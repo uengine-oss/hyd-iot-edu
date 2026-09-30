@@ -1,0 +1,18 @@
+# L6 platform monitoring (student edition): scrape the Python services' /metrics on it-net / DMZ.
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+rule_files: [/etc/prometheus/rules.yml]
+scrape_configs:
+  - job_name: connect-ingest
+    static_configs: [{ targets: ['connect-ingest:8093'] }]
+  - job_name: cmd-gateway
+    static_configs: [{ targets: ['cmd-gateway:8090'] }]
+  - job_name: detector
+    static_configs: [{ targets: ['detector:8092'] }]
+  - job_name: connect-sink
+    static_configs: [{ targets: ['connect-sink:8094'] }]
+  - job_name: agent
+    static_configs: [{ targets: ['agent:8091'] }]
+  - job_name: process
+    static_configs: [{ targets: ['process:8080'] }]

@@ -1,0 +1,7 @@
+__pycache__/
+.pytest_cache/
+.env
+docs/video/_rec/
+docs/video/audio/*.txt
+.superpowers/sdd/*/scenario_run*.log
+.superpowers/sdd/*/video_run*.log

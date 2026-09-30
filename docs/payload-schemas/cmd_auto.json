@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "plant/{asset}/cmd/auto (MQTT, cmd-gateway -> PLC) — v3 7.3",
+  "type": "object",
+  "required": ["cmdId", "source", "expiresAt", "writes"],
+  "properties": {
+    "cmdId": {"type": "string"},
+    "source": {"const": "HITL"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "writes": {"type": "array", "items": {"type": "object", "required": ["res", "v"],
+      "properties": {"res": {"enum": ["FanSpeedSP", "LoadSP", "Reset"]}, "v": {"type": "number"}}}}
+  }
+}

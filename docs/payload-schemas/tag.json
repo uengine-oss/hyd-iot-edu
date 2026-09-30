@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "plant/{asset}/tag/{name} (MQTT 1 Hz) and plant.tag (Kafka, with asset+name added)",
+  "type": "object",
+  "required": ["t", "v"],
+  "properties": {"t": {"type": "string", "format": "date-time"}, "v": {"type": "number"}, "q": {"enum": ["good", "bad", "uncertain"]},
+                 "asset": {"type": "string"}, "name": {"type": "string"}}
+}

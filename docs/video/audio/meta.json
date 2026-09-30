@@ -1,0 +1,94 @@
+{
+ "intro": {
+  "file": "docs\\video\\audio\\intro.mp3",
+  "duration": 34.1
+ },
+ "layers": {
+  "file": "docs\\video\\audio\\layers.mp3",
+  "duration": 20.86
+ },
+ "fuxa": {
+  "file": "docs\\video\\audio\\fuxa.mp3",
+  "duration": 19.7
+ },
+ "console": {
+  "file": "docs\\video\\audio\\console.mp3",
+  "duration": 14.02
+ },
+ "inject": {
+  "file": "docs\\video\\audio\\inject.mp3",
+  "duration": 15.1
+ },
+ "rising": {
+  "file": "docs\\video\\audio\\rising.mp3",
+  "duration": 14.93
+ },
+ "fuxa_alarm": {
+  "file": "docs\\video\\audio\\fuxa_alarm.mp3",
+  "duration": 14.95
+ },
+ "agent": {
+  "file": "docs\\video\\audio\\agent.mp3",
+  "duration": 40.63
+ },
+ "neo4j": {
+  "file": "docs\\video\\audio\\neo4j.mp3",
+  "duration": 18.89
+ },
+ "approve": {
+  "file": "docs\\video\\audio\\approve.mp3",
+  "duration": 11.26
+ },
+ "process": {
+  "file": "docs\\video\\audio\\process.mp3",
+  "duration": 29.69
+ },
+ "grafana": {
+  "file": "docs\\video\\audio\\grafana.mp3",
+  "duration": 29.23
+ },
+ "closed": {
+  "file": "docs\\video\\audio\\closed.mp3",
+  "duration": 14.54
+ },
+ "l79_intro": {
+  "file": "docs\\video\\audio\\l79_intro.mp3",
+  "duration": 22.73
+ },
+ "l79_linked": {
+  "file": "docs\\video\\audio\\l79_linked.mp3",
+  "duration": 20.11
+ },
+ "l79_map": {
+  "file": "docs\\video\\audio\\l79_map.mp3",
+  "duration": 30.48
+ },
+ "l79_decide": {
+  "file": "docs\\video\\audio\\l79_decide.mp3",
+  "duration": 24.05
+ },
+ "l79_persp": {
+  "file": "docs\\video\\audio\\l79_persp.mp3",
+  "duration": 29.3
+ },
+ "l79_approve": {
+  "file": "docs\\video\\audio\\l79_approve.mp3",
+  "duration": 29.09
+ },
+ "l79_systems": {
+  "file": "docs\\video\\audio\\l79_systems.mp3",
+  "duration": 12.41
+ },
+ "negative": {
+  "file": "docs\\video\\audio\\negative.mp3",
+  "duration": 13.32
+ },
+ "rejected": {
+  "file": "docs\\video\\audio\\rejected.mp3",
+  "duration": 21.24
+ },
+ "outro": {
+  "file": "docs\\video\\audio\\outro.mp3",
+  "duration": 23.76
+ }
+}

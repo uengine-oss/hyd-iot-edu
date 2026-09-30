@@ -1,0 +1,94 @@
+[
+ {
+  "id": "intro",
+  "start": 0.0
+ },
+ {
+  "id": "layers",
+  "start": 35.1
+ },
+ {
+  "id": "fuxa",
+  "start": 56.97
+ },
+ {
+  "id": "console",
+  "start": 77.67
+ },
+ {
+  "id": "inject",
+  "start": 92.7
+ },
+ {
+  "id": "rising",
+  "start": 108.81
+ },
+ {
+  "id": "fuxa_alarm",
+  "start": 161.17
+ },
+ {
+  "id": "agent",
+  "start": 177.12
+ },
+ {
+  "id": "neo4j",
+  "start": 218.76
+ },
+ {
+  "id": "approve",
+  "start": 273.7
+ },
+ {
+  "id": "process",
+  "start": 288.06
+ },
+ {
+  "id": "grafana",
+  "start": 318.75
+ },
+ {
+  "id": "closed",
+  "start": 358.76
+ },
+ {
+  "id": "l79_intro",
+  "start": 374.31
+ },
+ {
+  "id": "l79_linked",
+  "start": 398.05
+ },
+ {
+  "id": "l79_map",
+  "start": 419.18
+ },
+ {
+  "id": "l79_decide",
+  "start": 450.67
+ },
+ {
+  "id": "l79_persp",
+  "start": 475.74
+ },
+ {
+  "id": "l79_approve",
+  "start": 506.06
+ },
+ {
+  "id": "l79_systems",
+  "start": 536.15
+ },
+ {
+  "id": "negative",
+  "start": 549.57
+ },
+ {
+  "id": "rejected",
+  "start": 563.91
+ },
+ {
+  "id": "outro",
+  "start": 614.45
+ }
+]

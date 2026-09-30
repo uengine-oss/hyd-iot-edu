@@ -1,0 +1,1106 @@
+{
+ "uid": "hyd-trend",
+ "title": "HYD 설비 추세 · 경보 · 조치",
+ "tags": [
+  "hyd-iot-edu",
+  "L6"
+ ],
+ "timezone": "browser",
+ "editable": true,
+ "schemaVersion": 39,
+ "version": 1,
+ "refresh": "5s",
+ "time": {
+  "from": "now-10m",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "asset",
+    "label": "설비",
+    "type": "custom",
+    "query": "HYD-01,HYD-02,HYD-03",
+    "current": {
+     "text": "HYD-01",
+     "value": "HYD-01"
+    },
+    "options": [
+     {
+      "text": "HYD-01",
+      "value": "HYD-01",
+      "selected": true
+     },
+     {
+      "text": "HYD-02",
+      "value": "HYD-02",
+      "selected": false
+     },
+     {
+      "text": "HYD-03",
+      "value": "HYD-03",
+      "selected": false
+     }
+    ]
+   }
+  ]
+ },
+ "annotations": {
+  "list": [
+   {
+    "name": "경보 RAISE",
+    "datasource": {
+     "type": "grafana-postgresql-datasource",
+     "uid": "tsdb"
+    },
+    "enable": true,
+    "iconColor": "#dc2626",
+    "hide": false,
+    "target": {
+     "rawQuery": true,
+     "format": "table",
+     "editorMode": "code",
+     "rawSql": "SELECT raised_at AS time, 'RAISE ' || pattern || ' (' || alert_id || ')' AS text, asset AS tags FROM alerts WHERE asset='$asset' AND raised_at IS NOT NULL AND $__timeFilter(raised_at)"
+    }
+   },
+   {
+    "name": "경보 CLEAR",
+    "datasource": {
+     "type": "grafana-postgresql-datasource",
+     "uid": "tsdb"
+    },
+    "enable": true,
+    "iconColor": "#059669",
+    "hide": false,
+    "target": {
+     "rawQuery": true,
+     "format": "table",
+     "editorMode": "code",
+     "rawSql": "SELECT cleared_at AS time, 'CLEAR ' || pattern AS text, asset AS tags FROM alerts WHERE asset='$asset' AND cleared_at IS NOT NULL AND $__timeFilter(cleared_at)"
+    }
+   },
+   {
+    "name": "승인 조치",
+    "datasource": {
+     "type": "grafana-postgresql-datasource",
+     "uid": "tsdb"
+    },
+    "enable": true,
+    "iconColor": "#2563eb",
+    "hide": false,
+    "target": {
+     "rawQuery": true,
+     "format": "table",
+     "editorMode": "code",
+     "rawSql": "SELECT issued_at AS time, '승인 조치 ' || cmd_id || ' by ' || coalesce(approved_by,'?') || ': ' || actions::text AS text, asset AS tags FROM actions WHERE asset='$asset' AND $__timeFilter(issued_at)"
+    }
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "유온 TS1 (현재)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT value FROM tag_1s WHERE asset='$asset' AND name='TS1' ORDER BY time DESC LIMIT 1",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "celsius",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#d97706",
+        "value": 60
+       },
+       {
+        "color": "#dc2626",
+        "value": 65
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "냉각 효율 CE",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 4,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT value FROM tag_1s WHERE asset='$asset' AND name='CE' ORDER BY time DESC LIMIT 1",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#dc2626",
+        "value": 0
+       },
+       {
+        "color": "#d97706",
+        "value": 70
+       },
+       {
+        "color": "#059669",
+        "value": 80
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "이상 점수 (AE 대용)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT score AS value FROM feat_1s WHERE asset='$asset' AND sensor='TS1' ORDER BY time DESC LIMIT 1",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#d97706",
+        "value": 0.5
+       },
+       {
+        "color": "#dc2626",
+        "value": 0.8
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "활성 경보",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT count(*) AS value FROM alerts WHERE asset='$asset' AND state='RAISE'",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#dc2626",
+        "value": 1
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "팬 속도 SP",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT value FROM tag_1s WHERE asset='$asset' AND name='FanSpeedSP' ORDER BY time DESC LIMIT 1",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#2563eb",
+        "value": 0
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 6,
+   "type": "stat",
+   "title": "펌프 부하 SP",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 20,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT value FROM tag_1s WHERE asset='$asset' AND name='LoadSP' ORDER BY time DESC LIMIT 1",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "#059669",
+        "value": null
+       },
+       {
+        "color": "#2563eb",
+        "value": 0
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "유온 TS1 — 경보(빨강/초록)·승인 조치(파랑) 주석과 함께 감쇠를 확인",
+   "description": "60 ℃ 경고 · 65 ℃ 인터록 트립. 주석은 alerts / actions 테이블에서 온다.",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 4,
+    "w": 16,
+    "h": 9
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"TS1\" FROM tag_1s WHERE asset = '$asset' AND name = 'TS1' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "celsius",
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "pointSize": 4,
+      "showPoints": "never",
+      "spanNulls": true,
+      "lineInterpolation": "linear",
+      "axisSoftMin": 40,
+      "axisSoftMax": 70,
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "#d97706",
+        "value": 60
+       },
+       {
+        "color": "#dc2626",
+        "value": 65
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "TS1"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#2563eb"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "timeseries",
+   "title": "이상 점수 (Flink ONNX 오토인코더 자리)",
+   "description": "",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 4,
+    "w": 8,
+    "h": 9
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, score AS \"score\" FROM feat_1s WHERE asset='$asset' AND sensor='TS1' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "pointSize": 4,
+      "showPoints": "never",
+      "spanNulls": true,
+      "lineInterpolation": "linear",
+      "axisSoftMin": 0,
+      "axisSoftMax": 1,
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "#dc2626",
+        "value": 0.8
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "score"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#7c3aed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "냉각 효율 CE · 시스템 효율 SE (%)",
+   "description": "",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 13,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"CE\" FROM tag_1s WHERE asset = '$asset' AND name = 'CE' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    },
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "B",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"SE\" FROM tag_1s WHERE asset = '$asset' AND name = 'SE' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "pointSize": 4,
+      "showPoints": "never",
+      "spanNulls": true,
+      "lineInterpolation": "linear",
+      "axisSoftMin": 0,
+      "axisSoftMax": 100
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#059669"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#0891b2"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 10,
+   "type": "timeseries",
+   "title": "냉각 능력 CP (kW 상당)",
+   "description": "",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 13,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"CP\" FROM tag_1s WHERE asset = '$asset' AND name = 'CP' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "pointSize": 4,
+      "showPoints": "never",
+      "spanNulls": true,
+      "lineInterpolation": "linear",
+      "axisSoftMin": null,
+      "axisSoftMax": null
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CP"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#7c3aed"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 11,
+   "type": "timeseries",
+   "title": "설정값: 팬 속도 · 펌프 부하 (%)",
+   "description": "",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 13,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"FanSpeedSP\" FROM tag_1s WHERE asset = '$asset' AND name = 'FanSpeedSP' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    },
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "B",
+     "rawQuery": true,
+     "rawSql": "SELECT time, value AS \"LoadSP\" FROM tag_1s WHERE asset = '$asset' AND name = 'LoadSP' AND $__timeFilter(time) ORDER BY time",
+     "format": "time_series",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 0,
+      "pointSize": 4,
+      "showPoints": "never",
+      "spanNulls": true,
+      "lineInterpolation": "linear",
+      "axisSoftMin": 0,
+      "axisSoftMax": 100
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#d97706"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "#2563eb"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 12,
+   "type": "table",
+   "title": "경보 (alerts)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 21,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT raised_at AS \"발생\", cleared_at AS \"해제\", alert_id, pattern, severity, state FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "auto",
+      "cellOptions": {
+       "type": "auto"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "sortBy": []
+   }
+  },
+  {
+   "id": 13,
+   "type": "table",
+   "title": "조치 (actions) — 승인된 action.cmd와 PLC ACK",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 21,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT issued_at AS \"발행\", cmd_id, incident, actions::text AS actions, approved_by, ack_result, ack_reason, ack_at FROM actions WHERE asset='$asset' ORDER BY issued_at DESC LIMIT 20",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "auto",
+      "cellOptions": {
+       "type": "auto"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "sortBy": []
+   }
+  },
+  {
+   "id": 14,
+   "type": "table",
+   "title": "감사 로그 (audit)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "tsdb"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 29,
+    "w": 24,
+    "h": 9
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "tsdb"
+     },
+     "refId": "A",
+     "rawQuery": true,
+     "rawSql": "SELECT time, incident, actor, event, detail::text AS detail FROM audit WHERE $__timeFilter(time) ORDER BY time DESC LIMIT 50",
+     "format": "table",
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "auto",
+      "cellOptions": {
+       "type": "auto"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "sortBy": []
+   }
+  }
+ ]
+}

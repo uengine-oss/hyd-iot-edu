@@ -1,0 +1,10 @@
+# 학생 노트북용 WSL 2 자원 상한 예시 (hyd-iot-edu 경량 구성 기준: 컨테이너 합계 약 1.4 GB)
+# 사용법: 이 파일을 %UserProfile%\.wslconfig 로 복사 → PowerShell에서 wsl --shutdown → Docker Desktop 재시작
+# 주의: PC의 모든 WSL 배포판(Ubuntu 등)에 함께 적용된다.
+[wsl2]
+memory=4GB            # WSL VM 전체 메모리 상한 (8 GB 노트북이면 3~4 GB 권장)
+processors=2          # 가상 CPU 수
+swap=2GB
+[experimental]
+autoMemoryReclaim=gradual   # 쓰지 않는 메모리를 Windows에 천천히 돌려준다
+sparseVhd=true              # 지운 데이터만큼 가상 디스크(vhdx)가 줄어들 수 있게

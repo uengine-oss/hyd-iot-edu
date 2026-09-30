@@ -1,0 +1,12 @@
+groups:
+  - name: platform
+    rules:
+      - alert: IngestStalled
+        expr: ingest_last_event_age_seconds > 30
+        for: 30s
+        labels: { severity: warning }
+        annotations: { summary: "connect-ingest has not seen an OT message for 30 s (v3 M4: 수집 지연 경보)" }
+      - alert: GatewayRejections
+        expr: increase(gateway_decisions_total{result="REJECT"}[5m]) > 3
+        labels: { severity: warning }
+        annotations: { summary: "cmd-gateway rejected more than 3 commands in 5 minutes" }

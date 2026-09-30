@@ -1,0 +1,350 @@
+# hyd-iot-edu — 유압설비 IoT-SCADA 학생용 프로토타입 (v3 아키텍처 L1~L9)
+# 프로필: ot · backbone · detect · knowledge · agent · enterprise · process (기본, .env COMPOSE_PROFILES)
+#         monitor(Prometheus) · tools(Redpanda Console) 는 선택 — 경량 기본 구성에서 뺐다. 필요하면 COMPOSE_PROFILES에 추가.
+name: hyd-iot-edu
+
+x-logging: &log                          # 컨테이너 로그가 디스크(WSL vhdx)를 키우지 않게 순환
+  driver: json-file
+  options: { max-size: "5m", max-file: "2" }
+
+x-py-health: &py-health
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 10s
+
+networks:
+  ot-net: {}
+  it-net: {}
+
+volumes:
+  tsdb-data: {}
+  neo4j-data: {}
+  redpanda-data: {}
+
+services:
+  # ───────────────────────────── OT (ot-net) ─────────────────────────────
+  emqx:                                   # L2 IoT 미들웨어 · MQTT 브로커
+    logging: *log
+    mem_limit: 320m
+    image: emqx/emqx:5.8
+    profiles: [ot]
+    networks: [ot-net]
+    ports: ["127.0.0.1:1883:1883", "127.0.0.1:18083:18083"]
+    environment:
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 8자 이상 필수. 첫 로그인 때 변경을 요구하면 새 값으로 바꾸고 기억해 둘 것
+    healthcheck:
+      test: ["CMD", "emqx", "ctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  plant-sim:                              # L1 유압설비 3기 + soft-PLC + DAQ (EdgeX 역할 포함)
+    logging: *log
+    mem_limit: 96m
+    build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
+    profiles: [ot]
+    networks: [ot-net]
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      MQTT_HOST: emqx
+      TIME_SCALE: ${TIME_SCALE:-20}
+      DAQ_PROFILE: ${DAQ_PROFILE:-lite}      # lite: 예외 보고(데드밴드·하트비트), 파형 없음 · full: 전 태그 1 Hz + 100 Hz 파형
+    depends_on:
+      emqx: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
+      <<: *py-health
+
+  fuxa:                                   # L6(OT) 웹 SCADA
+    logging: *log
+    mem_limit: 192m
+    image: frangoteam/fuxa:latest
+    profiles: [ot]
+    networks: [ot-net]
+    ports: ["127.0.0.1:1881:1881"]
+    depends_on:
+      emqx: { condition: service_healthy }
+
+  fuxa-init:                              # FUXA 프로젝트(태그·뷰·알람) 자동 주입
+    logging: *log
+    mem_limit: 64m
+    image: python:3.12-slim
+    profiles: [ot]
+    networks: [ot-net]
+    volumes: ["./ot/fuxa:/work:ro"]
+    command: ["python", "/work/init.py"]
+    depends_on: [fuxa]
+    restart: "no"
+
+
+  # ───────────────────────────── DMZ (ot-net + it-net) ─────────────────────────────
+  connect-ingest:                         # L3 DMZ: OT MQTT → Kafka 단방향 복제
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: dmz/connect-ingest/Dockerfile }
+    profiles: [backbone]
+    networks: [ot-net, it-net]
+    ports: ["127.0.0.1:8093:8093"]
+    environment:
+      MQTT_HOST: emqx
+      KAFKA_BOOTSTRAP: redpanda:9092
+    depends_on:
+      redpanda: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8093/healthz')"]
+      <<: *py-health
+
+  cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → OT (검증 5종) — 유일한 하향 통로
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: dmz/cmd-gateway/Dockerfile }
+    profiles: [detect]
+    networks: [ot-net, it-net]
+    ports: ["127.0.0.1:8090:8090"]
+    environment:
+      MQTT_HOST: emqx
+      KAFKA_BOOTSTRAP: redpanda:9092
+    depends_on:
+      redpanda: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8090/healthz')"]
+      <<: *py-health
+
+  # ───────────────────────────── IT (it-net) ─────────────────────────────
+  redpanda:                               # L3 이벤트 백본 (Kafka API 호환)
+    logging: *log
+    mem_limit: 448m
+    image: redpandadata/redpanda:v24.2.7
+    profiles: [backbone]
+    networks: [it-net]
+    command:
+      - redpanda start
+      - --mode dev-container
+      - --smp 1
+      - --memory 320M
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    ports: ["127.0.0.1:19092:19092", "127.0.0.1:9644:9644"]
+    volumes: ["redpanda-data:/var/lib/redpanda/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  topic-init:                             # Kafka 토픽 7개 생성 (v3 5.2절)
+    logging: *log
+    mem_limit: 128m
+    image: redpandadata/redpanda:v24.2.7
+    profiles: [backbone]
+    networks: [it-net]
+    entrypoint: ["/bin/bash", "/topics.sh"]
+    volumes: ["./it/redpanda/topics.sh:/topics.sh:ro"]
+    depends_on:
+      redpanda: { condition: service_healthy }
+    restart: "no"
+
+  redpanda-console:                       # L3 진입점: 토픽·메시지 브라우저 (선택: tools 프로필)
+    logging: *log
+    mem_limit: 128m
+    image: redpandadata/console:v2.7.2
+    profiles: [tools]
+    networks: [it-net]
+    ports: ["127.0.0.1:8085:8080"]
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    depends_on:
+      redpanda: { condition: service_healthy }
+
+  timescaledb:                            # L5 시계열 저장소
+    logging: *log
+    mem_limit: 256m
+    image: timescale/timescaledb:2.17.2-pg16
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "work_mem=4MB", "-c", "max_connections=40",
+              "-c", "timescaledb.max_background_workers=4", "-c", "max_worker_processes=10", "-c", "timescaledb.telemetry_level=off"]
+    profiles: [backbone]
+    networks: [it-net]
+    ports: ["127.0.0.1:5432:5432"]
+    environment:
+      POSTGRES_USER: hyd
+      POSTGRES_PASSWORD: hyd
+      POSTGRES_DB: hyd
+    volumes:
+      - tsdb-data:/var/lib/postgresql/data
+      - ./it/timescaledb/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hyd -d hyd"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  connect-sink:                           # L5 Kafka → TimescaleDB 적재 (JDBC Sink 역할)
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: it/connect-sink/Dockerfile }
+    profiles: [backbone]
+    networks: [it-net]
+    ports: ["127.0.0.1:8094:8094"]
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
+    depends_on:
+      redpanda: { condition: service_healthy }
+      timescaledb: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8094/healthz')"]
+      <<: *py-health
+
+  grafana:                                # L6(IT) 설비 추세 · 조치 주석
+    logging: *log
+    mem_limit: 192m
+    image: grafana/grafana:11.3.0
+    profiles: [backbone]
+    networks: [it-net]
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_DEFAULT_THEME: light
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/hyd-trend.json
+    volumes:
+      - ./it/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      timescaledb: { condition: service_healthy }
+
+  detector:                               # L4 스트림 처리 · CEP (Flink 역할)
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: it/detector/Dockerfile }
+    profiles: [detect]
+    networks: [it-net]
+    ports: ["127.0.0.1:8092:8092"]
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      TIME_SCALE: ${TIME_SCALE:-20}
+    depends_on:
+      redpanda: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8092/healthz')"]
+      <<: *py-health
+
+  prometheus:                             # L6 플랫폼 감시 (선택)
+    logging: *log
+    mem_limit: 128m
+    image: prom/prometheus:v2.55.1
+    profiles: [monitor]
+    networks: [it-net]
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./it/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./it/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+
+  neo4j:                                  # L7 온톨로지 지식 그래프
+    logging: *log
+    mem_limit: 560m
+    image: neo4j:5.26-community
+    profiles: [knowledge]
+    networks: [it-net]
+    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]
+    environment:
+      NEO4J_AUTH: neo4j/hydpass123
+      NEO4J_server_memory_heap_initial__size: 128m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 48m
+      NEO4J_server_jvm_additional: "-XX:MaxMetaspaceSize=160m"
+      NEO4J_db_tx__log_rotation_retention__policy: "1 files"
+    volumes: ["neo4j-data:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/7687' || exit 1"]   # Bolt port probe: no extra JVM (cypher-shell) inside the memory cap
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 20s
+
+  kg-seed:                                # 온톨로지 스키마·인스턴스 적재 (멱등)
+    logging: *log
+    mem_limit: 384m
+    image: neo4j:5.26-community
+    profiles: [knowledge]
+    networks: [it-net]
+    entrypoint: ["/bin/bash", "/seed/seed.sh"]
+    volumes: ["./it/neo4j:/seed:ro"]
+    depends_on:
+      neo4j: { condition: service_healthy }
+    restart: "no"
+
+  agent:                                  # L8 AI 에이전트 (LangGraph/MCP/LiteLLM 역할, 읽기 전용 도구)
+    logging: *log
+    mem_limit: 192m
+    build: { context: ., dockerfile: it/agent/Dockerfile }
+    profiles: [agent]
+    networks: [it-net]
+    ports: ["127.0.0.1:8091:8091"]
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_AUTH: neo4j/hydpass123
+      PROCESS_URL: http://process:8080
+      ENTERPRISE_URL: http://enterprise-sim:8095
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-claude-opus-5}
+    depends_on:
+      redpanda: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8091/healthz')"]
+      <<: *py-health
+
+  process:                                # L9 프로세스 엔진 (미니 BPMN: 승인 → action.cmd → ACK → 재관측 → 종결)
+    logging: *log
+    mem_limit: 160m
+    build: { context: ., dockerfile: it/process/Dockerfile }
+    profiles: [process]
+    networks: [it-net]
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_AUTH: neo4j/hydpass123
+      TIME_SCALE: ${TIME_SCALE:-20}
+      ENTERPRISE_URL: http://enterprise-sim:8095
+    depends_on:
+      redpanda: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8080/healthz')"]
+      <<: *py-health
+
+  enterprise-sim:                         # L9 연계 대상: 기업 시스템 목업 (ERP · MES · CMMS · QMS · SCM · EMS)
+    logging: *log
+    mem_limit: 96m
+    build: { context: ., dockerfile: it/enterprise-sim/Dockerfile }
+    profiles: [enterprise]
+    networks: [it-net]
+    ports: ["127.0.0.1:8095:8095"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
+      <<: *py-health
+
+  portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA)
+    logging: *log
+    mem_limit: 32m
+    image: nginx:1.27-alpine
+    profiles: [process]
+    networks: [it-net]
+    ports: ["127.0.0.1:8088:80"]
+    volumes:
+      - ./it/portal/www:/usr/share/nginx/html:ro
+      - ./it/portal/nginx.conf:/etc/nginx/conf.d/default.conf:ro

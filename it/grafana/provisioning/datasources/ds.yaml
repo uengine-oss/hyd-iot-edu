@@ -1,0 +1,17 @@
+apiVersion: 1
+datasources:
+  - name: TimescaleDB
+    uid: tsdb
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: timescaledb:5432
+    user: grafana
+    isDefault: true
+    secureJsonData:
+      password: grafana
+    jsonData:
+      database: hyd
+      sslmode: disable
+      timescaledb: true
+      postgresVersion: 1600
+      maxOpenConns: 4

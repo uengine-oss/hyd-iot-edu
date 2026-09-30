@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>유압설비 모니터링 · 조치 포탈</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="enterprise.css">
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="hitl.css">
+</head>
+<body>
+<aside class="rail">
+  <button class="brand active" id="brandHome" title="메인 화면"><strong>유압설비 포탈</strong><span>IIoT SCADA × 지식 지도 Agent · L1~L9</span></button>
+  <nav>
+    <button data-tab="home">시스템 아키텍처 &amp; 맵</button>
+    <div class="navgroup">관제 · 제어 <small>L1 ~ L6</small></div>
+    <button data-tab="scenario">결함 시나리오 시뮬레이션</button>
+    <button data-tab="incidents">이상 확인 &amp; 조치</button>
+    <button data-tab="trends">실시간 설비 모니터링</button>
+    <div class="navgroup focus">지식 · 판단 · 실행 <small>L7 ~ L9</small></div>
+    <button data-tab="ontology">온톨로지 지식 지도</button>
+    <button data-tab="skills">에이전트 스킬 카탈로그</button>
+    <button data-tab="decision">전사 의사결정 시나리오</button>
+    <button data-tab="process">업무 프로세스 · 시스템 연계</button>
+  </nav>
+  <div class="foot">L1~L6은 설비를 즉시 제어한다.<br>L7~L9는 온톨로지로 조직·KPI·규정·기업 시스템을 이어 "무엇이 회사에 이로운가"를 판단한다.</div>
+</aside>
+
+<div class="strip">
+  <span class="sim">시뮬레이션 시각 <b id="simT" class="num">–</b></span>
+  <span>시간 배율 <b id="scale" class="num">–</b>×</span>
+  <span>열린 인시던트 <b id="openCount" class="num">0</b></span>
+  <div class="dots" id="healthDots"></div>
+</div>
+
+<main>
+  <!-- ───────── home ───────── -->
+  <section class="view active" id="view-main">
+    <div class="m-head">
+      <div>
+        <h1>유압설비 IIoT SCADA<span class="x">×</span>지식 지도 기반 Agent 조치 프로세스</h1>
+        <p>설비에서 올라온 데이터로 이상을 잡는 것에서 끝나지 않는다. 온톨로지 지식 지도가 원인 · 조치 · 부서 KPI · 규정 · 기업 시스템을 이어 주고, 에이전트는 그 지도를 따라 회사 전체에 이로운 조치를 제안한다. 사람이 권한에 따라 승인하면 설비와 기업 시스템에 실행된다.</p>
+      </div>
+      <div class="m-actions"><button class="btn" id="mainArch">시스템 아키텍처 &amp; 맵 보기</button></div>
+    </div>
+    <div class="m-hero" id="mainHero"></div>
+    <div class="m-stages" id="mainStages"></div>
+    <div class="m-stats" id="mainStats"></div>
+  </section>
+
+  <section class="view" id="view-home">
+    <h1>레이어 L9 → L1, 그리고 각 레이어로 들어가는 문</h1>
+    <p class="lead">v3 설계서의 기능 레이어 9개와 배치 영역(OT · DMZ · IT)을 그대로 옮겼다. 무거운 제품은 같은 이름·같은 메시지 계약을 지키는 작은 파이썬 서비스로 바꿨고, 가벼운 실제 제품(EMQX, FUXA, Redpanda, TimescaleDB, Grafana, Neo4j)은 그대로 쓴다. 점은 5초마다 확인하는 상태다.</p>
+    <div class="focusbox"><b>이 프로토타입의 초점은 L7 ~ L9다.</b> L1~L6은 경보가 나면 팬을 올리는 즉각 제어까지다. L7 온톨로지는 여기에 조직 · KPI · 규정 · ERP/MES/CMMS/QMS · 에이전트 스킬을 이어, L8 에이전트가 부서 간 상충을 전사 관점에서 판단하고 L9가 승인 권한에 따라 기업 시스템에서 실행하게 한다. 왼쪽 아래 <b>지식 · 판단 · 실행</b> 메뉴에서 따라가 보자.</div>
+    <div class="stack" id="stack"></div>
+    <div class="legend"><span><i class="z ot">OT</i> 설비·실시간 운전 (ot-net)</span><span><i class="z dmz">DMZ</i> 유일한 통로 (ot-net + it-net)</span><span><i class="z it">IT</i> 장부·분석·지식·프로세스 (it-net)</span><span class="muted">괄호 안은 원래 아키텍처의 제품 이름</span></div>
+    <h2>강의 순서 (Compose 프로필)</h2>
+    <p class="muted">M1 ot → M2 backbone → M3 detect → M4 monitor → M5 knowledge → M6 agent → M7 process. <code>docker compose --profile ot up</code>처럼 필요한 단계만 띄울 수 있다. 시나리오는 <b>결함 시나리오 시뮬레이션</b>에서, 결과는 <b>이상 확인 &amp; 조치</b>와 <b>실시간 설비 모니터링</b>에서 본다.</p>
+  </section>
+
+  <!-- ───────── L7 ontology map ───────── -->
+  <section class="view" id="view-ontology">
+    <h1>온톨로지 지식 지도 (L7)</h1>
+    <p class="lead">왼쪽 세 열(설비·관측, 고장, 조치)은 "무엇이 고장났고 무엇을 하면 되는가"를 담는다. 오른쪽 세 열(조직·KPI·규정, 시스템·스킬·프로세스, 판단·사례)은 "그 조치가 회사의 누구에게 어떤 이익과 손해인가, 필요한 정보는 어느 시스템에 있는가, 누가 승인하는가"를 담는다. 에이전트는 이 지도를 따라 판단한다.</p>
+    <div class="toolbar">
+      <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
+      <label>강조 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
+      <input type="search" id="ontoSearch" placeholder="노드 이름·id 검색" aria-label="노드 검색">
+      <button class="btn small" id="ontoReload">다시 읽기</button>
+    </div>
+    <div class="chips" id="ontoLayers"></div>
+    <div class="muted" id="ontoStats"></div>
+    <div class="onto">
+      <div class="onto-map" id="ontoMap"></div>
+      <aside class="onto-node" id="ontoNode"></aside>
+    </div>
+    <h2>매뉴얼 업로드 → SOP 인제스천</h2>
+    <div class="upload" id="manualUpload">
+      <p class="muted">정비 매뉴얼(.md · .txt · .pdf)을 올리면 절 제목(예: <code>HM-8.1 쿨러 팬 벨트 점검</code>)은 매뉴얼 절로, 번호 매긴 줄(<code>1. …</code>)은 SOP 단계로 읽는다. 미리보기에서 확인하고 조치와 연결한 뒤 적재한다. <a href="samples/HM-8_cooler-fan-manual.md" download>예시 매뉴얼 받기</a></p>
+      <div class="toolbar"><input type="file" id="manualFile" accept=".md,.txt,.pdf"><input id="manualBy" value="지식 관리자" aria-label="적재자"><button class="btn" id="manualPreview">미리보기</button></div>
+      <div id="manualResult"></div>
+      <div id="manualHistory"></div>
+    </div>
+    <h2>에이전트가 쓰는 질의 템플릿 (화이트리스트 Cypher)</h2>
+    <div class="toolbar" id="ontoTpl">
+      <button class="btn small" data-t="t1_causes">T1 원인 후보</button><button class="btn small" data-t="t2_actions">T2 조치·SOP</button>
+      <button class="btn small" data-t="t3_scenario">T3-a 시나리오·필요 정보</button><button class="btn small" data-t="t3_options">T3-b 대안·스킬·KPI 영향</button>
+      <button class="btn small" data-t="t3_kpis">T3-c KPI·부서·목표</button><button class="btn small" data-t="t3_policies">T3-d 규정</button>
+      <button class="btn small" data-t="t3_triggers">T3-e 트리거</button><button class="btn small" data-t="t3_roles">T3-f 역할·직급</button><button class="btn small" data-t="t3_precedents">T3-g 현장 판단 선례</button>
+    </div>
+    <pre class="tpl" id="ontoTplText">버튼을 누르면 템플릿 원문이 나온다. Neo4j Browser(7474)에 붙여 넣어 직접 실행해 볼 수 있다.</pre>
+  </section>
+
+  <!-- ───────── L8 agent skill catalog ───────── -->
+  <section class="view" id="view-skills">
+    <h1>에이전트 스킬 카탈로그 (L8)</h1>
+    <p class="lead">에이전트가 판단한 뒤 실행을 제안할 수 있는 업무 단위다. 스킬마다 실행 시스템, 업무 프로세스, 승인 역할, 거는 규정, 필요한 정보가 온톨로지 관계로 연결돼 있다. 이름 · 설명 · 상세와 연결을 여기서 고치면 다음 판단부터 반영된다. 에이전트는 스킬을 직접 실행하지 않는다.</p>
+    <div class="split skills-split">
+      <div><div class="listhead"><span>스킬</span><button class="btn small" id="skillNew">새 스킬</button></div><div class="list" id="skillList"></div></div>
+      <div class="detail" id="skillDetail"><div class="empty">왼쪽에서 스킬을 고른다.</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── L8 enterprise decisions ───────── -->
+  <section class="view" id="view-decision">
+    <h1>전사 의사결정 시나리오 (L8)</h1>
+    <p class="lead">같은 설비 이상이라도 생산 · 보전 · 구매 · 품질 · 영업 · 에너지 부서마다 최선의 답이 다르다. 에이전트는 온톨로지에서 대안과 KPI 산식, 규정, 필요한 정보의 위치를 꺼내 ERP · MES · CMMS · QMS · SCM · EMS를 조회하고, 부서 관점과 전사 관점의 1위를 따로 계산한다. LLM 없이 같은 입력이면 항상 같은 답이 나온다.</p>
+    <div class="scn-cards" id="scnCards"><div class="muted">불러오는 중…</div></div>
+    <div id="decResult"></div>
+  </section>
+
+  <!-- ───────── L9 business process & systems ───────── -->
+  <section class="view" id="view-process">
+    <h1>업무 프로세스 · 시스템 연계 (L9)</h1>
+    <p class="lead">에이전트가 제출한 판단을 사람이 승인한다. 승인할 수 있는 역할은 온톨로지가 정한다. 승인되면 프로세스 엔진이 대안의 스킬을 ERP · MES · CMMS · QMS · EMS에 실행하고, 설비 즉시 제어만은 기존 HITL 경로(action.cmd → cmd-gateway)로 남긴다.</p>
+    <h2>조치 프로세스 흐름 (BPMN)</h2>
+    <div class="bpmn-wrap" id="procBpmn"></div>
+    <div class="split">
+      <div><div class="listhead"><span>판단 목록</span></div><div class="list" id="decList"></div></div>
+      <div class="detail" id="decDetail"></div>
+    </div>
+    <h2>기업 시스템 현황 (enterprise-sim)</h2>
+    <div class="boards" id="sysBoards"></div>
+    <h2>시스템 트랜잭션 로그</h2>
+    <div class="audit" id="txList"></div>
+  </section>
+
+  <!-- ───────── scenario ───────── -->
+  <section class="view" id="view-scenario">
+    <h1>결함 시나리오 시뮬레이션</h1>
+    <p class="lead">설비 3기의 현재 값과 PLC 상태. "쿨러 열화 주입"을 누르면 유온이 오르고, SCADA에 알람이 뜨고, 탐지기가 경보를 내고, 에이전트가 가이드를 만든다. 승인은 <b>이상 확인 &amp; 조치</b> 탭에서 설비를 눌러 한다.</p>
+    <div class="toolbar">
+      <button class="btn" id="btnReset">전체 초기화 (정상 운전점)</button>
+      <label>시간 배율 <select id="selScale"><option>5</option><option>10</option><option selected>20</option><option>40</option></select>×</label>
+      <span class="muted">1초 = 배율 × 시뮬레이션 초. 15분 재관측이 45초로 줄어든다(×20).</span>
+    </div>
+    <div class="units" id="units"></div>
+    <h2>최근 명령 게이트웨이 결정</h2>
+    <div class="log" id="gwLog"><div class="muted">아직 결정이 없다.</div></div>
+  </section>
+
+  <!-- ───────── 설비 SCADA (incidents) ───────── -->
+  <section class="view" id="view-incidents">
+    <h1>이상 확인 &amp; 조치</h1>
+    <p class="lead">설비 3기의 흐름도와 실측값이다. 경보가 붙은 설비를 누르면 아래에 그 설비의 프로세스(에이전트 트레이스 → 가이드 카드 → 승인 → PLC ACK → 재관측 → 종결)가 나타난다. 승인된 조치만 action.cmd로 나가고, 게이트웨이와 PLC 검증을 거쳐 실행된다.</p>
+    <div class="scada" id="scada"></div>
+    <div id="hitlPanel"></div>
+    <div class="split scada-split">
+      <div>
+        <div class="listhead"><span id="incListTitle">인시던트</span><button class="btn small" id="btnAllInc">전체 보기</button></div>
+        <div class="list" id="incList"><div class="muted">인시던트가 없다. 결함 시나리오 시뮬레이션에서 열화를 주입해 보자.</div></div>
+      </div>
+      <div class="rightcol">
+        <div class="detail" id="incDetail"><div class="empty">위 도식에서 설비를 고르면 그 설비의 프로세스가 여기에 나온다.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── trends ───────── -->
+  <section class="view" id="view-trends">
+    <h1>실시간 설비 모니터링 (Grafana)</h1>
+    <p class="lead">Grafana(L6) 패널을 그대로 끼워 넣었다. 유온 추세 위에 경보 RAISE/CLEAR와 승인 조치가 주석으로 겹쳐, 조치 이후 이상 징후가 감쇠하는 모습을 볼 수 있다.</p>
+    <div class="toolbar">
+      <label>설비 <select id="selAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
+      <a id="grafanaLink" target="_blank" rel="noopener">Grafana에서 전체 대시보드 열기</a>
+    </div>
+    <div class="wide"><iframe id="pTs1" height="330" title="유온 TS1"></iframe></div>
+    <div class="grid2">
+      <iframe id="pScore" height="240" title="이상 점수"></iframe>
+      <iframe id="pCe" height="240" title="냉각 효율"></iframe>
+      <iframe id="pSp" height="240" title="설정값"></iframe>
+      <iframe id="pAlerts" height="240" title="경보 테이블"></iframe>
+    </div>
+  </section>
+</main>
+
+<div id="caption"></div>
+<script src="layers.js"></script>
+<script src="app.js"></script>
+<script src="enterprise.js"></script>
+<script src="main.js"></script>
+<script src="hitl.js"></script>
+</body>
+</html>

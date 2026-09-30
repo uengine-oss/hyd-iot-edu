@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "plant/{asset}/status (MQTT retained, PLC -> everyone) — includes the command ACK",
+  "type": "object",
+  "required": ["asset", "t", "mode", "state", "fan_pct", "load_pct", "interlock"],
+  "properties": {
+    "asset": {"type": "string"}, "t": {"type": "string", "format": "date-time"},
+    "mode": {"enum": ["LOCAL", "REMOTE_MANUAL", "REMOTE_AUTO"]},
+    "state": {"enum": ["RUN", "TRIP"]}, "trip": {"type": ["string", "null"], "examples": ["OVERTEMP"]},
+    "fan_pct": {"type": "number"}, "load_pct": {"type": "number"}, "cooler_health": {"type": "number"},
+    "cmdId": {"type": ["string", "null"]}, "result": {"enum": ["DONE", "REJECTED", null]},
+    "reason": {"type": ["string", "null"], "examples": ["MODE_MISMATCH", "EXPIRED", "DUPLICATE", "OUT_OF_RANGE", "INTERLOCK_TRIP", "RESET_TOO_HOT"]},
+    "source": {"type": ["string", "null"]}, "interlock": {"enum": ["PASS", "TRIP"]},
+    "sim_t": {"type": "number"}, "time_scale": {"type": "number"}
+  }
+}

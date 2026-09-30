@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "alerts (Kafka, detector -> agent/process/cmd-gateway/sink)",
+  "type": "object",
+  "required": ["alertId", "asset", "pattern", "severity", "state", "t"],
+  "properties": {
+    "alertId": {"type": "string", "examples": ["ALT-hyd01-0001", "ALT-hyd03-TRIP-001"]},
+    "asset": {"type": "string"},
+    "pattern": {"enum": ["COOLER_DEGRADATION", "OVERHEAT_TRIP"]},
+    "severity": {"enum": ["HIGH", "CRITICAL"]},
+    "state": {"enum": ["RAISE", "CLEAR"]},
+    "t": {"type": "string", "format": "date-time"},
+    "evidence": {"type": "object", "properties": {"ts1": {"type": "number"}, "ce": {"type": "number"}, "ts1_slope": {"type": "number"}, "score": {"type": ["number", "null"]}}}
+  }
+}
