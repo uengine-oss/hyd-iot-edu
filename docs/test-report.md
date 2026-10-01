@@ -1,8 +1,6 @@
 # 통합 시나리오 테스트 결과 (scripts/scenario_test.py)
 
-> 2026-10-01 후속 **UI 세부 점검**: 16개 재현 항목을 교정. 포탈 9화면×3개 폭과 실제 폼·지식관리·Grafana 검사, UI 결함→승인→PLC ACK→CLOSED 완주, FUXA 실제 쓰기·거부·복구 확인. 최종 단위 136개, 실제 LLM 필수 E2E 46/46(171초). [UI 검증 기록](ui-stability-review.md)에 전후 화면과 재현 스크립트를 남겼다.
-
-> 최신 검증은 **2026-10-01 안정성 개선**이다: 단위 135개, 전체 E2E 59/59(345초), LLM 필수 E2E 46/46(169초), 장애 복구 12/12, HITL API 회귀 9/9. 실행 조건과 로그는 [안정성 검증 기록](stability-plan.md)을 참조한다. 아래는 개선 전 2026-09-30 기록으로 보존한다.
+> 아래는 **2026-09-30 초기 검증 기록**이다. 이후 안정성·UI 개선의 실행별 결과와 캡처는 저장소 밖의 로컬 HTML에 보관한다. 현재 코드의 재검증 방법은 [README](../README.md)의 검사 명령을 따른다.
 
 실행: 2026-09-30 (L7~L9 고도화 + 경량 구성 + HITL 조치 의사결정 · 선례 환류 · 스킬 카탈로그 · 매뉴얼 인제스천 적용 뒤), TIME_SCALE=20, DAQ_PROFILE=lite, COMPOSE_PROFILES=ot,backbone,detect,knowledge,agent,enterprise,process
 

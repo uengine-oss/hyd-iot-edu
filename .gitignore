@@ -3,6 +3,13 @@ __pycache__/
 .env
 .venv/
 .evidence/
+# Local screenshots and run-specific review artifacts are archived outside Git.
+/UIUX_*/
+/hyd-iot-edu_UIUX_*.html
+/_삭제/
+/docs/ui-stability-review.md
+/docs/ui-visual-review-173.*
+/docs/stability-plan.md
 docs/video/_rec/
 docs/video/audio/*.txt
 .superpowers/sdd/*/scenario_run*.log

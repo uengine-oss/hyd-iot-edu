@@ -3,6 +3,9 @@
 .env
 .env.*
 .evidence
+UIUX_*
+hyd-iot-edu_UIUX_*.html
+_삭제
 **/__pycache__
 .pytest_cache
 docs/video

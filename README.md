@@ -130,7 +130,7 @@ python scripts/scenario_test.py        # 통합: 스택이 떠 있어야 함
 - **서비스 /healthz는 소비 루프가 죽으면 503**을 돌려준다(포탈 홈의 점이 빨강). 잘못된 메시지(예: Redpanda Console에서 손으로 보낸 비JSON `action.cmd`)는 스키마 검증에서 거부되고 서비스는 계속 산다.
 - **시간 배율**: `.env`의 `TIME_SCALE`은 plant-sim·detector·process가 공통으로 읽는다. 포탈/`POST /api/time_scale`은 plant-sim의 물리 속도만 바꾼다(탐지 유지 시간·재관측 타이머는 그대로).
 
-장애 복구 검증: 실제 LLM을 설정하고 전체 시나리오가 끝난 뒤 `python scripts/stability_test.py`를 실행합니다. 실제 DB 중단, 수집기 재시작, Kafka 재처리, process/enterprise 재시작을 수행하므로 시연 중에는 실행하지 않습니다. 개발 의존성은 `pip install -r requirements-dev.txt`로 설치합니다(Python 3.12). LLM 사용을 필수로 검사하려면 `python scripts/scenario_test.py --require-llm`을 사용합니다. 결과와 범위는 [안정성 검증 기록](docs/stability-plan.md)을 참고하세요.
+장애 복구 검증: 실제 LLM을 설정하고 전체 시나리오가 끝난 뒤 `python scripts/stability_test.py`를 실행합니다. 실제 DB 중단, 수집기 재시작, Kafka 재처리, process/enterprise 재시작을 수행하므로 시연 중에는 실행하지 않습니다. 개발 의존성은 `pip install -r requirements-dev.txt`로 설치합니다(Python 3.12). LLM 사용을 필수로 검사하려면 `python scripts/scenario_test.py --require-llm`을 사용합니다. 실행별 결과·로그·캡처는 `.evidence/`에 생성하며 Git과 Docker 빌드에 포함하지 않습니다. 보관용 사진·검수 기록은 저장소 밖의 단일 HTML로 관리합니다.
 
 ## 범위 밖 (학생용 간소화)
 
