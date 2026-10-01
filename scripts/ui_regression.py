@@ -212,8 +212,10 @@ with sync_playwright() as pw:
                 page.locator(f'#ontoNode [data-go="{target}"]').click()
                 expect(page.locator('#ontoNode h3')).to_have_text(nodes[target]['name'])
                 expect(page.locator('.o-node.sel')).to_have_attribute('data-id', target)
-                expect(page.locator('.o-node.dim')).to_have_count(0)
-                expect(page.locator('.o-edge.dim')).to_have_count(0)
+                adjacent = {target} | {e['to'] if e['from'] == target else e['from']
+                                      for e in graph['edges'] if target in (e['from'], e['to'])}
+                expect(page.locator('.o-node:not(.dim)')).to_have_count(len(adjacent))
+                expect(page.locator('.o-edge.hot')).to_have_count(sum(target in (e['from'], e['to']) for e in graph['edges']))
         shot('ontology-cross-domain-after')
     check('real equipment-to-manual and action-to-skill-to-process paths remain readable', cross_domain_ontology)
 

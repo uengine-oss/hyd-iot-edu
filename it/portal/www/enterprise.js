@@ -111,7 +111,7 @@ function drawGraph() {
     maxY = Math.max(maxY, y);
   });
   const width = visibleGroups.length * W + 10, height = maxY + 10;
-  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="온톨로지 지식 지도"><defs><marker id="ontoArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7Z" fill="#c57905"/></marker></defs>`;
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="온톨로지 지식 지도">`;
   visibleGroups.forEach(({ gr }, ci) => {
     svg += `<rect x="${ci * W + 2}" y="2" width="${W - 6}" height="${height - 4}" rx="6" fill="${gr.color}" fill-opacity="0.045"/>` +
       `<text x="${ci * W + 10}" y="20" class="o-colh" fill="${gr.color}">${esc(gr.title)}</text>`;
@@ -127,11 +127,11 @@ function drawGraph() {
     if (Math.abs(a.x - b.x) < 5) { const bx = a.x + BOX + 14 + Math.min(40, Math.abs(y2 - y1) / 8); d = `M${x1},${y1} C${bx},${y1} ${bx},${y2} ${a.x + BOX},${y2}`; }
     else if (b.x > a.x) d = `M${x1},${y1} C${x1 + 30},${y1} ${x2 - 30},${y2} ${x2},${y2}`;
     else d = `M${a.x},${y1} C${a.x - 30},${y1} ${b.x + BOX + 30},${y2} ${b.x + BOX},${y2}`;
-    // Selecting a node identifies its immediate edges; it must not erase the
-    // indirect connections to causes, manuals, skills and business processes.
-    const cls = hot ? 'o-edge hot' : inFocus ? 'o-edge focus' : focus ? 'o-edge dim' : 'o-edge';
+    // Local selection highlights direct relations; a scenario keeps its broader
+    // path visible as context. Dimming never removes nodes or navigation links.
+    const cls = hot ? 'o-edge hot' : inFocus ? 'o-edge focus' : (focus || ent.sel) ? 'o-edge dim' : 'o-edge';
     const nm = id => g.nodes.find(n => n.id === id)?.name || id;
-    const path = `<path d="${d}" class="${cls}" ${hot ? 'marker-end="url(#ontoArrow)"' : ''}><title>${esc(nm(e.from))} → ${esc(RELATION_KO[e.type] || e.type)} → ${esc(nm(e.to))} (${esc(e.type)})</title></path>`;
+    const path = `<path d="${d}" class="${cls}"><title>${esc(nm(e.from))} → ${esc(RELATION_KO[e.type] || e.type)} → ${esc(nm(e.to))} (${esc(e.type)})</title></path>`;
     if (hot) selEdges.push({ path, e, mid: [(x1 + x2) / 2, (y1 + y2) / 2] }); else edges += path;
   }
   svg += edges + selEdges.map(s => s.path).join('');
@@ -140,7 +140,7 @@ function drawGraph() {
     const n = p.n, gi = groupOf(n.label), color = ONTO_GROUPS[gi].color;
     const match = q && (String(n.name).toLowerCase().includes(q) || String(n.id).toLowerCase().includes(q));
     const neighbor = ent.sel && g.edges.some(e => (e.from === ent.sel && e.to === id) || (e.to === ent.sel && e.from === id));
-    const dim = focus && !focus.has(id) && !match && id !== ent.sel;
+    const dim = (focus || ent.sel) && !(focus && focus.has(id)) && id !== ent.sel && !neighbor && !match;
     const cls = ['o-node', id === ent.sel ? 'sel' : '', neighbor ? 'nb' : '', match ? 'match' : '', dim ? 'dim' : ''].join(' ');
     const label = String(n.name || n.id); const short = label;
     svg += `<g class="${cls}" data-id="${esc(id)}" tabindex="0"><rect x="${p.x}" y="${p.y}" width="${BOX}" height="${H}" rx="4" style="--c:${color}"/>` +
@@ -174,7 +174,7 @@ function drawGraph() {
 }
 function renderNodePanel() {
   const box = $('#ontoNode');
-  const g = ent.graph; if (!g || !ent.sel) { box.innerHTML = '<div class="muted">노드를 선택하면 속성과 관계를 확인할 수 있습니다. 연결된 이름을 눌러 고장·조치·매뉴얼·스킬로 이어지는 관계를 따라가세요.</div>'; return; }
+  const g = ent.graph; if (!g || !ent.sel) { box.innerHTML = '<div class="muted">항목을 누르면 직접 연결된 관계를 강조합니다. 연결된 이름을 눌러 다음 지식으로 이동하세요.</div>'; return; }
   const n = g.nodes.find(x => x.id === ent.sel); if (!n) return;
   const props = Object.entries(n.props || {}).filter(([k]) => !['id', 'name'].includes(k));
   const outE = g.edges.filter(e => e.from === n.id), inE = g.edges.filter(e => e.to === n.id);

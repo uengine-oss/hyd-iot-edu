@@ -92,7 +92,8 @@ with sync_playwright() as pw:
     expect(page.locator('#ontoMap svg')).to_be_visible()
     asset = page.locator('#ontoAsset').input_value()
     page.locator(f'.o-node[data-id="{asset}"]').click()
-    expect(page.locator('.o-node.dim')).to_have_count(0)
+    expect(page.locator('.o-node:not(.dim)')).to_have_count(6)
+    expect(page.locator('.o-edge.hot')).to_have_count(5)
     shot('ontology-selection')
     history = page.locator('#manualHistory details')
     expect(history).to_be_visible()
@@ -103,7 +104,7 @@ with sync_playwright() as pw:
     expect(page.locator('#manualResult')).to_contain_text('파일을 먼저')
     shot('manual-missing-file', page.locator('#manualUpload'))
     assert not re.search(r'\bT[123](?:\b|[-_])', page.locator('#ontoTpl').inner_text())
-    record('cross-domain visibility, manual history table, missing-file message and friendly query labels')
+    record('direct-relation emphasis, manual history table, missing-file message and friendly query labels')
 
     page.route('**:8091/api/ontology/graph?*', lambda route: route.abort())
     page.locator('#ontoReload').click()
