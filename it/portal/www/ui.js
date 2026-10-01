@@ -34,9 +34,39 @@ const UI = {
     REMOTE_AUTO: "원격 자동",
     REMOTE_MANUAL: "원격 수동",
     LOCAL: "현장 제어",
+    WITHHELD: "데이터 확인 필요",
+    REJECTED_BY_GUARDRAIL: "제약 검증에서 중단",
+    NO_FEASIBLE_OPTION: "실행 가능한 대안 없음",
+    NOT_APPLICABLE: "적용 조건에 해당하지 않음",
+    EVALUATED: "검토 완료",
   },
   status(value) {
     return this.states[value] || value || "–";
+  },
+  dateTime(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleString('ko-KR');
+  },
+  // Human-readable labels belong to the UI; API step names and raw records stay intact.
+  steps: {
+    freshness: ['데이터 상태 확인', '최근 데이터가 들어오는지, 분석에 사용할 수 있는지 확인합니다.'],
+    t1_causes: ['고장 원인 조회', '경보와 증상에 연결된 고장 원인 후보를 찾습니다.'],
+    evidence: ['관측값으로 근거 확인', '센서 이력에서 각 원인을 뒷받침하는 조건을 확인합니다.'],
+    rank: ['원인 후보 비교', '사전확률과 관측 근거를 바탕으로 원인 후보의 순위를 정합니다.'],
+    t2_actions: ['조치 방법과 정비 절차 조회', '원인에 연결된 조치, 허용 범위, 정비 절차와 매뉴얼을 찾습니다.'],
+    card: ['조치 가이드 작성', '원인과 권장 조치를 근거와 함께 정리합니다.'],
+    guardrail: ['제약과 근거 검증', '권고가 정해진 제약을 지키고 근거를 갖추었는지 검사합니다.'],
+    submit: ['승인 절차로 전달', '판단 결과를 승인 담당자가 검토할 수 있도록 전달합니다.'],
+    enterprise: ['관련 업무 판단 연결', '설비의 문제와 연결된 생산·정비·품질 등의 판단을 실행합니다.'],
+    ontology_context: ['판단에 필요한 지식 조회', '상황에 연결된 대안, 스킬, 성과 지표와 규정을 찾습니다.'],
+    precedents: ['이전 판단 사례 확인', '같은 상황에서 사람이 승인한 대안을 살펴봅니다.'],
+    info_routing: ['정보를 가진 시스템 찾기', '필요한 정보를 어느 기업 시스템에서 조회할지 확인합니다.'],
+    fetch: ['기업 시스템 정보 조회', '생산·정비·품질 등 관련 시스템에서 현재 정보를 읽습니다.'],
+    impacts: ['대안별 영향 계산', '각 대안이 성과 지표에 미치는 금액 영향을 계산합니다.'],
+    policies: ['규정 위반 확인', '제외해야 할 대안과 불이익을 반영할 대안을 구분합니다.'],
+    perspectives: ['부서와 전사 관점 비교', '부서별 목표와 회사 전체 목표에서 유리한 대안을 비교합니다.'],
+    recommend: ['권고안 정리', '권고안, 선택 근거와 필요한 승인 역할을 정리합니다.'],
+    error: ['처리 실패', '실패 원인은 아래 처리 기록에서 확인할 수 있습니다.'],
   },
   revealDetail(detail) {
     const split = detail.closest(".split");

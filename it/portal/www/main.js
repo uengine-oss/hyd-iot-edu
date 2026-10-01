@@ -122,9 +122,9 @@
 
   function stagesHtml() {
     const st = [
-      ['scenario', 'IIoT · SCADA', 'L1 ~ L6', '센서 17채널을 MQTT로 수집하고 Kafka · TimescaleDB에 쌓는다. CEP가 이상을 잡고, FUXA와 Grafana로 관제한다. 경보가 나면 팬 속도를 올리는 즉각 제어까지가 여기다.'],
-      ['ontology', '지식 지도 (온톨로지)', 'L7', '설비 · 고장 · 조치 지식에 부서 · KPI · 규정 · ERP/MES/CMMS · 에이전트 스킬을 연결한다. 어떤 정보가 어느 시스템에 있고 누가 승인하는지도 지도에 있다.'],
-      ['decision', '지식 지도 기반 Agent 조치 프로세스', 'L8 ~ L9', '에이전트가 지도를 따라 원인과 조치를 찾고, 부서마다 다른 이익을 전사 관점에서 판단한다. 사람이 권한에 따라 승인하면 기업 시스템과 설비에 실행된다.'],
+      ['scenario', '설비 관찰과 제어', 'L1 ~ L6', '결함을 주입하고 센서값과 경보가 어떻게 달라지는지 확인합니다. 운전 모드를 바꾸어 팬과 펌프를 직접 조작해볼 수 있습니다.'],
+      ['ontology', '지식 지도 (온톨로지)', 'L7', '설비의 고장이 어떤 원인·조치·매뉴얼과 연결되는지 살펴봅니다. 스킬, 기업 시스템, 승인 담당자까지 관계를 따라갑니다.'],
+      ['decision', '판단과 승인', 'L8 ~ L9', '에이전트의 권고와 부서별 영향을 비교합니다. 담당자가 승인한 뒤 설비 조치와 기업 시스템 작업이 어떻게 실행되는지 확인합니다.'],
     ];
     return st.map(([tab, t, l, d], i) => `<button class="m-stage" data-go="${tab}"><span class="m-step">${i + 1}</span><span class="m-st-l">${l}</span><strong>${t}</strong><span class="m-st-d">${d}</span><span class="m-st-go">열기</span></button>`).join('');
   }

@@ -106,10 +106,11 @@ function renderStack() {
     const comps = el('div', 'comps');
     for (const c of L.comps) {
       const key = c.health || c.url;
-      const comp = el('span', 'comp');
-      comp.innerHTML = `<i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i><i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
-        `<a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)} ↗</a><span class="role-desc">${esc(c.role)}</span><details><summary>구현 비교</summary><span>${esc(c.full)}</span></details>` +
-        (c.optional ? '<span class="role">선택 프로필</span>' : '');
+      const comp = el('div', 'comp');
+      const optionalEntry = c.entryHealth || c.optional;
+      comp.innerHTML = `<span class="comp-name"><i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i><i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
+        `<a ${optionalEntry ? 'role="link" aria-disabled="true"' : `href="${c.url}"`} data-entry="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}${optionalEntry ? '' : ' ↗'}</a></span><span class="role-desc">${esc(c.role)}` +
+        (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구 확인 중)</span>` : '') + '</span>';
       comps.append(comp);
     }
     row.append(comps); stack.append(row);
@@ -132,6 +133,22 @@ async function pollHealth() {
     finally { clearTimeout(timer); }
     document.querySelectorAll(`.dot[data-h="${CSS.escape(key)}"]`).forEach(d => d.className = 'dot ' + healthState[key]);
   }));
+  await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.entryHealth).map(async c => {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
+    try { await fetch(c.entryHealth, {mode:'no-cors', cache:'no-store', signal:controller.signal}); healthState[c.entryHealth] = 'up'; }
+    catch (_) { healthState[c.entryHealth] = 'off'; }
+    finally { clearTimeout(timer); }
+  }));
+  for (const c of LAYERS.flatMap(L => L.comps).filter(c => c.entryHealth || c.optional)) {
+    const available = healthState[c.entryHealth || c.health] === 'up';
+    const link = document.querySelector(`[data-entry="${CSS.escape(c.url)}"]`);
+    if (!link) continue;
+    if (available) { link.href = c.url; link.removeAttribute('aria-disabled'); }
+    else { link.removeAttribute('href'); link.setAttribute('aria-disabled', 'true'); }
+    link.textContent = c.name + (available ? ' ↗' : '');
+    link.title = available ? '화면 열기' : '선택 도구를 실행하면 이 링크가 활성화됩니다.';
+    document.querySelector(`[data-entry-status="${CSS.escape(c.url)}"]`).textContent = available ? '' : `(${c.entryName || '선택 도구'} 미실행)`;
+  }
   const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !(c.optional && healthState[c.health] === 'off'));
   const down = all.filter(c => healthState[c.health] === 'down');
   dots.innerHTML = `<span title="앱 healthz와 외부 UI 연결 응답입니다. 전체 파이프라인의 성공을 뜻하지 않습니다."><i class="dot ${down.length ? 'down' : 'up'}"></i>구성요소 ${all.length - down.length}/${all.length} 응답${down.length ? ' — 응답 없음: ' + esc(down.map(c => c.name.split(' ')[0]).join(', ')) : ''}</span>`;
@@ -161,19 +178,23 @@ function renderUnits() {
         <div class="bar"><i></i><b style="left:65%"></b></div>
         <div class="kv"><span>냉각 효율 CE</span><em class="num ce"></em><span>냉각 능력 CP</span><em class="num cp"></em>
           <span>팬 속도 SP</span><em class="num fan"></em><span>펌프 부하 SP</span><em class="num load"></em>
-          <span>쿨러 상태(health)</span><em class="num health"></em><span>탐지 단계</span><em class="phase"></em>
-          <span>PLC 상태</span><em class="plc"></em><span>마지막 ACK</span><em class="ack"></em></div>
+          <span>쿨러 성능 비율</span><em class="num health"></em><span>탐지 단계</span><em class="phase"></em>
+          <span>PLC 상태</span><em class="plc"></em><span>최근 명령 결과</span><em class="ack"></em></div>
         <svg class="spark" role="img" aria-label="PS1 압력 추이"></svg><div class="muted">PS1 압력 추이 · 화면에서 1초 간격 수집</div>
         <div class="fault"></div>
         <div class="ctl">
+          <fieldset class="ctl-group"><legend>결함 실험</legend><div>
           <button class="btn danger" data-act="degrade">쿨러 열화 주입</button>
-          <button class="btn" data-act="restore">복구</button>
+          <button class="btn" data-act="restore">쿨러 복구</button>
+          </div></fieldset><fieldset class="ctl-group"><legend>운전 모드</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
           <button class="btn warn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
           <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
+          </div></fieldset><fieldset class="ctl-group"><legend>수동 조작 · 적용 시 원격 수동으로 전환</legend><div>
           <button class="btn" data-act="fan">팬 80 %</button>
           <button class="btn" data-act="load">부하 70 %</button>
           <button class="btn" data-act="reset">보호 정지 해제</button>
+          </div></fieldset>
         </div>`;
       card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);
@@ -186,11 +207,13 @@ function renderUnits() {
     card.querySelector('.cp').textContent = fmt(t.CP, 1) + ' kW';
     card.querySelector('.fan').textContent = fmt(t.FanSpeedSP, 0) + ' %';
     card.querySelector('.load').textContent = fmt(t.LoadSP, 0) + ' %';
-    card.querySelector('.health').textContent = fmt(s.cooler_health, 2);
+    card.querySelector('.health').textContent = fmt(s.cooler_health * 100, 0) + ' %';
     card.querySelector('.phase').innerHTML = `<span class="state ${d.phase || 'IDLE'}">${UI.status(d.phase)}</span>${d.alert_id ? ' <span class="muted">' + esc(d.alert_id) + '</span>' : ''}`;
     card.querySelector('.plc').innerHTML = `<span class="state ${s.state}">${UI.status(s.state)}${s.trip ? ' · ' + s.trip : ''}</span>`;
-    card.querySelector('.ack').textContent = s.cmdId ? `${s.cmdId} → ${s.result}${s.reason ? ' (' + s.reason + ')' : ''}` : '–';
-    card.querySelector('.fault').textContent = u.fault ? `결함 진행 중: ${u.fault}` : '';
+    card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : '아직 없음';
+    card.querySelector('.ack').title = s.cmdId ? `${s.cmdId}${s.reason ? ' · ' + s.reason : ''}` : '';
+    card.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === s.mode)));
+    card.querySelector('.fault').textContent = u.fault ? `결함 진행 중: ${u.fault === 'cooler_degradation' ? '쿨러 성능 저하' : u.fault}` : '';
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
   }
 }
@@ -370,10 +393,11 @@ function lane(inc) {
 }
 function traceHtml(run) {
   if (!run) return '<div class="muted">이 경보에 대한 에이전트 실행 기록이 없다.</div>';
-  let html = `<div class="muted">${esc(run.id)} · ${esc(run.status)} · 시작 ${esc((run.started || '').slice(11, 19))}${run.ended ? ' · 종료 ' + esc(run.ended.slice(11, 19)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
+  let html = `<div class="muted">${esc(run.id)} · ${esc(UI.status(run.status))} · 시작 ${esc((run.started || '').slice(11, 19))}${run.ended ? ' · 종료 ' + esc(run.ended.slice(11, 19)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
   for (const s of run.steps) {
     const out = s.output == null ? '' : JSON.stringify(s.output, null, 1);
-    html += `<div class="step ${esc(s.status)}"><strong>${esc(s.name)} <span>${esc(s.t.slice(11, 19))}</span></strong><span>${esc(s.note || '')}</span>${out ? `<details><summary>출력 데이터 보기</summary><pre>${esc(out)}</pre></details>` : ''}</div>`;
+    const [name, note] = UI.steps[s.name] || [s.name, s.note || ''];
+    html += `<div class="step ${esc(s.status)}"><strong>${esc(name)} <span>${esc(UI.status(s.status))} · ${esc(s.t.slice(11, 19))}</span></strong><span>${esc(note)}</span><details><summary>처리 기록과 출력 데이터</summary><p>${esc(s.name)}${s.note ? ' · ' + esc(s.note) : ''}</p>${out ? `<pre>${esc(out)}</pre>` : '<p>출력 데이터가 없습니다.</p>'}</details></div>`;
   }
   return html + '</div>';
 }
@@ -381,12 +405,12 @@ function cardHtml(card, editable) {
   if (!card) return '<div class="muted">카드가 없다.</div>';
   let html = `<div class="summary">${esc(card.summary)} <span class="muted">(${esc(card.summarySource || 'template')})</span></div>`;
   html += `<div class="muted">데이터 신선도: ${card.freshness && card.freshness.ok ? '정상' : '신뢰 불가'} (${fmt(card.freshness && card.freshness.age_s, 1)} s) · 인용 노드 ${(card.citations || []).length}개</div>`;
-  html += '<h2>원인 후보 (T1 + 증거)</h2><table class="causes"><tr><th>순위</th><th>원인</th><th>사전확률</th><th>점수</th><th>증거 (SQL 규칙 → 값)</th></tr>';
+  html += '<h2>가능한 고장 원인과 관측 근거</h2><table class="causes"><tr><th>순위</th><th>원인</th><th>사전확률</th><th>점수</th><th>확인한 조건과 관측값</th></tr>';
   (card.causes || []).forEach((c, i) => {
     const ev = (c.evidence || []).map(e => `<div class="ev"><span class="${e.passed ? 'ok' : 'no'}">${esc(e.name)}</span> = ${esc(fmt(e.value, 2))} <span class="muted">${esc(e.id)}</span></div>`).join('');
     html += `<tr><td>${i + 1}</td><td><strong>${esc(c.name)}</strong><div class="muted">${esc(c.description || '')}<br>${esc(c.id)}</div></td><td class="num">${fmt(c.prior, 2)}</td><td class="score num">${fmt(c.score, 2)}</td><td>${ev || '<span class="muted">증거 규칙 없음</span>'}</td></tr>`;
   });
-  html += '</table><h2>권장 조치 (T2: 조치 → SOP → 매뉴얼)</h2>';
+  html += '</table><h2>권장 조치와 정비 절차</h2>';
   for (const a of card.recommended || []) {
     html += `<div class="action" data-code="${esc(a.code)}"><header><strong>${esc(a.name)}</strong><span class="code">${esc(a.code)} · ${a.kind === 'command' ? '즉시 조치 명령' : '작업지시'} · ${esc(a.relation || '')}</span></header>`;
     if (a.kind === 'command' && a.paramRange) {
@@ -430,10 +454,10 @@ function renderDetail() {
     if (inc.ack) html += `<div class="muted">PLC ACK: ${esc(inc.ack.result)}${inc.ack.reason ? ' (' + esc(inc.ack.reason) + ')' : ''} · 인터록 ${esc(inc.ack.interlock || '')}</div>`;
     if (inc.workOrder) html += `<div class="muted">작업지시 ${esc(inc.workOrder.id)}: ${esc(inc.workOrder.name)} (${esc(inc.workOrder.sop || '')})</div>`;
   }
-  html += '<h2>에이전트 트레이스 (L8)</h2>' + traceHtml(run);
   const card = (inc && inc.card) || (run && run.card);
   const editable = inc && inc.state === 'AWAITING_APPROVAL';
   html += '<h2>가이드 카드</h2>' + cardHtml(card, editable);
+  html += '<details class="technical"><summary>에이전트의 분석 과정 확인</summary>' + traceHtml(run) + '</details>';
   if (editable) {
     html += `<div class="approve-row"><button class="btn primary" id="btnApprove">승인 → action.cmd 발행</button><input type="text" id="rejectReason" placeholder="거부 사유"><button class="btn" id="btnReject">거부</button></div>
       <p class="hint">승인하면 프로세스가 expiresAt = 지금 + 120 s 로 action.cmd를 발행하고, cmd-gateway가 5종 검증 뒤 plant/{asset}/cmd/auto 로 내려보낸다. PLC는 REMOTE_AUTO에서만 받는다.</p>`;

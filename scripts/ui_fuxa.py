@@ -42,19 +42,25 @@ with sync_playwright() as p:
         fan.press('Enter')
         evidence['invalid'] = until(lambda u: u['status']['reason'] == 'OUT_OF_RANGE')
         assert evidence['invalid']['tags']['FanSpeedSP'] == 80
+        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('OUT_OF_RANGE', timeout=5000)
         page.screenshot(path=str(out / 'fuxa-range-rejected.png'))
         mode.select_option('0')
         until(lambda u: u['status']['mode'] == 'LOCAL')
         fan.fill('75')
         fan.press('Enter')
         evidence['local'] = until(lambda u: u['status']['reason'] == 'MODE_MISMATCH')
+        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('MODE_MISMATCH', timeout=5000)
         mode.select_option('1')
         until(lambda u: u['status']['mode'] == 'REMOTE_MANUAL')
         fan.fill('75')
         fan.press('Enter')
         evidence['recovered'] = until(lambda u: u['tags']['FanSpeedSP'] == 75 and u['status']['result'] == 'DONE')
         expect(page.locator('#home')).not_to_contain_text('##.##')
-        page.wait_for_timeout(1500)
+        # HTTP state can precede the MQTT -> FUXA -> browser update. Require the
+        # actual cleared widget within 5 s instead of sampling after a fixed nap.
+        recovery_started = time.monotonic()
+        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('–', timeout=5000)
+        evidence['reason_recovery_wait_ms'] = round((time.monotonic() - recovery_started) * 1000)
         evidence['reason_display'] = page.locator('[data-name="HYD-02 ack reason"]').text_content()
         assert 'MODE_MISMATCH' not in evidence['reason_display'] and 'OUT_OF_RANGE' not in evidence['reason_display'], evidence['reason_display']
         for width, height in [(1024, 768), (1262, 624), (1440, 900)]:

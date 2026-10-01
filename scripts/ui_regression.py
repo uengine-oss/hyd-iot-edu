@@ -186,6 +186,37 @@ with sync_playwright() as pw:
         shot('manual-committed-after')
     check('ontology asset/search/focus, nine templates and manual preview', ontology)
 
+    def cross_domain_ontology():
+        tab('ontology')
+        page.locator('#ontoFocus').select_option('')
+        page.locator('#ontoSearch').fill('')
+        graph = page.evaluate('ent.graph')
+        nodes = {n['id']: n for n in graph['nodes']}
+        def linked(node, relation, incoming=False):
+            return [e['from'] if incoming else e['to'] for e in graph['edges']
+                    if e['type'] == relation and e['to' if incoming else 'from'] == node]
+        asset = page.locator('#ontoAsset').input_value()
+        component = next(n for n in linked(asset, 'HAS_COMPONENT') if linked(n, 'OCCURS_IN', True))
+        failure = linked(component, 'OCCURS_IN', True)[0]
+        cause = next(n for n in linked(failure, 'CAUSES', True) if linked(n, 'MITIGATED_BY'))
+        action = next(n for n in linked(cause, 'MITIGATED_BY') if linked(n, 'FOLLOWS') and linked(n, 'IMPLEMENTS', True))
+        procedure = linked(action, 'FOLLOWS')[0]
+        step = next(n for n in linked(procedure, 'HAS_STEP') if linked(n, 'REFERS_TO'))
+        manual = linked(step, 'REFERS_TO')[0]
+        skill = linked(action, 'IMPLEMENTS', True)[0]
+        process = linked(skill, 'EXECUTED_IN')[0]
+        for path in [[asset, component, failure, cause, action, procedure, step, manual], [action, skill, process]]:
+            page.locator(f'.o-node[data-id="{path[0]}"]').click()
+            expect(page.locator('.o-node.sel')).to_have_attribute('data-id', path[0])
+            for target in path[1:]:
+                page.locator(f'#ontoNode [data-go="{target}"]').click()
+                expect(page.locator('#ontoNode h3')).to_have_text(nodes[target]['name'])
+                expect(page.locator('.o-node.sel')).to_have_attribute('data-id', target)
+                expect(page.locator('.o-node.dim')).to_have_count(0)
+                expect(page.locator('.o-edge.dim')).to_have_count(0)
+        shot('ontology-cross-domain-after')
+    check('real equipment-to-manual and action-to-skill-to-process paths remain readable', cross_domain_ontology)
+
     def decisions():
         tab('decision')
         expect(page.locator('.scn')).to_have_count(4)

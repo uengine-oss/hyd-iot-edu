@@ -12,9 +12,9 @@
   const NODES = {
     start: { lane: 0, x: 186, kind: 'start', label: '이상 발생' },
     alert: { lane: 0, x: 300, kind: 'task', label: '경보 RAISE · CEP' },
-    diag: { lane: 1, x: 390, kind: 'task', label: '원인 진단 (T1 · 증거)' },
-    lookup: { lane: 1, x: 555, kind: 'task', label: '조치 조회 (T2 · T3)', sub: '스킬 · KPI · 규정 · 선례' },
-    rank: { lane: 1, x: 715, kind: 'task', label: '우선순위 · 가드레일' },
+    diag: { lane: 1, x: 390, kind: 'task', label: '고장 원인 분석' },
+    lookup: { lane: 1, x: 555, kind: 'task', label: '조치 방법 검토', sub: '스킬 · 성과 영향 · 규정' },
+    rank: { lane: 1, x: 715, kind: 'task', label: '조치 순위 · 제약 검증' },
     decide: { lane: 2, x: 840, kind: 'task', label: '조치 의사결정', sub: '역할 권한 · 사유' },
     gw: { lane: 2, x: 975, kind: 'gateway', label: '즉시 제어?' },
     cmd: { lane: 3, x: 1100, kind: 'task', label: 'action.cmd → PLC', sub: '게이트웨이 5종 검증' },
@@ -241,16 +241,16 @@
     if (!k) { box.innerHTML = '<div class="empty">왼쪽에서 스킬을 고른다.</div>'; return; }
     const sel = (id, items, cur) => `<select id="${id}">${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
     box.innerHTML = `<div class="skill-edit"><div class="muted mono">${esc(k.id)}${k.updatedBy ? ' · 최근 편집 ' + esc(k.updatedBy) + ' ' + esc((k.updatedAt || '').slice(0, 16)) : ''}</div>
-      <label>이름 (name)<input id="skName" value="${esc(k.name)}" maxlength="80"></label>
-      <label>설명 (description)<textarea id="skDesc" rows="2">${esc(k.description || '')}</textarea></label>
-      <label>스킬 상세 (detail) — 입력 · 실행 · 파라미터 · 산출 · 가드레일<textarea id="skDetail" rows="8" class="mono">${esc(k.detail || '')}</textarea></label>
+      <label>스킬 이름<input id="skName" value="${esc(k.name)}" maxlength="80"></label>
+      <label><span id="skDescLabel">어떤 작업을 하나요?</span><textarea id="skDesc" rows="2" aria-labelledby="skDescLabel">${esc(k.description || '')}</textarea></label>
+      <label><span id="skDetailLabel">실행 방법과 조건 — 필요한 입력 · 수행할 작업 · 결과 · 제한 조건</span><textarea id="skDetail" rows="8" aria-labelledby="skDetailLabel">${esc(k.detail || '')}</textarea></label>
       <div class="skill-rels"><label>실행 시스템 ${sel('skSys', c.systems, (k.system || {}).id)}</label><label>업무 프로세스 ${sel('skProc', c.processes, (k.process || {}).id)}</label><label>승인 역할 ${sel('skRole', c.roles, (k.approver || {}).id)}</label></div>
       <div class="approve-row"><input id="skBy" value="지식 관리자" aria-label="편집자"><button class="btn primary" id="skSave">${H.skillNew ? '온톨로지에 추가' : '저장'}</button><span id="skMsg" class="muted" role="status"></span></div>
-      ${H.skillNew ? '' : `<h3>온톨로지 연결 (읽기)</h3><table class="kvt">
-        <tr><th>거는 규정</th><td>${k.policies.map(p => `<span class="${p.kind === 'HARD' ? 'hard' : 'soft'}">${esc(p.kind)} · ${esc(p.name)}</span>`).join(' ') || '없음'}</td></tr>
+      ${H.skillNew ? '' : `<h3>연결된 지식</h3><table class="kvt">
+        <tr><th>적용 규정</th><td>${k.policies.map(p => `<span class="${p.kind === 'HARD' ? 'hard' : 'soft'}">${p.kind === 'HARD' ? '필수 준수' : p.kind === 'SOFT' ? '평가에 반영' : esc(p.kind)} · ${esc(p.name)}</span>`).join(' ') || '없음'}</td></tr>
         <tr><th>필요한 정보</th><td>${k.infos.map(i => `${esc(i.name)} <span class="muted">(${esc(i.system)})</span>`).join('<br>') || '없음'}</td></tr>
-        <tr><th>구현하는 조치</th><td>${k.actions.map(a => esc(a.name)).join(', ') || '없음'}</td></tr>
-        <tr><th>쓰는 판단 대안</th><td>${k.usedBy.map(u => `${esc(u.scenario)} — ${esc(u.option)}`).join('<br>') || '없음'}</td></tr></table>`}</div>`;
+        <tr><th>연결된 조치</th><td>${k.actions.map(a => esc(a.name)).join(', ') || '없음'}</td></tr>
+        <tr><th>이 스킬을 쓰는 대안</th><td>${k.usedBy.map(u => `${esc(u.scenario)} — ${esc(u.option)}`).join('<br>') || '없음'}</td></tr></table>`}</div>`;
     const fields = [...box.querySelectorAll('input, textarea, select')];
     const draft = H.skillDrafts.get(key);
     if (draft) fields.forEach(e => { if (draft[e.id] != null) e.value = draft[e.id]; });
@@ -279,7 +279,8 @@
   async function loadUploads() {
     try {
       const ups = await getJ(API.process + '/api/kg/manuals');
-      $('#manualHistory').innerHTML = ups.length ? '<div class="muted">적재 이력: ' + ups.map(u => `${esc(u.filename)} (절 ${u.sections} · 절차 ${u.procedures}, ${esc(u.by)} ${esc((u.t || '').slice(0, 16))})`).join(' · ') + '</div>' : '';
+      const history = $('#manualHistory'), wasOpen = !!history.querySelector('details[open]');
+      history.innerHTML = ups.length ? `<details class="technical" ${wasOpen ? 'open' : ''}><summary>매뉴얼 등록 이력 · ${ups.length}건</summary><div class="table-scroll"><table class="prov"><thead><tr><th>매뉴얼</th><th>등록 내용</th><th>등록자</th><th>등록 시각</th></tr></thead><tbody>` + ups.map(u => `<tr><td>${esc(u.filename)}</td><td>매뉴얼 절 ${u.sections}개 · 절차 ${u.procedures}개</td><td>${esc(u.by)}</td><td>${esc(UI.dateTime(u.t))}</td></tr>`).join('') + '</tbody></table></div></details>' : '';
     } catch (e) { }
   }
   function renderPreview() {

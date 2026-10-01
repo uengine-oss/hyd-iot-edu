@@ -15,6 +15,18 @@ const LABEL_KO = { Asset: '설비', Component: '부품', Sensor: '센서', Actua
   Cause: '원인', Evidence: '증거 규칙', Action: '조치', Constraint: '제약', Procedure: 'SOP', Step: 'SOP 단계', ManualSection: '매뉴얼 절', Goal: '전사 목표',
   Department: '부서', Role: '역할', KPI: 'KPI', Policy: '규정', System: '기업 시스템', InfoType: '정보 유형', Skill: '에이전트 스킬', BusinessProcess: '업무 프로세스',
   Supplier: '공급사', ManualUpload: '매뉴얼 적재', Scenario: '판단 시나리오', Option: '대안', Decision: '판단 사례', Incident: '인시던트', Alert: '경보' };
+const RELATION_KO = {
+  HAS_COMPONENT: '구성 부품', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', DETECTS: '감지 증상', INDICATES: '나타내는 고장',
+  OCCURS_IN: '발생 위치', CAUSES: '일으키는 고장', EVIDENCED_BY: '판단 근거', LEADS_TO: '이어지는 현상',
+  MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', TARGETS: '조치 대상', REQUIRES: '필요 조건', FOLLOWS: '따르는 절차',
+  HAS_STEP: '절차 단계', REFERS_TO: '참조 매뉴얼', IMPLEMENTS: '수행하는 조치', EXECUTED_IN: '실행 프로세스', EXECUTED_VIA: '실행 시스템',
+  APPROVED_BY: '승인 담당', REQUIRES_INFO: '필요한 정보', NEEDS_INFO: '판단에 필요한 정보', HELD_IN: '정보 보유 시스템',
+  USES_SKILL: '사용 스킬', HAS_OPTION: '선택 가능한 대안', TRIGGERS_DECISION: '연결된 판단 상황', IMPACTS: '영향받는 지표',
+  OWNED_BY: '담당 부서', CONTRIBUTES_TO: '기여하는 목표', GOVERNS: '적용 대상', MEMBER_OF: '소속 부서', BUYS_FROM: '구매처',
+  DECIDED: '선택한 대안', ABOUT: '관련 상황', FOR: '대상 설비', TRIGGERED_BY: '발생 계기', DIAGNOSED_AS: '진단 원인',
+  RESOLVED_BY: '해결 조치', INSTANCE_OF: '해당 패턴', INGESTED: '등록된 지식', OBSERVED_BY: '관측 센서',
+  USES: '사용 대상', SUPPORTS: '지원 대상', RUNS_ON: '실행 기반', ENFORCED_BY: '준수 확인 시스템',
+};
 const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', scenarios: null, result: null, persp: 'enterprise',
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
   form: { by: '홍길동', role: null, reason: '' }, lastDetailSig: null };
@@ -40,10 +52,17 @@ async function loadGraph(force) {
     if (ent.graphAsset !== asset) ent.sel = null;
     ent.graph = graph; ent.graphAsset = asset;
   }
-  catch (e) { if ($('#ontoAsset').value !== asset) return; $('#ontoStats').textContent = '불러오기 실패'; $('#ontoMap').innerHTML = `<div class="muted" style="padding:20px">에이전트(8091) 또는 Neo4j에 연결할 수 없다. ${esc(e.message)}</div>`; return; }
+  catch (e) {
+    if ($('#ontoAsset').value !== asset) return;
+    ent.graph = null; // A reopened tab must retry, not present cached data as recovered.
+    $('#ontoNode').innerHTML = '';
+    $('#ontoStats').textContent = '불러오기 실패';
+    $('#ontoMap').innerHTML = `<div class="empty" role="alert" title="${esc(e.message)}">지식을 불러올 수 없습니다. 연결을 확인하고 ‘다시 읽기’를 눌러주세요.</div>`;
+    return;
+  }
   if (!ent.scenarios || !ent.scenarios.length) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { ent.scenarios = null; } }
   const sel = $('#ontoFocus');
-  if (sel.options.length <= 1) (ent.scenarios || []).forEach(s => sel.append(new Option(`판단 경로 ${s.scenario.no}. ${s.scenario.name}`, s.scenario.id)));
+  if (sel.options.length <= 1) (ent.scenarios || []).forEach(s => sel.append(new Option(`판단 시나리오 ${s.scenario.no}. ${s.scenario.name}`, s.scenario.id)));
   drawGraph();
 }
 function groupOf(label) { return ONTO_GROUPS.findIndex(g => g.labels.includes(label)); }
@@ -71,7 +90,7 @@ function focusSet() {
 }
 function drawGraph() {
   const g = ent.graph; if (!g) return;
-  const W = 192, BOX = 172, H = 20, GAP = 5, TOP = 34;
+  const W = 192, BOX = 172, H = 26, GAP = 6, TOP = 34;
   const focus = focusSet();
   const q = ent.search.trim().toLowerCase();
   const cols = ONTO_GROUPS.map(() => []);
@@ -91,7 +110,7 @@ function drawGraph() {
     maxY = Math.max(maxY, y);
   });
   const width = visibleGroups.length * W + 10, height = maxY + 10;
-  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="온톨로지 지식 지도">`;
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="온톨로지 지식 지도"><defs><marker id="ontoArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7Z" fill="#c57905"/></marker></defs>`;
   visibleGroups.forEach(({ gr }, ci) => {
     svg += `<rect x="${ci * W + 2}" y="2" width="${W - 6}" height="${height - 4}" rx="6" fill="${gr.color}" fill-opacity="0.045"/>` +
       `<text x="${ci * W + 10}" y="20" class="o-colh" fill="${gr.color}">${esc(gr.title)}</text>`;
@@ -107,8 +126,11 @@ function drawGraph() {
     if (Math.abs(a.x - b.x) < 5) { const bx = a.x + BOX + 14 + Math.min(40, Math.abs(y2 - y1) / 8); d = `M${x1},${y1} C${bx},${y1} ${bx},${y2} ${a.x + BOX},${y2}`; }
     else if (b.x > a.x) d = `M${x1},${y1} C${x1 + 30},${y1} ${x2 - 30},${y2} ${x2},${y2}`;
     else d = `M${a.x},${y1} C${a.x - 30},${y1} ${b.x + BOX + 30},${y2} ${b.x + BOX},${y2}`;
-    const cls = hot ? 'o-edge hot' : inFocus ? 'o-edge focus' : (focus || ent.sel) ? 'o-edge dim' : 'o-edge';
-    const path = `<path d="${d}" class="${cls}"><title>${esc(e.from)} -${esc(e.type)}-> ${esc(e.to)}</title></path>`;
+    // Selecting a node identifies its immediate edges; it must not erase the
+    // indirect connections to causes, manuals, skills and business processes.
+    const cls = hot ? 'o-edge hot' : inFocus ? 'o-edge focus' : focus ? 'o-edge dim' : 'o-edge';
+    const nm = id => g.nodes.find(n => n.id === id)?.name || id;
+    const path = `<path d="${d}" class="${cls}" ${hot ? 'marker-end="url(#ontoArrow)"' : ''}><title>${esc(nm(e.from))} → ${esc(RELATION_KO[e.type] || e.type)} → ${esc(nm(e.to))} (${esc(e.type)})</title></path>`;
     if (hot) selEdges.push({ path, e, mid: [(x1 + x2) / 2, (y1 + y2) / 2] }); else edges += path;
   }
   svg += edges + selEdges.map(s => s.path).join('');
@@ -117,11 +139,11 @@ function drawGraph() {
     const n = p.n, gi = groupOf(n.label), color = ONTO_GROUPS[gi].color;
     const match = q && (String(n.name).toLowerCase().includes(q) || String(n.id).toLowerCase().includes(q));
     const neighbor = ent.sel && g.edges.some(e => (e.from === ent.sel && e.to === id) || (e.to === ent.sel && e.from === id));
-    const dim = (focus && !focus.has(id)) || (ent.sel && id !== ent.sel && !neighbor);
+    const dim = focus && !focus.has(id) && !match && id !== ent.sel;
     const cls = ['o-node', id === ent.sel ? 'sel' : '', neighbor ? 'nb' : '', match ? 'match' : '', dim ? 'dim' : ''].join(' ');
     const label = String(n.name || n.id); const short = label.length > 22 ? label.slice(0, 21) + '…' : label;
     svg += `<g class="${cls}" data-id="${esc(id)}" tabindex="0"><rect x="${p.x}" y="${p.y}" width="${BOX}" height="${H}" rx="4" style="--c:${color}"/>` +
-      `<text x="${p.x + 7}" y="${p.y + 14}">${esc(short)}</text><title>${esc(LABEL_KO[n.label] || n.label)} · ${esc(n.id)}\n${esc(label)}</title></g>`;
+      `<text x="${p.x + 7}" y="${p.y + 17}">${esc(short)}</text><title>${esc(LABEL_KO[n.label] || n.label)} · ${esc(n.id)}\n${esc(label)}</title></g>`;
   }
   svg += '</svg>';
   const box = $('#ontoMap'); box.innerHTML = svg;
@@ -151,12 +173,12 @@ function drawGraph() {
 }
 function renderNodePanel() {
   const box = $('#ontoNode');
-  const g = ent.graph; if (!g || !ent.sel) { box.innerHTML = '<div class="muted">노드를 누르면 속성과 관계가 여기에 나온다. 전사 지식은 보라(조직·KPI·규정)와 청록(시스템·스킬·프로세스) 열에 있다. 강조에서 판단 시나리오를 고르면 에이전트가 그 판단에 쓰는 경로만 밝게 남는다.</div>'; return; }
+  const g = ent.graph; if (!g || !ent.sel) { box.innerHTML = '<div class="muted">노드를 선택하면 속성과 관계를 확인할 수 있습니다. 연결된 이름을 눌러 고장·조치·매뉴얼·스킬로 이어지는 관계를 따라가세요.</div>'; return; }
   const n = g.nodes.find(x => x.id === ent.sel); if (!n) return;
   const props = Object.entries(n.props || {}).filter(([k]) => !['id', 'name'].includes(k));
   const outE = g.edges.filter(e => e.from === n.id), inE = g.edges.filter(e => e.to === n.id);
   const nm = id => { const x = g.nodes.find(y => y.id === id); return x ? x.name : id; };
-  const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><code>${dir === 'out' ? '→' : '←'} ${esc(e.type)}</code> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
+  const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><span title="${esc(e.type)}">${dir === 'out' ? '→' : '←'} ${esc(RELATION_KO[e.type] || e.type)}</span> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
   box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)} <span class="muted">(${esc(n.label)})</span></div><h3>${esc(n.name)}</h3><div class="muted mono">${esc(n.id)}</div>` +
     (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
     (outE.length ? `<h4>나가는 관계 ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>들어오는 관계 ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
@@ -247,17 +269,17 @@ function renderDecision() {
       html += `<td class="num ${won(v)} ${persp === 'enterprise' || persp === c.id ? '' : 'off'}" title="${esc(note)}">${v == null ? '' : money(v)}</td>`;
     }
     html += `<td class="num tot ${won(o.total)}">${money(o.total)}</td><td>` +
-      (o.violations || []).map(v => `<span class="hard" title="${esc(v.source)}">HARD · ${esc(v.name)}</span>`).join('') +
-      (o.softPenalties || []).map(v => `<span class="soft" title="${esc(v.source)}">SOFT · ${esc(v.name)} ${money(v.penalty)}</span>`).join('') +
+      (o.violations || []).map(v => `<span class="hard" title="${esc(v.source)}">필수 규정 위반 · ${esc(v.name)}</span>`).join('') +
+      (o.softPenalties || []).map(v => `<span class="soft" title="${esc(v.source)}">평가 불이익 · ${esc(v.name)} ${money(v.penalty)}</span>`).join('') +
       (o.errors || []).map(e => `<span class="hard">${esc(e)}</span>`).join('') + '</td></tr>';
   }
   html += '</tbody></table></div><p class="muted">셀에 마우스를 올리면 온톨로지에 저장된 산식 설명이 보인다. 금액은 만원, 양수는 이익·절감, 음수는 손실·비용이다.</p>';
   if (r.drivers && r.drivers.length) html += '<h2>권고를 만든 차이 (권고안 − 차선)</h2><div class="drivers">' + r.drivers.map(x => `<span class="${won(x.delta)}">${esc(x.name)} <b>${money(x.delta)}</b></span>`).join('') + '</div>';
+  if (d.status === 'SUBMITTED') html += `<div class="approve-row"><button class="btn primary" id="goApprove">승인 화면으로 이동</button><span class="muted">권고안과 승인 역할을 확인한 뒤 실행을 결정합니다.</span></div>`;
   html += '<h2>판단에 사용한 기업 시스템 정보</h2><div class="table-scroll"><table class="prov"><tr><th>정보 유형 (InfoType)</th><th>시스템</th><th>엔드포인트</th><th>가져온 사실</th></tr>' +
     (d.provenance || []).map(p => `<tr><td>${esc(p.name || p.info)}<div class="muted mono">${esc(p.info)}</div></td><td><b>${esc(p.systemName || p.system)}</b></td><td class="mono">${esc(p.endpoint)}</td>` +
       `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : Object.entries(p.facts || {}).map(([k, v]) => `<code>${esc(k)}=${esc(v)}</code>`).join(' ')}</td></tr>`).join('') + '</table></div>';
-  html += `<h2>판단 트레이스 (L8)</h2>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] });
-  if (d.status === 'SUBMITTED') html += `<div class="approve-row"><button class="btn primary" id="goApprove">업무 프로세스·시스템 연계에서 승인하기 (L9)</button><span class="muted">에이전트는 제출만 한다. 승인 권한은 온톨로지의 역할(Role)이 정한다.</span></div>`;
+  html += `<details class="technical"><summary>판단 과정 확인</summary>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] }) + '</details>';
   box.innerHTML = html;
   box.querySelectorAll('.persp button').forEach(b => b.addEventListener('click', () => { ent.persp = b.dataset.p; renderDecision(); }));
   const go = $('#goApprove'); if (go) go.addEventListener('click', () => { ent.decSel = d.id; selectTab('process'); });

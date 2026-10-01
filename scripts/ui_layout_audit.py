@@ -30,9 +30,15 @@ SCAN = r"""() => {
    if(!visible(e)||e.disabled) return;
    const r=e.matches('.o-node') ? rect(e.querySelector('rect')) : [...e.getClientRects()].find(r=>r.width>2&&r.height>2);
    if(!r)return;
-   const x=(r.left+r.right)/2,y=(r.top+r.bottom)/2;
-   if(x<0||x>=innerWidth||y<0||y>=innerHeight)return;
-   for(let p=e.parentElement;p;p=p.parentElement){const c=getComputedStyle(p),b=rect(p);if(/auto|scroll|hidden|clip/.test(c.overflow+c.overflowX+c.overflowY) && (x<b.left||x>b.left+p.clientWidth||y<b.top||y>b.top+p.clientHeight))return;}
+   // Hit-test the visible intersection. A fractional center at the scroll edge
+   // can round onto the adjacent footer even when the link has visible pixels.
+   let left=Math.max(0,r.left),right=Math.min(innerWidth,r.right),top=Math.max(0,r.top),bottom=Math.min(innerHeight,r.bottom);
+   for(let p=e.parentElement;p;p=p.parentElement){const c=getComputedStyle(p),b=rect(p);
+     if(/auto|scroll|hidden|clip/.test(c.overflowX)){left=Math.max(left,b.left+p.clientLeft);right=Math.min(right,b.left+p.clientLeft+p.clientWidth);}
+     if(/auto|scroll|hidden|clip/.test(c.overflowY)){top=Math.max(top,b.top+p.clientTop);bottom=Math.min(bottom,b.top+p.clientTop+p.clientHeight);}
+   }
+   if(right-left<3||bottom-top<3)return;
+   const x=(left+right)/2,y=(top+bottom)/2;
    tested++; const hit=document.elementFromPoint(x,y);
    if(hit && hit!==e && !e.contains(hit) && !(hit.tagName==='LABEL' && hit.control===e)) blocked.push({target:e.id||e.textContent.trim().slice(0,60),by:hit.id||hit.className});
  });
@@ -52,6 +58,10 @@ with sync_playwright() as pw:
     assert probe.evaluate(SCAN)['textOverlaps'], 'overlap detector missed known collision'
     probe.locator('text').nth(1).evaluate('(e)=>e.setAttribute("y",70)')
     assert not probe.evaluate(SCAN)['textOverlaps'], 'overlap detector rejected separated labels'
+    probe.set_content('<main><button style="position:absolute;left:10px;top:10px;width:100px;height:40px">Covered</button><div id="shield" style="position:absolute;left:10px;top:10px;width:100px;height:40px"></div></main>')
+    assert probe.evaluate(SCAN)['blocked'], 'hit-test missed a covered button'
+    probe.locator('#shield').evaluate('(e)=>e.remove()')
+    assert not probe.evaluate(SCAN)['blocked'], 'hit-test rejected an uncovered button'
     probe.close()
     for width, height in [(1920,1080),(1440,900),(1262,624),(1024,768)]:
         page.set_viewport_size({'width':width,'height':height})

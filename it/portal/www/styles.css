@@ -9,6 +9,8 @@ body {
 }
 body {
   font: 14px/1.6 var(--font);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   color: var(--ink);
   background: var(--paper);
   display: grid;
@@ -503,6 +505,8 @@ textarea::placeholder {
 }
 .toolbar label {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: var(--s2);
   font-size: 13px;
@@ -629,24 +633,30 @@ tr:last-child td {
   font-size: 14px;
 }
 .layer .name span {
-  color: var(--ink-3);
-  font-size: 12px;
+  color: var(--ink-2);
+  font-size: 13px;
   line-height: 1.6;
 }
 .layer .comps {
   display: flex;
   flex-direction: column;
-  gap: var(--s3);
+  gap: var(--s2);
   padding: var(--row-pad);
   border-left: 1px solid var(--rule);
   min-width: 0;
 }
 .comp {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s2);
+  display: grid;
+  grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1.5fr);
+  align-items: baseline;
+  gap: var(--s3);
   font-size: 13px;
+  min-width: 0;
+}
+.comp-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
 }
 .comp .role {
@@ -657,18 +667,14 @@ tr:last-child td {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.comp a[aria-disabled="true"] { color: var(--ink-2); text-decoration: none; cursor: default; }
 .comp .role-desc {
-  flex-basis: 100%;
-  padding-left: var(--s4);
+  color: var(--ink-2);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
-.comp details {
-  font-size: 11px;
-  color: var(--ink-3);
-  flex-basis: 100%;
-  padding-left: var(--s4);
-}
-.comp details summary {
-  cursor: pointer;
+@media (max-width: 1100px) {
+  .comp { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
 }
 .z {
   font-size: 10px;
@@ -718,6 +724,7 @@ tr:last-child td {
   align-items: center;
   flex-wrap: wrap;
 }
+.unit { display: flex; flex-direction: column; }
 .unit header strong {
   font-size: 18px;
 }
@@ -787,12 +794,16 @@ tr:last-child td {
   margin: var(--s3) 0;
 }
 .unit .ctl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s2);
+  display: grid;
+  gap: var(--s3);
   border-top: 1px solid var(--rule);
   padding-top: var(--s4);
+  margin-top: auto;
 }
+.ctl-group { margin: 0; padding: 0; border: 0; min-width: 0; }
+.ctl-group legend { color: var(--ink-2); font-size: 12px; margin-bottom: var(--s1); }
+.ctl-group > div { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.ctl-group [aria-pressed="true"] { background: var(--it-bg); border-color: var(--accent); color: var(--accent); }
 .spark {
   display: block;
   width: 100%;

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유압설비 모니터링 · 조치 포탈</title>
-<link rel="stylesheet" href="tokens.css?v=20261001-design">
-<link rel="stylesheet" href="styles.css?v=20261001-design">
-<link rel="stylesheet" href="enterprise.css?v=20261001-design">
-<link rel="stylesheet" href="main.css?v=20261001-design">
-<link rel="stylesheet" href="hitl.css?v=20261001-design">
+<link rel="stylesheet" href="tokens.css?v=20261001-purpose">
+<link rel="stylesheet" href="styles.css?v=20261001-purpose">
+<link rel="stylesheet" href="enterprise.css?v=20261001-purpose">
+<link rel="stylesheet" href="main.css?v=20261001-purpose">
+<link rel="stylesheet" href="hitl.css?v=20261001-purpose">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -57,8 +57,7 @@
   </section>
 
   <section class="view" id="view-home">
-    <div class="page-head"><div class="eyebrow">SYSTEM MAP · L1–L9</div><h1>시스템 아키텍처</h1><p class="lead">센서에서 수집한 값이 경보와 판단을 거쳐 설비 조치로 돌아오는 경로입니다. 각 구성요소를 열어 실제 데이터와 연결 상태를 살펴보세요.</p></div>
-    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>데이터의 이동 경로를 따라가세요.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>L1의 설비부터 L9의 승인까지 역할을 비교하고, 구성요소 링크를 열어보세요.</p></div><div><b>확인하기</b><p>데이터 수집 경로와 제어 명령 경로가 어디에서 만나는지 확인하세요.</p></div></div></details>
+    <div class="page-head"><div class="eyebrow">SYSTEM MAP · L1–L9</div><h1>시스템 아키텍처</h1><p class="lead">L1 현장 설비부터 L9 승인·실행까지, 각 레이어의 역할과 구성요소를 살펴봅니다.</p></div>
     <div class="stack" id="stack"></div>
     <div class="legend"><span><i class="z ot">OT</i> 설비·실시간 운전 (ot-net)</span><span><i class="z dmz">DMZ</i> 유일한 통로 (ot-net + it-net)</span><span><i class="z it">IT</i> 장부·분석·지식·프로세스 (it-net)</span></div>
     <details class="technical"><summary>환경 구성과 실행 순서 · Compose</summary><h2>서비스 실행 순서</h2>
@@ -68,10 +67,10 @@
   <!-- ───────── L7 ontology map ───────── -->
   <section class="view" id="view-ontology">
     <div class="page-head"><div class="eyebrow">CONNECTED KNOWLEDGE · L7</div><h1>온톨로지 지식 지도</h1><p class="lead">설비·고장·조치와 조직·규정·업무의 관계를 탐색하고, 판단에 쓰이는 지식을 직접 살펴봅니다.</p></div>
-    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>AI가 판단에 사용하는 관계를 따라가세요.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>이름으로 검색하거나 노드를 선택해 속성과 연결 관계를 읽어보세요.</p></div><div><b>확인하기</b><p>판단 경로를 강조해 필요한 지식을 비교하세요. 아래에서 매뉴얼 등록과 Cypher 질의도 실습할 수 있습니다.</p></div></div></details>
+    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>설비·고장·조치·업무가 어떻게 연결되는지 살펴보세요.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>노드를 선택하고 연결된 이름을 눌러 다른 분야의 지식으로 이동하세요.</p></div><div><b>확인하기</b><p>판단 시나리오를 선택하면 관련 지식이 강조됩니다. 아래에서 매뉴얼 등록과 관계 조회도 실습할 수 있습니다.</p></div></div></details>
     <div class="toolbar">
       <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
-      <label>강조 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
+      <label>상황 강조 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
       <input type="search" id="ontoSearch" placeholder="노드 이름·id 검색" aria-label="노드 검색">
       <button class="btn small" id="ontoReload">다시 읽기</button>
     </div>
@@ -90,10 +89,10 @@
     </div>
     <h2>판단 근거를 직접 조회하기 <small>Cypher</small></h2>
     <div class="toolbar" id="ontoTpl">
-      <button class="btn small" data-t="t1_causes">T1 원인 후보</button><button class="btn small" data-t="t2_actions">T2 조치·SOP</button>
-      <button class="btn small" data-t="t3_scenario">T3-a 시나리오·필요 정보</button><button class="btn small" data-t="t3_options">T3-b 대안·스킬·KPI 영향</button>
-      <button class="btn small" data-t="t3_kpis">T3-c KPI·부서·목표</button><button class="btn small" data-t="t3_policies">T3-d 규정</button>
-      <button class="btn small" data-t="t3_triggers">T3-e 트리거</button><button class="btn small" data-t="t3_roles">T3-f 역할·직급</button><button class="btn small" data-t="t3_precedents">T3-g 현장 판단 선례</button>
+      <button class="btn small" data-t="t1_causes">고장 원인 살펴보기</button><button class="btn small" data-t="t2_actions">조치 방법과 정비 절차 확인하기</button>
+      <button class="btn small" data-t="t3_scenario">판단에 필요한 정보</button><button class="btn small" data-t="t3_options">대안별 스킬과 성과 영향</button>
+      <button class="btn small" data-t="t3_kpis">부서별 성과 지표와 목표</button><button class="btn small" data-t="t3_policies">지켜야 할 규정</button>
+      <button class="btn small" data-t="t3_triggers">판단이 필요한 상황</button><button class="btn small" data-t="t3_roles">승인 역할과 권한</button><button class="btn small" data-t="t3_precedents">이전에 내린 판단</button>
     </div>
     <pre class="tpl" id="ontoTplText">질의를 선택하면 실행할 Cypher가 표시됩니다. Neo4j Browser에서 같은 관계를 직접 조회해보세요.</pre>
   </section>
@@ -188,11 +187,11 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261001-design"></script>
-<script src="layers.js?v=20261001-design"></script>
-<script src="app.js?v=20261001-design"></script>
-<script src="enterprise.js?v=20261001-design"></script>
-<script src="main.js?v=20261001-design"></script>
-<script src="hitl.js?v=20261001-design"></script>
+<script src="ui.js?v=20261001-purpose"></script>
+<script src="layers.js?v=20261001-purpose"></script>
+<script src="app.js?v=20261001-purpose"></script>
+<script src="enterprise.js?v=20261001-purpose"></script>
+<script src="main.js?v=20261001-purpose"></script>
+<script src="hitl.js?v=20261001-purpose"></script>
 </body>
 </html>
