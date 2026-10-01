@@ -42,14 +42,14 @@ with sync_playwright() as p:
         fan.press('Enter')
         evidence['invalid'] = until(lambda u: u['status']['reason'] == 'OUT_OF_RANGE')
         assert evidence['invalid']['tags']['FanSpeedSP'] == 80
-        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('OUT_OF_RANGE', timeout=5000)
+        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('허용 범위 초과', timeout=5000)
         page.screenshot(path=str(out / 'fuxa-range-rejected.png'))
         mode.select_option('0')
         until(lambda u: u['status']['mode'] == 'LOCAL')
         fan.fill('75')
         fan.press('Enter')
         evidence['local'] = until(lambda u: u['status']['reason'] == 'MODE_MISMATCH')
-        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('MODE_MISMATCH', timeout=5000)
+        expect(page.locator('[data-name="HYD-02 ack reason"]')).to_have_text('운전 모드 확인 필요', timeout=5000)
         mode.select_option('1')
         until(lambda u: u['status']['mode'] == 'REMOTE_MANUAL')
         fan.fill('75')
@@ -67,7 +67,16 @@ with sync_playwright() as p:
             page.set_viewport_size({'width': width, 'height': height})
             box = page.locator('#home #content > svg').bounding_box()
             assert box['x'] + box['width'] <= width + 1, box
+            page.locator('.hyd-unit-0').scroll_into_view_if_needed()
+            for card in page.locator('.hyd-unit').all():
+                r=card.bounding_box()
+                assert r['x']>=0 and r['x']+r['width']<=width, r
+                # Native-sized cards reflow; they are never shrunk into tiny controls.
+                assert r['width']>=370, r
             page.screenshot(path=str(out / f'fuxa-{width}-after.png'))
+            if width < 1400:
+                page.locator('.hyd-unit-2').scroll_into_view_if_needed()
+                page.screenshot(path=str(out / f'fuxa-{width}-third-unit.png'))
         assert not errors, errors
         evidence['ok'] = True
         print('PASS FUXA manual mode, valid write, range denial, LOCAL denial, recovery, three widths', flush=True)

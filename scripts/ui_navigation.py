@@ -3,16 +3,18 @@ import json
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
+from ui_capture_ready import trends_ready
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / '.evidence/design-navigation'
 OUT.mkdir(parents=True, exist_ok=True)
 TABS = ['main', 'home', 'scenario', 'incidents', 'trends', 'ontology', 'skills', 'decision', 'process']
+CAPTURE_VIEWS = set(sys.argv[2].split(',')) if len(sys.argv)>2 else set(TABS)
 records, errors = [], []
 
 with sync_playwright() as pw:
     browser = pw.chromium.launch()
-    page = browser.new_page(viewport={'width':1440,'height':900}, reduced_motion='reduce')
+    page = browser.new_page(viewport={'width':1440,'height':900}, reduced_motion='reduce', timezone_id='Asia/Seoul')
     page.on('pageerror',lambda e: errors.append(str(e)))
     page.goto('http://localhost:8088')
     expect(page.locator('#scale')).not_to_have_text('–')
@@ -28,7 +30,11 @@ with sync_playwright() as pw:
             expect(page.locator(f'[data-tab={tab}]')).to_have_attribute('aria-current','page')
             if tab=='ontology':
                 expect(page.locator('.o-node').first).to_be_visible()
-                page.locator('.o-node').first.click()
+                first=page.locator('.o-node').first
+                if page.evaluate('hydEnt.ent.sel') != first.get_attribute('data-id'):
+                    first.click()
+            if tab=='trends': trends_ready(page)
+            if tab=='scenario': page.wait_for_function("hydApp.state.waves['HYD-01']?.length >= 2")
             if tab=='skills': expect(page.locator('#skName')).to_be_visible()
             if tab=='decision':
                 if not page.locator('#decResult .mtx').count():
@@ -40,6 +46,8 @@ with sync_playwright() as pw:
                 expect(done.first).to_be_visible()
                 done.first.click()
                 expect(page.locator('#decDetail .prov')).to_be_visible()
+                selected=page.evaluate('hydEnt.ent.decDetail.id')
+                page.wait_for_function('(id)=>document.querySelector("#procBpmn").dataset.diagramKey===id',arg=selected)
             page.locator('main').evaluate('(e)=>e.scrollTop=0')
             page.wait_for_timeout(250)
             metrics=page.evaluate('''() => {
@@ -48,7 +56,8 @@ with sync_playwright() as pw:
                     footerOverlaps:main.getBoundingClientRect().bottom>footer.getBoundingClientRect().top+1};
             }''')
             records.append(dict(width=width,tab=tab,**metrics))
-            page.screenshot(path=str(OUT/f'{width}-{tab}.png'))
+            if tab in CAPTURE_VIEWS:
+                page.screenshot(path=str(OUT/f'{width}-{tab}.png'))
             page.locator('main').evaluate('(e)=>e.scrollTop=e.scrollHeight')
             expect(page.locator('#pageNext')).to_be_visible()
         expect(page.locator('#pageNext')).to_be_disabled()

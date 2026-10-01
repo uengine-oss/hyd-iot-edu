@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유압설비 모니터링 · 조치 포탈</title>
-<link rel="stylesheet" href="tokens.css?v=20261001-purpose">
-<link rel="stylesheet" href="styles.css?v=20261001-purpose">
-<link rel="stylesheet" href="enterprise.css?v=20261001-purpose">
-<link rel="stylesheet" href="main.css?v=20261001-purpose">
-<link rel="stylesheet" href="hitl.css?v=20261001-purpose">
+<link rel="stylesheet" href="tokens.css?v=20261001-visual173">
+<link rel="stylesheet" href="styles.css?v=20261001-visual173">
+<link rel="stylesheet" href="enterprise.css?v=20261001-visual173">
+<link rel="stylesheet" href="main.css?v=20261001-visual173">
+<link rel="stylesheet" href="hitl.css?v=20261001-visual173">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -83,7 +83,7 @@
     <h2>매뉴얼에서 정비 절차 만들기 <small>SOP</small></h2>
     <div class="upload" id="manualUpload">
       <p class="muted">정비 매뉴얼(.md · .txt · .pdf)을 올리면 절 제목(예: <code>HM-8.1 쿨러 팬 벨트 점검</code>)은 매뉴얼 절로, 번호 매긴 줄(<code>1. …</code>)은 SOP 단계로 읽습니다. 미리보기에서 확인하고 조치와 연결한 뒤 등록하세요. <a href="samples/HM-8_cooler-fan-manual.md" download>예시 매뉴얼 받기</a></p>
-      <div class="toolbar"><input type="file" id="manualFile" accept=".md,.txt,.pdf"><input id="manualBy" value="지식 관리자" aria-label="적재자"><button class="btn" id="manualPreview">미리보기</button></div>
+      <div class="toolbar"><label class="file-picker"><span class="btn">매뉴얼 파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><input id="manualBy" value="지식 관리자" aria-label="적재자"><button class="btn" id="manualPreview">미리보기</button></div>
       <div id="manualResult"></div>
       <div id="manualHistory"></div>
     </div>
@@ -175,8 +175,8 @@
     <div class="grid2">
       <iframe id="pScore" height="240" title="이상 점수"></iframe>
       <iframe id="pCe" height="240" title="냉각 효율"></iframe>
-      <iframe id="pSp" height="240" title="설정값"></iframe>
-      <iframe id="pAlerts" height="240" title="경보 테이블"></iframe>
+      <iframe id="pSp" height="240" style="grid-column:1/-1" title="설정값"></iframe>
+      <iframe id="pAlerts" height="320" title="경보 테이블"></iframe>
     </div>
   </section>
 </main>
@@ -187,11 +187,11 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261001-purpose"></script>
-<script src="layers.js?v=20261001-purpose"></script>
-<script src="app.js?v=20261001-purpose"></script>
-<script src="enterprise.js?v=20261001-purpose"></script>
-<script src="main.js?v=20261001-purpose"></script>
-<script src="hitl.js?v=20261001-purpose"></script>
+<script src="ui.js?v=20261001-visual173"></script>
+<script src="layers.js?v=20261001-visual173"></script>
+<script src="app.js?v=20261001-visual173"></script>
+<script src="enterprise.js?v=20261001-visual173"></script>
+<script src="main.js?v=20261001-visual173"></script>
+<script src="hitl.js?v=20261001-visual173"></script>
 </body>
 </html>

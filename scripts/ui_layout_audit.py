@@ -7,10 +7,13 @@ import json
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
+from ui_capture_ready import trends_ready
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / '.evidence/ux-audit' / (sys.argv[1] if len(sys.argv) > 1 else 'current')
 OUT.mkdir(parents=True, exist_ok=True)
+VIEWS = (sys.argv[2].split(',') if len(sys.argv) > 2 else
+         ['main','home','scenario','incidents','trends','ontology','skills','decision','process'])
 SCAN = r"""() => {
  const rect = e => e.getBoundingClientRect();
  const visible = e => {const r=rect(e); return r.width>0 && r.height>0 && getComputedStyle(e).visibility!=='hidden';};
@@ -47,7 +50,7 @@ SCAN = r"""() => {
 
 with sync_playwright() as pw:
     browser = pw.chromium.launch()
-    page = browser.new_page(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce')
+    page = browser.new_page(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce', timezone_id='Asia/Seoul')
     errors, records = [], []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('http://localhost:8088')
@@ -65,7 +68,7 @@ with sync_playwright() as pw:
     probe.close()
     for width, height in [(1920,1080),(1440,900),(1262,624),(1024,768)]:
         page.set_viewport_size({'width':width,'height':height})
-        for name in ['main','home','scenario','incidents','trends','ontology','skills','decision','process']:
+        for name in VIEWS:
             page.locator('#brandHome' if name=='main' else f'.rail [data-tab={name}]').click()
             page.wait_for_timeout(900)
             if name=='incidents':
@@ -74,7 +77,9 @@ with sync_playwright() as pw:
                 expect(page.locator('#hitlPanel .bpmn')).to_be_visible()
             elif name=='ontology':
                 expect(page.locator('.o-node').first).to_be_visible()
-                page.locator('.o-node').first.click()
+                first=page.locator('.o-node').first
+                if page.evaluate('hydEnt.ent.sel') != first.get_attribute('data-id'):
+                    first.click()
             elif name=='skills':
                 expect(page.locator('#skName')).to_be_visible()
                 page.locator('#skName').fill('설비 운전 상황에 따른 정비 작업지시 및 부서별 승인 처리')
@@ -85,6 +90,10 @@ with sync_playwright() as pw:
                 expect(page.locator('#decList .item').first).to_be_visible()
                 page.locator('#decList .item').first.click()
                 expect(page.locator('#decDetail h2').first).to_be_visible()
+                selected=page.evaluate('hydEnt.ent.decDetail.id')
+                page.wait_for_function('(id)=>document.querySelector("#procBpmn").dataset.diagramKey===id',arg=selected)
+            elif name=='trends': trends_ready(page)
+            elif name=='scenario': page.wait_for_function("hydApp.state.waves['HYD-01']?.length >= 2")
             page.locator('main').evaluate('(e)=>e.scrollTop=0')
             extent=page.locator('main').evaluate('(e)=>Math.max(0,e.scrollHeight-e.clientHeight)')
             for label, top in [('top',0),('middle',extent/2),('bottom',extent)]:
@@ -99,6 +108,9 @@ with sync_playwright() as pw:
                 region=page.locator('#procBpmn .bpmn-scroll')
                 region.scroll_into_view_if_needed()
                 region.evaluate('(e)=>e.scrollLeft=e.scrollWidth')
+                assert region.evaluate('(e)=>e.scrollWidth-e.clientWidth-e.scrollLeft < 2')
+                page.wait_for_timeout(2600)
+                assert region.evaluate('(e)=>e.scrollWidth-e.clientWidth-e.scrollLeft < 2'), 'poll reset BPMN position'
                 page.screenshot(path=str(OUT/f'{width}-bpmn-right.png'))
                 page.locator('#procBpmn [data-bpmn-fit]').click()
                 assert region.evaluate('(e)=>e.scrollWidth<=e.clientWidth+2')

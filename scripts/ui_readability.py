@@ -15,7 +15,7 @@ checks, errors, images = [], [], []
 
 with sync_playwright() as pw:
     browser = pw.chromium.launch()
-    page = browser.new_page(viewport={'width': 1440, 'height': 900}, locale='ko-KR')
+    page = browser.new_page(viewport={'width': 1440, 'height': 900}, locale='ko-KR', timezone_id='Asia/Seoul')
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('http://localhost:8088')
     expect(page.locator('#scale')).not_to_have_text('–')
@@ -76,6 +76,7 @@ with sync_playwright() as pw:
     tab('scenario')
     expect(page.locator('#units .unit')).to_have_count(3)
     expect(page.locator('#units [aria-pressed=true]')).to_have_count(3)
+    page.wait_for_function("hydApp.state.waves['HYD-01']?.length >= 2")
     controls = page.locator('#units .ctl').evaluate_all('(es)=>es.map(e=>e.getBoundingClientRect().top)')
     assert max(controls) - min(controls) < 2, controls
     shot('equipment-controls', page.locator('#units'))
@@ -136,6 +137,12 @@ with sync_playwright() as pw:
     record('action evidence comes before trace; friendly trace and full raw output remain available')
 
     tab('process')
+    completed=page.locator('#decList .item').filter(has=page.locator('.pill.EXECUTED')).first
+    expect(completed).to_be_visible()
+    completed.click()
+    expect(page.locator('#decDetail h2 .pill')).to_have_text('실행 완료')
+    selected=page.evaluate('hydEnt.ent.decDetail.id')
+    page.wait_for_function('(id)=>document.querySelector("#procBpmn").dataset.diagramKey===id',arg=selected)
     expect(page.locator('#procBpmn svg')).to_be_visible()
     assert not re.search(r'\bT[123](?:\b|[-_])', page.locator('#procBpmn').inner_text())
     page.locator('#procBpmn [data-bpmn-fit]').click()

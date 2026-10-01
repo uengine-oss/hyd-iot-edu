@@ -147,7 +147,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -216,7 +265,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -281,7 +379,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -342,7 +489,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -403,7 +599,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -464,7 +709,56 @@
      },
      "mappings": []
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "reduceOptions": {
@@ -560,6 +854,54 @@
         }
        }
       ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
      }
     ]
    },
@@ -649,6 +991,54 @@
          "mode": "fixed",
          "fixedColor": "#7c3aed"
         }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
        }
       ]
      }
@@ -761,6 +1151,54 @@
         }
        }
       ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
      }
     ]
    },
@@ -843,6 +1281,54 @@
          "mode": "fixed",
          "fixedColor": "#7c3aed"
         }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
        }
       ]
      }
@@ -955,6 +1441,54 @@
         }
        }
       ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
      }
     ]
    },
@@ -973,7 +1507,7 @@
   {
    "id": 12,
    "type": "table",
-   "title": "경보 (alerts)",
+   "title": "경보 이력",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -992,7 +1526,7 @@
      },
      "refId": "A",
      "rawQuery": true,
-     "rawSql": "SELECT raised_at AS \"발생\", cleared_at AS \"해제\", alert_id, pattern, severity, state FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20",
+     "rawSql": "SELECT pattern, severity, state, raised_at AS \"발생\", cleared_at AS \"해제\", alert_id FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20",
      "format": "table",
      "editorMode": "code"
     }
@@ -1006,7 +1540,214 @@
       }
      }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "pattern"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "경보 유형"
+       },
+       {
+        "id": "custom.width",
+        "value": 180
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "COOLER_DEGRADATION": {
+            "text": "쿨러 성능 저하",
+            "index": 0
+           },
+           "TEMP_TRIP": {
+            "text": "유온 보호 정지",
+            "index": 1
+           },
+           "OVERHEAT_TRIP": {
+            "text": "유온 보호 정지",
+            "index": 2
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "severity"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "심각도"
+       },
+       {
+        "id": "custom.width",
+        "value": 90
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "HIGH": {
+            "text": "높음",
+            "index": 0
+           },
+           "CRITICAL": {
+            "text": "긴급",
+            "index": 1
+           },
+           "WARNING": {
+            "text": "주의",
+            "index": 2
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "state"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "상태"
+       },
+       {
+        "id": "custom.width",
+        "value": 100
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "RAISE": {
+            "text": "발생",
+            "index": 0
+           },
+           "CLEAR": {
+            "text": "해제",
+            "index": 1
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "발생"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "발생 시각"
+       },
+       {
+        "id": "custom.width",
+        "value": 170
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "해제"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "해제 시각"
+       },
+       {
+        "id": "custom.width",
+        "value": 170
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "alert_id"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "경보 번호"
+       },
+       {
+        "id": "custom.width",
+        "value": 230
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "showHeader": true,
@@ -1050,7 +1791,56 @@
       }
      }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "showHeader": true,
@@ -1094,7 +1884,56 @@
       }
      }
     },
-    "overrides": []
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "CE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "냉각 효율 CE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SE"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "시스템 효율 SE"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "FanSpeedSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "팬 속도"
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "LoadSP"
+      },
+      "properties": [
+       {
+        "id": "displayName",
+        "value": "펌프 부하"
+       }
+      ]
+     }
+    ]
    },
    "options": {
     "showHeader": true,

@@ -90,7 +90,8 @@ function focusSet() {
 }
 function drawGraph() {
   const g = ent.graph; if (!g) return;
-  const W = 192, BOX = 172, H = 26, GAP = 6, TOP = 34;
+  const count = Math.max(1, ONTO_GROUPS.length - ent.hidden.size);
+  const W = Math.max(192, Math.min(280, Math.floor(($('#ontoMap').clientWidth - 10) / count))), BOX = W - 20, H = 28, GAP = 6, TOP = 34;
   const focus = focusSet();
   const q = ent.search.trim().toLowerCase();
   const cols = ONTO_GROUPS.map(() => []);
@@ -141,12 +142,12 @@ function drawGraph() {
     const neighbor = ent.sel && g.edges.some(e => (e.from === ent.sel && e.to === id) || (e.to === ent.sel && e.from === id));
     const dim = focus && !focus.has(id) && !match && id !== ent.sel;
     const cls = ['o-node', id === ent.sel ? 'sel' : '', neighbor ? 'nb' : '', match ? 'match' : '', dim ? 'dim' : ''].join(' ');
-    const label = String(n.name || n.id); const short = label.length > 22 ? label.slice(0, 21) + '…' : label;
+    const label = String(n.name || n.id); const short = label;
     svg += `<g class="${cls}" data-id="${esc(id)}" tabindex="0"><rect x="${p.x}" y="${p.y}" width="${BOX}" height="${H}" rx="4" style="--c:${color}"/>` +
       `<text x="${p.x + 7}" y="${p.y + 17}">${esc(short)}</text><title>${esc(LABEL_KO[n.label] || n.label)} · ${esc(n.id)}\n${esc(label)}</title></g>`;
   }
   svg += '</svg>';
-  const box = $('#ontoMap'); box.innerHTML = svg;
+  const box = $('#ontoMap'); const scroll = [box.scrollLeft,box.scrollTop]; box.innerHTML = svg; box.scrollLeft=scroll[0]; box.scrollTop=scroll[1];
   // Fit the actual rendered Korean/Latin text, not a fixed character count.
   box.querySelectorAll('.o-node text').forEach(t => {
     const original = t.textContent;
@@ -167,7 +168,7 @@ function drawGraph() {
   const counts = {}; g.nodes.forEach(n => counts[n.label] = (counts[n.label] || 0) + 1);
   const ent_ = ['Department', 'Role', 'KPI', 'Goal', 'Policy', 'System', 'InfoType', 'Skill', 'BusinessProcess', 'Scenario', 'Option', 'Supplier', 'Decision'].reduce((s, l) => s + (counts[l] || 0), 0);
   const matches = [...box.querySelectorAll('.o-node.match')];
-  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 그중 전사 지식 <b>${ent_}</b>개` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '') + (q ? ` · 검색 결과 ${matches.length}개` : '');
+  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 그중 전사 지식 <b>${ent_}</b>개` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '') + (q ? ` · 검색 결과 ${matches.length}개` : '') + (box.scrollWidth > box.clientWidth ? ' · 지도 안에서 좌우로 이동' : '');
   if (q && matches.length) { const r = matches[0].getBBox(); box.scrollLeft = Math.max(0, r.x - 20); box.scrollTop = Math.max(0, r.y - 60); }
   renderNodePanel();
 }
@@ -182,9 +183,11 @@ function renderNodePanel() {
   box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)} <span class="muted">(${esc(n.label)})</span></div><h3>${esc(n.name)}</h3><div class="muted mono">${esc(n.id)}</div>` +
     (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
     (outE.length ? `<h4>나가는 관계 ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>들어오는 관계 ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
-  box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); }));
+  box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); const node=[...$('#ontoMap').querySelectorAll('.o-node')].find(n=>n.dataset.id===ent.sel); if(node) { const r=node.getBBox(); $('#ontoMap').scrollTo({left:Math.max(0,r.x-20),top:Math.max(0,r.y-60)}); } }));
 }
 function initOntology() {
+  const map = $('#ontoMap'); map.tabIndex=0; map.setAttribute('role','region'); map.setAttribute('aria-label','지식 지도, 가로와 세로로 이동 가능');
+  let width=0; new ResizeObserver(() => { if(map.clientWidth && map.clientWidth!==width) {width=map.clientWidth; if(ent.graph) drawGraph();} }).observe(map);
   const chips = $('#ontoLayers');
   ONTO_GROUPS.forEach(gr => {
     const b = el('label', 'chiptoggle', `<input type="checkbox" checked value="${gr.key}"><i style="background:${gr.color}"></i>${esc(gr.title)}`);
@@ -197,14 +200,14 @@ function initOntology() {
   $('#ontoReload').addEventListener('click', () => loadGraph(true));
   document.querySelectorAll('#ontoTpl button').forEach(b => b.addEventListener('click', async () => {
     try { const t = await getJ(API.agent + '/api/ontology/template/' + b.dataset.t); $('#ontoTplText').textContent = t.text; }
-    catch (e) { $('#ontoTplText').textContent = '템플릿을 읽을 수 없다: ' + e.message; }
+    catch (e) { $('#ontoTplText').textContent = '질의를 불러오지 못했습니다: ' + e.message; }
   }));
   renderNodePanel();
 }
 
 /* ================================================= L8 전사 의사결정 시나리오 */
 async function loadScenarios() {
-  if (!ent.scenarios) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { $('#scnCards').innerHTML = `<div class="muted">에이전트(8091)에 연결할 수 없다. ${esc(e.message)}</div>`; return; } }
+  if (!ent.scenarios) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { $('#scnCards').innerHTML = `<div class="muted">에이전트에 연결할 수 없습니다. ${esc(e.message)}</div>`; return; } }
   const box = $('#scnCards');
   if (box.dataset.ready) return;
   box.dataset.ready = '1'; box.innerHTML = '';
@@ -213,7 +216,7 @@ async function loadScenarios() {
     const card = el('article', 'scn');
     const assets = s.asset === 'ALL' ? '<option value="">전체 설비</option>' : ['HYD-01', 'HYD-02', 'HYD-03'].map(a => `<option ${a === s.asset ? 'selected' : ''}>${a}</option>`).join('');
     card.innerHTML = `<div class="scn-no">${s.no}</div><h3>${esc(s.name)}</h3><p>${esc(s.question)}</p>
-      <div class="muted">온톨로지 트리거: ${trig || '없음'} · 대안 ${row.options}개${s.condition ? ' · 적용 조건 <code>' + esc(s.condition) + '</code>' : ''}</div>
+      <div class="muted">온톨로지 트리거: ${trig || '없음'} · 대안 ${row.options}개${s.condition ? ' · 적용 조건 <span title="' + esc(s.condition) + '">' + esc(UI.condition(s.condition)) + '</span>' : ''}</div>
       <div class="scn-run"><select aria-label="설비">${assets}</select><button class="btn primary">에이전트 판단 실행</button></div>`;
     card.querySelector('button').addEventListener('click', () => runDecision(s.id, card.querySelector('select').value || null, card));
     box.append(card);
@@ -248,14 +251,14 @@ function renderDecision() {
     <span class="pill ${d.status === 'SUBMITTED' ? 'AWAITING_APPROVAL' : 'CLOSED'}">${esc(UI.status(d.status))}</span></div>`;
   if (d.applicable === false) html += `<div class="note">이 설비는 적용 조건 <code>${esc(d.condition)}</code>을 만족하지 않는다. 경보로 자동 기동되면 제출되지 않지만, 학습용으로 평가 결과를 보여 준다.</div>`;
   html += `<div class="versus">
-    <div><small>즉각 제어만 할 때 (L1~L6)</small><p>${esc(scn.immediate || '')}</p><span class="muted">센서값 하나를 보고 설비 하나를 제어한다.</span></div>
+    <div><small>즉각 제어만 할 때 (L1~L6)</small><p>${esc(scn.immediate || '')}</p><span class="muted">센서값을 기준으로 해당 설비를 제어합니다.</span></div>
     <div class="win"><small>온톨로지 기반 전사 판단 (L7~L9)</small><p>${rec ? '권고: <b>' + esc(rec.name) + '</b>' : '실행 가능한 대안 없음'}</p><span>${esc(r.explanation)}</span></div></div>`;
   html += `<h2>관점 바꿔 보기</h2><div class="persp" role="tablist">` + [{ id: 'enterprise', name: '전사 (Goal: 전사 영업이익)' }, ...depts].map(p =>
     `<button role="tab" class="${p.id === persp ? 'on' : ''}" data-p="${esc(p.id)}">${esc(p.name)}<small>${esc(name(r.winners[p.id]) || '–')}</small></button>`).join('') + '</div>';
   const naive = persp !== 'enterprise' && r.naiveWinners[persp] && r.naiveWinners[persp] !== pw ? opts.find(o => o.id === r.naiveWinners[persp]) : null;
   html += `<p class="muted">${persp === 'enterprise' ? '모든 부서 KPI의 금액 영향을 합산한 순위다.' : '이 부서가 소유한 KPI만 보고 고른 1위다.'} 1위: <b>${esc(name(pw))}</b>` +
     (naive ? ` · 규정을 무시하면 <b>${esc(naive.name)}</b>를 골랐겠지만 <b>${esc(naive.violations[0].name)}</b> 위반으로 제외됐다.` : '') + '</p>';
-  html += '<div class="mtx-wrap"><table class="mtx"><thead><tr><th rowspan="2">대안 (스킬 · 승인 역할)</th>' +
+  html += '<div class="mtx-wrap" tabindex="0" role="region" aria-label="대안별 영향 비교 표, 가로와 세로 이동 가능"><table class="mtx"><thead><tr><th rowspan="2">대안 (스킬 · 승인 역할)</th>' +
     cols.map(o => `<th colspan="${o.kpis.length}" class="${persp === 'enterprise' || persp === o.id ? '' : 'off'}">${esc(o.name)}</th>`).join('') +
     '<th rowspan="2">전사 합계<br><small>만원</small></th><th rowspan="2">규정</th></tr><tr>' +
     cols.flatMap(o => o.kpis.map(k => `<th class="k ${persp === 'enterprise' || persp === o.id ? '' : 'off'}">${esc(k.name)}</th>`)).join('') + '</tr></thead><tbody>';
@@ -266,19 +269,19 @@ function renderDecision() {
       `<div class="muted">승인: ${esc((o.approver || {}).name || '–')}</div></td>`;
     for (const c of cols) for (const k of c.kpis) {
       const v = o.impacts[k.id]; const note = (o.notes || {})[k.id] || '';
-      html += `<td class="num ${won(v)} ${persp === 'enterprise' || persp === c.id ? '' : 'off'}" title="${esc(note)}">${v == null ? '' : money(v)}</td>`;
+      html += `<td class="num ${won(v)} ${persp === 'enterprise' || persp === c.id ? '' : 'off'}" title="${esc(note)}">${v == null ? '—' : money(v)}</td>`;
     }
     html += `<td class="num tot ${won(o.total)}">${money(o.total)}</td><td>` +
       (o.violations || []).map(v => `<span class="hard" title="${esc(v.source)}">필수 규정 위반 · ${esc(v.name)}</span>`).join('') +
       (o.softPenalties || []).map(v => `<span class="soft" title="${esc(v.source)}">평가 불이익 · ${esc(v.name)} ${money(v.penalty)}</span>`).join('') +
       (o.errors || []).map(e => `<span class="hard">${esc(e)}</span>`).join('') + '</td></tr>';
   }
-  html += '</tbody></table></div><p class="muted">셀에 마우스를 올리면 온톨로지에 저장된 산식 설명이 보인다. 금액은 만원, 양수는 이익·절감, 음수는 손실·비용이다.</p>';
+  html += '</tbody></table></div><p class="muted">금액은 만원입니다. 양수는 이익·절감, 음수는 손실·비용, —는 산정 항목 없음입니다. 셀에 마우스를 올리면 산식 설명을 확인할 수 있습니다.</p>';
   if (r.drivers && r.drivers.length) html += '<h2>권고를 만든 차이 (권고안 − 차선)</h2><div class="drivers">' + r.drivers.map(x => `<span class="${won(x.delta)}">${esc(x.name)} <b>${money(x.delta)}</b></span>`).join('') + '</div>';
   if (d.status === 'SUBMITTED') html += `<div class="approve-row"><button class="btn primary" id="goApprove">승인 화면으로 이동</button><span class="muted">권고안과 승인 역할을 확인한 뒤 실행을 결정합니다.</span></div>`;
-  html += '<h2>판단에 사용한 기업 시스템 정보</h2><div class="table-scroll"><table class="prov"><tr><th>정보 유형 (InfoType)</th><th>시스템</th><th>엔드포인트</th><th>가져온 사실</th></tr>' +
-    (d.provenance || []).map(p => `<tr><td>${esc(p.name || p.info)}<div class="muted mono">${esc(p.info)}</div></td><td><b>${esc(p.systemName || p.system)}</b></td><td class="mono">${esc(p.endpoint)}</td>` +
-      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : Object.entries(p.facts || {}).map(([k, v]) => `<code>${esc(k)}=${esc(v)}</code>`).join(' ')}</td></tr>`).join('') + '</table></div>';
+  html += '<h2>판단에 사용한 기업 시스템 정보</h2><div class="table-scroll"><table class="prov facts-table"><tr><th>정보 출처</th><th>시스템</th><th>판단에 사용한 값</th></tr>' +
+    (d.provenance || []).map(p => `<tr><td>${esc(p.name || p.info)}<details class="source-detail"><summary>조회 원문</summary><p>${esc(p.info)}<br>${esc(p.endpoint)}</p><pre>${esc(JSON.stringify(p.facts || {},null,2))}</pre></details></td><td><b>${esc(p.systemName || p.system)}</b></td>` +
+      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : UI.factList(p.facts)}</td></tr>`).join('') + '</table></div>';
   html += `<details class="technical"><summary>판단 과정 확인</summary>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] }) + '</details>';
   box.innerHTML = html;
   box.querySelectorAll('.persp button').forEach(b => b.addEventListener('click', () => { ent.persp = b.dataset.p; renderDecision(); }));
@@ -305,7 +308,7 @@ function renderProcess() {
   list.dataset.sig = sig;
   const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
   const scroll = list.scrollTop;
-  list.innerHTML = ent.decisions.length ? '' : '<div class="muted">제출된 판단이 없다. 전사 의사결정 시나리오에서 실행하거나, 결함 시나리오 시뮬레이션에서 쿨러 열화를 주입하면 경보에서 자동으로 만들어진다.</div>';
+  list.innerHTML = ent.decisions.length ? '' : '<div class="muted">아직 제출된 판단이 없습니다. 전사 의사결정에서 판단을 실행하거나 결함 시뮬레이션으로 경보를 발생시켜 보세요.</div>';
   if (ent.decisionsError) list.innerHTML = '<div class="neg" role="status">판단 목록을 갱신할 수 없습니다. 연결을 확인하세요. 아래는 마지막으로 받은 목록입니다.</div>';
   for (const d of ent.decisions) {
     const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
@@ -330,7 +333,7 @@ function renderProcess() {
 }
 function renderDecisionApproval() {
   const box = $('#decDetail'); const d = ent.decDetail;
-  if (!d) { ent.lastDetailSig = null; box.innerHTML = '<div class="empty">왼쪽에서 판단을 고르면 승인 화면이 나온다.</div>'; return; }
+  if (!d) { ent.lastDetailSig = null; box.innerHTML = '<div class="empty">목록에서 판단을 선택하면 승인 화면을 확인할 수 있습니다.</div>'; return; }
   // the 2.5 s refresh must not wipe what the approver is typing or selecting: redraw only when the decision changed
   const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length;
   if (sig === ent.lastDetailSig && box.querySelector('.opts')) return;
@@ -338,22 +341,22 @@ function renderDecisionApproval() {
   const roles = Object.entries(d.roles || {}).sort((a, b) => b[1].level - a[1].level);
   const pending = d.state === 'PENDING_APPROVAL';
   let html = `<h2 style="margin-top:0">${esc((d.scenario || {}).name || '')} <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></h2>
-    <div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · 제출 ${esc((d.created || '').slice(11, 19))}${(d.origin || {}).incident ? ' · 인시던트 ' + esc(d.origin.incident) : ''}</div>
+    <div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · 제출 ${esc(UI.dateTime(d.created))}${(d.origin || {}).incident ? ' · 인시던트 ' + esc(d.origin.incident) : ''}</div>
     <div class="summary">${esc(d.explanation || '')}</div>`;
   if (pending) html += `<div class="who"><label>승인자 <input id="decBy" value="${esc(ent.form.by)}"></label><label>역할 <select id="decRole">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === ent.form.role ? 'selected' : ''}>${esc(r.name)} (${esc(r.dept)}, 직급 ${r.level})</option>`).join('')}</select></label>
-      <span class="muted">대안마다 승인 역할이 온톨로지(Option -APPROVED_BY-> Role)에 있다. 같은 역할이거나 더 높은 직급만 승인할 수 있다.</span></div>`;
-  html += '<div class="table-scroll"><table class="opts"><tr><th>대안</th><th>전사 합계<br><small>만원</small></th><th>승인 역할</th><th>실행될 스킬 → 시스템</th><th></th></tr>';
+      <span class="muted">대안에 지정된 담당 역할이나 더 높은 직급으로 승인할 수 있습니다.</span></div>`;
+  html += '<div class="table-scroll"><table class="opts"><thead><tr><th>대안</th><th>전사 합계<br><small>만원</small></th><th>승인 역할</th><th>실행될 스킬 → 시스템</th><th>승인</th></tr></thead><tbody>';
   for (const o of d.options || []) {
     html += `<tr class="${o.id === d.recommended ? 'rec' : ''} ${o.feasible ? '' : 'out'} ${o.id === d.chosen ? 'chosen' : ''}"><td><b>${esc(o.name)}</b>${o.id === d.recommended ? ' <span class="star">권고</span>' : ''}${o.feasible ? '' : ' <span class="hard">' + esc((o.violations || [])[0] ? o.violations[0].name : '제외') + '</span>'}</td>` +
-      `<td class="num ${won(o.total)}">${money(o.total)}</td><td>${esc((o.approver || {}).name || '–')}</td>` +
-      `<td>${(o.skills || []).map(s => `${esc(s.name)} → <b>${esc(s.systemName || s.system)}</b>`).join('<br>') || '–'}</td>` +
+      `<td data-label="전사 합계 · 만원" class="num ${won(o.total)}">${money(o.total)}</td><td data-label="승인 역할">${esc((o.approver || {}).name || '–')}</td>` +
+      `<td data-label="실행될 스킬 → 시스템">${(o.skills || []).map(s => `${esc(s.name)} → <b>${esc(s.systemName || s.system)}</b>`).join('<br>') || '–'}</td>` +
       `<td>${pending && o.feasible ? `<button class="btn small" data-approve="${esc(o.id)}">이 안으로 승인</button>` : o.id === d.chosen ? '승인됨' : ''}</td></tr>`;
   }
-  html += '</table></div>';
+  html += '</tbody></table></div>';
   if (pending) html += `<div class="approve-row"><input type="text" id="decReason" placeholder="반려 사유" value="${esc(ent.form.reason)}"><button class="btn" id="decReject">반려</button><span id="decMsg" class="neg">${esc(ent.form.msg || '')}</span></div>`;
   if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><div class="table-scroll" tabindex="0" role="region" aria-label="실행 결과 표"><table class="prov"><tr><th>스킬</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
     d.executions.map(x => `<tr><td>${esc(x.skill)}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(UI.status(x.status))}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table></div>';
-  html += '<h2>이력</h2><div class="audit">' + (d.history || []).map(h => `<div>${esc((h.t || '').slice(11, 19))} <b>${esc(h.state)}</b> ${esc(h.by || '')} ${esc(h.role || '')} ${esc(h.option || '')} ${esc(h.reason || '')}</div>`).join('') + '</div>';
+  html += '<h2>이력</h2><div class="audit">' + (d.history || []).map(h => UI.eventRecord({time:h.t,name:h.state,actor:h.by,detail:h.reason || '',raw:h})).join('') + '</div>';
   box.innerHTML = html;
   const by = $('#decBy'), role = $('#decRole'), reason = $('#decReason');
   if (by) by.addEventListener('input', () => ent.form.by = by.value);
@@ -378,17 +381,17 @@ function renderDecisionApproval() {
 }
 function renderSystems() {
   const box = $('#sysBoards'); const s = ent.entState;
-  if (!s) { box.innerHTML = '<div class="muted">enterprise-sim(8095)에 연결할 수 없다.</div>'; return; }
-  const t = (rows, cols) => rows.length ? '<table>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '')}</td>`).join('') + '</tr>').join('') + '</table>' : '<div class="muted">변경 없음</div>';
+  if (!s) { box.innerHTML = '<div class="muted">기업 시스템에 연결할 수 없습니다. 연결 상태를 확인해 주세요.</div>'; return; }
+  const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table><thead><tr>' + labels.map(x=>`<th>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '–')}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>' : '<div class="muted">변경 없음</div>';
   const boards = [
-    ['MES', '생산오더', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'])],
-    ['CMMS', '작업지시', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'])],
-    ['ERP', '구매요청 · 출하', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'])],
-    ['QMS', '격리 · 출하 승인', t([...s.qms.holds.map(h => ({ a: h.lot, b: h.status })), ...s.qms.releases.map(h => ({ a: h.lot, b: h.status }))], ['a', 'b'])],
-    ['EMS', '수요 제어', t(s.ems.actions, ['action'])],
+    ['MES', '생산오더', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더','설비','납기까지 (시간)'])],
+    ['CMMS', '작업지시', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['작업번호','설비','작업','정비 시점'])],
+    ['ERP', '구매요청 · 출하', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'], ['참조번호','대상','상태 · 출고처'])],
+    ['QMS', '격리 · 출하 승인', t([...s.qms.holds.map(h => ({ a: h.lot, b: h.status })), ...s.qms.releases.map(h => ({ a: h.lot, b: h.status }))], ['a', 'b'], ['로트','상태'])],
+    ['EMS', '수요 제어', t(s.ems.actions, ['action'], ['실행 내용'])],
   ];
   box.innerHTML = boards.map(([sys, title, body]) => `<div class="board"><header><b>${sys}</b><span>${title}</span></header>${body}</div>`).join('');
-  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => `<div>${esc(x.t.slice(11, 19))} <b>${esc(x.system)}</b> ${esc(x.detail)} <span class="muted">${esc(x.ref)} · ${esc(x.decision || '')} · ${esc(x.by || '')}</span></div>`).join('') : '<div class="muted">아직 실행된 트랜잭션이 없다.</div>';
+  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({time:x.t,name:x.system.replace(/^sys:/,'').toUpperCase(),actor:x.by,detail:x.detail,raw:x})).join('') : '<div class="muted">아직 시스템 실행 이력이 없습니다.</div>';
 }
 
 /* ------------------------------------------------ 이상 확인 & 조치: 인시던트에 연결된 전사 판단 */
@@ -403,7 +406,7 @@ async function fillIncidentDecisions() {
     box.innerHTML = '<h2>전사 판단 (L7 → L8 → L9)</h2>' + (mine.length ? '<div class="linked">' + mine.map(d =>
       `<a href="#" data-dec="${esc(d.id)}"><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></a>`).join('') +
       '</div><p class="muted">같은 경보를 온톨로지가 ERP·MES·CMMS·QMS 정보와 부서 KPI로 이어 판단한 결과다. 누르면 승인 화면으로 간다.</p>'
-      : '<div class="muted">이 인시던트와 연결된 전사 판단이 없다.</div>');
+      : '<div class="muted">이 인시던트와 연결된 전사 판단이 없습니다.</div>');
     box.querySelectorAll('[data-dec]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.decSel = a.dataset.dec; selectTab('process'); }));
   } catch (e) { box.innerHTML = ''; }
 }

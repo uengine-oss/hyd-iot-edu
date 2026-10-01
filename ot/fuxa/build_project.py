@@ -38,13 +38,13 @@ def build_tags():
             tags[f"{k}_{name}"] = {"id": f"{k}_{name}", "name": f"{a} {name}", "type": "json",
                                    "address": f"plant/{k}/tag/{name}", "memaddress": "v", "options": {"subs": ["v"]}}
         for fld in ("mode", "state", "result", "reason"):
-            source = "reason_display" if fld == "reason" else fld
+            source = fld + "_text"
             tags[f"{k}_{fld}"] = {"id": f"{k}_{fld}", "name": f"{a} {fld}", "type": "json",
                                   "address": f"plant/{k}/status", "memaddress": source, "options": {"subs": [source]}}
         tags[f"{k}_alert"] = {"id": f"{k}_alert", "name": f"{a} IT alert level", "type": "json",
                               "address": f"plant/{k}/alert", "memaddress": "level", "options": {"subs": ["level"]}}
         tags[f"{k}_alert_text"] = {"id": f"{k}_alert_text", "name": f"{a} IT alert text", "type": "json",
-                                   "address": f"plant/{k}/alert", "memaddress": "text", "options": {"subs": ["text"]}}
+                                   "address": f"plant/{k}/alert", "memaddress": "display_text", "options": {"subs": ["display_text"]}}
         # writes (FUXA -> PLC). retain must be false for command topics (v3: cmd retained 금지)
         for res in ("FanSpeedSP", "LoadSP", "Reset"):
             tags[f"{k}_cmd_{res}"] = {"id": f"{k}_cmd_{res}", "name": f"{a} write {res}", "type": "json",
@@ -147,24 +147,24 @@ class View:
 
     def render(self):
         body = "\n".join(self.svg)
-        return (f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" '
+        return (f'<svg width="{W}" height="{H}" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" '
                 f'xmlns:html="http://www.w3.org/1999/xhtml"><g><title>Layer 1</title>\n{body}\n</g></svg>')
 
 
 def build_view():
     v = View()
     v.text(30, 40, "유압설비 운전 화면 — HYD-01 ~ 03 (OT · FUXA)", size=22, weight="bold", color="#111827")
-    v.text(30, 62, "1 Hz 태그: plant/{asset}/tag/*   ·   IT 경보 중계: plant/{asset}/alert   ·   수동 조작: plant/{asset}/cmd/manual",
+    v.text(30, 62, "설비 상태를 확인하고 팬 속도·부하·운전 모드를 직접 조작합니다.",
            size=12, color="#6b7280")
     for i, a in enumerate(ASSETS):
         k = key(a)
-        x = COL_X0 + i * (COL_W + 15)
-        y = 85
-        v.rect(x, y, COL_W, 600, fill="#f9fafb")
+        v.svg.append(f'<svg class="hyd-unit hyd-unit-{i}" x="{COL_X0+i*(COL_W+15)}" y="85" width="{COL_W}" height="630" viewBox="0 0 {COL_W} 630" preserveAspectRatio="xMinYMin meet">')
+        x, y = 0, 0
+        v.rect(x, y, COL_W, 625, fill="#f9fafb")
         v.text(x + 16, y + 30, a, size=20, weight="bold", color="#1e3a8a")
-        v.text(x + 90, y + 30, "IT 경보", size=12, color="#6b7280")
-        v.semaphore(x + 150, y + 25, f"{k}_alert", f"{a} alert")
-        v.text(x + 175, y + 30, "현재 모드", size=11, color="#6b7280")
+        v.text(x + 104, y + 30, "경보", size=12, color="#6b7280")
+        v.semaphore(x + 150, y + 25, f"{k}_alert", f"{a} alert", r=10)
+        v.text(x + 175, y + 30, "현재 모드", size=12, color="#6b7280")
         v.value(x + 240, y + 30, f"{k}_mode", f"{a} mode", w=112, size=12, color="#374151")
         v.text(x + 175, y + 52, "PLC 상태", size=11, color="#6b7280")
         v.value(x + 277, y + 52, f"{k}_state", f"{a} state", w=75, size=13, color="#374151")
@@ -173,7 +173,7 @@ def build_view():
         v.text(x + 16, y + 70, "유온 TS1 (℃)", size=13, color="#374151")
         v.progress(x + 16, y + 80, 40, 220, f"{k}_TS1", f"{a} TS1", 0, 100, "#f97316")
         v.text(x + 62, y + 90, "100", size=10, color="#9ca3af")
-        v.text(x + 62, y + 152, "65 트립", size=10, color="#ef4444")
+        v.text(x + 62, y + 152, "65 정지", size=11, color="#bd3547")
         v.text(x + 62, y + 220, "48 정상", size=10, color="#22c55e")
         v.text(x + 62, y + 300, "0", size=10, color="#9ca3af")
         v.value(x + 110, y + 130, f"{k}_TS1", f"{a} TS1", " ℃", w=150, size=38, color="#111827")
@@ -189,24 +189,26 @@ def build_view():
 
         # manual controls
         cy = y + 330
-        v.rect(x + 16, cy, COL_W - 32, 150, fill="#eef2ff", stroke="#c7d2fe")
+        v.rect(x + 16, cy, COL_W - 32, 180, fill="#eef2ff", stroke="#c7d2fe")
         v.text(x + 28, cy + 22, "수동 조작 · 입력 후 Enter로 적용", size=12, weight="bold", color="#3730a3")
         v.text(x + 28, cy + 50, "팬 속도 % (0~100)", size=12, color="#374151")
         v.input(x + 190, cy + 34, 80, 24, f"{k}_cmd_FanSpeedSP", f"{a} fan write")
         v.text(x + 28, cy + 80, "펌프 부하 % (60~100)", size=12, color="#374151")
         v.input(x + 190, cy + 64, 80, 24, f"{k}_cmd_LoadSP", f"{a} load write")
-        v.button(x + 285, cy + 34, 70, 24, f"{k}_cmd_Reset", "RESET", "RESET", 1, bg="#dc2626")
+        v.button(x + 285, cy + 34, 70, 28, f"{k}_cmd_Reset", "정지 해제", "정지 해제", 1, bg="#3859d6")
         v.text(x + 28, cy + 110, "모드 변경 명령", size=12, color="#374151")
         v.select(x + 190, cy + 94, 165, 24, f"{k}_mode_set", f"{a} mode set",
-                 [("", "전환할 모드 선택"), (1, "REMOTE_MANUAL"), (2, "REMOTE_AUTO"), (0, "LOCAL")])
-        v.text(x + 28, cy + 140, "마지막 명령 ACK", size=12, color="#374151")
+                 [("", "전환할 모드 선택"), (1, "원격 수동"), (2, "원격 자동"), (0, "현장 제어")])
+        v.text(x + 28, cy + 140, "최근 명령 결과", size=12, color="#374151")
         v.value(x + 190, cy + 140, f"{k}_result", f"{a} ack", w=80, size=12, color="#111827")
-        v.value(x + 260, cy + 140, f"{k}_reason", f"{a} ack reason", w=90, size=11, color="#b91c1c")
+        v.text(x + 28, cy + 164, "확인 사항", size=12, color="#374151")
+        v.value(x + 145, cy + 164, f"{k}_reason", f"{a} ack reason", w=200, size=12, color="#b91c1c")
 
         # IT alert text
-        v.text(x + 16, y + 510, "IT 경보 (Flink CEP → cmd-gateway 중계)", size=12, weight="bold", color="#7f1d1d")
-        v.value(x + 16, y + 535, f"{k}_alert_text", f"{a} alert text", w=335, size=12, color="#7f1d1d")
-        v.text(x + 16, y + 580, "IT가 멈춰도 이 화면과 수동 조작·인터록은 계속 동작한다.", size=11, color="#9ca3af")
+        v.text(x + 16, y + 542, "최근 경보 · IT 분석망에서 전달", size=12, weight="bold", color="#4b5c73")
+        v.value(x + 16, y + 566, f"{k}_alert_text", f"{a} alert text", w=335, size=13, color="#374151")
+        v.text(x + 16, y + 606, "분석망과 별개로 현장 제어·보호 정지는 유지됩니다.", size=11, color="#65748b")
+        v.svg.append('</svg>')
 
     view_id = "v_hyd_overview"
     return {"id": view_id, "name": "설비 현황",
@@ -243,7 +245,22 @@ def build_project():
                           "tags": build_tags()}},
         "hmi": {"views": [view],
                 "layout": {"start": view["id"], "zoom": "disabled",
-                           "customStyles": "#container { width: 100% !important; } #home { display: block; width: 100% !important; } #home #content { width: 100% !important; } #home #content > svg { width: 100%; height: auto; display: block; }",
+                           "customStyles": """
+                           #container { width: 100% !important; }
+                           #home { display: block; width: 100% !important; }
+                           #home #content { width: 100% !important; }
+                           #home #content > svg { width: 100%; height: 730px; display: block; }
+                           .hyd-unit { overflow: visible; }
+                           @media (max-width: 1399px) {
+                             #home #content > svg { height: 1390px; }
+                             .hyd-unit-2 { transform: translate(-774px, 660px); }
+                           }
+                           @media (max-width: 999px) {
+                             #home #content > svg { height: 2050px; }
+                             .hyd-unit-1 { transform: translate(-387px, 660px); }
+                             .hyd-unit-2 { transform: translate(-774px, 1320px); }
+                           }
+                           """,
                            "header": {"bkcolor": "#ffffff", "fgcolor": "#1f2937"},
                            "navigation": {"mode": "fix", "type": "inline",
                                           "bkcolor": "#f4f5f7", "fgcolor": "#1f2937",

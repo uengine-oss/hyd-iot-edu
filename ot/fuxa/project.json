@@ -120,10 +120,10 @@
      "name": "HYD-01 mode",
      "type": "json",
      "address": "plant/hyd01/status",
-     "memaddress": "mode",
+     "memaddress": "mode_text",
      "options": {
       "subs": [
-       "mode"
+       "mode_text"
       ]
      }
     },
@@ -132,10 +132,10 @@
      "name": "HYD-01 state",
      "type": "json",
      "address": "plant/hyd01/status",
-     "memaddress": "state",
+     "memaddress": "state_text",
      "options": {
       "subs": [
-       "state"
+       "state_text"
       ]
      }
     },
@@ -144,10 +144,10 @@
      "name": "HYD-01 result",
      "type": "json",
      "address": "plant/hyd01/status",
-     "memaddress": "result",
+     "memaddress": "result_text",
      "options": {
       "subs": [
-       "result"
+       "result_text"
       ]
      }
     },
@@ -156,10 +156,10 @@
      "name": "HYD-01 reason",
      "type": "json",
      "address": "plant/hyd01/status",
-     "memaddress": "reason_display",
+     "memaddress": "reason_text",
      "options": {
       "subs": [
-       "reason_display"
+       "reason_text"
       ]
      }
     },
@@ -180,10 +180,10 @@
      "name": "HYD-01 IT alert text",
      "type": "json",
      "address": "plant/hyd01/alert",
-     "memaddress": "text",
+     "memaddress": "display_text",
      "options": {
       "subs": [
-       "text"
+       "display_text"
       ]
      }
     },
@@ -340,10 +340,10 @@
      "name": "HYD-02 mode",
      "type": "json",
      "address": "plant/hyd02/status",
-     "memaddress": "mode",
+     "memaddress": "mode_text",
      "options": {
       "subs": [
-       "mode"
+       "mode_text"
       ]
      }
     },
@@ -352,10 +352,10 @@
      "name": "HYD-02 state",
      "type": "json",
      "address": "plant/hyd02/status",
-     "memaddress": "state",
+     "memaddress": "state_text",
      "options": {
       "subs": [
-       "state"
+       "state_text"
       ]
      }
     },
@@ -364,10 +364,10 @@
      "name": "HYD-02 result",
      "type": "json",
      "address": "plant/hyd02/status",
-     "memaddress": "result",
+     "memaddress": "result_text",
      "options": {
       "subs": [
-       "result"
+       "result_text"
       ]
      }
     },
@@ -376,10 +376,10 @@
      "name": "HYD-02 reason",
      "type": "json",
      "address": "plant/hyd02/status",
-     "memaddress": "reason_display",
+     "memaddress": "reason_text",
      "options": {
       "subs": [
-       "reason_display"
+       "reason_text"
       ]
      }
     },
@@ -400,10 +400,10 @@
      "name": "HYD-02 IT alert text",
      "type": "json",
      "address": "plant/hyd02/alert",
-     "memaddress": "text",
+     "memaddress": "display_text",
      "options": {
       "subs": [
-       "text"
+       "display_text"
       ]
      }
     },
@@ -560,10 +560,10 @@
      "name": "HYD-03 mode",
      "type": "json",
      "address": "plant/hyd03/status",
-     "memaddress": "mode",
+     "memaddress": "mode_text",
      "options": {
       "subs": [
-       "mode"
+       "mode_text"
       ]
      }
     },
@@ -572,10 +572,10 @@
      "name": "HYD-03 state",
      "type": "json",
      "address": "plant/hyd03/status",
-     "memaddress": "state",
+     "memaddress": "state_text",
      "options": {
       "subs": [
-       "state"
+       "state_text"
       ]
      }
     },
@@ -584,10 +584,10 @@
      "name": "HYD-03 result",
      "type": "json",
      "address": "plant/hyd03/status",
-     "memaddress": "result",
+     "memaddress": "result_text",
      "options": {
       "subs": [
-       "result"
+       "result_text"
       ]
      }
     },
@@ -596,10 +596,10 @@
      "name": "HYD-03 reason",
      "type": "json",
      "address": "plant/hyd03/status",
-     "memaddress": "reason_display",
+     "memaddress": "reason_text",
      "options": {
       "subs": [
-       "reason_display"
+       "reason_text"
       ]
      }
     },
@@ -620,10 +620,10 @@
      "name": "HYD-03 IT alert text",
      "type": "json",
      "address": "plant/hyd03/alert",
-     "memaddress": "text",
+     "memaddress": "display_text",
      "options": {
       "subs": [
-       "text"
+       "display_text"
       ]
      }
     },
@@ -694,8 +694,8 @@
      "margin": 10
     },
     "items": {
-     "GSE_8e41837c-ee6d-4b48-93c7-4113379ab5f3": {
-      "id": "GSE_8e41837c-ee6d-4b48-93c7-4113379ab5f3",
+     "GSE_450e3abd-9d84-4cd2-a20e-a05445161bed": {
+      "id": "GSE_450e3abd-9d84-4cd2-a20e-a05445161bed",
       "type": "svg-ext-gauge_semaphore",
       "name": "HYD-01 alert",
       "label": "HtmlSemaphore",
@@ -724,8 +724,8 @@
        ]
       }
      },
-     "VAL_3069e617-aa2f-4a7d-be7a-8d1056bff704": {
-      "id": "VAL_3069e617-aa2f-4a7d-be7a-8d1056bff704",
+     "VAL_f25b8c7a-0537-4174-ae3e-a9e52ff87eee": {
+      "id": "VAL_f25b8c7a-0537-4174-ae3e-a9e52ff87eee",
       "type": "svg-ext-value",
       "name": "HYD-01 mode",
       "label": "Value",
@@ -748,8 +748,8 @@
        ]
       }
      },
-     "VAL_21ff9cbd-d045-4678-9718-3ae69608a958": {
-      "id": "VAL_21ff9cbd-d045-4678-9718-3ae69608a958",
+     "VAL_e6bea797-93ef-4fa6-bede-eab2d25f2012": {
+      "id": "VAL_e6bea797-93ef-4fa6-bede-eab2d25f2012",
       "type": "svg-ext-value",
       "name": "HYD-01 state",
       "label": "Value",
@@ -772,8 +772,8 @@
        ]
       }
      },
-     "GXP_e9ff2c74-603a-4eb6-97db-6139cc5bee23": {
-      "id": "GXP_e9ff2c74-603a-4eb6-97db-6139cc5bee23",
+     "GXP_f0a6f678-a485-4129-b6f7-d118a4505817": {
+      "id": "GXP_f0a6f678-a485-4129-b6f7-d118a4505817",
       "type": "svg-ext-gauge_progress",
       "name": "HYD-01 TS1",
       "label": "HtmlProgress",
@@ -800,8 +800,8 @@
        "variableSrc": "emqx"
       }
      },
-     "VAL_11f39a06-648d-4d5a-bc9e-db370e5d23f3": {
-      "id": "VAL_11f39a06-648d-4d5a-bc9e-db370e5d23f3",
+     "VAL_87834b14-09aa-4394-ac86-abba6706c9ee": {
+      "id": "VAL_87834b14-09aa-4394-ac86-abba6706c9ee",
       "type": "svg-ext-value",
       "name": "HYD-01 TS1",
       "label": "Value",
@@ -824,8 +824,8 @@
        ]
       }
      },
-     "VAL_66248890-bf19-4866-9ee5-889d3bcd9dde": {
-      "id": "VAL_66248890-bf19-4866-9ee5-889d3bcd9dde",
+     "VAL_061b6ce7-520f-48a9-957c-fee0a27d8001": {
+      "id": "VAL_061b6ce7-520f-48a9-957c-fee0a27d8001",
       "type": "svg-ext-value",
       "name": "냉각 효율 CE",
       "label": "Value",
@@ -848,8 +848,8 @@
        ]
       }
      },
-     "VAL_67438e49-9650-4091-ba68-fc55a683cb11": {
-      "id": "VAL_67438e49-9650-4091-ba68-fc55a683cb11",
+     "VAL_cbed2ad6-0034-40e4-bdff-b0efe79aab36": {
+      "id": "VAL_cbed2ad6-0034-40e4-bdff-b0efe79aab36",
       "type": "svg-ext-value",
       "name": "냉각 능력 CP",
       "label": "Value",
@@ -872,8 +872,8 @@
        ]
       }
      },
-     "VAL_d9e33fc4-6360-4006-9b39-447d4c7334a8": {
-      "id": "VAL_d9e33fc4-6360-4006-9b39-447d4c7334a8",
+     "VAL_43cd8f26-369f-4d9d-a564-93243a76230d": {
+      "id": "VAL_43cd8f26-369f-4d9d-a564-93243a76230d",
       "type": "svg-ext-value",
       "name": "시스템 효율 SE",
       "label": "Value",
@@ -896,8 +896,8 @@
        ]
       }
      },
-     "VAL_b8185e10-1e06-44b6-a149-d8a33d728895": {
-      "id": "VAL_b8185e10-1e06-44b6-a149-d8a33d728895",
+     "VAL_535f6666-551e-4d5e-ae69-203332a121a3": {
+      "id": "VAL_535f6666-551e-4d5e-ae69-203332a121a3",
       "type": "svg-ext-value",
       "name": "진동 VS1",
       "label": "Value",
@@ -920,8 +920,8 @@
        ]
       }
      },
-     "VAL_3e43e781-8f9a-4097-91a8-c7aa5c35efc7": {
-      "id": "VAL_3e43e781-8f9a-4097-91a8-c7aa5c35efc7",
+     "VAL_0c298c61-c211-48ad-96d1-4436db5b0d12": {
+      "id": "VAL_0c298c61-c211-48ad-96d1-4436db5b0d12",
       "type": "svg-ext-value",
       "name": "압력 PS1",
       "label": "Value",
@@ -944,8 +944,8 @@
        ]
       }
      },
-     "VAL_400e4a16-4ff3-4ad1-bce7-9b2c0d20b42e": {
-      "id": "VAL_400e4a16-4ff3-4ad1-bce7-9b2c0d20b42e",
+     "VAL_cf568b06-fc05-414b-aff5-9fd32673485e": {
+      "id": "VAL_cf568b06-fc05-414b-aff5-9fd32673485e",
       "type": "svg-ext-value",
       "name": "팬 속도 SP",
       "label": "Value",
@@ -968,8 +968,8 @@
        ]
       }
      },
-     "VAL_3a10761e-f8e6-4611-91b1-a85fc88d54a9": {
-      "id": "VAL_3a10761e-f8e6-4611-91b1-a85fc88d54a9",
+     "VAL_8ec24ed1-8ee4-4f78-85e8-6f202495d82c": {
+      "id": "VAL_8ec24ed1-8ee4-4f78-85e8-6f202495d82c",
       "type": "svg-ext-value",
       "name": "펌프 부하 SP",
       "label": "Value",
@@ -992,8 +992,8 @@
        ]
       }
      },
-     "HXI_625d4a16-cc51-4947-a079-3fcde1bbf1c2": {
-      "id": "HXI_625d4a16-cc51-4947-a079-3fcde1bbf1c2",
+     "HXI_e9d851ac-5895-48cf-9db2-769106d822f0": {
+      "id": "HXI_e9d851ac-5895-48cf-9db2-769106d822f0",
       "type": "svg-ext-html_input",
       "name": "HYD-01 fan write",
       "label": "HtmlInput",
@@ -1008,8 +1008,8 @@
        "alarmColor": ""
       }
      },
-     "HXI_fdd2351e-c6e7-421e-a45c-b49117f26b85": {
-      "id": "HXI_fdd2351e-c6e7-421e-a45c-b49117f26b85",
+     "HXI_f45a535b-cd37-429f-91a8-95c2c8e1f02d": {
+      "id": "HXI_f45a535b-cd37-429f-91a8-95c2c8e1f02d",
       "type": "svg-ext-html_input",
       "name": "HYD-01 load write",
       "label": "HtmlInput",
@@ -1024,10 +1024,10 @@
        "alarmColor": ""
       }
      },
-     "HXB_e1ba6e4e-5602-44d5-b452-80a1206c8356": {
-      "id": "HXB_e1ba6e4e-5602-44d5-b452-80a1206c8356",
+     "HXB_056741cc-5505-45b8-a8a0-32873f1c6192": {
+      "id": "HXB_056741cc-5505-45b8-a8a0-32873f1c6192",
       "type": "svg-ext-html_button",
-      "name": "RESET",
+      "name": "정지 해제",
       "label": "HtmlButton",
       "property": {
        "events": [
@@ -1037,7 +1037,7 @@
          "actparam": "1"
         }
        ],
-       "variable": "RESET",
+       "variable": "정지 해제",
        "variableId": "hyd01_cmd_Reset",
        "variableSrc": "emqx",
        "alarmId": "",
@@ -1046,8 +1046,8 @@
        "alarmColor": ""
       }
      },
-     "HXS_d1e03ca0-43ab-4998-bbc4-8888dacf6566": {
-      "id": "HXS_d1e03ca0-43ab-4998-bbc4-8888dacf6566",
+     "HXS_1f384487-cab6-4182-8fe2-c55730c477c5": {
+      "id": "HXS_1f384487-cab6-4182-8fe2-c55730c477c5",
       "type": "svg-ext-html_select",
       "name": "HYD-01 mode set",
       "label": "HtmlSelect",
@@ -1071,25 +1071,25 @@
          "type": "step",
          "min": "1",
          "max": "1",
-         "text": "REMOTE_MANUAL"
+         "text": "원격 수동"
         },
         {
          "type": "step",
          "min": "2",
          "max": "2",
-         "text": "REMOTE_AUTO"
+         "text": "원격 자동"
         },
         {
          "type": "step",
          "min": "0",
          "max": "0",
-         "text": "LOCAL"
+         "text": "현장 제어"
         }
        ]
       }
      },
-     "VAL_92f6d1bd-9e44-485f-a4ac-1ebd3124a621": {
-      "id": "VAL_92f6d1bd-9e44-485f-a4ac-1ebd3124a621",
+     "VAL_8d868a64-4685-42b7-b87e-40a0257c015d": {
+      "id": "VAL_8d868a64-4685-42b7-b87e-40a0257c015d",
       "type": "svg-ext-value",
       "name": "HYD-01 ack",
       "label": "Value",
@@ -1112,8 +1112,8 @@
        ]
       }
      },
-     "VAL_66beb83e-ea3f-439d-955b-3adb1c528314": {
-      "id": "VAL_66beb83e-ea3f-439d-955b-3adb1c528314",
+     "VAL_3dffe064-b8aa-435c-b965-a9d78e47507d": {
+      "id": "VAL_3dffe064-b8aa-435c-b965-a9d78e47507d",
       "type": "svg-ext-value",
       "name": "HYD-01 ack reason",
       "label": "Value",
@@ -1136,8 +1136,8 @@
        ]
       }
      },
-     "VAL_454441a8-83c9-4448-8d71-28c09c46cf0e": {
-      "id": "VAL_454441a8-83c9-4448-8d71-28c09c46cf0e",
+     "VAL_ddfa300e-4041-4eea-b0e9-055d2851ef20": {
+      "id": "VAL_ddfa300e-4041-4eea-b0e9-055d2851ef20",
       "type": "svg-ext-value",
       "name": "HYD-01 alert text",
       "label": "Value",
@@ -1160,8 +1160,8 @@
        ]
       }
      },
-     "GSE_4a2d1ab8-493c-4da1-83fb-956805ab898d": {
-      "id": "GSE_4a2d1ab8-493c-4da1-83fb-956805ab898d",
+     "GSE_cc16a5fa-11a9-4c88-9598-b6ebdb5e4405": {
+      "id": "GSE_cc16a5fa-11a9-4c88-9598-b6ebdb5e4405",
       "type": "svg-ext-gauge_semaphore",
       "name": "HYD-02 alert",
       "label": "HtmlSemaphore",
@@ -1190,8 +1190,8 @@
        ]
       }
      },
-     "VAL_204395d2-28c8-4eed-9e19-0f6a3e9758be": {
-      "id": "VAL_204395d2-28c8-4eed-9e19-0f6a3e9758be",
+     "VAL_7d1f29c4-c2eb-4529-8165-7ce1de986c94": {
+      "id": "VAL_7d1f29c4-c2eb-4529-8165-7ce1de986c94",
       "type": "svg-ext-value",
       "name": "HYD-02 mode",
       "label": "Value",
@@ -1214,8 +1214,8 @@
        ]
       }
      },
-     "VAL_b22a342b-0d01-4c82-9fa3-06daf1f6d2b3": {
-      "id": "VAL_b22a342b-0d01-4c82-9fa3-06daf1f6d2b3",
+     "VAL_a64f8e9a-3900-4d34-88c4-23ee1dfc66ec": {
+      "id": "VAL_a64f8e9a-3900-4d34-88c4-23ee1dfc66ec",
       "type": "svg-ext-value",
       "name": "HYD-02 state",
       "label": "Value",
@@ -1238,8 +1238,8 @@
        ]
       }
      },
-     "GXP_8a36c633-d10d-4df3-808b-3f19a46983c4": {
-      "id": "GXP_8a36c633-d10d-4df3-808b-3f19a46983c4",
+     "GXP_9731128a-111e-4898-8c80-58429c35db0b": {
+      "id": "GXP_9731128a-111e-4898-8c80-58429c35db0b",
       "type": "svg-ext-gauge_progress",
       "name": "HYD-02 TS1",
       "label": "HtmlProgress",
@@ -1266,8 +1266,8 @@
        "variableSrc": "emqx"
       }
      },
-     "VAL_180a8b21-229d-4fd7-a5fe-2c54365efa59": {
-      "id": "VAL_180a8b21-229d-4fd7-a5fe-2c54365efa59",
+     "VAL_1e44f699-f222-44a5-9c29-9aa1a208cce3": {
+      "id": "VAL_1e44f699-f222-44a5-9c29-9aa1a208cce3",
       "type": "svg-ext-value",
       "name": "HYD-02 TS1",
       "label": "Value",
@@ -1290,8 +1290,8 @@
        ]
       }
      },
-     "VAL_df904f68-926b-4ea4-b2e6-08970729da4b": {
-      "id": "VAL_df904f68-926b-4ea4-b2e6-08970729da4b",
+     "VAL_4ca8c745-e359-43e1-9b35-8ca3a136ca02": {
+      "id": "VAL_4ca8c745-e359-43e1-9b35-8ca3a136ca02",
       "type": "svg-ext-value",
       "name": "냉각 효율 CE",
       "label": "Value",
@@ -1314,8 +1314,8 @@
        ]
       }
      },
-     "VAL_ecc4b0d7-1558-447e-99d5-61e6a1344c12": {
-      "id": "VAL_ecc4b0d7-1558-447e-99d5-61e6a1344c12",
+     "VAL_8218344f-6769-41c7-a4e5-9e762439a75f": {
+      "id": "VAL_8218344f-6769-41c7-a4e5-9e762439a75f",
       "type": "svg-ext-value",
       "name": "냉각 능력 CP",
       "label": "Value",
@@ -1338,8 +1338,8 @@
        ]
       }
      },
-     "VAL_323eab3c-943a-45ae-a9b4-67e6cd7a68cc": {
-      "id": "VAL_323eab3c-943a-45ae-a9b4-67e6cd7a68cc",
+     "VAL_4323fbbe-aae5-4768-996d-6f9c21b166f8": {
+      "id": "VAL_4323fbbe-aae5-4768-996d-6f9c21b166f8",
       "type": "svg-ext-value",
       "name": "시스템 효율 SE",
       "label": "Value",
@@ -1362,8 +1362,8 @@
        ]
       }
      },
-     "VAL_dcb573df-86b7-4135-88bc-043321f47c4c": {
-      "id": "VAL_dcb573df-86b7-4135-88bc-043321f47c4c",
+     "VAL_de653be8-4091-4c6b-aee2-04d74d90af3a": {
+      "id": "VAL_de653be8-4091-4c6b-aee2-04d74d90af3a",
       "type": "svg-ext-value",
       "name": "진동 VS1",
       "label": "Value",
@@ -1386,8 +1386,8 @@
        ]
       }
      },
-     "VAL_e92fcd5b-aa38-4ac8-b09d-9269fb1cc3af": {
-      "id": "VAL_e92fcd5b-aa38-4ac8-b09d-9269fb1cc3af",
+     "VAL_c53dc75a-6fe5-46bc-96ed-4f59dadac384": {
+      "id": "VAL_c53dc75a-6fe5-46bc-96ed-4f59dadac384",
       "type": "svg-ext-value",
       "name": "압력 PS1",
       "label": "Value",
@@ -1410,8 +1410,8 @@
        ]
       }
      },
-     "VAL_ff5768d4-28ac-408e-b3e0-76e8bf05795f": {
-      "id": "VAL_ff5768d4-28ac-408e-b3e0-76e8bf05795f",
+     "VAL_5728eb95-db34-4e1f-9062-4d3ef7c328fa": {
+      "id": "VAL_5728eb95-db34-4e1f-9062-4d3ef7c328fa",
       "type": "svg-ext-value",
       "name": "팬 속도 SP",
       "label": "Value",
@@ -1434,8 +1434,8 @@
        ]
       }
      },
-     "VAL_d94461e4-289d-404a-8dc0-0a50d9ed1442": {
-      "id": "VAL_d94461e4-289d-404a-8dc0-0a50d9ed1442",
+     "VAL_8ac64e1c-e558-492e-be2f-2d10b5d8468d": {
+      "id": "VAL_8ac64e1c-e558-492e-be2f-2d10b5d8468d",
       "type": "svg-ext-value",
       "name": "펌프 부하 SP",
       "label": "Value",
@@ -1458,8 +1458,8 @@
        ]
       }
      },
-     "HXI_ba2a2858-84a3-47f6-9ad6-c02f15ad422e": {
-      "id": "HXI_ba2a2858-84a3-47f6-9ad6-c02f15ad422e",
+     "HXI_d4652da9-0df4-4906-8c8e-fb91783b6248": {
+      "id": "HXI_d4652da9-0df4-4906-8c8e-fb91783b6248",
       "type": "svg-ext-html_input",
       "name": "HYD-02 fan write",
       "label": "HtmlInput",
@@ -1474,8 +1474,8 @@
        "alarmColor": ""
       }
      },
-     "HXI_2e1cb0e4-c1fb-42bc-9ef6-d15cb2ea6424": {
-      "id": "HXI_2e1cb0e4-c1fb-42bc-9ef6-d15cb2ea6424",
+     "HXI_6761931e-8129-43b2-ae26-420534a3ad1c": {
+      "id": "HXI_6761931e-8129-43b2-ae26-420534a3ad1c",
       "type": "svg-ext-html_input",
       "name": "HYD-02 load write",
       "label": "HtmlInput",
@@ -1490,10 +1490,10 @@
        "alarmColor": ""
       }
      },
-     "HXB_7e8a7724-459b-4a22-b050-01085874e028": {
-      "id": "HXB_7e8a7724-459b-4a22-b050-01085874e028",
+     "HXB_cdb24644-5beb-4e43-9cdf-9c64408d9b92": {
+      "id": "HXB_cdb24644-5beb-4e43-9cdf-9c64408d9b92",
       "type": "svg-ext-html_button",
-      "name": "RESET",
+      "name": "정지 해제",
       "label": "HtmlButton",
       "property": {
        "events": [
@@ -1503,7 +1503,7 @@
          "actparam": "1"
         }
        ],
-       "variable": "RESET",
+       "variable": "정지 해제",
        "variableId": "hyd02_cmd_Reset",
        "variableSrc": "emqx",
        "alarmId": "",
@@ -1512,8 +1512,8 @@
        "alarmColor": ""
       }
      },
-     "HXS_ad93ba78-f516-40ae-9f31-7ac215776bff": {
-      "id": "HXS_ad93ba78-f516-40ae-9f31-7ac215776bff",
+     "HXS_9fee85ff-e413-4f51-b373-af73e01305bb": {
+      "id": "HXS_9fee85ff-e413-4f51-b373-af73e01305bb",
       "type": "svg-ext-html_select",
       "name": "HYD-02 mode set",
       "label": "HtmlSelect",
@@ -1537,25 +1537,25 @@
          "type": "step",
          "min": "1",
          "max": "1",
-         "text": "REMOTE_MANUAL"
+         "text": "원격 수동"
         },
         {
          "type": "step",
          "min": "2",
          "max": "2",
-         "text": "REMOTE_AUTO"
+         "text": "원격 자동"
         },
         {
          "type": "step",
          "min": "0",
          "max": "0",
-         "text": "LOCAL"
+         "text": "현장 제어"
         }
        ]
       }
      },
-     "VAL_fe4fd23a-6101-419d-a94a-38126d7c64ce": {
-      "id": "VAL_fe4fd23a-6101-419d-a94a-38126d7c64ce",
+     "VAL_db4b9d72-7056-49bf-98bc-e9b1badf62f6": {
+      "id": "VAL_db4b9d72-7056-49bf-98bc-e9b1badf62f6",
       "type": "svg-ext-value",
       "name": "HYD-02 ack",
       "label": "Value",
@@ -1578,8 +1578,8 @@
        ]
       }
      },
-     "VAL_ed7d79ee-237f-4ea3-8fb3-8c7723a573cc": {
-      "id": "VAL_ed7d79ee-237f-4ea3-8fb3-8c7723a573cc",
+     "VAL_28dd55d2-4666-4e70-b29c-c7bc2428c9b5": {
+      "id": "VAL_28dd55d2-4666-4e70-b29c-c7bc2428c9b5",
       "type": "svg-ext-value",
       "name": "HYD-02 ack reason",
       "label": "Value",
@@ -1602,8 +1602,8 @@
        ]
       }
      },
-     "VAL_5c7d38f0-ac96-439c-b272-3c48f48acb25": {
-      "id": "VAL_5c7d38f0-ac96-439c-b272-3c48f48acb25",
+     "VAL_789c8642-ca25-4834-b87d-cdc331158a86": {
+      "id": "VAL_789c8642-ca25-4834-b87d-cdc331158a86",
       "type": "svg-ext-value",
       "name": "HYD-02 alert text",
       "label": "Value",
@@ -1626,8 +1626,8 @@
        ]
       }
      },
-     "GSE_a9e77b48-37dd-4b68-b943-7d20f528b929": {
-      "id": "GSE_a9e77b48-37dd-4b68-b943-7d20f528b929",
+     "GSE_bbb78fd0-5add-4030-af82-9404123d9ca3": {
+      "id": "GSE_bbb78fd0-5add-4030-af82-9404123d9ca3",
       "type": "svg-ext-gauge_semaphore",
       "name": "HYD-03 alert",
       "label": "HtmlSemaphore",
@@ -1656,8 +1656,8 @@
        ]
       }
      },
-     "VAL_cffcd847-413c-4e8c-9d8f-adfda729c25b": {
-      "id": "VAL_cffcd847-413c-4e8c-9d8f-adfda729c25b",
+     "VAL_71b856f9-4918-439e-ac49-19d41257017e": {
+      "id": "VAL_71b856f9-4918-439e-ac49-19d41257017e",
       "type": "svg-ext-value",
       "name": "HYD-03 mode",
       "label": "Value",
@@ -1680,8 +1680,8 @@
        ]
       }
      },
-     "VAL_d245987c-721d-48e8-b95b-8923d1dd5402": {
-      "id": "VAL_d245987c-721d-48e8-b95b-8923d1dd5402",
+     "VAL_7a7449b2-7e05-4091-927c-0c198d7e472d": {
+      "id": "VAL_7a7449b2-7e05-4091-927c-0c198d7e472d",
       "type": "svg-ext-value",
       "name": "HYD-03 state",
       "label": "Value",
@@ -1704,8 +1704,8 @@
        ]
       }
      },
-     "GXP_f984e72c-1e3d-4408-8d57-a72a54efb414": {
-      "id": "GXP_f984e72c-1e3d-4408-8d57-a72a54efb414",
+     "GXP_f8c1f7d0-d15a-4021-9279-605a35578f52": {
+      "id": "GXP_f8c1f7d0-d15a-4021-9279-605a35578f52",
       "type": "svg-ext-gauge_progress",
       "name": "HYD-03 TS1",
       "label": "HtmlProgress",
@@ -1732,8 +1732,8 @@
        "variableSrc": "emqx"
       }
      },
-     "VAL_dbd042ec-0971-430c-9bfb-f32be0237f57": {
-      "id": "VAL_dbd042ec-0971-430c-9bfb-f32be0237f57",
+     "VAL_9971d7b3-f7dc-4e5b-ade1-f269847db8b2": {
+      "id": "VAL_9971d7b3-f7dc-4e5b-ade1-f269847db8b2",
       "type": "svg-ext-value",
       "name": "HYD-03 TS1",
       "label": "Value",
@@ -1756,8 +1756,8 @@
        ]
       }
      },
-     "VAL_7c7b9b45-e961-447e-a207-bc756a896f4a": {
-      "id": "VAL_7c7b9b45-e961-447e-a207-bc756a896f4a",
+     "VAL_dfbc8bb1-3f4d-4ac2-a6e8-55ea08061e33": {
+      "id": "VAL_dfbc8bb1-3f4d-4ac2-a6e8-55ea08061e33",
       "type": "svg-ext-value",
       "name": "냉각 효율 CE",
       "label": "Value",
@@ -1780,8 +1780,8 @@
        ]
       }
      },
-     "VAL_d9757796-8616-42ab-9cc1-a6dfa9c22567": {
-      "id": "VAL_d9757796-8616-42ab-9cc1-a6dfa9c22567",
+     "VAL_0eeaad55-27da-4330-956e-d3e6307a92ed": {
+      "id": "VAL_0eeaad55-27da-4330-956e-d3e6307a92ed",
       "type": "svg-ext-value",
       "name": "냉각 능력 CP",
       "label": "Value",
@@ -1804,8 +1804,8 @@
        ]
       }
      },
-     "VAL_c311d6c6-1522-4566-a0a3-e805c29461b1": {
-      "id": "VAL_c311d6c6-1522-4566-a0a3-e805c29461b1",
+     "VAL_d11ccd83-8c92-4509-86e6-5109b30d2539": {
+      "id": "VAL_d11ccd83-8c92-4509-86e6-5109b30d2539",
       "type": "svg-ext-value",
       "name": "시스템 효율 SE",
       "label": "Value",
@@ -1828,8 +1828,8 @@
        ]
       }
      },
-     "VAL_28ad8e83-8441-4c31-b687-d01482d4c7ef": {
-      "id": "VAL_28ad8e83-8441-4c31-b687-d01482d4c7ef",
+     "VAL_f1ecc729-8165-4196-aea9-5ae704f51f63": {
+      "id": "VAL_f1ecc729-8165-4196-aea9-5ae704f51f63",
       "type": "svg-ext-value",
       "name": "진동 VS1",
       "label": "Value",
@@ -1852,8 +1852,8 @@
        ]
       }
      },
-     "VAL_4b8e599f-e2b0-4cb0-8a2a-32836726ed87": {
-      "id": "VAL_4b8e599f-e2b0-4cb0-8a2a-32836726ed87",
+     "VAL_94d54077-6490-4221-b3d9-be607cfa39db": {
+      "id": "VAL_94d54077-6490-4221-b3d9-be607cfa39db",
       "type": "svg-ext-value",
       "name": "압력 PS1",
       "label": "Value",
@@ -1876,8 +1876,8 @@
        ]
       }
      },
-     "VAL_8f83b5cd-bd54-42cf-8508-4a520ebad1f6": {
-      "id": "VAL_8f83b5cd-bd54-42cf-8508-4a520ebad1f6",
+     "VAL_cef05f88-964f-45aa-81a2-c01dde851a90": {
+      "id": "VAL_cef05f88-964f-45aa-81a2-c01dde851a90",
       "type": "svg-ext-value",
       "name": "팬 속도 SP",
       "label": "Value",
@@ -1900,8 +1900,8 @@
        ]
       }
      },
-     "VAL_788e9464-bfca-469b-9aea-63c66d76d5f5": {
-      "id": "VAL_788e9464-bfca-469b-9aea-63c66d76d5f5",
+     "VAL_18a84f0f-a9fb-423e-8448-0b2c8dee4e22": {
+      "id": "VAL_18a84f0f-a9fb-423e-8448-0b2c8dee4e22",
       "type": "svg-ext-value",
       "name": "펌프 부하 SP",
       "label": "Value",
@@ -1924,8 +1924,8 @@
        ]
       }
      },
-     "HXI_d3b76f21-08f3-4a27-a3f6-020e5123cc7c": {
-      "id": "HXI_d3b76f21-08f3-4a27-a3f6-020e5123cc7c",
+     "HXI_c1b0baa9-25a7-463a-8e64-11ced732fff5": {
+      "id": "HXI_c1b0baa9-25a7-463a-8e64-11ced732fff5",
       "type": "svg-ext-html_input",
       "name": "HYD-03 fan write",
       "label": "HtmlInput",
@@ -1940,8 +1940,8 @@
        "alarmColor": ""
       }
      },
-     "HXI_b2d6b1ec-b5b0-494e-8ecd-06fbe6e6aa0f": {
-      "id": "HXI_b2d6b1ec-b5b0-494e-8ecd-06fbe6e6aa0f",
+     "HXI_9476ec84-0a2e-4e91-8890-59a69926cf77": {
+      "id": "HXI_9476ec84-0a2e-4e91-8890-59a69926cf77",
       "type": "svg-ext-html_input",
       "name": "HYD-03 load write",
       "label": "HtmlInput",
@@ -1956,10 +1956,10 @@
        "alarmColor": ""
       }
      },
-     "HXB_f0fd71d3-fb8a-4cde-a8b4-6453dbe11cb9": {
-      "id": "HXB_f0fd71d3-fb8a-4cde-a8b4-6453dbe11cb9",
+     "HXB_40f8980e-d546-479c-97ec-fb106334a60e": {
+      "id": "HXB_40f8980e-d546-479c-97ec-fb106334a60e",
       "type": "svg-ext-html_button",
-      "name": "RESET",
+      "name": "정지 해제",
       "label": "HtmlButton",
       "property": {
        "events": [
@@ -1969,7 +1969,7 @@
          "actparam": "1"
         }
        ],
-       "variable": "RESET",
+       "variable": "정지 해제",
        "variableId": "hyd03_cmd_Reset",
        "variableSrc": "emqx",
        "alarmId": "",
@@ -1978,8 +1978,8 @@
        "alarmColor": ""
       }
      },
-     "HXS_0ab382ed-70ad-4d9f-ad60-7699c75f7f77": {
-      "id": "HXS_0ab382ed-70ad-4d9f-ad60-7699c75f7f77",
+     "HXS_ba65ea73-b559-4cf4-8056-866572e008a8": {
+      "id": "HXS_ba65ea73-b559-4cf4-8056-866572e008a8",
       "type": "svg-ext-html_select",
       "name": "HYD-03 mode set",
       "label": "HtmlSelect",
@@ -2003,25 +2003,25 @@
          "type": "step",
          "min": "1",
          "max": "1",
-         "text": "REMOTE_MANUAL"
+         "text": "원격 수동"
         },
         {
          "type": "step",
          "min": "2",
          "max": "2",
-         "text": "REMOTE_AUTO"
+         "text": "원격 자동"
         },
         {
          "type": "step",
          "min": "0",
          "max": "0",
-         "text": "LOCAL"
+         "text": "현장 제어"
         }
        ]
       }
      },
-     "VAL_488ff5ae-ff43-4df0-b6ac-02e62c485dab": {
-      "id": "VAL_488ff5ae-ff43-4df0-b6ac-02e62c485dab",
+     "VAL_58b06025-4ef5-4784-9130-a1c537548d2e": {
+      "id": "VAL_58b06025-4ef5-4784-9130-a1c537548d2e",
       "type": "svg-ext-value",
       "name": "HYD-03 ack",
       "label": "Value",
@@ -2044,8 +2044,8 @@
        ]
       }
      },
-     "VAL_2006ce5c-a1e8-4e3f-aa90-cb55c67f7923": {
-      "id": "VAL_2006ce5c-a1e8-4e3f-aa90-cb55c67f7923",
+     "VAL_99668ec6-eea6-42a2-be4b-358ac24ff13c": {
+      "id": "VAL_99668ec6-eea6-42a2-be4b-358ac24ff13c",
       "type": "svg-ext-value",
       "name": "HYD-03 ack reason",
       "label": "Value",
@@ -2068,8 +2068,8 @@
        ]
       }
      },
-     "VAL_3fd025bb-7921-4240-82bd-76b705792a3e": {
-      "id": "VAL_3fd025bb-7921-4240-82bd-76b705792a3e",
+     "VAL_085d6b9a-32b5-498c-be25-edfdceae9f1a": {
+      "id": "VAL_085d6b9a-32b5-498c-be25-edfdceae9f1a",
       "type": "svg-ext-value",
       "name": "HYD-03 alert text",
       "label": "Value",
@@ -2094,13 +2094,13 @@
      }
     },
     "variables": {},
-    "svgcontent": "<svg width=\"1180\" height=\"720\" viewBox=\"0 0 1180 720\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" xmlns:html=\"http://www.w3.org/1999/xhtml\"><g><title>Layer 1</title>\n<text x=\"30\" y=\"40\" font-family=\"sans-serif\" font-size=\"22\" font-weight=\"bold\" fill=\"#111827\" text-anchor=\"start\" xml:space=\"preserve\">유압설비 운전 화면 — HYD-01 ~ 03 (OT · FUXA)</text>\n<text x=\"30\" y=\"62\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">1 Hz 태그: plant/{asset}/tag/*   ·   IT 경보 중계: plant/{asset}/alert   ·   수동 조작: plant/{asset}/cmd/manual</text>\n<rect x=\"20\" y=\"85\" width=\"372\" height=\"600\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"36\" y=\"115\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-01</text>\n<text x=\"110\" y=\"115\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_8e41837c-ee6d-4b48-93c7-4113379ab5f3\"><ellipse cx=\"170\" cy=\"110\" rx=\"14\" ry=\"14\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_d287d452-da3a-4dad-9c2a-5f154bbe6f10\"/></g>\n<text x=\"195\" y=\"115\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_3069e617-aa2f-4a7d-be7a-8d1056bff704\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_25300384-cad7-436a-b0a0-2d61d9af8b21\" y=\"115\" x=\"372\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"195\" y=\"137\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_21ff9cbd-d045-4678-9718-3ae69608a958\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_411c6960-19d9-4d91-ab89-d972b38c0226\" y=\"137\" x=\"372\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"36\" y=\"155\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_e9ff2c74-603a-4eb6-97db-6139cc5bee23\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"165\" x=\"36\" id=\"A-GXP_0824299a-ee20-4103-94f8-8f14be836394\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"275\" x=\"36\" id=\"B-GXP_86553d31-cc48-42ec-962c-54364989f74d\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_12779c66-4b4e-4536-b829-bae0fa59b86f\" width=\"40\" height=\"220\" y=\"165\" x=\"36\"/></g>\n<text x=\"82\" y=\"175\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"82\" y=\"237\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#ef4444\" text-anchor=\"start\" xml:space=\"preserve\">65 트립</text>\n<text x=\"82\" y=\"305\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"82\" y=\"385\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_11f39a06-648d-4d5a-bc9e-db370e5d23f3\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ae4b28bf-cc45-44e9-9063-d5bcf5cc490b\" y=\"215\" x=\"280\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"260\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_66248890-bf19-4866-9ee5-889d3bcd9dde\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_79772ee5-1121-4c8e-90f5-3f289881a349\" y=\"260\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"284\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_67438e49-9650-4091-ba68-fc55a683cb11\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_32cdd457-6b82-4c9b-886f-2fd87639b427\" y=\"284\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"308\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_d9e33fc4-6360-4006-9b39-447d4c7334a8\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ba7577ba-1d56-415b-b5a9-6b73da0bce35\" y=\"308\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"332\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_b8185e10-1e06-44b6-a149-d8a33d728895\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_13af6e87-3912-4afb-b2d2-0dbd427c94cd\" y=\"332\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"356\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_3e43e781-8f9a-4097-91a8-c7aa5c35efc7\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_f3f977a4-b8ce-4cb3-9b37-df2c20bcb43a\" y=\"356\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_400e4a16-4ff3-4ad1-bce7-9b2c0d20b42e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_612a424a-8533-4b43-afd3-36cfdab22e38\" y=\"380\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"140\" y=\"404\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_3a10761e-f8e6-4611-91b1-a85fc88d54a9\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_13b4a149-22ca-4ed4-8d6a-dc93596d77ba\" y=\"404\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"36\" y=\"415\" width=\"340\" height=\"150\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"48\" y=\"437\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"48\" y=\"465\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_625d4a16-cc51-4947-a079-3fcde1bbf1c2\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_ec6c7235-0e5a-4a76-b324-8d13b1fb01e1\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"449\" x=\"210\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_2e219aab-bc86-4183-b361-ab501c46401c\" width=\"80\" height=\"24\" y=\"449\" x=\"210\"><INPUT id=\"I-HXI_1f27620b-c1f0-4292-8e33-633585762446\" aria-label=\"HYD-01 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"48\" y=\"495\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_fdd2351e-c6e7-421e-a45c-b49117f26b85\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_bd69e898-d198-4396-8bc3-a096850ffe4a\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"479\" x=\"210\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_4b5447f2-bbe0-4a5e-9269-471ad06d1fde\" width=\"80\" height=\"24\" y=\"479\" x=\"210\"><INPUT id=\"I-HXI_b946f557-2c37-4c64-91ba-87d3e049e4df\" aria-label=\"HYD-01 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_e1ba6e4e-5602-44d5-b452-80a1206c8356\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"305\" y=\"449\" width=\"70\" height=\"24\" fill=\"#dc2626\" id=\"svg_665eac28-c597-4ba6-af22-ee3b4db89492\" stroke=\"#ffffff\"/><foreignObject x=\"305\" y=\"449\" height=\"24\" width=\"70\" id=\"H-HXB_56cc0aa8-d420-4202-9870-c1511455a80a\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #dc2626; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_56cc0aa8-d420-4202-9870-c1511455a80a\">RESET</BUTTON></foreignObject></g>\n<text x=\"48\" y=\"525\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_d1e03ca0-43ab-4998-bbc4-8888dacf6566\"><rect id=\"svg_7e921afb-e0d2-44f2-8890-34bf7cbb0d34\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"509\" x=\"210\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_18c9a95e-e1aa-404d-8027-a956c45e5e3b\" width=\"165\" height=\"24\" y=\"509\" x=\"210\"><SELECT aria-label=\"HYD-01 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_18c9a95e-e1aa-404d-8027-a956c45e5e3b\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"48\" y=\"555\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">마지막 명령 ACK</text>\n<g id=\"VAL_92f6d1bd-9e44-485f-a4ac-1ebd3124a621\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3a2a5b6c-c148-44f4-8aa2-80ecb05dd482\" y=\"555\" x=\"290\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<g id=\"VAL_66beb83e-ea3f-439d-955b-3adb1c528314\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"11\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1e86a79c-bd4c-48db-adf4-352015cf48ee\" y=\"555\" x=\"370\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"11\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"36\" y=\"595\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#7f1d1d\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보 (Flink CEP → cmd-gateway 중계)</text>\n<g id=\"VAL_454441a8-83c9-4448-8d71-28c09c46cf0e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ac9ce0e0-6f53-429e-ba5b-277b12909bf3\" y=\"620\" x=\"371\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#7f1d1d\" stroke-width=\"0\">–</text></g>\n<text x=\"36\" y=\"665\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">IT가 멈춰도 이 화면과 수동 조작·인터록은 계속 동작한다.</text>\n<rect x=\"407\" y=\"85\" width=\"372\" height=\"600\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"423\" y=\"115\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-02</text>\n<text x=\"497\" y=\"115\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_4a2d1ab8-493c-4da1-83fb-956805ab898d\"><ellipse cx=\"557\" cy=\"110\" rx=\"14\" ry=\"14\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_aa8bd65a-6e0a-4cf5-86f6-db0f73030ec4\"/></g>\n<text x=\"582\" y=\"115\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_204395d2-28c8-4eed-9e19-0f6a3e9758be\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_78083bc9-53cc-48a6-a57b-a5f80d4eebee\" y=\"115\" x=\"759\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"582\" y=\"137\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_b22a342b-0d01-4c82-9fa3-06daf1f6d2b3\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_8e75f255-91af-41af-8d79-17c355ae0429\" y=\"137\" x=\"759\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"423\" y=\"155\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_8a36c633-d10d-4df3-808b-3f19a46983c4\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"165\" x=\"423\" id=\"A-GXP_b1d7fa2a-64f4-4b85-9b73-cdc39494567c\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"275\" x=\"423\" id=\"B-GXP_733c3dd3-44c9-4224-8029-2d26049d7a1b\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_c600f666-15b8-4674-8022-918f3cac1778\" width=\"40\" height=\"220\" y=\"165\" x=\"423\"/></g>\n<text x=\"469\" y=\"175\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"469\" y=\"237\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#ef4444\" text-anchor=\"start\" xml:space=\"preserve\">65 트립</text>\n<text x=\"469\" y=\"305\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"469\" y=\"385\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_180a8b21-229d-4fd7-a5fe-2c54365efa59\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_add1262a-85f4-42f4-8e46-f1860ee0484e\" y=\"215\" x=\"667\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"260\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_df904f68-926b-4ea4-b2e6-08970729da4b\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_eda2f87c-4dc0-42ec-8c31-1a1259006c0a\" y=\"260\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"284\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_ecc4b0d7-1558-447e-99d5-61e6a1344c12\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_808d1667-5ed4-41ee-b2cd-36c3e5277114\" y=\"284\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"308\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_323eab3c-943a-45ae-a9b4-67e6cd7a68cc\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ffc0762e-af7a-48e6-b021-17983c557747\" y=\"308\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"332\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_dcb573df-86b7-4135-88bc-043321f47c4c\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ceb26a9c-c069-4b3f-965c-f7c7b84acfb4\" y=\"332\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"356\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_e92fcd5b-aa38-4ac8-b09d-9269fb1cc3af\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_0c18726c-78c2-4745-9cd2-7c591d93a23d\" y=\"356\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_ff5768d4-28ac-408e-b3e0-76e8bf05795f\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_a77dacf9-01ea-4573-b94e-b209a7eeec06\" y=\"380\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"527\" y=\"404\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_d94461e4-289d-404a-8dc0-0a50d9ed1442\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_89b8e056-1a41-42b1-8048-dbcc727d9b76\" y=\"404\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"423\" y=\"415\" width=\"340\" height=\"150\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"435\" y=\"437\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"435\" y=\"465\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_ba2a2858-84a3-47f6-9ad6-c02f15ad422e\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_69c5f92b-648a-4464-ae60-8f1cf2f1d3f3\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"449\" x=\"597\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_ae633a70-9e59-4b9e-afa5-2e7356cb2972\" width=\"80\" height=\"24\" y=\"449\" x=\"597\"><INPUT id=\"I-HXI_0a12e1d9-34b1-45ab-b501-78d206d0b982\" aria-label=\"HYD-02 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"435\" y=\"495\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_2e1cb0e4-c1fb-42bc-9ef6-d15cb2ea6424\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_538ff8fe-7265-4d4c-aeb2-2a421c8ac98d\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"479\" x=\"597\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_e2820c56-cbb2-4850-8d0e-5eceaabade9a\" width=\"80\" height=\"24\" y=\"479\" x=\"597\"><INPUT id=\"I-HXI_8d2e84cc-4a43-4f16-aff9-5b42112145fe\" aria-label=\"HYD-02 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_7e8a7724-459b-4a22-b050-01085874e028\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"692\" y=\"449\" width=\"70\" height=\"24\" fill=\"#dc2626\" id=\"svg_e3cfedb3-6179-4f2a-8831-d6e2a5fa29a5\" stroke=\"#ffffff\"/><foreignObject x=\"692\" y=\"449\" height=\"24\" width=\"70\" id=\"H-HXB_32b8f43f-9241-43c0-b65d-a00c29290873\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #dc2626; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_32b8f43f-9241-43c0-b65d-a00c29290873\">RESET</BUTTON></foreignObject></g>\n<text x=\"435\" y=\"525\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_ad93ba78-f516-40ae-9f31-7ac215776bff\"><rect id=\"svg_87a80bc4-628e-471d-b4ce-cd223159509b\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"509\" x=\"597\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_e2b929c1-dc49-4a5c-bc71-ad3622cf287f\" width=\"165\" height=\"24\" y=\"509\" x=\"597\"><SELECT aria-label=\"HYD-02 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_e2b929c1-dc49-4a5c-bc71-ad3622cf287f\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"435\" y=\"555\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">마지막 명령 ACK</text>\n<g id=\"VAL_fe4fd23a-6101-419d-a94a-38126d7c64ce\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_5b46338d-8b0c-4da0-ae6c-ade8c190ef9c\" y=\"555\" x=\"677\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<g id=\"VAL_ed7d79ee-237f-4ea3-8fb3-8c7723a573cc\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"11\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_35229cbc-dc1f-48a1-93e1-e45f22df92a1\" y=\"555\" x=\"757\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"11\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"423\" y=\"595\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#7f1d1d\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보 (Flink CEP → cmd-gateway 중계)</text>\n<g id=\"VAL_5c7d38f0-ac96-439c-b272-3c48f48acb25\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_86090b3b-ecb0-4f29-b648-7f877ecfd4a9\" y=\"620\" x=\"758\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#7f1d1d\" stroke-width=\"0\">–</text></g>\n<text x=\"423\" y=\"665\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">IT가 멈춰도 이 화면과 수동 조작·인터록은 계속 동작한다.</text>\n<rect x=\"794\" y=\"85\" width=\"372\" height=\"600\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"810\" y=\"115\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-03</text>\n<text x=\"884\" y=\"115\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_a9e77b48-37dd-4b68-b943-7d20f528b929\"><ellipse cx=\"944\" cy=\"110\" rx=\"14\" ry=\"14\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_fbdb7f97-cee2-4f37-a893-b6d2a43db36a\"/></g>\n<text x=\"969\" y=\"115\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_cffcd847-413c-4e8c-9d8f-adfda729c25b\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_a51d0f88-9642-4b16-adcf-faf8c9667010\" y=\"115\" x=\"1146\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"969\" y=\"137\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_d245987c-721d-48e8-b95b-8923d1dd5402\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_afeb4f96-b64d-4500-8c36-81e8cd088061\" y=\"137\" x=\"1146\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"810\" y=\"155\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_f984e72c-1e3d-4408-8d57-a72a54efb414\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"165\" x=\"810\" id=\"A-GXP_a6f9cd26-5bf1-4bc2-8001-a733f6a6fb05\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"275\" x=\"810\" id=\"B-GXP_868c3d4a-9492-4314-8578-02814c1bd6cd\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_d72ae9b3-6e17-4f61-b8e7-a022179309f2\" width=\"40\" height=\"220\" y=\"165\" x=\"810\"/></g>\n<text x=\"856\" y=\"175\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"856\" y=\"237\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#ef4444\" text-anchor=\"start\" xml:space=\"preserve\">65 트립</text>\n<text x=\"856\" y=\"305\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"856\" y=\"385\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_dbd042ec-0971-430c-9bfb-f32be0237f57\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_4169c928-1acf-4f3a-8da5-586692d8f6ee\" y=\"215\" x=\"1054\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"260\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_7c7b9b45-e961-447e-a207-bc756a896f4a\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1b4bd780-574e-4378-9178-2e8412be6adf\" y=\"260\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"284\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_d9757796-8616-42ab-9cc1-a6dfa9c22567\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_83f1662a-318d-48ab-b3cd-a01975125d91\" y=\"284\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"308\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_c311d6c6-1522-4566-a0a3-e805c29461b1\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_2cee223e-12f1-4fc8-b900-e67a9f32542b\" y=\"308\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"332\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_28ad8e83-8441-4c31-b687-d01482d4c7ef\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_cb6894a2-21bf-4400-8143-c9169996f60b\" y=\"332\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"356\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_4b8e599f-e2b0-4cb0-8a2a-32836726ed87\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_be2b8e42-2636-417a-88eb-e780fe1f94ef\" y=\"356\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_8f83b5cd-bd54-42cf-8508-4a520ebad1f6\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_d5ebca39-2a2c-4859-ae53-d939609a3ea8\" y=\"380\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"914\" y=\"404\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_788e9464-bfca-469b-9aea-63c66d76d5f5\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_92e5dbcb-8181-4b5a-809e-9f72abc8dfe1\" y=\"404\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"810\" y=\"415\" width=\"340\" height=\"150\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"822\" y=\"437\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"822\" y=\"465\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_d3b76f21-08f3-4a27-a3f6-020e5123cc7c\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_03d80a5f-1a29-413f-9cde-787726eeb0ff\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"449\" x=\"984\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_316a51b8-dd3d-48cf-9785-784497b51816\" width=\"80\" height=\"24\" y=\"449\" x=\"984\"><INPUT id=\"I-HXI_ae4e037b-5c11-4b44-9cff-59c10f037c99\" aria-label=\"HYD-03 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"822\" y=\"495\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_b2d6b1ec-b5b0-494e-8ecd-06fbe6e6aa0f\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_9200706a-3a23-4a05-9f8a-7d5118e9b359\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"479\" x=\"984\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_482fb3ff-0254-46a3-9876-ed7f4dd32489\" width=\"80\" height=\"24\" y=\"479\" x=\"984\"><INPUT id=\"I-HXI_25b40d32-a895-451d-8ba6-5b4da93f070a\" aria-label=\"HYD-03 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_f0fd71d3-fb8a-4cde-a8b4-6453dbe11cb9\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"1079\" y=\"449\" width=\"70\" height=\"24\" fill=\"#dc2626\" id=\"svg_73c601e6-c5b0-4015-a573-32f93de177bf\" stroke=\"#ffffff\"/><foreignObject x=\"1079\" y=\"449\" height=\"24\" width=\"70\" id=\"H-HXB_580f022d-752a-4738-b3d2-3e97410550a0\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #dc2626; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_580f022d-752a-4738-b3d2-3e97410550a0\">RESET</BUTTON></foreignObject></g>\n<text x=\"822\" y=\"525\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_0ab382ed-70ad-4d9f-ad60-7699c75f7f77\"><rect id=\"svg_eca155ac-82e3-4fcf-93d3-d48f4a064a80\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"509\" x=\"984\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_c62af0de-08bc-48da-89fa-71cc5e3daef5\" width=\"165\" height=\"24\" y=\"509\" x=\"984\"><SELECT aria-label=\"HYD-03 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_c62af0de-08bc-48da-89fa-71cc5e3daef5\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"822\" y=\"555\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">마지막 명령 ACK</text>\n<g id=\"VAL_488ff5ae-ff43-4df0-b6ac-02e62c485dab\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3bf066fa-ede9-4084-9c5f-9f0383873d76\" y=\"555\" x=\"1064\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<g id=\"VAL_2006ce5c-a1e8-4e3f-aa90-cb55c67f7923\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"11\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_420544dd-f276-40e8-aaea-9e4824f12817\" y=\"555\" x=\"1144\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"11\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"810\" y=\"595\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#7f1d1d\" text-anchor=\"start\" xml:space=\"preserve\">IT 경보 (Flink CEP → cmd-gateway 중계)</text>\n<g id=\"VAL_3fd025bb-7921-4240-82bd-76b705792a3e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_41e5921c-2cca-4618-b4dd-08398972d1d3\" y=\"620\" x=\"1145\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#7f1d1d\" stroke-width=\"0\">–</text></g>\n<text x=\"810\" y=\"665\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">IT가 멈춰도 이 화면과 수동 조작·인터록은 계속 동작한다.</text>\n</g></svg>"
+    "svgcontent": "<svg width=\"1180\" height=\"720\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" xmlns:html=\"http://www.w3.org/1999/xhtml\"><g><title>Layer 1</title>\n<text x=\"30\" y=\"40\" font-family=\"sans-serif\" font-size=\"22\" font-weight=\"bold\" fill=\"#111827\" text-anchor=\"start\" xml:space=\"preserve\">유압설비 운전 화면 — HYD-01 ~ 03 (OT · FUXA)</text>\n<text x=\"30\" y=\"62\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">설비 상태를 확인하고 팬 속도·부하·운전 모드를 직접 조작합니다.</text>\n<svg class=\"hyd-unit hyd-unit-0\" x=\"20\" y=\"85\" width=\"372\" height=\"630\" viewBox=\"0 0 372 630\" preserveAspectRatio=\"xMinYMin meet\">\n<rect x=\"0\" y=\"0\" width=\"372\" height=\"625\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"16\" y=\"30\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-01</text>\n<text x=\"104\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_450e3abd-9d84-4cd2-a20e-a05445161bed\"><ellipse cx=\"150\" cy=\"25\" rx=\"10\" ry=\"10\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_dfd0dfd5-06b5-4d42-96e4-73b6acb3bd64\"/></g>\n<text x=\"175\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_f25b8c7a-0537-4174-ae3e-a9e52ff87eee\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_6a3f836a-29af-4ba0-a488-a62ab881a020\" y=\"30\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"175\" y=\"52\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_e6bea797-93ef-4fa6-bede-eab2d25f2012\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_31758ad3-3fef-48d5-a769-a72fd5fa18e0\" y=\"52\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"70\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_f0a6f678-a485-4129-b6f7-d118a4505817\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"80\" x=\"16\" id=\"A-GXP_04805a82-1be8-47a0-91ac-c1d05159f6d4\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"190\" x=\"16\" id=\"B-GXP_d5560b65-f209-4546-a1e3-dd45fbb4e900\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_d9b9e8a8-84ed-4857-812d-f048973786d5\" width=\"40\" height=\"220\" y=\"80\" x=\"16\"/></g>\n<text x=\"62\" y=\"90\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"62\" y=\"152\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#bd3547\" text-anchor=\"start\" xml:space=\"preserve\">65 정지</text>\n<text x=\"62\" y=\"220\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"62\" y=\"300\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_87834b14-09aa-4394-ac86-abba6706c9ee\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1e63370e-313c-499e-b418-988a5558e1d4\" y=\"130\" x=\"260\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"175\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_061b6ce7-520f-48a9-957c-fee0a27d8001\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1938a2ee-8a2b-4e10-9bdb-d8669440f1ad\" y=\"175\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"199\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_cbed2ad6-0034-40e4-bdff-b0efe79aab36\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_bf65a1cc-4ccc-46ae-9b76-5e561ca2dd60\" y=\"199\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"223\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_43cd8f26-369f-4d9d-a564-93243a76230d\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_b766c6c5-8b62-40ca-a4e8-26c37d477241\" y=\"223\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"247\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_535f6666-551e-4d5e-ae69-203332a121a3\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_ac97e0b8-e881-4cd7-9b83-781707eb1990\" y=\"247\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"271\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_0c298c61-c211-48ad-96d1-4436db5b0d12\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_a122d626-335e-4f27-9a1e-7c361e9b8e84\" y=\"271\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"295\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_cf568b06-fc05-414b-aff5-9fd32673485e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_35fcab1c-4acc-432d-a09f-2e1e427691a7\" y=\"295\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"319\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_8ec24ed1-8ee4-4f78-85e8-6f202495d82c\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_6246fe27-54ce-4bc7-af6b-738ba61dda8f\" y=\"319\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"16\" y=\"330\" width=\"340\" height=\"180\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"28\" y=\"352\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"28\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_e9d851ac-5895-48cf-9db2-769106d822f0\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_8fc1fb9a-9f56-48ff-9378-1c441a239689\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"364\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_d7d8a03d-5290-4390-8fa2-e9b7fa5ae449\" width=\"80\" height=\"24\" y=\"364\" x=\"190\"><INPUT id=\"I-HXI_b4b609de-a46f-436c-8c32-9bcbd34f829a\" aria-label=\"HYD-01 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"28\" y=\"410\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_f45a535b-cd37-429f-91a8-95c2c8e1f02d\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_adb1b88c-6d65-44a0-88f2-97ab40fac01e\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"394\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_afdc2837-86a6-4189-ae85-d7b3204b3b12\" width=\"80\" height=\"24\" y=\"394\" x=\"190\"><INPUT id=\"I-HXI_7f9da2c3-17b3-47ff-b4ae-ac89bdb2df5e\" aria-label=\"HYD-01 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_056741cc-5505-45b8-a8a0-32873f1c6192\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"285\" y=\"364\" width=\"70\" height=\"28\" fill=\"#3859d6\" id=\"svg_f1a59fb0-0ee5-4291-95ee-954949138dd8\" stroke=\"#ffffff\"/><foreignObject x=\"285\" y=\"364\" height=\"28\" width=\"70\" id=\"H-HXB_a36fb91f-60a1-4177-b217-d72ff8f329f7\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #3859d6; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_a36fb91f-60a1-4177-b217-d72ff8f329f7\">정지 해제</BUTTON></foreignObject></g>\n<text x=\"28\" y=\"440\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_1f384487-cab6-4182-8fe2-c55730c477c5\"><rect id=\"svg_b7eed6e7-f6ee-4095-9047-2a27ab69ca39\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"424\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_0640795b-edc3-45e6-8783-4a33f3a95cd1\" width=\"165\" height=\"24\" y=\"424\" x=\"190\"><SELECT aria-label=\"HYD-01 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_0640795b-edc3-45e6-8783-4a33f3a95cd1\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"28\" y=\"470\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">최근 명령 결과</text>\n<g id=\"VAL_8d868a64-4685-42b7-b87e-40a0257c015d\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_63a9d4da-51ae-4083-8c6e-3a40ddfc4147\" y=\"470\" x=\"270\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"28\" y=\"494\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">확인 사항</text>\n<g id=\"VAL_3dffe064-b8aa-435c-b965-a9d78e47507d\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_fe1c54bb-faca-43fc-b884-3eb5194139db\" y=\"494\" x=\"345\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"542\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#4b5c73\" text-anchor=\"start\" xml:space=\"preserve\">최근 경보 · IT 분석망에서 전달</text>\n<g id=\"VAL_ddfa300e-4041-4eea-b0e9-055d2851ef20\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_b0b5e99f-5fd3-4e1b-a474-7267709652f3\" y=\"566\" x=\"351\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"606\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#65748b\" text-anchor=\"start\" xml:space=\"preserve\">분석망과 별개로 현장 제어·보호 정지는 유지됩니다.</text>\n</svg>\n<svg class=\"hyd-unit hyd-unit-1\" x=\"407\" y=\"85\" width=\"372\" height=\"630\" viewBox=\"0 0 372 630\" preserveAspectRatio=\"xMinYMin meet\">\n<rect x=\"0\" y=\"0\" width=\"372\" height=\"625\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"16\" y=\"30\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-02</text>\n<text x=\"104\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_cc16a5fa-11a9-4c88-9598-b6ebdb5e4405\"><ellipse cx=\"150\" cy=\"25\" rx=\"10\" ry=\"10\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_24bc7adb-0ecc-4e28-8e7f-d1e46b48262e\"/></g>\n<text x=\"175\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_7d1f29c4-c2eb-4529-8165-7ce1de986c94\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_d4951687-5c4a-4a16-ac71-5e23e58c1ba3\" y=\"30\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"175\" y=\"52\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_a64f8e9a-3900-4d34-88c4-23ee1dfc66ec\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_a2e190cc-65d4-4ece-9373-fe859be1a70f\" y=\"52\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"70\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_9731128a-111e-4898-8c80-58429c35db0b\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"80\" x=\"16\" id=\"A-GXP_bb84d064-86cc-498f-8169-f74ca75af147\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"190\" x=\"16\" id=\"B-GXP_3113a06d-253a-4f23-9296-2e235fabf7c1\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_37f873e9-1210-407d-bfae-2b4425011ffc\" width=\"40\" height=\"220\" y=\"80\" x=\"16\"/></g>\n<text x=\"62\" y=\"90\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"62\" y=\"152\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#bd3547\" text-anchor=\"start\" xml:space=\"preserve\">65 정지</text>\n<text x=\"62\" y=\"220\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"62\" y=\"300\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_1e44f699-f222-44a5-9c29-9aa1a208cce3\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_fea92ee2-14e0-4505-ba4f-7350371b8964\" y=\"130\" x=\"260\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"175\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_4ca8c745-e359-43e1-9b35-8ca3a136ca02\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_e741274e-a190-4c80-9bad-0b8ba4542e1f\" y=\"175\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"199\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_8218344f-6769-41c7-a4e5-9e762439a75f\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3cfc8469-53fb-4f86-bc9c-72d2b5c68405\" y=\"199\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"223\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_4323fbbe-aae5-4768-996d-6f9c21b166f8\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_9e173bda-46fd-42d0-926b-42d07bc93d1c\" y=\"223\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"247\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_de653be8-4091-4c6b-aee2-04d74d90af3a\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_c8e5815b-1773-4ccb-92c7-8c7b49cc57ec\" y=\"247\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"271\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_c53dc75a-6fe5-46bc-96ed-4f59dadac384\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_278c698f-f507-4e01-bd51-34016ffb9ae9\" y=\"271\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"295\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_5728eb95-db34-4e1f-9062-4d3ef7c328fa\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_c6901fd4-2968-408f-8337-1af408be88e8\" y=\"295\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"319\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_8ac64e1c-e558-492e-be2f-2d10b5d8468d\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3c2d3f25-38b8-460f-86f2-59f88b171c46\" y=\"319\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"16\" y=\"330\" width=\"340\" height=\"180\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"28\" y=\"352\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"28\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_d4652da9-0df4-4906-8c8e-fb91783b6248\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_d48ad172-2e27-41e7-891c-2e2d8fdcba1f\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"364\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_29479ff0-a531-49fd-86ec-ea3aa6d84300\" width=\"80\" height=\"24\" y=\"364\" x=\"190\"><INPUT id=\"I-HXI_19644adb-8c86-4371-87dc-5658438bf868\" aria-label=\"HYD-02 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"28\" y=\"410\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_6761931e-8129-43b2-ae26-420534a3ad1c\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_34c2addb-e9cf-4d00-a68f-a845f1bc930d\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"394\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_df936c6e-7d3a-47ac-8a25-030f86803568\" width=\"80\" height=\"24\" y=\"394\" x=\"190\"><INPUT id=\"I-HXI_7b17076d-f05b-46e9-bcf4-da272c4aebde\" aria-label=\"HYD-02 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_cdb24644-5beb-4e43-9cdf-9c64408d9b92\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"285\" y=\"364\" width=\"70\" height=\"28\" fill=\"#3859d6\" id=\"svg_b9572d90-a6ca-4359-b30e-b8b0df5914bc\" stroke=\"#ffffff\"/><foreignObject x=\"285\" y=\"364\" height=\"28\" width=\"70\" id=\"H-HXB_a1825432-2481-4938-ba6b-7d3132efa0df\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #3859d6; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_a1825432-2481-4938-ba6b-7d3132efa0df\">정지 해제</BUTTON></foreignObject></g>\n<text x=\"28\" y=\"440\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_9fee85ff-e413-4f51-b373-af73e01305bb\"><rect id=\"svg_2c5e95e0-c1af-48e1-bd05-bd0508c25b67\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"424\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_e6a85b88-89a2-44c4-9021-b2ef769d7b20\" width=\"165\" height=\"24\" y=\"424\" x=\"190\"><SELECT aria-label=\"HYD-02 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_e6a85b88-89a2-44c4-9021-b2ef769d7b20\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"28\" y=\"470\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">최근 명령 결과</text>\n<g id=\"VAL_db4b9d72-7056-49bf-98bc-e9b1badf62f6\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1d1578bf-1ea8-47fb-acd3-67959eeeea51\" y=\"470\" x=\"270\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"28\" y=\"494\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">확인 사항</text>\n<g id=\"VAL_28dd55d2-4666-4e70-b29c-c7bc2428c9b5\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3a61c8bc-16cc-4001-9baf-da2801d5c207\" y=\"494\" x=\"345\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"542\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#4b5c73\" text-anchor=\"start\" xml:space=\"preserve\">최근 경보 · IT 분석망에서 전달</text>\n<g id=\"VAL_789c8642-ca25-4834-b87d-cdc331158a86\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_d2267fef-ce45-494e-9294-16efda476aae\" y=\"566\" x=\"351\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"606\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#65748b\" text-anchor=\"start\" xml:space=\"preserve\">분석망과 별개로 현장 제어·보호 정지는 유지됩니다.</text>\n</svg>\n<svg class=\"hyd-unit hyd-unit-2\" x=\"794\" y=\"85\" width=\"372\" height=\"630\" viewBox=\"0 0 372 630\" preserveAspectRatio=\"xMinYMin meet\">\n<rect x=\"0\" y=\"0\" width=\"372\" height=\"625\" rx=\"8\" fill=\"#f9fafb\" stroke=\"#d1d5db\" stroke-width=\"1\"/>\n<text x=\"16\" y=\"30\" font-family=\"sans-serif\" font-size=\"20\" font-weight=\"bold\" fill=\"#1e3a8a\" text-anchor=\"start\" xml:space=\"preserve\">HYD-03</text>\n<text x=\"104\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">경보</text>\n<g type=\"svg-ext-gauge_semaphore\" fill=\"#000000\" font-size=\"14\" stroke=\"#000000\" font-family=\"sans-serif\" id=\"GSE_bbb78fd0-5add-4030-af82-9404123d9ca3\"><ellipse cx=\"150\" cy=\"25\" rx=\"10\" ry=\"10\" fill=\"#bfbfbf\" stroke=\"#9ca3af\" id=\"GSE_d10a84c1-a71f-491b-99e5-4e7ee6fc4cdf\"/></g>\n<text x=\"175\" y=\"30\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">현재 모드</text>\n<g id=\"VAL_71b856f9-4918-439e-ac49-19d41257017e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_a004e65c-75fa-4a66-bd1d-d23cf17246df\" y=\"30\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"175\" y=\"52\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">PLC 상태</text>\n<g id=\"VAL_7a7449b2-7e05-4091-927c-0c198d7e472d\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_5c04e4f2-54fa-4b0f-bb25-e3db090ead40\" y=\"52\" x=\"352\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"70\" font-family=\"sans-serif\" font-size=\"13\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">유온 TS1 (℃)</text>\n<g font-family=\"sans-serif\" font-size=\"14\" type=\"svg-ext-gauge_progress\" id=\"GXP_f8c1f7d0-d15a-4021-9279-605a35578f52\" stroke=\"null\"><rect fill=\"#e5e7eb\" height=\"220\" width=\"40\" y=\"80\" x=\"16\" id=\"A-GXP_83f814b8-1360-426e-9192-32d005e86bb3\" stroke=\"null\"/><rect fill=\"#f97316\" height=\"110\" width=\"40\" y=\"190\" x=\"16\" id=\"B-GXP_fa1fad58-5bb1-49eb-b264-1d8302bd79ce\" stroke=\"null\"/><foreignObject font-size=\"14\" id=\"H-GXP_a8f64b95-6843-473d-a349-1e443b731fee\" width=\"40\" height=\"220\" y=\"80\" x=\"16\"/></g>\n<text x=\"62\" y=\"90\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">100</text>\n<text x=\"62\" y=\"152\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#bd3547\" text-anchor=\"start\" xml:space=\"preserve\">65 정지</text>\n<text x=\"62\" y=\"220\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#22c55e\" text-anchor=\"start\" xml:space=\"preserve\">48 정상</text>\n<text x=\"62\" y=\"300\" font-family=\"sans-serif\" font-size=\"10\" font-weight=\"normal\" fill=\"#9ca3af\" text-anchor=\"start\" xml:space=\"preserve\">0</text>\n<g id=\"VAL_9971d7b3-f7dc-4e5b-ade1-f269847db8b2\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"38\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_5edc1109-1af8-4c80-bb99-d61bfa79ab51\" y=\"130\" x=\"260\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"38\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"175\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 효율 CE (%)</text>\n<g id=\"VAL_dfbc8bb1-3f4d-4ac2-a6e8-55ea08061e33\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_c1f3e45f-c6d1-4536-b7e2-10f1890bc492\" y=\"175\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"199\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">냉각 능력 CP (kW)</text>\n<g id=\"VAL_0eeaad55-27da-4330-956e-d3e6307a92ed\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_5322b3f2-8565-49bb-abfd-70ed4ca084de\" y=\"199\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"223\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">시스템 효율 SE (%)</text>\n<g id=\"VAL_d11ccd83-8c92-4509-86e6-5109b30d2539\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_1b87f612-fa2d-43f9-a19d-672b3cb67988\" y=\"223\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"247\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">진동 VS1 (mm/s)</text>\n<g id=\"VAL_f1ecc729-8165-4196-aea9-5ae704f51f63\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_c694d79b-4ee5-4d31-929c-babda1256f73\" y=\"247\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"271\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">압력 PS1 (bar)</text>\n<g id=\"VAL_94d54077-6490-4221-b3d9-be607cfa39db\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_122d971d-cad3-42b4-b7dd-ac516a77951d\" y=\"271\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"295\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 SP (%)</text>\n<g id=\"VAL_cef05f88-964f-45aa-81a2-c01dde851a90\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_9370f084-c633-45b2-8f27-00827d110190\" y=\"295\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"120\" y=\"319\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#6b7280\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 SP (%)</text>\n<g id=\"VAL_18a84f0f-a9fb-423e-8448-0b2c8dee4e22\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"14\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_5cd9a3d9-6ead-4177-bed5-5ec9495e8972\" y=\"319\" x=\"350\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<rect x=\"16\" y=\"330\" width=\"340\" height=\"180\" rx=\"8\" fill=\"#eef2ff\" stroke=\"#c7d2fe\" stroke-width=\"1\"/>\n<text x=\"28\" y=\"352\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#3730a3\" text-anchor=\"start\" xml:space=\"preserve\">수동 조작 · 입력 후 Enter로 적용</text>\n<text x=\"28\" y=\"380\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">팬 속도 % (0~100)</text>\n<g id=\"HXI_c1b0baa9-25a7-463a-8e64-11ced732fff5\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_e483fa1a-128e-4a38-a84c-f4cd68c43d4d\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"364\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_3b146f35-28a5-4f21-8004-dee61e33a750\" width=\"80\" height=\"24\" y=\"364\" x=\"190\"><INPUT id=\"I-HXI_a5d0efd1-ccbe-4783-8018-ebe74e720078\" aria-label=\"HYD-03 fan write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<text x=\"28\" y=\"410\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">펌프 부하 % (60~100)</text>\n<g id=\"HXI_9476ec84-0a2e-4e91-8890-59a69926cf77\" stroke=\"#000000\" text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#f1f1f1ff\" type=\"svg-ext-html_input\"><rect id=\"svg_042e3dc0-263b-47e2-94b0-fba45dec8821\" stroke=\"null\" fill=\"#ffffff\" height=\"24\" width=\"80\" y=\"394\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXI_d45cd58e-cef1-410c-9c45-84ace5094950\" width=\"80\" height=\"24\" y=\"394\" x=\"190\"><INPUT id=\"I-HXI_b69fc6ce-a746-4869-a63d-ec2f1d3529fd\" aria-label=\"HYD-03 load write\" title=\"값을 입력하고 Enter로 적용\" style=\"width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;\" type=\"text\"/></foreignObject></g>\n<g id=\"HXB_40f8980e-d546-479c-97ec-fb106334a60e\" type=\"svg-ext-html_button\" fill=\"#FFFFFF\" font-size=\"14\" font-family=\"sans-serif\" text-anchor=\"right\" stroke=\"#000000\"><rect stroke-width=\"0\" x=\"285\" y=\"364\" width=\"70\" height=\"28\" fill=\"#3859d6\" id=\"svg_a94b7f54-84dc-4a73-bb8f-1b20ae3754bc\" stroke=\"#ffffff\"/><foreignObject x=\"285\" y=\"364\" height=\"28\" width=\"70\" id=\"H-HXB_b71d7c12-a59f-47fa-8d70-ef7b806a253b\"><BUTTON style=\"width: 100%; height: 100%; vector-effect: non-scaling-stroke; background-color: #3859d6; color: rgb(255, 255, 255);\" class=\"md-btn  md-btn-raised\" id=\"B-HXB_b71d7c12-a59f-47fa-8d70-ef7b806a253b\">정지 해제</BUTTON></foreignObject></g>\n<text x=\"28\" y=\"440\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">모드 변경 명령</text>\n<g text-anchor=\"right\" font-family=\"sans-serif\" font-size=\"14\" fill=\"#000000\" type=\"svg-ext-html_select\" id=\"HXS_ba65ea73-b559-4cf4-8056-866572e008a8\"><rect id=\"svg_f4c5ab33-6c09-45b5-a222-80884ef3aa60\" fill=\"#ffffff\" height=\"24\" width=\"165\" y=\"424\" x=\"190\" stroke-width=\"0\"/><foreignObject id=\"H-HXS_2465c2a5-9e09-4293-912f-a92838e23f84\" width=\"165\" height=\"24\" y=\"424\" x=\"190\"><SELECT aria-label=\"HYD-03 mode set\" style=\"width:100%;height:100%;text-align: right;margin-top:unset;\" id=\"S-HXS_2465c2a5-9e09-4293-912f-a92838e23f84\"><OPTION/></SELECT></foreignObject></g>\n<text x=\"28\" y=\"470\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">최근 명령 결과</text>\n<g id=\"VAL_58b06025-4ef5-4784-9130-a1c537548d2e\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_70d94bf1-53bb-4e19-8f6e-7e546a8baa62\" y=\"470\" x=\"270\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111827\" stroke-width=\"0\">–</text></g>\n<text x=\"28\" y=\"494\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"normal\" fill=\"#374151\" text-anchor=\"start\" xml:space=\"preserve\">확인 사항</text>\n<g id=\"VAL_99668ec6-eea6-42a2-be4b-358ac24ff13c\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"12\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_3472e064-93f3-4ffc-8fbf-cd088d15cd02\" y=\"494\" x=\"345\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#b91c1c\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"542\" font-family=\"sans-serif\" font-size=\"12\" font-weight=\"bold\" fill=\"#4b5c73\" text-anchor=\"start\" xml:space=\"preserve\">최근 경보 · IT 분석망에서 전달</text>\n<g id=\"VAL_085d6b9a-32b5-498c-be25-edfdceae9f1a\" text-anchor=\"end\" font-family=\"sans-serif\" stroke-width=\"0\" font-size=\"13\" fill=\"none\" type=\"svg-ext-value\"><text id=\"VAL_9707def6-0044-47c1-ac67-f77bf7869ff3\" y=\"566\" x=\"351\" xml:space=\"preserve\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"13\" fill=\"#374151\" stroke-width=\"0\">–</text></g>\n<text x=\"16\" y=\"606\" font-family=\"sans-serif\" font-size=\"11\" font-weight=\"normal\" fill=\"#65748b\" text-anchor=\"start\" xml:space=\"preserve\">분석망과 별개로 현장 제어·보호 정지는 유지됩니다.</text>\n</svg>\n</g></svg>"
    }
   ],
   "layout": {
    "start": "v_hyd_overview",
    "zoom": "disabled",
-   "customStyles": "#container { width: 100% !important; } #home { display: block; width: 100% !important; } #home #content { width: 100% !important; } #home #content > svg { width: 100%; height: auto; display: block; }",
+   "customStyles": "\n                           #container { width: 100% !important; }\n                           #home { display: block; width: 100% !important; }\n                           #home #content { width: 100% !important; }\n                           #home #content > svg { width: 100%; height: 730px; display: block; }\n                           .hyd-unit { overflow: visible; }\n                           @media (max-width: 1399px) {\n                             #home #content > svg { height: 1390px; }\n                             .hyd-unit-2 { transform: translate(-774px, 660px); }\n                           }\n                           @media (max-width: 999px) {\n                             #home #content > svg { height: 2050px; }\n                             .hyd-unit-1 { transform: translate(-387px, 660px); }\n                             .hyd-unit-2 { transform: translate(-774px, 1320px); }\n                           }\n                           ",
    "header": {
     "bkcolor": "#ffffff",
     "fgcolor": "#1f2937"

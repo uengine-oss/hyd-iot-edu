@@ -158,11 +158,11 @@ async function pollHealth() {
 /* ---------------- scenario ---------------- */
 function tsColor(t) { return t >= 65 ? 'trip' : t >= 60 ? 'hot' : ''; }
 function sparkline(svg, values, min, max) {
-  if (!values || !values.length) { svg.innerHTML = ''; return; }
+  if (!values || values.length < 2) { svg.setAttribute('viewBox','0 0 300 36'); svg.innerHTML = '<text x="0" y="24" fill="#65748b" font-size="12">압력 추이를 수집하고 있습니다…</text>'; return; }
   const w = 300, h = 36, n = values.length;
   const pts = values.map((v, i) => `${(i / Math.max(1, n - 1)) * w},${h - ((v - min) / (max - min || 1)) * (h - 4) - 2}`).join(' ');
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('preserveAspectRatio', 'none');
-  svg.innerHTML = `<polyline fill="none" stroke="#7c8794" stroke-width="1.2" points="${pts}"/>`;
+  svg.innerHTML = `<polyline fill="none" stroke="#3859d6" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts}"/>`;
 }
 function renderUnits() {
   const box = $('#units');
@@ -175,7 +175,7 @@ function renderUnits() {
       card = el('div', 'unit'); card.dataset.asset = asset;
       card.innerHTML = `<header><strong>${asset}</strong><span class="mode"></span></header>
         <div class="big num"><span class="v"></span><small>℃ 유온 TS1</small></div>
-        <div class="bar"><i></i><b style="left:65%"></b></div>
+        <div class="bar"><i></i><b style="left:65%"></b></div><div class="threshold-note">보호 정지 기준 65 °C</div>
         <div class="kv"><span>냉각 효율 CE</span><em class="num ce"></em><span>냉각 능력 CP</span><em class="num cp"></em>
           <span>팬 속도 SP</span><em class="num fan"></em><span>펌프 부하 SP</span><em class="num load"></em>
           <span>쿨러 성능 비율</span><em class="num health"></em><span>탐지 단계</span><em class="phase"></em>
@@ -188,7 +188,7 @@ function renderUnits() {
           <button class="btn" data-act="restore">쿨러 복구</button>
           </div></fieldset><fieldset class="ctl-group"><legend>운전 모드</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
-          <button class="btn warn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
+          <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
           <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
           </div></fieldset><fieldset class="ctl-group"><legend>수동 조작 · 적용 시 원격 수동으로 전환</legend><div>
           <button class="btn" data-act="fan">팬 80 %</button>
@@ -250,8 +250,8 @@ $('#selScale').addEventListener('change', async (e) => {
 function renderGwLog(entries) {
   const box = $('#gwLog'); box.innerHTML = '';
   const mine = state.log.map(l => `<div>${esc(l)}</div>`).join('');
-  const gw = (entries || []).slice(0, 12).map(e => `<div>${esc(e.t.slice(11, 19))}  게이트웨이 ${e.ok ? 'PASS' : 'REJECT'} · ${esc(e.cmdId)} · ${esc(e.asset)} · ${esc(e.check)} ${e.reason ? '— ' + esc(e.reason) : ''}</div>`).join('');
-  box.innerHTML = (mine + gw) || '<div class="muted">아직 결정이 없다.</div>';
+  const gw = (entries || []).slice(0, 12).map(e => UI.eventRecord({time:e.t,name:e.ok ? '명령 검증 통과' : '명령 거절',actor:e.asset,detail:e.reason || '',raw:e})).join('');
+  box.innerHTML = (mine + gw) || '<div class="muted">아직 명령 기록이 없습니다.</div>';
 }
 
 
@@ -286,7 +286,7 @@ function incidentsFor(asset) { return state.incidents.filter(i => i.asset === as
 function openIncidentFor(asset) { return incidentsFor(asset).find(i => !i.terminal) || null; }
 function renderScada() {
   const box = $('#scada');
-  if (!state.plant) { box.innerHTML = '<div class="muted">plant-sim(8000)에 연결할 수 없다.</div>'; return; }
+  if (!state.plant) { box.innerHTML = '<div class="muted">설비 시뮬레이터에 연결할 수 없습니다. 연결 상태를 확인해 주세요.</div>'; return; }
   if (!box.querySelector('.ucard')) box.innerHTML = '';
   for (const [asset, u] of Object.entries(state.plant.units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
@@ -308,12 +308,16 @@ function renderScada() {
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0)); set('v-ce', fmt(t.CE, 0)); set('v-fan', fmt(t.FanSpeedSP, 0));
     set('v-load', fmt(t.LoadSP, 0)); set('v-eps', fmt(t.EPS1, 1)); set('v-ps1', fmt(t.PS1, 0));
     card.querySelector('.ts1-bulb').setAttribute('fill', tsColor2(t.TS1));
+    let readings = card.querySelector('.readings');
+    if (!readings) { readings = el('div','readings'); card.querySelector('svg').after(readings); }
+    readings.innerHTML = `<span>유온 <b>${fmt(t.TS1,1)} °C</b></span><span>냉각 효율 <b>${fmt(t.CE,0)} %</b></span><span>압력 <b>${fmt(t.PS1,0)} bar</b></span>`;
     const fan = card.querySelector('.fan');
     const running = s.state === 'RUN' && t.FanSpeedSP > 0;
     fan.classList.toggle('stop', !running);
     fan.style.setProperty('--spin', (running ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
     card.querySelector('.f-phase').innerHTML = `탐지 <span class="chip ${(d.phase || 'idle').toLowerCase()}" title="${esc(d.phase)}">${esc(UI.status(d.phase))}</span>${d.alert_id ? ' ' + esc(d.alert_id) : ''}`;
-    card.querySelector('.f-inc').textContent = inc ? `${inc.id} · ${STATE_LABEL[inc.state] || inc.state}` : (s.cmdId ? `마지막 ACK ${s.cmdId.slice(0, 18)} ${s.result}` : '경보 없음');
+    card.querySelector('.f-inc').title = s.cmdId ? `${s.cmdId} · ${s.reason || ''}` : '';
+    card.querySelector('.f-inc').textContent = inc ? `${inc.id} · ${STATE_LABEL[inc.state] || inc.state}` : (s.cmdId ? `최근 명령 · ${UI.status(s.result)}` : '경보 없음');
   }
 }
 async function selectAsset(asset) {
@@ -338,12 +342,12 @@ function renderIncList() {
   const scroll = box.scrollTop; box.innerHTML = '';
   const filtered = (state.selectedAsset && !state.showAll) ? incidentsFor(state.selectedAsset) : state.incidents;
   $('#incListTitle').textContent = (state.selectedAsset && !state.showAll) ? `${state.selectedAsset} 인시던트 (${filtered.length})` : `전체 인시던트 (${state.incidents.length})`;
-  if (!filtered.length) { box.innerHTML = `<div class="muted">${state.selectedAsset && !state.showAll ? state.selectedAsset + ' 인시던트가 없다.' : '인시던트가 없다. 결함 시나리오 시뮬레이션에서 열화를 주입해 보자.'}</div>`; }
+  if (!filtered.length) { box.innerHTML = `<div class="muted">${state.selectedAsset && !state.showAll ? state.selectedAsset + ' 인시던트가 없습니다.' : '인시던트가 없습니다. 결함 시뮬레이션에서 쿨러 열화를 주입해 보세요.'}</div>`; }
   for (const inc of filtered) {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
     keyboardItem(it);
     it.dataset.itemId = inc.id;
-    it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(UI.status(inc.state))}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc((inc.created || '').slice(11, 19))}</span>`;
+    it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(UI.status(inc.state))}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc(UI.time(inc.created))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
@@ -385,36 +389,43 @@ function lane(inc) {
   for (const s of def.steps) {
     const cls = s.id === cur ? 'now' : done.has(s.id) ? 'done' : '';
     const h = (inc.history || []).find(x => x.state === s.id);
-    html += `<div class="st ${cls}">${esc(s.label)}<small>${esc(s.type)}${h ? ' · ' + h.t.slice(11, 19) : ''}</small></div>`;
+    html += `<div class="st ${cls}">${esc(s.label)}<small>${esc(({startEvent:'시작',endEvent:'종료',userTask:'사람의 확인',serviceTask:'시스템 처리',exclusiveGateway:'조건 분기',intermediateCatchEvent:'응답 대기'})[s.type] || s.type)}${h ? ' · ' + UI.time(h.t) : ''}</small></div>`;
   }
   html += '</div>';
   if (fail) html += `<div class="st fail" style="display:inline-block;padding:6px 10px;border-radius:4px;font-size:12px">${esc(fail.label)}${inc.reason ? ' — ' + esc(inc.reason) : ''}</div>`;
   return html;
 }
 function traceHtml(run) {
-  if (!run) return '<div class="muted">이 경보에 대한 에이전트 실행 기록이 없다.</div>';
-  let html = `<div class="muted">${esc(run.id)} · ${esc(UI.status(run.status))} · 시작 ${esc((run.started || '').slice(11, 19))}${run.ended ? ' · 종료 ' + esc(run.ended.slice(11, 19)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
+  if (!run) return '<div class="muted">이 경보의 에이전트 실행 기록이 없습니다.</div>';
+  let html = `<div class="muted">${esc(run.id)} · ${esc(UI.status(run.status))} · 시작 ${esc(UI.time(run.started))}${run.ended ? ' · 종료 ' + esc(UI.time(run.ended)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
   for (const s of run.steps) {
     const out = s.output == null ? '' : JSON.stringify(s.output, null, 1);
     const [name, note] = UI.steps[s.name] || [s.name, s.note || ''];
-    html += `<div class="step ${esc(s.status)}"><strong>${esc(name)} <span>${esc(UI.status(s.status))} · ${esc(s.t.slice(11, 19))}</span></strong><span>${esc(note)}</span><details><summary>처리 기록과 출력 데이터</summary><p>${esc(s.name)}${s.note ? ' · ' + esc(s.note) : ''}</p>${out ? `<pre>${esc(out)}</pre>` : '<p>출력 데이터가 없습니다.</p>'}</details></div>`;
+    html += `<div class="step ${esc(s.status)}"><strong>${esc(name)} <span>${esc(UI.status(s.status))} · ${esc(UI.time(s.t))}</span></strong><span>${esc(note)}</span><details><summary>처리 기록과 출력 데이터</summary><p>${esc(s.name)}${s.note ? ' · ' + esc(s.note) : ''}</p>${out ? `<pre>${esc(out)}</pre>` : '<p>출력 데이터가 없습니다.</p>'}</details></div>`;
   }
   return html + '</div>';
 }
 function cardHtml(card, editable) {
-  if (!card) return '<div class="muted">카드가 없다.</div>';
-  let html = `<div class="summary">${esc(card.summary)} <span class="muted">(${esc(card.summarySource || 'template')})</span></div>`;
+  if (!card) return '<div class="muted">아직 조치 가이드가 없습니다.</div>';
+  let summary = card.summary;
+  if (!card.summarySource || card.summarySource === 'template') {
+    const top = card.causes?.[0], alert = card.alert || {};
+    const pattern = {COOLER_DEGRADATION:'쿨러 성능 저하',OVER_TEMPERATURE:'유온 과열',TEMP_TRIP:'유온 보호 정지',OVERHEAT_TRIP:'유온 보호 정지'}[alert.pattern] || alert.pattern || '설비 이상';
+    summary = `${alert.asset || ''} · ${pattern}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다 (점수 ${fmt(top.score,2)}).` : '') +
+      (card.recommended?.length ? ' 권장 조치: ' + card.recommended.map(a => a.name + (a.kind === 'command' ? ` ${a.value}${/_pct$/.test(a.param) ? ' %' : ''}` : '')).join(', ') + '.' : '');
+  }
+  let html = `<div class="summary">${esc(summary)} <span class="muted">${card.summarySource && card.summarySource !== 'template' ? 'AI 요약' : '규칙 기반 요약'}</span><details class="source-detail"><summary>요약 원문과 출처</summary><p>${esc(card.summary)}</p><code>${esc(card.summarySource || 'template')}</code></details></div>`;
   html += `<div class="muted">데이터 신선도: ${card.freshness && card.freshness.ok ? '정상' : '신뢰 불가'} (${fmt(card.freshness && card.freshness.age_s, 1)} s) · 인용 노드 ${(card.citations || []).length}개</div>`;
-  html += '<h2>가능한 고장 원인과 관측 근거</h2><table class="causes"><tr><th>순위</th><th>원인</th><th>사전확률</th><th>점수</th><th>확인한 조건과 관측값</th></tr>';
+  html += '<h2>가능한 고장 원인과 관측 근거</h2><div class="table-scroll" tabindex="0" role="region" aria-label="고장 원인과 관측 근거 표"><table class="causes"><thead><tr><th>순위</th><th>원인</th><th>사전확률</th><th>점수</th><th>확인한 조건과 관측값</th></tr></thead><tbody>';
   (card.causes || []).forEach((c, i) => {
-    const ev = (c.evidence || []).map(e => `<div class="ev"><span class="${e.passed ? 'ok' : 'no'}">${esc(e.name)}</span> = ${esc(fmt(e.value, 2))} <span class="muted">${esc(e.id)}</span></div>`).join('');
-    html += `<tr><td>${i + 1}</td><td><strong>${esc(c.name)}</strong><div class="muted">${esc(c.description || '')}<br>${esc(c.id)}</div></td><td class="num">${fmt(c.prior, 2)}</td><td class="score num">${fmt(c.score, 2)}</td><td>${ev || '<span class="muted">증거 규칙 없음</span>'}</td></tr>`;
+    const ev = (c.evidence || []).map(e => `<div class="ev" title="${esc(e.id)}"><span class="${e.passed ? 'ok' : 'no'}">${esc(e.name)}</span><b>${e.passed ? '조건 충족' : '조건 미충족'} · 관측 ${esc(fmt(e.value, 2))}</b></div>`).join('');
+    html += `<tr><td>후보 ${i + 1}</td><td><strong title="${esc(c.id)}">${esc(c.name)}</strong><div class="muted">${esc(c.description || '')}</div></td><td data-label="사전확률" class="num">${fmt(c.prior, 2)}</td><td data-label="점수" class="score num">${fmt(c.score, 2)}</td><td data-label="확인한 조건과 관측값">${ev || '<span class="muted">증거 규칙 없음</span>'}</td></tr>`;
   });
-  html += '</table><h2>권장 조치와 정비 절차</h2>';
+  html += '</tbody></table></div><h2>권장 조치와 정비 절차</h2>';
   for (const a of card.recommended || []) {
-    html += `<div class="action" data-code="${esc(a.code)}"><header><strong>${esc(a.name)}</strong><span class="code">${esc(a.code)} · ${a.kind === 'command' ? '즉시 조치 명령' : '작업지시'} · ${esc(a.relation || '')}</span></header>`;
+    html += `<div class="action" data-code="${esc(a.code)}"><header><strong>${esc(a.name)}</strong><span class="code" title="${esc(a.code)} · ${esc(a.relation || '')}">${a.kind === 'command' ? '즉시 조치 명령' : '작업지시'}</span></header>`;
     if (a.kind === 'command' && a.paramRange) {
-      html += `<div class="param"><span>${esc(a.param)}</span>${editable ? `<input type="range" min="${a.paramRange[0]}" max="${a.paramRange[1]}" step="1" value="${a.value}" data-param="${esc(a.param)}">` : ''}<output class="num">${a.value}</output><span class="muted">허용 범위 ${a.paramRange[0]}~${a.paramRange[1]} (온톨로지 paramRange)</span></div>`;
+      html += `<div class="param"><span title="${esc(a.param)}">${esc(({fan_pct:'팬 속도 (%)',load_pct:'펌프 부하 (%)'})[a.param] || a.param)}</span>${editable ? `<input type="range" min="${a.paramRange[0]}" max="${a.paramRange[1]}" step="1" value="${a.value}" data-param="${esc(a.param)}">` : ''}<output class="num">${a.value}</output><span class="muted">허용 범위 ${a.paramRange[0]}~${a.paramRange[1]} (온톨로지에 정의된 범위)</span></div>`;
       html += `<div class="muted">제약: ${(a.constraints || []).map(k => esc(k.name)).join(' · ') || '없음'} · 대상 구동기 ${esc(a.resource || '')}</div>`;
     }
     if (a.sop && a.sop.steps && a.sop.steps.length) {
@@ -443,14 +454,14 @@ function renderDetail() {
         <div class="kv"><span>유온 TS1</span><b class="num">${fmt(t.TS1, 1)} ℃</b><span>냉각 효율 CE</span><b class="num">${fmt(t.CE, 0)} %</b><span>팬 / 부하</span><b class="num">${fmt(t.FanSpeedSP, 0)} % / ${fmt(t.LoadSP, 0)} %</b><span>PLC</span><b>${esc(s.mode)} · ${esc(s.state)}</b><span>탐지 단계</span><b>${esc(d.phase || '–')}</b><span>쿨러 상태(health)</span><b class="num">${fmt(s.cooler_health, 2)}</b></div>
         <p class="muted">경보가 나면 에이전트가 온톨로지에서 원인·조치를 꺼내 카드를 만들고, 그 프로세스가 여기에 나타난다. 결함 시나리오 시뮬레이션에서 이 설비에 쿨러 열화를 주입해 볼 수 있다.${past.length ? ' 왼쪽 목록에 이 설비의 지난 인시던트 ' + past.length + '건이 있다.' : ''}</p></div>`;
     } else {
-      box.innerHTML = '<div class="empty">위 도식에서 설비를 고르면 그 설비의 프로세스가 여기에 나온다.</div>';
+      box.innerHTML = '<div class="empty">위 도식에서 설비를 선택하면 관련 조치 과정을 확인할 수 있습니다.</div>';
     }
     return;
   }
   let html = '';
   if (inc) {
     html += `<h2 style="margin-top:0">${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(UI.status(inc.state))}</span> <span class="muted">${esc(inc.asset)} · 경보 ${esc(inc.alertId)}${inc.cmdId ? ' · 명령 ' + esc(inc.cmdId) : ''}${inc.approvedBy ? ' · 승인 ' + esc(inc.approvedBy) : ''}</span></h2>`;
-    html += '<h2>프로세스 (미니 BPMN)</h2>' + lane(inc);
+    html += '<h2>조치 진행 단계</h2>' + lane(inc);
     if (inc.ack) html += `<div class="muted">PLC ACK: ${esc(inc.ack.result)}${inc.ack.reason ? ' (' + esc(inc.ack.reason) + ')' : ''} · 인터록 ${esc(inc.ack.interlock || '')}</div>`;
     if (inc.workOrder) html += `<div class="muted">작업지시 ${esc(inc.workOrder.id)}: ${esc(inc.workOrder.name)} (${esc(inc.workOrder.sop || '')})</div>`;
   }
@@ -464,7 +475,7 @@ function renderDetail() {
   }
   if (inc) {
     const audit = state.audit.filter(a => a.incident === inc.id);
-    html += '<h2>감사 로그</h2><div class="audit">' + (audit.map(a => `<div>${esc(a.t.slice(11, 19))} <b>${esc(a.actor)}</b> ${esc(a.event)} <span class="muted">${esc(JSON.stringify(a.detail).slice(0, 140))}</span></div>`).join('') || '<div class="muted">없음</div>') + '</div>';
+    html += '<h2>감사 로그</h2><div class="audit">' + (audit.map(a => UI.eventRecord({time:a.t,name:a.event,actor:a.actor,detail:a.detail?.reason || '',raw:a})).join('') || '<div class="muted">없음</div>') + '</div>';
   }
   box.innerHTML = html;
   for (const e of box.querySelectorAll('input')) {

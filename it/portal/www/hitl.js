@@ -91,6 +91,21 @@
     return `<div class="bpmn-cap"><span>${caption || ''}</span><span class="b-legend"><span><i class="done"></i>완료</span><span><i class="now"></i>진행 중</span><span><i class="fail"></i>실패 · 에스컬레이션</span><span><i class="loop"></i>지식 환류</span></span></div><div class="bpmn-tools"><span>흐름도를 좌우로 이동해 다음 단계를 확인할 수 있습니다.</span><button type="button" class="btn small" data-bpmn-fit aria-pressed="false">전체 흐름 보기</button></div><div class="bpmn-scroll" tabindex="0" role="region" aria-label="업무 흐름도, 좌우 방향키로 이동">${s}</div>`;
   }
   window.hydBpmn = bpmnSvg;
+  function setDiagramContent(box, html, key) {
+    const old = box.querySelector('.bpmn-scroll');
+    const same = box.dataset.diagramKey === key;
+    const left = same && old ? old.scrollLeft : 0;
+    const fit = same && old?.classList.contains('fit');
+    const focus = same && document.activeElement === old ? 'region' :
+      same && document.activeElement?.matches('[data-bpmn-fit]') && box.contains(document.activeElement) ? 'button' : null;
+    box.innerHTML = html; box.dataset.diagramKey = key;
+    const region = box.querySelector('.bpmn-scroll'), button = box.querySelector('[data-bpmn-fit]');
+    if (!region) return;
+    region.classList.toggle('fit', !!fit); region.scrollLeft = left;
+    button.setAttribute('aria-pressed', String(!!fit));
+    button.textContent = fit ? '읽기 편한 크기로 보기' : '전체 흐름 보기';
+    if (focus) (focus === 'region' ? region : button).focus({preventScroll:true});
+  }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-bpmn-fit]'); if (!b) return;
     const region = b.parentElement.nextElementSibling;
@@ -126,8 +141,8 @@
     const box = document.getElementById('hitlPanel'); const inc = H.inc, d = H.dec;
     let html = '<section class="hitl">' + bpmnSvg({ inc, dec: d }, `<b>${esc(inc.id)}</b> 조치 프로세스 — ${esc(inc.asset)} · 경보 ${esc(inc.alertId)}`);
     if (!d) {
-      html += `<div class="hitl-wait">${inc.state === 'AWAITING_APPROVAL' ? '에이전트가 온톨로지 · 스킬 · KPI로 조치 우선순위를 계산하고 있다…' : '이 인시던트에 연결된 전사 판단이 없다. 아래 가이드 카드로 즉시 제어만 승인할 수 있다.'}</div></section>`;
-      box.innerHTML = html; return;
+      html += `<div class="hitl-wait">${inc.state === 'AWAITING_APPROVAL' ? '에이전트가 연결된 지식과 성과 지표로 조치 우선순위를 계산하고 있습니다…' : '연결된 전사 판단이 없습니다. 아래 조치 가이드에서 설비 제어를 승인할 수 있습니다.'}</div></section>`;
+      setDiagramContent(box, html, inc.id); return;
     }
     const kname = Object.fromEntries((d.kpis || []).map(k => [k.id, k.name]));
     const opts = [...(d.options || [])].sort((a, b) => (b.feasible - a.feasible) || (b.total - a.total));
@@ -175,7 +190,7 @@
     const others = H.decs.filter(x => x.id !== d.id);
     if (others.length) html += '<div class="hitl-others">같은 경보에서 함께 올라온 판단: ' + others.map(x => `<a href="#" data-dec="${esc(x.id)}">${esc((x.scenario || {}).name || '')} <span class="pill ${esc(x.state)}">${esc(UI.status(x.state))}</span></a>`).join(' ') + '</div>';
     html += '</section>';
-    box.innerHTML = html;
+    setDiagramContent(box, html, inc.id);
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { H.form.option = r.value; H.msg = ''; const o = (H.dec.options || []).find(x => x.id === r.value); if (o && o.approver) H.form.role = o.approver.id; renderHitl(); }));
     const on = (id, ev, fn) => { const e = document.getElementById(id); if (e) e.addEventListener(ev, fn); };
     on('hFan', 'input', e => { H.form.fan = +e.target.value; e.target.nextElementSibling.textContent = e.target.value; });
@@ -210,14 +225,14 @@
     if (state.tab !== 'process' || hydEnt.ent.decDetail?.id !== d?.id) return;
     const sig = [d && d.id, d && d.state, inc && inc.state].join('|');
     if (box.dataset.sig === sig) return; box.dataset.sig = sig;
-    box.innerHTML = bpmnSvg(inc ? { inc, dec: d } : null, inc ? `판단 <b>${esc(d.id)}</b> · 인시던트 ${esc(inc.id)}의 진행` : (d ? '수동으로 실행한 판단이다. 설비 인시던트와 연결된 판단을 고르면 진행 상태가 표시된다.' : '판단을 고르면 진행 상태가 표시된다.'));
+    setDiagramContent(box, bpmnSvg(inc ? { inc, dec: d } : null, inc ? `판단 <b>${esc(d.id)}</b> · 인시던트 ${esc(inc.id)}의 진행` : (d ? '수동으로 실행한 판단입니다. 설비 인시던트와 연결된 판단을 선택하면 진행 상태를 확인할 수 있습니다.' : '판단을 선택하면 진행 상태를 확인할 수 있습니다.')), d?.id || 'overview');
   }
   setInterval(refreshProcBpmn, 2000);
 
   /* ================================================= skill catalog */
   async function loadSkills() {
     if (!H.skills.length) $('#skillList').innerHTML = '<div class="muted" role="status">스킬을 불러오는 중…</div>';
-    try { H.skills = await getJ(API.process + '/api/kg/skills'); } catch (e) { $('#skillList').innerHTML = `<div class="muted">process(8080) 또는 Neo4j에 연결할 수 없다. ${esc(e.message)}</div>`; return; }
+    try { H.skills = await getJ(API.process + '/api/kg/skills'); } catch (e) { $('#skillList').innerHTML = `<div class="muted">스킬 목록을 불러오지 못했습니다. 업무 서비스와 지식 저장소 연결을 확인해 주세요. ${esc(e.message)}</div>`; return; }
     if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); } catch (e) { H.catalog = { systems: [], processes: [], roles: [], actions: [] }; } }
     if (!H.skillSel && H.skills.length && !H.skillNew) H.skillSel = H.skills[0].id;
     renderSkillList(); renderSkillDetail();
@@ -238,9 +253,9 @@
     if (box.dataset.key === key && box.querySelector('#skName')) return;
     box.dataset.key = key || '';
     const k = H.skillNew ? { id: '(새 스킬)', name: '', description: '', detail: '입력: \n실행: \n파라미터: \n산출: \n가드레일: ', policies: [], infos: [], actions: [], usedBy: [] } : H.skills.find(x => x.id === H.skillSel);
-    if (!k) { box.innerHTML = '<div class="empty">왼쪽에서 스킬을 고른다.</div>'; return; }
+    if (!k) { box.innerHTML = '<div class="empty">목록에서 편집할 스킬을 선택해 주세요.</div>'; return; }
     const sel = (id, items, cur) => `<select id="${id}">${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
-    box.innerHTML = `<div class="skill-edit"><div class="muted mono">${esc(k.id)}${k.updatedBy ? ' · 최근 편집 ' + esc(k.updatedBy) + ' ' + esc((k.updatedAt || '').slice(0, 16)) : ''}</div>
+    box.innerHTML = `<div class="skill-edit"><div class="muted"><span class="mono">${esc(k.id)}</span>${k.updatedBy ? ' · 최근 편집 ' + esc(k.updatedBy) + ' ' + esc(UI.dateTime(k.updatedAt)) : ''}</div>
       <label>스킬 이름<input id="skName" value="${esc(k.name)}" maxlength="80"></label>
       <label><span id="skDescLabel">어떤 작업을 하나요?</span><textarea id="skDesc" rows="2" aria-labelledby="skDescLabel">${esc(k.description || '')}</textarea></label>
       <label><span id="skDetailLabel">실행 방법과 조건 — 필요한 입력 · 수행할 작업 · 결과 · 제한 조건</span><textarea id="skDetail" rows="8" aria-labelledby="skDetailLabel">${esc(k.detail || '')}</textarea></label>
@@ -300,14 +315,14 @@
       try {
         const out = await postJ(API.process + '/api/kg/manuals/commit', { ...r, links, by: $('#manualBy').value });
         if (H.preview !== r) return;
-        $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 절차 ${out.procedures} · 단계 ${out.steps}. 지식 지도를 다시 읽는다.`;
+        $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 절차 ${out.procedures} · 단계 ${out.steps}. 지식 지도를 새로 불러옵니다.`;
         c.textContent = '적재 완료';
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
       } catch (e) { if (H.preview === r) { $('#manualMsg').textContent = '실패: ' + e.message; c.disabled = false; } }
     });
   }
   $('#manualPreview').addEventListener('click', async () => {
-    const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg">파일을 먼저 고른다.</div>'; return; }
+    const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg">파일을 먼저 선택해 주세요.</div>'; return; }
     const b = $('#manualPreview'); b.disabled = true; b.textContent = '읽는 중…'; H.preview = null;
     $('#manualResult').innerHTML = '<div class="muted" role="status">매뉴얼을 읽는 중…</div>';
     try {
@@ -319,7 +334,7 @@
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = '미리보기'; }
   });
-  $('#manualFile').addEventListener('change', () => { H.preview = null; renderPreview(); });
+  $('#manualFile').addEventListener('change', () => { H.preview = null; $('#manualFilename').textContent = $('#manualFile').files[0]?.name || '선택한 파일 없음'; renderPreview(); });
 
   /* ------------------------------------------------ tab hooks */
   const _sel = selectTab;

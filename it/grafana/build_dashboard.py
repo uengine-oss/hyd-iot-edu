@@ -98,7 +98,7 @@ panels = [
     timeseries("설정값: 팬 속도 · 펌프 부하 (%)", [sql_target(tag_sql("FanSpeedSP", "FanSpeedSP"), "A"), sql_target(tag_sql("LoadSP", "LoadSP"), "B")],
                16, 13, 8, 8, unit="percent", colors={"FanSpeedSP": AMBER, "LoadSP": BLUE}, ymin=0, ymax=100),
 
-    table("경보 (alerts)", "SELECT raised_at AS \"발생\", cleared_at AS \"해제\", alert_id, pattern, severity, state "
+    table("경보 이력", "SELECT pattern, severity, state, raised_at AS \"발생\", cleared_at AS \"해제\", alert_id "
                           "FROM alerts WHERE asset='$asset' ORDER BY raised_at DESC LIMIT 20", 0, 21, 12, 8),
     table("조치 (actions) — 승인된 action.cmd와 PLC ACK",
           "SELECT issued_at AS \"발행\", cmd_id, incident, actions::text AS actions, approved_by, ack_result, ack_reason, ack_at "
@@ -106,6 +106,27 @@ panels = [
     table("감사 로그 (audit)", "SELECT time, incident, actor, event, detail::text AS detail FROM audit "
                               "WHERE $__timeFilter(time) ORDER BY time DESC LIMIT 50", 0, 29, 24, 9),
 ]
+
+# Presentation aliases preserve query values and the source identifiers.
+for panel in panels:
+    aliases = {"CE": "냉각 효율 CE", "SE": "시스템 효율 SE", "FanSpeedSP": "팬 속도", "LoadSP": "펌프 부하"}
+    for name, label in aliases.items():
+        panel["fieldConfig"]["overrides"].append({"matcher": {"id": "byName", "options": name},
+            "properties": [{"id": "displayName", "value": label}]})
+
+alert_labels = {"pattern": ("경보 유형", 180), "severity": ("심각도", 90), "state": ("상태", 100),
+                "발생": ("발생 시각", 170), "해제": ("해제 시각", 170), "alert_id": ("경보 번호", 230)}
+alert_values = {
+    "pattern": {"COOLER_DEGRADATION": "쿨러 성능 저하", "TEMP_TRIP": "유온 보호 정지", "OVERHEAT_TRIP": "유온 보호 정지"},
+    "severity": {"HIGH": "높음", "CRITICAL": "긴급", "WARNING": "주의"},
+    "state": {"RAISE": "발생", "CLEAR": "해제"},
+}
+for name, (label, width) in alert_labels.items():
+    props = [{"id": "displayName", "value": label}, {"id": "custom.width", "value": width}]
+    if name in alert_values:
+        props.append({"id": "mappings", "value": [{"type": "value", "options": {
+            key: {"text": text, "index": i} for i, (key, text) in enumerate(alert_values[name].items())}}]})
+    panels[11]["fieldConfig"]["overrides"].append({"matcher": {"id": "byName", "options": name}, "properties": props})
 
 dashboard = {
     "uid": "hyd-trend", "title": "HYD 설비 추세 · 경보 · 조치", "tags": ["hyd-iot-edu", "L6"],

@@ -96,6 +96,12 @@ class Edge:
         # FUXA's MQTT JSON tags skip null updates, otherwise a successful ACK
         # keeps displaying the previous rejection. Preserve the canonical reason.
         st["reason_display"] = st.get("reason") or "–"
+        # Display fields do not replace the PLC/API command contract.
+        labels = {"REMOTE_AUTO": "원격 자동", "REMOTE_MANUAL": "원격 수동", "LOCAL": "현장 제어",
+                  "RUN": "운전 중", "TRIP": "보호 정지", "DONE": "완료", "REJECTED": "거절",
+                  "OUT_OF_RANGE": "허용 범위 초과", "MODE_MISMATCH": "운전 모드 확인 필요"}
+        for field in ("mode", "state", "result", "reason"):
+            st[field + "_text"] = labels.get(st.get(field), st.get(field)) or "–"
         self.client.publish(topics.mqtt_status(k), json.dumps(st), qos=1, retain=True)
         self.plant.units[asset].dirty_status = False
 

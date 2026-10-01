@@ -47,6 +47,58 @@ const UI = {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleString('ko-KR');
   },
+  time(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleTimeString('ko-KR', {hour12:false});
+  },
+  eventNames: {
+    GUIDE_SUBMITTED:'조치 가이드 제출', GUIDE_APPROVED:'조치 가이드 승인',
+    DECISION_SUBMITTED:'업무 판단 제출', DECISION_APPROVED:'업무 판단 승인',
+    DECISION_DENIED:'승인 권한 확인 실패', DECISION_REJECTED:'업무 판단 반려',
+    CMD_ISSUED:'설비 명령 전송', ACK_RECEIVED:'설비 응답 수신',
+    INCIDENT_CREATED:'인시던트 생성', INCIDENT_CLOSED:'인시던트 종결',
+    STATE_CHANGED:'진행 상태 변경', REOBSERVE_DONE:'조치 효과 확인 완료',
+    ACK_DONE:'설비 명령 완료', ALERT_CLEARED:'경보 해제', CMD_PUBLISHED:'설비 명령 발행',
+    MANUAL_INGESTED:'매뉴얼 등록', REOBSERVATION:'조치 후 재관측', SKILL_EDITED:'스킬 수정',
+    SKILL_EXECUTED:'스킬 실행',
+  },
+  eventRecord({time, name, actor='', detail='', raw}) {
+    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventNames[name] || this.status(name))}</strong><span>${esc(actor)}</span></header>${detail ? `<p>${esc(detail)}</p>` : ''}${raw ? `<details><summary>원본 기록</summary><pre>${esc(JSON.stringify(raw,null,2))}</pre></details>` : ''}</article>`;
+  },
+  condition(value) {
+    return {'cmms_cleans_60d >= 3':'최근 60일 동안 쿨러 세척 3회 이상','qms_hot_min > 0':'과열 구간에 생산된 로트가 있음'}[value] || value;
+  },
+  // Labels and units follow enterprise-sim/entsim/data.py. Unknown fields retain
+  // their exact key/value; source records are always available beside the facts.
+  facts: {
+    due_in_h:['납기까지','시간'], remaining_qty:['생산 잔량','개'], rate_per_h:['생산 속도','개/시간'],
+    hour_value:['생산 시간당 가치','만원/시간'], alt_asset:['대체 설비',''], alt_free_h:['대체 설비 가용 시간','시간'],
+    alt_rate_per_h:['대체 설비 생산 속도','개/시간'], changeover_h:['설비 전환 시간','시간'], order_id:['생산오더',''],
+    sales_order:['판매 주문',''], customer_tier:['고객 구분',''], penalty_per_h:['시간당 지체상금','만원/시간'],
+    failure_cost:['돌발 고장 비용','만원'], claim_cost:['품질 클레임 비용','만원'],
+    fg_item:['완제품 품목',''], fg_stock:['완제품 재고','개'], ship_in_h:['출하까지','시간'],
+    cleans_60d:['최근 60일 세척 횟수','회'], last_clean_days:['마지막 세척 후','일'], clean_h:['세척 소요','시간'],
+    clean_cost:['세척 비용','만원'], night_in_h:['야간 정비창까지','시간'], oil_risk_per_h:['시간당 작동유 위험 비용','만원/시간'], mtbf_h:['평균 고장 간격','시간'],
+    hot_min:['과열 지속 시간','분'], auto_lot:['자동차 고객 로트',''], auto_qty:['자동차 고객 수량','개'],
+    gen_lot:['일반 고객 로트',''], gen_qty:['일반 고객 수량','개'], inspect_h:['검사 소요','시간'],
+    inspect_cost:['전수검사 비용','만원'], sample_cost:['표본검사 비용','만원'],
+    gen_defect_p:['일반 고객 불량 확률','확률'], auto_defect_p:['자동차 고객 불량 확률','확률'],
+    gen_claim:['일반 고객 클레임 손실','만원'], auto_claim:['자동차 고객 클레임 손실','만원'],
+    std_price:['기준 구매 단가','만원'], contract_kw:['계약 전력','kW'], demand_kw:['현재 전력 수요','kW'],
+    fan_boost_kw:['팬 증속 추가 전력','kW'], basic_rate:['기본 요금 단가','만원/kW'], peak_h:['피크 시간','시간'],
+    peak_window:['피크 시간대',''], outdoor_c:['외기 온도','°C'], energy_rate:['전력량 요금 단가','만원/kWh'],
+  },
+  factList(facts) {
+    return '<dl class="fact-list">' + Object.entries(facts || {}).map(([key,value]) => {
+      const short = key.replace(/^(mes|erp|cmms|qms|scm|ems)_/, '');
+      let spec = this.facts[short];
+      const supplier = short.match(/^([abc])_(price|fail|lead_d|avl)$/);
+      if (supplier) { const field={price:['구매 단가','만원'],fail:['고장 확률','확률'],lead_d:['납기','일'],avl:['승인 공급사','여부']}[supplier[2]]; spec=[supplier[1].toUpperCase()+' 공급사 '+field[0],field[1]]; }
+      const [label,unit] = spec || [key,''];
+      const shown = unit==='확률' ? Number(value)*100+' %' : unit==='여부' ? (value ? '예' : '아니요') : `${typeof value==='number' ? value.toLocaleString('ko-KR') : value}${unit ? ' '+unit : ''}`;
+      return `<div title="${esc(key)}"><dt>${esc(label)}</dt><dd>${esc(shown)}</dd></div>`;
+    }).join('')+'</dl>';
+  },
   // Human-readable labels belong to the UI; API step names and raw records stay intact.
   steps: {
     freshness: ['데이터 상태 확인', '최근 데이터가 들어오는지, 분석에 사용할 수 있는지 확인합니다.'],

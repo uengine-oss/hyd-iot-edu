@@ -72,3 +72,16 @@ def test_alert_to_ot_levels():
     clear = gw.alert_to_ot({"alertId": "ALT-1", "asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "state": "CLEAR", "severity": "HIGH"})
     assert raise_["level"] == 2 and clear["level"] == 0
     assert raise_["alertId"] == "ALT-1" and "COOLER_DEGRADATION" in raise_["text"]
+    assert raise_["display_text"] == "경보 발생 · 쿨러 성능 저하"
+    assert clear["display_text"] == "경보 해제 · 쿨러 성능 저하"
+
+
+def test_legacy_alert_display_upgrade_preserves_event_and_is_idempotent():
+    old = {"alertId": "ALT-1", "pattern": "OVERHEAT_TRIP", "state": "CLEAR",
+           "t": "2026-10-01T00:00:00Z", "level": 0, "text": "CLEAR OVERHEAT_TRIP (ALT-1)"}
+    upgraded = gw.upgrade_retained_alert(old)
+    assert {k: upgraded[k] for k in old} == old
+    assert upgraded["display_text"] == "경보 해제 · 유온 보호 정지"
+    assert gw.upgrade_retained_alert(upgraded) is None
+    assert gw.upgrade_retained_alert({"state": "CLEAR"}) is None
+    assert gw.upgrade_retained_alert([]) is None

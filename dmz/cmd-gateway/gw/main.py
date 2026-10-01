@@ -34,11 +34,19 @@ mqtt = make_client("cmd-gateway")
 def _on_connect(client, userdata, flags, rc, properties=None):
     state["mqtt"] = True
     client.subscribe("plant/+/status", qos=1)
+    client.subscribe("plant/+/alert", qos=1)
     log.info("mqtt connected, watching plant/+/status")
 
 
 def _on_message(client, userdata, msg):
     parsed = topics.parse_mqtt(msg.topic)
+    if parsed and parsed[1] == "alert" and msg.retain:
+        try:
+            upgraded = gw.upgrade_retained_alert(json.loads(msg.payload.decode()))
+            if upgraded:
+                client.publish(msg.topic, json.dumps(upgraded), qos=1, retain=True)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass
     if parsed and parsed[1] == "status":
         try:
             st = json.loads(msg.payload.decode())

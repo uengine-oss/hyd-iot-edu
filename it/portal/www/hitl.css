@@ -446,7 +446,7 @@
 }
 .skill-rels {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s4);
 }
 .skill-rels label,
@@ -542,3 +542,11 @@
     padding: var(--s3);
   }
 }
+
+
+.skill-rels label:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+.upload > p { max-width: 90ch; }
+.file-picker { position: relative; display: inline-flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.file-picker input[type=file] { position: absolute; width: 1px; height: 1px; min-width: 0; min-height: 0; padding: 0; border: 0; margin: 0; clip-path: inset(50%); overflow: hidden; }
+.file-picker:focus-within .btn { outline: 3px solid #8298ee; outline-offset: 3px; }
+.file-picker .file-name { max-width: 240px; overflow-wrap: anywhere; font-size: 13px; }
