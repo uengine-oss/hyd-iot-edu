@@ -268,6 +268,8 @@ with sync_playwright() as pw:
         tab('trends')
         page.locator('#selAsset').select_option('HYD-02')
         for sel in ['#pTs1', '#pScore', '#pCe', '#pSp', '#pAlerts']:
+            # Grafana renders a panel when its iframe enters the visible area.
+            page.locator(sel).scroll_into_view_if_needed()
             frame = page.frame_locator(sel)
             expect(frame.locator('body')).not_to_contain_text('Dashboard not found', timeout=30000)
             expect(frame.get_by_role('region')).to_be_visible(timeout=45000)

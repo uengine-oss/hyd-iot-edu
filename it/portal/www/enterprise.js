@@ -223,7 +223,7 @@ function renderDecision() {
   const cols = owners.map(o => ({ ...o, kpis: o.kpis.filter(k => used.has(k.id)) })).filter(o => o.kpis.length);
   const pw = r.winners[persp];
   let html = `<div class="dec-head"><h2>${esc(scn.name || '')} <span class="muted">${esc(d.asset || '')} · ${esc(d.id)}</span></h2>
-    <span class="pill ${d.status === 'SUBMITTED' ? 'AWAITING_APPROVAL' : 'CLOSED'}">${esc(d.status)}</span></div>`;
+    <span class="pill ${d.status === 'SUBMITTED' ? 'AWAITING_APPROVAL' : 'CLOSED'}">${esc(UI.status(d.status))}</span></div>`;
   if (d.applicable === false) html += `<div class="note">이 설비는 적용 조건 <code>${esc(d.condition)}</code>을 만족하지 않는다. 경보로 자동 기동되면 제출되지 않지만, 학습용으로 평가 결과를 보여 준다.</div>`;
   html += `<div class="versus">
     <div><small>즉각 제어만 할 때 (L1~L6)</small><p>${esc(scn.immediate || '')}</p><span class="muted">센서값 하나를 보고 설비 하나를 제어한다.</span></div>
@@ -253,9 +253,9 @@ function renderDecision() {
   }
   html += '</tbody></table></div><p class="muted">셀에 마우스를 올리면 온톨로지에 저장된 산식 설명이 보인다. 금액은 만원, 양수는 이익·절감, 음수는 손실·비용이다.</p>';
   if (r.drivers && r.drivers.length) html += '<h2>권고를 만든 차이 (권고안 − 차선)</h2><div class="drivers">' + r.drivers.map(x => `<span class="${won(x.delta)}">${esc(x.name)} <b>${money(x.delta)}</b></span>`).join('') + '</div>';
-  html += '<h2>에이전트가 온톨로지를 따라 조회한 기업 시스템</h2><table class="prov"><tr><th>정보 유형 (InfoType)</th><th>시스템</th><th>엔드포인트</th><th>가져온 사실</th></tr>' +
+  html += '<h2>판단에 사용한 기업 시스템 정보</h2><div class="table-scroll"><table class="prov"><tr><th>정보 유형 (InfoType)</th><th>시스템</th><th>엔드포인트</th><th>가져온 사실</th></tr>' +
     (d.provenance || []).map(p => `<tr><td>${esc(p.name || p.info)}<div class="muted mono">${esc(p.info)}</div></td><td><b>${esc(p.systemName || p.system)}</b></td><td class="mono">${esc(p.endpoint)}</td>` +
-      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : Object.entries(p.facts || {}).map(([k, v]) => `<code>${esc(k)}=${esc(v)}</code>`).join(' ')}</td></tr>`).join('') + '</table>';
+      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : Object.entries(p.facts || {}).map(([k, v]) => `<code>${esc(k)}=${esc(v)}</code>`).join(' ')}</td></tr>`).join('') + '</table></div>';
   html += `<h2>판단 트레이스 (L8)</h2>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] });
   if (d.status === 'SUBMITTED') html += `<div class="approve-row"><button class="btn primary" id="goApprove">업무 프로세스·시스템 연계에서 승인하기 (L9)</button><span class="muted">에이전트는 제출만 한다. 승인 권한은 온톨로지의 역할(Role)이 정한다.</span></div>`;
   box.innerHTML = html;
@@ -289,13 +289,14 @@ function renderProcess() {
     const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
     keyboardItem(it);
     it.dataset.itemId = d.id;
-    it.innerHTML = `<div><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(d.state)}</span></div>` +
+    it.innerHTML = `<div><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></div>` +
       `<div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · ${(d.origin || {}).kind === 'alert' ? '경보 ' + esc((d.origin || {}).alertId || '') : '수동 실행'}${d.override ? ' · 권고와 다른 안 승인' : ''}</div>`;
     it.addEventListener('click', async () => {
-      if (ent.decSel === d.id && ent.decDetail) return;
+      if (ent.decSel === d.id && ent.decDetail) { UI.revealDetail($('#decDetail')); return; }
       ent.decSel = d.id; ent.decDetail = null; ent.form.msg = ''; ent.lastDetailSig = null;
       $('#decDetail').innerHTML = '<div class="empty" role="status">선택한 판단을 불러오는 중…</div>';
       await refreshProcess();
+      if (ent.decSel === d.id) UI.revealDetail($('#decDetail'));
     });
     list.append(it);
   }
@@ -314,7 +315,7 @@ function renderDecisionApproval() {
   ent.lastDetailSig = sig;
   const roles = Object.entries(d.roles || {}).sort((a, b) => b[1].level - a[1].level);
   const pending = d.state === 'PENDING_APPROVAL';
-  let html = `<h2 style="margin-top:0">${esc((d.scenario || {}).name || '')} <span class="pill ${esc(d.state)}">${esc(d.state)}</span></h2>
+  let html = `<h2 style="margin-top:0">${esc((d.scenario || {}).name || '')} <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></h2>
     <div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · 제출 ${esc((d.created || '').slice(11, 19))}${(d.origin || {}).incident ? ' · 인시던트 ' + esc(d.origin.incident) : ''}</div>
     <div class="summary">${esc(d.explanation || '')}</div>`;
   if (pending) html += `<div class="who"><label>승인자 <input id="decBy" value="${esc(ent.form.by)}"></label><label>역할 <select id="decRole">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === ent.form.role ? 'selected' : ''}>${esc(r.name)} (${esc(r.dept)}, 직급 ${r.level})</option>`).join('')}</select></label>
@@ -328,8 +329,8 @@ function renderDecisionApproval() {
   }
   html += '</table></div>';
   if (pending) html += `<div class="approve-row"><input type="text" id="decReason" placeholder="반려 사유" value="${esc(ent.form.reason)}"><button class="btn" id="decReject">반려</button><span id="decMsg" class="neg">${esc(ent.form.msg || '')}</span></div>`;
-  if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><table class="prov"><tr><th>스킬</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
-    d.executions.map(x => `<tr><td>${esc(x.skill)}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(x.status)}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table>';
+  if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><div class="table-scroll" tabindex="0" role="region" aria-label="실행 결과 표"><table class="prov"><tr><th>스킬</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
+    d.executions.map(x => `<tr><td>${esc(x.skill)}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(UI.status(x.status))}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table></div>';
   html += '<h2>이력</h2><div class="audit">' + (d.history || []).map(h => `<div>${esc((h.t || '').slice(11, 19))} <b>${esc(h.state)}</b> ${esc(h.by || '')} ${esc(h.role || '')} ${esc(h.option || '')} ${esc(h.reason || '')}</div>`).join('') + '</div>';
   box.innerHTML = html;
   const by = $('#decBy'), role = $('#decRole'), reason = $('#decReason');
@@ -378,7 +379,7 @@ async function fillIncidentDecisions() {
     const all = await getJ(API.process + '/api/decisions');
     const mine = all.filter(d => (d.origin || {}).incident === inc.id);
     box.innerHTML = '<h2>전사 판단 (L7 → L8 → L9)</h2>' + (mine.length ? '<div class="linked">' + mine.map(d =>
-      `<a href="#" data-dec="${esc(d.id)}"><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(d.state)}</span></a>`).join('') +
+      `<a href="#" data-dec="${esc(d.id)}"><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></a>`).join('') +
       '</div><p class="muted">같은 경보를 온톨로지가 ERP·MES·CMMS·QMS 정보와 부서 KPI로 이어 판단한 결과다. 누르면 승인 화면으로 간다.</p>'
       : '<div class="muted">이 인시던트와 연결된 전사 판단이 없다.</div>');
     box.querySelectorAll('[data-dec]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.decSel = a.dataset.dec; selectTab('process'); }));

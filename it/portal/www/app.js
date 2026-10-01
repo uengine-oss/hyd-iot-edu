@@ -31,17 +31,69 @@ const state = { tab: 'main', plant: null, det: null, incidents: [], runs: [], se
 
 /* ---------------- tabs ---------------- */
 function selectTab(name) {
+  if (!document.getElementById('view-' + name)) return;
   const changed = state.tab !== name;
   state.tab = name;
-  document.querySelectorAll('.rail nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.rail nav button').forEach(b => {
+    const active = b.dataset.tab === name;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
   const brand = document.getElementById('brandHome'); if (brand) brand.classList.toggle('active', name === 'main');
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   if (changed) $('main').scrollTo(0, 0);
   if (name === 'scenario') renderUnits();
   if (name === 'incidents') { renderScada(); renderIncList(); renderDetail(); }
   if (name === 'trends') renderTrends();
+  updateNavigation(name);
 }
-document.querySelectorAll('.rail nav button').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.tab)));
+const navButtons = [...document.querySelectorAll('.rail nav button[data-tab]')];
+navButtons.forEach(b => {
+  b.dataset.label = b.textContent;
+  b.innerHTML = UI.icon(b.dataset.icon) + `<span>${esc(b.dataset.label)}</span>`;
+  b.addEventListener('click', () => { selectTab(b.dataset.tab); $('#content').focus({preventScroll:true}); });
+});
+function setMenu(open) {
+  $('#navigation').classList.toggle('open', open);
+  $('#menuToggle').setAttribute('aria-expanded', String(open));
+  $('#menuToggle').setAttribute('aria-label', open ? '실습 메뉴 닫기' : '실습 메뉴 열기');
+  $('#navScrim').hidden = !open;
+  // Off-canvas items must not remain in the keyboard tab order.
+  $('#navigation').inert = matchMedia('(max-width:720px)').matches && !open;
+}
+function updateNavigation(name) {
+  const index = navButtons.findIndex(b => b.dataset.tab === name);
+  $('#pageLocation').textContent = navButtons[index]?.dataset.label || '실습 홈';
+  document.title = `${$('#pageLocation').textContent} · HYD Lab`;
+  const prev = navButtons[index - 1], next = navButtons[index + 1];
+  for (const [id, target, direction] of [['pagePrev', prev, '이전'], ['pageNext', next, '다음']]) {
+    const button = $('#' + id); if (!button) continue;
+    button.disabled = !target;
+    button.dataset.target = target?.dataset.tab || '';
+    button.innerHTML = `<span>${direction}${direction === '다음' ? ' →' : ''}</span><b>${esc(target?.dataset.label || (direction === '이전' ? '첫 화면' : '마지막 화면'))}</b>`;
+    button.setAttribute('aria-label', `${direction} 화면: ${target?.dataset.label || '없음'}`);
+  }
+  const count = $('#pagePosition'); if (count) count.textContent = `${index + 1} / ${navButtons.length}`;
+  setMenu(false);
+}
+$('#menuToggle').addEventListener('click', () => {
+  const open = $('#menuToggle').getAttribute('aria-expanded') !== 'true'; setMenu(open);
+  if (open) $('#navigation [aria-current="page"]')?.focus();
+});
+$('#navScrim').addEventListener('click', () => { setMenu(false); $('#menuToggle').focus(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#navigation').classList.contains('open')) { setMenu(false); $('#menuToggle').focus(); }
+  if (e.key === 'Tab' && matchMedia('(max-width:720px)').matches && $('#navigation').classList.contains('open')) {
+    const items = [...$('#navigation').querySelectorAll('button')];
+    if (e.shiftKey && document.activeElement === items[0]) { e.preventDefault(); items.at(-1).focus(); }
+    if (!e.shiftKey && document.activeElement === items.at(-1)) { e.preventDefault(); items[0].focus(); }
+  }
+});
+matchMedia('(max-width:720px)').addEventListener('change', () => setMenu(false));
+document.querySelectorAll('#pagePrev,#pageNext').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.target) { selectTab(b.dataset.target); $('#content').focus({preventScroll:true}); }
+}));
+selectTab('main');
 
 /* ---------------- home: layer stack + health ---------------- */
 const healthState = {};
@@ -56,7 +108,7 @@ function renderStack() {
       const key = c.health || c.url;
       const comp = el('span', 'comp');
       comp.innerHTML = `<i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i><i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
-        `<a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a><span class="role">${esc(c.role)}</span><span class="role">(${esc(c.full)})</span>` +
+        `<a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)} ↗</a><span class="role-desc">${esc(c.role)}</span><details><summary>구현 비교</summary><span>${esc(c.full)}</span></details>` +
         (c.optional ? '<span class="role">선택 프로필</span>' : '');
       comps.append(comp);
     }
@@ -97,7 +149,7 @@ function sparkline(svg, values, min, max) {
 }
 function renderUnits() {
   const box = $('#units');
-  if (!state.plant) { box.innerHTML = '<div class="muted">plant-sim(8000)에 연결할 수 없다. docker compose --profile ot up</div>'; return; }
+  if (!state.plant) { box.innerHTML = '<div class="muted">설비 시뮬레이터와 연결이 끊겼습니다. 서비스 연결을 확인하세요. 연결되면 자동으로 다시 표시됩니다.</div>'; return; }
   if (!box.querySelector('.unit')) box.innerHTML = '';
   const units = state.plant.units;
   for (const [asset, u] of Object.entries(units)) {
@@ -116,18 +168,18 @@ function renderUnits() {
         <div class="ctl">
           <button class="btn danger" data-act="degrade">쿨러 열화 주입</button>
           <button class="btn" data-act="restore">복구</button>
-          <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">REMOTE_AUTO</button>
-          <button class="btn warn" data-act="mode" data-mode="REMOTE_MANUAL">REMOTE_MANUAL</button>
-          <button class="btn" data-act="mode" data-mode="LOCAL">LOCAL</button>
+          <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
+          <button class="btn warn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
+          <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
           <button class="btn" data-act="fan">팬 80 %</button>
           <button class="btn" data-act="load">부하 70 %</button>
-          <button class="btn" data-act="reset">RESET</button>
+          <button class="btn" data-act="reset">보호 정지 해제</button>
         </div>`;
       card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);
     }
     const t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[asset]) || {};
-    card.querySelector('.mode').textContent = `${s.mode}`;
+    card.querySelector('.mode').textContent = UI.status(s.mode);
     card.querySelector('.big .v').textContent = fmt(t.TS1, 1);
     const bar = card.querySelector('.bar i'); bar.style.width = Math.min(100, t.TS1) + '%'; bar.className = tsColor(t.TS1);
     card.querySelector('.ce').textContent = fmt(t.CE, 0) + ' %';
@@ -135,8 +187,8 @@ function renderUnits() {
     card.querySelector('.fan').textContent = fmt(t.FanSpeedSP, 0) + ' %';
     card.querySelector('.load').textContent = fmt(t.LoadSP, 0) + ' %';
     card.querySelector('.health').textContent = fmt(s.cooler_health, 2);
-    card.querySelector('.phase').innerHTML = `<span class="state ${d.phase || 'IDLE'}">${d.phase || '–'}</span>${d.alert_id ? ' <span class="muted">' + esc(d.alert_id) + '</span>' : ''}`;
-    card.querySelector('.plc').innerHTML = `<span class="state ${s.state}">${s.state}${s.trip ? ' · ' + s.trip : ''}</span>`;
+    card.querySelector('.phase').innerHTML = `<span class="state ${d.phase || 'IDLE'}">${UI.status(d.phase)}</span>${d.alert_id ? ' <span class="muted">' + esc(d.alert_id) + '</span>' : ''}`;
+    card.querySelector('.plc').innerHTML = `<span class="state ${s.state}">${UI.status(s.state)}${s.trip ? ' · ' + s.trip : ''}</span>`;
     card.querySelector('.ack').textContent = s.cmdId ? `${s.cmdId} → ${s.result}${s.reason ? ' (' + s.reason + ')' : ''}` : '–';
     card.querySelector('.fault').textContent = u.fault ? `결함 진행 중: ${u.fault}` : '';
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
@@ -181,11 +233,7 @@ function renderGwLog(entries) {
 
 
 /* ---------------- 설비 SCADA: unit schematics + selection ---------------- */
-const STATE_LABEL = {
-  GUIDE_RECEIVED: '카드 수신', AWAITING_APPROVAL: '승인 대기', CMD_ISSUED: '명령 발행', AWAITING_ACK: 'ACK 대기', ACKED: 'ACK 완료',
-  RE_OBSERVING: '재관측 중', RESOLVED: '완화 확인', WORK_ORDER_CREATED: '작업지시', CLOSED: '종결', ESCALATED: '에스컬레이션',
-  REJECTED_BY_OPERATOR: '거부', RESOLVED_WITHOUT_ACTION: '자연 회복',
-};
+const STATE_LABEL = UI.states;
 function tsColor2(t) { return t >= 65 ? '#d7263d' : t >= 55 ? '#c77700' : '#1e8e5a'; }
 function unitSvg(asset) {
   const fins = [270, 279, 288, 297, 306, 315, 324].map(x => `<line class="fin" x1="${x}" y1="60" x2="${x}" y2="100"/>`).join('');
@@ -231,7 +279,7 @@ function renderScada() {
     const alarm = d.phase === 'RAISED' || d.phase === 'CANDIDATE' || d.phase === 'CLEARING' || s.state === 'TRIP';
     card.classList.toggle('alarm', alarm); card.classList.toggle('trip', s.state === 'TRIP'); card.classList.toggle('sel', state.selectedAsset === asset);
     const modeCls = s.mode === 'REMOTE_AUTO' ? 'auto' : s.mode === 'REMOTE_MANUAL' ? 'manual' : 'local';
-    card.querySelector('.chips').innerHTML = `<span class="chip ${modeCls}">${esc(s.mode)}</span><span class="chip ${s.state === 'TRIP' ? 'trip' : 'run'}">${esc(s.state)}${s.trip ? ' ' + esc(s.trip) : ''}</span>`
+    card.querySelector('.chips').innerHTML = `<span class="chip ${modeCls}" title="${esc(s.mode)}">${esc(UI.status(s.mode))}</span><span class="chip ${s.state === 'TRIP' ? 'trip' : 'run'}" title="${esc(s.state)}">${esc(UI.status(s.state))}${s.trip ? ' ' + esc(s.trip) : ''}</span>`
       + (inc ? `<span class="chip inc">${esc(STATE_LABEL[inc.state] || inc.state)}</span>` : '');
     const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n) n.textContent = v; };
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0)); set('v-ce', fmt(t.CE, 0)); set('v-fan', fmt(t.FanSpeedSP, 0));
@@ -241,7 +289,7 @@ function renderScada() {
     const running = s.state === 'RUN' && t.FanSpeedSP > 0;
     fan.classList.toggle('stop', !running);
     fan.style.setProperty('--spin', (running ? (2.4 * 60 / Math.max(10, t.FanSpeedSP)).toFixed(2) : 2) + 's');
-    card.querySelector('.f-phase').innerHTML = `탐지 <span class="chip ${(d.phase || 'idle').toLowerCase()}">${esc(d.phase || '–')}</span>${d.alert_id ? ' ' + esc(d.alert_id) : ''}`;
+    card.querySelector('.f-phase').innerHTML = `탐지 <span class="chip ${(d.phase || 'idle').toLowerCase()}" title="${esc(d.phase)}">${esc(UI.status(d.phase))}</span>${d.alert_id ? ' ' + esc(d.alert_id) : ''}`;
     card.querySelector('.f-inc').textContent = inc ? `${inc.id} · ${STATE_LABEL[inc.state] || inc.state}` : (s.cmdId ? `마지막 ACK ${s.cmdId.slice(0, 18)} ${s.result}` : '경보 없음');
   }
 }
@@ -272,7 +320,7 @@ function renderIncList() {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
     keyboardItem(it);
     it.dataset.itemId = inc.id;
-    it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(inc.state)}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc((inc.created || '').slice(11, 19))}</span>`;
+    it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(UI.status(inc.state))}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc((inc.created || '').slice(11, 19))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
@@ -281,7 +329,7 @@ function renderIncList() {
     const it = el('div', 'item');
     keyboardItem(it);
     it.dataset.itemId = r.id;
-    it.innerHTML = `<strong>${esc(r.id)} <span class="pill ESCALATED">${esc(r.status)}</span></strong><span>${esc(r.asset)} · ${esc(r.alertId)} · 에이전트 실행만 있음</span>`;
+    it.innerHTML = `<strong>${esc(r.id)} <span class="pill ESCALATED">${esc(UI.status(r.status))}</span></strong><span>${esc(r.asset)} · ${esc(r.alertId)} · 에이전트 실행만 있음</span>`;
     it.addEventListener('click', () => { state.selected = null; state.detail = null; loadRun(r.id).then(renderDetail); });
     box.append(it);
   }
@@ -325,7 +373,7 @@ function traceHtml(run) {
   let html = `<div class="muted">${esc(run.id)} · ${esc(run.status)} · 시작 ${esc((run.started || '').slice(11, 19))}${run.ended ? ' · 종료 ' + esc(run.ended.slice(11, 19)) : ''}${run.error ? ' · ' + esc(run.error) : ''}</div><div class="trace">`;
   for (const s of run.steps) {
     const out = s.output == null ? '' : JSON.stringify(s.output, null, 1);
-    html += `<div class="step ${esc(s.status)}"><strong>${esc(s.name)} <span>${esc(s.t.slice(11, 19))}</span></strong><span>${esc(s.note || '')}</span>${out ? `<pre>${esc(out.slice(0, 900))}${out.length > 900 ? '…' : ''}</pre>` : ''}</div>`;
+    html += `<div class="step ${esc(s.status)}"><strong>${esc(s.name)} <span>${esc(s.t.slice(11, 19))}</span></strong><span>${esc(s.note || '')}</span>${out ? `<details><summary>출력 데이터 보기</summary><pre>${esc(out)}</pre></details>` : ''}</div>`;
   }
   return html + '</div>';
 }
@@ -377,7 +425,7 @@ function renderDetail() {
   }
   let html = '';
   if (inc) {
-    html += `<h2 style="margin-top:0">${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(inc.state)}</span> <span class="muted">${esc(inc.asset)} · 경보 ${esc(inc.alertId)}${inc.cmdId ? ' · 명령 ' + esc(inc.cmdId) : ''}${inc.approvedBy ? ' · 승인 ' + esc(inc.approvedBy) : ''}</span></h2>`;
+    html += `<h2 style="margin-top:0">${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(UI.status(inc.state))}</span> <span class="muted">${esc(inc.asset)} · 경보 ${esc(inc.alertId)}${inc.cmdId ? ' · 명령 ' + esc(inc.cmdId) : ''}${inc.approvedBy ? ' · 승인 ' + esc(inc.approvedBy) : ''}</span></h2>`;
     html += '<h2>프로세스 (미니 BPMN)</h2>' + lane(inc);
     if (inc.ack) html += `<div class="muted">PLC ACK: ${esc(inc.ack.result)}${inc.ack.reason ? ' (' + esc(inc.ack.reason) + ')' : ''} · 인터록 ${esc(inc.ack.interlock || '')}</div>`;
     if (inc.workOrder) html += `<div class="muted">작업지시 ${esc(inc.workOrder.id)}: ${esc(inc.workOrder.name)} (${esc(inc.workOrder.sop || '')})</div>`;

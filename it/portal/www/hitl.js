@@ -138,7 +138,7 @@
     if (H.form.fan == null) { H.form.fan = cv.fan; H.form.load = cv.load; }
     const roles = Object.entries(d.roles || {}).sort((a, b) => a[1].level - b[1].level);
     if (!H.form.role) { const ro = opts.find(o => o.id === H.form.option); H.form.role = ((ro && ro.approver) || {}).id || (roles[0] || [''])[0]; }
-    html += `<div class="hitl-head"><h2>조치 의사결정 (HITL) <span class="pill ${esc(d.state)}">${esc(d.state)}</span></h2>
+    html += `<div class="hitl-head"><h2>조치 의사결정 (HITL) <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></h2>
       <p>${esc((d.scenario || {}).name || '')} — 에이전트가 온톨로지의 스킬 · KPI · 규정 · 과거 선례로 매긴 우선순위다. 하나를 골라 결정하면 즉시 제어는 게이트웨이 경로로, 나머지 스킬은 기업 시스템에서 실행되고, 이 판단은 온톨로지에 기록되어 다음 판단에 반영된다.</p></div>`;
     html += '<div class="hitl-opts">';
     opts.forEach((o, i) => {
@@ -170,10 +170,10 @@
     } else {
       html += `<div class="hitl-done">결정: <b>${esc((opts.find(o => o.id === d.chosen) || {}).name || d.chosen || '')}</b> · ${esc(d.approvedBy || '')} (${esc((d.roles[d.approvedRole] || {}).name || d.approvedRole || '')})${d.override ? ' · 권고와 다른 선택' : ''}${d.reason ? ' · 사유: ' + esc(d.reason) : ''}
         <div class="muted">이 판단은 온톨로지에 Decision 노드로 기록됐고, 같은 판단의 다음 권고 계산에 "현장 판단 선례"로 반영된다.</div>
-        ${(d.executions || []).map(x => `<div class="hx"><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(x.status)}</span> ${esc(x.skill)} — ${esc(x.detail || '')}</div>`).join('')}</div>`;
+        ${(d.executions || []).map(x => `<div class="hx"><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(UI.status(x.status))}</span> ${esc(x.skill)} — ${esc(x.detail || '')}</div>`).join('')}</div>`;
     }
     const others = H.decs.filter(x => x.id !== d.id);
-    if (others.length) html += '<div class="hitl-others">같은 경보에서 함께 올라온 판단: ' + others.map(x => `<a href="#" data-dec="${esc(x.id)}">${esc((x.scenario || {}).name || '')} <span class="pill ${esc(x.state)}">${esc(x.state)}</span></a>`).join(' ') + '</div>';
+    if (others.length) html += '<div class="hitl-others">같은 경보에서 함께 올라온 판단: ' + others.map(x => `<a href="#" data-dec="${esc(x.id)}">${esc((x.scenario || {}).name || '')} <span class="pill ${esc(x.state)}">${esc(UI.status(x.state))}</span></a>`).join(' ') + '</div>';
     html += '</section>';
     box.innerHTML = html;
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { H.form.option = r.value; H.msg = ''; const o = (H.dec.options || []).find(x => x.id === r.value); if (o && o.approver) H.form.role = o.approver.id; renderHitl(); }));
@@ -228,7 +228,7 @@
       const it = el('div', 'item' + (k.id === H.skillSel && !H.skillNew ? ' sel' : ''));
       keyboardItem(it);
       it.innerHTML = `<strong>${esc(k.name)}</strong><span>${esc((k.system || {}).name || '')} · 승인 ${esc((k.approver || {}).name || '–')}${k.edited ? ' · 편집됨' : ''}</span><span class="d">${esc(k.description || '')}</span>`;
-      it.addEventListener('click', () => { H.skillSel = k.id; H.skillNew = false; renderSkillList(); renderSkillDetail(); });
+      it.addEventListener('click', () => { H.skillSel = k.id; H.skillNew = false; renderSkillList(); renderSkillDetail(); UI.revealDetail($('#skillDetail')); });
       list.append(it);
     }
   }
@@ -273,7 +273,7 @@
       finally { b.disabled = false; }
     });
   }
-  $('#skillNew').addEventListener('click', () => { H.skillNew = true; renderSkillList(); renderSkillDetail(); });
+  $('#skillNew').addEventListener('click', () => { H.skillNew = true; renderSkillList(); renderSkillDetail(); UI.revealDetail($('#skillDetail')); $('#skName').focus({preventScroll:true}); });
 
   /* ================================================= manual upload → SOP ingestion */
   async function loadUploads() {

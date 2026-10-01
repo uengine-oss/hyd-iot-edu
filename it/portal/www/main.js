@@ -168,9 +168,14 @@
     fitNodes(); document.fonts.ready.then(fitNodes);
     document.getElementById('mainStages').innerHTML = stagesHtml();
     document.querySelectorAll('.m-stage').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.go)));
-    document.getElementById('brandHome').addEventListener('click', () => selectTab('main'));
+    document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({preventScroll:true}); });
     document.getElementById('mainArch').addEventListener('click', () => selectTab('home'));
     document.getElementById('mainOperate').addEventListener('click', () => selectTab('incidents'));
+    document.getElementById('heroZoom').addEventListener('click', e => {
+      const zoomed = box.classList.toggle('zoomed');
+      e.currentTarget.setAttribute('aria-pressed', String(zoomed));
+      e.currentTarget.textContent = zoomed ? '화면에 맞추기' : '도식 확대';
+    });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
   }

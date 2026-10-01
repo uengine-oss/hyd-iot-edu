@@ -235,7 +235,7 @@
   {
    "id": 3,
    "type": "stat",
-   "title": "이상 점수 (AE 대용)",
+   "title": "이상 점수 · 통계 기반",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -483,8 +483,8 @@
   {
    "id": 7,
    "type": "timeseries",
-   "title": "유온 TS1 — 경보(빨강/초록)·승인 조치(파랑) 주석과 함께 감쇠를 확인",
-   "description": "60 ℃ 경고 · 65 ℃ 인터록 트립. 주석은 alerts / actions 테이블에서 온다.",
+   "title": "유온 TS1 · 경보와 조치 전후 추이",
+   "description": "60 ℃ 경고 · 65 ℃ 보호 정지. 빨강은 경보 발생, 초록은 해제, 파랑은 승인된 조치입니다. 경보·조치 이력과 유온 변화를 함께 비교하세요.",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"
@@ -578,8 +578,8 @@
   {
    "id": 8,
    "type": "timeseries",
-   "title": "이상 점수 (Flink ONNX 오토인코더 자리)",
-   "description": "",
+   "title": "이상 점수 · 통계 기반",
+   "description": "TS1·CE·VS1의 표준화 편차(z-score)를 합산한 실습용 점수입니다. 값이 클수록 정상 기준에서 멀어집니다. 학습된 오토인코더의 출력은 아닙니다.",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "tsdb"

@@ -73,7 +73,7 @@ panels = [
          0, 0, 4, 4, unit="celsius", thresholds=[(60, WARN), (65, CRIT)]),
     stat("냉각 효율 CE", "SELECT value FROM tag_1s WHERE asset='$asset' AND name='CE' ORDER BY time DESC LIMIT 1",
          4, 0, 4, 4, unit="percent", thresholds=[(0, CRIT), (70, WARN), (80, GOOD)]),
-    stat("이상 점수 (AE 대용)", "SELECT score AS value FROM feat_1s WHERE asset='$asset' AND sensor='TS1' ORDER BY time DESC LIMIT 1",
+    stat("이상 점수 · 통계 기반", "SELECT score AS value FROM feat_1s WHERE asset='$asset' AND sensor='TS1' ORDER BY time DESC LIMIT 1",
          8, 0, 4, 4, unit="percentunit", thresholds=[(0.5, WARN), (0.8, CRIT)]),
     stat("활성 경보", "SELECT count(*) AS value FROM alerts WHERE asset='$asset' AND state='RAISE'",
          12, 0, 4, 4, thresholds=[(1, CRIT)]),
@@ -82,13 +82,14 @@ panels = [
     stat("펌프 부하 SP", "SELECT value FROM tag_1s WHERE asset='$asset' AND name='LoadSP' ORDER BY time DESC LIMIT 1",
          20, 0, 4, 4, unit="percent", thresholds=[(0, BLUE)]),
 
-    timeseries("유온 TS1 — 경보(빨강/초록)·승인 조치(파랑) 주석과 함께 감쇠를 확인", [sql_target(tag_sql("TS1"))],
+    timeseries("유온 TS1 · 경보와 조치 전후 추이", [sql_target(tag_sql("TS1"))],
                0, 4, 16, 9, unit="celsius", colors={"TS1": BLUE},
                thresholds=[(60, WARN), (65, CRIT)], ymin=40, ymax=70,
-               desc="60 ℃ 경고 · 65 ℃ 인터록 트립. 주석은 alerts / actions 테이블에서 온다."),
-    timeseries("이상 점수 (Flink ONNX 오토인코더 자리)", [sql_target(
+               desc="60 ℃ 경고 · 65 ℃ 보호 정지. 빨강은 경보 발생, 초록은 해제, 파랑은 승인된 조치입니다. 경보·조치 이력과 유온 변화를 함께 비교하세요."),
+    timeseries("이상 점수 · 통계 기반", [sql_target(
         "SELECT time, score AS \"score\" FROM feat_1s WHERE asset='$asset' AND sensor='TS1' AND $__timeFilter(time) ORDER BY time")],
-        16, 4, 8, 9, unit="percentunit", colors={"score": PURPLE}, thresholds=[(0.8, CRIT)], ymin=0, ymax=1),
+        16, 4, 8, 9, unit="percentunit", colors={"score": PURPLE}, thresholds=[(0.8, CRIT)], ymin=0, ymax=1,
+        desc="TS1·CE·VS1의 표준화 편차(z-score)를 합산한 실습용 점수입니다. 값이 클수록 정상 기준에서 멀어집니다. 학습된 오토인코더의 출력은 아닙니다."),
 
     timeseries("냉각 효율 CE · 시스템 효율 SE (%)", [sql_target(tag_sql("CE"), "A"), sql_target(tag_sql("SE"), "B")],
                0, 13, 8, 8, unit="percent", colors={"CE": GREEN, "SE": TEAL}, ymin=0, ymax=100),
