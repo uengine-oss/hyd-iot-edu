@@ -1,0 +1,9 @@
+.git
+.venv
+.env
+.env.*
+.evidence
+**/__pycache__
+.pytest_cache
+docs/video
+video

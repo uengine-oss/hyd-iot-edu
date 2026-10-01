@@ -70,7 +70,7 @@ def section(title):
     print(f"\n== {title}", flush=True)
 
 
-def happy_path():
+def happy_path(require_llm=False):
     section("0. 서비스 상태")
     for name, url in (("plant-sim", PLANT), ("cmd-gateway", GATEWAY), ("detector", DETECTOR), ("agent", AGENT),
                       ("process", PROCESS), ("connect-ingest", INGEST), ("connect-sink", SINK), ("enterprise-sim", ENT)):
@@ -104,6 +104,9 @@ def happy_path():
     t1 = steps.get("t1_causes", {}).get("output", [])
     check("T1 returned 4 cause candidates", len(t1) == 4, str([c["causeId"] for c in t1]))
     card = full.get("card") or {}
+    if require_llm:
+        source = card.get("summarySource")
+        check("real LLM summary (no template fallback)", bool(source) and source != "template", str(source))
     check("top cause = cooler fin fouling", card.get("topCause") == "cause:cooler-fin-fouling", f"scores={[(c['id'], c['score']) for c in card.get('causes', [])]}")
     codes = [a["code"] for a in card.get("recommended", [])]
     check("recommended FAN_BOOST, REDUCE_LOAD, COOLER_CLEAN_WO", codes == ["FAN_BOOST", "REDUCE_LOAD", "COOLER_CLEAN_WO"], str(codes))
@@ -257,9 +260,10 @@ def negative_trip():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--require-llm", action="store_true", help="fail if the card uses the template fallback")
     args = ap.parse_args()
     t0 = time.time()
-    alert_id, cmd_id, inc_id = happy_path()
+    alert_id, cmd_id, inc_id = happy_path(require_llm=args.require_llm)
     enterprise_checks(inc_id)
     knowledge_admin_checks()
     if not args.quick:

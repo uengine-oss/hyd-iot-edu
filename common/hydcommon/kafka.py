@@ -34,20 +34,22 @@ async def producer() -> AIOKafkaProducer:
             await p.start()
             return p
         except Exception as e:  # broker not ready yet
+            await p.stop()
             log.warning("kafka producer not ready (%s), retrying", e)
             await asyncio.sleep(2)
 
 
-async def consumer(topics: list[str], group: str, from_latest: bool = True) -> AIOKafkaConsumer:
+async def consumer(topics: list[str], group: str, from_latest: bool = True, auto_commit: bool = True) -> AIOKafkaConsumer:
     while True:
         c = AIOKafkaConsumer(*topics, bootstrap_servers=bootstrap(), group_id=group,
                              auto_offset_reset="latest" if from_latest else "earliest",
-                             enable_auto_commit=True,
+                             enable_auto_commit=auto_commit,
                              value_deserializer=decode_value,
-                             key_deserializer=lambda b: b.decode() if b else None)
+                             key_deserializer=lambda b: b.decode(errors="replace") if b else None)
         try:
             await c.start()
             return c
         except Exception as e:
+            await c.stop()
             log.warning("kafka consumer not ready (%s), retrying", e)
             await asyncio.sleep(2)

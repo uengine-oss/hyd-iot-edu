@@ -21,10 +21,13 @@ volumes:
   tsdb-data: {}
   neo4j-data: {}
   redpanda-data: {}
+  process-data: {}
+  enterprise-data: {}
 
 services:
   # ───────────────────────────── OT (ot-net) ─────────────────────────────
   emqx:                                   # L2 IoT 미들웨어 · MQTT 브로커
+    restart: unless-stopped
     logging: *log
     mem_limit: 320m
     image: emqx/emqx:5.8
@@ -41,6 +44,7 @@ services:
       start_period: 15s
 
   plant-sim:                              # L1 유압설비 3기 + soft-PLC + DAQ (EdgeX 역할 포함)
+    restart: unless-stopped
     logging: *log
     mem_limit: 96m
     build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
@@ -58,6 +62,7 @@ services:
       <<: *py-health
 
   fuxa:                                   # L6(OT) 웹 SCADA
+    restart: unless-stopped
     logging: *log
     mem_limit: 192m
     image: frangoteam/fuxa:latest
@@ -81,6 +86,7 @@ services:
 
   # ───────────────────────────── DMZ (ot-net + it-net) ─────────────────────────────
   connect-ingest:                         # L3 DMZ: OT MQTT → Kafka 단방향 복제
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/connect-ingest/Dockerfile }
@@ -98,6 +104,7 @@ services:
       <<: *py-health
 
   cmd-gateway:                            # L3 DMZ: Kafka action.cmd/alerts → OT (검증 5종) — 유일한 하향 통로
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: dmz/cmd-gateway/Dockerfile }
@@ -116,6 +123,7 @@ services:
 
   # ───────────────────────────── IT (it-net) ─────────────────────────────
   redpanda:                               # L3 이벤트 백본 (Kafka API 호환)
+    restart: unless-stopped
     logging: *log
     mem_limit: 448m
     image: redpandadata/redpanda:v24.2.7
@@ -151,6 +159,7 @@ services:
     restart: "no"
 
   redpanda-console:                       # L3 진입점: 토픽·메시지 브라우저 (선택: tools 프로필)
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     image: redpandadata/console:v2.7.2
@@ -163,6 +172,7 @@ services:
       redpanda: { condition: service_healthy }
 
   timescaledb:                            # L5 시계열 저장소
+    restart: unless-stopped
     logging: *log
     mem_limit: 256m
     image: timescale/timescaledb:2.17.2-pg16
@@ -185,6 +195,7 @@ services:
       retries: 30
 
   connect-sink:                           # L5 Kafka → TimescaleDB 적재 (JDBC Sink 역할)
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: it/connect-sink/Dockerfile }
@@ -203,6 +214,7 @@ services:
       <<: *py-health
 
   grafana:                                # L6(IT) 설비 추세 · 조치 주석
+    restart: unless-stopped
     logging: *log
     mem_limit: 192m
     image: grafana/grafana:11.3.0
@@ -222,6 +234,7 @@ services:
       timescaledb: { condition: service_healthy }
 
   detector:                               # L4 스트림 처리 · CEP (Flink 역할)
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     build: { context: ., dockerfile: it/detector/Dockerfile }
@@ -239,6 +252,7 @@ services:
       <<: *py-health
 
   prometheus:                             # L6 플랫폼 감시 (선택)
+    restart: unless-stopped
     logging: *log
     mem_limit: 128m
     image: prom/prometheus:v2.55.1
@@ -250,6 +264,7 @@ services:
       - ./it/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
 
   neo4j:                                  # L7 온톨로지 지식 그래프
+    restart: unless-stopped
     logging: *log
     mem_limit: 560m
     image: neo4j:5.26-community
@@ -284,6 +299,7 @@ services:
     restart: "no"
 
   agent:                                  # L8 AI 에이전트 (LangGraph/MCP/LiteLLM 역할, 읽기 전용 도구)
+    restart: unless-stopped
     logging: *log
     mem_limit: 192m
     build: { context: ., dockerfile: it/agent/Dockerfile }
@@ -298,8 +314,16 @@ services:
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-claude-opus-5}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      LLM_MODEL: ${LLM_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-8}
     depends_on:
+      kg-seed: { condition: service_completed_successfully }
+      connect-sink: { condition: service_healthy }
+      process: { condition: service_healthy }
+      enterprise-sim: { condition: service_healthy }
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
     healthcheck:
@@ -307,12 +331,14 @@ services:
       <<: *py-health
 
   process:                                # L9 프로세스 엔진 (미니 BPMN: 승인 → action.cmd → ACK → 재관측 → 종결)
+    restart: unless-stopped
     logging: *log
     mem_limit: 160m
     build: { context: ., dockerfile: it/process/Dockerfile }
     profiles: [process]
     networks: [it-net]
     ports: ["127.0.0.1:8080:8080"]
+    volumes: ["process-data:/data"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
@@ -328,17 +354,22 @@ services:
       <<: *py-health
 
   enterprise-sim:                         # L9 연계 대상: 기업 시스템 목업 (ERP · MES · CMMS · QMS · SCM · EMS)
+    restart: unless-stopped
     logging: *log
     mem_limit: 96m
     build: { context: ., dockerfile: it/enterprise-sim/Dockerfile }
     profiles: [enterprise]
     networks: [it-net]
     ports: ["127.0.0.1:8095:8095"]
+    environment:
+      ENTERPRISE_STATE_PATH: /data/enterprise.sqlite3
+    volumes: ["enterprise-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
       <<: *py-health
 
   portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA)
+    restart: unless-stopped
     logging: *log
     mem_limit: 32m
     image: nginx:1.27-alpine

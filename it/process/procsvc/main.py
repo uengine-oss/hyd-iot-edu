@@ -4,6 +4,7 @@ Only this service may write action.cmd (the agent has no command authority). Tim
 the latest TS1 for the re-observation verdict comes from TimescaleDB.
 """
 import asyncio
+import copy
 import json
 import logging
 import os
@@ -19,6 +20,7 @@ from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from hydcommon.timeutil import now, now_iso
 from . import decisions as declib, definition, kgadmin, machine
+from .store import Store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("process")
@@ -35,6 +37,12 @@ book: dict[str, dict] = {}          # enterprise decisions (L9)
 audit_log: list[dict] = []
 producer = None
 loop: asyncio.AbstractEventLoop | None = None
+store = None
+
+
+def persist():
+    if store is not None:
+        store.save(incidents, book, audit_log)
 
 
 class Fx(machine.Effects):
@@ -44,6 +52,7 @@ class Fx(machine.Effects):
         self.inc = inc
 
     def emit_cmd(self, cmd: dict) -> None:
+        persist()  # durable CMD_ISSUED before any external side effect
         asyncio.run_coroutine_threadsafe(producer.send(topics.K_CMD, key=topics.asset_key(cmd["asset"]), value=cmd), loop)
 
     def emit_audit(self, evt: dict) -> None:
@@ -77,6 +86,7 @@ def latest_ts1(asset: str) -> float | None:
 
 
 def _after(inc: machine.Incident):
+    persist()
     if inc.state in definition.TERMINAL:
         c_inc.inc(state=inc.state)
         if inc.state == "CLOSED":
@@ -149,8 +159,15 @@ def _watch(task):
 
 @app.on_event("startup")
 async def _startup():
-    global loop
+    global loop, store
     loop = asyncio.get_running_loop()
+    store = Store(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3"))
+    saved_incidents, saved_book, saved_audit = store.restore()
+    incidents.update(saved_incidents)
+    book.update(saved_book)
+    audit_log[:] = saved_audit
+    state["incidents"] = len(incidents)
+    persist()
     asyncio.create_task(consume()).add_done_callback(_watch)
 
 
@@ -255,6 +272,7 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
     evt = {"t": now_iso(), "incident": incident, "asset": asset, "actor": actor, "event": event, "detail": detail}
     audit_log.insert(0, evt)
     del audit_log[500:]
+    persist()
     if producer is not None:
         asyncio.get_running_loop().create_task(producer.send(topics.K_AUDIT, key=topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), value=evt))
 
@@ -303,6 +321,9 @@ def record_decision(d: dict) -> None:
 async def create_decision(payload: dict):
     if not payload.get("id") or not payload.get("options"):
         raise HTTPException(400, "decision needs id and options")
+    if payload["id"] in book:
+        d = book[payload["id"]]
+        return {"id": d["id"], "state": d["state"], "duplicate": True}
     d = declib.new(payload)
     book[d["id"]] = d
     _audit(d.get("asset") or "-", "agent", "DECISION_SUBMITTED",
@@ -342,6 +363,7 @@ async def approve_decision(did: str, req: DecisionApproveReq):
     loop_ = asyncio.get_running_loop()
     results = [await loop_.run_in_executor(None, exec_skill, d, item) for item in plan["enterprise"]]
     declib.record_execution(d, results, plan)
+    persist()
     for r in results:
         _audit(d.get("asset") or "-", "process", "SKILL_EXECUTED" if r["ok"] else "SKILL_FAILED",
                {"decision": did, "skill": r["skill"], "system": r["system"], "ref": r.get("ref"), "detail": r.get("detail") or r.get("error")})
@@ -540,17 +562,32 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     d = book.get(req.decision)
     if not inc or not d:
         raise HTTPException(404, "no such incident or decision")
+    if inc.state != "AWAITING_APPROVAL":
+        raise HTTPException(409, f"incident is {inc.state}")
+    if (d.get("origin") or {}).get("incident") != inc_id or d.get("asset") != inc.asset:
+        raise HTTPException(400, "decision does not belong to this incident")
     opt = next((o for o in d.get("options", []) if o["id"] == req.option), None)
     if opt is None:
         raise HTTPException(400, "unknown option")
     cooling = any(s["id"] == "skill:cooling-adjust" for s in opt.get("skills") or [])
     try:
-        plan = declib.approve(d, req.option, req.by, req.role, req.reason)       # role check first: nothing happens if denied
+        candidate = copy.deepcopy(d)
+        plan = declib.approve(candidate, req.option, req.by, req.role, req.reason)
+        # Validate the command before consuming the human decision.
+        if cooling:
+            proposed = []
+            for action in (inc.card or {}).get("recommended") or []:
+                if action.get("code") == "FAN_BOOST":
+                    proposed.append({"code": "FAN_BOOST", "fan_pct": req.fan_pct if req.fan_pct is not None else action.get("value", 100)})
+                elif action.get("code") == "REDUCE_LOAD":
+                    proposed.append({"code": "REDUCE_LOAD", "load_pct": req.load_pct if req.load_pct is not None else action.get("value", 80)})
+            machine._validate_actions(inc, proposed)
     except PermissionError as e:
         _audit(inc.asset, req.by, "DECISION_DENIED", {"decision": d["id"], "option": req.option, "role": req.role, "reason": str(e)}, incident=inc_id)
         raise HTTPException(403, str(e))
     except ValueError as e:
         raise HTTPException(400, str(e))
+    d.update(candidate)
     _audit(inc.asset, req.by, "DECISION_APPROVED", {"decision": d["id"], "option": req.option, "role": req.role, "override": d["override"],
                                                      "reason": req.reason, "via": "HITL 조치 의사결정"}, incident=inc_id)
     cmd = None
@@ -572,6 +609,7 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     loop_ = asyncio.get_running_loop()
     results = [await loop_.run_in_executor(None, exec_skill, d, item) for item in plan["enterprise"]]
     declib.record_execution(d, results, plan)
+    persist()
     for r in results:
         _audit(inc.asset, "process", "SKILL_EXECUTED" if r["ok"] else "SKILL_FAILED",
                {"decision": d["id"], "skill": r["skill"], "system": r["system"], "ref": r.get("ref"), "detail": r.get("detail") or r.get("error")}, incident=inc_id)

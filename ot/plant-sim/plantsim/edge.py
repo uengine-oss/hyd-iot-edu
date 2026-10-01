@@ -93,6 +93,9 @@ class Edge:
     def _publish_status(self, asset: str) -> None:
         k = topics.asset_key(asset)
         st = self.plant.status(asset)
+        # FUXA's MQTT JSON tags skip null updates, otherwise a successful ACK
+        # keeps displaying the previous rejection. Preserve the canonical reason.
+        st["reason_display"] = st.get("reason") or "–"
         self.client.publish(topics.mqtt_status(k), json.dumps(st), qos=1, retain=True)
         self.plant.units[asset].dirty_status = False
 

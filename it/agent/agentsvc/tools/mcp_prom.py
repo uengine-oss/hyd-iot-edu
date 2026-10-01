@@ -17,7 +17,8 @@ def freshness(tsdb, asset: str) -> dict:
         with urllib.request.urlopen(INGEST_URL, timeout=3) as r:
             ingest = json.loads(r.read())
     except Exception as e:  # noqa: BLE001
-        ingest = {"error": str(e)[:80]}
-    ok = age is not None and age <= MAX_AGE_S and bool((ingest or {}).get("ok", True))
+        ingest = {"ok": False, "error": type(e).__name__}
+    ok = age is not None and 0 <= age <= MAX_AGE_S and (ingest or {}).get("ok") is True
     return {"ok": ok, "age_s": None if age is None else round(age, 1), "max_age_s": MAX_AGE_S, "latest_ts1": value,
-            "ingest": ingest, "reason": None if ok else ("no data" if age is None else f"data is {age:.0f} s old")}
+            "ingest": ingest, "reason": None if ok else ("ingest unavailable" if (ingest or {}).get("ok") is not True
+                        else "no data" if age is None else f"data age is {age:.0f} s")}

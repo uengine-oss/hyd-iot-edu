@@ -7,6 +7,7 @@
 **강의의 초점은 L7~L9입니다.** L1~L6은 경보가 나면 팬을 올리는 즉각 제어까지입니다. L7 온톨로지는 여기에 조직 · KPI · 규정 · 기업 시스템(ERP · MES · CMMS · QMS · SCM · EMS) · 에이전트 스킬 · 업무 프로세스를 잇고, L8 에이전트는 부서 간 상충하는 이익을 전사 관점에서 판단하며, L9는 온톨로지가 정한 승인 역할에 따라 기업 시스템에서 실행합니다. 설계와 시나리오는 [docs/l7-l9-ontology-decisions.md](docs/l7-l9-ontology-decisions.md)에 있습니다.
 
 ```
+cp .env.example .env                 # 최초 1회 (PowerShell: Copy-Item .env.example .env)
 docker compose up -d --build          # 전체 (.env의 COMPOSE_PROFILES)
 python scripts/scenario_test.py       # 시나리오 자동 검증 (약 6분, L7~L9 전사 판단 포함)
 ```
@@ -112,7 +113,9 @@ python scripts/scenario_test.py        # 통합: 스택이 떠 있어야 함
 
 ## LLM (선택)
 
-`.env`의 `ANTHROPIC_API_KEY`를 넣으면 agent가 카드 요약문을 Claude(`LLM_MODEL`, 기본 `claude-opus-5`)로 씁니다. 없어도 전 시나리오가 동작합니다(템플릿 문장). 전사 판단은 LLM을 쓰지 않습니다. 온톨로지의 산식과 규정으로 결정하므로 같은 입력이면 항상 같은 답이 나옵니다.
+`.env`의 `OPENAI_API_KEY`를 넣으면 카드 요약문을 OpenAI로 작성합니다(`LLM_PROVIDER=auto`, 기본 모델 `gpt-4o-mini`). LiteLLM을 사용하려면 `OPENAI_BASE_URL`을 프록시의 `/v1` 주소로, `LLM_MODEL`을 그 배포 모델 이름으로 설정합니다. `LLM_PROVIDER=anthropic`과 `ANTHROPIC_API_KEY`도 지원합니다. 키가 없거나 API 오류·빈 응답·시간 초과가 생기면 템플릿 문장을 사용합니다. 기본 호출 제한은 8초이고 자동 재시도는 하지 않습니다. 설정 변경은 `docker compose up -d agent`로 적용합니다.
+
+전사 판단은 LLM을 쓰지 않습니다. 온톨로지의 산식과 규정으로 결정합니다. LLM은 카드 설명만 작성하며, 구조화된 권고나 승인 권한을 바꾸지 않습니다. 설명문의 사실 정확성은 별도의 검토 대상입니다.
 
 ## 설명 영상
 
@@ -121,9 +124,13 @@ python scripts/scenario_test.py        # 통합: 스택이 떠 있어야 함
 ## 운영 메모
 
 - **포트는 127.0.0.1에만 열린다.** 같은 노트북의 브라우저만 접근할 수 있다. 다른 기기(예: 강의실 프로젝터 PC)에서 봐야 하면 `compose.yaml`의 `127.0.0.1:` 접두어를 지운다. 이때 OT 브로커(1883)와 plant-sim(8000)이 LAN에 노출되므로 EMQX 인증/ACL(학생 가이드 과제 5)을 먼저 켜는 것이 맞다.
-- **process/agent를 재시작하면 진행 중이던 인시던트와 에이전트 실행은 사라진다** (학생판은 메모리 상태). 경보가 아직 살아 있으면 `POST http://localhost:8091/api/agent/replay/{alertId}`로 에이전트를 다시 돌려 새 카드를 받는다. 재시작 전 발행된 명령 ID는 재사용되지 않는다(랜덤 접미사).
+- **process와 enterprise-sim은 상태를 전용 볼륨에 보존합니다.** 승인 대기·종료 기록은 재시작 후 유지됩니다. 명령 실행/재관측 도중 process가 재시작되면 `PROCESS_RESTART_REVIEW`로 에스컬레이션하며 명령을 자동 재발행하지 않습니다. 승인 도중이던 기업 판단은 `PARTIAL`로 남아 확인이 필요합니다. 같은 decision/skill의 기업 실행 재요청은 기존 결과를 반환합니다. `docker compose down -v`는 이 기록과 DB를 지웁니다.
+- **agent 실행 트레이스는 메모리 상태입니다.** agent 재시작 시 사라집니다. `/api/agent/replay/{alertId}`는 그 agent가 아직 기억하는 경보에만 사용할 수 있습니다. 제출된 카드는 process에 보존됩니다.
+- **DB 장애 시 connect-sink는 소비 확정을 보류하고 재연결합니다.** DB 기록과 Kafka 위치를 같은 트랜잭션으로 저장하여 장애 후 재처리 중 중복 적재를 막습니다. 잘못된 메시지는 위치를 로그에 남기고 건너뜁니다. 토픽을 삭제·재생성하면 오프셋이 초기화되므로 새 DB/볼륨을 함께 사용해야 합니다.
 - **서비스 /healthz는 소비 루프가 죽으면 503**을 돌려준다(포탈 홈의 점이 빨강). 잘못된 메시지(예: Redpanda Console에서 손으로 보낸 비JSON `action.cmd`)는 스키마 검증에서 거부되고 서비스는 계속 산다.
 - **시간 배율**: `.env`의 `TIME_SCALE`은 plant-sim·detector·process가 공통으로 읽는다. 포탈/`POST /api/time_scale`은 plant-sim의 물리 속도만 바꾼다(탐지 유지 시간·재관측 타이머는 그대로).
+
+장애 복구 검증: 실제 LLM을 설정하고 전체 시나리오가 끝난 뒤 `python scripts/stability_test.py`를 실행합니다. 실제 DB 중단, 수집기 재시작, Kafka 재처리, process/enterprise 재시작을 수행하므로 시연 중에는 실행하지 않습니다. 개발 의존성은 `pip install -r requirements-dev.txt`로 설치합니다(Python 3.12). LLM 사용을 필수로 검사하려면 `python scripts/scenario_test.py --require-llm`을 사용합니다. 결과와 범위는 [안정성 검증 기록](docs/stability-plan.md)을 참고하세요.
 
 ## 범위 밖 (학생용 간소화)
 

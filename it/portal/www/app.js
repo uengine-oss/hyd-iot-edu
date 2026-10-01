@@ -4,17 +4,41 @@ const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-async function getJ(url) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status + ' ' + url); return r.json(); }
-async function postJ(url, body) { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || r.status); return j; }
+async function requestJ(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.method ? 30000 : 8000);
+  try {
+    const r = await fetch(url, { cache: 'no-store', ...options, signal: controller.signal });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const detail = j.detail;
+      throw new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : `요청 실패 (${r.status})`);
+    }
+    return j;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(options.method ? '응답 시간 초과. 처리 결과를 새로 확인한 뒤 다시 시도하세요.' : '응답 시간 초과. 연결 상태를 확인하세요.');
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+const getJ = url => requestJ(url);
+const postJ = (url, body, method = 'POST') => requestJ(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+function keyboardItem(item) {
+  item.tabIndex = 0; item.setAttribute('role', 'button');
+  item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
+}
 
 const state = { tab: 'main', plant: null, det: null, incidents: [], runs: [], selected: null, detail: null, run: null, definition: null, audit: [], waves: {}, log: [], selectedAsset: null, showAll: false };
 
 /* ---------------- tabs ---------------- */
 function selectTab(name) {
+  const changed = state.tab !== name;
   state.tab = name;
   document.querySelectorAll('.rail nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   const brand = document.getElementById('brandHome'); if (brand) brand.classList.toggle('active', name === 'main');
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (changed) $('main').scrollTo(0, 0);
+  if (name === 'scenario') renderUnits();
+  if (name === 'incidents') { renderScada(); renderIncList(); renderDetail(); }
   if (name === 'trends') renderTrends();
 }
 document.querySelectorAll('.rail nav button').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.tab)));
@@ -40,36 +64,41 @@ function renderStack() {
   }
 }
 async function pollHealth() {
-  const dots = $('#healthDots'); dots.innerHTML = '';
-  for (const L of LAYERS) for (const c of L.comps) {
-    if (!c.health) continue;
+  if (pollHealth.busy) return; pollHealth.busy = true;
+  const dots = $('#healthDots');
+  try {
+  await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.health).map(async c => {
     const key = c.health;
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
     try {
       if (c.health.endsWith('/healthz')) {            // our services answer JSON with CORS
-        const r = await fetch(c.health, { cache: 'no-store' }); healthState[key] = r.ok ? 'up' : 'down';
+        const r = await fetch(c.health, { cache: 'no-store', signal: controller.signal }); healthState[key] = r.ok ? 'up' : 'down';
       } else {                                         // third-party UIs: opaque probe = reachable
-        await fetch(c.health, { mode: 'no-cors', cache: 'no-store' }); healthState[key] = 'up';
+        await fetch(c.health, { mode: 'no-cors', cache: 'no-store', signal: controller.signal }); healthState[key] = 'up';
       }
     } catch (e) { healthState[key] = c.optional ? 'off' : 'down'; }
+    finally { clearTimeout(timer); }
     document.querySelectorAll(`.dot[data-h="${CSS.escape(key)}"]`).forEach(d => d.className = 'dot ' + healthState[key]);
-  }
+  }));
   const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !(c.optional && healthState[c.health] === 'off'));
   const down = all.filter(c => healthState[c.health] === 'down');
-  dots.innerHTML = `<span><i class="dot ${down.length ? 'down' : 'up'}"></i>구성요소 ${all.length - down.length}/${all.length} 정상${down.length ? ' — 응답 없음: ' + esc(down.map(c => c.name.split(' ')[0]).join(', ')) : ''}</span>`;
+  dots.innerHTML = `<span title="앱 healthz와 외부 UI 연결 응답입니다. 전체 파이프라인의 성공을 뜻하지 않습니다."><i class="dot ${down.length ? 'down' : 'up'}"></i>구성요소 ${all.length - down.length}/${all.length} 응답${down.length ? ' — 응답 없음: ' + esc(down.map(c => c.name.split(' ')[0]).join(', ')) : ''}</span>`;
+  } finally { pollHealth.busy = false; }
 }
 
 /* ---------------- scenario ---------------- */
 function tsColor(t) { return t >= 65 ? 'trip' : t >= 60 ? 'hot' : ''; }
 function sparkline(svg, values, min, max) {
-  if (!values || !values.length) return;
+  if (!values || !values.length) { svg.innerHTML = ''; return; }
   const w = 300, h = 36, n = values.length;
-  const pts = values.map((v, i) => `${(i / (n - 1)) * w},${h - ((v - min) / (max - min || 1)) * (h - 4) - 2}`).join(' ');
+  const pts = values.map((v, i) => `${(i / Math.max(1, n - 1)) * w},${h - ((v - min) / (max - min || 1)) * (h - 4) - 2}`).join(' ');
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('preserveAspectRatio', 'none');
   svg.innerHTML = `<polyline fill="none" stroke="#7c8794" stroke-width="1.2" points="${pts}"/>`;
 }
 function renderUnits() {
   const box = $('#units');
   if (!state.plant) { box.innerHTML = '<div class="muted">plant-sim(8000)에 연결할 수 없다. docker compose --profile ot up</div>'; return; }
+  if (!box.querySelector('.unit')) box.innerHTML = '';
   const units = state.plant.units;
   for (const [asset, u] of Object.entries(units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
@@ -82,7 +111,7 @@ function renderUnits() {
           <span>팬 속도 SP</span><em class="num fan"></em><span>펌프 부하 SP</span><em class="num load"></em>
           <span>쿨러 상태(health)</span><em class="num health"></em><span>탐지 단계</span><em class="phase"></em>
           <span>PLC 상태</span><em class="plc"></em><span>마지막 ACK</span><em class="ack"></em></div>
-        <svg class="spark"></svg><div class="muted">PS1 압력 파형 100 Hz (1초 배치)</div>
+        <svg class="spark" role="img" aria-label="PS1 압력 추이"></svg><div class="muted">PS1 압력 추이 · 화면에서 1초 간격 수집</div>
         <div class="fault"></div>
         <div class="ctl">
           <button class="btn danger" data-act="degrade">쿨러 열화 주입</button>
@@ -94,7 +123,7 @@ function renderUnits() {
           <button class="btn" data-act="load">부하 70 %</button>
           <button class="btn" data-act="reset">RESET</button>
         </div>`;
-      card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode)));
+      card.querySelectorAll('button').forEach(b => b.addEventListener('click', () => unitAction(asset, b.dataset.act, b.dataset.mode, b)));
       box.append(card);
     }
     const t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[asset]) || {};
@@ -113,7 +142,9 @@ function renderUnits() {
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
   }
 }
-async function unitAction(asset, act, mode) {
+async function unitAction(asset, act, mode, button) {
+  if (button) button.disabled = true;
+  scenarioMessage(`${asset} 처리 중…`);
   try {
     if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 주입 (health → 0.43, 300 sim-s 램프)`); }
     else if (act === 'restore') { await postJ(API.plant + '/api/fault', { asset, type: 'restore', ramp_sim_s: 60 }); logLine(`${asset} 쿨러 복구`); }
@@ -122,11 +153,24 @@ async function unitAction(asset, act, mode) {
     else if (act === 'load') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { LoadSP: 70 } }); logLine(`${asset} 수동 부하 70 % → ${r.result} ${r.reason || ''}`); }
     else if (act === 'reset') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { Reset: 1 } }); logLine(`${asset} RESET → ${r.result} ${r.reason || ''}`); }
   } catch (e) { logLine('실패: ' + e.message); }
+  finally { if (button) button.disabled = false; }
   refreshFast();
 }
-function logLine(s) { state.log.unshift(`${new Date().toLocaleTimeString()}  ${s}`); state.log = state.log.slice(0, 30); }
-$('#btnReset').addEventListener('click', async () => { await postJ(API.plant + '/api/reset'); logLine('전체 초기화'); refreshFast(); });
-$('#selScale').addEventListener('change', async (e) => { await postJ(API.plant + '/api/time_scale', { scale: Number(e.target.value) }); logLine('시간 배율 ' + e.target.value + '×'); });
+function logLine(s) { state.log.unshift(`${new Date().toLocaleTimeString()}  ${s}`); state.log = state.log.slice(0, 30); if (state.tab === 'scenario') scenarioMessage(s, s.startsWith('실패:') || s.includes('REJECTED')); }
+function scenarioMessage(text, failed = false) { const box = $('#scenarioMsg'); box.textContent = text; box.classList.toggle('neg', failed); }
+$('#btnReset').addEventListener('click', async (e) => {
+  const b = e.currentTarget; b.disabled = true; scenarioMessage('초기화 중…');
+  try { await postJ(API.plant + '/api/reset'); logLine('전체 초기화'); scenarioMessage('설비를 정상 운전점으로 초기화했습니다.'); }
+  catch (err) { scenarioMessage('초기화 실패: ' + err.message, true); }
+  finally { b.disabled = false; await refreshFast(); }
+});
+let scaleBusy = false;
+$('#selScale').addEventListener('change', async (e) => {
+  const select = e.target, value = Number(select.value); scaleBusy = true; select.disabled = true;
+  try { await postJ(API.plant + '/api/time_scale', { scale: value }); logLine('시간 배율 ' + value + '×'); scenarioMessage('설비 시뮬레이션 배율을 변경했습니다.'); }
+  catch (err) { select.value = String(state.plant?.time_scale || 20); scenarioMessage('배율 변경 실패: ' + err.message, true); }
+  finally { scaleBusy = false; select.disabled = false; await refreshFast(); }
+});
 
 function renderGwLog(entries) {
   const box = $('#gwLog'); box.innerHTML = '';
@@ -172,6 +216,7 @@ function openIncidentFor(asset) { return incidentsFor(asset).find(i => !i.termin
 function renderScada() {
   const box = $('#scada');
   if (!state.plant) { box.innerHTML = '<div class="muted">plant-sim(8000)에 연결할 수 없다.</div>'; return; }
+  if (!box.querySelector('.ucard')) box.innerHTML = '';
   for (const [asset, u] of Object.entries(state.plant.units)) {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
@@ -208,7 +253,7 @@ async function selectAsset(asset) {
   if (!pick) { state.detail = null; state.run = null; }
   renderScada(); renderIncList();
   if (pick) await loadDetail(); else renderDetail();
-  const det = $('#incDetail'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const det = $('#hitlPanel'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 $('#btnAllInc').addEventListener('click', () => { state.showAll = true; renderIncList(); });
 
@@ -220,13 +265,15 @@ function renderIncList() {
   if (!filtered.length) { box.innerHTML = `<div class="muted">${state.selectedAsset && !state.showAll ? state.selectedAsset + ' 인시던트가 없다.' : '인시던트가 없다. 결함 시나리오 시뮬레이션에서 열화를 주입해 보자.'}</div>`; }
   for (const inc of filtered) {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
+    keyboardItem(it);
     it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(inc.state)}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc((inc.created || '').slice(11, 19))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
   // runs without incident (withheld / guardrail-rejected) are still worth seeing
-  for (const r of state.runs.filter(r => !r.incidentId && r.status !== 'RUNNING')) {
+  for (const r of state.runs.filter(r => !r.incidentId && r.status !== 'RUNNING' && (!state.selectedAsset || state.showAll || r.asset === state.selectedAsset))) {
     const it = el('div', 'item');
+    keyboardItem(it);
     it.innerHTML = `<strong>${esc(r.id)} <span class="pill ESCALATED">${esc(r.status)}</span></strong><span>${esc(r.asset)} · ${esc(r.alertId)} · 에이전트 실행만 있음</span>`;
     it.addEventListener('click', () => { state.selected = null; state.detail = null; loadRun(r.id).then(renderDetail); });
     box.append(it);
@@ -235,11 +282,18 @@ function renderIncList() {
 async function loadRun(id) { try { state.run = await getJ(API.agent + '/api/agent/runs/' + id); } catch (e) { state.run = null; } }
 async function loadDetail() {
   if (!state.selected) return;
+  const selected = state.selected;
   try {
-    state.detail = await getJ(API.process + '/api/incidents/' + state.selected);
-    const run = state.runs.find(r => r.alertId === state.detail.alertId);
-    if (run) await loadRun(run.id); else state.run = null;
-  } catch (e) { state.detail = null; }
+    const detail = await getJ(API.process + '/api/incidents/' + selected);
+    const found = state.runs.find(r => r.alertId === detail.alertId);
+    const run = found ? await getJ(API.agent + '/api/agent/runs/' + found.id).catch(() => null) : null;
+    if (state.selected !== selected) return;
+    state.detail = detail; state.run = run;
+  } catch (e) {
+    if (state.selected !== selected) return;
+    $('#incDetail').innerHTML = `<div class="neg" role="status">상세를 불러오지 못했습니다. ${esc(e.message)}</div>`;
+    $('#incDetail').dataset.signature = ''; state.detail = null; state.run = null; return;
+  }
   renderDetail();
 }
 function lane(inc) {
@@ -292,11 +346,16 @@ function cardHtml(card, editable) {
 function renderDetail() {
   const box = $('#incDetail');
   const inc = state.detail, run = state.run;
+  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id)]);
+  if ((inc || run) && box.dataset.signature === signature) return;
+  const same = inc && box.dataset.incident === inc.id;
+  const draft = same ? [...box.querySelectorAll('input')].map(e => [e.id || e.dataset.param, e.value]) : [];
+  box.dataset.signature = signature; box.dataset.incident = inc?.id || '';
   if (!inc && !run) {
     if (state.selectedAsset && state.plant && state.plant.units[state.selectedAsset]) {
       const u = state.plant.units[state.selectedAsset], t = u.tags, s = u.status, d = (state.det && state.det.assets && state.det.assets[state.selectedAsset]) || {};
       const past = incidentsFor(state.selectedAsset);
-      box.innerHTML = `<div class="assetinfo"><h2>${esc(state.selectedAsset)} — 경보 없음, 정상 운전</h2>
+      box.innerHTML = `<div class="assetinfo"><h2>${esc(state.selectedAsset)} — 인시던트 없음 · PLC ${esc(s.state)}</h2>
         <div class="kv"><span>유온 TS1</span><b class="num">${fmt(t.TS1, 1)} ℃</b><span>냉각 효율 CE</span><b class="num">${fmt(t.CE, 0)} %</b><span>팬 / 부하</span><b class="num">${fmt(t.FanSpeedSP, 0)} % / ${fmt(t.LoadSP, 0)} %</b><span>PLC</span><b>${esc(s.mode)} · ${esc(s.state)}</b><span>탐지 단계</span><b>${esc(d.phase || '–')}</b><span>쿨러 상태(health)</span><b class="num">${fmt(s.cooler_health, 2)}</b></div>
         <p class="muted">경보가 나면 에이전트가 온톨로지에서 원인·조치를 꺼내 카드를 만들고, 그 프로세스가 여기에 나타난다. 결함 시나리오 시뮬레이션에서 이 설비에 쿨러 열화를 주입해 볼 수 있다.${past.length ? ' 왼쪽 목록에 이 설비의 지난 인시던트 ' + past.length + '건이 있다.' : ''}</p></div>`;
     } else {
@@ -321,9 +380,13 @@ function renderDetail() {
   }
   if (inc) {
     const audit = state.audit.filter(a => a.incident === inc.id);
-    html += '<h2>감사 로그</h2><div class="audit">' + (audit.map(a => `<div>${esc(a.t.slice(11, 19))} <b>${esc(a.actor)}</b> ${esc(a.event)} <span class="muted">${esc(JSON.stringify(a.detail)).slice(0, 140)}</span></div>`).join('') || '<div class="muted">없음</div>') + '</div>';
+    html += '<h2>감사 로그</h2><div class="audit">' + (audit.map(a => `<div>${esc(a.t.slice(11, 19))} <b>${esc(a.actor)}</b> ${esc(a.event)} <span class="muted">${esc(JSON.stringify(a.detail).slice(0, 140))}</span></div>`).join('') || '<div class="muted">없음</div>') + '</div>';
   }
   box.innerHTML = html;
+  for (const e of box.querySelectorAll('input')) {
+    const saved = draft.find(([key]) => key === (e.id || e.dataset.param));
+    if (saved) { e.value = saved[1]; if (e.type === 'range') e.parentElement.querySelector('output').textContent = e.value; }
+  }
   box.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('input', () => r.parentElement.querySelector('output').textContent = r.value));
   const ap = $('#btnApprove'); if (ap) ap.addEventListener('click', approve);
   const rj = $('#btnReject'); if (rj) rj.addEventListener('click', reject);
@@ -358,25 +421,33 @@ $('#selAsset').addEventListener('change', renderTrends);
 
 /* ---------------- polling ---------------- */
 async function refreshFast() {
+  if (refreshFast.busy) return; refreshFast.busy = true;
+  try {
   try { state.plant = await getJ(API.plant + '/api/state'); } catch (e) { state.plant = null; }
   try { state.det = await getJ(API.detector + '/api/detector/state'); } catch (e) { state.det = null; }
   if (state.plant) {
     $('#simT').textContent = `${Math.floor(state.plant.sim_t / 60)}분 ${Math.floor(state.plant.sim_t % 60)}초`;
     $('#scale').textContent = state.plant.time_scale;
-    for (const [a, u] of Object.entries(state.plant.units)) { // synthetic ripple preview from PS1 (the real 100 Hz batch is on MQTT/Kafka)
-      const arr = state.waves[a] || []; for (let i = 0; i < 20; i++) arr.push(u.tags.PS1 + 3 * Math.sin(i / 20 * Math.PI * 2 * 5) + (Math.random() - .5)); state.waves[a] = arr.slice(-100);
+    if (!scaleBusy && document.activeElement !== $('#selScale')) $('#selScale').value = String(state.plant.time_scale);
+    for (const [a, u] of Object.entries(state.plant.units)) {
+      const arr = state.waves[a] || []; arr.push(u.tags.PS1); state.waves[a] = arr.slice(-100);
     }
-  }
+  } else { $('#simT').textContent = '연결 끊김'; $('#scale').textContent = '–'; }
   if (state.tab === 'scenario') { renderUnits(); try { renderGwLog(await getJ(API.gateway + '/api/gateway/log')); } catch (e) { renderGwLog([]); } }
   if (state.tab === 'incidents') renderScada();
+  } finally { refreshFast.busy = false; }
 }
 async function refreshSlow() {
-  try { state.incidents = await getJ(API.process + '/api/incidents'); } catch (e) { state.incidents = []; }
+  if (refreshSlow.busy) return; refreshSlow.busy = true;
+  try {
+  let incidentError = false;
+  try { state.incidents = await getJ(API.process + '/api/incidents'); } catch (e) { incidentError = true; }
   try { state.runs = await getJ(API.agent + '/api/agent/runs'); } catch (e) { state.runs = []; }
   try { state.audit = await getJ(API.process + '/api/audit'); } catch (e) { state.audit = []; }
   if (!state.definition) { try { state.definition = await getJ(API.process + '/api/definition'); } catch (e) { } }
-  $('#openCount').textContent = state.incidents.filter(i => !i.terminal).length;
+  $('#openCount').textContent = incidentError ? '연결 끊김' : state.incidents.filter(i => !i.terminal).length;
   if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }
+  } finally { refreshSlow.busy = false; }
 }
 renderStack(); pollHealth(); refreshFast(); refreshSlow();
 setInterval(refreshFast, 1000); setInterval(refreshSlow, 2000); setInterval(pollHealth, 5000);

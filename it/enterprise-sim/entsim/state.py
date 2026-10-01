@@ -3,6 +3,9 @@ approved agent skill. Only the process service calls this (the agent has no writ
 from __future__ import annotations
 
 import copy
+import json
+import sqlite3
+from pathlib import Path
 import secrets
 import threading
 from datetime import datetime, timezone
@@ -24,13 +27,30 @@ def _id(prefix: str) -> str:
 
 
 class EnterpriseState:
-    def __init__(self):
+    def __init__(self, path=None):
         self._lock = threading.Lock()
+        self._db = None
         self.reset()
+        if path:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            self._db = sqlite3.connect(path, check_same_thread=False)
+            self._db.execute("PRAGMA journal_mode=WAL")
+            self._db.execute("CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY, body TEXT NOT NULL)")
+            row = self._db.execute("SELECT body FROM state WHERE id=1").fetchone()
+            if row:
+                saved = json.loads(row[0])
+                self._s, self._tx, self._done = saved["state"], saved["transactions"], saved["done"]
+
+    def _save(self):
+        if self._db:
+            with self._db:
+                self._db.execute("INSERT OR REPLACE INTO state VALUES (1,?)",
+                    (json.dumps({"state": self._s, "transactions": self._tx, "done": self._done}),))
 
     def reset(self) -> None:
         with getattr(self, "_lock", threading.Lock()):
             self._tx: list[dict] = []
+            self._done = {}
             self._s = {
                 "mes": {"orders": [dict(o, asset=a, moved_from=None) for a, o in copy.deepcopy(data._ORDERS).items()]},
                 "cmms": {"work_orders": []},
@@ -38,6 +58,7 @@ class EnterpriseState:
                 "qms": {"holds": [], "releases": []},
                 "ems": {"actions": []},
             }
+            self._save()
 
     def execute(self, req: dict) -> dict:
         skill = req.get("skill")
@@ -46,11 +67,21 @@ class EnterpriseState:
         asset = req.get("asset") or "HYD-01"
         params = req.get("params") or {}
         with self._lock:
+            key = json.dumps([req.get("decision"), skill]) if req.get("decision") else None
+            fingerprint = json.dumps({k: req.get(k) for k in ("decision", "option", "skill", "asset", "params")}, sort_keys=True)
+            if key in self._done:
+                prior = self._done[key]
+                if prior["fingerprint"] != fingerprint:
+                    raise ValueError("idempotency conflict: decision/skill already executed with different input")
+                return copy.deepcopy(prior["tx"])
             ref, detail = self._apply(skill, asset, params, req)
             tx = {"id": _id("TX"), "t": _now(), "system": SKILLS[skill], "skill": skill, "ref": ref, "detail": detail,
                   "asset": asset, "decision": req.get("decision"), "option": req.get("option"), "by": req.get("by")}
             self._tx.insert(0, tx)
             del self._tx[300:]
+            if key:
+                self._done[key] = {"fingerprint": fingerprint, "tx": tx}
+            self._save()
             return tx
 
     def _apply(self, skill: str, asset: str, params: dict, req: dict) -> tuple[str, str]:

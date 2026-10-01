@@ -1,6 +1,8 @@
 __pycache__/
 .pytest_cache/
 .env
+.venv/
+.evidence/
 docs/video/_rec/
 docs/video/audio/*.txt
 .superpowers/sdd/*/scenario_run*.log

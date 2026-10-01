@@ -15,6 +15,7 @@ import time
 from datetime import datetime, timezone
 
 import psycopg
+from aiokafka.errors import CommitFailedError
 from psycopg.types.json import Jsonb
 
 from hydcommon import topics
@@ -49,10 +50,14 @@ def ts(s, fallback_ms=None) -> datetime:
 async def connect_db():
     while True:
         try:
-            conn = await psycopg.AsyncConnection.connect(PG_DSN, autocommit=True)
+            conn = await psycopg.AsyncConnection.connect(PG_DSN, autocommit=True, connect_timeout=5)
+            await conn.execute("""CREATE TABLE IF NOT EXISTS sink_offsets (
+                topic TEXT NOT NULL, partition_id INTEGER NOT NULL, next_offset BIGINT NOT NULL,
+                PRIMARY KEY(topic, partition_id))""")
             state["db"] = True
             return conn
         except Exception as e:  # noqa: BLE001
+            state["db"] = False
             log.warning("db not ready (%s), retrying", e)
             await asyncio.sleep(2)
 
@@ -90,16 +95,19 @@ async def handle_event(conn, topic, v, rec_ms):
         elif topic == topics.K_CMD:
             await cur.execute(
                 """INSERT INTO actions (cmd_id, incident, asset, actions, approved_by, issued_at, expires_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (cmd_id) DO NOTHING""",
+                   VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (cmd_id) DO UPDATE SET incident=EXCLUDED.incident, asset=EXCLUDED.asset,
+                       actions=EXCLUDED.actions, approved_by=EXCLUDED.approved_by,
+                       issued_at=EXCLUDED.issued_at, expires_at=EXCLUDED.expires_at""",
                 (v["cmdId"], v.get("incident"), v.get("asset"), Jsonb(v.get("actions") or []), v.get("approvedBy"),
                  ts(v.get("issuedAt"), rec_ms), ts(v.get("expiresAt"), rec_ms)))
             c_rows.inc(table="actions")
         elif topic == topics.K_STATUS:
             if v.get("cmdId") and v.get("result"):
                 await cur.execute(
-                    """UPDATE actions SET ack_result=%s, ack_reason=%s, ack_at=%s
-                       WHERE cmd_id=%s AND ack_result IS NULL""",
-                    (v["result"], v.get("reason"), ts(v.get("t"), rec_ms), v["cmdId"]))
+                    """INSERT INTO actions (cmd_id, ack_result, ack_reason, ack_at) VALUES (%s,%s,%s,%s)
+                       ON CONFLICT (cmd_id) DO UPDATE SET ack_result=EXCLUDED.ack_result,
+                       ack_reason=EXCLUDED.ack_reason, ack_at=EXCLUDED.ack_at WHERE actions.ack_result IS NULL""",
+                    (v["cmdId"], v["result"], v.get("reason"), ts(v.get("t"), rec_ms)))
         elif topic == topics.K_AUDIT:
             await cur.execute(
                 "INSERT INTO audit (time, incident, actor, event, detail) VALUES (%s, %s, %s, %s, %s)",
@@ -108,39 +116,71 @@ async def handle_event(conn, topic, v, rec_ms):
     state["rows"] += 1
 
 
-async def run():
-    conn = await connect_db()
-    cons = await make_consumer(TOPICS, group="connect-sink", from_latest=False)
-    state["kafka"] = True
-    log.info("consuming %s", TOPICS)
-    tag_rows, feat_rows, last_flush = [], [], time.monotonic()
-    while True:
-        batches = await cons.getmany(timeout_ms=500, max_records=2000)
+async def store_records(conn, batches):
+    """Rows and source offsets share one DB transaction, including restart/rebalance replay."""
+    async with conn.transaction():
         for tp, records in batches.items():
+            if not records:
+                continue
+            cur = await conn.execute("SELECT next_offset FROM sink_offsets WHERE topic=%s AND partition_id=%s",
+                                     (tp.topic, tp.partition))
+            row = await cur.fetchone()
+            next_offset = row[0] if row else -1
+            tags, feats = [], []
             for r in records:
+                if r.offset < next_offset:
+                    continue
                 v = r.value
                 try:
                     if not isinstance(v, dict) or "_raw" in v:
                         raise ValueError("malformed record")
                     if tp.topic == topics.K_TAG:
-                        tag_rows.append((ts(v.get("t"), r.timestamp), v["asset"], v["name"], v.get("v")))
+                        tags.append((ts(v.get("t"), r.timestamp), v["asset"], v["name"], float(v["v"])))
                     elif tp.topic == topics.K_FEAT:
-                        feat_rows.append((ts(v.get("t"), r.timestamp), v["asset"], v["sensor"], v.get("mean"), v.get("rms"), v.get("slope"), v.get("score")))
+                        values = [float(v[k]) if v.get(k) is not None else None for k in ("mean", "rms", "slope", "score")]
+                        feats.append((ts(v.get("t"), r.timestamp), v["asset"], v["sensor"], *values))
                     else:
-                        await handle_event(conn, tp.topic, v, r.timestamp)
-                except Exception as e:  # noqa: BLE001
+                        # A bad event rolls back only its savepoint, not valid neighbours.
+                        async with conn.transaction():
+                            await handle_event(conn, tp.topic, v, r.timestamp)
+                except (ValueError, TypeError, KeyError, psycopg.DataError, psycopg.IntegrityError) as exc:
                     state["errors"] += 1
-                    log.warning("bad record on %s: %s (%s)", tp.topic, e, str(v)[:120])
-        if tag_rows or feat_rows:
-            if len(tag_rows) >= 500 or time.monotonic() - last_flush >= 1.0:
+                    log.warning("invalid record %s/%s/%s (%s)", tp.topic, tp.partition, r.offset, type(exc).__name__)
+            await write_batch(conn, tags, feats)
+            await conn.execute("""INSERT INTO sink_offsets VALUES (%s,%s,%s)
+                ON CONFLICT (topic,partition_id) DO UPDATE SET next_offset=GREATEST(sink_offsets.next_offset,EXCLUDED.next_offset)""",
+                (tp.topic, tp.partition, records[-1].offset + 1))
+
+
+async def run():
+    conn = await connect_db()
+    cons = await make_consumer(TOPICS, group="connect-sink", from_latest=False, auto_commit=False)
+    state["kafka"] = True
+    try:
+        while True:
+            batches = await cons.getmany(timeout_ms=500, max_records=2000)
+            if not batches:
+                continue
+            while True:
                 try:
-                    await write_batch(conn, tag_rows, feat_rows)
+                    await store_records(conn, batches)
+                    state["db"] = True
                     state["last_write"] = time.time()
-                except Exception as e:  # noqa: BLE001
+                    break
+                except (psycopg.OperationalError, psycopg.InterfaceError):
+                    state["db"] = False
                     state["errors"] += 1
-                    log.warning("batch write failed: %s", e)
+                    await conn.close()
                     conn = await connect_db()
-                tag_rows, feat_rows, last_flush = [], [], time.monotonic()
+            try:
+                await cons.commit({tp: records[-1].offset + 1 for tp, records in batches.items() if records})
+            except CommitFailedError:
+                # DB offsets suppress duplicates after Kafka partition reassignment.
+                log.warning("rebalance before offset commit; DB checkpoint retained")
+    finally:
+        state.update(db=False, kafka=False)
+        await cons.stop()
+        await conn.close()
 
 
 app = make_app("connect-sink (L5: Kafka -> TimescaleDB)", reg,

@@ -5,7 +5,7 @@
    - manual upload: manual → ManualSection / Procedure / Step nodes */
 (function () {
   const H = { inc: null, decs: [], dec: null, sig: null, form: { option: null, reason: '', role: null, by: 'OP-17', fan: null, load: null }, msg: '', busy: false,
-    skills: [], catalog: null, skillSel: null, skillNew: false, preview: null };
+    skills: [], catalog: null, skillSel: null, skillNew: false, skillDrafts: new Map(), preview: null };
 
   /* ================================================= BPMN renderer */
   const LANES = ['설비 · 탐지 (L1~L4)', '에이전트 (L8)', '사람 · HITL', '프로세스 (L9)', '기업 시스템', '온톨로지 (L7)'];
@@ -103,6 +103,7 @@
     const prim = decs.find(d => (d.scenario || {}).id === 'sc:delivery-vs-maintenance') || decs[0] || null;
     let dec = null;
     if (prim) { try { dec = await getJ(API.process + '/api/decisions/' + prim.id); } catch (e) { } }
+    if (state.tab !== 'incidents' || state.detail?.id !== inc.id) return;
     const sig = [inc.id, inc.state, decs.length, dec && dec.id, dec && dec.state, H.msg].join('|');
     if (!force && sig === H.sig) return;
     if (H.inc && H.inc.id !== inc.id) H.form = { option: null, reason: '', role: null, by: 'OP-17', fan: null, load: null };
@@ -180,6 +181,7 @@
   }
   async function decideNow() {
     if (H.busy) return; H.busy = true;
+    const go = $('#hGo'); if (go) { go.disabled = true; go.textContent = '처리 중…'; }
     try {
       await postJ(API.process + `/api/incidents/${H.inc.id}/decide`, { decision: H.dec.id, option: H.form.option, by: H.form.by || '승인자', role: H.form.role,
         reason: H.form.reason, fan_pct: H.form.fan, load_pct: H.form.load });
@@ -198,6 +200,7 @@
     const d = hydEnt.ent.decDetail; let inc = null;
     const incId = d && (d.origin || {}).incident;
     if (incId) { try { inc = await getJ(API.process + '/api/incidents/' + incId); } catch (e) { } }
+    if (state.tab !== 'process' || hydEnt.ent.decDetail?.id !== d?.id) return;
     const sig = [d && d.id, d && d.state, inc && inc.state].join('|');
     if (box.dataset.sig === sig) return; box.dataset.sig = sig;
     box.innerHTML = bpmnSvg(inc ? { inc, dec: d } : null, inc ? `판단 <b>${esc(d.id)}</b> · 인시던트 ${esc(inc.id)}의 진행` : (d ? '수동으로 실행한 판단이다. 설비 인시던트와 연결된 판단을 고르면 진행 상태가 표시된다.' : '판단을 고르면 진행 상태가 표시된다.'));
@@ -206,6 +209,7 @@
 
   /* ================================================= skill catalog */
   async function loadSkills() {
+    if (!H.skills.length) $('#skillList').innerHTML = '<div class="muted" role="status">스킬을 불러오는 중…</div>';
     try { H.skills = await getJ(API.process + '/api/kg/skills'); } catch (e) { $('#skillList').innerHTML = `<div class="muted">process(8080) 또는 Neo4j에 연결할 수 없다. ${esc(e.message)}</div>`; return; }
     if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); } catch (e) { H.catalog = { systems: [], processes: [], roles: [], actions: [] }; } }
     if (!H.skillSel && H.skills.length && !H.skillNew) H.skillSel = H.skills[0].id;
@@ -215,6 +219,7 @@
     const list = $('#skillList'); list.innerHTML = '';
     for (const k of H.skills) {
       const it = el('div', 'item' + (k.id === H.skillSel && !H.skillNew ? ' sel' : ''));
+      keyboardItem(it);
       it.innerHTML = `<strong>${esc(k.name)}</strong><span>${esc((k.system || {}).name || '')} · 승인 ${esc((k.approver || {}).name || '–')}${k.edited ? ' · 편집됨' : ''}</span><span class="d">${esc(k.description || '')}</span>`;
       it.addEventListener('click', () => { H.skillSel = k.id; H.skillNew = false; renderSkillList(); renderSkillDetail(); });
       list.append(it);
@@ -222,6 +227,9 @@
   }
   function renderSkillDetail() {
     const box = $('#skillDetail'); const c = H.catalog || { systems: [], processes: [], roles: [] };
+    const key = H.skillNew ? '__new__' : H.skillSel;
+    if (box.dataset.key === key && box.querySelector('#skName')) return;
+    box.dataset.key = key || '';
     const k = H.skillNew ? { id: '(새 스킬)', name: '', description: '', detail: '입력: \n실행: \n파라미터: \n산출: \n가드레일: ', policies: [], infos: [], actions: [], usedBy: [] } : H.skills.find(x => x.id === H.skillSel);
     if (!k) { box.innerHTML = '<div class="empty">왼쪽에서 스킬을 고른다.</div>'; return; }
     const sel = (id, items, cur) => `<select id="${id}">${items.map(x => `<option value="${esc(x.id)}" ${cur === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
@@ -230,20 +238,32 @@
       <label>설명 (description)<textarea id="skDesc" rows="2">${esc(k.description || '')}</textarea></label>
       <label>스킬 상세 (detail) — 입력 · 실행 · 파라미터 · 산출 · 가드레일<textarea id="skDetail" rows="8" class="mono">${esc(k.detail || '')}</textarea></label>
       <div class="skill-rels"><label>실행 시스템 ${sel('skSys', c.systems, (k.system || {}).id)}</label><label>업무 프로세스 ${sel('skProc', c.processes, (k.process || {}).id)}</label><label>승인 역할 ${sel('skRole', c.roles, (k.approver || {}).id)}</label></div>
-      <div class="approve-row"><input id="skBy" value="지식 관리자" aria-label="편집자"><button class="btn primary" id="skSave">${H.skillNew ? '온톨로지에 추가' : '저장'}</button><span id="skMsg" class="muted"></span></div>
+      <div class="approve-row"><input id="skBy" value="지식 관리자" aria-label="편집자"><button class="btn primary" id="skSave">${H.skillNew ? '온톨로지에 추가' : '저장'}</button><span id="skMsg" class="muted" role="status"></span></div>
       ${H.skillNew ? '' : `<h3>온톨로지 연결 (읽기)</h3><table class="kvt">
         <tr><th>거는 규정</th><td>${k.policies.map(p => `<span class="${p.kind === 'HARD' ? 'hard' : 'soft'}">${esc(p.kind)} · ${esc(p.name)}</span>`).join(' ') || '없음'}</td></tr>
         <tr><th>필요한 정보</th><td>${k.infos.map(i => `${esc(i.name)} <span class="muted">(${esc(i.system)})</span>`).join('<br>') || '없음'}</td></tr>
         <tr><th>구현하는 조치</th><td>${k.actions.map(a => esc(a.name)).join(', ') || '없음'}</td></tr>
         <tr><th>쓰는 판단 대안</th><td>${k.usedBy.map(u => `${esc(u.scenario)} — ${esc(u.option)}`).join('<br>') || '없음'}</td></tr></table>`}</div>`;
-    $('#skSave').addEventListener('click', async () => {
-      const body = { name: $('#skName').value, description: $('#skDesc').value, detail: $('#skDetail').value, system: $('#skSys').value, process: $('#skProc').value, approver: $('#skRole').value, by: $('#skBy').value };
+    const fields = [...box.querySelectorAll('input, textarea, select')];
+    const draft = H.skillDrafts.get(key);
+    if (draft) fields.forEach(e => { if (draft[e.id] != null) e.value = draft[e.id]; });
+    const remember = () => { H.skillDrafts.set(key, Object.fromEntries(fields.map(e => [e.id, e.value]))); $('#skMsg').textContent = '저장하지 않은 변경 사항'; };
+    fields.forEach(e => { e.addEventListener('input', remember); e.addEventListener('change', remember); });
+    if (draft) $('#skMsg').textContent = '저장하지 않은 변경 사항';
+    $('#skSave').addEventListener('click', async (ev) => {
+      const b = ev.currentTarget;
+      const body = { name: $('#skName').value.trim(), description: $('#skDesc').value, detail: $('#skDetail').value, system: $('#skSys').value, process: $('#skProc').value, approver: $('#skRole').value, by: $('#skBy').value.trim() };
+      if (!body.name) { $('#skMsg').textContent = '스킬 이름을 입력하세요.'; $('#skName').focus(); return; }
+      b.disabled = true; $('#skMsg').textContent = '저장 중…';
       try {
-        const r = H.skillNew ? await postJ(API.process + '/api/kg/skills', body)
-          : await (await fetch(API.process + '/api/kg/skills/' + encodeURIComponent(k.id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+        const r = key === '__new__' ? await postJ(API.process + '/api/kg/skills', body)
+          : await postJ(API.process + '/api/kg/skills/' + encodeURIComponent(k.id), body, 'PUT');
         if (r.detail && !r.id) throw new Error(r.detail);
-        H.skillSel = r.id; H.skillNew = false; await loadSkills(); $('#skMsg').textContent = '온톨로지에 반영했다.';
-      } catch (e) { $('#skMsg').textContent = '실패: ' + e.message; }
+        H.skillDrafts.delete(key);
+        if (box.dataset.key === key) { H.skillSel = r.id; H.skillNew = false; box.dataset.key = ''; }
+        await loadSkills(); if (H.skillSel === r.id) $('#skMsg').textContent = '온톨로지에 반영했다.';
+      } catch (e) { if (box.dataset.key === key) $('#skMsg').textContent = '실패: ' + e.message; }
+      finally { b.disabled = false; }
     });
   }
   $('#skillNew').addEventListener('click', () => { H.skillNew = true; renderSkillList(); renderSkillDetail(); });
@@ -266,21 +286,32 @@
         <ol>${p.steps.map(s => `<li>${esc(s.text)} <span class="muted">${esc(s.manual || '')}</span></li>`).join('')}</ol></div>`).join('') || '<div class="muted">없음</div>'}</div></div>
       <div class="approve-row"><button class="btn primary" id="manualCommit" ${r.sections.length || r.procedures.length ? '' : 'disabled'}>온톨로지에 적재</button><span id="manualMsg" class="muted"></span></div></div>`;
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
+      c.disabled = true;
+      $('#manualMsg').textContent = '적재 중…';
       const links = {}; box.querySelectorAll('[data-link]').forEach(s => links[s.dataset.link] = s.value || null);
       try {
         const out = await postJ(API.process + '/api/kg/manuals/commit', { ...r, links, by: $('#manualBy').value });
+        if (H.preview !== r) return;
         $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 절차 ${out.procedures} · 단계 ${out.steps}. 지식 지도를 다시 읽는다.`;
+        c.textContent = '적재 완료';
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);
-      } catch (e) { $('#manualMsg').textContent = '실패: ' + e.message; }
+      } catch (e) { if (H.preview === r) { $('#manualMsg').textContent = '실패: ' + e.message; c.disabled = false; } }
     });
   }
   $('#manualPreview').addEventListener('click', async () => {
     const f = $('#manualFile').files[0]; if (!f) { $('#manualResult').innerHTML = '<div class="neg">파일을 먼저 고른다.</div>'; return; }
-    const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = no; rd.readAsDataURL(f); });
-    if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); } catch (e) { } }
-    try { H.preview = await postJ(API.process + '/api/kg/manuals/preview', { filename: f.name, data: b64 }); renderPreview(); }
-    catch (e) { $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
+    const b = $('#manualPreview'); b.disabled = true; b.textContent = '읽는 중…'; H.preview = null;
+    $('#manualResult').innerHTML = '<div class="muted" role="status">매뉴얼을 읽는 중…</div>';
+    try {
+      const b64 = await new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1] || ''); rd.onerror = () => no(new Error('파일을 읽을 수 없습니다.')); rd.readAsDataURL(f); });
+      if (!H.catalog) H.catalog = await getJ(API.process + '/api/kg/catalog');
+      const preview = await postJ(API.process + '/api/kg/manuals/preview', { filename: f.name, data: b64 });
+      if ($('#manualFile').files[0] !== f) return;
+      H.preview = preview; renderPreview();
+    } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
+    finally { b.disabled = false; b.textContent = '미리보기'; }
   });
+  $('#manualFile').addEventListener('change', () => { H.preview = null; renderPreview(); });
 
   /* ------------------------------------------------ tab hooks */
   const _sel = selectTab;
@@ -289,6 +320,7 @@
     if (name === 'skills') loadSkills();
     if (name === 'ontology') loadUploads();
     if (name === 'incidents') refreshHitl(true);
+    if (name === 'process') refreshProcBpmn();
     if (name !== 'incidents') { const b = document.getElementById('hitlPanel'); if (b) b.innerHTML = ''; H.sig = null; }
   };
   window.hydApp.selectTab = selectTab;

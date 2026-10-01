@@ -4,6 +4,7 @@ The agent reaches these endpoints only through InfoType nodes of the ontology (w
 only the process service may POST /api/exec after a human approved a decision.
 """
 import logging
+import os
 
 from fastapi import HTTPException, Query
 
@@ -17,7 +18,7 @@ log = logging.getLogger("enterprise-sim")
 reg = Registry()
 c_reads = reg.counter("enterprise_reads_total", "reads by system")
 c_exec = reg.counter("enterprise_exec_total", "executed skills by system")
-st = EnterpriseState()
+st = EnterpriseState(os.getenv("ENTERPRISE_STATE_PATH"))
 app = make_app("enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios)", reg, lambda: {"ok": True, "transactions": len(st.transactions())})
 
 

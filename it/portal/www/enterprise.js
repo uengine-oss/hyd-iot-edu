@@ -34,8 +34,13 @@ async function loadGraph(force) {
   const asset = $('#ontoAsset').value;
   if (ent.graph && ent.graphAsset === asset && !force) { drawGraph(); return; }
   $('#ontoStats').textContent = '불러오는 중…';
-  try { ent.graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(asset)); ent.graphAsset = asset; }
-  catch (e) { $('#ontoMap').innerHTML = `<div class="muted" style="padding:20px">에이전트(8091) 또는 Neo4j에 연결할 수 없다. ${esc(e.message)}</div>`; return; }
+  try {
+    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(asset));
+    if ($('#ontoAsset').value !== asset) return;
+    if (ent.graphAsset !== asset) ent.sel = null;
+    ent.graph = graph; ent.graphAsset = asset;
+  }
+  catch (e) { if ($('#ontoAsset').value !== asset) return; $('#ontoStats').textContent = '불러오기 실패'; $('#ontoMap').innerHTML = `<div class="muted" style="padding:20px">에이전트(8091) 또는 Neo4j에 연결할 수 없다. ${esc(e.message)}</div>`; return; }
   if (!ent.scenarios || !ent.scenarios.length) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { ent.scenarios = null; } }
   const sel = $('#ontoFocus');
   if (sel.options.length <= 1) (ent.scenarios || []).forEach(s => sel.append(new Option(`판단 경로 ${s.scenario.no}. ${s.scenario.name}`, s.scenario.id)));
@@ -179,11 +184,13 @@ async function loadScenarios() {
 }
 async function runDecision(sid, asset, card) {
   if (ent.busy) return; ent.busy = true;
+  const buttons = [...document.querySelectorAll('.scn button')]; buttons.forEach(b => b.disabled = true);
+  const activeButton = card?.querySelector('button'); if (activeButton) activeButton.textContent = '판단 중…';
   document.querySelectorAll('.scn').forEach(c => c.classList.toggle('on', c === card));
   $('#decResult').innerHTML = '<div class="muted">에이전트가 온톨로지를 따라 기업 시스템을 조회하고 있다…</div>';
   try { ent.result = await postJ(API.agent + '/api/agent/decide', { scenario: sid, asset }); ent.persp = 'enterprise'; renderDecision(); }
   catch (e) { $('#decResult').innerHTML = `<div class="muted">판단 실패: ${esc(e.message)}</div>`; }
-  finally { ent.busy = false; }
+  finally { ent.busy = false; buttons.forEach(b => { b.disabled = false; b.textContent = '에이전트 판단 실행'; }); }
 }
 function won(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : ''; }
 function money(v) { return v == null ? '–' : (v > 0 ? '+' : '') + Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 1 }); }
@@ -243,17 +250,23 @@ function renderDecision() {
 /* ================================================= L9 업무 프로세스 · 시스템 연계 */
 async function refreshProcess() {
   if (state.tab !== 'process') return;
-  try { ent.decisions = await getJ(API.process + '/api/decisions'); } catch (e) { ent.decisions = []; }
+  try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = false; } catch (e) { ent.decisionsError = true; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions')]); } catch (e) { ent.entState = null; }
   if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
-  if (ent.decSel) { try { ent.decDetail = await getJ(API.process + '/api/decisions/' + ent.decSel); } catch (e) { ent.decDetail = null; } }
+  const selected = ent.decSel;
+  if (selected) {
+    try { const detail = await getJ(API.process + '/api/decisions/' + selected); if (selected !== ent.decSel) return; ent.decDetail = detail; }
+    catch (e) { if (selected !== ent.decSel) return; ent.decDetail = null; }
+  }
   renderProcess();
 }
 function renderProcess() {
   const list = $('#decList');
   list.innerHTML = ent.decisions.length ? '' : '<div class="muted">제출된 판단이 없다. 전사 의사결정 시나리오에서 실행하거나, 결함 시나리오 시뮬레이션에서 쿨러 열화를 주입하면 경보에서 자동으로 만들어진다.</div>';
+  if (ent.decisionsError) list.innerHTML = '<div class="neg" role="status">판단 목록을 갱신할 수 없습니다. 연결을 확인하세요. 아래는 마지막으로 받은 목록입니다.</div>';
   for (const d of ent.decisions) {
     const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
+    keyboardItem(it);
     it.innerHTML = `<div><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(d.state)}</span></div>` +
       `<div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · ${(d.origin || {}).kind === 'alert' ? '경보 ' + esc((d.origin || {}).alertId || '') : '수동 실행'}${d.override ? ' · 권고와 다른 안 승인' : ''}</div>`;
     it.addEventListener('click', async () => { ent.decSel = d.id; ent.form.msg = ''; ent.lastDetailSig = null; await refreshProcess(); });
@@ -276,14 +289,14 @@ function renderDecisionApproval() {
     <div class="summary">${esc(d.explanation || '')}</div>`;
   if (pending) html += `<div class="who"><label>승인자 <input id="decBy" value="${esc(ent.form.by)}"></label><label>역할 <select id="decRole">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === ent.form.role ? 'selected' : ''}>${esc(r.name)} (${esc(r.dept)}, 직급 ${r.level})</option>`).join('')}</select></label>
       <span class="muted">대안마다 승인 역할이 온톨로지(Option -APPROVED_BY-> Role)에 있다. 같은 역할이거나 더 높은 직급만 승인할 수 있다.</span></div>`;
-  html += '<table class="opts"><tr><th>대안</th><th>전사 합계</th><th>승인 역할</th><th>실행될 스킬 → 시스템</th><th></th></tr>';
+  html += '<div class="table-scroll"><table class="opts"><tr><th>대안</th><th>전사 합계<br><small>만원</small></th><th>승인 역할</th><th>실행될 스킬 → 시스템</th><th></th></tr>';
   for (const o of d.options || []) {
     html += `<tr class="${o.id === d.recommended ? 'rec' : ''} ${o.feasible ? '' : 'out'} ${o.id === d.chosen ? 'chosen' : ''}"><td><b>${esc(o.name)}</b>${o.id === d.recommended ? ' <span class="star">권고</span>' : ''}${o.feasible ? '' : ' <span class="hard">' + esc((o.violations || [])[0] ? o.violations[0].name : '제외') + '</span>'}</td>` +
       `<td class="num ${won(o.total)}">${money(o.total)}</td><td>${esc((o.approver || {}).name || '–')}</td>` +
       `<td>${(o.skills || []).map(s => `${esc(s.name)} → <b>${esc(s.systemName || s.system)}</b>`).join('<br>') || '–'}</td>` +
       `<td>${pending && o.feasible ? `<button class="btn small" data-approve="${esc(o.id)}">이 안으로 승인</button>` : o.id === d.chosen ? '승인됨' : ''}</td></tr>`;
   }
-  html += '</table>';
+  html += '</table></div>';
   if (pending) html += `<div class="approve-row"><input type="text" id="decReason" placeholder="반려 사유" value="${esc(ent.form.reason)}"><button class="btn" id="decReject">반려</button><span id="decMsg" class="neg">${esc(ent.form.msg || '')}</span></div>`;
   if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><table class="prov"><tr><th>스킬</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
     d.executions.map(x => `<tr><td>${esc(x.skill)}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(x.status)}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table>';

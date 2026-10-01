@@ -38,8 +38,9 @@ def build_tags():
             tags[f"{k}_{name}"] = {"id": f"{k}_{name}", "name": f"{a} {name}", "type": "json",
                                    "address": f"plant/{k}/tag/{name}", "memaddress": "v", "options": {"subs": ["v"]}}
         for fld in ("mode", "state", "result", "reason"):
+            source = "reason_display" if fld == "reason" else fld
             tags[f"{k}_{fld}"] = {"id": f"{k}_{fld}", "name": f"{a} {fld}", "type": "json",
-                                  "address": f"plant/{k}/status", "memaddress": fld, "options": {"subs": [fld]}}
+                                  "address": f"plant/{k}/status", "memaddress": source, "options": {"subs": [source]}}
         tags[f"{k}_alert"] = {"id": f"{k}_alert", "name": f"{a} IT alert level", "type": "json",
                               "address": f"plant/{k}/alert", "memaddress": "level", "options": {"subs": ["level"]}}
         tags[f"{k}_alert_text"] = {"id": f"{k}_alert_text", "name": f"{a} IT alert text", "type": "json",
@@ -77,7 +78,7 @@ class View:
         self.svg.append(
             f'<g id="{iid}" text-anchor="end" font-family="sans-serif" stroke-width="0" font-size="{size}" fill="none" type="svg-ext-value">'
             f'<text id="{uid("VAL")}" y="{y}" x="{x + w}" xml:space="preserve" text-anchor="end" font-family="sans-serif" '
-            f'font-size="{size}" fill="{color}" stroke-width="0">##.##</text></g>')
+            f'font-size="{size}" fill="{color}" stroke-width="0">–</text></g>')
 
     def progress(self, x, y, w, h, tag, name, vmin=0, vmax=100, color="#4f8df5"):
         iid = uid("GXP")
@@ -112,7 +113,7 @@ class View:
             f'<g id="{iid}" stroke="#000000" text-anchor="right" font-family="sans-serif" font-size="14" fill="#f1f1f1ff" type="svg-ext-html_input">'
             f'<rect id="{uid("svg")}" stroke="null" fill="#ffffff" height="{h}" width="{w}" y="{y}" x="{x}" stroke-width="0"/>'
             f'<foreignObject id="H-{h1}" width="{w}" height="{h}" y="{y}" x="{x}">'
-            f'<INPUT id="I-{h2}" style="width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; '
+            f'<INPUT id="I-{h2}" aria-label="{name}" title="값을 입력하고 Enter로 적용" style="width: calc(100% - 7px); height: calc(100% - 7px); text-align: right; border: 1px solid #9ca3af; '
             f'background-color: rgb(255, 255, 255); color: rgb(0, 0, 0); vector-effect: non-scaling-stroke;" type="text"/>'
             f'</foreignObject></g>')
 
@@ -141,12 +142,12 @@ class View:
             f'<g text-anchor="right" font-family="sans-serif" font-size="14" fill="#000000" type="svg-ext-html_select" id="{iid}">'
             f'<rect id="{uid("svg")}" fill="#ffffff" height="{h}" width="{w}" y="{y}" x="{x}" stroke-width="0"/>'
             f'<foreignObject id="H-{h1}" width="{w}" height="{h}" y="{y}" x="{x}">'
-            f'<SELECT style="width:100%;height:100%;text-align: right;margin-top:unset;" id="S-{h1}"><OPTION/></SELECT>'
+            f'<SELECT aria-label="{name}" style="width:100%;height:100%;text-align: right;margin-top:unset;" id="S-{h1}"><OPTION/></SELECT>'
             f'</foreignObject></g>')
 
     def render(self):
         body = "\n".join(self.svg)
-        return (f'<svg width="{W}" height="{H}" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" '
+        return (f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" '
                 f'xmlns:html="http://www.w3.org/1999/xhtml"><g><title>Layer 1</title>\n{body}\n</g></svg>')
 
 
@@ -163,13 +164,13 @@ def build_view():
         v.text(x + 16, y + 30, a, size=20, weight="bold", color="#1e3a8a")
         v.text(x + 90, y + 30, "IT 경보", size=12, color="#6b7280")
         v.semaphore(x + 150, y + 25, f"{k}_alert", f"{a} alert")
-        v.text(x + 175, y + 30, "모드", size=12, color="#6b7280")
-        v.value(x + 200, y + 30, f"{k}_mode", f"{a} mode", w=100, size=12, color="#374151")
-        v.text(x + 300, y + 30, "상태", size=12, color="#6b7280")
-        v.value(x + 322, y + 30, f"{k}_state", f"{a} state", w=45, size=13, color="#374151")
+        v.text(x + 175, y + 30, "현재 모드", size=11, color="#6b7280")
+        v.value(x + 240, y + 30, f"{k}_mode", f"{a} mode", w=112, size=12, color="#374151")
+        v.text(x + 175, y + 52, "PLC 상태", size=11, color="#6b7280")
+        v.value(x + 277, y + 52, f"{k}_state", f"{a} state", w=75, size=13, color="#374151")
 
         # TS1 bar + big number
-        v.text(x + 16, y + 70, "유온 TS1", size=13, color="#374151")
+        v.text(x + 16, y + 70, "유온 TS1 (℃)", size=13, color="#374151")
         v.progress(x + 16, y + 80, 40, 220, f"{k}_TS1", f"{a} TS1", 0, 100, "#f97316")
         v.text(x + 62, y + 90, "100", size=10, color="#9ca3af")
         v.text(x + 62, y + 152, "65 트립", size=10, color="#ef4444")
@@ -182,22 +183,22 @@ def build_view():
                 ("팬 속도 SP", f"{k}_FanSpeedSP", " %"), ("펌프 부하 SP", f"{k}_LoadSP", " %")]
         ry = y + 175
         for label, tag, unit in rows:
-            v.text(x + 120, ry, label, size=12, color="#6b7280")
+            v.text(x + 120, ry, f"{label} ({unit.strip()})", size=12, color="#6b7280")
             v.value(x + 220, ry, tag, label, unit, w=130, size=14)
             ry += 24
 
         # manual controls
         cy = y + 330
         v.rect(x + 16, cy, COL_W - 32, 150, fill="#eef2ff", stroke="#c7d2fe")
-        v.text(x + 28, cy + 22, "수동 조작 (cmd/manual · source FUXA)", size=12, weight="bold", color="#3730a3")
+        v.text(x + 28, cy + 22, "수동 조작 · 입력 후 Enter로 적용", size=12, weight="bold", color="#3730a3")
         v.text(x + 28, cy + 50, "팬 속도 % (0~100)", size=12, color="#374151")
         v.input(x + 190, cy + 34, 80, 24, f"{k}_cmd_FanSpeedSP", f"{a} fan write")
         v.text(x + 28, cy + 80, "펌프 부하 % (60~100)", size=12, color="#374151")
         v.input(x + 190, cy + 64, 80, 24, f"{k}_cmd_LoadSP", f"{a} load write")
         v.button(x + 285, cy + 34, 70, 24, f"{k}_cmd_Reset", "RESET", "RESET", 1, bg="#dc2626")
-        v.text(x + 28, cy + 110, "운전 모드 전환", size=12, color="#374151")
+        v.text(x + 28, cy + 110, "모드 변경 명령", size=12, color="#374151")
         v.select(x + 190, cy + 94, 165, 24, f"{k}_mode_set", f"{a} mode set",
-                 [(1, "REMOTE_MANUAL"), (2, "REMOTE_AUTO"), (0, "LOCAL")])
+                 [("", "전환할 모드 선택"), (1, "REMOTE_MANUAL"), (2, "REMOTE_AUTO"), (0, "LOCAL")])
         v.text(x + 28, cy + 140, "마지막 명령 ACK", size=12, color="#374151")
         v.value(x + 190, cy + 140, f"{k}_result", f"{a} ack", w=80, size=12, color="#111827")
         v.value(x + 260, cy + 140, f"{k}_reason", f"{a} ack reason", w=90, size=11, color="#b91c1c")
@@ -241,8 +242,11 @@ def build_project():
                           "property": {"address": "mqtt://emqx:1883", "clientId": "fuxa-ot", "timeout": 10000},
                           "tags": build_tags()}},
         "hmi": {"views": [view],
-                "layout": {"start": view["id"], "header": {},
+                "layout": {"start": view["id"], "zoom": "disabled",
+                           "customStyles": "#container { width: 100% !important; } #home { display: block; width: 100% !important; } #home #content { width: 100% !important; } #home #content > svg { width: 100%; height: auto; display: block; }",
+                           "header": {"bkcolor": "#ffffff", "fgcolor": "#1f2937"},
                            "navigation": {"mode": "fix", "type": "inline",
+                                          "bkcolor": "#f4f5f7", "fgcolor": "#1f2937",
                                           "items": [{"icon": "home", "view": view["id"], "link": "", "text": "설비 현황"}]}}},
         "alarms": build_alarms(),
         "texts": [],

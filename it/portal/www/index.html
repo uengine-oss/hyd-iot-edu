@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유압설비 모니터링 · 조치 포탈</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="enterprise.css">
-<link rel="stylesheet" href="main.css">
-<link rel="stylesheet" href="hitl.css">
+<link rel="stylesheet" href="styles.css?v=20261001-ui">
+<link rel="stylesheet" href="enterprise.css?v=20261001-ui">
+<link rel="stylesheet" href="main.css?v=20261001-ui">
+<link rel="stylesheet" href="hitl.css?v=20261001-ui">
 </head>
 <body>
 <aside class="rail">
@@ -133,8 +133,9 @@
     <div class="toolbar">
       <button class="btn" id="btnReset">전체 초기화 (정상 운전점)</button>
       <label>시간 배율 <select id="selScale"><option>5</option><option>10</option><option selected>20</option><option>40</option></select>×</label>
-      <span class="muted">1초 = 배율 × 시뮬레이션 초. 15분 재관측이 45초로 줄어든다(×20).</span>
+      <span class="muted">설비 시뮬레이션 배율입니다. 탐지·재관측 시간은 서비스 시작 시 설정한 배율을 사용합니다.</span>
     </div>
+    <div id="scenarioMsg" class="muted" role="status" aria-live="polite"></div>
     <div class="units" id="units"></div>
     <h2>최근 명령 게이트웨이 결정</h2>
     <div class="log" id="gwLog"><div class="muted">아직 결정이 없다.</div></div>
@@ -176,10 +177,10 @@
 </main>
 
 <div id="caption"></div>
-<script src="layers.js"></script>
-<script src="app.js"></script>
-<script src="enterprise.js"></script>
-<script src="main.js"></script>
-<script src="hitl.js"></script>
+<script src="layers.js?v=20261001-ui"></script>
+<script src="app.js?v=20261001-ui"></script>
+<script src="enterprise.js?v=20261001-ui"></script>
+<script src="main.js?v=20261001-ui"></script>
+<script src="hitl.js?v=20261001-ui"></script>
 </body>
 </html>

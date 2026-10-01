@@ -1,4 +1,6 @@
 pytest>=8
+-r it/agent/requirements.txt
+-r it/process/requirements.txt
 httpx>=0.27
 paho-mqtt>=2.1
 aiokafka>=0.11

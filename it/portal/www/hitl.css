@@ -84,7 +84,12 @@
 .skill-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
 .skill-edit input, .skill-edit textarea, .skill-edit select { font: inherit; font-size: 13.5px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; color: var(--ink); }
 .skill-edit textarea.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.6; }
-.skill-rels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.skill-rels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.skill-rels label, .skill-edit input, .skill-edit select, .skill-edit textarea { min-width: 0; max-width: 100%; }
+.hact { flex-wrap: wrap; }
+.hact .btn { flex-shrink: 0; }
+@media (max-width: 1100px) { .skills-split { grid-template-columns: 260px minmax(0, 1fr); } .skill-rels { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .skills-split { grid-template-columns: minmax(0, 1fr); } }
 .skill-edit h3 { margin: 10px 0 0; font-size: 14px; }
 
 /* manual upload */
