@@ -68,8 +68,8 @@
       const cls = kind === 'loop' ? 'b-flow loop' : kind === 'msg' ? 'b-flow msg' : 'b-flow' + (done ? ' done' : '');
       let out = `<path d="${d}" class="${cls}" marker-end="url(#${kind === 'loop' ? 'bArrP' : 'bArr'})"/>`;
       if (label) {
-        const lx = kind === 'loop' ? B.x + 150 : (ax + bx) / 2 + 6, ly = kind === 'loop' ? by + 96 : by - 6;
-        out += `<text x="${lx}" y="${ly}" class="b-flowt ${kind || ''}">${esc(label)}</text>`;
+        const lx = kind === 'loop' ? B.x + 150 : (ax + bx) / 2 - 12, ly = kind === 'loop' ? by + 96 : by - 12;
+        out += `<text x="${lx}" y="${ly}" text-anchor="${kind === 'loop' ? 'start' : 'end'}" class="b-flowt ${kind || ''}">${esc(label)}</text>`;
       }
       return out;
     };
@@ -88,9 +88,16 @@
       }
     }
     s += '</svg>';
-    return `<div class="bpmn-cap"><span>${caption || ''}</span><span class="b-legend"><i class="done"></i>완료 <i class="now"></i>진행 중 <i class="fail"></i>실패 · 에스컬레이션 <i class="loop"></i>지식 환류</span></div>` + s;
+    return `<div class="bpmn-cap"><span>${caption || ''}</span><span class="b-legend"><span><i class="done"></i>완료</span><span><i class="now"></i>진행 중</span><span><i class="fail"></i>실패 · 에스컬레이션</span><span><i class="loop"></i>지식 환류</span></span></div><div class="bpmn-tools"><span>흐름도를 좌우로 이동해 다음 단계를 확인할 수 있습니다.</span><button type="button" class="btn small" data-bpmn-fit aria-pressed="false">전체 흐름 보기</button></div><div class="bpmn-scroll" tabindex="0" role="region" aria-label="업무 흐름도, 좌우 방향키로 이동">${s}</div>`;
   }
   window.hydBpmn = bpmnSvg;
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-bpmn-fit]'); if (!b) return;
+    const region = b.parentElement.nextElementSibling;
+    const fit = region.classList.toggle('fit');
+    b.setAttribute('aria-pressed', String(fit));
+    b.textContent = fit ? '읽기 편한 크기로 보기' : '전체 흐름 보기';
+  });
 
   /* ================================================= HITL decision panel (이상 확인 & 조치) */
   const money = v => v == null ? '–' : (v > 0 ? '+' : '') + Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 1 });

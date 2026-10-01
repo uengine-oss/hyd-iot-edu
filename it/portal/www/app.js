@@ -205,7 +205,7 @@ function unitSvg(asset) {
     <circle class="ts1-bulb" cx="240" cy="80" r="11" fill="#1e8e5a"/><text class="sym" x="240" y="84" text-anchor="middle">T</text>
     <text class="ts1 v-ts1" x="240" y="112" text-anchor="middle">–</text>
     <rect class="cooler" x="262" y="55" width="70" height="50" rx="3"/>${fins}
-    <text x="297" y="126" text-anchor="middle">쿨러 CE <tspan class="v-ce">–</tspan> %</text>
+    <text x="310" y="143" text-anchor="middle">쿨러 CE <tspan class="v-ce">–</tspan> %</text>
     <g class="fan"><circle class="fanring" cx="350" cy="80" r="14"/>
       <path class="blade" d="${blade}"/><path class="blade" d="${blade}" transform="rotate(120 350 80)"/><path class="blade" d="${blade}" transform="rotate(240 350 80)"/></g>
     <text x="350" y="110" text-anchor="middle">팬 <tspan class="v-fan">–</tspan> %</text>
@@ -259,13 +259,19 @@ $('#btnAllInc').addEventListener('click', () => { state.showAll = true; renderIn
 
 /* ---------------- incidents ---------------- */
 function renderIncList() {
-  const box = $('#incList'); box.innerHTML = '';
+  const box = $('#incList');
+  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.selected, state.incidents, state.runs]);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const focused = box.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
+  const scroll = box.scrollTop; box.innerHTML = '';
   const filtered = (state.selectedAsset && !state.showAll) ? incidentsFor(state.selectedAsset) : state.incidents;
   $('#incListTitle').textContent = (state.selectedAsset && !state.showAll) ? `${state.selectedAsset} 인시던트 (${filtered.length})` : `전체 인시던트 (${state.incidents.length})`;
   if (!filtered.length) { box.innerHTML = `<div class="muted">${state.selectedAsset && !state.showAll ? state.selectedAsset + ' 인시던트가 없다.' : '인시던트가 없다. 결함 시나리오 시뮬레이션에서 열화를 주입해 보자.'}</div>`; }
   for (const inc of filtered) {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
     keyboardItem(it);
+    it.dataset.itemId = inc.id;
     it.innerHTML = `<strong>${esc(inc.id)} <span class="pill ${esc(inc.state)}">${esc(inc.state)}</span></strong><span>${esc(inc.asset)} · ${esc(inc.alertId)} · ${esc((inc.created || '').slice(11, 19))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
@@ -274,10 +280,13 @@ function renderIncList() {
   for (const r of state.runs.filter(r => !r.incidentId && r.status !== 'RUNNING' && (!state.selectedAsset || state.showAll || r.asset === state.selectedAsset))) {
     const it = el('div', 'item');
     keyboardItem(it);
+    it.dataset.itemId = r.id;
     it.innerHTML = `<strong>${esc(r.id)} <span class="pill ESCALATED">${esc(r.status)}</span></strong><span>${esc(r.asset)} · ${esc(r.alertId)} · 에이전트 실행만 있음</span>`;
     it.addEventListener('click', () => { state.selected = null; state.detail = null; loadRun(r.id).then(renderDetail); });
     box.append(it);
   }
+  if (focused) [...box.children].find(e => e.dataset.itemId === focused)?.focus({preventScroll:true});
+  box.scrollTop = scroll;
 }
 async function loadRun(id) { try { state.run = await getJ(API.agent + '/api/agent/runs/' + id); } catch (e) { state.run = null; } }
 async function loadDetail() {
@@ -349,6 +358,9 @@ function renderDetail() {
   const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id)]);
   if ((inc || run) && box.dataset.signature === signature) return;
   const same = inc && box.dataset.incident === inc.id;
+  const active = same && box.contains(document.activeElement) ? document.activeElement : null;
+  const focusedKey = active && (active.id || active.dataset.param);
+  const selection = active && active.type === 'text' ? [active.selectionStart, active.selectionEnd] : null;
   const draft = same ? [...box.querySelectorAll('input')].map(e => [e.id || e.dataset.param, e.value]) : [];
   box.dataset.signature = signature; box.dataset.incident = inc?.id || '';
   if (!inc && !run) {
@@ -386,6 +398,10 @@ function renderDetail() {
   for (const e of box.querySelectorAll('input')) {
     const saved = draft.find(([key]) => key === (e.id || e.dataset.param));
     if (saved) { e.value = saved[1]; if (e.type === 'range') e.parentElement.querySelector('output').textContent = e.value; }
+    if (focusedKey && focusedKey === (e.id || e.dataset.param)) {
+      e.focus({preventScroll:true});
+      if (selection) e.setSelectionRange(...selection);
+    }
   }
   box.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('input', () => r.parentElement.querySelector('output').textContent = r.value));
   const ap = $('#btnApprove'); if (ap) ap.addEventListener('click', approve);

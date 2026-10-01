@@ -125,14 +125,29 @@ function drawGraph() {
   }
   svg += '</svg>';
   const box = $('#ontoMap'); box.innerHTML = svg;
+  // Fit the actual rendered Korean/Latin text, not a fixed character count.
+  box.querySelectorAll('.o-node text').forEach(t => {
+    const original = t.textContent;
+    let short = original;
+    while (t.getComputedTextLength() > BOX - 16 && short.length > 1) {
+      short = short.slice(0, -1); t.textContent = short + '…';
+    }
+  });
   box.querySelectorAll('.o-node').forEach(gn => {
-    const pick = () => { ent.sel = ent.sel === gn.dataset.id ? null : gn.dataset.id; drawGraph(); renderNodePanel(); };
+    gn.setAttribute('role', 'button');
+    gn.setAttribute('aria-label', gn.querySelector('title').textContent);
+    gn.setAttribute('aria-pressed', String(gn.dataset.id === ent.sel));
+    const pick = () => { const id = gn.dataset.id; ent.sel = ent.sel === id ? null : id; drawGraph(); renderNodePanel();
+      [...box.querySelectorAll('.o-node')].find(n => n.dataset.id === id)?.focus({preventScroll:true}); };
     gn.addEventListener('click', pick);
     gn.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } });
   });
   const counts = {}; g.nodes.forEach(n => counts[n.label] = (counts[n.label] || 0) + 1);
   const ent_ = ['Department', 'Role', 'KPI', 'Goal', 'Policy', 'System', 'InfoType', 'Skill', 'BusinessProcess', 'Scenario', 'Option', 'Supplier', 'Decision'].reduce((s, l) => s + (counts[l] || 0), 0);
-  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 그중 전사 지식(조직·KPI·규정·시스템·스킬·판단) <b>${ent_}</b>개` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '');
+  const matches = [...box.querySelectorAll('.o-node.match')];
+  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 그중 전사 지식 <b>${ent_}</b>개` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '') + (q ? ` · 검색 결과 ${matches.length}개` : '');
+  if (q && matches.length) { const r = matches[0].getBBox(); box.scrollLeft = Math.max(0, r.x - 20); box.scrollTop = Math.max(0, r.y - 60); }
+  renderNodePanel();
 }
 function renderNodePanel() {
   const box = $('#ontoNode');
@@ -143,7 +158,7 @@ function renderNodePanel() {
   const nm = id => { const x = g.nodes.find(y => y.id === id); return x ? x.name : id; };
   const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><code>${dir === 'out' ? '→' : '←'} ${esc(e.type)}</code> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
   box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)} <span class="muted">(${esc(n.label)})</span></div><h3>${esc(n.name)}</h3><div class="muted mono">${esc(n.id)}</div>` +
-    (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v)).slice(0, 400)}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
+    (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
     (outE.length ? `<h4>나가는 관계 ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>들어오는 관계 ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
   box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); }));
 }
@@ -191,6 +206,7 @@ async function runDecision(sid, asset, card) {
   try { ent.result = await postJ(API.agent + '/api/agent/decide', { scenario: sid, asset }); ent.persp = 'enterprise'; renderDecision(); }
   catch (e) { $('#decResult').innerHTML = `<div class="muted">판단 실패: ${esc(e.message)}</div>`; }
   finally { ent.busy = false; buttons.forEach(b => { b.disabled = false; b.textContent = '에이전트 판단 실행'; }); }
+  if (state.tab === 'decision') $('#decResult').scrollIntoView({block:'start'});
 }
 function won(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : ''; }
 function money(v) { return v == null ? '–' : (v > 0 ? '+' : '') + Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 1 }); }
@@ -262,15 +278,29 @@ async function refreshProcess() {
 }
 function renderProcess() {
   const list = $('#decList');
+  const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError]);
+  if (list.dataset.sig !== sig) {
+  list.dataset.sig = sig;
+  const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
+  const scroll = list.scrollTop;
   list.innerHTML = ent.decisions.length ? '' : '<div class="muted">제출된 판단이 없다. 전사 의사결정 시나리오에서 실행하거나, 결함 시나리오 시뮬레이션에서 쿨러 열화를 주입하면 경보에서 자동으로 만들어진다.</div>';
   if (ent.decisionsError) list.innerHTML = '<div class="neg" role="status">판단 목록을 갱신할 수 없습니다. 연결을 확인하세요. 아래는 마지막으로 받은 목록입니다.</div>';
   for (const d of ent.decisions) {
     const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
     keyboardItem(it);
+    it.dataset.itemId = d.id;
     it.innerHTML = `<div><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(d.state)}</span></div>` +
       `<div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · ${(d.origin || {}).kind === 'alert' ? '경보 ' + esc((d.origin || {}).alertId || '') : '수동 실행'}${d.override ? ' · 권고와 다른 안 승인' : ''}</div>`;
-    it.addEventListener('click', async () => { ent.decSel = d.id; ent.form.msg = ''; ent.lastDetailSig = null; await refreshProcess(); });
+    it.addEventListener('click', async () => {
+      if (ent.decSel === d.id && ent.decDetail) return;
+      ent.decSel = d.id; ent.decDetail = null; ent.form.msg = ''; ent.lastDetailSig = null;
+      $('#decDetail').innerHTML = '<div class="empty" role="status">선택한 판단을 불러오는 중…</div>';
+      await refreshProcess();
+    });
     list.append(it);
+  }
+  if (focused) [...list.children].find(e => e.dataset.itemId === focused)?.focus({preventScroll:true});
+  list.scrollTop = scroll;
   }
   renderDecisionApproval();
   renderSystems();
@@ -307,12 +337,20 @@ function renderDecisionApproval() {
   if (role) { ent.form.role = role.value; role.addEventListener('change', () => { ent.form.role = role.value; ent.form.msg = ''; }); }
   if (reason) reason.addEventListener('input', () => ent.form.reason = reason.value);
   box.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', async () => {
+    const controls = [...box.querySelectorAll('[data-approve],#decReject')];
+    controls.forEach(c => c.disabled = true); b.textContent = '승인 중…';
+    $('#decMsg').textContent = '승인 요청을 처리하고 있습니다.';
     try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: b.dataset.approve, by: $('#decBy').value || '승인자', role: $('#decRole').value }); await refreshProcess(); }
-    catch (e) { ent.form.msg = e.message; $('#decMsg').textContent = e.message; }
+    catch (e) { ent.form.msg = e.message; if (ent.decSel === d.id) $('#decMsg').textContent = e.message; }
+    finally { controls.forEach(c => c.disabled = false); b.textContent = '이 안으로 승인'; }
   }));
   const rj = $('#decReject'); if (rj) rj.addEventListener('click', async () => {
+    if (!$('#decReason').value.trim()) { ent.form.msg = '반려 사유를 입력하세요.'; $('#decMsg').textContent = ent.form.msg; $('#decReason').focus(); return; }
+    const controls = [...box.querySelectorAll('[data-approve],#decReject')];
+    controls.forEach(c => c.disabled = true); rj.textContent = '반려 중…';
     try { await postJ(API.process + `/api/decisions/${d.id}/reject`, { by: $('#decBy').value, reason: $('#decReason').value }); await refreshProcess(); }
-    catch (e) { $('#decMsg').textContent = e.message; }
+    catch (e) { if (ent.decSel === d.id) $('#decMsg').textContent = e.message; }
+    finally { controls.forEach(c => c.disabled = false); rj.textContent = '반려'; }
   });
 }
 function renderSystems() {

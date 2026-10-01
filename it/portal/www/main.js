@@ -19,7 +19,7 @@
   function nodeSvg([id, label, g, x, y]) {
     if (id === 'agent') {
       return `<g class="m-agent"><circle cx="${x}" cy="${y}" r="44" class="m-halo"/><circle cx="${x}" cy="${y}" r="30" fill="#1b2430" stroke="#fff" stroke-width="2"/>` +
-        `<text x="${x}" y="${y - 2}" text-anchor="middle" class="m-agent-t">AI</text><text x="${x}" y="${y + 13}" text-anchor="middle" class="m-agent-s">Agent</text></g>`;
+        `<text x="${x}" y="${y - 6}" text-anchor="middle" class="m-agent-t">AI</text><text x="${x}" y="${y + 15}" text-anchor="middle" class="m-agent-s">Agent</text></g>`;
     }
     const w = Math.max(64, label.length * 12 + 20);
     return `<g class="m-node"><rect x="${x - w / 2}" y="${y - 13}" width="${w}" height="26" rx="13" fill="#1b2430" stroke="${G[g]}" stroke-width="1.6"/>` +
@@ -137,7 +137,8 @@
   function renderLive() {
     const live = document.getElementById('mLive'); if (!live) return;
     const u = state.plant && state.plant.units;
-    if (!u) { live.textContent = 'plant-sim 연결 대기'; return; }
+    if (!u) { live.textContent = '설비 연결 끊김 · 현재 운전 상태를 확인할 수 없습니다.';
+      document.getElementById('mainStats').innerHTML = '<div class="m-unavailable" role="status">설비 연결 끊김 · 현재 운전 상태를 확인할 수 없습니다.</div>'; return; }
     const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? 'TRIP' : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + x.status.mode + ')'}`.trim());
     live.textContent = '실시간 유온 TS1  ·  ' + parts.join('   ');
     const hot = Object.values(u).some(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP');
@@ -146,20 +147,30 @@
     const open = (state.incidents || []).filter(i => !i.terminal).length;
     const alarms = Object.values(u).filter(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP').length;
     box.innerHTML = [
-      ['설비', `${Object.keys(u).length}기`, alarms ? `이상 ${alarms}기` : '모두 정상'],
-      ['열린 인시던트', String(open), open ? '이상 확인 & 조치에서 승인' : '없음'],
+      ['설비', `${Object.keys(u).length}기`, alarms ? `고온·트립 ${alarms}기` : '모든 설비 유온 55 ℃ 미만'],
+      ['열린 인시던트', $('#openCount').textContent === '연결 끊김' ? '–' : String(open), $('#openCount').textContent === '연결 끊김' ? '프로세스 연결 끊김' : open ? '이상 확인 & 조치에서 확인' : '없음'],
       ['지식 지도', graphCount ? `${graphCount.n}` : '–', graphCount ? `노드 · 관계 ${graphCount.e}` : 'Neo4j 연결 대기'],
-      ['시간 배율', `${state.plant.time_scale ?? '–'}×`, '벽시계 1초 = 시뮬레이션 초'],
+      ['시간 배율', `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`],
     ].map(([k, v, s]) => `<div><span>${k}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
   }
 
   function init() {
     const box = document.getElementById('mainHero'); if (!box) return;
     box.innerHTML = heroSvg();
+    const fitNodes = () => box.querySelectorAll('.m-node').forEach(g => {
+      const r = g.querySelector('rect'), t = g.querySelector('text'), dot = g.querySelector('circle');
+      const cx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) / 2;
+      const measured = t.getComputedTextLength(); if (!measured) return;
+      const w = Math.ceil(measured) + 40;
+      r.setAttribute('x', cx - w / 2); r.setAttribute('width', w);
+      dot.setAttribute('cx', cx - w / 2 + 12); t.setAttribute('x', cx - w / 2 + 23);
+    });
+    fitNodes(); document.fonts.ready.then(fitNodes);
     document.getElementById('mainStages').innerHTML = stagesHtml();
     document.querySelectorAll('.m-stage').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.go)));
     document.getElementById('brandHome').addEventListener('click', () => selectTab('main'));
     document.getElementById('mainArch').addEventListener('click', () => selectTab('home'));
+    document.getElementById('mainOperate').addEventListener('click', () => selectTab('incidents'));
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
   }

@@ -213,6 +213,46 @@ with sync_playwright() as pw:
         shot('decision-denied-after')
     check('all four decisions, perspectives, approval inputs and operator denial', decisions)
 
+    def usability():
+        tab('main')
+        page.locator('#mainOperate').click()
+        expect(page.locator('#view-incidents')).to_be_visible()
+        for name, selector in [('incidents','#incList .item'),('process','#decList .item')]:
+            tab(name)
+            item=page.locator(selector).first
+            item.focus()
+            page.wait_for_timeout(5500)
+            expect(item).to_be_focused()
+            item.press('Enter')
+        page.locator('#decReason').fill('')
+        page.locator('#decReject').click()
+        expect(page.locator('#decMsg')).to_have_text('반려 사유를 입력하세요.')
+        expect(page.locator('#decReason')).to_be_focused()
+        toggle=page.locator('#procBpmn [data-bpmn-fit]')
+        toggle.click()
+        expect(toggle).to_have_attribute('aria-pressed','true')
+        require(page.locator('#procBpmn .bpmn-scroll').evaluate('(e)=>e.scrollWidth<=e.clientWidth+2'),'fit diagram overflow')
+        toggle.click()
+        tab('ontology')
+        page.locator('#ontoSearch').fill('no-such-node-20261001')
+        expect(page.locator('#ontoStats')).to_contain_text('검색 결과 0개')
+        page.locator('#ontoSearch').fill('쿨러')
+        expect(page.locator('.o-node.match').first).to_be_visible()
+        page.locator('#ontoSearch').fill('')
+        node=page.locator('.o-node').first
+        node.focus()
+        node.press('Enter')
+        expect(page.locator('.o-node.sel')).to_be_focused()
+        tab('main')
+        page.route('**:8000/api/**',lambda route:route.abort())
+        try:
+            expect(page.locator('#mainStats')).to_contain_text('설비 연결 끊김',timeout=20000)
+        finally:
+            page.unroute('**:8000/api/**')
+        expect(page.locator('#mainStats')).not_to_contain_text('설비 연결 끊김',timeout=20000)
+    check('entry action, keyboard retention, rejection validation, diagram fit, search and stale status',usability)
+
+
     def layouts():
         for width, height in [(1440, 900), (1262, 624), (1024, 768)]:
             page.set_viewport_size({'width': width, 'height': height})

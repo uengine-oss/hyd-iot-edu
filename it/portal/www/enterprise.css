@@ -58,8 +58,10 @@ pre.tpl { background: #1b2430; color: #dfe5ec; padding: 12px 14px; border-radius
 .scn-no { position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; border-radius: 50%; background: #efe7ff; color: #6d28d9; font-weight: 600; text-align: center; line-height: 24px; font-size: 13px; }
 .scn h3 { margin: 0 0 4px; font-size: 15px; }
 .scn p { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
-.scn-run { display: flex; gap: 8px; margin-top: 10px; }
-.dec-head { display: flex; align-items: baseline; gap: 12px; margin-top: 26px; border-top: 2px solid var(--ink); padding-top: 12px; }
+.scn { display: flex; flex-direction: column; }
+.scn-run { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
+.scn-run .btn { white-space: nowrap; }
+.dec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-top: 26px; border-top: 2px solid var(--ink); padding-top: 12px; }
 .dec-head h2 { margin: 0; font-size: 18px; }
 .versus { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; margin: 14px 0 6px; }
 .versus > div { border: 1px solid var(--rule); border-radius: var(--radius); padding: 12px 14px; background: var(--panel); font-size: 13px; }
@@ -112,6 +114,11 @@ pre.tpl { background: #1b2430; color: #dfe5ec; padding: 12px 14px; border-radius
 .board header b { color: #0f766e; }
 .board header span { color: var(--ink-3); }
 .board table { width: 100%; border-collapse: collapse; }
+.board { min-width: 0; }
+.board table { table-layout: fixed; }
+.board td { overflow-wrap: anywhere; }
+.who label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.opts .btn { white-space: nowrap; }
 .board td { border-top: 1px dashed #eef1f4; padding: 3px 4px 3px 0; }
 .linked { display: flex; flex-wrap: wrap; gap: 8px; }
 .linked a { border: 1px solid #d9c9f5; background: #faf7ff; padding: 6px 10px; border-radius: var(--radius); }

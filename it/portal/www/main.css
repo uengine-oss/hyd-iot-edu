@@ -2,11 +2,12 @@
 .rail .brand { cursor: pointer; background: none; border: 0; border-bottom: 1px solid #2e3a49; text-align: left; font: inherit; color: inherit; width: 100%; }
 .rail .brand:hover strong, .rail .brand.active strong { color: #f5c46b; }
 #view-main { max-width: 1240px; }
-.m-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+.m-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.m-head > div:first-child { flex: 1 1 600px; min-width: 0; }
 .m-head h1 { font-size: 26px; line-height: 1.25; margin: 0; letter-spacing: -0.01em; }
 .m-head h1 .x { color: var(--ink-3); font-weight: 400; margin: 0 6px; }
 .m-head p { margin: 6px 0 0; color: var(--ink-2); max-width: 70ch; }
-.m-hero { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 var(--rule); background: #16202d; }
+.m-hero { border-radius: 10px; overflow: auto; padding: 16px; box-shadow: 0 1px 0 var(--rule); background: #16202d; }
 .m-hero-svg { display: block; width: 100%; height: auto; font-family: var(--font); }
 .m-zone { font-size: 14px; font-weight: 600; letter-spacing: .01em; }
 .m-sep { stroke: #2f3f55; stroke-dasharray: 3 5; }
@@ -52,6 +53,8 @@
 .m-step { position: absolute; right: 14px; top: 12px; font-size: 22px; font-weight: 600; color: #d3d9e0; }
 .m-st-l { font-size: 12px; color: var(--ink-3); }
 .m-stage strong { font-size: 16px; }
+.m-st-l { padding-right: 28px; }
+.m-stage .m-st-go { margin-top: auto; padding-top: 10px; }
 .m-st-d { font-size: 13px; color: var(--ink-2); line-height: 1.55; }
 .m-st-go { margin-top: 6px; font-size: 12.5px; color: var(--accent); }
 .m-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
@@ -59,5 +62,7 @@
 .m-stats span { font-size: 12px; color: var(--ink-3); }
 .m-stats b { font-size: 20px; }
 .m-stats small { font-size: 12px; color: var(--ink-2); }
+.m-stats .m-unavailable { grid-column: 1 / -1; }
+.m-actions { flex-wrap: wrap; }
 .m-actions { display: flex; gap: 10px; align-items: center; }
 @media (max-width: 980px) { .m-stages, .m-stats { grid-template-columns: 1fr; } }
