@@ -1,19 +1,27 @@
 #!/bin/bash
-# kg-seed: load the ontology (idempotent) and print a summary. Runs inside the neo4j image (has cypher-shell).
+# kg-seed: load the ontology v2 (schema-first: v2/schema.json -> v2/constraints.cypher + v2/instances.cypher). Idempotent.
+# A graph seeded by the old v1 ontology (Scenario · Procedure · InfoType …) is cleared once, so v1 and v2 never mix.
 set -e
 URI=${NEO4J_URI:-bolt://neo4j:7687}
 USER=neo4j; PASS=${NEO4J_PASSWORD:-hydpass123}
+cy() { cypher-shell -a "$URI" -u $USER -p $PASS --format plain "$@"; }
 for i in $(seq 1 60); do
-  if cypher-shell -a "$URI" -u $USER -p $PASS "RETURN 1" >/dev/null 2>&1; then break; fi
+  if cy "RETURN 1" >/dev/null 2>&1; then break; fi
   echo "waiting for neo4j ($i)"; sleep 3
 done
-echo "seeding ontology ..."
-cypher-shell -a "$URI" -u $USER -p $PASS --format plain -f /seed/seed.cypher
-echo "seeding enterprise ontology (조직 · KPI · 규정 · 시스템 · 스킬 · 판단 시나리오) ..."
-cypher-shell -a "$URI" -u $USER -p $PASS --format plain -f /seed/seed_enterprise.cypher
+V1=$(cy "MATCH (n) WHERE n:Scenario OR n:Procedure OR n:InfoType OR n:Policy OR n:ManualUpload RETURN count(n)" | tail -1)
+if [ "$V1" != "0" ]; then
+  echo "v1 ontology found ($V1 marker nodes) — clearing the graph for v2"
+  cy "MATCH (n) DETACH DELETE n" >/dev/null
+  for c in $(cy "SHOW CONSTRAINTS YIELD name RETURN name" | tail -n +2 | tr -d '"'); do cy "DROP CONSTRAINT \`$c\` IF EXISTS" >/dev/null; done
+  for x in $(cy "SHOW INDEXES YIELD name, type, owningConstraint WHERE type <> 'LOOKUP' AND owningConstraint IS NULL RETURN name" | tail -n +2 | tr -d '"'); do cy "DROP INDEX \`$x\` IF EXISTS" >/dev/null; done
+fi
+echo "seeding ontology v2: constraints ..."
+cy -f /seed/v2/constraints.cypher
+echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소스 · 설비 진단 · 스킬=SOP · 규칙 DMN · 외부 변수) ..."
+cy -f /seed/v2/instances.cypher
 echo "--- node counts by label ---"
-cypher-shell -a "$URI" -u $USER -p $PASS --format plain "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
-echo "--- T1 for COOLER_DEGRADATION ---"
-cypher-shell -a "$URI" -u $USER -p $PASS --format plain -P "pattern => 'COOLER_DEGRADATION'" -P "asset => 'HYD-01'" \
-  "MATCH (p:AnomalyPattern {code: \$pattern})-[:DETECTS]->(:Symptom)-[:INDICATES]->(fm:FailureMode)<-[r:CAUSES]-(c:Cause) RETURN DISTINCT c.id, r.weight ORDER BY r.weight DESC"
+cy "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
+echo "--- 고장 유형별 조치 방법 (스킬 = SOP) ---"
+cy "MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY]->(s:Skill) RETURN fm.name, type(k), s.sopId, s.name ORDER BY fm.name, type(k) DESC, s.sopId"
 echo "kg-seed done"

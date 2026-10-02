@@ -39,7 +39,7 @@ def test_restart_keeps_pending_and_terminal_but_escalates_inflight(tmp_path):
     terminal = copy.deepcopy(pending)
     terminal.id, terminal.state = "closed", "REJECTED_BY_OPERATOR"
     decision = decisions.new(dec())
-    decisions.approve(decision, "opt:sc1-derate", "reviewer", "role:prod-mgr")
+    decisions.approve(decision, "skill:derate-night-clean", "reviewer", "role:prod-mgr")
     store = Store(path)
     store.save({i.id: i for i in (pending, inflight, terminal)}, {"d": decision}, [{"event": "TEST"}])
     store.db.close()
@@ -57,6 +57,9 @@ def test_restart_keeps_pending_and_terminal_but_escalates_inflight(tmp_path):
 @pytest.fixture
 def hitl(monkeypatch):
     inc = new_incident()
+    inc.card = dict(inc.card, recommended=[      # ontology v2 guide card: atomic commands of the failure mode's SOP skills
+        {"code": "FAN_SET", "actionId": "action:set-fan", "name": "팬 속도 설정", "kind": "command", "param": "fan_pct", "value": 100, "paramRange": [0, 100]},
+        {"code": "LOAD_SET", "actionId": "action:set-load", "name": "펌프 부하 설정", "kind": "command", "param": "load_pct", "value": 80, "paramRange": [60, 100]}])
     d = decisions.new(dec())
     d.update(id="D-test", asset=inc.asset, origin={"incident": inc.id})
     monkeypatch.setattr(main, "incidents", {inc.id: inc})
@@ -68,10 +71,10 @@ def hitl(monkeypatch):
 def test_invalid_hitl_input_does_not_consume_approval(hitl):
     inc, d = hitl
     before = copy.deepcopy(d)
-    req = main.HitlDecideReq(decision=d["id"], option="opt:sc1-derate", role="role:prod-mgr", fan_pct=999)
+    req = main.HitlDecideReq(decision=d["id"], option="skill:fan-max-derate", role="role:prod-mgr", fan_pct=999)
     with pytest.raises(HTTPException) as exc:
         asyncio.run(main.hitl_decide(inc.id, req))
-    assert exc.value.status_code == 400
+    assert exc.value.status_code == 400 and "fan_pct=999" in str(exc.value.detail)
     assert d == before
     assert inc.state == "AWAITING_APPROVAL" and inc.cmd_id is None
 
@@ -80,7 +83,7 @@ def test_hitl_rejects_unrelated_decision(hitl):
     inc, d = hitl
     d["origin"]["incident"] = "another"
     with pytest.raises(HTTPException) as exc:
-        asyncio.run(main.hitl_decide(inc.id, main.HitlDecideReq(decision=d["id"], option="opt:sc1-derate", role="role:prod-mgr")))
+        asyncio.run(main.hitl_decide(inc.id, main.HitlDecideReq(decision=d["id"], option="skill:fan-max-derate", role="role:prod-mgr")))
     assert exc.value.status_code == 400
     assert d["state"] == "PENDING_APPROVAL"
 

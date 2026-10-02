@@ -177,3 +177,14 @@ def test_reobserve_does_not_extend_when_still_hot():
     machine.on_status(inc, {"asset": "HYD-01", "cmdId": inc.cmd_id, "result": "DONE"}, now(), fx)
     machine.on_timer(inc, "reobs", now(), latest_ts1=58.0, fx=fx, time_scale=20)
     assert inc.state == "ESCALATED"
+
+
+def test_command_without_parameter_needs_no_value():
+    """RESET (냉각 후 리셋 SOP) has no parameter: approving it must not ask for one."""
+    card = dict(CARD, recommended=CARD["recommended"] + [{"code": "RESET", "actionId": "action:reset", "name": "리셋", "kind": "command",
+                                                         "param": None, "value": 1, "paramRange": None}])
+    inc = machine.Incident.from_card("INC-0923-09", card)
+    machine.on_card(inc)
+    fx = FX()
+    cmd = machine.on_approve(inc, "OP-17", [{"code": "RESET"}], now(), fx, time_scale=20)
+    assert cmd["actions"] == [{"code": "RESET"}] and inc.state == "AWAITING_ACK"

@@ -95,39 +95,47 @@ def happy_path(require_llm=False):
     gw = get(f"{GATEWAY}/healthz")
     check("cmd-gateway relayed alert to OT", gw.get("alerts_relayed", 0) >= 1, f"alerts_relayed={gw.get('alerts_relayed')}")
 
-    section("3. L8 에이전트: 온톨로지 T1/T2 + 증거 → 가이드 카드")
+    section("3. L8 에이전트: 온톨로지 v2 T1/T2 + 증거 → 가이드 카드 → 조치 카드(스킬 = SOP)")
     run, dt = wait_for("agent run", lambda: next((r for r in get(f"{AGENT}/api/agent/runs") if r["alertId"] == alert_id and r["status"] != "RUNNING"), None), 90)
     check("agent run finished", run is not None and run["status"] == "SUBMITTED", f"status={run and run['status']} after {dt:.0f}s")
     full = get(f"{AGENT}/api/agent/runs/{run['id']}") if run else {}
     steps = {s["name"]: s for s in full.get("steps", [])}
     check("freshness ok", steps.get("freshness", {}).get("output", {}).get("ok") is True, json.dumps(steps.get("freshness", {}).get("output", {}).get("age_s")))
     t1 = steps.get("t1_causes", {}).get("output", [])
-    check("T1 returned 4 cause candidates", len(t1) == 4, str([c["causeId"] for c in t1]))
+    check("T1 returned the cooling-loss causes (fin fouling, high ambient)", {c["causeId"] for c in t1} == {"cause:cooler-fin-fouling", "cause:high-ambient"}, str([c["causeId"] for c in t1]))
     card = full.get("card") or {}
     if require_llm:
         source = card.get("summarySource")
         check("real LLM summary (no template fallback)", bool(source) and source != "template", str(source))
-    check("top cause = cooler fin fouling", card.get("topCause") == "cause:cooler-fin-fouling", f"scores={[(c['id'], c['score']) for c in card.get('causes', [])]}")
+    check("top cause = cooler fin fouling (failure mode cooling loss)", card.get("topCause") == "cause:cooler-fin-fouling" and card.get("failureMode") == "fm:cooling-loss",
+          f"scores={[(c['id'], c['score']) for c in card.get('causes', [])]}")
     codes = [a["code"] for a in card.get("recommended", [])]
-    check("recommended FAN_BOOST, REDUCE_LOAD, COOLER_CLEAN_WO", codes == ["FAN_BOOST", "REDUCE_LOAD", "COOLER_CLEAN_WO"], str(codes))
+    check("guide card actions = atomic actions of the SOP skills (FAN_SET, LOAD_SET, WO_CREATE)", codes == ["FAN_SET", "LOAD_SET", "WO_CREATE"], str(codes))
+    check("SOP skills of the failure mode on the card", [k["sopId"] for k in card.get("skills", [])] == ["SOP-COOL-01", "SOP-COOL-02", "SOP-COOL-03", "SOP-COOL-04"],
+          str([k["sopId"] for k in card.get("skills", [])]))
     check("SOP steps + manual refs attached", any(s.get("manual") for a in card.get("recommended", []) for s in a["sop"]["steps"]), "")
     check("guardrail passed", steps.get("guardrail", {}).get("status") == "DONE", json.dumps(steps.get("guardrail", {}).get("output")))
     check("citations present", len(card.get("citations", [])) >= 8, f"{len(card.get('citations', []))} ids")
-    ent_step = steps.get("enterprise", {}).get("output") or []
-    check("L7→L8: ontology linked this alert to enterprise decision scenarios", {e["scenario"] for e in ent_step} >= {"고객 납기 vs 설비 보전", "교체 부품 구매: 구매단가 vs 전사 이익", "과열 구간 생산 로트: 규정 vs 납기"},
-          str([(e["scenario"], e["status"], e["recommended"]) for e in ent_step]))
+    cs = steps.get("cards", {}).get("output") or {}
+    check("action cards submitted: 3 SOP cards, SOP-COOL-02 recommended", cs.get("status") == "SUBMITTED" and cs.get("recommended") == "skill:fan-max-derate"
+          and len(cs.get("cards", [])) == 3, json.dumps(cs, ensure_ascii=False)[:200])
 
-    section("4. L9 프로세스: 승인 → action.cmd → 게이트웨이 검증 → cmd/auto → PLC ACK")
+    section("4. HITL: 사람이 카드 하나 선택 → 역할 권한 → action.cmd → 게이트웨이 검증 → cmd/auto → PLC ACK")
     inc, dt = wait_for("incident", lambda: open_incident(alert_id), 30)
     check("incident AWAITING_APPROVAL", inc is not None and inc["state"] == "AWAITING_APPROVAL", f"{inc and inc['id']} {inc and inc['state']}")
-    r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "OP-17", "actions": [{"code": "FAN_BOOST", "fan_pct": 100}, {"code": "REDUCE_LOAD", "load_pct": 80}]})
-    check("approve accepted", r.get("state") == "AWAITING_ACK", json.dumps(r.get("cmd", r))[:160])
+    dec = next((d for d in get(f"{PROCESS}/api/decisions") if (d.get("origin") or {}).get("incident") == inc["id"]), None)
+    check("process holds the action-card decision for the incident", dec is not None and dec["state"] == "PENDING_APPROVAL", json.dumps(dec, ensure_ascii=False)[:160])
+    r = post(f"{PROCESS}/api/incidents/{inc['id']}/decide", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "OP-17", "role": "role:operator", "reason": "test"})
+    check("operator may not choose SOP-COOL-02 (needs 생산관리자)", r.get("error") == 403, r.get("body", "")[:100])
+    r = post(f"{PROCESS}/api/incidents/{inc['id']}/decide", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr",
+                                                             "reason": "OEM 납기 오더 진행 중 — 생산을 멈추지 않고 유온을 확실히 내린다"})
+    check("decision accepted → command issued", (r.get("incident") or {}).get("state") == "AWAITING_ACK", json.dumps(r.get("cmd"), ensure_ascii=False)[:160])
     cmd_id = (r.get("cmd") or {}).get("cmdId")
     st, dt = wait_for("ACK", lambda: get(f"{PROCESS}/api/incidents/{inc['id']}") if get(f"{PROCESS}/api/incidents/{inc['id']}")["state"] in ("RE_OBSERVING", "ESCALATED") else None, 40)
     check("PLC ACK DONE → RE_OBSERVING", st is not None and st["state"] == "RE_OBSERVING", f"state={st and st['state']} ack={st and st.get('ack')} after {dt:.1f}s")
     log = get(f"{GATEWAY}/api/gateway/log")
     entry = next((e for e in log if e["cmdId"] == cmd_id), None)
-    check("gateway decision PASS", entry is not None and entry["ok"], json.dumps(entry))
+    check("gateway decision PASS (FAN_SET · LOAD_SET whitelisted)", entry is not None and entry["ok"], json.dumps(entry))
     u = plant_unit()
     check("PLC applied fan 100 / load 80", u["status"]["fan_pct"] == 100 and u["status"]["load_pct"] == 80, f"fan={u['status']['fan_pct']} load={u['status']['load_pct']} cmdId={u['status']['cmdId']}")
 
@@ -143,58 +151,59 @@ def happy_path(require_llm=False):
 
 
 def enterprise_checks(inc_id):
-    section("5b. L7 → L8 → L9: 경보에서 자동 기동된 전사 판단 → 역할 승인 → 기업 시스템 실행")
-    post(f"{ENT}/api/reset")
-    decs = [d for d in get(f"{PROCESS}/api/decisions") if (d.get("origin") or {}).get("incident") == inc_id]
-    by = {(d.get("scenario") or {}).get("id"): d for d in decs}
-    check("process received decisions for the incident", len(decs) >= 3, str([(k, v["state"], v["recommended"]) for k, v in by.items()]))
-    d1 = get(f"{PROCESS}/api/decisions/{by['sc:delivery-vs-maintenance']['id']}")
-    check("SC1 recommends derate + night cleaning (not stop, not continue)", d1["recommended"] == "opt:sc1-derate", d1["explanation"][:120])
-    cont = next(o for o in d1["options"] if o["id"] == "opt:sc1-continue")
-    check("SC1 'continue' excluded by HARD policy 65 ℃", not cont["feasible"] and cont["violations"][0]["policy"] == "pol:ts1-limit", "")
-    check("SC1 maintenance dept prefers a different option", d1["winners"].get("dept:maintenance") != d1["recommended"], json.dumps(d1["winners"], ensure_ascii=False))
-    r = post(f"{PROCESS}/api/decisions/{d1['id']}/approve", {"option": "opt:sc1-stop", "by": "OP-17", "role": "role:operator"})
-    check("operator may not approve a plant stop (needs 공장장)", r.get("error") == 403, r.get("body", "")[:100])
-    r = post(f"{PROCESS}/api/decisions/{d1['id']}/approve", {"option": "opt:sc1-derate", "by": "이생산", "role": "role:prod-mgr"})
-    ex = {x["skill"]: x for x in r.get("executions", [])}
-    check("approved → CMMS work order executed, PLC part left to HITL", r.get("state") == "EXECUTED" and ex.get("skill:schedule-maintenance", {}).get("status") == "DONE"
-          and ex.get("skill:cooling-adjust", {}).get("status") == "VIA_HITL", json.dumps({k: v["status"] for k, v in ex.items()}))
-    d2 = get(f"{PROCESS}/api/decisions/{by['sc:part-procurement']['id']}")
-    check("SC2 enterprise picks OEM while purchasing prefers the cheap supplier",
-          d2["recommended"] == "opt:sc2-b" and d2["winners"].get("dept:purchasing") == "opt:sc2-a" and d2["naiveWinners"].get("dept:purchasing") == "opt:sc2-c", "")
-    r = post(f"{PROCESS}/api/decisions/{d2['id']}/approve", {"option": "opt:sc2-b", "by": "박공장장", "role": "role:plant-mgr"})
-    tx = get(f"{ENT}/api/transactions")
-    check("ERP purchase request + CMMS work order in enterprise systems", {t["system"] for t in tx} >= {"sys:erp", "sys:cmms"}, str([(t["system"], t["ref"]) for t in tx]))
-    audit = [a["event"] for a in get(f"{PROCESS}/api/audit")]
-    check("audit has DECISION_SUBMITTED/DENIED/APPROVED/SKILL_EXECUTED", {"DECISION_SUBMITTED", "DECISION_DENIED", "DECISION_APPROVED", "SKILL_EXECUTED"} <= set(audit), "")
+    section("5b. L7 → L8 → L9: 판단 사례 기록 → 다음 판단의 선례 · DMN 규칙(온도 · 압력 · 운전 모드 · 트립) 반응")
     import subprocess
+    post(f"{ENT}/api/reset")
+    dec = next((d for d in get(f"{PROCESS}/api/decisions") if (d.get("origin") or {}).get("incident") == inc_id), None)
+    d = get(f"{PROCESS}/api/decisions/{dec['id']}") if dec else {}
+    ex = {x.get("code"): x for x in d.get("executions", [])}
+    check("decision EXECUTED, PLC commands left to the HITL incident", d.get("state") == "EXECUTED" and ex.get("FAN_SET", {}).get("status") == "VIA_HITL"
+          and ex.get("LOAD_SET", {}).get("status") == "VIA_HITL", json.dumps({k: v["status"] for k, v in ex.items()}))
     time.sleep(2)
     out = subprocess.run(["docker", "compose", "exec", "-T", "neo4j", "cypher-shell", "-u", "neo4j", "-p", "hydpass123", "--format", "plain",
-                          f"MATCH (x:Decision {{id: '{d1['id']}'}})-[:DECIDED]->(o:Option) MATCH (x)-[:FOR]->(i:Incident) RETURN o.id, i.id"],
+                          f"MATCH (x:DecisionCase {{id: 'case:{dec['id']}'}})-[:CHOSE]->(s:Skill) MATCH (x)-[:FOR_INCIDENT]->(i:Incident)-[:DIAGNOSED_AS]->(c:Cause) RETURN s.sopId, i.id, c.id"],
                          capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
-    check("decision case written to the ontology (Decision -DECIDED-> Option, -FOR-> Incident)", "opt:sc1-derate" in out, out.strip().splitlines()[-1] if out.strip() else "")
+    check("decision case written to the ontology (DecisionCase -CHOSE-> Skill, -FOR_INCIDENT-> Incident -DIAGNOSED_AS-> Cause)", "SOP-COOL-02" in out and inc_id in out,
+          out.strip().splitlines()[-1] if out.strip() else "")
+    nd = post(f"{AGENT}/api/agent/decide", {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {"cause": "cause:cooler-fin-fouling"}}, timeout=60)
+    rec = next((o for o in (nd.get("result") or {}).get("options", []) if o["id"] == "skill:fan-max-derate"), {})
+    check("next decision reads the human precedent (same failure mode)", (rec.get("precedent") or {}).get("n", 0) >= 2, json.dumps(rec.get("precedent"), ensure_ascii=False))
+    temp = next((o for o in (nd.get("result") or {}).get("options", []) if o["id"] == "skill:fan-max"), {})
+    check("DMN temperature rule: forecast 55.4 ℃ ≥ 55 → WARN on SOP-COOL-01", any(w["rule"] == "rule:ts1-warn" for w in temp.get("warnings", [])), "")
+    m = post(f"{AGENT}/api/agent/decide", {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {"cause": "cause:cooler-fin-fouling", "plc_mode": "REMOTE_MANUAL"}}, timeout=60)
+    check("DMN mode rule: REMOTE_MANUAL excludes every control card", (m.get("result") or {}).get("recommended") is None
+          and all(not o["feasible"] for o in (m.get("result") or {}).get("options", [])), (m.get("result") or {}).get("explanation", "")[:120])
+    tr = post(f"{AGENT}/api/agent/decide", {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "facts": {"cause": "cause:cooler-fin-fouling", "plc_state": "TRIP"}}, timeout=60)
+    check("DMN trip rule: in TRIP only SOP-TRIP-01 (reset after cooling) remains", (tr.get("result") or {}).get("recommended") == "skill:reset-after-cool", "")
+    pu = post(f"{AGENT}/api/agent/decide", {"asset": "HYD-01", "pattern": "PUMP_LEAKAGE", "facts": {"cause": "cause:pump-seal-wear"}}, timeout=60)
+    po = {o["id"]: o for o in (pu.get("result") or {}).get("options", [])}
+    check("pump leakage: pressure raise excluded, standby pump recommended, low-pressure forecast warned",
+          (pu.get("result") or {}).get("recommended") == "skill:switch-standby-pump" and not po.get("skill:raise-pressure", {}).get("feasible", True)
+          and any(w["rule"] == "rule:ps1-warn" for w in po.get("skill:derate-70", {}).get("warnings", [])), (pu.get("result") or {}).get("explanation", "")[:140])
 
 
 def knowledge_admin_checks():
-    section("5c. 지식 관리 (L9 → L7): 스킬 카탈로그 · 매뉴얼 인제스천 · HITL 선례 환류")
+    section("5c. 지식 관리 (L9 → L7): 스킬(SOP) 카탈로그 · 고장 유형 매칭 · 매뉴얼 인제스천")
     import base64
     from pathlib import Path
     skills = get(f"{PROCESS}/api/kg/skills", timeout=20)
-    check("skill catalog lists 8+ skills with description and detail", len(skills) >= 8 and all(k.get("description") and k.get("detail") for k in skills[:8]),
-          str([k["name"] for k in skills][:4]))
-    pk = next((k for k in skills if k["id"] == "skill:procure-part"), {})
-    check("skill shows system · approver · policy from the ontology", (pk.get("system") or {}).get("id") == "sys:erp" and (pk.get("approver") or {}).get("id") == "role:purchasing-mgr"
-          and any(p["id"] == "pol:avl" for p in pk.get("policies", [])), "")
+    check("skill catalog lists 14+ SOP skills, each with steps and a failure mode", len(skills) >= 14 and all(k.get("sopId") and k.get("steps") and k.get("failureModes") for k in skills),
+          str([k["sopId"] for k in skills][:5]))
+    sk = next((k for k in skills if k["id"] == "skill:fan-max-derate"), {})
+    check("skill shows approver · atomic actions · DMN rules from the ontology", (sk.get("approver") or {}).get("id") == "role:prod-mgr"
+          and {a["code"] for a in sk.get("actions", [])} == {"FAN_SET", "LOAD_SET"} and any(r["effect"] == "SELECT" for r in sk.get("rules", [])), "")
+    bad = post(f"{PROCESS}/api/kg/skills", {"name": "x", "sopId": "SOP-X-01", "steps": "a", "failureMode": ""})
+    check("a new skill without a failure mode is refused", bad.get("error") == 400, bad.get("body", "")[:80])
+    dup = post(f"{PROCESS}/api/kg/skills", {"name": "x", "sopId": "SOP-COOL-01", "steps": "a", "failureMode": "fm:cooling-loss"})
+    check("an SOP number another skill owns is refused", dup.get("error") == 409, dup.get("body", "")[:80])
     sample = Path(__file__).resolve().parents[1] / "docs" / "samples" / "HM-8_cooler-fan-manual.md"
     pv = post(f"{PROCESS}/api/kg/manuals/preview", {"filename": sample.name, "data": base64.b64encode(sample.read_bytes()).decode()}, timeout=30)
     check("manual preview: 2 sections, 2 SOPs, 8 steps", len(pv.get("sections", [])) == 2 and sum(p["stepCount"] for p in pv.get("procedures", [])) == 8,
-          str([(p["id"], p.get("suggestedAction")) for p in pv.get("procedures", [])]))
-    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, by="scenario_test"), timeout=30)
-    check("manual committed to the ontology", out.get("procedures") == 2 and out.get("steps") == 8, json.dumps(out, ensure_ascii=False))
-    d = post(f"{AGENT}/api/agent/decide", {"scenario": "sc:delivery-vs-maintenance", "asset": "HYD-01"}, timeout=60)
-    prec = next((s_["output"] for s_ in d.get("steps", []) if s_["name"] == "precedents"), None)
-    check("next decision reads the human precedent written in 5b", isinstance(prec, dict) and prec.get("opt:sc1-derate", {}).get("n", 0) >= 1,
-          json.dumps(prec, ensure_ascii=False)[:160])
+          str([(p["id"], p.get("suggestedFailureMode")) for p in pv.get("procedures", [])]))
+    links = {p["id"]: {"failureMode": "fm:bearing-degradation", "relation": "REMEDIED_BY", "kind": "work_order"} for p in pv.get("procedures", [])}
+    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="scenario_test"), timeout=30)
+    check("manual committed: 2 SOP skills matched to the fan bearing failure mode", out.get("procedures") == 2 and out.get("steps") == 8
+          and all(v["failureMode"] == "fm:bearing-degradation" for v in (out.get("skills") or {}).values()), json.dumps(out.get("skills"), ensure_ascii=False))
 
 
 def db_checks(alert_id, cmd_id, inc_id):
@@ -202,7 +211,7 @@ def db_checks(alert_id, cmd_id, inc_id):
     import subprocess
     def q(sql):
         out = subprocess.run(["docker", "compose", "exec", "-T", "timescaledb", "psql", "-U", "hyd", "-d", "hyd", "-At", "-c", sql],
-                             capture_output=True, text=True, cwd=__file__.rsplit("scripts", 1)[0])
+                             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=__file__.rsplit("scripts", 1)[0])
         return out.stdout.strip()
     check("alerts row RAISE→CLEAR", "CLEAR" in q(f"SELECT state FROM alerts WHERE alert_id='{alert_id}'"), q(f"SELECT state, raised_at, cleared_at FROM alerts WHERE alert_id='{alert_id}'"))
     check("actions row with ACK DONE", "DONE" in q(f"SELECT ack_result FROM actions WHERE cmd_id='{cmd_id}'"), q(f"SELECT cmd_id, ack_result, approved_by FROM actions WHERE cmd_id='{cmd_id}'"))
@@ -222,7 +231,11 @@ def negative_manual_mode():
     alert_id = d["alert_id"] if d else None
     inc, dt = wait_for("incident HYD-02", lambda: open_incident(alert_id), 90)
     check("incident for HYD-02", inc is not None, f"{inc and inc['id']}")
-    r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "OP-17", "actions": [{"code": "FAN_BOOST", "fan_pct": 100}]})
+    d2 = next((x for x in get(f"{PROCESS}/api/decisions") if (x.get("origin") or {}).get("incident") == (inc or {}).get("id")), None)
+    d2 = get(f"{PROCESS}/api/decisions/{d2['id']}") if d2 else {}
+    check("agent cards: REMOTE_MANUAL fact excludes every control card (rule:auto-mode)", d2.get("options") and all(
+        any(v["rule"] == "rule:auto-mode" for v in o["violations"]) for o in d2["options"]), d2.get("explanation", "")[:120])
+    r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "OP-17", "actions": [{"code": "FAN_SET", "fan_pct": 100}]})
     cmd_id = (r.get("cmd") or {}).get("cmdId")
     log, dt = wait_for("gateway reject", lambda: next((e for e in get(f"{GATEWAY}/api/gateway/log") if e["cmdId"] == cmd_id), None), 20)
     check("gateway REJECTED with MODE", log is not None and not log["ok"] and log["check"] == "MODE", json.dumps(log))
@@ -233,7 +246,7 @@ def negative_manual_mode():
     import subprocess
     out = subprocess.run(["docker", "compose", "exec", "-T", "timescaledb", "psql", "-U", "hyd", "-d", "hyd", "-At", "-c",
                           f"SELECT detail->>'check' FROM audit WHERE event='CMD_REJECTED' AND detail->>'cmdId'='{cmd_id}'"],
-                         capture_output=True, text=True, cwd=__file__.rsplit("scripts", 1)[0]).stdout.strip()
+                         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=__file__.rsplit("scripts", 1)[0]).stdout.strip()
     check("Kafka audit → TimescaleDB has cmd-gateway CMD_REJECTED", out == "MODE", f"check={out!r}")
     post(f"{PLANT}/api/fault", {"asset": "HYD-02", "type": "restore", "ramp_sim_s": 30})
     post(f"{PLANT}/api/mode", {"asset": "HYD-02", "mode": "REMOTE_AUTO"})
@@ -248,6 +261,9 @@ def negative_trip():
     check("PLC tripped at >65 C", u is not None and u["status"]["trip"] == "OVERTEMP", f"after {dt:.0f}s TS1={u and u['tags']['TS1']}")
     d, dt = wait_for("trip alert", lambda: det("HYD-03") if det("HYD-03").get("tripped") else None, 30)
     check("detector OVERHEAT_TRIP alert", d is not None, "")
+    tinc, dt = wait_for("trip incident", lambda: next((i for i in get(f"{PROCESS}/api/incidents") if i["asset"] == "HYD-03" and i["alertId"] and "TRIP" in i["alertId"]), None), 60)
+    td = next((x for x in get(f"{PROCESS}/api/decisions") if (x.get("origin") or {}).get("incident") == (tinc or {}).get("id")), None)
+    check("agent card for the trip: only SOP-TRIP-01 (reset after cooling) is recommended", td is not None and td.get("recommended") == "skill:reset-after-cool", json.dumps(td, ensure_ascii=False)[:160])
     r = post(f"{PLANT}/api/manual", {"asset": "HYD-03", "writes": {"Reset": 1}})
     check("RESET rejected while hot", r.get("result") == "REJECTED" and r.get("reason") == "RESET_TOO_HOT", json.dumps(r))
     post(f"{PLANT}/api/fault", {"asset": "HYD-03", "type": "restore", "ramp_sim_s": 30})

@@ -1,8 +1,9 @@
 """L9 knowledge administration (pure): manual -> SOP ingestion parser and skill edit validation.
 
-Humans maintain the knowledge map through the process service (the agent stays read-only):
-  - upload a maintenance manual (Markdown / text / PDF text) -> ManualSection + Procedure + Step nodes,
-  - edit or add agent skills (name, description, detail).
+Humans maintain the knowledge map (ontology v2) through the process service (the agent stays read-only):
+  - upload a maintenance manual (Markdown / text / PDF text) -> ManualSection nodes + one Skill (= SOP) per procedure with
+    its Step nodes, matched to the failure mode a person picks in the preview,
+  - edit skills (name, description, approver) or add a new SOP skill matched to a failure mode.
 
 Manual format the parser understands (PDF text works too, headings do not need '#'):
     ## HM-8.1 쿨러 팬 벨트 점검          <- section: ref + title, following plain lines = excerpt
@@ -12,7 +13,6 @@ Numbered lines without an explicit SOP heading become procedure 'SOP-<section re
 """
 from __future__ import annotations
 
-import hashlib
 import re
 
 SECTION_RE = re.compile(r"^\s*#{0,4}\s*([A-Z]{1,6}-\d+(?:\.\d+)*)\s+(.+?)\s*$")
@@ -81,18 +81,43 @@ def parse_manual(text: str, filename: str, actions: list[dict] | None = None) ->
     return {"filename": filename, "title": title, "sections": sections, "procedures": procedures, "warnings": warnings}
 
 
-def validate_skill(body: dict) -> dict:
+SOP_ID_RE = re.compile(r"^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
+
+
+def validate_skill(body: dict, create: bool = False) -> dict:
+    """Skill edit (name, description, approver). A new skill (create=True) is an SOP matched to a failure mode
+    (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY-> Skill ≥ 1)."""
     name = str(body.get("name") or "").strip()
     if not name:
         raise ValueError("스킬 이름이 비어 있다")
     if len(name) > 80:
         raise ValueError("스킬 이름은 80자 이내")
-    out = {"name": name, "description": str(body.get("description") or "").strip()[:500], "detail": str(body.get("detail") or "").strip()[:4000]}
-    for k in ("system", "process", "approver"):
-        if body.get(k):
-            out[k] = str(body[k])
+    out = {"name": name, "description": str(body.get("description") or "").strip()[:500]}
+    if body.get("approver"):
+        out["approver"] = str(body["approver"])
+    if not create:
+        return out
+    sop = str(body.get("sopId") or "").strip().upper()
+    if not SOP_ID_RE.match(sop):
+        raise ValueError("SOP 번호는 'SOP-FAN-05'처럼 SOP-로 시작해야 한다")
+    steps = body.get("steps") or []
+    if isinstance(steps, str):
+        steps = steps.splitlines()
+    steps = [str(s).strip() for s in steps if str(s).strip()]
+    if not steps:
+        raise ValueError("SOP 단계가 하나 이상 있어야 한다 (한 줄에 한 단계)")
+    if not str(body.get("failureMode") or "").strip():
+        raise ValueError("조치 방법은 고장 유형에 매칭되어야 한다 (failureMode)")
+    kind = body.get("kind") or "work_order"
+    if kind not in ("control", "work_order"):
+        raise ValueError("스킬 종류는 control 또는 work_order")
+    relation = body.get("relation") or "REMEDIED_BY"
+    if relation not in ("MITIGATED_BY", "REMEDIED_BY"):
+        raise ValueError("고장 유형과의 관계는 MITIGATED_BY(즉시 완화) 또는 REMEDIED_BY(근본 조치)")
+    out.update(sopId=sop, steps=steps[:30], failureMode=str(body["failureMode"]).strip(), kind=kind, relation=relation)
     return out
 
 
-def skill_id(name: str) -> str:
-    return "skill:custom-" + hashlib.sha1(name.encode("utf-8")).hexdigest()[:8]
+def skill_id(sop_id: str) -> str:
+    """One skill per SOP: the id follows the SOP number (skill:sop-fan-05)."""
+    return "skill:" + re.sub(r"[^a-z0-9-]+", "-", sop_id.lower()).strip("-")

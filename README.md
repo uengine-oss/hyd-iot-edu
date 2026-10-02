@@ -4,7 +4,7 @@
 무거운 제품(Process-GPT, Flink, Kafka Connect, EdgeX, LangGraph/MCP 서버, LiteLLM)은 **같은 이름·같은 메시지 계약을 지키는 작은 파이썬 서비스**로 바꿨고,
 가벼운 실제 제품(EMQX, FUXA, Redpanda, TimescaleDB, Grafana, Neo4j)은 그대로 씁니다.
 
-**강의의 초점은 L7~L9입니다.** L1~L6은 경보가 나면 팬을 올리는 즉각 제어까지입니다. L7 온톨로지는 여기에 조직 · KPI · 규정 · 기업 시스템(ERP · MES · CMMS · QMS · SCM · EMS) · 에이전트 스킬 · 업무 프로세스를 잇고, L8 에이전트는 부서 간 상충하는 이익을 전사 관점에서 판단하며, L9는 온톨로지가 정한 승인 역할에 따라 기업 시스템에서 실행합니다. 설계와 시나리오는 [docs/l7-l9-ontology-decisions.md](docs/l7-l9-ontology-decisions.md)에 있습니다.
+**강의의 초점은 L7~L9입니다.** L1~L6은 경보가 나면 팬을 올리는 즉각 제어까지입니다. L7 온톨로지 v2는 BSC(관점 · 전략 목표 · 성과 지표) → BPMN 프로세스 → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = 스킬 = SOP · DMN 규칙(온도 · 압력 임계값) 계층을 잇고, L8 에이전트는 이상 원인의 고장 유형에 매칭된 SOP 스킬을 규칙 · 예측 · BSC 득실 · 선례로 골라 카드 2~3장을 내밀며, L9는 사람이 고른 카드를 승인 역할에 따라 PLC와 기업 시스템에서 실행합니다. 설계는 [docs/ontology/schema-v2.md](docs/ontology/schema-v2.md), 클래스 표는 [docs/ontology/class-table.md](docs/ontology/class-table.md), 클래스 연관 그림은 [docs/ontology/ontology-classes.svg](docs/ontology/ontology-classes.svg), 스키마 파일은 [it/neo4j/v2/](it/neo4j/v2/)에 있습니다. v1 설계(전사 판단 시나리오)는 [docs/l7-l9-ontology-decisions.md](docs/l7-l9-ontology-decisions.md)에 기록으로 남겨 두었습니다.
 
 ```
 cp .env.example .env                 # 최초 1회 (PowerShell: Copy-Item .env.example .env)
@@ -19,12 +19,12 @@ python scripts/scenario_test.py       # 시나리오 자동 검증 (약 6분, L7
 | | 메인 (왼쪽 위 "유압설비 포탈") | 유압 파워유닛 · IIoT/SCADA 경로 · 온톨로지 지식 지도 · 에이전트 폐루프를 한 장에 그린 그림, 실시간 유온, 세 단계 바로가기 |
 | | 시스템 아키텍처 & 맵 | 레이어 L9 → L1과 진입점 · 상태 |
 | 관제 · 제어 (L1~L6) | 결함 시나리오 시뮬레이션 | 쿨러 열화 주입, 모드, 수동 조작 |
-| | 이상 확인 & 조치 | 설비 도식, BPMN 조치 흐름도, **HITL 조치 의사결정**(에이전트가 매긴 우선순위 중 하나를 역할 권한으로 결정), 에이전트 트레이스, 가이드 카드 |
+| | 이상 확인 & 조치 | 설비 도식, BPMN 조치 흐름도, **HITL 조치 카드 선택**(에이전트가 고장 유형에 매칭된 SOP 스킬 2~3장을 DMN 규칙 · 예측 · BSC 득실 · 선례로 순위 매김 → 사람이 출처를 확인하고 하나를 역할 권한으로 결정 → PLC), 에이전트 트레이스, 가이드 카드 |
 | | 실시간 설비 모니터링 | Grafana 추세와 경보·조치 주석 |
-| 지식 · 판단 · 실행 (L7~L9) | 온톨로지 지식 지도 | 설비·고장·조치 지식과 조직·KPI·규정·시스템·스킬·판단 지식, 판단별 강조 경로, 질의 템플릿, **매뉴얼 업로드 → SOP 인제스천** |
-| | 에이전트 스킬 카탈로그 | 스킬 8종의 이름 · 설명 · 상세(입력 · 실행 · 파라미터 · 산출 · 가드레일), 실행 시스템 · 프로세스 · 승인 역할 편집, 새 스킬 추가 |
-| | 전사 의사결정 시나리오 | 네 가지 판단: 대안 × KPI 금액 영향, 부서별 1위 vs 전사 1위, 규정 제외, 조회한 시스템 |
-| | 업무 프로세스 · 시스템 연계 | BPMN 흐름도(선택한 판단의 진행 상태), 역할 기반 승인, ERP · MES · CMMS · QMS · EMS 실행 결과, 트랜잭션 로그 |
+| 지식 · 판단 · 실행 (L7~L9) | 온톨로지 지식 지도 | 온톨로지 v2 계층(BSC · BPMN 프로세스 · 리소스 · 설비 진단 · 스킬 = SOP · DMN 규칙 · 외부 변수), 이상 패턴별 강조 경로, Cypher 템플릿, **매뉴얼 업로드 → SOP 스킬 인제스천**(고장 유형에 매칭) |
+| | 에이전트 스킬 | 조치 방법 = 스킬 = SOP 14종: 단계 · 원자 조치 · 매칭된 고장 유형 · 걸리는 규칙 확인, 이름 · 설명 · 승인 역할 편집, 새 SOP 스킬 추가 |
+| | 조치 판단 규칙 | 이상 패턴을 골라 판단 실행: 원인 판정, 카드별 규칙 판정(SELECT · EXCLUDE · PENALTY · WARN), 예측, 부서별 득실, 순위 식. 운전 모드 · PLC 상태 · 팬 누적 시간 · 예비 펌프를 바꿔 규칙 반응 실습 |
+| | 업무 프로세스 · 시스템 연계 | BPMN 흐름도(선택한 판단의 진행 상태), 역할 기반 승인, CMMS 작업지시 · ERP 구매요청 실행 결과, 트랜잭션 로그 |
 
 ## 진입점
 
@@ -65,8 +65,8 @@ python scripts/scenario_test.py       # 시나리오 자동 검증 (약 6분, L7
 | M2 | `backbone` | redpanda(+topic-init), connect-ingest, connect-sink, timescaledb, grafana | Grafana 추세 (토픽 브라우저는 `tools` 프로필의 Redpanda Console) |
 | M3 | `detect` | detector, cmd-gateway | 열화 주입 → RAISE → FUXA 알람, 복구 → CLEAR |
 | M4 | `monitor` (선택) | prometheus | 6개 서비스 /metrics 수집. 경량 기본값에서는 빠져 있다 |
-| M5 | `knowledge` | neo4j, kg-seed | T1/T2 템플릿 결과, 전사 온톨로지(조직 · KPI · 규정 · 시스템 · 스킬 · 판단 시나리오) |
-| M6 | `agent` + `enterprise` | agent, enterprise-sim | 근거 인용 가이드 카드, T3 전사 판단(기업 시스템 조회 → 부서별 KPI 비교) |
+| M5 | `knowledge` | neo4j, kg-seed | 온톨로지 v2 적재(고장 유형별 SOP 스킬 목록 출력), T1/T2/T3 템플릿 |
+| M6 | `agent` + `enterprise` | agent, enterprise-sim | 근거 인용 가이드 카드, 조치 카드 판단(DMN 규칙 · 예측 · BSC 득실 · 선례) |
 | M7 | `process` | process, portal | 승인 → ACK → 재관측 → 종결, REMOTE_MANUAL 거부, 역할 기반 전사 판단 승인 → 기업 시스템 실행 |
 
 ```
@@ -96,7 +96,7 @@ common/hydcommon/   토픽 이름·페이로드 스키마·MQTT/Kafka 헬퍼 (�
 ot/   plant-sim/ (thermal.py 물리 · plc.py soft-PLC · edge.py MQTT · daq.py 발행 프로필)   fuxa/ (build_project.py → project.json, init.py)
 dmz/  connect-ingest/   cmd-gateway/ (validate.py 검증 5종)
 it/   redpanda/ detector/ (features.py · cep.py) connect-sink/ timescaledb/ grafana/ prometheus/
-      neo4j/ (seed.cypher · seed_enterprise.cypher · templates/t0~t3) agent/ (tools/mcp_*.py · card.py · guardrail.py · llm.py · decision.py · enterprise.py)
+      neo4j/ (v2/ 스키마 · 인스턴스 · OWL, templates/t0~t3, v1/ 보관) agent/ (tools/mcp_*.py · card.py · guardrail.py · llm.py · cards.py · decide.py)
       process/ (definition.py · machine.py · decisions.py) enterprise-sim/ (entsim/data.py · state.py) portal/ (app.js · enterprise.js)
 tests/   순수 로직 단위 테스트 (pytest)      scripts/scenario_test.py   통합 시나리오 (L1~L9)
 video/   scenes.py · narration.py · record_demo.py   → docs/video/hyd-iot-edu-demo.mp4

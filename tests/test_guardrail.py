@@ -65,3 +65,34 @@ def test_guardrail_rejects_stale_data():
     c = copy.deepcopy(GOOD)
     c["freshness"] = {"ok": False, "age_s": 300}
     assert any("fresh" in x.lower() for x in guardrail.check(c))
+
+
+def test_command_without_parameter_is_allowed():
+    """RESET has no parameter: a command needs a range/value only when it has a parameter."""
+    c = copy.deepcopy(GOOD)
+    c["recommended"].append({"code": "RESET", "actionId": "action:reset", "name": "리셋", "kind": "command", "param": None,
+                             "value": 1, "paramRange": None, "constraints": [], "sop": {"id": "SOP-TRIP-01", "steps": []}})
+    c["citations"].append("action:reset")
+    assert guardrail.check(c) == []
+
+
+CARDS = {"recommended": "skill:a", "options": [
+    {"id": "skill:a", "sopId": "SOP-A", "feasible": True, "violations": [], "approver": {"id": "role:prod-mgr"},
+     "selectedBy": [{"rule": "rule:cand"}], "steps": [{"id": "SOP-A/1"}]},
+    {"id": "skill:b", "sopId": "SOP-B", "feasible": False, "violations": [{"rule": "rule:x"}], "approver": {"id": "role:operator"},
+     "selectedBy": [{"rule": "rule:cand"}], "steps": [{"id": "SOP-B/1"}]}]}
+
+
+def test_cards_guardrail_passes_a_cited_feasible_recommendation():
+    assert guardrail.check_cards(CARDS) == []
+
+
+def test_cards_guardrail_rejects_uncited_infeasible_or_unapproved_recommendation():
+    c = copy.deepcopy(CARDS); c["options"][1]["selectedBy"] = []
+    assert any("skill:b" in v for v in guardrail.check_cards(c))
+    c = copy.deepcopy(CARDS); c["recommended"] = "skill:b"
+    assert any("규정" in v for v in guardrail.check_cards(c))
+    c = copy.deepcopy(CARDS); c["options"][0]["approver"] = None
+    assert any("승인" in v for v in guardrail.check_cards(c))
+    c = copy.deepcopy(CARDS); c["options"][0]["steps"] = []
+    assert any("SOP" in v for v in guardrail.check_cards(c))

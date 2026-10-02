@@ -1,7 +1,4 @@
-// T3-g 현장 판단 선례 (HITL 환류): 같은 시나리오에서 사람이 승인한 대안과 사유
-// Decision -ABOUT-> Scenario, Decision -DECIDED-> Option (process 서비스가 승인 때 기록)
-MATCH (d:Decision)-[:ABOUT]->(:Scenario {id: $scenario})
-MATCH (d)-[:DECIDED]->(o:Option)
-WHERE d.state IN ['APPROVED', 'EXECUTED', 'PARTIAL']
-WITH o.id AS option, count(d) AS n, collect(d.reason) AS rs
-RETURN option, n, [r IN rs WHERE r IS NOT NULL AND r <> ''][..3] AS reasons
+// T3-e — 선례 (parameter: $failureMode): 같은 고장 유형의 사건에서 사람이 고른 스킬과 사유 (DecisionCase -CHOSE-> Skill)
+MATCH (dc:DecisionCase)-[:FOR_INCIDENT]->(:Incident)-[:DIAGNOSED_AS]->(:Cause)-[:CAUSES]->(:FailureMode {id: $failureMode})
+MATCH (dc)-[:CHOSE]->(s:Skill)
+RETURN s.id AS skill, count(*) AS n, collect(dc.reason)[0..5] AS reasons

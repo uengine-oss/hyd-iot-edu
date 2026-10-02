@@ -16,7 +16,7 @@ from hydcommon import topics
 from hydcommon.kafka import consumer as make_consumer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
-from . import card as cardlib, enterprise, guardrail, llm
+from . import card as cardlib, decide as decidelib, guardrail, llm
 from .runs import RunRegistry
 from .tools import mcp_kg, mcp_prom, mcp_tsdb
 
@@ -30,7 +30,7 @@ runs = RunRegistry()
 state = {"kafka": False, "neo4j": False, "runs": 0, "llm": llm.available(), "llm_model": llm.MODEL}
 kg: mcp_kg.KnowledgeGraph | None = None
 tsdb = mcp_tsdb.TimeSeriesDB()
-decisions = enterprise.DecisionRegistry()
+decisions = decidelib.DecisionRegistry()
 
 
 def submit_card(card: dict) -> dict:
@@ -64,11 +64,12 @@ def pipeline(run) -> None:
         causes = cardlib.rank_causes(t1, results)
         run.step("rank", [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"]} for c in causes],
                  note="원인 점수 = 사전확률 × 통과 증거 가중치 비율")
-        # 4. T2 actions for the top cause (mcp-kg)
-        t2 = {causes[0]["id"]: kg.t2_actions(causes[0]["id"], asset)} if causes else {}
-        run.step("t2_actions", [{k: r.get(k) for k in ("code", "name", "kind", "min", "max", "default", "relation")}
-                                | {"sop": (r.get("procedure") or {}).get("id"), "steps": len(r.get("steps") or [])} for r in next(iter(t2.values()), [])],
-                 note="mcp-kg T2: 원인 → 조치(파라미터 범위) → SOP 단계 → 매뉴얼 절")
+        # 4. T2: the failure mode's SOP skills for the top cause (mcp-kg)
+        t2 = {causes[0]["id"]: kg.t2_skills(causes[0]["id"])} if causes else {}
+        run.step("t2_skills", [{"sop": r.get("sopId"), "skill": r.get("name"), "relation": r.get("relation"), "kind": r.get("kind"),
+                                "actions": [f"{a['code']}={a.get('value')}" for a in r.get("actions") or []], "steps": len(r.get("steps") or [])}
+                               for r in next(iter(t2.values()), [])],
+                 note="mcp-kg T2: 원인 → 고장 유형 → 조치 방법(스킬 = SOP) → 원자 조치 · 단계 · 매뉴얼 절")
         # 5. card (+ optional LLM narrative)
         card = cardlib.build_card(None, alert, causes, t2, fresh)
         summary, source = llm.summarize(card, card["summary"])
@@ -89,18 +90,21 @@ def pipeline(run) -> None:
         run.incident_id = res.get("id")
         card["incident"] = run.incident_id
         run.step("submit", res, note="process API에 카드 제출 (에이전트의 유일한 쓰기)")
-        # 8. enterprise decisions (L7 -> L8 -> L9): scenarios the ontology links to this cause / pattern
-        linked = []
+        # 8. action cards (L7 -> L8 -> L9): DMN rules + forecasts + BSC trade-offs + precedents -> ranked SOP skills for the human
+        linked = {}
         try:
-            ids = [c for c in [card.get("topCause"), "pattern:" + str(alert.get("pattern", "")).lower().replace("_", "-")] if c]
-            for trig in kg.triggers(ids):
-                d = enterprise.decide(kg, decisions, trig["id"], asset,
-                                      origin={"kind": "alert", "alertId": alert.get("alertId"), "incident": run.incident_id, "trigger": trig["trigger"]})
-                linked.append({"decision": d["id"], "scenario": trig["name"], "status": d["status"], "applicable": d.get("applicable"),
-                               "recommended": next((o["name"] for o in (d.get("result") or {}).get("options", []) if o["id"] == d.get("recommended")), None)})
+            d = decidelib.decide(kg, decisions, tsdb, asset, alert.get("pattern", ""), causes[0],
+                                 origin={"kind": "alert", "alertId": alert.get("alertId"), "incident": run.incident_id,
+                                         "pattern": alert.get("pattern"), "cause": causes[0]["id"], "failureMode": causes[0].get("failureModeId")})
+            res = d.get("result") or {}
+            linked = {"decision": d["id"], "status": d["status"], "recommended": d.get("recommended"),
+                      "cards": [f"{o['rank']}. {o['sopId']} {o['name']}" + ("" if o["feasible"] else " (제외)") for o in res.get("options", [])],
+                      "explanation": d.get("explanation")}
         except Exception as e:  # noqa: BLE001
-            log.warning("enterprise decisions skipped: %s", e)
-        run.step("enterprise", linked, note="온톨로지가 이 원인·경보에 연결한 전사 판단 시나리오 (ERP·MES·CMMS·QMS 조회 → KPI 트레이드오프)")
+            log.warning("action-card decision skipped: %s", e)
+            linked = {"error": str(e)}
+        run.step("cards", linked, status="DONE" if linked.get("status") == "SUBMITTED" else "FAILED",
+                 note="조치 카드: DMN 후보 · 규정 규칙 → 예측 · BSC 상충 · 선례로 순위 → 사람이 고를 카드 2~3장 제출")
         run.finish("SUBMITTED")
         c_runs.inc(status="SUBMITTED")
         log.info("run %s submitted as incident %s", run.id, run.incident_id)
@@ -172,8 +176,10 @@ async def replay(alert_id: str):
 
 # ---------------------------------------------------------------- L7/L8 endpoints for the portal
 class DecideReq(BaseModel):
-    scenario: str
-    asset: str | None = None
+    """Manual run of the action-card decision (portal '조치 판단 규칙' view). facts: what-if values a person sets."""
+    asset: str = "HYD-01"
+    pattern: str = "COOLER_DEGRADATION"
+    facts: dict | None = None
 
 
 def _kg():
@@ -202,15 +208,35 @@ def ontology_roles():
     return _kg().roles()
 
 
-@app.get("/api/agent/scenarios")
-def list_scenarios():
-    return _kg().scenarios()
+@app.get("/api/ontology/patterns")
+def ontology_patterns():
+    return _kg().patterns()
+
+
+def _manual_decide(k, req: DecideReq) -> dict:
+    """Same pipeline as an alert, without submitting: T1 causes → evidence → top cause → action cards."""
+    t1 = k.t1_causes(req.pattern, req.asset)
+    if not t1:
+        raise HTTPException(404, f"no cause candidates for pattern {req.pattern}")
+    try:
+        results = tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], req.asset)
+    except Exception as e:  # noqa: BLE001
+        log.warning("evidence evaluation skipped: %s", e)
+        results = {}
+    causes = cardlib.rank_causes(t1, results)
+    if req.facts and req.facts.get("cause"):
+        causes.sort(key=lambda c: c["id"] != req.facts["cause"])
+    d = decidelib.decide(k, decisions, tsdb, req.asset, req.pattern, causes[0], origin={"kind": "manual", "pattern": req.pattern},
+                         overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False)
+    d["causes"] = [{"id": c["id"], "name": c["name"], "score": c["score"], "failureMode": c.get("failureMode"),
+                    "evidence": [{"name": e["name"], "value": e["value"], "passed": e["passed"]} for e in c["evidence"]]} for c in causes]
+    return d
 
 
 @app.post("/api/agent/decide")
 async def decide(req: DecideReq):
     k = _kg()
-    return await asyncio.get_running_loop().run_in_executor(None, lambda: enterprise.decide(k, decisions, req.scenario, req.asset))
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: _manual_decide(k, req))
 
 
 @app.get("/api/agent/decisions")

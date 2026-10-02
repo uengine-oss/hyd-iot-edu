@@ -101,9 +101,10 @@ class EnterpriseState:
         if skill == "skill:procure-part":
             sup = params.get("supplier", "sup:b")
             name = next((x["name"] for x in data._SUPPLIERS if x["id"] == sup), sup)
-            pr = {"id": _id("PR"), "part": "P-CLR-CORE", "supplier": sup, "supplierName": name, "asset": asset, "status": "승인됨 → 발주"}
+            part = params.get("part") or "쿨러 코어"
+            pr = {"id": _id("PR"), "part": part, "supplier": sup, "supplierName": name, "asset": asset, "status": "승인됨 → 발주"}
             s["erp"]["purchase_requests"].insert(0, pr)
-            return pr["id"], f"쿨러 코어 구매요청 — {name}"
+            return pr["id"], f"{part} 구매요청 — {name}"
         if skill == "skill:hold-lot":
             lots = data._QMS[asset]
             lot = params.get("lot") or lots["auto_lot"]

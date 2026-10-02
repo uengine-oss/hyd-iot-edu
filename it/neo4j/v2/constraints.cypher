@@ -1,0 +1,38 @@
+// 생성 파일 — scripts/ontology_v2.py gen (원본: schema.json). 직접 고치지 않는다.
+
+CREATE CONSTRAINT v2_perspective_id IF NOT EXISTS FOR (n:Perspective) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_objective_id IF NOT EXISTS FOR (n:Objective) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_measure_id IF NOT EXISTS FOR (n:Measure) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_process_id IF NOT EXISTS FOR (n:Process) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_flownode_id IF NOT EXISTS FOR (n:FlowNode) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_orgunit_id IF NOT EXISTS FOR (n:OrgUnit) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_role_id IF NOT EXISTS FOR (n:Role) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_system_id IF NOT EXISTS FOR (n:System) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_asset_id IF NOT EXISTS FOR (n:Asset) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_component_id IF NOT EXISTS FOR (n:Component) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_sensor_id IF NOT EXISTS FOR (n:Sensor) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_actuator_id IF NOT EXISTS FOR (n:Actuator) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_statevariable_id IF NOT EXISTS FOR (n:StateVariable) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_part_id IF NOT EXISTS FOR (n:Part) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_supplier_id IF NOT EXISTS FOR (n:Supplier) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_anomalypattern_id IF NOT EXISTS FOR (n:AnomalyPattern) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_symptom_id IF NOT EXISTS FOR (n:Symptom) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_failuremode_id IF NOT EXISTS FOR (n:FailureMode) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_cause_id IF NOT EXISTS FOR (n:Cause) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_evidence_id IF NOT EXISTS FOR (n:Evidence) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_step_id IF NOT EXISTS FOR (n:Step) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_manualsection_id IF NOT EXISTS FOR (n:ManualSection) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_skill_id IF NOT EXISTS FOR (n:Skill) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_action_id IF NOT EXISTS FOR (n:Action) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_decision_id IF NOT EXISTS FOR (n:Decision) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_inputdata_id IF NOT EXISTS FOR (n:InputData) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_decisiontable_id IF NOT EXISTS FOR (n:DecisionTable) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_rule_id IF NOT EXISTS FOR (n:Rule) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_knowledgesource_id IF NOT EXISTS FOR (n:KnowledgeSource) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_externalvariable_id IF NOT EXISTS FOR (n:ExternalVariable) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_forecast_id IF NOT EXISTS FOR (n:Forecast) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_incident_id IF NOT EXISTS FOR (n:Incident) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_decisioncase_id IF NOT EXISTS FOR (n:DecisionCase) REQUIRE n.id IS UNIQUE;
+
+// 엔티티 인식(entity resolution)용 전문 검색 색인: 이름과 다른 이름(aliases)
+CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:Measure|Component|StateVariable|Symptom|Cause|ExternalVariable) ON EACH [n.name, n.aliases];

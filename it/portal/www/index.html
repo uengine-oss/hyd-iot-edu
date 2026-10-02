@@ -24,7 +24,7 @@
     <div class="navgroup focus">지식에서 의사결정까지 <small>L7–L9</small></div>
     <button data-tab="ontology" data-icon="nodes">온톨로지 지식 지도</button>
     <button data-tab="skills" data-icon="skills">에이전트 스킬</button>
-    <button data-tab="decision" data-icon="decision">전사 의사결정</button>
+    <button data-tab="decision" data-icon="decision">조치 판단 규칙</button>
     <button data-tab="process" data-icon="process">업무 프로세스</button>
   </nav>
   <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션 환경</strong><small>직접 실험하고, 변화를 확인하세요.</small></div></div>
@@ -66,11 +66,11 @@
 
   <!-- ───────── L7 ontology map ───────── -->
   <section class="view" id="view-ontology">
-    <div class="page-head"><div class="eyebrow">CONNECTED KNOWLEDGE · L7</div><h1>온톨로지 지식 지도</h1><p class="lead">설비·고장·조치와 조직·규정·업무의 관계를 탐색하고, 판단에 쓰이는 지식을 직접 살펴봅니다.</p></div>
-    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>항목을 누르면 직접 연결된 관계를, 시나리오를 고르면 판단에 쓰는 경로를 강조합니다.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>노드를 선택하고 연결된 이름을 눌러 다른 분야의 지식으로 이동하세요.</p></div><div><b>확인하기</b><p>판단 시나리오를 선택하면 관련 지식이 강조됩니다. 아래에서 매뉴얼 등록과 관계 조회도 실습할 수 있습니다.</p></div></div></details>
+    <div class="page-head"><div class="eyebrow">CONNECTED KNOWLEDGE · L7</div><h1>온톨로지 지식 지도</h1><p class="lead">BSC(관점 · 전략 목표 · 성과 지표) · 프로세스(BPMN) · 리소스 · 스킬과 규칙(DMN) 계층의 관계를 탐색합니다. 조치 방법은 고장 유형에 매칭된 스킬(= SOP)입니다.</p></div>
+    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>항목을 누르면 직접 연결된 관계를, 이상 패턴을 고르면 진단에서 조치 카드까지 쓰는 경로를 강조합니다.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>노드를 선택하고 연결된 이름을 눌러 다른 분야의 지식으로 이동하세요.</p></div><div><b>확인하기</b><p>이상 패턴을 고르면 증상 → 고장 유형 → 원인 · 증거 → 조치 방법(SOP) → 규칙 · 성과 지표 경로가 강조됩니다. 아래에서 매뉴얼 등록과 관계 조회도 실습할 수 있습니다.</p></div></div></details>
     <div class="toolbar">
       <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
-      <label>시나리오 보기 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
+      <label>이상 패턴 경로 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
       <input type="search" id="ontoSearch" placeholder="노드 이름·id 검색" aria-label="노드 검색">
       <button class="btn small" id="ontoReload">다시 읽기</button>
     </div>
@@ -82,25 +82,25 @@
     </div>
     <h2>매뉴얼에서 정비 절차 만들기 <small>SOP</small></h2>
     <div class="upload" id="manualUpload">
-      <p class="muted">정비 매뉴얼(.md · .txt · .pdf)을 올리면 절 제목(예: <code>HM-8.1 쿨러 팬 벨트 점검</code>)은 매뉴얼 절로, 번호 매긴 줄(<code>1. …</code>)은 SOP 단계로 읽습니다. 미리보기에서 확인하고 조치와 연결한 뒤 등록하세요. <a href="samples/HM-8_cooler-fan-manual.md" download>예시 매뉴얼 받기</a></p>
+      <p class="muted">정비 매뉴얼(.md · .txt · .pdf)을 올리면 절 제목(예: <code>HM-8.1 쿨러 팬 벨트 점검</code>)은 매뉴얼 절로, 번호 매긴 줄(<code>1. …</code>)은 SOP 단계로 읽습니다. 절차 하나가 조치 방법(스킬 = SOP) 하나가 됩니다. 미리보기에서 절차마다 고장 유형을 골라 매칭한 뒤 등록하세요. <a href="samples/HM-8_cooler-fan-manual.md" download>예시 매뉴얼 받기</a></p>
       <div class="toolbar"><label class="file-picker"><span class="btn">매뉴얼 파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><input id="manualBy" value="지식 관리자" aria-label="적재자"><button class="btn" id="manualPreview">미리보기</button></div>
       <div id="manualResult"></div>
       <div id="manualHistory"></div>
     </div>
     <h2>판단 근거를 직접 조회하기 <small>Cypher</small></h2>
     <div class="toolbar" id="ontoTpl">
-      <button class="btn small" data-t="t1_causes">고장 원인 살펴보기</button><button class="btn small" data-t="t2_actions">조치 방법과 정비 절차 확인하기</button>
-      <button class="btn small" data-t="t3_scenario">판단에 필요한 정보</button><button class="btn small" data-t="t3_options">대안별 스킬과 성과 영향</button>
-      <button class="btn small" data-t="t3_kpis">부서별 성과 지표와 목표</button><button class="btn small" data-t="t3_policies">지켜야 할 규정</button>
-      <button class="btn small" data-t="t3_triggers">판단이 필요한 상황</button><button class="btn small" data-t="t3_roles">승인 역할과 권한</button><button class="btn small" data-t="t3_precedents">이전에 내린 판단</button>
+      <button class="btn small" data-t="t1_causes">T1 경보 → 원인 · 증거</button><button class="btn small" data-t="t2_skills">T2 고장 유형 → 조치 방법(SOP)</button>
+      <button class="btn small" data-t="t3_dmn">DMN 규칙 · 임계값</button><button class="btn small" data-t="t3_inputs">판단 입력과 출처</button>
+      <button class="btn small" data-t="t3_tradeoffs">BSC 득실 (성과 지표 · 부서)</button><button class="btn small" data-t="t3_forecasts">조치별 예측</button>
+      <button class="btn small" data-t="t3_precedents">선례 (사람의 선택)</button><button class="btn small" data-t="t3_roles">승인 역할과 직급</button>
     </div>
     <pre class="tpl" id="ontoTplText">질의를 선택하면 실행할 Cypher가 표시됩니다. Neo4j Browser에서 같은 관계를 직접 조회해보세요.</pre>
   </section>
 
   <!-- ───────── L8 agent skill catalog ───────── -->
   <section class="view" id="view-skills">
-    <div class="page-head"><div class="eyebrow">AGENT CAPABILITIES · L8</div><h1>에이전트 스킬</h1><p class="lead">에이전트가 제안할 수 있는 작업과 실행 시스템, 승인 역할을 연결합니다.</p></div>
-    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>작업 하나가 실행되기 위한 조건을 살펴보세요.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>스킬을 선택해 설명과 연결 대상을 확인하고 수정·저장해보세요.</p></div><div><b>확인하기</b><p>다시 선택했을 때 저장한 내용이 남는지 확인하세요. 저장 전 입력은 탭을 이동해도 유지됩니다.</p></div></div></details>
+    <div class="page-head"><div class="eyebrow">AGENT CAPABILITIES · L8</div><h1>에이전트 스킬</h1><p class="lead">조치 방법은 스킬입니다. 스킬 하나가 SOP 하나이고, 고장 유형에 즉시 완화 또는 근본 조치로 매칭됩니다.</p></div>
+    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>작업 하나가 실행되기 위한 조건을 살펴보세요.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>스킬(SOP)을 선택해 단계 · 원자 조치 · 매칭된 고장 유형 · 걸리는 규칙을 확인하고, 이름 · 설명 · 승인 역할을 고쳐 보세요.</p></div><div><b>확인하기</b><p>다시 선택했을 때 저장한 내용이 남는지 확인하세요. 저장 전 입력은 탭을 이동해도 유지됩니다.</p></div></div></details>
     <div class="split skills-split">
       <div><div class="listhead"><span>스킬</span><button class="btn small" id="skillNew">새 스킬</button></div><div class="list" id="skillList"></div></div>
       <div class="detail" id="skillDetail"><div class="empty">스킬을 선택해 내용과 실행 조건을 확인하세요.</div></div>
@@ -109,10 +109,18 @@
 
   <!-- ───────── L8 enterprise decisions ───────── -->
   <section class="view" id="view-decision">
-    <div class="page-head"><div class="eyebrow">COMPARE & DECIDE · L8</div><h1>전사 의사결정</h1><p class="lead">같은 상황을 부서별 관점과 회사 전체 관점에서 비교하고, 실행할 대안을 검토합니다.</p></div>
-    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>부서의 최선과 회사의 최선은 같을까요?</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>상황과 설비를 선택해 판단을 실행한 뒤 부서 관점을 바꿔보세요.</p></div><div><b>확인하기</b><p>권고 대안, 예상 영향 금액, 규정으로 제외된 대안을 비교하고 승인 화면으로 이동하세요.</p></div></div></details>
-    <div class="scn-cards" id="scnCards"><div class="muted">불러오는 중…</div></div>
-    <div id="decResult"></div>
+    <div class="page-head"><div class="eyebrow">DMN RULES · BSC TRADE-OFFS · L8</div><h1>조치 판단 규칙</h1><p class="lead">에이전트가 조치 카드(스킬 = SOP)를 고르고 거르고 순위를 매기는 과정을 규칙 단위로 봅니다. 사실을 바꿔 넣으면 규칙이 어떻게 반응하는지 확인할 수 있습니다.</p></div>
+    <details class="learning-guide"><summary><span class="guide-icon">?</span><span>같은 이상이라도 운전 모드 · 팬 누적 시간 · 예비 펌프 상태에 따라 카드가 달라집니다.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>설비와 이상 패턴을 고르고 판단을 실행하세요. 다음에는 운전 모드를 REMOTE_MANUAL로, 팬 100 % 누적 시간을 30시간으로 바꿔 다시 실행해 보세요.</p></div><div><b>확인하기</b><p>어느 규칙이 후보를 고르고(SELECT) 제외 · 감점 · 경고했는지, 득실 성과 지표(BSC)가 어느 부서 것인지, 순위 식의 각 항을 비교하세요. 실제 결정은 이상 확인 · 조치 화면에서 합니다.</p></div></div></details>
+    <div class="toolbar dec-run">
+      <label>설비 <select id="decAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
+      <label>이상 패턴 <select id="decPattern"></select></label>
+      <label>운전 모드 <select id="decMode"><option value="">실제 값</option><option>REMOTE_AUTO</option><option>REMOTE_MANUAL</option><option>LOCAL</option></select></label>
+      <label>PLC 상태 <select id="decState"><option value="">실제 값</option><option>RUN</option><option>TRIP</option></select></label>
+      <label>팬 100 % 누적 (h) <input id="decFan" type="number" min="0" step="1" placeholder="실제 값"></label>
+      <label>예비 펌프 <select id="decStandby"><option value="">실제 값</option><option value="true">가용</option><option value="false">정비 중</option></select></label>
+      <button class="btn primary" id="decRun">판단 실행</button>
+    </div>
+    <div id="decResult"><div class="muted">설비와 이상 패턴을 고르고 판단을 실행하세요.</div></div>
   </section>
 
   <!-- ───────── L9 business process & systems ───────── -->

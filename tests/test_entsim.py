@@ -6,24 +6,18 @@ import pytest
 
 from entsim import data, state
 
-SEED = Path(__file__).resolve().parents[1] / "it" / "neo4j" / "seed_enterprise.cypher"
-PREFIXES = ("mes", "erp", "cmms", "scm", "qms", "ems")
-
-
-def all_facts(asset):
-    out = {}
-    for fn in (data.mes_orders, data.erp_contract, data.erp_inventory, data.cmms_history, data.qms_lots):
-        out |= data.prefixed(fn(asset))
-    out |= data.prefixed(data.scm_suppliers("P-CLR-CORE")) | data.prefixed(data.ems_demand())
-    return out
+INSTANCES = Path(__file__).resolve().parents[1] / "it" / "neo4j" / "v2" / "instances.cypher"
+# ontology v2: InputData -SOURCED_FROM-> sys:mes is fetched by the agent from enterprise-sim (variable -> MES fact key)
+MES_FACTS = {"order_due_h": "due_in_h"}
 
 
 @pytest.mark.parametrize("asset", ["HYD-01", "HYD-02", "HYD-03"])
-def test_every_fact_named_in_the_ontology_is_served(asset):
-    names = set(re.findall(r"\b((?:%s)_[a-z0-9_]+)\b" % "|".join(PREFIXES), SEED.read_text(encoding="utf-8")))
-    assert names, "no facts referenced?"
-    missing = names - set(all_facts(asset))
-    assert not missing, missing
+def test_every_mes_input_of_the_ontology_is_served(asset):
+    rows = re.findall(r"\['in:[a-z0-9-]+','[^']*','[a-z]+','([a-z0-9_]+)','sys:mes'", INSTANCES.read_text(encoding="utf-8"))
+    assert rows, "no InputData sourced from sys:mes?"
+    facts = data.mes_orders(asset)["facts"]
+    for var in rows:
+        assert isinstance(facts.get(MES_FACTS[var]), (int, float)), var
 
 
 def test_facts_are_prefixed_by_their_system():

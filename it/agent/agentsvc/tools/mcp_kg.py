@@ -1,7 +1,8 @@
-"""mcp-kg (read-only): whitelisted Cypher templates T1/T2 against the Neo4j ontology.
+"""mcp-kg (read-only): whitelisted Cypher templates against the Neo4j ontology v2.
 
 In the full architecture this is a separate MCP server container; the student edition keeps the same
 whitelist discipline (only template files can run, parameters only) inside the agent process.
+  T1 원인 후보 · 증거   T2 고장 유형별 조치 방법(스킬 = SOP)   T3 DMN 규칙 · 입력 출처 · BSC 상충 · 예측 · 선례 · 역할   T0 지식 지도
 """
 import os
 from pathlib import Path
@@ -25,32 +26,50 @@ class KnowledgeGraph:
         return self._cache[name]
 
     def _run(self, name: str, **params) -> list[dict]:
+        # managed read transaction: the driver retries a dropped connection (e.g. after a Neo4j restart) and transient errors
+        q = self.template(name)
         with self.driver.session() as s:
-            return [r.data() for r in s.run(self.template(name), **params)]
+            return s.execute_read(lambda tx: [r.data() for r in tx.run(q, **params)])
 
+    # ---- T1 / T2: diagnosis and the failure mode's SOP skills
     def t1_causes(self, pattern: str, asset: str) -> list[dict]:
         return self._run("t1_causes", pattern=pattern, asset=asset)
 
-    def t2_actions(self, cause_id: str, asset: str) -> list[dict]:
-        return self._run("t2_actions", cause=cause_id, asset=asset)
+    def t2_skills(self, cause_id: str) -> list[dict]:
+        return self._run("t2_skills", cause=cause_id)
 
-    # ---- T3: enterprise decision context (L7 -> L8) ----
-    def scenario_context(self, scenario: str) -> dict:
-        rows = self._run("t3_scenario", scenario=scenario)
-        if not rows or not rows[0].get("scenario"):
-            raise KeyError(scenario)
-        return {"scenario": rows[0], "options": self._run("t3_options", scenario=scenario),
-                "kpis": self._run("t3_kpis"), "policies": self._run("t3_policies", scenario=scenario),
-                "precedents": {r["option"]: {"n": r["n"], "reasons": r["reasons"]} for r in self._run("t3_precedents", scenario=scenario)}}
+    # ---- T3: decision context (DMN rules, inputs, BSC trade-offs, forecasts, precedents)
+    def skills(self, ids: list[str]) -> list[dict]:
+        return self._run("t3_skills", ids=ids)
 
-    def triggers(self, ids: list[str]) -> list[dict]:
-        return self._run("t3_triggers", ids=ids)
+    def dmn(self) -> list[dict]:
+        return self._run("t3_dmn")
+
+    def inputs(self) -> list[dict]:
+        return self._run("t3_inputs")
+
+    def tradeoffs(self, ids: list[str]) -> list[dict]:
+        return self._run("t3_tradeoffs", ids=ids)
+
+    def forecasts(self, cause: str) -> dict[str, dict]:
+        out: dict[str, dict] = {}
+        for r in self._run("t3_forecasts", cause=cause):
+            if r.get("skill"):
+                out.setdefault(r["skill"], {})[r["variable"]] = r
+        return out
+
+    def precedents(self, failure_mode: str) -> list[dict]:
+        return self._run("t3_precedents", failureMode=failure_mode)
 
     def roles(self) -> list[dict]:
         return self._run("t3_roles")
 
-    def scenarios(self) -> list[dict]:
-        return self._run("t0_scenarios")
+    def suppliers(self) -> dict[str, dict]:
+        return {r["id"]: r for r in self._run("t3_suppliers")}
+
+    # ---- T0: portal knowledge map
+    def patterns(self) -> list[dict]:
+        return self._run("t0_patterns")
 
     def graph(self, asset: str) -> dict:
         return {"nodes": self._run("t0_graph_nodes", asset=asset), "edges": self._run("t0_graph_edges", asset=asset)}

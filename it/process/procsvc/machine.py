@@ -89,6 +89,9 @@ def _validate_actions(inc: Incident, actions: list[dict]) -> list[dict]:
         if rec.get("kind") != "command":
             continue
         param, rng = rec.get("param"), rec.get("paramRange")
+        if not param:                       # e.g. RESET: a command without a parameter
+            out.append({"code": a["code"]})
+            continue
         val = a.get(param)
         if val is None:
             raise ValueError(f"action {a['code']} needs parameter {param}")

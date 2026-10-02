@@ -39,24 +39,24 @@ def check(card: dict) -> list[str]:
         rng, val = a.get("paramRange"), a.get("value")
         if rng and val is not None and not (rng[0] <= val <= rng[1]):
             v.append(f"action {a.get('code')} value {val} outside paramRange {rng}")
-        if a.get("kind") == "command" and (not rng or val is None):
+        if a.get("kind") == "command" and a.get("param") and (not rng or val is None):
             v.append(f"command action {a.get('code')} lacks paramRange/value")
     return v
 
 
-def check_decision(result: dict, ctx: dict) -> list[str]:
-    """Enterprise decision guardrail: every impact cites a KPI node, the recommendation is feasible (no HARD policy
-    violated, no missing fact) and names the approving Role from the ontology."""
+def check_cards(result: dict) -> list[str]:
+    """Action-card guardrail (ontology v2): every card was selected by a DMN rule of the ontology, and the recommended
+    card is not excluded by a rule, names its approving Role and carries its SOP steps."""
     v: list[str] = []
-    kpis = {k["id"] for k in ctx.get("kpis", [])}
     for o in result.get("options", []):
-        for k in o.get("impacts", {}):
-            if k not in kpis:
-                v.append(f"{o['id']}: 온톨로지에 없는 KPI {k} 인용")
+        if not o.get("selectedBy"):
+            v.append(f"{o['id']}: 후보 선택 규칙(Rule -OUTPUTS-> Skill) 인용이 없다")
     rec = next((o for o in result.get("options", []) if o["id"] == result.get("recommended")), None)
     if rec:
-        if rec.get("violations") or rec.get("errors"):
-            v.append(f"권고안 {rec['id']}가 규정 위반 또는 데이터 부족")
+        if rec.get("violations") or not rec.get("feasible", True):
+            v.append(f"권고 카드 {rec['id']}가 규정(EXCLUDE 규칙)에 걸려 있다")
         if not (rec.get("approver") or {}).get("id"):
-            v.append(f"권고안 {rec['id']}에 승인 역할(Option -APPROVED_BY-> Role)이 없다")
+            v.append(f"권고 카드 {rec['id']}에 승인 역할(Skill -APPROVED_BY-> Role)이 없다")
+        if not rec.get("steps"):
+            v.append(f"권고 카드 {rec['id']}에 SOP 단계(Skill -HAS_STEP-> Step)가 없다")
     return v

@@ -1,33 +1,37 @@
-/* L7 ~ L9 views: 온톨로지 지식 지도 · 전사 의사결정 시나리오 · 업무 프로세스·시스템 연계.
+/* L7 ~ L9 views: 온톨로지 지식 지도 · 조치 판단 규칙 (DMN · BSC) · 업무 프로세스·시스템 연계 — ontology v2.
    Loaded after app.js and reuses its helpers ($, el, esc, fmt, getJ, postJ, state, selectTab).
    Data: agent (8091) for the ontology and the decision engine, process (8080) for approval, enterprise-sim (8095) for ERP/MES/…  */
 API.ent = P(8095);
 
+// columns of the knowledge map = layers of the ontology v2 schema (it/neo4j/v2/schema.json)
 const ONTO_GROUPS = [
-  { key: 'asset', title: '설비 · 관측', color: '#6b7280', labels: ['Asset', 'Component', 'Sensor', 'Actuator', 'AnomalyPattern', 'Symptom'] },
-  { key: 'failure', title: '고장 지식', color: '#b42318', labels: ['FailureMode', 'Cause', 'Evidence'] },
-  { key: 'action', title: '조치 지식', color: '#9a6700', labels: ['Action', 'Constraint', 'Procedure', 'Step', 'ManualSection'] },
-  { key: 'org', title: '조직 · KPI · 규정', color: '#6d28d9', labels: ['Goal', 'Department', 'Role', 'KPI', 'Policy'] },
-  { key: 'sys', title: '시스템 · 스킬 · 프로세스', color: '#0f766e', labels: ['System', 'InfoType', 'Skill', 'BusinessProcess', 'Supplier'] },
-  { key: 'decision', title: '판단 · 사례', color: '#1d4ed8', labels: ['Scenario', 'Option', 'Decision', 'Incident', 'Alert', 'ManualUpload'] },
+  { key: 'value', title: '전략목표 (BSC)', color: '#6d28d9', labels: ['Perspective', 'Objective', 'Measure'] },
+  { key: 'process', title: '프로세스 (BPMN)', color: '#1d4ed8', labels: ['Process', 'Event', 'Task', 'Gateway'] },
+  { key: 'resource', title: '리소스', color: '#6b7280', labels: ['OrgUnit', 'Role', 'System', 'Asset', 'Component', 'Sensor', 'Actuator', 'StateVariable', 'Part', 'Supplier'] },
+  { key: 'diagnosis', title: '설비 진단 (ISO 13374)', color: '#b42318', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
+  { key: 'skill', title: '스킬 = SOP · 규칙 (DMN)', color: '#0f766e', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
+  { key: 'external', title: '외부 변수 · 예측 · 사례', color: '#9a6700', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
 ];
-const LABEL_KO = { Asset: '설비', Component: '부품', Sensor: '센서', Actuator: '구동기', AnomalyPattern: '이상 패턴', Symptom: '증상', FailureMode: '고장모드',
-  Cause: '원인', Evidence: '증거 규칙', Action: '조치', Constraint: '제약', Procedure: 'SOP', Step: 'SOP 단계', ManualSection: '매뉴얼 절', Goal: '전사 목표',
-  Department: '부서', Role: '역할', KPI: 'KPI', Policy: '규정', System: '기업 시스템', InfoType: '정보 유형', Skill: '에이전트 스킬', BusinessProcess: '업무 프로세스',
-  Supplier: '공급사', ManualUpload: '매뉴얼 적재', Scenario: '판단 시나리오', Option: '대안', Decision: '판단 사례', Incident: '인시던트', Alert: '경보' };
+const LABEL_KO = { Perspective: 'BSC 관점', Objective: '전략 목표 (조직 목표)', Measure: '성과 지표', Process: '프로세스', Event: '이벤트', Task: '작업', Gateway: '게이트웨이',
+  OrgUnit: '부서', Role: '역할', System: '시스템', Asset: '설비', Component: '구성 요소', Sensor: '센서', Actuator: '구동기', StateVariable: '상태 변수',
+  Part: '부품', Supplier: '공급사', AnomalyPattern: '이상 패턴', Symptom: '증상', FailureMode: '고장 유형', Cause: '원인', Evidence: '증거', ManualSection: '매뉴얼 절',
+  Skill: '조치 방법 (스킬 = SOP)', Step: 'SOP 단계', Action: '원자 조치', Decision: 'DMN 판단', DecisionTable: '결정표', Rule: '규칙', InputData: '입력 데이터',
+  KnowledgeSource: '지식 출처', ExternalVariable: '외부 변수', Forecast: '예측', Incident: '사건', DecisionCase: '판단 사례' };
 const RELATION_KO = {
-  HAS_COMPONENT: '구성 부품', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', DETECTS: '감지 증상', INDICATES: '나타내는 고장',
-  OCCURS_IN: '발생 위치', CAUSES: '일으키는 고장', EVIDENCED_BY: '판단 근거', LEADS_TO: '이어지는 현상',
-  MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', TARGETS: '조치 대상', REQUIRES: '필요 조건', FOLLOWS: '따르는 절차',
-  HAS_STEP: '절차 단계', REFERS_TO: '참조 매뉴얼', IMPLEMENTS: '수행하는 조치', EXECUTED_IN: '실행 프로세스', EXECUTED_VIA: '실행 시스템',
-  APPROVED_BY: '승인 담당', REQUIRES_INFO: '필요한 정보', NEEDS_INFO: '판단에 필요한 정보', HELD_IN: '정보 보유 시스템',
-  USES_SKILL: '사용 스킬', HAS_OPTION: '선택 가능한 대안', TRIGGERS_DECISION: '연결된 판단 상황', IMPACTS: '영향받는 지표',
-  OWNED_BY: '담당 부서', CONTRIBUTES_TO: '기여하는 목표', GOVERNS: '적용 대상', MEMBER_OF: '소속 부서', BUYS_FROM: '구매처',
-  DECIDED: '선택한 대안', ABOUT: '관련 상황', FOR: '대상 설비', TRIGGERED_BY: '발생 계기', DIAGNOSED_AS: '진단 원인',
-  RESOLVED_BY: '해결 조치', INSTANCE_OF: '해당 패턴', INGESTED: '등록된 지식', OBSERVED_BY: '관측 센서',
-  USES: '사용 대상', SUPPORTS: '지원 대상', RUNS_ON: '실행 기반', ENFORCED_BY: '준수 확인 시스템',
+  IN_PERSPECTIVE: '속한 관점', SUPPORTS: '받쳐 주는 목표', MEASURES: '측정하는 목표', OWNED_BY: '담당 부서', INFLUENCES: '영향 (+/−)',
+  ACHIEVES: '달성하는 조직 목표', HAS_NODE: '흐름 노드', SEQUENCE_FLOW: '다음 단계', ATTACHED_TO: '경계 이벤트', PERFORMED_BY: '수행자', READS: '읽는 데이터',
+  PRODUCES: '만드는 데이터', INVOKES: '부르는 판단', EXECUTES: '실행하는 스킬', CORRELATES: '시작시키는 경보', ACTS_ON: '대상 설비',
+  MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
+  USES_PART: '교체 부품', SUPPLIED_BY: '공급사', HAS_SKILL: '수행 가능한 스킬', SOURCED_FROM: '데이터 출처', REPRESENTS: '나타내는 변수 · 지표',
+  DETECTS: '감지 증상', OBSERVED_BY: '관측 센서', INDICATES: '나타내는 고장', OCCURS_IN: '발생 위치', LEADS_TO: '이어지는 고장', CAUSES: '일으키는 고장',
+  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화 SOP', REMEDIED_BY: '근본 조치 SOP',
+  ADDRESSES: '해당 원인', HAS_STEP: 'SOP 단계', REFERS_TO: '근거 매뉴얼', PART_OF: '속한 문서', CONSISTS_OF: '원자 조치', TARGETS: '조치 대상',
+  APPROVED_BY: '승인 역할', AFFECTS: '움직이는 변수 · 지표', REQUIRES_INPUT: '필요한 입력', REQUIRES_DECISION: '먼저 내릴 판단', IMPLEMENTED_BY: '결정표',
+  GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계값 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상 스킬', PENALIZES: '감점 지표',
+  DERIVED_FROM: '근거 출처', FORECASTS: '예측 대상', ASSUMES: '가정한 스킬', GIVEN: '가정한 원인', ON_ASSET: '설비', RAISED_BY: '경보 패턴',
+  DIAGNOSED_AS: '판정 원인', INSTANCE_OF: '판단 정의', CHOSE: '고른 스킬', DECIDED_BY: '판단한 역할', FOR_INCIDENT: '대상 사건',
 };
-const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', scenarios: null, result: null, persp: 'enterprise',
+const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', patterns: null, result: null,
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
   form: { by: '홍길동', role: null, reason: '' }, lastDetailSig: null };
 
@@ -36,9 +40,13 @@ const _selectTab = selectTab;
 selectTab = function (name) {
   _selectTab(name);
   if (name === 'ontology') loadGraph();
-  if (name === 'decision') loadScenarios();
+  if (name === 'decision') loadDecisionView();
   if (name === 'process') refreshProcess();
 };
+async function loadPatterns() {
+  if (!ent.patterns || !ent.patterns.length) { try { ent.patterns = await getJ(API.agent + '/api/ontology/patterns'); } catch (e) { ent.patterns = null; } }
+  return ent.patterns || [];
+}
 // incident-linked decisions are shown by the HITL panel (hitl.js)
 
 /* ================================================= L7 온톨로지 지식 지도 */
@@ -60,32 +68,36 @@ async function loadGraph(force) {
     $('#ontoMap').innerHTML = `<div class="empty" role="alert" title="${esc(e.message)}">지식을 불러올 수 없습니다. 연결을 확인하고 ‘다시 읽기’를 눌러주세요.</div>`;
     return;
   }
-  if (!ent.scenarios || !ent.scenarios.length) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { ent.scenarios = null; } }
+  const pats = await loadPatterns();
   const sel = $('#ontoFocus');
-  if (sel.options.length <= 1) (ent.scenarios || []).forEach(s => sel.append(new Option(`판단 시나리오 ${s.scenario.no}. ${s.scenario.name}`, s.scenario.id)));
+  if (sel.options.length <= 1) pats.forEach(p => sel.append(new Option(`${p.name} (${p.code})`, p.id)));
   drawGraph();
 }
 function groupOf(label) { return ONTO_GROUPS.findIndex(g => g.labels.includes(label)); }
 function focusSet() {
-  // nodes the agent touches for one decision scenario: scenario → options → skills → systems/processes/infos/policies/roles, KPIs → departments/goals, triggers
+  // the path the agent walks for one anomaly pattern: pattern → symptoms → failure modes → causes · evidence → SOP skills
+  // → steps · manual · atomic actions · approver, the rules that select / limit each skill, its first KPI effects and forecasts
   if (!ent.focus || !ent.graph) return null;
   const out = new Map(), inn = new Map();
   for (const e of ent.graph.edges) { (out.get(e.from) || out.set(e.from, []).get(e.from)).push(e); (inn.get(e.to) || inn.set(e.to, []).get(e.to)).push(e); }
   const keep = new Set([ent.focus]);
   const walk = (id, types, dir = 'out') => ((dir === 'out' ? out : inn).get(id) || []).filter(e => types.includes(e.type)).map(e => dir === 'out' ? e.to : e.from);
-  const opts = walk(ent.focus, ['HAS_OPTION']); opts.forEach(x => keep.add(x));
-  walk(ent.focus, ['NEEDS_INFO']).forEach(i => { keep.add(i); walk(i, ['HELD_IN']).forEach(x => keep.add(x)); });
-  walk(ent.focus, ['TRIGGERS_DECISION'], 'in').forEach(x => keep.add(x));
-  walk(ent.focus, ['GOVERNS'], 'in').forEach(x => keep.add(x));
-  for (const o of opts) {
-    walk(o, ['APPROVED_BY', 'BUYS_FROM']).forEach(x => keep.add(x));
-    for (const k of walk(o, ['IMPACTS'])) { keep.add(k); walk(k, ['OWNED_BY', 'CONTRIBUTES_TO']).forEach(x => keep.add(x)); }
-    for (const s of walk(o, ['USES_SKILL'])) {
-      keep.add(s); walk(s, ['EXECUTED_VIA', 'EXECUTED_IN', 'REQUIRES_INFO', 'IMPLEMENTS']).forEach(x => keep.add(x));
-      walk(s, ['GOVERNS'], 'in').forEach(x => keep.add(x));
+  const add = xs => { xs.forEach(x => keep.add(x)); return xs; };
+  add(walk(ent.focus, ['TESTS', 'DERIVED_FROM']));
+  add(walk(ent.focus, ['CORRELATES'], 'in')).forEach(ev => add(walk(ev, ['HAS_NODE'], 'in')));
+  for (const sy of add(walk(ent.focus, ['DETECTS']))) {
+    for (const fm of add(walk(sy, ['INDICATES']))) {
+      add(walk(fm, ['OCCURS_IN']));
+      for (const c of add(walk(fm, ['CAUSES'], 'in'))) add(walk(c, ['EVIDENCED_BY', 'DISTURBS']));
+      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY']))) {
+        add(walk(s, ['APPROVED_BY', 'CONSISTS_OF', 'ADDRESSES']));
+        for (const st of add(walk(s, ['HAS_STEP']))) add(walk(st, ['REFERS_TO']));
+        add(walk(s, ['AFFECTS']));
+        for (const r of add(walk(s, ['OUTPUTS', 'APPLIES_TO'], 'in'))) add(walk(r, ['DERIVED_FROM', 'TESTS']));
+        add(walk(s, ['ASSUMES'], 'in'));
+      }
     }
   }
-  walk(ent.focus, ['ABOUT'], 'in').forEach(x => keep.add(x));
   return keep;
 }
 function drawGraph() {
@@ -166,9 +178,9 @@ function drawGraph() {
     gn.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } });
   });
   const counts = {}; g.nodes.forEach(n => counts[n.label] = (counts[n.label] || 0) + 1);
-  const ent_ = ['Department', 'Role', 'KPI', 'Goal', 'Policy', 'System', 'InfoType', 'Skill', 'BusinessProcess', 'Scenario', 'Option', 'Supplier', 'Decision'].reduce((s, l) => s + (counts[l] || 0), 0);
+  const skills = counts.Skill || 0, rules = counts.Rule || 0, kpis = counts.Measure || 0;
   const matches = [...box.querySelectorAll('.o-node.match')];
-  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 그중 전사 지식 <b>${ent_}</b>개` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '') + (q ? ` · 검색 결과 ${matches.length}개` : '') + (box.scrollWidth > box.clientWidth ? ' · 지도 안에서 좌우로 이동' : '');
+  $('#ontoStats').innerHTML = `노드 ${g.nodes.length}개 · 관계 ${g.edges.length}개 · 조치 방법(SOP) <b>${skills}</b> · DMN 규칙 <b>${rules}</b> · BSC 성과 지표 <b>${kpis}</b>` + (focus ? ` · 강조 경로 ${focus.size}개 노드` : '') + (q ? ` · 검색 결과 ${matches.length}개` : '') + (box.scrollWidth > box.clientWidth ? ' · 지도 안에서 좌우로 이동' : '');
   if (q && matches.length) { const r = matches[0].getBBox(); box.scrollLeft = Math.max(0, r.x - 20); box.scrollTop = Math.max(0, r.y - 60); }
   renderNodePanel();
 }
@@ -205,88 +217,90 @@ function initOntology() {
   renderNodePanel();
 }
 
-/* ================================================= L8 전사 의사결정 시나리오 */
-async function loadScenarios() {
-  if (!ent.scenarios) { try { ent.scenarios = await getJ(API.agent + '/api/agent/scenarios'); } catch (e) { $('#scnCards').innerHTML = `<div class="muted">에이전트에 연결할 수 없습니다. ${esc(e.message)}</div>`; return; } }
-  const box = $('#scnCards');
-  if (box.dataset.ready) return;
-  box.dataset.ready = '1'; box.innerHTML = '';
-  for (const row of ent.scenarios) {
-    const s = row.scenario, trig = (row.triggers || []).filter(t => t && t.id).map(t => esc(t.name || t.id)).join(', ');
-    const card = el('article', 'scn');
-    const assets = s.asset === 'ALL' ? '<option value="">전체 설비</option>' : ['HYD-01', 'HYD-02', 'HYD-03'].map(a => `<option ${a === s.asset ? 'selected' : ''}>${a}</option>`).join('');
-    card.innerHTML = `<div class="scn-no">${s.no}</div><h3>${esc(s.name)}</h3><p>${esc(s.question)}</p>
-      <div class="muted">온톨로지 트리거: ${trig || '없음'} · 대안 ${row.options}개${s.condition ? ' · 적용 조건 <span title="' + esc(s.condition) + '">' + esc(UI.condition(s.condition)) + '</span>' : ''}</div>
-      <div class="scn-run"><select aria-label="설비">${assets}</select><button class="btn primary">에이전트 판단 실행</button></div>`;
-    card.querySelector('button').addEventListener('click', () => runDecision(s.id, card.querySelector('select').value || null, card));
-    box.append(card);
-  }
+/* ================================================= action cards (shared with the HITL panel in hitl.js) */
+const KIND_KO = { command: 'PLC 명령', transaction: '시스템 트랜잭션' };
+function signNum(v) { return (v > 0 ? '+' : '') + Number(v).toFixed(2); }
+function effChip(x, cls) {
+  const t = `${x.name} ${x.dir === 1 ? '↑' : '↓'}${x.owner ? ' [' + x.owner + ']' : ''}`;
+  return `<span class="${cls}" title="경로 강도 ${x.weight}${x.conds && x.conds.length ? ' · 조건: ' + x.conds.join(', ') : ''}">${esc(t)}</span>`;
 }
-async function runDecision(sid, asset, card) {
+function ruleChip(r, cls, label) {
+  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(r.annotation || r.rule)}</span>`;
+}
+function cardHtml(o, opt = {}) {
+  const hasCmd = (o.actions || []).some(a => a.kind === 'command'), hasTx = (o.actions || []).some(a => a.kind !== 'command');
+  const fc = (o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit)} <span class="muted">(${esc(f.method)})</span>`).join(' · ');
+  const uncond = x => !x.conditional, cond = x => x.conditional;
+  const sp = o.scoreParts || {};
+  const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
+    <span class="hbody"><span class="htitle"><span class="mono">${esc(o.sopId || '')}</span> ${esc(o.name)}${o.id === opt.rec ? ' <em class="star">권고</em>' : ''}${hasCmd ? ' <em class="ot">PLC 명령</em>' : ''}${hasTx ? ' <em class="tx">작업지시 · 구매</em>' : ''}${o.id === opt.chosen ? ' <em class="done">결정됨</em>' : ''}${o.feasible ? '' : ' <em class="hard">제외</em>'}</span>
+      <span class="muted">${esc(o.description || '')}</span>
+      <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">점수 ${signNum(o.score || 0)}</b>
+        <span class="muted" title="온톨로지 순위 규칙(dec:rank-actions)의 식">BSC ${signNum(sp.bsc || 0)} · 예측 ${signNum(sp.forecast || 0)} · 경고 ${signNum(sp.warn || 0)} · 감점 ${signNum(sp.penalty || 0)} · 선례 ${signNum(sp.precedent || 0)}</span></span>
+      ${fc ? `<span class="hfc">예측: ${fc}</span>` : ''}
+      <span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>
+      ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<span class="hkpi cond"><span class="muted">조건부:</span>${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span>` : ''}
+      <span class="hskill">${(o.actions || []).map(a => `<span title="${esc(KIND_KO[a.kind] || a.kind)}">${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''} → ${esc(a.targetName || a.target || '')}</span>`).join('') || '<span class="none">원자 조치 없음</span>'}</span>
+      <span class="hmeta">승인: ${esc((o.approver || {}).name || '–')}${o.precedent && o.precedent.n ? ` · 선례 ${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)` : ''}
+        ${(o.violations || []).map(v => ruleChip(v, 'hard', '제외')).join('')}${(o.penalties || []).map(v => ruleChip(v, 'soft', `감점 ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', '경고')).join('')}</span>
+      <details class="source-detail hsrc"><summary>출처 보기 — 고른 규칙 · SOP 단계 · 매뉴얼</summary>
+        <div>${(o.selectedBy || []).map(r => `<div><b>${esc(r.rule)}</b> <code>${esc(r.when || '')}</code> — ${esc(r.annotation || '')} <span class="muted">근거 ${esc((r.sources || []).join(', '))}</span></div>`).join('')}</div>
+        <ol>${(o.steps || []).map(s => `<li>${esc(s.text)} ${s.manual ? `<span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol>
+        ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? '<div class="muted">선례 사유: ' + o.precedent.reasons.map(esc).join(' / ') + '</div>' : ''}
+      </details>
+    </span>`;
+  if (!opt.selectable) return `<div class="hopt ${o.feasible ? '' : 'out'} ${o.id === opt.rec ? 'rec' : ''}">${'<span></span>' + head}</div>`;
+  return `<label class="hopt ${o.feasible ? '' : 'out'} ${opt.selected ? 'sel' : ''} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">
+    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${o.feasible && opt.pending ? '' : 'disabled'}>${head}</label>`;
+}
+window.hydCards = { cardHtml };
+
+/* ================================================= L8 조치 판단 규칙 (DMN · BSC) */
+async function loadDecisionView() {
+  const sel = $('#decPattern');
+  if (sel.options.length) return;
+  const pats = await loadPatterns();
+  pats.forEach(p => sel.append(new Option(`${p.name} (${p.code})${p.failureModes && p.failureModes.length ? ' → ' + p.failureModes.join(', ') : ''}`, p.code)));
+  if (!pats.length) $('#decResult').innerHTML = '<div class="muted">에이전트에서 이상 패턴을 불러오지 못했습니다. 에이전트 연결을 확인하세요.</div>';
+}
+async function runDecision() {
   if (ent.busy) return; ent.busy = true;
-  const buttons = [...document.querySelectorAll('.scn button')]; buttons.forEach(b => b.disabled = true);
-  const activeButton = card?.querySelector('button'); if (activeButton) activeButton.textContent = '판단 중…';
-  document.querySelectorAll('.scn').forEach(c => c.classList.toggle('on', c === card));
-  $('#decResult').innerHTML = '<div class="muted">에이전트가 온톨로지를 따라 기업 시스템을 조회하고 있다…</div>';
-  try { ent.result = await postJ(API.agent + '/api/agent/decide', { scenario: sid, asset }); ent.persp = 'enterprise'; renderDecision(); }
+  const b = $('#decRun'); b.disabled = true; b.textContent = '판단 중…';
+  const facts = {};
+  if ($('#decMode').value) facts.plc_mode = $('#decMode').value;
+  if ($('#decState').value) facts.plc_state = $('#decState').value;
+  if ($('#decFan').value !== '') facts.fan100_hours = Number($('#decFan').value);
+  if ($('#decStandby').value) facts.standby_ready = $('#decStandby').value === 'true';
+  $('#decResult').innerHTML = '<div class="muted">에이전트가 온톨로지의 규칙을 사실에 대어 보고 있습니다…</div>';
+  try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); renderDecision(); }
   catch (e) { $('#decResult').innerHTML = `<div class="muted">판단 실패: ${esc(e.message)}</div>`; }
-  finally { ent.busy = false; buttons.forEach(b => { b.disabled = false; b.textContent = '에이전트 판단 실행'; }); }
-  if (state.tab === 'decision') $('#decResult').scrollIntoView({block:'start'});
+  finally { ent.busy = false; b.disabled = false; b.textContent = '판단 실행'; }
 }
-function won(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : ''; }
-function money(v) { return v == null ? '–' : (v > 0 ? '+' : '') + Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 1 }); }
 function renderDecision() {
   const d = ent.result; const box = $('#decResult');
   if (!d || !d.result) { box.innerHTML = `<div class="muted">${esc(d && (d.error || d.status) || '')}</div>`; return; }
-  const r = d.result, scn = d.scenario || {}, opts = r.options, kpis = d.kpis || [];
-  const name = id => (opts.find(o => o.id === id) || {}).name || id;
-  const rec = opts.find(o => o.id === r.recommended);
-  const depts = r.departments || [];
-  const persp = ent.persp;
-  const owners = []; kpis.forEach(k => { if (!owners.find(o => o.id === k.owner)) owners.push({ id: k.owner, name: k.ownerName, kpis: [] }); owners.find(o => o.id === k.owner).kpis.push(k); });
-  const used = new Set(opts.flatMap(o => Object.keys(o.impacts)));
-  const cols = owners.map(o => ({ ...o, kpis: o.kpis.filter(k => used.has(k.id)) })).filter(o => o.kpis.length);
-  const pw = r.winners[persp];
-  let html = `<div class="dec-head"><h2>${esc(scn.name || '')} <span class="muted">${esc(d.asset || '')} · ${esc(d.id)}</span></h2>
-    <span class="pill ${d.status === 'SUBMITTED' ? 'AWAITING_APPROVAL' : 'CLOSED'}">${esc(UI.status(d.status))}</span></div>`;
-  if (d.applicable === false) html += `<div class="note">이 설비는 적용 조건 <code>${esc(d.condition)}</code>을 만족하지 않는다. 경보로 자동 기동되면 제출되지 않지만, 학습용으로 평가 결과를 보여 준다.</div>`;
-  html += `<div class="versus">
-    <div><small>즉각 제어만 할 때 (L1~L6)</small><p>${esc(scn.immediate || '')}</p><span class="muted">센서값을 기준으로 해당 설비를 제어합니다.</span></div>
-    <div class="win"><small>온톨로지 기반 전사 판단 (L7~L9)</small><p>${rec ? '권고: <b>' + esc(rec.name) + '</b>' : '실행 가능한 대안 없음'}</p><span>${esc(r.explanation)}</span></div></div>`;
-  html += `<h2>관점 바꿔 보기</h2><div class="persp" role="tablist">` + [{ id: 'enterprise', name: '전사 (Goal: 전사 영업이익)' }, ...depts].map(p =>
-    `<button role="tab" class="${p.id === persp ? 'on' : ''}" data-p="${esc(p.id)}">${esc(p.name)}<small>${esc(name(r.winners[p.id]) || '–')}</small></button>`).join('') + '</div>';
-  const naive = persp !== 'enterprise' && r.naiveWinners[persp] && r.naiveWinners[persp] !== pw ? opts.find(o => o.id === r.naiveWinners[persp]) : null;
-  html += `<p class="muted">${persp === 'enterprise' ? '모든 부서 KPI의 금액 영향을 합산한 순위다.' : '이 부서가 소유한 KPI만 보고 고른 1위다.'} 1위: <b>${esc(name(pw))}</b>` +
-    (naive ? ` · 규정을 무시하면 <b>${esc(naive.name)}</b>를 골랐겠지만 <b>${esc(naive.violations[0].name)}</b> 위반으로 제외됐다.` : '') + '</p>';
-  html += '<div class="mtx-wrap" tabindex="0" role="region" aria-label="대안별 영향 비교 표, 가로와 세로 이동 가능"><table class="mtx"><thead><tr><th rowspan="2">대안 (스킬 · 승인 역할)</th>' +
-    cols.map(o => `<th colspan="${o.kpis.length}" class="${persp === 'enterprise' || persp === o.id ? '' : 'off'}">${esc(o.name)}</th>`).join('') +
-    '<th rowspan="2">전사 합계<br><small>만원</small></th><th rowspan="2">규정</th></tr><tr>' +
-    cols.flatMap(o => o.kpis.map(k => `<th class="k ${persp === 'enterprise' || persp === o.id ? '' : 'off'}">${esc(k.name)}</th>`)).join('') + '</tr></thead><tbody>';
-  for (const o of opts) {
-    const cls = [o.id === r.recommended ? 'rec' : '', o.id === pw ? 'pw' : '', o.feasible ? '' : 'out'].join(' ');
-    html += `<tr class="${cls}"><td><b>${esc(o.name)}</b>${o.id === r.recommended ? ' <span class="star">권고</span>' : ''}<div class="muted">${esc(o.description || '')}</div>` +
-      `<div class="skills">${(o.skills || []).map(s => `<span title="${esc(s.processName || '')}">${esc(s.name)} <i>${esc(s.systemName || '')}</i></span>`).join('') || '<span class="none">스킬 없음</span>'}</div>` +
-      `<div class="muted">승인: ${esc((o.approver || {}).name || '–')}</div></td>`;
-    for (const c of cols) for (const k of c.kpis) {
-      const v = o.impacts[k.id]; const note = (o.notes || {})[k.id] || '';
-      html += `<td class="num ${won(v)} ${persp === 'enterprise' || persp === c.id ? '' : 'off'}" title="${esc(note)}">${v == null ? '—' : money(v)}</td>`;
-    }
-    html += `<td class="num tot ${won(o.total)}">${money(o.total)}</td><td>` +
-      (o.violations || []).map(v => `<span class="hard" title="${esc(v.source)}">필수 규정 위반 · ${esc(v.name)}</span>`).join('') +
-      (o.softPenalties || []).map(v => `<span class="soft" title="${esc(v.source)}">평가 불이익 · ${esc(v.name)} ${money(v.penalty)}</span>`).join('') +
-      (o.errors || []).map(e => `<span class="hard">${esc(e)}</span>`).join('') + '</td></tr>';
-  }
-  html += '</tbody></table></div><p class="muted">금액은 만원입니다. 양수는 이익·절감, 음수는 손실·비용, —는 산정 항목 없음입니다. 셀에 마우스를 올리면 산식 설명을 확인할 수 있습니다.</p>';
-  if (r.drivers && r.drivers.length) html += '<h2>권고를 만든 차이 (권고안 − 차선)</h2><div class="drivers">' + r.drivers.map(x => `<span class="${won(x.delta)}">${esc(x.name)} <b>${money(x.delta)}</b></span>`).join('') + '</div>';
-  if (d.status === 'SUBMITTED') html += `<div class="approve-row"><button class="btn primary" id="goApprove">승인 화면으로 이동</button><span class="muted">권고안과 승인 역할을 확인한 뒤 실행을 결정합니다.</span></div>`;
-  html += '<h2>판단에 사용한 기업 시스템 정보</h2><div class="table-scroll"><table class="prov facts-table"><tr><th>정보 출처</th><th>시스템</th><th>판단에 사용한 값</th></tr>' +
-    (d.provenance || []).map(p => `<tr><td>${esc(p.name || p.info)}<details class="source-detail"><summary>조회 원문</summary><p>${esc(p.info)}<br>${esc(p.endpoint)}</p><pre>${esc(JSON.stringify(p.facts || {},null,2))}</pre></details></td><td><b>${esc(p.systemName || p.system)}</b></td>` +
-      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : UI.factList(p.facts)}</td></tr>`).join('') + '</table></div>';
+  const r = d.result, opts = r.options || [];
+  const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
+  let html = `<div class="dec-head"><h2>${esc((d.scenario || {}).name || '')} <span class="muted">${esc(d.asset || '')} · ${esc(d.id)}</span></h2>
+    <span class="pill ${d.status === 'EVALUATED' ? 'CLOSED' : 'ESCALATED'}">${esc(UI.status(d.status))}</span></div>`;
+  html += `<div class="summary">${esc(r.explanation || '')}</div>`;
+  html += '<h2>원인 판정 (T1 · 증거)</h2><div class="table-scroll"><table class="prov"><tr><th>원인</th><th>고장 유형</th><th>점수</th><th>증거</th></tr>' +
+    (d.causes || []).map((c, i) => `<tr class="${i === 0 ? 'rec' : ''}"><td><b>${esc(c.name)}</b>${i === 0 ? ' <span class="star">판정</span>' : ''}</td><td>${esc(c.failureMode || '')}</td><td class="num">${esc(c.score)}</td>` +
+      `<td>${(c.evidence || []).map(e => `<span class="${e.passed ? 'pos' : 'neg'}">${esc(e.name)} = ${esc(e.value ?? '–')}</span>`).join('<br>') || '–'}</td></tr>`).join('') + '</table></div>';
+  html += `<h2>조치 카드 ${opts.length}장 (스킬 = SOP)</h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs })).join('') + '</div>';
+  if (r.rankRule) html += `<p class="muted">순위 규칙 <b>${esc(r.rankRule.rule)}</b>: ${esc(r.rankRule.annotation || '')}</p>`;
+  const tr = r.trace || [];
+  html += '<h2>규칙 판정 (DMN)</h2><div class="table-scroll"><table class="prov"><tr><th>판단</th><th>규칙</th><th>대상 카드</th><th>조건 (임계값)</th><th>결과</th></tr>' +
+    tr.map(t => `<tr class="${t.fired ? 'rec' : ''}"><td>${esc(t.decision === 'dec:action-candidates' ? '후보 선택' : '규정 적합성')}</td><td class="mono">${esc(t.rule)}</td>` +
+      `<td>${esc(t.skill ? ((opts.find(o => o.id === t.skill) || {}).sopId || t.skill) : '—')}</td><td><code>${esc(t.when || '')}</code></td>` +
+      `<td>${t.fired ? '<b>발동</b>' : (t.unknown && t.unknown.length ? '<span class="muted">사실 없음: ' + esc(t.unknown.join(', ')) + '</span>' : '해당 없음')}</td></tr>`).join('') + '</table></div>';
+  html += '<h2>규칙이 검사한 사실과 출처 (InputData → 시스템 · 센서)</h2><div class="table-scroll"><table class="prov facts-table"><tr><th>입력 데이터</th><th>출처</th><th>값</th><th>가져온 방법</th></tr>' +
+    (d.provenance || []).map(p => `<tr><td>${esc(p.name)} <span class="mono muted">${esc(p.variable)}</span></td><td><b>${esc(p.sourceName || p.source)}</b></td>` +
+      `<td>${p.error ? '<span class="neg">' + esc(p.error) + '</span>' : esc(JSON.stringify(p.value))}</td><td class="muted">${esc(p.how || '')}</td></tr>`).join('') + '</table></div>';
   html += `<details class="technical"><summary>판단 과정 확인</summary>` + traceHtml({ id: d.id, status: d.status, started: d.created, steps: d.steps || [] }) + '</details>';
   box.innerHTML = html;
-  box.querySelectorAll('.persp button').forEach(b => b.addEventListener('click', () => { ent.persp = b.dataset.p; renderDecision(); }));
-  const go = $('#goApprove'); if (go) go.addEventListener('click', () => { ent.decSel = d.id; selectTab('process'); });
 }
+$('#decRun').addEventListener('click', runDecision);
 
 /* ================================================= L9 업무 프로세스 · 시스템 연계 */
 async function refreshProcess() {
@@ -308,7 +322,7 @@ function renderProcess() {
   list.dataset.sig = sig;
   const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
   const scroll = list.scrollTop;
-  list.innerHTML = ent.decisions.length ? '' : '<div class="muted">아직 제출된 판단이 없습니다. 전사 의사결정에서 판단을 실행하거나 결함 시뮬레이션으로 경보를 발생시켜 보세요.</div>';
+  list.innerHTML = ent.decisions.length ? '' : '<div class="muted">아직 제출된 판단이 없습니다. 결함 시뮬레이션으로 경보를 발생시키면 에이전트가 조치 카드를 제출합니다.</div>';
   if (ent.decisionsError) list.innerHTML = '<div class="neg" role="status">판단 목록을 갱신할 수 없습니다. 연결을 확인하세요. 아래는 마지막으로 받은 목록입니다.</div>';
   for (const d of ent.decisions) {
     const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
@@ -344,18 +358,18 @@ function renderDecisionApproval() {
     <div class="muted">${esc(d.id)} · ${esc(d.asset || '')} · 제출 ${esc(UI.dateTime(d.created))}${(d.origin || {}).incident ? ' · 인시던트 ' + esc(d.origin.incident) : ''}</div>
     <div class="summary">${esc(d.explanation || '')}</div>`;
   if (pending) html += `<div class="who"><label>승인자 <input id="decBy" value="${esc(ent.form.by)}"></label><label>역할 <select id="decRole">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === ent.form.role ? 'selected' : ''}>${esc(r.name)} (${esc(r.dept)}, 직급 ${r.level})</option>`).join('')}</select></label>
-      <span class="muted">대안에 지정된 담당 역할이나 더 높은 직급으로 승인할 수 있습니다.</span></div>`;
-  html += '<div class="table-scroll"><table class="opts"><thead><tr><th>대안</th><th>전사 합계<br><small>만원</small></th><th>승인 역할</th><th>실행될 스킬 → 시스템</th><th>승인</th></tr></thead><tbody>';
+      <span class="muted">카드(SOP)에 지정된 승인 역할이나 더 높은 직급으로 승인할 수 있습니다. 설비 인시던트의 PLC 명령은 이상 확인 · 조치 화면에서 결정합니다.</span></div>`;
+  html += '<div class="table-scroll"><table class="opts"><thead><tr><th>조치 카드 (스킬 = SOP)</th><th>점수</th><th>승인 역할</th><th>원자 조치 → 대상</th><th>승인</th></tr></thead><tbody>';
   for (const o of d.options || []) {
-    html += `<tr class="${o.id === d.recommended ? 'rec' : ''} ${o.feasible ? '' : 'out'} ${o.id === d.chosen ? 'chosen' : ''}"><td><b>${esc(o.name)}</b>${o.id === d.recommended ? ' <span class="star">권고</span>' : ''}${o.feasible ? '' : ' <span class="hard">' + esc((o.violations || [])[0] ? o.violations[0].name : '제외') + '</span>'}</td>` +
-      `<td data-label="전사 합계 · 만원" class="num ${won(o.total)}">${money(o.total)}</td><td data-label="승인 역할">${esc((o.approver || {}).name || '–')}</td>` +
-      `<td data-label="실행될 스킬 → 시스템">${(o.skills || []).map(s => `${esc(s.name)} → <b>${esc(s.systemName || s.system)}</b>`).join('<br>') || '–'}</td>` +
-      `<td>${pending && o.feasible ? `<button class="btn small" data-approve="${esc(o.id)}">이 안으로 승인</button>` : o.id === d.chosen ? '승인됨' : ''}</td></tr>`;
+    html += `<tr class="${o.id === d.recommended ? 'rec' : ''} ${o.feasible ? '' : 'out'} ${o.id === d.chosen ? 'chosen' : ''}"><td><b><span class="mono">${esc(o.sopId || '')}</span> ${esc(o.name)}</b>${o.id === d.recommended ? ' <span class="star">권고</span>' : ''}${o.feasible ? '' : ' <span class="hard">' + esc(((o.violations || [])[0] || {}).annotation || '제외') + '</span>'}</td>` +
+      `<td data-label="점수" class="num ${(o.score || 0) >= 0 ? 'pos' : 'neg'}">${esc(o.score ?? '–')}</td><td data-label="승인 역할">${esc((o.approver || {}).name || '–')}</td>` +
+      `<td data-label="원자 조치 → 대상">${(o.actions || []).map(a => `${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''} → <b>${esc(a.targetName || a.target || '')}</b>`).join('<br>') || '–'}</td>` +
+      `<td>${pending && o.feasible ? `<button class="btn small" data-approve="${esc(o.id)}">이 카드로 승인</button>` : o.id === d.chosen ? '승인됨' : ''}</td></tr>`;
   }
   html += '</tbody></table></div>';
   if (pending) html += `<div class="approve-row"><input type="text" id="decReason" placeholder="반려 사유" value="${esc(ent.form.reason)}"><button class="btn" id="decReject">반려</button><span id="decMsg" class="neg">${esc(ent.form.msg || '')}</span></div>`;
-  if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><div class="table-scroll" tabindex="0" role="region" aria-label="실행 결과 표"><table class="prov"><tr><th>스킬</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
-    d.executions.map(x => `<tr><td>${esc(x.skill)}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(UI.status(x.status))}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table></div>';
+  if ((d.executions || []).length) html += '<h2>실행 결과 (L9 → 기업 시스템)</h2><div class="table-scroll" tabindex="0" role="region" aria-label="실행 결과 표"><table class="prov"><tr><th>카드 · 조치</th><th>시스템</th><th>결과</th><th>참조</th><th>내용</th></tr>' +
+    d.executions.map(x => `<tr><td>${esc(x.skill)}${x.code ? ' · ' + esc(x.code) : ''}</td><td>${esc(x.system || '')}</td><td><span class="pill ${x.status === 'DONE' ? 'CLOSED' : x.status === 'VIA_HITL' ? 'AWAITING_APPROVAL' : 'ESCALATED'}">${esc(UI.status(x.status))}</span></td><td class="mono">${esc(x.ref || '')}</td><td>${esc(x.detail || '')}</td></tr>`).join('') + '</table></div>';
   html += '<h2>이력</h2><div class="audit">' + (d.history || []).map(h => UI.eventRecord({time:h.t,name:h.state,actor:h.by,detail:h.reason || '',raw:h})).join('') + '</div>';
   box.innerHTML = html;
   const by = $('#decBy'), role = $('#decRole'), reason = $('#decReason');
@@ -368,7 +382,7 @@ function renderDecisionApproval() {
     $('#decMsg').textContent = '승인 요청을 처리하고 있습니다.';
     try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: b.dataset.approve, by: $('#decBy').value || '승인자', role: $('#decRole').value }); await refreshProcess(); }
     catch (e) { ent.form.msg = e.message; if (ent.decSel === d.id) $('#decMsg').textContent = e.message; }
-    finally { controls.forEach(c => c.disabled = false); b.textContent = '이 안으로 승인'; }
+    finally { controls.forEach(c => c.disabled = false); b.textContent = '이 카드로 승인'; }
   }));
   const rj = $('#decReject'); if (rj) rj.addEventListener('click', async () => {
     if (!$('#decReason').value.trim()) { ent.form.msg = '반려 사유를 입력하세요.'; $('#decMsg').textContent = ent.form.msg; $('#decReason').focus(); return; }
@@ -394,24 +408,7 @@ function renderSystems() {
   $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({time:x.t,name:x.system.replace(/^sys:/,'').toUpperCase(),actor:x.by,detail:x.detail,raw:x})).join('') : '<div class="muted">아직 시스템 실행 이력이 없습니다.</div>';
 }
 
-/* ------------------------------------------------ 이상 확인 & 조치: 인시던트에 연결된 전사 판단 */
-async function fillIncidentDecisions() {
-  const inc = state.detail; if (!inc) return;
-  const host = document.getElementById('incDetail'); if (!host) return;
-  let box = document.getElementById('incDecisions');
-  if (!box) { box = el('div'); box.id = 'incDecisions'; const h = [...host.querySelectorAll('h2')].find(x => x.textContent.startsWith('가이드 카드')); host.insertBefore(box, h || null); }
-  try {
-    const all = await getJ(API.process + '/api/decisions');
-    const mine = all.filter(d => (d.origin || {}).incident === inc.id);
-    box.innerHTML = '<h2>전사 판단 (L7 → L8 → L9)</h2>' + (mine.length ? '<div class="linked">' + mine.map(d =>
-      `<a href="#" data-dec="${esc(d.id)}"><b>${esc((d.scenario || {}).name || '')}</b> <span class="pill ${esc(d.state)}">${esc(UI.status(d.state))}</span></a>`).join('') +
-      '</div><p class="muted">같은 경보를 온톨로지가 ERP·MES·CMMS·QMS 정보와 부서 KPI로 이어 판단한 결과다. 누르면 승인 화면으로 간다.</p>'
-      : '<div class="muted">이 인시던트와 연결된 전사 판단이 없습니다.</div>');
-    box.querySelectorAll('[data-dec]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.decSel = a.dataset.dec; selectTab('process'); }));
-  } catch (e) { box.innerHTML = ''; }
-}
-
 initOntology();
 setInterval(() => { if (state.tab === 'process') refreshProcess(); }, 2500);
 window.hydApp.selectTab = selectTab;          // the recorder and ?present=1 hooks must see the L7~L9 loaders too
-window.hydEnt = { ent, runDecision, loadGraph, refreshProcess };
+window.hydEnt = { ent, runDecision, loadGraph, refreshProcess, loadDecisionView };

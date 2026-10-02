@@ -41,29 +41,48 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
     return out
 
 
+def _kind(action: dict) -> str:
+    """Card action kind: PLC command, CMMS work order or ERP purchase request (the process service treats each differently)."""
+    if action.get("kind") == "command":
+        return "command"
+    return "work_order" if action.get("code") == "WO_CREATE" else "purchase"
+
+
+def _skills_for(cause_id: str, t2_by_cause: dict[str, list[dict]]) -> list[dict]:
+    """t2_skills rows (the failure mode's SOP skills): immediate mitigations first, then remedies, by SOP id."""
+    return sorted(t2_by_cause.get(cause_id) or [], key=lambda r: (r.get("relation") != "MITIGATED_BY", r.get("sopId") or ""))
+
+
 def _actions_for(cause_id: str, t2_by_cause: dict[str, list[dict]]) -> list[dict]:
-    rows = sorted(t2_by_cause.get(cause_id) or [], key=lambda r: (r.get("priority") or 99, r.get("code") or ""))
-    acts = []
-    for r in rows:
-        steps = sorted([s for s in (r.get("steps") or []) if s.get("id")], key=lambda s: s.get("order") or 0)
-        rng = [r["min"], r["max"]] if r.get("min") is not None and r.get("max") is not None else None
-        acts.append({"code": r["code"], "actionId": r["actionId"], "name": r.get("name"), "kind": r.get("kind"),
-                     "relation": r.get("relation"), "description": r.get("description"),
-                     "param": r.get("param"), "value": r.get("default"), "paramRange": rng,
-                     "actuatorId": r.get("actuatorId"), "resource": r.get("resource"),
-                     "constraints": r.get("constraints") or [],
-                     "sop": {"id": (r.get("procedure") or {}).get("id"), "name": (r.get("procedure") or {}).get("name"),
-                             "steps": [{"id": s["id"], "order": s.get("order"), "text": s.get("text"),
-                                        "manual": s.get("manual")} for s in steps]}})
+    """Flatten the SOP skills into one entry per action code (the first skill that uses the code supplies value and SOP).
+    The process service validates approved commands against these entries (code, parameter, range)."""
+    acts, seen = [], set()
+    for k in _skills_for(cause_id, t2_by_cause):
+        steps = sorted([s for s in (k.get("steps") or []) if s.get("id")], key=lambda s: s.get("order") or 0)
+        for a in sorted(k.get("actions") or [], key=lambda a: a.get("seq") or 0):
+            if not a.get("code") or a["code"] in seen:
+                continue
+            seen.add(a["code"])
+            rng = [a["min"], a["max"]] if a.get("min") is not None and a.get("max") is not None else None
+            acts.append({"code": a["code"], "actionId": a["id"], "name": a.get("name"), "kind": _kind(a),
+                         "relation": k.get("relation"), "description": k.get("description"),
+                         "param": a.get("param"), "value": a.get("value"), "paramRange": rng,
+                         "actuatorId": a.get("target"), "resource": a.get("targetName"), "constraints": [],
+                         "skillId": k["skillId"],
+                         "sop": {"id": k.get("sopId"), "name": k.get("name"),
+                                 "steps": [{"id": s["id"], "order": s.get("order"), "text": s.get("text"),
+                                            "manual": s.get("manual")} for s in steps]}})
     return acts
 
 
-def _citations(causes: list[dict], actions: list[dict]) -> list[str]:
+def _citations(causes: list[dict], actions: list[dict], skills: list[dict] | None = None) -> list[str]:
     ids: list[str] = []
     for c in causes:
         ids += [c["id"], c.get("failureModeId")] + [e["id"] for e in c["evidence"]]
+    for k in skills or []:
+        ids += [k.get("skillId"), k.get("sopId")]
     for a in actions:
-        ids += [a["actionId"], a["sop"].get("id"), a.get("actuatorId")] + [k.get("id") for k in a["constraints"]]
+        ids += [a["actionId"], a.get("skillId"), a["sop"].get("id"), a.get("actuatorId")] + [k.get("id") for k in a["constraints"]]
         for s in a["sop"]["steps"]:
             ids.append(s["id"])
             if s.get("manual"):
@@ -95,8 +114,12 @@ def build_card(incident_id: str, alert: dict, causes: list[dict], t2_by_cause: d
                freshness: dict, summary: str | None = None) -> dict:
     top = causes[0]["id"] if causes else None
     actions = _actions_for(top, t2_by_cause) if top else []
+    skills = _skills_for(top, t2_by_cause) if top else []
     card = {"incident": incident_id, "alert": alert, "freshness": freshness,
-            "causes": causes, "topCause": top, "recommended": actions,
-            "citations": _citations(causes, actions),
+            "causes": causes, "topCause": top, "failureMode": causes[0].get("failureModeId") if causes else None,
+            "recommended": actions,
+            "skills": [{"id": k["skillId"], "sopId": k.get("sopId"), "name": k.get("name"), "kind": k.get("kind"), "relation": k.get("relation"),
+                        "approver": k.get("approver"), "actions": [f"{a['code']}={a.get('value')}" for a in k.get("actions") or []]} for k in skills],
+            "citations": _citations(causes, actions, skills),
             "summary": summary or template_summary(alert, causes, actions)}
     return card

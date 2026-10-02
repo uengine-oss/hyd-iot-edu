@@ -1,0 +1,2069 @@
+{
+  "name": "hyd-iot-edu ontology",
+  "version": "2.3.0",
+  "namespace": "https://uengine-oss.github.io/hyd-iot-edu/ontology#",
+  "description": "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다.",
+  "conventions": {
+    "id": "모든 노드는 고유한 id를 가진다. 접두사가 클래스를 드러낸다 (kpi:, skill:, rule: …).",
+    "name": "모든 노드는 사람이 읽는 한국어 name을 가진다. aliases는 엔티티 인식(entity resolution)용 다른 이름 목록이다.",
+    "sign": "INFLUENCES · AFFECTS의 sign은 +1(같은 방향) 또는 -1(반대 방향)이다. 관계가 없으면 관계를 만들지 않는다 (0을 쓰지 않는다). 조건부면 sign을 두고 condition에 조건을 적는다.",
+    "money": "금액은 만원 단위다.",
+    "superLabel": "extends가 있는 클래스의 노드는 부모 레이블도 함께 단다. 예: (:Task:FlowNode).",
+    "minimalSet": "표준의 모든 요소를 담지 않는다. 세 결함 시나리오가 실제로 쓰는 요소만 둔다. scripts/ontology_v2.py validate가 인스턴스가 쓰지 않는 스키마 요소를 보고한다.",
+    "threshold": "임계값은 문장이 아니라 관계로 둔다: (규칙 또는 이상 패턴)-[:TESTS {operator, value, unit}]->(입력 데이터). 한 규칙의 TESTS는 모두 AND다 (DMN 결정표의 한 행). OR는 규칙을 두 행으로 나눈다.",
+    "label_ko": "모든 클래스는 label_ko(한글 이름)를 가진다. 표와 그림은 이 이름을 쓴다."
+  },
+  "layers": [
+    {
+      "id": "value",
+      "order": 1,
+      "name": "가치 계층 (BSC)",
+      "standard": "BSC (Balanced Scorecard) — 관점 · 전략목표 · 성과지표 · 인과관계",
+      "description": "회사가 무엇을 얻고 잃는지. BSC 관점 → 전략 목표(조직 목표) → 성과 지표. 성과 지표 사이의 상충 관계(INFLUENCES +/-)가 에이전트의 거시적 판단 근거다."
+    },
+    {
+      "id": "process",
+      "order": 2,
+      "name": "프로세스 계층",
+      "standard": "BPMN 2.0 최소 집합 — Process · Event · Task · Gateway · SequenceFlow · 수행자",
+      "description": "KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데이터와 판단으로 진행되는지."
+    },
+    {
+      "id": "resource",
+      "order": 3,
+      "name": "리소스 계층",
+      "standard": "조직 · 시스템 · 설비 (ISO 14224 설비 분류 취지) · 상태 변수",
+      "description": "실제로 일을 하는 주체와 대상. 사람(역할), 정보 시스템, 설비와 그 물리 상태 변수."
+    },
+    {
+      "id": "diagnosis",
+      "order": 3,
+      "name": "설비 진단 지식 (리소스 계층의 설비 코어)",
+      "standard": "ISO 13374 / MIMOSA OSA-CBM — SD(상태 감지) · HA(건강 평가) · AG(권고)",
+      "description": "이상 패턴 → 증상 → 고장 유형 → 원인 → 증거, 그리고 매뉴얼 절. 아키텍처 v4 L7 설계를 따른다. 조치 방법은 스킬 계층의 Skill(= SOP)이 고장 유형에 매칭되어 이어진다."
+    },
+    {
+      "id": "skill",
+      "order": 4,
+      "name": "스킬 · 규칙 계층",
+      "standard": "DMN 1.x 최소 집합 — Decision · InputData · DecisionTable(Rule) · KnowledgeSource",
+      "description": "조치 방법(스킬 = SOP)과, 어떤 규칙으로 후보를 고르고 걸러 내는지. 규칙마다 출처(KnowledgeSource)가 있다."
+    },
+    {
+      "id": "external",
+      "order": 5,
+      "name": "외부 변수 · 예측",
+      "standard": "변수 · 예측 프레임워크",
+      "description": "회사가 통제하지 못하지만 KPI와 설비 상태에 영향을 주는 변수(환율, 외기온도, 전력단가 …)와 조치별 예측값."
+    },
+    {
+      "id": "record",
+      "order": 6,
+      "name": "운영 기록",
+      "standard": "사례 기록 (DMN 판단의 실행 인스턴스)",
+      "description": "실행 중에 쌓이는 사건과 사람의 판단 사례. 다음 판단의 선례로 쓰인다."
+    }
+  ],
+  "classes": [
+    {
+      "name": "Perspective",
+      "label_ko": "BSC 관점",
+      "layer": "value",
+      "standard": "BSC Perspective",
+      "description": "BSC 관점. 재무 · 고객 · 내부 프로세스 · 학습과 성장.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "order",
+          "type": "integer",
+          "required": true,
+          "description": "전략맵에서 아래(학습)부터 위(재무)까지의 순서. 학습=1 … 재무=4"
+        }
+      ]
+    },
+    {
+      "name": "Objective",
+      "label_ko": "전략 목표 (조직 목표)",
+      "layer": "value",
+      "standard": "BSC Strategic Objective",
+      "description": "전략 목표. 한 관점에 속하고, 다른 목표를 받쳐 준다 (전략맵의 인과 화살표).",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Measure",
+      "label_ko": "성과 지표",
+      "layer": "value",
+      "standard": "BSC Measure (성과 지표)",
+      "description": "BSC 성과 지표. 전략 목표를 측정하고(목표값 · 경고 · 위험 임계값), 다른 성과 지표에 +/- 영향을 준다. 상충 관계의 노드다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "direction",
+          "type": "enum",
+          "values": [
+            "UP",
+            "DOWN"
+          ],
+          "required": true,
+          "description": "UP=클수록 좋다, DOWN=작을수록 좋다"
+        },
+        {
+          "name": "formula",
+          "type": "string",
+          "description": "다른 KPI로 계산되면 식. 예: kpi:revenue - kpi:cost"
+        },
+        {
+          "name": "target",
+          "type": "number"
+        },
+        {
+          "name": "thresholdWarn",
+          "type": "number"
+        },
+        {
+          "name": "thresholdCrit",
+          "type": "number"
+        },
+        {
+          "name": "frequency",
+          "type": "string",
+          "description": "측정 주기. 예: 일, 월, 실시간"
+        }
+      ]
+    },
+    {
+      "name": "Process",
+      "label_ko": "프로세스",
+      "layer": "process",
+      "standard": "BPMN Process",
+      "description": "업무 프로세스. KPI를 달성하기 위해 존재하고, 대상(ACTS_ON)인 설비에 대해 돈다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "isExecutable",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "FlowNode",
+      "label_ko": "흐름 노드 (추상)",
+      "layer": "process",
+      "standard": "BPMN FlowNode (추상)",
+      "abstract": true,
+      "description": "프로세스 안의 한 지점. Event · Task · Gateway의 부모.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Event",
+      "label_ko": "이벤트",
+      "layer": "process",
+      "standard": "BPMN Event",
+      "extends": "FlowNode",
+      "description": "프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.",
+      "properties": [
+        {
+          "name": "position",
+          "type": "enum",
+          "values": [
+            "start",
+            "boundary",
+            "end"
+          ],
+          "required": true
+        },
+        {
+          "name": "eventDefinition",
+          "type": "enum",
+          "values": [
+            "none",
+            "message",
+            "timer",
+            "escalation"
+          ],
+          "required": true
+        },
+        {
+          "name": "messageRef",
+          "type": "string",
+          "description": "message 이벤트가 받는 메시지(토픽) 이름"
+        },
+        {
+          "name": "correlationKey",
+          "type": "string",
+          "description": "메시지를 프로세스 인스턴스에 잇는 키. 예: asset (경보의 설비 = 프로세스의 대상)"
+        },
+        {
+          "name": "timer",
+          "type": "string",
+          "description": "timer 이벤트의 ISO 8601 기간. 예: PT10M"
+        }
+      ]
+    },
+    {
+      "name": "Task",
+      "label_ko": "작업",
+      "layer": "process",
+      "standard": "BPMN Task",
+      "extends": "FlowNode",
+      "description": "일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).",
+      "properties": [
+        {
+          "name": "taskType",
+          "type": "enum",
+          "values": [
+            "user",
+            "service",
+            "businessRule"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Gateway",
+      "label_ko": "게이트웨이",
+      "layer": "process",
+      "standard": "BPMN Gateway",
+      "extends": "FlowNode",
+      "description": "흐름이 갈라지거나 합쳐지는 지점.",
+      "properties": [
+        {
+          "name": "gatewayType",
+          "type": "enum",
+          "values": [
+            "exclusive"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "OrgUnit",
+      "label_ko": "조직 (부서)",
+      "layer": "resource",
+      "standard": "조직 단위",
+      "description": "부서. KPI를 소유한다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Role",
+      "label_ko": "역할",
+      "layer": "resource",
+      "standard": "BPMN Performer / 직무",
+      "description": "일을 수행하거나 승인하는 역할. level이 높을수록 승인 권한이 크다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "level",
+          "type": "integer",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "label_ko": "정보 시스템",
+      "layer": "resource",
+      "standard": "정보 시스템 (BPMN DataStore 취지)",
+      "description": "데이터를 갖고 있거나 스킬을 실행하는 시스템. ERP · MES · CMMS · SCADA · AI 에이전트 등.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "zone",
+          "type": "enum",
+          "values": [
+            "IT",
+            "OT"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Asset",
+      "label_ko": "설비",
+      "layer": "resource",
+      "standard": "ISO 14224 Equipment unit / MIMOSA Asset",
+      "description": "설비 한 대. 예: 유압 파워팩 HYD-01.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "description": "운영 데이터(경보 · 태그 · 인시던트)가 쓰는 설비 코드. 예: HYD-01"
+        }
+      ]
+    },
+    {
+      "name": "Component",
+      "label_ko": "구성 요소",
+      "layer": "resource",
+      "standard": "ISO 14224 Maintainable item",
+      "description": "설비 구성 요소. 쿨러, 팬, 주 펌프, 예비 펌프, 모터, 탱크.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "name": "Sensor",
+      "label_ko": "센서",
+      "layer": "resource",
+      "standard": "MIMOSA DA (Data Acquisition)",
+      "description": "계측 채널. 태그 이름이 실시간 데이터와 연결된다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "tag",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "unit",
+          "type": "string"
+        },
+        {
+          "name": "virtual",
+          "type": "boolean",
+          "description": "계산으로 만든 가상 센서면 true"
+        }
+      ]
+    },
+    {
+      "name": "Actuator",
+      "label_ko": "구동기",
+      "layer": "resource",
+      "standard": "구동기 (PLC 쓰기 대상)",
+      "description": "PLC가 값을 써서 움직이는 장치. 쓰기 자원 이름(resource)이 PLC 명령과 연결된다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "type": "string",
+          "required": true,
+          "description": "PLC 쓰기 자원. 예: FanSpeedSP"
+        },
+        {
+          "name": "min",
+          "type": "number"
+        },
+        {
+          "name": "max",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "StateVariable",
+      "label_ko": "상태 변수",
+      "layer": "resource",
+      "standard": "공정 상태 변수",
+      "description": "설비의 물리량. 조작 변수(팬 속도, 부하)와 결과 변수(유온, 진동, 압력)가 있다. 물리 영향이 KPI로 이어지는 다리다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "kind",
+          "type": "enum",
+          "values": [
+            "manipulated",
+            "controlled",
+            "disturbance"
+          ],
+          "required": true
+        },
+        {
+          "name": "normal",
+          "type": "number",
+          "description": "정상 운전점"
+        },
+        {
+          "name": "limit",
+          "type": "number",
+          "description": "인터록 한계"
+        }
+      ]
+    },
+    {
+      "name": "Part",
+      "label_ko": "부품",
+      "layer": "resource",
+      "standard": "예비품 / 자재",
+      "description": "교체 부품.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "partNo",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Supplier",
+      "label_ko": "공급사",
+      "layer": "resource",
+      "standard": "공급사",
+      "description": "부품 공급사. avl=false면 승인 공급사 목록에 없다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "avl",
+          "type": "boolean",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "AnomalyPattern",
+      "label_ko": "이상 패턴",
+      "layer": "diagnosis",
+      "standard": "ISO 13374 SD (State Detection)",
+      "description": "CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS로 입력 데이터에 건다. rule은 사람이 읽는 요약이다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "description": "경보 메시지의 pattern 값. 예: COOLER_DEGRADATION"
+        },
+        {
+          "name": "rule",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "holdSeconds",
+          "type": "number"
+        }
+      ],
+      "requiredRelationships": [
+        {
+          "type": [
+            "TESTS"
+          ],
+          "direction": "out",
+          "min": 1,
+          "description": "탐지 임계값(TESTS)이 하나 이상 있어야 한다"
+        }
+      ]
+    },
+    {
+      "name": "Symptom",
+      "label_ko": "증상",
+      "layer": "diagnosis",
+      "standard": "ISO 13374 HA (Health Assessment) — 관측 증상",
+      "description": "계측값의 이상 양상.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "name": "FailureMode",
+      "label_ko": "고장 유형",
+      "layer": "diagnosis",
+      "standard": "ISO 14224 Failure mode",
+      "description": "구성 요소 단위의 고장 유형. 조치 방법(스킬)은 고장 유형에 매칭된다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Cause",
+      "label_ko": "원인",
+      "layer": "diagnosis",
+      "standard": "ISO 14224 Failure cause",
+      "description": "고장의 근본 원인. prior는 사전 확률이다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        },
+        {
+          "name": "prior",
+          "type": "number",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Evidence",
+      "label_ko": "증거",
+      "layer": "diagnosis",
+      "standard": "MIMOSA 확증 규칙",
+      "description": "원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "rule",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "sql",
+          "type": "string",
+          "required": true,
+          "description": "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다"
+        },
+        {
+          "name": "expect",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "lt",
+            "gt",
+            "gte"
+          ],
+          "description": "SQL 값과 threshold의 비교 방향"
+        },
+        {
+          "name": "threshold",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "weight",
+          "type": "number",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Step",
+      "label_ko": "SOP 단계",
+      "layer": "diagnosis",
+      "standard": "SOP 단계",
+      "description": "조치 방법(스킬 = SOP)의 한 단계. 근거 매뉴얼 절을 가리킨다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "order",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "ManualSection",
+      "label_ko": "매뉴얼 절",
+      "layer": "diagnosis",
+      "standard": "지식 베이스 문서 조각",
+      "description": "기술 매뉴얼의 절. 조치 카드의 출처로 인용된다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "ref",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "excerpt",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Skill",
+      "label_ko": "조치 방법 (스킬 = SOP)",
+      "layer": "skill",
+      "standard": "조치 방법 = SOP (DMN 판단의 출력 · BPMN 서비스 작업이 수행)",
+      "description": "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 또는 근본 조치로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "sopId",
+          "type": "string",
+          "required": true,
+          "description": "SOP 번호. 예: SOP-COOL-02"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "kind",
+          "type": "enum",
+          "values": [
+            "control",
+            "work_order"
+          ],
+          "required": true,
+          "description": "control=PLC 즉시 제어, work_order=정비, business=기업 시스템 업무"
+        }
+      ],
+      "requiredRelationships": [
+        {
+          "type": [
+            "HAS_STEP"
+          ],
+          "direction": "out",
+          "min": 1,
+          "description": "SOP 단계가 하나 이상 있어야 한다"
+        },
+        {
+          "type": [
+            "MITIGATED_BY",
+            "REMEDIED_BY"
+          ],
+          "direction": "in",
+          "fromClass": "FailureMode",
+          "min": 1,
+          "description": "고장 유형 하나 이상에 매칭되어야 한다"
+        }
+      ]
+    },
+    {
+      "name": "Action",
+      "label_ko": "원자 조치",
+      "layer": "skill",
+      "standard": "원자 조치 (PLC 쓰기 또는 시스템 트랜잭션)",
+      "description": "더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "description": "게이트웨이 허용 목록 코드. 예: FAN_SET"
+        },
+        {
+          "name": "kind",
+          "type": "enum",
+          "values": [
+            "command",
+            "transaction"
+          ],
+          "required": true
+        },
+        {
+          "name": "param",
+          "type": "string"
+        },
+        {
+          "name": "min",
+          "type": "number"
+        },
+        {
+          "name": "max",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "Decision",
+      "label_ko": "판단 (DMN)",
+      "layer": "skill",
+      "standard": "DMN Decision",
+      "description": "판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "question",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "InputData",
+      "label_ko": "입력 데이터",
+      "layer": "skill",
+      "standard": "DMN InputData",
+      "description": "판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "typeRef",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "required": true,
+          "description": "규칙식에서 쓰는 변수 이름"
+        }
+      ]
+    },
+    {
+      "name": "DecisionTable",
+      "label_ko": "결정표",
+      "layer": "skill",
+      "standard": "DMN Decision Table",
+      "description": "규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "hitPolicy",
+          "type": "enum",
+          "values": [
+            "PRIORITY",
+            "COLLECT"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Rule",
+      "label_ko": "규칙",
+      "layer": "skill",
+      "standard": "DMN Decision Rule",
+      "description": "결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "order",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "when",
+          "type": "string",
+          "required": true,
+          "description": "사람이 읽는 조건. TESTS 관계와 같은 내용이어야 한다 (검사기가 확인)"
+        },
+        {
+          "name": "effect",
+          "type": "enum",
+          "values": [
+            "SELECT",
+            "EXCLUDE",
+            "PENALTY",
+            "WARN",
+            "RANK"
+          ],
+          "required": true
+        },
+        {
+          "name": "penalty",
+          "type": "number",
+          "description": "PENALTY일 때 감점액 (만원)"
+        },
+        {
+          "name": "annotation",
+          "type": "string"
+        }
+      ],
+      "requiredRelationships": [
+        {
+          "type": [
+            "TESTS"
+          ],
+          "direction": "out",
+          "min": 1,
+          "unlessProperty": {
+            "effect": [
+              "RANK"
+            ]
+          },
+          "description": "임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외)"
+        }
+      ]
+    },
+    {
+      "name": "KnowledgeSource",
+      "label_ko": "지식 출처",
+      "layer": "skill",
+      "standard": "DMN KnowledgeSource",
+      "description": "판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "kind",
+          "type": "enum",
+          "values": [
+            "manual",
+            "regulation",
+            "policy",
+            "strategy"
+          ],
+          "required": true
+        },
+        {
+          "name": "ref",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ExternalVariable",
+      "label_ko": "외부 변수",
+      "layer": "external",
+      "standard": "외생 변수",
+      "description": "회사가 통제하지 못하는 변수.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "aliases",
+          "type": "string[]"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "source",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Forecast",
+      "label_ko": "예측",
+      "layer": "external",
+      "standard": "예측",
+      "description": "어떤 변수의 예측값. 특정 스킬을 실행한다는 가정 아래의 조건부 예측일 수 있다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "horizon",
+          "type": "string",
+          "required": true,
+          "description": "예: steady-state, PT15M"
+        },
+        {
+          "name": "method",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Incident",
+      "label_ko": "사건",
+      "layer": "record",
+      "standard": "사건 기록",
+      "description": "경보 하나로 열린 사건.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "alertId",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "openedAt",
+          "type": "datetime",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "DecisionCase",
+      "label_ko": "판단 사례",
+      "layer": "record",
+      "standard": "DMN 판단의 실행 인스턴스",
+      "description": "사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "decidedAt",
+          "type": "datetime",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        },
+        {
+          "name": "followedRecommendation",
+          "type": "boolean",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "type": "IN_PERSPECTIVE",
+      "from": [
+        "Objective"
+      ],
+      "to": [
+        "Perspective"
+      ],
+      "cardinality": "N:1",
+      "description": "목표가 속한 BSC 관점"
+    },
+    {
+      "type": "SUPPORTS",
+      "from": [
+        "Objective"
+      ],
+      "to": [
+        "Objective"
+      ],
+      "cardinality": "N:M",
+      "description": "전략맵 인과: 아래 관점의 목표가 위 관점의 목표를 받쳐 준다"
+    },
+    {
+      "type": "MEASURES",
+      "from": [
+        "Measure"
+      ],
+      "to": [
+        "Objective"
+      ],
+      "cardinality": "N:1",
+      "description": "성과 지표가 측정하는 전략 목표"
+    },
+    {
+      "type": "OWNED_BY",
+      "from": [
+        "Measure"
+      ],
+      "to": [
+        "OrgUnit"
+      ],
+      "cardinality": "N:1",
+      "description": "성과 지표 책임 부서"
+    },
+    {
+      "type": "INFLUENCES",
+      "from": [
+        "Measure",
+        "StateVariable",
+        "ExternalVariable"
+      ],
+      "to": [
+        "Measure",
+        "StateVariable"
+      ],
+      "cardinality": "N:M",
+      "description": "상충 관계. 원천이 오르면 대상이 sign 방향으로 움직인다. 관계가 없으면 만들지 않는다.",
+      "properties": [
+        {
+          "name": "sign",
+          "type": "integer",
+          "required": true,
+          "values": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "strength",
+          "type": "enum",
+          "values": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        {
+          "name": "condition",
+          "type": "string",
+          "description": "조건부 영향일 때 조건"
+        },
+        {
+          "name": "note",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "type": "ACHIEVES",
+      "from": [
+        "Process"
+      ],
+      "to": [
+        "Objective"
+      ],
+      "cardinality": "N:M",
+      "description": "프로세스가 달성하려는 BSC 전략 목표 (조직 목표)"
+    },
+    {
+      "type": "HAS_NODE",
+      "from": [
+        "Process"
+      ],
+      "to": [
+        "FlowNode"
+      ],
+      "cardinality": "1:N",
+      "description": "프로세스에 속한 흐름 노드"
+    },
+    {
+      "type": "ACTS_ON",
+      "from": [
+        "Process"
+      ],
+      "to": [
+        "Asset"
+      ],
+      "cardinality": "N:M",
+      "description": "프로세스의 대상 설비. 시작 이벤트의 correlationKey가 이 대상을 고른다"
+    },
+    {
+      "type": "SEQUENCE_FLOW",
+      "from": [
+        "FlowNode"
+      ],
+      "to": [
+        "FlowNode"
+      ],
+      "cardinality": "N:M",
+      "description": "실행 순서",
+      "properties": [
+        {
+          "name": "condition",
+          "type": "string",
+          "description": "게이트웨이 분기 조건"
+        }
+      ]
+    },
+    {
+      "type": "ATTACHED_TO",
+      "from": [
+        "Event"
+      ],
+      "to": [
+        "Task"
+      ],
+      "cardinality": "N:1",
+      "description": "경계 이벤트가 붙은 작업 (예: 승인 시간 초과)"
+    },
+    {
+      "type": "PERFORMED_BY",
+      "from": [
+        "Task"
+      ],
+      "to": [
+        "Role",
+        "System"
+      ],
+      "cardinality": "N:1",
+      "description": "작업 수행자 (BPMN 레인)"
+    },
+    {
+      "type": "READS",
+      "from": [
+        "Task"
+      ],
+      "to": [
+        "InputData"
+      ],
+      "cardinality": "N:M",
+      "description": "작업이 읽는 데이터 (BPMN 데이터 연결)"
+    },
+    {
+      "type": "PRODUCES",
+      "from": [
+        "Task"
+      ],
+      "to": [
+        "InputData"
+      ],
+      "cardinality": "N:M",
+      "description": "작업이 만드는 데이터 (BPMN 데이터 출력). 다음 작업 · 판단의 입력이 된다"
+    },
+    {
+      "type": "INVOKES",
+      "from": [
+        "Task"
+      ],
+      "to": [
+        "Decision"
+      ],
+      "cardinality": "N:1",
+      "description": "판단 규칙 작업이 부르는 판단 (BPMN businessRuleTask → DMN)"
+    },
+    {
+      "type": "EXECUTES",
+      "from": [
+        "Task"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "작업이 실행하는 스킬"
+    },
+    {
+      "type": "CORRELATES",
+      "from": [
+        "Event"
+      ],
+      "to": [
+        "AnomalyPattern"
+      ],
+      "cardinality": "N:M",
+      "description": "메시지 시작 이벤트가 받는 경보 패턴"
+    },
+    {
+      "type": "MEMBER_OF",
+      "from": [
+        "Role"
+      ],
+      "to": [
+        "OrgUnit"
+      ],
+      "cardinality": "N:1",
+      "description": "역할의 소속 부서"
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "from": [
+        "Asset"
+      ],
+      "to": [
+        "Component"
+      ],
+      "cardinality": "1:N",
+      "description": "설비의 구성 요소"
+    },
+    {
+      "type": "MONITORED_BY",
+      "from": [
+        "Component"
+      ],
+      "to": [
+        "Sensor"
+      ],
+      "cardinality": "N:M",
+      "description": "구성 요소를 계측하는 센서"
+    },
+    {
+      "type": "ACTUATED_BY",
+      "from": [
+        "Component"
+      ],
+      "to": [
+        "Actuator"
+      ],
+      "cardinality": "N:M",
+      "description": "구성 요소를 움직이는 구동기"
+    },
+    {
+      "type": "OBSERVES",
+      "from": [
+        "Sensor"
+      ],
+      "to": [
+        "StateVariable"
+      ],
+      "cardinality": "N:1",
+      "description": "센서가 읽는 상태 변수"
+    },
+    {
+      "type": "MANIPULATES",
+      "from": [
+        "Actuator"
+      ],
+      "to": [
+        "StateVariable"
+      ],
+      "cardinality": "1:1",
+      "description": "구동기가 바꾸는 조작 변수"
+    },
+    {
+      "type": "USES_PART",
+      "from": [
+        "Component"
+      ],
+      "to": [
+        "Part"
+      ],
+      "cardinality": "N:M",
+      "description": "구성 요소에 들어가는 교체 부품"
+    },
+    {
+      "type": "SUPPLIED_BY",
+      "from": [
+        "Part"
+      ],
+      "to": [
+        "Supplier"
+      ],
+      "cardinality": "N:M",
+      "description": "부품 공급 조건",
+      "properties": [
+        {
+          "name": "price",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "failRate",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "leadDays",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "type": "HAS_SKILL",
+      "from": [
+        "Role",
+        "System"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "리소스가 수행할 수 있는 스킬"
+    },
+    {
+      "type": "SOURCED_FROM",
+      "from": [
+        "InputData"
+      ],
+      "to": [
+        "System",
+        "Sensor"
+      ],
+      "cardinality": "N:1",
+      "description": "입력 데이터의 출처"
+    },
+    {
+      "type": "REPRESENTS",
+      "from": [
+        "InputData"
+      ],
+      "to": [
+        "StateVariable",
+        "Measure"
+      ],
+      "cardinality": "N:1",
+      "description": "입력 데이터가 나타내는 상태 변수나 성과 지표. 임계값을 온톨로지의 한계 · 목표와 잇는다"
+    },
+    {
+      "type": "DETECTS",
+      "from": [
+        "AnomalyPattern"
+      ],
+      "to": [
+        "Symptom"
+      ],
+      "cardinality": "N:M",
+      "description": "패턴이 감지하는 증상"
+    },
+    {
+      "type": "OBSERVED_BY",
+      "from": [
+        "Symptom"
+      ],
+      "to": [
+        "Sensor"
+      ],
+      "cardinality": "N:M",
+      "description": "증상이 보이는 센서"
+    },
+    {
+      "type": "INDICATES",
+      "from": [
+        "Symptom"
+      ],
+      "to": [
+        "FailureMode"
+      ],
+      "cardinality": "N:M",
+      "description": "증상이 가리키는 고장 모드"
+    },
+    {
+      "type": "OCCURS_IN",
+      "from": [
+        "FailureMode"
+      ],
+      "to": [
+        "Component"
+      ],
+      "cardinality": "N:1",
+      "description": "고장이 일어나는 구성 요소"
+    },
+    {
+      "type": "LEADS_TO",
+      "from": [
+        "FailureMode"
+      ],
+      "to": [
+        "FailureMode"
+      ],
+      "cardinality": "N:M",
+      "description": "고장의 전파"
+    },
+    {
+      "type": "CAUSES",
+      "from": [
+        "Cause"
+      ],
+      "to": [
+        "FailureMode"
+      ],
+      "cardinality": "N:M",
+      "description": "원인이 일으키는 고장 모드"
+    },
+    {
+      "type": "INVOLVES_PART",
+      "from": [
+        "Cause"
+      ],
+      "to": [
+        "Part"
+      ],
+      "cardinality": "N:M",
+      "description": "원인과 관련된 부품"
+    },
+    {
+      "type": "DISTURBS",
+      "from": [
+        "Cause"
+      ],
+      "to": [
+        "StateVariable"
+      ],
+      "cardinality": "N:M",
+      "description": "원인이 움직이는 외란 상태 변수. 여기서 물리 영향(INFLUENCES) 경로가 시작된다",
+      "properties": [
+        {
+          "name": "sign",
+          "type": "integer",
+          "required": true,
+          "values": [
+            1,
+            -1
+          ]
+        }
+      ]
+    },
+    {
+      "type": "EVIDENCED_BY",
+      "from": [
+        "Cause"
+      ],
+      "to": [
+        "Evidence"
+      ],
+      "cardinality": "1:N",
+      "description": "원인을 확정하는 증거"
+    },
+    {
+      "type": "MITIGATED_BY",
+      "from": [
+        "FailureMode"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)"
+    },
+    {
+      "type": "REMEDIED_BY",
+      "from": [
+        "FailureMode"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다"
+    },
+    {
+      "type": "ADDRESSES",
+      "from": [
+        "Skill"
+      ],
+      "to": [
+        "Cause"
+      ],
+      "cardinality": "N:M",
+      "description": "조치 방법이 특정 원인에만 맞을 때 그 원인. 없으면 고장 유형의 모든 원인에 쓸 수 있다"
+    },
+    {
+      "type": "HAS_STEP",
+      "from": [
+        "Skill"
+      ],
+      "to": [
+        "Step"
+      ],
+      "cardinality": "1:N",
+      "description": "스킬(SOP)의 단계"
+    },
+    {
+      "type": "REFERS_TO",
+      "from": [
+        "Step"
+      ],
+      "to": [
+        "ManualSection"
+      ],
+      "cardinality": "N:1",
+      "description": "단계의 근거 매뉴얼 절"
+    },
+    {
+      "type": "PART_OF",
+      "from": [
+        "ManualSection"
+      ],
+      "to": [
+        "KnowledgeSource"
+      ],
+      "cardinality": "N:1",
+      "description": "매뉴얼 절이 속한 문서"
+    },
+    {
+      "type": "CONSISTS_OF",
+      "from": [
+        "Skill"
+      ],
+      "to": [
+        "Action"
+      ],
+      "cardinality": "N:M",
+      "description": "스킬을 이루는 원자 조치와 그 값",
+      "properties": [
+        {
+          "name": "value",
+          "type": "any",
+          "description": "이 스킬에서 쓰는 파라미터 값"
+        },
+        {
+          "name": "seq",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "type": "TARGETS",
+      "from": [
+        "Action"
+      ],
+      "to": [
+        "Actuator",
+        "System"
+      ],
+      "cardinality": "N:1",
+      "description": "조치가 쓰는 대상 (구동기 또는 시스템)"
+    },
+    {
+      "type": "APPROVED_BY",
+      "from": [
+        "Skill"
+      ],
+      "to": [
+        "Role"
+      ],
+      "cardinality": "N:1",
+      "description": "스킬 실행을 승인할 최소 역할"
+    },
+    {
+      "type": "AFFECTS",
+      "from": [
+        "Skill"
+      ],
+      "to": [
+        "StateVariable",
+        "Measure"
+      ],
+      "cardinality": "N:M",
+      "description": "스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다",
+      "properties": [
+        {
+          "name": "sign",
+          "type": "integer",
+          "required": true,
+          "values": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "delta",
+          "type": "number",
+          "description": "알려진 변화량"
+        },
+        {
+          "name": "unit",
+          "type": "string"
+        },
+        {
+          "name": "note",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "type": "REQUIRES_INPUT",
+      "from": [
+        "Decision"
+      ],
+      "to": [
+        "InputData"
+      ],
+      "cardinality": "N:M",
+      "description": "판단에 필요한 입력 (DMN information requirement)"
+    },
+    {
+      "type": "REQUIRES_DECISION",
+      "from": [
+        "Decision"
+      ],
+      "to": [
+        "Decision"
+      ],
+      "cardinality": "N:M",
+      "description": "먼저 내려야 하는 하위 판단 (DMN information requirement)"
+    },
+    {
+      "type": "IMPLEMENTED_BY",
+      "from": [
+        "Decision"
+      ],
+      "to": [
+        "DecisionTable"
+      ],
+      "cardinality": "1:1",
+      "description": "판단을 구현하는 결정표 (DMN decision logic)"
+    },
+    {
+      "type": "GOVERNED_BY",
+      "from": [
+        "Decision"
+      ],
+      "to": [
+        "KnowledgeSource"
+      ],
+      "cardinality": "N:M",
+      "description": "판단을 통제하는 출처 (DMN authority requirement)"
+    },
+    {
+      "type": "HAS_RULE",
+      "from": [
+        "DecisionTable"
+      ],
+      "to": [
+        "Rule"
+      ],
+      "cardinality": "1:N",
+      "description": "결정표의 규칙"
+    },
+    {
+      "type": "TESTS",
+      "from": [
+        "Rule",
+        "AnomalyPattern"
+      ],
+      "to": [
+        "InputData"
+      ],
+      "cardinality": "N:M",
+      "description": "임계값 검사. 입력 데이터 값을 operator로 value와 비교한다. 한 규칙의 검사는 모두 AND",
+      "properties": [
+        {
+          "name": "operator",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "<",
+            "<=",
+            ">",
+            ">=",
+            "==",
+            "!="
+          ]
+        },
+        {
+          "name": "value",
+          "type": "any",
+          "required": true,
+          "description": "임계값 (숫자 · 문자 · 참거짓)"
+        },
+        {
+          "name": "unit",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "type": "OUTPUTS",
+      "from": [
+        "Rule"
+      ],
+      "to": [
+        "Skill",
+        "Cause"
+      ],
+      "cardinality": "N:M",
+      "description": "SELECT 규칙이 내는 결과. 원인 판정 규칙은 원인을, 후보 선택 규칙은 스킬을 낸다"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from": [
+        "Rule"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "EXCLUDE · PENALTY · WARN 규칙이 적용되는 스킬"
+    },
+    {
+      "type": "PENALIZES",
+      "from": [
+        "Rule"
+      ],
+      "to": [
+        "Measure"
+      ],
+      "cardinality": "N:1",
+      "description": "PENALTY 규칙이 깎는 성과 지표"
+    },
+    {
+      "type": "DERIVED_FROM",
+      "from": [
+        "Rule",
+        "AnomalyPattern"
+      ],
+      "to": [
+        "KnowledgeSource",
+        "ManualSection"
+      ],
+      "cardinality": "N:M",
+      "description": "규칙 · 탐지 임계값의 출처. 조치 카드와 경보 설명에 인용된다"
+    },
+    {
+      "type": "FORECASTS",
+      "from": [
+        "Forecast"
+      ],
+      "to": [
+        "StateVariable",
+        "Measure",
+        "ExternalVariable"
+      ],
+      "cardinality": "N:1",
+      "description": "예측 대상 변수"
+    },
+    {
+      "type": "ASSUMES",
+      "from": [
+        "Forecast"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:1",
+      "description": "이 스킬을 실행한다고 가정한 예측"
+    },
+    {
+      "type": "GIVEN",
+      "from": [
+        "Forecast"
+      ],
+      "to": [
+        "Cause"
+      ],
+      "cardinality": "N:1",
+      "description": "이 원인이 있는 상태를 가정한 예측"
+    },
+    {
+      "type": "ON_ASSET",
+      "from": [
+        "Incident"
+      ],
+      "to": [
+        "Asset"
+      ],
+      "cardinality": "N:1",
+      "description": "사건이 난 설비"
+    },
+    {
+      "type": "RAISED_BY",
+      "from": [
+        "Incident"
+      ],
+      "to": [
+        "AnomalyPattern"
+      ],
+      "cardinality": "N:1",
+      "description": "사건을 연 경보 패턴"
+    },
+    {
+      "type": "DIAGNOSED_AS",
+      "from": [
+        "Incident"
+      ],
+      "to": [
+        "Cause"
+      ],
+      "cardinality": "N:1",
+      "description": "판정된 원인"
+    },
+    {
+      "type": "INSTANCE_OF",
+      "from": [
+        "DecisionCase"
+      ],
+      "to": [
+        "Decision"
+      ],
+      "cardinality": "N:1",
+      "description": "이 사례가 실행한 판단 정의"
+    },
+    {
+      "type": "CHOSE",
+      "from": [
+        "DecisionCase"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:1",
+      "description": "사람이 고른 스킬"
+    },
+    {
+      "type": "DECIDED_BY",
+      "from": [
+        "DecisionCase"
+      ],
+      "to": [
+        "Role"
+      ],
+      "cardinality": "N:1",
+      "description": "판단한 역할"
+    },
+    {
+      "type": "FOR_INCIDENT",
+      "from": [
+        "DecisionCase"
+      ],
+      "to": [
+        "Incident"
+      ],
+      "cardinality": "N:1",
+      "description": "판단 대상 사건"
+    }
+  ]
+}

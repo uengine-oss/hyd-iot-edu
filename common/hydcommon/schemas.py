@@ -1,12 +1,16 @@
 """Payload contracts (v3 section 7.3) and validation helpers."""
 from typing import Any
 
-ACTION_WHITELIST = {"FAN_BOOST", "REDUCE_LOAD", "RESET"}
+# Ontology v2 atomic commands (Action.code) the PLC supports. PUMP_SELECT / STOP / PRESSURE_SET exist in the ontology but
+# not in this PLC, so the gateway rejects them (WHITELIST). FAN_BOOST / REDUCE_LOAD are the v1 names, kept for old cards.
+ACTION_WHITELIST = {"FAN_SET", "LOAD_SET", "RESET", "FAN_BOOST", "REDUCE_LOAD"}
 # action code -> (PLC resource, parameter key in action.cmd)
 ACTION_TO_WRITES = {
+    "FAN_SET": ("FanSpeedSP", "fan_pct"),
+    "LOAD_SET": ("LoadSP", "load_pct"),
+    "RESET": ("Reset", None),
     "FAN_BOOST": ("FanSpeedSP", "fan_pct"),
     "REDUCE_LOAD": ("LoadSP", "load_pct"),
-    "RESET": ("Reset", None),
 }
 MODES = ("LOCAL", "REMOTE_MANUAL", "REMOTE_AUTO")
 

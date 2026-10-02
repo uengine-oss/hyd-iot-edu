@@ -57,14 +57,25 @@ def test_empty_or_unstructured_text_is_reported():
     assert r["sections"] == [] and r["procedures"] == [] and r["warnings"]
 
 
-def test_skill_validation():
-    ok = kgadmin.validate_skill({"name": "벨트 교체 작업지시", "description": "벨트를 교체한다", "detail": "입력: …"})
-    assert ok["name"] == "벨트 교체 작업지시"
+def test_skill_validation_for_edit():
+    ok = kgadmin.validate_skill({"name": "팬 최대", "description": "팬만 100 %로 올린다", "approver": "role:operator"})
+    assert ok == {"name": "팬 최대", "description": "팬만 100 %로 올린다", "approver": "role:operator"}
     with pytest.raises(ValueError):
         kgadmin.validate_skill({"name": "  ", "description": "x"})
     with pytest.raises(ValueError):
         kgadmin.validate_skill({"name": "x" * 200})
-    assert kgadmin.skill_id("벨트 교체 작업지시") .startswith("skill:")
+
+
+def test_new_skill_must_be_an_sop_matched_to_a_failure_mode():
+    """조치 방법 = Skill = SOP: a new skill needs an SOP id, at least one step and a failure mode it is matched to."""
+    body = {"name": "벨트 교체", "description": "벨트를 교체한다", "sopId": "SOP-FAN-05", "kind": "work_order",
+            "failureMode": "fm:bearing-degradation", "relation": "REMEDIED_BY", "steps": "LOCAL로 전환한다.\n\n벨트를 교체한다. ", "approver": "role:maint-mgr"}
+    ok = kgadmin.validate_skill(body, create=True)
+    assert ok["steps"] == ["LOCAL로 전환한다.", "벨트를 교체한다."] and ok["sopId"] == "SOP-FAN-05" and ok["relation"] == "REMEDIED_BY"
+    for bad in ({"sopId": "fan 5"}, {"steps": "  "}, {"failureMode": ""}, {"kind": "business"}, {"relation": "CAUSES"}):
+        with pytest.raises(ValueError):
+            kgadmin.validate_skill(body | bad, create=True)
+    assert kgadmin.skill_id("SOP-FAN-05") == "skill:sop-fan-05"
 
 
 def test_ties_prefer_work_order_actions_for_maintenance_procedures():
