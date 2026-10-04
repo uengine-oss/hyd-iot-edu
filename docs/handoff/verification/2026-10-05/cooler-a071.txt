@@ -1,0 +1,59 @@
+
+== 0. 모드 · 서비스
+  physical clock factor vs baseline: 1; scale=20.0
+  [PASS] process in instance mode  {"mode": "instance", "agent_bridge": "legacy", "definition": "anomaly_response", "repo": "PgRepo", "time_scale": 20.0, "engine": "process-engine:944c2d688251:1"}
+  [PASS] agent bridge setting matches the run  agent_bridge=legacy expect_worker=False
+  [PASS] process healthy with Supabase  {"ok": true, "mode": "instance", "supabase": true, "kafka": true}
+  [PASS] enterprise-sim healthy  backend=supabase
+  [PASS] users table seeded (people + agents)  7 users
+  [PASS] default definition exposes the selection contract  version=2.1 pinned=True
+
+== 1. 초기화 → 쿨러 열화 주입 (HYD-01) → 경보가 인스턴스를 연다
+  [PASS] fault injected  {"asset": "HYD-01", "kind": "cooler_degradation", "targets": {"cooler_health": 0.43}, "ramp_sim_s": 300.0, "target_health": 0.43}
+  [PASS] detector RAISED  after 34s
+  [PASS] one instance opened for the alert  anomaly_response.5a980f8f-be6a-4ed5-83e6-5c6e8e3b7637 after 1s
+  [PASS] incident opened by the instance (AWAITING_APPROVAL)  INC-1004-01-a4f9 AWAITING_APPROVAL
+  [PASS] role_bindings on the instance (the definition's roles)  ['sys:agent', 'role:operator', 'role:prod-mgr', 'sys:scada', 'sys:process', 'sys:cmms']
+  [PASS] every activity planned (TODO) and task:diagnose live for cliagents  {"task:escalate": "TODO", "task:candidates": "TODO", "task:compliance": "TODO", "task:rank": "TODO", "task:select": "TODO", "task:command": "TODO", "task:work-order": "TODO", "task:reobserve": "TODO", "task:diagnose": "IN_PROGRESS"}
+  [PASS] agent task carries agent_mode=COMPLETE · agent_orch=cliagents · query with [InputData]  {"agent_mode": "COMPLETE", "agent_orch": "cliagents", "tool": "formHandler:diagnose", "user_id": "sys:agent"}
+
+== 2. 에이전트 작업 4개 (IN_PROGRESS → SUBMITTED → DONE) → 사람의 할일 task:select
+  [PASS] four agent tasks DONE and task:select IN_PROGRESS  after 9s {"task:command": "TODO", "task:work-order": "TODO", "task:reobserve": "TODO", "task:escalate": "TODO", "task:diagnose": "DONE", "task:candidates": "DONE", "task:compliance": "DONE", "task:rank": "DONE", "task:select": "IN_PROGRESS", "ev:select-timeout": "IN_PROGRESS"}
+  [PASS] agent rows went through save_task_result (draft_status COMPLETED, consumer released)  {'task:diagnose': 'COMPLETED', 'task:candidates': 'COMPLETED', 'task:compliance': 'COMPLETED', 'task:rank': 'COMPLETED'}
+  [PASS] agent tasks were done by the legacy bridge  4 task_started
+  [PASS] boundary timer is a work item with a due_date (sys:process)  {"status": "IN_PROGRESS", "due_date": "2026-10-04T21:46:08.039Z", "user_id": "sys:process"}
+  [PASS] instance variables carry cause · decision_id (product list shape)  {"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "decision_id": "DEC-EVAL-059e15fda8f5463fa8cb616a993c8523"}
+  [PASS] events recorded for the agent tasks  9 events: ['task_completed', 'task_started', 'task_working']
+  [PASS] operator sees the selection task in the todolist (IN_PROGRESS)  3
+  [PASS] selection uses the instance's definition and pinned form  version=2.1 form_source=definition-version
+  [PASS] decision holds ranked SOP cards, SOP-COOL-02 recommended  ['SOP-COOL-02', 'SOP-COOL-03', 'SOP-COOL-01']
+
+== 3. 사람의 선택: 역할 검사 → 폼 제출(SUBMITTED) → 엔진 → gw:control → PLC 명령 (task:command)
+  [PASS] operator refused (403) — card needs 생산관리자  {"detail":"승인 권한 없음: '팬 최대 + 부하 80 %'은(는) 생산관리자 이상이 승인해야 한다"}
+  [PASS] selection task still IN_PROGRESS after refusal
+  [PASS] current source reviewed before explicit approval  REV-efe6278b-bfb0-4b21-8e29-0d17e2ea1912
+  [PASS] review did not issue a PLC command
+  [PASS] production manager's selection accepted  {"ended": "None", "pending": "None"}
+  [PASS] approval intent durably DELIVERED once for this selection  [{"todo_id": "37d7cae9-5f19-4bde-bcc8-83285c85b04e", "decision_id": "DEC-EVAL-059e15fda8f5463fa8cb616a993c8523", "status": "DELIVERED", "attempts": 1}]
+  [PASS] approval response distinguishes accepted intent and delivery result  {"accepted": true, "approval_status": "DELIVERED"}
+  [PASS] task:select DONE with gateway_decisions, timer CANCELLED, task:command dispatched (SUBMITTED/DONE)  {"task:work-order": "TODO", "task:reobserve": "TODO", "task:escalate": "TODO", "task:diagnose": "DONE", "task:candidates": "DONE", "task:compliance": "DONE", "task:rank": "DONE", "task:select": "DONE", "ev:select-timeout": "CANCELLED", "task:command": "SUBMITTED"}
+  [PASS] incident issued action.cmd (AWAITING_ACK or beyond)  RE_OBSERVING cmd=CMD-1004-0001-b4a2 after 0s
+
+== 4. ACK → 재관측 → 작업지시(CMMS) → 종결
+  [PASS] PLC ACK → task:command DONE → task:reobserve waiting (SUBMITTED, held by the service)  after 2s
+  [PASS] instance COMPLETED via ev:closed  after 64s end_event=ev:closed
+  [PASS] eight tasks DONE, task:escalate CANCELLED (the branch not taken)  {"task:escalate": "CANCELLED", "task:diagnose": "DONE", "task:candidates": "DONE", "task:compliance": "DONE", "task:rank": "DONE", "task:select": "DONE", "ev:select-timeout": "CANCELLED", "task:command": "DONE", "task:reobserve": "DONE", "task:work-order": "DONE"}
+  [PASS] CMMS work order created by task:work-order  {"ok": true, "ref": "WO-1004-9047", "code": "WO_CREATE", "skill": "skill:fan-max-derate", "detail": "HYD-01 SOP-COOL-02 팬 최대 + 부하 80 % → 작업지시 선택한 조치 이후 정비 점검: 팬
+  [PASS] enterprise transactions include the work order  1
+  [PASS] Incident exposes the same actual CMMS reference  {"name": "Incident exposes the same actual CMMS reference", "passed": true, "actual": "WO-1004-9047", "expected": "WO-1004-9047"}
+  [PASS] Incident closes only after the actual CMMS receipt  {"name": "Incident closes only after the actual CMMS receipt", "passed": true, "incident_closed": "2026-10-04T21:46:49.371Z", "cmms_created": "2026-10-04 21:46:48.973601+00:00"}
+  [PASS] recovered=true recorded · participants listed  ['sys:agent', 'role:operator', 'role:prod-mgr', 'sys:scada', 'sys:process', 'sys:cmms']
+
+== 5. 온톨로지 Execution 레이어
+  [PASS] ProcessInstance -INSTANCE_OF-> proc:anomaly-response with WorkItem -EXECUTES-> Task, COMPLETED  "proc:anomaly-response", 10, 9, "COMPLETED"
+  [PASS] instance linked to the incident, its cause and the bound roles  "INC-1004-01-a4f9", "cause:cooler-fin-fouling", 6
+
+== 6. 레거시 경로 보존
+  [PASS] incident list still served (legacy API intact)  143
+
+ALL PASS — 42/42 checks

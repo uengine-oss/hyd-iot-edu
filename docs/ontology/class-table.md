@@ -38,3 +38,8 @@
 | 외부 변수 · 예측 | Forecast | 예측 | 예측 |
 | 운영 기록 | Incident | 사건 | 사건 기록 |
 | 운영 기록 | DecisionCase | 판단 사례 | DMN 판단의 실행 인스턴스 |
+| 운영 기록 | IngestionControl | 적재 트랜잭션 제어 | HYD ingestion provenance (implementation record) |
+| 운영 기록 | IngestionBatch | 적재 배치 | HYD ingestion provenance (implementation record) |
+| 운영 기록 | ProcessInstance | 프로세스 실행 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
+| 운영 기록 | WorkItem | 실행 작업 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
+| 운영 기록 | ProcessVersion | 프로세스 정의 버전 | ProcessGPT version provenance; HYD immutable element snapshot |

@@ -1,0 +1,1365 @@
+{
+  "phase": "A066",
+  "scope": "47 repository snapshots and bounded adoption review; not all-source or runtime acceptance",
+  "prior_records": [
+    "REPOSITORY_REVIEW.md",
+    "AUDIT.md",
+    "HANDOFF.md"
+  ],
+  "counts": {
+    "snapshots": 47,
+    "new_acquisitions": 30,
+    "preserved_existing": 17,
+    "new_bounded_reviews": 30,
+    "parent_pins": 23,
+    "existing_pin_differences": 5
+  },
+  "repositories": [
+    {
+      "id": "A01",
+      "name": "process-gpt-deepagents",
+      "url": "https://github.com/uengine-oss/process-gpt-deepagents",
+      "snapshot": "1bf79e04546efe9d660ac2da7af13453837ac4fa",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-deepagents",
+      "parent_pin": "1bf79e04546efe9d660ac2da7af13453837ac4fa",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "core/agents/agent.py",
+          "lines": [
+            1,
+            227
+          ],
+          "sha256": "4deb6043bd62d797b7d80d10de765f7b360cd9a9f5901b5b77ffe8da71c8b801",
+          "source_url": "https://github.com/uengine-oss/process-gpt-deepagents/blob/1bf79e04546efe9d660ac2da7af13453837ac4fa/core/agents/agent.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "도구/스킬/sandbox/checkpointer → create_deep_agent",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/prompt.py",
+        "it/agent-worker/worker/workspace.py"
+      ],
+      "remaining": "HYD 변경 지식·추출 실제 검증; 프레임워크 교체 미결정",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A02",
+      "name": "process-gpt-base-agent-langchain-react",
+      "url": "https://github.com/uengine-oss/process-gpt-base-agent-langchain-react",
+      "snapshot": "a8bfffc773349991f116d3fba4be27c17aaf790d",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-base-agent-langchain-react",
+      "parent_pin": "a8bfffc773349991f116d3fba4be27c17aaf790d",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/work_assistant_agent/agent.py",
+          "lines": [
+            1,
+            180
+          ],
+          "sha256": "86573529182fcaa814e890deb98ab6ee98dbc1785c59c09746f33a2ac74d152b",
+          "source_url": "https://github.com/uengine-oss/process-gpt-base-agent-langchain-react/blob/a8bfffc773349991f116d3fba4be27c17aaf790d/src/work_assistant_agent/agent.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "ReAct 세션/PDF2BPMN 필수 선택 선언 → HITL/추출 비교",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/hitl.py",
+        "it/process/procsvc/manual_extraction.py"
+      ],
+      "remaining": "agent.py 첫180행; 강제 라우팅 본문 미열람",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A03",
+      "name": "process-gpt-a2a-orch",
+      "url": "https://github.com/uengine-oss/process-gpt-a2a-orch",
+      "snapshot": "ad5e937f25aa80e1f3fe37eff657f55abd7d3d25",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-a2a-orch",
+      "parent_pin": "ad5e937f25aa80e1f3fe37eff657f55abd7d3d25",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/a2a_agent_executor/executor.py",
+          "lines": [
+            1,
+            160
+          ],
+          "sha256": "208e1401c5718529f1b2c383722c8a6355e1fb7d9438f4693a7faecf38522bea",
+          "source_url": "https://github.com/uengine-oss/process-gpt-a2a-orch/blob/ad5e937f25aa80e1f3fe37eff657f55abd7d3d25/src/a2a_agent_executor/executor.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "AgentCard push 지원에 따른 webhook/sync 분기 → worker 이벤트 비교",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/events.py"
+      ],
+      "remaining": "외부 A2A가 필수라는 근거 없음; webhook 저장 미검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A04",
+      "name": "process-gpt-codex",
+      "url": "https://github.com/uengine-oss/process-gpt-codex",
+      "snapshot": "75784eee21c7fe9a8eee5be90db0ffad70f2605c",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-codex",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "INTENT.md",
+          "lines": [
+            1,
+            63
+          ],
+          "sha256": "c1ed32967eeed8a93aeda0b7e6eaa5feb22c6b9e35e7e4caf9a28a56bfbd8003",
+          "source_url": "https://github.com/uengine-oss/process-gpt-codex/blob/75784eee21c7fe9a8eee5be90db0ffad70f2605c/INTENT.md"
+        },
+        {
+          "path": "README.md",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "005cd9a01246e793b33ddf5d0922c09d39d80be734dbb061a52e0c7cc97e3e33",
+          "source_url": "https://github.com/uengine-oss/process-gpt-codex/blob/75784eee21c7fe9a8eee5be90db0ffad70f2605c/README.md"
+        },
+        {
+          "path": "docs/specs/process-execution.md",
+          "lines": [
+            1,
+            139
+          ],
+          "sha256": "77b084405bfccc3248a4da4a3ac4e9cdc4df48fb81a302868cd648ad7d9174a4",
+          "source_url": "https://github.com/uengine-oss/process-gpt-codex/blob/75784eee21c7fe9a8eee5be90db0ffad70f2605c/docs/specs/process-execution.md"
+        },
+        {
+          "path": "app/executor.py",
+          "lines": [
+            1,
+            250
+          ],
+          "sha256": "e2299f0279080c9c93b1e780406f196315ca3162bbee4d6ce753f73cbef170c0",
+          "source_url": "https://github.com/uengine-oss/process-gpt-codex/blob/75784eee21c7fe9a8eee5be90db0ffad70f2605c/app/executor.py"
+        },
+        {
+          "path": "app/process/form_contract.py",
+          "lines": [
+            1,
+            209
+          ],
+          "sha256": "754f7543264a653dce27924b8266b9513f2d02ccf7e07b9fe3e8acc727988e27",
+          "source_url": "https://github.com/uengine-oss/process-gpt-codex/blob/75784eee21c7fe9a8eee5be90db0ffad70f2605c/app/process/form_contract.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "현 경로 유지",
+      "finding": "SDK 작업→런타임→폼/도구 이벤트 → outcome/provider 비교",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/outcome.py",
+        "it/agent-worker/worker/codex_provider.py"
+      ],
+      "remaining": "App Server로 정책 우회하지 않음; 새 Codex 미검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A05",
+      "name": "process-gpt-cli-agent",
+      "url": "https://github.com/uengine-oss/process-gpt-cli-agent",
+      "snapshot": "4475bf797a91fb6c6540e8a4f4b7f98012cf21b7",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-cli-agent",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 CLI pump/on_start/timeout/HITL → runner/hitl",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/runner.py",
+        "it/agent-worker/worker/hitl.py"
+      ],
+      "remaining": "자식트리/PG 조건부 저장은 HYD 확장",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A06",
+      "name": "cliagents",
+      "url": "https://github.com/uengine-oss/cliagents",
+      "snapshot": "7c7a3923984f8247a27233cedb786e1a9097d451",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\cliagents",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "사용 중",
+      "finding": "CLI provider/resume/이벤트 파서 → 실제 worker",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/codex_provider.py"
+      ],
+      "remaining": "전체 provider 검증 아님; 최신 실행 차단",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A07",
+      "name": "process-gpt-openai-deep-research",
+      "url": "https://github.com/uengine-oss/process-gpt-openai-deep-research",
+      "snapshot": "49ddcd9ceecb4f234d892008034d5e10a3da9fec",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-openai-deep-research",
+      "parent_pin": "49ddcd9ceecb4f234d892008034d5e10a3da9fec",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "core/worker.py",
+          "lines": [
+            1,
+            49
+          ],
+          "sha256": "9e1636a6ad838bcd69032093ffec4f69da95fbc72e1eacd9937326e453bae624",
+          "source_url": "https://github.com/uengine-oss/process-gpt-openai-deep-research/blob/49ddcd9ceecb4f234d892008034d5e10a3da9fec/core/worker.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "JSON→PromptMultiFormatFlow subprocess 진입",
+      "hyd_counterparts": [],
+      "remaining": "연구보고 플로 내부 미열람; 설비 판단 필수 경로 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A08",
+      "name": "process-gpt-deep-research",
+      "url": "https://github.com/uengine-oss/process-gpt-deep-research",
+      "snapshot": "8a343e2528cc740da60223bfadea9388c431335c",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-deep-research",
+      "parent_pin": "8a343e2528cc740da60223bfadea9388c431335c",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/agent_sdk_runner.py",
+          "lines": [
+            1,
+            100
+          ],
+          "sha256": "a13e482713eaa8cd0be83c5e6277e590e7936e0813ef3e1468589b8bfb084be7",
+          "source_url": "https://github.com/uengine-oss/process-gpt-deep-research/blob/8a343e2528cc740da60223bfadea9388c431335c/src/agent_sdk_runner.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "task_record polling→run_deep_research 진입",
+      "hyd_counterparts": [],
+      "remaining": "HYD 원문 검토/적재와 일반 연구보고를 구분",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "A09",
+      "name": "process-gpt-react-voice-agent",
+      "url": "https://github.com/uengine-oss/process-gpt-react-voice-agent",
+      "snapshot": "b79f700c2f3b9da3511f5a2c3a069060bcbae9be",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-react-voice-agent",
+      "parent_pin": "b79f700c2f3b9da3511f5a2c3a069060bcbae9be",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "server/app.py",
+          "lines": [
+            1,
+            100
+          ],
+          "sha256": "4c42904969758278bbc864497b345b64c390f90468ed6365be119db5a2ce543a",
+          "source_url": "https://github.com/uengine-oss/process-gpt-react-voice-agent/blob/b79f700c2f3b9da3511f5a2c3a069060bcbae9be/server/app.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "UI 확장 보류",
+      "finding": "WebSocket 사용자/대화→VoiceReactAgent 연결",
+      "hyd_counterparts": [],
+      "remaining": "음성은 현재 승인/현장제어 필수조건 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C01",
+      "name": "process-gpt",
+      "url": "https://github.com/uengine-oss/process-gpt",
+      "snapshot": "3335272b3f6978886e2b661b9977a0acfe7991e9",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "A066 parent gitmodules/tree metadata read; prior DB review reused, selected bytes compared to HEAD",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 690,
+      "decision": "계약 반영",
+      "finding": "메타 gitlink/DB 원형 → compose.yaml·Supabase migration",
+      "hyd_counterparts": [
+        "compose.yaml",
+        "it/supabase/migrations"
+      ],
+      "remaining": "전체 제품 배포 아님; 인덱스 차이 보존",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C02",
+      "name": "process-gpt-vue3",
+      "url": "https://github.com/uengine-oss/process-gpt-vue3",
+      "snapshot": "d88f78ca0b60d979d9de4988f0cd2969949f7ece",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-vue3",
+      "parent_pin": "f8d6c45baad7078abfaac0d3f233fee6ae2b61ac",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 Execution/폼/재작업 UI 대조 → execution_graph·포털",
+      "hyd_counterparts": [
+        "it/process/procsvc/execution_graph.py",
+        "it/portal/www"
+      ],
+      "remaining": "최신 직접 UI·전체 의미 연결",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C03",
+      "name": "process-gpt-completion",
+      "url": "https://github.com/uengine-oss/process-gpt-completion",
+      "snapshot": "b272c9ab458f3ca3e18fe286e4e770d291b99e89",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-completion",
+      "parent_pin": "621db777c63a652382f9ab3ff5d5322d809a9802",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 정의/작업/재작업/inputData → engine·input_bindings",
+      "hyd_counterparts": [
+        "it/process/procsvc/engine.py",
+        "it/process/procsvc/input_bindings.py"
+      ],
+      "remaining": "조건 재판정·보상; inputBindings는 HYD 확장",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C04",
+      "name": "process-gpt-gateway",
+      "url": "https://github.com/uengine-oss/process-gpt-gateway",
+      "snapshot": "2567edc18a22ce70f96bf0fda0bf774c7aa8c162",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-gateway",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/main/resources/application.yml",
+          "lines": [
+            1,
+            181
+          ],
+          "sha256": "17d52973c374b1b789ba0e6846bc68640c0cb97bf02b227cc9ff90c0854aed6b",
+          "source_url": "https://github.com/uengine-oss/process-gpt-gateway/blob/2567edc18a22ce70f96bf0fda0bf774c7aa8c162/src/main/resources/application.yml"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "현 경로 유지",
+      "finding": "Spring 경로 재작성·MCP proxy 주소 → HYD compose/포털",
+      "hyd_counterparts": [
+        "compose.yaml",
+        "it/portal"
+      ],
+      "remaining": "게이트웨이 전체 이식·운영 인증 검증 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C05",
+      "name": "process-gpt-infra-docker",
+      "url": "https://github.com/uengine-oss/process-gpt-infra-docker",
+      "snapshot": "754751629c14e6018729fe5d7a0a3a9594d0bcd7",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-infra-docker",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [],
+      "selection_note": "service/image/healthcheck names only from docker-compose.yml",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "Compose 서비스·이미지·healthcheck 목록 → compose.yaml",
+      "hyd_counterparts": [
+        "compose.yaml"
+      ],
+      "remaining": "설정 전체 미열람; 이미지 태그와 소스 pin 별도",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C06",
+      "name": "process-gpt-k8s",
+      "url": "https://github.com/uengine-oss/process-gpt-k8s",
+      "snapshot": "193ebdccf577006c759b7e78c2c23775ba569ce6",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-k8s",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "deployments/mcp-proxy-deployment.yaml",
+          "lines": [
+            1,
+            55
+          ],
+          "sha256": "f3ff30544332bd4f0e042996bffb55d6b2c03097fd3d6d08ce58d902df8a7509",
+          "source_url": "https://github.com/uengine-oss/process-gpt-k8s/blob/193ebdccf577006c759b7e78c2c23775ba569ce6/deployments/mcp-proxy-deployment.yaml"
+        },
+        {
+          "path": "services/mcp-proxy-svc.yaml",
+          "lines": [
+            1,
+            14
+          ],
+          "sha256": "aed449ec4be645aacce0d9ad05979ec3d085807575917dbe3431676c59bb912e",
+          "source_url": "https://github.com/uengine-oss/process-gpt-k8s/blob/193ebdccf577006c759b7e78c2c23775ba569ce6/services/mcp-proxy-svc.yaml"
+        }
+      ],
+      "selection_note": "additional deployment image/path/name matches only",
+      "tracked_change_count": 0,
+      "decision": "배포 보류",
+      "finding": "Kubernetes 런너/MCP proxy/FCM 서비스 연결 → 운영 경계 대조",
+      "hyd_counterparts": [
+        "compose.yaml"
+      ],
+      "remaining": "이미지 원본 일부 미확정; K8s 배포 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C07",
+      "name": "process-gpt-agent-sdk",
+      "url": "https://github.com/uengine-oss/process-gpt-agent-sdk",
+      "snapshot": "58ca16d8680345ce0b030808c12712823248bd49",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-agent-sdk",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 todolist/events/원자 claim → PG·worker",
+      "hyd_counterparts": [
+        "it/supabase/migrations",
+        "it/agent-worker/worker"
+      ],
+      "remaining": "SDK 전체 이식 아님; 최신 실제 Codex",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "C08",
+      "name": "process-gpt-session-router",
+      "url": "https://github.com/uengine-oss/process-gpt-session-router",
+      "snapshot": "a5edf5cce9d3449d5e7ac3c3c27e1f47b69ad3b3",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-session-router",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "internal/router/router.go",
+          "lines": [
+            1,
+            180
+          ],
+          "sha256": "d0af28179f615024fa66fa6d19defd476287f2e6b8112357fcd2c9ce83479430",
+          "source_url": "https://github.com/uengine-oss/process-gpt-session-router/blob/a5edf5cce9d3449d5e7ac3c3c27e1f47b69ad3b3/internal/router/router.go"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "배포 보류",
+      "finding": "대화 ID/agent type별 런너 프록시 진입 → workspace 비교",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/workspace.py"
+      ],
+      "remaining": "resolve 후반 미열람; 호스트 워커 교체 근거 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "D01",
+      "name": "bpmn-process-generation-skill",
+      "url": "https://github.com/uengine-oss/bpmn-process-generation-skill",
+      "snapshot": "f8c4b6d55b921817fa4ab9e088e77956fccdf75f",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\bpmn-process-generation-skill",
+      "parent_pin": "f8c4b6d55b921817fa4ab9e088e77956fccdf75f",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 정의/역할/폼/스킬 계약 → definition_registry",
+      "hyd_counterparts": [
+        "it/process/procsvc/definition_registry.py"
+      ],
+      "remaining": "실제 에이전트 신규 정의 생성 종합검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "D02",
+      "name": "process-gpt-strategy-skill",
+      "url": "https://github.com/uengine-oss/process-gpt-strategy-skill",
+      "snapshot": "f4d050df51d56faa7b08d915786860ecfaa63e11",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-strategy-skill",
+      "parent_pin": "f4d050df51d56faa7b08d915786860ecfaa63e11",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "기존 대조 유지",
+      "finding": "BSC 전략·상충 요구 스냅샷 유지",
+      "hyd_counterparts": [],
+      "remaining": "이번 본문 재열람 없음; 시스템 의미 연결 후속",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "D03",
+      "name": "process-gpt-docs.github.io",
+      "url": "https://github.com/uengine-oss/process-gpt-docs.github.io",
+      "snapshot": "ad6944ffb48f84c53c8d6bc7e5a4f9e04e216b15",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-docs.github.io",
+      "parent_pin": "ad6944ffb48f84c53c8d6bc7e5a4f9e04e216b15",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "gridsome.config.js",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "a68554b04c85564fc0b043f082904270712a311dfd82eef21fe2655a178b7c45",
+          "source_url": "https://github.com/uengine-oss/process-gpt-docs.github.io/blob/ad6944ffb48f84c53c8d6bc7e5a4f9e04e216b15/gridsome.config.js"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "문서 대조 중",
+      "finding": "사이트 navigation에 rework/reference/DMN 안내 연결",
+      "hyd_counterparts": [],
+      "remaining": "안내 본문 미열람; 메뉴 존재는 동작 증거 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "D04",
+      "name": "process-gpt-agents.github.io",
+      "url": "https://github.com/uengine-oss/process-gpt-agents.github.io",
+      "snapshot": "cdc78f0aeb53fec67f8903954a16ae4980d0fc5b",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-agents.github.io",
+      "parent_pin": "cdc78f0aeb53fec67f8903954a16ae4980d0fc5b",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/router/index.js",
+          "lines": [
+            1,
+            21
+          ],
+          "sha256": "591a44444cb9012e1ba22e98a322e8d01f9a380a901d1fc9085d6382551e976d",
+          "source_url": "https://github.com/uengine-oss/process-gpt-agents.github.io/blob/cdc78f0aeb53fec67f8903954a16ae4980d0fc5b/src/router/index.js"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "UI 확장 보류",
+      "finding": "Vue router home/marketplace 연결",
+      "hyd_counterparts": [],
+      "remaining": "등록/실행 본문 미열람; 마켓플레이스 도입 요청 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "D05",
+      "name": "process-gpt-sample-app-wms",
+      "url": "https://github.com/uengine-oss/process-gpt-sample-app-wms",
+      "snapshot": "8ba09f4420ba04d094a0fc4a05c72bc38b0b8a52",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-sample-app-wms",
+      "parent_pin": "fc82ea2ad5e3f486b5b0396877ec48932ae6bb4d",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 업무 DB/RPC/MCP·성공/오류 → enterprise-mcp/PG",
+      "hyd_counterparts": [
+        "it/enterprise-mcp",
+        "it/supabase/migrations"
+      ],
+      "remaining": "HYD 업무 데이터/권한 별도; WMS 전체 이식 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "O01",
+      "name": "ontology-studio",
+      "url": "https://github.com/uengine-oss/ontology-studio",
+      "snapshot": "6a229be8dcce2aeb533ecdba360b5b4564ffb777",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\ontology-studio",
+      "parent_pin": "6a229be8dcce2aeb533ecdba360b5b4564ffb777",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 고정 스키마/원문 근거/검증 루프 → manual 계층",
+      "hyd_counterparts": [
+        "it/process/procsvc/manual_sources.py",
+        "it/process/procsvc/manual_graph.py"
+      ],
+      "remaining": "실제 추출·전체 질문/관계 검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "O02",
+      "name": "ontologic",
+      "url": "https://github.com/uengine-oss/ontologic",
+      "snapshot": "e72adf14d66554e7f3018cf608eac69faf0f4007",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\ontologic",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "연결 추적 유지",
+      "finding": "기존 15개 하위 경로 gitmodules/tree 추적",
+      "hyd_counterparts": [
+        "docs/handoff/REPOSITORY_REVIEW.md"
+      ],
+      "remaining": "전체 패브릭 이식 아님; 지도 밖 catalog 후보 후속",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "O03",
+      "name": "ontological-db",
+      "url": "https://github.com/uengine-oss/ontological-db",
+      "snapshot": "3179cc723c36bb54cd3ab02c4b0e5162fd170a10",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\ontological-db",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "DB 교체 보류",
+      "finding": "기존 연구용 DB 스냅샷·조사 기록 유지",
+      "hyd_counterparts": [],
+      "remaining": "이번 내부 재열람 없음; Neo4j 교체 근거 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "O04",
+      "name": "ontological-db-enterprise-custom",
+      "url": "https://github.com/uengine-oss/ontological-db-enterprise-custom",
+      "snapshot": "2fd0ac2c951c378ffece626589965ac83bfbb7aa",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\ontological-db-enterprise-custom",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "bolt/src/main.rs",
+          "lines": [
+            1,
+            80
+          ],
+          "sha256": "abc2661d44ec9c65e7e3ace30635c8646beaa77eb992c7345e28a5cc1bca2021",
+          "source_url": "https://github.com/uengine-oss/ontological-db-enterprise-custom/blob/2fd0ac2c951c378ffece626589965ac83bfbb7aa/bolt/src/main.rs"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "DB 교체 보류",
+      "finding": "Bolt listener/PostgreSQL 연결 설정 진입",
+      "hyd_counterparts": [],
+      "remaining": "og_cypher 본문/성능/완전호환 미검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "O05",
+      "name": "process-gpt-knowledge-graph",
+      "url": "https://github.com/uengine-oss/process-gpt-knowledge-graph",
+      "snapshot": "47ca72314945b8a45a29d2d77febd49a082917d1",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-knowledge-graph",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "구현 판단 보류",
+      "finding": "기존 확보 당시 빈 구현 기록 유지",
+      "hyd_counterparts": [],
+      "remaining": "tree 재확인 전 현재 원격의 빈 레포로 단정하지 않음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "P01",
+      "name": "process-gpt-analytic",
+      "url": "https://github.com/uengine-oss/process-gpt-analytic",
+      "snapshot": "8308db56ce6269245abba551009a9f96b54ab4d7",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-analytic",
+      "parent_pin": "8308db56ce6269245abba551009a9f96b54ab4d7",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "backend/app/main.py",
+          "lines": [
+            1,
+            120
+          ],
+          "sha256": "fb8a8a199e0d03998fa088717fe35fd73a9d48d1f22797db2adc89573b2ee432",
+          "source_url": "https://github.com/uengine-oss/process-gpt-analytic/blob/8308db56ce6269245abba551009a9f96b54ab4d7/backend/app/main.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "ETL scheduler·instance/timeline 서비스 연결 → 모니터링 비교",
+      "hyd_counterparts": [
+        "it/process/procsvc/instances.py",
+        "it/portal/www"
+      ],
+      "remaining": "ETL 지연/원천 상태 대조; 분석 서비스 미배포",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "P02",
+      "name": "process-gpt-instance-classifier",
+      "url": "https://github.com/uengine-oss/process-gpt-instance-classifier",
+      "snapshot": "384a6ff277f10d789868b0f9c8c72dcb998a84ed",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-instance-classifier",
+      "parent_pin": "384a6ff277f10d789868b0f9c8c72dcb998a84ed",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "app/poller.py",
+          "lines": [
+            1,
+            78
+          ],
+          "sha256": "a7c25b04d78d87b465ba862e6745cebe878bd56c5c6b0c63f424f84071dd202f",
+          "source_url": "https://github.com/uengine-oss/process-gpt-instance-classifier/blob/384a6ff277f10d789868b0f9c8c72dcb998a84ed/app/poller.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "분류기 보류",
+      "finding": "신규 instance ingest·정의별 recluster 진입",
+      "hyd_counterparts": [],
+      "remaining": "클러스터와 확정 경보 패턴은 다름; ingest 내부 미열람",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "P03",
+      "name": "process-gpt-strategy",
+      "url": "https://github.com/uengine-oss/process-gpt-strategy",
+      "snapshot": "1db85d3b0ab7acf50204360b8115e14fcb4ffb25",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-strategy",
+      "parent_pin": "1db85d3b0ab7acf50204360b8115e14fcb4ffb25",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 원천→그래프 증분·소유권 → knowledge_projection",
+      "hyd_counterparts": [
+        "it/process/procsvc/knowledge_projection.py",
+        "it/process/procsvc/skill_graph.py"
+      ],
+      "remaining": "BSC 전체 의미 연결·업무 상충 변화",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "P04",
+      "name": "process-gpt-agent-feedback",
+      "url": "https://github.com/uengine-oss/process-gpt-agent-feedback",
+      "snapshot": "e58f4d13e5daaf2c0d5600db657b36bfe72dd1b2",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-agent-feedback",
+      "parent_pin": "e58f4d13e5daaf2c0d5600db657b36bfe72dd1b2",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "core/feedback_proposal_routes.py",
+          "lines": [
+            113,
+            184
+          ],
+          "sha256": "c7a4aa9dc449c71e7f665ebd1a7f248ffc55ff7944f23a79e815d23be5f38d36",
+          "source_url": "https://github.com/uengine-oss/process-gpt-agent-feedback/blob/e58f4d13e5daaf2c0d5600db657b36bfe72dd1b2/core/feedback_proposal_routes.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "대상별 승인→SKILL/DMN 비동기·정의 draft 결과",
+      "hyd_counterparts": [
+        "it/process/procsvc/skill_graph.py",
+        "it/process/procsvc/definition_registry.py"
+      ],
+      "remaining": "applied:true 조기응답을 완료로 채택하지 않음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T01",
+      "name": "process-gpt-memento",
+      "url": "https://github.com/uengine-oss/process-gpt-memento",
+      "snapshot": "659ab9fe8a122f1b06da86c9ef59dd85daabb069",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-memento",
+      "parent_pin": "a640bb4a2fda902938880df8b42fece48ac15d52",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "기존 대조 유지",
+      "finding": "문서 검색/메모리 스냅샷·과거 기록 재사용",
+      "hyd_counterparts": [],
+      "remaining": "이번 내부 코드 재열람 없음; 검색 품질 미결",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T02",
+      "name": "process-gpt-bpmn-extractor",
+      "url": "https://github.com/uengine-oss/process-gpt-bpmn-extractor",
+      "snapshot": "c7992ce95e90492647411980a3034653784137e6",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-bpmn-extractor",
+      "parent_pin": "aee3efd61deb36317289a1021a8926489719a11b",
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "계약 반영",
+      "finding": "기존 고정 스키마 추출 대조 → manual_extraction",
+      "hyd_counterparts": [
+        "it/process/procsvc/manual_extraction.py"
+      ],
+      "remaining": "실제 Codex 일반문서/PDF 추출 정확성",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T03",
+      "name": "process-gpt-office-mcp",
+      "url": "https://github.com/uengine-oss/process-gpt-office-mcp",
+      "snapshot": "f14cbce51d9ba2476bb3e868dbdfdcb6966b6ea6",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-office-mcp",
+      "parent_pin": "f14cbce51d9ba2476bb3e868dbdfdcb6966b6ea6",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "main.py",
+          "lines": [
+            1,
+            100
+          ],
+          "sha256": "32e7f7c22b345557156aa1ca3215e407ddffb0acd97c56cddcf459d9c7ad16e7",
+          "source_url": "https://github.com/uengine-oss/process-gpt-office-mcp/blob/f14cbce51d9ba2476bb3e868dbdfdcb6966b6ea6/main.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "office MCP 로드·이미지 편집 REST 진입",
+      "hyd_counterparts": [],
+      "remaining": "도구 전체 미열람; 문서/슬라이드 제작은 현 Goal 제외",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T04",
+      "name": "process-gpt-mcp-validator",
+      "url": "https://github.com/uengine-oss/process-gpt-mcp-validator",
+      "snapshot": "95647edbb581d0dbcbcc670fd49e29b171b64baf",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-mcp-validator",
+      "parent_pin": "95647edbb581d0dbcbcc670fd49e29b171b64baf",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "main.py",
+          "lines": [
+            1,
+            18
+          ],
+          "sha256": "6e846c8c1dc6cc119454edc0ae719755452fb2c685e31be422d3743b920be7b5",
+          "source_url": "https://github.com/uengine-oss/process-gpt-mcp-validator/blob/95647edbb581d0dbcbcc670fd49e29b171b64baf/main.py"
+        },
+        {
+          "path": "pyproject.toml",
+          "lines": [
+            1,
+            13
+          ],
+          "sha256": "7933562c05a238d2b3d1a84286166bc3214437ed8b7d709e6dcc192ccc1f840b",
+          "source_url": "https://github.com/uengine-oss/process-gpt-mcp-validator/blob/95647edbb581d0dbcbcc670fd49e29b171b64baf/pyproject.toml"
+        },
+        {
+          "path": "src/mcp_validator/api.py",
+          "lines": [
+            1,
+            265
+          ],
+          "sha256": "e04dea9e598e67905927a6529b31fb1d15d4464f43ec4c1bcbe1986f889ef4b7",
+          "source_url": "https://github.com/uengine-oss/process-gpt-mcp-validator/blob/95647edbb581d0dbcbcc670fd49e29b171b64baf/src/mcp_validator/api.py"
+        },
+        {
+          "path": "src/mcp_validator/validator.py",
+          "lines": [
+            1,
+            188
+          ],
+          "sha256": "0201c817d56ddaa30d148ef4ad983539d5dabead815e8073c68a22ec67dace60",
+          "source_url": "https://github.com/uengine-oss/process-gpt-mcp-validator/blob/95647edbb581d0dbcbcc670fd49e29b171b64baf/src/mcp_validator/validator.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "검증 경계 참고",
+      "finding": "initialize/list tools/timeout/partial → 기존 MCP probe와 비교",
+      "hyd_counterparts": [
+        "scripts/probe_timeseries_mcp.py",
+        "scripts/probe_prometheus_mcp.py",
+        "tests/test_enterprise_mcp.py"
+      ],
+      "remaining": "연결 성공은 도구 결과 정확성 증거 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T05",
+      "name": "process-gpt-visionparser",
+      "url": "https://github.com/uengine-oss/process-gpt-visionparser",
+      "snapshot": "8cf53d3ee4cb5a5c585272b43372f4624cad4b8c",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-visionparser",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "executors/executor.py",
+          "lines": [
+            1,
+            160
+          ],
+          "sha256": "5c6238262e05e45a5ec44527158a08aadac0b6d4e1d9010fcd88b730bc2a1713",
+          "source_url": "https://github.com/uengine-oss/process-gpt-visionparser/blob/8cf53d3ee4cb5a5c585272b43372f4624cad4b8c/executors/executor.py"
+        },
+        {
+          "path": "pipelines/final_output_pipeline.py",
+          "lines": [
+            45,
+            144
+          ],
+          "sha256": "3dded6c4407b8c74d5ba7609cbb36ffa82e80c90fe2b3383685834760ec261ba",
+          "source_url": "https://github.com/uengine-oss/process-gpt-visionparser/blob/8cf53d3ee4cb5a5c585272b43372f4624cad4b8c/pipelines/final_output_pipeline.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "resolved/ambiguous/raw 분리 formatter → manual_review 비교",
+      "hyd_counterparts": [
+        "it/process/procsvc/manual_review.py"
+      ],
+      "remaining": "다수결은 참값 보장 아님; 좌표/복수값/실제 추출",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T06",
+      "name": "process-gpt-glossary",
+      "url": "https://github.com/uengine-oss/process-gpt-glossary",
+      "snapshot": "6a29cd98684d00ee8a01a3094076133412df95ff",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-glossary",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "backend/api/glossary_router.py",
+          "lines": [
+            1,
+            160
+          ],
+          "sha256": "6dc65393df6738c2ff90c769a76c767c2aca9aee0fc2f4a2a737d156a7d12bd7",
+          "source_url": "https://github.com/uengine-oss/process-gpt-glossary/blob/6a29cd98684d00ee8a01a3094076133412df95ff/backend/api/glossary_router.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "용어 상태/동의어/소유자·확정 매핑/조인 입력 모델",
+      "hyd_counterparts": [
+        "it/process/procsvc/knowledge_projection.py",
+        "it/enterprise-mcp/enterprise_mcp/tools.py"
+      ],
+      "remaining": "저장·검토 권한 본문/전체 의미 연결 미완료",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T07",
+      "name": "process-gpt-claude-skills",
+      "url": "https://github.com/uengine-oss/process-gpt-claude-skills",
+      "snapshot": "456d56f928fbbb36180c585e1444fd970468a440",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-claude-skills",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "packages/backend/src/claude_skills_mcp_backend/mcp_handlers.py",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "fbe700e26dc0643a5aab6c42da694c708fbba9fcbe69139a9d4ce7e5fdf64dbd",
+          "source_url": "https://github.com/uengine-oss/process-gpt-claude-skills/blob/456d56f928fbbb36180c585e1444fd970468a440/packages/backend/src/claude_skills_mcp_backend/mcp_handlers.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "대조 중",
+      "finding": "SkillsMCPServer 검색엔진/부분 로딩 상태 진입",
+      "hyd_counterparts": [],
+      "remaining": "검색/실행 본문 미열람; 이름으로 채택하지 않음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "T08",
+      "name": "process-gpt-computer-use",
+      "url": "https://github.com/uengine-oss/process-gpt-computer-use",
+      "snapshot": "174adf6724c5c3337eb47e0c6e026af8ea4e1748",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-computer-use",
+      "parent_pin": "174adf6724c5c3337eb47e0c6e026af8ea4e1748",
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/mcp_server.py",
+          "lines": [
+            1,
+            100
+          ],
+          "sha256": "5e2808cd251ee1044647fc3be4f404858d8c89b56abcefe717d59ef835adbefb",
+          "source_url": "https://github.com/uengine-oss/process-gpt-computer-use/blob/174adf6724c5c3337eb47e0c6e026af8ea4e1748/src/mcp_server.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "FastMCP→PodManager/Executor·TTL 초기화",
+      "hyd_counterparts": [],
+      "remaining": "Pod shell 도입/PLC 경로 확대 근거 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X01",
+      "name": "process-gpt-mobile",
+      "url": "https://github.com/uengine-oss/process-gpt-mobile",
+      "snapshot": "0fa1143876710c5fb351a55eccb31a9e35e8becb",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-mobile",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "src/native.js",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "4a899c7679efd470c6ddba76fc5e3bcda2dcfa2e62777de97ddb6e05dc4bd550",
+          "source_url": "https://github.com/uengine-oss/process-gpt-mobile/blob/0fa1143876710c5fb351a55eccb31a9e35e8becb/src/native.js"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "UI 확장 보류",
+      "finding": "주입형 token store/push/file native bridge 진입",
+      "hyd_counterparts": [],
+      "remaining": "주석만으로 안전 저장 보장하지 않음; 모바일 미배포",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X02",
+      "name": "process-gpt-billing",
+      "url": "https://github.com/uengine-oss/process-gpt-billing",
+      "snapshot": "f0ac5ae3509f6fab8af1045d955f1e48e2dcdfcf",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-billing",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "app/api/routes/payments.py",
+          "lines": [
+            1,
+            80
+          ],
+          "sha256": "19cb81b585c5571ec688177c2d192f19413e62c02975309d02614c259d7485cf",
+          "source_url": "https://github.com/uengine-oss/process-gpt-billing/blob/f0ac5ae3509f6fab8af1045d955f1e48e2dcdfcf/app/api/routes/payments.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "현 도입 제외",
+      "finding": "결제 검증→승인→거래/영수증 API",
+      "hyd_counterparts": [],
+      "remaining": "결제 기능 개발/결제 요청 없음",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X03",
+      "name": "process-gpt-crewai-action",
+      "url": "https://github.com/uengine-oss/process-gpt-crewai-action",
+      "snapshot": "ecdf8debfe92f779841eaff807fcd5cac9003e61",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-crewai-action",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "crewai_action_executor.py",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "8ce6a4c55c69fe9c69fc1394d11c54fc67249978e97cdec0b4b0a6757d9247eb",
+          "source_url": "https://github.com/uengine-oss/process-gpt-crewai-action/blob/ecdf8debfe92f779841eaff807fcd5cac9003e61/crewai_action_executor.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "CrewAI 작업상태·폼/산출물 이벤트 → worker 비교",
+      "hyd_counterparts": [],
+      "remaining": "협업 프레임워크 교체 근거 없음; 실제 실행 미검증",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X04",
+      "name": "process-gpt-crewai-deep-research",
+      "url": "https://github.com/uengine-oss/process-gpt-crewai-deep-research",
+      "snapshot": "49e2b129e2923ff63615574c2f537708d2f9cdc0",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-crewai-deep-research",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "core/worker.py",
+          "lines": [
+            1,
+            54
+          ],
+          "sha256": "c306e1983571ccbe1c536d2caade0edf87d1880cbf39d66ffe36ec628d53ceeb",
+          "source_url": "https://github.com/uengine-oss/process-gpt-crewai-deep-research/blob/49e2b129e2923ff63615574c2f537708d2f9cdc0/core/worker.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "JSON→MultiFormatFlow·finally adapter shutdown",
+      "hyd_counterparts": [],
+      "remaining": "연구 플로 내부 미열람; 설비 판단 필수 경로 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X05",
+      "name": "process-gpt-langchain-react",
+      "url": "https://github.com/uengine-oss/process-gpt-langchain-react",
+      "snapshot": "16e1f38ca743037cbdc47652a05419a15b635908",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-langchain-react",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "langchain_react/tool_loader.py",
+          "lines": [
+            1,
+            75
+          ],
+          "sha256": "4473058946fc948ca90d400e11bd5feb1e95e95e10284ccd2e0e54c2feb75395",
+          "source_url": "https://github.com/uengine-oss/process-gpt-langchain-react/blob/16e1f38ca743037cbdc47652a05419a15b635908/langchain_react/tool_loader.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "MCP+이미지/만화 생성 loader; A02와 별개",
+      "hyd_counterparts": [],
+      "remaining": "이미지 도구는 현재 설비 판단에 불필요",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X06",
+      "name": "process-gpt-browser-use",
+      "url": "https://github.com/uengine-oss/process-gpt-browser-use",
+      "snapshot": "6aeaa42ca7fa32e7649899c56221421ee7a8fa07",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-browser-use",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "browser_use_agent_executor.py",
+          "lines": [
+            1,
+            110
+          ],
+          "sha256": "af2e28d26d19887e773fee34e661e33d43a2e4b863f818944564a3a6fa8daa9e",
+          "source_url": "https://github.com/uengine-oss/process-gpt-browser-use/blob/6aeaa42ca7fa32e7649899c56221421ee7a8fa07/browser_use_agent_executor.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "런타임 보류",
+      "finding": "SDK/browser-use optional import·executor 진입",
+      "hyd_counterparts": [],
+      "remaining": "자동화 본문 미열람; 브라우저 정책 우회로 사용 안 함",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X07",
+      "name": "process-gpt-agent-utils",
+      "url": "https://github.com/uengine-oss/process-gpt-agent-utils",
+      "snapshot": "5dbd7e0b201be27cede22b1a81fd8e28bf7c0449",
+      "local": "C:\\Users\\roede\\AppData\\Local\\Temp\\claude\\d--work-study\\952d3c36-79d1-411d-8a6b-ca449642fa1c\\scratchpad\\refs\\process-gpt-agent-utils",
+      "parent_pin": null,
+      "acquisition": "existing_preserved",
+      "read_scope": "prior review record reused; not reread in A066",
+      "read_files": [],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "기존 대조 유지",
+      "finding": "공통 도구/결과 계약 스냅샷·기존 조사 유지",
+      "hyd_counterparts": [],
+      "remaining": "이번 내부 재열람 없음; 공통 유틸 전체 이식 아님",
+      "reference_runtime_verified_in_A066": false
+    },
+    {
+      "id": "X08",
+      "name": "process-gpt-llm-factory",
+      "url": "https://github.com/uengine-oss/process-gpt-llm-factory",
+      "snapshot": "a32e57e825eef28495425319349e316c28b19d6d",
+      "local": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references\\a066\\process-gpt-llm-factory",
+      "parent_pin": null,
+      "acquisition": "acquired",
+      "read_scope": "A066 bounded source/config review",
+      "read_files": [
+        {
+          "path": "llm_factory/factory.py",
+          "lines": [
+            1,
+            190
+          ],
+          "sha256": "894ab94dfdb886cdcc9ca1c69a2688b6e874bfea5c88c55cf68a539c8c0bf746",
+          "source_url": "https://github.com/uengine-oss/process-gpt-llm-factory/blob/a32e57e825eef28495425319349e316c28b19d6d/llm_factory/factory.py"
+        }
+      ],
+      "selection_note": "",
+      "tracked_change_count": 0,
+      "decision": "현 연결 유지",
+      "finding": "환경 provider별 LangChain 모델/embedding factory",
+      "hyd_counterparts": [
+        "it/agent-worker/worker/settings.py"
+      ],
+      "remaining": "CLI와 다른 경로; 기본 모델명은 현 가용성 보장 아님",
+      "reference_runtime_verified_in_A066": false
+    }
+  ],
+  "followups": [
+    {
+      "phase": "A067",
+      "ids": [
+        "T06",
+        "O02"
+      ],
+      "evidence": ".evidence/reaudit/a067-reference-read.json",
+      "implementation": "docs/enterprise-catalog.md",
+      "boundary": "Actual PostgreSQL glossary storage and catalog ownership metadata compared; HYD metadata preservation verified 18 checks, not full glossary adoption."
+    },
+    {
+      "phase": "A069",
+      "ids": [
+        "D02",
+        "P03",
+        "P04"
+      ],
+      "evidence": ".evidence/reaudit/a069-reference-read.json",
+      "implementation": "docs/ranking-policy.md",
+      "boundary": "Strategy interview quality rules, KPI performer contribution and DMN draft/PR identity compared. HYD explicit arithmetic policy and reviewed edit receipts verified; not full BSC condition evaluation or FEEL/PR adoption."
+    },
+    {
+      "phase": "A070",
+      "repositories": [
+        "P03"
+      ],
+      "source": "app/graph/age_adapter.py:262-347",
+      "evidence": ".evidence/reaudit/a070-reference-read.json",
+      "adopted": "Preserve relationship endpoints, kind and properties in individual BSC paths; separate reviewed predicates from prose.",
+      "not_adopted": "AGE unlink/create workaround; no claim of product condition engine or quantitative causality",
+      "verification": {
+        "unit": 973,
+        "live": 14,
+        "cooler": 42,
+        "direct_ui": false,
+        "new_codex": false
+      }
+    },
+    {
+      "phase": "A071",
+      "repositories": [
+        "C03"
+      ],
+      "source": [
+        "process_engine.py:978-1034",
+        "polling_service/workitem_processor.py:4431-4535"
+      ],
+      "evidence": ".evidence/reaudit/a071-reference-read.json",
+      "adopted": "New work generations and attached event candidates; HYD adds exact fresh producer and current timer arrival contracts.",
+      "not_adopted": "No claim that product compensation generation undoes PLC or enterprise effects.",
+      "verification": {
+        "unit": 982,
+        "live": 24,
+        "cooler": 42,
+        "direct_ui": false,
+        "new_codex": false
+      }
+    }
+  ]
+}

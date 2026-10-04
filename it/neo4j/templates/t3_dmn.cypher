@@ -3,6 +3,7 @@
 MATCH (d:Decision)-[:IMPLEMENTED_BY]->(t:DecisionTable)-[:HAS_RULE]->(r:Rule)
 RETURN d.id AS decision, d.name AS decisionName, d.question AS question, t.id AS table, t.hitPolicy AS hitPolicy,
        r.id AS rule, r.order AS ord, r.effect AS effect, r.penalty AS penalty, r.when AS when, r.annotation AS annotation,
+       r.rankingPolicy AS rankingPolicy,
        COLLECT { MATCH (r)-[x:TESTS]->(i:InputData) RETURN {input: i.id, variable: i.variable, operator: x.operator, value: x.value, unit: x.unit} } AS tests,
        COLLECT { MATCH (r)-[:OUTPUTS]->(o) RETURN o.id } AS outputs,
        COLLECT { MATCH (r)-[:APPLIES_TO]->(s:Skill) RETURN s.id } AS applies,

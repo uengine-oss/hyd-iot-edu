@@ -1,0 +1,89 @@
+[
+  {
+    "severity": "HIGH",
+    "detectionMode": "held",
+    "slopeWindowSeconds": 60,
+    "code": "COOLER_DEGRADATION",
+    "clearRule": "TS1 < 52 and slope(TS1) <= 0",
+    "name": "쿨러 성능 저하",
+    "rule": "TS1 > 55 and CE < 70 and slope(TS1) > 0",
+    "holdSeconds": 60,
+    "id": "pattern:cooler-degradation",
+    "clearHoldSeconds": 60,
+    "tests": [
+      {
+        "variable": "ce",
+        "value": 70,
+        "operator": "<"
+      },
+      {
+        "variable": "ts1",
+        "value": 55,
+        "operator": ">"
+      },
+      {
+        "variable": "ts1_slope",
+        "value": 0,
+        "operator": ">"
+      }
+    ]
+  },
+  {
+    "severity": "HIGH",
+    "detectionMode": "held",
+    "slopeWindowSeconds": 60,
+    "code": "FAN_VIBRATION",
+    "clearRule": "VS1 < 1.1",
+    "name": "팬 진동 상승",
+    "rule": "VS1 > 1.2 and slope(VS1) > 0",
+    "holdSeconds": 60,
+    "id": "pattern:fan-vibration",
+    "clearHoldSeconds": 60,
+    "tests": [
+      {
+        "variable": "vs1_slope",
+        "value": 0,
+        "operator": ">"
+      },
+      {
+        "variable": "vs1",
+        "value": 1.2,
+        "operator": ">"
+      }
+    ]
+  },
+  {
+    "severity": "HIGH",
+    "detectionMode": "held",
+    "slopeWindowSeconds": 60,
+    "code": "PUMP_LEAKAGE",
+    "clearRule": "PLC.state == 'RUN' and ((PS1 >= 168 and FS1 >= 8) or LoadSP < 80)",
+    "name": "펌프 내부 누설",
+    "rule": "PLC.state == 'RUN' and PS1 < 165 and FS1 < 8.0 and LoadSP >= 80",
+    "holdSeconds": 60,
+    "id": "pattern:pump-leakage",
+    "clearHoldSeconds": 60,
+    "tests": [
+      {
+        "variable": "plc_state",
+        "value": "RUN",
+        "operator": "=="
+      },
+      {
+        "variable": "load",
+        "value": 80,
+        "operator": ">="
+      },
+      {
+        "variable": "fs1",
+        "value": 8.0,
+        "operator": "<"
+      },
+      {
+        "variable": "ps1",
+        "value": 165,
+        "operator": "<"
+      }
+    ]
+  }
+]

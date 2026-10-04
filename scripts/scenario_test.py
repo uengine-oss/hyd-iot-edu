@@ -145,6 +145,15 @@ def happy_path(require_llm=False):
     fin, dt = wait_for("CLOSED", lambda: get(f"{PROCESS}/api/incidents/{inc['id']}") if get(f"{PROCESS}/api/incidents/{inc['id']}")["terminal"] else None, 120)
     check("incident CLOSED", fin is not None and fin["state"] == "CLOSED", f"state={fin and fin['state']} reason={fin and fin.get('reason')} after {dt:.0f}s")
     check("work order created", bool(fin and fin.get("workOrder")), json.dumps(fin and fin.get("workOrder")))
+    from datetime import datetime
+    from pathlib import Path
+    transactions = get(f"{ENT}/api/transactions")
+    actual = next((row for row in transactions if row.get('decision') == dec['id'] and row.get('skill') == 'skill:schedule-maintenance'), None)
+    check('Incident work order matches the actual CMMS receipt', bool(actual and fin and fin.get('workOrder', {}).get('id') == actual['ref']), json.dumps(actual, ensure_ascii=False))
+    ordered = bool(actual and fin and fin.get('closed') and datetime.fromisoformat(fin['closed'].replace('Z','+00:00')) >= datetime.fromisoformat(actual['t'].replace('Z','+00:00')))
+    check('Incident closes after the actual CMMS commit', ordered, f"closed={fin and fin.get('closed')} cmms={actual and actual['t']}")
+    evidence = Path('.evidence/reaudit/legacy-receipts'); evidence.mkdir(parents=True, exist_ok=True)
+    (evidence/f"{inc['id']}.json").write_text(json.dumps({'incident':fin,'cmms':actual,'close_after_commit':ordered},ensure_ascii=False,indent=2),encoding='utf-8')
     hist = [h["state"] for h in (fin or {}).get("history", [])]
     check("history order", hist == ["GUIDE_RECEIVED", "AWAITING_APPROVAL", "CMD_ISSUED", "AWAITING_ACK", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "CLOSED"], str(hist))
     return alert_id, cmd_id, inc["id"]
@@ -197,13 +206,19 @@ def knowledge_admin_checks():
     dup = post(f"{PROCESS}/api/kg/skills", {"name": "x", "sopId": "SOP-COOL-01", "steps": "a", "failureMode": "fm:cooling-loss"})
     check("an SOP number another skill owns is refused", dup.get("error") == 409, dup.get("body", "")[:80])
     sample = Path(__file__).resolve().parents[1] / "docs" / "samples" / "HM-8_cooler-fan-manual.md"
-    pv = post(f"{PROCESS}/api/kg/manuals/preview", {"filename": sample.name, "data": base64.b64encode(sample.read_bytes()).decode()}, timeout=30)
+    import uuid
+    suffix = uuid.uuid4().hex[:8].upper()
+    raw = sample.read_text(encoding='utf-8').replace('SOP-FAN-11', 'SOP-TEST-' + suffix + '-11').replace('SOP-FAN-12', 'SOP-TEST-' + suffix + '-12').encode()
+    pv = post(f"{PROCESS}/api/kg/manuals/preview", {"filename": 'scenario-' + sample.name, "data": base64.b64encode(raw).decode()}, timeout=30)
     check("manual preview: 2 sections, 2 SOPs, 8 steps", len(pv.get("sections", [])) == 2 and sum(p["stepCount"] for p in pv.get("procedures", [])) == 8,
           str([(p["id"], p.get("suggestedFailureMode")) for p in pv.get("procedures", [])]))
     links = {p["id"]: {"failureMode": "fm:bearing-degradation", "relation": "REMEDIED_BY", "kind": "work_order"} for p in pv.get("procedures", [])}
-    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="scenario_test"), timeout=30)
+    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="scenario_test", reviewed=True), timeout=30)
     check("manual committed: 2 SOP skills matched to the fan bearing failure mode", out.get("procedures") == 2 and out.get("steps") == 8
           and all(v["failureMode"] == "fm:bearing-degradation" for v in (out.get("skills") or {}).values()), json.dumps(out.get("skills"), ensure_ascii=False))
+    undone = post(f"{PROCESS}/api/kg/manuals/batches/{pv['batch']}/rollback", {'by': 'scenario_test'}, timeout=30)
+    check('fixture manual graph rolled back while source remains readable', undone.get('status') == 'ROLLED_BACK' and
+          get(f"{PROCESS}/api/kg/manuals/sources/{pv['source_id']}").get('source_id') == pv['source_id'], pv['batch'])
 
 
 def db_checks(alert_id, cmd_id, inc_id):
@@ -221,7 +236,7 @@ def db_checks(alert_id, cmd_id, inc_id):
 
 
 def negative_manual_mode():
-    section("7. 부정 시나리오: REMOTE_MANUAL 모드에서는 게이트웨이가 거부 → 에스컬레이션")
+    section("7. 부정 시나리오: 원자 명령 승인 우회를 사전에 거부")
     post(f"{PLANT}/api/reset")
     time.sleep(2)
     post(f"{PLANT}/api/mode", {"asset": "HYD-02", "mode": "REMOTE_MANUAL"})
@@ -236,18 +251,12 @@ def negative_manual_mode():
     check("agent cards: REMOTE_MANUAL fact excludes every control card (rule:auto-mode)", d2.get("options") and all(
         any(v["rule"] == "rule:auto-mode" for v in o["violations"]) for o in d2["options"]), d2.get("explanation", "")[:120])
     r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "OP-17", "actions": [{"code": "FAN_SET", "fan_pct": 100}]})
-    cmd_id = (r.get("cmd") or {}).get("cmdId")
-    log, dt = wait_for("gateway reject", lambda: next((e for e in get(f"{GATEWAY}/api/gateway/log") if e["cmdId"] == cmd_id), None), 20)
-    check("gateway REJECTED with MODE", log is not None and not log["ok"] and log["check"] == "MODE", json.dumps(log))
-    fin, dt = wait_for("escalation", lambda: get(f"{PROCESS}/api/incidents/{inc['id']}") if get(f"{PROCESS}/api/incidents/{inc['id']}")["terminal"] else None, 60)
-    check("incident ESCALATED (ACK_TIMEOUT)", fin is not None and fin["state"] == "ESCALATED" and fin.get("reason") == "ACK_TIMEOUT", f"{fin and fin['state']} {fin and fin.get('reason')} after {dt:.0f}s")
+    check("raw command approval without SOP and role is rejected", r.get("error") == 409, json.dumps(r))
+    current = get(f"{PROCESS}/api/incidents/{inc['id']}")
+    check("no command created by rejected approval", current.get("cmdId") is None, str(current.get("cmdId")))
+    check("incident stays open for a reviewed choice", current["state"] == "AWAITING_APPROVAL", current["state"])
     audit = get(f"{PROCESS}/api/audit")
-    check("process audit has ACK_TIMEOUT", any(a["event"] == "ACK_TIMEOUT" and a["incident"] == inc["id"] for a in audit), "")
-    import subprocess
-    out = subprocess.run(["docker", "compose", "exec", "-T", "timescaledb", "psql", "-U", "hyd", "-d", "hyd", "-At", "-c",
-                          f"SELECT detail->>'check' FROM audit WHERE event='CMD_REJECTED' AND detail->>'cmdId'='{cmd_id}'"],
-                         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=__file__.rsplit("scripts", 1)[0]).stdout.strip()
-    check("Kafka audit → TimescaleDB has cmd-gateway CMD_REJECTED", out == "MODE", f"check={out!r}")
+    check("no command audit for bypass attempt", not any(a["event"] == "CMD_ISSUED" and a.get("incident") == inc["id"] for a in audit))
     post(f"{PLANT}/api/fault", {"asset": "HYD-02", "type": "restore", "ramp_sim_s": 30})
     post(f"{PLANT}/api/mode", {"asset": "HYD-02", "mode": "REMOTE_AUTO"})
 

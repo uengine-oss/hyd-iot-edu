@@ -1,0 +1,98 @@
+{
+  "processDefinitionId": "alert_triage",
+  "processDefinitionName": "미지원 경보 현장 검토",
+  "version": "1.0",
+  "ontologyRef": "proc:alert-triage",
+  "description": "명시 진단/회복 계약이 없는 경보의 원문과 PLC 사유를 사람이 검토한다. 검토 완료는 설비 회복이나 제어 승인이 아니다.",
+  "roles": [
+    {
+      "name": "생산관리자",
+      "endpoint": "role:prod-mgr",
+      "resolutionRule": "온톨로지 Role role:prod-mgr (level 2). 상급 승인 · 에스컬레이션"
+    }
+  ],
+  "data": [
+    {
+      "name": "asset",
+      "type": "Text"
+    },
+    {
+      "name": "alert",
+      "type": "Object"
+    },
+    {
+      "name": "pattern",
+      "type": "Text"
+    },
+    {
+      "name": "alert_id",
+      "type": "Text"
+    },
+    {
+      "name": "incident",
+      "type": "Text"
+    },
+    {
+      "name": "note",
+      "type": "Text"
+    }
+  ],
+  "events": [
+    {
+      "id": "ev:unhandled-alert",
+      "type": "startEvent",
+      "eventDefinition": "message",
+      "name": "미지원 경보 접수"
+    },
+    {
+      "id": "ev:review-recorded",
+      "type": "endEvent",
+      "name": "현장 검토 기록 완료"
+    }
+  ],
+  "activities": [
+    {
+      "id": "task:triage",
+      "name": "미지원 경보 현장 검토",
+      "type": "userTask",
+      "role": "생산관리자",
+      "tool": "formHandler:alert_triage",
+      "inputData": [
+        "asset",
+        "alert",
+        "pattern",
+        "incident"
+      ],
+      "outputData": [
+        "note"
+      ],
+      "instruction": "경보 원문과 PLC TRIP 사유를 확인하고 현장 대응/후속 조사 내용을 기록하세요. 이 제출은 설비 명령이나 정상 회복 판정이 아닙니다.",
+      "description": "정의에 없는 경보/회복 기준을 추측하지 않고 사람이 확인한다."
+    }
+  ],
+  "gateways": [],
+  "sequences": [
+    {
+      "id": "seq:open-review",
+      "source": "ev:unhandled-alert",
+      "target": "task:triage"
+    },
+    {
+      "id": "seq:recorded",
+      "source": "task:triage",
+      "target": "ev:review-recorded"
+    }
+  ],
+  "forms": {
+    "alert_triage": {
+      "fields_json": [
+        {
+          "key": "note",
+          "text": "경보 확인 및 현장 대응 기록",
+          "type": "textarea",
+          "required": true
+        }
+      ]
+    }
+  }
+}

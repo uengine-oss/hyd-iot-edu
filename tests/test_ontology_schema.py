@@ -16,6 +16,21 @@ RELS = {r["type"] for r in S["relationships"]}
 def test_relationship_endpoints_are_declared_classes():
     for r in S["relationships"]:
         assert set(r["from"]) <= CLASSES and set(r["to"]) <= CLASSES, r["type"]
+        for a, b in r.get('endpointPairs', []):
+            assert a in r['from'] and b in r['to']
+
+
+def test_execution_projection_schema_and_crossed_pairs():
+    nodes = [_node(['ProcessInstance'], id='p.1', name='run', status='RUNNING', tenant_id='hyd'),
+             _node(['WorkItem'], id='w', activity_id='t', activity_name='task', status='PENDING', tenant_id='hyd')]
+    rels = [_rel('IN_INSTANCE', 'w', ['WorkItem'], 'p.1', ['ProcessInstance']),
+            _rel('INSTANCE_OF', 'p.1', ['ProcessInstance'], 'p', ['Process'], version='1'),
+            _rel('EXECUTES', 'w', ['WorkItem'], 't', ['Task'])]
+    assert ov.validate(nodes, rels, S) == []
+    for wrong in [_rel('INSTANCE_OF', 'p.1', ['ProcessInstance'], 'd', ['Decision']),
+                  _rel('EXECUTES', 'w', ['WorkItem'], 's', ['Skill']),
+                  _rel('EXECUTES', 't', ['Task'], 't2', ['Task'])]:
+        assert '허용된 끝점 쌍' in '\n'.join(ov.validate([], [wrong], S))
 
 
 def test_every_class_has_layer_standard_and_id_or_parent():

@@ -1,0 +1,55 @@
+........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 29%]
+........................................................................ [ 36%]
+........................................................................ [ 43%]
+........................................................................ [ 51%]
+........................................................................ [ 58%]
+........................................................................ [ 65%]
+........................................................................ [ 73%]
+........................................................................ [ 80%]
+........................................................................ [ 87%]
+........................................................................ [ 95%]
+..............................................                           [100%]
+============================== warnings summary ===============================
+it\agent\agentsvc\main.py:198
+  D:\work\study\hyd-iot-edu\it\agent\agentsvc\main.py:198: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")
+
+.venv314\Lib\site-packages\fastapi\applications.py:4744
+.venv314\Lib\site-packages\fastapi\applications.py:4744
+.venv314\Lib\site-packages\fastapi\applications.py:4744
+  D:\work\study\hyd-iot-edu\.venv314\Lib\site-packages\fastapi\applications.py:4744: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+it\process\procsvc\main.py:322
+  D:\work\study\hyd-iot-edu\it\process\procsvc\main.py:322: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")
+
+it\detector\det\main.py:342
+  D:\work\study\hyd-iot-edu\it\detector\det\main.py:342: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+982 passed, 6 warnings in 23.92s

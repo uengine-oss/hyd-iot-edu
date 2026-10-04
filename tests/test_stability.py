@@ -135,3 +135,22 @@ def test_data_trust_fails_closed_when_ingest_is_unreachable(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", unavailable)
     result = mcp_prom.freshness(DB(), "HYD-01")
     assert result["ok"] is False and result["reason"] == "ingest unavailable"
+
+
+def test_store_save_from_another_thread(tmp_path):
+    """Instance-runtime hooks persist from executor threads; the shared SQLite connection must accept that."""
+    import threading
+    store = Store(str(tmp_path / "p.sqlite3"))
+    errors = []
+
+    def save():
+        try:
+            store.save({}, {"d1": {"state": "DONE", "history": []}}, ["from-thread"])
+        except Exception as e:  # noqa: BLE001
+            errors.append(e)
+
+    th = threading.Thread(target=save)
+    th.start(); th.join()
+    assert errors == []
+    _, book, audit = store.restore()
+    assert book["d1"]["state"] == "DONE" and audit == ["from-thread"]

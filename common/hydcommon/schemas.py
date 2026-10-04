@@ -1,17 +1,22 @@
 """Payload contracts (v3 section 7.3) and validation helpers."""
 from typing import Any
 
-# Ontology v2 atomic commands (Action.code) the PLC supports. PUMP_SELECT / STOP / PRESSURE_SET exist in the ontology but
-# not in this PLC, so the gateway rejects them (WHITELIST). FAN_BOOST / REDUCE_LOAD are the v1 names, kept for old cards.
-ACTION_WHITELIST = {"FAN_SET", "LOAD_SET", "RESET", "FAN_BOOST", "REDUCE_LOAD"}
+# Ontology v2 atomic commands (Action.code) the PLC supports: fan / load setpoints, interlock reset, standby pump
+# selection (actr:pump-selector) and a planned stop. PRESSURE_SET exists in the ontology only as the forbidden old
+# procedure (rule:no-pressure-raise), this PLC has no pressure setpoint, so the gateway rejects it (WHITELIST).
+# FAN_BOOST / REDUCE_LOAD are the v1 names, kept for old cards.
+ACTION_WHITELIST = {"FAN_SET", "LOAD_SET", "RESET", "PUMP_SELECT", "STOP", "FAN_BOOST", "REDUCE_LOAD"}
 # action code -> (PLC resource, parameter key in action.cmd)
 ACTION_TO_WRITES = {
     "FAN_SET": ("FanSpeedSP", "fan_pct"),
     "LOAD_SET": ("LoadSP", "load_pct"),
     "RESET": ("Reset", None),
+    "PUMP_SELECT": ("PumpSelect", "pump"),
+    "STOP": ("Stop", None),
     "FAN_BOOST": ("FanSpeedSP", "fan_pct"),
     "REDUCE_LOAD": ("LoadSP", "load_pct"),
 }
+PUMP_CODES = {"A": 0, "B": 1}      # PumpSelect write value (the ontology Action value is the pump letter)
 MODES = ("LOCAL", "REMOTE_MANUAL", "REMOTE_AUTO")
 
 _REQUIRED_CMD_FIELDS = ("cmdId", "asset", "incident", "source", "actions", "approvedBy", "expiresAt")
@@ -43,5 +48,7 @@ def actions_to_writes(actions: list[dict]) -> list[dict]:
     for a in actions:
         res, key = ACTION_TO_WRITES[a["code"]]
         v = 1 if key is None else a[key]
+        if key == "pump":
+            v = PUMP_CODES[str(v).upper()] if str(v).upper() in PUMP_CODES else v
         writes.append({"res": res, "v": v})
     return writes

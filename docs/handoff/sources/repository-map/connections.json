@@ -1,0 +1,471 @@
+[
+  {
+    "source": "C01",
+    "target": "C02",
+    "type": "등록",
+    "detail": "services/frontend",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "C03",
+    "type": "등록",
+    "detail": "services/completion",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A01",
+    "type": "등록",
+    "detail": "services/deepagents",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A02",
+    "type": "등록",
+    "detail": "services/base-agent-langchain-react",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A03",
+    "type": "등록",
+    "detail": "services/a2a-orch",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A07",
+    "type": "등록",
+    "detail": "services/openai-deep-research",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A08",
+    "type": "등록",
+    "detail": "services/deep-research",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "A09",
+    "type": "등록",
+    "detail": "services/react-voice-agent",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "T01",
+    "type": "등록",
+    "detail": "services/memento",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "T02",
+    "type": "등록",
+    "detail": "services/bpmn-extractor",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "T03",
+    "type": "등록",
+    "detail": "services/office-mcp",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "T04",
+    "type": "등록",
+    "detail": "services/mcp-validator",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "T08",
+    "type": "등록",
+    "detail": "services/computer-use",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "P01",
+    "type": "등록",
+    "detail": "services/analytic",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "P02",
+    "type": "등록",
+    "detail": "services/instance-classifier",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "P03",
+    "type": "등록",
+    "detail": "services/strategy",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "P04",
+    "type": "등록",
+    "detail": "services/agent-feedback",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "O01",
+    "type": "등록",
+    "detail": "services/ontology-studio",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "D01",
+    "type": "등록",
+    "detail": "skills/bpmn-process-generation-skill",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "D02",
+    "type": "등록",
+    "detail": "skills/bsc-strategy-interview",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "D03",
+    "type": "등록",
+    "detail": "docs/doc-site",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "D04",
+    "type": "등록",
+    "detail": "services/agents.github.io",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C01",
+    "target": "D05",
+    "type": "등록",
+    "detail": "services/sample-app-wms",
+    "evidence": "https://github.com/uengine-oss/process-gpt/blob/main/.gitmodules"
+  },
+  {
+    "source": "C02",
+    "target": "C03",
+    "type": "호출",
+    "detail": "업무 실행·검증 API",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "T01",
+    "type": "호출",
+    "detail": "문서·검색 API",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "A01",
+    "type": "호출",
+    "detail": "Deepagents 채팅",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "A02",
+    "type": "호출",
+    "detail": "/agent/ ReAct API",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "A04",
+    "type": "호출",
+    "detail": "Codex 채팅",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "A05",
+    "type": "호출",
+    "detail": "CLI 선택·실행·파일",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "T04",
+    "type": "호출",
+    "detail": "MCP 설정 검사",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "P01",
+    "type": "호출",
+    "detail": "분석 API",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "P02",
+    "type": "호출",
+    "detail": "분류·유사 업무",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "P03",
+    "type": "호출",
+    "detail": "전략·KPI·온톨로지",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "P04",
+    "type": "호출",
+    "detail": "피드백 제안",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "T07",
+    "type": "호출",
+    "detail": "일부 스킬 검사 경로",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "C02",
+    "target": "C04",
+    "type": "선택 라우팅",
+    "detail": "에이전트 요청을 게이트웨이 경유 또는 실행체 직결로 전달(환경별 선택)",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/src/services/agentProxyRules.js"
+  },
+  {
+    "source": "A01",
+    "target": "C07",
+    "type": "의존",
+    "detail": "채팅·폴링 공통 계약",
+    "evidence": "https://github.com/uengine-oss/process-gpt-deepagents/blob/master/requirements.txt"
+  },
+  {
+    "source": "A03",
+    "target": "C07",
+    "type": "의존",
+    "detail": "A2A 실행 이벤트",
+    "evidence": "https://github.com/uengine-oss/process-gpt-a2a-orch/blob/main/README.md"
+  },
+  {
+    "source": "A04",
+    "target": "C07",
+    "type": "의존",
+    "detail": "요청·SSE·채팅 저장",
+    "evidence": "https://github.com/uengine-oss/process-gpt-codex/blob/main/README.md"
+  },
+  {
+    "source": "A05",
+    "target": "A06",
+    "type": "의존",
+    "detail": "CLI 제공자별 동작",
+    "evidence": "https://github.com/uengine-oss/process-gpt-cli-agent/blob/main/README.md"
+  },
+  {
+    "source": "X03",
+    "target": "C07",
+    "type": "의존",
+    "detail": "작업 폴링·결과 이벤트",
+    "evidence": "https://github.com/uengine-oss/process-gpt-crewai-action/blob/main/requirements.txt"
+  },
+  {
+    "source": "X03",
+    "target": "X07",
+    "type": "의존",
+    "detail": "도구·지식·DB 보조 기능",
+    "evidence": "https://github.com/uengine-oss/process-gpt-crewai-action/blob/main/requirements.txt"
+  },
+  {
+    "source": "A01",
+    "target": "T01",
+    "type": "호출",
+    "detail": "자료 조회·메모리 또는 산출물 보관",
+    "evidence": "https://github.com/uengine-oss/process-gpt-deepagents/blob/master/README.md"
+  },
+  {
+    "source": "A02",
+    "target": "T01",
+    "type": "호출",
+    "detail": "자료 조회·메모리 또는 산출물 보관",
+    "evidence": "https://github.com/uengine-oss/process-gpt-base-agent-langchain-react/blob/main/README.md"
+  },
+  {
+    "source": "A04",
+    "target": "T01",
+    "type": "호출",
+    "detail": "자료 조회·메모리 또는 산출물 보관",
+    "evidence": "https://github.com/uengine-oss/process-gpt-codex/blob/main/README.md"
+  },
+  {
+    "source": "A08",
+    "target": "T01",
+    "type": "호출",
+    "detail": "자료 조회·메모리 또는 산출물 보관",
+    "evidence": "https://github.com/uengine-oss/process-gpt-deep-research/blob/master/README.md"
+  },
+  {
+    "source": "T03",
+    "target": "T01",
+    "type": "호출",
+    "detail": "자료 조회·메모리 또는 산출물 보관",
+    "evidence": "https://github.com/uengine-oss/process-gpt-office-mcp/blob/main/README.md"
+  },
+  {
+    "source": "A01",
+    "target": "T03",
+    "type": "설정 연결",
+    "detail": "Office MCP 주소가 배포 환경에 지정됨",
+    "evidence": "https://github.com/uengine-oss/process-gpt-infra-docker/blob/main/docker-compose.yml"
+  },
+  {
+    "source": "A08",
+    "target": "T03",
+    "type": "설정 연결",
+    "detail": "문서 출력 시 선택 연동",
+    "evidence": "https://github.com/uengine-oss/process-gpt-deep-research/blob/master/README.md"
+  },
+  {
+    "source": "C08",
+    "target": "A01",
+    "type": "선택 라우팅",
+    "detail": "대화별 런너 Pod / 비채팅은 shared 서비스",
+    "evidence": "https://github.com/uengine-oss/process-gpt-session-router/blob/main/README.md"
+  },
+  {
+    "source": "C08",
+    "target": "A04",
+    "type": "선택 라우팅",
+    "detail": "대화별 런너 Pod / 비채팅은 shared 서비스",
+    "evidence": "https://github.com/uengine-oss/process-gpt-session-router/blob/main/README.md"
+  },
+  {
+    "source": "P04",
+    "target": "A01",
+    "type": "호출",
+    "detail": "승인된 스킬 변경을 현재 스킬 API에 전달",
+    "evidence": "https://github.com/uengine-oss/process-gpt-vue3/blob/main/vite.config.ts"
+  },
+  {
+    "source": "O02",
+    "target": "O01",
+    "type": "공유 구성",
+    "detail": "별도 플랫폼이 Studio를 공유; ProcessGPT의 하위라는 뜻은 아님",
+    "evidence": "https://github.com/uengine-oss/ontologic/blob/main/.gitmodules"
+  },
+  {
+    "source": "O02",
+    "target": "T02",
+    "type": "공유 구성",
+    "detail": "BPMN 추출·표현 구성 공유",
+    "evidence": "https://github.com/uengine-oss/ontologic/blob/main/.gitmodules"
+  },
+  {
+    "source": "O03",
+    "target": "O04",
+    "type": "관련 기술",
+    "detail": "같은 Ontological 계열 설명. 기능 차이·호환성은 미확인",
+    "evidence": "https://github.com/uengine-oss/ontological-db-enterprise-custom/blob/main/README.md"
+  },
+  {
+    "source": "X01",
+    "target": "C02",
+    "type": "화면 사용",
+    "detail": "웹 포털 + mobile-live/shell 앱 에셋",
+    "evidence": "https://github.com/uengine-oss/process-gpt-mobile/blob/main/README.md"
+  },
+  {
+    "source": "C04",
+    "target": "X02",
+    "type": "호출",
+    "detail": "/payments 경로",
+    "evidence": "https://github.com/uengine-oss/process-gpt-gateway/blob/main/src/main/resources/application.yml"
+  },
+  {
+    "source": "C05",
+    "target": "T06",
+    "type": "배포",
+    "detail": "ProcessGPT용 용어집 이미지·포트 구성",
+    "evidence": "https://github.com/uengine-oss/process-gpt-infra-docker/blob/main/docker-compose.yml"
+  },
+  {
+    "source": "C06",
+    "target": "A01",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "A04",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "A05",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "T05",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "X03",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "X04",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "X05",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "X06",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  },
+  {
+    "source": "C06",
+    "target": "C08",
+    "type": "배포 정의",
+    "detail": "정의 존재만 확인; 운영 활성 여부 미검증",
+    "evidence": "https://github.com/uengine-oss/process-gpt-k8s/tree/main/deployments"
+  }
+]

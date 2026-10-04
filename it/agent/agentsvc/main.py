@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import urllib.request
+from urllib.parse import quote
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -23,6 +24,7 @@ from .tools import mcp_kg, mcp_prom, mcp_tsdb
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("agent")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
+AUTOMATIC_PIPELINE = os.getenv("PROCESS_MODE", "legacy") != "instance"
 
 reg = Registry()
 c_runs = reg.counter("agent_runs_total", "agent runs by status")
@@ -40,10 +42,16 @@ def submit_card(card: dict) -> dict:
         return json.loads(r.read())
 
 
-def pipeline(run) -> None:
+def pipeline(run, *, do_submit=True) -> None:
     """Synchronous reasoning pipeline (runs in a worker thread)."""
     alert, asset = run.alert, run.asset
     try:
+        policy=decidelib._get_json(f"{PROCESS_URL}/api/alerts/policy?pattern={quote(str(alert.get('pattern') or ''),safe='')}")
+        run.step('alert_policy',policy,note='프로세스 정의의 경보 지원 범위/사람 검토 경로')
+        if policy.get('route')!='response':
+            run.finish('WITHHELD','이 경보는 명시된 사람 검토 경로에서 확인합니다')
+            c_runs.inc(status='WITHHELD')
+            return
         # 1. data trust (mcp-prom)
         fresh = mcp_prom.freshness(tsdb, asset)
         run.step("freshness", fresh, note="mcp-prom: 데이터 신선도·수집 상태")
@@ -62,6 +70,13 @@ def pipeline(run) -> None:
         results = tsdb.evaluate(evidence, asset)
         run.step("evidence", results, note="mcp-tsdb: Evidence SQL 템플릿 실행 (tag_1s)")
         causes = cardlib.rank_causes(t1, results)
+        assessment = cardlib.evidence_status(causes)
+        if assessment['withheld']:
+            run.card = cardlib.build_card(None, alert, causes, {}, fresh)
+            run.step('evidence_assessment', assessment, note=assessment['reason'])
+            run.finish('WITHHELD', assessment['reason'])
+            c_runs.inc(status='WITHHELD')
+            return
         run.step("rank", [{"id": c["id"], "name": c["name"], "score": c["score"], "prior": c["prior"]} for c in causes],
                  note="원인 점수 = 사전확률 × 통과 증거 가중치 비율")
         # 4. T2: the failure mode's SOP skills for the top cause (mcp-kg)
@@ -85,11 +100,28 @@ def pipeline(run) -> None:
             c_runs.inc(status="REJECTED_BY_GUARDRAIL")
             log.warning("run %s rejected by guardrail: %s", run.id, violations)
             return
+        if not do_submit:
+            d = decidelib.decide(kg, decisions, tsdb, asset, alert.get('pattern',''), causes[0], do_submit=False,
+                                origin={'kind':'alert','alertId':alert['alertId'],'pattern':alert['pattern'],
+                                        'cause':causes[0]['id'],'failureMode':causes[0].get('failureModeId')})
+            if d.get('status') != 'EVALUATED' or not (d.get('result') or {}).get('options'):
+                run.step('cards',d,status='FAILED');run.finish('WITHHELD',d.get('error') or '검증된 조치 대안을 만들지 못했습니다')
+                return
+            run.evaluation = {k:d.get(k) for k in ('id','schema','scenario','asset','origin','recommended','explanation',
+                                                    'rankRule','roles','facts','provenance','applicable')}
+            run.evaluation.update(options=d['result']['options'],rankRule=d['result'].get('rankRule'))
+            run.step('cards',d,note='읽기 평가 결과: 프로세스 점유 확인 후 접수하며 여기서는 제출/실행하지 않습니다')
+            run.finish('EVALUATED')
+            return
         # 7. submit (the agent's only write)
         res = submit_card(card)
         run.incident_id = res.get("id")
         card["incident"] = run.incident_id
         run.step("submit", res, note="process API에 카드 제출 (에이전트의 유일한 쓰기)")
+        if res.get('state')!='AWAITING_APPROVAL':
+            run.finish('WITHHELD','사건이 조치 선택 상태가 아니므로 카드 제출을 중단합니다')
+            c_runs.inc(status='WITHHELD')
+            return
         # 8. action cards (L7 -> L8 -> L9): DMN rules + forecasts + BSC trade-offs + precedents -> ranked SOP skills for the human
         linked = {}
         try:
@@ -126,6 +158,9 @@ async def consume():
         alert = rec.value
         if not isinstance(alert, dict) or alert.get("state") != "RAISE" or not alert.get("alertId"):
             continue
+        if not AUTOMATIC_PIPELINE:
+            log.info("RAISE %s is owned by the instance worker; legacy pipeline skipped", alert["alertId"])
+            continue
         run = runs.create_if_new(alert)
         if run is None:
             log.info("duplicate RAISE for %s ignored", alert.get("alertId"))
@@ -136,6 +171,21 @@ async def consume():
 
 app = make_app("agent (L8: ontology-grounded guide cards, read-only tools)", reg,
                lambda: {**state, "ok": state["kafka"] and not state.get("consumer_dead", False)})
+
+
+class EvaluationReq(BaseModel):
+    alert: dict
+
+
+@app.post('/api/agent/evaluate')
+def evaluate_without_submission(req: EvaluationReq):
+    if (req.alert.get('state')!='RAISE' or any(not isinstance(req.alert.get(k),str) or not req.alert[k]
+                                             for k in ('alertId','asset','pattern'))):
+        raise HTTPException(400,'원천 RAISE 경보의 ID/설비/패턴이 필요합니다')
+    run = runs.force_new(req.alert)
+    state['runs'] += 1
+    pipeline(run,do_submit=False)
+    return run.to_dict()
 
 
 def _watch(task):
@@ -221,15 +271,18 @@ def _manual_decide(k, req: DecideReq) -> dict:
     try:
         results = tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], req.asset)
     except Exception as e:  # noqa: BLE001
-        log.warning("evidence evaluation skipped: %s", e)
-        results = {}
+        log.warning("evidence source unavailable: %s", e)
+        raise HTTPException(503, '근거 원천 조회 실패로 판단을 보류합니다') from e
     causes = cardlib.rank_causes(t1, results)
+    assessment = cardlib.evidence_status(causes)
+    if assessment['withheld']:
+        raise HTTPException(409, {'reason': assessment['reason'], 'evidence_status': assessment, 'causes': causes})
     if req.facts and req.facts.get("cause"):
         causes.sort(key=lambda c: c["id"] != req.facts["cause"])
     d = decidelib.decide(k, decisions, tsdb, req.asset, req.pattern, causes[0], origin={"kind": "manual", "pattern": req.pattern},
                          overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False)
     d["causes"] = [{"id": c["id"], "name": c["name"], "score": c["score"], "failureMode": c.get("failureMode"),
-                    "evidence": [{"name": e["name"], "value": e["value"], "passed": e["passed"]} for e in c["evidence"]]} for c in causes]
+                    "evidence": c["evidence"]} for c in causes]
     return d
 
 
@@ -237,6 +290,55 @@ def _manual_decide(k, req: DecideReq) -> dict:
 async def decide(req: DecideReq):
     k = _kg()
     return await asyncio.get_running_loop().run_in_executor(None, lambda: _manual_decide(k, req))
+
+
+class ApprovalCheckReq(BaseModel):
+    decision: dict
+    option: str
+    role: str
+
+
+class ForecastReq(BaseModel):
+    asset: str
+    actions: list[dict]
+    horizon_s: float = 900
+
+
+class ChoicePreviewReq(BaseModel):
+    decision: dict
+    option: str
+    parameters: dict
+
+
+@app.post('/api/agent/choice-preview')
+def choice_preview(req: ChoicePreviewReq):
+    from .approval import preview
+    try:
+        return preview(_kg(), tsdb, req.decision, req.option, req.parameters)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.post('/api/agent/forecast')
+def forecast_actions(req: ForecastReq):
+    """Read-only counterfactual; cannot submit a decision or send a command."""
+    from .forecasting import current
+    try:
+        return current(_kg(), req.asset, req.actions, req.horizon_s)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    except OSError as e:
+        raise HTTPException(503, 'forecast source unavailable') from e
+
+
+@app.post('/api/agent/approval-check')
+def approval_check(req: ApprovalCheckReq):
+    """Read-only policy/source assessment; this endpoint cannot authorize effects."""
+    from .approval import assess
+    try:
+        return assess(_kg(), tsdb, req.decision, req.option, req.role)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
 
 
 @app.get("/api/agent/decisions")

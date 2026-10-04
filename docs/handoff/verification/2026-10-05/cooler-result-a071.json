@@ -1,0 +1,14 @@
+{
+  "started": "2026-10-04T21:44:52.569682+00:00",
+  "runner_pid": 3256,
+  "command": [
+    "D:\\work\\study\\hyd-iot-edu\\.venv314\\Scripts\\python.exe",
+    "-u",
+    "scripts/scenario_instance_test.py",
+    "--fresh-review"
+  ],
+  "scenario_sha256": "17df71964285cd7c272962dc6c281675bbbe01846791123993118ea119c22539",
+  "scenario_pid": 14220,
+  "exit_code": 0,
+  "finished": "2026-10-04T21:46:57.639333+00:00"
+}

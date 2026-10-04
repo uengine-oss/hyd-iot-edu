@@ -27,9 +27,9 @@ _INVENTORY = {"HYD-01": {"fg_item": "FG-AUTO-7", "fg_stock": 900, "ship_in_h": 2
               "HYD-02": {"fg_item": "FG-IND-3", "fg_stock": 100, "ship_in_h": 10},
               "HYD-03": {"fg_item": "FG-AUTO-9", "fg_stock": 200, "ship_in_h": 3}}
 # CMMS: maintenance history of the cooler
-_CMMS = {"HYD-01": {"cleans_60d": 3, "last_clean_days": 21, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 1400},
-         "HYD-02": {"cleans_60d": 1, "last_clean_days": 45, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 2600},
-         "HYD-03": {"cleans_60d": 0, "last_clean_days": 80, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 3100}}
+_CMMS = {"HYD-01": {"cleans_60d": 3, "last_clean_days": 21, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 1400, "standby_ready": True},
+         "HYD-02": {"cleans_60d": 1, "last_clean_days": 45, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 2600, "standby_ready": True},
+         "HYD-03": {"cleans_60d": 0, "last_clean_days": 80, "clean_h": 3, "clean_cost": 40, "night_in_h": 9, "oil_risk_per_h": 5, "mtbf_h": 3100, "standby_ready": True}}
 # QMS: lots produced during the last over-temperature window
 _QMS = {"HYD-01": {"hot_min": 12, "auto_lot": "L-0930-A17", "auto_qty": 800, "gen_lot": "L-0930-G05", "gen_qty": 600,
                    "inspect_h": 4, "inspect_cost": 60, "sample_cost": 10, "gen_defect_p": 0.03, "gen_claim": 400, "auto_defect_p": 0.05, "auto_claim": 3000},

@@ -20,6 +20,8 @@ edge = Edge(plant, publish_wave=None if os.getenv("PUBLISH_WAVE") is None else o
 reg = Registry()
 g_ts1 = reg.gauge("plant_ts1_celsius", "oil temperature")
 g_health = reg.gauge("plant_cooler_health", "cooler health 0..1")
+g_leak = reg.gauge("plant_pump_leak", "pump A internal leakage fraction")
+g_wear = reg.gauge("plant_fan_bearing_wear", "fan bearing wear 0..1")
 g_pub = reg.gauge("plant_mqtt_published_total", "messages published")
 
 app = FastAPI(title="plant-sim (L1 hydraulic units + soft-PLC)", version="1.0")
@@ -28,8 +30,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 class FaultReq(BaseModel):
     asset: str = "HYD-01"
-    type: str = "cooler_degradation"     # cooler_degradation | restore
-    target_health: float = thermal.DEGRADED_HEALTH
+    type: str = "cooler_degradation"     # cooler_degradation | pump_leakage | fan_vibration | restore
+    target: float | None = None          # ramp target of the fault's disturbance variable (default per kind)
+    target_health: float | None = None   # legacy name for cooler_degradation
     ramp_sim_s: float = 300.0
 
 
@@ -67,6 +70,8 @@ def metrics():
     for a, u in plant.units.items():
         g_ts1.set(u.state.ts1, asset=a)
         g_health.set(u.state.cooler_health, asset=a)
+        g_leak.set(u.state.leak, asset=a)
+        g_wear.set(u.state.bearing_wear, asset=a)
     g_pub.set(edge.published)
     return reg.render()
 
@@ -80,8 +85,9 @@ def state():
 def fault(req: FaultReq):
     if req.asset not in plant.units:
         raise HTTPException(404, "unknown asset")
+    target = req.target if req.target is not None else (req.target_health if req.type == "cooler_degradation" else None)
     try:
-        return plant.inject(req.asset, req.type, req.target_health, req.ramp_sim_s)
+        return plant.inject(req.asset, req.type, target, req.ramp_sim_s)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -119,11 +125,11 @@ def time_scale(req: ScaleReq):
 
 @app.post("/api/reset")
 def reset():
-    """Lecture helper: put every unit back to the healthy operating point (REMOTE_AUTO, fan 60, load 90)."""
+    """Lecture helper: put every unit back to the healthy operating point (REMOTE_AUTO, fan 60, load 90, pump A, no faults)."""
     with plant.lock:
         for a, u in plant.units.items():
-            u.fault = None
-            u.state.cooler_health = 1.0
+            u.faults.clear()
+            u.state.cooler_health, u.state.leak, u.state.bearing_wear, u.state.pump = 1.0, 0.0, 0.0, "A"
             u.state.fan_pct, u.state.load_pct = 60.0, 90.0
             u.state.ts1 = 48.0
             u.ctrl.mode, u.ctrl.state, u.ctrl.trip = "REMOTE_AUTO", "RUN", None

@@ -48,7 +48,9 @@ def gen_constraints(s: dict) -> str:
             out.append(f"CREATE CONSTRAINT v2_{c['name'].lower()}_id IF NOT EXISTS FOR (n:{c['name']}) REQUIRE n.id IS UNIQUE;")
     searchable = [c["name"] for c in s["classes"] if any(p["name"] == "aliases" for p in c["properties"])]
     out += ["", "// 엔티티 인식(entity resolution)용 전문 검색 색인: 이름과 다른 이름(aliases)",
-            f"CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:{'|'.join(searchable)}) ON EACH [n.name, n.aliases];", ""]
+            f"CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:{'|'.join(searchable)}) ON EACH [n.name, n.aliases];",
+            "CREATE CONSTRAINT execution_projection_id IF NOT EXISTS FOR (n:ExecutionProjection) REQUIRE n.id IS UNIQUE;",
+            "CREATE CONSTRAINT case_projection_id IF NOT EXISTS FOR (n:CaseProjection) REQUIRE n.id IS UNIQUE;", ""]
     return "\n".join(out)
 
 
@@ -93,6 +95,8 @@ def gen_ttl(s: dict) -> str:
         comment = r["description"]
         if r.get("properties"):
             comment += " | 관계 속성: " + ", ".join(p["name"] + (" (필수)" if p.get("required") else "") for p in r["properties"])
+        if r.get("endpointPairs"):
+            comment += " | 허용된 끝점 쌍: " + ", ".join(f"{a} → {b}" for a, b in r["endpointPairs"])
         L.append("\n".join([f"hyd:{r['type']} a owl:ObjectProperty ;", f"  rdfs:label \"{r['type']}\" ;",
                             f"  rdfs:domain {_union(r['from'])} ;", f"  rdfs:range {_union(r['to'])} ;",
                             f"  hyd:cardinality \"{r['cardinality']}\" ;", f"  rdfs:comment {_ttl_str(comment)} ."]))
@@ -148,6 +152,8 @@ def gen_prompt(s: dict) -> str:
         if r.get("properties"):
             rp = " {" + ", ".join(p["name"] + ("!" if p.get("required") else "") for p in r["properties"]) + "}"
         out.append(f"- `(:{'|'.join(r['from'])})-[:{r['type']}{rp}]->(:{'|'.join(r['to'])})` {r['cardinality']}. {r['description']}")
+        if r.get("endpointPairs"):
+            out.append("  - 허용된 끝점 쌍: " + ", ".join(f"`{a} → {b}`" for a, b in r["endpointPairs"]) + ". 위 from/to 목록의 모든 조합을 허용하는 것은 아니다.")
     return "\n".join(out) + "\n"
 
 
@@ -306,7 +312,7 @@ def cmd_load(args) -> int:
                 ses.run(f"DROP CONSTRAINT `{r['name']}` IF EXISTS").consume()
             for r in list(ses.run("SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP' RETURN name")):
                 ses.run(f"DROP INDEX `{r['name']}` IF EXISTS").consume()
-        for f in ("constraints.cypher", "instances.cypher"):
+        for f in ("constraints.cypher", "instances.cypher", "detector-patterns.cypher"):
             sts = split_statements((V2 / f).read_text(encoding="utf-8"))
             for i, st in enumerate(sts, 1):
                 try:
@@ -356,6 +362,8 @@ def validate(records_nodes, records_rels, s: dict) -> list[str]:
         spec = rel_by[t]
         if not set(r["la"]) & set(spec["from"]) or not set(r["lb"]) & set(spec["to"]):
             errs.append(f"rel {t}: {r['a']}{r['la']} → {r['b']}{r['lb']} 는 허용된 끝점({spec['from']} → {spec['to']})이 아님")
+        elif spec.get("endpointPairs") and not any(a in r['la'] and b in r['lb'] for a, b in spec['endpointPairs']):
+            errs.append(f"rel {t}: {r['a']} → {r['b']} 는 허용된 끝점 쌍이 아님 {spec['endpointPairs']}")
         for p in spec.get("properties", []):
             v = r["props"].get(p["name"])
             if p.get("required") and v is None:

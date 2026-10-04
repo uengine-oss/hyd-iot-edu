@@ -1,0 +1,34 @@
+{
+  "scope": "actual HTTP/PG/restart/timer/Neo4j; no Codex or PLC",
+  "checks": {
+    "original_condition_takes_old_branch": true,
+    "first_plan_includes_prior_review": true,
+    "new_review_and_all_branches_wait_for_producer": true,
+    "unreached_review_cannot_be_submitted": true,
+    "exact_condition_producer_and_arrival_durable_in_pg": true,
+    "process_restart_preserves_waiting_condition_identity": true,
+    "request_replay_is_original_receipt": true,
+    "second_plan_includes_prior_review": true,
+    "older_producer_cannot_release_new_review": true,
+    "fresh_condition_snapshot_and_reference_reach_review": true,
+    "condition_snapshot_preserves_exact_value_and_source": true,
+    "new_review_reevaluates_gateway_and_cancels_new_timer": true,
+    "original_done_review_and_gateway_record_preserved": true,
+    "new_branch_closes_after_all_admitted_work": true,
+    "gateway_graph_matches_current_rows": true,
+    "original_timer_fires_and_cancels_review": true,
+    "expired-boundary_plan_includes_prior_review": true,
+    "expired_review_is_not_reopened_before_fresh_producer": true,
+    "new_timer_starts_at_new_review_with_same_time_scale": true,
+    "previous_timeout_branch_waits_for_new_timer_arrival": true,
+    "only_new_boundary_wins_in_new_generation": true,
+    "late_review_cannot_override_fired_boundary": true,
+    "boundary_generation_finishes_without_losing_old_timer": true,
+    "boundary_graph_matches_current_rows": true
+  },
+  "instances": [
+    "condition-recheck-gateway-dc6db0e3.4479fa4c-98bb-4887-9149-27abb36387e5",
+    "condition-recheck-boundary-92c6aa0d.04b3b784-b38b-496e-927b-214504af836d"
+  ],
+  "exit_code": 0
+}

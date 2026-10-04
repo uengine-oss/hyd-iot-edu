@@ -1,0 +1,21 @@
+{
+  "phase": "A070",
+  "checks": {
+    "distinct_path_weight_and_condition_pairs_preserved": true,
+    "true_condition_uses_full_strong_path": true,
+    "unchanged_current_card_can_be_approved": true,
+    "false_strong_path_excluded_weak_path_retained": true,
+    "changed_bsc_fact_invalidates_old_consent": true,
+    "unknown_only_adds_unconfirmed_increment": true,
+    "reviewed_expression_changes_applicability": true,
+    "replay_returns_receipt_without_reverting_policy": true,
+    "stale_revision_rejected": true,
+    "different_source_text_rejected": true,
+    "missing_binding_rejected": true,
+    "executable_code_rejected": true,
+    "cleared_interpretation_keeps_original_text_unknown": true,
+    "candidate_forecast_is_explicit_distinct_input": true
+  },
+  "fixture_cleanup": true,
+  "scope": "real PG/graph/API/MCP/approval; no Codex or PLC"
+}

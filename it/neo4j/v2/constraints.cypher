@@ -33,6 +33,13 @@ CREATE CONSTRAINT v2_externalvariable_id IF NOT EXISTS FOR (n:ExternalVariable) 
 CREATE CONSTRAINT v2_forecast_id IF NOT EXISTS FOR (n:Forecast) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_incident_id IF NOT EXISTS FOR (n:Incident) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_decisioncase_id IF NOT EXISTS FOR (n:DecisionCase) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_ingestioncontrol_id IF NOT EXISTS FOR (n:IngestionControl) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_ingestionbatch_id IF NOT EXISTS FOR (n:IngestionBatch) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_processinstance_id IF NOT EXISTS FOR (n:ProcessInstance) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_workitem_id IF NOT EXISTS FOR (n:WorkItem) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_processversion_id IF NOT EXISTS FOR (n:ProcessVersion) REQUIRE n.id IS UNIQUE;
 
 // 엔티티 인식(entity resolution)용 전문 검색 색인: 이름과 다른 이름(aliases)
 CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:Measure|Component|StateVariable|Symptom|Cause|ExternalVariable) ON EACH [n.name, n.aliases];
+CREATE CONSTRAINT execution_projection_id IF NOT EXISTS FOR (n:ExecutionProjection) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT case_projection_id IF NOT EXISTS FOR (n:CaseProjection) REQUIRE n.id IS UNIQUE;

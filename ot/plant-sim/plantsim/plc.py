@@ -2,6 +2,9 @@
 
 Mirrors v3 section 7.1/7.2 (OT PLC row):
   mode/source match -> expiry (PLC clock) -> last-32 cmdId dedupe -> write range -> hard interlock
+
+Writes: FanSpeedSP, LoadSP, Reset, PumpSelect (0 = A, 1 = B; ontology actr:pump-selector), Stop (planned stop, state STOP).
+Interlocks (ontology AFFECTS notes): TS1 > 65 OVERTEMP, PS1 < 130 LOW_PRESSURE, VS1 >= 2.0 HIGH_VIBRATION. No automatic reset.
 """
 from collections import deque
 from dataclasses import dataclass, field
@@ -10,20 +13,24 @@ import time
 
 from hydcommon.schemas import MODES
 from hydcommon.timeutil import parse_iso
+from hydcommon.forecast import MODEL_ID
 from . import thermal
 
 TRIP_TS1 = thermal.TRIP_TS1
+TRIP_PS1 = thermal.TRIP_PS1
+TRIP_VS1 = thermal.TRIP_VS1
 RESET_TS1 = 55.0
 LOAD_MIN = 60.0
 DEDUP_N = 32
-WRITE_RANGES = {"FanSpeedSP": (0.0, 100.0), "LoadSP": (LOAD_MIN, 100.0), "Reset": (1, 1)}
+WRITE_RANGES = {"FanSpeedSP": (0.0, 100.0), "LoadSP": (LOAD_MIN, 100.0), "Reset": (1, 1), "PumpSelect": (0, 1), "Stop": (1, 1)}
+PUMP_OF = {0: "A", 1: "B"}
 
 
 @dataclass
 class PlcState:
     mode: str = "REMOTE_AUTO"
-    state: str = "RUN"            # RUN | TRIP
-    trip: str | None = None       # OVERTEMP
+    state: str = "RUN"            # RUN | TRIP | STOP (planned stop by command; Reset restarts)
+    trip: str | None = None       # OVERTEMP | LOW_PRESSURE | HIGH_VIBRATION
     recent_cmd_ids: deque = field(default_factory=lambda: deque(maxlen=DEDUP_N))
     last_cmd_id: str | None = None
     last_result: str | None = None
@@ -40,10 +47,16 @@ class CmdResult:
 
 
 def check_interlock(p: PlcState, u: thermal.UnitState) -> None:
-    """Hard interlock: TS1 above 65 C trips the pump. No automatic reset."""
-    if u.ts1 > TRIP_TS1 and p.state != "TRIP":
-        p.state = "TRIP"
-        p.trip = "OVERTEMP"
+    """Hard interlocks on a running unit: TS1 above 65 C, discharge pressure under 130 bar, fan vibration at or above
+    2.0 mm/s. The first one that holds trips the unit; there is no automatic reset."""
+    if p.state != "RUN":
+        return
+    if u.ts1 > TRIP_TS1:
+        p.state, p.trip = "TRIP", "OVERTEMP"
+    elif u.ps1 < TRIP_PS1:
+        p.state, p.trip = "TRIP", "LOW_PRESSURE"
+    elif u.vs1 >= TRIP_VS1:
+        p.state, p.trip = "TRIP", "HIGH_VIBRATION"
 
 
 def _reject(p: PlcState, cmd_id: str, reason: str, source: str) -> CmdResult:
@@ -108,6 +121,10 @@ def apply_command(p: PlcState, u: thermal.UnitState, cmd: dict, source: str, now
             u.load_pct = v
         elif res == "Reset":
             p.state, p.trip = "RUN", None
+        elif res == "PumpSelect":
+            u.pump = PUMP_OF[int(round(v))]
+        elif res == "Stop":
+            p.state, p.trip = "STOP", None
         applied[res] = v
 
     if source == "FUXA" and p.mode == "REMOTE_AUTO":
@@ -138,10 +155,16 @@ def status_payload(asset: str, p: PlcState, u: thermal.UnitState, now_iso: str) 
         "t": now_iso,
         "mode": p.mode,
         "state": p.state,
+        "forecast_model": MODEL_ID,
+        "ts1": u.ts1,
+        "t_amb": u.t_amb,
         "trip": p.trip,
         "fan_pct": u.fan_pct,
         "load_pct": u.load_pct,
         "cooler_health": round(u.cooler_health, 3),
+        "leak": round(u.leak, 3),
+        "bearing_wear": round(u.bearing_wear, 3),
+        "pump": u.pump,
         "cmdId": p.last_cmd_id,
         "result": p.last_result,
         "reason": p.last_reason,

@@ -11,11 +11,20 @@ from hydcommon.timeutil import now, now_iso
 from . import thermal, plc
 
 
+# fault kind -> (UnitState attribute it ramps, default target). Each kind is one ontology disturbance variable:
+# cooler_degradation = sv:fouling (cooler_health), pump_leakage = sv:leak, fan_vibration = sv:bearing-wear.
+FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
+               "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
+               "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
+HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+
+
 @dataclass
 class Fault:
-    kind: str                 # cooler_degradation | restore
-    target_health: float
-    rate_per_s: float         # health change per simulated second (signed)
+    kind: str                 # cooler_degradation | pump_leakage | fan_vibration | restore
+    attr: str                 # UnitState attribute being ramped
+    target: float
+    rate_per_s: float         # change per simulated second (signed)
 
 
 @dataclass
@@ -23,8 +32,13 @@ class Unit:
     asset: str
     state: thermal.UnitState = field(default_factory=thermal.UnitState)
     ctrl: plc.PlcState = field(default_factory=plc.PlcState)
-    fault: Fault | None = None
+    faults: dict[str, Fault] = field(default_factory=dict)   # attr -> ramp in progress
     dirty_status: bool = True
+
+    @property
+    def fault(self) -> Fault | None:
+        """The fault being injected right now (the first ramp still running), kept for the status/snapshot contract."""
+        return next(iter(self.faults.values()), None)
 
 
 class Plant:
@@ -52,30 +66,35 @@ class Plant:
 
     @staticmethod
     def _apply_fault(u: Unit, dt: float) -> None:
-        f = u.fault
-        if not f:
-            return
-        h = u.state.cooler_health
-        if abs(h - f.target_health) <= abs(f.rate_per_s * dt):
-            u.state.cooler_health = f.target_health
-            u.fault = None
-        else:
-            u.state.cooler_health = h + f.rate_per_s * dt
+        for attr, f in list(u.faults.items()):
+            cur = getattr(u.state, attr)
+            if abs(cur - f.target) <= abs(f.rate_per_s * dt):
+                setattr(u.state, attr, f.target)
+                del u.faults[attr]
+                u.dirty_status = True  # publish the transition out of a non-stationary model domain
+            else:
+                setattr(u.state, attr, cur + f.rate_per_s * dt)
 
     # ---- fault injection API ----
-    def inject(self, asset: str, kind: str, target_health: float = thermal.DEGRADED_HEALTH, ramp_sim_s: float = 300.0) -> dict:
+    def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float = 300.0) -> dict:
+        """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
+        step). `restore` ramps every disturbance back to its healthy value."""
         with self.lock:
             u = self.units[asset]
-            if kind == "cooler_degradation":
-                target = float(target_health)
-            elif kind == "restore":
-                target = 1.0
+            if kind == "restore":
+                plan = {attr: healthy for attr, healthy in HEALTHY.items() if getattr(u.state, attr) != healthy or attr in u.faults}
+            elif kind in FAULT_KINDS:
+                attr, default = FAULT_KINDS[kind]
+                plan = {attr: float(default if target is None else target)}
             else:
                 raise ValueError(f"unknown fault kind {kind}")
-            delta = target - u.state.cooler_health
-            rate = delta / max(1.0, float(ramp_sim_s))
-            u.fault = Fault(kind, target, rate)
-            return {"asset": asset, "kind": kind, "target_health": target, "ramp_sim_s": ramp_sim_s}
+            for attr, tgt in plan.items():
+                rate = (tgt - getattr(u.state, attr)) / max(1.0, float(ramp_sim_s))
+                u.faults[attr] = Fault(kind, attr, tgt, rate)
+            if plan:
+                u.dirty_status = True
+            return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
+                    "target_health": plan.get("cooler_health", u.state.cooler_health)}
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
@@ -109,6 +128,7 @@ class Plant:
         st = plc.status_payload(asset, u.ctrl, u.state, now_iso())
         st["sim_t"] = round(self.sim_t, 1)
         st["time_scale"] = self.time_scale
+        st['disturbance_ramps'] = sorted(u.faults)
         return st
 
     def snapshot(self) -> dict:
@@ -117,6 +137,9 @@ class Plant:
                 "time_scale": self.time_scale,
                 "sim_t": round(self.sim_t, 1),
                 "units": {a: {"tags": self.tags(a), "status": self.status(a),
-                              "fault": (u.fault.kind if u.fault else None)}
+                              "fault": (u.fault.kind if u.fault else None),
+                              "faults": [f.kind for f in u.faults.values()],
+                              "disturbances": {"cooler_health": round(u.state.cooler_health, 3), "leak": round(u.state.leak, 3),
+                                               "bearing_wear": round(u.state.bearing_wear, 3), "pump": u.state.pump}}
                           for a, u in self.units.items()},
             }

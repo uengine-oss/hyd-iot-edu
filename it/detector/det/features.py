@@ -27,6 +27,10 @@ class SlopeWindow:
 
     def push(self, t: float, v: float) -> None:
         self.pts.append((t, v))
+        self.trim(t)
+
+    def trim(self, t: float) -> None:
+        """Expire samples even when this signal itself has stopped publishing."""
         while self.pts and t - self.pts[0][0] > self.window_s:
             self.pts.popleft()
 

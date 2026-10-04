@@ -1,0 +1,241 @@
+{
+  "processDefinitionId": "condition-recheck",
+  "processDefinitionName": "Condition recheck",
+  "version": "1",
+  "roles": [
+    {
+      "name": "Reviewer",
+      "endpoint": "role:operator"
+    }
+  ],
+  "data": [
+    {
+      "name": "x",
+      "type": "Text"
+    },
+    {
+      "name": "review",
+      "type": "Text"
+    },
+    {
+      "name": "old_result",
+      "type": "Text"
+    },
+    {
+      "name": "new_result",
+      "type": "Text"
+    },
+    {
+      "name": "late_result",
+      "type": "Text"
+    },
+    {
+      "name": "hold",
+      "type": "Text"
+    }
+  ],
+  "forms": {
+    "x": {
+      "fields_json": [
+        {
+          "key": "x",
+          "type": "text",
+          "text": "x",
+          "required": false
+        }
+      ]
+    },
+    "review": {
+      "fields_json": [
+        {
+          "key": "review",
+          "type": "text",
+          "text": "review",
+          "required": false
+        }
+      ]
+    },
+    "old_result": {
+      "fields_json": [
+        {
+          "key": "old_result",
+          "type": "text",
+          "text": "old_result",
+          "required": false
+        }
+      ]
+    },
+    "new_result": {
+      "fields_json": [
+        {
+          "key": "new_result",
+          "type": "text",
+          "text": "new_result",
+          "required": false
+        }
+      ]
+    },
+    "late_result": {
+      "fields_json": [
+        {
+          "key": "late_result",
+          "type": "text",
+          "text": "late_result",
+          "required": false
+        }
+      ]
+    },
+    "hold": {
+      "fields_json": [
+        {
+          "key": "hold",
+          "type": "text",
+          "text": "hold",
+          "required": false
+        }
+      ]
+    }
+  },
+  "activities": [
+    {
+      "id": "a",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:x",
+      "outputData": [
+        "x"
+      ]
+    },
+    {
+      "id": "b",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:review",
+      "outputData": [
+        "review"
+      ]
+    },
+    {
+      "id": "c",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:old_result",
+      "outputData": [
+        "old_result"
+      ]
+    },
+    {
+      "id": "d",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:new_result",
+      "outputData": [
+        "new_result"
+      ]
+    },
+    {
+      "id": "late",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:late_result",
+      "outputData": [
+        "late_result"
+      ]
+    },
+    {
+      "id": "hold",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:hold",
+      "outputData": [
+        "hold"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "s",
+      "type": "startEvent"
+    },
+    {
+      "id": "e",
+      "type": "endEvent"
+    },
+    {
+      "id": "deadline",
+      "type": "boundaryEvent",
+      "attachedTo": "b",
+      "eventDefinition": "timer",
+      "timer": "PT5M"
+    }
+  ],
+  "gateways": [
+    {
+      "id": "g",
+      "type": "exclusiveGateway"
+    }
+  ],
+  "sequences": [
+    {
+      "id": "s-a",
+      "source": "s",
+      "target": "a"
+    },
+    {
+      "id": "s-b",
+      "source": "s",
+      "target": "b"
+    },
+    {
+      "id": "s-hold",
+      "source": "s",
+      "target": "hold"
+    },
+    {
+      "id": "a-e",
+      "source": "a",
+      "target": "e"
+    },
+    {
+      "id": "b-g",
+      "source": "b",
+      "target": "g"
+    },
+    {
+      "id": "g-d",
+      "source": "g",
+      "target": "d"
+    },
+    {
+      "id": "c-e",
+      "source": "c",
+      "target": "e"
+    },
+    {
+      "id": "d-e",
+      "source": "d",
+      "target": "e"
+    },
+    {
+      "id": "deadline-late",
+      "source": "deadline",
+      "target": "late"
+    },
+    {
+      "id": "late-e",
+      "source": "late",
+      "target": "e"
+    },
+    {
+      "id": "hold-e",
+      "source": "hold",
+      "target": "e"
+    },
+    {
+      "id": "g-c",
+      "source": "g",
+      "target": "c",
+      "condition": "x == \"old\""
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "scope": "Report evidence export for A069-A071; not the whole raw archive or fresh reruns",
+  "sources": [
+    {
+      "file": "unit-a071.txt",
+      "source": ".evidence/reaudit/a071-full-verified.log",
+      "source_sha256": "7c39e8f36399dc6e4c86b7dced98a8f43b28b9197916497a397cb850f4f1042e",
+      "export_sha256": "5bb1e1bf33696c0d4dc7fe9d845e5f670fe5ed6e45bcb395da769f8a80048b08",
+      "conversion": "decoded utf-16; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "cooler-a071.txt",
+      "source": ".evidence/reaudit/a071-cooler/scenario.log",
+      "source_sha256": "103fe6929591721f83cf3808801f628d275bb942ad1c0047be06d4633740ba39",
+      "export_sha256": "fcbc9f123c76c4fd8c30b70bcae4e19ff1b8453b01b80c56b7e4ee216e0b9786",
+      "conversion": "decoded utf8; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "cooler-result-a071.json",
+      "source": ".evidence/reaudit/a071-cooler/result.json",
+      "source_sha256": "c2eb98bc132906697dcec096621ee384ca4a11b2ba106a132fcb8fadaa4f8c16",
+      "export_sha256": "c6e0d5332029454b5a4a614c3472b5eff15b25417612a151f31f57680ff4b119",
+      "conversion": "decoded utf8; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "rework-a071.json",
+      "source": ".evidence/reaudit/a071-live-verified/result.json",
+      "source_sha256": "9bb4bdbcc3f6efad7c853ac01ba001a7904d0a3da1ab0435787111dc3d174204",
+      "export_sha256": "15a122b056ba3987276b1b2a52ba6a6263b03d58b65e8507cea2a39f3b18f811",
+      "conversion": "decoded utf8; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "failure-harness-a071.txt",
+      "source": ".evidence/reaudit/a071-live-first.log",
+      "source_sha256": "6bf74d6cbf1c82736a20138658aa637f8f878ad47a8573dfd0b69ef10b492b84",
+      "export_sha256": "b98e9b31edcb309c54aa23918e40eae91d7c822131a01c081ba8c0a7e4154782",
+      "conversion": "decoded utf-16; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "failure-boundary-a071.txt",
+      "source": ".evidence/reaudit/a071-live-final.log",
+      "source_sha256": "3bc60c36d572121674475f63b1136a2f581651918f631f573ebe5a169cff356a",
+      "export_sha256": "122c40b69cf7ef8cc3b4c986d784080476744591e801ab267d82141240aa51a6",
+      "conversion": "decoded utf-16; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "deployed-a071.json",
+      "source": ".evidence/reaudit/a071-deployed-source.json",
+      "source_sha256": "2deea0094887076523bcf17e3baa87ed56e005db7f349bacb8e07100fd14144a",
+      "export_sha256": "19f5f8b5a178b6956bff9932ba9c116fb8ace02fd0bce325eaeae9adf873d2b2",
+      "conversion": "decoded utf8; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "environment-a071.json",
+      "source": ".evidence/reaudit/a071-final-state.json",
+      "source_sha256": "fedc3c38636857909087cd7342b80ce3a1d09a9b696d67f41129856967aa4ba8",
+      "export_sha256": "b5341f40e3c7d1267f896f06aa4022b096bfabd87b7c09c3d182379f01cd11c6",
+      "conversion": "decoded utf8; UTF-8/LF display export with trailing whitespace normalized; original source unchanged"
+    },
+    {
+      "file": "a069-checks.json",
+      "source": ".evidence/reaudit/a069-live-final/result.json",
+      "source_sha256": "915c1b01fc02e23b92fa5f104da70ca12c0db3c66fb96d40c1c27899ddbd90d3",
+      "export_sha256": "dfdb5dcbb44761144d2319d000143b4b70a8978129c0300525d1ae078356d5ec",
+      "conversion": "selected check results only; full input/response in local source"
+    },
+    {
+      "file": "a070-checks.json",
+      "source": ".evidence/reaudit/a070-live-first/result.json",
+      "source_sha256": "4e42b722a1035eb9178f6755c0e308fc3b905c80282fc96286041c19090a8d43",
+      "export_sha256": "62a08b1be1a98462a00b7f35ffab292a39289f7aee8686c207d5f871ea901266",
+      "conversion": "selected check results only; full input/response in local source"
+    }
+  ]
+}

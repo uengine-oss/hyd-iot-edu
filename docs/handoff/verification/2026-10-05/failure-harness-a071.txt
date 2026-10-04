@@ -1,0 +1,34 @@
+PASS original_condition_takes_old_branch
+PASS first_plan_includes_prior_review
+PASS new_review_and_all_branches_wait_for_producer
+PASS unreached_review_cannot_be_submitted
+PASS exact_condition_producer_and_arrival_durable_in_pg
+PASS process_restart_preserves_waiting_condition_identity
+PASS request_replay_is_original_receipt
+PASS second_plan_includes_prior_review
+PASS older_producer_cannot_release_new_review
+PASS fresh_condition_snapshot_and_reference_reach_review
+PASS condition_snapshot_preserves_exact_value_and_source
+PASS new_review_reevaluates_gateway_and_cancels_new_timer
+PASS original_done_review_and_gateway_record_preserved
+PASS new_branch_closes_after_all_admitted_work
+PASS gateway_graph_matches_current_rows
+.venv314/Scripts/python.exe : Traceback (most recent call last):
+위치 줄:2 문자:22
++ ... ONUTF8='1'; .venv314/Scripts/python.exe scripts/probe_rework_conditio ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 120, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 97, in main
+    until(lambda:latest(pid)['late']['status']=='IN_PROGRESS')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 31, in until
+    value=fn()
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 97, in <lambda>
+    until(lambda:latest(pid)['late']['status']=='IN_PROGRESS')
+                 ~~~~~~~~~~~^^^^^^^^
+KeyError: 'late'

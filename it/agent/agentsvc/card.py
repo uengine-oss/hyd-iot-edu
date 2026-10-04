@@ -1,5 +1,6 @@
 """Guide-card assembly (L8, pure logic): rank causes by prior × evidence, then attach actions/SOP/manual with citations."""
 from typing import Any
+import math
 
 NO_EVIDENCE_DISCOUNT = 0.3   # a cause with no evidence rule at all keeps only 30 % of its prior
 
@@ -10,6 +11,8 @@ def passes(expect: str, value: Any, threshold: float) -> bool:
     try:
         v = float(value)
     except (TypeError, ValueError):
+        return False
+    if not math.isfinite(v) or not math.isfinite(threshold):
         return False
     return {"lt": v < threshold, "lte": v <= threshold, "gt": v > threshold, "gte": v >= threshold,
             "eq": v == threshold}.get(expect, False)
@@ -25,20 +28,37 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
         for e in row.get("evidence") or []:
             r = results.get(e["id"], {})
             w = float(e.get("weight") or 0)
-            ok = bool(r.get("passed"))
+            raw = r.get('value')
+            known = (type(r.get('passed')) is bool and isinstance(raw, (float, int))
+                     and not isinstance(raw, bool) and math.isfinite(raw)
+                     and r.get('status') != 'UNKNOWN' and not r.get('error'))
+            ok = r['passed'] if known else None
             wsum += w
             wpass += w if ok else 0.0
             evs.append({"id": e["id"], "name": e.get("name"), "weight": w, "expect": e.get("expect"),
-                        "threshold": e.get("threshold"), "value": r.get("value"), "passed": ok})
+                        "threshold": e.get("threshold"), "value": raw, "passed": ok,
+                        "status": ('PASS' if ok else 'FAIL') if known else 'UNKNOWN',
+                        **{k: r[k] for k in ('error', 'error_kind', 'reason', 'sql') if k in r}})
         prior = float(row.get("prior") or 0)
         score = prior * (wpass / wsum) if wsum > 0 else prior * NO_EVIDENCE_DISCOUNT
         out.append({"id": row["causeId"], "name": row.get("cause"), "description": row.get("description"),
                     "failureModeId": row.get("failureModeId"), "failureMode": row.get("failureMode"),
                     "component": row.get("component"), "symptoms": row.get("symptoms") or [],
-                    "prior": prior, "score": round(score, 4), "evidence": evs})
+                    "prior": prior, "score": None if any(e['status'] == 'UNKNOWN' for e in evs) else round(score, 4), "evidence": evs})
     # evidence-backed causes always rank above causes that have no confirmed evidence
-    out.sort(key=lambda c: (any(e["passed"] for e in c["evidence"]), c["score"]), reverse=True)
+    out.sort(key=lambda c: (c['score'] is not None, any(e["passed"] is True for e in c["evidence"]), c["score"] or 0), reverse=True)
     return out
+
+
+def evidence_status(causes: list[dict]) -> dict:
+    """An unknown alternative cannot be silently ranked below a known candidate."""
+    unknown = sorted({e['id'] for c in causes for e in c.get('evidence', [])
+                      if e.get('passed') is None or e.get('status') == 'UNKNOWN'})
+    supported = any(e.get('passed') is True for c in causes for e in c.get('evidence', []))
+    status = 'UNKNOWN' if unknown else 'SUPPORTED' if supported else 'UNSUPPORTED'
+    return dict(status=status, unknown=unknown, withheld=status != 'SUPPORTED',
+                reason='근거 조회가 불완전하여 원인 순위와 조치를 보류합니다.' if unknown else
+                '현재 관측 근거로 뒷받침되는 원인이 없어 조치를 보류합니다.' if not supported else None)
 
 
 def _kind(action: dict) -> str:
@@ -95,12 +115,18 @@ def _citations(causes: list[dict], actions: list[dict], skills: list[dict] | Non
     return out
 
 
+PATTERN_KO = {"COOLER_DEGRADATION": "쿨러 성능 저하", "PUMP_LEAKAGE": "펌프 내부 누설", "FAN_VIBRATION": "팬 진동 상승", "OVERHEAT_TRIP": "과열 보호 정지"}
+
+
 def template_summary(alert: dict, causes: list[dict], actions: list[dict]) -> str:
     top = causes[0] if causes else None
     cmds = [a for a in actions if a["kind"] == "command"]
     wos = [a for a in actions if a["kind"] == "work_order"]
-    parts = [f"{alert.get('asset')}에서 {alert.get('pattern')} 경보가 발생했습니다"
-             + (f" (TS1 {alert['evidence'].get('ts1')} ℃, CE {alert['evidence'].get('ce')} %)." if alert.get("evidence") else ".")]
+    ev = alert.get("evidence") or {}
+    shown = {"ts1": ("TS1", "℃"), "ce": ("CE", "%"), "ps1": ("PS1", "bar"), "fs1": ("FS1", "l/min"), "vs1": ("VS1", "mm/s"), "load": ("LoadSP", "%")}
+    reading = ", ".join(f"{tag} {ev[k]} {unit}" for k, (tag, unit) in shown.items() if ev.get(k) is not None)
+    parts = [f"{alert.get('asset')}에서 {PATTERN_KO.get(alert.get('pattern'), alert.get('pattern'))} 경보가 발생했습니다"
+             + (f" ({reading})." if reading else ".")]
     if top:
         passed = [e["name"] for e in top["evidence"] if e["passed"]]
         parts.append(f"가장 유력한 원인은 '{top['name']}'(점수 {top['score']:.2f})이며 근거는 {', '.join(passed) if passed else '없음'}입니다.")
@@ -112,14 +138,16 @@ def template_summary(alert: dict, causes: list[dict], actions: list[dict]) -> st
 
 def build_card(incident_id: str, alert: dict, causes: list[dict], t2_by_cause: dict[str, list[dict]],
                freshness: dict, summary: str | None = None) -> dict:
-    top = causes[0]["id"] if causes else None
+    assessment = evidence_status(causes)
+    top = causes[0]["id"] if causes and not assessment['withheld'] else None
     actions = _actions_for(top, t2_by_cause) if top else []
     skills = _skills_for(top, t2_by_cause) if top else []
     card = {"incident": incident_id, "alert": alert, "freshness": freshness,
-            "causes": causes, "topCause": top, "failureMode": causes[0].get("failureModeId") if causes else None,
+            "causes": causes, "topCause": top, "failureMode": causes[0].get("failureModeId") if top else None,
+            "withheld": assessment['withheld'], "evidence_status": assessment,
             "recommended": actions,
             "skills": [{"id": k["skillId"], "sopId": k.get("sopId"), "name": k.get("name"), "kind": k.get("kind"), "relation": k.get("relation"),
                         "approver": k.get("approver"), "actions": [f"{a['code']}={a.get('value')}" for a in k.get("actions") or []]} for k in skills],
             "citations": _citations(causes, actions, skills),
-            "summary": summary or template_summary(alert, causes, actions)}
+            "summary": assessment['reason'] if assessment['withheld'] else summary or template_summary(alert, causes, actions)}
     return card

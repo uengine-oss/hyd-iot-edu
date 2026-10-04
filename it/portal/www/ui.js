@@ -24,6 +24,7 @@ const UI = {
     RUNNING: "실행 중",
     RUN: "운전 중",
     TRIP: "보호 정지",
+    STOP: "계획 정지",
     RAISED: "경보 발생",
     RAISE: "경보 발생",
     CLEAR: "경보 해제",
@@ -39,6 +40,13 @@ const UI = {
     NO_FEASIBLE_OPTION: "실행 가능한 대안 없음",
     NOT_APPLICABLE: "적용 조건에 해당하지 않음",
     EVALUATED: "검토 완료",
+    // process instances · todolist (ProcessGPT 상태값)
+    NEW: "생성",
+    TODO: "할 일",
+    IN_PROGRESS: "진행 중",
+    PENDING: "대기",
+    HUMAN_ASKED: '사람 확인 대기', FB_REQUESTED: '피드백 반영', STARTED: '워커 실행 중', FAILED: '실패', CANCELLED: "취소",
+    COMPLETED: "완료",
   },
   status(value) {
     return this.states[value] || value || "–";
@@ -52,6 +60,7 @@ const UI = {
     return Number.isNaN(date.getTime()) ? value || '–' : date.toLocaleTimeString('ko-KR', {hour12:false});
   },
   eventNames: {
+    task_deferred:'진단·평가 보류', task_reassessment_requested:'새 평가 요청',
     GUIDE_SUBMITTED:'조치 가이드 제출', GUIDE_APPROVED:'조치 가이드 승인',
     DECISION_SUBMITTED:'업무 판단 제출', DECISION_APPROVED:'업무 판단 승인',
     DECISION_DENIED:'승인 권한 확인 실패', DECISION_REJECTED:'업무 판단 반려',

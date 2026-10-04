@@ -1,5 +1,7 @@
 # hyd-iot-edu — 유압설비 IoT-SCADA 학생용 프로토타입
 
+현재 개발 목표·구현 범위·검증 결과·다음 작업은 **[프로젝트 현황](docs/PROJECT_STATUS.md)**을 먼저 확인하세요(2026-10-05, A071). 회의 원문과 실제 참고 코드에 근거한 시스템 개발이 진행 중이며, 아래 초기 프로토타입 설명은 전체 목표의 완료 선언이 아닙니다. 상세 재개 위치는 [HANDOFF](docs/handoff/HANDOFF.md)입니다.
+
 `유압설비_IoT-SCADA_아키텍처_v3.pdf` 4쪽 구조도(L1~L9, OT·DMZ·IT)를 학생 노트북에서 `docker compose up` 한 번으로 돌리는 완성본입니다.
 무거운 제품(Process-GPT, Flink, Kafka Connect, EdgeX, LangGraph/MCP 서버, LiteLLM)은 **같은 이름·같은 메시지 계약을 지키는 작은 파이썬 서비스**로 바꿨고,
 가벼운 실제 제품(EMQX, FUXA, Redpanda, TimescaleDB, Grafana, Neo4j)은 그대로 씁니다.
@@ -78,7 +80,7 @@ docker compose --profile ot --profile backbone up -d   # M1+M2
 
 기본값이 경량 구성입니다. 전체 기동 시 컨테이너 메모리 합계는 약 1.4 GB입니다.
 
-- `DAQ_PROFILE=lite`(기본): TS1·CE만 매초, 나머지 태그는 변할 때와 10초·30초 하트비트에만 발행하고 100 Hz 파형은 보내지 않습니다. 원래 설계대로 보려면 `.env`에서 `full`로 바꿉니다.
+- `DAQ_PROFILE=lite`(기본): 지속조건·경사 계산에 쓰는 TS1·CE·PS1·FS1·VS1·LoadSP는 매초 발행합니다. 나머지 태그는 변화와 10초·30초 하트비트에 따라 발행하며 100 Hz 파형은 보내지 않습니다. 전체 태그·파형을 수집하려면 `.env`에서 `full`로 바꿉니다.
 - Prometheus(`monitor`)와 Redpanda Console(`tools`)은 선택 프로필입니다. 필요하면 `.env`의 `COMPOSE_PROFILES`에 추가합니다.
 - 모든 서비스에 메모리 상한과 로그 순환(5 MB × 2)이 걸려 있고, 원시 시계열은 3일 보존 · 2시간 뒤 압축입니다.
 - WSL 전체 상한은 `docs/wslconfig.example`을 `%UserProfile%\.wslconfig`로 복사한 뒤 `wsl --shutdown`으로 적용합니다.

@@ -1,0 +1,23 @@
+{
+  "phase": "A069",
+  "checks": {
+    "stored_policy_reaches_MCP": true,
+    "changed_formula_reverses_recommendation": true,
+    "lowest_actual_forecast_rank": true,
+    "highest_actual_forecast_rank": true,
+    "old_card_requires_new_policy_review": true,
+    "request_replay_returns_original_receipt_without_reverting_live_policy": true,
+    "stale_revision_rejected": true,
+    "non_arithmetic_code_rejected_before_write": true,
+    "unbound_input_rejected_before_write": true,
+    "rejections_leave_live_policy_unchanged": true,
+    "runtime_error_does_not_fall_back_to_fixed_formula": true,
+    "new_physical_column_used_by_authored_formula": true,
+    "actual_business_change_reverses_recommendation": true,
+    "rank_only_physical_input_change_requires_review": true,
+    "unknown_policy_input_withholds_recommendation": true,
+    "original_policy_restored": true
+  },
+  "fixture_cleanup": true,
+  "scope": "real HTTP/Neo4j/PG/MCP/approval; no Codex or PLC"
+}

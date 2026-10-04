@@ -1,0 +1,104 @@
+{
+  "services": [
+    {
+      "service": "agent",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "cmd-gateway",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "connect-ingest",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "connect-sink",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "detector",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "dmn-mcp",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "emqx",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "enterprise-mcp",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "enterprise-sim",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "fuxa",
+      "state": "running",
+      "health": ""
+    },
+    {
+      "service": "grafana",
+      "state": "running",
+      "health": ""
+    },
+    {
+      "service": "neo4j",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "plant-sim",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "portal",
+      "state": "running",
+      "health": ""
+    },
+    {
+      "service": "process",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "prometheus",
+      "state": "running",
+      "health": ""
+    },
+    {
+      "service": "redpanda",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "timescaledb",
+      "state": "running",
+      "health": "healthy"
+    }
+  ],
+  "instances": {
+    "condition-recheck-gateway-a5db9529.b03bfc8f-2eea-4d6d-9912-04bcc319edd7": "COMPLETED",
+    "condition-recheck-boundary-5c7bff5c.9b522b6e-868e-4170-bc88-b930e15c1035": "COMPLETED",
+    "condition-recheck-gateway-7ddf959a.f44e4496-1290-42e2-adc6-a34ffc0a5b42": "COMPLETED",
+    "condition-recheck-boundary-af9f4f85.36edcbb8-8dfc-4d8f-babd-4d3595e442c7": "COMPLETED",
+    "condition-recheck-gateway-dc6db0e3.4479fa4c-98bb-4887-9149-27abb36387e5": "COMPLETED",
+    "condition-recheck-boundary-92c6aa0d.04b3b784-b38b-496e-927b-214504af836d": "COMPLETED"
+  },
+  "codex_config_sha256": "836330d564fe7cbd72946985bfa2ca90bd1b7eac22aa5aa6143489972cd0db0a",
+  "config_unchanged": true
+}

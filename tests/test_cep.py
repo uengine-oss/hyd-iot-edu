@@ -1,3 +1,4 @@
+import pytest
 from det import cep, features
 
 
@@ -60,14 +61,19 @@ def test_no_raise_when_ce_healthy():
     assert ev is None and st.phase == "IDLE"
 
 
-def test_trip_alert_raise_and_clear():
+@pytest.mark.parametrize('reason,pattern', [('OVERTEMP','OVERHEAT_TRIP'),
+    ('LOW_PRESSURE','LOW_PRESSURE_TRIP'), ('HIGH_VIBRATION','HIGH_VIBRATION_TRIP'),
+    (None,'PLC_TRIP'), ('UNRECOGNIZED_SOURCE_REASON','PLC_TRIP')])
+def test_trip_alert_raise_and_clear(reason,pattern):
     st = cep.TripState()
     assert cep.trip_alert(st, "HYD-01", tripped=False) is None
-    ev = cep.trip_alert(st, "HYD-01", tripped=True)
-    assert ev["state"] == "RAISE" and ev["pattern"] == "OVERHEAT_TRIP" and ev["severity"] == "CRITICAL"
+    ev = cep.trip_alert(st, "HYD-01", tripped=True, reason=reason)
+    assert ev["state"] == "RAISE" and ev["pattern"] == pattern and ev["severity"] == "CRITICAL"
+    assert ev['evidence']['trip'] == reason
     assert cep.trip_alert(st, "HYD-01", tripped=True) is None
     ev2 = cep.trip_alert(st, "HYD-01", tripped=False)
     assert ev2["state"] == "CLEAR" and ev2["alertId"] == ev["alertId"]
+    assert ev2['pattern'] == pattern and ev2['evidence']['trip'] == reason
 
 
 def test_wave_features_slope_positive_for_ramp():

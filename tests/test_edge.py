@@ -1,6 +1,8 @@
 from plantsim import edge
 import json
 from unittest.mock import Mock
+import threading
+import pytest
 
 
 def test_command_source_is_derived_from_topic_not_payload():
@@ -28,3 +30,23 @@ def test_successful_ack_clears_fuxa_rejection_without_changing_reason_contract()
     assert done['reason_display'] == '–'
     assert done['reason_text'] == '–' and done['result_text'] == '완료'
     assert plant.status('HYD-01')['reason'] is None
+
+
+@pytest.mark.parametrize('scale',[.5,2,20])
+def test_current_model_status_is_published_each_wall_tick_without_plc_changes(monkeypatch,scale):
+    plant=edge.Plant(time_scale=scale)
+    service=object.__new__(edge.Edge)
+    service.plant,service.client=plant,Mock()
+    service._stop=threading.Event(); service.connected=True; service.publish_wave=False
+    service._publish_tags=lambda asset:None
+    for unit in plant.units.values(): unit.dirty_status=False
+    ticks=[]
+    def next_tick(_):
+        ticks.append(True)
+        if len(ticks)==3: service._stop.set()
+    monkeypatch.setattr(edge.time,'sleep',next_tick)
+    service._run()
+    for asset in plant.units:
+        snapshots=[json.loads(c.args[1]) for c in service.client.publish.call_args_list
+                   if json.loads(c.args[1])['asset']==asset]
+        assert len(snapshots)==3

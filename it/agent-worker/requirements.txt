@@ -1,0 +1,2 @@
+psycopg[binary]==3.2.3
+git+https://github.com/uengine-oss/cliagents@7c7a3923984f8247a27233cedb786e1a9097d451

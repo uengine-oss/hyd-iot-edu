@@ -1,0 +1,87 @@
+{
+  "processDefinitionId": "inspection_review",
+  "processDefinitionName": "검사 점수 검토 (교육 예제)",
+  "version": "1",
+  "roles": [
+    {
+      "name": "검토자",
+      "endpoint": "role:operator"
+    }
+  ],
+  "data": [
+    {
+      "name": "score",
+      "type": "Number"
+    }
+  ],
+  "forms": {
+    "inspection_review-form": {
+      "fields_json": [
+        {
+          "key": "score",
+          "type": "number",
+          "text": "측정 점수"
+        }
+      ]
+    }
+  },
+  "activities": [
+    {
+      "id": "task:review",
+      "name": "점수 검토",
+      "type": "userTask",
+      "role": "검토자",
+      "tool": "formHandler:inspection_review-form",
+      "outputData": [
+        "score"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "start",
+      "type": "startEvent"
+    },
+    {
+      "id": "accepted",
+      "type": "endEvent"
+    },
+    {
+      "id": "rejected",
+      "type": "endEvent"
+    }
+  ],
+  "gateways": [
+    {
+      "id": "choice",
+      "type": "exclusiveGateway"
+    }
+  ],
+  "sequences": [
+    {
+      "id": "s1",
+      "source": "start",
+      "target": "task:review"
+    },
+    {
+      "id": "s2",
+      "source": "task:review",
+      "target": "choice"
+    },
+    {
+      "id": "s3",
+      "source": "choice",
+      "target": "accepted",
+      "condition": "score >= 5"
+    },
+    {
+      "id": "s4",
+      "source": "choice",
+      "target": "rejected",
+      "properties": {
+        "default": true
+      }
+    }
+  ],
+  "description": "정의와 폼 변경을 확인하는 임의 점수 예제입니다. 실제 공정 품질 기준이 아닙니다."
+}

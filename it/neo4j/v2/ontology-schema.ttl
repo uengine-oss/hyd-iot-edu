@@ -9,7 +9,7 @@
 
 <https://uengine-oss.github.io/hyd-iot-edu/ontology> a owl:Ontology ;
   rdfs:label "hyd-iot-edu ontology"@ko ;
-  owl:versionInfo "2.3.0" ;
+  owl:versionInfo "2.5.0" ;
   rdfs:comment "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다."@ko .
 
 hyd:layer a owl:AnnotationProperty ; rdfs:label "계층"@ko .
@@ -112,7 +112,7 @@ hyd:Supplier a owl:Class ;
   hyd:standard "공급사"@ko .
 hyd:AnomalyPattern a owl:Class ;
   rdfs:label "AnomalyPattern" ;
-  rdfs:comment "CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS로 입력 데이터에 건다. rule은 사람이 읽는 요약이다."@ko ;
+  rdfs:comment "CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS의 AND 조건이다. rule은 사람이 읽는 요약이며 실행하지 않는다. held 실행은 명시된 해제 조건과 시간 계약을 함께 검증한다."@ko ;
   hyd:layer "설비 진단 지식 (리소스 계층의 설비 코어)"@ko ;
   hyd:standard "ISO 13374 SD (State Detection)"@ko .
 hyd:Symptom a owl:Class ;
@@ -200,6 +200,31 @@ hyd:DecisionCase a owl:Class ;
   rdfs:comment "사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다."@ko ;
   hyd:layer "운영 기록"@ko ;
   hyd:standard "DMN 판단의 실행 인스턴스"@ko .
+hyd:IngestionControl a owl:Class ;
+  rdfs:label "IngestionControl" ;
+  rdfs:comment "HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "HYD ingestion provenance (implementation record)"@ko .
+hyd:IngestionBatch a owl:Class ;
+  rdfs:label "IngestionBatch" ;
+  rdfs:comment "원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "HYD ingestion provenance (implementation record)"@ko .
+hyd:ProcessInstance a owl:Class ;
+  rdfs:label "ProcessInstance" ;
+  rdfs:comment "bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)"@ko .
+hyd:WorkItem a owl:Class ;
+  rdfs:label "WorkItem" ;
+  rdfs:comment "todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)"@ko .
+hyd:ProcessVersion a owl:Class ;
+  rdfs:label "ProcessVersion" ;
+  rdfs:comment "관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT version provenance; HYD immutable element snapshot"@ko .
 
 # ---------------------------------------------------------------- object properties (graph relationships)
 hyd:IN_PERSPECTIVE a owl:ObjectProperty ;
@@ -231,7 +256,7 @@ hyd:INFLUENCES a owl:ObjectProperty ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Measure hyd:StateVariable hyd:ExternalVariable ) ] ;
   rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Measure hyd:StateVariable ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "상충 관계. 원천이 오르면 대상이 sign 방향으로 움직인다. 관계가 없으면 만들지 않는다. | 관계 속성: sign (필수), strength, condition, note"@ko .
+  rdfs:comment "상충 관계. 원천이 오르면 대상이 sign 방향으로 움직인다. 관계가 없으면 만들지 않는다. | 관계 속성: sign (필수), strength, condition, note, conditionPolicy"@ko .
 hyd:ACHIEVES a owl:ObjectProperty ;
   rdfs:label "ACHIEVES" ;
   rdfs:domain hyd:Process ;
@@ -240,7 +265,7 @@ hyd:ACHIEVES a owl:ObjectProperty ;
   rdfs:comment "프로세스가 달성하려는 BSC 전략 목표 (조직 목표)"@ko .
 hyd:HAS_NODE a owl:ObjectProperty ;
   rdfs:label "HAS_NODE" ;
-  rdfs:domain hyd:Process ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Process hyd:ProcessVersion ) ] ;
   rdfs:range hyd:FlowNode ;
   hyd:cardinality "1:N" ;
   rdfs:comment "프로세스에 속한 흐름 노드"@ko .
@@ -255,7 +280,7 @@ hyd:SEQUENCE_FLOW a owl:ObjectProperty ;
   rdfs:domain hyd:FlowNode ;
   rdfs:range hyd:FlowNode ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "실행 순서 | 관계 속성: condition"@ko .
+  rdfs:comment "실행 순서 | 관계 속성: condition, id, priority, isDefault"@ko .
 hyd:ATTACHED_TO a owl:ObjectProperty ;
   rdfs:label "ATTACHED_TO" ;
   rdfs:domain hyd:Event ;
@@ -288,10 +313,10 @@ hyd:INVOKES a owl:ObjectProperty ;
   rdfs:comment "판단 규칙 작업이 부르는 판단 (BPMN businessRuleTask → DMN)"@ko .
 hyd:EXECUTES a owl:ObjectProperty ;
   rdfs:label "EXECUTES" ;
-  rdfs:domain hyd:Task ;
-  rdfs:range hyd:Skill ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Task hyd:WorkItem ) ] ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Skill hyd:Task hyd:Event ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "작업이 실행하는 스킬"@ko .
+  rdfs:comment "정의 작업이 스킬을 실행하거나 실행 작업이 정의 활동을 가리킨다. 끝점 쌍을 구분한다. | 허용된 끝점 쌍: Task → Skill, WorkItem → Task, WorkItem → Event"@ko .
 hyd:CORRELATES a owl:ObjectProperty ;
   rdfs:label "CORRELATES" ;
   rdfs:domain hyd:Event ;
@@ -477,7 +502,7 @@ hyd:AFFECTS a owl:ObjectProperty ;
   rdfs:domain hyd:Skill ;
   rdfs:range [ a owl:Class ; owl:unionOf ( hyd:StateVariable hyd:Measure ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다 | 관계 속성: sign (필수), delta, unit, note"@ko .
+  rdfs:comment "스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다 | 관계 속성: sign (필수), delta, unit, note, conditionPolicy, condition"@ko .
 hyd:REQUIRES_INPUT a owl:ObjectProperty ;
   rdfs:label "REQUIRES_INPUT" ;
   rdfs:domain hyd:Decision ;
@@ -558,10 +583,10 @@ hyd:GIVEN a owl:ObjectProperty ;
   rdfs:comment "이 원인이 있는 상태를 가정한 예측"@ko .
 hyd:ON_ASSET a owl:ObjectProperty ;
   rdfs:label "ON_ASSET" ;
-  rdfs:domain hyd:Incident ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Incident hyd:ProcessInstance ) ] ;
   rdfs:range hyd:Asset ;
   hyd:cardinality "N:1" ;
-  rdfs:comment "사건이 난 설비"@ko .
+  rdfs:comment "사건 또는 프로세스 실행의 대상 설비"@ko .
 hyd:RAISED_BY a owl:ObjectProperty ;
   rdfs:label "RAISED_BY" ;
   rdfs:domain hyd:Incident ;
@@ -576,10 +601,10 @@ hyd:DIAGNOSED_AS a owl:ObjectProperty ;
   rdfs:comment "판정된 원인"@ko .
 hyd:INSTANCE_OF a owl:ObjectProperty ;
   rdfs:label "INSTANCE_OF" ;
-  rdfs:domain hyd:DecisionCase ;
-  rdfs:range hyd:Decision ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:DecisionCase hyd:ProcessInstance ) ] ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Decision hyd:Process ) ] ;
   hyd:cardinality "N:1" ;
-  rdfs:comment "이 사례가 실행한 판단 정의"@ko .
+  rdfs:comment "판단 사례 또는 프로세스 실행이 자기 정의를 가리킨다. 끝점 쌍을 구분한다. | 관계 속성: version | 허용된 끝점 쌍: DecisionCase → Decision, ProcessInstance → Process"@ko .
 hyd:CHOSE a owl:ObjectProperty ;
   rdfs:label "CHOSE" ;
   rdfs:domain hyd:DecisionCase ;
@@ -598,8 +623,80 @@ hyd:FOR_INCIDENT a owl:ObjectProperty ;
   rdfs:range hyd:Incident ;
   hyd:cardinality "N:1" ;
   rdfs:comment "판단 대상 사건"@ko .
+hyd:HANDLES a owl:ObjectProperty ;
+  rdfs:label "HANDLES" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range hyd:Incident ;
+  hyd:cardinality "N:1" ;
+  rdfs:comment "프로세스 실행이 처리하는 사건"@ko .
+hyd:IN_INSTANCE a owl:ObjectProperty ;
+  rdfs:label "IN_INSTANCE" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range hyd:ProcessInstance ;
+  hyd:cardinality "N:1" ;
+  rdfs:comment "실행 작업이 속한 인스턴스"@ko .
+hyd:ASSIGNED_TO a owl:ObjectProperty ;
+  rdfs:label "ASSIGNED_TO" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System ) ] ;
+  hyd:cardinality "N:M" ;
+  rdfs:comment "HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다. | 관계 속성: kind"@ko .
+hyd:ROLE_BOUND a owl:ObjectProperty ;
+  rdfs:label "ROLE_BOUND" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System ) ] ;
+  hyd:cardinality "N:M" ;
+  rdfs:comment "실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다. | 관계 속성: role_name"@ko .
+hyd:USES_VERSION a owl:ObjectProperty ;
+  rdfs:label "USES_VERSION" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range hyd:ProcessVersion ;
+  hyd:cardinality "N:1" ;
+  rdfs:comment "이 실행이 사용하는 고정 정의 버전"@ko .
+hyd:MAPS_TO a owl:ObjectProperty ;
+  rdfs:label "MAPS_TO" ;
+  rdfs:domain hyd:FlowNode ;
+  rdfs:range hyd:FlowNode ;
+  hyd:cardinality "N:1" ;
+  rdfs:comment "버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결"@ko .
 
 # ---------------------------------------------------------------- datatype properties (node properties)
+hyd:_ingest_base a owl:DatatypeProperty ;
+  rdfs:label "_ingest_base" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "첫 적재 이전 소유 속성과 출처 관계 JSON"@ko .
+hyd:_ingest_batches a owl:DatatypeProperty ;
+  rdfs:label "_ingest_batches" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "이 노드를 사용하는 활성 배치 ID"@ko .
+hyd:_ingest_created a owl:DatatypeProperty ;
+  rdfs:label "_ingest_created" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:boolean ;
+  rdfs:comment "첫 적재에서 새로 만든 노드 여부"@ko .
+hyd:_ingest_history a owl:DatatypeProperty ;
+  rdfs:label "_ingest_history" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "활성 배치별 원천 속성/출처 변경 이력 JSON"@ko .
+hyd:activity_id a owl:DatatypeProperty ;
+  rdfs:label "activity_id" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:string .
+hyd:activity_name a owl:DatatypeProperty ;
+  rdfs:label "activity_name" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:string .
+hyd:agent_mode a owl:DatatypeProperty ;
+  rdfs:label "agent_mode" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:string .
+hyd:agent_orch a owl:DatatypeProperty ;
+  rdfs:label "agent_orch" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:string .
 hyd:alertId a owl:DatatypeProperty ;
   rdfs:label "alertId" ;
   rdfs:domain hyd:Incident ;
@@ -612,38 +709,119 @@ hyd:annotation a owl:DatatypeProperty ;
   rdfs:label "annotation" ;
   rdfs:domain hyd:Rule ;
   rdfs:range xsd:string .
+hyd:assetColumn a owl:DatatypeProperty ;
+  rdfs:label "assetColumn" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "자산을 식별하는 원천 열. 없으면 자동 자산 질의를 생성하지 않는다"@ko .
 hyd:avl a owl:DatatypeProperty ;
   rdfs:label "avl" ;
   rdfs:domain hyd:Supplier ;
   rdfs:range xsd:boolean .
+hyd:catalog a owl:DatatypeProperty ;
+  rdfs:label "catalog" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "원천 데이터베이스"@ko .
+hyd:clearHoldSeconds a owl:DatatypeProperty ;
+  rdfs:label "clearHoldSeconds" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "해제 조건 유지 시간(시뮬레이션 초)"@ko .
+hyd:clearRule a owl:DatatypeProperty ;
+  rdfs:label "clearRule" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:string ;
+  rdfs:comment "held의 명시적 해제 비교식. and/or/not, 비교, slope(TAG)만 지원"@ko .
+hyd:clearedAt a owl:DatatypeProperty ;
+  rdfs:label "clearedAt" ;
+  rdfs:domain hyd:IngestionBatch ;
+  rdfs:range xsd:string .
 hyd:code a owl:DatatypeProperty ;
   rdfs:label "code" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Asset hyd:AnomalyPattern hyd:Action ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "운영 데이터(경보 · 태그 · 인시던트)가 쓰는 설비 코드. 예: HYD-01"@ko .
+hyd:column a owl:DatatypeProperty ;
+  rdfs:label "column" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "대소문자를 보존한 원천 열"@ko .
 hyd:correlationKey a owl:DatatypeProperty ;
   rdfs:label "correlationKey" ;
   rdfs:domain hyd:Event ;
   rdfs:range xsd:string ;
   rdfs:comment "메시지를 프로세스 인스턴스에 잇는 키. 예: asset (경보의 설비 = 프로세스의 대상)"@ko .
+hyd:createdAt a owl:DatatypeProperty ;
+  rdfs:label "createdAt" ;
+  rdfs:domain hyd:IngestionBatch ;
+  rdfs:range xsd:string .
+hyd:current_activity_ids a owl:DatatypeProperty ;
+  rdfs:label "current_activity_ids" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range xsd:string .
+hyd:datasource a owl:DatatypeProperty ;
+  rdfs:label "datasource" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "물리 원천 연결 이름"@ko .
 hyd:decidedAt a owl:DatatypeProperty ;
   rdfs:label "decidedAt" ;
   rdfs:domain hyd:DecisionCase ;
   rdfs:range xsd:dateTime .
+hyd:definition_id a owl:DatatypeProperty ;
+  rdfs:label "definition_id" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:FlowNode hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion ) ] ;
+  rdfs:range xsd:string .
 hyd:description a owl:DatatypeProperty ;
   rdfs:label "description" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Objective hyd:Skill ) ] ;
   rdfs:range xsd:string .
+hyd:detectionMode a owl:DatatypeProperty ;
+  rdfs:label "detectionMode" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:string ;
+  rdfs:comment "held는 TESTS 기반 지속조건, plc-trip은 PLC 원천 트립 감시 허용값: held, plc-trip"@ko .
+hyd:detectorScope a owl:DatatypeProperty ;
+  rdfs:label "detectorScope" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:string ;
+  rdfs:comment "감지기 배포별 정의 집합. 미지정은 production, 격리 검증은 별도 scope를 사용한다. 접근권한 경계가 아니다"@ko .
 hyd:direction a owl:DatatypeProperty ;
   rdfs:label "direction" ;
   rdfs:domain hyd:Measure ;
   rdfs:range xsd:string ;
   rdfs:comment "UP=클수록 좋다, DOWN=작을수록 좋다 허용값: UP, DOWN"@ko .
+hyd:draft_status a owl:DatatypeProperty ;
+  rdfs:label "draft_status" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:string ;
+  rdfs:comment "허용값: STARTED, CANCELLED, COMPLETED, FB_REQUESTED, HUMAN_ASKED, FAILED"@ko .
+hyd:due_date a owl:DatatypeProperty ;
+  rdfs:label "due_date" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:dateTime .
+hyd:duration a owl:DatatypeProperty ;
+  rdfs:label "duration" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:decimal .
 hyd:effect a owl:DatatypeProperty ;
   rdfs:label "effect" ;
   rdfs:domain hyd:Rule ;
   rdfs:range xsd:string ;
   rdfs:comment "허용값: SELECT, EXCLUDE, PENALTY, WARN, RANK"@ko .
+hyd:element_id a owl:DatatypeProperty ;
+  rdfs:label "element_id" ;
+  rdfs:domain hyd:FlowNode ;
+  rdfs:range xsd:string .
+hyd:end_date a owl:DatatypeProperty ;
+  rdfs:label "end_date" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:ProcessInstance hyd:WorkItem ) ] ;
+  rdfs:range xsd:dateTime .
+hyd:end_event a owl:DatatypeProperty ;
+  rdfs:label "end_event" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range xsd:string .
 hyd:eventDefinition a owl:DatatypeProperty ;
   rdfs:label "eventDefinition" ;
   rdfs:domain hyd:Event ;
@@ -658,10 +836,38 @@ hyd:expect a owl:DatatypeProperty ;
   rdfs:domain hyd:Evidence ;
   rdfs:range xsd:string ;
   rdfs:comment "SQL 값과 threshold의 비교 방향 허용값: lt, gt, gte"@ko .
+hyd:filename a owl:DatatypeProperty ;
+  rdfs:label "filename" ;
+  rdfs:domain hyd:IngestionBatch ;
+  rdfs:range xsd:string .
+hyd:fingerprint a owl:DatatypeProperty ;
+  rdfs:label "fingerprint" ;
+  rdfs:domain hyd:IngestionBatch ;
+  rdfs:range xsd:string .
 hyd:followedRecommendation a owl:DatatypeProperty ;
   rdfs:label "followedRecommendation" ;
   rdfs:domain hyd:DecisionCase ;
   rdfs:range xsd:boolean .
+hyd:forecastHorizonS a owl:DatatypeProperty ;
+  rdfs:label "forecastHorizonS" ;
+  rdfs:domain hyd:Asset ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "카드의 예측 시간 범위(시뮬레이션 초)"@ko .
+hyd:forecastModel a owl:DatatypeProperty ;
+  rdfs:label "forecastModel" ;
+  rdfs:domain hyd:Asset ;
+  rdfs:range xsd:string ;
+  rdfs:comment "현재 조치 예측에 사용하는 명시 모델 ID"@ko .
+hyd:forecastRevision a owl:DatatypeProperty ;
+  rdfs:label "forecastRevision" ;
+  rdfs:domain hyd:Asset ;
+  rdfs:range xsd:string ;
+  rdfs:comment "적용 모델 판본"@ko .
+hyd:forecastScope a owl:DatatypeProperty ;
+  rdfs:label "forecastScope" ;
+  rdfs:domain hyd:Asset ;
+  rdfs:range xsd:string ;
+  rdfs:comment "모델 적용 범위; 시뮬레이터와 현장 모델을 구분"@ko .
 hyd:formula a owl:DatatypeProperty ;
   rdfs:label "formula" ;
   rdfs:domain hyd:Measure ;
@@ -693,8 +899,18 @@ hyd:horizon a owl:DatatypeProperty ;
   rdfs:comment "예: steady-state, PT15M"@ko .
 hyd:id a owl:DatatypeProperty ;
   rdfs:label "id" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Step hyd:ManualSection hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:Rule hyd:KnowledgeSource hyd:ExternalVariable hyd:Forecast hyd:Incident hyd:DecisionCase ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Step hyd:ManualSection hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:Rule hyd:KnowledgeSource hyd:ExternalVariable hyd:Forecast hyd:Incident hyd:DecisionCase hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion ) ] ;
   rdfs:range xsd:string .
+hyd:ingest_batch a owl:DatatypeProperty ;
+  rdfs:label "ingest_batch" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "구버전 적재 소유자. 복원 이력 없는 자동 삭제는 거부한다"@ko .
+hyd:ingested_at a owl:DatatypeProperty ;
+  rdfs:label "ingested_at" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "현재 활성 적재 시각"@ko .
 hyd:isExecutable a owl:DatatypeProperty ;
   rdfs:label "isExecutable" ;
   rdfs:domain hyd:Process ;
@@ -732,13 +948,17 @@ hyd:min a owl:DatatypeProperty ;
   rdfs:range xsd:decimal .
 hyd:name a owl:DatatypeProperty ;
   rdfs:label "name" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:KnowledgeSource hyd:ExternalVariable ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:KnowledgeSource hyd:ExternalVariable hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:ProcessVersion ) ] ;
   rdfs:range xsd:string .
 hyd:normal a owl:DatatypeProperty ;
   rdfs:label "normal" ;
   rdfs:domain hyd:StateVariable ;
   rdfs:range xsd:decimal ;
   rdfs:comment "정상 운전점"@ko .
+hyd:ontology_ref a owl:DatatypeProperty ;
+  rdfs:label "ontology_ref" ;
+  rdfs:domain hyd:ProcessVersion ;
+  rdfs:range xsd:string .
 hyd:openedAt a owl:DatatypeProperty ;
   rdfs:label "openedAt" ;
   rdfs:domain hyd:Incident ;
@@ -770,10 +990,19 @@ hyd:prior a owl:DatatypeProperty ;
   rdfs:label "prior" ;
   rdfs:domain hyd:Cause ;
   rdfs:range xsd:decimal .
+hyd:projection_warnings a owl:DatatypeProperty ;
+  rdfs:label "projection_warnings" ;
+  rdfs:domain hyd:ProcessInstance ;
+  rdfs:range xsd:string .
 hyd:question a owl:DatatypeProperty ;
   rdfs:label "question" ;
   rdfs:domain hyd:Decision ;
   rdfs:range xsd:string .
+hyd:rankingPolicy a owl:DatatypeProperty ;
+  rdfs:label "rankingPolicy" ;
+  rdfs:domain hyd:Rule ;
+  rdfs:range xsd:string ;
+  rdfs:comment "RANK 실행 계약 v1 JSON: 명시 입력과 제한된 산술식 성분. annotation은 설명이며 실행하지 않는다."@ko .
 hyd:reason a owl:DatatypeProperty ;
   rdfs:label "reason" ;
   rdfs:domain hyd:DecisionCase ;
@@ -787,10 +1016,37 @@ hyd:resource a owl:DatatypeProperty ;
   rdfs:domain hyd:Actuator ;
   rdfs:range xsd:string ;
   rdfs:comment "PLC 쓰기 자원. 예: FanSpeedSP"@ko .
+hyd:retry a owl:DatatypeProperty ;
+  rdfs:label "retry" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:integer .
+hyd:rework_count a owl:DatatypeProperty ;
+  rdfs:label "rework_count" ;
+  rdfs:domain hyd:WorkItem ;
+  rdfs:range xsd:integer .
 hyd:rule a owl:DatatypeProperty ;
   rdfs:label "rule" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:AnomalyPattern hyd:Evidence ) ] ;
   rdfs:range xsd:string .
+hyd:schema a owl:DatatypeProperty ;
+  rdfs:label "schema" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "대소문자를 보존한 원천 스키마"@ko .
+hyd:sequence a owl:DatatypeProperty ;
+  rdfs:label "sequence" ;
+  rdfs:domain hyd:IngestionControl ;
+  rdfs:range xsd:integer .
+hyd:severity a owl:DatatypeProperty ;
+  rdfs:label "severity" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:string ;
+  rdfs:comment "허용값: LOW, MEDIUM, HIGH, CRITICAL"@ko .
+hyd:slopeWindowSeconds a owl:DatatypeProperty ;
+  rdfs:label "slopeWindowSeconds" ;
+  rdfs:domain hyd:AnomalyPattern ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "경사 계산 창(시뮬레이션 초), 수집 해상도와 함께 검증"@ko .
 hyd:sopId a owl:DatatypeProperty ;
   rdfs:label "sopId" ;
   rdfs:domain hyd:Skill ;
@@ -800,11 +1056,39 @@ hyd:source a owl:DatatypeProperty ;
   rdfs:label "source" ;
   rdfs:domain hyd:ExternalVariable ;
   rdfs:range xsd:string .
+hyd:source_id a owl:DatatypeProperty ;
+  rdfs:label "source_id" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "인제스천 원본 문서 내 위치"@ko .
+hyd:source_type a owl:DatatypeProperty ;
+  rdfs:label "source_type" ;
+  rdfs:domain hyd:FlowNode ;
+  rdfs:range xsd:string .
 hyd:sql a owl:DatatypeProperty ;
   rdfs:label "sql" ;
   rdfs:domain hyd:Evidence ;
   rdfs:range xsd:string ;
   rdfs:comment "시계열 DB 검증 질의. %(asset)s 매개변수 하나, 숫자 열 하나(value)를 돌려준다"@ko .
+hyd:sqlType a owl:DatatypeProperty ;
+  rdfs:label "sqlType" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "원천 SQL 형식"@ko .
+hyd:start_date a owl:DatatypeProperty ;
+  rdfs:label "start_date" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:ProcessInstance hyd:WorkItem ) ] ;
+  rdfs:range xsd:dateTime .
+hyd:status a owl:DatatypeProperty ;
+  rdfs:label "status" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:IngestionBatch hyd:ProcessInstance hyd:WorkItem ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "허용값: ACTIVE, CLEARED"@ko .
+hyd:table a owl:DatatypeProperty ;
+  rdfs:label "table" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "대소문자를 보존한 원천 테이블"@ko .
 hyd:tag a owl:DatatypeProperty ;
   rdfs:label "tag" ;
   rdfs:domain hyd:Sensor ;
@@ -817,7 +1101,11 @@ hyd:taskType a owl:DatatypeProperty ;
   rdfs:label "taskType" ;
   rdfs:domain hyd:Task ;
   rdfs:range xsd:string ;
-  rdfs:comment "허용값: user, service, businessRule"@ko .
+  rdfs:comment "허용값: user, service, businessRule, manual, script, send, receive, subProcess, callActivity"@ko .
+hyd:tenant_id a owl:DatatypeProperty ;
+  rdfs:label "tenant_id" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:FlowNode hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion ) ] ;
+  rdfs:range xsd:string .
 hyd:text a owl:DatatypeProperty ;
   rdfs:label "text" ;
   rdfs:domain hyd:Step ;
@@ -843,6 +1131,10 @@ hyd:title a owl:DatatypeProperty ;
   rdfs:label "title" ;
   rdfs:domain hyd:ManualSection ;
   rdfs:range xsd:string .
+hyd:tool a owl:DatatypeProperty ;
+  rdfs:label "tool" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Task hyd:WorkItem ) ] ;
+  rdfs:range xsd:string .
 hyd:typeRef a owl:DatatypeProperty ;
   rdfs:label "typeRef" ;
   rdfs:domain hyd:InputData ;
@@ -860,6 +1152,10 @@ hyd:variable a owl:DatatypeProperty ;
   rdfs:domain hyd:InputData ;
   rdfs:range xsd:string ;
   rdfs:comment "규칙식에서 쓰는 변수 이름"@ko .
+hyd:version a owl:DatatypeProperty ;
+  rdfs:label "version" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:FlowNode hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion ) ] ;
+  rdfs:range xsd:string .
 hyd:virtual a owl:DatatypeProperty ;
   rdfs:label "virtual" ;
   rdfs:domain hyd:Sensor ;

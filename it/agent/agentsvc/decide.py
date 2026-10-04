@@ -16,10 +16,12 @@ from datetime import datetime, timezone
 
 from . import cards, guardrail
 from .tools import mcp_ent
+from .tools.physical import binding, is_physical, read_physical
 
 log = logging.getLogger("agent.decide")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
 SENSOR_TAGS = {"ts1": "TS1", "ce": "CE", "ps1": "PS1", "fs1": "FS1", "vs1": "VS1", "load": "LoadSP"}
+MAX_APPROVAL_FACT_AGE_S = float(os.getenv('APPROVAL_FACT_MAX_AGE_S', '15'))
 
 
 def _now() -> str:
@@ -62,43 +64,90 @@ def submit(payload: dict) -> dict:
         return json.loads(r.read())
 
 
-def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb) -> tuple[dict, list[dict]]:
+def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: bool = False) -> tuple[dict, list[dict]]:
     """Fetch every InputData the DMN rules may test, from the source the ontology names for it.
     known: facts the pipeline already has (pattern, cause, failure_mode, alert evidence). Returns (facts, provenance)."""
     facts, prov = dict(known), []
-    plant = None
+    plant = erp = qms = None
+    identities = {}
+    for item in inputs:
+        identities.setdefault(item['variable'], set()).add(json.dumps(binding(item), sort_keys=True))
     for i in inputs:
         var, src, kind = i["variable"], i["source"], i["sourceKind"]
         row = {"variable": var, "name": i["name"], "source": src, "sourceName": i["sourceName"], "represents": i.get("representsName")}
+        physical = is_physical(i)
+        if physical:
+            row['binding'] = binding(i)
         try:
-            if var in facts and facts[var] is not None:
+            if len(identities[var]) != 1:
+                raise ValueError('ambiguous InputData bindings for variable')
+            if physical:
+                if not src:
+                    raise ValueError('physical InputData has no declared source')
+                facts[var] = read_physical(i, asset)
+                row.update(value=facts[var], how='명시된 업무 DB 물리 출처의 설비별 단일 행', observed_at=_now())
+            elif var in facts and facts[var] is not None:
                 row.update(value=facts[var], how="파이프라인이 이미 가진 값")
             elif kind == "Sensor" or var in SENSOR_TAGS and src in ("sys:scada",):
                 tag = i.get("tag") or SENSOR_TAGS.get(var)
                 v, age = tsdb.latest(asset, tag)
+                row['age_seconds'] = age
+                if strict and (age is None or not -2 <= age <= MAX_APPROVAL_FACT_AGE_S):
+                    raise ValueError(f'{tag} 최신값 시각을 신뢰할 수 없습니다 (age={age})')
                 facts[var] = None if v is None else round(v, 3)
                 row.update(value=facts[var], how=f"TimescaleDB tag_1s {tag} 최신값 ({age:.0f} s 전)" if v is not None else f"TimescaleDB {tag} 값 없음")
             elif src == "sys:scada" and var in ("plc_mode", "plc_state"):
                 if plant is None:
                     plant = _get_json(f"{PROCESS_URL}/api/plant/{asset}/status")
+                if strict:
+                    observed = datetime.fromisoformat(str(plant.get('t') or '').replace('Z', '+00:00'))
+                    if observed.tzinfo is None:
+                        raise ValueError('PLC 상태 시각에 시간대가 없습니다')
+                    age = (datetime.now(timezone.utc) - observed).total_seconds()
+                    row.update(age_seconds=age, observed_at=plant['t'])
+                    if not -2 <= age <= MAX_APPROVAL_FACT_AGE_S:
+                        raise ValueError(f'PLC 상태가 오래됐거나 미래 시각입니다 (age={age})')
                 facts[var] = plant.get("mode" if var == "plc_mode" else "state")
                 row.update(value=facts[var], how="plant.status 최신 메시지 (process 서비스가 구독)")
             elif src == "sys:historian" and var == "fan100_hours":
+                if strict:
+                    _, age = tsdb.latest(asset, 'FanSpeedSP')
+                    row['age_seconds'] = age
+                    if age is None or not -2 <= age <= MAX_APPROVAL_FACT_AGE_S:
+                        raise ValueError('팬 운전 이력의 최신 수집을 확인할 수 없습니다')
                 facts[var] = tsdb.fan100_hours(asset)
                 row.update(value=facts[var], how="TimescaleDB FanSpeedSP ≥ 99 % 누적 (최근 48 h)")
             elif src == "sys:mes" and var == "order_due_h":
                 mes = mcp_ent.fetch("/mes/orders?asset={asset}", asset)
                 facts[var] = (mes.get("facts") or {}).get("due_in_h")
                 row.update(value=facts[var], how="MES 생산오더 납기까지 남은 시간")
+            elif src == "sys:erp" and var in ("order_penalty_per_h", "order_customer_tier"):
+                # 회의 L385~404: 납기 상충은 설비 상태만이 아니라 계약(지연 보상 · 고객 등급)을 같이 봐야 판단된다
+                if erp is None:
+                    erp = (mcp_ent.fetch("/erp/contract?asset={asset}", asset).get("facts") or {})
+                facts[var] = erp.get("penalty_per_h" if var == "order_penalty_per_h" else "customer_tier")
+                row.update(value=facts[var], how="ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)")
+            elif src == "sys:qms" and var in ("hot_lot_claim", "hot_lot_qty"):
+                if qms is None:
+                    qms = (mcp_ent.fetch("/qms/lots?asset={asset}", asset).get("facts") or {})
+                qty = qms.get("auto_qty")
+                if not isinstance(qty, (float, int)) or isinstance(qty, bool) or qty < 0:
+                    facts[var] = None
+                else:
+                    facts[var] = qty if var == "hot_lot_qty" else (qms.get("auto_claim") if qty > 0 else 0)
+                row.update(value=facts[var], how="QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)")
             elif src == "sys:cmms" and var == "standby_ready":
-                facts[var] = True
-                row.update(value=True, how="CMMS 목업에 예비 펌프 정비 항목이 없어 기본값 true")
+                maintenance = mcp_ent.fetch('/cmms/history?asset={asset}', asset).get('facts') or {}
+                value = maintenance.get('standby_ready')
+                facts[var] = value if type(value) is bool else None
+                row.update(value=facts[var], how='CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)')
             elif src in ("sys:agent", "sys:scm", "sys:process", "sys:cep"):
                 row.update(value=facts.get(var), how="후보마다 계산하거나 경보 · 결정 시점에 정해진다")
             else:
+                facts[var] = None
                 row.update(value=None, how="출처 조회 방법 없음")
         except Exception as e:  # noqa: BLE001
-            facts.setdefault(var, None)
+            facts[var] = None
             row.update(value=None, error=str(e)[:160])
         prov.append(row)
     return facts, prov
@@ -108,6 +157,9 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
            overrides: dict | None = None, do_submit: bool = True) -> dict:
     """cause: the top ranked cause of the guide card ({id, name, failureModeId, failureMode}). overrides: facts set by a person
     (portal 'what if' — e.g. plc_mode REMOTE_MANUAL) to watch the DMN rules react."""
+    if overrides and do_submit:
+        raise ValueError('가정 facts는 읽기 전용 evaluate_cards에서만 사용할 수 있습니다')
+    from . import forecasting
     steps: list[dict] = []
 
     def step(name, output, note, status="DONE"):
@@ -134,10 +186,11 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
              status="DONE" if not any(p.get("error") for p in prov) else "FAILED")
         cand_ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
         skills = {r["skillId"]: r for r in kg.skills(cand_ids)}
-        forecasts = kg.forecasts(cause["id"])
+        forecasts, forecast_contexts = forecasting.candidates(kg, asset, skills)
+        step('forecast', forecast_contexts, '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
         tradeoffs = kg.tradeoffs(cand_ids)
         precedents = kg.precedents(cause.get("failureModeId") or "")
-        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, kg.suppliers())
+        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, kg.suppliers(), forecast_contexts)
         step("candidates", [{"rule": t["rule"], "when": t["when"], "fired": t["fired"], "unknown": t["unknown"]}
                             for t in result["trace"] if t["decision"] == "dec:action-candidates"],
              "dec:action-candidates: 고장 유형 · PLC 상태 규칙 → 후보 SOP 스킬 (원인 한정 스킬은 원인으로 거름)")

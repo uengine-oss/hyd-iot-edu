@@ -99,12 +99,14 @@ MERGE (n:Role {id: r[0]}) SET n.name = r[1], n.level = r[3]
 WITH n, r MATCH (d:OrgUnit {id: r[2]}) MERGE (n)-[:MEMBER_OF]->(d);
 
 UNWIND [['sys:scada','SCADA · PLC (cmd-gateway 경유)','OT'],['sys:historian','Historian (TimescaleDB)','IT'],['sys:agent','AI 에이전트','IT'],
-        ['sys:process','HITL 프로세스 서비스','IT'],['sys:cep','CEP 탐지기 (Flink 대체)','IT'],['sys:mes','MES','IT'],['sys:erp','ERP','IT'],['sys:cmms','CMMS','IT'],['sys:scm','SCM 구매 포털','IT']] AS r
+        ['sys:process','HITL 프로세스 서비스','IT'],['sys:cep','CEP 탐지기 (Flink 대체)','IT'],['sys:mes','MES','IT'],['sys:erp','ERP','IT'],['sys:cmms','CMMS','IT'],['sys:scm','SCM 구매 포털','IT'],['sys:qms','QMS 품질 시스템','IT']] AS r
 MERGE (n:System {id: r[0]}) SET n.name = r[1], n.zone = r[2];
 
 // 설비 3대는 같은 구조다. 구성 요소 노드는 형식(타입) 수준으로 공유한다.
 UNWIND [['asset:hyd-01','HYD-01'],['asset:hyd-02','HYD-02'],['asset:hyd-03','HYD-03']] AS r
-MERGE (a:Asset {id: r[0]}) SET a.code = r[1], a.name = r[1] + ' 유압 파워팩';
+MERGE (a:Asset {id: r[0]}) SET a.code = r[1], a.name = r[1] + ' 유압 파워팩',
+  a.forecastModel = 'hydraulic-lumped-simulator-v1', a.forecastRevision = '1.0',
+  a.forecastScope = 'HYD teaching simulator; constant-input open-loop nominal prediction', a.forecastHorizonS = 900;
 UNWIND [['comp:cooler','오일 쿨러',['쿨러','열교환기']],['comp:fan','쿨러 팬',['팬','송풍기']],['comp:pump-a','주 펌프 (A)',['펌프','유압 펌프']],
         ['comp:pump-b','예비 펌프 (B)',['스탠바이 펌프']],['comp:motor','구동 모터',['모터']],['comp:tank','작동유 탱크',['탱크','리저버']]] AS r
 MERGE (n:Component {id: r[0]}) SET n.name = r[1], n.aliases = r[2]
@@ -198,7 +200,7 @@ MERGE (n:ManualSection {id: r[0]}) SET n.ref = r[0], n.title = r[1], n.excerpt =
 WITH n MATCH (k:KnowledgeSource {id:'ks:manual-hm'}) MERGE (n)-[:PART_OF]->(k);
 
 UNWIND [['pattern:cooler-degradation','쿨러 성능 저하','COOLER_DEGRADATION','TS1 > 55 and CE < 70 and slope(TS1) > 0',60],
-        ['pattern:pump-leakage','펌프 내부 누설','PUMP_LEAKAGE','PS1 < 165 and FS1 < 8.0 and LoadSP >= 80',60],
+        ['pattern:pump-leakage','펌프 내부 누설','PUMP_LEAKAGE',"PLC.state == 'RUN' and PS1 < 165 and FS1 < 8.0 and LoadSP >= 80",60],
         ['pattern:fan-vibration','팬 진동 상승','FAN_VIBRATION','VS1 > 1.2 and slope(VS1) > 0',60],
         ['pattern:overheat-trip','과열 인터록 트립','OVERHEAT_TRIP','PLC state == TRIP',0]] AS r
 MERGE (n:AnomalyPattern {id: r[0]}) SET n.name = r[1], n.code = r[2], n.rule = r[3], n.holdSeconds = r[4];
@@ -374,6 +376,10 @@ UNWIND [['in:pattern','경보 패턴','string','pattern','sys:cep',null],
         ['in:fan100-hours','팬 100 % 누적 시간','number','fan100_hours','sys:historian','sv:fan-speed'],
         ['in:standby-ready','예비 펌프 가용','boolean','standby_ready','sys:cmms',null],
         ['in:order-due','긴급 오더 남은 시간','number','order_due_h','sys:mes','msr:otd'],
+        ['in:order-penalty','납기 지연 시 시간당 보상','number','order_penalty_per_h','sys:erp','msr:penalty'],
+        ['in:order-tier','고객 등급','string','order_customer_tier','sys:erp',null],
+        ['in:hot-lot-claim','고온 구간 출하 대기 로트의 클레임 위험 (만원)','number','hot_lot_claim','sys:qms','msr:quality-claim'],
+        ['in:hot-lot-qty','고온 구간 출하 대기 수량','number','hot_lot_qty','sys:qms',null],
         ['in:supplier-avl','공급사 승인 여부','boolean','supplier_avl','sys:scm',null],
         ['in:chosen-skill','사람이 고른 스킬','string','chosen_skill','sys:process',null]] AS r
 MERGE (n:InputData {id: r[0]}) SET n.name = r[1], n.typeRef = r[2], n.variable = r[3]
@@ -397,7 +403,7 @@ UNWIND [
   ['dec:diagnose-cause','고장 유형 · 원인 판정','이 경보의 고장 유형과 근본 원인은 무엇인가?','dt:diagnose-cause','PRIORITY',['in:pattern','in:ts1','in:ce','in:ps1'],['ks:manual-hm']],
   ['dec:action-candidates','조치 후보 선택','이 고장 유형에 쓸 수 있는 조치 방법(스킬 = SOP)은 무엇인가? (원인 한정 스킬은 원인으로 거른다)','dt:action-candidates','COLLECT',['in:failure-mode','in:cause','in:plc-state'],['ks:manual-hm']],
   ['dec:compliance','규정 적합성','후보 스킬 중 규정상 쓸 수 없거나 감점할 것은 무엇인가?','dt:compliance','COLLECT',['in:skill-kind','in:skill-code','in:failure-mode','in:plc-mode','in:plc-state','in:forecast-ts1','in:forecast-ps1','in:fan100-hours','in:standby-ready','in:supplier-avl'],['ks:sr-04','ks:manual-hm','ks:pr-07']],
-  ['dec:rank-actions','조치 우선순위','남은 후보 중 회사 가치(영업이익)에 가장 유리한 순서는?','dt:rank-actions','PRIORITY',['in:forecast-ts1','in:order-due'],['ks:strategy-map']]
+  ['dec:rank-actions','조치 우선순위','남은 후보 중 회사 가치(영업이익)에 가장 유리한 순서는?','dt:rank-actions','PRIORITY',['in:forecast-ts1','in:order-due','in:order-penalty','in:order-tier','in:hot-lot-claim','in:hot-lot-qty'],['ks:strategy-map']]
 ] AS r
 MERGE (d:Decision {id: r[0]}) SET d.name = r[1], d.question = r[2]
 MERGE (t:DecisionTable {id: r[3]}) SET t.name = r[1] + ' 결정표', t.hitPolicy = r[4]
@@ -444,7 +450,7 @@ UNWIND [
     [['in:supplier-avl','==',false,null]]],
   ['rule:trip-reset-only','dt:compliance',8,"plc_state == 'TRIP' and skill_code != 'RESET'",'EXCLUDE',null,'트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 (냉각 후 리셋만)',[],null,['HM-9.4'],
     [['in:plc-state','==','TRIP',null],['in:skill-code','!=','RESET',null]]],
-  ['rule:rank-value','dt:rank-actions',1,'true','RANK',null,'점수 = BSC 득실(스킬 → 처음 닿는 성과 지표, 강도 high 1 · medium 0.6 · low 0.3, 조건부는 절반) + 예측 유온 여유 (55 − 예측)/3 (±2 한도) − 경고 0.5 − 감점/20 + 선례 비율 × 1.5. 제외된 카드는 뒤로, 동점이면 승인 직급이 낮은 쪽',[],null,['ks:strategy-map'],[]]
+  ['rule:rank-value','dt:rank-actions',1,'true','RANK',null,'점수 = BSC 득실(스킬 → 처음 닿는 성과 지표, 강도 high 1 · medium 0.6 · low 0.3, 조건부는 절반) + 예측 유온 여유 (55 − 예측)/3 (±2 한도) − 경고 0.5 − 감점/20 + 선례 비율 × 1.5 + 납기 긴급도((24 − 남은 h)/24 × 지연 보상/100, 0~1) × 생산 영향(유지 +1 · 감산 +0.4 · 정지 −1) × 1.5 − 품질 위험(고온 구간 출하 대기 로트가 있고 예측 유온 ≥ 55 ℃ 면 클레임/1000, ≤ 1) × 1.5. 제외된 카드는 뒤로, 동점이면 승인 직급이 낮은 쪽',[],null,['ks:strategy-map'],[]]
 ] AS r
 MERGE (n:Rule {id: r[0]}) SET n.order = r[2], n.when = r[3], n.effect = r[4], n.penalty = r[5], n.annotation = r[6]
 WITH n, r MATCH (t:DecisionTable {id: r[1]}) MERGE (t)-[:HAS_RULE]->(n)
@@ -461,8 +467,9 @@ FOREACH (_ IN CASE WHEN i IS NULL THEN [] ELSE [1] END | MERGE (n)-[x:TESTS]->(i
 // ============================================================== 5. 프로세스 계층 (BPMN 최소 집합)
 MERGE (p:Process {id: 'proc:anomaly-response'}) SET p.name = '설비 이상 조치', p.isExecutable = true;
 MERGE (p:Process {id: 'proc:maintenance-wo'}) SET p.name = '정비 작업지시', p.isExecutable = false;
+MERGE (p:Process {id: 'proc:alert-triage'}) SET p.name = '미지원 경보 현장 검토', p.isExecutable = true;
 // 프로세스가 달성하려는 BSC 전략 목표 (조직 목표)
-UNWIND [['proc:anomaly-response',['obj:availability','obj:safety','obj:delivery']],['proc:maintenance-wo',['obj:availability','obj:cost']]] AS r
+UNWIND [['proc:anomaly-response',['obj:availability','obj:safety','obj:delivery']],['proc:maintenance-wo',['obj:availability','obj:cost']],['proc:alert-triage',['obj:safety']]] AS r
 UNWIND r[1] AS oid MATCH (p:Process {id: r[0]}), (o:Objective {id: oid}) MERGE (p)-[:ACHIEVES]->(o);
 // 프로세스의 대상: 경보의 asset(correlationKey)이 고르는 설비
 MATCH (p:Process), (a:Asset) MERGE (p)-[:ACTS_ON]->(a);
@@ -508,7 +515,7 @@ MATCH (t:Task {id: r[0]}), (d:Decision {id: r[1]}) MERGE (t)-[:INVOKES]->(d);
 UNWIND [['task:diagnose',['in:pattern','in:ts1','in:ce','in:ps1']],
         ['task:candidates',['in:failure-mode','in:cause','in:plc-state']],
         ['task:compliance',['in:skill-kind','in:skill-code','in:failure-mode','in:plc-mode','in:plc-state','in:forecast-ts1','in:forecast-ps1','in:fan100-hours','in:standby-ready','in:supplier-avl']],
-        ['task:rank',['in:forecast-ts1','in:order-due']],
+        ['task:rank',['in:forecast-ts1','in:order-due','in:order-penalty','in:order-tier','in:hot-lot-claim','in:hot-lot-qty']],
         ['task:command',['in:chosen-skill','in:plc-mode']],
         ['task:reobserve',['in:ts1']],
         ['task:work-order',['in:chosen-skill']]] AS r
@@ -565,3 +572,7 @@ UNWIND [['case:demo-1','inc:demo-1','skill:fan-max-derate','role:prod-mgr',true,
 MERGE (c:DecisionCase {id: r[0]}) SET c.followedRecommendation = r[4], c.reason = r[5], c.decidedAt = r[6]
 WITH c, r MATCH (i:Incident {id: r[1]}), (s:Skill {id: r[2]}), (ro:Role {id: r[3]}), (d:Decision {id:'dec:rank-actions'})
 MERGE (c)-[:FOR_INCIDENT]->(i) MERGE (c)-[:CHOSE]->(s) MERGE (c)-[:DECIDED_BY]->(ro) MERGE (c)-[:INSTANCE_OF]->(d);
+
+// A069: fresh seed only. Live policy changes use the reviewed ranking-policy API.
+MATCH (r:Rule {id: 'rule:rank-value'}) WHERE r.rankingPolicy IS NULL
+SET r.rankingPolicy = '{"version":1,"inputs":{"due":"order_due_h","penalty":"order_penalty_per_h","claim":"hot_lot_claim","qty":"hot_lot_qty"},"components":{"bsc":"bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss","forecast":"0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)","warn":"-0.5 * warning_count","penalty":"-penalty_total / 20","precedent":"1.5 * precedent_share","delivery":"(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == \'keep\' else (0.4 if production == \'reduce\' else -1)) * 1.5","quality":"0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)"},"tieBreak":"lower_approver"}';

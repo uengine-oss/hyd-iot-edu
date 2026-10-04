@@ -125,8 +125,13 @@ class EnterpriseState:
             return "EMS", act["action"]
         raise ValueError(skill)
 
-    def transactions(self) -> list[dict]:
+    def transactions(self, decision: str | None = None) -> list[dict]:
         with self._lock:
+            if decision is not None:
+                # The display feed is capped at 300; the idempotency ledger is
+                # durable and complete for requests carrying this decision ID.
+                return copy.deepcopy([item['tx'] for item in self._done.values()
+                                      if item['tx'].get('decision') == decision])
             return list(self._tx)
 
     def snapshot(self) -> dict:

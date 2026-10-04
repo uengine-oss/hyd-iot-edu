@@ -12,7 +12,9 @@ async function requestJ(url, options = {}) {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
       const detail = j.detail;
-      throw new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : `요청 실패 (${r.status})`);
+      const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
+      error.status = r.status;
+      throw error;
     }
     return j;
   } catch (e) {
@@ -156,6 +158,15 @@ async function pollHealth() {
 }
 
 /* ---------------- scenario ---------------- */
+const FAULT_LABEL = { cooler_degradation: '쿨러 성능 저하', pump_leakage: '펌프 내부 누설', fan_vibration: '팬 베어링 마모', restore: '복구' };
+const PATTERN_LABEL = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열', TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지' };
+function phaseHtml(d) {
+  // one line per CEP pattern that is not idle; the cooler pattern alone when everything is quiet
+  const pats = Object.entries(d.patterns || { COOLER_DEGRADATION: { phase: d.phase, alert_id: d.alert_id } });
+  const busy = pats.filter(([, p]) => p.phase && p.phase !== 'IDLE');
+  if (!busy.length) return `<span class="state IDLE">${UI.status('IDLE')}</span>`;
+  return busy.map(([code, p]) => `<span class="state ${esc(p.phase)}">${UI.status(p.phase)}</span> <span class="muted">${esc(PATTERN_LABEL[code] || code)}${p.alert_id ? ' · ' + esc(p.alert_id) : ''}</span>`).join('<br>');
+}
 function tsColor(t) { return t >= 65 ? 'trip' : t >= 60 ? 'hot' : ''; }
 function sparkline(svg, values, min, max) {
   if (!values || values.length < 2) { svg.setAttribute('viewBox','0 0 300 36'); svg.innerHTML = '<text x="0" y="24" fill="#65748b" font-size="12">압력 추이를 수집하고 있습니다…</text>'; return; }
@@ -178,14 +189,18 @@ function renderUnits() {
         <div class="bar"><i></i><b style="left:65%"></b></div><div class="threshold-note">보호 정지 기준 65 °C</div>
         <div class="kv"><span>냉각 효율 CE</span><em class="num ce"></em><span>냉각 능력 CP</span><em class="num cp"></em>
           <span>팬 속도 SP</span><em class="num fan"></em><span>펌프 부하 SP</span><em class="num load"></em>
+          <span>토출 압력 PS1</span><em class="num ps1"></em><span>유량 FS1</span><em class="num fs1"></em>
+          <span>팬 진동 VS1</span><em class="num vs1"></em><span>운전 펌프</span><em class="num pump"></em>
           <span>쿨러 성능 비율</span><em class="num health"></em><span>탐지 단계</span><em class="phase"></em>
           <span>PLC 상태</span><em class="plc"></em><span>최근 명령 결과</span><em class="ack"></em></div>
         <svg class="spark" role="img" aria-label="PS1 압력 추이"></svg><div class="muted">PS1 압력 추이 · 화면에서 1초 간격 수집</div>
         <div class="fault"></div>
         <div class="ctl">
-          <fieldset class="ctl-group"><legend>결함 실험</legend><div>
+          <fieldset class="ctl-group"><legend>결함 실험 · 300 sim-s 동안 서서히 진행</legend><div>
           <button class="btn danger" data-act="degrade">쿨러 열화 주입</button>
-          <button class="btn" data-act="restore">쿨러 복구</button>
+          <button class="btn danger" data-act="leak">펌프 누설 주입</button>
+          <button class="btn danger" data-act="wear">팬 베어링 마모 주입</button>
+          <button class="btn" data-act="restore">결함 복구</button>
           </div></fieldset><fieldset class="ctl-group"><legend>운전 모드</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
           <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
@@ -207,13 +222,20 @@ function renderUnits() {
     card.querySelector('.cp').textContent = fmt(t.CP, 1) + ' kW';
     card.querySelector('.fan').textContent = fmt(t.FanSpeedSP, 0) + ' %';
     card.querySelector('.load').textContent = fmt(t.LoadSP, 0) + ' %';
+    card.querySelector('.ps1').textContent = fmt(t.PS1, 0) + ' bar';
+    card.querySelector('.fs1').textContent = fmt(t.FS1, 1) + ' l/min';
+    card.querySelector('.vs1').textContent = fmt(t.VS1, 2) + ' mm/s';
+    card.querySelector('.pump').textContent = s.pump ? `${s.pump}${s.pump === 'B' ? ' (예비)' : ''}` : '–';
     card.querySelector('.health').textContent = fmt(s.cooler_health * 100, 0) + ' %';
-    card.querySelector('.phase').innerHTML = `<span class="state ${d.phase || 'IDLE'}">${UI.status(d.phase)}</span>${d.alert_id ? ' <span class="muted">' + esc(d.alert_id) + '</span>' : ''}`;
+    card.querySelector('.phase').innerHTML = phaseHtml(d);
     card.querySelector('.plc').innerHTML = `<span class="state ${s.state}">${UI.status(s.state)}${s.trip ? ' · ' + s.trip : ''}</span>`;
     card.querySelector('.ack').textContent = s.cmdId ? UI.status(s.result) + (s.reason ? ' · ' + s.reason : '') : '아직 없음';
     card.querySelector('.ack').title = s.cmdId ? `${s.cmdId}${s.reason ? ' · ' + s.reason : ''}` : '';
     card.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === s.mode)));
-    card.querySelector('.fault').textContent = u.fault ? `결함 진행 중: ${u.fault === 'cooler_degradation' ? '쿨러 성능 저하' : u.fault}` : '';
+    const dz = u.disturbances || {};
+    const active = [dz.cooler_health != null && dz.cooler_health < 0.999 ? `쿨러 성능 ${fmt(dz.cooler_health * 100, 0)} %` : '', dz.leak > 0 ? `펌프 A 누설 ${fmt(dz.leak * 100, 0)} %` : '', dz.bearing_wear > 0 ? `팬 베어링 마모 ${fmt(dz.bearing_wear * 100, 0)} %` : ''].filter(Boolean);
+    const ramps = (u.faults || []).map(k => FAULT_LABEL[k] || k);
+    card.querySelector('.fault').textContent = (ramps.length ? `결함 진행 중: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}현재 상태: ${active.join(' · ')}` : '');
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
   }
 }
@@ -222,7 +244,9 @@ async function unitAction(asset, act, mode, button) {
   scenarioMessage(`${asset} 처리 중…`);
   try {
     if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 주입 (health → 0.43, 300 sim-s 램프)`); }
-    else if (act === 'restore') { await postJ(API.plant + '/api/fault', { asset, type: 'restore', ramp_sim_s: 60 }); logLine(`${asset} 쿨러 복구`); }
+    else if (act === 'leak') { await postJ(API.plant + '/api/fault', { asset, type: 'pump_leakage' }); logLine(`${asset} 펌프 A 내부 누설 주입 (누설 → 15 %, 300 sim-s 램프) · PS1·FS1 하락`); }
+    else if (act === 'wear') { await postJ(API.plant + '/api/fault', { asset, type: 'fan_vibration' }); logLine(`${asset} 팬 베어링 마모 주입 (마모 → 80 %, 300 sim-s 램프) · VS1 상승`); }
+    else if (act === 'restore') { await postJ(API.plant + '/api/fault', { asset, type: 'restore', ramp_sim_s: 60 }); logLine(`${asset} 결함 복구 (쿨러·누설·베어링 모두 정상으로)`); }
     else if (act === 'mode') { await postJ(API.plant + '/api/mode', { asset, mode }); logLine(`${asset} 현장 패널: 모드 → ${mode}`); }
     else if (act === 'fan') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { FanSpeedSP: 80 } }); logLine(`${asset} 수동 팬 80 % → ${r.result} ${r.reason || ''}`); }
     else if (act === 'load') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { LoadSP: 70 } }); logLine(`${asset} 수동 부하 70 % → ${r.result} ${r.reason || ''}`); }
@@ -410,7 +434,7 @@ function cardHtml(card, editable) {
   let summary = card.summary;
   if (!card.summarySource || card.summarySource === 'template') {
     const top = card.causes?.[0], alert = card.alert || {};
-    const pattern = {COOLER_DEGRADATION:'쿨러 성능 저하',OVER_TEMPERATURE:'유온 과열',TEMP_TRIP:'유온 보호 정지',OVERHEAT_TRIP:'유온 보호 정지'}[alert.pattern] || alert.pattern || '설비 이상';
+    const pattern = PATTERN_LABEL[alert.pattern] || alert.pattern || '설비 이상';
     summary = `${alert.asset || ''} · ${pattern}.` + (top ? ` 가장 유력한 원인은 ‘${top.name}’입니다 (점수 ${fmt(top.score,2)}).` : '') +
       (card.recommended?.length ? ' 권장 조치: ' + card.recommended.map(a => a.name + (a.kind === 'command' ? ` ${a.value}${/_pct$/.test(a.param) ? ' %' : ''}` : '')).join(', ') + '.' : '');
   }
@@ -418,14 +442,17 @@ function cardHtml(card, editable) {
   html += `<div class="muted">데이터 신선도: ${card.freshness && card.freshness.ok ? '정상' : '신뢰 불가'} (${fmt(card.freshness && card.freshness.age_s, 1)} s) · 인용 노드 ${(card.citations || []).length}개</div>`;
   html += '<h2>가능한 고장 원인과 관측 근거</h2><div class="table-scroll" tabindex="0" role="region" aria-label="고장 원인과 관측 근거 표"><table class="causes"><thead><tr><th>순위</th><th>원인</th><th>사전확률</th><th>점수</th><th>확인한 조건과 관측값</th></tr></thead><tbody>';
   (card.causes || []).forEach((c, i) => {
-    const ev = (c.evidence || []).map(e => `<div class="ev" title="${esc(e.id)}"><span class="${e.passed ? 'ok' : 'no'}">${esc(e.name)}</span><b>${e.passed ? '조건 충족' : '조건 미충족'} · 관측 ${esc(fmt(e.value, 2))}</b></div>`).join('');
+    const ev = (c.evidence || []).map(e => {
+      const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
+      return `<div class="ev" title="${esc(e.id)}"><span class="${unknown ? 'muted' : e.passed ? 'ok' : 'no'}">${esc(e.name)}</span><b>${unknown ? '판정 미확인' : e.passed ? '조건 충족' : '조건 미충족'} · 관측 ${esc(fmt(e.value, 2))}</b>${unknown ? `<span class="muted">${esc(e.error || e.reason || '관측 근거 없음')}</span>` : ''}</div>`;
+    }).join('');
     html += `<tr><td>후보 ${i + 1}</td><td><strong title="${esc(c.id)}">${esc(c.name)}</strong><div class="muted">${esc(c.description || '')}</div></td><td data-label="사전확률" class="num">${fmt(c.prior, 2)}</td><td data-label="점수" class="score num">${fmt(c.score, 2)}</td><td data-label="확인한 조건과 관측값">${ev || '<span class="muted">증거 규칙 없음</span>'}</td></tr>`;
   });
   html += '</tbody></table></div><h2>권장 조치와 정비 절차</h2>';
   for (const a of card.recommended || []) {
     html += `<div class="action" data-code="${esc(a.code)}"><header><strong>${esc(a.name)}</strong><span class="code" title="${esc(a.code)} · ${esc(a.relation || '')}">${a.kind === 'command' ? '즉시 조치 명령' : '작업지시'}</span></header>`;
     if (a.kind === 'command' && a.paramRange) {
-      html += `<div class="param"><span title="${esc(a.param)}">${esc(({fan_pct:'팬 속도 (%)',load_pct:'펌프 부하 (%)'})[a.param] || a.param)}</span>${editable ? `<input type="range" min="${a.paramRange[0]}" max="${a.paramRange[1]}" step="1" value="${a.value}" data-param="${esc(a.param)}">` : ''}<output class="num">${a.value}</output><span class="muted">허용 범위 ${a.paramRange[0]}~${a.paramRange[1]} (온톨로지에 정의된 범위)</span></div>`;
+      html += `<div class="param"><span title="${esc(a.param)}">${esc(({fan_pct:'팬 속도 (%)',load_pct:'펌프 부하 (%)',pump:'운전 펌프'})[a.param] || a.param)}</span>${editable ? `<input type="range" min="${a.paramRange[0]}" max="${a.paramRange[1]}" step="1" value="${a.value}" data-param="${esc(a.param)}">` : ''}<output class="num">${a.value}</output><span class="muted">허용 범위 ${a.paramRange[0]}~${a.paramRange[1]} (온톨로지에 정의된 범위)</span></div>`;
       html += `<div class="muted">제약: ${(a.constraints || []).map(k => esc(k.name)).join(' · ') || '없음'} · 대상 구동기 ${esc(a.resource || '')}</div>`;
     }
     if (a.sop && a.sop.steps && a.sop.steps.length) {
@@ -464,14 +491,18 @@ function renderDetail() {
     html += '<h2>조치 진행 단계</h2>' + lane(inc);
     if (inc.ack) html += `<div class="muted">PLC ACK: ${esc(inc.ack.result)}${inc.ack.reason ? ' (' + esc(inc.ack.reason) + ')' : ''} · 인터록 ${esc(inc.ack.interlock || '')}</div>`;
     if (inc.workOrder) html += `<div class="muted">작업지시 ${esc(inc.workOrder.id)}: ${esc(inc.workOrder.name)} (${esc(inc.workOrder.sop || '')})</div>`;
+    if (inc.workOrderRequest && !inc.workOrder) {
+      html += `<p>작업지시 발행 대기 · 승인한 내용: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')}. 실제 CMMS 응답을 확인해야 종결됩니다.</p>`;
+      if (inc.processOwned === false && (inc.state === 'RESOLVED' || (inc.state === 'AWAITING_APPROVAL' && inc.workOrderRequest.work_order_only)))
+        html += '<button class="btn" id="btnWorkOrderRetry">같은 작업지시 재전달</button>';
+    }
   }
   const card = (inc && inc.card) || (run && run.card);
-  const editable = inc && inc.state === 'AWAITING_APPROVAL';
-  html += '<h2>가이드 카드</h2>' + cardHtml(card, editable);
+  const editable = inc && inc.state === 'AWAITING_APPROVAL' && !inc.workOrderRequest;
+  html += '<h2>가이드 카드</h2>' + cardHtml(card, false);
   html += '<details class="technical"><summary>에이전트의 분석 과정 확인</summary>' + traceHtml(run) + '</details>';
   if (editable) {
-    html += `<div class="approve-row"><button class="btn primary" id="btnApprove">승인 → action.cmd 발행</button><input type="text" id="rejectReason" placeholder="거부 사유"><button class="btn" id="btnReject">거부</button></div>
-      <p class="hint">승인하면 프로세스가 expiresAt = 지금 + 120 s 로 action.cmd를 발행하고, cmd-gateway가 5종 검증 뒤 plant/{asset}/cmd/auto 로 내려보낸다. PLC는 REMOTE_AUTO에서만 받는다.</p>`;
+    html += `<p class="hint">가이드는 판단 근거입니다. 조치 카드에서 SOP 전체와 승인 역할을 선택하세요. 승인 시 현재 설비·업무 조건을 다시 확인합니다.</p>`;
   }
   if (inc) {
     const audit = state.audit.filter(a => a.incident === inc.id);
@@ -487,20 +518,13 @@ function renderDetail() {
     }
   }
   box.querySelectorAll('input[type=range]').forEach(r => r.addEventListener('input', () => r.parentElement.querySelector('output').textContent = r.value));
-  const ap = $('#btnApprove'); if (ap) ap.addEventListener('click', approve);
   const rj = $('#btnReject'); if (rj) rj.addEventListener('click', reject);
-}
-async function approve() {
-  const inc = state.detail; if (!inc) return;
-  const actions = [];
-  for (const a of inc.card.recommended || []) {
-    if (a.kind !== 'command') continue;
-    const r = $(`#incDetail .action[data-code="${a.code}"] input[type=range]`);
-    actions.push({ code: a.code, [a.param]: Number(r ? r.value : a.value) });
-  }
-  try { await postJ(API.process + `/api/incidents/${inc.id}/approve`, { approvedBy: 'OP-17', actions }); logLine(`${inc.id} 승인: ${JSON.stringify(actions)}`); }
-  catch (e) { alert('승인 실패: ' + e.message); }
-  await refreshSlow(); await loadDetail();
+  const wr = $('#btnWorkOrderRetry'); if (wr) wr.addEventListener('click', async () => {
+    wr.disabled = true;
+    try { await postJ(API.process + `/api/incidents/${encodeURIComponent(inc.id)}/work-order-retry`, {}); }
+    catch (e) { alert('작업지시 재전달 실패: ' + e.message); }
+    finally { await refreshSlow(); await loadDetail(); }
+  });
 }
 async function reject() {
   const inc = state.detail; if (!inc) return;
@@ -555,4 +579,4 @@ setInterval(refreshFast, 1000); setInterval(refreshSlow, 2000); setInterval(poll
 if (new URLSearchParams(location.search).get('present') === '1') document.body.classList.add('present');
 window.setCaption = (text) => { $('#caption').textContent = text || ''; };
 window.hydApp = { selectTab, state, selectAsset: async (a) => { selectTab('incidents'); await refreshSlow(); await selectAsset(a); },
-  selectIncident: async (id) => { state.selected = id; selectTab('incidents'); await refreshSlow(); const inc = state.incidents.find(i => i.id === id); if (inc) state.selectedAsset = inc.asset; renderScada(); renderIncList(); await loadDetail(); }, approve, refreshSlow, refreshFast };
+  selectIncident: async (id) => { state.selected = id; selectTab('incidents'); await refreshSlow(); const inc = state.incidents.find(i => i.id === id); if (inc) state.selectedAsset = inc.asset; renderScada(); renderIncList(); await loadDetail(); }, refreshSlow, refreshFast };

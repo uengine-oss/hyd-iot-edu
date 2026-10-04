@@ -7,6 +7,8 @@ FORBIDDEN_KEYS = {"writes", "cmdId", "expiresAt", "mqtt", "topic"}
 
 def check(card: dict) -> list[str]:
     v: list[str] = []
+    if card.get('withheld') or (card.get('evidence_status') or {}).get('withheld'):
+        v.append('evidence assessment withheld; no action may be submitted')
     cites = set(card.get("citations") or [])
     if not cites:
         v.append("citations list is empty")
@@ -26,6 +28,8 @@ def check(card: dict) -> list[str]:
         elif c["id"] not in cites:
             v.append(f"cause {c['id']} not in citations")
         for e in c.get("evidence") or []:
+            if e.get('status') == 'UNKNOWN' or e.get('error') or ('passed' in e and e['passed'] is None):
+                v.append(f"evidence {e.get('id')} is unknown")
             if e.get("id") and e["id"] not in cites:
                 v.append(f"evidence {e['id']} not in citations")
 
@@ -39,8 +43,13 @@ def check(card: dict) -> list[str]:
         rng, val = a.get("paramRange"), a.get("value")
         if rng and val is not None and not (rng[0] <= val <= rng[1]):
             v.append(f"action {a.get('code')} value {val} outside paramRange {rng}")
-        if a.get("kind") == "command" and a.get("param") and (not rng or val is None):
-            v.append(f"command action {a.get('code')} lacks paramRange/value")
+        if a.get("kind") == "command" and a.get("param"):
+            # a parameterised command needs its value; a numeric value also needs the ontology's min/max (fan_pct, load_pct).
+            # A categorical value (PUMP_SELECT pump = 'B') has no range by nature — live check 2026-10-04.
+            if val is None:
+                v.append(f"command action {a.get('code')} lacks value")
+            elif isinstance(val, (int, float)) and not isinstance(val, bool) and not rng:
+                v.append(f"command action {a.get('code')} lacks paramRange/value")
     return v
 
 

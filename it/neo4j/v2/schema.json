@@ -1,6 +1,6 @@
 {
   "name": "hyd-iot-edu ontology",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "namespace": "https://uengine-oss.github.io/hyd-iot-edu/ontology#",
   "description": "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다.",
   "conventions": {
@@ -213,6 +213,26 @@
           "name": "name",
           "type": "string",
           "required": true
+        },
+        {
+          "name": "definition_id",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "tenant_id",
+          "type": "string"
+        },
+        {
+          "name": "element_id",
+          "type": "string"
+        },
+        {
+          "name": "source_type",
+          "type": "string"
         }
       ]
     },
@@ -276,9 +296,19 @@
           "values": [
             "user",
             "service",
-            "businessRule"
+            "businessRule",
+            "manual",
+            "script",
+            "send",
+            "receive",
+            "subProcess",
+            "callActivity"
           ],
           "required": true
+        },
+        {
+          "name": "tool",
+          "type": "string"
         }
       ]
     },
@@ -368,6 +398,36 @@
             "OT"
           ],
           "required": true
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "description": "인제스천 원본 문서 내 위치"
+        },
+        {
+          "name": "ingest_batch",
+          "type": "string",
+          "description": "구버전 적재 소유자. 복원 이력 없는 자동 삭제는 거부한다"
+        },
+        {
+          "name": "_ingest_base",
+          "type": "string",
+          "description": "첫 적재 이전 소유 속성과 출처 관계 JSON"
+        },
+        {
+          "name": "_ingest_history",
+          "type": "string",
+          "description": "활성 배치별 원천 속성/출처 변경 이력 JSON"
+        },
+        {
+          "name": "_ingest_batches",
+          "type": "string[]",
+          "description": "이 노드를 사용하는 활성 배치 ID"
+        },
+        {
+          "name": "_ingest_created",
+          "type": "boolean",
+          "description": "첫 적재에서 새로 만든 노드 여부"
         }
       ]
     },
@@ -393,6 +453,26 @@
           "type": "string",
           "required": true,
           "description": "운영 데이터(경보 · 태그 · 인시던트)가 쓰는 설비 코드. 예: HYD-01"
+        },
+        {
+          "name": "forecastModel",
+          "type": "string",
+          "description": "현재 조치 예측에 사용하는 명시 모델 ID"
+        },
+        {
+          "name": "forecastRevision",
+          "type": "string",
+          "description": "적용 모델 판본"
+        },
+        {
+          "name": "forecastScope",
+          "type": "string",
+          "description": "모델 적용 범위; 시뮬레이터와 현장 모델을 구분"
+        },
+        {
+          "name": "forecastHorizonS",
+          "type": "number",
+          "description": "카드의 예측 시간 범위(시뮬레이션 초)"
         }
       ]
     },
@@ -585,7 +665,7 @@
       "label_ko": "이상 패턴",
       "layer": "diagnosis",
       "standard": "ISO 13374 SD (State Detection)",
-      "description": "CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS로 입력 데이터에 건다. rule은 사람이 읽는 요약이다.",
+      "description": "CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS의 AND 조건이다. rule은 사람이 읽는 요약이며 실행하지 않는다. held 실행은 명시된 해제 조건과 시간 계약을 함께 검증한다.",
       "properties": [
         {
           "name": "id",
@@ -611,6 +691,45 @@
         {
           "name": "holdSeconds",
           "type": "number"
+        },
+        {
+          "name": "detectionMode",
+          "type": "enum",
+          "values": [
+            "held",
+            "plc-trip"
+          ],
+          "description": "held는 TESTS 기반 지속조건, plc-trip은 PLC 원천 트립 감시"
+        },
+        {
+          "name": "detectorScope",
+          "type": "string",
+          "description": "감지기 배포별 정의 집합. 미지정은 production, 격리 검증은 별도 scope를 사용한다. 접근권한 경계가 아니다"
+        },
+        {
+          "name": "clearRule",
+          "type": "string",
+          "description": "held의 명시적 해제 비교식. and/or/not, 비교, slope(TAG)만 지원"
+        },
+        {
+          "name": "clearHoldSeconds",
+          "type": "number",
+          "description": "해제 조건 유지 시간(시뮬레이션 초)"
+        },
+        {
+          "name": "slopeWindowSeconds",
+          "type": "number",
+          "description": "경사 계산 창(시뮬레이션 초), 수집 해상도와 함께 검증"
+        },
+        {
+          "name": "severity",
+          "type": "enum",
+          "values": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
         }
       ],
       "requiredRelationships": [
@@ -954,6 +1073,76 @@
           "type": "string",
           "required": true,
           "description": "규칙식에서 쓰는 변수 이름"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "description": "인제스천 원본 문서 내 위치"
+        },
+        {
+          "name": "ingest_batch",
+          "type": "string",
+          "description": "구버전 적재 소유자. 복원 이력 없는 자동 삭제는 거부한다"
+        },
+        {
+          "name": "_ingest_base",
+          "type": "string",
+          "description": "첫 적재 이전 소유 속성과 출처 관계 JSON"
+        },
+        {
+          "name": "_ingest_history",
+          "type": "string",
+          "description": "활성 배치별 원천 속성/출처 변경 이력 JSON"
+        },
+        {
+          "name": "_ingest_batches",
+          "type": "string[]",
+          "description": "이 노드를 사용하는 활성 배치 ID"
+        },
+        {
+          "name": "_ingest_created",
+          "type": "boolean",
+          "description": "첫 적재에서 새로 만든 노드 여부"
+        },
+        {
+          "name": "datasource",
+          "type": "string",
+          "description": "물리 원천 연결 이름"
+        },
+        {
+          "name": "catalog",
+          "type": "string",
+          "description": "원천 데이터베이스"
+        },
+        {
+          "name": "schema",
+          "type": "string",
+          "description": "대소문자를 보존한 원천 스키마"
+        },
+        {
+          "name": "table",
+          "type": "string",
+          "description": "대소문자를 보존한 원천 테이블"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "대소문자를 보존한 원천 열"
+        },
+        {
+          "name": "sqlType",
+          "type": "string",
+          "description": "원천 SQL 형식"
+        },
+        {
+          "name": "assetColumn",
+          "type": "string",
+          "description": "자산을 식별하는 원천 열. 없으면 자동 자산 질의를 생성하지 않는다"
+        },
+        {
+          "name": "ingested_at",
+          "type": "string",
+          "description": "현재 활성 적재 시각"
         }
       ]
     },
@@ -1028,6 +1217,11 @@
         {
           "name": "annotation",
           "type": "string"
+        },
+        {
+          "name": "rankingPolicy",
+          "type": "string",
+          "description": "RANK 실행 계약 v1 JSON: 명시 입력과 제한된 산술식 성분. annotation은 설명이며 실행하지 않는다."
         }
       ],
       "requiredRelationships": [
@@ -1198,6 +1392,291 @@
           "required": true
         }
       ]
+    },
+    {
+      "name": "IngestionControl",
+      "label_ko": "적재 트랜잭션 제어",
+      "layer": "record",
+      "standard": "HYD ingestion provenance (implementation record)",
+      "description": "HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "sequence",
+          "type": "integer",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "IngestionBatch",
+      "label_ko": "적재 배치",
+      "layer": "record",
+      "standard": "HYD ingestion provenance (implementation record)",
+      "description": "원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "filename",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "fingerprint",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "values": [
+            "ACTIVE",
+            "CLEARED"
+          ],
+          "required": true
+        },
+        {
+          "name": "createdAt",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "clearedAt",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ProcessInstance",
+      "label_ko": "프로세스 실행",
+      "layer": "record",
+      "standard": "ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)",
+      "description": "bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "NEW",
+            "RUNNING",
+            "COMPLETED"
+          ]
+        },
+        {
+          "name": "start_date",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "end_date",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "end_event",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "current_activity_ids",
+          "type": "string[]",
+          "required": false
+        },
+        {
+          "name": "version",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "definition_id",
+          "type": "string"
+        },
+        {
+          "name": "projection_warnings",
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "name": "WorkItem",
+      "label_ko": "실행 작업",
+      "layer": "record",
+      "standard": "ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)",
+      "description": "todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "activity_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "activity_name",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "NEW",
+            "TODO",
+            "IN_PROGRESS",
+            "SUBMITTED",
+            "PENDING",
+            "DONE",
+            "CANCELLED"
+          ]
+        },
+        {
+          "name": "tool",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "agent_mode",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "agent_orch",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "draft_status",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "STARTED",
+            "CANCELLED",
+            "COMPLETED",
+            "FB_REQUESTED",
+            "HUMAN_ASKED",
+            "FAILED"
+          ]
+        },
+        {
+          "name": "retry",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "rework_count",
+          "type": "integer",
+          "required": false
+        },
+        {
+          "name": "duration",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "start_date",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "end_date",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "due_date",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "name": "definition_id",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ProcessVersion",
+      "label_ko": "프로세스 정의 버전",
+      "layer": "record",
+      "standard": "ProcessGPT version provenance; HYD immutable element snapshot",
+      "description": "관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "definition_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "version",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "ontology_ref",
+          "type": "string"
+        }
+      ]
     }
   ],
   "relationships": [
@@ -1285,6 +1764,11 @@
         {
           "name": "note",
           "type": "string"
+        },
+        {
+          "name": "conditionPolicy",
+          "type": "string",
+          "description": "검토한 condition 원문·fact/forecast 입력·불리언 식의 v1 JSON. 없거나 현재 설명과 다르면 조건은 미확인이다."
         }
       ]
     },
@@ -1302,7 +1786,8 @@
     {
       "type": "HAS_NODE",
       "from": [
-        "Process"
+        "Process",
+        "ProcessVersion"
       ],
       "to": [
         "FlowNode"
@@ -1336,6 +1821,18 @@
           "name": "condition",
           "type": "string",
           "description": "게이트웨이 분기 조건"
+        },
+        {
+          "name": "id",
+          "type": "string"
+        },
+        {
+          "name": "priority",
+          "type": "number"
+        },
+        {
+          "name": "isDefault",
+          "type": "boolean"
         }
       ]
     },
@@ -1398,13 +1895,30 @@
     {
       "type": "EXECUTES",
       "from": [
-        "Task"
+        "Task",
+        "WorkItem"
       ],
       "to": [
-        "Skill"
+        "Skill",
+        "Task",
+        "Event"
       ],
       "cardinality": "N:M",
-      "description": "작업이 실행하는 스킬"
+      "description": "정의 작업이 스킬을 실행하거나 실행 작업이 정의 활동을 가리킨다. 끝점 쌍을 구분한다.",
+      "endpointPairs": [
+        [
+          "Task",
+          "Skill"
+        ],
+        [
+          "WorkItem",
+          "Task"
+        ],
+        [
+          "WorkItem",
+          "Event"
+        ]
+      ]
     },
     {
       "type": "CORRELATES",
@@ -1811,6 +2325,16 @@
         {
           "name": "note",
           "type": "string"
+        },
+        {
+          "name": "conditionPolicy",
+          "type": "string",
+          "description": "검토한 condition 원문·fact/forecast 입력·불리언 식의 v1 JSON. 없거나 현재 설명과 다르면 조건은 미확인이다."
+        },
+        {
+          "name": "condition",
+          "type": "string",
+          "description": "스킬 영향이 적용되는 조건의 원문"
         }
       ]
     },
@@ -1991,13 +2515,14 @@
     {
       "type": "ON_ASSET",
       "from": [
-        "Incident"
+        "Incident",
+        "ProcessInstance"
       ],
       "to": [
         "Asset"
       ],
       "cardinality": "N:1",
-      "description": "사건이 난 설비"
+      "description": "사건 또는 프로세스 실행의 대상 설비"
     },
     {
       "type": "RAISED_BY",
@@ -2024,13 +2549,32 @@
     {
       "type": "INSTANCE_OF",
       "from": [
-        "DecisionCase"
+        "DecisionCase",
+        "ProcessInstance"
       ],
       "to": [
-        "Decision"
+        "Decision",
+        "Process"
       ],
       "cardinality": "N:1",
-      "description": "이 사례가 실행한 판단 정의"
+      "description": "판단 사례 또는 프로세스 실행이 자기 정의를 가리킨다. 끝점 쌍을 구분한다.",
+      "endpointPairs": [
+        [
+          "DecisionCase",
+          "Decision"
+        ],
+        [
+          "ProcessInstance",
+          "Process"
+        ]
+      ],
+      "properties": [
+        {
+          "name": "version",
+          "type": "string",
+          "required": false
+        }
+      ]
     },
     {
       "type": "CHOSE",
@@ -2064,6 +2608,94 @@
       ],
       "cardinality": "N:1",
       "description": "판단 대상 사건"
+    },
+    {
+      "type": "HANDLES",
+      "from": [
+        "ProcessInstance"
+      ],
+      "to": [
+        "Incident"
+      ],
+      "cardinality": "N:1",
+      "description": "프로세스 실행이 처리하는 사건",
+      "properties": []
+    },
+    {
+      "type": "IN_INSTANCE",
+      "from": [
+        "WorkItem"
+      ],
+      "to": [
+        "ProcessInstance"
+      ],
+      "cardinality": "N:1",
+      "description": "실행 작업이 속한 인스턴스",
+      "properties": []
+    },
+    {
+      "type": "ASSIGNED_TO",
+      "from": [
+        "WorkItem"
+      ],
+      "to": [
+        "Role",
+        "System"
+      ],
+      "cardinality": "N:M",
+      "description": "HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다.",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "single",
+            "multi"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ROLE_BOUND",
+      "from": [
+        "ProcessInstance"
+      ],
+      "to": [
+        "Role",
+        "System"
+      ],
+      "cardinality": "N:M",
+      "description": "실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다.",
+      "properties": [
+        {
+          "name": "role_name",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "type": "USES_VERSION",
+      "from": [
+        "ProcessInstance"
+      ],
+      "to": [
+        "ProcessVersion"
+      ],
+      "cardinality": "N:1",
+      "description": "이 실행이 사용하는 고정 정의 버전"
+    },
+    {
+      "type": "MAPS_TO",
+      "from": [
+        "FlowNode"
+      ],
+      "to": [
+        "FlowNode"
+      ],
+      "cardinality": "N:1",
+      "description": "버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결"
     }
   ]
 }

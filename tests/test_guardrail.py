@@ -96,3 +96,18 @@ def test_cards_guardrail_rejects_uncited_infeasible_or_unapproved_recommendation
     assert any("승인" in v for v in guardrail.check_cards(c))
     c = copy.deepcopy(CARDS); c["options"][0]["steps"] = []
     assert any("SOP" in v for v in guardrail.check_cards(c))
+
+
+def test_categorical_command_passes_without_a_numeric_range():
+    # PUMP_SELECT pump='B' (ontology actr:pump-selector, min/max null) must pass; a numeric parameter still needs its range
+    base = {"alert": {"alertId": "A", "asset": "HYD-02", "pattern": "PUMP_LEAKAGE"}, "freshness": {"ok": True, "age_s": 1.0},
+            "causes": [{"id": "cause:pump-seal-wear", "name": "씰", "score": 0.6, "evidence": []}], "topCause": "cause:pump-seal-wear", "summary": "s"}
+    pump = {"code": "PUMP_SELECT", "actionId": "action:select-pump", "name": "예비 펌프 전환", "kind": "command", "param": "pump", "value": "B",
+            "paramRange": None, "constraints": [], "sop": {"id": "SOP-PMP-01", "steps": []}}
+    card = dict(base, recommended=[pump], citations=["cause:pump-seal-wear", "action:select-pump"])
+    assert not [x for x in guardrail.check(card) if "PUMP_SELECT" in x]
+    load = dict(pump, code="LOAD_SET", actionId="action:set-load", param="load_pct", value=70, paramRange=None)
+    card = dict(base, recommended=[load], citations=["cause:pump-seal-wear", "action:set-load"])
+    assert any("lacks paramRange" in x for x in guardrail.check(card))
+    card = dict(base, recommended=[dict(pump, value=None)], citations=["cause:pump-seal-wear", "action:select-pump"])
+    assert any("lacks value" in x for x in guardrail.check(card))

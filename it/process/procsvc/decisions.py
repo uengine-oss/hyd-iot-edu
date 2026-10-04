@@ -53,7 +53,7 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
 def reject(d: dict, by: str, reason: str) -> None:
     if d["state"] != "PENDING_APPROVAL":
         raise ValueError(f"decision is {d['state']}")
-    d.update(state="REJECTED", approvedBy=by)
+    d.update(state="REJECTED", approvedBy=by, reason=reason)
     d["history"].append({"state": "REJECTED", "t": _now(), "by": by, "reason": reason})
 
 

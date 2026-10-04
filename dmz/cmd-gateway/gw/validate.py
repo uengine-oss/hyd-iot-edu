@@ -73,7 +73,8 @@ def alert_to_ot(alert: dict) -> dict:
             "state": alert.get("state"), "level": 2 if raised else 0, "t": alert.get("t"),
             "text": f"{'RAISE' if raised else 'CLEAR'} {alert.get('pattern')} ({alert.get('alertId')})",
             "display_text": f"{'경보 발생' if raised else '경보 해제'} · " +
-                {"COOLER_DEGRADATION": "쿨러 성능 저하", "TEMP_TRIP": "유온 보호 정지", "OVERHEAT_TRIP": "유온 보호 정지"}.get(alert.get('pattern'), str(alert.get('pattern')))}
+                {"COOLER_DEGRADATION": "쿨러 성능 저하", "PUMP_LEAKAGE": "펌프 내부 누설", "FAN_VIBRATION": "팬 진동 상승",
+                 "TEMP_TRIP": "유온 보호 정지", "OVERHEAT_TRIP": "유온 보호 정지"}.get(alert.get('pattern'), str(alert.get('pattern')))}
 
 
 def upgrade_retained_alert(alert: dict) -> dict | None:

@@ -1,0 +1,25 @@
+{
+  "process": {
+    "image": "sha256:656271bca738623bada282d662fe9e9fb8793d2f87749661211059d783786a3c",
+    "files": {
+      "it/process/procsvc/engine.py": {
+        "match": true,
+        "sha256": "e941a3b286008b056c1d4ae2d93dacd713906ab0c2bfa1fc71b205f2422f6ba1"
+      },
+      "it/process/procsvc/rework.py": {
+        "match": true,
+        "sha256": "b5ffc899e8a7694cc2e37c98f311dae71113b26980cc094eb6489dbe83cf3ab8"
+      },
+      "it/process/procsvc/dependency_schedule.py": {
+        "match": true,
+        "sha256": "90be2b79fa19a4b98f483f7760d84393decd5e5e34f5e8f0831b8ba9ae7c6068"
+      }
+    }
+  },
+  "portal": {
+    "file": "it/portal/www/instanceRework.js",
+    "match": true,
+    "sha256": "113d60800b8ef277645689318148cb107afb11963397aecc385ba2769a81b6e2",
+    "direct_ui_review": false
+  }
+}

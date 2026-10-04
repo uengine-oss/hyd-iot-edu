@@ -1,0 +1,28 @@
+{
+  "processDefinitionId": "rework_inspection",
+  "processDefinitionName": "측정과 재검토 — 재작업 실습",
+  "version": "1",
+  "roles": [{"name": "검토자", "endpoint": "role:operator"}],
+  "forms": {
+    "score": {"fields_json": [{"key": "score", "type": "number", "text": "검토 점수"}]},
+    "note": {"fields_json": [{"key": "note", "type": "text", "text": "확인 내용"}]}
+  },
+  "activities": [
+    {"id": "measure", "name": "측정값 기록", "type": "userTask", "role": "검토자", "tool": "formHandler:score", "outputData": ["score"]},
+    {"id": "check", "name": "측정값 재검토", "type": "userTask", "role": "검토자", "tool": "formHandler:score", "inputData": ["score"], "outputData": ["score"], "attachedEvents": ["deadline"]},
+    {"id": "finish", "name": "검토 결과 확인", "type": "userTask", "role": "검토자", "tool": "formHandler:note", "inputData": ["score"], "outputData": ["note"]}
+  ],
+  "events": [
+    {"id": "start", "type": "startEvent"},
+    {"id": "end", "type": "endEvent"},
+    {"id": "deadline", "type": "boundaryEvent", "eventDefinition": "timer", "attachedTo": "check", "timer": "PT24H"}
+  ],
+  "sequences": [
+    {"id": "s1", "source": "start", "target": "measure"},
+    {"id": "s2", "source": "measure", "target": "check"},
+    {"id": "s3", "source": "check", "target": "finish"},
+    {"id": "s4", "source": "finish", "target": "end"},
+    {"id": "s5", "source": "deadline", "target": "end"}
+  ],
+  "description": "업무 출력과 시작 입력, 재작업 세대의 관계를 비교하는 교육용 정의입니다. 점수는 실제 공정 품질 기준이 아닙니다."
+}

@@ -227,33 +227,64 @@ function effChip(x, cls) {
 function ruleChip(r, cls, label) {
   return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(r.annotation || r.rule)}</span>`;
 }
+function forecastContextHtml(c) {
+  if (!c) return '';
+  if (c.error) return `<span class="hfc hard">현재 조치 예측을 확인할 수 없습니다: ${esc(c.error)}</span>`;
+  const val = k => Number.isFinite(c.values?.[k]) ? Number(c.values[k]).toFixed(2) : '미확인';
+  const inputLabels = {ts1:'현재 유온(℃)',t_amb:'주변온도(℃)',fan_pct:'팬(%)',load_pct:'부하(%)',
+    cooler_health:'냉각성능 비율',leak:'누설 비율',bearing_wear:'베어링 마모',state:'PLC 상태',pump:'선택 펌프'};
+  return `<span class="hfc">${esc(c.horizon_s)} 시뮬레이션초 뒤: 유온 ${val('ts1')}℃ · 압력 ${val('ps1')}bar · 진동 ${val('vs1')}mm/s<br>
+    구간 최대: 유온 ${val('ts1_peak')}℃ · 진동 ${val('vs1_peak')}mm/s</span>
+    <details class="source-detail hsrc"><summary>예측 조건과 한계</summary>
+      <p>교육용 시뮬레이터 모델입니다. 현재 열화와 주변온도가 유지된다는 조건으로 계산하며, 현장 설비의 검증된 예측이 아닙니다.</p>
+      <p>입력 시점: ${esc(c.source_t)}<br>모델: ${esc(c.model_id)} · 판본 ${esc(c.model_revision)}</p>
+      <p>${Object.entries(inputLabels).map(([k,label]) => `${label}: ${esc(c.inputs?.[k] ?? '미확인')}`).join(' · ')}</p>
+      <p>카드에 표시된 조치값을 적용한 결과입니다. 작업지시·구매 요청만으로 설비가 수리되지는 않습니다. 실제 인터록은 예측 도중 운전을 중단할 수 있습니다.</p>
+    </details>`;
+}
 function cardHtml(o, opt = {}) {
   const hasCmd = (o.actions || []).some(a => a.kind === 'command'), hasTx = (o.actions || []).some(a => a.kind !== 'command');
   const fc = (o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit)} <span class="muted">(${esc(f.method)})</span>`).join(' · ');
   const uncond = x => !x.conditional, cond = x => x.conditional;
   const sp = o.scoreParts || {};
+  const scoreLabels = {bsc:'BSC',forecast:'예측',warn:'경고',penalty:'감점',precedent:'선례',delivery:'납기',quality:'품질'};
+  const scoreBreakdown = Object.entries(sp)
+    .map(([key,value]) => `${esc(scoreLabels[key] || key)} ${Number.isFinite(value) ? signNum(value) : '미확인'}`).join(' · ');
+  const ranking = o.rankingEvidence;
   const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
     <span class="hbody"><span class="htitle"><span class="mono">${esc(o.sopId || '')}</span> ${esc(o.name)}${o.id === opt.rec ? ' <em class="star">권고</em>' : ''}${hasCmd ? ' <em class="ot">PLC 명령</em>' : ''}${hasTx ? ' <em class="tx">작업지시 · 구매</em>' : ''}${o.id === opt.chosen ? ' <em class="done">결정됨</em>' : ''}${o.feasible ? '' : ' <em class="hard">제외</em>'}</span>
       <span class="muted">${esc(o.description || '')}</span>
+      ${o.reviewed_choice ? `<span class="hfc">기준 SOP: ${esc(o.reviewed_choice.reference_name || o.sopId)}<br>기본 조치: ${(o.reviewed_choice.reference_actions || []).map(a => `${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}`).join(' · ')}<br>이번 승인 대상은 아래에 표시된 조치값입니다. 원문 SOP가 수정된 것은 아닙니다.</span>` : ''}
       <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">점수 ${signNum(o.score || 0)}</b>
-        <span class="muted" title="온톨로지 순위 규칙(dec:rank-actions)의 식">BSC ${signNum(sp.bsc || 0)} · 예측 ${signNum(sp.forecast || 0)} · 경고 ${signNum(sp.warn || 0)} · 감점 ${signNum(sp.penalty || 0)} · 선례 ${signNum(sp.precedent || 0)}</span></span>
+        <span class="muted" title="온톨로지 순위 규칙(dec:rank-actions)의 식">${scoreBreakdown}</span></span>
       ${fc ? `<span class="hfc">예측: ${fc}</span>` : ''}
+      ${forecastContextHtml(o.forecastContext)}
       <span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>
-      ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<span class="hkpi cond"><span class="muted">조건부:</span>${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span>` : ''}
+      ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<span class="hkpi cond"><span class="muted">미확인 영향의 추정:</span>${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span>` : ''}
       <span class="hskill">${(o.actions || []).map(a => `<span title="${esc(KIND_KO[a.kind] || a.kind)}">${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''} → ${esc(a.targetName || a.target || '')}</span>`).join('') || '<span class="none">원자 조치 없음</span>'}</span>
       <span class="hmeta">승인: ${esc((o.approver || {}).name || '–')}${o.precedent && o.precedent.n ? ` · 선례 ${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)` : ''}
         ${(o.violations || []).map(v => ruleChip(v, 'hard', '제외')).join('')}${(o.penalties || []).map(v => ruleChip(v, 'soft', `감점 ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', '경고')).join('')}</span>
-      <details class="source-detail hsrc"><summary>출처 보기 — 고른 규칙 · SOP 단계 · 매뉴얼</summary>
+      <details class="source-detail hsrc"><summary>${o.reviewed_choice ? '출처 보기 — 원문 기본 절차(이번 적용값은 변경안 참조)' : '출처 보기 — 고른 규칙 · SOP 단계 · 매뉴얼'}</summary>
+        ${ranking ? `<div><b>실제로 계산한 순위 식 · ${esc(ranking.rule)}</b>${Object.entries(ranking.policy?.components || {}).map(([key,expr]) => `<div>${esc(scoreLabels[key] || key)}: <code>${esc(expr)}</code> = ${esc(sp[key])}</div>`).join('')}<div class="muted">${esc(ranking.conditionMode || '')}</div><div class="muted">입력 연결: ${esc(JSON.stringify(ranking.policy?.inputs || {}))}</div></div>` : ''}
         <div>${(o.selectedBy || []).map(r => `<div><b>${esc(r.rule)}</b> <code>${esc(r.when || '')}</code> — ${esc(r.annotation || '')} <span class="muted">근거 ${esc((r.sources || []).join(', '))}</span></div>`).join('')}</div>
+        ${(o.tradeoffEvaluation || []).length ? `<details><summary>BSC 경로와 조건 판정 ${(o.tradeoffEvaluation || []).length}건</summary>${o.tradeoffEvaluation.map(p => `<div><b>${esc({TRUE:'적용',FALSE:'미적용',UNKNOWN:'미확인'}[p.status] || p.status)}</b> ${esc(p.name)} · 경로 강도 ${esc(p.weight)}<br>${esc((p.nodes || []).join(' → '))}${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(c.status)}<br>${Object.entries(c.inputs || {}).map(([alias,v]) => `${esc(alias)}: ${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(v.variable)} = ${esc(v.value ?? '미확인')}`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join('')}</details>` : ''}
         <ol>${(o.steps || []).map(s => `<li>${esc(s.text)} ${s.manual ? `<span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol>
         ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? '<div class="muted">선례 사유: ' + o.precedent.reasons.map(esc).join(' / ') + '</div>' : ''}
       </details>
     </span>`;
   if (!opt.selectable) return `<div class="hopt ${o.feasible ? '' : 'out'} ${o.id === opt.rec ? 'rec' : ''}">${'<span></span>' + head}</div>`;
   return `<label class="hopt ${o.feasible ? '' : 'out'} ${opt.selected ? 'sel' : ''} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">
-    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${o.feasible && opt.pending ? '' : 'disabled'}>${head}</label>`;
+    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${(o.feasible || opt.reviewable) && opt.pending ? '' : 'disabled'}>${head}</label>`;
 }
-window.hydCards = { cardHtml };
+function reviewMatches(review, decision, option, parameters, scope = {}) {
+  const saved = review?.snapshot?.options?.[0]?.reviewed_choice?.parameters;
+  return !!(review?.id && review?.snapshot?.id === decision && review?.snapshot?.options?.[0]?.id === option
+    && review?.scope?.decision === decision && review?.scope?.option === option && saved
+    && Object.entries(scope).every(([key,value]) => review.scope[key] === value)
+    && Object.keys(saved).length === Object.keys(parameters).length
+    && Object.entries(parameters).every(([key,value]) => saved[key] === value));
+}
+window.hydCards = { cardHtml, reviewMatches };
 
 /* ================================================= L8 조치 판단 규칙 (DMN · BSC) */
 async function loadDecisionView() {
@@ -265,6 +296,7 @@ async function loadDecisionView() {
 }
 async function runDecision() {
   if (ent.busy) return; ent.busy = true;
+  ent.result = null; // A failed new request must not retain the previous successful judgment.
   const b = $('#decRun'); b.disabled = true; b.textContent = '판단 중…';
   const facts = {};
   if ($('#decMode').value) facts.plc_mode = $('#decMode').value;
@@ -286,7 +318,9 @@ function renderDecision() {
   html += `<div class="summary">${esc(r.explanation || '')}</div>`;
   html += '<h2>원인 판정 (T1 · 증거)</h2><div class="table-scroll"><table class="prov"><tr><th>원인</th><th>고장 유형</th><th>점수</th><th>증거</th></tr>' +
     (d.causes || []).map((c, i) => `<tr class="${i === 0 ? 'rec' : ''}"><td><b>${esc(c.name)}</b>${i === 0 ? ' <span class="star">판정</span>' : ''}</td><td>${esc(c.failureMode || '')}</td><td class="num">${esc(c.score)}</td>` +
-      `<td>${(c.evidence || []).map(e => `<span class="${e.passed ? 'pos' : 'neg'}">${esc(e.name)} = ${esc(e.value ?? '–')}</span>`).join('<br>') || '–'}</td></tr>`).join('') + '</table></div>';
+      `<td>${(c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
+        return `<span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)} = ${esc(fmt(e.value, 3))}${unknown ? ' · 판정 미확인' : ''}</span>`;
+      }).join('<br>') || '–'}</td></tr>`).join('') + '</table></div>';
   html += `<h2>조치 카드 ${opts.length}장 (스킬 = SOP)</h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs })).join('') + '</div>';
   if (r.rankRule) html += `<p class="muted">순위 규칙 <b>${esc(r.rankRule.rule)}</b>: ${esc(r.rankRule.annotation || '')}</p>`;
   const tr = r.trace || [];

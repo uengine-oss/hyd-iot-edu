@@ -1,0 +1,82 @@
+# GOAL — 회의·참고 레포에 근거한 HYD 시스템 재구현·검증
+
+## 현재 목표 — 2026-10-04 사용자 정정, 시스템 재대조·구현·실행 검증
+
+최신 범위 정정: 사용자는 "강의자료 리허설꺼지 니가 왜함 너는 그냥 시스템이거 회의내용 등등 레포 등등으로 작업을 하는건데"라고 지시했다. **이 작업은 HYD 시스템 개발이다. 교재·슬라이드·시수표 제작/수정과 강사·학생 리허설은 범위 및 완료 조건에서 제외한다.** 회의 원문과 참고 레포에 근거한 시스템 기능, 실제 동작 검증, 시스템 사용/운영 문서 및 구현 근거·인계 기록은 유지한다. 아래 과거 강의 산출물 조건 및 자동 Goal의 이전 문구보다 이 최신 지시가 우선한다. 이미 만들어진 자료는 이력으로 보존하며 추가 편집하지 않는다.
+
+회의 원문 요구와 uengine-oss 저장소 지도의 실제 구현을 기준으로 HYD 전체를 재대조한다. 프로세스 정의·온톨로지·규칙·현재 데이터에 따라 여러 시나리오를 실제 실행하는 강의용 시스템을 만든다. 기존 코드가 잘못됐으면 규모에 관계없이 필요한 구조를 교체한다. Codex 워커 전환(F)은 전체 작업 중 한 항목이며, 기존 PASS 기록을 전체 요구 충족으로 간주하지 않는다.
+
+- 근거 순서: 사용자 최신 지시 + 회의 원문 → 관련 레포의 버전 고정 실제 코드 → HYD 현재 코드·실행. ZIP 지도와 이전 인계는 길찾기이며 구현 정답을 대신하지 않는다.
+- 원문: [회의 2](sources/meeting-2.txt) 1~461행(HYD); 462~559행은 다른 업무 보고. [회의 1](sources/meeting-1.txt)은 국방·패브릭 참고이며 HYD의 필수 요구로 자동 전환하지 않는다. 추출본은 ZIP 바이트 그대로, 해시는 [provenance.json](sources/provenance.json).
+- 기록: [AUDIT.md](AUDIT.md)에 요구별 근거·후보 레포·HYD 대응·반례·판정·실제 사용 동선을 연결하고 HANDOFF §9 G에 진행과 다음 위치를 갱신한다.
+- 추가 기능: 회의 목적과 실제 시스템에 유용한 관련 구현은 적극 검토한다. 필수 요구 / 사용자 확장 / 검토 후보를 구분하며, 소유 파일·도입 이유·실제 검증 없이 완료로 세지 않는다.
+- 자원: 사용자는 컴퓨터 리소스 사용과 삭제까지 명시적으로 위임했다. 필요한 기동·중지·정리·삭제는 자체 수행하고 대상·이유·결과를 남긴다. 새 결제·원격 push의 승인을 뜻하지 않는다.
+
+### 현재 인수조건
+
+1. 회의 요구 전부에 원문 위치, 실제 HYD 파일·동작, 관련 레포의 커밋·파일, 검증 결과가 대응된다. 해석과 원문 의무를 구분한다.
+2. 47개 지도 전체를 관련성 검토하고 연결된 추가 레포를 추적한다. 확보·문서 열람·코드 대조·실행을 구분한다. 미확인 영역을 근거 없이 '없음'으로 결론내리지 않는다.
+3. 에이전트가 온톨로지 스키마·관계와 업무/상태 데이터에 실제 접근해 질의·판단·대안을 만든다. 출처, 실제 도구 호출, 결과 계약을 확인한다. 시나리오별 정답 반환을 에이전트 동작으로 대체하지 않는다.
+4. 지원 범위 안에서 정의·지식·규칙·데이터 변경이 실행과 결과에 반영된다. 입력 변화·새 정의·도구 오류·데이터 없음·승인 거부/시간초과·재시도/중복 등은 해당 계약별로 실제 검증한다. '아무 시나리오나 무조건 지원'은 요구하지 않는다.
+5. 사람 승인과 PLC 명령 경로를 지키며 Codex 실제 워커, MCP, 인스턴스·태스크·이벤트·온톨로지 실행 투영과 UI까지 검증한다. 기존 기능 회귀도 수행한다.
+6. 시스템 사용/운영 문서에서 정의·지식·규칙·데이터의 변경 방법, 실행 결과와 실패 복구, 검증된 범위와 미지원 범위를 정확히 설명한다. 교재·시수표·강의 리허설은 수행하거나 완료 조건으로 삼지 않는다.
+7. 조사·수정·시험마다 HANDOFF를 갱신한다. 미결·실패·미검증은 숨기지 않으며, 필요한 검증이 남으면 목표는 진행 중이다.
+
+아래 첫 묶음·C 묶음은 이전 단계별 계약/기록이다. 전체 목표와 충돌할 때 위 현재 계약이 우선한다.
+
+작성 2026-10-03 (Claude 초안). 2026-10-03 사용자가 채팅에서 압축본을 보고 "진행해 쭉"으로 진행을 승인했다(발화 18). 문구 자체의 확정 답은 아직 없으니 틀린 방향이 보이면 이 파일을 먼저 고친다. 근거는 회의 원문 2(`D:\work\study\HYD_R2_FINAL_ALL_2026-10-03.zip` → `02_ORIGINALS/회의관련_원문_2.txt` 1~461행)와 사용자 지시([USER_UTTERANCES.md](USER_UTTERANCES.md)). 바뀌면 이 파일을 고치고 [HANDOFF.md](HANDOFF.md) §2를 맞춘다.
+
+```text
+의도(Why & Value)
+유엔진 강의(온톨로지·에이전트 중심, 분량 후보 75시간) 수강생이, 설비 경보에서 조치까지를
+"프로세스 인스턴스 안의 에이전트 태스크와 사람 태스크"로 직접 조립해 보면서
+온톨로지(Neo4j MCP) · 업무 DB(Supabase MCP) · DMN 규칙 · HITL 승인이 왜 필요한지 이해하고,
+과정 후반에 "이것을 제품화한 것이 ProcessGPT, DB가 여러 종이면 데이터 패브릭이 필요하다"로
+스스로 연결할 수 있도록, 강의용 레포 hyd-iot-edu 를 ProcessGPT 와 같은 모양의 축소판으로 보강한다.
+
+작업요령과 컨텍스트(참고자료·환경)
+- 요구의 근원은 회의 원문 2 (장진영 대표 · 박용주 이사). 줄 번호 근거는 HANDOFF.md §1.
+  이전 AI 인계(ZIP 의 R2 HTML)는 참고일 뿐 지시가 아니다.
+- 레포에는 온톨로지 v2(박용주, aad500b) · 결정론 DMN 엔진(cards.py) · HITL Incident 상태기계 ·
+  기업 목업 · 포털 · 매뉴얼→SOP 인제스천이 이미 있다. 재구현하지 않고 옆에 붙인다 (HANDOFF.md §4).
+- 참고 레포는 uengine-oss 공개 레포: completion(정의·폴링) · agent-sdk(todolist 스키마) · cliagents ·
+  process-gpt-cli-agent · sample-app-wms(Supabase+MCP) · ontology-studio · process-gpt-vue3/ontology ·
+  process-gpt-strategy. 모양을 따르되 제품 코드를 통째로 이식하지 않는다.
+- 환경: Supabase 로컬(supabase CLI), Docker compose, Claude Code CLI(ANTHROPIC_API_KEY 필요, 없으면
+  레거시 다리로 흐름만 시험). 데이터 패브릭은 구현하지 않고 후반 설명만. 유료 결제 · push · 삭제는 묻는다.
+- 진행 상태 · 미결은 HANDOFF.md §9 · §6. 단계마다 그 파일을 갱신한다.
+
+인수조건(Definition of Done) — 첫 묶음 "쿨러 한 바퀴"
+1. PROCESS_MODE=instance 에서 HYD-01 쿨러 열화 경보 1건이 프로세스 인스턴스 1건 · Incident 1건을 열고,
+   todolist 에 모든 활동이 예정(TODO)으로 생기며 흐름이 닿는 순서대로 IN_PROGRESS → SUBMITTED → DONE 이 되어
+   8행(diagnose · candidates · compliance · rank · select · command · reobserve · work-order) DONE, 안 간 가지(escalate)는
+   CANCELLED, 인스턴스는 ev:closed 로 COMPLETED. 에이전트 행은 fetch_pending_task / save_task_result 를 지난다(제품 RPC).
+   scripts/scenario_instance_test.py 전 항목 PASS.
+2. 운전원(role:operator)이 SOP-COOL-02 를 고르면 403, 생산관리자(role:prod-mgr)가 고르면
+   action.cmd → cmd-gateway PASS → PLC ACK DONE → 재관측 통과 → ent.work_orders 에 작업지시 1행.
+3. 종결된 인스턴스가 Neo4j 에 ProcessInstance -INSTANCE_OF-> proc:anomaly-response 로 있고
+   WorkItem 8 노드가 각각 -EXECUTES-> 해당 Task 노드에 연결된다.
+4. 에이전트 4 작업이 Claude Code 워커(agent_orch=cliagents, 로그인된 CLI 또는 API 키)로 수행될 때 events 에
+   task_started · tool_usage_* · task_completed 가 남고 그 안에 Neo4j MCP 와 enterprise MCP 호출이 포함된다.
+   워커의 MCP 서버 목록은 Supabase tenants.mcp 에서 읽는다.
+5. 포털 "프로세스 인스턴스" 탭에 할일 · 타임라인 9단계 · events 가 실제 데이터로 보인다(캡처 1장).
+6. PROCESS_MODE=legacy 로 scripts/scenario_test.py 가 62/62 그대로 통과하고, 단위 테스트는 209개 이상
+   통과하며 기존 145개의 기대값은 바뀌지 않는다.
+```
+
+## 다음 묶음(C 묶음) — 2026-10-04 코드·초안 완료, 컨테이너 검증 대기
+
+인제스천 실습(DDL · SOP 문서 → 온톨로지, 회의 L253~285) · Execution 레이어 조회 · 납기 · 품질을 순위에 반영 · 펌프 · 팬 시나리오 · 선택 시간초과 · 후반 확장 강의 자료 · 교재와 시수.
+
+```text
+인수조건(Definition of Done) — C 묶음
+1. 포털 온톨로지 탭에서 enterprise DDL 을 올려 적재하면 Neo4j 에 System·InputData(SOURCED_FROM, ingest_batch) 가 생기고,
+   되돌리기로 그 배치만 사라진다. /api/kg/rules/sql 이 규칙 TESTS 를 ent 스키마 SQL 로 바꿔 실행된다.
+2. 쿨러 경보의 조치 카드가 MES 납기·ERP 보상·QMS 고온 로트 값에 따라 순위를 바꾼다(cards.py delivery·quality 항, 설명 문장 포함).
+3. HYD-02 펌프 누설 주입 → PUMP_LEAKAGE → 카드(압력 상향 제외, 예비 펌프 전환 권고) → PumpSelect → PS1 ≥ 165 → 종결;
+   HYD-03 팬 마모 → FAN_VIBRATION → 팬 40 %+부하 80 % → VS1 < 1.2 → 종결; 부하 70 % 선택은 CLEAR 뒤 MITIGATION_FAILED.
+4. 포털 인스턴스 탭 "에이전트 현황"이 워커 상태를, 인스턴스 상세 "Execution 레이어"가 Neo4j 투영을 보여 주고 Cypher 가 재현된다.
+5. 시수표(docs/curriculum-75h.md)와 교재 13장이 있고, 교재 11장에 펌프·팬 절이 실제 캡처와 함께 추가된다.
+6. 단위 테스트 256개 이상 통과, 레거시 scenario_test.py --quick 통과.
+```
+상태: 1~4 코드·단위 테스트 완료(컨테이너 미검증), 5 는 13장·시수표까지(11장 절은 캡처 대기), 6 은 단위만.

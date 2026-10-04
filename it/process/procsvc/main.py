@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import urllib.request
+from contextlib import nullcontext
 
 import psycopg
 from fastapi import HTTPException
@@ -19,14 +20,24 @@ from hydcommon.kafka import consumer as make_consumer, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from hydcommon.timeutil import now, now_iso
-from . import decisions as declib, definition, kgadmin, machine
+from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, work_orders, current_approval, engine
 from .store import Store
+from . import skill_graph
+from . import ranking_policy
+from . import bsc_conditions
+from .knowledge_projection import KnowledgeReconciler
+from .case_projection import CaseProjector, incident_params as _incident_params
+from .source_inbox import PgSourceInbox, kafka_record, source_record
+from .source_delivery import SourceDelivery, SourcePending
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("process")
 TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
 PG_DSN = os.getenv("PG_DSN", "postgresql://hyd:hyd@timescaledb:5432/hyd")
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
+# legacy  : the agent submits a guide card → Incident (v2 behaviour, scenario_test.py 62/62)
+# instance: an alert opens a process instance; the agent and the people are tasks inside it (ProcessGPT-shaped, docs/HANDOFF.md)
+PROCESS_MODE = os.getenv("PROCESS_MODE", "legacy")
 
 reg = Registry()
 c_inc = reg.counter("process_incidents_total", "incidents by terminal state")
@@ -36,15 +47,21 @@ incidents: dict[str, machine.Incident] = {}
 book: dict[str, dict] = {}          # action-card decisions (L9, ontology v2)
 audit_log: list[dict] = []
 plant_status: dict[str, dict] = {}   # latest plant.status per asset (PLC mode / state for the agent's DMN facts)
-uploads: list[dict] = []             # manual ingestion history (this process run)
 producer = None
 loop: asyncio.AbstractEventLoop | None = None
 store = None
+source_inbox = None
+source_delivery = None
+case_projector = None
+case_projection_event = None
+case_projection_task = None
+knowledge_reconciler = None
 
 
 def persist():
     if store is not None:
         store.save(incidents, book, audit_log)
+        _wake_case_projection()
 
 
 class Fx(machine.Effects):
@@ -71,69 +88,131 @@ async def fire_timer(inc_id: str, name: str, seconds: float):
     inc = incidents.get(inc_id)
     if not inc:
         return
-    ts1 = await asyncio.get_running_loop().run_in_executor(None, latest_ts1, inc.asset) if name == "reobs" else None
-    machine.on_timer(inc, name, now(), ts1, Fx(inc), time_scale=TIME_SCALE)
+    value = await asyncio.get_running_loop().run_in_executor(None, latest_tag, inc.asset, inc.recovery[0]) if name == "reobs" and inc.recovery else None
+    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE)
     _after(inc)
+    if inc.state == 'RESOLVED':
+        rt = instance_mode.current()
+        owned = await asyncio.get_running_loop().run_in_executor(None, rt.repo.incident_is_process_owned, inc.id) if rt else False
+        if not owned:
+            await asyncio.get_running_loop().run_in_executor(None, _complete_legacy_work_order, inc)
 
 
-def latest_ts1(asset: str) -> float | None:
+def latest_tag(asset: str, tag: str = "TS1") -> float | None:
+    """Latest 1 s value of one tag (the incident's recovery tag: TS1 · PS1 · VS1) from TimescaleDB."""
     try:
         with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
-            cur.execute("SELECT value FROM tag_1s WHERE asset=%s AND name='TS1' ORDER BY time DESC LIMIT 1", (asset,))
+            cur.execute("SELECT value FROM tag_1s WHERE asset=%s AND name=%s ORDER BY time DESC LIMIT 1", (asset, tag))
             row = cur.fetchone()
             return float(row[0]) if row else None
     except Exception as e:  # noqa: BLE001
-        log.warning("latest_ts1 failed: %s", e)
+        log.warning("latest_tag %s failed: %s", tag, e)
         return None
 
 
+def latest_ts1(asset: str) -> float | None:
+    return latest_tag(asset, "TS1")
+
+
 def _after(inc: machine.Incident):
+    """Runs on the event loop or on a worker thread (instance-mode hooks), so it schedules through the global loop."""
     persist()
     if inc.state in definition.TERMINAL:
         c_inc.inc(state=inc.state)
-        if inc.state == "CLOSED":
-            asyncio.get_running_loop().run_in_executor(None, record_incident, inc)
-    g_open.set(sum(1 for i in incidents.values() if i.state not in definition.TERMINAL))
+        if inc.state == "CLOSED" and loop is not None:
+            loop.run_in_executor(None, record_incident, inc)
+    g_open.set(sum(1 for i in list(incidents.values()) if i.state not in definition.TERMINAL))
+    instance_mode.on_incident_update(inc)
 
 
-INCIDENT_Q = """
-MERGE (i:Incident {id: $id}) SET i.alertId = $alert, i.openedAt = datetime($created)
-WITH i OPTIONAL MATCH (a:Asset {code: $asset}) FOREACH (_ IN CASE WHEN a IS NULL THEN [] ELSE [1] END | MERGE (i)-[:ON_ASSET]->(a))
-WITH i OPTIONAL MATCH (p:AnomalyPattern {code: $pattern}) FOREACH (_ IN CASE WHEN p IS NULL THEN [] ELSE [1] END | MERGE (i)-[:RAISED_BY]->(p))
-WITH i OPTIONAL MATCH (c:Cause {id: $cause}) FOREACH (_ IN CASE WHEN c IS NULL THEN [] ELSE [1] END | MERGE (i)-[:DIAGNOSED_AS]->(c))
-"""
-
-
-def _incident_params(inc: machine.Incident) -> dict:
-    card = inc.card or {}
-    return {"id": inc.id, "alert": inc.alert_id, "created": inc.created, "asset": inc.asset,
-            "pattern": (card.get("alert") or {}).get("pattern"), "cause": card.get("topCause")}
+def _wake_case_projection():
+    if loop is not None and case_projection_event is not None and not loop.is_closed():
+        loop.call_soon_threadsafe(case_projection_event.set)
 
 
 def record_incident(inc: machine.Incident) -> None:
-    """Write the case back into the ontology v2 (Incident -ON_ASSET-> Asset, -RAISED_BY-> AnomalyPattern, -DIAGNOSED_AS-> Cause)."""
-    try:
-        _q(INCIDENT_Q, **_incident_params(inc))
-        log.info("incident %s recorded in ontology", inc.id)
-    except Exception as e:  # noqa: BLE001
-        log.warning("ontology record skipped: %s", e)
+    # Only wake delivery; the mutable caller snapshot is never graph authority.
+    _wake_case_projection()
+
+
+def _incident_projected(incident_id):
+    rt = instance_mode.current()
+    if rt is not None:
+        rt.repo.enqueue_incident_projections(rt.tenant_id, incident_id)
+
+
+async def _case_projection_loop():
+    while True:
+        try:
+            await asyncio.wait_for(case_projection_event.wait(), timeout=2)
+        except asyncio.TimeoutError:
+            pass
+        case_projection_event.clear()
+        try:
+            if knowledge_reconciler is not None:
+                await asyncio.to_thread(knowledge_reconciler.poll)
+            await asyncio.to_thread(case_projector.drain)
+        except Exception:
+            log.exception('case graph recovery loop failed; durable jobs remain pending')
+
+
 
 
 async def consume():
     global producer
     producer = await make_producer()
-    cons = await make_consumer([topics.K_STATUS, topics.K_ALERTS], group="process", from_latest=True)
+    durable=source_inbox is not None
+    cons = await make_consumer([topics.K_STATUS, topics.K_ALERTS], group="process", from_latest=not durable,
+                               auto_commit=not durable,raw_values=durable)
     state["kafka"] = True
     log.info("consuming plant.status (ACK) and alerts (CLEAR)")
     async for rec in cons:
+        if durable:
+            from aiokafka import TopicPartition
+            record=kafka_record(rec)
+            policy=None
+            # On a receipt failure this exact delivery remains unacknowledged.
+            # Do not consume a later record and commit past the missing event.
+            while True:
+                try:
+                    if record['kind']=='RAISE' and policy is None:
+                        policy=await asyncio.to_thread(instance_mode.current().alert_policy,record['payload'].get('pattern'))
+                    await asyncio.to_thread(source_inbox.receive,record,policy)
+                    if record['topic']==topics.K_STATUS:
+                        plant_status.update(await asyncio.to_thread(source_inbox.latest_states))
+                    state.pop('source_receive_error',None)
+                    break
+                except Exception as exc:
+                    state['source_receive_error']=str(exc)
+                    log.exception('source receipt/offset failed: %s/%s/%s',rec.topic,rec.partition,rec.offset)
+                    await asyncio.sleep(1)
+            try:
+                await cons.commit({TopicPartition(rec.topic,rec.partition):rec.offset+1})
+            except Exception:
+                # Rebalance/network failure may redeliver an already committed
+                # receipt. Every later offset also passes receive() first.
+                log.exception('durable source will tolerate offset redelivery: %s/%s/%s',rec.topic,rec.partition,rec.offset)
+            continue
         v = rec.value
         if not isinstance(v, dict) or "_raw" in v:
             log.warning("ignoring malformed record on %s", rec.topic)
             continue
         if rec.topic == topics.K_STATUS and v.get("asset"):
             plant_status[v["asset"]] = v
+        if rec.topic == topics.K_ALERTS and v.get("state") == "RAISE":
+            instance_mode.on_alert_raise(v)      # message start event (ev:alert): one RAISE opens one process instance
+            if instance_mode.current() is None and definition.recovery_for(v.get('pattern')) is None:
+                if not any(i.alert_id==v.get('alertId') for i in list(incidents.values())):
+                    inc=machine.Incident.from_card(machine.new_incident_id(),{'alert':v,'recommended':[]})
+                    machine.on_card(inc);incidents[inc.id]=inc;state['incidents']=len(incidents)
+                    _audit(inc.asset,'process','UNSUPPORTED_ALERT_PATTERN',{'alert':v},incident=inc.id)
+                    _after(inc)
         for inc in list(incidents.values()):
             if inc.state in definition.TERMINAL:
+                if (rec.topic == topics.K_ALERTS and inc.reason == 'UNSUPPORTED_ALERT_PATTERN'
+                        and v.get('alertId') == inc.alert_id and v.get('state') == 'CLEAR' and not inc.cleared):
+                    machine.on_alert(inc,v,Fx(inc))
+                    _after(inc)  # Source CLEAR is recorded; ESCALATED remains human review.
                 continue
             try:
                 if rec.topic == topics.K_STATUS and v.get("asset") == inc.asset:
@@ -145,8 +224,92 @@ async def consume():
                 log.warning("record on %s failed for %s: %s", rec.topic, inc.id, e)
 
 
+def _apply_source_event(receipt):
+    value=receipt['payload'];rt=instance_mode.current()
+    if receipt['kind']=='CLEAR':
+        inc=next((i for i in list(incidents.values()) if i.alert_id==value['alertId']),None)
+    else:
+        inc=next((i for i in list(incidents.values()) if i.cmd_id==value['cmdId']),None)
+    if inc is None:raise SourcePending('연결할 원천 사건/명령이 아직 없습니다')
+    if value['asset']!=inc.asset or (receipt['kind']=='CLEAR' and 'pattern' in value and value['pattern']!=inc.pattern):
+        raise ValueError('원천 해제/응답의 설비 또는 경보 패턴이 사건과 다릅니다')
+    inst=rt.instance_of_incident(inc.id)
+    # Use the same instance lock as approval/task transitions. Source receipt
+    # fencing alone cannot prevent a previously running handler from finishing.
+    with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
+        if receipt['kind']=='CLEAR' and not inc.cleared:
+            machine.on_alert(inc,value,Fx(inc))
+        elif receipt['kind']=='ACK':
+            machine.on_status(inc,value,now(),Fx(inc),time_scale=TIME_SCALE)
+        persist()
+        rt.on_incident_update(inc.state,inc.id,inc.cleared)
+        return {'incident':inc.id,'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,
+                'ack':inc.ack,'disposition':'correlated source observed; recovery is not inferred'}
+
+
+async def _source_loop():
+    while producer is None:await asyncio.sleep(.1)
+    while True:
+        try:
+            result=await source_delivery.run_once()
+            state.pop('source_handler_error',None)
+            if result is None:await asyncio.sleep(.2)
+        except Exception as exc:
+            state['source_handler_error']=str(exc)
+            log.exception('source handler unavailable')
+            await asyncio.sleep(1)
+
+
 app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
-               lambda: {**state, "ok": state["kafka"] and not state.get("consumer_dead", False)})
+               lambda: {**state, "ok": state["kafka"] and not any(state.get(k) for k in
+                    ('consumer_dead','source_receive_error','source_handler_error'))})
+instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
+
+
+def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> dict:
+    rt = instance_mode.current()
+    inst = rt.instance_of_incident(inc.id) if rt else None
+    current_id = engine.variables(inst).get('decision_id') if inst else None
+    choices = [d for d in book.values() if (d.get('origin') or {}).get('incident') == inc.id
+               and (not inst or d.get('id') == current_id)
+               and d.get('chosen') and d.get('state') in ('APPROVED', 'PARTIAL', 'EXECUTED')]
+    if len(choices) != 1:
+        raise ValueError('명령 발행에 필요한 단일 승인 판단을 확인할 수 없습니다')
+    d = choices[0]
+    _check_current_approval(d, d['chosen'], d['approvedRole'])
+    from .approval_hooks import require_reviewed_commands
+    require_reviewed_commands(next(o for o in d['options'] if o['id'] == d['chosen']), commands)
+    cmd = machine.on_approve(inc, by, commands, now(), Fx(inc), time_scale=TIME_SCALE)
+    _after(inc)
+    return cmd
+
+
+def _check_current_approval(d, option, role):
+    report = current_approval.check(d, option, role)
+    _audit(d.get('asset') or '-', 'process', 'APPROVAL_CURRENT_CHECK', report,
+           incident=(d.get('origin') or {}).get('incident'))
+    return current_approval.require(lambda *_: report, d, option, role)
+
+
+def _instance_context() -> instance_mode.ProcessContext:
+    return instance_mode.ProcessContext(incidents=incidents, book=book, state=state, time_scale=TIME_SCALE, persist=persist, audit=_audit,
+                                        cypher=_q, exec_skill=exec_skill, record_decision=record_decision, approve_incident=_approve_incident,
+                                        get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
+                                        reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
+                                        accept_evaluation=_publish_legacy_evaluation)
+
+
+def _approval_receipts(decision_id):
+    from urllib.parse import urlencode
+    with urllib.request.urlopen(ENTERPRISE_URL + '/api/transactions?' + urlencode({'decision': decision_id}), timeout=10) as response:
+        return json.loads(response.read())
+
+
+def _review_service():
+    from .decision_reviews import DecisionReviews
+    if store is None:
+        raise ValueError('검토본 저장소가 준비되지 않았습니다')
+    return DecisionReviews(store,book,incidents,current_approval.preview)
 
 
 def _watch(task):
@@ -158,7 +321,7 @@ def _watch(task):
 
 @app.on_event("startup")
 async def _startup():
-    global loop, store
+    global loop, store, source_inbox, source_delivery, case_projector, case_projection_event, case_projection_task, knowledge_reconciler
     loop = asyncio.get_running_loop()
     store = Store(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3"))
     saved_incidents, saved_book, saved_audit = store.restore()
@@ -168,7 +331,28 @@ async def _startup():
     audit_log[:] = saved_audit
     state["incidents"] = len(incidents)
     persist()
+    if PROCESS_MODE == "instance":
+        rt=instance_mode.start(_instance_context())
+        source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
+        plant_status.update(await asyncio.to_thread(source_inbox.latest_states))
+        source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
+        asyncio.create_task(_source_loop()).add_done_callback(_watch)
+    case_projector = CaseProjector(store, _q, _incident_projected)
+    active_runtime=instance_mode.current()
+    knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),active_runtime.repo if active_runtime else None)
+    case_projection_event = asyncio.Event()
+    case_projection_event.set()
+    case_projection_task = asyncio.create_task(_case_projection_loop())
     asyncio.create_task(consume()).add_done_callback(_watch)
+
+
+@app.get('/api/graph-projections')
+async def graph_projection_status():
+    if store is None:
+        raise HTTPException(503, '사건 저장소가 준비되지 않았습니다')
+    result = await asyncio.to_thread(store.case_projection_status)
+    knowledge=await asyncio.to_thread(knowledge_reconciler.status) if knowledge_reconciler else None
+    return result | {'worker_running': case_projection_task is not None and not case_projection_task.done(),'knowledge':knowledge}
 
 
 class ApproveReq(BaseModel):
@@ -181,13 +365,66 @@ class RejectReq(BaseModel):
     reason: str = ""
 
 
+class SourceRetryReq(BaseModel):
+    by: str
+    reason: str
+
+
+@app.get('/api/source-events')
+async def source_events(after_id: int=0,limit: int=100,status: str|None=None):
+    if source_inbox is None:raise HTTPException(409,'원천 접수는 instance 모드에서 사용할 수 있습니다')
+    try:return await asyncio.to_thread(source_inbox.list,after_id=after_id,limit=limit,status=status)
+    except ValueError as exc:raise HTTPException(400,str(exc))
+
+
+@app.get('/api/source-events/{receipt_id}')
+async def source_event(receipt_id: int):
+    if source_inbox is None:raise HTTPException(409,'원천 접수 저장소가 준비되지 않았습니다')
+    row=await asyncio.to_thread(source_inbox.get,receipt_id)
+    if row is None:raise HTTPException(404,'접수 기록이 없습니다')
+    return row
+
+
+@app.post('/api/source-events/{receipt_id}/retry')
+async def retry_source_event(receipt_id: int,req: SourceRetryReq):
+    if source_inbox is None:raise HTTPException(409,'원천 접수 저장소가 준비되지 않았습니다')
+    try:row=await asyncio.to_thread(source_inbox.retry_failed,receipt_id,by=req.by,reason=req.reason)
+    except ValueError as exc:raise HTTPException(400,str(exc))
+    if row is None:raise HTTPException(409,'재시도할 FAILED 원천 접수가 아닙니다')
+    return row
+
+
 @app.post("/api/incidents")
 async def create_incident(card: dict):   # async: mutates incidents on the loop thread, like consume()
     if not card.get("alert") or not card.get("recommended"):
         raise HTTPException(400, "card needs alert and recommended actions")
     alert_id = card["alert"].get("alertId")
-    for inc in incidents.values():
-        if inc.alert_id == alert_id and inc.state not in definition.TERMINAL:
+    if not alert_id or not card['alert'].get('asset'):
+        raise HTTPException(400,'alert에는 alertId와 asset이 필요합니다')
+    rt=instance_mode.current()
+    if rt is not None:
+        try:
+            if source_delivery is not None:
+                record=source_record(topics.K_ALERTS,None,None,card['alert'],source='http')
+                if record['kind']!='RAISE':raise ValueError('가이드에는 원천 RAISE 경보가 필요합니다')
+                policy=await asyncio.to_thread(rt.alert_policy,record['payload'].get('pattern'))
+                receipt=await asyncio.to_thread(source_inbox.receive,record,policy)
+                await source_delivery.wait_for(receipt)
+            else:
+                await asyncio.get_running_loop().run_in_executor(None,rt.on_alert_raise,card['alert'])
+        except (ValueError,LookupError) as exc:
+            raise HTTPException(409,str(exc))
+        except TimeoutError as exc:
+            raise HTTPException(503,str(exc))
+    for inc in list(incidents.values()):
+        if inc.alert_id == alert_id:
+            if (inc.asset,inc.pattern)!=(card['alert'].get('asset'),card['alert'].get('pattern')):
+                raise HTTPException(409,'같은 경보 ID의 설비/패턴이 다릅니다')
+            if rt is not None and inc.state=='AWAITING_APPROVAL' and not inc.card.get("recommended"):
+                # instance mode: the incident was opened by the instance; the agent's card fills it in
+                inc.card = dict(card, incident=inc.id, alert=inc.card['alert'])
+                persist()
+                return {"id": inc.id, "state": inc.state, "duplicate": True, "cardUpdated": True}
             return {"id": inc.id, "state": inc.state, "duplicate": True}
     inc = machine.Incident.from_card(machine.new_incident_id(), card)
     machine.on_card(inc)
@@ -200,6 +437,16 @@ async def create_incident(card: dict):   # async: mutates incidents on the loop 
     return {"id": inc.id, "state": inc.state}
 
 
+@app.get('/api/alerts/policy')
+async def alert_execution_policy(pattern: str = ''):
+    rt=instance_mode.current()
+    if rt is not None:
+        return await asyncio.get_running_loop().run_in_executor(None,rt.alert_policy,pattern)
+    criterion=definition.recovery_for(pattern)
+    return {'pattern':pattern,'route':'response' if criterion else 'triage','criterion':criterion,
+            'definition':'legacy-incident','version':'explicit-patterns-v1'}
+
+
 @app.get("/api/incidents")
 def list_incidents():
     return [i.to_dict() | {"card": None} for i in sorted(incidents.values(), key=lambda i: i.created, reverse=True)]
@@ -210,7 +457,20 @@ def get_incident(inc_id: str):
     inc = incidents.get(inc_id)
     if not inc:
         raise HTTPException(404, "no such incident")
-    return inc.to_dict()
+    rt=instance_mode.current()
+    return inc.to_dict() | {'processOwned':bool(rt and rt.repo.incident_is_process_owned(inc_id))}
+
+
+async def _require_legacy_incident(inc_id):
+    rt = instance_mode.current()
+    if rt and inc_id and await asyncio.get_running_loop().run_in_executor(None, rt.repo.incident_is_process_owned, inc_id):
+        raise HTTPException(409, '프로세스 인스턴스의 사람 작업에서 승인·복구하세요')
+
+
+async def _require_legacy_decision(d):
+    if d.get('process_approval_id'):
+        raise HTTPException(409, '이미 접수된 프로세스 승인입니다. 해당 작업에서 전달 상태를 확인하세요')
+    await _require_legacy_incident((d.get('origin') or {}).get('incident'))
 
 
 @app.post("/api/incidents/{inc_id}/approve")
@@ -218,12 +478,24 @@ async def approve(inc_id: str, req: ApproveReq):
     inc = incidents.get(inc_id)
     if not inc:
         raise HTTPException(404, "no such incident")
-    try:
-        cmd = machine.on_approve(inc, req.approvedBy, req.actions, now(), Fx(inc), time_scale=TIME_SCALE)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _after(inc)
-    return {"id": inc.id, "state": inc.state, "cmd": cmd}
+    await _require_legacy_incident(inc_id)
+    raise HTTPException(409, '원자 명령만으로 승인할 수 없습니다. 조치 카드에서 SOP와 승인 역할을 선택하세요')
+
+
+@app.post('/api/incidents/{inc_id}/work-order-retry')
+async def retry_legacy_work_order(inc_id: str):
+    inc = incidents.get(inc_id)
+    if inc is None:
+        raise HTTPException(404, 'no such incident')
+    await _require_legacy_incident(inc_id)
+    if inc.state not in ('RESOLVED', 'AWAITING_APPROVAL') or not inc.work_order_request:
+        raise HTTPException(409, '재전달할 승인된 작업지시가 없습니다')
+    if inc.state == 'AWAITING_APPROVAL' and not inc.work_order_request['work_order_only']:
+        raise HTTPException(409, '설비 재관측이 끝나지 않았습니다')
+    result = await asyncio.get_running_loop().run_in_executor(None, _complete_legacy_work_order, inc)
+    if result.get('ok') is not True:
+        raise HTTPException(502, result)
+    return {'incident':inc.to_dict(), 'work_order':result}
 
 
 @app.post("/api/incidents/{inc_id}/reject")
@@ -231,6 +503,7 @@ async def reject(inc_id: str, req: RejectReq):
     inc = incidents.get(inc_id)
     if not inc:
         raise HTTPException(404, "no such incident")
+    await _require_legacy_incident(inc_id)
     try:
         machine.on_reject(inc, req.by, req.reason, Fx(inc))
     except ValueError as e:
@@ -260,7 +533,7 @@ def get_definition():
 
 @app.get("/api/summary")
 def summary():
-    return {"open": [i.to_dict() | {"card": None} for i in incidents.values() if i.state not in definition.TERMINAL],
+    return {"open": [i.to_dict() | {"card": None} for i in list(incidents.values()) if i.state not in definition.TERMINAL],
             "total": len(incidents), "time_scale": TIME_SCALE}
 
 
@@ -282,8 +555,8 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
     audit_log.insert(0, evt)
     del audit_log[500:]
     persist()
-    if producer is not None:
-        asyncio.get_running_loop().create_task(producer.send(topics.K_AUDIT, key=topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), value=evt))
+    if producer is not None and loop is not None:   # callable from worker threads too (instance-mode hooks)
+        asyncio.run_coroutine_threadsafe(producer.send(topics.K_AUDIT, key=topics.asset_key(asset if asset in ("HYD-01", "HYD-02", "HYD-03") else "HYD-01"), value=evt), loop)
 
 
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them
@@ -298,7 +571,7 @@ def exec_skill(d: dict, item: dict) -> dict:
     if not job:
         return out | {"ok": False, "error": f"실행할 수 없는 트랜잭션 {item.get('code')}"}
     if item["code"] == "WO_CREATE":
-        params = {"task": f"{opt.get('sopId')} {opt.get('name')} → 작업지시 {item.get('value')}",
+        params = {"task": f"{item.get('sop') or opt.get('sopId')} {opt.get('name')} → 작업지시 {item.get('value')}",
                   "window": "야간 정비창" if "night" in opt["id"] else "즉시"}
     else:
         params = {"supplier": item.get("value") or "sup:b", "part": opt.get("name")}
@@ -309,49 +582,139 @@ def exec_skill(d: dict, item: dict) -> dict:
                                      headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=10) as r:
             tx = json.loads(r.read())
+        if not isinstance(tx.get('ref'), str) or not tx['ref'].strip():
+            raise ValueError('enterprise response has no actual transaction reference')
         return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail")}
     except Exception as e:  # noqa: BLE001
         return out | {"ok": False, "error": str(e)[:200]}
 
 
-DECISION_CASE_Q = """
-MERGE (x:DecisionCase {id: $id}) SET x.decidedAt = datetime($at), x.reason = $reason, x.followedRecommendation = $followed
-WITH x MATCH (d:Decision {id: 'dec:rank-actions'}) MERGE (x)-[:INSTANCE_OF]->(d)
-WITH x OPTIONAL MATCH (s:Skill {id: $skill}) FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END | MERGE (x)-[:CHOSE]->(s))
-WITH x OPTIONAL MATCH (r:Role {id: $role}) FOREACH (_ IN CASE WHEN r IS NULL THEN [] ELSE [1] END | MERGE (x)-[:DECIDED_BY]->(r))
-WITH x OPTIONAL MATCH (i:Incident {id: $incident}) FOREACH (_ IN CASE WHEN i IS NULL THEN [] ELSE [1] END | MERGE (x)-[:FOR_INCIDENT]->(i))
-"""
+def _work_order_context():
+    from types import SimpleNamespace
+    return SimpleNamespace(incidents=incidents, persist=persist, audit=_audit, after_incident=_after)
+
+
+def _freeze_legacy_work_order(inc, by):
+    action = next((a for a in inc.card.get('recommended', []) if a.get('kind')=='work_order'), None)
+    if action is None:
+        raise ValueError('승인 가이드에 후속 작업지시가 없습니다. 정비 계획 검토가 필요합니다')
+    option = {'id':action.get('skillId') or action.get('actionId') or action['code'],
+              'sopId':(action.get('sop') or {}).get('id'),
+              'name':(action.get('sop') or {}).get('name') or action.get('name'),
+              'actions':[{'kind':'command'}]}
+    item = {'skill':option['id'], 'sop':option['sopId'], 'code':'WO_CREATE',
+            'name':option['name'], 'system':'sys:cmms', 'value':action.get('value'),
+            'param':action.get('param'), 'source':'approved-legacy-guide'}
+    d = {'id':inc.id, 'chosen':option['id'], 'approvedBy':by, 'options':[option],
+         'asset':inc.asset, 'origin':{'incident':inc.id}}
+    work_orders.prepare(_work_order_context(), d, item, allow_before_recovery=True)
+
+
+def _complete_legacy_work_order(inc):
+    """Legacy guide approval still requires a real, idempotent CMMS receipt."""
+    item = {}
+    try:
+        saved = inc.work_order_request
+        if saved:
+            item = copy.deepcopy(saved['item'])
+            option = {'id':saved['option'], 'sopId':item.get('sop'), 'name':saved['option_name'],
+                      'actions':[{'kind':'command'}] if not saved['work_order_only'] else []}
+            d = {'id':saved['decision'], 'chosen':saved['option'], 'approvedBy':saved['by'],
+                 'options':[option], 'asset':inc.asset, 'origin':{'incident':inc.id}}
+        else:
+            raise ValueError('승인 당시의 작업지시 요청이 없습니다. 정비 계획 검토가 필요합니다')
+        ctx = _work_order_context()
+        work_orders.prepare(ctx, d, item)
+        result = exec_skill(d, item)
+        if result.get('ok') is not True:
+            raise RuntimeError(result.get('error') or 'CMMS failed')
+        work_orders.confirm(ctx, inc, item, result)
+        decision = book.get(saved['decision'])
+        if decision is not None:
+            from .approval_hooks import record_execution
+            record_execution(decision, result)
+            persist()
+        return result
+    except Exception as exc:
+        _audit(inc.asset, 'process', 'WORK_ORDER_FAILED', {'error':str(exc), 'retryable':inc.state=='RESOLVED'}, incident=inc.id)
+        return {'ok':False, 'code':'WO_CREATE', 'error':str(exc),
+                'skill':item.get('skill'), 'system':item.get('system', 'sys:cmms')}
 
 
 def record_decision(d: dict) -> None:
-    """Case memory in the ontology v2: DecisionCase -INSTANCE_OF-> Decision(dec:rank-actions), -CHOSE-> Skill, -DECIDED_BY-> Role,
-    -FOR_INCIDENT-> Incident. The agent reads it back as a precedent of the same failure mode (T3-e)."""
-    if d.get("state") not in ("APPROVED", "EXECUTED", "PARTIAL") or not d.get("chosen"):
-        return
-    try:
-        inc = incidents.get((d.get("origin") or {}).get("incident") or "")
-        if inc:
-            _q(INCIDENT_Q, **_incident_params(inc))
-        at = next((h["t"] for h in reversed(d.get("history") or []) if h.get("state") == "APPROVED"), d["created"])
-        _q(DECISION_CASE_Q, id="case:" + d["id"], at=at, reason=d.get("reason") or "", followed=not d.get("override"),
-           skill=d["chosen"], role=d.get("approvedRole"), incident=inc.id if inc else None)
-    except Exception as e:  # noqa: BLE001
-        log.warning("decision record skipped: %s", e)
+    """The persisted source and queue own delivery, including retries/restart."""
+    _wake_case_projection()
 
 
 @app.post("/api/decisions")
 async def create_decision(payload: dict):
+    return await asyncio.get_running_loop().run_in_executor(None, _create_decision, payload)
+
+
+def _create_decision(payload: dict):
+    """Serialize acceptance with rework so a late producer cannot bind to a new generation."""
     if not payload.get("id") or not payload.get("options"):
         raise HTTPException(400, "decision needs id and options")
+    origin = payload.get('origin') or {}
+    rt = instance_mode.current()
+    inst = rt.instance_of_incident(origin.get('incident')) if rt and origin.get('incident') else None
+    with rt._transition(inst['proc_inst_id']) if inst else nullcontext():
+        if inst:
+            inst = rt.repo.get_instance(inst['proc_inst_id'])
+            legacy=origin.get('legacy_attempt')
+            if legacy is not None:
+                if not isinstance(legacy,dict):raise HTTPException(409,'invalid legacy attempt')
+                wi=rt.repo.get_workitem(legacy.get('workitem'))
+                if (not wi or wi['proc_inst_id']!=inst['proc_inst_id'] or wi['status']!='IN_PROGRESS'
+                        or wi.get('draft_status')!='STARTED' or wi.get('consumer')!=legacy.get('owner')):
+                    raise HTTPException(409,'legacy assessment no longer owns the task')
+            scope = origin.get('process_scope')
+            if int(inst.get('rework_generation') or 0) > 0 or scope is not None:
+                from .decision_scope import validate_submission
+                try:
+                    import uuid
+                    wid = str(uuid.UUID(scope.get('workitem', ''))) if isinstance(scope, dict) else None
+                    workitem = rt.repo.get_workitem(wid) if wid else None
+                    validate_submission(inst, rt.definition_for(inst), workitem, scope)
+                except (ValueError, TypeError, AttributeError) as error:
+                    raise HTTPException(409, str(error))
+        elif origin.get('process_scope') is not None:
+            raise HTTPException(409, '판단의 활성 프로세스 인스턴스를 찾을 수 없습니다')
+        elif (rt and origin.get('incident') and payload['id'] not in book
+              and rt.repo.incident_is_process_owned(origin['incident'])):
+            raise HTTPException(409, '종료된 프로세스 사건에 새 판단을 접수할 수 없습니다')
+        return _store_decision(payload)
+
+
+def _store_decision(payload):
     if payload["id"] in book:
         d = book[payload["id"]]
+        if any((payload.get('origin') or {}).get(key) != (d.get('origin') or {}).get(key)
+               for key in ('process_scope','legacy_attempt')):
+            raise HTTPException(409, '같은 판단 ID를 다른 작업/세대에서 재사용할 수 없습니다')
         return {"id": d["id"], "state": d["state"], "duplicate": True}
+    origin=payload.get('origin') or {}
+    if origin.get('incident'):
+        inc=incidents.get(origin['incident'])
+        if not inc or inc.asset!=payload.get('asset') or (origin.get('pattern') is not None and origin['pattern']!=inc.pattern):
+            raise HTTPException(409,'결정의 원천 사건/설비/패턴이 일치하지 않습니다')
+        if inc.state!='AWAITING_APPROVAL' or inc.recovery is None:
+            raise HTTPException(409,'이 사건은 조치 카드 접수 대상이 아닙니다. 현장 검토 상태를 확인하세요')
     d = declib.new(payload)
     book[d["id"]] = d
     _audit(d.get("asset") or "-", "agent", "DECISION_SUBMITTED",
            {"decision": d["id"], "cards": [o.get("sopId") for o in d.get("options", [])], "recommended": d.get("recommended")},
            incident=(d.get("origin") or {}).get("incident"))
+    instance_mode.bridge_legacy_agent(d)
     return {"id": d["id"], "state": d["state"]}
+
+
+def _publish_legacy_evaluation(payload,card):
+    rt=instance_mode.current()
+    if rt is None:raise ValueError('instance runtime required')
+    rt.hooks.update_incident_card(payload['origin']['incident'],card)
+    _create_decision(payload)
+    return book[payload['id']]
 
 
 @app.get("/api/decisions")
@@ -373,7 +736,9 @@ async def approve_decision(did: str, req: DecisionApproveReq):
     d = book.get(did)
     if not d:
         raise HTTPException(404, "no such decision")
+    await _require_legacy_decision(d)
     try:
+        await asyncio.get_running_loop().run_in_executor(None, _check_current_approval, d, req.option, req.role)
         plan = declib.approve(d, req.option, req.by, req.role, req.reason)
     except PermissionError as e:
         _audit(d.get("asset") or "-", req.by, "DECISION_DENIED", {"decision": did, "option": req.option, "role": req.role, "reason": str(e)})
@@ -398,6 +763,7 @@ async def reject_decision(did: str, req: DecisionRejectReq):
     d = book.get(did)
     if not d:
         raise HTTPException(404, "no such decision")
+    await _require_legacy_decision(d)
     try:
         declib.reject(d, req.by, req.reason)
     except ValueError as e:
@@ -427,8 +793,8 @@ def _q(cypher: str, **params) -> list[dict]:
 SKILL_Q = """
 MATCH (k:Skill) WHERE $id IS NULL OR k.id = $id
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
-RETURN k.id AS id, k.sopId AS sopId, k.name AS name, k.description AS description, k.kind AS kind,
-       CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name} END AS approver,
+RETURN k.id AS id, k.sopId AS sopId, k.name AS name, k.description AS description, k.kind AS kind, k._manual_document AS source_document, k.source_id AS source_id,
+       CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name, level:r.level} END AS approver,
        COLLECT { MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY]->(k) RETURN {id: fm.id, name: fm.name, relation: type(m)} } AS failureModes,
        COLLECT { MATCH (k)-[:ADDRESSES]->(c:Cause) RETURN {id: c.id, name: c.name} } AS causes,
        COLLECT { MATCH (k)-[co:CONSISTS_OF]->(a:Action) RETURN {code: a.code, name: a.name, kind: a.kind, value: co.value} ORDER BY co.seq } AS actions,
@@ -443,7 +809,7 @@ ORDER BY sopId
 
 @app.get("/api/kg/skills")
 async def kg_skills():
-    return await asyncio.get_running_loop().run_in_executor(None, lambda: _q(SKILL_Q, id=None))
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: skill_graph.stamp(_q(SKILL_Q, id=None)))
 
 
 @app.get("/api/kg/catalog")
@@ -456,156 +822,213 @@ async def kg_catalog():
     return await asyncio.get_running_loop().run_in_executor(None, run)
 
 
-def _set_approver(sid: str, role: str | None) -> None:
-    if role:
-        _q("MATCH (k:Skill {id: $id}) OPTIONAL MATCH (k)-[old:APPROVED_BY]->() DELETE old", id=sid)
-        _q("MATCH (k:Skill {id: $id}), (r:Role {id: $role}) MERGE (k)-[:APPROVED_BY]->(r)", id=sid, role=role)
-
-
-def _write_sop_skill(sid: str, v: dict, steps: list[dict], performer: str) -> None:
-    """Create / replace one SOP skill: Skill {sopId, kind} -HAS_STEP-> Step (-REFERS_TO-> ManualSection), matched to its failure mode.
-    One SOP number belongs to one skill: a number another skill already uses is refused (its Step nodes would be shared)."""
-    taken = _q("MATCH (k:Skill {sopId: $sop}) WHERE k.id <> $id RETURN k.id AS id, k.name AS name", sop=v["sopId"], id=sid)
-    if taken:
-        raise ValueError(f"SOP 번호 {v['sopId']}는 이미 '{taken[0]['name']}'({taken[0]['id']})의 것이다 — 다른 번호를 쓰세요")
-    _q("""MERGE (k:Skill {id: $id}) SET k.sopId = $sop, k.name = $name, k.description = $description, k.kind = $kind""",
-       id=sid, sop=v["sopId"], name=v["name"], description=v["description"] or f"{v['sopId']} 절차", kind=v["kind"])
-    _q("MATCH (k:Skill {id: $id})-[:HAS_STEP]->(s:Step) DETACH DELETE s", id=sid)
-    for st in steps:
-        _q("""MATCH (k:Skill {id: $id}) MERGE (s:Step {id: $sid}) SET s.order = $order, s.text = $text MERGE (k)-[:HAS_STEP]->(s)
-              WITH s OPTIONAL MATCH (m:ManualSection {id: $manual}) FOREACH (_ IN CASE WHEN m IS NULL THEN [] ELSE [1] END | MERGE (s)-[:REFERS_TO]->(m))""",
-           id=sid, sid=f"{v['sopId']}/{st['order']}", order=st["order"], text=st["text"], manual=st.get("manual"))
-    rel = "MITIGATED_BY" if v["relation"] == "MITIGATED_BY" else "REMEDIED_BY"
-    _q(f"MATCH (f:FailureMode {{id: $fm}}), (k:Skill {{id: $id}}) MERGE (f)-[:{rel}]->(k)", fm=v["failureMode"], id=sid)
-    _q("MATCH (s {id: $sys}), (k:Skill {id: $id}) WHERE s:System OR s:Role MERGE (s)-[:HAS_SKILL]->(k)", sys=performer, id=sid)
-    _set_approver(sid, v.get("approver") or "role:maint-mgr")
+def _author_skill(sid, values, body, create=False):
+    driver = _kg()
+    try:
+        with driver.session() as session:
+            return skill_graph.write(session, SKILL_Q, sid, values, create=create,
+                expected_revision=body.get('revision'), request_id=body.get('request_id'),
+                by=str(body.get('by') or '지식 관리자'))
+    finally:
+        driver.close()
 
 
 @app.put("/api/kg/skills/{sid}")
 async def kg_update_skill(sid: str, body: dict):
     try:
-        v = kgadmin.validate_skill(body)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    loop_ = asyncio.get_running_loop()
-    if not await loop_.run_in_executor(None, lambda: _q("MATCH (k:Skill {id: $id}) RETURN k.id AS id", id=sid)):
-        raise HTTPException(404, "no such skill")
-    by = str(body.get("by") or "지식 관리자")
-
-    def run():
-        _q("MATCH (k:Skill {id: $id}) SET k.name = $name, k.description = $description", id=sid, name=v["name"], description=v["description"])
-        _set_approver(sid, v.get("approver"))
-        return _q(SKILL_Q, id=sid)[0]
-    out = await loop_.run_in_executor(None, run)
-    _audit("-", by, "SKILL_EDITED", {"skill": sid, "name": v["name"]})
+        values = kgadmin.validate_skill(body)
+        out = await asyncio.get_running_loop().run_in_executor(None, lambda: _author_skill(sid, values, body))
+    except KeyError:
+        raise HTTPException(404, 'no such skill')
+    except skill_graph.Conflict as error:
+        raise HTTPException(409, str(error))
+    except ValueError as error:
+        raise HTTPException(400, str(error))
+    _audit('-', str(body.get('by') or '지식 관리자'), 'SKILL_EDITED', {'skill': sid, 'name': values['name']})
     return out
 
 
 @app.post("/api/kg/skills")
 async def kg_create_skill(body: dict):
-    """New SOP skill (ontology v2): sopId + steps + the failure mode it treats (MITIGATED_BY | REMEDIED_BY)."""
     try:
-        v = kgadmin.validate_skill(body, create=True)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    sid = kgadmin.skill_id(v["sopId"])
-    by = str(body.get("by") or "지식 관리자")
-    loop_ = asyncio.get_running_loop()
-    if not await loop_.run_in_executor(None, lambda: _q("MATCH (f:FailureMode {id: $id}) RETURN f.id AS id", id=v["failureMode"])):
-        raise HTTPException(400, f"unknown failure mode {v['failureMode']}")
-    steps = [{"order": i + 1, "text": s} for i, s in enumerate(v["steps"])]
-    performer = "sys:scada" if v["kind"] == "control" else "sys:cmms"
-    try:
-        out = await loop_.run_in_executor(None, lambda: (_write_sop_skill(sid, v, steps, performer), _q(SKILL_Q, id=sid)[0])[1])
-    except ValueError as e:
-        raise HTTPException(409, str(e))
-    _audit("-", by, "SKILL_CREATED", {"skill": sid, "sop": v["sopId"], "failureMode": v["failureMode"]})
+        values = kgadmin.validate_skill(body, create=True)
+        sid = kgadmin.skill_id(values['sopId'])
+        out = await asyncio.get_running_loop().run_in_executor(None, lambda: _author_skill(sid, values, body, create=True))
+    except skill_graph.Conflict as error:
+        raise HTTPException(409, str(error))
+    except ValueError as error:
+        raise HTTPException(400, str(error))
+    _audit('-', str(body.get('by') or '지식 관리자'), 'SKILL_CREATED', {'skill': sid, 'sop': values['sopId']})
     return out
 
 
-def _extract_text(filename: str, data_b64: str) -> str:
-    import base64
-    import io
-    raw = base64.b64decode(data_b64 or "")
-    if filename.lower().endswith(".pdf"):
-        from pypdf import PdfReader
-        return "\n".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(raw)).pages)
-    for enc in ("utf-8-sig", "cp949"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    return raw.decode("utf-8", errors="replace")
+# Document originals are durable; source review and graph commit have distinct states.
+from pathlib import Path
+from .manual_sources import ManualSources
+from . import manual_api
+manual_api.register(app,
+    archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
+    driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
+    runtime_factory=instance_mode.current)
 
 
-@app.post("/api/kg/manuals/preview")
-async def kg_manual_preview(body: dict):
-    name = str(body.get("filename") or "manual.md")
+# ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
+@app.post("/api/kg/ddl/preview")
+async def kg_ddl_preview(body: dict):
+    """body = {filename, data(base64) | text}. Parses CREATE TABLE statements and proposes the ontology plan
+    (System per source system, InputData per selected column with provenance). Nothing is written."""
+    name = str(body.get("filename") or "schema.sql")
     loop_ = asyncio.get_running_loop()
     try:
-        text = await loop_.run_in_executor(None, lambda: _extract_text(name, body.get("data", "")))
+        text = body.get("text") if isinstance(body.get("text"), str) and body.get("text") else await loop_.run_in_executor(None, lambda: _extract_text(name, body.get("data", "")))
     except Exception as e:  # noqa: BLE001
         raise HTTPException(400, f"파일을 읽을 수 없다: {e}")
-    # suggest the failure mode each SOP treats (the skill must be matched to one)
-    fms = await loop_.run_in_executor(None, lambda: _q("MATCH (f:FailureMode) OPTIONAL MATCH (f)-[:OCCURS_IN]->(c:Component) "
-                                                       "RETURN f.id AS id, f.name + ' ' + coalesce(c.name, '') AS name"))
-    r = kgadmin.parse_manual(text, name, fms)
-    for p in r["procedures"]:
-        p["suggestedFailureMode"] = p.pop("suggestedAction", None)
-    r["chars"] = len(text)
-    return r
+    try:
+        tables = ingest.parse_ddl(text)
+        plan = ingest.plan(tables, filename=name, batch=ingest.new_batch_id("ddl"),
+                           selection=body.get("selection"), systems=body.get("systems"),
+                           datasource=body.get("datasource", "hyd-enterprise"), catalog=body.get("catalog", "postgres"))
+    except (ValueError, TypeError) as e:
+        raise HTTPException(400, str(e))
+    if not tables:
+        raise HTTPException(400, "CREATE TABLE 문을 찾지 못했다")
+    systems = await loop_.run_in_executor(None, lambda: _q("MATCH (s:System) RETURN s.id AS id, s.name AS name, s.zone AS zone ORDER BY s.id"))
+    plan["existingSystems"] = systems
+    plan["chars"] = len(text)
+    return plan
 
 
-@app.post("/api/kg/manuals/commit")
-async def kg_manual_commit(body: dict):
-    """body = parse result (possibly edited in the UI) + {by, links: {procedureId: {failureMode, relation, kind}}}.
-    Each procedure becomes one Skill (= SOP) with its steps, matched to the chosen failure mode; sections become ManualSection nodes."""
-    secs, procs = body.get("sections") or [], body.get("procedures") or []
-    if not secs and not procs:
-        raise HTTPException(400, "적재할 절 · 절차가 없다")
-    by, links = str(body.get("by") or "지식 관리자"), body.get("links") or {}
-    for p_ in procs:
-        ln = links.get(p_["id"]) or {}
-        if not (ln.get("failureMode") or p_.get("suggestedFailureMode")):
-            raise HTTPException(400, f"{p_['id']}: 조치 방법(SOP)은 고장 유형에 매칭되어야 한다 — 고장 유형을 고르세요")
+@app.post("/api/kg/ddl/commit")
+async def kg_ddl_commit(body: dict):
+    """body = the preview plan (possibly edited: selection/systems) + {by}. Applies the ownership journal and nodes in one transaction."""
+    if not body.get("inputs") and not body.get("systems"):
+        raise HTTPException(400, "적재할 시스템 · 입력 데이터가 없다")
+    by = str(body.get("by") or "지식 관리자")
+    plan = {"batch": body.get("batch") or ingest.new_batch_id("ddl"), "filename": body.get("filename", "schema.sql"),
+            "systems": body.get("systems") or [], "inputs": body.get("inputs") or []}
+
+    try:
+        ingest.validate_plan(plan)
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(400, str(e))
 
     def run():
-        for p_ in procs:                       # all-or-nothing: refuse before writing anything
-            sop = str(p_["id"]).upper()
-            taken = _q("MATCH (k:Skill {sopId: $sop}) WHERE k.id <> $id RETURN k.name AS name", sop=sop, id=kgadmin.skill_id(sop))
-            if taken:
-                raise ValueError(f"SOP 번호 {sop}는 이미 '{taken[0]['name']}'의 것이다 — 매뉴얼의 SOP 번호를 바꾸세요")
-        for s_ in secs:
-            _q("""MERGE (m:ManualSection {id: $ref}) SET m.ref = $ref, m.title = $title, m.excerpt = $excerpt
-                  WITH m MATCH (k:KnowledgeSource {id: 'ks:manual-hm'}) MERGE (m)-[:PART_OF]->(k)""",
-               ref=s_["ref"], title=s_["title"], excerpt=s_.get("excerpt", ""))
-        made = {}
-        for p_ in procs:
-            ln = links.get(p_["id"]) or {}
-            v = kgadmin.validate_skill({"name": p_["name"], "description": f"매뉴얼 {body.get('filename', '')}에서 등록한 SOP",
-                                        "sopId": p_["id"], "steps": [s["text"] for s in p_.get("steps", [])],
-                                        "failureMode": ln.get("failureMode") or p_.get("suggestedFailureMode"),
-                                        "relation": ln.get("relation") or "REMEDIED_BY", "kind": ln.get("kind") or "work_order",
-                                        "approver": "role:maint-mgr"}, create=True)
-            sid = kgadmin.skill_id(v["sopId"])
-            _write_sop_skill(sid, v, [{"order": s["order"], "text": s["text"], "manual": s.get("manual")} for s in p_.get("steps", [])],
-                             "sys:scada" if v["kind"] == "control" else "sys:cmms")
-            made[p_["id"]] = {"skill": sid, "failureMode": v["failureMode"], "relation": v["relation"]}
-        return {"sections": len(secs), "procedures": len(procs), "steps": sum(len(p_.get("steps", [])) for p_ in procs), "skills": made}
+        with _kg() as drv, drv.session() as session:
+            return graph_ingest.commit(session, plan)
     try:
         out = await asyncio.get_running_loop().run_in_executor(None, run)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    out.update(filename=body.get("filename", "manual"), by=by, t=now_iso())
-    uploads.insert(0, out)
-    del uploads[20:]
-    _audit("-", by, "MANUAL_INGESTED", {k: out[k] for k in ("filename", "sections", "procedures", "steps")} | {"skills": list(out["skills"].values())})
+    except graph_ingest.Conflict as e:
+        raise HTTPException(409, str(e))
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"온톨로지 적재 실패: {str(e)[:200]}")
+    out.update(by=by, t=now_iso(), kind="ddl")
+    # Ingestion history is the durable graph journal read by /api/kg/ingests.
+    # The old manual-upload list no longer exists; do not fail after commit.
+    _audit("-", by, "DDL_INGESTED", {k: out[k] for k in ("batch", "filename", "systems", "inputs")})
     return out
 
 
-@app.get("/api/kg/manuals")
-async def kg_manuals():
-    return uploads
+@app.get("/api/kg/ingests")
+async def kg_ingests():
+    """Active batch claims by label; shared nodes may be retained or restored on clear."""
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: _q(graph_ingest.BATCHES_Q))
+
+
+@app.delete("/api/kg/ingests/{batch}")
+async def kg_ingest_clear(batch: str, by: str = "지식 관리자"):
+    """Release one batch's claims and restore the latest remaining revision atomically."""
+    def run():
+        with _kg() as drv, drv.session() as session:
+            return graph_ingest.clear(session, batch)
+    try:
+        out = await asyncio.get_running_loop().run_in_executor(None, run)
+    except graph_ingest.Conflict as e:
+        raise HTTPException(409, str(e))
+    except KeyError:
+        raise HTTPException(404, "배치를 찾을 수 없습니다")
+    except Exception as e:
+        raise HTTPException(502, f"되돌리기 실패: {str(e)[:200]}")
+    _audit("-", by, "INGEST_CLEARED", out)
+    return out
+
+
+@app.post("/api/kg/rules/sql")
+async def kg_rule_sql(body: dict):
+    """회의 6번: a rule's threshold tests → the SQL that checks them against the ingested tables.
+    body = {rule: 'rule:…'} (TESTS read from the ontology) or {tests: [{variable, operator, value}]}."""
+    loop_ = asyncio.get_running_loop()
+    tests = body.get("tests")
+    if not tests and body.get("rule"):
+        tests = await loop_.run_in_executor(None, lambda: _q(
+            "MATCH (r:Rule {id: $id})-[t:TESTS]->(i:InputData) RETURN i.variable AS variable, t.operator AS operator, t.value AS value", id=body["rule"]))
+    if not tests:
+        raise HTTPException(400, "tests 또는 rule 이 필요하다")
+    inputs = await loop_.run_in_executor(None, lambda: _q(
+        "MATCH (i:InputData) WHERE i.table IS NOT NULL RETURN i.variable AS variable, i.datasource AS datasource, "
+        "i.catalog AS catalog, i.schema AS schema, i.table AS table, i.column AS column, i.assetColumn AS assetColumn"))
+    mapped = {}
+    used = {t.get("variable") for t in tests}
+    for item in inputs:
+        if item["variable"] not in used:
+            continue
+        if item["variable"] in mapped and mapped[item["variable"]] != item:
+            raise HTTPException(409, "같은 변수가 여러 원천을 가리킵니다. 원천 정보를 다시 적재하세요")
+        mapped[item["variable"]] = item
+    try:
+        return ingest.tests_to_sql(tests, mapped)
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get('/api/kg/ranking-policy/{rule}')
+async def kg_ranking_policy(rule: str):
+    def run():
+        with _kg() as driver, driver.session() as session:
+            return ranking_policy.read(session, rule)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, run)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc))
+    except skill_graph.Conflict as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.get('/api/kg/bsc/conditions')
+async def kg_bsc_conditions():
+    def run():
+        with _kg() as driver, driver.session() as session:
+            return bsc_conditions.read(session)
+    return await asyncio.get_running_loop().run_in_executor(None, run)
+
+
+@app.put('/api/kg/bsc/conditions/{edge}')
+async def kg_bsc_condition_write(edge: str, body: dict):
+    def run():
+        with _kg() as driver, driver.session() as session:
+            return bsc_conditions.write(session, edge, body)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, run)
+    except skill_graph.Conflict as exc:
+        raise HTTPException(409, str(exc))
+    except KeyError as exc:
+        raise HTTPException(404, str(exc))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.put('/api/kg/ranking-policy/{rule}')
+async def kg_ranking_policy_write(rule: str, body: dict):
+    def run():
+        with _kg() as driver, driver.session() as session:
+            return ranking_policy.write(session, rule, body)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, run)
+    except skill_graph.Conflict as exc:
+        raise HTTPException(409, str(exc))
+    except KeyError as exc:
+        raise HTTPException(404, str(exc))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(400, str(exc))
 
 
 # ---------------------------------------------------------------- HITL: one human decision for an equipment anomaly
@@ -617,6 +1040,7 @@ class HitlDecideReq(BaseModel):
     reason: str = ""
     fan_pct: float | None = None
     load_pct: float | None = None
+    review_id: str | None = None
 
 
 def _commands_of(opt: dict, req: HitlDecideReq) -> list[dict]:
@@ -637,6 +1061,20 @@ def _commands_of(opt: dict, req: HitlDecideReq) -> list[dict]:
     return out
 
 
+@app.post('/api/incidents/{inc_id}/decision-preview')
+async def legacy_decision_preview(inc_id: str, req: instance_mode.ReviewReq):
+    await _require_legacy_incident(inc_id)
+    d = book.get(req.decision)
+    if not d or (d.get('origin') or {}).get('incident') != inc_id:
+        raise HTTPException(404,'no such incident decision')
+    await _require_legacy_decision(d)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None,lambda:
+            _review_service().create(req.decision,req.option,req.parameters,{'kind':'legacy','incident':inc_id}))
+    except ValueError as exc:
+        raise HTTPException(409,str(exc))
+
+
 @app.post("/api/incidents/{inc_id}/decide")
 async def hitl_decide(inc_id: str, req: HitlDecideReq):
     """The operator picks one ranked action card (= one SOP skill of the failure mode). Its PLC commands go out through the
@@ -647,6 +1085,8 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     d = book.get(req.decision)
     if not inc or not d:
         raise HTTPException(404, "no such incident or decision")
+    await _require_legacy_incident(inc_id)
+    await _require_legacy_decision(d)
     if inc.state != "AWAITING_APPROVAL":
         raise HTTPException(409, f"incident is {inc.state}")
     if (d.get("origin") or {}).get("incident") != inc_id or d.get("asset") != inc.asset:
@@ -654,32 +1094,60 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     opt = next((o for o in d.get("options", []) if o["id"] == req.option), None)
     if opt is None:
         raise HTTPException(400, "unknown option")
-    commands = _commands_of(opt, req)
     try:
-        candidate = copy.deepcopy(d)
+        scope = {'kind':'legacy','incident':inc_id}
+        candidate = (_review_service().snapshot(req.review_id,req.decision,req.option,scope)
+                     if req.review_id else copy.deepcopy(d))
+        opt = next(o for o in candidate['options'] if o['id']==req.option)
+        commands = _commands_of(opt, req)
         plan = declib.approve(candidate, req.option, req.by, req.role, req.reason)
         if commands:                          # validate the command before consuming the human decision
             machine._validate_actions(inc, commands)
+        from .approval_hooks import require_reviewed_commands
+        require_reviewed_commands(opt, commands)
+        await asyncio.get_running_loop().run_in_executor(None, _check_current_approval, candidate, req.option, req.role)
+        # The read yields to other requests; check whether another choice won.
+        if inc.state != 'AWAITING_APPROVAL':
+            raise ValueError(f'incident is {inc.state}')
+        candidate = (_review_service().snapshot(req.review_id,req.decision,req.option,scope)
+                     if req.review_id else copy.deepcopy(d))
+        plan = declib.approve(candidate, req.option, req.by, req.role, req.reason)
     except PermissionError as e:
         _audit(inc.asset, req.by, "DECISION_DENIED", {"decision": d["id"], "option": req.option, "role": req.role, "reason": str(e)}, incident=inc_id)
         raise HTTPException(403, str(e))
     except ValueError as e:
         raise HTTPException(400, str(e))
+    before = copy.deepcopy(d)
     d.update(candidate)
+    try:
+        work_orders.prepare(_work_order_context(), d, work_orders.request_for_option(opt), allow_before_recovery=True)
+    except Exception as e:
+        d.clear()
+        d.update(before)
+        raise HTTPException(400, str(e))
     _audit(inc.asset, req.by, "DECISION_APPROVED", {"decision": d["id"], "option": req.option, "sop": opt.get("sopId"), "role": req.role,
                                                      "override": d["override"], "reason": req.reason, "via": "HITL 조치 카드 선택"}, incident=inc_id)
     cmd = None
     try:
         if commands:
             cmd = machine.on_approve(inc, req.by, commands, now(), Fx(inc), time_scale=TIME_SCALE)
+            for item in plan.get('ot', []):
+                d['executions'].append({'skill':item['skill'], 'code':item.get('code'),
+                    'status':'VIA_HITL', 'system':item.get('system'), 't':now_iso(),
+                    'detail':f"PLC 명령 {item.get('code')}={item.get('value')} — Incident의 ACK/재관측 결과를 확인하세요"})
         else:
-            machine.on_reject(inc, req.by, f"HITL 판단: '{opt.get('sopId')} {opt['name']}' 선택 — 즉시 제어 없음", Fx(inc))
+            inc.approved_by = req.by
     except ValueError as e:
         raise HTTPException(400, str(e))
     _after(inc)
     loop_ = asyncio.get_running_loop()
-    results = [await loop_.run_in_executor(None, exec_skill, d, item) for item in plan["enterprise"]]
-    declib.record_execution(d, results, plan)
+    results = [await loop_.run_in_executor(None, exec_skill, d, item)
+               for item in plan["enterprise"] if item.get('code') != 'WO_CREATE']
+    from .approval_hooks import record_execution
+    for result in results:
+        record_execution(d, result)
+    if not commands and all(r.get('ok') for r in results):
+        results.append(await loop_.run_in_executor(None, _complete_legacy_work_order, inc))
     persist()
     for r in results:
         _audit(inc.asset, "process", "SKILL_EXECUTED" if r["ok"] else "SKILL_FAILED",

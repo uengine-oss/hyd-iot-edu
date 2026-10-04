@@ -7,7 +7,7 @@ whitelist discipline (only template files can run, parameters only) inside the a
 import os
 from pathlib import Path
 
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, unit_of_work
 
 TEMPLATES = Path(os.getenv("KG_TEMPLATES", "/srv/templates"))
 
@@ -16,7 +16,9 @@ class KnowledgeGraph:
     def __init__(self):
         uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
         user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
-        self.driver = GraphDatabase.driver(uri, auth=(user, pwd))
+        self.driver = GraphDatabase.driver(uri, auth=(user, pwd),
+                                          connection_timeout=3, connection_acquisition_timeout=5,
+                                          max_transaction_retry_time=0)
         self._cache: dict[str, str] = {}
 
     def template(self, name: str) -> str:
@@ -26,10 +28,13 @@ class KnowledgeGraph:
         return self._cache[name]
 
     def _run(self, name: str, **params) -> list[dict]:
-        # managed read transaction: the driver retries a dropped connection (e.g. after a Neo4j restart) and transient errors
+        # Bound database work; callers retain UNKNOWN/retry semantics on failure.
         q = self.template(name)
+        @unit_of_work(timeout=5.0)
+        def read(tx):
+            return [r.data() for r in tx.run(q, **params)]
         with self.driver.session() as s:
-            return s.execute_read(lambda tx: [r.data() for r in tx.run(q, **params)])
+            return s.execute_read(read)
 
     # ---- T1 / T2: diagnosis and the failure mode's SOP skills
     def t1_causes(self, pattern: str, asset: str) -> list[dict]:
@@ -58,6 +63,12 @@ class KnowledgeGraph:
                 out.setdefault(r["skill"], {})[r["variable"]] = r
         return out
 
+    def forecast_model(self, asset: str) -> dict:
+        rows = self._run('t3_forecast_model', asset=asset)
+        if len(rows) != 1:
+            raise ValueError('asset requires exactly one explicit forecast model binding')
+        return rows[0]
+
     def precedents(self, failure_mode: str) -> list[dict]:
         return self._run("t3_precedents", failureMode=failure_mode)
 
@@ -79,8 +90,11 @@ class KnowledgeGraph:
 
     def ping(self) -> bool:
         try:
+            @unit_of_work(timeout=5.0)
+            def read(tx):
+                return tx.run("RETURN 1").single()
             with self.driver.session() as s:
-                s.run("RETURN 1").single()
+                s.execute_read(read)
             return True
         except Exception:  # noqa: BLE001
             return False

@@ -1,0 +1,91 @@
+"""What the work item row does not carry: the form (output contract), the people and agents, the tenant's MCP servers.
+
+The product's ProcessGPTRequestContext.prepare_context (processgpt_agent_sdk/processgpt_agent_framework.py) gathers the
+same bundle: form_def by the row's tool, users split into agents/users, tenants.mcp, notify emails, sources, feedback.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+from hydcommon.process_contracts import pinned_form
+
+FREEFORM_FIELDS = [{"key": "freeform", "type": "textarea", "text": "자유형식 입력"}]
+
+
+@dataclass
+class Context:
+    row: dict
+    form_id: str
+    form_fields: list[dict]
+    form_html: str | None = None
+    agents: list[dict] = field(default_factory=list)
+    users: list[dict] = field(default_factory=list)
+    tenant_mcp: dict | None = None
+    notify_user_emails: str = ""
+    feedback: str = ""                 # the product summarises long feedback with an LLM; here the text is passed as is
+    human_answer: str = ""             # a person's answer to the agent's question (HITL resume)
+    sources: list[dict] = field(default_factory=list)
+    definition: dict | None = None     # proc_def.definition — the designer's agentConfig/skills per activity live here
+
+    @property
+    def extras(self) -> dict[str, Any]:
+        return {"id": self.row.get("id"), "proc_inst_id": self.row.get("root_proc_inst_id") or self.row.get("proc_inst_id"),
+                "activity_name": self.row.get("activity_name"), "agents": self.agents, "users": self.users, "tenant_mcp": self.tenant_mcp,
+                "form_fields": self.form_fields, "form_html": self.form_html, "form_id": self.form_id,
+                "notify_user_emails": self.notify_user_emails, "summarized_feedback": self.feedback, "sources": self.sources,
+                "process_scope": process_scope(self.row)}
+
+
+def process_scope(row):
+    return {'tenant': row.get('tenant_id'), 'instance': row.get('proc_inst_id'), 'workitem': row.get('id'),
+            'generation': int(row.get('generation') or 0), 'version': row.get('version'), 'consumer': row.get('consumer')}
+
+
+def prepare(repo, row: dict, tenant_id: str) -> Context:
+    """Read the bundle for one claimed row. Version-owned forms are authoritative; pre-contract definitions use the legacy form table."""
+    if row.get('tenant_id',tenant_id) != tenant_id:
+        raise ValueError('다른 테넌트의 작업입니다')
+    definition = None
+    form = None
+    tool = row.get('tool') or ''
+    if row.get('proc_def_id'):
+        if not row.get('version'):
+            raise LookupError('작업의 고정 정의 버전이 없습니다')
+        definition = (repo.get_proc_def(row['proc_def_id'],tenant_id,version=row['version']) or {}).get('definition')
+        if not definition:
+            raise LookupError('작업의 고정 정의를 찾을 수 없습니다')
+        activity = next((a for a in definition.get('activities',[]) if a['id']==row['activity_id']),None)
+        if activity is None:
+            raise ValueError('정의에 없는 작업입니다')
+        tool = activity.get('tool') or tool
+        form = pinned_form(definition,tool)
+    form_id = tool.split(':',1)[1] if tool.startswith('formHandler:') else tool
+    if form is None and form_id:
+        form = repo.get_form(form_id,tenant_id)
+    fields = (form or {}).get('fields_json')
+    if fields is None:
+        fields = FREEFORM_FIELDS
+    user_ids = [u.strip() for u in (row.get("user_id") or "").split(",") if u.strip()]
+    people = repo.list_users(user_ids, tenant_id) if user_ids else []
+    agents = [u for u in people if u.get("is_agent")]
+    users = [u for u in people if not u.get("is_agent")]
+    tenant = repo.get_tenant(tenant_id) or {}
+    feedback = row.get("feedback") or {}
+    if isinstance(feedback, str):
+        feedback = {"text": feedback}
+    return Context(row=row, form_id=form_id or "freeform", form_fields=fields, form_html=(form or {}).get("html"), agents=agents, users=users,
+                   tenant_mcp=tenant.get("mcp"), notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
+                   feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
+                   sources=[], definition=definition)
+
+
+def activity_capabilities(definition: dict | None, activity_id: str) -> dict:
+    """The designer's choices for this activity (the product's core/activity.py): agentConfig{cli, model, permission}, skills, tools."""
+    if not isinstance(definition, dict):
+        return {}
+    for a in definition.get("activities") or []:
+        if isinstance(a, dict) and a.get("id") == activity_id:
+            config = a.get("agentConfig") or a.get("agent_config") or {}
+            return {"agent_config": config if isinstance(config, dict) else {}, "skills": list(a.get("skills") or []),
+                    "tools": list(a.get("tools") or a.get("mcpServers") or [])}
+    return {}

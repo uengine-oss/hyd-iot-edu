@@ -1613,13 +1613,21 @@
             "text": "쿨러 성능 저하",
             "index": 0
            },
+           "PUMP_LEAKAGE": {
+            "text": "펌프 내부 누설",
+            "index": 1
+           },
+           "FAN_VIBRATION": {
+            "text": "팬 진동 상승",
+            "index": 2
+           },
            "TEMP_TRIP": {
             "text": "유온 보호 정지",
-            "index": 1
+            "index": 3
            },
            "OVERHEAT_TRIP": {
             "text": "유온 보호 정지",
-            "index": 2
+            "index": 4
            }
           }
          }

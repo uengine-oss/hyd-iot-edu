@@ -30,16 +30,16 @@
 KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데이터와 판단으로 진행되는지.
 
 - `(:Process {id!, name!, isExecutable})` 업무 프로세스. KPI를 달성하기 위해 존재하고, 대상(ACTS_ON)인 설비에 대해 돈다.
-- `(:FlowNode {id!, name!})` 프로세스 안의 한 지점. Event · Task · Gateway의 부모.
-- `(:Event:FlowNode {id!, name!, position![start|boundary|end], eventDefinition![none|message|timer|escalation], messageRef, correlationKey, timer})` 프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.
-- `(:Task:FlowNode {id!, name!, taskType![user|service|businessRule]})` 일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).
-- `(:Gateway:FlowNode {id!, name!, gatewayType![exclusive]})` 흐름이 갈라지거나 합쳐지는 지점.
+- `(:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type})` 프로세스 안의 한 지점. Event · Task · Gateway의 부모.
+- `(:Event:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, position![start|boundary|end], eventDefinition![none|message|timer|escalation], messageRef, correlationKey, timer})` 프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.
+- `(:Task:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, taskType![user|service|businessRule|manual|script|send|receive|subProcess|callActivity], tool})` 일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).
+- `(:Gateway:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, gatewayType![exclusive]})` 흐름이 갈라지거나 합쳐지는 지점.
 
 ## 설비 진단 지식 (리소스 계층의 설비 코어) — ISO 13374 / MIMOSA OSA-CBM — SD(상태 감지) · HA(건강 평가) · AG(권고)
 
 이상 패턴 → 증상 → 고장 유형 → 원인 → 증거, 그리고 매뉴얼 절. 아키텍처 v4 L7 설계를 따른다. 조치 방법은 스킬 계층의 Skill(= SOP)이 고장 유형에 매칭되어 이어진다.
 
-- `(:AnomalyPattern {id!, name!, code!, rule!, holdSeconds})` CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS로 입력 데이터에 건다. rule은 사람이 읽는 요약이다.
+- `(:AnomalyPattern {id!, name!, code!, rule!, holdSeconds, detectionMode[held|plc-trip], detectorScope, clearRule, clearHoldSeconds, slopeWindowSeconds, severity[LOW|MEDIUM|HIGH|CRITICAL]})` CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS의 AND 조건이다. rule은 사람이 읽는 요약이며 실행하지 않는다. held 실행은 명시된 해제 조건과 시간 계약을 함께 검증한다.
   - 필수: 탐지 임계값(TESTS)이 하나 이상 있어야 한다 (`TESTS` out, 최소 1)
 - `(:Symptom {id!, name!, aliases})` 계측값의 이상 양상.
 - `(:FailureMode {id!, name!})` 구성 요소 단위의 고장 유형. 조치 방법(스킬)은 고장 유형에 매칭된다.
@@ -54,8 +54,8 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 - `(:OrgUnit {id!, name!})` 부서. KPI를 소유한다.
 - `(:Role {id!, name!, level!})` 일을 수행하거나 승인하는 역할. level이 높을수록 승인 권한이 크다.
-- `(:System {id!, name!, zone![IT|OT]})` 데이터를 갖고 있거나 스킬을 실행하는 시스템. ERP · MES · CMMS · SCADA · AI 에이전트 등.
-- `(:Asset {id!, name!, code!})` 설비 한 대. 예: 유압 파워팩 HYD-01.
+- `(:System {id!, name!, zone![IT|OT], source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created})` 데이터를 갖고 있거나 스킬을 실행하는 시스템. ERP · MES · CMMS · SCADA · AI 에이전트 등.
+- `(:Asset {id!, name!, code!, forecastModel, forecastRevision, forecastScope, forecastHorizonS})` 설비 한 대. 예: 유압 파워팩 HYD-01.
 - `(:Component {id!, name!, aliases})` 설비 구성 요소. 쿨러, 팬, 주 펌프, 예비 펌프, 모터, 탱크.
 - `(:Sensor {id!, name!, tag!, unit, virtual})` 계측 채널. 태그 이름이 실시간 데이터와 연결된다.
 - `(:Actuator {id!, name!, resource!, min, max})` PLC가 값을 써서 움직이는 장치. 쓰기 자원 이름(resource)이 PLC 명령과 연결된다.
@@ -72,9 +72,9 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
   - 필수: 고장 유형 하나 이상에 매칭되어야 한다 (`MITIGATED_BY|REMEDIED_BY` in, 최소 1)
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
-- `(:InputData {id!, name!, typeRef!, variable!})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
+- `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
 - `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
-- `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
+- `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
   - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1)
 - `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.
 
@@ -91,6 +91,11 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 - `(:Incident {id!, alertId!, openedAt!})` 경보 하나로 열린 사건.
 - `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!})` 사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.
+- `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
+- `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
+- `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.
+- `(:WorkItem {id!, tenant_id!, activity_id!, activity_name, status![NEW|TODO|IN_PROGRESS|SUBMITTED|PENDING|DONE|CANCELLED], tool, agent_mode, agent_orch, draft_status[STARTED|CANCELLED|COMPLETED|FB_REQUESTED|HUMAN_ASKED|FAILED], retry, rework_count, duration, start_date, end_date, due_date, definition_id, version})` todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다.
+- `(:ProcessVersion {id!, name!, definition_id!, version!, tenant_id!, ontology_ref})` 관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다.
 
 ## 관계
 
@@ -100,17 +105,18 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Objective)-[:SUPPORTS]->(:Objective)` N:M. 전략맵 인과: 아래 관점의 목표가 위 관점의 목표를 받쳐 준다
 - `(:Measure)-[:MEASURES]->(:Objective)` N:1. 성과 지표가 측정하는 전략 목표
 - `(:Measure)-[:OWNED_BY]->(:OrgUnit)` N:1. 성과 지표 책임 부서
-- `(:Measure|StateVariable|ExternalVariable)-[:INFLUENCES {sign!, strength, condition, note}]->(:Measure|StateVariable)` N:M. 상충 관계. 원천이 오르면 대상이 sign 방향으로 움직인다. 관계가 없으면 만들지 않는다.
+- `(:Measure|StateVariable|ExternalVariable)-[:INFLUENCES {sign!, strength, condition, note, conditionPolicy}]->(:Measure|StateVariable)` N:M. 상충 관계. 원천이 오르면 대상이 sign 방향으로 움직인다. 관계가 없으면 만들지 않는다.
 - `(:Process)-[:ACHIEVES]->(:Objective)` N:M. 프로세스가 달성하려는 BSC 전략 목표 (조직 목표)
-- `(:Process)-[:HAS_NODE]->(:FlowNode)` 1:N. 프로세스에 속한 흐름 노드
+- `(:Process|ProcessVersion)-[:HAS_NODE]->(:FlowNode)` 1:N. 프로세스에 속한 흐름 노드
 - `(:Process)-[:ACTS_ON]->(:Asset)` N:M. 프로세스의 대상 설비. 시작 이벤트의 correlationKey가 이 대상을 고른다
-- `(:FlowNode)-[:SEQUENCE_FLOW {condition}]->(:FlowNode)` N:M. 실행 순서
+- `(:FlowNode)-[:SEQUENCE_FLOW {condition, id, priority, isDefault}]->(:FlowNode)` N:M. 실행 순서
 - `(:Event)-[:ATTACHED_TO]->(:Task)` N:1. 경계 이벤트가 붙은 작업 (예: 승인 시간 초과)
 - `(:Task)-[:PERFORMED_BY]->(:Role|System)` N:1. 작업 수행자 (BPMN 레인)
 - `(:Task)-[:READS]->(:InputData)` N:M. 작업이 읽는 데이터 (BPMN 데이터 연결)
 - `(:Task)-[:PRODUCES]->(:InputData)` N:M. 작업이 만드는 데이터 (BPMN 데이터 출력). 다음 작업 · 판단의 입력이 된다
 - `(:Task)-[:INVOKES]->(:Decision)` N:1. 판단 규칙 작업이 부르는 판단 (BPMN businessRuleTask → DMN)
-- `(:Task)-[:EXECUTES]->(:Skill)` N:M. 작업이 실행하는 스킬
+- `(:Task|WorkItem)-[:EXECUTES]->(:Skill|Task|Event)` N:M. 정의 작업이 스킬을 실행하거나 실행 작업이 정의 활동을 가리킨다. 끝점 쌍을 구분한다.
+  - 허용된 끝점 쌍: `Task → Skill`, `WorkItem → Task`, `WorkItem → Event`. 위 from/to 목록의 모든 조합을 허용하는 것은 아니다.
 - `(:Event)-[:CORRELATES]->(:AnomalyPattern)` N:M. 메시지 시작 이벤트가 받는 경보 패턴
 - `(:Role)-[:MEMBER_OF]->(:OrgUnit)` N:1. 역할의 소속 부서
 - `(:Asset)-[:HAS_COMPONENT]->(:Component)` 1:N. 설비의 구성 요소
@@ -141,7 +147,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Skill)-[:CONSISTS_OF {value, seq}]->(:Action)` N:M. 스킬을 이루는 원자 조치와 그 값
 - `(:Action)-[:TARGETS]->(:Actuator|System)` N:1. 조치가 쓰는 대상 (구동기 또는 시스템)
 - `(:Skill)-[:APPROVED_BY]->(:Role)` N:1. 스킬 실행을 승인할 최소 역할
-- `(:Skill)-[:AFFECTS {sign!, delta, unit, note}]->(:StateVariable|Measure)` N:M. 스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다
+- `(:Skill)-[:AFFECTS {sign!, delta, unit, note, conditionPolicy, condition}]->(:StateVariable|Measure)` N:M. 스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다
 - `(:Decision)-[:REQUIRES_INPUT]->(:InputData)` N:M. 판단에 필요한 입력 (DMN information requirement)
 - `(:Decision)-[:REQUIRES_DECISION]->(:Decision)` N:M. 먼저 내려야 하는 하위 판단 (DMN information requirement)
 - `(:Decision)-[:IMPLEMENTED_BY]->(:DecisionTable)` 1:1. 판단을 구현하는 결정표 (DMN decision logic)
@@ -155,10 +161,17 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Forecast)-[:FORECASTS]->(:StateVariable|Measure|ExternalVariable)` N:1. 예측 대상 변수
 - `(:Forecast)-[:ASSUMES]->(:Skill)` N:1. 이 스킬을 실행한다고 가정한 예측
 - `(:Forecast)-[:GIVEN]->(:Cause)` N:1. 이 원인이 있는 상태를 가정한 예측
-- `(:Incident)-[:ON_ASSET]->(:Asset)` N:1. 사건이 난 설비
+- `(:Incident|ProcessInstance)-[:ON_ASSET]->(:Asset)` N:1. 사건 또는 프로세스 실행의 대상 설비
 - `(:Incident)-[:RAISED_BY]->(:AnomalyPattern)` N:1. 사건을 연 경보 패턴
 - `(:Incident)-[:DIAGNOSED_AS]->(:Cause)` N:1. 판정된 원인
-- `(:DecisionCase)-[:INSTANCE_OF]->(:Decision)` N:1. 이 사례가 실행한 판단 정의
+- `(:DecisionCase|ProcessInstance)-[:INSTANCE_OF {version}]->(:Decision|Process)` N:1. 판단 사례 또는 프로세스 실행이 자기 정의를 가리킨다. 끝점 쌍을 구분한다.
+  - 허용된 끝점 쌍: `DecisionCase → Decision`, `ProcessInstance → Process`. 위 from/to 목록의 모든 조합을 허용하는 것은 아니다.
 - `(:DecisionCase)-[:CHOSE]->(:Skill)` N:1. 사람이 고른 스킬
 - `(:DecisionCase)-[:DECIDED_BY]->(:Role)` N:1. 판단한 역할
 - `(:DecisionCase)-[:FOR_INCIDENT]->(:Incident)` N:1. 판단 대상 사건
+- `(:ProcessInstance)-[:HANDLES]->(:Incident)` N:1. 프로세스 실행이 처리하는 사건
+- `(:WorkItem)-[:IN_INSTANCE]->(:ProcessInstance)` N:1. 실행 작업이 속한 인스턴스
+- `(:WorkItem)-[:ASSIGNED_TO {kind}]->(:Role|System)` N:M. HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다.
+- `(:ProcessInstance)-[:ROLE_BOUND {role_name}]->(:Role|System)` N:M. 실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다.
+- `(:ProcessInstance)-[:USES_VERSION]->(:ProcessVersion)` N:1. 이 실행이 사용하는 고정 정의 버전
+- `(:FlowNode)-[:MAPS_TO]->(:FlowNode)` N:1. 버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결

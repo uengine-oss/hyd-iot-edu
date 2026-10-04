@@ -1,0 +1,170 @@
+{
+  "processDefinitionId": "bound-dependency-review",
+  "processDefinitionName": "Dependency review",
+  "version": "1",
+  "roles": [
+    {
+      "name": "Reviewer",
+      "endpoint": "role:operator"
+    }
+  ],
+  "data": [
+    {
+      "name": "x",
+      "type": "Text"
+    },
+    {
+      "name": "y",
+      "type": "Text"
+    },
+    {
+      "name": "z",
+      "type": "Text"
+    },
+    {
+      "name": "hold",
+      "type": "Text"
+    }
+  ],
+  "forms": {
+    "x": {
+      "fields_json": [
+        {
+          "key": "x",
+          "type": "text",
+          "text": "x"
+        }
+      ]
+    },
+    "y": {
+      "fields_json": [
+        {
+          "key": "y",
+          "type": "text",
+          "text": "y"
+        }
+      ]
+    },
+    "z": {
+      "fields_json": [
+        {
+          "key": "z",
+          "type": "text",
+          "text": "z"
+        }
+      ]
+    },
+    "hold": {
+      "fields_json": [
+        {
+          "key": "hold",
+          "type": "text",
+          "text": "hold"
+        }
+      ]
+    }
+  },
+  "activities": [
+    {
+      "id": "a",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:x",
+      "inputData": [],
+      "outputData": [
+        "x"
+      ]
+    },
+    {
+      "id": "b",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:y",
+      "inputData": [
+        "x"
+      ],
+      "outputData": [
+        "y"
+      ],
+      "inputBindings": {
+        "x": {
+          "activity": "a"
+        }
+      }
+    },
+    {
+      "id": "c",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:z",
+      "inputData": [
+        "y"
+      ],
+      "outputData": [
+        "z"
+      ],
+      "inputBindings": {
+        "y": {
+          "activity": "b"
+        }
+      }
+    },
+    {
+      "id": "hold",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:hold",
+      "inputData": [],
+      "outputData": [
+        "hold"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "s",
+      "type": "startEvent"
+    },
+    {
+      "id": "e",
+      "type": "endEvent"
+    }
+  ],
+  "sequences": [
+    {
+      "id": "s-a",
+      "source": "s",
+      "target": "a"
+    },
+    {
+      "id": "s-b",
+      "source": "s",
+      "target": "b"
+    },
+    {
+      "id": "s-hold",
+      "source": "s",
+      "target": "hold"
+    },
+    {
+      "id": "a-e",
+      "source": "a",
+      "target": "e"
+    },
+    {
+      "id": "b-c",
+      "source": "b",
+      "target": "c"
+    },
+    {
+      "id": "c-e",
+      "source": "c",
+      "target": "e"
+    },
+    {
+      "id": "hold-e",
+      "source": "hold",
+      "target": "e"
+    }
+  ]
+}

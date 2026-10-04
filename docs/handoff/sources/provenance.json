@@ -1,0 +1,287 @@
+{
+  "date_kst": "2026-10-04",
+  "archive": "D:\\work\\study\\HYD_R2_FINAL_ALL_2026-10-03.zip",
+  "archive_sha256": "a3d3781e972a421423f2cddcdf0c851743fde639ece57633ada621984ed9334b",
+  "files": [
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/02_ORIGINALS/회의관련_원문_1.txt",
+      "local": "meeting-1.txt",
+      "sha256": "95b701cf4e38835cdea42b942245ecbd77d638bd613b98533b599977ec2d85e9"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/02_ORIGINALS/회의관련_원문_2.txt",
+      "local": "meeting-2.txt",
+      "sha256": "209f662f9ee049ae2a700e686a6d48a46bcf089cfc48f2c6a8143501ac488a12"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/CONNECTIONS.md",
+      "local": "repository-map/CONNECTIONS.md",
+      "sha256": "286a8f25dfc4c76f0e6fcaf829ebcb1ea8611b09997afe3481cb84dc6c7cf584"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/README.md",
+      "local": "repository-map/README.md",
+      "sha256": "ab39dc152d6ea60739547ec9d81f533549a0a17539a74495532a2e45dd3edceb"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/REPOSITORY_MAP.md",
+      "local": "repository-map/REPOSITORY_MAP.md",
+      "sha256": "f6e3836f5a3a6d39d92a2baca667351db2174b5a3a499e640acf04e57c94f5f7"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/SHA256SUMS.txt",
+      "local": "repository-map/SHA256SUMS.txt",
+      "sha256": "d5f66a45d6dcd391abe8ecb65a18058d39a4c54ca883889d12702941dbe9b8e6"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/connections.json",
+      "local": "repository-map/connections.json",
+      "sha256": "0eba724e28f97bd8bdcc2e490615ad5d1770d76f70262feb8cbec253379c539e"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repositories.json",
+      "local": "repository-map/repositories.json",
+      "sha256": "23904b9b3fc31b71ad9feb97bb33aacc73f06c22f565852c6de74297a7f90768"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A01_process-gpt-deepagents.md",
+      "local": "repository-map/repository_notes/A01_process-gpt-deepagents.md",
+      "sha256": "e3f5abd50ce10332abd37dc8e440c4590d78cad5974d77adf095a74c92af96b3"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A02_process-gpt-base-agent-langchain-react.md",
+      "local": "repository-map/repository_notes/A02_process-gpt-base-agent-langchain-react.md",
+      "sha256": "1ba0adefc61364babef182dc44d33430eed94cbfaa8134d96ec6c3f467757c0f"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A03_process-gpt-a2a-orch.md",
+      "local": "repository-map/repository_notes/A03_process-gpt-a2a-orch.md",
+      "sha256": "54f7749ee22d98b75c5dd547c30d6f9969261791e67e4e740dab69081aefffe2"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A04_process-gpt-codex.md",
+      "local": "repository-map/repository_notes/A04_process-gpt-codex.md",
+      "sha256": "ccedf07e62f632028e78af7fed04925488fb13fec98921ced89522a54f65d4f9"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A05_process-gpt-cli-agent.md",
+      "local": "repository-map/repository_notes/A05_process-gpt-cli-agent.md",
+      "sha256": "6334633b135dd5681135cb2a2d54db4ac10366fc811702e5abb8a4d8cf098744"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A06_cliagents.md",
+      "local": "repository-map/repository_notes/A06_cliagents.md",
+      "sha256": "4d5efdf1926d784f22d87dd1f6a9a9c17fd356bf58848e8678c9e57c5c0ba1de"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A07_process-gpt-openai-deep-research.md",
+      "local": "repository-map/repository_notes/A07_process-gpt-openai-deep-research.md",
+      "sha256": "6cad81db5a1099cea2f408ed4bee8fd606d763d0df6696d8b7fa4a175fdbe87b"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A08_process-gpt-deep-research.md",
+      "local": "repository-map/repository_notes/A08_process-gpt-deep-research.md",
+      "sha256": "3bc17f8c74956a4e166c3d6ac784648b7937447e3ec3b124c7c85f878de2f726"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/A09_process-gpt-react-voice-agent.md",
+      "local": "repository-map/repository_notes/A09_process-gpt-react-voice-agent.md",
+      "sha256": "e2171283834d40efb05d84ad90f7c227164af7232fe4e68cd93141b1344e468a"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C01_process-gpt.md",
+      "local": "repository-map/repository_notes/C01_process-gpt.md",
+      "sha256": "3fdd2b59fe01a03a2a9e0fdb45894f603435797a3630eb263cccb33708c66397"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C02_process-gpt-vue3.md",
+      "local": "repository-map/repository_notes/C02_process-gpt-vue3.md",
+      "sha256": "e54724ce292465cea8a4c23efc72a2edae943a23242f5c7b0b7df7ac2a4a846c"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C03_process-gpt-completion.md",
+      "local": "repository-map/repository_notes/C03_process-gpt-completion.md",
+      "sha256": "4eb064cc130ac4d00ae7c80bce46ff9dd1db30436f5a9f7b2e2bc566dc10d96b"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C04_process-gpt-gateway.md",
+      "local": "repository-map/repository_notes/C04_process-gpt-gateway.md",
+      "sha256": "7834e0051835917e729f857a0ebd73fb3292985fb5c5ac1a4420ed97989d1c7f"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C05_process-gpt-infra-docker.md",
+      "local": "repository-map/repository_notes/C05_process-gpt-infra-docker.md",
+      "sha256": "eb70007412d4fc13d8b55524d80142ed344c6e24c487347b668a85bbe4be36cb"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C06_process-gpt-k8s.md",
+      "local": "repository-map/repository_notes/C06_process-gpt-k8s.md",
+      "sha256": "92ea56201050987aec8c068088fa2b86a4b20a1b0f4b5a688fa1b82ec65c0a08"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C07_process-gpt-agent-sdk.md",
+      "local": "repository-map/repository_notes/C07_process-gpt-agent-sdk.md",
+      "sha256": "0aa5792bc83ca8bf71df98cdf33930d19566732cdbac7a0a0301d7c2de5fb57b"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/C08_process-gpt-session-router.md",
+      "local": "repository-map/repository_notes/C08_process-gpt-session-router.md",
+      "sha256": "2019444bb064d72ef64a71b8c498ce3a34948a8e2b07208f4e4c26bdd223cf4f"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/D01_bpmn-process-generation-skill.md",
+      "local": "repository-map/repository_notes/D01_bpmn-process-generation-skill.md",
+      "sha256": "2ad828a821d5dc575bdfcd47992d0bf33949cdb2c03b0460ff9814f0de6824b0"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/D02_process-gpt-strategy-skill.md",
+      "local": "repository-map/repository_notes/D02_process-gpt-strategy-skill.md",
+      "sha256": "e1eeb81ce4414b6eccbbf0527ff1c5ae93f62ad14051e95d1bcf0f4dfae79713"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/D03_process-gpt-docs.github.io.md",
+      "local": "repository-map/repository_notes/D03_process-gpt-docs.github.io.md",
+      "sha256": "24fa95b9d9b2b6b7db27cd186c2251ef2a1ccef6ee22dc1ae18795e5d1e20c3a"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/D04_process-gpt-agents.github.io.md",
+      "local": "repository-map/repository_notes/D04_process-gpt-agents.github.io.md",
+      "sha256": "feea02e5ee2c0495da0124f2c519797611b551e275c78e59f3e8a054efb7a06d"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/D05_process-gpt-sample-app-wms.md",
+      "local": "repository-map/repository_notes/D05_process-gpt-sample-app-wms.md",
+      "sha256": "177c86b46fcffb1b84c5209d26f818c20f87a1ad0af45f167e938276a4684f3a"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/O01_ontology-studio.md",
+      "local": "repository-map/repository_notes/O01_ontology-studio.md",
+      "sha256": "f4fa97b1ab0beca392f03bb6da7cc1eca5036c8a80c31d268b13d58ac48aadb4"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/O02_ontologic.md",
+      "local": "repository-map/repository_notes/O02_ontologic.md",
+      "sha256": "66232b5bbdc991c9308c3661b82fda1972e5ad76b55957578bb14f37173a1e04"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/O03_ontological-db.md",
+      "local": "repository-map/repository_notes/O03_ontological-db.md",
+      "sha256": "d1bd99a210304ee37f22e1a95f57c538858f81f134200002195dbe45cd5f132b"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/O04_ontological-db-enterprise-custom.md",
+      "local": "repository-map/repository_notes/O04_ontological-db-enterprise-custom.md",
+      "sha256": "842d97c41e4e892829838e0e919afff5b17b9784dfdce15567eb183f6807d86f"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/O05_process-gpt-knowledge-graph.md",
+      "local": "repository-map/repository_notes/O05_process-gpt-knowledge-graph.md",
+      "sha256": "54cd991feaacbc91d49f2076b1ea3915ea2ea20d56fb1bc8efe6c8c33b423b44"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/P01_process-gpt-analytic.md",
+      "local": "repository-map/repository_notes/P01_process-gpt-analytic.md",
+      "sha256": "4fad1ff057a0ccd5cd7b94d55c1c8dd6488c1481080481974531bd7c36e71177"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/P02_process-gpt-instance-classifier.md",
+      "local": "repository-map/repository_notes/P02_process-gpt-instance-classifier.md",
+      "sha256": "98a4e5c77584ae2fc00f22a6a2f2aeac3bd0736a23d37830f5264aa30666b716"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/P03_process-gpt-strategy.md",
+      "local": "repository-map/repository_notes/P03_process-gpt-strategy.md",
+      "sha256": "df5e0c61ed4391203f8557adf101618143b381d5ae5808a5f292ed459788f85c"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/P04_process-gpt-agent-feedback.md",
+      "local": "repository-map/repository_notes/P04_process-gpt-agent-feedback.md",
+      "sha256": "5092bbcf2532c617dc8f30222fc85e4ac134cbde0f30fb51ccb3e35b3738ac6c"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T01_process-gpt-memento.md",
+      "local": "repository-map/repository_notes/T01_process-gpt-memento.md",
+      "sha256": "29b9cae2841b0e1990340fc1b5de6f3f78ace8a9f3257e85d9e8e3b3458e5506"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T02_process-gpt-bpmn-extractor.md",
+      "local": "repository-map/repository_notes/T02_process-gpt-bpmn-extractor.md",
+      "sha256": "8442aa78ebe5465cd6325ffda9e930d2b331c8f1aa2f7029671c49d7c80effaf"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T03_process-gpt-office-mcp.md",
+      "local": "repository-map/repository_notes/T03_process-gpt-office-mcp.md",
+      "sha256": "7a5d1351ee9f92037f9cca8f00a32b568c5b6cf3f73ada780c5844715874bf7e"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T04_process-gpt-mcp-validator.md",
+      "local": "repository-map/repository_notes/T04_process-gpt-mcp-validator.md",
+      "sha256": "7231fe7ca05ab82fe994079cae07e564e11789d81c42a24330866ae270b08bfb"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T05_process-gpt-visionparser.md",
+      "local": "repository-map/repository_notes/T05_process-gpt-visionparser.md",
+      "sha256": "faeb988016081b96281b111545f3d5ef1ad6c505335e1dd439b206e8f7cdf336"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T06_process-gpt-glossary.md",
+      "local": "repository-map/repository_notes/T06_process-gpt-glossary.md",
+      "sha256": "fb58f3eac42ee75bea45ec5d2bd70598d55445c6eba14e236a28a3c6cf2dc488"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T07_process-gpt-claude-skills.md",
+      "local": "repository-map/repository_notes/T07_process-gpt-claude-skills.md",
+      "sha256": "87d91b85e17d78a581d8db04550501806f055ece9603d5834723a1295e94ee63"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/T08_process-gpt-computer-use.md",
+      "local": "repository-map/repository_notes/T08_process-gpt-computer-use.md",
+      "sha256": "9591fedb7a25209f71ec084ba861715c688af84cc46f5340730e2f988aaa4361"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X01_process-gpt-mobile.md",
+      "local": "repository-map/repository_notes/X01_process-gpt-mobile.md",
+      "sha256": "3d2fe4883daa4a540e2b09eef9a2438a689ac0644807fcf7668ea956741c4d00"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X02_process-gpt-billing.md",
+      "local": "repository-map/repository_notes/X02_process-gpt-billing.md",
+      "sha256": "681bc99042040ef47724f035a4f04e087dd5a0a61953d107131fb2e963a1c0a5"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X03_process-gpt-crewai-action.md",
+      "local": "repository-map/repository_notes/X03_process-gpt-crewai-action.md",
+      "sha256": "d0a22636465b3e657f6fad8491b9ccf1ea6fe0ef8feadc774d9deb90324aba31"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X04_process-gpt-crewai-deep-research.md",
+      "local": "repository-map/repository_notes/X04_process-gpt-crewai-deep-research.md",
+      "sha256": "cf59693ddb935d743b203eb2af8a7dc8190ac4c71f6d461c59bac1a440a05ee0"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X05_process-gpt-langchain-react.md",
+      "local": "repository-map/repository_notes/X05_process-gpt-langchain-react.md",
+      "sha256": "e0d10da2524c9d5e98854ab9438867119e2d48595687b07becbde3309badb289"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X06_process-gpt-browser-use.md",
+      "local": "repository-map/repository_notes/X06_process-gpt-browser-use.md",
+      "sha256": "a980479fc6862b1ae77ebacbb79bb31c7bb3ff6e8289f2b7b96e639f0ea2bc34"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X07_process-gpt-agent-utils.md",
+      "local": "repository-map/repository_notes/X07_process-gpt-agent-utils.md",
+      "sha256": "5e65dadd9ae044a36272c3c404c9905caabebbcec2c20f4fa84132436814bb54"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_notes/X08_process-gpt-llm-factory.md",
+      "local": "repository-map/repository_notes/X08_process-gpt-llm-factory.md",
+      "sha256": "57b71427dbdd3ae7ba500f59877a9200880ef66867d7067880d7dc99a02f5592"
+    },
+    {
+      "member": "HYD_R2_FINAL_PACKAGE_2026-10-03/03_REFERENCE/ProcessGPT_Repository_Map_2026-10-03.zip!ProcessGPT_Repository_Map_2026-10-03/repository_urls.txt",
+      "local": "repository-map/repository_urls.txt",
+      "sha256": "5ba25e6f50d8851fd0ddf89d32a8c39a553e13d4cccc31e24a8128c925b50eab"
+    }
+  ]
+}

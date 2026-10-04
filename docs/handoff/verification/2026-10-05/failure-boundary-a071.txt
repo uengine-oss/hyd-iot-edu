@@ -1,0 +1,39 @@
+PASS original_condition_takes_old_branch
+PASS first_plan_includes_prior_review
+PASS new_review_and_all_branches_wait_for_producer
+PASS unreached_review_cannot_be_submitted
+PASS exact_condition_producer_and_arrival_durable_in_pg
+PASS process_restart_preserves_waiting_condition_identity
+PASS request_replay_is_original_receipt
+PASS second_plan_includes_prior_review
+PASS older_producer_cannot_release_new_review
+PASS fresh_condition_snapshot_and_reference_reach_review
+PASS condition_snapshot_preserves_exact_value_and_source
+PASS new_review_reevaluates_gateway_and_cancels_new_timer
+PASS original_done_review_and_gateway_record_preserved
+PASS new_branch_closes_after_all_admitted_work
+PASS gateway_graph_matches_current_rows
+PASS original_timer_fires_and_cancels_review
+PASS expired-boundary_plan_includes_prior_review
+PASS expired_review_is_not_reopened_before_fresh_producer
+PASS new_timer_starts_at_new_review_with_same_time_scale
+FAIL only_new_boundary_wins_in_new_generation
+.venv314/Scripts/python.exe : Traceback (most recent call last):
+위치 줄:17 문자:1
++ .venv314/Scripts/python.exe scripts/probe_rework_conditions.py .evide ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 120, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 111, in main
+    check('only_new_boundary_wins_in_new_generation',fired['deadline']['status']=='DONE' and fired['b']['status']=='CAN
+CELLED' and fired['late']['generation']==1 and fired['d']['status']=='TODO')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\work\study\hyd-iot-edu\scripts\probe_rework_conditions.py", line 25, in check
+    print(('PASS ' if value else 'FAIL ')+name,flush=True); assert value,name
+                                                                   ^^^^^
+AssertionError: only_new_boundary_wins_in_new_generation

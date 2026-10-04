@@ -1,6 +1,7 @@
 """Agent run registry: one run per alertId (duplicate RAISE messages never start a second reasoning run)."""
 from dataclasses import dataclass, field
 from collections import OrderedDict
+from threading import RLock
 
 from hydcommon.timeutil import now_iso
 
@@ -18,6 +19,7 @@ class Run:
     card: dict | None = None
     incident_id: str | None = None
     error: str | None = None
+    evaluation: dict | None = None
 
     def step(self, name: str, output=None, status: str = "DONE", note: str | None = None) -> dict:
         s = {"name": name, "status": status, "t": now_iso(), "note": note, "output": output}
@@ -30,7 +32,7 @@ class Run:
     def to_dict(self) -> dict:
         return {"id": self.id, "alertId": self.alert_id, "asset": self.asset, "status": self.status,
                 "started": self.started, "ended": self.ended, "steps": self.steps, "card": self.card,
-                "incidentId": self.incident_id, "error": self.error}
+                "incidentId": self.incident_id, "error": self.error, "evaluation": self.evaluation}
 
 
 class RunRegistry:
@@ -39,8 +41,13 @@ class RunRegistry:
         self._runs: OrderedDict[str, Run] = OrderedDict()
         self._by_alert: dict[str, str] = {}
         self._seq = 0
+        self._lock = RLock()
 
     def create_if_new(self, alert: dict) -> Run | None:
+        with self._lock:
+            return self._create_if_new(alert)
+
+    def _create_if_new(self, alert: dict) -> Run | None:
         aid = alert.get("alertId")
         if not aid or aid in self._by_alert:
             return None
@@ -50,20 +57,25 @@ class RunRegistry:
         self._by_alert[aid] = run.id
         while len(self._runs) > self.keep:
             old_id, old = self._runs.popitem(last=False)
-            self._by_alert.pop(old.alert_id, None)
+            if self._by_alert.get(old.alert_id)==old_id:
+                self._by_alert.pop(old.alert_id, None)
         return run
 
     def force_new(self, alert: dict) -> Run:
-        """Replay helper for the lecture: allow a second run for the same alert."""
-        self._by_alert.pop(alert.get("alertId"), None)
-        return self.create_if_new(alert)
+        """Explicit fresh evaluation for the same alert, with a unique run ID."""
+        with self._lock:
+            self._by_alert.pop(alert.get("alertId"), None)
+            return self._create_if_new(alert)
 
     def get(self, run_id: str) -> Run | None:
-        return self._runs.get(run_id)
+        with self._lock:
+            return self._runs.get(run_id)
 
     def by_alert(self, alert_id: str) -> Run | None:
-        rid = self._by_alert.get(alert_id)
-        return self._runs.get(rid) if rid else None
+        with self._lock:
+            rid = self._by_alert.get(alert_id)
+            return self._runs.get(rid) if rid else None
 
     def all(self) -> list[Run]:
-        return list(reversed(self._runs.values()))
+        with self._lock:
+            return list(reversed(self._runs.values()))

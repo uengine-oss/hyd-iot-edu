@@ -59,6 +59,8 @@ def test_happy_path_to_closed():
     machine.on_alert(inc, {"alertId": "ALT-hyd01-0001", "state": "CLEAR"}, fx)
     assert inc.cleared and inc.state == "RE_OBSERVING"
     machine.on_timer(inc, "reobs", t + timedelta(seconds=45), latest_ts1=49.5, fx=fx)
+    assert inc.state == 'RESOLVED' and inc.work_order is None
+    machine.on_work_order(inc, {'ok':True, 'ref':'WO-CMMS-actual', 'code':'COOLER_CLEAN_WO'}, fx)
     assert inc.state == "CLOSED"
     assert inc.work_order and inc.work_order["code"] == "COOLER_CLEAN_WO"
     states = [h["state"] for h in inc.history]
@@ -158,7 +160,7 @@ def test_reobserve_extends_once_when_cooling_but_not_yet_cleared():
     assert any(a["event"] == "REOBSERVATION_EXTENDED" for a in fx.audits)
     machine.on_alert(inc, {"alertId": "ALT-hyd01-0001", "state": "CLEAR"}, fx)
     machine.on_timer(inc, "reobs", now() + timedelta(seconds=60), latest_ts1=50.9, fx=fx, time_scale=20)
-    assert inc.state == "CLOSED"
+    assert inc.state == "RESOLVED" and inc.work_order is None
 
 
 def test_reobserve_escalates_after_extension_without_clear():

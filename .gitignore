@@ -2,7 +2,11 @@ __pycache__/
 .pytest_cache/
 .env
 .venv/
+.venv314/
 .evidence/
+# Supabase CLI machine state and generated authentication material.
+it/supabase/.temp/
+it/supabase/.branches/
 # Local screenshots and run-specific review artifacts are archived outside Git.
 /UIUX_*/
 /hyd-iot-edu_UIUX_*.html

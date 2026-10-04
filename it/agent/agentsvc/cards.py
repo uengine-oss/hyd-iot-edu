@@ -4,16 +4,29 @@
                 원인 한정 스킬(ADDRESSES)은 그 원인일 때만 남긴다.
   2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인)에 대어
                 EXCLUDE(제외) · PENALTY(감점) · WARN(경고)을 정한다. APPLIES_TO가 없는 규칙은 모든 후보에 적용된다.
-  3. 순위       dec:rank-actions 규칙의 식: BSC 득실 + 예측 유온 여유 − 경고 − 감점 + 선례.
+  3. 순위       dec:rank-actions 규칙의 식: BSC 득실 + 예측 유온 여유 − 경고 − 감점 + 선례
+                + 납기 긴급도 × 생산 영향 (회의 2026-10-01 L385~404: "납기가 더 중요하면 장비가 고장 나든 돌려야" — MES 남은 시간과
+                  ERP 지연 보상으로 긴급도를 재고, 생산을 유지하는 카드에 가산 · 정지하는 카드에 감산)
+                − 품질 클레임 위험 (QMS: 고온 구간에 출하 대기 로트가 있고 예측 유온이 55 ℃ 를 넘는 카드는 클레임 위험만큼 감산).
 LLM 없이 결정론적이다. 같은 그래프 · 같은 사실이면 같은 카드와 순위가 나온다.
 """
 from __future__ import annotations
+import hashlib
+import json
+from hydcommon import ranking, bsc
 
 STRENGTH_NOTE = "강도 high 1 · medium 0.6 · low 0.3 (경로의 곱), 조건부 경로는 절반"
 WARN_COST = 0.5
 PENALTY_SCALE = 20.0
 PRECEDENT_WEIGHT = 1.5
 FORECAST_REF, FORECAST_SPAN, FORECAST_CAP = 55.0, 3.0, 2.0
+# 납기 (rule:rank-value 주석과 같은 값): 남은 시간이 DELIVERY_URGENT_H 보다 짧을수록, 시간당 보상이 DELIVERY_PENALTY_REF 에 가까울수록 긴급
+DELIVERY_WEIGHT, DELIVERY_URGENT_H, DELIVERY_PENALTY_REF = 1.5, 24.0, 100.0
+PRODUCTION_EFFECT = {"keep": 1.0, "reduce": 0.4, "stop": -1.0}        # 카드가 생산을 유지 · 감산 · 정지
+# 품질: 출하 대기 로트의 클레임 금액(만원)을 QUALITY_CLAIM_REF 로 나눈 위험(≤ 1) × 가중치, 예측 유온이 FORECAST_REF 이상인 카드에만
+QUALITY_WEIGHT, QUALITY_CLAIM_REF = 1.5, 1000.0
+STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:tp"}
+LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
 
 
 def _num(v):
@@ -79,20 +92,90 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     return f
 
 
-def score_option(o: dict) -> dict:
-    value = sum(g["weight"] * (0.5 if g["conditional"] else 1.0) for g in o["gains"]) - \
-            sum(l["weight"] * (0.5 if l["conditional"] else 1.0) for l in o["losses"])
+def production_effect(o: dict) -> str:
+    """What the card does to production, read from its PLC commands: a STOP command = stop, a load set-point under the
+    design load = reduce, any other command = keep. A card without commands (work order only) falls back to its BSC losses
+    (availability loss = stop, throughput loss = reduce). Live check 2026-10-04: judging every card by BSC losses marked all
+    three cooler cards 'stop' because each lists 생산량·가동률 ↓ in its trade-offs."""
+    commands = {a.get("code"): a.get("value") for a in o.get("actions") or [] if a.get("code") and a.get("kind", "command") == "command"}
+    if commands:
+        if "STOP" in commands:
+            return "stop"
+        load = _num(commands.get("LOAD_SET"))
+        if load is not None and load < LOAD_DESIGN:
+            return "reduce"
+        return "keep"
+    measures = {l.get("measure") for l in o.get("losses") or []}
+    if measures & STOP_MEASURES:
+        return "stop"
+    if measures & REDUCE_MEASURES:
+        return "reduce"
+    return "keep"
+
+
+def delivery_urgency(facts: dict) -> float:
+    """0 (no urgent order) … 1 (an OEM order due within hours with a heavy hourly penalty). MES order_due_h × ERP order_penalty_per_h."""
+    due, penalty = _num(facts.get("order_due_h")), _num(facts.get("order_penalty_per_h"))
+    if due is None or penalty is None or penalty <= 0:
+        return 0.0
+    time_part = max(0.0, min(1.0, (DELIVERY_URGENT_H - due) / DELIVERY_URGENT_H))
+    return round(time_part * max(0.0, min(1.0, penalty / DELIVERY_PENALTY_REF)), 2)
+
+
+def quality_risk(o: dict, facts: dict) -> float:
+    """0 … 1: the claim exposure of hot lots waiting for shipment, charged to cards whose forecast oil temperature stays ≥ 55 ℃."""
+    claim, qty = _num(facts.get("hot_lot_claim")), _num(facts.get("hot_lot_qty"))
     ts1 = next((x["value"] for x in o["forecast"] if x["variable"] == "sv:ts1"), None)
-    fc = 0.0 if ts1 is None else max(-FORECAST_CAP, min(FORECAST_CAP, (FORECAST_REF - float(ts1)) / FORECAST_SPAN))
-    warn = -WARN_COST * len(o["warnings"])
-    pen = -sum(float(p.get("penalty") or 0) for p in o["penalties"]) / PENALTY_SCALE
-    prec = PRECEDENT_WEIGHT * (o["precedent"]["share"] if o["precedent"] else 0.0)
-    parts = {"bsc": round(value, 2), "forecast": round(fc, 2), "warn": round(warn, 2), "penalty": round(pen, 2), "precedent": round(prec, 2)}
-    return {"score": round(sum(parts.values()), 2), "scoreParts": parts}
+    if not claim or claim <= 0 or (qty is not None and qty <= 0) or ts1 is None or float(ts1) < FORECAST_REF:
+        return 0.0
+    return round(min(1.0, claim / QUALITY_CLAIM_REF), 2)
+
+
+def score_option(o: dict, facts: dict, policy: dict) -> dict:
+    facts = facts or {}
+    ts1 = next((x["value"] for x in o["forecast"] if x["variable"] == "sv:ts1"), None)
+    features = {'bsc_gain':sum(x['weight'] for x in o['gains'] if not x['conditional']),
+        'bsc_conditional_gain':sum(x['weight'] for x in o['gains'] if x['conditional']),
+        'bsc_loss':sum(x['weight'] for x in o['losses'] if not x['conditional']),
+        'bsc_conditional_loss':sum(x['weight'] for x in o['losses'] if x['conditional']),
+        'forecast_ts1':ts1, 'warning_count':len(o['warnings']),
+        'penalty_total':sum(ranking.number(p.get('penalty') or 0) for p in o['penalties']),
+        'precedent_share':o['precedent']['share'] if o['precedent'] else 0,
+        'production':o.get('production') or production_effect(o)}
+    return ranking.score(policy, features, facts)
+
+
+def rank_policy(rules, facts):
+    matches = []
+    for rule in rules:
+        if rule['effect'] != 'RANK':
+            raise ValueError('ranking table contains a non-RANK rule')
+        fired, unknown = rule_fires(rule, facts) if rule.get('tests') else (True, [])
+        if unknown and not any(test_ok(t, facts) is False for t in rule['tests']):
+            raise ValueError('ranking rule input is unknown: ' + ', '.join(unknown))
+        if fired:
+            matches.append(rule)
+    if len(matches) != 1:
+        raise ValueError('exactly one applicable executable ranking rule is required')
+    return matches[0], ranking.validate(matches[0].get('rankingPolicy'))
+
+
+def ranking_variables(rules):
+    return {variable for rule in rules if rule['decision']=='dec:rank-actions'
+            for variable in ranking.validate(rule.get('rankingPolicy'))['inputs'].values()}
+
+
+def policy_digest(dmn, skill):
+    sid = skill['skillId']
+    applicable = [r for r in dmn if r['decision'] == 'dec:rank-actions'
+        or (r['decision'] == 'dec:action-candidates' and sid in (r.get('outputs') or []))
+        or (r['decision'] == 'dec:compliance' and (not r.get('applies') or sid in r['applies']))]
+    return hashlib.sha256(json.dumps({'skill':skill, 'rules':applicable},
+        ensure_ascii=False,sort_keys=True,separators=(',', ':')).encode()).hexdigest()
 
 
 def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecasts: dict[str, dict], tradeoffs: list[dict],
-             precedents: list[dict], suppliers: dict[str, dict]) -> dict:
+             precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None) -> dict:
     """dmn: t3_dmn rows. skills: id -> t2/t3 skill row. forecasts: skill -> {variable -> row}. tradeoffs: t3_tradeoffs rows.
     precedents: t3_precedents rows. suppliers: id -> {avl}. Returns options ranked + recommendation + rule trace."""
     tables = _by_decision(dmn)
@@ -117,37 +200,66 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
         k = skills[sid]
         cf = candidate_facts(base_facts, k, forecasts, suppliers)
         violations, penalties, warnings = [], [], []
+        forecast_context = (forecast_contexts or {}).get(sid)
+        if forecast_contexts is not None:
+            if not forecast_context or forecast_context.get('error'):
+                violations.append({'rule':'forecast:model-unavailable', 'effect':'EXCLUDE',
+                    'annotation':'현재 조치 예측을 확인할 수 없습니다: ' + str((forecast_context or {}).get('error', 'missing forecast')),
+                    'sources':['forecast:model-binding']})
+            elif forecast_context.get('predicted_interlocks'):
+                violations.append({'rule':'forecast:predicted-interlock', 'effect':'EXCLUDE',
+                    'annotation':'예측 구간의 PLC 인터록: ' + ', '.join(forecast_context['predicted_interlocks']),
+                    'sources':[forecast_context['model_id']]})
         for r in tables.get("dec:compliance", []):
             if r.get("applies") and sid not in r["applies"]:
                 continue
             fired, unknown = rule_fires(r, cf)
             trace.append({"decision": "dec:compliance", "rule": r["rule"], "skill": sid, "when": r.get("when"), "fired": fired, "unknown": unknown})
             if not fired:
+                # Missing evidence is not a satisfied rule. WARN remains advisory,
+                # but the human must see its uncertainty before choosing a card.
+                # A known-false AND term makes the remaining unknown irrelevant.
+                if unknown and not any(test_ok(t, cf) is False for t in r.get('tests') or []):
+                    pending = dict(_cite(r), unknown=unknown,
+                                   annotation='확인되지 않은 조건 (' + ', '.join(unknown) + '): ' + (r.get('annotation') or r['rule']))
+                    (warnings if r['effect'] == 'WARN' else violations).append(pending)
                 continue
             {"EXCLUDE": violations, "PENALTY": penalties, "WARN": warnings}.get(r["effect"], []).append(_cite(r))
         tos = [t for t in tradeoffs if t["skill"] == sid]
-        eff = lambda t: {"measure": t["measure"], "name": t["name"], "owner": t.get("owner"), "dir": t["dir"], "weight": round(float(t["weight"]), 2),
-                         "conditional": bool(t.get("conditional")), "conds": t.get("conds") or []}
+        effects, paths = bsc.evaluate_paths(tos, base_facts, forecasts.get(sid) or {})
         p = prec_by.get(sid)
         o = {"id": sid, "sopId": k.get("sopId"), "name": k.get("name"), "kind": k.get("kind"), "description": k.get("description"),
              "relation": k.get("relation"), "approver": k.get("approver"), "actions": k.get("actions") or [], "steps": k.get("steps") or [],
              "forecast": [{"variable": v, "name": x["variableName"], "value": x["value"], "unit": x["unit"], "method": x["method"], "id": x["id"]}
                           for v, x in (forecasts.get(sid) or {}).items()],
-             "gains": [eff(t) for t in tos if t["good"]], "losses": [eff(t) for t in tos if not t["good"]],
+             "gains": [t for t in effects if t["good"]], "losses": [t for t in effects if not t["good"]],
+             "tradeoffEvaluation":paths,
              "violations": violations, "penalties": penalties, "warnings": warnings, "feasible": not violations,
              "selectedBy": selected_by.get(sid, []),
              "precedent": {"n": p["n"], "share": round(p["n"] / total_prec, 2), "reasons": p.get("reasons") or []} if p and total_prec else None,
              "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl")}}
-        o.update(score_option(o))
+        o["production"] = production_effect(o)
+        if forecast_contexts is not None:
+            o['forecastContext'] = forecast_context
+        o['policy_sha256'] = policy_digest(dmn, k)
+        rank_rule, policy = rank_policy(tables.get('dec:rank-actions', []), cf)
+        o['rankingEvidence'] = {'rule':rank_rule['rule'], 'policy':policy, 'policy_sha256':ranking.fingerprint(policy),
+            'gains':o['gains'], 'losses':o['losses'],
+            'paths':bsc.consent_paths(paths),
+            'conditionMode':'명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정'}
+        o.update(score_option(o, base_facts, policy))
         options.append(o)
     lvl = lambda o: (o.get("approver") or {}).get("level") or 9
     options.sort(key=lambda o: (not o["feasible"], -o["score"], lvl(o)))
     for i, o in enumerate(options):
         o["rank"] = i + 1
     rec = next((o for o in options if o["feasible"]), None)
-    rank_rule = next(iter(tables.get("dec:rank-actions", [])), None)
+    rank_rule = next((r for r in tables.get('dec:rank-actions', []) if rec and r['rule']==rec['rankingEvidence']['rule']), None)
+    if rank_rule is None and options:
+        rank_rule = next((r for r in tables.get('dec:rank-actions', []) if r['rule']==options[0]['rankingEvidence']['rule']), None)
     return {"options": options, "recommended": rec["id"] if rec else None, "trace": trace,
-            "rankRule": _cite(rank_rule) if rank_rule else None, "explanation": explain(options, rec, base_facts)}
+            "rankRule": dict(_cite(rank_rule), rankingPolicy=ranking.validate(rank_rule['rankingPolicy'])) if rank_rule else None,
+            "explanation": explain(options, rec, base_facts)}
 
 
 def _names(xs: list[dict], n: int = 3) -> str:
@@ -173,4 +285,14 @@ def explain(options: list[dict], rec: dict | None, facts: dict) -> str:
         parts.append("제외: " + "; ".join(f"'{o['name']}' — {o['violations'][0]['annotation']}" for o in out) + ".")
     if rec["precedent"]:
         parts.append(f"같은 고장 유형에서 사람이 이 안을 고른 선례 {rec['precedent']['n']}건 ({int(rec['precedent']['share'] * 100)} %).")
+    delivery = rec['scoreParts'].get('delivery', 0)
+    if delivery:
+        tier = f"{facts['order_customer_tier']} " if facts.get("order_customer_tier") else ""
+        parts.append(f"납기: {tier}오더 납기까지 {facts.get('order_due_h')} h, 지연 시 {facts.get('order_penalty_per_h')}만원/h — "
+                     f"생산을 {'유지' if rec.get('production') == 'keep' else '감산' if rec.get('production') == 'reduce' else '정지'}하는 카드"
+                     f"의 실행 순위 식 결과 {delivery:+g}점.")
+    risky = [o for o in options if (o["scoreParts"].get("quality") or 0) < 0]
+    if risky:
+        parts.append(f"품질: 출하 대기 로트 {facts.get('hot_lot_qty')}개(클레임 {facts.get('hot_lot_claim')}만원) — 실행 순위 식에 따라 "
+                     + ", ".join(f"'{o['name']}'" for o in risky) + " 감산.")
     return " ".join(parts)

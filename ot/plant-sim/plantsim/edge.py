@@ -1,6 +1,6 @@
 """EdgeX stand-in (L2 device layer): publishes standard OT topics and maps commands to PLC writes.
 
-Publishes  plant/{a}/tag/{name} (1 Hz), plant/{a}/wave/{sensor} (1 s batch), plant/{a}/status (retained)
+Publishes  plant/{a}/tag/{name} (1 Hz), plant/{a}/wave/{sensor} (1 s batch), plant/{a}/status (1 Hz, retained)
 Subscribes plant/{a}/cmd/manual (FUXA), plant/{a}/cmd/auto (cmd-gateway), plant/{a}/mode (FUXA)
 """
 import json
@@ -98,8 +98,8 @@ class Edge:
         st["reason_display"] = st.get("reason") or "–"
         # Display fields do not replace the PLC/API command contract.
         labels = {"REMOTE_AUTO": "원격 자동", "REMOTE_MANUAL": "원격 수동", "LOCAL": "현장 제어",
-                  "RUN": "운전 중", "TRIP": "보호 정지", "DONE": "완료", "REJECTED": "거절",
-                  "OUT_OF_RANGE": "허용 범위 초과", "MODE_MISMATCH": "운전 모드 확인 필요"}
+                  "RUN": "운전 중", "TRIP": "보호 정지", "STOP": "계획 정지", "DONE": "완료", "REJECTED": "거절",
+                  "OUT_OF_RANGE": "허용 범위 초과", "MODE_MISMATCH": "운전 모드 확인 필요", "INTERLOCK_TRIP": "보호 정지 중 (리셋만 가능)"}
         for field in ("mode", "state", "result", "reason"):
             st[field + "_text"] = labels.get(st.get(field), st.get(field)) or "–"
         self.client.publish(topics.mqtt_status(k), json.dumps(st), qos=1, retain=True)
@@ -126,10 +126,12 @@ class Edge:
             next_t += 1.0
             self.plant.tick(1.0)
             if self.connected:
-                for a, u in self.plant.units.items():
+                for a in self.plant.units:
                     self._publish_tags(a)
                     if self.publish_wave:
                         self._publish_waves(a)
-                    if u.dirty_status or int(self.plant.sim_t) % (10 * int(self.plant.time_scale)) == 0:
-                        self._publish_status(a)
+                    # The status includes continuously evolving model inputs,
+                    # not only PLC modes/ACKs. Forecast review must see each
+                    # measured wall tick, independent of simulation speed.
+                    self._publish_status(a)
             time.sleep(max(0.0, next_t - time.monotonic()))

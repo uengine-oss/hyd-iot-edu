@@ -117,7 +117,8 @@ for panel in panels:
 alert_labels = {"pattern": ("경보 유형", 180), "severity": ("심각도", 90), "state": ("상태", 100),
                 "발생": ("발생 시각", 170), "해제": ("해제 시각", 170), "alert_id": ("경보 번호", 230)}
 alert_values = {
-    "pattern": {"COOLER_DEGRADATION": "쿨러 성능 저하", "TEMP_TRIP": "유온 보호 정지", "OVERHEAT_TRIP": "유온 보호 정지"},
+    "pattern": {"COOLER_DEGRADATION": "쿨러 성능 저하", "PUMP_LEAKAGE": "펌프 내부 누설", "FAN_VIBRATION": "팬 진동 상승",
+                "TEMP_TRIP": "유온 보호 정지", "OVERHEAT_TRIP": "유온 보호 정지"},
     "severity": {"HIGH": "높음", "CRITICAL": "긴급", "WARNING": "주의"},
     "state": {"RAISE": "발생", "CLEAR": "해제"},
 }

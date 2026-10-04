@@ -1,0 +1,577 @@
+{
+  "processDefinitionId": "anomaly_response",
+  "processDefinitionName": "설비 이상 조치",
+  "version": "2.1",
+  "description": "경보(alerts RAISE)가 프로세스 인스턴스를 열고, AI 에이전트가 네 개의 판단 작업(원인 진단 · 조치 후보 · 규정 검토 · 우선순위)을 맡아 조치 카드를 올리면, 사람이 카드 하나를 고르고(승인, 폼 select_card 제출), 프로세스가 PLC 명령 · 재관측 · 작업지시를 실행해 종결한다. 온톨로지 v2 proc:anomaly-response 의 흐름 노드와 1:1 대응한다 (it/neo4j/v2/instances.cypher 5절).",
+  "ontologyRef": "proc:anomaly-response",
+  "megaProcessId": "설비 운영",
+  "majorProcessId": "설비 이상 대응",
+  "data": [
+    {
+      "name": "asset",
+      "type": "Text",
+      "description": "경보가 난 설비 (상관 키, 예: HYD-01)"
+    },
+    {
+      "name": "alert",
+      "type": "Object",
+      "description": "원천 경보 메시지 (alertId · pattern · state · evidence)"
+    },
+    {
+      "name": "pattern",
+      "type": "Text",
+      "description": "이상 패턴 코드 (AnomalyPattern.code)"
+    },
+    {
+      "name": "cause",
+      "type": "Text",
+      "description": "판정된 원인 (Cause.id)"
+    },
+    {
+      "name": "failure_mode",
+      "type": "Text",
+      "description": "고장 유형 (FailureMode.id)"
+    },
+    {
+      "name": "guide_card",
+      "type": "Object",
+      "description": "원인 · 증거 · SOP 스킬 · 매뉴얼 절을 인용한 가이드 카드"
+    },
+    {
+      "name": "candidates",
+      "type": "Array",
+      "description": "dec:action-candidates 가 고른 후보 스킬 목록"
+    },
+    {
+      "name": "compliance",
+      "type": "Object",
+      "description": "dec:compliance 규칙 판정 (제외 · 감점 · 경고)"
+    },
+    {
+      "name": "decision",
+      "type": "Object",
+      "description": "순위가 매겨진 조치 카드 묶음 (process /api/decisions 에 제출된 것)"
+    },
+    {
+      "name": "decision_id",
+      "type": "Text",
+      "description": "조치 카드 묶음 id"
+    },
+    {
+      "name": "incident",
+      "type": "Text",
+      "description": "PLC 명령 경로를 맡는 Incident id — process 가 인스턴스 시작 때 만들어 넣는다 (에이전트 출력 아님)"
+    },
+    {
+      "name": "chosen_skill",
+      "type": "Text",
+      "description": "사람이 고른 스킬(= SOP) id"
+    },
+    {
+      "name": "chosen_skill_kind",
+      "type": "Text",
+      "description": "고른 스킬의 종류: control(즉시 제어) | work_order(작업지시만)"
+    },
+    {
+      "name": "recovered",
+      "type": "Boolean",
+      "description": "재관측 결과 — 경보 해제 and TS1 < 55 ℃"
+    },
+    {
+      "name": "work_order",
+      "type": "Object",
+      "description": "CMMS 작업지시 결과"
+    },
+    {
+      "name": "note",
+      "type": "Text",
+      "description": "상급자 확인 메모"
+    }
+  ],
+  "roles": [
+    {
+      "name": "AI 에이전트",
+      "endpoint": "sys:agent",
+      "resolutionRule": "온톨로지 System sys:agent — cliagents 워커가 Claude Code 로 수행"
+    },
+    {
+      "name": "운전원",
+      "endpoint": "role:operator",
+      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 카드 선택"
+    },
+    {
+      "name": "생산관리자",
+      "endpoint": "role:prod-mgr",
+      "resolutionRule": "온톨로지 Role role:prod-mgr (level 2). 상급 승인 · 에스컬레이션"
+    },
+    {
+      "name": "SCADA",
+      "endpoint": "sys:scada",
+      "resolutionRule": "PLC 명령 — process 서비스의 Incident 경로(action.cmd → cmd-gateway)만 발행"
+    },
+    {
+      "name": "프로세스",
+      "endpoint": "sys:process",
+      "resolutionRule": "process 서비스 자체 (타이머 · 재관측)"
+    },
+    {
+      "name": "CMMS",
+      "endpoint": "sys:cmms",
+      "resolutionRule": "enterprise 시스템 (작업지시)"
+    }
+  ],
+  "events": [
+    {
+      "id": "ev:alert",
+      "name": "경보 수신",
+      "type": "startEvent",
+      "eventDefinition": "message",
+      "messageRef": "alerts (state=RAISE)",
+      "correlationKey": "asset",
+      "description": "Kafka alerts 토픽의 RAISE 메시지 하나가 인스턴스 하나를 연다. 같은 alertId 로는 두 번 열지 않는다."
+    },
+    {
+      "id": "ev:select-timeout",
+      "name": "선택 시간 초과",
+      "type": "boundaryEvent",
+      "eventDefinition": "timer",
+      "timer": "PT10M",
+      "attachedTo": "task:select",
+      "description": "운전원이 10분 안에 카드를 고르지 않으면 생산관리자에게 넘어간다 (시간 배율 적용)."
+    },
+    {
+      "id": "ev:closed",
+      "name": "종결",
+      "type": "endEvent",
+      "eventDefinition": "none"
+    },
+    {
+      "id": "ev:escalated",
+      "name": "에스컬레이션 종료",
+      "type": "endEvent",
+      "eventDefinition": "escalation"
+    }
+  ],
+  "activities": [
+    {
+      "id": "task:diagnose",
+      "name": "원인 진단",
+      "type": "businessRuleTask",
+      "role": "AI 에이전트",
+      "agent": "sys:agent",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "decision": "dec:diagnose-cause",
+      "tool": "formHandler:diagnose",
+      "instruction": "경보 패턴에서 증상 → 고장 유형 → 원인 후보를 온톨로지(Neo4j MCP)로 찾고, 각 원인의 증거 규칙(Evidence.sql)을 시계열 DB 에서 평가해 원인 점수를 매긴다. 가장 유력한 원인과 고장 유형, 인용 노드 id 를 출력한다. 조치를 실행하지 않는다.",
+      "inputData": [
+        "pattern",
+        "asset",
+        "alert"
+      ],
+      "outputData": [
+        "cause",
+        "failure_mode",
+        "guide_card"
+      ],
+      "checkpoints": [
+        "모든 주장에 온톨로지 노드 id 인용",
+        "데이터 신선도 60 s 이내가 아니면 보류 카드"
+      ],
+      "duration": 2,
+      "description": "원인 진단"
+    },
+    {
+      "id": "task:candidates",
+      "name": "조치 후보 조회",
+      "type": "businessRuleTask",
+      "role": "AI 에이전트",
+      "agent": "sys:agent",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "decision": "dec:action-candidates",
+      "tool": "formHandler:candidates",
+      "instruction": "고장 유형 · PLC 상태를 dec:action-candidates 결정표(DMN)에 대어 후보 조치 방법(스킬 = SOP)을 고른다. 원인 한정 스킬(ADDRESSES)은 판정 원인일 때만 남긴다.",
+      "inputData": [
+        "failure_mode",
+        "cause",
+        "asset"
+      ],
+      "outputData": [
+        "candidates"
+      ],
+      "duration": 1,
+      "description": "조치 후보 조회"
+    },
+    {
+      "id": "task:compliance",
+      "name": "규정 검토",
+      "type": "businessRuleTask",
+      "role": "AI 에이전트",
+      "agent": "sys:agent",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "decision": "dec:compliance",
+      "tool": "formHandler:compliance",
+      "instruction": "후보마다 예측 유온 · 압력, 스킬 종류, 명령 코드, 공급사 승인, PLC 모드를 dec:compliance 규칙에 대어 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)를 정한다. 규칙 출처(KnowledgeSource · 매뉴얼 절)를 인용한다.",
+      "inputData": [
+        "candidates",
+        "asset"
+      ],
+      "outputData": [
+        "compliance"
+      ],
+      "duration": 1,
+      "description": "규정 검토"
+    },
+    {
+      "id": "task:rank",
+      "name": "우선순위 · 카드 작성",
+      "type": "businessRuleTask",
+      "role": "AI 에이전트",
+      "agent": "sys:agent",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "decision": "dec:rank-actions",
+      "tool": "formHandler:rank",
+      "instruction": "BSC 득실(AFFECTS → INFLUENCES 경로) · 예측 · 경고 · 감점 · 선례로 후보 순위를 매기고, 업무 DB(Supabase MCP)에서 납기 · 계약 · 재고를 읽어 영향을 설명에 넣는다. 사람이 고를 카드 2~3장과 권고 1장을 process /api/decisions 에 제출한다. 승인 역할은 온톨로지 Skill -APPROVED_BY-> Role 을 따른다.",
+      "inputData": [
+        "candidates",
+        "compliance",
+        "asset",
+        "incident"
+      ],
+      "outputData": [
+        "decision",
+        "decision_id"
+      ],
+      "duration": 2,
+      "description": "우선순위 · 카드 작성"
+    },
+    {
+      "id": "task:select",
+      "name": "조치 카드 선택 (HITL)",
+      "type": "userTask",
+      "role": "운전원",
+      "tool": "formHandler:select_card",
+      "agent": null,
+      "orchestration": null,
+      "instruction": "에이전트가 올린 카드 중 하나를 고르거나 거부한다. 고른 카드의 승인 역할보다 낮은 역할이면 process 가 거절한다(403).",
+      "inputData": [
+        "decision"
+      ],
+      "outputData": [
+        "chosen_skill",
+        "chosen_skill_kind"
+      ],
+      "checkpoints": [
+        "규정상 제외된 카드는 고를 수 없음",
+        "승인 역할 ≥ 카드의 APPROVED_BY"
+      ],
+      "duration": 1,
+      "attachedEvents": [
+        "ev:select-timeout"
+      ],
+      "description": "조치 카드 선택 (HITL)"
+    },
+    {
+      "id": "task:escalate",
+      "name": "상급자 호출",
+      "type": "userTask",
+      "role": "생산관리자",
+      "tool": "formHandler:escalate",
+      "agent": null,
+      "orchestration": null,
+      "instruction": "선택 시간 초과 또는 미회복. 생산관리자가 상황을 확인하고 후속 조치를 결정한다.",
+      "inputData": [
+        "decision",
+        "incident",
+        "recovered"
+      ],
+      "outputData": [
+        "note"
+      ],
+      "duration": 1,
+      "description": "상급자 호출"
+    },
+    {
+      "id": "task:command",
+      "name": "PLC 명령 발행",
+      "type": "serviceTask",
+      "role": "SCADA",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "incident:command",
+      "instruction": "고른 스킬의 원자 조치(Action.code · value)를 action.cmd 로 발행한다 (만료 +120 s). cmd-gateway 검증 5종 → PLC → ACK 30 s. 이 작업은 process 서비스의 Incident 상태기계가 수행한다.",
+      "inputData": [
+        "chosen_skill",
+        "incident"
+      ],
+      "outputData": [],
+      "duration": 1,
+      "description": "PLC 명령 발행"
+    },
+    {
+      "id": "task:reobserve",
+      "name": "재관측 (15분)",
+      "type": "serviceTask",
+      "role": "프로세스",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "incident:reobserve",
+      "instruction": "ACK 뒤 15분(시간 배율 적용) 재관측한다. 경보 CLEAR와 사건에 고정된 정의의 패턴별 회복 기준을 함께 확인한다. 기준이 없으면 회복으로 판정하지 않는다.",
+      "inputData": [
+        "incident"
+      ],
+      "outputData": [
+        "recovered"
+      ],
+      "duration": 1,
+      "description": "재관측 (15분)"
+    },
+    {
+      "id": "task:work-order",
+      "name": "정비 작업지시",
+      "type": "serviceTask",
+      "role": "CMMS",
+      "agent": null,
+      "orchestration": "hyd-process",
+      "tool": "enterprise:WO_CREATE",
+      "instruction": "고른 스킬의 WO_CREATE 트랜잭션을 CMMS 에 발행한다 (업무 DB work_orders 행). 발행은 정비 완료가 아니다.",
+      "inputData": [
+        "chosen_skill",
+        "asset"
+      ],
+      "outputData": [
+        "work_order"
+      ],
+      "duration": 1,
+      "description": "정비 작업지시"
+    }
+  ],
+  "gateways": [
+    {
+      "id": "gw:control",
+      "name": "즉시 제어 포함?",
+      "type": "exclusiveGateway",
+      "conditionData": [
+        "chosen_skill_kind"
+      ]
+    },
+    {
+      "id": "gw:recovered",
+      "name": "회복?",
+      "type": "exclusiveGateway",
+      "conditionData": [
+        "recovered"
+      ]
+    }
+  ],
+  "sequences": [
+    {
+      "id": "seq:alert-diagnose",
+      "source": "ev:alert",
+      "target": "task:diagnose"
+    },
+    {
+      "id": "seq:diagnose-candidates",
+      "source": "task:diagnose",
+      "target": "task:candidates"
+    },
+    {
+      "id": "seq:candidates-compliance",
+      "source": "task:candidates",
+      "target": "task:compliance"
+    },
+    {
+      "id": "seq:compliance-rank",
+      "source": "task:compliance",
+      "target": "task:rank"
+    },
+    {
+      "id": "seq:rank-select",
+      "source": "task:rank",
+      "target": "task:select"
+    },
+    {
+      "id": "seq:select-gw",
+      "source": "task:select",
+      "target": "gw:control"
+    },
+    {
+      "id": "seq:gw-command",
+      "source": "gw:control",
+      "target": "task:command",
+      "name": "선택 스킬 kind == control",
+      "condition": "chosen_skill_kind == 'control'"
+    },
+    {
+      "id": "seq:gw-workorder",
+      "source": "gw:control",
+      "target": "task:work-order",
+      "name": "선택 스킬 kind == work_order",
+      "condition": "chosen_skill_kind == 'work_order'"
+    },
+    {
+      "id": "seq:command-reobserve",
+      "source": "task:command",
+      "target": "task:reobserve"
+    },
+    {
+      "id": "seq:reobserve-gw",
+      "source": "task:reobserve",
+      "target": "gw:recovered"
+    },
+    {
+      "id": "seq:gw-recovered-wo",
+      "source": "gw:recovered",
+      "target": "task:work-order",
+      "name": "TS1 < 55 and 경보 해제",
+      "condition": "recovered == True"
+    },
+    {
+      "id": "seq:gw-recovered-escalate",
+      "source": "gw:recovered",
+      "target": "task:escalate",
+      "name": "미회복",
+      "condition": "recovered != True"
+    },
+    {
+      "id": "seq:workorder-closed",
+      "source": "task:work-order",
+      "target": "ev:closed"
+    },
+    {
+      "id": "seq:timeout-escalate",
+      "source": "ev:select-timeout",
+      "target": "task:escalate"
+    },
+    {
+      "id": "seq:escalate-end",
+      "source": "task:escalate",
+      "target": "ev:escalated"
+    }
+  ],
+  "forms": {
+    "candidates": {
+      "fields_json": [
+        {
+          "key": "candidates",
+          "text": "후보 스킬 id 목록 (dec:action-candidates 결과)",
+          "type": "array"
+        }
+      ]
+    },
+    "compliance": {
+      "fields_json": [
+        {
+          "key": "compliance",
+          "text": "스킬 id → {feasible, excluded[], penalties[], warnings[]} (dec:compliance 결과)",
+          "type": "object"
+        }
+      ]
+    },
+    "diagnose": {
+      "fields_json": [
+        {
+          "key": "cause",
+          "text": "판정한 원인 노드 id (예: cause:cooler-fin-fouling)",
+          "type": "text"
+        },
+        {
+          "key": "failure_mode",
+          "text": "고장 유형 노드 id (예: fm:cooling-loss)",
+          "type": "text"
+        },
+        {
+          "key": "guide_card",
+          "text": "hyd-dmn diagnose 도구가 돌려준 가이드 카드 객체 그대로 (alert · causes · recommended · skills · citations · summary)",
+          "type": "object"
+        }
+      ]
+    },
+    "escalate": {
+      "fields_json": [
+        {
+          "key": "note",
+          "text": "생산관리자 확인 메모",
+          "type": "textarea"
+        }
+      ]
+    },
+    "rank": {
+      "fields_json": [
+        {
+          "key": "decision",
+          "text": "순위 결과 요약 {recommended, explanation, order[]} — hyd-dmn evaluate_cards · submit_decision 결과",
+          "type": "object"
+        },
+        {
+          "key": "decision_id",
+          "text": "submit_decision 이 돌려준 조치 카드 묶음 id",
+          "type": "text"
+        }
+      ]
+    },
+    "select_card": {
+      "fields_json": [
+        {
+          "key": "chosen_skill",
+          "text": "고른 스킬(SOP) id",
+          "type": "text"
+        },
+        {
+          "key": "chosen_skill_kind",
+          "text": "스킬 종류",
+          "type": "select",
+          "items": [
+            {
+              "control": "즉시 제어"
+            },
+            {
+              "work_order": "작업지시만"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "contractProvenance": {
+    "kind": "new-version-contract",
+    "source": "it/supabase/seed.sql + live hyd form_def, captured 2026-10-04",
+    "predecessor": "1.0",
+    "predecessorFileSha256": "e7b80a1a69103c4ef38e098284877d4635fd8f3bb9ae38ca9c45e6b039d860c2",
+    "corrections": [
+      "escalate outputData now includes note",
+      "candidates data type Array",
+      "human/service agentMode none normalized to absent"
+    ],
+    "historicalFormReconstruction": false
+  },
+  "alertPolicy": {
+    "patterns": {
+      "COOLER_DEGRADATION": {
+        "tag": "TS1",
+        "op": "<",
+        "limit": 55.0,
+        "requireClear": true
+      },
+      "PUMP_LEAKAGE": {
+        "tag": "PS1",
+        "op": ">=",
+        "limit": 165.0,
+        "requireClear": true
+      },
+      "FAN_VIBRATION": {
+        "tag": "VS1",
+        "op": "<",
+        "limit": 1.2,
+        "requireClear": true
+      }
+    },
+    "unsupported": {
+      "definition": "alert_triage",
+      "version": "1.0"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "inputs": {"due": "order_due_h", "penalty": "order_penalty_per_h", "claim": "hot_lot_claim", "qty": "hot_lot_qty"},
+  "components": {
+    "bsc": "bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss",
+    "forecast": "0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)",
+    "warn": "-0.5 * warning_count",
+    "penalty": "-penalty_total / 20",
+    "precedent": "1.5 * precedent_share",
+    "delivery": "(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == 'keep' else (0.4 if production == 'reduce' else -1)) * 1.5",
+    "quality": "0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)"
+  },
+  "tieBreak": "lower_approver"
+}

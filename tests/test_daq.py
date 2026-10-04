@@ -1,6 +1,6 @@
-"""DAQ 'lite' profile: the CEP inputs (TS1, CE) go out every second, other tags only on a real change or a heartbeat,
-and the auxiliary channels on a slow heartbeat. Cuts OT->Kafka->DB volume ~7x without starving detector or evidence SQL."""
+"""Temporal inputs are sampled every second; only non-temporal tags use deadbands."""
 from plantsim.daq import DaqFilter
+from hydcommon.daq_contract import ALWAYS, reporting_interval
 
 
 def tags(**over):
@@ -19,7 +19,7 @@ def test_lite_always_sends_cep_inputs_but_holds_steady_tags():
     first = f.select("HYD-01", tags(), 0.0)
     assert set(first) == set(tags())                     # first sample of every tag goes out
     second = f.select("HYD-01", tags(PS1=182.3), 1.0)     # PS1 moved 0.4 bar < 1.0 deadband
-    assert set(second) == {"TS1", "CE"}
+    assert set(second) == ALWAYS & set(tags())
 
 
 def test_lite_sends_a_tag_that_moves_past_its_deadband():
@@ -27,6 +27,17 @@ def test_lite_sends_a_tag_that_moves_past_its_deadband():
     f.select("HYD-01", tags(), 0.0)
     out = f.select("HYD-01", tags(FanSpeedSP=100.0, PS1=184.0), 1.0)
     assert {"FanSpeedSP", "PS1"} <= set(out)
+
+
+def test_lite_preserves_small_crossings_and_steady_temporal_samples():
+    f = DaqFilter("lite")
+    f.select("HYD-01", tags(FS1=7.99, PS1=164.99, VS1=1.201, LoadSP=80.01), 0.0)
+    values = tags(FS1=8.01, PS1=165.01, VS1=1.199, LoadSP=79.99)
+    for t in (1., 2., 3.):
+        out = f.select("HYD-01", values, t)
+        assert ALWAYS <= set(out)
+        assert {name: out[name] for name in ALWAYS} == {name: values[name] for name in ALWAYS}
+        assert all(reporting_interval(name) == 1 for name in ALWAYS)
 
 
 def test_lite_heartbeats_core_and_aux_tags():

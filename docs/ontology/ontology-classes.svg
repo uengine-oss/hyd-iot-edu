@@ -4,7 +4,7 @@
 <marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0L12 6L0 12z" fill="#fff" stroke="#374151"/></marker>
 </defs>
 <rect width="2336" height="1018" fill="#ffffff"/>
-<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.3.0 — 클래스 36개 · 관계 66종</text>
+<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.5.0 — 클래스 41개 · 관계 72종</text>
 <text x="30" y="58" font-size="13" fill="#4b5563">BSC(관점 · 전략 목표 · 성과 지표) → 프로세스(BPMN) → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = Skill = SOP · 규칙(DMN) → 외부 변수 · 예측 · 운영 기록. 화살표 = 관계 방향, 점선 삼각형 = 상속</text>
 <text x="30" y="120" font-size="14" font-weight="700" fill="#6d28d9">가치 계층 (BSC)</text>
 <text x="430" y="120" font-size="14" font-weight="700" fill="#1d4ed8">프로세스 계층</text>
@@ -25,6 +25,7 @@
 <path d="M2030.0,159.0 C1578.2,159.0 1477.8,719.0 1026.0,719.0" fill="none" stroke="#9a6700" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ExternalVariable -[INFLUENCES]-> StateVariable</title></path>
 <path d="M430.0,159.0 C338.2,159.0 317.8,239.0 226.0,239.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Process -[ACHIEVES]-> Objective</title></path>
 <path d="M626.0,159.0 C682.0,159.0 682.0,239.0 626.0,239.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Process -[HAS_NODE]-> FlowNode</title></path>
+<path d="M2030.0,851.0 C1398.2,851.0 1257.8,239.0 626.0,239.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessVersion -[HAS_NODE]-> FlowNode</title></path>
 <path d="M626.0,159.0 C717.8,159.0 738.2,399.0 830.0,399.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Process -[ACTS_ON]-> Asset</title></path>
 <path d="M626.0,232.1 C672.0,206.1 672.0,262.1 626.0,248.1" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>FlowNode -[SEQUENCE_FLOW]-> FlowNode</title></path>
 <path d="M626.0,319.0 C682.0,319.0 682.0,399.0 626.0,399.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Event -[ATTACHED_TO]-> Task</title></path>
@@ -34,6 +35,11 @@
 <path d="M626.0,399.0 C1077.8,399.0 1178.2,399.0 1630.0,399.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Task -[PRODUCES]-> InputData</title></path>
 <path d="M626.0,399.0 C1077.8,399.0 1178.2,319.0 1630.0,319.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Task -[INVOKES]-> Decision</title></path>
 <path d="M626.0,399.0 C1077.8,399.0 1178.2,159.0 1630.0,159.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Task -[EXECUTES]-> Skill</title></path>
+<path d="M626.0,392.1 C672.0,366.1 672.0,422.1 626.0,408.1" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Task -[EXECUTES]-> Task</title></path>
+<path d="M626.0,399.0 C682.0,399.0 682.0,319.0 626.0,319.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Task -[EXECUTES]-> Event</title></path>
+<path d="M2030.0,771.0 C1938.2,771.0 1917.8,159.0 1826.0,159.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[EXECUTES]-> Skill</title></path>
+<path d="M2030.0,771.0 C1398.2,771.0 1257.8,399.0 626.0,399.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[EXECUTES]-> Task</title></path>
+<path d="M2030.0,771.0 C1398.2,771.0 1257.8,319.0 626.0,319.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[EXECUTES]-> Event</title></path>
 <path d="M626.0,319.0 C897.8,319.0 958.2,159.0 1230.0,159.0" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Event -[CORRELATES]-> AnomalyPattern</title></path>
 <path d="M1026.0,239.0 C1082.0,239.0 1082.0,159.0 1026.0,159.0" fill="none" stroke="#4b5563" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Role -[MEMBER_OF]-> OrgUnit</title></path>
 <path d="M1026.0,399.0 C1082.0,399.0 1082.0,479.0 1026.0,479.0" fill="none" stroke="#4b5563" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Asset -[HAS_COMPONENT]-> Component</title></path>
@@ -91,12 +97,24 @@
 <path d="M2030.0,239.0 C1938.2,239.0 1917.8,159.0 1826.0,159.0" fill="none" stroke="#9a6700" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Forecast -[ASSUMES]-> Skill</title></path>
 <path d="M2030.0,239.0 C1758.2,239.0 1697.8,399.0 1426.0,399.0" fill="none" stroke="#9a6700" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Forecast -[GIVEN]-> Cause</title></path>
 <path d="M2030.0,371.0 C1578.2,371.0 1477.8,399.0 1026.0,399.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Incident -[ON_ASSET]-> Asset</title></path>
+<path d="M2030.0,691.0 C1578.2,691.0 1477.8,399.0 1026.0,399.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[ON_ASSET]-> Asset</title></path>
 <path d="M2030.0,371.0 C1758.2,371.0 1697.8,159.0 1426.0,159.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Incident -[RAISED_BY]-> AnomalyPattern</title></path>
 <path d="M2030.0,371.0 C1758.2,371.0 1697.8,399.0 1426.0,399.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Incident -[DIAGNOSED_AS]-> Cause</title></path>
 <path d="M2030.0,451.0 C1938.2,451.0 1917.8,319.0 1826.0,319.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>DecisionCase -[INSTANCE_OF]-> Decision</title></path>
+<path d="M2030.0,451.0 C1398.2,451.0 1257.8,159.0 626.0,159.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>DecisionCase -[INSTANCE_OF]-> Process</title></path>
+<path d="M2030.0,691.0 C1938.2,691.0 1917.8,319.0 1826.0,319.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[INSTANCE_OF]-> Decision</title></path>
+<path d="M2030.0,691.0 C1398.2,691.0 1257.8,159.0 626.0,159.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[INSTANCE_OF]-> Process</title></path>
 <path d="M2030.0,451.0 C1938.2,451.0 1917.8,159.0 1826.0,159.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>DecisionCase -[CHOSE]-> Skill</title></path>
 <path d="M2030.0,451.0 C1578.2,451.0 1477.8,239.0 1026.0,239.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>DecisionCase -[DECIDED_BY]-> Role</title></path>
 <path d="M2226.0,451.0 C2282.0,451.0 2282.0,371.0 2226.0,371.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>DecisionCase -[FOR_INCIDENT]-> Incident</title></path>
+<path d="M2226.0,691.0 C2296.0,691.0 2296.0,371.0 2226.0,371.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[HANDLES]-> Incident</title></path>
+<path d="M2226.0,771.0 C2282.0,771.0 2282.0,691.0 2226.0,691.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[IN_INSTANCE]-> ProcessInstance</title></path>
+<path d="M2030.0,771.0 C1578.2,771.0 1477.8,239.0 1026.0,239.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[ASSIGNED_TO]-> Role</title></path>
+<path d="M2030.0,771.0 C1578.2,771.0 1477.8,319.0 1026.0,319.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>WorkItem -[ASSIGNED_TO]-> System</title></path>
+<path d="M2030.0,691.0 C1578.2,691.0 1477.8,239.0 1026.0,239.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[ROLE_BOUND]-> Role</title></path>
+<path d="M2030.0,691.0 C1578.2,691.0 1477.8,319.0 1026.0,319.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[ROLE_BOUND]-> System</title></path>
+<path d="M2226.0,691.0 C2287.8,691.0 2287.8,851.0 2226.0,851.0" fill="none" stroke="#7c2d12" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>ProcessInstance -[USES_VERSION]-> ProcessVersion</title></path>
+<path d="M626.0,232.1 C672.0,206.1 672.0,262.1 626.0,248.1" fill="none" stroke="#1d4ed8" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>FlowNode -[MAPS_TO]-> FlowNode</title></path>
 <path d="M448,296 L448,262" fill="none" stroke="#374151" stroke-dasharray="4 3" marker-end="url(#tri)"/>
 <path d="M448,376 L448,262" fill="none" stroke="#374151" stroke-dasharray="4 3" marker-end="url(#tri)"/>
 <path d="M448,456 L448,262" fill="none" stroke="#374151" stroke-dasharray="4 3" marker-end="url(#tri)"/>
@@ -112,6 +130,7 @@
 <text x="1528" y="442" font-size="9.5" text-anchor="middle" fill="#9a6700" stroke="#fff" stroke-width="3" paint-order="stroke">INFLUENCES</text>
 <text x="345" y="190" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">ACHIEVES</text>
 <text x="668" y="202" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">HAS_NODE</text>
+<text x="1568" y="722" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">HAS_NODE</text>
 <text x="728" y="282" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">ACTS_ON</text>
 <text x="660" y="283" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">SEQUENCE_FLOW</text>
 <text x="668" y="362" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">ATTACHED_TO</text>
@@ -121,6 +140,11 @@
 <text x="1128" y="424" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">PRODUCES</text>
 <text x="1128" y="362" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">INVOKES</text>
 <text x="1128" y="282" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
+<text x="660" y="399" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
+<text x="666" y="350" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
+<text x="1928" y="468" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
+<text x="1211" y="533" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
+<text x="1568" y="676" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">EXECUTES</text>
 <text x="825" y="287" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">CORRELATES</text>
 <text x="1068" y="202" font-size="9.5" text-anchor="middle" fill="#4b5563" stroke="#fff" stroke-width="3" paint-order="stroke">MEMBER_OF</text>
 <text x="1068" y="442" font-size="9.5" text-anchor="middle" fill="#4b5563" stroke="#fff" stroke-width="3" paint-order="stroke">HAS_COMPONENT</text>
@@ -142,7 +166,7 @@
 <text x="1145" y="378" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">OCCURS_IN</text>
 <text x="1460" y="319" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">LEADS_TO</text>
 <text x="1468" y="362" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">CAUSES</text>
-<text x="1145" y="543" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">INVOLVES_PART</text>
+<text x="1111" y="661" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">INVOLVES_PART</text>
 <text x="1145" y="515" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">DISTURBS</text>
 <text x="1468" y="464" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">EVIDENCED_BY</text>
 <text x="1528" y="242" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">MITIGATED_BY</text>
@@ -178,12 +202,24 @@
 <text x="1928" y="202" font-size="9.5" text-anchor="middle" fill="#9a6700" stroke="#fff" stroke-width="3" paint-order="stroke">ASSUMES</text>
 <text x="1831" y="277" font-size="9.5" text-anchor="middle" fill="#9a6700" stroke="#fff" stroke-width="3" paint-order="stroke">GIVEN</text>
 <text x="1528" y="388" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ON_ASSET</text>
+<text x="1528" y="548" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ON_ASSET</text>
 <text x="1625" y="208" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">RAISED_BY</text>
 <text x="1877" y="377" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">DIAGNOSED_AS</text>
 <text x="1945" y="408" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">INSTANCE_OF</text>
+<text x="1088" y="225" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">INSTANCE_OF</text>
+<text x="1945" y="563" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">INSTANCE_OF</text>
+<text x="1568" y="579" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">INSTANCE_OF</text>
 <text x="1945" y="351" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">CHOSE</text>
 <text x="1528" y="348" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">DECIDED_BY</text>
 <text x="2268" y="414" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">FOR_INCIDENT</text>
+<text x="2278" y="534" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">HANDLES</text>
+<text x="2268" y="734" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">IN_INSTANCE</text>
+<text x="1528" y="508" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ASSIGNED_TO</text>
+<text x="1699" y="676" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ASSIGNED_TO</text>
+<text x="1699" y="596" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ROLE_BOUND</text>
+<text x="1444" y="453" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">ROLE_BOUND</text>
+<text x="2272" y="774" font-size="9.5" text-anchor="middle" fill="#7c2d12" stroke="#fff" stroke-width="3" paint-order="stroke">USES_VERSION</text>
+<text x="660" y="239" font-size="9.5" text-anchor="middle" fill="#1d4ed8" stroke="#fff" stroke-width="3" paint-order="stroke">MAPS_TO</text>
 <g><rect x="30" y="136" width="196" height="46" rx="7" fill="#fff" stroke="#6d28d9" stroke-width="1.8"/><rect x="30" y="136" width="6" height="46" rx="3" fill="#6d28d9"/><text x="44" y="155" font-size="14" font-weight="700" fill="#111827">Perspective</text><text x="44" y="173" font-size="12" fill="#374151">BSC 관점</text><title>Perspective (BSC 관점) — BSC Perspective</title></g>
 <g><rect x="30" y="216" width="196" height="46" rx="7" fill="#fff" stroke="#6d28d9" stroke-width="1.8"/><rect x="30" y="216" width="6" height="46" rx="3" fill="#6d28d9"/><text x="44" y="235" font-size="14" font-weight="700" fill="#111827">Objective</text><text x="44" y="253" font-size="12" fill="#374151">전략 목표 (조직 목표)</text><title>Objective (전략 목표 (조직 목표)) — BSC Strategic Objective</title></g>
 <g><rect x="30" y="296" width="196" height="46" rx="7" fill="#fff" stroke="#6d28d9" stroke-width="1.8"/><rect x="30" y="296" width="6" height="46" rx="3" fill="#6d28d9"/><text x="44" y="315" font-size="14" font-weight="700" fill="#111827">Measure</text><text x="44" y="333" font-size="12" fill="#374151">성과 지표</text><title>Measure (성과 지표) — BSC Measure (성과 지표)</title></g>
@@ -220,4 +256,9 @@
 <g><rect x="2030" y="216" width="196" height="46" rx="7" fill="#fff" stroke="#9a6700" stroke-width="1.8"/><rect x="2030" y="216" width="6" height="46" rx="3" fill="#9a6700"/><text x="2044" y="235" font-size="14" font-weight="700" fill="#111827">Forecast</text><text x="2044" y="253" font-size="12" fill="#374151">예측</text><title>Forecast (예측) — 예측</title></g>
 <g><rect x="2030" y="348" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="348" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="367" font-size="14" font-weight="700" fill="#111827">Incident</text><text x="2044" y="385" font-size="12" fill="#374151">사건</text><title>Incident (사건) — 사건 기록</title></g>
 <g><rect x="2030" y="428" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="428" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="447" font-size="14" font-weight="700" fill="#111827">DecisionCase</text><text x="2044" y="465" font-size="12" fill="#374151">판단 사례</text><title>DecisionCase (판단 사례) — DMN 판단의 실행 인스턴스</title></g>
+<g><rect x="2030" y="508" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="508" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="527" font-size="14" font-weight="700" fill="#111827">IngestionControl</text><text x="2044" y="545" font-size="12" fill="#374151">적재 트랜잭션 제어</text><title>IngestionControl (적재 트랜잭션 제어) — HYD ingestion provenance (implementation record)</title></g>
+<g><rect x="2030" y="588" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="588" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="607" font-size="14" font-weight="700" fill="#111827">IngestionBatch</text><text x="2044" y="625" font-size="12" fill="#374151">적재 배치</text><title>IngestionBatch (적재 배치) — HYD ingestion provenance (implementation record)</title></g>
+<g><rect x="2030" y="668" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="668" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="687" font-size="14" font-weight="700" fill="#111827">ProcessInstance</text><text x="2044" y="705" font-size="12" fill="#374151">프로세스 실행</text><title>ProcessInstance (프로세스 실행) — ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)</title></g>
+<g><rect x="2030" y="748" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="748" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="767" font-size="14" font-weight="700" fill="#111827">WorkItem</text><text x="2044" y="785" font-size="12" fill="#374151">실행 작업</text><title>WorkItem (실행 작업) — ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)</title></g>
+<g><rect x="2030" y="828" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="828" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="847" font-size="14" font-weight="700" fill="#111827">ProcessVersion</text><text x="2044" y="865" font-size="12" fill="#374151">프로세스 정의 버전</text><title>ProcessVersion (프로세스 정의 버전) — ProcessGPT version provenance; HYD immutable element snapshot</title></g>
 </svg>
