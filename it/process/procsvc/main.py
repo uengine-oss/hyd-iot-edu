@@ -369,6 +369,29 @@ app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observa
                     ('consumer_dead','source_receive_error','source_handler_error','source_policy_error'))})
 instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
 
+from . import memdebug
+if memdebug.enabled():                      # A131: GET /debug/memory only with PROCESS_MEMDEBUG=1 (OOM diagnosis, dev only)
+    def _snapshot_bytes():
+        if store is None:
+            return None
+        with store._lock:
+            row = store.db.execute("select length(body) from snapshot where id=1").fetchone()
+        return row[0] if row else 0
+
+    memdebug.register(app, {
+        "incidents": lambda: len(incidents), "book": lambda: len(book), "audit_log": lambda: len(audit_log),
+        "plant_status": lambda: len(plant_status), "state_keys": lambda: sorted(state),
+        "metrics_series": lambda: {n: len(s) for n, s in list(reg._counters.items()) + list(reg._gauges.items())},
+        "sse_stream_clients": lambda: instance_mode.stream_clients,
+        "snapshot_json_bytes": _snapshot_bytes,
+        "case_projection_pending": lambda: store.case_projection_status(limit=1)["pending"] if store else None,
+        "runtime": lambda: (lambda rt: None if rt is None else {
+            "repo": type(rt.repo).__name__, "repo_local": sorted(vars(rt.repo._local)) if hasattr(rt.repo, "_local") else None,
+            "runtime_local": sorted(vars(rt._local)), "memory_repo_sizes": {k: len(v) for k, v in vars(rt.repo).items()
+                                                                           if isinstance(v, (dict, list))} if type(rt.repo).__name__ == "MemoryRepo" else None,
+        })(instance_mode.current()),
+    }, get_loop=lambda: loop)
+
 
 def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> dict:
     rt = instance_mode.current()

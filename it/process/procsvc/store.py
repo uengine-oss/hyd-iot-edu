@@ -54,10 +54,18 @@ class Store(CaseProjectionStore):
             # may add incidents on other executor threads while asdict walks an
             # existing incident, so freeze collection membership first.
             members = list(incidents.values())
-            body = json.dumps({"incidents": [asdict(i) for i in members],
-                               "book": dict(book), "audit": list(audit)}, ensure_ascii=False)
+            data = {"incidents": [asdict(i) for i in members], "book": dict(book), "audit": list(audit)}
+            body = json.dumps(data, ensure_ascii=False)
             self.db.execute("INSERT OR REPLACE INTO snapshot VALUES (1, ?)", (body,))
-            self._enqueue_case_snapshot(json.loads(body))
+            # A131: the outbox digests are computed from json.dumps(sort_keys=True) of each incident/decision, which gives
+            # the same string for `data` as for json.loads(body) (tuples→lists, non-str keys→str both ways). Re-parsing
+            # the 14 MB snapshot here built ~600 k throw-away objects on every persist() — the largest allocation burst
+            # in the service and, through glibc arena retention, a driver of the RSS growth that ended in the OOM kill.
+            # The only case where the two differ is a dict mixing str and non-str keys (sort_keys raises); fall back then.
+            try:
+                self._enqueue_case_snapshot(data)
+            except TypeError:
+                self._enqueue_case_snapshot(json.loads(body))
 
     def restore(self):
         with self._lock:

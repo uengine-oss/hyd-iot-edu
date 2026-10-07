@@ -372,6 +372,8 @@ services:
       AGENT_BRIDGE: ${AGENT_BRIDGE:-legacy}
       # 포털 "에이전트 현황": 워커의 /health · /agents. 컨테이너 워커면 agent-worker:8097, 강사 PC 워커(run_worker_host.sh)면 host.docker.internal:8097
       WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}
+      # A131: 1 mounts GET /debug/memory (tracemalloc · RSS · container sizes) for OOM diagnosis; off in the product default
+      PROCESS_MEMDEBUG: ${PROCESS_MEMDEBUG:-0}
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redpanda: { condition: service_healthy }

@@ -69,6 +69,7 @@ class ProcessContext:
 
 _runtime: instances.InstanceRuntime | None = None
 _ctx: ProcessContext | None = None
+stream_clients = 0            # A131: open /api/events/stream generators (memory diagnostics; must return to 0 after disconnects)
 
 
 def current() -> instances.InstanceRuntime | None:
@@ -79,6 +80,16 @@ def current() -> instances.InstanceRuntime | None:
 async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0):
     """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
     timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects."""
+    global stream_clients
+    stream_clients += 1
+    try:
+        async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s):
+            yield frame
+    finally:
+        stream_clients -= 1
+
+
+async def _event_frames(repo, since, is_disconnected, interval, keepalive_s):
     seen: set[str] = set()
     cursor = since
     if cursor is None:
