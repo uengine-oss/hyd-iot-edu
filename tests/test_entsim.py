@@ -1,5 +1,6 @@
 """enterprise-sim: mock ERP/MES/CMMS/QMS/SCM/EMS. The ontology's formulas may only use facts these systems really serve."""
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -9,10 +10,20 @@ from entsim import data, state
 INSTANCES = Path(__file__).resolve().parents[1] / "it" / "neo4j" / "v2" / "instances.cypher"
 # ontology v2: InputData -SOURCED_FROM-> sys:mes is fetched by the agent from enterprise-sim (variable -> MES fact key)
 MES_FACTS = {"order_due_h": "due_in_h"}
+T0 = datetime(2026, 10, 7, 0, 0, tzinfo=timezone.utc)
+
+
+@pytest.fixture
+def scenario_clock(monkeypatch):
+    """A142: since A086 the MES hours are computed from data._SCENARIO_START, which is anchored when the module is imported
+    (= pytest collection). In a full run, minutes of other tests pass before this module, so due_in_h reads 5.97, not 6.
+    Pin both the anchor and the clock so the seed values are read exactly as the scenario defines them."""
+    monkeypatch.setattr(data, "_SCENARIO_START", T0)
+    monkeypatch.setattr(data, "_now", lambda: T0)
 
 
 @pytest.mark.parametrize("asset", ["HYD-01", "HYD-02", "HYD-03"])
-def test_every_mes_input_of_the_ontology_is_served(asset):
+def test_every_mes_input_of_the_ontology_is_served(asset, scenario_clock):
     rows = re.findall(r"\['in:[a-z0-9-]+','[^']*','[a-z]+','([a-z0-9_]+)','sys:mes'", INSTANCES.read_text(encoding="utf-8"))
     assert rows, "no InputData sourced from sys:mes?"
     facts = data.mes_orders(asset)["facts"]
@@ -20,7 +31,7 @@ def test_every_mes_input_of_the_ontology_is_served(asset):
         assert isinstance(facts.get(MES_FACTS[var]), (int, float)), var
 
 
-def test_facts_are_prefixed_by_their_system():
+def test_facts_are_prefixed_by_their_system(scenario_clock):
     f = data.prefixed(data.mes_orders("HYD-01"))
     assert f["mes_due_in_h"] == 6 and "mes_records" not in f
 
