@@ -101,11 +101,14 @@
 - 알림 채널(Mattermost 등 vs 포털 내 할일 목록만): 첫 묶음은 포털 할일 목록(todolist TODO)으로 하고, 외부 알림은 후속.
 - Execution 레이어를 그래프에 쓰는 시점·방식(이벤트마다 MERGE vs 종결 시 일괄): process 서비스가 기존 record_incident처럼 종결·승인 시점에 MERGE하는 것으로 시작, 모니터링 화면 요구가 생기면 늘린다.
 - ~~펌프·팬 결함 시뮬레이터(plant-sim에 없음)~~ → 10-04 C4 로 구현(§9 C4). 남은 결정: 실제 완주 뒤 시나리오별 실습 시수.
+- (10-07) 안전선은 "수업에서 보여 줄 장면이 재현되고 학생 경로가 막히지 않는다"이며 100점은 목표가 아니다. 남은 것은 UI/UX 정리와 워커 묶음 회귀 1회뿐이고, 변형 확대·작은 후속 후보는 선택이다. UI/UX의 "됐다"는 사용자가 캡처를 보고 정한다.
 
 ## 7. 외부 대기 — 우리가 못 정하는 것
 
-- 컨테이너 안 Claude Code가 쓸 `ANTHROPIC_API_KEY`(통합 시험용). 사용자에게 요청 예정. 교육 배포 시 학생 키 정책도 사용자 결정.
-- Docker 데몬 기동(사용자 PC). 켜지면 B11을 바로 진행한다(supabase CLI는 설치 끝).
+- (10-07 저녁) 사용자 재부팅 뒤 **호스트 워커 2개 재기동**: `bash scripts/run_worker_host.sh`, 두 번째는 `CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098 bash scripts/run_worker_host.sh`. 컨테이너는 Docker Desktop → `cd it/supabase && supabase start` → `docker compose up -d` → `docker compose --profile cliagents up -d enterprise-mcp dmn-mcp`. 호스트 psycopg가 막히면 `. scripts/host_libpq.sh`(결정 96; Smart App Control 끄기는 사용자 결정).
+- **잔재 인스턴스 9건 삭제 승인**(A108 목록). 기능엔 영향 없고 화면에 "진행 중"으로 남을 뿐이라, 승인 전엔 두는 것이 규칙.
+- **UI/UX 판정**은 사용자 눈: 화면별 제거·정렬 목록과 캡처를 먼저 보여 드리고 "됐다"를 받는다(UIUX.md 인수 조건 6).
+- 기능 보고서 `docs/보고서/2026-10-07_HYD_기능보고.html` 검토 후 고칠 곳 지시.
 
 ## 8. 자산 지도 — 무엇이 어디 있고 언제 여는가
 
@@ -1057,10 +1060,11 @@ A033 추가: 처리owner/lease/token·설비별단일claim·지연CLEAR/ACK·실
 ## 10. 새 세션용 복붙 대사
 
 ```
-(2026-10-07 저녁 이후) 첫 일은 docs/handoff/UIUX.md 계약대로 UI/UX 재설계입니다(process-gpt 최신 HEAD + 외부 디자인 조사 → 화면별 제거·정렬 목록을 사용자에게 먼저 → 재구성). 기능 보고서는 docs/보고서/에 있고 재부팅 뒤 기동 순서는 REPORT_BRIEF.md §0.
-D:\work\study\hyd-iot-edu 작업을 전체 Goal로 이어가세요.
-공유 CLAUDE.md와 로컬 AGENTS.md를 확인하고 docs/handoff/GOAL.md의 현재 계약 → HANDOFF.md §0·§9 G의 A071 후속 → QA.md 현재 답 → DECISIONS.md 최신 결정 → AUDIT.md·PROGRESS.md를 읽으세요.
-목표는 회의 원문과 실제 uengine-oss 레포를 근거로 정의·온톨로지·규칙·현재 데이터가 바뀌어도 지원 계약에 맞게 동작하는 HYD 시스템을 구현·검증하는 것입니다. F 블록이나 고정 해피패스만 끝내는 목표가 아닙니다. 필요한 재설계를 하되 임의 간소화하지 말고, 교재·슬라이드·강의 리허설은 하지 마세요.
-A066의47스냅샷/채택표와 A067~A070 원천/순위/BSC 검증을 유지하고 A071 별도 분기 조건의 새 검토·생산자 대기·타이머 도달을 연결했습니다(전체982/실제24/동일배포쿨러42, 새Codex 아님). 실패2종과 복구·배포·프로세스 상태는 §9A071을 확인하세요. 다음은 전체미결표 기준 R10/R11 실제효과 보상 계약을 C03 compensation_handler.py와 HYD rework_effects/승인·명령·기업영수증으로 대조하고, R01/R02/R06 원천→의미/지식→판단 변경수용을 이어가는 일입니다. 엔진 밖 전체 요구와47레포 채택을 빠뜨리지 마세요. 시작gateway/과거도달 미확인·실제추출·새Codex/UI 미결도 유지합니다. 검사기는 실제 API/시간계약부터 확인하고 관련검사 뒤 안정된 단계에서 전체검사를 수행하세요. 정책차단을 우회하거나 이미 통과한 동일 검사를 이유 없이 반복하지 마세요.
-한국어로 답하고 시스템 구현·실행에 집중하며 단계별 최소 근거만 §9에 갱신하세요. 컴퓨터 리소스 기동·중지·필요한 삭제는 위임됐으나 WIP/원본은 보존합니다. 유료 결제·개인 Codex 기존 설정 변경은 묻습니다. 2026-10-05 보고 요청에서 이번 누적 작업의 origin/main push는 명시 승인됐으므로 재승인을 묻지 않습니다. A033의 실행 정책 거절은 다른 래퍼로 우회하지 말고 새Codex 검증과 레거시 검증을 구분하세요. 워커 종료는 PowerShell로 확인하세요.
+D:\work\study\hyd-iot-edu 작업을 이어가세요. 이 시스템은 수업용(강의·시연·실라버스 재료)이며, 100점이 목표가 아닙니다. 안전선은 "수업에서 보여 줄 장면이 재현되고 학생이 따라 하는 경로가 막히지 않는다"입니다.
+먼저 docs/handoff/HANDOFF.md 맨 위 재개 포인터 → §7 외부 대기 → §9 A102~A111 → docs/handoff/UIUX.md → DECISIONS.md 96~99 → PROGRESS.md 순서로 읽으세요. 기능 쪽은 회의 요구 R01~R14 핵심 경로가 전부 실제로 돌고 핵심 회귀 12개가 전부 통과했으므로(A108), 새 기능을 만들지 마세요.
+첫 일은 UI/UX 정리입니다(UIUX.md 계약). 순서: (1) process-gpt-vue3 최신 HEAD를 clone해 레이아웃·카드·칩·폼 규칙을 읽고, 외부 서비스 3곳 이상의 운영 대시보드·승인 화면·폼 디자인을 웹에서 조사해 출처와 함께 verification/<날짜>/uiux-refs.md에 적습니다. (2) 현재 포털 10탭 캡처(.evidence/reaudit/a109-report-ui/)를 보고 화면마다 "빼는 것(내부 용어·설명 문단·실습 안내) / 남기는 것 / 카드로 묶는 것" 목록을 만들어 사용자에게 먼저 보여 줍니다. (3) 승인되면 tokens.css·styles.css·ui.js의 공통 카드·폼부터 고치고, 조치 판단 규칙 → 이상 확인·조치 → 폼 → 프로세스 인스턴스 순으로 재구성합니다. 기능·API·엔진은 건드리지 않고 화면 문구와 배치만 바꿉니다. 화면마다 1440·1024 캡처를 찍어 보여 주고 사용자가 "됐다"고 해야 완료입니다. 자기 취향으로 정하지 말고 모든 규칙에 출처를 붙이세요.
+둘째 일은 사용자가 지시할 때 워커 묶음 회귀 1회: 호스트 워커 2개를 띄운 뒤 `.venv314/Scripts/python scripts/run_regression.py --group worker --out .evidence/reaudit/reg-<날짜>-worker`(약 1시간, 회귀 중 compose build/up 금지).
+그 외는 선택입니다: 잔재 인스턴스 9건 삭제(사용자 승인 뒤 A101 방식), 작은 후속 후보 4건(T04 실행 전 MCP 점검·T01 인용 위치 복구·D02 kpiRole·거래 before/after 포털 노출). 질문·변경 변형을 늘려 점수를 올리는 일은 하지 않습니다.
+환경: 재부팅 뒤 호스트 워커는 `bash scripts/run_worker_host.sh`(둘째는 CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098)로 다시 띄우고, 호스트 psycopg가 막히면 `. scripts/host_libpq.sh`를 먼저 source 합니다. 컨테이너 기동 순서는 §7.
+한국어로 답하고, 단계마다 §9에 최소 근거를 갱신하며, 커밋·push는 안전하면 해도 됩니다. 삭제·결제·외부 전송은 묻습니다. 땜빵 우회 대신 멈추고 보고하세요.
 ```
