@@ -9,7 +9,13 @@ from __future__ import annotations
 import re
 
 HEADING = re.compile(r'^(#{1,3}) ', re.M)
-DEFAULT_MAX_CHARS = 40_000
+# A119 (r14 B1): the proposal now goes to a workspace file, so the output-token ceiling that set 40,000 (A093) is gone.
+# What still bounds one task is its *input*: the segment text sits in the agent's context twice (read as input, then
+# written back as cited JSON of about the same size) next to the instruction and schema brief, and one run must finish
+# inside CLIAGENTS_RUN_TIMEOUT_SECONDS (1,800 s). Measured ceiling: one task of 82,795 chars took 1,180 s (A092,
+# a092-ingest-large-1) — 80,000 keeps ~35 % time headroom under that and, at the pessimistic 1 token/char of CJK text,
+# 2 × 80 K + ~10 K brief stays under a 200 K-token context. EHU40 (126,168 chars) → 2 segments instead of 4.
+DEFAULT_MAX_CHARS = 80_000
 MIN_SEGMENT_CHARS = 2_000
 
 

@@ -10,7 +10,7 @@ from . import engine, kgadmin, manual_segments, manual_locate
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '1.7'          # 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
+VERSION = '1.8'          # 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
 
 INSTRUCTION = '''보관된 manual_source의 모든 pages를 읽고 기존 ManualSection → Skill → Step 스키마로 추출 제안을 작성하세요.
@@ -39,7 +39,8 @@ SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 
 입력에 segment가 있으면 이 작업은 긴 문서의 한 구간(index/total)만 담당합니다. manual_source.pages에는 담당 구간의 원문만 들어 있고
 좌표는 그 text 기준입니다(서버가 전체 문서 좌표로 되돌립니다). 구간 밖 내용을 추측하거나 다른 구간의 절·SOP를 만들지 마세요.
 구간 경계에서 잘린 절차는 보이는 범위까지만 적고 warnings에 잘렸다고 쓰세요. review_feedback의 항목이 이 구간에 없으면 무시하세요(다른 구간이 처리합니다).
-최종 응답은 {"proposal": 위 객체} 하나입니다.'''
+최종 결과 {"proposal": 위 객체}는 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰세요(파이썬 스크립트에서 json.dump로 쓰는 방식을 권장, 폴더가 없으면 만드세요).
+마지막 메시지에는 결과 JSON을 넣지 말고 "결과 파일 작성 완료: 절 n, 절차 m" 한 줄만 적으세요. 파일이 있으면 서버는 파일을 결과로 읽습니다.'''
 
 
 def definition():

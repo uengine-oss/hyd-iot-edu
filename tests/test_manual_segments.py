@@ -185,3 +185,14 @@ def test_large_document_runs_one_task_per_segment_and_reports_one_merged_result(
     runtime.repo.update_instance(wrong)
     with pytest.raises(ValueError, match='보관 원문이 다릅니다'):
         extraction.result(runtime, source, lead['proc_inst_id'], None)
+
+
+def test_default_segment_size_is_input_bound_now_that_the_result_goes_to_a_file():
+    """A119 (r14 B1): 80,000 chars — under the measured single-task ceiling (82,795 chars in 1,180 s, A092) and within a
+    200 K-token context at 1 token/char with the result written back. An EHU40-sized PDF (80 pages, ~126 K chars) → 2 tasks."""
+    assert ms.DEFAULT_MAX_CHARS == 80_000
+    pages = [{'page': i, 'text': f'Chapter {i}. TOPIC {i}\n' + f'Line {i} of the manual body text, with a value of {i * 3} bar.\n' * 26} for i in range(1, 81)]
+    src = {'source_id': 'manual:doc:pdf', 'document_id': 'doc', 'filename': 'm.pdf', 'status': 'READY', 'pages': pages}
+    total = sum(len(p['text']) for p in pages)
+    assert 120_000 <= total <= 135_000
+    assert len(ms.segments(src)) == 2 and len(ms.segments(src, max_chars=40_000)) == 4

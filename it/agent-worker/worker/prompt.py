@@ -62,7 +62,8 @@ def format_correction(reason: str, form_fields: Any) -> str:
     the exact defect, no new queries — the product's validate → correct → recheck loop (bpmn-extractor process_validator)."""
     return (f"방금 제출한 결과가 출력 형식 검사에서 거절됐습니다: {reason}\n"
             "조회나 분석을 다시 하지 말고, 같은 내용을 아래 형식에 맞춰 다시 제출하세요. 배열 필드는 JSON 배열 그대로(문자열로 감싸지 않음), "
-            "숫자는 숫자로 쓰세요.\n\n" + output_contract(form_fields))
+            "숫자는 숫자로 쓰세요. 결과를 `output/result.json` 파일로 냈다면 그 파일을 고쳐 다시 쓰고 마지막 메시지에는 확인만 적으세요.\n\n"
+            + output_contract(form_fields))
 
 
 def output_contract(form_fields: Any) -> str:
@@ -74,7 +75,11 @@ def output_contract(form_fields: Any) -> str:
     lines = ["## 결과 제출 형식", "근거 부족으로 완료할 수 없으면 완료 폼 대신 보류 객체 하나를 제출하세요: "
              '{"__deferred__":{"status":"UNKNOWN","reason":"실제 보류 이유","evidence":{}}}. '
              "조회 실패/결측은 UNKNOWN, 조회한 모든 근거가 불일치하면 UNSUPPORTED입니다. 실제 근거를 evidence에 보존합니다.",
-             "작업을 마치면 **마지막 메시지에 아래 JSON 객체 하나만** 출력하세요. 설명 문장이나 코드펜스 밖 텍스트를 함께 쓰지 마세요.",
+             "작업을 마치면 아래 JSON 객체 하나를 다음 두 방법 중 하나로 제출하세요. "
+             "(a) 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰고(스크립트로 써도 됨), 마지막 메시지에는 "
+             "파일을 썼다는 짧은 확인 한 줄만 적습니다(결과 JSON을 메시지에 되풀이하지 않음). 결과가 길면 반드시 이 방법을 씁니다. "
+             "(b) 파일을 쓰지 않았다면 **마지막 메시지에 그 JSON 객체 하나만** 출력합니다. 설명 문장이나 코드펜스 밖 텍스트를 함께 쓰지 마세요. "
+             "파일이 있으면 파일이 결과이고 메시지는 읽지 않습니다.",
              "", f"필드:\n{described}"]
     if any(f.get("choices") for f in fields):
         lines.append("선택지가 있는 필드는 **허용값 중 하나를 그대로** 쓰세요. 뜻이 같아 보이는 다른 표현('예', 'Y', 'true' 등)으로 바꾸지 마세요.")

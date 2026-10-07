@@ -289,3 +289,31 @@ def test_an_ambiguous_short_quote_goes_back_to_the_agent_as_a_correction(rt,docu
     runtime.poll_once()
     row=runtime.repo.get_workitem(wi['id'])
     assert row['draft_status']=='FB_REQUESTED' and '긴 인용' in row['feedback']['text']
+
+
+def test_extraction_proposal_written_to_the_workspace_file_is_the_result_and_source_id_is_still_checked(rt,document,tmp_path):
+    """A119 (r14 B1, studio batch_ingest(path)): the agent writes {"proposal": …} to output/result.json and says one line;
+    the server contract (source_id, anchors) applies to the file's content exactly as to a message."""
+    from cliagents import ExecEvent, ExecEventKind
+    from pathlib import Path
+    runtime,_=rt;_,source,proposal=document
+    inst=extraction.start(runtime,source,str(uuid4()))
+    rounds=iter([dict(proposal,source_id='manual:other:0000'),proposal])
+    reqs=[]
+    def fn(provider,request,env):
+        reqs.append(request)
+        yield ExecEvent(kind=ExecEventKind.RUN_START,text='claude',session_id='sess-F')
+        out=Path(request.workdir)/'output'/'result.json';out.parent.mkdir(exist_ok=True)
+        out.write_text(json.dumps({'proposal':next(rounds)},ensure_ascii=False),encoding='utf-8')
+        yield ExecEvent(kind=ExecEventKind.RESULT,text='결과 파일 작성 완료: 절 1, 절차 1',session_id='sess-F')
+    runner=Runner(_settings(tmp_path/'worker'),runtime.repo,exec_fn=fn,schema_prompt='S',resolve_provider=lambda _:object())
+    wi=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert runner.poll_once()==1
+    assert 'output/result.json' in _delivered_prompt(reqs[0],tmp_path/'worker'/'hyd'/wi['id'])
+    assert runtime.poll_once()==1                                   # engine: wrong source_id in the file → correction, not DONE
+    row=runtime.repo.get_workitem(wi['id'])
+    assert row['status']=='IN_PROGRESS' and row['draft_status']=='FB_REQUESTED' and '원문 판본' in row['feedback']['text']
+    assert runner.poll_once()==1 and runtime.poll_once()==1
+    done=extraction.result(runtime,source,inst['proc_inst_id'],None)
+    assert done['status']=='DONE' and done['preview']['procedures'][0]['id']=='SOP-EXTRACT-1' and done['corrections']['attempts']==1
+    assert all(e['data'].get('result_source')=='file' for e in runtime.repo.list_events(todo_id=wi['id']) if e['event_type']=='task_completed')

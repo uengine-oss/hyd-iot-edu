@@ -17,6 +17,12 @@ from cliagents import ArtifactBundle, DirectorySink, registry
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
+#: A119 (r14 B1, ontology-studio `/workspace/output/_parsed_*.json` → `batch_ingest(path)`): the agent writes its result
+#: into this file inside the run workspace; the worker reads it as the result when it exists, and falls back to the last
+#: message otherwise. A fixed relative path — nothing outside the workspace can be named. (`outputs/result.json` next to it
+#: is what the worker stored after the run; keep the two apart.)
+RESULT_FILE = "output/result.json"
+
 CONSTITUTION = """# HYD 설비 이상 조치 — ProcessGPT 업무 에이전트 작업 규칙
 
 당신은 ProcessGPT 업무 프로세스 안에서 실행되는 에이전트입니다. 프로세스 인스턴스의 한 작업(todolist 한 줄)만 맡습니다.
@@ -27,7 +33,8 @@ CONSTITUTION = """# HYD 설비 이상 조치 — ProcessGPT 업무 에이전트 
   규칙 판정은 DMN 도구(hyd-dmn MCP)의 결정론적 결과를 씁니다. 규칙을 임의로 해석해 바꾸지 않습니다.
 - 모든 판단에 온톨로지 노드 id(cause:…, fm:…, skill:…, rule:…, ms:…)를 인용합니다.
 - 확실하지 않은 값을 지어내지 말고, 모르면 모른다고 결과에 적으세요. 조회 실패와 값 없음을 구분합니다.
-- 결과는 지시된 제출 형식(JSON 객체)으로 마지막 메시지에 냅니다.
+- 결과는 지시된 제출 형식(JSON 객체)으로 작업 디렉터리의 `output/result.json` 파일에 쓰거나 마지막 메시지에 냅니다.
+  파일에 썼으면 마지막 메시지는 짧은 확인 한 줄만 쓰고 결과 JSON을 되풀이하지 않습니다. 긴 결과(절·단계가 많은 추출 등)는 반드시 파일로 냅니다.
 - 계산 스크립트가 필요하면 작업 디렉터리 안에 파일로 쓰고 `python <파일>` 한 명령으로 실행하세요. `cd`·`;`·환경변수 설정을 섞은 명령은 승인되지 않습니다.
 - 근거가 없어 완료할 수 없으면 값을 꾸며 폼을 채우지 마세요. 보류만 담은 JSON
   {"__deferred__":{"status":"UNKNOWN","reason":"보류 이유","evidence":{}}}를 제출하세요.
@@ -83,6 +90,17 @@ class Workspace:
 
     def files(self) -> list[Path]:
         return sorted(p for p in self.path.rglob("*") if p.is_file()) if self.exists else []
+
+    @property
+    def result_file(self) -> Path:
+        return self.path / RESULT_FILE
+
+    def clear_result_file(self) -> None:
+        """A119: a retained workspace may hold the result of an earlier attempt; a new run must not inherit it."""
+        try:
+            self.result_file.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def locate(root: Path, run_id: str, *, tenant_id: str = "") -> Workspace:

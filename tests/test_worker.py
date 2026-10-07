@@ -619,3 +619,63 @@ def test_portal_question_card_reads_sdk_question_field():
     www = ui.parent
     assert "humanQuestionText(d)" in (www / "instances.js").read_text(encoding="utf-8")
     assert "humanQuestionText(d)" in (www / "liveStream.js").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------- A119 (r14 B1): result file instead of the last message
+def test_outcome_prefers_the_workspace_result_file_and_reports_its_defects(tmp_path):
+    fields = FORM_DIAGNOSE["fields_json"]
+    f = tmp_path / "output" / "result.json"; f.parent.mkdir()
+    f.write_text(json.dumps({"cause": "cause:file", "failure_mode": "fm:y", "guide_card": {"a": 1}}), encoding="utf-8")
+    out = outcome.interpret("결과 파일 작성 완료", fields, result_file=f)
+    assert out.contract_met and out.source == "file" and out.outputs["cause"] == "cause:file" and out.payload["text"] == "결과 파일 작성 완료"
+    # the file wins over a JSON message
+    assert outcome.interpret('{"cause": "msg", "failure_mode": "f", "guide_card": {"k": 1}}', fields, result_file=f).outputs["cause"] == "cause:file"
+    f.write_text('{"cause": "c", "failure_mode": "f", "guide_card": {"k": 1}', encoding="utf-8")                # unclosed (A073 GPU failure mode)
+    broken = outcome.interpret('{"cause": "msg", "failure_mode": "f", "guide_card": {"k": 1}}', fields, result_file=f)
+    assert not broken.contract_met and broken.source == "file" and "올바른 JSON이 아닙니다" in broken.mismatch_reason and "output/result.json" in broken.mismatch_reason
+    f.write_text('[1, 2]', encoding="utf-8")
+    assert "JSON 객체가 아닙니다" in outcome.interpret("", fields, result_file=f).mismatch_reason
+    f.write_text(json.dumps({"cause": "c"}), encoding="utf-8")
+    assert outcome.interpret("", fields, result_file=f).missing_fields == ["failure_mode", "guide_card"]
+    f.write_text(json.dumps({"cause": "c", "failure_mode": "f", "guide_card": {"a": 1}}), encoding="utf-8")
+    big = outcome.interpret("", fields, result_file=f, max_file_bytes=10)
+    assert not big.contract_met and "너무 큽니다" in big.mismatch_reason
+    f.unlink()
+    fallback = outcome.interpret('{"cause": "msg", "failure_mode": "f", "guide_card": {"k": 1}}', fields, result_file=f)
+    assert fallback.contract_met and fallback.source == "message" and fallback.outputs["cause"] == "msg"
+    assert outcome.interpret("자유", context.FREEFORM_FIELDS, result_file=f).contract_met
+
+
+def test_runner_reads_the_result_file_the_agent_wrote_and_clears_a_stale_one(tmp_path):
+    repo, inst = _repo()
+    row0 = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
+    stale = tmp_path / "hyd" / row0["id"] / "output" / "result.json"; stale.parent.mkdir(parents=True)
+    stale.write_text(json.dumps({"cause": "cause:stale", "failure_mode": "fm:stale", "guide_card": {"s": 1}}), encoding="utf-8")
+    def fn(provider, request, env):
+        assert not stale.exists()                                                           # cleared before the CLI starts
+        yield ExecEvent(kind=ExecEventKind.RUN_START, text="claude", session_id="sess-F")
+        out = Path(request.workdir) / "output" / "result.json"; out.parent.mkdir(exist_ok=True)
+        out.write_text(json.dumps({"cause": "cause:from-file", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": [1]}}, ensure_ascii=False), encoding="utf-8")
+        yield ExecEvent(kind=ExecEventKind.RESULT, text="결과 파일 작성 완료", session_id="sess-F")
+    r = Runner(_settings(tmp_path), repo, exec_fn=fn, schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1
+    row = repo.get_workitem(row0["id"])
+    assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "cause:from-file" and row["output"]["text"] == "결과 파일 작성 완료"
+    done = [e for e in repo.list_events(todo_id=row["id"]) if e["event_type"] == "task_completed"][0]
+    assert done["data"]["result_source"] == "file"
+
+
+def test_runner_sends_a_broken_result_file_back_for_correction(tmp_path):
+    repo, inst = _repo()
+    reqs, rounds = [], iter(['{"cause": "c", "failure_mode": "f", "guide_card": {"k": 1}', '{"cause": "fixed", "failure_mode": "f", "guide_card": {"k": 1}}'])
+    def fn(provider, request, env):
+        reqs.append(request)
+        yield ExecEvent(kind=ExecEventKind.RUN_START, text="claude", session_id="sess-C")
+        out = Path(request.workdir) / "output" / "result.json"; out.parent.mkdir(exist_ok=True)
+        out.write_text(next(rounds), encoding="utf-8")
+        yield ExecEvent(kind=ExecEventKind.RESULT, text="파일에 썼습니다", session_id="sess-C")
+    r = Runner(_settings(tmp_path), repo, exec_fn=fn, schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1
+    row = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
+    assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "fixed"
+    assert len(reqs) == 2 and reqs[1].resume_session == "sess-C" and "output/result.json" in reqs[1].prompt and "올바른 JSON이 아닙니다" in reqs[1].prompt

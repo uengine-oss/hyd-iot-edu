@@ -46,6 +46,9 @@ class Settings:
     default_permission: Permission = field(default_factory=lambda: _PERMISSION_BY_NAME.get(os.getenv("CLIAGENTS_DEFAULT_PERMISSION", ""), Permission.WORKSPACE_WRITE))
     run_timeout_s: float = float(os.getenv("CLIAGENTS_RUN_TIMEOUT_SECONDS", "1800"))
     max_format_corrections: int = int(os.getenv("MAX_FORMAT_CORRECTIONS", "2"))     # A086: same-session shape fixes before failing
+    # A119 (r14 B1): the agent may write its result to <workspace>/output/result.json instead of the last message; cap on what
+    # the worker will read back (EHU40 80-page extraction ≈ 0.3 MB; a 3× manual ≈ 0.5 MB)
+    max_result_file_bytes: int = int(os.getenv("MAX_RESULT_FILE_BYTES", str(16 * 1024 * 1024)))
     # one directory per run under here (must be a persistent volume: a paused run resumes into it)
     workspace_root: Path = Path(os.getenv("CLIAGENTS_WORKSPACE_ROOT", os.getenv("WORKSPACE_ROOT", "/workspace")))
     workspace_retention_hours: int = int(os.getenv("CLIAGENTS_WORKSPACE_RETENTION_HOURS", "72"))

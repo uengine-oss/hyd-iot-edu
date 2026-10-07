@@ -107,6 +107,7 @@ class Runner:
         permission = _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission)
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
+        ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result
         workspace.provision(ws, agent_id=provider_id, schema_prompt=self.schema_prompt,
                             task={"id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "activity_id": row.get("activity_id"),
                                   "activity_name": row.get("activity_name"), "form_id": ctx.form_id, "form_fields": ctx.form_fields,
@@ -165,7 +166,9 @@ class Runner:
             return
         if paused is not None:
             self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
-        result = outcome.interpret(final_text, ctx.form_fields, versioned='forms' in (ctx.definition or {}))
+        interpret = lambda text: outcome.interpret(text, ctx.form_fields, versioned='forms' in (ctx.definition or {}),   # noqa: E731
+                                                   result_file=ws.result_file, max_file_bytes=self.s.max_result_file_bytes)
+        result = interpret(final_text)
         corrections = 0
         while not result.contract_met and session_id and corrections < self.s.max_format_corrections:
             corrections += 1
@@ -174,7 +177,7 @@ class Runner:
                               resume_session=session_id)
             final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl")
             session_id = resumed or session_id
-            result = outcome.interpret(final_text, ctx.form_fields, versioned='forms' in (ctx.definition or {}))
+            result = interpret(final_text)
         if not result.contract_met:
             raise RunFailed(f"결과가 요구된 출력 형식과 맞지 않습니다: {result.mismatch_reason}\n\n에이전트 응답:\n{result.raw_text[:1000]}")
         payload = dict(result.payload)
@@ -182,11 +185,12 @@ class Runner:
             payload["cliagents_session_id"] = session_id          # the next task of the instance, or a human's answer, resumes it
         if not self.repo.save_task_result(row["id"], payload, final=True,expected_consumer=row['consumer']):
             raise Cancelled()
-        self._event(row, job_id, "task_completed", {"output_keys": sorted(result.outputs), "text": result.raw_text[:2000], "session_id": session_id}, crew_type="result")
+        self._event(row, job_id, "task_completed", {"output_keys": sorted(result.outputs), "text": result.raw_text[:2000], "session_id": session_id,
+                                                   "result_source": result.source}, crew_type="result")
         hitl.clear(ws.path)
         (ws.path / "outputs").mkdir(exist_ok=True)
         (ws.path / "outputs" / "result.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        log.info("%s %s submitted (%s)", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text")
+        log.info("%s %s submitted (%s) from %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text", result.source)
 
     def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, crew: str, trace_path=None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
