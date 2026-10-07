@@ -1,6 +1,10 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 aiokafka==0.12.0
+# A148 (sweep 69): decode every codec a Kafka client may use — one snappy record ended the consume loop
+python-snappy==0.7.3
+lz4==4.3.3
+zstandard==0.23.0
 psycopg[binary]==3.2.3
 neo4j==5.27.0
 pydantic==2.10.4

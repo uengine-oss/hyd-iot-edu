@@ -74,6 +74,39 @@ def execution_source(repo,connection,tenant,pid):
     finally:del repo._local.connection
 
 
+#: ProcessInstance / WorkItem properties the projection copies verbatim from the source (instances.py INSTANCE_Q params);
+#: a graph-only change to one of them is drift the fence hash cannot see (the fence hashes the *payload the projector sent*,
+#: not what the graph holds now). A148 (sweep 57): inspect reports it, so a tampered or stale node is found without a repair.
+INSTANCE_DRIFT_FIELDS=(('status','status'),('end_event','end_event'),('proc_def_version','version'),('rework_generation','rework_generation'),
+                       ('proc_def_id','definition_id'))
+ITEM_DRIFT_FIELDS=(('status','status'),('draft_status','draft_status'),('activity_id','activity_id'),('generation','generation'))
+
+
+def execution_drift(source,graph):
+    """[{where,field,source,graph}] for every projected field whose graph value differs from the source row; [] when the
+    projection matches. A missing node/item counts as drift too (deleted or never projected) unless the source is deleted."""
+    out=[];inst=source.get('instance') or {}
+    nodes=[n.get('node') or {} for n in graph.get('nodes') or []]
+    if inst and not inst.get('is_deleted'):
+        if not nodes:return [dict(where='ProcessInstance',field='*',source='present',graph='missing')]
+        node=nodes[0]
+        for src,dst in INSTANCE_DRIFT_FIELDS:
+            s,g=inst.get(src),node.get(dst)
+            if src=='rework_generation':s=int(s or 0);g=int(g or 0)
+            if (s or None)!=(g or None):out.append(dict(where='ProcessInstance',field=dst,source=s,graph=g))
+        items={i.get('node',{}).get('id'):i.get('node') or {} for i in graph.get('items') or []}
+        for row in source.get('items') or []:
+            g=items.get(row['id'])
+            if g is None:out.append(dict(where='WorkItem:'+row['id'],field='*',source='present',graph='missing'));continue
+            for src,dst in ITEM_DRIFT_FIELDS:
+                s,gv=row.get(src),g.get(dst)
+                if src=='generation':s=int(s or 0);gv=int(gv or 0)
+                if (s or None)!=(gv or None):out.append(dict(where='WorkItem:'+row['id'],field=dst,source=s,graph=gv))
+    elif nodes:
+        out.append(dict(where='ProcessInstance',field='*',source='deleted',graph='present'))
+    return out
+
+
 def inspect_execution(repo,query,tenant,pid):
     if getattr(repo._local,'connection',None) is not None:raise RuntimeError('inspect projection outside business transactions')
     with repo._conn() as c:
@@ -81,7 +114,8 @@ def inspect_execution(repo,query,tenant,pid):
         source=execution_source(repo,c,tenant,pid)
         pending=c.execute('select id,revision,attempts,last_error from execution_projection_outbox where tenant_id=%s and proc_inst_id=%s and processed_at is null order by id',(tenant,pid)).fetchall()
     source=json.loads(json.dumps(source,default=str))
-    return dict(kind='Execution',tenant=tenant,id=pid,source=source,source_hash=digest(source),pending=pending,graph=graph_state(query,'Execution',pid))
+    graph=graph_state(query,'Execution',pid)
+    return dict(kind='Execution',tenant=tenant,id=pid,source=source,source_hash=digest(source),pending=pending,graph=graph,drift=execution_drift(source,graph))
 
 
 def intent(plan,by,reason,request_id):

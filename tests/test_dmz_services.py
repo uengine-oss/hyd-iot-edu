@@ -163,9 +163,16 @@ def test_sink_store_records_sets_the_gauge(monkeypatch):
 def _cmd(cmd_id="CMD-1", **over):
     from datetime import timedelta
     from hydcommon.timeutil import now, to_iso
-    base = {"cmdId": cmd_id, "asset": "HYD-01", "incident": "INC-1", "source": "HITL",
+    base = {"cmdId": cmd_id, "asset": "HYD-01", "incident": "INC-1", "source": "HITL", "approvalId": "APR-" + cmd_id,
             "actions": [{"code": "FAN_BOOST", "fan_pct": 100}], "approvedBy": "OP-17", "expiresAt": to_iso(now() + timedelta(seconds=120))}
     return dict(base, **over)
+
+
+def _approve(st, *cmds):
+    """A148 check ⑤: register process's ledger record for these commands."""
+    from hydcommon import schemas
+    for c in cmds:
+        assert gw.record_approval(st, {"actor": "process", "event": schemas.CMD_APPROVAL_LEDGER_EVENT, "detail": schemas.approval_ledger_record(c)})
 
 
 def test_gateway_audit_check_names_are_the_decision_check_values():
@@ -176,14 +183,16 @@ def test_gateway_audit_check_names_are_the_decision_check_values():
     produced.add(gw.validate({"cmdId": "X"}, st, now()).check)
     produced.add(gw.validate(_cmd(actions=[{"code": "OPEN_VALVE"}]), st, now()).check)
     produced.add(gw.validate(_cmd(expiresAt="2000-01-01T00:00:00Z"), st, now()).check)
-    assert gw.validate(_cmd("D"), st, now()).ok
-    produced.add(gw.validate(_cmd("D"), st, now()).check)
+    produced.add(gw.validate(_cmd("FORGED"), st, now()).check)          # A148: no ledger record → APPROVAL
+    d, m, r1, r2, r3 = _cmd("D"), _cmd("M"), _cmd("R1"), _cmd("R2"), _cmd("R3"); _approve(st, d, m, r1, r2, r3)
+    assert gw.validate(d, st, now()).ok
+    produced.add(gw.validate(d, st, now()).check)
     st.last_status["HYD-01"] = {"mode": "REMOTE_MANUAL"}
-    produced.add(gw.validate(_cmd("M"), st, now()).check)
+    produced.add(gw.validate(m, st, now()).check)
     st.last_status["HYD-01"] = {"mode": "REMOTE_AUTO"}
     t = now()
-    gw.validate(_cmd("R1"), st, t); gw.validate(_cmd("R2"), st, t)
-    produced.add(gw.validate(_cmd("R3"), st, t).check)
+    gw.validate(r1, st, t); gw.validate(r2, st, t)
+    produced.add(gw.validate(r3, st, t).check)
     assert produced == set(gw.CHECKS), produced ^ set(gw.CHECKS)
     # the forwarded-command audit lists exactly these names (it used to say EXPIRY and MODE+RATE, which no rejection ever carries)
     import inspect

@@ -1,19 +1,30 @@
 from datetime import timedelta
 
 from gw import validate as gw
+from hydcommon import schemas
 from hydcommon.timeutil import now, to_iso
+
+_APPROVED = []   # commands these tests treat as approved by process (A148 check ⑤ — the ledger is filled by state())
 
 
 def cmd(cmd_id="CMD-1", actions=None, expires_in=120, asset="HYD-01"):
-    return {"cmdId": cmd_id, "asset": asset, "incident": "INC-1", "source": "HITL",
-            "actions": actions or [{"code": "FAN_BOOST", "fan_pct": 100}, {"code": "REDUCE_LOAD", "load_pct": 80}],
-            "approvedBy": "OP-17", "expiresAt": to_iso(now() + timedelta(seconds=expires_in))}
+    c = {"cmdId": cmd_id, "asset": asset, "incident": "INC-1", "source": "HITL",
+         "actions": actions or [{"code": "FAN_BOOST", "fan_pct": 100}, {"code": "REDUCE_LOAD", "load_pct": 80}],
+         "approvedBy": "OP-17", "approvalId": "APR-" + cmd_id, "expiresAt": to_iso(now() + timedelta(seconds=expires_in))}
+    _APPROVED.append(c)
+    return c
 
 
 def state(mode="REMOTE_AUTO"):
     st = gw.GatewayState()
     st.last_status["HYD-01"] = {"mode": mode, "state": "RUN"}
+    _ledger(st)
     return st
+
+
+def _ledger(st):
+    for c in _APPROVED:
+        gw.record_approval(st, {"actor": "process", "event": schemas.CMD_APPROVAL_LEDGER_EVENT, "detail": schemas.approval_ledger_record(c)})
 
 
 def test_valid_cmd_passes_and_maps_writes():
@@ -41,8 +52,9 @@ def test_expired_rejected():
 
 def test_duplicate_rejected():
     st = state()
-    assert gw.validate(cmd("CMD-9"), st, now()).ok
-    d = gw.validate(cmd("CMD-9"), st, now())
+    c = cmd("CMD-9"); _ledger(st)
+    assert gw.validate(c, st, now()).ok
+    d = gw.validate(c, st, now())
     assert not d.ok and d.check == "DUPLICATE"
 
 
@@ -53,18 +65,20 @@ def test_manual_mode_rejected():
 
 def test_unknown_asset_status_rejected():
     st = gw.GatewayState()   # no status seen for the asset yet
-    d = gw.validate(cmd(), st, now())
+    c = cmd(); _ledger(st)
+    d = gw.validate(c, st, now())
     assert not d.ok and d.check == "MODE"
 
 
 def test_rate_limit_rejects_third_command_in_same_second():
     st = state()
     t = now()
-    assert gw.validate(cmd("A"), st, t).ok
-    assert gw.validate(cmd("B"), st, t).ok
-    d = gw.validate(cmd("C"), st, t)
+    a, b, c, d_ = cmd("A"), cmd("B"), cmd("C"), cmd("D"); _ledger(st)
+    assert gw.validate(a, st, t).ok
+    assert gw.validate(b, st, t).ok
+    d = gw.validate(c, st, t)
     assert not d.ok and d.check == "RATE_LIMIT"
-    assert gw.validate(cmd("D"), st, t + timedelta(seconds=1)).ok
+    assert gw.validate(d_, st, t + timedelta(seconds=1)).ok
 
 
 def test_alert_to_ot_levels():

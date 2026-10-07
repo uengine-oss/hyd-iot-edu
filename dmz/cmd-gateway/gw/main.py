@@ -1,10 +1,13 @@
 """cmd-gateway (L3, DMZ): the ONLY path from IT down to OT.
 
-  Kafka action.cmd --validate (5 checks)--> MQTT plant/{a}/cmd/auto   (retain=false)
+  Kafka action.cmd --validate (6 checks)--> MQTT plant/{a}/cmd/auto   (retain=false)
   Kafka alerts     --relay (display only)--> MQTT plant/{a}/alert     (retain=true)
-  MQTT plant/{a}/status --> remembered so check ⑤ knows the PLC mode
+  Kafka audit      --process approval ledger records (A148) remembered for check ⑤ (own consumer task, group cmd-gateway-ledger)
+  MQTT plant/{a}/status --> remembered so check ⑥ knows the PLC mode
   MQTT plant/{a}/alert  --> retained legacy display records are re-published with display_text (no new alarm event)
 Rejected commands are dropped and written to Kafka audit with the failing check (one of validate.CHECKS).
+A command whose ledger record has not arrived yet waits up to APPROVAL_GRACE_S (the record is published first, but two
+topics give no cross-topic order); after that it is rejected as APPROVAL like any forged command.
 """
 import asyncio
 import json
@@ -26,8 +29,9 @@ log = logging.getLogger("cmd-gateway")
 reg = Registry()
 c_dec = reg.counter("gateway_decisions_total", "command decisions by result/check")
 c_alerts = reg.counter("gateway_alerts_relayed_total", "alerts relayed to OT")
-state = {"mqtt": False, "kafka": False, "forwarded": 0, "rejected": 0, "alerts_relayed": 0}
+state = {"mqtt": False, "kafka": False, "forwarded": 0, "rejected": 0, "alerts_relayed": 0, "approvals_recorded": 0}
 gstate = gw.GatewayState()
+APPROVAL_GRACE_S = float(__import__("os").getenv("APPROVAL_GRACE_S", "3"))
 decisions: deque = deque(maxlen=200)
 mqtt = make_client("cmd-gateway")
 
@@ -58,14 +62,53 @@ def _on_message(client, userdata, msg):
 
 async def run():
     prod = await make_producer()
-    cons = await make_consumer([topics.K_CMD, topics.K_ALERTS], group="cmd-gateway", from_latest=True)
     state["kafka"] = True
-    log.info("consuming action.cmd and alerts")
-    async for rec in cons:
+    while True:
+        cons = await make_consumer([topics.K_CMD, topics.K_ALERTS], group="cmd-gateway", from_latest=True)
+        log.info("consuming action.cmd and alerts")
         try:
-            await handle(prod, rec)
-        except Exception as e:  # noqa: BLE001
-            log.warning("record on %s failed: %s", rec.topic, e)
+            async for rec in cons:
+                try:
+                    await handle(prod, rec)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("record on %s failed: %s", rec.topic, e)
+        except Exception as e:  # noqa: BLE001 — A148: a fetch that cannot be decoded (unsupported codec, broken batch)
+            # used to end this task for good (healthz 503 until a restart). The record is dropped (commands expire in
+            # 120 s anyway), the error is counted for /healthz, and the loop resumes behind the poison record.
+            state["consumer_errors"] = state.get("consumer_errors", 0) + 1
+            state["consumer_last_error"] = repr(e)[:200]
+            log.error("consume loop failed (%s); dropping the record and resuming", e)
+            await _skip_poison(cons)
+        finally:
+            await cons.stop()
+        await asyncio.sleep(1)
+
+
+async def _skip_poison(cons) -> None:
+    """Commit one past the position of every assigned partition so the undecodable record is left behind."""
+    try:
+        for tp in cons.assignment():
+            pos = await cons.position(tp)
+            await cons.commit({tp: pos + 1})
+    except Exception as e:  # noqa: BLE001
+        log.warning("could not step over the poison record: %s", e)
+
+
+async def run_ledger():
+    """A148: process's approval records (audit topic) feed check ⑤. Its own consumer so a command waiting for its record
+    in handle() never blocks the record it is waiting for."""
+    cons = await make_consumer([topics.K_AUDIT], group="cmd-gateway-ledger", from_latest=True)
+    log.info("consuming audit for approval ledger records")
+    async for rec in cons:
+        v = rec.value if isinstance(rec.value, dict) else {}
+        if gw.record_approval(gstate, v):
+            state["approvals_recorded"] += 1
+
+
+async def _await_ledger(cmd_id: str) -> None:
+    deadline = time.monotonic() + APPROVAL_GRACE_S
+    while cmd_id not in gstate.approvals and time.monotonic() < deadline:
+        await asyncio.sleep(0.1)
 
 
 async def handle(prod, rec):
@@ -82,6 +125,8 @@ async def handle(prod, rec):
         log.info("alert relayed -> %s %s %s", topics.mqtt_alert(key), v.get("state"), v.get("alertId"))
         return
 
+    if isinstance(v.get("cmdId"), str) and v["cmdId"] not in gstate.approvals:
+        await _await_ledger(v["cmdId"])       # the record is published first; this only covers cross-topic reordering
     d = gw.validate(v, gstate, now())
     entry = {"t": now_iso(), "cmdId": v.get("cmdId") if isinstance(v, dict) else None,
              "asset": v.get("asset") if isinstance(v, dict) else None, "incident": v.get("incident") if isinstance(v, dict) else None,
@@ -121,6 +166,7 @@ async def _startup():
     mqtt.on_message = _on_message
     mqtt.loop_start()
     asyncio.create_task(run()).add_done_callback(_watch)
+    asyncio.create_task(run_ledger()).add_done_callback(_watch)
 
 
 @app.get("/api/gateway/log")
@@ -130,4 +176,5 @@ def get_log():
 
 @app.get("/api/gateway/status")
 def get_status():
-    return {"plc_status": gstate.last_status, "seen_cmd_ids": list(gstate.seen_cmd_ids)[-10:], **state}
+    return {"plc_status": gstate.last_status, "seen_cmd_ids": list(gstate.seen_cmd_ids)[-10:],
+            "approvals_known": list(gstate.approvals)[-10:], **state}

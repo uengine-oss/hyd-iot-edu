@@ -61,13 +61,22 @@ def s03(browser):
         if btn.count():
             btn.first.click(); pg.wait_for_timeout(6000)
             facts['ws_after_connect'] = re.findall(r'(Connected|Disconnected|Connecting|connect(?:ion)? (?:failed|error)[^\n]*|연결[^\n]{0,20})', pg.locator('body').inner_text())[:6]
+            # A148: EMQX 5.8 shows a "Disconnect" button once connected (no "Connected" text), and the Topic input carries
+            # the default value "testtopic/#" with no placeholder
+            facts['ws_connected'] = pg.get_by_role('button', name=re.compile(r'^\s*Disconnect\s*$')).count() > 0
             topic = pg.locator('input[placeholder*="opic"], input[placeholder*="토픽"]')
+            if not topic.count():                                  # Vue keeps the value off the DOM attribute: find it by value
+                vis = pg.locator('input:visible')
+                for i in range(vis.count()):
+                    if vis.nth(i).input_value() == 'testtopic/#':
+                        topic = vis.nth(i); break
             if topic.count():
                 topic.first.fill('plant/hyd01/#')
                 sub = pg.get_by_role('button', name=re.compile(r'^\s*(Subscribe|구독)\s*$'))
                 if sub.count() and sub.first.is_enabled():
                     sub.first.click(); pg.wait_for_timeout(5000)
                     facts['ws_messages_text'] = len(re.findall(r'plant/hyd01/', pg.locator('body').inner_text()))
+                    facts['ws_subscribed_topics'] = re.findall(r'plant/hyd01/#', pg.locator('body').inner_text())[:2]
         else:
             facts['ws_connect_button'] = 'not found'
         facts['files'].append(shot(pg, '03', 'emqx-websocket', full_page=True))

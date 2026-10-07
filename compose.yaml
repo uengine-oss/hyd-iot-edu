@@ -35,7 +35,7 @@ services:
     image: emqx/emqx:5.8
     profiles: [ot]
     networks: [ot-net]
-    ports: ["127.0.0.1:1883:1883", "127.0.0.1:18083:18083"]
+    ports: ["127.0.0.1:1883:1883", "127.0.0.1:18083:18083", "127.0.0.1:8083:8083"]   # 8083 = MQTT over WebSocket (A148: 03회차 대시보드 WebSocket Client 구독용)
     environment:
       EMQX_DASHBOARD__DEFAULT_PASSWORD: public123   # 8자 이상 필수. 첫 로그인 때 변경을 요구하면 새 값으로 바꾸고 기억해 둘 것
     healthcheck:
@@ -98,6 +98,7 @@ services:
     environment:
       MQTT_HOST: emqx
       KAFKA_BOOTSTRAP: redpanda:9092
+      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:-hyd-cmd-approval-local}   # A148 check ⑤: must equal process's key (approval ledger HMAC)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -207,6 +208,7 @@ services:
     ports: ["127.0.0.1:8094:8094"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
+      CMD_FINGERPRINT_KEY: ${CMD_FINGERPRINT_KEY:-hyd-cmd-approval-local}   # A148: approval ledger HMAC key shared with cmd-gateway
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
     depends_on:
       redpanda: { condition: service_healthy }

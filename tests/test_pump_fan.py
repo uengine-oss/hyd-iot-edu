@@ -218,7 +218,10 @@ def test_gateway_forwards_pump_select_and_still_rejects_pressure_set():
     st = gw.GatewayState()
     st.last_status["HYD-01"] = {"mode": "REMOTE_AUTO", "state": "RUN"}
     base = {"cmdId": "CMD-P1", "asset": "HYD-01", "incident": "INC-1", "source": "HITL", "approvedBy": "PM-01",
-            "expiresAt": to_iso(now() + timedelta(seconds=120))}
+            "approvalId": "APR-P1", "expiresAt": to_iso(now() + timedelta(seconds=120))}
+    from hydcommon import schemas   # A148 check ⑤: the gateway needs process's ledger record for the command
+    for c in (base | {"actions": [{"code": "PUMP_SELECT", "pump": "B"}]}, base | {"cmdId": "CMD-P2", "actions": [{"code": "PRESSURE_SET", "pressure_delta": 10}]}):
+        gw.record_approval(st, {"actor": "process", "event": schemas.CMD_APPROVAL_LEDGER_EVENT, "detail": schemas.approval_ledger_record(c)})
     d = gw.validate(base | {"actions": [{"code": "PUMP_SELECT", "pump": "B"}]}, st, now())
     assert d.ok and d.mqtt_payload["writes"] == [{"res": "PumpSelect", "v": 1}]
     d = gw.validate(base | {"cmdId": "CMD-P2", "actions": [{"code": "PRESSURE_SET", "pressure_delta": 10}]}, st, now())

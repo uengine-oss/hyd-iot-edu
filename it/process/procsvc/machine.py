@@ -12,6 +12,7 @@ import itertools
 import secrets
 import threading
 
+from hydcommon import schemas
 from hydcommon.timeutil import now_iso, plus_seconds, to_iso
 from . import definition as d
 
@@ -58,6 +59,7 @@ class Incident:
     reason: str | None = None
     history: list[dict] = field(default_factory=list)
     cmd_id: str | None = None
+    approval_id: str | None = None      # A148: the approval ledger record id the gateway matches the command against
     expires_at: str | None = None
     approved_by: str | None = None
     actions: list[dict] = field(default_factory=list)
@@ -97,7 +99,7 @@ class Incident:
 
     def to_dict(self) -> dict:
         return {"id": self.id, "asset": self.asset, "alertId": self.alert_id, "state": self.state, "reason": self.reason,
-                "history": self.history, "cmdId": self.cmd_id, "expiresAt": self.expires_at, "approvedBy": self.approved_by,
+                "history": self.history, "cmdId": self.cmd_id, "approvalId": self.approval_id, "expiresAt": self.expires_at, "approvedBy": self.approved_by,
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,
                 "workOrderRequest": self.work_order_request,
                 "reobsExtensions": self.reobs_extensions,
@@ -163,11 +165,15 @@ def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: dateti
     # v3 form CMD-MMDD-NNNN plus a random suffix: the gateway and PLC de-duplicate on cmdId, and an in-memory
     # counter restarts with the container, so a bare sequence number would be rejected as DUPLICATE after a restart.
     inc.cmd_id = f"CMD-{now.strftime('%m%d')}-{next(_cmd_seq):04d}-{secrets.token_hex(2)}"
+    inc.approval_id = f"APR-{now.strftime('%m%d')}-{secrets.token_hex(4)}"
     inc.expires_at = to_iso(plus_seconds(now, d.CMD_EXPIRY_S))
     cmd = {"cmdId": inc.cmd_id, "asset": inc.asset, "incident": inc.id, "source": "HITL", "actions": acts,
-           "approvedBy": approved_by, "issuedAt": to_iso(now), "expiresAt": inc.expires_at}
+           "approvedBy": approved_by, "approvalId": inc.approval_id, "issuedAt": to_iso(now), "expiresAt": inc.expires_at}
     _audit(inc, fx, "operator", "GUIDE_APPROVED", {"approvedBy": approved_by, "actions": acts})
     _go(inc, "CMD_ISSUED", inc.cmd_id)
+    # A148: the approval ledger record goes out on the audit topic *before* the command — cmd-gateway forwards only a
+    # command whose cmdId has this record and whose fingerprint (HMAC over the approved fields) matches it.
+    _audit(inc, fx, "process", schemas.CMD_APPROVAL_LEDGER_EVENT, schemas.approval_ledger_record(cmd))
     fx.emit_cmd(cmd)
     _audit(inc, fx, "process", "CMD_PUBLISHED", {"cmdId": inc.cmd_id, "expiresAt": inc.expires_at})
     _go(inc, "AWAITING_ACK")

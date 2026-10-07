@@ -1,5 +1,34 @@
 """Payload contracts (v3 section 7.3) and validation helpers."""
+import hashlib
+import hmac
+import json
+import os
 from typing import Any
+
+# A148 (remaining-sweep 69): the approval ledger. Kafka and MQTT carry no authentication, so before this a client that could
+# write to `action.cmd` had a command executed by the PLC (`.evidence/a148/69/`: forged FAN_SET passed all five checks and
+# ACKed DONE). Now process records every approval on the audit topic (`CMD_APPROVAL_LEDGER_EVENT`, actor "process") with the
+# command's fingerprint, and cmd-gateway forwards a command only when that record exists for its cmdId and the fingerprint
+# recomputed from the command matches. The fingerprint is an HMAC with a key only process and cmd-gateway hold
+# (`CMD_FINGERPRINT_KEY`, compose default below — set a private value in `.env` for anything beyond the classroom).
+CMD_APPROVAL_LEDGER_EVENT = "CMD_APPROVAL_RECORDED"
+CMD_FINGERPRINT_KEY_ENV = "CMD_FINGERPRINT_KEY"
+CMD_FINGERPRINT_DEFAULT_KEY = "hyd-cmd-approval-local"
+_FINGERPRINT_FIELDS = ("cmdId", "asset", "incident", "actions", "approvedBy", "expiresAt", "approvalId")
+
+
+def cmd_fingerprint(cmd: dict, key: str | None = None) -> str:
+    """HMAC-SHA256 over the command's approved fields (canonical JSON). Any change to the actions, asset, expiry, approver
+    or approval id gives a different value, so the gateway can tell a forwarded command from the one process approved."""
+    k = key if key is not None else os.getenv(CMD_FINGERPRINT_KEY_ENV, CMD_FINGERPRINT_DEFAULT_KEY)
+    canonical = json.dumps({f: cmd.get(f) for f in _FINGERPRINT_FIELDS}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hmac.new(k.encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def approval_ledger_record(cmd: dict, key: str | None = None) -> dict:
+    """The audit `detail` process writes before publishing the command (what cmd-gateway keeps as its ledger)."""
+    return {"cmdId": cmd["cmdId"], "approvalId": cmd["approvalId"], "approvedBy": cmd.get("approvedBy"),
+            "expiresAt": cmd.get("expiresAt"), "fingerprint": cmd_fingerprint(cmd, key)}
 
 # Ontology v2 atomic commands (Action.code) the PLC supports: fan / load setpoints, interlock reset, standby pump
 # selection (actr:pump-selector) and a planned stop. PRESSURE_SET exists in the ontology only as the forbidden old

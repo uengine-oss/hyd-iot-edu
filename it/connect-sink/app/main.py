@@ -166,13 +166,34 @@ async def store_records(conn, batches):
                 (tp.topic, tp.partition, records[-1].offset + 1))
 
 
+async def _step_over_poison(cons, exc) -> None:
+    """A148 (sweep 69): one record aiokafka could not decode (a snappy-compressed forged `action.cmd` record) ended this
+    loop for good — the sink stopped writing, tag_1s went stale and the judgment deferred on data age. The codec
+    libraries are installed now; should a fetch still fail, every assigned partition moves one record past its
+    position (at most one record per topic is lost, which /healthz counts) and consuming resumes."""
+    state["fetch_errors"] = state.get("fetch_errors", 0) + 1
+    state["fetch_last_error"] = repr(exc)[:200]
+    log.error("fetch failed (%s); stepping one record forward on every partition and resuming", exc)
+    for tp in cons.assignment():
+        try:
+            cons.seek(tp, await cons.position(tp) + 1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("could not step over the poison record on %s: %s", tp, e)
+
+
 async def run():
     conn = await connect_db()
     cons = await make_consumer(TOPICS, group="connect-sink", from_latest=False, auto_commit=False)
     state["kafka"] = True
     try:
         while True:
-            batches = await cons.getmany(timeout_ms=500, max_records=2000)
+            try:
+                batches = await cons.getmany(timeout_ms=500, max_records=2000)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # noqa: BLE001 — undecodable batch (unsupported codec, corrupt record)
+                await _step_over_poison(cons, exc)
+                continue
             if not batches:
                 continue
             while True:
