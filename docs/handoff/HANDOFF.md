@@ -105,6 +105,7 @@
 
 - **UI/UX 판정(DoD 4)**: 사용자 눈. 캡처 `.evidence/a122/<tab>-1440|1024.png`(12탭) 또는 http://127.0.0.1:8088 을 보고 "됐다" 또는 바꿀 명칭·배치를 말하면 `ui.js` `UI.terms` 한 곳에서 고친다.
 - 기능 보고서 `docs/보고서/2026-10-07_HYD_기능보고.html` 검토 후 고칠 곳 지시(선택).
+- (10-08) `docs/src/`(마스터 가이드 생성 코드, study-b3 세션 영역)에 낡은 서술 2건: `arch_internal.py:712` "워커 /agents는 check_auth 미사용"(A129로 프로브 추가됨), 시간 배율 설명이 있으면 "20배속 기본(가상 설비)". 그 세션이 종료돼 전달 못 함 — docs/src를 다음에 만지는 사람이 고친다.
 - 호스트 워커는 필요할 때 띄운다(`bash scripts/run_worker_host.sh`, 둘째는 `CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098`). A130 worker 묶음은 러너가 2개를 띄워 돌림.
 
 ## 8. 자산 지도 — 무엇이 어디 있고 언제 여는가
