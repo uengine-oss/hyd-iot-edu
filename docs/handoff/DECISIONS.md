@@ -482,3 +482,10 @@ A092 실측에서 2,294줄 매뉴얼을 통문서 1작업으로 추출하면 성
 ## 93. 워커 claim은 임대(lease)이고, 실행 중인 에이전트 작업은 사람이 취소할 수 있다 — A097
 
 R13 2차 대조(C07 agent-sdk e4728a2, C02 vue3)에서 확인한 두 격차. (1) HYD의 워커 claim은 영구 점유라 워커가 죽으면 행이 STARTED+consumer로 남아 사람이 닫을 때까지 멈췄다. 제품처럼 claim에 `lease_until`(120초)을 두고 러너가 30초마다 갱신하며, 만료된 임대는 다른 워커가 회수(`claim_count` 증가, 로그에 회수 기록)하고 세 번째 만료 뒤에는 엔진 sweep이 FAILED로 표시해 A082 닫기 경로로 넘긴다. 죽은 워커가 늦게 보낸 결과는 consumer 불일치로 거절된다(기존 규칙). 마이그레이션은 추가만 하며 기존 STARTED 행에는 지금부터 임대를 준다. (2) 실행 중(STARTED) 에이전트 작업은 사람이 사유와 함께 취소할 수 있다(`draft_status=CANCELLED`, 사람 이벤트 기록). 워커는 다음 확인(2초)에서 CLI를 멈추고 점유를 놓는다. 취소된 행은 자동 재실행하지 않는다 — 사람이 닫거나 재작업·재판단으로 새 세대를 만든다(제품도 반송/되돌리기는 미구현). 근거: `20261007000018_worker_lease.sql`, `procdb.py`, `runner.py`, `instances.cancel_agent_task`, `scripts/probe_worker_lease.py`.
+
+## 94. 전문가 질문 3건은 업계 자료로 답을 정해 넣었다 — A098
+
+사용자: "네가 조사해서 현업 판단에 검증하면 된다". `docs/expert-questions-a079.md`의 세 질문을 공개 자료로 조사해 다음처럼 정했고 `it/neo4j/v2/knowledge_a098.cypher`(시드)와 라이브 그래프에 넣었다. 현업이 다른 값을 주면 같은 파일에서 바꾼다.
+- 질문 1(유량→성과) = **A**: 유량 저하는 액추에이터 속도 저하·사이클 지연 → 생산량 감소(중간, FS1 < 8.0 l/min). 근거: 펌프 내부 누설↑ → 체적 효율↓ → 구동 느려짐·열 발생(machinerylubrication.com "Determining Hydraulic Pump Condition Using Volumetric Efficiency", powermotiontech.com 같은 글), 유량이 액추에이터 속도를 정한다(listerfluidpower 계산기·사이클 타임 특허 US 11447930).
+- 질문 2(작동유 열화) = **(가) 고장 유형 유지**: 원인 산화(0.4)·수분 혼입(0.25)·오염 입자(0.25)·교환 주기 초과(0.1); 확인은 정기 오일 분석을 사람이 입력(TAN 증가 +1 주의·+2 교환, 수분 2,500 ppm 미만 유지(Karl Fischer), ISO 4406 청정도 +1 주의·+2 위험, 점도 변화) — 근거: Hayley Group 오일 분석 안내(DP032), Spectro Scientific "Hydraulic fluid analysis", Schroeder Trouble Check; 조치는 매뉴얼 HM-9의 SOP-OIL-21(작동유 교환, 40 ℃ 이상 배유 금지·점도 등급 혼합 금지)을 실제 적재 파이프라인으로 넣고 fm:oil-degradation에 연결, 승인 정비관리자.
+- 질문 3(과열 정지) = **A + 3-2 예**: 과열 정지는 선행 고장(냉각 성능 상실·펌프 효율 저하)의 결과로 두고 감사 기준 Q02를 "자체 원인이 있거나 원인이 있는 선행 고장이 있다"로 바꿨다(근거: 릴리프 밸브 바이패스·펌프 마모·쿨러 오염·외기 고온이 과열의 원인이며 이미 각 고장 유형에 있음 — boarparts "Hydraulic system running hot" 점검표). 저압 정지·고진동 정지는 PLC 인터록과 감지기 경보가 이미 있으므로 고장 유형·경보 패턴·리셋 스킬(SOP-TRIP-02/03: 원인 조치 확인 → 값 복귀 확인(PS1 ≥ 130 bar / VS1 < 1.2 mm/s) → 리셋)·후보 규칙으로 등록했고, 기존 과열 리셋 카드는 과열 트립에만 나오도록 좁혔다.

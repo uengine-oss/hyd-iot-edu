@@ -38,8 +38,8 @@ def declared_relations():
 GOLDEN = [
     ('Q01 모든 센서가 상태 변수를 거쳐 성과 지표까지 닿는다 (리소스→BSC)',
      "MATCH (s:Sensor) WHERE NOT EXISTS { (s)-[:OBSERVES]->(:StateVariable)-[:INFLUENCES*1..4]->(:Measure) } RETURN s.id AS id"),
-    ('Q02 모든 고장 유형에 원인이 하나 이상 있다 (진단)',
-     "MATCH (f:FailureMode) WHERE NOT (:Cause)-[:CAUSES]->(f) RETURN f.id AS id"),
+    ('Q02 모든 고장 유형에 원인이 있거나, 원인이 있는 선행 고장이 있다 (진단; A098 전문가 질문 3-A: 트립은 선행 고장의 결과)',
+     "MATCH (f:FailureMode) WHERE NOT (:Cause)-[:CAUSES]->(f) AND NOT EXISTS { (:Cause)-[:CAUSES]->(:FailureMode)-[:LEADS_TO]->(f) } RETURN f.id AS id"),
     ('Q03 모든 고장 유형에 조치(스킬)가 하나 이상 있다 (진단→조치)',
      "MATCH (f:FailureMode) WHERE NOT (f)-[:MITIGATED_BY|REMEDIED_BY]->(:Skill) RETURN f.id AS id"),
     ('Q04 모든 스킬이 성과 지표에 닿는다 (조치→BSC: AFFECTS 직접 또는 상태 변수 경로)',

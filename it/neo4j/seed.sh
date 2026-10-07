@@ -20,6 +20,8 @@ echo "seeding ontology v2: constraints ..."
 cy -f /seed/v2/constraints.cypher
 echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소스 · 설비 진단 · 스킬=SOP · 규칙 DMN · 외부 변수) ..."
 cy -f /seed/v2/instances.cypher
+echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량→생산량 · 작동유 열화 원인/증상 · 저압/고진동 트립) ..."
+cy -f /seed/v2/knowledge_a098.cypher
 echo "--- node counts by label ---"
 cy "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
 echo "--- 고장 유형별 조치 방법 (스킬 = SOP) ---"

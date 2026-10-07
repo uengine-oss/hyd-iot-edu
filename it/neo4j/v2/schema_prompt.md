@@ -41,12 +41,12 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 - `(:AnomalyPattern {id!, name!, code!, rule!, holdSeconds, detectionMode[held|plc-trip], detectorScope, clearRule, clearHoldSeconds, slopeWindowSeconds, severity[LOW|MEDIUM|HIGH|CRITICAL]})` CEP가 감지하는 이상 패턴. 탐지 임계값은 TESTS의 AND 조건이다. rule은 사람이 읽는 요약이며 실행하지 않는다. held 실행은 명시된 해제 조건과 시간 계약을 함께 검증한다.
   - 필수: 탐지 임계값(TESTS)이 하나 이상 있어야 한다 (`TESTS` out, 최소 1)
-- `(:Symptom {id!, name!, aliases})` 계측값의 이상 양상.
+- `(:Symptom {id!, name!, aliases, note})` 계측값의 이상 양상.
 - `(:FailureMode {id!, name!})` 구성 요소 단위의 고장 유형. 조치 방법(스킬)은 고장 유형에 매칭된다.
 - `(:Cause {id!, name!, aliases, prior!})` 고장의 근본 원인. prior는 사전 확률이다.
 - `(:Evidence {id!, name!, rule!, sql!, expect![lt|gt|gte], threshold!, weight!, tag, windowSeconds})` 원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.
-- `(:Step {id!, order!, text!})` 조치 방법(스킬 = SOP)의 한 단계. 근거 매뉴얼 절을 가리킨다.
-- `(:ManualSection {id!, ref!, title!, excerpt})` 기술 매뉴얼의 절. 조치 카드의 출처로 인용된다.
+- `(:Step {id!, order!, text!, _manual_document, citation, source_id})` 조치 방법(스킬 = SOP)의 한 단계. 근거 매뉴얼 절을 가리킨다.
+- `(:ManualSection {id!, ref!, title!, excerpt, _manual_document, citation, source_id})` 기술 매뉴얼의 절. 조치 카드의 출처로 인용된다.
 
 ## 리소스 계층 — 조직 · 시스템 · 설비 (ISO 14224 설비 분류 취지) · 상태 변수
 
@@ -67,7 +67,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 조치 방법(스킬 = SOP)과, 어떤 규칙으로 후보를 고르고 걸러 내는지. 규칙마다 출처(KnowledgeSource)가 있다.
 
-- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order]})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 또는 근본 조치로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.
+- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order], _manual_document, citation, source_id})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 또는 근본 조치로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.
   - 필수: SOP 단계가 하나 이상 있어야 한다 (`HAS_STEP` out, 최소 1)
   - 필수: 고장 유형 하나 이상에 매칭되어야 한다 (`MITIGATED_BY|REMEDIED_BY` in, 최소 1)
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
@@ -76,7 +76,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
 - `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
   - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1)
-- `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.
+- `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref, _manual_document, document_id, extractor, sha256, source_id})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.
 
 ## 외부 변수 · 예측 — 변수 · 예측 프레임워크
 
@@ -131,7 +131,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Actuator)-[:MANIPULATES]->(:StateVariable)` 1:1. 구동기가 바꾸는 조작 변수
 - `(:Component)-[:USES_PART]->(:Part)` N:M. 구성 요소에 들어가는 교체 부품
 - `(:Part)-[:SUPPLIED_BY {price!, failRate!, leadDays}]->(:Supplier)` N:M. 부품 공급 조건
-- `(:Role|System)-[:HAS_SKILL]->(:Skill)` N:M. 리소스가 수행할 수 있는 스킬
+- `(:Role|System)-[:HAS_SKILL {_manual_document}]->(:Skill)` N:M. 리소스가 수행할 수 있는 스킬
 - `(:InputData)-[:SOURCED_FROM]->(:System|Sensor)` N:1. 입력 데이터의 출처
 - `(:InputData)-[:REPRESENTS]->(:StateVariable|Measure)` N:1. 입력 데이터가 나타내는 상태 변수나 성과 지표. 임계값을 온톨로지의 한계 · 목표와 잇는다
 - `(:AnomalyPattern)-[:DETECTS]->(:Symptom)` N:M. 패턴이 감지하는 증상
@@ -143,16 +143,16 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Cause)-[:INVOLVES_PART]->(:Part)` N:M. 원인과 관련된 부품
 - `(:Cause)-[:DISTURBS {sign!}]->(:StateVariable)` N:M. 원인이 움직이는 외란 상태 변수. 여기서 물리 영향(INFLUENCES) 경로가 시작된다
 - `(:Cause)-[:EVIDENCED_BY]->(:Evidence)` 1:N. 원인을 확정하는 증거
-- `(:FailureMode)-[:MITIGATED_BY]->(:Skill)` N:M. 고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)
-- `(:FailureMode)-[:REMEDIED_BY]->(:Skill)` N:M. 고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다
+- `(:FailureMode)-[:MITIGATED_BY {_manual_document}]->(:Skill)` N:M. 고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)
+- `(:FailureMode)-[:REMEDIED_BY {_manual_document}]->(:Skill)` N:M. 고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다
 - `(:Skill)-[:ADDRESSES]->(:Cause)` N:M. 조치 방법이 특정 원인에만 맞을 때 그 원인. 없으면 고장 유형의 모든 원인에 쓸 수 있다
-- `(:Skill)-[:HAS_STEP]->(:Step)` 1:N. 스킬(SOP)의 단계
-- `(:Step)-[:REFERS_TO]->(:ManualSection)` N:1. 단계의 근거 매뉴얼 절
-- `(:ManualSection)-[:PART_OF]->(:KnowledgeSource)` N:1. 매뉴얼 절이 속한 문서
+- `(:Skill)-[:HAS_STEP {_manual_document}]->(:Step)` 1:N. 스킬(SOP)의 단계
+- `(:Step)-[:REFERS_TO {_manual_document}]->(:ManualSection)` N:1. 단계의 근거 매뉴얼 절
+- `(:ManualSection)-[:PART_OF {_manual_document}]->(:KnowledgeSource)` N:1. 매뉴얼 절이 속한 문서
 - `(:Skill)-[:CONSISTS_OF {value, seq}]->(:Action)` N:M. 스킬을 이루는 원자 조치와 그 값
 - `(:Action)-[:TARGETS]->(:Actuator|System)` N:1. 조치가 쓰는 대상 (구동기 또는 시스템)
-- `(:Skill)-[:APPROVED_BY]->(:Role)` N:1. 스킬 실행을 승인할 최소 역할
-- `(:Skill)-[:AFFECTS {sign!, delta, unit, note, conditionPolicy, condition}]->(:StateVariable|Measure)` N:M. 스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다
+- `(:Skill)-[:APPROVED_BY {_manual_document}]->(:Role)` N:1. 스킬 실행을 승인할 최소 역할
+- `(:Skill)-[:AFFECTS {sign!, delta, unit, note, conditionPolicy, condition, _manual_document}]->(:StateVariable|Measure)` N:M. 스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다
 - `(:Decision)-[:REQUIRES_INPUT]->(:InputData)` N:M. 판단에 필요한 입력 (DMN information requirement)
 - `(:Decision)-[:REQUIRES_DECISION]->(:Decision)` N:M. 먼저 내려야 하는 하위 판단 (DMN information requirement)
 - `(:Decision)-[:IMPLEMENTED_BY]->(:DecisionTable)` 1:1. 판단을 구현하는 결정표 (DMN decision logic)

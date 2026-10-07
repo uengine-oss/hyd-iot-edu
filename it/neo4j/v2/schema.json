@@ -805,6 +805,12 @@
         {
           "name": "aliases",
           "type": "string[]"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "required": false,
+          "description": "관측 방법 설명(실시간 센서가 없을 때 사람 입력 등). A098"
         }
       ]
     },
@@ -939,6 +945,24 @@
           "name": "text",
           "type": "string",
           "required": true
+        },
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "required": false,
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        },
+        {
+          "name": "citation",
+          "type": "string",
+          "required": false,
+          "description": "원문 인용(보관 원문 판본의 페이지·문자 좌표·인용문 JSON) — manual_graph 적재가 쓴다"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": false,
+          "description": "보관 원문 판본 id(manual:<document>:<sha256>) — 적재 출처"
         }
       ]
     },
@@ -967,6 +991,24 @@
         {
           "name": "excerpt",
           "type": "string"
+        },
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "required": false,
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        },
+        {
+          "name": "citation",
+          "type": "string",
+          "required": false,
+          "description": "원문 인용(보관 원문 판본의 페이지·문자 좌표·인용문 JSON) — manual_graph 적재가 쓴다"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": false,
+          "description": "보관 원문 판본 id(manual:<document>:<sha256>) — 적재 출처"
         }
       ]
     },
@@ -1007,6 +1049,24 @@
           ],
           "required": true,
           "description": "control=PLC 즉시 제어, work_order=정비, business=기업 시스템 업무"
+        },
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "required": false,
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        },
+        {
+          "name": "citation",
+          "type": "string",
+          "required": false,
+          "description": "원문 인용(보관 원문 판본의 페이지·문자 좌표·인용문 JSON) — manual_graph 적재가 쓴다"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": false,
+          "description": "보관 원문 판본 id(manual:<document>:<sha256>) — 적재 출처"
         }
       ],
       "requiredRelationships": [
@@ -1357,6 +1417,36 @@
         {
           "name": "ref",
           "type": "string"
+        },
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "required": false,
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        },
+        {
+          "name": "document_id",
+          "type": "string",
+          "required": false,
+          "description": "A098 선언"
+        },
+        {
+          "name": "extractor",
+          "type": "string",
+          "required": false,
+          "description": "A098 선언"
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "required": false,
+          "description": "A098 선언"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": false,
+          "description": "보관 원문 판본 id(manual:<document>:<sha256>) — 적재 출처"
         }
       ]
     },
@@ -2545,7 +2635,14 @@
         "Skill"
       ],
       "cardinality": "N:M",
-      "description": "리소스가 수행할 수 있는 스킬"
+      "description": "리소스가 수행할 수 있는 스킬",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "SOURCED_FROM",
@@ -2690,7 +2787,14 @@
         "Skill"
       ],
       "cardinality": "N:M",
-      "description": "고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)"
+      "description": "고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "REMEDIED_BY",
@@ -2701,7 +2805,14 @@
         "Skill"
       ],
       "cardinality": "N:M",
-      "description": "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다"
+      "description": "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "ADDRESSES",
@@ -2723,7 +2834,14 @@
         "Step"
       ],
       "cardinality": "1:N",
-      "description": "스킬(SOP)의 단계"
+      "description": "스킬(SOP)의 단계",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "REFERS_TO",
@@ -2734,7 +2852,14 @@
         "ManualSection"
       ],
       "cardinality": "N:1",
-      "description": "단계의 근거 매뉴얼 절"
+      "description": "단계의 근거 매뉴얼 절",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "PART_OF",
@@ -2745,7 +2870,14 @@
         "KnowledgeSource"
       ],
       "cardinality": "N:1",
-      "description": "매뉴얼 절이 속한 문서"
+      "description": "매뉴얼 절이 속한 문서",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "CONSISTS_OF",
@@ -2790,7 +2922,14 @@
         "Role"
       ],
       "cardinality": "N:1",
-      "description": "스킬 실행을 승인할 최소 역할"
+      "description": "스킬 실행을 승인할 최소 역할",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
     },
     {
       "type": "AFFECTS",
@@ -2835,6 +2974,11 @@
           "name": "condition",
           "type": "string",
           "description": "스킬 영향이 적용되는 조건의 원문"
+        },
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
         }
       ]
     },

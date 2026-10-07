@@ -435,8 +435,10 @@ function renderSystems() {
     ['MES', '생산오더', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더','설비','납기까지 (시간)'])],
     ['CMMS', '작업지시', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['작업번호','설비','작업','정비 시점'])],
     ['ERP', '구매요청 · 출하', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'], ['참조번호','대상','상태 · 출고처'])],
-    ['QMS', '격리 · 출하 승인', t([...s.qms.holds.map(h => ({ a: h.lot, b: h.status })), ...s.qms.releases.map(h => ({ a: h.lot, b: h.status }))], ['a', 'b'], ['로트','상태'])],
-    ['EMS', '수요 제어', t(s.ems.actions, ['action'], ['실행 내용'])],
+    // A098: the enterprise state exposes qms.lot_dispositions and ems.ems_actions (A086 schema); the old holds/releases/actions
+    // names threw "undefined.map" and left the whole process tab half-rendered.
+    ['QMS', '격리 · 출하 승인', t((s.qms?.lot_dispositions || []).map(h => ({ a: h.lot || h.lot_id || h.id, b: h.disposition || h.status || '' })), ['a', 'b'], ['로트','처분'])],
+    ['EMS', '수요 제어', t((s.ems?.ems_actions || []).map(x => ({ action: x.action || x.description || x.kind || JSON.stringify(x).slice(0, 80) })), ['action'], ['실행 내용'])],
   ];
   box.innerHTML = boards.map(([sys, title, body]) => `<div class="board"><header><b>${sys}</b><span>${title}</span></header>${body}</div>`).join('');
   $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({time:x.t,name:x.system.replace(/^sys:/,'').toUpperCase(),actor:x.by,detail:x.detail,raw:x})).join('') : '<div class="muted">아직 시스템 실행 이력이 없습니다.</div>';

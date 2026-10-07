@@ -84,6 +84,30 @@ def parse_manual(text: str, filename: str, actions: list[dict] | None = None) ->
 SOP_ID_RE = re.compile(r"^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 
 
+def validate_affects(raw) -> list:
+    """A098 (A079 gave the manual-ingestion review an impact field; the admin skill edit lacked one, so seeded/early
+    skills could never reach a performance measure — audit Q04): [{target, sign, note?}] → the skill's AFFECTS edges.
+    target is a StateVariable or Measure id (checked in the graph at write time), sign is +/- (or ±1)."""
+    if not isinstance(raw, list) or len(raw) > 12:
+        raise ValueError("affects는 최대 12개의 {target, sign, note} 목록")
+    out, seen = [], set()
+    for item in raw:
+        if not isinstance(item, dict):
+            raise ValueError("affects 항목은 객체")
+        target = str(item.get("target") or "").strip()
+        if not re.match(r"^(sv|msr):[a-z0-9-]+$", target):
+            raise ValueError(f"affects.target은 상태 변수(sv:…) 또는 성과 지표(msr:…) id: {target!r}")
+        sign = item.get("sign")
+        sign = {"+": 1, "-": -1, 1: 1, -1: -1, "1": 1, "-1": -1}.get(sign)
+        if sign is None:
+            raise ValueError("affects.sign은 + 또는 -")
+        if target in seen:
+            raise ValueError(f"affects.target 중복: {target}")
+        seen.add(target)
+        out.append({"target": target, "sign": sign, "note": str(item.get("note") or "").strip()[:200]})
+    return out
+
+
 def validate_skill(body: dict, create: bool = False) -> dict:
     """Skill edit (name, description, approver). A new skill (create=True) is an SOP matched to a failure mode
     (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY-> Skill ≥ 1)."""
@@ -95,6 +119,8 @@ def validate_skill(body: dict, create: bool = False) -> dict:
     out = {"name": name, "description": str(body.get("description") or "").strip()[:500]}
     if body.get("approver"):
         out["approver"] = str(body["approver"])
+    if body.get("affects") is not None:
+        out["affects"] = validate_affects(body["affects"])
     if not create:
         # A075: a reviewer may (re)link an existing skill to a failure mode; the candidate rules of that failure mode then
         # offer the skill (meeting L253~302: ingested knowledge must reach the runtime judgment).

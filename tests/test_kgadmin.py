@@ -93,3 +93,14 @@ def test_existing_skill_can_be_relinked_to_a_failure_mode_for_candidate_rules():
     assert "failureMode" not in kgadmin.validate_skill({"name": "이름만"})
     with pytest.raises(ValueError):
         kgadmin.validate_skill({"name": "x", "failureMode": "fm:x", "relation": "CAUSES"})
+
+
+def test_skill_edit_accepts_impact_links_and_rejects_bad_targets():
+    """A098: the admin skill edit carries AFFECTS (target sv:/msr:, sign ±), like the manual-ingestion review (A079)."""
+    out = kgadmin.validate_skill({"name": "쿨러 팬 점검 절차", "description": "x", "affects": [{"target": "sv:bearing-wear", "sign": "-", "note": "점검"}, {"target": "msr:maint-cost", "sign": 1}]})
+    assert out["affects"] == [{"target": "sv:bearing-wear", "sign": -1, "note": "점검"}, {"target": "msr:maint-cost", "sign": 1, "note": ""}]
+    assert "affects" not in kgadmin.validate_skill({"name": "팬", "description": "x"})
+    import pytest
+    for bad in ([{"target": "sen:ts1", "sign": "+"}], [{"target": "sv:x", "sign": "up"}], [{"target": "sv:x", "sign": "+"}, {"target": "sv:x", "sign": "-"}], "sv:x", [{}] * 13):
+        with pytest.raises(ValueError):
+            kgadmin.validate_skill({"name": "팬", "description": "x", "affects": bad})

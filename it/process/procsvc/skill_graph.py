@@ -115,6 +115,16 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
         if values.get('failureMode'):
             link_candidate_rules(tx,sid,values['failureMode'])
         tx.run('MATCH (k:Skill {id:$id}) SET k.name=$name,k.description=$description',id=sid,name=values['name'],description=values['description']).consume()
+        if values.get('affects') is not None:
+            # A098: the admin's impact links replace the skill's admin-owned AFFECTS edges; manual-owned ones (review commit,
+            # _manual_document) stay with their batch. Every target must exist as a StateVariable or Measure.
+            for a in values['affects']:
+                if not tx.run('MATCH (t {id:$t}) WHERE t:StateVariable OR t:Measure RETURN t.id AS id',t=a['target']).data():
+                    raise ValueError(f"영향 대상이 온톨로지에 없습니다: {a['target']}")
+            tx.run('MATCH (k:Skill {id:$id})-[old:AFFECTS]->() WHERE old._manual_document IS NULL DELETE old',id=sid).consume()
+            for a in values['affects']:
+                tx.run('MATCH (k:Skill {id:$id}),(t {id:$t}) WHERE t:StateVariable OR t:Measure CREATE (k)-[:AFFECTS {sign:$sign,note:$note}]->(t)',
+                       id=sid,t=a['target'],sign=a['sign'],note=a['note'] or None).consume()
         if role:
             tx.run('MATCH (k:Skill {id:$id})-[old:APPROVED_BY]->() DELETE old',id=sid).consume()
             tx.run('MATCH (k:Skill {id:$id}),(r:Role {id:$role}) CREATE (k)-[:APPROVED_BY]->(r)',id=sid,role=role).consume()

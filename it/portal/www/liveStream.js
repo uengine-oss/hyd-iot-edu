@@ -43,6 +43,11 @@
       case 'task_working': return { title: d.type === 'usage' ? '모델 응답 중' : (d.name || d.type || '진행'), text: d.content || d.message || (d.usage ? `토큰 입력 ${d.usage.input_tokens ?? '–'} · 출력 ${d.usage.output_tokens ?? '–'}` : '') };
       case 'task_started': return { title: activityOf(e) || d.name || '작업', text: d.goal || d.agent || '' };
       case 'task_completed': return { title: activityOf(e) || '작업', text: (d.output_keys || []).length ? '출력 ' + d.output_keys.join(', ') : (d.text || '').slice(0, 140) };
+      case 'task_cancelled': {                     // A098: three different things used to look identical in the stream
+        if (e.job_id === 'TASK_CANCEL_REQUESTED') return { title: '실행 취소 요청 (사람)', text: (d.goal || '').slice(0, 160) };
+        if (e.job_id === 'TASK_CLOSED') return { title: '작업 닫음 (사람)', text: (d.goal || d.reason || '').slice(0, 160) };
+        return { title: (activityOf(e) || '작업') + ' · 워커가 실행을 멈춤', text: (d.goal || '').slice(0, 160) };
+      }
       case 'human_asked': return { title: '사람에게 질문', text: (d.text || '').slice(0, 160) };
       case 'human_response': return { title: '사람의 답변', text: (d.answer || '').slice(0, 160) };
       case 'error': return { title: d.name || '오류', text: (d.friendly || d.raw_error || d.message || '').slice(0, 160) };

@@ -312,7 +312,7 @@ def cmd_load(args) -> int:
                 ses.run(f"DROP CONSTRAINT `{r['name']}` IF EXISTS").consume()
             for r in list(ses.run("SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP' RETURN name")):
                 ses.run(f"DROP INDEX `{r['name']}` IF EXISTS").consume()
-        for f in ("constraints.cypher", "instances.cypher", "detector-patterns.cypher"):
+        for f in ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "detector-patterns.cypher"):
             sts = split_statements((V2 / f).read_text(encoding="utf-8"))
             for i, st in enumerate(sts, 1):
                 try:

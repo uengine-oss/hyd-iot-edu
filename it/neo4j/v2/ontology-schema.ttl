@@ -401,7 +401,7 @@ hyd:HAS_SKILL a owl:ObjectProperty ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System ) ] ;
   rdfs:range hyd:Skill ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "리소스가 수행할 수 있는 스킬"@ko .
+  rdfs:comment "리소스가 수행할 수 있는 스킬 | 관계 속성: _manual_document"@ko .
 hyd:SOURCED_FROM a owl:ObjectProperty ;
   rdfs:label "SOURCED_FROM" ;
   rdfs:domain hyd:InputData ;
@@ -473,13 +473,13 @@ hyd:MITIGATED_BY a owl:ObjectProperty ;
   rdfs:domain hyd:FailureMode ;
   rdfs:range hyd:Skill ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)"@ko .
+  rdfs:comment "고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP) | 관계 속성: _manual_document"@ko .
 hyd:REMEDIED_BY a owl:ObjectProperty ;
   rdfs:label "REMEDIED_BY" ;
   rdfs:domain hyd:FailureMode ;
   rdfs:range hyd:Skill ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다"@ko .
+  rdfs:comment "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다 | 관계 속성: _manual_document"@ko .
 hyd:ADDRESSES a owl:ObjectProperty ;
   rdfs:label "ADDRESSES" ;
   rdfs:domain hyd:Skill ;
@@ -491,19 +491,19 @@ hyd:HAS_STEP a owl:ObjectProperty ;
   rdfs:domain hyd:Skill ;
   rdfs:range hyd:Step ;
   hyd:cardinality "1:N" ;
-  rdfs:comment "스킬(SOP)의 단계"@ko .
+  rdfs:comment "스킬(SOP)의 단계 | 관계 속성: _manual_document"@ko .
 hyd:REFERS_TO a owl:ObjectProperty ;
   rdfs:label "REFERS_TO" ;
   rdfs:domain hyd:Step ;
   rdfs:range hyd:ManualSection ;
   hyd:cardinality "N:1" ;
-  rdfs:comment "단계의 근거 매뉴얼 절"@ko .
+  rdfs:comment "단계의 근거 매뉴얼 절 | 관계 속성: _manual_document"@ko .
 hyd:PART_OF a owl:ObjectProperty ;
   rdfs:label "PART_OF" ;
   rdfs:domain hyd:ManualSection ;
   rdfs:range hyd:KnowledgeSource ;
   hyd:cardinality "N:1" ;
-  rdfs:comment "매뉴얼 절이 속한 문서"@ko .
+  rdfs:comment "매뉴얼 절이 속한 문서 | 관계 속성: _manual_document"@ko .
 hyd:CONSISTS_OF a owl:ObjectProperty ;
   rdfs:label "CONSISTS_OF" ;
   rdfs:domain hyd:Skill ;
@@ -521,13 +521,13 @@ hyd:APPROVED_BY a owl:ObjectProperty ;
   rdfs:domain hyd:Skill ;
   rdfs:range hyd:Role ;
   hyd:cardinality "N:1" ;
-  rdfs:comment "스킬 실행을 승인할 최소 역할"@ko .
+  rdfs:comment "스킬 실행을 승인할 최소 역할 | 관계 속성: _manual_document"@ko .
 hyd:AFFECTS a owl:ObjectProperty ;
   rdfs:label "AFFECTS" ;
   rdfs:domain hyd:Skill ;
   rdfs:range [ a owl:Class ; owl:unionOf ( hyd:StateVariable hyd:Measure ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다 | 관계 속성: sign (필수), delta, unit, note, conditionPolicy, condition"@ko .
+  rdfs:comment "스킬이 상태 변수나 성과 지표를 움직이는 방향과 크기. INFLUENCES 경로를 따라 영업이익까지 이어진다 | 관계 속성: sign (필수), delta, unit, note, conditionPolicy, condition, _manual_document"@ko .
 hyd:REQUIRES_INPUT a owl:ObjectProperty ;
   rdfs:label "REQUIRES_INPUT" ;
   rdfs:domain hyd:Decision ;
@@ -706,6 +706,11 @@ hyd:_ingest_history a owl:DatatypeProperty ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "활성 배치별 원천 속성/출처 변경 이력 JSON"@ko .
+hyd:_manual_document a owl:DatatypeProperty ;
+  rdfs:label "_manual_document" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Step hyd:ManualSection hyd:Skill hyd:KnowledgeSource ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"@ko .
 hyd:activity_id a owl:DatatypeProperty ;
   rdfs:label "activity_id" ;
   rdfs:domain hyd:WorkItem ;
@@ -766,6 +771,11 @@ hyd:catchAll a owl:DatatypeProperty ;
   rdfs:domain hyd:Event ;
   rdfs:range xsd:boolean ;
   rdfs:comment "메시지 시작 이벤트가 특정 경보 패턴 없이 모든 경보를 받는가 (alert_triage)"@ko .
+hyd:citation a owl:DatatypeProperty ;
+  rdfs:label "citation" ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Step hyd:ManualSection hyd:Skill ) ] ;
+  rdfs:range xsd:string ;
+  rdfs:comment "원문 인용(보관 원문 판본의 페이지·문자 좌표·인용문 JSON) — manual_graph 적재가 쓴다"@ko .
 hyd:clearHoldSeconds a owl:DatatypeProperty ;
   rdfs:label "clearHoldSeconds" ;
   rdfs:domain hyd:AnomalyPattern ;
@@ -863,6 +873,11 @@ hyd:document a owl:DatatypeProperty ;
   rdfs:label "document" ;
   rdfs:domain hyd:ManualIngestionBatch ;
   rdfs:range xsd:string .
+hyd:document_id a owl:DatatypeProperty ;
+  rdfs:label "document_id" ;
+  rdfs:domain hyd:KnowledgeSource ;
+  rdfs:range xsd:string ;
+  rdfs:comment "A098 선언"@ko .
 hyd:draft_status a owl:DatatypeProperty ;
   rdfs:label "draft_status" ;
   rdfs:domain hyd:WorkItem ;
@@ -911,6 +926,11 @@ hyd:expect a owl:DatatypeProperty ;
   rdfs:domain hyd:Evidence ;
   rdfs:range xsd:string ;
   rdfs:comment "SQL 값과 threshold의 비교 방향 허용값: lt, gt, gte"@ko .
+hyd:extractor a owl:DatatypeProperty ;
+  rdfs:label "extractor" ;
+  rdfs:domain hyd:KnowledgeSource ;
+  rdfs:range xsd:string ;
+  rdfs:comment "A098 선언"@ko .
 hyd:filename a owl:DatatypeProperty ;
   rdfs:label "filename" ;
   rdfs:domain hyd:IngestionBatch ;
@@ -1043,6 +1063,11 @@ hyd:normal a owl:DatatypeProperty ;
   rdfs:domain hyd:StateVariable ;
   rdfs:range xsd:decimal ;
   rdfs:comment "정상 운전점"@ko .
+hyd:note a owl:DatatypeProperty ;
+  rdfs:label "note" ;
+  rdfs:domain hyd:Symptom ;
+  rdfs:range xsd:string ;
+  rdfs:comment "관측 방법 설명(실시간 센서가 없을 때 사람 입력 등). A098"@ko .
 hyd:ontology_ref a owl:DatatypeProperty ;
   rdfs:label "ontology_ref" ;
   rdfs:domain hyd:ProcessVersion ;
@@ -1190,6 +1215,11 @@ hyd:severity a owl:DatatypeProperty ;
   rdfs:domain hyd:AnomalyPattern ;
   rdfs:range xsd:string ;
   rdfs:comment "허용값: LOW, MEDIUM, HIGH, CRITICAL"@ko .
+hyd:sha256 a owl:DatatypeProperty ;
+  rdfs:label "sha256" ;
+  rdfs:domain hyd:KnowledgeSource ;
+  rdfs:range xsd:string ;
+  rdfs:comment "A098 선언"@ko .
 hyd:skill a owl:DatatypeProperty ;
   rdfs:label "skill" ;
   rdfs:domain hyd:KnowledgeEdit ;
@@ -1245,7 +1275,7 @@ hyd:sourceTrip a owl:DatatypeProperty ;
   rdfs:comment "트립 경보의 PLC 트립 사유"@ko .
 hyd:source_id a owl:DatatypeProperty ;
   rdfs:label "source_id" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:InputData ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:Step hyd:ManualSection hyd:Skill hyd:InputData hyd:KnowledgeSource ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "인제스천 원본 문서 내 위치"@ko .
 hyd:source_incident_id a owl:DatatypeProperty ;
