@@ -1144,6 +1144,28 @@ body.present #caption {
   }
 }
 @media (max-width: 1200px) {
+  /* A098: at 1024 px the status strip wrapped ("진행 중" on two lines) and the live ticker was cut mid-word */
+  .strip-status {
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+  .strip-status > span:not(.stream-ticker) {
+    white-space: nowrap;
+  }
+  .stream-ticker {
+    max-width: 200px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .stream-ticker > span, .stream-ticker b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dots {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .units {
     gap: var(--s4);
   }
