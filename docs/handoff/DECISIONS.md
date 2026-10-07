@@ -493,3 +493,21 @@ R13 2차 대조(C07 agent-sdk e4728a2, C02 vue3)에서 확인한 두 격차. (1)
 ## 95. 병렬 게이트웨이는 분기는 즉시, 합류는 "모든 들어오는 길의 최신 행이 끝났을 때" 발화한다 — A100
 
 사용자 결정("권고대로": 병렬 합류만 만든다). 제품(process-gpt-completion check_task_status)의 합류 대기를 HYD 엔진에 넣되 저장 상태 없이 행에서 계산한다: 합류(들어오는 흐름 2개 이상의 parallelGateway)는 들어오는 각 출발 노드의 최신 작업 행이 DONE(이벤트는 발화)일 때만 다음으로 확장하고, 아니면 그 길은 거기서 멈춘다(`Advance.waiting_joins`). 마지막으로 끝난 길이 합류를 발화한다. 재작업으로 한 가지에 새 세대 행이 생기면 그 행이 다시 DONE 돼야 합류가 다시 발화하고, 다른 가지의 DONE 행은 그대로 센다 — 저장된 도착 기록이 없으니 세대 꼬임이 없다. 등록 검증: 병렬 분기의 나가는 흐름에 조건 금지, 합류로 들어오는 출발은 활동·이벤트만(게이트웨이 직결 불가), inclusiveGateway는 등록 거부(엔진 의미를 보증하지 않음). 서브프로세스·다중 인스턴스는 이번 범위 밖(사용자 결정). 근거: `engine._join_ready`·`_next_nodes`, `definition_registry`, `tests/test_parallel_join.py`, 실측 `a100-parallel-1/` 7/7.
+
+## 96. 호스트에서 DB를 여는 파이썬은 서명된 libpq로 psycopg의 순수 파이썬 구현을 쓴다 — A105
+
+2026-10-07 16:21부터 이 PC의 Windows Smart App Control(정책 {0283ac0f-fff1-49ae-ada1-8a933130cad6}, `VerifiedAndReputablePolicyState=1`, 코드 무결성 이벤트 3077)이 `.venv314`의 psycopg_binary 안 서명 없는 `libpq-*.dll`·`libssl-3-x64-*.dll`을 차단해 호스트의 psycopg import가 전부 죽었다(단위시험 20모듈 수집 오류, 검사기 42개, 호스트 워커 기동 실패). 제품 코드는 바꾸지 않고 호스트 실행 환경만 바꾼다: `scripts/host_libpq.sh`가 Authenticode 서명이 있는 LibreOffice의 `libpq.dll`을 PATH 앞에 두면 psycopg가 자동으로 python 구현으로 넘어간다(접속 0.05 s, 단위시험 1,094 통과, 쿨러 42/42). `run_worker_host.sh`·`run_regression.py`에 포함했고 pytest·검사기는 `. scripts/host_libpq.sh` 뒤에 실행한다. 컨테이너 안 실행(`docker exec -i hyd-iot-edu-process-1 python -`)도 같은 결과를 낸다. Smart App Control을 끄는 것은 되돌릴 수 없는 스위치라 사용자 결정으로 남긴다. 우회가 아니라 서명된 동일 라이브러리로의 교체이며, 이 결정은 HYD 레포 밖 전역 설정을 건드리지 않는다.
+
+## 97. 기업 거래(transactions)는 변경 전·후 상태를 함께 남긴다 — A103
+
+A090 후속 후보 "거래 before/after"를 구현했다. 근거: 제품의 거래 기록과 CMMS/ERP 감사 로그는 "무엇을 어떤 값에서 어떤 값으로" 바꿨는지를 남기며, 사람이 조치 영수증을 확인할 때(R10) 사후 값만으로는 재작업·보상 판단이 어렵다. 마이그레이션 `20261007000019_transactions_before_after.sql`(추가만, `before`/`after` jsonb)과 `exec_skill`이 영향 행을 실행 전·후에 캡처하고, 메모리 백엔드(`entsim/state.py`)도 같은 모양을 낸다(`_affected`). 스킬별 영향 범위: 재배치는 작업지시/설비 할당, 발주는 재고·공급, 정비 계획은 CMMS 작업지시. 이전 거래 행은 before/after가 NULL로 남고(소급 추정 금지) 새 거래부터 채워진다. 포털 거래 표시는 그대로이며 before/after 노출은 후속 후보.
+
+## 98. 데이터 신선도 검사는 작은 시계 오차(기본 2초)를 허용하고, 그 너머의 미래 시각은 여전히 거부한다 — A107
+
+실측(2026-10-07 agent RUN-0011, 효과보상 회귀 재실행): 신선도 단계가 `age_s=-0.0`으로 "데이터 신뢰 불가"를 내 진단이 보류되고 사건이 조치 없이 종결됐다. 비교 대상 행(TS1 57.23, 07:43:07.833Z)은 앞뒤 행과 정확히 1.000초 간격으로 적재된 정상 행이었고, `tag_1s`에 미래 시각 행은 0건, plant-sim·TimescaleDB·agent 컨테이너 시계는 같았다. 즉 설비가 샘플에 시각을 찍는 순간과 DB가 `now()`를 읽는 순간 사이의 수 ms 차이가 음수 age로 나타난 것이며, 오래된 데이터가 아니다. 이전 통과 실측(A090 123회)의 age는 0.1~0.9초로 같은 구조에서 운 좋게 양수였을 뿐이다.
+
+결정: `mcp_prom.freshness`는 `-FRESHNESS_MAX_SKEW_S(기본 2초) ≤ age ≤ FRESHNESS_MAX_AGE_S(60초)`를 신선으로 본다. 허용치보다 더 미래인 시각은 시계 고장으로 보고 사유를 "future-dated by N s"로 바꿔 여전히 추론을 보류한다. 오래됨·데이터 없음·수집 장애 판정은 그대로다. 시험 `tests/test_freshness_skew.py` 7건(−0.02·−2.0 신선, −5.0 거부, 61초 오래됨, 데이터 없음, 수집 장애 우선). 검사가 재야 할 것은 "오래된 데이터로 판단하지 않기"이므로 ms 단위 음수는 판정 대상이 아니다. 에이전트 컨테이너 재빌드 후 효과보상 회귀를 다시 돌려 확인한다.
+
+## 99. 원천 소비자는 DB 일시 오류로 죽지 않고 재시도하며, 그동안 /healthz가 사유를 보인다 — A108
+
+실측(2026-10-07 08:01:10Z): 컨테이너 재시작 직후 RAISE 경보 분류(`alert_policy`)의 psycopg 접속이 `host.docker.internal` IPv6로 떨어져 1회 실패했고, `consume()`이 그 예외로 끝나 이후 모든 경보가 무시됐다(/healthz 503이지만 compose는 unhealthy를 재시작하지 않음). 제품(ProcessGPT 폴링 루프)과 HYD 워커(`worker/main.py` poll 루프)는 예외를 기록하고 계속 도는데 process의 Kafka 소비만 죽는 구조였다. 결정: 분류 조회를 백오프 재시도(1→30 s)로 감싸고 오프셋은 성공 뒤에만 커밋(durable 경로), `/healthz`에 `source_policy_error`를 노출해 회복 전까지 503, 회복 시 해제. 레거시(auto-commit) 경로는 한 건 실패를 기록하고 다음 레코드로 간다. "조용히 건강한 척"을 막는 `_watch`는 그대로 두되 그 경로에 닿는 일시 오류를 없앴다. 함께 적은 운영 규칙: 라이브 회귀 중 `compose build/up`을 하지 않는다(의존 서비스 재시작, 10-07 두 번).

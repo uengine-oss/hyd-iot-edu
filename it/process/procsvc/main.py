@@ -204,6 +204,24 @@ async def _case_projection_loop():
 
 
 
+async def _alert_policy_retrying(pattern):
+    """A108: classifying a RAISE needs the DB; a transient failure there must not end the consumer for good. Observed
+    2026-10-07 08:01:10 right after a container restart (libpq fell to the unreachable IPv6 host.docker.internal):
+    `consumer task ended: OperationalError`, /healthz 503, every later alert ignored until a manual restart. Now the lookup
+    retries with backoff; the offset is not committed meanwhile (durable path) and /healthz shows source_policy_error."""
+    delay = 1.0
+    while True:
+        try:
+            policy = await asyncio.to_thread(instance_mode.current().alert_policy, pattern)
+            state.pop('source_policy_error', None)
+            return policy
+        except Exception as exc:  # noqa: BLE001 — psycopg OperationalError/InterfaceError, DNS, pool exhaustion
+            state['source_policy_error'] = f"{type(exc).__name__}: {str(exc)[:200]}"
+            log.exception('alert policy lookup failed; retrying in %.0fs', delay)
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 30.0)
+
+
 async def consume():
     global producer
     producer = await make_producer()
@@ -227,7 +245,7 @@ async def consume():
                 record=kafka_record(rec)
                 policy=None
                 if record['kind']=='RAISE':
-                    policy=await asyncio.to_thread(instance_mode.current().alert_policy,record['payload'].get('pattern'))
+                    policy=await _alert_policy_retrying(record['payload'].get('pattern'))
                 items.append((rec,record,policy))
             start=0
             while start<len(items):
@@ -253,7 +271,10 @@ async def consume():
                 await asyncio.sleep(1)
             continue
         for rec in recs:
-          _legacy_record(rec)
+          try:
+              _legacy_record(rec)
+          except Exception:  # noqa: BLE001 — A108: one failed receipt must not end the consumer (legacy auto-commit path)
+              log.exception('legacy record handling failed on %s/%s', rec.topic, rec.offset)
 
 
 def _legacy_record(rec):
@@ -326,7 +347,7 @@ async def _source_loop():
 
 app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
                lambda: {**state, "ok": state["kafka"] and not any(state.get(k) for k in
-                    ('consumer_dead','source_receive_error','source_handler_error'))})
+                    ('consumer_dead','source_receive_error','source_handler_error','source_policy_error'))})
 instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
 
 

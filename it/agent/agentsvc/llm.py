@@ -36,6 +36,13 @@ def available() -> bool:
                 os.getenv("ANTHROPIC_API_KEY") if PROVIDER == "anthropic" else False)
 
 
+def announce() -> None:
+    """A106 (X08 process-gpt-utils model_factory): say once at startup which narrative model this service will call, so a
+    wrong LLM_PROVIDER/LLM_MODEL/key shows in the first log lines instead of only as "using template" on the first incident.
+    Called from the app startup hook — at import time logging is not configured yet and the line would be dropped."""
+    log.info("narrative LLM: provider=%s model=%s available=%s", PROVIDER, MODEL, available())
+
+
 def summarize(card: dict, fallback: str) -> tuple[str, str]:
     if not available():
         return fallback, "template"

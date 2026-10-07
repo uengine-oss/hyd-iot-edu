@@ -94,3 +94,14 @@ def test_other_inverses_and_the_irreversible_list():
     for forward in ("skill:release-lot", "skill:substitute-shipment", "skill:demand-control"):
         assert forward in state.SKILLS and forward not in state.INVERSE_OF
 
+
+
+def test_transactions_keep_the_affected_row_before_and_after(tmp_path):
+    """A103 (product audit_events): an update-type skill records the row before and after; a create-type skill records the new row."""
+    st = state.EnterpriseState()
+    moved = st.execute({"skill": "skill:reallocate-production", "asset": "HYD-01", "decision": "DEC-A103-1", "option": "skill:derate-70", "by": "t"})
+    assert moved["before"]["asset"] == "HYD-01" and moved["before"].get("moved_from") is None
+    assert moved["after"]["asset"] == moved["before"]["alt_asset"] and moved["after"]["moved_from"] == "HYD-01" and moved["after"]["order_id"] == moved["ref"]
+    wo = st.execute({"skill": "skill:schedule-maintenance", "asset": "HYD-01", "decision": "DEC-A103-2", "option": "skill:wo-cooler-clean", "by": "t"})
+    assert wo["before"] is None and wo["after"]["id"] == wo["ref"] and wo["after"]["status"] == "배정됨"
+    assert st.transactions("DEC-A103-1")[0]["after"]["moved_from"] == "HYD-01"

@@ -50,13 +50,13 @@ class SupabaseEnterprise:
 
     def transactions(self, decision: str | None = None) -> list[dict]:
         with self._connect() as conn, conn.cursor() as cur:
-            query = "select id, t, system, skill, ref, detail, asset, decision_id, option_id, requested_by, compensates from ent.transactions"
+            query = "select id, t, system, skill, ref, detail, asset, decision_id, option_id, requested_by, compensates, before, after from ent.transactions"
             if decision is None:
                 cur.execute(query + " order by t desc limit 300")
             else:
                 cur.execute(query + " where decision_id=%s order by t,id", (decision,))
             rows = cur.fetchall()
-        keys = ("id", "t", "system", "skill", "ref", "detail", "asset", "decision", "option", "by", "compensates")
+        keys = ("id", "t", "system", "skill", "ref", "detail", "asset", "decision", "option", "by", "compensates", "before", "after")   # A103
         return [dict(zip(keys, (str(v) if k == "t" else v for k, v in zip(keys, r)))) for r in rows]
 
     def snapshot(self) -> dict:

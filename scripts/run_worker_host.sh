@@ -15,6 +15,8 @@ export CONSUMER_ID="${CONSUMER_ID:-agent-worker:host}"
 # The worker is Claude Code on Opus (user 2026-10-06: "Opus, not a toy"); pin it instead of relying on the personal default model.
 export CLI_MODEL="${CLI_MODEL:-opus}"
 export HEALTH_PORT="${HEALTH_PORT:-8097}"
+# A105: Smart App Control blocks psycopg_binary's unsigned libpq; load a signed one for the pure-Python wrapper instead.
+. scripts/host_libpq.sh
 PY="${PYTHON:-.venv314/Scripts/python.exe}"
 [ -x "$PY" ] || PY=python
 exec "$PY" -m worker.main

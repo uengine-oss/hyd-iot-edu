@@ -103,8 +103,11 @@ def provision(ws: Workspace, *, agent_id: str, schema_prompt: str, task: dict) -
     (ws.context_dir / "task.json").write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def sweep(root: Path, retention_seconds: int, *, now: float | None = None) -> list[Path]:
-    """Delete run directories past the retention window (age = newest file inside, so a resumed run is not stale)."""
+def sweep(root: Path, retention_seconds: int, *, now: float | None = None, keep=None) -> list[Path]:
+    """Delete run directories past the retention window (age = newest file inside, so a resumed run is not stale).
+    A104 (process-gpt-session-router kube.go: ask the runner whether it is busy before reclaiming): `keep(run_id)` lets the
+    caller spare a directory whose work item is still open — a run waiting for a person's answer (HUMAN_ASKED) keeps its
+    CLI session under the directory, so deleting it after 72 h would make the answer impossible to resume."""
     if not root.is_dir():
         return []
     cutoff = (now or time.time()) - retention_seconds
@@ -112,6 +115,8 @@ def sweep(root: Path, retention_seconds: int, *, now: float | None = None) -> li
     for candidate in _run_dirs(root):
         try:
             if _last_touched(candidate) >= cutoff:
+                continue
+            if keep is not None and keep(candidate.name):
                 continue
             shutil.rmtree(candidate)
             removed.append(candidate)

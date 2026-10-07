@@ -500,3 +500,18 @@ def test_runner_stops_the_cli_when_its_lease_is_lost(tmp_path, monkeypatch):
     from cliagents import ExecRequest
     with pytest.raises(Cancelled):
         runner._stream(dict(row, consumer="w1"), "job", object(), ExecRequest(prompt="x", workdir=str(tmp_path)), None, "crew")
+
+
+def test_sweep_spares_a_run_whose_work_item_is_still_open(tmp_path):
+    """A104 (session-router kube.go: ask before reclaiming): an old directory of a HUMAN_ASKED/IN_PROGRESS work item is kept,
+    because the paused CLI session lives under it and the person's late answer must still resume."""
+    import os, time as _t
+    from worker import workspace
+    root = tmp_path / "ws"
+    for wid in ("open-1", "done-2"):
+        d = root / "hyd" / wid / "context"; d.mkdir(parents=True); (d / "task.json").write_text("{}", encoding="utf8")
+        old = _t.time() - 10 * 3600
+        for p in (d / "task.json", d, root / "hyd" / wid):
+            os.utime(p, (old, old))
+    removed = workspace.sweep(root, retention_seconds=3600, keep=lambda wid: wid == "open-1")
+    assert [p.name for p in removed] == ["done-2"] and (root / "hyd" / "open-1").exists() and not (root / "hyd" / "done-2").exists()

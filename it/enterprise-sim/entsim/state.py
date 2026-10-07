@@ -90,16 +90,39 @@ class EnterpriseState:
                 if prior["fingerprint"] != fingerprint:
                     raise ValueError("idempotency conflict: decision/skill already executed with different input")
                 return copy.deepcopy(prior["tx"])
+            before = copy.deepcopy(self._affected(skill, asset, params.get("ref") or params.get("order")))   # A103: row before (update-type skills)
             ref, detail = self._apply(skill, asset, params, req)
+            after = copy.deepcopy(self._affected(skill, asset, ref))
             tx = {"id": _id("TX"), "t": _now(), "system": SKILLS[skill], "skill": skill, "ref": ref, "detail": detail,
                   "asset": asset, "decision": req.get("decision"), "option": req.get("option"), "by": req.get("by"),
-                  "compensates": req.get("compensates") if skill in COMPENSATION_SKILLS else None}
+                  "compensates": req.get("compensates") if skill in COMPENSATION_SKILLS else None,
+                  "before": before if skill in ("skill:reallocate-production",) or skill in COMPENSATION_SKILLS else None, "after": after}
             self._tx.insert(0, tx)
             del self._tx[300:]
             if key:
                 self._done[key] = {"fingerprint": fingerprint, "tx": tx}
             self._save()
             return tx
+
+    def _affected(self, skill: str, asset: str, ref: str | None) -> dict | None:
+        """A103 (product audit_events before/after): the one business row an execution creates or changes, found the way
+        the ledger refers to it. Same meaning as ent.exec_skill's v_before/v_after (migration 19)."""
+        s = self._s
+        if skill in ("skill:reallocate-production", "skill:restore-production"):
+            return next((o for o in s["mes"]["orders"] if (o["order_id"] == ref) or (ref is None and o["asset"] == asset)), None)
+        if skill in ("skill:schedule-maintenance", "skill:cancel-work-order"):
+            return next((w for w in s["cmms"]["work_orders"] if w["id"] == ref), None)
+        if skill in ("skill:procure-part", "skill:cancel-purchase-request"):
+            return next((p for p in s["erp"]["purchase_requests"] if p["id"] == ref), None)
+        if skill in ("skill:hold-lot", "skill:release-hold"):
+            return next((h for h in s["qms"]["holds"] if h["lot"] == ref), None)
+        if skill == "skill:release-lot":
+            return next((h for h in s["qms"]["releases"] if h["lot"] == ref), None)
+        if skill == "skill:substitute-shipment":
+            return next((x for x in s["erp"]["shipments"] if x["id"] == ref), None)
+        if skill == "skill:demand-control":
+            return s["ems"]["actions"][0] if s["ems"]["actions"] else None
+        return None
 
     def _apply(self, skill: str, asset: str, params: dict, req: dict) -> tuple[str, str]:
         s = self._s

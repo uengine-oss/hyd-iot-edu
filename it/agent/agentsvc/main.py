@@ -197,6 +197,7 @@ def _watch(task):
 
 @app.on_event("startup")
 async def _startup():
+    llm.announce()
     asyncio.create_task(consume()).add_done_callback(_watch)
 
 

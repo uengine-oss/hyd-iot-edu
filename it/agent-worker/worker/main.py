@@ -71,7 +71,8 @@ def serve_http() -> None:
 def sweep_forever() -> None:
     while True:
         try:
-            removed = workspace.sweep(settings.workspace_root, settings.retention_seconds)
+            removed = workspace.sweep(settings.workspace_root, settings.retention_seconds,
+                                  keep=lambda wid: (_repo().get_workitem(wid) or {}).get("status") == "IN_PROGRESS")   # A104: open work keeps its session
             if removed:
                 log.info("swept %d expired workspaces", len(removed))
         except Exception:  # noqa: BLE001
