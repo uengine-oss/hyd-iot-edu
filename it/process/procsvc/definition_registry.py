@@ -108,7 +108,28 @@ def validate_definition(raw):
     if not any(e['type'] == 'endEvent' for e in defn.events.values()):
         raise ValueError('endEvent가 필요합니다')
     _static_connectivity(defn, all_ids)
+    _condition_variables(defn)
     return defn
+
+
+def _condition_variables(defn):
+    """A098 (bpmn-process-generation-skill 08-reference-info: a gateway condition may only read a variable some earlier
+    task writes). Every name a sequence condition reads must be a declared process variable (data) that an activity
+    produces (outputData) or the server sets (PROTECTED_OUTPUTS); otherwise the gateway would judge on a value that
+    can never exist and the instance would stall at 'cannot proceed'."""
+    import ast
+    produced = {o for a in defn.activities.values() for o in (a.get('outputData') or [])} | PROTECTED_OUTPUTS
+    for s in defn.sequences:
+        cond = s.get('condition')
+        if not cond:
+            continue
+        names = {n.id for n in ast.walk(engine.compile_condition(cond)) if isinstance(n, ast.Name)} - {'True', 'False', 'None'}
+        undeclared = sorted(n for n in names if n not in defn.data)
+        if undeclared:
+            raise ValueError(f"분기 {s.get('id')}의 조건이 선언되지 않은 변수를 읽습니다: {', '.join(undeclared)} (data에 선언)")
+        unproduced = sorted(n for n in names if n not in produced)
+        if unproduced:
+            raise ValueError(f"분기 {s.get('id')}의 조건 변수 {', '.join(unproduced)}를 어떤 활동도 내지 않습니다 (outputData)")
 
 
 def _static_connectivity(defn, all_ids):

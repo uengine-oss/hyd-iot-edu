@@ -124,6 +124,9 @@ def test_api_rejects_version_overwrite_missing_version_and_replay(app_world):
     lambda d:(d['activities'].append({'id':'task:dead','name':'막힘','type':'userTask','role':'검토자','tool':'formHandler:review','outputData':['score']}),
               d['sequences'].append({'id':'s5','source':'choice','target':'task:dead','condition':'score < 0'})),                           # reaches no end
     lambda d:d['events'].append({'id':'lonely','type':'endEvent'}),                                                                           # never entered
+    # A098 condition variables (bpmn-process-generation-skill reference-info): declared and produced by some activity
+    lambda d:d['sequences'][2].update(condition='scoer >= 5'),                                                                                 # typo: not declared
+    lambda d:(d['data'].append({'name':'ghost','type':'Number'}), d['sequences'][2].update(condition='ghost >= 5')),                            # declared, nobody writes it
 ])
 def test_invalid_definition_does_not_publish(app_world,change):
     c,rt,repo=app_world

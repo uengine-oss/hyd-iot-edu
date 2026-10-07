@@ -134,7 +134,7 @@ def test_legacy_cancelled_review_without_arrival_evidence_is_not_reopened():
 def test_unused_boundary_condition_does_not_block_normal_review_completion():
     raw=definition()
     next(s for s in raw['sequences'] if s['id']=='deadline-late')['condition']='missing == "yes"'
-    rt,pid,old=setup(raw); rt.submit(old['a']['id'],{'x':'old'},now=NOW)
+    rt,pid,old=setup(raw,registry=False); rt.submit(old['a']['id'],{'x':'old'},now=NOW)   # 'missing' is undeclared on purpose (A098 registry refuses it); this probes the runtime
     rt.submit(old['b']['id'],{'review':'old'},now=NOW)
     request(rt,pid,old['a']['id']); rt.submit(latest(rt,pid,'a')['id'],{'x':'new'},now=NOW)
     rt.submit(latest(rt,pid,'b')['id'],{'review':'normal'},now=NOW)

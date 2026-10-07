@@ -64,8 +64,11 @@ GOLDEN = [
      "MATCH (:Process)-[:HAS_NODE]->(e:Event {position:'start', eventDefinition:'message'}) WHERE NOT (e)-[:CORRELATES]->(:AnomalyPattern) AND coalesce(e.catchAll, false) = false RETURN e.id AS id"),
     ('Q14 모든 경보 패턴이 증상→고장 유형까지 닿는다 (ISO 13374 SD→HA)',
      "MATCH (a:AnomalyPattern) WHERE NOT EXISTS { (a)-[:DETECTS]->(:Symptom)-[:INDICATES]->(:FailureMode) } RETURN a.id AS id"),
-    ('Q15 모든 증상이 센서에서 보인다',
-     "MATCH (s:Symptom) WHERE NOT (s)-[:OBSERVED_BY]->(:Sensor) RETURN s.id AS id"),
+    ('Q15 모든 증상이 센서에서 보이거나, 사람이 입력하는 항목으로 보인다 (경보 패턴이 검사하는 InputData에 출처 시스템이 있음; A098 사용자 결정: 오일 분석은 사람 입력)',
+     "MATCH (s:Symptom) WHERE NOT (s)-[:OBSERVED_BY]->(:Sensor) "
+     "AND NOT EXISTS { (:AnomalyPattern)-[:DETECTS]->(s) } RETURN s.id AS id "
+     "UNION MATCH (s:Symptom) WHERE NOT (s)-[:OBSERVED_BY]->(:Sensor) "
+     "AND NOT EXISTS { (p:AnomalyPattern)-[:DETECTS]->(s) WHERE EXISTS { (p)-[:TESTS]->(:InputData)-[:SOURCED_FROM]->(:System) } } RETURN s.id AS id"),
     ('Q16 BSC: 모든 목표가 관점에 속하고 모든 지표가 목표를 측정하며 부서가 소유한다',
      "MATCH (o:Objective) WHERE NOT (o)-[:IN_PERSPECTIVE]->() RETURN o.id AS id UNION MATCH (m:Measure) WHERE NOT (m)-[:MEASURES]->() OR NOT (m)-[:OWNED_BY]->() RETURN m.id AS id"),
     ('Q17 BSC 전략맵 인과는 아래 관점에서 위 관점으로만 간다',
