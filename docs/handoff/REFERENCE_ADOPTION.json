@@ -43,8 +43,9 @@
         "it/agent-worker/worker/prompt.py",
         "it/agent-worker/worker/workspace.py"
       ],
-      "remaining": "HYD 변경 지식·추출 실제 검증; 프레임워크 교체 미결정",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "HYD 변경 지식·추출 실제 검증; 프레임워크 교체 미결정 → A095 env_guard + A114 A5 접미사 차단(_TOKEN/_API_KEY/_ACCESS_KEY/_PRIVATE_KEY, CLI 인증 키는 유지)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "A02",
@@ -192,8 +193,9 @@
         "it/agent-worker/worker/runner.py",
         "it/agent-worker/worker/hitl.py"
       ],
-      "remaining": "자식트리/PG 조건부 저장은 HYD 확장",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "자식트리/PG 조건부 저장은 HYD 확장 → A114 A3·A4 반영(agent_cli 계열 선택 키, bridge.cleanup이 codex-mcp.toml 삭제)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "A06",
@@ -338,8 +340,9 @@
         "it/process/procsvc/execution_graph.py",
         "it/portal/www"
       ],
-      "remaining": "최신 직접 UI·전체 의미 연결",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "최신 직접 UI·전체 의미 연결 → A115 A12 humanQuestionText 반영; B6·B7은 A121 UI/UX 정리안(BPMN B안·StatusChip 상태 색·명칭표), 구현 A122는 사용자 '됐다' 대기",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "C03",
@@ -359,8 +362,9 @@
         "it/process/procsvc/engine.py",
         "it/process/procsvc/input_bindings.py"
       ],
-      "remaining": "조건 재판정·보상; inputBindings는 HYD 확장",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "조건 재판정·보상; inputBindings는 HYD 확장 → A100 병렬 합류, A115 A6 게이트웨이 없는 분기 등록 거부, A116 B5 에이전트 활동 제품 모양(userTask+agentMode, 정의 2.2, 제품 pydantic 파싱 무시 0; 제품 엔진 실제 구동 시험은 안 함)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "C04",
@@ -410,8 +414,9 @@
       "hyd_counterparts": [
         "compose.yaml"
       ],
-      "remaining": "설정 전체 미열람; 이미지 태그와 소스 pin 별도",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "설정 전체 미열람; 이미지 태그와 소스 pin 별도 → A115 A8 legacy 점유 직후 clear_task_lease 반영; 10-06 lease 함수 추가로 fetch_pending_task 본문 동일 주장은 철회",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "C06",
@@ -470,8 +475,9 @@
         "it/supabase/migrations",
         "it/agent-worker/worker"
       ],
-      "remaining": "SDK 전체 이식 아님; 최신 실제 Codex",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "SDK 전체 이식 아님; 최신 실제 Codex → A097 lease + A114 A1·A2 반영(claim_count는 회수만 +1 마이그레이션 21, 연장 예외 재시도·LeaseLost), 라이브 a114-lease-1 6/6",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "C08",
@@ -520,8 +526,9 @@
       "hyd_counterparts": [
         "it/process/procsvc/definition_registry.py"
       ],
-      "remaining": "실제 에이전트 신규 정의 생성 종합검증",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "실제 에이전트 신규 정의 생성 종합검증 → A096 정적 연결성 3종 + A115 A6 + A116 제품 모양 활동 수용(양방향)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "D02",
@@ -615,8 +622,9 @@
         "it/enterprise-mcp",
         "it/supabase/migrations"
       ],
-      "remaining": "HYD 업무 데이터/권한 별도; WMS 전체 이식 아님",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "HYD 업무 데이터/권한 별도; WMS 전체 이식 아님 → A103 before/after, A115 A7 행 잠금·advisory lock·INVALID 입력·재생 키(마이그레이션 22, 동시 취소 2→1)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "O01",
@@ -636,8 +644,9 @@
         "it/process/procsvc/manual_sources.py",
         "it/process/procsvc/manual_graph.py"
       ],
-      "remaining": "실제 추출·전체 질문/관계 검증",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "실제 추출·전체 질문/관계 검증 → A118 B3 문서별 골든 퀘스천 보고(서버 근거 대조, 라이브 3문항) 채택; 에이전트 생성 파서 방식(B4)은 A119 재현성 비교로 비채택",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "O02",
@@ -849,8 +858,9 @@
       "decision": "기존 대조 유지",
       "finding": "문서 검색/메모리 스냅샷·과거 기록 재사용",
       "hyd_counterparts": [],
-      "remaining": "이번 내부 코드 재열람 없음; 검색 품질 미결",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "이번 내부 코드 재열람 없음; 검색 품질 미결 → A117 B2 반영: citations.document_locate 방식의 서버 인용 위치 찾기(manual_locate.py), 리플레이 265/267·231/233; 검색 자체는 미채택",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "T02",
@@ -869,8 +879,9 @@
       "hyd_counterparts": [
         "it/process/procsvc/manual_extraction.py"
       ],
-      "remaining": "실제 Codex 일반문서/PDF 추출 정확성",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "실제 Codex 일반문서/PDF 추출 정확성 → A094 EHU40 10/10, A115 A6 uncontrolled_split 등록 거부, A119 B1 결과 파일화·구간 80,000자(EHU40 1.8 612 s 10/10); B4 코드 파서 혼합은 재현성 비교로 비채택",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "T03",
@@ -1026,8 +1037,9 @@
         "it/process/procsvc/knowledge_projection.py",
         "it/enterprise-mcp/enterprise_mcp/tools.py"
       ],
-      "remaining": "저장·검토 권한 본문/전체 의미 연결 미완료",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "저장·검토 권한 본문/전체 의미 연결 미완료 → 동의어는 B8 선택(A115 판정, 미착수)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "optional_B8"
     },
     {
       "id": "T07",
@@ -1268,8 +1280,9 @@
       "decision": "기존 대조 유지",
       "finding": "공통 도구/결과 계약 스냅샷·기존 조사 유지",
       "hyd_counterparts": [],
-      "remaining": "이번 내부 재열람 없음; 공통 유틸 전체 이식 아님",
-      "reference_runtime_verified_in_A066": false
+      "remaining": "이번 내부 재열람 없음; 공통 유틸 전체 이식 아님 → A115 A11 hitPolicy UNIQUE·안내문 정정(HYD 자체 DMN 유지)",
+      "reference_runtime_verified_in_A066": false,
+      "r14_status_20261007": "reflected"
     },
     {
       "id": "X08",
@@ -1360,6 +1373,59 @@
         "direct_ui": false,
         "new_codex": false
       }
+    },
+    {
+      "phase": "A113-A119",
+      "date": "2026-10-07",
+      "repositories": [
+        "C01",
+        "C02",
+        "C03",
+        "C05",
+        "C07",
+        "A01",
+        "A04",
+        "A05",
+        "A06",
+        "T01",
+        "T02",
+        "T06",
+        "D01",
+        "D05",
+        "O01",
+        "O02",
+        "P01",
+        "P03",
+        "X07",
+        "X08"
+      ],
+      "evidence": [
+        "docs/handoff/verification/2026-10-07/r14-summary.md",
+        ".evidence/reaudit/a113/",
+        ".evidence/a115/",
+        ".evidence/a116/product_model_parse.json",
+        ".evidence/a117/replay_locate.json",
+        ".evidence/a118/golden_report.json",
+        ".evidence/a119/ehu40-1/"
+      ],
+      "judgement_rule": "user 2026-10-07: repo comparison exists to avoid rebuilding an existing answer; current HYD wins when it meets meeting requirements and is more robust; judge both sides adversarially on result, efficiency, stability, generality (DECISIONS 100)",
+      "defects_fixed": "A1-A5 (A114), A6-A12 (A115); unit 1,151; core regression 6/6 (reg-a115c)",
+      "structural_adopted": {
+        "B5": "A116 userTask+agentMode product shape, definition 2.2, bidirectional registry",
+        "B2": "A117 server-side citation locate",
+        "B3": "A118 per-document golden questions with server-verified citations",
+        "B1": "A119 result file output/result.json, segment 80,000 chars"
+      },
+      "structural_not_adopted": {
+        "B4": "A119 reproducibility compare 1.6 vs 1.8 (Jaccard 0.711, shared SOP steps 27/27, similarity 0.901): code-parser hybrid not adopted",
+        "B8": "optional, not started"
+      },
+      "deferred_to_uiux": {
+        "B6": "A121 BPMN plan B (definition JSON -> own SVG, 3 lanes)",
+        "B7": "A121 instance detail tabs, StatusChip colors, naming table"
+      },
+      "kept_hyd": "timer, instance lock, failure PENDING, idempotency key, SQL check, DDL drift, BSC conflict, human question DB resume, form renderer, live stream (r14-summary C)",
+      "not_verified": "product completion engine actually running HYD 2.2 definition (model parse only); agent compliance with SQL constitution lines (needs LLM run); 1.8 same-definition repeat run skipped by user instruction"
     }
   ]
 }

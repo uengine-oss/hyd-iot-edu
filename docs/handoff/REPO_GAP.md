@@ -74,7 +74,7 @@
 
 ### 6 · DMN 규칙 (L289~302·L313~348)
 
-| 제품 | `dmn_rule_tool.py`: proc_def(type=dmn)의 DMN XML을 파싱해 LLM이 규칙 매칭표를 쓰고, 키 없으면 결정론 폴백(규칙 나열) | 내 구현 | `dmn-mcp`: 박용주 v2 `cards.py` 결정론 엔진을 도구로 | 처리 | **유지**(DECISIONS 3). 제품 도구는 **후반 설명**("ProcessGPT는 DMN을 LLM 추론 도구로도 제공") |
+| 제품 | `dmn_rule_tool.py`: proc_def(type=dmn)의 DMN XML을 파싱해 LLM이 규칙 매칭표를 쓰고, 키 없으면 결정론 폴백(규칙 나열) | 내 구현 | `dmn-mcp`: 박용주 v2 `cards.py` 결정론 엔진을 도구로 | 처리 | **유지**(DECISIONS 3). 제품 도구는 **후반 설명**("ProcessGPT는 DMN을 LLM 추론 도구로도 제공"). **A113 정정(r14 D):** "제품 DMN = LLM 도구"는 불완전 — 제품에도 결정론 평가기(deterministic)가 있다. HYD 엔진 유지 결정은 그대로이며, HYD 안 불일치 2건(hitPolicy 선언 PRIORITY↔코드 "정확히 하나", 진단 규칙 미실행인데 안내문은 적용한다고 씀)은 A115 A11로 수정(UNIQUE 선언·다른 선언은 평가 거부·안내문 정정) |
 
 ### 5 · 현황값 MCP (L51~79) · 2 · 인제스천 (L253~285) · 9 · 납기 (L385~404) · 12 · 모니터링 (L434) · 13 · 후반 (L437~448) · 14 · 시나리오·교재
 
@@ -119,12 +119,37 @@
 | 영역 | 제품(고정 커밋) | HYD 현재 | 판정 |
 |---|---|---|---|
 | 프로세스 엔진 규모 | process-gpt-completion b272c9a: 4.7만 줄(`workitem_processor.py` 5,550) | `procsvc` 1.07만 줄 + 워커 1,503 + 에이전트 2,073 | 제품의 1/4 규모 |
-| 엔진 기능 | subProcess·adHocSubProcess·callActivity·multiInstance(foreach)·parallel/inclusive/exclusive 게이트웨이·타이머·crewai/langgraph 오케스트레이션·결정론 고착화·보상·재작업 | 사람/서비스/businessRule task·배타 게이트웨이·경계 타이머·cliagents(Claude Code·Codex)·보상·재작업·효과 영수증 | 서브프로세스·병렬·다중 인스턴스·다른 오케스트레이션 **없음** (A041 지원 범위 그대로) |
+| 엔진 기능 | subProcess·adHocSubProcess·callActivity·multiInstance(foreach)·parallel/inclusive/exclusive 게이트웨이·타이머·crewai/langgraph 오케스트레이션·결정론 고착화·보상·재작업 | 사람/서비스/businessRule task·배타 게이트웨이·경계 타이머·cliagents(Claude Code·Codex)·보상·재작업·효과 영수증 (A092 당시) → **A100 병렬 분기·합류 추가, A116부터 에이전트 작업은 제품 모양 userTask+agentMode(정의 2.2; 저장된 1.0~2.1의 businessRuleTask는 불변·엔진이 그대로 실행), A115 게이트웨이 없는 분기 등록 거부** | 서브프로세스·다중 인스턴스·다른 오케스트레이션 **없음** (A041 지원 범위, 병렬은 A100으로 생김) |
 | 인스턴스·todolist·이벤트 | agent-sdk e4728a2 `database_schema.sql` 그대로 + 폴링 lease/max_claims | 같은 테이블·열·RPC 이름, 폴링 claim·stale 정리 | 같음(42/42·1배속 완주로 확인) |
-| 문서 인제스천 파이프라인 | process-gpt-bpmn-extractor c7992ce 3.3만 줄: PDF/OCR(최대 50쪽)·SOP 경계 탐지(LLM, 최대 30쪽)·고정/의미 청크(1,000자, 겹침 200)·메멘토 임베딩 청크·절별 추출·청크 간 병합(`test_chunk_integration` 5종)·검증기 1,315줄(엔진에 실제 실행해 추적 비교)·HITL 728줄 | 문서 전체를 Claude Code **한 작업**에 넘기고(16,000자 초과는 파일로 전달) 문자 좌표 앵커·페이지 검토 전수·3회 교정 루프·커버리지·충돌 미리보기 | A093: 제목 경계 40,000자 구간 → 구간별 Claude Code 작업 → 서버 좌표 복원·결정적 병합 → 전체 계약 재검증(제품의 청크→추출→병합과 같은 모양, 임베딩 청크는 없음). 실측 2,294줄(구간 3, 1,443 s, 7/8)·6,785줄·24만 자(구간 7, 82분, 7/8, 절 198·SOP 193 전부, 중복 0)·실제 다이킨 EHU40 80쪽 PDF(구간 4, HANDOFF A094) |
+| 문서 인제스천 파이프라인 | process-gpt-bpmn-extractor c7992ce 3.3만 줄: PDF/OCR(최대 50쪽)·SOP 경계 탐지(LLM, 최대 30쪽)·고정/의미 청크(1,000자, 겹침 200)·메멘토 임베딩 청크·절별 추출·청크 간 병합(`test_chunk_integration` 5종)·검증기 1,315줄(엔진에 실제 실행해 추적 비교)·HITL 728줄 | (A092 당시) 문서 전체를 Claude Code **한 작업**에 넘기고(16,000자 초과는 파일로 전달) 문자 좌표 앵커·페이지 검토 전수·3회 교정 루프·커버리지·충돌 미리보기 → **현재(A117~A119, 10-07):** 앵커는 에이전트가 `{page, quote}`만 내고 좌표는 서버가 찾음(`manual_locate.py`: 정확→글자·숫자→낱말 끼어듦 40자, 모호하면 긴 인용 요청), 결과는 작업 폴더 `output/result.json` 파일(메시지 JSON은 하위 호환), 구간 기준 80,000자(정의 1.8) | A093: 제목 경계 40,000자 구간 → 구간별 Claude Code 작업 → 서버 좌표 복원·결정적 병합 → 전체 계약 재검증(제품의 청크→추출→병합과 같은 모양, 임베딩 청크는 없음). 실측 2,294줄(구간 3, 1,443 s, 7/8)·6,785줄·24만 자(구간 7, 82분, 7/8, 절 198·SOP 193 전부, 중복 0)·실제 다이킨 EHU40 80쪽 PDF(구간 4, HANDOFF A094). **A119: EHU40 1.8은 구간 2·612 s·교정 0·10/10(1.6은 구간 4·902 s), 1.6↔1.8 SOP Jaccard 0.711·공통 단계 27/27·유사도 0.901 → B4 코드 파서 혼합은 하지 않음. A118: 문서별 골든 퀘스천 보고(에이전트 답 + 서버가 문서 노드 인용 대조, HM-9 3문항 라이브)** |
 | 지식 문서 색인 | ontology-studio 6a229be `document_indexing` 878줄: OCR·토큰 기준 청크(1,200/150)·임베딩·Neo4j 풀텍스트+벡터 인덱스 | 없음(그래프에 원문 청크·벡터 인덱스 없음, 매뉴얼은 SQLite 보관+절/단계 노드) | 없음 |
 | 온톨로지 MCP | ontology-studio 읽기 4도구 + 출처(sources) | hyd-dmn 13도구(진단·규칙·입력·시계열·PromQL·카드·예측·제출)·enterprise MCP·Neo4j MCP | HYD가 넓음(실측 다수) |
 
 실측(수천 줄 문서): `scripts/make_large_manual.py`로 만든 교육용 매뉴얼 2,294줄·80,502자·158 KB·절 69·SOP 61(+폐지 1)을 실제 Claude Code 워커로 추출 — 결과는 HANDOFF A092. 통문서 1작업: DONE 1,180 s·내용 검사 전부 통과, 단 출력 160 KB를 한 메시지로 내는 구조(크기 상한). A093 구간 추출: 같은 문서 DONE 1,443 s·7/8(발췌 선택 4절 차이), 3배 문서(6,785줄·470 KB) 실측은 HANDOFF A093.
 
 주의: 위 "수천 줄"은 내가 생성기로 만든 교육용 문서 크기이며 현업 대표 크기의 근거가 아니다. 참고 레포 안에는 인제스천용 실제 샘플 문서가 없고(bpmn-extractor `output_bpmn/`은 결과 BPMN 2종 22~43 KB, 입력 문서는 없음; ontology-studio는 스펙 docx 72 KB), 코드의 상한(OCR 50쪽·SOP 경계 30쪽·청크 1,000자)만 있다. 현업 매뉴얼 크기 조사는 별도(HANDOFF A094 예정).
+
+## 6. r14 재확인 뒤 상태 — 결함 A1~A12·구조 변경 B1~B8 (2026-10-07 A113~A119)
+
+사용자 기준(10-07): 레포 대조는 "정답이 있는데 또 만드는 낭비"를 막기 위한 것이다. 현 구현이 회의 요구를 만족하고 더 견고하면 그것이 정답이며, 단 제3자 입장에서 결과·효율·안정성·범용성 네 기준으로 양쪽을 적대적으로 판정한다(DECISIONS 100). 판정 원문은 `verification/2026-10-07/r14-summary.md`, 수정 근거는 HANDOFF §9 A114~A119.
+
+| # | 결함/구조 | 판정 | 반영 | 증거 |
+|---|---|---|---|---|
+| A1~A5 | 임대 횟수·연장 예외·CLI 선택 키·Codex toml 비밀·env 접미사 차단 | 레포가 나음 → 고침 | A114: 마이그레이션 21(claim_count는 회수만 +1)·`LeaseLost`·`agent_cli` 계열 키·`codex-mcp.toml` 삭제·`*_TOKEN/*_API_KEY` 차단 | 단위 1,108, 라이브 임대 `a114-lease-1/` 6/6 |
+| A6 | 게이트웨이 없는 분기 등록 통과·합류 활동 2회 실행 | 레포 규칙(uncontrolled_split)이 나음, HYD는 WARNING이 아니라 등록 거부로 | A115: `definition_registry._gatewayless_splits` 400, 시험 정의·예시 8개를 `fork` 병렬 게이트웨이로 | `.evidence/a115/a6_live.out` |
+| A7 | 보상 함수 행 잠금 없음·unknown 입력·재생 키 | wms가 나음 | A115: 마이그레이션 22(for update·advisory lock·INVALID·`ent.tx_response`) | `a7_probe.out`, 동시 취소 2건→1건 `a7_race.out` |
+| A8 | legacy 평가 경로 lease 잔존 | infra-docker 10-06이 나음 | A115: 점유 직후 `clear_task_lease` | 회귀 `reg-a115c` |
+| A9 | 에이전트 SQL 규칙이 상시 지시에 없음 | text2sql이 나음 | A115: `workspace.CONSTITUTION` 4줄 | 지시 파일 시험; 에이전트 준수는 LLM 실행 미검증 |
+| A10 | DB 주석 변경 미감지·형식 매핑 부분 문자열 | HYD 자체 결함 | A115: `COMMENT_CHANGED`(기준은 적재 뒤 첫 동기화의 실제 DB 주석)·정확 대조 | `ddl-drift-4` 8/8 |
+| A11 | hitPolicy 선언≠동작·진단 규칙 안내문 | DMN 표준 | A115: UNIQUE·다른 선언 평가 거부·안내문 정정·kg-seed 재적재 | `a11_live.out` |
+| A12 | 사람 질문 카드 `text`만 읽음 | vue3 10-06 | A115: `humanQuestionText`(text→question) | node 함수 시험, 화면 미검증 |
+| B5 | 에이전트 활동 유형(businessRuleTask ↔ userTask+agentMode) | 양방향 불통 → **한다** | A116: 정규화 등록기·정의 2.2·투영 속성·`definition-authoring.md` | 단위 1,161, 제품 pydantic 파싱 무시 0, `b5_live.out` PASS |
+| B2 | 인용 위치를 서버가 찾기 | 결정적·즉시 → **한다** | A117: `manual_locate.py`, 앵커 page+quote | `.evidence/a117/replay_locate.json` 265/267·231/233 |
+| B3 | 문서별 골든 퀘스천 보고 | 수업 장면(L253~285) → **한다** | A118: `manual_golden.py`·`manual_golden_check` 1.0·API 2개·commit 연동 | 단위 21, 라이브 `.evidence/a118/golden_report.json` 3문항 |
+| B1 | 인제스천 결과를 파일로 | 마지막 메시지 JSON 잘림 위험 → **한다** | A119: `output/result.json`·정의 1.8·구간 80,000자 | 단위 1,198, EHU40 1.8 612 s 10/10 |
+| B4 | 구조는 코드 파서·절차는 LLM 혼합 | 재현성 측정 뒤 결정 → **하지 않음** | A119 1.6↔1.8 비교: Jaccard 0.711·공통 SOP 단계 27/27·유사도 0.901, 흔들림은 범위·인용 끊는 위치·점검표 펼침(파서가 고칠 성질 아님) | `.evidence/a119/compare.md`; 범위 고정 원하면 정의에 "SOP로 삼을 장" 명시(사용자) |
+| B6·B7 | BPMN을 정의에서 그리기·인스턴스 상세 정리 | UI/UX로 편입 | A121 정리안: BPMN B안(정의 JSON→자체 SVG, 레인 3)·상태 색 StatusChip·명칭표; 구현은 A122 | `UIUX_PLAN.md`, `.evidence/a121/` |
+| B8 | InputData 동의어·OCR·본문 검색 | 선택 | 미착수 | — |
+| C | 타이머·인스턴스 잠금·실패 PENDING·멱등 키·SQL 검사·DDL 드리프트·BSC 상충·사람 질문 DB 재개·폼 렌더러·실시간 스트림 | HYD가 나음 → 유지 | 변경 없음 | r14-summary §C |
+
+A115에서 먼저 "B는 전부 안 한다"고 했던 판정은 한쪽으로 기운 것이라 철회했다(HANDOFF A115). 제품 엔진(completion)이 HYD 2.2 정의를 실제로 구동하는 시험은 하지 않았고 모델 파싱까지만 확인했다.
