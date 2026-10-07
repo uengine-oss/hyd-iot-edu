@@ -35,6 +35,7 @@ FAIL_PATTERNS = [r"^FAILED:", r"^FAIL ", r"\[FAIL\]", r"Traceback \(most recent 
 PROBES = {
     "core": [
         ("cooler-42", "scripts/run_scenario_evidence.py", ["--fresh-review", "--out", "{out}"], 1800, "scenario.log"),
+        ("pump-fan", "scripts/run_scenario_pump_fan_evidence.py", ["--out", "{out}"], 1500, None),   # A120: pump · fan instances end to end
         ("effect-compensation", "scripts/probe_effect_compensation.py", ["{out}"], 1500, None),
         ("work-order-only", "scripts/probe_work_order_only_card.py", ["--out", "{out}"], 900, None),
         ("ddl-drift", "scripts/probe_ddl_drift.py", ["--out", "{out}"], 300, None),

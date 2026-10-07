@@ -222,6 +222,25 @@ async def _alert_policy_retrying(pattern):
             delay = min(delay * 2, 30.0)
 
 
+async def _receive_retrying(pairs):
+    """A120: the receipt itself opens a DB connection; right after a container restart libpq may pick the unreachable IPv6
+    host.docker.internal (2026-10-07 13:37:45: `consumer task ended: OperationalError` raised from source_inbox.receive_many
+    → /healthz 503 and every later alert, pump·fan included, ignored until a manual restart — A108 had covered only the
+    policy lookup). Same contract as _alert_policy_retrying: retry with backoff, nothing committed meanwhile, /healthz shows
+    source_receive_error until the receipt succeeds."""
+    delay = 1.0
+    while True:
+        try:
+            out = await asyncio.to_thread(source_inbox.receive_many, pairs)
+            state.pop('source_receive_error', None)
+            return out
+        except Exception as exc:  # noqa: BLE001 — psycopg OperationalError/InterfaceError, DNS, pool exhaustion
+            state['source_receive_error'] = f"{type(exc).__name__}: {str(exc)[:200]}"
+            log.exception('source receipt unavailable; retrying in %.0fs', delay)
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 30.0)
+
+
 async def consume():
     global producer
     producer = await make_producer()
@@ -249,7 +268,7 @@ async def consume():
                 items.append((rec,record,policy))
             start=0
             while start<len(items):
-                rows,error,states=await asyncio.to_thread(source_inbox.receive_many,[(r,p) for _,r,p in items[start:]])
+                rows,error,states=await _receive_retrying([(r,p) for _,r,p in items[start:]])
                 done=start+len(rows)
                 if states:
                     plant_status.update(states)
