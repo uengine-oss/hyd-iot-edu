@@ -6,7 +6,7 @@ approval. The immutable archived source is pinned into its starting variables.
 from copy import deepcopy
 from uuid import UUID, uuid4
 
-from . import engine, kgadmin, manual_segments
+from . import engine, kgadmin, manual_segments, manual_locate
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
@@ -22,8 +22,9 @@ proposal 객체의 형태:
  "procedures":[{"id":"SOP-형식의 제안 ID","name":"절차 이름","section":"절 ref","anchor":ANCHOR,
  "steps":[{"order":1,"text":"조건과 금지를 보존한 단계","manual":"절 ref","anchor":ANCHOR}]}],
  "page_reviews":[{"page":1,"note":"이 페이지에서 검토한 내용 또는 절차가 없는 이유"}], "warnings":[]}
-ANCHOR는 {"source_id":"원본 source_id","page":1,"start":0,"end":10,"quote":"해당 정확한 문자열"}입니다.
-문자 좌표는 각 page.text의 Python 문자열 인덱스(0부터, end 제외)입니다. 모든 절/SOP/단계에 정확한 인용이 필요합니다.
+ANCHOR는 {"source_id":"원본 source_id","page":1,"quote":"원문 그대로의 문장"}입니다. start/end 문자 좌표는 적지 않아도 됩니다 —
+서버가 그 페이지에서 인용문의 위치를 찾습니다(정확 일치 → 글자·숫자만 비교 → 낱말 사이 짧은 끼어듦 허용). 인용은 그 페이지에서 한 곳만
+가리키도록 충분히 길게(표 제목·번호를 포함해) 잡으세요. 여러 곳에 있는 짧은 인용은 거부됩니다. 모든 절/SOP/단계에 인용이 필요합니다.
 페이지를 빠짐없이 page_reviews에 기록하세요. 페이지 검토 기록은 내용 정확성 보증이 아니며 사람이 다시 원문을 검토합니다.
 SOP ID 형식은 SOP-대문자/숫자 토큰을 '-'로 연결한 것입니다(예: SOP-OIL-21, SOP-HM9-2). 점(.)·소문자·공백은 쓸 수 없습니다.
 SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 HM-9.2 → SOP-HM9-2)를 쓰고 warnings에 명시하세요.
@@ -67,16 +68,14 @@ def validate_proposal(source, proposal):
         raise ValueError('추출 제안의 원문 판본이 다릅니다')
     pages = {p['page']:p['text'] for p in source['pages']}
     def anchor(value):
+        # A117 (r14 B2, memento document_locate): the agent quotes, the server locates. Offsets the agent sends are kept
+        # when they are right; otherwise the located span (page, start, end, source's own quote) is written back in place
+        # so the stored proposal is coordinate-complete for the reviewer, coverage and the graph.
         if not isinstance(value, dict) or value.get('source_id') != source['source_id']:
             raise ValueError('원문 판본의 인용이 필요합니다')
-        page, start, end = (value.get(k) for k in ('page','start','end'))
-        if any(type(v) is not int for v in (page,start,end)) or page not in pages:
-            raise ValueError('원문 인용 좌표가 올바르지 않습니다')
-        if not 0 <= start < end <= len(pages[page]):
-            raise ValueError(f'원문 인용 좌표가 페이지 {page} 범위를 벗어났습니다 (start={start}, end={end}, 페이지 길이 {len(pages[page])})')
-        if value.get('quote') != pages[page][start:end]:
-            actual=pages[page][start:end]
-            raise ValueError(f'원문 인용 문자열이 좌표와 다릅니다 (페이지 {page}, {start}~{end}): quote={str(value.get("quote"))[:60]!r} ≠ 원문={actual[:60]!r}')
+        located = manual_locate.locate(pages, value)
+        value.update({k: located[k] for k in ('page','start','end','quote')})
+        value.pop('located', None)
     for key, limit in [('sections',1000),('procedures',500),('page_reviews',500),('warnings',1000)]:
         if not isinstance(proposal.get(key),list) or len(proposal[key]) > limit:raise ValueError(key+' 목록을 확인하세요')
     seen_pages=set()

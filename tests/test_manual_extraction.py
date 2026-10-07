@@ -257,3 +257,35 @@ def test_long_manual_prompt_is_delivered_through_the_workspace_file_not_argv(rt,
     full=(tmp_path/'worker'/'hyd'/wi['id']/PROMPT_FILE).read_text(encoding='utf8')
     assert full.count('절차 설명 문장입니다.')>=2500 and '## 지시사항' in full and '## 결과 제출 형식' in full   # JSON-escaped newlines
     assert '짧은 매뉴얼' in short_req.prompt and '## 결과 제출 형식' in short_req.prompt
+
+
+def test_quote_only_anchors_are_located_by_the_server_and_stored_with_offsets(rt,document,tmp_path):
+    """A117 (r14 B2): the agent's proposal carries page + quote only; the stored result has start/end filled in and the
+    reviewer's validation (archive.validate_anchor, offsets required) accepts it unchanged."""
+    runtime,_=rt;archive,source,proposal=document
+    quoted=copy.deepcopy(proposal)
+    for a in [quoted['sections'][0]['anchor'],quoted['procedures'][0]['anchor'],quoted['procedures'][0]['steps'][0]['anchor']]:
+        a.pop('start');a.pop('end')
+    quoted['sections'][0]['anchor']['quote']='정비  절차'                          # whitespace the LLM changed
+    inst=extraction.start(runtime,source,str(uuid4()))
+    runner=Runner(_settings(tmp_path/'worker'),runtime.repo,exec_fn=_fake_exec(json.dumps({'proposal':quoted})),
+                  schema_prompt='ManualSection Skill Step',resolve_provider=lambda _:object())
+    assert runner.poll_once()==1 and runtime.poll_once()==1
+    result=extraction.result(runtime,source,inst['proc_inst_id'],None)
+    assert result['status']=='DONE' and (result.get('corrections') or {}).get('attempts',0)==0
+    stored=result['preview']['procedures'][0]['steps'][0]['anchor']
+    assert stored['start']==proposal['procedures'][0]['steps'][0]['anchor']['start'] and stored['end']==proposal['procedures'][0]['steps'][0]['anchor']['end']
+    assert result['preview']['sections'][0]['anchor']['quote']=='정비 절차'      # the source's own characters
+    preview=result['preview'];preview.update(reviewed=True,by='검토자',links={'SOP-EXTRACT-1':{'failureMode':'fm:bearing-degradation'}})
+    assert manual_review.validate(archive,'hyd',preview)['procedures'][0]['id']=='SOP-EXTRACT-1'
+
+
+def test_an_ambiguous_short_quote_goes_back_to_the_agent_as_a_correction(rt,document):
+    runtime,_=rt;_,source,proposal=document
+    bad=copy.deepcopy(proposal);a=bad['procedures'][0]['steps'][0]['anchor'];a.pop('start');a.pop('end');a['quote']='설명입니다.'
+    inst=extraction.start(runtime,source,str(uuid4()))
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    assert runtime.repo.save_task_result(wi['id'],{'proposal':bad},final=True)
+    runtime.poll_once()
+    row=runtime.repo.get_workitem(wi['id'])
+    assert row['draft_status']=='FB_REQUESTED' and '긴 인용' in row['feedback']['text']
