@@ -1,5 +1,7 @@
 """Read-only candidate forecast using fresh, explicitly modelled plant status."""
 from datetime import datetime, timezone
+import math
+import os
 from urllib.parse import quote
 
 from copy import deepcopy
@@ -7,8 +9,42 @@ from hydcommon.forecast import predict, number, MODEL_ID, MODEL_REVISION, MODEL_
 from . import decide
 
 
-REVIEW_POLICY = {'version': 'simulator-consent-v1',
-                 'max_adverse_change': {'ts1': 0.5, 'ts1_peak': 2.0, 'vs1': 0.05, 'vs1_peak': 0.05}}
+# A129: `max_adverse_change` is the budget at the reviewed instant. The plant keeps evolving between the human's review
+# and the command (TS1 rises while the card is read), and at TIME_SCALE=20 a few wall-clock seconds are minutes of
+# simulated time, so the budget grows with the *simulated* time elapsed between the two forecasts' source timestamps
+# (`max_adverse_rate_per_sim_min`, bounded by the lumped model's heating rate: ≤ 1.2 ℃/sim-min for the teaching cooler
+# case, vibration 0.004/℃). Past `max_review_age_sim_s` the reviewed forecast is stale whatever the values did.
+REVIEW_POLICY = {'version': 'simulator-consent-v2',
+                 'max_adverse_change': {'ts1': 0.5, 'ts1_peak': 2.0, 'vs1': 0.05, 'vs1_peak': 0.05},
+                 'max_adverse_rate_per_sim_min': {'ts1': 1.0, 'ts1_peak': 1.5, 'vs1': 0.006, 'vs1_peak': 0.006},
+                 'max_review_age_sim_s': 1800}
+
+
+def stack_time_scale():
+    """Simulated seconds per wall-clock second: the process service publishes the stack's TIME_SCALE; env, then 1."""
+    try:
+        published = decide._get_json(f'{decide.PROCESS_URL}/api/process/mode').get('time_scale')
+    except Exception:  # noqa: BLE001 — unreachable process: fall back to the environment, never block the check
+        published = None
+    for candidate in (published, os.getenv('TIME_SCALE')):
+        try:
+            scale = float(candidate)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(scale) and scale > 0:
+            return scale
+    return 1.0
+
+
+def _elapsed_sim_s(old, current, time_scale):
+    """Simulated seconds between the reviewed and the current forecast's plant timestamps; None when either is unknown."""
+    try:
+        stamps = [datetime.fromisoformat(str(c.get('source_t') or '').replace('Z', '+00:00')) for c in (old, current)]
+    except ValueError:
+        return None
+    if any(s.tzinfo is None for s in stamps):
+        return None
+    return max(0.0, (stamps[1] - stamps[0]).total_seconds()) * time_scale
 
 
 def binding(kg, asset):
@@ -77,15 +113,21 @@ def candidates(kg, asset, skills):
     return forecasts, contexts
 
 
-def consent_changes(old, current):
+def consent_changes(old, current, time_scale=None):
     """Ignore clock drift, not model/input/action changes or worsening safety.
 
     Budgets are conservative teaching review policy, not model accuracy claims.
     Interlocks and DMN exclusions are checked independently with no tolerance.
+    `time_scale` (simulated s per wall s) defaults to the running stack's value.
     """
     if not old or not current or old.get('error') or current.get('error'):
         return ['검토한 현재 모델 예측이 없거나 예측을 확인할 수 없습니다']
     reasons = []
+    elapsed = _elapsed_sim_s(old, current, stack_time_scale() if time_scale is None else float(time_scale))
+    max_age = REVIEW_POLICY['max_review_age_sim_s']
+    if elapsed is not None and elapsed > max_age:
+        reasons.append(f'검토한 예측이 시뮬레이션 {elapsed / 60:.0f}분 전 상태입니다: 새 카드 검토가 필요합니다')
+    minutes = min(elapsed or 0.0, max_age) / 60
     for key in ('model_id', 'model_revision', 'scope', 'binding', 'horizon_s', 'parameters',
                 'actions', 'assumptions', 'review_policy'):
         if old.get(key) != current.get(key):
@@ -97,8 +139,9 @@ def consent_changes(old, current):
             reasons.append(f'예측 입력 {key} 변경: 새 카드 검토가 필요합니다')
     if current.get('predicted_interlocks'):
         reasons.append('예측 구간에서 PLC 인터록이 예상됩니다')
+    rates = REVIEW_POLICY['max_adverse_rate_per_sim_min']
     for key, tolerance in REVIEW_POLICY['max_adverse_change'].items():
         a, b = old.get('values', {}).get(key), current.get('values', {}).get(key)
-        if a is None or b is None or b > a + tolerance:
+        if a is None or b is None or b > a + tolerance + rates.get(key, 0.0) * minutes:
             reasons.append(f'예측 {key} 악화 또는 미확인: 새 카드 검토가 필요합니다')
     return reasons

@@ -21,9 +21,9 @@ TENANT_MCP = {"mcpServers": {"neo4j": {"command": "uvx", "args": ["mcp-neo4j-cyp
                              "hyd-dmn": {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"}}}
 
 
-def _repo():
+def _repo(def_path=DEF_PATH):
     repo = procdb.MemoryRepo()
-    defn = engine.Definition.load(DEF_PATH)
+    defn = engine.Definition.load(def_path)
     repo.upsert_proc_def(defn.raw)
     repo.upsert_form(FORM_DIAGNOSE)
     repo.upsert_tenant({"id": "hyd", "name": "hyd", "mcp": TENANT_MCP})
@@ -298,6 +298,49 @@ def test_late_result_or_error_cannot_overwrite_cancellation(tmp_path,monkeypatch
     assert fresh['status']=='CANCELLED' and fresh['draft_status']=='CANCELLED'
     assert fresh.get('output') is None and fresh['consumer'] is None
     assert not any(e['event_type']=='task_completed' for e in repo.list_events(todo_id=first['id']))
+
+
+def test_read_only_runs_claude_code_with_workspace_write_and_says_so(tmp_path, caplog):
+    # A129 (session 14, first try): cliagents turns READ_ONLY into Claude Code's plan mode, where every MCP tool is refused.
+    from worker.settings import effective_permission
+    with caplog.at_level("WARNING", logger="worker.settings"):
+        assert effective_permission("claude-code", Permission.READ_ONLY) is Permission.WORKSPACE_WRITE
+    assert "plan mode" in caplog.text and "read_only" in caplog.text
+    assert effective_permission("codex", Permission.READ_ONLY) is Permission.READ_ONLY
+    assert effective_permission("claude-code", Permission.COMMAND_EXEC) is Permission.COMMAND_EXEC
+    defn = json.loads(DEF_PATH.read_text(encoding="utf-8"))
+    defn["activities"][0]["agentConfig"] = {"cli": "claude-code", "permission": "read_only"}       # activities[0] is task:diagnose
+    (tmp_path / "read_only.json").write_text(json.dumps(defn, ensure_ascii=False), encoding="utf-8")
+    repo, inst = _repo(tmp_path / "read_only.json")
+    reqs = []
+    r = Runner(_settings(tmp_path), repo, exec_fn=_fake_exec('{"cause": "c", "failure_mode": "f", "guide_card": {"x": 1}}', requests=reqs),
+               schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1 and reqs[0][0].permission is Permission.WORKSPACE_WRITE
+
+
+def test_agents_probe_cli_credentials_only_when_asked(monkeypatch):
+    # A129: /agents?check_auth=1 took the flag and ignored it; the product's picker probes `claude auth status` / `codex login status`.
+    from types import SimpleNamespace
+    from worker import main
+    found = [SimpleNamespace(agent_id="claude-code", installed=True, executable_path="/usr/bin/claude", install_hint=""),
+             SimpleNamespace(agent_id="codex", installed=False, executable_path=None, install_hint="npm i -g @openai/codex")]
+    monkeypatch.setattr(main.registry, "availability", lambda surface, refresh=False: found)
+    probes = []
+
+    def fake_run(argv, **kw):
+        probes.append(argv)
+        return SimpleNamespace(returncode=1, stdout="", stderr="Not logged in. Run `claude login`.\nmore")
+    monkeypatch.setattr(main.subprocess, "run", fake_run)
+    plain = main.agents()
+    assert probes == [] and "authenticated" not in plain[0] and plain[0]["default"] is True
+    rows = main.agents(check_auth=True)
+    assert probes == [["/usr/bin/claude", "auth", "status"]]
+    assert rows[0]["authenticated"] is False and rows[0]["auth_hint"] == "Not logged in. Run `claude login`."
+    assert rows[1]["authenticated"] is None and rows[1]["auth_hint"] == "" and rows[1]["installed"] is False
+    monkeypatch.setattr(main.subprocess, "run", lambda argv, **kw: SimpleNamespace(returncode=0, stdout="ok", stderr=""))
+    assert main.agents(check_auth=True)[0]["authenticated"] is True
+    monkeypatch.setattr(main.subprocess, "run", lambda argv, **kw: (_ for _ in ()).throw(OSError("gone")))
+    assert main.agents(check_auth=True)[0]["authenticated"] is None            # a failed probe is unknown, not "log in first"
 
 
 def test_activity_capabilities_read_the_designers_agent_config():

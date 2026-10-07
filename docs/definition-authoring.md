@@ -23,6 +23,8 @@
 
 현재 공개 등록은 사람 작업(userTask/manualTask), CLI 에이전트(ProcessGPT와 같은 모양: userTask + agentMode DRAFT 또는 COMPLETE, orchestration cliagents — 생략하면 cliagents; 이전 모양 businessRuleTask + agentMode는 등록 때 이 모양으로 바뀐다), 등록된 서비스 도구, 배타 게이트웨이, 시작/종료/경계 타이머를 검사한다. 서비스 도구는 incident:command, incident:reobserve, enterprise:WO_CREATE이며 실제 연결·필요 입력이 있어야 실행된다. 반복·병렬 합류·subProcess/callActivity는 공개 경로 통합 검증 전이므로 등록을 거절한다. 모든 BPMN을 지원한다는 뜻이 아니다.
 
+활동의 `agentConfig.permission`은 `workspace_write`(기본)·`command_exec`·`read_only`다. `read_only`는 Claude Code에서 plan 모드가 되어 MCP 도구 호출이 전부 거절되므로(14회차 1차 실패), 워커는 Claude Code일 때 `read_only`를 `workspace_write`로 바꾸고 경고 로그를 남긴다(A129). 조회만 시키려면 권한이 아니라 도구 목록(`tools`)으로 제한한다.
+
 새 정의의 폼은 정의 원문과 함께 버전별 불변 저장된다. 기존 anomaly_response1.0은 당시 폼 snapshot이 없어 현재 form_def를 읽는 `legacy-live`로 표시한다. 기본 신규 설비 실행은 2.0으로 전환하여 6개 폼을 정의 안에 보존한다. 상급자 확인은 note를 필수로 제출하고 그 값을 실행 변수에 남긴다. 1.0 과거 폼을 자동 복원했다는 뜻은 아니다. MCP 서버 설정도 정의 원문 밖에 있으므로 폼 고정만으로 모든 실행 환경이 고정됐다고 하지 않는다.
 
 ## 실제 API

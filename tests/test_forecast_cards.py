@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 import pytest
 
@@ -79,6 +80,46 @@ def test_material_prediction_changes_require_new_review(monkeypatch, change):
 
 def test_missing_previous_model_context_requires_new_review():
     assert forecasting.consent_changes(None, {})
+
+
+def _later(context, wall_seconds, **values):
+    """The same forecast re-read `wall_seconds` later on the plant clock, with the given predicted values moved."""
+    later = deepcopy(context)
+    stamp = datetime.fromisoformat(context['source_t'].replace('Z', '+00:00')) + timedelta(seconds=wall_seconds)
+    later['source_t'] = stamp.isoformat()
+    later['values'].update({k: later['values'][k] + v for k, v in values.items()})
+    return later
+
+
+def test_consent_budget_grows_with_simulated_time_between_review_and_command(monkeypatch):
+    # A129 (session 19, 2-fresh-review): at TIME_SCALE=20 the 15 wall seconds between the human's review and the command
+    # are 5 simulated minutes in which TS1 legitimately rises; the same rise in 15 real seconds is not legitimate.
+    result, _ = evaluate(monkeypatch, thermal.UnitState(cooler_health=.43, ts1=62))
+    old = result['options'][0]['forecastContext']
+    drifted = _later(old, 15, ts1=1.5, ts1_peak=3.0)
+    assert forecasting.consent_changes(old, drifted, time_scale=20) == []
+    assert forecasting.consent_changes(old, drifted, time_scale=1) == [
+        '예측 ts1 악화 또는 미확인: 새 카드 검토가 필요합니다', '예측 ts1_peak 악화 또는 미확인: 새 카드 검토가 필요합니다']
+    # a change larger than the plant can produce in that simulated time is still a different prediction
+    assert forecasting.consent_changes(old, _later(old, 15, ts1=8.0), time_scale=20)
+
+
+def test_stale_review_requires_a_new_card_even_when_values_hold(monkeypatch):
+    result, _ = evaluate(monkeypatch, thermal.UnitState(cooler_health=.43, ts1=56))
+    old = result['options'][0]['forecastContext']
+    assert forecasting.consent_changes(old, _later(old, 120, ts1=0.0), time_scale=20) == [
+        '검토한 예측이 시뮬레이션 40분 전 상태입니다: 새 카드 검토가 필요합니다']
+    assert forecasting.consent_changes(old, _later(old, 120, ts1=0.0), time_scale=1) == []
+
+
+def test_time_scale_comes_from_the_running_stack_then_the_environment(monkeypatch):
+    monkeypatch.setattr(decide, '_get_json', lambda url: {'time_scale': 20.0})
+    assert forecasting.stack_time_scale() == 20.0
+    monkeypatch.setattr(decide, '_get_json', lambda url: (_ for _ in ()).throw(OSError('offline')))
+    monkeypatch.setenv('TIME_SCALE', '5')
+    assert forecasting.stack_time_scale() == 5.0
+    monkeypatch.delenv('TIME_SCALE')
+    assert forecasting.stack_time_scale() == 1.0
 
 
 def test_live_submit_cannot_overwrite_source_facts_before_any_io():

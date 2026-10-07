@@ -23,7 +23,7 @@ from procsvc import task_deferral
 
 from . import bridge, context, hitl, outcome, prompt, workspace
 from . import events as ui_events
-from .settings import Settings
+from .settings import Settings, effective_permission
 from .process_control import controlled_stream
 
 log = logging.getLogger("worker.runner")
@@ -104,7 +104,7 @@ class Runner:
         # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
         provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
         model = _first(config, _MODEL_KEYS) or self.s.model
-        permission = _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission)
+        permission = effective_permission(provider_id, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result

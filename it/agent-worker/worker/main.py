@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -36,12 +37,36 @@ def _repo():
     return PgRepo(settings.supabase_dsn)
 
 
+#: A129 (process-gpt-cli-agent core/availability.py): how each CLI is asked whether it has credentials — read-only status
+#: commands, no model call. `installed` is cheap (PATH); `authenticated` costs a subprocess per agent, so it is opt-in
+#: (`/agents?check_auth=1`), and a probe that hangs or errors reports None ("unknown") rather than a false "log in first".
+_AUTH_PROBES = {"claude-code": ["auth", "status"], "codex": ["login", "status"]}
+_PROBE_TIMEOUT_S = 10
+
+
+def _probe_auth(agent_id: str, executable: str | None, *, runner=None) -> tuple[bool | None, str]:
+    probe = _AUTH_PROBES.get(agent_id)
+    if not probe or not executable:
+        return None, ""
+    try:
+        completed = (runner or subprocess.run)([executable, *probe], capture_output=True, text=True, timeout=_PROBE_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError):
+        return None, ""
+    if completed.returncode == 0:
+        return True, ""
+    detail = (completed.stderr or completed.stdout or "").strip().splitlines()
+    return False, detail[0] if detail else "not logged in"
+
+
 def agents(check_auth: bool = False) -> list[dict]:
-    """Which CLI agents exist in this container — the same probe the product's picker uses."""
+    """Which CLI agents exist in this container — the same probe the product's picker uses (auth state on request)."""
     out = []
     for a in registry.availability(Surface.EXEC, refresh=True):
-        out.append({"agent_id": a.agent_id, "installed": a.installed, "install_hint": None if a.installed else a.install_hint,
-                    "default": a.agent_id == settings.cli_agent})
+        row = {"agent_id": a.agent_id, "installed": a.installed, "install_hint": None if a.installed else a.install_hint,
+               "default": a.agent_id == settings.cli_agent}
+        if check_auth:
+            row["authenticated"], row["auth_hint"] = _probe_auth(a.agent_id, a.executable_path) if a.installed else (None, "")
+        out.append(row)
     return out
 
 
@@ -51,7 +76,7 @@ class Http(BaseHTTPRequestHandler):
         if path.path in ("/health", "/healthz"):
             body, code = dict(status, runs_in_flight=_runner.in_flight if _runner else 0), 200 if status["status"] == "ok" else 503
         elif path.path == "/agents":
-            body, code = {"agents": agents("check_auth=1" in (path.query or ""))}, 200
+            body, code = {"agents": agents(any(f"check_auth={v}" in (path.query or "") for v in ("1", "true", "yes")))}, 200
         else:
             body, code = {"error": "not found"}, 404
         data = json.dumps(body, ensure_ascii=False).encode()

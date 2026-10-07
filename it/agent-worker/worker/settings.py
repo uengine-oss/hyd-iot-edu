@@ -5,15 +5,30 @@ retention window long enough to answer "where did my file go?".
 """
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from cliagents import Permission
 
+log = logging.getLogger("worker.settings")
 #: The orchestration value this worker polls (todolist.agent_orch). One value for every CLI (the product's AGENT_TYPE).
 AGENT_TYPE = "cliagents"
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
+
+
+def effective_permission(provider_id: str, permission: Permission) -> Permission:
+    """A129: cliagents maps READ_ONLY onto Claude Code's `plan` permission mode (cliagents/providers/claude_code.py), where
+    every MCP tool call fails with "Cannot call … while in plan mode" (session 14, first try: the run deferred without
+    reading the business DB). A headless business task without its tools is a dead run, so for Claude Code READ_ONLY is
+    normalized to WORKSPACE_WRITE — the worker's default: writes stay inside the run workspace and commands remain gated by
+    the allowed-tools list — and the normalization is logged. Other CLIs keep the definition's value."""
+    if provider_id == "claude-code" and permission is Permission.READ_ONLY:
+        log.warning("agentConfig permission=read_only would run Claude Code in plan mode (MCP tools refused); using %s",
+                    Permission.WORKSPACE_WRITE.value)
+        return Permission.WORKSPACE_WRITE
+    return permission
 
 
 def _csv(value: str) -> list[str]:

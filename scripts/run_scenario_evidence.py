@@ -12,7 +12,11 @@ import traceback
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--out',required=True)
-    ap.add_argument('--worker',action='store_true');ap.add_argument('--fresh-review',action='store_true')
+    ap.add_argument('--worker',action='store_true')
+    # A129: the current selection contract (docs/sessions/19 step 3) reviews the current forecast before approving, so the
+    # review is the default; `--no-fresh-review` reproduces the diagnosis-time approval that the approval check refuses.
+    ap.add_argument('--fresh-review',dest='fresh_review',action='store_true',default=True)
+    ap.add_argument('--no-fresh-review',dest='fresh_review',action='store_false')
     args=ap.parse_args();root=Path(__file__).resolve().parents[1]
     out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=False)
     command=[sys.executable,'-u','scripts/scenario_instance_test.py']
