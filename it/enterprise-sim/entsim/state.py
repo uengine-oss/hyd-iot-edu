@@ -25,6 +25,15 @@ COMPENSATION_SKILLS = {
 }
 INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:procure-part": "skill:cancel-purchase-request",
               "skill:reallocate-production": "skill:restore-production", "skill:hold-lot": "skill:release-hold"}
+# Korean display names of the business skills (system of record for the portal's names.json — A150). The forward
+# names come from the v1 enterprise seed (it/neo4j/v1/seed_enterprise.cypher); the v2 graph does not carry these skills.
+SKILL_NAMES = {
+    "skill:schedule-maintenance": "정비 작업지시 발행", "skill:reallocate-production": "생산오더 대체 설비 이관",
+    "skill:procure-part": "부품 구매요청", "skill:hold-lot": "로트 격리 · 전수검사", "skill:release-lot": "로트 출하 승인",
+    "skill:substitute-shipment": "완제품 재고 대체 출하", "skill:demand-control": "수요 제어 지시",
+    "skill:cancel-work-order": "정비 작업지시 취소", "skill:cancel-purchase-request": "구매요청 취소",
+    "skill:restore-production": "생산오더 원래 설비 복원", "skill:release-hold": "로트 격리 해제",
+}
 IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어가 되돌릴 수 없다",
                 "skill:substitute-shipment": "대체 출하는 물류가 움직여 되돌릴 수 없다",
                 "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}

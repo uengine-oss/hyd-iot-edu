@@ -45,6 +45,12 @@ def main() -> int:
     if not names:
         print("names: 0 — Neo4j에 id/name 노드가 없다. 생성하지 않음", file=sys.stderr)
         return 1
+    # 업무 스킬(skill:schedule-maintenance 등)은 v2 그래프에 없고 enterprise-sim 코드가 정본이다(A150)
+    sys.path.insert(0, str(ROOT / "it" / "enterprise-sim"))
+    from entsim.state import SKILL_NAMES  # noqa: E402
+    for sid, label in SKILL_NAMES.items():
+        names.setdefault(sid, label)
+    kinds["BusinessSkill"] = len(SKILL_NAMES)
     print(f"names: {len(names)} · " + " · ".join(f"{k} {v}" for k, v in sorted(kinds.items(), key=lambda x: -x[1])))
     if a.check:
         return 0
