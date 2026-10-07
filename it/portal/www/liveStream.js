@@ -132,13 +132,29 @@
     const es = new EventSource(API.process + '/api/events/stream');
     S.es = es;
     es.onopen = () => {
-      S.connected = true; connState(UI.t('header.connected'), true);
+      S.connected = true; S.backoff = 0; connState(UI.t('header.connected'), true);
       const t = document.getElementById('streamTicker');
       if (t && !S.lastKey) t.innerHTML = `<i class="live-dot on"></i><span>${esc(UI.t('header.waiting'))}</span>`;
     };
     es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (e) { /* ignore a bad frame */ } render(); });
     es.onmessage = ev => { try { push(JSON.parse(ev.data), true); } catch (e) { return; } render(); };
-    es.onerror = () => { S.connected = false; connState(UI.t('header.disconnected'), false); };   // EventSource reconnects by itself; ids keep the list deduplicated
+    // A147: a dropped connection (readyState CONNECTING) is retried by the browser itself; ids keep the list deduplicated.
+    // A non-200 answer closes the EventSource for good (readyState CLOSED): legacy mode answers 409 → show "실시간 꺼짐",
+    // anything else (process restarting, 5xx) → reconnect with backoff 2 · 4 · 8 … 30 s.
+    es.onerror = () => {
+      S.connected = false;
+      if (es.readyState !== EventSource.CLOSED) { connState(UI.t('header.disconnected'), false); return; }
+      es.close(); if (S.es === es) S.es = null;
+      afterClose();
+    };
+  }
+  async function afterClose() {
+    let legacy = false;
+    try { legacy = !(await getJ(API.process + '/api/process/mode')).definition; } catch (_) { /* process unreachable: retry below */ }
+    if (legacy) { S.off = true; connState(UI.t('header.streamOff'), false); return; }
+    connState(UI.t('header.disconnected'), false);
+    S.backoff = Math.min(30000, (S.backoff || 1000) * 2);
+    clearTimeout(S.retryTimer); S.retryTimer = setTimeout(connect, S.backoff);
   }
 
   function mount() {

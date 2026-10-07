@@ -4,9 +4,19 @@
 (function () {
   const states = new Map();
   const kinds = { enterprise: '업무 거래', plc: '설비 명령', cmms: '정비 요청 (원장 미확인)', 'cmms-request': '정비 요청 (접수 불명확)', local: '로컬 실행 기록' };
+  // A147: a lost response keeps the exact request (same request_id) so a retry never creates a second compensation/review (instanceRework.js pattern)
+  const key = id => 'hyd:effects:' + id;
   function stateFor(id, by) {
-    if (!states.has(id)) states.set(id, { data: null, by: by || '', role: '', reason: '', picked: new Set(), busy: false, error: '', notice: '' });
+    if (!states.has(id)) {
+      let pending = null;
+      try { pending = JSON.parse(sessionStorage.getItem(key(id)) || 'null'); } catch (_) { /* Storage unavailable: in-memory retry still works. */ }
+      states.set(id, { data: null, by: pending?.body.by || by || '', role: pending?.body.role || '', reason: pending?.body.reason || '', picked: new Set(), busy: false, error: '', notice: '', pending });
+    }
     return states.get(id);
+  }
+  function clearPending(s, id) {
+    s.pending = null;
+    try { sessionStorage.removeItem(key(id)); } catch (_) { /* nothing persisted */ }
   }
   function label(e) {
     if (e.kind === 'enterprise') return `${esc(UI.who(e.system) || '')} · ${esc(e.skill || '')} · ${esc(e.ref || '')}${e.detail ? ' — ' + esc(e.detail) : ''}`;
@@ -22,6 +32,9 @@
     async function load() {
       try { s.data = await getJ(API.process + '/api/instances/' + encodeURIComponent(id) + '/effects'); s.error = ''; }
       catch (e) { s.data = null; s.error = e.message; }
+      // the server already holds a finished receipt for the pending request → it went through; a PENDING compensation receipt is resumed by the retry
+      const done = s.pending && (s.data?.receipts || []).find(r => r.request_id === s.pending.body.request_id && r.status !== 'PENDING');
+      if (done) { clearPending(s, id); s.notice = `이전 요청이 처리됐습니다 (${done.request_id})`; }
       draw();
     }
     function draw() {
@@ -45,29 +58,38 @@
           ${UI.field({ label: UI.t('form.role'), required: true, input: `<select id="efRole" ${s.busy ? 'disabled' : ''}><option value="">${esc(UI.t('form.pickRole'))}</option>${(d.review_roles || []).map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` })}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="efReason" rows="2" ${s.busy ? 'disabled' : ''}>${esc(s.reason)}</textarea>` })}
         </div></section>
-        ${UI.actions(`<button class="btn outline" id="efCompensate" ${!reversiblePending || s.busy ? 'disabled' : ''}>되돌릴 수 있는 거래 ${reversiblePending}건 보상 요청</button><button class="btn primary" id="efReview" ${!s.picked.size || s.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))} (${s.picked.size})</button>`, s.error)}</div>
+        ${s.pending ? `<p>응답을 확인하지 못한 요청이 있습니다. 같은 요청의 결과를 확인하며 중복 처리하지 않습니다.</p>${UI.actions(`<button class="btn" id="efRetry" ${s.busy ? 'disabled' : ''}>같은 요청 결과 다시 확인</button>`, s.error)}`
+          : UI.actions(`<button class="btn outline" id="efCompensate" ${!reversiblePending || s.busy ? 'disabled' : ''}>되돌릴 수 있는 거래 ${reversiblePending}건 보상 요청</button><button class="btn primary" id="efReview" ${!s.picked.size || s.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))} (${s.picked.size})</button>`, s.error)}</div>
         ${pending.size === 0 && (d.effects || []).length ? `<p class="rework-success" role="status">모든 효과가 해결됐습니다. ${esc(UI.t('inst.rework'))}에서 새 차수를 요청할 수 있습니다.</p>` : ''}
         ${receipts ? UI.fold(`확인 기록 ${(d.receipts || []).length}건`, `<ul>${receipts}</ul>`, { cls: 'small' }) : ''}
         ${s.notice ? `<p role="status">${esc(s.notice)}</p>` : ''}`;
-      host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`미해결 ${pending.size}`, 'warning') : ''}`, body, { open: pending.size > 0 });
+      host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`미해결 ${pending.size}`, 'warning') : ''}`, body, { open: pending.size > 0 || !!s.pending });
       host.querySelectorAll('input[data-effect]').forEach(cb => cb.addEventListener('change', e => { e.target.checked ? s.picked.add(e.target.dataset.effect) : s.picked.delete(e.target.dataset.effect); draw(); }));
       host.querySelector('#efBy')?.addEventListener('input', e => s.by = e.target.value);
       host.querySelector('#efRole')?.addEventListener('change', e => s.role = e.target.value);
       host.querySelector('#efReason')?.addEventListener('input', e => s.reason = e.target.value);
       host.querySelector('#efCompensate')?.addEventListener('click', () => send('compensate', null));
       host.querySelector('#efReview')?.addEventListener('click', () => send('review', [...s.picked]));
+      host.querySelector('#efRetry')?.addEventListener('click', () => send());
     }
     async function send(kind, effects) {
       if (s.busy) return;
-      if (!s.by.trim() || !s.role || !s.reason.trim()) { s.error = UI.t('form.err.byRoleReason'); draw(); return; }
+      if (!s.pending) {
+        if (!s.by.trim() || !s.role || !s.reason.trim()) { s.error = UI.t('form.err.byRoleReason'); draw(); return; }
+        s.pending = { kind, body: { request_id: crypto.randomUUID(), by: s.by, role: s.role, reason: s.reason, effects } };
+        try { sessionStorage.setItem(key(id), JSON.stringify(s.pending)); } catch (_) { /* Retain exact request in memory. */ }
+      }
+      ({ kind } = s.pending);
       s.busy = true; s.error = ''; s.notice = ''; draw();
-      const body = { request_id: crypto.randomUUID(), by: s.by, role: s.role, reason: s.reason, effects };
       try {
-        const r = await postJ(API.process + '/api/instances/' + encodeURIComponent(id) + '/effects/' + kind, body);
+        const r = await postJ(API.process + '/api/instances/' + encodeURIComponent(id) + '/effects/' + kind, s.pending.body);
         s.notice = kind === 'review' ? `확인 기록 저장 (${r.request_id})` : `보상 ${UI.status(r.status)} (${(r.results || []).filter(x => x.ok).length}/${(r.effects || []).length})`;
         if (r.status === 'FAILED') s.error = r.error || '보상 실패';
-        s.picked.clear();
-      } catch (e) { s.error = e.message; }
+        clearPending(s, id); s.picked.clear();
+      } catch (e) {
+        s.error = e.message;
+        if (e.status >= 400 && e.status < 500) clearPending(s, id);    // the server refused this request: a new one is needed
+      }
       s.busy = false;
       await load();
       if (changed) changed();

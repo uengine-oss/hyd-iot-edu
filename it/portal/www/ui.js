@@ -9,7 +9,7 @@ const UI = {
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '승인과 실행', 'nav.instances': '처리 건',
     'nav.knowledge': '지식 관리', 'nav.admin': '관리',
     'nav.group.plant': '설비', 'nav.group.decide': '판단과 처리', 'nav.group.manage': '관리',
-    'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중',
+    'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중', 'header.streamOff': '실시간 꺼짐 (기본 처리 모드)',
     'header.open': '진행 중', 'header.simTime': '시뮬레이션 시각', 'header.scale': '시간 배율', 'header.simBadge': '시뮬레이션', 'header.menu': '메뉴',
     // 공통 단위
     'case': '사건', 'instance': '처리 건', 'step': '단계', 'myTurn': '내 차례', 'agent': 'AI 에이전트', 'operator': '운전원', 'system': '시스템',
@@ -67,7 +67,7 @@ const UI = {
     // 승인과 실행
     'proc.flow': '업무 흐름', 'proc.list': '판단 결과', 'proc.empty': '아직 제출된 판단이 없습니다', 'proc.emptySub': '경보가 나면 에이전트가 조치 후보를 제출합니다', 'proc.select': '판단을 선택하세요',
     'proc.manual': '수동 실행', 'proc.override': '추천과 다른 선택', 'proc.submitted': '제출', 'proc.executions': '실행 결과', 'proc.history': '이력', 'proc.systems': '기업 시스템 현황', 'proc.tx': '시스템 실행 이력',
-    'proc.noChange': '변경 없음', 'proc.noTx': '아직 실행 이력이 없습니다', 'proc.noEnt': '기업 시스템에 연결할 수 없습니다', 'proc.listError': '판단 목록을 갱신할 수 없습니다. 마지막으로 받은 목록입니다.',
+    'proc.noChange': '변경 없음', 'proc.noTx': '아직 실행 이력이 없습니다', 'tx.beforeAfter': '변경 전·후', 'tx.col.field': '항목', 'tx.col.before': '변경 전', 'tx.col.after': '변경 후', 'tx.noDiff': '바뀐 값 없음', 'tx.created': '새로 만듦', 'proc.noEnt': '기업 시스템에 연결할 수 없습니다', 'proc.listError': '판단 목록을 갱신할 수 없습니다. 마지막으로 받은 목록입니다.',
     'proc.flowEmpty': '판단을 선택하면 진행 상태가 표시됩니다', 'proc.flowManual': '수동 실행 판단은 진행 상태가 없습니다', 'proc.approving': '승인 중…', 'proc.rejecting': '반려 중…',
     'proc.legend.done': '완료', 'proc.legend.now': '진행 중', 'proc.legend.stop': '중단', 'proc.legend.skipped': '건너뜀',
     'sys.MES': '생산 주문', 'sys.CMMS': '정비 요청', 'sys.ERP': '구매 · 출하', 'sys.QMS': '품질 처분', 'sys.EMS': '에너지 제어',
@@ -150,6 +150,7 @@ const UI = {
   /* ---------- A141 단계 로그(영문) → 화면 문구. 원문은 호출하는 쪽이 접기에 보존한다. ---------- */
   logPatterns: [
     [/^cancelled: instance ended \((?:ev:)?([\w-]+)\)$/, (m, U) => `처리 건 종료(${U.flowName(m[1])})로 취소`],
+    [/^cancelled: (?:ev:|task:)?([\w-]+) completed first;?$/, m => m[1] === 'select-timeout' ? '선택 시간 초과가 먼저 와서 취소' : '다른 갈래가 먼저 끝나 취소'],   // A147: 경계 타이머 경쟁
     [/^human approval accepted; delivery tracked separately$/, () => '담당자 승인 접수 · 전달은 별도로 추적'],
     [/^approval accepted by (.+?); delivery pending$/, (m, U) => `${U.who(m[1])} 승인 접수 · 전달 대기`],
     [/^submitted by (.+)$/, (m, U) => `${U.who(m[1])} 제출`],
@@ -247,8 +248,9 @@ const UI = {
   },
   eventName(name) { return this.eventNames[name] || this.states[name] || name || '–'; },
   // chips: optional pre-rendered small chips after the actor (A132: `결과 파일로 제출` on a task_completed whose result_source is file)
-  eventRecord({ time, name, actor = '', detail = '', raw, chips = '' }) {
-    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span>${chips}</header>${detail ? `<p>${esc(detail)}</p>` : ''}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
+  // extra: optional pre-rendered fold before the raw fold (A147: 기업 거래의 `변경 전·후`)
+  eventRecord({ time, name, actor = '', detail = '', raw, chips = '', extra = '' }) {
+    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span>${chips}</header>${detail ? `<p>${esc(detail)}</p>` : ''}${extra}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
   },
   condition(value) {
     return { 'cmms_cleans_60d >= 3': '최근 60일 동안 쿨러 세척 3회 이상', 'qms_hot_min > 0': '과열 구간에 생산된 로트가 있음' }[value] || value;

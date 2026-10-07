@@ -23,4 +23,5 @@
 
 ## 증거
 - `.evidence/sessions/18/`(2026-10-07 제작자, `run.py`·`commands.md`): 오늘 13:01 완료된 쿨러 인스턴스로 — 1·4 `GET /api/instances/{id}/graph`(정의 `proc:anomaly-response` 2.2, 작업 10, 경고 0, 투영 대기 0) · 2 API가 준 Cypher 본문을 bolt로 그대로 실행해 작업 10개 동일 · 3 `WorkItem -EXECUTES->` 흐름 노드 10행 · 5 ProcessInstance 속성 목록, `ON_ASSET` 집계(HYD-01 113건 …), HYD-01 정의 버전별 건수 · 6 `GET /api/graph-projections` — **검증됨**(Browser 화면 대신 같은 Cypher를 bolt 드라이버로 실행). 포털 표 화면은 캡처 없이 진행 — **미검증**.
+- 화면 캡처 `.evidence/sessions/18/screen-portal-execution-table.png`(2026-10-08 A147 제작자, `scripts/ui_session_shots.py`, `screen-facts.json`): 1단계 완료된 쿨러 처리 건(`anomaly_response.a0f8000c…`) → 기록 탭 → "지식 반영" 표 10행 · 정의 버전 2.2 · 질의 보기 있음 — **검증됨**(화면).
 - 제작자 증거: 쿨러 42/42 안의 그래프 검사(ProcessInstance -INSTANCE_OF-> Process, WorkItem -EXECUTES-> Task, ROLE_BOUND) `.evidence/reaudit/reg-a116/cooler-42/scenario.log`, 투영 복구·격리 `probe_execution_projection.py`·`probe_projection_repair_live.py`(`docs/execution-projection.md` "검증"), 실행 범위 `probe_execution_scope.py`. 학생 완주 증거 아님.

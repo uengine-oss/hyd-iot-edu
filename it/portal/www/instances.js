@@ -415,6 +415,14 @@
       <div class="form"><section class="form-section"><div class="form-grid">${UI.field({ label: UI.t('form.by'), required: true, input: `<input data-retry-by value="${esc(I.form.by || '')}">` })}${UI.field({ label: UI.t('form.role'), required: true, input: `<select data-retry-role><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}">${esc(who(r))}</option>`).join('')}</select>` })}</div></section>
       ${UI.actions(`<button class="btn primary" data-work-order-retry="${esc(w.id)}" ${I.busy || !roles.length ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>`, !roles.length ? '승인 원문을 확인할 수 없어 별도 검토가 필요합니다.' : I.msg)}</div></div>`, { open: true })).join('');
   }
+  // A147: 승인 폐기 요청은 보내기 전에 sessionStorage 에 보존(같은 request_id) — 응답을 잃으면 같은 요청으로 결과만 다시 확인한다(instanceRework.js 와 같은 방식)
+  const discardKey = wid => 'hyd:discard:' + wid;
+  function discardPending(wid) { try { return JSON.parse(sessionStorage.getItem(discardKey(wid)) || 'null'); } catch (_) { return I.discardPending?.[wid] || null; } }
+  function setDiscardPending(wid, req) {
+    I.discardPending = { ...(I.discardPending || {}), [wid]: req };
+    try { req ? sessionStorage.setItem(discardKey(wid), JSON.stringify(req)) : sessionStorage.removeItem(discardKey(wid)); } catch (_) { /* in-memory copy above */ }
+    if (!req) delete I.discardPending[wid];
+  }
   function approvalHtml(view) {
     const approvals = view.approvals || [];
     if (!approvals.length) return '';
@@ -425,14 +433,17 @@
       const roles = Object.keys(snapshot.roles || {});
       const commandPending = view.workitems.some(w => w.tool === 'incident:command' && w.status === 'PENDING');
       const reviewable = view.instance.status === 'RUNNING' && (a.status === 'FAILED' || (a.status === 'DELIVERED' && commandPending));
-      const retry = reviewable ? `<p class="field-hint">${a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
+      let lost = discardPending(a.todo_id);
+      if (lost && a.status === 'DISCARDED') { setDiscardPending(a.todo_id, null); lost = null; }   // the server holds the outcome: nothing to replay
+      const retry = lost ? `<p>응답을 확인하지 못한 폐기 요청이 있습니다. 같은 요청의 결과를 확인하며 중복 처리하지 않습니다.</p>${UI.actions(`<button class="btn" data-discard-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>같은 요청 결과 다시 확인</button>`, I.msg)}`
+        : reviewable ? `<p class="field-hint">${a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
         <div class="form"><section class="form-section"><div class="form-grid">${UI.field({ label: UI.t('form.by'), required: true, input: `<input data-retry-by value="${esc(I.form.by || '')}">` })}${UI.field({ label: UI.t('form.role'), required: true, input: `<select data-retry-role><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}">${esc(who(r))}</option>`).join('')}</select>` })}
         ${UI.field({ label: '폐기 ' + UI.t('form.reason'), cls: 'wide', hint: '사건이 종료되고 실제 조치가 없음을 확인한 경우에만 승인을 폐기하고 처리 건을 취소할 수 있습니다.', input: `<input data-discard-reason placeholder="후속 조치를 진행하지 않고 종료하는 이유">` })}</div></section>
         ${UI.actions(`${a.status === 'FAILED' ? `<button class="btn primary" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button class="btn outline" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.msg)}
         <div data-discard-preview role="status"></div></div>` : '';
       const discarded = a.status === 'DISCARDED' ? `<p class="field-hint">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify((a.history || []).at(-1), null, 2))}</pre>`, { cls: 'small' })}` : '';
       return UI.fold(`${esc(UI.t('inst.approval'))} ${chip(a.status, names[a.status] || UI.status(a.status))}`, `<div data-approval-panel><p class="kv-line">${esc(option.name || p.option)} · ${esc(UI.t('card.approver'))} <b>${esc(p.by)}</b> · 전달 시도 ${esc(a.attempts)}회</p>
-        ${a.error ? UI.fold('오류 기록', `<pre>${esc(a.error)}</pre>`, { cls: 'small', open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' });
+        ${a.error ? UI.fold('오류 기록', `<pre>${esc(a.error)}</pre>`, { cls: 'small', open: true }) : ''}${retry}${discarded}</div>`, { open: reviewable || a.status === 'FAILED' || !!lost });
     }).join('');
   }
 
@@ -507,7 +518,18 @@
       finally { I.busy = false; await load(true); }
     });
   }
+  async function sendDiscard(wid) {
+    const req = discardPending(wid); if (!req || I.busy) return;
+    I.busy = true;
+    try { await postJ(API.process + `/api/todolist/${encodeURIComponent(wid)}/approval-discard`, req); setDiscardPending(wid, null); I.msg = ''; }
+    catch (e) {
+      I.msg = e.message;
+      if (e.status >= 400 && e.status < 500) setDiscardPending(wid, null);   // refused (other request, wrong role …): a new preview is needed
+    }
+    finally { I.busy = false; await load(true); }
+  }
   function wireApprovalButtons(box) {
+    box.querySelectorAll('[data-discard-retry]').forEach(button => button.addEventListener('click', () => { button.disabled = true; sendDiscard(button.dataset.discardRetry); }));
     box.querySelectorAll('[data-approval-retry], [data-work-order-retry]').forEach(button => button.addEventListener('click', async () => {
       if (I.busy) return;
       const panel = button.closest('[data-approval-panel]');
@@ -543,10 +565,9 @@
           const request_id = crypto.randomUUID();
           result.querySelector('[data-confirm-discard]').addEventListener('click', async event => {
             if (I.busy) return;
-            I.busy = true; event.currentTarget.disabled = true;
-            try { await postJ(API.process + `/api/todolist/${encodeURIComponent(wid)}/approval-discard`, { by, role, reason, request_id }); I.msg = ''; }
-            catch (e) { I.msg = e.message; }
-            finally { I.busy = false; await load(true); }
+            event.currentTarget.disabled = true;
+            setDiscardPending(wid, { by, role, reason, request_id });
+            await sendDiscard(wid);
           });
         } catch (e) { result.textContent = e.message; }
         finally { I.busy = false; button.disabled = false; }

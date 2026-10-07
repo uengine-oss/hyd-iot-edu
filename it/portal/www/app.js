@@ -114,18 +114,37 @@ function renderStack() {
       const comp = el('div', 'comp');
       const optionalEntry = c.entryHealth || c.optional;
       comp.innerHTML = `<span class="comp-name"><i class="dot ${healthState[key] || 'unknown'}" data-h="${esc(key)}"></i><i class="z ${c.zone}">${c.zone.toUpperCase()}</i>` +
-        `<a ${optionalEntry ? 'role="link" aria-disabled="true"' : `href="${c.url}"`} data-entry="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}${optionalEntry ? '' : ' ↗'}</a></span><span class="role-desc">${esc(c.role)}` +
-        (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구 확인 중)</span>` : '') + '</span>';
+        `<a href="${c.url}" data-entry="${esc(c.url)}" target="_blank" rel="noopener"${optionalEntry ? ' title="선택 도구 — 누르면 켜져 있는지 확인하고 엽니다."' : ''}>${esc(c.name)} ↗</a></span><span class="role-desc">${esc(c.role)}` +
+        (optionalEntry ? ` <span class="role" data-entry-status="${esc(c.url)}">(선택 도구)</span>` : '') + '</span>';
+      if (optionalEntry) comp.querySelector('a').addEventListener('click', e => openOptional(e, c));
       comps.append(comp);
     }
     row.append(comps); stack.append(row);
   }
 }
+// A147: 선택 도구(FUXA · Prometheus · Redpanda Console)는 5초 상태 확인에서 뺀다. 꺼진 포트에 보내는 요청은 fetch · img · WebSocket
+// 어느 방식이든 브라우저가 콘솔에 ERR_CONNECTION_REFUSED 를 남기기 때문이다(.evidence/a147/probe-methods.txt). 링크를 누를 때만
+// 한 번 확인해 켜져 있으면 열고, 꺼져 있으면 "(꺼짐)"을 표시한다.
+async function reachable(url) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 3000);
+  try { await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal }); return true; }
+  catch (_) { return false; }
+  finally { clearTimeout(timer); }
+}
+async function openOptional(e, c) {
+  e.preventDefault();
+  const probe = c.entryHealth || c.health || c.url, status = document.querySelector(`[data-entry-status="${CSS.escape(c.url)}"]`);
+  if (status) status.textContent = '(확인 중)';
+  const up = await reachable(probe);
+  if (c.optional && c.health) { healthState[c.health] = up ? 'up' : 'off'; document.querySelectorAll(`.dot[data-h="${CSS.escape(c.health)}"]`).forEach(d => d.className = 'dot ' + healthState[c.health]); }
+  if (status) status.textContent = up ? '(선택 도구)' : '(꺼짐 — 켜면 열립니다)';
+  if (up) window.open(c.url, '_blank', 'noopener');
+}
 async function pollHealth() {
   if (pollHealth.busy) return; pollHealth.busy = true;
   const dots = $('#healthDots');
   try {
-    await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.health).map(async c => {
+    await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.health && !c.optional).map(async c => {
       const key = c.health;
       const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
       try {
@@ -134,29 +153,12 @@ async function pollHealth() {
         } else {                                         // third-party UIs: opaque probe = reachable
           await fetch(c.health, { mode: 'no-cors', cache: 'no-store', signal: controller.signal }); healthState[key] = 'up';
         }
-      } catch (e) { healthState[key] = c.optional ? 'off' : 'down'; }
+      } catch (e) { healthState[key] = 'down'; }
       finally { clearTimeout(timer); }
       document.querySelectorAll(`.dot[data-h="${CSS.escape(key)}"]`).forEach(d => d.className = 'dot ' + healthState[key]);
     }));
-    await Promise.all(LAYERS.flatMap(L => L.comps).filter(c => c.entryHealth).map(async c => {
-      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 4000);
-      try { await fetch(c.entryHealth, { mode: 'no-cors', cache: 'no-store', signal: controller.signal }); healthState[c.entryHealth] = 'up'; }
-      catch (_) { healthState[c.entryHealth] = 'off'; }
-      finally { clearTimeout(timer); }
-    }));
-    for (const c of LAYERS.flatMap(L => L.comps).filter(c => c.entryHealth || c.optional)) {
-      const available = healthState[c.entryHealth || c.health] === 'up';
-      const link = document.querySelector(`[data-entry="${CSS.escape(c.url)}"]`);
-      if (!link) continue;
-      if (available) { link.href = c.url; link.removeAttribute('aria-disabled'); }
-      else { link.removeAttribute('href'); link.setAttribute('aria-disabled', 'true'); }
-      link.textContent = c.name + (available ? ' ↗' : '');
-      link.title = available ? '화면 열기' : '선택 도구를 실행하면 이 링크가 활성화됩니다.';
-      const status = document.querySelector(`[data-entry-status="${CSS.escape(c.url)}"]`);
-      if (status) status.textContent = available ? '' : '(선택 도구 꺼짐)';
-    }
-    // F10: optional tools that are off are not failures — they are left out of the count and never paint the dot red
-    const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !(c.optional && healthState[c.health] === 'off'));
+    // F10 · A147: optional tools are not counted — off is their normal state, not a failure
+    const all = LAYERS.flatMap(L => L.comps).filter(c => c.health && !c.optional);
     const down = all.filter(c => healthState[c.health] === 'down');
     dots.innerHTML = `<span title="서비스 응답 확인입니다. 전체 파이프라인의 성공을 뜻하지 않습니다."><i class="dot ${down.length ? 'down' : 'up'}"></i>${esc(UI.t('header.services'))} ${all.length - down.length}/${all.length}${down.length ? ` — ${esc(UI.t('header.noResponse'))}: ` + esc(down.map(c => c.name.split(' ')[0]).join(', ')) : ''}</span>`;
   } finally { pollHealth.busy = false; }

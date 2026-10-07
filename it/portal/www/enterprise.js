@@ -482,7 +482,18 @@ function renderSystems() {
     ['EMS', t((s.ems?.ems_actions || []).map(x => ({ action: x.action || x.description || x.kind || JSON.stringify(x).slice(0, 80) })), ['action'], ['실행 내용'])],
   ];
   box.innerHTML = boards.map(([sys, body]) => `<div class="board"><header><b>${esc(UI.t('sys.' + sys))}</b><span>${esc(sys)}</span></header>${body}</div>`).join('');
-  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;
+  $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;
+}
+// A147 (DECISIONS 97 후속): 거래가 바꾼 행의 변경 전·후 — 바뀐 항목만, 기본 닫힘. 기록이 없는 거래(before/after 둘 다 없음)는 접기도 없다
+function txDiffFold(x) {
+  const b = x.before || null, a = x.after || null;
+  if (!b && !a) return '';
+  const show = v => v == null || v === '' ? '–' : typeof v === 'object' ? JSON.stringify(v) : /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(String(v)) ? UI.dateTime(v) : String(v);
+  const keys = [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])].filter(k => JSON.stringify((b || {})[k] ?? null) !== JSON.stringify((a || {})[k] ?? null));
+  const body = !keys.length ? `<p class="muted">${esc(UI.t('tx.noDiff'))}</p>`
+    : `${b ? '' : `<p class="muted">${esc(UI.t('tx.created'))}</p>`}<table class="compact-table"><thead><tr><th>${esc(UI.t('tx.col.field'))}</th><th>${esc(UI.t('tx.col.before'))}</th><th>${esc(UI.t('tx.col.after'))}</th></tr></thead><tbody>` +
+      keys.map(k => `<tr><td class="mono">${esc(k)}</td><td>${esc(show((b || {})[k]))}</td><td><b>${esc(show((a || {})[k]))}</b></td></tr>`).join('') + '</tbody></table>';
+  return UI.fold(`${esc(UI.t('tx.beforeAfter'))} <span class="chip tone-neutral sm">${keys.length}</span>`, body, { cls: 'small' });
 }
 
 initOntology();
