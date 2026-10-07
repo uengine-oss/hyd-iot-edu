@@ -24,6 +24,21 @@ def test_degraded_reaches_trip_within_20_sim_minutes():
     assert 600 <= t <= 1800, f"reached 65C after {t}s (ts1={s.ts1:.1f})"
 
 
+def test_moderate_degradation_alarms_but_never_trips():
+    """A146: severity "moderate" must cross the alarm line (TS1 > 55, CE < 70) and settle below the 65 C trip."""
+    s = thermal.UnitState()
+    run(s, 3000)
+    s.cooler_health = thermal.MODERATE_HEALTH
+    peak = 0.0
+    for _ in range(6000):   # 100 simulated minutes — past 6 time constants, i.e. the plateau
+        thermal.step(s, 1.0, True)
+        peak = max(peak, s.ts1)
+    assert peak < thermal.TRIP_TS1 - 1.0, f"moderate fault approached the trip: peak {peak:.2f}"
+    assert s.ts1 > 55.0 and s.ce < 70.0, (s.ts1, s.ce)
+    assert abs(s.ts1 - thermal.equilibrium_ts1(90, 60, thermal.MODERATE_HEALTH)) < 0.1
+    assert thermal.equilibrium_ts1(80, 100, thermal.MODERATE_HEALTH) < 52.0   # fan 100 + load 80 still clears the alarm
+
+
 def test_mitigation_equilibrium_about_49():
     s = thermal.UnitState()
     s.cooler_health = thermal.DEGRADED_HEALTH

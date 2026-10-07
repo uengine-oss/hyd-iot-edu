@@ -17,6 +17,12 @@ FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
                "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
                "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
 HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+# Named fault strengths. "high" is every kind's default (the lecture scenes that end in a PLC trip keep using it);
+# "moderate" is defined for the cooler only: TS1 settles at ~62.5 C, so the alarm stays up without the 65 C trip
+# (the window a coding-agent worker needs at TIME_SCALE 20, A146). The trip itself is untouched (plc.check_interlock).
+SEVERITY = {"cooler_degradation": {"high": thermal.DEGRADED_HEALTH, "moderate": thermal.MODERATE_HEALTH},
+            "pump_leakage": {"high": thermal.DEGRADED_LEAK},
+            "fan_vibration": {"high": thermal.DEGRADED_BEARING}}
 
 
 @dataclass
@@ -76,15 +82,21 @@ class Plant:
                 setattr(u.state, attr, cur + f.rate_per_s * dt)
 
     # ---- fault injection API ----
-    def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float = 300.0) -> dict:
+    def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float = 300.0,
+               severity: str | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
-        step). `restore` ramps every disturbance back to its healthy value."""
+        step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
+        strength from SEVERITY ("high" = the kind's default)."""
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
                 plan = {attr: healthy for attr, healthy in HEALTHY.items() if getattr(u.state, attr) != healthy or attr in u.faults}
             elif kind in FAULT_KINDS:
                 attr, default = FAULT_KINDS[kind]
+                if target is None and severity is not None:
+                    if severity not in SEVERITY[kind]:
+                        raise ValueError(f"unknown severity {severity} for {kind} (known: {sorted(SEVERITY[kind])})")
+                    default = SEVERITY[kind][severity]
                 plan = {attr: float(default if target is None else target)}
             else:
                 raise ValueError(f"unknown fault kind {kind}")

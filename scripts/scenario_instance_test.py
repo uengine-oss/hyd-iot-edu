@@ -3,6 +3,7 @@
     PROCESS_MODE=instance AGENT_BRIDGE=legacy  docker compose up -d --build process enterprise-sim
     python scripts/scenario_instance_test.py               # cooler scenario as a process instance (~4 min at TIME_SCALE=20)
     python scripts/scenario_instance_test.py --worker      # expect the cliagents worker (AGENT_BRIDGE=off) instead of the legacy bridge
+    python scripts/scenario_instance_test.py --severity high   # plant-sim's trip-strength cooler fault (0.43) instead of the default moderate (0.55)
 
 Checks (ProcessGPT semantics): alert RAISE opens one instance (every activity TODO, task:diagnose IN_PROGRESS) + one incident
 → four agent tasks go IN_PROGRESS → SUBMITTED (fetch_pending_task / save_task_result) → DONE by the engine → task:select
@@ -25,6 +26,10 @@ import urllib.request
 H = "http://127.0.0.1"
 PLANT, DETECTOR, PROCESS, ENT = f"{H}:8000", f"{H}:8092", f"{H}:8080", f"{H}:8095"
 AGENT_TASKS = ("task:diagnose", "task:candidates", "task:compliance", "task:rank")
+# A146: cooler fault strength. "moderate" (health 0.55, TS1 settles at ~62.5 C) keeps the alarm up without the 65 C
+# trip, so the four agent tasks get a real window even with a coding-agent worker at TIME_SCALE 20 (A128: ~375 s).
+# "high" is plant-sim's API default (health 0.43, trips ~90 s after injection) — the lecture scenes that want the trip.
+SEVERITY_HEALTH = {"moderate": 0.55, "high": 0.43}
 results: list[tuple[str, bool, str]] = []
 
 
@@ -77,6 +82,43 @@ def wait_for(fn, timeout, every=1.0):
 
 def section(title):
     print(f"\n== {title}", flush=True)
+
+
+def physical_abort(pid, alert_id, asset="HYD-01"):
+    """A146: the reasons the agent phase can never finish — report them at once instead of waiting out the timeout.
+    Returns (reason, observation) or (None, observation)."""
+    det = get(f"{DETECTOR}/api/detector/state")["assets"].get(asset, {})
+    v = view(pid)
+    wi = {w["activity_id"]: w["status"] for w in v["workitems"]}
+    vd = variables(v["instance"])
+    obs = {"ts1": det.get("ts1"), "plc_state": det.get("plc_state"), "tripped": det.get("tripped"), "phase": det.get("phase"),
+           "alert_id": det.get("alert_id"), "incident_outcome": vd.get("incident_outcome"), "workitems": wi}
+    if det.get("tripped") or det.get("plc_state") == "TRIP":
+        return "PLC TRIP (OVERHEAT_TRIP RAISE): the fault is too strong for the agent window", obs
+    if det.get("phase") != "RAISED" or det.get("alert_id") != alert_id:
+        return "cooler alert CLEARED before the agents finished", obs
+    if vd.get("incident_outcome") == "RESOLVED_WITHOUT_ACTION" or wi.get("task:escalate") == "IN_PROGRESS" \
+            or any(wi.get(a) == "CANCELLED" for a in AGENT_TASKS):
+        return "process aborted before action (_abort_before_action)", obs
+    return None, obs
+
+
+def wait_agent_tasks(pid, alert_id, timeout):
+    """Poll until task:select is IN_PROGRESS; stop early with the reason when the physical window closes."""
+    t0 = time.time()
+    abort, obs = None, {}
+    while time.time() - t0 < timeout:
+        try:
+            tl = items(pid)
+            if tl.get("task:select", {}).get("status") == "IN_PROGRESS":
+                return tl, time.time() - t0, None, {}
+            abort, obs = physical_abort(pid, alert_id)
+            if abort:
+                return None, time.time() - t0, abort, obs
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(1.0)
+    return None, time.time() - t0, None, obs
 
 
 def variables(inst):
@@ -155,7 +197,7 @@ def restart_during_reobserve(pid, inc_id, decision_id):
     summary()
 
 
-def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False):
+def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False, severity: str = "moderate"):
     section("0. 모드 · 서비스")
     mode = get(f"{PROCESS}/api/process/mode")
     clock_factor = 20.0 / max(float(mode.get("time_scale") or 20.0), 1.0)
@@ -178,8 +220,9 @@ def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False)
     post(f"{PLANT}/api/reset")
     post(f"{ENT}/api/reset")
     time.sleep(2)
-    r = post(f"{PLANT}/api/fault", {"asset": "HYD-01", "type": "cooler_degradation"})
-    check("fault injected", r.get("kind") == "cooler_degradation", json.dumps(r))
+    r = post(f"{PLANT}/api/fault", {"asset": "HYD-01", "type": "cooler_degradation", "severity": severity})
+    check(f"fault injected (severity {severity}, cooler_health -> {SEVERITY_HEALTH[severity]})",
+          r.get("kind") == "cooler_degradation" and r.get("target_health") == SEVERITY_HEALTH[severity], json.dumps(r))
     d, dt = wait_for(lambda: get(f"{DETECTOR}/api/detector/state")["assets"].get("HYD-01", {}) if get(f"{DETECTOR}/api/detector/state")["assets"].get("HYD-01", {}).get("phase") == "RAISED" else None, 200 * clock_factor)
     require("detector RAISED", d is not None, f"after {dt:.0f}s")
     alert_id = d["alert_id"] if d else None
@@ -198,9 +241,11 @@ def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False)
           json.dumps({k: first.get(k) for k in ('agent_mode', 'agent_orch', 'tool', 'user_id')}))
 
     section("2. 에이전트 작업 4개 (IN_PROGRESS → SUBMITTED → DONE) → 사람의 할일 task:select")
-    tl, dt = wait_for(lambda: items(pid) if items(pid).get("task:select", {}).get("status") == "IN_PROGRESS" else None, 900 if expect_worker else 120)   # four coding-agent runs in sequence
+    tl, dt, abort, obs = wait_agent_tasks(pid, alert_id, 900 if expect_worker else 120)   # four coding-agent runs in sequence
+    if abort:   # A146: trip / CLEAR / abort-before-action ends the run now, with what was observed
+        require("physical window held until task:select", False, f"after {dt:.0f}s {abort}: " + json.dumps(obs, ensure_ascii=False))
     require("four agent tasks DONE and task:select IN_PROGRESS", tl is not None and all(tl[a]["status"] == "DONE" for a in AGENT_TASKS),
-            f"after {dt:.0f}s " + json.dumps({k: v['status'] for k, v in (tl or {}).items()}, ensure_ascii=False))
+            f"after {dt:.0f}s " + json.dumps({k: v['status'] for k, v in (tl or {}).items()} if tl else obs, ensure_ascii=False))
     check("agent rows went through save_task_result (draft_status COMPLETED, consumer released)", all(tl[a].get("draft_status") == "COMPLETED" and tl[a].get("consumer") is None for a in AGENT_TASKS), str({a: tl[a].get("draft_status") for a in AGENT_TASKS}))
     started = [e for e in view(pid)["events"] if e["event_type"] == "task_started"]
     check("agent tasks were done by " + ("the cliagents worker" if expect_worker else "the legacy bridge"),
@@ -297,5 +342,7 @@ if __name__ == "__main__":
     ap.add_argument("--worker", action="store_true", help="expect the cliagents worker (AGENT_BRIDGE=off) instead of the legacy bridge")
     ap.add_argument('--restart-during-reobserve',action='store_true',help='kill/start the real process after PLC ACK; expect human restart review')
     ap.add_argument('--fresh-review',action='store_true',help='explicitly review the current source before approving unchanged SOP values')
+    ap.add_argument('--severity',choices=sorted(SEVERITY_HEALTH),default='moderate',
+                    help='cooler fault strength: moderate (0.55, alarm without trip — default) | high (0.43, plant-sim default, trips ~90 s)')
     args=ap.parse_args()
-    main(args.worker,args.restart_during_reobserve,args.fresh_review)
+    main(args.worker,args.restart_during_reobserve,args.fresh_review,args.severity)

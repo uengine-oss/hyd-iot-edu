@@ -133,6 +133,21 @@ def test_plant_cooler_injection_keeps_the_legacy_contract():
     assert pl.units["HYD-01"].state.cooler_health == 0.5
 
 
+def test_plant_cooler_severity_names_the_strength():
+    """A146: no target + no severity = the trip-strength default (lecture scenes unchanged); "moderate" = 0.55;
+    an explicit target still wins; unknown names and moderate for other kinds are refused."""
+    pl = plantmod.Plant(time_scale=1.0)
+    assert pl.inject("HYD-01", "cooler_degradation")["target_health"] == thermal.DEGRADED_HEALTH == 0.43
+    assert pl.inject("HYD-01", "cooler_degradation", severity="high")["target_health"] == 0.43
+    assert pl.inject("HYD-01", "cooler_degradation", severity="moderate")["target_health"] == thermal.MODERATE_HEALTH == 0.55
+    assert pl.inject("HYD-01", "cooler_degradation", 0.3, severity="moderate")["target_health"] == 0.3
+    with pytest.raises(ValueError):
+        pl.inject("HYD-01", "cooler_degradation", severity="mild")
+    with pytest.raises(ValueError):
+        pl.inject("HYD-02", "pump_leakage", severity="moderate")
+    assert pl.inject("HYD-02", "pump_leakage", severity="high")["targets"] == {"leak": thermal.DEGRADED_LEAK}
+
+
 # ---------------------------------------------------------------- detector CEP
 def feed(fn, st, t0, seconds, **kw):
     ev, t = None, t0

@@ -17,11 +17,13 @@ def main():
     # review is the default; `--no-fresh-review` reproduces the diagnosis-time approval that the approval check refuses.
     ap.add_argument('--fresh-review',dest='fresh_review',action='store_true',default=True)
     ap.add_argument('--no-fresh-review',dest='fresh_review',action='store_false')
+    ap.add_argument('--severity',choices=('moderate','high'),default=None,help='cooler fault strength (A146); default = the scenario script default (moderate)')
     args=ap.parse_args();root=Path(__file__).resolve().parents[1]
     out=Path(args.out).resolve();out.mkdir(parents=True,exist_ok=False)
     command=[sys.executable,'-u','scripts/scenario_instance_test.py']
     if args.worker:command.append('--worker')
     if args.fresh_review:command.append('--fresh-review')
+    if args.severity:command+=['--severity',args.severity]
     record={'started':datetime.now(timezone.utc).isoformat(),'runner_pid':os.getpid(),'command':command,
         'scenario_sha256':hashlib.sha256((root/'scripts/scenario_instance_test.py').read_bytes()).hexdigest()}
     def write(name):(out/(name+'.json')).write_text(json.dumps(record,indent=2),encoding='utf-8')

@@ -33,6 +33,7 @@ class FaultReq(BaseModel):
     type: str = "cooler_degradation"     # cooler_degradation | pump_leakage | fan_vibration | restore
     target: float | None = None          # ramp target of the fault's disturbance variable (default per kind)
     target_health: float | None = None   # legacy name for cooler_degradation
+    severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
     ramp_sim_s: float = 300.0
 
 
@@ -87,7 +88,7 @@ def fault(req: FaultReq):
         raise HTTPException(404, "unknown asset")
     target = req.target if req.target is not None else (req.target_health if req.type == "cooler_degradation" else None)
     try:
-        return plant.inject(req.asset, req.type, target, req.ramp_sim_s)
+        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

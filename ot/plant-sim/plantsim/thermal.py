@@ -14,8 +14,10 @@ whole plant stays explainable in a lecture.
 
 Constants were solved so that
     normal   (load 90, fan 60,  health 1.00) settles near 48 C, PS1 182 bar, FS1 9.0 l/min, VS1 0.6 mm/s
-    degraded (load 90, fan 60,  health 0.43) heads for ~70 C  -> passes the 65 C trip
-    mitigated(load 80, fan 100, health 0.43) settles near 49 C -> clears the 52 C CLEAR line
+    degraded (load 90, fan 60,  health 0.43) heads for ~70 C  -> passes the 65 C trip   (severity "high", API default)
+    moderate (load 90, fan 60,  health 0.55) settles at 62.5 C -> alarm (TS1 > 55, CE 46 < 70) but never the 65 C trip
+                                             (severity "moderate": the window agents need; tau ~925 sim-s, RAISE ~770 sim-s)
+    mitigated(load 80, fan 100, health 0.43) settles near 49 C -> clears the 52 C CLEAR line (health 0.55: ~44.6 C)
     leaking  (load 90, leak 0.15, pump A)    PS1 ~162 bar < 165, FS1 ~7.65 < 8.0 -> PUMP_LEAKAGE; pump B restores 182 (fc:pump-switch)
     worn fan (fan 60, wear 0.8)              VS1 ~1.35 > 1.2 -> FAN_VIBRATION; fan 40 -> ~0.9 (fc:fan-slow-vs1); fan 100 -> ~2.8 >= 2.0 interlock
 """
@@ -31,7 +33,8 @@ T_AMB = 25.0
 TRIP_TS1 = 65.0
 TRIP_PS1 = 130.0         # low-pressure interlock (ontology sv:ps1 limit)
 TRIP_VS1 = 2.0           # vibration interlock (ontology sv:vs1 limit)
-DEGRADED_HEALTH = 0.43   # default fault-injection target (cooler fin fouling, sv:fouling)
+DEGRADED_HEALTH = 0.43   # default fault-injection target (cooler fin fouling, sv:fouling): severity "high", trips at 65 C
+MODERATE_HEALTH = 0.55   # severity "moderate": equilibrium 62.5 C — alarm without the trip (window for slow agents, A146)
 DEGRADED_LEAK = 0.15     # default fault-injection target: 15 % internal leakage (pump A shaft seal wear, sv:leak)
 DEGRADED_BEARING = 0.8   # default fault-injection target: fan bearing wear 0..1 (sv:bearing-wear)
 K_LEAK = 0.08            # leakage flow -> heat (sv:leak -> sv:ts1, low)
