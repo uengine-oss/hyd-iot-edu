@@ -442,7 +442,9 @@
     const events = evs.slice(-80).reverse().filter(e => !(e.event_type === 'tool_usage_started' && evs.some(x => x.event_type === 'tool_usage_finished' && x.data?.tool_use_id === e.data?.tool_use_id))).map(e => {
       let detail = eventDetail(e), name = e.job_id === 'TASK_REVIEW_REQUIRED' ? e.job_id : e.event_type;
       if (e.event_type === 'tool_usage_finished') { const s0 = started.get(e.data?.tool_use_id); if (s0) detail = `${(e.data.tool || '').replace(/^mcp__/, '').replace(/__/g, ' · ')} · ${Math.round(new Date(e.timestamp) - new Date(s0.timestamp))} ms`; name = 'tool_usage_started'; }
-      return UI.eventRecord({ time: e.timestamp, name, actor: e.crew_type || '', detail, raw: e.data });
+      // A132: the worker says where the result came from (result_source file | message); only the file case gets a chip
+      const chips = e.event_type === 'task_completed' && e.data?.result_source === 'file' ? `<span class="chip tone-neutral sm">${esc(UI.t('inst.resultFile'))}</span>` : '';
+      return UI.eventRecord({ time: e.timestamp, name, actor: e.crew_type || '', detail, raw: e.data, chips });
     }).join('');
     return `<h3 style="font-size:14px;margin:0 0 var(--s2)">${esc(UI.t('inst.steps'))}</h3><div class="table-scroll"><table class="inst-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 style="font-size:14px;margin:var(--s6) 0 var(--s2)">${esc(UI.t('inst.events'))} <span class="chip tone-neutral sm">${view.events.length}</span></h3><div class="inst-events">${events || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>

@@ -292,12 +292,106 @@
       $('#manualSourcesNext')?.addEventListener('click', () => loadManualSources(page.next_offset));
     } catch (e) { box.textContent = '보관 원문을 읽지 못했습니다: ' + e.message; }
   }
+  /* ---- 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 → A132 화면). API 그대로:
+     POST /api/kg/manuals/batches/{batch}/golden-questions {questions, by, request_id} · GET …/golden-report (없으면 404). 현재 판본(head) 배치만 가능. */
+  H.golden = H.golden || {};                      // batch → { report (undefined 읽기 전 · null 없음 · object), error, busy, msg, draft }
+  const goldenUrl = (batch, tail) => API.process + '/api/kg/manuals/batches/' + encodeURIComponent(batch) + '/golden-' + tail;
+  const goldenFinal = r => r && ['DONE', 'CANCELLED', 'FAILED'].includes(r.status);
+  const ITEM_STATUS = { answerable: ['golden.answerable', 'success'], partially_answerable: ['golden.partial', 'warning'], not_yet_answerable: ['golden.notYet', 'neutral'] };
+  async function fetchGolden(batch) {
+    const g = H.golden[batch] = H.golden[batch] || {};
+    try {
+      const next = await getJ(goldenUrl(batch, 'report'));
+      const changed = JSON.stringify(next) !== JSON.stringify(g.report); g.report = next; g.error = ''; return changed;
+    } catch (e) {
+      if (e.status === 404) { const changed = g.report !== null; g.report = null; g.error = ''; return changed; }
+      g.error = e.message; return true;
+    }
+  }
+  function goldenStatusChip(r) {
+    if (!r) return '';
+    if (r.status === 'DONE') return UI.chipText(UI.t('golden.done'), 'success');
+    if (r.status === 'CANCELLED' || r.status === 'FAILED') return UI.chipText(UI.t('golden.failed'), 'danger');
+    return r.corrections ? UI.chipText(UI.t('golden.correcting'), 'warning') : UI.chipText(UI.t('golden.pending'), 'accent');
+  }
+  function goldenForm(batch, g) {
+    const dis = g.busy ? 'disabled' : '';
+    return `<div class="form golden-form" data-golden-form="${esc(batch)}"><div class="form-grid">
+      ${UI.field({ label: UI.t('golden.questions'), required: true, hint: UI.t('golden.questionsHint'), cls: 'wide', input: `<textarea rows="4" data-golden-q aria-label="${esc(UI.t('golden.questions'))}" ${dis}>${esc(g.draft || '')}</textarea>` })}
+      ${UI.field({ label: UI.t('form.by'), input: `<input data-golden-by value="${esc(g.by != null ? g.by : $('#manualBy').value)}" ${dis}>` })}
+    </div>${UI.actions(`<button type="button" class="btn primary" data-golden-ask ${dis}>${esc(g.busy ? UI.t('golden.asking') : UI.t('golden.ask'))}</button>`, g.msg || '')}</div>`;
+  }
+  function goldenItems(r) {
+    const items = (r.report && r.report.items) || [];
+    const counts = `<div class="card-chips golden-counts">${UI.chipText(`${UI.t('golden.answerable')} ${r.answerable || 0}`, 'success')}${UI.chipText(`${UI.t('golden.partial')} ${r.partially_answerable || 0}`, 'warning')}${UI.chipText(`${UI.t('golden.notYet')} ${r.not_yet_answerable || 0}`, 'neutral')}${UI.chipText(`${UI.t('golden.grounded')} ${r.grounded || 0}`, 'accent')}</div>`;
+    const summary = r.report && r.report.summary ? `<p class="card-sub">${esc(r.report.summary)}</p>` : '';
+    const cards = items.map(it => {
+      const [key, tone] = ITEM_STATUS[it.status] || ['golden.notYet', 'neutral'];
+      const cited = it.cited || [];
+      return UI.card({ title: esc(it.question), cls: 'golden-item',
+        chips: UI.chipText(UI.t(key), tone) + (it.confidence ? UI.chipText(`${UI.t('golden.confidence')} ${UI.t('golden.conf.' + it.confidence)}`, 'neutral') : ''),
+        body: `<p class="golden-answer">${esc(it.answer || '')}</p>`
+          + UI.fold(`${esc(UI.t('golden.evidence'))} <span class="chip tone-neutral sm">${cited.length}</span>`, cited.length ? `<p class="muted">${esc(UI.t('golden.cited'))}</p><ul class="golden-cited">${cited.map(c => `<li><code>${esc(c)}</code></li>`).join('')}</ul>` : `<p class="muted">${esc(UI.t('golden.noCited'))}</p>`, { cls: 'small' })
+          + (it.cypher ? UI.fold(esc(UI.t('golden.query')), `<pre>${esc(it.cypher)}</pre>`, { cls: 'small' }) : '') });
+    }).join('');
+    return counts + summary + `<div class="cards golden-items">${cards}</div>`;
+  }
+  function goldenSection(batch, open) {
+    const g = H.golden[batch] || {}; const r = g.report;
+    let body;
+    if (g.error) body = `<p class="neg">${esc(UI.t('golden.err.load'))}: ${esc(g.error)}</p>` + goldenForm(batch, g);
+    else if (r === undefined) body = `<p class="muted">${esc(UI.t('loading'))}</p>`;
+    else if (r === null || r.status === 'CANCELLED' || r.status === 'FAILED') body = goldenForm(batch, g);
+    else if (!goldenFinal(r)) body = UI.empty(UI.t('golden.checking', { n: r.questions }), UI.t('golden.checkingSub'), 'compact') + (r.corrections ? `<p class="muted">${esc(UI.t('golden.corrections', { n: r.corrections.attempts }))}</p>` : '');
+    else body = goldenItems(r) + UI.fold(esc(UI.t('golden.askMore')), goldenForm(batch, g), { cls: 'plain', open: !!g.msg || !!g.busy });
+    return UI.fold(`${esc(UI.t('golden.title'))} ${goldenStatusChip(r)}`, body, { open: open !== undefined ? open : true, cls: 'golden' });
+  }
+  function renderGolden(batch) {
+    const box = $('#manualHistory').querySelector(`[data-golden="${CSS.escape(batch)}"]`); if (!box) return;
+    const open = box.querySelector('details.golden')?.open;
+    box.innerHTML = goldenSection(batch, open); wireGolden(box);
+  }
+  function wireGolden(root) {
+    root.querySelectorAll('[data-golden-ask]').forEach(b => b.addEventListener('click', async () => {
+      const form = b.closest('[data-golden-form]'); const batch = form.dataset.goldenForm; const g = H.golden[batch] = H.golden[batch] || {};
+      g.draft = form.querySelector('[data-golden-q]').value; g.by = form.querySelector('[data-golden-by]').value.trim();
+      const questions = [...new Set(g.draft.split('\n').map(s => s.trim()).filter(Boolean))];
+      if (!questions.length) { g.msg = UI.t('golden.err.empty'); renderGolden(batch); return; }
+      if (questions.length > 20) { g.msg = UI.t('golden.err.many'); renderGolden(batch); return; }
+      g.busy = true; g.msg = ''; renderGolden(batch);
+      try { await postJ(goldenUrl(batch, 'questions'), { questions, by: g.by, request_id: crypto.randomUUID() }); g.draft = ''; await fetchGolden(batch); }
+      catch (e) { g.msg = e.message; }
+      finally { g.busy = false; renderGolden(batch); }
+    }));
+  }
+  setInterval(async () => {                      // 2초 폴링(기존 패턴): 확인 중인 배치만 다시 읽는다
+    if (state.tab !== 'knowledge') return;
+    for (const [batch, g] of Object.entries(H.golden)) {
+      if (!g.report || goldenFinal(g.report) || g.polling) continue;
+      g.polling = true;
+      try { if (await fetchGolden(batch)) renderGolden(batch); } finally { g.polling = false; }
+    }
+  }, 2000);
+
   async function loadUploads() {
     await loadManualSources();
     try {
       const ups = await getJ(API.process + '/api/kg/manuals');
-      const history = $('#manualHistory'), wasOpen = !!history.querySelector('details[open]');
-      history.innerHTML = ups.length ? UI.fold(`매뉴얼 등록 이력 <span class="chip tone-neutral sm">${ups.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>매뉴얼</th><th>등록 내용</th><th>담당자</th><th>등록 시각</th><th>판본</th></tr></thead><tbody>` + ups.map(u => `<tr><td><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original">${esc(u.filename)}</a></td><td>절 ${u.sections} · 조치 방법 ${u.procedures} · 단계 ${u.steps}</td><td>${esc(u.by)}</td><td>${esc(UI.dateTime(u.t))}</td><td>${u.status === 'ROLLED_BACK' ? '되돌림' : u.current ? '현재 판본' : '이전 판본'} <button class="btn small" data-manual-revise="${esc(u.document_id)}">이 문서 개정</button>${u.current && u.status === 'ACTIVE' ? ` <button class="btn small" data-manual-undo="${esc(u.batch)}">이 판본 되돌리기</button>` : ''}</td></tr>`).join('') + '</tbody></table></div><p class="muted" id="manualHistoryMsg">되돌리기는 최신 판본부터 진행합니다. 보관한 원문은 지우지 않습니다.</p>', { open: wasOpen, cls: 'plain' }) : '';
+      const history = $('#manualHistory'), wasOpen = !!history.querySelector('details.manual-history[open]');
+      const goldenOpen = {}; history.querySelectorAll('[data-golden]').forEach(d => { goldenOpen[d.dataset.golden] = d.querySelector('details.golden')?.open; });
+      const current = ups.filter(u => u.current);
+      const counts = u => `${UI.t('kn.sections')} ${u.sections} · ${UI.t('kn.procedures')} ${u.procedures} · ${UI.t('kn.steps')} ${u.steps}`;
+      const version = u => u.status === 'ROLLED_BACK' ? UI.chipText(UI.t('kn.rolledBack'), 'neutral') : u.current ? UI.chipText(UI.t('kn.current'), 'success') : UI.chipText(UI.t('kn.previous'), 'neutral');
+      const buttons = u => `<button class="btn small" data-manual-revise="${esc(u.document_id)}">${esc(UI.t('kn.revise'))}</button>${u.current && u.status === 'ACTIVE' ? `<button class="btn small" data-manual-undo="${esc(u.batch)}">${esc(UI.t('kn.undo'))}</button>` : ''}`;
+      // 매뉴얼 배치 카드(R3): 제목 = 파일 · 칩 = 판본 · 핵심 값 = 절·조치 방법·단계 · 보조 = 담당자·시각 · 본문 = 이 문서로 답할 수 있는 질문
+      const cards = current.map(u => UI.card({ title: `<a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original">${esc(u.filename)}</a>`, chips: version(u), value: esc(counts(u)),
+        sub: `${esc(u.by)} · ${esc(UI.dateTime(u.t))}`, actions: buttons(u), cls: 'manual-doc', body: `<div data-golden="${esc(u.batch)}">${goldenSection(u.batch, goldenOpen[u.batch])}</div>` })).join('');
+      history.innerHTML = `<h2 class="sec">${esc(UI.t('kn.docs'))} <span class="chip tone-neutral sm">${current.length}</span></h2>`
+        + (current.length ? `<div class="cards manual-docs">${cards}</div>` : UI.empty(UI.t('kn.docsEmpty'), UI.t('kn.docsEmptySub'), 'compact'))
+        + (ups.length ? UI.fold(`${esc(UI.t('kn.history'))} <span class="chip tone-neutral sm">${ups.length}</span>`, `<div class="table-scroll"><table class="prov"><thead><tr><th>매뉴얼</th><th>등록 내용</th><th>담당자</th><th>등록 시각</th><th>판본</th></tr></thead><tbody>` + ups.map(u => `<tr><td><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(u.source_id)}/original">${esc(u.filename)}</a></td><td>${esc(counts(u))}</td><td>${esc(u.by)}</td><td>${esc(UI.dateTime(u.t))}</td><td>${version(u)} ${buttons(u)}</td></tr>`).join('') + '</tbody></table></div><p class="muted">되돌리기는 최신 판본부터 진행합니다. 보관한 원문은 지우지 않습니다.</p>', { open: wasOpen, cls: 'plain manual-history' }) : '')
+        + '<p class="muted" id="manualHistoryMsg" role="status"></p>';
+      wireGolden(history);
+      current.forEach(u => fetchGolden(u.batch).then(() => renderGolden(u.batch)));
       history.querySelectorAll('[data-manual-revise]').forEach(b => b.addEventListener('click', () => {
         $('#manualDocumentId').value = b.dataset.manualRevise;
         $('#manualHistoryMsg').textContent = '개정할 문서를 선택했습니다. 새 판본 파일을 선택하고 미리보기에서 다시 검토하세요.';

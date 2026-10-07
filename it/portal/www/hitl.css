@@ -561,3 +561,19 @@ div.hopt { cursor: default; }
 .dec-run { flex-wrap: wrap; gap: 10px; align-items: end; }
 .dec-run input[type=number] { width: 90px; }
 .skill-edit ol.steps { margin: 4px 0 8px 18px; padding: 0; font-size: 13px; }
+
+/* A132 — 지식 관리: 매뉴얼 배치 카드 + 이 문서로 답할 수 있는 질문 */
+.manual-docs { grid-template-columns: 1fr; margin-bottom: var(--s4); }
+.manual-doc .card-title a { color: inherit; text-decoration: none; }
+.manual-doc .card-title a:hover { text-decoration: underline; }
+.manual-doc .card-body { margin-top: var(--s3); }
+details.golden > summary { font-size: 14px; font-weight: 600; }
+.golden-counts { margin-bottom: var(--s2); }
+.golden-items { grid-template-columns: 1fr; margin-top: var(--s3); }
+.golden-item { background: var(--surface-soft); }
+.golden-answer { margin: 0 0 var(--s2); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.golden-cited { margin: 0; padding-left: 18px; }
+.golden-cited li { overflow-wrap: anywhere; }
+.golden-cited code { font-size: 12px; overflow-wrap: anywhere; }
+.golden-form { margin-top: var(--s2); }
+.golden-form textarea { white-space: pre-wrap; }

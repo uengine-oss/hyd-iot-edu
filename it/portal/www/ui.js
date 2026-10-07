@@ -86,6 +86,16 @@ const UI = {
     'onto.stats': '항목 {n} · 연결 {e} · 조치 방법 {s} · 규칙 {r} · 성과 지표 {k}', 'onto.path': '강조 경로 {n}개', 'onto.found': '검색 결과 {n}개', 'onto.scroll': '지도 안에서 좌우로 이동',
     'onto.hint': '항목을 누르면 연결된 관계가 강조됩니다', 'onto.out': '나가는 관계', 'onto.in': '들어오는 관계', 'onto.loadFail': '지식을 불러올 수 없습니다', 'onto.loadFailSub': '연결을 확인하고 다시 읽기를 누르세요',
     'kn.manual': '매뉴얼 등록', 'kn.ddl': '업무 데이터 연결', 'kn.query': '질의 보기', 'kn.pickFile': '파일 선택', 'kn.noFile': '선택한 파일 없음', 'kn.preview': '미리보기', 'kn.by': '담당자',
+    'kn.docs': '등록된 매뉴얼', 'kn.docsEmpty': '등록된 매뉴얼이 없습니다', 'kn.docsEmptySub': '위에서 매뉴얼 파일을 골라 미리보기 뒤 적재하면 여기에 나타납니다', 'kn.history': '매뉴얼 등록 이력',
+    'kn.current': '현재 판본', 'kn.previous': '이전 판본', 'kn.rolledBack': '되돌림', 'kn.revise': '이 문서 개정', 'kn.undo': '이 판본 되돌리기', 'kn.sections': '절', 'kn.procedures': '조치 방법', 'kn.steps': '단계',
+    // 이 문서로 답할 수 있는 질문 (A118 골든 퀘스천 — 화면 문구만)
+    'golden.title': '이 문서로 답할 수 있는 질문', 'golden.questions': '질문', 'golden.questionsHint': '한 줄에 하나 · 최대 20개 · 이 문서를 읽은 뒤 답할 수 있어야 하는 질문을 적습니다',
+    'golden.ask': '확인 요청', 'golden.asking': '요청 중…', 'golden.askMore': '다른 질문 확인하기', 'golden.pending': '진행 중', 'golden.correcting': '교정 중', 'golden.done': '완료', 'golden.failed': '실패',
+    'golden.checking': '질문 {n}개를 지식에 대어 보는 중…', 'golden.checkingSub': 'AI 에이전트가 이 문서가 넣은 지식만으로 답하는지 확인합니다', 'golden.none': '아직 확인한 질문이 없습니다',
+    'golden.answerable': '답할 수 있음', 'golden.partial': '일부', 'golden.notYet': '아직 못 함', 'golden.grounded': '근거 있음', 'golden.confidence': '확신도',
+    'golden.conf.high': '높음', 'golden.conf.medium': '보통', 'golden.conf.low': '낮음', 'golden.evidence': '근거 보기', 'golden.cited': '인용한 지식 항목', 'golden.noCited': '인용한 항목 없음', 'golden.query': '질의 보기',
+    'golden.err.empty': '질문을 한 줄 이상 적으세요', 'golden.err.many': '질문은 최대 20개입니다', 'golden.err.load': '확인 결과를 읽지 못했습니다', 'golden.corrections': '형식 교정 {n}회',
+    'inst.resultFile': '결과 파일로 제출',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
@@ -173,8 +183,9 @@ const UI = {
     '명령 검증 통과': '명령 검증 통과', '명령 거절': '명령 거절',
   },
   eventName(name) { return this.eventNames[name] || this.states[name] || name || '–'; },
-  eventRecord({ time, name, actor = '', detail = '', raw }) {
-    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span></header>${detail ? `<p>${esc(detail)}</p>` : ''}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
+  // chips: optional pre-rendered small chips after the actor (A132: `결과 파일로 제출` on a task_completed whose result_source is file)
+  eventRecord({ time, name, actor = '', detail = '', raw, chips = '' }) {
+    return `<article class="event-record"><header><time title="${esc(this.dateTime(time))}">${esc(this.time(time))}</time><strong>${esc(this.eventName(name))}</strong><span>${esc(this.who(actor))}</span>${chips}</header>${detail ? `<p>${esc(detail)}</p>` : ''}${raw ? `<details class="fold small"><summary>${esc(this.t('raw'))}</summary><pre>${esc(JSON.stringify(raw, null, 2))}</pre></details>` : ''}</article>`;
   },
   condition(value) {
     return { 'cmms_cleans_60d >= 3': '최근 60일 동안 쿨러 세척 3회 이상', 'qms_hot_min > 0': '과열 구간에 생산된 로트가 있음' }[value] || value;
