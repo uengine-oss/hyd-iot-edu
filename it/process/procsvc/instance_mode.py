@@ -35,7 +35,7 @@ from .legacy_assessment import LegacyAssessment
 log = logging.getLogger("process.instance_mode")
 
 DEFINITIONS_DIR = Path(os.getenv("PROCESS_DEFINITIONS", "/srv/definitions"))
-DEFINITION_FILE = os.getenv("PROCESS_DEFINITION_FILE", "anomaly_response_v21.json")
+DEFINITION_FILE = os.getenv("PROCESS_DEFINITION_FILE", "anomaly_response_v22.json")   # A116: 2.2 = 2.1 in the product's agent-task shape
 # legacy: while the cliagents worker is absent, the legacy agent's card + decision complete the instance's agent tasks
 #         through the same RPCs the worker would use (fetch_pending_task → save_task_result).   off: the tasks wait for the worker.
 AGENT_BRIDGE = os.getenv("AGENT_BRIDGE", "legacy")

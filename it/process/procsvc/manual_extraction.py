@@ -10,7 +10,7 @@ from . import engine, kgadmin, manual_segments
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '1.6'          # 1.6 (A094, real Daikin manual): keep the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
+VERSION = '1.7'          # 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
 
 INSTRUCTION = '''보관된 manual_source의 모든 pages를 읽고 기존 ManualSection → Skill → Step 스키마로 추출 제안을 작성하세요.
@@ -48,7 +48,7 @@ def definition():
                       dict(name='proposal', type='Object')],
                 events=[dict(id='start', type='startEvent', name='원문 추출 요청'),
                         dict(id='end', type='endEvent', name='추출 제안 생성 완료')],
-                activities=[dict(id=ACTIVITY, name='원문 근거로 SOP 제안', type='businessRuleTask',
+                activities=[dict(id=ACTIVITY, name='원문 근거로 SOP 제안', type='userTask',   # A116: product shape (userTask + agentMode)
                                  role='AI 에이전트', agentMode='COMPLETE', orchestration='cliagents',
                                  agentConfig=dict(cli='claude-code'), tool='formHandler:manual_proposal',
                                  inputData=['manual_source','review_feedback','segment'], outputData=['proposal'], instruction=INSTRUCTION)],

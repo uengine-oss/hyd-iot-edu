@@ -22,7 +22,7 @@ def definition(did):
       'roles':[{'name':'조회 담당','endpoint':'sys:agent'}],
       'data':[{'name':f['key'],'type':'Text'} for f in fields],
       'forms':{'confirmed_asset':{'fields_json':fields}},
-      'activities':[{'id':'confirm-and-query','type':'businessRuleTask','name':'담당자에게 대상 확인 후 조회',
+      'activities':[{'id':'confirm-and-query','type':'userTask','name':'담당자에게 대상 확인 후 조회',
          'role':'조회 담당','agentMode':'COMPLETE','orchestration':'cliagents','tool':'formHandler:confirmed_asset',
          'agentConfig':{'cli':'codex','model':'gpt-5.6-sol','permission':'read_only','reasoning_effort':'low'},
          'instruction':'조회할 대상 설비는 아직 제공되지 않았습니다. 담당자에게 HYD-02 또는 HYD-03 중 어느 설비인지 업무 질문을 보내고 답변을 기다리세요. 임의 선택이나 기본값은 금지합니다. 질문의 선택지는 HYD-02, HYD-03입니다. 답변이 오면 enterprise MCP describe_schema로 스키마를 확인하고 선택한 코드의 설비 이름을 SELECT로 직접 조회하세요. selected_asset/asset_name/sql에 확인된 값과 실제 SQL을 제출하세요. 조치 실행이나 다른 질문은 필요 없습니다.',

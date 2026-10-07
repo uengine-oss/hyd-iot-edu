@@ -70,7 +70,7 @@ def definition(did):
             'roles': [{'name': '조회 담당', 'endpoint': 'sys:agent'}],
             'data': [{'name': 'question', 'type': 'Text'}] + [{'name': f['key'], 'type': {'array': 'Array', 'text': 'Text'}[f['type']]} for f in FIELDS],
             'forms': {'rule_answer': {'fields_json': FIELDS}},
-            'activities': [{'id': 'answer', 'type': 'businessRuleTask', 'name': '규칙 조건 확인하기', 'role': '조회 담당',
+            'activities': [{'id': 'answer', 'type': 'userTask', 'name': '규칙 조건 확인하기', 'role': '조회 담당',
                             'agentMode': 'COMPLETE', 'orchestration': 'cliagents', 'tool': 'formHandler:rule_answer',
                             'agentConfig': {'cli': 'claude-code'},
                             'inputData': ['question'], 'outputData': [f['key'] for f in FIELDS],

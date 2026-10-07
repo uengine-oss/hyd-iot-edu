@@ -58,7 +58,7 @@ class World:
 def test_definition_matches_ontology_v2_flow_nodes(defn):
     assert len(defn.activities) == 9 and len(defn.gateways) == 2 and len(defn.events) == 4 and len(defn.sequences) == 15
     assert defn.raw["ontologyRef"] == "proc:anomaly-response"
-    agent_tasks = [a for a in defn.activities.values() if a["type"] == "businessRuleTask"]
+    agent_tasks = [a for a in defn.activities.values() if engine.is_agent(a)]
     assert [a["id"] for a in agent_tasks] == ["task:diagnose", "task:candidates", "task:compliance", "task:rank"]
     assert all(a["orchestration"] == "cliagents" and a["agentMode"] == "COMPLETE" and a["tool"].startswith("formHandler:") for a in agent_tasks)
     assert defn.activities["task:select"]["attachedEvents"] == ["ev:select-timeout"] and defn.attached_activity("ev:select-timeout")["id"] == "task:select"

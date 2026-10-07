@@ -47,7 +47,7 @@ def main():
         print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
     raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     raw['roles'].append({'name':'Agent','endpoint':'sys:agent'})
-    raw['activities'][0].update(type='businessRuleTask',role='Agent',agentMode='COMPLETE',orchestration='cliagents')
+    raw['activities'][0].update(type='userTask',role='Agent',agentMode='COMPLETE',orchestration='cliagents')
     tenant='defer-'+uuid.uuid4().hex[:10]
     with psycopg.connect(DSN,connect_timeout=5) as c:
         c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'A058 retained isolated fixture'))

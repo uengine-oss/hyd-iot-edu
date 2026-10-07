@@ -43,7 +43,7 @@ def test_recovery_snapshot_survives_new_definition_and_store_restart(world,tmp_p
     rt.register_definition(changed)
     saved=Store(tmp_path/'state.db');saved.save(world['incidents'],{},[])
     restored,_,_=saved.restore();other=restored[inc.id]
-    assert other.recovery==('TS1','<',55) and other.recovery_policy['version']=='2.1'
+    assert other.recovery==('TS1','<',55) and other.recovery_policy['version']=='2.2'   # A116: runtime default definition 2.2
     other.state='RE_OBSERVING';other.cleared=True
     machine.on_timer(other,'reobs',NOW,80,NoFx())
     assert other.state=='ESCALATED' and other.work_order is None

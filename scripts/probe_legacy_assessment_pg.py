@@ -19,7 +19,7 @@ HELD={'id':'explicit-fixture','status':'WITHHELD','error':'Fixture source unavai
 
 
 def runtime(meta):
-    raw=json.loads((ROOT/'it/process/definitions/anomaly_response_v21.json').read_text(encoding='utf8'))
+    raw=json.loads((ROOT/'it/process/definitions/anomaly_response_v22.json').read_text(encoding='utf8'))
     hooks=instances.Hooks(new_incident=lambda alert,recovery_policy=None:{'id':'fixture-incident'})
     return instances.InstanceRuntime(procdb.PgRepo(DSN),engine.Definition.from_dict(raw),hooks,tenant_id=meta['tenant'])
 

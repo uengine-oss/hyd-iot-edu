@@ -31,7 +31,7 @@ def main():
     health()
     raw=json.loads((ROOT/'docs/examples/bound-input-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId']+='-'+uuid.uuid4().hex[:10]
-    raw['activities'][1].update(type='businessRuleTask',agentMode='COMPLETE',orchestration='cliagents')
+    raw['activities'][1].update(type='userTask',agentMode='COMPLETE',orchestration='cliagents')
     raw['activities'][3].update(outputData=['x'],tool='formHandler:x')
     for label,change in [('unreachable',lambda bad:bad.update(sequences=[s for s in bad['sequences'] if s['id']!='s-a'])),
                          ('cycle',lambda bad:bad['activities'][0].update(inputData=['y'],inputBindings={'y':{'activity':'b'}}))]:

@@ -33,6 +33,25 @@ from pathlib import Path
 USER_TYPES = {"userTask", "manualTask"}
 AUTO_TYPES = {"businessRuleTask", "serviceTask", "scriptTask", "sendTask", "receiveTask"}
 SERVICE_TYPES = {"serviceTask", "scriptTask", "sendTask"}
+# A116 (r14 B5, ProcessGPT shape): an agent activity is a userTask carrying agentMode DRAFT|COMPLETE (+ orchestration), the
+# way the product's designer (GPTUserTaskPanel) and polling service (database.determine_agent_mode) read it. Registered
+# definitions are stored in that shape; versions stored before A116 still carry businessRuleTask and keep running.
+AGENT_MODES = ("DRAFT", "COMPLETE")
+AGENT_ORCH = "cliagents"              # the only agent orchestration HYD executes (the product defaults to crewai-deep-research)
+NO_MODE = (None, "", "none", "None", "null")
+
+
+def agent_mode_of(activity: dict) -> str | None:
+    mode = str(activity.get("agentMode") or "").upper()
+    return mode if mode in AGENT_MODES else None
+
+
+def is_agent(activity: dict) -> bool:
+    return activity.get("type") in USER_TYPES | {"businessRuleTask"} and agent_mode_of(activity) is not None
+
+
+def is_human(activity: dict) -> bool:
+    return activity.get("type") in USER_TYPES and agent_mode_of(activity) is None
 TERMINAL_STATUSES = {"DONE", "CANCELLED"}
 LIVE_STATUSES = {"IN_PROGRESS", "SUBMITTED", "PENDING"}
 PROCESS_ORCH = "hyd-process"          # service tasks the process service executes itself
@@ -291,13 +310,12 @@ def _query_text(activity: dict) -> str:
 
 def new_workitem(defn: Definition, inst: dict, activity: dict, now: datetime | None = None, status: str = "TODO") -> dict:
     """todolist row for one activity, TODO (예정 업무) unless told otherwise. agent_mode: COMPLETE/DRAFT for agents, NULL for people."""
-    is_user = activity.get("type") in USER_TYPES
+    is_user = is_human(activity)
     binding = defn.role_binding(activity.get("role"))
-    mode = (activity.get("agentMode") or "").upper()
-    agent_mode = mode if mode in ("DRAFT", "COMPLETE") else None
+    agent_mode = agent_mode_of(activity)
     orch = activity.get("orchestration")
-    if orch in (None, "", "none", "None"):
-        orch = None if is_user else (None if agent_mode is None and activity.get("type") not in SERVICE_TYPES else PROCESS_ORCH)
+    if orch in NO_MODE:
+        orch = None if is_user else (AGENT_ORCH if agent_mode else (PROCESS_ORCH if activity.get("type") in SERVICE_TYPES else None))
     tool = activity.get("tool") or ("formHandler:defaultForm" if "task" in str(activity.get("type", "")).lower() else None)
     return {"id": str(uuid.uuid4()), "proc_inst_id": inst["proc_inst_id"], "root_proc_inst_id": inst.get("root_proc_inst_id"),
             "proc_def_id": defn.id, "activity_id": activity["id"], "activity_name": activity.get("name"),

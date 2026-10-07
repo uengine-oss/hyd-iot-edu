@@ -61,7 +61,7 @@ class ReworkRuntime:
         with self._transition(proc_inst_id):
             inst = self.repo.get_instance(proc_inst_id)
             defn = self.definition_for(inst)
-            human_roles = {defn.role_endpoint(a.get('role')) for a in defn.activities.values() if a['type'] in engine.USER_TYPES}
+            human_roles = {defn.role_endpoint(a.get('role')) for a in defn.activities.values() if engine.is_human(a)}
             if role not in human_roles:
                 raise PermissionError('고정 정의의 사람 업무 담당 역할로 요청하세요')
             prior = self.repo.get_rework(self.tenant_id, proc_inst_id, request_id)

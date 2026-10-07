@@ -82,7 +82,7 @@ def definition(did):
             'roles': [{'name': '조회 담당', 'endpoint': 'sys:agent'}],
             'data': [{'name': 'question', 'type': 'Text'}] + [{'name': f['key'], 'type': {'array': 'Array', 'text': 'Text'}[f['type']]} for f in FIELDS],
             'forms': {'timeseries_answer': {'fields_json': FIELDS}},
-            'activities': [{'id': 'answer', 'type': 'businessRuleTask', 'name': '시계열 질문에 답하기', 'role': '조회 담당',
+            'activities': [{'id': 'answer', 'type': 'userTask', 'name': '시계열 질문에 답하기', 'role': '조회 담당',
                             'agentMode': 'COMPLETE', 'orchestration': 'cliagents', 'tool': 'formHandler:timeseries_answer',
                             'agentConfig': {'cli': 'claude-code'},
                             'inputData': ['question'], 'outputData': [f['key'] for f in FIELDS],

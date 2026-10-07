@@ -46,6 +46,7 @@ def validate_definition(raw):
             raise ValueError('분기 priority는 정수여야 합니다')
         if 'default' in props and type(props['default']) is not bool:
             raise ValueError('분기 default는 boolean이어야 합니다')
+    _normalize_agent_activities(raw)
     try:
         defn = engine.Definition.from_dict(deepcopy(raw))
     except (KeyError, TypeError, SyntaxError) as e:
@@ -62,12 +63,12 @@ def validate_definition(raw):
         kind = a['type']
         if PROTECTED_OUTPUTS.intersection(a.get('outputData') or []):
             raise ValueError('Incident와 승인 명령 값은 서버 승인 경로에서만 만들 수 있습니다')
-        if kind not in {'userTask','manualTask','businessRuleTask','serviceTask'}:
+        if kind not in {'userTask','manualTask','serviceTask'}:
             raise ValueError(f'아직 실행을 지원하지 않는 활동 타입: {kind}')
         if kind == 'serviceTask':
             if a.get('tool') not in SERVICE_TOOLS:
                 raise ValueError(f"지원하지 않는 서비스 도구: {a.get('tool')}")
-            if a.get('agentMode') or a.get('orchestration') not in (None,'hyd-process'):
+            if a.get('agentMode') not in engine.NO_MODE or a.get('orchestration') not in (None,'hyd-process'):
                 raise ValueError('서비스 작업은 hyd-process에서 실행합니다')
         else:
             form = pinned_form(raw, a.get('tool'))
@@ -76,10 +77,13 @@ def validate_definition(raw):
             fields = {f['key'] for f in form['fields_json']}
             if fields != set(a.get('outputData') or []):
                 raise ValueError(f"활동 {a['id']}의 outputData와 폼 key가 다릅니다")
-            if kind == 'businessRuleTask' and (a.get('agentMode') not in ('DRAFT','COMPLETE') or a.get('orchestration') != 'cliagents'):
-                raise ValueError(f"에이전트 활동 {a['id']}에는 agentMode DRAFT/COMPLETE와 orchestration cliagents가 필요합니다")
-            if kind in ('userTask','manualTask') and (a.get('agentMode') or a.get('orchestration')):
-                raise ValueError('사람 작업에는 agentMode/orchestration을 지정할 수 없습니다')
+            if engine.is_agent(a):
+                if a.get('orchestration') != engine.AGENT_ORCH:
+                    raise ValueError(f"에이전트 활동 {a['id']}: HYD는 orchestration {engine.AGENT_ORCH}만 실행합니다 ({a.get('orchestration')})")
+                if a.get('agent') is not None and (not isinstance(a['agent'], str) or not a['agent'].strip()):
+                    raise ValueError(f"에이전트 활동 {a['id']}의 agent는 비어 있지 않은 문자열이어야 합니다")
+            elif a.get('orchestration') not in engine.NO_MODE:
+                raise ValueError('사람 작업에는 orchestration을 지정할 수 없습니다')
     for g in defn.gateways.values():
         if g.get('type') == 'parallelGateway':
             # A100: a parallel split takes every outgoing flow (no conditions); a parallel join (≥2 incoming) waits for every
@@ -117,6 +121,32 @@ def validate_definition(raw):
     _static_connectivity(defn, all_ids)
     _condition_variables(defn)
     return defn
+
+
+def _normalize_agent_activities(raw):
+    """A116 (r14 B5): store agent activities in the product's shape — userTask + agentMode DRAFT|COMPLETE + orchestration —
+    so a definition made with the ProcessGPT designer registers here unchanged and a definition made here runs on the
+    product's polling service (which handles userTask/manualTask only; a businessRuleTask would never be picked up).
+    `businessRuleTask` + agentMode (HYD's shape before A116) is accepted and rewritten; agentMode none/null/'' is dropped;
+    an agent activity without orchestration gets cliagents (the product would default to crewai-deep-research)."""
+    for a in raw.get('activities', []):
+        if not isinstance(a, dict):
+            continue
+        if a.get('agentMode') in engine.NO_MODE:
+            a.pop('agentMode', None)
+        elif isinstance(a.get('agentMode'), str) and a['agentMode'].upper() in engine.AGENT_MODES:
+            a['agentMode'] = a['agentMode'].upper()
+        else:
+            raise ValueError(f"활동 {a.get('id')}의 agentMode는 none, DRAFT, COMPLETE 중 하나여야 합니다")
+        if a.get('orchestration') in engine.NO_MODE:
+            a.pop('orchestration', None)
+        if a.get('type') == 'businessRuleTask':
+            if 'agentMode' not in a:
+                raise ValueError(f"활동 {a.get('id')}: businessRuleTask는 agentMode DRAFT/COMPLETE가 있는 에이전트 작업일 때만 "
+                                 "userTask + agentMode로 등록합니다 (제품 엔진은 businessRuleTask를 실행하지 않습니다)")
+            a['type'] = 'userTask'
+        if a.get('type') in engine.USER_TYPES and 'agentMode' in a and 'orchestration' not in a:
+            a['orchestration'] = engine.AGENT_ORCH
 
 
 def _condition_variables(defn):

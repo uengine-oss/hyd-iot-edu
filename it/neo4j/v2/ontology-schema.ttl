@@ -727,6 +727,11 @@ hyd:after a owl:DatatypeProperty ;
   rdfs:label "after" ;
   rdfs:domain hyd:ManualIngestionBatch ;
   rdfs:range xsd:string .
+hyd:agentMode a owl:DatatypeProperty ;
+  rdfs:label "agentMode" ;
+  rdfs:domain hyd:Task ;
+  rdfs:range xsd:string ;
+  rdfs:comment "AI 에이전트가 맡는 작업(ProcessGPT Activity.agent_mode, A116). 실행 정의에서는 userTask + agentMode로 적는다; 사람 작업은 비어 있다 허용값: DRAFT, COMPLETE"@ko .
 hyd:agent_mode a owl:DatatypeProperty ;
   rdfs:label "agent_mode" ;
   rdfs:domain hyd:WorkItem ;
@@ -1076,6 +1081,11 @@ hyd:openedAt a owl:DatatypeProperty ;
   rdfs:label "openedAt" ;
   rdfs:domain hyd:Incident ;
   rdfs:range xsd:dateTime .
+hyd:orchestration a owl:DatatypeProperty ;
+  rdfs:label "orchestration" ;
+  rdfs:domain hyd:Task ;
+  rdfs:range xsd:string ;
+  rdfs:comment "에이전트 작업의 실행기(HYD는 cliagents)"@ko .
 hyd:order a owl:DatatypeProperty ;
   rdfs:label "order" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Step hyd:Rule ) ] ;

@@ -40,7 +40,8 @@ def for_definition(raw,pattern):
 
 def require_triage(defn):
     """A fallback is a human review, not an alternate path to unreviewed effects."""
-    if not defn.activities or any(a.get('type') not in ('userTask','manualTask') or
-        a.get('tool')=='formHandler:select_card' or a.get('agentMode') or a.get('orchestration')
-        for a in defn.activities.values()):
+    from . import engine
+    if not defn.activities or any(not engine.is_human(a) or a.get('tool')=='formHandler:select_card'
+                                  or a.get('orchestration') not in engine.NO_MODE
+                                  for a in defn.activities.values()):
         raise ValueError('미지원 경보 경로는 조치 선택/에이전트/서비스 없는 사람 검토여야 합니다')

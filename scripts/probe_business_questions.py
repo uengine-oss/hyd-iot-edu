@@ -47,7 +47,7 @@ def definition(did):
             'roles': [{'name': '조회 담당', 'endpoint': 'sys:agent'}],
             'data': [{'name': 'question', 'type': 'Text'}] + [{'name': f['key'], 'type': {'array': 'Array', 'text': 'Text'}[f['type']]} for f in FIELDS],
             'forms': {'business_answer': {'fields_json': FIELDS}},
-            'activities': [{'id': 'answer', 'type': 'businessRuleTask', 'name': '업무 질문에 답하기', 'role': '조회 담당',
+            'activities': [{'id': 'answer', 'type': 'userTask', 'name': '업무 질문에 답하기', 'role': '조회 담당',
                             'agentMode': 'COMPLETE', 'orchestration': 'cliagents', 'tool': 'formHandler:business_answer',
                             'agentConfig': {'cli': 'claude-code'},        # not read_only: cliagents maps it to Claude Code plan mode, which blocks every MCP call (a081-questions-1)
                             'inputData': ['question'], 'outputData': [f['key'] for f in FIELDS],

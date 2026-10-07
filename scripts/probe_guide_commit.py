@@ -30,7 +30,7 @@ def main():
     ctx=instance_mode.ProcessContext(incidents,book,{},20,persist,
         lambda *a,**k:audit.append(str(a)),lambda *a,**k:[],unexpected,unexpected,unexpected,
         lambda:None,unexpected)
-    defn=engine.Definition.load(ROOT/'it/process/definitions/anomaly_response_v21.json')
+    defn=engine.Definition.load(ROOT/'it/process/definitions/anomaly_response_v22.json')
     rt=instances.InstanceRuntime(repo,defn,instance_mode._hooks(ctx),tenant_id=tenant,consumer=tenant+'-engine')
     alert={'alertId':tenant,'asset':'HYD-01','pattern':'COOLER_DEGRADATION','state':'RAISE','evidence':{'fixture':'guide durability'}}
     inst=rt.on_alert_raise(alert);pid=inst['proc_inst_id']

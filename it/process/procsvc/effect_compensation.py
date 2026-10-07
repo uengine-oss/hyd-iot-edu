@@ -163,7 +163,7 @@ class EffectRuntime:
             effects = inventory(evidence)
             defn = self.definition_for(inst)
             roles = sorted({defn.role_endpoint(a.get("role")) for a in defn.activities.values()
-                            if a.get("type") in engine.USER_TYPES and defn.role_endpoint(a.get("role"))})
+                            if engine.is_human(a) and defn.role_endpoint(a.get("role"))})
             incident = evidence["incident"]
             return {"instance": proc_inst_id, "incident": {k: incident.get(k) for k in ("id", "state", "cmdId", "cleared", "workOrder")},
                     "effects": effects, "resolution": resolution(effects, receipts), "receipts": receipts,
@@ -171,7 +171,7 @@ class EffectRuntime:
                     "scope": "조회는 상태를 바꾸지 않습니다. 되돌릴 수 있는 거래는 보상 요청으로, 나머지는 사람의 확인으로만 해결됩니다."}
 
     def _authorize_review(self, defn, evidence, approvals, by, role, reason):
-        human = {defn.role_endpoint(a.get("role")) for a in defn.activities.values() if a.get("type") in engine.USER_TYPES}
+        human = {defn.role_endpoint(a.get("role")) for a in defn.activities.values() if engine.is_human(a)}
         if not all(isinstance(v, str) and v.strip() for v in (by, role, reason)):
             raise ValueError("요청자, 역할, 사유가 필요합니다")
         if role not in human:

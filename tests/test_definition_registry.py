@@ -191,3 +191,78 @@ def test_human_response_cannot_requeue_a_completed_task(app_world):
     assert c.post('/api/todolist/'+w['id']+'/human-response',json={'job_id':'invented','answer':'resume'}).status_code==409
     saved=repo.get_workitem(w['id'])
     assert saved['status']=='DONE' and saved.get('draft_status') is None
+
+
+# ---- A116 (r14 B5): agent activities in the product's shape (userTask + agentMode), both directions ----------------------
+import json as _json
+from procsvc.definition_registry import validate_definition as _validate
+
+
+def _agent_definition(**activity):
+    raw = definition('agent-shape')
+    raw['roles'].append({'name': 'AI 에이전트', 'endpoint': 'sys:agent'})
+    raw['activities'][0].update({'role': 'AI 에이전트', **activity})
+    return raw
+
+
+def test_product_shaped_agent_task_registers_and_opens_as_an_agent_work_item():
+    """A userTask with agentMode COMPLETE (what GPTUserTaskPanel writes; orchestration left to the default) is an agent task."""
+    raw = _agent_definition(agentMode='COMPLETE', agent='agent:hyd')
+    defn = _validate(raw)
+    a = defn.activities['task:review']
+    assert a['type'] == 'userTask' and a['agentMode'] == 'COMPLETE' and a['orchestration'] == 'cliagents' and a['agent'] == 'agent:hyd'
+    assert engine.is_agent(a) and not engine.is_human(a)
+    row = engine.new_workitem(defn, engine.new_instance(defn, {}), a)
+    assert row['agent_mode'] == 'COMPLETE' and row['agent_orch'] == 'cliagents'
+
+
+def test_hyd_pre_a116_shape_is_rewritten_to_the_product_shape():
+    """businessRuleTask + agentMode (HYD's shape before A116) still registers, stored as userTask + agentMode."""
+    defn = _validate(_agent_definition(type='businessRuleTask', agentMode='complete', orchestration='cliagents'))
+    a = defn.activities['task:review']
+    assert a['type'] == 'userTask' and a['agentMode'] == 'COMPLETE' and engine.is_agent(a)
+
+
+def test_agent_mode_none_is_a_human_task_and_is_dropped():
+    """The product writes agentMode 'none' / orchestration null on human tasks (determine_agent_mode treats them as absent)."""
+    raw = definition('human-none'); raw['activities'][0].update(agentMode='none', orchestration=None)
+    defn = _validate(raw)
+    a = defn.activities['task:review']
+    assert 'agentMode' not in a and 'orchestration' not in a and engine.is_human(a)
+    assert engine.new_workitem(defn, engine.new_instance(defn, {}), a)['agent_mode'] is None
+
+
+@pytest.mark.parametrize('activity, word', [
+    (dict(agentMode='COMPLETE', orchestration='crewai-deep-research'), 'cliagents만'),   # the product's default orchestration
+    (dict(agentMode='AUTO'), 'agentMode는'),
+    (dict(type='businessRuleTask'), 'businessRuleTask는 agentMode'),                     # a rule task without an agent
+    (dict(orchestration='cliagents'), '사람 작업에는 orchestration'),
+    (dict(agentMode='COMPLETE', agent=''), 'agent는'),
+])
+def test_agent_shapes_hyd_cannot_run_are_refused(activity, word):
+    with pytest.raises(ValueError, match=word):
+        _validate(_agent_definition(**activity))
+
+
+def test_stored_pre_a116_versions_keep_running_as_agent_tasks():
+    """Versions registered before A116 (anomaly_response 1.0–2.1) are immutable and still hold businessRuleTask."""
+    defs = Path(__file__).resolve().parents[1] / 'it/process/definitions'
+    old = engine.Definition.from_dict(_json.loads((defs / 'anomaly_response_v21.json').read_text(encoding='utf-8')))
+    a = old.activities['task:diagnose']
+    assert a['type'] == 'businessRuleTask' and engine.is_agent(a)
+    assert engine.new_workitem(old, engine.new_instance(old, {}), a)['agent_mode'] == 'COMPLETE'
+
+
+def test_v22_is_v21_in_the_product_shape():
+    defs = Path(__file__).resolve().parents[1] / 'it/process/definitions'
+    old = _json.loads((defs / 'anomaly_response_v21.json').read_text(encoding='utf-8'))
+    new = _json.loads((defs / 'anomaly_response_v22.json').read_text(encoding='utf-8'))
+    assert new['version'] == '2.2' and new['contractProvenance']['predecessor'] == '2.1'
+    for o, n in zip(old['activities'], new['activities']):
+        assert o['id'] == n['id']
+        if o['type'] == 'businessRuleTask':
+            assert n['type'] == 'userTask' and n['agentMode'] == 'COMPLETE' and n['orchestration'] == 'cliagents'
+        else:
+            assert n['type'] == o['type'] and 'agentMode' not in n
+    assert {a['type'] for a in new['activities']} <= {'userTask', 'manualTask', 'serviceTask'}   # types the product's polling handles
+    assert _validate(new).raw['activities'] == new['activities']                               # already normalized: stored as written

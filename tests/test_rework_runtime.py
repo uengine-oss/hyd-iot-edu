@@ -16,7 +16,7 @@ def definition(agent=False):
                   {'id': 'finish', 'name': 'Finish', 'type': 'userTask', 'role': 'Reviewer',
                    'tool': 'formHandler:note', 'inputData': ['score'], 'outputData': ['note']}]
     if agent:
-        activities[0].update(type='businessRuleTask', role='Agent', agentMode='COMPLETE', orchestration='cliagents')
+        activities[0].update(type='userTask', role='Agent', agentMode='COMPLETE', orchestration='cliagents')   # A116 product shape
     return engine.Definition.from_dict({
         'processDefinitionId': 'repeatable-inspection', 'processDefinitionName': 'Repeatable inspection', 'version': '1',
         'roles': [{'name': 'Reviewer', 'endpoint': 'role:operator'}, {'name': 'Agent', 'endpoint': 'sys:agent'}],

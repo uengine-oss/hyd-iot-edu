@@ -185,7 +185,7 @@ def plan(defn, inst, workitems, workitem_id, approvals=()):
         defn, inst, workitems, set(reasons), control, root['activity_id'])
     blockers.extend(schedule_blockers)
     roles = sorted({defn.role_endpoint(a.get('role')) for a in defn.activities.values()
-                    if a.get('type') in engine.USER_TYPES and defn.role_endpoint(a.get('role'))})
+                    if engine.is_human(a) and defn.role_endpoint(a.get('role'))})
     candidate_sources = {key: {'kind': 'input'} for key in values}
     for entry in retained:
         producer = rows[entry['workitem']]

@@ -38,7 +38,7 @@ def main():
     def no_effect(*a,**k):raise AssertionError('no command/CMMS effect is allowed in this storage probe')
     ctx=instance_mode.ProcessContext(incidents,book,{},20,persist,lambda *a,**k:None,lambda *a,**k:[],
         no_effect,no_effect,no_effect,lambda:None,no_effect)
-    raw=json.loads((ROOT/'it/process/definitions/anomaly_response_v21.json').read_text(encoding='utf-8'))
+    raw=json.loads((ROOT/'it/process/definitions/anomaly_response_v22.json').read_text(encoding='utf-8'))
     rt=instances.InstanceRuntime(repo,engine.Definition.from_dict(raw),instance_mode._hooks(ctx),tenant_id=tenant)
     def activate(runtime):
         instance_mode._runtime=runtime;service.incidents=incidents;service.persist=persist;service.source_inbox=inbox

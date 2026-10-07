@@ -329,6 +329,22 @@
           "type": "string"
         },
         {
+          "name": "agentMode",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "DRAFT",
+            "COMPLETE"
+          ],
+          "description": "AI 에이전트가 맡는 작업(ProcessGPT Activity.agent_mode, A116). 실행 정의에서는 userTask + agentMode로 적는다; 사람 작업은 비어 있다"
+        },
+        {
+          "name": "orchestration",
+          "type": "string",
+          "required": false,
+          "description": "에이전트 작업의 실행기(HYD는 cliagents)"
+        },
+        {
           "name": "semantic_id",
           "type": "string",
           "required": false,

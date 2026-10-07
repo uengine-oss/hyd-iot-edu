@@ -48,7 +48,7 @@ def main():
     # An actual claimed agent row is needed for the stale-result fence. Its
     # accepted value below is a labelled test payload, not an AI inference.
     raw['roles'].append({'name': 'Agent', 'endpoint': 'sys:agent'})
-    raw['activities'][0].update(type='businessRuleTask', role='Agent', agentMode='COMPLETE', orchestration='cliagents')
+    raw['activities'][0].update(type='userTask', role='Agent', agentMode='COMPLETE', orchestration='cliagents')
     tenant = 'rework-' + uuid.uuid4().hex[:10]
     with psycopg.connect(DSN) as c:
         c.execute('insert into tenants(id,name) values(%s,%s)', (tenant, 'A038 retained fixture'))

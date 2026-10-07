@@ -39,7 +39,7 @@ def definition(did, version):
       'roles':[{'name':'조회 담당','endpoint':'sys:agent'}],
       'data':[{'name':'count','type':'Number'},{'name':'sql','type':'Text'},{'name':'note','type':'Text'}],
       'forms':{'measurement':{'fields_json':fields}},
-      'activities':[{'id':'measure','type':'businessRuleTask','name':'업무 DB 조회','role':'조회 담당',
+      'activities':[{'id':'measure','type':'userTask','name':'업무 DB 조회','role':'조회 담당',
         'agentMode':'COMPLETE','orchestration':'cliagents','tool':'formHandler:measurement',
         'agentConfig':{'cli':'codex','model':'gpt-5.6-sol','permission':'read_only','reasoning_effort':'low'},
         'instruction':f'enterprise MCP describe_schema로 현재 스키마를 읽으세요. {target}의 수를 구하는 SELECT를 직접 작성하고 enterprise query로 실행하세요. 반환된 값만 count에 넣고 실행 SQL을 sql에 쓰세요. 표/컬럼을 추측하지 마세요. 이 작업은 설비목록 집계이며 원인 진단이나 조치 카드 제출이 아닙니다. 쓰기는 금지합니다. note 필드가 있으면 대상 범위를 설명하세요.',

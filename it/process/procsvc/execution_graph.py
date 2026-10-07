@@ -24,6 +24,9 @@ def definition_projection(defn, tenant):
                      'version': version, 'element_id': raw['id'], 'source_type': raw['type']}
             if label == 'Task':
                 props.update(taskType=raw['type'].removesuffix('Task'), tool=raw.get('tool'))
+                mode = str(raw.get('agentMode') or '').upper()        # A116: the product's Activity.agent_mode
+                if mode in ('DRAFT', 'COMPLETE'):
+                    props.update(agentMode=mode, orchestration=raw.get('orchestration'))
             elif label == 'Event':
                 props.update(position={'startEvent': 'start', 'endEvent': 'end', 'boundaryEvent': 'boundary'}[raw['type']],
                              eventDefinition=raw.get('eventDefinition', 'none'), timer=raw.get('timer'),
