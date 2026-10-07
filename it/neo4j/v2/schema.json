@@ -354,9 +354,11 @@
           "name": "gatewayType",
           "type": "enum",
           "values": [
-            "exclusive"
+            "exclusive",
+            "parallel"
           ],
-          "required": true
+          "required": true,
+          "description": " A100: parallel(병렬 분기·합류) 지원."
         },
         {
           "name": "semantic_id",

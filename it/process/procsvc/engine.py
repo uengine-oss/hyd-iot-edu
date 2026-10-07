@@ -108,6 +108,9 @@ class Definition:
     def outgoing(self, node_id: str) -> list[dict]:
         return [s for s in self.sequences if s["source"] == node_id]
 
+    def incoming(self, node_id: str) -> list[dict]:
+        return [s for s in self.sequences if s["target"] == node_id]
+
     def attached_events(self, activity_id: str) -> list[dict]:
         """Boundary events of an activity — the product keeps the list on the activity (attachedEvents); the event's
         own attachedTo is accepted too so either spelling works."""
@@ -334,6 +337,7 @@ class Advance:
     ended: str | None = None                                 # end event id if the instance finished
     visited: list[str] = field(default_factory=list)        # gateways/events passed, for the log
     pending: bool = False                                    # the completed item could not proceed (conditions not met)
+    waiting_joins: list[str] = field(default_factory=list)  # A100: parallel joins this path arrived at that still wait for other paths
 
 
 def workitem_order(row: dict) -> tuple:
@@ -493,7 +497,7 @@ def _advance(defn: Definition, inst: dict, node_id: str, workitems: list[dict], 
     """Follow the flow from a finished node to the next activities / end events (resolve_next_activity_payloads + execute_next_activity)."""
     from . import dependency_schedule
     rows = _by_activity(workitems)
-    for target in _next_nodes(defn, node_id, variables(inst), adv):
+    for target in _next_nodes(defn, node_id, variables(inst), adv, workitems):
         if target in defn.activities:
             row = rows.get(target)
             if row is None or row["status"] in TERMINAL_STATUSES:
@@ -561,9 +565,36 @@ def _advance(defn: Definition, inst: dict, node_id: str, workitems: list[dict], 
                     adv.updated.append(row)
 
 
-def _next_nodes(defn: Definition, node_id: str, values: dict, adv: Advance) -> list[str]:
+def _join_ready(defn: Definition, gateway_id: str, workitems: list[dict]) -> bool:
+    """A100 (process-gpt-completion check_task_status: a parallel join waits for every incoming path). The join is ready
+    when the latest row of every incoming source is finished — an activity DONE, a boundary/timer event fired. Readiness
+    is computed from the rows, never stored, so a reworked branch (new generation) must finish again before the join
+    fires again while the other branch's DONE row still counts."""
+    rows = _by_activity(workitems)
+    for seq in defn.sequences:
+        if seq["target"] != gateway_id:
+            continue
+        src = seq["source"]
+        row = rows.get(src)
+        if src in defn.activities:
+            if not row or row["status"] != "DONE":
+                return False
+        elif src in defn.events:
+            if not row or row["status"] not in ("SUBMITTED", "DONE"):
+                return False
+        else:                                                   # a gateway feeding a join is refused at registration
+            return False
+    return True
+
+
+def is_parallel_join(defn: Definition, gateway_id: str) -> bool:
+    return defn.gateways.get(gateway_id, {}).get("type") == "parallelGateway" and len(defn.incoming(gateway_id)) > 1
+
+
+def _next_nodes(defn: Definition, node_id: str, values: dict, adv: Advance, workitems: list[dict] | None = None) -> list[str]:
     """Targets after a node, expanding gateways with the product's rules: XOR takes exactly one (true → priority → default),
-    inclusive takes every allowed branch, parallel takes all."""
+    inclusive takes every allowed branch, parallel takes all. A parallel join (≥2 incoming) is expanded only when every
+    incoming path has finished (`_join_ready`); otherwise this path stops here and the last arriving path fires it."""
     out: list[str] = []
     queue = [node_id]
     seen: set[str] = set()
@@ -573,6 +604,9 @@ def _next_nodes(defn: Definition, node_id: str, values: dict, adv: Advance) -> l
             continue
         seen.add(cur)
         if cur in defn.gateways and cur != node_id:
+            if is_parallel_join(defn, cur) and not _join_ready(defn, cur, workitems or []):
+                adv.waiting_joins.append(cur)
+                continue
             adv.visited.append(cur)
         for tgt in _allowed_targets(defn, cur, values):
             if tgt in defn.gateways:

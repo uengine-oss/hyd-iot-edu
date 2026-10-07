@@ -977,7 +977,7 @@ hyd:gatewayType a owl:DatatypeProperty ;
   rdfs:label "gatewayType" ;
   rdfs:domain hyd:Gateway ;
   rdfs:range xsd:string ;
-  rdfs:comment "허용값: exclusive"@ko .
+  rdfs:comment " A100: parallel(병렬 분기·합류) 지원. 허용값: exclusive, parallel"@ko .
 hyd:generation a owl:DatatypeProperty ;
   rdfs:label "generation" ;
   rdfs:domain hyd:WorkItem ;

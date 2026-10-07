@@ -81,8 +81,15 @@ def validate_definition(raw):
             if kind in ('userTask','manualTask') and (a.get('agentMode') or a.get('orchestration')):
                 raise ValueError('사람 작업에는 agentMode/orchestration을 지정할 수 없습니다')
     for g in defn.gateways.values():
-        if g.get('type') != 'exclusiveGateway':
-            raise ValueError('등록 경로는 현재 exclusiveGateway만 검증되었습니다')
+        if g.get('type') == 'parallelGateway':
+            # A100: a parallel split takes every outgoing flow (no conditions); a parallel join (≥2 incoming) waits for every
+            # incoming path, so each incoming source must be an activity or an event whose row can finish (not a gateway).
+            if any(s.get('condition') for s in defn.outgoing(g['id'])):
+                raise ValueError(f"병렬 게이트웨이 {g['id']}의 나가는 흐름에는 조건을 둘 수 없습니다 (모든 가지를 동시에 시작)")
+            if len(defn.incoming(g['id'])) > 1 and any(s['source'] in defn.gateways for s in defn.incoming(g['id'])):
+                raise ValueError(f"병렬 합류 {g['id']}로 들어오는 흐름의 출발은 활동 또는 이벤트여야 합니다 (게이트웨이 직결 불가)")
+        elif g.get('type') != 'exclusiveGateway':
+            raise ValueError('등록 경로는 현재 exclusiveGateway와 parallelGateway만 검증되었습니다')
     for e in defn.events.values():
         if e.get('type') not in {'startEvent','endEvent','boundaryEvent'}:
             raise ValueError(f"지원하지 않는 이벤트: {e.get('type')}")

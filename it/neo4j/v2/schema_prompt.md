@@ -33,7 +33,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type})` 프로세스 안의 한 지점. Event · Task · Gateway의 부모.
 - `(:Event:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, position![start|boundary|end], eventDefinition![none|message|timer|escalation], messageRef, correlationKey, timer, semantic_id, semantic_warning, catchAll})` 프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.
 - `(:Task:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, taskType![user|service|businessRule|manual|script|send|receive|subProcess|callActivity], tool, semantic_id, semantic_warning})` 일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).
-- `(:Gateway:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, gatewayType![exclusive], semantic_id, semantic_warning})` 흐름이 갈라지거나 합쳐지는 지점.
+- `(:Gateway:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, gatewayType![exclusive|parallel], semantic_id, semantic_warning})` 흐름이 갈라지거나 합쳐지는 지점.
 
 ## 설비 진단 지식 (리소스 계층의 설비 코어) — ISO 13374 / MIMOSA OSA-CBM — SD(상태 감지) · HA(건강 평가) · AG(권고)
 

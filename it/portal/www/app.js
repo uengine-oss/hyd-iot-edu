@@ -413,7 +413,7 @@ function lane(inc) {
   for (const s of def.steps) {
     const cls = s.id === cur ? 'now' : done.has(s.id) ? 'done' : '';
     const h = (inc.history || []).find(x => x.state === s.id);
-    html += `<div class="st ${cls}">${esc(s.label)}<small>${esc(({startEvent:'시작',endEvent:'종료',userTask:'사람의 확인',serviceTask:'시스템 처리',exclusiveGateway:'조건 분기',intermediateCatchEvent:'응답 대기'})[s.type] || s.type)}${h ? ' · ' + UI.time(h.t) : ''}</small></div>`;
+    html += `<div class="st ${cls}">${esc(s.label)}<small>${esc(({startEvent:'시작',endEvent:'종료',userTask:'사람의 확인',serviceTask:'시스템 처리',exclusiveGateway:'조건 분기',parallelGateway:'병렬 분기·합류',intermediateCatchEvent:'응답 대기'})[s.type] || s.type)}${h ? ' · ' + UI.time(h.t) : ''}</small></div>`;
   }
   html += '</div>';
   if (fail) html += `<div class="st fail" style="display:inline-block;padding:6px 10px;border-radius:4px;font-size:12px">${esc(fail.label)}${inc.reason ? ' — ' + esc(inc.reason) : ''}</div>`;
