@@ -1105,15 +1105,15 @@ A033 추가: 처리owner/lease/token·설비별단일claim·지연CLEAR/ACK·실
 ## 10. 새 세션용 복붙 대사
 
 ```
-D:\work\study\hyd-iot-edu 작업을 이어가세요. 목표는 docs/handoff/GOAL.md 맨 위 "완주 목표"(DoD 7개)이며, 남은 작업 없이 최종 완료까지 수행합니다. 부분 작업으로 끊지 않습니다.
+D:\work\study\hyd-iot-edu 작업을 이어가세요. 목표는 docs/handoff/GOAL.md 맨 위 "완주 목표"(DoD 7개)이며, 상태는 GOAL.md의 DoD 상태표와 HANDOFF.md 맨 위 포인터에 있습니다.
 
-먼저 docs/handoff/HANDOFF.md 맨 위 재개 포인터 → §2 확정 방향·§3 절대 규칙 → §9 A115 → docs/handoff/verification/2026-10-07/r14-summary.md → docs/handoff/UIUX.md → docs/curriculum-75h.md 순서로 읽으세요. 회의 요구 R01~R14 핵심 경로는 실제로 돌고 핵심 회귀 6/6·단위 1,151입니다. r14 결함 A1~A12는 전부 고쳤습니다.
+먼저 HANDOFF.md 맨 위 포인터 → §6·§7 → §9 A129·A130 → GOAL.md DoD 상태표 순서로 읽으세요. 10-08 기준: DoD 1(회차 증거)·2(펌프·팬)·3(B 판정 반영)·6(RUNBOOK·스크립트)·7(문서)은 검증됨, DoD 4(UI)는 사용자 "됐다" 대기, DoD 5(회귀)는 A130 결과(reg-a130-core·reg-a130-worker)를 확인해 실패가 있으면 그 항목만 원인 파일:줄로 고칩니다.
 
-레포 대조 기준: "정답이 있는데 또 만드는 낭비"를 막기 위한 것입니다. 결과·효율·안정성·범용성 네 기준으로 양쪽을 제3자처럼 적대적으로 판정하고, 실제 결함이거나 회의 요구를 못 채울 때만 바꿉니다. 키워드 검색으로 결론 내지 말고 진입→흐름→저장→화면 순서로 읽으세요(참고 레포 최신본은 .evidence/reaudit/references-latest/<레포>, 새로 받으려면 bash scripts/refs_latest.sh).
+작업 방식(사용자 확정): 큼지막하게·서브에이전트 병렬(문서는 opus, 코드는 fable), 100점 아님·60명이라고 반복 검증 금지, 이미 한 검사는 반복하지 않고 안 한 것만 모아서 1회, 근본 수정·해피패스 금지, 모든 실행은 .evidence/<A번호>/에 명령·로그·JSON을 남김. 리소스(컨테이너·DB·잔재·임시 파일) 정리·삭제는 묻지 않음(sh -c 안에 삭제를 넣으면 안전검사에 걸리니 직접 명령). 결제·외부 전송·원자료 삭제만 묻습니다. 20배속이 기본값(가상 설비).
 
-순서: ① B5(에이전트 활동 유형을 제품 모양 userTask+agentMode로, 양방향 호환·정의 v2.2·등록 규칙·엔진·추출) → B2(인용 위치를 서버가) → B3(문서별 골든 퀘스천 보고) → B1(인제스천 결과 파일화·재측정), B4는 같은 매뉴얼 2회 추출 재현성을 잰 뒤 결정 ② 펌프·팬 시나리오 인스턴스 모드 완주 ③ UI/UX: 화면별 "빼는 것/남기는 것/카드로 묶는 것"과 명칭표를 먼저 보여 주고 승인 뒤 고치며, 화면마다 1440·1024 캡처에 내가 "됐다"고 해야 완료 ④ 회차 25개 실행 장면 절차·증거 ⑤ 전체 회귀 18개(core 12 + worker 6) ⑥ RUNBOOK·인계 정리. 각 단계는 시험을 붙이고 바꾼 곳만 라이브 확인(10분 넘는 측정은 먼저 알림).
+설계서 v3와 IoT·SCADA 층이 다른 것(Flink·EdgeX·Kafka Connect·Alertmanager가 Python 대역)은 사용자가 10-08 "현 구조 유지"로 결정했습니다(DECISIONS 106). 다시 제안하지 마세요.
 
-환경: Docker Desktop → cd it/supabase && supabase start → docker compose up -d → docker compose --profile cliagents up -d enterprise-mcp dmn-mcp → 호스트 워커 bash scripts/run_worker_host.sh (둘째는 CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098). 호스트 psycopg는 . scripts/host_libpq.sh. process healthz에 consumer_dead·IPv6 주소가 보이면 docker restart hyd-iot-edu-process-1. 시험 잔재는 scripts/cleanup_residue_instances.py --before <시각> --apply. 리소스(컨테이너·DB·잔재·임시 파일) 정리·삭제는 묻지 않고 합니다. sh -c 안에 삭제를 넣으면 안전검사에 걸리니 직접 명령으로.
+환경: Docker Desktop → cd it/supabase && supabase start → docker compose up -d → docker compose --profile cliagents up -d enterprise-mcp dmn-mcp. 호스트 psycopg는 . scripts/host_libpq.sh. 워커는 bash scripts/run_worker_host.sh(둘째 CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098), 종료 powershell -File scripts/stop_worker_host.ps1. process healthz에 consumer_dead가 보이면 docker restart hyd-iot-edu-process-1. 시험 잔재는 scripts/cleanup_residue_instances.py --before <ISO> --apply. 아웃박스 정리는 scripts/prune_projection_outbox.py --older-than-days 1 --apply(회귀 중 금지).
 
-한국어로 답하고, 단계마다 HANDOFF §9에 최소 근거를 갱신하며 커밋합니다. 결제·외부 전송·원자료 삭제만 묻고, 막히면 땜빵 우회 대신 멈추고 보고하세요.
+한국어로 답하고, 단계마다 HANDOFF §9에 근거를 갱신하며 커밋합니다. 막히면 땜빵 우회 대신 멈추고 보고하세요.
 ```
