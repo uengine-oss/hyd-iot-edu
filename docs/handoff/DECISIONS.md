@@ -557,3 +557,17 @@ A090 후속 후보 "거래 before/after"를 구현했다. 근거: 제품의 거�
 - 20배속 기본값(규칙의 출처): 가상 설비라 TIME_SCALE=20이 수업·실습·검사의 기본이며 1~2배속 권장 문구는 쓰지 않는다(사용자 10-08 "우린 실제 설비가 아니라서 배속이 기본값"). 20배속에서 흔들리는 코드는 배속 기준으로 고친다(A129 정책 v2, A146 쿨러 고장 강도). 워커 회차의 시나리오(팬 또는 쿨러)는 A146 결과로 확정한다.
 - T03 HWPX/DOCX 변환기는 미채택으로 확정 — 회의 원문·AUDIT에 요구 0건, 받은 매뉴얼은 전부 PDF(91·92), `manual_sources.py`는 PDF·md·txt만 받는다. 실제 요구가 생기면 다시 연다(A145).
 - 참고 레포 미확정 연결 4건(agent-router·mcp-proxy·fcm-service·PAL)은 공개 범위에서 소스를 찾지 못해 "확인 불가"로 닫는다(패키지는 있으나 소스 레포 미표시·404·비공개 레지스트리). HYD 요구와 연결된 기능이 없어 채택 판단은 바뀌지 않으며, 소유 레포가 공개되면 다시 연다(A145).
+
+## 109. 전수 마감에서 "구현 대신 범위 밖"으로 닫은 10건 (2026-10-08 새벽, A143·A144; 전문은 `.evidence/a143/decisions-proposed.md`·`.evidence/a144/decisions-proposed.md`)
+
+- 18 시작 직후 게이트웨이·도달 근거 없는 CANCELLED: 가상의 제어 토큰을 만들지 않고 `condition_replay_requires_arrival`/`dependency_control_arrival_unavailable` 보류가 계약(`docs/rework-conditions.md:21`, 시험 3). 지어내기 금지(11)와 일치.
+- 20 정의 draft 판본(is_draft·parent_version): 미채택. 판본은 불변 등록·새 version이 변경이고(`20261004000002_immutable_definitions.sql`), `is_draft` 열은 있으나 쓰는 코드 0, 커리큘럼에 draft 검토 활동 없음.
+- 23 추출 정의 1.9 SOP 범위: 운전·점검·정비·고장 조치 장만 SOP, 설치·배선·시운전·반입은 page_reviews만(업계: 보전 작업 지시 vs 시공 문서). A119 1.6↔1.8 흔들림(Jaccard 0.711)의 원인이 이 범위 차이.
+- 24 참조 중 SOP 병행 판본: 구현 안 함. 참조가 있으면 개정·되돌리기 모두 Conflict로 거부해 보존(`probe_manual_graph.py:100-103` 실측 PASS, `_replace`는 DETACH 없는 DELETE). 병행 판본은 Skill id 1:1 체계를 바꾸는 제품 작업, 요구 0.
+- 25 적재→감사 Kafka outbox: 두지 않음. 정본은 Neo4j 트랜잭션 안 `ManualIngestionBatch`+보관 원문, 감사는 알림 사본이며 `history()`로 되읽음. 실행·사건 투영 outbox(A043·A044)로 "전체 graph outbox"는 닫힌 범위.
+- 26 지식 재투영 선별 최적화: 측정 — 인스턴스 334건, 지식 변경 1회 재투영 258~274건이 2분 1초~2분 48초(≈2.1건/s), INVENTORY_Q 11~21 ms. 수업 중 분 단위로 드문 백그라운드라 안 함. 재검토 기준 인스턴스 2,000건 또는 지식 변경 5분 간격 미만.
+- 27 범용 tool registry·tenant MCP 판본 고정: 안 함. 서비스 작업은 등록 시 `SERVICE_TOOLS`, 에이전트 작업은 `select_servers` 2겹이 이미 검증. `tenants.mcp`는 실행마다 읽는 것이 운영 의도(주소 수정이 다음 작업에 바로 반영). 재검토: 테넌트 2개 이상 또는 수업 중 MCP 편집 활동.
+- 28 InputData 동의어: 미채택. 에이전트는 사전이 아니라 원천 메타데이터(컬럼 COMMENT·`describe_catalog`·InputData 한국어 name)로 낱말을 맞추고, 실측 21/21·15/15·18/18에 실패 0, 스키마 도구 우선 호출 8/8. `ont_names` 전문 색인은 이미 있음. 별칭을 두면 DDL 재적재 시 유지 주체가 새 문제.
+- 29 업무 데이터 허용 나이: 만들지 않음. 업무 기록의 유효성은 "바뀌었나"이지 "언제 읽었나"가 아님 — A086 anchor 재대조(`approval.py:144-157`)+A085 출처 시각(`decide.py:67-73`)이 계약. 센서·PLC만 15 s 신선도(연속 관측).
+- 30 배율: 지원 배율 20(기본)·1, 둘 다 `test_forecast_cards.py:94-121`로 고정. 임의 배율 해상도 자동 설계는 DAQ 1초 표본 계약을 깨므로 안 함. **워커 회차 장면: 팬 베어링 마모(A128 실측)와 쿨러 moderate(A146 실측 42/42) 둘 다 가능** — A144 제안의 "팬 확정"은 A146 이전 기준이라 여기서 갱신.
+- 34 판단 코드의 sys:* 분기·`ranking.FEATURES`: 코드 유지. 새 업무 조건은 물리 InputData로 이미 데이터(A078 10/10); 남은 분기는 URL이 아닌 파생 의미(환산·게이트·신선도)라 System 노드 endpoint 속성은 반쪽 계약; FEATURES는 평가 파생이고 정책은 이미 데이터(`rankingPolicy`); 워커 경로는 SQL이라 소비자 없음. process-gpt-strategy 대조(B-3) "평가 의미는 코드"와 일치.
