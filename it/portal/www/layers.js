@@ -16,7 +16,8 @@ const LAYERS = [
     { name: 'Neo4j', role: '설비·고장·매뉴얼·스킬·조직의 관계 저장', zone: 'it', url: P(7474) + '/browser/', health: P(7474) },
   ]},
   { no: 'L6', name: '관제 · SCADA · 인프라 감시', role: '설비 상태와 데이터 추이를 확인', zone: 'mixed', comps: [
-    { name: 'FUXA', role: '설비 감시·수동 조작·운전 모드 전환', zone: 'ot', url: P(1881), health: P(1881) + '/api/settings' },
+    // A122 F10: FUXA is an optional tool — when it is not running the portal shows "선택 도구 꺼짐", not a failure.
+    { name: 'FUXA', role: '설비 감시·수동 조작·운전 모드 전환', zone: 'ot', url: P(1881), health: P(1881) + '/api/settings', optional: true },
     { name: 'Grafana', role: '센서 추이와 경보·조치 이력 시각화', zone: 'it', url: P(3000) + '/d/hyd-trend', health: P(3000) + '/api/health' },
     { name: 'Prometheus', role: '서비스 상태와 처리량 수집', zone: 'it', url: P(9090), health: P(9090) + '/-/ready', optional: true },
   ]},

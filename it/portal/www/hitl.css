@@ -432,13 +432,6 @@
   flex-direction: column;
   gap: var(--s4);
 }
-.skill-edit label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--ink-2);
-}
 .skill-edit textarea.mono {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 13px;

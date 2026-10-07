@@ -36,6 +36,21 @@
   --shadow: 0 4px 20px rgba(32, 51, 91, 0.035);
   --font:
     "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  /* A122 chip tones — process-gpt-vue3 src/ds/styles/tokens.css:49-69 (uiux-refs R4) */
+  --chip-neutral-bg: rgba(11, 11, 11, 0.05);
+  --chip-neutral-fg: #52514e;
+  --chip-accent-bg: #cde2fb;
+  --chip-accent-fg: #184f95;
+  --chip-success-bg: #caeac7;
+  --chip-success-fg: #006300;
+  --chip-warning-bg: #f9dca4;
+  --chip-warning-fg: #734500;
+  --chip-danger-bg: #fad6d6;
+  --chip-danger-fg: #8e2626;
+  --card-pad: 16px;    /* PgCard.vue:77-119 (R2) */
+  --field-h: 34px;     /* PgTextField.vue:81-125 (R5) */
+  --btn-h: 32px;       /* PgButton.vue:72-95 (R5) */
+  --prose-max: 768px;  /* --app-content-max (R1) */
 }
 @media (max-width: 1100px) {
   :root {

@@ -1,16 +1,16 @@
-/* Main (landing) view: one picture of the whole idea — a hydraulic power unit feeding an IIoT/SCADA backbone, and the
-   ontology knowledge map an agent walks to decide what to do. Live values come from state.plant (app.js polling). */
+/* 홈: one picture of the whole idea — a hydraulic power unit feeding an IIoT/SCADA backbone, and the knowledge map an agent
+   walks to decide what to do. Live values come from state.plant (app.js polling). A122: no layer numbers, no lecture copy. */
 (function () {
   const G = { asset: '#9aa7b5', obs: '#9aa7b5', failure: '#f07167', action: '#f5a623', org: '#b794f6', sys: '#2dd4bf', decision: '#7aa2ff', agent: '#ffffff' };
   // knowledge-map nodes (a readable subset of the real ontology; ids match seed.cypher / seed_enterprise.cypher)
   const N = [
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
-    ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장모드 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
-    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', 'SOP-COOL-01', 'action', 1105, 152],
+    ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
+    ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-01', 'action', 1105, 152],
     ['agent', 'AI Agent', 'agent', 960, 326], ['scn', '판단 · 납기 vs 보전', 'decision', 1090, 262],
-    ['kpi1', 'BSC · 납기 준수율', 'org', 1095, 356], ['kpi2', 'BSC · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 472],
+    ['kpi1', '성과 지표 · 납기 준수율', 'org', 1095, 356], ['kpi2', '성과 지표 · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 472],
     ['pol', '규정 · 유온 65 ℃', 'org', 826, 450], ['erp', 'ERP', 'sys', 770, 494], ['mes', 'MES', 'sys', 862, 516], ['cmms', 'CMMS', 'sys', 962, 516],
-    ['skill', '스킬 · 작업지시', 'sys', 1066, 526],
+    ['skill', '조치 · 정비 요청', 'sys', 1066, 526],
   ];
   const E = [['asset', 'ts1'], ['asset', 'ce'], ['sym', 'ts1'], ['sym', 'fm'], ['cause', 'fm'], ['cause', 'act'], ['act', 'sop'],
     ['cause', 'scn'], ['scn', 'kpi1'], ['scn', 'kpi2'], ['kpi1', 'dept'], ['kpi2', 'dept'], ['pol', 'scn'], ['erp', 'agent'], ['mes', 'agent'],
@@ -34,8 +34,8 @@
       return `<line x1="${A[3]}" y1="${A[4]}" x2="${B[3]}" y2="${B[4]}" class="m-edge${agent ? ' m-edge-agent' : ''}"/>`;
     }).join('');
     return `<svg viewBox="0 0 1200 580" role="img" aria-labelledby="mainHeroTitle mainHeroDesc" class="m-hero-svg">
-  <title id="mainHeroTitle">유압설비 IIoT SCADA와 지식 지도 기반 에이전트 조치 프로세스</title>
-  <desc id="mainHeroDesc">왼쪽은 유압 파워유닛과 센서, 가운데는 MQTT와 Kafka로 이어지는 수집·관제 경로, 오른쪽은 온톨로지 지식 지도와 AI 에이전트이며, 승인된 조치가 다시 설비로 돌아가는 폐루프를 그렸다.</desc>
+  <title id="mainHeroTitle">유압설비와 지식 지도 기반 에이전트 조치 흐름</title>
+  <desc id="mainHeroDesc">왼쪽은 유압 파워유닛과 센서, 가운데는 수집·관제 경로, 오른쪽은 지식 지도와 AI 에이전트이며, 승인된 조치가 다시 설비로 돌아간다.</desc>
   <defs>
     <pattern id="mGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#27354a" stroke-width="1"/></pattern>
     <marker id="mArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a623"/></marker>
@@ -46,9 +46,9 @@
   <rect width="1200" height="580" fill="#16202d"/><rect width="1200" height="580" fill="url(#mGrid)"/>
 
   <!-- zone bands -->
-  <text x="40" y="48" class="m-zone" fill="#f07167">현장 설비 · IIoT  (L1 ~ L2)</text>
-  <text x="538" y="48" class="m-zone" fill="#7aa2ff">관제 · 데이터 백본  (L3 ~ L6)</text>
-  <text x="660" y="86" class="m-zone" fill="#b794f6">지식 지도 · 에이전트 조치  (L7 ~ L9)</text>
+  <text x="40" y="48" class="m-zone" fill="#f07167">현장 설비</text>
+  <text x="538" y="48" class="m-zone" fill="#7aa2ff">관제 · 데이터</text>
+  <text x="660" y="86" class="m-zone" fill="#b794f6">지식 지도 · 에이전트 조치</text>
   <line x1="520" y1="60" x2="520" y2="556" class="m-sep"/><line x1="640" y1="60" x2="640" y2="556" class="m-sep"/>
 
   <!-- hydraulic power unit (ISO-style line art) -->
@@ -82,7 +82,7 @@
     <g class="m-sensor"><circle cx="300" cy="238" r="13"/><text x="300" y="242" text-anchor="middle">PS1</text></g>
     <g class="m-sensor"><circle cx="496" cy="300" r="13"/><text x="496" y="304" text-anchor="middle">CE</text></g>
     <g class="m-sensor"><circle cx="306" cy="328" r="13"/><text x="306" y="332" text-anchor="middle">VS1</text></g>
-    <text x="70" y="532" class="m-cap">유압 파워유닛 HYD-01 · 02 · 03  —  soft-PLC · 인터록 65 ℃</text>
+    <text x="70" y="532" class="m-cap">유압 파워유닛 HYD-01 · 02 · 03  —  보호 정지 65 ℃</text>
     <text x="70" y="552" class="m-live" id="mLive">실시간 값 불러오는 중…</text>
   </g>
 
@@ -93,18 +93,18 @@
   <g class="m-bus">
     <rect x="540" y="110" width="80" height="420" rx="10"/>
     <text x="580" y="140" text-anchor="middle" class="m-bus-t">MQTT</text>
-    <text x="580" y="158" text-anchor="middle" class="m-bus-s">EMQX</text>
+    <text x="580" y="158" text-anchor="middle" class="m-bus-s">메시지 중계</text>
     <path d="M580 170 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
     <text x="580" y="226" text-anchor="middle" class="m-bus-t">DMZ</text>
-    <text x="580" y="244" text-anchor="middle" class="m-bus-s">ingest ↑</text>
+    <text x="580" y="244" text-anchor="middle" class="m-bus-s">수집 ↑</text>
     <path d="M580 254 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
     <text x="580" y="310" text-anchor="middle" class="m-bus-t">Kafka</text>
-    <text x="580" y="328" text-anchor="middle" class="m-bus-s">Redpanda</text>
+    <text x="580" y="328" text-anchor="middle" class="m-bus-s">이벤트 저장</text>
     <path d="M580 338 v34" stroke="#7aa2ff" stroke-width="2" marker-end="url(#mArrowB)"/>
-    <text x="580" y="394" text-anchor="middle" class="m-bus-t">CEP</text>
-    <text x="580" y="412" text-anchor="middle" class="m-bus-s">이상 탐지</text>
-    <text x="580" y="462" text-anchor="middle" class="m-bus-t">SCADA</text>
-    <text x="580" y="480" text-anchor="middle" class="m-bus-s">FUXA · Grafana</text>
+    <text x="580" y="394" text-anchor="middle" class="m-bus-t">탐지</text>
+    <text x="580" y="412" text-anchor="middle" class="m-bus-s">이상 판정</text>
+    <text x="580" y="462" text-anchor="middle" class="m-bus-t">관제</text>
+    <text x="580" y="480" text-anchor="middle" class="m-bus-s">모니터링</text>
   </g>
   <path d="M620 318 H652" class="m-data m-data-solid" marker-end="url(#mArrowB)"/>
 
@@ -113,20 +113,16 @@
   ${edges}
   ${N.map(nodeSvg).join('')}
 
-  <!-- closed loop: approved action goes back to the plant through L9 + gateway -->
+  <!-- closed loop: approved action goes back to the plant through the gateway -->
   <path d="M1010 104 C 900 18, 620 12, 454 38" class="m-loop" marker-end="url(#mArrow)"/>
-  <rect x="660" y="8" width="296" height="26" rx="13" fill="#16202d" stroke="#f5a623"/>
-  <text x="808" y="26" text-anchor="middle" class="m-loop-t">승인된 조치 → L9 → 게이트웨이 검증 → PLC</text>
+  <rect x="690" y="8" width="236" height="26" rx="13" fill="#16202d" stroke="#f5a623"/>
+  <text x="808" y="26" text-anchor="middle" class="m-loop-t">승인된 조치 → 검증 → 설비</text>
 </svg>`;
   }
 
   function stagesHtml() {
-    const st = [
-      ['scenario', '설비 관찰과 제어', 'L1 ~ L6', '결함을 주입하고 센서값과 경보가 어떻게 달라지는지 확인합니다. 운전 모드를 바꾸어 팬과 펌프를 직접 조작해볼 수 있습니다.'],
-      ['ontology', '지식 지도 (온톨로지)', 'L7', '설비의 고장이 어떤 원인·조치·매뉴얼과 연결되는지 살펴봅니다. 스킬, 기업 시스템, 승인 담당자까지 관계를 따라갑니다.'],
-      ['decision', '판단과 승인', 'L8 ~ L9', '에이전트의 권고와 부서별 영향을 비교합니다. 담당자가 승인한 뒤 설비 조치와 기업 시스템 작업이 어떻게 실행되는지 확인합니다.'],
-    ];
-    return st.map(([tab, t, l, d], i) => `<button class="m-stage" data-go="${tab}"><span class="m-step">${i + 1}</span><span class="m-st-l">${l}</span><strong>${t}</strong><span class="m-st-d">${d}</span><span class="m-st-go">열기</span></button>`).join('');
+    const st = [['scenario', 'main.go.scenario', 'main.go.scenario.sub'], ['incidents', 'main.go.incidents', 'main.go.incidents.sub'], ['instances', 'main.go.instances', 'main.go.instances.sub']];
+    return st.map(([tab, t, d]) => `<button class="card" data-go="${tab}"><header class="card-head"><div class="card-title"><h3>${esc(UI.t(t))}</h3></div></header><p class="card-sub">${esc(UI.t(d))}</p><span class="go">열기 →</span></button>`).join('');
   }
 
   let graphCount = null;
@@ -137,21 +133,22 @@
   function renderLive() {
     const live = document.getElementById('mLive'); if (!live) return;
     const u = state.plant && state.plant.units;
-    if (!u) { live.textContent = '설비 연결 끊김 · 현재 운전 상태를 확인할 수 없습니다.';
-      document.getElementById('mainStats').innerHTML = '<div class="m-unavailable" role="status">설비 연결 끊김 · 현재 운전 상태를 확인할 수 없습니다.</div>'; return; }
-    const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? 'TRIP' : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + x.status.mode + ')'}`.trim());
-    live.textContent = '실시간 유온 TS1  ·  ' + parts.join('   ');
+    if (!u) { live.textContent = UI.t('main.noConn');
+      document.getElementById('mainStats').innerHTML = UI.empty(UI.t('main.noConn'), UI.t('plant.noConnSub'), 'compact'); return; }
+    const parts = Object.entries(u).map(([a, x]) => `${a} ${Number(x.tags.TS1).toFixed(1)} ℃ ${x.status.state === 'TRIP' ? UI.status('TRIP') : x.status.mode === 'REMOTE_AUTO' ? '' : '(' + UI.status(x.status.mode) + ')'}`.trim());
+    live.textContent = UI.t('main.liveTs1') + '  ·  ' + parts.join('   ');
     const hot = Object.values(u).some(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP');
     document.getElementById('mOilBody')?.classList.toggle('hot', hot);
     const box = document.getElementById('mainStats'); if (!box) return;
     const open = (state.incidents || []).filter(i => !i.terminal).length;
     const alarms = Object.values(u).filter(x => x.tags.TS1 >= 55 || x.status.state === 'TRIP').length;
+    const n = v => Number(v).toLocaleString('ko-KR');
     box.innerHTML = [
-      ['설비', `${Object.keys(u).length}기`, alarms ? `고온·트립 ${alarms}기` : '모든 설비 유온 55 ℃ 미만'],
-      ['열린 인시던트', $('#openCount').textContent === '연결 끊김' ? '–' : String(open), $('#openCount').textContent === '연결 끊김' ? '프로세스 연결 끊김' : open ? '이상 확인 & 조치에서 확인' : '없음'],
-      ['지식 지도', graphCount ? `${graphCount.n}` : '–', graphCount ? `노드 · 관계 ${graphCount.e}` : 'Neo4j 연결 대기'],
-      ['시간 배율', `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`],
-    ].map(([k, v, s]) => `<div><span>${k}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
+      [UI.t('main.assets'), `${Object.keys(u).length}기`, alarms ? `${UI.t('main.hot')} ${alarms}기` : UI.t('main.cool'), alarms ? 'hot' : ''],
+      [UI.t('main.openCases'), $('#openCount').textContent === '–' ? '–' : String(open), open ? UI.t('nav.incidents') : UI.t('main.none'), open ? 'hot' : ''],
+      [UI.t('main.knowledge'), graphCount ? n(graphCount.n) : '–', graphCount ? `${UI.t('main.links')} ${n(graphCount.e)}` : UI.t('main.waitNeo'), ''],
+      [UI.t('main.scale'), `${state.plant.time_scale ?? '–'}×`, `실제 1초 = 시뮬레이션 ${state.plant.time_scale ?? '–'}초`, ''],
+    ].map(([k, v, s, cls]) => `<div class="card ${cls}"><span>${esc(k)}</span><b class="num">${esc(v)}</b><small>${esc(s)}</small></div>`).join('');
   }
 
   function init() {
@@ -167,14 +164,14 @@
     });
     fitNodes(); document.fonts.ready.then(fitNodes);
     document.getElementById('mainStages').innerHTML = stagesHtml();
-    document.querySelectorAll('.m-stage').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.go)));
-    document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({preventScroll:true}); });
+    document.querySelectorAll('.m-go [data-go]').forEach(b => b.addEventListener('click', () => selectTab(b.dataset.go)));
+    document.getElementById('brandHome').addEventListener('click', () => { selectTab('main'); $('#content').focus({ preventScroll: true }); });
     document.getElementById('mainArch').addEventListener('click', () => selectTab('home'));
     document.getElementById('mainOperate').addEventListener('click', () => selectTab('incidents'));
     document.getElementById('heroZoom').addEventListener('click', e => {
       const zoomed = box.classList.toggle('zoomed');
       e.currentTarget.setAttribute('aria-pressed', String(zoomed));
-      e.currentTarget.textContent = zoomed ? '화면에 맞추기' : '도식 확대';
+      e.currentTarget.textContent = zoomed ? UI.t('main.unzoom') : UI.t('main.zoom');
     });
     loadCounts().then(renderLive);
     setInterval(renderLive, 1000);
