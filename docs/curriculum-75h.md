@@ -1,6 +1,6 @@
 # 75시간 과정 설계 초안 — 온톨로지 · 에이전트 · 프로세스 인스턴스로 설비 이상을 조치하기
 
-작성 2026-10-04, 갱신 2026-10-07. 2026-10-01 회의(장진영 대표 · 박용주 이사)가 정한 방향을 과정 시간표로 옮긴 **초안**이다.
+작성 2026-10-04, 갱신 2026-10-08(§4 배속 · §5 준비 조건, A145). 2026-10-01 회의(장진영 대표 · 박용주 이사)가 정한 방향을 과정 시간표로 옮긴 **초안**이다.
 교재 작업과 시수 확정은 회의가 정한 담당(박용주 이사, 교재 집필진)에게 있다. 이 문서는 그 작업의 출발점이며,
 시간은 전부 **예상치**다. 강사가 각 실습을 배포본으로 한 번 완주한 뒤 실측으로 바꾼다.
 
@@ -11,19 +11,19 @@
 근거 원문: 회의 원문 2(`HYD_R2_FINAL_ALL_2026-10-03.zip` → `02_ORIGINALS/회의관련_원문_2.txt`). 줄 번호를 `L###`로 적는다.
 "상태" 열의 DoD 번호는 `docs/handoff/GOAL.md` 완주 목표의 완료 조건 번호다.
 
-| 회의가 정한 것 | 원문 | 이 설계에서 | 상태(2026-10-07) |
+| 회의가 정한 것 | 원문 | 이 설계에서 | 상태(2026-10-08) |
 |---|---|---|---|
-| 분량 후보 75시간 | L187~188, L222 | 3시간 × 25회 = 75시간 | 회차 25개 절차(`docs/sessions/`) 있음. 제작자 실행 증거는 DoD 1 진행 중 |
+| 분량 후보 75시간 | L187~188, L222 | 3시간 × 25회 = 75시간 | 회차 25개 절차(`docs/sessions/`) 있음. 제작자 실행 증거 DoD 1 검증됨(§5) |
 | 온톨로지 · 에이전트 파트에 비중, SCADA 아래층은 시간을 채우려 넣은 것 | L230~232 | 1부(L1~L6) 12시간, 2~4부(온톨로지 · 에이전트 · 프로세스) 42시간 | 완료(설계) |
 | 시나리오 기반으로 가되 기술 딥다이브와 설명문을 조금씩 더해 섹션을 채운다 | L236~238 | 회차마다 "시나리오에서 이 기술이 필요한 순간" → 짧은 원리 → 실습 | 완료(설계·회차 절차 형식) |
-| 세 시나리오(쿨러 · 펌프 · 팬) | L29~30, L187~188 | 5부에서 세 시나리오를 같은 길(정의 2.2 하나)로 완주하고 차이를 비교 | 쿨러 완주 검증됨(42/42). 펌프 · 팬은 제작자 완주 증거 각 1회(`.evidence/a120/`), 가림 흐름은 현재 배포본 미검증 — DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖), 같은 배포본 재실행은 DoD 5 |
+| 세 시나리오(쿨러 · 펌프 · 팬) | L29~30, L187~188 | 5부에서 세 시나리오를 같은 길(정의 2.2 하나)로 완주하고 차이를 비교 | 쿨러 완주 검증됨(42/42). 펌프 · 팬 제작자 완주 각 1회(`.evidence/a120/`) — DoD 2 검증됨. 가림 · 팬 함정 장면도 A128에서 검증됨, 같은 배포본 회귀는 DoD 5 통과 |
 | 학생이 맨땅에서 오픈소스 구성요소를 조립해 이해한다 | L438 | 실습은 "설정하고 켜고 관찰한다"가 기본. 완성본을 보여 주고 끝내지 않는다 | 기동 절차 `docs/RUNBOOK.md` 있음. 학생 PC 10분 기동 실측은 DoD 6 |
 | MCP 동작 방식(스키마 받고 Cypher 생성)을 학생에게 설명 | L105~112 | 2부 7회차 | 워커 경로 검증됨. 학생이 자기 CLI에 직접 붙이는 절차는 미검증(DoD 1) |
 | 에이전트 = Claude Code 같은 범용 에이전트, 서버가 서브프로세스로 호출 | L154~156, L175~214 | 3부 | 완료(Claude Code 1배속 완주, Codex 2배속 완주, 정의 2.2에서 에이전트 작업은 제품 모양 `userTask + agentMode`) |
 | 인제스천 과정 자체를 학생에게 | L253~285 | 2부 9회차(한 블록, 후반 60분이 규칙 → SQL · 문서 → SOP) | 완료(DDL 적재 · 되돌리기, 매뉴얼 추출은 결과 파일 · 80,000자 구간 · 서버 인용 위치 · 골든 퀘스천 보고까지). 학생 절차 증거는 DoD 1 |
-| 규칙에 해당하는 질의를 생성해야 에이전트가 판단한다 | L301~302 | 2부 8~9회차, 3부 12회차 | 완료(규칙 → SQL API, 규칙 질문 워커 실행). 12회차 학생용 질문 정의 3종은 `docs/examples/`에 추가 중(DoD 1) |
-| 사람은 알림을 받고 버튼만 누른다 | L405~426 | 4부 | 완료(403 → 생산관리자 선택 → ACK → 재관측 → 정비 요청 → 종결). 선택 시간초과의 학생 절차는 미검증(DoD 1) |
-| 프로세스 인스턴스 · 에이전트 모니터링 화면 | L434~435 | 4부 15회차 | 완료(화면 · Execution 레이어 투영). 화면 명칭 개편은 DoD 4 |
+| 규칙에 해당하는 질의를 생성해야 에이전트가 판단한다 | L301~302 | 2부 8~9회차, 3부 12회차 | 완료(규칙 → SQL API, 규칙 질문 워커 실행). 12회차 학생용 질문 정의 3종은 `docs/examples/`에 추가됨(A127) |
+| 사람은 알림을 받고 버튼만 누른다 | L405~426 | 4부 | 완료(403 → 생산관리자 선택 → ACK → 재관측 → 정비 요청 → 종결). 선택 시간초과(책임자 호출)도 회차 절차로 검증됨(A128) |
+| 프로세스 인스턴스 · 에이전트 모니터링 화면 | L434~435 | 4부 15회차 | 완료(화면 · Execution 레이어 투영). 화면 명칭 개편은 구현됨, DoD 4 사용자 판정 대기 |
 | 후반: 여러 DB → 데이터 패브릭, 프로세스 · 룰 관리 → ProcessGPT | L437~448 | 6부 | 설명 회차(실행 기능 아님). 데이터 패브릭은 구현하지 않는다 |
 
 ## 1. 과정 개요
@@ -40,7 +40,7 @@
 - **진행 방식**: 3시간 블록 25회. 블록마다 설명 40~60분, 실습 90~110분, 정리 · 질문 20분(예상). 매 회차 끝에 "오늘 남는 것"(파일 · 화면 · 질의 결과)을 정한다.
 - **환경**: 학생 PC 1대(Docker Desktop, 메모리 4 GB 이상 할당, Python 3.12+, Node 20+), 저장소 `hyd-iot-edu`, Supabase CLI, 선택한 코딩 에이전트 CLI(Claude Code · Codex). 기동 · 확인 · 종료 절차는 `docs/RUNBOOK.md`. 제작자 배포본 기본값은 `PROCESS_MODE=instance`, `AGENT_BRIDGE=legacy`, `TIME_SCALE=20`, `ENTERPRISE_BACKEND=supabase`, 실행 정의 2.2(`it/process/definitions/anomaly_response_v22.json`). **미결**: 학생 인증과 사용량 운영 방식은 확정 전이다. 제작자 Windows 호스트의 구독 로그인 Codex 경로와 Claude Code 경로는 검증했으며 학생별 환경은 별도 준비해야 한다. 레거시 다리(`AGENT_BRIDGE=legacy`)는 프로세스 흐름 확인용이며 실제 에이전트 실습을 대신한 완료 증거로 세지 않는다.
 - **교재**: `D:\work\study\시스템교재`(1~13장). 회차 열의 "교재"는 그 장 번호다. 코드 위치는 `docs/student-guide.md`의 층별 표를 따른다.
-- **화면 명칭 주의**: 이 문서와 `docs/sessions/`는 개편 전 포털 명칭(인스턴스 · 인시던트 · 작업지시 · 에스컬레이션 · 재관측 · 스킬/SOP)으로 쓴다. UI/UX 개편 뒤 화면 명칭은 처리 건 · 사건 · 정비 요청 · 책임자 확인 · 효과 확인 · 조치 방법으로 바뀔 예정이다(`docs/handoff/UIUX_PLAN.md` D1). 바뀐 뒤 이 문서의 용어를 한 번에 맞춘다.
+- **화면 명칭 주의**: 이 문서와 `docs/sessions/`는 개편 전 포털 명칭(인스턴스 · 인시던트 · 작업지시 · 에스컬레이션 · 재관측 · 스킬/SOP)으로 쓴다. 포털은 이미 처리 건 · 사건 · 정비 요청 · 책임자 확인 · 효과 확인 · 조치 방법으로 바뀌었다(A122 구현, 메뉴: 홈 · 시스템 구성 / 결함 시뮬레이션 · 이상 확인 · 조치 · 실시간 모니터링 / 지식 지도 · 조치 방법 · 조치 판단 규칙 · 승인과 실행 · 처리 건 / 지식 관리 · 관리). 사용자 판정(DoD 4)이 끝나면 이 문서의 용어를 한 번에 맞춘다(`docs/handoff/UIUX_PLAN.md` D1).
 
 ## 2. 전체 흐름
 
@@ -88,16 +88,16 @@
 | 10 | 에이전트는 LLM + 도구 + 절차 | 카드는 누가 어떻게 썼나 | 쿨러 경보의 에이전트 트레이스(`alert_policy → freshness → t1_causes → evidence(→ evidence_assessment) → rank → t2_skills → card → guardrail → cards → submit`) 읽기, 한 단계씩 어느 도구가 어느 출처를 읽었는지 표로 | 트레이스 10~11단계 각각의 출처(Neo4j · TimescaleDB · MES · ERP · QMS · Prometheus) 표. `submit`이 에이전트의 유일한 쓰기(process API에 카드 제출)임을 코드 줄로 | 9장 · `it/agent/agentsvc/main.py`(`pipeline()`), `decide.py` | 70/80/30 |
 | 11 | 범용 코딩 에이전트를 서버가 부른다 | 범용 에이전트를 플랫폼 안에 넣으려면 | `cliagents`의 Codex 명령(`codex exec --json …`)과 Claude Code 명령을 비교하고, CLI별 MCP 설정과 이벤트 스트림 읽기 | session id · 실제 MCP 호출 · 최종 결과를 원시 스트림과 DB 이벤트에서 대응 | 13장 3절 · `it/agent-worker/worker/bridge.py`, `runner.py` | 60/90/30 |
 | 12 | 지식과 현황값을 함께 읽는다 | 온톨로지만으로는 "지금 값"을 모른다 | 세 MCP(neo4j · enterprise · hyd-dmn)를 범용 코딩 에이전트에 붙여 "HYD-02 펌프 누설, 지금 PS1과 납기는?"을 질의, 도구별 출처와 시각 기록. 질문은 `docs/examples/`의 질문 정의 3종(시계열 · 업무 · 규칙)을 등록해 학생이 문구를 바꿔 다시 묻는다(검사 스크립트 `probe_*_questions.py`는 강사 대조용). 9회차에서 적재한 문서의 골든 퀘스천 보고(`GET /api/kg/manuals/batches/{배치}/golden-report`)를 읽어 "문서로 답하는 질문"과 "현황값을 읽어야 하는 질문"을 구분 | 실제 도구 호출과 응답값 확인; 정해진 호출 순서만 성공 기준으로 삼지 않음. "데이터 없음"이 "거짓"과 구분되는지 | 13장 3절 · `it/enterprise-mcp/`, `it/dmn-mcp/`, `docs/examples/` | 60/90/30 |
-| 13 | 워커를 내 PC에서 돌린다 | 작업을 "집어 가는" 쪽을 직접 본다 | `.env`에 `AGENT_BRIDGE=off`를 적용해 `process`를 재기동(시간 배율은 기본 20배속 그대로 — 가상 설비라 배속이 기본값이며, 20배속 쿨러는 에이전트 네 작업이 끝나기 전에 트립하므로 이 회차는 **팬 경보(HYD-03)**로 진행, 제작자 검증 `.evidence/sessions/13/`). 워커 기동: Git Bash는 `scripts/run_worker_host.sh`, PowerShell은 `scripts/run_worker_host.ps1`(기본값 Codex, Claude Code는 `-Provider claude-code`), 종료 `stop_worker_host.ps1`. 경보 → 네 작업 → 사람 선택까지 로그와 포털 비교 | 네 작업의 task_started · tool_usage_* · task_completed, 독립 세션 4개와 프로세스 변수 전달 확인. 20배속에서는 에이전트 지연 중 과열 트립이 났으므로 2배속으로 | 13장 3절 · `it/agent-worker/worker/`, `docs/RUNBOOK.md` | 50/100/30 |
-| 14 | 가드레일과 사람에게 묻기(HITL) | 에이전트가 모르면 어떻게 해야 하나 | 인용 없는 카드의 거부를 확인하고, 선택한 CLI의 권한 요청 이벤트 · 사람 답변 · 같은 작업 재개를 비교. 질문 장면은 `scripts/probe_codex_human.py` 또는 9회차 추출 작업으로 만들고 포털 "에이전트의 질문" 카드에 답한다(`POST /api/todolist/{id}/human-response`) | 가드레일 거부 1건. HUMAN_ASKED → 답변 → 같은 세션 재개 1건. **Codex 경로는 제작자 증거 있음, Claude Code 경로의 질문 → 답변 라이브와 포털 질문 카드 화면은 미검증** — 수업에서 쓸 CLI를 하나로 정한다(Codex 도구 거부는 작업 실패로 끝날 수 있음) | 9장 · 13장 4절 · `worker/hitl.py` | 60/90/30 |
+| 13 | 워커를 내 PC에서 돌린다 | 작업을 "집어 가는" 쪽을 직접 본다 | `.env`에 `AGENT_BRIDGE=off`를 적용해 `process`를 재기동(시간 배율은 기본 20배속 그대로 — 가상 설비라 배속이 기본값이며, 20배속 쿨러는 에이전트 네 작업이 끝나기 전에 트립하므로 이 회차는 **팬 경보(HYD-03)**로 진행, 제작자 검증 `.evidence/sessions/13/`). 워커 기동: Git Bash는 `scripts/run_worker_host.sh`, PowerShell은 `scripts/run_worker_host.ps1`(기본값 Codex, Claude Code는 `-Provider claude-code`), 종료 `stop_worker_host.ps1`. 경보 → 네 작업 → 사람 선택까지 로그와 포털 비교 | 네 작업의 task_started · tool_usage_* · task_completed, 독립 세션 4개와 프로세스 변수 전달 확인(20배속 · 팬 경보로 제작자 검증, §4) | 13장 3절 · `it/agent-worker/worker/`, `docs/RUNBOOK.md` | 50/100/30 |
+| 14 | 가드레일과 사람에게 묻기(HITL) | 에이전트가 모르면 어떻게 해야 하나 | 인용 없는 카드의 거부를 확인하고, 선택한 CLI의 권한 요청 이벤트 · 사람 답변 · 같은 작업 재개를 비교. 질문 장면은 `scripts/probe_codex_human.py` 또는 9회차 추출 작업으로 만들고 포털 "에이전트의 질문" 카드에 답한다(`POST /api/todolist/{id}/human-response`) | 가드레일 거부 1건. HUMAN_ASKED → 답변 → 같은 세션 재개 1건. Codex 경로와 Claude Code 경로(A128, `.evidence/sessions/14/try2/`) 모두 제작자 증거 있음. **포털 질문 카드 화면 캡처는 미검증** — 수업에서 쓸 CLI를 하나로 정한다(Codex 도구 거부는 작업 실패로 끝날 수 있음) | 9장 · 13장 4절 · `worker/hitl.py` | 60/90/30 |
 
 ### 4부 · 프로세스 인스턴스와 사람의 승인 (12시간)
 
 | 회차 | 주제 | 왜 지금 | 학생 행동 | 관찰 · 확인 | 교재 · 코드 | 분 |
 |---|---|---|---|---|---|---|
 | 15 | 프로세스가 주인공, 에이전트는 작업 | 에이전트가 끝나면 누가 다음을 여나 | 포털 인스턴스 탭에서 경보 하나가 인스턴스 하나를 열고 9개 작업이 TODO로 미리 생기는 것 보기, 상태 전이 표 채우기, 모니터링 배너 읽기. 정의 2.2(`anomaly_response_v22.json`)에서 에이전트 작업이 제품(ProcessGPT)과 같은 모양 `userTask + agentMode(+ orchestration cliagents)`로 적혀 있고 사람 작업은 agentMode가 없음을 정의 파일에서 확인 | TODO → IN_PROGRESS → SUBMITTED → DONE, 안 간 가지 CANCELLED를 한 인스턴스에서 전부 관찰. Supabase `todolist` 행과 화면 행이 같음 | 13장 2절 · `it/process/procsvc/engine.py`, `it/process/definitions/anomaly_response_v22.json`, `it/supabase/migrations/20261003000001_process_engine.sql` | 60/90/30 |
-| 16 | 사람의 작업: 폼 제출과 권한 | 버튼 하나가 어디까지 가나 | 운전원 역할로 SOP-COOL-02를 골라 403 받기, 생산관리자로 다시 골라 action.cmd → 게이트웨이 PASS → PLC ACK 확인. 상급자 호출을 보려면: 선택 시간초과 타이머(PT10M, 20배속이면 벽시계 30초)를 **즉석에서 줄이는 화면 · API는 없으므로** `anomaly_response_v22.json`을 복사해 타이머를 바꾸고 새 버전으로 등록한 뒤 실행하거나, 선택하지 않고 기다린다. 정의 변경 실습은 `docs/definition-authoring.md`와 `docs/examples/inspection-review-v1.json` · `v2.json`(아래 "정의 변경 실습 보강") | 403 1건, ACK DONE 1건, SELECT_TIMEOUT 1건(책임자 호출 작업 열림). 같은 점수 7이 버전에 따라 accepted/rejected로 끝남. **선택 시간초과의 학생 절차(짧은 타이머 새 버전)는 미검증** | 10장 · 13장 4절 · `it/process/procsvc/instances.py`, `decisions.py` | 60/90/30 |
-| 17 | 서비스 작업과 안전 경로 | 왜 에이전트가 PLC에 직접 쓰면 안 되나 | task:command · task:reobserve · task:work-order가 Incident 상태기계와 어떻게 맞물리는지 추적, 재관측 판정 기준이 패턴마다 다른 것 확인(`definition.py RECOVERY`: 쿨러 TS1 < 55, 펌프 PS1 ≥ 165, 팬 VS1 < 1.2). 에이전트 · 워커 · MCP 코드에 PLC 쓰기가 없음을 검색으로 확인 | 감사 로그 REOBSERVATION의 criterion 값이 패턴별로 다름(쿨러 행은 바로, 펌프 · 팬 행은 20 · 21회차 실행 뒤). 펌프 · 팬 criterion의 현재 배포본 증거는 DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖) | 10장 · `machine.py`, `definition.py` | 60/90/30 |
+| 16 | 사람의 작업: 폼 제출과 권한 | 버튼 하나가 어디까지 가나 | 운전원 역할로 SOP-COOL-02를 골라 403 받기, 생산관리자로 다시 골라 action.cmd → 게이트웨이 PASS → PLC ACK 확인. 상급자 호출을 보려면: 선택 시간초과 타이머(PT10M, 20배속이면 벽시계 30초)를 **즉석에서 줄이는 화면 · API는 없으므로** `anomaly_response_v22.json`을 복사해 타이머를 바꾸고 새 버전으로 등록한 뒤 실행하거나, 선택하지 않고 기다린다. 정의 변경 실습은 `docs/definition-authoring.md`와 `docs/examples/inspection-review-v1.json` · `v2.json`(아래 "정의 변경 실습 보강") | 403 1건, ACK DONE 1건, SELECT_TIMEOUT 1건(책임자 호출 작업 열림). 같은 점수 7이 버전에 따라 accepted/rejected로 끝남. 선택하지 않고 기다리는 절차는 검증됨(A128, 20배속에서 벽시계 30초). 짧은 타이머 새 버전을 등록해도 경보가 여는 실행에는 쓰이지 않는다(`PROCESS_DEFINITION_FILE` 고정) | 10장 · 13장 4절 · `it/process/procsvc/instances.py`, `decisions.py` | 60/90/30 |
+| 17 | 서비스 작업과 안전 경로 | 왜 에이전트가 PLC에 직접 쓰면 안 되나 | task:command · task:reobserve · task:work-order가 Incident 상태기계와 어떻게 맞물리는지 추적, 재관측 판정 기준이 패턴마다 다른 것 확인(`definition.py RECOVERY`: 쿨러 TS1 < 55, 펌프 PS1 ≥ 165, 팬 VS1 < 1.2). 에이전트 · 워커 · MCP 코드에 PLC 쓰기가 없음을 검색으로 확인 | 감사 로그 REOBSERVATION의 criterion 값이 패턴별로 다름(쿨러 행은 바로, 펌프 · 팬 행은 20 · 21회차 실행 뒤). 펌프 · 팬 criterion의 현재 배포본 증거는 DoD 2 검증됨(제작자 완주 각 1회), 세 패턴 criterion은 A128 2차에서도 확인 | 10장 · `machine.py`, `definition.py` | 60/90/30 |
 | 18 | Execution 레이어: 그래프는 원천의 그림자 | 인스턴스를 온톨로지와 잇는 이유 | 포털 "온톨로지 Execution 레이어" 표의 Cypher를 Neo4j 브라우저에 그대로 붙여 같은 결과 얻기, WorkItem -EXECUTES-> Task가 8장의 BPMN 노드와 같은 id임을 확인 | 질의 결과가 포털 표와 같음, 한 설비의 인스턴스 이력을 Cypher로 세기 | 13장 5절 · `instances.py`(EXECUTION_Q) | 50/100/30 |
 
 ### 5부 · 세 시나리오 종합 (15시간)
@@ -105,9 +105,9 @@
 | 회차 | 주제 | 왜 지금 | 학생 행동 | 관찰 · 확인 | 교재 · 코드 | 분 |
 |---|---|---|---|---|---|---|
 | 19 | 쿨러 열화 완주(기준 시나리오) | 한 바퀴를 혼자서 | 주입 → 경보 → 카드 → 선택 → ACK → CLEAR → 재관측 → 작업지시 → 종결을 안내 없이 완주, 걸린 시간 기록 | 인스턴스 COMPLETED, ent.work_orders 1행 | 11장 4절 | 20/130/30 |
-| 20 | 펌프 내부 누설 완주 | 압력 · 유량이 떨어진다 | HYD-02에 누설 주입, PUMP_LEAKAGE 카드에서 "압력 상향"이 규정상 제외된 이유 읽기, 예비 펌프 전환(SOP-PMP-01) 선택 → PumpSelect B → PS1 회복 → 종결 | PS1 ≥ 165로 RESOLVED, 카드에 `rule:no-pressure-raise` 인용(`instances.cypher` 436행). 현재 배포본 제작자 완주 증거 `.evidence/a120/pump-3/`(1회) — DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖). 예비 펌프가 "정비 중"이거나 공급사 AVL 철회면 카드가 빠진다(23회차) | 13장 7절 · `it/neo4j/v2/instances.cypher`(pattern:pump-leakage), `scripts/run_scenario_pump_fan_evidence.py`(강사 시연용) | 30/120/30 |
-| 21 | 팬 베어링 마모 완주와 함정 | 진동이 오른다 | HYD-03에 마모 주입, FAN_VIBRATION 카드에서 팬 감속+부하 저감(SOP-FAN-01, 팬 40 % + 부하 80 %) 선택 → VS1 < 1.2 → 종결. 함정 실험: 마모를 유지한 채 수동 조작(`POST /api/manual`, `FanSpeedSP: 100`)으로 팬 100 %를 쓰면 VS1 ≥ 2.0 HIGH_VIBRATION 인터록(`thermal.TRIP_VS1`, `plc.py`)이 걸리는 이유를 INFLUENCES 관계와 `thermal.vibration` 식으로 설명 | 종결 1건, 인터록 1건, 설명 한 단락. 완주 제작자 증거 `.evidence/a120/fan-1/`(1회) — DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖). **함정(팬 100 % 트립) 장면은 어떤 검사도 돌리지 않아 미검증** | 13장 7절 · `thermal.py`(vibration), `plc.py` | 30/120/30 |
-| 22 | 가림과 회복: 실패하는 선택 | 경보가 꺼졌는데 왜 에스컬레이션인가 | 펌프 누설에 부하 70 %를 선택 → 경보 CLEAR(`LoadSP < 80`) → 재관측 PS1 < 165 → MITIGATION_FAILED → ESCALATED. 카드의 "새 예측 검토"에서 본 예측값(검사 설명 기준 160 bar 안팎, 실제 화면 값 사용)과 실측 비교 | ESCALATED 1건, "가림 ≠ 회복"을 데이터로 설명. 가림 흐름의 현재 배포본(인스턴스 모드) 제작자 증거 없음 — 레거시 검사 `scenario_pump_fan_test.py --only mask`만 있음, DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖) | 13장 7절 · `det/cep.py`, `definition.RECOVERY`, `machine.py` | 40/110/30 |
+| 20 | 펌프 내부 누설 완주 | 압력 · 유량이 떨어진다 | HYD-02에 누설 주입, PUMP_LEAKAGE 카드에서 "압력 상향"이 규정상 제외된 이유 읽기, 예비 펌프 전환(SOP-PMP-01) 선택 → PumpSelect B → PS1 회복 → 종결 | PS1 ≥ 165로 RESOLVED, 카드에 `rule:no-pressure-raise` 인용(`instances.cypher` 436행). 현재 배포본 제작자 완주 증거 `.evidence/a120/pump-3/`(1회) · 회차 절차 `.evidence/sessions/20/` 40/40 — DoD 2 검증됨. 예비 펌프가 "정비 중"이거나 공급사 AVL 철회면 카드가 빠진다(23회차) | 13장 7절 · `it/neo4j/v2/instances.cypher`(pattern:pump-leakage), `scripts/run_scenario_pump_fan_evidence.py`(강사 시연용) | 30/120/30 |
+| 21 | 팬 베어링 마모 완주와 함정 | 진동이 오른다 | HYD-03에 마모 주입, FAN_VIBRATION 카드에서 팬 감속+부하 저감(SOP-FAN-01, 팬 40 % + 부하 80 %) 선택 → VS1 < 1.2 → 종결. 함정 실험: 마모를 유지한 채 수동 조작(`POST /api/manual`, `FanSpeedSP: 100`)으로 팬 100 %를 쓰면 VS1 ≥ 2.0 HIGH_VIBRATION 인터록(`thermal.TRIP_VS1`, `plc.py`)이 걸리는 이유를 INFLUENCES 관계와 `thermal.vibration` 식으로 설명 | 종결 1건, 인터록 1건, 설명 한 단락. 완주 제작자 증거 `.evidence/a120/fan-1/`(1회) — DoD 2 검증됨. 함정(팬 100 % 트립) 장면은 A128에서 검증됨(마모 상태 팬 100 % → 1.0 s 뒤 HIGH_VIBRATION, `.evidence/sessions/21/trap/`) | 13장 7절 · `thermal.py`(vibration), `plc.py` | 30/120/30 |
+| 22 | 가림과 회복: 실패하는 선택 | 경보가 꺼졌는데 왜 에스컬레이션인가 | 펌프 누설에 부하 70 %를 선택 → 경보 CLEAR(`LoadSP < 80`) → 재관측 PS1 < 165 → MITIGATION_FAILED → ESCALATED. 카드의 "새 예측 검토"에서 본 예측값(검사 설명 기준 160 bar 안팎, 실제 화면 값 사용)과 실측 비교 | ESCALATED 1건, "가림 ≠ 회복"을 데이터로 설명. 가림 흐름의 인스턴스 모드 제작자 증거 A128(`.evidence/sessions/22/`: ESCALATED · MITIGATION_FAILED, PS1 156.22 < 165) | 13장 7절 · `det/cep.py`, `definition.RECOVERY`, `machine.py` | 40/110/30 |
 | 23 | 납기 · 품질이 순위를 바꾼다 | 설비만 보면 틀리는 판단 | Supabase `ent` 스키마에서 MES 납기(`production_orders`) · ERP 보상(`sales_contracts`) · QMS 고온 로트(`quality_profiles` · `lot_dispositions`) 값을 바꿔 같은 경보의 카드 순위가 달라지는 것을 "조치 판단 규칙" 탭에서 비교. 펌프 경보에서 SCM `suppliers.avl=false` → `POST /api/kg/scm/sync` → 부품 구매 카드 제외 → 복원. 선택 작업이 열린 상태에서 납기를 바꾸고 옛 카드를 고르면 거절되는 것 확인 | 순위가 바뀐 비교표 1장, 공급사 제외/복귀 2건, 옛 승인 거절 1건. (이전 초안의 "전사 판단 세 가지 실행"은 v1 온톨로지의 `sc:*` 시나리오였고 현재 v2 온톨로지에는 없다 — 패턴별 카드 순위 변화와 공급사 AVL 제외로 대체) | 10장 · 8장 · `cards.py`(delivery · quality 항), `docs/ranking-policy.md`, `docs/enterprise-catalog.md` | 50/100/30 |
 
 ### 6부 · 확장과 평가 (6시간)
@@ -120,27 +120,28 @@
 ## 4. 시간 검산과 전제
 
 - 25회 × 3시간 = 75시간. 부별 합계 12 + 15 + 15 + 12 + 15 + 6 = 75.
-- 각 회차의 분 배분(설명/실습/정리)은 **예상**이다. 자동 실행 시간은 수업 시간이 아니다. 참고로 쿨러 시나리오의 자동 시험은 약 2분(`scripts/scenario_test.py --quick`), 전체 약 5분이지만, 학생이 화면을 읽고 결정하는 19회차는 130분을 잡았다.
-- 기본 배율은 20배지만 실제 Codex 완주는 2배속에서 확인했다(작업 네 개 287초, ACK 이후 종결 확인 594초). 20배속에서는 에이전트 지연 중 과열 트립이 발생했다. 배율은 plant · detector · process에 함께 적용해야 한다. plant의 `/api/time_scale`만 바꾸는 방법을 전체 시스템의 배율 변경으로 가르치지 않는다. 호스트 워커 회차(12~14)는 2배속을 권장한다. 강사 리허설에서 사고 진행 · 승인 시간 · 대기 시간을 함께 조정한다.
+- 각 회차의 분 배분(설명/실습/정리)은 **예상**이다. 자동 실행 시간은 수업 시간이 아니다. 참고로 인스턴스 모드 쿨러 검사(`scripts/run_scenario_evidence.py`, 회귀 core `cooler-42`)의 2026-10-08 1회 실측은 명령 ACK 2 s · 종결 69 s(`.evidence/a129/cooler-1/`)이고, 펌프 · 팬 검사는 종결까지 57 s · 55 s(`.evidence/a120/`)였다. 학생이 화면을 읽고 결정하는 19회차는 130분을 잡았다. (`scripts/scenario_test.py --quick`은 legacy 모드 전용이라 현재 `PROCESS_MODE=instance` 배포본의 기준이 아니다 — HANDOFF A115.)
+- **기본 배율은 20배속이다.** 가상 설비라 배속이 기본값이며 수업 · 실습 · 검사 모두 `TIME_SCALE=20`으로 한다(2026-10-08 사용자 결정, HANDOFF §6). 1~2배속을 권장하지 않는다. 20배속 쿨러는 호스트 워커의 에이전트 네 작업이 끝나기 전에 트립하므로 워커 회차(13)는 스스로 풀리지 않는 **팬 경보(HYD-03)**로 진행한다(제작자 검증 `.evidence/sessions/13/`). 20배속 쿨러에서 승인 직전 재검사가 정상 상승을 거절하던 결함은 허용폭을 시뮬레이션 경과 시간에 비례하게 바꿔 고쳤다(A129, 쿨러 42/42). 배율은 plant · detector · process에 함께 적용해야 한다. plant의 `/api/time_scale`만 바꾸는 방법을 전체 시스템의 배율 변경으로 가르치지 않는다. 강사 리허설에서 사고 진행 · 승인 시간 · 대기 시간을 함께 조정한다.
+  - 이력(측정 기록): 실제 Codex 완주는 2배속(작업 네 개 287초, ACK 이후 종결 확인 594초), Claude Code 완주는 1배속에서 확인했다. ~~호스트 워커 회차(12~14)는 2배속을 권장한다.~~ (2026-10-08 20배속 기본 규칙으로 삭제)
 - 2부 9회차의 "규칙 → SQL, 문서 → SOP"는 한 블록 안에서 후반 60분으로 잡았다. 파일럿에서 넘치면 10회차 앞으로 30분 이동.
 
-## 5. 준비 조건과 미결 (2026-10-07 기준)
+## 5. 준비 조건과 미결 (2026-10-08 기준)
 
-"DoD n"은 `docs/handoff/GOAL.md` 완주 목표의 완료 조건 번호다.
+"DoD n"은 `docs/handoff/GOAL.md` 완주 목표의 완료 조건 번호다. 회차별 증거 상태의 정본은 `docs/sessions/README.md` 회차 표와 GOAL DoD 상태표다(1차 A127 = 공유 상태를 바꾸지 않는 단계, 2차 A128 = 결함 주입 · 설비 모드 · 워커 단계).
 
 | 항목 | 상태 |
 |---|---|
-| 회차 25개 학생 절차와 제작자 실행 증거 | 절차 `docs/sessions/<NN>-*.md` 25개 있음. 배포본에서 학생 절차를 그대로 돌린 증거(`.evidence/sessions/<NN>/`)는 **DoD 1 진행 중**(24 · 25회차는 해당 없음) |
-| 학생 PC 사양 · Docker 메모리 · 기동 절차 | 4 GB 이상 할당 권장(`docs/student-guide.md`), 기동 절차 `docs/RUNBOOK.md`. 학생 PC 10분 기동 실측은 **DoD 6**, 파일럿에서 |
-| 코딩 에이전트 인증(7 · 12~14회차) | **미결**: 학생 계정 · 사용량 운영. 제작자 호스트에서 Claude Code 1배속 쿨러 완주, Codex 2배속 완주, 세 MCP 질문 실행은 검증됨. 학생 환경을 보증하지 않음 |
-| 7회차 학생 CLI에 Neo4j MCP 직접 연결 | 설정 JSON은 적었으나 제작자도 미실행 — **미검증(DoD 1)**. 대체: 워커 경로 · 강사 시연 |
-| 12회차 학생용 질문 정의 3종 | `docs/examples/`에 추가 중 — **DoD 1** |
-| 14회차 Claude Code 질문 → 답변 라이브 | Codex 경로만 제작자 증거 있음. Claude Code 경로와 포털 질문 카드 화면 **미검증(DoD 1)** |
-| 16회차 선택 시간초과(책임자 호출) 학생 절차 | 타이머 복구 검사 증거만 있음. 짧은 타이머 새 버전 등록 절차는 **미검증(DoD 1)** |
-| 펌프 · 팬 · 가림 시나리오(17 · 20~22회차) | 펌프 · 팬 인스턴스 모드 제작자 완주 증거 각 1회(`.evidence/a120/pump-3/` 40/40, `fan-1/` 34/34). 가림(부하 70 % → MITIGATION_FAILED)은 인스턴스 모드 증거 없음, 21회차 팬 100 % 인터록 장면은 검사 없음 — **DoD 2 검증됨(제작자 완주 각 1회; 가림·팬 인터록 장면은 범위 밖)**, 같은 배포본 회귀 재실행은 **DoD 5** |
-| 인제스천 실습(9회차) | DDL 적재 · 되돌리기 · 드리프트 8/8, 매뉴얼 라이브 추출(HM-9, EHU40 80쪽), 골든 퀘스천 보고 라이브 1회 — 완료. 학생 절차 증거는 DoD 1 |
-| 인스턴스 모니터링 · Execution 레이어(15 · 18회차) | 쿨러 42/42에 그래프 검사 포함 — 완료. 화면 명칭 개편(§1 "화면 명칭 주의")은 **DoD 4**, 개편 뒤 이 문서와 `docs/sessions/` 용어를 맞춘다 |
-| 전체 회귀(core 12 + worker 6)와 매뉴얼 인제스천 재측정 | **DoD 5** |
+| 회차 25개 학생 절차와 제작자 실행 증거 | 절차 `docs/sessions/<NN>-*.md` 25개 있음. 배포본에서 학생 절차를 돌린 제작자 증거(`.evidence/sessions/<NN>/`) — **DoD 1 검증됨(제작자)**: 1차 A127 검증 7 · 부분 8, 2차 A128에서 01 · 04 · 13 · 14 · 16 · 20~23 등 보강, 24 · 25회차는 해당 없음. 남은 미검증은 학생 CLI 토큰(07)과 공유 그래프 변경(09 적재 · 되돌리기) 사유뿐. 19회차는 A128에서 승인 직전 재검사 허용폭 결함으로 2회 실패 → A129 수정 뒤 쿨러 1회 42/42(`.evidence/a129/cooler-1/`, 회차 폴더 재실행은 안 함) |
+| 학생 PC 사양 · Docker 메모리 · 기동 절차 | 4 GB 이상 할당 권장(`docs/student-guide.md`), 기동 절차 `docs/RUNBOOK.md`(명령 대조 A124). 학생 PC 10분 기동 실측은 **DoD 6 미실측**, 파일럿에서 |
+| 코딩 에이전트 인증(7 · 12~14회차) | **미결**: 학생 계정 · 사용량 운영. 제작자 호스트에서 Claude Code 1배속 쿨러 완주, Codex 2배속 완주(이력), 20배속 팬 경보에서 워커 Claude Code 네 작업 처리(13회차, A128), 세 MCP 질문 실행은 검증됨. 학생 환경을 보증하지 않음 |
+| 7회차 학생 CLI에 Neo4j MCP 직접 연결 | 설정 파일로 서버 기동 · 도구 2개 · 읽기 전용(1 · 4 · 6단계)은 검증됨(A127). 학생 CLI 세션(2 · 3 · 5단계)은 토큰 사유로 **미검증**. 대체: 워커 경로 · 강사 시연 |
+| 12회차 학생용 질문 정의 3종 | `docs/examples/{timeseries,business,rule}-question-v1.json` 추가 · validate 통과(A127). 시계열 질문 1단계 라이브 실행(답 0.610 = DB 직접값, A128). 업무 · 규칙 질문(2 · 3단계)의 회차 절차 실행은 미검증(같은 질문 종류의 검사 스크립트 `business-questions` 21/21 · `rule-questions` 15/15는 A130 통과) |
+| 14회차 Claude Code 질문 → 답변 라이브 | **검증됨**(A128 2차, `.evidence/sessions/14/try2/`: 질문 → 답변 → 같은 세션 재개 → DONE). 1차 실패 원인 `permission: read_only` → plan 모드는 A129에서 워커가 workspace_write로 정규화(실제 실행 미검증). 포털 질문 카드 화면 캡처는 미검증 |
+| 16회차 선택 시간초과(책임자 호출) | **검증됨**(A128, `.evidence/sessions/16/timeout2/`: 403 · ACK · 30 s 뒤 SELECT_TIMEOUT · 책임자 호출). 20배속이면 PT10M = 벽시계 30초라 짧은 타이머 새 버전 등록은 필요 없다(새 등록 버전은 경보가 여는 실행에 쓰이지 않음 — `PROCESS_DEFINITION_FILE` 고정) |
+| 펌프 · 팬 · 가림 시나리오(17 · 20~22회차) | 펌프 · 팬 인스턴스 모드 제작자 완주 각 1회(`.evidence/a120/pump-3/` 40/40, `fan-1/` 34/34) — **DoD 2 검증됨**. A128: 20 40/40, 21 34/34 + 함정(팬 100 % → 1.0 s 뒤 HIGH_VIBRATION), 22 가림(부하 70 % → CLEAR → MITIGATION_FAILED → 책임자 확인 `ev:escalated`) 검증됨. 같은 배포본 회귀 `pump-fan`은 **DoD 5** 통과 |
+| 인제스천 실습(9회차) | DDL 적재 · 되돌리기 · 드리프트 8/8, 매뉴얼 라이브 추출(HM-9, EHU40 80쪽), 골든 퀘스천 보고 라이브 1회 — 완료. 회차 절차 증거는 부분(A127 · A128: 응답 모양 · 미리보기 · 골든 GET · 에이전트 추출 158 s 검증됨, 적재 · 되돌리기 · 등록은 공유 그래프 사유로 미검증) |
+| 인스턴스 모니터링 · Execution 레이어(15 · 18회차) | 쿨러 42/42에 그래프 검사 포함 — 완료. 화면 명칭 개편은 구현됨(A122: 처리 건 · 사건 · 정비 요청 · 책임자 확인 · 효과 확인 · 조치 방법), **DoD 4 사용자 "됐다" 대기**. 이 문서와 `docs/sessions/` 용어는 아직 개편 전 명칭 |
+| 전체 회귀(core + worker)와 매뉴얼 인제스천 재측정 | **DoD 5 검증됨** — 같은 배포본 1회 기준 18/18(A130 core 5/5 · worker 3/6 → A131 process OOM 근본 수정 → ingest-hm9 8/8 · worker-lease 6/6 → A134 cancel-running 7/7). 인제스천 재측정은 A119 EHU40 612 s · 10/10 |
 | 교재 11장 펌프 · 팬 절 | 교재 작업은 시스템 완주 목표 밖(GOAL 2026-10-06 정정). 캡처 자료는 `.evidence/a120/` 활용 가능 |
 | 평가 방식(25회차) | 발표 + 자가 평가로 가정. 수료 기준은 운영 측 결정 |
 
