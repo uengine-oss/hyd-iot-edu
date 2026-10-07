@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>유압 설비 IoT 완전 정복</title>
+<meta name="description" content="hyd-iot-edu 유압 설비 3대의 설비, 전체 아키텍처, 기름 온도 하나가 AI와 사람을 거쳐 돌아오는 이야기. 2부에는 부품 · 연결 · 기술 레이어 · 데이터 리니지 · 서비스 속 구조 · 코드에서 뽑은 전체 목록을 숨김없이 담았다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f6f7f5; --card:#ffffff; --ink:#1b2328; --muted:#56646d; --rule:#d9dfe2; --chip:#eef1f2;
+  --ot:#9a5a1c; --ot-bg:#fcefe2; --dmz:#5b4691; --dmz-bg:#f0ecf8; --it:#1f6378; --it-bg:#e7f3f6; --ai:#394b98; --ai-bg:#ebeffa;
+  --data:#1f6f8b; --req:#c62f3b; --disp:#7b4fc9; --mon:#6f7a82; --ok:#2f7a4a; --warn:#a15c00;
+  --body:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:"JetBrains Mono",Consolas,ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:820px;margin:0 auto;padding:40px 20px 90px}
+.wide{max-width:1240px;margin:0 auto;padding:0 20px}
+h1,h2,h3,h4{line-height:1.35;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:2.35rem;font-weight:800;margin:.4rem 0 .6rem}
+h2{font-size:1.6rem;font-weight:800;margin:4.2rem 0 1rem;padding-top:1.2rem;border-top:3px solid var(--ink)}
+h3{font-size:1.22rem;font-weight:700;margin:2.6rem 0 .6rem}
+h4{font-size:1.02rem;font-weight:700;margin:1.6rem 0 .3rem}
+p{margin:.6rem 0}
+a{color:var(--data)}
+code,.mono{font-family:var(--mono);font-size:.86em;background:var(--chip);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:1.14rem;color:#2c373d}
+.n{display:inline-block;min-width:1.35em;text-align:center;font-weight:700;color:var(--ink)}
+.partno{display:inline-block;font-family:var(--mono);font-size:.8rem;font-weight:600;color:#fff;background:var(--ink);border-radius:6px;padding:2px 9px;margin-right:8px;vertical-align:.2em}
+.meta{font-size:.9rem;color:var(--muted)}
+hr.soft{border:0;border-top:1px dashed var(--rule);margin:2rem 0}
+
+/* 목차 */
+.toc{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px 22px;margin:1.6rem 0}
+.toc ol{margin:.3rem 0 0;padding-left:1.3rem}
+.toc li{margin:.15rem 0}
+.toc a{text-decoration:none;color:var(--ink)}
+.toc a:hover{text-decoration:underline}
+.toc .sub{font-size:.92rem;color:var(--muted)}
+
+/* 네 가지 상자: 비유 · 원리 · 이 프로젝트 · 한 줄 */
+.box{border-radius:12px;padding:14px 18px 12px;margin:1rem 0;border:1px solid var(--rule);background:var(--card)}
+.box > .tag{display:inline-block;font-size:.76rem;font-weight:700;letter-spacing:.04em;border-radius:999px;padding:1px 10px;margin-bottom:.35rem}
+.box p:first-of-type{margin-top:.1rem}
+.analogy{background:#fffaf0;border-color:#f0dcb2}
+.analogy > .tag{background:#f6e3b8;color:#7a5200}
+.principle{background:#f4f8fb;border-color:#cfe0ea}
+.principle > .tag{background:#d6e8f2;color:#1b4f66}
+.inproj{background:#f5f7f4;border-color:#d6e0d2}
+.inproj > .tag{background:#dbe8d6;color:#2d5a2c}
+.oneline{background:var(--ink);color:#f2f5f6;border:0}
+.oneline > .tag{background:#f2f5f6;color:var(--ink)}
+.oneline b{color:#ffe08a}
+.caution{background:#fff5f5;border-color:#f1c9cc}
+.caution > .tag{background:#f7d6d9;color:#8f1f29}
+
+/* 표 */
+.tbl{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.93rem;background:var(--card);border-radius:10px;overflow:hidden}
+.tbl th,.tbl td{border-bottom:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:top}
+.tbl th{background:#eef1f2;font-weight:700;white-space:nowrap}
+.tbl td.c,.tbl th.c{text-align:center}
+.tbl tr:last-child td{border-bottom:0}
+.tscroll{overflow-x:auto;margin:1rem 0}
+.tscroll .tbl{margin:0;min-width:620px}
+.good{color:var(--ok);font-weight:700}
+.equip td:first-child{min-width:96px;white-space:nowrap}
+.equip td:nth-child(3){min-width:108px}
+.bad{color:var(--req);font-weight:700}
+
+/* 그림 */
+figure{margin:1.6rem 0}
+.figcard{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px;overflow-x:auto}
+.figcard svg{display:block;width:100%;height:auto;font-family:var(--body)}
+figcaption{font-size:.9rem;color:var(--muted);margin-top:.55rem}
+figcaption b{color:var(--ink)}
+.arch-wrap svg{min-width:980px}
+.min720 svg{min-width:720px}
+
+/* 범례 */
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 18px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;margin:0 0 12px;font-size:.92rem}
+.legend div{display:flex;gap:10px;align-items:center}
+.legend svg{flex:none}
+
+/* 등장인물 표 */
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:1rem 0}
+.cast div{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:.94rem;line-height:1.6}
+.cast b{display:block;font-size:1rem}
+.cast span{color:var(--muted);font-size:.86rem}
+.cast .o{border-left-color:#cf8a45}.cast .d{border-left-color:#8a76bf}.cast .i{border-left-color:#3f8ea3}.cast .a{border-left-color:#5a6fbf}.cast .p{border-left-color:#b9ae98}.cast .c{border-left-color:#d6a64f}
+
+/* 두 가지 걱정 */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:1rem 0}
+.two > div{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:14px 16px}
+.two h4{margin:.1rem 0 .4rem;font-size:1.08rem}
+.two ul{margin:.2rem 0;padding-left:1.1rem}
+
+/* 단계(여행) */
+.steps{list-style:none;margin:1rem 0;padding:0;counter-reset:s}
+.steps > li{position:relative;padding:0 0 1.05rem 3rem;counter-increment:s}
+.steps > li::before{content:counter(s);position:absolute;left:0;top:.15rem;width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;background:var(--data);color:#fff;font-weight:700;font-size:.95rem}
+.steps > li.r::before{background:var(--req)} .steps > li.p::before{background:var(--disp)} .steps > li.k::before{background:var(--ink)} .steps > li.o::before{background:#cf8a45} .steps > li.d::before{background:#8a76bf}
+.steps > li:not(:last-child)::after{content:"";position:absolute;left:.95rem;top:2.35rem;bottom:.2rem;width:2px;background:var(--rule)}
+.steps .t{font-family:var(--mono);font-size:.8rem;font-weight:600;background:#fde8ea;color:var(--req);border-radius:6px;padding:1px 7px;margin-left:6px;white-space:nowrap}
+
+/* 사슬(버퍼 지도) */
+.chain{margin:1.2rem 0;display:grid;gap:0}
+.hop{display:grid;grid-template-columns:170px 1fr;gap:14px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
+.hop .who{font-weight:700;line-height:1.45}
+.hop .who small{display:block;font-weight:400;color:var(--muted);font-size:.84rem}
+.hop .keep{font-size:.93rem;line-height:1.65}
+.hop .keep b{color:var(--ink)}
+.hop.mem{border-left:6px solid #e0a13a}.hop.disk{border-left:6px solid var(--ok)}.hop.none{border-left:6px solid var(--req)}.hop.exp{border-left:6px solid var(--disp)}
+.link{height:26px;margin-left:84px;border-left:3px solid var(--data);position:relative}
+.link span{position:absolute;left:14px;top:2px;font-size:.8rem;color:var(--muted);white-space:nowrap}
+@media (max-width:560px){.hop{grid-template-columns:1fr}.link{margin-left:24px}}
+
+/* 막대 비교 */
+.bars{display:grid;gap:10px;margin:1rem 0}
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;font-size:.92rem}
+.bar .track{background:#eceff0;border-radius:6px;height:18px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.bar .v{font-family:var(--mono);font-size:.85rem;text-align:right}
+@media (max-width:560px){.bar{grid-template-columns:110px 1fr 70px}}
+
+/* 토픽 주소 해부 */
+.topic{display:flex;flex-wrap:wrap;gap:4px;margin:1rem 0;font-family:var(--mono);font-size:.92rem}
+.topic span{display:flex;flex-direction:column;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:6px 10px}
+.topic span i{font-style:normal;font-family:var(--body);font-size:.76rem;color:var(--muted)}
+.topic em{font-style:normal;align-self:center;color:var(--muted)}
+
+/* 탐지 카드 */
+.det{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:1rem 0}
+.det div{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--data);border-radius:10px;padding:12px 14px;font-size:.93rem;line-height:1.65}
+.det b{display:block;font-size:1.02rem;margin-bottom:.2rem}
+.det .ex{display:block;margin-top:.4rem;color:var(--muted);font-size:.86rem}
+
+/* 점검 문제 */
+details{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;margin:.7rem 0}
+summary{cursor:pointer;font-weight:700;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"Q ";color:var(--data);font-family:var(--mono)}
+details[open] summary{margin-bottom:.4rem}
+details .ans{border-top:1px dashed var(--rule);padding-top:.5rem}
+
+/* 용어집 */
+dl.gloss{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 16px;margin:1rem 0;font-size:.94rem}
+dl.gloss dt{font-weight:700}
+dl.gloss dd{margin:0;color:#2c373d}
+@media (max-width:560px){dl.gloss{grid-template-columns:1fr} dl.gloss dd{margin-bottom:.5rem}}
+
+.cover{background:var(--ink);color:#f2f5f6;border-radius:18px;padding:28px 26px;margin:0 0 1.6rem}
+.cover h1{color:#fff;margin-top:.3rem}
+.cover .eyebrow{color:#aebbc2}
+.cover .lead{color:#dfe6e9}
+.cover code{background:#3a4750;color:#fff}
+.cover .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:1rem}
+.cover .row span{background:#2f3a41;border-radius:999px;padding:3px 12px;font-size:.84rem;color:#e6ecee}
+
+@media (max-width:560px){ body{font-size:16px} h1{font-size:1.8rem} h2{font-size:1.35rem} .wrap{padding:24px 16px 70px} .wide{padding:0 16px} }
+
+/* ── 인쇄(PDF) ── */
+@page { size: A4; margin: 15mm 14mm 16mm; }
+@page poster { size: 330mm 485mm; margin: 9mm; }
+@media print{
+  body{background:#fff;font-size:10.6pt;line-height:1.75}
+  .wrap{max-width:none;padding:0}
+  .wide{max-width:none;padding:0}
+  .poster{page:poster;break-before:page;break-after:page}
+  .poster .arch-wrap svg{min-width:0}
+  .figcard{overflow:visible;border-color:#cfd6da}
+  .arch-wrap svg,.min720 svg{min-width:0}
+  h2{break-before:page;margin-top:0}
+  h2.keep{break-before:auto}
+  h3,h4{break-after:avoid}
+  .box,.hop,figure,.tbl tr,details,.cast div,.det div,.two > div,.legend{break-inside:avoid}
+  .tscroll{overflow:visible}
+  .tscroll .tbl{min-width:0}
+  a{color:inherit;text-decoration:none}
+  details{border-color:#cfd6da}
+  .noprint{display:none}
+}
+</style>
+<style>
+<!--PART2_CSS-->
+</style>
+<style>
+#part2{margin-top:3rem;border-top:3px solid #24313a;padding-top:2rem}
+@media print{#part2{break-before:page;margin-top:0;border-top:0;padding-top:0}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="cover">
+  <div class="eyebrow">hyd-iot-edu · 커밋 a676a11 기준 · 2026-10-01</div>
+  <h1>유압 설비의 기름 온도가<br>AI와 사람을 거쳐 돌아오기까지</h1>
+  <p class="lead">유압 설비 세 대의 기름 온도 하나가 운전실 화면, 사무실 장부, AI를 거쳐 “팬을 올리자”는 조치로 돌아오기까지의 이야기입니다. 설비가 무슨 일을 하는지부터 시작해 아키텍처를 위에서 아래로 따라 내려갑니다.</p>
+</header>
+
+<nav class="toc" aria-label="차례">
+  <ol>
+    <li><a href="#s1">이 설비는 무엇을 하나: 유압 설비 이야기</a></li>
+    <li><a href="#s2">전체 아키텍처 한 장</a></li>
+    <li><a href="#s3">이야기 ① 기름 온도 48 ℃의 여행: 설비에서 AI까지</a></li>
+    <li><a href="#s4">이야기 ② 쿨러가 더러워진 날: AI의 제안이 설비에 닿기까지</a></li>
+    <li><a href="#s5">처음 질문 네 가지, 한 줄씩</a></li>
+  </ol>
+  <p class="part2-link"><b>2부 · 시스템 아키텍처 상세</b> — <a href="#part2">부품 · 연결 전부, 기술 레이어 구조도, 층별 설명, 시퀀스, 데이터 리니지, 서비스 속 구조, 코드에서 뽑은 전체 목록</a>(6절부터). 1부는 10-01 기준 이야기로 큰 흐름을, 2부는 2026-10-07 코드 기준으로 숨김없는 세부와 1부 이후 달라진 점을 다룹니다.</p>
+</nav>
+
+<!-- ───────────── 1. 설비 ───────────── -->
+<h2 id="s1" class="keep">1. 이 설비는 무엇을 하나: 유압 설비 이야기</h2>
+<p class="lead">유압 설비(유압 동력 장치)는 <b>기름을 높은 압력으로 밀어 기계를 움직이는 심장</b>입니다. 굴착기 팔이나 프레스가 큰 힘을 내는 것도 이 원리입니다. 모터가 펌프를 돌리고, 펌프가 탱크의 기름을 빨아 160 bar 넘는 압력으로 밀어내고, 밸브가 그 기름을 일할 곳으로 보냅니다. 일을 마친 기름은 쿨러에서 식은 뒤 탱크로 돌아옵니다.</p>
+<p>이 프로젝트에는 같은 구조의 설비가 세 대(HYD-01, 02, 03) 있습니다. 진짜 기계 대신 컴퓨터가 열의 흐름을 계산해 흉내 냅니다.</p>
+
+<figure class="figcard min720">
+<!--FIG_PROCESS-->
+<figcaption><b>그림 1.</b> 기름은 탱크 → 펌프 → 밸브 → 일하는 기계 → 쿨러 → 탱크로 한 바퀴 돕니다. 말풍선은 센서, 주황 글씨는 사람이나 AI가 바꿀 수 있는 설정값입니다.</figcaption>
+</figure>
+
+<h3>구성품 다섯 가지가 하는 일</h3>
+<div class="tscroll"><table class="tbl equip">
+<tr><th>구성품</th><th>하는 일 (몸으로 치면)</th><th>달린 센서</th><th>잘못되면</th></tr>
+<tr><td><b>오일 탱크</b></td><td>기름을 담아 두고 돌아온 기름을 받는 통 (혈액 저장소)</td><td>TS3 탱크 유온<br>TS4 주변 온도</td><td>기름이 뜨거운 채로 돌아오면 탱크 온도도 따라 오릅니다.</td></tr>
+<tr><td><b>구동 모터</b></td><td>펌프를 돌리는 전기 모터 (근육)</td><td>EPS1 모터 전력</td><td>펌프가 서면 전력이 0이 됩니다.</td></tr>
+<tr><td><b>유압 펌프</b></td><td>기름을 빨아들여 높은 압력으로 밀어냄. <b>부하</b>(얼마나 세게 일하나)를 60~100 %로 조절 (심장)</td><td>PS1 토출 압력<br>FS1 유량<br>VS1 진동</td><td>세게 일할수록 열이 많이 납니다. 열은 부하의 제곱에 비례합니다.</td></tr>
+<tr><td><b>메인 제어 밸브</b></td><td>압력 기름을 일할 곳으로 보내고 돌아오는 길을 정함 (판막)</td><td>PS2 메인 라인<br>PS3 리턴 · PS4 드레인<br>PS5 파일럿 · PS6 어큐뮬레이터</td><td>압력이 비정상이면 기계가 힘을 못 냅니다.</td></tr>
+<tr><td><b>오일 쿨러 + 팬</b></td><td>데워진 기름을 식힘. <b>팬 속도</b>를 0~100 %로 조절 (땀샘)</td><td>TS1 쿨러 입구 유온<br>TS2 쿨러 출구 유온<br>FS2 쿨러 유량<br>CE 냉각 효율 · CP 냉각 능력</td><td>핀에 먼지가 끼면 식히는 힘이 떨어져 기름 온도가 오릅니다. <b>이 프로젝트 이야기의 주인공 고장</b>입니다.</td></tr>
+</table></div>
+<p class="meta">CE(냉각 효율), CP(냉각 능력), SE(시스템 효율)는 실제 계기가 아니라 다른 값에서 계산한 “가상 센서”입니다.</p>
+
+<div class="box principle"><span class="tag">이 설비의 핵심은 “열의 저울”</span>
+<p>펌프가 일하면 열이 생기고, 쿨러가 그 열을 뺍니다. 두 힘이 맞는 곳에서 기름 온도가 멈춥니다. 모든 이야기는 이 저울 하나에서 나옵니다.</p>
+<ul>
+<li><b>정상</b>(부하 90 %, 팬 60 %, 쿨러 깨끗함): 약 <b>48 ℃</b>에서 안정됩니다.</li>
+<li><b>쿨러 오염</b>(식히는 힘이 43 %로 떨어짐): 약 70 ℃를 향해 계속 오르고, 도중에 <b>65 ℃에서 PLC가 펌프를 세웁니다(트립).</b> 55 ℃ 아래로 식을 때까지 다시 켤 수 없습니다.</li>
+<li><b>조치</b>(팬 100 %, 부하 80 %): 쿨러가 더러운 채로도 약 <b>49 ℃</b>에서 버팁니다. 그사이 쿨러를 청소하면 됩니다.</li>
+</ul>
+<p>즉 쿨러가 더러워졌을 때 사람이 할 수 있는 즉각 조치는 두 가지입니다. <b>팬을 올린다(FAN_BOOST)</b>와 <b>부하를 줄인다(REDUCE_LOAD)</b>입니다. 쿨러 청소는 작업지시로 따로 나갑니다.</p></div>
+
+<p>기름 온도가 오르는 원인 후보는 네 가지로 정리돼 있습니다. 쿨러 핀 오염, 팬 성능 저하, 과부하, 주변 온도 상승입니다. 시뮬레이터가 실제로 일으킬 수 있는 고장은 그중 <b>쿨러 오염</b>입니다. 아키텍처 전체는 이것을 <b>빨리 알아채고, 원인을 짚고, 사람의 승인을 받아 안전하게 조치하기 위해</b> 있습니다.</p>
+
+</div>
+<!-- ───────────── 2. 전체 그림 ───────────── -->
+<section class="poster">
+<div class="wide">
+<h2 id="s2" class="keep">2. 전체 아키텍처 한 장</h2>
+<div class="legend" role="list" aria-label="그림 읽는 법">
+  <div role="listitem"><svg width="56" height="14"><line x1="4" y1="7" x2="44" y2="7" stroke="#1f6f8b" stroke-width="2.4"/><path d="M44,2 L54,7 L44,12z" fill="#1f6f8b"/></svg><span><b>계측 데이터</b> — 화살표 쪽으로 흐름</span></div>
+  <div role="listitem"><svg width="56" height="14"><line x1="4" y1="7" x2="44" y2="7" stroke="#d1343f" stroke-width="3.2"/><path d="M44,2 L54,7 L44,12z" fill="#d1343f"/></svg><span><b>명령</b> — 승인된 조치가 설비로</span></div>
+  <div role="listitem"><svg width="56" height="14"><line x1="4" y1="7" x2="44" y2="7" stroke="#7b4fc9" stroke-width="2.4" stroke-dasharray="7 4"/><path d="M44,2 L54,7 L44,12z" fill="#7b4fc9"/></svg><span><b>경보</b> — 운전실 화면으로</span></div>
+  <div role="listitem"><svg width="56" height="14"><circle cx="10" cy="7" r="5.5" fill="#1f6f8b" stroke="#fff" stroke-width="1.5"/><line x1="16" y1="7" x2="50" y2="7" stroke="#1f6f8b" stroke-width="2.2"/></svg><span><b>●</b> = 이 쪽이 연결을 먼저 연다</span></div>
+  <div role="listitem"><svg width="56" height="14"><rect x="4" y="1" width="48" height="12" rx="3" fill="#fbfcfc" stroke="#8f989f" stroke-dasharray="5 3"/></svg><span><b>점선 상자</b> = 기동 때 1회 도우미 또는 선택 구성</span></div>
+</div>
+<figure class="figcard arch-wrap">
+<!--ARCH_SVG-->
+</figure>
+<p class="meta" style="margin-top:.4rem">위(설비)에서 아래(사람)로 읽습니다. 가운데 세로줄이 척추입니다. 파란 값은 아래로, 빨간 명령과 보라 경보는 위로 올라갑니다. 그림에 선을 그리지 않은 것: 포털 화면이 브라우저에서 각 서비스를 직접 부르는 연결, 강의용 로컬 패널(설비 시뮬레이터 API), Prometheus가 각 서비스를 살피는 선.</p>
+</div>
+</section>
+<div class="wrap">
+
+<!-- ───────────── 3. 이야기 ① ───────────── -->
+<h2 id="s3">3. 이야기 ① 기름 온도 48 ℃의 여행: 설비에서 AI까지</h2>
+<p class="lead">HYD-01의 쿨러 입구 기름 온도(TS1)가 48.0 ℃입니다. 이 숫자를 따라 그림의 위에서 아래로 내려가 보겠습니다.</p>
+
+<h3><span class="partno">①</span>첫 번째 정거장: 설비 옆의 PLC</h3>
+<p>설비 시뮬레이터 안에는 작은 PLC(설비 옆 제어기)가 함께 들어 있습니다. PLC는 설비의 마지막 안전장치입니다. 기름이 65 ℃를 넘으면 누가 뭐라 하든 펌프를 세우고, 55 ℃ 아래로 식은 뒤 사람이 리셋할 때까지 다시 켜지 않습니다. 네트워크가 끊겨도 이 판단은 설비 옆에서 혼자 합니다.</p>
+<p>PLC는 누가 명령을 보냈는지도 따집니다. 운전 모드는 셋입니다. <code>LOCAL</code>(현장만), <code>REMOTE_MANUAL</code>(운전실 수동 조작만), <code>REMOTE_AUTO</code>(승인된 자동 조치도 받음)입니다. 운전실에서 누가 손으로 조작하면 자동으로 <code>REMOTE_MANUAL</code>로 바뀌어, <b>사람의 손이 언제나 AI보다 우선</b>합니다.</p>
+<p>같은 프로그램 안의 데이터 수집 부분이 1초마다 센서 값을 꺼내 공장 게시판에 붙입니다. 온도(TS1)와 냉각 효율(CE)은 매초 보내고, 나머지는 값이 조금 이상 바뀌었을 때나 일정 시간마다만 보내 양을 줄입니다.</p>
+
+<h3><span class="partno">②</span>두 번째 정거장: 공장 게시판, EMQX(MQTT)</h3>
+<p>온도는 <code>plant/hyd01/tag/TS1</code>이라는 칸에 붙습니다. 공장 안의 모두가 이 게시판 하나에만 연결하고, 그 칸을 “구독”해 둔 쪽은 새 쪽지가 붙는 즉시 받습니다. 이 방식이 <b>MQTT</b>이고 게시판 관리인을 <b>브로커</b>라고 부릅니다. 이 프로젝트의 브로커는 <b>EMQX</b>입니다. 가볍고 빨라서, 장치가 많고 연결이 자주 끊기는 공장에 맞습니다.</p>
+
+<div class="box principle"><span class="tag">MQTT가 “휘발성”이라는 말의 정확한 뜻</span>
+<p>MQTT 브로커는 <b>생중계 방송국</b>입니다. 지금 채널을 켜 둔 쪽에게 바로 밀어 주고, 전해지면 지웁니다. 못 본 쪽에게 다시 보여 주지 않습니다. 보관하는 물건이 아니라 <b>전달하는 물건</b>이라는 뜻입니다.</p>
+<p>이 프로젝트에서는 그 성질이 그대로 드러납니다.</p>
+<ul>
+<li>온도 값은 <b>QoS 0</b>(한 번 던지고 끝, 받았는지 확인하지 않음)으로 보냅니다. 1초 뒤 새 값이 또 오니까 한 장쯤 빠져도 된다는 선택입니다.</li>
+<li>모든 연결이 <b>“깨끗한 세션”</b>입니다. 받는 쪽이 끊겨 있던 동안 온 값은 그 사람 몫으로 모아 두지 않습니다.</li>
+<li>반대로 설비 상태(운전 중·트립·마지막 명령 결과)는 <b>QoS 1 + retain</b>(칸마다 마지막 한 장을 붙여 둠)으로 보냅니다. 나중에 붙은 쪽도 “지금 상태”는 바로 알 수 있습니다.</li>
+</ul>
+<p>그래서 이 게시판만으로는 “지난 한 시간의 온도”를 다시 볼 수 없습니다. 그 일은 뒤에 나오는 장부와 기록 DB가 맡습니다.</p></div>
+
+<div class="box caution"><span class="tag">“EMQX는 풀링하면 휘발된다”?</span>
+<p><b>“가져가면 사라진다”는 맞지만 EMQX만의 일은 아닙니다.</b> 전해 주고 지우는 것은 모든 MQTT 브로커가 똑같습니다. 그리고 “풀링”은 용어가 반대입니다. MQTT는 브로커가 <b>밀어 주는(push)</b> 방식이고, 스스로 <b>가져가는(pull)</b> 쪽은 Kafka입니다. 이 프로젝트에서 값이 사라질 수 있는 진짜 이유는 EMQX라서가 아니라, <b>QoS 0과 깨끗한 세션을 골랐기 때문</b>입니다. 받는 쪽(수집 다리)이 잠깐 끊겨 있던 동안의 온도는 어디에도 남지 않습니다.</p></div>
+
+<h3><span class="partno">③</span>잠깐 옆길: 운전실 화면</h3>
+<p>같은 게시판을 운전실 화면(FUXA)도 구독하고 있어서, 48.0 ℃는 곧바로 운전원 모니터에 뜹니다. 60 ℃면 “높음”, 65 ℃면 “매우 높음” 알람이 화면에서 바로 울립니다. 운전원이 팬이나 부하를 손으로 바꾸면 명령이 게시판을 거쳐 PLC로 갑니다. <b>여기까지는 모두 공장 망 안입니다.</b> 사무실 쪽이 통째로 멈춰도 화면, 수동 조작, 트립은 그대로 돕니다.</p>
+
+<h3><span class="partno">④</span><span class="partno">⑤</span>세 번째 정거장: 경계의 두 문, DMZ 역할</h3>
+<p>이제 온도가 공장 망(ot-net)에서 사무실 망(it-net)으로 넘어가야 합니다. 공장과 사무실이 서로 아무 데나 연결되면, 사무실이 뚫렸을 때 공장까지 바로 뚫립니다. 그래서 두 망 사이를 오갈 수 있는 것을 <b>딱 두 서비스</b>로 정했습니다.</p>
+<ul>
+<li><b>⑤ 수집 다리(connect-ingest)</b>: 공장 게시판을 <b>구독만</b> 하고 사무실 장부에 적습니다. 공장 쪽에는 아무것도 쓰지 않는 <b>올라가는 전용 문</b>입니다.</li>
+<li><b>④ 명령 게이트웨이(cmd-gateway)</b>: 사무실에서 공장으로 내려가는 <b>유일한 문</b>입니다. 검사를 통과한 자동 명령과 경보 표시, 이 두 가지만 게시판에 씁니다.</li>
+</ul>
+
+<div class="box analogy"><span class="tag">DMZ는 연결다리인가?</span>
+<p><b>DMZ는 다리가 아니라 다리 한가운데의 검문소입니다.</b> 공장과 사무실은 직접 만나지 않고, 정해진 문 두 개로만 오갑니다. 올라가는 문은 올라가기만 하고, 내려가는 문은 검사를 통과한 것만 내려보냅니다.</p>
+<p>다만 이 프로젝트는 학생 노트북에서 가볍게 돌리려고 경계를 <b>줄여서</b> 흉내 냈습니다. DMZ 전용 망이나 방화벽은 없고, 두 망에 동시에 붙은 서비스 두 개로 표현합니다. 방향도 방화벽이 아니라 <b>프로그램 규칙</b>(수집 다리 코드에는 발행이 없고, 게이트웨이는 두 종류만 발행)으로 지킵니다. EMQX에도 계정별 권한이 걸려 있지 않습니다. 같은 참조 설계를 따른 ceco_demo는 이 부분을 방화벽 컨테이너와 계정별 권한으로 실제로 막습니다.</p></div>
+
+<h3><span class="partno">⑥</span>네 번째 정거장: 번호 매긴 장부, Redpanda(Kafka)</h3>
+<p>수집 다리가 온도를 받아 <b>Redpanda</b>라는 장부의 <code>plant.tag</code> 토픽에 설비 번호(<code>hyd01</code>)를 붙여 적습니다. Redpanda는 Kafka와 똑같은 방식으로 쓰는, 더 가벼운 제품입니다.</p>
+
+<div class="box inproj"><span class="tag">그래서 Kafka(장부)는 왜 필요한가</span>
+<p>장부는 <b>녹화 서버이자 은행 원장</b>입니다. 들어온 순서대로 번호를 붙여 디스크에 적고, 누가 읽어도 지우지 않습니다. 보관 기간은 토픽마다 다릅니다. 온도는 1일(오래 볼 값은 기록 DB로 옮기므로 짧게), 설비 상태는 7일, 경보와 명령은 365일, 감사 기록은 5년입니다. 이 프로젝트에 장부가 필요한 이유는 세 가지입니다.</p>
+<ol>
+<li><b>여럿이 각자 읽는다.</b> 경보 하나를 게이트웨이(운전실 표시), 저장 심부름꾼(기록), AI 에이전트(원인 분석), 업무 프로세스(사건 관리)가 서로 모른 채 각자 읽습니다.</li>
+<li><b>설비별 순서가 지켜진다.</b> 설비 번호를 열쇠로 적어서, 한 설비의 값은 들어온 순서대로 읽힙니다. “온도가 계속 오르고 있나” 같은 판단은 순서가 섞이면 틀립니다.</li>
+<li><b>오래 남는다.</b> 명령과 감사 기록은 1년, 5년씩 남아 “누가 언제 무엇을 승인했나”를 나중에 따라갈 수 있습니다.</li>
+</ol>
+<p>그러니까 <b>“MQTT 대신 Kafka”가 아니라 “MQTT 다음에 Kafka”</b>입니다. 공장 안은 가벼운 생중계(MQTT)로 “지금 값”을 나누고, 사무실은 녹화(장부)로 남겨 여러 번 씁니다.</p></div>
+
+<div class="box caution"><span class="tag">장부에 들어가기 전은 장부가 지켜 주지 못한다</span>
+<p>이 프로젝트에서 값이 사라질 수 있는 곳은 모두 <b>장부에 들어가기 전의 이음새</b>입니다. 알고 쓰면 됩니다.</p>
+<ul>
+<li>게시판 → 수집 다리: QoS 0 · 깨끗한 세션이라, 수집 다리가 끊긴 동안의 값은 남지 않습니다.</li>
+<li>수집 다리 안: 메모리 대기열이 2만 건입니다. 장부가 느려 대기열이 차면 새 값을 <b>버리고 버린 건수를 셉니다.</b> 장부에 쓰다 실패한 한 건도 버려집니다. 디스크 버퍼는 없습니다.</li>
+</ul>
+<p>학생 노트북에서 가볍게 돌리려고 고른 단순화입니다. 이런 구간의 유실률은 측정해 두지 않았습니다.</p></div>
+
+<h3><span class="partno">⑦</span>다섯 번째 정거장: 검사관, detector</h3>
+<p>장부에 온도가 적히면 검사관(detector)이 바로 읽습니다. 온도가 들어올 때마다 세 가지를 계산합니다.</p>
+<div class="det">
+  <div><b>기울기</b>최근 60초 동안 온도가 오르고 있나 내리고 있나.</div>
+  <div><b>이상 점수</b>정상 기준(온도 48 ℃, 냉각 효율 84 %, 진동 0.6 mm/s)에서 얼마나 벗어났나. 0~1 사이 점수.</div>
+  <div style="border-top-color:var(--disp)"><b>상황 패턴(CEP)</b>“온도 55 ℃ 초과 + 냉각 효율 70 % 미만 + 오르는 중”이 60초 동안 이어지면 → <b>쿨러 열화 경보</b>. 온도 52 ℃ 미만 + 더 안 오름이 60초 이어지면 → 해제.</div>
+</div>
+<p>한 가지 값만 보지 않고 온도·냉각 효율·기울기를 <b>함께</b> 보는 이유가 있습니다. 여름날 잠깐 온도가 오른 것과 쿨러가 망가져 계속 오르는 것을 구별하기 위해서입니다. 설비가 트립으로 멈추면 검사관은 “과열 정지(OVERHEAT_TRIP)” 경보를 따로 냅니다. 계산 결과(<code>feat.1s</code>)와 경보(<code>alerts</code>)는 다시 장부에 적습니다.</p>
+
+<h3><span class="partno">⑧</span><span class="partno">⑨</span><span class="partno">⑩</span>마지막 정거장: 기록과 추세 화면</h3>
+<p>저장 심부름꾼(connect-sink)이 장부를 읽어 기록 DB(TimescaleDB)에 옮깁니다. 1초 값은 3일, 1분 요약은 30일 동안 남고, 경보·명령·감사 표는 지우지 않습니다. Grafana가 이 기록으로 온도·냉각 효율·이상 점수 추세를 그리고, 경보가 난 때(빨강)와 풀린 때(초록), 승인한 때(파랑)를 그래프 위에 표시합니다.</p>
+<p>48.0 ℃의 여행은 여기서 끝납니다. 정상일 때는 여기까지입니다. 이제 쿨러가 더러워진 날의 이야기로 넘어갑니다.</p>
+
+<!-- ───────────── 4. 이야기 ② ───────────── -->
+<h2 id="s4">4. 이야기 ② 쿨러가 더러워진 날: AI의 제안이 설비에 닿기까지</h2>
+<p class="lead">이번에는 반대 방향입니다. 핵심은 하나입니다. <b>AI는 설비에 명령할 수 없습니다.</b> AI는 “조치 카드”를 제안만 하고, 사람이 승인해야 명령이 생기며, 그 명령은 게이트웨이와 PLC에서 다시 검사를 받습니다.</p>
+
+<ol class="steps">
+<li class="o"><b>쿨러가 더러워진다.</b> HYD-01의 쿨러 핀에 먼지가 끼어 식히는 힘이 점점 떨어집니다(100 % → 43 %). 냉각 효율(CE)이 떨어지고 기름 온도가 오르기 시작합니다.</li>
+<li><b>검사관이 알아챈다.</b> “55 ℃ 초과 + 냉각 효율 70 % 미만 + 오르는 중”이 이어지자 <b>쿨러 열화 경보</b>(심각도 높음)가 장부에 적힙니다. 고장을 넣고 38초 뒤, 그때 온도 56.9 ℃, 냉각 효율 36 %였습니다(실측).</li>
+<li class="p"><b>운전실에 알린다.</b> 게이트웨이가 경보를 공장 게시판에 붙이고, 운전실 화면에 경보가 뜹니다.</li>
+<li class="k"><b>AI 에이전트가 깨어난다.</b> 먼저 <b>데이터가 신선한지</b> 확인합니다. 최신 온도가 60초 넘게 묵었거나 수집 다리가 멈췄으면 추론을 보류합니다. 낡은 데이터로 판단하면 안 되기 때문입니다.</li>
+<li class="k"><b>원인을 짚는다.</b> 에이전트는 온톨로지(Neo4j)에 적힌 지식을 따라갑니다. “쿨러 열화 패턴의 원인 후보는 쿨러 핀 오염(사전 확률 0.5), 팬 성능 저하(0.25), 과부하(0.15), 주변 온도 상승(0.10).” 각 후보마다 온톨로지에 적힌 <b>증거 질문</b>을 기록 DB에 던집니다. “냉각 효율 30초 평균이 70 % 미만인가?”, “팬 설정은 정상(50 % 이상)이었나?”, “부하가 95 %를 넘었나?”, “주변 온도가 38 ℃를 넘었나?” 증거가 맞는 만큼 점수를 매겨 <b>쿨러 핀 오염</b>이 1순위가 됩니다.</li>
+<li class="k"><b>조치 카드를 쓴다.</b> 1순위 원인에 연결된 조치(팬 올리기 80~100 %, 부하 줄이기 60~90 %)와 표준 절차(SOP), 매뉴얼 절을 붙여 카드를 만듭니다. 그 전에 <b>가드레일</b>이 카드를 검사합니다. 근거 인용이 있는가, 값이 허용 범위 안인가, 명령 번호나 MQTT 주소처럼 AI가 쓰면 안 되는 항목이 들어 있지 않은가를 봅니다. 카드는 업무 프로세스에 “승인 대기”로 제출됩니다. 경보 뒤 2초 걸렸습니다(실측). LLM 키가 설정돼 있으면 LLM이 카드 <b>요약문만</b> 다듬고, 없거나 실패하면 정해진 문장을 씁니다.</li>
+<li class="k"><b>사람이 결정한다.</b> 운전원이 포털 화면에서 카드를 읽고 “팬 100 %, 부하 80 %”를 승인합니다. 업무 프로세스가 승인 내용이 카드에 있던 조치인지, 값이 범위 안인지 다시 확인한 뒤 명령을 장부(<code>action.cmd</code>)에 적습니다. 명령에는 <b>120초 만료</b>가 붙습니다.</li>
+<li class="r"><b>검사 1: 게이트웨이.</b> 서식이 맞는가, 허용된 조치(팬 올리기·부하 줄이기·리셋)인가, 만료되지 않았나, 같은 명령이 두 번 온 건 아닌가, 설비가 자동 조치를 받는 모드(REMOTE_AUTO)인가, 초당 2건을 넘지 않나. 모두 통과하면 공장 게시판의 자동 명령 칸에 QoS 1로 붙이고, 통과·거부 모두 감사 기록에 남깁니다.</li>
+<li class="r"><b>검사 2: PLC.</b> 모드와 보낸 쪽, 만료, 중복, 쓰기 범위, 트립 여부를 한 번 더 보고 팬과 부하를 바꿉니다. 결과(완료·거부와 이유)는 설비 상태에 적혀 같은 길로 올라갑니다. 승인부터 “완료” 확인까지 4.2초였습니다(실측).</li>
+<li><b>정말 나아졌는지 다시 본다.</b> 업무 프로세스는 명령이 들어갔다고 끝내지 않습니다. 45초 동안 지켜보며 “경보 해제 + 온도 55 ℃ 미만”을 확인합니다. 이번에는 조치 44초 뒤 51.4 ℃에서 경보가 풀렸습니다(실측). 그러면 <b>쿨러 청소 작업지시</b>를 내고 사건을 닫으며, 이 사례를 온톨로지에 기록해 다음 판단의 근거로 씁니다.</li>
+</ol>
+
+<div class="box caution"><span class="tag">일이 틀어지면</span>
+<ul>
+<li><b>운전원이 수동 조작 중이면:</b> 설비가 REMOTE_MANUAL이라 게이트웨이가 명령을 거부하고, 확인 응답이 오지 않아 사건이 “사람에게 넘김(ESCALATED)”으로 바뀝니다. 명령을 다시 보내지 않습니다. 이번 시험에서는 29초 뒤 넘겨졌습니다(실측).</li>
+<li><b>아무도 조치하지 않으면:</b> 기름이 계속 데워져 65 ℃에서 PLC가 펌프를 세우고, 검사관이 “과열 정지” 경보를 냅니다. 55 ℃ 아래로 식은 뒤에만 리셋할 수 있습니다. 시험에서는 방치 50초 만에 트립했습니다(실측).</li>
+<li><b>명령이 늦게 도착하면:</b> 120초 만료가 지난 명령은 게이트웨이와 PLC가 모두 버립니다. 사진처럼 멈춰 있던 옛 조치가 뒤늦게 실행되는 일을 막습니다. 이때만큼은 “사라지는 것”이 안전장치입니다.</li>
+</ul></div>
+
+<h3>L9: 공장 밖의 결정까지</h3>
+<p>쿨러를 청소하려면 설비를 세워야 하고, 그러면 납기가 밀릴 수 있습니다. 이런 결정은 운전원 혼자 할 일이 아닙니다. 에이전트는 온톨로지가 연결해 둔 기업 시스템(ERP·MES·CMMS·QMS·SCM·EMS 목업)의 데이터를 <b>읽기만 해서</b> 선택지별 지표를 계산하고, “납기 대 보전”, “부품 구매”, “과열 로트 처리”, “피크 전력” 같은 결정 시나리오의 안을 부서별·전사 기준으로 비교해 올립니다. 승인은 역할 단계(운전원 → 팀장 → 공장장)에 맞는 사람이 합니다. 설비를 직접 움직이는 조치는 이 길로 실행되지 않고, 반드시 앞의 승인·검사 길(HITL)로만 갑니다. 이 부분은 LLM 없이 정해진 규칙으로 계산합니다.</p>
+
+<!-- ───────────── 5. 한 줄 답 ───────────── -->
+<h2 id="s5">5. 처음 질문 네 가지, 한 줄씩</h2>
+<table class="tbl">
+<tr><th>질문</th><th>답</th></tr>
+<tr><td>MQTT가 휘발성이라는데?</td><td>MQTT 브로커는 <b>전달</b>하는 곳이지 <b>보관</b>하는 곳이 아니다. 지금 듣는 쪽에 밀어 주고 지운다. 여기서는 온도를 QoS 0·깨끗한 세션으로 보내서, 받는 쪽이 끊긴 동안의 값은 남지 않는다.</td></tr>
+<tr><td>EMQX는 풀링하면 휘발된다?</td><td>가져가면 지우는 건 모든 MQTT 브로커가 같고, MQTT는 풀이 아니라 푸시다. 이 프로젝트에서 값이 사라질 수 있는 이유는 EMQX가 아니라 QoS 0·깨끗한 세션·메모리 대기열을 고른 설정이다.</td></tr>
+<tr><td>그래서 Kafka를 써야 한다?</td><td>MQTT <b>대신</b>이 아니라 MQTT <b>다음에</b>. 공장은 생중계(MQTT), 사무실은 녹화(Redpanda = Kafka 방식). 여럿이 각자 읽고, 순서가 지켜지고, 명령·감사가 오래 남는다. 다만 장부에 들어가기 전의 이음새는 장부가 지켜 주지 못한다.</td></tr>
+<tr><td>DMZ가 연결다리?</td><td>다리가 아니라 다리 가운데 <b>검문소</b>다. 여기서는 올라가는 문(수집 다리)과 내려가는 문(명령 게이트웨이) 두 서비스로만 흉내 냈고, 방화벽 없이 프로그램 규칙으로 방향을 지킨다.</td></tr>
+</table>
+
+</div>
+<!--PART2-->
+</body>
+</html>

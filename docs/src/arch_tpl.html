@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HYD 시스템 아키텍처</title>
+<meta name="description" content="hyd-iot-edu 유압 설비 IoT·AI 시스템의 부품 {{NP}}개와 연결 {{NL}}개를 그림 한 장과 쉬운 설명·기술 세부로 숨김없이 풀어 쓴 문서.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f6f7f5; --card:#ffffff; --ink:#1b2328; --muted:#56646d; --rule:#d9dfe2; --chip:#eef1f2;
+  --plant:#6b604a; --ot:#9a5a1c; --dmz:#5b4691; --it:#1f6378; --ai:#394b98; --biz:#56662a; --inst:#7d3f66; --ext:#4b5963;
+  --data:#1f6f8b; --cmd:#d1343f; --alert:#7b4fc9; --api:#4a5fb5; --mon:#7d8890; --once:#8f989f; --human:#2b2f33; --ok:#2f7a4a; --warn:#a15c00;
+  --body:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:"JetBrains Mono",Consolas,ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:860px;margin:0 auto;padding:40px 20px 90px}
+.wide{max-width:1280px;margin:0 auto;padding:0 20px}
+h1,h2,h3,h4{line-height:1.35;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:2.35rem;font-weight:800;margin:.4rem 0 .6rem}
+h2{font-size:1.6rem;font-weight:800;margin:4.2rem 0 1rem;padding-top:1.2rem;border-top:3px solid var(--ink)}
+h3{font-size:1.18rem;font-weight:700;margin:2.2rem 0 .5rem}
+h4{font-size:1.02rem;font-weight:700;margin:1.4rem 0 .3rem}
+p{margin:.6rem 0}
+a{color:var(--data)}
+a:focus-visible{outline:2px solid var(--data);outline-offset:2px}
+code,.mono{font-family:var(--mono);font-size:.84em;background:var(--chip);padding:1px 6px;border-radius:5px}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:1.12rem;color:#2c373d}
+.meta-note{font-size:.9rem;color:var(--muted)}
+
+.cover{background:var(--ink);color:#f2f5f6;border-radius:18px;padding:28px 26px;margin:0 0 1.6rem}
+.cover h1{color:#fff;margin-top:.3rem}
+.cover .eyebrow{color:#aebbc2}
+.cover .lead{color:#dfe6e9}
+.cover code{background:#3a4750;color:#fff}
+.cover .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:1rem}
+.cover .row span{background:#2f3a41;border-radius:999px;padding:3px 12px;font-size:.84rem;color:#e6ecee}
+
+.toc{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px 22px;margin:1.6rem 0}
+.toc ol{margin:.3rem 0 0;padding-left:1.4rem;columns:2;column-gap:28px}
+.toc li{margin:.15rem 0;break-inside:avoid}
+.toc a{text-decoration:none;color:var(--ink)}
+.toc a:hover{text-decoration:underline}
+@media (max-width:640px){.toc ol{columns:1}}
+
+.box{border-radius:12px;padding:14px 18px 12px;margin:1rem 0;border:1px solid var(--rule);background:var(--card)}
+.box > .tag{display:inline-block;font-size:.76rem;font-weight:700;letter-spacing:.04em;border-radius:999px;padding:1px 10px;margin-bottom:.35rem}
+.analogy{background:#fffaf0;border-color:#f0dcb2}.analogy > .tag{background:#f6e3b8;color:#7a5200}
+.principle{background:#f4f8fb;border-color:#cfe0ea}.principle > .tag{background:#d6e8f2;color:#1b4f66}
+.inproj{background:#f5f7f4;border-color:#d6e0d2}.inproj > .tag{background:#dbe8d6;color:#2d5a2c}
+.caution{background:#fff5f5;border-color:#f1c9cc}.caution > .tag{background:#f7d6d9;color:#8f1f29}
+.limit{background:#f7f5fb;border-color:#ddd3ef}.limit > .tag{background:#e6ddf4;color:#4b3680}
+
+.tbl{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem;background:var(--card);border-radius:10px;overflow:hidden}
+.tbl th,.tbl td{border-bottom:1px solid var(--rule);padding:7px 9px;text-align:left;vertical-align:top}
+.tbl th{background:#eef1f2;font-weight:700}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td code{white-space:nowrap}
+.tscroll{overflow-x:auto;margin:1rem 0}
+.tscroll .tbl{margin:0;min-width:680px}
+
+figure{margin:1.2rem 0}
+.figcard{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.figcard svg{display:block;width:100%;height:auto;min-width:1500px;font-family:var(--body)}
+.figcard svg.arch-o{min-width:1000px}
+figcaption{font-size:.9rem;color:var(--muted);margin-top:.55rem}
+
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 18px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;margin:0 0 12px;font-size:.9rem}
+.legend div{display:flex;gap:10px;align-items:center}
+.legend svg{flex:none}
+
+/* 참조 표시 */
+.nref{display:inline-grid;place-items:center;min-width:1.5em;height:1.5em;padding:0 .2em;border-radius:999px;background:var(--ink);color:#fff;font-weight:700;font-size:.82em;text-decoration:none;vertical-align:.08em}
+.nref.nz-plant{background:var(--plant)}.nref.nz-ot{background:var(--ot)}.nref.nz-dmz{background:var(--dmz)}.nref.nz-it{background:var(--it)}
+.nref.nz-ai{background:var(--ai)}.nref.nz-biz{background:var(--biz)}.nref.nz-inst{background:var(--inst)}.nref.nz-ext{background:var(--ext)}
+.cref,.cnum{display:inline-block;padding:0 .45em;border-radius:999px;font:700 .74em var(--mono);border:1.3px solid currentColor;text-decoration:none;white-space:nowrap;vertical-align:.1em}
+.k-data{color:var(--data)}.k-api{color:var(--api)}.k-alert{color:var(--alert);border-style:dashed}.k-mon{color:var(--mon);border-style:dotted}
+.k-once{color:var(--once);border-style:dashed}.k-human{color:var(--human)}
+.cref.k-cmd,.cnum.k-cmd{background:var(--cmd);border-color:var(--cmd);color:#fff}
+
+/* 이야기 단계 */
+.steps{list-style:none;margin:1rem 0;padding:0;counter-reset:s}
+.steps > li{position:relative;padding:0 0 1rem 3rem;counter-increment:s}
+.steps > li::before{content:counter(s);position:absolute;left:0;top:.15rem;width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;background:var(--data);color:#fff;font-weight:700;font-size:.95rem}
+.steps > li.r::before{background:var(--cmd)} .steps > li.p::before{background:var(--alert)} .steps > li.k::before{background:var(--ai)} .steps > li.o::before{background:#cf8a45} .steps > li.i::before{background:var(--inst)} .steps > li.h::before{background:var(--human)}
+.steps > li:not(:last-child)::after{content:"";position:absolute;left:.95rem;top:2.35rem;bottom:.2rem;width:2px;background:var(--rule)}
+.steps .tech{display:block;margin-top:.25rem;font-size:.88rem;color:var(--muted);line-height:1.7}
+
+/* 구역 카드 */
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:1rem 0}
+.zones > div{background:var(--card);border-radius:10px;padding:12px 14px;border:1px solid var(--rule);border-top:5px solid var(--rule);font-size:.93rem;line-height:1.7}
+.zones h4{margin:.1rem 0 .3rem}
+.zones .zo{border-top-color:#cf8a45}.zones .zd{border-top-color:#8a76bf}.zones .zi{border-top-color:#3f8ea3}.zones .zx{border-top-color:#9aa3aa}
+
+/* 두 모드 */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:1rem 0}
+.two > div{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:14px 16px;font-size:.94rem}
+.two h4{margin:.1rem 0 .4rem;font-size:1.08rem}
+.two ol,.two ul{margin:.2rem 0;padding-left:1.2rem}
+
+/* 부품 카드 */
+.parts{display:grid;gap:14px}
+.part{background:var(--card);border:1px solid var(--rule);border-left:6px solid var(--rule);border-radius:12px;padding:14px 18px}
+.part header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.part h3{margin:0;font-size:1.15rem}
+.pnum{display:inline-grid;place-items:center;width:2rem;height:2rem;border-radius:50%;color:#fff;font-weight:700;flex:none;background:var(--ink)}
+.pz-plant{border-left-color:#b9ae98}.pz-plant .pnum{background:var(--plant)}
+.pz-ot{border-left-color:#cf8a45}.pz-ot .pnum{background:var(--ot)}
+.pz-dmz{border-left-color:#8a76bf}.pz-dmz .pnum{background:var(--dmz)}
+.pz-it{border-left-color:#3f8ea3}.pz-it .pnum{background:var(--it)}
+.pz-ai{border-left-color:#5a6fbf}.pz-ai .pnum{background:var(--ai)}
+.pz-biz{border-left-color:#7a8a4a}.pz-biz .pnum{background:var(--biz)}
+.pz-inst{border-left-color:#b0739a}.pz-inst .pnum{background:var(--inst)}
+.pz-ext{border-left-color:#9aa3aa}.pz-ext .pnum{background:var(--ext)}
+.zchip,.kchip{font-size:.74rem;padding:1px 9px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.kchip{background:#fff3d6;color:#7a5200}
+.easy{background:#fffaf0;border:1px solid #f0dcb2;border-radius:10px;padding:8px 12px;margin:.7rem 0 .5rem}
+.tech{border:1px solid var(--rule);border-radius:10px;padding:8px 12px;font-size:.92rem;line-height:1.75}
+.lane{display:inline-block;font-size:.72rem;font-weight:700;border-radius:999px;padding:0 9px;margin-bottom:.1rem}
+.easy .lane{background:#f6e3b8;color:#7a5200}
+.tech .lane{background:#e3e8eb;color:#33424b}
+.easy p{margin:.2rem 0}
+dl.spec{display:grid;grid-template-columns:minmax(90px,130px) 1fr;gap:3px 14px;margin:.3rem 0 .4rem;font-size:.88rem}
+dl.spec dt{font-weight:700;color:#33424b}
+dl.spec dd{margin:0}
+@media (max-width:560px){dl.spec{grid-template-columns:1fr} dl.spec dd{margin-bottom:.35rem}}
+.rel{font-size:.84rem;color:var(--muted);margin:.5rem 0 0;line-height:2}
+
+/* 기술 레이어 · 시퀀스 · 리니지 · 속 구조 */
+.abadge{display:inline-block;min-width:1.55em;padding:0 .35em;border:1.3px solid var(--k);color:var(--k);background:#fff;border-radius:999px;font-size:.76rem;font-weight:800;text-align:center;line-height:1.45;text-decoration:none;vertical-align:.08em}
+.kdot{display:inline-block;width:.62em;height:.62em;border-radius:50%;margin-right:.35em;vertical-align:.05em}
+.lyr{font-family:var(--mono);font-size:.74rem;background:var(--chip);border-radius:4px;padding:0 5px;color:#33424b}
+.klegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.84rem;margin:.4rem 0 .6rem}
+.klegend span{display:inline-flex;align-items:center;gap:6px}
+.lyrsec{border:1px solid var(--bd);border-left:6px solid var(--bd);border-radius:12px;padding:10px 14px 12px;margin:1rem 0;background:#fff}
+.lyrsec header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.lyrsec h3{margin:0;font-size:1.12rem}
+.lcode{background:var(--fg);color:#fff;font-weight:800;border-radius:6px;padding:0 8px;font-size:.88rem}
+.lfunc{color:var(--fg);font-weight:700;font-size:.86rem}
+.lcards{font-size:.84rem;line-height:2;margin:.45rem 0 .2rem}
+.lcard{display:inline-block;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:0 7px;margin:0 3px 3px 0;line-height:1.6}
+.lcard code{font-size:.74rem;color:#56646d}
+.seqstory{padding-left:1.3rem}
+.seqstory li{margin:.5rem 0}
+.seqstory p{margin:.15rem 0}
+.snum{font-size:.76rem;background:var(--chip);border-radius:5px;padding:0 6px;color:var(--muted)}
+.mechlegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.84rem;margin:.4rem 0 .8rem}
+.mechlegend i{display:inline-block;width:18px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.mech{font-size:.78rem;border:1px solid #9aa7ae;border-radius:5px;padding:0 5px;white-space:nowrap}
+.inner-sec,.lin-sec{margin:1.6rem 0 2rem}
+.inner-sec h3,.lin-sec h3{border-bottom:2px solid var(--rule);padding-bottom:.25rem}
+.tbl.small{font-size:.8rem}
+.tbl .ref{font-family:var(--mono);font-size:.7rem;color:#6b7780;word-break:break-all}
+.tbl .fld{font-family:var(--mono);font-size:.74rem;word-break:break-word}
+.notes{font-size:.86rem;color:#33424b}
+.lin-two h4{margin:.4rem 0}
+.lin-two ul{font-size:.86rem;margin:.2rem 0}
+.caution li{margin:.25rem 0;font-size:.9rem}
+.svcs{display:grid;grid-template-columns:1fr}
+.sqlfile{margin:.9rem 0 .2rem;font-size:.86rem;font-weight:700}
+pre.code{font-family:var(--mono);font-size:.76rem;line-height:1.55;background:#f6f8f9;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;margin:.3rem 0}
+.figcard svg.seq{min-width:1100px}
+.figcard svg.layers{min-width:1800px}
+.figcard svg.inner,.figcard svg.lin{min-width:960px}
+.hops{list-style:none;padding:0;margin:.8rem 0;display:grid;gap:8px}
+.hop{border:1px solid var(--rule);border-radius:10px;padding:7px 12px;background:#fff}
+.hophead{margin:0 0 .2rem;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.hopno{background:#1f6f8b;color:#fff;font-weight:800;border-radius:6px;padding:0 7px;font-size:.84rem}
+.hopbr{background:#ebeffa;color:#394b98;border-radius:6px;padding:0 7px;font-size:.78rem;font-weight:700}
+dl.hopdl{font-size:.84rem;margin:.1rem 0}
+dl.hopdl dd.fld{font-family:var(--mono);font-size:.76rem;word-break:break-word}
+dl.hopdl dd.ref{font-family:var(--mono);font-size:.72rem;color:#6b7780;word-break:break-all}
+
+/* 연결 목록 */
+.clines{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px}
+@media (max-width:560px){.clines{grid-template-columns:1fr}}
+.cline{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:.9rem;line-height:1.65}
+.cline.lk-cmd{border-color:#eab0b5}
+.cline .cnum{font-size:.82rem;padding:.12em .55em}
+.cline p{margin:.15rem 0}
+.ends{font-weight:600}
+.arrow{color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:.78rem;color:var(--muted)}
+.meta span{background:var(--chip);padding:0 7px;border-radius:5px}
+.meta .nodraw{background:#fff3d6;color:#7a5200}
+.proto{font-family:var(--mono);font-size:.78rem;color:#33424b}
+
+dl.gloss{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 16px;margin:1rem 0;font-size:.93rem}
+dl.gloss dt{font-weight:700}
+dl.gloss dd{margin:0;color:#2c373d}
+@media (max-width:560px){dl.gloss{grid-template-columns:1fr} dl.gloss dd{margin-bottom:.5rem}}
+
+@media (max-width:560px){ body{font-size:16px} h1{font-size:1.8rem} h2{font-size:1.35rem} .wrap{padding:24px 16px 70px} .wide{padding:0 16px} }
+
+/* ── 인쇄(PDF) ── */
+@page { size: A4; margin: 14mm 13mm 15mm; }
+@page poster { size: {{POSTER_W}}mm {{POSTER_H}}mm; margin: 8mm; }
+@page postero { size: 380mm 500mm; margin: 8mm; }
+@page posterl { size: {{LPOSTER_W}}mm {{LPOSTER_H}}mm; margin: 8mm; }
+@page wide { size: 297mm 210mm; margin: 11mm 12mm 13mm; }
+@page posters { size: {{SPOSTER_W}}mm {{SPOSTER_H}}mm; margin: 8mm; }
+@media print{
+  body{background:#fff;font-size:10.3pt;line-height:1.72}
+  .wrap,.wide{max-width:none;padding:0}
+  .poster{page:poster;break-before:page;break-after:page}
+  .poster.poster-o{page:postero}
+  .poster.poster-l{page:posterl}
+  .poster.poster-l .figcard svg{height:{{LFIG_H}}mm}
+  .poster.poster-s{page:posters}
+  .poster.poster-s .figcard svg{height:{{SFIG_H}}mm}
+  .lyrsec header,.inner-sec h3,.lin-sec h3{break-after:avoid}
+  .inner-fig,.lin-fig,.hop{break-inside:avoid}
+  .wide-print{page:wide}
+  .wide-print h2{break-before:page}
+  .svcs{grid-template-columns:1fr 1fr}
+  .figcard svg.seq,.figcard svg.layers,.figcard svg.inner,.figcard svg.lin{min-width:0}
+  .figcard{overflow:visible;border-color:#cfd6da;padding:4px}
+  .figcard svg{min-width:0}
+  .poster h2{margin:0 0 3mm;padding-top:2mm;break-after:avoid}
+  .poster figure{margin:0}
+  .poster .figcard svg{width:auto;max-width:100%;height:{{FIG_H}}mm;margin:0 auto}
+  .poster .meta-note{margin:2mm 0 0;font-size:9pt}
+  .poster.poster-o .figcard svg{height:420mm}
+  .poster h3{margin:0 0 2mm}
+  h2{break-before:page;margin-top:0}
+  h2.keep{break-before:auto}
+  h3,h4{break-after:avoid}
+  .box,.cline,figure,.tbl tr,.zones > div,.two > div,.legend,.steps > li,.easy,dl.spec,.tech p{break-inside:avoid}
+  .part{break-inside:auto}
+  .part header,.easy{break-after:avoid}
+  .tscroll{overflow:visible}.tscroll .tbl{min-width:0}
+  .clines{grid-template-columns:1fr 1fr}
+  a{color:inherit;text-decoration:none}
+  .noprint{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="cover">
+  <div class="eyebrow">hyd-iot-edu · 시스템 아키텍처 · 2026-10-07 작업 사본 기준(HEAD 245eba3 + 미커밋 변경)</div>
+  <h1>유압 설비 IoT·AI 시스템,<br>부품 {{NP}}개와 연결 {{NL}}개 전부</h1>
+  <p class="lead">설비 세 대의 센서 값이 운전실 화면과 사무실 장부, 이상 탐지, AI 조사, 사람의 승인을 거쳐 다시 설비로 돌아오기까지, 이 시스템을 이루는 모든 부품과 모든 연결을 그림 한 장과 설명으로 풀었습니다. 처음 보는 분은 <b>쉬운 말</b> 칸만 읽어도 흐름을 따라갈 수 있고, 만드는 분은 <b>기술 세부</b> 칸에서 포트·계정·토픽·보관 기간·검사 조건까지 확인할 수 있습니다.</p>
+  <div class="row"><span>부품 {{NP}}개 (①~㉖)</span><span>연결 {{NL}}개 (C1~C{{NL}})</span><span>망 2개 + DMZ 역할</span><span>운영 방식 2가지</span><span>기술 레이어 9층 · 구성요소 {{NLC}}개 · 화살표 {{NLA}}개</span><span>리니지 {{NLIN}}갈래 · {{NHOP}}단계</span><span>서비스 속 구조 {{NINT}}개</span><span>근거: compose.yaml · 소스 코드</span></div>
+</header>
+
+<div class="box inproj"><span class="tag">이 문서를 읽는 법</span>
+<ul>
+<li><b>번호가 곧 주소입니다.</b> 동그라미 숫자(예: {n:rp})는 부품, <span class="cref k-data">C7</span> 같은 표시는 연결입니다. 그림·본문·목록이 같은 번호를 씁니다. 누르면 그 설명으로 갑니다. ①~㉑은 <a href="마스터_가이드.html">마스터 가이드</a>와 같은 번호입니다.</li>
+<li><b>두 갈래로 썼습니다.</b> 노란 <b>쉬운 말</b> 칸은 전문 용어 없이 무엇을 하는지, 회색 <b>기술 세부</b> 칸은 제품·버전·포트·계정·저장·코드 위치입니다.</li>
+<li><b>비유는 이해를 돕는 데까지만 씁니다.</b> 비유가 실제와 다른 지점은 「비유의 한계」로 밝혔습니다.</li>
+<li><b>숫자는 코드에 적힌 값입니다.</b> 실제로 재 본 값은 「실측」이라고 출처와 함께 적고, 확인하지 못한 것은 「미확인」이라고 적었습니다.</li>
+</ul></div>
+
+<nav class="toc" aria-label="차례">
+  <ol>
+    <li><a href="#s1">처음 보는 분을 위한 3분 이야기</a></li>
+    <li><a href="#s2">그림 읽는 법</a></li>
+    <li><a href="#s3">전체 그림: 한눈에 보기 · 컨테이너 배치도</a></li>
+    <li><a href="#layers">기술 레이어 구조도: 층마다 구성요소, 화살표마다 프로토콜</a></li>
+    <li><a href="#lyrtext">층별 설명 · 화살표 {{NLA}}개</a></li>
+    <li><a href="#lyrtable">레이어별 기술 표</a></li>
+    <li><a href="#seq">레이어 간 시퀀스: 쿨러 열화 한 건</a></li>
+    <li><a href="#s4">층과 구역: 어디에 무엇이 있나</a></li>
+    <li><a href="#s5">구역 사이의 규칙과 잠금 현황</a></li>
+    <li><a href="#s6">두 가지 운영 방식: legacy와 instance</a></li>
+    <li><a href="#s7">일곱 가지 흐름</a></li>
+    <li><a href="#parts">부품 {{NP}}개</a></li>
+    <li><a href="#lines">연결 {{NL}}개</a></li>
+    <li><a href="#dict">데이터 사전: 토픽 · 표 · 저장소</a></li>
+    <li><a href="#lineage">데이터 리니지: 값 하나가 태어나 끝나는 곳까지</a></li>
+    <li><a href="#inner">서비스 속 구조: 컨테이너 안의 부품과 일꾼</a></li>
+    <li><a href="#buffers">값이 머무는 곳, 사라질 수 있는 곳</a></li>
+    <li><a href="#switches">설정 스위치와 기동 단위</a></li>
+    <li><a href="#limits">실제 제품과 다른 점 · 알려진 한계</a></li>
+    <li><a href="#diff">마스터 가이드(10-01)와 달라진 점</a></li>
+    <li><a href="#appendix">부록: 코드에서 뽑은 전체 목록</a></li>
+    <li><a href="#gloss">용어집</a></li>
+    <li><a href="#src">근거 파일</a></li>
+  </ol>
+</nav>
+
+<!-- ───────────── 1 ───────────── -->
+<h2 id="s1" class="keep">처음 보는 분을 위한 3분 이야기</h2>
+<p class="lead">공장에는 기름을 높은 압력으로 밀어 기계를 움직이는 <b>유압 설비</b>가 세 대 있습니다. 이 시스템의 목적은 하나입니다. <b>설비가 이상해지면 빨리 알아채고, 원인을 짚고, 사람의 승인을 받아 안전하게 조치하고, 정말 나아졌는지 확인한 뒤 기록을 남기는 것</b>입니다.</p>
+<ol class="steps">
+<li class="o"><b>설비가 값을 낸다.</b> 설비 옆의 작은 제어기(PLC)와 수집 장치가 1초마다 온도·압력·진동 값을 꺼내 공장 안 게시판({n:emqx})에 붙입니다. 이 프로젝트에서는 진짜 기계 대신 {nn:sim}이 물리 계산으로 흉내 냅니다.<span class="tech">MQTT 토픽 plant/hyd01/tag/TS1 등 · {c:c_sim_pub}</span></li>
+<li><b>공장 안에서 먼저 쓴다.</b> 운전실 화면({n:fuxa})이 같은 게시판을 보고 값과 알람을 띄웁니다. 사무실 쪽이 통째로 멈춰도 화면·수동 조작·자동 정지(트립)는 공장 안에서 그대로 돕니다.</li>
+<li class="p"><b>경계를 넘는다.</b> 공장과 사무실은 직접 연결하지 않고 <b>문 두 개</b>로만 오갑니다. 올라가는 문({n:ing})은 값을 읽어 사무실 장부에 옮기기만 하고, 내려가는 문({n:gw})은 검사를 통과한 명령과 경보 표시만 공장에 씁니다.</li>
+<li><b>장부에 남기고 나눠 쓴다.</b> 사무실 장부({n:rp})는 들어온 순서대로 번호를 붙여 보관합니다. 검사관({n:det})이 이상을 찾고, 심부름꾼({n:sink})이 기록 DB({n:tsdb})에 옮기고, {nn:graf}가 추세를 그립니다.</li>
+<li class="k"><b>AI가 조사한다.</b> 이상 경보가 나면 AI({n:agent} 조사관, 또는 instance 모드의 {n:worker} AI 직원)가 지식 지도({n:neo})에서 원인 후보와 조치 방법을 찾고, 기록 DB에서 증거를 확인하고, 회사 업무 데이터({n:ent})까지 따져 <b>조치 카드</b>를 씁니다. AI는 설비에 직접 명령할 수 없습니다.</li>
+<li class="h"><b>사람이 고른다.</b> 담당자가 포털({n:portal})에서 근거를 읽고 카드 하나를 승인합니다. 업무 진행({n:proc})이 승인 내용을 다시 확인한 뒤에야 명령을 만듭니다.</li>
+<li class="r"><b>두 번 검사하고 실행한다.</b> 명령은 내려가는 문에서 한 번(검사 1), 설비 옆 PLC에서 또 한 번(검사 2) 검사를 받고 나서야 팬 속도나 부하를 바꿉니다. 명령에는 120초 만료가 붙어 늦게 도착한 옛 명령은 버려집니다.</li>
+<li><b>정말 나아졌는지 본다.</b> 명령이 들어갔다고 끝내지 않습니다. 정해진 시간 동안 지켜보며 경보가 풀리고 값이 기준 안으로 돌아왔는지 확인한 뒤, 정비 작업지시를 내고 사건을 닫습니다.</li>
+</ol>
+<div class="box analogy"><span class="tag">한 문장으로</span><p>센서 값은 <b>위(설비)에서 아래(사람)</b>로 내려가며 기록되고, 조치는 <b>사람의 승인을 받아야만</b> 검사 두 겹을 지나 <b>아래에서 위</b>로 올라갑니다. 아래 그림도 이 방향(위 = 설비, 아래 = 사람)으로 그렸습니다.</p></div>
+
+<!-- ───────────── 2 ───────────── -->
+<h2 id="s2">그림 읽는 법</h2>
+<div class="legend" role="list" aria-label="그림 읽는 법">
+  <div role="listitem" style="grid-column:1/-1"><svg width="58" height="30" aria-hidden="true"><rect x="2" y="2" width="54" height="26" rx="4" fill="#fff" stroke="#9aa7ae"/><line x1="6" y1="11" x2="52" y2="11" stroke="#e1e6e9"/><line x1="8" y1="17" x2="40" y2="17" stroke="#24313a"/><line x1="8" y1="23" x2="46" y2="23" stroke="#1f5f78"/></svg><span><b>상자 안</b> 맨 위는 번호 · 이름 · 실제 제품, 구분선 아래는 그 부품의 <b>안쪽 구성 전부</b>(토픽 · 검사 조건 · 표 · 처리 순서 · 도구 · 포트 · 계정)입니다. 굵은 글씨는 항목 이름, <code>파란 고정폭</code>은 토픽 · 표 · 명령 이름입니다. 같은 내용을 쉬운 말로 풀어 쓴 설명은 <a href="#parts">{sec:parts}절 부품 카드</a>에 있습니다.</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><line x1="4" y1="7" x2="46" y2="7" stroke="#1f6f8b" stroke-width="2.4"/><path d="M46,2 L56,7 L46,12z" fill="#1f6f8b"/></svg><span><b>파란 선</b> 계측·기록 데이터. 화살표 쪽으로 흐름</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><line x1="4" y1="7" x2="46" y2="7" stroke="#d1343f" stroke-width="3.2"/><path d="M46,2 L56,7 L46,12z" fill="#d1343f"/></svg><span><b>빨간 굵은 선</b> 명령·업무 실행. 설비나 업무를 바꾸는 길</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><line x1="4" y1="7" x2="46" y2="7" stroke="#7b4fc9" stroke-width="2.4" stroke-dasharray="7 4"/><path d="M46,2 L56,7 L46,12z" fill="#7b4fc9"/></svg><span><b>보라 점선</b> 경보. 이상을 알리는 길</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><line x1="4" y1="7" x2="46" y2="7" stroke="#4a5fb5" stroke-width="1.8"/><path d="M46,2 L56,7 L46,12z" fill="#4a5fb5"/></svg><span><b>남색 가는 선</b> 조회·호출. 물어보고 답을 받는 길</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><line x1="4" y1="7" x2="54" y2="7" stroke="#7d8890" stroke-width="1.6" stroke-dasharray="2 4"/></svg><span><b>회색 점선</b> 감시. 살아 있는지만 본다</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><circle cx="10" cy="7" r="5.5" fill="#1f6f8b" stroke="#fff" stroke-width="1.5"/><line x1="16" y1="7" x2="54" y2="7" stroke="#1f6f8b" stroke-width="2.2"/></svg><span><b>●</b> 이 쪽이 연결을 먼저 연다. 화살표(데이터 방향)와 다를 수 있다</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><rect x="4" y="1" width="50" height="12" rx="3" fill="#fbfcfc" stroke="#8f989f" stroke-dasharray="6 4"/></svg><span><b>긴 점선 상자</b> 기동 때 한 번 돌고 끝나는 도우미</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><rect x="4" y="1" width="50" height="12" rx="3" fill="#fbfcfc" stroke="#7d8890" stroke-dasharray="2 3"/></svg><span><b>짧은 점선 상자</b> 선택 프로필. 기본 구성에서는 뜨지 않음</span></div>
+  <div role="listitem"><svg width="58" height="14" aria-hidden="true"><rect x="4" y="1" width="50" height="12" rx="3" fill="#fff" stroke="#b0739a" stroke-width="1.4"/></svg><span><b>자주 테두리</b> instance 모드 부품(Supabase · MCP · AI 직원)</span></div>
+  <div role="listitem"><svg width="58" height="16" aria-hidden="true"><rect x="8" y="1" width="42" height="14" rx="7" fill="#fff" stroke="#4a5fb5"/><text x="29" y="12" font-size="9" text-anchor="middle" fill="#4a5fb5" font-family="monospace" font-weight="700">C34</text></svg><span><b>상자 위 작은 표</b> 선을 그리면 그림이 엉키는 연결. 여는 쪽(「부름」 · 「긁음」)과 받는 쪽에 같은 번호</span></div>
+</div>
+<div class="box limit"><span class="tag">그림의 한계</span><p>상자 하나는 컨테이너 하나입니다(예외: ㉒ Supabase는 여러 컨테이너로 된 별도 묶음, ㉖ Neo4j MCP는 ㉕ 안에서 작업마다 뜨는 프로세스, ⑰ LLM은 인터넷 너머의 서비스). 선 하나는 「한 쪽이 다른 쪽에 연결해 주고받는 것」 하나입니다. 같은 연결 안에서 여러 토픽이 오가도 선은 하나이고, 무엇이 오가는지는 <a href="#lines">연결 목록</a>에 적었습니다. 그림의 위치는 역할을 보여 주기 위한 배치이며, 실제 망 구조는 <a href="#s5">{sec:s5}절</a>의 표가 정확합니다.</p></div>
+
+</div>
+<!-- ───────────── 3 ───────────── -->
+<section class="poster poster-o">
+<div class="wide">
+<h2 id="s3" class="keep">전체 그림</h2>
+<h3 id="s3a">3-1. 한눈에 보기: 무엇이 무엇과 이어지나</h3>
+<p class="meta-note">먼저 큰 길만 봅니다. 상자에는 번호 · 이름 · 제품만 적었습니다. 위(설비)에서 아래(사람)로 읽고, 가운데 세로줄(척추)을 따라가면 됩니다: 설비 → 공장 게시판 → 두 문 → 장부 → AI → 업무 진행 → 업무 기록부. 파란 값은 아래로, 빨간 명령은 위로, 보라 경보는 공장 화면과 AI 쪽으로 갑니다.</p>
+<figure class="figcard">
+<!--SVG_OVERVIEW-->
+</figure>
+<p class="meta-note">이 그림과 <a href="#s3b">3-2 상세 그림</a>은 같은 번호(부품 ①~㉖)를 씁니다. 연결 번호(C)는 3-2와 본문 {sec:lines}절 기준이고, 이 그림에도 같은 번호로 붙어 있습니다.</p>
+</div>
+</section>
+<section class="poster">
+<div class="wide">
+<h3 id="s3b" style="margin-top:0">3-2. 컨테이너 배치도: 상자 안까지 전부</h3>
+<p class="meta-note">3-1과 비슷한 배치에 상자를 넓혀, 상자마다 안쪽 구성(토픽 · 검사 조건 · 표 · 처리 순서 · 도구 · 포트 · 계정)을 모두 적었습니다. 좁은 화면에서는 그림을 옆으로 밀어 봅니다. 상자 안 내용을 쉬운 말로 풀어 쓴 설명은 <a href="#parts">{sec:parts}절 부품 카드</a>에 있습니다.</p>
+<figure class="figcard">
+<!--SVG-->
+</figure>
+</div>
+</section>
+
+<!-- ───────────── 기술 레이어 구조도 ───────────── -->
+<section class="poster poster-l">
+<div class="wide">
+<h2 id="layers" class="keep">기술 레이어 구조도: 층마다 구성요소, 화살표마다 프로토콜</h2>
+<p class="meta-note">설계서 v2의 「그림 1」과 같은 방식으로 그렸습니다. 띠 하나가 층 하나(위 L9 사람 · 업무 → 아래 L1 설비)이고, 띠 왼쪽에 층 이름과 핵심 기능, 오른쪽에 그 층의 <b>구성요소 {{NLC}}개</b>를 카드로 따로 놓았습니다. 카드는 컨테이너가 아니라 하는 일 단위입니다. 예를 들어 plant-sim 컨테이너 하나 안의 열 모델 · soft-PLC · 고장 램프 · DAQ 필터 · 엣지는 각자 카드입니다. 카드 아래 회색 꼬리표가 실제로 그 일을 하는 컨테이너 · 포트입니다. 화살표 {{NLA}}개에는 번호와 프로토콜 · 토픽 · 표 이름을 붙였고, 같은 번호로 <a href="#lyrtext">{sec:lyrtext}절</a>의 글과 <a href="#arrows">화살표 표</a>에 전부 풀어 썼습니다.</p>
+<!--LEGEND_L-->
+<figure class="figcard">
+<!--SVG_LAYERS-->
+</figure>
+</div>
+</section>
+<div class="wrap">
+
+<h2 id="lyrtext">층별 설명: 그림을 위에서 아래로 읽기</h2>
+<p class="lead">앞 그림의 띠 아홉 개를 하나씩 풉니다. <b>쉬운 말</b> 칸은 그 층이 무슨 일을 하는지 이야기로, <b>기술 세부</b> 칸은 제품 · 버전 · 포트 · 토픽 · 보관 · 검사 조건입니다. 글 속 동그라미 숫자(<span class="abadge" style="--k:#2563eb">4</span> 같은)는 그림의 화살표 번호이고, 누르면 아래 화살표 표의 그 줄로 갑니다. 화살표 {{NLA}}개가 모두 어느 한 문장에 나옵니다.</p>
+<!--LAYER_TEXT-->
+<h3 id="arrows">화살표 {{NLA}}개 전부</h3>
+<p class="meta-note">「L3 → L2」처럼 층이 바뀌는 화살표는 층 표시를 붙였습니다. 종류 색은 그림과 같습니다.</p>
+<!--ARROW_TABLE-->
+
+<h2 id="lyrtable">레이어별 기술 표</h2>
+<p>층마다 <b>무엇을 맡고 무엇은 맡지 않는지</b>, 실제로 돌아가는 기술과 원래 설계(설계서 v3의 실제 제품)가 어떻게 다른지를 한 줄씩 적었습니다. 「하지 않는 일」 칸은 책임을 다른 층에 넘기는 경계입니다.</p>
+<!--LAYER_TABLE-->
+
+</div>
+<section class="poster poster-s">
+<div class="wide">
+<h2 id="seq" class="keep">레이어 간 시퀀스: 쿨러 열화 한 건의 처음부터 끝까지</h2>
+<p class="meta-note">세로줄은 층, 가로 화살표 하나가 한 단계입니다(왼쪽 번호 순서대로). 같은 층 안의 일은 그 세로줄 위의 상자로 그렸습니다. 기본 운영 방식(legacy) 기준이고, instance 모드에서 달라지는 점은 <a href="#s6">{sec:s6}절</a>에 있습니다. 화살표 색은 기술 레이어 구조도와 같습니다.</p>
+<figure class="figcard">
+<!--SVG_SEQ-->
+</figure>
+<p class="meta-note"><!--SEQ_NOTE--></p>
+</div>
+</section>
+<div class="wrap">
+<h3 id="seqstory">단계별 이야기</h3>
+<!--SEQ_STORY-->
+</div>
+<div class="wrap">
+
+<!-- ───────────── 4 ───────────── -->
+<h2 id="s4">층과 구역: 어디에 무엇이 있나</h2>
+<p>이 시스템은 설계서 <code>유압설비_IoT-SCADA_아키텍처_v3.pdf</code>의 9개 층(L1~L9)을 따릅니다. 층은 「하는 일」로 나눈 것이고, 구역(OT · DMZ · IT)은 「어느 망에 붙어 있나」로 나눈 것입니다. 둘은 다른 기준이라 L6처럼 두 구역에 걸친 층도 있습니다.</p>
+<div class="tscroll"><table class="tbl">
+<tr><th>층</th><th>하는 일 (쉬운 말)</th><th>이 시스템의 부품</th><th>원래 설계의 실제 제품</th><th>구역</th></tr>
+<tr><td><b>L1</b></td><td>설비와 그 옆 제어기·수집 장치</td><td>{nn:sim}</td><td>유압 설비 · soft-PLC · 고속 DAQ</td><td>현장/OT</td></tr>
+<tr><td><b>L2</b></td><td>공장 안 메시지 게시판</td><td>{nn:emqx} (설비 쪽 발행은 ①이 겸함)</td><td>EMQX · EdgeX</td><td>OT</td></tr>
+<tr><td><b>L3</b></td><td>공장↔사무실 경계와 사무실 장부</td><td>{nn:ing} · {nn:gw} · {nn:rp} · {nn:tinit} · {nn:cons}</td><td>Kafka Connect MQTT Source · 명령 게이트웨이 · Apache Kafka</td><td>DMZ 역할 / IT</td></tr>
+<tr><td><b>L4</b></td><td>흐르는 값에서 이상 찾기</td><td>{nn:det}</td><td>Apache Flink CEP + ONNX</td><td>IT</td></tr>
+<tr><td><b>L5</b></td><td>오래 보관하는 기록</td><td>{nn:sink} · {nn:tsdb}</td><td>Kafka Connect JDBC Sink · TimescaleDB</td><td>IT</td></tr>
+<tr><td><b>L6</b></td><td>사람이 보는 화면과 시스템 감시</td><td>{nn:fuxa} · {nn:finit} (공장) · {nn:graf} · {nn:prom} (사무실)</td><td>FUXA · Grafana · Prometheus · Alertmanager</td><td>OT + IT</td></tr>
+<tr><td><b>L7</b></td><td>지식 지도(온톨로지)</td><td>{nn:neo} · {nn:seed} · {nn:kgmcp}</td><td>Neo4j + n10s</td><td>IT</td></tr>
+<tr><td><b>L8</b></td><td>AI 조사와 판단</td><td>{nn:agent} · {nn:llm} · {nn:worker} · {nn:dmnmcp} · {nn:entmcp}</td><td>LangGraph · MCP 서버 · LiteLLM · ProcessGPT 에이전트</td><td>IT · 밖</td></tr>
+<tr><td><b>L9</b></td><td>업무 진행·승인·회사 시스템 연계</td><td>{nn:proc} · {nn:ent} · {nn:portal} · {nn:supa}</td><td>Process-GPT · Flowable · guide-app · SAP/MES/CMMS 등</td><td>IT</td></tr>
+</table></div>
+
+<div class="zones">
+  <div class="zo"><h4>OT · 공장 망 (ot-net)</h4>{n:sim} {n:emqx} {n:fuxa} {n:finit}. 기계와 가까운 부품. 사무실 쪽 망(it-net)에는 붙어 있지 않습니다. 사무실이 멈춰도 계측·화면·수동 조작·트립이 돕니다.</div>
+  <div class="zd"><h4>DMZ 역할 (두 망에 동시에)</h4>{n:ing} {n:gw} 두 서비스만 ot-net과 it-net에 함께 붙어 있습니다. 공장과 사무실이 오가는 통로는 이 둘뿐입니다. 전용 DMZ 망이나 방화벽 장치는 없습니다.</div>
+  <div class="zi"><h4>IT · 사무 망 (it-net)</h4>나머지 컨테이너 전부. 장부·검사·기록·화면·지식·AI·업무. 공장 게시판에는 직접 닿지 못하고 두 문을 거쳐야 합니다.</div>
+  <div class="zx"><h4>compose 밖</h4>{n:supa} Supabase(호스트에서 <code>supabase start</code>로 따로 띄움, 컨테이너는 <code>host.docker.internal</code>로 접속), {n:llm} LLM(인터넷), 사람의 브라우저(호스트). 호스트에서 돌리는 AI 직원({n:worker}의 다른 실행 방식)도 여기입니다.</div>
+</div>
+
+<!-- ───────────── 5 ───────────── -->
+<h2 id="s5">구역 사이의 규칙과 잠금 현황</h2>
+<div class="box principle"><span class="tag">원칙</span>
+<ol>
+<li><b>공장과 사무실을 직접 잇지 않는다.</b> 두 망을 오가는 것은 {n:ing}(올라가는 문)과 {n:gw}(내려가는 문) 둘뿐입니다. compose 망 설정상 다른 컨테이너는 상대 망에 붙지 못합니다.</li>
+<li><b>올라가는 문은 쓰지 않는다.</b> {n:ing}의 코드에는 공장 게시판에 발행하는 부분이 없습니다({c:c_ing_sub}는 구독만).</li>
+<li><b>내려가는 문은 두 가지만 쓴다.</b> {n:gw}는 검사를 통과한 자동 명령({c:c_gw_auto})과 경보 표시({c:c_gw_disp})만 씁니다.</li>
+<li><b>AI는 명령 필드를 만들 수 없다.</b> 카드에 명령 번호·토픽·만료 같은 필드가 있으면 가드레일이 거부합니다. 명령은 사람이 승인한 뒤 {n:proc}가 만듭니다.</li>
+<li><b>설비 옆이 마지막 판단을 한다.</b> PLC는 누가 보냈든 모드·만료·중복·범위·트립을 다시 보고, 인터록(65 ℃ 등)은 네트워크와 상관없이 설비 옆에서 혼자 겁니다.</li>
+</ol></div>
+<div class="box caution"><span class="tag">숨기지 않고 적는 것: 이 원칙을 「무엇으로」 지키나</span>
+<p>실제 공장은 위 원칙을 방화벽 장비, 계정별 권한(ACL), 암호화(TLS)로 강제합니다. 이 시스템은 학생 노트북에서 가볍게 돌리려고 <b>상당 부분을 프로그램 규칙으로만</b> 지킵니다. 그래서 아래 표의 「없음」은 그 칸의 원칙이 <b>코드가 지켜 주는 동안에만</b> 지켜진다는 뜻입니다.</p></div>
+<div class="tscroll"><table class="tbl">
+<tr><th>잠금 장치</th><th>현재 상태</th><th>뜻</th></tr>
+<tr><td>망 분리</td><td><span class="good">있음</span> ot-net · it-net 두 개</td><td>두 문 말고는 상대 망 컨테이너 이름을 찾을 수조차 없다. 단 두 망 모두 <code>internal</code>이 아니고 방화벽 규칙은 없다.</td></tr>
+<tr><td>방향 강제(방화벽)</td><td><b>없음</b></td><td>올라가는 문이 「쓰지 않는다」는 것은 코드 내용일 뿐, 망이 막는 것이 아니다.</td></tr>
+<tr><td>MQTT 계정·ACL</td><td><b>없음</b></td><td>{n:emqx}에 붙을 수 있으면 누구나 <code>cmd/auto</code>에도 쓸 수 있다. 그래도 PLC 검사(모드·만료·범위·트립)는 거친다.</td></tr>
+<tr><td>호스트 포트 노출</td><td><span class="good">127.0.0.1에만</span></td><td>같은 PC의 브라우저·도구만 들어온다. <code>127.0.0.1:</code>을 지우면 1883(게시판)과 8000(고장 주입)이 랜에 열리므로 먼저 인증을 켜야 한다.</td></tr>
+<tr><td>서비스 API 인증</td><td><b>없음</b></td><td>8000 · 8080 · 8090~8095 · 8097 API는 인증 없이 열리고 CORS가 전부 허용이다(포털이 브라우저에서 직접 부르기 때문).</td></tr>
+<tr><td>DB 계정 분리</td><td><span class="good">부분</span></td><td>AI·판단 엔진은 읽기 전용 계정(hyd_timeseries_reader · hyd_enterprise_reader, 5초 제한)으로 읽는다. 쓰기 서비스는 소유자 계정 hyd를 쓴다.</td></tr>
+<tr><td>AI 도구 제한</td><td><span class="good">있음</span></td><td>{n:worker}는 허용 목록의 도구만 쓴다(Neo4j 읽기 · 기업 DB 읽기 · 판단 엔진 · 파일 읽기). 쓰기는 판단 제출 하나.</td></tr>
+<tr><td>비밀 값</td><td><span class="good">.env에만</span></td><td>LLM 키는 저장소에 없다. 아래 계정은 로컬 개발 기본값이며 compose 파일에 그대로 적혀 있다.</td></tr>
+</table></div>
+<div class="tscroll"><table class="tbl">
+<tr><th>계정 (로컬 기본값, compose·README에 공개된 값)</th><th>어디에</th></tr>
+<tr><td>EMQX 대시보드 비밀번호 <code>public123</code> (사용자명은 EMQX 기본값)</td><td>{n:emqx} 18083</td></tr>
+<tr><td>TimescaleDB <code>hyd/hyd</code> · <code>grafana/grafana</code> · <code>hyd_timeseries_reader</code></td><td>{n:tsdb} 5432</td></tr>
+<tr><td>Grafana 익명 Viewer · 관리자 <code>admin/admin</code></td><td>{n:graf} 3000</td></tr>
+<tr><td>Neo4j <code>neo4j/hydpass123</code></td><td>{n:neo} 7474 · 7687</td></tr>
+<tr><td>Supabase <code>postgres/postgres</code> · <code>hyd_enterprise_reader</code></td><td>{n:supa} 54322</td></tr>
+<tr><td>LLM 키 <code>OPENAI_API_KEY</code> · <code>LLM_API_KEY</code> · <code>ANTHROPIC_API_KEY</code></td><td><code>.env</code>(값은 이 문서에 없음)</td></tr>
+</table></div>
+
+<!-- ───────────── 6 ───────────── -->
+<h2 id="s6">두 가지 운영 방식: legacy와 instance</h2>
+<p>같은 부품으로 두 방식이 돕니다. 차이는 <b>「경보 한 건을 누가 끌고 가나」</b>입니다. 스위치는 <code>.env</code>의 <code>PROCESS_MODE</code>입니다.</p>
+<div class="two">
+<div><h4>legacy (저장소 기본값)</h4>
+<ol>
+<li>경보가 {n:agent}를 깨운다({c:c_ag_alert}).</li>
+<li>agent가 정해진 순서(신선도 → 원인 → 증거 → 스킬 → 카드 → 가드레일)로 계산해 카드를 {n:proc}에 낸다.</li>
+<li>process가 사건으로 받아 사람 승인을 기다리고, 승인되면 명령 → ACK → 재관측 → 작업지시 → 종결.</li>
+</ol>
+<p class="meta-note">판단은 LLM 없이 계산. LLM은 요약 문장만. Supabase · cliagents 없이 compose 하나로 돈다.</p></div>
+<div><h4>instance (ProcessGPT 방식, 현재 개발 PC 설정)</h4>
+<ol>
+<li>경보 하나가 <b>프로세스 인스턴스</b> 하나를 연다({n:proc}가 정의 <code>anomaly_response_v22.json</code>으로, 기록은 {n:supa}).</li>
+<li>인스턴스 안의 Task가 차례로 생긴다: 진단 → 후보 → 규정 확인 → 순위(AI) → 선택(사람) → 명령 → 재관측 → 작업지시.</li>
+<li>AI Task는 {n:worker}가 집어 Claude Code로 수행하고, MCP 창구({n:dmnmcp} {n:entmcp} {n:kgmcp})로만 데이터를 본다. 워커가 없으면 <code>AGENT_BRIDGE=legacy</code>일 때 {n:agent}의 계산으로 대신 채운다({c:c_proc_ag}).</li>
+<li>사람 Task(카드 선택)는 10분 넘게 비면 상향 보고로 간다.</li>
+</ol>
+<p class="meta-note">Supabase(<code>supabase start</code>) 필요. 컨테이너 워커는 cliagents 프로필과 <code>ANTHROPIC_API_KEY</code>, 호스트 워커는 로그인한 Claude Code와 <code>scripts/run_worker_host.sh</code>.</p></div>
+</div>
+<div class="box inproj"><span class="tag">이 개발 PC의 현재 설정 (.env, 키 값 제외)</span>
+<p><code>PROCESS_MODE=instance</code> · <code>AGENT_BRIDGE=legacy</code> · <code>PROCESS_REPO=pg</code> · <code>ENTERPRISE_BACKEND=supabase</code> · <code>COMPOSE_PROFILES</code>에 cliagents 없음(워커는 컨테이너가 아닌 방식으로 돌리거나 legacy 다리로 채움) · <code>TIME_SCALE=20</code> · <code>DAQ_PROFILE=lite</code>. 저장소 기본값(<code>.env.example</code>)은 <code>PROCESS_MODE=legacy</code>, <code>ENTERPRISE_BACKEND</code> 미지정(memory)입니다.</p></div>
+<div class="box analogy"><span class="tag">비유와 그 한계</span>
+<p>legacy는 <b>「조사관 한 명이 보고서를 써서 결재 서류함에 넣는」</b> 방식, instance는 <b>「사건마다 결재 서류철을 새로 만들고 칸마다 담당(AI 직원 · 운전원 · 시스템)을 정해 차례로 채우는」</b> 방식입니다. 한계: instance에서도 AI 직원은 사람처럼 아무 시스템이나 열 수 없습니다. 허락된 창구(MCP 도구)만 쓰고, 결정 계산 자체는 판단 엔진이 합니다.</p></div>
+
+<!-- ───────────── 7 ───────────── -->
+<h2 id="s7">일곱 가지 흐름</h2>
+<p>번호 순서대로 따라가면 됩니다. 각 단계 밑의 작은 글씨가 기술 세부입니다.</p>
+
+<h3>흐름 1 · 계측: 기름 온도 한 값이 기록되기까지</h3>
+<ol class="steps">
+<li class="o">{nn:sim}이 1초마다(설비 시간 20초) 열의 저울을 계산합니다. 정상이면 쿨러 입구 온도 TS1이 약 48 ℃입니다.<span class="tech">thermal.py · TIME_SCALE=20 · lite 프로필에서 TS1 · CE · PS1 · FS1 · VS1 · LoadSP 매초</span></li>
+<li>값을 공장 게시판 칸 <code>plant/hyd01/tag/TS1</code>에 붙입니다({c:c_sim_pub}). 받았는지 확인하지 않고 한 번 던집니다.<span class="tech">QoS 0 · 페이로드 {t, v, q:"good"}</span></li>
+<li>{nn:fuxa}가 같은 칸을 구독해 화면에 띄웁니다({c:c_fuxa}). 60 ℃면 「높음」, 65 ℃면 「인터록」 알람.</li>
+<li class="p">{nn:ing}가 같은 값을 구독해({c:c_ing_sub}) 장부 <code>plant.tag</code>에 설비 열쇠 <code>hyd01</code>로 적습니다({c:c_ing_pub}).<span class="tech">대기열 2만 건 · 넘치면 버리고 셈</span></li>
+<li>{nn:det}가 장부에서 읽어 기울기·이상 점수를 계산하고 <code>feat.1s</code>에 적습니다({c:c_det}).</li>
+<li>{nn:sink}가 장부를 읽어({c:c_sink_sub}) {nn:tsdb}의 tag_1s · feat_1s 표에 옮깁니다({c:c_sink_db}). 1분 요약 tag_1m이 자동으로 만들어집니다.</li>
+<li>{nn:graf}가 기록 DB를 읽어({c:c_graf}) 추세를 그립니다. 포털 「실시간 모니터링」이 이 화면을 끼워 보여 줍니다.</li>
+</ol>
+
+<h3>흐름 2 · 경보: 이상을 찾아 화면과 AI에 알리기까지</h3>
+<ol class="steps">
+<li class="o">쿨러 핀에 먼지가 낍니다(강의에서는 포털 「결함 시뮬레이션」이 {n:sim}의 <code>/api/fault</code>를 불러 냉각 능력을 43 %로 서서히 낮춥니다, {c:c_browser}).</li>
+<li>{nn:det}가 Neo4j에서 읽어 둔 정의({c:c_det_neo})대로 「TS1 &gt; 55 ℃ 그리고 냉각 효율 CE &lt; 70 % 그리고 TS1이 오르는 중」이 60 설비초 이어지는지 봅니다.<span class="tech">IDLE → CANDIDATE → RAISED · 20배속이면 현실 약 3초</span></li>
+<li class="p">이어지면 <b>쿨러 열화 경보 RAISE</b>를 장부 <code>alerts</code>에 적습니다. 해제(TS1 &lt; 52 ℃이고 더 오르지 않음 60초)면 CLEAR를 같은 경보 ID로 적습니다.<span class="tech">alertId ALT-hyd01-0001-xxxx · evidence에 정의 판본(sha256) · 값 · 관측 나이</span></li>
+<li class="p">{nn:gw}가 경보를 읽어({c:c_gw_alert}) 공장 게시판 <code>plant/hyd01/alert</code>에 붙이고({c:c_gw_disp}), {n:fuxa}의 「IT 경보」 표시등이 켜집니다.</li>
+<li>{nn:sink}가 경보 표를 채웁니다. {nn:proc}도 경보를 읽습니다({c:c_proc_rp}): <b>legacy</b>에서는 사건이 경보가 아니라 {n:agent}의 카드로 열리고(흐름 3), process는 경보의 해제(CLEAR)를 재관측 판정에 씁니다. <b>instance</b>에서는 RAISE 하나가 곧바로 인스턴스 하나를 엽니다(흐름 6). legacy면 {nn:agent}가 같은 경보로 깨어납니다({c:c_ag_alert}).</li>
+<li class="r">아무도 조치하지 않으면 기름이 계속 데워져 <b>65 ℃에서 PLC가 펌프를 세웁니다</b>(트립). 검사관은 OVERHEAT_TRIP 경보를 바로 냅니다. 55 ℃ 아래로 식은 뒤에만 리셋할 수 있습니다.</li>
+</ol>
+
+<h3>흐름 3 · AI 조사: 원인을 짚고 조치 카드를 쓰기까지 (legacy)</h3>
+<ol class="steps">
+<li class="k"><b>대응할 경보인가.</b> {n:agent}가 {n:proc}에 경보 정책을 묻습니다({c:c_ag_proc}).</li>
+<li class="k"><b>데이터가 신선한가.</b> 최신 TS1이 60초 넘게 묵었거나 수집 다리가 멈췄으면({c:c_ag_ing}) 판단을 보류합니다. 낡은 값으로 판단하지 않기 위해서입니다.</li>
+<li class="k"><b>원인 후보.</b> 지식 지도에서 「쿨러 열화 → 냉각 손실 → 원인: 쿨러 핀 오염(사전확률 0.6) · 주변 고온(0.2)」을 찾습니다({c:c_ag_neo}).</li>
+<li class="k"><b>증거 확인.</b> 원인마다 지도에 적힌 증거 질문(예: 「CE 30초 평균 &lt; 70」, 「TS4 ≥ 35 ℃」)을 기록 DB에 읽기 전용으로 던집니다({c:c_ag_tsdb}). 결과는 통과 · 실패 · 모름. 근거가 모자라면 보류합니다.</li>
+<li class="k"><b>조치 방법.</b> 1순위 원인의 고장 유형에 연결된 SOP 스킬(예: 팬 최대 SOP-COOL-01)과 단계, 매뉴얼 절을 붙입니다.</li>
+<li class="k"><b>요약과 검사.</b> LLM 키가 있으면 요약 세 문장만 맡기고({c:c_ag_llm}), 가드레일이 명령 필드·근거 누락·범위 밖 값을 검사한 뒤 카드를 제출합니다.</li>
+<li class="k"><b>조치 카드 순위.</b> 승인 대기가 되면 규칙(선택 · 제외 · 감점 · 경고), 예측, BSC 득실, 선례, 업무 데이터({c:c_ag_ent})로 카드 2~3장의 순위를 매겨 제출합니다. 이 계산에는 LLM을 쓰지 않습니다.</li>
+</ol>
+
+<h3>흐름 4 · 승인과 실행: 사람의 결정이 설비에 닿고 확인되기까지</h3>
+<ol class="steps">
+<li class="h">담당자가 {nn:portal}에서 카드와 근거를 읽고 카드 하나를 고릅니다. 팬·부하 값은 카드 범위 안에서만 바꿀 수 있습니다({c:c_browser} → {n:proc} <code>/decide</code>).</li>
+<li class="r">{nn:proc}가 고른 카드가 그 사건의 카드인지, 값이 범위 안인지 다시 확인하고 명령을 <code>action.cmd</code>에 적습니다. <b>120초 만료</b>가 붙습니다({c:c_proc_rp}).</li>
+<li class="r"><b>검사 1 · 게이트웨이.</b> {nn:gw}가 읽어({c:c_gw_cmd}) 스키마 · 허용 목록 · 만료 · 중복 · 모드(REMOTE_AUTO인가)와 초당 2건을 봅니다. 통과면 <code>cmd/auto</code>에 붙이고({c:c_gw_auto}), 통과든 거부든 감사 기록을 남깁니다.</li>
+<li class="r"><b>검사 2 · PLC.</b> {n:sim}이 받아({c:c_sim_sub}) 출처·모드 · 만료 · 중복 · 범위 · 트립을 다시 보고 팬과 부하를 바꿉니다. 결과(DONE/REJECTED와 이유)는 status에 실려 흐름 1의 길로 올라갑니다.</li>
+<li>{n:proc}가 ACK를 30초 안에 받아야 합니다. 못 받거나 거부면 사람에게 넘깁니다(ESCALATED). 명령을 다시 보내지 않습니다.</li>
+<li><b>재관측.</b> 900 설비초(20배속이면 45초) 동안 지켜보며 경보 CLEAR와 회복 기준(쿨러면 TS1 &lt; 55 ℃)을 함께 확인합니다({c:c_proc_tsdb}). 값은 돌아왔는데 CLEAR가 늦으면 최대 3번 연장합니다.</li>
+<li class="r">회복되면 {nn:ent}에 CMMS 작업지시(쿨러 청소)를 실행하고({c:c_proc_ent}) 실제 번호를 받아야 사건을 닫습니다. 사례는 지식 지도에도 기록됩니다({c:c_proc_neo}).</li>
+</ol>
+<div class="box caution"><span class="tag">일이 틀어지면</span>
+<ul>
+<li><b>운전원이 손으로 조작 중이면:</b> PLC가 REMOTE_MANUAL이라 게이트웨이가 「MODE」로 거부하고, ACK가 오지 않아 사건이 사람에게 넘어갑니다.</li>
+<li><b>명령이 늦게 도착하면:</b> 120초가 지난 명령은 게이트웨이와 PLC가 모두 버립니다. 옛 조치가 뒤늦게 실행되지 않게 하는 안전장치입니다.</li>
+<li><b>승인 전에 저절로 나으면:</b> 조치 없이 해결(RESOLVED_WITHOUT_ACTION)로 닫습니다.</li>
+<li><b>process가 명령 도중 재시작되면:</b> 명령을 자동으로 다시 보내지 않고 확인 대상으로 올립니다.</li>
+</ul></div>
+
+<h3>흐름 5 · 운전원 직접 조작: 화면 버튼이 기계를 움직이기까지</h3>
+<ol class="steps">
+<li class="h">운전원이 {nn:fuxa}에서 팬 값을 80으로 바꿉니다({c:c_oper}).</li>
+<li class="r">FUXA가 <code>plant/hyd01/cmd/manual</code>에 <code>{"FanSpeedSP": 80}</code>을 붙입니다({c:c_fuxa}).</li>
+<li class="r">{n:sim}의 PLC가 명령 ID를 붙이고 모드(LOCAL이면 거부)·범위·트립을 본 뒤 실행합니다. REMOTE_AUTO였다면 <b>REMOTE_MANUAL로 바뀌어</b>, 그 뒤로 오는 AI 쪽 자동 명령은 거부됩니다. 사람의 손이 언제나 AI보다 우선합니다.</li>
+<li>결과와 새 값이 흐름 1의 길로 화면에 돌아옵니다. 이 흐름은 사무실 쪽을 전혀 거치지 않습니다.</li>
+</ol>
+
+<h3>흐름 6 · instance 모드: 경보 한 건 = 인스턴스 하나, Task 단위로</h3>
+<ol class="steps">
+<li class="i">경보 RAISE가 Supabase 수신함을 거쳐 {nn:proc}에 들어오고, 정의 <code>anomaly_response_v22</code>의 인스턴스가 열립니다({c:c_proc_supa}).</li>
+<li class="i">진단 · 후보 · 규정 확인 · 순위 Task가 <b>AI 몫</b>(cliagents)으로 todolist에 쌓입니다.</li>
+<li class="i">{nn:worker}가 3초마다 일을 찾아 집고(120초 임대, 30초마다 갱신) Claude Code를 실행합니다({c:c_wk_supa} {c:c_wk_llm}). Claude Code는 허락된 창구만 씁니다: 판단 엔진({c:c_wk_dmn}), 기업 DB({c:c_wk_ent}), 지식 지도 읽기({c:c_kgmcp_neo}).</li>
+<li class="i">결과가 Task 양식에 맞는지 검사하고(틀리면 두 번까지 고쳐 달라고 함) 저장합니다. 질문이 필요하면 멈추고 사람의 답을 기다립니다. 워커가 죽으면 임대가 끝난 뒤 다른 워커가 이어받습니다.</li>
+<li class="h">「선택」 Task는 사람 몫입니다. 운전원이 포털 「프로세스 인스턴스」에서 카드를 고릅니다. 10분 넘게 비면 상향 보고 Task로 갑니다.</li>
+<li class="r">이후 명령 · 재관측 · 작업지시는 흐름 4와 같은 길(검사 1 · 2 포함)로 갑니다. 기업 실행은 Supabase ent 스키마에 기록됩니다({c:c_ent_supa}).</li>
+</ol>
+
+<h3>흐름 7 · 지식 넣기: 매뉴얼 한 권이 조치 방법이 되기까지</h3>
+<ol class="steps">
+<li class="h">담당자가 포털 「온톨로지 지식 지도」에서 매뉴얼(텍스트·PDF)을 올립니다. 원문 바이트와 추출 텍스트가 {n:proc}의 <code>manuals.sqlite3</code>에 판본(SHA256)별로 보관됩니다.</li>
+<li class="i">「에이전트 추출 요청」을 누르면 추출 인스턴스(<code>manual_source_extraction</code>)가 열리고, AI 직원(cliagents 워커, {n:worker})이 고정 스키마와 원문 좌표를 읽어 스킬·단계·고장 유형 제안을 만듭니다. 제안의 모든 인용은 판본 · 쪽 · 글자 위치 · 원문 문자열로 검증됩니다.</li>
+<li class="h">사람이 이름 · 단계 · SOP 번호 · 연결할 고장 유형을 검토해 확정해야 적재됩니다. AI가 「검토함」이라고 써도 승인이 되지 않습니다.</li>
+<li>한 번의 Neo4j 트랜잭션으로 적재하고 전후 상태를 기록합니다({c:c_proc_neo}). 최신 배치부터 되돌릴 수 있습니다. 새 SOP를 고장 유형에 잇는 것과 실제 조치 후보로 켜는 것(규칙)은 별개의 결정입니다.</li>
+</ol>
+
+</div>
+<!-- ───────────── 부품 ───────────── -->
+<div class="wrap">
+<h2 id="parts">부품 {{NP}}개</h2>
+<p>그림의 번호 순서입니다. 각 카드의 <b>닿는 연결</b>을 누르면 그 연결의 설명으로 갑니다.</p>
+<div class="parts">
+<!--PARTS-->
+</div>
+
+<!-- ───────────── 연결 ───────────── -->
+<h2 id="lines">연결 {{NL}}개</h2>
+<p>● 뒤가 연결을 먼저 여는 부품, 화살표 뒤가 받는 부품입니다. 「데이터」 칸은 실제 값이 흐르는 방향입니다(여는 쪽과 다를 수 있습니다). 고정폭 글씨 줄은 프로토콜 · 포트 · 계정입니다.</p>
+<ol class="clines">
+<!--LINES-->
+</ol>
+
+<!-- ───────────── 사전 ───────────── -->
+<h2 id="dict">데이터 사전: 토픽 · 표 · 저장소</h2>
+<h3>공장 게시판(MQTT) 토픽 — {n:emqx}</h3>
+<p class="meta-note"><code>{k}</code>는 설비 키 hyd01 · hyd02 · hyd03입니다.</p>
+<div class="tscroll"><table class="tbl">
+<tr><th>토픽</th><th>쓰는 쪽 → 읽는 쪽</th><th>QoS / retain</th><th>내용</th></tr>
+<tr><td><code>plant/{k}/tag/{이름}</code></td><td>{n:sim} → {n:fuxa} {n:ing}</td><td>0 / 없음</td><td>{t, v, q}. 이름 19개(TS1~4 · PS1~6 · EPS1 · FS1 · FS2 · VS1 · CE · CP · SE · FanSpeedSP · LoadSP)</td></tr>
+<tr><td><code>plant/{k}/wave/{PS1|EPS1|FS1}</code></td><td>{n:sim} → {n:ing}</td><td>0 / 없음</td><td>{t0, hz, v[]} 파형. DAQ_PROFILE=full일 때만</td></tr>
+<tr><td><code>plant/{k}/status</code></td><td>{n:sim} → {n:fuxa} {n:ing} {n:gw}</td><td>1 / <b>retain</b></td><td>모드 · 운전 상태 · 인터록 · 마지막 명령 ACK(cmdId · result · reason) · 한글 표시 문구</td></tr>
+<tr><td><code>plant/{k}/mode</code></td><td>{n:fuxa} → {n:sim}</td><td>1 / 금지</td><td>{mode} 또는 숫자(0 LOCAL · 1 REMOTE_MANUAL · 2 REMOTE_AUTO)</td></tr>
+<tr><td><code>plant/{k}/cmd/manual</code></td><td>{n:fuxa} → {n:sim}</td><td>1 / 금지</td><td>{"FanSpeedSP": 80}처럼 값만. 출처 = 운전원</td></tr>
+<tr><td><code>plant/{k}/cmd/auto</code></td><td>{n:gw} → {n:sim}</td><td>1 / 금지</td><td>{cmdId, source:HITL, expiresAt, writes[{res, v}]}. 출처 = 승인된 자동 조치</td></tr>
+<tr><td><code>plant/{k}/alert</code></td><td>{n:gw} → {n:fuxa}</td><td>1 / <b>retain</b></td><td>{alertId, pattern, severity, state, level 2/0, t, text, display_text}</td></tr>
+</table></div>
+
+<h3>사무실 장부(Kafka) 토픽 — {n:rp}</h3>
+<div class="tscroll"><table class="tbl">
+<tr><th>토픽</th><th>보존</th><th>쓰는 쪽</th><th>읽는 쪽</th><th>내용</th></tr>
+<tr><td><code>plant.tag</code></td><td>1일</td><td>{n:ing}</td><td>{n:det} {n:sink}</td><td>{asset, name, t, v, q}</td></tr>
+<tr><td><code>plant.wave</code></td><td>6시간</td><td>{n:ing}</td><td>{n:det}</td><td>파형(full일 때만)</td></tr>
+<tr><td><code>plant.status</code></td><td>7일</td><td>{n:ing}</td><td>{n:det} {n:proc} {n:sink}</td><td>status 원문(ACK 포함)</td></tr>
+<tr><td><code>feat.1s</code></td><td>3일</td><td>{n:det}</td><td>{n:sink}</td><td>{asset, t, sensor, mean, rms, slope, score}</td></tr>
+<tr><td><code>alerts</code></td><td>365일</td><td>{n:det}</td><td>{n:gw} {n:agent} {n:proc} {n:sink}</td><td>{alertId, asset, pattern, severity, state, t, evidence}</td></tr>
+<tr><td><code>action.cmd</code></td><td>365일</td><td>{n:proc}</td><td>{n:gw} {n:sink}</td><td>{cmdId, asset, incident, source:HITL, actions[], approvedBy, expiresAt}</td></tr>
+<tr><td><code>audit</code></td><td>5년</td><td>{n:proc} {n:gw}</td><td>{n:sink}</td><td>{t, incident, asset, actor, event, detail}</td></tr>
+</table></div>
+<p class="meta-note">모든 토픽: 파티션 1 · 복제 1, 키 = 설비. 정리 정책·용량 제한은 설정하지 않음(Redpanda 기본값).</p>
+
+<h3 id="msgs">메시지 예시: 쿨러 열화 한 건이 지나는 모양</h3>
+<p class="meta-note"><b>필드 이름과 구조는 코드 그대로</b>이고, <b>값은 이해를 돕기 위한 예시</b>입니다(실행 기록에서 복사한 것이 아님). 「…」은 줄인 부분입니다. 각 필드가 단계마다 어떻게 바뀌는지는 <a href="#lineage">데이터 리니지</a>에 있습니다.</p>
+<div class="two">
+<div><h4>① 공장 게시판 <code>plant/hyd01/tag/TS1</code> (QoS 0)</h4>
+<pre class="code">{"t": "2026-10-07T05:12:03.481Z", "v": 57.42, "q": "good"}</pre>
+<p class="meta-note">t는 설비 시간이 아니라 보낸 순간의 실제 시각. 설비는 토픽 안의 hyd01로만 알 수 있다.</p></div>
+<div><h4>② 사무실 장부 <code>plant.tag</code> (키 hyd01)</h4>
+<pre class="code">{"asset": "HYD-01", "name": "TS1",
+ "t": "2026-10-07T05:12:03.481Z", "v": 57.42, "q": "good"}</pre>
+<p class="meta-note">수집 다리가 토픽에서 asset · name을 꺼내 본문에 더한다. 기록 DB tag_1s에는 q 없이 (time, asset, name, value)로 들어간다.</p></div>
+<div><h4>③ 경보 <code>alerts</code> (detector → 장부)</h4>
+<pre class="code">{"alertId": "ALT-hyd01-0001-3fa2", "asset": "HYD-01",
+ "pattern": "COOLER_DEGRADATION", "severity": "HIGH",
+ "state": "RAISE", "t": "2026-10-07T05:12:41+00:00",
+ "evidence": {"definition": {…}, "values": {"TS1": 57.4, "CE": 66.1},
+              "slopes": {"TS1": 0.03}, "condition": true,
+              "clear_condition": false, "observation": {…}}}</pre>
+<p class="meta-note">severity는 Neo4j 패턴 정의 값(LOW · MEDIUM · HIGH · CRITICAL 중 하나). 해제 때는 같은 alertId로 state "CLEAR".</p></div>
+<div><h4>④ 공장 화면용 경보 <code>plant/hyd01/alert</code> (retain)</h4>
+<pre class="code">{"alertId": "ALT-hyd01-0001-3fa2", "pattern": "COOLER_DEGRADATION",
+ "severity": "HIGH", "state": "RAISE", "level": 2,
+ "t": "…", "text": "…", "display_text": "…"}</pre>
+<p class="meta-note">게이트웨이가 evidence · asset을 빼고 표시등 값 level(RAISE 2 · CLEAR 0)과 한글 문구를 더한다.</p></div>
+<div><h4>⑤ 명령 <code>action.cmd</code> (process → 장부)</h4>
+<pre class="code">{"cmdId": "CMD-1007-0001-a1b2", "asset": "HYD-01",
+ "incident": "INC-1007-01-c3d4", "source": "HITL",
+ "actions": [{"code": "FAN_SET", "fan_pct": 100}],
+ "approvedBy": "OP-17", "issuedAt": "…",
+ "expiresAt": "…(issuedAt + 120초)"}</pre></div>
+<div><h4>⑥ 공장으로 가는 명령 <code>plant/hyd01/cmd/auto</code> (QoS 1)</h4>
+<pre class="code">{"cmdId": "CMD-1007-0001-a1b2", "source": "HITL",
+ "expiresAt": "…",
+ "writes": [{"res": "FanSpeedSP", "v": 100}]}</pre>
+<p class="meta-note">게이트웨이가 actions를 PLC 레지스터 이름(writes)으로 바꾸고 asset · incident · approvedBy를 뺀다.</p></div>
+<div><h4>⑦ PLC 상태 · 결과 <code>plant/hyd01/status</code> (QoS 1 retain)</h4>
+<pre class="code">{"asset": "HYD-01", "t": "…", "mode": "REMOTE_AUTO",
+ "state": "RUN", "trip": false, "ts1": 57.38, "t_amb": …,
+ "fan_pct": 100, "load_pct": …, "cooler_health": …,
+ "leak": …, "bearing_wear": …, "pump": "A",
+ "cmdId": "CMD-1007-0001-a1b2", "result": "DONE",
+ "reason": …, "source": "HITL", "interlock": "PASS",
+ "sim_t": …, "time_scale": 20, "disturbance_ramps": …,
+ "mode_text": "…", "state_text": "…", "result_text": "…", …}</pre>
+<p class="meta-note">마지막 명령의 cmdId · result가 다음 명령 전까지 매초 반복된다. 조치 표(actions)에는 처음 받은 결과만 적는다.</p></div>
+<div><h4>⑧ 감사 <code>audit</code> (게이트웨이 → 장부)</h4>
+<pre class="code">{"t": "…", "incident": "INC-1007-01-c3d4",
+ "actor": "cmd-gateway", "event": "CMD_FORWARDED",
+ "detail": {"cmdId": "CMD-1007-0001-a1b2",
+            "writes": [{"res": "FanSpeedSP", "v": 100}],
+            "checks": […]}}</pre>
+<p class="meta-note">거부면 event "CMD_REJECTED", detail {cmdId, check, reason}. 게이트웨이 감사에는 asset 필드가 없다.</p></div>
+</div>
+
+<h3>저장소 전부</h3>
+<div class="tscroll"><table class="tbl">
+<tr><th>저장소</th><th>무엇이</th><th>얼마나</th></tr>
+<tr><td>{n:tsdb} TimescaleDB (볼륨 tsdb-data)</td><td>tag_1s · feat_1s(시계열) · tag_1m(1분 요약) · alerts · actions · audit · sink_offsets</td><td>1초 값 3일(2시간 뒤 압축) · 1분 요약 30일 · 경보·명령·감사 영구</td></tr>
+<tr><td>{n:rp} Redpanda (볼륨 redpanda-data)</td><td>토픽 7개</td><td>위 표</td></tr>
+<tr><td>{n:neo} Neo4j (볼륨 neo4j-data)</td><td>온톨로지 v2 · 사건/판단 투영 · 매뉴얼 적재 배치 기록</td><td>영구</td></tr>
+<tr><td>{n:proc} process (볼륨 process-data)</td><td>process.sqlite3(사건 · 판단 · 감사) · manuals.sqlite3(매뉴얼 원문 · 추출 · 검토)</td><td>영구(<code>down -v</code>면 삭제)</td></tr>
+<tr><td>{n:det} detector (볼륨 detector-data)</td><td>detector.sqlite3(체크포인트 · 오프셋 · 경보 outbox)</td><td>최신 상태</td></tr>
+<tr><td>{n:ent} enterprise-sim (볼륨 enterprise-data)</td><td>enterprise.sqlite3(memory 백엔드의 상태 · 거래)</td><td>영구</td></tr>
+<tr><td>{n:worker} agent-worker (볼륨 worker-data)</td><td>작업별 작업공간 · Claude Code 세션</td><td>영구</td></tr>
+<tr><td>{n:supa} Supabase (compose 밖)</td><td>public: 정의 · 인스턴스 · todolist · events · inbox · outbox · 영수증 / ent: 기업 데이터 14표</td><td>Supabase 볼륨</td></tr>
+<tr><td>메모리만 (재시작하면 사라짐)</td><td>{n:emqx} retain 메시지 · {n:ing} 대기열 · {n:gw} 중복 목록·로그 · {n:agent} 실행 트레이스 · {n:sim} 설비 상태</td><td>—</td></tr>
+</table></div>
+
+<div class="wide-print">
+<!-- ───────────── 리니지 ───────────── -->
+<h2 id="lineage">데이터 리니지: 값 하나가 태어나 끝나는 곳까지</h2>
+<p class="lead">값 하나를 따라가며 <b>어디서 태어나, 어떤 길(프로토콜 · 토픽 · 표)로, 어떤 모양(필드)으로 바뀌며, 어디에 얼마나 남고, 어디서 끝나는지</b>를 단계마다 적었습니다. 갈래는 {{NLIN}}개, 단계는 모두 {{NHOP}}개입니다.</p>
+<div class="box inproj"><span class="tag">읽는 법</span><ul>
+<li>그림의 한 줄이 한 갈래입니다. 같은 값이 여러 곳에서 읽히면 갈래가 나뉩니다(예: 공장 화면 · 검사관 · 저장 심부름꾼).</li>
+<li>표의 <b>필드 · 컬럼</b> 칸은 그 단계에서 실제로 실려 가는 이름 그대로이고, <b>바뀐 것</b> 칸은 앞 단계와 달라진 점(이름 · 단위 · 더하거나 버린 칸)입니다.</li>
+<li><b>근거</b> 칸의 「파일:줄」은 저장소 코드 위치입니다(2026-10-07 작업 사본).</li>
+<li>설정 기준: compose 기본값(TIME_SCALE 20 · DAQ_PROFILE lite · PROCESS_MODE legacy). 이 PC의 .env는 PROCESS_MODE instance · ENTERPRISE_BACKEND supabase입니다.</li>
+</ul></div>
+<!--LINEAGE-->
+<h3 id="caution">코드와 주석 · 문서가 다른 곳 {{NCAU}}건</h3>
+<p class="meta-note">리니지를 따라가며 찾은 차이입니다. 문서가 아니라 코드가 실제 동작이므로, 이 문서는 코드 쪽으로 썼습니다. 코드는 고치지 않았습니다.</p>
+<!--CAUTION-->
+
+<!-- ───────────── 속 구조 ───────────── -->
+<h2 id="inner">서비스 속 구조: 컨테이너 안의 부품과 일꾼</h2>
+<p class="lead">직접 만든 서비스 {{NINT}}개의 속을 열었습니다. 가운데 상자는 서비스 안의 부품, 왼쪽 파란 상자는 바깥과 주고받는 창구(프로토콜 · 포트 · 토픽 · 표), 오른쪽 곡선은 부품끼리 잇는 방식(같은 프로세스 안 함수 · 대기열 · 파일 · 네트워크)입니다. 실행 형태 줄에는 프로세스 · 스레드 · 이벤트 루프 수를 적었습니다. EMQX · Redpanda · TimescaleDB · Neo4j · FUXA · Grafana처럼 이미 만들어진 제품은 <a href="#parts">부품 카드</a>에 설정을 적었습니다.</p>
+<!--INTERNAL-->
+
+</div>
+<!-- ───────────── 버퍼 ───────────── -->
+<h2 id="buffers">값이 머무는 곳, 사라질 수 있는 곳</h2>
+<p>「휘발성」이라는 말을 정확히 쓰기 위해, 값 하나가 지나는 길에서 <b>어디에 얼마나 머무는지</b>를 차례로 적었습니다.</p>
+<div class="tscroll"><table class="tbl">
+<tr><th>구간</th><th>머무는 방식</th><th>사라질 수 있는 경우</th></tr>
+<tr><td>{n:sim} → {n:emqx}</td><td>전달만(QoS 0)</td><td>게시판이 그 순간 받지 못하면 그 한 값은 없다. 1초 뒤 새 값이 온다는 선택.</td></tr>
+<tr><td>{n:emqx} → {n:ing}</td><td>깨끗한 세션 · 메모리</td><td>수집 다리가 끊겨 있던 동안의 값은 어디에도 남지 않는다. status·alert는 retain이라 마지막 한 장은 다시 받는다.</td></tr>
+<tr><td>{n:ing} 내부</td><td>메모리 대기열 2만 건</td><td>장부가 느려 대기열이 차면 새 값을 버리고 센다. 장부 쓰기 실패 한 건도 버린다. 디스크 버퍼 없음.</td></tr>
+<tr><td>{n:rp}</td><td><span class="good">디스크</span>, 순서 보장</td><td>보존 기간이 지나면 지운다(온도 1일). 그 전에는 누가 읽어도 남는다.</td></tr>
+<tr><td>{n:rp} → {n:sink} → {n:tsdb}</td><td><span class="good">트랜잭션</span>(행 + 위치 함께)</td><td>DB 장애 중에도 위치를 확정하지 않아 빠짐 · 중복 없이 이어진다. 형식이 틀린 레코드는 건너뛴다(오류 수 집계).</td></tr>
+<tr><td>{n:det} → 경보</td><td><span class="good">outbox</span>(SQLite) 후 전송</td><td>최소 한 번 전달. 같은 경보가 두 번 갈 수는 있다(같은 alertId).</td></tr>
+<tr><td>{n:proc} → 명령</td><td>장부 + 120초 만료</td><td>만료가 지나면 게이트웨이·PLC가 버린다. 이것은 <b>일부러 사라지게 한</b> 안전장치다.</td></tr>
+</table></div>
+<p class="meta-note">이 구간들의 실제 유실률은 측정하지 않았습니다(미확인).</p>
+
+<!-- ───────────── 스위치 ───────────── -->
+<h2 id="switches">설정 스위치와 기동 단위</h2>
+<h3>compose 프로필 (= 설계서 단계 M1~M7)</h3>
+<div class="tscroll"><table class="tbl">
+<tr><th>프로필</th><th>뜨는 부품</th><th>기본</th></tr>
+<tr><td><code>ot</code></td><td>{n:sim} {n:emqx} {n:fuxa} {n:finit}</td><td>켜짐</td></tr>
+<tr><td><code>backbone</code></td><td>{n:ing} {n:rp} {n:tinit} {n:tsdb} {n:sink} {n:graf}</td><td>켜짐</td></tr>
+<tr><td><code>detect</code></td><td>{n:det} {n:gw}</td><td>켜짐</td></tr>
+<tr><td><code>knowledge</code></td><td>{n:neo} {n:seed}</td><td>켜짐</td></tr>
+<tr><td><code>agent</code> · <code>enterprise</code></td><td>{n:agent} · {n:ent}</td><td>켜짐</td></tr>
+<tr><td><code>process</code></td><td>{n:proc} {n:portal}</td><td>켜짐</td></tr>
+<tr><td><code>monitor</code></td><td>{n:prom}</td><td>꺼짐(선택)</td></tr>
+<tr><td><code>tools</code></td><td>{n:cons}</td><td>꺼짐(선택)</td></tr>
+<tr><td><code>cliagents</code></td><td>{n:entmcp} {n:dmnmcp} {n:worker}</td><td>꺼짐(instance 모드용)</td></tr>
+<tr><td>(compose 밖)</td><td>{n:supa}: <code>cd it/supabase &amp;&amp; supabase start</code></td><td>instance 모드 · supabase 백엔드에 필요</td></tr>
+</table></div>
+<p class="meta-note">모든 서비스에 메모리 상한과 로그 순환(5 MB × 2개)이 걸려 있습니다. 기본 프로필 18개 서비스의 메모리 상한을 모두 더하면 약 5.0 GB(Neo4j 1.5 GB, 기동 때 1회 도우미 포함)이고, 실제 사용량은 이보다 적습니다(README 기록 약 1.4 GB, 학생 가이드 기록 약 2.5 GB — 측정 시점이 다름).</p>
+<h3>환경 변수 (.env)</h3>
+<div class="tscroll"><table class="tbl">
+<tr><th>변수</th><th>값</th><th>무엇이 바뀌나</th></tr>
+<tr><td><code>TIME_SCALE</code></td><td>20(기본)</td><td>설비 시간 배속. {n:sim} · {n:det} · {n:proc}가 함께 읽는다. 포털의 배율 변경은 {n:sim}만 즉시 바꾼다(탐지 유지 시간·재관측은 그대로).</td></tr>
+<tr><td><code>DAQ_PROFILE</code></td><td>lite(기본) · full</td><td>보내는 태그·주기와 파형 여부. {n:det}·{n:agent}의 신선도 한도도 이 계약을 따른다.</td></tr>
+<tr><td><code>PROCESS_MODE</code></td><td>legacy(기본) · instance</td><td>{sec:s6}절의 두 방식.</td></tr>
+<tr><td><code>AGENT_BRIDGE</code></td><td>legacy(기본) · off</td><td>instance에서 워커가 없을 때 agent 계산으로 AI Task를 채울지.</td></tr>
+<tr><td><code>PROCESS_REPO</code></td><td>pg(기본) · memory</td><td>instance 기록을 Supabase에 둘지 메모리에 둘지.</td></tr>
+<tr><td><code>ENTERPRISE_BACKEND</code></td><td>memory(기본) · supabase</td><td>기업 데이터 원천.</td></tr>
+<tr><td><code>LLM_PROVIDER</code> · <code>LLM_MODEL</code> · <code>OPENAI_BASE_URL</code></td><td>auto · 빈 값 · OpenAI</td><td>{n:agent} 요약에 쓸 LLM. 키가 없으면 정해진 문장.</td></tr>
+<tr><td><code>OBSERVATION_GRACE_S</code></td><td>2</td><td>검사관이 「낡은 값」으로 볼 여유(보고 주기 + 이 값).</td></tr>
+<tr><td><code>WORKER_URL</code></td><td>http://agent-worker:8097</td><td>포털 「에이전트 현황」이 볼 워커 주소(호스트 워커면 host.docker.internal:8097).</td></tr>
+</table></div>
+
+<!-- ───────────── 한계 ───────────── -->
+<h2 id="limits">실제 제품과 다른 점 · 알려진 한계</h2>
+<h3>일부러 줄인 것 (교육용 단순화)</h3>
+<div class="tscroll"><table class="tbl">
+<tr><th>이 시스템</th><th>실제 현장 · 원래 설계</th><th>바꿀 때 지킬 계약</th></tr>
+<tr><td>{n:sim} 안의 PLC · 수집 장치</td><td>실제 PLC + EdgeX(Modbus)</td><td>MQTT 토픽 · 페이로드({sec:dict}절)</td></tr>
+<tr><td>{n:ing} 파이썬</td><td>Kafka Connect MQTT Source</td><td>Kafka 키 = 설비</td></tr>
+<tr><td>{n:det} 파이썬, 고정 기준 이상 점수</td><td>Apache Flink + ONNX 학습 모델</td><td>feat.1s · alerts 페이로드</td></tr>
+<tr><td>{n:sink} 파이썬</td><td>Kafka Connect JDBC Sink</td><td>init.sql 표 구조</td></tr>
+<tr><td>{n:agent} 안의 도구 함수 · 요약 함수</td><td>MCP 서버 컨테이너 · LiteLLM 게이트웨이</td><td>도구 이름 · 읽기 전용 · process만 쓰기</td></tr>
+<tr><td>{n:proc} 파이썬 미니 BPMN</td><td>Process-GPT · Flowable</td><td>REST · action.cmd · audit</td></tr>
+<tr><td>{n:ent} 목업</td><td>SAP ERP · MES · CMMS · QMS · SCM · EMS</td><td>읽기 경로는 온톨로지가 줌, 쓰기는 <code>/api/exec</code></td></tr>
+<tr><td>DMZ = 두 망에 붙은 서비스 2개</td><td>전용 DMZ 망 + 방화벽 + 단방향 장비</td><td>방향 규칙({sec:s5}절)</td></tr>
+<tr><td>Prometheus 규칙만, 알림 없음</td><td>Alertmanager · 메일</td><td>rules.yml</td></tr>
+</table></div>
+
+<h3>코드에서 확인한 한계와 결함 가능성 (2026-10-07)</h3>
+<div class="box caution"><span class="tag">결함 가능성 · 실행 미확인</span>
+<p><b>빈 DB에서 탐지 정의가 비는 문제.</b> {n:seed}는 <code>constraints · instances · knowledge_a098</code> 세 파일만 넣고, 검사관이 읽는 <code>detectionMode='held'</code>와 해제 식(<code>clearRule</code>)은 <code>detector-patterns.cypher</code>에만 있습니다(이 파일은 <code>scripts/ontology_v2.py</code>만 넣음). 그래서 Neo4j 볼륨을 지우고 compose만으로 처음 띄우면 {n:det}의 패턴 카탈로그가 0개가 되어 <code>/healthz</code>가 503이 될 것으로 보입니다. 코드를 읽어 추론한 것이며 빈 DB 기동은 실행해 보지 않았습니다. 기존 볼륨에는 이미 들어 있어 지금 돌아가는 환경에는 영향이 없을 수 있습니다.</p></div>
+<ul>
+<li>{n:emqx}에 계정·ACL이 없습니다. 게시판에 붙을 수 있으면 <code>cmd/auto</code>에 쓸 수 있습니다(PLC 검사는 여전히 거침).</li>
+<li>{n:fuxa}의 이미지 태그가 <code>latest</code>입니다. 화면 생성기는 FUXA 1.3을 가정하므로 새 판에서 달라질 수 있습니다. FUXA에는 상태 확인(healthcheck)이 없습니다.</li>
+<li>FUXA의 IT 경보 문구는 「쿨러 성능 저하」로 고정돼 있어 펌프 누설·팬 진동 경보에도 같은 문구가 보입니다.</li>
+<li>{n:ing}의 <code>/healthz</code>는 항상 200이고, 버린 건수는 Prometheus 지표로 나가지 않습니다.</li>
+<li>{n:sim}의 「로컬 패널」 API(<code>/api/manual</code>)는 출처를 FUXA로 처리해 LOCAL 모드에서는 거부됩니다. FUXA는 <code>mode</code> 토픽으로 LOCAL을 원격 해제할 수 있습니다.</li>
+<li>status는 매초 보내지만 수집 계약 표는 PLC 상태 보고 주기를 10초로 적고 있습니다(신선도 한도 계산에 쓰임).</li>
+<li>게이트웨이 통과 기록의 검사 이름은 <code>EXPIRY</code>, 거부 기록은 <code>EXPIRED</code>로 다릅니다.</li>
+<li>{n:dmnmcp}의 설명 주석은 도구 8개를 적지만 실제 도구는 14개입니다. <code>ALLOWED_TOOLS</code> 기본값이 compose와 워커 설정 파일에서 다릅니다(설정 파일에만 <code>Bash(python *)</code>).</li>
+<li>{n:det}의 이상 점수는 학습 모델이 아니라 고정 기준의 z-점수 계산입니다. <code>cep.py</code>의 옛 고정 임계값 함수는 호출되지 않는 코드입니다(정본은 그래프의 TESTS).</li>
+<li>APOC 플러그인은 켜져 있지만 저장소 코드에서 호출하는 곳은 없습니다.</li>
+<li>{n:agent}의 실행 트레이스는 메모리에만 있어 재시작하면 사라집니다(제출된 카드는 process에 남음).</li>
+</ul>
+
+<!-- ───────────── 차이 ───────────── -->
+<h2 id="diff">마스터 가이드(10-01)와 달라진 점</h2>
+<p><a href="마스터_가이드.html">마스터 가이드</a>는 커밋 a676a11(2026-10-01) 기준의 이야기책입니다. 그 뒤 코드가 바뀌었거나 처음부터 표현이 좁았던 곳을 현재 코드 기준으로 바로잡습니다.</p>
+<div class="tscroll"><table class="tbl">
+<tr><th>마스터 가이드 표현</th><th>현재 코드</th></tr>
+<tr><td>온도(TS1)와 냉각 효율(CE)만 매초 보냄</td><td>lite에서 TS1 · CE · PS1 · FS1 · VS1 · LoadSP 여섯 개를 매초 보냄</td></tr>
+<tr><td>허용 조치는 팬 올리기 · 부하 줄이기 · 리셋</td><td>허용 목록 7개: FAN_SET · LOAD_SET · RESET · PUMP_SELECT · STOP · FAN_BOOST · REDUCE_LOAD</td></tr>
+<tr><td>운전원이 「팬 100 %, 부하 80 %」를 승인</td><td>원자 명령 승인 API는 409. SOP 조치 카드 하나를 고르고 값은 카드 범위 안에서 조정(<code>/decide</code>)</td></tr>
+<tr><td>원인 후보 넷(사전확률 0.5 · 0.25 · 0.15 · 0.10), 증거 「팬 50 % 이상 · 부하 95 % · 주변 38 ℃」</td><td>v1 지식. 현재 v2는 쿨러 핀 오염 0.6 · 주변 고온 0.2, 증거 CE 30초 평균 &lt; 70 · VS1 2분 평균 &lt; 0.9 · TS4 ≥ 35</td></tr>
+<tr><td>CEP 규칙이 검사관 안에 고정</td><td>규칙은 Neo4j 정의(TESTS · clearRule)에서 읽고 15초마다 다시 읽음. 수치는 같음. 「60초」는 설비 시간(20배속이면 현실 약 3초)</td></tr>
+<tr><td>트립 경보는 과열 정지</td><td>OVERHEAT_TRIP · LOW_PRESSURE_TRIP · HIGH_VIBRATION_TRIP · PLC_TRIP</td></tr>
+<tr><td>납기 대 보전 · 부품 구매 · 과열 로트 · 피크 전력 결정 시나리오</td><td>v1 시나리오는 버리고 v2의 「조치 카드 순위」 결정만 남음</td></tr>
+<tr><td>판단은 LLM 없이 정해진 규칙</td><td>legacy에서는 맞음. instance에서는 AI Task를 Claude Code가 수행(결정 계산은 판단 엔진 도구)</td></tr>
+<tr><td>재관측 45초</td><td>900 설비초 ÷ 배속(20이면 45초), 최대 3번 연장</td></tr>
+<tr><td>(그림에 없음)</td><td>instance 모드 부품 {n:supa} {n:entmcp} {n:dmnmcp} {n:worker} {n:kgmcp}, 검사관 → Neo4j 연결 {c:c_det_neo}, 브라우저 직접 호출 {c:c_browser}</td></tr>
+</table></div>
+<p class="meta-note">마스터 가이드의 실측값(경보까지 38초, 승인 → 완료 4.2초, 조치 뒤 44초 해제 등)은 10-01 코드에서 잰 값이며 현재 코드로 다시 재지 않았습니다.</p>
+
+<!-- ───────────── 용어 ───────────── -->
+<div class="wide-print">
+<h2 id="appendix">부록: 코드에서 뽑은 전체 목록</h2>
+<p class="lead">이 절은 사람이 옮겨 적지 않았습니다. 문서를 만들 때마다 생성기가 저장소의 <code>compose.yaml</code> · 토픽 스크립트 · SQL · 마이그레이션 · 온톨로지 스키마 · 서비스 코드를 직접 읽어 표로 만듭니다. 그래서 코드가 바뀌면 이 표도 그대로 따라갑니다. 생성기는 이 표의 서비스 · 볼륨 · 망 · Kafka 토픽 · MQTT 토픽이 모두 <a href="#layers">기술 레이어 구조도</a>에 실제 이름으로 나오는지 대조하고, 하나라도 빠지면 문서를 만들지 않습니다. 읽는 쪽이 원문 줄 수와 뽑은 수가 맞는지도 함께 검사합니다.</p>
+<!--APPENDIX-->
+
+</div>
+<h2 id="gloss">용어집</h2>
+<dl class="gloss">
+<dt>유압 설비</dt><dd>기름을 높은 압력으로 밀어 기계를 움직이는 장치. 펌프 · 밸브 · 쿨러 · 탱크로 이루어진다.</dd>
+<dt>PLC</dt><dd>설비 바로 옆의 작은 제어 컴퓨터. 위험하면 네트워크와 상관없이 스스로 멈춘다(인터록 · 트립).</dd>
+<dt>OT / IT</dt><dd>OT는 기계를 움직이는 공장 쪽 기술, IT는 기록 · 분석 · 업무를 하는 사무실 쪽 기술.</dd>
+<dt>DMZ</dt><dd>공장과 사무실 사이의 완충 지대. 다리가 아니라 다리 가운데의 검문소에 가깝다. 이 시스템에서는 두 망에 붙은 서비스 둘로 흉내 낸다.</dd>
+<dt>MQTT · 브로커</dt><dd>장치들이 게시판(브로커)에 쪽지를 붙이고 구독한 쪽이 바로 받는 가벼운 통신 방식. 전달하는 곳이지 보관하는 곳이 아니다.</dd>
+<dt>토픽</dt><dd>게시판(또는 장부)의 칸 이름. 예: <code>plant/hyd01/tag/TS1</code>.</dd>
+<dt>QoS 0 / 1 · retain</dt><dd>QoS 0은 한 번 던지고 확인 안 함, QoS 1은 받았는지 확인함. retain은 칸마다 마지막 한 장을 붙여 두어 나중에 온 쪽도 지금 상태를 바로 알게 함.</dd>
+<dt>Kafka · Redpanda</dt><dd>번호를 붙여 디스크에 쌓는 장부. 여러 쪽이 각자 읽고, 설비별 순서가 지켜지고, 오래 남는다. Redpanda는 Kafka와 같은 방식으로 쓰는 가벼운 제품.</dd>
+<dt>CEP</dt><dd>복합 이벤트 처리. 「온도 높음 + 효율 낮음 + 오르는 중이 60초」처럼 여러 조건이 시간 동안 함께 일어나는지 보는 방식.</dd>
+<dt>시계열 DB</dt><dd>시간 순서로 쌓이는 값을 잘 저장 · 요약하는 DB. 여기서는 TimescaleDB.</dd>
+<dt>온톨로지</dt><dd>무엇이 무엇과 어떤 관계인지 적은 지식 지도. 여기서는 설비 · 고장 · 원인 · 조치 · 규칙 · 업무 지표가 이어져 있다.</dd>
+<dt>SOP · 스킬</dt><dd>표준 작업 절차. 이 시스템에서 「조치 방법 = 스킬 = SOP」는 같은 것을 가리킨다.</dd>
+<dt>BSC · BPMN · DMN</dt><dd>BSC는 성과 지표 체계(관점 · 목표 · 지표), BPMN은 업무 흐름도 표준, DMN은 결정 규칙 표준.</dd>
+<dt>HITL</dt><dd>Human-in-the-loop. 사람이 고리 안에 있어 승인해야 실행된다는 뜻.</dd>
+<dt>가드레일</dt><dd>AI가 낸 결과가 넘으면 안 되는 선(명령 필드 금지 · 근거 필수 · 범위 안 값)을 기계적으로 검사하는 장치.</dd>
+<dt>LLM</dt><dd>글을 읽고 쓰는 대형 언어 모델(예: GPT, Claude).</dd>
+<dt>MCP</dt><dd>AI가 외부 도구 · 데이터를 정해진 방식으로 부르게 하는 연결 규격. 여기서는 AI 직원이 쓰는 「창구」.</dd>
+<dt>프로세스 인스턴스 · Task</dt><dd>업무 정의(서식)로 만든 실제 업무 한 건이 인스턴스, 그 안의 개별 작업이 Task. Task마다 맡는 쪽(AI · 사람 · 시스템)이 정해져 있다.</dd>
+<dt>ACK · 재관측</dt><dd>ACK는 설비가 명령을 받았다는 응답. 재관측은 명령 뒤 실제로 나아졌는지 다시 보는 것.</dd>
+<dt>outbox · 임대(lease)</dt><dd>outbox는 보낼 것을 먼저 적어 두고 보낸 뒤 지우는 방식(잃어버리지 않기 위해). 임대는 일을 집은 쪽이 일정 시간마다 「아직 하는 중」을 갱신하고, 끊기면 다른 쪽이 가져가는 방식.</dd>
+<dt>compose 프로필</dt><dd>여러 컨테이너를 묶어 한꺼번에 켜고 끄는 단위.</dd>
+</dl>
+
+<!-- ───────────── 근거 ───────────── -->
+<h2 id="src">근거 파일</h2>
+<p>이 문서의 값은 아래 파일에서 읽었습니다(2026-10-07 작업 사본). 바뀌면 <code>docs/src/arch_build.py</code>의 정의를 고치고 다시 만듭니다.</p>
+<ul class="meta-note">
+<li><code>compose.yaml</code> · <code>.env.example</code> · <code>.env</code>(모드 변수만) · <code>README.md</code> · <code>docs/topics.md</code> · <code>docs/student-guide.md</code></li>
+<li>OT: <code>ot/plant-sim/plantsim/*.py</code> · <code>common/hydcommon/*.py</code> · <code>ot/fuxa/build_project.py</code> · <code>init.py</code></li>
+<li>DMZ·백본: <code>dmz/connect-ingest/app/main.py</code> · <code>dmz/cmd-gateway/gw/*.py</code> · <code>it/redpanda/topics.sh</code> · <code>it/timescaledb/*.sql</code> · <code>it/connect-sink/app/main.py</code> · <code>it/grafana/provisioning/</code> · <code>it/prometheus/*.yml</code></li>
+<li>탐지·지식: <code>it/detector/det/*.py</code> · <code>it/neo4j/seed.sh</code> · <code>it/neo4j/v2/*</code> · <code>scripts/ontology_v2.py</code> · <code>docs/ontology/class-table.md</code></li>
+<li>AI·업무: <code>it/agent/agentsvc/</code> · <code>it/process/procsvc/</code> · <code>it/process/definitions/anomaly_response_v22.json</code> · <code>it/enterprise-sim/entsim/</code> · <code>it/portal/</code> · <code>it/enterprise-mcp/</code> · <code>it/dmn-mcp/</code> · <code>it/agent-worker/</code> · <code>it/supabase/</code> · <code>scripts/run_worker_host.sh</code></li>
+<li>기록: <code>docs/handoff/MANUAL_INGESTION.md</code> · <code>docs/handoff/HANDOFF.md</code>(Neo4j 실측 노드 수)</li>
+</ul>
+</div>
+</body>
+</html>

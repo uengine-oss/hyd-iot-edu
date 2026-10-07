@@ -1,7 +1,11 @@
 """agent-worker: the ProcessGPT agent type `cliagents` (process-gpt-cli-agent/server.py + agent-sdk ProcessGPTAgentServer).
 
-    poll ─▶ fetch_pending_task(agent_orch=cliagents) ─▶ Runner.handle() ─▶ save_task_result(final) → SUBMITTED
-A small HTTP surface answers what an operator asks: /health (runs in flight), /agents?check_auth=1 (which CLIs exist here).
+    poll ─▶ fetch_pending_task(agent_orch=cliagents) ─▶ Runner.handle() ─▶ save_task_result(final)
+    (→ SUBMITTED only when the task's agent_mode is COMPLETE; in DRAFT mode only the draft is stored)
+The repo method names are the product's; PgRepo runs them as HYD's lock-ordered SQL (claim_process_workitems with a
+tenant filter, result saved by a conditional UPDATE on the expected consumer — see it/process/procsvc/procdb.py).
+A small HTTP surface answers what an operator asks: /health (runs in flight), /agents?check_auth=1 (which CLIs exist
+here; with check_auth=1 each CLI's own auth/login status probe is run, A129).
 """
 from __future__ import annotations
 

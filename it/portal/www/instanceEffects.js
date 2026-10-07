@@ -19,7 +19,7 @@
     try { sessionStorage.removeItem(key(id)); } catch (_) { /* nothing persisted */ }
   }
   function label(e) {
-    if (e.kind === 'enterprise') return `${esc(UI.who(e.system) || '')} · ${esc(e.skill || '')} · ${esc(e.ref || '')}${e.detail ? ' — ' + esc(e.detail) : ''}`;
+    if (e.kind === 'enterprise') return `${esc(UI.who(e.system) || '')} · ${esc(UI.idText(e.skill || ''))} · ${esc(e.ref || '')}${e.detail ? ' — ' + esc(e.detail) : ''}`;
     if (e.kind === 'plc') return `${esc(e.cmdId || '')} · ${esc((e.actions || []).map(a => a.code + (a.fan_pct != null ? ' ' + a.fan_pct : '') + (a.load_pct != null ? ' ' + a.load_pct : '') + (a.pump ? ' ' + a.pump : '')).join(', '))} · ${UI.t('ack')} ${esc(UI.status((e.ack || {}).result) || '없음')}`;
     return `${esc(e.ref || e.code || '')}${e.status ? ' · ' + esc(UI.status(e.status)) : ''}`;
   }

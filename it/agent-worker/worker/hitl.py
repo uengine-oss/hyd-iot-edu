@@ -1,8 +1,9 @@
 """Pausing for a human, and picking up where the pause happened (process-gpt-cli-agent/core/hitl.py).
 
 A CLI agent has no graph to suspend: the process ends. What survives is the pair (session id, workspace) — enough for
-the CLI to resume its own conversation. So a pause is written down in the workspace, not held in memory; the answer that
-arrives tomorrow still lands in the run that asked.
+the CLI to resume its own conversation. So a pause is written down, not held in memory: the authority is the DB record
+(todolist.draft._human_request, matched against feedback.job_id — durable_resume / pending_request); the workspace file
+(.processgpt-pending.json) is only a cache. The answer that arrives tomorrow still lands in the run that asked.
 """
 from __future__ import annotations
 

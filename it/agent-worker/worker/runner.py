@@ -2,7 +2,12 @@
 
     fetch_pending_task ─▶ context (form · users · tenant MCP) ─▶ workspace per run ─▶ .mcp.json bridge ─▶ prompt
       ─▶ coding agent headless (cliagents stream_exec) ─▶ UI events + events rows ─▶ outcome against the form contract
-      ─▶ save_task_result(final=True)  (the row becomes SUBMITTED; the engine takes it from there)
+      ─▶ save_task_result(final=True)  (agent_mode COMPLETE: the row becomes SUBMITTED and the engine takes it from there;
+                                        DRAFT: only the draft is stored)
+
+fetch_pending_task / save_task_result are repo method names kept from the product; PgRepo runs them as HYD's lock-ordered
+SQL (it/process/procsvc/procdb.py). There is no separate lease-renew thread: the lease is renewed inside check_stop on the
+main thread every LEASE_RENEW_EVERY_S (30 s), alongside the cancel check (_stream).
 
 Less is observable with a CLI than with an in-process graph, so more has to be said out loud: a run that could not use its
 tools pauses as a human question, a run that produced prose where the form wanted fields fails instead of storing a shrug,
