@@ -6,7 +6,9 @@ from urllib.parse import quote
 from fastapi import HTTPException
 from fastapi.responses import Response
 
-from . import manual_graph, manual_review, manual_extraction
+from uuid import uuid4
+
+from . import manual_graph, manual_review, manual_extraction, manual_golden
 from .manual_sources import MAX_BYTES
 
 
@@ -134,8 +136,27 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             result = graph(commit_with_rules)
             audit('-', plan['by'], 'MANUAL_INGESTED', {key: result[key] for key in
                   ('batch', 'source_id', 'filename', 'sections', 'procedures', 'steps')})
+            if body.get('golden_questions'):           # A118: ask right after the commit what this document made answerable
+                result['golden'] = start_golden(result['batch'], body['golden_questions'], plan['by'], body.get('golden_request_id'))
             return result
         return await run(work)
+
+    def start_golden(batch, questions, by, request_id=None):
+        record = graph(lambda session: manual_golden.batch_knowledge(session, tenant, batch))
+        req = manual_golden.request(record, questions, by)
+        inst = manual_golden.start(runtime(), req, request_id or str(uuid4()))
+        audit('-', req['by'] or '-', 'MANUAL_GOLDEN_REQUESTED', dict(batch=batch, instance=inst['proc_inst_id'], questions=len(req['questions'])))
+        return dict(batch=batch, instance=inst['proc_inst_id'], questions=len(req['questions']), knowledge_ids=len(req['knowledge']['ids']))
+
+    @app.post('/api/kg/manuals/batches/{batch}/golden-questions')
+    async def golden_questions(batch: str, body: dict):
+        """A118 (r14 B3): which questions can the ontology answer because of this document? Opens one agent task that
+        answers each question from the graph, citing this document's node ids; GET …/golden-report reads the result."""
+        return await run(lambda: start_golden(batch, body.get('questions'), body.get('by'), body.get('request_id')))
+
+    @app.get('/api/kg/manuals/batches/{batch}/golden-report')
+    async def golden_report(batch: str):
+        return await run(lambda: manual_golden.result(runtime(), batch))
 
     @app.post('/api/kg/manuals/batches/{batch}/rollback')
     async def rollback(batch: str, body: dict):

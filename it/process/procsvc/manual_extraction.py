@@ -114,6 +114,12 @@ def validate_proposal(source, proposal):
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         validate_proposal(engine.variables(inst).get('manual_source'), (output or {}).get('proposal'))
+    else:
+        from . import manual_golden              # A118: the per-document golden-question report shares the correction loop
+        manual_golden.validate_result(form, inst, output)
+
+
+CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1')
 
 
 REVIEW_FEEDBACK_MAX = 20

@@ -308,11 +308,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
         if form is not None:
             validate_output(form, wi.get('output'))
-            from .manual_extraction import validate_result, CONTRACT as EXTRACTION_CONTRACT
+            from .manual_extraction import validate_result, CORRECTABLE_CONTRACTS
             try:
                 validate_result(form, inst, wi.get('output'))
             except ValueError as rejected:
-                if form.get('contract') != EXTRACTION_CONTRACT:
+                if form.get('contract') not in CORRECTABLE_CONTRACTS:
                     raise
                 # A077: a cited-extraction defect goes back to the agent as feedback (same CLI session) instead of
                 # re-judging the identical output three times. Bounded like the product's validator loop.
