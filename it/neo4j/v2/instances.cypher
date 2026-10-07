@@ -237,17 +237,18 @@ WITH n, r OPTIONAL MATCH (p:Part {id: r[5]}) FOREACH (_ IN CASE WHEN p IS NULL T
 UNWIND [['cause:cooler-fin-fouling','sv:fouling'],['cause:pump-seal-wear','sv:leak'],['cause:fan-bearing-wear','sv:bearing-wear']] AS r
 MATCH (c:Cause {id: r[0]}), (v:StateVariable {id: r[1]}) MERGE (c)-[d:DISTURBS]->(v) SET d.sign = 1;
 
-// 증거: [id, cause, name, rule, weight, expect, threshold, sql]. sql은 %(asset)s 하나를 받아 숫자 하나(value)를 돌려준다.
+// 증거: [id, cause, name, rule, weight, expect, threshold, sql, tag, windowSeconds]. sql은 %(asset)s 하나를 받아 숫자 하나(value)를 돌려준다.
+// tag · windowSeconds는 sql이 읽는 태그와 구간이다. 구간에 수집 계약보다 긴 관측 공백이 있으면 판정하지 않는다(A083).
 UNWIND [
-  ['evd:ce-low','cause:cooler-fin-fouling','냉각 효율 평균 70 % 미만 (최근 30초)','avg(CE) over 30s < 70',0.6,'lt',70,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'CE\' AND time > now() - interval \'30 seconds\''],
-  ['evd:fan-normal','cause:cooler-fin-fouling','팬 진동 정상 (팬 고장 아님)','avg(VS1) over 2m < 0.9',0.4,'lt',0.9,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'VS1\' AND time > now() - interval \'2 minutes\''],
-  ['evd:ambient-high','cause:high-ambient','캐비닛 온도 35 ℃ 이상','avg(TS4) over 2m >= 35',1.0,'gte',35,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'TS4\' AND time > now() - interval \'2 minutes\''],
-  ['evd:ps1-low','cause:pump-seal-wear','토출 압력 평균 165 bar 미만','avg(PS1) over 2m < 165',0.6,'lt',165,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'PS1\' AND time > now() - interval \'2 minutes\''],
-  ['evd:fs1-drop','cause:pump-seal-wear','유량 평균 8.0 l/min 미만','avg(FS1) over 2m < 8.0',0.4,'lt',8.0,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'FS1\' AND time > now() - interval \'2 minutes\''],
-  ['evd:vs1-trend','cause:fan-bearing-wear','진동 상승폭 0.2 mm/s 초과 (최근 5분)','max(VS1) - min(VS1) over 5m > 0.2',0.6,'gt',0.2,'SELECT max(value) - min(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'VS1\' AND time > now() - interval \'5 minutes\''],
-  ['evd:ts1-normal','cause:fan-bearing-wear','유온 52 ℃ 미만 (냉각 문제 아님)','avg(TS1) over 2m < 52',0.4,'lt',52,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'TS1\' AND time > now() - interval \'2 minutes\'']
+  ['evd:ce-low','cause:cooler-fin-fouling','냉각 효율 평균 70 % 미만 (최근 30초)','avg(CE) over 30s < 70',0.6,'lt',70,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'CE\' AND time > now() - interval \'30 seconds\'','CE',30],
+  ['evd:fan-normal','cause:cooler-fin-fouling','팬 진동 정상 (팬 고장 아님)','avg(VS1) over 2m < 0.9',0.4,'lt',0.9,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'VS1\' AND time > now() - interval \'2 minutes\'','VS1',120],
+  ['evd:ambient-high','cause:high-ambient','캐비닛 온도 35 ℃ 이상','avg(TS4) over 2m >= 35',1.0,'gte',35,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'TS4\' AND time > now() - interval \'2 minutes\'','TS4',120],
+  ['evd:ps1-low','cause:pump-seal-wear','토출 압력 평균 165 bar 미만','avg(PS1) over 2m < 165',0.6,'lt',165,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'PS1\' AND time > now() - interval \'2 minutes\'','PS1',120],
+  ['evd:fs1-drop','cause:pump-seal-wear','유량 평균 8.0 l/min 미만','avg(FS1) over 2m < 8.0',0.4,'lt',8.0,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'FS1\' AND time > now() - interval \'2 minutes\'','FS1',120],
+  ['evd:vs1-trend','cause:fan-bearing-wear','진동 상승폭 0.2 mm/s 초과 (최근 5분)','max(VS1) - min(VS1) over 5m > 0.2',0.6,'gt',0.2,'SELECT max(value) - min(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'VS1\' AND time > now() - interval \'5 minutes\'','VS1',300],
+  ['evd:ts1-normal','cause:fan-bearing-wear','유온 52 ℃ 미만 (냉각 문제 아님)','avg(TS1) over 2m < 52',0.4,'lt',52,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'TS1\' AND time > now() - interval \'2 minutes\'','TS1',120]
 ] AS r
-MERGE (n:Evidence {id: r[0]}) SET n.name = r[2], n.rule = r[3], n.weight = r[4], n.expect = r[5], n.threshold = r[6], n.sql = r[7]
+MERGE (n:Evidence {id: r[0]}) SET n.name = r[2], n.rule = r[3], n.weight = r[4], n.expect = r[5], n.threshold = r[6], n.sql = r[7], n.tag = r[8], n.windowSeconds = r[9]
 WITH n, r MATCH (c:Cause {id: r[1]}) MERGE (c)-[:EVIDENCED_BY]->(n);
 
 // ============================================================== 4. 스킬 · 규칙 계층 (DMN)
@@ -373,7 +374,7 @@ UNWIND [['in:pattern','경보 패턴','string','pattern','sys:cep',null],
         ['in:forecast-ps1','조치 후 예측 토출 압력','number','forecast_ps1','sys:agent','sv:ps1'],
         ['in:skill-kind','후보 스킬 종류','enum','skill_kind','sys:agent',null],
         ['in:skill-code','후보 스킬의 명령 코드','string','skill_code','sys:agent',null],
-        ['in:fan100-hours','팬 100 % 누적 시간','number','fan100_hours','sys:historian','sv:fan-speed'],
+        ['in:fan100-hours','팬 100 % 연속 운전 시간','number','fan100_hours','sys:historian','sv:fan-speed'],
         ['in:standby-ready','예비 펌프 가용','boolean','standby_ready','sys:cmms',null],
         ['in:order-due','긴급 오더 남은 시간','number','order_due_h','sys:mes','msr:otd'],
         ['in:order-penalty','납기 지연 시 시간당 보상','number','order_penalty_per_h','sys:erp','msr:penalty'],
@@ -422,11 +423,11 @@ UNWIND [
     [['in:pattern','==','PUMP_LEAKAGE',null],['in:ps1','<',165,'bar']]],
   ['rule:dx-fan','dt:diagnose-cause',3,"pattern == 'FAN_VIBRATION' and ts1 < 52",'SELECT',null,'유온이 정상인데 진동만 오르면 베어링 (근거 evd:vs1-trend)',['cause:fan-bearing-wear'],null,['HM-8.1'],
     [['in:pattern','==','FAN_VIBRATION',null],['in:ts1','<',52,'℃']]],
-  ['rule:cand-cooler','dt:action-candidates',1,"failure_mode == 'fm:cooling-loss'",'SELECT',null,'냉각 성능 상실 → 즉시 완화 SOP (팬 최대 · 팬 최대+부하 저감 · 부하 저감+야간 세척)',['skill:fan-max','skill:fan-max-derate','skill:derate-night-clean'],null,['HM-7.3','HM-9.1'],
+  ['rule:cand-cooler','dt:action-candidates',1,"failure_mode == 'fm:cooling-loss'",'SELECT',null,'냉각 성능 상실 → 즉시 완화 SOP (팬 최대 · 팬 최대+부하 저감 · 부하 저감+야간 세척) + 근본 조치 작업지시 (핀 세척 · 캐비닛 환기)',['skill:fan-max','skill:fan-max-derate','skill:derate-night-clean','skill:wo-cooler-clean','skill:wo-ventilation'],null,['HM-7.3','HM-9.1'],
     [['in:failure-mode','==','fm:cooling-loss',null]]],
-  ['rule:cand-pump','dt:action-candidates',2,"failure_mode == 'fm:volumetric-loss'",'SELECT',null,'펌프 체적 효율 저하 → 즉시 완화 SOP (예비 펌프 전환 · 부하 저감 · 압력 상향)',['skill:switch-standby-pump','skill:derate-70','skill:raise-pressure'],null,['HM-5.2'],
+  ['rule:cand-pump','dt:action-candidates',2,"failure_mode == 'fm:volumetric-loss'",'SELECT',null,'펌프 체적 효율 저하 → 즉시 완화 SOP (예비 펌프 전환 · 부하 저감 · 압력 상향) + 근본 조치 작업지시 (축 씰 교체 · 씰 키트 구매요청)',['skill:switch-standby-pump','skill:derate-70','skill:raise-pressure','skill:wo-pump-seal'],null,['HM-5.2'],
     [['in:failure-mode','==','fm:volumetric-loss',null]]],
-  ['rule:cand-fan','dt:action-candidates',3,"failure_mode == 'fm:bearing-degradation'",'SELECT',null,'팬 베어링 열화 → 팬 감속+부하 저감 · 팬 감속 · 계획 정지',['skill:fan-slow-derate','skill:fan-slow','skill:planned-stop'],null,['HM-8.1','HM-8.3'],
+  ['rule:cand-fan','dt:action-candidates',3,"failure_mode == 'fm:bearing-degradation'",'SELECT',null,'팬 베어링 열화 → 팬 감속+부하 저감 · 팬 감속 · 계획 정지 + 근본 조치 작업지시 (베어링 교체)',['skill:fan-slow-derate','skill:fan-slow','skill:planned-stop','skill:wo-fan-bearing'],null,['HM-8.1','HM-8.3'],
     [['in:failure-mode','==','fm:bearing-degradation',null]]],
   ['rule:cand-trip','dt:action-candidates',4,"plc_state == 'TRIP'",'SELECT',null,'트립 중이면 제어 명령 대신 냉각 후 리셋',['skill:reset-after-cool'],null,['HM-9.4'],
     [['in:plc-state','==','TRIP',null]]],
@@ -526,6 +527,23 @@ UNWIND [['task:diagnose',['in:failure-mode','in:cause']],
 UNWIND r[1] AS iid MATCH (t:Task {id: r[0]}), (i:InputData {id: iid}) MERGE (t)-[:PRODUCES]->(i);
 MATCH (t:Task {id:'task:command'}), (s:Skill {kind:'control'}) MERGE (t)-[:EXECUTES]->(s);
 MATCH (t:Task {id:'task:work-order'}), (s:Skill {kind:'work_order'}) MERGE (t)-[:EXECUTES]->(s);
+
+// A079: 미지원 경보 현장 검토(proc:alert-triage)의 흐름 노드 — 실행 정의 alert_triage_v1.json을 그대로 옮긴 것(실행 버전 MAPS_TO 대응용)
+UNWIND [
+  ['ev:unhandled-alert','Event','미지원 경보 접수',{position:'start', eventDefinition:'message', messageRef:'alerts (명시 진단/회복 계약 없음)', correlationKey:'asset', catchAll:true},null],
+  ['task:triage','Task','미지원 경보 현장 검토',{taskType:'user'},'role:prod-mgr'],
+  ['ev:review-recorded','Event','현장 검토 기록 완료',{position:'end', eventDefinition:'none'},null]
+] AS r
+MERGE (n:FlowNode {id: r[0]}) SET n.name = r[2], n += r[3]
+WITH n, r
+FOREACH (_ IN CASE WHEN r[1] = 'Event' THEN [1] ELSE [] END | SET n:Event)
+FOREACH (_ IN CASE WHEN r[1] = 'Task' THEN [1] ELSE [] END | SET n:Task)
+WITH n, r MATCH (p:Process {id: 'proc:alert-triage'}) MERGE (p)-[:HAS_NODE]->(n)
+WITH n, r OPTIONAL MATCH (who {id: r[4]}) FOREACH (_ IN CASE WHEN who IS NULL THEN [] ELSE [1] END | MERGE (n)-[:PERFORMED_BY]->(who));
+UNWIND [['ev:unhandled-alert','task:triage',null],['task:triage','ev:review-recorded',null]] AS r
+MATCH (a:FlowNode {id: r[0]}), (b:FlowNode {id: r[1]}) MERGE (a)-[f:SEQUENCE_FLOW]->(b) SET f.condition = r[2];
+// 이 시작 이벤트는 명시 계약이 없는 경보를 받으므로 특정 AnomalyPattern과 CORRELATES 하지 않는다(alert_policy 'triage' 경로).
+UNWIND ['in:pattern','in:plc-state'] AS iid MATCH (t:Task {id:'task:triage'}), (i:InputData {id: iid}) MERGE (t)-[:READS]->(i);
 
 // ============================================================== 6. 외부 변수 · 예측
 UNWIND [['ext:fx','원/달러 환율',['환율'],'원/USD','한국은행'],['ext:ambient','외기 온도',['기온','폭염'],'℃','기상청'],

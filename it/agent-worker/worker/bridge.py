@@ -25,6 +25,40 @@ class BridgeResult:
     extra_args: list[str] = field(default_factory=list)
 
 
+def cleanup(workdir: Path) -> list[str]:
+    """A096 (process-gpt-cli-agent RuntimeLease: provider files are restored after the run because they carry tenant MCP
+    credentials): the run is over, so the servers' env (DSNs, passwords) is removed from the workspace's .mcp.json — the
+    directory is kept for 72 h for resumes, and every run calls install() again before it starts. Returns the server names
+    whose env was removed."""
+    path = Path(workdir) / MCP_CONFIG_FILENAME
+    if not path.exists():
+        return []
+    try:
+        config = json.loads(path.read_text(encoding="utf-8")) or {}
+    except json.JSONDecodeError:
+        return []
+    entries = config.get("mcpServers") if isinstance(config.get("mcpServers"), dict) else {}
+    removed = [name for name, entry in entries.items() if isinstance(entry, dict) and entry.pop("env", None)]
+    if removed:
+        path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return removed
+
+
+def select_servers(tenant_mcp: dict | None, tools: list[str] | None) -> tuple[dict | None, list[str]]:
+    """A095 (process-gpt-base-agent executor: per-task MCP server selection): when the activity declares `tools`, only those
+    tenant servers are registered for the run. Returns (filtered config, declared names that the tenant does not have —
+    the designer's intent that cannot be met, logged by the caller). No declaration = every tenant server, as before."""
+    if not tools:
+        return tenant_mcp, []
+    config = (tenant_mcp or {}).get("mcpServers")
+    if not isinstance(config, dict):
+        return tenant_mcp, list(tools)
+    wanted = [str(t) for t in tools]
+    chosen = {name: spec for name, spec in config.items() if name in wanted}
+    missing = [t for t in wanted if t not in config]
+    return dict(tenant_mcp, mcpServers=chosen), missing
+
+
 def servers_of(tenant_mcp: dict | None, *, extra_env: dict[str, str] | None = None,
                host_rewrite: dict[str, str] | None = None) -> tuple[list[McpServer], dict[str, str]]:
     """Split a tenant MCP config into stdio servers (McpServer) and HTTP servers (name -> url).

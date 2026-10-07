@@ -31,9 +31,9 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 - `(:Process {id!, name!, isExecutable})` 업무 프로세스. KPI를 달성하기 위해 존재하고, 대상(ACTS_ON)인 설비에 대해 돈다.
 - `(:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type})` 프로세스 안의 한 지점. Event · Task · Gateway의 부모.
-- `(:Event:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, position![start|boundary|end], eventDefinition![none|message|timer|escalation], messageRef, correlationKey, timer})` 프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.
-- `(:Task:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, taskType![user|service|businessRule|manual|script|send|receive|subProcess|callActivity], tool})` 일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).
-- `(:Gateway:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, gatewayType![exclusive]})` 흐름이 갈라지거나 합쳐지는 지점.
+- `(:Event:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, position![start|boundary|end], eventDefinition![none|message|timer|escalation], messageRef, correlationKey, timer, semantic_id, semantic_warning, catchAll})` 프로세스를 시작 · 중단 · 종료시키는 사건. 트리거는 클래스가 아니라 이 이벤트의 속성(eventDefinition, messageRef, correlationKey)이고, 어떤 경보가 시작시키는지는 CORRELATES로 잇는다.
+- `(:Task:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, taskType![user|service|businessRule|manual|script|send|receive|subProcess|callActivity], tool, semantic_id, semantic_warning})` 일의 단위. 종류에 따라 사람이 하거나(user), 시스템이 하거나(service), 판단 규칙을 부른다(businessRule).
+- `(:Gateway:FlowNode {id!, name!, definition_id, version, tenant_id, element_id, source_type, gatewayType![exclusive], semantic_id, semantic_warning})` 흐름이 갈라지거나 합쳐지는 지점.
 
 ## 설비 진단 지식 (리소스 계층의 설비 코어) — ISO 13374 / MIMOSA OSA-CBM — SD(상태 감지) · HA(건강 평가) · AG(권고)
 
@@ -44,7 +44,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Symptom {id!, name!, aliases})` 계측값의 이상 양상.
 - `(:FailureMode {id!, name!})` 구성 요소 단위의 고장 유형. 조치 방법(스킬)은 고장 유형에 매칭된다.
 - `(:Cause {id!, name!, aliases, prior!})` 고장의 근본 원인. prior는 사전 확률이다.
-- `(:Evidence {id!, name!, rule!, sql!, expect![lt|gt|gte], threshold!, weight!})` 원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.
+- `(:Evidence {id!, name!, rule!, sql!, expect![lt|gt|gte], threshold!, weight!, tag, windowSeconds})` 원인을 확정하는 정량 근거. sql 값이 expect 방향으로 threshold를 넘으면 통과한다. rule은 사람이 읽는 조건이다.
 - `(:Step {id!, order!, text!})` 조치 방법(스킬 = SOP)의 한 단계. 근거 매뉴얼 절을 가리킨다.
 - `(:ManualSection {id!, ref!, title!, excerpt})` 기술 매뉴얼의 절. 조치 카드의 출처로 인용된다.
 
@@ -72,7 +72,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
   - 필수: 고장 유형 하나 이상에 매칭되어야 한다 (`MITIGATED_BY|REMEDIED_BY` in, 최소 1)
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
-- `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
+- `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED], sourceLiveType, sourceCheckedAt, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
 - `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
 - `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
   - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1)
@@ -89,13 +89,18 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 실행 중에 쌓이는 사건과 사람의 판단 사례. 다음 판단의 선례로 쓰인다.
 
-- `(:Incident {id!, alertId!, openedAt!})` 경보 하나로 열린 사건.
-- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!})` 사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.
+- `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
+- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, status[PENDING_APPROVAL|APPROVED|REJECTED|EXECUTED|PARTIAL], source_incident_id, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
-- `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.
-- `(:WorkItem {id!, tenant_id!, activity_id!, activity_name, status![NEW|TODO|IN_PROGRESS|SUBMITTED|PENDING|DONE|CANCELLED], tool, agent_mode, agent_orch, draft_status[STARTED|CANCELLED|COMPLETED|FB_REQUESTED|HUMAN_ASKED|FAILED], retry, rework_count, duration, start_date, end_date, due_date, definition_id, version})` todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다.
-- `(:ProcessVersion {id!, name!, definition_id!, version!, tenant_id!, ontology_ref})` 관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다.
+- `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED|CANCELLED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings, rework_generation, projection_revision})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.
+- `(:WorkItem {id!, tenant_id!, activity_id!, activity_name, status![NEW|TODO|IN_PROGRESS|SUBMITTED|PENDING|DONE|CANCELLED], tool, agent_mode, agent_orch, draft_status[STARTED|CANCELLED|COMPLETED|FB_REQUESTED|HUMAN_ASKED|FAILED], retry, rework_count, duration, start_date, end_date, due_date, definition_id, version, generation, supersedes_id, rework_request_id})` todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다.
+- `(:ProcessVersion {id!, name!, definition_id!, version!, tenant_id!, ontology_ref, projection_warnings})` 관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다.
+- `(:ExecutionProjection {id!, tenant_id, lock, revision, payload_hash})` 실행 정의·인스턴스·작업을 그래프에 쓸 때 판본 순서를 지키는 잠금·영수증 (execution_graph). 사람이 편집하지 않는다.
+- `(:CaseProjection {id!, lock, revision, payload_hash})` 사건·판단 사례를 그래프에 쓸 때 판본 순서를 지키는 잠금·영수증 (case_projection).
+- `(:KnowledgeEdit {id!, fingerprint, created_at, actor, kind, skill, rule, edge, reason, before, result})` 스킬·규칙 편집 요청 하나의 멱등 영수증 (skill_graph.write): 같은 request_id로 다시 오면 저장된 결과를 돌려준다.
+- `(:ManualIngestionDocument {id!, tenant, head, snapshot})` 매뉴얼 한 문서의 적재 이력 머리: 현재 판본(head)과 그래프 스냅샷 (manual_graph).
+- `(:ManualIngestionBatch {id!, tenant, document, previous, status, fingerprint, createdAt, rolledBackAt, rolledBackBy, plan, before, after, receipt})` 검토·적재 한 번의 영수증과 되돌리기 정보: 계획·전후 상태·상태(ACTIVE/ROLLED_BACK) (manual_graph).
 
 ## 관계
 

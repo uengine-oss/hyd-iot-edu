@@ -107,4 +107,43 @@ def validate_definition(raw):
         visit(n)
     if not any(e['type'] == 'endEvent' for e in defn.events.values()):
         raise ValueError('endEvent가 필요합니다')
+    _static_connectivity(defn, all_ids)
     return defn
+
+
+def _static_connectivity(defn, all_ids):
+    """A096 (process-gpt-bpmn-extractor process_validator._static_check · bpmn-process-generation-skill, R13 2차): a
+    definition is refused when a node cannot be reached from the start, cannot reach an end, or an endEvent is never
+    entered. A boundary event (activity.attachedEvents or event.attachedTo) is reached through its host activity. The
+    extractor's fourth rule (no fan-out off a non-gateway) is NOT applied: this engine, like the product's, fires every
+    non-false outgoing sequence of a node as an implicit split (`_allowed_targets`), and the rework tests rely on it."""
+    host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
+    def next_of(n):
+        return [s['target'] for s in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n]
+    reach, stack = set(), [e['id'] for e in defn.start_events()]
+    while stack:
+        n = stack.pop()
+        if n in reach:
+            continue
+        reach.add(n); stack.extend(next_of(n))
+    unreached = [n for n in all_ids if n not in reach]
+    if unreached:
+        raise ValueError(f"시작 이벤트에서 도달할 수 없는 노드: {', '.join(unreached)}")
+    ends = {e['id'] for e in defn.events.values() if e['type'] == 'endEvent'}
+    memo = {}
+    def reaches_end(n, trail=()):
+        if n in ends:
+            return True
+        if n in memo:
+            return memo[n]
+        if n in trail:
+            return False
+        memo[n] = any(reaches_end(m, trail + (n,)) for m in next_of(n))
+        return memo[n]
+    dead = [n for n in all_ids if not reaches_end(n)]
+    if dead:
+        raise ValueError(f"종료 이벤트에 이르지 못하는 노드: {', '.join(dead)}")
+    entered = {s['target'] for s in defn.sequences}
+    never = sorted(e for e in ends if e not in entered)
+    if never:
+        raise ValueError(f"들어오는 흐름이 없는 endEvent: {', '.join(never)}")

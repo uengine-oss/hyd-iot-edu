@@ -12,6 +12,8 @@ export MCP_HOST_REWRITE="${MCP_HOST_REWRITE:-neo4j:7687=127.0.0.1:7687,enterpris
 export CLIAGENTS_WORKSPACE_ROOT="${CLIAGENTS_WORKSPACE_ROOT:-$HERE/.evidence/workspace}"
 export SCHEMA_PROMPT="${SCHEMA_PROMPT:-$HERE/it/neo4j/v2/schema_prompt.md}"
 export CONSUMER_ID="${CONSUMER_ID:-agent-worker:host}"
+# The worker is Claude Code on Opus (user 2026-10-06: "Opus, not a toy"); pin it instead of relying on the personal default model.
+export CLI_MODEL="${CLI_MODEL:-opus}"
 export HEALTH_PORT="${HEALTH_PORT:-8097}"
 PY="${PYTHON:-.venv314/Scripts/python.exe}"
 [ -x "$PY" ] || PY=python

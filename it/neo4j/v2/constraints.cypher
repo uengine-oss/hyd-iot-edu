@@ -38,6 +38,11 @@ CREATE CONSTRAINT v2_ingestionbatch_id IF NOT EXISTS FOR (n:IngestionBatch) REQU
 CREATE CONSTRAINT v2_processinstance_id IF NOT EXISTS FOR (n:ProcessInstance) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_workitem_id IF NOT EXISTS FOR (n:WorkItem) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_processversion_id IF NOT EXISTS FOR (n:ProcessVersion) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_executionprojection_id IF NOT EXISTS FOR (n:ExecutionProjection) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_caseprojection_id IF NOT EXISTS FOR (n:CaseProjection) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_knowledgeedit_id IF NOT EXISTS FOR (n:KnowledgeEdit) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_manualingestiondocument_id IF NOT EXISTS FOR (n:ManualIngestionDocument) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_manualingestionbatch_id IF NOT EXISTS FOR (n:ManualIngestionBatch) REQUIRE n.id IS UNIQUE;
 
 // 엔티티 인식(entity resolution)용 전문 검색 색인: 이름과 다른 이름(aliases)
 CREATE FULLTEXT INDEX ont_names IF NOT EXISTS FOR (n:Measure|Component|StateVariable|Symptom|Cause|ExternalVariable) ON EACH [n.name, n.aliases];

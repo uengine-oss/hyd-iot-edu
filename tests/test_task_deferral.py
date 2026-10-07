@@ -159,3 +159,16 @@ def test_http_reassessment_returns_receipt_and_rejects_stale_request(monkeypatch
     assert client.post(f"/api/todolist/{row['id']}/reassess",json=payload).json()==response.json()
     assert client.post(f"/api/todolist/{row['id']}/reassess",json=payload|{'request_id':'another'}).status_code==409
     assert client.post('/api/todolist/unknown/reassess',json=payload).status_code==404
+
+
+def test_fenced_whole_message_control_object_is_still_a_control_object():
+    """A081: Claude Code wrapped its hold-back JSON in a ```json fence and the worker failed the task as a contract
+    mismatch. The fenced whole message is the object; prose around an object is not."""
+    obj='{"__deferred__":{"status":"UNKNOWN","reason":"plan mode blocked the tools","evidence":{"attempt":1}}}'
+    assert deferred.control('```json\n'+obj+'\n```')['status']=='UNKNOWN'
+    assert deferred.control('```\n'+obj+'```')['status']=='UNKNOWN'
+    assert deferred.control(obj)['status']=='UNKNOWN'
+    assert deferred.control('설명입니다.\n'+obj) is None
+    from worker import hitl
+    q='{"__human_input__":{"question":"어느 설비입니까?","options":["HYD-01","HYD-02"]}}'
+    assert hitl.business_question('```json\n'+q+'\n```')['question']=='어느 설비입니까?'

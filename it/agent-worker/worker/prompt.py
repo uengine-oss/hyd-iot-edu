@@ -57,6 +57,14 @@ def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = 
     return text + "\n위 맥락을 참고해 작업을 새로 진행하세요."
 
 
+def format_correction(reason: str, form_fields: Any) -> str:
+    """A086: the result had the right content but not the contract's shape (e.g. an array sent as a JSON string). Same session,
+    the exact defect, no new queries — the product's validate → correct → recheck loop (bpmn-extractor process_validator)."""
+    return (f"방금 제출한 결과가 출력 형식 검사에서 거절됐습니다: {reason}\n"
+            "조회나 분석을 다시 하지 말고, 같은 내용을 아래 형식에 맞춰 다시 제출하세요. 배열 필드는 JSON 배열 그대로(문자열로 감싸지 않음), "
+            "숫자는 숫자로 쓰세요.\n\n" + output_contract(form_fields))
+
+
 def output_contract(form_fields: Any) -> str:
     fields = field_list(form_fields)
     if not fields:

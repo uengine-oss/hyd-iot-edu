@@ -40,27 +40,31 @@ class SupabaseEnterprise:
 
     # ---- writes (process service only)
     def execute(self, req: dict) -> dict:
+        from .state import COMPENSATION_SKILLS
+        fn = "ent.exec_compensation" if req.get("skill") in COMPENSATION_SKILLS else "ent.exec_skill"
         with self._connect() as conn, conn.cursor() as cur:
-            cur.execute("select ent.exec_skill(%s::jsonb)", (json.dumps(req, ensure_ascii=False),))
+            cur.execute(f"select {fn}(%s::jsonb)", (json.dumps(req, ensure_ascii=False),))
             tx = _json(cur.fetchone()[0])
             conn.commit()
         return tx
 
     def transactions(self, decision: str | None = None) -> list[dict]:
         with self._connect() as conn, conn.cursor() as cur:
-            query = "select id, t, system, skill, ref, detail, asset, decision_id, option_id, requested_by from ent.transactions"
+            query = "select id, t, system, skill, ref, detail, asset, decision_id, option_id, requested_by, compensates from ent.transactions"
             if decision is None:
                 cur.execute(query + " order by t desc limit 300")
             else:
                 cur.execute(query + " where decision_id=%s order by t,id", (decision,))
             rows = cur.fetchall()
-        keys = ("id", "t", "system", "skill", "ref", "detail", "asset", "decision", "option", "by")
+        keys = ("id", "t", "system", "skill", "ref", "detail", "asset", "decision", "option", "by", "compensates")
         return [dict(zip(keys, (str(v) if k == "t" else v for k, v in zip(keys, r)))) for r in rows]
 
     def snapshot(self) -> dict:
         out: dict = {}
         with self._connect() as conn, conn.cursor() as cur:
-            cur.execute("select to_jsonb(o) from ent.production_orders o order by o.order_id")
+            # A086: hours are computed from the stored due/free times; the frozen legacy columns are not shown
+            cur.execute("select to_jsonb(o) - 'due_in_h' - 'alt_free_h' || jsonb_build_object('due_in_h', ent.hours_from_now(o.due_at), "
+                        "'alt_free_h', ent.hours_from_now(o.alt_free_at)) from ent.production_orders o order by o.order_id")
             out["mes"] = {"orders": [_json(r[0]) for r in cur.fetchall()]}
             for table in WRITE_TABLES:
                 cur.execute(f"select to_jsonb(x) from ent.{table} x order by x.created_at desc")

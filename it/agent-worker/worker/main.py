@@ -14,12 +14,17 @@ from urllib.parse import urlparse
 
 from cliagents import Surface, registry
 
-from . import workspace
+from . import env_guard, workspace
 from .runner import Runner
 from .settings import AGENT_TYPE, settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("worker")
+# A095: settings are captured above; from here on no child process (the CLI agent, its MCP servers) can inherit the
+# worker's own credentials. The Codex GPU key is handed over by name only when that provider runs (settings.codex_model_provider_env_key).
+_SCRUBBED = env_guard.scrub(keep=(settings.codex_model_provider_env_key,))
+if _SCRUBBED:
+    log.info("child-process environment: removed %s", ", ".join(_SCRUBBED))
 status = {"status": "starting", "agent_type": AGENT_TYPE, "runs_in_flight": 0, "max_concurrent_runs": 1, "polls": 0, "handled": 0,
           "last_poll": None, "error": None}
 _runner: Runner | None = None

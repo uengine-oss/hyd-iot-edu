@@ -167,6 +167,26 @@ def test_business_fact_change_is_visible_and_requires_review(context):
     assert not result['allowed'] and any('order_due_h' in r for r in result['reasons'])
 
 
+def test_time_derived_business_fact_compares_its_source_record_not_the_elapsed_hours(context, monkeypatch):
+    """A086: hours until the MES due date keep falling while the due date is unchanged. The consent compares the due date
+    (provenance anchor); elapsed time reaches the decision through the re-evaluated rules. A moved due date is refused."""
+    state, _, d = context
+    due = '2026-10-07T03:00:00+00:00'
+    d['facts']['order_due_h'] = 6.0
+    d['provenance'] = [{'variable': 'order_due_h', 'anchor': due}]
+    current = {'anchor': due}
+    def gather(inputs, asset, known, tsdb, strict=False):
+        return dict(deepcopy(state['facts']), order_due_h=5.97), [{'variable': 'order_due_h', **current}]
+    monkeypatch.setattr(decide, 'gather_facts', gather)
+    assert assess(context)['allowed']                                    # 2 minutes later, same due date
+    current['anchor'] = '2026-10-08T09:00:00+00:00'                      # MES moved the due date
+    result = assess(context)
+    assert not result['allowed'] and any('order_due_h' in r for r in result['reasons'])
+    current.pop('anchor')                                                # the source stopped giving the due date
+    result = assess(context)
+    assert not result['allowed'] and any('order_due_h' in r for r in result['reasons'])
+
+
 def test_current_roles_are_checked(context):
     _, kg, d = context
     result = approval.assess(kg,None,d,'skill:mix','role:removed')

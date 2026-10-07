@@ -96,12 +96,35 @@ class does not execute a process, issue a command or declare business completion
     def receive(self, record, policy=None):
         if getattr(self.repo._local, 'connection', None) is not None:
             raise RuntimeError('source receipt requires its own committed transaction')
+        with self.repo._conn() as c:
+            return self._receive_on(c, record, policy)
+
+    def receive_many(self, items):
+        """A080: deliveries in order on ONE connection, still one committed transaction per receipt. Stops at the first
+        failure so the caller never acknowledges past a missing event. Returns (rows, error, states): rows are the receipts
+        stored (a prefix of items), error the first failure or None, states the latest plant states if any stored row was a
+        status. The live stack at 20x produced ~3.6 status/s while one-connection-per-receipt consumed ~2.4/s and the lag
+        only grew."""
+        if getattr(self.repo._local, 'connection', None) is not None:
+            raise RuntimeError('source receipt requires its own committed transaction')
+        rows, error = [], None
+        with self.repo._conn() as c:
+            for record, policy in items:
+                try:
+                    rows.append(self._receive_on(c, record, policy))
+                except Exception as exc:  # noqa: BLE001 — reported to the caller, which retries this delivery
+                    error = exc
+                    break
+            states = self._latest_states_on(c) if any(r['topic'] == topics.K_STATUS for r, _ in items[:len(rows)]) else None
+        return rows, error, states
+
+    def _receive_on(self, c, record, policy):
         record = deepcopy(record)
         if record['kind'] == 'RAISE' and not isinstance(policy, dict):
             raise ValueError('RAISE requires the policy selected at receipt time')
         pinned = deepcopy(policy)
         digest(pinned)  # JSON validity, including no non-finite policy numbers.
-        with self.repo._conn() as c, c.transaction():
+        with c.transaction():
             origin = [self.tenant_id,record['delivery_key']]
             c.execute('select pg_advisory_xact_lock(hashtextextended(%s,0))',
                       (json.dumps(['source-origin', *origin]),))
@@ -148,8 +171,11 @@ class does not execute a process, issue a command or declare business completion
 
     def latest_states(self):
         with self.repo._conn() as c:
-            return {r['asset']:r['payload'] for r in c.execute(
-                'select asset,payload from process_source_state where tenant_id=%s',(self.tenant_id,)).fetchall()}
+            return self._latest_states_on(c)
+
+    def _latest_states_on(self, c):
+        return {r['asset']:r['payload'] for r in c.execute(
+            'select asset,payload from process_source_state where tenant_id=%s',(self.tenant_id,)).fetchall()}
 
     def get(self, receipt_id):
         with self.repo._conn() as c:

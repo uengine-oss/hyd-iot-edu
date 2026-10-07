@@ -34,7 +34,7 @@ class MemoryEnterprise:
 
     def _mes_orders(self, asset: str) -> dict:
         out = data.mes_orders(asset)
-        live = [o for o in self.st.snapshot()["mes"]["orders"] if o["asset"] == asset or o.get("moved_from") == asset]
+        live = [data.current_order(o) for o in self.st.snapshot()["mes"]["orders"] if o["asset"] == asset or o.get("moved_from") == asset]
         out["records"] = live or out["records"]
         return out
 
@@ -49,10 +49,13 @@ class MemoryEnterprise:
         return self.st.transactions(decision)
 
     def snapshot(self) -> dict:
-        return self.st.snapshot()
+        snap = self.st.snapshot()
+        snap["mes"]["orders"] = [data.current_order(o) for o in snap["mes"]["orders"]]   # A086: hours as of now
+        return snap
 
     def reset(self) -> None:
         self.st.reset()
+        data.reanchor()          # A086: the teaching scenario's times start again from now (Supabase: ent.reanchor_scenario_times)
 
     def ping(self) -> bool:
         return True

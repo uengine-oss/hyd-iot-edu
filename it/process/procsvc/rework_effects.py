@@ -6,6 +6,7 @@ PG generation receipt, so no SQLite mutation can survive a rolled-back request.
 from copy import deepcopy
 
 from . import engine, rework
+from . import effect_compensation as effects_mod
 
 RUNTIME_CONSENT = {'commands', 'chosen_option', 'approved_by', 'approved_role'}
 
@@ -87,8 +88,12 @@ def collect(ctx, inst):
             'scope': 'owning Incident and all its decision ledgers; no external effect reversed'}
 
 
-def admit(proposal, defn, inst, work, approvals, evidence):
-    """Enrich the structural plan; never remove an unrelated blocker."""
+def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
+    """Enrich the structural plan; never remove an unrelated blocker.
+
+    Effects (A072): every external effect of the case must be compensated (exact inverse receipt in the enterprise ledger)
+    or acknowledged (review receipt). Then the Incident may be reopened for the new generation; the old command stays
+    in its history. Nothing here reverses a PLC command."""
     proposal = deepcopy(proposal)
     blockers = proposal['blockers']
     def block(code, **detail): blockers.append(dict(code=code, **detail))
@@ -97,13 +102,24 @@ def admit(proposal, defn, inst, work, approvals, evidence):
     decisions = {d['id']: d for d in evidence['decisions']}
     if incident.get('id') != values.get('incident') or incident.get('asset') != values.get('asset'):
         raise ValueError('효과 조회와 재작업 사건이 다릅니다')
-    if incident.get('state') != 'AWAITING_APPROVAL' or incident.get('cleared') or not incident.get('recovery'):
+    effects = effects_mod.inventory(evidence)
+    outcome = effects_mod.resolution(effects, list(receipts))
+    settled = not outcome['pending']
+    if not incident.get('recovery') or incident.get('cleared'):
+        block('incident_not_active_for_rework')          # a cleared alert ends its own path; nothing to re-decide
+    elif incident.get('state') == 'AWAITING_ACK':
+        block('incident_command_in_flight')
+    elif incident.get('state') not in effects_mod.REOPENABLE:
         block('incident_not_active_for_rework')
-    if any(incident.get(k) for k in ('cmdId', 'actions', 'ack', 'workOrder', 'workOrderRequest')):
-        block('incident_effects_require_compensation')
+    elif incident.get('state') != 'AWAITING_APPROVAL':
+        if settled:
+            proposal['reopen_incident'] = True
+        else:
+            block('incident_not_active_for_rework')
+    if not settled:
+        block(effects_mod.BLOCKER, effects=list(outcome['pending']))
+    proposal['effects_resolution'] = {'effects': effects, **outcome}
     for did, decision in decisions.items():
-        if decision.get('executions') or evidence['enterprise_receipts'][did]:
-            block('decision_effects_require_compensation', decision=did)
         if (decision.get('chosen') or decision.get('state') not in {'PENDING_APPROVAL', 'REJECTED'}) and not any(
                 a['decision_id'] == did for a in approvals):
             block('untracked_decision_consent', decision=did)
@@ -119,9 +135,9 @@ def admit(proposal, defn, inst, work, approvals, evidence):
             block('approval_decision_original_missing', workitem=approval['todo_id'])
         if approval['status'] == 'DISCARDED':
             continue
-        eligible = approval['status'] in {'PENDING', 'FAILED'} or (approval['status'] == 'DELIVERED' and bool(unissued))
-        if (not eligible or approval['todo_id'] not in affected
-                or approval.get('results')):
+        eligible = (approval['status'] in {'PENDING', 'FAILED'} or (approval['status'] == 'DELIVERED' and bool(unissued))
+                    or (approval['status'] == 'DELIVERED' and settled))
+        if not eligible or approval['todo_id'] not in affected or (approval.get('results') and not settled):
             block('approval_effects_require_review', workitem=approval['todo_id'])
         else:
             retire.append(approval['todo_id'])
@@ -136,10 +152,13 @@ def admit(proposal, defn, inst, work, approvals, evidence):
         owned.update(commands=p['commands'], chosen_option=option, approved_by=p['by'], approved_role=p['role'])
     clear = {k for k in RUNTIME_CONSENT if k in owned and values.get(k) == owned[k]
              and (inst.get('variable_sources') or {}).get(k, {}).get('kind') == 'runtime'}
+    # Started services whose external effect the receipts settle (command → PLC ack, work order → ledger) clear with them;
+    # an unexplained service log keeps its review blocker.
+    affected_services = effects_mod.explained_services(defn, work, affected, effects, outcome) if settled else set()
     blockers[:] = [b for b in blockers
                    if b['code'] != 'incident_rework_effect_contract_pending'
                    and not (b['code'] == 'approval_requires_review' and b.get('workitem') in retire)
-                   and not (b['code'] == 'service_effects_require_review' and b.get('workitem') in unissued)
+                   and not (b['code'] == 'service_effects_require_review' and (b.get('workitem') in unissued or b.get('workitem') in affected_services))
                    and not (b['code'] == 'variable_provenance_requires_review' and b.get('variable') in clear)]
     for key in clear:
         proposal['candidate_variables'].pop(key, None)
@@ -153,5 +172,6 @@ def admit(proposal, defn, inst, work, approvals, evidence):
     proposal['effects'] = deepcopy(evidence)
     proposal['snapshot_token'] = rework.fingerprint({'local': proposal['snapshot_token'], 'effects': evidence})
     proposal['execution_available'] = not blockers and bool(proposal['request_roles'])
-    proposal['scope'] = '현재 사건과 전체 판단 원장을 재조회하고 효과가 없는 범위에서 새 작업/판단/승인을 시작합니다. 기존 조치는 보상하지 않습니다.'
+    proposal['scope'] = ('현재 사건과 전체 판단 원장을 재조회합니다. 되돌릴 수 있는 거래는 기업 시스템의 역거래 영수증으로, 되돌릴 수 없는 효과와 '
+                         '설비 명령은 사람의 확인 영수증으로 해결된 뒤에만 새 작업/판단/승인을 시작합니다. 설비에 역명령을 보내지 않습니다.')
     return proposal

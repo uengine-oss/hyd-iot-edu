@@ -26,9 +26,11 @@ def definition():
     }
 
 
-def setup(raw=None):
+def setup(raw=None, registry=True):
     raw = raw or definition()
-    d = definition_registry.validate_definition(raw)
+    # registry=False: a deliberately partial flow (nodes left unreachable) that the A096 static connectivity check refuses
+    # at registration; these tests probe the rework runtime on such flows, not registration.
+    d = definition_registry.validate_definition(raw) if registry else engine.Definition.from_dict(raw)
     repo = procdb.MemoryRepo()
     rt = instances.InstanceRuntime(repo, d, instances.Hooks())
     inst = rt.start_definition(d.id, '1', str(uuid.uuid4()), now=NOW)
@@ -113,7 +115,7 @@ def test_failure_to_persist_instance_rolls_back_task_and_end_arrival(monkeypatch
 def test_reworking_one_path_preserves_other_arrival_at_the_same_end():
     raw = definition()
     raw['sequences'][-1]['target'] = 'end-a'
-    rt, pid, rows = setup(raw)
+    rt, pid, rows = setup(raw, registry=False)        # end-b is left without an incoming flow on purpose
     rt.submit(rows['b']['id'], {'b': 'retained'}, now=NOW)
     before = deepcopy(rt.repo.get_instance(pid)['flow_state']['end_arrivals'])
     preview = rt.preview_rework(pid, rows['a']['id'])

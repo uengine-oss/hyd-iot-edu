@@ -15,6 +15,7 @@ import json
 import os
 import socket
 import threading
+import time
 import uuid
 from copy import deepcopy
 from contextlib import contextmanager
@@ -22,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Protocol
 from .approval_store import MemoryApprovals, PgApprovals
 from .rework_store import MemoryReworks, PgReworks
+from .effect_store import MemoryEffects, PgEffects
 from .projection_repo import MemoryProjection, PgProjection
 
 SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
@@ -38,6 +40,8 @@ INSTANCE_COLS = ("proc_def_id", "proc_inst_id", "proc_inst_name", "root_proc_ins
 JSON_COLS = {"assignees", "output", "draft", "feedback", "role_bindings", "variables_data", "gateway_decisions", "definition", "mcp",
              "fields_json", "data", "initial_variables", "variable_sources", "flow_state"}
 STALE_MINUTES = 30
+LEASE_SECONDS = 120      # A097: a worker claim lives this long unless renewed (agent-sdk lease.py: 120 s, renew every 30 s)
+MAX_CLAIMS = 3           # A097: after the third expired lease the row is FAILED for a person to close (agent-sdk max_claims)
 
 
 class Repo(Protocol):
@@ -63,6 +67,11 @@ class Repo(Protocol):
     def list_reworks(self, tenant_id: str, proc_inst_id: str) -> list[dict]: ...
     def insert_rework(self, row: dict) -> None: ...
     def list_approvals(self, proc_inst_id: str, tenant_id: str) -> list[dict]: ...
+    # effect receipts (A072): compensation deliveries and human acknowledgements, replayed by request id
+    def insert_effect_receipt(self, row: dict) -> None: ...
+    def update_effect_receipt(self, row: dict) -> None: ...
+    def get_effect_receipt(self, tenant_id: str, proc_inst_id: str, request_id: str) -> dict | None: ...
+    def list_effect_receipts(self, tenant_id: str, proc_inst_id: str) -> list[dict]: ...
     def pending_approvals(self, tenant_id: str, after_id: str | None = None, limit: int = 100) -> list[dict]: ...
     def incident_is_process_owned(self, incident_id: str) -> bool: ...
     def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]: ...
@@ -85,6 +94,10 @@ class Repo(Protocol):
     def update_task_error(self, todo_id: str, expected_consumer: str | None = None) -> bool: ...
     def set_draft_status(self, todo_id: str, draft_status: str | None, consumer: str | None = None, expected_consumer: str | None = None) -> bool: ...
     def release_worker_claim(self,todo_id: str,consumer: str) -> bool: ...
+    # A097 (agent-sdk lease_until/claim_count/max_claims): a worker claim is a lease the runner renews; an expired lease
+    # is reclaimable by another worker (fetch_pending_task) and, past MAX_CLAIMS, marked FAILED by the engine's sweep
+    def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool: ...
+    def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int: ...
     # the engine's claim (completion polling)
     def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]: ...
     def cleanup_stale_consumers(self, minutes: int = STALE_MINUTES) -> int: ...
@@ -92,6 +105,7 @@ class Repo(Protocol):
     def record_events(self, events: list[dict]) -> None: ...
     def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
     def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500) -> list[dict]: ...
+    def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
     def insert_notification(self, note: dict) -> None: ...
     def ping(self) -> bool: ...
@@ -110,7 +124,7 @@ def _owns_claim(row,consumer):
 
 
 # ---------------------------------------------------------------- in-memory
-class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
+class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection):
     def __init__(self):
         self._lock = threading.RLock()
         self.defs: dict[tuple[str, str], dict] = {}
@@ -124,6 +138,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
         self.notifications: list[dict] = []
         self.approvals: dict[str, dict] = {}
         self.reworks: dict[tuple, dict] = {}
+        self.effect_receipts: dict[tuple, dict] = {}
         self.projection_jobs = {}
         self._projection_sequence = 0
 
@@ -280,11 +295,16 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
             for w in sorted(self.workitems.values(), key=lambda w: w["start_date"]):
                 if w["status"] != "IN_PROGRESS" or (agent_orch and w.get("agent_orch") != agent_orch) or (tenant_id is not None and w.get("tenant_id") != tenant_id) or (proc_inst_id is not None and w.get("proc_inst_id") != proc_inst_id):
                     continue
+                expired = w.get("draft_status") == "STARTED" and w.get("lease_until") is not None \
+                    and w["lease_until"] < time.time() and int(w.get("claim_count") or 0) < MAX_CLAIMS
                 ready = (w.get("agent_mode") in ("DRAFT", "COMPLETE") and w.get("draft") is None and w.get("draft_status") is None) \
-                    or w.get("draft_status") == "FB_REQUESTED"
+                    or w.get("draft_status") == "FB_REQUESTED" or expired
                 if not ready:
                     continue
+                if expired:
+                    w["log"] = (w.get("log") or "") + f"[Lease expired: reclaimed by {consumer} (claim {int(w.get('claim_count') or 0) + 1})] "
                 w["draft_status"], w["consumer"] = "STARTED", consumer
+                w["lease_until"], w["claim_count"] = time.time() + LEASE_SECONDS, int(w.get("claim_count") or 0) + 1
                 self._enqueue_projection(w)
                 out.append(_copy(w))
                 if len(out) >= limit:
@@ -325,6 +345,24 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
             self._enqueue_projection(w)
             return True
 
+    def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool:
+        with self._lock:
+            w = self.workitems.get(todo_id)
+            if not w or w.get("consumer") != consumer or w.get("status") != "IN_PROGRESS" or w.get("draft_status") != "STARTED":
+                return False
+            w["lease_until"] = time.time() + seconds
+            return True
+
+    def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:
+        with self._lock:
+            n = 0
+            for w in self.workitems.values():
+                if w.get("status") == "IN_PROGRESS" and w.get("draft_status") == "STARTED" and w.get("lease_until") is not None \
+                        and w["lease_until"] < time.time() and int(w.get("claim_count") or 0) >= max_claims:
+                    w.update(draft_status="FAILED", consumer=None, log=(w.get("log") or "") + f"[Lease expired after {w.get('claim_count')} claims: run marked FAILED] ")
+                    self._enqueue_projection(w); n += 1
+            return n
+
     # ---- engine claim
     def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]:
         with self._lock:
@@ -358,6 +396,11 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
         rows = [e for e in self.events if (proc_inst_id is None or e.get("proc_inst_id") == proc_inst_id) and (todo_id is None or e.get("todo_id") == todo_id)]
         return [_copy(e) for e in rows[-limit:]]
 
+    def list_events_since(self, since=None, limit=300) -> list[dict]:
+        """Events at or after `since` (ISO), oldest first; the caller drops ids it has seen (A091 SSE cursor)."""
+        rows = [e for e in self.events if since is None or str(e.get("timestamp") or "") >= since]
+        return [_copy(e) for e in sorted(rows, key=lambda e: (str(e.get("timestamp") or ""), e["id"]))[:limit]]
+
     def find_task_event(self, todo_id, job_id, event_type):
         return next((_copy(e) for e in reversed(self.events) if e.get('todo_id')==todo_id
                      and e.get('job_id')==job_id and e.get('event_type')==event_type),None)
@@ -378,7 +421,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryProjection):
 
 
 # ---------------------------------------------------------------- postgres (Supabase)
-class PgRepo(PgApprovals, PgReworks, PgProjection):
+class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection):
     def __init__(self, dsn: str | None = None):
         import psycopg
         from psycopg.rows import dict_row
@@ -633,6 +676,14 @@ class PgRepo(PgApprovals, PgReworks, PgProjection):
             return c.execute('update todolist set consumer=null where id=%s and consumer=%s returning id',
                              (todo_id,consumer)).fetchone() is not None
 
+    def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool:
+        with self._conn() as c:
+            return bool(c.execute("select renew_task_lease(%s,%s,%s)", (todo_id, consumer, seconds)).fetchone()["renew_task_lease"])
+
+    def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:
+        with self._conn() as c:
+            return int(c.execute("select expire_worker_leases(%s)", (max_claims,)).fetchone()["expire_worker_leases"])
+
     # ---- engine claim
     def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]:
         with self._conn() as c:
@@ -663,6 +714,14 @@ class PgRepo(PgApprovals, PgReworks, PgProjection):
         sql = "select * from events" + (" where " + " and ".join(where) if where else "") + " order by timestamp limit %s"
         with self._conn() as c:
             return [self._row(r) for r in c.execute(sql, args + [limit]).fetchall()]
+
+    def list_events_since(self, since=None, limit=300) -> list[dict]:
+        with self._conn() as c:
+            if since is None:
+                rows = c.execute("select * from (select * from events order by timestamp desc, id desc limit %s) x order by timestamp, id", (limit,)).fetchall()
+            else:
+                rows = c.execute("select * from events where timestamp >= %s::timestamptz order by timestamp, id limit %s", (since, limit)).fetchall()
+            return [self._row(r) for r in rows]
 
     def find_task_event(self, todo_id, job_id, event_type):
         with self._conn() as c:

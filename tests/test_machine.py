@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from procsvc import machine, definition
+from procsvc import machine, definition as d, definition
 from hydcommon.timeutil import now, parse_iso
 
 CARD = {
@@ -163,13 +163,18 @@ def test_reobserve_extends_once_when_cooling_but_not_yet_cleared():
     assert inc.state == "RESOLVED" and inc.work_order is None
 
 
-def test_reobserve_escalates_after_extension_without_clear():
+def test_reobserve_escalates_after_extensions_without_clear():
+    """A072 run 4 (1x): the plant was inside the limit (51.86 C) and the detector CLEAR landed seconds after the single
+    extension ended. Inside the limit the incident now waits up to REOBSERVE_MAX_EXTENSIONS (3) third-windows for CLEAR;
+    a value that stays inside without ever clearing still escalates after the last one."""
     inc, fx = new_incident(), FX()
     approve(inc, fx)
     machine.on_status(inc, {"asset": "HYD-01", "cmdId": inc.cmd_id, "result": "DONE"}, now(), fx)
-    machine.on_timer(inc, "reobs", now(), latest_ts1=53.0, fx=fx, time_scale=20)
-    assert inc.state == "RE_OBSERVING"
-    machine.on_timer(inc, "reobs", now(), latest_ts1=53.0, fx=fx, time_scale=20)   # still no CLEAR → no second extension
+    for n in range(1, d.REOBSERVE_MAX_EXTENSIONS + 1):
+        machine.on_timer(inc, "reobs", now(), latest_ts1=53.0, fx=fx, time_scale=20)
+        assert inc.state == "RE_OBSERVING" and inc.reobs_extensions == n
+    assert fx.timers.count(("reobs", 900 / 20 / 3)) == d.REOBSERVE_MAX_EXTENSIONS
+    machine.on_timer(inc, "reobs", now(), latest_ts1=53.0, fx=fx, time_scale=20)   # still no CLEAR → no further extension
     assert inc.state == "ESCALATED" and inc.reason == "MITIGATION_FAILED"
 
 
@@ -190,3 +195,28 @@ def test_command_without_parameter_needs_no_value():
     fx = FX()
     cmd = machine.on_approve(inc, "OP-17", [{"code": "RESET"}], now(), fx, time_scale=20)
     assert cmd["actions"] == [{"code": "RESET"}] and inc.state == "AWAITING_ACK"
+
+
+def test_timer_armed_for_a_superseded_command_is_ignored_after_rework_reopen():
+    """A072 live run 4: the first command's 45 s re-observation timer fired inside the second command's window and escalated
+    the case 6 s in. A timer judges only the command that armed it."""
+    inc, fx = new_incident(), FX()
+    t = now()
+    approve(inc, fx, t)
+    first = inc.cmd_id
+    machine.on_status(inc, {"asset": "HYD-01", "cmdId": first, "result": "DONE", "mode": "REMOTE_AUTO"}, t, fx)
+    assert inc.state == "RE_OBSERVING"
+    assert machine.on_rework_reopen(inc, "req-1", "이생산", "role:prod-mgr", "fan only was not enough", {"acknowledged": [f"plc:{first}"]}, fx)
+    approve(inc, fx, t + timedelta(seconds=20))
+    second = inc.cmd_id
+    assert second != first
+    machine.on_timer(inc, "ack", t + timedelta(seconds=30), latest_ts1=57.0, fx=fx, cmd_id=first)     # stale ack timer
+    assert inc.state == "AWAITING_ACK" and fx.audits[-1]["event"] == "TIMER_IGNORED" and fx.audits[-1]["detail"]["armedFor"] == first
+    machine.on_status(inc, {"asset": "HYD-01", "cmdId": second, "result": "DONE", "mode": "REMOTE_AUTO"}, t + timedelta(seconds=23), fx)
+    machine.on_timer(inc, "reobs", t + timedelta(seconds=45), latest_ts1=55.21, fx=fx, cmd_id=first)   # stale reobs timer, hot value
+    assert inc.state == "RE_OBSERVING" and inc.reason is None
+    machine.on_alert(inc, {"alertId": "ALT-hyd01-0001", "state": "CLEAR"}, fx)
+    machine.on_timer(inc, "reobs", t + timedelta(seconds=68), latest_ts1=49.0, fx=fx, cmd_id=second)   # the current command's own window
+    assert inc.state == "RESOLVED"
+    machine.on_timer(inc, "reobs", t + timedelta(seconds=70), latest_ts1=49.0, fx=fx)                  # legacy callers without a binding still work
+    assert inc.state == "RESOLVED"

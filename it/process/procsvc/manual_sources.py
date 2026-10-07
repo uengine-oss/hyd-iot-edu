@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -34,6 +35,17 @@ class Extraction:
     status: str = 'READY'
 
 
+PRIVATE_USE = re.compile('[-]')
+
+
+def normalize_glyphs(text: str) -> str:
+    """A094 (real Daikin manual): symbol-font bullets come out of pypdf as private-use code points (U+F06C …) that carry
+    no text, are invisible to a reader and get dropped from an agent's quote — which then fails the exact-citation
+    contract and costs a correction round. They become a visible bullet at archive time, so anchors are deterministic
+    on what the agent actually reads. text-v2 of the extractor; a replayed source keeps its old extraction by design."""
+    return PRIVATE_USE.sub('•', text)
+
+
 def extract(raw: bytes, filename: str) -> Extraction:
     if not raw or len(raw) > MAX_BYTES:
         raise ValueError('빈 파일 또는 30 MiB를 초과한 파일입니다')
@@ -48,10 +60,10 @@ def extract(raw: bytes, filename: str) -> Extraction:
             raise ValueError('암호화된 PDF는 먼저 복호화해야 합니다')
         if not 0 < len(reader.pages) <= MAX_PAGES:
             raise ValueError('PDF는 1~500페이지여야 합니다')
-        pages = tuple(page.extract_text() or '' for page in reader.pages)
+        pages = tuple(normalize_glyphs(page.extract_text() or '') for page in reader.pages)
         empty = [str(i) for i, text in enumerate(pages, 1) if not text.strip()]
         warnings = (f"텍스트가 없는 페이지 {', '.join(empty)}: OCR 또는 빈 페이지 여부 검토 필요",) if empty else ()
-        return Extraction(pages, f'pypdf:{pypdf.__version__}:text-v1', 'application/pdf',
+        return Extraction(pages, f'pypdf:{pypdf.__version__}:text-v2', 'application/pdf',
                           warnings, 'OCR_REQUIRED' if empty else 'READY')
     if suffix not in ('.md', '.txt', '.markdown'):
         raise ValueError('지원 파일은 Markdown, TXT, PDF입니다')

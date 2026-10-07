@@ -34,9 +34,21 @@ def validate(value):
     return result
 
 
+def unfence(text):
+    """A081: CLI agents often wrap the whole final message in a ```json fence; the control object is still the whole
+    message. Prose around an object is not accepted (that stays a contract failure)."""
+    if not isinstance(text,str):return text
+    body=text.strip()
+    if body.startswith('```'):
+        first_line_end=body.find(chr(10))
+        if first_line_end!=-1 and body.endswith('```'):
+            body=body[first_line_end+1:-3].strip()
+    return body
+
+
 def control(text):
     """Only a whole JSON control object may bypass the business form contract."""
-    try:value=json.loads(text)
+    try:value=json.loads(unfence(text))
     except (TypeError,ValueError):return None
     if not isinstance(value,dict) or '__deferred__' not in value:return None
     if set(value)!={'__deferred__'}:raise ValueError('deferral and business output cannot be mixed')

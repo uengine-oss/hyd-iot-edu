@@ -397,8 +397,9 @@
         <label class="muted">매칭할 고장 유형 <select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === p.suggestedFailureMode ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></label>
         <label class="muted">관계 <select data-rel="${esc(p.id)}"><option value="REMEDIED_BY">근본 조치</option><option value="MITIGATED_BY">즉시 완화</option></select></label>
         <label class="muted">종류 <select data-kind="${esc(p.id)}"><option value="work_order">정비 작업지시</option><option value="control">설비 제어</option></select></label>
+        <label class="muted">움직이는 변수·지표 <input aria-label="SOP ${esc(p.id)} 영향" data-affects="${esc(p.id)}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+" title="상태 변수(sv:…) 또는 성과 지표(msr:…) id와 방향(+/-)을 쉼표로. 비우면 BSC 득실 0"></label>
         <ol>${p.steps.map(s => `<li><textarea aria-label="SOP ${esc(p.id)} 단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea> <span class="muted">${esc(s.manual || '')}</span>${citation(s.anchor)}</li>`).join('')}</ol></div>`).join('') || '<div class="muted">없음</div>'}</div></div>
-      <label><input type="checkbox" id="manualReviewed"> 원문·단계·고장 유형·관계를 검토했습니다. 규칙의 실행 후보는 자동으로 바뀌지 않습니다.</label>
+      <label><input type="checkbox" id="manualReviewed"> 원문·단계·고장 유형·관계를 검토했습니다. 고른 고장 유형에 실행 후보 규칙이 있으면 적재와 함께 이 SOP가 그 규칙에 연결되어 다음 판단부터 후보로 평가됩니다.</label>
       <div class="approve-row"><button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button><span id="manualMsg" class="muted"></span></div></div>`;
     $('#manualFullSource').addEventListener('click', async () => {
       try {
@@ -440,7 +441,7 @@
         const created = await postJ(extractionUrl, {request_id: state.request_id});
         sessionStorage.setItem(extractionKey, JSON.stringify({...state, instance: created.instance}));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = '추출 작업 접수됨. 워커 실행 후 진행·결과 확인을 누르세요. 접수는 추출 완료가 아닙니다.';
+        if (H.preview === r) $('#manualAgentStatus').textContent = (created.segments > 1 ? `긴 문서라 ${created.segments}개 구간 작업으로 접수됨(결과는 하나로 병합). ` : '추출 작업 접수됨. ') + '워커 실행 후 진행·결과 확인을 누르세요. 접수는 추출 완료가 아닙니다.';
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
       finally { if (H.preview === r) button.disabled = false; }
     });
@@ -451,13 +452,18 @@
         const result = await getJ(extractionUrl + '/' + encodeURIComponent(instance));
         if (H.preview !== r) return;
         if (result.preview) { H.preview = result.preview; renderPreview(); }
-        else $('#manualAgentStatus').textContent = '추출 상태: ' + result.status + (result.log ? ' · ' + result.log : '') + ' — 프로세스 인스턴스 화면에서 작업·오류를 확인할 수 있습니다.';
+        else {
+          const seg = result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` + (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [${s.index}: ${s.status}]`).join('') : '';
+          $('#manualAgentStatus').textContent = '추출 상태: ' + result.status + seg + (result.log ? ' · ' + result.log : '') + ' — 프로세스 인스턴스 화면에서 작업·오류를 확인할 수 있습니다.';
+        }
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '결과 확인 실패: ' + e.message; }
     });
+    // "sv:ts1:-, msr:maint-cost:+" → [{target, sign}] (A079: reviewed impact of an ingested SOP)
+    const parseAffects = text => (text || '').split(',').map(s => s.trim()).filter(Boolean).map(s => { const m = s.match(/^(.*?):([+-])$/); return m ? { target: m[1].trim(), sign: m[2] } : { target: s, sign: '?' }; });
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
       if (!$('#manualReviewed').checked) { $('#manualMsg').textContent = '원문을 대조하고 검토 완료를 표시하세요.'; return; }
       const links = {};
-      box.querySelectorAll('[data-fm]').forEach(s => { const id = s.dataset.fm; links[id] = { failureMode: s.value || null, relation: box.querySelector(`[data-rel="${CSS.escape(id)}"]`).value, kind: box.querySelector(`[data-kind="${CSS.escape(id)}"]`).value }; });
+      box.querySelectorAll('[data-fm]').forEach(s => { const id = s.dataset.fm; links[id] = { failureMode: s.value || null, relation: box.querySelector(`[data-rel="${CSS.escape(id)}"]`).value, kind: box.querySelector(`[data-kind="${CSS.escape(id)}"]`).value, affects: parseAffects(box.querySelector(`[data-affects="${CSS.escape(id)}"]`).value) }; });
       const missing = Object.entries(links).filter(([, v]) => !v.failureMode).map(([k]) => k);
       if (missing.length) { $('#manualMsg').textContent = `고장 유형을 고르세요: ${missing.join(', ')} — 조치 방법(SOP)은 고장 유형에 매칭되어야 합니다.`; return; }
       c.disabled = true;
@@ -473,7 +479,10 @@
         });
         const out = await postJ(API.process + '/api/kg/manuals/commit', { ...reviewed, links: reviewedLinks, by: $('#manualBy').value, reviewed: true });
         if (H.preview !== r) return;
-        $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · SOP ${out.procedures} · 단계 ${out.steps}. 실행 후보 규칙은 변경하지 않았습니다.`;
+        const activated = out.candidate_activation && typeof out.candidate_activation === 'object' ? Object.entries(out.candidate_activation) : [];
+        $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · SOP ${out.procedures} · 단계 ${out.steps}. ` + (activated.length
+          ? '실행 후보 규칙에 연결: ' + activated.map(([fm, rules]) => `${fm} → ${rules.join(', ')}`).join(' · ') + ' (되돌리면 함께 빠집니다)'
+          : '연결된 실행 후보 규칙이 없어 판단 후보는 바뀌지 않았습니다.');
         c.textContent = '적재 완료';
         H.skills = [];
         await loadUploads(); if (window.hydEnt) hydEnt.loadGraph(true);

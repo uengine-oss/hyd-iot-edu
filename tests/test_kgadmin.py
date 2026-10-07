@@ -84,3 +84,12 @@ def test_ties_prefer_work_order_actions_for_maintenance_procedures():
                {"id": "act:fan-inspect-wo", "name": "쿨러 팬 점검 작업지시", "kind": "work_order"}]
     r = kgadmin.parse_manual("## HM-8.2 쿨러 팬 벨트 교체\n### SOP-FAN-02 벨트 교체 절차\n1. 구 벨트를 분리한다.", "m.md", actions)
     assert r["procedures"][0]["suggestedAction"] == "act:fan-inspect-wo"
+
+
+def test_existing_skill_can_be_relinked_to_a_failure_mode_for_candidate_rules():
+    """A075: a reviewer re-links an admin-registered SOP to a failure mode so the candidate rules can offer it."""
+    out = kgadmin.validate_skill({"name": "쿨러 팬 점검 절차", "failureMode": " fm:bearing-degradation ", "relation": "REMEDIED_BY"})
+    assert out["failureMode"] == "fm:bearing-degradation" and out["relation"] == "REMEDIED_BY"
+    assert "failureMode" not in kgadmin.validate_skill({"name": "이름만"})
+    with pytest.raises(ValueError):
+        kgadmin.validate_skill({"name": "x", "failureMode": "fm:x", "relation": "CAUSES"})

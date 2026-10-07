@@ -279,6 +279,24 @@
           "name": "timer",
           "type": "string",
           "description": "timer 이벤트의 ISO 8601 기간. 예: PT10M"
+        },
+        {
+          "name": "semantic_id",
+          "type": "string",
+          "required": false,
+          "description": "실행 정의 노드가 대응하는 온톨로지 흐름 노드 id"
+        },
+        {
+          "name": "semantic_warning",
+          "type": "string",
+          "required": false,
+          "description": "대응 실패 사유 (없으면 null)"
+        },
+        {
+          "name": "catchAll",
+          "type": "boolean",
+          "required": false,
+          "description": "메시지 시작 이벤트가 특정 경보 패턴 없이 모든 경보를 받는가 (alert_triage)"
         }
       ]
     },
@@ -309,6 +327,18 @@
         {
           "name": "tool",
           "type": "string"
+        },
+        {
+          "name": "semantic_id",
+          "type": "string",
+          "required": false,
+          "description": "실행 정의 노드가 대응하는 온톨로지 흐름 노드 id (MAPS_TO 대상)"
+        },
+        {
+          "name": "semantic_warning",
+          "type": "string",
+          "required": false,
+          "description": "대응 실패 사유 (없으면 null)"
         }
       ]
     },
@@ -327,6 +357,18 @@
             "exclusive"
           ],
           "required": true
+        },
+        {
+          "name": "semantic_id",
+          "type": "string",
+          "required": false,
+          "description": "실행 정의 노드가 대응하는 온톨로지 흐름 노드 id"
+        },
+        {
+          "name": "semantic_warning",
+          "type": "string",
+          "required": false,
+          "description": "대응 실패 사유 (없으면 null)"
         }
       ]
     },
@@ -861,6 +903,18 @@
           "name": "weight",
           "type": "number",
           "required": true
+        },
+        {
+          "name": "tag",
+          "type": "string",
+          "required": false,
+          "description": "sql이 읽는 시계열 태그. windowSeconds와 함께 선언하면 구간 조건으로 보고, 수집 계약보다 긴 관측 공백이 있으면 판정하지 않는다(미확인)"
+        },
+        {
+          "name": "windowSeconds",
+          "type": "number",
+          "required": false,
+          "description": "sql이 집계하는 최근 구간(초)"
         }
       ]
     },
@@ -1140,6 +1194,38 @@
           "description": "자산을 식별하는 원천 열. 없으면 자동 자산 질의를 생성하지 않는다"
         },
         {
+          "name": "derive",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "hours_from_now"
+          ],
+          "description": "시각 열(timestamptz)을 판단에 넣는 방식. hours_from_now = (값 − 지금)/3600, 미래 양수·과거 음수. 승인 재검증은 환산값이 아니라 원래 시각을 비교한다(A086)"
+        },
+        {
+          "name": "sourceState",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "OK",
+            "MISSING",
+            "TYPE_CHANGED"
+          ],
+          "description": "DDL 동기화(A087)가 확인한 바인딩 상태. MISSING·TYPE_CHANGED이면 에이전트는 읽지 않고 미확인으로 둔다"
+        },
+        {
+          "name": "sourceLiveType",
+          "type": "string",
+          "required": false,
+          "description": "원천 카탈로그의 현재 열 타입(없으면 null)"
+        },
+        {
+          "name": "sourceCheckedAt",
+          "type": "string",
+          "required": false,
+          "description": "바인딩 상태가 마지막으로 바뀐 시각"
+        },
+        {
           "name": "ingested_at",
           "type": "string",
           "description": "현재 활성 적재 시각"
@@ -1362,6 +1448,85 @@
           "name": "openedAt",
           "type": "datetime",
           "required": true
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "required": false,
+          "description": "사건 상태기계의 현재 상태 (procsvc/machine.py)",
+          "values": [
+            "AWAITING_APPROVAL",
+            "CMD_ISSUED",
+            "AWAITING_ACK",
+            "ACKED",
+            "RE_OBSERVING",
+            "RESOLVED",
+            "WORK_ORDER_CREATED",
+            "CLOSED",
+            "ESCALATED",
+            "REJECTED_BY_OPERATOR",
+            "RESOLVED_WITHOUT_ACTION"
+          ]
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": "종결·에스컬레이션 사유"
+        },
+        {
+          "name": "closedAt",
+          "type": "datetime",
+          "required": false,
+          "description": "종결 시각"
+        },
+        {
+          "name": "cleared",
+          "type": "boolean",
+          "required": false,
+          "description": "원천 경보가 해제됐는가"
+        },
+        {
+          "name": "command_id",
+          "type": "string",
+          "required": false,
+          "description": "마지막으로 발행한 PLC 명령 id (없으면 null)"
+        },
+        {
+          "name": "work_order_ref",
+          "type": "string",
+          "required": false,
+          "description": "CMMS 작업지시 영수증(JSON 문자열)"
+        },
+        {
+          "name": "sourcePattern",
+          "type": "string",
+          "required": false,
+          "description": "사건을 연 경보 패턴 코드"
+        },
+        {
+          "name": "sourceTrip",
+          "type": "string",
+          "required": false,
+          "description": "트립 경보의 PLC 트립 사유"
+        },
+        {
+          "name": "sourceAlert",
+          "type": "string",
+          "required": false,
+          "description": "사건을 연 원천 경보 원문(JSON 문자열)"
+        },
+        {
+          "name": "projection_revision",
+          "type": "integer",
+          "required": false,
+          "description": "이 노드를 쓴 원천 투영 판본 (case_projection)"
+        },
+        {
+          "name": "projection_warnings",
+          "type": "string[]",
+          "required": false,
+          "description": "투영 중 찾지 못한 참조(설비·패턴·원인)"
         }
       ]
     },
@@ -1390,6 +1555,37 @@
           "name": "followedRecommendation",
           "type": "boolean",
           "required": true
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "required": false,
+          "description": "판단의 상태 (procsvc/decisions.py)",
+          "values": [
+            "PENDING_APPROVAL",
+            "APPROVED",
+            "REJECTED",
+            "EXECUTED",
+            "PARTIAL"
+          ]
+        },
+        {
+          "name": "source_incident_id",
+          "type": "string",
+          "required": false,
+          "description": "이 판단이 속한 사건 id"
+        },
+        {
+          "name": "projection_revision",
+          "type": "integer",
+          "required": false,
+          "description": "이 노드를 쓴 원천 투영 판본"
+        },
+        {
+          "name": "projection_warnings",
+          "type": "string[]",
+          "required": false,
+          "description": "투영 중 찾지 못한 참조(판단 모델·스킬·역할·사건)"
         }
       ]
     },
@@ -1493,7 +1689,8 @@
           "values": [
             "NEW",
             "RUNNING",
-            "COMPLETED"
+            "COMPLETED",
+            "CANCELLED"
           ]
         },
         {
@@ -1528,6 +1725,18 @@
         {
           "name": "projection_warnings",
           "type": "string[]"
+        },
+        {
+          "name": "rework_generation",
+          "type": "integer",
+          "required": false,
+          "description": "재작업 세대 (0 = 최초 실행)"
+        },
+        {
+          "name": "projection_revision",
+          "type": "integer",
+          "required": false,
+          "description": "이 노드를 쓴 실행 투영 판본 (execution_graph)"
         }
       ]
     },
@@ -1637,6 +1846,24 @@
         {
           "name": "version",
           "type": "string"
+        },
+        {
+          "name": "generation",
+          "type": "integer",
+          "required": false,
+          "description": "이 작업이 속한 재작업 세대"
+        },
+        {
+          "name": "supersedes_id",
+          "type": "string",
+          "required": false,
+          "description": "재작업으로 대체한 이전 세대 작업 id"
+        },
+        {
+          "name": "rework_request_id",
+          "type": "string",
+          "required": false,
+          "description": "이 작업을 만든 재작업 요청 id"
         }
       ]
     },
@@ -1675,6 +1902,279 @@
         {
           "name": "ontology_ref",
           "type": "string"
+        },
+        {
+          "name": "projection_warnings",
+          "type": "string[]",
+          "required": false,
+          "description": "실행 정의 노드가 온톨로지 흐름 노드에 대응하지 못한 경고"
+        }
+      ]
+    },
+    {
+      "name": "ExecutionProjection",
+      "label_ko": "실행 투영 잠금",
+      "layer": "record",
+      "standard": "내부 기록",
+      "description": "실행 정의·인스턴스·작업을 그래프에 쓸 때 판본 순서를 지키는 잠금·영수증 (execution_graph). 사람이 편집하지 않는다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "lock",
+          "type": "integer",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "revision",
+          "type": "integer",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "payload_hash",
+          "type": "string",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "CaseProjection",
+      "label_ko": "사건·판단 투영 잠금",
+      "layer": "record",
+      "standard": "내부 기록",
+      "description": "사건·판단 사례를 그래프에 쓸 때 판본 순서를 지키는 잠금·영수증 (case_projection).",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "lock",
+          "type": "integer",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "revision",
+          "type": "integer",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "payload_hash",
+          "type": "string",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "KnowledgeEdit",
+      "label_ko": "지식 편집 영수증",
+      "layer": "record",
+      "standard": "내부 기록",
+      "description": "스킬·규칙 편집 요청 하나의 멱등 영수증 (skill_graph.write): 같은 request_id로 다시 오면 저장된 결과를 돌려준다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "fingerprint",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "actor",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "kind",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "skill",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "rule",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "edge",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "before",
+          "type": "string",
+          "required": false,
+          "description": "편집 전 상태(JSON 문자열)"
+        },
+        {
+          "name": "result",
+          "type": "string",
+          "required": false,
+          "description": "편집 결과(JSON 문자열)"
+        }
+      ]
+    },
+    {
+      "name": "ManualIngestionDocument",
+      "label_ko": "매뉴얼 적재 문서",
+      "layer": "record",
+      "standard": "내부 기록",
+      "description": "매뉴얼 한 문서의 적재 이력 머리: 현재 판본(head)과 그래프 스냅샷 (manual_graph).",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "tenant",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "head",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "snapshot",
+          "type": "string",
+          "required": false,
+          "description": "이 문서가 소유한 노드·관계 스냅샷(JSON 문자열)"
+        }
+      ]
+    },
+    {
+      "name": "ManualIngestionBatch",
+      "label_ko": "매뉴얼 적재 배치",
+      "layer": "record",
+      "standard": "내부 기록",
+      "description": "검토·적재 한 번의 영수증과 되돌리기 정보: 계획·전후 상태·상태(ACTIVE/ROLLED_BACK) (manual_graph).",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "tenant",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "document",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "previous",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "fingerprint",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "rolledBackAt",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "rolledBackBy",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "plan",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "before",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "after",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "receipt",
+          "type": "string",
+          "required": false,
+          "description": ""
         }
       ]
     }

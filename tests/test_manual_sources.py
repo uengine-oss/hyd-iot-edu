@@ -166,3 +166,13 @@ def test_encrypted_pdf_is_rejected_without_partial_document(store):
         store.save('hyd', 'encrypted.pdf', stream.getvalue())
     with sqlite3.connect(store.path) as db:
         assert db.execute('SELECT count(*) FROM manual_documents').fetchone()[0] == 0
+
+
+def test_pdf_symbol_font_bullets_become_visible_bullets_at_archive_time():
+    """A094 (real Daikin manual): private-use glyphs (Wingdings bullets) are invisible and vanish from agent quotes."""
+    from procsvc.manual_sources import normalize_glyphs
+    raw = '1.3.1 General Precautions \n DANGER \n Ensure that transportation is safe\n second item'
+    out = normalize_glyphs(raw)
+    assert '' not in out and '' not in out and out.count('•') == 2
+    assert out.startswith('1.3.1 General Precautions \n DANGER \n• Ensure')
+    assert normalize_glyphs('한글 • ASCII 그대로') == '한글 • ASCII 그대로'

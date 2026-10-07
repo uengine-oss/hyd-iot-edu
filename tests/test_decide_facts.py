@@ -48,6 +48,22 @@ def test_no_hot_lot_means_no_claim_exposure(monkeypatch):
     assert facts["hot_lot_claim"] == 0 and facts["hot_lot_qty"] == 0
 
 
+def test_business_facts_record_read_time_and_the_source_row_time_only_when_given(monkeypatch):
+    """A085 (R05): a business value carries when it was read; the source's own row time is kept when the source gives
+    it (MES records[].updated_at) and recorded as absent otherwise — never invented."""
+    mes = {"system": "MES", "facts": {"due_in_h": 6}, "records": [
+        {"asset": "HYD-01", "order_id": "MO-1", "updated_at": "2026-10-03T16:00:01+00:00"},
+        {"asset": "HYD-02", "order_id": "MO-2", "updated_at": "2026-10-06T09:00:00+00:00"}]}      # another asset's row
+    eps = dict(ENDPOINTS, **{"/mes/orders?asset={asset}": mes})
+    monkeypatch.setattr(decide.mcp_ent, "fetch", lambda ep, asset: eps[ep])
+    _, prov = decide.gather_facts(INPUTS[1:], "HYD-01", {}, FakeTSDB())
+    rows = {p["variable"]: p for p in prov}
+    assert rows["order_due_h"]["source_as_of"] == "2026-10-03T16:00:01+00:00" and rows["order_due_h"]["source_time"] == "record updated_at"
+    for var in ("order_penalty_per_h", "order_customer_tier", "hot_lot_qty", "standby_ready"):
+        assert rows[var]["source_as_of"] is None and rows[var]["source_time"] == "원천이 행 시점을 주지 않음"
+    assert all(rows[v]["observed_at"] for v in rows)
+
+
 def test_a_failing_source_is_reported_not_guessed(monkeypatch):
     def boom(ep, asset):
         raise RuntimeError("ERP down")

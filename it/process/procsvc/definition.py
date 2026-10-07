@@ -26,7 +26,8 @@ ACK_TIMEOUT_S = 30           # wall clock (v3 7.3)
 CMD_EXPIRY_S = 120           # wall clock (v3 7.2)
 REOBSERVE_SIM_S = 15 * 60    # simulated seconds; divided by TIME_SCALE
 REOBSERVE_TS1_MAX = 55.0
-REOBSERVE_MAX_EXTENSIONS = 1   # one extra third-window when the value is already inside the limit but CLEAR is pending
+REOBSERVE_MAX_EXTENSIONS = 3   # extra third-windows while the value is already inside the limit but the detector CLEAR (hysteresis held 60 s)
+                               # has not landed yet. A072 run 4 (1x): one extension ended 3 s before CLEAR arrived → MITIGATION_FAILED on a recovered plant.
 # Recovery criterion per alert pattern: (tag re-read from TimescaleDB, operator, limit). The limits are the ontology's:
 # TS1 55 ℃ (reset line), PS1 165 bar (sv:ps1 -> msr:throughput "PS1 < 165 bar에서 사이클 지연"), VS1 1.2 mm/s (pattern raise line).
 RECOVERY = {"COOLER_DEGRADATION": ("TS1", "<", REOBSERVE_TS1_MAX),

@@ -659,6 +659,37 @@ def fire_event(defn: Definition, inst: dict, event_row: dict, workitems: list[di
     return process_submitted(defn, inst, event_row, workitems, now, time_scale)
 
 
+
+def abort_to(defn: Definition, inst: dict, workitems: list[dict], target_activity_id: str, reason: str,
+             now: datetime | None = None, time_scale: float = 1.0) -> Advance:
+    """The case ended outside the flow (A074: the Incident reached a terminal state before any action was issued — alert
+    cleared, operator rejected, escalated). Every open work item is cancelled with the reason and the flow jumps to the
+    named human activity so a person records the outcome and the instance ends through the definition's own end event.
+    Nothing is invented: no output is written for the cancelled work, agent claims are released by the CANCELLED status."""
+    if target_activity_id not in defn.activities:
+        raise ValueError(f"{target_activity_id} is not an activity")
+    adv = Advance()
+    # the engine pre-creates a TODO row per activity: the target's own waiting row is reached, never cancelled and re-created
+    waiting = [w for w in workitems if w["activity_id"] == target_activity_id and w["status"] == "TODO"]
+    target = max(waiting, key=workitem_order) if waiting else None
+    for row in workitems:
+        if row["status"] in TERMINAL_STATUSES or row is target:
+            continue
+        row.update(status="CANCELLED", end_date=now_iso(now), consumer=None, log=(row.get("log") or "") + f"cancelled: {reason}; ")
+        adv.updated.append(row)
+    if target is None:
+        target = new_workitem(defn, inst, defn.activities[target_activity_id], now)
+        adv.created.append(target)
+    else:
+        adv.updated.append(target)
+    target["log"] = (target.get("log") or "") + f"reached by abort: {reason}; "
+    events = reach(defn, inst, target, workitems, now, time_scale)
+    adv.created += events
+    adv.reached = [target]
+    inst["current_activity_ids"] = [target_activity_id]
+    return adv
+
+
 # ---------------------------------------------------------------- views for the portal / tests
 def timeline(defn: Definition, inst: dict, workitems: list[dict]) -> list[dict]:
     """Every activity of the definition with its latest work item state, in flow order (the portal derives the richer

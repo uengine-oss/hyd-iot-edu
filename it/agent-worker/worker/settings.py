@@ -36,16 +36,27 @@ class Settings:
     cli_agent: str = os.getenv("CLIAGENTS_DEFAULT_CLI", os.getenv("CLI_AGENT", "claude-code"))
     model: str | None = os.getenv("CLI_MODEL") or None
     reasoning_effort: str = os.getenv("CLI_REASONING_EFFORT", "low")
+    # HYD addition (A073): run Codex against an OpenAI-compatible model server (the lecturer's GPU SGLang) by inline
+    # `-c model_provider` overrides per run — the personal ~/.codex/config.toml is never edited (--ignore-user-config).
+    # The API key stays in the worker process environment under `codex_model_provider_env_key`; it is never written to a file.
+    codex_model_provider_base_url: str = os.getenv("CODEX_MODEL_PROVIDER_BASE_URL", "")
+    codex_model_provider_name: str = os.getenv("CODEX_MODEL_PROVIDER_NAME", "HYD GPU model server")
+    codex_model_provider_env_key: str = os.getenv("CODEX_MODEL_PROVIDER_ENV_KEY", "HYD_GPU_API_KEY")
+    codex_model: str | None = os.getenv("CODEX_MODEL") or None
     default_permission: Permission = field(default_factory=lambda: _PERMISSION_BY_NAME.get(os.getenv("CLIAGENTS_DEFAULT_PERMISSION", ""), Permission.WORKSPACE_WRITE))
     run_timeout_s: float = float(os.getenv("CLIAGENTS_RUN_TIMEOUT_SECONDS", "1800"))
+    max_format_corrections: int = int(os.getenv("MAX_FORMAT_CORRECTIONS", "2"))     # A086: same-session shape fixes before failing
     # one directory per run under here (must be a persistent volume: a paused run resumes into it)
     workspace_root: Path = Path(os.getenv("CLIAGENTS_WORKSPACE_ROOT", os.getenv("WORKSPACE_ROOT", "/workspace")))
     workspace_retention_hours: int = int(os.getenv("CLIAGENTS_WORKSPACE_RETENTION_HOURS", "72"))
     schema_prompt_path: Path = Path(os.getenv("SCHEMA_PROMPT", "/srv/ontology/schema_prompt.md"))
     # HYD addition: headless runs cannot answer a permission prompt, so the read-only tools the task needs are pre-approved
     # (Claude Code --allowedTools). Anything else still arrives as a permission_request → human question (HITL).
+    # A077: prompts longer than this go to context/prompt.md (Windows argv limit ≈ 32 K chars; keep headroom for the other args)
+    max_inline_prompt_chars: int = int(os.getenv("MAX_INLINE_PROMPT_CHARS", "16000"))
     allowed_tools: list[str] = field(default_factory=lambda: _csv(os.getenv(
-        "ALLOWED_TOOLS", "mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep")))
+        "ALLOWED_TOOLS", "mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep,"
+        "Bash(python *),Bash(python3 *),PowerShell(python *)")))   # A077: a citation-offset script runs in the run workspace (file writes stay under the workspace permission mode)
     # Claude Code keeps its login under CLAUDE_CONFIG_DIR. Isolating it per run (the product's RuntimeLease) is only safe when
     # an API key authenticates the CLI; a subscription login lives in the shared config dir and must not be relocated.
     isolate_config_dir: bool = bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -53,6 +64,7 @@ class Settings:
     mcp_host_rewrite: str = os.getenv("MCP_HOST_REWRITE", "")
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
+    lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
 
     @property
     def retention_seconds(self) -> int:

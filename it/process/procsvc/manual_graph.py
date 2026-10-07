@@ -19,7 +19,7 @@ class Conflict(ValueError):
 
 
 LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')
-RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'APPROVED_BY', 'HAS_SKILL')
+RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS', 'AFFECTS')
 
 
 def ensure_schema(session):
@@ -34,7 +34,8 @@ def ensure_schema(session):
 
 def _lock(tx):
     tx.run("MERGE (n:IngestionControl {id:'ingestion:manual'}) "
-           "ON CREATE SET n.sequence=0 SET n.sequence=n.sequence+1").consume()
+           "ON CREATE SET n.sequence=0 "
+           "SET n.name=coalesce(n.name,'manual ingestion transaction lock'), n.sequence=coalesce(n.sequence,0)+1").consume()   # A092: schema requires name
 
 
 def _sort(snapshot):
@@ -65,9 +66,9 @@ def desired(plan):
         nodes.append({'labels': [label], 'props': dict(id=nid, _manual_document=document, **props)})
         return label, nid
 
-    def edge(a, kind, b):
+    def edge(a, kind, b, **props):
         edges.append(dict(from_labels=[a[0]], from_id=a[1], to_labels=[b[0]], to_id=b[1],
-                          type=kind, props={'_manual_document': document}))
+                          type=kind, props={'_manual_document': document, **props}))
 
     source = node('KnowledgeSource', 'ks:' + prefix, name=plan['filename'], kind='manual',
                   source_id=plan['source_id'], document_id=plan['document_id'], sha256=plan['sha256'],
@@ -84,7 +85,11 @@ def desired(plan):
                      description=f"매뉴얼 {plan['filename']}에서 검토한 SOP", source_id=plan['source_id'],
                      citation=canonical(p['anchor']))
         edge(('FailureMode', p['failureMode']), p['relation'], skill)
+        for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
+            edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules
         edge(skill, 'APPROVED_BY', ('Role', p['approver']))
+        for a in p.get('affects') or []:            # A079: reviewed impact → the SOP reaches the BSC like seeded skills
+            edge(skill, 'AFFECTS', (a['label'], a['target']), sign=a['sign'], **({'note': a['note']} if a['note'] else {}))
         edge(('System', 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'), 'HAS_SKILL', skill)
         for step in p['steps']:
             st = node('Step', skill[1] + ':' + str(step['order']), order=step['order'], text=step['text'],
@@ -92,6 +97,16 @@ def desired(plan):
             edge(skill, 'HAS_STEP', st)
             edge(st, 'REFERS_TO', sections[step['manual']])
     return _sort(dict(nodes=nodes, edges=edges))
+
+
+def sop_conflicts(session, document, sop_ids):
+    """Which proposed SOP ids are already a Skill owned by someone else (another manual document or admin knowledge)."""
+    if not sop_ids:return []
+    def read(tx):
+        rows=tx.run('MATCH (k:Skill) WHERE k.sopId IN $ids RETURN k.sopId AS sop, k.id AS id, k._manual_document AS owner',ids=list(sop_ids)).data()
+        return [dict(sop=r['sop'],skill=r['id'],owner=r['owner'] or 'admin',kind='other_document' if r['owner'] else 'admin_knowledge')
+                for r in rows if r['owner']!=document]
+    return session.execute_read(read)
 
 
 def _validate_targets(tx, snapshot, document):
@@ -132,7 +147,7 @@ def _replace(tx, document, snapshot):
         if edge['type'] not in RELATIONS:
             raise Conflict('보관된 관계 유형이 지원 계약과 다릅니다')
         a, b = ':'.join(edge['from_labels']), ':'.join(edge['to_labels'])
-        if any(label not in (*LABELS, 'FailureMode', 'Role', 'System') for label in edge['from_labels'] + edge['to_labels']):
+        if any(label not in (*LABELS, 'FailureMode', 'Role', 'System', 'Rule', 'StateVariable', 'Measure') for label in edge['from_labels'] + edge['to_labels']):   # Rule: A075 candidate-rule OUTPUTS · StateVariable/Measure: A079 reviewed AFFECTS
             raise Conflict('보관된 관계의 대상 유형이 다릅니다')
         row = tx.run(f"MATCH (a:{a} {{id:$a}}), (b:{b} {{id:$b}}) CREATE (a)-[r:{edge['type']}]->(b) "
                      'SET r=$props RETURN count(r) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
@@ -145,7 +160,7 @@ def _receipt(plan, at, replayed=False):
                 filename=plan['filename'], by=plan['by'], t=at, status='ACTIVE', replayed=replayed,
                 sections=len(plan['sections']), procedures=len(plan['procedures']),
                 steps=sum(len(p['steps']) for p in plan['procedures']),
-                candidate_activation='NOT_CHANGED', extraction=plan.get('extraction'),
+                candidate_activation=plan.get('candidate_rules') or 'NOT_CHANGED', extraction=plan.get('extraction'),
                 skills={p['id']: dict(skill=skill_id(p['id']), failureMode=p['failureMode'], relation=p['relation'])
                         for p in plan['procedures']})
 

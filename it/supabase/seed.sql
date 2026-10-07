@@ -7,11 +7,12 @@ insert into ent.assets (code, name, line) values
   ('HYD-03', '유압 파워팩 3호기', '창원 1공장 B라인')
 on conflict (code) do update set name = excluded.name, line = excluded.line;
 
-insert into ent.production_orders (order_id, asset, item, customer, due_in_h, remaining_qty, rate_per_h, hour_value, alt_asset, alt_free_h, alt_rate_per_h, changeover_h) values
-  ('MO-0930-0412', 'HYD-01', 'FG-AUTO-7 (유압 브래킷)', '가나자동차 (OEM, 교육용 가상)', 6, 1500, 300, 50, 'HYD-02', 8, 270, 1),
-  ('MO-0930-0415', 'HYD-02', 'FG-IND-3 (산업용 매니폴드)', '다라산업 (일반, 교육용 가상)', 20, 800, 250, 40, 'HYD-03', 4, 240, 1),
-  ('MO-0930-0419', 'HYD-03', 'FG-AUTO-9 (실린더 블록)', '가나자동차 (OEM, 교육용 가상)', 3, 600, 300, 50, 'HYD-01', 2, 280, 1)
-on conflict (order_id) do update set asset = excluded.asset, due_in_h = excluded.due_in_h, remaining_qty = excluded.remaining_qty, moved_from = null;
+-- 시각 열(due_at 등)은 아래 ent.reanchor_scenario_times()가 '지금' 기준 시나리오 값(납기 6 h 등)으로 맞춘다 (A086).
+insert into ent.production_orders (order_id, asset, item, customer, due_at, remaining_qty, rate_per_h, hour_value, alt_asset, alt_free_at, alt_rate_per_h, changeover_h) values
+  ('MO-0930-0412', 'HYD-01', 'FG-AUTO-7 (유압 브래킷)', '가나자동차 (OEM, 교육용 가상)', now(), 1500, 300, 50, 'HYD-02', now(), 270, 1),
+  ('MO-0930-0415', 'HYD-02', 'FG-IND-3 (산업용 매니폴드)', '다라산업 (일반, 교육용 가상)', now(), 800, 250, 40, 'HYD-03', now(), 240, 1),
+  ('MO-0930-0419', 'HYD-03', 'FG-AUTO-9 (실린더 블록)', '가나자동차 (OEM, 교육용 가상)', now(), 600, 300, 50, 'HYD-01', now(), 280, 1)
+on conflict (order_id) do update set asset = excluded.asset, remaining_qty = excluded.remaining_qty, moved_from = null;
 
 insert into ent.sales_contracts (sales_order, asset, order_id, customer, customer_tier, penalty_per_h, failure_cost, claim_cost) values
   ('SO-2609-118', 'HYD-01', 'MO-0930-0412', '가나자동차 (OEM, 교육용 가상)', 'OEM', 120, 900, 300),
@@ -19,18 +20,19 @@ insert into ent.sales_contracts (sales_order, asset, order_id, customer, custome
   ('SO-2609-140', 'HYD-03', 'MO-0930-0419', '가나자동차 (OEM, 교육용 가상)', 'OEM', 120, 900, 300)
 on conflict (sales_order) do nothing;
 
-insert into ent.fg_inventory (asset, fg_item, fg_stock, ship_in_h) values
-  ('HYD-01', 'FG-AUTO-7', 900, 2), ('HYD-02', 'FG-IND-3', 100, 10), ('HYD-03', 'FG-AUTO-9', 200, 3)
+insert into ent.fg_inventory (asset, fg_item, fg_stock, ship_at) values
+  ('HYD-01', 'FG-AUTO-7', 900, now()), ('HYD-02', 'FG-IND-3', 100, now()), ('HYD-03', 'FG-AUTO-9', 200, now())
 on conflict (asset) do update set fg_stock = excluded.fg_stock;
 
-insert into ent.maintenance_profiles (asset, cleans_60d, last_clean_days, clean_h, clean_cost, night_in_h, oil_risk_per_h, mtbf_h, standby_ready) values
-  ('HYD-01', 3, 21, 3, 40, 9, 5, 1400, true), ('HYD-02', 1, 45, 3, 40, 9, 5, 2600, true), ('HYD-03', 0, 80, 3, 40, 9, 5, 3100, true)
+insert into ent.maintenance_profiles (asset, clean_h, clean_cost, night_window_at, oil_risk_per_h, mtbf_h, standby_ready) values
+  ('HYD-01', 3, 40, now(), 5, 1400, true), ('HYD-02', 3, 40, now(), 5, 2600, true), ('HYD-03', 3, 40, now(), 5, 3100, true)
 on conflict (asset) do nothing;
 
 delete from ent.maintenance_history;
-insert into ent.maintenance_history (asset, wo, task, days_ago) values
-  ('HYD-01', 'WO-HIST-01-1', '쿨러 핀 세척', 21), ('HYD-01', 'WO-HIST-01-2', '쿨러 핀 세척', 38), ('HYD-01', 'WO-HIST-01-3', '쿨러 핀 세척', 55),
-  ('HYD-02', 'WO-HIST-02-1', '쿨러 핀 세척', 21);
+-- 마지막 세척·60일 세척 횟수는 이 이력에서 계산한다(cmms_history). 수행 일시는 reanchor_scenario_times()가 맞춘다.
+insert into ent.maintenance_history (asset, wo, task, performed_at) values
+  ('HYD-01', 'WO-HIST-01-1', '쿨러 핀 세척', now()), ('HYD-01', 'WO-HIST-01-2', '쿨러 핀 세척', now()), ('HYD-01', 'WO-HIST-01-3', '쿨러 핀 세척', now()),
+  ('HYD-02', 'WO-HIST-02-1', '쿨러 핀 세척', now()), ('HYD-03', 'WO-HIST-03-P', '쿨러 핀 세척', now());
 
 insert into ent.quality_profiles (asset, hot_min, auto_lot, auto_qty, gen_lot, gen_qty, inspect_h, inspect_cost, sample_cost, gen_defect_p, gen_claim, auto_defect_p, auto_claim) values
   ('HYD-01', 12, 'L-0930-A17', 800, 'L-0930-G05', 600, 4, 60, 10, 0.03, 400, 0.05, 3000),
@@ -81,3 +83,5 @@ insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_jso
   ('select_card','hyd', 'anomaly_response', 'task:select',     '[{"key":"chosen_skill","type":"text","text":"고른 스킬(SOP) id"},{"key":"chosen_skill_kind","type":"select","text":"스킬 종류","items":[{"control":"즉시 제어"},{"work_order":"작업지시만"}]}]'),
   ('escalate',   'hyd', 'anomaly_response', 'task:escalate',   '[{"key":"note","type":"textarea","text":"생산관리자 확인 메모"}]')
 on conflict (id, tenant_id) do update set proc_def_id = excluded.proc_def_id, activity_id = excluded.activity_id, fields_json = excluded.fields_json;
+
+select ent.reanchor_scenario_times();

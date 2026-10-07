@@ -50,6 +50,7 @@ class Incident:
     created: str = field(default_factory=now_iso)
     closed: str | None = None
     recovery_policy: dict | None = None
+    superseded: list[dict] = field(default_factory=list)   # commands/work orders of generations retired by rework (A072)
 
     @property
     def pattern(self) -> str | None:
@@ -81,7 +82,7 @@ class Incident:
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,
                 "workOrderRequest": self.work_order_request,
                 "reobsExtensions": self.reobs_extensions,
-                "recoveryPolicy": self.recovery_policy,
+                "recoveryPolicy": self.recovery_policy, "superseded": self.superseded,
                 "created": self.created, "closed": self.closed, "card": self.card, "terminal": self.state in d.TERMINAL}
 
 
@@ -153,6 +154,29 @@ def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: dateti
     return cmd
 
 
+REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "ESCALATED"}
+
+
+def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason: str, effects: dict, fx: Effects) -> bool:
+    """A rework retired the generation that issued this incident's command. Nothing is sent to the PLC: the command,
+    its ACK and any work order move to `superseded` and the incident waits for the next generation's approval.
+    Idempotent per request id. AWAITING_ACK (command in flight) and CLOSED are refused."""
+    if any(h.get("note") == f"reopened for rework {request_id}" for h in inc.history):
+        return False
+    if inc.state not in REOPENABLE:
+        raise ValueError(f"cannot reopen incident for rework in state {inc.state}")
+    inc.superseded.append({"request_id": request_id, "state_before": inc.state, "cmdId": inc.cmd_id, "actions": inc.actions,
+                           "ack": inc.ack, "expiresAt": inc.expires_at, "approvedBy": inc.approved_by, "workOrder": inc.work_order,
+                           "workOrderRequest": inc.work_order_request, "reason_before": inc.reason, "effects": effects,
+                           "by": by, "role": role, "reason": reason, "t": now_iso()})
+    inc.cmd_id, inc.expires_at, inc.approved_by, inc.actions, inc.ack = None, None, None, [], None
+    inc.work_order, inc.work_order_request, inc.reobs_extensions, inc.reason, inc.closed = None, None, 0, None, None
+    _audit(inc, fx, "operator", "INCIDENT_REOPENED", {"request_id": request_id, "by": by, "role": role, "reason": reason,
+                                                       "superseded": inc.superseded[-1]["cmdId"], "effects": effects})
+    _go(inc, "AWAITING_APPROVAL", f"reopened for rework {request_id}")
+    return True
+
+
 def on_reject(inc: Incident, by: str, reason: str, fx: Effects) -> None:
     if inc.state != "AWAITING_APPROVAL":
         raise ValueError(f"cannot reject in state {inc.state}")
@@ -194,9 +218,15 @@ def on_alert(inc: Incident, alert: dict, fx: Effects) -> None:
             _go(inc, "RESOLVED_WITHOUT_ACTION", "cleared before any action")
 
 
-def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, fx: Effects, time_scale: float = 20.0) -> None:
+def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, fx: Effects, time_scale: float = 20.0,
+             cmd_id: str | None = None) -> None:
     """latest_ts1: the latest value of the incident's recovery tag (inc.recovery[0]); the name is historical — for a
-    cooler incident it is TS1, for a pump incident PS1, for a fan incident VS1."""
+    cooler incident it is TS1, for a pump incident PS1, for a fan incident VS1.
+    cmd_id: the command that armed this timer. A timer armed for a command that a rework has since superseded (A072) must
+    not judge the next command's window; it is recorded and ignored."""
+    if cmd_id is not None and cmd_id != inc.cmd_id:
+        _audit(inc, fx, "process", "TIMER_IGNORED", {"timer": name, "armedFor": cmd_id, "current": inc.cmd_id, "state": inc.state})
+        return
     if name == "ack" and inc.state == "AWAITING_ACK":
         inc.reason = "ACK_TIMEOUT"
         _audit(inc, fx, "process", "ACK_TIMEOUT", {"cmdId": inc.cmd_id})

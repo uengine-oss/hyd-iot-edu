@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Callable
 from functools import partial
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from hydcommon.timeutil import now_iso
@@ -63,6 +64,7 @@ class ProcessContext:
     record_incident: Callable | None = None
     approval_receipts: Callable | None = None
     accept_evaluation: Callable | None = None
+    exec_compensation: Callable | None = None     # (request) → enterprise /api/exec with a compensation skill (A072)
 
 
 _runtime: instances.InstanceRuntime | None = None
@@ -74,6 +76,36 @@ def current() -> instances.InstanceRuntime | None:
 
 
 # ---------------------------------------------------------------- lifecycle
+async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0):
+    """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
+    timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects."""
+    seen: set[str] = set()
+    cursor = since
+    if cursor is None:
+        for e in await asyncio.to_thread(repo.list_events_since, None, 60):          # a short history so the panel is not empty
+            seen.add(e["id"]); cursor = max(cursor or "", str(e.get("timestamp") or ""))
+            yield "event: history\ndata: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+    idle = 0.0
+    while not await is_disconnected():
+        rows = await asyncio.to_thread(repo.list_events_since, cursor, 300)
+        fresh = [e for e in rows if e["id"] not in seen]
+        if fresh:
+            for e in fresh:
+                ts = str(e.get("timestamp") or "")
+                if cursor is None or ts > cursor:
+                    cursor, seen = ts, {e["id"]}
+                else:
+                    seen.add(e["id"])
+                yield "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+            idle = 0.0
+        else:
+            idle += interval
+            if idle >= keepalive_s:
+                idle = 0.0
+                yield ": keepalive\n\n"
+        await asyncio.sleep(interval)
+
+
 def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     """Create the runtime (repo + definition + hooks) and make it current. No background tasks — unit-testable."""
     global _runtime, _ctx
@@ -215,9 +247,23 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         inc = ctx.incidents.get(inc_id)
         return inc.state if inc is not None else None
 
+    def reopen_incident(inc_id: str, request_id: str, by: str, role: str, reason: str, effects: dict) -> bool:
+        inc = ctx.incidents.get(inc_id)
+        if inc is None:
+            raise ValueError(f"no such incident {inc_id}")
+        fx = work_orders._Audit()
+        changed = machine.on_rework_reopen(inc, request_id, by, role, reason, effects, fx)
+        if changed:
+            ctx.persist()
+            for event in fx.events:
+                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
+            if ctx.after_incident:
+                ctx.after_incident(inc)
+        return changed
+
     def incident_snapshot(inc_id: str) -> dict | None:
         inc=ctx.incidents.get(inc_id)
-        return {'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id} if inc is not None else None
+        return {'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,'superseded':bool(inc.superseded)} if inc is not None else None
 
     def decision_option(decision_id: str, option_id: str) -> dict | None:
         d = ctx.book.get(decision_id) or {}
@@ -244,6 +290,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            preview_decision=delivery.preview, approve_review=delivery.prepare_review,
                            validate_approval=delivery.validate, deliver_approval=delivery.deliver, record_approval=delivery.record,
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
+                           reopen_incident=reopen_incident, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit)
 
 
@@ -390,6 +437,11 @@ class SubmitReq(BaseModel):
     by: str | None = None
 
 
+class CloseReq(BaseModel):
+    by: str
+    reason: str
+
+
 class SelectReq(BaseModel):
     decision: str
     option: str
@@ -433,6 +485,10 @@ class ApprovalDiscardReq(ApprovalRetryReq):
 class ReworkReq(ApprovalDiscardReq):
     workitem_id: str
     snapshot_token: str = Field(min_length=64, max_length=64)
+
+
+class EffectReq(ApprovalDiscardReq):
+    effects: list[str] | None = None
 
 
 def _rt() -> instances.InstanceRuntime:
@@ -479,6 +535,13 @@ def mount(app: FastAPI, process_mode: str) -> None:
         except ValueError as e:
             raise HTTPException(409,str(e))
 
+    @app.get("/api/events/stream")
+    async def events_stream(request: Request, since: str | None = None):
+        """A091: server-sent stream of the product's events table (agent tool calls, task transitions, human answers …).
+        The portal shows them as they happen instead of re-reading an instance every two seconds."""
+        return StreamingResponse(event_stream(_rt().repo, since, request.is_disconnected), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
     @app.get("/api/instances")
     async def list_instances(status: str | None = None, limit: int = 100):
         rt = _rt()
@@ -509,6 +572,44 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(409, str(e))
         except OSError as e:
             raise HTTPException(503, '재작업 효과 조회가 실패했습니다: ' + str(e)[:200])
+
+    @app.get('/api/instances/{proc_inst_id}/effects')
+    async def instance_effects(proc_inst_id: str):
+        """External effects of the case with reversibility, receipts and what still blocks rework (A072)."""
+        try:
+            return await _in_executor(_rt().effects_view, proc_inst_id)
+        except KeyError as e:
+            raise HTTPException(404, str(e))
+        except (ValueError, LookupError) as e:
+            raise HTTPException(409, str(e))
+        except OSError as e:
+            raise HTTPException(503, '효과 조회가 실패했습니다: ' + str(e)[:200])
+
+    @app.post('/api/instances/{proc_inst_id}/effects/compensate')
+    async def compensate_effects(proc_inst_id: str, req: EffectReq):
+        try:
+            return await _in_executor(_rt().compensate_effects, proc_inst_id, req.request_id, req.by, req.role, req.reason, req.effects)
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except KeyError as e:
+            raise HTTPException(404, str(e))
+        except (ValueError, LookupError) as e:
+            raise HTTPException(409, str(e))
+        except OSError as e:
+            raise HTTPException(503, '보상 접수 또는 효과 조회가 실패했습니다: ' + str(e)[:200])
+
+    @app.post('/api/instances/{proc_inst_id}/effects/review')
+    async def review_effects(proc_inst_id: str, req: EffectReq):
+        try:
+            return await _in_executor(_rt().review_effects, proc_inst_id, req.request_id, req.by, req.role, req.reason, req.effects)
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except KeyError as e:
+            raise HTTPException(404, str(e))
+        except (ValueError, LookupError) as e:
+            raise HTTPException(409, str(e))
+        except OSError as e:
+            raise HTTPException(503, '확인 접수 또는 효과 조회가 실패했습니다: ' + str(e)[:200])
 
     @app.post('/api/instances/{proc_inst_id}/rework')
     async def request_rework(proc_inst_id: str, req: ReworkReq):
@@ -581,6 +682,30 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(404, "no such work item")
         except ValueError as e:
             raise HTTPException(400, str(e))
+
+    @app.post('/api/todolist/{wid}/close')
+    async def close_agent_task(wid: str, req: CloseReq):
+        """A082: a person closes a stuck agent task (PENDING / run failed) with a reason; never a human task or a live one."""
+        try:
+            return await _in_executor(_rt().close_agent_task, wid, req.by, req.reason)
+        except KeyError:
+            raise HTTPException(404, 'no such work item')
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+
+    @app.post('/api/todolist/{wid}/cancel')
+    async def cancel_agent_task(wid: str, req: CloseReq):
+        """A097: a person cancels a running agent task; the worker stops on its next check and releases the claim."""
+        try:
+            return await _in_executor(_rt().cancel_agent_task, wid, req.by, req.reason)
+        except KeyError:
+            raise HTTPException(404, 'no such work item')
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except ValueError as e:
+            raise HTTPException(409, str(e))
 
     @app.post('/api/todolist/{wid}/decision-preview')
     async def preview_card(wid: str, req: ReviewReq):

@@ -112,6 +112,7 @@ def test_test_ok_operators():
 
 
 def test_delivery_urgency_favours_the_card_that_keeps_production(monkeypatch):
+    # The delivery/quality terms come from the reviewed rankingPolicy data (A069/A078), not from helper code.
     # 회의 L385~404: an OEM order due in 6 h with 120만원/h penalty — the card that keeps running gains, the one that stops loses
     trade = TRADE + [{"skill": "skill:clean", "measure": "msr:availability", "name": "설비 가동률", "direction": "UP", "dir": -1, "owner": "생산팀", "good": False, "conditional": False, "weight": 1.0, "conds": []}]
     base = dict(BASE, cause="cause:other", order_due_h=6, order_penalty_per_h=120, order_customer_tier="OEM")
@@ -122,13 +123,11 @@ def test_delivery_urgency_favours_the_card_that_keeps_production(monkeypatch):
     assert cards.production_effect({"actions": [{"code": "LOAD_SET", "kind": "command", "value": 80}, {"code": "FAN_SET", "kind": "command", "value": 100}]}) == "reduce"
     assert cards.production_effect({"actions": [{"code": "FAN_SET", "kind": "command", "value": 100}], "losses": [{"measure": "msr:availability"}]}) == "keep"   # commands win over BSC guesses
     assert cards.production_effect({"actions": [{"code": "PUMP_SELECT", "kind": "command", "value": "B"}]}) == "keep"
-    assert cards.delivery_urgency(base) == 0.75
     assert by["skill:fan"]["scoreParts"]["delivery"] == 1.12 and by["skill:mix"]["scoreParts"]["delivery"] == 0.45 and by["skill:clean"]["scoreParts"]["delivery"] == -1.12
     assert "납기" in r["explanation"] and "OEM" in r["explanation"] and "6 h" in r["explanation"]
     # no urgent order → the delivery term is 0 and the old ranking stands (backward compatible)
     r0 = run()
     assert all(o["scoreParts"]["delivery"] == 0 and o["scoreParts"]["quality"] == 0 for o in r0["options"]) and "납기" not in r0["explanation"]
-    assert cards.delivery_urgency({"order_due_h": 30, "order_penalty_per_h": 120}) == 0 and cards.delivery_urgency({"order_due_h": 6}) == 0
 
 
 def test_hot_lot_quality_risk_charges_only_the_hot_forecast_card():
@@ -138,5 +137,3 @@ def test_hot_lot_quality_risk_charges_only_the_hot_forecast_card():
     by = {o["id"]: o for o in r["options"]}
     assert by["skill:fan"]["scoreParts"]["quality"] == -1.5 and by["skill:mix"]["scoreParts"]["quality"] == 0      # 55.4 ℃ vs 49.0 ℃
     assert "품질" in r["explanation"] and "800" in r["explanation"]
-    assert cards.quality_risk(by["skill:fan"], {"hot_lot_claim": 300, "hot_lot_qty": 10}) == 0.3
-    assert cards.quality_risk(by["skill:fan"], {"hot_lot_claim": 3000, "hot_lot_qty": 0}) == 0

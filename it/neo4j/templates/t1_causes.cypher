@@ -7,5 +7,5 @@ WITH c, fm, collect(DISTINCT s.name) AS symptoms, collect(DISTINCT e) AS evs, he
 RETURN c.id AS causeId, c.name AS cause, null AS description,
        fm.id AS failureModeId, fm.name AS failureMode, component,
        c.prior AS prior, symptoms,
-       [e IN evs | {id: e.id, name: e.name, weight: e.weight, expect: e.expect, threshold: e.threshold, sql: e.sql}] AS evidence
+       [e IN evs | {id: e.id, name: e.name, weight: e.weight, expect: e.expect, threshold: e.threshold, sql: e.sql, tag: e.tag, windowSeconds: e.windowSeconds}] AS evidence
 ORDER BY prior DESC

@@ -27,11 +27,13 @@ from typing import Callable
 from hydcommon.timeutil import now_iso, parse_iso
 from hydcommon.process_contracts import pinned_form, validate_output
 from . import engine
+from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
 from .execution_graph import INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection
 from .projection_receipt import digest as projection_digest,require as require_projection_receipt
 from .approval_delivery import ApprovalDelivery
 from .rework_runtime import ReworkRuntime
+from .effect_compensation import EffectRuntime
 from .current_approval import ApprovalReviewRequired
 
 log = logging.getLogger("process.instances")
@@ -75,13 +77,15 @@ class Hooks:
     record_approval: Callable[[dict], None] = lambda row: None
     approval_effects: Callable | None = None  # authoritative read only; absent means unknown
     rework_effects: Callable | None = None
+    reopen_incident: Callable | None = None     # (inc_id, request_id, by, role, reason, effects) → machine.on_rework_reopen (A072)
+    exec_compensation: Callable | None = None   # (request dict) → enterprise compensation transaction (A072)
     exec_enterprise: Callable[[str, dict], dict] = lambda decision_id, item: {"ok": False, "error": "no enterprise hook"}
     record_cypher: Callable[..., list] = lambda q, **params: []
     query_cypher: Callable[..., list] = lambda q, **params: []          # read the projected Execution layer back (monitoring)
     audit: Callable[..., None] = lambda asset, actor, event, detail, incident=None: None
 
 
-class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
+class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
     def __init__(self, repo, defn: engine.Definition, hooks: Hooks, time_scale: float = 20.0, tenant_id: str = "hyd",
                  consumer: str = ENGINE_CONSUMER):
         self.repo, self.defn, self.hooks, self.time_scale, self.tenant_id, self.consumer = repo, defn, hooks, time_scale, tenant_id, consumer
@@ -304,8 +308,15 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
         if form is not None:
             validate_output(form, wi.get('output'))
-            from .manual_extraction import validate_result
-            validate_result(form, inst, wi.get('output'))
+            from .manual_extraction import validate_result, CONTRACT as EXTRACTION_CONTRACT
+            try:
+                validate_result(form, inst, wi.get('output'))
+            except ValueError as rejected:
+                if form.get('contract') != EXTRACTION_CONTRACT:
+                    raise
+                # A077: a cited-extraction defect goes back to the agent as feedback (same CLI session) instead of
+                # re-judging the identical output three times. Bounded like the product's validator loop.
+                return self._return_for_correction(wi, inst, str(rejected))
         if (int(inst.get('rework_generation') or 0) > 0 and engine.variables(inst).get('incident')
                 and 'decision_id' in (wi.get('output') or {})):
             from .decision_scope import validate_output as validate_decision_output
@@ -354,8 +365,38 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
             except Exception as e:  # every failure releases or blocks the claim
                 self._fail(wi, e, now)
         serviced = self.reconcile_services(now)
+        aborted = self.reconcile_terminal_incidents(now)
         self.reconcile_projections()
-        return delivered+len(claimed)+serviced
+        return delivered+len(claimed)+serviced+aborted
+
+    CORRECTION_ROUNDS = 3   # product process_validator: bounded correction rounds, then stop with the best-known state
+
+    def _return_for_correction(self, wi: dict, inst: dict, reason: str) -> dict:
+        """A077 (meeting L253~302): the extraction proposal failed the citation/structure contract. Hand the exact reason
+        back to the agent as feedback and let it correct the *same* proposal in the same CLI session; after
+        CORRECTION_ROUNDS rejections the task blocks as PENDING for a person, with every reason kept."""
+        feedback = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
+        history = list(feedback.get('history') or []) + [reason]
+        attempt = len(history)
+        wi['log'] = (wi.get('log') or '') + f'[Rejected {attempt}/{self.CORRECTION_ROUNDS}] {reason[:300]}; '
+        wi['feedback'] = {'kind': 'validation', 'attempt': attempt, 'history': history,
+                          'text': (f'추출 제안이 원문 검증에서 거부되었습니다({attempt}/{self.CORRECTION_ROUNDS}): {reason}\n'
+                                   '입력 데이터의 이전 proposal을 고쳐 같은 형식으로 다시 제출하세요. 인용(anchor)은 page.text의 '
+                                   '정확한 부분 문자열과 좌표여야 하며, 모든 페이지에 page_reviews가 있어야 합니다. '
+                                   '원문에 없는 절차를 추가하지 마세요.')}
+        wi['draft'] = deepcopy(wi.get('output'))          # the previous proposal (and its cliagents_session_id) stays readable
+        wi['output'] = None
+        if attempt >= self.CORRECTION_ROUNDS:
+            wi.update(status='PENDING', consumer=None, end_date=None)
+            event = {'name': '추출 제안 거부 · 사람 확인 필요', 'recovery': 'human_review', 'attempt': attempt, 'reasons': history}
+        else:
+            wi.update(status='IN_PROGRESS', draft_status='FB_REQUESTED', consumer=None, end_date=None)
+            event = {'name': '추출 제안 거부 · 에이전트 재작업', 'recovery': 'agent_correction', 'attempt': attempt, 'reasons': history}
+        self.repo.update_workitem(wi)
+        self.repo.record_events([{'job_id': 'TASK_REJECTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'agent',
+                                  'event_type': 'error', 'data': event}])
+        self._after_commit(self._project, inst)
+        return {'instance': inst, 'workitem': wi, 'reached': [], 'ended': None, 'pending': True, 'correction': event}
 
     @workitem_transition
     def _fail(self, wi: dict, err: Exception, now: datetime | None) -> None:
@@ -480,6 +521,83 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
         self._after_commit(self.deliver_approval, wi['id'], now)
         return {'instance':inst, 'workitem':wi, 'accepted':True, 'approval_status':'PENDING',
                 'plan':{k:v for k,v in plan.items() if k!='_snapshot'}, 'enterprise_results':[]}
+
+    # ---------------------------------------------------------------- a person closes an agent task that cannot continue (A082)
+    HUMAN_CLOSE_END_EVENT = 'closed-by-human'
+
+    @workitem_transition
+    def cancel_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
+        """A097 (process-gpt-vue3 FormWorkItem: a person cancels a running agent task → draft_status CANCELLED): the worker
+        sees the mark on its next check (runner._cancelled), stops the CLI, releases its claim and records task_cancelled.
+        The row then waits for the person — close it (A082) or let a rework/re-judgment start a new generation."""
+        wi = self.repo.get_workitem(workitem_id)
+        if not wi:
+            raise KeyError(workitem_id)
+        if not isinstance(by, str) or not by.strip() or not isinstance(reason, str) or not reason.strip():
+            raise ValueError('취소하는 사람과 사유가 필요합니다')
+        if not wi.get('agent_mode') or not wi.get('agent_orch'):
+            raise PermissionError('에이전트 작업만 취소할 수 있습니다')
+        if not (wi['status'] == 'IN_PROGRESS' and wi.get('draft_status') == 'STARTED' and wi.get('consumer')):
+            raise ValueError('워커가 실행 중인 에이전트 작업(STARTED)만 취소할 수 있습니다')
+        now = now or datetime.now(timezone.utc)
+        wi.update(draft_status='CANCELLED', log=(wi.get('log') or '') + f'[Cancel requested by {by.strip()}] {reason.strip()[:300]}; ')
+        self.repo.update_workitem(wi)
+        self.repo.record_events([{'job_id': 'TASK_CANCEL_REQUESTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
+                                  'event_type': 'task_cancelled', 'timestamp': engine.now_iso(now),
+                                  'data': {'name': '실행 취소 요청', 'goal': f'{by.strip()}: {reason.strip()[:300]}', 'by': by.strip(),
+                                           'consumer': wi.get('consumer')}}])
+        return dict(workitem=wi['id'], status=wi['status'], draft_status='CANCELLED', consumer=wi.get('consumer'))
+
+    def close_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
+        """A082: PENDING after bounded retries/corrections, or a worker run that died (draft FAILED) — the product's task
+        cancel for the HYD case. Human tasks and live tasks are refused; an instance whose Incident is still open is
+        refused too (use re-judgment / escalation). The row is CANCELLED with the reason kept; when nothing else is open
+        the instance ends with the technical end event 'closed-by-human', never a business end event."""
+        wi = self.repo.get_workitem(workitem_id)
+        if not wi:
+            raise KeyError(workitem_id)
+        if not isinstance(by, str) or not by.strip() or not isinstance(reason, str) or not reason.strip():
+            raise ValueError('닫는 사람과 사유가 필요합니다')
+        if not wi.get('agent_mode') or not wi.get('agent_orch'):
+            raise PermissionError('에이전트 작업만 이 경로로 닫습니다. 사람 작업은 제출로, 서비스 작업은 사건 경과·에스컬레이션으로 끝납니다')
+        stuck = wi['status'] == 'PENDING' or (wi['status'] == 'IN_PROGRESS' and wi.get('draft_status') in ('FAILED', 'CANCELLED'))
+        if not stuck:
+            raise ValueError('멈춘 에이전트 작업(PENDING, 실행 실패 또는 취소된 실행)만 닫을 수 있습니다')
+        inst = self.repo.get_instance(wi['proc_inst_id'])
+        if not inst or inst.get('status') != 'RUNNING':
+            raise ValueError('실행 중인 인스턴스의 작업만 닫을 수 있습니다')
+        inc_id = engine.variables(inst).get('incident')
+        if inc_id:
+            state = self.hooks.incident_state(inc_id)
+            if state is not None and state not in incident_def.TERMINAL:
+                raise ValueError(f'사건이 아직 진행 중입니다({state}). 재판단·에스컬레이션으로 처리하세요')
+        now = now or datetime.now(timezone.utc)
+        previous = dict(status=wi['status'], draft_status=wi.get('draft_status'), retry=wi.get('retry'))
+        wi.update(status='CANCELLED', draft_status='CANCELLED', consumer=None, end_date=engine.now_iso(now),
+                  log=(wi.get('log') or '') + f'[Closed by {by.strip()}] {reason.strip()[:300]}; ')
+        self.repo.update_workitem(wi)
+        # event_type is the product's enum (no 'task_closed'); the person's close is a task_cancelled with job_id TASK_CLOSED
+        self.repo.record_events([{'job_id': 'TASK_CLOSED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
+                                  'event_type': 'task_cancelled',
+                                  'data': {'name': '에이전트 작업 닫음', 'by': by.strip(), 'reason': reason.strip()[:1000], 'previous': previous}}])
+        rows = self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'], limit=None)
+        defn = self.definition_for_workitem(wi)
+        live = [r for r in rows if r['id'] != wi['id'] and r['status'] in ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING')
+                and r['activity_id'] not in defn.events]
+        ended = False
+        if not live:
+            for r in rows:
+                if r['id'] != wi['id'] and r['status'] in ('TODO', 'IN_PROGRESS') and r['activity_id'] in defn.events:
+                    r.update(status='CANCELLED', end_date=engine.now_iso(now), log=(r.get('log') or '') + 'cancelled: instance closed by a person; ')
+                    self.repo.update_workitem(r)
+            inst.update(status='COMPLETED', end_event=self.HUMAN_CLOSE_END_EVENT, end_date=engine.now_iso(now), current_activity_ids=[])
+            self.repo.update_instance(inst)
+            ended = True
+        self._after_commit(self.hooks.audit, engine.variables(inst).get('asset', '-'), by.strip(), 'AGENT_TASK_CLOSED',
+                           {'workitem': wi['id'], 'instance': wi['proc_inst_id'], 'reason': reason.strip()[:300], 'instance_ended': ended})
+        self._after_commit(self._project, inst)
+        return {'workitem': wi['id'], 'status': wi['status'], 'instance': wi['proc_inst_id'],
+                'instance_status': inst['status'], 'instance_ended': ended, 'end_event': inst.get('end_event')}
 
     # ---------------------------------------------------------------- HITL: the agent asked a person (human_asked → human_response)
     @workitem_transition
@@ -676,6 +794,74 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
             if reobs:
                 recovered = {"ESCALATED": False, "RESOLVED_WITHOUT_ACTION": bool(cleared)}.get(inc_state, True)
                 self.submit(reobs["id"], {"recovered": recovered}, by="process", now=now)
+        if inc_state in incident_def.TERMINAL:
+            rows = self.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
+            if self._command_never_issued(rows, self.hooks.incident_snapshot(inc_id)) and self._escalation_not_open(rows):
+                self._abort_before_action(inst, rows, inc_state, cleared, now)
+
+    CONTROL_PATH = ("task:command", "task:reobserve", "task:work-order")
+
+    @staticmethod
+    def _command_never_issued(rows, snap=None) -> bool:
+        """No approved action reached the plant before the Incident ended. Either no control-path work item ever started, or
+        (A083) the only one that did is task:command left PENDING because delivery was refused (ApprovalReviewRequired:
+        recovery is a new judgment, impossible once the alert cleared) and the Incident itself records no command — neither a
+        current cmdId nor one retired by rework. Without the Incident's record the row alone does not prove it."""
+        started = [w for w in rows if w["activity_id"] in InstanceRuntime.CONTROL_PATH and w["status"] not in ("TODO", "CANCELLED")]
+        if not started:
+            return True
+        return (snap is not None and not snap.get("cmdId") and not snap.get("superseded")
+                and all(w["activity_id"] == "task:command" and w["status"] == "PENDING" for w in started))
+
+    @staticmethod
+    def _escalation_not_open(rows) -> bool:
+        return not any(w["activity_id"] == "task:escalate" and w["status"] not in ("TODO", "CANCELLED") for w in rows)
+
+    def _abort_before_action(self, inst, rows, inc_state, cleared, now):
+        """A074: the case ended (alert cleared / rejected / escalated) while agent or selection work was still open — until now
+        such instances stayed RUNNING forever (A072: adbf8350, 8b917b16, 99130019). Cancel the open work and hand the outcome
+        to the escalation review so the instance ends through ev:escalated with the recorded reason."""
+        defn = self.definition_for(inst)
+        if "task:escalate" not in defn.activities:
+            return
+        reason = f"incident {inc_state} before any action (cleared={bool(cleared)})"
+        adv = engine.abort_to(defn, inst, rows, "task:escalate", reason, now, self.time_scale)
+        engine.set_variables(defn, inst, {"recovered": bool(cleared), "incident_outcome": inc_state},
+                             source={"kind": "runtime", "by": "process", "reason": reason})
+        for row in adv.updated:
+            self.repo.update_workitem(row)
+        self.repo.insert_workitems(adv.created)
+        self.repo.update_instance(inst)
+        self.repo.record_events([{"job_id": "INCIDENT_ENDED_BEFORE_ACTION", "todo_id": adv.reached[0]["id"], "proc_inst_id": inst["proc_inst_id"],
+                                  "crew_type": "result", "event_type": "task_working",
+                                  "data": {"name": "조치 전 사건 종료 → 에스컬레이션 검토", "incident_state": inc_state, "cleared": bool(cleared),
+                                           "cancelled": [w["activity_id"] for w in adv.updated]}}])
+        v = engine.variables(inst)
+        self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "INCIDENT_ENDED_BEFORE_ACTION",
+                           {"instance": inst["proc_inst_id"], "state": inc_state, "cleared": bool(cleared), "cancelled": [w["activity_id"] for w in adv.updated]},
+                           incident=v.get("incident"))
+        self._after_commit(self._project, inst)
+
+    def reconcile_terminal_incidents(self, now=None) -> int:
+        """Housekeeping: RUNNING instances whose Incident already ended before any action (missed callback, restart, or rows
+        created before A074) are routed to the escalation review. Idempotent; one instance per transition lock."""
+        changed = 0
+        for inst in self.repo.list_instances(status="RUNNING", limit=200, tenant_id=self.tenant_id):
+            inc_id = engine.variables(inst).get("incident")
+            if not inc_id:
+                continue
+            snap = self.hooks.incident_snapshot(inc_id)
+            if not snap or snap.get("state") not in incident_def.TERMINAL:
+                continue
+            with self._transition(inst["proc_inst_id"]):
+                fresh = self.repo.get_instance(inst["proc_inst_id"])
+                if not fresh or fresh["status"] != "RUNNING":
+                    continue
+                rows = self.repo.list_workitems(proc_inst_id=fresh["proc_inst_id"], limit=None)
+                if self._command_never_issued(rows, snap) and self._escalation_not_open(rows):
+                    self._abort_before_action(fresh, rows, snap["state"], bool(snap.get("cleared")), now)
+                    changed += 1
+        return changed
 
     def _open_tool(self, inst: dict, tool: str) -> dict | None:
         return next((w for w in self.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
@@ -699,7 +885,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime):
         return {"instance": inst, "definition":defn.raw, "workitems": items, "timeline": engine.timeline(defn, inst, items),
                 "events": self.repo.list_events(proc_inst_id=proc_inst_id),
                 "approvals":self.repo.list_approvals(proc_inst_id, self.tenant_id),
-                "reworks":self.repo.list_reworks(self.tenant_id, proc_inst_id)}
+                "reworks":self.repo.list_reworks(self.tenant_id, proc_inst_id),
+                "effects":self.repo.list_effect_receipts(self.tenant_id, proc_inst_id)}
 
     def execution_view(self, proc_inst_id: str) -> dict | None:
         """The Execution layer as the graph holds it (회의 L434~435: the instance monitoring screen). Read back from Neo4j, not

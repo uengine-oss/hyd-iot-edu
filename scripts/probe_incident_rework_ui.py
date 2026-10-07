@@ -138,10 +138,10 @@ asyncio.run(run())'''
         if (out/'source-before.json').exists():
             before = read('source-before')
             with psycopg.connect(DSN, autocommit=True) as conn:
-                current = conn.execute('select due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
+                current = conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
                 assert float(current) in (before['due'], before['changed_due']), 'Another writer changed MES; review before overwriting'
-                conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (before['due'], before['order_id']))
-                actual = conn.execute('select due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
+                conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (before['due'], before['order_id']))
+                actual = conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
                 assert float(actual) == before['due']
                 save('source-restored', {'order_id': before['order_id'], 'due': actual})
         current = request(PLANT+'/api/state')['units']['HYD-01']['status']
@@ -171,14 +171,14 @@ asyncio.run(run())'''
     elif args.phase == 'change-source':
         assert not (out/'source-before.json').exists(), 'Already changed; use existing journal'
         with psycopg.connect(DSN, autocommit=True) as conn:
-            rows = conn.execute("select order_id,due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
+            rows = conn.execute("select order_id,ent.hours_from_now(due_at) as due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
             assert len(rows) == 1 and rows[0][1] is not None
             order_id, due = rows[0]
             changed = args.due if args.due is not None else (36.0 if float(due) < 24 else 2.0)
             assert changed >= 0 and changed != float(due)
             save('source-before', {'order_id': order_id, 'due': float(due), 'changed_due': changed})
-            conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (changed, order_id))
-            assert float(conn.execute('select due_in_h from ent.production_orders where order_id=%s', (order_id,)).fetchone()[0]) == changed
+            conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (changed, order_id))
+            assert float(conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (order_id,)).fetchone()[0]) == changed
         save('after-source-change-view', request(path))
         print(f'MES due {due} -> {changed}; prior decision intentionally preserved', flush=True)
     elif args.phase == 'rank':
@@ -187,10 +187,10 @@ asyncio.run(run())'''
     elif args.phase == 'resume-source':
         before = read('source-before')
         with psycopg.connect(DSN, autocommit=True) as conn:
-            current = conn.execute('select due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
+            current = conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
             assert float(current) == before['due'], 'Resume only the exact restored fixture'
-            conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (before['changed_due'], before['order_id']))
-            actual = conn.execute('select due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
+            conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (before['changed_due'], before['order_id']))
+            actual = conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (before['order_id'],)).fetchone()[0]
             assert float(actual) == before['changed_due']
             save('source-resumed', {'order_id': before['order_id'], 'due': actual})
         print('Restored fixture resumed from exact source journal; approval unchanged', flush=True)

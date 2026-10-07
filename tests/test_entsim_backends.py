@@ -10,6 +10,7 @@ from entsim.supabase_backend import SupabaseEnterprise
 def test_memory_backend_reads_and_executes_like_before(tmp_path, monkeypatch):
     monkeypatch.setenv("ENTERPRISE_STATE_PATH", str(tmp_path / "e.sqlite3"))
     m = entmain.MemoryEnterprise()
+    m.reset()                                                  # A086: the scenario's hours count from this reset
     assert m.read("mes_orders", asset="HYD-01")["facts"]["due_in_h"] == 6 and m.read("ems_demand")["system"] == "EMS"
     assert m.read("scm_suppliers", part="P-CLR-CORE")["facts"]["std_price"] == 250
     tx = m.execute({"decision": "D1", "option": "skill:fan-max-derate", "skill": "skill:schedule-maintenance", "asset": "HYD-01", "by": "x", "params": {}})

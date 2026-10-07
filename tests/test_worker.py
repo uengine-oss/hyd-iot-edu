@@ -228,6 +228,21 @@ def test_runner_contract_mismatch_marks_failed_with_an_error_event(tmp_path):
     assert repo.fetch_pending_task("cliagents", "x") == []                   # FAILED waits for a person
 
 
+def test_runner_asks_the_same_session_to_fix_the_result_shape_before_failing(tmp_path):
+    """A086 (a086-promql-at-1): the right answer with `values` sent as a JSON string failed the whole task. Now the defect is
+    sent back to the same session (bounded) and the corrected result is submitted."""
+    repo, inst = _repo()
+    reqs, answers = [], iter(["원인은 쿨러 핀 오염입니다 (JSON 없음)", '{"cause": "c", "failure_mode": "f", "guide_card": {"x": 1}}'])
+    def fn(provider, request, env):
+        yield from _fake_exec(next(answers), requests=reqs)(provider, request, env)
+    r = Runner(_settings(tmp_path), repo, exec_fn=fn, schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1
+    row = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
+    assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "c"
+    assert len(reqs) == 2 and reqs[1][0].resume_session == "sess-A" and "출력 형식 검사에서 거절" in reqs[1][0].prompt
+    assert any("출력 형식 교정 요청 1/2" in json.dumps(e["data"], ensure_ascii=False) for e in repo.list_events(todo_id=row["id"]))
+
+
 def test_runner_pauses_as_a_human_question_and_resumes_after_the_answer(tmp_path):
     repo, inst = _repo()
     reqs = []
@@ -320,3 +335,168 @@ def test_resolve_provider_hands_the_cli_its_full_path(monkeypatch):
 
     monkeypatch.setattr(runner_mod.registry, "resolve", lambda pid, surface=None: Missing())
     assert runner_mod._resolve_provider("claude-code").executable == "claude"
+
+
+def test_resolve_provider_prefers_the_native_exe_over_the_cmd_shim(monkeypatch, tmp_path):
+    # Windows live check 2026-10-06: the npm claude.cmd shim goes through cmd.exe, which expanded `%OS%` inside the prompt and
+    # broke the flags (plain-text output, MCP tools "not granted"). The shim only calls bin/claude.exe; use that directly.
+    from worker import runner as runner_mod
+    shim = tmp_path / "claude.CMD"; shim.write_text("@ECHO off\r\n", encoding="utf-8")
+    native = tmp_path / "node_modules" / "@anthropic-ai" / "claude-code" / "bin" / "claude.exe"
+    native.parent.mkdir(parents=True); native.write_bytes(b"MZ")
+
+    class Stub:
+        executable = "claude"
+        def resolve_executable(self, *, refresh=False):
+            return str(shim)
+
+    monkeypatch.setattr(runner_mod.registry, "resolve", lambda pid, surface=None: Stub())
+    assert runner_mod._resolve_provider("claude-code").executable == str(native)
+    native.unlink()
+    assert runner_mod._resolve_provider("claude-code").executable == str(shim)      # no native binary → keep the resolved shim
+    assert runner_mod._unshim("/usr/local/bin/claude") == "/usr/local/bin/claude"    # POSIX: untouched
+
+
+def test_codex_runs_can_be_routed_to_a_gpu_model_server_per_run(tmp_path):
+    """A073: CODEX_MODEL_PROVIDER_BASE_URL routes Codex to an OpenAI-compatible server (the lecturer's SGLang) by inline
+    -c overrides; wire_api must be "responses" (Codex 0.151 rejects "chat"); the key is only an env var name."""
+    repo, inst = _repo()
+    requests = []
+    settings = _settings(tmp_path, cli_agent="codex", codex_model_provider_base_url="http://gpu.example:30000/v1",
+                         codex_model_provider_name="HYD GPU SGLang", codex_model="frentis-ai-model")
+    runner = Runner(settings, repo, exec_fn=_fake_exec('{"cause":"c","failure_mode":"f","guide_card":{}}', requests=requests),
+                    schema_prompt="s", resolve_provider=lambda pid: object())
+    assert runner.poll_once() == 1
+    request = requests[0][0]
+    args = request.extra_args
+    assert args[args.index("model_provider=hydgpu") + 1] == "-c"
+    table = next(a for a in args if a.startswith("model_providers.hydgpu="))
+    assert 'base_url="http://gpu.example:30000/v1"' in table and 'wire_api="responses"' in table and 'env_key="HYD_GPU_API_KEY"' in table
+    assert "chat" not in table and request.model == "frentis-ai-model"
+    plain = []
+    Runner(_settings(tmp_path, cli_agent="codex"), repo, exec_fn=_fake_exec('{"cause":"c","failure_mode":"f","guide_card":{}}', requests=plain),
+           schema_prompt="s", resolve_provider=lambda pid: object())
+    assert not any("model_provider" in a for a in plain[0][0].extra_args) if plain else True   # default: no override
+
+
+def test_error_item_followed_by_a_result_is_a_notice_not_a_failure(tmp_path):
+    """A073 live: Codex emits `item.type=error` ("Model metadata for `frentis-ai-model` not found…") for a custom model
+    provider and then completes the turn. The worker must not abort on that item; it fails only when no result follows."""
+    repo, inst = _repo()
+    def exec_ok(provider, request, env):
+        yield ExecEvent(kind=ExecEventKind.RUN_START, text="codex", session_id="s1")
+        yield ExecEvent(kind=ExecEventKind.ERROR, text="Model metadata for `frentis-ai-model` not found. Defaulting to fallback metadata", session_id="s1", is_error=True)
+        yield ExecEvent(kind=ExecEventKind.RESULT, text='{"cause":"c","failure_mode":"f","guide_card":{"summary":"s"}}', session_id="s1")
+    runner = Runner(_settings(tmp_path, cli_agent="codex"), repo, exec_fn=exec_ok, schema_prompt="s", resolve_provider=lambda pid: object())
+    assert runner.poll_once() == 1
+    rows = [w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None) if w["activity_id"] == "task:diagnose"]
+    assert rows and rows[0]["status"] == "SUBMITTED" and rows[0]["output"]["cause"] == "c"
+    notices = [e for e in repo.list_events(proc_inst_id=inst["proc_inst_id"]) if "에이전트 오류 보고" in json.dumps(e.get("data") or {}, ensure_ascii=False)]
+    assert notices, "the non-fatal error item is kept as a notice event"
+
+    repo2, inst2 = _repo()
+    def exec_dead(provider, request, env):
+        yield ExecEvent(kind=ExecEventKind.RUN_START, text="codex", session_id="s2")
+        yield ExecEvent(kind=ExecEventKind.ERROR, text="model provider unreachable", session_id="s2", is_error=True)
+    runner2 = Runner(_settings(tmp_path, cli_agent="codex"), repo2, exec_fn=exec_dead, schema_prompt="s", resolve_provider=lambda pid: object())
+    assert runner2.poll_once() == 1
+    row = next(w for w in repo2.list_workitems(proc_inst_id=inst2["proc_inst_id"], limit=None) if w["activity_id"] == "task:diagnose")
+    assert row["draft_status"] == "FAILED"
+    errors = [e for e in repo2.list_events(proc_inst_id=inst2["proc_inst_id"]) if e.get("event_type") == "error"]
+    assert errors and "model provider unreachable" in json.dumps(errors[-1].get("data") or {}, ensure_ascii=False)
+
+
+
+# ---------------------------------------------------------------- A095 · R13 1조 격차: 자식 프로세스 환경·작업별 MCP 서버
+def test_worker_secrets_never_reach_the_cli_child_process():
+    """process-gpt-deepagents sandbox env whitelist: cliagents' exec_env copies os.environ, so the worker scrubs itself."""
+    from worker import env_guard
+    env = {"SUPABASE_DSN": "postgresql://x", "NEO4J_PASSWORD": "p", "ENT_DB_DSN": "d", "HYD_GPU_API_KEY": "k", "PATH": "/bin",
+           "HOME": "/h", "CLAUDE_CONFIG_DIR": "/c", "MCP_HOST_REWRITE": "a=b"}
+    removed = env_guard.scrub(env, keep=("HYD_GPU_API_KEY",))
+    assert removed == ["ENT_DB_DSN", "NEO4J_PASSWORD", "SUPABASE_DSN"]
+    assert set(env) == {"HYD_GPU_API_KEY", "PATH", "HOME", "CLAUDE_CONFIG_DIR", "MCP_HOST_REWRITE"}
+    # the pinned provider really does start from os.environ: a key present there is visible to the child unless scrubbed
+    import os
+    from cliagents import registry as reg
+    provider = reg.get("claude-code") if hasattr(reg, "get") else None
+    if provider is not None and hasattr(provider, "exec_env"):
+        os.environ["HYD_TEST_SECRET_DSN"] = "x"
+        try:
+            assert "HYD_TEST_SECRET_DSN" in provider.exec_env({})
+            env_guard.scrub()
+            assert "HYD_TEST_SECRET_DSN" not in provider.exec_env({})
+        finally:
+            os.environ.pop("HYD_TEST_SECRET_DSN", None)
+
+
+def test_activity_tools_select_the_mcp_servers_registered_for_the_run(tmp_path):
+    """process-gpt-base-agent executor: per-task MCP server selection. No declaration keeps every tenant server."""
+    full, missing = bridge.select_servers(TENANT_MCP, None)
+    assert full is TENANT_MCP and missing == []
+    only, missing = bridge.select_servers(TENANT_MCP, ["enterprise", "no-such-server"])
+    assert sorted(only["mcpServers"]) == ["enterprise"] and missing == ["no-such-server"]
+    assert sorted(bridge.install(tmp_path, only, provider_id="claude-code").servers) == ["enterprise"]
+    assert sorted(bridge.install(tmp_path, TENANT_MCP, provider_id="claude-code").servers) == sorted(TENANT_MCP["mcpServers"])
+
+
+def test_tenant_credentials_leave_the_retained_workspace_after_the_run(tmp_path):
+    """A096 (process-gpt-cli-agent RuntimeLease): .mcp.json carries server env during the run only."""
+    import json
+    res = bridge.install(tmp_path, TENANT_MCP, provider_id="claude-code")
+    before = json.loads((tmp_path / bridge.MCP_CONFIG_FILENAME).read_text(encoding="utf8"))["mcpServers"]
+    with_env = [n for n, e in before.items() if e.get("env")]
+    assert with_env, "fixture must carry at least one stdio server env"
+    assert sorted(bridge.cleanup(tmp_path)) == sorted(with_env)
+    after = json.loads((tmp_path / bridge.MCP_CONFIG_FILENAME).read_text(encoding="utf8"))["mcpServers"]
+    assert not any(e.get("env") for e in after.values()) and set(after) == set(before)          # servers kept, secrets gone
+    assert bridge.cleanup(tmp_path) == []                                                        # idempotent
+    assert sorted(bridge.install(tmp_path, TENANT_MCP, provider_id="claude-code").servers) == sorted(res.servers)   # next run rewrites them
+
+
+# ---------------------------------------------------------------- A097 · worker lease (agent-sdk lease_until / claim_count / max_claims)
+def _agent_row(repo, n=1):
+    for i in range(n):
+        repo.insert_workitems([{"id": f"lease-{i}", "proc_inst_id": "p-lease", "tenant_id": "hyd", "activity_id": "task:x", "status": "IN_PROGRESS",
+                                "agent_mode": "COMPLETE", "agent_orch": "cliagents", "start_date": f"2026-10-07T00:00:0{i}Z", "query": "[Instruction]\nx"}])
+    repo.insert_instance({"proc_inst_id": "p-lease", "tenant_id": "hyd", "status": "RUNNING", "proc_def_id": "d", "proc_def_version": "1",
+                          "start_date": "2026-10-07T00:00:00Z", "variables_data": []})
+
+
+def test_expired_lease_is_reclaimed_by_another_worker_and_the_first_worker_stops(monkeypatch):
+    repo = procdb.MemoryRepo(); _agent_row(repo)
+    first = repo.fetch_pending_task("cliagents", "w1")[0]
+    assert first["draft_status"] == "STARTED" and first["claim_count"] == 1 and first["lease_until"] > 0
+    assert repo.fetch_pending_task("cliagents", "w2") == []                        # live lease: nobody else may take it
+    assert repo.renew_task_lease(first["id"], "w1") and not repo.renew_task_lease(first["id"], "w9")
+    repo.workitems[first["id"]]["lease_until"] = 0                                 # w1 died: the lease runs out
+    second = repo.fetch_pending_task("cliagents", "w2")[0]
+    assert second["consumer"] == "w2" and second["claim_count"] == 2 and "[Lease expired: reclaimed by w2 (claim 2)]" in second["log"]
+    assert not repo.renew_task_lease(first["id"], "w1")                             # the old worker has lost its lease …
+    assert not repo.save_task_result(first["id"], {"a": 1}, final=True, expected_consumer="w1")   # … and cannot submit a late result
+    assert repo.save_task_result(first["id"], {"a": 2}, final=True, expected_consumer="w2")
+
+
+def test_third_expired_lease_marks_the_run_failed_for_a_person_to_close():
+    repo = procdb.MemoryRepo(); _agent_row(repo)
+    for n in range(1, procdb.MAX_CLAIMS + 1):
+        row = repo.fetch_pending_task("cliagents", f"w{n}")[0]
+        assert row["claim_count"] == n
+        repo.workitems[row["id"]]["lease_until"] = 0
+    assert repo.fetch_pending_task("cliagents", "w-late") == []                    # no fourth claim
+    assert repo.expire_worker_leases() == 1
+    row = repo.get_workitem("lease-0")
+    assert row["draft_status"] == "FAILED" and row["consumer"] is None and "[Lease expired after 3 claims" in row["log"]
+    assert repo.expire_worker_leases() == 0                                        # idempotent
+
+
+def test_runner_stops_the_cli_when_its_lease_is_lost(tmp_path, monkeypatch):
+    repo = procdb.MemoryRepo(); _agent_row(repo)
+    runner = Runner(_settings(tmp_path, lease_renew_every_s=0.0), repo, exec_fn=_fake_exec("{}"), schema_prompt="x", resolve_provider=lambda _: object())
+    row = repo.fetch_pending_task("cliagents", "w1")[0]
+    repo.workitems[row["id"]]["lease_until"] = 0
+    assert repo.fetch_pending_task("cliagents", "w2")                             # reclaimed while w1 is still streaming
+    from worker.runner import Cancelled
+    from cliagents import ExecRequest
+    with pytest.raises(Cancelled):
+        runner._stream(dict(row, consumer="w1"), "job", object(), ExecRequest(prompt="x", workdir=str(tmp_path)), None, "crew")

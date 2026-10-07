@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="enterprise.css?v=20261001-visual173">
 <link rel="stylesheet" href="main.css?v=20261001-visual173">
 <link rel="stylesheet" href="hitl.css?v=20261001-visual173">
-<link rel="stylesheet" href="instances.css?v=20261004-a041">
+<link rel="stylesheet" href="instances.css?v=20261007-a091">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -35,7 +35,7 @@
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="실습 메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
   <div class="breadcrumb"><span>워크스페이스</span><b id="pageLocation">실습 홈</b></div>
-  <div class="strip-status"><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><div class="dots" id="healthDots"></div></div>
+  <div class="strip-status"><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><span class="stream-ticker" id="streamTicker" aria-live="polite"><i class="live-dot off"></i><span>스트림 연결 중</span></span><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시간 정보">시간 정보</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
 </header>
 <button class="nav-scrim" id="navScrim" aria-label="메뉴 닫기" hidden></button>
@@ -155,6 +155,17 @@
     <div class="page-head"><div class="eyebrow">PROCESS INSTANCES · TODOLIST · L8–L9</div><h1>프로세스 인스턴스</h1><p class="lead">경보 하나가 프로세스 인스턴스 하나를 열고, AI 에이전트의 판단 작업과 사람의 선택은 그 안의 작업(task)입니다. 작업 하나가 할일 목록(todolist)의 한 줄입니다.</p></div>
     <details class="learning-guide"><summary><span class="guide-icon">?</span><span>에이전트가 주인공이 아니라 프로세스가 주인공입니다. 에이전트는 자기 차례의 작업을 집어 갈 뿐입니다.</span><span class="guide-label">실습 안내</span></summary><div class="guide-grid"><div><b>해보기</b><p>결함을 주입하고 인스턴스가 열리는 것을 확인하세요. 네 개의 에이전트 작업이 차례로 끝나면 할일 목록에 "조치 카드 선택"이 나타납니다. 카드를 고르면 PLC 명령 · 재관측 · 작업지시가 서비스 작업으로 이어집니다.</p></div><div><b>확인하기</b><p>각 작업의 상태(TODO 예정 → IN_PROGRESS 처리 중 → SUBMITTED 제출 → DONE, 안 간 가지는 CANCELLED), 수행자(sys:agent · role:operator · sys:scada …), 에이전트가 호출한 도구 기록(events)을 비교하세요. 이 테이블·상태·RPC(fetch_pending_task · save_task_result)가 그대로 ProcessGPT의 todolist입니다.</p></div></div></details>
     <div id="instBanner"></div>
+    <div class="inst-top">
+      <section class="stream-panel" id="streamPanel"></section>
+      <section class="todo-wrap"><h2>내 할일 <small>todolist · 나에게 배정된 IN_PROGRESS 작업과 에이전트의 질문</small></h2>
+        <div class="list" id="todoList"><div class="muted">사람이 할 작업이 없습니다.</div></div></section>
+    </div>
+    <div id="todoPanel"></div>
+    <div class="split inst-split">
+      <div><div class="listhead"><span>인스턴스</span><select id="instStatus" aria-label="인스턴스 상태"><option value="">최근 50건</option><option value="RUNNING">실행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></div><div class="list" id="instList"><div class="muted">아직 인스턴스가 없습니다.</div></div></div>
+      <div class="detail" id="instDetail"><div class="empty">인스턴스를 선택하면 작업 타임라인 · 변수 · 에이전트 도구 기록을 확인할 수 있습니다.</div></div>
+    </div>
+    <h2 class="advanced-head">고급 <small>원천 이벤트 · 정의 등록 · 직접 실행</small></h2>
     <details class="definition-editor" id="sourceEventsPanel">
       <summary>원천 이벤트 접수 · 오류 확인 · 재시도</summary>
       <p>접수 기록은 원문이 저장됐다는 뜻입니다. 처리 완료는 해당 이벤트의 반영 결과가 기록됐다는 뜻이며, 설비 회복이나 업무 종결을 뜻하지 않습니다.</p>
@@ -189,13 +200,6 @@
       <button class="btn primary" id="definitionStart">선택한 정의 버전으로 실행</button>
       <p id="definitionMessage" role="status"></p>
     </details>
-    <h2>내 할일 <small>todolist · 나에게 배정된 IN_PROGRESS 작업과 에이전트의 질문</small></h2>
-    <div class="list" id="todoList"><div class="muted">사람이 할 작업이 없습니다.</div></div>
-    <div id="todoPanel"></div>
-    <div class="split">
-      <div><div class="listhead"><span>인스턴스</span><button class="btn small" id="instReload">다시 읽기</button></div><div class="list" id="instList"><div class="muted">아직 인스턴스가 없습니다.</div></div></div>
-      <div class="detail" id="instDetail"><div class="empty">인스턴스를 선택하면 작업 타임라인 · 변수 · 에이전트 도구 기록을 확인할 수 있습니다.</div></div>
-    </div>
   </section>
 
   <!-- ───────── scenario ───────── -->
@@ -238,6 +242,7 @@
       <label>설비 <select id="selAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
       <a id="grafanaLink" target="_blank" rel="noopener">Grafana에서 전체 대시보드 열기</a>
     </div>
+    <div id="trendsNotice" class="inst-banner off" hidden></div>
     <div class="wide"><iframe id="pTs1" height="330" title="유온 TS1"></iframe></div>
     <div class="grid2">
       <iframe id="pScore" height="240" title="이상 점수"></iframe>
@@ -256,14 +261,16 @@
 <div id="caption"></div>
 <script src="ui.js?v=20261005-a059"></script>
 <script src="layers.js?v=20261001-visual173"></script>
-<script src="app.js?v=20261004-a053"></script>
+<script src="app.js?v=20261007-a091"></script>
 <script src="enterprise.js?v=20261004-a053"></script>
 <script src="main.js?v=20261001-visual173"></script>
-<script src="hitl.js?v=20261004-a050"></script>
+<script src="hitl.js?v=20261007-a083"></script>
 <script src="instanceSteps.js?v=20261004-processgpt"></script>
-<script src="instanceRework.js?v=20261004-a041"></script>
+<script src="instanceRework.js?v=20261007-a091"></script>
+<script src="instanceEffects.js?v=20261006-a075"></script>
 <script src="taskDeferral.js?v=20261005-a059"></script>
-<script src="instances.js?v=20261005-a059"></script>
+<script src="instances.js?v=20261007-a097"></script>
+<script src="liveStream.js?v=20261007-a091"></script>
 <script src="definitionRegistry.js?v=20261004-registry"></script>
 <script src="sourceEvents.js?v=20261004-inbox"></script>
 </body>

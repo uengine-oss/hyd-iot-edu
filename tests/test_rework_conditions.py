@@ -102,7 +102,7 @@ def test_expired_boundary_review_can_be_reconsidered_from_proven_arrival():
 def test_gateway_without_prior_work_arrival_is_explicitly_unavailable():
     raw=definition(); raw['sequences']=[s for s in raw['sequences'] if s['id'] not in ('s-b','b-g')]
     raw['sequences'].append(dict(id='s-g',source='s',target='g'))
-    rt,pid,old=setup(raw); rt.submit(old['a']['id'],{'x':'old'},now=NOW)
+    rt,pid,old=setup(raw,registry=False); rt.submit(old['a']['id'],{'x':'old'},now=NOW)     # b·late·deadline are cut off on purpose
     result=rt.preview_rework(pid,old['a']['id'])
     assert not result['execution_available']
     assert any(b['code']=='condition_replay_requires_arrival' for b in result['blockers'])

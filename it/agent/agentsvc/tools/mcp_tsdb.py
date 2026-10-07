@@ -6,18 +6,35 @@ Stored Evidence templates retain their %(asset)s parameter and scalar result.
 """
 import os
 import math
+from datetime import timedelta
 
 import psycopg
+from hydcommon.daq_contract import reporting_interval
 from hydcommon.sql_read import guard, READ_FUNCTIONS
 
 from .. import card as cardlib
 
 PG_DSN = os.getenv("TSDB_DSN", "postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd")
 TABLES = frozenset({'tag_1s', 'feat_1s', 'tag_1m'})
+DAQ_PROFILE = os.getenv('DAQ_PROFILE', 'lite')
+OBSERVATION_GRACE_S = 2.0          # the detector's Observations grace: one contract for "no gap"
 
 
 def read_sql(sql):
     return guard(sql, schema='public', tables=TABLES, functions=READ_FUNCTIONS | {'TIME_BUCKET'})
+
+
+def observation_coverage(times, window_start, now, limit_s):
+    """A083 (R05, meeting L51~79): a window aggregate (avg/max-min over N s) is evidence only if the window was observed.
+    Every instant of [window_start, now] must lie within limit_s after some sample — the detector's gap rule from
+    hydcommon.daq_contract (deadband tags are legitimately silent up to their heartbeat). `times` are the tag's sample
+    times from window_start - limit_s to now, ascending. Returns the coverage record kept with the result."""
+    prior = [t for t in times if t <= window_start]
+    inside = [t for t in times if window_start < t <= now]
+    points = [prior[-1] if prior else window_start] + inside + [now]
+    max_gap = max((b - a).total_seconds() for a, b in zip(points, points[1:]))
+    return {'samples': len(inside), 'max_gap_s': round(max_gap, 3), 'limit_s': limit_s,
+            'covered': bool(inside or prior) and max_gap <= limit_s}
 
 
 class TimeSeriesDB:
@@ -82,6 +99,22 @@ class TimeSeriesDB:
                     value = float(raw)
                     if isinstance(raw, (bool, str)) or not math.isfinite(value):
                         raise ValueError('Evidence SQL must return a finite numeric scalar')
+                    if e.get('tag') is None and e.get('windowSeconds') is None:
+                        result['coverage'] = None          # not a declared window predicate: nothing to prove
+                    else:
+                        tag, window = e.get('tag'), e.get('windowSeconds')
+                        if not isinstance(tag, str) or not tag or isinstance(window, bool) or not isinstance(window, (int, float)) \
+                                or not math.isfinite(window) or window <= 0:
+                            raise ValueError('Evidence window needs both tag and a positive windowSeconds')
+                        limit = reporting_interval(tag, DAQ_PROFILE) + OBSERVATION_GRACE_S
+                        cur.execute("SELECT now(), coalesce(array_agg(time ORDER BY time), '{}') FROM tag_1s WHERE asset = %s AND name = %s "
+                                    "AND time > now() - make_interval(secs => %s) AND time <= now()", (asset, tag, float(window) + limit))
+                        now, times = cur.fetchone()
+                        cov = observation_coverage(list(times), now - timedelta(seconds=float(window)), now, limit)
+                        result['coverage'] = dict(cov, tag=tag, window_s=float(window))
+                        if not cov['covered']:
+                            result.update(value=value, reason='OBSERVATION_GAP')   # the partial aggregate is kept, never judged
+                            continue
                 except Exception as ex:  # noqa: BLE001
                     invalid = isinstance(ex, (ValueError, TypeError, KeyError)) or (isinstance(ex, psycopg.Error) and (ex.sqlstate or '').startswith('42'))
                     result.update(reason='QUERY_ERROR', error_kind='INVALID' if invalid else 'UNKNOWN', error=str(ex)[:120])
@@ -91,15 +124,22 @@ class TimeSeriesDB:
                 result.update(value=value, passed=passed, status='PASS' if passed else 'FAIL')
         return out
 
-    def fan100_hours(self, asset: str) -> float:
-        """Hours the fan ran at ≥ 99 % in the last 48 h (time-weighted: each row lasts until the next row of the same tag)."""
+    def fan100_hours(self, asset: str) -> float | None:
+        """Length of the fan's current continuous run at ≥ 99 % in hours (HM-7.3 "100 % 연속 운전은 24시간 이내", rule:fan-24h).
+        0 when the newest sample is below 99 %; None when there is no sample in the last 48 h (no data is not 0 h).
+        A086: this used to be the 48 h *cumulative* time, a different quantity from the rule and the manual."""
         with self._conn() as conn, conn.cursor() as cur:
-            cur.execute("""SELECT coalesce(sum(extract(epoch FROM (nxt - time))) / 3600.0, 0) FROM (
-                             SELECT time, value, lead(time) OVER (ORDER BY time) AS nxt FROM tag_1s
-                             WHERE asset = %s AND name = 'FanSpeedSP' AND time > now() - interval '48 hours') x
-                           WHERE value >= 99 AND nxt IS NOT NULL""", (asset,))
-            row = cur.fetchone()
-        return round(float(row[0] or 0), 2)
+            cur.execute("""WITH s AS (SELECT time, value FROM tag_1s WHERE asset = %s AND name = 'FanSpeedSP' AND time > now() - interval '48 hours'),
+                                newest AS (SELECT time, value FROM s ORDER BY time DESC LIMIT 1),
+                                broke AS (SELECT max(time) AS t FROM s WHERE value < 99)
+                           SELECT (SELECT value FROM newest), (SELECT time FROM newest),
+                                  (SELECT min(time) FROM s WHERE time > coalesce((SELECT t FROM broke), '-infinity'::timestamptz))""", (asset,))
+            value, newest, run_start = cur.fetchone()
+        if value is None:
+            return None
+        if float(value) < 99 or run_start is None:
+            return 0.0
+        return round((newest - run_start).total_seconds() / 3600, 2)
 
     def latest(self, asset: str, name: str = "TS1") -> tuple[float | None, float | None]:
         """(value, age_seconds) of the newest tag row."""

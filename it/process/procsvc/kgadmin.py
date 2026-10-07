@@ -96,6 +96,13 @@ def validate_skill(body: dict, create: bool = False) -> dict:
     if body.get("approver"):
         out["approver"] = str(body["approver"])
     if not create:
+        # A075: a reviewer may (re)link an existing skill to a failure mode; the candidate rules of that failure mode then
+        # offer the skill (meeting L253~302: ingested knowledge must reach the runtime judgment).
+        if body.get("failureMode"):
+            relation = body.get("relation") or "REMEDIED_BY"
+            if relation not in ("MITIGATED_BY", "REMEDIED_BY"):
+                raise ValueError("고장 유형과의 관계는 MITIGATED_BY(즉시 완화) 또는 REMEDIED_BY(근본 조치)")
+            out.update(failureMode=str(body["failureMode"]).strip(), relation=relation)
         return out
     sop = str(body.get("sopId") or "").strip().upper()
     if not SOP_ID_RE.match(sop):

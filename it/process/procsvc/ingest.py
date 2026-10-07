@@ -203,13 +203,34 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
                 raise ValueError(f"{t.qualified}.{cname}: DDL 에 없는 열")
             c = by_name[cname]
             iid, variable = physical_identity(datasource, catalog, t.schema, t.name, c.name)
-            inputs.append({"id": iid, "name": c.comment or f"{t.name} {c.name}",
+            item = {"id": iid, "name": c.comment or f"{t.name} {c.name}",
                 "typeRef": c.type_ref, "variable": variable, "system": sid, "datasource": datasource, "catalog": catalog,
                 "schema": t.schema, "table": t.name, "column": c.name, "sqlType": c.type,
                 "assetColumn": "asset" if "asset" in by_name else None,
-                "source_id": f"{filename}#{t.qualified}.{display_identifier(c.name)}"})
+                "source_id": f"{filename}#{t.qualified}.{display_identifier(c.name)}"}
+            if is_point_in_time(c.type):
+                # A086: a business time (납기 일시 · 출하 일시) reaches the rules as signed hours from now, computed at read
+                item.update(typeRef="number", derive=DERIVE_HOURS, name=f"{item['name']} (지금부터 h)")
+            inputs.append(item)
     return {"batch": batch, "filename": filename, "datasource": datasource, "catalog": catalog,
             "systems": list(out_systems.values()), "inputs": inputs, "warnings": warnings, "tables": previews}
+
+
+DERIVE_HOURS = "hours_from_now"
+
+
+def is_point_in_time(sql_type: str) -> bool:
+    return "timestamp" in (sql_type or "").lower()
+
+
+def derived_sql(src: dict) -> str:
+    """The SQL expression a rule tests for this input: the column, or for a point in time its signed hours from now."""
+    col = quoted(src["column"])
+    if src.get("derive") == DERIVE_HOURS:
+        return f"round((extract(epoch from ({col} - now())) / 3600)::numeric, 2)"
+    if src.get("derive") is not None:
+        raise ValueError("지원하지 않는 입력 환산")
+    return col
 
 
 # ---------------------------------------------------------------- commit contract
@@ -228,8 +249,10 @@ def validate_plan(p: dict) -> None:
     seen = set()
     required = ("id", "name", "typeRef", "variable", "datasource", "catalog", "schema", "table", "column", "sqlType", "source_id", "system")
     for item in p["inputs"]:
-        if set(item) - set(required) - {"assetColumn"}:
+        if set(item) - set(required) - {"assetColumn", "derive"}:
             raise ValueError("허용되지 않은 입력 속성")
+        if "derive" in item and (item["derive"] != DERIVE_HOURS or not is_point_in_time(item.get("sqlType") or "") or item.get("typeRef") != "number"):
+            raise ValueError("시각 열만 '지금부터 시간(h)'으로 환산할 수 있습니다")
         if not all(isinstance(item.get(k), str) and item[k] for k in required):
             raise ValueError("입력 데이터의 필수 속성을 확인하세요")
         if item.get("assetColumn") is not None and (not isinstance(item["assetColumn"], str) or not item["assetColumn"]):
@@ -265,7 +288,7 @@ def tests_to_sql(tests: list[dict], inputs: dict[str, dict], *, asset_column: st
             raise ValueError(f"{schema}.{table}: 자산 식별 열을 명시해야 합니다")
         asset = quoted(asset_fields.pop())
         for src, test in rows:
-            col = quoted(src["column"])
+            col = derived_sql(src)
             fields.append(col)
             op = _sql_op(test.get("operator") or "==")
             value = test.get("value")

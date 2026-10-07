@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 from . import cards, guardrail
 from .tools import mcp_ent
-from .tools.physical import binding, is_physical, read_physical
+from .tools.physical import binding, is_physical, read_physical, read_physical_fact
 
 log = logging.getLogger("agent.decide")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
@@ -64,6 +64,15 @@ def submit(payload: dict) -> dict:
         return json.loads(r.read())
 
 
+def source_time(response: dict, asset: str) -> dict:
+    """A085 (R05, meeting L75~79): when a business fact was read, and the source's own time for the asset's row when the
+    source gives one (records[].updated_at). A source without row times is recorded as such — never filled in."""
+    stamps = sorted(str(r['updated_at']) for r in response.get('records') or []
+                    if isinstance(r, dict) and r.get('asset') in (asset, None) and r.get('updated_at'))
+    return {'observed_at': _now(), 'source_as_of': stamps[-1] if stamps else None,
+            'source_time': 'record updated_at' if stamps else '원천이 행 시점을 주지 않음'}
+
+
 def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: bool = False) -> tuple[dict, list[dict]]:
     """Fetch every InputData the DMN rules may test, from the source the ontology names for it.
     known: facts the pipeline already has (pattern, cause, failure_mode, alert evidence). Returns (facts, provenance)."""
@@ -84,8 +93,13 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             if physical:
                 if not src:
                     raise ValueError('physical InputData has no declared source')
-                facts[var] = read_physical(i, asset)
-                row.update(value=facts[var], how='명시된 업무 DB 물리 출처의 설비별 단일 행', observed_at=_now())
+                if i.get('sourceState') not in (None, 'OK'):
+                    # A087: the business DDL changed under this binding (column gone or meaning changed) — never read it
+                    raise ValueError(f"원천 열이 DDL 동기화에서 {i['sourceState']}로 확인돼 판단에 쓰지 않습니다"
+                                     f" (선언 {i.get('sqlType')}, 현재 {i.get('sourceLiveType') or '없음'}). 지식 작성자가 DDL을 다시 적재·검토해야 합니다")
+                facts[var], anchor = read_physical_fact(i, asset) if i.get('derive') else (read_physical(i, asset), None)
+                row.update(value=facts[var], how='명시된 업무 DB 물리 출처의 설비별 단일 행' + (' (시각 열을 지금부터 h로 환산)' if i.get('derive') else ''),
+                           observed_at=_now(), **({'anchor': anchor} if i.get('derive') else {}))
             elif var in facts and facts[var] is not None:
                 row.update(value=facts[var], how="파이프라인이 이미 가진 값")
             elif kind == "Sensor" or var in SENSOR_TAGS and src in ("sys:scada",):
@@ -116,31 +130,34 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                     if age is None or not -2 <= age <= MAX_APPROVAL_FACT_AGE_S:
                         raise ValueError('팬 운전 이력의 최신 수집을 확인할 수 없습니다')
                 facts[var] = tsdb.fan100_hours(asset)
-                row.update(value=facts[var], how="TimescaleDB FanSpeedSP ≥ 99 % 누적 (최근 48 h)")
+                row.update(value=facts[var], how="TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간 (HM-7.3; 관측 없으면 미확인)")
             elif src == "sys:mes" and var == "order_due_h":
                 mes = mcp_ent.fetch("/mes/orders?asset={asset}", asset)
                 facts[var] = (mes.get("facts") or {}).get("due_in_h")
-                row.update(value=facts[var], how="MES 생산오더 납기까지 남은 시간")
+                # A086: the hours are computed from the MES due date at read time; the due date itself is the business record
+                row.update(value=facts[var], how="MES 생산오더 납기까지 남은 시간 (납기 일시 기준, 조회 시각에 계산)",
+                           anchor=(mes.get("facts") or {}).get("due_at"), **source_time(mes, asset))
             elif src == "sys:erp" and var in ("order_penalty_per_h", "order_customer_tier"):
                 # 회의 L385~404: 납기 상충은 설비 상태만이 아니라 계약(지연 보상 · 고객 등급)을 같이 봐야 판단된다
                 if erp is None:
-                    erp = (mcp_ent.fetch("/erp/contract?asset={asset}", asset).get("facts") or {})
-                facts[var] = erp.get("penalty_per_h" if var == "order_penalty_per_h" else "customer_tier")
-                row.update(value=facts[var], how="ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)")
+                    erp = mcp_ent.fetch("/erp/contract?asset={asset}", asset)
+                facts[var] = (erp.get("facts") or {}).get("penalty_per_h" if var == "order_penalty_per_h" else "customer_tier")
+                row.update(value=facts[var], how="ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)", **source_time(erp, asset))
             elif src == "sys:qms" and var in ("hot_lot_claim", "hot_lot_qty"):
                 if qms is None:
-                    qms = (mcp_ent.fetch("/qms/lots?asset={asset}", asset).get("facts") or {})
-                qty = qms.get("auto_qty")
+                    qms = mcp_ent.fetch("/qms/lots?asset={asset}", asset)
+                lots = qms.get("facts") or {}
+                qty = lots.get("auto_qty")
                 if not isinstance(qty, (float, int)) or isinstance(qty, bool) or qty < 0:
                     facts[var] = None
                 else:
-                    facts[var] = qty if var == "hot_lot_qty" else (qms.get("auto_claim") if qty > 0 else 0)
-                row.update(value=facts[var], how="QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)")
+                    facts[var] = qty if var == "hot_lot_qty" else (lots.get("auto_claim") if qty > 0 else 0)
+                row.update(value=facts[var], how="QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)", **source_time(qms, asset))
             elif src == "sys:cmms" and var == "standby_ready":
-                maintenance = mcp_ent.fetch('/cmms/history?asset={asset}', asset).get('facts') or {}
-                value = maintenance.get('standby_ready')
+                cmms = mcp_ent.fetch('/cmms/history?asset={asset}', asset)
+                value = (cmms.get('facts') or {}).get('standby_ready')
                 facts[var] = value if type(value) is bool else None
-                row.update(value=facts[var], how='CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)')
+                row.update(value=facts[var], how='CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)', **source_time(cmms, asset))
             elif src in ("sys:agent", "sys:scm", "sys:process", "sys:cep"):
                 row.update(value=facts.get(var), how="후보마다 계산하거나 경보 · 결정 시점에 정해진다")
             else:

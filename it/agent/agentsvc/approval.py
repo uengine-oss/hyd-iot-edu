@@ -140,9 +140,20 @@ def assess(kg, tsdb, decision, option_id, role):
         actual_role = roles.get(role)
         if not actual_role or (role != need.get('id') and int(actual_role.get('level') or 0) <= int(need.get('level') or 0)):
             reasons.append('현재 역할 정보에서 승인 권한이 없습니다')
+    # A086: a fact computed from a source time (hours until the MES due date) keeps decreasing while the record is
+    # unchanged. Its consent context is the source record (provenance anchor); the elapsed time reaches the decision
+    # through the re-evaluated rules above (penalties/warnings/feasibility), like continuous sensor values.
+    anchors_before = {p['variable']: p['anchor'] for p in decision.get('provenance') or [] if p.get('anchor') is not None}
+    anchors_after = {p['variable']: p['anchor'] for p in provenance if p.get('anchor') is not None}
+
+    def unchanged(key):
+        if key in anchors_before or key in anchors_after:
+            return anchors_before.get(key) is not None and anchors_before.get(key) == anchors_after.get(key) and facts.get(key) is not None
+        return prior.get(key) is not None and facts.get(key) is not None and prior.get(key) == facts.get(key)
+
     for key in ('order_due_h', 'order_penalty_per_h', 'order_customer_tier', 'hot_lot_claim', 'hot_lot_qty'):
         if key in prior or key in facts:
-            if prior.get(key) is None or facts.get(key) is None or prior.get(key) != facts.get(key):
+            if not unchanged(key):
                 reasons.append(f'업무 판단 입력 {key}가 변경됐거나 확인되지 않습니다')
     # Explicit physical inputs used by current rules are also human consent
     # context. Equal values from a different column/meaning are not equivalent.
@@ -155,13 +166,17 @@ def assess(kg, tsdb, decision, option_id, role):
     relevant.update(ranking_inputs)
     relevant.update(data['bsc_variables'])
     for key in sorted(ranking_inputs):
-        if (key in prior) != (key in facts) or canonical(prior.get(key)) != canonical(facts.get(key)):
+        if key in anchors_before or key in anchors_after:
+            changed = not unchanged(key)
+        else:
+            changed = (key in prior) != (key in facts) or canonical(prior.get(key)) != canonical(facts.get(key))
+        if changed:
             reasons.append(f'순위 판단 입력 {key}가 변경됐습니다. 새 판단을 검토하세요')
     after = {p['variable']: p.get('binding') for p in provenance if p.get('binding')}
     for key in sorted(relevant & (before.keys() | after.keys())):
         if canonical(before.get(key)) != canonical(after.get(key)):
             reasons.append(f'업무 판단 입력 {key}의 물리 출처 또는 의미가 변경됐습니다')
-        if prior.get(key) is None or facts.get(key) is None or prior.get(key) != facts.get(key):
+        if not unchanged(key):
             reasons.append(f'업무 판단 입력 {key}가 변경됐거나 확인되지 않습니다')
     report['allowed'] = not reasons
     return report

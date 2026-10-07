@@ -37,8 +37,9 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
-            inst = manual_extraction.start(runtime(),source,request_id)
-            return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id)
+            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'))
+            seg = manual_extraction.engine.variables(inst).get('segment') or {}
+            return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
         return await run(work)
 
     @app.get('/api/kg/manuals/sources/{source_id}/extractions/{instance_id}')
@@ -46,7 +47,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         def work():
             source = archive_factory().get(tenant,source_id)
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
-            return manual_extraction.result(runtime(),source,instance_id,previous)
+            value = manual_extraction.result(runtime(),source,instance_id,previous)
+            if value.get('preview'):
+                # A077 (ontology-studio merge_warning): tell the reviewer *before* commit which proposed SOP ids another
+                # document or admin knowledge already owns. Read-only; the commit-time Conflict stays as the hard rule.
+                value['preview']['conflicts'] = graph(lambda session: manual_graph.sop_conflicts(
+                    session, source['document_id'], [p['id'] for p in value['preview']['procedures']]))
+            return value
         return await run(work)
 
     @app.get('/api/kg/manuals/sources/{source_id}/extractions')
@@ -119,7 +126,12 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                     raise ValueError('추출 작업이 완료되지 않았거나 검토한 작업 세대가 다릅니다')
                 plan['extraction'] = current['extraction']
                 plan['page_reviews'] = current['page_reviews']
-            result = graph(lambda session: manual_graph.commit(session, plan))
+            def commit_with_rules(session):
+                from . import skill_graph
+                fms = sorted({p['failureMode'] for p in plan['procedures']})
+                plan['candidate_rules'] = {fm: session.execute_read(lambda tx, fm=fm: skill_graph.candidate_rules(tx, fm)) for fm in fms}
+                return manual_graph.commit(session, plan)
+            result = graph(commit_with_rules)
             audit('-', plan['by'], 'MANUAL_INGESTED', {key: result[key] for key in
                   ('batch', 'source_id', 'filename', 'sections', 'procedures', 'steps')})
             return result

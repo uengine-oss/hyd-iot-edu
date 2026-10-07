@@ -38,7 +38,7 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
             evs.append({"id": e["id"], "name": e.get("name"), "weight": w, "expect": e.get("expect"),
                         "threshold": e.get("threshold"), "value": raw, "passed": ok,
                         "status": ('PASS' if ok else 'FAIL') if known else 'UNKNOWN',
-                        **{k: r[k] for k in ('error', 'error_kind', 'reason', 'sql') if k in r}})
+                        **{k: r[k] for k in ('error', 'error_kind', 'reason', 'sql', 'coverage') if k in r}})
         prior = float(row.get("prior") or 0)
         score = prior * (wpass / wsum) if wsum > 0 else prior * NO_EVIDENCE_DISCOUNT
         out.append({"id": row["causeId"], "name": row.get("cause"), "description": row.get("description"),

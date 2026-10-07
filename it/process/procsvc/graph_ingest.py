@@ -13,9 +13,11 @@ from datetime import datetime, timezone
 from .ingest import validate_plan
 
 INPUT_FIELDS = ('name', 'typeRef', 'variable', 'datasource', 'catalog', 'schema',
-                'table', 'column', 'sqlType', 'assetColumn', 'source_id', 'ingested_at')
+                'table', 'column', 'sqlType', 'assetColumn', 'derive', 'source_id', 'ingested_at')
 SYSTEM_FIELDS = ('name', 'zone', 'source_id')
 JOURNAL_FIELDS = ('_ingest_base', '_ingest_history', '_ingest_batches', '_ingest_created')
+# A087: observations the DDL source sync records on a binding — system state, not someone's edit of the input
+SYNC_FIELDS = ('sourceState', 'sourceLiveType', 'sourceCheckedAt')
 
 
 class Conflict(ValueError):
@@ -29,8 +31,8 @@ def _json(value):
 def _lock(tx):
     # Unique constraint is installed by ensure_schema before transactions begin.
     tx.run("MERGE (n:IngestionControl {id:'ingestion:ddl'}) "
-           "ON CREATE SET n.name='DDL ingestion transaction lock', n.sequence=0 "
-           "SET n.sequence=n.sequence+1").consume()
+           "ON CREATE SET n.sequence=0 "
+           "SET n.name=coalesce(n.name,'DDL ingestion transaction lock'), n.sequence=coalesce(n.sequence,0)+1").consume()   # A092: schema requires name; older lock nodes had none
 
 
 def ensure_schema(session):
@@ -166,7 +168,7 @@ def clear(session, batch):
                     continue
                 if props['_ingest_created']:
                     fields = INPUT_FIELDS if label == 'InputData' else SYSTEM_FIELDS
-                    foreign_props = set(props) - set(fields) - set(JOURNAL_FIELDS) - {'id'}
+                    foreign_props = set(props) - set(fields) - set(JOURNAL_FIELDS) - set(SYNC_FIELDS) - {'id'}
                     labels = tx.run(f'MATCH (n:{label} {{id:$id}}) RETURN labels(n) AS labels', id=nid).single()['labels']
                     externally_extended = bool(foreign_props or set(labels) - {label})
                     if label == 'InputData':

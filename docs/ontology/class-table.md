@@ -43,3 +43,8 @@
 | 운영 기록 | ProcessInstance | 프로세스 실행 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
 | 운영 기록 | WorkItem | 실행 작업 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
 | 운영 기록 | ProcessVersion | 프로세스 정의 버전 | ProcessGPT version provenance; HYD immutable element snapshot |
+| 운영 기록 | ExecutionProjection | 실행 투영 잠금 | 내부 기록 |
+| 운영 기록 | CaseProjection | 사건·판단 투영 잠금 | 내부 기록 |
+| 운영 기록 | KnowledgeEdit | 지식 편집 영수증 | 내부 기록 |
+| 운영 기록 | ManualIngestionDocument | 매뉴얼 적재 문서 | 내부 기록 |
+| 운영 기록 | ManualIngestionBatch | 매뉴얼 적재 배치 | 내부 기록 |

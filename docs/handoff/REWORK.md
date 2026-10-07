@@ -184,3 +184,8 @@ JS app/instances/instanceRework 구문 검사 exit0. Python/서버를 변경하�
 ### A071 조건 재검토·경계 도달 후속
 
 별도 흐름의 변경 조건은 실제 선행 검토 작업을 새 세대에 포함하고 정확한 생산 완료를 기다린다. 새 타이머는 새 검토 도달부터 시작하며 이전 timeout 후속의 도달을 재사용하지 않는다. API·예제·출처·보류 경계는 [현재 운영 계약](../rework-conditions.md), 실패/복구와 전체982·실제24의 근거는 HANDOFF §9 A071을 따른다. 과거 이 문서의 의존스케줄러 전체 미구현 설명은 당시 기록이다. 실제 효과 보상/시작gateway 재평가·미확인과거도달은 남는다.
+
+
+### A072 실제효과 보상·확인·Incident 재개
+
+재작업 전 기존 세대의 외부 효과를 전부 영수증으로 해결한다. 기업 역거래 4종은 보상 영수증(PENDING→DELIVERED|FAILED, 같은 request_id 재전달이 남은 항목부터 이어감), 되돌릴 수 없는 거래·PLC 명령·원장 미확인 기록은 사람 확인 영수증(RECORDED)이다. 해결되면 미리보기에 `reopen_incident`가 표시되고 새 세대 요청이 같은 거래에서 Incident를 승인 대기로 재개하며 이전 명령·ACK·작업지시는 `superseded`, 이전 승인은 DISCARDED(via rework)다. 실제 실행에서 찾은 결함(영수증 첫 응답 시각 누락, 폐기 명령의 재관측 타이머가 새 창 판정)과 수정·증거는 HANDOFF §9 A072, 운영 계약은 [effect-compensation.md](../effect-compensation.md). 세대1 에이전트 작업은 대역 워커이며 새 Codex/Claude Code 완주는 별도 미결이다.

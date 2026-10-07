@@ -63,7 +63,7 @@ def main():
             save('g0-decision',base.request(base.PROCESS+'/api/decisions/'+did));save('g0-view',current)
         decision=read('g0-decision');did=decision['id'];selection=task('task:select')
         with base.psycopg.connect(base.DSN) as conn:
-            rows=conn.execute("select order_id,due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
+            rows=conn.execute("select order_id,ent.hours_from_now(due_at) as due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
         assert len(rows)==1 and rows[0][1] is not None
         order,due=rows[0];changed=36.0 if float(due)<24 else 2.0
         save('source-before',dict(order_id=order,due=float(due),changed_due=changed))

@@ -53,3 +53,44 @@ def test_transactions_are_logged_newest_first_and_reset_clears_them():
     assert [t["skill"] for t in st.transactions()] == ["skill:procure-part", "skill:hold-lot"]
     st.reset()
     assert st.transactions() == []
+
+
+def test_work_order_cancellation_is_an_exact_idempotent_inverse():
+    st = state.EnterpriseState()
+    wo = st.execute({"decision": "D-A072", "option": "skill:x", "skill": "skill:schedule-maintenance", "asset": "HYD-01", "by": "x"})
+    undo = st.execute({"decision": "D-A072", "skill": "skill:cancel-work-order", "asset": "HYD-01", "by": "reviewer",
+                       "params": {"ref": wo["ref"]}, "compensates": wo["id"]})
+    assert undo["system"] == "sys:cmms" and undo["ref"] == wo["ref"] and undo["compensates"] == wo["id"]
+    assert st.snapshot()["cmms"]["work_orders"][0]["status"] == state.CANCELLED
+    again = st.execute({"decision": "D-A072", "skill": "skill:cancel-work-order", "asset": "HYD-01", "by": "reviewer",
+                        "params": {"ref": wo["ref"]}, "compensates": wo["id"]})
+    assert again == undo                                           # same request → same receipt, no second cancellation
+    with pytest.raises(ValueError, match="cannot be cancelled"):   # a second attempt with a different decision meets the moved-on record
+        st.execute({"decision": "D-other", "skill": "skill:cancel-work-order", "asset": "HYD-01", "by": "x", "params": {"ref": wo["ref"]}})
+    with pytest.raises(ValueError, match="no such work order"):
+        st.execute({"skill": "skill:cancel-work-order", "asset": "HYD-01", "params": {"ref": "WO-NOPE"}})
+    with pytest.raises(ValueError, match="params.ref"):
+        st.execute({"skill": "skill:cancel-work-order", "asset": "HYD-01"})
+    assert [tx["skill"] for tx in st.transactions("D-A072")] == ["skill:schedule-maintenance", "skill:cancel-work-order"]
+
+
+def test_other_inverses_and_the_irreversible_list():
+    st = state.EnterpriseState()
+    pr = st.execute({"decision": "D1", "skill": "skill:procure-part", "asset": "HYD-01", "params": {"supplier": "sup:b"}})
+    assert st.execute({"decision": "D1", "skill": "skill:cancel-purchase-request", "asset": "HYD-01", "params": {"ref": pr["ref"]}})["ref"] == pr["ref"]
+    assert st.snapshot()["erp"]["purchase_requests"][0]["status"] == state.CANCELLED
+    mv = st.execute({"decision": "D2", "skill": "skill:reallocate-production", "asset": "HYD-01"})
+    st.execute({"decision": "D2", "skill": "skill:restore-production", "asset": "HYD-01", "params": {"ref": mv["ref"]}})
+    assert all(o["moved_from"] is None for o in st.snapshot()["mes"]["orders"])
+    assert st.execute({"decision": "D2", "skill": "skill:restore-production", "asset": "HYD-01", "params": {"ref": mv["ref"]}})["ref"] == mv["ref"]   # replay → same receipt
+    with pytest.raises(ValueError, match="no reallocation"):                                                                                     # a new request meets the restored order
+        st.execute({"decision": "D2-again", "skill": "skill:restore-production", "asset": "HYD-01", "params": {"ref": mv["ref"]}})
+    hold = st.execute({"decision": "D3", "skill": "skill:hold-lot", "asset": "HYD-01"})
+    st.execute({"decision": "D3", "skill": "skill:release-hold", "asset": "HYD-01", "params": {"ref": hold["ref"]}})
+    assert st.snapshot()["qms"]["holds"][0]["status"] == "격리 해제"
+    assert set(state.INVERSE_OF) == {"skill:schedule-maintenance", "skill:procure-part", "skill:reallocate-production", "skill:hold-lot"}
+    assert set(state.IRREVERSIBLE) == {"skill:release-lot", "skill:substitute-shipment", "skill:demand-control"}
+    assert not set(state.INVERSE_OF) & set(state.IRREVERSIBLE) and set(state.INVERSE_OF.values()) == set(state.COMPENSATION_SKILLS)
+    for forward in ("skill:release-lot", "skill:substitute-shipment", "skill:demand-control"):
+        assert forward in state.SKILLS and forward not in state.INVERSE_OF
+

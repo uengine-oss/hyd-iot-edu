@@ -252,7 +252,7 @@ services:
       OBSERVATION_GRACE_S: ${OBSERVATION_GRACE_S:-2}
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
-      DETECTOR_STATE_PATH: /data/detector.sqlite3
+      DETECTOR_STATE_PATH: ${DETECTOR_STATE_PATH:-/data/detector.sqlite3}   # 다른 시간 배율로 돌릴 때는 별도 파일을 지정한다(기존 상태 파일 보존; A072)
     depends_on:
       redpanda: { condition: service_healthy }
       topic-init: { condition: service_completed_successfully }
@@ -324,6 +324,7 @@ services:
       KAFKA_BOOTSTRAP: redpanda:9092
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
+      DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
       PROCESS_URL: http://process:8080
@@ -333,6 +334,8 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       LLM_MODEL: ${LLM_MODEL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}                 # key for OPENAI_BASE_URL when it is a GPU/LiteLLM endpoint (A073)
+      LLM_EXTRA_BODY: ${LLM_EXTRA_BODY:-}           # vendor request fields, e.g. {"chat_template_kwargs":{"enable_thinking":false}} for SGLang/Qwen
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-8}
     depends_on:
@@ -437,6 +440,7 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
+      DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_AUTH: neo4j/hydpass123
       PROCESS_URL: http://process:8080

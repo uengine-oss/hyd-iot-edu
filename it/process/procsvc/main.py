@@ -8,6 +8,7 @@ import copy
 import json
 import logging
 import os
+import urllib.error
 import urllib.request
 from contextlib import nullcontext
 
@@ -46,6 +47,7 @@ state = {"kafka": False, "incidents": 0}
 incidents: dict[str, machine.Incident] = {}
 book: dict[str, dict] = {}          # action-card decisions (L9, ontology v2)
 audit_log: list[dict] = []
+SOURCE_BATCH_MAX = int(os.getenv('SOURCE_BATCH_MAX', '50'))   # A080: deliveries received per DB connection and per offset commit (~6 s at 20x)
 plant_status: dict[str, dict] = {}   # latest plant.status per asset (PLC mode / state for the agent's DMN facts)
 producer = None
 loop: asyncio.AbstractEventLoop | None = None
@@ -80,16 +82,17 @@ class Fx(machine.Effects):
         asyncio.run_coroutine_threadsafe(producer.send(topics.K_AUDIT, key=topics.asset_key(self.inc.asset), value=evt), loop)
 
     def set_timer(self, name: str, seconds: float) -> None:
-        loop.call_soon_threadsafe(lambda: asyncio.create_task(fire_timer(self.inc.id, name, seconds)))
+        cmd_id = self.inc.cmd_id          # the timer belongs to this command; a rework may supersede it before it fires
+        loop.call_soon_threadsafe(lambda: asyncio.create_task(fire_timer(self.inc.id, name, seconds, cmd_id)))
 
 
-async def fire_timer(inc_id: str, name: str, seconds: float):
+async def fire_timer(inc_id: str, name: str, seconds: float, cmd_id: str | None = None):
     await asyncio.sleep(seconds)
     inc = incidents.get(inc_id)
     if not inc:
         return
     value = await asyncio.get_running_loop().run_in_executor(None, latest_tag, inc.asset, inc.recovery[0]) if name == "reobs" and inc.recovery else None
-    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE)
+    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE, cmd_id=cmd_id)
     _after(inc)
     if inc.state == 'RESOLVED':
         rt = instance_mode.current()
@@ -141,6 +144,49 @@ def _incident_projected(incident_id):
         rt.repo.enqueue_incident_projections(rt.tenant_id, incident_id)
 
 
+def _ddl_sync_once():
+    """A087: compare physical InputData bindings with the live business catalog (see ddl_sync)."""
+    import psycopg
+    from . import ddl_sync
+    from .procdb import SUPABASE_DSN
+    report = ddl_sync.sync(_q, lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+    if report.get('changed'):
+        _audit("-", "process", "DDL_SOURCE_DRIFT", {"changes": report["changes"][:50]})
+    return report
+
+
+def _scm_sync_once():
+    """A089: SCM master data (supplier AVL, quotes of the parts ent holds) → graph (see scm_sync)."""
+    import psycopg
+    from . import scm_sync
+    from .procdb import SUPABASE_DSN
+    report = scm_sync.sync(_q, lambda: psycopg.connect(SUPABASE_DSN, connect_timeout=5))
+    if report.get('changed'):
+        _audit("-", "process", "SCM_SOURCE_SYNCED", {k: report[k] for k in ("set_suppliers", "set_quotes", "delete_quotes")})
+    return report
+
+
+def _lease_sweep_once():
+    """A097: a worker run whose lease expired three times is marked FAILED so a person can close it (A082)."""
+    from . import procdb
+    rt = instance_mode.current()
+    n = rt.repo.expire_worker_leases() if rt is not None else 0
+    if n:
+        log.warning("worker lease sweep: %d run(s) marked FAILED after %d expired claims", n, procdb.MAX_CLAIMS)
+    return {"failed": n}
+
+
+async def _ddl_sync_loop():
+    interval = float(os.getenv("DDL_SYNC_INTERVAL_S", "60"))
+    while True:
+        for name, once in (("DDL source", _ddl_sync_once), ("SCM source", _scm_sync_once), ("worker lease", _lease_sweep_once)):
+            try:
+                await asyncio.to_thread(once)
+            except Exception:  # noqa: BLE001
+                log.exception("%s sync failed; the graph keeps its last synced state", name)
+        await asyncio.sleep(interval)
+
+
 async def _case_projection_loop():
     while True:
         try:
@@ -166,37 +212,55 @@ async def consume():
                                auto_commit=not durable,raw_values=durable)
     state["kafka"] = True
     log.info("consuming plant.status (ACK) and alerts (CLEAR)")
-    async for rec in cons:
+    from aiokafka import TopicPartition
+    while True:
+      batches = await cons.getmany(timeout_ms=250, max_records=SOURCE_BATCH_MAX)
+      if not batches:
+          continue
+      for tp, recs in batches.items():
         if durable:
-            from aiokafka import TopicPartition
-            record=kafka_record(rec)
-            policy=None
-            # On a receipt failure this exact delivery remains unacknowledged.
-            # Do not consume a later record and commit past the missing event.
-            while True:
-                try:
-                    if record['kind']=='RAISE' and policy is None:
-                        policy=await asyncio.to_thread(instance_mode.current().alert_policy,record['payload'].get('pattern'))
-                    await asyncio.to_thread(source_inbox.receive,record,policy)
-                    if record['topic']==topics.K_STATUS:
-                        plant_status.update(await asyncio.to_thread(source_inbox.latest_states))
+            # A080: receive the whole fetched batch on one DB connection (one committed transaction per receipt, as
+            # before) and commit the offset once per batch. On a receipt failure the failed delivery and everything after
+            # it stay unacknowledged and are retried; nothing is committed past a missing event.
+            items=[]
+            for rec in recs:
+                record=kafka_record(rec)
+                policy=None
+                if record['kind']=='RAISE':
+                    policy=await asyncio.to_thread(instance_mode.current().alert_policy,record['payload'].get('pattern'))
+                items.append((rec,record,policy))
+            start=0
+            while start<len(items):
+                rows,error,states=await asyncio.to_thread(source_inbox.receive_many,[(r,p) for _,r,p in items[start:]])
+                done=start+len(rows)
+                if states:
+                    plant_status.update(states)
+                if done>start:
+                    last=items[done-1][0]
+                    try:
+                        await cons.commit({TopicPartition(last.topic,last.partition):last.offset+1})
+                    except Exception:
+                        # Rebalance/network failure may redeliver an already committed
+                        # receipt. Every later offset also passes receive() first.
+                        log.exception('durable source will tolerate offset redelivery: %s/%s/%s',last.topic,last.partition,last.offset)
+                if error is None:
                     state.pop('source_receive_error',None)
                     break
-                except Exception as exc:
-                    state['source_receive_error']=str(exc)
-                    log.exception('source receipt/offset failed: %s/%s/%s',rec.topic,rec.partition,rec.offset)
-                    await asyncio.sleep(1)
-            try:
-                await cons.commit({TopicPartition(rec.topic,rec.partition):rec.offset+1})
-            except Exception:
-                # Rebalance/network failure may redeliver an already committed
-                # receipt. Every later offset also passes receive() first.
-                log.exception('durable source will tolerate offset redelivery: %s/%s/%s',rec.topic,rec.partition,rec.offset)
+                failed=items[done][0]
+                state['source_receive_error']=str(error)
+                log.error('source receipt failed: %s/%s/%s: %s',failed.topic,failed.partition,failed.offset,error)
+                start=done
+                await asyncio.sleep(1)
             continue
+        for rec in recs:
+          _legacy_record(rec)
+
+
+def _legacy_record(rec):
         v = rec.value
         if not isinstance(v, dict) or "_raw" in v:
             log.warning("ignoring malformed record on %s", rec.topic)
-            continue
+            return
         if rec.topic == topics.K_STATUS and v.get("asset"):
             plant_status[v["asset"]] = v
         if rec.topic == topics.K_ALERTS and v.get("state") == "RAISE":
@@ -213,7 +277,7 @@ async def consume():
                         and v.get('alertId') == inc.alert_id and v.get('state') == 'CLEAR' and not inc.cleared):
                     machine.on_alert(inc,v,Fx(inc))
                     _after(inc)  # Source CLEAR is recorded; ESCALATED remains human review.
-                continue
+                continue  # next incident
             try:
                 if rec.topic == topics.K_STATUS and v.get("asset") == inc.asset:
                     machine.on_status(inc, v, now(), Fx(inc), time_scale=TIME_SCALE)
@@ -296,7 +360,18 @@ def _instance_context() -> instance_mode.ProcessContext:
                                         cypher=_q, exec_skill=exec_skill, record_decision=record_decision, approve_incident=_approve_incident,
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
                                         reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
-                                        accept_evaluation=_publish_legacy_evaluation)
+                                        accept_evaluation=_publish_legacy_evaluation, exec_compensation=_exec_compensation)
+
+
+def _exec_compensation(body: dict) -> dict:
+    """POST one compensation skill (A072) to the enterprise systems; the enterprise keeps it idempotent per decision/skill/ref."""
+    req = urllib.request.Request(ENTERPRISE_URL + "/api/exec", data=json.dumps(body, ensure_ascii=False).encode(),
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise ValueError(f"enterprise refused the compensation: {e.code} {e.read().decode(errors='replace')[:200]}")
 
 
 def _approval_receipts(decision_id):
@@ -343,6 +418,7 @@ async def _startup():
     case_projection_event = asyncio.Event()
     case_projection_event.set()
     case_projection_task = asyncio.create_task(_case_projection_loop())
+    asyncio.create_task(_ddl_sync_loop())
     asyncio.create_task(consume()).add_done_callback(_watch)
 
 
@@ -898,6 +974,24 @@ async def kg_ddl_preview(body: dict):
     return plan
 
 
+@app.post("/api/kg/ddl/sync")
+async def kg_ddl_sync():
+    """A087: poll the live business catalog now; physical inputs whose column vanished or changed type are marked."""
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, _ddl_sync_once)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"원천 카탈로그 동기화 실패: {str(e)[:200]}")
+
+
+@app.post("/api/kg/scm/sync")
+async def kg_scm_sync():
+    """A089: apply the business database's supplier master data to the graph now."""
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, _scm_sync_once)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"SCM 원천 동기화 실패: {str(e)[:200]}")
+
+
 @app.post("/api/kg/ddl/commit")
 async def kg_ddl_commit(body: dict):
     """body = the preview plan (possibly edited: selection/systems) + {by}. Applies the ownership journal and nodes in one transaction."""
@@ -922,6 +1016,10 @@ async def kg_ddl_commit(body: dict):
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"온톨로지 적재 실패: {str(e)[:200]}")
     out.update(by=by, t=now_iso(), kind="ddl")
+    try:   # A087: a re-ingested binding reports its live state at once, not after the next poll
+        out["sourceSync"] = await asyncio.get_running_loop().run_in_executor(None, _ddl_sync_once)
+    except Exception as e:  # noqa: BLE001
+        out["sourceSync"] = {"error": str(e)[:200]}
     # Ingestion history is the durable graph journal read by /api/kg/ingests.
     # The old manual-upload list no longer exists; do not fail after commit.
     _audit("-", by, "DDL_INGESTED", {k: out[k] for k in ("batch", "filename", "systems", "inputs")})
@@ -965,7 +1063,7 @@ async def kg_rule_sql(body: dict):
         raise HTTPException(400, "tests 또는 rule 이 필요하다")
     inputs = await loop_.run_in_executor(None, lambda: _q(
         "MATCH (i:InputData) WHERE i.table IS NOT NULL RETURN i.variable AS variable, i.datasource AS datasource, "
-        "i.catalog AS catalog, i.schema AS schema, i.table AS table, i.column AS column, i.assetColumn AS assetColumn"))
+        "i.catalog AS catalog, i.schema AS schema, i.table AS table, i.column AS column, i.assetColumn AS assetColumn, i.derive AS derive"))
     mapped = {}
     used = {t.get("variable") for t in tests}
     for item in inputs:

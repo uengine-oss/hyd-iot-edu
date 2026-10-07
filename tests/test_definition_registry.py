@@ -119,6 +119,11 @@ def test_api_rejects_version_overwrite_missing_version_and_replay(app_world):
     lambda d:d['activities'][0].update(outputData='score'),
     lambda d:d['forms']['review']['fields_json'][0].update(type='select',items=123),
     lambda d:d['gateways'][0].pop('type'),
+    # A096 static connectivity (bpmn-extractor process_validator._static_check · bpmn-process-generation-skill)
+    lambda d:d['activities'].append({'id':'task:orphan','name':'고아','type':'userTask','role':'검토자','tool':'formHandler:review','outputData':['score']}),   # unreachable
+    lambda d:(d['activities'].append({'id':'task:dead','name':'막힘','type':'userTask','role':'검토자','tool':'formHandler:review','outputData':['score']}),
+              d['sequences'].append({'id':'s5','source':'choice','target':'task:dead','condition':'score < 0'})),                           # reaches no end
+    lambda d:d['events'].append({'id':'lonely','type':'endEvent'}),                                                                           # never entered
 ])
 def test_invalid_definition_does_not_publish(app_world,change):
     c,rt,repo=app_world

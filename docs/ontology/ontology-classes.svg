@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2336 1018" width="2336" height="1018" font-family="Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2336 1390" width="2336" height="1390" font-family="Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif">
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
 <marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0L12 6L0 12z" fill="#fff" stroke="#374151"/></marker>
 </defs>
-<rect width="2336" height="1018" fill="#ffffff"/>
-<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.5.0 — 클래스 41개 · 관계 72종</text>
+<rect width="2336" height="1390" fill="#ffffff"/>
+<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.5.0 — 클래스 46개 · 관계 72종</text>
 <text x="30" y="58" font-size="13" fill="#4b5563">BSC(관점 · 전략 목표 · 성과 지표) → 프로세스(BPMN) → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = Skill = SOP · 규칙(DMN) → 외부 변수 · 예측 · 운영 기록. 화살표 = 관계 방향, 점선 삼각형 = 상속</text>
 <text x="30" y="120" font-size="14" font-weight="700" fill="#6d28d9">가치 계층 (BSC)</text>
 <text x="430" y="120" font-size="14" font-weight="700" fill="#1d4ed8">프로세스 계층</text>
@@ -261,4 +261,9 @@
 <g><rect x="2030" y="668" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="668" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="687" font-size="14" font-weight="700" fill="#111827">ProcessInstance</text><text x="2044" y="705" font-size="12" fill="#374151">프로세스 실행</text><title>ProcessInstance (프로세스 실행) — ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)</title></g>
 <g><rect x="2030" y="748" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="748" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="767" font-size="14" font-weight="700" fill="#111827">WorkItem</text><text x="2044" y="785" font-size="12" fill="#374151">실행 작업</text><title>WorkItem (실행 작업) — ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)</title></g>
 <g><rect x="2030" y="828" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="828" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="847" font-size="14" font-weight="700" fill="#111827">ProcessVersion</text><text x="2044" y="865" font-size="12" fill="#374151">프로세스 정의 버전</text><title>ProcessVersion (프로세스 정의 버전) — ProcessGPT version provenance; HYD immutable element snapshot</title></g>
+<g><rect x="2030" y="908" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="908" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="927" font-size="14" font-weight="700" fill="#111827">ExecutionProjection</text><text x="2044" y="945" font-size="12" fill="#374151">실행 투영 잠금</text><title>ExecutionProjection (실행 투영 잠금) — 내부 기록</title></g>
+<g><rect x="2030" y="988" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="988" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="1007" font-size="14" font-weight="700" fill="#111827">CaseProjection</text><text x="2044" y="1025" font-size="12" fill="#374151">사건·판단 투영 잠금</text><title>CaseProjection (사건·판단 투영 잠금) — 내부 기록</title></g>
+<g><rect x="2030" y="1068" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="1068" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="1087" font-size="14" font-weight="700" fill="#111827">KnowledgeEdit</text><text x="2044" y="1105" font-size="12" fill="#374151">지식 편집 영수증</text><title>KnowledgeEdit (지식 편집 영수증) — 내부 기록</title></g>
+<g><rect x="2030" y="1148" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="1148" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="1167" font-size="14" font-weight="700" fill="#111827">ManualIngestionDocument</text><text x="2044" y="1185" font-size="12" fill="#374151">매뉴얼 적재 문서</text><title>ManualIngestionDocument (매뉴얼 적재 문서) — 내부 기록</title></g>
+<g><rect x="2030" y="1228" width="196" height="46" rx="7" fill="#fff" stroke="#7c2d12" stroke-width="1.8"/><rect x="2030" y="1228" width="6" height="46" rx="3" fill="#7c2d12"/><text x="2044" y="1247" font-size="14" font-weight="700" fill="#111827">ManualIngestionBatch</text><text x="2044" y="1265" font-size="12" fill="#374151">매뉴얼 적재 배치</text><title>ManualIngestionBatch (매뉴얼 적재 배치) — 내부 기록</title></g>
 </svg>

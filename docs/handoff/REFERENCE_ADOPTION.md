@@ -21,44 +21,44 @@ A067 후속: T06의 실제 PostgreSQL 용어 저장과 지도 밖 catalog의 원
 | ID | 현재 판단 | 확인한 계약과 HYD 대응 | 남은 경계 |
 |---|---|---|---|
 | C01 | 계약 반영 | 메타 gitlink/DB 원형 → compose.yaml·Supabase migration | 전체 제품 배포 아님; 인덱스 차이 보존 |
-| C02 | 계약 반영 | 기존 Execution/폼/재작업 UI 대조 → execution_graph·포털 | 최신 직접 UI·전체 의미 연결 |
-| C03 | 계약 반영 | 기존 정의/작업/재작업/inputData → engine·input_bindings | 조건 재판정·보상; inputBindings는 HYD 확장 |
+| C02 | 본문 대조 완료(스냅샷 d88f78c) | 주장 참(부분). 실행 중 에이전트 취소(`FormWorkItem.vue` L954-964, `draft_status=CANCELLED`)에 대응하는 HYD 포털 버튼/엔드포인트 없음 — 워커 `_cancelled`(runner)는 이미 감지 대기, `close_agent_task`는 PENDING·FAILED만. 위임·checkpoints 강제·DRAFT 초안 화면은 보류, 반송/되돌리기는 제품 백엔드도 미구현 | **A097 반영: `cancel_agent_task`·`POST /api/todolist/{wid}/cancel`·포털 "실행 취소"**. 근거 [r13-group4](verification/2026-10-07/r13-group4-C02-C03-C07.md) |
+| C03 | 본문 대조 완료 | 주장 참. `engine.py` L87이 subProcess/callActivity를 허용하지만 실행 분기 0건 — 등록 경로(`definition_registry`)는 이미 거부하므로 파일 직접 로드에만 해당(기록). 제품의 `_process_sub_processes` L1188-1657·병렬/포괄 합류(`check_task_status` L3455-3646)·cron 중간 타이머·기한 계산은 현재 정의에 쓰임이 없어 보류. 제품의 3회 실패→DONE(polling_service L86-95)은 HYD PENDING이 더 맞음 | **A096: 정적 연결성 검사 4종을 등록 검증에 추가**(T02·D01 권고와 동일). 근거 r13-group4 |
 | C04 | 현 경로 유지 | Spring 경로 재작성·MCP proxy 주소 → HYD compose/포털 | 게이트웨이 전체 이식·운영 인증 검증 없음 |
-| C05 | 대조 중 | Compose 서비스·이미지·healthcheck 목록 → compose.yaml | 설정 전체 미열람; 이미지 태그와 소스 pin 별도 |
+| C05 | 대조 완료·보류 | compose 890줄·.env.example·litellm·nginx·migrate-db·README 전부 열람. `fetch_pending_task`(init.sql L2705-2747)는 HYD 마이그레이션 L261-292와 본문 동일(이미 채택). 이 레포가 빌드하는 deepagents 이미지 `:24fbdd4`는 A01 스냅샷 1bf79e0의 조상 | LiteLLM·Supabase 자체호스팅·migrate-db·nginx upstream은 HYD 구조(직접 base URL·supabase CLI migrations·정적 포털)에 불필요. 미열람: kong.yml, init.sql DDL 본문. 근거 [r13-group1](verification/2026-10-07/r13-group1-C05-A01-A02.md) |
 | C06 | 배포 보류 | Kubernetes 런너/MCP proxy/FCM 서비스 연결 → 운영 경계 대조 | 이미지 원본 일부 미확정; K8s 배포 없음 |
-| C07 | 계약 반영 | 기존 todolist/events/원자 claim → PG·worker | SDK 전체 이식 아님; 최신 실제 Codex |
+| C07 | 본문 대조 완료(스냅샷 58ca16d) | 주장 참이나 "stale 정리 같은 계약"은 절반 — HYD `cleanup_stale_consumers`는 엔진 SUBMITTED만 풀고 워커 STARTED 고아 회수 없음(스냅샷 SDK에도 없고 HEAD e4728a2에서 `lease_until/claim_count/max_claims=3`·`renew_task_lease`(function.sql L34-169, lease.py 120 s/30 s) 추가) | **A097 반영: `20261007000018_worker_lease.sql` lease_until/claim_count/max 3·renew 30 s·expire sweep, 실측 6/6(워커 사망→117초 뒤 회수→완료)**. 근거 r13-group4 |
 | C08 | 배포 보류 | 대화 ID/agent type별 런너 프록시 진입 → workspace 비교 | resolve 후반 미열람; 호스트 워커 교체 근거 없음 |
-| A01 | 대조 중 | 도구/스킬/sandbox/checkpointer → create_deep_agent | HYD 변경 지식·추출 실제 검증; 프레임워크 교체 미결정 |
-| A02 | 대조 중 | ReAct 세션/PDF2BPMN 필수 선택 선언 → HITL/추출 비교 | agent.py 첫180행; 강제 라우팅 본문 미열람 |
+| A01 | 대조 완료·격차 1건 반영(A095) | 주장 참(agent.py L120-227, 15파일 전부). 결정론 재실행+보상(replay.py L177-231)·입력 오프로드(L525-586)·HITL 체크포인터는 HYD가 dmn-mcp·effect_compensation·`_deliver_prompt`·DB 저장으로 대체. **격차: 샌드박스 env 화이트리스트(docker_sandbox.py L52-66)** — HYD 워커는 `SUPABASE_DSN` 등을 env로 갖고 cliagents `exec_env`가 `os.environ`을 복사해 Claude Code 자식 프로세스에 상속됨(직접 확인) → `worker/env_guard.py`로 설정 읽은 뒤 자기 환경에서 비밀 제거(A095) | 프레임워크 교체 근거 없음(서브에이전트 요구가 R표에 없음). 근거 r13-group1 |
+| A02 | 대조 완료·격차 1건 반영(A095) | 강제 라우팅(L1265-1389)·옵션 elicitation(L1395-1678)·run 진입(L2456-2485) 열람, 주장 참. A02 HITL 상태는 프로세스 메모리 dict(executor L721/726, 재시작 유실) — HYD draft DB 저장이 더 강함. **격차: 작업별 MCP 서버 선택(executor L355-422)** — HYD `activity_capabilities`의 tools를 runner가 쓰지 않고 tenant_mcp 전체를 등록(직접 확인, 현재 정의 4종 tools 선언 0건이라 잠재) → `bridge.select_servers`로 선언 시 그 서버만 등록(A095) | 근거 r13-group1 |
 | A03 | 런타임 보류 | AgentCard push 지원에 따른 webhook/sync 분기 → worker 이벤트 비교 | 외부 A2A가 필수라는 근거 없음; webhook 저장 미검증 |
 | A04 | 현 경로 유지 | SDK 작업→런타임→폼/도구 이벤트 → outcome/provider 비교 | App Server로 정책 우회하지 않음; 새 Codex 미검증 |
-| A05 | 계약 반영 | 기존 CLI pump/on_start/timeout/HITL → runner/hitl | 자식트리/PG 조건부 저장은 HYD 확장 |
-| A06 | 사용 중 | CLI provider/resume/이벤트 파서 → 실제 worker | 전체 provider 검증 아님; 최신 실행 차단 |
+| A05 | 본문 대조 완료(4475bf7) | 주장 참. 제품 astream은 exit code/stderr를 안 읽어 HYD `process_control`이 더 강함. 제품 RuntimeLease(실행 후 제공자 파일 복원, 테넌트 MCP 자격증명 사유)에 대응해 HYD는 `.mcp.json`에 서버 env 평문을 쓰고 72 h 보존했음 | **A096: `bridge.cleanup`으로 실행 종료 시 env 제거**(매 실행 install 재호출이라 재개 영향 없음). 보류: Journal·replay_limited, `_pause`가 remember() 반환값을 버려 알림 중복 가능(runner 244, 미실측). 근거 r13-group6 |
+| A06 | 본문 대조 완료(7c7a392) | 주장 참. "최신 실행 차단"의 실체는 Codex 0.151 `exec resume` 플래그 순서(HYD codex_provider가 재배열). `exec_env`가 `os.environ`을 복사(A095 env_guard의 근거). 권한 거부 인식은 Claude 마커 4종 부분일치/Codex declined뿐(라이브러리 한계, HYD는 --allowedTools로 완화) | **A096: exit 0인데 stderr가 있으면 워커 로그에 꼬리 기록**(이전엔 버려짐). 근거 r13-group6 |
 | A07 | 런타임 보류 | JSON→PromptMultiFormatFlow subprocess 진입 | 연구보고 플로 내부 미열람; 설비 판단 필수 경로 아님 |
 | A08 | 런타임 보류 | task_record polling→run_deep_research 진입 | HYD 원문 검토/적재와 일반 연구보고를 구분 |
 | A09 | UI 확장 보류 | WebSocket 사용자/대화→VoiceReactAgent 연결 | 음성은 현재 승인/현장제어 필수조건 아님 |
 | T01 | 기존 대조 유지 | 문서 검색/메모리 스냅샷·과거 기록 재사용 | 이번 내부 코드 재열람 없음; 검색 품질 미결 |
-| T02 | 계약 반영 | 기존 고정 스키마 추출 대조 → manual_extraction | 실제 Codex 일반문서/PDF 추출 정확성 |
+| T02 | 본문 대조 완료(c7992ce) | 주장 참. A093/A094의 `manual_segments.py`(제목 경계 분할·결정적 병합·페이지 범위)가 제품 청크→병합(`test_chunk_integration`, 실 LLM+Neo4j 통합 시험)에 대응. 엔진 실제 실행 추적·LLM 교정·LLM SOP 경계·의미 병합·풍부한 HITL payload는 HYD 계약(사람 검토·고정 판본)과 달라 보류 | **A096: `process_validator` 527-625 정적 검사 4종 반영.** 남은 경계: 구간 경계에서 잘린 SOP 이어붙이기 없음(경고로만). 실측: 실물 EHU40 10/10(A094). 근거 r13-group6 |
 | T03 | 런타임 보류 | office MCP 로드·이미지 편집 REST 진입 | 도구 전체 미열람; 문서/슬라이드 제작은 현 Goal 제외 |
 | T04 | 검증 경계 참고 | initialize/list tools/timeout/partial → 기존 MCP probe와 비교 | 연결 성공은 도구 결과 정확성 증거 아님 |
-| T05 | 대조 중 | resolved/ambiguous/raw 분리 formatter → manual_review 비교 | 다수결은 참값 보장 아님; 좌표/복수값/실제 추출 |
-| T06 | 대조 중 | 용어 상태/동의어/소유자·확정 매핑/조인 입력 모델 | 저장·검토 권한 본문/전체 의미 연결 미완료 |
-| T07 | 대조 중 | SkillsMCPServer 검색엔진/부분 로딩 상태 진입 | 검색/실행 본문 미열람; 이름으로 채택하지 않음 |
+| T05 | 대조 완료·OCR 경로만 후보 | formatter는 `final_output_pipeline.py:45-142`에 있음(참). 단 visionparser는 텍스트 레이어를 읽지 않고 모든 PDF를 400 dpi 래스터화+CLAHE 뒤 페이지마다 VLM OCR(`executor.py:670-681`), 다수결은 extraction_passes 기본 1회의 청크 간 최빈값(`executor.py:833-841`) — HYD는 pypdf 텍스트+빈 페이지 OCR_REQUIRED 차단(`manual_sources.py`), OCR 경로 0줄 | 채택 후보: 빈 페이지만 OCR로 채우는 `extract` 분기(추출기 태그 구분). 전면 래스터화는 채택 안 함(실물 PDF 텍스트 레이어로 10/10, A094). 근거 [r13-group2](verification/2026-10-07/r13-group2-T05-T06-T07.md) |
+| T06 | 대조 완료·동의어 검색만 후보 | PostgreSQL `terms(status DEFAULT 'Draft', synonyms text[], batch_id)`+`term_owners/term_reviewers`(`10-app-schema.sql:45-74`) 참. **검토 권한 검사 없음**: `update_term_info`가 status를 누구나 Approved로 갱신(`glossary_manage_service.py:802-855`), 테넌트는 X-Tenant-Id 무검증·JWT 서명 미검증(`util/tenant.py:10-29`), 롤백은 batch_id DELETE(`bulk_service.py:1412-1435`) | 채택 후보: InputData 동의어 배열+동의어 포함 검색(R06). 상태·권한·롤백 모델은 HYD(`graph_ingest.clear` 복원·감사)가 더 강해 보류. 근거 r13-group2 |
+| T07 | 대조 완료·채택 0 | description만 임베딩한 코사인 top-k(`search_engine.py:121-251`), 엔진은 권한 검사를 하지 않음(docstring 140-141), 문서는 read 시점 지연 fetch(`mcp_handlers.py:440-463`), 배치 10개 증분 색인(`http_server.py:2213-2238`) | HYD의 SOP 선택은 DMN 규칙 OUTPUTS 조인(`skill_graph.py`·`cards.py`)으로 대상이 다름 — 채택 없음. 근거 r13-group2 |
 | T08 | 런타임 보류 | FastMCP→PodManager/Executor·TTL 초기화 | Pod shell 도입/PLC 경로 확대 근거 없음 |
-| P01 | 대조 중 | ETL scheduler·instance/timeline 서비스 연결 → 모니터링 비교 | ETL 지연/원천 상태 대조; 분석 서비스 미배포 |
+| P01 | 대조 완료·보류 | 연결 주장 참(`main.py:18-32,111-115,260-287`). 고정 커밋 8308db5는 원격 main 이력에 없어 `git fetch <sha>`로만 도달. ETL은 60초마다 전체 테이블 UPSERT(워터마크 없음, `etl.py:1324-1389`), `etl_state`는 완료 시각/성공만이며 load 예외를 print로 삼켜 부분 실패도 success(`main.py:84-131`), fact_task가 비면 랜덤 샘플 삽입(`etl.py:1194-1321`) | HYD는 SSE 커서·투영 FENCE·`freshness{ok,age_s,max_age_s}`·승인 15초가 이미 더 강함. 후보는 LAG 윈도 식(`etl.py:1167-1188`)뿐. 근거 [r13-group3](verification/2026-10-07/r13-group3-P01-P04-D03.md) |
 | P02 | 분류기 보류 | 신규 instance ingest·정의별 recluster 진입 | 클러스터와 확정 경보 패턴은 다름; ingest 내부 미열람 |
-| P03 | 계약 반영 | 기존 원천→그래프 증분·소유권 → knowledge_projection | BSC 전체 의미 연결·업무 상충 변화 |
-| P04 | 대조 중 | 대상별 승인→SKILL/DMN 비동기·정의 draft 결과 | applied:true 조기응답을 완료로 채택하지 않음 |
-| O01 | 계약 반영 | 기존 고정 스키마/원문 근거/검증 루프 → manual 계층 | 실제 추출·전체 질문/관계 검증 |
+| P03 | 본문 대조 완료(1db85d3) | **주장 부분 틀림:** ontology_sync 계약을 실제 이식한 HYD 파일은 `ddl_sync.py`·`scm_sync.py`(docstring에 출처)이고 `knowledge_projection`은 그래프 내부 digest 재투영기. "소유권"은 제품에 없음(DETACH DELETE 삭제 216-223/324-336/409) — HYD graph_ingest/manual_graph 자체 설계. 제품 결함 1건(todolist 커서 전역 키 54/701/769 → 다중 테넌트 누락) | 제품 전용 로직 6개 비채택. 근거 [r13-group6](verification/2026-10-07/r13-group6-P03-T02-A05-A06.md) |
+| P04 | 대조 완료·보류 | 배치 처리기는 DMN draft 판본+병합요청 생성 성공 여부로 applied를 돌려주나(`feedback_batch_manager.py:598-656`, 직접 확인) API 응답은 작업 생성 시점의 applied:true이고 처리 결과가 제안 GET에 실리지 않음(하위 조사 보고). 스킬 없음·커밋 예외를 "건너뜀"으로 정상 반환해 COMPLETED가 되는 경로(`skill_committer.py:155-157,197-206`, 직접 확인) | HYD `skill_graph.write`는 영수증·속성·관계를 한 트랜잭션, 같은 request_id=같은 결과, 불일치=409. 채택 후보: draft 판본 데이터 모양(`database.py:959-1050` is_draft·parent_version·source_todolist_id·requester_id[]·reviewer_id)을 R11 정의 변경 계약에 참고. 근거 r13-group3 |
+| O01 | 본문 대조 완료(6a229be8) | 부분 참: "고정 스키마"는 제품 계약이 아니라 HYD 선택(제품은 실행 중 편집·rename→라벨 교체 `ontology/api.py:99-121`), "원문 근거"는 HYD 문자 앵커가 더 강함(제품은 sources 노드 id), "검증 루프"는 대상이 다름(제품 Golden Question 답 가능성 vs HYD 인용 WRONG/MISSING 재추출). 제품에 스키마 버전/이력 없음. 문서 청크 BM25+벡터 RRF는 제품에서도 미연결 | 조건부 후보: Golden Question 보고 형식 `{question,answer,status,confidence}`(R03), MCP 답변 `sources[]`+출처 없음 명시(R06). `ocr_service.py` 574줄은 T05와 함께 스캔 PDF 보강 시. 근거 r13-group5 |
 | O02 | 연결 추적 유지 | 기존 15개 하위 경로 gitmodules/tree 추적 | 전체 패브릭 이식 아님; 지도 밖 catalog 후보 후속 |
 | O03 | DB 교체 보류 | 기존 연구용 DB 스냅샷·조사 기록 유지 | 이번 내부 재열람 없음; Neo4j 교체 근거 없음 |
 | O04 | DB 교체 보류 | Bolt listener/PostgreSQL 연결 설정 진입 | og_cypher 본문/성능/완전호환 미검증 |
 | O05 | 구현 판단 보류 | 기존 확보 당시 빈 구현 기록 유지 | tree 재확인 전 현재 원격의 빈 레포로 단정하지 않음 |
-| D01 | 계약 반영 | 기존 정의/역할/폼/스킬 계약 → definition_registry | 실제 에이전트 신규 정의 생성 종합검증 |
+| D01 | 본문 대조 완료(f8c4b6d5) | 부분 참: HYD registry는 스킬의 elements[] 형식이 아니라 `save_to_supabase.py:95-191 flatten()` 결과 형식을 받고, 폼은 D01 `form_def` 별도 테이블 vs HYD 판본 안 `forms`, 스킬(`skills[]`) 0건. 정적 연결성 4종(`process_validator.py:540-591`)은 HYD에 없었음(순환 금지+endEvent 존재만) | **A096: 정적 연결성 검사 반영.** 후속 후보: 분기 조건 변수가 선행 활동 outputData에 있는지 검사(`08-reference-info.md:63-80`). 실제 엔진 구동 검증+LLM 교정 루프는 HYD 불변 판본과 충돌해 보류. 근거 [r13-group5](verification/2026-10-07/r13-group5-D01-D05-O01.md) |
 | D02 | 기존 대조 유지 | BSC 전략·상충 요구 스냅샷 유지 | 이번 본문 재열람 없음; 시스템 의미 연결 후속 |
-| D03 | 문서 대조 중 | 사이트 navigation에 rework/reference/DMN 안내 연결 | 안내 본문 미열람; 메뉴 존재는 동작 증거 아님 |
+| D03 | 문서 대조 완료·채택 0 | navigation은 ko에 셋 다, en은 dmn 없음(부분 참). rework.md는 "로그 역순 보상 자동 처리"+UI 절차만(효과 유형·불가 처리·세대 없음), reference-info.md는 C03 inputBindings UI, dmn.md는 승인/버전 없음, feedback-system.md는 P04 코드와 불일치 | HYD REWORK.md·CURRENT_APPROVAL.md가 원본 코드 대조로 더 깊음. 근거 r13-group3 |
 | D04 | UI 확장 보류 | Vue router home/marketplace 연결 | 등록/실행 본문 미열람; 마켓플레이스 도입 요청 없음 |
-| D05 | 계약 반영 | 기존 업무 DB/RPC/MCP·성공/오류 → enterprise-mcp/PG | HYD 업무 데이터/권한 별도; WMS 전체 이식 아님 |
+| D05 | 본문 대조 완료(8ba09f44) | 주장 참(봉투 `{result, document}`·식별 분리·mcpServers 모양 동일). 멱등성은 HYD가 더 강함(제품은 같은 키면 입력이 달라도 캐시 반환 365-369, HYD는 fingerprint 불일치 거부) | **후속 후보: `ent.transactions`에 before/after jsonb**(제품 `audit_events` core_schema.sql:168-179; HYD는 detail text만, R10/R12). RPC별 has_role 게이트·expected_version CONFLICT·AUDITOR 전용 읽기는 HYD 권한 모델(service_role 한정)에서 판별 대상 없음 → 보류. 근거 r13-group5 |
 | X01 | UI 확장 보류 | 주입형 token store/push/file native bridge 진입 | 주석만으로 안전 저장 보장하지 않음; 모바일 미배포 |
 | X02 | 현 도입 제외 | 결제 검증→승인→거래/영수증 API | 결제 기능 개발/결제 요청 없음 |
 | X03 | 런타임 보류 | CrewAI 작업상태·폼/산출물 이벤트 → worker 비교 | 협업 프레임워크 교체 근거 없음; 실제 실행 미검증 |
@@ -82,3 +82,13 @@ R13은 여전히 미완료/25점이다. 모든 런타임 설치나 파일 수는
 A070: P03 1db85d3b app/graph/age_adapter.py262~347의 관계 양 끝·종류·속성 보존을 HYD 개별 BSC 경로 근거에 반영했다. 조건 실행 엔진 코드가 아니며 AGE의 삭제/재생성 구현은 비채택이다. [BSC 운영 계약](../bsc-conditions.md), 실제14/쿨러42·전체973과 원문/HEAD 내용 비교(a070-reference-read.json)를 기록했다. 원문 전체 의미·AI해석·정량 인과 모델은 남는다.
 
 A071: C03 b272c9ab process_engine.py978~1034 및 polling_service/workitem_processor.py4431~4535를 대조했다(a071-reference-read.json,고정HEAD행내용일치). 새재작업행·부착이벤트 후보를 참고해 HYD 조건재검토·정확한생산자대기·새timer도달을 연결했다. 제품보상호출을 실제효과취소로 간주하지 않는다. 전체982/실제24/동일배포쿨러42, 실패2종·미결경계는 HANDOFF A071·운영계약 rework-conditions.md.
+
+## A092 추가 대조 (2026-10-07, 고정 커밋을 다시 받아 코드로 읽음)
+
+| 레포(커밋) | 이번에 읽은 것 | HYD 대응과 남은 경계 |
+|---|---|---|
+| process-gpt-completion b272c9a | `polling_service/workitem_processor.py` 5,550줄의 활동 분기(subProcess·adHocSubProcess·callActivity·multiInstance foreach·parallel/inclusive/exclusive), `process_engine.py` rework/feedback 핸들러, 전체 4.7만 줄 | HYD 엔진은 사람/서비스/businessRule·배타·경계 타이머·재작업·보상까지. 서브프로세스·병렬·다중 인스턴스는 **없음** — 회의 요구(R11)는 "인스턴스/태스크 구조"라 필수는 아니나 ProcessGPT 동등성 주장에는 못 미침 |
+| process-gpt-agent-sdk e4728a2 | `database.py` polling(lease·max_claims·browser-automation 분기), `processgpt_agent_framework.py` 서버 루프 | HYD 워커의 claim·stale 정리와 같은 계약(42/42). lease 갱신·여러 pod 동시 claim은 HYD 단일 워커라 미검증 |
+| process-gpt-bpmn-extractor c7992ce | `pdf_extractor.py`(OCR 50쪽·SOP 경계 30쪽·청크 1000/200·의미 청크), `hitl.py` 728줄(pause_for_hitl→HUMAN_ASKED→FB_REQUESTED 재진입, 질문 payload·배치 응답), `process_validator.py` 1,315줄(엔진 실제 실행 추적 비교), `test_chunk_integration` 5종(청크 간 통합·역할 중복 제거·순서) | HYD는 통문서 1작업+문자 좌표 앵커+교정 3회. HITL은 같은 상태 전이(HUMAN_ASKED/FB_REQUESTED, A024)이나 질문 payload·배치 응답 계약은 단순. 분할·병합·엔진 실행 검증 없음. **대형 문서 실측은 HANDOFF A092** |
+| ontology-studio 6a229be | `document_indexing/service.py` 878줄(OCR·토큰 청크 1200/150·임베딩·풀텍스트+벡터 인덱스·HAS_CHUNK), `agent_session/service.py` 1,786줄(히스토리 압축 12k 토큰) | HYD에 원문 청크·벡터 검색 없음(매뉴얼 원문은 SQLite 보관, 절/단계만 그래프). 회의 R02 "문서→인스턴스"에는 지금 구조로 답하지만 "매뉴얼 의미 검색"(SCADA 회전 기억)은 미구현 |
+

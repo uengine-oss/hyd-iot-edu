@@ -61,26 +61,34 @@ def test_late_ack_cannot_override_restart_review(world,monkeypatch):
     assert observed['state']=='ESCALATED' and inc.ack is None and inc.reason=='PROCESS_RESTART_REVIEW'
 
 
-@pytest.mark.parametrize('receipt_error,commit_error',[(True,False),(False,True)])
-def test_offset_never_precedes_receipt_and_redelivery_is_safe(monkeypatch,receipt_error,commit_error):
+@pytest.mark.parametrize('fail_attempt,commit_error',[(1,False),(2,False),(None,True)])
+def test_offset_never_precedes_receipt_and_redelivery_is_safe(monkeypatch,fail_attempt,commit_error):
+    """A033 contract under the A080 batched path: a batch is received on one connection, the offset is committed once per
+    batch and only up to the last *received* delivery; a failed receipt (first or second of the batch) is retried and
+    nothing is ever committed past it; a commit failure is tolerated (redelivery passes receive() again)."""
     events=[];attempts=0
     class Inbox:
-        def receive(self,record,policy):
+        def receive_many(self,items):
             nonlocal attempts
-            attempts+=1
-            if receipt_error and attempts==1:
-                events.append('receipt-failed');raise OSError('fixture DB unavailable')
-            events.append('saved-'+str(record['offset_no']))
+            rows=[]
+            for i,(record,policy) in enumerate(items):
+                attempts+=1
+                if fail_attempt and attempts==fail_attempt:
+                    events.append('receipt-failed-'+str(record['offset_no']));return rows,OSError('fixture DB unavailable'),({} if rows else None)
+                events.append('saved-'+str(record['offset_no']));rows.append(record)
+            return rows,None,{}
         def latest_states(self):return {}
     class Consumer:
-        def __aiter__(self):
-            async def rows():
-                for n in (1,2):yield SimpleNamespace(topic='alerts',partition=0,offset=n,value=json.dumps(dict(ALERT,alertId=str(n))).encode())
-            return rows()
+        calls=0
+        async def getmany(self,timeout_ms,max_records):
+            self.calls+=1
+            if self.calls==1:
+                return {('alerts',0):[SimpleNamespace(topic='alerts',partition=0,offset=n,value=json.dumps(dict(ALERT,alertId=str(n))).encode()) for n in (1,2)]}
+            raise asyncio.CancelledError   # the fixture stream ends
         async def commit(self,offsets):
             target=next(iter(offsets.values()));events.append('commit-'+str(target))
-            assert 'saved-'+str(target-1) in events
-            if commit_error and target==2:raise OSError('fixture rebalance')
+            assert 'saved-'+str(target-1) in events                    # never past a missing receipt
+            if commit_error and target==3:raise OSError('fixture rebalance')
     async def producer():return object()
     async def consumer(*a,**kw):
         assert kw['auto_commit'] is False and kw['raw_values'] is True
@@ -89,5 +97,8 @@ def test_offset_never_precedes_receipt_and_redelivery_is_safe(monkeypatch,receip
     monkeypatch.setattr(main,'source_inbox',Inbox());monkeypatch.setattr(main,'make_consumer',consumer)
     monkeypatch.setattr(main,'make_producer',producer);monkeypatch.setattr(main.asyncio,'sleep',no_wait)
     monkeypatch.setattr(main.instance_mode,'current',lambda:SimpleNamespace(alert_policy=lambda p:{'pattern':p}))
-    asyncio.run(main.consume())
-    assert events[-2:]==['saved-2','commit-3'] and 'commit-2' in events
+    with pytest.raises(asyncio.CancelledError):asyncio.run(main.consume())
+    assert events[-2:]==['saved-2','commit-3']
+    if fail_attempt==1: assert events[:2]==['receipt-failed-1','saved-1'] and 'commit-2' not in events
+    if fail_attempt==2: assert events[:3]==['saved-1','receipt-failed-2','commit-2']        # committed up to the received one only
+    if commit_error: assert main.state.get('source_receive_error') is None

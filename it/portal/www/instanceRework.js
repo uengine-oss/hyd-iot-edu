@@ -73,7 +73,8 @@
           ${p.blockers.length ? `<div class="rework-blocked"><b>추가 검토가 필요합니다</b><ul>${p.blockers.map(b => `<li>${esc(reasons[b.code] || '지원 범위를 확인해야 합니다.')} ${esc(b.variable || (b.workitem ? taskName(b.workitem) : '') || '')}</li>`).join('')}</ul></div>` : '<p>현재 조회 결과에서는 새 작업 세대를 요청할 수 있습니다. 접수 시 상태와 효과를 다시 확인합니다.</p>'}
           <details><summary>작업별 영향과 조회 근거</summary><pre>${esc(JSON.stringify({workitems:p.affected_workitems, reasons:p.reasons, candidate_variables:p.candidate_variables, blockers:p.blockers, effects:p.effects}, null, 2))}</pre></details></section>`;
       }
-      host.innerHTML = `<section class="rework-panel"><h3>작업 다시 수행</h3>
+      const finished = view.instance.status !== 'RUNNING' && !s.pending;   // A091: a finished instance folds this panel to one line
+      host.innerHTML = (finished ? '<details class="rework-fold"><summary>작업 다시 수행 · 종료된 인스턴스 — 재작업 요청 이력만 남아 있습니다</summary>' : '') + `<section class="rework-panel"><h3>작업 다시 수행</h3>
         <p>조건이나 판단 근거가 바뀌었다면 시작할 작업을 선택하세요. 이전 결과는 이력으로 남고, 영향을 받는 작업은 새 세대에서 수행합니다. 새 조치는 별도 사람 승인이 필요합니다.</p>
         ${s.success ? `<p class="rework-success" role="status">세대 ${esc(s.success.generation)} 요청이 접수됐습니다. 새 작업의 진행과 사람 선택을 확인하세요.</p>` : ''}
         ${view.instance.status !== 'RUNNING' && !s.pending ? '<p>종료된 인스턴스입니다. 과거 작업과 재작업 요청 이력을 확인할 수 있습니다.</p>' : `
@@ -85,7 +86,7 @@
         ${s.pending ? `<p>응답을 확인하지 못한 요청이 있습니다. 같은 요청의 결과를 확인하며 중복 세대를 만들지 않습니다.</p><button class="btn" id="rwRetry" ${s.busy?'disabled':''}>같은 요청 결과 다시 확인</button>` : `
         <label class="rework-confirm"><input type="checkbox" id="rwConfirm" ${s.confirmed?'checked':''} ${!p?.execution_available||s.busy?'disabled':''}> 영향 범위와 이전 승인 처리 내용을 확인했습니다.</label>
         <button class="btn primary" id="rwSubmit" ${eligible()?'':'disabled'}>확인한 범위로 새 작업 세대 요청</button>`}`}
-        ${s.busy?'<p role="status">처리 중입니다…</p>':''}${s.error?`<p class="neg" role="alert">${esc(s.error)}</p>`:''}</section>`;
+        ${s.busy?'<p role="status">처리 중입니다…</p>':''}${s.error?`<p class="neg" role="alert">${esc(s.error)}</p>`:''}</section>` + (finished ? '</details>' : '');
       host.querySelector('#rwStart')?.addEventListener('change', e => {
         s.workitem=e.target.value; s.preview=null; s.confirmed=false; s.error=''; draw();
       });

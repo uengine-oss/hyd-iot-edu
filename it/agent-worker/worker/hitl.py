@@ -16,8 +16,9 @@ _STATE_FILENAME = ".processgpt-pending.json"
 
 def business_question(text: str) -> dict | None:
     """Explicit business input request, separate from CLI permission escalation."""
+    from procsvc.task_deferral import unfence
     try:
-        value = json.loads(text)
+        value = json.loads(unfence(text))
     except (ValueError, TypeError):
         return None
     if not isinstance(value, dict) or '__human_input__' not in value:

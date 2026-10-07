@@ -14,7 +14,8 @@ from psycopg import sql
 from hydcommon.enterprise import reader_connection
 
 BINDING_FIELDS = ('id', 'name', 'typeRef', 'source', 'represents', 'representsName',
-                  'datasource', 'catalog', 'schema', 'table', 'column', 'assetColumn', 'sqlType')
+                  'datasource', 'catalog', 'schema', 'table', 'column', 'assetColumn', 'sqlType', 'derive')
+DERIVE_HOURS = 'hours_from_now'
 PHYSICAL_FIELDS = ('datasource', 'catalog', 'schema', 'table', 'column', 'assetColumn', 'sqlType')
 
 
@@ -51,6 +52,15 @@ def scalar(value, type_ref):
 
 
 def read_physical(item, asset):
+    return read_physical_fact(item, asset)[0]
+
+
+def read_physical_fact(item, asset):
+    """(value, anchor). A point-in-time column declared derive=hours_from_now (A086) is read as signed hours from now;
+    the anchor is the stored time itself — the business record a consent compares, while the hours keep moving."""
+    derive = item.get('derive')
+    if derive not in (None, DERIVE_HOURS):
+        raise ValueError('physical InputData derivation is not supported')
     if item.get('datasource') != 'hyd-enterprise' or item.get('schema') != 'ent':
         raise ValueError('physical InputData datasource/schema is not registered')
     for key in ('catalog', 'table', 'column', 'assetColumn'):
@@ -67,10 +77,16 @@ def read_physical(item, asset):
         conn.execute("set local lock_timeout='1000ms'")
         if conn.execute('select current_database()').fetchone()[0] != item['catalog']:
             raise ValueError('physical InputData catalog does not match the connected database')
-        query = sql.SQL('select {} from {} where {} = %s limit 2').format(
-            sql.Identifier(item['column']), sql.Identifier(item['schema'], item['table']),
-            sql.Identifier(item['assetColumn']))
+        column = sql.Identifier(item['column'])
+        hours = sql.SQL('round((extract(epoch from ({} - now())) / 3600)::numeric, 2)').format(column) if derive else sql.SQL('null')
+        query = sql.SQL('select {}, {} from {} where {} = %s limit 2').format(
+            column, hours, sql.Identifier(item['schema'], item['table']), sql.Identifier(item['assetColumn']))
         rows = conn.execute(query, (asset,)).fetchall()
         if len(rows) != 1:
             raise ValueError('physical InputData source row count is not one')
-        return scalar(rows[0][0], item.get('typeRef'))
+        raw, derived = rows[0]
+        if derive:
+            if raw is not None and not isinstance(raw, datetime):
+                raise ValueError('hours_from_now needs a point-in-time column')
+            return scalar(derived, item.get('typeRef')), scalar(raw, 'date')
+        return scalar(raw, item.get('typeRef')), None

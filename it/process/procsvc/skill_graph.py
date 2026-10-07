@@ -33,6 +33,28 @@ def stamp(rows):
     return result
 
 
+CANDIDATE_RULES_Q = (
+    "MATCH (:DecisionTable {id:'dt:action-candidates'})-[:HAS_RULE]->(r:Rule)-[t:TESTS]->(i:InputData) "
+    "WITH r, collect({input:i.id, operator:t.operator, value:t.value}) AS tests "
+    "WHERE size(tests)=1 AND tests[0].input='in:failure-mode' AND tests[0].operator='==' AND tests[0].value=$fm "
+    "RETURN r.id AS id ORDER BY r.id")
+
+
+def candidate_rules(tx, failure_mode):
+    """dec:action-candidates rules that select by this failure mode alone (rules with extra tests such as plc_state are not
+    widened). These are the rules whose OUTPUTS a skill must join to be judged at runtime."""
+    return [row['id'] for row in tx.run(CANDIDATE_RULES_Q, fm=failure_mode).data()]
+
+
+def link_candidate_rules(tx, sid, failure_mode):
+    """A075 (meeting L253~302, L301): a skill matched to a failure mode joins that failure mode's candidate rules (OUTPUTS),
+    so the DMN judgment (dec:action-candidates → compliance → rank) can offer it. Idempotent; returns the rule ids."""
+    rules = candidate_rules(tx, failure_mode)
+    for rule in rules:
+        tx.run('MATCH (r:Rule {id:$rule}),(k:Skill {id:$id}) MERGE (r)-[:OUTPUTS]->(k)', rule=rule, id=sid).consume()
+    return rules
+
+
 def write(session, query, sid, values, *, create=False, expected_revision=None, request_id=None, by='지식 관리자'):
     """The receipt, properties, steps and all relationships commit together.
 
@@ -82,6 +104,16 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
             rel=values['relation']
             if rel not in {'MITIGATED_BY','REMEDIED_BY'}:raise ValueError('unsupported failure relation')
             tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}),(s:System {{id:$performer}}) CREATE (f)-[:{rel}]->(k) CREATE (s)-[:HAS_SKILL]->(k)',fm=values['failureMode'],id=sid,performer=performer).consume()
+        elif values.get('failureMode'):
+            rel=values.get('relation') or 'REMEDIED_BY'
+            if rel not in {'MITIGATED_BY','REMEDIED_BY'}:raise ValueError('unsupported failure relation')
+            target=tx.run('MATCH (n:FailureMode {id:$id}) SET n.id=n.id RETURN n.id AS id',id=values['failureMode']).data()
+            if len(target)!=1:raise ValueError('FailureMode 대상이 없거나 중복되어 변경하지 않았습니다')
+            tx.run('MATCH (:FailureMode)-[old:MITIGATED_BY|REMEDIED_BY]->(k:Skill {id:$id}) DELETE old',id=sid).consume()
+            tx.run('MATCH (r:Rule)-[old:OUTPUTS]->(k:Skill {id:$id}) WHERE r.id STARTS WITH "rule:cand-" DELETE old',id=sid).consume()
+            tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}) CREATE (f)-[:{rel}]->(k)',fm=values['failureMode'],id=sid).consume()
+        if values.get('failureMode'):
+            link_candidate_rules(tx,sid,values['failureMode'])
         tx.run('MATCH (k:Skill {id:$id}) SET k.name=$name,k.description=$description',id=sid,name=values['name'],description=values['description']).consume()
         if role:
             tx.run('MATCH (k:Skill {id:$id})-[old:APPROVED_BY]->() DELETE old',id=sid).consume()

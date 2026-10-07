@@ -4,10 +4,9 @@
                 원인 한정 스킬(ADDRESSES)은 그 원인일 때만 남긴다.
   2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인)에 대어
                 EXCLUDE(제외) · PENALTY(감점) · WARN(경고)을 정한다. APPLIES_TO가 없는 규칙은 모든 후보에 적용된다.
-  3. 순위       dec:rank-actions 규칙의 식: BSC 득실 + 예측 유온 여유 − 경고 − 감점 + 선례
-                + 납기 긴급도 × 생산 영향 (회의 2026-10-01 L385~404: "납기가 더 중요하면 장비가 고장 나든 돌려야" — MES 남은 시간과
-                  ERP 지연 보상으로 긴급도를 재고, 생산을 유지하는 카드에 가산 · 정지하는 카드에 감산)
-                − 품질 클레임 위험 (QMS: 고온 구간에 출하 대기 로트가 있고 예측 유온이 55 ℃ 를 넘는 카드는 클레임 위험만큼 감산).
+  3. 순위       dec:rank-actions 규칙의 `rankingPolicy`(검토된 명시 식, A069)로 계산한다. 기본 정책은 BSC 득실 + 예측 유온 여유
+                − 경고 − 감점 + 선례 + 납기 긴급도 × 생산 영향 − 품질 클레임 위험이며(회의 2026-10-01 L385~404), 납기·품질·계약·재고 같은
+                업무 조건은 이 코드가 아니라 정책 데이터(입력 별칭 + 식)가 담는다 — 새 조건은 DDL 인제스천 + 정책 변경만으로 늘어난다(A078).
 LLM 없이 결정론적이다. 같은 그래프 · 같은 사실이면 같은 카드와 순위가 나온다.
 """
 from __future__ import annotations
@@ -20,11 +19,6 @@ WARN_COST = 0.5
 PENALTY_SCALE = 20.0
 PRECEDENT_WEIGHT = 1.5
 FORECAST_REF, FORECAST_SPAN, FORECAST_CAP = 55.0, 3.0, 2.0
-# 납기 (rule:rank-value 주석과 같은 값): 남은 시간이 DELIVERY_URGENT_H 보다 짧을수록, 시간당 보상이 DELIVERY_PENALTY_REF 에 가까울수록 긴급
-DELIVERY_WEIGHT, DELIVERY_URGENT_H, DELIVERY_PENALTY_REF = 1.5, 24.0, 100.0
-PRODUCTION_EFFECT = {"keep": 1.0, "reduce": 0.4, "stop": -1.0}        # 카드가 생산을 유지 · 감산 · 정지
-# 품질: 출하 대기 로트의 클레임 금액(만원)을 QUALITY_CLAIM_REF 로 나눈 위험(≤ 1) × 가중치, 예측 유온이 FORECAST_REF 이상인 카드에만
-QUALITY_WEIGHT, QUALITY_CLAIM_REF = 1.5, 1000.0
 STOP_MEASURES, REDUCE_MEASURES = {"msr:availability"}, {"msr:throughput", "msr:tp"}
 LOAD_DESIGN = 90.0                                                      # 정상 운전 부하 (thermal.py 설계점): 이보다 낮게 설정하면 감산
 
@@ -111,24 +105,6 @@ def production_effect(o: dict) -> str:
     if measures & REDUCE_MEASURES:
         return "reduce"
     return "keep"
-
-
-def delivery_urgency(facts: dict) -> float:
-    """0 (no urgent order) … 1 (an OEM order due within hours with a heavy hourly penalty). MES order_due_h × ERP order_penalty_per_h."""
-    due, penalty = _num(facts.get("order_due_h")), _num(facts.get("order_penalty_per_h"))
-    if due is None or penalty is None or penalty <= 0:
-        return 0.0
-    time_part = max(0.0, min(1.0, (DELIVERY_URGENT_H - due) / DELIVERY_URGENT_H))
-    return round(time_part * max(0.0, min(1.0, penalty / DELIVERY_PENALTY_REF)), 2)
-
-
-def quality_risk(o: dict, facts: dict) -> float:
-    """0 … 1: the claim exposure of hot lots waiting for shipment, charged to cards whose forecast oil temperature stays ≥ 55 ℃."""
-    claim, qty = _num(facts.get("hot_lot_claim")), _num(facts.get("hot_lot_qty"))
-    ts1 = next((x["value"] for x in o["forecast"] if x["variable"] == "sv:ts1"), None)
-    if not claim or claim <= 0 or (qty is not None and qty <= 0) or ts1 is None or float(ts1) < FORECAST_REF:
-        return 0.0
-    return round(min(1.0, claim / QUALITY_CLAIM_REF), 2)
 
 
 def score_option(o: dict, facts: dict, policy: dict) -> dict:

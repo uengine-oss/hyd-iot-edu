@@ -21,7 +21,8 @@
     try {
     try { I.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { I.mode = { error: e.message }; }
     if (!I.mode || I.mode.mode !== 'instance') { renderBanner(); return; }
-    try { I.instances = await getJ(API.process + '/api/instances?limit=50'); } catch (e) { I.instances = []; }
+    // A083: the server filters by status; without it a RUNNING case older than the newest 50 is unreachable from the portal
+    try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); } catch (e) { I.instances = []; }
     let todoRows = [];
     try { todoRows = await getJ(API.process + '/api/todolist?status=IN_PROGRESS'); } catch (e) { I.msg = e.message; }
     I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED');
@@ -39,7 +40,7 @@
     const decId = selectTask ? await decisionIdOf(selectTask) : null;
     if (decId !== I.decId) { I.decId = decId; I.dec = null; I.form = { option: null, role: null, by: I.form.by, reason: '', fan: null, load: null }; }
     if (I.decId && !I.dec) { try { I.dec = await getJ(API.process + '/api/decisions/' + encodeURIComponent(I.decId)); } catch (e) { I.dec = null; } }
-    const sig = JSON.stringify([I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
+    const sig = JSON.stringify([I.status, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
       I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status]), I.view && I.view.events.length,
       I.view && (I.view.approvals || []).map(a => [a.todo_id,a.status,a.attempts,a.error]), I.dec && I.dec.state, I.msg,
       I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection,
@@ -69,23 +70,21 @@
       return;
     }
     const running = I.instances.filter(x => x.status === 'RUNNING').length;
-    b.innerHTML = `<div class="inst-banner">정의 <b>${esc(I.mode.definition)}</b> · 저장소 ${esc(I.mode.repo)} · 엔진 ${esc(I.mode.engine || '')} · 에이전트 다리 ${esc(I.mode.agent_bridge || 'off')} · 시간 배율 ${esc(I.mode.time_scale)}× · 실행 중 인스턴스 <b>${running}</b> · 내 할일 <b>${I.todo.length}</b>${I.asked.length ? ` · <b class="neg">에이전트 질문 ${I.asked.length}</b>` : ''}
-      <span class="muted">— 에이전트 작업은 agent_orch=cliagents 워커가 fetch_pending_task 로 집어 save_task_result 로 제출하고, 서비스 작업은 process 서비스가, 사람 작업은 이 화면에서 제출합니다. 제출(SUBMITTED)된 작업은 엔진이 다음 작업을 열며 DONE 으로 바꿉니다.</span></div>
-      ${workerHtml()}`;
-  }
-  function workerHtml() {
-    const w = I.worker || {};
-    const h = w.health || {};
-    const busy = I.instances.flatMap(x => x.current_activity_ids || []).length;
-    if (!w.reachable) {
-      const bridge = I.mode && I.mode.agent_bridge === 'legacy' && !(I.view?.instance?.rework_generation > 0);
-      return `<div class="inst-banner off"><b>에이전트 현황</b> · 워커(agent_orch=cliagents) 응답 없음 <code>${esc(w.url || '')}</code>${w.error ? ` · ${esc(w.error)}` : ''}
-        <span class="muted">— ${bridge ? '지금은 레거시 다리가 에이전트 작업 네 개를 대신 채웁니다(AGENT_BRIDGE=legacy).' : '에이전트 작업은 워커가 뜰 때까지 IN_PROGRESS 로 기다립니다.'} 워커는 compose 프로필 cliagents(API 키) 또는 <code>scripts/run_worker_host.sh</code>(이 PC에 로그인된 Claude Code · Codex)로 띄웁니다.</span></div>`;
-    }
-    const agents = (w.agents || []).map(a => `<span class="pill ${a.installed ? 'DONE' : 'FAILED'}">${esc(a.agent_id)}${a.default ? ' · 기본' : ''}${a.installed ? '' : ' · 미설치'}</span>`).join(' ');
-    return `<div class="inst-banner"><b>에이전트 현황</b> · 워커 <span class="pill ${h.status === 'ok' ? 'RUNNING' : 'FAILED'}">${esc(h.status || '?')}</span> ${esc(h.agent_type || 'cliagents')}
-      · 실행 중 <b>${esc(h.runs_in_flight ?? 0)}</b>/${esc(h.max_concurrent_runs ?? 1)} · 처리한 작업 <b>${esc(h.handled ?? 0)}</b> · 폴링 ${esc(h.polls ?? 0)}회${h.last_poll ? ' · 마지막 ' + esc(UI.time(h.last_poll)) : ''} · 설치된 CLI ${agents || '<span class="muted">없음</span>'}
-      <span class="muted">— 워커는 2초마다 fetch_pending_task(agent_orch=cliagents) 로 IN_PROGRESS 에이전트 작업을 집어 선택된 CLI(Claude Code · Codex)를 서브프로세스로 실행하고, 결과를 save_task_result 로 제출합니다. 현재 열린 활동 ${busy}개.</span></div>`;
+    const w = I.worker || {}, h = w.health || {};
+    const workerChip = !w.reachable ? `<span class="stat warn"><i class="live-dot off"></i>워커 응답 없음</span>`
+      : `<span class="stat ok"><i class="live-dot on"></i>워커 ${esc(h.agent_type || 'cliagents')} · 실행 중 ${esc(h.runs_in_flight ?? 0)}/${esc(h.max_concurrent_runs ?? 1)} · 처리 ${esc(h.handled ?? 0)}</span>`;
+    const agents = (w.agents || []).filter(a => a.installed).map(a => esc(a.agent_id) + (a.default ? ' (기본)' : '')).join(' · ');
+    b.innerHTML = `<div class="inst-status">
+      <span class="stat"><small>정의</small><b>${esc(I.mode.definition)}</b></span>
+      <span class="stat"><small>실행 중</small><b class="num">${running}</b></span>
+      <span class="stat${I.todo.length ? ' hot' : ''}"><small>내 할일</small><b class="num">${I.todo.length}</b></span>
+      ${I.asked.length ? `<span class="stat warn"><small>에이전트 질문</small><b class="num">${I.asked.length}</b></span>` : ''}
+      ${workerChip}
+      <span class="stat"><small>CLI</small><b>${agents || '없음'}</b></span>
+      <span class="stat"><small>다리</small><b>${esc(I.mode.agent_bridge || 'off')}</b></span>
+      <span class="stat"><small>배율</small><b class="num">${esc(I.mode.time_scale)}×</b></span>
+      <details class="stat-help"><summary>이 화면은 어떻게 도나</summary><p>에이전트 작업은 agent_orch=cliagents 워커가 <code>fetch_pending_task</code>로 집어 선택된 CLI(Claude Code · Codex)를 서브프로세스로 실행하고 <code>save_task_result</code>로 제출합니다. 서비스 작업은 process 서비스가, 사람 작업은 이 화면에서 제출합니다. 제출(SUBMITTED)된 작업은 엔진이 다음 작업을 열며 DONE으로 바꿉니다. 저장소 ${esc(I.mode.repo)} · 엔진 ${esc(I.mode.engine || '')}${!w.reachable ? ` · 워커 주소 <code>${esc(w.url || '')}</code>${w.error ? ' · ' + esc(w.error) : ''} — ${I.mode.agent_bridge === 'legacy' ? '지금은 레거시 다리가 에이전트 작업 네 개를 대신 채웁니다.' : '에이전트 작업은 워커가 뜰 때까지 IN_PROGRESS로 기다립니다.'} 워커는 <code>scripts/run_worker_host.sh</code>로 띄웁니다.` : ''}</p></details>
+    </div>`;
   }
 
   /* ------------------------------------------------ todolist (human tasks = IN_PROGRESS rows assigned to a role) + agent questions */
@@ -280,9 +279,16 @@
     const box = $('#instList');
     if (!I.instances.length) { box.innerHTML = '<div class="muted">아직 인스턴스가 없습니다. 결함 시뮬레이션에서 열화를 주입하면 경보가 인스턴스를 엽니다.</div>'; return; }
     box.innerHTML = '';
+    const names = {};
+    ((I.view && I.view.definition && I.view.definition.activities) || []).forEach(a => { names[a.id] = a.name; });
     I.instances.forEach(x => {
-      const it = el('div', 'item' + (x.proc_inst_id === I.sel ? ' sel' : ''), `<strong>${esc(x.proc_inst_name)}</strong> ${pill(x.status)}
-        <span>${esc((x.current_activity_ids || []).join(', ') || (x.end_event || ''))}</span><span class="muted">${esc(UI.dateTime(x.start_date))} · ${esc(x.proc_inst_id)}</span>`);
+      const started = new Date(x.start_date), ended = x.end_date ? new Date(x.end_date) : null;
+      const span = ((ended || new Date()) - started) / 60000;
+      const when = x.status === 'RUNNING' ? `${span < 1 ? '방금 시작' : Math.round(span) + '분 경과'}` : `${ended ? Math.max(1, Math.round(span)) + '분 만에 ' : ''}${UI.status(x.status)}`;
+      const steps = (x.current_activity_ids || []).map(id => `<span class="chip step-chip">${esc(names[id] || id.replace(/^task:|^ev:/, ''))}</span>`).join('');
+      const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${pill(x.status)}</div>
+        <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(x.end_event)}</span>` : '')}</div>
+        <span class="muted">${esc(when)} · ${esc(UI.time(x.start_date))} · <code>${esc(x.proc_inst_id.slice(-8))}</code></span>`);
       keyboardItem(it);
       it.addEventListener('click', () => { I.sel = x.proc_inst_id; load(true); });
       box.appendChild(it);
@@ -343,7 +349,7 @@
       ${inst.initial_variables == null ? '<p>이전 실행에는 시작 입력 원문이 별도로 저장되지 않았습니다. 현재 결과를 최초 입력으로 간주하지 않습니다.</p>'
         : `<details><summary>보존된 시작 입력 보기</summary><pre>${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre></details>`}</section>`;
     const rows = I.view.workitems.map(w => `<tr class="${esc(w.status)}"><td>${esc(w.activity_name)}<br><small class="muted">${esc(w.activity_id)} · 세대 ${esc(w.generation || 0)}</small>${w.supersedes_id ? `<details><summary>이전 작업 ID</summary><code style="overflow-wrap:anywhere">${esc(w.supersedes_id)}</code></details>` : ''}</td><td>${pill(w.status)}${w.draft_status ? `<br><small class="muted">${esc(w.draft_status)}</small>` : ''}</td>
-      <td>${esc(who(w.user_id))}${w.agent_orch ? `<br><small class="muted">${esc(w.agent_orch)}${w.agent_mode ? ' · ' + esc(w.agent_mode) : ''}${w.consumer ? ' · ' + esc(w.consumer) : ''}</small>` : ''}</td>
+      <td>${esc(who(w.user_id))}${w.agent_orch ? `<br><small class="muted">${esc(w.agent_orch)}${w.agent_mode ? ' · ' + esc(w.agent_mode) : ''}${w.consumer ? ' · ' + esc(w.consumer) : ''}</small>` : ''}${w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && (w.draft_status === 'FAILED' || w.draft_status === 'CANCELLED'))) ? `<br><button class="btn" data-close-task="${esc(w.id)}" title="멈춘 에이전트 작업을 사유와 함께 닫습니다. 사건이 진행 중이면 거절됩니다.">작업 닫기</button>` : ''}${w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<br><button class="btn" data-cancel-task="${esc(w.id)}" title="실행 중인 에이전트 작업을 취소합니다. 워커가 다음 확인(2초 안)에서 멈추고 점유를 놓습니다. 그 뒤 작업 닫기 또는 재작업으로 처리합니다.">실행 취소</button>` : ''}</td>
       <td>${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? '<br><small class="muted">기한 ' + esc(UI.time(w.due_date)) + '</small>' : ''}</td>
       <td class="log">${esc(w.log || '')}${w.output && Object.keys(w.output).length ? `<details><summary>출력 ${Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text'}</summary><pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre></details>` : ''}${w.gateway_decisions ? `<details><summary>게이트웨이 판정</summary><pre>${esc(JSON.stringify(w.gateway_decisions, null, 1).slice(0, 800))}</pre></details>` : ''}</td></tr>`).join('');
     const events = I.view.events.slice(-80).reverse().map(e => UI.eventRecord({ time: e.timestamp, name: e.job_id==='TASK_REVIEW_REQUIRED' ? e.job_id : e.event_type, actor: e.crew_type || '', detail: eventDetail(e), raw: e.data })).join('');
@@ -352,14 +358,33 @@
       ${inst.status === 'RUNNING' && inst.flow_state?.end_arrivals?.length ? '<p class="box" id="instanceEndWaiting">일부 경로가 종료 지점에 도달했습니다. 남은 작업이 끝나면 전체 실행이 종료됩니다.</p>' : ''}
       ${dependencyWaiting}
       <h3>작업 흐름 · 현재 세대 ${esc(inst.rework_generation || 0)}</h3>${flow}${approvalHtml()}${workOrderRetryHtml()}
-      <div id="taskDeferralPanel"></div><div id="reworkPanel"></div>
+      <div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div>
       ${(I.view.reworks || []).length ? `<section class="box" id="reworkHistory"><h3>재작업 요청 이력</h3>${I.view.reworks.map(r => `<p>세대 ${esc(r.generation)} · ${esc(r.request.by)} (${esc(who(r.request.role))}) · ${esc(r.request.reason)}</p><details><summary>요청과 새 작업 연결</summary><pre>${esc(JSON.stringify({request_id:r.request_id, previous:r.request.workitem_id, started:r.result.start_workitem}, null, 2))}</pre></details>`).join('')}</section>` : ''}
       ${inputSnapshot}<h3>변수 (variables_data)</h3><div class="inst-vars">${varRows || '<div class="muted">없음</div>'}</div>
       <h3>작업 (todolist)</h3><table class="inst-table"><thead><tr><th>작업</th><th>상태</th><th>수행자</th><th>시각</th><th>기록 · 출력</th></tr></thead><tbody>${rows}</tbody></table>
       <h3>에이전트 실행 기록 (events) <small class="muted">${I.view.events.length}건</small></h3><div class="inst-events">${events || '<div class="muted">아직 기록이 없습니다.</div>'}</div>
       ${graphHtml()}`;
     window.hydRework?.mount(box.querySelector('#reworkPanel'), {view:I.view,by:I.form.by,changed:()=>load(true)});
+    window.hydEffects?.mount(box.querySelector('#effectsPanel'), {view:I.view,by:I.form.by,changed:()=>load(true)});
     window.hydTaskDeferral?.mount(box.querySelector('#taskDeferralPanel'), {view:I.view,by:I.form.by,changed:()=>load(true)});
+    box.querySelectorAll('[data-close-task]').forEach(button => button.addEventListener('click', async () => {
+      if (I.busy) return;
+      const reason = window.prompt('이 에이전트 작업을 닫는 사유를 적으세요 (기록에 남습니다)');
+      if (!reason || !reason.trim()) return;
+      I.busy = true; button.disabled = true;
+      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(button.dataset.closeTask)}/close`, { by: I.form.by || '확인자', reason: reason.trim() }); I.msg = ''; }
+      catch (e) { I.msg = e.message; }
+      finally { I.busy = false; await load(true); }
+    }));
+    box.querySelectorAll('[data-cancel-task]').forEach(button => button.addEventListener('click', async () => {
+      if (I.busy) return;
+      const reason = window.prompt('실행 중인 에이전트 작업을 취소하는 사유를 적으세요 (기록에 남습니다)');
+      if (!reason || !reason.trim()) return;
+      I.busy = true; button.disabled = true;
+      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(button.dataset.cancelTask)}/cancel`, { by: I.form.by || '확인자', reason: reason.trim() }); I.msg = ''; }
+      catch (e) { I.msg = e.message; }
+      finally { I.busy = false; await load(true); }
+    }));
     box.querySelectorAll('[data-approval-retry], [data-work-order-retry]').forEach(button => button.addEventListener('click', async () => {
       if (I.busy) return;
       const panel = button.closest('[data-approval-panel]');
@@ -492,6 +517,7 @@
   selectTab = function (name) { _sel(name); if (name === 'instances') load(true); };
   window.hydApp.selectTab = selectTab;
   $('#instReload').addEventListener('click', () => load(true));
+  $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; load(true); });
   setInterval(() => load(false), 2000);
   window.hydInstances = { I, load };
 })();

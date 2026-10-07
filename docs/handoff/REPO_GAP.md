@@ -111,3 +111,20 @@
 | 워커 재시도 | agent-sdk: 실패 즉시 FAILED(재시도 없음) | 같음 | — |
 | `--allowedTools` | 없음(permission_request → 사람 질문) | 읽기 MCP·Read·Glob·Grep 을 미리 허용, 나머지는 사람 질문 | headless 에서 매 도구마다 멈추지 않게 (DECISIONS 12) |
 | MCP_HOST_REWRITE | 없음 | tenants.mcp 의 컨테이너 호스트명을 호스트 실행 시 바꿈 | 강사 PC 의 구독 로그인 Claude Code 로 워커를 돌리는 수업 구성 |
+
+## 5. 제품 규모 대비 HYD 깊이 — 실측 대조 (A092, 2026-10-07)
+
+사용자 질문: "레포 참고해서 품질이 정말 되는 건가, 문서 수천 줄 수준의 실제 처리인가, 장난감 수준 아닌가". 고정 커밋을 다시 받아 코드 규모와 기능으로 대조했다. 아래는 코드에서 센 값이며, HYD 쪽은 실제 실행 증거가 있는 것만 "됨"으로 적는다.
+
+| 영역 | 제품(고정 커밋) | HYD 현재 | 판정 |
+|---|---|---|---|
+| 프로세스 엔진 규모 | process-gpt-completion b272c9a: 4.7만 줄(`workitem_processor.py` 5,550) | `procsvc` 1.07만 줄 + 워커 1,503 + 에이전트 2,073 | 제품의 1/4 규모 |
+| 엔진 기능 | subProcess·adHocSubProcess·callActivity·multiInstance(foreach)·parallel/inclusive/exclusive 게이트웨이·타이머·crewai/langgraph 오케스트레이션·결정론 고착화·보상·재작업 | 사람/서비스/businessRule task·배타 게이트웨이·경계 타이머·cliagents(Claude Code·Codex)·보상·재작업·효과 영수증 | 서브프로세스·병렬·다중 인스턴스·다른 오케스트레이션 **없음** (A041 지원 범위 그대로) |
+| 인스턴스·todolist·이벤트 | agent-sdk e4728a2 `database_schema.sql` 그대로 + 폴링 lease/max_claims | 같은 테이블·열·RPC 이름, 폴링 claim·stale 정리 | 같음(42/42·1배속 완주로 확인) |
+| 문서 인제스천 파이프라인 | process-gpt-bpmn-extractor c7992ce 3.3만 줄: PDF/OCR(최대 50쪽)·SOP 경계 탐지(LLM, 최대 30쪽)·고정/의미 청크(1,000자, 겹침 200)·메멘토 임베딩 청크·절별 추출·청크 간 병합(`test_chunk_integration` 5종)·검증기 1,315줄(엔진에 실제 실행해 추적 비교)·HITL 728줄 | 문서 전체를 Claude Code **한 작업**에 넘기고(16,000자 초과는 파일로 전달) 문자 좌표 앵커·페이지 검토 전수·3회 교정 루프·커버리지·충돌 미리보기 | A093: 제목 경계 40,000자 구간 → 구간별 Claude Code 작업 → 서버 좌표 복원·결정적 병합 → 전체 계약 재검증(제품의 청크→추출→병합과 같은 모양, 임베딩 청크는 없음). 실측 2,294줄(구간 3, 1,443 s, 7/8)·6,785줄·24만 자(구간 7, 82분, 7/8, 절 198·SOP 193 전부, 중복 0)·실제 다이킨 EHU40 80쪽 PDF(구간 4, HANDOFF A094) |
+| 지식 문서 색인 | ontology-studio 6a229be `document_indexing` 878줄: OCR·토큰 기준 청크(1,200/150)·임베딩·Neo4j 풀텍스트+벡터 인덱스 | 없음(그래프에 원문 청크·벡터 인덱스 없음, 매뉴얼은 SQLite 보관+절/단계 노드) | 없음 |
+| 온톨로지 MCP | ontology-studio 읽기 4도구 + 출처(sources) | hyd-dmn 13도구(진단·규칙·입력·시계열·PromQL·카드·예측·제출)·enterprise MCP·Neo4j MCP | HYD가 넓음(실측 다수) |
+
+실측(수천 줄 문서): `scripts/make_large_manual.py`로 만든 교육용 매뉴얼 2,294줄·80,502자·158 KB·절 69·SOP 61(+폐지 1)을 실제 Claude Code 워커로 추출 — 결과는 HANDOFF A092. 통문서 1작업: DONE 1,180 s·내용 검사 전부 통과, 단 출력 160 KB를 한 메시지로 내는 구조(크기 상한). A093 구간 추출: 같은 문서 DONE 1,443 s·7/8(발췌 선택 4절 차이), 3배 문서(6,785줄·470 KB) 실측은 HANDOFF A093.
+
+주의: 위 "수천 줄"은 내가 생성기로 만든 교육용 문서 크기이며 현업 대표 크기의 근거가 아니다. 참고 레포 안에는 인제스천용 실제 샘플 문서가 없고(bpmn-extractor `output_bpmn/`은 결과 BPMN 2종 22~43 KB, 입력 문서는 없음; ontology-studio는 스펙 docx 72 KB), 코드의 상한(OCR 50쪽·SOP 경계 30쪽·청크 1,000자)만 있다. 현업 매뉴얼 크기 조사는 별도(HANDOFF A094 예정).

@@ -534,7 +534,14 @@ async function reject() {
 }
 
 /* ---------------- trends ---------------- */
+async function trendsNotice() {
+  const n = $('#trendsNotice'); if (!n) return;
+  // Grafana sends no CORS headers: an opaque (no-cors) response means reachable, a network error means it is down
+  try { await fetch(API.grafana + '/api/health', { mode: 'no-cors', cache: 'no-store' }); n.hidden = true; }
+  catch (e) { n.hidden = false; n.innerHTML = '<b>Grafana가 응답하지 않습니다.</b> 그래프 패널은 Grafana가 그립니다. <code>docker compose up -d grafana</code> 로 띄운 뒤 다시 열어 주세요. 센서값 자체는 결함 시뮬레이션 · 이상 확인 화면에서 1초마다 갱신됩니다.'; }
+}
 function renderTrends() {
+  trendsNotice();
   const asset = $('#selAsset').value;
   const base = `${API.grafana}/d-solo/hyd-trend/hyd?orgId=1&var-asset=${asset}&refresh=5s&from=now-10m&to=now&theme=light&panelId=`;
   $('#pTs1').src = base + 7; $('#pScore').src = base + 8; $('#pCe').src = base + 9; $('#pSp').src = base + 11; $('#pAlerts').src = base + 12;

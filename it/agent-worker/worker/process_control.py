@@ -4,6 +4,7 @@ The pump retains cliagents' parser and teardown. The caller checks its deadline
 and database state independently of stdout. Each run owns its process tree.
 Windows job lifetime: https://learn.microsoft.com/windows/win32/procthread/job-objects
 """
+import logging
 import os
 import queue
 import signal
@@ -106,6 +107,10 @@ def controlled_stream(stream,provider,request,env,check_stop,failed):
                 send(event)
             if not stop.is_set() and _LAST_RUN.returncode != 0:
                 raise failed(f'CLI exit {_LAST_RUN.returncode}: {_LAST_RUN.stderr[-2000:]}')
+            if not stop.is_set() and (_LAST_RUN.stderr or '').strip():
+                # A096 (cliagents keeps stderr only in its result slot): a run that exits 0 may still have warned
+                # (deprecated flag, MCP server start-up noise); keep the tail in the worker log instead of dropping it.
+                logging.getLogger('worker.process').warning('CLI exit 0 with stderr: %s', _LAST_RUN.stderr[-1000:].strip())
         except BaseException as error:
             failure.append(error)
         finally:

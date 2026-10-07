@@ -16,6 +16,20 @@ SKILLS = {
     "skill:schedule-maintenance": "sys:cmms", "skill:reallocate-production": "sys:mes", "skill:procure-part": "sys:erp",
     "skill:hold-lot": "sys:qms", "skill:release-lot": "sys:qms", "skill:substitute-shipment": "sys:erp", "skill:demand-control": "sys:ems",
 }
+# Exact inverses the business systems really offer (A072, 2026-10-05). An inverse needs the original reference and only
+# applies while the record is still in the state the forward transaction created. Everything else is irreversible:
+# the process must get a person's acknowledgement instead of pretending to undo it (product compensation.py principle).
+COMPENSATION_SKILLS = {
+    "skill:cancel-work-order": "sys:cmms", "skill:cancel-purchase-request": "sys:erp",
+    "skill:restore-production": "sys:mes", "skill:release-hold": "sys:qms",
+}
+INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:procure-part": "skill:cancel-purchase-request",
+              "skill:reallocate-production": "skill:restore-production", "skill:hold-lot": "skill:release-hold"}
+IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어가 되돌릴 수 없다",
+                "skill:substitute-shipment": "대체 출하는 물류가 움직여 되돌릴 수 없다",
+                "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}
+SKILLS.update(COMPENSATION_SKILLS)
+CANCELLED = "취소"
 
 
 def _now() -> str:
@@ -67,7 +81,9 @@ class EnterpriseState:
         asset = req.get("asset") or "HYD-01"
         params = req.get("params") or {}
         with self._lock:
-            key = json.dumps([req.get("decision"), skill]) if req.get("decision") else None
+            # a compensation is keyed by the record it reverses: one decision may undo several references
+            key = (json.dumps([req.get("decision"), skill, params.get("ref")]) if skill in COMPENSATION_SKILLS
+                   else json.dumps([req.get("decision"), skill])) if req.get("decision") else None
             fingerprint = json.dumps({k: req.get(k) for k in ("decision", "option", "skill", "asset", "params")}, sort_keys=True)
             if key in self._done:
                 prior = self._done[key]
@@ -76,7 +92,8 @@ class EnterpriseState:
                 return copy.deepcopy(prior["tx"])
             ref, detail = self._apply(skill, asset, params, req)
             tx = {"id": _id("TX"), "t": _now(), "system": SKILLS[skill], "skill": skill, "ref": ref, "detail": detail,
-                  "asset": asset, "decision": req.get("decision"), "option": req.get("option"), "by": req.get("by")}
+                  "asset": asset, "decision": req.get("decision"), "option": req.get("option"), "by": req.get("by"),
+                  "compensates": req.get("compensates") if skill in COMPENSATION_SKILLS else None}
             self._tx.insert(0, tx)
             del self._tx[300:]
             if key:
@@ -123,6 +140,47 @@ class EnterpriseState:
             act = {"action": params.get("action", "HYD-03 비긴급 오더 야간 이동에 맞춰 피크 수요 목표 설정"), "t": _now()}
             s["ems"]["actions"].insert(0, act)
             return "EMS", act["action"]
+        if skill in COMPENSATION_SKILLS:
+            return self._compensate(skill, params)
+        raise ValueError(skill)
+
+    def _compensate(self, skill: str, params: dict) -> tuple[str, str]:
+        """Reverse exactly one forward record by its reference, only from the state the forward transaction left."""
+        s = self._s
+        ref = params.get("ref")
+        if not ref:
+            raise ValueError(f"{skill} needs the reference of the record to reverse (params.ref)")
+        if skill == "skill:cancel-work-order":
+            wo = next((w for w in s["cmms"]["work_orders"] if w["id"] == ref), None)
+            if wo is None:
+                raise ValueError(f"no such work order {ref}")
+            if wo["status"] != "배정됨":
+                raise ValueError(f"work order {ref} cannot be cancelled in status {wo['status']}")
+            wo.update(status=CANCELLED, cancelled_at=_now())
+            return ref, f"{wo['asset']} 작업지시 {ref} 취소 ({wo['task']})"
+        if skill == "skill:cancel-purchase-request":
+            pr = next((p for p in s["erp"]["purchase_requests"] if p["id"] == ref), None)
+            if pr is None:
+                raise ValueError(f"no such purchase request {ref}")
+            if pr["status"] != "승인됨 → 발주":
+                raise ValueError(f"purchase request {ref} cannot be cancelled in status {pr['status']}")
+            pr.update(status=CANCELLED, cancelled_at=_now())
+            return ref, f"구매요청 {ref} 취소 ({pr['part']} — {pr['supplierName']})"
+        if skill == "skill:restore-production":
+            order = next((o for o in s["mes"]["orders"] if o["order_id"] == ref), None)
+            if order is None or not order.get("moved_from"):
+                raise ValueError(f"order {ref} has no reallocation to restore")
+            previous, moved_from = order["asset"], order["moved_from"]
+            order.update(asset=moved_from, moved_from=None)
+            return ref, f"{ref} {previous} → {moved_from} 원복"
+        if skill == "skill:release-hold":
+            hold = next((h for h in s["qms"]["holds"] if h["lot"] == ref), None)
+            if hold is None:
+                raise ValueError(f"no hold on lot {ref}")
+            if hold["status"] != "격리 · 전수검사 대기":
+                raise ValueError(f"lot {ref} hold cannot be released in status {hold['status']}")
+            hold.update(status="격리 해제", released_at=_now())
+            return ref, f"로트 {ref} 격리 해제"
         raise ValueError(skill)
 
     def transactions(self, decision: str | None = None) -> list[dict]:

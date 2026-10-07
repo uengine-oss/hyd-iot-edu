@@ -42,10 +42,10 @@ class Handler(BaseHTTPRequestHandler):
                         if count>=3 and not state['mutated']:
                             source=json.loads((ROOT/'source-before.json').read_text(encoding='utf8'))
                             with psycopg.connect(DSN) as conn:
-                                row=conn.execute('select due_in_h from ent.production_orders where order_id=%s for update',(source['order_id'],)).fetchone()
+                                row=conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s for update',(source['order_id'],)).fetchone()
                                 if not row or float(row[0]) not in (source['due'],source['changed_due']):
                                     raise RuntimeError('MES changed outside this fixture; refusing overwrite')
-                                conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s',(source['changed_due'],source['order_id']))
+                                conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s',(source['changed_due'],source['order_id']))
                             state['mutated']=True;save('proxy-progress',state)
                 request=Request('http://agent:8091'+self.path,data=body if self.command=='POST' else None,
                                 headers={'Content-Type':'application/json'},method=self.command)

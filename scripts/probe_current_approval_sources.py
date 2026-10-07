@@ -45,7 +45,7 @@ def main():
 
     with psycopg.connect(DSN, autocommit=True) as conn:
         readiness = conn.execute("select standby_ready from ent.maintenance_profiles where asset='HYD-01'").fetchone()[0]
-        orders = conn.execute("select order_id,due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
+        orders = conn.execute("select order_id,ent.hours_from_now(due_at) as due_in_h from ent.production_orders where asset='HYD-01'").fetchall()
         assert len(orders) == 1, 'fixture expects exactly one source order'
         order_id, due = orders[0]
         save('prior-values', {'standby_ready': readiness, 'order': orders})
@@ -55,12 +55,12 @@ def main():
             good = assess(cooler, 'skill:fan-max-derate')
             save('cooler-baseline', good)
             check('unchanged source data is allowed', good.get('allowed') is True, good.get('reasons'))
-            conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (float(due) + 7, order_id))
+            conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (float(due) + 7, order_id))
             changed = assess(cooler, 'skill:fan-max-derate')
             save('changed-order', changed)
             check('actual MES due change rejects the old consent context', changed.get('allowed') is False
                   and any('order_due_h' in r for r in changed.get('reasons', [])), changed.get('reasons'))
-            conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (due, order_id))
+            conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (due, order_id))
             conn.execute("update ent.maintenance_profiles set standby_ready=true where asset='HYD-01'")
             pump = preview('PUMP_LEAKAGE')
             save('pump-decision', pump)
@@ -79,10 +79,10 @@ def main():
                       and changed['facts']['standby_ready'] is value
                       and any(v['rule']=='rule:standby' for v in changed['current_option']['violations']), changed.get('reasons'))
         finally:
-            conn.execute('update ent.production_orders set due_in_h=%s where order_id=%s', (due, order_id))
+            conn.execute('update ent.production_orders set due_at=now()+make_interval(secs=>%s*3600) where order_id=%s', (due, order_id))
             conn.execute("update ent.maintenance_profiles set standby_ready=%s where asset='HYD-01'", (readiness,))
             actual_ready = conn.execute("select standby_ready from ent.maintenance_profiles where asset='HYD-01'").fetchone()[0]
-            actual_due = conn.execute('select due_in_h from ent.production_orders where order_id=%s', (order_id,)).fetchone()[0]
+            actual_due = conn.execute('select ent.hours_from_now(due_at) as due_in_h from ent.production_orders where order_id=%s', (order_id,)).fetchone()[0]
             check('source fixture values restored exactly', actual_ready is readiness and actual_due == due)
     raise SystemExit(0 if all(c['passed'] for c in report['checks']) else 1)
 

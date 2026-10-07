@@ -46,7 +46,8 @@ class ReworkRuntime:
                 proposal['started_services'] = [wid for wid in proposal['started_services'] if wid not in never_started]
                 proposal['blockers'] = [b for b in proposal['blockers']
                     if not (b['code'] == 'service_effects_require_review' and b.get('workitem') in never_started)]
-            proposal = rework_effects.admit(proposal, defn, inst, work, approvals, evidence)
+            receipts = self.repo.list_effect_receipts(self.tenant_id, inst['proc_inst_id'])
+            proposal = rework_effects.admit(proposal, defn, inst, work, approvals, evidence, receipts)
         return proposal
 
     def request_rework(self, proc_inst_id, workitem_id, request_id, snapshot_token, by, role, reason, now=None):
@@ -83,6 +84,11 @@ class ReworkRuntime:
                     'request_id': request_id, 'by': by, 'role': role, 'reason': reason,
                     'via': 'rework', 'effects': deepcopy(proposal['effects'])})
                 self.repo.update_approval(approval)
+            if proposal.get('reopen_incident'):
+                if self.hooks.reopen_incident is None:
+                    raise ValueError('사건 재개 연결이 없어 재작업을 시작할 수 없습니다')
+                self.hooks.reopen_incident(engine.variables(inst)['incident'], request_id, by, role, reason,
+                                           deepcopy(proposal.get('effects_resolution') or {}))
             adv = rework.new_generation(defn, inst, work, proposal, request_id, now, self.time_scale)
             for row in adv.updated:
                 self.repo.update_workitem(row)
