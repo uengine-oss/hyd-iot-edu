@@ -542,3 +542,11 @@ A090 후속 후보 "거래 before/after"를 구현했다. 근거: 제품의 거�
 - ceco(D:/work/study/ceco_demo/compose.yml)는 OpenPLC·Mosquitto×2·Kafka+ZK·Flink+ONNX·InfluxDB×2·Alertmanager·Caddy·router 3구역으로 설계서 식 제품 구성이라 더 정돈되어 있다.
 - 선택지: ① 설계서대로 제품 교체(Flink·Connect·Alertmanager 약 4~5일 + 회귀, EdgeX는 별도) ② 현 구조 유지하고 문서에 차이를 적음. 사용자: "일단 지금 구조대로 가고 보고서에 다르다고, ceco가 더 정돈되었다고 적자" → ②.
 - 적용: 24회차에서 v3·ceco를 같은 골격의 제품 구현으로 보여 주며 차이 설명. L4는 "Flink 역할의 Python 검사관(대역)"으로 표기. 보고 정본 D:/work/작업보고/2026-10-08.md.
+
+## 107. IoT·SCADA 층 제품 교체 — 방향은 정했으나 **보류**, 원래 완주 목표까지만 (2026-10-08 저녁, 사용자 결정)
+
+- 경위: 사용자가 "강의 재료가 되려면 굵직한 것을 가져와야 한다"며 106을 다시 열었고, ceco 구조(`D:/work/study/ceco_demo` 마스터 가이드 "시스템 아키텍처 한 장"·리니지·한계 통독)를 대조했다. 그 뒤 "IoT는 진행하지 말고 보류, 일단 원래 목표까지만".
+- 정한 방향(실행 안 함, 재개 시 출발점): **v3 = 계약, ceco = 구현 참고**. EMQX 유지(Mosquitto 미채택) · Kafka Connect(Bento 미채택) · EdgeX(Node-RED 미채택) · **OpenPLC 채택**(v3 "soft-PLC(OpenPLC 등)", ceco `1_control/plc-openplc`) · Flink SQL + ONNX(ceco `4_it/detection-flink`) · Alertmanager + Mailpit · **구역 라우터 3망 채택**(ceco `shared/network-router`, IEC 62443 구역·통로/Purdue/CISA: OT→DMZ·IT→DMZ만 연결을 열고 DMZ는 열지 않음) · Redpanda 유지 · cmd-gateway 유지. 토픽 7개 이름·메시지 모양·승인→관문→PLC ACK 흐름 불변. 예상 +3.5 GB(학생 PC 16 GB).
+- 보안 확인 항목(재개 시 먼저): Kafka·MQTT 무인증 상태에서 사무실 망의 공격자가 `action.cmd`에 직접 쓸 수 있는지, cmd-gateway가 명령 출처(승인 기록)를 대조하는지 — 세 겹 검사(사람 승인·관문·PLC)는 v3 그대로이나 출처 검증은 미확인.
+- 작업 단위 초안: A135 Kafka Connect / A136 Alertmanager+Mailpit / A137 OpenPLC+EdgeX / A138 Flink / A139 라우터(마지막·단독). 조각 compose 파일(`compose.d/*.yaml` + `include:`)로 병렬, 검증은 기존 회귀 1회.
+- 같이 보류: 회의 AI 층 굵직한 블록 후보 12개(`docs/handoff/verification/2026-10-08/teachable-candidates.md`, 1차 추천: 데이터 패브릭·자연어→프로세스 정의·피드백 학습 루프·What-if 시뮬레이션·레거시 메타데이터 증강). 데이터 패브릭은 HANDOFF §2 "구현하지 않고 후반 설명만"과 충돌하므로 재개 시 사용자 확인.

@@ -31,7 +31,7 @@
 | 2 펌프·팬 완주 | 검증됨 | 펌프 40/40·팬 34/34(`.evidence/a120/`), A120 |
 | 3 구조 변경 B 적대 판정·반영 | 검증됨 — B5(A116)·B2(A117)·B3(A118)·B1(A119), B4 하지 않음, 제품 pydantic 파싱 무시 0(실제 제품 구동은 미검증) | A116~A119 |
 | 4 UI/UX | 구현 완료·캡처 1회 — **사용자 "됐다" 대기** | `.evidence/a122/`, A121·A122 |
-| 5 회귀 | 오늘 통과 8 + A130 1회: core 5/5, worker 3/6 — 실패 3(ingest-hm9·worker-lease·cancel-running)은 process 커널 OOM(누수) 때문 → **A131 근본 수정 뒤 그 3개만 1회 재실행(진행 중)** | reg-a115·a116·a120·a129·a130, `.evidence/a130/dmesg-oom.txt`, `.evidence/a131/` |
+| 5 회귀 | **검증됨** — 오늘 통과 8 + A130 core 5/5·worker 3/6 → OOM 근본 수정(A131: glibc 아레나·스냅샷 재파싱, RSS 774→417 MB) 뒤 ingest-hm9 8/8·worker-lease 6/6, cancel-running은 검사기 타이밍 가정 수정(A134) 뒤 7/7. 같은 배포본 1회 기준 18/18 | reg-a115·a116·a120·a129·a130·a131·a134, `.evidence/a131/분석.md` |
 | 6 RUNBOOK·운영 | 초안·명령 대조(맞음 9·고침 2), 10분 기동은 미실측 | `docs/RUNBOOK.md`, A123·A124 |
 | 7 문서 | §6·§7 정리, 보조 문서·발화표·커리큘럼 갱신 | A125·A126, HANDOFF 10-08 |
 
