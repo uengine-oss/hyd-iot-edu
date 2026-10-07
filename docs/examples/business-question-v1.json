@@ -1,0 +1,117 @@
+{
+  "processDefinitionId": "business_question",
+  "processDefinitionName": "업무 질문 조회 (메타데이터 기반)",
+  "version": "1",
+  "roles": [
+    {
+      "name": "조회 담당",
+      "endpoint": "sys:agent"
+    }
+  ],
+  "data": [
+    {
+      "name": "question",
+      "type": "Text"
+    },
+    {
+      "name": "answer",
+      "type": "Text"
+    },
+    {
+      "name": "values",
+      "type": "Array"
+    },
+    {
+      "name": "sql",
+      "type": "Text"
+    },
+    {
+      "name": "tables",
+      "type": "Array"
+    },
+    {
+      "name": "note",
+      "type": "Text"
+    }
+  ],
+  "forms": {
+    "business_answer": {
+      "fields_json": [
+        {
+          "key": "answer",
+          "type": "text",
+          "text": "질문에 대한 답. 실제 조회 결과의 값만 쓴다"
+        },
+        {
+          "key": "values",
+          "type": "array",
+          "text": "답의 근거가 된 값들을 조회 결과 순서대로"
+        },
+        {
+          "key": "sql",
+          "type": "text",
+          "text": "답을 낸 최종 SELECT 한 문장(실제로 실행해 성공한 것)"
+        },
+        {
+          "key": "tables",
+          "type": "array",
+          "text": "사용한 ent 테이블 이름 목록"
+        },
+        {
+          "key": "note",
+          "type": "text",
+          "text": "어떤 메타데이터(주석·컬럼)로 표·컬럼을 골랐는지"
+        }
+      ]
+    }
+  },
+  "activities": [
+    {
+      "id": "answer",
+      "type": "userTask",
+      "name": "업무 질문에 답하기",
+      "role": "조회 담당",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "tool": "formHandler:business_answer",
+      "agentConfig": {
+        "cli": "claude-code"
+      },
+      "inputData": [
+        "question"
+      ],
+      "outputData": [
+        "answer",
+        "values",
+        "sql",
+        "tables",
+        "note"
+      ],
+      "instruction": "입력 데이터의 question에 업무 DB로 답하세요. 표·컬럼을 추측하지 말고 enterprise describe_catalog(컬럼 주석)와 describe_schema로 현재 메타데이터를 읽은 뒤 SELECT를 직접 작성해 enterprise query로 실행하세요. 실행에 성공한 결과의 값만 answer·values에 쓰고, 그 SELECT를 sql에, 사용한 테이블을 tables에, 표·컬럼을 고른 메타데이터 근거를 note에 적으세요. 결과가 없으면 지어내지 말고 answer에 그 사실을 쓰세요. 이 작업은 조회이며 설비 조치·판단 카드 제출이 아닙니다. 쓰기는 금지합니다."
+    }
+  ],
+  "events": [
+    {
+      "id": "start",
+      "type": "startEvent"
+    },
+    {
+      "id": "end",
+      "type": "endEvent"
+    }
+  ],
+  "gateways": [],
+  "sequences": [
+    {
+      "id": "s1",
+      "source": "start",
+      "target": "answer"
+    },
+    {
+      "id": "s2",
+      "source": "answer",
+      "target": "end"
+    }
+  ],
+  "description": "수업용 질문 정의(12회차). 시작 변수 question 에 질문을 넣어 실행하면 조회 담당 에이전트(cliagents, Claude Code)가 enterprise describe_catalog / describe_schema → query (Supabase ent 스키마 SELECT) 순서로 읽어 폼에 답을 적는다. 예시 질문: HYD-02 설비의 현재 생산오더는 납기까지 몇 시간 남았고, 그 설비 판매 계약의 고객 등급은? / 완제품 재고 수량이 가장 적은 설비 코드와 그 재고 수량은? — 검사 스크립트 scripts/probe_business_questions.py 의 정의와 같은 모양이며 기대값 자동 대조는 검사 스크립트에만 있다."
+}

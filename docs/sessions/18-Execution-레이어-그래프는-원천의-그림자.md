@@ -12,9 +12,9 @@
 ## 실행 장면
 1. [화면] 완료된 쿨러 인스턴스 상세 → Execution 레이어 표 → [관찰] 투영된 정의 버전 · 작업 노드 id → [확인] 표 아래 Cypher 본문을 복사.
 2. [화면] Neo4j Browser에 붙여 넣고 실행 → [확인] 포털 표와 같은 행 수·id.
-3. [화면] `MATCH (w:WorkItem)-[:IN_INSTANCE]->(p:ProcessInstance {id:'<인스턴스 id>'}) MATCH (w)-[:EXECUTES]->(t) RETURN w.activity_id, w.status, t.id, labels(t)` → [관찰] 작업 → 정의의 활동 노드 → [확인] `t.id`가 8회차·15회차에서 본 BPMN 노드 id(`task:diagnose` …)와 같다.
-4. [명령] `curl -s 127.0.0.1:8080/api/instances/<id>/graph` → [확인] 2단계와 같은 내용(투영 상태 · 재시도 정보 포함).
-5. [화면] `MATCH (p:ProcessInstance)-[:INSTANCE_OF]->(d) WHERE p.asset='HYD-01' RETURN d.id, p.status, count(*)`(속성 이름은 1단계 표에서 확인) → [확인] 한 설비의 실행 이력을 정의 버전별로 센다.
+3. [화면] `MATCH (w:WorkItem)-[:IN_INSTANCE]->(p:ProcessInstance {id:'<인스턴스 id>'}) MATCH (w)-[:EXECUTES]->(t) RETURN w.activity_id, w.status, t.id, labels(t)` → [관찰] 작업 → 정의의 활동 노드 → [확인] `t.id`는 버전이 붙은 흐름 노드 id `flow:hyd:anomaly_response:2.2:task%3Adiagnose`(끝부분이 8회차·15회차에서 본 BPMN 노드 id `task:diagnose`를 URL 인코딩한 것)이다.
+4. [명령] `curl -s 127.0.0.1:8080/api/instances/<id>/graph` → [확인] 2단계와 같은 내용(`graph.workitems` 10행, `graph.process.version`, `projection` 상태 · 재시도 정보 포함).
+5. [화면] `MATCH (p:ProcessInstance)-[:ON_ASSET]->(a:Asset {code:'HYD-01'}) MATCH (p)-[io:INSTANCE_OF]->(d) RETURN d.id, io.version, p.status, count(*)`(ProcessInstance에는 `asset` 속성이 없고 `ON_ASSET` 관계로 설비에 묶인다; 버전은 `INSTANCE_OF` 관계의 `version`) → [확인] 한 설비의 실행 이력을 정의 버전별로 센다.
 6. [정리] 그래프는 원천(PostgreSQL)의 그림자다: 투영이 늦거나 실패하면 `docs/execution-projection.md` "상태 확인"의 복구 절차, 원천은 바뀌지 않는다 → [확인] "원천 vs 투영" 한 줄.
 
 ## 막혔을 때
@@ -22,5 +22,5 @@
 - Cypher 속성 이름 불일치: `CALL db.schema.visualization()`에서 ProcessInstance · WorkItem 속성 확인.
 
 ## 증거
+- `.evidence/sessions/18/`(2026-10-07 제작자, `run.py`·`commands.md`): 오늘 13:01 완료된 쿨러 인스턴스로 — 1·4 `GET /api/instances/{id}/graph`(정의 `proc:anomaly-response` 2.2, 작업 10, 경고 0, 투영 대기 0) · 2 API가 준 Cypher 본문을 bolt로 그대로 실행해 작업 10개 동일 · 3 `WorkItem -EXECUTES->` 흐름 노드 10행 · 5 ProcessInstance 속성 목록, `ON_ASSET` 집계(HYD-01 113건 …), HYD-01 정의 버전별 건수 · 6 `GET /api/graph-projections` — **검증됨**(Browser 화면 대신 같은 Cypher를 bolt 드라이버로 실행). 포털 표 화면은 캡처 없이 진행 — **미검증**.
 - 제작자 증거: 쿨러 42/42 안의 그래프 검사(ProcessInstance -INSTANCE_OF-> Process, WorkItem -EXECUTES-> Task, ROLE_BOUND) `.evidence/reaudit/reg-a116/cooler-42/scenario.log`, 투영 복구·격리 `probe_execution_projection.py`·`probe_projection_repair_live.py`(`docs/execution-projection.md` "검증"), 실행 범위 `probe_execution_scope.py`. 학생 완주 증거 아님.
-- `.evidence/sessions/18/`: **미검증**.

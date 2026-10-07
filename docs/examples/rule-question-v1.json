@@ -1,0 +1,107 @@
+{
+  "processDefinitionId": "rule_question",
+  "processDefinitionName": "규칙 조건 조회 (규칙 → 질의)",
+  "version": "1",
+  "roles": [
+    {
+      "name": "조회 담당",
+      "endpoint": "sys:agent"
+    }
+  ],
+  "data": [
+    {
+      "name": "question",
+      "type": "Text"
+    },
+    {
+      "name": "holds",
+      "type": "Text"
+    },
+    {
+      "name": "values",
+      "type": "Array"
+    },
+    {
+      "name": "queries",
+      "type": "Array"
+    },
+    {
+      "name": "note",
+      "type": "Text"
+    }
+  ],
+  "forms": {
+    "rule_answer": {
+      "fields_json": [
+        {
+          "key": "holds",
+          "type": "text",
+          "text": "규칙 조건이 지금 성립하는지: true / false / unknown 중 하나"
+        },
+        {
+          "key": "values",
+          "type": "array",
+          "text": "규칙이 검사하는 입력마다 \"변수=값\" (값이 없으면 \"변수=없음\")"
+        },
+        {
+          "key": "queries",
+          "type": "array",
+          "text": "값을 얻으려고 실제로 실행해 성공한 질의들"
+        },
+        {
+          "key": "note",
+          "type": "text",
+          "text": "어떤 규칙 정의와 입력 출처 메타데이터로 질의를 만들었는지"
+        }
+      ]
+    }
+  },
+  "activities": [
+    {
+      "id": "answer",
+      "type": "userTask",
+      "name": "규칙 조건 확인하기",
+      "role": "조회 담당",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "tool": "formHandler:rule_answer",
+      "agentConfig": {
+        "cli": "claude-code"
+      },
+      "inputData": [
+        "question"
+      ],
+      "outputData": [
+        "holds",
+        "values",
+        "queries",
+        "note"
+      ],
+      "instruction": "입력 데이터의 question이 가리키는 규칙을 hyd-dmn dmn_rules로 읽고, 규칙이 검사하는 입력마다 hyd-dmn inputs로 출처(센서·시스템)를 확인하세요. 그 출처의 원천(hyd-dmn timeseries_schema/timeseries_query 또는 enterprise describe_catalog/query)에서 현재 값을 직접 질의해 조건을 평가하세요. 값이 없으면 거짓으로 간주하지 말고 unknown으로 답하세요. holds·values·queries·note를 채우세요. 이 작업은 조회이며 설비 조치·판단 카드 제출이 아닙니다. 쓰기는 금지합니다."
+    }
+  ],
+  "events": [
+    {
+      "id": "start",
+      "type": "startEvent"
+    },
+    {
+      "id": "end",
+      "type": "endEvent"
+    }
+  ],
+  "gateways": [],
+  "sequences": [
+    {
+      "id": "s1",
+      "source": "start",
+      "target": "answer"
+    },
+    {
+      "id": "s2",
+      "source": "answer",
+      "target": "end"
+    }
+  ],
+  "description": "수업용 질문 정의(12회차). 시작 변수 question 에 질문을 넣어 실행하면 조회 담당 에이전트(cliagents, Claude Code)가 hyd-dmn dmn_rules → inputs → 출처 원천(timeseries_query 또는 enterprise query) 순서로 읽어 폼에 답을 적는다. 예시 질문: 규칙 rule:standby 의 조건이 설비 HYD-03에서 지금 성립하는가? / 규칙 rule:fan-24h 의 조건이 설비 HYD-01에서 지금 성립하는가? 그 입력 값도 알려 달라. — 검사 스크립트 scripts/probe_rule_questions.py 의 정의와 같은 모양이며 기대값 자동 대조는 검사 스크립트에만 있다."
+}
