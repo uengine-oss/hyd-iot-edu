@@ -62,7 +62,21 @@ def rule_fires(rule: dict, facts: dict) -> tuple[bool, list[str]]:
     return ok and bool(rule.get("tests")), unknown
 
 
+# A115 (r14 A11, DMN hit policy): how this code evaluates each table it executes. The graph declares the policy on the
+# DecisionTable (instances.cypher); a declaration that differs from the evaluation is refused instead of silently ignored.
+# dt:diagnose-cause is not evaluated here: the cause ranking is prior x evidence weight (card.rank_causes).
+EXECUTED_HIT_POLICIES = {"dec:action-candidates": "COLLECT", "dec:compliance": "COLLECT", "dec:rank-actions": "UNIQUE"}
+
+
+def check_hit_policy(rows: list[dict]) -> None:
+    for r in rows:
+        expected = EXECUTED_HIT_POLICIES.get(r.get("decision"))
+        if expected and r.get("hitPolicy") is not None and r["hitPolicy"] != expected:
+            raise ValueError(f"{r['decision']} 결정표의 hitPolicy {r['hitPolicy']}는 이 엔진의 평가 방식({expected})과 다릅니다")
+
+
 def _by_decision(dmn: list[dict]) -> dict[str, list[dict]]:
+    check_hit_policy(dmn)
     out: dict[str, list[dict]] = {}
     for r in sorted(dmn, key=lambda r: (r["decision"], r.get("ord") or 0)):
         out.setdefault(r["decision"], []).append(r)
@@ -122,6 +136,7 @@ def score_option(o: dict, facts: dict, policy: dict) -> dict:
 
 
 def rank_policy(rules, facts):
+    check_hit_policy(rules)
     matches = []
     for rule in rules:
         if rule['effect'] != 'RANK':
@@ -132,6 +147,7 @@ def rank_policy(rules, facts):
         if fired:
             matches.append(rule)
     if len(matches) != 1:
+        # UNIQUE (EXECUTED_HIT_POLICIES): two applicable ranking policies are a table error, not a choice
         raise ValueError('exactly one applicable executable ranking rule is required')
     return matches[0], ranking.validate(matches[0].get('rankingPolicy'))
 

@@ -97,6 +97,9 @@ class Repo(Protocol):
     # A097 (agent-sdk lease_until/claim_count/max_claims): a worker claim is a lease the runner renews; an expired lease
     # is reclaimable by another worker (fetch_pending_task) and, past MAX_CLAIMS, marked FAILED by the engine's sweep
     def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool: ...
+    # A115 (infra-docker init.sql:2559-2564): a claim path that does not renew the worker lease clears it, so no worker
+    # reclaims a row whose owner keeps its own expiry (legacy assessment)
+    def clear_task_lease(self, todo_id: str, consumer: str) -> bool: ...
     def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int: ...
     # the engine's claim (completion polling)
     def claim_submitted(self, consumer: str, limit: int = 10, tenant_id: str | None = None) -> list[dict]: ...
@@ -354,6 +357,14 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             if not w or w.get("consumer") != consumer or w.get("status") != "IN_PROGRESS" or w.get("draft_status") != "STARTED":
                 return False
             w["lease_until"] = time.time() + seconds
+            return True
+
+    def clear_task_lease(self, todo_id: str, consumer: str) -> bool:
+        with self._lock:
+            w = self.workitems.get(todo_id)
+            if not w or w.get("consumer") != consumer:
+                return False
+            w["lease_until"] = None
             return True
 
     def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:
@@ -682,6 +693,10 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection):
     def renew_task_lease(self, todo_id: str, consumer: str, seconds: int = LEASE_SECONDS) -> bool:
         with self._conn() as c:
             return bool(c.execute("select renew_task_lease(%s,%s,%s)", (todo_id, consumer, seconds)).fetchone()["renew_task_lease"])
+
+    def clear_task_lease(self, todo_id: str, consumer: str) -> bool:
+        with self._conn() as c:
+            return c.execute("update todolist set lease_until = null where id = %s and consumer = %s", (todo_id, consumer)).rowcount == 1
 
     def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:
         with self._conn() as c:

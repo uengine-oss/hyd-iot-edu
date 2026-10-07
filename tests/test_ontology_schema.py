@@ -140,7 +140,7 @@ def test_minimal_set_bpmn_dmn_bsc_links_exist():
     assert set(by["REPRESENTS"]["to"]) == {"StateVariable", "Measure"}
     assert "USES" not in RELS
     hp = next(p for p in ov.classes_by_name(S)["DecisionTable"]["properties"] if p["name"] == "hitPolicy")
-    assert hp["values"] == ["PRIORITY", "COLLECT"]
+    assert hp["values"] == ["PRIORITY", "COLLECT", "UNIQUE"]   # A115: dt:rank-actions is evaluated UNIQUE
 
 
 def _dmn_fixture(when="forecast_ts1 >= 65", declare=True, task_reads=True, sourced=True):

@@ -2,26 +2,110 @@
   "processDefinitionId": "independent-reviews",
   "processDefinitionName": "Independent reviews",
   "version": "1",
-  "roles": [{"name": "Reviewer", "endpoint": "role:operator"}],
-  "data": [{"name": "a", "type": "Text"}, {"name": "b", "type": "Text"}],
+  "roles": [
+    {
+      "name": "Reviewer",
+      "endpoint": "role:operator"
+    }
+  ],
+  "data": [
+    {
+      "name": "a",
+      "type": "Text"
+    },
+    {
+      "name": "b",
+      "type": "Text"
+    }
+  ],
   "forms": {
-    "a": {"fields_json": [{"key": "a", "type": "text", "text": "First review"}]},
-    "b": {"fields_json": [{"key": "b", "type": "text", "text": "Second review"}]}
+    "a": {
+      "fields_json": [
+        {
+          "key": "a",
+          "type": "text",
+          "text": "First review"
+        }
+      ]
+    },
+    "b": {
+      "fields_json": [
+        {
+          "key": "b",
+          "type": "text",
+          "text": "Second review"
+        }
+      ]
+    }
   },
   "activities": [
-    {"id": "a", "name": "First review", "type": "userTask", "role": "Reviewer", "tool": "formHandler:a", "outputData": ["a"]},
-    {"id": "b", "name": "Second review", "type": "userTask", "role": "Reviewer", "tool": "formHandler:b", "outputData": ["b"]}
+    {
+      "id": "a",
+      "name": "First review",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:a",
+      "outputData": [
+        "a"
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Second review",
+      "type": "userTask",
+      "role": "Reviewer",
+      "tool": "formHandler:b",
+      "outputData": [
+        "b"
+      ]
+    }
   ],
   "events": [
-    {"id": "start", "type": "startEvent"},
-    {"id": "end-a", "type": "endEvent"},
-    {"id": "end-b", "type": "endEvent"}
+    {
+      "id": "start",
+      "type": "startEvent"
+    },
+    {
+      "id": "end-a",
+      "type": "endEvent"
+    },
+    {
+      "id": "end-b",
+      "type": "endEvent"
+    }
   ],
-  "gateways": [],
+  "gateways": [
+    {
+      "id": "fork",
+      "type": "parallelGateway",
+      "name": "동시 진행"
+    }
+  ],
   "sequences": [
-    {"id": "s-a", "source": "start", "target": "a"},
-    {"id": "s-b", "source": "start", "target": "b"},
-    {"id": "a-e", "source": "a", "target": "end-a"},
-    {"id": "b-e", "source": "b", "target": "end-b"}
+    {
+      "id": "start-fork",
+      "source": "start",
+      "target": "fork"
+    },
+    {
+      "id": "s-a",
+      "source": "fork",
+      "target": "a"
+    },
+    {
+      "id": "s-b",
+      "source": "fork",
+      "target": "b"
+    },
+    {
+      "id": "a-e",
+      "source": "a",
+      "target": "end-a"
+    },
+    {
+      "id": "b-e",
+      "source": "b",
+      "target": "end-b"
+    }
   ]
 }

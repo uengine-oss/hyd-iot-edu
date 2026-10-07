@@ -18,9 +18,9 @@ def definition():
             for a,key in [('a','x'),('b','review'),('c','old_result'),('d','new_result'),('late','late_result'),('hold','hold')]],
         events=[dict(id='s',type='startEvent'),dict(id='e',type='endEvent'),
             dict(id='deadline',type='boundaryEvent',attachedTo='b',eventDefinition='timer',timer='PT5M')],
-        gateways=[dict(id='g',type='exclusiveGateway')],
+        gateways=[dict(id='g',type='exclusiveGateway'),dict(id='fork',type='parallelGateway')],   # A115: split via gateway
         sequences=[dict(id=src+'-'+dst,source=src,target=dst) for src,dst in
-            [('s','a'),('s','b'),('s','hold'),('a','e'),('b','g'),('g','d'),('c','e'),('d','e'),('deadline','late'),('late','e'),('hold','e')]]
+            [('s','fork'),('fork','a'),('fork','b'),('fork','hold'),('a','e'),('b','g'),('g','d'),('c','e'),('d','e'),('deadline','late'),('late','e'),('hold','e')]]
             +[dict(id='g-c',source='g',target='c',condition='x == "old"')])
 
 
@@ -100,8 +100,8 @@ def test_expired_boundary_review_can_be_reconsidered_from_proven_arrival():
 
 
 def test_gateway_without_prior_work_arrival_is_explicitly_unavailable():
-    raw=definition(); raw['sequences']=[s for s in raw['sequences'] if s['id'] not in ('s-b','b-g')]
-    raw['sequences'].append(dict(id='s-g',source='s',target='g'))
+    raw=definition(); raw['sequences']=[s for s in raw['sequences'] if s['id'] not in ('fork-b','b-g')]
+    raw['sequences'].append(dict(id='fork-g',source='fork',target='g'))
     rt,pid,old=setup(raw,registry=False); rt.submit(old['a']['id'],{'x':'old'},now=NOW)     # b·late·deadline are cut off on purpose
     result=rt.preview_rework(pid,old['a']['id'])
     assert not result['execution_available']

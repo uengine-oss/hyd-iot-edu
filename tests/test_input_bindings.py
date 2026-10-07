@@ -80,7 +80,7 @@ def test_binding_control_dependency_cycle_is_rejected():
 
 
 def test_unreachable_bound_producer_is_rejected_before_instance_side_effects():
-    raw=bound_definition(); raw['sequences']=[s for s in raw['sequences'] if s['id']!='s-a']
+    raw=bound_definition(); raw['sequences']=[s for s in raw['sequences'] if s['id']!='fork-a']
     with pytest.raises(ValueError,match='inputBindings'): definition_registry.validate_definition(raw)
 
 

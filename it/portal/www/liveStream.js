@@ -48,7 +48,7 @@
         if (e.job_id === 'TASK_CLOSED') return { title: '작업 닫음 (사람)', text: (d.goal || d.reason || '').slice(0, 160) };
         return { title: (activityOf(e) || '작업') + ' · 워커가 실행을 멈춤', text: (d.goal || '').slice(0, 160) };
       }
-      case 'human_asked': return { title: '사람에게 질문', text: (d.text || '').slice(0, 160) };
+      case 'human_asked': return { title: '사람에게 질문', text: humanQuestionText(d).slice(0, 160) };
       case 'human_response': return { title: '사람의 답변', text: (d.answer || '').slice(0, 160) };
       case 'error': return { title: d.name || '오류', text: (d.friendly || d.raw_error || d.message || '').slice(0, 160) };
       default: return { title: e.event_type, text: d.message || d.note || d.content || '' };

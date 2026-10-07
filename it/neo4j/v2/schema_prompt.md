@@ -72,8 +72,8 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
   - 필수: 고장 유형 하나 이상에 매칭되어야 한다 (`MITIGATED_BY|REMEDIED_BY` in, 최소 1)
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
-- `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED], sourceLiveType, sourceCheckedAt, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
-- `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
+- `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED|COMMENT_CHANGED], sourceLiveType, sourceLiveComment, sourceBaseComment, sourceCheckedAt, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
+- `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT|UNIQUE]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
 - `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
   - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1)
 - `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref, _manual_document, document_id, extractor, sha256, source_id})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.

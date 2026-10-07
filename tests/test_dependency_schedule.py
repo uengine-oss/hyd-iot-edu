@@ -18,8 +18,9 @@ def definition():
                             inputData=inputs, outputData=[output])
                        for a, inputs, output in [('a', [], 'x'), ('b', ['x'], 'y'), ('c', ['y'], 'z'), ('hold', [], 'hold')]],
         'events': [{'id': 's', 'type': 'startEvent'}, {'id': 'e', 'type': 'endEvent'}],
+        'gateways': [{'id': 'fork', 'type': 'parallelGateway'}],   # A115: independent paths split through a gateway
         'sequences': [dict(id=f'{src}-{tgt}', source=src, target=tgt)
-                      for src, tgt in [('s','a'), ('s','b'), ('s','hold'), ('a','e'), ('b','c'), ('c','e'), ('hold','e')]],
+                      for src, tgt in [('s','fork'), ('fork','a'), ('fork','b'), ('fork','hold'), ('a','e'), ('b','c'), ('c','e'), ('hold','e')]],
     }
 
 
@@ -127,7 +128,7 @@ def test_runtime_reference_without_input_data_is_remapped_to_new_producer():
 
 def test_unreached_control_branch_is_not_opened_by_data_dependency():
     raw=definition()
-    raw['sequences']=[s for s in raw['sequences'] if s['id']!='s-b']
+    raw['sequences']=[s for s in raw['sequences'] if s['id'] not in ('fork-b','hold-e')]   # A115: hold leads only to b
     raw['sequences'].append(dict(id='hold-b',source='hold',target='b'))
     rt,pid,old=setup_definition(raw)
     rt.submit(old['a']['id'], {'x':'old'},now=NOW)

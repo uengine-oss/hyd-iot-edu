@@ -1271,15 +1271,28 @@
           "values": [
             "OK",
             "MISSING",
-            "TYPE_CHANGED"
+            "TYPE_CHANGED",
+            "COMMENT_CHANGED"
           ],
-          "description": "DDL 동기화(A087)가 확인한 바인딩 상태. MISSING·TYPE_CHANGED이면 에이전트는 읽지 않고 미확인으로 둔다"
+          "description": "DDL 동기화(A087·A115)가 확인한 바인딩 상태. MISSING·TYPE_CHANGED·COMMENT_CHANGED(적재 뒤 실제 열 주석 = 업무 의미가 바뀜)이면 에이전트는 읽지 않고 미확인으로 둔다"
         },
         {
           "name": "sourceLiveType",
           "type": "string",
           "required": false,
           "description": "원천 카탈로그의 현재 열 타입(없으면 null)"
+        },
+        {
+          "name": "sourceLiveComment",
+          "type": "string",
+          "required": false,
+          "description": "원천 카탈로그의 현재 열 주석(A115, 없으면 null)"
+        },
+        {
+          "name": "sourceBaseComment",
+          "type": "string",
+          "required": false,
+          "description": "적재 뒤 첫 DDL 동기화가 본 실제 열 주석(A115, 없으면 빈 문자열). 이후 실제 주석이 이 값과 다르면 COMMENT_CHANGED. 재적재하면 지워진다"
         },
         {
           "name": "sourceCheckedAt",
@@ -1316,7 +1329,8 @@
           "type": "enum",
           "values": [
             "PRIORITY",
-            "COLLECT"
+            "COLLECT",
+            "UNIQUE"
           ],
           "required": true
         }

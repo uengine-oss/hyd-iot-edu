@@ -991,7 +991,7 @@ hyd:hitPolicy a owl:DatatypeProperty ;
   rdfs:label "hitPolicy" ;
   rdfs:domain hyd:DecisionTable ;
   rdfs:range xsd:string ;
-  rdfs:comment "허용값: PRIORITY, COLLECT"@ko .
+  rdfs:comment "허용값: PRIORITY, COLLECT, UNIQUE"@ko .
 hyd:holdSeconds a owl:DatatypeProperty ;
   rdfs:label "holdSeconds" ;
   rdfs:domain hyd:AnomalyPattern ;
@@ -1248,11 +1248,21 @@ hyd:sourceAlert a owl:DatatypeProperty ;
   rdfs:domain hyd:Incident ;
   rdfs:range xsd:string ;
   rdfs:comment "사건을 연 원천 경보 원문(JSON 문자열)"@ko .
+hyd:sourceBaseComment a owl:DatatypeProperty ;
+  rdfs:label "sourceBaseComment" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "적재 뒤 첫 DDL 동기화가 본 실제 열 주석(A115, 없으면 빈 문자열). 이후 실제 주석이 이 값과 다르면 COMMENT_CHANGED. 재적재하면 지워진다"@ko .
 hyd:sourceCheckedAt a owl:DatatypeProperty ;
   rdfs:label "sourceCheckedAt" ;
   rdfs:domain hyd:InputData ;
   rdfs:range xsd:string ;
   rdfs:comment "바인딩 상태가 마지막으로 바뀐 시각"@ko .
+hyd:sourceLiveComment a owl:DatatypeProperty ;
+  rdfs:label "sourceLiveComment" ;
+  rdfs:domain hyd:InputData ;
+  rdfs:range xsd:string ;
+  rdfs:comment "원천 카탈로그의 현재 열 주석(A115, 없으면 null)"@ko .
 hyd:sourceLiveType a owl:DatatypeProperty ;
   rdfs:label "sourceLiveType" ;
   rdfs:domain hyd:InputData ;
@@ -1267,7 +1277,7 @@ hyd:sourceState a owl:DatatypeProperty ;
   rdfs:label "sourceState" ;
   rdfs:domain hyd:InputData ;
   rdfs:range xsd:string ;
-  rdfs:comment "DDL 동기화(A087)가 확인한 바인딩 상태. MISSING·TYPE_CHANGED이면 에이전트는 읽지 않고 미확인으로 둔다 허용값: OK, MISSING, TYPE_CHANGED"@ko .
+  rdfs:comment "DDL 동기화(A087·A115)가 확인한 바인딩 상태. MISSING·TYPE_CHANGED·COMMENT_CHANGED(적재 뒤 실제 열 주석 = 업무 의미가 바뀜)이면 에이전트는 읽지 않고 미확인으로 둔다 허용값: OK, MISSING, TYPE_CHANGED, COMMENT_CHANGED"@ko .
 hyd:sourceTrip a owl:DatatypeProperty ;
   rdfs:label "sourceTrip" ;
   rdfs:domain hyd:Incident ;

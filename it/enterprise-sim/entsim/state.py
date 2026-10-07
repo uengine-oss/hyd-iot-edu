@@ -80,6 +80,13 @@ class EnterpriseState:
             raise ValueError(f"unknown or non-enterprise skill {skill!r}")
         asset = req.get("asset") or "HYD-01"
         params = req.get("params") or {}
+        # A115 (r14 A7, wms `INVALID: unknown sku`; same checks as ent.exec_skill/exec_compensation, migration 22)
+        if (req.get("asset") is not None or skill not in COMPENSATION_SKILLS) and asset not in data.ASSETS:
+            raise ValueError(f"INVALID: unknown asset {asset}")
+        if skill == "skill:procure-part" and params.get("supplier", "sup:b") not in {x["id"] for x in data._SUPPLIERS}:
+            raise ValueError(f"INVALID: unknown supplier {params.get('supplier')}")
+        if skill == "skill:reallocate-production" and "to" in params and (params["to"] not in data.ASSETS or params["to"] == asset):
+            raise ValueError(f"INVALID: unknown or same target asset {params['to']}")
         with self._lock:
             # a compensation is keyed by the record it reverses: one decision may undo several references
             key = (json.dumps([req.get("decision"), skill, params.get("ref")]) if skill in COMPENSATION_SKILLS

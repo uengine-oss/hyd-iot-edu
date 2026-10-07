@@ -17,7 +17,7 @@ INPUT_FIELDS = ('name', 'typeRef', 'variable', 'datasource', 'catalog', 'schema'
 SYSTEM_FIELDS = ('name', 'zone', 'source_id')
 JOURNAL_FIELDS = ('_ingest_base', '_ingest_history', '_ingest_batches', '_ingest_created')
 # A087: observations the DDL source sync records on a binding — system state, not someone's edit of the input
-SYNC_FIELDS = ('sourceState', 'sourceLiveType', 'sourceCheckedAt')
+SYNC_FIELDS = ('sourceState', 'sourceLiveType', 'sourceLiveComment', 'sourceBaseComment', 'sourceCheckedAt')
 
 
 class Conflict(ValueError):
@@ -104,6 +104,9 @@ def _claim(tx, label, item, batch, at):
             state['sources'] = [{'id': item['system'], 'labels': ['System'], 'props': {}}]
     history.append({'batch': batch, 'state': state})
     _apply(tx, label, nid, state)
+    if label == 'InputData':
+        # A115: a reviewed (re-)ingestion is the new meaning; the next DDL sync records a fresh live-comment baseline
+        tx.run('MATCH (n:InputData {id:$id}) REMOVE n.sourceBaseComment', id=nid).consume()
     tx.run(f'MATCH (n:{label} {{id:$id}}) SET n += $journal', id=nid, journal={
         '_ingest_base': base, '_ingest_created': props.get('_ingest_created', created),
         '_ingest_history': _json(history), '_ingest_batches': [h['batch'] for h in history]}).consume()

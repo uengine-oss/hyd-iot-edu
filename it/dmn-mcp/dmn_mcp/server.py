@@ -14,8 +14,10 @@ from pydantic import Field
 from .tools import DmnTools, enveloped
 
 mcp = FastMCP("hyd-dmn", instructions=(
-    "유압설비 교육 공장의 결정론 판단 엔진이다. 온톨로지 v2 의 DMN 결정표(dec:diagnose-cause · dec:action-candidates · dec:compliance · "
-    "dec:rank-actions)를 실제 사실에 대어 같은 입력이면 같은 결과를 낸다. 규칙을 임의로 해석하지 말고 이 도구의 결과를 인용하라. "
+    "유압설비 교육 공장의 결정론 판단 엔진이다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매긴다. "
+    "조치 판단은 온톨로지 v2 의 DMN 결정표 dec:action-candidates(COLLECT) · dec:compliance(COLLECT) · dec:rank-actions(UNIQUE)를 "
+    "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. dec:diagnose-cause 규칙(rule:dx-*)은 진단 근거를 설명하는 지식이며 이 엔진이 평가하지 않는다. "
+    "규칙을 임의로 해석하지 말고 이 도구의 결과를 인용하라. "
     "submit_decision 만 쓰기이며(process /api/decisions), 설비 명령은 어디서도 나가지 않는다. 모든 도구는 {result: ok|error, document} 봉투로 답한다."))
 tools = DmnTools()
 

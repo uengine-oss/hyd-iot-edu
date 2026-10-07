@@ -95,7 +95,7 @@ flowchart TB
 | 표준 | 시나리오에 꼭 필요해서 담은 것 | 쓰지 않아 뺀 것 |
 |---|---|---|
 | BPMN | 시작 이벤트(메시지 = 경보, 상관 키 = 설비), 경계 타이머(선택 시간 초과), 종료(종결 · 에스컬레이션), 작업 3종(user · service · businessRule), 배타 게이트웨이, 작업의 데이터 입력 · 출력, 수행자, 프로세스 대상 | 중간 이벤트, 조건 · 신호 · 오류 이벤트, 병렬 · 포괄 게이트웨이, 수동 작업, 풀 · 레인 · 메시지 흐름, 하위 프로세스 |
-| DMN | 판단, 입력 데이터, 결정표, 임계값 검사(연산자 6종), hit policy 2종(PRIORITY · COLLECT), 지식 출처, 정보 · 권한 요구 | hit policy UNIQUE · FIRST · RULE ORDER, 업무 지식 모델(BKM), FEEL 함수, 출력 열 정의, 결정 서비스 |
+| DMN | 판단, 입력 데이터, 결정표, 임계값 검사(연산자 6종), hit policy 3종(PRIORITY · COLLECT · UNIQUE), 지식 출처, 정보 · 권한 요구 | hit policy FIRST · RULE ORDER, 업무 지식 모델(BKM), FEEL 함수, 출력 열 정의, 결정 서비스 |
 | BSC | 관점 4개, 전략목표, 성과 지표(방향 · 목표 · 경고 · 위험 임계값 · 계산식), 성과 지표 간 `+`/`-` 영향, 성과 지표 소유 부서 | 실행 과제(Initiative) 별도 클래스, 가중치 스코어카드, 목표 대비 실적 시계열 |
 
 ## 4. 클래스
@@ -172,7 +172,7 @@ flowchart TB
 | | Action | code!, kind!, param, min, max | 원자 조치 (PLC 쓰기 · 시스템 트랜잭션) |
 | | Decision | question! | 판단 정의 |
 | | InputData | variable!, typeRef! | 판단 · 작업 사이를 흐르는 데이터. 출처(SOURCED_FROM)나 만든 작업(PRODUCES)이 있고, 상태 변수 · 성과 지표를 가리킨다(REPRESENTS) |
-| | DecisionTable · Rule | hitPolicy! (PRIORITY · COLLECT), when!, effect! (SELECT · EXCLUDE · PENALTY · WARN · RANK) | 결정표와 규칙. 규칙은 임계값 검사(TESTS)를 하나 이상 가진다 (RANK 제외) |
+| | DecisionTable · Rule | hitPolicy! (PRIORITY · COLLECT · UNIQUE — 엔진이 평가하는 표는 cards.EXECUTED_HIT_POLICIES와 같아야 한다), when!, effect! (SELECT · EXCLUDE · PENALTY · WARN · RANK) | 결정표와 규칙. 규칙은 임계값 검사(TESTS)를 하나 이상 가진다 (RANK 제외) |
 | | KnowledgeSource | kind! (manual · regulation · policy · strategy) | 매뉴얼, 사내 규정, 정책, 전략맵 |
 | 외부 · 예측 | ExternalVariable · Forecast | unit!, value!, method! | 외생 변수, 조치별 예측값 |
 | 운영 기록 | Incident · DecisionCase | alertId!, followedRecommendation! | 사건과 사람의 판단 사례(선례) |

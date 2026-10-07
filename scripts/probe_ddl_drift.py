@@ -17,6 +17,7 @@ import uuid
 from pathlib import Path
 
 import psycopg
+import psycopg.sql
 from probe_physical_facts import http
 from probe_ranking_policy import mcp
 
@@ -71,7 +72,27 @@ def main():
         reasons = {c: (prov.get(v) or {}).get('error') for c, v in var.items()}
         check('the_stale_bindings_carry_the_ddl_sync_reason', all(r and 'DDL 동기화' in r for r in (reasons['fg_item'], reasons['ship_eta']))
               and 'TYPE_CHANGED' in reasons['fg_item'] and 'MISSING' in reasons['ship_eta'] and not reasons['fg_stock'], reasons)
+        # A115 (r14 A10): only the live comment of the matching column changes → COMMENT_CHANGED, not read; restoring the
+        # comment makes it OK again. The DDL file's comment differs from the live one from the start and is not a change.
+        with psycopg.connect(DSN, autocommit=True) as db:
+            report['original_fg_stock_comment'] = db.execute(
+                "select col_description('ent.fg_inventory'::regclass, ordinal_position) from information_schema.columns "
+                "where table_schema='ent' and table_name='fg_inventory' and column_name='fg_stock'").fetchone()[0]
+            db.execute("comment on column ent.fg_inventory.fg_stock is 'A115 가용 재고 (의미 변경 시험)'")
+        comment_changed = True
+        changed = http(8080, '/api/kg/ddl/sync', {}); report['comment_sync'] = changed; save()
+        check('a_comment_only_change_is_marked', ids['fg_stock'] in (changed.get('states') or {}).get('COMMENT_CHANGED', []), changed)
+        doc = mcp('evaluate_cards', ARGS); report['evaluate_after_comment'] = doc; save()
+        prov = {p['variable']: p for p in doc.get('provenance') or []}
+        why = (prov.get(var['fg_stock']) or {}).get('error') or ''
+        check('the_changed_meaning_is_not_read', (doc.get('facts') or {}).get(var['fg_stock']) is None and 'COMMENT_CHANGED' in why, why)
     finally:
+        if report.get('original_fg_stock_comment', 0) != 0 and locals().get('comment_changed'):
+            with psycopg.connect(DSN, autocommit=True) as db:
+                db.execute(psycopg.sql.SQL("comment on column ent.fg_inventory.fg_stock is {}").format(
+                    psycopg.sql.Literal(report['original_fg_stock_comment'])))
+            back = http(8080, '/api/kg/ddl/sync', {}); report['comment_restored_sync'] = back; save()
+            check('restoring_the_comment_makes_it_ok_again', ids['fg_stock'] in (back.get('states') or {}).get('OK', []), back)
         cur = http(8080, PATH)
         restore = dict(policy=original['policy'], annotation=original['annotation'], expected_revision=cur['revision'],
                        request_id=str(uuid.uuid4()), by='A087 probe', reason='A087 restore')

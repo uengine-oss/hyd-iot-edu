@@ -26,10 +26,27 @@ from .ddl import create_tables, identifier, quoted, display_identifier, source_c
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-# SQL type → DMN typeRef (InputData.typeRef)
-_TYPE_MAP = (("bool", "boolean"), ("int", "number"), ("serial", "number"), ("numeric", "number"), ("decimal", "number"),
-             ("real", "number"), ("double", "number"), ("float", "number"), ("timestamp", "date"), ("date", "date"), ("json", "object"),
-             ("text", "string"), ("char", "string"), ("uuid", "string"))
+# SQL type → DMN typeRef (InputData.typeRef). A115 (r14 A10): matched on the base type name, not a substring — `interval`
+# and `point` contain "int" and were read as numbers. An interval is a duration (no reader accepts it, so a binding to one
+# is refused instead of read as a wrong number); an array or json is an object; an unknown type stays a string.
+_TYPE_NAMES = {
+    "boolean": ("boolean", "bool"),
+    "number": ("smallint", "integer", "int", "int2", "int4", "int8", "bigint", "smallserial", "serial", "bigserial", "serial2",
+               "serial4", "serial8", "numeric", "decimal", "real", "float", "float4", "float8", "double", "double precision"),
+    "date": ("date", "timestamp", "timestamptz", "timestamp with time zone", "timestamp without time zone", "datetime",
+             "time", "timetz", "time with time zone", "time without time zone"),
+    "object": ("json", "jsonb", "array"),
+}
+_TYPE_MAP = {name: ref for ref, names in _TYPE_NAMES.items() for name in names}
+
+
+def type_ref_of(sql_type: str) -> str:
+    t = " ".join(re.sub(r"\([^)]*\)", " ", (sql_type or "").lower()).split())
+    if t.endswith("[]"):
+        return "object"
+    if t.startswith("interval"):
+        return "duration"
+    return _TYPE_MAP.get(t, "string")
 # table comment prefix / name hint → System node (existing ontology ids where the v2 instances have them)
 _SYSTEM_HINTS = (("MES", "sys:mes", "MES"), ("ERP", "sys:erp", "ERP"), ("CMMS", "sys:cmms", "CMMS"), ("QMS", "sys:qms", "QMS"),
                  ("SCM", "sys:scm", "SCM"), ("EMS", "sys:ems", "EMS"), ("SCADA", "sys:scada", "SCADA"), ("HISTORIAN", "sys:historian", "Historian"))
@@ -48,11 +65,7 @@ class Column:
 
     @property
     def type_ref(self) -> str:
-        t = self.type.lower()
-        for key, ref in _TYPE_MAP:
-            if key in t:
-                return ref
-        return "string"
+        return type_ref_of(self.type)
 
 
 @dataclass
@@ -203,20 +216,27 @@ def plan(tables: list[Table], *, filename: str, batch: str, selection: dict[str,
                 raise ValueError(f"{t.qualified}.{cname}: DDL 에 없는 열")
             c = by_name[cname]
             iid, variable = physical_identity(datasource, catalog, t.schema, t.name, c.name)
-            item = {"id": iid, "name": c.comment or f"{t.name} {c.name}",
+            item = {"id": iid, "name": input_name(c.comment, t.name, c.name),
                 "typeRef": c.type_ref, "variable": variable, "system": sid, "datasource": datasource, "catalog": catalog,
                 "schema": t.schema, "table": t.name, "column": c.name, "sqlType": c.type,
                 "assetColumn": "asset" if "asset" in by_name else None,
                 "source_id": f"{filename}#{t.qualified}.{display_identifier(c.name)}"}
             if is_point_in_time(c.type):
                 # A086: a business time (납기 일시 · 출하 일시) reaches the rules as signed hours from now, computed at read
-                item.update(typeRef="number", derive=DERIVE_HOURS, name=f"{item['name']} (지금부터 h)")
+                item.update(typeRef="number", derive=DERIVE_HOURS, name=input_name(c.comment, t.name, c.name, derive=True))
             inputs.append(item)
     return {"batch": batch, "filename": filename, "datasource": datasource, "catalog": catalog,
             "systems": list(out_systems.values()), "inputs": inputs, "warnings": warnings, "tables": previews}
 
 
 DERIVE_HOURS = "hours_from_now"
+
+
+def input_name(comment: str, table: str, column: str, *, derive: bool = False) -> str:
+    """The InputData name an ingestion gives a column: its comment (the business meaning), else "table column"; a time
+    column read as hours from now says so. ddl_sync compares it with the live comment (A115 COMMENT_CHANGED)."""
+    name = comment or f"{table} {column}"
+    return f"{name} (지금부터 h)" if derive else name
 
 
 def is_point_in_time(sql_type: str) -> bool:

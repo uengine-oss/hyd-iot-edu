@@ -155,3 +155,18 @@ def test_failed_publication_does_not_starve_another_instance(world):
     assert worker.tick(NOW+timedelta(seconds=1))==1
     other=next(w for w in rt.repo.list_workitems(proc_inst_id=second['proc_inst_id']) if w['activity_id']=='task:diagnose')
     assert other['status']=='PENDING' and rt.repo.get_workitem(wi['id'])['status']=='IN_PROGRESS'
+
+
+def test_legacy_claim_leaves_no_worker_lease_to_reclaim(world, monkeypatch):
+    """A115 (r14 A8, infra-docker init.sql:2559-2564): the legacy claim keeps its own expiry and never renews the worker
+    lease, so it clears it. Before, the shared claim's now+120 s stayed on the row and a cliagents worker reclaimed it
+    after 120 s (a delivery retry can wait longer), running the same diagnosis twice."""
+    rt,inst,wi,worker,published=setup(world,lambda _:pytest.fail('not evaluated here'))
+    row=worker.claim(wi['id'],NOW)
+    assert row and rt.repo.get_workitem(wi['id'])['lease_until'] is None
+    from procsvc import procdb
+    later=procdb.time.time()+procdb.LEASE_SECONDS+60
+    monkeypatch.setattr(procdb.time,'time',lambda:later)
+    assert rt.repo.fetch_pending_task('cliagents','agent-worker:other',tenant_id='hyd')==[]
+    assert rt.repo.expire_worker_leases()==0
+    assert rt.repo.get_workitem(wi['id'])['consumer']==row['consumer']

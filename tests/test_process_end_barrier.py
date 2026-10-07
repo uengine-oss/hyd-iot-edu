@@ -20,8 +20,9 @@ def definition():
                        for key in ('a', 'b')],
         'events': [{'id': 'start', 'type': 'startEvent'},
                    {'id': 'end-a', 'type': 'endEvent'}, {'id': 'end-b', 'type': 'endEvent'}],
-        'gateways': [],
-        'sequences': [{'id': 's-' + key, 'source': 'start', 'target': key} for key in ('a', 'b')]
+        'gateways': [{'id': 'fork', 'type': 'parallelGateway'}],   # A115: independent paths split through a gateway
+        'sequences': [{'id': 's-fork', 'source': 'start', 'target': 'fork'}]
+                     + [{'id': 's-' + key, 'source': 'fork', 'target': key} for key in ('a', 'b')]
                      + [{'id': key + '-e', 'source': key, 'target': 'end-' + key} for key in ('a', 'b')],
     }
 

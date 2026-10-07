@@ -105,3 +105,30 @@ def test_transactions_keep_the_affected_row_before_and_after(tmp_path):
     wo = st.execute({"skill": "skill:schedule-maintenance", "asset": "HYD-01", "decision": "DEC-A103-2", "option": "skill:wo-cooler-clean", "by": "t"})
     assert wo["before"] is None and wo["after"]["id"] == wo["ref"] and wo["after"]["status"] == "배정됨"
     assert st.transactions("DEC-A103-1")[0]["after"]["moved_from"] == "HYD-01"
+
+
+@pytest.mark.parametrize("req, word", [
+    ({"skill": "skill:schedule-maintenance", "asset": "HYD-99"}, "unknown asset"),
+    ({"skill": "skill:procure-part", "asset": "HYD-01", "params": {"supplier": "sup:zz"}}, "unknown supplier"),
+    ({"skill": "skill:reallocate-production", "asset": "HYD-01", "params": {"to": "HYD-77"}}, "unknown or same target asset"),
+    ({"skill": "skill:reallocate-production", "asset": "HYD-01", "params": {"to": "HYD-01"}}, "unknown or same target asset"),
+    ({"skill": "skill:cancel-work-order", "asset": "HYD-99", "params": {"ref": "WO-x"}}, "unknown asset"),
+])
+def test_execution_refuses_equipment_or_suppliers_that_do_not_exist(req, word):
+    """A115 (r14 A7): like the wms sample's `INVALID: unknown sku` and ent.exec_skill (migration 22) — no record is
+    written for an asset, supplier or target that the business systems do not have."""
+    st = state.EnterpriseState()
+    before = st.snapshot()
+    with pytest.raises(ValueError, match="INVALID: " + word):
+        st.execute(dict(req, decision="DEC-INVALID"))
+    assert st.snapshot() == before and st.transactions() == []
+
+
+def test_replay_returns_the_same_response_as_the_first_call():
+    st = state.EnterpriseState()
+    req = {"decision": "DEC-R", "option": "o", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "by": "u"}
+    first = st.execute(req)
+    assert st.execute(req) == first
+    comp = {"decision": "DEC-R2", "skill": "skill:cancel-work-order", "compensates": first["id"], "params": {"ref": first["ref"]}}
+    c1 = st.execute(comp)
+    assert st.execute(comp) == c1 and set(c1) == set(first)

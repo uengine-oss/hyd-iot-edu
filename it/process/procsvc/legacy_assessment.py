@@ -60,6 +60,10 @@ class LegacyAssessment:
                 if claimed:raise ValueError('legacy assessment claimed a different work item')
                 return None
             row=claimed[0]
+            # A115 (r14 A8, infra-docker init.sql:2559-2564): this claim keeps its own expiry in _legacy_attempt and
+            # never renews the worker lease the shared claim attached; left at now+120 s, a cliagents worker would
+            # reclaim the row and run it a second time once a delivery retry outlasted it.
+            repo.clear_task_lease(row['id'],owner);row['lease_until']=None
             attempt=dict(owner=owner,started=clock.isoformat(),lease_until=(clock+timedelta(seconds=self.lease_seconds)).isoformat())
             row['draft']={'_legacy_attempt':attempt};repo.update_workitem(row)
             repo.record_events([dict(job_id=owner,todo_id=row['id'],proc_inst_id=row['proc_inst_id'],crew_type='legacy',

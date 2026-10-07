@@ -143,8 +143,7 @@ def _static_connectivity(defn, all_ids):
     """A096 (process-gpt-bpmn-extractor process_validator._static_check · bpmn-process-generation-skill, R13 2차): a
     definition is refused when a node cannot be reached from the start, cannot reach an end, or an endEvent is never
     entered. A boundary event (activity.attachedEvents or event.attachedTo) is reached through its host activity. The
-    extractor's fourth rule (no fan-out off a non-gateway) is NOT applied: this engine, like the product's, fires every
-    non-false outgoing sequence of a node as an implicit split (`_allowed_targets`), and the rework tests rely on it."""
+    extractor's fourth rule (no fan-out off a non-gateway) is `_gatewayless_splits` (A115)."""
     host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
     def next_of(n):
         return [s['target'] for s in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n]
@@ -175,3 +174,18 @@ def _static_connectivity(defn, all_ids):
     never = sorted(e for e in ends if e not in entered)
     if never:
         raise ValueError(f"들어오는 흐름이 없는 endEvent: {', '.join(never)}")
+    _gatewayless_splits(defn)
+
+
+def _gatewayless_splits(defn):
+    """A115 (r14 A6; bpmn-extractor process_validator._static_check `uncontrolled_split`). The engine fires every
+    non-false outgoing flow of a non-gateway node, so a split without a gateway that meets again downstream runs the
+    meeting activity once per branch (g1_probe: D DONE, then D created again when C finishes). The extractor only warns
+    (score 1, fed to its repair loop) and skips start events; registration here refuses it, start events included,
+    because the duplicate run happens the same way from a start event. Branches go through an exclusiveGateway
+    (choose one) or a parallelGateway (all, joined by a parallel join)."""
+    for n in [*defn.activities, *defn.events]:
+        targets = sorted({s['target'] for s in defn.outgoing(n)})
+        if len(targets) > 1:
+            raise ValueError(f"노드 {n}가 게이트웨이 없이 {len(targets)}갈래로 나뉩니다 (→ {', '.join(targets)}). "
+                             "갈림은 exclusiveGateway(하나 선택) 또는 parallelGateway(모두 진행)를 거쳐야 합니다")

@@ -590,3 +590,32 @@ def test_codex_server_env_copy_leaves_the_retained_workspace_and_tokens_do_not_r
     removed = env_guard.scrub(env, keep=("HYD_GPU_API_KEY",))
     assert removed == ["AWS_ACCESS_KEY", "GH_TOKEN", "LLM_API_KEY"]
     assert set(env) == {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HYD_GPU_API_KEY", "PATH"}
+
+
+@pytest.mark.parametrize("agent_id", ["claude-code", "codex"])
+def test_standing_instructions_carry_the_sql_rules(tmp_path, agent_id):
+    """A115 (r14 A9, neo4j-text2sql controller_repair_prompt.md: no invented tables/columns, SELECT only, smallest repair):
+    the SQL rules used to live only in a probe's instruction (probe_codex_sql_repair.py); every run now gets them."""
+    from worker import workspace
+    ws = workspace.for_run(tmp_path, "a115-sql")
+    workspace.provision(ws, agent_id=agent_id, schema_prompt="schema", task={"id": "t"})
+    text = "\n".join(p.read_text(encoding="utf-8") for p in ws.files() if p.suffix == ".md" and p.parent == ws.path)
+    for rule in ("describe_schema", "지어내지 않습니다", "SELECT 한 문장", "최대 두 번", "실패를 0이나 빈 값으로 바꿔"):
+        assert rule in text, rule
+
+
+def test_portal_question_card_reads_sdk_question_field():
+    """A115 (r14 A12, vue3 humanQuestionText): text first, then an SDK agent's `question`; the card was empty before."""
+    import shutil, subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+    ui = Path(__file__).resolve().parents[1] / "it" / "portal" / "www" / "ui.js"
+    script = ("const vm=require('vm');const fs=require('fs');const c={};vm.createContext(c);"
+              f"vm.runInContext(fs.readFileSync({json.dumps(str(ui))},'utf8'),c);"
+              "const f=c.humanQuestionText;console.log(JSON.stringify([f({question:'납기 허용 기준?'}),f({text:'승인할까요?',question:'무시'}),f({}),f(null)]))")
+    out = subprocess.run([node, "-e", script], capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    assert json.loads(out) == ["납기 허용 기준?", "승인할까요?", "", ""]
+    www = ui.parent
+    assert "humanQuestionText(d)" in (www / "instances.js").read_text(encoding="utf-8")
+    assert "humanQuestionText(d)" in (www / "liveStream.js").read_text(encoding="utf-8")

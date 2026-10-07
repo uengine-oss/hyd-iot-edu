@@ -91,3 +91,36 @@ def test_registry_refuses_parallel_shapes_the_engine_does_not_guarantee(change):
     d = definition(); change(d)
     with pytest.raises(ValueError):
         definition_registry.validate_definition(d)
+
+
+def _without_gateways(raw, sequences):
+    raw = deepcopy(raw)
+    raw['gateways'] = []
+    raw['sequences'] = [{'id': f'{s}-{t}', 'source': s, 'target': t} for s, t in sequences]
+    return raw
+
+
+def test_gatewayless_split_that_meets_again_is_refused():
+    """A115 (r14 A6, bpmn-extractor uncontrolled_split): without gateways the engine fires both flows out of `a`, and
+    the meeting activity `c` ran once per branch (g1_probe: c DONE, then c created again). Registration refuses it."""
+    raw = definition()
+    raw['activities'].append({'id': 'd', 'name': '보고', 'type': 'userTask', 'role': '운전원', 'tool': 'formHandler:fd', 'outputData': ['d_out']})
+    raw['data'].append({'name': 'd_out', 'type': 'Text'})
+    raw['forms']['fd'] = {'fields_json': [{'key': 'd_out', 'type': 'text', 'text': 'd_out'}]}
+    raw = _without_gateways(raw, [('start', 'a'), ('a', 'b'), ('a', 'd'), ('b', 'c'), ('d', 'c'), ('c', 'end')])
+    with pytest.raises(ValueError, match='노드 a가 게이트웨이 없이 2갈래'):
+        definition_registry.validate_definition(raw)
+
+
+def test_gatewayless_split_from_a_start_event_is_refused():
+    """The extractor skips start events; here the duplicate run happens the same way, so a start event may not fan out."""
+    raw = _without_gateways(definition(), [('start', 'a'), ('start', 'b'), ('a', 'c'), ('b', 'c'), ('c', 'end')])
+    with pytest.raises(ValueError, match='노드 start가 게이트웨이 없이 2갈래'):
+        definition_registry.validate_definition(raw)
+
+
+def test_real_definitions_have_no_gatewayless_split():
+    import json, pathlib
+    root = pathlib.Path(__file__).resolve().parents[1] / 'it' / 'process' / 'definitions'
+    for p in sorted(root.glob('*.json')):
+        definition_registry._gatewayless_splits(engine.Definition.from_dict(json.loads(p.read_text(encoding='utf-8'))))

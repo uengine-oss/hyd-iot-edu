@@ -404,7 +404,7 @@ UNWIND [
   ['dec:diagnose-cause','고장 유형 · 원인 판정','이 경보의 고장 유형과 근본 원인은 무엇인가?','dt:diagnose-cause','PRIORITY',['in:pattern','in:ts1','in:ce','in:ps1'],['ks:manual-hm']],
   ['dec:action-candidates','조치 후보 선택','이 고장 유형에 쓸 수 있는 조치 방법(스킬 = SOP)은 무엇인가? (원인 한정 스킬은 원인으로 거른다)','dt:action-candidates','COLLECT',['in:failure-mode','in:cause','in:plc-state'],['ks:manual-hm']],
   ['dec:compliance','규정 적합성','후보 스킬 중 규정상 쓸 수 없거나 감점할 것은 무엇인가?','dt:compliance','COLLECT',['in:skill-kind','in:skill-code','in:failure-mode','in:plc-mode','in:plc-state','in:forecast-ts1','in:forecast-ps1','in:fan100-hours','in:standby-ready','in:supplier-avl'],['ks:sr-04','ks:manual-hm','ks:pr-07']],
-  ['dec:rank-actions','조치 우선순위','남은 후보 중 회사 가치(영업이익)에 가장 유리한 순서는?','dt:rank-actions','PRIORITY',['in:forecast-ts1','in:order-due','in:order-penalty','in:order-tier','in:hot-lot-claim','in:hot-lot-qty'],['ks:strategy-map']]
+  ['dec:rank-actions','조치 우선순위','남은 후보 중 회사 가치(영업이익)에 가장 유리한 순서는?','dt:rank-actions','UNIQUE',['in:forecast-ts1','in:order-due','in:order-penalty','in:order-tier','in:hot-lot-claim','in:hot-lot-qty'],['ks:strategy-map']]
 ] AS r
 MERGE (d:Decision {id: r[0]}) SET d.name = r[1], d.question = r[2]
 MERGE (t:DecisionTable {id: r[3]}) SET t.name = r[1] + ' 결정표', t.hitPolicy = r[4]

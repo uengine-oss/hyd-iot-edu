@@ -137,3 +137,20 @@ def test_hot_lot_quality_risk_charges_only_the_hot_forecast_card():
     by = {o["id"]: o for o in r["options"]}
     assert by["skill:fan"]["scoreParts"]["quality"] == -1.5 and by["skill:mix"]["scoreParts"]["quality"] == 0      # 55.4 ℃ vs 49.0 ℃
     assert "품질" in r["explanation"] and "800" in r["explanation"]
+
+
+def test_declared_hit_policies_match_how_the_engine_evaluates():
+    """A115 (r14 A11): the graph declared dt:rank-actions PRIORITY while the code requires exactly one applicable ranking
+    rule (UNIQUE). Every table the engine executes now declares the policy it is evaluated with."""
+    import re
+    text = (Path(__file__).resolve().parents[1] / 'it/neo4j/v2/instances.cypher').read_text(encoding='utf-8')
+    declared = dict(re.findall(r"\['(dec:[a-z-]+)','[^']*','[^']*','dt:[a-z-]+','([A-Z]+)'", text))
+    assert {d: declared[d] for d in cards.EXECUTED_HIT_POLICIES} == cards.EXECUTED_HIT_POLICIES
+
+
+def test_a_hit_policy_the_engine_does_not_apply_is_refused():
+    dmn = [dict(r, hitPolicy='PRIORITY' if r['decision'] == 'dec:rank-actions' else r.get('hitPolicy')) for r in DMN]
+    import pytest
+    with pytest.raises(ValueError, match='hitPolicy PRIORITY'):
+        run(dmn=dmn)
+    assert run(dmn=[dict(r, hitPolicy=cards.EXECUTED_HIT_POLICIES.get(r['decision'])) for r in DMN])['options']

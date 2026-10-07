@@ -170,7 +170,7 @@
     const d = open.data || {};
     const options = Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [];
     box.innerHTML = `<section class="todo-panel ask"><h3>에이전트가 묻습니다 — ${esc(task.activity_name)}</h3>
-      <div class="summary">${esc(d.text || '')}</div>
+      <div class="summary">${esc(humanQuestionText(d))}</div>
       ${options.length ? `<div class="human-options">${options.map((o,i) => `<button class="btn" type="button" data-human-option="${i}">${esc(o)}</button>`).join(' ')}</div>` : ''}
       <div class="todo-form"><label>답변 <textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea></label><label>담당자 <input id="tdBy" value="${esc(I.form.by)}"></label>
       <button class="btn primary" id="tdAnswerGo">답변 보내기</button><span class="neg">${esc(I.msg)}</span></div>
@@ -504,7 +504,7 @@
     if (d.recovery === 'new_judgment_and_consent') return '현재 조건 검사로 명령을 보류했습니다. 판단 작업에서 새 검토와 승인을 진행하세요. ' + ((d.assessment || {}).reasons || []).join('; ');
     if (d.tool) return `${d.tool}${d.input ? ' ' + JSON.stringify(d.input).slice(0, 120) : ''}${d.output ? ' → ' + String(d.output).slice(0, 120) : ''}`;
     if (d.goal) return `${d.goal}${d.name ? ' · ' + d.name : ''}`;
-    if (d.text) return String(d.text).slice(0, 160);
+    if (d.text || d.question) return humanQuestionText(d).slice(0, 160);
     return d.message || d.note || d.content || d.friendly || d.raw_error || (d.output_keys ? '출력 ' + d.output_keys.join(', ') : '') || (d.answer ? '답변 ' + d.answer : '');
   }
 

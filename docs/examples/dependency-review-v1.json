@@ -122,18 +122,23 @@
   ],
   "sequences": [
     {
-      "id": "s-a",
+      "id": "s-fork",
       "source": "s",
+      "target": "fork"
+    },
+    {
+      "id": "s-a",
+      "source": "fork",
       "target": "a"
     },
     {
       "id": "s-b",
-      "source": "s",
+      "source": "fork",
       "target": "b"
     },
     {
       "id": "s-hold",
-      "source": "s",
+      "source": "fork",
       "target": "hold"
     },
     {
@@ -155,6 +160,13 @@
       "id": "hold-e",
       "source": "hold",
       "target": "e"
+    }
+  ],
+  "gateways": [
+    {
+      "id": "fork",
+      "type": "parallelGateway",
+      "name": "동시 진행"
     }
   ]
 }

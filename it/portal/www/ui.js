@@ -154,3 +154,9 @@ const UI = {
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name] || paths.home}"/></svg>`;
   },
 };
+
+/* A115 (r14 A12, process-gpt-vue3 shared/hitlFeedback humanQuestionText): a person's question card reads `text`, and an
+   SDK agent's `question` when there is no text — before, an SDK question showed an empty card. */
+function humanQuestionText(data) {
+  return String((data && (data.text || data.question)) || "");
+}
