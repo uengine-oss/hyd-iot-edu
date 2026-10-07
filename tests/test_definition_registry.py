@@ -266,3 +266,35 @@ def test_v22_is_v21_in_the_product_shape():
             assert n['type'] == o['type'] and 'agentMode' not in n
     assert {a['type'] for a in new['activities']} <= {'userTask', 'manualTask', 'serviceTask'}   # types the product's polling handles
     assert _validate(new).raw['activities'] == new['activities']                               # already normalized: stored as written
+
+
+def test_condition_variable_produced_only_behind_its_gateway_is_refused():
+    """A143 (remaining-sweep 19, D01): a condition may read a variable from another branch (condition-recheck-v1: `a` on a
+    parallel path writes x, `g` after `b` reads it — the engine waits for it), but not one whose every producer sits
+    behind the gateway itself — that value cannot exist when the gateway first judges and the instance waits forever."""
+    import json
+    from procsvc.definition_registry import validate_definition
+    d=definition(did='behind')
+    d['data'].append({'name':'verdict','type':'Text'})
+    d['forms']['verdict']={'fields_json':[{'key':'verdict','type':'text','text':'판정'}]}
+    d['activities'].append({'id':'task:after','name':'사후 판정','type':'userTask','role':'검토자','tool':'formHandler:verdict','outputData':['verdict']})
+    d['sequences'][2].update(target='task:after',condition='verdict == "ok"')        # choice → task:after only when task:after itself says so
+    d['sequences'].append({'id':'s5','source':'task:after','target':'accepted'})
+    with pytest.raises(ValueError, match='뒤의 활동'):
+        validate_definition(d)
+    # the same variable written by an activity reachable before the gateway is fine (cross-path producers stay allowed)
+    ok=definition(did='before')
+    ok['data'].append({'name':'verdict','type':'Text'})
+    ok['forms']['verdict']={'fields_json':[{'key':'verdict','type':'text','text':'판정'}]}
+    ok['activities'].append({'id':'task:pre','name':'사전 판정','type':'userTask','role':'검토자','tool':'formHandler:verdict','outputData':['verdict']})
+    ok['sequences'][0].update(target='task:pre'); ok['sequences'].append({'id':'s0','source':'task:pre','target':'task:review'})
+    ok['sequences'][2].update(condition='verdict == "ok" and score >= 5')
+    assert validate_definition(ok)
+    # every shipped and example definition still registers under the stronger rule
+    root=Path(__file__).resolve().parents[1]
+    files=sorted((root/'it/process/definitions').glob('*.json'))+sorted((root/'docs/examples').glob('*.json'))
+    assert files
+    for f in files:
+        raw=json.loads(f.read_text(encoding='utf-8'))
+        if 'forms' in raw:                       # anomaly_response.json (v1) is the legacy file-loaded definition, never registered
+            validate_definition(raw)

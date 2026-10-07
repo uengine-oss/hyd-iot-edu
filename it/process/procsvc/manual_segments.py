@@ -71,6 +71,28 @@ def within(anchor: dict, seg: dict) -> bool:
                for r in ranges_of(seg))
 
 
+def _continuation(procedures: list[dict], first_index: int, index: int, later: dict):
+    """A143 (remaining-sweep 21, T02 boundary): a numbered procedure cut by a segment boundary comes back as the same SOP id
+    from the next segment with the numbering continued (each segment is told to write only what it sees). Deterministic
+    rule, no text matching: same id, adjacent segments (first_index + 1 == index), the later part's first `order` is
+    exactly the earlier part's last `order` + 1, and the later part's own `order`s are contiguous. Then the later steps
+    are appended to the earlier procedure (anchors untouched, so the whole-document contract still checks every step).
+    Anything else (restarted numbering, a gap, a non-adjacent segment) is the duplicate case — first kept, warned."""
+    if index != first_index + 1:
+        return None
+    earlier = next((p for p in procedures if p['id'] == later['id']), None)
+    before, after = earlier.get('steps') or [], later.get('steps') or []
+    if not before or not after:
+        return None
+    orders = [st.get('order') for st in after]
+    if any(type(o) is not int for o in orders) or type(before[-1].get('order')) is not int:
+        return None
+    if orders[0] != before[-1]['order'] + 1 or orders != list(range(orders[0], orders[0] + len(orders))):
+        return None
+    earlier['steps'] = before + after
+    return orders[0], orders[-1]
+
+
 def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | None = None) -> dict:
     """parts: [(segment, proposal)] with whole-document anchors. Sections and procedures are concatenated; a ref or SOP id
     that two segments both propose keeps the first and records the duplicate as a warning (a reviewer decides); page
@@ -92,6 +114,10 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
             if not within(p.get('anchor') or {}, seg) or any(not within(st.get('anchor') or {}, seg) for st in p.get('steps') or []):
                 raise ValueError(f"{tag} SOP {p.get('id')}의 인용이 담당 구간 밖입니다")
             if p['id'] in seen_sop:
+                joined = _continuation(merged['procedures'], seen_sop[p['id']], seg['index'], p)
+                if joined:
+                    merged['warnings'].append(f"{tag} SOP {p['id']}: 구간 경계에서 잘린 절차를 이어붙임 (단계 {joined[0]}~{joined[1]}을 구간 {seen_sop[p['id']]}의 뒤에 결합) — 검토 필요")
+                    continue
                 merged['warnings'].append(f"{tag} SOP {p['id']}이(가) 구간 {seen_sop[p['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
                 continue
             seen_sop[p['id']] = seg['index']; merged['procedures'].append(p)

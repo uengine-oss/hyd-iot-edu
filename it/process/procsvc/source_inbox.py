@@ -91,6 +91,11 @@ The caller may acknowledge its Kafka offset only after receive() returns. This
 class does not execute a process, issue a command or declare business completion.
 """
     def __init__(self, repo, tenant_id='hyd'):
+        # A143 (remaining-sweep 14): instance mode used to fail at startup with AttributeError('MemoryRepo' has no '_conn')
+        # when PROCESS_REPO=memory. The inbox is PostgreSQL-only (advisory locks, FOR UPDATE, committed receipts), so say so.
+        if not hasattr(repo, '_conn') or not hasattr(repo, '_local'):
+            raise RuntimeError('PROCESS_MODE=instance requires PROCESS_REPO=pg: source receipts (process_source_inbox) are '
+                               f'PostgreSQL rows; {type(repo).__name__} serves unit tests and PROCESS_MODE=legacy only')
         self.repo, self.tenant_id = repo, tenant_id
 
     def receive(self, record, policy=None):

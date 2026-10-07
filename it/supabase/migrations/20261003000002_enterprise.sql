@@ -4,7 +4,9 @@
 -- 회의(2026-10-01, 원문 L350~353 · L375~377 · L397~399): "주문량 · 원가 · 납기 · 에너지 · 규제 같은 일반 데이터는
 -- 시계열에 있을 수 없다. 일반 RDB 가 하나 있어야 하고, Supabase 로 쓴다면 Supabase MCP 가 붙어야 한다."
 -- 이 스키마가 그 RDB 다. 값은 it/enterprise-sim/entsim/data.py 의 가상 데이터와 같다 (금액 만원, 시간 h).
--- 에이전트(Claude Code)는 Supabase MCP 로 이 테이블을 읽고, 쓰기는 process 서비스가 승인 뒤 ent.exec_skill() 로만 한다.
+-- 에이전트(Claude Code)는 enterprise-mcp(HTTP, it/enterprise-mcp)가 읽기 전용 역할 hyd_enterprise_reader(20261004000003)로 읽은
+-- 결과를 받는다 — Supabase MCP(anon/authenticated)가 아니다(A143 정정; seed.sql:61 · compose.yaml enterprise-mcp 참고).
+-- 쓰기는 process 서비스가 승인 뒤 ent.exec_skill() 로만 한다.
 -- 구조는 process-gpt-sample-app-wms/supabase 를 따른다: 스키마 분리 · RLS · 명령은 RPC 하나.
 -- ============================================================================
 
@@ -305,7 +307,8 @@ grant select on all tables in schema ent to anon, authenticated;
 grant all on all tables in schema ent to service_role;
 grant usage, select on all sequences in schema ent to service_role;
 grant execute on all functions in schema ent to anon, authenticated, service_role;
--- 읽기 RPC 는 누구나, 쓰기 RPC(exec_skill · reset_executions)는 서비스 키만: 에이전트의 Supabase MCP 는 anon/authenticated 로 붙는다.
+-- 읽기 RPC 는 누구나, 쓰기 RPC(exec_skill · reset_executions)는 서비스 키만. 에이전트가 실제로 쓰는 읽기 경로는 anon/authenticated 가
+-- 아니라 enterprise-mcp + hyd_enterprise_reader 역할이다(20261004000003; A143 정정).
 revoke execute on function ent.exec_skill(jsonb) from anon, authenticated;
 revoke execute on function ent.reset_executions() from anon, authenticated;
 

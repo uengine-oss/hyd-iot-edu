@@ -124,7 +124,9 @@ def execute(req: dict):
     try:
         tx = ent.execute(req)
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        # A143 (remaining-sweep 16): the memory backend raises the idempotency conflict as ValueError; same code as supabase
+        msg = str(e)
+        raise HTTPException(409 if "idempotency" in msg else 400, msg)
     except Exception as e:  # noqa: BLE001 — database errors from ent.exec_skill (unknown skill, idempotency conflict)
         msg = str(e).splitlines()[0]
         raise HTTPException(409 if "idempotency" in msg else 400, msg[:300])

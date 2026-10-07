@@ -7,14 +7,33 @@ Failures escalate; the process never retries a command.
 from dataclasses import dataclass, field
 from copy import deepcopy
 from datetime import datetime
+import functools
 import itertools
 import secrets
+import threading
 
 from hydcommon.timeutil import now_iso, plus_seconds, to_iso
 from . import definition as d
 
 _cmd_seq = itertools.count(1)
 _inc_seq = itertools.count(1)
+
+# A143 (remaining-sweep 13): Incidents and decisions are mutated on the event-loop thread (legacy handlers, timers) and on
+# executor threads (instance-mode hooks, approval delivery), and store.save() snapshots them from either side. Every
+# transition below and every snapshot capture (store.Store.save) holds this lock, so a snapshot never contains a state
+# that disagrees with its own history and a decision is never captured between clear() and update(). Re-entrant: a
+# transition's Effects may persist (emit_cmd → persist → save). Nothing blocking (network, DB) runs under it — the
+# callers do their I/O before or after the transition (timer: latest_tag before on_timer; enterprise: exec_skill before
+# record_execution / on_work_order).
+STATE_LOCK = threading.RLock()
+
+
+def _transition(fn):
+    @functools.wraps(fn)
+    def locked(*args, **kwargs):
+        with STATE_LOCK:
+            return fn(*args, **kwargs)
+    return locked
 
 
 def new_incident_id(now: datetime | None = None) -> str:
@@ -98,6 +117,7 @@ def _audit(inc: Incident, fx: Effects, actor: str, event: str, detail: dict | No
 
 
 # ---------------------------------------------------------------- transitions
+@_transition
 def on_card(inc: Incident) -> None:
     inc.history.append({"state": "GUIDE_RECEIVED", "t": now_iso(), "note": f"alert {inc.alert_id}"})
     if inc.recovery is None:
@@ -132,6 +152,7 @@ def _validate_actions(inc: Incident, actions: list[dict]) -> list[dict]:
     return out
 
 
+@_transition
 def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: datetime, fx: Effects, time_scale: float = 20.0) -> dict:
     if inc.state != "AWAITING_APPROVAL":
         raise ValueError(f"cannot approve in state {inc.state}")
@@ -157,6 +178,7 @@ def on_approve(inc: Incident, approved_by: str, actions: list[dict], now: dateti
 REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "ESCALATED"}
 
 
+@_transition
 def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason: str, effects: dict, fx: Effects) -> bool:
     """A rework retired the generation that issued this incident's command. Nothing is sent to the PLC: the command,
     its ACK and any work order move to `superseded` and the incident waits for the next generation's approval.
@@ -177,6 +199,7 @@ def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason:
     return True
 
 
+@_transition
 def on_reject(inc: Incident, by: str, reason: str, fx: Effects) -> None:
     if inc.state != "AWAITING_APPROVAL":
         raise ValueError(f"cannot reject in state {inc.state}")
@@ -185,6 +208,7 @@ def on_reject(inc: Incident, by: str, reason: str, fx: Effects) -> None:
     _go(inc, "REJECTED_BY_OPERATOR", reason)
 
 
+@_transition
 def on_status(inc: Incident, status: dict, now: datetime, fx: Effects, time_scale: float = 20.0) -> None:
     """plant.status carries the PLC ACK as cmdId/result. Only the incident's own cmdId counts (stale/retained ids are ignored)."""
     if inc.state != "AWAITING_ACK" or not inc.cmd_id or status.get("cmdId") != inc.cmd_id:
@@ -205,6 +229,7 @@ def on_status(inc: Incident, status: dict, now: datetime, fx: Effects, time_scal
         _go(inc, "ESCALATED", inc.reason)
 
 
+@_transition
 def on_alert(inc: Incident, alert: dict, fx: Effects) -> None:
     if alert.get("alertId") != inc.alert_id or alert.get("state") != "CLEAR":
         return
@@ -218,6 +243,7 @@ def on_alert(inc: Incident, alert: dict, fx: Effects) -> None:
             _go(inc, "RESOLVED_WITHOUT_ACTION", "cleared before any action")
 
 
+@_transition
 def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, fx: Effects, time_scale: float = 20.0,
              cmd_id: str | None = None) -> None:
     """latest_ts1: the latest value of the incident's recovery tag (inc.recovery[0]); the name is historical — for a
@@ -261,6 +287,7 @@ def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, 
         # before this Incident can claim a work order and close.
 
 
+@_transition
 def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only: bool = False) -> None:
     ref = receipt.get('ref')
     if receipt.get('ok') is not True or not isinstance(ref, str) or not ref.strip():

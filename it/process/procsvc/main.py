@@ -1,7 +1,9 @@
 """process (L9): mini-BPMN engine. Guide card in -> human approval -> action.cmd -> ACK -> re-observe -> work order -> close.
 
-Only this service may write action.cmd (the agent has no command authority). Timers are asyncio tasks;
-the latest TS1 for the re-observation verdict comes from TimescaleDB.
+Only this service may write action.cmd (the agent has no command authority). Timers are asyncio tasks; the re-observation
+verdict reads the latest value of the incident's recovery tag from TimescaleDB (TS1 for a cooler, PS1 pump, VS1 fan —
+definition.RECOVERY). The human approval is POST /api/incidents/{id}/decide (legacy, action card) or
+POST /api/todolist/{id}/select (instance mode); POST /api/incidents/{id}/approve is retired and answers 409.
 """
 import asyncio
 import copy
@@ -1279,13 +1281,14 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     except ValueError as e:
         raise HTTPException(400, str(e))
     before = copy.deepcopy(d)
-    d.update(candidate)
-    try:
-        work_orders.prepare(_work_order_context(), d, work_orders.request_for_option(opt), allow_before_recovery=True)
-    except Exception as e:
-        d.clear()
-        d.update(before)
-        raise HTTPException(400, str(e))
+    with machine.STATE_LOCK:   # A143: the decision is never captured by an executor-thread snapshot between clear() and update()
+        d.update(candidate)
+        try:
+            work_orders.prepare(_work_order_context(), d, work_orders.request_for_option(opt), allow_before_recovery=True)
+        except Exception as e:
+            d.clear()
+            d.update(before)
+            raise HTTPException(400, str(e))
     _audit(inc.asset, req.by, "DECISION_APPROVED", {"decision": d["id"], "option": req.option, "sop": opt.get("sopId"), "role": req.role,
                                                      "override": d["override"], "reason": req.reason, "via": "HITL 조치 카드 선택"}, incident=inc_id)
     cmd = None

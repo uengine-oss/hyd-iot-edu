@@ -109,3 +109,16 @@ def test_pg_decision_receipts_use_exact_query_without_display_limit():
     query,args=log[0]
     assert 'where decision_id=%s' in query and 'limit' not in query.lower()
     assert args==('decision-older-than-page',)
+
+
+def test_idempotency_conflict_is_409_on_the_memory_backend_too(tmp_path, monkeypatch):
+    """A143 (remaining-sweep 16): the supabase backend answered 409 for 'idempotency conflict' (DB error path) while the
+    memory backend raised ValueError and answered 400 for the same conflict. One contract for both."""
+    from fastapi.testclient import TestClient
+    monkeypatch.setenv("ENTERPRISE_STATE_PATH", str(tmp_path / "e.sqlite3"))
+    client = TestClient(entmain.app)
+    body = {"decision": "D-a143", "option": "skill:x", "skill": "skill:schedule-maintenance", "asset": "HYD-01", "by": "x", "params": {}}
+    assert client.post("/api/exec", json=body).status_code == 200
+    r = client.post("/api/exec", json=dict(body, asset="HYD-02"))
+    assert r.status_code == 409 and "idempotency" in r.json()["detail"]
+    assert client.post("/api/exec", json=dict(body, skill="skill:nope", decision="D-other")).status_code == 400   # other ValueErrors stay 400

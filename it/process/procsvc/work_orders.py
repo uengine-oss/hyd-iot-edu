@@ -36,18 +36,19 @@ def prepare(ctx, decision, item, *, allow_before_recovery=False):
                'item':deepcopy(item), 'work_order_only':not commands}
     if not request['by']:
         raise ValueError('work order has no approving person')
-    if inc.work_order_request is not None:
-        if inc.work_order_request != request:
-            raise ValueError('work order retry conflicts with its saved request')
-    else:
-        if inc.state != 'RESOLVED' and not ((not commands or allow_before_recovery) and inc.state == 'AWAITING_APPROVAL'):
-            raise ValueError(f'work order requires confirmed recovery or an approved work-order-only choice: {inc.state}')
-        inc.work_order_request = request
-        try:
-            ctx.persist()
-        except Exception:
-            inc.work_order_request = None
-            raise
+    with machine.STATE_LOCK:   # A143: the saved request and its rollback are one step for a concurrent snapshot
+        if inc.work_order_request is not None:
+            if inc.work_order_request != request:
+                raise ValueError('work order retry conflicts with its saved request')
+        else:
+            if inc.state != 'RESOLVED' and not ((not commands or allow_before_recovery) and inc.state == 'AWAITING_APPROVAL'):
+                raise ValueError(f'work order requires confirmed recovery or an approved work-order-only choice: {inc.state}')
+            inc.work_order_request = request
+            try:
+                ctx.persist()
+            except Exception:
+                inc.work_order_request = None
+                raise
     # Closed is an idempotent response replay; escalation requires human review.
     if inc.state not in ('RESOLVED', 'AWAITING_APPROVAL', 'CLOSED'):
         raise ValueError(f'work order needs review after Incident state {inc.state}')
@@ -72,14 +73,15 @@ def confirm(ctx, inc, item, result):
     request = inc.work_order_request
     receipt = dict(result, name=item.get('name'), sop=item.get('sop'), requested_value=item.get('value'),
                    source=item.get('source'), decision=request['decision'])
-    try:
-        inc.approved_by = request['by']
-        machine.on_work_order(inc, receipt, fx, work_order_only=request['work_order_only'])
-        ctx.persist()
-    except Exception:
-        inc.__dict__.clear()
-        inc.__dict__.update(before)
-        raise
+    with machine.STATE_LOCK:   # A143: __dict__.clear()+update() rollback must not be captured half-way by a snapshot
+        try:
+            inc.approved_by = request['by']
+            machine.on_work_order(inc, receipt, fx, work_order_only=request['work_order_only'])
+            ctx.persist()
+        except Exception:
+            inc.__dict__.clear()
+            inc.__dict__.update(before)
+            raise
     for event in fx.events:
         ctx.audit(inc.asset, event['actor'], event['event'], event['detail'], incident=inc.id)
     if getattr(ctx, 'after_incident', None):

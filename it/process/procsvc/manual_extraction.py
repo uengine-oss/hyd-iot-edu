@@ -10,7 +10,7 @@ from . import engine, kgadmin, manual_segments, manual_locate
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '1.8'          # 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
+VERSION = '1.9'          # 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
 
 INSTRUCTION = '''보관된 manual_source의 모든 pages를 읽고 기존 ManualSection → Skill → Step 스키마로 추출 제안을 작성하세요.
@@ -33,6 +33,7 @@ SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 
 절의 excerpt는 그 절의 판정 기준·임계값·금지 조건을 담은 문장(표가 있으면 표)을 우선 고르고, 승인 권한·기록 방법 같은 일반 문단은 기준 문장이 없을 때만 씁니다.
 절 제목·단계 text는 원문의 언어를 그대로 유지하고 번역하지 마세요(영문 매뉴얼이면 영문). 검토자가 인용과 단계를 나란히 대조합니다. 번역이 필요하면 사람 검토 단계의 일입니다.
 원문이 소절(예: 13.5.1 분리, 13.5.2 분해, 13.5.3 청소)마다 번호 목록을 두면 소절마다 절차 하나를 만들고 상위 절(13.5)로 묶지 마세요. 상위 절의 공통 경고·선행 조건은 warnings에 적습니다.
+SOP로 삼을 장의 범위: 운전·점검·정비·고장 조치(트러블슈팅) 장의 절차만 SOP(procedures)로 만드세요. 설치·배선·시운전·반입/양중 장(예: 설치, 배관·배선, 시운전 조정)의 절차는 정비 SOP가 아니므로 procedures에 넣지 말고, 그 장은 page_reviews에 "설치·배선 장 — SOP 범위 밖"으로만 기록하세요. 어느 쪽인지 애매한 장은 warnings에 장 번호와 이유를 적고 procedures에는 넣지 마세요.
 고장 유형 연결과 최종 적재는 사람 검토 단계입니다.
 입력에 review_feedback이 있으면 사람이 이전 제안을 검토한 판정입니다. WRONG 항목은 원문을 다시 읽어 고치고, MISSING 항목은 원문에서 찾아 추가하되
 원문에 없으면 warnings에 그 이유를 적으세요. OK 항목은 그대로 유지하세요. 판정을 근거 없이 따르지 말고 원문이 우선입니다.

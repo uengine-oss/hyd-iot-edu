@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from .machine import _transition   # A143: decision mutations share the Incident state lock (see machine.STATE_LOCK)
+
 OT_SYSTEMS = {"sys:scada"}   # where PLC commands go — never executed from a decision, only via the HITL incident
 
 
@@ -28,6 +30,7 @@ def _level(d: dict, role: str) -> int:
     return int(r["level"]) if r else 0
 
 
+@_transition
 def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> dict:
     if d["state"] != "PENDING_APPROVAL":
         raise ValueError(f"decision is {d['state']}")
@@ -50,6 +53,7 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
             "ot": [item(a) for a in acts if a.get("kind") == "command"]}
 
 
+@_transition
 def reject(d: dict, by: str, reason: str) -> None:
     if d["state"] != "PENDING_APPROVAL":
         raise ValueError(f"decision is {d['state']}")
@@ -57,6 +61,7 @@ def reject(d: dict, by: str, reason: str) -> None:
     d["history"].append({"state": "REJECTED", "t": _now(), "by": by, "reason": reason})
 
 
+@_transition
 def record_execution(d: dict, results: list[dict], plan: dict) -> None:
     for r in results:
         d["executions"].append({"skill": r["skill"], "code": r.get("code"), "status": "DONE" if r.get("ok") else "FAILED", "ref": r.get("ref"),

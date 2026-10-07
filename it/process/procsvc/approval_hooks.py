@@ -18,6 +18,7 @@ def require_reviewed_commands(option, commands):
         raise ValueError('검토한 카드와 실행 조치값이 다릅니다. 변경한 조치의 새 예측 카드를 검토하세요')
 
 
+@machine._transition
 def record_execution(d, result):
     """Record the latest outcome per approved atomic action, idempotently."""
     entry = {'skill':result.get('skill'), 'code':result.get('code'),
@@ -108,15 +109,16 @@ class DecisionDelivery:
         payload = row['payload']
         self.validate(payload)
         snapshot = deepcopy(payload['plan']['_snapshot'])
-        d = self.ctx.book.setdefault(row['decision_id'], {})
-        owner = d.get('process_approval_id')
-        if owner not in (None, row['todo_id']):
-            raise ValueError('decision belongs to a different committed approval')
-        # Keep completed results when replaying the same intent, but never use mutable card inputs.
-        executions = deepcopy(d.get('executions', [])) if owner == row['todo_id'] else []
-        d.clear()
-        d.update(snapshot, process_approval_id=row['todo_id'], executions=executions)
-        self.ctx.persist()
+        with machine.STATE_LOCK:   # A143: clear()+update() must not be captured half-way by a concurrent snapshot
+            d = self.ctx.book.setdefault(row['decision_id'], {})
+            owner = d.get('process_approval_id')
+            if owner not in (None, row['todo_id']):
+                raise ValueError('decision belongs to a different committed approval')
+            # Keep completed results when replaying the same intent, but never use mutable card inputs.
+            executions = deepcopy(d.get('executions', [])) if owner == row['todo_id'] else []
+            d.clear()
+            d.update(snapshot, process_approval_id=row['todo_id'], executions=executions)
+            self.ctx.persist()
         results = []
         for item in payload['plan'].get('enterprise', []):
             if item.get('code') == 'WO_CREATE':

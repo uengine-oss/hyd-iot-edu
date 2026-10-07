@@ -2,12 +2,18 @@
 
 Two implementations behind one small interface:
   PgRepo      — psycopg 3 against the Supabase Postgres (it/supabase/migrations/20261003000001_process_engine.sql)
-  MemoryRepo  — dict-based, for unit tests and for running the process service without a database
+  MemoryRepo  — dict-based, for unit tests and for PROCESS_MODE=legacy without a database. PROCESS_MODE=instance needs
+                PgRepo: source receipts, leases and the projection outbox are PostgreSQL rows (source_inbox.PgSourceInbox
+                refuses a MemoryRepo at startup with a clear message, A143).
 
 The repo is deliberately thin: SQL only, no business rules. Which work items exist and what state they are in is the
-engine's decision (engine.py); here they are written down. The product's RPCs are mirrored one to one so the lecture can
-point at them: fetch_pending_task / save_task_result / record_events_bulk (agent-sdk function.sql) for the worker side,
-claim_submitted_workitems / cleanup_stale_consumers (completion polling_service/database.py) for the engine side.
+engine's decision (engine.py); here they are written down. The product's RPC names are kept so the lecture can point at
+them, but what runs is HYD's own lock-ordered SQL (migration 000004, DECISIONS 31): the worker claim is
+claim_process_workitems(…,'worker') with tenant/instance filters (fetch_pending_task is a thin wrapper of it), the
+engine claim claim_process_workitems(…,'engine') (claim_submitted_workitems wrapper), results are saved by a conditional
+UPDATE on the expected consumer (save_task_result RPC only when no expected_consumer is given), leases by
+renew_task_lease / clear_task_lease, sweeps by expire_worker_leases / cleanup_stale_consumers. Every work-item write
+locks the parent instance first (_workitem_connection), including lease renew/clear (A143).
 """
 from __future__ import annotations
 
@@ -695,7 +701,9 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection):
             return bool(c.execute("select renew_task_lease(%s,%s,%s)", (todo_id, consumer, seconds)).fetchone()["renew_task_lease"])
 
     def clear_task_lease(self, todo_id: str, consumer: str) -> bool:
-        with self._conn() as c:
+        # A143: parent first like every other todolist write (the child UPDATE trigger writes the parent; a direct UPDATE
+        # deadlocked against an engine transition holding the instance — .evidence/a143/lease_lock_order.json)
+        with self._workitem_connection(todo_id) as c:
             return c.execute("update todolist set lease_until = null where id = %s and consumer = %s", (todo_id, consumer)).rowcount == 1
 
     def expire_worker_leases(self, max_claims: int = MAX_CLAIMS) -> int:

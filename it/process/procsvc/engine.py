@@ -103,7 +103,9 @@ class Definition:
         for a in self.activities.values():
             if a.get("role") and a["role"] not in self.roles:
                 raise ValueError(f"activity {a['id']} uses undefined role {a['role']!r}")
-            if a.get("type") not in USER_TYPES | AUTO_TYPES | {"subProcess", "callActivity"}:
+            # A143 (remaining-sweep 17, R13 C03): subProcess/callActivity have no execution branch anywhere in this engine, so
+            # a file loaded directly (Definition.load) is refused the same way the registration path refuses it.
+            if a.get("type") not in USER_TYPES | AUTO_TYPES:
                 raise ValueError(f"activity {a['id']} has unsupported type {a.get('type')!r}")
             for ev_id in a.get("attachedEvents") or []:
                 if ev_id not in self.events:

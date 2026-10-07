@@ -265,3 +265,16 @@ def test_timeline_lists_every_activity_in_flow_order(defn):
                                               "task:command", "task:reobserve", "task:work-order", "task:escalate"]
     assert tl[0]["status"] == "DONE" and tl[1]["status"] == "IN_PROGRESS" and tl[4]["status"] == "TODO"
     assert tl[4]["performer"] == "role:operator" and tl[0]["orchestration"] == "cliagents"
+
+
+def test_sub_process_and_call_activity_are_refused_on_direct_load(tmp_path):
+    """A143 (remaining-sweep 17, R13 C03): the engine has no execution branch for subProcess/callActivity, so a file loaded
+    directly (Definition.load) is refused like the registration path refuses it — not accepted and then never run."""
+    for kind in ("subProcess", "callActivity"):
+        d = json.loads(DEF_PATH.read_text(encoding="utf-8"))
+        d["activities"][0]["type"] = kind
+        path = tmp_path / f"{kind}.json"
+        path.write_text(json.dumps(d), encoding="utf-8")
+        with pytest.raises(ValueError, match="unsupported type"):
+            engine.Definition.load(path)
+    assert engine.Definition.load(DEF_PATH).activities   # the real definition still loads

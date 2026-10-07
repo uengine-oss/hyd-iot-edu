@@ -1,7 +1,11 @@
 """Durable process snapshot. Uncertain in-flight execution needs review, never replay.
 
 save() is called from the event-loop thread (legacy Incident path) and from executor threads
-(instance runtime hooks), so the connection is shared across threads behind a lock.
+(instance runtime hooks). Two locks: `_lock` guards the shared SQLite connection; machine.STATE_LOCK
+(A143) guards the in-memory incidents/book while they are captured — every Incident transition
+(machine.on_*) and every decision mutation (decisions, approval_hooks, work_orders) holds the same
+lock, so a snapshot is always a consistent picture (membership was frozen since A032; now the
+fields of one incident/decision are too). The dicts themselves are not thread-safe outside that lock.
 """
 import json
 import hashlib
@@ -11,7 +15,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from hydcommon.timeutil import now_iso
-from .machine import Incident
+from .machine import Incident, STATE_LOCK
 from .definition import TERMINAL
 from .case_projection_store import CaseProjectionStore
 
@@ -49,7 +53,10 @@ class Store(CaseProjectionStore):
         return json.loads(body)
 
     def save(self, incidents, book, audit):
-        with self._lock, self.db:
+        # STATE_LOCK first, then the connection lock — the only order used anywhere (reviews/projection take `_lock` alone
+        # and never STATE_LOCK inside it), so no cycle. Capture, serialize and write under both: a transition that starts
+        # while the capture runs waits (test_store_concurrency.test_snapshot_never_captures_a_half_applied_transition).
+        with STATE_LOCK, self._lock, self.db:
             # Capture and write in the same serialization order. Alarm handlers
             # may add incidents on other executor threads while asdict walks an
             # existing incident, so freeze collection membership first.

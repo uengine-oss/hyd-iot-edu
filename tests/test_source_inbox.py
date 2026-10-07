@@ -65,3 +65,17 @@ def test_http_identity_does_not_invent_kafka_coordinates():
     kafka=source_record('alerts',0,9,value)
     assert http['event_key']==kafka['event_key'] and http['delivery_key']!=kafka['delivery_key']
     assert http['partition_no'] is None and http['offset_no'] is None and http['wire_kind']=='decoded'
+
+
+def test_instance_mode_refuses_a_memory_repo_with_a_clear_message():
+    """A143 (remaining-sweep 14): PROCESS_MODE=instance + PROCESS_REPO=memory used to die at startup with
+    AttributeError('MemoryRepo' object has no attribute '_conn') from latest_states (main.py startup). The inbox is
+    PostgreSQL-only, so the refusal is explicit and names the setting to change."""
+    from procsvc import procdb
+    from procsvc.source_inbox import PgSourceInbox
+    with pytest.raises(RuntimeError, match='PROCESS_REPO=pg'):
+        PgSourceInbox(procdb.MemoryRepo(), 'hyd')
+    class PgLike:                                    # the contract the inbox actually uses
+        _local = SimpleNamespace(connection=None)
+        def _conn(self): raise AssertionError('not called by the constructor')
+    assert PgSourceInbox(PgLike(), 'hyd').tenant_id == 'hyd'

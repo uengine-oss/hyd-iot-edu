@@ -1,5 +1,6 @@
 # Supabase 로컬 프로젝트 (supabase CLI: `cd it/supabase && supabase start`)
-# 업무 DB(ent 스키마: ERP · MES · CMMS · QMS · SCM · EMS)와 프로세스 엔진 테이블(proc_def · bpm_proc_inst · todolist · events)을 둔다.
+# 업무 DB(ent 스키마: ERP · MES · CMMS · QMS · SCM · EMS)와 프로세스 엔진 테이블(proc_def · proc_def_version · bpm_proc_inst · todolist ·
+# events · process_source_inbox/state · 승인·투영 outbox · 효과 영수증 등, migrations/ 참고)을 둔다.
 # 포트는 Supabase 기본값(54321~). 기존 스택(TimescaleDB 5432 · process 8080 · portal 8088)과 겹치지 않는다.
 # 다른 프로젝트의 supabase 와 함께 띄우려면 아래 포트만 바꾼다.
 project_id = "hyd-iot-edu"

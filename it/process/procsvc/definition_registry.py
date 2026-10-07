@@ -153,9 +153,26 @@ def _condition_variables(defn):
     """A098 (bpmn-process-generation-skill 08-reference-info: a gateway condition may only read a variable some earlier
     task writes). Every name a sequence condition reads must be a declared process variable (data) that an activity
     produces (outputData) or the server sets (PROTECTED_OUTPUTS); otherwise the gateway would judge on a value that
-    can never exist and the instance would stall at 'cannot proceed'."""
+    can never exist and the instance would stall at 'cannot proceed'.
+
+    A143 (remaining-sweep 19, D01 "outputData of the activity before the gateway"): the producer must also be able to run
+    before the gateway judges. HYD allows a producer on another branch of the same instance (condition-recheck-v1: `a` on
+    a parallel path writes x, `g` after `b` reads it — the engine waits for it, docs/rework-conditions.md), so the rule is
+    not "ancestor of the gateway" but "reachable from the start without passing through the gateway". A variable whose
+    every producer sits behind the gateway (reachable only through it) can never exist when the gateway first judges,
+    and the instance would wait forever."""
     import ast
     produced = {o for a in defn.activities.values() for o in (a.get('outputData') or [])} | PROTECTED_OUTPUTS
+    host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
+    def reachable_without(blocked):
+        reach, stack = set(), [e['id'] for e in defn.start_events()]
+        while stack:
+            n = stack.pop()
+            if n in reach or n == blocked:
+                continue
+            reach.add(n)
+            stack.extend([t['target'] for t in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n])
+        return reach
     for s in defn.sequences:
         cond = s.get('condition')
         if not cond:
@@ -167,6 +184,13 @@ def _condition_variables(defn):
         unproduced = sorted(n for n in names if n not in produced)
         if unproduced:
             raise ValueError(f"분기 {s.get('id')}의 조건 변수 {', '.join(unproduced)}를 어떤 활동도 내지 않습니다 (outputData)")
+        gateway = s['source']
+        before = reachable_without(gateway)
+        producers = {n: sorted(a['id'] for a in defn.activities.values() if n in (a.get('outputData') or [])) for n in names - PROTECTED_OUTPUTS}
+        behind = sorted(n for n, acts in producers.items() if acts and not any(a in before for a in acts))
+        if behind:
+            raise ValueError(f"분기 {s.get('id')}의 조건 변수 {', '.join(behind)}는 게이트웨이 {gateway} 뒤의 활동"
+                             f"({', '.join(a for n in behind for a in producers[n])})만 내므로 판정 시점에 존재할 수 없습니다")
 
 
 def _static_connectivity(defn, all_ids):

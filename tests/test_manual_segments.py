@@ -196,3 +196,49 @@ def test_default_segment_size_is_input_bound_now_that_the_result_goes_to_a_file(
     total = sum(len(p['text']) for p in pages)
     assert 120_000 <= total <= 135_000
     assert len(ms.segments(src)) == 2 and len(ms.segments(src, max_chars=40_000)) == 4
+
+
+def test_sop_cut_by_a_segment_boundary_is_joined_when_the_numbering_continues():
+    """A143 (remaining-sweep 21, T02): segment k ends inside a numbered procedure and segment k+1 starts in it. Each segment
+    writes only what it sees (same SOP id, numbering continued); the merge joins them deterministically. Restarted
+    numbering, a gap, or a non-adjacent segment stays the duplicate case (first kept, warned)."""
+    src = _source(_doc(12))
+    segs = ms.segments(src, max_chars=6000)
+    parts = [(s, _proposal_for(src, s)) for s in segs]
+    assert len(segs) >= 3
+    cut = [(s, json.loads(json.dumps(p))) for s, p in parts]
+    first_sop = cut[0][1]['procedures'][-1]                                      # last SOP of segment 1: steps 1~2
+    assert [st['order'] for st in first_sop['steps']] == [1, 2]
+    tail = json.loads(json.dumps(cut[1][1]['procedures'][0]))                    # real step anchors inside segment 2
+    tail['id'] = first_sop['id']
+    for i, st in enumerate(tail['steps'], 3):
+        st['order'] = i
+    cut[1][1]['procedures'].insert(0, tail)
+    merged = ms.merge(src, cut)
+    joined = next(p for p in merged['procedures'] if p['id'] == first_sop['id'])
+    assert [st['order'] for st in joined['steps']] == [1, 2, 3, 4]
+    assert joined['steps'][2]['anchor'] == tail['steps'][0]['anchor']            # anchors untouched (segment 2 coordinates)
+    assert joined['anchor'] == first_sop['anchor']                               # the procedure stays anchored where it starts
+    assert [p['id'] for p in merged['procedures']] == [p['id'] for p in ms.merge(src, parts)['procedures']]   # no new SOP, order kept
+    assert any('이어붙임' in w and first_sop['id'] in w and '3~4' in w for w in merged['warnings'])
+    extraction.validate_proposal(src, merged)                                    # 1..n contiguous, anchors valid: contract holds
+    # restarted numbering (1, 2 again) → not joined, duplicate warning as before
+    restart = [(s, json.loads(json.dumps(p))) for s, p in parts]
+    restart[1][1]['procedures'].insert(0, json.loads(json.dumps(restart[1][1]['procedures'][0])) | {'id': first_sop['id']})
+    m2 = ms.merge(src, restart)
+    assert len(next(p for p in m2['procedures'] if p['id'] == first_sop['id'])['steps']) == 2
+    assert any('에서도 제안됨' in w for w in m2['warnings']) and not any('이어붙임' in w for w in m2['warnings'])
+    # a gap in the numbering (steps 4~5 after 1~2) → not joined
+    gap = [(s, json.loads(json.dumps(p))) for s, p in parts]
+    g = json.loads(json.dumps(gap[1][1]['procedures'][0])) | {'id': first_sop['id']}
+    for i, st in enumerate(g['steps'], 4):
+        st['order'] = i
+    gap[1][1]['procedures'].insert(0, g)
+    assert not any('이어붙임' in w for w in ms.merge(src, gap)['warnings'])
+    # the continuation arriving from a non-adjacent segment (1 → 3) → not joined
+    far = [(s, json.loads(json.dumps(p))) for s, p in parts]
+    f = json.loads(json.dumps(far[2][1]['procedures'][0])) | {'id': first_sop['id']}
+    for i, st in enumerate(f['steps'], 3):
+        st['order'] = i
+    far[2][1]['procedures'].insert(0, f)
+    assert not any('이어붙임' in w for w in ms.merge(src, far)['warnings'])

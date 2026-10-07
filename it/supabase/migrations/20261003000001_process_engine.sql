@@ -179,7 +179,7 @@ create table if not exists public.todolist (
   consumer text,                                        -- 지금 이 행을 처리 중인 워커/엔진 (pod · host:pid)
   log text,
   project_id uuid,
-  draft jsonb,                                          -- agent_mode=DRAFT 의 초안 (사람 검토 뒤 제출)
+  draft jsonb,                                          -- agent_mode=DRAFT 의 초안 (사람 검토 뒤 제출) + 워커의 _human_request(질문·cliagents_session_id)·_deferral(보류) 기록 (A143 정정, 000024 comment on column)
   agent_mode public.agent_mode,                         -- NULL = 사람이 한다 · COMPLETE = 에이전트가 끝까지 · DRAFT = 에이전트 초안 + 사람 제출
   agent_orch text,                                      -- 어느 워커가 집는가: cliagents | hyd-process(서비스) | NULL
   feedback jsonb,
