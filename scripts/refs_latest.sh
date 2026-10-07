@@ -33,7 +33,9 @@ done
 echo "== index"
 for n in "${REPOS[@]}"; do
   d="$OUT/$n"; [ -d "$d" ] || continue
-  if [ -d "$d/.codegraph" ]; then codegraph sync "$d" >/dev/null 2>&1 && echo "SYNCED $n" || echo "SYNC-FAIL $n"
-  else codegraph init "$d" >/dev/null 2>&1 && echo "INDEXED $n" || echo "INDEX-FAIL $n"; fi
+  # Some repos commit .codegraph/.gitignore without a DB; `sync` then walks up and re-syncs the HYD index instead.
+  # Only a local codegraph.db means "already indexed"; otherwise init inside the repo directory.
+  if [ -f "$d/.codegraph/codegraph.db" ]; then (cd "$d" && codegraph sync . >/dev/null 2>&1) && echo "SYNCED $n" || echo "SYNC-FAIL $n"
+  else (cd "$d" && codegraph init . >/dev/null 2>&1) && echo "INDEXED $n" || echo "INDEX-FAIL $n"; fi
 done
 echo DONE
