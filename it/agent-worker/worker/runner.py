@@ -29,6 +29,19 @@ from .process_control import controlled_stream
 log = logging.getLogger("worker.runner")
 ExecFn = Callable[[object, ExecRequest, dict | None], Iterable[ExecEvent]]
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
+# A114: the same spellings process-gpt-cli-agent core/selection.py accepts (work item, agent record and chat body never
+# agreed on casing); HYD's earlier cli/agent stay last for definitions written before.
+_AGENT_KEYS = ("agent_cli", "agentCli", "cli_agent", "cliAgent", "cli", "agent")
+_MODEL_KEYS = ("agent_model", "agentModel", "model")
+_PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
+
+
+def _first(config: dict, keys) -> str | None:
+    for k in keys:
+        v = config.get(k)
+        if v not in (None, ""):
+            return v
+    return None
 
 
 class RunFailed(RuntimeError):
@@ -37,6 +50,11 @@ class RunFailed(RuntimeError):
 
 class Cancelled(RuntimeError):
     pass
+
+
+class LeaseLost(Cancelled):
+    """A114 (agent-sdk renew_task_lease not_owner): another worker reclaimed the row after this one's lease ran out —
+    drop the run (fencing), but do not tell anyone a person cancelled it."""
 
 
 class Runner:
@@ -61,10 +79,14 @@ class Runner:
         try:
             ctx = context.prepare(self.repo, row, self.s.tenant_id)
             self.run(row, ctx, job_id)
-        except Cancelled:
+        except Cancelled as stop:
             self.repo.release_worker_claim(row['id'],row['consumer'])
-            log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
-            self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
+            if isinstance(stop, LeaseLost) or self._reclaimed(row):
+                log.info("%s %s lease lost: another worker took over", row.get("proc_inst_id"), row.get("activity_id"))
+                self._event(row, job_id, "task_cancelled", {"name": "실행 중단", "goal": "응답이 끊긴 사이 다른 실행기가 이 작업을 이어받았습니다."}, crew_type="agent")
+            else:
+                log.info("%s %s cancelled by a person", row.get("proc_inst_id"), row.get("activity_id"))
+                self._event(row, job_id, "task_cancelled", {"name": "작업 취소", "goal": "담당자가 실행을 취소했습니다."}, crew_type="agent")
         except Exception as e:  # noqa: BLE001 — every failure path ends in a DB state, never a lost claim
             self._fail(row, job_id, e)
         finally:
@@ -78,9 +100,11 @@ class Runner:
     def run(self, row: dict, ctx: context.Context, job_id: str) -> None:
         caps = context.activity_capabilities(ctx.definition, row.get("activity_id") or "")
         config = caps.get("agent_config") or {}
-        provider_id = str(config.get("cli") or config.get("agent") or self.s.cli_agent)
-        model = config.get("model") or self.s.model
-        permission = _PERMISSION_BY_NAME.get(str(config.get("permission") or ""), self.s.default_permission)
+        # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
+        # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
+        provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
+        model = _first(config, _MODEL_KEYS) or self.s.model
+        permission = _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission)
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         workspace.provision(ws, agent_id=provider_id, schema_prompt=self.schema_prompt,
@@ -173,12 +197,21 @@ class Runner:
             nonlocal last_check, last_renew
             if time.monotonic()-last_check >= self.s.cancel_check_every_s:
                 last_check=time.monotonic()
-                if self._cancelled(row):raise Cancelled()
+                if self._cancelled(row):raise LeaseLost() if self._reclaimed(row) else Cancelled()
             if time.monotonic()-last_renew >= self.s.lease_renew_every_s:
-                # A097 (agent-sdk lease): keep the claim alive while the CLI runs; a lost lease means another worker
-                # reclaimed the row after this one looked dead — stop and let that run own the result.
+                # A097 (agent-sdk lease): keep the claim alive while the CLI runs. A114 (agent-sdk lease.py:163-170,
+                # renew_task_lease not_owner/not_started): a DB error is retried next period instead of failing a live
+                # run; a refused renewal stops the run only when another worker owns the row (fencing). When the row
+                # merely moved on (a person cancelled, closed …) the cancel check decides, not the lease.
                 last_renew=time.monotonic()
-                if not self.repo.renew_task_lease(row['id'],row['consumer']):raise Cancelled()
+                try:
+                    renewed = self.repo.renew_task_lease(row['id'],row['consumer'])
+                except Exception as e:  # noqa: BLE001 — transient DB/network failure
+                    log.warning("%s lease renewal failed, retrying next period: %s", row.get("id"), e)
+                    renewed = True
+                if not renewed:
+                    if self._reclaimed(row):raise LeaseLost()
+                    if self._cancelled(row):raise Cancelled()
             if time.monotonic()>deadline:
                 raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
         gen = (_exec_stream(provider,request,env,check_stop=check_stop) if self.exec_fn is _exec_stream
@@ -224,6 +257,15 @@ class Runner:
         if last_error and not final_text:
             raise RunFailed(last_error)
         return (final_text or "".join(streamed)).strip(), session_id, pause_reason
+
+    def _reclaimed(self, row: dict) -> bool:
+        """Another worker holds the row now (its consumer changed while still STARTED) — not a person's cancel."""
+        try:
+            fresh = self.repo.get_workitem(row["id"]) or {}
+        except Exception:  # noqa: BLE001
+            return False
+        return (fresh.get("status") == "IN_PROGRESS" and str(fresh.get("draft_status") or "").upper() == "STARTED"
+                and bool(fresh.get("consumer")) and fresh.get("consumer") != row.get("consumer"))
 
     def _cancelled(self, row: dict) -> bool:
         fresh = self.repo.get_workitem(row["id"]) or {}

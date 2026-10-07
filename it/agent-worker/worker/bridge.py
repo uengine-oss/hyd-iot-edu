@@ -30,6 +30,11 @@ def cleanup(workdir: Path) -> list[str]:
     credentials): the run is over, so the servers' env (DSNs, passwords) is removed from the workspace's .mcp.json — the
     directory is kept for 72 h for resumes, and every run calls install() again before it starts. Returns the server names
     whose env was removed."""
+    # A114 (A113 r14 A4): the Codex path wrote the same server env (DSNs, the Neo4j password) into codex-mcp.toml — a copy
+    # of what is passed with -c — and left it in the 72 h workspace. install() rewrites it before every run, so it goes.
+    codex_copy = Path(workdir) / "codex-mcp.toml"
+    if codex_copy.exists():
+        codex_copy.unlink()
     path = Path(workdir) / MCP_CONFIG_FILENAME
     if not path.exists():
         return []

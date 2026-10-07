@@ -9,15 +9,22 @@ import os
 
 DEFAULT_BLOCK = ("SUPABASE_DSN", "SUPABASE_SERVICE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "NEO4J_PASSWORD", "NEO4J_AUTH", "PGPASSWORD",
                  "DATABASE_URL", "POSTGRES_PASSWORD")
-BLOCK_SUFFIXES = ("_DSN", "_PASSWORD", "_SECRET", "_SERVICE_KEY")
+BLOCK_SUFFIXES = ("_DSN", "_PASSWORD", "_SECRET", "_SERVICE_KEY",
+                  # A114 (A113 r14 A5; deepagents 10-06 now passes only TENANT_ID into its sandbox): tokens and API keys
+                  # of other services (GH_TOKEN, LLM_API_KEY of the internal narrative model …) are not the CLI's business
+                  "_TOKEN", "_API_KEY", "_ACCESS_KEY", "_PRIVATE_KEY")
+# The CLI's own authentication stays — without it the container worker's Claude Code / Codex cannot log in. A host worker
+# on a subscription login has none of these set.
+CLI_AUTH_KEEP = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "OPENAI_API_KEY", "CODEX_API_KEY")
 
 
 def secret_keys(environ, block=DEFAULT_BLOCK, suffixes=BLOCK_SUFFIXES, keep=()) -> list[str]:
     """Which keys of `environ` must not reach a child process (explicit names plus credential-looking suffixes)."""
     out = []
+    keep = tuple(keep or ()) + CLI_AUTH_KEEP
     for k in environ:
         up = k.upper()
-        if k in keep:
+        if k in keep or up in keep:
             continue
         if up in block or any(up.endswith(s) for s in suffixes):
             out.append(k)

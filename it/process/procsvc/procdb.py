@@ -304,7 +304,10 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
                 if expired:
                     w["log"] = (w.get("log") or "") + f"[Lease expired: reclaimed by {consumer} (claim {int(w.get('claim_count') or 0) + 1})] "
                 w["draft_status"], w["consumer"] = "STARTED", consumer
-                w["lease_until"], w["claim_count"] = time.time() + LEASE_SECONDS, int(w.get("claim_count") or 0) + 1
+                # A114 (agent-sdk function.sql:102-105): only a reclaim of an expired lease accumulates; a fresh claim or a
+                # re-claim after a person's answer (FB_REQUESTED) starts at 1, so feedback rounds do not use up the cap.
+                w["lease_until"] = time.time() + LEASE_SECONDS
+                w["claim_count"] = int(w.get("claim_count") or 0) + 1 if expired else 1
                 self._enqueue_projection(w)
                 out.append(_copy(w))
                 if len(out) >= limit:

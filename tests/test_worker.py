@@ -515,3 +515,78 @@ def test_sweep_spares_a_run_whose_work_item_is_still_open(tmp_path):
             os.utime(p, (old, old))
     removed = workspace.sweep(root, retention_seconds=3600, keep=lambda wid: wid == "open-1")
     assert [p.name for p in removed] == ["done-2"] and (root / "hyd" / "open-1").exists() and not (root / "hyd" / "done-2").exists()
+
+
+# ---------------------------------------------------------------- A114 · A113 r14 A1~A5 (product parity for the worker)
+def test_claim_count_counts_only_reclaims_so_feedback_rounds_do_not_use_up_the_cap():
+    """agent-sdk function.sql:102-105: a re-claim after a person's answer starts at 1; only an expired-lease reclaim adds.
+    Before A114, three answers made claim_count 4 and one dead worker then meant FAILED instead of a reclaim."""
+    repo = procdb.MemoryRepo(); _agent_row(repo)
+    wid = "lease-0"
+    for n in range(3):
+        row = repo.fetch_pending_task("cliagents", f"w{n}")[0]
+        assert row["claim_count"] == 1                                            # fresh / post-answer claim
+        repo.workitems[wid].update(draft_status="HUMAN_ASKED", consumer=None)     # the agent asks a person …
+        repo.workitems[wid].update(draft_status="FB_REQUESTED")                   # … who answers
+    assert repo.fetch_pending_task("cliagents", "w3")[0]["claim_count"] == 1
+    repo.workitems[wid]["lease_until"] = 0                                        # this worker dies once
+    again = repo.fetch_pending_task("cliagents", "w4")[0]
+    assert again["consumer"] == "w4" and again["claim_count"] == 2                # reclaimed, not FAILED
+    assert repo.expire_worker_leases() == 0
+
+
+def test_a_transient_db_error_on_renewal_does_not_fail_a_live_run(tmp_path):
+    """agent-sdk lease.py:163-170: the renewal is retried next period; the run finishes and submits normally."""
+    repo, inst = _repo()
+    calls = []
+    def flaky(todo_id, consumer, seconds=120):
+        calls.append(todo_id)
+        raise RuntimeError("connection reset")
+    repo.renew_task_lease = flaky
+    answer = '{"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": []}}'
+    r = Runner(_settings(tmp_path, lease_renew_every_s=0.0), repo, exec_fn=_fake_exec(answer), schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1
+    row = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
+    assert row["status"] == "SUBMITTED"
+
+
+def test_a_lost_lease_stops_the_run_and_says_another_worker_took_over_not_that_a_person_cancelled(tmp_path):
+    repo = procdb.MemoryRepo(); _agent_row(repo)
+    runner = Runner(_settings(tmp_path, lease_renew_every_s=0.0), repo, exec_fn=_fake_exec("{}"), schema_prompt="x", resolve_provider=lambda _: object())
+    row = repo.fetch_pending_task("cliagents", "w1")[0]
+    repo.workitems[row["id"]]["lease_until"] = 0
+    assert repo.fetch_pending_task("cliagents", "w2")                             # reclaimed while w1 is still streaming
+    from worker.runner import LeaseLost
+    from cliagents import ExecRequest
+    with pytest.raises(LeaseLost):
+        runner._stream(dict(row, consumer="w1"), "job", object(), ExecRequest(prompt="x", workdir=str(tmp_path)), None, "crew")
+    assert runner._reclaimed(dict(row, consumer="w1")) and not runner._reclaimed(dict(row, consumer="w2"))
+
+
+def test_the_product_uis_agent_cli_key_selects_the_cli(tmp_path, monkeypatch):
+    """process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327 store agent_cli/agent_model."""
+    from worker import runner as runner_mod
+    repo, inst = _repo()
+    seen, reqs = [], []
+    monkeypatch.setattr(runner_mod.context, "activity_capabilities",
+                        lambda defn, aid: {"agent_config": {"agent_cli": "codex", "agent_model": "o4-mini", "agent_permission": "read_only"}, "skills": [], "tools": []})
+    answer = '{"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": []}}'
+    r = Runner(_settings(tmp_path), repo, exec_fn=_fake_exec(answer, requests=reqs), schema_prompt="# s",
+               resolve_provider=lambda pid: seen.append(pid) or object())
+    assert r.poll_once() == 1
+    assert seen == ["codex"] and reqs[0][0].model == "o4-mini"
+    assert runner_mod._first({"cli": "claude-code"}, runner_mod._AGENT_KEYS) == "claude-code"     # earlier HYD definitions still work
+
+
+def test_codex_server_env_copy_leaves_the_retained_workspace_and_tokens_do_not_reach_the_cli(tmp_path):
+    res = bridge.install(tmp_path, TENANT_MCP, provider_id="codex")
+    toml = tmp_path / "codex-mcp.toml"
+    assert toml.exists() and res.extra_args                                      # the run gets its servers through -c …
+    bridge.cleanup(tmp_path)
+    assert not toml.exists()                                                     # … and the on-disk copy with their env is gone
+    from worker import env_guard
+    env = {"GH_TOKEN": "g", "LLM_API_KEY": "l", "AWS_ACCESS_KEY": "a", "ANTHROPIC_API_KEY": "cli", "CLAUDE_CODE_OAUTH_TOKEN": "cli2",
+           "HYD_GPU_API_KEY": "kept", "PATH": "/bin"}
+    removed = env_guard.scrub(env, keep=("HYD_GPU_API_KEY",))
+    assert removed == ["AWS_ACCESS_KEY", "GH_TOKEN", "LLM_API_KEY"]
+    assert set(env) == {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HYD_GPU_API_KEY", "PATH"}
