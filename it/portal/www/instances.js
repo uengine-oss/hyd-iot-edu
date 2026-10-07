@@ -7,7 +7,7 @@
    A122 (UIUX_PLAN §1.3 · §1.4 · §5): summary cards → 에이전트 활동 + 내 차례 → 폼(사건 / 선택 / 사유·담당) → 목록 + 상세 3탭(결과 · 흐름 · 기록). */
 (function () {
   const I = { mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
-              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null, listShown: 20 };
+              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null, listShown: 20, todoShown: 6, eventsShown: 20 };
   const who = id => UI.who(id);
   const chip = s => UI.chip(s);
   const STEP_LABEL = { done: UI.t('done'), current: UI.status('IN_PROGRESS'), skipped: UI.status('SKIPPED'), todo: UI.status('TODO') };
@@ -42,7 +42,7 @@
     const sig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
       I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status]), I.view && I.view.events.length,
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.dec && I.dec.state, I.msg,
-      I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab]);
+      I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab, I.todoShown, I.eventsShown, UI.namesVersion]);
     if (!force && sig === I.sig) return;
     I.sig = sig;
     renderBanner(); renderTodo(); renderList(); renderDetail();
@@ -86,13 +86,16 @@
       it.addEventListener('click', () => { I.sel = t.proc_inst_id; I.taskSel = t.id; load(true); });
       box.appendChild(it);
     });
-    I.todo.forEach(t => {
+    // A141: 처음 6건 + 더 보기 (선택된 건은 위로 고정) — 한 화면에 많이 보이지 않게
+    const paged = UI.page(I.todo, I.todoShown, t => t.proc_inst_id === I.sel);
+    paged.rows.forEach(t => {
       const inst = I.instances.find(x => x.proc_inst_id === t.proc_inst_id) || {};
-      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${chip(t.status)}</div><span class="sub">${esc(inst.proc_inst_name || t.proc_inst_id)} · ${esc(who(t.user_id))}</span>`);
+      const it = el('div', 'item' + (t.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(UI.flowName(t.activity_name))}</strong>${chip(t.status)}</div><span class="sub">${esc(inst.proc_inst_name || UI.defName(t.proc_inst_id))} · ${esc(who(t.user_id))}</span>`);
       keyboardItem(it);
       it.addEventListener('click', () => { I.sel = t.proc_inst_id; I.taskSel = t.id; load(true); });
       box.appendChild(it);
     });
+    if (paged.rest) { const more = el('div', 'todo-more', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { I.todoShown += UI.PAGE; renderTodo(); }); box.appendChild(more); }
     renderTodoPanel();
   }
 
@@ -206,14 +209,14 @@
     const maintenanceText = maintenance.length ? maintenance.map(a => a.value ?? a.name ?? UI.t('workOrder')).join(', ') : `선택한 조치 이후 정비 점검: ${chosen.name || ''}`;
     const sc = d.scenario || {};
     const inst = I.view?.instance || {};
+    // A141: 사건 정보(설비 · 고장 유형 · 원인 · 함께 발행될 정비 요청)는 접기로. 화면에는 제목 · 기한 · 한 줄 요약 · 선택 카드 · 조치값 · 사유 · 결정 버튼만
     box.innerHTML = `<section class="todo-panel"><div class="detail-head"><div class="row"><h3 style="margin:0">${esc(UI.t('select'))}</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span></div><div class="sub">${esc(inst.proc_inst_name || '')}${timer && timer.due_date ? ` · ${esc(UI.t('form.deadline'))} ${esc(UI.time(timer.due_date))} · ${esc(UI.t('form.timeout'))}` : ''}</div></div>
       ${summaryBlock(d.explanation)}
+      ${UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case')}
       <div class="form">
-      ${UI.section(UI.t('form.section.case'), `<div class="ro-grid wide">${UI.readonly(UI.t('dec.asset'), esc(d.asset || vars(inst).asset || ''))}${UI.readonly('고장 유형', esc(sc.failureMode || '–'))}${UI.readonly(UI.t('dec.cause'), esc(sc.cause || '–'))}${timer && timer.due_date ? UI.readonly(UI.t('form.deadline'), esc(UI.dateTime(timer.due_date)), UI.t('form.timeout')) : ''}</div>`)}
       ${UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${cards}</div>` +
         (fanA || loadA || pumpA ? `<div class="form-grid wide">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}</div>` : '') +
-        `<div class="wide" id="tdReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
-        (hasWorkOrder ? `<p class="field-hint wide">${esc(UI.t('inst.followWo'))}: ${esc(maintenanceText)}</p>` : ''))}
+        `<div class="wide" id="tdReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`)}
       ${hydCards.whoFields('td', I.form, roles)}
       ${UI.actions(`<button class="btn outline" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button><button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.decide'))}</button>`, I.msg)}
       </div></section>`;
@@ -304,7 +307,7 @@
     const cancelBtn = w && w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button class="btn small outline" data-cancel-task="${esc(w.id)}">${esc(UI.t('btn.cancelTask'))}</button>` : '';
     const reasonForm = I.closing && w && I.closing.id === w.id ? `<div class="form inline-form" data-reason-form><div class="form-grid">${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small outline" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go>${esc(UI.t('btn.confirm'))}</button>`, I.msg)}</div>` : '';
     const body = w ? `<div class="meta"><span>${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}</span>${w.due_date && !w.end_date ? `<span>${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</span>` : ''}${w.generation ? `<span>${esc(w.generation)}${esc(UI.t('inst.gen'))}</span>` : ''}${w.draft_status && w.status !== 'DONE' ? `<span>${chip(w.draft_status)}</span>` : ''}</div>
-      ${w.log ? `<p class="kv-line">${esc(w.log)}</p>` : ''}
+      ${UI.logHtml(w.log)}
       ${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`, { cls: 'small' }) : ''}
       ${w.gateway_decisions ? UI.fold(esc(UI.t('inst.gateway')), `<pre>${esc(JSON.stringify(w.gateway_decisions, null, 1).slice(0, 800))}</pre>`, { cls: 'small' }) : ''}
       ${closeBtn || cancelBtn ? `<div class="row-wrap">${closeBtn}${cancelBtn}</div>` : ''}${reasonForm}` : `<p class="muted">${esc(STEP_LABEL[s.state])}</p>`;
@@ -319,11 +322,14 @@
     const st = stepsOf(view);
     const s = st ? st.summary : null;
     const progress = s ? `${s.done}/${s.total} ${UI.t('inst.stepsDone')}${s.current ? ` · ${UI.t('inst.now')}: ${UI.flowName(s.current.name)}` : s.next ? ` · ${UI.t('inst.next')}: ${UI.flowName(s.next.name)}` : s.finished ? ` · ${UI.t('inst.finished')}` : ''}` : '';
-    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div><div class="sub">${esc(UI.t('inst.started'))} ${esc(UI.dateTime(inst.start_date))}${inst.end_date ? ` · ${esc(UI.t('inst.ended'))} ${esc(UI.dateTime(inst.end_date))}` : ''}${progress ? ' · ' + esc(progress) : ''}</div></div>`;
+    // A141: 시작 · 종료 시각과 id 는 상세 정보 접기로, 머리글에는 진행 요약만
+    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div>${progress ? `<div class="sub">${esc(progress)}</div>` : ''}</div>`
+      + UI.metaFold([[UI.t('inst.started'), esc(UI.dateTime(inst.start_date))], [UI.t('inst.ended'), inst.end_date ? esc(UI.dateTime(inst.end_date)) : ''], ['ID', `<span class="mono">${esc(inst.proc_inst_id)}</span>`]]);
     const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.events.length };
     const tabs = UI.tabs([['result', UI.t('inst.tab.result')], ['flow', UI.t('inst.tab.flow'), counts.flow], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
     box.innerHTML = head + tabs + `<div class="inst-detail-tabs"><div class="tab-pane ${I.tab === 'result' ? 'on' : ''}" data-pane="result">${resultPane(view, v)}</div><div class="tab-pane ${I.tab === 'flow' ? 'on' : ''}" data-pane="flow">${flowPane(view, st)}</div><div class="tab-pane ${I.tab === 'log' ? 'on' : ''}" data-pane="log">${logPane(view)}</div></div>`;
     box.querySelectorAll('[data-inst-tab]').forEach(b => b.addEventListener('click', () => { I.tab = b.dataset.instTab; box.querySelectorAll('[data-inst-tab]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); }); box.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === I.tab)); if (I.tab === 'flow') mountFlow(view); }));
+    box.querySelector('[data-events-more]')?.addEventListener('click', () => { I.eventsShown += 40; renderDetail(); });
     if (I.tab === 'flow') mountFlow(view);
     window.hydRework?.mount(box.querySelector('#reworkPanel'), { view, by: I.form.by, changed: () => load(true) });
     window.hydEffects?.mount(box.querySelector('#effectsPanel'), { view, by: I.form.by, changed: () => load(true) });
@@ -333,7 +339,7 @@
   }
   function mountFlow(view) {
     const host = $('#instFlow'); if (!host || !window.hydFlow) return;
-    hydFlow.mount(host, hydFlow.render(view.definition, { workitems: view.workitems, instance: view.instance, caption: '' }), view.instance.proc_inst_id);
+    hydFlow.mount(host, hydFlow.render(view.definition, { workitems: view.workitems, instance: view.instance, caption: '', vertical: hydFlow.narrow(host) }), view.instance.proc_inst_id);
   }
 
   /* 결과 탭: 결정 · 설비 응답 · 효과 확인 · 정비 요청 카드 + 값(라벨 붙은 읽기 전용) + 시작 값 접기 */
@@ -350,24 +356,26 @@
     const woW = view.workitems.filter(w => w.activity_id === 'task:work-order').sort((a, b) => (b.generation || 0) - (a.generation || 0))[0];
     if (woW && woW.status !== 'CANCELLED' && woW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('workOrder')), chips: chip(woW.status), value: v.work_order && (v.work_order.ref || v.work_order.id) ? `<span class="kv mono">${esc(v.work_order.ref || v.work_order.id)}</span>` : '', sub: esc((v.work_order && v.work_order.detail) || '') }));
     const esW = view.workitems.filter(w => w.activity_id === 'task:escalate').sort((a, b) => (b.generation || 0) - (a.generation || 0))[0];
-    if (esW && esW.status !== 'CANCELLED' && esW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('escalate')), chips: chip(esW.status), sub: esc(v.note || esW.log || '') }));
+    if (esW && esW.status !== 'CANCELLED' && esW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('escalate')), chips: chip(esW.status), sub: esc(UI.logText(v.note || esW.log || '')) }));
     let html = cards.length ? `<div class="cards two">${cards.join('')}</div>` : UI.empty(UI.t('inst.noResult'), inst.status === 'RUNNING' ? UI.t('inst.noResultSub') : '', 'compact');
     // 값: label = definition data name, key as small text, structured values folded (R5 read-only form)
     const internal = new Set(['decision', 'decision_id', 'guide_card', 'candidates', 'compliance', 'incident', 'commands', 'chosen_option', 'alert', 'alert_id']);
     const varRows = (inst.variables_data || []).filter(row => !internal.has(row.key)).map(row => {
       const value = row.value, name = UI.terms['var.' + row.key] || (row.name && row.name !== row.key ? row.name.replace(/\s*[\(—(].*$/, '') : row.key);
       const shown = row.key === 'pattern' && typeof PATTERN_LABEL !== 'undefined' ? (PATTERN_LABEL[value] || value) : row.key === 'chosen_skill_kind' ? (value === 'control' ? UI.t('chip.control') : value === 'work_order' ? UI.t('chip.workOrder') : value)
-        : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || value
-        : row.key === 'failure_mode' ? (typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || value
-        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || value) : row.key === 'approved_role' ? UI.who(value) : value;
+        : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
+        : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
+        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? UI.who(value) : typeof value === 'string' ? UI.idText(value) : value;
       const body = value !== null && typeof value === 'object' ? UI.fold(esc(UI.t('inst.structured')), `<pre>${esc(JSON.stringify(value, null, 2))}</pre>`, { cls: 'small' }) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
       const producer = source?.kind === 'workitem' ? view.workitems.find(w => w.id === source.id) : null;
       const origin = source?.kind === 'input' ? UI.t('inst.source.input') : source?.kind === 'workitem' ? UI.flowName(producer?.activity_name || source.activity) : source?.kind === 'runtime' ? UI.t('inst.source.runtime') : UI.t('inst.source.none');
       return UI.readonly(name, body, origin);
     }).join('');
-    html += `<h3 style="font-size:14px;margin:var(--s6) 0 var(--s3)">${esc(UI.t('inst.values'))}</h3><div class="ro-grid">${varRows || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>`;
-    html += `<div style="margin-top:var(--s4)">` + UI.fold(esc(UI.t('inst.initial')), inst.initial_variables == null ? `<p class="muted">${esc(UI.t('empty.noData'))}</p>` : `<pre>${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre>`) + '</div>';
+    // A141: 값 격자(출처 포함)는 기본 접기
+    const varCount = (inst.variables_data || []).filter(row => !internal.has(row.key)).length;
+    html += `<div class="stack-list" style="margin-top:var(--s4)">` + UI.fold(`${esc(UI.t('inst.valuesFold'))} <span class="chip tone-neutral sm">${varCount}</span>`, `<div class="ro-grid">${varRows || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>`)
+      + UI.fold(esc(UI.t('inst.initial')), inst.initial_variables == null ? `<p class="muted">${esc(UI.t('empty.noData'))}</p>` : `<pre>${esc(JSON.stringify(inst.initial_variables, null, 2))}</pre>`) + '</div>';
     return html;
   }
 
@@ -434,18 +442,20 @@
     const rows = view.workitems.map(w => `<tr class="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name))}${w.generation ? `<br><small class="muted">${esc(w.generation)}${esc(UI.t('inst.gen'))}</small>` : ''}</td><td>${chip(w.status)}${w.draft_status && w.status !== 'DONE' ? `<br>${chip(w.draft_status)}` : ''}</td>
       <td>${esc(who(w.user_id))}</td>
       <td>${esc(UI.time(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}${w.due_date && !w.end_date ? `<br><small class="muted">${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</small>` : ''}</td>
-      <td class="log">${esc(w.log || '')}${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`, { cls: 'small' }) : ''}${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify({ id: w.id, activity_id: w.activity_id, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions }, null, 1))}</pre>`, { cls: 'small' })}</td></tr>`).join('');
+      <td class="log">${esc(UI.logText(w.log || ''))}${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`, { cls: 'small' }) : ''}${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify({ id: w.id, activity_id: w.activity_id, log: w.log, generation: w.generation, agent_orch: w.agent_orch, agent_mode: w.agent_mode, consumer: w.consumer, draft_status: w.draft_status, supersedes_id: w.supersedes_id, gateway_decisions: w.gateway_decisions }, null, 1))}</pre>`, { cls: 'small' })}</td></tr>`).join('');
     // R9: a tool call and its result become one record with the duration
     const evs = view.events.slice();
     const started = new Map(); evs.forEach(e => { if (e.event_type === 'tool_usage_started' && e.data?.tool_use_id) started.set(e.data.tool_use_id, e); });
     const merged = new Set();
-    const events = evs.slice(-80).reverse().filter(e => !(e.event_type === 'tool_usage_started' && evs.some(x => x.event_type === 'tool_usage_finished' && x.data?.tool_use_id === e.data?.tool_use_id))).map(e => {
+    // A141: 최근 20건만 먼저, 나머지는 더 보기. 도구 이름은 UI.toolName(원문은 각 기록의 원문 접기에 그대로)
+    const all = evs.reverse().filter(e => !(e.event_type === 'tool_usage_started' && evs.some(x => x.event_type === 'tool_usage_finished' && x.data?.tool_use_id === e.data?.tool_use_id)));
+    const events = all.slice(0, I.eventsShown).map(e => {
       let detail = eventDetail(e), name = e.job_id === 'TASK_REVIEW_REQUIRED' ? e.job_id : e.event_type;
-      if (e.event_type === 'tool_usage_finished') { const s0 = started.get(e.data?.tool_use_id); if (s0) detail = `${(e.data.tool || '').replace(/^mcp__/, '').replace(/__/g, ' · ')} · ${Math.round(new Date(e.timestamp) - new Date(s0.timestamp))} ms`; name = 'tool_usage_started'; }
+      if (e.event_type === 'tool_usage_finished') { const s0 = started.get(e.data?.tool_use_id); if (s0) detail = `${UI.toolName(e.data.tool)} · ${Math.round(new Date(e.timestamp) - new Date(s0.timestamp))} ms`; name = 'tool_usage_started'; }
       // A132: the worker says where the result came from (result_source file | message); only the file case gets a chip
       const chips = e.event_type === 'task_completed' && e.data?.result_source === 'file' ? `<span class="chip tone-neutral sm">${esc(UI.t('inst.resultFile'))}</span>` : '';
       return UI.eventRecord({ time: e.timestamp, name, actor: e.crew_type || '', detail, raw: e.data, chips });
-    }).join('');
+    }).join('') + (all.length > I.eventsShown ? `<button type="button" class="btn small" data-events-more style="width:100%;margin-top:var(--s2)">${esc(UI.t('inst.eventsMore'))} (남은 ${all.length - I.eventsShown}건)</button>` : '');
     return `<h3 style="font-size:14px;margin:0 0 var(--s2)">${esc(UI.t('inst.steps'))}</h3><div class="table-scroll"><table class="inst-table"><thead><tr><th>${esc(UI.t('inst.stepTable.step'))}</th><th>${esc(UI.t('inst.stepTable.status'))}</th><th>${esc(UI.t('inst.stepTable.who'))}</th><th>${esc(UI.t('inst.stepTable.when'))}</th><th>${esc(UI.t('inst.stepTable.result'))}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <h3 style="font-size:14px;margin:var(--s6) 0 var(--s2)">${esc(UI.t('inst.events'))} <span class="chip tone-neutral sm">${view.events.length}</span></h3><div class="inst-events">${events || `<div class="muted">${esc(UI.t('empty.noData'))}</div>`}</div>
       <div style="margin-top:var(--s4)">${UI.fold(esc(UI.t('inst.graph')), graphHtml(inst))}</div>`;
@@ -474,10 +484,10 @@
   function eventDetail(e) {
     const d = e.data || {};
     if (d.recovery === 'new_judgment_and_consent') return '현재 조건 검사로 명령을 보류했습니다. 판단 단계에서 새 검토와 승인을 진행하세요. ' + ((d.assessment || {}).reasons || []).join('; ');
-    if (d.tool) return `${(d.tool || '').replace(/^mcp__/, '').replace(/__/g, ' · ')}${d.input ? ' ' + JSON.stringify(d.input).slice(0, 120) : ''}${d.output ? ' → ' + String(d.output).slice(0, 120) : ''}`;
-    if (d.goal) return `${d.goal}${d.name ? ' · ' + d.name : ''}`;
+    if (d.tool) return `${UI.toolName(d.tool)}${d.input ? ' ' + JSON.stringify(d.input).slice(0, 120) : ''}${d.output ? ' → ' + String(d.output).slice(0, 120) : ''}`;
+    if (d.goal) return `${UI.logText(d.goal)}${d.name ? ' · ' + UI.who(d.name) : ''}`;
     if (d.text || d.question) return humanQuestionText(d).slice(0, 160);
-    return d.message || d.note || d.content || d.friendly || d.raw_error || (d.output_keys ? UI.t('inst.output') + ' ' + d.output_keys.join(', ') : '') || (d.answer ? UI.t('form.answer') + ' ' + d.answer : '');
+    return UI.logText(d.message || d.note || d.friendly || d.raw_error || d.reason || '') || d.content || (d.output_keys ? UI.t('inst.output') + ' ' + d.output_keys.join(', ') : '') || (d.answer ? UI.t('form.answer') + ' ' + d.answer : '');
   }
 
   /* ------------------------------------------------ buttons inside the 흐름 tab (R5: inline reason instead of window.prompt) */

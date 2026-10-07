@@ -17,7 +17,7 @@
     const inst = I && I.instances.find(x => x.proc_inst_id === id);
     if (inst) return inst.proc_inst_name || id;
     if (!id) return '';
-    return id.split('.')[0].replace(/_/g, ' ');
+    return UI.defName(id);          // A141: 'anomaly_response.…' → 설비 이상 조치 (UI.terms def.*)
   }
   const activityByTodo = {};          // task_started carries the activity's goal; later events of the same work item reuse it
   function activityOf(e) {
@@ -28,7 +28,7 @@
     if (e.event_type === 'task_started' && e.data && (e.data.goal || e.data.name) && e.todo_id) activityByTodo[e.todo_id] = e.data.goal || e.data.name;
     return UI.flowName(activityByTodo[e.todo_id] || (e.data && e.event_type === 'task_started' && (e.data.goal || e.data.name)) || '');
   }
-  function shortTool(t) { return String(t || '').replace(/^mcp__/, '').replace(/__/g, ' · '); }
+  function shortTool(t) { return UI.toolName(t); }   // A141: 도구 이름은 UI.terms tool.* (원문은 처리 건 기록의 원문 접기에)
   function fmtMs(ms) { return ms < 1000 ? `${Math.round(ms)} ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.floor(ms / 60000)}분 ${Math.round((ms % 60000) / 1000)}초`; }
   // F9: a readable one-line preview instead of 140 chars of JSON
   function brief(v, n = 120) {
@@ -57,9 +57,9 @@
       case 'task_started': return { title: activityOf(e) || d.name || UI.t('step'), text: d.goal || '' };
       case 'task_completed': return { title: activityOf(e) || UI.t('step'), text: (d.output_keys || []).length ? UI.t('inst.output') + ' ' + d.output_keys.join(', ') : brief(d.text) };
       case 'task_cancelled': {                     // A098: three different things used to look identical in the stream
-        if (e.job_id === 'TASK_CANCEL_REQUESTED') return { title: UI.t('stream.cancelReq'), text: brief(d.goal, 160) };
-        if (e.job_id === 'TASK_CLOSED') return { title: UI.t('stream.closed'), text: brief(d.goal || d.reason, 160) };
-        return { title: (activityOf(e) || UI.t('step')) + ' · ' + UI.t('stream.stopped'), text: brief(d.goal, 160) };
+        if (e.job_id === 'TASK_CANCEL_REQUESTED') return { title: UI.t('stream.cancelReq'), text: UI.logText(brief(d.goal, 160)) };
+        if (e.job_id === 'TASK_CLOSED') return { title: UI.t('stream.closed'), text: UI.logText(brief(d.goal || d.reason, 160)) };
+        return { title: (activityOf(e) || UI.t('step')) + ' · ' + UI.t('stream.stopped'), text: UI.logText(brief(d.goal, 160)) };   // A141: 영문 취소 사유 → 번역 표
       }
       case 'human_asked': return { title: UI.t('stream.asked'), text: humanQuestionText(d).slice(0, 160) };
       case 'human_response': return { title: UI.t('stream.answered'), text: (d.answer || '').slice(0, 160) };
@@ -123,6 +123,7 @@
     box.querySelectorAll('.stream-row[data-inst]').forEach(row => row.addEventListener('click', () => { if (row.dataset.inst && window.hydInstancesSelect) window.hydInstancesSelect(row.dataset.inst); }));
     box.querySelector('#streamMore')?.addEventListener('click', () => { S.showAll = true; render(); });
     const count = document.getElementById('streamCount'); if (count) count.textContent = `${rows.length}`;
+    const foldCount = document.getElementById('streamFoldCount'); if (foldCount) foldCount.textContent = `${rows.length}`;   // A141: 접힌 요약 줄의 건수
   }
 
   function connect() {

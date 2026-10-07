@@ -65,6 +65,8 @@ curl -s http://127.0.0.1:8097/health     # 호스트 워커 (8098은 둘째)
 
 화면 주소: 포털 http://127.0.0.1:8088 (홈 상태 점 전부 초록) · Neo4j Browser http://127.0.0.1:7474 (neo4j / hydpass123) · Grafana http://127.0.0.1:3000 · FUXA http://127.0.0.1:1881 · EMQX http://127.0.0.1:18083 (admin / public123) · Supabase Studio http://127.0.0.1:54323 · FastAPI 서비스 8개(8000·8093·8090·8094·8092·8091·8080·8095)의 `/docs` (MCP 2개 8199·8198은 `/docs`가 없다, 404).
 
+포털 원문 id → 이름 사전 재생성(지식 그래프를 바꾼 뒤, A141): `PYTHONUTF8=1 .venv314/Scripts/python.exe scripts/portal_names.py` → `it/portal/www/names.json` (정적 파일, 재기동 불필요).
+
 ## 3. 자주 나는 오류와 첫 조치
 
 | 증상 | 첫 조치 | 근거 |

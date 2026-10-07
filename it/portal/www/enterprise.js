@@ -74,6 +74,8 @@ async function loadGraph(force) {
   drawGraph();
 }
 function groupOf(label) { return ONTO_GROUPS.findIndex(g => g.labels.includes(label)); }
+// A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
+const nodeName = n => String(n.name && n.name !== n.id ? n.name : UI.name(n.id));
 function focusSet() {
   // the path the agent walks for one anomaly pattern: pattern → symptoms → failure modes → causes · evidence → skills
   // → steps · manual · atomic actions · approver, the rules that select / limit each skill, its first KPI effects and forecasts
@@ -140,7 +142,7 @@ function drawGraph() {
     else if (b.x > a.x) d = `M${x1},${y1} C${x1 + 30},${y1} ${x2 - 30},${y2} ${x2},${y2}`;
     else d = `M${a.x},${y1} C${a.x - 30},${y1} ${b.x + BOX + 30},${y2} ${b.x + BOX},${y2}`;
     const cls = hot ? 'o-edge hot' : inFocus ? 'o-edge focus' : (focus || ent.sel) ? 'o-edge dim' : 'o-edge';
-    const nm = id => g.nodes.find(n => n.id === id)?.name || id;
+    const nm = id => nodeName(g.nodes.find(n => n.id === id) || { id });   // A141: 관계 말풍선도 이름 없는 규칙은 사전으로
     const path = `<path d="${d}" class="${cls}"><title>${esc(nm(e.from))} → ${esc(RELATION_KO[e.type] || e.type)} → ${esc(nm(e.to))}</title></path>`;
     if (hot) selEdges.push({ path, e, mid: [(x1 + x2) / 2, (y1 + y2) / 2] }); else edges += path;
   }
@@ -152,7 +154,7 @@ function drawGraph() {
     const neighbor = ent.sel && g.edges.some(e => (e.from === ent.sel && e.to === id) || (e.to === ent.sel && e.from === id));
     const dim = (focus || ent.sel) && !(focus && focus.has(id)) && id !== ent.sel && !neighbor && !match;
     const cls = ['o-node', id === ent.sel ? 'sel' : '', neighbor ? 'nb' : '', match ? 'match' : '', dim ? 'dim' : ''].join(' ');
-    const label = String(n.name || n.id);
+    const label = nodeName(n);   // A141: 이름 없는 규칙 노드는 사전(annotation)으로, 없으면 id 그대로
     svg += `<g class="${cls}" data-id="${esc(id)}" tabindex="0"><rect x="${p.x}" y="${p.y}" width="${BOX}" height="${H}" rx="4" style="--c:${color}"/>` +
       `<text x="${p.x + 7}" y="${p.y + 17}">${esc(label)}</text><title>${esc(LABEL_KO[n.label] || n.label)}\n${esc(label)}</title></g>`;
   }
@@ -186,9 +188,9 @@ function renderNodePanel() {
   const n = g.nodes.find(x => x.id === ent.sel); if (!n) return;
   const props = Object.entries(n.props || {}).filter(([k]) => !['id', 'name'].includes(k));
   const outE = g.edges.filter(e => e.from === n.id), inE = g.edges.filter(e => e.to === n.id);
-  const nm = id => { const x = g.nodes.find(y => y.id === id); return x ? x.name : id; };
+  const nm = id => nodeName(g.nodes.find(y => y.id === id) || { id });
   const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><span>${dir === 'out' ? '→' : '←'} ${esc(RELATION_KO[e.type] || e.type)}</span> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
-  box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)}</div><h3>${esc(n.name)}</h3>` +
+  box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)}</div><h3>${esc(nodeName(n))}</h3>` +
     (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
     (outE.length ? `<h4>${esc(UI.t('onto.out'))} ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>${esc(UI.t('onto.in'))} ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
   box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); const node = [...$('#ontoMap').querySelectorAll('.o-node')].find(n => n.dataset.id === ent.sel); if (node) { const r = node.getBBox(); $('#ontoMap').scrollTo({ left: Math.max(0, r.x - 20), top: Math.max(0, r.y - 60) }); } }));
@@ -220,7 +222,7 @@ function effChip(x, cls) {
   return `<span class="${cls}" title="영향 강도 ${x.weight}${x.conds && x.conds.length ? ' · 조건: ' + x.conds.join(', ') : ''}">${esc(t)}</span>`;
 }
 function ruleChip(r, cls, label) {
-  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(r.annotation || r.rule)}</span>`;
+  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.idText(r.annotation || UI.name(r.rule)))}</span>`;
 }
 // FAN_SET=100 → "팬 100 %" (명칭표 "카드"): the action code and target stay in the evidence fold
 const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SELECT: ['펌프', ''], WO_CREATE: [null, ''], PR_CREATE: ['구매 요청', ''] };
@@ -254,26 +256,31 @@ function cardHtml(o, opt = {}) {
   const chips = [o.id === opt.rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
   const line = [forecastLine(o), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+  // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
+  const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
+  const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;
   const evidence = `
     ${o.reviewed_choice ? `<p><b>${esc(UI.t('card.baseSop'))}</b> ${esc(o.reviewed_choice.reference_name || o.sopId)} · ${(o.reviewed_choice.reference_actions || []).map(a => esc(actionLabel(a))).join(' · ')}</p>` : ''}
-    <dl><div><dt>${esc(UI.t('card.score'))}</dt><dd>${Object.entries(sp).map(([key, value]) => `${esc(scoreLabels[key] || key)} ${Number.isFinite(value) ? signNum(value) : '미확인'}`).join(' · ') || '–'}</dd></div>
+    <dl>${o.sopId ? `<div><dt>${esc(UI.t('card.sop'))}</dt><dd>${esc(o.sopId)}</dd></div>` : ''}
+    <div><dt>${esc(UI.t('card.score'))}</dt><dd>${Object.entries(sp).map(([key, value]) => `${esc(scoreLabels[key] || key)} ${Number.isFinite(value) ? signNum(value) : '미확인'}`).join(' · ') || '–'}</dd></div>
+    ${(o.gains || []).some(uncond) || (o.losses || []).some(uncond) ? `<div><dt>${esc(UI.t('fold.kpi'))}</dt><dd>${kpiAll}</dd></div>` : ''}
+    ${softAll ? `<div><dt>${esc(UI.t('fold.penalty'))}</dt><dd><span class="hmeta">${softAll}</span></dd></div>` : ''}
     <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
     ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')} <span class="muted">(${esc(f.method)})</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
-    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(r.annotation || r.rule)}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')}</dd></div>` : ''}
+    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.idText(r.annotation || UI.name(r.rule)))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')}</dd></div>` : ''}
     ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol style="margin:0;padding-left:18px">${(o.steps || []).map(s => `<li>${esc(s.text)}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
     ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
     ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
     ${ranking ? UI.fold(esc(UI.t('card.scoreHow')), `${Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)}: <code>${esc(expr)}</code> = ${esc(sp[key])}</div>`).join('')}<div class="muted">${esc(ranking.conditionMode || '')}</div>`, { cls: 'small' }) : ''}
     ${(o.tradeoffEvaluation || []).length ? UI.fold(`${esc(UI.t('kpi'))} 경로와 조건 판정 ${o.tradeoffEvaluation.length}건`, o.tradeoffEvaluation.map(p => `<div><b>${esc({ TRUE: '적용', FALSE: '미적용', UNKNOWN: '미확인' }[p.status] || p.status)}</b> ${esc(p.name)} · 강도 ${esc(p.weight)}<br><span class="muted">${esc((p.nodes || []).join(' → '))}</span>${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(c.status)}<br>${Object.entries(c.inputs || {}).map(([alias, v]) => `${esc(alias)}: ${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(v.variable)} = ${esc(v.value ?? '미확인')}`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join(''), { cls: 'small' }) : ''}`;
   const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
-    <span class="hbody"><span class="htitle">${esc(o.name)} ${chips}</span>
-      <span class="hsub">${esc(o.sopId || '')}${o.description ? ' · ' + esc(o.description) : ''}</span>
+    <span class="hbody"><span class="htitle">${esc(UI.idText(o.name))} ${chips}</span>
+      ${o.description ? `<span class="hsub">${esc(o.description)}</span>` : ''}
       <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">${esc(UI.t('card.score'))} ${signNum(o.score || 0)}</b></span>
       <span class="hline">${line}</span>
-      <span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>
-      ${(o.violations || []).length || (o.penalties || []).length || (o.warnings || []).length ? `<span class="hmeta">${(o.violations || []).map(v => ruleChip(v, 'hard', UI.t('chip.excluded'))).join('')}${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}</span>` : ''}
-      ${UI.fold(esc(UI.t('card.evidence')), evidence, { cls: 'small' })}
+      ${(o.violations || []).length ? `<span class="hmeta">${ruleChip(o.violations[0], 'hard', UI.t('chip.excluded'))}${o.violations.length > 1 ? `<span class="muted">+${o.violations.length - 1}</span>` : ''}</span>` : ''}
+      ${UI.fold(esc(UI.t('card.evidence')), ((o.violations || []).length > 1 ? `<p><b>${esc(UI.t('fold.violations'))}</b> <span class="hmeta">${o.violations.map(v => ruleChip(v, 'hard', UI.t('chip.excluded'))).join('')}</span></p>` : '') + evidence, { cls: 'small' })}
     </span>`;
   if (!opt.selectable) return `<div class="hopt ${o.feasible ? '' : 'out'} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">${'<span></span>' + head}</div>`;
   return `<label class="hopt ${o.feasible ? '' : 'out'} ${opt.selected ? 'sel' : ''} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">
@@ -324,7 +331,8 @@ async function runDecision() {
 }
 // first sentence = up to a period followed by whitespace or the end ("점수 3.87" must not cut)
 const firstSentence = text => { const m = String(text || '').match(/^[\s\S]*?[.。](?=\s|$)/); return m ? m[0] : String(text || ''); };
-function summaryBlock(text) {
+function summaryBlock(raw) {
+  const text = UI.idText(raw);                       // A141: 레거시 판단의 fm:/cause: id → 이름
   const first = firstSentence(text), rest = String(text || '').slice(first.length).trim();
   return `<div class="summary prose"><p style="margin:0">${esc(first)}</p>${rest ? UI.fold(esc(UI.t('dec.summaryMore')), `<p style="margin:0">${esc(rest)}</p>`, { cls: 'small' }) : ''}</div>`;
 }
@@ -333,16 +341,18 @@ function renderDecision() {
   if (!d || !d.result) { box.innerHTML = UI.empty(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || ''); return; }
   const r = d.result, opts = r.options || [];
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
-  let html = `<div class="detail-head" style="margin-top:var(--s6)"><div class="row"><h2>${esc((d.scenario || {}).name || '')}</h2>${UI.chip(d.status)}</div><div class="sub">${esc(d.asset || '')} · ${esc(UI.dateTime(d.created))} · <span class="mono">${esc(d.id)}</span></div></div>`;
+  // A141: 판단 시각 · id 는 상세 정보 접기로
+  let html = `<div class="detail-head" style="margin-top:var(--s6)"><div class="row"><h2>${esc(UI.idText((d.scenario || {}).name || ''))}</h2>${UI.chip(d.status)}</div><div class="sub">${esc(d.asset || '')}</div></div>`;
   html += summaryBlock(r.explanation);
+  html += UI.metaFold([[UI.t('inst.stepTable.when'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]]);
   // 원인: 1위 큰 글씨 + 고장 유형 칩 + 증거, 2위 이하 접기 (C2)
   const causes = d.causes || [];
   const evidenceHtml = c => (c.evidence || []).map(e => { const unknown = e.status === 'UNKNOWN' || e.passed == null || e.value == null || !!e.error;
     return `<div class="kv-line"><span class="${unknown ? 'muted' : e.passed ? 'pos' : 'neg'}">${esc(e.name)}</span> = ${esc(fmt(e.value, 3))}${unknown ? ` · ${esc(UI.t('inc.unknown'))}` : ''}</div>`; }).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`;
   if (causes.length) {
     const top = causes[0];
-    html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(top.name), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(top.failureMode, 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
-      (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<div style="margin-bottom:var(--s2)"><b>${esc(c.name)}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(c.failureMode) : ''}${evidenceHtml(c)}</div>`).join(''), { cls: 'small' }) : '') });
+    html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(UI.idText(top.name)), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(UI.idText(top.failureMode), 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
+      (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<div style="margin-bottom:var(--s2)"><b>${esc(UI.idText(c.name))}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(UI.idText(c.failureMode)) : ''}${evidenceHtml(c)}</div>`).join(''), { cls: 'small' }) : '') });
   }
   html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs })).join('') + '</div>';
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
@@ -352,7 +362,7 @@ function renderDecision() {
   const target = t => t.skill ? ((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
   html += UI.fold(`${esc(UI.t('dec.rules'))} <span class="chip tone-neutral sm">${tr.length}</span>`,
     `<table class="compact-table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
-    tr.map(t => `<tr class="${t.fired ? 'rec' : ''}"><td>${esc(t.annotation || t.rule)}<br><small class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</small>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`, { cls: 'small' })}</td><td>${esc(target(t))}</td>` +
+    tr.map(t => `<tr class="${t.fired ? 'rec' : ''}"><td>${esc(UI.idText(t.annotation || UI.name(t.rule)))}<br><small class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</small>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`, { cls: 'small' })}</td><td>${esc(target(t))}</td>` +
       `<td>${t.fired ? `<b>${esc(UI.t('dec.fired'))}</b>` : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.join(', '))}</span>` : esc(UI.t('dec.notApplicable')))}</td></tr>`).join('') + '</tbody></table>');
   html += UI.fold(`${esc(UI.t('dec.inputs'))} <span class="chip tone-neutral sm">${(d.provenance || []).length}</span>`,
     `<table class="compact-table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +
@@ -377,7 +387,7 @@ async function refreshProcess() {
 }
 function renderProcess() {
   const list = $('#decList');
-  const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError, ent.decShown]);
+  const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError, ent.decShown, UI.namesVersion]);
   if (list.dataset.sig !== sig) {
     list.dataset.sig = sig;
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
@@ -389,7 +399,7 @@ function renderProcess() {
       const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
       keyboardItem(it);
       it.dataset.itemId = d.id;
-      it.innerHTML = `<div class="row"><strong>${esc((d.scenario || {}).name || '')}</strong>${UI.chip(d.state)}</div>` +
+      it.innerHTML = `<div class="row"><strong>${esc(UI.idText((d.scenario || {}).name || ''))}</strong>${UI.chip(d.state)}</div>` +
         `<span class="sub">${esc(d.asset || '')} · ${esc(UI.dateTime(d.created))}${(d.origin || {}).kind !== 'alert' ? ' · ' + esc(UI.t('proc.manual')) : ''}${d.override ? ' · ' + esc(UI.t('proc.override')) : ''}</span>`;
       it.addEventListener('click', async () => {
         if (ent.decSel === d.id && ent.decDetail) { UI.revealDetail($('#decDetail')); return; }
@@ -411,7 +421,7 @@ function renderDecisionApproval() {
   const box = $('#decDetail'); const d = ent.decDetail;
   if (!d) { ent.lastDetailSig = null; box.innerHTML = UI.empty(UI.t('proc.select')); return; }
   // the 2.5 s refresh must not wipe what the approver is typing or selecting: redraw only when the decision changed
-  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length;
+  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion;
   if (sig === ent.lastDetailSig && box.querySelector('.hitl-opts')) return;
   ent.lastDetailSig = sig;
   const roles = Object.entries(d.roles || {}).sort((a, b) => a[1].level - b[1].level);
@@ -421,11 +431,12 @@ function renderDecisionApproval() {
   if (!ent.form.option || !opts.some(o => o.id === ent.form.option)) ent.form.option = d.recommended || (opts.find(o => o.feasible) || opts[0] || {}).id;
   if (!ent.form.role) ent.form.role = ((opts.find(o => o.id === ent.form.option) || {}).approver || {}).id || (roles[0] || [''])[0];
   const sc = d.scenario || {};
-  let html = `<div class="detail-head"><div class="row"><h2>${esc(sc.name || '')}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')} · ${esc(UI.t('proc.submitted'))} ${esc(UI.dateTime(d.created))}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''} · <span class="mono">${esc(d.id)}</span></div></div>`;
+  // A141: 제출 시각 · id · 사건 정보(설비 · 고장 유형 · 원인)는 접기로. 화면에는 제목 · 상태 · 한 줄 요약 · 선택 카드 · 사유 · 승인 버튼만
+  let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''}</div></div>`;
   html += summaryBlock(d.explanation);
+  html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
   if (pending) {
     html += `<div class="form">` +
-      UI.section(UI.t('form.section.case'), `<div class="ro-grid wide">${UI.readonly(UI.t('dec.asset'), esc(d.asset || ''))}${UI.readonly('고장 유형', esc(sc.failureMode || '–'))}${UI.readonly(UI.t('dec.cause'), esc(sc.cause || '–'))}${UI.readonly(UI.t('proc.submitted'), esc(UI.dateTime(d.created)))}</div>`) +
       UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt' })).join('')}</div>`) +
       whoFields('dec', ent.form, roles) +
       UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove">${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';

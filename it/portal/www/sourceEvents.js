@@ -9,7 +9,7 @@
   function locked(value){busy=value;for(const id of ['sourceEventRefresh','sourceEventMore','sourceEventStatus']) q(id).disabled=value;
     q('sourceEventRetry').querySelector('button').disabled=value;
     q('sourceEventDetailRefresh').disabled=value||!selected;}
-  function rowText(row){return '#'+row.id+' · '+(labels[row.status]||row.status)+' · '+(row.asset||'설비 미상')+' · '+row.kind+(row.error?' · '+row.error:'');}
+  function rowText(row){return '#'+row.id+' · '+(labels[row.status]||row.status)+' · '+(row.asset||'설비 미상')+' · '+row.kind+(row.error?' · '+UI.logText(row.error):'');}   // A141: 영문 오류 문구는 번역 표로, 원문은 선택 접수의 '오류' 칸에 그대로
   function field(parent,label,value){const title=document.createElement('h3'),body=document.createElement('pre');
     title.textContent=label;body.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);
     body.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';parent.append(title,body);}

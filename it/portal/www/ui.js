@@ -96,6 +96,15 @@ const UI = {
     'golden.conf.high': '높음', 'golden.conf.medium': '보통', 'golden.conf.low': '낮음', 'golden.evidence': '근거 보기', 'golden.cited': '인용한 지식 항목', 'golden.noCited': '인용한 항목 없음', 'golden.query': '질의 보기',
     'golden.err.empty': '질문을 한 줄 이상 적으세요', 'golden.err.many': '질문은 최대 20개입니다', 'golden.err.load': '확인 결과를 읽지 못했습니다', 'golden.corrections': '형식 교정 {n}회',
     'inst.resultFile': '결과 파일로 제출',
+    // A141 다이어트: 보조 정보 접기 · 에이전트 도구 이름 · 정의 이름
+    'fold.meta': '상세 정보', 'fold.case': '사건 정보', 'fold.kpi': '성과 지표 영향', 'fold.penalty': '감점 · 경고', 'fold.violations': '제외 사유', 'golden.summary': '집계 · 요약',
+    'inst.eventsMore': '이전 활동 더 보기', 'inst.valuesFold': '값', 'card.sop': '절차 번호', 'log.raw': '원문',
+    'def.anomaly_response': '설비 이상 조치', 'def.manual_extraction': '매뉴얼 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
+    'tool.Write': '파일 쓰기', 'tool.Read': '파일 읽기', 'tool.Edit': '파일 수정', 'tool.Glob': '파일 찾기', 'tool.Grep': '내용 검색', 'tool.PowerShell': '명령 실행', 'tool.Bash': '명령 실행', 'tool.ToolSearch': '도구 검색', 'tool.WebFetch': '웹 읽기', 'tool.WebSearch': '웹 검색', 'tool.Agent': '하위 에이전트',
+    'tool.mcp__neo4j__read_neo4j_cypher': '지식 그래프 조회', 'tool.mcp__neo4j__write_neo4j_cypher': '지식 그래프 쓰기', 'tool.mcp__neo4j__get_neo4j_schema': '지식 그래프 구조 조회',
+    'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
+    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출',
+    'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
@@ -125,6 +134,59 @@ const UI = {
   /* definition names (process definition JSON) → display names; the definition itself is not changed */
   flowName(name) { return this.terms['flow.name.' + name] || name; },
   flowSeq(name) { return this.terms['flow.seq.' + name] || name || ''; },
+  defName(id) { const base = String(id || '').split('.')[0]; return this.terms['def.' + base] || base.replace(/_/g, ' '); },
+  toolName(t) { const raw = String(t || ''); return this.terms['tool.' + raw] || raw.replace(/^mcp__/, '').replace(/__/g, ' · '); },
+
+  /* ---------- A141 원문 id → 이름 (names.json: scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
+     응답에 이름이 있으면 그것을 쓰고, 없을 때만 이 사전으로 바꾼다. 사전에 없는 id 는 그대로 둔다(지어내지 않음). */
+  names: {}, namesVersion: 0,
+  ID_RE: /\b(?:fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
+  name(id) { return (id && this.names[id]) || id || ''; },
+  idText(text) { return String(text ?? '').replace(this.ID_RE, m => this.names[m] || m); },
+  async loadNames() {
+    try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
+  },
+
+  /* ---------- A141 단계 로그(영문) → 화면 문구. 원문은 호출하는 쪽이 접기에 보존한다. ---------- */
+  logPatterns: [
+    [/^cancelled: instance ended \((?:ev:)?([\w-]+)\)$/, (m, U) => `처리 건 종료(${U.flowName(m[1])})로 취소`],
+    [/^human approval accepted; delivery tracked separately$/, () => '담당자 승인 접수 · 전달은 별도로 추적'],
+    [/^approval accepted by (.+?); delivery pending$/, (m, U) => `${U.who(m[1])} 승인 접수 · 전달 대기`],
+    [/^submitted by (.+)$/, (m, U) => `${U.who(m[1])} 제출`],
+    [/^waiting for the incident re-observation verdict$/, () => '효과 확인 결과 대기'],
+    [/^cancelled: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 취소`],
+    [/^reached by abort: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 도달`],
+    [/^rework superseded: (.+)$/, () => '다시 수행으로 대체됨'],
+    [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행 임대 만료 · 다른 작업자가 이어받음 (${m[2]}번째)`],
+    [/^action\.cmd (CMD-[\w-]+) issued; waiting ACK$/, m => `설비 명령 ${m[1]} 전송 · 응답 대기`],
+    [/^\[Cancel requested by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 실행 취소 요청] ${m[2]}`.trim()],
+    [/^\[Closed by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 단계 닫음] ${m[2]}`.trim()],
+    [/^\[DEFERRED\] ?(.*)$/, m => `[보류] ${m[1]}`.trim()],
+    [/^(\d+(?:\.\d+)?) sim-s = (\d+(?:\.\d+)?) s$/, m => `시뮬레이션 ${m[1]}초 = 실제 ${m[2]}초`],
+    [/^cleared before any action$/, () => '조치 전에 경보 해제'],
+    [/^cleared=(True|False) (\w+)=([\d.]+) \(criterion (.+)\)$/, m => `경보 해제 ${m[1] === 'True' ? '예' : '아니요'} · ${m[2]} ${m[3]} (기준 ${m[4]})`],
+    [/^alert (ALT-[\w-]+)$/, m => `경보 ${m[1]}`],
+    [/^source handler lease expired$/, () => '원천 처리기 임대 만료'],
+    [/^[A-Z_]{4,}$/, (m, U) => U.status(m[0])],
+  ],
+  logText(raw) {
+    const text = String(raw ?? '').trim(); if (!text) return '';
+    return text.split(/;\s+/).map(s => s.trim()).filter(Boolean).map(seg => {
+      for (const [re, fn] of this.logPatterns) { const m = seg.match(re); if (m) return fn(m, this); }
+      return this.idText(seg);
+    }).join(' · ');
+  },
+  // 번역된 문구 + 원문 접기(원문이 다를 때만)
+  logHtml(raw, cls = 'kv-line') {
+    const text = this.logText(raw); if (!text) return '';
+    return `<p class="${cls}">${esc(text)}</p>` + (text !== String(raw).trim() ? this.fold(esc(this.t('log.raw')), `<pre>${esc(raw)}</pre>`, { cls: 'small' }) : '');
+  },
+  // 보조 메타(담당자 · 시각 · id)는 기본 접기: items = [[label, value]], 값이 비면 뺀다
+  metaFold(items, label = 'fold.meta') {
+    const rows = (items || []).filter(([, v]) => v != null && v !== '' && v !== '–');
+    if (!rows.length) return '';
+    return this.fold(esc(this.t(label)), `<dl class="meta-list">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`, { cls: 'small' });
+  },
 
   /* ---------- 상태 이름 (UIUX_PLAN §5.2 D3 + 사건 상태) ---------- */
   states: {
@@ -138,6 +200,7 @@ const UI = {
     NEW: "생성", TODO: "예정", IN_PROGRESS: "진행 중", PENDING: "보류", HUMAN_ASKED: '답변 기다림', FB_REQUESTED: '반영 중', STARTED: '진행 중', CANCELLED: "취소",
     COMPLETED: "완료", SKIPPED: "건너뜀", DELIVERED: "전달 완료", DISCARDED: "폐기", OK: "완료",
     UNSUPPORTED_ALERT_PATTERN: "정의에 없는 경보 패턴", SELECT_TIMEOUT: "선택 시간 초과", NOT_RECOVERED: "미회복",
+    PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "인터록",
   },
   tones: {
     neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED'],
@@ -302,3 +365,4 @@ const UI = {
 function humanQuestionText(data) {
   return String((data && (data.text || data.question)) || "");
 }
+UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽기 전에는 id 가 그대로 보이고, 화면은 주기 갱신 때 따라온다.

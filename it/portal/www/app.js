@@ -375,7 +375,8 @@ function renderIncList() {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
     keyboardItem(it);
     it.dataset.itemId = inc.id;
-    it.innerHTML = `<div class="row"><strong>${esc(inc.asset)} · ${esc(PATTERN_LABEL[(inc.card || {}).alert?.pattern] || UI.t('case'))}</strong>${UI.chip(inc.state)}</div><span class="sub">${esc(UI.t('inc.alertAt'))} ${esc(UI.dateTime(inc.created))} · <span class="mono">${esc(inc.id)}</span></span>`;
+    it.title = inc.id;   // A141: 사건 id 는 목록 글자로 보이지 않고 상세의 상세 정보 접기에서 본다
+    it.innerHTML = `<div class="row"><strong>${esc(inc.asset)} · ${esc(PATTERN_LABEL[(inc.card || {}).alert?.pattern] || UI.t('case'))}</strong>${UI.chip(inc.state)}</div><span class="sub">${esc(UI.t('inc.alertAt'))} ${esc(UI.dateTime(inc.created))}</span>`;
     it.addEventListener('click', () => { state.selected = inc.id; state.selectedAsset = inc.asset; renderScada(); renderIncList(); loadDetail(); });
     box.append(it);
   }
@@ -418,14 +419,15 @@ function timelineHtml(inc) {
   return '<div class="timeline">' + hist.map((h, i) => {
     const last = i === hist.length - 1;
     const cls = fail.includes(h.state) ? 'fail' : (last && !inc.terminal) ? 'current' : 'done';
-    let note = '';
-    if (h.state === 'ACKED' && inc.ack) note = `${UI.status(inc.ack.result)}${inc.ack.interlock ? ' · 인터록 ' + inc.ack.interlock : ''}${inc.ack.reason ? ' · ' + inc.ack.reason : ''}`;
+    let note = '', raw = '';
+    if (h.state === 'ACKED' && inc.ack) note = `${UI.status(inc.ack.result)}${inc.ack.interlock ? ' · ' + UI.status('INTERLOCK') + ' ' + UI.status(inc.ack.interlock) : ''}${inc.ack.reason ? ' · ' + UI.logText(inc.ack.reason) : ''}`;
     else if (h.state === 'WORK_ORDER_CREATED' && inc.workOrder) note = `${inc.workOrder.ref || inc.workOrder.id || ''}${inc.workOrder.requested_value ? ' · ' + inc.workOrder.requested_value : ''}`;
     else if (h.state === 'AWAITING_APPROVAL' && inc.approvedBy) note = `${UI.t('inc.approvedBy')} ${inc.approvedBy}`;
     else if (h.state === 'ESCALATED' && inc.reason) note = UI.status(inc.reason);
-    else if (h.note && !/^alert |^CMD-|^WO-/.test(h.note)) note = h.note;
+    else if (h.note && !/^alert |^CMD-|^WO-/.test(h.note)) { note = UI.logText(h.note); raw = note !== h.note.trim() ? h.note : ''; }   // A141: 영문 단계 기록 → 화면 문구, 원문은 접기
+    // A141: 수행 주체는 보조 정보 — 카드 글자 대신 title 로만. 화면에는 단계 이름 · 시각 · 결과 한 줄
     const who = h.state === 'AWAITING_APPROVAL' && inc.approvedBy ? inc.approvedBy : UI.who(HISTORY_WHO[h.state] || 'sys:process');
-    return `<div class="tl ${cls}"><span class="dot"></span>${UI.card({ title: esc(UI.status(h.state)), sub: `<span class="meta"><span>${esc(who)}</span><span>${esc(UI.dateTime(h.t))}</span>${note ? `<span>${esc(note)}</span>` : ''}</span>` })}</div>`;
+    return `<div class="tl ${cls}"><span class="dot"></span>${UI.card({ title: esc(UI.status(h.state)), attrs: `title="${esc(who)}"`, sub: `<span class="meta"><span>${esc(UI.dateTime(h.t))}</span>${note ? `<span>${esc(note)}</span>` : ''}</span>`, body: raw ? UI.fold(esc(UI.t('log.raw')), `<pre>${esc(raw)}</pre>`, { cls: 'small' }) : '' })}</div>`;
   }).join('') + '</div>';
 }
 function traceHtml(run) {
@@ -470,7 +472,7 @@ function guideCardHtml(card) {
 function renderDetail() {
   const box = $('#incDetail');
   const inc = state.detail, run = state.run;
-  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id)]);
+  const signature = JSON.stringify([inc, run, inc && state.audit.filter(a => a.incident === inc.id), UI.namesVersion]);
   if ((inc || run) && box.dataset.signature === signature) return;
   box.dataset.signature = signature; box.dataset.incident = inc?.id || '';
   if (!inc && !run) {
@@ -486,8 +488,10 @@ function renderDetail() {
   let html = '';
   if (inc) {
     const pattern = PATTERN_LABEL[(inc.card || {}).alert?.pattern] || '';
-    html += `<div class="detail-head"><div class="row"><h2>${esc(inc.asset)} ${esc(UI.t('case'))}${pattern ? ' · ' + esc(pattern) : ''}</h2>${UI.chip(inc.state)}</div><div class="sub">${esc(UI.t('inc.alertAt'))} ${esc(UI.dateTime(inc.created))}${inc.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(inc.approvedBy)}` : ''}${inc.closed ? ` · ${esc(UI.t('closed'))} ${esc(UI.dateTime(inc.closed))}` : ''} · <span class="mono">${esc(inc.id)}</span></div></div>`;
-    html += `<h3 style="font-size:14px;margin:0 0 var(--s2)">${esc(UI.t('inc.progress'))}</h3>` + timelineHtml(inc);
+    // A141: 경보 · 승인자 · 종결 시각 · id 는 상세 정보 접기로
+    html += `<div class="detail-head"><div class="row"><h2>${esc(inc.asset)} ${esc(UI.t('case'))}${pattern ? ' · ' + esc(pattern) : ''}</h2>${UI.chip(inc.state)}</div></div>`;
+    html += UI.metaFold([[UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))], [UI.t('inc.approvedBy'), esc(inc.approvedBy || '')], [UI.t('closed'), inc.closed ? esc(UI.dateTime(inc.closed)) : ''], ['ID', `<span class="mono">${esc(inc.id)}</span>`]]);
+    html += `<h3 style="font-size:14px;margin:var(--s3) 0 var(--s2)">${esc(UI.t('inc.progress'))}</h3>` + timelineHtml(inc);
     if (inc.workOrderRequest && !inc.workOrder) {
       html += `<p class="kv-line">${esc(UI.t('inc.woPending'))}: ${esc(inc.workOrderRequest.item.value || inc.workOrderRequest.item.name || '')}</p>`;
       if (inc.processOwned === false && (inc.state === 'RESOLVED' || (inc.state === 'AWAITING_APPROVAL' && inc.workOrderRequest.work_order_only)))

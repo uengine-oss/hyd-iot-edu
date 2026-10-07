@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>유압설비 모니터링 · 조치 포탈</title>
-<link rel="stylesheet" href="tokens.css?v=20261008-a132">
-<link rel="stylesheet" href="styles.css?v=20261008-a132">
-<link rel="stylesheet" href="enterprise.css?v=20261008-a132">
-<link rel="stylesheet" href="main.css?v=20261008-a132">
-<link rel="stylesheet" href="hitl.css?v=20261008-a132">
-<link rel="stylesheet" href="instances.css?v=20261008-a132">
-<link rel="stylesheet" href="components.css?v=20261008-a132">
+<link rel="stylesheet" href="tokens.css?v=20261008-a141">
+<link rel="stylesheet" href="styles.css?v=20261008-a141">
+<link rel="stylesheet" href="enterprise.css?v=20261008-a141">
+<link rel="stylesheet" href="main.css?v=20261008-a141">
+<link rel="stylesheet" href="hitl.css?v=20261008-a141">
+<link rel="stylesheet" href="instances.css?v=20261008-a141">
+<link rel="stylesheet" href="components.css?v=20261008-a141">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -127,12 +127,11 @@
   <section class="view" id="view-instances">
     <div class="page-head"><h1>처리 건</h1></div>
     <div id="instBanner"></div>
-    <div class="inst-top">
-      <section class="stream-panel" id="streamPanel"></section>
-      <section class="todo-wrap"><div class="sec-head" style="margin-top:0"><h2>내 차례</h2></div>
-        <div class="list" id="todoList"></div></section>
-    </div>
+    <!-- A141: 행동(내 차례 → 선택 · 승인 · 입력)이 먼저, 에이전트 활동 스트림은 접기 -->
+    <section class="todo-wrap"><div class="sec-head" style="margin-top:0"><h2>내 차례</h2></div>
+      <div class="list todo-grid" id="todoList"></div></section>
     <div id="todoPanel"></div>
+    <details class="fold stream-fold" id="streamFold"><summary>에이전트 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
     <div class="split inst-split">
       <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
       <div class="detail" id="instDetail"></div>
@@ -263,20 +262,20 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261008-a132"></script>
-<script src="layers.js?v=20261008-a132"></script>
-<script src="app.js?v=20261008-a132"></script>
-<script src="enterprise.js?v=20261008-a132"></script>
-<script src="main.js?v=20261008-a132"></script>
-<script src="flow.js?v=20261008-a132"></script>
-<script src="hitl.js?v=20261008-a132"></script>
-<script src="instanceSteps.js?v=20261008-a132"></script>
-<script src="instanceRework.js?v=20261008-a132"></script>
-<script src="instanceEffects.js?v=20261008-a132"></script>
-<script src="taskDeferral.js?v=20261008-a132"></script>
-<script src="instances.js?v=20261008-a132"></script>
-<script src="liveStream.js?v=20261008-a132"></script>
-<script src="definitionRegistry.js?v=20261008-a132"></script>
-<script src="sourceEvents.js?v=20261008-a132"></script>
+<script src="ui.js?v=20261008-a141"></script>
+<script src="layers.js?v=20261008-a141"></script>
+<script src="app.js?v=20261008-a141"></script>
+<script src="enterprise.js?v=20261008-a141"></script>
+<script src="main.js?v=20261008-a141"></script>
+<script src="flow.js?v=20261008-a141"></script>
+<script src="hitl.js?v=20261008-a141"></script>
+<script src="instanceSteps.js?v=20261008-a141"></script>
+<script src="instanceRework.js?v=20261008-a141"></script>
+<script src="instanceEffects.js?v=20261008-a141"></script>
+<script src="taskDeferral.js?v=20261008-a141"></script>
+<script src="instances.js?v=20261008-a141"></script>
+<script src="liveStream.js?v=20261008-a141"></script>
+<script src="definitionRegistry.js?v=20261008-a141"></script>
+<script src="sourceEvents.js?v=20261008-a141"></script>
 </body>
 </html>

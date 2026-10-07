@@ -247,6 +247,30 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .admin-panel .fold-body .form-grid { margin-top: var(--s2); }
 .upload { border-radius: var(--radius-sm); padding: var(--card-pad); }
 
+/* A141 diet — same tokens, fewer things on screen. Secondary info (who · when · id) lives in details.fold.small */
+.meta-list { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s1) var(--s4); font-size: 13px; }
+.meta-list > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--s2); padding: 2px 0; }
+.meta-list dt { color: var(--ink-3); }
+.meta-list dd { margin: 0; overflow-wrap: anywhere; }
+.detail-head + details.fold.small { margin: calc(-1 * var(--s2)) 0 var(--s3); }
+/* 처리 건: 내 차례 is the action — two columns of the same list cards, no side stream */
+.todo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); max-height: none; padding: 0; }
+.todo-grid .item { margin: 0; }
+.todo-grid .todo-more { grid-column: 1 / -1; }
+@media (max-width: 900px) { .todo-grid { grid-template-columns: 1fr; } }
+.stream-fold { margin: var(--s6) 0; }
+.stream-fold > .fold-body { padding: 0; }
+.stream-fold .stream-panel { border: 0; box-shadow: none; border-radius: 0; }
+/* 흐름도 세로 배치(좁은 폭): 폭에 맞추고 가로 스크롤 없음 */
+.flow-scroll.vert { overflow-x: hidden; }
+.flow-scroll.vert svg { min-width: 0; width: 100%; margin: 0 auto; }
+/* 조치 후보 카드: 제외 사유 한 줄만, 나머지 칩은 근거 접기 안 */
+.hopt .hmeta .muted { font-size: 11.5px; }
+.hopt .fold-body .hmeta { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+/* 지식 관리: 질문 카드 답은 한 단락 */
+.golden-item .golden-answer { margin: 0 0 var(--s2); }
+.golden-counts { margin-bottom: var(--s2); }
+
 /* A122: three asset cards never push the page wider than the viewport (min-content → 0) */
 .scada { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ucard header .chips { flex: 1 1 100px; min-width: 0; }
