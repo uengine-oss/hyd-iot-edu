@@ -61,9 +61,9 @@ curl -s http://127.0.0.1:8097/health     # 호스트 워커 (8098은 둘째)
 | Supabase | 7 (2026-10-07 관측): supabase_db · kong · auth · rest · realtime · studio · pg_meta (이름 접미사 `_hyd-iot-edu`) | — |
 | 선택 프로필 | monitor → prometheus(9090), tools → redpanda-console(8085) | — |
 
-즉 `docker ps`에 **hyd-iot-edu-* 17개 + supabase_* 7개 = 24개**가 "Up"이면 된다(fuxa·grafana·portal·prometheus·console은 healthcheck가 없어 "(healthy)" 표시가 없다). healthz 기대값: 각 서비스 `{"ok":true,…}`, process는 `"mode":"instance","supabase":true`, enterprise-mcp는 `"role":"hyd_enterprise_reader","read_only":true`, 워커 `/health`는 `"status":"ok"`.
+즉 `docker ps`에 **hyd-iot-edu-* 17개 + supabase_* 7개 = 24개**가 "Up"이면 된다(fuxa·grafana·portal·prometheus·console은 healthcheck가 없어 "(healthy)" 표시가 없다). **개수만 보지 말고 위 이름 15+2를 대조한다** — 2026-10-07 대조(`.evidence/a124/runbook-check.md`) 때는 fuxa가 Exited(137)인데 선택 프로필 prometheus가 떠 있어 개수는 17로 같았다(FUXA 1881 응답 없음). 빠진 서비스는 `docker compose up -d <서비스>`로 올린다. healthz 기대값: 각 서비스 `{"ok":true,…}`, process는 `"mode":"instance","supabase":true`, enterprise-mcp는 `"role":"hyd_enterprise_reader","read_only":true`, 워커 `/health`는 `"status":"ok"`(워커 응답 키는 10-07 대조 때 워커가 꺼져 있어 미검증). `supabase status`는 `Stopped services: [inbucket storage imgproxy edge_runtime analytics vector pooler]`를 먼저 찍는데 이는 `it/supabase/config.toml`에서 꺼 둔 것(`enabled = false`)이라 정상이다.
 
-화면 주소: 포털 http://127.0.0.1:8088 (홈 상태 점 전부 초록) · Neo4j Browser http://127.0.0.1:7474 (neo4j / hydpass123) · Grafana http://127.0.0.1:3000 · FUXA http://127.0.0.1:1881 · EMQX http://127.0.0.1:18083 (admin / public123) · Supabase Studio http://127.0.0.1:54323 · 각 서비스 `/docs`(FastAPI).
+화면 주소: 포털 http://127.0.0.1:8088 (홈 상태 점 전부 초록) · Neo4j Browser http://127.0.0.1:7474 (neo4j / hydpass123) · Grafana http://127.0.0.1:3000 · FUXA http://127.0.0.1:1881 · EMQX http://127.0.0.1:18083 (admin / public123) · Supabase Studio http://127.0.0.1:54323 · FastAPI 서비스 8개(8000·8093·8090·8094·8092·8091·8080·8095)의 `/docs` (MCP 2개 8199·8198은 `/docs`가 없다, 404).
 
 ## 3. 자주 나는 오류와 첫 조치
 
@@ -73,7 +73,8 @@ curl -s http://127.0.0.1:8097/health     # 호스트 워커 (8098은 둘째)
 | 호스트에서 파이썬이 psycopg를 못 올린다(libpq DLL 차단, os error 4551) | `. scripts/host_libpq.sh` 를 먼저 source(LibreOffice의 서명된 libpq 사용). Smart App Control 끄기는 사용자 결정 | HANDOFF A105 |
 | process 컨테이너가 메모리로 죽는다(OOM, RestartCount 증가) | `.env`의 `PROCESS_MEM_LIMIT=768m` 확인 후 `docker compose up -d process` | `.env.example` 주석(A115: 512m에서 509 MiB 도달) |
 | 시험·실습 뒤 RUNNING 인스턴스 잔재가 "내 할일"에 남는다 | `. scripts/host_libpq.sh; .venv314/Scripts/python.exe scripts/cleanup_residue_instances.py --before <ISO시각, 예 2026-10-07T12:20Z> --out .evidence/residue/<이름>` 로 먼저 목록·백업, 확인 뒤 `--apply` | 스크립트 머리말(A115) |
-| 워커를 다시 띄워야 한다 | PowerShell `scripts/stop_worker_host.ps1` 로 트리째 종료 → §1 ⑤ 다시 | `scripts/stop_worker_host.ps1` |
+| 워커를 다시 띄워야 한다 | 저장소 루트에서 PowerShell `scripts/stop_worker_host.ps1` 로 트리째 종료 → §1 ⑤ 다시. 스크립트는 명령줄에 `worker.main`이 있는 `python(w).exe`(sh·ps1 기동 둘 다 해당)와 그 자식 프로세스 전부(CLI·MCP)를 `Stop-Process -Force`하고 결과를 `.evidence/reaudit/worker-stop.json`에 쓴다(남으면 exit 1). `-StopScenario`를 주면 `scenario_instance_test.py --worker`도 함께 끝낸다 | `scripts/stop_worker_host.ps1` |
+| `process.sqlite3`가 수백 MB로 커진다(처리 완료된 투영 아웃박스 행이 안 지워짐, A115: 8,615행 188 MB) | `.venv314/Scripts/python.exe scripts/prune_projection_outbox.py --older-than-days 1` 로 먼저 세고(dry-run, 컨테이너 실행 중에도 안전), 회귀가 돌지 않을 때 `--apply`(500행씩 짧은 트랜잭션). 디스크를 실제로 돌려받으려면 `docker compose stop process` 뒤 `--apply --vacuum`(실행 중이면 거부) → `docker compose up -d process` | 스크립트 머리말(A124), `.evidence/a124/prune-dry.txt` |
 | 승인했는데 PLC ACK가 없다(게이트웨이 `MODE`) | 설비가 REMOTE_MANUAL이다 → 포털 결함 시뮬레이션 카드 **원격 자동** | `docs/student-guide.md` §7 |
 | FUXA 값이 `##.##` | `docker compose up -d --force-recreate fuxa-init` | 같은 문서 |
 | 경보가 안 난다 | `curl -s 127.0.0.1:8092/api/detector/state` 의 `phase`·`slope`; CANDIDATE가 60 시뮬레이션-초 유지돼야 RAISED | 같은 문서 |
