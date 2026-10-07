@@ -30,7 +30,7 @@ function keyboardItem(item) {
   item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); } });
 }
 
-const state = { tab: 'main', plant: null, det: null, incidents: [], runs: [], selected: null, detail: null, run: null, definition: null, audit: [], waves: {}, log: [], selectedAsset: null, showAll: false };
+const state = { tab: 'main', plant: null, det: null, incidents: [], runs: [], selected: null, detail: null, run: null, definition: null, audit: [], waves: {}, log: [], selectedAsset: null, showAll: false, incShown: 20 };
 
 /* ---------------- tabs ---------------- */
 function selectTab(name) {
@@ -348,7 +348,7 @@ function renderScada() {
   }
 }
 async function selectAsset(asset) {
-  state.selectedAsset = asset; state.showAll = false;
+  state.selectedAsset = asset; state.showAll = false; state.incShown = UI.PAGE;
   const list = incidentsFor(asset);
   const pick = list.find(i => !i.terminal) || list[0] || null;
   state.selected = pick ? pick.id : null;
@@ -357,12 +357,12 @@ async function selectAsset(asset) {
   if (pick) await loadDetail(); else renderDetail();
   const det = $('#hitlPanel'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-$('#btnAllInc').addEventListener('click', () => { state.showAll = true; renderIncList(); });
+$('#btnAllInc').addEventListener('click', () => { state.showAll = true; state.incShown = UI.PAGE; renderIncList(); });
 
 /* ---------------- 사건 목록 · 상세 ---------------- */
 function renderIncList() {
   const box = $('#incList');
-  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.selected, state.incidents, state.runs]);
+  const sig = JSON.stringify([state.selectedAsset, state.showAll, state.selected, state.incidents, state.runs, state.incShown]);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const focused = box.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
@@ -370,7 +370,8 @@ function renderIncList() {
   const filtered = (state.selectedAsset && !state.showAll) ? incidentsFor(state.selectedAsset) : state.incidents;
   $('#incListTitle').textContent = (state.selectedAsset && !state.showAll) ? `${state.selectedAsset} ${UI.t('inc.list')} (${filtered.length})` : `${UI.t('inc.listAll')} (${state.incidents.length})`;
   if (!filtered.length) { box.innerHTML = UI.empty(UI.t('inc.noCase'), UI.t('inc.noAlertSub'), 'compact'); }
-  for (const inc of filtered) {
+  const paged = UI.page(filtered, state.incShown, inc => inc.id === state.selected);
+  for (const inc of paged.rows) {
     const it = el('div', 'item' + (inc.id === state.selected ? ' sel' : ''));
     keyboardItem(it);
     it.dataset.itemId = inc.id;
@@ -387,6 +388,7 @@ function renderIncList() {
     it.addEventListener('click', () => { state.selected = null; state.detail = null; loadRun(r.id).then(renderDetail); });
     box.append(it);
   }
+  if (paged.rest) { const more = el('div', '', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { state.incShown += UI.PAGE; renderIncList(); }); box.append(more); }
   if (focused) [...box.children].find(e => e.dataset.itemId === focused)?.focus({ preventScroll: true });
   box.scrollTop = scroll;
 }

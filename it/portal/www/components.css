@@ -246,3 +246,9 @@ details.fold.plain > .fold-body { padding: 0 0 var(--s2); }
 .admin-panel { margin-bottom: var(--s6); }
 .admin-panel .fold-body .form-grid { margin-top: var(--s2); }
 .upload { border-radius: var(--radius-sm); padding: var(--card-pad); }
+
+/* A122: three asset cards never push the page wider than the viewport (min-content → 0) */
+.scada { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ucard header .chips { flex: 1 1 100px; min-width: 0; }
+.ucard .foot { gap: var(--s2); min-width: 0; }
+.ucard .f-phase { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

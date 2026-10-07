@@ -34,7 +34,7 @@ const RELATION_KO = {
 };
 const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', patterns: null, result: null,
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
-  form: { by: '홍길동', role: null, reason: '', option: null }, lastDetailSig: null };
+  form: { by: '홍길동', role: null, reason: '', option: null }, lastDetailSig: null, decShown: 20 };
 
 /* ------------------------------------------------ tab hooks */
 const _selectTab = selectTab;
@@ -377,14 +377,15 @@ async function refreshProcess() {
 }
 function renderProcess() {
   const list = $('#decList');
-  const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError]);
+  const sig = JSON.stringify([ent.decisions, ent.decSel, ent.decisionsError, ent.decShown]);
   if (list.dataset.sig !== sig) {
     list.dataset.sig = sig;
     const focused = list.contains(document.activeElement) ? document.activeElement.dataset.itemId : null;
     const scroll = list.scrollTop;
     list.innerHTML = ent.decisions.length ? '' : UI.empty(UI.t('proc.empty'), UI.t('proc.emptySub'), 'compact');
     if (ent.decisionsError) list.innerHTML = `<div class="neg" role="status">${esc(UI.t('proc.listError'))}</div>`;
-    for (const d of ent.decisions) {
+    const paged = UI.page(ent.decisions, ent.decShown, d => d.id === ent.decSel);
+    for (const d of paged.rows) {
       const it = el('div', 'item' + (d.id === ent.decSel ? ' sel' : ''));
       keyboardItem(it);
       it.dataset.itemId = d.id;
@@ -399,6 +400,7 @@ function renderProcess() {
       });
       list.append(it);
     }
+    if (paged.rest) { const more = el('div', '', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { ent.decShown += UI.PAGE; list.dataset.sig = ''; renderProcess(); }); list.append(more); }
     if (focused) [...list.children].find(e => e.dataset.itemId === focused)?.focus({ preventScroll: true });
     list.scrollTop = scroll;
   }

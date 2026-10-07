@@ -202,6 +202,14 @@ const UI = {
   tabs(items, active, attr = 'data-tab-key') {
     return `<div class="tabs" role="tablist">${items.map(([k, l, n]) => `<button type="button" role="tab" class="tab${k === active ? ' on' : ''}" ${attr}="${esc(k)}" aria-selected="${k === active}">${esc(l)}${n != null ? ` <span class="chip tone-neutral sm">${esc(n)}</span>` : ''}</button>`).join('')}</div>`;
   },
+  // paged list (A122 coordinator request): first `shown` rows, the selected row pinned on top when it is beyond them, one 더 보기 button
+  PAGE: 20,
+  page(items, shown, isSelected) {
+    const head = items.slice(0, shown);
+    const pinned = items.slice(shown).find(isSelected);
+    return { rows: pinned ? [pinned, ...head] : head, rest: Math.max(0, items.length - shown), pinned: !!pinned };
+  },
+  moreButton(rest, attr = 'data-more') { return rest > 0 ? `<button type="button" class="btn small" ${attr} style="width:100%;margin-top:var(--s2)">${esc(this.t('btn.more'))} (남은 ${rest}건)</button>` : ''; },
   // read-only labelled value (이전 단계 입력 · 변수)
   readonly(label, value, sub = '') { return `<div class="field ro"><label>${esc(label)}</label><div class="ro-value">${value}</div>${sub ? `<p class="field-hint">${esc(sub)}</p>` : ''}</div>`; },
 

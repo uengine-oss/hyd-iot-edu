@@ -7,7 +7,7 @@
    A122 (UIUX_PLAN §1.3 · §1.4 · §5): summary cards → 에이전트 활동 + 내 차례 → 폼(사건 / 선택 / 사유·담당) → 목록 + 상세 3탭(결과 · 흐름 · 기록). */
 (function () {
   const I = { mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
-              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null };
+              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null, listShown: 20 };
   const who = id => UI.who(id);
   const chip = s => UI.chip(s);
   const STEP_LABEL = { done: UI.t('done'), current: UI.status('IN_PROGRESS'), skipped: UI.status('SKIPPED'), todo: UI.status('TODO') };
@@ -39,7 +39,7 @@
     const decId = selectTask ? await decisionIdOf(selectTask) : null;
     if (decId !== I.decId) { I.decId = decId; I.dec = null; I.form = { option: null, role: null, by: I.form.by, reason: '', fan: null, load: null }; }
     if (I.decId && !I.dec) { try { I.dec = await getJ(API.process + '/api/decisions/' + encodeURIComponent(I.decId)); } catch (e) { I.dec = null; } }
-    const sig = JSON.stringify([I.status, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
+    const sig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
       I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status]), I.view && I.view.events.length,
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.dec && I.dec.state, I.msg,
       I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab]);
@@ -269,7 +269,8 @@
     box.innerHTML = '';
     const names = {};
     ((I.view && I.view.definition && I.view.definition.activities) || []).forEach(a => { names[a.id] = a.name; });
-    I.instances.forEach(x => {
+    const paged = UI.page(I.instances, I.listShown, x => x.proc_inst_id === I.sel);
+    paged.rows.forEach(x => {
       const started = new Date(x.start_date), ended = x.end_date ? new Date(x.end_date) : null;
       const span = ((ended || new Date()) - started) / 60000;
       const when = x.status === 'RUNNING' ? `${span < 1 ? UI.t('inst.justStarted') : Math.round(span) + UI.t('inst.elapsed')}` : `${ended ? Math.max(1, Math.round(span)) + UI.t('inst.took') + ' ' : ''}${UI.status(x.status)}`;
@@ -281,6 +282,7 @@
       it.addEventListener('click', () => { I.sel = x.proc_inst_id; load(true); });
       box.appendChild(it);
     });
+    if (paged.rest) { const more = el('div', '', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { I.listShown += UI.PAGE; renderList(); }); box.appendChild(more); }
   }
 
   function stepsOf(view) {
@@ -546,7 +548,7 @@
   selectTab = function (name) { _sel(name); if (name === 'instances') load(true); };
   window.hydApp.selectTab = selectTab;
   $('#instReload').addEventListener('click', () => load(true));
-  $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; load(true); });
+  $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; I.listShown = UI.PAGE; load(true); });
   setInterval(() => load(false), 2000);
   window.hydInstances = { I, load };
 })();
