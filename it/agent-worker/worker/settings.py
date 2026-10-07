@@ -16,6 +16,10 @@ log = logging.getLogger("worker.settings")
 #: The orchestration value this worker polls (todolist.agent_orch). One value for every CLI (the product's AGENT_TYPE).
 AGENT_TYPE = "cliagents"
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
+#: Claude Code --allowedTools for a headless run: the read-only MCP tools the task needs plus `python <file>` for the A077
+#: citation-offset script (file writes stay under the workspace permission mode). Single source of truth (see allowed_tools).
+DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep,"
+                         "Bash(python *),Bash(python3 *),PowerShell(python *)")
 
 
 def effective_permission(provider_id: str, permission: Permission) -> Permission:
@@ -72,9 +76,10 @@ class Settings:
     # (Claude Code --allowedTools). Anything else still arrives as a permission_request → human question (HITL).
     # A077: prompts longer than this go to context/prompt.md (Windows argv limit ≈ 32 K chars; keep headroom for the other args)
     max_inline_prompt_chars: int = int(os.getenv("MAX_INLINE_PROMPT_CHARS", "16000"))
-    allowed_tools: list[str] = field(default_factory=lambda: _csv(os.getenv(
-        "ALLOWED_TOOLS", "mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep,"
-        "Bash(python *),Bash(python3 *),PowerShell(python *)")))   # A077: a citation-offset script runs in the run workspace (file writes stay under the workspace permission mode)
+    # The default list lives here only (compose passes ALLOWED_TOOLS through as `${ALLOWED_TOOLS:-}`; an empty value means
+    # this default). It used to be duplicated in compose.yaml without the python entries, so the container could not run
+    # the A077 citation-offset script without a permission request.
+    allowed_tools: list[str] = field(default_factory=lambda: _csv(os.getenv("ALLOWED_TOOLS") or DEFAULT_ALLOWED_TOOLS))
     # Claude Code keeps its login under CLAUDE_CONFIG_DIR. Isolating it per run (the product's RuntimeLease) is only safe when
     # an API key authenticates the CLI; a subscription login lives in the shared config dir and must not be relocated.
     isolate_config_dir: bool = bool(os.getenv("ANTHROPIC_API_KEY"))

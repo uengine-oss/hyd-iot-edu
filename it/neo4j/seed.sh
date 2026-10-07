@@ -22,6 +22,19 @@ echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소�
 cy -f /seed/v2/instances.cypher
 echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량→생산량 · 작동유 열화 원인/증상 · 저압/고진동 트립) ..."
 cy -f /seed/v2/knowledge_a098.cypher
+# A144 (O04): read back what was just loaded. Every line of seed_checks.cypher is one query that returns offending rows;
+# any row means the seed did not land as the scenarios expect, and the service fails (compose: agent · dmn-mcp depend on
+# kg-seed completing successfully, so a broken graph never starts the judgment services).
+echo "--- read-back checks (v2/seed_checks.cypher) ---"
+FAILED=0; CHECKS=0
+while IFS= read -r q; do
+  case "$q" in ''|//*) continue;; esac
+  CHECKS=$((CHECKS+1))
+  ROWS=$(cy "$q" | tail -n +2 | sed '/^$/d')
+  if [ -n "$ROWS" ]; then echo "CHECK FAILED: $ROWS"; FAILED=$((FAILED+1)); fi
+done < /seed/v2/seed_checks.cypher
+echo "read-back: $CHECKS checks, $FAILED failed"
+if [ "$FAILED" != "0" ]; then echo "kg-seed FAILED read-back"; exit 1; fi
 echo "--- node counts by label ---"
 cy "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
 echo "--- 고장 유형별 조치 방법 (스킬 = SOP) ---"

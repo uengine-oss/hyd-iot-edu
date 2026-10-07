@@ -14,7 +14,7 @@ from hydcommon.sql_read import guard, READ_FUNCTIONS
 
 from .. import card as cardlib
 
-PG_DSN = os.getenv("TSDB_DSN", "postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd")
+TSDB_DSN = os.getenv("TSDB_DSN", "postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd")
 TABLES = frozenset({'tag_1s', 'feat_1s', 'tag_1m'})
 DAQ_PROFILE = os.getenv('DAQ_PROFILE', 'lite')
 OBSERVATION_GRACE_S = 2.0          # the detector's Observations grace: one contract for "no gap"
@@ -39,7 +39,7 @@ def observation_coverage(times, window_start, now, limit_s):
 
 class TimeSeriesDB:
     def __init__(self):
-        self.dsn = PG_DSN
+        self.dsn = TSDB_DSN
 
     def _conn(self):
         return psycopg.connect(self.dsn, autocommit=True, connect_timeout=5,

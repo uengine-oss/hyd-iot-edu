@@ -14,6 +14,10 @@ from agentsvc.tools import mcp_kg, mcp_prom, mcp_tsdb
 from agentsvc.tools.prometheus import Prometheus
 
 
+#: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
+CAUSE_BASIS = "ontology T1 (pattern → symptom → failure mode ← cause), same query as diagnose"
+
+
 def ok(document) -> dict:
     """The result envelope the WMS sample's MCP uses: {"result": "ok", "document": …}."""
     return {"result": "ok", "document": document}
@@ -98,16 +102,24 @@ class DmnTools:
 
     # ---- task:rank
     def evaluate_cards(self, asset: str, pattern: str, cause: str, failure_mode: str, overrides: dict | None = None) -> dict:
-        """Run dec:action-candidates → dec:compliance → dec:rank-actions with forecasts, BSC trade-offs and precedents. No submission."""
-        c = self._cause(cause, failure_mode)
-        return decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c, origin={"kind": "mcp", "pattern": pattern},
+        """Run dec:action-candidates → dec:compliance → dec:rank-actions with forecasts, BSC trade-offs and precedents. No submission.
+        The (cause, failure_mode) pair must be one the diagnosis knowledge (T1) lists for this pattern and asset; an
+        argument with no diagnosis basis is refused (INVALID) instead of silently filtering candidates by a made-up cause."""
+        c = self._diagnosed_cause(asset, pattern, cause, failure_mode)
+        return decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c,
+                                origin={"kind": "mcp", "pattern": pattern, "cause": cause, "failureMode": failure_mode,
+                                        "cause_basis": CAUSE_BASIS},
                                 overrides=overrides or None, do_submit=False)
 
     def submit_decision(self, asset: str, pattern: str, cause: str, failure_mode: str, incident: str, alert_id: str | None = None,
                         overrides: dict | None = None, process_scope: dict | None = None) -> dict:
         """Same evaluation, then POST the ranked cards to the process service (the agent's only write). Returns id · status · recommended."""
-        c = self._cause(cause, failure_mode)
-        origin = {"kind": "alert", "alertId": alert_id, "incident": incident, "pattern": pattern, "cause": cause, "failureMode": failure_mode}
+        if overrides:
+            # the same guard decide() applies, raised here before any graph/DB IO: what-if facts never reach a live submission
+            raise ValueError('가정 facts는 읽기 전용 evaluate_cards에서만 사용할 수 있습니다')
+        c = self._diagnosed_cause(asset, pattern, cause, failure_mode)
+        origin = {"kind": "alert", "alertId": alert_id, "incident": incident, "pattern": pattern, "cause": cause, "failureMode": failure_mode,
+                  "cause_basis": CAUSE_BASIS}
         if process_scope is not None:
             origin['process_scope'] = dict(process_scope)
         rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c, origin=origin, overrides=overrides or None, do_submit=True)
@@ -127,6 +139,23 @@ class DmnTools:
     def _cause(cause: str, failure_mode: str) -> dict:
         """The shape decide.decide() expects for the top cause. Names are only used in explanation text, so ids suffice here."""
         return {"id": cause, "name": cause, "failureModeId": failure_mode, "failureMode": failure_mode}
+
+    def _diagnosed_cause(self, asset: str, pattern: str, cause: str, failure_mode: str) -> dict:
+        """A144 (A053 open end): evaluate_cards/submit_decision take the cause as an argument, so nothing used to tie it to a
+        diagnosis. The same T1 query diagnose() ranks (pattern → symptom → failure mode ← cause) is the diagnosis basis: the
+        pair must appear there, and the real names are carried into the explanation. Anything else is a ValueError
+        (→ INVALID envelope): the caller must diagnose first, or fix its arguments."""
+        if not isinstance(cause, str) or not cause or not isinstance(failure_mode, str) or not failure_mode:
+            raise ValueError("cause와 failure_mode는 비어 있지 않은 노드 id여야 합니다")
+        listed = [r for r in self.kg.t1_causes(pattern, asset) if r.get("causeId") == cause]
+        if not listed:
+            raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다. diagnose 결과의 원인 id를 쓰세요")
+        match = [r for r in listed if r.get("failureModeId") == failure_mode]
+        if not match:
+            known = sorted({r.get("failureModeId") for r in listed if r.get("failureModeId")})
+            raise ValueError(f"{cause}는 고장 유형 {failure_mode}의 원인이 아닙니다 (진단 지식: {', '.join(known) or '없음'})")
+        r = match[0]
+        return {"id": cause, "name": r.get("cause") or cause, "failureModeId": failure_mode, "failureMode": r.get("failureMode") or failure_mode}
 
     def health(self) -> dict:
         return {"neo4j": self.kg.ping(), "llm": llm.available()}

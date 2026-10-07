@@ -1,11 +1,14 @@
-"""connect-sink (L5): Kafka -> TimescaleDB (the JDBC Sink role, upsert mode).
+"""connect-sink (L5): Kafka -> TimescaleDB (the JDBC Sink role of the full architecture, in one Python process).
 
-  plant.tag    -> tag_1s   (batched inserts)
-  feat.1s      -> feat_1s
-  alerts       -> alerts   (RAISE insert / CLEAR update by alert_id)
-  action.cmd   -> actions  (insert)
-  plant.status -> actions  (ACK: cmdId/result -> ack_result/ack_reason/ack_at)
-  audit        -> audit
+  plant.tag    -> tag_1s   (batched plain INSERT — no unique key; duplicates are prevented by the sink_offsets checkpoint)
+  feat.1s      -> feat_1s  (same: plain INSERT + checkpoint)
+  alerts       -> alerts   (upsert by alert_id: RAISE insert / CLEAR update)
+  action.cmd   -> actions  (upsert by cmd_id)
+  plant.status -> actions  (ACK: cmdId/result -> ack_result/ack_reason/ack_at, first ACK wins)
+  audit        -> audit    (plain INSERT + checkpoint)
+Rows and the Kafka offsets they came from are committed in one DB transaction (store_records), so a restart or a
+rebalance replays records the checkpoint already covers without writing them twice. `sink_batch_age_seconds` is the age
+of the oldest record in the batch just stored (how far behind the sink is).
 """
 import asyncio
 import json
@@ -116,8 +119,19 @@ async def handle_event(conn, topic, v, rec_ms):
     state["rows"] += 1
 
 
+def batch_age_seconds(batches, now_s=None) -> float | None:
+    """Age (s) of the oldest record in the batch by its Kafka record timestamp (ms); None for an empty batch."""
+    stamps = [r.timestamp for records in batches.values() for r in records if r.timestamp]
+    if not stamps:
+        return None
+    return round(max(0.0, (time.time() if now_s is None else now_s) - min(stamps) / 1000.0), 3)
+
+
 async def store_records(conn, batches):
     """Rows and source offsets share one DB transaction, including restart/rebalance replay."""
+    age = batch_age_seconds(batches)
+    if age is not None:
+        g_lag.set(age)
     async with conn.transaction():
         for tp, records in batches.items():
             if not records:

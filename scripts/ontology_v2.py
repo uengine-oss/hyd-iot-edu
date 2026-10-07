@@ -425,6 +425,39 @@ def integrity(records_nodes, records_rels) -> list[str]:
     for _, inp, _ in _out(records_rels, "READS"):
         if inp not in produced and inp not in sourced:
             errs.append(f"input {inp}: 출처(SOURCED_FROM)도 만드는 작업(PRODUCES)도 없다")
+    errs += kpi_role_integrity(records_nodes, records_rels)
+    return errs
+
+
+def kpi_role_integrity(records_nodes, records_rels) -> list[str]:
+    """A144 (D02): BSC leading/lagging roles must agree with the strategy-map causality. A lagging (outcome) Measure never
+    INFLUENCES a leading (driver) Measure, and every leading Measure reaches some lagging Measure through INFLUENCES
+    (a driver that drives no outcome is not a driver). Measures without a role are reported by validate() as a missing
+    required property; here they are skipped so one defect is reported once."""
+    role = {n["props"].get("id"): n["props"].get("kpiRole") for n in records_nodes if "Measure" in n["labels"]}
+    edges = [(a, b) for a, b, _ in _out(records_rels, "INFLUENCES") if a in role and b in role]
+    errs = []
+    for a, b in edges:
+        if role[a] == "lagging" and role[b] == "leading":
+            errs.append(f"measure {a}: 후행(lagging) 지표가 선행(leading) 지표 {b}에 INFLUENCES — 전략맵 인과 방향 위반")
+    out = {}
+    for a, b in edges:
+        out.setdefault(a, set()).add(b)
+    for m, r in role.items():
+        if r != "leading":
+            continue
+        seen, stack, reached = set(), [m], False
+        while stack and not reached:
+            cur = stack.pop()
+            for nxt in out.get(cur, ()):
+                if role.get(nxt) == "lagging":
+                    reached = True
+                    break
+                if nxt not in seen:
+                    seen.add(nxt)
+                    stack.append(nxt)
+        if not reached:
+            errs.append(f"measure {m}: 선행(leading) 지표인데 INFLUENCES 경로로 닿는 후행(lagging) 지표가 없다")
     return errs
 
 

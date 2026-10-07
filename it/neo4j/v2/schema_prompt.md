@@ -23,7 +23,7 @@
 
 - `(:Perspective {id!, name!, order!})` BSC 관점. 재무 · 고객 · 내부 프로세스 · 학습과 성장.
 - `(:Objective {id!, name!, description})` 전략 목표. 한 관점에 속하고, 다른 목표를 받쳐 준다 (전략맵의 인과 화살표).
-- `(:Measure {id!, name!, aliases, unit!, direction![UP|DOWN], formula, target, thresholdWarn, thresholdCrit, frequency})` BSC 성과 지표. 전략 목표를 측정하고(목표값 · 경고 · 위험 임계값), 다른 성과 지표에 +/- 영향을 준다. 상충 관계의 노드다.
+- `(:Measure {id!, name!, aliases, unit!, direction![UP|DOWN], kpiRole![leading|lagging], formula, target, thresholdWarn, thresholdCrit, frequency})` BSC 성과 지표. 전략 목표를 측정하고(목표값 · 경고 · 위험 임계값), 다른 성과 지표에 +/- 영향을 준다. 상충 관계의 노드다.
 
 ## 프로세스 계층 — BPMN 2.0 최소 집합 — Process · Event · Task · Gateway · SequenceFlow · 수행자
 

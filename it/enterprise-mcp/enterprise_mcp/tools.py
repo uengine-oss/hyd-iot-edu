@@ -3,15 +3,20 @@
 Reads only. Every tool answers in the envelope the WMS sample uses ({"result": "ok", "document": …} / {"result": "error",
 "error_kind", "message"}); the document of a named read is the {"system", "facts", "records"} record the agent's decision
 engine already understands (enterprise-sim), so the ontology InputData -SOURCED_FROM-> System links keep working.
-`describe_schema` hands the agent the DDL-level view it needs to write its own SELECT (`query`); `query` runs it through
-sql_guard on a read-only, time-boxed connection.
+`describe_catalog` (structured) and `describe_schema` (the same metadata rendered as quoted DDL text in `document`) hand
+the agent the view it needs to write its own SELECT (`query`); `query` runs it through sql_guard on a read-only,
+time-boxed connection. `guarded` turns a DB/connection failure of any tool into the error envelope (error_kind UNKNOWN)
+and a rejected statement into INVALID, so a tool never raises a stack trace at the MCP client.
 """
 from __future__ import annotations
 
+import functools
 import json
 from typing import Callable
 
-from .sql_guard import guard
+import psycopg
+
+from .sql_guard import SqlRejected, guard
 from .catalog import CATALOG_SQL, render
 
 READ_RPCS = {
@@ -31,6 +36,21 @@ def ok(document) -> dict:
 def error(kind: str, message: str, **extra) -> dict:
     """kind: INVALID (rejected input) | UNKNOWN (database / unexpected) — the WMS sample's error_kind vocabulary."""
     return {"result": "error", "error_kind": kind, "message": message, **extra}
+
+
+def guarded(fn):
+    """Envelope every failure of a tool: SqlRejected → INVALID, psycopg/connection/runtime errors → UNKNOWN (first line of
+    the DB message, no stack trace). KeyError (unknown fixed read) is a programming error and still raises."""
+    @functools.wraps(fn)
+    def run(*a, **kw):
+        try:
+            return fn(*a, **kw)
+        except SqlRejected as e:
+            return error("INVALID", f"rejected: {e}", **({"statement": kw["sql"]} if "sql" in kw else {}))
+        except (psycopg.Error, RuntimeError, OSError) as e:
+            return error("UNKNOWN", f"database: {str(e).splitlines()[0][:200] if str(e) else type(e).__name__}",
+                         **({"statement": kw["sql"]} if "sql" in kw else {}))
+    return run
 
 
 class EnterpriseTools:
@@ -54,9 +74,11 @@ class EnterpriseTools:
         return ok(value if isinstance(value, dict) else json.loads(value or "{}"))
 
     # ---- the agent's own SQL (회의 6번)
-    def describe_schema(self) -> str:
-        """Quoted query/ingestion DDL with actual comments, types and constraints."""
-        return render(self.describe_catalog()['document'])
+    def describe_schema(self) -> dict:
+        """Quoted query/ingestion DDL with actual comments, types and constraints, as `document` (a string) in the envelope.
+        (It used to return the bare string; FastMCP then sent {"result": "<ddl>"}, colliding with the envelope's
+        result=ok|error vocabulary — a client checking result == "ok" saw DDL instead.)"""
+        return ok(render(self.describe_catalog()['document']))
 
     def describe_catalog(self) -> dict:
         """One live catalog statement, restricted to reader-visible ent tables/views."""

@@ -4,7 +4,9 @@ Per asset: feature slopes and z-score anomaly score (autoencoder slot), plus
 Neo4j TESTS/clearRule/hold definitions evaluated on each TS1 tick. Active alerts
 pin their definition; SQLite checkpoints and an outbox preserve alert identity
 across restart. Authoritative PLC trips are watched separately.
-Simulated time = (event time - first event time) * TIME_SCALE, so hold windows are in simulated seconds.
+Clocks: pattern hold/clear windows are measured in simulated seconds = event epoch seconds * TIME_SCALE
+(pattern_runtime.observe -> cep._step). sim_time() below, (event time - first event time) * TIME_SCALE, is used only
+for the TS1/VS1 slope windows shown on the portal; it is not the clock the patterns hold on.
 """
 import asyncio
 import logging

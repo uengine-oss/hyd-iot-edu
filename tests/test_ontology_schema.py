@@ -79,8 +79,8 @@ def _rel(t, a, la, b, lb, **props):
 
 
 def test_validator_passes_a_conforming_fragment():
-    nodes = [_node(["Measure"], id="msr:a", name="A", unit="%", direction="UP"),
-             _node(["Measure"], id="msr:b", name="B", unit="%", direction="DOWN"),
+    nodes = [_node(["Measure"], id="msr:a", name="A", unit="%", direction="UP", kpiRole="leading"),
+             _node(["Measure"], id="msr:b", name="B", unit="%", direction="DOWN", kpiRole="lagging"),
              _node(["Task", "FlowNode"], id="t", name="T", taskType="user")]
     rels = [_rel("INFLUENCES", "msr:a", ["Measure"], "msr:b", ["Measure"], sign=-1)]
     assert ov.validate(nodes, rels, S) == []

@@ -69,7 +69,10 @@ def test_worker_prompt_and_mcp_pass_exact_producer_scope(monkeypatch):
         seen.append(kwargs)
         return {'id': 'D', 'status': 'SUBMITTED'}
     monkeypatch.setattr(dmn.decidelib, 'decide', decide)
-    tool = dmn.DmnTools(kg=object(), tsdb=object())
+    class Graph:            # A144: the cause argument must have a diagnosis basis (T1) before the scope is passed on
+        def t1_causes(self, pattern, asset):
+            return [{'causeId': 'cause', 'cause': 'C', 'failureModeId': 'failure', 'failureMode': 'F'}]
+    tool = dmn.DmnTools(kg=Graph(), tsdb=object())
     tool.submit_decision('HYD-01', 'COOLER_DEGRADATION', 'cause', 'failure', 'INC-fixture', process_scope=scope)
     assert seen[0]['origin']['process_scope'] == scope and seen[0]['do_submit'] is True
 

@@ -150,6 +150,16 @@
           "description": "UP=클수록 좋다, DOWN=작을수록 좋다"
         },
         {
+          "name": "kpiRole",
+          "type": "enum",
+          "values": [
+            "leading",
+            "lagging"
+          ],
+          "required": true,
+          "description": "BSC 지표 역할. lagging=후행 결과 지표(재무·고객 성과, 전략맵의 끝), leading=선행 동인 지표(내부 프로세스·학습의 동인; INFLUENCES 경로로 후행 지표를 움직인다). 후행 지표는 선행 지표에 INFLUENCES하지 않고, 선행 지표는 후행 지표에 닿아야 한다"
+        },
+        {
           "name": "formula",
           "type": "string",
           "description": "다른 KPI로 계산되면 식. 예: kpi:revenue - kpi:cost"

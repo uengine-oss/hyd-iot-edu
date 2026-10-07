@@ -1,7 +1,10 @@
 """agent (L8): alert -> data-trust check -> T1 causes -> evidence SQL -> T2 actions -> guide card -> guardrail -> process API.
 
-The LangGraph/MCP/LiteLLM stack of the full architecture is collapsed into one process, but the discipline is kept:
-tools are read-only, the only write is POST {PROCESS_URL}/api/incidents, and every step is recorded in the run trace.
+The LangGraph/MCP/LiteLLM stack of the full architecture is collapsed into one process (the `tools.mcp_*` modules are
+in-process functions, not MCP servers), but the discipline is kept: tools are read-only and every step is recorded in the
+run trace. The legacy pipeline writes to the process service twice and nowhere else: POST /api/incidents (the guide card,
+step 7 below) and then POST /api/decisions (the ranked action cards, decide.submit). PROCESS_MODE=instance hands the
+action-card step to the process instance's agent task instead (see /api/agent/decide and dmn-mcp).
 """
 import asyncio
 import json

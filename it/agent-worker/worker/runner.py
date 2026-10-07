@@ -120,6 +120,7 @@ class Runner:
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite))
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=ws.exists)
+            hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
             text = prompt.resume_prompt(ctx.human_answer, previous_summary=str(row.get("draft") or "")[:2000], restarted=plan.restarted)
             resume_session = plan.session_id or None
             if plan.restarted:
@@ -280,10 +281,24 @@ class Runner:
     # ---- outcomes
     def _pause(self, row: dict, ws: workspace.Workspace, agent_id: str, session_id: str, question: str, job_id: str,
                options: list[str] | None = None) -> None:
-        """Stop and wait for a person, without calling it done or failed (draft_status HUMAN_ASKED + human_asked event)."""
+        """Stop and wait for a person, without calling it done or failed (draft_status HUMAN_ASKED + human_asked event).
+
+        A144 (A05 open end, `_pause` discarded remember()'s duplicate verdict): the DB is the authority. If the row already
+        carries the same question (fingerprint) still unanswered, this is a repeat of a pending ask — keep the status and
+        the existing job id, and do not insert a second human_asked event or notification. A re-ask after the person
+        answered is a new question (new event + notification), because the answer consumed the previous one."""
+        fingerprint = hitl.fingerprint(agent_id, question)
+        pending = hitl.pending_request(row)
+        if pending is not None and pending.fingerprint == fingerprint:
+            with self.repo.instance_transaction(self.s.tenant_id, row['proc_inst_id']):
+                if not self.repo.set_draft_status(row['id'], 'HUMAN_ASKED', expected_consumer=row['consumer']):
+                    raise Cancelled()
+            log.info("%s %s asked the same pending question again (job %s); not notifying twice", row.get("proc_inst_id"),
+                     row.get("activity_id"), pending.job_id)
+            return
         ask_job = f"human_asked_{row['id'][:8]}_{uuid.uuid4().hex}"
         request = hitl.PendingRequest(run_id=row["id"], agent_id=agent_id, session_id=session_id, question=question, job_id=ask_job,
-                                      fingerprint=hitl.fingerprint(agent_id, question))
+                                      fingerprint=fingerprint)
         with self.repo.instance_transaction(self.s.tenant_id, row['proc_inst_id']):
             if not self.repo.set_draft_status(row['id'],'HUMAN_ASKED',expected_consumer=row['consumer']):
                 raise Cancelled()
@@ -297,7 +312,11 @@ class Runner:
             self.repo.insert_notification({"title": question[:200], "type": "workitem_bpm", "description": agent_id, "user_id": _asker_of(row),
                                            "tenant_id": self.s.tenant_id, "url": f"/todolist/{row['id']}", "from_user_id": agent_id})
         try:
-            hitl.remember(ws.path, request)
+            if not hitl.remember(ws.path, request):
+                # the file cache still held an older pending record with this fingerprint although the DB had none (or an
+                # answered one): the DB rows above are the truth, so overwrite the cache rather than trust it
+                hitl.clear(ws.path)
+                hitl.remember(ws.path, request)
         except OSError:
             log.exception('pending file cache failed; question/session already persisted in DB')
         log.info("%s %s paused for a person: %s", row.get("proc_inst_id"), row.get("activity_id"), question[:80])

@@ -26,31 +26,34 @@ UNWIND [['dept:plant','공장 경영'],['dept:production','생산팀'],['dept:ma
         ['dept:quality','품질팀'],['dept:sales','영업팀'],['dept:energy','환경안전 · 에너지팀']] AS r
 MERGE (n:OrgUnit {id: r[0]}) SET n.name = r[1];
 
-// BSC 성과 지표: [id, name, aliases, unit, direction, objective, owner, formula, target, frequency]
+// BSC 성과 지표: [id, name, aliases, unit, direction, objective, owner, formula, target, frequency, kpiRole]
+// kpiRole(BSC, Kaplan·Norton): lagging = 결과 지표(재무·고객 관점의 성과, 전략맵의 끝), leading = 선행 동인 지표(내부 프로세스·
+// 학습 관점의 동인, INFLUENCES 경로로 결과 지표를 움직인다). 규칙: 후행 지표는 선행 지표에 INFLUENCES하지 않고, 모든 선행
+// 지표는 INFLUENCES 경로로 후행 지표에 닿는다 (scripts/ontology_v2.py integrity · probe_semantic_links Q23).
 UNWIND [
-  ['msr:op-profit','영업이익',['이익','수익','수익률'],'만원/월','UP','obj:profit','dept:plant','msr:revenue - kpi:cost',null,'월'],
-  ['msr:revenue','매출',['매출액'],'만원/월','UP','obj:profit','dept:sales',null,null,'월'],
-  ['msr:cost','총비용',['비용','원가'],'만원/월','DOWN','obj:cost','dept:plant','msr:maint-cost + kpi:energy-cost + kpi:part-cost + kpi:inventory-cost + kpi:penalty',null,'월'],
-  ['msr:maint-cost','보전비',['정비비','수리비'],'만원/월','DOWN','obj:cost','dept:maintenance',null,null,'월'],
-  ['msr:energy-cost','에너지비',['전기요금','전력비'],'만원/월','DOWN','obj:cost','dept:energy',null,null,'월'],
-  ['msr:part-cost','부품 구매비',['구매비'],'만원/월','DOWN','obj:cost','dept:purchasing',null,null,'월'],
-  ['msr:inventory-cost','재고 보관비',['보관비','창고비'],'만원/월','DOWN','obj:cost','dept:production',null,null,'월'],
-  ['msr:penalty','지체상금',['납기 위약금'],'만원/월','DOWN','obj:cost','dept:sales',null,0,'월'],
-  ['msr:otd','납기 준수율',['납기','OTD'],'%','UP','obj:delivery','dept:sales',null,98,'주'],
-  ['msr:quality-claim','품질 클레임',['클레임','불량 유출'],'건/월','DOWN','obj:quality','dept:quality',null,0,'월'],
-  ['msr:brand','브랜드 신뢰',['브랜드','고객 신뢰'],'지수','UP','obj:quality','dept:sales',null,80,'분기'],
-  ['msr:availability','설비 가동률',['가동률','가용성'],'%','UP','obj:availability','dept:production',null,95,'일'],
-  ['msr:throughput','생산량',['생산 속도','처리량'],'ea/h','UP','obj:availability','dept:production',null,120,'실시간'],
-  ['msr:mtbf','평균 고장 간격',['MTBF','설비 신뢰성'],'h','UP','obj:availability','dept:maintenance',null,2000,'월'],
-  ['msr:oil-life','작동유 잔여 수명',['작동유 수명','오일 수명'],'%','UP','obj:availability','dept:maintenance',null,null,'주'],
-  ['msr:safety-margin','인터록 여유',['안전 여유','트립 여유'],'℃','UP','obj:safety','dept:production',null,10,'실시간'],
-  ['msr:energy-use','전력 사용량',['전력량','에너지 사용'],'kWh/일','DOWN','obj:energy','dept:energy',null,null,'일'],
-  ['msr:inventory','재고량',['완제품 재고','재고'],'ea','DOWN','obj:cost','dept:production',null,null,'일'],
-  ['msr:part-price','부품 단가',['부품가'],'만원/개','DOWN','obj:cost','dept:purchasing',null,null,'건'],
-  ['msr:part-quality','부품 품질',['부품 신뢰도'],'지수','UP','obj:quality','dept:purchasing',null,null,'분기'],
-  ['msr:precedent','판단 선례 축적',['선례','판단 사례'],'건','UP','obj:knowledge','dept:plant',null,null,'월']
+  ['msr:op-profit','영업이익',['이익','수익','수익률'],'만원/월','UP','obj:profit','dept:plant','msr:revenue - kpi:cost',null,'월','lagging'],
+  ['msr:revenue','매출',['매출액'],'만원/월','UP','obj:profit','dept:sales',null,null,'월','lagging'],
+  ['msr:cost','총비용',['비용','원가'],'만원/월','DOWN','obj:cost','dept:plant','msr:maint-cost + kpi:energy-cost + kpi:part-cost + kpi:inventory-cost + kpi:penalty',null,'월','lagging'],
+  ['msr:maint-cost','보전비',['정비비','수리비'],'만원/월','DOWN','obj:cost','dept:maintenance',null,null,'월','lagging'],
+  ['msr:energy-cost','에너지비',['전기요금','전력비'],'만원/월','DOWN','obj:cost','dept:energy',null,null,'월','lagging'],
+  ['msr:part-cost','부품 구매비',['구매비'],'만원/월','DOWN','obj:cost','dept:purchasing',null,null,'월','lagging'],
+  ['msr:inventory-cost','재고 보관비',['보관비','창고비'],'만원/월','DOWN','obj:cost','dept:production',null,null,'월','lagging'],
+  ['msr:penalty','지체상금',['납기 위약금'],'만원/월','DOWN','obj:cost','dept:sales',null,0,'월','lagging'],
+  ['msr:otd','납기 준수율',['납기','OTD'],'%','UP','obj:delivery','dept:sales',null,98,'주','lagging'],
+  ['msr:quality-claim','품질 클레임',['클레임','불량 유출'],'건/월','DOWN','obj:quality','dept:quality',null,0,'월','lagging'],
+  ['msr:brand','브랜드 신뢰',['브랜드','고객 신뢰'],'지수','UP','obj:quality','dept:sales',null,80,'분기','lagging'],
+  ['msr:availability','설비 가동률',['가동률','가용성'],'%','UP','obj:availability','dept:production',null,95,'일','leading'],
+  ['msr:throughput','생산량',['생산 속도','처리량'],'ea/h','UP','obj:availability','dept:production',null,120,'실시간','leading'],
+  ['msr:mtbf','평균 고장 간격',['MTBF','설비 신뢰성'],'h','UP','obj:availability','dept:maintenance',null,2000,'월','leading'],
+  ['msr:oil-life','작동유 잔여 수명',['작동유 수명','오일 수명'],'%','UP','obj:availability','dept:maintenance',null,null,'주','leading'],
+  ['msr:safety-margin','인터록 여유',['안전 여유','트립 여유'],'℃','UP','obj:safety','dept:production',null,10,'실시간','leading'],
+  ['msr:energy-use','전력 사용량',['전력량','에너지 사용'],'kWh/일','DOWN','obj:energy','dept:energy',null,null,'일','leading'],
+  ['msr:inventory','재고량',['완제품 재고','재고'],'ea','DOWN','obj:cost','dept:production',null,null,'일','leading'],
+  ['msr:part-price','부품 단가',['부품가'],'만원/개','DOWN','obj:cost','dept:purchasing',null,null,'건','leading'],
+  ['msr:part-quality','부품 품질',['부품 신뢰도'],'지수','UP','obj:quality','dept:purchasing',null,null,'분기','leading'],
+  ['msr:precedent','판단 선례 축적',['선례','판단 사례'],'건','UP','obj:knowledge','dept:plant',null,null,'월','leading']
 ] AS r
-MERGE (n:Measure {id: r[0]}) SET n.name = r[1], n.aliases = r[2], n.unit = r[3], n.direction = r[4], n.formula = r[7], n.target = r[8], n.frequency = r[9]
+MERGE (n:Measure {id: r[0]}) SET n.name = r[1], n.aliases = r[2], n.unit = r[3], n.direction = r[4], n.formula = r[7], n.target = r[8], n.frequency = r[9], n.kpiRole = r[10]
 WITH n, r MATCH (o:Objective {id: r[5]}), (d:OrgUnit {id: r[6]}) MERGE (n)-[:MEASURES]->(o) MERGE (n)-[:OWNED_BY]->(d);
 MATCH (n:Measure {id:'msr:safety-margin'}) SET n.thresholdWarn = 5, n.thresholdCrit = 0;
 

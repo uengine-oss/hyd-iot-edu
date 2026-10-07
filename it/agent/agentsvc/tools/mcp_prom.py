@@ -1,6 +1,8 @@
 """mcp-prom (read-only): data-trust check before reasoning (v3: '이상이면 추론을 보류하고 데이터 신뢰 불가 카드').
 
-Sources: newest tag age in TimescaleDB (end-to-end freshness) + connect-ingest /healthz (queue depth, lag).
+Despite the name this module does not query Prometheus (that is tools/prometheus.py, used by dmn-mcp's prometheus_*
+tools). Sources: newest tag age in TimescaleDB (end-to-end freshness) + connect-ingest /healthz, whose `ok` is true only
+while its MQTT leg and Kafka pump are both alive.
 """
 import json
 import os

@@ -12,6 +12,9 @@ from hydcommon.schemas import ACTION_WHITELIST, actions_to_writes, validate_acti
 from hydcommon.timeutil import parse_iso
 
 RATE_LIMIT_PER_S = 2
+#: The check names a Decision can carry when it rejects, in the order validate() applies them. The forwarded-command
+#: audit record lists exactly these, so an auditor can match a later rejection's `check` to the list a pass went through.
+CHECKS = ("SCHEMA", "WHITELIST", "EXPIRED", "DUPLICATE", "MODE", "RATE_LIMIT")
 
 
 @dataclass
@@ -23,7 +26,7 @@ class GatewayState:
 
 class Decision(NamedTuple):
     ok: bool
-    check: str            # PASS | SCHEMA | WHITELIST | EXPIRED | DUPLICATE | MODE | RATE_LIMIT
+    check: str            # PASS | one of CHECKS (SCHEMA | WHITELIST | EXPIRED | DUPLICATE | MODE | RATE_LIMIT)
     reason: str | None
     mqtt_payload: dict | None
 

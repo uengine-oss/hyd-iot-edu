@@ -117,7 +117,9 @@ def test_describe_schema_renders_ddl_like_text():
         {'name':'work_orders','kind':'r','comment':None,'constraints':[], 'columns':[
             {'name':'status','type':'text','nullable':False,'default':"'배정됨'::text",'comment':None},
             {'name':'decision_id','type':'text','nullable':True,'default':None,'comment':None}]}]}
-    ddl = EnterpriseTools(lambda: FakeConn([], [(catalog,)])).describe_schema()
+    out = EnterpriseTools(lambda: FakeConn([], [(catalog,)])).describe_schema()
+    assert out['result'] == 'ok'                      # A144: the DDL text travels as `document` in the envelope
+    ddl = out['document']
     assert 'create table "ent"."work_orders" (' in ddl
     assert '  "status" text default \'배정됨\'::text not null' in ddl
     assert '  "decision_id" text\n' in ddl

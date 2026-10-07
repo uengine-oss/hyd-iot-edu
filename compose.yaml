@@ -310,7 +310,7 @@ services:
       neo4j: { condition: service_healthy }
     restart: "no"
 
-  agent:                                  # L8 AI 에이전트 (LangGraph/MCP/LiteLLM 역할, 읽기 전용 도구)
+  agent:                                  # L8 AI 에이전트 (한 프로세스 안의 읽기 전용 도구 모듈 mcp_kg·mcp_tsdb·mcp_prom·mcp_ent — MCP 서버 아님; 실제 MCP 서버는 dmn-mcp·enterprise-mcp)
     restart: unless-stopped
     logging: *log
     mem_limit: 192m
@@ -320,9 +320,7 @@ services:
     ports: ["127.0.0.1:8091:8091"]
     environment:
       PROCESS_MODE: ${PROCESS_MODE:-legacy}
-      AGENT_BRIDGE: ${AGENT_BRIDGE:-legacy}
       KAFKA_BOOTSTRAP: redpanda:9092
-      PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
       DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
       NEO4J_URI: bolt://neo4j:7687
@@ -338,6 +336,7 @@ services:
       LLM_EXTRA_BODY: ${LLM_EXTRA_BODY:-}           # vendor request fields, e.g. {"chat_template_kwargs":{"enable_thinking":false}} for SGLang/Qwen
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-8}
+    extra_hosts: ["host.docker.internal:host-gateway"]   # ENTERPRISE_READ_DSN points at the host Supabase; Docker Desktop resolves the name by itself, Linux Engine only with this
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       connect-sink: { condition: service_healthy }
@@ -440,7 +439,6 @@ services:
     ports: ["127.0.0.1:8198:8198"]
     environment:
       PROMETHEUS_URL: http://prometheus:9090
-      PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
       TSDB_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
       DAQ_PROFILE: ${DAQ_PROFILE:-lite}     # Evidence 구간 공백 한도 = 감지기와 같은 수집 계약 (A083)
       NEO4J_URI: bolt://neo4j:7687
@@ -449,6 +447,7 @@ services:
       ENTERPRISE_URL: http://enterprise-sim:8095
       INGEST_URL: http://connect-ingest:8093/healthz
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+    extra_hosts: ["host.docker.internal:host-gateway"]   # same reason as agent: physical InputData reads go to the host Supabase
     depends_on:
       kg-seed: { condition: service_completed_successfully }
       process: { condition: service_healthy }
@@ -477,7 +476,7 @@ services:
       CLIAGENTS_DEFAULT_PERMISSION: ${CLIAGENTS_DEFAULT_PERMISSION:-workspace_write}
       CLIAGENTS_RUN_TIMEOUT_SECONDS: ${CLIAGENTS_RUN_TIMEOUT_SECONDS:-1800}
       CLIAGENTS_WORKSPACE_ROOT: /workspace
-      ALLOWED_TOOLS: ${ALLOWED_TOOLS:-mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep}
+      ALLOWED_TOOLS: ${ALLOWED_TOOLS:-}                         # empty = worker/settings.py DEFAULT_ALLOWED_TOOLS (one list; it includes `python <file>` for the A077 script)
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       process: { condition: service_healthy }

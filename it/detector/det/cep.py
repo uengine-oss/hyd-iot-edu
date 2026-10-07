@@ -1,9 +1,16 @@
 """L4 CEP (the Flink MATCH_RECOGNIZE job) as an explicit state machine per asset and pattern.
 
-Every pattern walks the same four phases; only its raise / clear conditions differ (ontology AnomalyPattern.condition):
+Every pattern walks the same four phases; only its raise / clear conditions differ:
 
   IDLE      --raise holds for hold_s--> RAISED   (emit RAISE)
   RAISED    --clear holds for hold_s--> IDLE     (emit CLEAR, same alertId)
+
+What the running detector executes is `_step` (the phase machine) and `trip_alert`, driven by pattern_runtime with the
+raise/clear predicates and hold seconds loaded from the Neo4j AnomalyPattern definitions (TESTS · clearRule · holdSeconds).
+The fixed thresholds below (RAISE_TS1 … CLEAR_VS1) and evaluate / evaluate_pump / evaluate_fan are the *reference*
+predicates of the three teaching patterns — the lecture text and tests/test_cep.py use them; main.py does not call them,
+and the names cep_state / pump_state / fan_state on AssetState are display aliases of the runtime's pattern states
+(main.DISPLAY_STATES), not executable predicates:
 
   COOLER_DEGRADATION  raise: TS1 > 55 and CE < 70 and slope(TS1) > 0          clear: TS1 < 52 and slope(TS1) <= 0
   PUMP_LEAKAGE        raise: PS1 < 165 and FS1 < 8.0 and LoadSP >= 80         clear: (PS1 >= 168 and FS1 >= 8.0) or LoadSP < 80

@@ -41,6 +41,11 @@ def to_kafka(topic: str, payload: bytes):
         body = json.loads(payload.decode())
     except (UnicodeDecodeError, json.JSONDecodeError):
         return None
+    if not isinstance(body, dict):
+        # A list/number/string payload on plant/+/status used to raise AttributeError inside the paho callback thread
+        # (paho 2.1 re-raises it and the network loop thread dies -> replication silently stops). Count and drop it.
+        state["malformed"] = state.get("malformed", 0) + 1
+        return None
     if kind == "tag" and rest:
         return topics.K_TAG, key, {"asset": asset, "name": rest, "t": body.get("t"), "v": body.get("v"), "q": body.get("q", "good")}
     if kind == "wave" and rest:
@@ -55,6 +60,12 @@ def _on_connect(client, userdata, flags, rc, properties=None):
     state["mqtt"] = True
     client.subscribe([("plant/+/tag/+", 0), ("plant/+/wave/+", 0), ("plant/+/status", 1)])
     log.info("subscribed to OT topics (rc=%s)", rc)
+
+
+def _on_disconnect(client, userdata, flags, rc, properties=None):
+    """paho reconnects by itself (reconnect_delay_set); until it does, /healthz must say the OT leg is down."""
+    state["mqtt"] = False
+    log.warning("mqtt disconnected (rc=%s); reconnecting", rc)
 
 
 def _on_message(client, userdata, msg):
@@ -95,9 +106,26 @@ async def age_updater():
         await asyncio.sleep(1)
 
 
-app = make_app("connect-ingest (L3 DMZ: OT MQTT -> Kafka)", reg,
-               lambda: {"mqtt": state["mqtt"], "kafka": state["kafka"], "replicated": state["count"],
-                        "last_event_age_s": round(time.time() - state["last_ts"], 1) if state["last_ts"] else None})
+def health() -> dict:
+    """/healthz body. `ok` (-> 200/503 in hydcommon.service) holds only while the MQTT client is connected AND the Kafka
+    producer is ready AND the pump task is still running — the agent's data-trust check (mcp_prom.freshness) and the
+    compose healthcheck both read this, so a broken leg must not look healthy."""
+    return {"ok": bool(state["mqtt"]) and bool(state["kafka"]) and not state.get("pump_dead", False),
+            "mqtt": state["mqtt"], "kafka": state["kafka"], "pump_dead": state.get("pump_dead", False),
+            "pump_error": state.get("pump_error"), "replicated": state["count"],
+            "dropped": state.get("dropped", 0), "malformed": state.get("malformed", 0),
+            "last_event_age_s": round(time.time() - state["last_ts"], 1) if state["last_ts"] else None}
+
+
+app = make_app("connect-ingest (L3 DMZ: OT MQTT -> Kafka)", reg, health)
+
+
+def _watch(task):
+    """If the Kafka pump ever exits, /healthz reports it (503) instead of looking healthy while replicating nothing."""
+    state["pump_dead"] = True
+    state["kafka"] = False
+    state["pump_error"] = repr(task.exception()) if not task.cancelled() and task.exception() else "exited"
+    log.error("kafka pump task ended: %s", state["pump_error"])
 
 
 @app.on_event("startup")
@@ -106,9 +134,10 @@ async def _startup():
     loop = asyncio.get_running_loop()
     client = make_client("connect-ingest")
     client.on_connect = _on_connect
+    client.on_disconnect = _on_disconnect
     client.on_message = _on_message
     client.loop_start()
-    asyncio.create_task(pump())
+    asyncio.create_task(pump()).add_done_callback(_watch)
     asyncio.create_task(age_updater())
 
 

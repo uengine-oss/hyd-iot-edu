@@ -49,6 +49,22 @@ def durable_resume(row: dict) -> ResumePlan | None:
     return ResumePlan(session_id=session) if isinstance(session, str) and session else None
 
 
+def pending_request(row: dict) -> PendingRequest | None:
+    """The question this row is still waiting on, from the DB record (draft._human_request), or None when there is no
+    request or the person has already answered it (feedback.job_id matches). The authority for duplicate detection."""
+    draft = row.get('draft')
+    if not isinstance(draft, dict) or not isinstance(draft.get('_human_request'), dict):
+        return None
+    request = draft['_human_request']
+    feedback = row.get('feedback')
+    if isinstance(feedback, dict) and feedback.get('job_id') and feedback.get('job_id') == request.get('job_id'):
+        return None
+    try:
+        return PendingRequest(**request)
+    except TypeError:
+        return None
+
+
 @dataclass
 class PendingRequest:
     run_id: str

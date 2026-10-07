@@ -2,7 +2,8 @@
 
 ontology (T3 DMN rules) -> inputs (InputData -SOURCED_FROM-> System | Sensor) -> facts (TSDB · process · MES) ->
 candidates (dec:action-candidates) -> compliance (dec:compliance) -> forecasts · BSC trade-offs · precedents ->
-rank (dec:rank-actions) -> guardrail -> submit (POST process /api/decisions — the agent's only write).
+rank (dec:rank-actions) -> guardrail -> submit (POST process /api/decisions — the agent's only write *of action cards*;
+the legacy pipeline in main.py has already posted the guide card to /api/incidents before calling decide()).
 """
 from __future__ import annotations
 

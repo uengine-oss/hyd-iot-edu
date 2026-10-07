@@ -154,7 +154,7 @@ flowchart TB
 |---|---|---|---|
 | BSC | Perspective | order! | BSC 관점. 학습=1 … 재무=4 |
 | | Objective | name! | 전략 목표 (조직 목표). 프로세스가 달성하려는 대상 |
-| | Measure | unit!, direction! (UP · DOWN), formula, target, thresholdWarn · thresholdCrit | BSC 성과 지표. 상충 관계의 노드 |
+| | Measure | unit!, direction! (UP · DOWN), kpiRole! (leading 선행 동인 · lagging 후행 결과), formula, target, thresholdWarn · thresholdCrit | BSC 성과 지표. 상충 관계의 노드. 후행 지표는 선행 지표를 움직이지 않고, 선행 지표는 INFLUENCES 경로로 후행 지표에 닿는다 |
 | 프로세스 | Process | isExecutable | 업무 프로세스 |
 | | Event : FlowNode | position! (start · boundary · end), eventDefinition! (none · message · timer · escalation), messageRef, correlationKey, timer | 시작 · 경계 · 종료 이벤트. 트리거는 이 속성들이다 |
 | | Task : FlowNode | taskType! (user · service · businessRule) | 작업. 읽는 데이터(READS)와 만드는 데이터(PRODUCES)를 가진다 |

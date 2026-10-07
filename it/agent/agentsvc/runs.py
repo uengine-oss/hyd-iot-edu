@@ -12,7 +12,7 @@ class Run:
     alert_id: str
     asset: str
     alert: dict
-    status: str = "RUNNING"          # RUNNING | SUBMITTED | REJECTED_BY_GUARDRAIL | WITHHELD | FAILED
+    status: str = "RUNNING"          # RUNNING | SUBMITTED | EVALUATED (instance mode: read-only evaluation, no submit) | REJECTED_BY_GUARDRAIL | WITHHELD | FAILED
     started: str = field(default_factory=now_iso)
     ended: str | None = None
     steps: list[dict] = field(default_factory=list)

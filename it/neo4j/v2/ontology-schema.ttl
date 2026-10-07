@@ -1029,6 +1029,11 @@ hyd:kind a owl:DatatypeProperty ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:StateVariable hyd:Skill hyd:Action hyd:KnowledgeSource hyd:KnowledgeEdit ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "허용값: manipulated, controlled, disturbance"@ko .
+hyd:kpiRole a owl:DatatypeProperty ;
+  rdfs:label "kpiRole" ;
+  rdfs:domain hyd:Measure ;
+  rdfs:range xsd:string ;
+  rdfs:comment "BSC 지표 역할. lagging=후행 결과 지표(재무·고객 성과, 전략맵의 끝), leading=선행 동인 지표(내부 프로세스·학습의 동인; INFLUENCES 경로로 후행 지표를 움직인다). 후행 지표는 선행 지표에 INFLUENCES하지 않고, 선행 지표는 후행 지표에 닿아야 한다 허용값: leading, lagging"@ko .
 hyd:level a owl:DatatypeProperty ;
   rdfs:label "level" ;
   rdfs:domain hyd:Role ;

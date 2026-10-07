@@ -1,8 +1,12 @@
 """mcp-kg (read-only): whitelisted Cypher templates against the Neo4j ontology v2.
 
 In the full architecture this is a separate MCP server container; the student edition keeps the same
-whitelist discipline (only template files can run, parameters only) inside the agent process.
-  T1 원인 후보 · 증거   T2 고장 유형별 조치 방법(스킬 = SOP)   T3 DMN 규칙 · 입력 출처 · BSC 상충 · 예측 · 선례 · 역할   T0 지식 지도
+whitelist discipline (only template files can run, parameters only) inside the agent process. The same holds for the
+sibling modules mcp_tsdb · mcp_prom · mcp_ent: the `mcp_` prefix names the role, not a protocol (requirements have no
+mcp/fastmcp). The MCP servers Claude Code actually connects to are it/dmn-mcp and it/enterprise-mcp.
+  T1 원인 후보 · 증거   T2 고장 유형별 조치 방법(스킬 = SOP)   T3 DMN 규칙 · 입력 출처 · BSC 상충 · 선례 · 역할 · 예측 모델 바인딩   T0 지식 지도
+Forecast values are not read from the graph: forecasting.candidates runs the explicit simulator model (hydcommon.forecast)
+against the fresh plant snapshot; the graph only binds which model/revision an asset uses (t3_forecast_model).
 """
 import os
 from pathlib import Path
@@ -55,13 +59,6 @@ class KnowledgeGraph:
 
     def tradeoffs(self, ids: list[str]) -> list[dict]:
         return self._run("t3_tradeoffs", ids=ids)
-
-    def forecasts(self, cause: str) -> dict[str, dict]:
-        out: dict[str, dict] = {}
-        for r in self._run("t3_forecasts", cause=cause):
-            if r.get("skill"):
-                out.setdefault(r["skill"], {})[r["variable"]] = r
-        return out
 
     def forecast_model(self, asset: str) -> dict:
         rows = self._run('t3_forecast_model', asset=asset)

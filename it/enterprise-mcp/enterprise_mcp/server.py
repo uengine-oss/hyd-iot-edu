@@ -1,7 +1,9 @@
 """enterprise-mcp: FastMCP server (streamable HTTP) exposing the business DB to the agent. Same pattern as wms-mcp.
 
     docker: ENTERPRISE_DSN=<dedicated reader DSN> MCP_PORT=8199
-    tools : mes_orders · erp_contract · erp_inventory · cmms_history · qms_lots · scm_suppliers · ems_demand · describe_schema · query
+    tools : mes_orders · erp_contract · erp_inventory · cmms_history · qms_lots · scm_suppliers · ems_demand (7 fixed reads) ·
+            describe_schema · describe_catalog · query   (10; all read-only, all answer in the {result, document} envelope —
+            a DB failure is {"result": "error", "error_kind": "UNKNOWN"}, never a raised exception)
 """
 from __future__ import annotations
 
@@ -12,8 +14,7 @@ import psycopg
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .sql_guard import SqlRejected
-from .tools import EnterpriseTools, error
+from .tools import EnterpriseTools, guarded
 from hydcommon.enterprise import reader_connection as connect_reader
 
 DSN = os.getenv("ENTERPRISE_DSN", "postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres")
@@ -32,69 +33,61 @@ Asset = Annotated[str, Field(description="설비 코드 (HYD-01 | HYD-02 | HYD-0
 @mcp.tool
 def mes_orders(asset: Asset) -> dict:
     """MES: 이 설비가 지금 돌리는 생산오더 (납기까지 남은 시간 due_in_h, 남은 수량, 시간당 생산 가치, 대체 설비)."""
-    return tools.read("mes_orders", asset=asset)
+    return guarded(tools.read)("mes_orders", asset=asset)
 
 
 @mcp.tool
 def erp_contract(asset: Asset) -> dict:
     """ERP: 그 오더의 계약 조건 (고객 등급, 납기 지연 시 시간당 보상 penalty_per_h, 고장 비용, 클레임 비용)."""
-    return tools.read("erp_contract", asset=asset)
+    return guarded(tools.read)("erp_contract", asset=asset)
 
 
 @mcp.tool
 def erp_inventory(asset: Asset) -> dict:
     """ERP: 완제품 재고 (품목, 수량, 출하 소요 시간)."""
-    return tools.read("erp_inventory", asset=asset)
+    return guarded(tools.read)("erp_inventory", asset=asset)
 
 
 @mcp.tool
 def cmms_history(asset: Asset) -> dict:
     """CMMS: 정비 기준(세척 주기 · 비용 · 다음 야간 정비창)과 과거 작업지시, 발행된 작업지시."""
-    return tools.read("cmms_history", asset=asset)
+    return guarded(tools.read)("cmms_history", asset=asset)
 
 
 @mcp.tool
 def qms_lots(asset: Asset) -> dict:
     """QMS: 고온 구간에 생산된 로트와 검사 비용 · 불량 확률 · 클레임."""
-    return tools.read("qms_lots", asset=asset)
+    return guarded(tools.read)("qms_lots", asset=asset)
 
 
 @mcp.tool
 def scm_suppliers(part: Annotated[str, Field(description="부품 번호 (기본 P-CLR-CORE 쿨러 코어)")] = "P-CLR-CORE") -> dict:
     """SCM: 부품 표준단가와 공급사 견적 (가격 · 고장률 · 납기 · 승인 공급사 여부 avl)."""
-    return tools.read("scm_suppliers", part=part)
+    return guarded(tools.read)("scm_suppliers", part=part)
 
 
 @mcp.tool
 def ems_demand() -> dict:
     """EMS: 오늘 오후 전력 수요 대 계약 전력, 팬 증속 부하, 피크 시간대."""
-    return tools.read("ems_demand")
+    return guarded(tools.read)("ems_demand")
 
 
 @mcp.tool
-def describe_schema() -> str:
-    """현재 ent 원천의 인용 식별자·타입·주석·키 관계를 DDL로 읽는다. 조회/적재용이며 DB 백업은 아니다."""
-    return tools.describe_schema()
+def describe_schema() -> dict:
+    """현재 ent 원천의 인용 식별자·타입·주석·키 관계를 DDL 문자열로 읽는다 ({result: ok, document: "<DDL>"}). 조회/적재용이며 DB 백업은 아니다."""
+    return guarded(tools.describe_schema)()
 
 
 @mcp.tool
 def describe_catalog() -> dict:
     """현재 DB의 실제 컬럼 의미(주석)·정밀도·기본값·키 관계와 table/view 구분. 없는 의미는 추측하지 않는다."""
-    try:
-        return tools.describe_catalog()
-    except (psycopg.Error, RuntimeError) as e:
-        return error('UNKNOWN', f"database: {str(e).splitlines()[0][:200]}")
+    return guarded(tools.describe_catalog)()
 
 
 @mcp.tool
 def query(sql: Annotated[str, Field(description="ent 스키마에 대한 SELECT 한 문장. 쓰기 · 시스템 스키마 · 다중 문장은 거절된다. 최대 200행")]) -> dict:
-    """읽기 전용 SQL 실행 (규칙 조건을 데이터에 대어 볼 때). {result: ok, document: {statement, columns, rows, row_count}} 를 돌려준다."""
-    try:
-        return tools.query(sql)
-    except SqlRejected as e:
-        return error("INVALID", f"rejected: {e}", statement=sql)
-    except (psycopg.Error, RuntimeError) as e:
-        return error("UNKNOWN", f"database: {str(e).splitlines()[0][:200]}", statement=sql)
+    """읽기 전용 SQL 실행 (규칙 조건을 데이터에 대어 볼 때). {result: ok, document: {statement, columns, rows, row_count}} 를 돌려준다. 거절은 error_kind INVALID, DB 오류는 UNKNOWN."""
+    return guarded(tools.query)(sql=sql)
 
 
 @mcp.custom_route("/healthz", methods=["GET"])

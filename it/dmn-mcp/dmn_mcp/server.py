@@ -1,7 +1,10 @@
 """hyd-dmn MCP: FastMCP server (streamable HTTP) wrapping the deterministic judgment engine.
 
-    docker: NEO4J_URI · NEO4J_AUTH · TSDB_DSN · PROCESS_URL · INGEST_URL   MCP_PORT=8198
-    tools : diagnose · dmn_rules · inputs · gather_facts · evaluate_cards · submit_decision · precedents · tradeoffs
+    docker: NEO4J_URI · NEO4J_AUTH · TSDB_DSN · DAQ_PROFILE · PROCESS_URL · ENTERPRISE_URL · ENTERPRISE_READ_DSN ·
+            INGEST_URL · PROMETHEUS_URL   MCP_PORT=8198
+    tools : diagnose · dmn_rules · inputs · gather_facts · timeseries_schema · timeseries_query ·
+            prometheus_metadata · prometheus_series · prometheus_query · evaluate_cards · forecast_actions ·
+            submit_decision · precedents · tradeoffs   (13; submit_decision is the only write)
 """
 from __future__ import annotations
 

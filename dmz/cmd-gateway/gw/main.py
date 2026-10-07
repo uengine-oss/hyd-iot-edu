@@ -3,7 +3,8 @@
   Kafka action.cmd --validate (5 checks)--> MQTT plant/{a}/cmd/auto   (retain=false)
   Kafka alerts     --relay (display only)--> MQTT plant/{a}/alert     (retain=true)
   MQTT plant/{a}/status --> remembered so check ⑤ knows the PLC mode
-Rejected commands are dropped and written to Kafka audit with the failing check.
+  MQTT plant/{a}/alert  --> retained legacy display records are re-published with display_text (no new alarm event)
+Rejected commands are dropped and written to Kafka audit with the failing check (one of validate.CHECKS).
 """
 import asyncio
 import json
@@ -35,7 +36,7 @@ def _on_connect(client, userdata, flags, rc, properties=None):
     state["mqtt"] = True
     client.subscribe("plant/+/status", qos=1)
     client.subscribe("plant/+/alert", qos=1)
-    log.info("mqtt connected, watching plant/+/status")
+    log.info("mqtt connected, watching plant/+/status and retained plant/+/alert")
 
 
 def _on_message(client, userdata, msg):
@@ -94,7 +95,7 @@ async def handle(prod, rec):
         log.info("cmd %s -> %s PASS %s", v["cmdId"], topics.mqtt_cmd_auto(key), d.mqtt_payload["writes"])
         await prod.send(topics.K_AUDIT, key=key, value={
             "t": now_iso(), "incident": v.get("incident"), "actor": "cmd-gateway", "event": "CMD_FORWARDED",
-            "detail": {"cmdId": v["cmdId"], "writes": d.mqtt_payload["writes"], "checks": ["SCHEMA", "WHITELIST", "EXPIRY", "DUPLICATE", "MODE+RATE"]}})
+            "detail": {"cmdId": v["cmdId"], "writes": d.mqtt_payload["writes"], "checks": list(gw.CHECKS)}})
     else:
         state["rejected"] += 1
         log.warning("cmd %s REJECTED at %s: %s", entry["cmdId"], d.check, d.reason)

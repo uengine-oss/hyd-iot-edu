@@ -85,6 +85,10 @@ GOLDEN = [
      "MATCH (f:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(k:Skill) "
      "WHERE NOT EXISTS { MATCH (:DecisionTable {id:'dt:action-candidates'})-[:HAS_RULE]-(r:Rule)-[t:TESTS]->(:InputData {variable:'failure_mode'}) WHERE t.value = f.id AND (r)-[:OUTPUTS]->(k) } "
      "RETURN f.id+' → '+k.id AS id"),
+    ('Q23 BSC kpiRole: 모든 지표에 선행/후행 역할이 있고, 후행(lagging) 지표는 선행(leading) 지표를 움직이지 않으며, 모든 선행 지표는 INFLUENCES 경로로 후행 지표에 닿는다 (A144 D02)',
+     "MATCH (m:Measure) WHERE NOT coalesce(m.kpiRole, '') IN ['leading', 'lagging'] RETURN m.id AS id "
+     "UNION MATCH (a:Measure {kpiRole:'lagging'})-[:INFLUENCES]->(b:Measure {kpiRole:'leading'}) RETURN a.id+'→'+b.id AS id "
+     "UNION MATCH (m:Measure {kpiRole:'leading'}) WHERE NOT EXISTS { (m)-[:INFLUENCES*1..6]->(:Measure {kpiRole:'lagging'}) } RETURN m.id AS id"),
 ]
 
 
