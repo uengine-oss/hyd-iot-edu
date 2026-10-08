@@ -611,3 +611,33 @@ def test_imported_flow_ends_through_its_escalation_when_the_alert_clears_first(w
     assert rows["Activity_0diag4n"]["status"] == "CANCELLED" and rows["Activity_0escl1b"]["status"] == "IN_PROGRESS"
     rt.submit(rows["Activity_0escl1b"]["id"], {"note": "조치 전에 경보가 풀림"}, by="이생산", now=NOW)
     assert rt.repo.get_instance(inst["proc_inst_id"])["end_event"] == "Event_1escd0t"
+
+
+def test_an_instance_tidied_away_by_reset_is_a_404_with_the_reason_not_a_500(api):
+    """A160: 기준으로 되돌리기가 학생 흐름 정의를 지우고 그 판본으로 끝난 처리 건을 숨긴(is_deleted) 뒤, 그 처리 건 · task 를
+    직접 열면 정의를 찾다가 LookupError → 500 이었다. 목록과 같게 '없음'이고, 왜 없는지 사유를 준다."""
+    from procsvc import instances as I
+    c, rt, repo, _ = api
+    c.post("/api/flows/import", json={"xml": LOOP, "definition_id": "oil_loop"})
+    assert c.post("/api/flows/oil_loop/register", json={"mapping": loop_mapping(B.parse_bpmn(LOOP))}).status_code == 201
+    inst = rt.start_definition("oil_loop", "1", "oil-1", values={"sample_id": "S-1"})
+    w = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["status"] == "IN_PROGRESS")
+    rt.submit(w["id"], {"iso_code": 10})
+    assert rt.instance_view(inst["proc_inst_id"])["instance"]["status"] == "COMPLETED"      # 되돌리기 전에는 열린다
+    assert c.post("/api/flows/reset").status_code == 200
+    for view in (lambda: rt.instance_view(inst["proc_inst_id"]), lambda: rt.workitem_view(w["id"])):
+        with pytest.raises(I.InstanceRemoved, match="기준으로 되돌리기로 정리된 처리 건"):
+            view()
+    assert rt.instance_view("no-such-instance") is None                                     # 없는 처리 건은 그대로 None
+
+
+def test_removed_instance_endpoints_answer_404_with_the_reason():
+    from procsvc import instance_mode, instances as I
+
+    src = open(instance_mode.__file__, encoding="utf-8").read()
+    # 같은 사유를 네 경로가 404 로 돌려주는지(라우트 본문에서 잡는지) — 처리 건 · 실행 그래프 · 기록 · task
+    for route in ('"/api/instances/{proc_inst_id}"', '"/api/instances/{proc_inst_id}/graph"', '"/api/events"', '"/api/todolist/{wid}"'):
+        body = src[src.index(route):]
+        body = body[:body.index("@app.", 10)]
+        assert "except instances.InstanceRemoved as e" in body and "HTTPException(404" in body.split("except instances.InstanceRemoved")[1][:80], route
+    assert isinstance(I.InstanceRemoved("x"), LookupError)

@@ -52,6 +52,15 @@ def workitem_transition(fn):
     return locked
 
 
+class InstanceRemoved(LookupError):
+    """처리 건이 "기준으로 되돌리기"로 정리됐다(is_deleted). 그 처리 건이 쓰던 학생 흐름 정의가 지워졌으므로 단건 조회도
+    목록과 같게 '없음'이다 — 정의를 찾다가 LookupError → 500 이 되던 것(A160 보고서 캡처에서 발견)을 사유 있는 404 로."""
+
+
+REMOVED_REASON = ("기준으로 되돌리기로 정리된 처리 건입니다 — 이 처리 건이 쓰던 학생 흐름 정의를 지웠기 때문에 열 수 없습니다"
+                  "(처리 건 목록에서도 빠집니다)")
+
+
 class ServiceExecutionError(RuntimeError):
     """Keep the actual tool response with the failure instead of submitting it as successful output."""
     def __init__(self, result: dict):
@@ -164,6 +173,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         if not wi or wi.get('tenant_id') != self.tenant_id:
             raise KeyError('no such work item')
         inst = self.repo.get_instance(wi['proc_inst_id'])
+        if inst and inst.get('is_deleted'):
+            raise InstanceRemoved(REMOVED_REASON)
         defn = self.definition_for(inst)
         if wi.get('proc_def_id') != inst['proc_def_id'] or wi.get('version') != inst['proc_def_version']:
             raise ValueError('작업과 인스턴스의 정의 버전이 다릅니다')
@@ -1066,6 +1077,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         inst = self.repo.get_instance(proc_inst_id)
         if not inst or inst.get('tenant_id') != self.tenant_id:
             return None
+        if inst.get('is_deleted'):
+            raise InstanceRemoved(REMOVED_REASON)
         items = self.repo.list_workitems(proc_inst_id=proc_inst_id, limit=None)
         defn = self.definition_for(inst)
         return {"instance": inst, "definition":defn.raw, "workitems": items, "timeline": engine.timeline(defn, inst, items),
@@ -1080,6 +1093,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         inst = self.repo.get_instance(proc_inst_id)
         if not inst or inst.get('tenant_id') != self.tenant_id:
             return None
+        if inst.get('is_deleted'):
+            raise InstanceRemoved(REMOVED_REASON)
         rows = self.hooks.query_cypher(EXECUTION_Q, id=proc_inst_id)
         return {"cypher": EXECUTION_Q.strip(), "params": {"id": proc_inst_id}, "graph": format_execution(rows),
                 "projection": self.repo.projection_status(self.tenant_id, proc_inst_id)}

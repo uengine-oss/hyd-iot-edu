@@ -763,7 +763,10 @@ def mount(app: FastAPI, process_mode: str) -> None:
 
     @app.get("/api/instances/{proc_inst_id}")
     async def get_instance(proc_inst_id: str):
-        view = await _in_executor(_rt().instance_view, proc_inst_id)
+        try:
+            view = await _in_executor(_rt().instance_view, proc_inst_id)
+        except instances.InstanceRemoved as e:
+            raise HTTPException(404, str(e))
         if view is None:
             raise HTTPException(404, "no such instance")
         return view
@@ -771,7 +774,10 @@ def mount(app: FastAPI, process_mode: str) -> None:
     @app.get("/api/instances/{proc_inst_id}/graph")
     async def get_instance_graph(proc_inst_id: str):
         """The instance as the ontology's Execution layer holds it (ProcessInstance · WorkItem · INSTANCE_OF · EXECUTES · ASSIGNED_TO · ROLE_BOUND)."""
-        view = await _in_executor(_rt().execution_view, proc_inst_id)
+        try:
+            view = await _in_executor(_rt().execution_view, proc_inst_id)
+        except instances.InstanceRemoved as e:
+            raise HTTPException(404, str(e))
         if view is None:
             raise HTTPException(404, "no such instance")
         return view
@@ -878,6 +884,8 @@ def mount(app: FastAPI, process_mode: str) -> None:
             return await _in_executor(rt.workitem_view,wid)
         except KeyError:
             raise HTTPException(404, "no such work item")
+        except instances.InstanceRemoved as e:
+            raise HTTPException(404, str(e))
         except (ValueError,LookupError) as e:
             raise HTTPException(409,str(e))
 
@@ -1025,8 +1033,11 @@ def mount(app: FastAPI, process_mode: str) -> None:
         rt = _rt()
         if not proc_inst_id and not todo_id:
             raise HTTPException(400,'proc_inst_id 또는 todo_id를 지정하세요')
-        if proc_inst_id and await _in_executor(rt.instance_view,proc_inst_id) is None:
-            raise HTTPException(404,'no such instance')
+        try:
+            if proc_inst_id and await _in_executor(rt.instance_view,proc_inst_id) is None:
+                raise HTTPException(404,'no such instance')
+        except instances.InstanceRemoved as e:
+            raise HTTPException(404,str(e))
         if todo_id:
             try:
                 await _in_executor(rt.workitem_view,todo_id)
