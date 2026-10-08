@@ -1061,6 +1061,9 @@ ask.register(app, runtime_factory=instance_mode.current, definitions_dir=instanc
 # B3 bpmn.io 그림 가져오기: task 별 부품 · 담당 매핑 → 사전 검사 → 판본 등록(그림 원본 함께), 기준으로 되돌리기 (flows_api.py)
 from . import flows_api
 flows_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
+# B6 출발본: 학생 구성 내보내기 · 가져오기(되돌리기 → 순서대로 적용 → 대조) · 하나의 기준으로 되돌리기 (config_bundle.py)
+from . import config_bundle
+config_bundle.register(app, runtime_factory=instance_mode.current, audit=_audit)
 
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
