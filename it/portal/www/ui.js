@@ -7,7 +7,7 @@ const UI = {
     // 메뉴 · 헤더
     'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인 · 조치', 'nav.trends': '실시간 모니터링',
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '승인과 실행', 'nav.instances': '처리 건',
-    'nav.knowledge': '지식 관리', 'nav.admin': '관리',
+    'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구(MCP)',
     'nav.group.plant': '설비', 'nav.group.decide': '판단과 처리', 'nav.group.manage': '관리',
     'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중', 'header.streamOff': '실시간 꺼짐 (기본 처리 모드)',
     'header.open': '진행 중', 'header.simTime': '시뮬레이션 시각', 'header.scale': '시간 배율', 'header.simBadge': '시뮬레이션', 'header.menu': '메뉴',
@@ -370,6 +370,7 @@ const UI = {
       process: "M3 4h6v6H3Zm12 10h6v6h-6ZM9 7h9v7M6 10v7h9",
       gear: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8 4-2-1 1-2-2-2-2 1-1-2h-4l-1 2-2-1-2 2 1 2-2 1v4l2 1-1 2 2 2 2-1 1 2h4l1-2 2 1 2-2-1-2 2-1Z",
       book: "M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4Zm16 0h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8Z",
+      tools: "M14 4v4a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V4M16 10v10M8 4v3M8 11v9M5 7h6v4H5Z",
     };
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name] || paths.home}"/></svg>`;
   },

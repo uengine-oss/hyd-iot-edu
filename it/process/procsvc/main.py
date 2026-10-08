@@ -1015,6 +1015,10 @@ manual_api.register(app,
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
 
+# U3 (A2 MCP): 도구 지도 · 읽기 전용 도구 써 보기 · 호출 기록 — tenants.mcp 와 events 를 읽기만 한다 (procsvc/mcp_api.py)
+from . import mcp_api
+mcp_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")
