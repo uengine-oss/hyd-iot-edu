@@ -35,7 +35,7 @@ def run():
     raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     raw['ontologyRef']='proc:'+tag;raw['roles'][0]['endpoint']='role:'+tag
     for item in raw['activities']+raw['events']:item['ontologyRef']='semantic:'+tag+':'+item['id']
-    with psycopg.connect(DSN) as conn:conn.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'A048 isolated projection acceptance'))
+    with psycopg.connect(DSN) as conn:conn.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'[회귀 검사] A048 격리 투영 인수 시험'))
     owned=['proc:'+tag,'role:'+tag]+[r['ontologyRef'] for r in raw['activities']+raw['events']]+['skill:'+tag]
     q('CREATE (:Role {id:$role,name:$name}),(:Process {id:$process,name:$name})',role='role:'+tag,process=raw['ontologyRef'],name=tag)
     for item in raw['activities']+raw['events']:

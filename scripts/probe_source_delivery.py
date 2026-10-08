@@ -91,19 +91,19 @@ def main():
               and inc.state=='ESCALATED' and inc.reason=='PROCESS_RESTART_REVIEW' and inc.ack is None)
         failed=inbox.receive(source_record('alerts',0,5,dict(alert,alertId=tenant+'-api')),policy)
         claimed=inbox.claim('api-error-fixture');assert claimed['id']==failed['id']
-        inbox.fail(claimed,'fixture dependency unavailable',max_failures=1)
+        inbox.fail(claimed,'[회귀 검사] 시험 의존 서비스 사용 불가',max_failures=1)
         async def api_checks():
             import httpx
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=service.app),base_url='http://fixture') as client:
                 listed=await client.get('/api/source-events',params={'status':'FAILED'})
                 check('API exposes the failed original receipt and error',listed.status_code==200
-                      and [r['id'] for r in listed.json()]==[failed['id']] and listed.json()[0]['error']=='fixture dependency unavailable')
+                      and [r['id'] for r in listed.json()]==[failed['id']] and listed.json()[0]['error']=='[회귀 검사] 시험 의존 서비스 사용 불가')
                 blank=await client.post(f'/api/source-events/{failed["id"]}/retry',json={'by':'','reason':''})
                 check('API rejects retry without actor and reason',blank.status_code==400)
-                retried=await client.post(f'/api/source-events/{failed["id"]}/retry',json={'by':'fixture reviewer','reason':'dependency restored'})
+                retried=await client.post(f'/api/source-events/{failed["id"]}/retry',json={'by':'[회귀 검사] 시험 검토자','reason':'[회귀 검사] 의존 서비스 복구'})
                 check('API records explicit same-event retry',retried.status_code==200 and retried.json()['id']==failed['id']
-                      and retried.json()['status']=='PENDING' and retried.json()['history'][-1]['by']=='fixture reviewer')
-                duplicate=await client.post(f'/api/source-events/{failed["id"]}/retry',json={'by':'fixture reviewer','reason':'again'})
+                      and retried.json()['status']=='PENDING' and retried.json()['history'][-1]['by']=='[회귀 검사] 시험 검토자')
+                duplicate=await client.post(f'/api/source-events/{failed["id"]}/retry',json={'by':'[회귀 검사] 시험 검토자','reason':'[회귀 검사] 다시 시도'})
                 check('API cannot reset nonfailed work or hide its status',duplicate.status_code==409)
                 service.source_inbox=PgSourceInbox(repo,'another-tenant')
                 hidden=await client.get(f'/api/source-events/{failed["id"]}')

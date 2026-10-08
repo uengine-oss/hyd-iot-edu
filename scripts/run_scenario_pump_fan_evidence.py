@@ -244,7 +244,7 @@ def run_to_selection(flow, asset, fault, pattern, raise_timeout):
         time.sleep(remaining)
         seen_runs.update(x.get("id") for x in get(f"{AGENT}/api/agent/runs") if x.get("alertId") == alert_id)
         request = {"deferral_id": receipt["id"], "request_id": "a120-" + uuid.uuid4().hex, "by": "이생산",
-                   "reason": "고장 주입 뒤 2분 원천 창을 새로 관측했으므로 재평가를 요청한다"}
+                   "reason": "[회귀 검사] 고장 주입 뒤 2분 원천 창을 새로 관측했으므로 재평가를 요청한다"}
         response = post(f"{PROCESS}/api/todolist/{held['id']}/reassess", request)
         save(f"{flow}-reassessment", {"held": held, "request": request, "response": response})
         if not check("explicit reassessment accepted (person's request, not an approval)", not response.get("error") and response.get("status") == "QUEUED",
@@ -337,9 +337,9 @@ def scenario_pump():
               dec.get("recommended") == "skill:switch-standby-pump" and opts.get("skill:raise-pressure", {}).get("feasible") is False
               and any(v.get("rule") == "rule:no-pressure-raise" for v in opts.get("skill:raise-pressure", {}).get("violations") or []),
               json.dumps({k: (o.get('rank'), o.get('feasible')) for k, o in opts.items()}, ensure_ascii=False))
-        r = post(f"{PROCESS}/api/todolist/{sel['id']}/select", {"decision": dec["id"], "option": "skill:switch-standby-pump", "by": "OP-17", "role": "role:operator", "reason": "test"})
+        r = post(f"{PROCESS}/api/todolist/{sel['id']}/select", {"decision": dec["id"], "option": "skill:switch-standby-pump", "by": "[회귀 검사] 운전원", "role": "role:operator", "reason": "[회귀 검사] 권한 밖 승인 시도"})
         check("operator refused (403) — 예비 펌프 전환 needs 생산관리자", r.get("error") == 403, str(r.get("body", ""))[:120])
-        r = select_with_review(sel, dec, "skill:switch-standby-pump", "이생산", "role:prod-mgr", "예비 펌프 정비 완료 상태 — 생산을 멈추지 않고 압력을 회복한다", inc_id)
+        r = select_with_review(sel, dec, "skill:switch-standby-pump", "이생산", "role:prod-mgr", "[회귀 검사] 예비 펌프 정비 완료 상태 — 생산을 멈추지 않고 압력을 회복한다", inc_id)
         if not check("production manager selected 예비 펌프 전환 (accepted · approval DELIVERED)", "instance" in r and not r.get("error") and r.get("approval_status") == "DELIVERED",
                      json.dumps(r.get("body") or {k: r.get(k) for k in ('accepted', 'approval_status')}, ensure_ascii=False)[:200]):
             return
@@ -378,7 +378,7 @@ def scenario_fan():
     check("candidate cards are the fan SOPs (fan-slow-derate · fan-slow) and fan-slow-derate is feasible",
           {"skill:fan-slow-derate", "skill:fan-slow"} <= set(opts) and opts["skill:fan-slow-derate"].get("feasible") is True,
           json.dumps({k: (o.get('rank'), o.get('feasible')) for k, o in opts.items()}, ensure_ascii=False))
-    r = select_with_review(sel, dec, "skill:fan-slow-derate", "이생산", "role:prod-mgr", "유온 상승 없이 진동만 낮춘다", inc_id)
+    r = select_with_review(sel, dec, "skill:fan-slow-derate", "이생산", "role:prod-mgr", "[회귀 검사] 유온 상승 없이 진동만 낮춘다", inc_id)
     if not check("production manager selected fan-slow-derate (accepted · approval DELIVERED)", "instance" in r and not r.get("error") and r.get("approval_status") == "DELIVERED",
                  json.dumps(r.get("body") or {k: r.get(k) for k in ('accepted', 'approval_status')}, ensure_ascii=False)[:200]):
         return

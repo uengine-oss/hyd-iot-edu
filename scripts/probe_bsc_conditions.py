@@ -39,7 +39,7 @@ def main():
         def policy(expression='x > 1',source='fact',variable=None):
             return dict(version=1,description=description,inputs={'x':dict(source=source,variable=variable or input_variable)},expression=expression)
         def body(value):
-            return dict(policy=value,expected_revision=current['revision'],request_id=str(uuid.uuid4()),by='A070 probe',reason='controlled explicit BSC condition verification')
+            return dict(policy=value,expected_revision=current['revision'],request_id=str(uuid.uuid4()),by='[회귀 검사] A070 검사기',reason='[회귀 검사] BSC 조건 명시 변경 검증')
         def update(value):
             nonlocal current
             request=body(value); current=http(8080,path,request,'PUT')
@@ -95,7 +95,7 @@ def main():
             live=next(r for r in http(8080,'/api/kg/bsc/conditions') if r['key']==current['key'])
             check('replay_returns_receipt_without_reverting_policy',replay==report['writes'][0]['result'] and live['revision']==current['revision'])
             check('stale_revision_rejected',rejected(dict(first,request_id=str(uuid.uuid4())),409))
-            check('different_source_text_rejected',rejected(body(dict(policy(),description='unreviewed text')),400))
+            check('different_source_text_rejected',rejected(body(dict(policy(),description='[회귀 검사] 검토하지 않은 설명')),400))
             check('missing_binding_rejected',rejected(body(policy(variable='missing:'+token)),400))
             check('executable_code_rejected',rejected(body(policy('__import__("os").getcwd()')),400))
             update(None)

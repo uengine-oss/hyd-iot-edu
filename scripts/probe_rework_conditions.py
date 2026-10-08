@@ -46,11 +46,11 @@ def main():
     def view(pid): return req('/api/instances/'+pid)
     def latest(pid):
         return {w['activity_id']:w for w in sorted(view(pid)['workitems'],key=lambda w:(w.get('generation') or 0,w.get('start_date') or ''))}
-    def submit(row,output): return req('/api/todolist/'+row['id']+'/submit',dict(output=output,by='A071 probe'))
+    def submit(row,output): return req('/api/todolist/'+row['id']+'/submit',dict(output=output,by='[회귀 검사] A071 검사기'))
     def rework(pid,row,label):
         plan=req('/api/instances/'+pid+'/rework-preview?workitem_id='+row['id']); save(label+'-preview',plan)
         check(label+'_plan_includes_prior_review',plan['execution_available'] and 'b' in plan['affected_nodes'])
-        body=dict(workitem_id=row['id'],request_id=str(uuid.uuid4()),snapshot_token=plan['snapshot_token'],by='A071 probe',role='role:operator',reason='new producer value changes separate branch condition')
+        body=dict(workitem_id=row['id'],request_id=str(uuid.uuid4()),snapshot_token=plan['snapshot_token'],by='[회귀 검사] A071 검사기',role='role:operator',reason='[회귀 검사] 앞 단계 새 값이 다른 분기 조건을 바꿈')
         result=req('/api/instances/'+pid+'/rework',body); save(label+'-receipt',result)
         return body,result
     def graph_matches(pid,label):
@@ -63,7 +63,7 @@ def main():
     original_b=latest(pid)['b']; check('original_condition_takes_old_branch',latest(pid)['c']['status']=='IN_PROGRESS')
     body,receipt=rework(pid,old['a'],'first'); fresh=latest(pid)
     check('new_review_and_all_branches_wait_for_producer',fresh['b']['status']==fresh['c']['status']==fresh['d']['status']=='TODO')
-    status,error=http('/api/todolist/'+fresh['b']['id']+'/submit',dict(output={'review':'premature'},by='A071 probe'))
+    status,error=http('/api/todolist/'+fresh['b']['id']+'/submit',dict(output={'review':'premature'},by='[회귀 검사] A071 검사기'))
     check('unreached_review_cannot_be_submitted',status==400 and 'not reached' in error.get('detail',''))
     waiting=view(pid); save('waiting',waiting)
     with psycopg.connect(DSN) as db:
@@ -76,7 +76,7 @@ def main():
     check('process_restart_preserves_waiting_condition_identity',view(pid)['instance']['flow_state']==state)
     check('request_replay_is_original_receipt',req('/api/instances/'+pid+'/rework',body)==receipt)
     _,second=rework(pid,fresh['a'],'second'); current=latest(pid)
-    status,error=http('/api/todolist/'+fresh['a']['id']+'/submit',dict(output={'x':'stale'},by='A071 probe'))
+    status,error=http('/api/todolist/'+fresh['a']['id']+'/submit',dict(output={'x':'stale'},by='[회귀 검사] A071 검사기'))
     check('older_producer_cannot_release_new_review',status==400 and latest(pid)['b']['status']=='TODO')
     with ThreadPoolExecutor(max_workers=2) as pool:
         futures=[pool.submit(submit,current['a'],{'x':'new'}),pool.submit(submit,old['hold'],{'hold':'finished'})]
@@ -110,7 +110,7 @@ def main():
     until(lambda:latest(pid).get('late',{}).get('status')=='IN_PROGRESS')
     fired=latest(pid); save('new-expired-boundary',view(pid))
     check('only_new_boundary_wins_in_new_generation',fired['deadline']['status']=='DONE' and fired['b']['status']=='CANCELLED' and fired['late']['generation']==1 and fired['d']['status']=='TODO')
-    status,error=http('/api/todolist/'+reopened['b']['id']+'/submit',dict(output={'review':'too late'},by='A071 probe'))
+    status,error=http('/api/todolist/'+reopened['b']['id']+'/submit',dict(output={'review':'too late'},by='[회귀 검사] A071 검사기'))
     check('late_review_cannot_override_fired_boundary',status==400 and fired['b']['status']=='CANCELLED')
     submit(fired['late'],{'late_result':'timeout handled'})
     check('boundary_generation_finishes_without_losing_old_timer',view(pid)['instance']['status']=='COMPLETED' and next(w for w in view(pid)['workitems'] if w['id']==expired['deadline']['id'])['status']=='DONE')

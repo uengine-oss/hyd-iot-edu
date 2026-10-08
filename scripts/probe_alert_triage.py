@@ -81,7 +81,7 @@ def inspect_case(label,inc,raw=None):
 
 def complete_review(label,inst,task,inc):
     response=post(PROCESS+'/api/todolist/'+task['id']+'/submit',
-        {'by':'A032 현장검토 시험','output':{'note':'원천 경보와 PLC 사유 확인. 시험 주입 복구. 이 기록은 실제 회복 승인/설비 명령이 아님.'}})
+        {'by':'[회귀 검사] A032 현장 검토','output':{'note':'[회귀 검사] 원천 경보와 PLC 사유 확인. 시험 주입 복구. 이 기록은 실제 회복 승인/설비 명령이 아님.'}})
     check(label+': human review accepted',not response.get('error'),response.get('error'))
     final=get(PROCESS+'/api/instances/'+inst['proc_inst_id']);saved=get(PROCESS+'/api/incidents/'+inc['id'])
     save(label+'-final',final);save(label+'-final-incident',saved)

@@ -47,7 +47,7 @@ def main():
         status, result = request('/api/kg/manuals/preview', dict(filename='같은 이름.md', data=base64.b64encode(raw).decode(), document_id=document_id))
         assert status == 200, (status, result)
         saved[result['source_id']] = raw
-        result.update(by='manual-api-probe', reviewed=True,
+        result.update(by='[회귀 검사] 매뉴얼 API 검사기', reviewed=True,
                       links={p['id']: {'failureMode': 'fm:bearing-degradation'} for p in result['procedures']})
         return result
 
@@ -58,7 +58,7 @@ def main():
         return status, result
 
     def undo(batch):
-        return request('/api/kg/manuals/batches/' + batch + '/rollback', {'by': 'manual-api-probe'})
+        return request('/api/kg/manuals/batches/' + batch + '/rollback', {'by': '[회귀 검사] 매뉴얼 API 검사기'})
 
     try:
         check('malformed base64 rejected', request('/api/kg/manuals/preview', {'filename': 'x.md', 'data': '!not-base64!'})[0] == 400)

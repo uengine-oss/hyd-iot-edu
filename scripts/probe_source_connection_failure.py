@@ -190,8 +190,8 @@ asyncio.run(main())'''
             incident = get(PROCESS + '/api/incidents/' + iid)
             check(row['asset'] + ': human triage without PLC command', incident['cmdId'] is None and incident['state'] == 'ESCALATED')
             task = next(w for w in view['workitems'] if w['activity_id'] == 'task:triage' and w['status'] == 'IN_PROGRESS')
-            reply = post(PROCESS + '/api/todolist/' + task['id'] + '/submit', {'by': 'A033 DB connection probe',
-                         'output': {'note': 'Transport outage recovered; original alert retained. No physical fault or recovery was inferred.'}})
+            reply = post(PROCESS + '/api/todolist/' + task['id'] + '/submit', {'by': '[회귀 검사] A033 DB 연결 검사기',
+                         'output': {'note': '[회귀 검사] 전송 장애 회복, 원래 경보 유지. 실제 설비 고장·회복을 추정하지 않음.'}})
             check(row['asset'] + ': human review recorded', not reply.get('error'))
             save('instance-' + row['asset'], get(PROCESS + '/api/instances/' + pid))
     except BaseException:

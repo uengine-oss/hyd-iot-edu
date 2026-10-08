@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 from procsvc import engine,instances,instance_mode,procdb,task_deferral
 
 DSN='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
-ASSESSMENT={'status':'UNKNOWN','reason':'Explicit fixture: source has no observation',
+ASSESSMENT={'status':'UNKNOWN','reason':'[회귀 검사] 명시 시험: 원천에 관측값 없음',
             'evidence':{'fixture-source':{'status':'UNKNOWN','value':None}}}
 
 
@@ -50,7 +50,7 @@ def main():
     raw['activities'][0].update(type='userTask',role='Agent',agentMode='COMPLETE',orchestration='cliagents')
     tenant='defer-'+uuid.uuid4().hex[:10]
     with psycopg.connect(DSN,connect_timeout=5) as c:
-        c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'A058 retained isolated fixture'))
+        c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'[회귀 검사] A058 보존 격리 시험'))
     meta=dict(tenant=tenant,definition=raw);rt=runtime(meta)
     inst=rt.start_definition(raw['processDefinitionId'],'1',str(uuid.uuid4()),{'score':2})
     row=rt.repo.fetch_pending_task('cliagents','fixture:old',tenant_id=tenant,proc_inst_id=inst['proc_inst_id'])[0]
@@ -69,7 +69,7 @@ def main():
     check('pending assessment is not claimable or submitted for completion',
           not rt.repo.fetch_pending_task('cliagents','wrong',tenant_id=tenant,proc_inst_id=meta['pid'])
           and not rt.repo.claim_submitted('engine',tenant_id=tenant))
-    payload=dict(deferral_id='attempt-1',request_id='explicit-retry',by='PG fixture reviewer',reason='Read a new source result')
+    payload=dict(deferral_id='attempt-1',request_id='explicit-retry',by='[회귀 검사] PG 시험 검토자',reason='[회귀 검사] 원천 결과를 새로 읽기')
     def repeat(_):
         own=runtime(meta)
         return task_deferral.reassess(own.repo,tenant,row['id'],**payload)
@@ -91,9 +91,9 @@ def main():
     check('only fresh result advances dependent work',current['check']['status']=='IN_PROGRESS'
           and current['check']['reference_ids']==[row['id']]
           and engine.variables(rt.repo.get_instance(meta['pid']))['score']==7)
-    rt.submit(current['check']['id'],{'score':8},by='PG fixture reviewer')
+    rt.submit(current['check']['id'],{'score':8},by='[회귀 검사] PG 시험 검토자')
     current=engine._by_activity(rt.repo.list_workitems(proc_inst_id=meta['pid'],limit=None))
-    rt.submit(current['finish']['id'],{'note':'Fixture deferral and reassessment complete'},by='PG fixture reviewer')
+    rt.submit(current['finish']['id'],{'note':'[회귀 검사] 보류와 재평가 시험 완료'},by='[회귀 검사] PG 시험 검토자')
     final=rt.instance_view(meta['pid']);save('final',final)
     check('retained isolated fixture completes with both assessment receipts',final['instance']['status']=='COMPLETED'
           and rt.repo.find_task_event(row['id'],'deferral:attempt-1','task_deferred') is not None

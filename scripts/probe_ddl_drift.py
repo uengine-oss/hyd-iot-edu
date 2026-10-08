@@ -62,7 +62,7 @@ def main():
         policy['inputs'].update(item=var['fg_item'], stock=var['fg_stock'], eta=var['ship_eta'])
         policy['components']['stock'] = "0 if stock is None else round(clamp(stock / 1000, 0, 1), 2) * (1 if production == 'stop' else 0)"
         body = dict(policy=policy, annotation=original['annotation'] + ' + A087 DDL 동기화 검증용 별칭', expected_revision=original['revision'],
-                    request_id=str(uuid.uuid4()), by='A087 probe', reason='A087: 원천 DDL과 어긋난 바인딩을 판단에 쓰지 않는지 검증')
+                    request_id=str(uuid.uuid4()), by='[회귀 검사] A087 검사기', reason='[회귀 검사] A087: 원천 DDL과 어긋난 바인딩을 판단에 쓰지 않는지 검증')
         http(8080, PATH, body, 'PUT')
         doc = mcp('evaluate_cards', ARGS); report['evaluate'] = doc; save()
         facts = doc.get('facts') or {}
@@ -95,7 +95,7 @@ def main():
             check('restoring_the_comment_makes_it_ok_again', ids['fg_stock'] in (back.get('states') or {}).get('OK', []), back)
         cur = http(8080, PATH)
         restore = dict(policy=original['policy'], annotation=original['annotation'], expected_revision=cur['revision'],
-                       request_id=str(uuid.uuid4()), by='A087 probe', reason='A087 restore')
+                       request_id=str(uuid.uuid4()), by='[회귀 검사] A087 검사기', reason='[회귀 검사] A087 원래대로 복원')
         report['restored_policy'] = http(8080, PATH, restore, 'PUT')['policy'] == original['policy']
         if batch:
             report['ingest_cleanup'] = http(8080, '/api/kg/ingests/' + urllib.parse.quote(batch, safe=''), method='DELETE')

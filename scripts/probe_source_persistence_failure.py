@@ -118,8 +118,8 @@ asyncio.run(main())'''
         check('CLEAR does not fabricate recovery or PLC command',final['state']=='ESCALATED' and final['cmdId'] is None and final['workOrder'] is None)
         view=get(PROCESS+'/api/instances/'+pid)
         task=next(w for w in view['workitems'] if w['activity_id']=='task:triage' and w['status']=='IN_PROGRESS')
-        reply=post(PROCESS+'/api/todolist/'+task['id']+'/submit',{'by':'A033 persistence probe',
-            'output':{'note':'Scoped PG write failure and CLEAR process-death verified. No physical recovery or command.'}})
+        reply=post(PROCESS+'/api/todolist/'+task['id']+'/submit',{'by':'[회귀 검사] A033 저장 실패 검사기',
+            'output':{'note':'[회귀 검사] 범위를 좁힌 PG 쓰기 실패와 CLEAR 중 process 종료 확인. 실제 설비 회복·명령 없음.'}})
         check('human review recorded',not reply.get('error'))
         save('instance-final',get(PROCESS+'/api/instances/'+pid));save('receipts-final',rows())
     finally:

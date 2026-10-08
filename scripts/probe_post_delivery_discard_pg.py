@@ -32,10 +32,10 @@ def main():
     base.choose(rt,meta);rt.poll_once();rt.poll_once();rt.hooks.approve_commands=original
     inc=next(iter(ctx.incidents.values()));inc.state='RESOLVED_WITHOUT_ACTION';inc.cleared=True;ctx.persist()
     pid=meta['pid'];tenant=meta['tenant'];wid=meta['wid']
-    meta['request']=dict(by='PG reviewer',role='role:prod-mgr',reason='Source ended without issuing command',request_id=str(uuid.uuid4()))
+    meta['request']=dict(by='[회귀 검사] PG 검토자',role='role:prod-mgr',reason='[회귀 검사] 명령을 내기 전에 원천 경보가 끝남',request_id=str(uuid.uuid4()))
     save('fixture',meta);before=rt.instance_view(pid);disk=store.restore();save('before',before)
     try:
-        preview=rt.preview_approval_discard(wid,'PG reviewer','role:prod-mgr');save('preview',preview)
+        preview=rt.preview_approval_discard(wid,'[회귀 검사] PG 검토자','role:prod-mgr');save('preview',preview)
         check('delivered command is stopped with no durable or external effect',preview['can_discard'] and bool(preview['unissued_commands']) and not meta['commands'])
         try:rt.preview_approval_discard(wid,'operator','role:operator')
         except PermissionError:denied=True

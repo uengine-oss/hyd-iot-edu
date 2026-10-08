@@ -43,7 +43,7 @@ def main():
     row=q('MATCH (i:Incident {id:$id}) RETURN i.reason AS reason',id=inc.id)[0]
     check('new events after restore cannot silently overwrite equal graph revision',row['reason']=='newer-two')
     dsn='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
-    with psycopg.connect(dsn) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tag,'A049 fence fixture'))
+    with psycopg.connect(dsn) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tag,'[회귀 검사] A049 울타리 시험'))
     repo=procdb.PgRepo(dsn);raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     rt=instances.InstanceRuntime(repo,engine.Definition.from_dict(raw),instances.Hooks(record_cypher=q,query_cypher=q),tenant_id=tag)
     inst=rt.start_definition(raw['processDefinitionId'],'1',tag,{'score':2});pid=inst['proc_inst_id']
@@ -58,23 +58,23 @@ def main():
         # The reviewed repair API is exercised here once implemented.
         from procsvc.projection_repair import repair_case,repair_execution,inspect_case,inspect_execution
         case_plan=inspect_case(store,q,'Incident',inc.id);case_rid=str(uuid.uuid4())
-        case_result=repair_case(store,q,'Incident',inc.id,by='A049 acceptance',reason='isolated restored SQLite comparison',plan=case_plan,request_id=case_rid)
+        case_result=repair_case(store,q,'Incident',inc.id,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 복원한 SQLite와 격리 비교',plan=case_plan,request_id=case_rid)
         save('case-repair',case_result);worker.drain()
         check('explicit restored-source repair delivers the current source',store.case_projection_status()['pending']==0 and q('MATCH (i:Incident {id:$id}) RETURN i.reason AS reason',id=inc.id)[0]['reason']=='colliding-restored-revision')
-        check('same SQLite repair request replays its journal after delivery',repair_case(store,q,'Incident',inc.id,by='A049 acceptance',reason='isolated restored SQLite comparison',plan=case_plan,request_id=case_rid)==case_result)
+        check('same SQLite repair request replays its journal after delivery',repair_case(store,q,'Incident',inc.id,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 복원한 SQLite와 격리 비교',plan=case_plan,request_id=case_rid)==case_result)
         pg_plan=inspect_execution(repo,q,tag,pid);pg_rid=str(uuid.uuid4())
-        pg_result=repair_execution(repo,q,tag,pid,by='A049 acceptance',reason='isolated graph ahead comparison',plan=pg_plan,request_id=pg_rid)
+        pg_result=repair_execution(repo,q,tag,pid,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 그래프가 앞선 상태 격리 비교',plan=pg_plan,request_id=pg_rid)
         save('pg-repair',pg_result);rt.reconcile_projections()
         check('explicit execution repair requeues above the observed fence',repo.projection_status(tag,pid)['pending']==0 and rt.execution_view(pid)['graph']['instance']['name']=='a049 changed current source')
-        check('same PG repair request replays its journal after delivery',repair_execution(repo,q,tag,pid,by='A049 acceptance',reason='isolated graph ahead comparison',plan=pg_plan,request_id=pg_rid)==pg_result)
+        check('same PG repair request replays its journal after delivery',repair_execution(repo,q,tag,pid,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 그래프가 앞선 상태 격리 비교',plan=pg_plan,request_id=pg_rid)==pg_result)
         decision=dict(id='DEC-'+tag,created=inc.created,state='APPROVED',chosen='skill:fan-max',approvedRole='role:operator',origin={'incident':inc.id})
         store.save(restored,{decision['id']:decision},[]);worker.drain()
         q('MATCH (i:Incident {id:$id}) DETACH DELETE i',id=inc.id)
-        repair_case(store,q,'Incident',inc.id,by='A049 acceptance',reason='isolated relationship damage');worker.drain()
+        repair_case(store,q,'Incident',inc.id,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 관계 손상 격리 시험');worker.drain()
         check('explicit repair restores a projection-only damaged relationship',q('MATCH (:Incident {id:$id})-[:ON_ASSET]->(a) RETURN a.code AS code',id=inc.id)==[dict(code='HYD-01')])
         check('incident recreation also restores reviewed incoming decision links',q('MATCH (:DecisionCase {id:$id})-[:FOR_INCIDENT]->(i) RETURN i.id AS id',id='case:'+decision['id'])==[dict(id=inc.id)])
         stale=inspect_case(store,q,'Incident',inc.id);restored[inc.id].reason='source changed after review';store.save(restored,{},[])
-        try:repair_case(store,q,'Incident',inc.id,by='A049 acceptance',reason='must reject stale inspection',plan=stale)
+        try:repair_case(store,q,'Incident',inc.id,by='[회귀 검사] A049 인수 검사',reason='[회귀 검사] 지난 점검 결과는 거절되어야 함',plan=stale)
         except ValueError:rejected=True
         else:rejected=False
         check('stale inspected source is rejected before repair',rejected)

@@ -60,7 +60,7 @@ def main():
         cur.execute("select id, consumer, draft_status from todolist where proc_inst_id=%s and activity_id='task:extract-manual'", (pid,))
         wid, c0, d0 = cur.fetchone(); wid = str(wid)
         before_claim = d0 != "STARTED" and c0 is None
-        s, first = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "아직 시작 전"})
+        s, first = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "[회귀 검사] 아직 시작 전"})
         report["first_cancel"] = {"row_before": {"consumer": c0, "draft_status": d0}, "status": s, "body": first}
         if s == 409:
             report["path"] = "before_claim"
@@ -70,7 +70,7 @@ def main():
                 time.sleep(1)
             r = row(cur, wid); check("worker_claimed", r["draft_status"] == "STARTED" and r["consumer"], r)
             time.sleep(15)                                                       # the CLI is really running
-            t1 = time.monotonic(); s, res = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "잘못된 문서를 올렸다"})
+            t1 = time.monotonic(); s, res = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "[회귀 검사] 잘못된 문서를 올렸다"})
         elif s == 200:
             report["path"] = "after_claim"
             skip("cancel_before_a_worker_claims_is_refused_409",
@@ -93,11 +93,11 @@ def main():
         cur.execute("select job_id, crew_type, event_type from events where todo_id=%s order by timestamp", (wid,))
         ev = [list(x) for x in cur.fetchall()]
         check("both_the_persons_request_and_the_workers_stop_are_recorded", any(e[0] == "TASK_CANCEL_REQUESTED" for e in ev) and any(e[2] == "task_cancelled" and e[1] != "human" for e in ev), ev[-6:])
-        s, again = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "다시"})
+        s, again = http(f"/api/todolist/{wid}/cancel", {"by": "운전원", "reason": "[회귀 검사] 다시"})
         check("second_cancel_is_refused", s == 409, {"status": s})
         s, nothing = http(root + "/extractions/" + pid)
         check("extraction_result_reports_the_cancelled_run_without_a_preview", s == 200 and nothing.get("preview") is None and nothing["status"] == "IN_PROGRESS", {"status": nothing.get("status")})
-        s, closed = http(f"/api/todolist/{wid}/close", {"by": "운전원", "reason": "취소 뒤 닫음"})
+        s, closed = http(f"/api/todolist/{wid}/close", {"by": "운전원", "reason": "[회귀 검사] 취소 뒤 닫음"})
         check("person_closes_the_cancelled_row", s == 200 and closed.get("status") == "CANCELLED", {"status": s, "body": closed})
     report["finished"] = datetime.now(timezone.utc).isoformat()
     executed = [c for c in report["checks"] if c["status"] != "skipped"]

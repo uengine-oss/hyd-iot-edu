@@ -83,7 +83,7 @@ def main():
     up = ok("/api/kg/manuals/preview", {"filename": "a075-test-manual.md", "data": base64.b64encode(MANUAL.encode("utf-8")).decode()}); save("preview", up)
     procs = {p["id"]: p for p in up["procedures"]}
     check("structured_preview_found_the_test_sop", SOP in procs and len(procs[SOP]["steps"]) == 3, {"procedures": list(procs), "batch": up["batch"]})
-    body = {"reviewed": True, "by": "A075 reviewer", "source_id": up["source_id"], "batch": up["batch"], "previous_batch": up.get("previous_batch"),
+    body = {"reviewed": True, "by": "[회귀 검사] A075 검토자", "source_id": up["source_id"], "batch": up["batch"], "previous_batch": up.get("previous_batch"),
             "method": up["method"], "sections": up["sections"], "procedures": up["procedures"],
             "links": {SOP: {"failureMode": FM, "relation": "REMEDIED_BY", "kind": "work_order", "approver": "role:maint-mgr",
                             "affects": [{"target": "sv:bearing-wear", "sign": "-", "note": "A079: 점검으로 마모 진행을 늦춘다"}]}}}
@@ -101,7 +101,7 @@ def main():
           {"scoreParts": (mine or {}).get("scoreParts"), "gains": [(g.get("measure"), g.get("sign")) for g in (mine or {}).get("gains") or []][:4]})
     listed = [o.get("sopId") for o in cards.get("options") or []] + [x for x in [SOP] if SOP in (cards.get("explanation") or "")]
     check("dmn_cards_now_include_the_ingested_sop", SOP in (cards.get("explanation") or "") or SOP in listed, {"status": cards.get("status"), "explanation": (cards.get("explanation") or "")[:200]})
-    rb = ok(f"/api/kg/manuals/batches/{receipt['batch']}/rollback", {"by": "A075 reviewer"}); save("rollback", rb)
+    rb = ok(f"/api/kg/manuals/batches/{receipt['batch']}/rollback", {"by": "[회귀 검사] A075 검토자"}); save("rollback", rb)
     gone = cypher(f"MATCH (k:Skill {{id:'{sid}'}}) RETURN k.id;")
     edge_gone = cypher(f"MATCH (:Rule)-[o:OUTPUTS]->(k:Skill {{id:'{sid}'}}) RETURN o;")
     check("rollback_removes_skill_and_rule_edge", not gone and not edge_gone, {"status": rb.get("status")})
@@ -115,14 +115,14 @@ def main():
         cypher(f"MATCH (k:Skill {{id:'{fixture}'}}) OPTIONAL MATCH (k)-[:HAS_STEP]->(st:Step) DETACH DELETE k, st;")
     drop_fixture()                                   # a run interrupted after creating it must not make this one fail
     try:
-        made = ok("/api/kg/skills", {"name": "A156 시험 조치(관리자 등록)", "description": "probe fixture — removed at the end",
+        made = ok("/api/kg/skills", {"name": "A156 시험 조치(관리자 등록)", "description": "[회귀 검사] 시험용 조치 — 끝나면 지운다",
                                      "sopId": "SOP-TEST-92", "steps": ["팬 베어링 소음 확인", "정비 요청 등록"], "failureMode": FM,
-                                     "kind": "work_order", "relation": "REMEDIED_BY", "approver": "role:maint-mgr", "by": "A075 reviewer",
+                                     "kind": "work_order", "relation": "REMEDIED_BY", "approver": "role:maint-mgr", "by": "[회귀 검사] A075 검토자",
                                      "request_id": str(uuid.uuid4())}); save("admin-create-fixture", made)
         skills = {s["id"]: s for s in ok("/api/kg/skills")}
         cur = skills[fixture]
         r = ok(f"/api/kg/skills/{fixture}", {"name": cur["name"], "description": cur["description"], "approver": (cur.get("approver") or {}).get("id"),
-                                             "failureMode": FM, "relation": "REMEDIED_BY", "revision": cur["revision"], "by": "A075 reviewer", "request_id": str(uuid.uuid4())}, method="PUT")
+                                             "failureMode": FM, "relation": "REMEDIED_BY", "revision": cur["revision"], "by": "[회귀 검사] A075 검토자", "request_id": str(uuid.uuid4())}, method="PUT")
         save("relink-admin-fixture", r)
         check("admin_relink_keeps_rule_output_for_existing_skill", any(x["id"] == "rule:cand-fan" for x in r["rules"]) and [f["id"] for f in r["failureModes"]] == [FM],
               {"rules": [x["id"] for x in r["rules"]], "failureModes": [f["id"] for f in r["failureModes"]]})

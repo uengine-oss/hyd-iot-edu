@@ -45,7 +45,7 @@ def main():
         procedures=[dict(id=sop,name='벨트 점검',section='section-1',anchor=anchor('설비를 정지한 후 전원을 차단한다.'),steps=[
             dict(order=1,text='설비를 정지한 후 전원을 차단한다.',manual='section-1',anchor=anchor('설비를 정지한 후 전원을 차단한다.')),
             dict(order=2,text='벨트 균열을 확인하고 결과를 기록한다.',manual='section-1',anchor=anchor('벨트 균열을 확인하고 결과를 기록한다.'))])],
-        page_reviews=[dict(page=1,note='검사기가 직접 작성한 계약 검증용 제안. 실제 AI 추출 아님.')],warnings=['합성 작업 출력이며 에이전트 추출 정확도 근거가 아닙니다.'])
+        page_reviews=[dict(page=1,note='[회귀 검사] 검사기가 직접 작성한 계약 검증용 제안. 실제 AI 추출 아님.')],warnings=['합성 작업 출력이며 에이전트 추출 정확도 근거가 아닙니다.'])
     save('synthetic-output',proposal)
     repo=PgRepo(DSN)
     rows=repo.fetch_pending_task('cliagents','a050-synthetic-contract-probe',tenant_id='hyd',proc_inst_id=pid)
@@ -61,7 +61,7 @@ def main():
     save('result',result);review=result['preview']
     check('actual engine produces cited preview without claimed CLI session',result['status']=='DONE' and review['extraction']['session_id'] is None)
     check('proposal alone cannot authorize graph commit',http('/api/kg/manuals/commit',review)[0]==400)
-    review.update(reviewed=True,by='A050 contract probe',links={sop:dict(failureMode='fm:bearing-degradation')})
+    review.update(reviewed=True,by='[회귀 검사] A050 계약 검사기',links={sop:dict(failureMode='fm:bearing-degradation')})
     forged=copy.deepcopy(review);forged['extraction']['workitem']='forged'
     check('forged production task binding is rejected',http('/api/kg/manuals/commit',forged)[0]==400)
     forged=copy.deepcopy(review);forged['procedures'][0]['steps'][1]['anchor']['quote']='forged'
@@ -70,7 +70,7 @@ def main():
     check('reviewed batch preserves actual production task and two steps',receipt['extraction']==review['extraction'] and receipt['steps']==2)
     replay=request('/api/kg/manuals/commit',review)
     check('same reviewed batch is idempotent',replay['replayed'] and replay['batch']==receipt['batch'])
-    rollback=request('/api/kg/manuals/batches/'+receipt['batch']+'/rollback',dict(by='A050 contract probe'))
+    rollback=request('/api/kg/manuals/batches/'+receipt['batch']+'/rollback',dict(by='[회귀 검사] A050 계약 검사기'))
     check('only this graph batch rolls back while original source survives',rollback['status']=='ROLLED_BACK' and request(root)==source)
     restart=subprocess.run(['docker','compose','restart','process'],cwd=ROOT,capture_output=True,timeout=60)
     (dest/'restart.log').write_bytes(restart.stdout+restart.stderr);assert restart.returncode==0

@@ -125,10 +125,10 @@ def happy_path(require_llm=False):
     check("incident AWAITING_APPROVAL", inc is not None and inc["state"] == "AWAITING_APPROVAL", f"{inc and inc['id']} {inc and inc['state']}")
     dec = next((d for d in get(f"{PROCESS}/api/decisions") if (d.get("origin") or {}).get("incident") == inc["id"]), None)
     check("process holds the action-card decision for the incident", dec is not None and dec["state"] == "PENDING_APPROVAL", json.dumps(dec, ensure_ascii=False)[:160])
-    r = post(f"{PROCESS}/api/incidents/{inc['id']}/decide", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "OP-17", "role": "role:operator", "reason": "test"})
+    r = post(f"{PROCESS}/api/incidents/{inc['id']}/decide", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "[회귀 검사] 운전원", "role": "role:operator", "reason": "[회귀 검사] 권한 밖 승인 시도"})
     check("operator may not choose SOP-COOL-02 (needs 생산관리자)", r.get("error") == 403, r.get("body", "")[:100])
     r = post(f"{PROCESS}/api/incidents/{inc['id']}/decide", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr",
-                                                             "reason": "OEM 납기 오더 진행 중 — 생산을 멈추지 않고 유온을 확실히 내린다"})
+                                                             "reason": "[회귀 검사] OEM 납기 오더 진행 중 — 생산을 멈추지 않고 유온을 확실히 내린다"})
     check("decision accepted → command issued", (r.get("incident") or {}).get("state") == "AWAITING_ACK", json.dumps(r.get("cmd"), ensure_ascii=False)[:160])
     cmd_id = (r.get("cmd") or {}).get("cmdId")
     st, dt = wait_for("ACK", lambda: get(f"{PROCESS}/api/incidents/{inc['id']}") if get(f"{PROCESS}/api/incidents/{inc['id']}")["state"] in ("RE_OBSERVING", "ESCALATED") else None, 40)
@@ -213,10 +213,10 @@ def knowledge_admin_checks():
     check("manual preview: 2 sections, 2 SOPs, 8 steps", len(pv.get("sections", [])) == 2 and sum(p["stepCount"] for p in pv.get("procedures", [])) == 8,
           str([(p["id"], p.get("suggestedFailureMode")) for p in pv.get("procedures", [])]))
     links = {p["id"]: {"failureMode": "fm:bearing-degradation", "relation": "REMEDIED_BY", "kind": "work_order"} for p in pv.get("procedures", [])}
-    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="scenario_test", reviewed=True), timeout=30)
+    out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="[회귀 검사] 시나리오 검사기", reviewed=True), timeout=30)
     check("manual committed: 2 SOP skills matched to the fan bearing failure mode", out.get("procedures") == 2 and out.get("steps") == 8
           and all(v["failureMode"] == "fm:bearing-degradation" for v in (out.get("skills") or {}).values()), json.dumps(out.get("skills"), ensure_ascii=False))
-    undone = post(f"{PROCESS}/api/kg/manuals/batches/{pv['batch']}/rollback", {'by': 'scenario_test'}, timeout=30)
+    undone = post(f"{PROCESS}/api/kg/manuals/batches/{pv['batch']}/rollback", {'by': '[회귀 검사] 시나리오 검사기'}, timeout=30)
     check('fixture manual graph rolled back while source remains readable', undone.get('status') == 'ROLLED_BACK' and
           get(f"{PROCESS}/api/kg/manuals/sources/{pv['source_id']}").get('source_id') == pv['source_id'], pv['batch'])
 
@@ -250,7 +250,7 @@ def negative_manual_mode():
     d2 = get(f"{PROCESS}/api/decisions/{d2['id']}") if d2 else {}
     check("agent cards: REMOTE_MANUAL fact excludes every control card (rule:auto-mode)", d2.get("options") and all(
         any(v["rule"] == "rule:auto-mode" for v in o["violations"]) for o in d2["options"]), d2.get("explanation", "")[:120])
-    r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "OP-17", "actions": [{"code": "FAN_SET", "fan_pct": 100}]})
+    r = post(f"{PROCESS}/api/incidents/{inc['id']}/approve", {"approvedBy": "[회귀 검사] 운전원", "actions": [{"code": "FAN_SET", "fan_pct": 100}]})
     check("raw command approval without SOP and role is rejected", r.get("error") == 409, json.dumps(r))
     current = get(f"{PROCESS}/api/incidents/{inc['id']}")
     check("no command created by rejected approval", current.get("cmdId") is None, str(current.get("cmdId")))

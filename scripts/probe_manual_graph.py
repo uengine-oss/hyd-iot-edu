@@ -40,7 +40,7 @@ def main():
         raw = f'# 정비\nHM-8.1 팬\nSOP-LIVE-{unique}-{suffix} 벨트 점검\n1. 설비를 정지한다.\n2. {variant}\n'
         source = archive.save(tenant, 'same-name.md', raw.encode(), document_id=document_id)
         body = manual_review.proposal(source)
-        body.update(reviewed=True, by='실제 검증', previous_batch=previous,
+        body.update(reviewed=True, by='[회귀 검사] 실제 검증', previous_batch=previous,
                     links={p['id']: {'failureMode': 'fm:bearing-degradation'} for p in body['procedures']})
         plan = manual_review.validate(archive, tenant, body)
         plans.append(plan)

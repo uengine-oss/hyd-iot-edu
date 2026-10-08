@@ -45,7 +45,7 @@ def main(destination):
         review=s.post(base+'/decision-preview',{'decision':d['id'],'option':option,'parameters':params},timeout=30);save('review',review)
         require('legacy review stored with incident scope',review.get('scope',{}).get('kind')=='legacy' and review['scope']['incident']==inc_id,review.get('error'))
         check('preview preserves original and issues no command',s.get(s.PROCESS+'/api/decisions/'+d['id'])==original and s.get(base).get('cmdId') is None)
-        body={'decision':d['id'],'option':option,'review_id':review['id'],'by':'A031-legacy-probe','role':'role:prod-mgr','reason':'새 예측의 변경값 검토',**params}
+        body={'decision':d['id'],'option':option,'review_id':review['id'],'by':'[회귀 검사] A031 레거시 검사기','role':'role:prod-mgr','reason':'[회귀 검사] 새 예측의 변경값 검토',**params}
         wrong=s.post(base+'/decide',dict(body,fan_pct=94),timeout=35);save('wrong-value',wrong)
         check('legacy rejects a value different from saved review',wrong.get('error')==400,wrong)
         lower=s.post(base+'/decide',dict(body,role='role:operator'),timeout=35);save('wrong-role',lower)

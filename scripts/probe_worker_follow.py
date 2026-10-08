@@ -77,7 +77,7 @@ def main():
     reviewed = ok(f"/api/todolist/{sel['id']}/decision-preview", {"decision": dec_id, "option": option, "parameters": {}}); save("review", reviewed)
     assert reviewed.get("id"), reviewed
     r = ok(f"/api/todolist/{sel['id']}/select", {"decision": dec_id, "option": option, "by": "이생산", "role": "role:prod-mgr",
-                                                  "reason": "A072 run 4 (1x, real Claude Code worker): approve the recommended card after fresh review", "review_id": reviewed["id"]})
+                                                  "reason": "[회귀 검사] A072 4회차(1배속, 실제 Claude Code 워커): 새로 검토한 뒤 추천 카드 승인", "review_id": reviewed["id"]})
     save("select", r); check("human_approval_accepted", "instance" in r, {"approval_status": r.get("approval_status")})
     inc = until(lambda: (lambda i: i if i.get("cmdId") and (i.get("ack") or {}).get("result") == "DONE" else None)(ok("/api/incidents/" + inc_id)), 120)
     save("incident-acked", inc); check("plc_ack_done", inc["state"] in ("ACKED", "RE_OBSERVING"), {"cmd": inc["cmdId"], "state": inc["state"]})

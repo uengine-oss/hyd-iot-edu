@@ -80,8 +80,8 @@ def main():
               [f['key'] for f in prepare(repo,w1,'hyd').form_fields]==['score'],forms)
         check('required_form_rejects_before_state_change',http('/api/todolist/'+w2['id']+'/submit',{'output':{'score':7}})[0]==400
               and repo.get_workitem(w2['id'])['status']=='IN_PROGRESS')
-        for w,output in ((w1,{'score':7}),(w2,{'score':7,'note':'검토 완료'})):
-            code,row=http('/api/todolist/'+w['id']+'/submit',{'output':output,'by':'실측 검토자'})
+        for w,output in ((w1,{'score':7}),(w2,{'score':7,'note':'[회귀 검사] 검토 완료'})):
+            code,row=http('/api/todolist/'+w['id']+'/submit',{'output':output,'by':'[회귀 검사] 실측 검토자'})
             assert code==200,(code,row)
         views=[http('/api/instances/'+pid)[1] for pid in (old,new)]
         graphs=[http('/api/instances/'+pid+'/graph')[1] for pid in (old,new)]

@@ -67,8 +67,8 @@ def main():
             policy['components']['contract'] = "0 if fail_cost is None else -round(clamp(fail_cost / 1000, 0, 5), 2) * (1 if production == 'keep' else 0)"
             policy['components']['stock'] = "0 if stock is None or ship_h is None else round(clamp(stock / 1000, 0, 1), 2) * (1 if production == 'stop' else 0)"
             body = dict(policy=policy, annotation=original['annotation'] + ' + 계약 고장 손실(만원/1000, 유지 카드 감산, ≤5) + 완제품 재고(수량/1000, 정지 카드 가산, ≤1)',
-                        expected_revision=current['revision'], request_id=str(uuid.uuid4()), by='A078 probe',
-                        reason='A078: 회의 L385~404 계약·재고 조건을 데이터만으로 추가하는 경로 검증')
+                        expected_revision=current['revision'], request_id=str(uuid.uuid4()), by='[회귀 검사] A078 검사기',
+                        reason='[회귀 검사] A078: 회의 L385~404 계약·재고 조건을 데이터만으로 추가하는 경로 검증')
             current = http(8080, PATH, body, 'PUT'); report['policy_write'] = current; save()
             check('policy_with_new_aliases_accepted', current['policy']['inputs']['fail_cost'] == var['failure_cost'])
             # 3. the DMN tool the agents call reads the live DB values and scores every card with the new components
@@ -106,7 +106,7 @@ def main():
             db.execute("update ent.sales_contracts set failure_cost=%s where asset='HYD-01'", (before,))
             db.execute("update ent.fg_inventory set fg_stock=%s, ship_at=%s where asset='HYD-01'", (stock_before, ship_before))
             restore = dict(policy=original['policy'], annotation=original['annotation'], expected_revision=http(8080, PATH)['revision'],
-                           request_id=str(uuid.uuid4()), by='A078 probe', reason='A078 restore')
+                           request_id=str(uuid.uuid4()), by='[회귀 검사] A078 검사기', reason='[회귀 검사] A078 원래대로 복원')
             current = http(8080, PATH, restore, 'PUT')
             if batch:
                 report['ingest_cleanup'] = http(8080, '/api/kg/ingests/' + urllib.parse.quote(batch, safe=''), method='DELETE')

@@ -43,8 +43,8 @@ def main(destination,restart_after_review=False):
         wid=rows['task:select']['id'];option='skill:fan-max-derate';base=s.PROCESS+'/api/todolist/'+wid
         params={'fan_pct':95,'load_pct':78}
         request={'decision':did,'option':option,'parameters':params}
-        selection={'decision':did,'option':option,'by':'A031-review-probe','role':'role:prod-mgr',
-                   'reason':'현재 입력으로 팬 95% / 부하 78% 변경안을 검토함',**params}
+        selection={'decision':did,'option':option,'by':'[회귀 검사] A031 검토 검사기','role':'role:prod-mgr',
+                   'reason':'[회귀 검사] 현재 입력으로 팬 95% / 부하 78% 변경안을 검토함',**params}
         review=s.post(base+'/decision-preview',request,timeout=30);save('review-first',review)
         require('preview saved and grants no execution',review.get('id','').startswith('REV-') and review.get('execution_authorized') is False,review.get('error'))
         opt=review['snapshot']['options'][0]

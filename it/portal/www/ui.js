@@ -121,6 +121,8 @@ const UI = {
     'flow.name.조치 카드 선택 (HITL)': '조치 선택', 'flow.name.상급자 호출': '책임자 확인', 'flow.name.PLC 명령 발행': '설비에 명령', 'flow.name.재관측 (15분)': '효과 확인 (15분)', 'flow.name.정비 작업지시': '정비 요청',
     'flow.name.선택 시간 초과': '선택 시간 초과', 'flow.name.종결': '종결', 'flow.name.에스컬레이션 종료': '책임자 확인으로 종료',
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
+    // A6: 끝 이벤트 id가 이름 없이 오는 자리(처리 건 목록 end_event · 로그 "instance ended (ev:…)") — 정의 events[].name과 같은 말
+    'flow.name.start': '시작', 'flow.name.alert': '설비 경보', 'flow.name.select-timeout': '선택 시간 초과', 'flow.name.unhandled-alert': '미지원 경보 접수', 'flow.name.review-recorded': '현장 검토 기록 완료',
     'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
@@ -214,6 +216,8 @@ const UI = {
     NEW: "생성", TODO: "예정", IN_PROGRESS: "진행 중", PENDING: "보류", HUMAN_ASKED: '답변 기다림', FB_REQUESTED: '반영 중', STARTED: '진행 중', CANCELLED: "취소",
     COMPLETED: "완료", SKIPPED: "건너뜀", DELIVERED: "전달 완료", DISCARDED: "폐기", OK: "완료",
     UNSUPPORTED_ALERT_PATTERN: "정의에 없는 경보 패턴", SELECT_TIMEOUT: "선택 시간 초과", NOT_RECOVERED: "미회복",
+    RECORDED: "기록됨", HANDLED: "처리 완료", QUEUED: "대기열", CLAIMED: "처리 중", WAITING: "대기", SUPERSEDED: "대체됨", ACTIVE: "현재 판본", ROLLED_BACK: "되돌림",   // A6
+    UNKNOWN: "판정 불가", UNSUPPORTED: "지원하지 않음", READY: "준비됨", OCR_REQUIRED: "글자 인식 필요", AWAITING_AGENT: "에이전트 대기", BLOCKED_FOR_REVIEW: "사람 확인 필요", CORRECTED: "교정됨",
     PROCESS_RESTART_REVIEW: "서비스 재시작 후 재검토", MITIGATION_FAILED: "완화 실패", ACK_TIMEOUT: "설비 응답 시간 초과", PASS: "통과", INTERLOCK: "인터록",
   },
   tones: {
@@ -258,6 +262,9 @@ const UI = {
     task_started: '단계 시작', task_completed: '단계 완료', task_working: '진행', tool_usage_started: '도구 호출', tool_usage_finished: '도구 결과',
     human_asked: '사람에게 질문', human_response: '사람의 답변', task_cancelled: '단계 취소', error: '오류',
     '명령 검증 통과': '명령 검증 통과', '명령 거절': '명령 거절',
+    ACK_REJECTED: '설비 명령 거절', GUIDE_REJECTED: '분석 결과 반려', WORK_ORDER_FAILED: '정비 요청 실패', SKILL_FAILED: '조치 실행 실패', SKILL_CREATED: '조치 방법 추가',   // A6
+    AGENT_TASK_CLOSED: '에이전트 작업 닫음', MANUAL_ROLLED_BACK: '매뉴얼 되돌림', DDL_INGESTED: '업무 데이터 구조 등록', DDL_SOURCE_DRIFT: '업무 데이터 구조 변경 감지',
+    INGEST_CLEARED: '업무 데이터 연결 해제', SCM_SOURCE_SYNCED: '공급망 원천 동기화',
   },
   eventName(name) { return this.eventNames[name] || this.states[name] || name || '–'; },
   // chips: optional pre-rendered small chips after the actor (A132: `결과 파일로 제출` on a task_completed whose result_source is file)

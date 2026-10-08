@@ -119,7 +119,7 @@ asyncio.run(main())'''
             proposal=ok(path+'/rework-preview?workitem_id='+prior_rank['id']);save('active-rework-preview',proposal)
             check('live effects preview permits pre-effect incident rework',proposal['execution_available'] and not proposal['blockers'])
             request={'workitem_id':prior_rank['id'],'request_id':str(uuid.uuid4()),'snapshot_token':proposal['snapshot_token'],
-                     'by':'A040 fixture reviewer','role':'role:prod-mgr','reason':'Re-evaluate current facts with a new producing work item'}
+                     'by':'[회귀 검사] A040 검토자','role':'role:prod-mgr','reason':'[회귀 검사] 값을 새로 만드는 단계로 현재 사실을 다시 평가'}
             receipt=ok(path+'/rework',request);save('rework-receipt',receipt)
             check('live request creates generation 1 and preserves original decision',receipt['generation']==1 and ok('/api/decisions/'+did)==original)
             # Helpers below must now follow the newest work item, not the older
@@ -138,7 +138,7 @@ asyncio.run(main())'''
             selection=task('task:select')
             check('new generation waits for separate human consent',selection['status']=='IN_PROGRESS' and selection['generation']==1
                   and ok('/api/incidents/'+incident)['cmdId'] is None and engine.variables(ok(path)['instance'])['decision_id']==did)
-            stale={'decision':original['id'],'option':original['recommended'],'by':'A040 stale requester','role':'role:prod-mgr'}
+            stale={'decision':original['id'],'option':original['recommended'],'by':'[회귀 검사] A040 지난 판단 요청자','role':'role:prod-mgr'}
             check('both old human work and old decision on new work are refused',
                   call('/api/todolist/'+prior_selection['id']+'/select',stale)[0]==400
                   and call('/api/todolist/'+selection['id']+'/select',stale)[0]==400)
@@ -151,8 +151,8 @@ asyncio.run(main())'''
         save('clear-publication', publish(dict(alert, state='CLEAR')))
         until(lambda: ok('/api/incidents/'+incident)['cleared'])
         until(lambda: task('task:escalate')['status']=='IN_PROGRESS')
-        ok('/api/todolist/'+task('task:escalate')['id']+'/submit', {'by': 'A039 fixture reviewer',
-           'output': {'note': 'Producer-scope fixture reviewed; source cleared; no physical fault or action asserted.'}})
+        ok('/api/todolist/'+task('task:escalate')['id']+'/submit', {'by': '[회귀 검사] A039 검토자',
+           'output': {'note': '[회귀 검사] 값을 만든 단계 범위 확인, 원천 경보 해제. 실제 설비 고장·조치를 주장하지 않음.'}})
         final = ok(path); inc = ok('/api/incidents/'+incident); save('final', final); save('incident-final', inc)
         check('normal timeout and human review end without command or work order', final['instance']['status']=='COMPLETED' and inc['cmdId'] is None and not inc.get('workOrder'))
         unscoped = deepcopy(decision); unscoped['id']='A039-ended-'+uuid.uuid4().hex; unscoped['origin'].pop('process_scope')

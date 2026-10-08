@@ -47,7 +47,7 @@ def run():
             class Session:
                 def run(self,*args,**kwargs):return session.run(*args,**kwargs)
                 def execute_write(self,fn):return session.execute_write(lambda tx:fn(Tx(tx)))
-            return skill_graph.write(Session() if fault else session,main.SKILL_Q,sid,values,create=create,expected_revision=revision,request_id=rid,by='A047 isolated acceptance')
+            return skill_graph.write(Session() if fault else session,main.SKILL_Q,sid,values,create=create,expected_revision=revision,request_id=rid,by='[회귀 검사] A047 격리 인수 시험')
     def rejected(fn,kind):
         try:fn()
         except kind:return True
@@ -55,7 +55,7 @@ def run():
     roles=['role:'+tag+'-1','role:'+tag+'-2'];ids.extend(roles)
     q('UNWIND $ids AS id CREATE (:Role {id:id,name:id,level:2,_acceptance_fixture:true})',ids=roles)
     fm=q('MATCH (f:FailureMode) RETURN f.id AS id ORDER BY id LIMIT 1')[0]['id']
-    values=kgadmin.validate_skill(dict(name=tag,description='isolated acceptance',approver=roles[0],sopId='SOP-'+tag,steps=['first step','second step'],failureMode=fm),create=True)
+    values=kgadmin.validate_skill(dict(name=tag,description='[회귀 검사] 격리 인수 시험 자료',approver=roles[0],sopId='SOP-'+tag,steps=['first step','second step'],failureMode=fm),create=True)
     sid=kgadmin.skill_id(values['sopId']);ids.extend([sid,sid+'/step/1',sid+'/step/2'])
     try:
         rid=str(uuid.uuid4());created=invoke(sid,values,create=True,rid=rid)
@@ -67,7 +67,7 @@ def run():
         reversed_values=dict(values,steps=list(reversed(values['steps'])))
         check('same request with reversed SOP step order is rejected',rejected(lambda:invoke(sid,reversed_values,create=True,rid=rid),skill_graph.Conflict) and snapshot()==before)
         check('another creation request cannot overwrite the existing SOP',rejected(lambda:invoke(sid,dict(values,name='replacement'),create=True),skill_graph.Conflict) and snapshot()==before)
-        edit=dict(name='valid edit',description='updated',approver=roles[1])
+        edit=dict(name='valid edit',description='[회귀 검사] 설명 수정',approver=roles[1])
         rid_bad=str(uuid.uuid4())
         check('unknown approval role rejects every change',rejected(lambda:invoke(sid,dict(edit,approver='role:missing-'+tag),revision=created['revision'],rid=rid_bad),ValueError) and snapshot()==before and receipt_count(rid_bad)==0)
         rid_fault=str(uuid.uuid4())
@@ -83,7 +83,7 @@ def run():
         updated=invoke(sid,edit,revision=now['revision'],rid=rid_edit)
         # A new driver/session models a fresh client after losing its response.
         with GraphDatabase.driver('bolt://127.0.0.1:7687',auth=tuple(env['NEO4J_AUTH'].split('/',1))) as fresh:
-            with fresh.session() as session:replay=skill_graph.write(session,main.SKILL_Q,sid,edit,expected_revision=now['revision'],request_id=rid_edit,by='A047 isolated acceptance')
+            with fresh.session() as session:replay=skill_graph.write(session,main.SKILL_Q,sid,edit,expected_revision=now['revision'],request_id=rid_edit,by='[회귀 검사] A047 격리 인수 시험')
         check('fresh client replays committed request despite its now-old revision',replay==updated and receipt_count(rid_edit)==1)
         before=snapshot()
         check('stale edit cannot overwrite the newer revision',rejected(lambda:invoke(sid,dict(edit,name='stale'),revision=created['revision']),skill_graph.Conflict) and snapshot()==before)

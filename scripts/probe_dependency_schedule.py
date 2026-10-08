@@ -36,18 +36,18 @@ def main():
     def view(): return req('/api/instances/'+pid)
     def latest():
         return {w['activity_id']:w for w in sorted(view()['workitems'],key=lambda w:(w.get('generation') or 0,w.get('start_date') or ''))}
-    def submit(row,key,value): return req('/api/todolist/'+row['id']+'/submit',dict(output={key:value},by='A063 probe'))
+    def submit(row,key,value): return req('/api/todolist/'+row['id']+'/submit',dict(output={key:value},by='[회귀 검사] A063 검사기'))
     def rework(row):
         preview=req('/api/instances/'+pid+'/rework-preview?workitem_id='+row['id']); save('preview-'+str(row['generation']),preview)
         check('generation_'+str(row['generation'])+'_plan_available',preview['execution_available'])
         return req('/api/instances/'+pid+'/rework',dict(workitem_id=row['id'],request_id=str(uuid.uuid4()),
-            snapshot_token=preview['snapshot_token'],by='A063 probe',role='role:operator',reason='changed producer result'))
+            snapshot_token=preview['snapshot_token'],by='[회귀 검사] A063 검사기',role='role:operator',reason='[회귀 검사] 앞 단계 결과 변경'))
     old=latest(); submit(old['a'],'x','old x'); submit(old['b'],'y','old y')
     first=rework(old['a']); save('first-rework',first)
     current=latest(); waiting=view(); save('waiting',waiting)
     check('only_root_open_consumers_wait', [current[a]['status'] for a in ('a','b','c')]==['IN_PROGRESS','TODO','TODO'])
     for activity,key in [('b','y'),('c','z')]:
-        status,body=http('/api/todolist/'+current[activity]['id']+'/submit',dict(output={key:'premature'},by='A063 probe'))
+        status,body=http('/api/todolist/'+current[activity]['id']+'/submit',dict(output={key:'premature'},by='[회귀 검사] A063 검사기'))
         check(activity+'_direct_submit_cannot_bypass_wait',status==400 and 'not reached' in body.get('detail','')
               and latest()[activity]['status']=='TODO' and latest()[activity]['output'] is None)
     with psycopg.connect(DSN) as conn:
@@ -58,7 +58,7 @@ def main():
     check('kill_restart_preserves_wait_and_identity',view()['instance']['flow_state']==state)
     second=rework(current['a']); save('second-rework',second)
     newer=latest()
-    stale_status,stale=http('/api/todolist/'+current['a']['id']+'/submit',dict(output={'x':'stale'},by='A063 probe'))
+    stale_status,stale=http('/api/todolist/'+current['a']['id']+'/submit',dict(output={'x':'stale'},by='[회귀 검사] A063 검사기'))
     save('stale-submit',dict(status=stale_status,response=stale))
     check('superseded_submission_rejected',stale_status==400 and 'CANCELLED' in stale.get('detail','')
           and latest()['a']['output'] is None)
@@ -69,7 +69,7 @@ def main():
     check('fresh_result_opens_exact_consumer_once',opened['b']['status']=='IN_PROGRESS' and opened['b']['generation']==2
           and opened['b']['reference_ids']==[newer['a']['id']] and 'fresh x' in opened['b']['query'] and 'old x' not in opened['b']['query'])
     check('flow_successor_waits_despite_data_plan',opened['c']['status']=='TODO' and view()['instance']['status']=='RUNNING')
-    code,duplicate=http('/api/todolist/'+newer['a']['id']+'/submit',dict(output={'x':'duplicate'},by='A063 probe'))
+    code,duplicate=http('/api/todolist/'+newer['a']['id']+'/submit',dict(output={'x':'duplicate'},by='[회귀 검사] A063 검사기'))
     check('duplicate_producer_rejected',code==400 and 'DONE' in duplicate.get('detail','')
           and latest()['b']['id']==opened['b']['id'] and latest()['a']['output']=={'x':'fresh x'})
     submit(opened['b'],'y','fresh y'); c=latest()['c']

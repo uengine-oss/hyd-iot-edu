@@ -47,7 +47,7 @@ def main():
     book={d['id']:d};store.save(sources,book,[])
     # PG execution exists before its Incident graph source, reproducing the old
     # dangling HANDLES edge. Its source and decision are labelled fixtures.
-    with psycopg.connect(DSN) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'A044 retained case fixture'))
+    with psycopg.connect(DSN) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'[회귀 검사] A044 보존 사례 시험'))
     repo=procdb.PgRepo(DSN)
     definition=engine.Definition.load(ROOT/'it/process/definitions/anomaly_response.json')
     rt=instances.InstanceRuntime(repo,definition,instances.Hooks(new_incident=lambda alert:{'id':inc.id},record_cypher=query,query_cypher=query),tenant_id=tenant)
@@ -75,7 +75,7 @@ def main():
     before=store.db.execute('select count(*) from case_projection_outbox').fetchone()[0]
     store.save(sources,book,[{'event':'unrelated audit'}])
     check('audit-only snapshot does not enqueue duplicate projections',store.db.execute('select count(*) from case_projection_outbox').fetchone()[0]==before)
-    inc.state='ESCALATED';inc.reason='fixture review';inc.card['topCause']=None;store.save(sources,book,[]);worker.drain()
+    inc.state='ESCALATED';inc.reason='[회귀 검사] 시험 검토';inc.card['topCause']=None;store.save(sources,book,[]);worker.drain()
     row=query('MATCH (i:Incident {id:$id}) OPTIONAL MATCH (i)-[:DIAGNOSED_AS]->(c) RETURN i.status AS status,count(c) AS causes',id=inc.id)[0]
     check('current state and removed diagnosis replace obsolete graph facts',row=={'status':'ESCALATED','causes':0})
     query(old_incident[0],**old_incident[1])
@@ -103,7 +103,7 @@ def main():
     with psycopg.connect(DSN) as c:
         c.execute("update todolist set status='CANCELLED' where proc_inst_id=%s",(pid,))
         c.execute("update bpm_proc_inst set status='COMPLETED',current_activity_ids='{}',end_date=now() where proc_inst_id=%s",(pid,))
-    other.state='ESCALATED';other.reason='fixture review';store.save(sources,book,[]);worker.drain();rt.reconcile_projections()
+    other.state='ESCALATED';other.reason='[회귀 검사] 시험 검토';store.save(sources,book,[]);worker.drain();rt.reconcile_projections()
     save('final-queue',store.case_projection_status());save('final-execution',rt.execution_view(pid))
     save('final-cases',query('MATCH (n) WHERE n.id IN $ids RETURN labels(n) AS labels,n{.*} AS properties',ids=[inc.id,other.id,'case:'+d['id'],'case:'+later['id']]))
     check('retained fixture leaves both queues settled',store.case_projection_status()['pending']==0 and repo.projection_status(tenant,pid)['pending']==0)

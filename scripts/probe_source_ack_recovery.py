@@ -76,7 +76,7 @@ asyncio.run(main())'''
             body=sql.SQL("BEGIN IF NEW.kind='ACK' AND NEW.status='HANDLED' AND NEW.result->>'incident'={} THEN PERFORM pg_advisory_xact_lock(hashtextextended({},0)); END IF; RETURN NEW; END").format(sql.Literal(iid),sql.Literal(key)).as_string(c)
             c.execute(sql.SQL('create function public.{}() returns trigger language plpgsql as {}').format(sql.Identifier(name),sql.Literal(body)));created=True
             c.execute(sql.SQL('create trigger {} before update on public.process_source_inbox for each row execute function public.{}()').format(sql.Identifier(name),sql.Identifier(name)))
-        response=s.post(s.PROCESS+'/api/todolist/'+task['id']+'/select',{'decision':decision['id'],'option':'skill:fan-slow-derate','by':'A033 ACK 검증','role':'role:prod-mgr','reason':'팬 조치 ACK 접수 중단 후 재시작 검토 경계 확인'})
+        response=s.post(s.PROCESS+'/api/todolist/'+task['id']+'/select',{'decision':decision['id'],'option':'skill:fan-slow-derate','by':'[회귀 검사] A033 ACK 검증','role':'role:prod-mgr','reason':'[회귀 검사] 팬 조치 ACK 접수 중단 후 재시작 검토 경계 확인'})
         save('approval',response);check('explicit human selection accepted',response.get('accepted') is True)
         ack=until(lambda:(i if (i.get('ack') or {}).get('result')=='DONE' and i['state']=='RE_OBSERVING' else None) if (i:=incident()) else None)
         save('incident-before-kill',ack);cmd=ack['cmdId']
@@ -102,7 +102,7 @@ asyncio.run(main())'''
         check('Kafka has exactly one publication of the approved command',len(commands)==1)
         view=until(lambda:(v if any(w['activity_id']=='task:escalate' and w['status']=='IN_PROGRESS' for w in v['workitems']) else None) if (v:=s.view(pid)) else None)
         esc=next(w for w in view['workitems'] if w['activity_id']=='task:escalate')
-        reply=s.post(s.PROCESS+'/api/todolist/'+esc['id']+'/submit',{'by':'A033 ACK 검증','output':{'note':'실제 PLC ACK 뒤 수신완료 거래 중단/재시작 검토 확인. 회복 종결로 처리하지 않음.'}})
+        reply=s.post(s.PROCESS+'/api/todolist/'+esc['id']+'/submit',{'by':'[회귀 검사] A033 ACK 검증','output':{'note':'[회귀 검사] 실제 PLC ACK 뒤 수신완료 거래 중단/재시작 검토 확인. 회복 종결로 처리하지 않음.'}})
         check('human restart review accepted',not reply.get('error'))
         completed=s.view(pid);save('instance-final',completed)
         check('ends by escalation, without CMMS branch',completed['instance']['end_event']=='ev:escalated'

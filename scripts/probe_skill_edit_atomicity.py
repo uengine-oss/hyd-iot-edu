@@ -23,11 +23,11 @@ def run():
     def save(name,value):(out/(name+'.json')).write_text(json.dumps(value,ensure_ascii=False,indent=2),encoding='utf8')
     def snapshot():return q('MATCH (s:Skill {id:$sid}) OPTIONAL MATCH (s)-[a:APPROVED_BY]->(r) RETURN properties(s) AS skill, collect(r.id) AS approvers',sid=sid)
     def restore():
-        q('MATCH (s:Skill {id:$sid}) OPTIONAL MATCH (s)-[a:APPROVED_BY]->() DELETE a SET s.name=$name,s.description=$description WITH s MATCH (r:Role {id:$role}) MERGE (s)-[:APPROVED_BY]->(r)',sid=sid,role=role,name=prefix,description='isolated acceptance fixture')
-    q('CREATE (r:Role {id:$role,name:$name,level:2,_acceptance_fixture:true}), (s:Skill {id:$sid,name:$name,description:$description,sopId:$sop,kind:"work_order",_acceptance_fixture:true}) CREATE (s)-[:APPROVED_BY]->(r)',sid=sid,role=role,name=prefix,description='isolated acceptance fixture',sop='SOP-'+prefix.upper())
+        q('MATCH (s:Skill {id:$sid}) OPTIONAL MATCH (s)-[a:APPROVED_BY]->() DELETE a SET s.name=$name,s.description=$description WITH s MATCH (r:Role {id:$role}) MERGE (s)-[:APPROVED_BY]->(r)',sid=sid,role=role,name=prefix,description='[회귀 검사] 격리 인수 시험 자료')
+    q('CREATE (r:Role {id:$role,name:$name,level:2,_acceptance_fixture:true}), (s:Skill {id:$sid,name:$name,description:$description,sopId:$sop,kind:"work_order",_acceptance_fixture:true}) CREATE (s)-[:APPROVED_BY]->(r)',sid=sid,role=role,name=prefix,description='[회귀 검사] 격리 인수 시험 자료',sop='SOP-'+prefix.upper())
     before=snapshot();save('before',before);checks=[]
     try:
-        request=Request('http://127.0.0.1:8080/api/kg/skills/'+sid,data=json.dumps({'name':'changed name','approver':'role:a047-missing-'+uuid.uuid4().hex,'by':'A047 isolated acceptance'}).encode(),headers={'Content-Type':'application/json'},method='PUT')
+        request=Request('http://127.0.0.1:8080/api/kg/skills/'+sid,data=json.dumps({'name':'changed name','approver':'role:a047-missing-'+uuid.uuid4().hex,'by':'[회귀 검사] A047 격리 인수 시험'}).encode(),headers={'Content-Type':'application/json'},method='PUT')
         try:
             with urlopen(request,timeout=25) as response:result=dict(status=response.status,body=json.load(response))
         except HTTPError as error:result=dict(status=error.code,body=error.read().decode())
