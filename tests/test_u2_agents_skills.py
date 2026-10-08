@@ -222,7 +222,7 @@ def test_portal_api_shows_what_the_wrap_up_added_and_writes_nothing(api):
     one = client.get("/api/skills/fan-vibration-check").json()
     assert one["content"] == SKILL_MD and one["agents"][0]["name"] == "팬 진동 점검 에이전트"
     assert client.get("/api/skills/nope").status_code == 404 and client.get("/api/agents/role:operator").status_code == 404
-    # read-only: no route accepts a write
+    # agents_api itself only reads (B1's writes live in agent_authoring_api — tests/test_b1_agent_authoring.py); no LLM draft route
     for method, url in (("post", "/api/agents"), ("put", "/api/agents/sys:agent"), ("delete", "/api/agents/sys:agent"),
                         ("post", "/api/skills"), ("put", "/api/skills/fan-vibration-check"), ("delete", "/api/skills/fan-vibration-check"),
                         ("post", "/api/agents/draft"), ("put", "/api/agent-bindings")):

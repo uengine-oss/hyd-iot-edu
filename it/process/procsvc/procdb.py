@@ -32,6 +32,7 @@ from .rework_store import MemoryReworks, PgReworks
 from .effect_store import MemoryEffects, PgEffects
 from .projection_repo import MemoryProjection, PgProjection
 from .agents_store import MemoryAgents, PgAgents          # U2: tenant skills · agent ↔ skill (read side)
+from .agent_authoring import MemoryAuthoring, PgAuthoring  # B1: 에이전트 · 스킬 · 배정 쓰기 + 되돌리기
 
 SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
 
@@ -153,7 +154,7 @@ def _owns_claim(row,consumer):
 
 
 # ---------------------------------------------------------------- in-memory
-class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection, MemoryAgents):
+class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection, MemoryAgents, MemoryAuthoring):
     def __init__(self):
         self._lock = threading.RLock()
         self.defs: dict[tuple[str, str], dict] = {}
@@ -557,7 +558,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
 
 
 # ---------------------------------------------------------------- postgres (Supabase)
-class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents):
+class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthoring):
     def __init__(self, dsn: str | None = None):
         import psycopg
         from psycopg.rows import dict_row

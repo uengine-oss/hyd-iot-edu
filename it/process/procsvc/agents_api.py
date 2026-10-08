@@ -6,16 +6,17 @@
     GET /api/skills              skills (tenant_skills): title · description · agents it is attached to · steps that declare it
     GET /api/skills/{name}       one skill with its SKILL.md text
 
-Nothing here writes. Agents (public.users) and skills (public.tenant_skills · public.agent_skills) are added in the wrap-up
-with Claude Code (docs/handoff/verification/2026-10-08/u2-agents-skills.md); the next request reads them, as the next run does.
-The product edits the same rows from the browser (process-gpt-vue3 AgentChatInfo.vue edit · SkillsManagement.vue upload);
-HYD's portal shows them only (TODO §0 "에이전트·스킬·MCP 설정은 포털에서 보기만").
+These routes only read. B1 (DECISIONS 110 ①) added the writes in agent_authoring_api.py (create · edit · clone · delete agents
+and skills, step → agent assignment, reset); the wrap-up (Claude Code → SQL) still writes the same rows. Each card carries
+`origin` ('seed' = protected default, 'user' = made in the portal) and a step's performer follows the step → agent assignment
+(activity_agent_map) when there is one — the same rule the engine applies when the step opens (agent_authoring.apply_agent_map).
 """
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
 from . import engine, instance_mode
+from .agent_authoring import origin_of
 from .agents_store import activity_capabilities, agent_settings, csv_list, role_text, skill_title
 
 
@@ -35,7 +36,7 @@ def _latest_definitions(rt) -> list[dict]:
     return list(latest.values())
 
 
-def agent_steps(definitions: list[dict]) -> list[dict]:
+def agent_steps(definitions: list[dict], maps: dict | None = None) -> list[dict]:
     """Every activity of the definitions with its performers: the activity's own `agent` (the product's AgentSelectField
     writes it) or the role's endpoint (HYD definitions: role "AI 에이전트" → sys:agent, "SCADA" → sys:scada).
     `agent` marks the steps a coding-agent worker runs (agentMode set, orchestration cliagents) — only those have run settings."""
@@ -51,24 +52,31 @@ def agent_steps(definitions: list[dict]) -> list[dict]:
                 continue
             orch = a.get("orchestration")
             is_agent = bool(engine.agent_mode_of(a)) and (orch in engine.NO_MODE or orch == engine.AGENT_ORCH)
+            mapped = (maps or {}).get((d["id"], a["id"])) if is_agent else None
+            default = performers
+            if mapped:                                   # B1: 단계 → 에이전트 배정이 이긴다(정의 원본은 그대로)
+                performers = [mapped]
             out.append({"definition_id": d["id"], "definition_name": d.get("name") or raw.get("processDefinitionName"),
                         "version": d.get("prod_version"), "activity_id": a["id"], "name": a.get("name") or a["id"], "agent": is_agent,
-                        "performers": performers, "caps": activity_capabilities(raw, a["id"]) if is_agent else {}})
+                        "performers": performers, "default_performers": default, "assigned": bool(mapped), "caps": activity_capabilities(raw, a["id"]) if is_agent else {}})
     return out
 
 
 def _card(user: dict, attached: list[str], steps: list[dict]) -> dict:
     mine = [s for s in steps if user["id"] in s["performers"]]
     return {"id": user["id"], "name": user.get("username") or user["id"], "kind": "system" if (user.get("agent_type") or "agent") == "system" else "agent",
+            "origin": origin_of(user), "editable": origin_of(user) == "user",
             "role": role_text(user.get("role")), "goal": user.get("goal") or "", "model": user.get("model") or None,
             "tools": csv_list(user.get("tools")), "skills": attached,
-            "steps": [{k: s[k] for k in ("definition_id", "definition_name", "version", "activity_id", "name", "agent")} for s in mine]}
+            "steps": [{k: s[k] for k in ("definition_id", "definition_name", "version", "activity_id", "name", "agent", "assigned")} for s in mine]}
 
 
 def mount(app: FastAPI) -> None:
     def _context():
         rt = instance_mode._rt()
-        steps = agent_steps(_latest_definitions(rt))
+        reader = getattr(rt.repo, "list_agent_map", None)
+        maps = {(m["proc_def_id"], m["activity_id"]): m["agent_id"] for m in reader(rt.tenant_id)} if callable(reader) else {}
+        steps = agent_steps(_latest_definitions(rt), maps)
         attached: dict[str, list[str]] = {}
         for r in rt.repo.list_agent_skills(rt.tenant_id):
             attached.setdefault(r["user_id"], []).append(r["skill_name"])
@@ -114,6 +122,7 @@ def mount(app: FastAPI) -> None:
         for s in rt.repo.list_skills(rt.tenant_id):
             n = s["skill_name"]
             out.append({"skill_name": n, "title": skill_title(s), "description": s.get("description") or "", "updated_at": s.get("updated_at"),
+                        "origin": origin_of(s),
                         "chars": len(s.get("content") or ""),
                         "agents": [{"id": uid, "name": names.get(uid, uid)} for uid, ss in attached.items() if n in ss],
                         "steps": [{"definition_id": st["definition_id"], "definition_name": st["definition_name"], "activity_id": st["activity_id"], "name": st["name"]}
@@ -127,7 +136,7 @@ def mount(app: FastAPI) -> None:
         if row is None:
             raise HTTPException(404, "그런 스킬이 없습니다")
         names = {u["id"]: u.get("username") or u["id"] for u in rt.repo.list_users(None, rt.tenant_id)}
-        return {**row, "title": skill_title(row),
+        return {**row, "title": skill_title(row), "origin": origin_of(row),
                 "agents": [{"id": uid, "name": names.get(uid, uid)} for uid, ss in attached.items() if name in ss],
                 "steps": [{"definition_id": st["definition_id"], "definition_name": st["definition_name"], "activity_id": st["activity_id"], "name": st["name"]}
                           for st in steps if name in (st["caps"].get("skills") or [])]}
