@@ -168,7 +168,7 @@ def main():
         until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {})), agent_wait, 3)
         rank1 = latest(pid)["task:rank"]
         with repo._conn() as c:
-            ev = c.execute("select event_type, crew_type, count(*) as n from events where todo_id = %s::uuid group by 1, 2", (rank1["id"],)).fetchall()
+            ev = c.execute("select event_type, crew_type, count(*) as n from events where todo_id = %s group by 1, 2", (str(rank1["id"]),)).fetchall()
         save("a-g1-rank-events", ev)
         tool_runs = sum(r["n"] for r in ev if r["event_type"] == "tool_usage_started" and str(r["crew_type"]).startswith("cliagents:"))
         doc = {"id": (rank1.get("output") or {}).get("decision_id")}
