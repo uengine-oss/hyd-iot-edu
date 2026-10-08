@@ -105,9 +105,11 @@ enterprise-mcp `query`/`describe_catalog`로도 보인다. memory 백엔드(`ent
   시험값 · 규칙 검사 사유 / 가중치 하나로 판단 순위 변경(E2) / 감점 하나는 그 규칙이 걸린 카드 점수만 / **원본 묶음 · 정책 · 업무 DB 불변, 쓰기 호출 0, 거래 기록 0** /
   주별 결과 결정성 · 지표 4개 이상 · 계수마다 출처 / 완화 vs 근본 조치 / CMMS 표준 작업 계약(memory · supabase · 마이그레이션) / 에이전트 API 끝까지 / decide 손익 · 업무 DB 장애 사유.
 - 일부러 깨뜨리기(돌연변이 4건 모두 잡힘): 시간당 가치를 상수로 → 1 실패, 경계값을 바뀌기 전 쪽으로 → 3 실패, 정책 사본 없이 원본 수정 → 4 실패, 미확인을 0으로 합산 → 1 실패.
-- 전체 `pytest -q`: **1299 passed**(기준 1284 + 15).
+- 전체 `pytest -q`: 작업 기준(71c0a78)에서 **1299 passed**(1284 + 15). 메인 `039f9a6`(U1~U11·U13 합친 뒤) 위로 다시 얹은 뒤 **1505 passed · 2 failed** —
+  실패 2건(`test_agent_trials_api.py::test_missing_skill_store…`, `test_mcp_check.py::test_repo_mcp_servers_mark_every_tool…`)은 이 변경 없이 `039f9a6`에서도 같게 실패(메인 트리 미커밋 수정 중), 이 단위와 무관.
 - 브라우저(Playwright, 시드 묶음을 쓰는 에이전트 API + 정적 포털, docker 없음): 불러오기 → 요약 · 4탭, 경계값 "이 값으로 계산" → 손익 1순위 변경 표시, 원래대로 → 기준, 주별 계산, 규칙 가중치 '예측' 0배 → 판단 1순위 변경 + "가치의 상충",
-  조치 판단 규칙 화면 카드 4장 모두 "예상 손익" 접기, 화면 영문 id 0, 콘솔 오류 0. 캡처 · 스크립트 `.evidence/u12-whatif/`(worktree).
+  조치 판단 규칙 화면 카드 4장 모두 "예상 손익" 접기, 화면 영문 id 0, whatif.js 오류 0. 메인 위로 얹은 뒤 U7 셸 `#/whatif`(shell.js MOUNTS → `hydWhatif.mount`)로 다시 확인.
+  캡처 · 스크립트 `.evidence/u12-whatif/`(worktree, gitignore). 콘솔의 `/api/ontology/graph` CORS 1건은 시험용 가짜 지식 그래프에 그 메서드가 없어서 — 실제 에이전트와 무관.
 
 ## 10. 라이브 확인 경로 (합친 뒤, 메인 통합 검증 때)
 1. 마이그레이션 적용(`cd it/supabase && npx -y supabase start` 또는 `supabase migration up`), `ENTERPRISE_BACKEND=supabase`로 enterprise-sim · agent 재기동.
