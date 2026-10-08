@@ -1049,6 +1049,10 @@ kpi.register(app, ts_dsn=PG_DSN, biz_dsn=_KPI_BIZ_DSN, driver_factory=_kg, time_
 from . import agent_trials
 agent_trials.register(app, runtime_factory=instance_mode.current)
 
+# B3 bpmn.io 그림 가져오기: task 별 부품 · 담당 매핑 → 사전 검사 → 판본 등록(그림 원본 함께), 기준으로 되돌리기 (flows_api.py)
+from . import flows_api
+flows_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")

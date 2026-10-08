@@ -807,6 +807,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 self._abort_before_action(inst, rows, inc_state, cleared, now)
 
     CONTROL_PATH = ("task:command", "task:reobserve", "task:work-order")
+    # B3: a flow imported from bpmn.io keeps its drawn task ids; its parts carry the same tool contract as these activities
+    CONTROL_TOOLS = ("incident:command", "incident:reobserve", "enterprise:WO_CREATE")
+    ESCALATE_TOOL = "formHandler:escalate"
 
     @staticmethod
     def _command_never_issued(rows, snap=None, generation=0) -> bool:
@@ -822,25 +825,29 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         if snap is not None and snap.get("cmdId"):
             return False
         current = int(generation or 0)
-        started = [w for w in rows if w["activity_id"] in InstanceRuntime.CONTROL_PATH and w["status"] not in ("TODO", "CANCELLED")
-                   and int(w.get("generation") or 0) == current]
+        started = [w for w in rows if (w["activity_id"] in InstanceRuntime.CONTROL_PATH or w.get("tool") in InstanceRuntime.CONTROL_TOOLS)
+                   and w["status"] not in ("TODO", "CANCELLED") and int(w.get("generation") or 0) == current]
         if not started:
             return True
-        return snap is not None and all(w["activity_id"] == "task:command" and w["status"] == "PENDING" for w in started)
+        return snap is not None and all((w["activity_id"] == "task:command" or w.get("tool") == "incident:command")
+                                        and w["status"] == "PENDING" for w in started)
 
     @staticmethod
     def _escalation_not_open(rows) -> bool:
-        return not any(w["activity_id"] == "task:escalate" and w["status"] not in ("TODO", "CANCELLED") for w in rows)
+        return not any((w["activity_id"] == "task:escalate" or w.get("tool") == InstanceRuntime.ESCALATE_TOOL)
+                       and w["status"] not in ("TODO", "CANCELLED") for w in rows)
 
     def _abort_before_action(self, inst, rows, inc_state, cleared, now):
         """A074: the case ended (alert cleared / rejected / escalated) while agent or selection work was still open — until now
         such instances stayed RUNNING forever (A072: adbf8350, 8b917b16, 99130019). Cancel the open work and hand the outcome
         to the escalation review so the instance ends through ev:escalated with the recorded reason."""
         defn = self.definition_for(inst)
-        if "task:escalate" not in defn.activities:
+        target = "task:escalate" if "task:escalate" in defn.activities else next(
+            (a["id"] for a in defn.activities.values() if a.get("tool") == self.ESCALATE_TOOL), None)
+        if target is None:
             return
         reason = f"incident {inc_state} before any action (cleared={bool(cleared)})"
-        adv = engine.abort_to(defn, inst, rows, "task:escalate", reason, now, self.time_scale)
+        adv = engine.abort_to(defn, inst, rows, target, reason, now, self.time_scale)
         engine.set_variables(defn, inst, {"recovered": bool(cleared), "incident_outcome": inc_state},
                              source={"kind": "runtime", "by": "process", "reason": reason})
         inbox.apply_advance(self, inst, adv)

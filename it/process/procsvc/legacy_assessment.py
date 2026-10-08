@@ -22,12 +22,21 @@ class LegacyAssessment:
         self.rt,self.evaluate,self.publish,self.bridge=runtime,evaluate,publish,bridge
         self.lease_seconds=lease_seconds
 
+    def _tools(self, one=None):
+        """B3: the base definition's tools for these activities — a flow imported from bpmn.io keeps its drawn task ids but
+        its scenario agent parts carry the same tool contract."""
+        acts=self.rt.defn.activities
+        if one is not None:
+            return (acts.get(one) or {}).get('tool') or object()
+        return {(acts.get(a) or {}).get('tool') or a for a in ACTIVITIES}
+
     def _live(self, row):
         inst=self.rt.repo.get_instance(row['proc_inst_id'])
         if (not inst or inst.get('tenant_id')!=self.rt.tenant_id or inst.get('is_deleted')
                 or inst.get('status')!='RUNNING' or int(inst.get('rework_generation') or 0)>0
                 or int(row.get('generation') or 0)>0):return None
-        if not ACTIVITIES <= set(self.rt.definition_for(inst).activities):return None
+        acts=self.rt.definition_for(inst).activities
+        if not (ACTIVITIES <= set(acts) or self._tools() <= {a.get('tool') for a in acts.values()}):return None
         origins=self.rt.repo.agent_task_origins(inst['proc_inst_id'],self.rt.tenant_id)
         if any(not o.startswith('legacy:') for o in origins):return None
         return inst
@@ -38,7 +47,8 @@ class LegacyAssessment:
         if not row or row.get('tenant_id')!=self.rt.tenant_id:return None
         with self.rt._transition(row['proc_inst_id']):
             row=repo.get_workitem(workitem_id);inst=self._live(row)
-            if (not inst or row['activity_id']!='task:diagnose' or row['status']!='IN_PROGRESS'
+            if (not inst or not (row['activity_id']=='task:diagnose' or row.get('tool')==self._tools('task:diagnose'))
+                    or row['status']!='IN_PROGRESS'
                     or row.get('agent_orch')!='cliagents'):return None
             previous=(row.get('draft') or {}).get('_legacy_attempt')
             if previous:

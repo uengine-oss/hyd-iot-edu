@@ -104,9 +104,13 @@ def validate_definition(raw):
                 raise ValueError('timer 기간은 0보다 커야 합니다')
     # Loop re-entry exists in the engine; joins/cancellation across iterations still
     # need integration coverage before the public registration contract accepts it.
+    # B3: a definition that declares loopPolicy "guarded" (bpmn_import writes it for a drawn back edge) is checked by
+    # _guarded_loops instead — every cycle leaves through an exclusive gateway and holds no parallel gateway.
     visiting, visited = set(), set()
     def visit(n):
         if n in visiting:
+            if raw.get('loopPolicy') == 'guarded':
+                return
             raise ValueError('등록 경로의 반복 실행은 아직 검증되지 않았습니다')
         if n in visited:
             return
@@ -116,6 +120,10 @@ def validate_definition(raw):
         visiting.remove(n); visited.add(n)
     for n in all_ids:
         visit(n)
+    if raw.get('loopPolicy') == 'guarded':
+        _guarded_loops(defn)
+    elif raw.get('loopPolicy') is not None:
+        raise ValueError("loopPolicy는 'guarded'만 지원합니다")
     if not any(e['type'] == 'endEvent' for e in defn.events.values()):
         raise ValueError('endEvent가 필요합니다')
     _static_connectivity(defn, all_ids)
@@ -211,17 +219,19 @@ def _static_connectivity(defn, all_ids):
     if unreached:
         raise ValueError(f"시작 이벤트에서 도달할 수 없는 노드: {', '.join(unreached)}")
     ends = {e['id'] for e in defn.events.values() if e['type'] == 'endEvent'}
-    memo = {}
-    def reaches_end(n, trail=()):
-        if n in ends:
-            return True
-        if n in memo:
-            return memo[n]
-        if n in trail:
-            return False
-        memo[n] = any(reaches_end(m, trail + (n,)) for m in next_of(n))
-        return memo[n]
-    dead = [n for n in all_ids if not reaches_end(n)]
+    # B3: backward reachability from the ends (a memoised DFS marked a node on a guarded loop dead when its only way out
+    # went back through a node already on the trail)
+    pred = {}
+    for n in all_ids:
+        for m in next_of(n):
+            pred.setdefault(m, []).append(n)
+    alive, stack = set(), list(ends)
+    while stack:
+        n = stack.pop()
+        if n in alive:
+            continue
+        alive.add(n); stack.extend(pred.get(n, []))
+    dead = [n for n in all_ids if n not in alive]
     if dead:
         raise ValueError(f"종료 이벤트에 이르지 못하는 노드: {', '.join(dead)}")
     entered = {s['target'] for s in defn.sequences}
@@ -243,3 +253,40 @@ def _gatewayless_splits(defn):
         if len(targets) > 1:
             raise ValueError(f"노드 {n}가 게이트웨이 없이 {len(targets)}갈래로 나뉩니다 (→ {', '.join(targets)}). "
                              "갈림은 exclusiveGateway(하나 선택) 또는 parallelGateway(모두 진행)를 거쳐야 합니다")
+
+
+def _guarded_loops(defn):
+    """B3 (bpmn.io import, engine re-entry engine.py `_advance` "re-entry (loop) → a fresh row"): a cycle is accepted only
+    when one of its exclusive gateways has a flow leaving the cycle (the loop can end) and it holds no parallel gateway
+    (a join across iterations has no integration coverage). Effects inside a cycle need a fresh human approval each time —
+    bpmn_import checks that before registration; the engine's Incident path refuses a second command anyway."""
+    nodes = [*defn.activities, *defn.events, *defn.gateways]
+    host_of = {ev['id']: a['id'] for a in defn.activities.values() for ev in defn.attached_events(a['id'])}
+    succ = {n: [s['target'] for s in defn.outgoing(n)] + [ev for ev, host in host_of.items() if host == n] for n in nodes}
+    index, low, on, stack, comps, counter = {}, {}, set(), [], [], [0]
+    def strong(v):
+        index[v] = low[v] = counter[0]; counter[0] += 1
+        stack.append(v); on.add(v)
+        for w in succ.get(v, []):
+            if w not in index:
+                strong(w); low[v] = min(low[v], low[w])
+            elif w in on:
+                low[v] = min(low[v], index[w])
+        if low[v] == index[v]:
+            comp = set()
+            while True:
+                w = stack.pop(); on.discard(w); comp.add(w)
+                if w == v:
+                    break
+            if len(comp) > 1 or v in succ.get(v, []):
+                comps.append(comp)
+    for v in nodes:
+        if v not in index:
+            strong(v)
+    for comp in comps:
+        exits = [n for n in comp if defn.gateways.get(n, {}).get('type') == 'exclusiveGateway'
+                 and any(s['target'] not in comp for s in defn.outgoing(n))]
+        if not exits:
+            raise ValueError(f"반복 경로({', '.join(sorted(comp))})에서 빠져나갈 배타 게이트웨이가 없습니다")
+        if any(defn.gateways.get(n, {}).get('type') == 'parallelGateway' for n in comp):
+            raise ValueError(f"반복 경로({', '.join(sorted(comp))}) 안의 병렬 게이트웨이는 아직 검증되지 않았습니다")
