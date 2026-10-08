@@ -107,13 +107,28 @@ def main():
     check("rollback_removes_skill_and_rule_edge", not gone and not edge_gone, {"status": rb.get("status")})
     cards2 = dmn_cards(FM, "cause:fan-bearing-wear"); save("dmn-cards-after-rollback", cards2)
     check("dmn_cards_no_longer_include_it", SOP not in (cards2.get("explanation") or "") and SOP not in [o.get("sopId") for o in cards2.get("options") or []])
-    # 5. admin re-link API on an existing admin-registered skill (idempotent replay)
-    skills = {s["id"]: s for s in ok("/api/kg/skills")}
-    cur = skills["skill:sop-fan-11"]
-    r = ok("/api/kg/skills/skill:sop-fan-11", {"name": cur["name"], "description": cur["description"], "approver": (cur.get("approver") or {}).get("id"),
-                                                "failureMode": FM, "relation": "REMEDIED_BY", "revision": cur["revision"], "by": "A075 reviewer", "request_id": str(uuid.uuid4())}, method="PUT")
-    save("relink-sop-fan-11", r)
-    check("admin_relink_keeps_rule_output_for_existing_skill", any(x["id"] == "rule:cand-fan" for x in r["rules"]) and [f["id"] for f in r["failureModes"]] == [FM])
+    # 5. admin re-link API on an admin-registered skill (idempotent replay). A156: the probe registers its own skill through the
+    # admin create API instead of relying on skill:sop-fan-11 — that node existed only on one PC's graph (left by an earlier
+    # admin registration, HANDOFF A133 "orphan Skill to delete") and is absent from a fresh seed. The fixture is removed at the end.
+    fixture = "skill:sop-test-92"
+    def drop_fixture():
+        cypher(f"MATCH (k:Skill {{id:'{fixture}'}}) OPTIONAL MATCH (k)-[:HAS_STEP]->(st:Step) DETACH DELETE k, st;")
+    drop_fixture()                                   # a run interrupted after creating it must not make this one fail
+    try:
+        made = ok("/api/kg/skills", {"name": "A156 시험 조치(관리자 등록)", "description": "probe fixture — removed at the end",
+                                     "sopId": "SOP-TEST-92", "steps": ["팬 베어링 소음 확인", "정비 요청 등록"], "failureMode": FM,
+                                     "kind": "work_order", "relation": "REMEDIED_BY", "approver": "role:maint-mgr", "by": "A075 reviewer",
+                                     "request_id": str(uuid.uuid4())}); save("admin-create-fixture", made)
+        skills = {s["id"]: s for s in ok("/api/kg/skills")}
+        cur = skills[fixture]
+        r = ok(f"/api/kg/skills/{fixture}", {"name": cur["name"], "description": cur["description"], "approver": (cur.get("approver") or {}).get("id"),
+                                             "failureMode": FM, "relation": "REMEDIED_BY", "revision": cur["revision"], "by": "A075 reviewer", "request_id": str(uuid.uuid4())}, method="PUT")
+        save("relink-admin-fixture", r)
+        check("admin_relink_keeps_rule_output_for_existing_skill", any(x["id"] == "rule:cand-fan" for x in r["rules"]) and [f["id"] for f in r["failureModes"]] == [FM],
+              {"rules": [x["id"] for x in r["rules"]], "failureModes": [f["id"] for f in r["failureModes"]]})
+    finally:
+        drop_fixture()
+    check("admin_fixture_removed", not cypher(f"MATCH (k:Skill {{id:'{fixture}'}}) RETURN k.id;"))
     report["finished"] = datetime.now(timezone.utc).isoformat(); save("result", report)
     print(f"ALL PASS: {len(report['checks'])} checks", flush=True)
 

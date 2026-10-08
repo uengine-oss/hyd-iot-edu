@@ -70,6 +70,7 @@
 클라우드 `.env`: 레포에 없다(.gitignore). 세션 시작 훅(`.claude/hooks/cloud-env.sh`)이 `.env.example`로 만들고,
 LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`·`LLM_EXTRA_BODY`)는 claude.ai/code 환경 설정의
 환경변수로 들어온다(compose는 `${VAR:-기본값}`만 쓰므로 셸 환경변수가 우선). LLM 서버 도메인은 환경의 네트워크 허용 목록에 있어야 한다.
+클라우드 `.env` 값: 예시 파일 기본값은 `PROCESS_MODE=legacy`·`AGENT_BRIDGE=legacy`·`ENTERPRISE_BACKEND=memory`라 강의 배포본과 다르다. 검증 전에 `docs/RUNBOOK.md` §0의 강의 배포본 값(`PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`)으로 맞춘다 — memory로 돈 core 회귀는 업무 DB를 쓰는 검사(작업지시 전용 카드·시간 기준값)가 거짓 실패했다(A157). AGENT_BRIDGE는 core 회귀 legacy, worker 회귀·실제 워커 시험 off.
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).
 클라우드 이미지 빌드: 에이전트 프록시가 TLS를 다시 서명하므로 빌드 안 `pip`가 `CERTIFICATE_VERIFY_FAILED`로 실패한다. 세션마다 한 번, 베이스 이미지에 프록시 CA를 넣는다(레포 Dockerfile은 그대로):
 `docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + `COPY /root/.ccr/ca-bundle.crt` 사본 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=…`로 `docker build -t python:3.12-slim`.
