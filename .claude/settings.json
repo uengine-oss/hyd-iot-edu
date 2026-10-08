@@ -1,0 +1,19 @@
+{
+  "claudeMdExcludes": [
+    "**/study/CLAUDE.md"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-bootstrap.sh\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
