@@ -340,10 +340,19 @@ def run(a, save, agent_wait, started):
         save("6-agent-runs", runs)
         where["agent 실행 기록"] = f"human:{alert_id}" in json.dumps(runs, ensure_ascii=False)
     check("원인 진단 근거 = 사람 입력 분석(human:<경보>)", any(where.values()), json.dumps(where, ensure_ascii=False) + " " + dump[:200])
+    diag_ids = {w["id"] for w in diag}
+    # 누가 수행했나: 최종 저장이 consumer 를 비우므로(procdb.save_task_result) task_started 이벤트로 본다 —
+    # 워커는 role "CLI 코딩 에이전트"(agent-worker/worker/events.py task_started), 내장 판단은 name "legacy agent"(instance_mode._event)
+    started = [(e.get("data") or {}) for e in events if e.get("todo_id") in diag_ids and e.get("event_type") == "task_started"]
+    save("6-diagnose-started", started)
     if a.expect == "worker":
-        orch = sorted({(w.get("agent_orch"), w.get("consumer")) for w in diag}, key=str)
-        check("원인 진단을 실제 워커(cliagents)가 수행", all(o == "cliagents" and c and "worker" in c for o, c in orch), orch)
-        diag_ids = {w["id"] for w in diag}
+        check("원인 진단을 실제 워커(CLI 코딩 에이전트)가 수행", len(started) == len(diag) and
+              all(s.get("role") == "CLI 코딩 에이전트" and s.get("name") != "legacy agent" for s in started),
+              [(s.get("name"), s.get("role")) for s in started])
+    else:
+        check("원인 진단을 내장 결정론 판단이 수행", len(started) == len(diag) and all(s.get("name") == "legacy agent" for s in started),
+              [(s.get("name"), s.get("role")) for s in started])
+    if a.expect == "worker":
         tool_ev = [e for e in events if e.get("todo_id") in diag_ids and str(e.get("event_type", "")).startswith("tool_usage")]
         save("6-diagnose-tool-events", tool_ev)
         names = sorted({json.dumps((e.get("data") or {}).get("tool_name") or (e.get("data") or {}).get("name") or "", ensure_ascii=False)
