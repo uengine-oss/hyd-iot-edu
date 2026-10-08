@@ -1049,6 +1049,11 @@ kpi.register(app, ts_dsn=PG_DSN, biz_dsn=_KPI_BIZ_DSN, driver_factory=_kg, time_
 from . import agent_trials
 agent_trials.register(app, runtime_factory=instance_mode.current)
 
+# B5 에이전트에게 질문하기: 질문 하나 = 처리 건 하나(정식 정의 ask_agent), 답할 에이전트 선택, 근거 대조 (procsvc/ask.py)
+from . import ask
+ask.register(app, runtime_factory=instance_mode.current, definitions_dir=instance_mode.DEFINITIONS_DIR,
+             worker_probe=lambda: instance_mode.worker_status(), bridge=lambda: instance_mode.AGENT_BRIDGE)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")

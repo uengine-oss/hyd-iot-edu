@@ -167,9 +167,11 @@ def policy_digest(dmn, skill):
 
 
 def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecasts: dict[str, dict], tradeoffs: list[dict],
-             precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None) -> dict:
+             precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None,
+             measure_weights: dict[str, float] | None = None) -> dict:
     """dmn: t3_dmn rows. skills: id -> t2/t3 skill row. forecasts: skill -> {variable -> row}. tradeoffs: t3_tradeoffs rows.
-    precedents: t3_precedents rows. suppliers: id -> {avl}. Returns options ranked + recommendation + rule trace."""
+    precedents: t3_precedents rows. suppliers: id -> {avl}. Returns options ranked + recommendation + rule trace.
+    measure_weights (B5 What-if 시험 실행만): 성과 지표별 중요도 배수 — BSC 득실의 무게에 곱한다. 없으면 지금과 같다."""
     tables = _by_decision(dmn)
     trace = []
     cand_ids: list[str] = []
@@ -219,6 +221,8 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             {"EXCLUDE": violations, "PENALTY": penalties, "WARN": warnings}.get(r["effect"], []).append(_cite(r))
         tos = [t for t in tradeoffs if t["skill"] == sid]
         effects, paths = bsc.evaluate_paths(tos, base_facts, forecasts.get(sid) or {})
+        if measure_weights:
+            effects = [dict(t, baseWeight=t["weight"], weight=round(t["weight"] * measure_weights.get(t["measure"], 1.0), 6)) for t in effects]
         p = prec_by.get(sid)
         o = {"id": sid, "sopId": k.get("sopId"), "name": k.get("name"), "kind": k.get("kind"), "description": k.get("description"),
              "relation": k.get("relation"), "approver": k.get("approver"), "actions": k.get("actions") or [], "steps": k.get("steps") or [],

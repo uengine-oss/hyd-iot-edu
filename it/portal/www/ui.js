@@ -395,6 +395,7 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
 Object.assign(UI.terms, {
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구(MCP)', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
   'nav.whatif': '손익 · What-if', 'nav.kpi': 'KPI', 'nav.fabric': '데이터 연결',
+  'nav.ask': '에이전트에게 질문',   // B5
   'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': 'AI 구성', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
   'shell.me': '나', 'shell.meNone': '선택 안 함', 'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.notReady': '준비 중', 'shell.notReadySub': '이 화면은 아직 연결되지 않았습니다. 기능이 붙으면 이 자리에 나타납니다.',

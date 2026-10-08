@@ -131,6 +131,8 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     _runtime = instances.InstanceRuntime(repo, defn, _hooks(ctx), time_scale=ctx.time_scale,
                                         tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}")
     _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
+    from . import ask
+    ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
     log.info("instance mode: definition %s (%d activities), repo %s, agent bridge %s", defn.id, len(defn.activities), type(repo).__name__, AGENT_BRIDGE)
     return _runtime

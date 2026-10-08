@@ -183,7 +183,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                      'input_state':'captured' if snapshot else ('waiting' if activity.get('inputBindings') else 'current'),
                      'events':self.repo.list_events(todo_id=wid)}
 
-    def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None):
+    def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None,
+                         role_endpoints=None):
         if not isinstance(event_id,str) or not event_id.strip():
             raise ValueError('중복 실행을 구분할 event_id가 필요합니다')
         if not isinstance(version,str) or not version.strip():
@@ -199,6 +200,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 if (def_id,version)!=(policy['target']['definition'],policy['target']['version']):
                     raise ValueError('이 정의는 경보를 지원하지 않습니다. 지정된 사람 검토 경로를 사용하세요')
                 alert_policy.require_triage(defn)
+        unknown_roles = sorted(set(role_endpoints or {}) - set(defn.roles))
+        if unknown_roles:
+            raise ValueError('정의에 없는 역할입니다: ' + ', '.join(unknown_roles))
         values = dict(values or {})
         if (PROTECTED_OUTPUTS | {'decision_id'}).intersection(values):
             raise ValueError('시작 변수로 Incident/승인 결과를 주입할 수 없습니다')
@@ -215,6 +219,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                               pattern=alert.get('pattern'),incident=(inc or {}).get('id'))
             inst = engine.new_instance(defn, values, name=name, now=now, tenant_id=self.tenant_id)
             inst['start_event_id'] = event_id
+            for b in inst['role_bindings']:          # B5: a start-time performer for a role (validated by the caller)
+                if b['name'] in (role_endpoints or {}):
+                    b['endpoint'] = role_endpoints[b['name']]
             adv = engine.start(defn, inst, now=now, time_scale=self.time_scale)
             self.repo.insert_instance(inst)
             inbox.apply_advance(self, inst, adv)

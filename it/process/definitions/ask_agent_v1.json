@@ -1,0 +1,58 @@
+{
+  "processDefinitionId": "ask_agent",
+  "processDefinitionName": "에이전트에게 질문하기",
+  "version": "1.0",
+  "description": "질문 하나 = 처리 건 하나. 고른 에이전트가 자기 도구(MCP)로 실제 조회한 결과만으로 답하고, 근거(실행한 질의 · 조회 결과)를 남긴다. 근거를 얻지 못하면 답할 수 없다고 이유와 함께 답한다. 이전 질문은 기억하지 않는다. 조회 전용 — 설비 조치 · 판단 카드 제출 · 쓰기는 하지 않는다. 회귀 검사기 probe_business_questions · probe_timeseries_questions · probe_rule_questions가 매번 임시로 등록하던 질문 정의를 하나의 정식 정의로 올린 것.",
+  "roles": [
+    {
+      "name": "답변 에이전트",
+      "endpoint": "sys:agent",
+      "resolutionRule": "질문할 때 고른 에이전트(users.is_agent). 고르지 않으면 기본 에이전트 sys:agent"
+    }
+  ],
+  "data": [
+    {"name": "question", "type": "Text", "description": "질문"},
+    {"name": "asked_by", "type": "Text", "description": "질문한 사람"},
+    {"name": "status", "type": "Text", "description": "답함 / 답할 수 없음"},
+    {"name": "answer", "type": "Text", "description": "답"},
+    {"name": "reason", "type": "Text", "description": "답할 수 없는 이유"},
+    {"name": "evidence", "type": "Array", "description": "근거 (실행한 질의와 조회 결과)"},
+    {"name": "note", "type": "Text", "description": "메타데이터 근거"}
+  ],
+  "events": [
+    {"id": "ev:question", "type": "startEvent", "name": "질문 접수"},
+    {"id": "ev:answered", "type": "endEvent", "name": "답변 완료"}
+  ],
+  "activities": [
+    {
+      "id": "task:answer",
+      "name": "질문에 답하기",
+      "type": "userTask",
+      "role": "답변 에이전트",
+      "agentMode": "COMPLETE",
+      "orchestration": "cliagents",
+      "tool": "formHandler:ask_answer",
+      "inputData": ["question"],
+      "outputData": ["status", "answer", "reason", "evidence", "note"],
+      "description": "사람이 포털에서 한 질문에 에이전트가 자기 도구로 조회해 답한다. 한 질문에 한 답, 이전 대화 기억 없음.",
+      "instruction": "입력 데이터의 question에 답하세요. 답은 이 작업에서 도구로 실제 조회한 결과에서만 냅니다. 표 · 열 · 메트릭 · 규칙 · 노드 이름을 추측하지 말고 메타데이터를 먼저 읽으세요: 업무 DB는 enterprise describe_catalog(열 주석) · describe_schema 뒤 enterprise query(SELECT), 센서 시계열은 hyd-dmn timeseries_schema 뒤 timeseries_query, Prometheus 메트릭은 hyd-dmn prometheus_metadata 뒤 prometheus_query, 지식(원인 · 조치 방법 · 규칙 · 성과 지표)은 neo4j 스키마를 읽은 뒤 읽기 Cypher. 실행에 성공한 질의만 evidence에 {\"tool\": 도구 이름, \"query\": 실행한 질의 그대로, \"result\": 그 질의가 돌려준 값 요약}으로 남기고, 그 값으로 answer를 쓰고 status를 answered로 하세요. 표 · 열을 고른 메타데이터 근거는 note에 적습니다. 쓸 수 있는 도구로 근거를 얻지 못했거나 질문이 이 공장의 데이터 · 지식 밖이면 지어내지 말고 status를 cannot_answer로, reason에 무엇을 조회했고 왜 답할 수 없는지 적으세요. 이 작업은 조회이며 설비 조치 · 판단 카드 제출 · 쓰기는 금지합니다. 이전 질문은 기억하지 않습니다."
+    }
+  ],
+  "gateways": [],
+  "sequences": [
+    {"id": "seq:ask", "source": "ev:question", "target": "task:answer"},
+    {"id": "seq:answered", "source": "task:answer", "target": "ev:answered"}
+  ],
+  "forms": {
+    "ask_answer": {
+      "contract": "ask-answer-v1",
+      "fields_json": [
+        {"key": "status", "type": "select", "text": "답했으면 answered, 근거를 얻지 못했으면 cannot_answer", "items": [{"answered": "답함"}, {"cannot_answer": "답할 수 없음"}]},
+        {"key": "answer", "type": "text", "text": "질문에 대한 답. 실제 조회 결과의 값만 쓴다 (답할 수 없으면 비워 둔다)", "required": false},
+        {"key": "reason", "type": "text", "text": "답할 수 없는 이유 — 무엇을 조회했고 왜 근거가 없는지 (답했으면 비워 둔다)", "required": false},
+        {"key": "evidence", "type": "array", "text": "근거 목록. 항목마다 {\"tool\": 도구 이름, \"query\": 실제로 실행해 성공한 질의, \"result\": 돌려받은 값 요약}", "required": false},
+        {"key": "note", "type": "text", "text": "표 · 열 · 메트릭 · 노드를 고른 메타데이터 근거", "required": false}
+      ]
+    }
+  }
+}

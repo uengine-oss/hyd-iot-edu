@@ -1,7 +1,9 @@
 /* A8 성과 지표 실적 · 역추적 (읽기 전용). window.hydKpi.mount(el)
    관점(재무 → 고객 → 내부 프로세스 → 학습과 성장) → 목표 → 지표 카드. 지표마다 실적 · 목표 · 달성률과 계산 근거(원천 표 · 열 · 식 · 행 수)를,
    원천이 없는 지표는 "계산 불가 — 사유"를 보여 준다. 미달 카드의 "원인 찾기" → 영향 경로와 같은 기간 처리 건 · 조치 · 설비.
-   데이터: process 서비스 GET /api/kpi · /api/kpi/trace (it/process/procsvc/kpi.py). 이 화면은 아무것도 쓰지 않는다. */
+   데이터: process 서비스 GET /api/kpi · /api/kpi/trace (it/process/procsvc/kpi.py). 이 화면은 아무것도 쓰지 않는다.
+   B5 목표값 바꿔 보기(시험 실행): POST /api/kpi/try · /api/kpi/try/trace 에 {지표: 시험 목표}를 보내 달성/미달 · 달성률 · 역추적을
+   그 목표로 다시 판정한다. 지식 그래프의 목표값은 그대로이고 "원래대로"는 시험 목표를 비운다. */
 (function () {
   const PERIODS = [['1h', '최근 1시간'], ['24h', '최근 24시간'], ['7d', '최근 7일'], ['30d', '최근 30일'], ['all', '전체 기록']];
   const STATUS = { met: '달성', missed: '미달', no_target: '목표 없음', partial: '부분 실적', no_data: '기록 없음', unavailable: '계산 불가', error: '조회 실패' };
@@ -33,6 +35,16 @@
       return j;
     } catch (e) { throw e.name === 'AbortError' ? new Error('응답 시간 초과. 처리 서비스 연결을 확인하세요.') : e; } finally { clearTimeout(timer); }
   }
+
+  async function postJSON(path, body) {
+    // eslint-disable-next-line no-undef
+    if (typeof requestJ === 'function') return requestJ(base() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const r = await fetch(base() + path, { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : `요청 실패 (${r.status})`);
+    return j;
+  }
+  const trialOn = st => Object.keys(st.applied || {}).length > 0;
 
   /* ---------------- 지표 카드 ---------------- */
   function valueLine(m) {
@@ -70,12 +82,14 @@
     const [roleLabel, roleTone] = ROLE[m.kpiRole] || ['역할 없음', 'neutral'];
     const status = chip(STATUS[m.status] || m.status, TONE[m.status]);
     const reason = m.reason ? `<p class="card-sub kpi-reason">${escH(m.reason)}</p>` : '';
+    const o = m.original;          // B5: 시험 목표가 걸린 지표 — 원래 목표 · 원래 판정을 옆에
+    const trial = o ? `<p class="card-sub">${chip('시험 목표', 'warning')} 원래 목표 ${o.target == null ? '없음' : num(o.target) + ' ' + escH(m.unit || '')} · 원래 판정 ${escH(STATUS[o.status] || o.status)}${o.rate == null ? '' : ` (달성률 ${num(o.rate)} %)`}</p>` : '';
     const action = m.status === 'missed' ? `<button type="button" class="btn small primary" data-kpi-trace="${escH(m.id)}">원인 찾기</button>` : '';
     const body = (m.status === 'unavailable' ? '' : fold('계산 근거', basis(m)));
     const html = `<section class="card kpi-card${m.status === 'missed' ? ' kpi-missed' : ''}" data-kpi="${escH(m.id)}">
       <header class="card-head"><div class="card-title"><h3>${escH(m.name)}</h3><span class="card-chips">${status}${chip(roleLabel, roleTone)}</span></div>
       ${action ? `<div class="card-actions">${action}</div>` : ''}</header>
-      <div class="card-value">${valueLine(m)}</div>${rateBar(m)}${reason}${body ? `<div class="card-body">${body}</div>` : ''}</section>`;
+      <div class="card-value">${valueLine(m)}</div>${rateBar(m)}${trial}${reason}${body ? `<div class="card-body">${body}</div>` : ''}</section>`;
     return html;
   }
 
@@ -108,6 +122,25 @@
       ${fold('이 목표가 받치는 목표', `<ul class="kpi-why">${objectives}</ul>`)}</section>`;
   }
 
+  /* ---------------- B5 목표값 바꿔 보기 ---------------- */
+  function trialPanel(st, all, d) {
+    st.targets = st.targets || {}; st.applied = st.applied || {};
+    const on = trialOn(st);
+    const changed = (d.trial && d.trial.changed) || [];
+    const head = on ? `<div class="summary prose" role="status"><p style="margin:0 0 var(--s2)">${chip(`시험 목표 ${Object.keys(st.applied).length}개 적용 중`, 'warning')} ${escH((d.trial && d.trial.note) || '')}</p>
+        ${changed.length ? `<ul class="kpi-why">${changed.map(c => `<li><b>${escH(c.name)}</b> 실적 ${num(c.value)} ${escH(c.unit || '')} — 목표 ${c.before.target == null ? '없음' : num(c.before.target)} → <b>${num(c.after.target)}</b> · ${escH(STATUS[c.before.status] || c.before.status)} → <b>${escH(STATUS[c.after.status] || c.after.status)}</b></li>`).join('')}</ul>`
+          : '<p class="kv-line" style="margin:0">판정이 바뀐 지표가 없습니다 (실적이 없거나 계산 불가인 지표는 목표를 바꿔도 그대로입니다).</p>'}
+        <div class="form-actions"><button type="button" class="btn small" data-kpi-trial-reset>원래대로</button></div></div>` : '';
+    const rows = all.map(m => `<tr><td>${escH(m.name)}</td><td>${(m.original ? m.original.target : m.target) == null ? '–' : num(m.original ? m.original.target : m.target) + ' ' + escH(m.unit || '')}</td>
+      <td><input type="number" step="any" data-kpi-target="${escH(m.id)}" value="${st.targets[m.id] ?? ''}" placeholder="그대로" aria-label="${escH(m.name)} 시험 목표" style="width:8em"></td>
+      <td>${escH(STATUS[m.status] || m.status)}</td></tr>`).join('');
+    const form = `<p class="field-hint">비운 칸은 지식 그래프의 목표 그대로입니다. 시험 판정은 이 화면 계산에만 쓰고 원본 목표는 바꾸지 않습니다.</p>
+      <table class="compact-table"><thead><tr><th>지표</th><th>원래 목표</th><th>시험 목표</th><th>지금 판정</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="form-actions"><button type="button" class="btn small primary" data-kpi-trial-run>시험 판정</button>${on ? '<button type="button" class="btn small" data-kpi-trial-reset>원래대로</button>' : ''}</div>
+      ${st.trialError ? `<p class="kpi-reason">${escH(st.trialError)}</p>` : ''}`;
+    return head + fold(`목표값 바꿔 보기 (시험 실행)${on ? ' ' + chip('적용 중', 'warning') : ''}`, form, !!st.trialOpen);
+  }
+
   /* ---------------- 화면 ---------------- */
   function render(st) {
     const el = st.el;
@@ -131,15 +164,21 @@
         const src = (df.sources || []).map(x => `${escH(x.system)} <code>${escH(x.table)}</code> ${escH(x.columns)}`).join('<br>') || '–';
         return `<tr><td>${escH(m.name)}</td><td>${m.target == null ? '–' : num(m.target) + ' ' + escH(m.unit || '')}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가 — ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
       }).join('')}</tbody></table>`;
-      body = stats + win + tracePanel(st) + persp + `<h2 class="sec">계산 정의</h2>` + fold(`지표별 계산 정의 표 (${all.length}개)`, defs);
+      body = stats + win + trialPanel(st, all, d) + tracePanel(st) + persp + `<h2 class="sec">계산 정의</h2>` + fold(`지표별 계산 정의 표 (${all.length}개)`, defs);
     }
     el.innerHTML = `<div class="page-head"><h1>성과 지표</h1>${tools}</div>${body}`;
   }
 
   async function load(st) {
     st.loading = true; st.error = null; render(st);
-    try { st.data = await getJSON(`/api/kpi?period=${encodeURIComponent(st.period)}`); }
-    catch (e) { st.error = e.message || String(e); st.data = null; }
+    try {
+      st.data = trialOn(st) ? await postJSON('/api/kpi/try', { period: st.period, targets: st.applied })
+        : await getJSON(`/api/kpi?period=${encodeURIComponent(st.period)}`);
+      if (trialOn(st)) st.trialError = null;
+    } catch (e) {
+      if (trialOn(st)) { st.trialError = '시험 판정을 하지 못했습니다: ' + (e.message || String(e)); st.applied = {}; st.loading = false; return load(st); }
+      st.error = e.message || String(e); st.data = null;
+    }
     st.loading = false; render(st);
     if (st.trace && st.data) openTrace(st, st.trace.measure);
   }
@@ -149,7 +188,11 @@
     st.trace = { measure, title: m ? m.name : '지표', loading: true };
     render(st);
     const panel = st.el.querySelector('#kpiTrace'); if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' });
-    try { st.trace = { measure, title: st.trace.title, data: await getJSON(`/api/kpi/trace?measure=${encodeURIComponent(measure)}&period=${encodeURIComponent(st.period)}`) }; }
+    try {
+      const data = trialOn(st) ? await postJSON('/api/kpi/try/trace', { measure, period: st.period, targets: st.applied })
+        : await getJSON(`/api/kpi/trace?measure=${encodeURIComponent(measure)}&period=${encodeURIComponent(st.period)}`);
+      st.trace = { measure, title: st.trace.title, data };
+    }
     catch (e) { st.trace = { measure, title: st.trace.title, error: e.message || String(e) }; }
     render(st);
   }
@@ -157,7 +200,7 @@
   function mount(el) {
     if (!el) return null;
     if (el._hydKpi) { load(el._hydKpi); return el._hydKpi; }
-    const st = { el, period: '24h', data: null, trace: null, loading: false, error: null };
+    const st = { el, period: '24h', data: null, trace: null, loading: false, error: null, targets: {}, applied: {}, trialOpen: false, trialError: null };
     try { st.period = localStorage.getItem('hydKpi.period') || '24h'; } catch (e) { /* 저장소가 없으면 기본 기간 */ }
     if (!PERIODS.some(([k]) => k === st.period)) st.period = '24h';
     el._hydKpi = st;
@@ -167,7 +210,17 @@
       if (e.target.closest('[data-kpi-reload]')) { load(st); return; }
       const t = e.target.closest('[data-kpi-trace]');
       if (t) { openTrace(st, t.dataset.kpiTrace); return; }
-      if (e.target.closest('[data-kpi-close]')) { st.trace = null; render(st); }
+      if (e.target.closest('[data-kpi-close]')) { st.trace = null; render(st); return; }
+      if (e.target.closest('[data-kpi-trial-run]')) {
+        st.trialOpen = true; st.applied = {};
+        for (const [k, v] of Object.entries(st.targets)) if (v !== '' && v != null) st.applied[k] = Number(v);
+        st.trace = null; load(st); return;
+      }
+      if (e.target.closest('[data-kpi-trial-reset]')) { st.targets = {}; st.applied = {}; st.trialError = null; st.trace = null; load(st); }
+    });
+    el.addEventListener('change', e => {
+      const t = e.target.closest('[data-kpi-target]');
+      if (t) { st.trialOpen = true; if (t.value === '') delete st.targets[t.dataset.kpiTarget]; else st.targets[t.dataset.kpiTarget] = t.value; }
     });
     load(st);
     return st;

@@ -9,6 +9,8 @@
   ③ 몇 주 What-if     조치 → 설비 값(부하 · 팬) → 지표(가동률 · 생산량 · 비용 · 이익)를 영향 계수로 잇고 주별로 계산한다.
                        계수마다 출처 종류(데이터 · 문서 · 가정)가 붙는다. 같은 입력은 같은 결과다(난수 · 현재 시각 없음).
   ④ 규칙 바꿔 보기    순위 정책 항목 하나의 가중치, 감점 규칙 하나의 감점을 시험값으로 바꿔 순위를 다시 계산한다.
+  ⑤ 관점 중요도(B5)   BSC 관점(재무 · 고객 · 내부 · 학습 — 이름과 지표 소속은 지식 그래프에서 읽음)마다 중요도 배수를 주면 카드 점수의
+                       성과 지표 득실이 그 비중으로 다시 계산된다. 1순위가 뒤집히는 비중은 ②의 경계값 찾기를 그대로 쓴다.
 
 돈 단위: 업무 DB는 만원, 화면은 원(× 10,000).
 """
@@ -349,14 +351,28 @@ def policy_view(dmn: list[dict]) -> dict:
                           for r in dmn if r.get('decision') == 'dec:compliance' and r.get('effect') == 'PENALTY']}
 
 
-def check_policy(dmn: list[dict], policy: dict | None) -> dict:
+def check_policy(dmn: list[dict], policy: dict | None, perspectives: dict | None = None) -> dict:
+    """perspectives: perspective_view(bundle) — 관점 중요도 시험값(B5)을 검사할 때 필요하다."""
     policy = policy or {}
-    if set(policy) - {'weights', 'penalties'}:
-        raise ValueError('규칙 시험값은 weights(순위 항목 가중치) · penalties(감점 규칙 감점)만 받습니다')
+    if set(policy) - {'weights', 'penalties', 'perspectives'}:
+        raise ValueError('규칙 시험값은 weights(순위 항목 가중치) · penalties(감점 규칙 감점) · perspectives(관점 중요도)만 받습니다')
     view = policy_view(dmn)
     comps = {c['key'] for c in view['components']}
     pens = {p['rule'] for p in view['penalties']}
     out = {'weights': {}, 'penalties': {}}
+    if policy.get('perspectives'):
+        pv = perspectives or {}
+        if not pv.get('available'):
+            raise ValueError('관점 중요도를 바꿀 수 없습니다: ' + (pv.get('reason') or '지식 그래프의 BSC 관점을 읽지 못했습니다'))
+        known = {x['id']: x['name'] for x in pv['perspectives']}
+        out['perspectives'] = {}
+        for k, w in policy['perspectives'].items():
+            x = _finite(w)
+            if k not in known:
+                raise ValueError(f'지식 그래프에 없는 관점입니다: {k}')
+            if x is None or not 0 <= x <= 10:
+                raise ValueError(f"관점 '{known[k]}' 중요도는 0 ~ 10배 사이 숫자여야 합니다")
+            out['perspectives'][k] = x
     for k, w in (policy.get('weights') or {}).items():
         x = _finite(w)
         if k not in comps:
@@ -390,6 +406,58 @@ def apply_policy(dmn: list[dict], policy: dict) -> list[dict]:
     return out
 
 
+# ---------------------------------------------------------------- ⑤ 관점 중요도 (B5, 시험 실행만)
+def load_perspectives(rows: list[dict]) -> dict:
+    """t3_perspectives 행 → {perspectives: [{id, name, order}], measures: {지표 id: 관점 id}}. 이름 · 소속은 그래프 그대로."""
+    out = {'perspectives': [], 'measures': {}}
+    for r in rows or []:
+        if not r.get('id'):
+            continue
+        out['perspectives'].append({'id': r['id'], 'name': r.get('name') or r['id'], 'order': r.get('ord')})
+        for m in r.get('measures') or []:
+            out['measures'][m] = r['id']
+    if not out['perspectives']:
+        return {'error': '지식 그래프에 BSC 관점(Perspective)이 없습니다 — 온톨로지 적재를 확인하세요'}
+    return out
+
+
+def perspective_view(bundle: dict) -> dict:
+    """화면용: 관점마다 이름과 이 판단의 카드 득실에 실제로 나오는 지표(없으면 바꿔도 순위가 그대로)."""
+    p = bundle.get('perspectives') or {}
+    if p.get('error') or not p.get('perspectives'):
+        return {'available': False, 'reason': p.get('error') or '지식 그래프에서 BSC 관점을 읽지 않았습니다', 'perspectives': []}
+    used: dict[str, dict] = {}
+    for t in bundle.get('tradeoffs') or []:
+        pid = p['measures'].get(t.get('measure'))
+        if pid:
+            used.setdefault(pid, {})[t['measure']] = t.get('name') or t['measure']
+    return {'available': True, 'perspectives': [{'id': x['id'], 'name': x['name'], 'order': x.get('order'),
+                                                 'measures': sorted(used.get(x['id'], {}).values()), 'inUse': x['id'] in used}
+                                                for x in p['perspectives']]}
+
+
+def measure_weights(bundle: dict, policy: dict | None) -> dict[str, float] | None:
+    w = (policy or {}).get('perspectives') or {}
+    if not w:
+        return None
+    m2p = (bundle.get('perspectives') or {}).get('measures') or {}
+    return {mid: float(w[pid]) for mid, pid in m2p.items() if pid in w}
+
+
+def bsc_by_perspective(o: dict, bundle: dict) -> list[dict]:
+    """카드 하나의 성과 지표 득실을 관점별로(시험 비중이 적용된 무게). 조건이 확인되지 않은 득실은 따로 센다."""
+    m2p = (bundle.get('perspectives') or {}).get('measures') or {}
+    names = {x['id']: x['name'] for x in (bundle.get('perspectives') or {}).get('perspectives') or []}
+    acc: dict[str, dict] = {}
+    for kind in ('gains', 'losses'):
+        for t in o.get(kind) or []:
+            pid = m2p.get(t.get('measure'))
+            x = acc.setdefault(pid or '-', {'perspective': pid, 'name': names.get(pid, '관점 없음'), 'gain': 0.0, 'loss': 0.0, 'measures': []})
+            x['gain' if kind == 'gains' else 'loss'] += 0 if t.get('conditional') else t['weight']
+            x['measures'].append(f"{t.get('name')} {'↑' if t.get('dir') == 1 else '↓'}")
+    return [dict(v, gain=round(v['gain'], 4), loss=round(v['loss'], 4)) for v in acc.values()]
+
+
 # ---------------------------------------------------------------- ② 다시 계산 · 경계값
 def _fingerprint(obj) -> str:
     return hashlib.sha256(json.dumps(obj, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
@@ -404,7 +472,7 @@ def rerank(bundle: dict, trial: dict | None = None, policy: dict | None = None) 
             facts[fact] = x
     dmn = apply_policy(bundle['dmn'], policy or {})
     return cards.evaluate(dmn, bundle['skills'], facts, bundle['forecasts'], bundle['tradeoffs'], bundle['precedents'],
-                          bundle['suppliers'], bundle.get('forecast_contexts'))
+                          bundle['suppliers'], bundle.get('forecast_contexts'), measure_weights=measure_weights(bundle, policy))
 
 
 def money_order(options: list[dict], money: dict[str, dict]) -> list[str]:
@@ -423,7 +491,8 @@ def evaluate(bundle: dict, mf: dict, trial: dict | None = None, policy: dict | N
                           'feasible': o['feasible'], 'excluded': [v.get('annotation') for v in o.get('violations') or []],
                           'decisionRank': o['rank'] if o['feasible'] else None, 'score': o['score'], 'scoreParts': o['scoreParts'],
                           'production': o.get('production'), 'moneyRank': order.index(o['id']) + 1 if o['id'] in order else None,
-                          'money': money[o['id']], 'paths': [p.get('nodes') for p in o.get('tradeoffEvaluation') or [] if p.get('nodes')]})
+                          'money': money[o['id']], 'paths': [p.get('nodes') for p in o.get('tradeoffEvaluation') or [] if p.get('nodes')],
+                          'bscByPerspective': bsc_by_perspective(o, bundle)})
     return {'cards': cards_out, 'top': {'decision': res['recommended'], 'money': order[0] if order else None},
             'explanation': res['explanation']}
 
@@ -457,10 +526,14 @@ def _range(vid, base):
     return lo, hi
 
 
-def _merge_policy(policy, weights=None, penalties=None):
+def _merge_policy(policy, weights=None, penalties=None, perspectives=None):
     p = {'weights': dict((policy or {}).get('weights') or {}), 'penalties': dict((policy or {}).get('penalties') or {})}
     p['weights'].update(weights or {})
     p['penalties'].update(penalties or {})
+    persp = dict((policy or {}).get('perspectives') or {})
+    persp.update(perspectives or {})
+    if persp:
+        p['perspectives'] = persp
     return p
 
 
@@ -488,6 +561,12 @@ def boundary_axes(bundle: dict, mf: dict, policy: dict | None = None, variables:
             p0 = ((policy or {}).get('penalties') or {}).get(r['rule'], _finite(r['penalty']) or 0.0)
             axes.append({'id': 'p:' + r['rule'], 'label': f"감점 규칙 '{r['annotation'] or r['rule']}' 감점", 'unit': '점', 'base': p0, 'lo': 0.0, 'hi': max(200.0, p0),
                          'kinds': ['decision'], 'apply': (lambda x, k=r['rule']: (None, _merge_policy(policy, penalties={k: x})))})
+        for pp in perspective_view(bundle)['perspectives']:     # B5: 관점 중요도 — 이 판단의 득실에 나오는 관점만
+            if not pp['inUse']:
+                continue
+            v0 = ((policy or {}).get('perspectives') or {}).get(pp['id'], 1.0)
+            axes.append({'id': 'v:' + pp['id'], 'label': f"관점 '{pp['name']}' 중요도", 'unit': '배', 'base': v0, 'lo': 0.0, 'hi': max(5.0, v0),
+                         'kinds': ['decision'], 'apply': (lambda x, k=pp['id']: (None, _merge_policy(policy, perspectives={k: x})))})
     return axes
 
 

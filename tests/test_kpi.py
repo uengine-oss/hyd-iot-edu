@@ -410,7 +410,8 @@ def test_routes_are_read_only_and_map_failures(monkeypatch):
     app = FastAPI()
     kpi.register(app, ts_dsn='x', biz_dsn='y', driver_factory=None, time_scale=20, tenant='hyd')
     methods = {(r.path, m) for r in app.routes if r.path.startswith('/api/kpi') for m in r.methods}
-    assert methods == {('/api/kpi', 'GET'), ('/api/kpi/definitions', 'GET'), ('/api/kpi/trace', 'GET')}
+    assert methods == {('/api/kpi', 'GET'), ('/api/kpi/definitions', 'GET'), ('/api/kpi/trace', 'GET'),
+                       ('/api/kpi/try', 'POST'), ('/api/kpi/try/trace', 'POST')}   # B5 목표 바꿔 보기: 시험 계산(쓰기 없음)
     c = TestClient(app)
     assert c.get('/api/kpi?period=7d').json()['summary']['total'] == 21
     assert c.get('/api/kpi?period=2d').status_code == 400

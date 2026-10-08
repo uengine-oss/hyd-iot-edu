@@ -300,6 +300,16 @@ def new_instance(defn: Definition, values: dict, name: str | None = None, now: d
     return inst
 
 
+def instance_binding(defn: Definition, inst: dict | None, role_name: str | None) -> dict | None:
+    """B5: the instance's role binding wins over the definition's default (ProcessGPT keeps role_bindings per instance).
+    new_instance copies the definition's bindings, so this is the definition's binding unless the start chose another
+    performer for a role (start_definition(role_endpoints=…), e.g. the agent a person picked to answer a question)."""
+    for b in (inst or {}).get("role_bindings") or []:
+        if isinstance(b, dict) and b.get("name") == role_name and b.get("endpoint"):
+            return {"name": b["name"], "endpoint": b["endpoint"], "resolutionRule": b.get("resolutionRule")}
+    return defn.role_binding(role_name)
+
+
 def _query_text(activity: dict) -> str:
     """The product's query column: [Description] + [Instruction] (the agent's brief); [InputData] is appended when reached."""
     parts = []
@@ -313,7 +323,7 @@ def _query_text(activity: dict) -> str:
 def new_workitem(defn: Definition, inst: dict, activity: dict, now: datetime | None = None, status: str = "TODO") -> dict:
     """todolist row for one activity, TODO (예정 업무) unless told otherwise. agent_mode: COMPLETE/DRAFT for agents, NULL for people."""
     is_user = is_human(activity)
-    binding = defn.role_binding(activity.get("role"))
+    binding = instance_binding(defn, inst, activity.get("role"))
     agent_mode = agent_mode_of(activity)
     orch = activity.get("orchestration")
     if orch in NO_MODE:
@@ -395,7 +405,7 @@ def reach(defn: Definition, inst: dict, row: dict, workitems: list[dict], now: d
     row["start_date"] = now_iso(now)
     inst.setdefault('flow_state',{}).setdefault('activity_arrivals',{})[row['id']] = {
         'activity':row['activity_id'],'generation':int(row.get('generation') or 0),'at':now_iso(now)}
-    binding = defn.role_binding(activity.get("role"))
+    binding = instance_binding(defn, inst, activity.get("role"))
     if binding and not row.get("user_id"):
         row["user_id"], row["assignees"] = binding.get("endpoint"), [binding]
     inputs = {k: v for k, v in variables(inst).items() if k in (activity.get("inputData") or [])}
