@@ -30,7 +30,7 @@ class MemoryEnterprise:
     def __init__(self):
         self.st = EnterpriseState(os.getenv("ENTERPRISE_STATE_PATH"))
         self._reads = {"mes_orders": self._mes_orders, "erp_contract": data.erp_contract, "erp_inventory": data.erp_inventory,
-                       "cmms_history": data.cmms_history, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand}
+                       "cmms_history": data.cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand}
 
     def _mes_orders(self, asset: str) -> dict:
         out = data.mes_orders(asset)
@@ -102,6 +102,11 @@ def erp_inventory(asset: str = Query("HYD-01")):
 @app.get("/cmms/history")
 def cmms_history(asset: str = Query("HYD-01")):
     return _read("CMMS", "cmms_history", asset=asset)
+
+
+@app.get("/cmms/tasks")
+def cmms_tasks(asset: str = Query("HYD-01")):
+    return _read("CMMS", "cmms_tasks", asset=asset)
 
 
 @app.get("/qms/lots")

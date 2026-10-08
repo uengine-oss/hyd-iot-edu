@@ -20,9 +20,9 @@ from hydcommon import topics
 from hydcommon.kafka import consumer as make_consumer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
-from . import card as cardlib, decide as decidelib, guardrail, llm
+from . import card as cardlib, decide as decidelib, guardrail, llm, whatif
 from .runs import RunRegistry
-from .tools import mcp_kg, mcp_prom, mcp_tsdb
+from .tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("agent")
@@ -36,6 +36,7 @@ state = {"kafka": False, "neo4j": False, "runs": 0, "llm": llm.available(), "llm
 kg: mcp_kg.KnowledgeGraph | None = None
 tsdb = mcp_tsdb.TimeSeriesDB()
 decisions = decidelib.DecisionRegistry()
+whatifs = whatif.Sessions()
 
 
 def submit_card(card: dict) -> dict:
@@ -286,7 +287,7 @@ def ontology_patterns():
     return _kg().patterns()
 
 
-def _manual_decide(k, req: DecideReq) -> dict:
+def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:
     """Same pipeline as an alert, without submitting: T1 causes → evidence → top cause → action cards."""
     t1 = k.t1_causes(req.pattern, req.asset)
     if not t1:
@@ -303,16 +304,124 @@ def _manual_decide(k, req: DecideReq) -> dict:
     if req.facts and req.facts.get("cause"):
         causes.sort(key=lambda c: c["id"] != req.facts["cause"])
     d = decidelib.decide(k, decisions, tsdb, req.asset, req.pattern, causes[0], origin={"kind": "manual", "pattern": req.pattern},
-                         overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False)
+                         overrides={x: v for x, v in (req.facts or {}).items() if x != "cause"}, do_submit=False, capture=capture)
     d["causes"] = [{"id": c["id"], "name": c["name"], "score": c["score"], "failureMode": c.get("failureMode"),
                     "evidence": c["evidence"]} for c in causes]
+    return d
+
+
+def _with_money(d: dict) -> dict:
+    """A7: each card of a manual decision gets its 손익(원) from the business DB (read-only GET). A failed read is a reason, not a 0."""
+    options = (d.get("result") or {}).get("options") or []
+    if options:
+        try:
+            mf = whatif.load_money_facts(mcp_ent.fetch, d["asset"])
+            for o in options:
+                o["money"] = whatif.card_money(o, mf)
+        except ValueError as e:
+            d["moneyError"] = str(e)
     return d
 
 
 @app.post("/api/agent/decide")
 async def decide(req: DecideReq):
     k = _kg()
-    return await asyncio.get_running_loop().run_in_executor(None, lambda: _manual_decide(k, req))
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: _with_money(_manual_decide(k, req)))
+
+
+# ---------------------------------------------------------------- A7 손익 · What-if · 규칙 바꿔 보기 (시험 실행만)
+class WhatifStartReq(BaseModel):
+    asset: str = "HYD-01"
+    pattern: str = "COOLER_DEGRADATION"
+
+
+class WhatifTryReq(BaseModel):
+    values: dict | None = None          # 시험값 {variable: number}
+    policy: dict | None = None          # {weights: {component: k}, penalties: {rule: value}}
+
+
+class WhatifWeeksReq(BaseModel):
+    card: str
+    weeks: int = 4
+    change: dict | None = None          # 값 하나 {variable: number}
+    policy: dict | None = None
+
+
+def _whatif_session(sid: str) -> dict:
+    s = whatifs.get(sid)
+    if not s:
+        raise HTTPException(404, "시험 기준 판단이 없습니다(에이전트가 다시 시작됐거나 오래됨). 다시 불러오세요")
+    return s
+
+
+def _whatif_view(s: dict, sid: str, trial=None, policy=None) -> dict:
+    ev = whatif.evaluate(s["bundle"], s["mf"], trial, policy)
+    unchanged = whatif.original_fingerprint(s["bundle"], s["mf"]) == s["fingerprint"]
+    if not unchanged:
+        raise HTTPException(500, "시험 실행 중 기준 판단 묶음이 바뀌었습니다 — 결과를 쓰지 않습니다")
+    return {"id": sid, "asset": s["asset"], "pattern": s["pattern"], "cause": s["cause"], "created": s["created"],
+            "decisionId": s["decisionId"], "variables": whatif.variable_list(s["mf"], trial), "policy": whatif.policy_view(s["bundle"]["dmn"]),
+            "policyTrial": policy or {"weights": {}, "penalties": {}}, "trial": trial or {}, **ev,
+            "baseTop": s["baseTop"], "summary": whatif.summary(ev, s["baseTop"] if (trial or (policy and any(policy.values()))) else None),
+            "original": {"unchanged": unchanged, "fingerprint": s["fingerprint"][:12],
+                         "note": "업무 DB · 지식 그래프 · 순위 정책은 읽기만 했고, 시험값은 이 계산의 사본에만 적용됐습니다"}}
+
+
+def _whatif_start(k, req: WhatifStartReq) -> dict:
+    bundle: dict = {}
+    d = _manual_decide(k, DecideReq(asset=req.asset, pattern=req.pattern), capture=bundle)
+    if d.get("status") == "FAILED" or not bundle:
+        raise HTTPException(409, "판단을 끝까지 계산하지 못해 시험 기준을 만들 수 없습니다: " + str(d.get("error") or d.get("status")))
+    try:
+        mf = whatif.load_money_facts(mcp_ent.fetch, req.asset)
+    except ValueError as e:
+        raise HTTPException(503, str(e)) from e
+    s = {"asset": req.asset, "pattern": req.pattern, "cause": {c: (d.get("causes") or [{}])[0].get(c) for c in ("id", "name", "failureMode")},
+         "created": d["created"], "decisionId": d["id"], "bundle": bundle, "mf": mf}
+    s["fingerprint"] = whatif.original_fingerprint(bundle, mf)
+    s["baseTop"] = whatif.evaluate(bundle, mf)["top"]
+    sid = whatifs.put(s)
+    return _whatif_view(s, sid)
+
+
+@app.post("/api/agent/whatif")
+async def whatif_start(req: WhatifStartReq):
+    """Read-only snapshot of one manual decision + business DB values; every later trial re-computes against it."""
+    k = _kg()
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: _whatif_start(k, req))
+
+
+def _checked(s, values=None, policy=None):
+    try:
+        return whatif.check_trial(values), whatif.check_policy(s["bundle"]["dmn"], policy)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.post("/api/agent/whatif/{sid}/try")
+async def whatif_try(sid: str, req: WhatifTryReq):
+    s = _whatif_session(sid)
+    trial, policy = _checked(s, req.values, req.policy)
+    return await asyncio.get_running_loop().run_in_executor(None, lambda: _whatif_view(s, sid, trial, policy))
+
+
+@app.post("/api/agent/whatif/{sid}/boundaries")
+async def whatif_boundaries(sid: str, req: WhatifTryReq):
+    s = _whatif_session(sid)
+    _, policy = _checked(s, None, req.policy)
+    out = await asyncio.get_running_loop().run_in_executor(None, lambda: whatif.find_boundaries(s["bundle"], s["mf"], policy=policy))
+    return {"id": sid, "boundaries": out}
+
+
+@app.post("/api/agent/whatif/{sid}/weeks")
+async def whatif_weeks(sid: str, req: WhatifWeeksReq):
+    s = _whatif_session(sid)
+    _, policy = _checked(s, None, req.policy)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(
+            None, lambda: whatif.weeks(s["bundle"], s["mf"], req.card, req.weeks, req.change, policy))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
 
 
 class ApprovalCheckReq(BaseModel):

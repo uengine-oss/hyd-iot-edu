@@ -70,11 +70,18 @@ _QMS = {"HYD-01": {"hot_min": 12, "auto_lot": "L-0930-A17", "auto_qty": 800, "ge
                    "inspect_h": 3, "inspect_cost": 35, "sample_cost": 0, "gen_defect_p": 0.0, "gen_claim": 0, "auto_defect_p": 0.04, "auto_claim": 3000}}
 # SCM: quotes for the cooler core (P-CLR-CORE); standard price is the purchasing KPI baseline
 _SUPPLIERS = [
-    {"id": "sup:a", "key": "a", "name": "A정밀 (저가)", "price": 180, "fail": 0.12, "lead_d": 3, "avl": True, "quality_score": 0.78},
-    {"id": "sup:b", "key": "b", "name": "B-OEM (순정)", "price": 260, "fail": 0.02, "lead_d": 5, "avl": True, "quality_score": 0.97},
-    {"id": "sup:c", "key": "c", "name": "C트레이딩 (최저가)", "price": 120, "fail": 0.20, "lead_d": 2, "avl": False, "quality_score": 0.61},
+    {"id": "sup:a", "key": "a", "name": "A정밀 (저가)", "part_no": "P-CLR-CORE", "price": 180, "fail": 0.12, "lead_d": 3, "avl": True, "quality_score": 0.78},
+    {"id": "sup:b", "key": "b", "name": "B-OEM (순정)", "part_no": "P-CLR-CORE", "price": 260, "fail": 0.02, "lead_d": 5, "avl": True, "quality_score": 0.97},
+    {"id": "sup:c", "key": "c", "name": "C트레이딩 (최저가)", "part_no": "P-CLR-CORE", "price": 120, "fail": 0.20, "lead_d": 2, "avl": False, "quality_score": 0.61},
 ]
-_STD_PRICE = {"P-CLR-CORE": 250}
+_STD_PRICE = {"P-CLR-CORE": 250, "P-PMP-SEAL": 50, "P-FAN-BRG": 25}          # A7: 씰 · 베어링 표준단가 (migration 20261008000037)
+# A7 CMMS 표준 작업: SOP별 계획 정지 시간(h) · 작업비(만원) · 필요 부품. 쿨러 핀 세척은 설비별 정비 기준(_CMMS clean_h · clean_cost)을 따른다.
+_TASKS = [
+    {"sop": "SOP-COOL-04", "name": "쿨러 핀 세척", "stop_h": None, "labor_cost": None, "part_no": None, "part_qty": 0, "from_profile": True},
+    {"sop": "SOP-COOL-05", "name": "캐비닛 환기 개선", "stop_h": 0, "labor_cost": 30, "part_no": None, "part_qty": 0, "from_profile": False},
+    {"sop": "SOP-PMP-04", "name": "펌프 축 씰 교체", "stop_h": 4, "labor_cost": 60, "part_no": "P-PMP-SEAL", "part_qty": 1, "from_profile": False},
+    {"sop": "SOP-FAN-04", "name": "팬 베어링 교체", "stop_h": 3, "labor_cost": 50, "part_no": "P-FAN-BRG", "part_qty": 1, "from_profile": False},
+]
 # EMS: this afternoon's demand vs contract (폭염)
 _EMS = {"contract_kw": 450, "demand_kw": 438, "fan_boost_kw": 6, "basic_rate": 0.8, "peak_h": 3, "peak_window": "14:00-17:00", "outdoor_c": 35, "energy_rate": 0.015}
 
@@ -124,10 +131,22 @@ def qms_lots(asset: str) -> dict:
 
 
 def scm_suppliers(part: str) -> dict:
-    facts = {"std_price": _STD_PRICE.get(part, 0)}
-    for s in _SUPPLIERS:
+    if part not in _STD_PRICE:
+        raise KeyError(part)                                   # Supabase ent.scm_suppliers: unknown part -> facts null -> 404
+    quotes = [s for s in _SUPPLIERS if s["part_no"] == part]   # A7: like ent.scm_suppliers, only that part's quotes
+    facts = {"std_price": _STD_PRICE[part]}
+    for s in quotes:
         facts |= {f"{s['key']}_price": s["price"], f"{s['key']}_fail": s["fail"], f"{s['key']}_lead_d": s["lead_d"], f"{s['key']}_avl": int(s["avl"])}
-    return {"system": "SCM", "facts": facts, "records": [dict(s, part=part) for s in _SUPPLIERS]}
+    return {"system": "SCM", "facts": facts, "records": [dict(s, part=part) for s in quotes]}
+
+
+def cmms_tasks(asset: str) -> dict:
+    """A7: CMMS standard tasks (stop hours · labour cost · part) — the source of the action cards' money items."""
+    c = _CMMS[_check(asset)]
+    recs = [{k: v for k, v in t.items() if k != "from_profile"} | (
+        {"stop_h": c["clean_h"], "labor_cost": c["clean_cost"], "source": "maintenance_profiles"} if t["from_profile"] else {"source": "task_standards"})
+        for t in _TASKS]
+    return {"system": "CMMS", "facts": {}, "records": recs}
 
 
 def ems_demand() -> dict:
