@@ -370,6 +370,9 @@ services:
       PROCESS_MODE: ${PROCESS_MODE:-legacy}
       PROCESS_REPO: ${PROCESS_REPO:-pg}
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
+      # A11 데이터 패브릭(/api/fabric/*): 쓰기 연결이 아니라 두 전용 읽기 계정만 쓴다
+      ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      TSDB_READ_DSN: ${TSDB_READ_DSN:-postgresql://hyd_timeseries_reader:hyd-timeseries-read-local@timescaledb:5432/hyd}
       AGENT_BRIDGE: ${AGENT_BRIDGE:-legacy}
       # 포털 "에이전트 현황": 워커의 /health · /agents. 컨테이너 워커면 agent-worker:8097, 강사 PC 워커(run_worker_host.sh)면 host.docker.internal:8097
       WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}

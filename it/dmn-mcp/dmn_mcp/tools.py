@@ -12,6 +12,7 @@ import psycopg
 from agentsvc import card as cardlib, decide as decidelib, llm
 from agentsvc.tools import mcp_kg, mcp_prom, mcp_tsdb
 from agentsvc.tools.prometheus import Prometheus
+from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
 
 
 #: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
@@ -47,11 +48,31 @@ def enveloped(fn):
 
 
 class DmnTools:
-    def __init__(self, kg: mcp_kg.KnowledgeGraph | None = None, tsdb: mcp_tsdb.TimeSeriesDB | None = None):
+    def __init__(self, kg: mcp_kg.KnowledgeGraph | None = None, tsdb: mcp_tsdb.TimeSeriesDB | None = None, fabric: Fabric | None = None):
         self.kg = kg or mcp_kg.KnowledgeGraph()
         self.tsdb = tsdb or mcp_tsdb.TimeSeriesDB()
         self.registry = decidelib.DecisionRegistry()
         self.prometheus = Prometheus()
+        self._fabric = fabric
+
+    # ---- A11 데이터 패브릭: 업무 DB + 시계열 DB 를 한 질문으로 (portal /api/fabric/query 와 같은 함수, 읽기 전용)
+    def _graph(self, cypher: str, **params) -> list[dict]:
+        from neo4j import unit_of_work
+
+        @unit_of_work(timeout=5.0)
+        def read(tx):
+            return [r.data() for r in tx.run(cypher, **params)]
+        with self.kg.driver.session() as s:
+            return s.execute_read(read)
+
+    @property
+    def fabric(self) -> Fabric:
+        if self._fabric is None:
+            self._fabric = Fabric(graph=self._graph)
+        return self._fabric
+
+    def fabric_query(self, asset: str, query: str = 'asset', limit: int = 50, sql: dict | None = None) -> dict:
+        return self.fabric.query(asset, query, limit, sql)
 
     # ---- task:diagnose
     def diagnose(self, asset: str, pattern: str) -> dict:
