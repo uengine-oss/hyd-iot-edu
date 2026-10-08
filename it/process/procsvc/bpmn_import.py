@@ -305,11 +305,18 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     for aid in sorted(base_agents - {a["id"] for a in agents}):
         agents.insert(0, {"id": aid, "name": aid, "goal": None})
     agent_role = next((p["role"] for p in parts if p["kind"] == "agent" and p.get("role") in roles), None)
-    policy = base.get("alertPolicy") or {}
+    policy = deepcopy(base.get("alertPolicy") or {})
     start_event = next((e for e in events if e.get("type") == "startEvent"), {})
+    # B7: 사람 입력 경보 패턴(오일 분석 등, human_alert.PATTERNS)도 경보 시작으로 고를 수 있다 — 기준 정의의 경보 정책은 그대로 두고
+    # 이 목록에만 보탠다(기준 흐름은 이 패턴을 받지 않으므로 배포 흐름이 없으면 사람 검토로 간다).
+    from . import human_alert
+    human = ({p: c for p, c in human_alert.policy_patterns().items() if p not in (policy.get("patterns") or {})}
+             if policy.get("patterns") and start_event.get("eventDefinition") == "message" else {})
+    if human:
+        policy["patterns"] = dict(policy["patterns"], **human)
     return {"base": {"id": base.get("processDefinitionId"), "version": base.get("version"), "name": base.get("processDefinitionName")},
             "parts": parts + general, "roles": role_list, "agents": agents, "agent_role": agent_role,
-            "patterns": list((policy.get("patterns") or {}).keys()), "alert_policy": deepcopy(policy),
+            "patterns": list((policy.get("patterns") or {}).keys()), "alert_policy": policy, "human_patterns": list(human),
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
             "data": {d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")},
             "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES),
@@ -345,7 +352,8 @@ def merge_mapping(parsed: dict, old: dict | None, cat: dict) -> tuple[dict, dict
         m["start"] = deepcopy(start)
     else:
         message = any(s.get("definition") == "message" for s in parsed["starts"])
-        m["start"] = ({"kind": "alert", "patterns": list(cat["patterns"])} if message and cat["patterns"]
+        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력은 사람이 고름)
+        m["start"] = ({"kind": "alert", "patterns": sensor} if message and sensor
                       else {"kind": "human", "fields": []})
     role_names = {r["name"] for r in cat["roles"]}
     for lane in parsed["lanes"]:

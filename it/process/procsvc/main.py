@@ -1066,6 +1066,26 @@ from . import config_bundle
 config_bundle.register(app, runtime_factory=instance_mode.current, audit=_audit)
 
 
+# B7 사람 입력 경보(오일 분석 결과): 센서 경보와 같은 계약의 경보를 만들어 POST /api/incidents 와 같은 원천 접수 경로로 보낸다 (human_alert.py)
+async def _admit_human_alert(alert: dict) -> None:
+    rt = instance_mode.current()
+    if source_delivery is not None:
+        record = source_record(topics.K_ALERTS, None, None, alert, source='http')
+        if record['kind'] != 'RAISE':
+            raise ValueError('사람 입력 경보가 원천 RAISE 형식이 아닙니다')
+        policy = await asyncio.to_thread(rt.alert_policy, record['payload'].get('pattern'))
+        receipt = await asyncio.to_thread(source_inbox.receive, record, policy)
+        await source_delivery.wait_for(receipt)
+    else:
+        await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
+
+
+from . import human_alert
+human_alert.register(app, runtime_factory=instance_mode.current, admit=_admit_human_alert, audit=_audit,
+                     open_alerts=lambda: [(i.card.get('alert') or {}, i.state) for i in list(incidents.values())
+                                          if i.state not in definition.TERMINAL])
+
+
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")
 async def kg_ddl_preview(body: dict):

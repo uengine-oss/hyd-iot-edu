@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0oil1d" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collaboration_0oil2c">
+    <bpmn:participant id="Participant_0oil3p" name="작동유 열화 대응 (학생 그림 예)" processRef="Process_0oil4r" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0oil4r" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_0oil5l">
+      <bpmn:lane id="Lane_0ai7k1" name="AI 에이전트">
+        <bpmn:flowNodeRef>StartEvent_0oil1n</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0diag7o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1cand2o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0comp3o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1rank4o</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_1mnt5m" name="정비관리자">
+        <bpmn:flowNodeRef>Activity_0slct5o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0tout6o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1chk8o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0chk9o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1done0o</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_0mgr6p" name="생산관리자">
+        <bpmn:flowNodeRef>Activity_0boss1o</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0bossd2o</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_1cmm7c" name="CMMS">
+        <bpmn:flowNodeRef>Activity_1wo7o</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_0oil1n" name="오일 분석 기준 이탈 입력">
+      <bpmn:outgoing>Flow_0o1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_0diag7o" name="원인 진단">
+      <bpmn:incoming>Flow_0o1</bpmn:incoming>
+      <bpmn:incoming>Flow_1again</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_1cand2o" name="조치 후보 조회">
+      <bpmn:incoming>Flow_0o2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_0comp3o" name="규정 검토">
+      <bpmn:incoming>Flow_0o3</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_1rank4o" name="우선순위 · 카드 작성">
+      <bpmn:incoming>Flow_0o4</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_0slct5o" name="정비 조치 선택 (승인)">
+      <bpmn:incoming>Flow_0o5</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="Activity_1wo7o" name="정비 작업지시">
+      <bpmn:incoming>Flow_0o6</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_1chk8o" name="교환 뒤 재분석 결과 입력">
+      <bpmn:incoming>Flow_0o7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_0chk9o" name="재분석 정상?">
+      <bpmn:incoming>Flow_0o8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ok9</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1again</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="Event_1done0o" name="종결">
+      <bpmn:incoming>Flow_0ok9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="Activity_0boss1o" name="정비 책임자 확인">
+      <bpmn:incoming>Flow_0tout</bpmn:incoming>
+      <bpmn:outgoing>Flow_0boss</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0bossd2o" name="확인 종료">
+      <bpmn:incoming>Flow_0boss</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="Event_0tout6o" name="선택 시간 초과" attachedToRef="Activity_0slct5o">
+      <bpmn:outgoing>Flow_0tout</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0oil6t" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0o1" sourceRef="StartEvent_0oil1n" targetRef="Activity_0diag7o" />
+    <bpmn:sequenceFlow id="Flow_0o2" sourceRef="Activity_0diag7o" targetRef="Activity_1cand2o" />
+    <bpmn:sequenceFlow id="Flow_0o3" sourceRef="Activity_1cand2o" targetRef="Activity_0comp3o" />
+    <bpmn:sequenceFlow id="Flow_0o4" sourceRef="Activity_0comp3o" targetRef="Activity_1rank4o" />
+    <bpmn:sequenceFlow id="Flow_0o5" sourceRef="Activity_1rank4o" targetRef="Activity_0slct5o" />
+    <bpmn:sequenceFlow id="Flow_0o6" sourceRef="Activity_0slct5o" targetRef="Activity_1wo7o" />
+    <bpmn:sequenceFlow id="Flow_0o7" sourceRef="Activity_1wo7o" targetRef="Activity_1chk8o" />
+    <bpmn:sequenceFlow id="Flow_0o8" sourceRef="Activity_1chk8o" targetRef="Gateway_0chk9o" />
+    <bpmn:sequenceFlow id="Flow_0ok9" name="정상" sourceRef="Gateway_0chk9o" targetRef="Event_1done0o" />
+    <bpmn:sequenceFlow id="Flow_1again" name="비정상 — 다시 판단" sourceRef="Gateway_0chk9o" targetRef="Activity_0diag7o" />
+    <bpmn:sequenceFlow id="Flow_0tout" sourceRef="Event_0tout6o" targetRef="Activity_0boss1o" />
+    <bpmn:sequenceFlow id="Flow_0boss" sourceRef="Activity_0boss1o" targetRef="Event_0bossd2o" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0oil2c">
+      <bpmndi:BPMNShape id="Participant_0oil3p_di" bpmnElement="Participant_0oil3p" isHorizontal="true"><dc:Bounds x="130" y="80" width="1690" height="640" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0ai7k1_di" bpmnElement="Lane_0ai7k1" isHorizontal="true"><dc:Bounds x="160" y="80" width="1660" height="160" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1mnt5m_di" bpmnElement="Lane_1mnt5m" isHorizontal="true"><dc:Bounds x="160" y="240" width="1660" height="160" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0mgr6p_di" bpmnElement="Lane_0mgr6p" isHorizontal="true"><dc:Bounds x="160" y="400" width="1660" height="160" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1cmm7c_di" bpmnElement="Lane_1cmm7c" isHorizontal="true"><dc:Bounds x="160" y="560" width="1660" height="160" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0oil1n_di" bpmnElement="StartEvent_0oil1n"><dc:Bounds x="222" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0diag7o_di" bpmnElement="Activity_0diag7o"><dc:Bounds x="340" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1cand2o_di" bpmnElement="Activity_1cand2o"><dc:Bounds x="490" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0comp3o_di" bpmnElement="Activity_0comp3o"><dc:Bounds x="640" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1rank4o_di" bpmnElement="Activity_1rank4o"><dc:Bounds x="790" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0slct5o_di" bpmnElement="Activity_0slct5o"><dc:Bounds x="940" y="280" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wo7o_di" bpmnElement="Activity_1wo7o"><dc:Bounds x="1090" y="600" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1chk8o_di" bpmnElement="Activity_1chk8o"><dc:Bounds x="1240" y="280" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0chk9o_di" bpmnElement="Gateway_0chk9o" isMarkerVisible="true"><dc:Bounds x="1415" y="295" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1done0o_di" bpmnElement="Event_1done0o"><dc:Bounds x="1572" y="302" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0boss1o_di" bpmnElement="Activity_0boss1o"><dc:Bounds x="1090" y="440" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0bossd2o_di" bpmnElement="Event_0bossd2o"><dc:Bounds x="1272" y="462" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tout6o_di" bpmnElement="Event_0tout6o"><dc:Bounds x="1002" y="342" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0o1_di" bpmnElement="Flow_0o1"><di:waypoint x="240" y="160" /><di:waypoint x="390" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o2_di" bpmnElement="Flow_0o2"><di:waypoint x="390" y="160" /><di:waypoint x="540" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o3_di" bpmnElement="Flow_0o3"><di:waypoint x="540" y="160" /><di:waypoint x="690" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o4_di" bpmnElement="Flow_0o4"><di:waypoint x="690" y="160" /><di:waypoint x="840" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o5_di" bpmnElement="Flow_0o5"><di:waypoint x="840" y="160" /><di:waypoint x="840" y="320" /><di:waypoint x="990" y="320" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o6_di" bpmnElement="Flow_0o6"><di:waypoint x="990" y="320" /><di:waypoint x="990" y="640" /><di:waypoint x="1140" y="640" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o7_di" bpmnElement="Flow_0o7"><di:waypoint x="1140" y="640" /><di:waypoint x="1140" y="320" /><di:waypoint x="1290" y="320" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o8_di" bpmnElement="Flow_0o8"><di:waypoint x="1290" y="320" /><di:waypoint x="1440" y="320" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ok9_di" bpmnElement="Flow_0ok9"><di:waypoint x="1440" y="320" /><di:waypoint x="1590" y="320" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1again_di" bpmnElement="Flow_1again"><di:waypoint x="1440" y="295" /><di:waypoint x="1440" y="100" /><di:waypoint x="390" y="100" /><di:waypoint x="390" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tout_di" bpmnElement="Flow_0tout"><di:waypoint x="1020" y="378" /><di:waypoint x="1020" y="480" /><di:waypoint x="1140" y="480" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0boss_di" bpmnElement="Flow_0boss"><di:waypoint x="1140" y="480" /><di:waypoint x="1290" y="480" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

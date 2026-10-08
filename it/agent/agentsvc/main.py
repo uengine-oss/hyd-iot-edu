@@ -67,11 +67,13 @@ def pipeline(run, *, do_submit=True) -> None:
             return
         # 2. T1 cause candidates (mcp-kg)
         t1 = kg.t1_causes(alert.get("pattern", ""), asset)
+        t1, human = cardlib.with_human_evidence(t1, alert)       # B7: 사람 입력 경보(오일 분석)는 입력한 결과가 증거
         run.step("t1_causes", [{k: r.get(k) for k in ("causeId", "cause", "prior", "failureMode")} | {"evidence": [e["id"] for e in r.get("evidence") or []]} for r in t1],
-                 note="mcp-kg T1: 경보 패턴 → 증상 → 고장모드 → 원인 후보 + 증거 규칙")
+                 note="mcp-kg T1: 경보 패턴 → 증상 → 고장모드 → 원인 후보 + 증거 규칙"
+                      + (" (센서 증거 규칙이 없는 원인은 사람이 입력한 분석 결과를 증거로)" if human else ""))
         # 3. evidence (mcp-tsdb)
-        evidence = [e for r in t1 for e in (r.get("evidence") or [])]
-        results = tsdb.evaluate(evidence, asset)
+        evidence = [e for r in t1 for e in (r.get("evidence") or []) if e["id"] not in human]
+        results = {**tsdb.evaluate(evidence, asset), **human}
         run.step("evidence", results, note="mcp-tsdb: Evidence SQL 템플릿 실행 (tag_1s)")
         causes = cardlib.rank_causes(t1, results)
         assessment = cardlib.evidence_status(causes)
@@ -109,7 +111,8 @@ def pipeline(run, *, do_submit=True) -> None:
                                 origin={'kind':'alert','alertId':alert['alertId'],'pattern':alert['pattern'],
                                         'cause':causes[0]['id'],'failureMode':causes[0].get('failureModeId')})
             if d.get('status') != 'EVALUATED' or not (d.get('result') or {}).get('options'):
-                run.step('cards',d,status='FAILED');run.finish('WITHHELD',d.get('error') or '검증된 조치 대안을 만들지 못했습니다')
+                run.step('cards',d,status='FAILED')
+                run.finish('WITHHELD',d.get('error') or d.get('explanation') or '검증된 조치 대안을 만들지 못했습니다')
                 return
             run.evaluation = {k:d.get(k) for k in ('id','schema','scenario','asset','origin','recommended','explanation',
                                                     'rankRule','roles','facts','provenance','applicable')}

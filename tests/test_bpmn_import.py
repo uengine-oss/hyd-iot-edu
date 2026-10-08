@@ -351,7 +351,8 @@ def test_api_registers_new_version_with_bpmn_and_keeps_prod_pointer(api):
     assert B.structure(stored) == B.structure(validate_definition(deepcopy(BASE)).raw)
     assert stored["bpmnImport"]["mapping"]["tasks"] == mapping["tasks"]
     # 운영 판본 포인터(proc_def 머리)는 그대로, 새 흐름은 머리 없이 판본만
-    assert repo.get_proc_def("anomaly_response") == base_head and repo.get_proc_def("my_cooler") is None
+    # B7: 메모리 저장소도 PG 처럼 학생 머리 행을 두되 운영 판본 포인터는 비어 있다(배포 전)
+    assert repo.get_proc_def("anomaly_response") == base_head and repo.get_proc_def("my_cooler")["prod_version"] is None
     # 그림 다시 받기 = 가져온 원본 그대로
     x = c.get("/api/flows/my_cooler/versions/1/bpmn")
     assert x.status_code == 200 and x.text == REDRAW and 'filename="my_cooler-v1.bpmn"' in x.headers["content-disposition"]

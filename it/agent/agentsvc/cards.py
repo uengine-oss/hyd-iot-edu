@@ -256,15 +256,20 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
         rank_rule = next((r for r in tables.get('dec:rank-actions', []) if r['rule']==options[0]['rankingEvidence']['rule']), None)
     return {"options": options, "recommended": rec["id"] if rec else None, "trace": trace,
             "rankRule": dict(_cite(rank_rule), rankingPolicy=ranking.validate(rank_rule['rankingPolicy'])) if rank_rule else None,
-            "explanation": explain(options, rec, base_facts)}
+            "explanation": explain(options, rec, base_facts,
+                                   [t["rule"] for t in trace if t["decision"] == "dec:action-candidates" and t["fired"]])}
 
 
 def _names(xs: list[dict], n: int = 3) -> str:
     return ", ".join(f"{x['name']} {'↑' if x['dir'] == 1 else '↓'}" + (f" [{x['owner']}]" if x.get("owner") else "") for x in xs[:n])
 
 
-def explain(options: list[dict], rec: dict | None, facts: dict) -> str:
+def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str] | None = None) -> str:
     if not options:
+        if fired:
+            # B7: the rule matched but outputs no skill yet (e.g. rule:cand-oil before the oil manual is ingested)
+            return (f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 선택 규칙 {', '.join(fired)} 은(는) 맞았지만 "
+                    "내놓는 조치(SOP)가 없다. 이 고장 유형의 조치는 아직 지식에 없다 (매뉴얼을 적재해 조치를 고장 유형에 연결하면 후보가 된다).")
         return "이 고장 유형에 맞는 조치 후보가 없다 (후보 선택 규칙이 맞지 않음)."
     head = f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 {len(options)}장"
     if not rec:

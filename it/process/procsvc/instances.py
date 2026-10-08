@@ -78,6 +78,7 @@ class Hooks:
     approval_effects: Callable | None = None  # authoritative read only; absent means unknown
     rework_effects: Callable | None = None
     reopen_incident: Callable | None = None     # (inc_id, request_id, by, role, reason, effects) → machine.on_rework_reopen (A072)
+    reopen_for_recheck: Callable | None = None  # B7: (inc_id, request_id, by, reason) → machine.on_recheck_reopen
     exec_compensation: Callable | None = None   # (request dict) → enterprise compensation transaction (A072)
     exec_enterprise: Callable[[str, dict], dict] = lambda decision_id, item: {"ok": False, "error": "no enterprise hook"}
     record_cypher: Callable[..., list] = lambda q, **params: []
@@ -425,6 +426,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         rows = self.repo.list_workitems(proc_inst_id=wi["proc_inst_id"], limit=None)
         rows = [r if r["id"] != wi["id"] else wi for r in rows]
         adv = engine.process_submitted(defn, inst, wi, rows, now=now, time_scale=self.time_scale)
+        recheck = self._recheck_round(inst, rows + list(adv.created), defn) if adv.created else None
         output = wi.get("output") or {}
         if not adv.pending and isinstance(output.get("guide_card"),dict) and engine.variables(inst).get("incident"):
             # This is required durable input for later approval, not a best-effort
@@ -445,10 +447,66 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                          {"instance": inst["proc_inst_id"], "task": wi["activity_id"], "next": [w["activity_id"] for w in adv.reached], "ended": adv.ended},
                          incident=engine.variables(inst).get("incident"))
         self._after_commit(self._project,inst)
+        if recheck is not None:
+            self._after_commit(self._reopen_for_recheck, inst["proc_inst_id"], recheck["id"], wi.get("user_id") or "process",
+                               f"'{wi.get('activity_name') or wi['activity_id']}' 뒤 '{recheck.get('activity_name') or recheck['activity_id']}'(으)로 "
+                               "다시 — 새 판단과 사람 승인을 받습니다")
         for row in adv.reached:
             if row["status"] == "SUBMITTED" and row.get("agent_orch") == engine.PROCESS_ORCH:
                 self._after_commit(self._run_service,inst,row,now)
         return out
+
+    # ---------------------------------------------------------------- B7: 재분석 뒤 다시 (작업지시로만 닫힌 사건이 새 승인을 받는 반복)
+    APPROVAL_TOOL = "formHandler:select_card"
+
+    def _recheck_round(self, inst: dict, rows: list[dict], defn=None) -> dict | None:
+        """The live re-entered row of a loop that leads back to a person's approval, while the instance's Incident is closed by
+        a work order alone (no PLC command). The engine's loop re-entry opens a fresh row (engine._advance); the Incident must
+        then wait for that new approval, or the approval is refused ('incident is CLOSED'). None when nothing to reopen."""
+        inc_id = engine.variables(inst).get("incident")
+        snap = self.hooks.incident_snapshot(inc_id) if inc_id else None
+        if not snap or snap.get("state") != "CLOSED" or snap.get("cmdId") or not snap.get("workOrder"):
+            return None
+        defn = defn or self.definition_for(inst)
+        approvals = {a["id"] for a in defn.activities.values() if a.get("tool") == self.APPROVAL_TOOL}
+        if not approvals:
+            return None
+        gen = int(inst.get("rework_generation") or 0)
+        mine = [w for w in rows if int(w.get("generation") or 0) == gen]
+        done = {w["activity_id"] for w in mine if w["status"] == "DONE"}
+        nxt: dict[str, list[str]] = {}
+        for seq in defn.raw.get("sequences") or []:
+            nxt.setdefault(seq["source"], []).append(seq["target"])
+        ends = {e["id"] for e in defn.raw.get("events") or [] if e.get("type") == "endEvent"}
+        def committed_to_approval(start):
+            """Every path from `start` meets a person's approval before any end — the flow has gone back to judgment.
+            (A re-entered check step whose branch may still end the flow is not: RECHECK → '정상' → end.)"""
+            seen, todo, met = set(), [start], False
+            while todo:
+                n = todo.pop()
+                if n in approvals:
+                    met = True; continue
+                if n in ends:
+                    return False
+                if n not in seen:
+                    seen.add(n); todo.extend(nxt.get(n, []))
+            return met
+        return next((w for w in mine if w["status"] in ("TODO", "IN_PROGRESS", "SUBMITTED", "PENDING") and w["activity_id"] in done
+                     and w["activity_id"] in defn.activities and committed_to_approval(w["activity_id"])), None)
+
+    def _reopen_for_recheck(self, proc_inst_id: str, row_id: str, by: str, reason: str) -> bool:
+        inst = self.repo.get_instance(proc_inst_id)
+        inc_id = engine.variables(inst).get("incident") if inst else None
+        if not inc_id:
+            return False
+        if self.hooks.reopen_for_recheck is None:
+            raise ValueError("재분석 뒤 사건을 다시 여는 기능이 연결되지 않았습니다")
+        changed = self.hooks.reopen_for_recheck(inc_id, row_id, by, reason)
+        if changed:
+            self.repo.record_events([{"job_id": "INCIDENT_REOPENED_RECHECK", "todo_id": row_id, "proc_inst_id": proc_inst_id,
+                                      "crew_type": "result", "event_type": "task_working",
+                                      "data": {"name": "재분석 뒤 다시 — 사건을 새 승인 대기로", "incident": inc_id, "by": by, "reason": reason}}])
+        return changed
 
     def poll_once(self, now: datetime | None = None) -> int:
         """Completion polling: claim SUBMITTED rows nobody holds and process them; a failure counts a retry, the third one
@@ -980,6 +1038,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 if not fresh or fresh["status"] != "RUNNING":
                     continue
                 rows = self.repo.list_workitems(proc_inst_id=fresh["proc_inst_id"], limit=None)
+                recheck = self._recheck_round(fresh, rows)
+                if recheck is not None:            # B7: a reopen lost after its commit (restart) is redone here
+                    self._after_commit(self._reopen_for_recheck, fresh["proc_inst_id"], recheck["id"], "process",
+                                       "재분석 뒤 다시 — 사건을 새 승인 대기로 (복구)")
+                    changed += 1
+                    continue
                 if self._command_never_issued(rows, snap, generation=fresh.get("rework_generation")) and self._escalation_not_open(rows):
                     self._abort_before_action(fresh, rows, snap["state"], bool(snap.get("cleared")), now)
                     changed += 1

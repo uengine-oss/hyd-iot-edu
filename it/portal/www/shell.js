@@ -13,6 +13,7 @@
   // 새 화면: 메뉴 키 → 전역 이름. 컨테이너는 <section id="view-<키>"> 안의 <div id="<키>View">.
   const MOUNTS = { inbox: 'hydInbox', agents: 'hydAgents', mcp: 'hydMcp', compare: 'hydCompare', eval: 'hydEval', whatif: 'hydWhatif', kpi: 'hydKpi', fabric: 'hydFabric' };
   MOUNTS.flows = 'hydFlows';                                         // B3 흐름 가져오기 (flows.js)
+  MOUNTS.oil = 'hydOilInput';                                        // B7 오일 분석 입력 (oilInput.js)
   const mounted = {};
   let applying = false;
 
