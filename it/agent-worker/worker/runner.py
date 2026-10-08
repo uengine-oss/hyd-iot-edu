@@ -230,6 +230,15 @@ class Runner:
         gen = (_exec_stream(provider,request,env,check_stop=check_stop) if self.exec_fn is _exec_stream
                else self.exec_fn(provider,request,env))
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
+        console = ui_events.ConsoleLog()                      # U1: tool call start/end as one terminal line each
+        notes = ui_events.NoteBuffer()                        # U1: the agent's prose between tool calls, one stored row per paragraph
+        def emit(ui):
+            line = console.line(ui, row)
+            if line:
+                log.info(line)
+            r = ui_events.row_of(ui, job_id=job_id, todo_id=row["id"], proc_inst_id=row.get("proc_inst_id"), crew_type=crew)
+            if r:
+                pending_rows.append(r)
         try:
             for ev in gen:
                 if trace:
@@ -251,10 +260,14 @@ class Runner:
                     # the end of the stream: a run that still ends without a result fails with the last reported error.
                     last_error = ev.text or "agent error"
                     self._event(row, job_id, "task_working", {"type": "notice", "content": f"에이전트 오류 보고(이어지는 결과를 확인합니다): {last_error[:500]}"}, crew_type=crew)
+                if ev.kind is ExecEventKind.ASSISTANT_TEXT:
+                    notes.add(ev.text)
+                elif ev.kind in ui_events.NOTE_BOUNDARY:
+                    note = notes.flush(final_text=ev.text if ev.kind is ExecEventKind.RESULT else None)
+                    if note:
+                        emit(note)
                 for ui in ui_events.translate(ev):
-                    r = ui_events.row_of(ui, job_id=job_id, todo_id=row["id"], proc_inst_id=row.get("proc_inst_id"), crew_type=crew)
-                    if r:
-                        pending_rows.append(r)
+                    emit(ui)
                 if pending_rows:
                     self.repo.record_events(pending_rows)
                     pending_rows = []
@@ -264,6 +277,9 @@ class Runner:
                 trace.close()
             if hasattr(gen, "close"):
                 gen.close()                                   # the library's teardown reaps the child process
+            note = notes.flush(final_text=final_text or None)  # a stream that ends without a result still leaves its last words
+            if note:
+                emit(note)
             if pending_rows:
                 self.repo.record_events(pending_rows)
         if self._cancelled(row):raise Cancelled()

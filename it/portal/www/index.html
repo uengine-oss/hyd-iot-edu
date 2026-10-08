@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="hitl.css?v=20261008-a147">
 <link rel="stylesheet" href="instances.css?v=20261008-a147">
 <link rel="stylesheet" href="components.css?v=20261008-a147">
+<link rel="stylesheet" href="taskDetail.css?v=20261008-u1">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -132,6 +133,7 @@
       <div class="list todo-grid" id="todoList"></div></section>
     <div id="todoPanel"></div>
     <details class="fold stream-fold" id="streamFold"><summary>에이전트 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
+    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 지금 일하는 AI 일꾼 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
     <div class="split inst-split">
       <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
       <div class="detail" id="instDetail"></div>
@@ -275,6 +277,8 @@
 <script src="taskDeferral.js?v=20261008-a147"></script>
 <script src="instances.js?v=20261008-a147"></script>
 <script src="liveStream.js?v=20261008-a147"></script>
+<script src="taskDetail.js?v=20261008-u1"></script>
+<script src="agentsPanel.js?v=20261008-u1"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
 </body>

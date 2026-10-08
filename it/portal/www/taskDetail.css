@@ -1,0 +1,55 @@
+/* U1 — task 상세 패널 · 지금 일하는 AI 일꾼 (taskDetail.js · agentsPanel.js). 기존 컴포넌트(card · fold · timeline · ro-grid · chip)를 쓰고 여기서는 붙이는 자리만 정한다. */
+#instDetail .f-node[data-node] { cursor: pointer; }
+#instDetail .f-node[data-node]:hover rect { stroke-width: 2.4; }
+#instDetail .f-node.picked rect { stroke: var(--it, #2f6fed); stroke-width: 3; filter: drop-shadow(0 0 3px rgba(47, 111, 237, .45)); }
+#instDetail .step-row[data-step-task] > summary { cursor: pointer; }
+#instDetail .step-row.picked { border-color: var(--it, #2f6fed); box-shadow: 0 0 0 2px rgba(47, 111, 237, .18) inset; }
+
+.task-detail { margin: var(--s4) 0; border-left: 4px solid var(--accent); }
+.task-detail.human { border-left-color: var(--warn); }
+.task-detail.system { border-left-color: #9aa7b5; }
+.task-detail.live { border-left-color: var(--ok); }
+.task-detail .card-chips .live-dot { margin-right: 2px; }
+.td-sections { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s2); }
+.td-section > summary .chip { margin-left: 4px; }
+.td-kv > div { grid-template-columns: 110px minmax(0, 1fr); }
+.td-table { margin-bottom: var(--s2); font-size: 12px; }
+.td-list { margin: 4px 0 0; padding-left: 20px; font-size: 13px; }
+.td-list li { margin: 2px 0; }
+.td-prose { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; font-size: 12px; margin: 0; }
+
+.td-timeline { max-height: 420px; overflow: auto; padding-right: 4px; }
+.td-timeline .tl-body { padding: 4px 0 10px; border-bottom: 1px dashed var(--rule); min-width: 0; }
+.td-timeline .tl:last-child .tl-body { border-bottom: 0; }
+.td-timeline .tl-head { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; font-size: 13px; }
+.td-timeline .tl-head time { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 58px; font-size: 12px; }
+.td-timeline .tl-head .dur { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); background: #edf0f5; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; }
+.td-timeline .tl-text { font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; margin-top: 2px; }
+.td-timeline .tl-text.res { color: var(--ink-3); font-family: Consolas, "Cascadia Mono", monospace; font-size: 11.5px; }
+.td-timeline .tl.small .tl-head { font-size: 12px; color: var(--ink-3); }
+.td-timeline .tl.small .tl-head b { font-weight: 500; }
+.td-timeline .tl.ask .dot::before { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+.td-timeline .tl.live .tl-head b { color: var(--ok); }
+.td-timeline .tl.current .dot::before { animation: livePulse 1.6s ease-out infinite; }
+
+.agents-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--s4); align-items: start; padding: var(--s3) var(--s4) var(--s4); }
+@media (max-width: 1100px) { .agents-grid { grid-template-columns: 1fr; } }
+.agent-tasks { display: flex; flex-direction: column; gap: var(--s2); }
+.agent-tasks .item { cursor: default; }
+.agent-tasks .item .row-wrap { margin-top: 4px; }
+
+/* 지금: <단계> — <누가> <무엇을 하는 중> (처리 건 머리글) */
+.td-now { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; padding: 6px 10px; margin-top: 4px; border-radius: 8px; background: #eef6ef; border: 1px solid #cfe5d2; color: var(--ink-2); }
+.td-now.done { background: var(--surface-2, #f3f5f8); border-color: var(--rule); }
+.td-now > b { color: var(--ink); }
+.td-now .linkish { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+/* 판단 근거 · 에이전트 판단 메시지 · 조건 · 점수 구성 */
+.td-basis { margin-bottom: var(--s3); padding: 8px 10px; border-radius: 8px; background: #f4f7fc; border: 1px solid #dbe4f3; }
+.td-basis-title { margin: 0 0 4px; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.td-note { margin: 4px 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: #fff; font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.td-cond { font-size: 12px; margin: 2px 0; }
+.td-part { display: inline-block; margin: 0 8px 2px 0; font-size: 12px; white-space: nowrap; }
+.td-table tr.rec td { background: #f3f8ff; }
+.td-count { font-variant-numeric: tabular-nums; }
+.td-timeline .tl.note .dot::before { background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

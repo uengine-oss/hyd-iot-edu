@@ -147,7 +147,7 @@
       const name = UI.flowName(n.name);
       if (n.kind === 'task') {
         const roleName = g.lane.get(n.id) === 'human' ? n.role : '';
-        s += `<g class="${cls}"><rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="8"/><text x="${cx}" y="${cy + (roleName ? -2 : 4)}" text-anchor="middle" class="f-t">${esc(name)}</text>${roleName ? `<text x="${cx}" y="${cy + 13}" text-anchor="middle" class="f-s">${esc(roleName)}</text>` : ''}</g>`;
+        s += `<g class="${cls}" data-node="${esc(n.id)}"><rect x="${cx - TW / 2}" y="${cy - TH / 2}" width="${TW}" height="${TH}" rx="8"/><text x="${cx}" y="${cy + (roleName ? -2 : 4)}" text-anchor="middle" class="f-t">${esc(name)}</text>${roleName ? `<text x="${cx}" y="${cy + 13}" text-anchor="middle" class="f-s">${esc(roleName)}</text>` : ''}</g>`;
       } else if (n.kind === 'gateway') {
         const lab = vertical ? `<text x="${cx + GW + 6}" y="${cy + 4}" class="f-s">${esc(name)}</text>` : `<text x="${cx}" y="${cy - GW - 6}" text-anchor="middle" class="f-s">${esc(name)}</text>`;
         s += `<g class="${cls}"><path d="M${cx} ${cy - GW} L${cx + GW} ${cy} L${cx} ${cy + GW} L${cx - GW} ${cy} Z"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" class="f-g">×</text>${lab}</g>`;

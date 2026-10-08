@@ -53,7 +53,8 @@
         const dur = started ? fmtMs(new Date(e.timestamp) - started) : '';
         return { title: shortTool(d.tool), text: brief(d.output), dur };
       }
-      case 'task_working': return { title: d.type === 'usage' ? UI.t('stream.model') : (d.name || d.type || UI.t('stream.working')), text: d.content || d.message || (d.usage ? `${UI.t('stream.tokens')} ${d.usage.input_tokens ?? '–'} / ${d.usage.output_tokens ?? '–'}` : '') };
+      // U1: the worker's assistant note (type text) and the built-in pipeline's evidence get Korean titles, not their type key
+      case 'task_working': return { title: d.type === 'usage' ? UI.t('stream.model') : (d.name || { text: '에이전트 판단', notice: '알림', evidence: '판단 근거' }[d.type] || UI.t('stream.working')), text: d.type === 'text' ? brief(d.content, 160) : d.content || d.message || (d.usage ? `${UI.t('stream.tokens')} ${d.usage.input_tokens ?? '–'} / ${d.usage.output_tokens ?? '–'}` : '') };
       case 'task_started': return { title: activityOf(e) || d.name || UI.t('step'), text: d.goal || '' };
       case 'task_completed': return { title: activityOf(e) || UI.t('step'), text: (d.output_keys || []).length ? UI.t('inst.output') + ' ' + d.output_keys.join(', ') : brief(d.text) };
       case 'task_cancelled': {                     // A098: three different things used to look identical in the stream
@@ -77,6 +78,7 @@
     if (S.rows.length > MAX) { const gone = S.rows.pop(); S.byId.delete(gone.e.id); }
     if (fresh && RELOAD_ON.has(e.event_type)) scheduleReload();
     if (fresh) ticker(e);
+    if (fresh && window.hydTaskDetail) window.hydTaskDetail.onEvent(e);   // U1: the open task panel takes its own task's events at once
   }
   function scheduleReload() {
     clearTimeout(S.reloadTimer);
