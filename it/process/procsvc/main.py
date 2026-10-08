@@ -1018,6 +1018,13 @@ manual_api.register(app,
     archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
+# A9 옛 DB 뜻 복원: AI candidates (agent task) → a person's review → only approved meanings reach the DDL plan
+from . import legacy_meaning, legacy_meaning_api
+from .legacy_meaning_store import LegacyMeaningStore
+_legacy_store = lambda: LegacyMeaningStore(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("legacy_meanings.sqlite3"))
+_legacy = legacy_meaning_api.Bridge(_legacy_store, os.getenv("TENANT_ID", "hyd"))
+legacy_meaning_api.register(app, driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
+    runtime_factory=instance_mode.current, store_factory=_legacy_store, worker_probe=lambda: instance_mode.worker_status())
 
 # A4 (U6): AI 판단 채점 — 화면에서 적은 정답표 대비 점수 · 반복 흔들림 · 지식 고치기 전·후 비교 (procsvc/eval_api.py · judgment_eval.py)
 from . import eval_api, judgment_eval, procdb as _procdb
@@ -1043,9 +1050,15 @@ async def kg_ddl_preview(body: dict):
         raise HTTPException(400, f"파일을 읽을 수 없다: {e}")
     try:
         tables = ingest.parse_ddl(text)
+        legacy = legacy_meaning.summary(tables, text)          # A9: columns without a meaning and the dump's sample rows
+        review = _legacy.review_for(body.get("meaning_review"), text)
+        refl = legacy_meaning.apply_comments(tables, review["review"]) if review else None
         plan = ingest.plan(tables, filename=name, batch=ingest.new_batch_id("ddl"),
                            selection=body.get("selection"), systems=body.get("systems"),
                            datasource=body.get("datasource", "hyd-enterprise"), catalog=body.get("catalog", "postgres"))
+        plan["legacy"] = legacy
+        if review:
+            plan["meaningReview"] = _legacy.applied(plan, review, refl)
     except (ValueError, TypeError) as e:
         raise HTTPException(400, str(e))
     if not tables:
@@ -1085,6 +1098,7 @@ async def kg_ddl_commit(body: dict):
 
     try:
         ingest.validate_plan(plan)
+        _legacy.check_commit(plan)             # A9: no meaning/REPRESENTS a person did not approve
     except (ValueError, KeyError, TypeError) as e:
         raise HTTPException(400, str(e))
 

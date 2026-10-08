@@ -269,8 +269,12 @@ def validate_plan(p: dict) -> None:
     seen = set()
     required = ("id", "name", "typeRef", "variable", "datasource", "catalog", "schema", "table", "column", "sqlType", "source_id", "system")
     for item in p["inputs"]:
-        if set(item) - set(required) - {"assetColumn", "derive"}:
+        if set(item) - set(required) - {"assetColumn", "derive", "represents", "meaningReview"}:
             raise ValueError("허용되지 않은 입력 속성")
+        # A9: REPRESENTS target and the review that approved the meaning (main.py checks the review itself)
+        for opt in ("represents", "meaningReview"):
+            if opt in item and item[opt] is not None and (not isinstance(item[opt], str) or not item[opt]):
+                raise ValueError(f"{opt} 값을 확인하세요")
         if "derive" in item and (item["derive"] != DERIVE_HOURS or not is_point_in_time(item.get("sqlType") or "") or item.get("typeRef") != "number"):
             raise ValueError("시각 열만 '지금부터 시간(h)'으로 환산할 수 있습니다")
         if not all(isinstance(item.get(k), str) and item[k] for k in required):
