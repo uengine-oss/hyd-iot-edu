@@ -90,6 +90,8 @@ class ReworkRuntime:
                 self.hooks.reopen_incident(engine.variables(inst)['incident'], request_id, by, role, reason,
                                            deepcopy(proposal.get('effects_resolution') or {}))
             adv = rework.new_generation(defn, inst, work, proposal, request_id, now, self.time_scale)
+            from . import inbox
+            inbox.apply_advance(self, inst, adv)
             for row in adv.updated:
                 self.repo.update_workitem(row)
             self.repo.insert_workitems(adv.created)

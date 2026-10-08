@@ -24,6 +24,7 @@
     <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인 · 조치</button>
     <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
     <div class="navgroup focus" data-term="nav.group.decide">판단과 처리</div>
+    <button data-tab="inbox" data-icon="skills" data-term="nav.inbox">내 작업함</button>
     <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
     <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
     <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
@@ -39,7 +40,7 @@
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
   <div class="breadcrumb"><b id="pageLocation">홈</b></div>
-  <div class="strip-status"><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><span class="stream-ticker" id="streamTicker" aria-live="polite"><i class="live-dot off"></i><span>연결 중</span></span><div class="dots" id="healthDots"></div></div>
+  <div class="strip-status"><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><span class="stream-ticker" id="streamTicker" aria-live="polite"><i class="live-dot off"></i><span>연결 중</span></span><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
 </header>
 <button class="nav-scrim" id="navScrim" aria-label="메뉴 닫기" hidden></button>
@@ -124,6 +125,12 @@
   </section>
 
   <!-- ───────── 처리 건 ───────── -->
+  <!-- U5: 나 · 내 작업함 · 알림 (inbox.js 가 #inboxView 에 그린다) -->
+  <section class="view" id="view-inbox">
+    <div class="page-head"><h1>내 작업함</h1></div>
+    <div id="inboxView"></div>
+  </section>
+
   <section class="view" id="view-instances">
     <div class="page-head"><h1>처리 건</h1></div>
     <div id="instBanner"></div>
@@ -275,6 +282,7 @@
 <script src="taskDeferral.js?v=20261008-a147"></script>
 <script src="instances.js?v=20261008-a147"></script>
 <script src="liveStream.js?v=20261008-a147"></script>
+<script src="inbox.js?v=20261008-u5"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
 </body>

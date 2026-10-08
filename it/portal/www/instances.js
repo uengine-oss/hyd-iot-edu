@@ -138,10 +138,10 @@
     box.innerHTML = `<section class="todo-panel"><div class="detail-head"><div class="row"><h3 style="margin:0">${esc(title)}</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span></div><div class="sub">${esc(why)}</div></div>
       ${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')), `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(k, v !== null && typeof v === 'object' ? `<pre>${esc(JSON.stringify(v, null, 2).slice(0, 1500))}</pre>` : esc(String(v)))).join('')}</div>`, { cls: 'plain' }) : ''}
       <div class="form ${inline ? 'inline-form' : ''}">${inline ? `<div class="form-grid">` : `<section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">`}
-        ${UI.field({ label: UI.t('form.by'), required: true, input: `<input id="tdBy" value="${esc(I.form.by)}">` })}${fields.map(control).join('')}
+        ${window.hydInbox?.byField('td', I.form) || UI.field({ label: UI.t('form.by'), required: true, input: `<input id="tdBy" value="${esc(I.form.by)}">` })}${fields.map(control).join('')}
       ${inline ? '</div>' : '</div></section>'}
       ${UI.actions(`<button class="btn primary" id="tdDone">${esc(isEscalate ? UI.t('btn.confirm') : UI.t('btn.submit'))}</button>`, I.msg)}</div></section>`;
-    $('#tdBy').addEventListener('input', e => I.form.by = e.target.value);
+    $('#tdBy')?.addEventListener('input', e => I.form.by = e.target.value);
     fields.forEach((f, i) => $('#tdField' + i).addEventListener('input', e => I.fieldValues[f.key] = e.target.value));
     $('#tdDone').addEventListener('click', () => {
       try {
@@ -176,13 +176,13 @@
       ${options.length ? `<div class="row-wrap" style="margin-bottom:var(--s3)">${options.map((o, i) => `<button class="btn small" type="button" data-human-option="${i}">${esc(o)}</button>`).join(' ')}</div>` : ''}
       <div class="form inline-form"><div class="form-grid">
         ${UI.field({ label: UI.t('form.answer'), required: true, cls: 'wide', hint: UI.t('form.hint.answer'), input: `<textarea id="tdAnswer" rows="2">${esc(I.form.reason)}</textarea>` })}
-        ${UI.field({ label: UI.t('form.by'), required: true, input: `<input id="tdBy" value="${esc(I.form.by)}">` })}</div>
+        ${window.hydInbox?.byField('td', I.form) || UI.field({ label: UI.t('form.by'), required: true, input: `<input id="tdBy" value="${esc(I.form.by)}">` })}</div>
       ${UI.actions(`<button class="btn primary" id="tdAnswerGo">${esc(UI.t('btn.answer'))}</button>`, I.msg)}</div></section>`;
     box.querySelectorAll('[data-human-option]').forEach(button => button.addEventListener('click', () => {
       I.form.reason = options[Number(button.dataset.humanOption)]; $('#tdAnswer').value = I.form.reason;
     }));
     $('#tdAnswer').addEventListener('input', e => I.form.reason = e.target.value);
-    $('#tdBy').addEventListener('input', e => I.form.by = e.target.value);
+    $('#tdBy')?.addEventListener('input', e => I.form.by = e.target.value);
     $('#tdAnswerGo').addEventListener('click', async () => {
       if (I.busy) return; I.busy = true;
       try { await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/human-response`, { job_id: open.job_id, answer: I.form.reason, by: I.form.by || '담당자' }); I.msg = ''; I.form.reason = ''; }
@@ -584,6 +584,7 @@
 
   /* ------------------------------------------------ hooks */
   window.hydInstancesSelect = id => { I.sel = id; I.taskSel = null; load(true); };
+  window.hydInstancesOpenTask = (id, taskId) => { I.sel = id; I.taskSel = taskId; load(true); };   // U5: 내 작업함 · 알림 → #/instances/<id>/task/<taskId>
   const _sel = selectTab;
   selectTab = function (name) { _sel(name); if (name === 'instances') load(true); };
   window.hydApp.selectTab = selectTab;

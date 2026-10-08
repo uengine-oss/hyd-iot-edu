@@ -84,4 +84,22 @@ insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_jso
   ('escalate',   'hyd', 'anomaly_response', 'task:escalate',   '[{"key":"note","type":"textarea","text":"생산관리자 확인 메모"}]')
 on conflict (id, tenant_id) do update set proc_def_id = excluded.proc_def_id, activity_id = excluded.activity_id, fields_json = excluded.fields_json;
 
+-- ============================================================================
+-- U5 (2026-10-08) 사람 사용자 · 업무분장 (migration 000029 role_members). 역할 사용자(role:*)는 위 users 에 있다.
+-- 운전원은 2명이라 조치 선택 단계는 역할 공용으로 남고, 생산관리자·정비관리자는 1명이라 그 사람에게 바로 배정된다(procsvc/inbox.py).
+-- ============================================================================
+insert into public.users (id, email, username, role, is_agent, agent_type, tenant_id) values
+  ('user:kim-op',     'kim.op@hyd.local',     '김운전', 'operator', false, null, 'hyd'),
+  ('user:choi-op',    'choi.op@hyd.local',    '최운전', 'operator', false, null, 'hyd'),
+  ('user:lee-prod',   'lee.prod@hyd.local',   '이생산', 'manager',  false, null, 'hyd'),
+  ('user:park-maint', 'park.maint@hyd.local', '박정비', 'manager',  false, null, 'hyd')
+on conflict (id) do update set email = excluded.email, username = excluded.username, role = excluded.role;
+
+insert into public.role_members (tenant_id, role_id, user_id) values
+  ('hyd', 'role:operator',  'user:kim-op'),
+  ('hyd', 'role:operator',  'user:choi-op'),
+  ('hyd', 'role:prod-mgr',  'user:lee-prod'),
+  ('hyd', 'role:maint-mgr', 'user:park-maint')
+on conflict do nothing;
+
 select ent.reanchor_scenario_times();

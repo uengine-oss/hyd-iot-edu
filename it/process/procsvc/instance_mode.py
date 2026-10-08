@@ -80,32 +80,34 @@ def current() -> instances.InstanceRuntime | None:
 
 
 # ---------------------------------------------------------------- lifecycle
-async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0):
+async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0,
+                       fetch: Callable | None = None, ts_key: str = "timestamp", history: int = 60):
     """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
-    timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects."""
+    timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects.
+    U5: `fetch(since, limit)` and `ts_key` let the same generator stream another table (notifications, inbox_api)."""
     global stream_clients
     stream_clients += 1
     try:
-        async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s):
+        async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch or repo.list_events_since, ts_key, history):
             yield frame
     finally:
         stream_clients -= 1
 
 
-async def _event_frames(repo, since, is_disconnected, interval, keepalive_s):
+async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch, ts_key, history):
     seen: set[str] = set()
     cursor = since
     if cursor is None:
-        for e in await asyncio.to_thread(repo.list_events_since, None, 60):          # a short history so the panel is not empty
-            seen.add(e["id"]); cursor = max(cursor or "", str(e.get("timestamp") or ""))
+        for e in await asyncio.to_thread(fetch, None, history):          # a short history so the panel is not empty
+            seen.add(e["id"]); cursor = max(cursor or "", str(e.get(ts_key) or ""))
             yield "event: history\ndata: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
     idle = 0.0
     while not await is_disconnected():
-        rows = await asyncio.to_thread(repo.list_events_since, cursor, 300)
+        rows = await asyncio.to_thread(fetch, cursor, 300)
         fresh = [e for e in rows if e["id"] not in seen]
         if fresh:
             for e in fresh:
-                ts = str(e.get("timestamp") or "")
+                ts = str(e.get(ts_key) or "")
                 if cursor is None or ts > cursor:
                     cursor, seen = ts, {e["id"]}
                 else:

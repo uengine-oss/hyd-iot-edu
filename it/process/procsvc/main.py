@@ -370,6 +370,8 @@ app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observa
                lambda: {**state, "ok": state["kafka"] and not any(state.get(k) for k in
                     ('consumer_dead','source_receive_error','source_handler_error','source_policy_error','startup_db_error'))})
 instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
+from . import inbox_api
+inbox_api.mount(app)                        # U5: /api/inbox/* (나 · 내 작업함 · 알림 · 업무분장 읽기)
 
 from . import memdebug
 if memdebug.enabled():                      # A131: GET /debug/memory only with PROCESS_MEMDEBUG=1 (OOM diagnosis, dev only)
