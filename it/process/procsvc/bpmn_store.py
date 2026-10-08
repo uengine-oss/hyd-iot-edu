@@ -175,6 +175,19 @@ class FlowStore:
             return row["snapshot"] if row else None
 
     # ------------------------------------------------------------ 기준으로 되돌리기
+    def running(self) -> list[dict]:
+        """B6: 되돌리기 전 확인 — 학생 판본을 쓰는 진행 중(NEW · RUNNING) 처리 건. 아무것도 바꾸지 않는다(reset 의 거절 조건과 같다)."""
+        if self.memory:
+            pinned = {(d, v) for d, t, v in self.mem["versions"] if t == self.tenant_id}
+            return [{k: i.get(k) for k in ("proc_inst_id", "proc_def_id", "proc_def_version")} for i in self.repo.instances.values()
+                    if i.get("tenant_id") == self.tenant_id and not i.get("is_deleted") and i.get("status") in ("NEW", "RUNNING")
+                    and (i.get("proc_def_id"), i.get("proc_def_version")) in pinned]
+        with self.repo._conn() as c:
+            return [dict(r) for r in c.execute("""select proc_inst_id, proc_def_id, proc_def_version from bpm_proc_inst i
+                    where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and exists (select 1 from proc_def_version v
+                    where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id and v.version=i.proc_def_version and v.origin='user')
+                    order by start_date""", (self.tenant_id,)).fetchall()]
+
     def reset(self) -> dict:
         """학생이 가져온 정의 · 판본 · 초안만 지운다. 그 판본으로 끝난 처리 건은 목록에서 숨긴다(is_deleted — 정의가 없어지므로).
         진행 중(NEW · RUNNING) 처리 건이 있으면 아무것도 지우지 않고 FlowBusy."""

@@ -259,8 +259,12 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
     def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict:
         with self._lock:
             head = self.defs.get((def_id, tenant_id))
-            if head is None or (def_id, tenant_id, version) not in self.def_versions:
+            if (def_id, tenant_id, version) not in self.def_versions:
                 raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+            if head is None:   # B3 가져온 흐름: PG 는 등록 때 proc_def 머리(prod_version NULL)를 넣는다 — 메모리는 첫 배포 때 같은 머리를 만든다
+                v = self.def_versions[(def_id, tenant_id, version)]
+                head = self.defs[(def_id, tenant_id)] = {'id': def_id, 'tenant_id': tenant_id, 'name': v.get('name'), 'definition': _copy(v.get('definition')),
+                                                         'prod_version': None, 'type': 'bpmn', 'ontology_ref': v.get('ontology_ref')}
             row = {'id': str(uuid.uuid4()), 'tenant_id': tenant_id, 'proc_def_id': def_id, 'version': version,
                    'previous_version': head.get('prod_version'), 'action': action, 'actor': actor, 'reason': reason,
                    'created_at': datetime.now(timezone.utc).isoformat()}
