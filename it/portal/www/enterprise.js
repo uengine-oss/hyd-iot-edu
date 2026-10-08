@@ -255,7 +255,7 @@ function cardHtml(o, opt = {}) {
   const ranking = o.rankingEvidence;
   const chips = [o.id === opt.rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
-  const line = [forecastLine(o), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+  const line = [forecastLine(o), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
   // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
   const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
   const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;

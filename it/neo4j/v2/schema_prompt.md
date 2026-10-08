@@ -90,7 +90,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 실행 중에 쌓이는 사건과 사람의 판단 사례. 다음 판단의 선례로 쓰인다.
 
 - `(:Incident {id!, alertId!, openedAt!, status[AWAITING_APPROVAL|CMD_ISSUED|AWAITING_ACK|ACKED|RE_OBSERVING|RESOLVED|WORK_ORDER_CREATED|CLOSED|ESCALATED|REJECTED_BY_OPERATOR|RESOLVED_WITHOUT_ACTION], reason, closedAt, cleared, command_id, work_order_ref, sourcePattern, sourceTrip, sourceAlert, projection_revision, projection_warnings})` 경보 하나로 열린 사건.
-- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, status[PENDING_APPROVAL|APPROVED|REJECTED|EXECUTED|PARTIAL], source_incident_id, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.
+- `(:DecisionCase {id!, decidedAt!, reason, followedRecommendation!, seeded, status[PENDING_APPROVAL|APPROVED|REJECTED|EXECUTED|PARTIAL], source_incident_id, projection_revision, projection_warnings})` 사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다(교육용 고정: 선례 몫은 seeded=true인 미리 넣은 사례만 센다 — DECISIONS 110 ④).
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
 - `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED|CANCELLED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings, rework_generation, projection_revision})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.

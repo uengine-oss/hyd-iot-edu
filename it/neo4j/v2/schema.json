@@ -1667,7 +1667,7 @@
       "label_ko": "판단 사례",
       "layer": "record",
       "standard": "DMN 판단의 실행 인스턴스",
-      "description": "사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다.",
+      "description": "사람이 실제로 내린 판단 한 건. 고른 스킬과 사유가 남고, 같은 판단의 다음 실행에서 선례로 읽힌다(교육용 고정: 선례 몫은 seeded=true인 미리 넣은 사례만 센다 — DECISIONS 110 ④).",
       "properties": [
         {
           "name": "id",
@@ -1687,6 +1687,12 @@
           "name": "followedRecommendation",
           "type": "boolean",
           "required": true
+        },
+        {
+          "name": "seeded",
+          "type": "boolean",
+          "required": false,
+          "description": "미리 넣은 예시 사례(그래프 시드 instances.cypher)면 true. 선례 조회(t3_precedents)는 이것만 센다 — 교육용 고정, DECISIONS 110 ④. 승인으로 투영된 사례(case_projection)에는 없다"
         },
         {
           "name": "status",

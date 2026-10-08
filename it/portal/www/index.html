@@ -277,6 +277,21 @@
       <div class="form-actions"><span id="definitionMessage" role="status" class="form-msg"></span><button class="btn primary" id="definitionStart">선택한 정의 버전으로 실행</button></div></section>
       </div>
     </details>
+    <details class="fold admin-panel" id="definitionDeployPanel">
+      <summary>흐름 판본 배포 · 비교 · 되돌리기 — 다음 경보부터 적용</summary>
+      <div class="fold-body form">
+      <section class="form-section"><h4>정의와 기록자</h4><div class="form-grid">
+        <div class="field"><label for="deployChoice">정의</label><select id="deployChoice"><option value="">불러오는 중</option></select></div>
+        <div class="field"><label for="deployBy">담당자 <i class="req">*</i></label><input id="deployBy" placeholder="배포 이력에 남습니다"></div>
+        <div class="field wide"><label for="deployReason">사유 <i class="req">*</i></label><textarea id="deployReason" rows="2" placeholder="왜 이 판본을 운영에 올리는지(되돌릴 때도 같은 칸)"></textarea><p class="field-hint">검사를 통과한 판본만 배포됩니다. 열린 처리 건은 자기 판본으로 끝나고, 새 경보부터 운영 판본으로 열립니다.</p></div>
+      </div>
+      <div class="form-actions"><span id="deployMessage" role="status" class="form-msg"></span><button class="btn small" id="deployRefresh">다시 읽기</button><button class="btn" id="deployRollback" disabled>이전 배포 판본으로 되돌리기</button></div></section>
+      <div id="deployStatus"></div>
+      <div id="deployVersions" class="list"></div>
+      <div id="deployCompare"></div>
+      <div id="deployHistory"></div>
+      </div>
+    </details>
   </section>
 
   <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
@@ -339,6 +354,7 @@
 <script src="agentsPanel.js?v=20261008-u1"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="agents.js?v=20261008-a158"></script>
+<script src="definitionDeploy.js?v=20261008-b4"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
 <script src="evaluation.js?v=20261008-u6"></script>
 <script src="mcp.js?v=20261008-u3"></script>

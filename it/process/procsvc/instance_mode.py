@@ -127,13 +127,37 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     global _runtime, _ctx
     _ctx = ctx
     repo = procdb.make_repo()
-    defn = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
+    defn = _bootstrap_definition(repo, os.getenv('TENANT_ID','hyd'))
     _runtime = instances.InstanceRuntime(repo, defn, _hooks(ctx), time_scale=ctx.time_scale,
                                         tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}")
-    _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
+    triage = _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
+    # B4: 기준 흐름 = 기동 파일(PROCESS_DEFINITION_FILE)의 판본 — 배포된 학생 판본으로 기동해도 "기준 흐름으로 되돌리기"는 이 판본으로 간다.
+    seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
+    _runtime.base_version, _runtime.reference_ids = seed.raw['version'], {seed.id, triage['id']}
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
-    log.info("instance mode: definition %s (%d activities), repo %s, agent bridge %s", defn.id, len(defn.activities), type(repo).__name__, AGENT_BRIDGE)
+    log.info("instance mode: definition %s@%s (%d activities), repo %s, agent bridge %s", defn.id, defn.raw.get('version'),
+             len(defn.activities), type(repo).__name__, AGENT_BRIDGE)
     return _runtime
+
+
+def _bootstrap_definition(repo, tenant_id: str) -> engine.Definition:
+    """U4 (TODO 4): the file (PROCESS_DEFINITION_FILE) is only the first seed. Once a deployed ("운영") version exists in the DB
+    for that definition id — set by the deploy/rollback API or an earlier seed — startup loads *that* version and the file is
+    not consulted, so a deployment survives restarts and a changed file no longer silently switches the alert flow."""
+    seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
+    deployed = repo.deployed_version(seed.id, tenant_id)
+    last = repo.list_deployments(seed.id, tenant_id, limit=1)
+    if last and last[0].get('action') == 'seed':
+        # B4: nobody deployed this id through the API (only a boot seed or the migration backfill of the old "last registered"
+        # pointer) — the file is still the reference, as before U4. A person's deploy/rollback/reset is what survives restarts.
+        return seed
+    if deployed and deployed != seed.raw.get('version'):
+        row = repo.get_proc_def(seed.id, tenant_id, version=deployed)
+        if not row or not row.get('definition'):
+            raise LookupError(f'배포 판본 {seed.id}@{deployed}의 정의 원문이 없습니다 (proc_def_version)')
+        log.info("instance mode: deployed version %s@%s is used instead of the seed file %s", seed.id, deployed, DEFINITION_FILE)
+        return engine.Definition.from_dict(row['definition'])
+    return seed
 
 
 def start(ctx: ProcessContext) -> instances.InstanceRuntime:
@@ -534,6 +558,15 @@ class DefinitionReq(BaseModel):
     definition: dict
 
 
+class RollbackReq(BaseModel):
+    by: str = Field(min_length=1, max_length=200)
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+class DeployReq(RollbackReq):
+    version: str = Field(min_length=1, max_length=200)
+
+
 class SubmitReq(BaseModel):
     output: dict | None = None
     by: str | None = None
@@ -604,17 +637,66 @@ def mount(app: FastAPI, process_mode: str) -> None:
     def process_mode_info():
         rt = _runtime
         return {"mode": process_mode, "agent_bridge": AGENT_BRIDGE if rt else None, "definition": rt.defn.id if rt else None,
+                "deployed_version": rt.repo.deployed_version(rt.defn.id, rt.tenant_id) if rt else None,
                 "repo": type(rt.repo).__name__ if rt else None, "time_scale": rt.time_scale if rt else None, "engine": rt.consumer if rt else None}
 
     @app.get("/api/process/definition")
     def process_definition():
-        return _rt().defn.raw
+        """The deployed version of the alert definition — what the next RAISE opens (U4)."""
+        try:
+            return _rt().deployed_definition().raw
+        except LookupError as e:
+            raise HTTPException(409, str(e))
+
+    from . import flow_deploy
+    flow_deploy.mount(app, lambda: _runtime)    # B4: /api/flows/deployments · /api/flows/deploy-reset · /api/flows/deploy-compare
+
+    @app.get('/api/process/definitions/{definition_id}/versions')
+    async def definition_versions(definition_id: str):
+        """U4: every registered version with the deployed one marked, deployability (validate_definition) and the deployment history."""
+        try:
+            return await _in_executor(_rt().definition_status, definition_id)
+        except LookupError as e:
+            raise HTTPException(404, str(e))
+
+    @app.get('/api/process/definitions/{definition_id}/compare')
+    async def compare_definition_versions(definition_id: str, from_version: str, to_version: str):
+        """U4: added / removed / changed steps, flows, conditions, variables, roles and forms between two versions, as people read it."""
+        try:
+            return await _in_executor(_rt().compare_definitions, definition_id, from_version, to_version)
+        except LookupError as e:
+            raise HTTPException(404, str(e))
+
+    @app.post('/api/process/definitions/{definition_id}/deploy')
+    async def deploy_definition(definition_id: str, req: DeployReq):
+        """U4: make a version the one new alerts open. Refused unless it passes validate_definition; open instances keep theirs."""
+        try:
+            return await _in_executor(_rt().deploy_definition, definition_id, req.version, req.by, req.reason)
+        except LookupError as e:
+            raise HTTPException(404, str(e))
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+
+    @app.post('/api/process/definitions/{definition_id}/rollback')
+    async def rollback_definition(definition_id: str, req: RollbackReq):
+        """U4: back to the version deployed before the current one."""
+        try:
+            return await _in_executor(_rt().rollback_definition, definition_id, req.by, req.reason)
+        except LookupError as e:
+            raise HTTPException(404, str(e))
+        except ValueError as e:
+            raise HTTPException(409, str(e))
 
     @app.get('/api/process/definitions')
     async def list_definitions():
         rt = _rt()
         rows = await _in_executor(rt.repo.list_definitions, rt.tenant_id)
-        return [{'id':r['id'],'name':r.get('name'),'version':r['prod_version'],
+        deployed = {}
+        for r in rows:
+            if r['id'] not in deployed:
+                deployed[r['id']] = await _in_executor(rt.repo.deployed_version, r['id'], rt.tenant_id)
+        return [{'id':r['id'],'name':r.get('name'),'version':r['prod_version'],'registered_at':r.get('registered_at'),
+                 'deployed':r['prod_version']==deployed.get(r['id']),'deployed_version':deployed.get(r['id']),
                  'form_source':'definition-version' if 'forms' in r['definition'] else 'legacy-live'} for r in rows]
 
     @app.get('/api/process/definitions/{definition_id}')

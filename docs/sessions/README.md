@@ -48,7 +48,7 @@
 | 12 | 학생이 질문을 바꿔 세 MCP에 묻기 | 수업용 정의 3개를 `docs/examples/timeseries-question-v1.json`·`business-question-v1.json`·`rule-question-v1.json`으로 분리(2026-10-07, 검사 스크립트의 정의와 같은 모양, `validate_definition` 통과). 기대값 자동 대조는 검사 스크립트에만 있음 |
 | 13 | `scripts/run_worker_host.ps1`로 기동 | 있음(기본 Codex, `-Provider claude-code`). Git Bash는 `run_worker_host.sh`. 20배속 그대로 쓴다(10-08 기준 기본). 쿨러 고장은 검사 스크립트 기본 강도 `moderate`(cooler_health 0.55, 트립 없이 평형 62.5 ℃)면 실제 워커 네 작업(약 4~5분) 동안 트립하지 않는다(A146 42/42); 포털 주입은 강한 고장(0.43, 약 90 s 뒤 트립)이라 포털로 하려면 팬 경보(HYD-03)로 |
 | 14 | HUMAN_ASKED → 답변 → 완료 | Claude Code 경로 라이브 검증됨(2026-10-07). 정의에 `permission: read_only`를 넣으면 워커가 Claude Code 계획 모드 대신 workspace_write로 바꿔 실행한다(A129, `.evidence/a148/53/` MCP 호출 정상). 포털 질문 카드 캡처 검증됨(`.evidence/a148/52/`) |
-| 16 | "10분 타이머를 짧게 줄여 상급자 호출 보기" | 20배속이면 PT10M = 벽시계 30초라 기다리면 된다. 새 버전 정의를 등록해도 경보가 여는 실행에는 쓰이지 않는다(`PROCESS_DEFINITION_FILE` 고정, `instance_mode.py` 38·114행) |
+| 16 | "10분 타이머를 짧게 줄여 상급자 호출 보기" | 20배속이면 PT10M = 벽시계 30초라 기다리면 된다. 새 버전 정의를 등록만 하면 경보에 쓰이지 않고, 관리 → **흐름 판본 배포**에서 그 판본을 배포해야 다음 경보부터 적용된다(U4, `docs/handoff/verification/2026-10-08/u4-deploy.md`) |
 | 17 | 재관측 criterion이 패턴별로 다름 | 코드(`definition.py RECOVERY`)와 현재 배포본 라이브 세 패턴 모두 확인(2026-10-07 2차) |
 | 20 | `rule:no-pressure-raise` 인용 | 규칙 id 존재(`instances.cypher` 436행), 현재 배포본 완주 40/40. 절차에 없던 "첫 진단 보류 → 2분 뒤 다시 평가"를 넣음. HYD-02 `standby_ready`는 마이그레이션 23(2026-10-08, A133)이 NULL을 true로 보정해 새 배포본·제작자 DB 모두 true다 |
 | 21 | "팬 100 %로 올리면 HIGH_VIBRATION 인터록" | 인터록 코드(`plc.py`·`thermal.TRIP_VS1`)와 장면 모두 확인(마모 상태 팬 100 % → 1초 뒤 트립) |

@@ -90,7 +90,16 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                  consumer: str = ENGINE_CONSUMER):
         self.repo, self.defn, self.hooks, self.time_scale, self.tenant_id, self.consumer = repo, defn, hooks, time_scale, tenant_id, consumer
         self._local=threading.local()
+        # B4: 기준 흐름 = 경보 진입 정의 id와 기준 판본(기동 파일 판본). instance_mode.build()가 파일 기준으로 다시 정한다(배포된 학생 판본으로
+        # 기동해도 기준은 파일). reference_ids의 흐름은 "기준 흐름으로 되돌리기"가 내리지 않는다.
+        self.base_version, self.reference_ids = defn.raw['version'], {defn.id}
         self.repo.upsert_proc_def(defn.raw, tenant_id)
+        # U4: `defn` is the runtime's bootstrap definition. It becomes the deployed ("운영") version of its id unless that version
+        # already is — a restarted engine or a peer runtime built from the deployed version writes nothing. instance_mode.build()
+        # reads the deployed pointer first, so the file on disk only seeds an empty database (TODO 4: "기동 시 파일은 최초 시드로만").
+        if self.repo.deployed_version(defn.id, tenant_id) != defn.raw['version']:
+            self.repo.record_deployment(defn.id, defn.raw['version'], tenant_id, action='seed', actor='process-engine',
+                                        reason='기동 정의를 운영 판본으로 등록')
 
     @contextmanager
     def _transition(self, pid):
@@ -230,10 +239,93 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
     def find_by_alert(self, alert_id: str) -> dict | None:
         return self.repo.find_event_instance(self.tenant_id, self.defn.id, alert_id)
 
+    # ---------------------------------------------------------------- U4: deployed version · deploy · rollback · compare
+    def deployed_definition(self, def_id: str | None = None) -> engine.Definition:
+        """The version an alert RAISE opens: proc_def.prod_version of the alert definition (never the file, never `self.defn`)."""
+        def_id = def_id or self.defn.id
+        version = self.repo.deployed_version(def_id, self.tenant_id)
+        if not version:
+            raise LookupError(f'배포된 운영 판본이 없습니다: {def_id}')
+        return self.definition_for({'proc_def_id':def_id,'tenant_id':self.tenant_id,'proc_def_version':version})
+
+    def definition_status(self, def_id: str) -> dict:
+        """Versions of one definition with the deployed one marked, whether each could be deployed (validate_definition), and the history."""
+        rows = [r for r in self.repo.list_definitions(self.tenant_id) if r['id'] == def_id]
+        if not rows:
+            raise LookupError(f'등록된 정의가 없습니다: {def_id}')
+        deployed = self.repo.deployed_version(def_id, self.tenant_id)
+        versions = []
+        for r in rows:
+            problem = None
+            try:
+                validate_definition(deepcopy(r['definition']))
+            except ValueError as e:
+                problem = str(e)
+            versions.append({'version': r['prod_version'], 'name': r.get('name'), 'registered_at': r.get('registered_at'),
+                             'message': r.get('message'), 'deployed': r['prod_version'] == deployed, 'deployable': problem is None,
+                             'problem': problem, 'form_source': 'definition-version' if 'forms' in r['definition'] else 'legacy-live'})
+        history = self.repo.list_deployments(def_id, self.tenant_id)
+        previous = history[0].get('previous_version') if history else None
+        from .flow_deploy import alert_patterns
+        latest = rows[-1]['definition']
+        return {'id': def_id, 'name': rows[-1].get('name'), 'deployed_version': deployed,
+                'alert_entry': def_id == self.defn.id or bool(alert_patterns(latest)), 'alert_patterns': alert_patterns(latest),
+                'reference': def_id in self.reference_ids, 'reference_version': self.base_version if def_id == self.defn.id else None,
+                'rollback_version': previous if previous and previous != deployed else None, 'versions': versions, 'history': history}
+
+    def deploy_definition(self, def_id: str, version: str, by: str, reason: str, action: str = 'deploy') -> dict:
+        """Make `version` the one new alerts open. Only a version that passes validate_definition; open instances keep theirs."""
+        if not isinstance(by, str) or not by.strip():
+            raise ValueError('배포한 사람을 적으세요')
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError('배포 사유를 적으세요')
+        if not isinstance(version, str) or not version.strip():
+            raise ValueError('배포할 판본을 지정하세요')
+        row = self.repo.get_proc_def(def_id, self.tenant_id, version=version)
+        if not row or not row.get('definition'):
+            raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+        try:
+            validate_definition(deepcopy(row['definition']))
+        except ValueError as e:
+            raise ValueError(f'검사를 통과하지 못한 판본은 배포할 수 없습니다: {e}') from e
+        current = self.repo.deployed_version(def_id, self.tenant_id)
+        if current == version:
+            raise ValueError(f'{def_id}@{version}은 이미 운영 판본입니다')
+        record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip())
+        self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',
+                                           'reset': 'DEFINITION_RESET'}.get(action, 'DEFINITION_DEPLOYED'),
+                         {'definition': def_id, 'version': version, 'previous_version': current, 'reason': reason.strip()})
+        from .flow_deploy import alert_patterns
+        patterns = alert_patterns(row['definition'])
+        if def_id == self.defn.id:
+            applies = '다음 경보부터'
+        elif patterns:
+            applies = '다음 경보부터(' + ', '.join(patterns) + ')'
+        else:
+            applies = '다음 직접 시작부터(경보 시작 조건 없음)'
+        return {'definition': def_id, 'version': version, 'previous_version': current, 'action': action, 'deployment': record,
+                'patterns': patterns, 'applies_to': applies}
+
+    def rollback_definition(self, def_id: str, by: str, reason: str) -> dict:
+        """Back to the version that was deployed before the current one (the newest deployment record's previous_version)."""
+        status = self.definition_status(def_id)
+        target = status['rollback_version']
+        if not target:
+            raise ValueError('되돌릴 이전 배포 판본이 없습니다')
+        return self.deploy_definition(def_id, target, by, reason, action='rollback')
+
+    def compare_definitions(self, def_id: str, from_version: str, to_version: str) -> dict:
+        from .definition_diff import compare
+        rows = [self.repo.get_proc_def(def_id, self.tenant_id, version=v) for v in (from_version, to_version)]
+        missing = [v for v, r in zip((from_version, to_version), rows) if not r or not r.get('definition')]
+        if missing:
+            raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{", ".join(missing)}')
+        return compare(rows[0]['definition'], rows[1]['definition'])
+
     def alert_policy(self, pattern):
-        from . import alert_policy
-        defn=self.definition_for({'proc_def_id':self.defn.id,'tenant_id':self.tenant_id,'proc_def_version':self.defn.raw['version']})
-        return alert_policy.for_definition(defn.raw,pattern)
+        """B4: the pattern's deployed flow (a student flow deployed for it, else the reference flow's deployed version)."""
+        from . import alert_policy, flow_deploy
+        return alert_policy.for_definition(flow_deploy.route_definition(self, pattern).raw,pattern)
 
     def on_alert_raise(self, alert: dict, now: datetime | None = None) -> dict | None:
         """Message start event: one RAISE alert opens one instance (duplicates of the same alertId are ignored)."""

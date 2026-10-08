@@ -29,6 +29,29 @@
 
 ## 실제 API
 
+### 판본 배포 — 다음 경보부터 적용 (U4)
+
+등록은 불변 판본을 하나 더하는 것이고, **경보가 여는 판본은 정의 id별 "운영 판본"(`proc_def.prod_version`) 하나**다. 기동 시 `PROCESS_DEFINITION_FILE`은 운영 판본이 없을 때만 등록·배포하는 시드이며, 운영 판본이 있으면 그 판본을 DB에서 읽어 기동한다(파일을 바꿔도 조용히 바뀌지 않는다).
+
+- `GET /api/process/definitions/{id}/versions` — 판본 목록(운영 표시, `deployable`·`problem` = `validate_definition` 결과), `deployed_version`, `rollback_version`, 배포 이력(`history`: 누가·언제·사유·이전 판본).
+- `GET /api/process/definitions/{id}/compare?from_version=&to_version=` — 추가·삭제·변경된 단계·연결·분기 조건·변수·역할·폼을 사람이 읽는 목록으로(`definition_diff.py`).
+- `POST /api/process/definitions/{id}/deploy {version, by, reason}` — 검사를 통과한 판본만(409), 없는 판본 404, 이미 운영 중이면 409. 감사 `DEFINITION_DEPLOYED`.
+- `POST /api/process/definitions/{id}/rollback {by, reason}` — 직전 운영 판본으로(이력 최신 행의 `previous_version`). 감사 `DEFINITION_ROLLED_BACK`.
+
+이미 열린 처리 건은 자기 판본(`bpm_proc_inst.proc_def_version`)으로 끝까지 간다. 포털: 관리 → **흐름 판본 배포 · 비교 · 되돌리기**. 원천 접수(`proc_inst_source`)는 접수 당시 정책을 고정하므로 배포 뒤 재처리해도 접수 당시 판본으로 열린다.
+
+### 경보 패턴별 배포 흐름 · 기준 흐름으로 되돌리기 (B4, `procsvc/flow_deploy.py`, 마이그레이션 `20261008000044`)
+
+경보 하나는 **패턴별로 지금 배포된 흐름**이 연다(기존 `alertPolicy` 계약 그대로):
+1. 배포 API로 배포된 학생 흐름(마지막 배포 기록이 `deploy`/`rollback`) 중 메시지 시작 + `alertPolicy.patterns`에 그 패턴이 있는 것 — 여럿이면 가장 최근 배포.
+2. 없으면 기준 흐름(`anomaly_response`)의 운영 판본. 지원하지 않는 패턴은 그 정의의 `alertPolicy.unsupported`(사람 검토)로.
+
+기동 시드·마이그레이션 백필(`seed`)만 있는 흐름은 경보를 가져가지 않는다(옛 "마지막 등록" 포인터가 조용히 경보를 가로채지 않게). 기준 흐름 id의 마지막 기록이 `seed`이면 기동은 파일을 따른다.
+
+- `GET /api/flows/deployments` — 패턴 → 여는 흐름·판본(`source`: 기준 흐름 / 내가 배포한 흐름), 배포된 학생 흐름(`opens`·가려진 `shadowed`), 기준 판본, `at_reference`.
+- `POST /api/flows/deploy-reset {by, reason?}` — **기준 흐름으로 되돌리기**: 학생 흐름은 경보 경로에서 내림(`withdraw`, 등록 판본은 남음), 기준 흐름 운영 판본 → 기준 판본(`reset`). 감사 `DEFINITION_WITHDRAWN`·`DEFINITION_RESET`. 학생 정의 삭제는 B3 `POST /api/flows/reset`.
+- `GET /api/flows/deploy-compare?definition=&version=` — 학생 판본(생략 시 운영 판본) vs 기준 판본: `steps`(바뀐 단계·연결·분기·이벤트 한 줄씩), `summary`, 전체 `changes`.
+
 ### 여러 경로의 종료
 
 `docs/examples/independent-reviews-v1.json`은 두 검토 작업을 함께 열고 각 결과를 받는 정의다. 한 작업이 종료 지점에 도달해도 다른 작업이 IN_PROGRESS/SUBMITTED/PENDING이면 인스턴스는 RUNNING을 유지한다. 남은 작업까지 끝나면 전체 COMPLETED가 된다. 일부 경로가 끝난 상태에서 서버가 재시작돼도 남은 작업을 계속 제출할 수 있다. 이는 병렬 게이트웨이 합류나 모든 BPMN 패턴의 지원을 뜻하지 않는다.
