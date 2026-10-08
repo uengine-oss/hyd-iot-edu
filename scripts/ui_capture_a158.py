@@ -24,7 +24,7 @@ RESIDUE_JS = r'''(sel) => {
     const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let n; (n = walk.nextNode());) {
         const el = n.parentElement; if (!el || !el.checkVisibility?.() || el.closest('code,pre,textarea,input,select')) continue;
-        for (const m of n.textContent.matchAll(re)) hits.add(m[0]);
+        for (const m of n.textContent.matchAll(re)) hits.add(m[0] + '  ⟵ ' + el.tagName.toLowerCase() + '.' + String(el.className).slice(0, 30) + ' in .' + String(el.parentElement?.className || '').slice(0, 30) + ': ' + n.textContent.slice(Math.max(0, m.index - 40), m.index + 40).replace(/\s+/g, ' '));
     }
     return [...hits].slice(0, 40);
 }'''

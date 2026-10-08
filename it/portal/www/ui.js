@@ -103,7 +103,7 @@ const UI = {
     'tool.Write': '파일 쓰기', 'tool.Read': '파일 읽기', 'tool.Edit': '파일 수정', 'tool.Glob': '파일 찾기', 'tool.Grep': '내용 검색', 'tool.PowerShell': '명령 실행', 'tool.Bash': '명령 실행', 'tool.ToolSearch': '도구 검색', 'tool.WebFetch': '웹 읽기', 'tool.WebSearch': '웹 검색', 'tool.Agent': '하위 에이전트',
     'tool.mcp__neo4j__read_neo4j_cypher': '지식 그래프 조회', 'tool.mcp__neo4j__write_neo4j_cypher': '지식 그래프 쓰기', 'tool.mcp__neo4j__get_neo4j_schema': '지식 그래프 구조 조회',
     'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
-    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출',
+    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 DB 묶어 보기',
     'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
@@ -142,7 +142,7 @@ const UI = {
   /* ---------- A141 원문 id → 이름 (names.json: scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
      응답에 이름이 있으면 그것을 쓰고, 없을 때만 이 사전으로 바꾼다. 사전에 없는 id 는 그대로 둔다(지어내지 않음). */
   names: {}, namesVersion: 0,
-  ID_RE: /\b(?:fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
+  ID_RE: /\b(?:pattern|fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
   name(id) { return (id && this.names[id]) || id || ''; },
   idText(text) { return String(text ?? '').replace(this.ID_RE, m => this.names[m] || m); },
   async loadNames() {

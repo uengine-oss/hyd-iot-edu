@@ -15,8 +15,6 @@
   const HIDDEN_OUTPUT = new Set(['text', 'cliagents_session_id']);
   const REFRESH_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'human_asked', 'human_response', 'error']);
   const DECISION_TOOLS = new Set(['formHandler:rank', 'formHandler:select_card']);
-  const isQuery = x => !!x && typeof x === 'object' && ((typeof x.query === 'string' && !/^select:/.test(x.query)) || typeof x.sql === 'string');   // Cypher · SQL · PromQL
-  const CODE_TOOLS = new Set(['Bash', 'PowerShell', 'Write', 'Read', 'Edit', 'Glob', 'Grep']);   // 에이전트가 실제로 친 명령 · 파일 경로는 문장이 아니라 코드로 보인다
   const HASH_RE = /^#\/instances\/([^/]+)(?:\/task\/([^/]+))?$/;
   const OP = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', '<': '<', '>=': '≥' };
   const TAG = { TS1: '유온 TS1', PS1: '압력 PS1', VS1: '진동 VS1' };
@@ -260,7 +258,7 @@
     evs.forEach(e => {
       const d = e.data || {};
       switch (e.event_type) {
-        case 'tool_usage_started': { const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: brief(d.input, 200), code: CODE_TOOLS.has(d.tool) || isQuery(d.input), raw: d, key: d.tool_use_id, running: true, k: 'tool:' + e.id }; byTool.set(d.tool_use_id, it); items.push(it); return; }
+        case 'tool_usage_started': { const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: brief(d.input, 200), code: d.tool !== 'ToolSearch', raw: d, key: d.tool_use_id, running: true, k: 'tool:' + e.id }; byTool.set(d.tool_use_id, it); items.push(it); return; }
         case 'tool_usage_finished': {
           const it = byTool.get(d.tool_use_id);
           if (it) { it.cls = d.is_error ? 'fail' : 'done'; it.running = false; it.dur = fmtMs(new Date(e.timestamp) - new Date(it.t)); it.result = brief(d.output, 200); it.rawOut = d; it.error = !!d.is_error; return; }
@@ -273,7 +271,7 @@
           if (d.type === 'usage') { items.push({ t: e.timestamp, cls: 'done', small: true, title: UI.t('td.tokens'), text: `${UI.t('stream.tokens')} ${(d.usage || {}).input_tokens ?? '–'} / ${(d.usage || {}).output_tokens ?? '–'}` }); return; }
           if (d.name === '승인 접수') { items.push({ t: e.timestamp, cls: 'done', title: d.name, text: `${d.by || ''}${d.role ? ' (' + UI.who(d.role) + ')' : ''}`, raw: d, k: 'w:' + e.id }); return; }
           if (d.session_id || d.model) { items.push({ t: e.timestamp, cls: 'done', title: UI.t('td.start'), text: d.model ? `${UI.t('td.model')} ${d.model}` : '', small: true }); return; }
-          items.push({ t: e.timestamp, cls: 'done', title: UI.logText(d.name || UI.t('stream.working')), text: UI.logText(d.content || d.message || ''), raw: d.content || d.message ? null : d, k: 'w:' + e.id }); return;
+          items.push({ t: e.timestamp, cls: 'done', title: UI.logText(d.name || UI.t('stream.working')), text: UI.logText(d.content || d.message || ''), code: d.type === 'file_artifact' || /^\s*(```|\{|\[)/.test(d.content || d.message || ''), raw: d.content || d.message ? null : d, k: 'w:' + e.id }); return;   // 에이전트가 쓴 파일 내용 · 결과 JSON을 그대로 말한 메시지는 코드로
         case 'human_asked': items.push({ t: e.timestamp, cls: 'ask', title: UI.t('stream.asked'), text: humanQuestionText(d), options: Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [], k: 'ask:' + e.id }); return;
         case 'human_response': items.push({ t: e.timestamp, cls: 'done', title: UI.t('stream.answered'), text: `${d.answer || ''}${d.by ? ' — ' + d.by : ''}`, k: 'ans:' + e.id }); return;
         case 'task_completed': items.push({ t: e.timestamp, cls: 'done', title: UI.t('stream.done'), text: (d.output_keys || []).length ? `${UI.t('td.outputKeys')} ${d.output_keys.map(k => UI.terms['var.' + k] || k).join(', ')}` : brief(d.text, 160), chip: d.result_source === 'file' ? UI.chipText(UI.t('inst.resultFile')) : '',
