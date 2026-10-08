@@ -1045,6 +1045,10 @@ from . import kpi
 from .procdb import SUPABASE_DSN as _KPI_BIZ_DSN
 kpi.register(app, ts_dsn=PG_DSN, biz_dsn=_KPI_BIZ_DSN, driver_factory=_kg, time_scale=TIME_SCALE, tenant=os.getenv("TENANT_ID", "hyd"))
 
+# A10 에이전트 시험 실행 · 비교 (읽기 전용 판단, 처리 건 · 명령 없음)
+from . import agent_trials
+agent_trials.register(app, runtime_factory=instance_mode.current)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")

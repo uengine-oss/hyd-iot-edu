@@ -1,0 +1,23 @@
+/* A10 에이전트 시험 비교 — 기존 card · fold · chip · form-grid 를 쓰고, 나란히 놓기와 차이 강조만 더한다. */
+.cmp { display: flex; flex-direction: column; gap: var(--s4); }
+.cmp-result { display: flex; flex-direction: column; gap: var(--s4); }
+.cmp-grid, .cmp-two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+.cmp-headline { margin: 0; padding-left: 1.2em; display: grid; gap: var(--s1); }
+.cmp-dl { display: grid; gap: var(--s2); margin: 0; }
+.cmp-dl > div { display: grid; grid-template-columns: 4.5em 1fr; gap: var(--s2); }
+.cmp-dl dt { color: var(--ink-3); font-size: 13px; }
+.cmp-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.cmp-why { margin: 0; color: var(--ink-2); font-size: 13px; }
+.cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); padding: var(--s2) 0; border-top: 1px solid var(--rule); }
+.cmp-row.cmp-head { border-top: 0; padding-top: 0; color: var(--ink-3); }
+.cmp-row.cmp-only { background: var(--dmz-bg); }
+.cmp-row.cmp-changed, .cmp-table tr.cmp-changed { background: var(--it-bg); }
+.cmp-call { min-width: 0; padding: 0 var(--s2); }
+.cmp-call header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.cmp-call header .num { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 1.5em; }
+.cmp-call p { margin: var(--s1) 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.cmp-call.cmp-empty { color: var(--ink-3); }
+.cmp-table { width: 100%; }
+.cmp-checks { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin: var(--s2) 0; }
+.cmp-check { display: inline-flex; align-items: center; gap: var(--s1); font-size: 13px; }
+@media (max-width: 900px) { .cmp-grid, .cmp-two { grid-template-columns: 1fr; } }
