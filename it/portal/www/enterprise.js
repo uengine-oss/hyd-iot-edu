@@ -299,6 +299,8 @@ function rangeField(id, label, a, value) {
   return `<div class="field range"><label for="${id}">${esc(label)}</label><div class="range-row"><input type="range" id="${id}" min="${a.min ?? 0}" max="${a.max ?? 100}" value="${esc(value)}"><output for="${id}">${esc(value)} %</output></div></div>`;
 }
 function whoFields(prefix, form, roles, { roleHint = UI.t('form.hint.role'), reasonHint = UI.t('form.hint.reason') } = {}) {
+  const asMe = window.hydInbox?.whoFields(prefix, form, roles, { reasonHint });   // U5: "나"를 골랐으면 승인자 = 나, 역할 = 내 역할(서버가 다시 검사)
+  if (asMe) return asMe;
   return UI.section(UI.t('form.section.who'),
     UI.field({ label: UI.t('form.by'), required: true, input: `<input id="${prefix}By" value="${esc(form.by || '')}">` }) +
     UI.field({ label: UI.t('form.role'), required: true, hint: roleHint, input: `<select id="${prefix}Role">${roles.map(([id, r]) => `<option value="${esc(id)}" ${id === form.role ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` }) +
@@ -456,7 +458,7 @@ function renderDecisionApproval() {
   const ap = $('#decApprove'); if (ap) ap.addEventListener('click', async () => {
     const controls = [...box.querySelectorAll('#decApprove,#decReject')];
     controls.forEach(c => c.disabled = true); ap.textContent = UI.t('proc.approving');
-    try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: ent.form.option, by: $('#decBy').value || '승인자', role: $('#decRole').value }); await refreshProcess(); }
+    try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: ent.form.option, by: ($('#decBy')?.value ?? ent.form.by) || '승인자', role: $('#decRole').value }); await refreshProcess(); }
     catch (e) { ent.form.msg = e.message; if (ent.decSel === d.id) msg(e.message); }
     finally { controls.forEach(c => c.disabled = false); ap.textContent = UI.t('btn.approve'); }
   });
@@ -464,7 +466,7 @@ function renderDecisionApproval() {
     if (!$('#decReason').value.trim()) { ent.form.msg = UI.t('form.err.reason'); msg(ent.form.msg); $('#decReason').focus(); return; }
     const controls = [...box.querySelectorAll('#decApprove,#decReject')];
     controls.forEach(c => c.disabled = true); rj.textContent = UI.t('proc.rejecting');
-    try { await postJ(API.process + `/api/decisions/${d.id}/reject`, { by: $('#decBy').value, reason: $('#decReason').value }); await refreshProcess(); }
+    try { await postJ(API.process + `/api/decisions/${d.id}/reject`, { by: $('#decBy')?.value ?? ent.form.by, reason: $('#decReason').value }); await refreshProcess(); }
     catch (e) { if (ent.decSel === d.id) msg(e.message); }
     finally { controls.forEach(c => c.disabled = false); rj.textContent = UI.t('btn.reject'); }
   });

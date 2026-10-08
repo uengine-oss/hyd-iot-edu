@@ -26,7 +26,7 @@ from typing import Callable
 
 from hydcommon.timeutil import now_iso, parse_iso
 from hydcommon.process_contracts import pinned_form, validate_output
-from . import engine
+from . import engine, inbox
 from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
 from .execution_graph import INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection
@@ -217,6 +217,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             inst['start_event_id'] = event_id
             adv = engine.start(defn, inst, now=now, time_scale=self.time_scale)
             self.repo.insert_instance(inst)
+            inbox.apply_advance(self, inst, adv)
             self.repo.insert_workitems(adv.created)
             self.repo.update_instance(inst)
         self.hooks.audit(values.get('asset','-'),'process','INSTANCE_STARTED',
@@ -331,6 +332,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             # projection. Persist it before committing DONE/next task. If the PG
             # commit then fails, replay writes the same guide; no command is sent.
             self.hooks.update_incident_card(engine.variables(inst)["incident"],output["guide_card"])
+        inbox.apply_advance(self, inst, adv)      # U5: 사람 단계 → 업무분장으로 담당자 해석(저장 전) · 알림(커밋 뒤)
         for row in adv.updated:
             self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)
@@ -475,6 +477,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         opt = deepcopy(self.hooks.decision_option(decision_id, option_id))
         if opt is None:
             raise ValueError("unknown option")
+        person = inbox.check_actor(self.repo, self.tenant_id, by, role)   # U5: "나"로 승인하면 그 역할의 구성원인지(아니면 403)
         # Validation must be pure: this hook returns an approved COPY, never mutates the external book.
         if review_id:
             if self.hooks.approve_review is None:
@@ -494,6 +497,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                                                "approved_by": by, "approved_role": role})
         if role and role not in (inst.get("participants") or []):      # a higher role may take the operator's task: they took part too
             inst.setdefault("participants", []).append(role)
+        if person and person not in inst.setdefault("participants", []):                # U5: 승인한 사람도 참여자 — 종결 알림을 받는다
+            inst["participants"].append(person)
         self.repo.update_instance(inst)
         approval = {'todo_id':wi['id'], 'proc_inst_id':wi['proc_inst_id'], 'tenant_id':self.tenant_id,
                     'decision_id':decision_id, 'payload':payload, 'status':'PENDING', 'attempts':0,
@@ -646,6 +651,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         if (defn.events.get(wi['activity_id']) or {}).get('eventDefinition')!='timer':return False
         rows=self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'],limit=None)
         adv=engine.fire_event(defn,inst,wi,rows,now=now,time_scale=self.time_scale)
+        inbox.apply_advance(self,inst,adv)
         for row in adv.updated:self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)
         self.repo.update_instance(inst)
@@ -837,6 +843,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         adv = engine.abort_to(defn, inst, rows, "task:escalate", reason, now, self.time_scale)
         engine.set_variables(defn, inst, {"recovered": bool(cleared), "incident_outcome": inc_state},
                              source={"kind": "runtime", "by": "process", "reason": reason})
+        inbox.apply_advance(self, inst, adv)
         for row in adv.updated:
             self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)

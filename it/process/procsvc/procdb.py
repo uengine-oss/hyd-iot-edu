@@ -118,7 +118,17 @@ class Repo(Protocol):
     def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500) -> list[dict]: ...
     def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
-    def insert_notification(self, note: dict) -> None: ...
+    def insert_notification(self, note: dict) -> dict: ...
+    # U5 (inbox): 역할 → 사람 업무분장 · 담당자 변경 이력 · 사용자별 알림 조회 (migration 000029)
+    def list_role_members(self, tenant_id: str, role_id: str | None = None) -> list[dict]: ...
+    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None: ...
+    def insert_assignment(self, row: dict) -> dict: ...
+    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]: ...
+    def list_notifications(self, tenant_id: str, user_ids: list[str], unread_only: bool = False, limit: int = 100) -> list[dict]: ...
+    def count_unread_notifications(self, tenant_id: str, user_ids: list[str]) -> int: ...
+    def mark_notifications_read(self, tenant_id: str, user_ids: list[str], ids: list[str] | None = None) -> int: ...
+    def list_notifications_since(self, since: str | None = None, limit: int = 300, tenant_id: str | None = None,
+                                 user_ids: list[str] | None = None) -> list[dict]: ...
     def ping(self) -> bool: ...
 
 
@@ -147,6 +157,8 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self.workitems: dict[str, dict] = {}
         self.events: list[dict] = []
         self.notifications: list[dict] = []
+        self.role_members: list[dict] = []
+        self.assignments: list[dict] = []
         self.approvals: dict[str, dict] = {}
         self.reworks: dict[tuple, dict] = {}
         self.effect_receipts: dict[tuple, dict] = {}
@@ -173,10 +185,10 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         with self._lock:
             inst=self.instances.get(proc_inst_id)
             if not inst or inst.get('tenant_id')!=tenant_id:raise KeyError('no such instance')
-            before=deepcopy((self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs))
+            before=deepcopy((self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments))
             try:yield
             except Exception:
-                self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs=before
+                self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments=before
                 raise
 
     def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]:
@@ -427,9 +439,12 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         return next((_copy(e) for e in reversed(self.events) if e.get('todo_id')==todo_id
                      and e.get('job_id')==job_id and e.get('event_type')==event_type),None)
 
-    def insert_notification(self, note: dict) -> None:
+    def insert_notification(self, note: dict) -> dict:
         with self._lock:
-            self.notifications.append(dict(note, id=note.get("id") or str(uuid.uuid4())))
+            row = dict(note, id=note.get("id") or str(uuid.uuid4()), tenant_id=note.get("tenant_id", "hyd"), is_read=False,
+                       created_at=datetime.now(timezone.utc).isoformat())
+            self.notifications.append(row)
+            return _copy(row)
 
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]:
         inst = self.instances.get(proc_inst_id)
@@ -437,6 +452,49 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             return []
         return sorted({e.get('job_id') or '' for e in self.events
                        if e.get('proc_inst_id') == proc_inst_id and e.get('event_type') == 'task_started'})
+
+    # ---- U5 inbox: 업무분장 · 담당자 이력 · 사용자별 알림
+    def list_role_members(self, tenant_id: str, role_id: str | None = None) -> list[dict]:
+        return [_copy(m) for m in self.role_members if m["tenant_id"] == tenant_id and (role_id is None or m["role_id"] == role_id)]
+
+    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None:
+        with self._lock:
+            self.role_members = [m for m in self.role_members if not (m["tenant_id"] == tenant_id and m["role_id"] == role_id and m["user_id"] == user_id)]
+            if member:
+                self.role_members.append({"tenant_id": tenant_id, "role_id": role_id, "user_id": user_id,
+                                          "created_at": datetime.now(timezone.utc).isoformat()})
+
+    def insert_assignment(self, row: dict) -> dict:
+        with self._lock:
+            saved = dict(row, id=row.get("id") or str(uuid.uuid4()), created_at=row.get("created_at") or datetime.now(timezone.utc).isoformat())
+            self.assignments.append(saved)
+            return _copy(saved)
+
+    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]:
+        return [_copy(a) for a in self.assignments if a["todo_id"] == todo_id and a.get("tenant_id", "hyd") == tenant_id]
+
+    def _notes_for(self, tenant_id, user_ids):
+        return [n for n in self.notifications if n.get("tenant_id", "hyd") == tenant_id and n.get("user_id") in set(user_ids)]
+
+    def list_notifications(self, tenant_id, user_ids, unread_only=False, limit=100) -> list[dict]:
+        rows = [n for n in self._notes_for(tenant_id, user_ids) if not unread_only or not n.get("is_read")]
+        return [_copy(n) for n in sorted(rows, key=lambda n: (n["created_at"], n["id"]), reverse=True)[:limit]]
+
+    def count_unread_notifications(self, tenant_id, user_ids) -> int:
+        return sum(1 for n in self._notes_for(tenant_id, user_ids) if not n.get("is_read"))
+
+    def mark_notifications_read(self, tenant_id, user_ids, ids=None) -> int:
+        with self._lock:
+            n = 0
+            for note in self._notes_for(tenant_id, user_ids):
+                if not note.get("is_read") and (ids is None or note["id"] in set(ids)):
+                    note["is_read"] = True; n += 1
+            return n
+
+    def list_notifications_since(self, since=None, limit=300, tenant_id=None, user_ids=None) -> list[dict]:
+        rows = [n for n in self.notifications if (since is None or str(n.get("created_at") or "") >= since)
+                and (tenant_id is None or n.get("tenant_id", "hyd") == tenant_id) and (user_ids is None or n.get("user_id") in set(user_ids))]
+        return [_copy(n) for n in sorted(rows, key=lambda n: (str(n.get("created_at") or ""), n["id"]))[:limit]]
 
     def ping(self) -> bool:
         return True
@@ -757,11 +815,64 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents):
                 order by timestamp desc limit 1''',(todo_id,job_id,event_type)).fetchone()
             return self._row(row) if row else None
 
-    def insert_notification(self, note: dict) -> None:
+    def insert_notification(self, note: dict) -> dict:
         with self._conn() as c:
-            c.execute("insert into notifications (title, type, description, user_id, tenant_id, url, from_user_id) values (%s, %s, %s, %s, %s, %s, %s)",
+            return self._row(c.execute("insert into notifications (title, type, description, user_id, tenant_id, url, from_user_id) "
+                                       "values (%s, %s, %s, %s, %s, %s, %s) returning *",
                       (note.get("title"), note.get("type"), note.get("description"), note.get("user_id"), note.get("tenant_id", "hyd"),
-                       note.get("url"), note.get("from_user_id")))
+                       note.get("url"), note.get("from_user_id"))).fetchone())
+
+    # ---- U5 inbox: 업무분장 · 담당자 이력 · 사용자별 알림 (migration 000029)
+    def list_role_members(self, tenant_id: str, role_id: str | None = None) -> list[dict]:
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("select * from role_members where tenant_id=%s and (%s::text is null or role_id=%s) order by role_id, user_id",
+                                                    (tenant_id, role_id, role_id)).fetchall()]
+
+    def set_role_member(self, tenant_id: str, role_id: str, user_id: str, member: bool) -> None:
+        with self._conn() as c:
+            if member:
+                c.execute("insert into role_members (tenant_id, role_id, user_id) values (%s,%s,%s) on conflict do nothing", (tenant_id, role_id, user_id))
+            else:
+                c.execute("delete from role_members where tenant_id=%s and role_id=%s and user_id=%s", (tenant_id, role_id, user_id))
+
+    def insert_assignment(self, row: dict) -> dict:
+        with self._conn() as c:
+            return self._row(c.execute("insert into task_assignments (tenant_id, proc_inst_id, todo_id, from_user_id, to_user_id, kind, by_user, reason) "
+                                       "values (%s,%s,%s,%s,%s,%s,%s,%s) returning *",
+                                       (row.get("tenant_id", "hyd"), row["proc_inst_id"], row["todo_id"], row.get("from_user_id"), row["to_user_id"], row["kind"],
+                                        row.get("by_user"), row.get("reason"))).fetchone())
+
+    def list_assignments(self, todo_id: str, tenant_id: str) -> list[dict]:
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("select * from task_assignments where todo_id=%s and tenant_id=%s order by created_at, id",
+                                                    (todo_id, tenant_id)).fetchall()]
+
+    def list_notifications(self, tenant_id, user_ids, unread_only=False, limit=100) -> list[dict]:
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("select * from notifications where tenant_id=%s and user_id = any(%s) and (not %s or not is_read) "
+                                                    "order by created_at desc, id desc limit %s", (tenant_id, list(user_ids), unread_only, limit)).fetchall()]
+
+    def count_unread_notifications(self, tenant_id, user_ids) -> int:
+        with self._conn() as c:
+            return int(c.execute("select count(*) as n from notifications where tenant_id=%s and user_id = any(%s) and not is_read",
+                                 (tenant_id, list(user_ids))).fetchone()["n"])
+
+    def mark_notifications_read(self, tenant_id, user_ids, ids=None) -> int:
+        with self._conn() as c:
+            return c.execute("update notifications set is_read=true where tenant_id=%s and user_id = any(%s) and not is_read "
+                             "and (%s::uuid[] is null or id = any(%s::uuid[]))", (tenant_id, list(user_ids), ids, ids)).rowcount
+
+    def list_notifications_since(self, since=None, limit=300, tenant_id=None, user_ids=None) -> list[dict]:
+        scope = "(%s::text is null or tenant_id=%s) and (%s::text[] is null or user_id = any(%s::text[]))"
+        args = (tenant_id, tenant_id, user_ids, user_ids)
+        with self._conn() as c:
+            if since is None:
+                rows = c.execute(f"select * from (select * from notifications where {scope} order by created_at desc, id desc limit %s) x "
+                                 "order by created_at, id", (*args, limit)).fetchall()
+            else:
+                rows = c.execute(f"select * from notifications where {scope} and created_at >= %s::timestamptz order by created_at, id limit %s",
+                                 (*args, since, limit)).fetchall()
+            return [self._row(r) for r in rows]
 
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]:
         with self._conn() as c:
