@@ -2,6 +2,7 @@
 
     python scripts/scenario_pump_fan_test.py            # ~6 min at TIME_SCALE=20
     python scripts/scenario_pump_fan_test.py --only pump|fan|mask
+    python scripts/scenario_pump_fan_test.py --worker --reassess-held   # real host workers (AGENT_BRIDGE=off): 900 s agent wait, held diagnosis reassessed
 
 pump  HYD-02: pump_leakage → PUMP_LEAKAGE RAISE → instance → cards (압력 상향 excluded, 예비 펌프 전환 recommended)
       → 생산관리자 selects switch-standby-pump → action.cmd PUMP_SELECT → PLC pump B → PS1 back ≥ 165 → CLEAR
@@ -26,6 +27,7 @@ results: list[tuple[str, bool, str]] = []
 observed_instances = []
 reassessment_evidence = []
 REASSESS_HELD = False
+AGENT_WAIT = 120 + 30   # legacy bridge; --worker: 900 s for four coding-agent runs in sequence (same as scenario_instance_test.py)
 
 
 def get(url, timeout=10):
@@ -132,7 +134,7 @@ def run_to_selection(asset, fault, pattern, raise_timeout):
                 stopped.update(run=latest['id'], status=latest['status'], reason=latest.get('error'))
                 return current
         return None
-    tl, dt = wait_for(selected_or_stopped, 150)
+    tl, dt = wait_for(selected_or_stopped, AGENT_WAIT)
     held=(tl or {}).get('task:diagnose') or {}
     if REASSESS_HELD and held.get('status')=='PENDING':
         receipt=(held.get('draft') or {}).get('_deferral') or {}
@@ -152,7 +154,7 @@ def run_to_selection(asset, fault, pattern, raise_timeout):
         response=post(f"{PROCESS}/api/todolist/{held['id']}/reassess",request)
         reassessment_evidence.append({'instance':pid,'held':held,'request':request,'response':response})
         if not check('explicit reassessment accepted',not response.get('error'),json.dumps(response,ensure_ascii=False)[:350]):return None
-        stopped.clear();tl,dt=wait_for(selected_or_stopped,150)
+        stopped.clear();tl,dt=wait_for(selected_or_stopped,AGENT_WAIT)
     ready = (tl is not None and tl.get('task:select', {}).get('status') == 'IN_PROGRESS'
              and all(tl.get(k,{}).get('status')=='DONE' for k in ('task:diagnose','task:candidates','task:compliance','task:rank')))
     detail = {'tasks': {k:v['status'] for k,v in (tl or items(pid)).items()}, 'stopped':stopped}
@@ -268,7 +270,11 @@ def scenario_mask():
     check("re-observation detail says cleared=true but PS1 criterion failed", rd.get("cleared") is True and rd.get("passed") is False and rd.get("criterion") == "PS1 >= 165.0", json.dumps(rd, ensure_ascii=False)[:160])
     # gw:recovered = no → the production manager gets the escalation task (a human task, the instance waits for it)
     esc, dt = wait_for(lambda: items(pid)["task:escalate"] if items(pid).get("task:escalate", {}).get("status") == "IN_PROGRESS" else None, 30)
-    check("task:escalate IN_PROGRESS for 생산관리자 (the instance waits for a person)", esc is not None and esc.get("user_id") == "role:prod-mgr", json.dumps({k: v['status'] for k, v in items(pid).items()}, ensure_ascii=False))
+    # A3(migration 029): a role with members resolves to a person — user_id is then that person, with assignees naming via=role:prod-mgr
+    to_mgr = esc is not None and (esc.get("user_id") == "role:prod-mgr" or any(a.get("via") == "role:prod-mgr" and a.get("endpoint") == esc.get("user_id")
+                                                                               for a in esc.get("assignees") or [] if isinstance(a, dict)))
+    check("task:escalate IN_PROGRESS for 생산관리자 (the instance waits for a person)", to_mgr,
+          json.dumps({"tasks": {k: v['status'] for k, v in items(pid).items()}, "user_id": (esc or {}).get("user_id")}, ensure_ascii=False))
     if esc:
         r = post(f"{PROCESS}/api/todolist/{esc['id']}/submit", {"output": {"note": "[회귀 검사] 부하 저감으로는 압력이 회복되지 않음. 예비 펌프 전환 지시."}, "by": "이생산"})
         check("manager submitted the escalate form", "instance" in r and not r.get("error"), str(r.get("body") or "")[:120])
@@ -279,14 +285,16 @@ def scenario_mask():
 
 
 def main():
-    global REASSESS_HELD
+    global REASSESS_HELD, AGENT_WAIT
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', choices=['pump','fan','mask'])
     ap.add_argument('--out', help='preserve this run decisions, instances and plant observations')
     ap.add_argument('--standby-ready', action='store_true', help='explicit test fixture: CMMS HYD-02 ready=true; restore prior value')
+    ap.add_argument('--worker', action='store_true', help='expect the cliagents host workers (AGENT_BRIDGE=off): wait 900 s for the agent tasks')
     ap.add_argument('--reassess-held', action='store_true', help='explicit test-user reassessment after a fresh 2-minute source window; no automatic production retry')
     args = ap.parse_args()
     REASSESS_HELD=args.reassess_held
+    if args.worker: AGENT_WAIT=900
     out=Path(args.out) if args.out else None
     if out: out.mkdir(parents=True,exist_ok=False)
     conn=None; prior=None
