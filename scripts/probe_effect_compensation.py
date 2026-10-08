@@ -181,7 +181,10 @@ def main():
                   and rows1.get("task:command", {}).get("status") == "CANCELLED",
                   {k: (w["status"], (w.get("log") or "")[:60]) for k, w in rows1.items()})
             check("a_cleared_branch_history_kept", snap["superseded"][-1]["cmdId"] == first_cmd and snap.get("cmdId") is None
-                  and plc["id"] in effects["resolution"]["acknowledged"], {"superseded": [x["cmdId"] for x in snap["superseded"]]})
+                  and any(r.get("kind") == "review" and plc["id"] in json.dumps(r) for r in view(pid).get("effects", [])),
+                  {"superseded": [x["cmdId"] for x in snap["superseded"]], "view_effects": [r.get("kind") for r in view(pid).get("effects", [])]})
+            # /effects lists what is still outstanding for the current generation (the retired command left it, by design);
+            # the review receipt itself is kept on the instance record — the same place the approval path checks (kinds == ["review"]).
             report["branch"] = "alarm cleared during generation 1 (moderate fault); case B (work-order inverse) not exercised"
             report["finished"] = datetime.now(timezone.utc).isoformat(); save("result", report)
             print(f"ALL PASS: {len(report['checks'])} checks — {report['branch']}", flush=True)
