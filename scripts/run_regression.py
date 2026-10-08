@@ -45,16 +45,18 @@ PROBES = {
         ("time-anchors", "scripts/probe_time_anchors.py", ["{out}"], 300, None),
         ("evidence-coverage", "scripts/probe_evidence_coverage.py", ["{out}"], 600, None),
         ("knowledge-to-judgment", "scripts/probe_knowledge_to_judgment.py", ["{out}"], 600, None),
-        ("expert-answers", "scripts/probe_expert_answers_a098.py", ["{out}"], 600, None),
         ("parallel-join", "scripts/probe_parallel_join.py", ["{out}"], 300, None),
-        ("semantic-audit", "scripts/probe_semantic_links.py", ["--out", "{out}", "--uri", NEO4J], 300, None),
         ("schema-validate", "scripts/ontology_v2.py", ["validate", "--uri", NEO4J], 300, None),
     ],
     "worker": [
         ("rule-questions", "scripts/probe_rule_questions.py", ["--out", "{out}"], 1800, None),
         ("business-questions", "scripts/probe_business_questions.py", ["--out", "{out}"], 1800, None),
         ("timeseries-questions", "scripts/probe_timeseries_questions.py", ["--out", "{out}"], 1800, None),
+        # A157: the HM-9 extraction is an agent task only a host worker picks up (core runs with the workers stopped — it timed out there)
+        ("expert-answers", "scripts/probe_expert_answers_a098.py", ["{out}"], 900, None),
         ("ingest-hm9", "scripts/probe_ingest_quality.py", ["{out}", "tests/fixtures/manuals/HM-9_oil-degradation-manual.md"], 1800, None),
+        # A157: Q03 needs fm:oil-degradation remedied, which only the HM-9 ingestion above commits (seed alone leaves it open)
+        ("semantic-audit", "scripts/probe_semantic_links.py", ["--out", "{out}", "--uri", NEO4J], 300, None),
         ("worker-lease", "scripts/probe_worker_lease.py", ["{out}"], 1200, None),
         ("cancel-running", "scripts/probe_cancel_running_task.py", ["{out}"], 900, None),
     ],
@@ -149,7 +151,9 @@ def run_one(name, script, args, timeout, log_name, out_root):
         res = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout, env=env)
         rc, text = res.returncode, (res.stdout or "") + "\n" + (res.stderr or "")
     except subprocess.TimeoutExpired as e:
-        rc, text = -1, (e.stdout or "") + "\nTIMEOUT"
+        # TimeoutExpired carries bytes even with text=True (A157: the runner died here and skipped the rest of the group)
+        partial = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+        rc, text = -1, partial + "\nTIMEOUT"
     if log_name and (out / log_name).exists():
         text += "\n" + (out / log_name).read_text(encoding="utf-8", errors="replace")
     passed, total = parse_pass(text)
