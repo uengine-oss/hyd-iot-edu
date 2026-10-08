@@ -1,7 +1,8 @@
 """U3 (A2 MCP 부분) — 도구 지도 · 도구 써 보기 · 호출 기록 API (읽기 전용).
 
 설정 원천은 public.tenants.mcp 하나다(워커 bridge.py 가 읽는 제품 형태). 랩업(Claude Code)에서 서버를 추가하면 같은 칸에
-들어가므로 여기 그대로 나타난다. 포털에서 서버를 추가 · 수정 · 삭제하는 경로는 없다(TODO D: ProcessGPT 에는 있다).
+들어가므로 여기 그대로 나타난다. B2(DECISIONS 110 ①)부터 등록 · 고치기 · 지우기 · 연결 검사 · 되돌리기는 procsvc/mcp_registry.py 에 있다
+(이 모듈의 읽기 경로는 그대로, 목록에 출처 · 마지막 검사 칸만 더한다).
 
   GET  /api/mcp/servers                         서버 → 설정(비밀값 가림) → 쓰는 에이전트 · 맡은 task. 네트워크 연결 없음.
   GET  /api/mcp/servers/{name}/tools?timeout=   지금 연결해 상태 · 도구 목록(이름 · 설명 · 입력 형식 · 읽기 전용 판정). 저장 없음.
@@ -19,7 +20,7 @@ import re
 
 from fastapi import HTTPException
 
-from . import mcp_calls, mcp_check
+from . import mcp_calls, mcp_check, mcp_registry
 
 CALL_SEMAPHORE = asyncio.Semaphore(3)           # 동시에 세 연결까지만 — 스레드 풀과 메모리(A131)를 지킨다
 LIST_TIMEOUT = (0.5, 6.0, 4.0)                  # (최소, 최대, 기본) 초 — 포털 GET 8초 제한 안
@@ -143,8 +144,12 @@ def register(app, *, runtime_factory, audit):
         def work():
             servers = servers_of(rt)
             used = usage(rt.repo, rt.tenant_id, list(servers))
+            try:                                                                                     # B2: 출처 · 고칠 수 있음 · 마지막 검사
+                marks = mcp_registry.annotate(mcp_registry.store_for(rt.repo), rt.tenant_id, servers)
+            except mcp_registry.RegistryError as e:
+                raise HTTPException(e.status, e.reason) from e
             return {"tenant": rt.tenant_id, "source": "tenants.mcp",
-                    "servers": [dict(server_view(n, raw), **used[n]) for n, raw in servers.items()]}
+                    "servers": [dict(server_view(n, raw), **used[n], **marks[n]) for n, raw in servers.items()]}
         return await run(work)
 
     @app.get("/api/mcp/servers/{name}/tools")
