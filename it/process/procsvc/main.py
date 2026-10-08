@@ -1035,6 +1035,9 @@ eval_api.register(app, driver_factory=_kg, book=book, incidents=incidents, runti
 # U3 (A2 MCP): 도구 지도 · 읽기 전용 도구 써 보기 · 호출 기록 — tenants.mcp 와 events 를 읽기만 한다 (procsvc/mcp_api.py)
 from . import mcp_api
 mcp_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
+# B2: MCP 서버 등록 · 고치기 · 지우기 · 연결 검사 게이트 · 되돌리기 (procsvc/mcp_registry.py)
+from . import mcp_registry
+mcp_registry.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 
 # A11 데이터 패브릭 미니: 업무 DB · 시계열 DB 읽기 전용 묶어 보기 (전용 읽기 계정만, fabric_api.py)
 from . import fabric_api

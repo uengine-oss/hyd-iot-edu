@@ -22,15 +22,22 @@ DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cy
                          "Bash(python *),Bash(python3 *),PowerShell(python *),Skill")   # U2: Skill = the assigned .claude/skills/<name>/SKILL.md
 
 
-def run_allowed_tools(allowed: list[str], servers: list[str]) -> list[str]:
-    """U2: a tenant MCP server the default list does not name (one a student registered for their agent) gets its tools
-    allowed for the run that registers it — otherwise the headless CLI would refuse every call to it as a permission
-    request. Servers the default list already names keep their narrower entries (neo4j: read tools only)."""
+def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[str, list[str]] | None = None) -> list[str]:
+    """U2 + B2: a tenant MCP server the default list does not name (one a student registered for their agent) gets only the
+    read-only tools its connection check stamped (bridge.gate_servers) — never `mcp__<server>__*`, which would also pre-approve
+    its write tools. Without a stamp it adds nothing (gate_servers already left such a server out of the run). Servers the
+    default list already names keep their narrower entries (neo4j: read tools only)."""
     out = list(allowed)
     for name in servers:
         if not any(a.startswith(f"mcp__{name}__") for a in out):
-            out.append(f"mcp__{name}__*")
+            out += [f"mcp__{name}__{tool}" for tool in (read_tools or {}).get(name, [])]
     return out
+
+
+def run_disallowed_tools(blocked_tools: dict[str, list[str]] | None) -> list[str]:
+    """B2: the tools a gated server's check found not read-only (write · unmarked) are denied outright (Claude Code
+    --disallowedTools), so the agent cannot even ask for them."""
+    return [f"mcp__{name}__{tool}" for name, tools in sorted((blocked_tools or {}).items()) for tool in tools]
 
 
 def effective_permission(provider_id: str, permission: Permission) -> Permission:

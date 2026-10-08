@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from procsvc import agents_api, agents_store, engine, instance_mode, instances, procdb
 from procsvc.agents_store import agent_settings, skill_markdown, skill_title
-from worker import workspace
+from worker import bridge, workspace
 from worker.runner import Runner
 from worker.settings import Settings, run_allowed_tools
 
@@ -26,6 +26,9 @@ MCP = {"mcpServers": {"neo4j": {"command": "uvx", "args": ["mcp-neo4j-cypher@0.4
                       "enterprise": {"type": "url", "url": "http://enterprise-mcp:8199/mcp", "transport": "streamable_http"},
                       "hyd-dmn": {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"},
                       "fan-vib": {"type": "url", "url": "http://fan-vib:9000/mcp", "transport": "streamable_http", "description": "팬 진동 조회"}}}
+# B2: a student's server runs only with the stamp of a passed connection check (read-only tools) made for its current config
+MCP["mcpServers"]["fan-vib"]["hyd"] = {"origin": "user", "gate": {"fingerprint": bridge.config_fingerprint(MCP["mcpServers"]["fan-vib"]),
+                                                                  "read_tools": ["vibration_rms"], "blocked_tools": ["reset_sensor"]}}
 SKILL_MD = "---\nname: fan-vibration-check\ndescription: 팬 진동 점검 순서\n---\n\n# 팬 진동 점검\n\n1. 진동 RMS 를 먼저 본다.\n"
 ANSWER = '{"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": []}}'
 
@@ -132,7 +135,8 @@ def test_worker_runs_with_the_agents_profile_skill_model_and_servers(tmp_path):
     mcp = json.loads((ws.path / ".mcp.json").read_text(encoding="utf-8"))
     assert sorted(mcp["mcpServers"]) == ["enterprise", "fan-vib"]                 # only the agent's servers
     allowed = request.extra_args[request.extra_args.index("--allowedTools") + 1].split(",")
-    assert "mcp__fan-vib__*" in allowed and "mcp__neo4j__write_neo4j_cypher" not in allowed
+    assert "mcp__fan-vib__vibration_rms" in allowed and "mcp__fan-vib__*" not in allowed and "mcp__neo4j__write_neo4j_cypher" not in allowed
+    assert request.extra_args[request.extra_args.index("--disallowedTools") + 1] == "mcp__fan-vib__reset_sensor"    # B2: write tool denied
     task = json.loads((ws.context_dir / "task.json").read_text(encoding="utf-8"))
     assert task["agent"]["skills"] == ["fan-vibration-check"] and task["agent"]["tools"] == ["enterprise", "fan-vib"]
     assert repo.get_workitem(row["id"])["status"] in ("SUBMITTED", "DONE")
@@ -178,7 +182,9 @@ def test_a_named_skill_without_a_body_is_said_out_loud(tmp_path, monkeypatch):
 
 def test_allowed_tools_open_only_servers_the_default_does_not_name():
     base = ["mcp__neo4j__read_neo4j_cypher", "mcp__enterprise__*", "Read"]
-    assert run_allowed_tools(base, ["neo4j", "enterprise", "fan-vib"]) == base + ["mcp__fan-vib__*"]
+    # B2: only the read-only tools the connection check stamped, never mcp__fan-vib__* (that would pre-approve its write tools)
+    assert run_allowed_tools(base, ["neo4j", "enterprise", "fan-vib"], {"fan-vib": ["vibration_rms"]}) == base + ["mcp__fan-vib__vibration_rms"]
+    assert run_allowed_tools(base, ["neo4j", "enterprise", "fan-vib"]) == base               # no stamp → nothing pre-approved
     assert run_allowed_tools(base, []) == base
 
 
