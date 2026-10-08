@@ -53,6 +53,7 @@
 | 그래프 DB는 Neo4j 유지. ProcessGPT 스키마 계약(`process-gpt-vue3/ontology/SCHEMA.md`)의 Execution 레이어(ProcessInstance·WorkItem, INSTANCE_OF·IN_INSTANCE·EXECUTES·ASSIGNED_TO)를 v2에 추가 | 회의·HYD 모두 Neo4j 전제. 제품은 Apache AGE지만 모델만 따름 |
 | 기존 Incident 상태기계(`it/process/procsvc/machine.py`: approve→action.cmd→게이트웨이→ACK→재관측→작업지시→종결)는 PLC 명령 경로의 서비스 태스크로 그대로 재사용 | 검증된 안전 경로. 회의 L430 "직접 제어는 현장" |
 | 첫 묶음 = 쿨러 시나리오 한 바퀴가 새 구조(인스턴스→에이전트 태스크→사람 태스크→실행→종결)로 돌 때까지. 그 뒤 인제스천·Execution 레이어·펌프·팬 | 의존 순서 4→6, 3·4·5→7, 7·8→11 |
+| **포털 = 직접 만들기**(에이전트·스킬·역할 매핑·MCP 쓰기, 기본 구성 보호, "기준으로 되돌리기"), 흐름은 **bpmn.io에서 그려 가져오기**(매핑·시작 조건·사전 검사·판본 배포·기준 비교), 스키마 고정 + 인제스천, 선례는 시드만(교육용 고정), 수업은 시나리오 4개 나선형 + 랩업 | 10-08 밤 사용자 결정, 경위 DECISIONS 110. 이전 "에이전트·스킬·MCP는 포털에서 보기만"을 대체 |
 | 데이터 패브릭은 **미니로 가볍게 구현**(읽기 전용, 업무 DB ent + 시계열 DB 두 원천을 설비 하나로 묶고 값마다 출처 표시, 새 서비스 없음: `common/hydcommon/fabric.py`·dmn-mcp `fabric_query`·포털 "데이터 연결"). 다종 DB(Oracle·SAP·Influx)·카탈로그는 여전히 후반 설명 | 회의 L63~67 "패브릭까지 안 가더라도", L447 확장 시나리오. 10-08 밤 사용자 "todo 다 구현"·"미니 및 가볍게"로 "설명만"을 바꿈(TODO 확정 A11, 커밋 f85bddb) |
 
 ## 3. 절대 규칙 — 어기면 산출물이 무효다
