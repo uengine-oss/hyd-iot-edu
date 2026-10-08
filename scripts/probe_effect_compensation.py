@@ -192,7 +192,32 @@ def main():
     check("a_new_generation_reached_new_selection_with_new_decision", sel2["id"] != sel["id"] and dec2 == doc["id"] and dec2 != dec_id, {"decision": dec2})
     status, body = http(PROCESS, f"/api/todolist/{sel2['id']}/select", {"decision": dec_id, "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr", "reason": "stale"})
     check("a_old_decision_refused_for_new_generation", status in (400, 409), body)
-    approve(sel2["id"], dec2, "skill:fan-max-derate", "A072 probe: second judgment, fan max with derate", "a-g1")
+    try:
+        approve(sel2["id"], dec2, "skill:fan-max-derate", "A072 probe: second judgment, fan max with derate", "a-g1")
+    except AssertionError:
+        # --worker, moderate fault: generation 0's fan command is still on the plant, so the alarm can clear while the real
+        # worker is still judging generation 1. That ending is a contract, not a skip (A156 fix in instances._command_never_issued):
+        # the reopened Incident is RESOLVED_WITHOUT_ACTION and the instance must follow it — generation 1's open tasks cancelled,
+        # task:escalate reached by abort — while the retired command and the effect review stay on record.
+        snap = incident(inc_id); save("a-incident-cleared", snap)
+        if not (worker and snap["state"] == "RESOLVED_WITHOUT_ACTION"):
+            raise
+        def g1(): return {w["activity_id"]: w for w in view(pid)["workitems"] if (w.get("generation") or 0) == 1}
+        rows1 = until(lambda: (lambda r: r if "reached by abort" in (r.get("task:escalate", {}).get("log") or "") else None)(g1()), 120, 2)
+        save("a-g1-cleared-view", view(pid))
+        effects = ok(PROCESS, f"/api/instances/{pid}/effects"); save("a-effects-cleared", effects)
+        check("a_cleared_branch_instance_follows_incident_abort",
+              rows1["task:select"]["status"] == "CANCELLED" and "before any action" in (rows1["task:select"].get("log") or "")
+              and not any(w["status"] == "IN_PROGRESS" and k != "task:escalate" for k, w in rows1.items())
+              and rows1.get("task:command", {}).get("status") == "CANCELLED",
+              {k: (w["status"], (w.get("log") or "")[:60]) for k, w in rows1.items()})
+        check("a_cleared_branch_history_kept", snap["superseded"][-1]["cmdId"] == first_cmd and snap.get("cmdId") is None
+              and plc["id"] in effects["resolution"]["acknowledged"], {"superseded": [x["cmdId"] for x in snap["superseded"]]})
+        report["branch"] = "alarm cleared during generation 1 (moderate fault); case B (work-order inverse) not exercised"
+        report["finished"] = datetime.now(timezone.utc).isoformat(); save("result", report)
+        print(f"ALL PASS: {len(report['checks'])} checks — {report['branch']}", flush=True)
+        return
+    report["branch"] = "generation 1 approved and executed"
     inc = until(lambda: (lambda i: i if i.get("cmdId") and (i.get("ack") or {}).get("result") == "DONE" else None)(incident(inc_id)), 90)
     check("a_second_command_issued_and_acknowledged", inc["cmdId"] != first_cmd and inc["state"] in ("ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "CLOSED"), {"cmd": inc["cmdId"], "state": inc["state"]})
     fin = until(lambda: (lambda v: v if v["instance"]["status"] == "COMPLETED" else None)(view(pid)), 480); save("a-final-view", fin)
