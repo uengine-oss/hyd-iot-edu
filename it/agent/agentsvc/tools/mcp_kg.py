@@ -72,6 +72,10 @@ class KnowledgeGraph:
     def roles(self) -> list[dict]:
         return self._run("t3_roles")
 
+    def perspectives(self) -> list[dict]:
+        """B5: BSC 관점과 그 관점의 성과 지표(Measure -MEASURES-> Objective -IN_PERSPECTIVE-> Perspective)."""
+        return self._run("t3_perspectives")
+
     def suppliers(self) -> dict[str, dict]:
         return {r["id"]: r for r in self._run("t3_suppliers")}
 

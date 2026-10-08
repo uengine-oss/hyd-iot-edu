@@ -361,6 +361,7 @@ def _whatif_view(s: dict, sid: str, trial=None, policy=None) -> dict:
         raise HTTPException(500, "시험 실행 중 기준 판단 묶음이 바뀌었습니다 — 결과를 쓰지 않습니다")
     return {"id": sid, "asset": s["asset"], "pattern": s["pattern"], "cause": s["cause"], "created": s["created"],
             "decisionId": s["decisionId"], "variables": whatif.variable_list(s["mf"], trial), "policy": whatif.policy_view(s["bundle"]["dmn"]),
+            "perspectives": whatif.perspective_view(s["bundle"]),
             "policyTrial": policy or {"weights": {}, "penalties": {}}, "trial": trial or {}, **ev,
             "baseTop": s["baseTop"], "summary": whatif.summary(ev, s["baseTop"] if (trial or (policy and any(policy.values()))) else None),
             "original": {"unchanged": unchanged, "fingerprint": s["fingerprint"][:12],
@@ -376,6 +377,10 @@ def _whatif_start(k, req: WhatifStartReq) -> dict:
         mf = whatif.load_money_facts(mcp_ent.fetch, req.asset)
     except ValueError as e:
         raise HTTPException(503, str(e)) from e
+    try:                                   # B5 관점 중요도: 관점 이름 · 지표 소속은 그래프에서 (못 읽으면 그 기능만 사유와 함께 꺼짐)
+        bundle["perspectives"] = whatif.load_perspectives(k.perspectives())
+    except Exception as e:  # noqa: BLE001
+        bundle["perspectives"] = {"error": f"지식 그래프에서 BSC 관점을 읽지 못했습니다: {type(e).__name__}: {str(e)[:160]}"}
     s = {"asset": req.asset, "pattern": req.pattern, "cause": {c: (d.get("causes") or [{}])[0].get(c) for c in ("id", "name", "failureMode")},
          "created": d["created"], "decisionId": d["id"], "bundle": bundle, "mf": mf}
     s["fingerprint"] = whatif.original_fingerprint(bundle, mf)
@@ -393,7 +398,7 @@ async def whatif_start(req: WhatifStartReq):
 
 def _checked(s, values=None, policy=None):
     try:
-        return whatif.check_trial(values), whatif.check_policy(s["bundle"]["dmn"], policy)
+        return whatif.check_trial(values), whatif.check_policy(s["bundle"]["dmn"], policy, whatif.perspective_view(s["bundle"]))
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
 

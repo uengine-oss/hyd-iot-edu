@@ -532,11 +532,61 @@ def _measures(f: Fetch) -> dict[str, dict]:
     return {r['id']: r for r in rows}
 
 
-def report(sources, period='24h', *, now=None, start=None, end=None, time_scale=20.0, tenant='hyd') -> dict:
-    """BSC 관점 → 목표 → 지표 실적. 원천 하나가 실패해도 그 원천을 쓰는 지표만 '조회 실패'다."""
+# ============================================================== B5 목표값 바꿔 보기 (시험 실행 — 그래프의 Measure.target 은 읽기만)
+def check_targets(measures: dict, targets) -> dict[str, float]:
+    """{지표 id: 시험 목표값}. 없는 지표 · 숫자가 아닌 값은 사람이 읽을 사유로 거절한다."""
+    if targets is None:
+        return {}
+    if not isinstance(targets, dict):
+        raise ValueError('목표 시험값은 {지표: 숫자} 모양이어야 합니다')
+    out = {}
+    for mid, v in targets.items():
+        m = measures.get(mid)
+        if m is None:
+            raise ValueError(f'지식 그래프에 없는 성과 지표입니다: {mid}')
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(float(v)):
+            raise ValueError(f"「{m['name']}」 목표 시험값은 숫자여야 합니다 (받은 값: {v!r})")
+        out[mid] = float(v)
+    return out
+
+
+def _with_targets(measures: dict, trial: dict) -> dict:
+    """시험 목표를 넣은 사본. 원본 행(그래프에서 읽은 것)은 바꾸지 않는다."""
+    return {mid: (dict(m, target=trial[mid]) if mid in trial else m) for mid, m in measures.items()}
+
+
+def _judged(value, target, direction) -> dict:
+    met, rate = achievement(value, target, direction or 'UP')
+    return {'target': target, 'met': met, 'rate': rate, 'status': 'no_target' if met is None else 'met' if met else 'missed'}
+
+
+def _trial_view(results: dict, original: dict, trial: dict) -> dict:
+    """지표마다 원래 목표로 본 판정을 옆에 붙이고, 판정이 바뀐 지표를 모은다(실적 값은 같다 — 목표만 다르다)."""
+    changed = []
+    for mid, r in results.items():
+        if mid not in trial:
+            continue
+        before = _judged(r['value'], original[mid].get('target'), original[mid].get('direction')) if r.get('status') in COMPUTED \
+            else {'target': original[mid].get('target'), 'met': None, 'rate': None, 'status': r.get('status')}
+        r['original'] = before
+        r['trialTarget'] = trial[mid]
+        if before['status'] != r.get('status') or before['rate'] != r.get('rate'):
+            changed.append({'id': mid, 'name': r['name'], 'unit': r.get('unit'), 'value': r.get('value'),
+                            'before': before, 'after': {k: r.get(k) for k in ('target', 'met', 'rate', 'status')}})
+    return {'targets': [{'id': mid, 'name': original[mid]['name'], 'unit': original[mid].get('unit'),
+                         'original': original[mid].get('target'), 'trial': v} for mid, v in sorted(trial.items())],
+            'changed': changed,
+            'note': '시험 목표는 이 계산에만 썼습니다. 지식 그래프의 목표값(Measure.target)은 읽기만 했고 그대로입니다'}
+
+
+def report(sources, period='24h', *, now=None, start=None, end=None, time_scale=20.0, tenant='hyd', targets=None) -> dict:
+    """BSC 관점 → 목표 → 지표 실적. 원천 하나가 실패해도 그 원천을 쓰는 지표만 '조회 실패'다.
+    targets: B5 목표값 바꿔 보기 — {지표 id: 시험 목표}. 달성/미달 · 달성률을 그 목표로 다시 판정한다(원본 목표 불변)."""
     w = window(period, now, start, end)
     f = Fetch(sources)
-    measures = _measures(f)
+    original = _measures(f)
+    trial = check_targets(original, targets)
+    measures = _with_targets(original, trial)
     try:
         supports = f('graph', 'supports', Q_SUPPORTS)
     except SourceError:
@@ -561,8 +611,21 @@ def report(sources, period='24h', *, now=None, start=None, end=None, time_scale=
             o['measures'].sort(key=lambda x: (x['kpiRole'] != 'lagging', x['id']))
         out.append({'id': p['id'], 'name': p['name'], 'objectives': objs})
     counts = {s: sum(1 for r in results.values() if r['status'] == s) for s in STATUS}
-    return {'window': w.view(), 'timeScale': float(time_scale), 'perspectives': out,
-            'summary': {'total': len(results), **counts, 'labels': STATUS}}
+    rep = {'window': w.view(), 'timeScale': float(time_scale), 'perspectives': out,
+           'summary': {'total': len(results), **counts, 'labels': STATUS}}
+    if trial:
+        rep['trial'] = _trial_view(results, original, trial)
+        for p in out:                       # 지표 카드는 results 의 사본이라 원래 판정을 다시 붙인다
+            for o in p['objectives']:
+                for x in o['measures']:
+                    if x['id'] in trial:
+                        x.update(original=results[x['id']]['original'], trialTarget=trial[x['id']])
+        before = dict(counts)
+        for c in rep['trial']['changed']:
+            before[c['after']['status']] -= 1
+            before[c['before']['status']] += 1
+        rep['summaryOriginal'] = {'total': len(results), **before, 'labels': STATUS}
+    return rep
 
 
 def definitions(sources) -> list[dict]:
@@ -618,11 +681,13 @@ def _drivers(f: Fetch, mid: str) -> dict[str, dict]:
     return nodes
 
 
-def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=None, time_scale=20.0, tenant='hyd') -> dict:
-    """미달 지표 → 영향 경로(그래프) + 같은 기간 처리 기록의 원인 업무 · 조치 · 설비."""
+def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=None, time_scale=20.0, tenant='hyd', targets=None) -> dict:
+    """미달 지표 → 영향 경로(그래프) + 같은 기간 처리 기록의 원인 업무 · 조치 · 설비. targets: B5 시험 목표(원본 불변)."""
     w = window(period, now, start, end)
     f = Fetch(sources)
-    measures = _measures(f)
+    original = _measures(f)
+    trial = check_targets(original, targets)
+    measures = _with_targets(original, trial)
     m = measures.get(measure_id)
     if m is None:
         raise KeyError(measure_id)
@@ -696,6 +761,8 @@ def trace(sources, measure_id: str, period='24h', *, now=None, start=None, end=N
             x = actions.setdefault(i['chosenSkill'], {'id': i['chosenSkill'], 'name': i['chosenSkillName'] or i['chosenSkill'],
                                                       'count': 0, 'effect': (skills.get(i['chosenSkill']) or {}).get('effect')})
             x['count'] += 1
+    if measure_id in trial:
+        _trial_view({measure_id: result}, original, trial)
     return {
         'window': w.view(), 'measure': {k: v for k, v in result.items() if k != 'events'},
         'drivers': sorted(({'id': k, 'name': d['name'], 'kind': d['kind'], 'path': d['path'], 'depth': d['depth'],
@@ -818,3 +885,18 @@ def register(app, *, ts_dsn, biz_dsn, driver_factory, time_scale, tenant):
     @app.get('/api/kpi/trace')
     async def kpi_trace(measure: str, period: str = '24h', start: str | None = None, end: str | None = None):
         return await run(lambda s: trace(s, measure, period, start=start, end=end, time_scale=time_scale, tenant=tenant))
+
+    # B5 목표값 바꿔 보기: 같은 계산에 시험 목표만 넣는다(쓰기 없음 — 그래프 · DB 는 읽기 전용 연결)
+    @app.post('/api/kpi/try')
+    async def kpi_try(body: dict):
+        b = body or {}
+        return await run(lambda s: report(s, b.get('period') or '24h', start=b.get('start'), end=b.get('end'), time_scale=time_scale,
+                                          tenant=tenant, targets=b.get('targets') or {}))
+
+    @app.post('/api/kpi/try/trace')
+    async def kpi_try_trace(body: dict):
+        b = body or {}
+        if not b.get('measure'):
+            raise HTTPException(400, '원인을 찾을 지표(measure)를 지정하세요')
+        return await run(lambda s: trace(s, b['measure'], b.get('period') or '24h', start=b.get('start'), end=b.get('end'),
+                                         time_scale=time_scale, tenant=tenant, targets=b.get('targets') or {}))

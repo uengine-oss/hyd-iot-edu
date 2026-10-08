@@ -40,6 +40,7 @@
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
     <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 연결</button>
     <div class="navgroup" data-term="nav.group.ai">AI 구성</div>
+    <button data-tab="ask" data-icon="agent" data-term="nav.ask">에이전트에게 질문</button>
     <button data-tab="agents" data-icon="agent" data-term="nav.agents">에이전트</button>
     <button data-tab="mcp" data-icon="tool" data-term="nav.mcp">도구(MCP)</button>
     <button data-tab="compare" data-icon="compare" data-term="nav.compare">시험 비교</button>
@@ -299,6 +300,10 @@
     <div class="page-head"><h1>내 작업함</h1></div>
     <div class="shell-mount" id="inboxView"></div>
   </section>
+  <section class="view" id="view-ask">
+    <div class="page-head"><h1>에이전트에게 질문</h1></div>
+    <div class="shell-mount" id="askView"></div>
+  </section>
   <section class="view" id="view-agents">
     <div class="page-head"><h1>에이전트</h1></div>
     <div class="shell-mount" id="agentsView"></div>
@@ -358,10 +363,11 @@
 <script src="sourceEvents.js?v=20261008-a147"></script>
 <script src="evaluation.js?v=20261008-u6"></script>
 <script src="mcp.js?v=20261008-u3"></script>
-<script src="whatif.js?v=20261008-u12"></script>
+<script src="whatif.js?v=20261008-b5"></script>
 <!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
 <script src="fabric.js?v=20261008-a11"></script>
-<script src="kpi.js?v=20261008-a8"></script>
+<script src="kpi.js?v=20261008-b5"></script>
+<script src="ask.js?v=20261008-b5"></script>
 <script src="compare.js?v=20261008-a10"></script>
 <script src="shell.js?v=20261008-u7"></script>
 </body>

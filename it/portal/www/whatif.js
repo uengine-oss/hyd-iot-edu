@@ -1,16 +1,18 @@
 /* A7 손익 · What-if · 규칙 바꿔 보기 — 시험 실행만. window.hydWhatif.mount(el)
    판단 한 번을 읽기 전용으로 계산해 기준으로 삼고(POST /api/agent/whatif), 시험값 · 규칙 시험값은 그 기준의 사본에만 적용한다.
    업무 DB · 지식 그래프 · 순위 정책은 바뀌지 않는다("원래대로"는 시험값을 비우고 기준 결과로 돌아간다).
-   요약(지금 1순위 · 무엇이 바뀌었나)을 먼저, 상세(항목별 출처 · 경계값 · 계수)는 접어 둔다. */
+   요약(지금 1순위 · 무엇이 바뀌었나)을 먼저, 상세(항목별 출처 · 경계값 · 계수)는 접어 둔다.
+   B5: 규칙 탭의 "관점 중요도" — BSC 관점(이름은 지식 그래프에서)마다 비중을 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
 (function () {
   const W = { el: null, asset: 'HYD-01', pattern: '', patterns: null, base: null, view: null, bounds: null, boundsMsg: '', tab: 'money',
-    busy: false, msg: '', values: {}, policy: { weights: {}, penalties: {} }, weeks: null, weeksForm: { card: '', variable: 'load_pct', value: '', weeks: 4 },
+    busy: false, msg: '', values: {}, policy: { weights: {}, penalties: {}, perspectives: {} }, perspForm: {}, weeks: null, weeksForm: { card: '', variable: 'load_pct', value: '', weeks: 4 },
     ruleForm: { target: '', value: '' } };
   const won = v => v == null ? '미확인' : `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toLocaleString('ko-KR')}원`;
   const num = (v, unit) => v == null ? '–' : `${Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 3 })}${unit ? ' ' + unit : ''}`;
   const tone = { '데이터': 'success', '문서': 'accent', '가정': 'warning', '시험값': 'danger' };
   const kindLabel = { decision: '판단 순위', money: '손익 순위' };
-  const trialCount = () => Object.keys(W.values).length + Object.keys(W.policy.weights).length + Object.keys(W.policy.penalties).length;
+  const ruleCount = () => Object.keys(W.policy.weights).length + Object.keys(W.policy.penalties).length + Object.keys(W.policy.perspectives || {}).length;
+  const trialCount = () => Object.keys(W.values).length + ruleCount();
   const cardName = id => ((W.view || W.base)?.cards || []).find(c => c.id === id)?.name || '없음';
 
   async function call(path, body) { return postJ(API.agent + '/api/agent/whatif' + path, body || {}); }
@@ -24,7 +26,7 @@
 
   async function load() {
     if (W.busy) return;
-    W.busy = true; W.msg = ''; W.base = W.view = W.bounds = W.weeks = null; W.values = {}; W.policy = { weights: {}, penalties: {} }; render();
+    W.busy = true; W.msg = ''; W.base = W.view = W.bounds = W.weeks = null; W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; render();
     try {
       W.base = W.view = await call('', { asset: W.asset, pattern: W.pattern });
       const first = W.base.cards.find(c => c.feasible);
@@ -44,7 +46,7 @@
     finally { W.busy = false; render(); }
   }
 
-  function reset() { W.values = {}; W.policy = { weights: {}, penalties: {} }; W.view = W.base; W.weeks = null; W.msg = ''; render(); }
+  function reset() { W.values = {}; W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {}; W.view = W.base; W.weeks = null; W.msg = ''; render(); }
 
   async function runWeeks() {
     if (!W.base || W.busy) return;
@@ -61,8 +63,9 @@
   function applyBoundary(i) {
     const b = (W.bounds || [])[i]; if (!b) return;
     W.values = { ...(b.trial || {}) };
-    W.policy = { weights: { ...((b.policy || {}).weights || {}) }, penalties: { ...((b.policy || {}).penalties || {}) } };
-    W.tab = b.variable.startsWith('w:') || b.variable.startsWith('p:') ? 'rules' : 'values';
+    W.policy = { weights: { ...((b.policy || {}).weights || {}) }, penalties: { ...((b.policy || {}).penalties || {}) }, perspectives: { ...((b.policy || {}).perspectives || {}) } };
+    W.perspForm = { ...W.policy.perspectives };
+    W.tab = b.variable.startsWith('w:') || b.variable.startsWith('p:') || b.variable.startsWith('v:') ? 'rules' : 'values';
     retry();
   }
 
@@ -80,7 +83,7 @@
     if (!v) { W.el.innerHTML = html + UI.empty('설비와 이상 패턴을 고르고 불러오기를 누르세요', '카드별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 봅니다'); wire(); return; }
     html += summaryHtml(v);
     html += UI.tabs([['money', '카드별 손익'], ['values', '값 바꿔 보기', Object.keys(W.values).length || null], ['weeks', '몇 주 What-if'],
-      ['rules', '규칙 바꿔 보기', Object.keys(W.policy.weights).length + Object.keys(W.policy.penalties).length || null]], W.tab, 'data-wi-tab');
+      ['rules', '규칙 바꿔 보기', ruleCount() || null]], W.tab, 'data-wi-tab');
     html += `<div class="tab-pane ${W.tab === 'money' ? 'on' : ''}">${moneyPane(v)}</div><div class="tab-pane ${W.tab === 'values' ? 'on' : ''}">${valuesPane(v)}</div>`
       + `<div class="tab-pane ${W.tab === 'weeks' ? 'on' : ''}">${weeksPane(v)}</div><div class="tab-pane ${W.tab === 'rules' ? 'on' : ''}">${rulesPane(v)}</div>`;
     W.el.innerHTML = html;
@@ -164,7 +167,29 @@
       + UI.actions(`<button class="btn primary" id="wiRule" ${W.busy ? 'disabled' : ''}>다시 계산</button>`)
       + compareTable(v)
       + UI.fold('규칙마다 1순위가 바뀌는 값', boundaryLines(ruleBounds), { cls: 'small' })
+      + perspectivePane(v)
       + UI.fold('순위 식 원문', p.components.map(c => `<div>${esc(c.label)}: <code>${esc(c.expr)}</code></div>`).join(''), { cls: 'small' });
+  }
+
+  // B5 관점 중요도: 이름 · 지표 소속은 지식 그래프(Perspective ← Objective ← Measure)에서. 기준은 모두 1배.
+  function perspectivePane(v) {
+    const pv = v.perspectives || { available: false, reason: '관점 정보가 없습니다', perspectives: [] };
+    let html = '<h3 class="sec" style="margin-top:var(--s5)">관점 중요도 바꿔 보기</h3>';
+    if (!pv.available) return html + `<p class="neg">${esc(pv.reason || '')}</p>`;
+    html += '<p class="field-hint">BSC 관점마다 중요도(배)를 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산됩니다. 빈 칸은 1배, 0은 그 관점을 보지 않음. 원본 순위 정책 · 지식은 그대로입니다.</p>';
+    html += `<div class="form-grid">${pv.perspectives.map(p => UI.field({ label: `${p.name} (배)`,
+      hint: p.inUse ? '이 판단의 득실: ' + p.measures.join(', ') : '이 판단의 카드 득실에 나오지 않는 관점 — 바꿔도 순위가 그대로입니다',
+      input: `<input type="number" step="any" min="0" max="10" data-wi-persp="${esc(p.id)}" value="${esc(W.perspForm[p.id] ?? '')}" placeholder="1">` })).join('')}</div>`;
+    html += UI.actions(`<button class="btn primary" id="wiPersp" ${W.busy ? 'disabled' : ''}>관점 비중으로 다시 계산</button>`);
+    const names = Object.fromEntries(pv.perspectives.map(p => [p.id, p.name]));
+    const base = Object.fromEntries((W.base.cards || []).map(c => [c.id, c]));
+    const cell = (c, pid) => { const x = (c.bscByPerspective || []).find(y => y.perspective === pid); return x ? `득 ${num(x.gain)} · 실 ${num(x.loss)}` : '–'; };
+    const used = pv.perspectives.filter(p => p.inUse);
+    html += UI.fold('카드별 관점 득실 (시험 비중 적용)', `<table class="compact-table"><thead><tr><th>카드</th>${used.map(p => `<th>${esc(p.name)}</th>`).join('')}<th>성과 지표 점수</th></tr></thead><tbody>${v.cards.map(c => {
+      const b = base[c.id] || {}, b0 = (b.scoreParts || {}).bsc, b1 = (c.scoreParts || {}).bsc;
+      return `<tr><td>${esc(UI.idText(c.name))}</td>${used.map(p => `<td>${cell(c, p.id)}</td>`).join('')}<td>${b0 === b1 ? esc(num(b1)) : `<span class="muted">${esc(num(b0))}</span> → <b>${esc(num(b1))}</b>`}</td></tr>`;
+    }).join('')}</tbody></table>${Object.keys(W.policy.perspectives || {}).length ? `<p class="field-hint">적용 중: ${Object.entries(W.policy.perspectives).map(([k, x]) => `${esc(names[k] || '관점')} ${num(x)}배`).join(' · ')}</p>` : ''}`, { cls: 'small' });
+    return html;
   }
 
   function weeksPane(v) {
@@ -214,10 +239,14 @@
     q('#wiRuleValue')?.addEventListener('change', e => { W.ruleForm.value = e.target.value; });
     q('#wiRule')?.addEventListener('click', () => {
       const t = W.ruleForm.target, val = W.ruleForm.value;
-      W.policy = { weights: {}, penalties: {} };
+      W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {};
       if (val !== '' && t) (t.startsWith('w:') ? W.policy.weights : W.policy.penalties)[t.slice(2)] = Number(val);
       retry();
     });
+    el.querySelectorAll('[data-wi-persp]').forEach(i => i.addEventListener('change', () => {
+      if (i.value === '') delete W.perspForm[i.dataset.wiPersp]; else W.perspForm[i.dataset.wiPersp] = Number(i.value);
+    }));
+    q('#wiPersp')?.addEventListener('click', () => { W.policy = { weights: {}, penalties: {}, perspectives: { ...W.perspForm } }; retry(); });
     q('#wiWCard')?.addEventListener('change', e => { W.weeksForm.card = e.target.value; });
     q('#wiWVar')?.addEventListener('change', e => { W.weeksForm.variable = e.target.value; });
     q('#wiWValue')?.addEventListener('change', e => { W.weeksForm.value = e.target.value; });
@@ -234,6 +263,6 @@
       rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '손익 · What-if' 화면에서</p>`, { cls: 'small' });
   }
 
-  window.hydWhatif = { mount, moneyFold };
+  window.hydWhatif = { mount, moneyFold, _W: W, _render: render };
   // 셸(shell.js MOUNTS.whatif)이 #/whatif 를 처음 열 때 mount(#whatifView)를 부른다.
 })();

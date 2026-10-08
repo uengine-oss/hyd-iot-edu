@@ -134,6 +134,8 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     # B4: 기준 흐름 = 기동 파일(PROCESS_DEFINITION_FILE)의 판본 — 배포된 학생 판본으로 기동해도 "기준 흐름으로 되돌리기"는 이 판본으로 간다.
     seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
     _runtime.base_version, _runtime.reference_ids = seed.raw['version'], {seed.id, triage['id']}
+    from . import ask
+    ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
     log.info("instance mode: definition %s@%s (%d activities), repo %s, agent bridge %s", defn.id, defn.raw.get('version'),
              len(defn.activities), type(repo).__name__, AGENT_BRIDGE)

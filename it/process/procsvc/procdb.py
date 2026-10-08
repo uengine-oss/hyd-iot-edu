@@ -99,6 +99,7 @@ class Repo(Protocol):
     def get_instance(self, proc_inst_id: str) -> dict | None: ...
     def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]: ...
     def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0) -> list[dict]: ...
+    def hide_instances(self, tenant_id, def_id, ids) -> int: ...   # B5: finished instances of one definition → is_deleted (rows kept)
     # work items
     def insert_workitems(self, items: list[dict]) -> None: ...
     def update_workitem(self, item: dict) -> None: ...
@@ -346,6 +347,15 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
               and not i.get('is_deleted',False) and str(i.get('start_event_id') or '').startswith(event_prefix)]
         rows.sort(key=lambda i:(i['start_date'],i['proc_inst_id']),reverse=True)
         return [{k:_copy(i.get(k)) for k in ('proc_inst_id','status','start_date','end_date')} for i in rows[offset:offset+limit]]
+
+    def hide_instances(self, tenant_id, def_id, ids):
+        n=0
+        with self._lock:
+            for pid in ids:
+                i=self.instances.get(pid)
+                if i and i.get('tenant_id')==tenant_id and i.get('proc_def_id')==def_id and i.get('status')!='RUNNING' and not i.get('is_deleted'):
+                    i['is_deleted']=True;n+=1
+        return n
 
     def insert_workitems(self, items: list[dict]) -> None:
         with self._lock:
@@ -797,6 +807,12 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 where tenant_id=%s and proc_def_id=%s and is_deleted=false and left(start_event_id,%s)=%s
                 order by start_date desc,proc_inst_id desc limit %s offset %s''',
                 (tenant_id,def_id,len(event_prefix),event_prefix,limit,offset)).fetchall()]
+
+    def hide_instances(self, tenant_id, def_id, ids):
+        if not ids:return 0
+        with self._conn() as c:
+            return c.execute('''update bpm_proc_inst set is_deleted=true where tenant_id=%s and proc_def_id=%s
+                and proc_inst_id=any(%s) and status<>'RUNNING' and not is_deleted''',(tenant_id,def_id,list(ids))).rowcount
 
     # ---- work items
     def insert_workitems(self, items: list[dict]) -> None:
