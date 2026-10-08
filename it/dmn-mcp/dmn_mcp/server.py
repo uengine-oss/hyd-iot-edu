@@ -36,9 +36,10 @@ Overrides = Annotated[dict | None, Field(description="가정 실험용 사실 �
 
 
 @mcp.tool(annotations=READ)
-def diagnose(asset: Asset, pattern: Pattern) -> dict:
-    """원인 진단: 신선도→후보(T1)→증거 SQL→순위→SOP/가이드. withheld=true이면 근거 미확인 또는 지지 근거 없음이므로 원인을 임의로 골라 후속 조치 판단을 하지 않는다. 원천/규칙을 확인한 뒤 재조회하거나 사람 확인을 요청한다. Evidence의 PASS/FAIL/UNKNOWN과 오류 근거를 보존한다."""
-    return enveloped(lambda: tools.diagnose(asset, pattern))()
+def diagnose(asset: Asset, pattern: Pattern,
+             alert_id: Annotated[str | None, Field(description="처리 중인 경보 id (입력의 alert.alertId). 사람 입력 경보(오일 분석 등)는 서버가 이 경보의 입력 결과를 근거로 읽는다. 비우면 그 설비 · 패턴의 처리 중인 사람 입력 경보")] = None) -> dict:
+    """원인 진단: 신선도→후보(T1)→증거 SQL→순위→SOP/가이드. withheld=true이면 근거 미확인 또는 지지 근거 없음이므로 원인을 임의로 골라 후속 조치 판단을 하지 않는다. 원천/규칙을 확인한 뒤 재조회하거나 사람 확인을 요청한다. Evidence의 PASS/FAIL/UNKNOWN과 오류 근거를 보존한다. 센서 증거 규칙이 없는 원인(사람 입력 패턴)은 사람이 입력한 분석 결과(process 서버 기록)가 증거다."""
+    return enveloped(lambda: tools.diagnose(asset, pattern, alert_id))()
 
 
 @mcp.tool(annotations=READ)

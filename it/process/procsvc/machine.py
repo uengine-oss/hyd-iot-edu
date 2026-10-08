@@ -206,6 +206,29 @@ def on_rework_reopen(inc: Incident, request_id: str, by: str, role: str, reason:
 
 
 @_transition
+def on_recheck_reopen(inc: Incident, request_id: str, by: str, reason: str, fx: Effects) -> bool:
+    """B7: a work-order-only case (no PLC command ever issued) closed on its CMMS receipt, but the flow's later check — a
+    person's re-analysis after the maintenance — went back to a new judgment and approval. The closed work order moves to
+    `superseded` (kept, never undone) and the Incident waits for the next approval. Only that closure may reopen: a case
+    that issued a command, or ended any other way (escalated · rejected · cleared), is not reopened here. Idempotent per
+    request id (the re-entered work item)."""
+    if any(h.get("note") == f"reopened for recheck {request_id}" for h in inc.history):
+        return False
+    if inc.state != "CLOSED" or inc.cmd_id or not inc.work_order or inc.recovery is None:
+        raise ValueError(f"재분석 뒤 다시 판단은 설비 명령 없이 작업지시로 닫힌 사건만 엽니다 (지금 {inc.state}, 명령 {inc.cmd_id or '없음'})")
+    inc.superseded.append({"request_id": request_id, "kind": "recheck", "state_before": inc.state, "cmdId": None, "actions": inc.actions,
+                           "ack": None, "approvedBy": inc.approved_by, "workOrder": inc.work_order,
+                           "workOrderRequest": inc.work_order_request, "reason_before": inc.reason, "closed_before": inc.closed,
+                           "by": by, "reason": reason, "t": now_iso()})
+    inc.approved_by, inc.actions, inc.work_order, inc.work_order_request = None, [], None, None
+    inc.reason, inc.closed = None, None
+    _audit(inc, fx, "operator", "INCIDENT_REOPENED", {"request_id": request_id, "by": by, "reason": reason, "kind": "recheck",
+                                                       "superseded_work_order": (inc.superseded[-1]["workOrder"] or {}).get("id")})
+    _go(inc, "AWAITING_APPROVAL", f"reopened for recheck {request_id}")
+    return True
+
+
+@_transition
 def on_reject(inc: Incident, by: str, reason: str, fx: Effects) -> None:
     if inc.state != "AWAITING_APPROVAL":
         raise ValueError(f"cannot reject in state {inc.state}")

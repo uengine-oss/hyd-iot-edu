@@ -18,6 +18,39 @@ def passes(expect: str, value: Any, threshold: float) -> bool:
             "eq": v == threshold}.get(expect, False)
 
 
+HUMAN_SOURCE = "human_input"
+HUMAN_FIELDS = ("source", "enteredBy", "item", "measured", "unit", "memo", "t")
+
+
+def human_evidence(alert: dict | None) -> dict | None:
+    """B7: a person's entered analysis (process `human_alert` — e.g. an oil analysis out of spec) is the observation behind a
+    human-input alert. It plays the role a sensor Evidence SQL plays for a detector alert: one PASS evidence row, cited by
+    its alert id, carrying who entered it. Anything else (a detector alert, an in-spec reading) gives None."""
+    if not isinstance(alert, dict) or alert.get("source") != HUMAN_SOURCE or not alert.get("alertId"):
+        return None
+    ev = alert.get("evidence") if isinstance(alert.get("evidence"), dict) else {}
+    if ev.get("out_of_spec") is not True:
+        return None
+    by = alert.get("enteredBy") if isinstance(alert.get("enteredBy"), dict) else {}
+    who = by.get("name") or by.get("id") or "입력자 미상"
+    return {"id": f"human:{alert['alertId']}", "name": f"사람 입력 분석 결과: {ev.get('item_name') or ev.get('item')} 기준 이탈 ({who})",
+            "weight": 1.0, "expect": "eq", "threshold": 1.0, "source": HUMAN_SOURCE, "enteredBy": by, "item": ev.get("item"),
+            "measured": ev.get("value"), "unit": ev.get("unit"), "memo": ev.get("memo"), "t": alert.get("t")}
+
+
+def with_human_evidence(t1_rows: list[dict], alert: dict | None) -> tuple[list[dict], dict[str, dict]]:
+    """Causes the knowledge gives no sensor Evidence rule (a pattern with no real-time sensor, such as OIL_ANALYSIS) get the
+    person's entered analysis as their evidence. Causes with their own Evidence keep only that (a detector reading is never
+    replaced). Returns (rows, results for rank_causes). The ranking among such causes stays prior × 1 — the knowledge's order."""
+    ev = human_evidence(alert)
+    if ev is None:
+        return t1_rows, {}
+    rows = [r if r.get("evidence") else dict(r, evidence=[dict(ev)]) for r in t1_rows]
+    if all(r is t for r, t in zip(rows, t1_rows)):
+        return t1_rows, {}
+    return rows, {ev["id"]: {"value": 1.0, "passed": True, "status": "PASS", "source": HUMAN_SOURCE}}
+
+
 def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
     """t1_rows: T1 template rows. results: evidence id -> {"value", "passed"}.
     score = prior × (Σ weight of passed evidence / Σ weight)."""
@@ -38,7 +71,8 @@ def rank_causes(t1_rows: list[dict], results: dict[str, dict]) -> list[dict]:
             evs.append({"id": e["id"], "name": e.get("name"), "weight": w, "expect": e.get("expect"),
                         "threshold": e.get("threshold"), "value": raw, "passed": ok,
                         "status": ('PASS' if ok else 'FAIL') if known else 'UNKNOWN',
-                        **{k: r[k] for k in ('error', 'error_kind', 'reason', 'sql', 'coverage') if k in r}})
+                        **{k: r[k] for k in ('error', 'error_kind', 'reason', 'sql', 'coverage') if k in r},
+                        **{k: e[k] for k in HUMAN_FIELDS if k in e}})
         prior = float(row.get("prior") or 0)
         score = prior * (wpass / wsum) if wsum > 0 else prior * NO_EVIDENCE_DISCOUNT
         out.append({"id": row["causeId"], "name": row.get("cause"), "description": row.get("description"),
@@ -115,7 +149,8 @@ def _citations(causes: list[dict], actions: list[dict], skills: list[dict] | Non
     return out
 
 
-PATTERN_KO = {"COOLER_DEGRADATION": "쿨러 성능 저하", "PUMP_LEAKAGE": "펌프 내부 누설", "FAN_VIBRATION": "팬 진동 상승", "OVERHEAT_TRIP": "과열 보호 정지"}
+PATTERN_KO = {"COOLER_DEGRADATION": "쿨러 성능 저하", "PUMP_LEAKAGE": "펌프 내부 누설", "FAN_VIBRATION": "팬 진동 상승", "OVERHEAT_TRIP": "과열 보호 정지",
+              "OIL_ANALYSIS": "오일 분석 기준 이탈(사람 입력)"}
 
 
 def template_summary(alert: dict, causes: list[dict], actions: list[dict]) -> str:

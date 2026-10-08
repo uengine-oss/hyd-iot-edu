@@ -140,6 +140,11 @@ class FlowStore:
                 self.mem["versions"][key] = {"snapshot": bpmn, "at": _now(), "file": file_name}
                 head = self.mem["heads"].setdefault((def_id, self.tenant_id), {"prod_version": None})
                 head.update(bpmn=bpmn, name=raw.get("processDefinitionName"))
+                # B7: PG 등록처럼 proc_def 머리 행도 둔다(prod_version 은 그대로) — B4 배포(record_deployment)가 머리를 찾는다
+                prod = (self.repo.defs.get((def_id, self.tenant_id)) or {}).get("prod_version")
+                self.repo.defs[(def_id, self.tenant_id)] = {"id": def_id, "tenant_id": self.tenant_id, "name": raw.get("processDefinitionName"),
+                                                            "definition": None, "prod_version": prod, "type": "bpmn",
+                                                            "ontology_ref": raw.get("ontologyRef")}
             return raw
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow:{self.tenant_id}:{def_id}",))

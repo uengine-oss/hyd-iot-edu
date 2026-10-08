@@ -75,15 +75,33 @@ class DmnTools:
         return self.fabric.query(asset, query, limit, sql)
 
     # ---- task:diagnose
-    def diagnose(self, asset: str, pattern: str) -> dict:
-        """Data trust → T1 cause candidates → evidence SQL → ranked causes → T2 SOP skills → guide card (with citations)."""
+    def human_alert(self, asset: str, pattern: str, alert_id: str | None = None) -> dict | None:
+        """B7: the person's entered analysis behind a human-input alert, read from the process (server truth, never from the
+        caller's arguments). None when no such alert is being handled for this asset and pattern."""
+        import urllib.error
+        from urllib.parse import urlencode
+        q = {"asset": asset, "pattern": pattern, **({"alert_id": alert_id} if alert_id else {})}
+        try:
+            return decidelib._get_json(f"{decidelib.PROCESS_URL}/api/human-alerts/current?{urlencode(q)}").get("alert")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            raise
+
+    def diagnose(self, asset: str, pattern: str, alert_id: str | None = None) -> dict:
+        """Data trust → T1 cause candidates → evidence SQL → ranked causes → T2 SOP skills → guide card (with citations).
+        B7: causes with no sensor Evidence rule (a pattern people enter, such as OIL_ANALYSIS) take the entered analysis of the
+        alert being handled as their evidence (card.with_human_evidence)."""
         fresh = mcp_prom.freshness(self.tsdb, asset)
         alert = {"asset": asset, "pattern": pattern}
         if not fresh["ok"]:
             return {"withheld": True, "freshness": fresh, "card": None, "reason": f"데이터 신뢰 불가: {fresh['reason']}"}
         t1 = self.kg.t1_causes(pattern, asset)
-        evidence = [e for r in t1 for e in (r.get("evidence") or [])]
-        results = self.tsdb.evaluate(evidence, asset)
+        human = {}
+        if any(not r.get("evidence") for r in t1):
+            t1, human = cardlib.with_human_evidence(t1, self.human_alert(asset, pattern, alert_id))
+        evidence = [e for r in t1 for e in (r.get("evidence") or []) if e["id"] not in human]
+        results = {**self.tsdb.evaluate(evidence, asset), **human}
         causes = cardlib.rank_causes(t1, results)
         assessment = cardlib.evidence_status(causes)
         if assessment['withheld']:

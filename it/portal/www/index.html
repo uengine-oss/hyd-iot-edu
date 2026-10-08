@@ -29,6 +29,7 @@
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
     <div class="navgroup" data-term="nav.group.plant">설비</div>
     <button data-tab="scenario" data-icon="play" data-term="nav.scenario">결함 시뮬레이션</button>
+    <button data-tab="oil" data-icon="alert">오일 분석 입력</button>
     <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인 · 조치</button>
     <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
     <div class="navgroup" data-term="nav.group.judge">판단</div>
@@ -338,6 +339,7 @@
     <div class="page-head"><h1>흐름 가져오기</h1></div>
     <div class="shell-mount" id="flowsView"></div>
   </section>
+  <section class="view" id="view-oil"><div class="page-head"><h1>오일 분석 입력</h1></div><div class="shell-mount" id="oilView"></div></section>
 </main>
   <nav class="page-navigation" aria-label="화면 순서대로 이동">
     <button id="pagePrev" class="page-direction" type="button"></button>
@@ -376,6 +378,7 @@
 <script src="ask.js?v=20261008-b5"></script>
 <script src="compare.js?v=20261008-a10"></script>
 <script src="flows.js?v=20261008-b3"></script>
+<script src="oilInput.js?v=20261008-b7"></script>
 <script src="shell.js?v=20261008-u7"></script>
 </body>
 </html>
