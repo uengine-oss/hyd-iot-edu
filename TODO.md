@@ -21,6 +21,8 @@
 | 7 | 모니터링(F3) | **도구 호출 콘솔 로그** — AI가 어떤 도구를 언제 무엇으로 불렀고 무엇을 받았는지 터미널에 한 줄씩(랩업 관찰 창) | 도구 호출 이벤트·실시간 스트림·포털 표시는 있고 워커 콘솔에는 없음(`worker/events.py:18`, `/api/events/stream`) | cliagents 이벤트 / 랩업 계약 CLAUDE.md §4 |
 | 8 | 검증(회의) | **AI 판단 채점** — 같은 경보를 여러 번 던져 진단·카드를 정답표로 채점, 지식을 고치기 전·후 점수 비교 | 규칙·업무 질문 정답 대조 검사기(`scripts/probe_rule_questions.py`·`probe_business_questions.py`), 문서별 골든 질문 — 경보 판단 정답표·반복·전후 비교 없음 | ontology-studio 골든 퀘스천 보고 / L136-138 "온톨로지가 잘 구성됐는지 체크하는 방법" |
 
+**화면 단위 대조(10-08 저녁, `docs/handoff/verification/2026-10-08/screens-vue3.md`, vue3 활성 라우트 92개 중 F1~F12 화면)**: 보강 19개 = UI만 부족 4(S1 단계 클릭 · S2 단계별 입력·에이전트 모니터 · S3 일꾼 현황 · S4 판본 비교) + 기능도 없음 15. 대응: 0번 ← S1·S2(흐름도 노드 클릭 진입, 그 단계만 실시간; 기존 `GET /api/todolist/{wid}`가 inputs·input_sources·events를 이미 돌려줌 — `procsvc/instances.py:164-184`), 6번 ← S3(vue3에도 전역 일꾼 화면은 없고 단계별 표시 — 근거 정정), 4번 ← S4(UI만으로 먼저)·S9 결재함·S10 검토 게시판, 5번 ← S5 내 할 일·S6 알림·S7 업무분장(역할→사람이 먼저, HYD엔 로그인 없음·`engine.py:324`)·S8 위임, 1번 ← S14 조직도·S15 에이전트 상세·S16 단계 담당 에이전트 고르기, 2번 ← S17, 3번 ← S18, 11번 ← S19, 12번 ← **S11 단계 평가(좋아요/나빠요·의견) → AI 개선안 → 전·후 비교 → 고른 것만 새 판본**(vue3 `ProcessFeedbackDrawer.vue:47-80`·`InstanceProgress.vue:4-15,162-189`; HYD는 `todolist.feedback` 칸만)·S12 내 피드백·S13 병합 요청함. 미확인: `/proposals`.
+
 ### 2. 권장 — ProcessGPT·온톨로지 서비스에 있고 한 바퀴를 넓혀 준다 (4)
 
 | # | 기능 | HYD 지금 (실물) | 원본 · 회의 근거 |
