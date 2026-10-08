@@ -722,7 +722,7 @@ dl.gloss dd{margin:0;color:#2c373d}
 <tr><td><code>ENTERPRISE_BACKEND</code></td><td>memory(기본) · supabase</td><td>기업 데이터 원천.</td></tr>
 <tr><td><code>LLM_PROVIDER</code> · <code>LLM_MODEL</code> · <code>OPENAI_BASE_URL</code></td><td>auto · 빈 값 · OpenAI</td><td>{n:agent} 요약에 쓸 LLM. 키가 없으면 정해진 문장.</td></tr>
 <tr><td><code>OBSERVATION_GRACE_S</code></td><td>2</td><td>검사관이 「낡은 값」으로 볼 여유(보고 주기 + 이 값).</td></tr>
-<tr><td><code>WORKER_URL</code></td><td>http://agent-worker:8097</td><td>포털 「에이전트 현황」이 볼 워커 주소(호스트 워커면 host.docker.internal:8097).</td></tr>
+<tr><td><code>WORKER_URL</code></td><td>http://agent-worker:8097</td><td>process 워커 상태 API(GET /api/agents/status)가 볼 워커 주소(호스트 워커면 host.docker.internal:8097).</td></tr>
 </table></div>
 
 <!-- ───────────── 한계 ───────────── -->

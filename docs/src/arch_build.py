@@ -294,7 +294,7 @@ C["c_proc_neo"] = ("Bolt 7687", "사건 · 판단 기록 투영(CaseProjection �
 C["c_proc_ent"] = ("HTTP enterprise-sim:8095", "<code>POST /api/exec</code>(작업지시 · 구매요청 등 승인된 업무 실행) · 거래 기록 조회.")
 C["c_proc_ag"] = ("HTTP agent:8091, 90초", "instance 모드 + AGENT_BRIDGE=legacy일 때 <code>/api/agent/evaluate</code>를 불러 AI Task 4개를 그 결과로 채운다.")
 C["c_proc_supa"] = ("PostgreSQL host.docker.internal:54322 (PROCESS_REPO=pg)", "정의 · 인스턴스 · todolist · events · inbox · 승인 outbox · 효과 영수증. instance 모드에서.")
-C["c_proc_wk"] = ("HTTP WORKER_URL /health · /agents (그림: 작은 표)", "포털 「에이전트 현황」에 보일 워커 상태. 감시용.")
+C["c_proc_wk"] = ("HTTP WORKER_URL /health · /agents (그림: 작은 표)", "process 워커 상태 API(GET /api/agents/status)가 보는 워커 상태. 감시용(포털 화면에는 없음).")
 C["c_staff"] = ("HTTP 127.0.0.1:8088", "포털 화면 파일(HTML · JS)을 받는다.")
 C["c_browser"] = ("HTTP, 브라우저 → 127.0.0.1의 각 포트 (그림: 대상 상자의 작은 표)", "8000 고장 주입 · 8090 게이트웨이 로그 · 8092 탐지 상태 · 8091 트레이스 · 온톨로지 · 8080 사건 · 승인 · 인스턴스 · 8095 기업 데이터 · 3000 Grafana 끼워 보기. 서비스들은 CORS를 전부 허용한다.")
 C["c_prom"] = ("HTTP 긁기 10초 (그림: 대상 상자의 작은 회색 표)", "6개 서비스의 /metrics. monitor 프로필일 때만.")
