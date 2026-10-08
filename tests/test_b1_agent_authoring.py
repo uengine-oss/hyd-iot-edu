@@ -34,6 +34,11 @@ def _seed(repo):
     for role, uid in (("role:operator", KIM), ("role:operator", CHOI), ("role:prod-mgr", LEE)):
         repo.set_role_member("hyd", role, uid, True)
     repo.put_skill({"skill_name": "fan-vibration-check", "description": "팬 진동 점검 순서", "content": SKILL_MD})   # 랩업 SQL 로 넣은 것(origin 없음)
+    # B2 게이트(합친 뒤): 학생 서버 fan-vib 는 연결 검사를 통과한 기록이 있어야 에이전트 도구로 붙는다
+    from procsvc import mcp_registry
+    entry = mcp_registry.store_for(repo).servers("hyd")["fan-vib"]
+    mcp_registry.store_for(repo).save_check("hyd", "fan-vib", {"status": "ok", "fingerprint": mcp_registry.fingerprint(entry), "checked_at": "2026-10-08T00:00:00Z",
+                                                               "tools": [{"name": "vibration", "read_only": True}]}, "시험")
 
 
 @pytest.fixture
@@ -383,3 +388,17 @@ def _pg_runs(client, repo, rt, agent, tag, made, tmp_path, before, seed_users):
     assert (out["agents"], out["skills"], out["assignments"], out["role_members"]) == (1, 1, 1, 1)
     assert [t["todo_id"] for t in out["returned_tasks"]] == [row["id"]] and repo.get_workitem(row["id"])["user_id"] == "sys:agent"
     assert sorted(u["id"] for u in repo.list_users(None, "hyd")) == seed_users and _default_settings(rt) == before
+
+
+def test_agent_tools_must_be_checked_student_servers_or_base_servers(env):
+    """B1 × B2 게이트: 검사 기록 없는 학생 서버는 거절(사유), 기준 서버는 검사 없이 붙는다. 검사 기록을 지우면 다시 거절."""
+    client, rt = env
+    from procsvc import mcp_registry
+    st = mcp_registry.store_for(rt.repo)
+    st.delete_checks("hyd", ["fan-vib"])
+    body = {"name": "게이트 시험", "goal": "팬 진동을 본다", "tools": ["fan-vib"], "skills": []}
+    r = client.post("/api/agents", json=body)
+    assert r.status_code == 422 and "fan-vib" in r.text and "연결 검사" in r.text, r.text
+    r = client.post("/api/agents", json=dict(body, tools=["neo4j", "enterprise"]))
+    assert r.status_code == 201, r.text
+

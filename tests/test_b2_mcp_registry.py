@@ -177,9 +177,11 @@ def test_selectable_lists_only_read_marked_tools_of_checked_servers(api):
     assert "'delete'" in tools["delete_rows"]["reason"] and tools["add"]["tool_id"] == "mcp__my-fake__add"
     assert [p["tool_id"] for p in sel["selectable_tools"]] == [f"mcp__my-fake__{n}" for n in READ]
     # 기준 서버도 검사 전에는 고를 수 없다(사유) — 검사는 기록만 남기고 기준 설정은 그대로
-    assert s["enterprise"]["selectable"] is False and "연결 검사" in s["enterprise"]["reason"] and s["enterprise"]["origin"] == "seed"
+    # 합친 뒤 규칙: 기준 서버는 기본 에이전트가 쓰는 구성이라 검사 없이 고를 수 있다(워커가 기본 허용 목록으로 실행) — 학생 서버만 검사가 필요
+    assert s["enterprise"]["selectable"] is True and s["enterprise"]["reason"] is None and s["enterprise"]["origin"] == "seed"
+    assert s["enterprise"]["check"]["status"] == "never"          # 검사 상태는 그대로 보인다(참고)
     assert mcp_registry.refuse_reasons(mcp_registry.store_for(api.repo), "hyd", ["my-fake", "enterprise", "ghost"]) == [
-        "enterprise: 연결 검사를 통과하지 않은 서버입니다 — '연결 검사'를 먼저 하세요", "ghost: 등록되지 않은 도구 서버입니다"]
+        "ghost: 등록되지 않은 도구 서버입니다"]
 
 
 def test_a_server_added_outside_the_portal_or_changed_after_its_check_is_not_selectable(api):

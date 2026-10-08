@@ -350,7 +350,10 @@ def selectable(store, tenant_id: str) -> dict:
         except ValueError as e:
             spec, entry_error = {}, f"설정 오류 — {e}"
         state = check_state(name, entry, records.get(name))
-        reason = _not_selectable_reason(state, entry_error)
+        origin = origin_of(name, entry)
+        # 기준 서버(seed)는 기본 에이전트가 이미 쓰는 구성 — 워커가 기본 허용 목록으로 실행하므로 포털 연결 검사 없이 고를 수 있다.
+        # (process 컨테이너에는 stdio 서버 명령(uvx 등)이 없어 neo4j 는 포털 검사가 늘 "명령 없음"이다 — 검사 결과는 참고로만 보인다)
+        reason = None if origin == "seed" and not entry_error else _not_selectable_reason(state, entry_error)
         tools = []
         for t in (records.get(name) or {}).get("tools") or []:
             if reason:
@@ -362,9 +365,8 @@ def selectable(store, tenant_id: str) -> dict:
                           "selectable": ok, "reason": why, "tool_id": f"mcp__{name}__{t['name']}"})
             if ok:
                 picks.append({"server": name, "tool": t["name"], "tool_id": f"mcp__{name}__{t['name']}"})
-        if not reason and not any(t["selectable"] for t in tools):
+        if not reason and origin != "seed" and not any(t["selectable"] for t in tools):
             reason = "읽기 전용(readOnlyHint=true)으로 표시한 도구가 없습니다 — 에이전트에 붙일 도구가 없습니다"
-        origin = origin_of(name, entry)
         out.append({"name": name, "origin": origin, "origin_text": ORIGIN_WORDS[origin], "mine": origin != "seed", "editable": origin != "seed",
                     "transport": spec.get("transport"), "check": state, "selectable": reason is None, "reason": reason, "agent_value": name,
                     "tools": tools})

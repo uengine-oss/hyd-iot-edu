@@ -127,6 +127,10 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
     unknown = [t for t in tools if t not in servers]
     if unknown:
         raise AuthoringError(f"등록되지 않은 도구 서버입니다: {', '.join(unknown)} (등록된 서버: {', '.join(sorted(servers)) or '없음'})")
+    from . import mcp_registry   # B2 게이트: 연결 검사를 통과한(또는 기준) 서버만 에이전트 도구로 붙인다
+    refused = mcp_registry.refuse_reasons(mcp_registry.store_for(repo), tenant_id, tools)
+    if refused:
+        raise AuthoringError("붙일 수 없는 도구 서버가 있습니다 — " + " / ".join(refused))
     skills = list(dict.fromkeys(csv_list(body.get("skills"))))
     if skills:
         stored = {s["skill_name"] for s in repo.list_skills(tenant_id, skills)}
