@@ -796,22 +796,31 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 self.submit(reobs["id"], {"recovered": recovered}, by="process", now=now)
         if inc_state in incident_def.TERMINAL:
             rows = self.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
-            if self._command_never_issued(rows, self.hooks.incident_snapshot(inc_id)) and self._escalation_not_open(rows):
+            if (self._command_never_issued(rows, self.hooks.incident_snapshot(inc_id), generation=inst.get("rework_generation"))
+                    and self._escalation_not_open(rows)):
                 self._abort_before_action(inst, rows, inc_state, cleared, now)
 
     CONTROL_PATH = ("task:command", "task:reobserve", "task:work-order")
 
     @staticmethod
-    def _command_never_issued(rows, snap=None) -> bool:
-        """No approved action reached the plant before the Incident ended. Either no control-path work item ever started, or
-        (A083) the only one that did is task:command left PENDING because delivery was refused (ApprovalReviewRequired:
-        recovery is a new judgment, impossible once the alert cleared) and the Incident itself records no command — neither a
-        current cmdId nor one retired by rework. Without the Incident's record the row alone does not prove it."""
-        started = [w for w in rows if w["activity_id"] in InstanceRuntime.CONTROL_PATH and w["status"] not in ("TODO", "CANCELLED")]
+    def _command_never_issued(rows, snap=None, generation=0) -> bool:
+        """No approved action of the generation the Incident now serves reached the plant before the Incident ended.
+        The Incident's record comes first: a current cmdId is an action whatever generation its row belongs to. Without one,
+        only this generation's control-path rows count — a rework that reopened the Incident (A072) retired the earlier
+        generation's command to `superseded` after a person reviewed its effect, and the Incident's own verdict ('cleared
+        before any action') is about the new generation (A156 item 55: generation 0's DONE task:command and the superseded
+        entry kept generation 1 RUNNING on an ended Incident). Either no control-path work item of this generation started,
+        or (A083) the only one that did is task:command left PENDING because delivery was refused (ApprovalReviewRequired:
+        recovery is a new judgment, impossible once the alert cleared). Without the Incident's record (snap None) a started
+        row alone is taken as an action."""
+        if snap is not None and snap.get("cmdId"):
+            return False
+        current = int(generation or 0)
+        started = [w for w in rows if w["activity_id"] in InstanceRuntime.CONTROL_PATH and w["status"] not in ("TODO", "CANCELLED")
+                   and int(w.get("generation") or 0) == current]
         if not started:
             return True
-        return (snap is not None and not snap.get("cmdId") and not snap.get("superseded")
-                and all(w["activity_id"] == "task:command" and w["status"] == "PENDING" for w in started))
+        return snap is not None and all(w["activity_id"] == "task:command" and w["status"] == "PENDING" for w in started)
 
     @staticmethod
     def _escalation_not_open(rows) -> bool:
@@ -858,7 +867,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 if not fresh or fresh["status"] != "RUNNING":
                     continue
                 rows = self.repo.list_workitems(proc_inst_id=fresh["proc_inst_id"], limit=None)
-                if self._command_never_issued(rows, snap) and self._escalation_not_open(rows):
+                if self._command_never_issued(rows, snap, generation=fresh.get("rework_generation")) and self._escalation_not_open(rows):
                     self._abort_before_action(fresh, rows, snap["state"], bool(snap.get("cleared")), now)
                     changed += 1
         return changed
