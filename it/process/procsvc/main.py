@@ -1015,6 +1015,13 @@ manual_api.register(app,
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
 
+# A4 (U6): AI 판단 채점 — 화면에서 적은 정답표 대비 점수 · 반복 흔들림 · 지식 고치기 전·후 비교 (procsvc/eval_api.py · judgment_eval.py)
+from . import eval_api, judgment_eval, procdb as _procdb
+eval_api.register(app, driver_factory=_kg, book=book, incidents=incidents, runtime_factory=instance_mode.current, audit=_audit,
+    agent_url=os.getenv('AGENT_URL', 'http://agent:8091'),
+    store_factory=lambda: (judgment_eval.PgEvalStore(_procdb.SUPABASE_DSN, os.getenv("TENANT_ID", "hyd"))
+                           if PROCESS_MODE == 'instance' and os.getenv('PROCESS_REPO', 'pg') != 'memory' else judgment_eval.MemoryEvalStore()))
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")
