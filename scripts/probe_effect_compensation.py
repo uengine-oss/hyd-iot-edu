@@ -164,8 +164,33 @@ def main():
     # generation 1 agent tasks: stand-in worker over the real PG RPC; legacy bridge must not touch them
     check("a_generation1_starts_at_rank_diagnosis_kept", all(latest(pid)[aid]["status"] == "DONE" and (latest(pid)[aid].get("generation") or 0) == 0 for aid in AGENT_TASKS))
     until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:rank", {})), 120)
+    def cleared_branch():
+        # --worker, moderate fault: generation 0's fan command is still on the plant, so the alarm can clear while the real
+        # worker is still judging generation 1 — before or after task:select opens. That ending is a contract, not a skip
+        # (A156 fix in instances._command_never_issued): the reopened Incident is RESOLVED_WITHOUT_ACTION and the instance
+        # follows it — generation 1's open tasks cancelled, task:escalate reached by abort — while the retired command and the
+        # effect review stay on record.
+            snap = incident(inc_id); save("a-incident-cleared", snap)
+            def g1(): return {w["activity_id"]: w for w in view(pid)["workitems"] if (w.get("generation") or 0) == 1}
+            rows1 = until(lambda: (lambda r: r if "reached by abort" in (r.get("task:escalate", {}).get("log") or "") else None)(g1()), 120, 2)
+            save("a-g1-cleared-view", view(pid))
+            effects = ok(PROCESS, f"/api/instances/{pid}/effects"); save("a-effects-cleared", effects)
+            check("a_cleared_branch_instance_follows_incident_abort",
+                  rows1["task:select"]["status"] == "CANCELLED" and "before any action" in (rows1["task:select"].get("log") or "")
+                  and not any(w["status"] == "IN_PROGRESS" and k != "task:escalate" for k, w in rows1.items())
+                  and rows1.get("task:command", {}).get("status") == "CANCELLED",
+                  {k: (w["status"], (w.get("log") or "")[:60]) for k, w in rows1.items()})
+            check("a_cleared_branch_history_kept", snap["superseded"][-1]["cmdId"] == first_cmd and snap.get("cmdId") is None
+                  and plc["id"] in effects["resolution"]["acknowledged"], {"superseded": [x["cmdId"] for x in snap["superseded"]]})
+            report["branch"] = "alarm cleared during generation 1 (moderate fault); case B (work-order inverse) not exercised"
+            report["finished"] = datetime.now(timezone.utc).isoformat(); save("result", report)
+            print(f"ALL PASS: {len(report['checks'])} checks — {report['branch']}", flush=True)
+            return True
     if worker:
-        until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {})), agent_wait, 3)
+        reached = until(lambda: ("select" if (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {}))
+                                 else "cleared" if incident(inc_id)["state"] == "RESOLVED_WITHOUT_ACTION" else None), agent_wait, 3)
+        if reached == "cleared":
+            return cleared_branch()
         rank1 = latest(pid)["task:rank"]
         with repo._conn() as c:
             ev = c.execute("select event_type, crew_type, count(*) as n from events where todo_id = %s group by 1, 2", (str(rank1["id"]),)).fetchall()
@@ -195,28 +220,9 @@ def main():
     try:
         approve(sel2["id"], dec2, "skill:fan-max-derate", "A072 probe: second judgment, fan max with derate", "a-g1")
     except AssertionError:
-        # --worker, moderate fault: generation 0's fan command is still on the plant, so the alarm can clear while the real
-        # worker is still judging generation 1. That ending is a contract, not a skip (A156 fix in instances._command_never_issued):
-        # the reopened Incident is RESOLVED_WITHOUT_ACTION and the instance must follow it — generation 1's open tasks cancelled,
-        # task:escalate reached by abort — while the retired command and the effect review stay on record.
-        snap = incident(inc_id); save("a-incident-cleared", snap)
-        if not (worker and snap["state"] == "RESOLVED_WITHOUT_ACTION"):
+        if not (worker and incident(inc_id)["state"] == "RESOLVED_WITHOUT_ACTION"):
             raise
-        def g1(): return {w["activity_id"]: w for w in view(pid)["workitems"] if (w.get("generation") or 0) == 1}
-        rows1 = until(lambda: (lambda r: r if "reached by abort" in (r.get("task:escalate", {}).get("log") or "") else None)(g1()), 120, 2)
-        save("a-g1-cleared-view", view(pid))
-        effects = ok(PROCESS, f"/api/instances/{pid}/effects"); save("a-effects-cleared", effects)
-        check("a_cleared_branch_instance_follows_incident_abort",
-              rows1["task:select"]["status"] == "CANCELLED" and "before any action" in (rows1["task:select"].get("log") or "")
-              and not any(w["status"] == "IN_PROGRESS" and k != "task:escalate" for k, w in rows1.items())
-              and rows1.get("task:command", {}).get("status") == "CANCELLED",
-              {k: (w["status"], (w.get("log") or "")[:60]) for k, w in rows1.items()})
-        check("a_cleared_branch_history_kept", snap["superseded"][-1]["cmdId"] == first_cmd and snap.get("cmdId") is None
-              and plc["id"] in effects["resolution"]["acknowledged"], {"superseded": [x["cmdId"] for x in snap["superseded"]]})
-        report["branch"] = "alarm cleared during generation 1 (moderate fault); case B (work-order inverse) not exercised"
-        report["finished"] = datetime.now(timezone.utc).isoformat(); save("result", report)
-        print(f"ALL PASS: {len(report['checks'])} checks — {report['branch']}", flush=True)
-        return
+        return cleared_branch()
     report["branch"] = "generation 1 approved and executed"
     inc = until(lambda: (lambda i: i if i.get("cmdId") and (i.get("ack") or {}).get("result") == "DONE" else None)(incident(inc_id)), 90)
     check("a_second_command_issued_and_acknowledged", inc["cmdId"] != first_cmd and inc["state"] in ("ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "CLOSED"), {"cmd": inc["cmdId"], "state": inc["state"]})
