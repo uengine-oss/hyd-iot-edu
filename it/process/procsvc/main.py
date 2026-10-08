@@ -1015,6 +1015,10 @@ manual_api.register(app,
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
 
+# A10 에이전트 시험 실행 · 비교 (읽기 전용 판단, 처리 건 · 명령 없음)
+from . import agent_trials
+agent_trials.register(app, runtime_factory=instance_mode.current)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")

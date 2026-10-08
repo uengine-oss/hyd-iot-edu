@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="hitl.css?v=20261008-a147">
 <link rel="stylesheet" href="instances.css?v=20261008-a147">
 <link rel="stylesheet" href="components.css?v=20261008-a147">
+<link rel="stylesheet" href="compare.css?v=20261008-a10">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -29,6 +30,7 @@
     <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
     <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
+    <button data-tab="compare" data-icon="decision">에이전트 시험 비교</button>
     <div class="navgroup" data-term="nav.group.manage">관리</div>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
@@ -136,6 +138,12 @@
       <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
       <div class="detail" id="instDetail"></div>
     </div>
+  </section>
+
+  <!-- ───────── 에이전트 시험 비교 (A10, compare.js) ───────── -->
+  <section class="view" id="view-compare">
+    <div class="page-head"><h1>에이전트 시험 비교</h1></div>
+    <div id="compareView"></div>
   </section>
 
   <!-- ───────── 결함 시뮬레이션 ───────── -->
@@ -277,5 +285,6 @@
 <script src="liveStream.js?v=20261008-a147"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
+<script src="compare.js?v=20261008-a10"></script>
 </body>
 </html>

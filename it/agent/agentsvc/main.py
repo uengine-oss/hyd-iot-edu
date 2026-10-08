@@ -191,6 +191,25 @@ def evaluate_without_submission(req: EvaluationReq):
     return run.to_dict()
 
 
+class TrialReq(BaseModel):
+    """A10 시험 실행: scenario {asset, pattern} · agent 설정 · 입력 스냅숏 항목(같은 입력 재사용) · 테넌트 MCP 서버 이름."""
+    scenario: dict
+    agent: dict
+    entries: dict = {}
+    tenant_servers: list[str] | None = None
+
+
+@app.post('/api/agent/trial')
+def agent_trial(req: TrialReq):
+    """Read-only judgment for one agent setting; no incident, decision, work item or command (trial.py)."""
+    from . import trial as triallib
+    if not all(isinstance(req.scenario.get(k), str) and req.scenario[k] for k in ('asset', 'pattern')):
+        raise HTTPException(400, '시나리오의 설비와 이상 패턴이 필요합니다')
+    snap = triallib.Snapshot(req.entries)
+    out = triallib.run_trial(req.scenario, req.agent, triallib.LiveWorld(kg, tsdb), snap, req.tenant_servers)
+    return {'trial': out, 'added': snap.added}
+
+
 def _watch(task):
     """If the consume loop ever exits, /healthz reports it (503) instead of looking healthy while doing nothing."""
     state["consumer_dead"] = True
