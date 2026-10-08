@@ -6,7 +6,7 @@
    단계 계산은 process-gpt-vue3 의 instanceSteps.js(window.hydSteps) 그대로다.
    A122 (UIUX_PLAN §1.3 · §1.4 · §5): summary cards → 에이전트 활동 + 내 차례 → 폼(사건 / 선택 / 사유·담당) → 목록 + 상세 3탭(결과 · 흐름 · 기록). */
 (function () {
-  const I = { mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
+  const I = { defNames: {}, mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
               form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null, listShown: 20, todoShown: 6, eventsShown: 20 };
   const who = id => UI.who(id);
   const chip = s => UI.chip(s);
@@ -23,6 +23,14 @@
     if (!I.mode || I.mode.mode !== 'instance') { renderBanner(); return; }
     // A083: the server filters by status; without it a RUNNING case older than the newest 50 is unreachable from the portal
     try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); } catch (e) { I.instances = []; }
+    // A157: list chips name each row's step from that row's own definition (it showed raw ids like extract-manual when another
+    // definition's instance was selected). Each definition version is fetched once; a failed fetch is reported, not hidden.
+    const defKey = x => `${x.proc_def_id}@${x.proc_def_version}`;
+    await Promise.all([...new Set(I.instances.filter(x => !(defKey(x) in I.defNames)).map(defKey))].map(async k => {
+      const [id, version] = k.split('@');
+      try { const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`); I.defNames[k] = Object.fromEntries((d.activities || []).map(a => [a.id, a.name])); }
+      catch (e) { I.msg = `흐름 정의 ${id} ${version}을(를) 읽지 못했습니다: ${e.message}`; }
+    }));
     let todoRows = [];
     try { todoRows = await getJ(API.process + '/api/todolist?status=IN_PROGRESS'); } catch (e) { I.msg = e.message; }
     I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED');
@@ -270,13 +278,12 @@
     const box = $('#instList');
     if (!I.instances.length) { box.innerHTML = UI.empty(UI.t('inst.empty'), UI.t('inst.emptySub'), 'compact'); return; }
     box.innerHTML = '';
-    const names = {};
-    ((I.view && I.view.definition && I.view.definition.activities) || []).forEach(a => { names[a.id] = a.name; });
     const paged = UI.page(I.instances, I.listShown, x => x.proc_inst_id === I.sel);
     paged.rows.forEach(x => {
       const started = new Date(x.start_date), ended = x.end_date ? new Date(x.end_date) : null;
       const span = ((ended || new Date()) - started) / 60000;
       const when = x.status === 'RUNNING' ? `${span < 1 ? UI.t('inst.justStarted') : Math.round(span) + UI.t('inst.elapsed')}` : `${ended ? Math.max(1, Math.round(span)) + UI.t('inst.took') + ' ' : ''}${UI.status(x.status)}`;
+      const names = I.defNames[`${x.proc_def_id}@${x.proc_def_version}`] || {};
       const steps = (x.current_activity_ids || []).map(id => `<span class="chip step-chip">${esc(UI.flowName(names[id] || id.replace(/^task:|^ev:/, '')))}</span>`).join('');
       const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}</div>
         <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
