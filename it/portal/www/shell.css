@@ -1,0 +1,135 @@
+/* A5 (U7) 포털 셸 — 메뉴 묶음 밀도 · 상단바("나" · 알림 배지) · 토스트 · 확인 대화상자 · 로딩/오류 블록.
+   tokens.css 의 색·간격만 쓴다(색을 새로 박지 않는다). 계약: docs/handoff/verification/2026-10-08/u7-shell.md */
+
+/* 메뉴: 7묶음 23항목이 한 화면에 들어오도록 넓은 화면에서만 촘촘하게(터치 화면은 44px 유지) */
+@media (min-width: 721px) {
+  .rail { gap: var(--s4); }
+  .rail nav button { min-height: 34px; padding: 6px 12px; }
+  .rail nav .navgroup { padding: var(--s3) var(--s3) var(--s1); }
+}
+.rail nav .navgroup:first-child { padding-top: 0; }
+
+/* 상단바: "나" 자리 · 알림. 서비스 상태 줄(.dots)이 길어져도 시각 · 나 · 알림은 화면 안에 남는다 */
+.strip-status { min-width: 0; flex: 1 1 auto; justify-content: flex-end; }
+.strip-status > span { white-space: nowrap; }
+.strip-status .dots { min-width: 0; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 4; }
+.clock-pop, .shell-bell { flex-shrink: 0; }
+@media (max-width: 1200px) { .strip-status .dots { max-width: 160px; } }
+.shell-me {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 12px;
+  min-width: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+.shell-me svg { width: 18px; height: 18px; flex-shrink: 0; }
+.shell-me b { font-weight: 600; color: var(--ink); }
+.shell-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-2);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.shell-bell:hover { background: var(--surface-soft); color: var(--ink); }
+.shell-bell svg { width: 20px; height: 20px; }
+.shell-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--alarm);
+  color: var(--panel);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+.shell-badge[hidden] { display: none; }
+@media (max-width: 1200px) { .shell-me { max-width: 140px; } }
+@media (max-width: 720px) {
+  .shell-me { max-width: 96px; }
+  .shell-me .shell-me-label { display: none; }
+}
+
+/* 새 화면 자리 */
+.shell-mount { min-height: 160px; }
+
+/* 로딩 · 오류 블록 — .empty 와 같은 자리 · 크기 */
+.state-loading .spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--rule);
+  border-top-color: var(--accent);
+  animation: shell-spin 0.8s linear infinite;
+}
+@keyframes shell-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .state-loading .spin { animation: none; } }
+.state-error b { color: var(--alarm); }
+.state-error .btn { margin-top: var(--s2); }
+
+/* 토스트: 아래 이전/다음 줄(64px) 위에 뜬다 */
+.toast-host {
+  position: fixed;
+  right: var(--s6);
+  bottom: calc(64px + var(--s4));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-width: min(420px, calc(100vw - 2 * var(--s4)));
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--panel);
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 6px 24px rgba(24, 36, 59, 0.18);
+  border-left: 4px solid var(--ink-3);
+}
+.toast.tone-ok { border-left-color: var(--ok); }
+.toast.tone-neg { border-left-color: var(--alarm); }
+.toast span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer; opacity: 0.7; }
+.toast-x:hover { opacity: 1; }
+@media (max-width: 720px) {
+  .toast-host { left: var(--s4); right: var(--s4); max-width: none; }
+}
+
+/* 확인 대화상자 */
+.confirm-dialog {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--panel-pad);
+  width: min(440px, calc(100vw - 2 * var(--s4)));
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.confirm-dialog::backdrop { background: rgba(24, 36, 59, 0.4); }
+.confirm-dialog h3 { margin: 0 0 var(--s2); font-size: 16px; }
+.confirm-dialog p { margin: 0 0 var(--s4); color: var(--ink-2); font-size: 14px; line-height: 1.6; }
+.confirm-dialog .form-actions { display: flex; justify-content: flex-end; gap: var(--s2); }

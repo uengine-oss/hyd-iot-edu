@@ -11,26 +11,40 @@
 <link rel="stylesheet" href="hitl.css?v=20261008-a147">
 <link rel="stylesheet" href="instances.css?v=20261008-a147">
 <link rel="stylesheet" href="components.css?v=20261008-a147">
+<link rel="stylesheet" href="shell.css?v=20261008-u7">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
 <aside class="rail" id="navigation" aria-label="메뉴">
   <button class="brand active" id="brandHome" title="홈"><span class="brand-mark" aria-hidden="true">H</span><span><strong>HYD Lab</strong><small>유압설비 조치 포탈</small></span></button>
   <nav aria-label="주 메뉴">
-    <button data-tab="main" data-icon="home" data-term="nav.main">홈</button>
-    <button data-tab="home" data-icon="map" data-term="nav.home">시스템 구성</button>
+    <!-- A5 (U7): 수강생 동선 묶음. 순서가 곧 이전/다음 화면 순서다. 계약: docs/handoff/verification/2026-10-08/u7-shell.md -->
+    <div class="navgroup" data-term="nav.group.work">작업</div>
+    <button data-tab="inbox" data-icon="inbox" data-term="nav.inbox">내 작업함</button>
+    <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
     <div class="navgroup" data-term="nav.group.plant">설비</div>
     <button data-tab="scenario" data-icon="play" data-term="nav.scenario">결함 시뮬레이션</button>
     <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인 · 조치</button>
     <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
-    <div class="navgroup focus" data-term="nav.group.decide">판단과 처리</div>
+    <div class="navgroup" data-term="nav.group.judge">판단</div>
+    <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
+    <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">손익 · What-if</button>
+    <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
+    <div class="navgroup" data-term="nav.group.knowledge">지식</div>
     <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
     <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
-    <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
-    <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
-    <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
-    <div class="navgroup" data-term="nav.group.manage">관리</div>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
+    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 연결</button>
+    <div class="navgroup" data-term="nav.group.ai">AI 구성</div>
+    <button data-tab="agents" data-icon="agent" data-term="nav.agents">에이전트</button>
+    <button data-tab="mcp" data-icon="tool" data-term="nav.mcp">도구(MCP)</button>
+    <button data-tab="compare" data-icon="compare" data-term="nav.compare">시험 비교</button>
+    <button data-tab="eval" data-icon="score" data-term="nav.eval">판단 채점</button>
+    <div class="navgroup" data-term="nav.group.kpi">성과</div>
+    <button data-tab="kpi" data-icon="kpi" data-term="nav.kpi">KPI</button>
+    <div class="navgroup" data-term="nav.group.system">시스템</div>
+    <button data-tab="main" data-icon="home" data-term="nav.main">홈</button>
+    <button data-tab="home" data-icon="map" data-term="nav.home">시스템 구성</button>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
   </nav>
   <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션</strong></div></div>
@@ -38,9 +52,12 @@
 
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
-  <div class="breadcrumb"><b id="pageLocation">홈</b></div>
+  <div class="breadcrumb"><span id="pageGroup">시스템</span><b id="pageLocation">홈</b></div>
   <div class="strip-status"><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><span class="stream-ticker" id="streamTicker" aria-live="polite"><i class="live-dot off"></i><span>연결 중</span></span><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
+  <!-- A5 (U7): "나" 자리 · 알림 배지. 내용은 window.hydInbox 가 채운다(없으면 비어 있음 표시). -->
+  <div class="shell-me" id="shellMe" aria-label="나"></div>
+  <button type="button" class="shell-bell" id="shellBell" aria-label="알림"><span class="shell-badge" id="shellBadge" hidden></span></button>
 </header>
 <button class="nav-scrim" id="navScrim" aria-label="메뉴 닫기" hidden></button>
 
@@ -254,6 +271,40 @@
       </div>
     </details>
   </section>
+
+  <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
+  <section class="view" id="view-inbox">
+    <div class="page-head"><h1>내 작업함</h1></div>
+    <div class="shell-mount" id="inboxView"></div>
+  </section>
+  <section class="view" id="view-agents">
+    <div class="page-head"><h1>에이전트</h1></div>
+    <div class="shell-mount" id="agentsView"></div>
+  </section>
+  <section class="view" id="view-mcp">
+    <div class="page-head"><h1>도구(MCP)</h1></div>
+    <div class="shell-mount" id="mcpView"></div>
+  </section>
+  <section class="view" id="view-compare">
+    <div class="page-head"><h1>시험 비교</h1></div>
+    <div class="shell-mount" id="compareView"></div>
+  </section>
+  <section class="view" id="view-eval">
+    <div class="page-head"><h1>판단 채점</h1></div>
+    <div class="shell-mount" id="evalView"></div>
+  </section>
+  <section class="view" id="view-whatif">
+    <div class="page-head"><h1>손익 · What-if</h1></div>
+    <div class="shell-mount" id="whatifView"></div>
+  </section>
+  <section class="view" id="view-kpi">
+    <div class="page-head"><h1>KPI</h1></div>
+    <div class="shell-mount" id="kpiView"></div>
+  </section>
+  <section class="view" id="view-fabric">
+    <div class="page-head"><h1>데이터 연결</h1></div>
+    <div class="shell-mount" id="fabricView"></div>
+  </section>
 </main>
   <nav class="page-navigation" aria-label="화면 순서대로 이동">
     <button id="pagePrev" class="page-direction" type="button"></button>
@@ -277,5 +328,7 @@
 <script src="liveStream.js?v=20261008-a147"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
+<!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
+<script src="shell.js?v=20261008-u7"></script>
 </body>
 </html>

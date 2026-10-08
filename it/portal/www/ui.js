@@ -381,3 +381,74 @@ function humanQuestionText(data) {
   return String((data && (data.text || data.question)) || "");
 }
 UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽기 전에는 id 가 그대로 보이고, 화면은 주기 갱신 때 따라온다.
+
+/* A5 (U7 포털 셸): 수강생 동선 메뉴 이름 · 새 화면 아이콘 · 토스트 · 확인 대화상자 · 로딩/오류 블록.
+   덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: docs/handoff/verification/2026-10-08/u7-shell.md */
+Object.assign(UI.terms, {
+  'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구(MCP)', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
+  'nav.whatif': '손익 · What-if', 'nav.kpi': 'KPI', 'nav.fabric': '데이터 연결',
+  'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': 'AI 구성', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
+  'shell.me': '나', 'shell.meNone': '선택 안 함', 'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
+  'shell.notReady': '준비 중', 'shell.notReadySub': '이 화면은 아직 연결되지 않았습니다. 기능이 붙으면 이 자리에 나타납니다.',
+  'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',
+  'dialog.ok': '확인', 'dialog.cancel': '취소', 'state.retry': '다시 시도',
+});
+(function () {
+  const extra = {
+    inbox: "M3 13h5l2 3h4l2-3h5M5 5h14l2 8v6H3v-6Z",
+    agent: "M12 3v3M7 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm2 5h0m6 0h0M9 15h6",
+    tool: "M14 4a4 4 0 0 0-4 5L4 15l3 3 6-6a4 4 0 0 0 5-4l-3 1-2-2 1-3Z",
+    compare: "M4 4h7v16H4Zm9 0h7v16h-7ZM6 8h3m6 0h3M6 12h3m6 0h3",
+    score: "M12 3l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L3 10l6-1Z",
+    whatif: "M4 19h16M6 15l4-4 3 3 5-6M16 8h2v2",
+    kpi: "M12 3a9 9 0 1 0 9 9h-9ZM14 3a7 7 0 0 1 7 7h-7Z",
+    fabric: "M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3Zm0 0v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3",
+    bell: "M6 16V11a6 6 0 0 1 12 0v5l2 2H4Zm4 4h4",
+    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
+  };
+  const base = UI.icon;
+  UI.icon = function (name) {
+    if (!extra[name]) return base.call(this, name);
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${extra[name]}"/></svg>`;
+  };
+  const html = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // 로딩 블록: 빈 블록(UI.empty)과 같은 자리·크기, 문구만 다르다.
+  UI.loading = function (text, cls = '') {
+    return `<div class="empty state-loading ${cls}" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><b>${html(text || this.t('loading'))}</b></div>`;
+  };
+  // 오류 블록: 무엇을 못 했는지 + 사람이 읽을 사유 한 줄 + (선택) 다시 시도 버튼. 버튼은 data-retry 로 찾아 붙인다.
+  UI.errorBlock = function (title, reason = '', { retry = false, cls = '' } = {}) {
+    return `<div class="empty state-error ${cls}" role="alert"><b>${html(title || this.t('error.load'))}</b>${reason ? `<span>${html(reason)}</span>` : ''}${retry ? `<button type="button" class="btn small" data-retry>${html(this.t('state.retry'))}</button>` : ''}</div>`;
+  };
+
+  // 토스트: 화면 아래쪽에 잠깐 뜨는 한 줄. tone = 'ok' | 'neg' | 'neutral'. 같은 문구가 겹치면 하나만 둔다.
+  UI.toast = function (message, { tone = 'neutral', timeout = 4000 } = {}) {
+    let host = document.getElementById('toastHost');
+    if (!host) { host = document.createElement('div'); host.id = 'toastHost'; host.className = 'toast-host'; host.setAttribute('aria-live', 'polite'); document.body.append(host); }
+    const text = String(message ?? '');
+    [...host.children].filter(n => n.dataset.text === text).forEach(n => n.remove());
+    const node = document.createElement('div');
+    node.className = 'toast tone-' + tone; node.dataset.text = text; node.setAttribute('role', tone === 'neg' ? 'alert' : 'status');
+    node.innerHTML = `<span>${html(text)}</span><button type="button" class="toast-x" aria-label="닫기">×</button>`;
+    node.querySelector('.toast-x').addEventListener('click', () => node.remove());
+    host.append(node);
+    if (timeout > 0) setTimeout(() => node.remove(), timeout);
+    return node;
+  };
+
+  // 확인 대화상자: Promise<boolean>. 위험한 행동(danger)은 확인 버튼이 빨강이고, 기본 초점은 취소에 둔다.
+  UI.confirm = function ({ title = '', body = '', ok, cancel, danger = false } = {}) {
+    return new Promise(resolve => {
+      const dlg = document.createElement('dialog');
+      dlg.className = 'confirm-dialog';
+      dlg.innerHTML = `<form method="dialog"><h3>${html(title)}</h3>${body ? `<p>${html(body)}</p>` : ''}
+        <div class="form-actions"><button value="cancel" class="btn" autofocus>${html(cancel || this.t('dialog.cancel'))}</button><button value="ok" class="btn ${danger ? 'danger' : 'primary'}">${html(ok || this.t('dialog.ok'))}</button></div></form>`;
+      document.body.append(dlg);
+      const done = v => { dlg.remove(); resolve(v); };
+      dlg.addEventListener('close', () => done(dlg.returnValue === 'ok'));
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+      else { dlg.remove(); resolve(window.confirm(`${title}${body ? '\n' + body : ''}`)); }
+    });
+  };
+})();
