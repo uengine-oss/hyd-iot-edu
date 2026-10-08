@@ -23,6 +23,11 @@ HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
 SEVERITY = {"cooler_degradation": {"high": thermal.DEGRADED_HEALTH, "moderate": thermal.MODERATE_HEALTH},
             "pump_leakage": {"high": thermal.DEGRADED_LEAK},
             "fan_vibration": {"high": thermal.DEGRADED_BEARING}}
+# Default ramp per kind (simulated seconds) when the caller gives none. Bearing wear ramps over 900 s: FAN_VIBRATION needs
+# VS1 > 1.2 *and still rising* for its 60 s hold, and over 300 s VS1 rose above 1.2 for only ~57 s (noise-free) — at
+# TIME_SCALE 20 (one sample = 20 sim-s) the raise then hung on sample phase and noise (A160: live miss after 151 s).
+# 900 s gives ~169 s of rise above the line (> hold + three samples). The detection rule (pattern:fan-vibration) is unchanged.
+DEFAULT_RAMP_S = {"cooler_degradation": 300.0, "pump_leakage": 300.0, "fan_vibration": 900.0, "restore": 300.0}
 
 
 @dataclass
@@ -82,11 +87,15 @@ class Plant:
                 setattr(u.state, attr, cur + f.rate_per_s * dt)
 
     # ---- fault injection API ----
-    def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float = 300.0,
+    def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
                severity: str | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
-        strength from SEVERITY ("high" = the kind's default)."""
+        strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
+        if ramp_sim_s is None:
+            if kind not in DEFAULT_RAMP_S:
+                raise ValueError(f"unknown fault kind {kind}")
+            ramp_sim_s = DEFAULT_RAMP_S[kind]
         with self.lock:
             u = self.units[asset]
             if kind == "restore":

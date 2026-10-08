@@ -290,3 +290,62 @@ def test_fan_incident_extends_once_when_vibration_is_down_but_clear_is_pending()
     machine.on_alert(inc, {"alertId": "ALT-x", "state": "CLEAR"}, fx)
     machine.on_timer(inc, "reobs", now(), 0.93, fx=fx, time_scale=20)
     assert inc.state == "RESOLVED" and inc.history[-1]["note"] == "VS1 0.93 < 1.2"
+
+
+# ---------------------------------------------------------------- A160: fan fault ramp vs the held FAN_VIBRATION rule
+def _rise_above_line_s(ramp_sim_s, load=90.0, fan=60.0):
+    """Noise-free simulated seconds VS1 spends above 1.2 mm/s while the bearing-wear ramp is still rising it."""
+    s = settled(load_pct=load, fan_pct=fan)
+    rate = thermal.DEGRADED_BEARING / ramp_sim_s
+    above = 0
+    for _ in range(int(ramp_sim_s)):
+        s.bearing_wear = min(thermal.DEGRADED_BEARING, s.bearing_wear + rate)
+        if thermal.vibration(s, fan) > cep.RAISE_VS1:
+            above += 1
+    return above
+
+
+def test_default_fan_ramp_rises_above_the_line_for_the_hold_plus_three_20x_samples():
+    """FAN_VIBRATION = VS1 > 1.2 and still rising, held 60 sim-s. At TIME_SCALE 20 one sample is 20 sim-s, so the rise above
+    the line must outlast the hold by a few samples or the raise hangs on sample phase (A160 live miss after 151 s)."""
+    need = cep.HOLD_S + 3 * 20
+    assert plantmod.DEFAULT_RAMP_S["fan_vibration"] == 900.0
+    assert _rise_above_line_s(plantmod.DEFAULT_RAMP_S["fan_vibration"]) >= need
+    assert _rise_above_line_s(300.0) < need          # the old shared default: why it flaked
+
+
+def test_default_fan_ramp_raises_during_the_ramp_at_20x_for_every_sample_phase():
+    """Replay the real plant at TIME_SCALE 20 (one VS1 sample per wall second, ±3 ms clock jitter) through the detector's
+    slope window and hold: the alert comes while the wear is still ramping, whatever the sample phase or noise seed."""
+    import random
+    from det.features import SlopeWindow
+
+    def raised_at(phase, seed):
+        pl = plantmod.Plant(time_scale=20)
+        u = pl.units["HYD-03"]
+        u.state.rng.seed(seed)
+        pl.tick(60)
+        if phase:
+            pl.tick(phase / 20)
+        r = pl.inject("HYD-03", "fan_vibration")
+        assert r["ramp_sim_s"] == 900.0
+        w, st, jit, t = SlopeWindow(60.0), cep.CepState(), random.Random(seed), 1000.0
+        for k in range(1, 91):
+            pl.tick(1.0)
+            t += 1.0 + jit.uniform(-0.003, 0.003)
+            w.push(t * 20, u.state.vs1)
+            vs1 = u.state.vs1
+            if cep._step(st, "HYD-03", t * 20, "FAN_VIBRATION", "HIGH", vs1 > cep.RAISE_VS1 and w.slope() > 0,
+                         vs1 < cep.CLEAR_VS1, cep.HOLD_S, None, {}, None):
+                return k
+        return None
+    got = [raised_at(phase, seed) for phase in range(0, 20, 4) for seed in (1, 2, 3)]
+    assert all(k is not None and k <= 900 / 20 for k in got), got
+
+
+def test_explicit_ramp_still_wins_and_unknown_kind_is_refused():
+    pl = plantmod.Plant(time_scale=20)
+    assert pl.inject("HYD-01", "fan_vibration", ramp_sim_s=100)["ramp_sim_s"] == 100
+    assert pl.inject("HYD-01", "cooler_degradation")["ramp_sim_s"] == 300.0
+    with pytest.raises(ValueError):
+        pl.inject("HYD-01", "fan_wobble")

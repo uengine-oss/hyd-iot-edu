@@ -34,7 +34,7 @@ class FaultReq(BaseModel):
     target: float | None = None          # ramp target of the fault's disturbance variable (default per kind)
     target_health: float | None = None   # legacy name for cooler_degradation
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
-    ramp_sim_s: float = 300.0
+    ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)
 
 
 class ModeReq(BaseModel):
