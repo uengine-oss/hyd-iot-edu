@@ -14,6 +14,8 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
+from hydcommon.fabric import CROSS_QUERIES, ENT, TS
+
 from .tools import DmnTools, enveloped
 
 mcp = FastMCP("hyd-dmn", instructions=(

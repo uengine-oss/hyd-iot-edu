@@ -282,6 +282,30 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
         assert ok is (mark == "READ"), name
 
 
+def test_repo_mcp_server_annotations_only_use_module_level_names():
+    """pydantic 은 도구 타입 힌트(from __future__ annotations 문자열)를 서버 모듈 전역에서 평가한다 —
+    import 하지 않은 이름(A158: dmn-mcp CROSS_QUERIES)이 있으면 컨테이너가 시작하자마자 죽는다. 그 이름을 여기서 잡는다."""
+    import ast, builtins
+    for path in ("it/dmn-mcp/dmn_mcp/server.py", "it/enterprise-mcp/enterprise_mcp/server.py"):
+        tree = ast.parse((ROOT / path).read_text(encoding="utf-8"))
+        bound = set(dir(builtins))
+        for node in tree.body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                bound |= {(a.asname or a.name).split(".")[0] for a in node.names}
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                bound.add(node.name)
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                for t in (node.targets if isinstance(node, ast.Assign) else [node.target]):
+                    bound |= {n.id for n in ast.walk(t) if isinstance(n, ast.Name)}
+        for fn in (n for n in tree.body if isinstance(n, ast.FunctionDef)):
+            args = fn.args.args + fn.args.kwonlyargs
+            for expr in [a.annotation for a in args if a.annotation] + ([fn.returns] if fn.returns else []):
+                local = {n.id for c in ast.walk(expr) if isinstance(c, ast.comprehension)
+                         for n in ast.walk(c.target) if isinstance(n, ast.Name)}
+                missing = {n.id for n in ast.walk(expr) if isinstance(n, ast.Name)} - bound - local
+                assert not missing, f"{path}:{fn.lineno} {fn.name} 타입 힌트에 정의되지 않은 이름: {sorted(missing)}"
+
+
 # ---------------------------------------------------------------- 비밀값 가림
 def test_secrets_are_masked_in_config_views():
     spec = mcp_check.normalize({"command": "uvx", "args": ["mcp-neo4j-cypher"], "env": {"NEO4J_URI": "bolt://neo4j:7687", "NEO4J_PASSWORD": "hydpass123", "NEO4J_READ_ONLY": "true"}})
