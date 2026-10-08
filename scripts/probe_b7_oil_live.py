@@ -356,8 +356,7 @@ def run(a, save, agent_wait, started):
     if a.expect == "worker":
         tool_ev = [e for e in events if e.get("todo_id") in diag_ids and str(e.get("event_type", "")).startswith("tool_usage")]
         save("6-diagnose-tool-events", tool_ev)
-        names = sorted({json.dumps((e.get("data") or {}).get("tool_name") or (e.get("data") or {}).get("name") or "", ensure_ascii=False)
-                        for e in tool_ev})
+        names = sorted({str((e.get("data") or {}).get("tool") or "") for e in tool_ev})   # 워커 이벤트의 도구 이름 키는 data.tool
         check("원인 진단 도구 호출 이벤트가 남음(콘솔 · 포털에 보이는 것)", len(tool_ev) > 0, names[:12])
 
 
