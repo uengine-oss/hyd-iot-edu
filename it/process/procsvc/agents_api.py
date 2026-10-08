@@ -99,7 +99,7 @@ def mount(app: FastAPI) -> None:
         # what the worker will run with — the same function, per step (a step may declare its own tools/skills/model)
         base = agent_settings(rt.repo, rt.tenant_id, user)
         card["run"] = {"instructions": base.instructions(), "settings": base.summary(),
-                       "steps": [{"definition_id": s["definition_id"], "activity_id": s["activity_id"], "name": s["name"],
+                       "steps": [{"definition_id": s["definition_id"], "definition_name": s["definition_name"], "activity_id": s["activity_id"], "name": s["name"],
                                   "settings": agent_settings(rt.repo, rt.tenant_id, user, activity=s["caps"]).summary()}
                                  for s in steps if s["agent"] and agent_id in s["performers"]],
                        "servers_registered": [{"name": n, "description": (servers.get(n) or {}).get("description") or ""} for n in sorted(servers)]}
@@ -116,7 +116,7 @@ def mount(app: FastAPI) -> None:
             out.append({"skill_name": n, "title": skill_title(s), "description": s.get("description") or "", "updated_at": s.get("updated_at"),
                         "chars": len(s.get("content") or ""),
                         "agents": [{"id": uid, "name": names.get(uid, uid)} for uid, ss in attached.items() if n in ss],
-                        "steps": [{"definition_id": st["definition_id"], "activity_id": st["activity_id"], "name": st["name"]}
+                        "steps": [{"definition_id": st["definition_id"], "definition_name": st["definition_name"], "activity_id": st["activity_id"], "name": st["name"]}
                                   for st in steps if n in (st["caps"].get("skills") or [])]})
         return out
 
@@ -129,5 +129,5 @@ def mount(app: FastAPI) -> None:
         names = {u["id"]: u.get("username") or u["id"] for u in rt.repo.list_users(None, rt.tenant_id)}
         return {**row, "title": skill_title(row),
                 "agents": [{"id": uid, "name": names.get(uid, uid)} for uid, ss in attached.items() if name in ss],
-                "steps": [{"definition_id": st["definition_id"], "activity_id": st["activity_id"], "name": st["name"]}
+                "steps": [{"definition_id": st["definition_id"], "definition_name": st["definition_name"], "activity_id": st["activity_id"], "name": st["name"]}
                           for st in steps if name in (st["caps"].get("skills") or [])]}

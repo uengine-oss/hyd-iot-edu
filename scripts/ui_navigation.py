@@ -8,8 +8,7 @@ from ui_capture_ready import trends_ready
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / '.evidence/design-navigation'
 OUT.mkdir(parents=True, exist_ok=True)
-TABS = ['main', 'home', 'scenario', 'incidents', 'trends', 'ontology', 'skills', 'decision', 'process']
-CAPTURE_VIEWS = set(sys.argv[2].split(',')) if len(sys.argv)>2 else set(TABS)
+CAPTURE_ARG = set(sys.argv[2].split(',')) if len(sys.argv)>2 else None
 records, errors = [], []
 
 with sync_playwright() as pw:
@@ -18,6 +17,10 @@ with sync_playwright() as pw:
     page.on('pageerror',lambda e: errors.append(str(e)))
     page.goto('http://localhost:8088')
     expect(page.locator('#scale')).not_to_have_text('–')
+    # A5 셸: 화면 순서는 사이드바 버튼 순서(묶음 포함)다 — 목록을 여기 박지 않고 페이지에서 읽는다.
+    TABS = page.evaluate("[...document.querySelectorAll('#navigation [data-tab]')].map(b => b.dataset.tab)")
+    assert len(TABS) == len(set(TABS)) and {'main', 'process', 'instances'} <= set(TABS), TABS
+    CAPTURE_VIEWS = CAPTURE_ARG or set(TABS)
     for width,height in [(1440,900),(820,1180),(768,1024),(390,844)]:
         page.set_viewport_size({'width':width,'height':height})
         while page.locator('#pagePrev').is_enabled():
@@ -26,7 +29,7 @@ with sync_playwright() as pw:
         for i,tab in enumerate(TABS):
             if i: page.locator('#pageNext').click()
             expect(page.locator(f'#view-{tab}')).to_be_visible()
-            expect(page.locator('#pagePosition')).to_have_text(f'{i+1} / 9')
+            expect(page.locator('#pagePosition')).to_have_text(f'{i+1} / {len(TABS)}')
             expect(page.locator(f'[data-tab={tab}]')).to_have_attribute('aria-current','page')
             if tab=='ontology':
                 expect(page.locator('.o-node').first).to_be_visible()

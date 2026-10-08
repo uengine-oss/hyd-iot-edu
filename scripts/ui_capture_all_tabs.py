@@ -19,7 +19,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 PORTAL = 'http://127.0.0.1:8088/'
-TABS = ['main', 'home', 'scenario', 'incidents', 'trends', 'ontology', 'skills', 'decision', 'process', 'instances', 'knowledge', 'admin']
+TABS = None   # A158: 기본은 사이드바 버튼 순서 전체(셸 묶음 포함) — 페이지에서 읽는다. --tabs 로 좁힌다
 WIDTHS = [(1440, 900), (1024, 768)]
 UNLOCK_CSS = 'body{height:auto!important;overflow:visible!important} main{overflow:visible!important;min-height:0!important} .list{max-height:none!important} .split>div:first-child{position:static!important} .inst-events,.stream-list,.onto-map{max-height:none!important}'
 IGNORE = ('127.0.0.1:1881', 'localhost:1881', ':8085', ':9090', ':9644')   # optional tools (FUXA · Redpanda console · Prometheus) off: their probes fail by design
@@ -31,7 +31,7 @@ def main():
     out = Path(args[0] if args else '.evidence/a122'); out.mkdir(parents=True, exist_ok=True)
     tabs = flags['--tabs'].split(',') if isinstance(flags.get('--tabs'), str) else TABS
     full = '--full' in flags
-    console, layout = {}, {}
+    console, layout, residue = {}, {}, {}
     with sync_playwright() as p:
         browser = p.chromium.launch()
         for w, h in WIDTHS:
@@ -41,6 +41,8 @@ def main():
             pg.on('console', lambda m: msgs.append({'type': m.type, 'text': m.text[:300], 'url': (m.location or {}).get('url', '')}))
             pg.on('pageerror', lambda e: msgs.append({'type': 'pageerror', 'text': str(e)[:300]}))
             pg.goto(PORTAL, wait_until='networkidle'); pg.wait_for_timeout(1500)
+            if tabs is None:
+                tabs = pg.evaluate("[...document.querySelectorAll('#navigation [data-tab]')].map(b => b.dataset.tab)")
             for tab in tabs:
                 msgs.clear()
                 pg.click(f'[data-tab="{tab}"]'); pg.wait_for_timeout(2500)
@@ -85,14 +87,26 @@ def main():
                 if style is not None:
                     style.evaluate('s => s.remove()')
                 layout[f'{tab}-{w}'] = {'overflow': wide, 'scroll': scroll}
+                # A6/A158: 화면에 보이는 영문 식별자(snake_case · undefined · NaN · [object …]) — 접힌 <details> 안은 보이지 않으니 제외
+                residue[f'{tab}-{w}'] = pg.evaluate(r'''(tab) => {
+                    const root = document.querySelector('#view-' + tab); if (!root) return [];
+                    const hits = new Set(), re = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b|\bundefined\b|\bNaN\b|\[object \w+\]/g;
+                    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                    for (let n; (n = walk.nextNode());) {
+                        const el = n.parentElement; if (!el || !el.checkVisibility?.() || el.closest('code,pre,textarea,input')) continue;
+                        for (const m of n.textContent.matchAll(re)) hits.add(m[0]);
+                    }
+                    return [...hits].slice(0, 40);
+                }''', tab)
                 bad = [m for m in msgs if m['type'] in ('error', 'pageerror', 'warning')]
                 ign = lambda m: any(k in m['text'] or k in m.get('url', '') for k in IGNORE)
                 console[f'{tab}-{w}'] = {'errors': [m for m in bad if not ign(m)], 'ignored': [m for m in bad if ign(m)]}
-                print(tab, w, 'console', len(console[f'{tab}-{w}']['errors']), 'ignored', len(console[f'{tab}-{w}']['ignored']), 'overflow', len(wide), scroll, flush=True)
+                print(tab, w, 'english', len(residue[f'{tab}-{w}']), 'console', len(console[f'{tab}-{w}']['errors']), 'ignored', len(console[f'{tab}-{w}']['ignored']), 'overflow', len(wide), scroll, flush=True)
             ctx.close()
         browser.close()
     (out / 'console.json').write_text(json.dumps(console, ensure_ascii=False, indent=2), encoding='utf8')
     (out / 'layout.json').write_text(json.dumps(layout, ensure_ascii=False, indent=2), encoding='utf8')
+    (out / 'residue.json').write_text(json.dumps(residue, ensure_ascii=False, indent=2), encoding='utf8')
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@
     return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="btn small" data-fold-text="${esc(key)}">펼치기</button>`;
   }
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
-  const stepLabel = s => `${UI.defName(s.definition_id)} · ${s.name}`;
+  const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${s.name}`;   // 정의에 등록된 이름 먼저(영문 id 노출 0)
   const chips = (items, tone = 'neutral') => items.length ? items.map(t => UI.chipText(t, tone)).join(' ') : '<span class="muted">없음</span>';
 
   async function load() {
@@ -135,7 +135,7 @@
   function skillDetail(s) {
     const agents = s.agents.length ? s.agents.map(a => `<button type="button" class="btn small" data-goto-agent="${esc(a.id)}">${esc(a.name)}</button>`).join(' ')
       : '<span class="muted">붙은 에이전트가 없습니다. 붙이지 않은 스킬은 어떤 실행에도 들어가지 않습니다.</span>';
-    const steps = s.steps.length ? chips(s.steps.map(x => `${UI.defName(x.definition_id)} · ${x.name}`)) : '<span class="muted">없음</span>';
+    const steps = s.steps.length ? chips(s.steps.map(stepLabel)) : '<span class="muted">없음</span>';
     const summary = `<dl class="meta-list" style="grid-template-columns:1fr">` +
       [['설명', esc(s.description || '–')], ['붙은 에이전트', agents], ['선언한 단계', steps], ['고친 시각', esc(s.updated_at ? UI.dateTime(s.updated_at) : '–')]]
         .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('') + '</dl>';

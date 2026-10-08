@@ -39,12 +39,47 @@ def row(cur, pid):
     return dict(id=str(r[0]), consumer=r[1], draft_status=r[2], status=r[3], lease_until=r[4].isoformat() if r[4] else None, claim_count=r[5], log=r[6]) if r else None
 
 
+WINDOWS = sys.platform == "win32"
+
+
 def worker_pids():
+    """(pid, parent pid) of every host worker python (`worker.main`) — PowerShell on Windows, /proc on Linux (cloud)."""
+    if not WINDOWS:
+        pairs = []
+        for d in Path("/proc").iterdir():
+            if not d.name.isdigit():
+                continue
+            try:
+                argv = (d / "cmdline").read_bytes().decode("utf-8", "replace").split("\0")
+                ppid = int((d / "stat").read_text().rsplit(")", 1)[1].split()[1])
+            except (OSError, ValueError, IndexError):
+                continue
+            if any(a == "-m" and b == "worker.main" for a, b in zip(argv, argv[1:])):   # the python itself, not a shell quoting it
+                pairs.append((int(d.name), ppid))
+        return pairs
     out = subprocess.run(["powershell", "-NoProfile", "-Command",
                           "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like '*worker.main*' } | ForEach-Object { \"$($_.ProcessId) $($_.ParentProcessId)\" }"],
                          capture_output=True, text=True).stdout.split()
     pairs = [tuple(map(int, out[i:i + 2])) for i in range(0, len(out) - 1, 2)]
     return pairs
+
+
+def listen_pid(port):
+    """The process listening on the worker's health port, or '' when none."""
+    if not WINDOWS:
+        return subprocess.run(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"], capture_output=True, text=True).stdout.split("\n")[0].strip()
+    return subprocess.run(["powershell", "-NoProfile", "-Command",
+                           f"(Get-NetTCPConnection -LocalPort {port} -State Listen | Select-Object -First 1).OwningProcess"], capture_output=True, text=True).stdout.strip()
+
+
+def kill(p):
+    if not WINDOWS:
+        import os, signal
+        try:
+            os.kill(p, signal.SIGKILL); return 0
+        except OSError as e:
+            return e.errno
+    return subprocess.run(["taskkill", "/PID", str(p), "/F"], capture_output=True, text=True, encoding="cp949", errors="replace").returncode   # Korean console output
 
 
 def consumer_port(consumer):
@@ -80,14 +115,12 @@ def main():
         except Exception as e:  # noqa: BLE001
             health = {"error": str(e)}
         # the consumer name maps to a health port (run_worker_host.sh); the process listening there and its wrapper are the victim
-        ps = subprocess.run(["powershell", "-NoProfile", "-Command",
-                             f"(Get-NetTCPConnection -LocalPort {port} -State Listen | Select-Object -First 1).OwningProcess"], capture_output=True, text=True).stdout.strip()
+        ps = listen_pid(port)
         if ps:
             owner = int(ps)
             tree = [owner] + [p for p, parent in worker_pids() if parent == owner] + [parent for p, parent in worker_pids() if p == owner]
             for p in sorted(set(tree)):
-                res = subprocess.run(["taskkill", "/PID", str(p), "/F"], capture_output=True, text=True, encoding="cp949", errors="replace")   # Korean console output
-                killed.append((p, res.returncode))
+                killed.append((p, kill(p)))
         step("killed_victim_worker", consumer=victim, port=port, killed=killed, health_before=health, row=r_before)
         time.sleep(3)
         try:
