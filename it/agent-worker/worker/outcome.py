@@ -60,6 +60,19 @@ def interpret(final_text: str, form_fields: Any, *, versioned: bool = False, res
     return _against_form(text, parsed, keys, form_fields, versioned, source="message")
 
 
+def deferral_in_result_file(result_file: Path | None, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> str | None:
+    """A151 (A148 item 55, 2026-10-08): the prompt asks for the result in `output/result.json`, so an agent that cannot
+    assess writes its `{"__deferred__": …}` there too — the runner only looked at the last message, sent the file back for
+    "form correction" twice and failed the run. Returns the file's JSON text when its top-level object carries
+    `__deferred__` (task_deferral.control validates it exactly like the message route), otherwise None."""
+    if result_file is None or not result_file.is_file():
+        return None
+    parsed, defect = _read_result_file(result_file, max_file_bytes)
+    if defect or "__deferred__" not in parsed:
+        return None
+    return json.dumps(parsed, ensure_ascii=False)
+
+
 def _against_form(text: str, parsed: dict, keys: list[str], form_fields: Any, versioned: bool, *, source: str) -> Outcome:
     if versioned:
         try:

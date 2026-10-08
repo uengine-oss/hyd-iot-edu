@@ -6,7 +6,9 @@ condition holds now — with "unknown" when a source has no value (R05: 데이�
 
 Ground truth is computed here straight from the same sources with the same formulas the deterministic engine uses
 (CMMS standby_ready; TimescaleDB FanSpeedSP ≥ 99 % time over 48 h = agentsvc.tools.mcp_tsdb.fan100_hours; latest PS1).
-Requires host worker + process AGENT_BRIDGE=off. No writes.
+Requires host worker + process AGENT_BRIDGE=off. The worker itself writes nothing.
+r1 checks the R05 path (no value ≠ false), but migration 23 back-filled HYD-03 standby_ready NULL→true, so the probe makes
+the missing value itself for the duration of r1 only and restores the original value in a finally (A151).
 """
 import argparse
 import json
@@ -15,6 +17,7 @@ import shutil
 import subprocess
 import time
 import uuid
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 from probe_definition_registry import http, ROOT
@@ -35,6 +38,25 @@ def ent(sql):
     r = subprocess.run(['docker', 'exec', 'supabase_db_hyd-iot-edu', 'psql', '-U', 'postgres', '-d', 'postgres', '-tAc', sql], capture_output=True, text=True, timeout=60)
     assert r.returncode == 0, r.stderr
     return r.stdout.strip()
+
+
+STANDBY_WHERE = "from ent.maintenance_profiles where asset='HYD-03'"
+
+
+@contextmanager
+def standby_missing():
+    """r1 precondition: HYD-03 standby_ready is missing (NULL) while the worker answers; the original value comes back even on failure."""
+    before = ent("select coalesce(standby_ready::text, 'null') " + STANDBY_WHERE)
+    assert before in ('true', 'false', 'null'), ('HYD-03 maintenance profile row missing', before)
+    ent("update ent.maintenance_profiles set standby_ready = null where asset='HYD-03'")
+    print('r1 precondition: HYD-03 standby_ready', before, '→ null', flush=True)
+    try:
+        yield before
+    finally:
+        ent(f"update ent.maintenance_profiles set standby_ready = {before} where asset='HYD-03'")
+        after = ent("select coalesce(standby_ready::text, 'null') " + STANDBY_WHERE)
+        print('r1 restored: HYD-03 standby_ready', after, flush=True)
+        assert after == before, ('restore failed', before, after)
 
 
 def truth_standby():
@@ -58,7 +80,7 @@ def truth_ps1():
 
 
 QUESTIONS = [
-    dict(key='r1', question='규칙 rule:standby 의 조건이 설비 HYD-03에서 지금 성립하는가?', truth=truth_standby, tol=None, var='standby_ready'),
+    dict(key='r1', question='규칙 rule:standby 의 조건이 설비 HYD-03에서 지금 성립하는가?', truth=truth_standby, tol=None, var='standby_ready', setup=standby_missing),
     dict(key='r2', question='규칙 rule:fan-24h 의 조건이 설비 HYD-01에서 지금 성립하는가? 그 입력 값도 알려 달라.', truth=truth_fan24, tol=0.1, var='fan100_hours'),
     dict(key='r3', question='규칙 rule:dx-pump 의 센서 조건이 설비 HYD-02에서 지금 성립하는가? 경보 패턴은 PUMP_LEAKAGE로 주어졌다고 보고, 센서 입력의 현재 값을 직접 조회해 판단하라.',
          truth=truth_ps1, tol=5.0, var='ps1'),
@@ -101,22 +123,25 @@ def main():
     for q in QUESTIONS:
         if args.only and q['key'] not in args.only.split(','):
             continue
-        code, body = http('/api/instances/start', {'definition_id': did, 'version': '1', 'event_id': did + '-' + q['key'], 'variables': {'question': q['question']}})
-        assert code == 200, (code, body)
-        pid = body['proc_inst_id']; t0 = time.monotonic(); print(q['key'], 'instance', pid, flush=True)
-        until = time.monotonic() + 900
-        while time.monotonic() < until:
-            try:
-                code, view = http('/api/instances/' + pid)
-            except Exception as exc:  # noqa: BLE001
-                print('poll retry:', str(exc)[:120], flush=True); time.sleep(5); continue
-            if code != 200:
-                time.sleep(5); continue
-            wi = view['workitems'][0]
-            if view['instance']['status'] == 'COMPLETED' or wi.get('draft_status') in ('FAILED', 'HUMAN_ASKED') or wi['status'] == 'PENDING':
-                break
-            time.sleep(3)
-        truth = q['truth']()                                       # right after the answer: the closest "now"
+        with (q.get('setup') or nullcontext)() as before:
+            if before is not None:
+                report['cases'].setdefault(q['key'], {})['precondition'] = {'standby_ready_before': before, 'during': 'null'}; save()
+            code, body = http('/api/instances/start', {'definition_id': did, 'version': '1', 'event_id': did + '-' + q['key'], 'variables': {'question': q['question']}})
+            assert code == 200, (code, body)
+            pid = body['proc_inst_id']; t0 = time.monotonic(); print(q['key'], 'instance', pid, flush=True)
+            until = time.monotonic() + 900
+            while time.monotonic() < until:
+                try:
+                    code, view = http('/api/instances/' + pid)
+                except Exception as exc:  # noqa: BLE001
+                    print('poll retry:', str(exc)[:120], flush=True); time.sleep(5); continue
+                if code != 200:
+                    time.sleep(5); continue
+                wi = view['workitems'][0]
+                if view['instance']['status'] == 'COMPLETED' or wi.get('draft_status') in ('FAILED', 'HUMAN_ASKED') or wi['status'] == 'PENDING':
+                    break
+                time.sleep(3)
+            truth = q['truth']()                                   # right after the answer, still inside the precondition: the closest "now"
         elapsed = round(time.monotonic() - t0, 1)
         (out / f"{q['key']}-instance.json").write_text(json.dumps(view, ensure_ascii=False, indent=2), encoding='utf8')
         starts = [e['data'] for e in view['events'] if e['event_type'] == 'tool_usage_started']
@@ -127,7 +152,7 @@ def main():
         output = wi.get('output') or {}
         holds = str(output.get('holds') or '').strip().lower()
         holds = 'unknown' if holds in ('unknown', '미확인', 'none', 'null', '') else holds
-        report['cases'][q['key']] = dict(instance=pid, status=wi['status'], elapsed_s=elapsed, truth=truth, output=output, tools=tools,
+        report['cases'][q['key']] = dict(report['cases'].get(q['key'], {}), instance=pid, status=wi['status'], elapsed_s=elapsed, truth=truth, output=output, tools=tools,
                                          executed=[(x.get('document') or {}).get('statement') or x.get('statement') for x in source_runs]); save()
         for src in (ROOT / '.evidence/workspace/hyd' / wi['id']).glob('*.events.jsonl'):
             shutil.copy2(src, out / f"{q['key']}-{src.name}")

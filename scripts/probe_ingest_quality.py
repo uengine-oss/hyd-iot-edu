@@ -62,9 +62,25 @@ def expectations(filename, preview, pages):
     elif filename.startswith("HM-FULL"):
         import re
         text_all = "\n".join(pg["text"] for pg in pages)
-        want_secs = set(re.findall(r"^## (HM-\d+\.\d+)", text_all, re.M)); want_sops = set(re.findall(r"^### (SOP-HM\d+-\d+)", text_all, re.M))
-        out.append(("every_numbered_section_found", want_secs <= set(secs), {"missing": sorted(want_secs - set(secs))[:20], "found": len(secs), "wanted": len(want_secs)}))
-        out.append(("every_sop_found_with_its_id", want_sops <= set(procs), {"missing": sorted(want_sops - set(procs))[:20], "found": len(procs), "wanted": len(want_sops)}))
+        # A151 (A148 item 72): extraction definition 1.9 (procsvc/manual_extraction.py:36) makes only operation·inspection·
+        # maintenance·troubleshooting chapters SOPs; installation·wiring chapters go to page_reviews and an ambiguous chapter is
+        # named in warnings and kept out of procedures. The a148 run left out 개요와 안전 (13·25장) and 예비품과 부록 (12·24·36장)
+        # that way — segments 3·4 dropped their sections too, segment 2 kept HM-12/13 as sections (1.9 does not say either).
+        # So: every section and SOP of an in-scope chapter must be found; a chapter whose title is outside that scope is not
+        # required but what is left out of it must be accounted for in warnings or page_reviews (a silent drop still fails).
+        chapters = {int(n): t.strip() for n, t in re.findall(r"^# (\d+)장 ([^\n]+)", text_all, re.M)}
+        outside = {n for n, t in chapters.items() if re.search(r"개요|부록|설치|배선|시운전|반입|양중", t)}
+        def chapter_of(ref): return int(re.match(r"(?:HM-|SOP-HM)(\d+)", ref).group(1))
+        all_secs = set(re.findall(r"^## (HM-\d+\.\d+)", text_all, re.M)); all_sops = set(re.findall(r"^### (SOP-HM\d+-\d+)", text_all, re.M))
+        want_secs = {r for r in all_secs if chapter_of(r) not in outside}; want_sops = {r for r in all_sops if chapter_of(r) not in outside}
+        notes = " ".join(preview["warnings"]) + " " + " ".join(r.get("note") or "" for r in preview["page_reviews"])
+        unreported = sorted(n for n in outside if ({r for r in all_secs | all_sops if chapter_of(r) == n} - set(secs) - set(procs))
+                            and not re.search(rf"(?<!\d){n}장|HM-{n}\.|SOP-HM{n}-", notes))
+        scope = {"outside_chapters": {n: chapters[n] for n in sorted(outside)}, "unreported_outside": unreported,
+                 "outside_found": {"sections": len({r for r in all_secs if chapter_of(r) in outside} & set(secs)),
+                                   "sops": len({r for r in all_sops if chapter_of(r) in outside} & set(procs))}}
+        out.append(("every_numbered_section_found", want_secs <= set(secs) and not unreported, {"missing": sorted(want_secs - set(secs))[:20], "found": len(secs), "wanted": len(want_secs)} | scope))
+        out.append(("every_sop_found_with_its_id", want_sops <= set(procs) and not unreported, {"missing": sorted(want_sops - set(procs))[:20], "found": len(procs), "wanted": len(want_sops)} | scope))
         steps_wanted = {m.group(1): len(re.findall(r"^\d+\. ", m.group(2), re.M)) for m in re.finditer(r"^### (SOP-HM\d+-\d+)[^\n]*\n((?:(?!^#).*\n?)*)", text_all, re.M)}
         bad = {k: (len(procs[k]["steps"]), n) for k, n in steps_wanted.items() if k in procs and len(procs[k]["steps"]) != n}
         out.append(("step_counts_match_the_numbered_lists", not bad, dict(list(bad.items())[:15])))
@@ -76,7 +92,12 @@ def expectations(filename, preview, pages):
         out.append(("every_sop_precondition_preserved", all(c[:20] in whole for _, c in conds), {"sops": len(conds), "lost": [s for s, c in conds if c[:20] not in whole][:10]}))
         avl_src = text_all.count("승인 공급사(AVL)"); avl_kept = sum(1 for p in procs.values() for s in p["steps"] if "AVL" in s["text"])
         out.append(("avl_prohibition_kept_in_steps", avl_kept >= avl_src, {"source": avl_src, "kept": avl_kept}))
-        out.append(("every_section_excerpt_carries_its_criteria", all("기준" in s["excerpt"] or "인터록" in s["excerpt"] for s in secs.values()), None))
+        # A151: 1.9 (manual_extraction.py:33) asks for the sentence carrying the section's 판정 기준·임계값·금지 조건 — a threshold
+        # precondition ("유온이 55 ℃ 이상이면 이 절차를 시작하지 않는다") or a conditional prohibition ("예비 펌프가 정비 중이면 전환
+        # 절차를 쓰지 않는다") is such a sentence; a general paragraph (기록·승인 권한) without any of them still fails.
+        criteria = re.compile(r"기준|인터록|\d+(?:\.\d+)?\s*(?:℃|bar|mm/s|%|l/min|시간|분)|면\s[^.\n]*(?:않는다|중단)")
+        no_criteria = sorted(r for r, s in secs.items() if not criteria.search(s.get("excerpt") or ""))
+        out.append(("every_section_excerpt_carries_its_criteria", not no_criteria, {"without_criteria": no_criteria[:20], "count": len(no_criteria)}))
         out.append(("coverage_ratio_recorded", True, preview.get("coverage")))
     elif filename.startswith("HM-REV"):
         # A094 round trip: the document was generated from the live ontology (scripts/reverse_extract_manual.py), so the

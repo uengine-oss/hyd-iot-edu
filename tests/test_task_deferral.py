@@ -172,3 +172,55 @@ def test_fenced_whole_message_control_object_is_still_a_control_object():
     from worker import hitl
     q='{"__human_input__":{"question":"어느 설비입니까?","options":["HYD-01","HYD-02"]}}'
     assert hitl.business_question('```json\n'+q+'\n```')['question']=='어느 설비입니까?'
+
+
+# ---- A151 (A148 item 55): a deferral written to the workspace result file is a deferral, not a format failure
+def _exec_writing_result_file(body, message='결과를 output/result.json 에 저장했습니다.', requests=None):
+    from pathlib import Path
+    from worker.workspace import RESULT_FILE
+    from cliagents import ExecEvent, ExecEventKind
+    def fn(provider, request, env):
+        if requests is not None:requests.append((request, env))
+        yield ExecEvent(kind=ExecEventKind.RUN_START, text='claude', session_id='sess-F')
+        if body is not None:
+            target=Path(request.workdir)/RESULT_FILE;target.parent.mkdir(parents=True,exist_ok=True)
+            target.write_text(json.dumps(body,ensure_ascii=False),encoding='utf-8')
+        yield ExecEvent(kind=ExecEventKind.RESULT, text=message, session_id='sess-F')
+    return fn
+
+
+def _diagnose(repo, inst):
+    return next(w for w in repo.list_workitems(proc_inst_id=inst['proc_inst_id']) if w['activity_id']=='task:diagnose')
+
+
+@pytest.mark.parametrize('route',['file','message'])
+def test_worker_recognises_a_deferral_from_the_result_file_or_the_message(tmp_path, route):
+    repo,inst=_repo();requests=[]
+    fn=(_exec_writing_result_file({'__deferred__':ASSESSMENT},requests=requests) if route=='file'
+        else _fake_exec(json.dumps({'__deferred__':ASSESSMENT}),requests=requests))
+    Runner(_settings(tmp_path),repo,exec_fn=fn).poll_once()
+    wi=_diagnose(repo,inst)
+    assert wi['status']=='PENDING' and not wi['output'] and wi['draft']['_deferral']['assessment']==ASSESSMENT
+    assert len(requests)==1                                              # no "output format correction" turn
+    kinds=[e['event_type'] for e in repo.list_events(todo_id=wi['id'])]
+    assert 'task_deferred' in kinds and 'task_completed' not in kinds
+
+
+def test_worker_without_a_deferral_still_submits_the_file_result(tmp_path):
+    repo,inst=_repo()
+    Runner(_settings(tmp_path),repo,exec_fn=_exec_writing_result_file({'cause':'c','failure_mode':'f','guide_card':{'ok':True}})).poll_once()
+    wi=_diagnose(repo,inst)
+    assert wi['status']=='SUBMITTED' and wi['output']['cause']=='c' and '_deferral' not in (wi['draft'] or {})
+    assert 'task_deferred' not in [e['event_type'] for e in repo.list_events(todo_id=wi['id'])]
+
+
+def test_result_file_deferral_reader_ignores_missing_broken_and_business_files(tmp_path):
+    from worker import outcome
+    f=tmp_path/'result.json'
+    assert outcome.deferral_in_result_file(f) is None                    # no file
+    f.write_text('{broken',encoding='utf-8');assert outcome.deferral_in_result_file(f) is None
+    f.write_text(json.dumps({'cause':'c'}),encoding='utf-8');assert outcome.deferral_in_result_file(f) is None
+    f.write_text(json.dumps({'__deferred__':ASSESSMENT}),encoding='utf-8')
+    assert deferred.control(outcome.deferral_in_result_file(f))==ASSESSMENT
+    f.write_text(json.dumps({'__deferred__':ASSESSMENT,'cause':'invented'}),encoding='utf-8')
+    with pytest.raises(ValueError):deferred.control(outcome.deferral_in_result_file(f))   # mixed is refused, same as the message route

@@ -157,6 +157,9 @@ class Runner:
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl")
         assessment = task_deferral.control(final_text)
+        if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
+            file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
+            assessment = task_deferral.control(file_text) if file_text is not None else None
         if assessment is not None:
             task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
                                 request_id=job_id,assessment=assessment,session_id=session_id or None)

@@ -368,7 +368,7 @@ async def _source_loop():
 
 app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
                lambda: {**state, "ok": state["kafka"] and not any(state.get(k) for k in
-                    ('consumer_dead','source_receive_error','source_handler_error','source_policy_error'))})
+                    ('consumer_dead','source_receive_error','source_handler_error','source_policy_error','startup_db_error'))})
 instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
 
 from . import memdebug
@@ -472,9 +472,12 @@ async def _startup():
     state["incidents"] = len(incidents)
     persist()
     if PROCESS_MODE == "instance":
-        rt=instance_mode.start(_instance_context())
+        # A151 (70-A): a DB paused while the container restarts no longer kills startup — bounded backoff, then the loops start once
+        ctx=_instance_context()
+        rt=await instance_mode.retry_startup(lambda: instance_mode.build(ctx), 'instance runtime', state)
+        instance_mode.start_loops(rt, ctx)
         source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
-        plant_status.update(await asyncio.to_thread(source_inbox.latest_states))
+        plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
         source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
         asyncio.create_task(_source_loop()).add_done_callback(_watch)
     case_projector = CaseProjector(store, _q, _incident_projected)

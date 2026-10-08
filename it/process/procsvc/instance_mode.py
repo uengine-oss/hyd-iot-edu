@@ -12,6 +12,7 @@ every alerts RAISE message, and when the legacy agent submits a decision. Everyt
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 import os
@@ -42,6 +43,8 @@ AGENT_BRIDGE = os.getenv("AGENT_BRIDGE", "legacy")
 POLL_INTERVAL_S = float(os.getenv("ENGINE_POLL_INTERVAL_S", "2"))     # the product polls every 5 s; faster here for the classroom
 WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cliagents worker's /health · /agents (monitoring, 회의 L434)
 STALE_CLEANUP_EVERY = 150                                              # × POLL_INTERVAL_S ≈ 5 min (the product's cleanup_task)
+# A151 (A148 item 70-A): how long startup waits for an unreachable DB before giving up and letting the restart policy act
+STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
 
 
 @dataclass
@@ -134,10 +137,57 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
 def start(ctx: ProcessContext) -> instances.InstanceRuntime:
     """build() plus the polling loop. Call from the FastAPI startup event (needs a running loop)."""
     rt = build(ctx)
+    start_loops(rt, ctx)
+    return rt
+
+
+def start_loops(rt: instances.InstanceRuntime, ctx: ProcessContext) -> None:
+    """The background loops of start(), split off so main.py can retry build() alone without starting a loop twice."""
     asyncio.create_task(_polling())
     if AGENT_BRIDGE == 'legacy':
         asyncio.create_task(_legacy_polling(rt,ctx))
-    return rt
+
+
+def _transient_db_errors() -> tuple[type[BaseException], ...]:
+    try:
+        import psycopg
+    except ImportError:          # MemoryRepo-only environments: nothing is a DB connection error
+        return ()
+    return (psycopg.OperationalError, psycopg.InterfaceError)
+
+
+async def retry_startup(step: Callable[[], object], what: str, state: dict, budget_s: float | None = None,
+                        first_delay: float = 2.0):
+    """A151 (A148 item 70-A, 2026-10-08): a process restarted while the DB was paused died in startup on the first
+    `psycopg.OperationalError` (procdb.PgRepo._conn, connect_timeout=5, no retry) and only the compose restart policy brought it
+    back (RestartCount 0→1). Startup steps that touch the DB now retry connection errors with a bounded backoff
+    (2, 4, 8, 16 s … — the sleeps add up to at most `budget_s`, default PROCESS_STARTUP_DB_WAIT_S=60). Meanwhile /healthz is
+    not ready (uvicorn serves nothing before startup ends, and state['startup_db_error'] keeps it 503 afterwards until cleared).
+    Anything that is not a connection error, or a DB still down after the budget, is raised as before."""
+    budget = STARTUP_DB_WAIT_S if budget_s is None else budget_s
+    transient = _transient_db_errors()
+    waited, delay, attempt = 0.0, first_delay, 0
+    while True:
+        attempt += 1
+        try:
+            out = step()
+            if inspect.isawaitable(out):
+                out = await out
+        except transient as exc:
+            state['startup_db_error'] = f"{what}: {type(exc).__name__}: {str(exc)[:200]}"
+            pause = min(delay, budget - waited)
+            if pause <= 0:
+                log.error("startup %s: DB still unreachable after %d attempts / %.0f s of waiting; giving up", what, attempt, waited)
+                raise
+            log.warning("startup %s: DB unreachable (attempt %d, %s); retrying in %.0f s", what, attempt, type(exc).__name__, pause)
+            await asyncio.sleep(pause)
+            waited += pause
+            delay *= 2
+            continue
+        state.pop('startup_db_error', None)
+        if attempt > 1:
+            log.info("startup %s: DB reachable after %d attempts (%.0f s of waiting)", what, attempt, waited)
+        return out
 
 
 def _evaluate_legacy(alert):
