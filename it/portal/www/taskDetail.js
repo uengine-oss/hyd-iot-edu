@@ -15,6 +15,8 @@
   const HIDDEN_OUTPUT = new Set(['text', 'cliagents_session_id']);
   const REFRESH_ON = new Set(['task_started', 'task_completed', 'task_cancelled', 'human_asked', 'human_response', 'error']);
   const DECISION_TOOLS = new Set(['formHandler:rank', 'formHandler:select_card']);
+  const isQuery = x => !!x && typeof x === 'object' && ((typeof x.query === 'string' && !/^select:/.test(x.query)) || typeof x.sql === 'string');   // Cypher · SQL · PromQL
+  const CODE_TOOLS = new Set(['Bash', 'PowerShell', 'Write', 'Read', 'Edit', 'Glob', 'Grep']);   // 에이전트가 실제로 친 명령 · 파일 경로는 문장이 아니라 코드로 보인다
   const HASH_RE = /^#\/instances\/([^/]+)(?:\/task\/([^/]+))?$/;
   const OP = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', '<': '<', '>=': '≥' };
   const TAG = { TS1: '유온 TS1', PS1: '압력 PS1', VS1: '진동 VS1' };
@@ -77,7 +79,12 @@
   const signed = x => typeof x === 'number' && Number.isFinite(x) ? (x > 0 ? '+' : '') + num(x) : '미확인';
   function brief(x, n = 160) {
     if (x == null) return '';
-    if (typeof x === 'string') return UI.idText(x.replace(/\s+/g, ' ').slice(0, n));
+    if (typeof x === 'string') {
+      if (/^select:/.test(x)) return x.slice(7).split(',').map(t => UI.toolName(t.trim())).join(', ').slice(0, n);   // 도구 검색(ToolSearch) "select:mcp__…" → 도구 이름
+      return UI.idText(x.replace(/\s+/g, ' ').slice(0, n));
+    }
+    if (Array.isArray(x) && x.length && x.every(y => y && typeof y === 'object' && typeof y.tool_name === 'string'))     // 도구 검색 결과: 찾은 도구 목록
+      return `${x.length}건 · ` + x.map(y => UI.toolName(y.tool_name)).join(', ').slice(0, n);
     if (Array.isArray(x)) return `${x.length}건` + (x.length && typeof x[0] !== 'object' ? ' · ' + x.slice(0, 5).map(y => UI.idText(String(y))).join(', ') : x.length ? ' · ' + Object.keys(x[0]).slice(0, 4).join(', ') : '');
     if (typeof x === 'object') {
       if (typeof x.query === 'string') return brief(x.query, n);
@@ -134,12 +141,17 @@
       <td>${esc(num(c.prior))}</td><td>${c.score == null && c.probability == null ? `<span class="muted">미확인</span>` : esc(num(c.score != null ? c.score : c.probability))}</td>
       <td>${(c.evidence || []).map(condText).join('') || `<span class="muted">${esc(UI.t('inc.noEvidence'))}</span>`}</td></tr>`)) + (scored ? `<p class="field-hint">${esc(UI.t('td.causeFormula'))}</p>` : '');
   }
+  // decision.order: 내장 경로는 "1. 이름" 문자열, 실제 워커는 {id, name, rank, score, sopId, approver} 객체 목록 — 둘 다 읽기 쉬운 줄로
+  function orderItem(x) {
+    if (x && typeof x === 'object') return `<li>${esc(x.name || UI.name(x.id) || '')}${x.sopId ? ` <span class="muted">${esc(x.sopId)}</span>` : ''}${x.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(x.score))}</span>` : ''}${x.approver ? `<span class="muted"> · ${esc((String(x.approver).match(/\(([^)]+)\)\s*$/) || [])[1] || UI.idText(String(x.approver)))}</span>` : ''}</li>`;
+    return `<li>${esc(UI.idText(String(x).replace(/^\d+\.\s*/, '')))}</li>`;
+  }
   const SPECIAL = {
     decision(d) {
       const opts = d.options || [];
       if (!opts.length && !d.recommended && !(d.order || []).length) return '';
       const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
-        : (d.order || []).length ? `<ol class="td-list">${d.order.map(x => `<li>${esc(UI.idText(String(x).replace(/^\d+\.\s*/, '')))}</li>`).join('')}</ol>` : '';
+        : (d.order || []).length ? `<ol class="td-list">${d.order.map(orderItem).join('')}</ol>` : '';
       return `${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
     guide_card(g) {
@@ -151,9 +163,11 @@
         ${causes.length ? `<p class="kv-line"><b>${esc(UI.t('inc.causes'))}</b></p>${causesTable(causes, g.topCause)}` : ''}${rec ? `<p class="kv-line"><b>${esc(UI.t('inc.recommended'))}</b></p><div class="row-wrap">${rec}</div>` : ''}`;
     },
     compliance(c) {
-      const rows = Object.entries(c);
+      const rows = Object.entries(c).filter(([id]) => !id.startsWith('_'));    // 워커가 붙인 _basis(판정 근거 · 쓴 사실 · 출처)는 후보가 아니다
       if (!rows.length || rows.some(([, x]) => !x || typeof x !== 'object')) return '';
-      return table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
+      const basis = c._basis && typeof c._basis === 'object' ? c._basis : null;
+      const why = basis && (basis.note || basis.engine) ? `<p class="kv-line"><b>판정 근거</b> ${esc(UI.idText([basis.note, basis.engine].filter(Boolean).join(' · ')))}</p>` : '';
+      return why + table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
     },
     chosen_option(o) { return o.name ? `<span class="kv">${esc(UI.idText(o.name))}</span>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
     work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(w.detail)}</p>` : ''}` : ''; },
@@ -246,7 +260,7 @@
     evs.forEach(e => {
       const d = e.data || {};
       switch (e.event_type) {
-        case 'tool_usage_started': { const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: brief(d.input, 200), raw: d, key: d.tool_use_id, running: true, k: 'tool:' + e.id }; byTool.set(d.tool_use_id, it); items.push(it); return; }
+        case 'tool_usage_started': { const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: brief(d.input, 200), code: CODE_TOOLS.has(d.tool) || isQuery(d.input), raw: d, key: d.tool_use_id, running: true, k: 'tool:' + e.id }; byTool.set(d.tool_use_id, it); items.push(it); return; }
         case 'tool_usage_finished': {
           const it = byTool.get(d.tool_use_id);
           if (it) { it.cls = d.is_error ? 'fail' : 'done'; it.running = false; it.dur = fmtMs(new Date(e.timestamp) - new Date(it.t)); it.result = brief(d.output, 200); it.rawOut = d; it.error = !!d.is_error; return; }
@@ -285,7 +299,7 @@
     if (!items.length) return `<p class="muted">${esc(UI.t('td.noTrace'))}</p>`;
     return `<div class="timeline td-timeline" data-td-timeline>${items.map(it => `<div class="tl ${esc(it.cls)}${it.small ? ' small' : ''}${it.live ? ' live' : ''}"><div class="dot"></div><div class="tl-body">
         <div class="tl-head">${it.t ? `<time title="${esc(UI.dateTime(it.t))}">${esc(UI.time(it.t))}</time>` : it.live ? `<i class="live-dot on"></i>` : '<time></time>'}<b>${esc(it.title)}</b>${it.chip || ''}${it.running ? `<span class="chip tone-accent sm">${esc(UI.t('td.running'))}</span>` : ''}${it.dur ? `<span class="dur">${esc(it.dur)}</span>` : ''}</div>
-        ${it.text ? `<div class="tl-text">${esc(it.text)}</div>` : ''}${it.html || ''}${it.result != null ? `<div class="tl-text res${it.error ? ' neg' : ''}">→ ${esc(it.result)}</div>` : ''}
+        ${it.text ? `<div class="tl-text">${it.code ? `<code>${esc(it.text)}</code>` : esc(it.text)}</div>` : ''}${it.html || ''}${it.result != null ? `<div class="tl-text res${it.error ? ' neg' : ''}">→ <code>${esc(it.result)}</code></div>` : ''}
         ${it.options && it.options.length ? `<div class="row-wrap">${it.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}
         ${it.foldTitle ? `<details class="fold small" data-k="${esc(it.k)}"><summary>${esc(it.foldTitle)}</summary><pre>${esc(it.foldBody)}</pre></details>` : ''}
         ${it.raw || it.rawOut ? `<details class="fold small" data-k="${esc(it.k)}:raw"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(it.rawOut ? { ...(it.raw || {}), ...it.rawOut } : it.raw, null, 2).slice(0, 6000))}</pre></details>` : ''}

@@ -68,6 +68,7 @@ def test_prompt_has_the_product_sections_and_a_json_contract_from_the_form():
     assert "`cause`: 원인 노드 id" in text and "허용값(이 중 하나를 그대로): `control`(즉시 제어), `work_order`(작업지시)" in text
     assert '"guide_card": ""' in text and "허용값 중 하나를 그대로" in text
     assert prompt.field_keys(FORM_DIAGNOSE["fields_json"]) == ["cause", "failure_mode", "guide_card"]
+    assert "한국어로 쓰세요" in text                   # A158: 처리 과정에 보이는 에이전트 설명은 한국어(영문 0)
     assert "최종 결과 본문을 그대로" in prompt.output_contract(None)
     assert "담당자 응답: 네" in prompt.resume_prompt("네") and "새로 진행" in prompt.resume_prompt("네", restarted=True, previous_summary="…")
 

@@ -4,7 +4,7 @@
 
 Portal :8088, process :8080. Read-only: every click here is a view, a read-only fabric query, or a dry-run calculation
 (What-if loads a baseline without writing). Per screen: a screenshot of the main area, console errors, and visible English
-identifiers (same rule as ui_capture_all_tabs.py). The task-detail shots open #/instances/<id>/task/<activity> for each
+identifiers (same rule as ui_capture_all_tabs.py). The task-detail shots open #/instances/<id>/task/<workitem> for each
 activity of the given (default: newest completed 설비 이상 조치) instance.
 """
 import json
@@ -16,6 +16,7 @@ from playwright.sync_api import sync_playwright
 
 PORTAL = 'http://127.0.0.1:8088/'
 PROCESS = 'http://127.0.0.1:8080'
+UNLOCK_CSS = 'body{height:auto!important;overflow:visible!important} main{overflow:visible!important;min-height:0!important} .list{max-height:none!important}'   # same as ui_capture_all_tabs --full
 IGNORE = ('127.0.0.1:1881', 'localhost:1881', ':8085', ':9644')
 RESIDUE_JS = r'''(sel) => {
     const root = document.querySelector(sel); if (!root) return ['(없음) ' + sel];
@@ -40,7 +41,10 @@ def main():
                                                        if i['proc_def_id'] == 'anomaly_response' and i['status'] == 'COMPLETED')
     view = get('/api/instances/' + inst)
     done = [t for t in (view.get('workitems') or []) if t.get('activity_id')]
-    acts = list(dict.fromkeys(t['activity_id'] for t in done))
+    seen, acts = set(), []          # one shot per step: the route takes the workitem id (#/instances/<id>/task/<workitem id>)
+    for t in sorted(done, key=lambda t: t.get('start_date') or ''):
+        if t['activity_id'] not in seen and t['status'] != 'TODO':
+            seen.add(t['activity_id']); acts.append((t['activity_id'], t['id']))
     report = {'instance': inst, 'shots': {}}
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -52,8 +56,10 @@ def main():
 
         def shot(name, sel='main'):
             pg.wait_for_timeout(800)
+            style = pg.add_style_tag(content=UNLOCK_CSS); pg.wait_for_timeout(300)   # <main> scrolls inside the shell: unlock so the element is whole
             el = pg.locator(sel).first
             el.screenshot(path=str(out / f'{name}.png'))
+            style.evaluate('s => s.remove()')
             bad = [m for m in msgs if m['type'] in ('error', 'pageerror') and not any(k in m['text'] or k in m['url'] for k in IGNORE)]
             report['shots'][name] = {'english': pg.evaluate(RESIDUE_JS, sel), 'console_errors': bad}
             msgs.clear()
@@ -67,8 +73,8 @@ def main():
                 pass
 
         # A1 처리 건 → task 상세 (단계마다)
-        for i, act in enumerate(acts):
-            pg.evaluate('(h) => { location.hash = h; }', f'#/instances/{inst}/task/{act}')
+        for i, (act, wid) in enumerate(acts):
+            pg.evaluate('(h) => { location.hash = h; }', f'#/instances/{inst}/task/{wid}')
             try:
                 pg.wait_for_selector('[data-task-detail]', timeout=15000)
             except Exception:  # noqa: BLE001

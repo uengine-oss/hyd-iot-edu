@@ -45,7 +45,7 @@
       const pending = new Set(res.pending);
       const rows = (d.effects || []).map(e => {
         const state = res.compensated.includes(e.id) ? UI.chipText('보상 완료', 'success') : res.acknowledged.includes(e.id) ? UI.chipText('사람 확인', 'success') : UI.chipText('미해결', 'warning');
-        const how = e.reversible ? `되돌릴 수 있음 → ${esc(e.inverse)}` : `되돌릴 수 없음 — ${esc(e.irreversible_reason || '')}`;
+        const how = e.reversible ? `되돌릴 수 있음 → ${esc(UI.name(e.inverse))}` : `되돌릴 수 없음 — ${esc(e.irreversible_reason || '')}`;
         const pick = pending.has(e.id) && !e.reversible ? `<input type="checkbox" data-effect="${esc(e.id)}" ${s.picked.has(e.id) ? 'checked' : ''} ${s.busy ? 'disabled' : ''}>` : '';
         return `<tr><td>${pick}</td><td>${esc(kinds[e.kind] || e.kind)}</td><td>${label(e)}</td><td>${how}</td><td>${state}</td></tr>`;
       }).join('');

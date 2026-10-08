@@ -12,7 +12,8 @@ from typing import Any
 
 def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     """The prompt for one work item: 업무 · 지시사항 · 참여자 · 입력 데이터 · 피드백 · 참고 자료 · 작업 공간 · 결과 제출 형식."""
-    sections: list[str] = ["당신은 ProcessGPT 업무 프로세스의 담당 에이전트입니다. 아래 업무를 끝까지 수행하고, 마지막에 결과를 제시하세요."]
+    sections: list[str] = ["당신은 ProcessGPT 업무 프로세스의 담당 에이전트입니다. 아래 업무를 끝까지 수행하고, 마지막에 결과를 제시하세요. "
+                           "진행 중에 남기는 설명과 마지막 메시지는 한국어로 쓰세요 — 포털 처리 과정에 그대로 보입니다(A158)."]
     activity = (row.get("activity_name") or "").strip()
     query = (row.get("query") or "").strip()
     if activity:
