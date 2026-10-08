@@ -43,7 +43,7 @@ def main():
         rows = {w['activity_id']: w for w in request('/api/instances/' + pid)['workitems']}
         return pid, rows
     def submit(row, value):
-        return request('/api/todolist/' + row['id'] + '/submit', {'output': {row['activity_id']: value}, 'by': 'A062 probe'})
+        return request('/api/todolist/' + row['id'] + '/submit', {'output': {row['activity_id']: value}, 'by': '[회귀 검사] A062 검사기'})
     if '--shared-only' in sys.argv:
         shared = deepcopy(raw)
         shared['processDefinitionId'] += '-shared'
@@ -55,7 +55,7 @@ def main():
         check('shared_end_waits_for_other_live_path', before['instance']['status'] == 'RUNNING')
         preview = request('/api/instances/' + pid + '/rework-preview?workitem_id=' + rows['a']['id'])
         result = request('/api/instances/' + pid + '/rework', dict(workitem_id=rows['a']['id'], request_id=str(uuid.uuid4()),
-            snapshot_token=preview['snapshot_token'], by='A062 probe', role='role:operator', reason='shared endpoint rework'))
+            snapshot_token=preview['snapshot_token'], by='[회귀 검사] A062 검사기', role='role:operator', reason='[회귀 검사] 공유 끝점 재작업'))
         after = request('/api/instances/' + pid); save('shared-rework', after)
         check('shared_end_keeps_unaffected_producer_arrival', after['instance']['flow_state']['end_arrivals']
               == before['instance']['flow_state']['end_arrivals'])
@@ -86,7 +86,7 @@ def main():
           and next(w for w in resumed['workitems'] if w['id'] == rows['b']['id'])['status'] == 'IN_PROGRESS')
     preview = request('/api/instances/' + pid + '/rework-preview?workitem_id=' + rows['a']['id'])
     reworked = request('/api/instances/' + pid + '/rework', dict(workitem_id=rows['a']['id'], request_id=str(uuid.uuid4()),
-        snapshot_token=preview['snapshot_token'], by='A062 probe', role='role:operator', reason='new first review'))
+        snapshot_token=preview['snapshot_token'], by='[회귀 검사] A062 검사기', role='role:operator', reason='[회귀 검사] 첫 검토 다시'))
     current = request('/api/instances/' + pid)
     state = current['instance']['flow_state']
     check('rework_retires_only_old_end_and_preserves_evidence', not state['end_arrivals']

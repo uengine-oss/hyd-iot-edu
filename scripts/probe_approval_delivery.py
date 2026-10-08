@@ -80,7 +80,7 @@ def fixture(purchase=False):
 
 
 def choose(rt, meta):
-    return rt.select(meta['wid'], meta['decision'], 'skill:fan-max-derate', 'probe-manager', 'role:prod-mgr')
+    return rt.select(meta['wid'], meta['decision'], 'skill:fan-max-derate', '[회귀 검사] 승인 검사기', 'role:prod-mgr')
 
 
 def new_runtime(meta):

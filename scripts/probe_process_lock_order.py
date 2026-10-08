@@ -32,7 +32,7 @@ def main(baseline):
                 if kind=='save':return repo.save_task_result(wi['id'],{'test':True},True,expected_consumer='fixture')
                 if kind=='draft':return repo.set_draft_status(wi['id'],'FAILED',expected_consumer='fixture')
                 if kind=='release':return repo.release_worker_claim(wi['id'],'fixture')
-                if kind=='update':return repo.update_workitem(repo.get_workitem(wi['id'])|{'log':'lock probe'})
+                if kind=='update':return repo.update_workitem(repo.get_workitem(wi['id'])|{'log':'[회귀 검사] 잠금 순서 검사'})
                 if kind=='worker_claim':return repo.fetch_pending_task('cliagents','fixture',tenant_id=rt.tenant_id)
                 if kind=='engine_claim':return repo.claim_submitted('fixture',tenant_id=rt.tenant_id)
                 with psycopg.connect(DSN+'?application_name='+tag) as c:

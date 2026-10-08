@@ -1,6 +1,7 @@
 """A155 — residue cleanup: precedent DecisionCases that verification runs left in the knowledge graph.
 
     .venv/bin/python scripts/cleanup_residue_cases.py --before 2026-10-08T12:00Z --out <dir> [--apply]            (Linux)
+    .venv/bin/python scripts/cleanup_residue_cases.py --marker [--legacy] --out <dir> [--apply]                   (A6, content)
     . scripts/host_libpq.sh; .venv314/Scripts/python scripts/cleanup_residue_cases.py --before <ISO> --out <dir> [--apply]
 
 Why: the precedent template (it/neo4j/templates/t3_precedents.cypher) counts every DecisionCase -CHOSE-> Skill of the same
@@ -8,6 +9,10 @@ failure mode and shows up to five reasons under 근거 보기 "과거 같은 선
 person uses, so their reasons ("A072 probe: …", "A148-50: 포털 클릭으로 …") were projected as precedents (A151 capture ①) and their
 counts entered the ranking feature precedent_share. The graph cannot tell a probe's decision from a person's, so — same rule as
 cleanup_residue_instances.py (decision 99) — everything decided before --before (the moment real use starts) is residue.
+
+A6: --marker selects by content instead of (or as well as) time — a projected case whose reason carries the checkers' marker
+"[회귀 검사]" (and, with --legacy, the exact pre-marker probe phrases), both lists from mark_regression_residue.py. Then --before
+is optional; with both, either condition makes a case residue.
 
 Only projected cases are candidates: a DecisionCase with source_incident_id (written by procsvc/case_projection.py). Seeded
 demo precedents (case:demo-*, no source_incident_id) are part of the ontology and are never touched.
@@ -24,7 +29,8 @@ from neo4j import GraphDatabase
 
 NEO4J = (os.environ.get('NEO4J_URI', 'bolt://127.0.0.1:7687'), ('neo4j', os.environ.get('NEO4J_PASSWORD', 'hydpass123')))
 LIST_Q = '''
-MATCH (dc:DecisionCase) WHERE dc.source_incident_id IS NOT NULL AND dc.decidedAt < datetime($before)
+MATCH (dc:DecisionCase) WHERE dc.source_incident_id IS NOT NULL
+  AND (($before IS NOT NULL AND dc.decidedAt < datetime($before)) OR any(p IN $patterns WHERE coalesce(dc.reason, '') CONTAINS p))
 OPTIONAL MATCH (dc)-[r]->(x)
 RETURN dc.id AS id, properties(dc) AS props, collect({type:type(r), to:x.id}) AS rels ORDER BY dc.id
 '''
@@ -32,16 +38,25 @@ RETURN dc.id AS id, properties(dc) AS props, collect({type:type(r), to:x.id}) AS
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--before', required=True, help='ISO instant; projected cases decided before this are residue')
+    ap.add_argument('--before', help='ISO instant; projected cases decided before this are residue')
+    ap.add_argument('--marker', action='store_true', help='reason carries the checker marker "[회귀 검사]" (A6)')
+    ap.add_argument('--legacy', action='store_true', help='with --marker: also the exact pre-marker probe phrases')
     ap.add_argument('--out', required=True)
     ap.add_argument('--apply', action='store_true')
     args = ap.parse_args()
-    datetime.fromisoformat(args.before.replace('Z', '+00:00'))   # fail loudly on a malformed boundary
+    if not args.before and not args.marker:
+        ap.error('--before or --marker is required')
+    if args.before:
+        datetime.fromisoformat(args.before.replace('Z', '+00:00'))   # fail loudly on a malformed boundary
+    patterns = []
+    if args.marker:
+        from mark_regression_residue import LEGACY, MARKER   # same directory; one marker list for PG and graph
+        patterns = [MARKER] + (list(LEGACY) if args.legacy else [])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     with GraphDatabase.driver(NEO4J[0], auth=NEO4J[1], connection_timeout=5) as driver, driver.session() as s:
-        rows = [r.data() for r in s.run(LIST_Q, before=args.before)]
-        (out / 'backup.json').write_text(json.dumps(dict(before=args.before, cases=rows), ensure_ascii=False, indent=2,
+        rows = [r.data() for r in s.run(LIST_Q, before=args.before, patterns=patterns)]
+        (out / 'backup.json').write_text(json.dumps(dict(before=args.before, marker=args.marker, legacy=args.legacy, cases=rows), ensure_ascii=False, indent=2,
                                                     default=str), encoding='utf-8')
         deleted = 0
         if args.apply and rows:
@@ -49,7 +64,7 @@ def main():
                             ids=[r['id'] for r in rows]).single()['n']
         left = s.run('MATCH (dc:DecisionCase) RETURN count(dc) AS n, '
                      'count(CASE WHEN dc.source_incident_id IS NULL THEN 1 END) AS seeded').single().data()
-    report = dict(before=args.before, residue=len(rows), applied=bool(args.apply), deleted=deleted, remaining=left,
+    report = dict(before=args.before, marker=args.marker, legacy=args.legacy, residue=len(rows), applied=bool(args.apply), deleted=deleted, remaining=left,
                   reasons=[(r['props'].get('reason') or '')[:80] for r in rows])
     (out / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(report, ensure_ascii=False))

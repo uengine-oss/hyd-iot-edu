@@ -53,7 +53,7 @@ def main():
     initial=until(lambda:graph() if graph().get('graph') else None);save('initial',initial)
     check('deployed instance reports absent ontology process before knowledge is created',initial['graph']['process']['id'] is None and any('ontology process missing' in w for w in initial['graph']['warnings']))
     try:
-        q('CREATE (:Process {id:$id,name:$name})',id=definition['ontologyRef'],name='A048 retained semantic fixture')
+        q('CREATE (:Process {id:$id,name:$name})',id=definition['ontologyRef'],name='[회귀 검사] A048 지식 연결 시험 공정')
         for item in elements:
             q('MATCH (p:Process {id:$process}) CREATE (n:FlowNode {id:$id,name:$name}) CREATE (p)-[:HAS_NODE]->(n)',process=definition['ontologyRef'],id=item['ontologyRef'],name=item.get('name') or item['id'])
         repaired=until(lambda: (g if g['graph']['process']['id']==definition['ontologyRef'] and not g['graph']['warnings'] and g['projection']['pending']==0 else None) if (g:=graph()).get('graph') else None)
@@ -76,7 +76,7 @@ def main():
         current=http('/api/instances/'+pid)[1]
         task=current['workitems'][0]
         if task['status']!='DONE':
-            status,result=http('/api/todolist/'+task['id']+'/submit',dict(output={'score':9},by='A048 explicit fixture completion'))
+            status,result=http('/api/todolist/'+task['id']+'/submit',dict(output={'score':9},by='[회귀 검사] A048 시험 단계 마무리'))
             save('completion-response',dict(status=status,result=result));assert status==200
         final=until(lambda: (v if v['instance']['status']=='COMPLETED' else None) if (v:=http('/api/instances/'+pid)[1]) else None)
         save('final',final);driver.close()

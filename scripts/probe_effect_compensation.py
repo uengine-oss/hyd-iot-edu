@@ -124,7 +124,7 @@ def main():
     until(lambda: latest(pid).get("task:select", {}).get("status") == "IN_PROGRESS", agent_wait)
     g0 = latest(pid); sel = g0["task:select"]; dec_id = variables(view(pid)["instance"])["decision_id"]
     save("a-g0-view", view(pid)); save("a-decision-first", ok(PROCESS, "/api/decisions/" + dec_id))
-    r = approve(sel["id"], dec_id, "skill:fan-max", "A072 probe: first judgment, fan only (keeps the OEM order at full load)", "a-g0")
+    r = approve(sel["id"], dec_id, "skill:fan-max", "[회귀 검사] A072 첫 판단: 팬만 올림(OEM 오더는 전부하 유지)", "a-g0")
     check("a_first_approval_accepted", "instance" in r)
     inc = until(lambda: (lambda i: i if i["state"] == "RE_OBSERVING" else None)(incident(inc_id)), 90)
     first_cmd = inc["cmdId"]; save("a-incident-after-ack", inc)
@@ -143,7 +143,7 @@ def main():
     status, body = http(PROCESS, f"/api/instances/{pid}/effects/compensate", {"request_id": str(uuid.uuid4()), "by": "이생산", "role": "role:prod-mgr", "reason": "x"})
     check("a_nothing_reversible_to_compensate_409", status == 409, body)
     review_body = {"request_id": str(uuid.uuid4()), "by": "이생산", "role": "role:prod-mgr",
-                   "reason": "fan 100 % confirmed on site; oil temperature still near 56 C, the fan-only action is not enough; new judgment needed", "effects": [plc["id"]]}
+                   "reason": "[회귀 검사] 현장에서 팬 100% 확인, 유온이 아직 56 ℃ 근처 — 팬만으로는 부족해 새 판단 필요", "effects": [plc["id"]]}
     receipt = ok(PROCESS, f"/api/instances/{pid}/effects/review", review_body); save("a-review-receipt", receipt)
     replay = ok(PROCESS, f"/api/instances/{pid}/effects/review", review_body)
     check("a_review_recorded_and_replayed_identically", receipt["status"] == "RECORDED" and replay == receipt and receipt["history"][0]["incident"]["cmdId"] == first_cmd)
@@ -153,7 +153,7 @@ def main():
     check("a_rework_admitted_with_reopen", preview["execution_available"] and preview.get("reopen_incident") is True and sel["id"] in preview["retire_approvals"],
           {"blockers": preview["blockers"], "retire": preview["retire_approvals"]})
     rw = {"workitem_id": rank["id"], "request_id": str(uuid.uuid4()), "snapshot_token": preview["snapshot_token"], "by": "이생산", "role": "role:prod-mgr",
-          "reason": "A072 probe: new judgment after confirming the plant state"}
+          "reason": "[회귀 검사] A072 설비 상태 확인 뒤 새 판단"}
     result = ok(PROCESS, f"/api/instances/{pid}/rework", rw); save("a-rework-receipt", result)
     inc = incident(inc_id); save("a-incident-reopened", inc)
     approval = next(a for a in view(pid)["approvals"] if a["todo_id"] == sel["id"])
@@ -218,10 +218,10 @@ def main():
     sel2 = latest(pid)["task:select"]; dec2 = variables(view(pid)["instance"])["decision_id"]
     save("a-g1-view", view(pid)); save("a-decision-second", ok(PROCESS, "/api/decisions/" + dec2))
     check("a_new_generation_reached_new_selection_with_new_decision", sel2["id"] != sel["id"] and dec2 == doc["id"] and dec2 != dec_id, {"decision": dec2})
-    status, body = http(PROCESS, f"/api/todolist/{sel2['id']}/select", {"decision": dec_id, "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr", "reason": "stale"})
+    status, body = http(PROCESS, f"/api/todolist/{sel2['id']}/select", {"decision": dec_id, "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr", "reason": "[회귀 검사] 지난 판단으로 승인 시도"})
     check("a_old_decision_refused_for_new_generation", status in (400, 409), body)
     try:
-        approve(sel2["id"], dec2, "skill:fan-max-derate", "A072 probe: second judgment, fan max with derate", "a-g1")
+        approve(sel2["id"], dec2, "skill:fan-max-derate", "[회귀 검사] A072 두 번째 판단: 팬 최대와 부하 저감", "a-g1")
     except AssertionError:
         if not (worker and incident(inc_id)["state"] == "RESOLVED_WITHOUT_ACTION"):
             raise

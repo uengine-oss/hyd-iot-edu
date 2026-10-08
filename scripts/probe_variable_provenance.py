@@ -23,7 +23,7 @@ def main():
         print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
     raw=json.loads(Path('docs/examples/inspection-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId']='provenance_'+uuid.uuid4().hex[:10]
-    raw['processDefinitionName']='Start input and result provenance acceptance'
+    raw['processDefinitionName']='[회귀 검사] 시작 입력·결과 출처 인수 시험'
     save('definition',raw)
     definition=call('/api/process/definitions',{'definition':raw});save('registered',definition)
     values={'score':2,'request':{'source':'A036 actual HTTP input','revision':1}}
@@ -35,7 +35,7 @@ def main():
     check('HTTP start records exact immutable input',inst['initial_variables']==values)
     check('start variables identify input source',inst['variable_sources']=={k:{'kind':'input'} for k in values})
     wi=next(w for w in before['workitems'] if w['activity_id']=='task:review')
-    result=call('/api/todolist/'+wi['id']+'/submit',{'by':'A036 provenance reviewer','output':{'score':7}});save('submitted',result)
+    result=call('/api/todolist/'+wi['id']+'/submit',{'by':'[회귀 검사] A036 출처 검토자','output':{'score':7}});save('submitted',result)
     final=call('/api/instances/'+pid);save('after',final)
     live={v['key']:v['value'] for v in final['instance']['variables_data']}
     check('changed result reaches correct gateway',live['score']==7 and final['instance']['end_event']=='accepted')

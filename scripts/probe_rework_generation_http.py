@@ -37,13 +37,13 @@ def main():
     inst = ok('/api/instances/start', {'definition_id': raw['processDefinitionId'], 'version': '1',
               'event_id': 'A038-' + uuid.uuid4().hex, 'variables': {'score': 2}})
     path = '/api/instances/' + inst['proc_inst_id']; view = ok(path)
-    first = latest(view, 'measure'); ok('/api/todolist/' + first['id'] + '/submit', {'by': 'A038 measurer', 'output': {'score': 7}})
-    second = latest(ok(path), 'check'); ok('/api/todolist/' + second['id'] + '/submit', {'by': 'A038 checker', 'output': {'score': 9}})
+    first = latest(view, 'measure'); ok('/api/todolist/' + first['id'] + '/submit', {'by': '[회귀 검사] A038 측정자', 'output': {'score': 7}})
+    second = latest(ok(path), 'check'); ok('/api/todolist/' + second['id'] + '/submit', {'by': '[회귀 검사] A038 확인자', 'output': {'score': 9}})
     before = ok(path); save('before', before)
     preview = ok(path + '/rework-preview?workitem_id=' + second['id']); save('preview', preview)
     check('restarting overwriter reuses real preceding output 7 instead of seed 2', preview['candidate_variables'] == {'score': 7} and preview['execution_available'])
     req = {'workitem_id': second['id'], 'request_id': str(uuid.uuid4()), 'snapshot_token': preview['snapshot_token'],
-           'by': 'A038 reviewer', 'role': 'role:operator', 'reason': 'Measurement review changed; retain earlier measurement'}
+           'by': '[회귀 검사] A038 검토자', 'role': 'role:operator', 'reason': '[회귀 검사] 측정 검토가 바뀜 — 앞선 측정값은 남김'}
     check('unknown requester role is rejected without mutation', call(path + '/rework', dict(req, role='outsider'))[0] == 403 and ok(path) == before)
     with ThreadPoolExecutor(max_workers=4) as pool:
         responses = list(pool.map(lambda _: call(path + '/rework', req), range(4)))
@@ -58,9 +58,9 @@ def main():
           next_check['id'] != second['id'] and next_check['generation'] == 1 and next_check['supersedes_id'] == second['id']
           and next_check['reference_ids'] == [first['id']] and timer['generation'] == 1)
     old_finish = latest(before, 'finish')
-    stale = call('/api/todolist/' + old_finish['id'] + '/submit', {'by': 'late person', 'output': {'note': 'obsolete'}})
+    stale = call('/api/todolist/' + old_finish['id'] + '/submit', {'by': '[회귀 검사] 늦게 온 사람', 'output': {'note': '[회귀 검사] 지난 제출'}})
     check('cancelled prior human submission is rejected', stale[0] == 400 and latest(ok(path), 'check')['output'] is None)
-    check('request ID cannot be reused with changed reason', call(path + '/rework', dict(req, reason='different'))[0] == 409)
+    check('request ID cannot be reused with changed reason', call(path + '/rework', dict(req, reason='[회귀 검사] 다른 사유'))[0] == 409)
     preview2 = ok(path + '/rework-preview?workitem_id=' + next_check['id'])
     requests = [dict(req, workitem_id=next_check['id'], request_id=str(uuid.uuid4()), snapshot_token=preview2['snapshot_token']) for _ in range(2)]
     with ThreadPoolExecutor(max_workers=2) as pool: raced = list(pool.map(lambda request: call(path + '/rework', request), requests))
@@ -78,8 +78,8 @@ def main():
         time.sleep(0.5)
     current = ok(path); save('after-restart', current)
     check('process restart retains exact generation rows and receipts', current == saved and ok(path + '/rework', req) == result)
-    check_row = latest(current, 'check'); ok('/api/todolist/' + check_row['id'] + '/submit', {'by': 'A038 rechecker', 'output': {'score': 11}})
-    finish = latest(ok(path), 'finish'); ok('/api/todolist/' + finish['id'] + '/submit', {'by': 'A038 confirmer', 'output': {'note': 'New generation compared with preserved history'}})
+    check_row = latest(current, 'check'); ok('/api/todolist/' + check_row['id'] + '/submit', {'by': '[회귀 검사] A038 재확인자', 'output': {'score': 11}})
+    finish = latest(ok(path), 'finish'); ok('/api/todolist/' + finish['id'] + '/submit', {'by': '[회귀 검사] A038 확정자', 'output': {'note': '[회귀 검사] 새 세대를 보존된 이력과 비교함'}})
     final = ok(path); save('final', final)
     check('generation 2 completes with changed output and original input', final['instance']['status'] == 'COMPLETED'
           and final['instance']['initial_variables'] == {'score': 2}

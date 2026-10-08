@@ -201,9 +201,9 @@ def restart_during_reobserve(pid, inc_id, decision_id):
     wi=items(pid)
     check('reobservation failed into review; no CMMS work order',wi['task:reobserve']['status']=='DONE'
           and wi['task:reobserve']['output'].get('recovered') is False and wi['task:work-order']['status']=='TODO',json.dumps(statuses(pid)))
-    retry=post(f"{PROCESS}/api/todolist/{wi['task:select']['id']}/select",dict(decision=decision_id,option='skill:fan-max-derate',by='fixture',role='role:prod-mgr'))
+    retry=post(f"{PROCESS}/api/todolist/{wi['task:select']['id']}/select",dict(decision=decision_id,option='skill:fan-max-derate',by='[회귀 검사] 시험 검토자',role='role:prod-mgr'))
     check('old approval rejected after restart',retry.get('error')==400,str(retry))
-    response=post(f"{PROCESS}/api/todolist/{wi['task:escalate']['id']}/submit",dict(output={'note':'강제 종료 후 설비 상태 확인, 별도 정비 판단 필요'},by='fixture'))
+    response=post(f"{PROCESS}/api/todolist/{wi['task:escalate']['id']}/submit",dict(output={'note':'[회귀 검사] 강제 종료 후 설비 상태 확인, 별도 정비 판단 필요'},by='[회귀 검사] 시험 검토자'))
     check('human confirms escalation',not response.get('error'),str(response.get('error')))
     final=view(pid);save('final-instance',final)
     check('explicit escalation end, without claiming recovery',final['instance']['status']=='COMPLETED'
@@ -287,11 +287,11 @@ def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False,
           json.dumps({"order": [o['sopId'] for o in dec.get('options', [])], "recommended": dec.get("recommended"), "policy_top": top, "drift": drift}, ensure_ascii=False))
 
     section("3. 사람의 선택: 역할 검사 → 폼 제출(SUBMITTED) → 엔진 → gw:control → PLC 명령 (task:command)")
-    r = post(f"{PROCESS}/api/todolist/{sel['id']}/select", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "OP-17", "role": "role:operator", "reason": "test"})
+    r = post(f"{PROCESS}/api/todolist/{sel['id']}/select", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "[회귀 검사] 운전원", "role": "role:operator", "reason": "[회귀 검사] 권한 밖 승인 시도"})
     check("operator refused (403) — card needs 생산관리자", r.get("error") == 403, r.get("body", "")[:100])
     check("selection task still IN_PROGRESS after refusal", get(f"{PROCESS}/api/todolist/{sel['id']}")["status"] == "IN_PROGRESS", "")
     selection = {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "이생산", "role": "role:prod-mgr",
-                 "reason": "OEM 납기 오더 진행 중 — 생산을 멈추지 않고 유온을 내린다"}
+                 "reason": "[회귀 검사] OEM 납기 오더 진행 중 — 생산을 멈추지 않고 유온을 내린다"}
     if fresh_review:
         reviewed=post(f"{PROCESS}/api/todolist/{sel['id']}/decision-preview",
                       {'decision':dec['id'],'option':selection['option'],'parameters':{}},timeout=60)

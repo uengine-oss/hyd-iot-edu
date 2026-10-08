@@ -30,7 +30,7 @@ def main():
             print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
         status,catalog=request('http://127.0.0.1:8080/api/kg/catalog');assert status==200
         sop='SOP-A047UI-'+uuid.uuid4().hex[:8].upper()
-        body=dict(name='A047 화면 저장 확인',description='isolated fixture',sopId=sop,steps=['격리된 시험 단계'],failureMode=catalog['failureModes'][0]['id'],approver='role:maint-mgr',request_id=str(uuid.uuid4()),by='A047 HTTP acceptance')
+        body=dict(name='[회귀 검사] A047 화면 저장 확인',description='[회귀 검사] 격리 시험 자료',sopId=sop,steps=['격리된 시험 단계'],failureMode=catalog['failureModes'][0]['id'],approver='role:maint-mgr',request_id=str(uuid.uuid4()),by='[회귀 검사] A047 HTTP 인수 시험')
         status,created=request(BASE,body,'POST');save('created',created)
         check('HTTP create returns reviewed revision',status==200 and bool(created.get('revision')))
         save('state',dict(sid=created['id'],sop=sop,body=body,original=created))
@@ -56,7 +56,7 @@ def main():
                 if args.phase=='check':
                     status,rows=request(BASE);skill=next(k for k in rows if k['id']==sid)
                     save('after-ui',dict(skill=skill,receipts=receipts))
-                    assert status==200 and skill['description']=='A047 committed response loss' and len(receipts)==3
+                    assert status==200 and skill['description']=='[회귀 검사] A047 응답 유실 뒤 저장' and len(receipts)==3
                     print('PASS actual UI edit and response-loss retry create exactly two edit receipts')
                 else:
                     ids=[sid,sid+'/step/1'];edges=q('MATCH (a)-[r]->(b) WHERE a.id IN $ids OR b.id IN $ids RETURN a.id AS a,type(r) AS type,b.id AS b',ids=ids)

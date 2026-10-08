@@ -148,7 +148,7 @@ def run_to_selection(asset, fault, pattern, raise_timeout):
         print(f'  Waiting {remaining:.0f} wall seconds for new 2-minute source window before explicit reassessment',flush=True)
         time.sleep(remaining)
         request={'deferral_id':receipt['id'],'request_id':'scenario-'+uuid.uuid4().hex,
-                 'by':'scenario-test','reason':'고장 주입 후 실제 2분 원천 창을 새로 관측하여 재평가 요청'}
+                 'by':'[회귀 검사] 시나리오 검사기','reason':'[회귀 검사] 고장 주입 후 실제 2분 원천 창을 새로 관측하여 재평가 요청'}
         response=post(f"{PROCESS}/api/todolist/{held['id']}/reassess",request)
         reassessment_evidence.append({'instance':pid,'held':held,'request':request,'response':response})
         if not check('explicit reassessment accepted',not response.get('error'),json.dumps(response,ensure_ascii=False)[:350]):return None
@@ -206,7 +206,7 @@ def scenario_pump():
     check("cards: 압력 상향 excluded by rule:no-pressure-raise, 예비 펌프 전환 recommended",
           dec.get("recommended") == "skill:switch-standby-pump" and opts.get("skill:raise-pressure", {}).get("feasible") is False,
           json.dumps({k: (o.get('rank'), o.get('feasible')) for k, o in opts.items()}, ensure_ascii=False))
-    r = select_with_review(sel,dec,'skill:switch-standby-pump','이생산','role:prod-mgr','예비 펌프 정비 완료 상태',inc_id)
+    r = select_with_review(sel,dec,'skill:switch-standby-pump','이생산','role:prod-mgr','[회귀 검사] 예비 펌프 정비 완료 상태',inc_id)
     if not check("production manager selected switch-standby-pump", "instance" in r and not r.get("error"), str(r.get("body") or "")[:300]):
         return
     inc, dt = wait_for(lambda: get(f"{PROCESS}/api/incidents/{inc_id}") if get(f"{PROCESS}/api/incidents/{inc_id}").get("state") in ("RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "CLOSED") else None, 60)
@@ -236,7 +236,7 @@ def scenario_fan():
     opts = {o["id"]: o for o in dec.get("options", [])}
     check("diagnosed cause = fan bearing wear (rule:dx-fan, TS1 < 52)", vd.get("cause") == "cause:fan-bearing-wear", json.dumps({k: vd.get(k) for k in ('cause', 'failure_mode')}, ensure_ascii=False))
     check("candidate cards are the fan SOPs", {"skill:fan-slow-derate", "skill:fan-slow"} <= set(opts), str(sorted(opts)))
-    r = select_with_review(sel,dec,'skill:fan-slow-derate','이생산','role:prod-mgr','유온 상승 없이 진동만 낮춘다',inc_id)
+    r = select_with_review(sel,dec,'skill:fan-slow-derate','이생산','role:prod-mgr','[회귀 검사] 유온 상승 없이 진동만 낮춘다',inc_id)
     if not check("production manager selected fan-slow-derate", "instance" in r and not r.get("error"), str(r.get("body") or "")[:300]):
         return
     inc, dt = wait_for(lambda: get(f"{PROCESS}/api/incidents/{inc_id}") if get(f"{PROCESS}/api/incidents/{inc_id}").get("state") in ("RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED", "CLOSED") else None, 60)
@@ -255,7 +255,7 @@ def scenario_mask():
     if not r:
         return
     pid, inc_id, dec, sel, vd = r
-    r = select_with_review(sel,dec,'skill:derate-70','김운전','role:operator','일단 부하를 낮춘다',inc_id)
+    r = select_with_review(sel,dec,'skill:derate-70','김운전','role:operator','[회귀 검사] 일단 부하를 낮춘다',inc_id)
     if not check("operator selected derate-70 (approver role:operator)", "instance" in r and not r.get("error"), str(r.get("body") or "")[:120]):
         return
     st, dt = wait_for(lambda: pattern_state("HYD-01", "PUMP_LEAKAGE") if pattern_state("HYD-01", "PUMP_LEAKAGE").get("phase") == "IDLE" else None, 90)
@@ -270,7 +270,7 @@ def scenario_mask():
     esc, dt = wait_for(lambda: items(pid)["task:escalate"] if items(pid).get("task:escalate", {}).get("status") == "IN_PROGRESS" else None, 30)
     check("task:escalate IN_PROGRESS for 생산관리자 (the instance waits for a person)", esc is not None and esc.get("user_id") == "role:prod-mgr", json.dumps({k: v['status'] for k, v in items(pid).items()}, ensure_ascii=False))
     if esc:
-        r = post(f"{PROCESS}/api/todolist/{esc['id']}/submit", {"output": {"note": "부하 저감으로는 압력이 회복되지 않음. 예비 펌프 전환 지시."}, "by": "이생산"})
+        r = post(f"{PROCESS}/api/todolist/{esc['id']}/submit", {"output": {"note": "[회귀 검사] 부하 저감으로는 압력이 회복되지 않음. 예비 펌프 전환 지시."}, "by": "이생산"})
         check("manager submitted the escalate form", "instance" in r and not r.get("error"), str(r.get("body") or "")[:120])
     fin = finish(pid, inc_id, "ev:escalated", timeout=60)
     if fin:

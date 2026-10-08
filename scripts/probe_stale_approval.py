@@ -54,8 +54,8 @@ def main(destination):
         save('baseline-assessment', baseline)
         check('same card is allowed before the mode change', baseline.get('allowed') is True, baseline.get('reasons'))
         changed_value = s.post(s.PROCESS + '/api/todolist/' + rows['task:select']['id'] + '/select',
-                        {'decision':decision['id'], 'option':option['id'], 'by':'changed-action-probe',
-                         'role':'role:prod-mgr', 'fan_pct':95, 'reason':'changed value has not been reviewed'})
+                        {'decision':decision['id'], 'option':option['id'], 'by':'[회귀 검사] 바뀐 조치 검사기',
+                         'role':'role:prod-mgr', 'fan_pct':95, 'reason':'[회귀 검사] 바뀐 값은 아직 검토되지 않음'})
         save('unreviewed-action',changed_value)
         check('different fan value cannot reuse the default-card forecast',changed_value.get('error') in (400,409)
               and '조치값' in changed_value.get('body',''),changed_value)
@@ -67,8 +67,8 @@ def main(destination):
         assert current, 'mode not visible to process'
         save('current-plant', current)
         result = s.post(s.PROCESS + '/api/todolist/' + rows['task:select']['id'] + '/select',
-                        {'decision': decision['id'], 'option': option['id'], 'by': 'stale-approval-probe',
-                         'role': 'role:prod-mgr', 'reason': 'stale mode verification'})
+                        {'decision': decision['id'], 'option': option['id'], 'by': '[회귀 검사] 지난 승인 검사기',
+                         'role': 'role:prod-mgr', 'reason': '[회귀 검사] 지난 운전 모드 검증'})
         save('approval-response', result)
         check('changed mode is rejected before approval acceptance', result.get('error') in (400, 409), result)
         after = s.get(s.PROCESS + '/api/incidents/' + inc_id)
@@ -111,7 +111,7 @@ def main(destination):
             review = next((w for w in view['workitems'] if w['activity_id'] == 'task:escalate' and w['status'] == 'IN_PROGRESS'), None)
             if review:
                 save('fixture-review', s.post(s.PROCESS + '/api/todolist/' + review['id'] + '/submit',
-                     {'by': 'stale-approval-probe', 'output': {'note': '실제 반례 상태와 명령 거절을 보존하고 시험을 종료함'}}))
+                     {'by': '[회귀 검사] 지난 승인 검사기', 'output': {'note': '[회귀 검사] 실제 반례 상태와 명령 거절을 보존하고 시험을 종료함'}}))
         save('plant-reset', s.post(s.PLANT + '/api/reset'))
         save('report', report)
     raise SystemExit(0 if report['checks'] and all(c['passed'] for c in report['checks']) else 1)

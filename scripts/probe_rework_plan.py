@@ -26,8 +26,8 @@ def main():
         assert passed, name
     raw = json.loads(Path('docs/examples/inspection-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId'] = 'rework_plan_' + uuid.uuid4().hex[:10]
-    raw['processDefinitionName'] = 'Rework dependency preview acceptance'
-    second = deepcopy(raw['activities'][0]); second.update(id='task:confirm', name='Confirm changed score', inputData=['score'])
+    raw['processDefinitionName'] = '[회귀 검사] 재작업 의존 미리보기 인수 시험'
+    second = deepcopy(raw['activities'][0]); second.update(id='task:confirm', name='[회귀 검사] 바뀐 점수 확인', inputData=['score'])
     raw['activities'].append(second)
     raw['sequences'][1]['target'] = second['id']
     raw['sequences'].append({'id': 'confirm-choice', 'source': second['id'], 'target': 'choice'})
@@ -44,7 +44,7 @@ def main():
     check('preview reports separate explicit request availability', initial['execution_available'] is True and not initial['blockers'])
     check('repeated preview leaves instance workitems and events unchanged',
           call(preview_path) == initial and call(path) == before)
-    call('/api/todolist/' + first['id'] + '/submit', {'by': 'A037 reviewer', 'output': {'score': 7}})
+    call('/api/todolist/' + first['id'] + '/submit', {'by': '[회귀 검사] A037 검토자', 'output': {'score': 7}})
     current = call(path); save('after-review', current)
     second_row = next(w for w in current['workitems'] if w['activity_id'] == second['id'])
     check('normal execution preserves original score while passing result to next task',
@@ -68,7 +68,7 @@ def main():
     except HTTPError as error: status = error.code
     check('foreign workitem cannot be a restart point', status == 409)
     # Finish the ordinary workflow so this probe leaves no pending human task.
-    call('/api/todolist/' + second_row['id'] + '/submit', {'by': 'A037 confirmer', 'output': {'score': 8}})
+    call('/api/todolist/' + second_row['id'] + '/submit', {'by': '[회귀 검사] A037 확정자', 'output': {'score': 8}})
     final = call(path); save('final', final)
     check('ordinary workflow finishes and planner does not reopen it',
           final['instance']['status'] == 'COMPLETED' and final['instance']['end_event'] == 'accepted'

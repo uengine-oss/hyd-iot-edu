@@ -132,14 +132,14 @@ def main():
         failed=work.fail(new,'fixture database unavailable',max_failures=2)
         check('failure limit stays FAILED and is not claimed as successful work',failed['status']=='FAILED' and failed['failures']==2 and failed['handled_at'] is None and work.claim('no-auto-retry') is None)
         original=deepcopy(failed)
-        retried=work.retry_failed(failed['id'],by='fixture reviewer',reason='fixture dependency restored')
+        retried=work.retry_failed(failed['id'],by='[회귀 검사] 시험 검토자',reason='[회귀 검사] 시험 의존 서비스 복구')
         check('explicit retry retains identity payload policy and error history',retried['id']==original['id'] and retried['payload']==original['payload'] and retried['policy']==original['policy']
               and retried['failures']==0 and retried['history'][-1]['event']=='explicit_retry')
         final=work.claim('final-handler')
         check('another tenant cannot settle a known claim',other.finish(final,{'fixture':'wrong tenant'}) is None)
         complete=work.finish(final,{'fixture':'correlated CLEAR observed'})
         check('handled receipt is not completed or explicitly retried twice',complete['status']=='HANDLED' and complete['handled_at']
-              and work.finish(final,{'fixture':'duplicate'}) is None and work.retry_failed(final['id'],by='fixture',reason='duplicate') is None)
+              and work.finish(final,{'fixture':'duplicate'}) is None and work.retry_failed(final['id'],by='[회귀 검사] 시험 검토자',reason='[회귀 검사] 중복 재시도') is None)
         (out/'claim-receipts.json').write_text(json.dumps(work.list(),ensure_ascii=False,indent=2),encoding='utf-8')
         (out/'receipts.json').write_text(json.dumps(reopened.list(),ensure_ascii=False,indent=2),encoding='utf-8')
     finally:

@@ -47,7 +47,7 @@ def main():
     preview=rt.preview_rework(pid,rank['id']);save('preview',preview)
     check('real complete enterprise ledger permits active pre-effect rework',preview['execution_available'] and all(v==[] for v in preview['effects']['enterprise_receipts'].values()))
     meta['request']={'workitem_id':rank['id'],'request_id':str(uuid.uuid4()),'snapshot_token':preview['snapshot_token'],
-                     'by':'PG rework reviewer','role':'role:prod-mgr','reason':'Changed evidence; retire failed consent and judge again'}
+                     'by':'[회귀 검사] PG 재작업 검토자','role':'role:prod-mgr','reason':'[회귀 검사] 근거가 바뀜 — 실패한 승인을 거두고 다시 판단'}
     save('fixture',meta);before=rt.instance_view(pid);before_disk=store.restore();save('before',before)
     try:
         for phase,exit_code in [('before',73),('after',74)]:
@@ -77,7 +77,7 @@ def main():
         bad=rt.repo.get_workitem(claimed['id']);save('rejected-old-result',bad)
         check('engine rejects old decision ID and does not open human selection',bad['status']=='SUBMITTED' and bad['retry']==1 and latest('task:select')['status']=='TODO')
         p=rt.preview_rework(pid,claimed['id'])
-        rt.request_rework(pid,claimed['id'],str(uuid.uuid4()),p['snapshot_token'],'PG reviewer','role:prod-mgr','Correct rejected old-decision output with another explicit generation')
+        rt.request_rework(pid,claimed['id'],str(uuid.uuid4()),p['snapshot_token'],'[회귀 검사] PG 검토자','role:prod-mgr','[회귀 검사] 거절된 옛 판단 출력을 새 세대로 바로잡음')
         new,=rt.repo.fetch_pending_task('cliagents','new-decision-test',tenant_id=tenant,proc_inst_id=pid)
         inst=rt.repo.get_instance(pid);scope=decision_scope.expected(inst,new)|{'consumer':new['consumer']}
         decision_scope.validate_submission(inst,rt.definition_for(inst),new,scope)
@@ -90,7 +90,7 @@ def main():
         check('generation 2 scoped decision advances while original decision stays immutable',selection['status']=='IN_PROGRESS'
               and rt.repo.get_workitem(new['id'])['status']=='DONE' and ctx.book[meta['decision']]==before_disk[1][meta['decision']])
         check('new judgment alone sends no command and has no consent',not meta['commands'] and rt.repo.get_approval(selection['id'],tenant) is None)
-        rt.select(selection['id'],fresh['id'],fresh['options'][0]['id'],'new reviewer','role:prod-mgr')
+        rt.select(selection['id'],fresh['id'],fresh['options'][0]['id'],'[회귀 검사] 새 검토자','role:prod-mgr')
         approval=rt.repo.get_approval(selection['id'],tenant)
         check('new explicit approval has new workitem and decision; one fixture command',approval['status']=='DELIVERED'
               and approval['decision_id']==fresh['id'] and approval['todo_id']!=prior['todo_id'] and len(meta['commands'])==1)

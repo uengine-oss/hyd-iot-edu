@@ -49,7 +49,7 @@ def main():
         report['checks'][name]=bool(value); print(('PASS ' if value else 'FAIL ')+name,flush=True);save()
     def request(policy, annotation='A069 explicit test formula'):
         return dict(policy=policy,annotation=annotation,expected_revision=current['revision'],
-                    request_id=str(uuid.uuid4()),reason='A069 controlled runtime verification',by='A069 probe')
+                    request_id=str(uuid.uuid4()),reason='[회귀 검사] A069 순위 정책 실행 중 변경 검증',by='[회귀 검사] A069 검사기')
     def update(policy, annotation='A069 explicit test formula'):
         nonlocal current
         body=request(policy,annotation); current=http(8080,path,body,'PUT')

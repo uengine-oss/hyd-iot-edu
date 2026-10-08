@@ -34,9 +34,9 @@ def main():
     prefix='/api/todolist/'+WID
     if args.phase=='before':
         check('original unresolved process with failed consent',view['instance']['status']=='RUNNING' and approval['status']=='FAILED')
-        status,error=call(prefix+'/approval-discard-preview',{'by':'A035 operator probe','role':'role:operator'})
+        status,error=call(prefix+'/approval-discard-preview',{'by':'[회귀 검사] A035 운전원','role':'role:operator'})
         save('operator-denied',{'status':status,'response':error});check('insufficient role denied',status==403)
-        status,preview=call(prefix+'/approval-discard-preview',{'by':'A035 recovery manager','role':'role:prod-mgr'})
+        status,preview=call(prefix+'/approval-discard-preview',{'by':'[회귀 검사] A035 복구 관리자','role':'role:prod-mgr'})
         save('preview',preview);check('actual ledger and ended Incident allow explicit discard',status==200 and preview['can_discard'] and not preview['enterprise_receipts'])
         check('no physical command before discard',incident['cmdId'] is None and incident['state']=='RESOLVED_WITHOUT_ACTION')
     else:

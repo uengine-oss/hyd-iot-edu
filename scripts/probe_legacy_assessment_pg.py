@@ -15,7 +15,7 @@ from procsvc import engine,instances,procdb,task_deferral
 from procsvc.legacy_assessment import LegacyAssessment
 
 DSN='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
-HELD={'id':'explicit-fixture','status':'WITHHELD','error':'Fixture source unavailable','steps':[]}
+HELD={'id':'explicit-fixture','status':'WITHHELD','error':'[회귀 검사] 시험 원천 사용 불가','steps':[]}
 
 
 def runtime(meta):
@@ -43,7 +43,7 @@ def main():
         print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
     meta={'tenant':'legacy-'+uuid.uuid4().hex[:10]}
     with psycopg.connect(DSN,connect_timeout=5) as c:
-        c.execute('insert into tenants(id,name) values(%s,%s)',(meta['tenant'],'A059 retained isolated fixture'))
+        c.execute('insert into tenants(id,name) values(%s,%s)',(meta['tenant'],'[회귀 검사] A059 보존 격리 시험'))
     rt=runtime(meta)
     alert={'alertId':'fixture-'+uuid.uuid4().hex,'asset':'HYD-02','pattern':'PUMP_LEAKAGE','state':'RAISE'}
     inst=rt.on_alert_raise(alert);meta['pid']=inst['proc_inst_id']
@@ -62,7 +62,7 @@ def main():
     pending=rt.repo.get_workitem(row['id']);save('pending',pending)
     check('committed reply becomes durable PENDING',pending['status']=='PENDING' and pending['draft']['_deferral']['assessment']['reason']==HELD['error'])
     receipt=task_deferral.reassess(rt.repo,meta['tenant'],row['id'],deferral_id=pending['draft']['_deferral']['id'],
-                                  request_id='fixture-fresh',by='fixture',reason='new source requested')
+                                  request_id='fixture-fresh',by='[회귀 검사] 시험 검토자',reason='[회귀 검사] 새 원천 조회 요청')
     fresh=worker(runtime(meta)).claim(row['id'])
     check('reassessment claims new owner without saved reply',fresh is not None and fresh['consumer']!=current['consumer']
           and 'result' not in fresh['draft']['_legacy_attempt'])

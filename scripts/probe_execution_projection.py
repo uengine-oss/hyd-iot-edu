@@ -42,7 +42,7 @@ def main():
         print(('PASS ' if ok else 'FAIL ')+name,flush=True); assert ok,name
     tenant='projection-'+uuid.uuid4().hex[:10]
     raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
-    with psycopg.connect(DSN) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'A043 retained projection fixture'))
+    with psycopg.connect(DSN) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'[회귀 검사] A043 보존 투영 시험'))
     captured=[]
     def writer(q,**params):
         captured.append((q,deepcopy(params)))

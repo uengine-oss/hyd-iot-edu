@@ -51,13 +51,13 @@ def main():
     raw['activities'][0].update(type='userTask', role='Agent', agentMode='COMPLETE', orchestration='cliagents')
     tenant = 'rework-' + uuid.uuid4().hex[:10]
     with psycopg.connect(DSN) as c:
-        c.execute('insert into tenants(id,name) values(%s,%s)', (tenant, 'A038 retained fixture'))
+        c.execute('insert into tenants(id,name) values(%s,%s)', (tenant, '[회귀 검사] A038 보존 시험'))
     meta = {'tenant': tenant, 'definition': raw}; rt = runtime(meta)
     inst = rt.start_definition(raw['processDefinitionId'], '1', str(uuid.uuid4()), {'score': 2}); pid = inst['proc_inst_id']
     claimed = rt.repo.fetch_pending_task('cliagents', 'old-worker', tenant_id=tenant, proc_inst_id=pid)[0]
     meta.update(pid=pid, request=dict(workitem_id=claimed['id'], request_id=str(uuid.uuid4()),
-                snapshot_token=rt.preview_rework(pid, claimed['id'])['snapshot_token'], by='PG rework tester',
-                role='role:operator', reason='Change request after original claim'))
+                snapshot_token=rt.preview_rework(pid, claimed['id'])['snapshot_token'], by='[회귀 검사] PG 재작업 시험자',
+                role='role:operator', reason='[회귀 검사] 원래 작업을 가져간 뒤 변경 요청'))
     save('fixture', meta); before = rt.instance_view(pid); save('before', before)
     process = subprocess.run([sys.executable, __file__, '--out', str(out), '--crash', 'before-commit'], capture_output=True)
     save('before-commit-child', {'exit': process.returncode, 'stderr': process.stderr.decode('utf8', errors='replace')})
@@ -88,9 +88,9 @@ def main():
     except psycopg.Error as error:
         check('DB rejects immutable request replacement', 'immutable' in str(error))
     else: check('DB rejects immutable request replacement', False)
-    rt.submit(current['check']['id'], {'score': 8}, by='PG reviewer')
+    rt.submit(current['check']['id'], {'score': 8}, by='[회귀 검사] PG 검토자')
     current = engine._by_activity(rt.repo.list_workitems(proc_inst_id=pid, limit=None))
-    rt.submit(current['finish']['id'], {'note': 'Actual generation checked'}, by='PG reviewer')
+    rt.submit(current['finish']['id'], {'note': '[회귀 검사] 실제 세대 확인함'}, by='[회귀 검사] PG 검토자')
     final = rt.instance_view(pid); save('final', final)
     check('retained fixture ends normally and original input survives', final['instance']['status'] == 'COMPLETED' and final['instance']['initial_variables'] == {'score': 2})
     save('result', {'scope': __doc__, 'fixture': meta, 'checks': checks})

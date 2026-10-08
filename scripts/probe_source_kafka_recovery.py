@@ -48,8 +48,8 @@ def main():
         inst,=instance(aid);view=get(PROCESS+'/api/instances/'+inst['proc_inst_id'])
         task=next(w for w in view['workitems'] if w['status']=='IN_PROGRESS')
         assert task['activity_id']=='task:triage'
-        answer=post(PROCESS+'/api/todolist/'+task['id']+'/submit',{'by':'A033 Kafka 복구 검증',
-            'output':{'note':'시험 Kafka 원문/재시작/중복/충돌 확인. 실제 설비 조치나 회복 승인 아님.'}})
+        answer=post(PROCESS+'/api/todolist/'+task['id']+'/submit',{'by':'[회귀 검사] A033 Kafka 복구 검증',
+            'output':{'note':'[회귀 검사] 시험 Kafka 원문/재시작/중복/충돌 확인. 실제 설비 조치나 회복 승인 아님.'}})
         check(aid+': human review accepted',not answer.get('error'))
         return get(PROCESS+'/api/instances/'+inst['proc_inst_id'])
     try:

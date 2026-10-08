@@ -44,7 +44,7 @@ def main():
     def view(): return req('/api/instances/'+pid)
     def latest():
         return {w['activity_id']:w for w in sorted(view()['workitems'],key=lambda w:(w.get('generation') or 0,w.get('start_date') or ''))}
-    def submit(row,key,value): return req('/api/todolist/'+row['id']+'/submit',dict(output={key:value},by='A064 fixture'))
+    def submit(row,key,value): return req('/api/todolist/'+row['id']+'/submit',dict(output={key:value},by='[회귀 검사] A064 검사기'))
     def claim(): return repo.fetch_pending_task('cliagents','a064-fixture',tenant_id='hyd',proc_inst_id=pid)
     rows=latest()
     check('initial_producer_live_consumer_waiting',rows['a']['status']=='IN_PROGRESS' and rows['b']['status']=='TODO')
@@ -67,7 +67,7 @@ def main():
     check('engine_poll_releases_bound_successor',latest()['b']['status']=='DONE' and latest()['c']['status']=='IN_PROGRESS')
     preview=req('/api/instances/'+pid+'/rework-preview?workitem_id='+rows['a']['id']); save('preview',preview)
     reworked=req('/api/instances/'+pid+'/rework',dict(workitem_id=rows['a']['id'],request_id=str(uuid.uuid4()),
-        snapshot_token=preview['snapshot_token'],by='A064 fixture',role='role:operator',reason='new measurement'))
+        snapshot_token=preview['snapshot_token'],by='[회귀 검사] A064 검사기',role='role:operator',reason='[회귀 검사] 새 측정값'))
     current=latest(); check('rework_consumer_waits_and_cannot_be_claimed',current['b']['status']=='TODO' and claim()==[])
     submit(current['a'],'x','revised measurement')
     claimed=claim(); check('new_generation_claims_exact_new_producer',len(claimed)==1 and claimed[0]['id']==current['b']['id']

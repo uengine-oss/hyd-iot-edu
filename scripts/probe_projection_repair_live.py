@@ -92,7 +92,7 @@ def main():
             plan=read(kind+'-plan')
             if kind=='Execution':check('CLI inspection captures the exact completed source and rejected receipt',plan['source']['instance']['proc_inst_id']==PID and plan['source']['instance']['status']=='COMPLETED' and any((p['last_error'] or '').startswith('ProjectionConflict:') for p in plan['pending']))
             else:check('CLI inspection captures the closed source, absent graph and dependent judgments',plan['source']['id']==INC and plan['source']['state']=='CLOSED' and not plan['graph']['nodes'] and len(plan['dependents'])>0)
-            cli(base+['apply','--file',file,'--by','A049 operator verification','--reason','repair isolated derived fixture after source comparison','--request-id',state['requests'][kind]],kind+'-apply')
+            cli(base+['apply','--file',file,'--by','[회귀 검사] A049 운영자 확인','--reason','[회귀 검사] 원천과 대조한 뒤 격리된 파생 시험 자료 복구','--request-id',state['requests'][kind]],kind+'-apply')
             resultfile=file.removesuffix('.json')+'.result.json'
             cli(['docker','cp','hyd-iot-edu-process-1:'+resultfile,str(OUT/(kind+'-result.json'))],kind+'-copy-result')
         repaired=until(lambda:(g if g['projection']['pending']==0 and not g['graph']['warnings'] else None) if (g:=graph()) else None)
@@ -107,7 +107,7 @@ def main():
         until(lambda:http('/healthz')[0]==200)
         for kind in ['Execution','Incident']:
             file='/tmp/a049-'+state['requests'][kind]+'.json'
-            cli(['docker','exec','hyd-iot-edu-process-1','python','-m','procsvc.projection_repair','apply','--file',file,'--by','A049 operator verification','--reason','repair isolated derived fixture after source comparison','--request-id',state['requests'][kind]],kind+'-replay-after-restart')
+            cli(['docker','exec','hyd-iot-edu-process-1','python','-m','procsvc.projection_repair','apply','--file',file,'--by','[회귀 검사] A049 운영자 확인','--reason','[회귀 검사] 원천과 대조한 뒤 격리된 파생 시험 자료 복구','--request-id',state['requests'][kind]],kind+'-replay-after-restart')
         after=view();save('after-restart',after);save('sync',http('/api/graph-projections')[1])
         check('service restart and CLI replay preserve current source and zero execution pending',after['instance']==read('before')['instance'] and after['workitems']==read('before')['workitems'] and graph()['projection']['pending']==0)
         with psycopg.connect(DSN) as conn:count=conn.execute('select count(*) from projection_repairs where request_id=%s',(state['requests']['Execution'],)).fetchone()[0]

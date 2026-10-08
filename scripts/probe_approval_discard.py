@@ -31,7 +31,7 @@ def main():
         inc=next(iter(ctx.incidents.values()));inc.state='RESOLVED_WITHOUT_ACTION';ctx.persist()
         before=rt.repo.get_approval(meta['wid'],meta['tenant']);save('before',before)
         check('real approval starts FAILED without command',before['status']=='FAILED' and not meta['commands'])
-        args=(meta['wid'],'PG discard probe','role:prod-mgr','Fixture ended; retire failed consent','same-request')
+        args=(meta['wid'],'[회귀 검사] PG 승인 폐기 검사기','role:prod-mgr','[회귀 검사] 시험 종료 — 실패한 승인을 거둠','same-request')
         preview=rt.preview_approval_discard(*args[:3]);save('preview',preview)
         check('real enterprise complete ledger reports no effect',preview['enterprise_receipts']==[] and preview['can_discard'])
         update=rt.repo.update_instance

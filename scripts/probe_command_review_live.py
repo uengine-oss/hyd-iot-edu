@@ -88,7 +88,7 @@ def main():
         def consent(d,wi,label):
             options=[o for o in d['options'] if o['feasible'] and any(a.get('kind')=='command' for a in o['actions'])]
             option=next((o for o in options if o['id']==d['recommended']),options[0])
-            response=base.request(base.PROCESS+'/api/todolist/'+wi['id']+'/select',dict(decision=d['id'],option=option['id'],by='A046 integration reviewer',role='role:prod-mgr'))
+            response=base.request(base.PROCESS+'/api/todolist/'+wi['id']+'/select',dict(decision=d['id'],option=option['id'],by='[회귀 검사] A046 통합 검토자',role='role:prod-mgr'))
             save(label+'-consent',response)
             return option
         original_option=consent(decision,selection,'g0')
@@ -101,7 +101,7 @@ def main():
         old=base.request(base.PROCESS+'/api/decisions/'+did);save('g0-approved-original',old)
         rank=task('task:rank');preview=base.request(path+'/rework-preview?workitem_id='+rank['id']);save('rework-preview',preview)
         check('real complete ledgers permit fresh judgment and consent',preview['execution_available'] and bool(preview['unissued_commands']))
-        body=dict(workitem_id=rank['id'],request_id=str(uuid.uuid4()),snapshot_token=preview['snapshot_token'],by='A046 integration reviewer',role='role:prod-mgr',reason='MES changed after delivered consent; recompute judgment and request fresh consent')
+        body=dict(workitem_id=rank['id'],request_id=str(uuid.uuid4()),snapshot_token=preview['snapshot_token'],by='[회귀 검사] A046 통합 검토자',role='role:prod-mgr',reason='[회귀 검사] 승인 전달 뒤 MES가 바뀜 — 판단을 다시 계산하고 새 승인을 요청')
         result=base.request(path+'/rework',body);save('rework-receipt',result)
         phase('rank')
         fresh=read('g1-decision');save('g1-before-consent',view())
