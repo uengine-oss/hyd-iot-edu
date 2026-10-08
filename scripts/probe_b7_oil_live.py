@@ -172,8 +172,8 @@ def run(a, save, agent_wait, started):
     # 1. 지식 상태
     fm = cypher("MATCH (p:AnomalyPattern {code:'OIL_ANALYSIS'})-[:DETECTS]->(:Symptom)-[:INDICATES]->(f:FailureMode) RETURN p.id, f.id;")
     check("지식: OIL_ANALYSIS 패턴 → 증상 → 고장 유형 1행", len(fm) == 1, fm)
-    sops = cypher("MATCH (:Rule {id:'rule:cand-oil'})-[:OUTPUTS]->(s) RETURN s.id;")
-    if not check(f"지식: rule:cand-oil 이 조치를 내놓음(HM-9 인제스천 뒤) — {SOP}", any(SOP in s for s in sops),
+    sops = cypher("MATCH (:Rule {id:'rule:cand-oil'})-[:OUTPUTS]->(s) RETURN s.sopId;")   # 조치 노드 id 는 skill:sop-oil-21, SOP 번호는 sopId
+    if not check(f"지식: rule:cand-oil 이 조치를 내놓음(HM-9 인제스천 뒤) — {SOP}", any(s.strip('"') == SOP for s in sops),
                  f"{sops} — 없으면 먼저 scripts/probe_expert_answers_a098.py(워커 필요)로 HM-9 를 적재"):
         return
 
