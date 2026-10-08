@@ -31,6 +31,7 @@ from .approval_store import MemoryApprovals, PgApprovals
 from .rework_store import MemoryReworks, PgReworks
 from .effect_store import MemoryEffects, PgEffects
 from .projection_repo import MemoryProjection, PgProjection
+from .agents_store import MemoryAgents, PgAgents          # U2: tenant skills · agent ↔ skill (read side)
 
 SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
 
@@ -63,6 +64,7 @@ class Repo(Protocol):
     def get_form(self, form_id: str, tenant_id: str = "hyd") -> dict | None: ...
     def get_tenant(self, tenant_id: str = "hyd") -> dict | None: ...
     def list_users(self, ids: list[str] | None = None, tenant_id: str = "hyd") -> list[dict]: ...
+    # U2 (agents_store.py, read only): list_skills · get_skill · list_agent_skills
     # instances
     def event_transaction(self, key: str): ...
     def instance_transaction(self, tenant_id: str, proc_inst_id: str): ...
@@ -133,7 +135,7 @@ def _owns_claim(row,consumer):
 
 
 # ---------------------------------------------------------------- in-memory
-class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection):
+class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection, MemoryAgents):
     def __init__(self):
         self._lock = threading.RLock()
         self.defs: dict[tuple[str, str], dict] = {}
@@ -441,7 +443,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
 
 
 # ---------------------------------------------------------------- postgres (Supabase)
-class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection):
+class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents):
     def __init__(self, dsn: str | None = None):
         import psycopg
         from psycopg.rows import dict_row

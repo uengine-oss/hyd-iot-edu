@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from cliagents import ArtifactBundle, DirectorySink, registry
+from procsvc.agents_store import SKILL_ROOTS, skill_markdown
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -119,13 +120,22 @@ def for_run(root: Path, run_id: str, *, tenant_id: str = "") -> Workspace:
     return ws
 
 
-def provision(ws: Workspace, *, agent_id: str, schema_prompt: str, task: dict) -> None:
-    """Write what the CLI reads before it starts: the constitution (CLAUDE.md), the schema brief, the task record.
-    Idempotent — a resumed run rewrites the same files."""
+def provision(ws: Workspace, *, agent_id: str, schema_prompt: str, task: dict, skills: list[dict] | None = None) -> list[str]:
+    """Write what the CLI reads before it starts: the constitution (CLAUDE.md), the schema brief, the task record, and (U2)
+    the assigned agent's skills in the CLI's own layout — cliagents puts a skill at `.claude/skills/<name>/SKILL.md` for
+    Claude Code and `.agents/skills/<name>/SKILL.md` for Codex (process-gpt-cli-agent core/skills.py build_bundle → emit).
+    Idempotent — a resumed run rewrites the same files; skills left from an earlier attempt are removed first, so the
+    folder holds exactly this run's skills. Returns the skill files written (workspace-relative)."""
+    for root in SKILL_ROOTS.values():
+        shutil.rmtree(ws.path / root, ignore_errors=True)
     bundle = ArtifactBundle().add_constitution(CONSTITUTION)
+    for skill in skills or []:
+        bundle.add_skill(skill["skill_name"], skill_markdown(skill), description=str(skill.get("description") or ""))
     registry.get(agent_id).emit(bundle, DirectorySink(str(ws.path)))
     (ws.context_dir / "schema_prompt.md").write_text(schema_prompt, encoding="utf-8")
     (ws.context_dir / "task.json").write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding="utf-8")
+    roots = [ws.path / r for r in SKILL_ROOTS.values()]
+    return sorted(str(p.relative_to(ws.path)).replace("\\", "/") for r in roots if r.exists() for p in r.rglob("SKILL.md"))
 
 
 def sweep(root: Path, retention_seconds: int, *, now: float | None = None, keep=None) -> list[Path]:

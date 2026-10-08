@@ -19,7 +19,18 @@ _PERMISSION_BY_NAME = {p.value: p for p in Permission}
 #: Claude Code --allowedTools for a headless run: the read-only MCP tools the task needs plus `python <file>` for the A077
 #: citation-offset script (file writes stay under the workspace permission mode). Single source of truth (see allowed_tools).
 DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,Read,Glob,Grep,"
-                         "Bash(python *),Bash(python3 *),PowerShell(python *)")
+                         "Bash(python *),Bash(python3 *),PowerShell(python *),Skill")   # U2: Skill = the assigned .claude/skills/<name>/SKILL.md
+
+
+def run_allowed_tools(allowed: list[str], servers: list[str]) -> list[str]:
+    """U2: a tenant MCP server the default list does not name (one a student registered for their agent) gets its tools
+    allowed for the run that registers it — otherwise the headless CLI would refuse every call to it as a permission
+    request. Servers the default list already names keep their narrower entries (neo4j: read tools only)."""
+    out = list(allowed)
+    for name in servers:
+        if not any(a.startswith(f"mcp__{name}__") for a in out):
+            out.append(f"mcp__{name}__*")
+    return out
 
 
 def effective_permission(provider_id: str, permission: Permission) -> Permission:
