@@ -66,7 +66,7 @@ def test_server_lists_all_ten_tools_and_guards_each_one():
     for name in ("mes_orders", "erp_contract", "erp_inventory", "cmms_history", "qms_lots", "scm_suppliers", "ems_demand",
                  "describe_schema", "describe_catalog", "query"):
         assert name in head, name
-    assert text.count("@mcp.tool\n") == 10 and text.count("return guarded(") == 10 and "def describe_schema() -> dict" in text
+    assert text.count("@mcp.tool(annotations=READ)\n") == 10 and text.count("return guarded(") == 10 and "def describe_schema() -> dict" in text
     assert sql_guard.__all__ == ["MAX_ROWS", "READ_FUNCTIONS", "SqlRejected", "guard"] and sql_guard.guard is __import__("hydcommon.sql_read", fromlist=["guard"]).guard
 
 

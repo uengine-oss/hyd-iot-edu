@@ -1,0 +1,20 @@
+/* U3 도구(MCP) — 서버 카드 격자 · 도구 줄 · 써 보기 결과 · 호출 기록만. 카드 · 칩 · 폼 · 접기 · 탭은 components.css 를 그대로 쓴다. */
+.mcp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: var(--s3); margin: var(--s3) 0 var(--s4); }
+.mcp-card .card-sub { overflow-wrap: anywhere; }
+.mcp-card.failed .card-sub { color: var(--alarm); }
+.mcp-detail .kv-line { margin: 4px 0; }
+.mcp-kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--s3); margin: 0; font-size: 13px; }
+.mcp-kv dt { color: var(--ink-3); }
+.mcp-kv dd { margin: 0; overflow-wrap: anywhere; }
+.mcp-tools, .mcp-calls { list-style: none; margin: 0; padding: 0; }
+.mcp-tool, .mcp-calls li { padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
+.mcp-tool:last-child, .mcp-calls li:last-child { border-bottom: 0; }
+.mcp-tool-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+.mcp-desc { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.mcp-why { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.mcp-try { margin-top: var(--s3); padding: var(--s3); border: 1px solid var(--rule); border-radius: var(--radius-sm); }
+.mcp-out { max-height: 360px; overflow: auto; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--chip-neutral-bg); padding: var(--s2) var(--s3); border-radius: var(--radius-sm); }
+.mcp-call-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: 13px; }
+.mcp-io code { overflow-wrap: anywhere; }
+.mcp-io span { color: var(--ink-3); }
+.mcp-filter { max-width: 320px; margin-bottom: var(--s3); }
