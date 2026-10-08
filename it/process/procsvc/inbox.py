@@ -78,6 +78,8 @@ def notification_targets(repo, tenant_id: str, endpoint: str | None) -> list[str
 def apply_advance(rt, inst: dict, adv) -> None:
     """흐름이 닿은 사람 단계를 업무분장으로 해석해 user_id 를 쓰고(저장 전, 같은 트랜잭션), 알림을 커밋 뒤에 예약한다."""
     tenant = rt.tenant_id
+    from .agent_authoring import apply_agent_map
+    apply_agent_map(rt, inst, adv)        # B1: 에이전트 단계 → 배정 표(activity_agent_map)의 에이전트(없으면 정의의 역할 담당 그대로)
     for row in adv.reached:
         if row.get("status") != "IN_PROGRESS" or not is_human_row(row):
             continue

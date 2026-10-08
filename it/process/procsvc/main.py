@@ -374,6 +374,8 @@ from . import agents_api
 agents_api.mount(app)                       # U2: /api/agents · /api/skills · /api/agent-bindings (instance mode)
 from . import inbox_api
 inbox_api.mount(app)                        # U5: /api/inbox/* (나 · 내 작업함 · 알림 · 업무분장 읽기)
+from . import agent_authoring_api
+agent_authoring_api.mount(app)              # B1: 에이전트 · 스킬 쓰기 · 단계/역할 배정 · POST /api/agents/reset
 
 from . import memdebug
 if memdebug.enabled():                      # A131: GET /debug/memory only with PROCESS_MEMDEBUG=1 (OOM diagnosis, dev only)
