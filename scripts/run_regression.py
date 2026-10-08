@@ -26,7 +26,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PY = str(ROOT / ".venv314/Scripts/python.exe")
+# Windows lecturer PC: .venv314 (CLAUDE.md §5); Linux (cloud): .venv; PYTHON overrides both.
+WINDOWS = os.name == "nt"
+PY = os.environ.get("PYTHON") or str(ROOT / (".venv314/Scripts/python.exe" if WINDOWS else ".venv/bin/python"))
 NEO4J = "bolt://127.0.0.1:7687"
 PASS_PATTERNS = [r"ALL PASS[^\d\n]*(\d+)\s*/\s*(\d+)", r"ALL PASS:\s*(\d+) checks", r"checks passed\s*(\d+)\s*/\s*(\d+)",
                  r"golden questions passed\s*(\d+)/(\d+)", r"^ALL PASS\s*$", r"^PASS$"]
@@ -68,6 +70,9 @@ def health(port):
 
 
 def worker_pids():
+    if not WINDOWS:
+        out = subprocess.run(["pgrep", "-f", r"python.* -m worker\.main"], capture_output=True, text=True).stdout.split()
+        return [int(p) for p in out if p.strip().isdigit()]
     out = subprocess.run(["powershell", "-NoProfile", "-Command",
                           "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -like '*worker.main*' } | ForEach-Object { $_.ProcessId }"],
                          capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.split()
@@ -76,6 +81,9 @@ def worker_pids():
 
 def kill_workers():
     for pid in worker_pids():
+        if not WINDOWS:
+            os.kill(pid, 15)
+            continue
         subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True, text=True, encoding="cp949", errors="replace")
     for _ in range(20):
         if not any(health(p) for p in (8097, 8098)):
@@ -106,7 +114,7 @@ def _host_path():
 
 def start_workers(n):
     for i in range(n):
-        env = dict(os.environ, PATH=_host_path())
+        env = dict(os.environ, PATH=_host_path(), PYTHON=PY)
         if i:
             env.update(CONSUMER_ID=f"agent-worker:host{i + 1}", HEALTH_PORT=str(8097 + i))
         log = open(ROOT / ".evidence/worker" / f"host-worker{i + 1 if i else ''}-regression.log", "a", encoding="utf-8")

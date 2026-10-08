@@ -30,6 +30,23 @@ AGENT_TASKS = ("task:diagnose", "task:candidates", "task:compliance", "task:rank
 # trip, so the four agent tasks get a real window even with a coding-agent worker at TIME_SCALE 20 (A128: ~375 s).
 # "high" is plant-sim's API default (health 0.43, trips ~90 s after injection) — the lecture scenes that want the trip.
 SEVERITY_HEALTH = {"moderate": 0.55, "high": 0.43}
+
+
+def policy_top(dec):
+    """A156: the expected recommendation is derived, not hard-coded. The fixed "SOP-COOL-02" expectation broke on a fresh
+    graph: precedent_share counts DecisionCases that earlier runs of this very test projected (case_projection.py), and the
+    default strength moved high → moderate (A146), so the policy's top card legitimately changes (cloud 2026-10-08:
+    COOL-03 3.80 > COOL-01 3.38 > COOL-02 3.32). Recompute every card's score from the decision's own facts with the
+    decision's ranking policy (agentsvc.cards.score_option — the same pure function the engine uses) and return
+    (top feasible card, scores that disagree with the stored ones)."""
+    root = Path(__file__).resolve().parents[1]
+    sys.path[:0] = [str(root / "it/agent"), str(root / "common")]
+    from agentsvc import cards
+    policy = (dec.get("rankRule") or {}).get("rankingPolicy")
+    scored = [(o, cards.score_option(o, dec.get("facts") or {}, policy)["score"]) for o in dec.get("options", [])]
+    drift = {o["id"]: (o.get("score"), s) for o, s in scored if round(s, 2) != round(o.get("score"), 2)}
+    ok = [(o, s) for o, s in scored if o.get("feasible", True) and not o.get("violations")]
+    return (max(ok, key=lambda x: x[1])[0]["id"] if ok else None), drift
 results: list[tuple[str, bool, str]] = []
 
 
@@ -263,7 +280,11 @@ def main(expect_worker: bool, restart: bool = False, fresh_review: bool = False,
     check("selection uses the instance's definition and pinned form", selection_contract_matches(inst, definition, selected_task, form),
           f"version={inst.get('proc_def_version')} form_source={selected_task.get('form_source')}")
     dec = get(f"{PROCESS}/api/decisions/{vd['decision_id']}")
-    check("decision holds ranked SOP cards, SOP-COOL-02 recommended", dec.get("recommended") == "skill:fan-max-derate" and len(dec.get("options", [])) >= 2, str([o['sopId'] for o in dec.get('options', [])]))
+    top, drift = policy_top(dec)
+    check("decision holds ranked SOP cards; recommendation = ranking policy's top (recomputed from the decision's facts)",
+          len(dec.get("options", [])) >= 2 and not drift and dec.get("recommended") == top
+          and any(o["id"] == "skill:fan-max-derate" and o.get("feasible", True) for o in dec.get("options", [])),
+          json.dumps({"order": [o['sopId'] for o in dec.get('options', [])], "recommended": dec.get("recommended"), "policy_top": top, "drift": drift}, ensure_ascii=False))
 
     section("3. 사람의 선택: 역할 검사 → 폼 제출(SUBMITTED) → 엔진 → gw:control → PLC 명령 (task:command)")
     r = post(f"{PROCESS}/api/todolist/{sel['id']}/select", {"decision": dec["id"], "option": "skill:fan-max-derate", "by": "OP-17", "role": "role:operator", "reason": "test"})

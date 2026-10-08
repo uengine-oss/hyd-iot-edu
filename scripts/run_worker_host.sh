@@ -17,6 +17,8 @@ export CLI_MODEL="${CLI_MODEL:-opus}"
 export HEALTH_PORT="${HEALTH_PORT:-8097}"
 # A105: Smart App Control blocks psycopg_binary's unsigned libpq; load a signed one for the pure-Python wrapper instead.
 . scripts/host_libpq.sh
-PY="${PYTHON:-.venv314/Scripts/python.exe}"
-[ -x "$PY" ] || PY=python
+# Windows: .venv314 (CLAUDE.md §5); Linux (cloud): .venv; PYTHON overrides. A missing interpreter fails loudly below.
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then for c in .venv314/Scripts/python.exe .venv/bin/python; do [ -x "$c" ] && { PY="$c"; break; }; done; fi
+[ -n "$PY" ] || { echo "run_worker_host.sh: no .venv314 or .venv python (set PYTHON=...)" >&2; exit 1; }
 exec "$PY" -m worker.main

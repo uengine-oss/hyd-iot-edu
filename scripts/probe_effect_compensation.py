@@ -13,6 +13,10 @@ node; the diagnosis stays). Then a new human approval of fan-max-derate -> secon
 closure with a real CMMS work order. Case B: on the Supabase enterprise backend the closed case's work order is cancelled
 by its exact inverse once, replayed idempotently, refused once the record moved on, and the ledger carries `compensates`.
 No Codex run; no PLC counter-command. Instances are kept as evidence.
+
+`--worker` (A156, A148 item 55): process AGENT_BRIDGE=off with host workers running (scripts/run_worker_host.sh). Both
+generations' agent tasks are done by the real cliagents worker (Claude Code) instead of the legacy bridge / stand-in; the probe
+checks that generation 1 task:rank carries the worker's own tool-usage events. Everything else is identical.
 """
 from datetime import datetime, timezone
 import json
@@ -64,9 +68,10 @@ asyncio.run(run())'''
 
 
 def main():
+    worker = "--worker" in sys.argv[2:]
     out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=False)
     consumer = "a072-standin-" + uuid.uuid4().hex[:8]
-    report = {"scope": __doc__, "consumer": consumer, "new_codex_execution": False, "checks": {}, "instances": [],
+    report = {"scope": __doc__, "consumer": consumer, "worker_mode": worker, "new_codex_execution": False, "checks": {}, "instances": [],
               "started": datetime.now(timezone.utc).isoformat()}
     def save(name, value):
         (out / (name + ".json")).write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str), encoding="utf8")
@@ -98,20 +103,25 @@ def main():
         return ok(PROCESS, f"/api/todolist/{wid}/select", {"decision": decision, "option": option, "by": "이생산", "role": "role:prod-mgr", "reason": reason, "review_id": reviewed["id"]})
 
     mode = ok(PROCESS, "/api/process/mode"); save("mode", mode)
-    check("process_instance_mode_legacy_bridge", mode["mode"] == "instance" and mode["agent_bridge"] == "legacy", mode)
+    check("process_instance_mode_" + ("worker_bridge_off" if worker else "legacy_bridge"),
+          mode["mode"] == "instance" and mode["agent_bridge"] == ("off" if worker else "legacy"), mode)
+    agent_wait = 900 if worker else 180   # four real Claude Code tasks take minutes (A146: about 6 min end to end)
     ok(PLANT, "/api/reset", {}); ok(ENT, "/api/reset", {})
     det = lambda: ok(DETECTOR, "/api/detector/state")["assets"].get("HYD-01", {})
     stale = det().get("alert_id")          # an earlier case's alert may still be RAISED; this probe must attach to its own alert only
     until(lambda: det().get("phase") != "RAISED", 120); time.sleep(3)
 
     # ---------------------------------------------------------------- Case A
-    ok(PLANT, "/api/fault", {"asset": "HYD-01", "type": "cooler_degradation"})
+    # --worker: four real Claude Code tasks take minutes; plant-sim's default (high, health 0.43) trips ~90 s after injection and
+    # the incident closes RESOLVED_WITHOUT_ACTION before any approval (first A156 run). moderate (0.55) keeps the alarm without
+    # the trip — the same choice as scenario_instance_test.py (A146).
+    ok(PLANT, "/api/fault", {"asset": "HYD-01", "type": "cooler_degradation", **({"severity": "moderate"} if worker else {})})
     raised = until(lambda: (lambda a: a if a.get("phase") == "RAISED" and a.get("alert_id") and a.get("alert_id") != stale else None)(det()), 200)
     alert_id = raised["alert_id"]
     inst = until(lambda: next((i for i in ok(PROCESS, "/api/instances?limit=30") if variables(i).get("alert_id") == alert_id), None), 60)
     pid = inst["proc_inst_id"]; report["instances"].append(pid); save("result", report)
     inc_id = variables(inst)["incident"]
-    until(lambda: latest(pid).get("task:select", {}).get("status") == "IN_PROGRESS", 180)
+    until(lambda: latest(pid).get("task:select", {}).get("status") == "IN_PROGRESS", agent_wait)
     g0 = latest(pid); sel = g0["task:select"]; dec_id = variables(view(pid)["instance"])["decision_id"]
     save("a-g0-view", view(pid)); save("a-decision-first", ok(PROCESS, "/api/decisions/" + dec_id))
     r = approve(sel["id"], dec_id, "skill:fan-max", "A072 probe: first judgment, fan only (keeps the OEM order at full load)", "a-g0")
@@ -154,18 +164,29 @@ def main():
     # generation 1 agent tasks: stand-in worker over the real PG RPC; legacy bridge must not touch them
     check("a_generation1_starts_at_rank_diagnosis_kept", all(latest(pid)[aid]["status"] == "DONE" and (latest(pid)[aid].get("generation") or 0) == 0 for aid in AGENT_TASKS))
     until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:rank", {})), 120)
-    row, = repo.fetch_pending_task("cliagents", consumer, tenant_id="hyd", proc_inst_id=pid)
-    assert row["activity_id"] == "task:rank" and row["generation"] == 1, row
-    values = variables(view(pid)["instance"])
-    arguments = {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "cause": values["cause"], "failure_mode": values["failure_mode"],
-                 "incident": inc_id, "alert_id": alert_id, "process_scope": process_scope(row)}
-    save("a-g1-claim-rank", row); save("a-g1-mcp-request", arguments)
-    mcp = mcp_submit(arguments); save("a-g1-mcp-response", mcp)
-    check("a_g1_real_dmn_mcp_new_decision", mcp["result"] == "ok" and mcp["document"]["status"] == "SUBMITTED" and mcp["document"]["id"] != dec_id, {"decision": mcp["document"]["id"]})
-    doc = mcp["document"]
-    output = {"decision_id": doc["id"], "decision": {"recommended": doc["recommended"], "explanation": doc["explanation"], "order": doc["cards"]}}
-    assert repo.save_task_result(row["id"], output, True, expected_consumer=consumer)
-    until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {})), 120)
+    if worker:
+        until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {})), agent_wait, 3)
+        rank1 = latest(pid)["task:rank"]
+        with repo._conn() as c:
+            ev = c.execute("select event_type, crew_type, count(*) as n from events where todo_id = %s::uuid group by 1, 2", (rank1["id"],)).fetchall()
+        save("a-g1-rank-events", ev)
+        tool_runs = sum(r["n"] for r in ev if r["event_type"] == "tool_usage_started" and str(r["crew_type"]).startswith("cliagents:"))
+        doc = {"id": (rank1.get("output") or {}).get("decision_id")}
+        check("a_g1_rank_done_by_real_worker_with_tool_calls", rank1["status"] == "DONE" and (rank1.get("generation") or 0) == 1
+              and tool_runs > 0 and doc["id"] and doc["id"] != dec_id, {"tool_usage_started": tool_runs, "decision": doc["id"]})
+    else:
+        row, = repo.fetch_pending_task("cliagents", consumer, tenant_id="hyd", proc_inst_id=pid)
+        assert row["activity_id"] == "task:rank" and row["generation"] == 1, row
+        values = variables(view(pid)["instance"])
+        arguments = {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "cause": values["cause"], "failure_mode": values["failure_mode"],
+                     "incident": inc_id, "alert_id": alert_id, "process_scope": process_scope(row)}
+        save("a-g1-claim-rank", row); save("a-g1-mcp-request", arguments)
+        mcp = mcp_submit(arguments); save("a-g1-mcp-response", mcp)
+        check("a_g1_real_dmn_mcp_new_decision", mcp["result"] == "ok" and mcp["document"]["status"] == "SUBMITTED" and mcp["document"]["id"] != dec_id, {"decision": mcp["document"]["id"]})
+        doc = mcp["document"]
+        output = {"decision_id": doc["id"], "decision": {"recommended": doc["recommended"], "explanation": doc["explanation"], "order": doc["cards"]}}
+        assert repo.save_task_result(row["id"], output, True, expected_consumer=consumer)
+        until(lambda: (lambda w: w.get("status") == "IN_PROGRESS" and (w.get("generation") or 0) == 1)(latest(pid).get("task:select", {})), 120)
     sel2 = latest(pid)["task:select"]; dec2 = variables(view(pid)["instance"])["decision_id"]
     save("a-g1-view", view(pid)); save("a-decision-second", ok(PROCESS, "/api/decisions/" + dec2))
     check("a_new_generation_reached_new_selection_with_new_decision", sel2["id"] != sel["id"] and dec2 == doc["id"] and dec2 != dec_id, {"decision": dec2})

@@ -18,3 +18,5 @@ MATCH (p:AnomalyPattern) WHERE NOT EXISTS { (p)-[:DETECTS]->(:Symptom)-[:INDICAT
 MATCH (c:Cause) WHERE NOT (c)-[:CAUSES]->(:FailureMode) RETURN 'cause without failure mode ' + c.id AS problem
 MATCH (a:Asset) WHERE a.forecastModel IS NULL OR a.forecastRevision IS NULL OR a.forecastHorizonS IS NULL RETURN 'asset without explicit forecast model binding ' + a.id AS problem
 MATCH (p:Process) WHERE NOT (p)-[:ACHIEVES]->(:Objective) OR NOT (p)-[:ACTS_ON]->(:Asset) RETURN 'process without objective/asset ' + p.id AS problem
+// A156: the detector needs held patterns (detector-patterns.cypher); none means a fresh volume would start it unhealthy
+MATCH (p:AnomalyPattern) WITH count(CASE WHEN p.detectionMode = 'held' THEN 1 END) AS held WHERE held = 0 RETURN 'no held AnomalyPattern: detector-patterns.cypher not loaded' AS problem

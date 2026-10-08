@@ -22,6 +22,11 @@ echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소�
 cy -f /seed/v2/instances.cypher
 echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량→생산량 · 작동유 열화 원인/증상 · 저압/고진동 트립) ..."
 cy -f /seed/v2/knowledge_a098.cypher
+# A156: the detector reads only AnomalyPatterns with detectionMode='held' (it/detector/det/pattern_source.py). Without this file
+# a fresh volume leaves the detector unhealthy ("catalog must contain 1..64 held patterns") — seen on the first cloud boot.
+# Additive and idempotent (coalesce keeps edited values), same file and order as scripts/ontology_v2.py load.
+echo "seeding ontology v2: detector-patterns (held 탐지 정의: detectionMode · clearRule · 유지 시간) ..."
+cy -f /seed/v2/detector-patterns.cypher
 # A144 (O04): read back what was just loaded. Every line of seed_checks.cypher is one query that returns offending rows;
 # any row means the seed did not land as the scenarios expect, and the service fails (compose: agent · dmn-mcp depend on
 # kg-seed completing successfully, so a broken graph never starts the judgment services).
