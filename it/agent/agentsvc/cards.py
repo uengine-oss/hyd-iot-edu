@@ -185,6 +185,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     cause = base_facts.get("cause")
     cand_ids = [s for s in cand_ids if s in skills and (not skills[s].get("addresses") or cause in skills[s]["addresses"])]
 
+    # precedents = t3_precedents 행 — 교육용 고정(DECISIONS 110 ④): 그 템플릿이 시드 선례(seeded=true)만 센다. 점수식은 그대로.
     total_prec = sum(p["n"] for p in precedents) or 0
     prec_by = {p["skill"]: p for p in precedents}
     options = []

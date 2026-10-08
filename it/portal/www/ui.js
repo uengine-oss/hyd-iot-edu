@@ -30,7 +30,7 @@ const UI = {
     'form.err.required': '필수 항목을 입력하세요', 'form.err.reason': '사유를 입력하세요', 'form.err.byRole': '담당자와 역할을 입력하세요', 'form.err.byRoleReason': '담당자 · 역할 · 사유를 입력하세요',
     // 카드 칩
     'chip.recommended': '추천', 'chip.chosen': '결정', 'chip.excluded': '제외', 'chip.control': '설비 제어', 'chip.workOrder': '정비 요청',
-    'card.score': '점수', 'card.approver': '승인', 'card.precedent': '과거 같은 선택', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
+    'card.score': '점수', 'card.approver': '승인', 'card.precedent': '과거 같은 선택', 'card.precedentFixed': '미리 넣은 예시만 반영(교육용 고정)', 'card.forecastTs1': '예상 유온', 'card.evidence': '근거 보기', 'card.expected': '예상 영향',
     'card.scoreHow': '점수 계산 방법', 'card.reviewed': '검토한 조치값', 'card.baseSop': '기준 절차', 'card.forecastLimits': '예측 조건과 한계', 'card.steps': '절차',
     'card.penalty': '감점', 'card.warn': '경고', 'card.noAction': '세부 동작 없음',
     'score.bsc': '성과 지표', 'score.forecast': '예측', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',

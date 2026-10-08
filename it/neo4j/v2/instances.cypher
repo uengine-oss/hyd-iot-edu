@@ -590,7 +590,8 @@ MERGE (i)-[:ON_ASSET]->(a) MERGE (i)-[:RAISED_BY]->(p) MERGE (i)-[:DIAGNOSED_AS]
 UNWIND [['case:demo-1','inc:demo-1','skill:fan-max-derate','role:prod-mgr',true,'OEM 납기 우선, 야간 세척 예정',datetime('2026-09-25T10:20:00+09:00')],
         ['case:demo-2','inc:demo-2','skill:derate-night-clean','role:prod-mgr',false,'팬 100 % 운전이 이번 주 이미 30시간 — 팬 수명 보호',datetime('2026-09-28T14:47:00+09:00')],
         ['case:demo-3','inc:demo-3','skill:switch-standby-pump','role:prod-mgr',true,'예비 펌프 정비 완료 상태 확인',datetime('2026-09-30T09:11:00+09:00')]] AS r
-MERGE (c:DecisionCase {id: r[0]}) SET c.followedRecommendation = r[4], c.reason = r[5], c.decidedAt = r[6]
+// B4 (DECISIONS 110 ④): seeded = true — 미리 넣은 예시. 선례 조회(templates/t3_precedents.cypher)는 이 사례만 센다(교육용 고정).
+MERGE (c:DecisionCase {id: r[0]}) SET c.followedRecommendation = r[4], c.reason = r[5], c.decidedAt = r[6], c.seeded = true
 WITH c, r MATCH (i:Incident {id: r[1]}), (s:Skill {id: r[2]}), (ro:Role {id: r[3]}), (d:Decision {id:'dec:rank-actions'})
 MERGE (c)-[:FOR_INCIDENT]->(i) MERGE (c)-[:CHOSE]->(s) MERGE (c)-[:DECIDED_BY]->(ro) MERGE (c)-[:INSTANCE_OF]->(d);
 

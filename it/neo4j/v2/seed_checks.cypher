@@ -20,3 +20,5 @@ MATCH (a:Asset) WHERE a.forecastModel IS NULL OR a.forecastRevision IS NULL OR a
 MATCH (p:Process) WHERE NOT (p)-[:ACHIEVES]->(:Objective) OR NOT (p)-[:ACTS_ON]->(:Asset) RETURN 'process without objective/asset ' + p.id AS problem
 // A156: the detector needs held patterns (detector-patterns.cypher); none means a fresh volume would start it unhealthy
 MATCH (p:AnomalyPattern) WITH count(CASE WHEN p.detectionMode = 'held' THEN 1 END) AS held WHERE held = 0 RETURN 'no held AnomalyPattern: detector-patterns.cypher not loaded' AS problem
+// B4 (DECISIONS 110 ④): 선례 조회는 seeded=true 사례만 센다 — 시드 선례가 하나도 표시되지 않았으면 선례 몫이 모두 0이 된다
+MATCH (c:DecisionCase) WHERE c.seeded = true WITH count(c) AS n WHERE n = 0 RETURN 'no seeded DecisionCase (precedent query would count nothing)' AS problem

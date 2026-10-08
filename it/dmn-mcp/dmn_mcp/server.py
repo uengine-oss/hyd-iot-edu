@@ -114,7 +114,7 @@ def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: 
 
 @mcp.tool(annotations=READ)
 def precedents(failure_mode: FailureMode) -> dict:
-    """같은 고장 유형에서 사람이 과거에 고른 카드(DecisionCase) 통계."""
+    """같은 고장 유형에서 사람이 과거에 고른 카드(DecisionCase) 통계. 교육용 고정: 미리 넣은 예시(seeded) 사례만 센다 — 승인해도 늘지 않는다."""
     return enveloped(lambda: tools.precedents(failure_mode))()
 
 

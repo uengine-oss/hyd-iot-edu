@@ -61,6 +61,14 @@ class Repo(Protocol):
     def upsert_proc_def(self, definition: dict, tenant_id: str = "hyd") -> None: ...
     def get_proc_def(self, def_id: str, tenant_id: str = "hyd", *, version: str | None = None) -> dict | None: ...
     def list_definitions(self, tenant_id: str = "hyd") -> list[dict]: ...
+    # U4: the deployed ("운영") version of a definition — what an alert RAISE opens. proc_def.prod_version + proc_def_deployment history.
+    def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None: ...
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict: ...
+    def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]: ...
+    # B4: every definition id that has a deployed version, with the time of its newest deployment record (alert routing by
+    # pattern — the newest deployed flow whose alertPolicy names the pattern opens it), and taking a flow off the alert path.
+    def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]: ...
+    def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict: ...
     def get_form(self, form_id: str, tenant_id: str = "hyd") -> dict | None: ...
     def get_tenant(self, tenant_id: str = "hyd") -> dict | None: ...
     def list_users(self, ids: list[str] | None = None, tenant_id: str = "hyd") -> list[dict]: ...
@@ -150,6 +158,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self._lock = threading.RLock()
         self.defs: dict[tuple[str, str], dict] = {}
         self.def_versions: dict[tuple[str, str, str], dict] = {}
+        self.deployments: list[dict] = []
         self.forms: dict[tuple[str, str], dict] = {}
         self.tenants: dict[str, dict] = {"hyd": {"id": "hyd", "name": "hyd", "mcp": None}}
         self.users: dict[str, dict] = {}
@@ -223,10 +232,14 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             old = self.def_versions.get(key)
             if old and json.dumps(old['definition'], sort_keys=True) != json.dumps(definition, sort_keys=True):
                 raise ValueError('이미 등록한 정의 버전은 변경할 수 없습니다. 새 버전을 사용하세요')
+            # U4: registering never moves the deployed pointer (prod_version); only record_deployment does.
+            head = self.defs.get(key[:2]) or {}
             row = {'id': definition['processDefinitionId'], 'tenant_id': tenant_id,
                    'name': definition.get('processDefinitionName'), 'definition': _copy(definition),
-                   'prod_version': version, 'type': 'bpmn', 'ontology_ref': definition.get('ontologyRef')}
-            self.def_versions[key] = _copy(row)
+                   'prod_version': head.get('prod_version'), 'type': 'bpmn', 'ontology_ref': definition.get('ontologyRef')}
+            if old is None:
+                self.def_versions[key] = dict(_copy(row), prod_version=version, message='HYD immutable registration',
+                                              registered_at=datetime.now(timezone.utc).isoformat())
             self.defs[key[:2]] = row
 
     def get_proc_def(self, def_id: str, tenant_id: str = "hyd", *, version: str | None = None) -> dict | None:
@@ -236,6 +249,49 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
 
     def list_definitions(self, tenant_id: str = "hyd") -> list[dict]:
         return [_copy(v) for (did,tenant,version),v in sorted(self.def_versions.items()) if tenant == tenant_id]
+
+    def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None:
+        head = self.defs.get((def_id, tenant_id))
+        return head.get('prod_version') if head else None
+
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict:
+        with self._lock:
+            head = self.defs.get((def_id, tenant_id))
+            if head is None or (def_id, tenant_id, version) not in self.def_versions:
+                raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+            row = {'id': str(uuid.uuid4()), 'tenant_id': tenant_id, 'proc_def_id': def_id, 'version': version,
+                   'previous_version': head.get('prod_version'), 'action': action, 'actor': actor, 'reason': reason,
+                   'created_at': datetime.now(timezone.utc).isoformat()}
+            head['prod_version'] = version
+            self.deployments.append(row)
+            return _copy(row)
+
+    def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]:
+        rows = [d for d in self.deployments if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id]
+        return [_copy(d) for d in list(reversed(rows))[:limit]]
+
+    def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]:
+        out = []
+        for (def_id, tenant), head in self.defs.items():
+            if tenant != tenant_id or not head.get('prod_version'):
+                continue
+            seq = max((n for n, d in enumerate(self.deployments) if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id), default=-1)
+            last = self.deployments[seq] if seq >= 0 else {}
+            out.append({'id': def_id, 'prod_version': head['prod_version'], 'deployed_seq': seq,
+                        'deployed_at': last.get('created_at'), 'last_action': last.get('action')})
+        return sorted(out, key=lambda r: (r['deployed_seq'], r['id']), reverse=True)
+
+    def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict:
+        with self._lock:
+            head = self.defs.get((def_id, tenant_id))
+            if head is None or not head.get('prod_version'):
+                raise LookupError(f'배포된 판본이 없는 정의입니다: {def_id}')
+            row = {'id': str(uuid.uuid4()), 'tenant_id': tenant_id, 'proc_def_id': def_id, 'version': None,
+                   'previous_version': head['prod_version'], 'action': 'withdraw', 'actor': actor, 'reason': reason,
+                   'created_at': datetime.now(timezone.utc).isoformat()}
+            head['prod_version'] = None
+            self.deployments.append(row)
+            return _copy(row)
 
     def upsert_form(self, form: dict, tenant_id: str = "hyd") -> None:
         self.forms[(form["id"], tenant_id)] = dict(form, tenant_id=tenant_id)
@@ -615,18 +671,21 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents):
                             (self._Jsonb(definition), tenant_id, definition['processDefinitionId'], version)).fetchone()
             if not row or not row['same']:
                 raise ValueError('이미 등록한 정의 버전은 변경할 수 없습니다. 새 버전을 사용하세요')
+            # U4: proc_def.definition is the latest registered text; prod_version (the deployed pointer) is left as it is —
+            # a new row starts with no deployed version, record_deployment() sets it.
             c.execute("""insert into proc_def (id, tenant_id, name, definition, prod_version, type, ontology_ref, updated_at)
-                         values (%s, %s, %s, %s, %s, 'bpmn', %s, now())
+                         values (%s, %s, %s, %s, null, 'bpmn', %s, now())
                          on conflict (id, tenant_id) where isdeleted = false do update set name = excluded.name, definition = excluded.definition,
-                             prod_version = excluded.prod_version, ontology_ref = excluded.ontology_ref, updated_at = now()""",
+                             ontology_ref = excluded.ontology_ref, updated_at = now()""",
                       (definition["processDefinitionId"], tenant_id, definition.get("processDefinitionName"), self._Jsonb(definition),
-                       definition.get("version"), definition.get("ontologyRef")))
+                       definition.get("ontologyRef")))
 
     def get_proc_def(self, def_id: str, tenant_id: str = "hyd", *, version: str | None = None) -> dict | None:
         with self._conn() as c:
             if version is not None:
                 return self._row(c.execute('''select proc_def_id as id, tenant_id, definition, version as prod_version,
-                        definition->>'processDefinitionName' as name, definition->>'ontologyRef' as ontology_ref, message
+                        definition->>'processDefinitionName' as name, definition->>'ontologyRef' as ontology_ref, message,
+                        "timeStamp" as registered_at
                         from proc_def_version where proc_def_id=%s and tenant_id=%s and version=%s and version_tag='hyd-immutable' ''',
                         (def_id, tenant_id, version)).fetchone())
             return self._row(c.execute("select * from proc_def where id = %s and tenant_id = %s and isdeleted = false", (def_id, tenant_id)).fetchone())
@@ -634,8 +693,54 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents):
     def list_definitions(self, tenant_id: str = "hyd") -> list[dict]:
         with self._conn() as c:
             return [self._row(r) for r in c.execute("""select proc_def_id as id,tenant_id,version as prod_version,
-                definition->>'processDefinitionName' as name,definition,message from proc_def_version
+                definition->>'processDefinitionName' as name,definition,message,"timeStamp" as registered_at from proc_def_version
                 where tenant_id=%s and version_tag='hyd-immutable' order by proc_def_id,version""", (tenant_id,)).fetchall()]
+
+    def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None:
+        with self._conn() as c:
+            row = c.execute("select prod_version from proc_def where id=%s and tenant_id=%s and isdeleted=false", (def_id, tenant_id)).fetchone()
+            return row['prod_version'] if row else None
+
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict:
+        with self._conn() as c, c.transaction():
+            head = c.execute("select prod_version from proc_def where id=%s and tenant_id=%s and isdeleted=false for update",
+                             (def_id, tenant_id)).fetchone()
+            known = c.execute("""select 1 from proc_def_version where tenant_id=%s and proc_def_id=%s and version=%s
+                                 and version_tag='hyd-immutable'""", (tenant_id, def_id, version)).fetchone()
+            if head is None or known is None:
+                raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
+            c.execute("update proc_def set prod_version=%s, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
+                      (version, def_id, tenant_id))
+            row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)
+                               values (%s,%s,%s,%s,%s,%s,%s) returning *""",
+                            (tenant_id, def_id, version, head['prod_version'], action, actor, reason)).fetchone()
+            return self._row(row)
+
+    def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]:
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("""select * from proc_def_deployment where tenant_id=%s and proc_def_id=%s
+                order by created_at desc, id desc limit %s""", (tenant_id, def_id, limit)).fetchall()]
+
+    def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]:
+        with self._conn() as c:
+            return [self._row(r) for r in c.execute("""select d.id, d.prod_version, x.created_at as deployed_at, x.action as last_action
+                from proc_def d left join lateral (select created_at, action from proc_def_deployment y
+                    where y.tenant_id=d.tenant_id and y.proc_def_id=d.id order by y.created_at desc, y.id desc limit 1) x on true
+                where d.tenant_id=%s and not d.isdeleted and d.prod_version is not null
+                order by x.created_at desc nulls last, d.id desc""", (tenant_id,)).fetchall()]
+
+    def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict:
+        with self._conn() as c, c.transaction():
+            head = c.execute("select prod_version from proc_def where id=%s and tenant_id=%s and isdeleted=false for update",
+                             (def_id, tenant_id)).fetchone()
+            if head is None or not head['prod_version']:
+                raise LookupError(f'배포된 판본이 없는 정의입니다: {def_id}')
+            c.execute("update proc_def set prod_version=null, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
+                      (def_id, tenant_id))
+            row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)
+                               values (%s,%s,null,%s,'withdraw',%s,%s) returning *""",
+                            (tenant_id, def_id, head['prod_version'], actor, reason)).fetchone()
+            return self._row(row)
 
     def get_form(self, form_id: str, tenant_id: str = "hyd") -> dict | None:
         with self._conn() as c:

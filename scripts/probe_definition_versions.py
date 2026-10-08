@@ -31,7 +31,7 @@ def main():
     try:
         with psycopg.connect(DSN, autocommit=True) as c:
             c.execute(sql.SQL('CREATE SCHEMA {}').format(sql.Identifier(schema)))
-            for table in ('proc_def', 'proc_def_version', 'bpm_proc_inst', 'todolist', 'events', 'form_def', 'users', 'tenants'):
+            for table in ('proc_def', 'proc_def_version', 'proc_def_deployment', 'bpm_proc_inst', 'todolist', 'events', 'form_def', 'users', 'tenants'):
                 c.execute(sql.SQL('CREATE TABLE {}.{} (LIKE public.{} INCLUDING ALL)').format(
                     sql.Identifier(schema), sql.Identifier(table), sql.Identifier(table)))
             c.execute(sql.SQL('CREATE UNIQUE INDEX ux_probe_versions ON {}.proc_def_version '

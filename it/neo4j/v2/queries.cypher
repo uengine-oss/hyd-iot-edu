@@ -129,6 +129,8 @@ RETURN t.name AS target, CASE i.sign WHEN 1 THEN '↑' ELSE '↓' END AS directi
 // @ask 쿨러 핀 오염 사건에서 사람들은 지금까지 어떤 카드를 왜 골랐나? (선례)
 // @params {"cause": "cause:cooler-fin-fouling"}
 MATCH (dc:DecisionCase)-[:FOR_INCIDENT]->(:Incident)-[:DIAGNOSED_AS]->(:Cause {id: $cause})
+// 교육용 고정: 시드 선례만 센다(templates/t3_precedents.cypher와 같은 기준). 이 조건을 빼면 승인으로 쌓인 사례까지 보인다 — DECISIONS 110 ④
+WHERE dc.seeded = true
 MATCH (dc)-[:CHOSE]->(s:Skill), (dc)-[:DECIDED_BY]->(r:Role)
 RETURN s.name AS chosen, count(*) AS times, collect(r.name + ': ' + dc.reason) AS reasons,
        sum(CASE WHEN dc.followedRecommendation THEN 0 ELSE 1 END) AS overrides
