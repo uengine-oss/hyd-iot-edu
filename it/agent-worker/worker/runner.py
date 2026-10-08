@@ -25,10 +25,11 @@ from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface, registry, stream_exec
 from procsvc import task_deferral
+from procsvc.agents_store import SKILL_ROOTS, agent_settings
 
 from . import bridge, context, hitl, outcome, prompt, workspace
 from . import events as ui_events
-from .settings import Settings, effective_permission
+from .settings import Settings, effective_permission, run_allowed_tools
 from .process_control import controlled_stream
 
 log = logging.getLogger("worker.runner")
@@ -37,7 +38,6 @@ _PERMISSION_BY_NAME = {p.value: p for p in Permission}
 # A114: the same spellings process-gpt-cli-agent core/selection.py accepts (work item, agent record and chat body never
 # agreed on casing); HYD's earlier cli/agent stay last for definitions written before.
 _AGENT_KEYS = ("agent_cli", "agentCli", "cli_agent", "cliAgent", "cli", "agent")
-_MODEL_KEYS = ("agent_model", "agentModel", "model")
 _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
 
 
@@ -108,19 +108,33 @@ class Runner:
         # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
         # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
         provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
-        model = _first(config, _MODEL_KEYS) or self.s.model
+        # U2 (TODO A2): the assigned agent's settings — model · MCP servers · skills · profile text — from the one source
+        # (users · agent_skills · tenant_skills) through the same function the portal and a trial run read.
+        # Model: the activity's agentConfig > the agent's model > the worker default.
+        agent = agent_settings(self.repo, self.s.tenant_id, ctx.profile, activity=caps)
+        model = agent.model or self.s.model
         permission = effective_permission(provider_id, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result
-        workspace.provision(ws, agent_id=provider_id, schema_prompt=self.schema_prompt,
+        written = workspace.provision(ws, agent_id=provider_id, schema_prompt=self.schema_prompt,
                             task={"id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "activity_id": row.get("activity_id"),
                                   "activity_name": row.get("activity_name"), "form_id": ctx.form_id, "form_fields": ctx.form_fields,
                                   "process_scope": context.process_scope(row), "query": row.get("query"),
-                                  "draft": row.get("draft"), "output": row.get("output")})
-        tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, caps.get("tools"))      # A095: the activity's declared servers only
+                                  "draft": row.get("draft"), "output": row.get("output"), "agent": agent.summary() if agent.agent_id else None},
+                            skills=agent.skills)
+        if agent.skills:
+            log.info("%s %s skills in the workspace: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(written) or "-")
+        if agent.missing_skills:    # the product names a skill that did not arrive (cli-agent executor.py:181-189); silence would read as "ignored my skill"
+            log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
+        tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, agent.tools)      # A095 + U2: the agent's / activity's servers only
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
+        if agent.tools == []:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
+        extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"])))
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite))
         if ctx.human_answer:
@@ -129,10 +143,10 @@ class Runner:
             text = prompt.resume_prompt(ctx.human_answer, previous_summary=str(row.get("draft") or "")[:2000], restarted=plan.restarted)
             resume_session = plan.session_id or None
             if plan.restarted:
-                text = prompt.build(row, ctx.extras, workdir=str(ws.path)) + "\n\n" + text
+                text = prompt.build(row, extras, workdir=str(ws.path)) + "\n\n" + text
                 self._event(row, job_id, "task_working", {"type": "notice", "content": f"이전 실행을 이어갈 수 없어 새로 시작합니다. ({plan.reason})"}, crew_type="agent")
         else:
-            text = prompt.build(row, ctx.extras, workdir=str(ws.path))
+            text = prompt.build(row, extras, workdir=str(ws.path))
             resume_session = _session_of(row)
         extra_args = list(bridged.extra_args)
         if provider_id == "codex":
@@ -146,10 +160,11 @@ class Runner:
                     ("name", self.s.codex_model_provider_name), ("base_url", self.s.codex_model_provider_base_url),
                     ("env_key", self.s.codex_model_provider_env_key), ("wire_api", "responses")))
                 extra_args += ["-c", "model_provider=hydgpu", "-c", "model_providers.hydgpu={" + table + "}"]
-                if not config.get("model") and self.s.codex_model:
+                if not agent.model and self.s.codex_model:
                     model = self.s.codex_model
         if provider_id == "claude-code" and self.s.allowed_tools:
-            extra_args += ["--allowedTools", ",".join(self.s.allowed_tools)]
+            servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
+            extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers))]
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"

@@ -30,6 +30,7 @@
     <button data-tab="evaluation" data-icon="decision" data-term="nav.evaluation">판단 채점</button>
     <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
+    <button data-tab="agents" data-icon="nodes">AI 에이전트</button>
     <div class="navgroup" data-term="nav.group.manage">관리</div>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
@@ -141,6 +142,9 @@
       <div class="detail" id="instDetail"></div>
     </div>
   </section>
+
+  <!-- ───────── AI 에이전트 · 스킬 (U2, 읽기 전용 — agents.js) ───────── -->
+  <section class="view" id="view-agents"><div id="agentsView"></div></section>
 
   <!-- ───────── 결함 시뮬레이션 ───────── -->
   <section class="view" id="view-scenario">
@@ -280,6 +284,7 @@
 <script src="instances.js?v=20261008-a147"></script>
 <script src="liveStream.js?v=20261008-a147"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
+<script src="agents.js?v=20261008-u2"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
 <script src="evaluation.js?v=20261008-u6"></script>
 </body>

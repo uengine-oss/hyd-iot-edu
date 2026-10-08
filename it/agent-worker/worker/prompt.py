@@ -19,6 +19,8 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
         sections.append(f"## 업무\n{activity}")
     if query:
         sections.append(f"## 지시사항\n{query}")
+    if extras.get("agent_instructions"):     # U2: the assigned agent's profile and skills (agents_store.AgentSettings.instructions)
+        sections.append(str(extras["agent_instructions"]))
     participants = _participants(extras)
     if participants:
         sections.append(f"## 참여자\n{participants}")

@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 from hydcommon.process_contracts import pinned_form
+from procsvc.agents_store import activity_capabilities as _activity_capabilities
 
 FREEFORM_FIELDS = [{"key": "freeform", "type": "textarea", "text": "자유형식 입력"}]
 
@@ -26,6 +27,7 @@ class Context:
     human_answer: str = ""             # a person's answer to the agent's question (HITL resume)
     sources: list[dict] = field(default_factory=list)
     definition: dict | None = None     # proc_def.definition — the designer's agentConfig/skills per activity live here
+    profile: dict | None = None        # U2: the agent this item is assigned to (users row) — its settings: agents_store.agent_settings
 
     @property
     def extras(self) -> dict[str, Any]:
@@ -76,16 +78,19 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
     return Context(row=row, form_id=form_id or "freeform", form_fields=fields, form_html=(form or {}).get("html"), agents=agents, users=users,
                    tenant_mcp=tenant.get("mcp"), notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
                    feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
-                   sources=[], definition=definition)
+                   sources=[], definition=definition, profile=agent_profile(agents))
+
+
+def agent_profile(agents: list[dict]) -> dict | None:
+    """The agent this work item is assigned to (row.user_id → users). A system performer (SCADA · process · CMMS) is not a
+    profile; among several, the first real agent wins (the product's root agent is agents[0] as well)."""
+    for a in agents:
+        if (a.get("agent_type") or "agent") == "agent":
+            return a
+    return None
 
 
 def activity_capabilities(definition: dict | None, activity_id: str) -> dict:
-    """The designer's choices for this activity (the product's core/activity.py): agentConfig{cli, model, permission}, skills, tools."""
-    if not isinstance(definition, dict):
-        return {}
-    for a in definition.get("activities") or []:
-        if isinstance(a, dict) and a.get("id") == activity_id:
-            config = a.get("agentConfig") or a.get("agent_config") or {}
-            return {"agent_config": config if isinstance(config, dict) else {}, "skills": list(a.get("skills") or []),
-                    "tools": list(a.get("tools") or a.get("mcpServers") or [])}
-    return {}
+    """The designer's choices for this activity: agentConfig{cli, model, permission}, skills, tools (shared with the
+    process service — procsvc/agents_store.py; the runner looks it up here so a test can replace it)."""
+    return _activity_capabilities(definition, activity_id)

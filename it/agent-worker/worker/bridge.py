@@ -52,8 +52,9 @@ def cleanup(workdir: Path) -> list[str]:
 def select_servers(tenant_mcp: dict | None, tools: list[str] | None) -> tuple[dict | None, list[str]]:
     """A095 (process-gpt-base-agent executor: per-task MCP server selection): when the activity declares `tools`, only those
     tenant servers are registered for the run. Returns (filtered config, declared names that the tenant does not have —
-    the designer's intent that cannot be met, logged by the caller). No declaration = every tenant server, as before."""
-    if not tools:
+    the designer's intent that cannot be met, logged by the caller). No declaration (None) = every tenant server, as before;
+    an empty list (U2: the agent's servers and the activity's declaration do not overlap) = no server."""
+    if tools is None:
         return tenant_mcp, []
     config = (tenant_mcp or {}).get("mcpServers")
     if not isinstance(config, dict):
