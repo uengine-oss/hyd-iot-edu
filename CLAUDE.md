@@ -65,7 +65,7 @@
 | 단위 시험 | `. scripts/host_libpq.sh; PYTHONUTF8=1 .venv314/Scripts/python -m pytest -q` (서명된 libpq를 PATH 앞에 둬 DLL 차단을 피한다) | `.venv/bin/python -m pytest -q` (host_libpq.sh 불필요) |
 | 워커 | `bash scripts/run_worker_host.sh` (`CLIAGENTS_DEFAULT_CLI=claude-code`). 멈출 때는 PowerShell `Get-CimInstance Win32_Process \| ? CommandLine -like '*worker.main*'`로 찾아 `taskkill //PID //F`, 포트 8097/8098이 내려갔는지 확인. 워커 1개가 python 2개로 보인다 | `bash scripts/run_worker_host.sh`, 멈출 때 `pkill -f worker.main` 후 포트 확인 |
 | 로그 인코딩 | 워커 로그에 cp949가 섞인다. 바이트로 읽어 `errors='replace'`로 디코드 | UTF-8 |
-| Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 | 클라우드 환경에 Docker가 없을 수 있다. 없으면 컨테이너가 필요한 검증은 "미검증(환경 없음)"으로 남기고 사용자에게 알린다 |
+| Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 | Docker·`docker compose` 기본 설치(VM 약 4 vCPU·16 GB). `docker info`가 안 되면 `dockerd`부터 켠다. 컨테이너는 세션마다 새로 띄운다(이미지는 환경 캐시에 남음, 느리면 환경 설정 스크립트에 `docker compose pull`). 메모리가 모자라 멈추면 그 사실을 보고한다 |
 
 통합 시험: `scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scripts/scenario_pump_fan_test.py`(펌프·팬·가림),
 `scripts/scenario_test.py --quick`(레거시, `PROCESS_MODE=legacy`로 process 재기동 필요).
