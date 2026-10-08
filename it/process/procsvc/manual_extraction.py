@@ -163,6 +163,15 @@ def segment_view(source, seg):
     return view
 
 
+def display_name(source):
+    """Instance list label (A155): a Markdown document's own first `# ` heading when it declares one — that is the
+    document's title, not a guess — otherwise the uploaded filename (PDF/plain text carry no declared title here)."""
+    if source.get('media_type')=='text/markdown' and source.get('pages'):
+        for line in source['pages'][0]['text'].splitlines():
+            if line.startswith('# ') and line[2:].strip():return line[2:].strip()[:120]
+    return source['filename']
+
+
 def start(rt, source, request_id, review_feedback=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
@@ -178,12 +187,12 @@ def start(rt, source, request_id, review_feedback=None):
         return inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
     segs=manual_segments.segments(source)
     if not segs:
-        return launch(event_id,{'manual_source':source},source['filename']+' 추출 제안')
+        return launch(event_id,{'manual_source':source},display_name(source)+' 추출 제안')
     lead=None
     for seg in segs:
         pinned=dict(seg,request_id=request_id)
         inst=launch(f"{event_id}:{seg['index']}",{'manual_source':segment_view(source,seg),'segment':pinned},
-                    f"{source['filename']} 추출 제안 (구간 {seg['index']}/{seg['total']})")
+                    f"{display_name(source)} 추출 제안 (구간 {seg['index']}/{seg['total']})")
         lead=lead or inst
     return lead
 

@@ -317,3 +317,17 @@ def test_extraction_proposal_written_to_the_workspace_file_is_the_result_and_sou
     done=extraction.result(runtime,source,inst['proc_inst_id'],None)
     assert done['status']=='DONE' and done['preview']['procedures'][0]['id']=='SOP-EXTRACT-1' and done['corrections']['attempts']==1
     assert all(e['data'].get('result_source')=='file' for e in runtime.repo.list_events(todo_id=wi['id']) if e['event_type']=='task_completed')
+
+
+def test_instance_name_uses_the_markdown_title_and_keeps_the_filename_otherwise(rt,tmp_path):
+    """A155: the instance list showed `HM-9_oil-degradation-manual.md 추출 제안` (an English filename) for a document
+    whose own title is Korean. A declared `# ` heading names the instance; a document without one keeps its filename."""
+    runtime,_=rt;archive=ManualSources(tmp_path/'names.sqlite3')
+    titled=archive.save('hyd','HM-9_oil-degradation-manual.md','# 작동유 관리 매뉴얼 (HM-9)\n\n본문\n'.encode())
+    plain=archive.save('hyd','notes.md','제목 없는 문서\n# 본문 중간의 제목은 첫 줄이 아니어도 제목으로 본다\n'.encode())
+    bare=archive.save('hyd','general.txt','# 텍스트 파일의 샵 줄\n'.encode())
+    assert extraction.display_name(titled)=='작동유 관리 매뉴얼 (HM-9)'
+    assert extraction.display_name(plain)=='본문 중간의 제목은 첫 줄이 아니어도 제목으로 본다'
+    assert extraction.display_name(bare)=='general.txt'
+    inst=extraction.start(runtime,titled,str(uuid4()))
+    assert inst['proc_inst_name']=='작동유 관리 매뉴얼 (HM-9) 추출 제안'

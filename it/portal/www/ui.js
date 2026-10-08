@@ -147,19 +147,32 @@ const UI = {
     try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
   },
 
-  /* ---------- A141 단계 로그(영문) → 화면 문구. 원문은 호출하는 쪽이 접기에 보존한다. ---------- */
+  /* ---------- A141 단계 로그(영문) → 화면 문구. 원문은 호출하는 쪽이 접기에 보존한다.
+     A155: process 는 로그를 "조각; 조각; "으로 덧붙인다(procsvc instances.py·engine.py). logText 가 ';'로 먼저 자르므로
+     패턴은 조각 하나에 맞춰야 한다 — ';'를 품은 패턴은 맞을 수 없다. ---------- */
   logPatterns: [
     [/^cancelled: instance ended \((?:ev:)?([\w-]+)\)$/, (m, U) => `처리 건 종료(${U.flowName(m[1])})로 취소`],
     [/^cancelled: (?:ev:|task:)?([\w-]+) completed first;?$/, m => m[1] === 'select-timeout' ? '선택 시간 초과가 먼저 와서 취소' : '다른 갈래가 먼저 끝나 취소'],   // A147: 경계 타이머 경쟁
-    [/^human approval accepted; delivery tracked separately$/, () => '담당자 승인 접수 · 전달은 별도로 추적'],
-    [/^approval accepted by (.+?); delivery pending$/, (m, U) => `${U.who(m[1])} 승인 접수 · 전달 대기`],
+    [/^human approval accepted$/, () => '담당자 승인 접수'],
+    [/^delivery tracked separately$/, () => '전달은 별도로 추적'],
+    [/^approval accepted by (.+)$/, (m, U) => `${U.who(m[1])} 승인 접수`],
+    [/^delivery pending$/, () => '전달 대기'],
+    [/^approval discarded: (.+)$/, () => '승인 폐기'],
+    [/^cancelled: instance closed by a person$/, () => '담당자가 처리 건을 닫아 취소'],
+    [/^fired at (\S+)$/, m => `발생 ${m[1].replace('T', ' ').replace(/\.\d+Z?$|Z$/, '')}`],
+    [/^\[Rejected (\d+)\/(\d+)\] ?(.*)$/, m => `[형식 반려 ${m[1]}/${m[2]}] ${m[3]}`.trim()],
+    [/^\[Error\] ?(.*)$/, m => `[오류] ${m[1]}`.trim()],
+    [/^\[DELIVERY RETRY\] ?(.*)$/, m => `[전달 재시도] ${m[1]}`.trim()],
+    [/^CMMS retry requested by (.+?) \((.+)\)$/, (m, U) => `${U.who(m[1])} 정비 요청 재시도`],
+    [/^\[Lease expired after (\d+) claims: run marked FAILED\]$/, m => `실행 임대 ${m[1]}회 만료 · 실패 처리`],
     [/^submitted by (.+)$/, (m, U) => `${U.who(m[1])} 제출`],
     [/^waiting for the incident re-observation verdict$/, () => '효과 확인 결과 대기'],
     [/^cancelled: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 취소`],
     [/^reached by abort: incident (\w+) before any action \(cleared=(True|False)\)$/, (m, U) => `조치 전 사건 종료(${U.status(m[1])})로 도달`],
     [/^rework superseded: (.+)$/, () => '다시 수행으로 대체됨'],
     [/^\[Lease expired: reclaimed by (.+?) \(claim (\d+)\)\]$/, m => `실행 임대 만료 · 다른 작업자가 이어받음 (${m[2]}번째)`],
-    [/^action\.cmd (CMD-[\w-]+) issued; waiting ACK$/, m => `설비 명령 ${m[1]} 전송 · 응답 대기`],
+    [/^action\.cmd (CMD-[\w-]+) issued$/, m => `설비 명령 ${m[1]} 전송`],
+    [/^waiting ACK$/, () => '설비 응답 대기'],
     [/^\[Cancel requested by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 실행 취소 요청] ${m[2]}`.trim()],
     [/^\[Closed by (.+?)\] ?(.*)$/, (m, U) => `[${U.who(m[1])} 단계 닫음] ${m[2]}`.trim()],
     [/^\[DEFERRED\] ?(.*)$/, m => `[보류] ${m[1]}`.trim()],
@@ -172,7 +185,7 @@ const UI = {
   ],
   logText(raw) {
     const text = String(raw ?? '').trim(); if (!text) return '';
-    return text.split(/;\s+/).map(s => s.trim()).filter(Boolean).map(seg => {
+    return text.split(/;\s*/).map(s => s.trim()).filter(Boolean).map(seg => {
       for (const [re, fn] of this.logPatterns) { const m = seg.match(re); if (m) return fn(m, this); }
       return this.idText(seg);
     }).join(' · ');
