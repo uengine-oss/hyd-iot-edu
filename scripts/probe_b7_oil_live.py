@@ -342,16 +342,17 @@ def run(a, save, agent_wait, started):
     check("원인 진단 근거 = 사람 입력 분석(human:<경보>)", any(where.values()), json.dumps(where, ensure_ascii=False) + " " + dump[:200])
     diag_ids = {w["id"] for w in diag}
     # 누가 수행했나: 최종 저장이 consumer 를 비우므로(procdb.save_task_result) task_started 이벤트로 본다 —
-    # 워커는 role "CLI 코딩 에이전트"(agent-worker/worker/events.py task_started), 내장 판단은 name "legacy agent"(instance_mode._event)
-    started = [(e.get("data") or {}) for e in events if e.get("todo_id") in diag_ids and e.get("event_type") == "task_started"]
+    # 워커는 crew_type "result" · role "CLI 코딩 에이전트"(agent-worker/worker/events.py task_started), 내장 결정론은
+    # 원인 진단 = LegacyAssessment(crew_type "legacy", instance_mode) · 나머지 = name "legacy agent"(instance_mode._event)
+    started = [e for e in events if e.get("todo_id") in diag_ids and e.get("event_type") == "task_started"]
     save("6-diagnose-started", started)
+    who = [(e.get("crew_type"), (e.get("data") or {}).get("name"), (e.get("data") or {}).get("role")) for e in started]
+    is_legacy = lambda e: e.get("crew_type") == "legacy" or (e.get("data") or {}).get("name") == "legacy agent"
     if a.expect == "worker":
         check("원인 진단을 실제 워커(CLI 코딩 에이전트)가 수행", len(started) == len(diag) and
-              all(s.get("role") == "CLI 코딩 에이전트" and s.get("name") != "legacy agent" for s in started),
-              [(s.get("name"), s.get("role")) for s in started])
+              all((e.get("data") or {}).get("role") == "CLI 코딩 에이전트" and not is_legacy(e) for e in started), who)
     else:
-        check("원인 진단을 내장 결정론 판단이 수행", len(started) == len(diag) and all(s.get("name") == "legacy agent" for s in started),
-              [(s.get("name"), s.get("role")) for s in started])
+        check("원인 진단을 내장 결정론 판단이 수행", len(started) == len(diag) and all(is_legacy(e) for e in started), who)
     if a.expect == "worker":
         tool_ev = [e for e in events if e.get("todo_id") in diag_ids and str(e.get("event_type", "")).startswith("tool_usage")]
         save("6-diagnose-tool-events", tool_ev)
