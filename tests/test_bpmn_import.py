@@ -106,6 +106,31 @@ def test_structure_comparison_is_not_vacuous():
     assert r["ok"] and B.structure(r["definition"]) != base_sig
 
 
+def test_compare_with_base_pairs_drawn_ids_with_the_chosen_parts():
+    """B4 기준 비교: 그림 id(Activity_…)는 기준 id와 다르므로 id로 맞추면 전부 삭제+추가(30/30)였다. 고른 부품 · 이웃으로 맞춘다."""
+    from procsvc import definition_diff as D
+    parsed, r = run_check(REDRAW)
+    d = r["definition"]
+    plain = D.compare(BASE, d)
+    assert plain["counts"]["추가"] >= 20 and plain["counts"]["삭제"] >= 20          # 맞추지 않으면 쓸모없는 목록 (이 시험이 헛돌지 않음)
+    same = D.compare_import(BASE, d)
+    assert same["counts"]["추가"] == 0 and same["counts"]["삭제"] == 0, same["changes"]
+    assert not [c for c in same["changes"] if c["kind"] in ("단계", "연결", "분기점")]
+    # 실제로 바꾼 것은 기준 id + 그림 id 로 보인다
+    edited = deepcopy(d)
+    diag = next(a for a in edited["activities"] if a["id"] == "Activity_0diag4n")
+    diag["name"] = "내 원인 진단"
+    edited["sequences"] = [s for s in edited["sequences"] if s["target"] != "Activity_0cmpl2r"]
+    out = D.compare_import(BASE, edited)
+    step = next(c for c in out["changes"] if c["kind"] == "단계" and c["change"] == "변경")
+    assert (step["id"], step["drawn_id"]) == ("task:diagnose", "Activity_0diag4n") and step["text"].endswith("변경: 이름")
+    gone = [c for c in out["changes"] if c["kind"] == "연결" and c["change"] == "삭제"]
+    assert len(gone) == 1 and gone[0]["flow"]["to"] == "규정 검토" and out["counts"]["추가"] == 0
+    # 일부러 깨뜨림: 고른 부품(mapping.tasks)을 지우면 task 는 맞출 수 없어 삭제+추가로 돌아간다
+    blind = deepcopy(d); blind["bpmnImport"]["mapping"]["tasks"] = {}
+    assert D.compare_import(BASE, blind)["counts"]["추가"] >= 9
+
+
 def test_converted_base_flow_runs_on_the_engine_to_escalation():
     _, r = run_check(REDRAW)
     raw = validate_definition(deepcopy(r["definition"])).raw
@@ -338,6 +363,11 @@ def test_api_registers_new_version_with_bpmn_and_keeps_prod_pointer(api):
     assert [a[2] for a in audit] == ["FLOW_REGISTERED", "FLOW_REGISTERED"]
     listed = c.get("/api/flows").json()
     assert [(x["id"], x["version"]) for x in listed["versions"]] == [("my_cooler", "1"), ("my_cooler", "2")]
+    # B4 기준 비교는 가져온 흐름을 고른 부품으로 맞춘다(단계 · 연결 추가/삭제 없음)
+    from procsvc import flow_deploy
+    diff = flow_deploy.compare_with_reference(rt, "my_cooler", "1")
+    assert diff["counts"]["추가"] == 0 and diff["counts"]["삭제"] == 0, diff["steps"]
+    assert all(f["label"] == "설명" for c in diff["changes"] if c["kind"] != "정의" for f in c["fields"]), diff["steps"]
 
 
 def test_api_refuses_failed_check_and_base_ids(api):

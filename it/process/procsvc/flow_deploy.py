@@ -116,7 +116,7 @@ def deploy_reset(rt, by: str, reason: str | None = None) -> dict:
 
 def compare_with_reference(rt, def_id: str, version: str | None = None) -> dict:
     """학생 판본(없으면 그 정의의 운영 판본) vs 기준 판본: 바뀐 단계·연결·조건을 사람이 읽는 목록으로 (definition_diff.compare)."""
-    from .definition_diff import compare
+    from .definition_diff import compare, compare_import
     base_version = _base_version(rt)
     base = rt.repo.get_proc_def(rt.defn.id, rt.tenant_id, version=base_version)
     if not base or not base.get('definition'):
@@ -127,7 +127,7 @@ def compare_with_reference(rt, def_id: str, version: str | None = None) -> dict:
     row = rt.repo.get_proc_def(def_id, rt.tenant_id, version=version)
     if not row or not row.get('definition'):
         raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
-    diff = compare(base['definition'], row['definition'])
+    diff = (compare_import if row['definition'].get('bpmnImport') else compare)(base['definition'], row['definition'])
     steps = [c['text'] for c in diff['changes'] if c['kind'] in ('단계', '연결', '분기점', '이벤트')]
     return dict(diff, reference={'definition': rt.defn.id, 'version': base_version}, target={'definition': def_id, 'version': version},
                 steps=steps, summary=('기준 흐름과 같습니다' if diff['same'] else
