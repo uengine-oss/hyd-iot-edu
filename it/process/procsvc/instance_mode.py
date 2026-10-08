@@ -417,6 +417,9 @@ def _bridge_legacy_agent(decision: dict) -> None:
             return
         _event(job_id, wi, inst, "task_started", {"goal": wi.get("activity_name"), "name": "legacy agent", "role": "L8 판단 파이프라인 (LLM 워커 없음)",
                                                    "task_description": (wi.get("query") or "")[:200]})
+        evidence = _legacy_evidence(decision, _ctx.incidents.get(inc_id)).get(wi["activity_id"])
+        if evidence:                                          # U1: how the built-in pipeline judged, as one row of this task's trace
+            _event(job_id, wi, inst, "task_working", evidence)
         if not _runtime.repo.save_task_result(wi["id"], outputs.get(wi["activity_id"], {}), final=True,
                                               expected_consumer='legacy-agent'):
             return
@@ -451,6 +454,42 @@ def _legacy_outputs(d: dict, inc: machine.Incident | None) -> dict[str, dict]:
         "task:rank": {"decision": {"recommended": d.get("recommended"), "explanation": d.get("explanation"),
                                    "order": [f"{o.get('rank')}. {o.get('sopId')} {o.get('name')}" for o in opts]}, "decision_id": d["id"]},
     }
+
+
+def _legacy_evidence(d: dict, inc: machine.Incident | None) -> dict[str, dict]:
+    """U1 (블랙박스 0): the built-in pipeline has no tool calls or prose to show, so each of its four tasks records the numbers
+    it decided with — cause score = prior × passed evidence weight / all evidence weight (agentsvc card.rank_causes), the rules
+    that selected each card, the compliance outcome, and each card's score parts under the ranking rule's formula. Values are
+    copied from the decision and the guide card as they are; nothing is recomputed here."""
+    opts, card = d.get("options") or [], (inc.card if inc else {}) or {}
+    causes = card.get("causes") or []
+    top = next((c for c in causes if c.get("id") == card.get("topCause")), causes[0] if causes else None)
+    def passed(c):
+        evs = c.get("evidence") or []
+        return sum(1 for e in evs if e.get("passed") is True), len(evs)
+    rank_rule = d.get("rankRule") or {}
+    rec = next((o for o in opts if o.get("id") == d.get("recommended")), None)
+    out = {
+        "task:diagnose": {"type": "evidence", "name": "판단 근거", "method": "원인 점수 = 사전확률 × (통과한 근거 가중치 ÷ 전체 근거 가중치)",
+                          "content": (f"원인 후보 {len(causes)}개를 관측 근거로 비교 — 판정 {top.get('name') or top.get('id')} (점수 {top.get('score')})"
+                                      if top else "원인 후보가 없습니다"),
+                          "causes": [{"id": c.get("id"), "name": c.get("name"), "prior": c.get("prior"), "score": c.get("score"),
+                                      "passed": passed(c)[0], "evidence": passed(c)[1]} for c in causes]},
+        "task:candidates": {"type": "evidence", "name": "판단 근거", "method": "조치 후보 선정 규칙이 발동한 조치만 후보로 올림",
+                            "content": f"선정 규칙으로 조치 후보 {len(opts)}장",
+                            "cards": [{"id": o.get("id"), "name": o.get("name"),
+                                       "rules": [r.get("annotation") or r.get("rule") for r in o.get("selectedBy") or []]} for o in opts]},
+        "task:compliance": {"type": "evidence", "name": "판단 근거", "method": "규정 규칙을 후보마다 대어 제외 · 감점 · 경고",
+                            "content": (f"규정 검사 — 제외 {sum(1 for o in opts if not o.get('feasible'))}장 · "
+                                        f"감점 {sum(len(o.get('penalties') or []) for o in opts)}건 · 경고 {sum(len(o.get('warnings') or []) for o in opts)}건")},
+        "task:rank": {"type": "evidence", "name": "판단 근거",
+                      "method": f"순위 규칙 {rank_rule.get('annotation') or rank_rule.get('rule') or '없음'}의 식으로 구성 점수를 더함",
+                      "content": (f"1위 {rec.get('name')} (점수 {rec.get('score')})" if rec else "규정을 통과한 카드가 없습니다"),
+                      "formula": (rank_rule.get("rankingPolicy") or {}).get("components") or {},
+                      "cards": [{"id": o.get("id"), "name": o.get("name"), "rank": o.get("rank"), "score": o.get("score"),
+                                 "parts": o.get("scoreParts") or {}, "feasible": o.get("feasible")} for o in opts]},
+    }
+    return out
 
 
 def _event(job_id: str, wi: dict, inst: dict, event_type: str, data: dict) -> None:

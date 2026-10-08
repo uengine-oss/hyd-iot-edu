@@ -319,7 +319,7 @@
       ${w.gateway_decisions ? UI.fold(esc(UI.t('inst.gateway')), `<pre>${esc(JSON.stringify(w.gateway_decisions, null, 1).slice(0, 800))}</pre>`, { cls: 'small' }) : ''}
       ${closeBtn || cancelBtn ? `<div class="row-wrap">${closeBtn}${cancelBtn}</div>` : ''}${reasonForm}` : `<p class="muted">${esc(STEP_LABEL[s.state])}</p>`;
     const chipHtml = s.state === 'skipped' ? UI.chip('SKIPPED') : s.state === 'todo' ? UI.chip('TODO') : chip(s.status || 'DONE');
-    return `<details class="fold step-row ${esc(s.state)}" ${s.state === 'current' ? 'open' : ''}><summary><span>${esc(UI.flowName(s.name))}</span><span class="muted" style="font-weight:400">${esc(s.who)}</span>${durText ? `<span class="muted" style="font-weight:400;margin-left:auto">${esc(durText)}</span>` : ''}<span style="margin-left:${durText ? '8px' : 'auto'}">${chipHtml}</span></summary><div class="fold-body">${body}</div></details>`;
+    return `<details class="fold step-row ${esc(s.state)}" ${s.state === 'current' ? 'open' : ''}${w ? ` data-step-task="${esc(w.id)}"` : ''}><summary><span>${esc(UI.flowName(s.name))}</span><span class="muted" style="font-weight:400">${esc(s.who)}</span>${durText ? `<span class="muted" style="font-weight:400;margin-left:auto">${esc(durText)}</span>` : ''}<span style="margin-left:${durText ? '8px' : 'auto'}">${chipHtml}</span></summary><div class="fold-body">${body}</div></details>`;
   }
 
   function renderDetail() {
@@ -330,7 +330,7 @@
     const s = st ? st.summary : null;
     const progress = s ? `${s.done}/${s.total} ${UI.t('inst.stepsDone')}${s.current ? ` · ${UI.t('inst.now')}: ${UI.flowName(s.current.name)}` : s.next ? ` · ${UI.t('inst.next')}: ${UI.flowName(s.next.name)}` : s.finished ? ` · ${UI.t('inst.finished')}` : ''}` : '';
     // A141: 시작 · 종료 시각과 id 는 상세 정보 접기로, 머리글에는 진행 요약만
-    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div>${progress ? `<div class="sub">${esc(progress)}</div>` : ''}</div>`
+    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div>${progress ? `<div class="sub">${esc(progress)}</div>` : ''}<div id="instNow"></div></div>`
       + UI.metaFold([[UI.t('inst.started'), esc(UI.dateTime(inst.start_date))], [UI.t('inst.ended'), inst.end_date ? esc(UI.dateTime(inst.end_date)) : ''], ['ID', `<span class="mono">${esc(inst.proc_inst_id)}</span>`]]);
     const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.events.length };
     const tabs = UI.tabs([['result', UI.t('inst.tab.result')], ['flow', UI.t('inst.tab.flow'), counts.flow], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
@@ -341,6 +341,7 @@
     window.hydRework?.mount(box.querySelector('#reworkPanel'), { view, by: I.form.by, changed: () => load(true) });
     window.hydEffects?.mount(box.querySelector('#effectsPanel'), { view, by: I.form.by, changed: () => load(true) });
     window.hydTaskDeferral?.mount(box.querySelector('#taskDeferralPanel'), { view, by: I.form.by, changed: () => load(true) });
+    window.hydTaskDetail?.mount(box.querySelector('#taskDetailPanel'));
     wireStepButtons(box);
     wireApprovalButtons(box);
   }
@@ -389,7 +390,7 @@
   /* 흐름 탭: 흐름도 + 단계 행(Dify tracing) + 패널 4(접기, 열어야 할 때만) */
   function flowPane(view, st) {
     const inst = view.instance;
-    let html = `<div class="flow-wrap" id="instFlow"></div>`;
+    let html = `<div class="flow-wrap" id="instFlow"></div><div id="taskDetailPanel"></div>`;   // U1: task 상세 패널 자리 (taskDetail.js)
     if (inst.status === 'RUNNING' && inst.flow_state?.end_arrivals?.length) html += `<p class="kv-line">${esc(UI.t('inst.endWaiting'))}</p>`;
     const waitingDependencies = Object.entries(inst.flow_state?.dependency_schedule || {}).filter(([id, spec]) => spec.flow_arrived && view.workitems.some(w => w.id === id && w.status === 'TODO'));
     if (waitingDependencies.length) html += UI.card({ title: esc(UI.t('inst.waitingResult')), cls: 'soft', body: waitingDependencies.map(([id, spec]) => {
