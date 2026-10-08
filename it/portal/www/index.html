@@ -31,6 +31,7 @@
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
     <div class="navgroup" data-term="nav.group.manage">관리</div>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
+    <button data-tab="fabric" data-icon="nodes">데이터 패브릭</button>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
   </nav>
   <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션</strong></div></div>
@@ -212,6 +213,12 @@
     <pre class="tpl" id="ontoTplText">질의를 선택하면 내용이 표시됩니다.</pre>
   </section>
 
+  <!-- ───────── 데이터 패브릭 (A11, fabric.js) ───────── -->
+  <section class="view" id="view-fabric">
+    <div class="page-head"><h1>데이터 패브릭</h1></div>
+    <div id="fabricView"></div>
+  </section>
+
   <!-- ───────── 관리 ───────── -->
   <section class="view" id="view-admin">
     <div class="page-head"><h1>관리</h1></div>
@@ -277,5 +284,6 @@
 <script src="liveStream.js?v=20261008-a147"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
+<script src="fabric.js?v=20261008-a11"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
             INGEST_URL · PROMETHEUS_URL   MCP_PORT=8198
     tools : diagnose · dmn_rules · inputs · gather_facts · timeseries_schema · timeseries_query ·
             prometheus_metadata · prometheus_series · prometheus_query · evaluate_cards · forecast_actions ·
-            submit_decision · precedents · tradeoffs   (13; submit_decision is the only write)
+            submit_decision · precedents · tradeoffs · fabric_query   (15; submit_decision is the only write)
 """
 from __future__ import annotations
 
@@ -118,6 +118,17 @@ def precedents(failure_mode: FailureMode) -> dict:
 def tradeoffs(skill_ids: Annotated[list[str], Field(description="스킬 id 목록")]) -> dict:
     """스킬 → 첫 BSC 지표까지 개별 경로/관계/소유자/원문 조건과 명시 조건식. 목록만으로 조건이 참이라고 가정하지 않는다. evaluate_cards의 tradeoffEvaluation이 현재 사실/후보 예측으로 TRUE/FALSE/UNKNOWN을 판정한다."""
     return enveloped(lambda: tools.tradeoffs(skill_ids))()
+
+
+@mcp.tool
+def fabric_query(asset: Asset,
+                 query: Annotated[str, Field(description="asset(설비 하나로 두 원천의 연결된 값 합치기) | " + " | ".join(
+                     f"{k}({v['title']})" for k, v in CROSS_QUERIES.items()) + " | sql(원천별 SELECT 직접 작성)")] = "asset",
+                 limit: Annotated[int, Field(description="원천 조회마다 최대 행 수 (1~200)", ge=1, le=200)] = 50,
+                 sql: Annotated[dict | None, Field(description=f"query=sql 일 때만: {{'{ENT}': 'ent 스키마 SELECT', '{TS}': 'tag_1s/feat_1s/tag_1m SELECT'}}. "
+                                                               "%(asset)s 로 설비 코드를 받는다. 쓰기 · 다른 스키마 · 다중 문장은 연결 전에 거절")] = None) -> dict:
+    """데이터 패브릭(읽기 전용): 업무 DB(Supabase ent: 주문 · 계약 · 정비 · 품질)와 시계열 DB(TimescaleDB: 센서 1초 기록)를 한 질문으로 묶는다. 값마다 출처(원천 · 표 · 열 · 조건 · 실행 SQL · 관측 시각)를 준다. 한 원천이 실패하면 partial=true 와 그 사유, 둘 다 실패하면 error. 전용 읽기 계정 · 읽기 전용 트랜잭션 · 5초 · 행 제한."""
+    return enveloped(lambda: tools.fabric_query(asset, query, limit, sql))()
 
 
 @mcp.custom_route("/healthz", methods=["GET"])

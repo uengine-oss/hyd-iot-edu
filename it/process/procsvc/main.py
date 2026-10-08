@@ -1015,6 +1015,10 @@ manual_api.register(app,
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
 
+# A11 데이터 패브릭 미니: 업무 DB · 시계열 DB 읽기 전용 묶어 보기 (전용 읽기 계정만, fabric_api.py)
+from . import fabric_api
+fabric_api.register(app, driver_factory=_kg)
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")
