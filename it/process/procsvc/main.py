@@ -1015,6 +1015,11 @@ manual_api.register(app,
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
 
+# A8 (U11): KPI 실적 · 역추적 — 시계열 · 업무 DB · 처리 기록에서 지표 실적, 미달 지표 → 원인 처리 건 (읽기 전용)
+from . import kpi
+from .procdb import SUPABASE_DSN as _KPI_BIZ_DSN
+kpi.register(app, ts_dsn=PG_DSN, biz_dsn=_KPI_BIZ_DSN, driver_factory=_kg, time_scale=TIME_SCALE, tenant=os.getenv("TENANT_ID", "hyd"))
+
 
 # ---------------------------------------------------------------- 인제스천 (회의 2번 · 6번): 회사 DB 의 DDL → System · InputData, 되돌리기, 규칙 → SQL
 @app.post("/api/kg/ddl/preview")

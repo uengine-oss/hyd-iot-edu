@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="hitl.css?v=20261008-a147">
 <link rel="stylesheet" href="instances.css?v=20261008-a147">
 <link rel="stylesheet" href="components.css?v=20261008-a147">
+<link rel="stylesheet" href="kpi.css?v=20261008-a8">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -29,6 +30,7 @@
     <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
     <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
     <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
+    <button data-tab="kpi" data-icon="chart">성과 지표</button>
     <div class="navgroup" data-term="nav.group.manage">관리</div>
     <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
     <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
@@ -254,6 +256,8 @@
       </div>
     </details>
   </section>
+  <!-- ───────── 성과 지표 (A8, kpi.js: window.hydKpi.mount) ───────── -->
+  <section class="view" id="view-kpi"><div id="kpiView"></div></section>
 </main>
   <nav class="page-navigation" aria-label="화면 순서대로 이동">
     <button id="pagePrev" class="page-direction" type="button"></button>
@@ -277,5 +281,6 @@
 <script src="liveStream.js?v=20261008-a147"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
+<script src="kpi.js?v=20261008-a8"></script>
 </body>
 </html>
