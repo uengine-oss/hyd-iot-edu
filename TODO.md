@@ -4,29 +4,30 @@
 
 **용도:** 실라버스 세션이 이 기능들이 있다고 가정하고 단원을 짠다(학생 자료에는 "개발 예정"). 구현 순서·비용 표가 아니다. UI/UX 다듬기는 기능에 당연히 딸려 오므로 항목으로 두지 않는다(기능 단위).
 **방향(사용자 10-08):** HYD를 ProcessGPT처럼 만들어 한 바퀴 체험한다 — 에이전트·도구를 세팅하고 → 설비 이상이 감지되면 → 담당자인 **나**에게 배정되고 → 처리 건이 돌아가는 과정·근거·도구 호출을 모두 보고 → 결과를 검증하고 → 개선까지. 맨 뒤에 실제 ProcessGPT를 짧게 소개한다. 외부 서비스로 체험할 수 있는 것은 외부로 대신하고(bpmn.io), Claude Code로 만들어 보는 것은 막마다 랩업에서 한다(이 목록에 넣지 않음).
-**기준:** ProcessGPT의 주 화면 **process-gpt-vue3의 기능 메뉴**(`src/router/MainRoutes.ts` 129개, 커밋 `a4f0a85`)와 그 화면이 부르는 서비스, 그리고 ProcessGPT에 등록된 **온톨로지 서비스(ontology-studio)** 가 부르는 서비스(데이터 패브릭·What-if)까지 본 뒤, 하나씩 현재 HYD 코드·포털·API·스크립트·회차 문서와 실물 대조했다(대조 기록 `docs/handoff/verification/2026-10-08/todo-verify.md`, 52개 원본 근거 `processgpt-gaps.md`). 이미 있는 것은 넣지 않았다.
+**상태: 보류 — 구현하지 않는다(사용자 10-08 "todo들은 무조건 보류").** 실라버스용 가정 목록이며 지금 검증·배포와 별개다.
+**기준:** ProcessGPT 큰 틀 안 마이크로서비스들의 실제 상호작용(서비스 → 서비스 호출·공유 표·폴링·트리거)을 세 묶음으로 코드에서 뽑아 흐름 F1~F12로 묶은 정본 `docs/handoff/verification/2026-10-08/processgpt-flows.md`(주 화면 process-gpt-vue3 메뉴 129개 포함, 커밋은 부록)를 기준으로, 흐름의 칸마다 현재 HYD 코드·포털·API·스크립트·회차 문서와 실물 대조했다(대조 기록 `todo-verify.md`, 원본 근거 `processgpt-gaps.md`). 이미 있는 것은 넣지 않았다. 아래 "흐름"은 그 문서의 F번호.
 
 ### 1. 필수 — ProcessGPT처럼 한 바퀴가 이어지려면 있어야 한다 (8)
 
 | # | 흐름 | 기능 | HYD 지금 (실물) | 원본 · 회의 근거 |
 |---|---|---|---|---|
-| 1 | 준비 | **에이전트 만들기** — "이런 일을 하는 에이전트"라고 대충 쓰면 이름·역할·목표·성격·쓸 도구가 자동으로 채워지고(등록된 도구 안에서), 사람이 고쳐 저장해 단계에 배정하면 실제 실행(지시문·모델·도구)에 반영. ProcessGPT 온톨로지 Organization 층(사람·AI 에이전트) | users 표 칸은 제품과 같으나 실행에는 이름·역할 한 줄만(`it/agent-worker/worker/prompt.py:156-160`), 생성 화면·API 없음 | vue3 조직도·`AgentField.vue:45-170`·`OrganizationAgentGenerator.js` / L146-156 |
-| 2 | 준비 | **스킬 붙이기** — 에이전트 작업 요령(SKILL.md)을 써서 붙이면 같은 경보에서 AI의 조회 순서·근거가 바뀜. ProcessGPT 온톨로지 Knowledge 층(스킬) | 정의의 skills를 워커가 읽고 버림(`worker/context.py:89`) | vue3 `/skills`, process-gpt-cli-agent `core/skills.py:69-134` / L132-135 |
-| 3 | 준비 | **MCP 등록·연결 검사** — 내가 만든 도구 서버를 등록하기 전에 연결·도구 목록을 검사하고, 통과해야 에이전트가 쓸 수 있음 | tenants.mcp는 SQL 손편집(`it/supabase/seed.sql:57-63`), 범용 검사 없음 | vue3 계정 설정 MCP·`/mcp-validator`, process-gpt-mcp-validator `validator.py:51-154` / L88-96·L123-138 |
-| 4 | 준비 | **흐름 버전 배포 → 다음 경보부터 적용** — 흐름(그리기는 bpmn.io) 새 버전을 승인·배포하면 다음 경보부터 그 흐름, 열린 건은 옛 흐름, 되돌리기 | 버전 등록·직접 시작·열린 건 옛 버전 유지는 있음, 경보 흐름은 파일 하나로 고정(`it/process/procsvc/instance_mode.py:39,128`) | vue3 판본 비교·검토 게시판, process-gpt `proc_def_version` / L448 |
-| 5 | 배정 | **나에게 배정 · 받은 함·알림** — 수강생이 담당자로 들어가면 사람 단계가 나에게 배정되고, 내 받은 함·알림으로 받아 결정 | 역할 단위 배정·역할로 거르는 할 일 API(`instance_mode.py:715-719`), notifications는 저장만 | vue3 `/my-inbox`·`/notifications`·`/work-assignment`, `todolist.user_id` / L405-406·L413·L417-426 |
-| 6 | 모니터링 | **지금 일하는 AI 일꾼** — 경보 하나에 일꾼이 떠서 어떤 작업을 잡고 내려가는지 | `GET /api/agents/status`(`instance_mode.py:465-479,689`)는 있고 포털 호출 0(처리 건 배너는 진행 중·내 차례·질문 3칸, `instances.js:61-74`; 15회차 문서는 있다고 적음 — 정정 필요) | vue3 에이전트 모니터 / L202-214·L434-435 |
-| 7 | 모니터링 | **도구 호출 콘솔 로그** — AI가 어떤 도구를 언제 무엇으로 불렀고 무엇을 받았는지 터미널에 한 줄씩(랩업 관찰 창) | 도구 호출 이벤트·실시간 스트림·포털 표시는 있고 워커 콘솔에는 없음(`worker/events.py:18`, `/api/events/stream`) | cliagents 이벤트 / 랩업 계약 CLAUDE.md §4 |
-| 8 | 검증 | **AI 판단 채점** — 같은 경보를 여러 번 던져 진단·카드를 정답표로 채점, 지식을 고치기 전·후 점수 비교 | 규칙·업무 질문 정답 대조 검사기(`scripts/probe_rule_questions.py`·`probe_business_questions.py`), 문서별 골든 질문 — 경보 판단 정답표·반복·전후 비교 없음 | ontology-studio 골든 퀘스천 보고 / L136-138 "온톨로지가 잘 구성됐는지 체크하는 방법" |
+| 1 | 준비(F4) | **에이전트 만들기** — "이런 일을 하는 에이전트"라고 대충 쓰면 이름·역할·목표·성격·쓸 도구가 자동으로 채워지고(등록된 도구 안에서), 사람이 고쳐 저장해 단계에 배정하면 실제 실행(지시문·모델·도구)에 반영. ProcessGPT 온톨로지 Organization 층(사람·AI 에이전트) | users 표 칸은 제품과 같으나 실행에는 이름·역할 한 줄만(`it/agent-worker/worker/prompt.py:156-160`), 생성 화면·API 없음 | vue3 조직도·`AgentField.vue:45-170`·`OrganizationAgentGenerator.js` / L146-156 |
+| 2 | 준비(F5) | **스킬 붙이기** — 에이전트 작업 요령(SKILL.md)을 써서 붙이면 같은 경보에서 AI의 조회 순서·근거가 바뀜. ProcessGPT 온톨로지 Knowledge 층(스킬) | 정의의 skills를 워커가 읽고 버림(`worker/context.py:89`) | vue3 `/skills`, process-gpt-cli-agent `core/skills.py:69-134` / L132-135 |
+| 3 | 준비(F6) | **MCP 등록·연결 검사** — 내가 만든 도구 서버를 등록하기 전에 연결·도구 목록을 검사하고, 통과해야 에이전트가 쓸 수 있음 | tenants.mcp는 SQL 손편집(`it/supabase/seed.sql:57-63`), 범용 검사 없음 | vue3 계정 설정 MCP·`/mcp-validator`, process-gpt-mcp-validator `validator.py:51-154` / L88-96·L123-138 |
+| 4 | 준비(F1) | **흐름 버전 배포 → 다음 경보부터 적용** — 흐름(그리기는 bpmn.io) 새 버전을 승인·배포하면 다음 경보부터 그 흐름, 열린 건은 옛 흐름, 되돌리기 | 버전 등록·직접 시작·열린 건 옛 버전 유지는 있음, 경보 흐름은 파일 하나로 고정(`it/process/procsvc/instance_mode.py:39,128`) | vue3 판본 비교·검토 게시판, process-gpt `proc_def_version` / L448 |
+| 5 | 배정(F7) | **나에게 배정 · 받은 함·알림** — 수강생이 담당자로 들어가면 사람 단계가 나에게 배정되고, 내 받은 함·알림으로 받아 결정 | 역할 단위 배정·역할로 거르는 할 일 API(`instance_mode.py:715-719`), notifications는 저장만 | vue3 `/my-inbox`·`/notifications`·`/work-assignment`, `todolist.user_id` / L405-406·L413·L417-426 |
+| 6 | 모니터링(F3) | **지금 일하는 AI 일꾼** — 경보 하나에 일꾼이 떠서 어떤 작업을 잡고 내려가는지 | `GET /api/agents/status`(`instance_mode.py:465-479,689`)는 있고 포털 호출 0(처리 건 배너는 진행 중·내 차례·질문 3칸, `instances.js:61-74`; 15회차 문서는 있다고 적음 — 정정 필요) | vue3 에이전트 모니터 / L202-214·L434-435 |
+| 7 | 모니터링(F3) | **도구 호출 콘솔 로그** — AI가 어떤 도구를 언제 무엇으로 불렀고 무엇을 받았는지 터미널에 한 줄씩(랩업 관찰 창) | 도구 호출 이벤트·실시간 스트림·포털 표시는 있고 워커 콘솔에는 없음(`worker/events.py:18`, `/api/events/stream`) | cliagents 이벤트 / 랩업 계약 CLAUDE.md §4 |
+| 8 | 검증(회의) | **AI 판단 채점** — 같은 경보를 여러 번 던져 진단·카드를 정답표로 채점, 지식을 고치기 전·후 점수 비교 | 규칙·업무 질문 정답 대조 검사기(`scripts/probe_rule_questions.py`·`probe_business_questions.py`), 문서별 골든 질문 — 경보 판단 정답표·반복·전후 비교 없음 | ontology-studio 골든 퀘스천 보고 / L136-138 "온톨로지가 잘 구성됐는지 체크하는 방법" |
 
 ### 2. 권장 — ProcessGPT·온톨로지 서비스에 있고 한 바퀴를 넓혀 준다 (4)
 
 | # | 기능 | HYD 지금 (실물) | 원본 · 회의 근거 |
 |---|---|---|---|
-| 9 | **데이터 패브릭** — 여러 DB(업무 DB·시계열 DB)를 한 데이터 소스 카탈로그에 등록하고, 에이전트가 표·컬럼·샘플을 보고 온톨로지 클래스를 표에 묶어(virtual class) 값을 DB에서 가져옴 | 업무 DB 한 종의 카탈로그 조회(enterprise MCP `describe_catalog`), 입력 데이터 → 원천 링크(InputData SOURCED_FROM); 여러 종 DB 카탈로그·클래스-표 바인딩 없음; 12회차는 세 서버를 따로 조회 | ProcessGPT 등록 서비스 ontology-studio → 데이터 패브릭(`tools.py:1014` `datasource_list`, `DATAFABRIC_BASE_URL`; `skills/ontology-build/references/datasource-binding.md`), ontologic `data-fabric`(MindsDB) / L63-67·L438-447 — HYD §2 "후반 설명만"은 이 결정으로 바뀜(사용자 10-08) |
-| 10 | **What-if** — 온톨로지의 영향 관계 위에서 환율·부품값·조치를 바꿔 몇 주 뒤 가동률·생산량·비용·이익이 어떻게 엇갈리는지 계산 | 관계 부호만(`it/neo4j/v2/instances.cypher:552-564`), 포털은 규칙 입력 4개 덮어써 순위 다시 보기(`enterprise.js:318-328`), 유온 24시간 예측 | ontology-studio → domain-layer What-if(`causal_client.py:1-12`, `WHATIF_API_URL`), ontologic `what-if-simulator` / L374-378·L386-413 — 아래 "다음 할 일" ②와 같음 |
-| 11 | **KPI 실적** — 처리 결과로 KPI 실제 값을 계산해 목표 대비를 보고, 못 미친 지표에서 업무·조치로 거슬러 오름. ProcessGPT 온톨로지 Strategy 층 | 지표에 목표값·식 문자열만(`instances.cypher:29-56`), 계산 코드 0 | vue3 `/analytics/kpi`·`/strategy-board`, process-gpt-strategy / L5-10 |
-| 12 | **기록 → 개선 순환** — 쌓인 기록에서 AI가 규칙·스킬 개선안을 내고 사람이 승인해야 다음 판단이 바뀜 | 선례는 승인 없이 순위에 자동 반영(`cards.py:133,188`), 사람이 손으로 고치는 API(순위 정책·BSC 조건)는 있음 | vue3 `/my-feedback`·`/proposals`, process-gpt-agent-feedback / L7-8·L448 |
+| 9 | **데이터 패브릭**(F11) — 여러 DB(업무 DB·시계열 DB)를 한 데이터 소스 카탈로그에 등록하고, 에이전트가 표·컬럼·샘플을 보고 온톨로지 클래스를 표에 묶어(virtual class) 값을 DB에서 가져옴 | 업무 DB 한 종의 카탈로그 조회(enterprise MCP `describe_catalog`), 입력 데이터 → 원천 링크(InputData SOURCED_FROM); 여러 종 DB 카탈로그·클래스-표 바인딩 없음; 12회차는 세 서버를 따로 조회 | 이웃 플랫폼 ontologic: data-fabric(MindsDB) → Neo4j 카탈로그 → ontology-studio가 표에 클래스 바인딩(`tools.py:1014` `datasource_list`, `DATAFABRIC_BASE_URL`; `skills/ontology-build/references/datasource-binding.md`) → text2sql `direct-sql`로 실데이터. **ProcessGPT 본체(vue3·엔진·배포)는 ontologic을 부르지 않고(0건), ontologic 감시 스케줄러가 ProcessGPT 프로세스를 MCP로 시작**(robo-data-agent-scheduler `profiles.py:900,948`) — ProcessGPT 한 바퀴의 필수 고리가 아니라 회의가 말한 다음 확장 / L63-67·L438-447 — HANDOFF §2 "후반 설명만"과 다름(구현 시 결정) |
+| 10 | **What-if**(F11) — 온톨로지의 영향 관계 위에서 환율·부품값·조치를 바꿔 몇 주 뒤 가동률·생산량·비용·이익이 어떻게 엇갈리는지 계산 | 관계 부호만(`it/neo4j/v2/instances.cypher:552-564`), 포털은 규칙 입력 4개 덮어써 순위 다시 보기(`enterprise.js:318-328`), 유온 24시간 예측 | ontologic domain-layer What-if(ontology-studio `causal_client.py:1-12` `WHATIF_API_URL`·`/whatif/analyze-matrix`), ontologic `what-if-simulator` — ProcessGPT 본체 호출 0 / L374-378·L386-413 — 아래 "다음 할 일" ②와 같음 |
+| 11 | **KPI 실적**(F10) — 처리 결과로 KPI 실제 값을 계산해 목표 대비를 보고, 못 미친 지표에서 업무·조치로 거슬러 오름. ProcessGPT 온톨로지 Strategy 층 | 지표에 목표값·식 문자열만(`instances.cypher:29-56`), 계산 코드 0 | vue3 `/analytics/kpi`·`/strategy-board`, process-gpt-strategy / L5-10 |
+| 12 | **기록 → 개선 순환**(F8) — 쌓인 기록에서 AI가 규칙·스킬 개선안을 내고 사람이 승인해야 다음 판단이 바뀜 | 선례는 승인 없이 순위에 자동 반영(`cards.py:133,188`), 사람이 손으로 고치는 API(순위 정책·BSC 조건)는 있음 | vue3 `/my-feedback`·`/proposals`, process-gpt-agent-feedback / L7-8·L448 |
 
 ### 3. 외부 도구로 대신 (HYD에 만들지 않음)
 
