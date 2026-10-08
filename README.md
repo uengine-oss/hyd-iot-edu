@@ -15,7 +15,7 @@ L9의 프로세스 엔진은 ProcessGPT 제품을 설치하지 않고 제품의 
 cp .env.example .env                 # 최초 1회. 강의 배포본은 .env에 PROCESS_MODE=instance, ENTERPRISE_BACKEND=supabase, PROCESS_MEM_LIMIT=768m (RUNBOOK §0)
 ( cd it/supabase && supabase start ) # 업무 DB · 프로세스 저장소 (instance 모드에 필요)
 docker compose up -d --build          # 기본 7 프로필 (.env의 COMPOSE_PROFILES)
-docker compose --profile cliagents up -d enterprise-mcp dmn-mcp   # 에이전트용 MCP 서버 2개
+docker compose up -d enterprise-mcp dmn-mcp   # 에이전트용 MCP 서버 2개
 bash scripts/run_worker_host.sh &     # 호스트 워커(Claude Code, 구독 로그인) — 실제 에이전트가 작업을 집게 하려면 process·agent에 AGENT_BRIDGE=off
 ```
 

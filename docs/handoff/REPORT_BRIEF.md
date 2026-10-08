@@ -8,7 +8,7 @@
 
 ## 0. 제작 순서(새 세션)
 
-1. 재부팅 뒤 환경: Docker Desktop → `cd it/supabase && supabase start` → `docker compose up -d`(.env의 COMPOSE_PROFILES) → `docker compose --profile cliagents up -d enterprise-mcp dmn-mcp` → `docker compose ps`에서 process·agent·enterprise-sim·detector·plant-sim healthy 확인 → 워커 `bash scripts/run_worker_host.sh`(두 번째는 `CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098`). 호스트 psycopg는 `.venv314/Scripts/python -c "import psycopg"`로 확인하고, 재부팅 뒤에도 차단이면 `. scripts/host_libpq.sh`를 먼저 source(결정 96).
+1. 재부팅 뒤 환경: Docker Desktop → `cd it/supabase && supabase start` → `docker compose up -d`(.env의 COMPOSE_PROFILES) → `docker compose up -d enterprise-mcp dmn-mcp` → `docker compose ps`에서 process·agent·enterprise-sim·detector·plant-sim healthy 확인 → 워커 `bash scripts/run_worker_host.sh`(두 번째는 `CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098`). 호스트 psycopg는 `.venv314/Scripts/python -c "import psycopg"`로 확인하고, 재부팅 뒤에도 차단이면 `. scripts/host_libpq.sh`를 먼저 source(결정 96).
 2. 캡처는 이미 있다: `.evidence/reaudit/a109-report-ui/<tab>-1440.png`(10탭, 10-07 18:30). 추가로 찍을 것은 §2. 찍는 도구는 `scripts/ui_capture_all_tabs.py`(Playwright, 포털 8088).
 3. 아래 §1의 절 순서대로 MD를 쓰고, 그림은 Pillow로 1,200px·JPEG 80으로 줄여 base64로 HTML에 내장한다(한 장 2 MB 안팎 목표). 표의 수치는 §3 출처 표에서만 가져온다. 없는 수치는 쓰지 않는다.
 4. 완성 뒤 HTML을 브라우저로 열어 잘림·겹침을 눈으로 보고, HANDOFF §9에 A110으로 기록·커밋.

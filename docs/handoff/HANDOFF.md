@@ -1072,7 +1072,7 @@ A033 추가: 처리owner/lease/token·설비별단일claim·지연CLEAR/ACK·실
 - [x] 레거시 회귀 `PROCESS_MODE=legacy scenario_test.py --quick` **46/46 ALL PASS**(170 s), 인스턴스 모드 복귀.
 - [x] 포털 캡처(`시스템교재/img/hyd/capture_c4_{scenario,instances,ontology,incidents}.png`, 1440×2600): 결함 시뮬레이션(버튼 3+복구·PS1/FS1/VS1·운전 펌프 B(예비)·현재 상태 문장), 인스턴스 탭(배너·에이전트 현황·인스턴스 6·8/8 단계 분기 묶음·변수·작업표·events), 온톨로지 DDL 섹션, 인시던트 목록(추가 확인 필요·종결·자연 회복). 첫 캡처가 빈 화면이었던 것은 process 재시작과 겹친 타이밍(코드 결함 아님, 재캡처로 확인).
 - [~] D4 워커(이 PC 로그인 Claude Code): `run_worker_host.sh` Windows 수정(PYTHONPATH ';'·`pwd -W`). 첫 실행 **결함** — cliagents 가 `shutil.which` 로 찾아 놓고 argv 엔 맨 이름 `claude` 를 넣어 CreateProcess 가 `claude.cmd` 를 못 찾음(WinError 2) → `runner._resolve_provider` 가 전체 경로를 provider.executable 에 넣음(test_worker +1, 원래 코드의 `Surface` 미임포트도 수정). 단위 **259**. process 를 `AGENT_BRIDGE=off WORKER_URL=http://host.docker.internal:8097` 로 재기동, `scenario_instance_test.py --worker` 실행 중 — 결과는 아래 줄에.
-- [~] D4 결과(10-04 01:40, Claude Code 워커): 옛 워커 프로세스가 TaskStop 뒤에도 살아 있어(exec 된 python 4개) 패치 전 코드로 작업을 집어 WinError 2 를 반복 → 전부 종료 후 새 워커 1개. 새 워커의 첫 실행은 Claude Code 가 **실제로 돌았고**(WinError 해결) "결과가 요구된 출력 형식과 맞지 않음: 에이전트가 결과를 반환하지 않음"으로 실패. 작업 폴더(.evidence/workspace/hyd/<id>: .mcp.json·CLAUDE.md·context/)에서 수동 헤드리스 실행은 정상("OK", stream-json). 발견: ① enterprise-mcp·dmn-mcp 컨테이너가 프로필 cliagents 에만 묶여 **떠 있지 않음**(빈 응답의 유력 원인, `docker compose --profile cliagents up -d enterprise-mcp dmn-mcp` 로 올리면 됨) ② Claude Code 응답에 **플랜 7일 사용률 97 %** 경고 → 추가 실행은 사용자 결정(DECISIONS 11). 워커·시험 중지, 실패 인스턴스(…8f68c13e)는 기록으로 남김. 다음: 사용자 허락 시 MCP 2개 기동 → `--worker` 1회.
+- [~] D4 결과(10-04 01:40, Claude Code 워커): 옛 워커 프로세스가 TaskStop 뒤에도 살아 있어(exec 된 python 4개) 패치 전 코드로 작업을 집어 WinError 2 를 반복 → 전부 종료 후 새 워커 1개. 새 워커의 첫 실행은 Claude Code 가 **실제로 돌았고**(WinError 해결) "결과가 요구된 출력 형식과 맞지 않음: 에이전트가 결과를 반환하지 않음"으로 실패. 작업 폴더(.evidence/workspace/hyd/<id>: .mcp.json·CLAUDE.md·context/)에서 수동 헤드리스 실행은 정상("OK", stream-json). 발견: ① enterprise-mcp·dmn-mcp 컨테이너가 프로필 cliagents 에만 묶여 **떠 있지 않음**(빈 응답의 유력 원인, `docker compose up -d enterprise-mcp dmn-mcp` 로 올리면 됨) ② Claude Code 응답에 **플랜 7일 사용률 97 %** 경고 → 추가 실행은 사용자 결정(DECISIONS 11). 워커·시험 중지, 실패 인스턴스(…8f68c13e)는 기록으로 남김. 다음: 사용자 허락 시 MCP 2개 기동 → `--worker` 1회.
 
 **F. D4 를 Codex 워커로 — Codex 세션이 이어서 할 일 (2026-10-04 02:00, 발화 26~28)**
 
@@ -1082,7 +1082,7 @@ A033 추가: 처리owner/lease/token·설비별단일claim·지연CLEAR/ACK·실
 - cliagents codex 프로바이더(`.venv314/Lib/site-packages/cliagents/providers/codex.py`): argv = `codex exec [resume <session>] --json --skip-git-repo-check --sandbox <mode> --cd <workdir> [--model …] <extra_args> <prompt>`. permission → `_SANDBOX_MODES` 매핑이 있다. MCP 서버는 **`$CODEX_HOME/config.toml` 의 `[mcp_servers.<name>]`**(stdio: command/args/env, HTTP: url)이며 프로바이더의 `install_bridge(..., mcp_servers=[McpServer…])` 가 codex CLI 로 멱등 등록한다(다른 섹션 보존). `codex_home(env)` 는 `CODEX_HOME` 없으면 `~/.codex`. 사용자의 `~/.codex/config.toml` 에는 이미 `[mcp_servers.openaiDeveloperDocs]`·`[mcp_servers.node_repl]` 가 있다 — **지우지 말 것**.
 - 워커 브리지(`it/agent-worker/worker/bridge.py`)는 Claude 전용(`.mcp.json` 쓰기, `CLAUDE_CONFIG_DIR` 격리). codex 분기가 없다. `runner.py:89` 의 `--allowedTools` extra_args 는 Claude 전용이라 codex 에 넘기면 argv 오류.
 - 워커는 `CLIAGENTS_DEFAULT_CLI` 로 프로바이더를 고른다(`settings.cli_agent`). `run_worker_host.sh` 는 Windows 수정(PYTHONPATH ';'·pwd -W) 끝.
-- enterprise-mcp·dmn-mcp 컨테이너는 compose 프로필 `cliagents` 에만 묶여 **지금 떠 있지 않다**: `docker compose --profile cliagents up -d enterprise-mcp dmn-mcp`(agent-worker 컨테이너는 올리지 말 것 — API 키 경로). 호스트 워커는 MCP_HOST_REWRITE 로 127.0.0.1:8199·8198·7687 을 쓴다.
+- enterprise-mcp·dmn-mcp 컨테이너는 compose 프로필 `cliagents` 에만 묶여 **지금 떠 있지 않다**: `docker compose up -d enterprise-mcp dmn-mcp`(agent-worker 컨테이너는 올리지 말 것 — API 키 경로). 호스트 워커는 MCP_HOST_REWRITE 로 127.0.0.1:8199·8198·7687 을 쓴다.
 - TaskStop/Ctrl-C 로 워커를 멈춰도 exec 된 python 이 살아남는다. 반드시 PowerShell `Get-CimInstance Win32_Process | ? CommandLine -like '*worker.main*' | Stop-Process -Force` 로 확인·종료.
 - 로그는 cp949 섞임: `open(..., 'rb').read().decode('utf-8', errors='replace')` 로 읽는다.
 
@@ -1134,7 +1134,7 @@ D:\work\study\hyd-iot-edu 작업을 이어가세요. 목표는 docs/handoff/GOAL
 
 설계서 v3와 IoT·SCADA 층이 다른 것(Flink·EdgeX·Kafka Connect·Alertmanager가 Python 대역)은 사용자가 10-08 "현 구조 유지"로 결정했습니다(DECISIONS 106). 다시 제안하지 마세요.
 
-환경: Docker Desktop → cd it/supabase && supabase start → docker compose up -d → docker compose --profile cliagents up -d enterprise-mcp dmn-mcp. 호스트 psycopg는 . scripts/host_libpq.sh. 워커는 bash scripts/run_worker_host.sh(둘째 CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098), 종료 powershell -File scripts/stop_worker_host.ps1. process healthz에 consumer_dead가 보이면 docker restart hyd-iot-edu-process-1. 시험 잔재는 scripts/cleanup_residue_instances.py --before <ISO> --apply. 아웃박스 정리는 scripts/prune_projection_outbox.py --older-than-days 1 --apply(회귀 중 금지).
+환경: Docker Desktop → cd it/supabase && supabase start → docker compose up -d → docker compose up -d enterprise-mcp dmn-mcp. 호스트 psycopg는 . scripts/host_libpq.sh. 워커는 bash scripts/run_worker_host.sh(둘째 CONSUMER_ID=agent-worker:host2 HEALTH_PORT=8098), 종료 powershell -File scripts/stop_worker_host.ps1. process healthz에 consumer_dead가 보이면 docker restart hyd-iot-edu-process-1. 시험 잔재는 scripts/cleanup_residue_instances.py --before <ISO> --apply. 아웃박스 정리는 scripts/prune_projection_outbox.py --older-than-days 1 --apply(회귀 중 금지).
 
 한국어로 답하고, 단계마다 HANDOFF §9에 근거를 갱신하며 커밋합니다. 막히면 땜빵 우회 대신 멈추고 보고하세요.
 ```
