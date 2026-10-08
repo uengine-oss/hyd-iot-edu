@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="mcp.css?v=20261008-u3">
 <link rel="stylesheet" href="shell.css?v=20261008-u7">
 <link rel="stylesheet" href="kpi.css?v=20261008-a8">
+<link rel="stylesheet" href="flows.css?v=20261008-b3">
 <link rel="stylesheet" href="compare.css?v=20261008-a10">
 </head>
 <body>
@@ -34,6 +35,7 @@
     <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
     <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">손익 · What-if</button>
     <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
+    <button data-tab="flows" data-icon="process">흐름 가져오기</button>
     <div class="navgroup" data-term="nav.group.knowledge">지식</div>
     <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
     <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
@@ -332,6 +334,10 @@
     <div class="page-head"><h1>데이터 연결</h1></div>
     <div class="shell-mount" id="fabricView"></div>
   </section>
+  <section class="view" id="view-flows">
+    <div class="page-head"><h1>흐름 가져오기</h1></div>
+    <div class="shell-mount" id="flowsView"></div>
+  </section>
 </main>
   <nav class="page-navigation" aria-label="화면 순서대로 이동">
     <button id="pagePrev" class="page-direction" type="button"></button>
@@ -369,6 +375,7 @@
 <script src="kpi.js?v=20261008-b5"></script>
 <script src="ask.js?v=20261008-b5"></script>
 <script src="compare.js?v=20261008-a10"></script>
+<script src="flows.js?v=20261008-b3"></script>
 <script src="shell.js?v=20261008-u7"></script>
 </body>
 </html>

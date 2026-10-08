@@ -21,7 +21,7 @@
 
 `processDefinitionId`, `processDefinitionName`, `version`, `activities`, `events`, `gateways`, `sequences`, `roles`, `data`, `forms`를 사용한다. 폼은 `forms.<폼ID>.fields_json`에 넣고 활동의 `tool`을 `formHandler:<폼ID>`로 지정한다. 폼의 key와 활동의 outputData가 일치해야 한다. 지원 필드는 text/textarea/number/integer/boolean/select/object/array이며 required 기본값은true다. object/array는 화면에서 JSON으로 입력한다. 동적 HTML은 실행하지 않는다.
 
-현재 공개 등록은 사람 작업(userTask/manualTask), CLI 에이전트(ProcessGPT와 같은 모양: userTask + agentMode DRAFT 또는 COMPLETE, orchestration cliagents — 생략하면 cliagents; 이전 모양 businessRuleTask + agentMode는 등록 때 이 모양으로 바뀐다), 등록된 서비스 도구, 배타 게이트웨이, 시작/종료/경계 타이머를 검사한다. 서비스 도구는 incident:command, incident:reobserve, enterprise:WO_CREATE이며 실제 연결·필요 입력이 있어야 실행된다. 반복·병렬 합류·subProcess/callActivity는 공개 경로 통합 검증 전이므로 등록을 거절한다. 모든 BPMN을 지원한다는 뜻이 아니다.
+현재 공개 등록은 사람 작업(userTask/manualTask), CLI 에이전트(ProcessGPT와 같은 모양: userTask + agentMode DRAFT 또는 COMPLETE, orchestration cliagents — 생략하면 cliagents; 이전 모양 businessRuleTask + agentMode는 등록 때 이 모양으로 바뀐다), 등록된 서비스 도구, 배타 게이트웨이, 시작/종료/경계 타이머를 검사한다. 서비스 도구는 incident:command, incident:reobserve, enterprise:WO_CREATE이며 실제 연결·필요 입력이 있어야 실행된다. 반복·병렬 합류·subProcess/callActivity는 공개 경로 통합 검증 전이므로 등록을 거절한다. 모든 BPMN을 지원한다는 뜻이 아니다. 예외(B3): `loopPolicy: "guarded"`를 적은 정의(포털 **흐름 가져오기**가 bpmn.io 그림의 되돌아가는 선을 살릴 때 적는다)는 반복을 받되, 반복마다 빠져나갈 배타 게이트웨이가 있고 병렬 게이트웨이가 없어야 한다. 가져오기 경로·사전 검사는 `docs/handoff/verification/2026-10-08/b3-bpmn.md`.
 
 활동의 `agentConfig.permission`은 `workspace_write`(기본)·`command_exec`·`read_only`다. `read_only`는 Claude Code에서 plan 모드가 되어 MCP 도구 호출이 전부 거절되므로(14회차 1차 실패), 워커는 Claude Code일 때 `read_only`를 `workspace_write`로 바꾸고 경고 로그를 남긴다(A129). 조회만 시키려면 권한이 아니라 도구 목록(`tools`)으로 제한한다.
 

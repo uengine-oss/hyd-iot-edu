@@ -406,7 +406,7 @@ def reconcile_legacy_decisions() -> None:
         if not inst or inst['status'] != 'RUNNING' or inst.get('is_deleted') or int(inst.get('rework_generation') or 0) > 0:
             continue
         rows = _runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'], limit=None)
-        if not any(w['activity_id'] in {'task:diagnose','task:candidates','task:compliance','task:rank'}
+        if not any(_legacy_key(w) in {'task:diagnose','task:candidates','task:compliance','task:rank'}
                    and w['status'] in {'IN_PROGRESS','SUBMITTED'} for w in rows):
             continue
         started = _runtime.repo.agent_task_origins(inst['proc_inst_id'], _runtime.tenant_id)
@@ -432,7 +432,7 @@ def _bridge_legacy_agent(decision: dict) -> None:
     if int(inst.get('rework_generation') or 0) > 0 or (decision.get('origin') or {}).get('process_scope'):
         return  # old deterministic results cannot populate a new generation or a claimed CLI run
     rows=_runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
-    if any(w['activity_id']=='task:diagnose' and w['status'] in {'PENDING','IN_PROGRESS'}
+    if any(_legacy_key(w)=='task:diagnose' and w['status'] in {'PENDING','IN_PROGRESS'}
            and (w.get('feedback') or {}).get('reassessment') for w in rows):
         return  # a prior decision cannot substitute for the requested fresh assessment
     outputs = _legacy_outputs(decision, _ctx.incidents.get(inc_id))
@@ -443,14 +443,23 @@ def _bridge_legacy_agent(decision: dict) -> None:
             return
         _event(job_id, wi, inst, "task_started", {"goal": wi.get("activity_name"), "name": "legacy agent", "role": "L8 판단 파이프라인 (LLM 워커 없음)",
                                                    "task_description": (wi.get("query") or "")[:200]})
-        evidence = _legacy_evidence(decision, _ctx.incidents.get(inc_id)).get(wi["activity_id"])
+        evidence = _legacy_evidence(decision, _ctx.incidents.get(inc_id)).get(_legacy_key(wi))
         if evidence:                                          # U1: how the built-in pipeline judged, as one row of this task's trace
             _event(job_id, wi, inst, "task_working", evidence)
-        if not _runtime.repo.save_task_result(wi["id"], outputs.get(wi["activity_id"], {}), final=True,
+        if not _runtime.repo.save_task_result(wi["id"], outputs.get(_legacy_key(wi), {}), final=True,
                                               expected_consumer='legacy-agent'):
             return
-        _event(job_id, wi, inst, "task_completed", {"output_keys": sorted(outputs.get(wi["activity_id"], {}))})
+        _event(job_id, wi, inst, "task_completed", {"output_keys": sorted(outputs.get(_legacy_key(wi), {}))})
         _runtime.poll_once()
+
+
+def _legacy_key(wi: dict) -> str:
+    """B3: a flow imported from bpmn.io keeps its drawn task ids, while its scenario agent parts carry the base activity's
+    contract (same tool · form). The built-in pipeline's outputs are keyed by the base activity, so match by that tool."""
+    aid = wi.get('activity_id')
+    if _runtime is None or aid in _runtime.defn.activities:
+        return aid
+    return next((a['id'] for a in _runtime.defn.activities.values() if wi.get('tool') and a.get('tool') == wi.get('tool')), aid)
 
 
 def _claim_own(proc_inst_id: str) -> dict | None:
