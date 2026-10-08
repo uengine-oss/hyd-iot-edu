@@ -172,9 +172,10 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
 
 
 def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause: dict, origin: dict | None = None,
-           overrides: dict | None = None, do_submit: bool = True) -> dict:
+           overrides: dict | None = None, do_submit: bool = True, capture: dict | None = None) -> dict:
     """cause: the top ranked cause of the guide card ({id, name, failureModeId, failureMode}). overrides: facts set by a person
-    (portal 'what if' — e.g. plc_mode REMOTE_MANUAL) to watch the DMN rules react."""
+    (portal 'what if' — e.g. plc_mode REMOTE_MANUAL) to watch the DMN rules react. capture: A7 what-if — receives the exact
+    inputs cards.evaluate used, so trials re-rank the same snapshot (read-only)."""
     if overrides and do_submit:
         raise ValueError('가정 facts는 읽기 전용 evaluate_cards에서만 사용할 수 있습니다')
     from . import forecasting
@@ -208,7 +209,11 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         step('forecast', forecast_contexts, '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
         tradeoffs = kg.tradeoffs(cand_ids)
         precedents = kg.precedents(cause.get("failureModeId") or "")
-        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, kg.suppliers(), forecast_contexts)
+        suppliers = kg.suppliers()
+        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, suppliers, forecast_contexts)
+        if capture is not None:
+            capture.update(dmn=dmn, skills=skills, facts=dict(facts), forecasts=forecasts, tradeoffs=tradeoffs, precedents=precedents,
+                           suppliers=suppliers, forecast_contexts=forecast_contexts)
         step("candidates", [{"rule": t["rule"], "when": t["when"], "fired": t["fired"], "unknown": t["unknown"]}
                             for t in result["trace"] if t["decision"] == "dec:action-candidates"],
              "dec:action-candidates: 고장 유형 · PLC 상태 규칙 → 후보 SOP 스킬 (원인 한정 스킬은 원인으로 거름)")

@@ -1,5 +1,6 @@
 """Bounded, explicitly authored arithmetic policies; never Python eval or prose execution."""
 import ast
+import functools
 import hashlib
 import json
 import math
@@ -44,6 +45,12 @@ def truth(value):
 def compile_expression(text, names):
     if not isinstance(text, str) or not 1 <= len(text) <= 2048:
         raise ValueError('ranking expression must contain 1..2048 characters')
+    return _compile(text, frozenset(names))
+
+
+@functools.lru_cache(maxsize=2048)
+def _compile(text, names):
+    # A7: what-if boundary search re-ranks the same policy hundreds of times; the checked tree is read-only, so cache it.
     try:
         tree = ast.parse(text, mode='eval')
     except (SyntaxError, RecursionError) as exc:

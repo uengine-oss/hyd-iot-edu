@@ -12,7 +12,7 @@ from typing import Callable
 
 READS = {
     "mes_orders": ("ent.mes_orders", ("asset",)), "erp_contract": ("ent.erp_contract", ("asset",)), "erp_inventory": ("ent.erp_inventory", ("asset",)),
-    "cmms_history": ("ent.cmms_history", ("asset",)), "qms_lots": ("ent.qms_lots", ("asset",)), "scm_suppliers": ("ent.scm_suppliers", ("part",)),
+    "cmms_history": ("ent.cmms_history", ("asset",)), "cmms_tasks": ("ent.cmms_tasks", ("asset",)), "qms_lots": ("ent.qms_lots", ("asset",)), "scm_suppliers": ("ent.scm_suppliers", ("part",)),
     "ems_demand": ("ent.ems_demand", ()),
 }
 WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions")
