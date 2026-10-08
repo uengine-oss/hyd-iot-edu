@@ -117,11 +117,12 @@ def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         validate_proposal(engine.variables(inst).get('manual_source'), (output or {}).get('proposal'))
     else:
-        from . import manual_golden              # A118: the per-document golden-question report shares the correction loop
+        from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)
+        legacy_meaning.validate_result(form, inst, output)
 
 
-CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1')
+CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1')
 
 
 REVIEW_FEEDBACK_MAX = 20

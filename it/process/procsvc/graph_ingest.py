@@ -18,6 +18,9 @@ SYSTEM_FIELDS = ('name', 'zone', 'source_id')
 JOURNAL_FIELDS = ('_ingest_base', '_ingest_history', '_ingest_batches', '_ingest_created')
 # A087: observations the DDL source sync records on a binding — system state, not someone's edit of the input
 SYNC_FIELDS = ('sourceState', 'sourceLiveType', 'sourceLiveComment', 'sourceBaseComment', 'sourceCheckedAt')
+# A9: the journal owns the input's outgoing SOURCED_FROM and (when a person approved a meaning) REPRESENTS. An entry without
+# 'rel' is SOURCED_FROM, so histories written before A9 compare equal.
+OWNED_RELS = ('SOURCED_FROM', 'REPRESENTS')
 
 
 class Conflict(ValueError):
@@ -50,9 +53,14 @@ def _read(tx, label, nid):
     props = dict(row['p'])
     sources = []
     if label == 'InputData':
-        sources = [dict(r) for r in tx.run(
-            'MATCH (:InputData {id:$id})-[r:SOURCED_FROM]->(s) '
-            'RETURN s.id AS id, labels(s) AS labels, properties(r) AS props ORDER BY s.id', id=nid)]
+        sources = []
+        for r in tx.run('MATCH (:InputData {id:$id})-[r:SOURCED_FROM|REPRESENTS]->(s) '
+                        'RETURN s.id AS id, labels(s) AS labels, properties(r) AS props, type(r) AS rel '
+                        'ORDER BY rel DESC, id', id=nid):
+            entry = dict(r)
+            if entry.pop('rel') == 'REPRESENTS':
+                entry['rel'] = 'REPRESENTS'
+            sources.append(entry)
     fields = INPUT_FIELDS if label == 'InputData' else SYSTEM_FIELDS
     return props, {'props': {k: props.get(k) for k in fields}, 'sources': sources}
 
@@ -60,18 +68,29 @@ def _read(tx, label, nid):
 def _apply(tx, label, nid, state):
     tx.run(f'MATCH (n:{label} {{id:$id}}) SET n += $props', id=nid, props=state['props']).consume()
     if label == 'InputData':
-        tx.run('MATCH (:InputData {id:$id})-[r:SOURCED_FROM]->() DELETE r', id=nid).consume()
+        tx.run('MATCH (:InputData {id:$id})-[r:SOURCED_FROM|REPRESENTS]->() DELETE r', id=nid).consume()
         for source in state['sources']:
+            rel = source.get('rel', 'SOURCED_FROM')
+            if rel not in OWNED_RELS:
+                raise Conflict('복원할 수 없는 관계 종류입니다')
             # Source identity includes its label; unrelated nodes can share an id.
             labels = source['labels']
             if not labels or any(not l.replace('_', '').isalnum() for l in labels):
                 raise Conflict('출처 레이블을 복원할 수 없습니다')
             pattern = ':'.join(labels)
             row = tx.run(f'MATCH (n:InputData {{id:$id}}), (s:{pattern} {{id:$source}}) '
-                         'MERGE (n)-[r:SOURCED_FROM]->(s) SET r = $props RETURN count(r) AS n',
+                         f'MERGE (n)-[r:{rel}]->(s) SET r = $props RETURN count(r) AS n',
                          id=nid, source=source['id'], props=source['props']).single()
             if row['n'] != 1:
                 raise Conflict('원래 출처가 삭제되거나 중복되어 복원할 수 없습니다')
+
+
+def _represent_labels(tx, target):
+    """A9: the REPRESENTS target must be exactly one StateVariable or Measure of the graph."""
+    rows = list(tx.run('MATCH (x {id:$id}) WHERE x:StateVariable OR x:Measure RETURN labels(x) AS labels', id=target))
+    if len(rows) != 1:
+        raise Conflict(f'연결할 상태 변수·성과 지표가 그래프에 없거나 여러 개입니다: {target}')
+    return list(rows[0]['labels'])
 
 
 def _history(props, current):
@@ -102,6 +121,9 @@ def _claim(tx, label, item, batch, at):
         state = {'props': {k: values.get(k) for k in fields}, 'sources': []}
         if label == 'InputData':
             state['sources'] = [{'id': item['system'], 'labels': ['System'], 'props': {}}]
+            if item.get('represents'):
+                state['sources'].append({'id': item['represents'], 'labels': _represent_labels(tx, item['represents']),
+                                         'props': {}, 'rel': 'REPRESENTS'})
     history.append({'batch': batch, 'state': state})
     _apply(tx, label, nid, state)
     if label == 'InputData':
@@ -176,13 +198,13 @@ def clear(session, batch):
                     externally_extended = bool(foreign_props or set(labels) - {label})
                     if label == 'InputData':
                         refs = tx.run('MATCH (n:InputData {id:$id})-[r]-() '
-                                      'WHERE NOT (type(r)="SOURCED_FROM" AND startNode(r)=n) '
+                                      'WHERE NOT (type(r) IN ["SOURCED_FROM","REPRESENTS"] AND startNode(r)=n) '
                                       'RETURN count(r) AS n', id=nid).single()['n']
                         if refs:
                             raise Conflict('규칙/작업 등이 이 입력을 사용 중입니다. 참조를 먼저 해제하세요')
                         if externally_extended:
                             raise Conflict('다른 작업이 이 입력의 속성/유형을 추가했습니다. 해당 변경을 먼저 검토하세요')
-                        tx.run('MATCH (:InputData {id:$id})-[r:SOURCED_FROM]->() DELETE r', id=nid).consume()
+                        tx.run('MATCH (:InputData {id:$id})-[r:SOURCED_FROM|REPRESENTS]->() DELETE r', id=nid).consume()
                     degree = tx.run(f'MATCH (n:{label} {{id:$id}}) OPTIONAL MATCH (n)-[r]-() '
                                     'RETURN count(r) AS n', id=nid).single()['n']
                     if not degree and not externally_extended:
