@@ -276,7 +276,7 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
         src = (ROOT / path).read_text(encoding="utf-8")
         assert "@mcp.tool\n" not in src, f"{path}: 표시 없는 도구가 있습니다"
         marks.update(dict((name, mark) for mark, name in re.findall(r"@mcp\.tool\(annotations=(READ|WRITE)\)\ndef (\w+)", src)))
-    assert len(marks) == 24 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]
+    assert len(marks) == 25 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]   # A11: dmn fabric_query (read) added → 15 + 10
     for name, mark in marks.items():
         ok, _ = mcp_check.read_only_verdict({"name": name, "annotations": {"readOnlyHint": mark == "READ"}})
         assert ok is (mark == "READ"), name

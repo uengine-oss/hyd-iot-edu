@@ -45,7 +45,7 @@ PART = {
  "cons":    (21, "장부 열람 Console", "선택(tools)", "", "it", "opt", 1180, 905, 230, 60),
  "supa":    (22, "업무 기록부 Supabase", "PostgreSQL 54322 · 따로 기동", "인스턴스 · Task · 기업 DB(ent)", "inst", "inst", 340, 1790, 500, 92),
  "entmcp":  (23, "기업 DB 창구", "enterprise-mcp · /mcp 8199", "읽기 도구 10개", "inst", "inst", 900, 1625, 230, 90),
- "dmnmcp":  (24, "판단 엔진 창구", "dmn-mcp · /mcp 8198", "도구 14개 · 쓰기는 1개", "inst", "inst", 40, 1625, 228, 100),
+ "dmnmcp":  (24, "판단 엔진 창구", "dmn-mcp · /mcp 8198", "도구 15개 · 쓰기는 1개", "inst", "inst", 40, 1625, 228, 100),
  "worker":  (25, "AI 직원 agent-worker", "Claude Code CLI · 8097", "Task를 집어 수행 · 결과 저장", "inst", "inst", 340, 1615, 500, 130),
  "kgmcp":   (26, "Neo4j MCP", "mcp-neo4j-cypher · 읽기 전용", "", "inst", "inst", 600, 1683, 225, 52),
 }

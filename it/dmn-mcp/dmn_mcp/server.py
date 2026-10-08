@@ -122,7 +122,7 @@ def tradeoffs(skill_ids: Annotated[list[str], Field(description="스킬 id 목�
     return enveloped(lambda: tools.tradeoffs(skill_ids))()
 
 
-@mcp.tool
+@mcp.tool(annotations=READ)
 def fabric_query(asset: Asset,
                  query: Annotated[str, Field(description="asset(설비 하나로 두 원천의 연결된 값 합치기) | " + " | ".join(
                      f"{k}({v['title']})" for k, v in CROSS_QUERIES.items()) + " | sql(원천별 SELECT 직접 작성)")] = "asset",

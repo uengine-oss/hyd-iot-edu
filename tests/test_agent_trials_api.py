@@ -66,7 +66,9 @@ def test_agent_settings_are_read_from_users_and_the_skill_store():
 def test_missing_skill_store_is_a_reason_on_the_skill_not_a_silent_drop():
     p = AT.agent_profiles(make_repo(with_store=False), "hyd")
     fan = next(a for a in p["agents"] if a["id"] == "agent:fan")
-    assert fan["skills"] == [{"name": "fan-check", "description": "", "content": "", "missing": "스킬 저장소(tenant_skills)를 읽을 수 없는 저장소입니다"}]
+    # after U2 merged, every repo has the skill store (list_skills); a skill with no body is still a stated reason, never a silent drop
+    assert [(s["name"], s["content"]) for s in fan["skills"]] == [("fan-check", "")]
+    assert fan["skills"][0]["missing"] in ("스킬 저장소(tenant_skills)를 읽을 수 없는 저장소입니다", "스킬 저장소에 이 이름의 스킬 본문이 없습니다")
 
 
 def test_compare_runs_both_on_one_snapshot_and_creates_no_instance_task_or_decision(env):
