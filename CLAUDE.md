@@ -67,5 +67,10 @@
 | 로그 인코딩 | 워커 로그에 cp949가 섞인다. 바이트로 읽어 `errors='replace'`로 디코드 | UTF-8 |
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 | Docker·`docker compose` 기본 설치(VM 약 4 vCPU·16 GB). `docker info`가 안 되면 `dockerd`부터 켠다. 컨테이너는 세션마다 새로 띄운다(이미지는 환경 캐시에 남음, 느리면 환경 설정 스크립트에 `docker compose pull`). 메모리가 모자라 멈추면 그 사실을 보고한다 |
 
+클라우드 `.env`: 레포에 없다(.gitignore). 세션 시작 훅(`.claude/hooks/cloud-env.sh`)이 `.env.example`로 만들고,
+LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`·`LLM_EXTRA_BODY`)는 claude.ai/code 환경 설정의
+환경변수로 들어온다(compose는 `${VAR:-기본값}`만 쓰므로 셸 환경변수가 우선). LLM 서버 도메인은 환경의 네트워크 허용 목록에 있어야 한다.
+클라우드에는 Supabase가 없으므로 `PROCESS_MODE=instance`·`ENTERPRISE_BACKEND=supabase` 검증은 로컬에서 하거나 미검증으로 남긴다.
+
 통합 시험: `scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scripts/scenario_pump_fan_test.py`(펌프·팬·가림),
 `scripts/scenario_test.py --quick`(레거시, `PROCESS_MODE=legacy`로 process 재기동 필요).
