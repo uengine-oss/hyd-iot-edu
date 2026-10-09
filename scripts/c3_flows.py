@@ -4,10 +4,13 @@
   .venv/bin/python scripts/c3_flows.py check             # 사전 검사만 (등록 안 함)
   .venv/bin/python scripts/c3_flows.py export DIR        # bpmn.io 로 열 수 있는 .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다
 
-흐름 모양 · 부품 · 설정은 C2 시험(tests/test_c2_execution.py)의 A · B · C 그림 · 매핑과 같다. 다른 점은 둘이다:
+A 흐름 모양 · 부품 · 설정은 C2 시험(tests/test_c2_execution.py)의 A 그림 · 매핑과 같다. B · C 는 C3 단순화(2026-10-09 확정 지시 '설비까지 안
+가기로 함, 처리되면 끝')로 줄였다: B = 제안 → 설비보전팀장 승인 → 정비 오더 등록 · 공지 메일 → 결과 보고, C = 제안 → 구매 담당 승인 → ERP 발주 ·
+공급사 메일 → 입고 · 재고 반영(바로) → 결과 보고. 예정된 정비 시간 대기 · 정비 모사 · 시운전 · 납기 대기는 없다. C2 와 다른 점은 더 있다:
   1) 판단 · 제안 task 를 시나리오 에이전트에 묶는다(agent:cooling · agent:pm-plan · agent:spare-buy — seed.sql, 에이전트마다 SKILL · MCP 서버가 다름).
   2) 담당자 승인 task 의 역할을 시나리오 승인자로 둔다(A 운전원 · B 설비보전팀장 · C 구매 담당).
-처리 건 시작은 경보다(A 쿨러 과열 COOLER_DEGRADATION, B 정기 정비 도래 PM_DUE, C 재고 기준 이탈 SPARE_BELOW_MIN).
+처리 건 시작은 경보다(A 쿨러 과열 COOLER_DEGRADATION — 감지기, B 정기 정비 도래 PM_DUE · C 재고 기준 이탈 SPARE_BELOW_MIN — 포털 결함 실험의
+[정기 점검] · [재고 보충] 버튼이 업무 감시와 같은 계약의 경보를 낸다, POST /api/scenario/{B|C}/start).
 """
 from __future__ import annotations
 
@@ -81,65 +84,49 @@ A_MAPPING = {
     "timers": {"B_overdue": "PT10M"},
     "flows": {"F_yes": {"var": "recovered", "op": "==", "value": True}, "F_no": {"default": True}}}
 
-# ================================================================ B 정기 정비 계획
+# ================================================================ B 정기 정비 (C3 단순화: 설비까지 가지 않음 — 오더 등록 · 공지로 끝)
 B_XML = xml("""
-  <bpmn:startEvent id="Start" name="정기 정비 도래"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
-  <bpmn:task id="T_agent" name="정비 일정 제안"/>
+  <bpmn:startEvent id="Start" name="정기 점검 요청"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
+  <bpmn:task id="T_agent" name="정비 계획 제안"/>
   <bpmn:userTask id="T_approve" name="설비보전팀장 승인"/>
-  <bpmn:serviceTask id="T_wo" name="정비 오더 · 생산팀 공지"/>
-  <bpmn:serviceTask id="T_do" name="예정된 시간에 정비 수행"/>
-  <bpmn:serviceTask id="T_run" name="시운전 확인"/>
-  <bpmn:exclusiveGateway id="G_pass" name="기준 통과?"/>
-  <bpmn:serviceTask id="R_ok" name="결과 보고: 정상"/>
-  <bpmn:serviceTask id="R_fail" name="결과 보고: 미달"/>
+  <bpmn:serviceTask id="T_wo" name="정비 오더 등록 · 공지 메일"/>
+  <bpmn:serviceTask id="R_ok" name="결과 보고"/>
   <bpmn:endEvent id="E_end" name="끝"/>
   <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent"/>
   <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
   <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_wo"/>
-  <bpmn:sequenceFlow id="F4" sourceRef="T_wo" targetRef="T_do"/>
-  <bpmn:sequenceFlow id="F5" sourceRef="T_do" targetRef="T_run"/>
-  <bpmn:sequenceFlow id="F6" sourceRef="T_run" targetRef="G_pass"/>
-  <bpmn:sequenceFlow id="F_yes" name="예" sourceRef="G_pass" targetRef="R_ok"/>
-  <bpmn:sequenceFlow id="F_no" name="아니오" sourceRef="G_pass" targetRef="R_fail"/>
-  <bpmn:sequenceFlow id="F7" sourceRef="R_ok" targetRef="E_end"/>
-  <bpmn:sequenceFlow id="F8" sourceRef="R_fail" targetRef="E_end"/>""", "Process_B", "정기 정비 계획",
-            lanes(["T_approve"], ["T_agent"], ["T_wo", "T_do", "T_run", "R_ok", "R_fail"]))
+  <bpmn:sequenceFlow id="F4" sourceRef="T_wo" targetRef="R_ok"/>
+  <bpmn:sequenceFlow id="F5" sourceRef="R_ok" targetRef="E_end"/>""", "Process_B", "정기 정비",
+            lanes(["T_approve"], ["T_agent"], ["T_wo", "R_ok"]))
 
-PRODUCTION_NOTICE = {"to": "production@hyd.local", "subject": "[정비 공지] {asset} {work_order.after.window}",
-                     "body": "작업지시 {work_order.ref} — 예정된 정비 시간에 {asset} 정지"}
+# 값 틀은 두 업무 백엔드(Supabase · 메모리)가 같은 칸으로 내는 영수증 값만 쓴다(ref · detail)
+PRODUCTION_NOTICE = {"to": "production@hyd.local", "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}",
+                     "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by})"}
 B_MAPPING = {
-    "name": "정기 정비 계획", "start": {"kind": "alert", "patterns": ["PM_DUE"]}, "lanes": {},
+    "name": "정기 정비", "start": {"kind": "alert", "patterns": ["PM_DUE"]}, "lanes": {},
     "tasks": {"T_agent": decide("agent:pm-plan", "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다"),
               "T_approve": {"part": "task:select", "role": "설비보전팀장"},
               # 정비 시간은 승인한 카드가 실어 온 시점이 우선이다(C3). window_var 는 카드에 시점이 없을 때의 기본(경보의 이번 야간 창)
               "T_wo": {"part": "task:work-order", "config": {"mail": PRODUCTION_NOTICE, "window_var": "alert.evidence.night_window_id"}},
-              "T_do": {"part": "svc:maintenance", "config": {"component": "pump", "sop": "SOP-PMP-04", "until": "work_order.after.window_starts_at"}},
-              "T_run": {"part": "svc:test-run"},
-              "R_ok": report("정상", "{asset} 정기 정비 결과", "시운전 정상 — {test_run.counter.detail}"),
-              "R_fail": report("미달", "{asset} 정기 정비 결과", "시운전 기준 미달 — 계수기는 리셋하지 않음")},
-    "timers": {}, "flows": {"F_yes": {"var": "passed", "op": "==", "value": True}, "F_no": {"default": True}}}
+              "R_ok": report("정상", "{asset} 정기 정비 결과", "정비 오더 {work_order.ref} 등록 · 생산팀 공지 — {work_order.detail}")},
+    "timers": {}, "flows": {}}
 
-# ================================================================ C 예비품 구매
+# ================================================================ C 예비품 구매 (C3 단순화: 발주 · 메일 · 바로 입고 → 재고가 재주문점 위로)
 C_XML = xml("""
-  <bpmn:startEvent id="Start" name="재고 기준 이탈"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
+  <bpmn:startEvent id="Start" name="재고 보충 요청"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
   <bpmn:task id="T_agent" name="발주안 제안"/>
   <bpmn:userTask id="T_approve" name="구매 담당 승인"/>
   <bpmn:serviceTask id="T_po" name="ERP 발주 · 공급사 메일"/>
-  <bpmn:serviceTask id="T_gr" name="입고 확인"/>
-  <bpmn:boundaryEvent id="B_late" name="납기 초과" attachedToRef="T_gr"><bpmn:timerEventDefinition id="TD1"/></bpmn:boundaryEvent>
-  <bpmn:serviceTask id="R_ok" name="결과 보고: 입고 완료"/>
-  <bpmn:serviceTask id="R_late" name="결과 보고: 지연"/>
-  <bpmn:endEvent id="E_done" name="입고 완료"/>
-  <bpmn:endEvent id="E_late" name="지연"/>
+  <bpmn:serviceTask id="T_gr" name="입고 · 재고 반영"/>
+  <bpmn:serviceTask id="R_ok" name="결과 보고"/>
+  <bpmn:endEvent id="E_end" name="끝"/>
   <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent"/>
   <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
   <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_po"/>
   <bpmn:sequenceFlow id="F4" sourceRef="T_po" targetRef="T_gr"/>
   <bpmn:sequenceFlow id="F5" sourceRef="T_gr" targetRef="R_ok"/>
-  <bpmn:sequenceFlow id="F6" sourceRef="R_ok" targetRef="E_done"/>
-  <bpmn:sequenceFlow id="F7" sourceRef="B_late" targetRef="R_late"/>
-  <bpmn:sequenceFlow id="F8" sourceRef="R_late" targetRef="E_late"/>""", "Process_C", "예비품 구매",
-            lanes(["T_approve"], ["T_agent"], ["T_po", "T_gr", "R_ok", "R_late"]))
+  <bpmn:sequenceFlow id="F6" sourceRef="R_ok" targetRef="E_end"/>""", "Process_C", "예비품 구매",
+            lanes(["T_approve"], ["T_agent"], ["T_po", "T_gr", "R_ok"]))
 
 SUPPLIER_MAIL = {"to": "supplier@hyd.local, receiving@hyd.local", "subject": "[발주] {approved_part_no} {approved_qty}개",
                  "body": "공급사 {approved_supplier}, 금액 {approved_amount}만원, 발주 번호 {purchase_order.ref}"}
@@ -148,10 +135,9 @@ C_MAPPING = {
     "tasks": {"T_agent": decide("agent:spare-buy", "필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정으로 비교해 발주 카드를 낸다"),
               "T_approve": {"part": "task:select", "role": "구매 담당"},
               "T_po": {"part": "svc:erp-po", "config": {"mail": SUPPLIER_MAIL}},
-              "T_gr": {"part": "svc:goods-receipt"},
-              "R_ok": report("입고 완료", "{approved_part_no} 발주 결과", "{goods_receipt.detail}"),
-              "R_late": report("지연", "{approved_part_no} 발주 결과", "납기 초과 — 발주 {purchase_order.ref}, 공급사 {approved_supplier}")},
-    "timers": {"B_late": "P6D"}, "flows": {}}
+              "T_gr": {"part": "svc:goods-receipt", "config": {"immediate": True}},
+              "R_ok": report("입고 완료", "{approved_part_no} 재고 보충 결과", "{goods_receipt.detail}")},
+    "timers": {}, "flows": {}}
 
 FLOWS = {"c3_cooling": ("cooling-emergency.bpmn", A_XML, A_MAPPING),
          "c3_pm": ("pm-planning.bpmn", B_XML, B_MAPPING),
