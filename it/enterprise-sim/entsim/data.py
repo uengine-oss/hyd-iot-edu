@@ -255,7 +255,9 @@ def pm_row(asset: str, counter: dict, spare: dict | None, peers: dict[str, dict]
             "hours_at_following_window": round(since + wins["M"]["starts_in_h"], 2), "pm_crew_available": night["crew_size"],
             "spare_available": spare["available"] if spare is not None else None,
             "kit_part_no": PM_KIT["part_no"], "kit_qty": kit, "spare_gap_after_pm": gap_after, "spare_gap_after_bundle": gap_bundle,
-            "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at")}
+            "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at"),
+            # C3: 그다음 예정된 정비 시간(월간 창) — 카드가 고른 시점을 작업지시에 싣는다 (SQL 뷰 ent.pm_status 와 같은 칸, 마이그레이션 46)
+            "following_window_id": wins["M"]["id"], "following_window_at": wins["M"]["starts_at"]}
 
 
 def maintenance_windows(asset: str) -> dict:

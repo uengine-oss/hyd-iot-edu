@@ -167,6 +167,7 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             elif src == "sys:cmms" and var in CMMS_PM_FACTS:
                 if pm is None:
                     pm = mcp_ent.fetch('/cmms/pm_status?asset={asset}', asset)
+                    facts.setdefault("windows_by_variable", pm_windows(pm.get('facts') or {}))
                 facts[var] = (pm.get('facts') or {}).get(var)
                 row.update(value=facts[var], how='CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)',
                            **source_time(pm, asset))
@@ -187,6 +188,17 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             row.update(value=None, error=str(e)[:160])
         prov.append(row)
     return facts, prov
+
+
+def pm_windows(row: dict) -> dict:
+    """C3: 정기 정비 판단 변수 → 그 변수가 가리키는 예정된 정비 시간(CMMS ent.pm_status 한 행). 카드가 고른 시점을 작업지시에 싣는 데 쓴다
+    (cards.option_window). 창 id 가 없으면 빼서, 모르는 창을 지어내지 않는다."""
+    out = {}
+    for var, key, name in (("hours_at_next_window", "night_window", "이번 예정된 정비 시간"),
+                           ("hours_at_following_window", "following_window", "그다음 예정된 정비 시간")):
+        if row.get(f"{key}_id"):
+            out[var] = {"id": row[f"{key}_id"], "starts_at": row.get(f"{key}_at"), "name": name}
+    return out
 
 
 def spare_facts(asset: str) -> dict:

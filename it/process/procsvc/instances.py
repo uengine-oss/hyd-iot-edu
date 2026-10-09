@@ -955,6 +955,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             window = effect_parts.lookup(v, window_var)
         except KeyError:
             window = None
+        # C3: 승인한 카드가 정비 시점을 실어 왔으면(agentsvc.cards.option_window — 이번 · 그다음 예정된 정비 시간 · 즉시) 그것이 우선이다.
+        # 담당자가 추천이 아닌 '미루기' 카드를 골라도 작업지시가 경보의 이번 야간 창으로 가지 않는다.
+        card_window = opt.get('window') if isinstance(opt.get('window'), dict) else None
+        if card_window:
+            window = {k: card_window[k] for k in ('id', 'label', 'starts_at') if card_window.get(k)} or None
         if window not in (None, ''):
             item['window'] = deepcopy(window)
         res = self.hooks.exec_enterprise(v.get("decision_id") or inst["proc_inst_id"], item)

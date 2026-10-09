@@ -111,6 +111,24 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     return f
 
 
+def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict | None) -> dict | None:
+    """C3: 카드가 고른 정비 시점. 일정 판단(사실에 windows_by_variable 이 있음)에서 이 카드에만 걸린 규정이 시험하는 변수가 가리키는
+    예정된 정비 시간을 카드에 싣는다(예: 이번 정비 시간의 운전시간 → 이번 창, 미룬 정비 시간의 운전시간 → 그다음 창).
+    어떤 창 변수도 시험하지 않는 정비 카드는 '즉시'다. 일정 판단이 아니면 None(작업지시는 흐름의 window_var 를 쓴다)."""
+    if not isinstance(windows, dict) or not windows:
+        return None
+    for r in compliance:
+        if not (r.get("applies") and sid in r["applies"]):
+            continue
+        for t in r.get("tests") or []:
+            w = windows.get(t.get("variable"))
+            if isinstance(w, dict) and w.get("id"):
+                return dict(w, basis=t.get("variable"))
+    if skill.get("kind") == "work_order":
+        return {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
+    return None
+
+
 def production_effect(o: dict) -> str:
     """What the card does to production, read from its PLC commands: a STOP command = stop, a load set-point under the
     design load = reduce, any other command = keep. A card without commands (work order only) falls back to its BSC losses
@@ -248,6 +266,9 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
              "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl",
                                              "po_amount", "lead_slack_days", "expected_defect_cost") if k2 in cf}}
         o["production"] = production_effect(o)
+        window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
+        if window:
+            o["window"] = window
         if forecast_contexts is not None:
             o['forecastContext'] = forecast_context
         o['policy_sha256'] = policy_digest(dmn, k)

@@ -306,6 +306,48 @@ def test_run_verdict(criteria: dict, readings: dict) -> tuple[bool, list[dict]]:
     return ok_all, rows
 
 
+# C3: 결과 보고 카드의 측정값(포털 resultReport.js 계약 values:[{name, value, unit?, limit?, ok?}]) — 태그 이름은 화면 말로
+TAG_LABELS = {"TS1": ("유온", "℃"), "PS1": ("압력", "bar"), "FS1": ("유량", "l/min"), "VS1": ("진동", "mm/s"),
+              "CE": ("냉각 효율", "%"), "CP": ("냉각 동력", "kW"), "EPS1": ("모터 전력", "W")}
+_OP_TEXT = {"<": "<", "<=": "≤", ">": ">", ">=": "≥"}
+
+
+def _value_row(tag: str, value, op: str | None, limit, ok) -> dict:
+    name, unit = TAG_LABELS.get(tag, (tag, ""))
+    row = {"name": f"{name} ({tag})", "value": round(value, 1) if isinstance(value, float) else ("값 없음" if value is None else value)}
+    if unit and value is not None:
+        row["unit"] = " " + unit
+    if op and limit is not None:
+        row["limit"] = f"{_OP_TEXT.get(op, op)} {_text(limit)}{(' ' + unit) if unit else ''}"
+    if ok is not None:
+        row["ok"] = bool(ok)
+    return row
+
+
+def report_values(v: dict) -> list[dict]:
+    """처리 건 값에서 결과 확인의 실제 측정값을 뽑는다: 재관측(reobservation: 회복 기준 태그 하나) · 시운전(test_run.readings) ·
+    입고(goods_receipt 수량). 없는 것은 빼고, 값을 지어내지 않는다."""
+    rows: list[dict] = []
+    ro = v.get("reobservation")
+    if isinstance(ro, dict) and ro.get("tag"):
+        rows.append(_value_row(ro["tag"], ro.get("value"), ro.get("op"), ro.get("limit"), ro.get("inside")))
+        if ro.get("cleared") is not None:
+            rows.append({"name": "경보 해제", "value": "예" if ro.get("cleared") else "아니오", "ok": bool(ro.get("cleared"))})
+    tr = v.get("test_run")
+    if isinstance(tr, dict):
+        for r in tr.get("readings") or []:
+            if isinstance(r, dict) and r.get("tag"):
+                rows.append(_value_row(r["tag"], r.get("value"), r.get("op"), r.get("limit"), r.get("ok")))
+    gr = v.get("goods_receipt")
+    if isinstance(gr, dict):
+        after = gr.get("after") if isinstance(gr.get("after"), dict) else {}
+        for key, name in (("qty", "입고 수량"), ("on_hand", "현재고"), ("available", "가용 재고")):
+            val = gr.get(key, after.get(key))
+            if isinstance(val, (int, float)):
+                rows.append({"name": name, "value": val, "unit": " 개"})
+    return rows
+
+
 def _text(v) -> str:
     import json
     if isinstance(v, float) and v.is_integer():

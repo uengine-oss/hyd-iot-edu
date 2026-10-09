@@ -160,6 +160,11 @@ class ServicePartsRuntime:
         v = self._require_approval(inst, wi)
         cfg = self._activity_of(wi).get("service") or {}
         state = self._state(wi)
+        immediate = bool(((v.get("chosen_option") or {}).get("window") or {}).get("immediate"))
+        if cfg.get("until") and immediate and "wait" not in state:
+            # C3: 승인한 카드가 '즉시(지금 정지하고 시행)'면 기다릴 예정된 정비 시간이 없다 — 바로 정비한다
+            state = self._save_state(wi, wait={"due_at": engine.now_iso(_clock(now)), "real_s": 0, "label": "즉시 시행", "immediate": True})
+            self._event(wi, "WAIT_SKIPPED", "즉시 시행 — 예정된 정비 시간 대기 없음", {"window": (v.get("chosen_option") or {}).get("window")})
         if cfg.get("until"):                       # 예정된 정비 시간까지 먼저 기다린다(시간 대기와 같은 계산 · 같은 수업 압축)
             clock = _clock(now)
             if "wait" not in state:
@@ -291,8 +296,20 @@ class ServicePartsRuntime:
         summary = effect_parts.render_report(cfg.get("summary") or "", context)
         keep = ("asset", "pattern", "approved_by", "approved_role", "approved_amount", "approved_qty", "approved_supplier", "recovered",
                 "passed", "received", "decision_id")
-        report = {"outcome": outcome, "level": level, "title": title, "summary": summary, "by": "sys:process",
-                  "at": engine.now_iso(_clock(now)), "values": {k: v.get(k) for k in keep if v.get(k) is not None},
+        # C3: 재관측으로 판정한 흐름(A)은 사건의 회복 기준 태그 최신값을 결과 보고 시점에 읽어 측정값으로 싣는다. 재관측 task 의 출력 계약
+        # (recovered 하나)은 배포된 정의가 정하므로 바꾸지 않는다 — 결과 보고는 재관측 바로 뒤라 같은 값을 본다.
+        measured = dict(v)
+        if v.get("recovered") is not None and v.get("incident") and self.hooks.recovery_reading is not None and "reobservation" not in v:
+            try:
+                reading = self.hooks.recovery_reading(v["incident"])
+            except Exception:  # noqa: BLE001 — 측정값은 보조 정보, 읽기 실패로 결과 보고를 막지 않는다
+                reading = None
+            if reading and reading.get("tag"):
+                measured["reobservation"] = reading
+        # C3: values = 측정값 목록(포털 결과 보고 카드 계약), facts = 처리 건의 승인 · 판정 값(전의 values dict)
+        report = {"outcome": outcome, "level": level, "verdict": level, "title": title, "summary": summary, "by": "sys:process",
+                  "at": engine.now_iso(_clock(now)), "values": effect_parts.report_values(measured),
+                  "facts": {k: v.get(k) for k in keep if v.get(k) is not None},
                   "refs": {k: (v.get(k) or {}).get("ref") for k in ("work_order", "purchase_order", "goods_receipt", "mcp_receipt")
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
         closed = False
