@@ -122,10 +122,12 @@ class Plant:
             for attr, tgt in plan.items():
                 rate = (tgt - getattr(u.state, attr)) / max(1.0, float(ramp_sim_s))
                 u.faults[attr] = Fault(kind, attr, tgt, rate)
-            if origin is not None:
-                u.injection = dict(origin, kind=kind, at=now_iso())
-            if plan or origin is not None:
+            # the unit's injection is always the *last* request: one without a press (the process's maintenance restore, a test
+            # script) clears the previous press, so a later alert is never linked to a press that no longer describes the unit
+            injection = dict(origin, kind=kind, at=now_iso()) if origin is not None else None
+            if plan or injection != u.injection:
                 u.dirty_status = True
+            u.injection = injection
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
                     "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection}
 

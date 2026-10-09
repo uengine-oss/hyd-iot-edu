@@ -10,6 +10,9 @@
 
 거절(409): 표시가 꺼져 있음(이미 처리됨 — 초기화 먼저) · 같은 시나리오 처리 건이 진행 중 · 그 패턴을 여는 흐름이 배포되지 않음.
 
+시나리오 시각 기준점(생산 오더 납기 · 예정된 정비 시간)은 설비 처리 건이 하나도 진행 중이 아닐 때만 지금으로 옮긴다(may_reanchor). 예정된 정비
+시간 id 가 기준점 시각을 품고 있어서, 진행 중인 처리 건이 승인 뒤 낼 작업지시의 창이 사라지기 때문이다.
+
   [쿨러 열화 주입] · [쿨러 복구] (A, HYD-01) — plant-sim 주입에 누름 id(origin)를 싣는다. 설비 상태(plant.status injection)에 남은 그 id 로,
   주입이 일으킨 경보가 연 처리 건에 기록을 붙인다(main._link_injection). 시간 창으로 짐작하지 않는다.
 """
@@ -19,6 +22,8 @@ import re
 import uuid
 from datetime import datetime, timezone
 from typing import Callable
+
+from hydcommon import topics
 
 from . import business_monitor, engine
 
@@ -67,11 +72,18 @@ def event_prefix(spec: dict) -> str:
     return f"{source}-{spec['pattern']}-{re.sub(r'[^A-Za-z0-9-]', '', spec['subject'])}-"
 
 
-def _runs(rt, spec: dict, limit: int = 60) -> list[dict]:
+def _runs(rt, spec: dict) -> list[dict]:
+    """그 시나리오 설비의 처리 건 전부(최신 먼저) 중 이 버튼 경보로 열린 것. 테넌트 전체 최신 N건으로 자르지 않는다 — 질문 · 시험 실행
+    처리 건이 위로 쌓여도 진행 중인 처리 건을 놓치지 않게."""
     prefix = event_prefix(spec)
     # 사람 검토(alert_triage)는 흐름이 없을 때의 대기열이지 그 시나리오의 처리 건이 아니다
-    return [i for i in rt.repo.list_instances(limit=limit, tenant_id=rt.tenant_id)
+    return [i for i in rt.repo.list_instances(None, None, rt.tenant_id, asset=spec["asset"])
             if str(i.get("start_event_id") or "").startswith(prefix) and i.get("proc_def_id") != "alert_triage"]
+
+
+def may_reanchor(rt) -> bool:
+    """설비 처리 건(A · B · C — 설비 값이 있는 처리 건)이 하나도 진행 중이 아니면 True."""
+    return not any(engine.variables(i).get("asset") in topics.ASSETS for i in rt.repo.list_instances("RUNNING", None, rt.tenant_id))
 
 
 def _brief(inst: dict | None) -> dict | None:
@@ -124,12 +136,19 @@ def injection_origin(button: str, person: dict) -> dict:
             "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
-def case_of_injection(rt, asset: str, injection_id: str, limit: int = 30) -> str | None:
-    """그 주입 id 로 연결된(SCENARIO_BUTTON 기록에 injection_id 가 있는) 처리 건."""
-    for inst in rt.repo.list_instances(None, limit, rt.tenant_id):
-        if engine.variables(inst).get("asset") != asset:
-            continue
-        if any(e.get("job_id") == "SCENARIO_BUTTON" and (e.get("data") or {}).get("injection_id") == injection_id
+def _instant(at) -> datetime:
+    """ISO 글(plant-sim 'Z' · 처리 건 '+00:00') 또는 DB 시각 → UTC 시각."""
+    return (at if isinstance(at, datetime) else datetime.fromisoformat(str(at).replace("Z", "+00:00"))).astimezone(timezone.utc)
+
+
+def case_of_injection(rt, asset: str, injection: dict) -> str | None:
+    """그 주입 id 로 연결된(SCENARIO_BUTTON 기록에 injection_id 가 있는) 처리 건. 그 설비 처리 건을 최신부터 보되 주입 시각보다 먼저 열린
+    처리 건에서 멈춘다(주입이 연 처리 건은 주입 뒤에 열린다) — 건수로 자르지 않는다."""
+    since = _instant(injection["at"])
+    for inst in rt.repo.list_instances(None, None, rt.tenant_id, asset=asset):
+        if _instant(inst["start_date"]) < since:
+            return None
+        if any(e.get("job_id") == "SCENARIO_BUTTON" and (e.get("data") or {}).get("injection_id") == injection["id"]
                for e in rt.repo.list_events(proc_inst_id=inst["proc_inst_id"])):
             return inst["proc_inst_id"]
     return None
@@ -162,21 +181,26 @@ def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
         raise Refused(f"{spec['asset']}에 '{spec['label']}' 표시가 없습니다 — 이미 처리됐습니다. [초기화]로 수업 시작 상태로 되돌린 뒤 누르세요")
     running = next((i for i in _runs(rt, spec) if i.get("status") == "RUNNING"), None)
     if running:
-        raise Refused(f"{spec['title']} 처리 건이 이미 진행 중입니다 ({running['proc_inst_id']})")
+        raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다 — 카드의 '처리 중' 표시를 눌러 그 처리 건을 보세요")
     if not route(spec["pattern"]):
-        raise Refused(f"{spec['pattern']} 경보를 여는 {spec['title']} 흐름이 배포되어 있지 않습니다 — 흐름 가져오기에서 배포하세요")
+        raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — 흐름 가져오기에서 배포하세요")
     return {"alert": build_alert(key, row, person=person), "row": row}
+
+
+class NotStarted(Exception):
+    """경보는 접수됐는데 배포된 흐름의 처리 건이 없다(HTTP 500, 좌표 포함) — '처리 건 시작'이라고 답하지 않는다."""
 
 
 def started(rt, key: str, alert: dict, definition: str, person: dict | None = None) -> dict:
     inst = rt.repo.find_event_instance(rt.tenant_id, definition, alert["alertId"])
-    if inst and person:
+    if inst is None:
+        raise NotStarted(f"{SCENARIOS[key]['title']}: 경보 {alert['alertId']} 를 접수했지만 흐름 {definition} 의 처리 건이 열리지 않았습니다")
+    if person:
         ev = alert["evidence"]
         rt.repo.record_events([press_event(inst["proc_inst_id"], SCENARIOS[key]["button"], alert["asset"], person, ev.get("requested_at"),
                                            {"alertId": alert["alertId"]})])
     return {"scenario": key, "alertId": alert["alertId"], "definition": definition,
-            "instance": inst["proc_inst_id"] if inst else None, "incident": engine.variables(inst).get("incident") if inst else None,
-            "evidence": alert["evidence"]}
+            "instance": inst["proc_inst_id"], "incident": engine.variables(inst).get("incident"), "evidence": alert["evidence"]}
 
 
 def last_instance(rt, key: str) -> dict | None:

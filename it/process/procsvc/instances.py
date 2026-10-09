@@ -264,14 +264,18 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.hooks.audit(values.get('asset','-'),'process','INSTANCE_STARTED',
                          {'instance':inst['proc_inst_id'],'event_id':event_id,'definition':def_id,'version':version},
                          incident=values.get('incident'))
+        self._project(inst)
         if self.hooks.case_started is not None:
             try:
                 self.hooks.case_started(inst)
-            except Exception as e:  # noqa: BLE001 — 연결 기록 실패가 처리 건 시작을 되돌리지 않는다. 대신 감사 기록에 좌표를 남긴다
+            except Exception as e:  # noqa: BLE001 — 연결 기록 실패가 이미 열린 처리 건을 되돌리지 않는다. 대신 처리 건 기록과 감사 기록에 남긴다
                 log.exception("case_started hook failed for %s", inst['proc_inst_id'])
                 self.hooks.audit(values.get('asset','-'),'process','CASE_LINK_FAILED',
                                  {'instance':inst['proc_inst_id'],'error':str(e)[:300]},incident=values.get('incident'))
-        self._project(inst)
+                # 처리 기록 화면의 시작 단계에 보인다. 이 기록마저 못 쓰면(저장소 장애) 예외가 호출자에게 간다 — 경보 재전송은 같은 처리 건을 찾는다
+                self.repo.record_events([{'job_id':'CASE_LINK_FAILED','todo_id':None,'proc_inst_id':inst['proc_inst_id'],'crew_type':'result',
+                                          'event_type':'error','data':{'name':'수업 버튼 연결 실패',
+                                                                       'friendly':f'수업 버튼 누름을 이 처리 건에 붙이지 못했습니다 — {str(e)[:300]}'}}])
         return inst
 
     # ---------------------------------------------------------------- start

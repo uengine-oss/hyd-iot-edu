@@ -32,6 +32,8 @@
   const isAgent = w => !!(w.agent_orch || w.agent_mode) && (w.agent_orch === 'cliagents' || !!w.agent_mode);
   const isHuman = w => !w.agent_orch && !w.agent_mode;
   const CHECK = /^(incident:reobserve|plant:test-run|enterprise:GR_CONFIRM)$/;
+  const PLANT = /^(plant:|incident:(command|reobserve)$)/;          // 설비에 닿는 단계(설비 명령 · 재관측 · 정비 모사 · 시운전)
+  const CASE_LEVEL = new Set(['SCENARIO_BUTTON', 'CASE_LINK_FAILED']);   // 단계(todo)가 아니라 처리 건에 붙는 기록 — 시작 단계에 보인다
   const LANE = { person: '사람', agent: 'AI 일꾼', system: '시스템' };
   const firstSentence = t => { const s = UI.clean(W().text(String(t || ''))).replace(/`[^`]*`에?/g, '').replace(/\*\*/g, '').trim(); const m = s.match(/^[^\n]*?[.。](?=\s|$)/); return (m ? m[0] : s.split('\n')[0]).slice(0, SENTENCE_MAX_CHARS); };
   const isoDur = s => { const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(s || '')); if (!m) return s || ''; return [m[1] && `${m[1]}일`, m[2] && `${m[2]}시간`, m[3] && `${m[3]}분`, m[4] && `${m[4]}초`].filter(Boolean).join(' '); };
@@ -164,22 +166,31 @@
     if (alert && typeof alert === 'object') {
       const ev = alert.evidence || {};
       const biz = !!alert.source && alert.source !== 'detector' && /erp|cmms|mes|scm/i.test(alert.source);
-      const who = (alert.observedBy && alert.observedBy.name) || (biz ? `${String(alert.source).toUpperCase()} 감시` : '센서 경보 감지기');
+      const pressed = biz && !!ev.trigger;                           // 업무 감시가 아니라 수업 버튼이 연 처리 건(근거 값은 감시와 같은 칸)
+      const who = pressed ? (ev.requested_by || '나 미선택') : (alert.observedBy && alert.observedBy.name) || (biz ? `${String(alert.source).toUpperCase()} 감시` : '센서 경보 감지기');
       const defn = ev.definition || {};
+      const caseRows = rowsOf((ctx.byTodo.get('') || []).filter(x => CASE_LEVEL.has(x.job_id)));
+      const plantBound = (ctx.view.definition && ctx.view.definition.activities || []).some(a => PLANT.test(a.tool || ''));
       const shown = biz ? Object.entries(ev).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object' && !/^(spare_below_min|pm_due)$/.test(k))
         : Object.entries(ev.values || {}).map(([k, x]) => [k.toLowerCase(), x]).concat(Object.entries(ev).filter(([k, x]) => /^(ts1|ce|ps1|fs1|vs1|load)$/.test(k) && typeof x === 'number' && !(ev.values || {})[k.toUpperCase()]));
       const chips = [chip(W().pattern(alert.pattern), 'danger')].concat(shown.slice(0, 6).map(([k, x]) => chip(`${W().fieldName(k)} ${W().value(k, x)}`)));
-      const sentence = biz ? `${who}${W().josa(who, '이/가')} ${alert.asset || ''} 업무 데이터에서 ‘${W().pattern(alert.pattern)}’${W().josa(W().pattern(alert.pattern), '을/를')} 발견해 처리 건을 열었습니다.`
+      const sentence = pressed ? `${who}${W().josa(who, '이/가')} ${ev.trigger}${W().josa(ev.trigger, '을/를')} 눌러 ${alert.asset || ''} ‘${W().pattern(alert.pattern)}’ 처리 건을 열었습니다. 근거는 그때의 업무 데이터 값입니다.`
+        : biz ? `${who}${W().josa(who, '이/가')} ${alert.asset || ''} 업무 데이터에서 ‘${W().pattern(alert.pattern)}’${W().josa(W().pattern(alert.pattern), '을/를')} 발견해 처리 건을 열었습니다.`
         : `${alert.asset || ''} 센서 값이 경보 규칙에 걸려 ‘${W().pattern(alert.pattern)}’ 경보가 났고, 처리 건이 열렸습니다.`;
-      const table = shown.length ? kvTable(shown.map(([k, x]) => [W().fieldName(k), W().value(k, x), k])) : '';
+      const pressRows = pressed ? [['누른 사람', ev.requested_by || '나 미선택', ''], ['누른 시각', UI.dateTime ? UI.dateTime(ev.requested_at) : ev.requested_at, '']] : [];
+      const table = shown.length || pressRows.length ? kvTable(pressRows.concat(shown.map(([k, x]) => [W().fieldName(k), W().value(k, x), k]))) : '';
+      if (biz && !plantBound) chips.push(chip('설비 명령 없음'));
       const sections = [
         sec('들어온 값', table || '<p class="muted">값 없음</p>', { open: true }),
+        caseRows.length ? sec(`수업 버튼 기록 ${caseRows.length}줄`, toolListHtml(caseRows, false, 'start'), { open: true }) : '',
+        biz && !plantBound ? sec('이 흐름의 끝','<p>이 흐름은 업무 시스템에서 끝납니다 — 설비 명령 · 재관측 · 정비 수행 · 시운전 단계가 없습니다(흐름 설계). 처리되면 시작한 업무 데이터의 표시가 꺼집니다.</p>', { open: true }) : '',
         defn.rule || defn.condition ? sec('걸린 규칙', `<p>${e(W().rule(defn.rule || defn.condition))}</p>${defn.clearRule ? `<p class="muted">풀리는 조건: ${e(W().rule(defn.clearRule))}</p>` : ''}${defn.severity ? `<p class="muted">심각도 ${e(defn.severity)}</p>` : ''}`) : '',
         sec('경보 원문', rawBlock(alert), { raw: true }),
       ];
-      return { key: 'start', type: 'start', lane: 'system', icon: biz ? 'schedule' : 'warn', title: biz ? '업무 데이터 감시가 시작' : '센서 경보로 시작',
-        actor: who, t0: alert.t || inst.start_date, t1: inst.start_date, sentence, chips, sections, state: 'ok',
-        ids: [alert.alertId, alert.pattern], biz };
+      return { key: 'start', type: 'start', lane: pressed ? 'person' : 'system', icon: biz ? 'schedule' : 'warn',
+        title: pressed ? '수업 버튼으로 시작' : biz ? '업무 데이터 감시가 시작' : '센서 경보로 시작',
+        actor: who, t0: alert.t || inst.start_date, t1: inst.start_date, sentence, chips, sections, rows: caseRows,
+        state: caseRows.some(r => r.kind === 'error') ? 'bad' : 'ok', ids: [alert.alertId, alert.pattern], biz, pressed };
     }
     const init = inst.initial_variables || {};
     const rows = Object.entries(init).filter(([, x]) => x != null && typeof x !== 'object').slice(0, 8);
@@ -635,7 +646,8 @@
       steps.filter(s => s.type === 'agent' && !(s.rows || []).length && !s.live).forEach(s => G.push({ key: 'noev:' + s.key, strong: true, text: `‘${s.title}’ 단계는 도구 호출 기록이 없습니다 (결과 값만 남음).` }));
     }
     const start = steps[0];
-    if (start && start.biz) G.push({ key: 'button', strong: true, text: '수업 버튼(재고 출고 · 운전시간 빨리 감기)을 누른 사람과 시각은 처리 건에 없습니다. 처리 건은 업무 데이터 감시가 이탈을 본 시각부터 기록합니다 (버튼 기록은 업무 DB 의 재고 이동 · 계수기 원장에만 있음).' });
+    if (start && start.pressed && !(start.rows || []).some(r => r.kind === 'sys')) G.push({ key: 'button', strong: true, text: '수업 버튼 기록(누른 사람 · 시각)이 처리 건 기록에 없습니다 — 시작 경보의 근거 값에만 남았습니다.' });
+    if (start && (start.rows || []).some(r => r.kind === 'error')) G.push({ key: 'link', strong: true, text: '수업 버튼 누름을 이 처리 건에 붙이지 못했습니다(시작 단계의 오류 줄). 누가 · 언제 눌렀는지는 감사 기록에만 있습니다.' });
     if (ctx.read.people.state === 'error' && steps.some(s => s.lane === 'person' && s.type !== 'start')) G.push({ key: 'people', strong: true, text: `사람 이름 목록을 읽지 못해 승인 · 입력한 사람이 원래 이름(id)으로 보일 수 있습니다 — ${ctx.read.people.error}` });
     if (steps.some(s => s.type === 'approve' && s.w && s.w.status === 'DONE')) G.push({ key: 'who', text: '승인한 사람 이름은 승인 화면에 입력한 값입니다. 로그인으로 본인 확인을 하지 않습니다.' });
     const pg = ctx.view.events_page;

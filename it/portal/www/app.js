@@ -208,7 +208,7 @@ function renderUnits() {
         <div class="fault"></div>
         <div class="ctl">
           <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}${EXPERIMENT[asset] ? ` · ${esc(EXPERIMENT[asset].title)}` : ''}</legend><div>
-          ${(EXPERIMENT[asset] || EXPERIMENT['HYD-01']).buttons.map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
+          ${(EXPERIMENT[asset] ? EXPERIMENT[asset].buttons : []).map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
           </div><p class="muted small biz-press" aria-live="polite"></p></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
           <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
@@ -261,11 +261,15 @@ function bizOf(asset) {
   const key = (EXPERIMENT[asset] || {}).key;
   return key && state.biz && state.biz.scenarios ? state.biz.scenarios[key] : null;
 }
+// 표시 칩: 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 '표시 없음'으로 보이지 않는다
 function bizAlertHtml(asset) {
+  if (!(EXPERIMENT[asset] || {}).key) return '';
+  if (state.biz === undefined) return '<span class="chip tone-neutral">표시 확인 중…</span>';
+  if (state.biz && state.biz.failed) return `<span class="chip tone-danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
   const b = bizOf(asset); if (!b) return '';
-  if (b.running) return `<a href="#" class="chip tone-accent" data-open-inst="${esc(b.running.instance)}" title="${esc(b.running.instance)}">${esc(b.title)} 처리 중 →</a>`;
+  if (b.running) return `<a href="#" class="chip tone-accent" data-open-inst="${esc(b.running.instance)}" title="처리 건 화면에서 보기">${esc(b.title)} 처리 중 →</a>`;
   if (b.alert) return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
-  if (b.alert === false && b.last) return `<a href="#" class="chip tone-success" data-open-inst="${esc(b.last.instance)}" title="${esc(b.last.instance)}">처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}</a>`;
+  if (b.alert === false && b.last) return `<a href="#" class="chip tone-success" data-open-inst="${esc(b.last.instance)}" title="처리 건 화면에서 보기">처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}</a>`;
   return b.error ? `<span class="chip tone-neutral" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
 }
 // 마지막 수업 버튼(감사 기록 — 처리 건이 없는 [초기화]도 여기서 보인다)
@@ -288,24 +292,25 @@ function pressedBy() {
   return { by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
 }
 async function refreshBiz() {
-  try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = null; }
+  try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = { failed: e.message }; }
 }
+const anchorNote = r => r && r.reanchored === false ? ' · 시나리오 시각 기준점은 그대로(진행 중인 처리 건이 있음)' : '';
 async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}`); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
     else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록' : ' · 연결된 처리 건 없음(감사 기록에 남김)'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
       const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());
-      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}`);
+      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}${anchorNote(r)}`);
       await refreshBiz();
     }
     else if (act === 'biz-reset') {
       const exp = EXPERIMENT[asset];
       state.biz = await postJ(API.process + `/api/scenario/${exp.key}/reset`, pressedBy());
-      logLine(`${asset} ${exp.title} 초기화 — 업무 데이터를 수업 시작값으로`);
+      logLine(`${asset} ${exp.title} 초기화 — 업무 데이터를 수업 시작값으로${anchorNote(state.biz)}`);
     }
     else if (act === 'mode') { await postJ(API.plant + '/api/mode', { asset, mode }); logLine(`${asset} 운전 모드 → ${UI.status(mode)}`); }
     else if (act === 'fan') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { FanSpeedSP: 80 } }); logLine(`${asset} 수동 팬 80 % → ${UI.status(r.result)} ${r.reason || ''}`); }
@@ -611,7 +616,7 @@ async function refreshSlow() {
     try { state.incidents = await getJ(API.process + '/api/incidents'); } catch (e) { incidentError = true; }
     try { state.runs = await getJ(API.agent + '/api/agent/runs'); } catch (e) { state.runs = []; }
     try { state.audit = await getJ(API.process + '/api/audit'); } catch (e) { state.audit = []; }
-    if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz) await refreshBiz();
+    if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed) await refreshBiz();
     if (!state.definition) { try { state.definition = await getJ(API.process + '/api/definition'); } catch (e) { } }
     $('#openCount').textContent = incidentError ? '–' : state.incidents.filter(i => !i.terminal).length;
     if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }

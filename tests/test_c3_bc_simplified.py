@@ -110,8 +110,9 @@ class FakeRt:
         self.repo = self
         self._inst = list(instances)
 
-    def list_instances(self, limit=100, tenant_id=None, **_):
-        return self._inst[:limit]
+    def list_instances(self, status=None, limit=100, tenant_id=None, incident_id=None, asset=None):
+        rows = [i for i in self._inst if status in (None, i.get("status")) and asset in (None, i.get("asset"))]
+        return rows[:limit]
 
 
 def test_buttons_show_the_alerts_refuse_when_handled_running_or_undeployed_and_reset_brings_them_back():
@@ -124,7 +125,7 @@ def test_buttons_show_the_alerts_refuse_when_handled_running_or_undeployed_and_r
     route = lambda pattern: "c3_pm" if pattern == "PM_DUE" else None
     with pytest.raises(SB.Refused, match="배포"):
         SB.prepare("C", read, FakeRt(), route)                                     # C 흐름이 배포되지 않음
-    running = {"proc_inst_id": "c3_pm.1", "status": "RUNNING", "start_event_id": "CMMS-PM_DUE-HYD-02-20261009010101"}
+    running = {"proc_inst_id": "c3_pm.1", "status": "RUNNING", "start_event_id": "CMMS-PM_DUE-HYD-02-20261009010101", "asset": "HYD-02"}
     with pytest.raises(SB.Refused, match="진행 중"):
         SB.prepare("B", read, FakeRt([running]), route)
     s = SB.status(read, FakeRt([running]))["scenarios"]
@@ -219,10 +220,11 @@ def test_injection_origin_carries_the_press_and_finds_its_case(world):
     origin = SB.injection_origin("쿨러 열화 주입", person)
     assert origin["id"].startswith("PRESS-") and origin["by"] == "김운전" and origin["button"] == "쿨러 열화 주입" and origin["at"]
     inst = rt.on_alert_raise(dict(c2.ALERT, alertId="HYD-01-A-9"), now=NOW)
-    assert SB.case_of_injection(rt, "HYD-01", origin["id"]) is None
+    injected = dict(origin, at=NOW.isoformat())                                 # 주입은 처리 건보다 먼저(NOW)
+    assert SB.case_of_injection(rt, "HYD-01", injected) is None
     rt.repo.record_events([SB.press_event(inst["proc_inst_id"], origin["button"], "HYD-01", origin, origin["at"], {"injection_id": origin["id"]})])
-    assert SB.case_of_injection(rt, "HYD-01", origin["id"]) == inst["proc_inst_id"]
-    assert SB.case_of_injection(rt, "HYD-01", "PRESS-other") is None
+    assert SB.case_of_injection(rt, "HYD-01", injected) == inst["proc_inst_id"]
+    assert SB.case_of_injection(rt, "HYD-01", dict(injected, id="PRESS-other")) is None
     assert SB.A_BUTTONS["degrade"]["fault"] == {"type": "cooler_degradation", "severity": SB.A_SEVERITY}
 
 

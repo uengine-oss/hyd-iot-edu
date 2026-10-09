@@ -101,7 +101,8 @@ class Repo(Protocol):
     def insert_instance(self, inst: dict) -> None: ...
     def update_instance(self, inst: dict) -> None: ...
     def get_instance(self, proc_inst_id: str) -> dict | None: ...
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]: ...
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]: ...
     def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0) -> list[dict]: ...
     def hide_instances(self, tenant_id, def_id, ids) -> int: ...   # B5: finished instances of one definition → is_deleted (rows kept)
     # work items
@@ -348,11 +349,12 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         return any(any(v.get('key')=='incident' and v.get('value')==incident_id
                        for v in i.get('variables_data') or []) for i in self.instances.values())
 
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]:
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]:
+        has = lambda i, key, val: any(v.get('key') == key and v.get('value') == val for v in i.get('variables_data') or [])
         rows = [i for i in self.instances.values() if not i.get("is_deleted",False)
                 and (status is None or i["status"] == status) and (tenant_id is None or i.get("tenant_id") == tenant_id)
-                and (incident_id is None or any(v.get('key')=='incident' and v.get('value')==incident_id
-                    for v in i.get('variables_data') or []))]
+                and (incident_id is None or has(i, 'incident', incident_id)) and (asset is None or has(i, 'asset', asset))]
         return [_copy(i) for i in sorted(rows, key=lambda i: i["start_date"], reverse=True)[:limit]]
 
     # ---- work items
@@ -819,13 +821,15 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return c.execute('select exists(select 1 from bpm_proc_inst where variables_data @> %s::jsonb) as owned',
                              (self._Jsonb([{'key':'incident','value':incident_id}]),)).fetchone()['owned']
 
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]:
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]:
         with self._conn() as c:
             rows = c.execute("""select * from bpm_proc_inst where is_deleted=false
                     and (%s::text is null or status::text=%s) and (%s::text is null or tenant_id=%s)
                     and (%s::text is null or variables_data @> %s::jsonb)
+                    and (%s::text is null or variables_data @> %s::jsonb)
                     order by start_date desc limit %s""", (status,status,tenant_id,tenant_id,incident_id,
-                        self._Jsonb([{'key':'incident','value':incident_id}]),limit)).fetchall()
+                        self._Jsonb([{'key':'incident','value':incident_id}]),asset,self._Jsonb([{'key':'asset','value':asset}]),limit)).fetchall()
             return [self._row(r) for r in rows]
 
     def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0):

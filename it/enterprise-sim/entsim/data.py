@@ -159,7 +159,7 @@ def ems_demand() -> dict:
 SPARE_BASE = {
     # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 3 · HYD-03 예방 교체 예약 2 → 가용 1 < 재주문점 2 — 수업 시작 상태가 곧
     # '재고 보충 필요'다(C3 B · C 단순화, 마이그레이션 47). 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 구매 처리 건이 입고까지 하면 가용 7.
-"P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 3, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
+    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 3, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
                    "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
     "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
     "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},

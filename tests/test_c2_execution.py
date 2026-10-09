@@ -396,7 +396,7 @@ def test_c_one_approval_orders_mails_receives_and_reports_even_over_the_delegati
 def test_c_supplier_delay_makes_the_due_date_timer_fire_and_a_delay_report_without_receipt(world):
     rt, inst, inc, d, opt, out = open_c(world)
     c_approve(rt, inst, d, opt)
-    out.delay_d = 3                                                               # 수업 버튼 '공급사 납기 지연 +3일'
+    out.delay_d = 3                                                               # 공급사 납기 지연 통보 +3일 (ERP 거래 skill:delay-delivery)
     rt.reconcile_services(now=NOW + timedelta(seconds=361))                       # 원래 입고 예정 — 늦어진 예정을 다시 읽고 더 기다린다
     gr = _row(rt, inst, "T_gr")
     assert gr["status"] == "SUBMITTED" and gr["draft"]["wait"]["delay_d"] == 3
