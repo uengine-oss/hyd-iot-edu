@@ -718,7 +718,9 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them
 TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procure-part",
            # C2 승인 뒤 실행 부품: 입고 확인 · 정비 수행 모사(작업지시 완료)
-           "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance"}
+           "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance",
+           # 시운전 통과 뒤 운전시간 계수기 리셋 · 다음 기한 기록 (시나리오 B)
+           "PM_RESET": "skill:pm-reset"}
 
 
 def _window_params(window, opt: dict) -> dict:
@@ -734,7 +736,7 @@ def _window_params(window, opt: dict) -> dict:
         return out or {"window": "즉시"}
     if isinstance(window, str) and window.strip():
         return {"window_id": window.strip()} if window.strip().startswith("MW-") else {"window": window.strip()}
-    return {"window": "야간 정비창" if "night" in opt["id"] else "즉시"}
+    return {"window": "예정된 정비 시간 (야간)" if "night" in opt["id"] else "즉시"}
 
 
 def exec_skill(d: dict, item: dict) -> dict:
@@ -751,7 +753,7 @@ def exec_skill(d: dict, item: dict) -> dict:
         params = {"supplier": item.get("value") or "sup:b", "part": opt.get("name")}
         if item.get("part_no"):          # C2: 승인 경로가 확정한 부품 · 수량 · 금액 (ERP 가 견적 · AVL · 금액을 다시 확인)
             params.update(part_no=item["part_no"], qty=item["qty"], amount=item["amount"])
-    else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) — 대상 기록 번호
+    else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) · PM_RESET(계수기 리셋) — 대상 기록 번호
         params = {"ref": item.get("ref")}
         if item.get("sop"):
             params["sop"] = item["sop"]

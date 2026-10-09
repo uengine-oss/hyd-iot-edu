@@ -31,6 +31,7 @@ READ_RPCS = {
     "spare_stock": ("ent.spare_stock_read", ("part",)),
     "part_quotes": ("ent.part_quotes_read", ("part",)),
     "maintenance_windows": ("ent.maintenance_windows_read", ("asset",)),
+    "pm_status": ("ent.pm_status_read", ("asset",)),     # 시나리오 B: 정기 정비 계획 · 운전시간 계수기
 }
 
 def ok(document) -> dict:

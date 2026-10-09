@@ -427,7 +427,6 @@ services:
     environment:
       SMTP_HOST: ${EFFECTS_SMTP_HOST:-host.docker.internal}      # Supabase 로컬 Inbucket (it/supabase/config.toml [inbucket] smtp_port)
       SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}
-      ENTERPRISE_URL: http://enterprise-sim:8095
       EFFECTS_STATE_PATH: /data/effects.sqlite3
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: ["effects-data:/data"]
@@ -462,6 +461,40 @@ services:
     extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8199/healthz')"]
+      <<: *py-health
+
+  enterprise-mcp-maint:                   # C2: 업무 MCP 보전용(정비 계획 · 운전시간 계수기 · 작업지시 · 생산 오더) — 같은 코드, 도구 묶음만 다름
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 160m
+    build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
+    profiles: [cliagents]
+    networks: [it-net]
+    ports: ["127.0.0.1:8196:8196"]
+    environment:
+      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_MCP_TOOLSET: maintenance
+      MCP_PORT: "8196"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8196/healthz')"]
+      <<: *py-health
+
+  enterprise-mcp-purchase:                # C2: 업무 MCP 구매용(ERP 예비품 재고 · SCM 공급사 견적)
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 160m
+    build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
+    profiles: [cliagents]
+    networks: [it-net]
+    ports: ["127.0.0.1:8195:8195"]
+    environment:
+      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_MCP_TOOLSET: purchasing
+      MCP_PORT: "8195"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8195/healthz')"]
       <<: *py-health
 
   dmn-mcp:                                # 결정론 판단 엔진(agentsvc cards · decide)을 MCP 도구로 — 반복 판단은 DMN, LLM 은 수집·설명

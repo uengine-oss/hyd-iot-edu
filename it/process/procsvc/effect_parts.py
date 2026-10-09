@@ -8,6 +8,8 @@
   svc:wait                 process:wait              시간 대기 — 기간(ISO) 또는 처리 건 값의 시각까지. 배속 × 수업 압축 배율        아니오
   svc:maintenance          plant:restore             정비 수행 모사 — 작업지시 완료(부품 소모) + 시뮬레이터 복구 + 완료 공지         예
   svc:goods-receipt        enterprise:GR_CONFIRM     입고 확인 — 발주의 입고 예정까지 기다렸다가 입고 · 검수 기록, 사건 종결       예
+  svc:test-run             plant:test-run            시운전 확인 — 안정 시간 뒤 압력 · 유량 · 진동을 기준과 비교, 통과면 계수기 리셋   예
+  svc:report               process:report            결과 보고 — 결과(정상 · 미달 · 지연 · 알림)를 담당자에게 알리고 사건을 닫는다    아니오
 
 활동(activity) 모양: {"type": "serviceTask", "tool": <tool>, "service": {<부품 설정>}, "inputData": [...], "outputData": [...]}.
 설정 · 출력 이름은 validate(activity)가 검사하고(등록 · 가져오기 검사), 실행은 instances.InstanceRuntime 의 부품 처리기가 한다.
@@ -28,9 +30,17 @@ PR_TOOL = "enterprise:PR_CREATE"
 WAIT_TOOL = "process:wait"
 RESTORE_TOOL = "plant:restore"
 GR_TOOL = "enterprise:GR_CONFIRM"
-TOOLS = (MCP_TOOL, PR_TOOL, WAIT_TOOL, RESTORE_TOOL, GR_TOOL)
+TEST_RUN_TOOL = "plant:test-run"
+REPORT_TOOL = "process:report"
+TOOLS = (MCP_TOOL, PR_TOOL, WAIT_TOOL, RESTORE_TOOL, GR_TOOL, TEST_RUN_TOOL, REPORT_TOOL)
 #: 바깥(업무 시스템 · 메일 · 설비 시뮬레이터)에 효과를 내는 부품 — 앞 경로에 사람 승인이 있어야 등록된다(bpmn_import.check)
-EFFECTS = {MCP_TOOL: "MCP 쓰기(메일 · 일정 · 기록)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인"}
+EFFECTS = {MCP_TOOL: "MCP 쓰기(메일)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인",
+           TEST_RUN_TOOL: "시운전 확인 · 계수기 리셋"}
+#: 시운전 기준 기본값(파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s, 경보선 = 사건 회복 기준과 같은 값 — definition.RECOVERY)
+TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}
+TEST_RUN_OPS = (">=", ">", "<=", "<")
+#: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · info 알림만, 사건은 그대로)
+REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info"}
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")         # mcp_registry.NAME_RE 와 같음
 TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -38,15 +48,15 @@ IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*$")
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\}")
 COMPONENTS = ("cooler", "pump", "fan")                                  # plant-sim 복구 대상(ot/plant-sim FaultReq.component)
-#: 승인 경로(select)가 카드에서 확정해 처리 건 값으로 넣는 발주 값 — 분기 조건 `approved_amount > 300`(구매팀장 추가 승인)에 쓴다
+#: 승인 경로(select)가 카드에서 확정해 처리 건 값으로 넣는 발주 값 — ERP 발주 · 공급사 메일 · 결과 보고가 쓴다. 2차 승인은 없다
+#: (확정 2026-10-09: 담당자 승인 1회. 전결 기준 300만 원 초과는 에이전트 요약 · 승인 화면에 표시만 한다 — PR-07 규칙 rule:pur-amount WARN)
 PURCHASE_VALUES = ("approved_amount", "approved_qty", "approved_supplier", "approved_unit_price", "approved_part_no")
 
 PARTS = {
     "svc:mcp-call": {
-        "tool": MCP_TOOL, "name": "승인 뒤 MCP 호출 (메일 · 일정 · 기록)", "outputs": ["mcp_receipt"],
+        "tool": MCP_TOOL, "name": "승인 뒤 MCP 호출 (메일 등)", "outputs": ["mcp_receipt"],
         "help": "등록된 MCP 서버의 도구 하나를 사람 승인 뒤에 부릅니다(쓰기 도구도 됨, 에이전트에게는 보이지 않음). "
-                "인자 값의 {값 이름}은 처리 건 값으로 바뀝니다. 수업 기본 서버 hyd-effects: send_mail(메일 → Inbucket) · "
-                "add_calendar_entry(CMMS 일정) · record_case(처리 건 기록).",
+                "인자 값의 {값 이름}은 처리 건 값으로 바뀝니다. 수업 기본 서버 hyd-effects: send_mail(메일 → 수업 메일함 Inbucket, 실제 발송 없음).",
         "config": {"server": "MCP 서버 이름 (예: hyd-effects)", "tool": "도구 이름 (예: send_mail)",
                    "arguments": "인자 틀 {이름: 값} — 문자열 안 {asset} · {approved_amount} · {work_order.ref} 처럼 처리 건 값을 넣는다",
                    "output": "결과를 담을 값 이름 (기본 mcp_receipt)"},
@@ -54,8 +64,8 @@ PARTS = {
     "svc:erp-po": {
         "tool": PR_TOOL, "name": "ERP 발주", "outputs": ["purchase_order"], "inputs": ["approved_amount"],
         "help": "사람이 승인한 카드의 공급사 · 수량 · 금액(approved_supplier · approved_qty · approved_amount)으로 ERP 발주를 냅니다. "
-                "ERP 가 견적 · 승인 공급사(AVL) · 금액을 다시 확인하고 입고 예정을 올립니다.",
-        "config": {},
+                "ERP 가 견적 · 승인 공급사(AVL) · 금액을 다시 확인하고 입고 예정을 올립니다. mail 을 정하면 발주 뒤 공급사 · 입고 부서에 메일을 보냅니다.",
+        "config": {"mail": "발주 뒤 보낼 메일 {to, subject, body} (선택, 수업 메일함 Inbucket — 실제 발송 없음). {purchase_order.ref} 같은 값을 넣는다"},
     },
     "svc:wait": {
         "tool": WAIT_TOOL, "name": "시간 대기", "outputs": ["waited"],
@@ -66,10 +76,11 @@ PARTS = {
     },
     "svc:maintenance": {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
-        "help": "현장 정비를 모사합니다: 작업지시가 있으면 CMMS 에서 완료 처리(표준 부품 소모), 설비 시뮬레이터의 대상 부품을 정상으로 "
-                "되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. 설비 명령 경로(PLC)가 아닌 실습 시뮬레이터 조작입니다.",
+        "help": "현장 정비를 모사합니다: (until 을 정하면 예정된 정비 시간까지 기다린 뒤) 작업지시가 있으면 CMMS 에서 완료 처리(표준 부품 소모), "
+                "설비 시뮬레이터의 대상 부품을 정상으로 되돌리고, 완료 공지를 처리 건 참여자에게 남깁니다. 설비 명령 경로(PLC)가 아닌 실습 시뮬레이터 조작입니다.",
         "config": {"component": "되돌릴 부품: cooler · pump · fan (비우면 설비 전체)", "sop": "작업지시 완료 때 부품 소모 기준 SOP (예: SOP-PMP-04, 비우면 카드의 SOP)",
-                   "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)"},
+                   "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)",
+                   "until": "먼저 기다릴 시각이 든 처리 건 값 (예: work_order.after.window_starts_at — 예정된 정비 시간, 수업 압축 적용)"},
     },
     "svc:goods-receipt": {
         "tool": GR_TOOL, "name": "입고 확인", "outputs": ["goods_receipt", "received"], "inputs": ["purchase_order"],
@@ -77,20 +88,73 @@ PARTS = {
                 "납기 초과를 보이려면 경계 타이머(예: P7D)를 붙입니다(같은 수업 압축 배율).",
         "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)"},
     },
+    "svc:test-run": {
+        "tool": TEST_RUN_TOOL, "name": "시운전 확인", "outputs": ["test_run", "passed"], "inputs": ["asset"],
+        "help": "정비 뒤 설비를 안정시킨 다음(배속만 적용) 압력 · 유량 · 진동의 최신값을 기준과 비교합니다. 모두 통과하면 CMMS 운전시간 계수기를 "
+                "리셋하고 다음 기한을 기록합니다. 결과 passed 로 정상/미달 분기를 그립니다.",
+        "config": {"criteria": "기준 {태그: [연산, 값]} (기본 PS1 >= 165 · FS1 >= 8 · VS1 < 1.2)", "settle": "안정 시간 ISO-8601 (기본 PT10M, 배속만 적용)",
+                   "reset_counter": "통과하면 계수기 리셋 · 다음 기한 기록 (기본 true)", "work_order_var": "작업지시 영수증 값 이름 (기본 work_order)"},
+    },
+    "svc:report": {
+        "tool": REPORT_TOOL, "name": "결과 보고", "outputs": ["result_report"],
+        "help": "처리 결과(정상 · 미달 · 지연 · 알림)를 담당자 화면에 알리고 기록합니다. 정상 · 미달은 사건을 닫고, 알림은 사건을 그대로 둡니다. "
+                "사람 task 가 아닙니다 — 담당자는 보기만 합니다.",
+        "config": {"outcome": "결과: 정상 · 입고 완료 · 미달 · 지연 · 알림 · 승인 지연", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
+                   "summary": "요약 틀 — 처리 건 값 {이름} 을 넣는다. 없는 값은 '(없음)'"},
+    },
 }
 BY_TOOL = {p["tool"]: k for k, p in PARTS.items()}
 
 
 # ---------------------------------------------------------------- 등록 검사
+NOTICE_SERVER, NOTICE_TOOL = "hyd-effects", "send_mail"
+
+
+def notice_spec(mail) -> dict | None:
+    """시스템 task 끝에 붙는 메일 공지 설정 → MCP 호출 설정. 없으면 None. {to, subject, body} 또는 {server, tool, arguments}."""
+    if mail in (None, {}, ""):
+        return None
+    if not isinstance(mail, dict):
+        raise ValueError("메일 공지(mail)는 {to, subject, body} 객체여야 합니다")
+    if "arguments" in mail:
+        spec = {"server": mail.get("server") or NOTICE_SERVER, "tool": mail.get("tool") or NOTICE_TOOL, "arguments": mail["arguments"]}
+    else:
+        spec = {"server": NOTICE_SERVER, "tool": NOTICE_TOOL, "arguments": {k: v for k, v in mail.items() if k in ("to", "cc", "subject", "body")}}
+    if not NAME_RE.match(str(spec["server"])) or not TOOL_RE.match(str(spec["tool"])) or not isinstance(spec["arguments"], dict):
+        raise ValueError("메일 공지의 서버 · 도구 · 인자가 올바르지 않습니다")
+    if spec["tool"] == NOTICE_TOOL and not all(spec["arguments"].get(k) for k in ("to", "subject")):
+        raise ValueError("메일 공지에는 받는 사람(to)과 제목(subject)이 있어야 합니다")
+    for name in placeholders(spec["arguments"]):
+        if not PATH_RE.match(name):
+            raise ValueError(f"메일 공지 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
+    return spec
+
+
 def validate(activity: dict) -> None:
     """부품 설정 · 출력 이름 검사. 틀리면 ValueError(사람이 읽는 사유)."""
     tool = activity.get("tool")
+    aid = activity.get("id")
+    if tool == "enterprise:WO_CREATE":               # 기준 부품(CMMS 작업지시)의 선택 설정: 정비 시점 값 이름 · 생산팀 공지 메일
+        cfg = activity.get("service") or {}
+        if not isinstance(cfg, dict) or set(cfg) - {"window_var", "mail"}:
+            raise ValueError(f"활동 {aid}: 작업지시 설정은 window_var · mail 만 받습니다")
+        if cfg.get("window_var") is not None and (not isinstance(cfg["window_var"], str) or not PATH_RE.match(cfg["window_var"])):
+            raise ValueError(f"활동 {aid}: window_var 는 처리 건 값 이름(점으로 안쪽 칸, 예: alert.evidence.night_window_id)이어야 합니다")
+        try:
+            notice_spec(cfg.get("mail"))
+        except ValueError as e:
+            raise ValueError(f"활동 {aid}: {e}") from e
+        return
     if tool not in TOOLS:
         return
-    aid = activity.get("id")
     cfg = activity.get("service") if activity.get("service") is not None else {}
     if not isinstance(cfg, dict):
         raise ValueError(f"활동 {aid}: service 설정은 객체여야 합니다")
+    if tool == PR_TOOL:
+        try:
+            notice_spec(cfg.get("mail"))
+        except ValueError as e:
+            raise ValueError(f"활동 {aid}: {e}") from e
     outs = list(activity.get("outputData") or [])
     if tool == MCP_TOOL:
         if not isinstance(cfg.get("server"), str) or not NAME_RE.match(cfg["server"]):
@@ -124,6 +188,32 @@ def validate(activity: dict) -> None:
             raise ValueError(f"활동 {aid}: until 은 처리 건 값 이름(점으로 안쪽 칸, 예: work_order.window_starts_at)이어야 합니다")
     if tool == RESTORE_TOOL and cfg.get("component") not in (None, "", *COMPONENTS):
         raise ValueError(f"활동 {aid}: 복구 부품은 {', '.join(COMPONENTS)} 중 하나입니다")
+    if tool == RESTORE_TOOL and cfg.get("until") not in (None, "") and (not isinstance(cfg["until"], str) or not PATH_RE.match(cfg["until"])):
+        raise ValueError(f"활동 {aid}: until 은 처리 건 값 이름(예: work_order.after.window_starts_at)이어야 합니다")
+    if tool == TEST_RUN_TOOL:
+        crit = cfg.get("criteria", TEST_RUN_CRITERIA)
+        if not isinstance(crit, dict) or not crit or any(not isinstance(t, str) or not re.match(r"^[A-Za-z][A-Za-z0-9_]{0,31}$", t)
+                                                          or not isinstance(c, (list, tuple)) or len(c) != 2 or c[0] not in TEST_RUN_OPS
+                                                          or isinstance(c[1], bool) or not isinstance(c[1], (int, float)) for t, c in crit.items()):
+            raise ValueError(f"활동 {aid}: 시운전 기준은 {{태그: [연산(>=, >, <=, <), 값]}} 이어야 합니다")
+        if cfg.get("settle") not in (None, ""):
+            try:
+                ok = engine.iso_duration_seconds(cfg["settle"]) >= 0
+            except (ValueError, TypeError):
+                ok = False
+            if not ok:
+                raise ValueError(f"활동 {aid}: 안정 시간 '{cfg['settle']}'을(를) 읽을 수 없습니다 (예: PT10M)")
+        if "reset_counter" in cfg and not isinstance(cfg["reset_counter"], bool):
+            raise ValueError(f"활동 {aid}: reset_counter 는 true/false 입니다")
+    if tool == REPORT_TOOL:
+        if cfg.get("outcome") not in REPORT_OUTCOMES:
+            raise ValueError(f"활동 {aid}: 결과 보고의 결과(outcome)는 {', '.join(REPORT_OUTCOMES)} 중 하나입니다")
+        for key in ("title", "summary"):
+            if cfg.get(key) is not None and not isinstance(cfg[key], str):
+                raise ValueError(f"활동 {aid}: {key} 는 글이어야 합니다")
+            for name in placeholders(cfg.get(key) or ""):
+                if not PATH_RE.match(name):
+                    raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
     for key in ("work_order_var", "purchase_order_var"):
         if cfg.get(key) is not None and (not isinstance(cfg[key], str) or not IDENT_RE.match(cfg[key])):
             raise ValueError(f"활동 {aid}: {key} 는 값 이름이어야 합니다")
@@ -194,6 +284,28 @@ def render(value, values: dict):
     return deepcopy(value)
 
 
+def render_report(template: str | None, values: dict) -> str:
+    """결과 보고 글: 없는 값은 '(없음)' — 보고는 값이 모자라도 나가야 한다(실패로 막지 않는다)."""
+    def text(m):
+        try:
+            v = lookup(values, m.group(1))
+        except KeyError:
+            return "(없음)"
+        return v if isinstance(v, str) else ("(없음)" if v is None else _text(v))
+    return PLACEHOLDER.sub(text, template or "")
+
+
+def test_run_verdict(criteria: dict, readings: dict) -> tuple[bool, list[dict]]:
+    """시운전 판정: 기준마다 최신값이 기준 안인지. 값이 없으면 미달(모르는 것을 통과로 치지 않는다)."""
+    rows, ok_all = [], True
+    for tag, (op, limit) in criteria.items():
+        v = readings.get(tag)
+        ok = v is not None and {">=": v >= limit, ">": v > limit, "<=": v <= limit, "<": v < limit}[op]
+        ok_all = ok_all and ok
+        rows.append({"tag": tag, "op": op, "limit": limit, "value": v, "ok": ok})
+    return ok_all, rows
+
+
 def _text(v) -> str:
     import json
     if isinstance(v, float) and v.is_integer():
@@ -258,7 +370,7 @@ def purchase_inputs(values: dict) -> tuple[str | None, int | None]:
 
 def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | None:
     """승인한 카드의 발주 값을 확정한다. 카드에 발주가 없으면 None. 부품 · 수량 · 견적을 모르면 ValueError —
-    금액을 모르는 채 승인하면 '300만 원 초과 → 구매팀장' 분기를 건너뛸 수 있으므로 승인을 받지 않는다."""
+    금액을 모르는 채 승인하면 사람이 무엇을 승인했는지(얼마를 발주하는지) 기록이 없으므로 승인을 받지 않는다."""
     action = purchase_action(option)
     if action is None:
         return None

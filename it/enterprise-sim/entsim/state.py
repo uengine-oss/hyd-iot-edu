@@ -41,21 +41,18 @@ IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어�
                 "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}
 # C2 (확정 TODO C): 승인 뒤 실행 부품이 부르는 업무 거래 + 수업 원인 버튼(예비품 출고). ent.exec_skill(migration 20261009000045)과 같은 규칙.
 # 되돌리기 계약이 없는 거래다(입고 · 정비 완료는 실물이 움직였고, 일정 · 기록 · 출고는 새 기록으로 바로잡는다) — effect_compensation 이 사유를 보인다.
-C2_SKILLS = {"skill:receive-goods": "sys:erp", "skill:complete-maintenance": "sys:cmms", "skill:calendar-entry": "sys:cmms",
-             "skill:record-case": "sys:cmms", "skill:issue-spare": "sys:erp",
+C2_SKILLS = {"skill:receive-goods": "sys:erp", "skill:complete-maintenance": "sys:cmms", "skill:issue-spare": "sys:erp",
              # 시나리오 B: 운전시간 계수기(수업 버튼 '빨리 감기' · 시운전 통과 뒤 리셋), 시나리오 C: 공급사 납기 지연(수업 버튼 — 미달 가지)
              "skill:pm-advance": "sys:cmms", "skill:pm-reset": "sys:cmms", "skill:delay-delivery": "sys:scm"}
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
-                   "skill:calendar-entry": "일정은 공지된 뒤라 취소 일정을 새로 등록한다",
-                   "skill:record-case": "처리 건 기록은 이력이라 지우지 않고 정정 기록을 남긴다",
                    "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
                    "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
                    "skill:pm-reset": "정기 정비가 끝나 다음 주기가 시작됐다(정정은 새 기록으로)",
                    "skill:delay-delivery": "공급사가 알린 납기 변경이라 되돌리지 않는다"}
 SKILLS.update(C2_SKILLS)
 SKILL_NAMES.update({"skill:receive-goods": "입고 · 검수", "skill:complete-maintenance": "정비 완료 · 부품 소모",
-                    "skill:calendar-entry": "CMMS 일정 등록", "skill:record-case": "처리 건 기록", "skill:issue-spare": "예비품 출고",
+                    "skill:issue-spare": "예비품 출고",
                     "skill:pm-advance": "운전시간 계수기 진행", "skill:pm-reset": "운전시간 계수기 리셋 · 다음 기한 기록",
                     "skill:delay-delivery": "공급사 납기 지연 통보"})
 SKILLS.update(COMPENSATION_SKILLS)
@@ -118,8 +115,6 @@ class EnterpriseState:
                                             for p, b in data.SPARE_BASE.items()})
         s["erp"].setdefault("stock_movements", [])
         s["erp"].setdefault("goods_receipts", [])
-        s["cmms"].setdefault("calendar", [])
-        s["cmms"].setdefault("case_records", [])
         s["cmms"].setdefault("pm_counters", {a: dict(b, cycle=1, last_done_at=None, due_since=None, updated_at=_now())
                                              for a, b in data.PM_BASE.items()})
         s["cmms"].setdefault("pm_log", [])
@@ -133,6 +128,7 @@ class EnterpriseState:
     def _stock_view(cls, row: dict) -> dict:
         avail = cls._available(row)
         return dict(row, available=avail, spare_gap=avail - row["reorder_point"], need_qty=max(row["target_stock"] - avail, 0),
+                    need_by_days=data.SPARE_BASE.get(row["part_no"], {}).get("need_by_days"),
                     below_reorder_point=avail < row["reorder_point"], name=data.SPARE_BASE.get(row["part_no"], {}).get("name"))
 
     def _move(self, part: str, kind: str, qty: int, asset, ref, by, reason) -> None:
@@ -276,10 +272,6 @@ class EnterpriseState:
             return next((g for g in s["erp"]["goods_receipts"] if g["id"] == ref), None)
         if skill == "skill:complete-maintenance":
             return next((w for w in s["cmms"]["work_orders"] if w["id"] == ref), None)
-        if skill == "skill:calendar-entry":
-            return next((c for c in s["cmms"]["calendar"] if c["id"] == ref), None)
-        if skill == "skill:record-case":
-            return next((c for c in s["cmms"]["case_records"] if c["id"] == ref), None)
         if skill == "skill:issue-spare":
             move = next((m for m in s["erp"]["stock_movements"] if m.get("ref") == ref), None)
             return s["erp"]["spare_stock"].get(move["part_no"]) if move else None
@@ -299,7 +291,7 @@ class EnterpriseState:
                     raise ValueError(f"INVALID: unknown maintenance window {params['window_id']} for {asset}")
                 window_id, starts_at = win["id"], win["starts_at"]
                 when = when or f"{win['label']} {datetime.fromisoformat(win['starts_at']).astimezone(_KST):%m-%d %H:%M}"
-            when = when or ("야간 정비창" if "derate" in str(req.get("option")) else "즉시")
+            when = when or ("예정된 정비 시간 (야간)" if "derate" in str(req.get("option")) else "즉시")
             wo = {"id": _id("WO"), "asset": asset, "task": params.get("task", "쿨러 핀 세척 (SOP-COOL-02)"), "window": when, "status": "배정됨",
                   "window_id": window_id, "window_starts_at": starts_at}
             s["cmms"]["work_orders"].insert(0, wo)
@@ -339,19 +331,6 @@ class EnterpriseState:
                 self._move(std["part_no"], "CONSUME", std["part_qty"], wo["asset"], wo["id"], req.get("by"), f"{params.get('sop')} 정비 소모")
                 used = f" — {std['part_no']} {std['part_qty']}개 소모"
             return wo["id"], f"{wo['asset']} 작업지시 {wo['id']} 완료 ({wo['task']}){used}"
-        if skill == "skill:calendar-entry":
-            title = params.get("title") or "정비 일정"
-            cal = {"id": _id("CAL"), "asset": asset, "title": title, "starts_at": params.get("starts_at") or _now(),
-                   "duration_h": params.get("duration_h"), "wo_ref": params.get("wo_ref"), "note": params.get("note"),
-                   "decision_id": req.get("decision"), "created_at": _now()}
-            s["cmms"]["calendar"].insert(0, cal)
-            return cal["id"], f"{asset} 일정 등록 — {title}"
-        if skill == "skill:record-case":
-            title = params.get("title") or "처리 건 기록"
-            rec = {"id": _id("CASE"), "asset": asset, "title": title, "body": params.get("body"), "proc_inst_id": params.get("proc_inst_id"),
-                   "decision_id": req.get("decision"), "created_at": _now()}
-            s["cmms"]["case_records"].insert(0, rec)
-            return rec["id"], f"처리 건 기록 — {title}"
         if skill == "skill:issue-spare":
             part, qty = params.get("part_no") or "P-PMP-SEAL", int(params.get("qty") or 1)
             row = s["erp"]["spare_stock"].get(part)

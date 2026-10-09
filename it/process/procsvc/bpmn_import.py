@@ -197,8 +197,7 @@ def parse_bpmn(xml_text: str) -> dict:
                 if parts.get("timeDate") or parts.get("timeCycle"):
                     out["problems"].append(problem(item, "timer", "타이머는 기간(timeDuration)만 씁니다 — 날짜 · 반복 타이머는 실행하지 않습니다"))
                 timer = parts.get("timeDuration") or None
-            if not item["interrupting"]:
-                out["problems"].append(problem(item, "event", "멈추지 않는(non-interrupting) 경계 타이머는 실행하지 않습니다 — 실선 타이머를 쓰세요"))
+            # C2: 멈추지 않는(점선) 경계 타이머 = 알림 가지(예: 승인 지연 알림). 붙은 task 는 계속 기다리고, 타이머 가지가 따로 흐른다(engine.non_interrupting)
             item["timer"] = timer
             out["boundaries"].append(item)
         elif tag in GATEWAY_TYPES:
@@ -287,6 +286,27 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                       "inputs": list(a.get("inputData") or []), "outputs": list(a.get("outputData") or []),
                       "approval": tool == APPROVAL_TOOL, "effect": EFFECT_TOOLS.get(tool),
                       "default_timer": timers[0] if timers else None, "contract": contract})
+    # C2 (확정 흐름 2026-10-09): '판단 · 제안' 에이전트 task 하나 — 기준의 순위 · 카드 작성(task:rank) 계약을 그대로 쓰되(같은 폼 · 같은 결과
+    # decision · decision_id, 승인 경로가 믿는 값), 앞 단계 없이 경보 값만 받는다. 에이전트가 그 안에서 진단 → 후보 → 규정 → 순위(evaluate_cards)를
+    # 하고 카드를 낸다(submit_decision). 과정은 실행 화면의 실시간 기록으로 보인다. 지시문은 매핑의 instruction 으로 바꿀 수 있다.
+    rank = next((p for p in parts if p["key"] == "task:rank" and p["kind"] == "agent"), None)
+    diag = next((p for p in parts if p["key"] == "task:diagnose" and p["kind"] == "agent"), None)
+    if rank is not None and diag is not None and rank.get("form") and diag.get("form"):
+        # 결과 = 진단(cause · failure_mode · guide_card — 설비 명령 승인은 가이드 카드에 있는 조치만 받는다) + 카드(decision · decision_id)
+        # 진단 칸은 선택(업무 경보 — 재고 · 운전시간 — 에는 센서 진단이 없을 수 있다). 명령 카드는 가이드 카드가 없으면 사건이 승인을 거절한다
+        fields = [dict(f, required=False) for f in deepcopy(diag["form"].get("fields_json") or [])] + deepcopy(rank["form"].get("fields_json") or [])
+        outs = [f["key"] for f in fields]
+        contract = deepcopy(rank["contract"])
+        contract.update(name="판단 · 제안", description="판단 · 제안", inputData=list(ALERT_START_VALUES), outputData=outs,
+                        tool="formHandler:decide",
+                        instruction="이 처리 건의 근거를 모두 조회해 원인 · 상황을 진단하고(diagnose), 후보 조치를 규정 · 회사 목표(BSC) · 성과 지표로 "
+                                    "비교해 순위를 매긴 뒤(evaluate_cards) 추천 1장과 지는 대안을 카드로 제출한다(submit_decision). "
+                                    "승인 전에는 조회 · 계산만 한다.")
+        parts.append(dict(deepcopy(rank), key="task:decide", name="판단 · 제안 (에이전트 한 번)", inputs=list(ALERT_START_VALUES),
+                          outputs=outs, tool="formHandler:decide", form_id="decide", form={"fields_json": fields},
+                          contract=contract, group="general",
+                          help="경보 하나에 에이전트 task 하나: 진단 · 후보 · 규정 · 순위를 한 번에 하고 카드(추천 1장 + 지는 대안)를 냅니다. "
+                               "결과는 담당자 승인 task 가 받습니다. 지시문을 시나리오에 맞게 바꿀 수 있습니다."))
     general = [{"key": "human", "group": "general", "name": "사람 task", "kind": "human",
                 "help": "담당 역할 · 폼 칸을 정합니다. 폼 칸이 이 task 가 내는 값입니다."},
                {"key": "agent", "group": "general", "name": "에이전트 task", "kind": "agent",
@@ -585,7 +605,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         bad = [v for v in inputs if not _identifier(v)]
         if bad:
             problems.append(problem(t, "inputs", f"받을 값 이름 {', '.join(bad)} 을(를) 쓸 수 없습니다")); continue
-        if p["group"] == "scenario":
+        if p["group"] == "scenario" or p.get("contract"):     # 기준 정의 부품과 그 계약을 쓰는 일반 부품(task:decide)
             a = deepcopy(p["contract"])
             a["id"], a["name"] = t["id"], t["name"] or p["name"]
             if p["kind"] == "human" and m.get("role"):
@@ -593,6 +613,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 if r is None or not r["human"]:
                     problems.append(problem(t, "role", f"'{m['role']}'은(는) 사람 역할이 아닙니다")); continue
                 a["role"] = r["name"]
+            if p["key"] == "task:decide" and str(m.get("instruction") or "").strip():
+                a["instruction"] = str(m["instruction"]).strip()          # C2: 시나리오마다 판단 지시문(시나리오 에이전트)을 바꾼다
             if p["kind"] == "agent" and m.get("agent"):
                 if m["agent"] not in agents:
                     problems.append(problem(t, "agent", f"에이전트 {m['agent']} 가 에이전트 목록에 없습니다")); continue
@@ -601,6 +623,13 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 forms[p["form_id"]] = deepcopy(p["form"])
             if lane_r and lane_r != a.get("role") and p["kind"] != "human":
                 pass                                           # 시스템 · 에이전트 부품은 부품 담당이 정한다(칸 이름은 그림 정보)
+            if p["tool"] == "enterprise:WO_CREATE" and isinstance(m.get("config"), dict) and m["config"]:
+                # C2: 작업지시 부품의 선택 설정 — 정비 시점 값 이름(window_var) · 생산팀 공지 메일(mail)
+                a["service"] = deepcopy(m["config"])
+                try:
+                    effect_parts.validate(a)
+                except ValueError as e:
+                    problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
         elif key in effect_parts.PARTS:                        # C2: 승인 뒤 실행 부품
             config = m.get("config") if isinstance(m.get("config"), dict) else {}
             sys_role = next((r["name"] for r in cat["roles"] if r.get("endpoint") == engine.SYSTEM_USER), None)
@@ -686,8 +715,11 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 ok = False
             if not ok:
                 problems.append(problem(b, "timer", f"기간 '{timer}'을(를) 읽을 수 없습니다 (예: PT10M)"))
-        events.append({"id": b["id"], "name": b["name"] or "시간 초과", "type": "boundaryEvent", "eventDefinition": "timer",
-                       "timer": timer, "attachedTo": b["attached_to"]})
+        ev = {"id": b["id"], "name": b["name"] or "시간 초과", "type": "boundaryEvent", "eventDefinition": "timer",
+              "timer": timer, "attachedTo": b["attached_to"]}
+        if b.get("interrupting") is False:
+            ev["cancelActivity"] = False
+        events.append(ev)
 
     # -- 분기 · 선
     flow_map = mapping.get("flows") if isinstance(mapping.get("flows"), dict) else {}

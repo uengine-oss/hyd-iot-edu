@@ -5,7 +5,7 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 $env:PYTHONUTF8 = '1'
 $env:PYTHONPATH = 'it/agent-worker;it/process;common'
 $env:SUPABASE_DSN = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
-$env:MCP_HOST_REWRITE = 'neo4j:7687=127.0.0.1:7687,enterprise-mcp:8199=127.0.0.1:8199,dmn-mcp:8198=127.0.0.1:8198'
+$env:MCP_HOST_REWRITE = 'neo4j:7687=127.0.0.1:7687,enterprise-mcp:8199=127.0.0.1:8199,dmn-mcp:8198=127.0.0.1:8198,enterprise-mcp-maint:8196=127.0.0.1:8196,enterprise-mcp-purchase:8195=127.0.0.1:8195'
 $env:CLIAGENTS_WORKSPACE_ROOT = Join-Path (Get-Location) '.evidence/workspace'
 $env:SCHEMA_PROMPT = Join-Path (Get-Location) 'it/neo4j/v2/schema_prompt.md'
 $env:CONSUMER_ID = "agent-worker:$Provider-host"

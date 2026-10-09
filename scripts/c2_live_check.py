@@ -1,13 +1,15 @@
 """C2 라이브 확인 (강사 PC · 메인 스택을 건드리지 않음): 버리는 DB(c2_check, scripts/c2_scratch_db.sh)에 붙인 enterprise-sim(Supabase 백엔드)과
 effects-mcp 를 이 PC 에서 따로 띄우고, 작은 SMTP 받는 곳(Inbucket 대역)으로 메일을 받아 C 경로의 부품을 실제로 부른다.
 
-  1. 수업 원인 버튼: POST /erp/spare/issue → 가용이 재주문점 아래로
-  2. ERP 재고 감시(business_monitor.scan_once)가 enterprise-sim 을 읽어 경보 한 건을 만든다 (같은 회차는 한 번)
+  1. 수업 원인 버튼 '자재 출고 −2': POST /erp/spare/issue → 가용이 재주문점 아래로
+  2. 업무 표 기준값 감시(business_monitor.scan_once)가 enterprise-sim 을 읽어 경보 한 건을 만든다 (같은 회차는 한 번)
   3. 승인 경로의 금액 확정(effect_parts.purchase_quote) — ERP 견적으로 330만 원
   4. ERP 발주(ent.exec_skill procure-part, 금액 · AVL 재확인) — 비AVL 은 거절
-  5. 승인 뒤 MCP 호출(mcp_check.call_effect) → effects-mcp send_mail(SMTP) · add_calendar_entry · record_case, 같은 키 재호출은 replayed
+  5. 승인 뒤 MCP 호출(mcp_check.call_effect) → effects-mcp send_mail(SMTP), 같은 키 재호출은 replayed
+  5e. 수업 버튼 '공급사 납기 지연 +3일'(미달 가지) → 발주의 입고 예정이 늦어짐
   6. 입고 확인(receive-goods) → 재고 회복, 재고 이동 원장
-  7. enterprise-mcp 읽기 도구(spare_stock · part_quotes · maintenance_windows)를 전용 읽기 계정으로
+  7. enterprise-mcp 읽기 도구(spare_stock · part_quotes · pm_status)를 전용 읽기 계정으로
+  8. 시나리오 B: 수업 버튼 '운전시간 빨리 감기 +300 h' → PM_DUE 경보 한 건(HYD-02) → 계수기 리셋(pm-reset) → 초기화
 
 사용: python scripts/c2_live_check.py <증거 폴더>   (스크립트가 띄운 프로세스는 끝날 때 모두 내린다)
 """
@@ -110,9 +112,9 @@ def main():
         if status != 200:
             raise RuntimeError(f"enterprise-sim 초기화 실패 {status}: {str(body)[:300]}")
         step("0 재고 초기화", body["records"])
-        status, issued = http("POST", "/erp/spare/issue", {"part_no": "P-PMP-SEAL", "qty": 1, "reason": "수업 원인: 타 라인 긴급 사용", "by": "instructor"})
+        status, issued = http("POST", "/erp/spare/issue", {"reason": "수업 원인: 자재 출고 −2", "by": "instructor"})
         step("1 예비품 출고 버튼", {"status": status, "detail": issued["transaction"]["detail"], "facts": issued["stock"]["facts"]})
-        read = lambda name, params: http("GET", "/erp/spare_stock")[1]
+        read = lambda name, params: http("GET", {"spare_stock": "/erp/spare_stock", "pm_status": "/cmms/pm_status"}[name])[1]
         seen: set = set()
         alerts = business_monitor.scan_once(read, seen)
         step("2 ERP 재고 감시 경보", alerts)
@@ -139,13 +141,11 @@ def main():
                                      idempotency_key=key)
         again = mcp_check.call_effect(spec, "send_mail", {"to": "supplier@hyd.local", "subject": "재시도", "body": "x"}, idempotency_key=key)
         step("5b 승인 뒤 메일 (SMTP)", {"first": mail["result"], "retry_same_key": again["result"], "smtp_received": len(MAILS)})
-        cal = mcp_check.call_effect(spec, "add_calendar_entry", {"asset": "HYD-03", "title": "씰 키트 입고 예정", "wo_ref": po["ref"],
-                                                                 "starts_at": po["after"]["expected_at"]}, idempotency_key=f"{dec}:cal")
-        rec = mcp_check.call_effect(spec, "record_case", {"title": "씰 키트 재고 보충", "body": "재주문점 이탈 → B-OEM 6개 발주", "asset": "HYD-03"},
-                                    idempotency_key=f"{dec}:case")
-        step("5c CMMS 일정 · 처리 건 기록", {"calendar": cal["result"], "case": rec["result"]})
         portal = mcp_check.call(spec, "send_mail", {"to": "x@y.z", "subject": "s", "body": "b"})
         step("5d 포털 '써 보기' 경로는 쓰기 도구를 거절", {"status": portal["status"], "error": portal.get("error")})
+        status, late = http("POST", "/erp/purchase_orders/delay", {"days": 3})
+        step("5e 공급사 납기 지연 버튼", {"status": status, "detail": late["transaction"]["detail"],
+                                     "po": http("GET", f"/erp/purchase_orders/{po['ref']}")[1]["facts"]})
         status, gr = http("POST", "/api/exec", {"decision": dec, "skill": "skill:receive-goods", "asset": "HYD-03", "by": "process",
                                                 "params": {"ref": po["ref"]}})
         step("6 입고 확인", {"status": status, "detail": gr["detail"], "stock": http("GET", "/erp/spare_stock?part=P-PMP-SEAL")[1]["facts"],
@@ -156,7 +156,19 @@ def main():
         et = EnterpriseTools(lambda: reader_connection(READER))
         step("7 enterprise-mcp 읽기 (전용 읽기 계정)", {"spare_stock": et.read("spare_stock", part="P-PMP-SEAL")["document"]["facts"],
                                                        "quotes": et.read("part_quotes", part="P-PMP-SEAL")["document"]["records"],
-                                                       "windows": et.read("maintenance_windows", asset="HYD-02")["document"]["records"][:2]})
+                                                       "pm_status": et.read("pm_status", asset="HYD-02")["document"]["facts"]})
+        status, adv = http("POST", "/cmms/pm/advance", {"hours": 300})
+        step("8 운전시간 빨리 감기 버튼", {"status": status, "rows": [{k: r[k] for k in ("asset", "hours_since_pm", "pm_due", "hours_at_next_window",
+                                                                                      "hours_at_following_window", "pm_crew_available", "spare_available")}
+                                                                    for r in adv["pm"]["records"]]})
+        pm_alerts = [a for a in business_monitor.scan_once(read, seen) if a["pattern"] == "PM_DUE"]
+        step("8b PM_DUE 경보", pm_alerts)
+        status, reset = http("POST", "/api/exec", {"decision": f"{dec}-pm", "skill": "skill:pm-reset", "asset": "HYD-02", "by": "process",
+                                                   "params": {"ref": "WO-live"}})
+        step("8c 시운전 통과 뒤 계수기 리셋", {"status": status, "detail": reset["detail"],
+                                         "pm": http("GET", "/cmms/pm_status?asset=HYD-02")[1]["facts"]["hours_since_pm"]})
+        step("8d 같은 회차 · 리셋 뒤 경보", {"new_alerts": [a["alertId"] for a in business_monitor.scan_once(read, seen | {a["alertId"] for a in pm_alerts})]})
+        http("POST", "/cmms/pm/reset", {})
         (OUT / "live-mail.eml").write_text(MAILS[0] if MAILS else "", encoding="utf-8")
         http("POST", "/erp/spare/reset", {})
     finally:

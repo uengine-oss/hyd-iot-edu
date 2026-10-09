@@ -59,7 +59,7 @@ SYSTEM_USER = "sys:process"           # performer of event work items (the produ
 # C2 (확정 TODO C, 결정 4): 기다리는 부품(시간 대기 · 입고 확인)은 업무 시간(정비창까지 몇 시간, 납기 며칠)을 기다린다. 배속(TIME_SCALE)만으로는
 # 20배속에서도 납기 5일이 6시간이라 수업에서 볼 수 없으므로, 그 부품과 그 부품에 붙은 경계 타이머에만 수업용 압축 배율을 한 번 더 곱한다.
 # 설비 물리 · 감지기 · 재관측 · 사람 응답 타이머(TIME_SCALE 규칙)는 그대로다. 값은 instance_mode.build 가 PROCESS_WAIT_COMPRESSION 으로 정한다.
-WAIT_TOOLS = ("process:wait", "enterprise:GR_CONFIRM")
+WAIT_TOOLS = ("process:wait", "enterprise:GR_CONFIRM", "plant:restore")   # 정비 수행은 예정된 정비 시간까지 기다릴 수 있다(until)
 _WAIT_COMPRESSION = [1.0]
 
 
@@ -528,8 +528,11 @@ def process_submitted(defn: Definition, inst: dict, workitem: dict, workitems: l
     if workitem.get("user_id") and workitem["user_id"] not in inst.setdefault("participants", []):
         inst["participants"].append(workitem["user_id"])
     inst["current_activity_ids"] = [a for a in inst.get("current_activity_ids") or [] if a != node_id]
-    # the alternatives die with the winner: an activity's attached events, or an event's attached activity
-    for other in _alternatives(defn, node_id):
+    # the alternatives die with the winner: an activity's attached events, or an event's attached activity.
+    # C2: a non-interrupting boundary timer (BPMN cancelActivity="false", e.g. 승인 지연 알림) leaves its activity running —
+    # its path is a second token; the activity's own completion later retires the (already fired) timer row.
+    alternatives = [] if non_interrupting(defn, node_id) else _alternatives(defn, node_id)
+    for other in alternatives:
         row = _by_activity(workitems).get(other)
         if row and row["status"] not in TERMINAL_STATUSES:
             row.update(status="CANCELLED", end_date=now_iso(now), log=(row.get("log") or "") + f"cancelled: {node_id} completed first; ")
@@ -537,6 +540,11 @@ def process_submitted(defn: Definition, inst: dict, workitem: dict, workitems: l
             inst['current_activity_ids'] = [a for a in inst.get('current_activity_ids') or [] if a != other]
     _advance(defn, inst, node_id, workitems, adv, now, time_scale)
     return adv
+
+
+def non_interrupting(defn: Definition, node_id: str) -> bool:
+    ev = defn.events.get(node_id) or {}
+    return ev.get("type") == "boundaryEvent" and ev.get("cancelActivity") is False
 
 
 def _alternatives(defn: Definition, node_id: str) -> list[str]:

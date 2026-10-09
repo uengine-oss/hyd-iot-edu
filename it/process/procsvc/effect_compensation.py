@@ -30,8 +30,6 @@ IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어�
 # C2 승인 뒤 실행 부품의 거래 (entsim.state.C2_IRREVERSIBLE 와 같은 사유)
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
-                   "skill:calendar-entry": "일정은 공지된 뒤라 취소 일정을 새로 등록한다",
-                   "skill:record-case": "처리 건 기록은 이력이라 지우지 않고 정정 기록을 남긴다",
                    "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
                    "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
                    "skill:pm-reset": "정기 정비가 끝나 다음 주기가 시작됐다(정정은 새 기록으로)",

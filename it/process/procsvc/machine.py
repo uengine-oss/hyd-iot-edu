@@ -351,3 +351,16 @@ def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'businessEffect': dict(receipt), 'cmdId': None})
     _go(inc, 'CLOSED', f"business effect {receipt.get('kind') or ''} {ref}".strip())
     return True
+
+
+@_transition
+def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
+    """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김).
+    이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
+    if level not in ('ok', 'fail'):
+        raise ValueError('결과 보고 등급은 ok 또는 fail 입니다')
+    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
+        return False
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
+    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"result report: {summary}"[:300])
+    return True

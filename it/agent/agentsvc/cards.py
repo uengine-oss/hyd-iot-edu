@@ -97,6 +97,17 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     f["skill_code"] = [a["code"] for a in skill.get("actions") or [] if a.get("code")]
     sup = next((a.get("value") for a in skill.get("actions") or [] if a.get("code") == "PR_CREATE"), None)
     f["supplier_avl"] = suppliers.get(sup, {}).get("avl") if sup else None
+    # C2: 구매 카드마다 발주 금액 · 납기 여유(온톨로지 in:po-amount · in:lead-slack-days, 출처 sys:agent = 후보마다 계산) — ERP 필요량 × SCM 견적
+    quote = (base.get("spare_quotes") or {}).get(sup) if sup else None
+    qty, need_by = _num(base.get("need_qty")), _num(base.get("need_by_days"))
+    if quote and qty is not None:
+        price, lead = _num(quote.get("price")), _num(quote.get("lead_d"))
+        f["po_amount"] = round(price * qty, 2) if price is not None else None
+        f["lead_slack_days"] = round(need_by - lead, 2) if need_by is not None and lead is not None else None
+        fail = _num(quote.get("fail_rate"))
+        f["expected_defect_cost"] = round(price * qty * fail, 2) if price is not None and fail is not None else None
+    elif sup:
+        f["po_amount"] = f["lead_slack_days"] = f["expected_defect_cost"] = None
     return f
 
 
@@ -234,7 +245,8 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
              "violations": violations, "penalties": penalties, "warnings": warnings, "feasible": not violations,
              "selectedBy": selected_by.get(sid, []),
              "precedent": {"n": p["n"], "share": round(p["n"] / total_prec, 2), "reasons": p.get("reasons") or []} if p and total_prec else None,
-             "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl")}}
+             "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl",
+                                             "po_amount", "lead_slack_days", "expected_defect_cost") if k2 in cf}}
         o["production"] = production_effect(o)
         if forecast_contexts is not None:
             o['forecastContext'] = forecast_context

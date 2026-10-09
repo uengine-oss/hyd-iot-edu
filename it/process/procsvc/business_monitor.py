@@ -81,7 +81,9 @@ def _spare_evidence(row: dict) -> dict:
 PM_EVIDENCE = ("plan_id", "package", "cycle", "pm_since_h", "pm_interval_h", "pm_tolerance_pct", "pm_notice_h", "pm_due_in_h", "pm_limit_in_h",
                "pm_window_open", "night_window_id", "night_window_at", "night_window_in_h", "night_within_limit", "weekend_within_limit",
                "monthly_within_limit", "bundle_peer", "bundle_peer_since_h", "bundle_crew_ok", "kit_part_no", "kit_qty", "spare_gap_after_pm",
-               "spare_gap_after_bundle", "due_since")
+               "spare_gap_after_bundle", "due_since",
+               # 온톨로지 B 판단 입력 이름(scenario_structure.cypher) 그대로
+               "hours_since_pm", "hours_at_next_window", "hours_at_following_window", "pm_crew_available", "spare_available")
 
 
 def _pm_evidence(row: dict) -> dict:

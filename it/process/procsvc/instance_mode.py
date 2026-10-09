@@ -418,6 +418,20 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                 ctx.after_incident(inc)
         return changed
 
+    def close_incident_result(inc_id: str, level: str, summary: str) -> bool:
+        inc = ctx.incidents.get(inc_id)
+        if inc is None:
+            raise ValueError(f"no such incident {inc_id}")
+        fx = work_orders._Audit()
+        changed = machine.on_result_report(inc, level, summary, fx)
+        if changed:
+            ctx.persist()
+            for event in fx.events:
+                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
+            if ctx.after_incident:
+                ctx.after_incident(inc)
+        return changed
+
     def recovery_reading(inc_id: str) -> dict | None:
         inc = ctx.incidents.get(inc_id)
         if inc is None or inc.recovery is None:
@@ -459,7 +473,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit,
                            enterprise_read=enterprise_read, mcp_call=mcp_call, plant_restore=plant_restore,
-                           close_incident_effect=close_incident_effect, recovery_reading=recovery_reading)
+                           close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
+                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result)
 
 
 def enterprise_read(name: str, params: dict) -> dict:

@@ -1,5 +1,5 @@
 -- C2 업무 DB 연기 시험 (버리는 DB c2_check 에서만): 출고 −2 → 재주문점 이탈 → 발주(금액 검사 · AVL) → 납기 지연 → 입고 → 회복, 작업지시 정비 시간 · 완료 소모,
--- 일정 · 기록, 운전시간 빨리 감기 → PM_DUE → 계수기 리셋.
+-- 운전시간 빨리 감기 → PM_DUE → 계수기 리셋.
 \set ON_ERROR_STOP 1
 select ent.spare_stock_read('P-PMP-SEAL')->'facts' as before;
 select ent.exec_skill('{"skill":"skill:issue-spare","asset":"HYD-03","by":"instructor","params":{"part_no":"P-PMP-SEAL","qty":2,"reason":"수업 원인: 자재 출고 −2"}}')->>'detail' as issue;
@@ -25,8 +25,6 @@ select ent.exec_skill(jsonb_build_object('decision','dec-b','skill','skill:sched
        'params', jsonb_build_object('task','SOP-PMP-04 펌프 축 씰 교체','window_id',(select id from ent.next_maintenance_windows('HYD-02',3) where kind='N' limit 1))))->'after' as wo;
 select ent.exec_skill(jsonb_build_object('decision','dec-b','skill','skill:complete-maintenance','asset','HYD-02','by','process',
        'params', jsonb_build_object('ref',(select id from ent.work_orders where decision_id='dec-b'),'sop','SOP-PMP-04')))->>'detail' as done;
-select ent.exec_skill('{"decision":"k1","skill":"skill:calendar-entry","asset":"HYD-02","params":{"title":"정비 예약","duration_h":4}}')->>'detail' as cal;
-select ent.exec_skill('{"decision":"k2","skill":"skill:record-case","asset":"HYD-03","params":{"title":"씰 키트 보충","body":"..."}}')->>'detail' as rec;
 select kind, qty, on_hand_after, available_after, reason from ent.stock_movements order by id;
 select ent.reset_spare_stock(null)->'facts' as reset;
 select ent.maintenance_windows_read('HYD-02')->'facts' as windows;

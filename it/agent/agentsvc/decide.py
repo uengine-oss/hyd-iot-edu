@@ -21,6 +21,11 @@ from .tools.physical import binding, is_physical, read_physical, read_physical_f
 
 log = logging.getLogger("agent.decide")
 PROCESS_URL = os.getenv("PROCESS_URL", "http://process:8080")
+# C2 (확정 2026-10-09): 업무 경보 시나리오의 판단 입력 — 온톨로지 InputData 의 변수 이름(scenario_structure.cypher) 그대로.
+#   B 정기 정비: CMMS 정기 정비 계획 · 운전시간 계수기 한 행(GET /cmms/pm_status — ent.pm_status)
+#   C 예비품 구매: ERP 예비품 재고(GET /erp/spare_stock) — 재주문점 아래인 부품(없으면 정비 키트 부품)의 한 행
+CMMS_PM_FACTS = ("hours_since_pm", "hours_at_next_window", "hours_at_following_window", "pm_crew_available", "spare_available")
+ERP_SPARE_FACTS = ("spare_gap", "need_qty", "need_by_days")
 SENSOR_TAGS = {"ts1": "TS1", "ce": "CE", "ps1": "PS1", "fs1": "FS1", "vs1": "VS1", "load": "LoadSP"}
 MAX_APPROVAL_FACT_AGE_S = float(os.getenv('APPROVAL_FACT_MAX_AGE_S', '15'))
 
@@ -78,7 +83,7 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
     """Fetch every InputData the DMN rules may test, from the source the ontology names for it.
     known: facts the pipeline already has (pattern, cause, failure_mode, alert evidence). Returns (facts, provenance)."""
     facts, prov = dict(known), []
-    plant = erp = qms = None
+    plant = erp = qms = pm = spare = None
     identities = {}
     for item in inputs:
         identities.setdefault(item['variable'], set()).add(json.dumps(binding(item), sort_keys=True))
@@ -159,6 +164,19 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                 value = (cmms.get('facts') or {}).get('standby_ready')
                 facts[var] = value if type(value) is bool else None
                 row.update(value=facts[var], how='CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)', **source_time(cmms, asset))
+            elif src == "sys:cmms" and var in CMMS_PM_FACTS:
+                if pm is None:
+                    pm = mcp_ent.fetch('/cmms/pm_status?asset={asset}', asset)
+                facts[var] = (pm.get('facts') or {}).get(var)
+                row.update(value=facts[var], how='CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)',
+                           **source_time(pm, asset))
+            elif src == "sys:erp" and var in ERP_SPARE_FACTS:
+                if spare is None:
+                    spare = spare_facts(asset)
+                    facts.update({k: spare.get(k) for k in ("spare_part_no", "spare_quotes", "need_qty", "need_by_days") if k not in facts})
+                facts[var] = spare.get(var)
+                row.update(value=facts[var], how=f"ERP 예비품 재고 {spare.get('spare_part_no')} (가용 = 실물 − 예약 + 입고 예정, 재주문점 · 목표 · 필요일)",
+                           observed_at=_now())
             elif src in ("sys:agent", "sys:scm", "sys:process", "sys:cep"):
                 row.update(value=facts.get(var), how="후보마다 계산하거나 경보 · 결정 시점에 정해진다")
             else:
@@ -169,6 +187,22 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
             row.update(value=None, error=str(e)[:160])
         prov.append(row)
     return facts, prov
+
+
+def spare_facts(asset: str) -> dict:
+    """C 판단의 재고 사실: 재주문점 아래인 중요 예비품(여럿이면 차이가 큰 것), 없으면 정기 정비 키트 부품. 그 부품의 공급사 견적도 함께
+    (spare_quotes: 공급사 → 단가 · 리드타임 · 불량률 · AVL — 카드마다 발주 금액 · 납기 여유를 계산하는 데 쓴다, cards.candidate_facts)."""
+    stock = mcp_ent.fetch('/erp/spare_stock', asset)
+    rows = [r for r in stock.get('records') or [] if isinstance(r, dict)]
+    below = sorted((r for r in rows if r.get('below_reorder_point')), key=lambda r: r.get('spare_gap') or 0)
+    row = below[0] if below else next((r for r in rows if r.get('part_no') == 'P-PMP-SEAL'), rows[0] if rows else {})
+    part = row.get('part_no')
+    quotes = {}
+    if part:
+        for q in (mcp_ent.fetch(f'/scm/quotes?part={part}', asset).get('records') or []):
+            quotes[q['supplier']] = {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl')}
+    return {'spare_part_no': part, 'spare_gap': row.get('spare_gap'), 'need_qty': row.get('need_qty'),
+            'need_by_days': row.get('need_by_days'), 'spare_quotes': quotes}
 
 
 def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause: dict, origin: dict | None = None,

@@ -105,6 +105,8 @@ def validate_definition(raw):
                 raise ValueError('boundaryEvent는 활동에 연결된 timer여야 합니다')
             if engine.iso_duration_seconds(e.get('timer')) <= 0:
                 raise ValueError('timer 기간은 0보다 커야 합니다')
+            if 'cancelActivity' in e and not isinstance(e['cancelActivity'], bool):
+                raise ValueError('boundaryEvent cancelActivity는 true/false입니다 (false = 멈추지 않는 알림 타이머)')
     # Loop re-entry exists in the engine; joins/cancellation across iterations still
     # need integration coverage before the public registration contract accepts it.
     # B3: a definition that declares loopPolicy "guarded" (bpmn_import writes it for a drawn back edge) is checked by

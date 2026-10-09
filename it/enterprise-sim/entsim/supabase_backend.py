@@ -19,7 +19,7 @@ READS = {
     "maintenance_windows": ("ent.maintenance_windows_read", ("asset",)), "purchase_order": ("ent.purchase_order_read", ("ref",)),
     "pm_status": ("ent.pm_status_read", ("asset",)),
 }
-WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions", "goods_receipts", "cmms_calendar", "case_records")
+WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions", "goods_receipts")
 
 
 def _json(value):
@@ -105,4 +105,4 @@ class SupabaseEnterprise:
 
 def _system_of(table: str) -> str:
     return {"work_orders": "cmms", "purchase_requests": "erp", "shipments": "erp", "lot_dispositions": "qms", "ems_actions": "ems",
-            "goods_receipts": "erp", "cmms_calendar": "cmms", "case_records": "cmms"}[table]
+            "goods_receipts": "erp"}[table]

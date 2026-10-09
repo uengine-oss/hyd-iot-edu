@@ -254,24 +254,11 @@ def test_send_mail_is_idempotent_per_key_and_checks_addresses(tmp_path):
     assert boom.send_mail("a@b.c", "s", "b", idempotency_key="k2")["error_kind"] == "UNKNOWN"
 
 
-def test_calendar_and_case_record_go_through_the_enterprise_exec_with_the_key():
-    from effects_mcp.tools import EffectTools, Ledger
-    posted = []
-    tools = EffectTools(Ledger(None), post=lambda url, body: posted.append((url, body)) or {"ref": "CAL-1", "detail": "일정", "id": "TX-1", "system": "sys:cmms"})
-    out = tools.add_calendar_entry("HYD-02", "씰 교체 예약", starts_at="2026-10-09T13:00:00Z", duration_h=4, wo_ref="WO-1", idempotency_key="i:t")
-    assert out["result"] == "ok" and out["document"]["ref"] == "CAL-1"
-    url, body = posted[0]
-    assert url.endswith("/api/exec") and body["skill"] == "skill:calendar-entry" and body["decision"] == "MCP:i:t"
-    assert body["params"] == {"title": "씰 교체 예약", "starts_at": "2026-10-09T13:00:00Z", "duration_h": 4, "wo_ref": "WO-1"}
-    assert tools.add_calendar_entry("HYD-02", "x", idempotency_key="i:t")["document"]["replayed"] is True and len(posted) == 1
-    assert tools.record_case("t", "b", idempotency_key="i:t")["error_kind"] == "INVALID"       # 같은 키를 다른 도구에
-
-
 def test_effects_server_marks_every_tool_as_write():
     import re
     src = (ROOT / "it/effects-mcp/effects_mcp/server.py").read_text(encoding="utf-8")
     marks = re.findall(r"@mcp\.tool\(annotations=(\w+)\)\ndef (\w+)", src)
-    assert marks == [("WRITE", "send_mail"), ("WRITE", "add_calendar_entry"), ("WRITE", "record_case")]
+    assert marks == [("WRITE", "send_mail")]          # 메일만 — 업무 쓰기는 기존 enterprise-sim 거래를 process 가 직접 쓴다
     assert '"readOnlyHint": False' in src
 
 
@@ -320,7 +307,7 @@ def test_cmms_window_parameters_from_the_approved_value():
     assert _window_params({"id": "MW-1", "label": "야간"}, opt) == {"window_id": "MW-1", "window": "야간"}
     assert _window_params({"label": "주말", "starts_at": "2026-10-10T00:00:00Z"}, opt) == {"window": "주말", "window_starts_at": "2026-10-10T00:00:00Z"}
     assert _window_params("다음 주 화요일 야간", opt) == {"window": "다음 주 화요일 야간"}
-    assert _window_params(None, {"id": "skill:night-clean"}) == {"window": "야간 정비창"}
+    assert _window_params(None, {"id": "skill:night-clean"}) == {"window": "예정된 정비 시간 (야간)"}
 
 
 def test_c2_transactions_are_listed_as_irreversible_with_the_same_reason():

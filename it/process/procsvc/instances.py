@@ -101,6 +101,8 @@ class Hooks:
     plant_restore: Callable[[str, str | None], dict] = lambda asset, component: {"ok": False, "error": "설비 시뮬레이터가 연결되지 않았습니다"}
     close_incident_effect: Callable[[str, dict], bool] | None = None   # 업무 효과(입고 확인)로 사건을 닫는다 (machine.on_business_effect)
     recovery_reading: Callable[[str], dict | None] | None = None     # 사건의 회복 기준 태그 최신값 · 경보 해제 (작업지시 뒤 재관측)
+    read_tag: Callable[[str, str], float | None] | None = None        # (설비, 태그) → 최신값 (시운전 확인)
+    close_incident_result: Callable[[str, str, str], bool] | None = None   # (사건, 등급 ok|fail, 요약) → 결과 보고로 사건 종결
 
 
 class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePartsRuntime):
@@ -147,7 +149,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def _check_deadline(self,wi,inst,defn,now):
         if inst.get('status')!='RUNNING':raise ValueError('instance is not running')
         clock=now or datetime.now(timezone.utc)
-        event_ids={e['id'] for e in defn.attached_events(wi['activity_id'])}
+        # C2: 멈추지 않는(알림) 타이머는 마감이 아니다 — 알림 뒤에도 담당자는 승인할 수 있다
+        event_ids={e['id'] for e in defn.attached_events(wi['activity_id']) if e.get('cancelActivity') is not False}
         if any(w['activity_id'] in event_ids and w['status']=='IN_PROGRESS'
                and w.get('due_date') and parse_iso(w['due_date'])<=clock
                for w in self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'],limit=None)):
@@ -856,6 +859,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                            {'instance':inst['proc_inst_id'],'event':wi['activity_id'],'next':[w['activity_id'] for w in adv.reached]},
                            incident=engine.variables(inst).get('incident'))
         self._after_commit(self._project,inst)
+        # C2: 타이머 가지가 시스템 task(승인 지연 알림 · 지연 결과 보고)에 닿으면 바로 실행한다(submit 경로와 같음 — 기다리면 2초 폴링이 잡는다)
+        for row in adv.reached:
+            if row["status"] == "SUBMITTED" and row.get("agent_orch") == engine.PROCESS_ORCH:
+                self._after_commit(self._run_service,inst,row,now)
         return True
 
     def reconcile_services(self,now=None):
@@ -941,8 +948,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         opt = v.get("chosen_option") or {}
         item = request_for_option(opt)
         # C2 (TODO C 실행 3): 승인된 정비 시점이 작업지시에 실린다 — 처리 건 값(기본 maintenance_window: 정비창 id 'MW-…' · {id, label, starts_at} ·
-        # 글 라벨)을 CMMS 요청의 window 로. 없으면 전과 같다(카드 id 로 '야간 정비창'/'즉시').
-        window = v.get(((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('window_var') or 'maintenance_window')
+        # 글 라벨)을 CMMS 요청의 window 로. 없으면 전과 같다(카드 id 로 '예정된 정비 시간 (야간)'/'즉시').
+        # window_var 는 점으로 안쪽 칸을 가리킬 수 있다(예: alert.evidence.night_window_id — PM_DUE 경보가 실어 온 다음 야간 정비 시간)
+        window_var = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('window_var') or 'maintenance_window'
+        try:
+            window = effect_parts.lookup(v, window_var)
+        except KeyError:
+            window = None
         if window not in (None, ''):
             item['window'] = deepcopy(window)
         res = self.hooks.exec_enterprise(v.get("decision_id") or inst["proc_inst_id"], item)
@@ -951,7 +963,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                          incident=v.get("incident"))
         if res.get("ok") is not True or not isinstance(res.get('ref'), str) or not res['ref'].strip():
             raise ServiceExecutionError(res)
-        self.submit(wi["id"], {"work_order": res}, by="process", now=now)
+        # C2: 정비 오더 뒤 생산팀 공지(선택) — 승인 뒤 MCP 메일(수업 메일함), 같은 작업의 재시도는 한 통
+        mail = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('mail')
+        notice = self._send_notice(inst, wi, dict(v, work_order=res), mail, now) if mail else None
+        self.submit(wi["id"], {"work_order": dict(res, notice=notice) if notice else res}, by="process", now=now)
 
     @workitem_transition
     def retry_work_order(self, workitem_id: str, by: str, role: str, now=None):

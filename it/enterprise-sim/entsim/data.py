@@ -159,17 +159,21 @@ def ems_demand() -> dict:
 SPARE_BASE = {
     # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 5 · HYD-03 예방 교체 예약 2 → 가용 3. 수업 버튼 '자재 출고 −2' → 가용 1 < 재주문점 2
     # → 재고 기준 이탈, 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 정기 정비(B) 1회는 1개를 써서 가용 2 = 재주문점(이탈 아님).
-    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 5, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03"},
-    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03"},
-    "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01"},
+    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 5, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
+                   "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
+    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
+    "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},
 }
 # 온톨로지 SUPPLIED_BY 와 같은 값(만원 · 불량률 · 리드타임 일). 쿨러 코어는 _SUPPLIERS 를 그대로 쓴다(같은 값을 두 곳에 두지 않음).
 _PART_QUOTES = {
     "P-PMP-SEAL": [("sup:a", 35, 0.12, 2), ("sup:b", 55, 0.02, 5), ("sup:c", 20, 0.30, 1)],
     "P-FAN-BRG": [("sup:a", 18, 0.10, 1), ("sup:b", 28, 0.03, 3)],
 }
-# (종류, 이름, 첫 창 h, 주기 h, 길이 h, 정비 인력이 한 창에 할 수 있는 작업 수). 사용자 화면 이름은 "예정된 정비 시간"이다.
-_WINDOW_RULES = [("N", "야간 정비 시간", 9, 24, 4, 1), ("W", "주말 계획 정지", 105, 168, 24, 2), ("M", "월간 계획 정지", 330, 720, 48, 3)]
+# (종류, 이름, 첫 창 h, 주기 h, 길이 h, 그 시간의 정비 인원 명). 사용자 화면 이름은 "예정된 정비 시간"이다(MES 생산 계획의 비생산 시간).
+# 정기 정비(B)의 '이번 예정된 정비 시간' = 다음 야간(N, 9 h 뒤, 인원 2명), '그다음 예정된 정비 시간' = 계획 정지(M, 280 h 뒤 — 1,950 h 에서
+# 미루면 2,230 h 로 허용 상한 2,200 h 를 넘는다, PM-02 PM-2.5). 두 대를 묶으려면 4명이 필요하다.
+_WINDOW_RULES = [("N", "야간 정비 시간", 9, 24, 4, 2), ("W", "주말 계획 정지", 105, 168, 24, 4), ("M", "월간 계획 정지", 280, 720, 48, 6)]
+BUNDLE_CREW = 4
 WINDOW_KINDS = {k: label for k, label, *_ in _WINDOW_RULES}
 
 # ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (CMMS)
@@ -207,7 +211,7 @@ def next_windows(asset: str, n: int = 3) -> list[dict]:
             st = first + timedelta(hours=k * period_h)
             out.append({"id": f"MW-{asset}-{kind}-{st.astimezone(timezone.utc):%Y%m%d%H%M}", "asset": asset, "kind": kind, "label": label,
                         "starts_at": st.isoformat(), "ends_at": (st + timedelta(hours=dur_h)).isoformat(), "starts_in_h": hours_from_now(st),
-                        "crew_jobs": crew})
+                        "crew_size": crew})
     return sorted(out, key=lambda w: w["starts_at"])
 
 
@@ -244,7 +248,12 @@ def pm_row(asset: str, counter: dict, spare: dict | None, peers: dict[str, dict]
             "monthly_within_limit": limit_in >= wins["M"]["starts_in_h"],
             "bundle_peer": peer[0] if peer else None, "bundle_peer_since_h": float(peer[1]["since_pm_h"]) if peer else None,
             "bundle_peer_limit_in_h": round(limit - float(peer[1]["since_pm_h"]), 2) if peer else None,
-            "night_crew_jobs": night["crew_jobs"], "bundle_crew_ok": night["crew_jobs"] >= 2,
+            "night_crew_size": night["crew_size"], "bundle_crew_ok": night["crew_size"] >= BUNDLE_CREW,
+            # 온톨로지 B 판단 입력(scenario_structure in:hours-since-pm · in:next-scheduled-time · in:hours-if-deferred · in:pm-crew ·
+            # in:spare-available)의 변수 이름 그대로 — 판단 엔진이 CMMS 에서 읽는 값
+            "hours_since_pm": since, "hours_at_next_window": round(since + night["starts_in_h"], 2),
+            "hours_at_following_window": round(since + wins["M"]["starts_in_h"], 2), "pm_crew_available": night["crew_size"],
+            "spare_available": spare["available"] if spare is not None else None,
             "kit_part_no": PM_KIT["part_no"], "kit_qty": kit, "spare_gap_after_pm": gap_after, "spare_gap_after_bundle": gap_bundle,
             "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at")}
 
