@@ -54,7 +54,7 @@
   // 처리 건 변수의 화면 이름 — 정의 설명문에는 규칙 id(dec:…)·클래스 이름이 섞여 있어 이름표를 따로 둔다(이미 있는 것은 덮지 않음)
   Object.entries({ 'var.alert': '경보 메시지', 'var.guide_card': '원인 분석 카드', 'var.candidates': '조치 후보', 'var.compliance': '규정 판정', 'var.decision': '조치 카드 묶음',
     'var.decision_id': '조치 카드 묶음 번호', 'var.incident': '사건', 'var.commands': '설비 명령', 'var.chosen_option': '고른 조치 카드', 'var.incident_outcome': '사건 결과',
-    'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안' })
+    'var.manual_source': '원문 문서', 'var.review_feedback': '사람 검토 판정', 'var.segment': '담당 구간', 'var.proposal': '추출 제안', 'var.ontology_catalog': '온톨로지 목록' })
     .forEach(([k, label]) => { if (!(k in UI.terms)) UI.terms[k] = label; });
 
   if (!UI.performers['legacy agent']) UI.performers['legacy agent'] = '내장 판단 파이프라인';   // process instance_mode._bridge_legacy_agent 의 이름
@@ -176,6 +176,12 @@
       const chars = s.pages.reduce((n, p) => n + String(p.text || '').length, 0);
       return `<p class="kv-line"><b>${esc(s.title || s.name || s.filename || s.source_id || '')}</b> · ${esc(s.pages.length)}${esc(UI.t('td.pages'))} · ${esc(chars.toLocaleString('ko-KR'))}${esc(UI.t('td.chars'))}</p>`;
     },
+    // C1: 추출이 가리킬 수 있는 기존 온톨로지 id 목록 — 전부 쏟지 않고 종류별 개수만
+    ontology_catalog(c) {
+      const kinds = { components: '구성 요소', symptoms: '증상', parts: '부품', actions: '원자 조치', roles: '역할', decision_tables: '결정표', failure_modes: '고장 유형', skills: '스킬' };
+      const rows = Object.entries(kinds).filter(([k]) => Array.isArray(c[k]));
+      return rows.length ? `<span class="row-wrap">${rows.map(([k, n]) => `<span class="chip tone-neutral sm">${esc(n)} ${esc(c[k].length)}</span>`).join('')}</span>` : '';
+    },
     segment(s) { return s.index != null ? `<span class="kv">${esc(s.index)} / ${esc(s.total)}</span>${s.title ? ` <span class="muted">${esc(s.title)}</span>` : ''}` : ''; },
     review_feedback(f) {
       const items = Array.isArray(f) ? f : f.items || f.reviews || [];
@@ -186,7 +192,7 @@
     proposal(p) {
       if (!Array.isArray(p.procedures) && !Array.isArray(p.sections)) return '';
       const procs = p.procedures || [];
-      return `<p class="kv-line">${esc(UI.t('td.sections'))} ${esc((p.sections || []).length)} · ${esc(UI.t('td.procedures'))} ${esc(procs.length)} · ${esc(UI.t('td.pageReviews'))} ${esc((p.page_reviews || []).length)} · ${esc(UI.t('td.warnings'))} ${esc((p.warnings || []).length)}</p>
+      return `<p class="kv-line">${esc(UI.t('td.sections'))} ${esc((p.sections || []).length)} · ${esc(UI.t('td.procedures'))} ${esc(procs.length)} · ${esc(UI.t('td.pageReviews'))} ${esc((p.page_reviews || []).length)} · ${esc(UI.t('td.warnings'))} ${esc((p.warnings || []).length)}${p.knowledge ? ` · 고장 유형 ${esc((p.knowledge.failure_modes || []).length)} · 원인 ${esc((p.knowledge.causes || []).length)} · 증거 ${esc((p.knowledge.evidence || []).length)} · 규칙 ${esc((p.knowledge.rules || []).length)}` : ''}</p>
         ${procs.length ? table([UI.t('td.procedures'), UI.t('td.sections'), UI.t('td.steps')], procs.slice(0, 30).map(x => `<tr><td>${esc(x.id || '')} ${esc(x.name || '')}</td><td>${esc(x.section || '')}</td><td>${esc((x.steps || []).length)}</td></tr>`)) : ''}
         ${(p.warnings || []).length ? `<ul class="td-list">${p.warnings.slice(0, 8).map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`;
     },

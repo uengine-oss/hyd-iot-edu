@@ -25,7 +25,7 @@ const RELATION_KO = {
   MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
   USES_PART: '교체 부품', SUPPLIED_BY: '공급사', HAS_SKILL: '수행 가능한 조치 방법', SOURCED_FROM: '데이터 출처', REPRESENTS: '나타내는 변수 · 지표',
   DETECTS: '감지 증상', OBSERVED_BY: '관측 센서', INDICATES: '나타내는 고장', OCCURS_IN: '발생 위치', LEADS_TO: '이어지는 고장', CAUSES: '일으키는 고장',
-  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화', REMEDIED_BY: '근본 조치',
+  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치',
   ADDRESSES: '해당 원인', HAS_STEP: '절차 단계', REFERS_TO: '근거 매뉴얼', PART_OF: '속한 문서', CONSISTS_OF: '세부 동작', TARGETS: '조치 대상',
   APPROVED_BY: '승인 역할', AFFECTS: '움직이는 변수 · 지표', REQUIRES_INPUT: '필요한 입력', REQUIRES_DECISION: '먼저 내릴 판단', IMPLEMENTED_BY: '결정표',
   GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계값 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상', PENALIZES: '감점 지표',
@@ -91,7 +91,7 @@ function focusSet() {
     for (const fm of add(walk(sy, ['INDICATES']))) {
       add(walk(fm, ['OCCURS_IN']));
       for (const c of add(walk(fm, ['CAUSES'], 'in'))) add(walk(c, ['EVIDENCED_BY', 'DISTURBS']));
-      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY']))) {
+      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY']))) {
         add(walk(s, ['APPROVED_BY', 'CONSISTS_OF', 'ADDRESSES']));
         for (const st of add(walk(s, ['HAS_STEP']))) add(walk(st, ['REFERS_TO']));
         add(walk(s, ['AFFECTS']));

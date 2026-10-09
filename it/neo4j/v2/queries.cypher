@@ -26,10 +26,10 @@ ORDER BY prior DESC, kind DESC, sop;
 // @query q2b-failure-mode-skills
 // @ask 고장 유형마다 매칭된 조치 방법(스킬 = SOP)을 단계 수와 함께 보여 줘
 // @params {}
-MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY]->(s:Skill)
+MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(s:Skill)
 OPTIONAL MATCH (s)-[:ADDRESSES]->(c:Cause)
 OPTIONAL MATCH (s)-[:HAS_STEP]->(st:Step)
-RETURN fm.name AS failureMode, CASE type(k) WHEN 'MITIGATED_BY' THEN '즉시 완화' ELSE '근본 조치' END AS kind,
+RETURN fm.name AS failureMode, CASE type(k) WHEN 'MITIGATED_BY' THEN '즉시 완화' WHEN 'PREVENTED_BY' THEN '예방 조치' ELSE '근본 조치' END AS kind,
        s.sopId AS sop, s.name AS skill, count(DISTINCT st) AS steps, collect(DISTINCT c.name) AS onlyForCause
 ORDER BY failureMode, kind DESC, sop;
 
@@ -84,7 +84,7 @@ ORDER BY size(gains) - size(losses) DESC;
 // @ask "예비 펌프 전환" 카드의 근거(출처)를 사람이 확인할 수 있게 모두 보여 줘
 // @params {"skill": "skill:switch-standby-pump"}
 MATCH (s:Skill {id: $skill})
-OPTIONAL MATCH (fm:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(s)
+OPTIONAL MATCH (fm:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(s)
 OPTIONAL MATCH (c:Cause)-[:CAUSES]->(fm) WHERE NOT (s)-[:ADDRESSES]->(:Cause) OR (s)-[:ADDRESSES]->(c)
 OPTIONAL MATCH (c)-[:EVIDENCED_BY]->(e:Evidence)
 OPTIONAL MATCH (sel:Rule)-[:OUTPUTS]->(s)

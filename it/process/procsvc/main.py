@@ -945,7 +945,7 @@ MATCH (k:Skill) WHERE $id IS NULL OR k.id = $id
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
 RETURN k.id AS id, k.sopId AS sopId, k.name AS name, k.description AS description, k.kind AS kind, k._manual_document AS source_document, k.source_id AS source_id,
        CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name, level:r.level} END AS approver,
-       COLLECT { MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY]->(k) RETURN {id: fm.id, name: fm.name, relation: type(m)} } AS failureModes,
+       COLLECT { MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k) RETURN {id: fm.id, name: fm.name, relation: type(m)} } AS failureModes,
        COLLECT { MATCH (k)-[:ADDRESSES]->(c:Cause) RETURN {id: c.id, name: c.name} } AS causes,
        COLLECT { MATCH (k)-[co:CONSISTS_OF]->(a:Action) RETURN {code: a.code, name: a.name, kind: a.kind, value: co.value} ORDER BY co.seq } AS actions,
        COLLECT { MATCH (k)-[:HAS_STEP]->(st:Step) OPTIONAL MATCH (st)-[:REFERS_TO]->(m:ManualSection)

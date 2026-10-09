@@ -100,7 +100,7 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
     segment (a segment may not cite outside its range). A reviewer's MISSING item that no segment produced is recorded,
     because each segment was told to ignore items outside its range."""
     merged = {'source_id': source['source_id'], 'sections': [], 'procedures': [], 'page_reviews': [], 'warnings': []}
-    seen_ref, seen_sop, reviews = {}, {}, {}
+    seen_ref, seen_sop, reviews, seen_knowledge = {}, {}, {}, {}
     for seg, prop in sorted(parts, key=lambda x: x[0]['index']):
         tag = f"[구간 {seg['index']}/{seg['total']}]"
         for s in prop.get('sections') or []:
@@ -121,6 +121,15 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
                 merged['warnings'].append(f"{tag} SOP {p['id']}이(가) 구간 {seen_sop[p['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
                 continue
             seen_sop[p['id']] = seg['index']; merged['procedures'].append(p)
+        for kind, items in (prop.get('knowledge') or {}).items():      # C1: knowledge items, first proposal of an id wins
+            for item in items or []:
+                if not within(item.get('anchor') or {}, seg):
+                    raise ValueError(f"{tag} {item.get('id')}의 인용이 담당 구간 밖입니다")
+                bucket = merged.setdefault('knowledge', {}).setdefault(kind, [])
+                if item['id'] in seen_knowledge:
+                    merged['warnings'].append(f"{tag} {item['id']}이(가) 구간 {seen_knowledge[item['id']]}에서도 제안됨 — 첫 제안을 유지, 검토 필요")
+                    continue
+                seen_knowledge[item['id']] = seg['index']; bucket.append(item)
         for r in prop.get('page_reviews') or []:
             reviews.setdefault(r['page'], []).append(f"{tag} {r['note']}")
         merged['warnings'] += [f"{tag} {w}" for w in prop.get('warnings') or []]

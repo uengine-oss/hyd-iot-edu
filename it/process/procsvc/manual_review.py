@@ -10,7 +10,7 @@ import json
 import re
 from uuid import uuid4, UUID
 
-from . import kgadmin
+from . import kgadmin, manual_knowledge
 
 STEP_RE = re.compile(r'^\s*(\d+)[.)]\s+(.+?)\s*$')
 
@@ -144,6 +144,7 @@ def validate(archive, tenant, body):
         checked_sections[ref] = dict(ref=ref, title=title, excerpt=section.get('excerpt') or '',
                                      anchor=anchor(section.get('anchor')))
     checked_procedures, seen = [], set()
+    sop_ids = {p.get('id') for p in procedures if isinstance(p, dict) and isinstance(p.get('id'), str)}
     links = body.get('links') or {}
     if not isinstance(links, dict):
         raise ValueError('고장 유형 연결은 SOP별 객체여야 합니다')
@@ -174,6 +175,8 @@ def validate(archive, tenant, body):
         if not isinstance(link, dict):
             raise ValueError('SOP 연결은 객체여야 합니다')
         affects = validate_affects(sop, link.get('affects'))
+        extra = manual_knowledge.validate_link(sop, {k: link.get(k) for k in ('actions', 'addresses')},
+                                               sops=sop_ids, require_failure_mode=False)   # C1: CONSISTS_OF · ADDRESSES
         # validate_skill's legacy 30-step slice must never truncate source-backed SOPs.
         fields = kgadmin.validate_skill(dict(name=p.get('name'), sopId=sop,
                     steps=[s['text'] for s in values], failureMode=link.get('failureMode'),
@@ -181,11 +184,15 @@ def validate(archive, tenant, body):
                     approver=link.get('approver') or 'role:maint-mgr'), create=True)
         checked_procedures.append(dict(id=sop, name=fields['name'], section=p['section'],
                  anchor=anchor(p.get('anchor')), steps=values, failureMode=fields['failureMode'],
-                 relation=fields['relation'], kind=fields['kind'], approver=fields['approver'], affects=affects))
+                 relation=fields['relation'], kind=fields['kind'], approver=fields['approver'], affects=affects,
+                 **{k: extra[k] for k in ('actions', 'addresses') if extra.get(k)}))
+    # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙). Existence in the graph is checked at commit.
+    knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor)
     tenant_key = hashlib.sha256(tenant.encode()).hexdigest()
     return dict(batch=batch, tenant=tenant, document=tenant_key + ':' + source['document_id'],
                 source_id=source['source_id'], document_id=source['document_id'],
                 sha256=source['sha256'], filename=source['filename'], extractor=source['extractor'],
                 previous_batch=body.get('previous_batch'), by=str(body['by']).strip(),
                 method=str(body.get('method') or 'human-reviewed'),
-                sections=list(checked_sections.values()), procedures=checked_procedures)
+                sections=list(checked_sections.values()), procedures=checked_procedures,
+                **({'knowledge': knowledge} if knowledge and any(knowledge.values()) else {}))

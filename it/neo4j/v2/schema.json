@@ -1,6 +1,6 @@
 {
   "name": "hyd-iot-edu ontology",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "namespace": "https://uengine-oss.github.io/hyd-iot-edu/ontology#",
   "description": "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다.",
   "conventions": {
@@ -1045,7 +1045,7 @@
       "label_ko": "조치 방법 (스킬 = SOP)",
       "layer": "skill",
       "standard": "조치 방법 = SOP (DMN 판단의 출력 · BPMN 서비스 작업이 수행)",
-      "description": "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 또는 근본 조치로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.",
+      "description": "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.",
       "properties": [
         {
           "name": "id",
@@ -1109,12 +1109,13 @@
         {
           "type": [
             "MITIGATED_BY",
-            "REMEDIED_BY"
+            "REMEDIED_BY",
+            "PREVENTED_BY"
           ],
           "direction": "in",
           "fromClass": "FailureMode",
           "min": 1,
-          "description": "고장 유형 하나 이상에 매칭되어야 한다"
+          "description": "고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나)"
         }
       ]
     },
@@ -2854,6 +2855,24 @@
       ],
       "cardinality": "N:M",
       "description": "고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "description": "이 노드/관계를 소유한 매뉴얼 적재 문서 id — 배치 되돌리기·외부 편집 판정에 쓴다(manual_graph)"
+        }
+      ]
+    },
+    {
+      "type": "PREVENTED_BY",
+      "from": [
+        "FailureMode"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:M",
+      "description": "예방 조치 — 고장 유형을 미리 막는 정기 정비(스킬 = SOP). 운전시간 · 달력 주기로 시행하며, 생긴 고장을 없애는 REMEDIED_BY와 구분한다(준용 EN 13306 preventive maintenance · ISO 14224 PM)",
       "properties": [
         {
           "name": "_manual_document",

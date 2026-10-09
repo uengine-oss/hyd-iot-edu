@@ -1,5 +1,6 @@
 """Original → source-backed preview → human review → atomic graph endpoints."""
 import asyncio
+import hashlib
 import base64
 from urllib.parse import quote
 
@@ -8,7 +9,7 @@ from fastapi.responses import Response
 
 from uuid import uuid4
 
-from . import manual_graph, manual_review, manual_extraction, manual_golden
+from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge
 from .manual_sources import MAX_BYTES
 
 
@@ -39,7 +40,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
-            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'))
+            catalog = graph(manual_knowledge.catalog)          # C1: the ids the document may point at, pinned with the run
+            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'),catalog=catalog)
             seg = manual_extraction.engine.variables(inst).get('segment') or {}
             return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
         return await run(work)
@@ -55,6 +57,10 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 # document or admin knowledge already owns. Read-only; the commit-time Conflict stays as the hard rule.
                 value['preview']['conflicts'] = graph(lambda session: manual_graph.sop_conflicts(
                     session, source['document_id'], [p['id'] for p in value['preview']['procedures']]))
+                # C1: knowledge ids that already exist (seed or another document) — drop the item and refer to the existing id
+                value['preview']['knowledge_conflicts'] = graph(lambda session: manual_knowledge.conflicts(
+                    session, value['preview'].get('knowledge'),
+                    hashlib.sha256(tenant.encode()).hexdigest() + ':' + source['document_id']))
             return value
         return await run(work)
 
@@ -130,6 +136,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 plan['page_reviews'] = current['page_reviews']
             def commit_with_rules(session):
                 from . import skill_graph
+                manual_knowledge.check_graph(session, plan, manual_graph.skill_id)   # C1: action values · rule inputs, before any write
                 fms = sorted({p['failureMode'] for p in plan['procedures']})
                 plan['candidate_rules'] = {fm: session.execute_read(lambda tx, fm=fm: skill_graph.candidate_rules(tx, fm)) for fm in fms}
                 return manual_graph.commit(session, plan)
@@ -165,6 +172,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             audit('-', body['by'], 'MANUAL_ROLLED_BACK', result)
             return result
         return await run(work)
+
+    @app.get('/api/kg/manuals/catalog')
+    async def catalog():
+        """C1: what a reviewed document may point at (components · symptoms · parts/suppliers · state variables · measures ·
+        atomic actions with min/max · roles · decision tables with their inputs · existing failure modes/causes/skills).
+        The review screen's pickers read this; the extraction agent gets the same object pinned as ontology_catalog."""
+        return await run(lambda: graph(manual_knowledge.catalog))
 
     @app.get('/api/kg/manuals')
     async def history():

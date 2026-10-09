@@ -3,7 +3,7 @@ from copy import deepcopy
 import hashlib
 import json
 import uuid
-from . import manual_graph
+from . import kgadmin, manual_graph
 
 
 class Conflict(ValueError):
@@ -102,17 +102,18 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
             for i,text in enumerate(values['steps'],1):
                 tx.run('MATCH (k:Skill {id:$id}) CREATE (s:Step {id:$sid,order:$order,text:$text}) CREATE (k)-[:HAS_STEP]->(s)',id=sid,sid=step_ids[i-1],order=i,text=text).consume()
             rel=values['relation']
-            if rel not in {'MITIGATED_BY','REMEDIED_BY'}:raise ValueError('unsupported failure relation')
+            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError('unsupported failure relation')
             tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}),(s:System {{id:$performer}}) CREATE (f)-[:{rel}]->(k) CREATE (s)-[:HAS_SKILL]->(k)',fm=values['failureMode'],id=sid,performer=performer).consume()
         elif values.get('failureMode'):
             rel=values.get('relation') or 'REMEDIED_BY'
-            if rel not in {'MITIGATED_BY','REMEDIED_BY'}:raise ValueError('unsupported failure relation')
+            if rel not in kgadmin.FAILURE_RELATIONS:raise ValueError('unsupported failure relation')
             target=tx.run('MATCH (n:FailureMode {id:$id}) SET n.id=n.id RETURN n.id AS id',id=values['failureMode']).data()
             if len(target)!=1:raise ValueError('FailureMode 대상이 없거나 중복되어 변경하지 않았습니다')
-            tx.run('MATCH (:FailureMode)-[old:MITIGATED_BY|REMEDIED_BY]->(k:Skill {id:$id}) DELETE old',id=sid).consume()
+            tx.run('MATCH (:FailureMode)-[old:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k:Skill {id:$id}) DELETE old',id=sid).consume()
             tx.run('MATCH (r:Rule)-[old:OUTPUTS]->(k:Skill {id:$id}) WHERE r.id STARTS WITH "rule:cand-" DELETE old',id=sid).consume()
             tx.run(f'MATCH (f:FailureMode {{id:$fm}}),(k:Skill {{id:$id}}) CREATE (f)-[:{rel}]->(k)',fm=values['failureMode'],id=sid).consume()
-        if values.get('failureMode'):
+        # 예방 조치(PREVENTED_BY, 정기 정비) 스킬은 경보 대응 후보 규칙에 합류시키지 않는다 — 정기 정비 도래 후보는 문서의 규칙이 정한다
+        if values.get('failureMode') and (values.get('relation') or 'REMEDIED_BY') in kgadmin.CORRECTIVE_RELATIONS:
             link_candidate_rules(tx,sid,values['failureMode'])
         tx.run('MATCH (k:Skill {id:$id}) SET k.name=$name,k.description=$description',id=sid,name=values['name'],description=values['description']).consume()
         if values.get('affects') is not None:

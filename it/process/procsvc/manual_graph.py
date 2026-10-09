@@ -3,6 +3,13 @@
 Originals and extraction coordinates live in ManualSources. Graph batches retain
 the reviewed before/after snapshots. A referenced or externally edited graph is
 never silently replaced; its owner must reconcile that conflict first.
+
+Ownership (C1): which nodes a document owns is the document's journal (ManualIngestionDocument.snapshot = the reviewed
+after-state of its head batch). The original four labels (KnowledgeSource · ManualSection · Skill · Step) and their edges
+still carry `_manual_document` because schema v2 declares it there and other readers use it (admin skill edit, AFFECTS).
+The knowledge labels added by C1 (FailureMode · Cause · Evidence · Rule) and their relationships carry no extra property —
+schema v2 stays unchanged — and are owned through the journal only. The snapshot of a document is every owned node and
+every relationship touching one, so a foreign reference to an owned node is still detected as drift.
 """
 from __future__ import annotations
 
@@ -12,18 +19,28 @@ from datetime import datetime, timezone
 
 from .manual_review import canonical
 from .kgadmin import skill_id
+from . import kgadmin, manual_knowledge
 
 
 class Conflict(ValueError):
     pass
 
 
-LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')
-RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS', 'AFFECTS')
+TAGGED_LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')          # carry _manual_document (schema-declared)
+KNOWLEDGE_LABELS = ('FailureMode', 'Cause', 'Evidence', 'Rule')                # C1: owned through the journal
+LABELS = TAGGED_LABELS + KNOWLEDGE_LABELS
+TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS',
+                    'AFFECTS')
+KNOWLEDGE_RELATIONS = ('OCCURS_IN', 'INDICATES', 'LEADS_TO', 'CAUSES', 'INVOLVES_PART', 'DISTURBS', 'EVIDENCED_BY', 'ADDRESSES',
+                       'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM')
+RELATIONS = TAGGED_RELATIONS + KNOWLEDGE_RELATIONS
+# labels a document's edges may point at outside the document (existing structure or another source's knowledge)
+TARGET_LABELS = LABELS + ('Role', 'System', 'StateVariable', 'Measure', 'Component', 'Symptom', 'Part', 'Action',
+                          'DecisionTable', 'InputData')
 
 
 def ensure_schema(session):
-    for label in (*LABELS, 'ManualIngestionDocument', 'ManualIngestionBatch', 'IngestionControl'):
+    for label in (*TAGGED_LABELS, 'ManualIngestionDocument', 'ManualIngestionBatch', 'IngestionControl'):
         session.run(f'CREATE CONSTRAINT manual_{label.lower()}_id IF NOT EXISTS '
                     f'FOR (n:{label}) REQUIRE n.id IS UNIQUE').consume()
     # Existing SOP authoring already promises one skill per SOP number. Enforce it
@@ -42,15 +59,31 @@ def _sort(snapshot):
     return {key: sorted(value, key=canonical) for key, value in snapshot.items()}
 
 
-def _snapshot(tx, document):
-    # Lock every owned node before reading properties and adjacent relationships.
-    nodes = tx.run('MATCH (n) WHERE n._manual_document=$document '
-                   'SET n.id=n.id RETURN labels(n) AS labels, properties(n) AS props', document=document).data()
-    for n in nodes:
-        n['labels'].sort()
-    edges = tx.run('MATCH (a)-[r]->(b) WHERE a._manual_document=$document OR b._manual_document=$document '
+def owned_keys(snapshot):
+    """(label, id) of every node a journal snapshot owns."""
+    return sorted({(n['labels'][0], n['props']['id']) for n in (snapshot or {}).get('nodes') or []})
+
+
+def _snapshot(tx, document, owned=()):
+    """The current graph state of what the document owns: its journal-owned nodes (plus any node still tagged with the
+    document, so a tagged node missing from the journal shows up as drift) and every relationship touching one of them."""
+    by_label = {}
+    for label, nid in owned:
+        by_label.setdefault(label, []).append(nid)
+    rows = {}
+    for label, ids in by_label.items():
+        if label not in LABELS:
+            raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
+        for r in tx.run(f'MATCH (n:{label}) WHERE n.id IN $ids SET n.id=n.id '
+                        'RETURN elementId(n) AS eid, labels(n) AS labels, properties(n) AS props', ids=ids).data():
+            rows[r['eid']] = r
+    for r in tx.run('MATCH (n) WHERE n._manual_document=$document SET n.id=n.id '
+                    'RETURN elementId(n) AS eid, labels(n) AS labels, properties(n) AS props', document=document).data():
+        rows[r['eid']] = r
+    nodes = [dict(labels=sorted(r['labels']), props=r['props']) for r in rows.values()]
+    edges = tx.run('MATCH (a)-[r]->(b) WHERE elementId(a) IN $e OR elementId(b) IN $e '
                    'RETURN labels(a) AS from_labels, a.id AS from_id, labels(b) AS to_labels, b.id AS to_id, '
-                   'type(r) AS type, properties(r) AS props', document=document).data()
+                   'type(r) AS type, properties(r) AS props', e=list(rows)).data() if rows else []
     for edge in edges:
         edge['from_labels'].sort()
         edge['to_labels'].sort()
@@ -63,12 +96,16 @@ def desired(plan):
     nodes, edges = [], []
 
     def node(label, nid, **props):
-        nodes.append({'labels': [label], 'props': dict(id=nid, _manual_document=document, **props)})
+        tag = {'_manual_document': document} if label in TAGGED_LABELS else {}
+        nodes.append({'labels': [label], 'props': dict(id=nid, **tag, **props)})
         return label, nid
 
-    def edge(a, kind, b, **props):
+    def edge(a, kind, b, tagged=None, **props):
+        # tagged=False: a C1 knowledge edge of a type the A075/A079 paths also write tagged (OUTPUTS) — schema v2 declares no
+        # _manual_document on it, so the document's own rule outputs stay untagged and are owned through the journal.
+        tag = {'_manual_document': document} if (kind in TAGGED_RELATIONS if tagged is None else tagged) else {}
         edges.append(dict(from_labels=[a[0]], from_id=a[1], to_labels=[b[0]], to_id=b[1],
-                          type=kind, props={'_manual_document': document, **props}))
+                          type=kind, props={**tag, **props}))
 
     source = node('KnowledgeSource', 'ks:' + prefix, name=plan['filename'], kind='manual',
                   source_id=plan['source_id'], document_id=plan['document_id'], sha256=plan['sha256'],
@@ -80,16 +117,25 @@ def desired(plan):
                        title=s['title'], excerpt=s['excerpt'], source_id=plan['source_id'],
                        citation=canonical(s['anchor']))
         edge(sections[s['ref']], 'PART_OF', source)
+    fms, causes = manual_knowledge.desired(plan, node, edge, sections, skill_id)
+    own_candidates, own_rules = manual_knowledge.own_candidate_outputs(plan, skill_id)
     for p in plan['procedures']:
         skill = node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'], kind=p['kind'],
                      description=f"매뉴얼 {plan['filename']}에서 검토한 SOP", source_id=plan['source_id'],
                      citation=canonical(p['anchor']))
-        edge(('FailureMode', p['failureMode']), p['relation'], skill)
-        for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
-            edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules
+        edge(fms.get(p['failureMode'], ('FailureMode', p['failureMode'])), p['relation'], skill)
+        # C1: a document that states its own candidate rule is not widened; a preventive (PREVENTED_BY) SOP never joins incident rules
+        if skill[1] not in own_candidates and p['relation'] in kgadmin.CORRECTIVE_RELATIONS:
+            for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
+                if rule not in own_rules:
+                    edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules
         edge(skill, 'APPROVED_BY', ('Role', p['approver']))
         for a in p.get('affects') or []:            # A079: reviewed impact → the SOP reaches the BSC like seeded skills
             edge(skill, 'AFFECTS', (a['label'], a['target']), sign=a['sign'], **({'note': a['note']} if a['note'] else {}))
+        for seq, a in enumerate(p.get('actions') or [], 1):          # C1: atomic actions with their values (card · execution)
+            edge(skill, 'CONSISTS_OF', ('Action', a['action']), seq=seq, **({'value': a['value']} if a['value'] is not None else {}))
+        for c in p.get('addresses') or []:                           # C1: the cause this SOP fixes
+            edge(skill, 'ADDRESSES', causes.get(c, ('Cause', c)))
         edge(('System', 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'), 'HAS_SKILL', skill)
         for step in p['steps']:
             st = node('Step', skill[1] + ':' + str(step['order']), order=step['order'], text=step['text'],
@@ -109,22 +155,24 @@ def sop_conflicts(session, document, sop_ids):
     return session.execute_read(read)
 
 
-def _validate_targets(tx, snapshot, document):
-    owned = {(n['labels'][0], n['props']['id']) for n in snapshot['nodes']}
+def _validate_targets(tx, snapshot, owned):
+    """Every node the snapshot creates is free or already this document's; every edge end outside it exists exactly once."""
+    owned = set(owned)
+    mine = {(n['labels'][0], n['props']['id']) for n in snapshot['nodes']}
     for node in snapshot['nodes']:
         label, nid = node['labels'][0], node['props']['id']
-        old = tx.run(f'MATCH (n:{label} {{id:$id}}) SET n.id=n.id RETURN n._manual_document AS owner', id=nid).single()
-        if old and old['owner'] != document:
+        old = tx.run(f'MATCH (n:{label} {{id:$id}}) SET n.id=n.id RETURN n.id AS id', id=nid).single()
+        if old and (label, nid) not in owned:
             raise Conflict(f'{label} {nid}: 다른 원천/기존 지식이 소유합니다. 덮어쓰지 않았습니다')
         if label == 'Skill':
-            sop = tx.run('MATCH (n:Skill {sopId:$sop}) SET n.id=n.id RETURN n.id AS id, n._manual_document AS owner',
+            sop = tx.run('MATCH (n:Skill {sopId:$sop}) SET n.id=n.id RETURN n.id AS id',
                          sop=node['props']['sopId']).single()
-            if sop and (sop['id'] != nid or sop['owner'] != document):
+            if sop and (sop['id'] != nid or ('Skill', sop['id']) not in owned):
                 raise Conflict(f"SOP 번호 {node['props']['sopId']}는 다른 원천의 스킬이 사용 중입니다")
     for edge in snapshot['edges']:
         for side in ('from', 'to'):
             labels, nid = edge[side + '_labels'], edge[side + '_id']
-            if (labels[0], nid) in owned:
+            if (labels[0], nid) in mine:
                 continue
             pattern = ':'.join(labels)
             rows = tx.run(f'MATCH (n:{pattern} {{id:$id}}) SET n.id=n.id RETURN labels(n) AS labels', id=nid).data()
@@ -132,22 +180,33 @@ def _validate_targets(tx, snapshot, document):
                 raise Conflict(f'{pattern} {nid}: 대상이 없거나 유형이 변경됐습니다')
 
 
-def _replace(tx, document, snapshot):
-    # Caller compared ALL incident edges with the journal; foreign references
-    # cannot be removed by these statements. No DETACH DELETE is used.
-    tx.run('MATCH (a)-[r]->(b) WHERE r._manual_document=$document '
-           'AND (a._manual_document=$document OR b._manual_document=$document) DELETE r', document=document).consume()
-    tx.run('MATCH (n) WHERE n._manual_document=$document DELETE n', document=document).consume()
-    for node in snapshot['nodes']:
+def _replace(tx, current, target):
+    # Caller verified the current graph equals the journal, so every relationship touching an owned node is the
+    # document's own; each is removed by its identity. No DETACH DELETE is used: an unexpected foreign reference
+    # makes the node delete fail and the whole transaction roll back.
+    for edge in current['edges']:
+        a, b = ':'.join(edge['from_labels']), ':'.join(edge['to_labels'])
+        if edge['type'] not in RELATIONS:
+            raise Conflict('보관된 관계 유형이 지원 계약과 다릅니다')
+        row = tx.run(f"MATCH (a:{a} {{id:$a}})-[r:{edge['type']}]->(b:{b} {{id:$b}}) WHERE properties(r) = $props "
+                     'WITH r LIMIT 1 DELETE r RETURN count(*) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
+        if row['n'] != 1:
+            raise Conflict('지울 관계가 기록과 달라 전체 적재를 취소했습니다')
+    for node in current['nodes']:
+        label = node['labels'][0]
+        if label not in LABELS or len(node['labels']) != 1:
+            raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
+        tx.run(f'MATCH (n:{label} {{id:$id}}) DELETE n', id=node['props']['id']).consume()
+    for node in target['nodes']:
         label = node['labels'][0]
         if label not in LABELS or len(node['labels']) != 1:
             raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
         tx.run(f'CREATE (n:{label}) SET n=$props', props=node['props']).consume()
-    for edge in snapshot['edges']:
+    for edge in target['edges']:
         if edge['type'] not in RELATIONS:
             raise Conflict('보관된 관계 유형이 지원 계약과 다릅니다')
         a, b = ':'.join(edge['from_labels']), ':'.join(edge['to_labels'])
-        if any(label not in (*LABELS, 'FailureMode', 'Role', 'System', 'Rule', 'StateVariable', 'Measure') for label in edge['from_labels'] + edge['to_labels']):   # Rule: A075 candidate-rule OUTPUTS · StateVariable/Measure: A079 reviewed AFFECTS
+        if any(label not in TARGET_LABELS for label in edge['from_labels'] + edge['to_labels']):
             raise Conflict('보관된 관계의 대상 유형이 다릅니다')
         row = tx.run(f"MATCH (a:{a} {{id:$a}}), (b:{b} {{id:$b}}) CREATE (a)-[r:{edge['type']}]->(b) "
                      'SET r=$props RETURN count(r) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
@@ -156,10 +215,13 @@ def _replace(tx, document, snapshot):
 
 
 def _receipt(plan, at, replayed=False):
+    k = plan.get('knowledge') or {}
     return dict(batch=plan['batch'], document_id=plan['document_id'], source_id=plan['source_id'],
                 filename=plan['filename'], by=plan['by'], t=at, status='ACTIVE', replayed=replayed,
                 sections=len(plan['sections']), procedures=len(plan['procedures']),
                 steps=sum(len(p['steps']) for p in plan['procedures']),
+                knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.KINDS},
+                actions=sum(len(p.get('actions') or []) for p in plan['procedures']),
                 candidate_activation=plan.get('candidate_rules') or 'NOT_CHANGED', extraction=plan.get('extraction'),
                 skills={p['id']: dict(skill=skill_id(p['id']), failureMode=p['failureMode'], relation=p['relation'])
                         for p in plan['procedures']})
@@ -187,12 +249,12 @@ def commit(session, plan):
                       id=plan['document']).single()
         if (head['head'] if head else None) != plan['previous_batch']:
             raise Conflict('현재 문서 판본이 미리보기 이후 변경됐습니다. 다시 검토하세요')
-        before = _snapshot(tx, plan['document'])
         expected = json.loads(head['snapshot']) if head else {'nodes': [], 'edges': []}
-        if before != expected:
+        before = _snapshot(tx, plan['document'], owned_keys(expected))
+        if before != _sort(expected):
             raise Conflict('적재 뒤 속성/규칙/실행 등의 참조가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
-        _validate_targets(tx, after, plan['document'])
-        _replace(tx, plan['document'], after)
+        _validate_targets(tx, after, owned_keys(before))
+        _replace(tx, before, after)
         receipt = _receipt(plan, at)
         tx.run('CREATE (b:ManualIngestionBatch) SET b=$props', props=dict(id=plan['batch'], tenant=plan['tenant'],
                document=plan['document'], previous=plan['previous_batch'], fingerprint=fingerprint, status='ACTIVE',
@@ -221,11 +283,13 @@ def rollback(session, tenant, batch, by):
         head = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) RETURN d.head AS head', id=document).single()
         if not head or head['head'] != batch:
             raise Conflict('최신 판본부터 순서대로 되돌려야 합니다')
-        if _snapshot(tx, document) != json.loads(record['after']):
+        after = json.loads(record['after'])
+        current = _snapshot(tx, document, owned_keys(after))
+        if current != _sort(after):
             raise Conflict('외부 속성/규칙/실행 참조가 있어 되돌릴 수 없습니다. 먼저 변경을 검토하세요')
         before = json.loads(record['before'])
-        _validate_targets(tx, before, document)
-        _replace(tx, document, before)
+        _validate_targets(tx, before, owned_keys(current))
+        _replace(tx, current, before)
         tx.run('MATCH (d:ManualIngestionDocument {id:$id}) SET d.head=$head, d.snapshot=$snapshot',
                id=document, head=record.get('previous'), snapshot=record['before']).consume()
         tx.run('MATCH (b:ManualIngestionBatch {id:$id}) SET b.status="ROLLED_BACK", b.rolledBackBy=$by, b.rolledBackAt=$at',
