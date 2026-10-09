@@ -1082,7 +1082,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         items = self.repo.list_workitems(proc_inst_id=proc_inst_id, limit=None)
         defn = self.definition_for(inst)
         return {"instance": inst, "definition":defn.raw, "workitems": items, "timeline": engine.timeline(defn, inst, items),
-                "events": self.repo.list_events(proc_inst_id=proc_inst_id),
+                "events": self.repo.list_events(proc_inst_id=proc_inst_id, limit=1500),   # A161-U1: newest 1,500 (a worker run writes ~40 rows per step)
                 "approvals":self.repo.list_approvals(proc_inst_id, self.tenant_id),
                 "reworks":self.repo.list_reworks(self.tenant_id, proc_inst_id),
                 "effects":self.repo.list_effect_receipts(self.tenant_id, proc_inst_id)}

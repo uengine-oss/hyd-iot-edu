@@ -7,10 +7,9 @@
    A122 (UIUX_PLAN §1.3 · §1.4 · §5): summary cards → 에이전트 활동 + 내 차례 → 폼(사건 / 선택 / 사유·담당) → 목록 + 상세 3탭(결과 · 흐름 · 기록). */
 (function () {
   const I = { defNames: {}, mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
-              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'result', closing: null, listShown: 20, todoShown: 6, eventsShown: 20 };
+              form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'flow', closing: null, listShown: 20, todoShown: 6, eventsShown: 20 };
   const who = id => UI.who(id);
   const chip = s => UI.chip(s);
-  const STEP_LABEL = { done: UI.t('done'), current: UI.status('IN_PROGRESS'), skipped: UI.status('SKIPPED'), todo: UI.status('TODO') };
   const isHuman = t => !t.agent_orch && !t.agent_mode;
 
   /* ------------------------------------------------ load */
@@ -36,7 +35,8 @@
     I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED');
     if (!I.sel && I.instances[0]) I.sel = I.instances[0].proc_inst_id;
     I.view = null;
-    if (I.sel) { try { I.view = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel)); } catch (e) { I.view = null; } }
+    I.viewErr = null;
+    if (I.sel) { try { I.view = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel)); } catch (e) { I.view = null; I.viewErr = e.message; } }   // A161-U1 (결함 1): 열 수 없는 이유를 보인다
     I.graph = null;
     if (I.sel) { try { I.graph = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel) + '/graph'); } catch (e) { I.graph = { error: e.message }; } }
     try { I.caseProjection = await getJ(API.process + '/api/graph-projections'); } catch (e) { I.caseProjection = { error: e.message }; }
@@ -48,9 +48,10 @@
     if (decId !== I.decId) { I.decId = decId; I.dec = null; I.form = { option: null, role: null, by: I.form.by, reason: '', fan: null, load: null }; }
     if (I.decId && !I.dec) { try { I.dec = await getJ(API.process + '/api/decisions/' + encodeURIComponent(I.decId)); } catch (e) { I.dec = null; } }
     const sig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
-      I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status]), I.view && I.view.events.length,
+      I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status, w.log]),
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.dec && I.dec.state, I.msg,
-      I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab, I.todoShown, I.eventsShown, UI.namesVersion]);
+      I.viewErr, I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab, I.todoShown, I.eventsShown, UI.namesVersion]);
+    feedTrace();                                   // A161-U1: the live trace takes the fresh view every poll (events · statuses), without a redraw
     if (!force && sig === I.sig) return;
     I.sig = sig;
     renderBanner(); renderTodo(); renderList(); renderDetail();
@@ -304,37 +305,47 @@
       workList, whoOf: w => who(w.task.user_id), finished: ['COMPLETED', 'CANCELLED'].includes(view.instance.status) });
     return { steps, groups: hydSteps.groupSteps(steps), summary: hydSteps.summarizeSteps(steps) };
   }
-  // Dify-tracing row: name · who · duration · status chip · chevron (R8); the step's work item details (and 닫기/취소) live inside
-  function stepRow(s, view) {
-    const w = view.workitems.filter(x => x.activity_id === s.id).sort((a, b) => (b.generation || 0) - (a.generation || 0) || (b.start_date || '').localeCompare(a.start_date || ''))[0];
-    const dur = w && w.start_date && w.end_date ? Math.max(0, (new Date(w.end_date) - new Date(w.start_date)) / 1000) : null;
-    const durText = dur == null ? '' : dur < 60 ? `${dur.toFixed(1)} s` : `${Math.floor(dur / 60)}분 ${Math.round(dur % 60)}초`;
-    const inst = view.instance;
-    const closeBtn = w && w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && (w.draft_status === 'FAILED' || w.draft_status === 'CANCELLED'))) ? `<button class="btn small outline" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
-    const cancelBtn = w && w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button class="btn small outline" data-cancel-task="${esc(w.id)}">${esc(UI.t('btn.cancelTask'))}</button>` : '';
-    const reasonForm = I.closing && w && I.closing.id === w.id ? `<div class="form inline-form" data-reason-form><div class="form-grid">${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small outline" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go>${esc(UI.t('btn.confirm'))}</button>`, I.msg)}</div>` : '';
-    const body = w ? `<div class="meta"><span>${esc(UI.dateTime(w.start_date))}${w.end_date ? ' → ' + esc(UI.time(w.end_date)) : ''}</span>${w.due_date && !w.end_date ? `<span>${esc(UI.t('inst.due'))} ${esc(UI.time(w.due_date))}</span>` : ''}${w.generation ? `<span>${esc(w.generation)}${esc(UI.t('inst.gen'))}</span>` : ''}${w.draft_status && w.status !== 'DONE' ? `<span>${chip(w.draft_status)}</span>` : ''}</div>
-      ${UI.logHtml(w.log)}
-      ${w.output && Object.keys(w.output).length ? UI.fold(`${esc(UI.t('inst.output'))} ${esc(Object.keys(w.output).filter(k => k !== 'text').join(', ') || 'text')}`, `<pre>${esc(JSON.stringify(w.output, null, 1).slice(0, 1500))}</pre>`, { cls: 'small' }) : ''}
-      ${w.gateway_decisions ? UI.fold(esc(UI.t('inst.gateway')), `<pre>${esc(JSON.stringify(w.gateway_decisions, null, 1).slice(0, 800))}</pre>`, { cls: 'small' }) : ''}
-      ${closeBtn || cancelBtn ? `<div class="row-wrap">${closeBtn}${cancelBtn}</div>` : ''}${reasonForm}` : `<p class="muted">${esc(STEP_LABEL[s.state])}</p>`;
-    const chipHtml = s.state === 'skipped' ? UI.chip('SKIPPED') : s.state === 'todo' ? UI.chip('TODO') : chip(s.status || 'DONE');
-    return `<details class="fold step-row ${esc(s.state)}" ${s.state === 'current' ? 'open' : ''}${w ? ` data-step-task="${esc(w.id)}"` : ''}><summary><span>${esc(UI.flowName(s.name))}</span><span class="muted" style="font-weight:400">${esc(s.who)}</span>${durText ? `<span class="muted" style="font-weight:400;margin-left:auto">${esc(durText)}</span>` : ''}<span style="margin-left:${durText ? '8px' : 'auto'}">${chipHtml}</span></summary><div class="fold-body">${body}</div></details>`;
+  /* A161-U1: 처리 건 상세 = process-gpt-vue3 apps/todolist/WorkItem.vue 의 탭(진행 · 결과 · 기록) + Dify run/status.tsx 요약 카드.
+     다시 그릴 때 실시간 처리 과정(#instTrace)과 task 상세(#taskDetailPanel)는 같은 DOM 을 옮겨 붙이고, 펼쳐 둔 접기는 제목으로 다시 연다(결함 15). */
+  function keepOpen(box, fn) {
+    const open = new Set([...box.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));
+    const shut = new Set([...box.querySelectorAll('details:not([open]) > summary')].map(x => x.textContent.trim()));
+    fn();
+    box.querySelectorAll('details > summary').forEach(x => { const t = x.textContent.trim(); if (open.has(t)) x.parentElement.open = true; else if (shut.has(t)) x.parentElement.open = false; });
   }
-
+  function ensureTrace(view) {
+    if (!window.hydTrace) return null;
+    if (!I.trace || I.traceFor !== view.instance.proc_inst_id) {
+      I.traceHost = document.createElement('div'); I.traceHost.id = 'instTrace';
+      I.trace = hydTrace.mount(I.traceHost, { instance: () => I.sel, detachedOk: true, stepExtra: stepExtra,
+        onDraw: m => { const box = document.getElementById('instSummary'); if (box) box.innerHTML = hydTrace.summaryHtml(m); } });
+      I.traceFor = view.instance.proc_inst_id;
+    }
+    return I.trace;
+  }
+  function feedTrace() {
+    if (I.view && window.hydStream) hydStream.fromPoll(I.view.events);
+    if (I.view && I.trace && I.traceFor === I.view.instance.proc_inst_id) { hydTrace.TR.mounted.add(I.trace); I.trace.update(I.view); }
+  }
   function renderDetail() {
     const box = $('#instDetail');
-    if (!I.view) { box.innerHTML = UI.empty(UI.t('inst.select'), UI.t('inst.selectSub')); return; }
+    if (!I.view) { box.innerHTML = I.sel && I.viewErr ? UI.empty(UI.t('inst.cannotOpen'), String(I.viewErr).replace(/^\d{3}\s*/, '')) : UI.empty(UI.t('inst.select'), UI.t('inst.selectSub')); return; }
     const view = I.view, inst = view.instance, v = vars(inst);
     const st = stepsOf(view);
     const s = st ? st.summary : null;
-    const progress = s ? `${s.done}/${s.total} ${UI.t('inst.stepsDone')}${s.current ? ` · ${UI.t('inst.now')}: ${UI.flowName(s.current.name)}` : s.next ? ` · ${UI.t('inst.next')}: ${UI.flowName(s.next.name)}` : s.finished ? ` · ${UI.t('inst.finished')}` : ''}` : '';
-    // A141: 시작 · 종료 시각과 id 는 상세 정보 접기로, 머리글에는 진행 요약만
-    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div>${progress ? `<div class="sub">${esc(progress)}</div>` : ''}<div id="instNow"></div></div>`
+    const trace = ensureTrace(view);
+    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div><div id="instNow"></div></div>
+      <div id="instSummary">${trace && trace.model ? hydTrace.summaryHtml(trace.model) : ''}</div>`
       + UI.metaFold([[UI.t('inst.started'), esc(UI.dateTime(inst.start_date))], [UI.t('inst.ended'), inst.end_date ? esc(UI.dateTime(inst.end_date)) : ''], ['ID', `<span class="mono">${esc(inst.proc_inst_id)}</span>`]]);
-    const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.events.length };
-    const tabs = UI.tabs([['result', UI.t('inst.tab.result')], ['flow', UI.t('inst.tab.flow'), counts.flow], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
-    box.innerHTML = head + tabs + `<div class="inst-detail-tabs"><div class="tab-pane ${I.tab === 'result' ? 'on' : ''}" data-pane="result">${resultPane(view, v)}</div><div class="tab-pane ${I.tab === 'flow' ? 'on' : ''}" data-pane="flow">${flowPane(view, st)}</div><div class="tab-pane ${I.tab === 'log' ? 'on' : ''}" data-pane="log">${logPane(view)}</div></div>`;
+    const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.workitems.length };
+    const tabs = UI.tabs([['flow', UI.t('inst.tab.flow'), counts.flow], ['result', UI.t('inst.tab.result')], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
+    const keepTd = box.querySelector('#taskDetailPanel');
+    keepOpen(box, () => {
+      box.innerHTML = head + tabs + `<div class="inst-detail-tabs"><div class="tab-pane ${I.tab === 'flow' ? 'on' : ''}" data-pane="flow">${flowPane(view, st)}</div><div class="tab-pane ${I.tab === 'result' ? 'on' : ''}" data-pane="result">${resultPane(view, v)}</div><div class="tab-pane ${I.tab === 'log' ? 'on' : ''}" data-pane="log">${logPane(view)}</div></div>`;
+      const slot = box.querySelector('#instTrace'); if (slot && I.traceHost) slot.replaceWith(I.traceHost);
+      const td = box.querySelector('#taskDetailPanel'); if (td && keepTd && keepTd !== td) td.replaceWith(keepTd);
+    });
+    if (trace) trace.update(view);
     box.querySelectorAll('[data-inst-tab]').forEach(b => b.addEventListener('click', () => { I.tab = b.dataset.instTab; box.querySelectorAll('[data-inst-tab]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); }); box.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === I.tab)); if (I.tab === 'flow') mountFlow(view); }));
     box.querySelector('[data-events-more]')?.addEventListener('click', () => { I.eventsShown += 40; renderDetail(); });
     if (I.tab === 'flow') mountFlow(view);
@@ -342,8 +353,16 @@
     window.hydEffects?.mount(box.querySelector('#effectsPanel'), { view, by: I.form.by, changed: () => load(true) });
     window.hydTaskDeferral?.mount(box.querySelector('#taskDeferralPanel'), { view, by: I.form.by, changed: () => load(true) });
     window.hydTaskDetail?.mount(box.querySelector('#taskDetailPanel'));
-    wireStepButtons(box);
     wireApprovalButtons(box);
+  }
+  // agent step: 단계 닫기 · 실행 취소 (사유 한 줄) + 자세히 — inside the trace step (A161-U1; buttons are delegated because the trace redraws by itself)
+  function stepExtra(s) {
+    const view = I.view, w = s.w; if (!view || !w) return '';
+    const inst = view.instance;
+    const closeBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && (w.draft_status === 'FAILED' || w.draft_status === 'CANCELLED'))) ? `<button class="btn small outline" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
+    const cancelBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button class="btn small outline" data-cancel-task="${esc(w.id)}">${esc(UI.t('btn.cancelTask'))}</button>` : '';
+    const reasonForm = I.closing && I.closing.id === w.id ? `<div class="form inline-form" data-reason-form><div class="form-grid">${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small outline" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go>${esc(UI.t('btn.confirm'))}</button>`, I.msg)}</div>` : '';
+    return `<div class="row-wrap tr-actions"><button type="button" class="btn small ghost" data-td-open="${esc(w.id)}">${esc(UI.t('trace.detail'))}</button>${closeBtn}${cancelBtn}</div>${reasonForm}`;
   }
   function mountFlow(view) {
     const host = $('#instFlow'); if (!host || !window.hydFlow) return;
@@ -400,17 +419,7 @@
       const reason = missingInitial.length ? `시작 값 ${missingInitial.join(', ')}이 없습니다. 입력을 확인해 새 처리 건을 시작하세요.`
         : (spec.waiting_for || []).some(x => x.reason === 'fresh_output_unavailable') ? '필요한 결과값이 없어 대기 중입니다.' : `${producers.map(UI.flowName.bind(UI)).join(', ')}의 결과가 확정되면 시작합니다.`;
       return `<p><b>${esc(UI.flowName(task?.activity_name || spec.activity))}</b>: ${esc(reason)}</p>`; }).join('') });
-    if (st) {
-      html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('inst.steps'))}</h3><div class="stack-list" style="gap:var(--s2)">`;
-      st.groups.forEach(g => {
-        if (g.type === 'step') { html += stepRow(g.step, view); return; }
-        html += `<div class="branch-head">${esc(UI.flowName(g.name || '분기'))}</div>`;
-        g.lanes.forEach(l => { l.steps.forEach(s => { html += stepRow(s, view); }); });
-      });
-      html += '</div>';
-    } else {
-      html += `<div class="inst-tl">${view.timeline.map((t, i) => `${i ? '<span class="arrow">→</span>' : ''}<div class="step ${esc(t.status || '')}"><b>${esc(UI.flowName(t.name))}</b><small>${esc(who(t.performer))}</small><small>${esc(UI.status(t.status) || UI.status('TODO'))}</small></div>`).join('')}</div>`;
-    }
+    html += `<div class="sec-row"><h3>${esc(UI.t('trace.title'))}</h3>${inst.status === 'RUNNING' ? `<span class="live-conn ${window.hydStream && hydStream.connected() ? 'on' : 'off'}" data-live-conn>${esc(UI.t(window.hydStream && hydStream.connected() ? 'header.connected' : 'header.connecting'))}</span>` : ''}</div><div id="instTrace"></div>`;
     html += `<div class="stack-list" style="margin-top:var(--s4)">${approvalHtml(view)}${workOrderRetryHtml(view)}<div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div>` +
       ((view.reworks || []).length ? UI.fold(`${esc(UI.t('inst.reworkHistory'))} <span class="chip tone-neutral sm">${view.reworks.length}</span>`, view.reworks.map(r => `<p>${esc(r.generation)}${esc(UI.t('inst.gen'))} · ${esc(r.request.by)} (${esc(who(r.request.role))}) · ${esc(r.request.reason)}</p>`).join('')) : '') + '</div>';
     return html;
@@ -510,21 +519,21 @@
   }
 
   /* ------------------------------------------------ buttons inside the 흐름 tab (R5: inline reason instead of window.prompt) */
-  function wireStepButtons(box) {
-    box.querySelectorAll('[data-close-task],[data-cancel-task]').forEach(button => button.addEventListener('click', () => {
-      I.closing = { id: button.dataset.closeTask || button.dataset.cancelTask, kind: button.dataset.closeTask ? 'close' : 'cancel', reason: '' }; I.msg = ''; renderDetail();
-    }));
-    box.querySelector('[data-close-abort]')?.addEventListener('click', () => { I.closing = null; renderDetail(); });
-    box.querySelector('[data-close-reason]')?.addEventListener('input', e => { if (I.closing) I.closing.reason = e.target.value; });
-    box.querySelector('[data-close-go]')?.addEventListener('click', async e => {
-      if (I.busy || !I.closing) return;
+  function wireStepButtons(box) {        // A161-U1: delegated once — the trace redraws its own steps
+    if (box._stepWired) return; box._stepWired = true;
+    box.addEventListener('click', async e => {
+      const b = e.target.closest('[data-close-task],[data-cancel-task]');
+      if (b) { I.closing = { id: b.dataset.closeTask || b.dataset.cancelTask, kind: b.dataset.closeTask ? 'close' : 'cancel', reason: '' }; I.msg = ''; I.trace?.draw(); return; }
+      if (e.target.closest('[data-close-abort]')) { I.closing = null; I.trace?.draw(); return; }
+      const go = e.target.closest('[data-close-go]'); if (!go || I.busy || !I.closing) return;
       const reason = (I.closing.reason || '').trim();
-      if (!reason) { I.msg = UI.t('form.err.reason'); renderDetail(); return; }
-      I.busy = true; e.currentTarget.disabled = true;
+      if (!reason) { I.msg = UI.t('form.err.reason'); I.trace?.draw(); return; }
+      I.busy = true; go.disabled = true;
       try { await postJ(API.process + `/api/todolist/${encodeURIComponent(I.closing.id)}/${I.closing.kind}`, { by: I.form.by || '확인자', reason }); I.msg = ''; I.closing = null; }
       catch (err) { I.msg = err.message; }
-      finally { I.busy = false; await load(true); }
+      finally { I.busy = false; await load(true); I.trace?.draw(); }
     });
+    box.addEventListener('input', e => { if (e.target.matches('[data-close-reason]') && I.closing) I.closing.reason = e.target.value; });
   }
   async function sendDiscard(wid) {
     const req = discardPending(wid); if (!req || I.busy) return;
@@ -589,6 +598,7 @@
   const _sel = selectTab;
   selectTab = function (name) { _sel(name); if (name === 'instances') load(true); };
   window.hydApp.selectTab = selectTab;
+  wireStepButtons($('#instDetail'));
   $('#instReload').addEventListener('click', () => load(true));
   $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; I.listShown = UI.PAGE; load(true); });
   setInterval(() => load(false), 2000);

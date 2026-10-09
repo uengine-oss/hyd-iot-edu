@@ -331,3 +331,19 @@ def test_instance_name_uses_the_markdown_title_and_keeps_the_filename_otherwise(
     assert extraction.display_name(bare)=='general.txt'
     inst=extraction.start(runtime,titled,str(uuid4()))
     assert inst['proc_inst_name']=='작동유 관리 매뉴얼 (HM-9) 추출 제안'
+
+
+def test_a161_golden_report_optional_probe_answers_null_instead_of_404(rt, document):
+    """A161-U1 (A160 결함 12): the portal's "is there a golden report yet?" probe must not be a 404 (a red console error
+    for a normal state). Without optional=1 the API still says 404."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api
+    runtime, _ = rt; archive, _source, _ = document
+    app = FastAPI()
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=lambda: None,
+                        tenant='hyd', audit=lambda *a: None, runtime_factory=lambda: runtime)
+    client = TestClient(app)
+    assert client.get('/api/kg/manuals/batches/nothing-here/golden-report').status_code == 404
+    r = client.get('/api/kg/manuals/batches/nothing-here/golden-report?optional=1')
+    assert r.status_code == 200 and r.json() is None

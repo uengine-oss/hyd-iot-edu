@@ -155,7 +155,16 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         return await run(lambda: start_golden(batch, body.get('questions'), body.get('by'), body.get('request_id')))
 
     @app.get('/api/kg/manuals/batches/{batch}/golden-report')
-    async def golden_report(batch: str):
+    async def golden_report(batch: str, optional: bool = False):
+        # A161-U1 (A160 결함 12): the portal asks "is there a report yet?" for every batch on screen; a 404 there is a red
+        # console error in the browser for a normal state. optional=1 answers 200 with null instead; without it, 404 as before.
+        if optional:
+            def maybe():
+                try:
+                    return manual_golden.result(runtime(), batch)
+                except KeyError:
+                    return None
+            return await run(maybe)
         return await run(lambda: manual_golden.result(runtime(), batch))
 
     @app.post('/api/kg/manuals/batches/{batch}/rollback')

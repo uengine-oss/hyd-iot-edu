@@ -80,7 +80,7 @@ def current() -> instances.InstanceRuntime | None:
 
 
 # ---------------------------------------------------------------- lifecycle
-async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0,
+async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.5, keepalive_s: float = 15.0,
                        fetch: Callable | None = None, ts_key: str = "timestamp", history: int = 60):
     """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
     timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects.
@@ -94,13 +94,21 @@ async def event_stream(repo, since: str | None, is_disconnected, interval: float
         stream_clients -= 1
 
 
+def _sse_id(e: dict, ts_key: str) -> str:
+    """A161-U1: every frame carries its timestamp as the SSE id. A browser that loses the connection reconnects by itself
+    with `Last-Event-ID: <ts>`; the stream resumes from there (>=, the client drops ids it has) instead of replaying the
+    60-row history — events written while the line was down are delivered, not skipped."""
+    ts = str(e.get(ts_key) or "").replace("\n", "")
+    return f"id: {ts}\n" if ts else ""
+
+
 async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch, ts_key, history):
     seen: set[str] = set()
     cursor = since
     if cursor is None:
         for e in await asyncio.to_thread(fetch, None, history):          # a short history so the panel is not empty
             seen.add(e["id"]); cursor = max(cursor or "", str(e.get(ts_key) or ""))
-            yield "event: history\ndata: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+            yield "event: history\n" + _sse_id(e, ts_key) + "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
     idle = 0.0
     while not await is_disconnected():
         rows = await asyncio.to_thread(fetch, cursor, 300)
@@ -112,7 +120,7 @@ async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fet
                     cursor, seen = ts, {e["id"]}
                 else:
                     seen.add(e["id"])
-                yield "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+                yield _sse_id(e, ts_key) + "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
             idle = 0.0
         else:
             idle += interval
@@ -753,6 +761,7 @@ def mount(app: FastAPI, process_mode: str) -> None:
     async def events_stream(request: Request, since: str | None = None):
         """A091: server-sent stream of the product's events table (agent tool calls, task transitions, human answers …).
         The portal shows them as they happen instead of re-reading an instance every two seconds."""
+        since = since or request.headers.get("last-event-id") or None     # A161-U1: browser reconnect resumes at its last id
         return StreamingResponse(event_stream(_rt().repo, since, request.is_disconnected), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
