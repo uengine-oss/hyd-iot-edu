@@ -73,8 +73,10 @@ def batch_knowledge(session, tenant, batch):
         record = row['b']
         if record['status'] != 'ACTIVE' or row['head'] != batch:
             raise ValueError('현재 판본(head)인 배치만 골든 퀘스천을 확인할 수 있습니다')
-        nodes = tx.run('MATCH (n) WHERE n._manual_document=$document RETURN labels(n) AS labels, properties(n) AS p ORDER BY n.id',
-                       document=record['document']).data()
+        # C1: what the document owns is its journal (head snapshot) — knowledge labels carry no _manual_document property
+        snap = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) RETURN d.snapshot AS s', id=record['document']).single()
+        nodes = sorted(({'labels': n['labels'], 'p': n['props']} for n in json.loads(snap['s'] if snap and snap['s'] else '{}').get('nodes', [])),
+                       key=lambda n: n['p']['id'])
         receipt = json.loads(record['receipt'])
         sections = [dict(id=n['p']['id'], ref=n['p'].get('ref'), title=n['p'].get('title')) for n in nodes if 'ManualSection' in n['labels']]
         skills = [dict(id=n['p']['id'], sopId=n['p'].get('sopId'), name=n['p'].get('name')) for n in nodes if 'Skill' in n['labels']]

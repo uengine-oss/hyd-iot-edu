@@ -6,11 +6,11 @@ approval. The immutable archived source is pinned into its starting variables.
 from copy import deepcopy
 from uuid import UUID, uuid4
 
-from . import engine, kgadmin, manual_segments, manual_locate
+from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '1.9'          # 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
+VERSION = '2.0'          # 2.0 (확정 TODO C1): optional knowledge part (고장 유형 · 원인 · 증거 · 규칙) and per-SOP suggested link (고장 유형 · 관계 · 종류 · 승인 · 원자 조치 값 · 대상 원인 · 영향) against the pinned ontology_catalog; 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
 
 INSTRUCTION = '''보관된 manual_source의 모든 pages를 읽고 기존 ManualSection → Skill → Step 스키마로 추출 제안을 작성하세요.
@@ -34,7 +34,22 @@ SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 
 절 제목·단계 text는 원문의 언어를 그대로 유지하고 번역하지 마세요(영문 매뉴얼이면 영문). 검토자가 인용과 단계를 나란히 대조합니다. 번역이 필요하면 사람 검토 단계의 일입니다.
 원문이 소절(예: 13.5.1 분리, 13.5.2 분해, 13.5.3 청소)마다 번호 목록을 두면 소절마다 절차 하나를 만들고 상위 절(13.5)로 묶지 마세요. 상위 절의 공통 경고·선행 조건은 warnings에 적습니다.
 SOP로 삼을 장의 범위: 운전·점검·정비·고장 조치(트러블슈팅) 장의 절차만 SOP(procedures)로 만드세요. 설치·배선·시운전·반입/양중 장(예: 설치, 배관·배선, 시운전 조정)의 절차는 정비 SOP가 아니므로 procedures에 넣지 말고, 그 장은 page_reviews에 "설치·배선 장 — SOP 범위 밖"으로만 기록하세요. 어느 쪽인지 애매한 장은 warnings에 장 번호와 이유를 적고 procedures에는 넣지 마세요.
-고장 유형 연결과 최종 적재는 사람 검토 단계입니다.
+고장 유형 연결과 최종 적재는 사람 검토 단계입니다. 아래 knowledge와 link는 사람이 검토 화면에서 확인할 "제안"입니다.
+입력 ontology_catalog는 온톨로지에 이미 있는 id 목록입니다(구성 요소 · 증상 · 부품/공급사 · 상태 변수 · 지표 · 원자 조치 · 역할 · 결정표와 입력 ·
+이미 있는 고장 유형/원인/스킬). 문서가 이 지식을 정의하면 proposal에 다음을 더하세요. 문서에 근거가 없는 항목은 만들지 말고, 목록에 없는 구성 요소 ·
+증상 · 부품 · 원자 조치 · 입력 · 결정표는 지어내지 말고 warnings에 적으세요. 이미 있는 고장 유형 · 원인 · 스킬은 새로 만들지 말고 그 id로 가리키세요.
+ "knowledge":{"failure_modes":[{"id":"fm:소문자-하이픈","name":"고장 유형 이름","component":"comp:…","symptoms":["sym:…"],"leads_to":["fm:…"],"section":"절 ref","anchor":ANCHOR}],
+  "causes":[{"id":"cause:…","name":"원인 이름","aliases":["다른 이름"],"prior":0.0~1.0,"failure_mode":"fm:…","parts":["part:…"],"disturbs":[{"target":"sv:…","sign":1}],"section":"절 ref","anchor":ANCHOR}],
+  "evidence":[{"id":"evd:…","cause":"cause:…","name":"증거 이름","tag":"evidence_tags 중 하나","aggregate":"avg|max|min|range","window_seconds":30,"expect":"lt|gt|gte","threshold":70,"weight":0.0~1.0,"section":"절 ref","anchor":ANCHOR}],
+  "rules":[{"id":"rule:…","table":"dt:diagnose-cause|dt:action-candidates|dt:compliance","effect":"진단·후보는 SELECT, 규정은 EXCLUDE|WARN|PENALTY",
+            "tests":[{"input":"그 결정표가 선언한 in:… 입력","operator":"<|<=|>|>=|==|!=","value":값,"unit":"단위 또는 null"}],
+            "outputs":["SELECT일 때: 진단은 cause:…, 후보는 이 문서의 SOP ID 또는 기존 skill:…"],"applies_to":["EXCLUDE/WARN/PENALTY일 때 대상 SOP ID(비우면 모든 후보)"],
+            "penalty":"PENALTY일 때 감점액(만원)","penalizes":"PENALTY일 때 msr:…","annotation":"사람이 읽는 설명","section":"근거 절 ref","anchor":ANCHOR}]}
+ 한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
+ 각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
+  "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
+ actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
+ 승인 역할 · 값이 문서에 없으면 비워 두고 warnings에 적으세요. 승인 · 선행 조건 문장은 단계가 아니라 link와 warnings로 옮깁니다.
 입력에 review_feedback이 있으면 사람이 이전 제안을 검토한 판정입니다. WRONG 항목은 원문을 다시 읽어 고치고, MISSING 항목은 원문에서 찾아 추가하되
 원문에 없으면 warnings에 그 이유를 적으세요. OK 항목은 그대로 유지하세요. 판정을 근거 없이 따르지 말고 원문이 우선입니다.
 입력에 segment가 있으면 이 작업은 긴 문서의 한 구간(index/total)만 담당합니다. manual_source.pages에는 담당 구간의 원문만 들어 있고
@@ -48,13 +63,13 @@ def definition():
     return dict(processDefinitionId=DEFINITION_ID, processDefinitionName='문서 원천의 에이전트 추출 제안',
                 version=VERSION, roles=[dict(name='AI 에이전트', endpoint='sys:agent')],
                 data=[dict(name='manual_source', type='Object'), dict(name='review_feedback', type='Object'), dict(name='segment', type='Object'),
-                      dict(name='proposal', type='Object')],
+                      dict(name='ontology_catalog', type='Object'), dict(name='proposal', type='Object')],
                 events=[dict(id='start', type='startEvent', name='원문 추출 요청'),
                         dict(id='end', type='endEvent', name='추출 제안 생성 완료')],
                 activities=[dict(id=ACTIVITY, name='원문 근거로 SOP 제안', type='userTask',   # A116: product shape (userTask + agentMode)
                                  role='AI 에이전트', agentMode='COMPLETE', orchestration='cliagents',
                                  agentConfig=dict(cli='claude-code'), tool='formHandler:manual_proposal',
-                                 inputData=['manual_source','review_feedback','segment'], outputData=['proposal'], instruction=INSTRUCTION)],
+                                 inputData=['manual_source','review_feedback','segment','ontology_catalog'], outputData=['proposal'], instruction=INSTRUCTION)],
                 gateways=[], sequences=[dict(id='s1', source='start', target=ACTIVITY),
                                         dict(id='s2', source=ACTIVITY, target='end')],
                 forms={'manual_proposal':dict(contract=CONTRACT, fields_json=[
@@ -110,6 +125,13 @@ def validate_proposal(source, proposal):
             if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
             nonempty(step.get('text'),'단계');anchor(step.get('anchor'))
+        if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
+            link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
+            if link.get('affects') is not None:
+                from .manual_review import validate_affects
+                validate_affects(p['id'],link['affects'])
+    if proposal.get('knowledge') is not None:
+        manual_knowledge.validate(proposal['knowledge'],sections=sections,sops=seen,anchor=anchor)
     return deepcopy(proposal)
 
 
@@ -175,7 +197,7 @@ def display_name(source):
     return source['filename']
 
 
-def start(rt, source, request_id, review_feedback=None):
+def start(rt, source, request_id, review_feedback=None, catalog=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
     if source['status'] != 'READY':raise ValueError('OCR/빈 페이지 검토를 먼저 완료해야 합니다')
@@ -186,6 +208,8 @@ def start(rt, source, request_id, review_feedback=None):
     def launch(event, values, name):
         if feedback and feedback['items']:
             values['review_feedback']=feedback          # pinned: the agent sees the previous verdicts as [InputData]
+        if catalog:
+            values['ontology_catalog']=catalog          # C1: the ids a document may point at (pinned with the run)
         inst=rt.start_definition(DEFINITION_ID,VERSION,event,values=values,name=name)
         return inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
     segs=manual_segments.segments(source)
@@ -210,6 +234,7 @@ def coverage(source, proposal):
     for p in proposal['procedures']:
         add(p.get('anchor'))
         for st in p['steps']:add(st.get('anchor'))
+    for a in manual_knowledge.anchors(proposal.get('knowledge')):add(a)
     pages=[]
     total_chars=total_cited=0
     for page in source['pages']:
@@ -240,6 +265,7 @@ def _preview(source, proposal, previous_batch, extraction):
     # Preserve only reviewed contract fields: output cannot set reviewed/by,
     # graph head, batch identity or import another task's claimed provenance.
     preview={k:proposal[k] for k in ('sections','procedures','page_reviews','warnings')}
+    if proposal.get('knowledge') is not None:preview['knowledge']=proposal['knowledge']     # C1: reviewed on the same screen
     preview.update(source_id=source['source_id'],document_id=source['document_id'],filename=source['filename'],
                    batch=str(uuid4()),previous_batch=previous_batch,method=CONTRACT,status='READY',
                    chars=sum(len(p['text']) for p in source['pages']),extraction=extraction)
@@ -256,6 +282,7 @@ def _translate(proposal, seg):
     for p in out['procedures']:
         shift(p['anchor'])
         for st in p['steps']:shift(st['anchor'])
+    for a in manual_knowledge.anchors(out.get('knowledge')):shift(a)
     return out
 
 
