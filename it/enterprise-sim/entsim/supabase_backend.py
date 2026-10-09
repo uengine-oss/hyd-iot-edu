@@ -94,6 +94,16 @@ class SupabaseEnterprise:
             cur.execute("select ent.reset_executions()")
             conn.commit()
 
+    def reanchor(self) -> None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("select ent.reanchor_scenario_times()")
+            conn.commit()
+
+    def archive(self, ref: str | None = None) -> dict:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("select ent.execution_archive_read(%s)", (ref,))
+            return _json(cur.fetchone()[0])
+
     def ping(self) -> bool:
         try:
             with self._connect() as conn, conn.cursor() as cur:

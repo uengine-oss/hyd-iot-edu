@@ -484,6 +484,7 @@ async def _startup():
         ctx=_instance_context()
         rt=await instance_mode.retry_startup(lambda: instance_mode.build(ctx), 'instance runtime', state)
         instance_mode.start_loops(rt, ctx)
+        rt.hooks.case_started=_link_injection     # C3: 수업 버튼의 설비 주입 → 그 주입이 연 처리 건 (누름 id 로 연결)
         source_inbox=PgSourceInbox(rt.repo,rt.tenant_id)
         plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
         source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
@@ -960,7 +961,8 @@ async def reject_decision(did: str, req: DecisionRejectReq):
 def _kg():
     from neo4j import GraphDatabase
     user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
-    return GraphDatabase.driver(os.getenv("NEO4J_URI", "bolt://neo4j:7687"), auth=(user, pwd))
+    # liveness_check_timeout=0: neo4j 재시작 뒤 풀에 남은 끊긴 연결을 쓰기 전에 걸러 낸다(agentsvc.tools.mcp_kg 와 같음)
+    return GraphDatabase.driver(os.getenv("NEO4J_URI", "bolt://neo4j:7687"), auth=(user, pwd), liveness_check_timeout=0)
 
 
 def _q(cypher: str, **params) -> list[dict]:
@@ -1113,9 +1115,10 @@ async def _admit_human_alert(alert: dict) -> None:
         await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
 
 
-# C3 B · C 단순화: 포털 '결함 실험'의 [정기 점검] · [재고 보충] · [초기화] (scenario_buttons.py). 버튼이 업무 감시와 같은 계약의 경보를 만들어
-# 같은 원천 접수 경로로 보낸다 — 배포된 B · C 흐름이 처리 건을 연다. 예전 원인 버튼(+300 h · 출고 −2 · 납기 지연)은 없앴다(시작 상태가 곧 기본값).
-from . import scenario_buttons
+# C3 B · C 단순화: 포털 '결함 실험'의 버튼 (scenario_buttons.py). [정기 점검] · [재고 보충]은 업무 감시와 같은 계약의 경보를 만들어 같은
+# 원천 접수 경로로 보낸다 — 배포된 B · C 흐름이 처리 건을 연다. [쿨러 열화 주입] · [쿨러 복구]는 plant-sim 에 누름 id 를 실어 보내고, 그 주입이
+# 일으킨 경보로 열린 처리 건에 같은 id 로 연결한다(case_started). 누름은 모두 감사 기록 SCENARIO_BUTTON(누가 · 언제 · 무엇)에 남는다.
+from . import business_monitor, scenario_buttons
 
 
 def _scenario_route(pattern: str) -> str | None:
@@ -1125,127 +1128,118 @@ def _scenario_route(pattern: str) -> str | None:
     return defn.id if defn is not None and defn.id != rt.defn.id else None
 
 
+def _press_audit(asset: str, person: dict, button: str, scenario: str, at: str, **detail) -> None:
+    _audit(asset, person["by"], "SCENARIO_BUTTON", {"scenario": scenario, "button": button, "at": at, **person, **detail})
+
+
+def _last_press(asset: str) -> dict | None:
+    """그 설비의 마지막 수업 버튼(감사 기록) — 처리 건이 없는 [초기화]도 화면 버튼 옆에 보인다."""
+    e = next((e for e in audit_log if e.get("asset") == asset and e.get("event") == "SCENARIO_BUTTON"), None)
+    return {k: e["detail"].get(k) for k in ("button", "by", "at", "instance")} if e else None
+
+
+def _scenario_rt():
+    if PROCESS_MODE != "instance":
+        raise HTTPException(409, "처리 건 모드(PROCESS_MODE=instance)에서만 쓸 수 있습니다")
+    return instance_mode.current()
+
+
 @app.get("/api/scenario/status")
 async def scenario_status():
-    """시나리오 B · C 의 화면 표시(정기 점검 도래 · 재고 보충 필요) · 근거 값 · 진행 중 · 마지막 처리 건."""
-    rt = instance_mode.current() if PROCESS_MODE == "instance" else None
-    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt)
+    """시나리오 B · C 의 화면 표시(정기 점검 도래 · 재고 보충 필요) · 근거 값 · 진행 중 · 마지막 처리 건, 설비마다 마지막 수업 버튼."""
+    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, _scenario_rt(), _last_press)
 
 
 @app.post("/api/scenario/{key}/start")
 async def scenario_start(key: str, body: dict | None = None):
-    """[정기 점검](B) · [재고 보충](C): 지금 업무 값으로 경보를 만들어 배포된 흐름의 처리 건을 바로 연다. 거절은 409(사유)."""
-    if PROCESS_MODE != "instance":
-        raise HTTPException(409, "처리 건 모드(PROCESS_MODE=instance)에서만 시작합니다")
-    rt = instance_mode.current()
-    person = scenario_buttons.who(body)
-    try:
-        prep = await asyncio.to_thread(scenario_buttons.prepare, key.upper(), instance_mode.enterprise_read, rt, _scenario_route, person)
-    except KeyError:
+    """[정기 점검](B) · [재고 보충](C): 시나리오 시각 기준점을 지금으로 맞추고, 지금 업무 값으로 경보를 만들어 배포된 흐름의 처리 건을 연다."""
+    rt = _scenario_rt()
+    key = key.upper()
+    if key not in scenario_buttons.SCENARIOS:
         raise HTTPException(404, f"모르는 시나리오 {key}")
+    person = scenario_buttons.who(body)
+    await asyncio.to_thread(_entsim_post, "/api/reanchor", {})
+    try:
+        prep = await asyncio.to_thread(scenario_buttons.prepare, key, instance_mode.enterprise_read, rt, _scenario_route, person)
     except scenario_buttons.Refused as e:
         raise HTTPException(409, str(e))
     alert = prep["alert"]
     await _admit_human_alert(alert)
-    _audit(alert["asset"], person["by"], "BUSINESS_ALERT_RAISED",
-           {"alertId": alert["alertId"], "pattern": alert["pattern"], "evidence": alert["evidence"], "trigger": "scenario-button", **person})
-    return await asyncio.to_thread(scenario_buttons.started, rt, key.upper(), alert, _scenario_route(alert["pattern"]), person)
+    out = await asyncio.to_thread(scenario_buttons.started, rt, key, alert, _scenario_route(alert["pattern"]), person)
+    _press_audit(alert["asset"], person, scenario_buttons.SCENARIOS[key]["button"], key, alert["evidence"]["requested_at"],
+                 instance=out["instance"], alertId=alert["alertId"])
+    return out
 
 
 @app.post("/api/scenario/{key}/reset")
 async def scenario_reset(key: str, body: dict | None = None):
-    """[초기화]: B = 운전시간 계수기 세 대(묶음 후보 HYD-03 포함) · 이번 회차 오더 표시, C = 씰 키트 재고를 수업 시작값으로. 끝난 처리 건 기록은 남는다.
-    누가 · 언제 눌렀는지는 감사 기록과 그 시나리오의 마지막 처리 건 기록(SCENARIO_BUTTON)에 남긴다."""
+    """[초기화]: B = 운전시간 계수기 세 대(묶음 후보 HYD-03 포함) · 이번 회차 오더 표시, C = 씰 키트 재고를 수업 시작값으로, 시나리오 시각
+    기준점을 지금으로. 끝난 처리 건 기록은 남는다. 누름은 감사 기록과(있으면) 그 시나리오 마지막 처리 건 기록에 남는다."""
+    rt = _scenario_rt()
     key = key.upper()
-    person = scenario_buttons.who(body)
-    if key == "B":
-        await asyncio.to_thread(_entsim_post, "/cmms/pm/reset", {})
-    elif key == "C":
-        await asyncio.to_thread(_entsim_post, "/erp/spare/reset", {"part_no": "P-PMP-SEAL"})
-    else:
+    if key not in scenario_buttons.SCENARIOS:
         raise HTTPException(404, f"모르는 시나리오 {key}")
-    rt = instance_mode.current() if PROCESS_MODE == "instance" else None
     spec = scenario_buttons.SCENARIOS[key]
+    person = scenario_buttons.who(body)
+    await asyncio.to_thread(_entsim_post, *spec["reset"])
+    await asyncio.to_thread(_entsim_post, "/api/reanchor", {})
     at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    _audit(spec["asset"], person["by"], "SCENARIO_RESET", {"scenario": key, "at": at, **person})
-    if rt is not None:
-        last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
-        if last:
-            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
-                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
-    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt)
-
-
-# A 쿨러 버튼도 처리 건에 누른 사람 · 때를 남긴다: 포털이 plant-sim 을 직접 부르지 않고 여기를 거친다. 열화 주입은 그 뒤 HYD-01 에 처음
-# 열리는 처리 건(감지기 경보 → 흐름)에, 복구는 HYD-01 의 마지막 처리 건에 SCENARIO_BUTTON 기록을 붙인다.
-# 열화 세기는 moderate(쿨러 성능 0.55 → 유온 약 62.5 ℃, 보호 정지 없음 — A146 회귀 기본값과 같음). high(0.43)는 실제 에이전트가 판단하는
-# 1분 남짓 사이에 65 ℃ 보호 정지가 먼저 와 사건이 '조치 전 해소'로 끝난다(2026-10-09 라이브 두 번 확인).
-_A_FAULTS = {"degrade": ("쿨러 열화 주입", {"type": "cooler_degradation", "severity": "moderate"}), "restore": ("쿨러 복구", {"type": "restore", "component": "cooler", "ramp_sim_s": 60})}
+    last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
+    if last:
+        await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
+            last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
+    _press_audit(spec["asset"], person, "초기화", key, at, instance=last["proc_inst_id"] if last else None)
+    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt, _last_press)
 
 
 @app.post("/api/scenario/A/{act}")
 async def scenario_a_button(act: str, body: dict | None = None):
-    if act not in _A_FAULTS:
+    """[쿨러 열화 주입] · [쿨러 복구] (HYD-01). 누름 id(origin)를 plant-sim 주입에 실어 보낸다 — 설비 상태(plant.status injection)에 남고, 그
+    주입이 일으킨 경보로 열린 처리 건에 case_started 가 같은 id 로 기록을 붙인다. 복구는 지금 주입 id 로 연결된 처리 건에 기록한다."""
+    rt = _scenario_rt()
+    if act not in scenario_buttons.A_BUTTONS:
         raise HTTPException(404, f"모르는 A 버튼 {act}")
-    button, fault = _A_FAULTS[act]
-    asset = (body or {}).get("asset") or "HYD-01"
+    spec = scenario_buttons.A_BUTTONS[act]
+    asset = scenario_buttons.A_ASSET
     person = scenario_buttons.who(body)
-    pressed = datetime.now(timezone.utc)
-    at = pressed.isoformat(timespec="seconds")
-    req = urllib.request.Request(os.getenv("PLANT_SIM_URL", "http://host.docker.internal:8000").rstrip("/") + "/api/fault",
-                                 data=json.dumps(dict(fault, asset=asset)).encode(), headers={"Content-Type": "application/json"}, method="POST")
+    if act == "degrade":
+        await asyncio.to_thread(_entsim_post, "/api/reanchor", {})
+    caused_by = (plant_status.get(asset) or {}).get("injection")
+    origin = scenario_buttons.injection_origin(spec["button"], person)
+    res = await asyncio.to_thread(_plant_post, "/api/fault", dict(spec["fault"], asset=asset, origin=origin))
+    linked = None
+    if act == "restore" and caused_by and caused_by.get("kind") != "restore":
+        linked = await asyncio.to_thread(scenario_buttons.case_of_injection, rt, asset, caused_by["id"])
+        if linked:
+            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
+                linked, spec["button"], asset, person, origin["at"], {"injection_id": origin["id"], "restores": caused_by["id"]})])
+    _press_audit(asset, person, spec["button"], "A", origin["at"], injection_id=origin["id"], instance=linked)
+    return {"ok": True, "button": spec["button"], "asset": asset, "at": origin["at"], "injection_id": origin["id"], "instance": linked,
+            "plant": res}
+
+
+def _plant_post(path: str, body: dict) -> dict:
+    req = urllib.request.Request(instance_mode.PLANT_SIM_URL.rstrip("/") + path, data=json.dumps(body, ensure_ascii=False).encode(),
+                                 headers={"Content-Type": "application/json"}, method="POST")
     try:
-        res = await asyncio.to_thread(lambda: json.loads(urllib.request.urlopen(req, timeout=10).read() or b"{}"))
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(502, f"설비 시뮬레이터 응답 없음: {e}")
-    _audit(asset, person["by"], "SCENARIO_BUTTON", {"button": button, "at": at, **person})
-    if PROCESS_MODE == "instance":
-        asyncio.create_task(_attach_a_press(asset, button, person, at, pressed, act))
-    return {"ok": True, "button": button, "asset": asset, "at": at, "plant": res}
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, f"plant-sim {path}: {e.read().decode(errors='replace')[:300]}")
+    except OSError as e:
+        raise HTTPException(502, f"plant-sim {path} 응답 없음: {e}")
 
 
-async def _attach_a_press(asset, button, person, at, pressed, act):
-    rt = instance_mode.current()
-    def mine(i):
-        v = engine.variables(i)
-        return v.get("asset") == asset and i.get("proc_def_id") not in ("alert_triage", "manual_source_extraction")
-    deadline = 1 if act == "restore" else 600
-    t0 = asyncio.get_running_loop().time()
-    while True:
-        rows = await asyncio.to_thread(rt.repo.list_instances, None, 30, rt.tenant_id)
-        hit = next((i for i in rows if mine(i) and (act == "restore" or str(i.get("start_date") or "") >= pressed.isoformat()[:19])), None)
-        if hit:
-            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(hit["proc_inst_id"], button, asset, person, at)])
-            return
-        if asyncio.get_running_loop().time() - t0 > deadline:
-            log.info("A button %s: no instance to attach the press to", button)
-            return
-        await asyncio.sleep(3)
-
-
-# C2 수업 초기화(포털에서는 [초기화]가 위 API 를 쓴다): enterprise-sim 에 그대로 전달
-@app.post("/api/simulate/spare-reset")
-async def simulate_spare_reset(body: dict | None = None):
-    """body = {part_no} (없으면 전부) — 예비품 재고를 수업 기준값으로."""
-    return await asyncio.to_thread(_entsim_post, "/erp/spare/reset", body or {})
-
-
-@app.post("/api/simulate/pm-reset")
-async def simulate_pm_reset(body: dict | None = None):
-    """body = {asset} (없으면 전부) — 운전시간 계수기를 수업 시작값으로."""
-    return await asyncio.to_thread(_entsim_post, "/cmms/pm/reset", body or {})
-
-
-@app.get("/api/simulate/pm-status")
-async def simulate_pm_status(asset: str | None = None):
-    from . import instance_mode as _im
-    return await asyncio.to_thread(_im.enterprise_read, "pm_status", {"asset": asset})
-
-
-@app.get("/api/simulate/spare-stock")
-async def simulate_spare_stock(part: str | None = None):
-    from . import instance_mode as _im
-    return await asyncio.to_thread(_im.enterprise_read, "spare_stock", {"part": part})
+def _link_injection(inst: dict) -> None:
+    """case_started 훅: 센서 경보로 열린 처리 건이면, 그 설비의 지금 주입(누름 id 가 실린 것)을 처리 건 기록에 붙인다."""
+    v = engine.variables(inst)
+    alert = v.get("alert") or {}
+    if not alert or business_monitor.is_business_alert(alert):
+        return
+    inj = (plant_status.get(v.get("asset")) or {}).get("injection")
+    if inj and inj.get("kind") != "restore":
+        instance_mode.current().repo.record_events([scenario_buttons.press_event(
+            inst["proc_inst_id"], inj["button"], v["asset"], inj, inj["at"], {"injection_id": inj["id"], "alertId": alert.get("alertId")})])
 
 
 def _entsim_post(path: str, body: dict) -> dict:
@@ -1255,7 +1249,9 @@ def _entsim_post(path: str, body: dict) -> dict:
         with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
-        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, e.read().decode(errors="replace")[:300])
+        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, f"enterprise-sim {path}: {e.read().decode(errors='replace')[:300]}")
+    except OSError as e:
+        raise HTTPException(502, f"enterprise-sim {path} 응답 없음: {e}")
 
 
 from . import human_alert

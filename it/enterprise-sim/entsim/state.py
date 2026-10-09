@@ -42,7 +42,7 @@ IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어�
 # C2 (확정 TODO C): 승인 뒤 실행 부품이 부르는 업무 거래 + 수업 원인 버튼(예비품 출고). ent.exec_skill(migration 20261009000045)과 같은 규칙.
 # 되돌리기 계약이 없는 거래다(입고 · 정비 완료는 실물이 움직였고, 일정 · 기록 · 출고는 새 기록으로 바로잡는다) — effect_compensation 이 사유를 보인다.
 C2_SKILLS = {"skill:receive-goods": "sys:erp", "skill:complete-maintenance": "sys:cmms", "skill:issue-spare": "sys:erp",
-             # 시나리오 B: 운전시간 계수기(수업 버튼 '빨리 감기' · 시운전 통과 뒤 리셋), 시나리오 C: 공급사 납기 지연(수업 버튼 — 미달 가지)
+             # 시나리오 B: 운전시간 계수기(운전시간 진행 · 시운전 통과 뒤 리셋), 시나리오 C: 공급사 납기 지연 통보(입고 대기 흐름의 지연 가지)
              "skill:pm-advance": "sys:cmms", "skill:pm-reset": "sys:cmms", "skill:delay-delivery": "sys:scm"}
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
@@ -83,16 +83,39 @@ class EnterpriseState:
             if row:
                 saved = json.loads(row[0])
                 self._s, self._tx, self._done = saved["state"], saved["transactions"], saved["done"]
+                self._archive = saved.get("archive", [])
                 self._c2_defaults()
 
     def _save(self):
         if self._db:
             with self._db:
                 self._db.execute("INSERT OR REPLACE INTO state VALUES (1,?)",
-                    (json.dumps({"state": self._s, "transactions": self._tx, "done": self._done}),))
+                    (json.dumps({"state": self._s, "transactions": self._tx, "done": self._done, "archive": self._archive}),))
+
+    # 수업 초기화가 옮겨 두는 실행 기록(ent.execution_archive 와 같은 뜻) — 표 이름 → 이 상태 안의 경로, 따라가기 키
+    _ARCHIVED = (("work_orders", ("cmms", "work_orders"), "id"), ("purchase_requests", ("erp", "purchase_requests"), "id"),
+                 ("shipments", ("erp", "shipments"), "id"), ("goods_receipts", ("erp", "goods_receipts"), "id"),
+                 ("lot_holds", ("qms", "holds"), "lot"), ("lot_releases", ("qms", "releases"), "lot"), ("ems_actions", ("ems", "actions"), None))
+
+    def _archive_executions(self) -> list[dict]:
+        """초기화 전 실행 기록을 보관 목록으로 옮긴다(Supabase ent.reset_executions 와 같은 규칙 — 지우지 않고 보관)."""
+        old = getattr(self, "_archive", [])
+        if not hasattr(self, "_s"):
+            return old
+        reset_no = 1 + max((a["reset_no"] for a in old), default=0)
+        rows = [{"reset_no": reset_no, "table": "transactions", "ref": t.get("ref"), "decision_id": t.get("decision"), "row": t} for t in self._tx]
+        for table, (sys_key, key), ref in self._ARCHIVED:
+            for r in self._s.get(sys_key, {}).get(key, []):
+                rows.append({"reset_no": reset_no, "table": table, "ref": r.get(ref) if ref else None, "decision_id": r.get("decision"), "row": r})
+        return old + copy.deepcopy(rows)
+
+    def archive(self, ref: str | None = None) -> dict:
+        with self._lock:
+            return {"records": copy.deepcopy([a for a in reversed(self._archive) if ref in (None, a["ref"], a["decision_id"])])}
 
     def reset(self) -> None:
         with getattr(self, "_lock", threading.Lock()):
+            self._archive = self._archive_executions()
             self._tx: list[dict] = []
             self._done = {}
             self._s = {
@@ -355,7 +378,7 @@ class EnterpriseState:
             reason = params.get("reason") or "예비품 출고"
             self._move(part, "ISSUE", qty, asset, ref, req.get("by"), reason)
             return ref, f"{part} {qty}개 출고 ({reason}) — 가용 {self._available(row)} / 재주문점 {row['reorder_point']}"
-        if skill == "skill:pm-advance":                    # 수업 버튼: 운전시간 빨리 감기 (설비 한 대)
+        if skill == "skill:pm-advance":                    # 운전시간 진행 (설비 한 대)
             hours = params.get("hours", 300)
             if isinstance(hours, bool) or not isinstance(hours, (int, float)) or not 0 < hours <= 5000:
                 raise ValueError("INVALID: hours must be between 0 and 5000")
@@ -363,7 +386,7 @@ class EnterpriseState:
             c["since_pm_h"] += hours
             c["total_h"] += hours
             ref = _id("RUN")
-            self._pm_log(asset, "ADVANCE", hours, ref, req.get("by"), params.get("reason") or "운전시간 빨리 감기 (수업 원인)")
+            self._pm_log(asset, "ADVANCE", hours, ref, req.get("by"), params.get("reason") or "운전시간 진행")
             return ref, f"{asset} 운전시간 +{hours:g} h — 마지막 정기 정비 뒤 {c['since_pm_h']:g} h / 주기 {data.PM_SETTINGS['interval_h']} h"
         if skill == "skill:pm-reset":                      # 시운전 통과 뒤: 계수기 리셋 · 다음 기한 기록
             c = s["cmms"]["pm_counters"][asset]
@@ -374,7 +397,7 @@ class EnterpriseState:
             return ref, (f"{asset} 운전시간 계수기 리셋 ({done:g} h 에 정기 정비) — 다음 기한 {data.PM_SETTINGS['interval_h']} h "
                          f"(허용 {data.PM_SETTINGS['interval_h'] * (1 - data.PM_SETTINGS['tolerance_pct'] / 100):g}~"
                          f"{data.PM_SETTINGS['interval_h'] * (1 + data.PM_SETTINGS['tolerance_pct'] / 100):g} h)")
-        if skill == "skill:delay-delivery":                # 수업 버튼: 공급사 납기 지연 (열린 발주 한 건)
+        if skill == "skill:delay-delivery":                # 공급사 납기 지연 통보 (열린 발주 한 건)
             days = params.get("days", 3)
             if isinstance(days, bool) or not isinstance(days, (int, float)) or not 0 < days <= 60:
                 raise ValueError("INVALID: days must be between 0 and 60")

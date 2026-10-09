@@ -206,7 +206,7 @@ function renderUnits() {
         <div class="ctl">
           <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}${EXPERIMENT[asset] ? ` · ${esc(EXPERIMENT[asset].title)}` : ''}</legend><div>
           ${(EXPERIMENT[asset] || EXPERIMENT['HYD-01']).buttons.map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
-          </div></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
+          </div><p class="muted small biz-press" aria-live="polite"></p></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
           <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
           <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
@@ -243,6 +243,7 @@ function renderUnits() {
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${UI.t('plant.current')}: ${active.join(' · ')}` : '');
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
     card.querySelector('.biz-alert').innerHTML = bizAlertHtml(asset);
+    card.querySelector('.biz-press').textContent = bizPressLine(asset);
   }
 }
 /* C3 B · C 단순화 — 결함 실험: 설비 카드마다 시나리오 하나(왼쪽부터 A 쿨러 · B 정기 점검 · C 재고 보충). B · C 는 설비까지 가지 않는다 —
@@ -264,6 +265,11 @@ function bizAlertHtml(asset) {
   if (b.alert === false && b.last) return `<a href="#" class="chip tone-success" data-open-inst="${esc(b.last.instance)}" title="${esc(b.last.instance)}">처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}</a>`;
   return b.error ? `<span class="chip tone-neutral" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
 }
+// 마지막 수업 버튼(감사 기록 — 처리 건이 없는 [초기화]도 여기서 보인다)
+function bizPressLine(asset) {
+  const p = state.biz && state.biz.presses && state.biz.presses[asset];
+  return p ? `마지막: [${p.button}] ${p.by} · ${UI.time ? UI.time(p.at) : p.at}` : '';
+}
 function bizFactLine(b) {
   const f = b.facts || {};
   if (b.key === 'B') return `운전시간 ${fmt(f.pm_since_h, 0)} h / 주기 ${fmt(f.pm_interval_h, 0)} h — 기한까지 ${fmt(f.pm_due_in_h, 0)} h`;
@@ -274,9 +280,9 @@ document.addEventListener('click', e => {
   e.preventDefault(); selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(a.dataset.openInst);
 });
 // 누가 눌렀나: 포털에서 고른 '나'(로그인 없음 — inbox.js). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
-function pressedBy(extra = {}) {
+function pressedBy() {
   const me = window.hydInbox && window.hydInbox.me && window.hydInbox.me();
-  return { ...extra, by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
+  return { by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
 }
 async function refreshBiz() {
   try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = null; }
@@ -285,9 +291,8 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade' && asset === 'HYD-01') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy({ asset })); logLine(`${asset} 쿨러 열화 시작 · ${r.at} · ${pressedBy().by}`); }
-    else if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 시작`); }
-    else if (act === 'restore') { await postJ(API.process + '/api/scenario/A/restore', pressedBy({ asset })); logLine(`${asset} 쿨러 복구`); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · 누름 ${r.injection_id} · ${pressedBy().by}`); await refreshBiz(); }
+    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ` · 처리 건 ${r.instance}에 기록` : ' · 연결된 처리 건 없음(감사 기록만)'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
       const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());

@@ -226,7 +226,7 @@ class ServicePartsRuntime:
         if not effect_parts.due(state["wait"], clock):
             return
         if "receipt" not in state and self.hooks.enterprise_read is not None and not state["wait"].get("immediate"):
-            # 공급사가 납기 지연을 알렸으면(수업 버튼 '공급사 납기 지연') 늦어진 입고 예정까지 더 기다린다 — 그 사이 납기 초과 타이머가 울릴 수 있다
+            # 공급사가 납기 지연을 알렸으면(ERP skill:delay-delivery) 늦어진 입고 예정까지 더 기다린다 — 그 사이 납기 초과 타이머가 울릴 수 있다
             facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
             delay_d = float(facts.get("delay_d") or 0)
             plan = state["wait"]

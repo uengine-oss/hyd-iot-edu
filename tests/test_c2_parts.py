@@ -152,23 +152,24 @@ def test_one_business_system_down_does_not_stop_the_other_rule():
 
 
 def test_pm_counter_and_delivery_delay_class_buttons_over_http():
-    """enterprise-sim 의 수업 API(포털 버튼은 C3 부터 [정기 점검] · [초기화]만 — 계수기 진행 · 납기 지연 API 는 시험 · 강사용으로 남김)."""
+    """enterprise-sim: 계수기 진행 · 공급사 납기 지연은 업무 거래(/api/exec skill:pm-advance · skill:delay-delivery), 초기화는 수업 API."""
     from fastapi.testclient import TestClient
     from entsim import main as entmain
     entmain.ent.st.reset()
     client = TestClient(entmain.app)
     f = client.get("/cmms/pm_status", params={"asset": "HYD-02"}).json()["facts"]
     assert (f["pm_since_h"], f["pm_due"], f["pm_alert"]) == (1950, True, True)              # 수업 시작 상태 = 정기 점검 도래
-    r = client.post("/cmms/pm/advance", json={"hours": 300, "asset": "HYD-01"})
-    assert r.status_code == 200 and len(r.json()["transactions"]) == 1
-    rows = {x["asset"]: x for x in r.json()["pm"]["records"]}
+    r = client.post("/api/exec", json={"skill": "skill:pm-advance", "decision": "RUN-1", "asset": "HYD-01", "params": {"hours": 300}})
+    assert r.status_code == 200 and r.json()["skill"] == "skill:pm-advance"
+    rows = {x["asset"]: x for x in client.get("/cmms/pm_status").json()["records"]}
     assert (rows["HYD-01"]["pm_since_h"], rows["HYD-03"]["pm_due"], rows["HYD-03"]["pm_window_open"]) == (1800, False, True)
-    assert client.post("/cmms/pm/advance", json={"hours": -5, "asset": "HYD-01"}).status_code == 400
+    assert client.post("/api/exec", json={"skill": "skill:pm-advance", "decision": "RUN-2", "asset": "HYD-01", "params": {"hours": -5}}).status_code == 400
     assert [x["pm_since_h"] for x in client.post("/cmms/pm/reset", json={}).json()["records"]] == [1500, 1950, 1880]
-    assert client.post("/erp/purchase_orders/delay", json={"days": 3}).status_code == 400          # 열린 발주가 없으면 거절
+    delay = {"skill": "skill:delay-delivery", "asset": "HYD-03", "params": {"days": 3}}
+    assert client.post("/api/exec", json=dict(delay, decision="DLY-1")).status_code == 400            # 열린 발주가 없으면 거절
     entmain.ent.st.execute({"decision": "D-C", "skill": "skill:procure-part", "asset": "HYD-03",
                             "params": {"supplier": "sup:b", "part_no": "P-PMP-SEAL", "qty": 6, "amount": 330}})
-    d = client.post("/erp/purchase_orders/delay", json={"days": 3}).json()["transaction"]
+    d = client.post("/api/exec", json=dict(delay, decision="DLY-2")).json()
     po = client.get(f"/erp/purchase_orders/{d['ref']}").json()["facts"]
     assert po["delay_d"] == 3 and po["lead_d"] == 5 and po["expected_in_h"] > 7 * 24 - 1
     entmain.ent.st.reset()
@@ -234,10 +235,11 @@ def test_spare_issue_button_and_reset_over_http(tmp_path, monkeypatch):
     entmain.ent.st.reset()
     client = TestClient(entmain.app)
     assert client.get("/erp/spare_stock", params={"part": "P-PMP-SEAL"}).json()["facts"]["available"] == 1   # 시작 상태 = 재고 보충 필요
-    r = client.post("/erp/spare/issue", json={"qty": 1, "reason": "타 라인 긴급 사용"})   # 강사 · 시험용 API (포털 버튼에서는 뺐다)
-    assert r.status_code == 200 and r.json()["stock"]["facts"]["available"] == 0
-    assert r.json()["transaction"]["skill"] == "skill:issue-spare"
-    assert client.post("/erp/spare/issue", json={"part_no": "P-PMP-SEAL", "qty": 99}).status_code == 400
+    issue = {"skill": "skill:issue-spare", "asset": "HYD-03", "params": {"part_no": "P-PMP-SEAL", "qty": 1, "reason": "타 라인 긴급 사용"}}
+    r = client.post("/api/exec", json=dict(issue, decision="GI-1"))                    # ERP 출고 거래
+    assert r.status_code == 200 and r.json()["skill"] == "skill:issue-spare"
+    assert client.get("/erp/spare_stock", params={"part": "P-PMP-SEAL"}).json()["facts"]["available"] == 0
+    assert client.post("/api/exec", json=dict(issue, decision="GI-2", params={"part_no": "P-PMP-SEAL", "qty": 99})).status_code == 400
     assert client.post("/erp/spare/reset", json={}).json()["records"][2]["available"] == 1
     assert client.get("/scm/quotes", params={"part": "P-PMP-SEAL"}).status_code == 200
     assert client.get("/cmms/windows", params={"asset": "HYD-02"}).json()["system"] == "CMMS"

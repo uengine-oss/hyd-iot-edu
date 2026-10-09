@@ -54,7 +54,7 @@ def test_b_button_case_registers_the_work_order_mails_and_ends_without_going_to_
     st = entstate.EnterpriseState()
     row = st.pm_status("HYD-02")["facts"]
     assert row["pm_alert"] is True                                                 # 수업 시작 상태 = 정기 점검 도래
-    alert = SB.build_alert("B", row, by="강사", now=NOW)
+    alert = SB.build_alert("B", row, now=NOW, person=SB.who({"by": "강사"}))
     assert alert["alertId"].startswith("CMMS-PM_DUE-HYD-02-") and alert["evidence"]["trigger"].endswith("[정기 점검] 버튼")
     rt = world["rt"]
     inst = rt.on_alert_raise(alert, now=NOW)
@@ -174,3 +174,77 @@ def test_the_scenario_agent_chosen_in_the_flow_is_the_task_performer(world, did,
     inst = rt.on_alert_raise(SB.build_alert("B" if did == "c3_pm" else "C", row, now=NOW), now=NOW)
     t = _row(rt, inst, "T_agent")
     assert t["user_id"] == agent and t["assignees"][0]["endpoint"] == agent
+
+
+class Refusing(Stock):
+    """업무 시스템이 승인된 거래를 거절한다(예: 그 사이 공급사가 승인 목록에서 빠짐 · 정비 시간이 지나감)."""
+    def __init__(self, world, code):
+        super().__init__(world)
+        self.refuse = code
+
+    def exec_skill(self, d, item):
+        if item["code"] == self.refuse:
+            self.calls.append(deepcopy(item))
+            return {"ok": False, "code": item["code"], "error": f"INVALID: {item['code']} refused by the business system"}
+        return super().exec_skill(d, item)
+
+
+@pytest.mark.parametrize("did,code,task", [("c3_pm", "WO_CREATE", "T_wo"), ("c3_spare", "PR_CREATE", "T_po")])
+def test_a_business_refusal_stops_the_case_loudly_and_the_alert_stays_on(world, did, code, task):
+    """비해피 가지: 승인 뒤 업무 시스템이 거래를 거절하면 처리 건은 끝나지 않는다 — 재시도 3회 뒤 PENDING · 사유 보존, 결과 보고 없음
+    (성공한 척하지 않는다). 표시를 끄는 업무 변화(오더 · 입고)가 없으니 '정기 점검 도래' · '재고 보충 필요'는 그대로다."""
+    from datetime import timedelta
+    from procsvc import instances as I
+    deploy(world, did)
+    out = Refusing(world, code)
+    rt = world["rt"]
+    st = entstate.EnterpriseState()
+    key = "B" if did == "c3_pm" else "C"
+    row = st.pm_status("HYD-02")["facts"] if key == "B" else st.spare_stock("P-PMP-SEAL")["facts"]
+    inst = rt.on_alert_raise(SB.build_alert(key, row, now=NOW), now=NOW)
+    inc = world["incidents"][engine.variables(inst)["incident"]]
+    d = c2.b_decision(inc.id) if key == "B" else c2.c_decision(inc.id)
+    world["book"][d["id"]] = d
+    rt.submit(_row(rt, inst, "T_agent")["id"], {"decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
+    rt.select(_row(rt, inst, "T_approve")["id"], d["id"], d["options"][0]["id"], "승인자", "role:prod-mgr", now=NOW)
+    for i in range(I.MAX_RETRIES):
+        rt.poll_once(now=NOW + timedelta(seconds=10 * (i + 1)))
+    w = _row(rt, inst, task)
+    done = rt.repo.get_instance(inst["proc_inst_id"])
+    assert w["status"] == "PENDING" and "refused by the business system" in w["log"] and done["status"] == "RUNNING"
+    assert "result_report" not in engine.variables(done)
+    errors = [e for e in rt.repo.list_events(proc_inst_id=inst["proc_inst_id"]) if e["job_id"] == "TASK_ERROR"]
+    assert errors and errors[-1]["data"]["service_result"]["error"].startswith("INVALID")
+    assert out.calls[-1]["code"] == code and not [c for c in out.calls if c["code"] == "GR_CONFIRM"]
+
+
+def test_injection_origin_carries_the_press_and_finds_its_case(world):
+    """A: 누름 id 가 설비 주입에 실리고, 그 id 로 연결된 처리 건을 시간 창 없이 찾는다."""
+    rt = world["rt"]
+    person = SB.who({"by": "김운전", "user_id": "user:kim-op", "roles": ["role:operator"]})
+    origin = SB.injection_origin("쿨러 열화 주입", person)
+    assert origin["id"].startswith("PRESS-") and origin["by"] == "김운전" and origin["button"] == "쿨러 열화 주입" and origin["at"]
+    inst = rt.on_alert_raise(dict(c2.ALERT, alertId="HYD-01-A-9"), now=NOW)
+    assert SB.case_of_injection(rt, "HYD-01", origin["id"]) is None
+    rt.repo.record_events([SB.press_event(inst["proc_inst_id"], origin["button"], "HYD-01", origin, origin["at"], {"injection_id": origin["id"]})])
+    assert SB.case_of_injection(rt, "HYD-01", origin["id"]) == inst["proc_inst_id"]
+    assert SB.case_of_injection(rt, "HYD-01", "PRESS-other") is None
+    assert SB.A_BUTTONS["degrade"]["fault"] == {"type": "cooler_degradation", "severity": SB.A_SEVERITY}
+
+
+def test_the_lesson_reset_keeps_executions_in_the_archive_and_reanchors_times():
+    """업무 초기화(/api/reset)는 운영 상태만 시작값으로 되돌리고, 끝난 처리 건이 가리키는 작업지시 · 발주 · 원장은 보관한다(지우지 않음)."""
+    from fastapi.testclient import TestClient
+    from entsim import main as entmain
+    entmain.ent.st.reset()
+    client = TestClient(entmain.app)
+    wo = client.post("/api/exec", json={"skill": "skill:schedule-maintenance", "decision": "D-ARC", "asset": "HYD-02",
+                                        "params": {"task": "정기 점검"}}).json()
+    assert client.get("/api/archive", params={"ref": wo["ref"]}).json()["records"] == []
+    assert client.post("/api/reset").json() == {"ok": True}
+    assert client.get("/api/transactions").json() == []                           # 운영 상태는 시작값
+    kept = client.get("/api/archive", params={"ref": wo["ref"]}).json()["records"]
+    assert {r["table"] for r in kept} == {"work_orders", "transactions"} and len({r["reset_no"] for r in kept}) == 1
+    assert client.get("/api/archive", params={"ref": "D-ARC"}).json()["records"]     # 판단 id 로도 따라간다
+    assert client.post("/api/reanchor").json() == {"ok": True}
+    entmain.ent.st.reset()

@@ -349,9 +349,11 @@ def new_workitem(defn: Definition, inst: dict, activity: dict, now: datetime | N
     """todolist row for one activity, TODO (예정 업무) unless told otherwise. agent_mode: COMPLETE/DRAFT for agents, NULL for people."""
     is_user = is_human(activity)
     binding = instance_binding(defn, inst, activity.get("role"))
-    if not is_user and activity.get("agent"):
+    default = defn.role_binding(activity.get("role"))
+    if not is_user and activity.get("agent") and (binding is None or default is None or binding.get("endpoint") == default.get("endpoint")):
         # C3: 흐름 가져오기가 task 에 고른 에이전트(시나리오 에이전트 — 자기 SKILL · MCP 서버)를 담당자로 둔다. 역할 기본 담당(sys:agent)으로
-        # 두면 워커가 그 행의 담당자 프로필(context.agent_profile)을 읽어 기본 에이전트의 도구로 돈다(라이브 B · C 에서 확인)
+        # 두면 워커가 그 행의 담당자 프로필(context.agent_profile)을 읽어 기본 에이전트의 도구로 돈다(라이브 B · C 에서 확인).
+        # 처리 건을 시작할 때 그 역할의 담당을 따로 고른 경우(B5 role_endpoints, 예: 질문에 답할 에이전트)는 그 선택이 이긴다.
         binding = {"name": activity.get("role"), "endpoint": activity["agent"], "resolutionRule": "activity.agent"}
     agent_mode = agent_mode_of(activity)
     orch = activity.get("orchestration")

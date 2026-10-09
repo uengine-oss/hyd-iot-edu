@@ -118,7 +118,8 @@ def test_b_facts_come_from_the_cmms_counter_with_the_ontology_variable_names(ent
 
 
 def test_b_without_seal_kits_no_card_is_feasible(enterprise, monkeypatch):
-    enterprise.post("/erp/spare/issue", json={"qty": 1})                          # 가용 1 → 0
+    enterprise.post("/api/exec", json={"skill": "skill:issue-spare", "decision": "GI-1", "asset": "HYD-03",
+                                       "params": {"part_no": "P-PMP-SEAL", "qty": 1}})             # 가용 1 → 0
     facts, result = b_judge(monkeypatch)
     assert facts["spare_available"] == 0 and result["recommended"] is None        # 지금 하는 안은 부품 없음, 미루기는 허용 오차 밖
 

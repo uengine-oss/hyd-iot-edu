@@ -174,8 +174,13 @@
 | 흐름 | B: 제안 → 설비보전팀장 승인 → 정비 오더 등록 · 공지 메일 → 결과 보고(task 4). C: 제안 → 구매 담당 승인 → ERP 발주 · 공급사 메일 → 입고 · 재고 반영(`immediate`) → 결과 보고(task 5). 레인 3, 분기 · 타이머 없음 | `scripts/c3_flows.py`, `service_parts.py`, `effect_parts.py` |
 | 결과 보고 값 | B: 정비 오더 · 정비 시점 · 공지 메일. C: 입고 수량 · 현재고 · 가용 재고(기준 ≥ 재주문점) · 공급사 메일 | `effect_parts.report_values` |
 | 포털 | 설비 카드마다 시나리오 하나, 카드 머리 표시(도래 · 필요 · 처리 중 → · 처리됨), 위쪽 원인 버튼 패널 삭제, 결과 카드 줄바꿈 · 승인자 이름 · '구매 담당' 역할 이름 | `app.js`, `resultReport.js`, `ui.js`, `names.json`, `theme.css` |
-| 누른 사람 · 때 | 포털이 고른 '나'(이름 · id · 역할)를 보냄 → 시작 경보 근거 + 처리 기록 `SCENARIO_BUTTON`. [초기화]는 감사 기록 + 그 시나리오 마지막 처리 건 기록. A 열화 주입은 그 뒤 HYD-01에 처음 열린 처리 건에, 복구는 마지막 처리 건에 붙인다 | `scenario_buttons.py`, `main.py` |
-| A 열화 세기 | 포털 버튼은 moderate(쿨러 0.55, 유온 약 62.5 ℃). high는 실제 에이전트가 판단하는 동안(46~79초) 65 ℃ 보호 정지가 먼저 와 사건이 "조치 전 해소"로 끝났다(라이브 2회, `live/failed-high-severity/`). 회귀 기본값(A146)과 같다 | `main.py _A_FAULTS` |
+| 누른 사람 · 때 | 포털이 고른 '나'(이름 · id · 역할)를 보냄 → 시작 경보 근거 + 처리 기록 `SCENARIO_BUTTON`, 모든 누름은 감사 기록 `SCENARIO_BUTTON`. 설비 카드 버튼 아래 "마지막: [버튼] 누가 · 때"(처리 건이 없는 [초기화]도 보인다, `/api/scenario/status presses`) | `scenario_buttons.py`, `main.py`, `app.js` |
+| A 누름 → 처리 건 연결 | 누름 id(`PRESS-…`)를 plant-sim 주입 요청 `origin`에 싣는다 → 설비 상태(plant.status `injection`)에 남는다 → 그 주입이 낸 경보로 처리 건이 열릴 때 `case_started` 훅이 같은 id 로 기록을 붙인다. [쿨러 복구]는 지금 주입 id 로 연결된 처리 건에 기록한다. 시간 창 추정 없음(라이브 3차: `injection_id` 가 처리 건 기록에 남음 확인) | `ot/plant-sim/plantsim/plant.py · main.py`, `instances.py Hooks.case_started`, `main.py _link_injection` |
+| A 열화 세기 | 포털 버튼은 moderate(쿨러 0.55, 평형 62.5 ℃ — 경보만, 보호 정지 없음) = 시나리오 A "서기 전에 식힌다"의 설정(A146 열모델 · 회귀 기본과 같음). high(0.43)는 평형 70 ℃라 주입 뒤 시뮬레이션 약 30분에 보호 정지한다. 20배속은 설비 물리만 빠르게 하고 에이전트 판단(실측 46~79초 = 시뮬레이션 15~26분)은 줄이지 못하므로 high 는 "판단이 늦어 서 버린" 장면이다(라이브 2회 `live/failed-high-severity/`). 이름 있는 상수 `scenario_buttons.A_SEVERITY` | `scenario_buttons.py` |
+| 시나리오 시각 기준점 | `ent.reanchor_scenario_times()`(생산 오더 납기 · 예정된 정비 시간 · 출하)를 버튼 시작(A · B · C) · [초기화] · enterprise-sim 시작 때 다시 맞춘다(`POST /api/reanchor`). 전에는 업무 실행 초기화 때만 돌아 C 판단에 "OEM 오더 납기까지 −1.27 h"가 나왔다 | `entsim/main.py · supabase_backend.py`, `procsvc/main.py` |
+| 업무 초기화가 기록을 지움 | `ent.reset_executions()`가 작업지시 · 발주 · 입고 · 원장을 지우기 전에 `ent.execution_archive`(초기화 회차 · 표 · ref · 판단 id · 행)로 옮긴다. 운영 상태(진행 중 오더 · 재고 · 계수기 · 시각)는 전과 같이 시작값이라 검사기의 출발점은 같다. `GET /api/archive?ref=` 로 따라간다. 메모리 백엔드 같은 규칙 | 마이그레이션 47, `entsim/state.py` |
+| neo4j 재시작 뒤 끊긴 연결 | 볼륨 교체로 neo4j 가 다시 뜬 뒤 agent 서비스 풀의 끊긴 연결이 승인 조건 검사를 ServiceUnavailable 로 실패시켰다(회귀 2차 cooler 24/25). 드라이버에 `liveness_check_timeout=0`(쓰기 전 연결 확인) | `agentsvc/tools/mcp_kg.py`, `procsvc/main.py _kg` |
+| 옛 수업 버튼 경로 삭제 | enterprise-sim `/erp/spare/issue` · `/cmms/pm/advance` · `/erp/purchase_orders/delay` · process `/api/simulate/*` 삭제, `scripts/c2_live_check.py` · `c2_live_in_container.sh` 삭제(C2 시작값 기준 검사 — 이 7절 완주 · `test_c3_bc_simplified` 가 대신한다). 업무 거래 skill:issue-spare · pm-advance · delay-delivery 는 ERP · CMMS 거래로 남는다(`/api/exec`) | 위 파일 |
 | **결함 수정: 시나리오 에이전트가 실제로 쓰이지 않음** | 흐름 가져오기가 task 에 고른 에이전트(agent:pm-plan · agent:spare-buy)가 담당자(user_id)가 아니라 역할 기본(sys:agent)이었다. 워커는 담당자 프로필로 도구를 정하므로 B · C 에이전트가 전체 `enterprise` 서버로 돌았다(1차 완주 `live/run1-default-agent/`). `engine.new_workitem` 이 활동의 `agent` 를 담당자로 둔다 → 2차 완주에서 `enterprise-maint` · `enterprise-purchase` 만 씀 | `engine.py` |
 
 ### 7.2 실제 워커 완주 (포털 버튼, 한 번에 한 건, 20배속)
@@ -201,13 +206,15 @@
 - 회귀(실제 워커): 1차 cooler 40/40 · pump-fan 43/43. 엔진 수정 뒤 2차는 아래 보고에 적는다.
 - 주의: 회귀 검사기의 `/api/reset`(업무 실행 초기화)이 완주 때 만든 업무 행(WO · PR · GR)을 지운다. 처리 건 기록은 남는다.
 
-### 7.4 블랙박스 점검 — 기록 · 화면에 없는 곳
+### 7.4 블랙박스 점검 — 기록 · 화면에 없는 곳 (근본 수정 뒤)
 
 | 곳 | 지금 | 비고 |
 |---|---|---|
-| C 지식의 "불량 기대비용" | 실제 추출이 PR-7.4의 비교 원칙을 규칙으로 만들지 않았고, SOP-PUR-13(최단 납기)을 A정밀로 연결했다 | 적재 스크립트가 검토 단계를 자동 승인했다. 사람 검토에서 규칙 추가 · 연결 수정이 필요(또는 PR-07 문장을 판정 가능한 문장으로) |
-| 결정 수준 provenance 의 카드별 값 | po_amount · lead_slack_days · supplier_avl 이 결정 수준에서 비어 있음("후보마다 계산") | 값은 각 카드 facts 에 있다. 화면이 카드별 값을 출처와 함께 보이는지는 별도 확인 |
-| [초기화] 기록 | 처리 건이 없으면 감사 기록에만 남는다 | 처음 수업 전 초기화 |
-| A 열화 주입 → 처리 건 연결 | 누른 뒤 10분 안 HYD-01의 첫 처리 건에 붙인다(추정 연결) | 경보가 안 나면 감사 기록에만 |
-| 승인 화면 캡처 | 승인 카드(추천 · 진 안 · 근거)가 화면 아래라 캡처에 잘림 | 판단 원본은 `X-decision.json` |
-| 납기 사실 | C 판단 설명에 "OEM 오더 납기까지 −1.27 h" — 시나리오 시각 기준점이 오래됨 | `reanchor_scenario_times` 는 업무 실행 초기화 때만 돈다 |
+| C 지식의 "불량 기대비용" | 실제 추출이 PR-7.4 비교 원칙을 판정 규칙으로 만들지 않았고, SOP-PUR-13(최단 납기)을 A정밀로 연결했다 → 추천이 설계(B-OEM)와 다름 | 원문이 "총비용으로 비교한다"는 원칙만 있고 판정할 문턱이 없다. 적재 스크립트(`c3_ingest.py`)는 검토 단계를 손대지 않고 승인했다 — 사람 검토에서 규칙 추가 · 연결 수정이 필요(C1 몫, 열림) |
+| 결정 수준 provenance 의 카드별 값 | po_amount · lead_slack_days · supplier_avl 은 결정 수준에서 "후보마다 계산"(값 없음) | 값은 각 카드 facts 에 있다. 화면의 카드별 출처 표시는 확인 안 함 |
+| 승인 화면 캡처 | 승인 카드(추천 · 진 안 · 근거)가 화면 아래라 캡처에 잘림 | 판단 원본 `X-decision.json` |
+
+### 7.5 검증 상태 (2026-10-09 22:30)
+
+- 라이브 3차(근본 수정 뒤): A 버튼 → 처리 건에 `injection_id` 기록 **검증됨**. 그 뒤 워커의 Claude Code 구독이 세션 한도에 걸려(`You've hit your session limit · resets 12:20am`) 에이전트 task 가 실패 — B · C 3차와 회귀 3차는 **미검증**(한도가 풀린 뒤 다시).
+- 회귀 2차의 pump-fan(21/23)은 무효: 검사가 도는 중에 이미지 재빌드를 해(규칙 위반) 끊겼고, 같은 때 LLM 한도에 걸렸다.

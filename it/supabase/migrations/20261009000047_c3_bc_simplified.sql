@@ -121,3 +121,54 @@ do $$ begin
   perform ent.refresh_spare_flag('P-PMP-SEAL');
   perform ent.refresh_pm_flag(a) from (values ('HYD-01'), ('HYD-02'), ('HYD-03')) v(a);
 end $$;
+
+-- ---------------------------------------------------------------- 수업 초기화가 실행 기록을 지우지 않게 (보관 뒤 운영 상태만 되돌림)
+-- 회귀 검사기 · 강사의 업무 초기화(ent.reset_executions)는 지금까지 작업지시 · 발주 · 입고 · 원장을 지웠다. 끝난 처리 건이 가리키는
+-- 업무 증거(WO · PR · GR · 거래 원장)가 사라져 처리 기록을 따라갈 수 없었다(2026-10-09 라이브 완주 뒤 회귀에서 확인).
+-- 이제 지우기 전에 한 행씩 ent.execution_archive 에 옮겨 둔다(표 · 행 · 초기화 시각 · 초기화 회차). 운영 상태(진행 중 오더 · 재고 · 계수기 ·
+-- 시각 기준점)는 전과 같이 수업 시작값으로 돌아가므로 검사기가 보는 출발점은 그대로다.
+create table if not exists ent.execution_archive (
+  id bigserial primary key,
+  reset_no bigint not null,                                 -- 몇 번째 초기화에서 옮겼는지
+  table_name text not null,
+  ref text,                                                 -- WO · PR · GR · TX id (따라가기 키)
+  decision_id text,
+  row jsonb not null,
+  archived_at timestamptz not null default now()
+);
+create index if not exists execution_archive_ref on ent.execution_archive (ref);
+create sequence if not exists ent.execution_reset_no;
+alter table ent.execution_archive enable row level security;
+drop policy if exists execution_archive_read_all on ent.execution_archive;
+create policy execution_archive_read_all on ent.execution_archive for select to anon, authenticated using (true);
+grant select on ent.execution_archive to hyd_enterprise_reader;
+
+create or replace function ent.reset_executions() returns void language plpgsql as $$
+declare n bigint := nextval('ent.execution_reset_no');
+begin
+  insert into ent.execution_archive (reset_no, table_name, ref, decision_id, row)
+    select n, 'goods_receipts', g.id, g.decision_id, to_jsonb(g) from ent.goods_receipts g
+    union all select n, 'transactions', t.id, t.decision_id, to_jsonb(t) from ent.transactions t
+    union all select n, 'work_orders', w.id, w.decision_id, to_jsonb(w) from ent.work_orders w
+    union all select n, 'purchase_requests', r.id, r.decision_id, to_jsonb(r) from ent.purchase_requests r
+    union all select n, 'shipments', s.id, s.decision_id, to_jsonb(s) from ent.shipments s
+    union all select n, 'lot_dispositions', l.lot, l.decision_id, to_jsonb(l) from ent.lot_dispositions l
+    union all select n, 'ems_actions', null, e.decision_id, to_jsonb(e) from ent.ems_actions e
+    union all select n, 'maintenance_history', h.wo, null, to_jsonb(h) from ent.maintenance_history h where h.wo not like 'WO-HIST-%';
+  delete from ent.goods_receipts;
+  delete from ent.transactions; delete from ent.work_orders; delete from ent.purchase_requests; delete from ent.shipments;
+  delete from ent.lot_dispositions; delete from ent.ems_actions;
+  delete from ent.maintenance_history where wo not like 'WO-HIST-%';
+  update ent.production_orders set asset = moved_from, moved_from = null where moved_from is not null;
+  perform ent.reset_spare_stock(null);
+  perform ent.reset_pm_counters(null);
+  perform ent.reanchor_scenario_times();
+end $$;
+
+create or replace function ent.execution_archive_read(p_ref text) returns jsonb language sql stable as $$
+  select jsonb_build_object('records', coalesce((select jsonb_agg(jsonb_build_object('reset_no', a.reset_no, 'table', a.table_name, 'ref', a.ref,
+                                                 'decision_id', a.decision_id, 'row', a.row, 'archived_at', a.archived_at) order by a.id desc)
+                                                 from ent.execution_archive a where p_ref is null or a.ref = p_ref or a.decision_id = p_ref), '[]'::jsonb))
+$$;
+revoke execute on function ent.reset_executions() from public, anon, authenticated;
+grant execute on function ent.reset_executions(), ent.reanchor_scenario_times() to service_role;
