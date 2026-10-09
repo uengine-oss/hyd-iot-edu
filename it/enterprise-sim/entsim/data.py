@@ -157,9 +157,9 @@ def ems_demand() -> dict:
 # ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 부품별 견적 · 예정된 정비 시간
 # Supabase 백엔드(migration 20261009000045)와 같은 값 · 같은 응답 모양. 재고는 바뀌는 값이라 state.py 가 들고, 여기에는 기준값만 둔다.
 SPARE_BASE = {
-    # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 5 · HYD-03 예방 교체 예약 2 → 가용 3. 수업 버튼 '자재 출고 −2' → 가용 1 < 재주문점 2
-    # → 재고 기준 이탈, 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 정기 정비(B) 1회는 1개를 써서 가용 2 = 재주문점(이탈 아님).
-    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 5, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
+    # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 3 · HYD-03 예방 교체 예약 2 → 가용 1 < 재주문점 2 — 수업 시작 상태가 곧
+    # '재고 보충 필요'다(C3 B · C 단순화, 마이그레이션 47). 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 구매 처리 건이 입고까지 하면 가용 7.
+"P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 3, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
                    "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
     "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
     "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},
@@ -181,8 +181,9 @@ WINDOW_KINDS = {k: label for k, label, *_ in _WINDOW_RULES}
 PM_SETTINGS = {"interval_h": 2000, "tolerance_pct": 10, "notice_h": 50}
 PM_PACKAGE = "2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)"
 PM_KIT = {"part_no": "P-PMP-SEAL", "qty": 1}
-# 수업 시작값(마지막 정기 정비 뒤 운전시간). 버튼 '운전시간 빨리 감기 +300 h'(세 대 모두) → HYD-02 1,950 h(PM_DUE) · HYD-03 1,880 h(허용 오차 안, 묶음 후보)
-PM_BASE = {"HYD-01": {"since_pm_h": 1200, "total_h": 9200}, "HYD-02": {"since_pm_h": 1650, "total_h": 11650}, "HYD-03": {"since_pm_h": 1580, "total_h": 7580}}
+# 수업 시작값(마지막 정기 정비 뒤 운전시간) — 시작 상태가 곧 'HYD-02 정기 점검 도래'다(C3 B · C 단순화, 마이그레이션 47):
+# HYD-02 1,950 h(PM_DUE) · HYD-03 1,880 h(허용 오차 안, 묶음 후보) · HYD-01 1,500 h
+PM_BASE = {"HYD-01": {"since_pm_h": 1500, "total_h": 9500}, "HYD-02": {"since_pm_h": 1950, "total_h": 11950}, "HYD-03": {"since_pm_h": 1880, "total_h": 7880}}
 
 
 def quote_rows(part: str) -> list[dict]:
@@ -257,7 +258,10 @@ def pm_row(asset: str, counter: dict, spare: dict | None, peers: dict[str, dict]
             "kit_part_no": PM_KIT["part_no"], "kit_qty": kit, "spare_gap_after_pm": gap_after, "spare_gap_after_bundle": gap_bundle,
             "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at"),
             # C3: 그다음 예정된 정비 시간(월간 창) — 카드가 고른 시점을 작업지시에 싣는다 (SQL 뷰 ent.pm_status 와 같은 칸, 마이그레이션 46)
-            "following_window_id": wins["M"]["id"], "following_window_at": wins["M"]["starts_at"]}
+            "following_window_id": wins["M"]["id"], "following_window_at": wins["M"]["starts_at"],
+            # C3 B · C 단순화: 이번 회차 정기 정비 오더(등록되면 화면의 '정기 점검 도래'가 꺼진다, SQL 뷰와 같은 칸 — 마이그레이션 47)
+            "pm_planned_wo": counter.get("plan_wo"), "pm_planned_window": counter.get("plan_window"), "pm_planned_at": counter.get("planned_at"),
+            "pm_alert": since >= interval - st["notice_h"] and not counter.get("plan_wo")}
 
 
 def maintenance_windows(asset: str) -> dict:

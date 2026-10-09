@@ -104,21 +104,21 @@ def b_judge(monkeypatch):
 
 
 def test_b_facts_come_from_the_cmms_counter_with_the_ontology_variable_names(enterprise, monkeypatch):
-    enterprise.post("/cmms/pm/advance", json={"hours": 300})                     # 수업 버튼: 세 대 +300 h → HYD-02 1,950 h
+    # C3 B · C 단순화: 수업 시작 상태가 곧 HYD-02 1,950 h(정기 점검 도래) · 씰 키트 가용 1(재고 보충 필요) — 버튼 없이 시작값
     facts, result = b_judge(monkeypatch)
     assert (facts["hours_since_pm"], facts["hours_at_next_window"], facts["hours_at_following_window"]) == pytest.approx((1950, 1959, 2230), abs=0.5)
-    assert (facts["pm_crew_available"], facts["spare_available"]) == (2, 3) and 19 < facts["order_due_h"] <= 20
+    assert (facts["pm_crew_available"], facts["spare_available"]) == (2, 1) and 19 < facts["order_due_h"] <= 20
     o = {x["sopId"]: x for x in result["options"]}
     assert result["recommended"] == "skill:pm-11"                                  # 이번 예정된 정비 시간에 단독
     assert not o["SOP-PM-13"]["feasible"] and o["SOP-PM-13"]["violations"][0]["rule"] == "rule:pm-defer-limit"   # 미루면 2,230 h > 2,200 h
     assert [p["rule"] for p in o["SOP-PM-12"]["penalties"]] == ["rule:pm-stop-order"]                         # 지금 정지 → 오더 손실
     assert [p["rule"] for p in o["SOP-PM-14"]["penalties"]] == ["rule:pm-bundle-crew"]                        # 두 대 묶기 → 인원 2명 < 4
+    assert not o["SOP-PM-14"]["feasible"] and [v["rule"] for v in o["SOP-PM-14"]["violations"]] == ["rule:pm-bundle-spare"]  # 키트 1 < 2 (C 와 이어짐)
     assert all(any(f["variable"] == "sv:ts1" for f in x["forecast"]) for x in result["options"])              # 명령 없는 카드도 지금 운전점 예측
 
 
 def test_b_without_seal_kits_no_card_is_feasible(enterprise, monkeypatch):
-    enterprise.post("/cmms/pm/advance", json={"hours": 300})
-    enterprise.post("/erp/spare/issue", json={"qty": 3})                          # 가용 0
+    enterprise.post("/erp/spare/issue", json={"qty": 1})                          # 가용 1 → 0
     facts, result = b_judge(monkeypatch)
     assert facts["spare_available"] == 0 and result["recommended"] is None        # 지금 하는 안은 부품 없음, 미루기는 허용 오차 밖
 
@@ -158,8 +158,7 @@ def c_judge(monkeypatch):
 
 
 def test_c_amount_and_lead_slack_are_computed_per_card_from_erp_need_and_scm_quotes(enterprise, monkeypatch):
-    enterprise.post("/erp/spare/issue", json={})                                  # 수업 버튼 '자재 출고 −2' → 가용 1 < 2
-    facts, result = c_judge(monkeypatch)
+    facts, result = c_judge(monkeypatch)                                         # 수업 시작 상태: 가용 1 < 재주문점 2
     assert (facts["spare_gap"], facts["need_qty"], facts["need_by_days"], facts["spare_part_no"]) == (-1, 6, 6, "P-PMP-SEAL")
     o = {x["sopId"]: x for x in result["options"]}
     b, a, c = o["SOP-PUR-11"], o["SOP-PUR-12"], o["SOP-PUR-13"]
@@ -172,7 +171,6 @@ def test_c_amount_and_lead_slack_are_computed_per_card_from_erp_need_and_scm_quo
 
 
 def test_c_lead_time_longer_than_the_need_date_warns_the_card(enterprise, monkeypatch):
-    enterprise.post("/erp/spare/issue", json={})
     monkeypatch.setitem(entmain.data.SPARE_BASE["P-PMP-SEAL"], "need_by_days", 3)        # 결품까지 3일 — B-OEM 5일은 늦다
     facts, result = c_judge(monkeypatch)
     b = next(x for x in result["options"] if x["sopId"] == "SOP-PUR-11")
@@ -182,7 +180,6 @@ def test_c_lead_time_longer_than_the_need_date_warns_the_card(enterprise, monkey
 def test_business_cause_comes_from_the_graph_path_not_from_a_sensor_diagnosis(enterprise):
     """C 재고 경보에는 증상이 없다: 원인은 '모자란 부품을 쓰는 원인'(Cause -INVOLVES_PART-> Part)으로 읽는다. 엉뚱한 원인은 거절."""
     from dmn_mcp.tools import DmnTools
-    enterprise.post("/erp/spare/issue", json={})
     calls = []
 
     class KG:

@@ -487,7 +487,7 @@ async def _startup():
         plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
         source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
         asyncio.create_task(_source_loop()).add_done_callback(_watch)
-        if os.getenv('BUSINESS_MONITOR','1')!='0':
+        if os.getenv('BUSINESS_MONITOR','0')!='0':
             # C2: 업무 표 기준값 감시 — 재고 재주문점 이탈(C) · 운전시간 정기 정비 도래(B)가 처리 건을 스스로 연다(business_monitor.py)
             from . import business_monitor
             asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_human_alert,
@@ -1112,33 +1112,65 @@ async def _admit_human_alert(alert: dict) -> None:
         await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
 
 
-# C2 수업 원인 버튼 — enterprise-sim 에 그대로 전달한다(포털 고장 모사 화면이 부른다). 원인만 만들고, 감지와 처리 건 시작은 감시기가 한다.
-#   C '자재 출고 −2' · 재고 초기화 · (미달 가지) '공급사 납기 지연', B '운전시간 빨리 감기 +300 h' · 계수기 초기화
-@app.post("/api/simulate/spare-issue")
-async def simulate_spare_issue(body: dict | None = None):
-    """body = {part_no, qty, asset, by, reason} (기본 P-PMP-SEAL 2개, HYD-03). 출고로 가용이 재주문점 아래로 내려가면 업무 기준값 감시가
-    다음 주기(BUSINESS_MONITOR_INTERVAL_S)에 처리 건을 연다."""
-    return await asyncio.to_thread(_entsim_post, "/erp/spare/issue", body or {})
+# C3 B · C 단순화: 포털 '결함 실험'의 [정기 점검] · [재고 보충] · [초기화] (scenario_buttons.py). 버튼이 업무 감시와 같은 계약의 경보를 만들어
+# 같은 원천 접수 경로로 보낸다 — 배포된 B · C 흐름이 처리 건을 연다. 예전 원인 버튼(+300 h · 출고 −2 · 납기 지연)은 없앴다(시작 상태가 곧 기본값).
+from . import scenario_buttons
 
 
+def _scenario_route(pattern: str) -> str | None:
+    from . import flow_deploy
+    rt = instance_mode.current()
+    defn = flow_deploy.route_definition(rt, pattern)
+    return defn.id if defn is not None and defn.id != rt.defn.id else None
+
+
+@app.get("/api/scenario/status")
+async def scenario_status():
+    """시나리오 B · C 의 화면 표시(정기 점검 도래 · 재고 보충 필요) · 근거 값 · 진행 중 · 마지막 처리 건."""
+    rt = instance_mode.current() if PROCESS_MODE == "instance" else None
+    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt)
+
+
+@app.post("/api/scenario/{key}/start")
+async def scenario_start(key: str, body: dict | None = None):
+    """[정기 점검](B) · [재고 보충](C): 지금 업무 값으로 경보를 만들어 배포된 흐름의 처리 건을 바로 연다. 거절은 409(사유)."""
+    if PROCESS_MODE != "instance":
+        raise HTTPException(409, "처리 건 모드(PROCESS_MODE=instance)에서만 시작합니다")
+    rt = instance_mode.current()
+    try:
+        prep = await asyncio.to_thread(scenario_buttons.prepare, key.upper(), instance_mode.enterprise_read, rt, _scenario_route)
+    except KeyError:
+        raise HTTPException(404, f"모르는 시나리오 {key}")
+    except scenario_buttons.Refused as e:
+        raise HTTPException(409, str(e))
+    alert = prep["alert"]
+    if (body or {}).get("by"):
+        alert["evidence"]["requested_by"] = str(body["by"])[:80]
+    await _admit_human_alert(alert)
+    _audit(alert["asset"], alert["observedBy"]["id"], "BUSINESS_ALERT_RAISED",
+           {"alertId": alert["alertId"], "pattern": alert["pattern"], "evidence": alert["evidence"], "trigger": "scenario-button"})
+    return await asyncio.to_thread(scenario_buttons.started, rt, key.upper(), alert, _scenario_route(alert["pattern"]))
+
+
+@app.post("/api/scenario/{key}/reset")
+async def scenario_reset(key: str):
+    """[초기화]: B = 운전시간 계수기 세 대(묶음 후보 HYD-03 포함) · 이번 회차 오더 표시, C = 씰 키트 재고를 수업 시작값으로. 끝난 처리 건 기록은 남는다."""
+    key = key.upper()
+    if key == "B":
+        await asyncio.to_thread(_entsim_post, "/cmms/pm/reset", {})
+    elif key == "C":
+        await asyncio.to_thread(_entsim_post, "/erp/spare/reset", {"part_no": "P-PMP-SEAL"})
+    else:
+        raise HTTPException(404, f"모르는 시나리오 {key}")
+    rt = instance_mode.current() if PROCESS_MODE == "instance" else None
+    return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt)
+
+
+# C2 수업 초기화(포털에서는 [초기화]가 위 API 를 쓴다): enterprise-sim 에 그대로 전달
 @app.post("/api/simulate/spare-reset")
 async def simulate_spare_reset(body: dict | None = None):
     """body = {part_no} (없으면 전부) — 예비품 재고를 수업 기준값으로."""
     return await asyncio.to_thread(_entsim_post, "/erp/spare/reset", body or {})
-
-
-@app.post("/api/simulate/delivery-delay")
-async def simulate_delivery_delay(body: dict | None = None):
-    """시나리오 C 미달 가지: body = {days: 3, ref | part_no} — 열린 발주의 입고 예정을 늦춘다. 입고 확인 task 가 늦어진 예정을 다시 읽어
-    납기 초과 타이머가 먼저 울리면 '지연' 결과 보고로 간다."""
-    return await asyncio.to_thread(_entsim_post, "/erp/purchase_orders/delay", body or {})
-
-
-@app.post("/api/simulate/pm-advance")
-async def simulate_pm_advance(body: dict | None = None):
-    """시나리오 B: body = {hours: 300, asset: <없으면 세 대 모두>}. 운전시간이 주기 − 사전 알림(1,950 h)에 닿은 설비는 업무 기준값 감시가
-    다음 주기에 PM_DUE 처리 건을 연다."""
-    return await asyncio.to_thread(_entsim_post, "/cmms/pm/advance", body or {})
 
 
 @app.post("/api/simulate/pm-reset")

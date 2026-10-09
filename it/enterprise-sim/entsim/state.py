@@ -111,11 +111,15 @@ class EnterpriseState:
         s = self._s
         s["erp"].setdefault("spare_stock", {p: {"part_no": p, "on_hand": b["on_hand"], "reserved": b["reserved"], "on_order": 0,
                                                 "reorder_point": b["reorder_point"], "target_stock": b["target_stock"],
-                                                "reserved_for": b["reserved_for"], "below_since": None}
+                                                "reserved_for": b["reserved_for"],
+                                                # C3: 시작값이 재주문점 아래면(씰 키트) 시작부터 '재고 보충 필요'
+                                                "below_since": _now() if b["on_hand"] - b["reserved"] < b["reorder_point"] else None}
                                             for p, b in data.SPARE_BASE.items()})
         s["erp"].setdefault("stock_movements", [])
         s["erp"].setdefault("goods_receipts", [])
-        s["cmms"].setdefault("pm_counters", {a: dict(b, cycle=1, last_done_at=None, due_since=None, updated_at=_now())
+        due_h = data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]
+        s["cmms"].setdefault("pm_counters", {a: dict(b, cycle=1, last_done_at=None, due_since=_now() if b["since_pm_h"] >= due_h else None,
+                                                     plan_wo=None, plan_window=None, planned_at=None, updated_at=_now())
                                              for a, b in data.PM_BASE.items()})
         s["cmms"].setdefault("pm_log", [])
 
@@ -158,7 +162,7 @@ class EnterpriseState:
                 row = self._s["erp"]["spare_stock"][p]
                 delta = b["on_hand"] - row["on_hand"]
                 row.update(on_hand=b["on_hand"], reserved=b["reserved"], on_order=0, below_since=None)
-                self._move(p, "RESET", delta, None, "RESET", "instructor", "수업 초기화")
+                self._move(p, "RESET", delta, None, "RESET", "instructor", "수업 초기화")   # 시작값이 재주문점 아래면 이탈 시각을 바로 남긴다
             self._save()
         return self.spare_stock(part)
 
@@ -196,7 +200,8 @@ class EnterpriseState:
                 if asset not in (None, a):
                     continue
                 c = self._s["cmms"]["pm_counters"][a]
-                c.update(since_pm_h=b["since_pm_h"], total_h=b["total_h"], cycle=1, last_done_at=None, due_since=None)
+                c.update(since_pm_h=b["since_pm_h"], total_h=b["total_h"], cycle=1, last_done_at=None, due_since=None,
+                         plan_wo=None, plan_window=None, planned_at=None)
                 self._pm_log(a, "BASE", 0, "RESET", "instructor", "수업 초기화")
             self._save()
         return self.pm_status(asset)
@@ -295,6 +300,10 @@ class EnterpriseState:
             wo = {"id": _id("WO"), "asset": asset, "task": params.get("task", "쿨러 핀 세척 (SOP-COOL-02)"), "window": when, "status": "배정됨",
                   "window_id": window_id, "window_starts_at": starts_at}
             s["cmms"]["work_orders"].insert(0, wo)
+            # C3 B · C 단순화: 정기 정비 도래 설비의 작업지시 = 이번 회차 정기 정비 오더(마이그레이션 47 트리거 ent.mark_pm_plan 과 같음)
+            c = s["cmms"].get("pm_counters", {}).get(asset)
+            if c is not None and not c.get("plan_wo") and c["since_pm_h"] >= data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]:
+                c.update(plan_wo=wo["id"], plan_window=when, planned_at=_now())
             return wo["id"], f"{asset} {wo['task']} — {when}"
         if skill == "skill:receive-goods":
             pr = next((p for p in s["erp"]["purchase_requests"] if p["id"] == params.get("ref")), None)
@@ -358,7 +367,7 @@ class EnterpriseState:
         if skill == "skill:pm-reset":                      # 시운전 통과 뒤: 계수기 리셋 · 다음 기한 기록
             c = s["cmms"]["pm_counters"][asset]
             done = c["since_pm_h"]
-            c.update(since_pm_h=0, cycle=c["cycle"] + 1, last_done_at=_now())
+            c.update(since_pm_h=0, cycle=c["cycle"] + 1, last_done_at=_now(), plan_wo=None, plan_window=None, planned_at=None)
             ref = _id("PMR")
             self._pm_log(asset, "RESET", -done, ref, req.get("by"), params.get("reason") or f"정기 정비 완료 ({params.get('ref') or '-'})")
             return ref, (f"{asset} 운전시간 계수기 리셋 ({done:g} h 에 정기 정비) — 다음 기한 {data.PM_SETTINGS['interval_h']} h "

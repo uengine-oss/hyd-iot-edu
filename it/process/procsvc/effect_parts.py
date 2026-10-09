@@ -86,7 +86,8 @@ PARTS = {
         "tool": GR_TOOL, "name": "입고 확인", "outputs": ["goods_receipt", "received"], "inputs": ["purchase_order"],
         "help": "발주의 입고 예정(리드타임)까지 기다린 뒤 입고 · 검수를 ERP 에 기록하고 재고를 올립니다. 확인되면 사건을 닫습니다. "
                 "납기 초과를 보이려면 경계 타이머(예: P7D)를 붙입니다(같은 수업 압축 배율).",
-        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)"},
+        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)",
+                   "immediate": "true 면 리드타임을 기다리지 않고 바로 입고 · 재고 반영 (C3 수업 흐름 — 설비까지 가지 않고 처리되면 끝)"},
     },
     "svc:test-run": {
         "tool": TEST_RUN_TOOL, "name": "시운전 확인", "outputs": ["test_run", "passed"], "inputs": ["asset"],
@@ -214,6 +215,8 @@ def validate(activity: dict) -> None:
             for name in placeholders(cfg.get(key) or ""):
                 if not PATH_RE.match(name):
                     raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
+    if tool == GR_TOOL and "immediate" in cfg and not isinstance(cfg["immediate"], bool):
+        raise ValueError(f"활동 {aid}: immediate 는 true/false 입니다")
     for key in ("work_order_var", "purchase_order_var"):
         if cfg.get(key) is not None and (not isinstance(cfg[key], str) or not IDENT_RE.match(cfg[key])):
             raise ValueError(f"활동 {aid}: {key} 는 값 이름이어야 합니다")
@@ -341,10 +344,28 @@ def report_values(v: dict) -> list[dict]:
     gr = v.get("goods_receipt")
     if isinstance(gr, dict):
         after = gr.get("after") if isinstance(gr.get("after"), dict) else {}
+        stock = gr.get("stock_after") if isinstance(gr.get("stock_after"), dict) else {}
         for key, name in (("qty", "입고 수량"), ("on_hand", "현재고"), ("available", "가용 재고")):
-            val = gr.get(key, after.get(key))
+            val = gr.get(key, after.get(key, stock.get(key)))
             if isinstance(val, (int, float)):
-                rows.append({"name": name, "value": val, "unit": " 개"})
+                row = {"name": name, "value": val, "unit": " 개"}
+                if key == "available" and isinstance(stock.get("reorder_point"), (int, float)):
+                    row.update(limit=f"≥ {_text(stock['reorder_point'])} 개 (재주문점)", ok=val >= stock["reorder_point"])
+                rows.append(row)
+    # C3 B · C 단순화: 정기 정비는 정비 오더 등록 · 공지로 끝난다 — 오더 번호 · 정비 시점 · 공지 메일을 결과 값으로
+    wo = v.get("work_order")
+    if isinstance(wo, dict) and wo.get("ref") and not isinstance(tr, dict) and not (isinstance(ro, dict) and ro.get("tag")):
+        after = wo.get("after") if isinstance(wo.get("after"), dict) else {}
+        rows.append({"name": "정비 오더", "value": wo["ref"]})
+        when = after.get("window_label") or after.get("window")
+        if when:
+            rows.append({"name": "정비 시점", "value": when})
+        notice = wo.get("notice") if isinstance(wo.get("notice"), dict) else None
+        if notice is not None:
+            rows.append({"name": "공지 메일", "value": "보냄" + (" (재전송 아님)" if notice.get("idempotent") is False else ""), "ok": True})
+    po = v.get("purchase_order")
+    if isinstance(po, dict) and isinstance(po.get("notice"), dict):
+        rows.append({"name": "공급사 메일", "value": "보냄", "ok": True})
     return rows
 
 

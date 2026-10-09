@@ -207,6 +207,10 @@ class ServicePartsRuntime:
             raise ValueError("입고를 확인할 발주 영수증(purchase_order.ref)이 처리 건에 없습니다")
         clock = _clock(now)
         state = self._state(wi)
+        if cfg.get("immediate") and "wait" not in state:
+            # C3 B · C 단순화: 발주 뒤 바로 입고 · 재고 반영(리드타임을 기다리지 않는다 — '처리되면 끝')
+            state = self._save_state(wi, wait={"due_at": engine.now_iso(clock), "real_s": 0, "label": "즉시 입고", "immediate": True})
+            self._event(wi, "RECEIPT_IMMEDIATE", "입고 대기 없음 — 발주 수량을 바로 입고 · 재고 반영", {"purchase_order": po["ref"]})
         if "wait" not in state:
             after = po.get("after") or {}
             lead_d, delay_d = after.get("lead_d"), after.get("delay_d") or 0
@@ -221,7 +225,7 @@ class ServicePartsRuntime:
             self._event(wi, "RECEIPT_WAIT", "입고 대기 시작", {"purchase_order": po["ref"], "plan": plan})
         if not effect_parts.due(state["wait"], clock):
             return
-        if "receipt" not in state and self.hooks.enterprise_read is not None:
+        if "receipt" not in state and self.hooks.enterprise_read is not None and not state["wait"].get("immediate"):
             # 공급사가 납기 지연을 알렸으면(수업 버튼 '공급사 납기 지연') 늦어진 입고 예정까지 더 기다린다 — 그 사이 납기 초과 타이머가 울릴 수 있다
             facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
             delay_d = float(facts.get("delay_d") or 0)
@@ -237,7 +241,16 @@ class ServicePartsRuntime:
             item = {"skill": (v.get("chosen_option") or {}).get("id"), "code": "GR_CONFIRM", "name": "입고 · 검수", "system": "sys:erp",
                     "ref": po["ref"], "source": "approved-purchase"}
             state = self._save_state(wi, receipt=self._exec(inst, v, item, "입고 확인"))
-        receipt = state["receipt"]
+        if "stock_after" not in state and self.hooks.enterprise_read is not None:
+            # C3: 입고 뒤 재고(가용 · 재주문점)를 결과 보고에 싣는다 — '재고 보충 필요' 표시가 꺼졌는지의 근거
+            part_no = (state["receipt"].get("after") or {}).get("part_no") or (po.get("after") or {}).get("part_no") or v.get("approved_part_no")
+            try:
+                facts = (self.hooks.enterprise_read("spare_stock", {"part": part_no}) or {}).get("facts") or {} if part_no else {}
+            except Exception:  # noqa: BLE001 — 보조 정보, 읽기 실패로 입고 확인을 막지 않는다
+                facts = {}
+            state = self._save_state(wi, stock_after={k: facts.get(k) for k in ("part_no", "on_hand", "reserved", "on_order", "available",
+                                                                                 "reorder_point", "below_reorder_point") if k in facts})
+        receipt = dict(state["receipt"], stock_after=state.get("stock_after") or None)
         if v.get("incident") and self.hooks.close_incident_effect is not None:
             self.hooks.close_incident_effect(v["incident"], {"ok": True, "ref": receipt.get("ref"), "detail": receipt.get("detail"), "kind": "goods_receipt"})
         notice = f"입고 확인 — {receipt.get('detail') or receipt.get('ref')}"
