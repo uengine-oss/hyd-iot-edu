@@ -724,7 +724,7 @@ TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procur
 
 
 def _window_params(window, opt: dict) -> dict:
-    """C2: 승인된 정비 시점 → CMMS window 인자. 정비창 id('MW-…') · {id|window_id, label, starts_at} · 글 라벨을 받는다."""
+    """C2: 승인된 정비 시점 → CMMS window 인자. 예정된 정비 시간 id('MW-…') · {id|window_id, label, starts_at} · 글 라벨을 받는다."""
     if isinstance(window, dict):
         out = {}
         if window.get("id") or window.get("window_id"):

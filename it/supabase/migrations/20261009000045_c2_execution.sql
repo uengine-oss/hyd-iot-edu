@@ -87,8 +87,8 @@ language sql stable as $$
     from ent.suppliers s where s.part_no = p_part and not exists (select 1 from ent.part_quotes q where q.part_no = p_part)
 $$;
 
--- ---------------------------------------------------------------- 3. 정비창
-create table if not exists ent.maintenance_window_rules (     -- CMMS: 반복 정비창 (야간 · 주말)
+-- ---------------------------------------------------------------- 3. 예정된 정비 시간
+create table if not exists ent.maintenance_window_rules (     -- CMMS: 반복 예정된 정비 시간 (야간 · 주말)
   asset text not null,                                      -- ent.assets.code (자산 행은 seed 가 넣으므로 FK 없음)
   kind text not null check (kind in ('N', 'W', 'M')),       -- N 야간 정비 시간 · W 주말 계획 정지 · M 월간 계획 정지
   label text not null,
@@ -108,7 +108,7 @@ select a.code, k.kind, k.label, now() + make_interval(hours => k.first_h), k.per
        k(kind, label, first_h, period_h, duration_h, crew)
 on conflict (asset, kind) do update set label = excluded.label, crew_size = excluded.crew_size;
 
--- 다가오는(또는 진행 중인) 정비창 p_n 개씩. id 는 설비 · 종류 · 시작 시각으로 정해져 같은 창은 같은 id 다.
+-- 다가오는(또는 진행 중인) 예정된 정비 시간 p_n 개씩. id 는 설비 · 종류 · 시작 시각으로 정해져 같은 창은 같은 id 다.
 -- 돌려주는 칸이 옛 판보다 늘었으므로(crew_size) 먼저 지운다(그것에 기대는 뷰 ent.pm_status 는 아래에서 다시 만든다).
 drop function if exists ent.next_maintenance_windows(text, integer) cascade;
 create or replace function ent.next_maintenance_windows(p_asset text, p_n integer default 3)
@@ -362,7 +362,7 @@ begin
   if v_skill = 'skill:schedule-maintenance' then
     v_ref := 'WO-' || to_char(now(), 'MMDD') || '-' || upper(substr(md5(random()::text), 1, 4));
     v_window_label := v_params->>'window';
-    if v_params ? 'window_id' then                       -- C2: 승인된 정비창 id → 라벨 · 시작 시각 (설비가 다르거나 없는 창은 거절)
+    if v_params ? 'window_id' then                       -- C2: 승인된 예정된 정비 시간 id → 라벨 · 시작 시각 (설비가 다르거나 없는 창은 거절)
       select * into v_window from ent.next_maintenance_windows(v_asset, 14) w where w.id = v_params->>'window_id';
       if not found then
         raise exception 'INVALID: unknown maintenance window % for %', v_params->>'window_id', v_asset using errcode = '22023';
@@ -628,7 +628,7 @@ begin
   update ent.maintenance_history h set performed_at = now() - make_interval(days => s.d)
     from (values ('WO-HIST-01-1', 21), ('WO-HIST-01-2', 38), ('WO-HIST-01-3', 55), ('WO-HIST-02-1', 21), ('WO-HIST-03-P', 80)) s(wo, d)
    where h.wo = s.wo;
-  -- C2: 정비창 규칙의 첫 창 = 지금 + 9 h(야간, maintenance_profiles.night_window_at 과 같음) · + 105 h(주말)
+  -- C2: 예정된 정비 시간 규칙의 첫 창 = 지금 + 9 h(야간, maintenance_profiles.night_window_at 과 같음) · + 105 h(주말)
   update ent.maintenance_window_rules set first_at = now() + make_interval(hours => case kind when 'N' then 9 when 'W' then 105 else 280 end);
 end $$;
 

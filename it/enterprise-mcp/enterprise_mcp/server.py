@@ -69,7 +69,7 @@ def erp_inventory(asset: Asset) -> dict:
 
 @mcp.tool(annotations=READ)
 def cmms_history(asset: Asset) -> dict:
-    """CMMS: 정비 기준(세척 주기 · 비용 · 다음 야간 정비창)과 과거 작업지시, 발행된 작업지시."""
+    """CMMS: 정비 기준(세척 주기 · 비용 · 다음 야간 예정된 정비 시간)과 과거 작업지시, 발행된 작업지시."""
     return guarded(tools.read)("cmms_history", asset=asset)
 
 
@@ -105,7 +105,7 @@ def part_quotes(part: Annotated[str, Field(description="부품 번호 (예: P-PM
 
 @mcp.tool(annotations=READ)
 def maintenance_windows(asset: Asset) -> dict:
-    """CMMS: 다가오는 정비창(야간 정비창 · 주말 계획 정지)의 id · 시작 · 끝 · 지금부터 몇 시간, 등록된 정비 일정."""
+    """CMMS: 다가오는 예정된 정비 시간(야간 예정된 정비 시간 · 주말 계획 정지)의 id · 시작 · 끝 · 지금부터 몇 시간, 등록된 정비 일정."""
     return guarded(tools.read)("maintenance_windows", asset=asset)
 
 

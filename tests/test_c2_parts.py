@@ -1,5 +1,5 @@
 """C2 (확정 TODO C) 부품 단위 시험 — 부품 계약(effect_parts) · ERP 재고 감시(business_monitor) · 업무 시스템 메모리 백엔드(재고 · 발주 · 입고 ·
-정비 완료 · 정비창 · 출고 버튼) · hyd-effects 쓰기 도구 · 승인 뒤 MCP 호출 클라이언트 · 대기 압축 · 시뮬레이터 부품별 복구 · 사건 종결."""
+정비 완료 · 예정된 정비 시간 · 출고 버튼) · hyd-effects 쓰기 도구 · 승인 뒤 MCP 호출 클라이언트 · 대기 압축 · 시뮬레이터 부품별 복구 · 사건 종결."""
 import json
 import smtplib
 import sys

@@ -285,7 +285,7 @@ class EnterpriseState:
         s = self._s
         if skill == "skill:schedule-maintenance":
             when, window_id, starts_at = params.get("window"), None, params.get("window_starts_at")
-            if params.get("window_id"):                     # C2: 승인된 정비창 id → 라벨 · 시작 시각 (ent.exec_skill 과 같은 검사)
+            if params.get("window_id"):                     # C2: 승인된 예정된 정비 시간 id → 라벨 · 시작 시각 (ent.exec_skill 과 같은 검사)
                 win = next((w for w in data.next_windows(asset, 14) if w["id"] == params["window_id"]), None)
                 if win is None:
                     raise ValueError(f"INVALID: unknown maintenance window {params['window_id']} for {asset}")

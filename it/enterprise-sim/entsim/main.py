@@ -31,7 +31,7 @@ class MemoryEnterprise:
         self.st = EnterpriseState(os.getenv("ENTERPRISE_STATE_PATH"))
         self._reads = {"mes_orders": self._mes_orders, "erp_contract": data.erp_contract, "erp_inventory": data.erp_inventory,
                        "cmms_history": data.cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand,
-                       # C2: 예비품 재고(바뀌는 값 → state) · 부품별 견적 · 다가오는 정비창 · 발주 한 건
+                       # C2: 예비품 재고(바뀌는 값 → state) · 부품별 견적 · 다가오는 예정된 정비 시간 · 발주 한 건
                        "spare_stock": self.st.spare_stock, "part_quotes": data.part_quotes, "maintenance_windows": data.maintenance_windows,
                        "purchase_order": self.st.purchase_order,
                        # C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (설비별 한 행)
@@ -135,7 +135,7 @@ def ems_demand():
     return _read("EMS", "ems_demand")
 
 
-# ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 견적 · 정비창 · 발주 조회
+# ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 견적 · 예정된 정비 시간 · 발주 조회
 @app.get("/erp/spare_stock")
 def spare_stock(part: str | None = Query(default=None)):
     """ERP: 중요 예비품 재고(가용 = 실물 - 예약, 재주문점 · 목표 · 입고 예정 · 필요량)와 최근 재고 이동. part 없으면 전부."""
@@ -150,7 +150,7 @@ def part_quotes(part: str = Query("P-PMP-SEAL")):
 
 @app.get("/cmms/windows")
 def maintenance_windows(asset: str = Query("HYD-02")):
-    """CMMS: 다가오는 정비창(야간 · 주말)과 등록된 일정."""
+    """CMMS: 다가오는 예정된 정비 시간(야간 · 주말)과 등록된 일정."""
     return _read("CMMS", "maintenance_windows", asset=asset)
 
 

@@ -947,7 +947,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         v = engine.variables(inst)
         opt = v.get("chosen_option") or {}
         item = request_for_option(opt)
-        # C2 (TODO C 실행 3): 승인된 정비 시점이 작업지시에 실린다 — 처리 건 값(기본 maintenance_window: 정비창 id 'MW-…' · {id, label, starts_at} ·
+        # C2 (TODO C 실행 3): 승인된 정비 시점이 작업지시에 실린다 — 처리 건 값(기본 maintenance_window: 예정된 정비 시간 id 'MW-…' · {id, label, starts_at} ·
         # 글 라벨)을 CMMS 요청의 window 로. 없으면 전과 같다(카드 id 로 '예정된 정비 시간 (야간)'/'즉시').
         # window_var 는 점으로 안쪽 칸을 가리킬 수 있다(예: alert.evidence.night_window_id — PM_DUE 경보가 실어 온 다음 야간 정비 시간)
         window_var = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('window_var') or 'maintenance_window'

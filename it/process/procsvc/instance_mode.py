@@ -478,7 +478,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
 
 
 def enterprise_read(name: str, params: dict) -> dict:
-    """C2: enterprise-sim 읽기(견적 · 발주 · 재고 · 정비창). 실패는 예외 — 값 없이 진행하지 않는다."""
+    """C2: enterprise-sim 읽기(견적 · 발주 · 재고 · 예정된 정비 시간). 실패는 예외 — 값 없이 진행하지 않는다."""
     from urllib.parse import quote, urlencode
     path, key = ENTERPRISE_READS[name]
     params = dict(params or {})

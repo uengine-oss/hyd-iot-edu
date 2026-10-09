@@ -14,7 +14,7 @@
 활동(activity) 모양: {"type": "serviceTask", "tool": <tool>, "service": {<부품 설정>}, "inputData": [...], "outputData": [...]}.
 설정 · 출력 이름은 validate(activity)가 검사하고(등록 · 가져오기 검사), 실행은 instances.InstanceRuntime 의 부품 처리기가 한다.
 
-시간: 업무 시간(정비창까지 9 h, 리드타임 5일)은 가상 시간이다. 실제 대기 = 가상 시간 ÷ (TIME_SCALE × 수업 압축 배율)
+시간: 업무 시간(예정된 정비 시간까지 9 h, 리드타임 5일)은 가상 시간이다. 실제 대기 = 가상 시간 ÷ (TIME_SCALE × 수업 압축 배율)
 (engine.wait_compression, 환경변수 PROCESS_WAIT_COMPRESSION). 설비 물리 · 감지기 · 재관측 · 사람 응답 타이머는 배속만 쓴다.
 """
 from __future__ import annotations
@@ -72,7 +72,7 @@ PARTS = {
         "help": "정해진 업무 시간(예: PT9H)이나 처리 건 값의 시각(예: work_order.window_starts_at)까지 기다립니다. "
                 "수업에서는 배속 × 수업 압축 배율로 줄어 몇 분이면 끝납니다. 경계 타이머를 붙이면 같은 배율이 적용됩니다.",
         "config": {"duration": "기다릴 업무 시간 ISO-8601 (예: PT9H, P5D)", "until": "기다릴 시각이 든 처리 건 값 (예: work_order.window_starts_at)",
-                   "label": "화면에 보일 이름 (예: 정비창까지 대기)"},
+                   "label": "화면에 보일 이름 (예: 예정된 정비 시간까지 대기)"},
     },
     "svc:maintenance": {
         "tool": RESTORE_TOOL, "name": "정비 수행 (모사)", "outputs": ["maintenance"], "inputs": ["asset"],
