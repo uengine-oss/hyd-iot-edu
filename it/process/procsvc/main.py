@@ -487,11 +487,11 @@ async def _startup():
         plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
         source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
         asyncio.create_task(_source_loop()).add_done_callback(_watch)
-        if os.getenv('ERP_STOCK_MONITOR','1')!='0':
-            # C2: ERP 재고 감시 — 재주문점 이탈이 시나리오 C 처리 건을 스스로 연다(business_monitor.py)
+        if os.getenv('BUSINESS_MONITOR','1')!='0':
+            # C2: 업무 표 기준값 감시 — 재고 재주문점 이탈(C) · 운전시간 정기 정비 도래(B)가 처리 건을 스스로 연다(business_monitor.py)
             from . import business_monitor
             asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_human_alert,
-                                                     float(os.getenv('ERP_STOCK_MONITOR_INTERVAL_S','15')),audit=_audit))
+                                                     float(os.getenv('BUSINESS_MONITOR_INTERVAL_S','15')),audit=_audit))
     case_projector = CaseProjector(store, _q, _incident_projected)
     active_runtime=instance_mode.current()
     knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),active_runtime.repo if active_runtime else None)
@@ -1110,11 +1110,12 @@ async def _admit_human_alert(alert: dict) -> None:
         await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
 
 
-# C2 수업 원인 버튼(시나리오 C): 예비품 출고 처리 · 재고 초기화 — enterprise-sim 에 그대로 전달한다(포털 고장 모사 화면이 부른다).
+# C2 수업 원인 버튼 — enterprise-sim 에 그대로 전달한다(포털 고장 모사 화면이 부른다). 원인만 만들고, 감지와 처리 건 시작은 감시기가 한다.
+#   C '자재 출고 −2' · 재고 초기화 · (미달 가지) '공급사 납기 지연', B '운전시간 빨리 감기 +300 h' · 계수기 초기화
 @app.post("/api/simulate/spare-issue")
 async def simulate_spare_issue(body: dict | None = None):
-    """body = {part_no, qty, asset, by, reason} (기본 P-PMP-SEAL 1개, HYD-03). 출고로 가용이 재주문점 아래로 내려가면 ERP 재고 감시가
-    다음 주기(ERP_STOCK_MONITOR_INTERVAL_S)에 처리 건을 연다."""
+    """body = {part_no, qty, asset, by, reason} (기본 P-PMP-SEAL 2개, HYD-03). 출고로 가용이 재주문점 아래로 내려가면 업무 기준값 감시가
+    다음 주기(BUSINESS_MONITOR_INTERVAL_S)에 처리 건을 연다."""
     return await asyncio.to_thread(_entsim_post, "/erp/spare/issue", body or {})
 
 
@@ -1122,6 +1123,32 @@ async def simulate_spare_issue(body: dict | None = None):
 async def simulate_spare_reset(body: dict | None = None):
     """body = {part_no} (없으면 전부) — 예비품 재고를 수업 기준값으로."""
     return await asyncio.to_thread(_entsim_post, "/erp/spare/reset", body or {})
+
+
+@app.post("/api/simulate/delivery-delay")
+async def simulate_delivery_delay(body: dict | None = None):
+    """시나리오 C 미달 가지: body = {days: 3, ref | part_no} — 열린 발주의 입고 예정을 늦춘다. 입고 확인 task 가 늦어진 예정을 다시 읽어
+    납기 초과 타이머가 먼저 울리면 '지연' 결과 보고로 간다."""
+    return await asyncio.to_thread(_entsim_post, "/erp/purchase_orders/delay", body or {})
+
+
+@app.post("/api/simulate/pm-advance")
+async def simulate_pm_advance(body: dict | None = None):
+    """시나리오 B: body = {hours: 300, asset: <없으면 세 대 모두>}. 운전시간이 주기 − 사전 알림(1,950 h)에 닿은 설비는 업무 기준값 감시가
+    다음 주기에 PM_DUE 처리 건을 연다."""
+    return await asyncio.to_thread(_entsim_post, "/cmms/pm/advance", body or {})
+
+
+@app.post("/api/simulate/pm-reset")
+async def simulate_pm_reset(body: dict | None = None):
+    """body = {asset} (없으면 전부) — 운전시간 계수기를 수업 시작값으로."""
+    return await asyncio.to_thread(_entsim_post, "/cmms/pm/reset", body or {})
+
+
+@app.get("/api/simulate/pm-status")
+async def simulate_pm_status(asset: str | None = None):
+    from . import instance_mode as _im
+    return await asyncio.to_thread(_im.enterprise_read, "pm_status", {"asset": asset})
 
 
 @app.get("/api/simulate/spare-stock")

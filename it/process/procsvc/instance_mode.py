@@ -56,7 +56,8 @@ WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "60"))
 EFFECT_MCP_SERVERS = json.loads(os.getenv("EFFECT_MCP_SERVERS") or json.dumps(
     {"hyd-effects": {"type": "url", "url": "http://effects-mcp:8197/mcp", "transport": "streamable_http"}}))
 ENTERPRISE_READS = {"part_quotes": ("/scm/quotes", "part"), "purchase_order": ("/erp/purchase_orders/{ref}", None),
-                    "spare_stock": ("/erp/spare_stock", "part"), "maintenance_windows": ("/cmms/windows", "asset")}
+                    "spare_stock": ("/erp/spare_stock", "part"), "maintenance_windows": ("/cmms/windows", "asset"),
+                    "pm_status": ("/cmms/pm_status", "asset")}
 
 
 @dataclass

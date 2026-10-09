@@ -17,6 +17,7 @@ READS = {
     # C2 (migration 20261009000045)
     "spare_stock": ("ent.spare_stock_read", ("part",)), "part_quotes": ("ent.part_quotes_read", ("part",)),
     "maintenance_windows": ("ent.maintenance_windows_read", ("asset",)), "purchase_order": ("ent.purchase_order_read", ("ref",)),
+    "pm_status": ("ent.pm_status_read", ("asset",)),
 }
 WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions", "goods_receipts", "cmms_calendar", "case_records")
 
@@ -77,6 +78,13 @@ class SupabaseEnterprise:
     def reset_spare_stock(self, part: str | None = None) -> dict:
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute("select ent.reset_spare_stock(%s)", (part,))
+            out = _json(cur.fetchone()[0])
+            conn.commit()
+        return out
+
+    def reset_pm_counters(self, asset: str | None = None) -> dict:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("select ent.reset_pm_counters(%s)", (asset,))
             out = _json(cur.fetchone()[0])
             conn.commit()
         return out

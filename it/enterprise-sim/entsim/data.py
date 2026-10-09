@@ -157,7 +157,9 @@ def ems_demand() -> dict:
 # ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 부품별 견적 · 정비창
 # Supabase 백엔드(migration 20261009000045)와 같은 값 · 같은 응답 모양. 재고는 바뀌는 값이라 state.py 가 들고, 여기에는 기준값만 둔다.
 SPARE_BASE = {
-    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 4, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03"},
+    # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 5 · HYD-03 예방 교체 예약 2 → 가용 3. 수업 버튼 '자재 출고 −2' → 가용 1 < 재주문점 2
+    # → 재고 기준 이탈, 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 정기 정비(B) 1회는 1개를 써서 가용 2 = 재주문점(이탈 아님).
+    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 5, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03"},
     "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03"},
     "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01"},
 }
@@ -166,7 +168,17 @@ _PART_QUOTES = {
     "P-PMP-SEAL": [("sup:a", 35, 0.12, 2), ("sup:b", 55, 0.02, 5), ("sup:c", 20, 0.30, 1)],
     "P-FAN-BRG": [("sup:a", 18, 0.10, 1), ("sup:b", 28, 0.03, 3)],
 }
-_WINDOW_RULES = [("N", "야간 정비창", 9, 24, 4), ("W", "주말 계획 정지", 105, 168, 24)]   # (종류, 이름, 첫 창 h, 주기 h, 길이 h)
+# (종류, 이름, 첫 창 h, 주기 h, 길이 h, 정비 인력이 한 창에 할 수 있는 작업 수). 사용자 화면 이름은 "예정된 정비 시간"이다.
+_WINDOW_RULES = [("N", "야간 정비 시간", 9, 24, 4, 1), ("W", "주말 계획 정지", 105, 168, 24, 2), ("M", "월간 계획 정지", 330, 720, 48, 3)]
+WINDOW_KINDS = {k: label for k, label, *_ in _WINDOW_RULES}
+
+# ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (CMMS)
+# 회사 설정(교육용): 주기 2,000 h, 허용 오차 ±10 %(1,800~2,200 h 안에 하면 보증 기록 요건 충족), 사전 알림 50 h(1,950 h 에 PM_DUE).
+PM_SETTINGS = {"interval_h": 2000, "tolerance_pct": 10, "notice_h": 50}
+PM_PACKAGE = "2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)"
+PM_KIT = {"part_no": "P-PMP-SEAL", "qty": 1}
+# 수업 시작값(마지막 정기 정비 뒤 운전시간). 버튼 '운전시간 빨리 감기 +300 h'(세 대 모두) → HYD-02 1,950 h(PM_DUE) · HYD-03 1,880 h(허용 오차 안, 묶음 후보)
+PM_BASE = {"HYD-01": {"since_pm_h": 1200, "total_h": 9200}, "HYD-02": {"since_pm_h": 1650, "total_h": 11650}, "HYD-03": {"since_pm_h": 1580, "total_h": 7580}}
 
 
 def quote_rows(part: str) -> list[dict]:
@@ -188,14 +200,53 @@ def next_windows(asset: str, n: int = 3) -> list[dict]:
     """ent.next_maintenance_windows 와 같은 계산: 규칙의 첫 창(시나리오 시작 + 9 h / 105 h)에서 주기마다, 끝나지 않은 창부터 n 개씩."""
     _check(asset)
     now, out = _now(), []
-    for kind, label, first_h, period_h, dur_h in _WINDOW_RULES:
+    for kind, label, first_h, period_h, dur_h, crew in _WINDOW_RULES:
         first = _at(first_h)
         k0 = max(0, math.ceil(((now - first).total_seconds() / 3600 - dur_h) / period_h))
         for k in range(k0, k0 + max(n, 1)):
             st = first + timedelta(hours=k * period_h)
             out.append({"id": f"MW-{asset}-{kind}-{st.astimezone(timezone.utc):%Y%m%d%H%M}", "asset": asset, "kind": kind, "label": label,
-                        "starts_at": st.isoformat(), "ends_at": (st + timedelta(hours=dur_h)).isoformat(), "starts_in_h": hours_from_now(st)})
+                        "starts_at": st.isoformat(), "ends_at": (st + timedelta(hours=dur_h)).isoformat(), "starts_in_h": hours_from_now(st),
+                        "crew_jobs": crew})
     return sorted(out, key=lambda w: w["starts_at"])
+
+
+def first_window(asset: str, kind: str) -> dict:
+    return next(w for w in next_windows(asset, 1) if w["kind"] == kind)
+
+
+def pm_row(asset: str, counter: dict, spare: dict | None, peers: dict[str, dict]) -> dict:
+    """ent.pm_status 한 행과 같은 계산(설비별 한 행 — 판단 입력의 물리 출처로 묶을 수 있다). counter = {since_pm_h, total_h, cycle, …},
+    spare = 정비 부품(씰 키트)의 재고 보기, peers = 다른 설비의 계수기. 운전시간은 실제 시간과 같이 흐른다고 보고(24 h 운전) 창까지의 시간을 더한다."""
+    st = PM_SETTINGS
+    since, interval, tol = float(counter["since_pm_h"]), float(st["interval_h"]), float(st["tolerance_pct"])
+    limit = interval * (1 + tol / 100)
+    lower = interval * (1 - tol / 100)
+    wins = {k: first_window(asset, k) for k in WINDOW_KINDS}
+    limit_in = round(limit - since, 2)
+    peer = None
+    for a, c in sorted(peers.items()):
+        if a != asset and float(c["since_pm_h"]) >= lower and (peer is None or c["since_pm_h"] > peer[1]["since_pm_h"]):
+            peer = (a, c)
+    kit = PM_KIT["qty"]
+    gap_after = gap_bundle = None
+    if spare is not None:
+        gap_after = spare["available"] - kit - spare["reorder_point"]
+        gap_bundle = spare["available"] - 2 * kit - spare["reorder_point"]
+    night = wins["N"]
+    return {"asset": asset, "plan_id": f"PM-{asset}-2000", "package": PM_PACKAGE, "cycle": int(counter.get("cycle") or 1),
+            "pm_since_h": since, "pm_total_h": float(counter["total_h"]), "pm_interval_h": interval, "pm_tolerance_pct": tol,
+            "pm_notice_h": float(st["notice_h"]), "pm_due_in_h": round(interval - since, 2), "pm_limit_in_h": limit_in,
+            "pm_window_open": since >= lower, "pm_due": since >= interval - st["notice_h"], "pm_over_limit": since > limit,
+            "night_window_id": night["id"], "night_window_at": night["starts_at"], "night_window_in_h": night["starts_in_h"],
+            "weekend_window_in_h": wins["W"]["starts_in_h"], "monthly_window_in_h": wins["M"]["starts_in_h"],
+            "night_within_limit": limit_in >= night["starts_in_h"], "weekend_within_limit": limit_in >= wins["W"]["starts_in_h"],
+            "monthly_within_limit": limit_in >= wins["M"]["starts_in_h"],
+            "bundle_peer": peer[0] if peer else None, "bundle_peer_since_h": float(peer[1]["since_pm_h"]) if peer else None,
+            "bundle_peer_limit_in_h": round(limit - float(peer[1]["since_pm_h"]), 2) if peer else None,
+            "night_crew_jobs": night["crew_jobs"], "bundle_crew_ok": night["crew_jobs"] >= 2,
+            "kit_part_no": PM_KIT["part_no"], "kit_qty": kit, "spare_gap_after_pm": gap_after, "spare_gap_after_bundle": gap_bundle,
+            "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at")}
 
 
 def maintenance_windows(asset: str) -> dict:

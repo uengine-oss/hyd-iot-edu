@@ -33,7 +33,9 @@ class MemoryEnterprise:
                        "cmms_history": data.cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand,
                        # C2: 예비품 재고(바뀌는 값 → state) · 부품별 견적 · 다가오는 정비창 · 발주 한 건
                        "spare_stock": self.st.spare_stock, "part_quotes": data.part_quotes, "maintenance_windows": data.maintenance_windows,
-                       "purchase_order": self.st.purchase_order}
+                       "purchase_order": self.st.purchase_order,
+                       # C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (설비별 한 행)
+                       "pm_status": self.st.pm_status}
 
     def _mes_orders(self, asset: str) -> dict:
         out = data.mes_orders(asset)
@@ -58,6 +60,9 @@ class MemoryEnterprise:
 
     def reset_spare_stock(self, part: str | None = None) -> dict:
         return self.st.reset_spare_stock(part)
+
+    def reset_pm_counters(self, asset: str | None = None) -> dict:
+        return self.st.reset_pm_counters(asset)
 
     def reset(self) -> None:
         self.st.reset()
@@ -157,13 +162,13 @@ def purchase_order(ref: str):
 
 @app.post("/erp/spare/issue")
 def issue_spare(body: dict):
-    """수업 원인 버튼(시나리오 C): 예비품 출고 처리 — 실제 출고처럼 재고 이동을 남기고 가용을 줄인다. 재주문점 아래로 내려가면
-    process 의 ERP 재고 감시가 스스로 처리 건을 연다. body = {part_no, qty, asset, by, reason, request_id?} (기본 P-PMP-SEAL 1개, HYD-03)."""
+    """수업 원인 버튼(시나리오 C '자재 출고 −2'): 예비품 출고 처리 — 실제 출고처럼 재고 이동을 남기고 가용을 줄인다. 재주문점 아래로 내려가면
+    process 의 업무 기준값 감시가 스스로 처리 건을 연다. body = {part_no, qty, asset, by, reason, request_id?} (기본 P-PMP-SEAL 2개, HYD-03)."""
     import uuid
     # 원장의 멱등 키(decision + skill)가 출고마다 달라야 한다 — 버튼을 두 번 누르면 두 번 출고(같은 요청 재전송은 request_id 로 한 번)
     req = {"skill": "skill:issue-spare", "decision": f"SPARE-ISSUE:{body.get('request_id') or uuid.uuid4()}",
            "asset": body.get("asset") or "HYD-03", "by": body.get("by") or "instructor",
-           "params": {"part_no": body.get("part_no") or "P-PMP-SEAL", "qty": body.get("qty") if body.get("qty") is not None else 1,
+           "params": {"part_no": body.get("part_no") or "P-PMP-SEAL", "qty": body.get("qty") if body.get("qty") is not None else 2,
                       "reason": body.get("reason") or "예비품 출고 (수업 원인)"}}
     tx = execute(req)
     return {"transaction": tx, "stock": ent.read("spare_stock", part=req["params"]["part_no"])}
@@ -173,6 +178,45 @@ def issue_spare(body: dict):
 def reset_spare(body: dict | None = None):
     """수업 초기화: 예비품 재고를 기준값으로(출고 버튼 되돌리기). body = {part_no} (없으면 전부)."""
     return ent.reset_spare_stock((body or {}).get("part_no"))
+
+
+@app.get("/cmms/pm_status")
+def pm_status(asset: str | None = Query(default=None)):
+    """CMMS: 정기 정비 계획 · 운전시간 계수기(설비별 한 행: 운전시간 · 주기 · 허용 오차 · 기한까지 · 예정된 정비 시간까지 · 묶음 후보 · 부품 영향)."""
+    return _read("CMMS", "pm_status", asset=asset)
+
+
+def _class_tx(skill: str, asset: str, body: dict, params: dict) -> dict:
+    import uuid
+    # 원장의 멱등 키(decision + skill)가 누를 때마다 달라야 한다(같은 요청 재전송은 request_id 로 한 번)
+    return execute({"skill": skill, "decision": f"CLASS:{skill}:{asset}:{body.get('request_id') or uuid.uuid4()}", "asset": asset,
+                    "by": body.get("by") or "instructor", "params": params})
+
+
+@app.post("/cmms/pm/advance")
+def pm_advance(body: dict | None = None):
+    """수업 원인 버튼(시나리오 B '운전시간 빨리 감기 +300 h'): 운전시간 계수기를 앞으로 돌린다. 1,950 h(주기 2,000 h − 사전 알림 50 h)에 닿으면
+    process 의 업무 기준값 감시가 PM_DUE 처리 건을 스스로 연다. body = {hours: 300, asset: <없으면 세 대 모두>, by, reason, request_id?}."""
+    body = body or {}
+    assets = [body["asset"]] if body.get("asset") else list(data.ASSETS)
+    params = {"hours": body.get("hours", 300), "reason": body.get("reason") or "운전시간 빨리 감기 (수업 원인)"}
+    txs = [_class_tx("skill:pm-advance", a, body, params) for a in assets]
+    return {"transactions": txs, "pm": ent.read("pm_status", asset=None)}
+
+
+@app.post("/cmms/pm/reset")
+def pm_reset(body: dict | None = None):
+    """수업 초기화: 운전시간 계수기를 수업 시작값으로. body = {asset} (없으면 전부)."""
+    return ent.reset_pm_counters((body or {}).get("asset"))
+
+
+@app.post("/erp/purchase_orders/delay")
+def delay_delivery(body: dict | None = None):
+    """수업 원인 버튼(시나리오 C 미달 가지 '공급사 납기 지연'): 열린 발주 한 건의 입고 예정을 days 만큼 늦춘다. 입고 확인 task 가 늦어진 예정을
+    다시 읽으므로 납기 초과 타이머가 먼저 울려 '지연' 결과 보고로 간다. body = {days: 3, ref | part_no (없으면 가장 최근 열린 발주), by}."""
+    body = body or {}
+    params = {"days": body.get("days", 3), **{k: body[k] for k in ("ref", "part_no") if body.get(k)}}
+    return {"transaction": _class_tx("skill:delay-delivery", body.get("asset") or "HYD-03", body, params)}
 
 
 @app.post("/api/exec")

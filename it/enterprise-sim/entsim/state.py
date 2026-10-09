@@ -42,15 +42,22 @@ IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어�
 # C2 (확정 TODO C): 승인 뒤 실행 부품이 부르는 업무 거래 + 수업 원인 버튼(예비품 출고). ent.exec_skill(migration 20261009000045)과 같은 규칙.
 # 되돌리기 계약이 없는 거래다(입고 · 정비 완료는 실물이 움직였고, 일정 · 기록 · 출고는 새 기록으로 바로잡는다) — effect_compensation 이 사유를 보인다.
 C2_SKILLS = {"skill:receive-goods": "sys:erp", "skill:complete-maintenance": "sys:cmms", "skill:calendar-entry": "sys:cmms",
-             "skill:record-case": "sys:cmms", "skill:issue-spare": "sys:erp"}
+             "skill:record-case": "sys:cmms", "skill:issue-spare": "sys:erp",
+             # 시나리오 B: 운전시간 계수기(수업 버튼 '빨리 감기' · 시운전 통과 뒤 리셋), 시나리오 C: 공급사 납기 지연(수업 버튼 — 미달 가지)
+             "skill:pm-advance": "sys:cmms", "skill:pm-reset": "sys:cmms", "skill:delay-delivery": "sys:scm"}
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
                    "skill:calendar-entry": "일정은 공지된 뒤라 취소 일정을 새로 등록한다",
                    "skill:record-case": "처리 건 기록은 이력이라 지우지 않고 정정 기록을 남긴다",
-                   "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)"}
+                   "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
+                   "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
+                   "skill:pm-reset": "정기 정비가 끝나 다음 주기가 시작됐다(정정은 새 기록으로)",
+                   "skill:delay-delivery": "공급사가 알린 납기 변경이라 되돌리지 않는다"}
 SKILLS.update(C2_SKILLS)
 SKILL_NAMES.update({"skill:receive-goods": "입고 · 검수", "skill:complete-maintenance": "정비 완료 · 부품 소모",
-                    "skill:calendar-entry": "CMMS 일정 등록", "skill:record-case": "처리 건 기록", "skill:issue-spare": "예비품 출고"})
+                    "skill:calendar-entry": "CMMS 일정 등록", "skill:record-case": "처리 건 기록", "skill:issue-spare": "예비품 출고",
+                    "skill:pm-advance": "운전시간 계수기 진행", "skill:pm-reset": "운전시간 계수기 리셋 · 다음 기한 기록",
+                    "skill:delay-delivery": "공급사 납기 지연 통보"})
 SKILLS.update(COMPENSATION_SKILLS)
 CANCELLED = "취소"
 PO_OPEN = "승인됨 → 발주"
@@ -113,16 +120,24 @@ class EnterpriseState:
         s["erp"].setdefault("goods_receipts", [])
         s["cmms"].setdefault("calendar", [])
         s["cmms"].setdefault("case_records", [])
+        s["cmms"].setdefault("pm_counters", {a: dict(b, cycle=1, last_done_at=None, due_since=None, updated_at=_now())
+                                             for a, b in data.PM_BASE.items()})
+        s["cmms"].setdefault("pm_log", [])
 
     @staticmethod
-    def _stock_view(row: dict) -> dict:
-        avail = row["on_hand"] - row["reserved"]
-        return dict(row, available=avail, need_qty=max(row["target_stock"] - avail - row["on_order"], 0),
+    def _available(row: dict) -> int:
+        """가용 재고 = 현재고 − 정비 예약 + 입고 예정 (PR-07 7.2, 온톨로지 in:spare-gap 의 정의)."""
+        return row["on_hand"] - row["reserved"] + row["on_order"]
+
+    @classmethod
+    def _stock_view(cls, row: dict) -> dict:
+        avail = cls._available(row)
+        return dict(row, available=avail, spare_gap=avail - row["reorder_point"], need_qty=max(row["target_stock"] - avail, 0),
                     below_reorder_point=avail < row["reorder_point"], name=data.SPARE_BASE.get(row["part_no"], {}).get("name"))
 
     def _move(self, part: str, kind: str, qty: int, asset, ref, by, reason) -> None:
         row = self._s["erp"]["spare_stock"][part]
-        avail = row["on_hand"] - row["reserved"]
+        avail = self._available(row)
         row["below_since"] = (row["below_since"] or _now()) if avail < row["reorder_point"] else None
         self._s["erp"]["stock_movements"].insert(0, {"part_no": part, "kind": kind, "qty": qty, "asset": asset, "ref": ref, "by_whom": by,
                                                      "reason": reason, "on_hand_after": row["on_hand"], "available_after": avail, "at": _now()})
@@ -151,13 +166,55 @@ class EnterpriseState:
             self._save()
         return self.spare_stock(part)
 
+    # ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기
+    def _pm_rows(self) -> list[dict]:
+        counters = self._s["cmms"]["pm_counters"]
+        spare = self._s["erp"]["spare_stock"].get(data.PM_KIT["part_no"])
+        view = self._stock_view(spare) if spare else None
+        return [data.pm_row(a, counters[a], view, counters) for a in sorted(counters)]
+
+    def pm_status(self, asset: str | None = None) -> dict:
+        """CMMS: 정기 정비 계획 · 운전시간 계수기(설비별 한 행, ent.pm_status 와 같은 칸). asset 없으면 전부."""
+        with self._lock:
+            self._c2_defaults()
+            rows = [r for r in self._pm_rows() if asset in (None, r["asset"])]
+            if asset is not None and not rows:
+                raise KeyError(asset)
+            log = [m for m in self._s["cmms"]["pm_log"] if asset in (None, m["asset"])][:20]
+            return {"system": "CMMS", "facts": copy.deepcopy(rows[0]) if rows else None, "records": copy.deepcopy(rows),
+                    "log": copy.deepcopy(log), "settings": dict(data.PM_SETTINGS), "as_of": _now()}
+
+    def _pm_log(self, asset, kind, delta, ref, by, reason) -> None:
+        c = self._s["cmms"]["pm_counters"][asset]
+        lower = data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]
+        c["due_since"] = (c["due_since"] or _now()) if c["since_pm_h"] >= lower else None
+        c["updated_at"] = _now()
+        self._s["cmms"]["pm_log"].insert(0, {"asset": asset, "kind": kind, "delta_h": delta, "since_after": c["since_pm_h"],
+                                             "total_after": c["total_h"], "cycle": c["cycle"], "ref": ref, "by_whom": by, "reason": reason, "at": _now()})
+        del self._s["cmms"]["pm_log"][200:]
+
+    def reset_pm_counters(self, asset: str | None = None) -> dict:
+        with self._lock:
+            self._c2_defaults()
+            for a, b in data.PM_BASE.items():
+                if asset not in (None, a):
+                    continue
+                c = self._s["cmms"]["pm_counters"][a]
+                c.update(since_pm_h=b["since_pm_h"], total_h=b["total_h"], cycle=1, last_done_at=None, due_since=None)
+                self._pm_log(a, "BASE", 0, "RESET", "instructor", "수업 초기화")
+            self._save()
+        return self.pm_status(asset)
+
     def purchase_order(self, ref: str) -> dict:
         with self._lock:
             pr = next((p for p in self._s["erp"]["purchase_requests"] if p["id"] == ref), None)
             if pr is None:
                 raise KeyError(ref)
             grs = [g for g in self._s["erp"].get("goods_receipts", []) if g["pr_id"] == ref]
-            return {"system": "ERP", "facts": copy.deepcopy(pr), "records": copy.deepcopy(grs)}
+            facts = copy.deepcopy(pr)
+            if pr.get("expected_at"):
+                facts["expected_in_h"] = data.hours_from_now(datetime.fromisoformat(pr["expected_at"]))
+            return {"system": "ERP", "facts": facts, "records": copy.deepcopy(grs)}
 
     def execute(self, req: dict) -> dict:
         skill = req.get("skill")
@@ -226,6 +283,10 @@ class EnterpriseState:
         if skill == "skill:issue-spare":
             move = next((m for m in s["erp"]["stock_movements"] if m.get("ref") == ref), None)
             return s["erp"]["spare_stock"].get(move["part_no"]) if move else None
+        if skill in ("skill:pm-advance", "skill:pm-reset"):
+            return s["cmms"]["pm_counters"].get(asset)
+        if skill == "skill:delay-delivery":
+            return next((p for p in s["erp"]["purchase_requests"] if p["id"] == ref), None)
         return None
 
     def _apply(self, skill: str, asset: str, params: dict, req: dict) -> tuple[str, str]:
@@ -304,7 +365,38 @@ class EnterpriseState:
             ref = _id("GI")
             reason = params.get("reason") or "예비품 출고"
             self._move(part, "ISSUE", qty, asset, ref, req.get("by"), reason)
-            return ref, f"{part} {qty}개 출고 ({reason}) — 가용 {row['on_hand'] - row['reserved']} / 재주문점 {row['reorder_point']}"
+            return ref, f"{part} {qty}개 출고 ({reason}) — 가용 {self._available(row)} / 재주문점 {row['reorder_point']}"
+        if skill == "skill:pm-advance":                    # 수업 버튼: 운전시간 빨리 감기 (설비 한 대)
+            hours = params.get("hours", 300)
+            if isinstance(hours, bool) or not isinstance(hours, (int, float)) or not 0 < hours <= 5000:
+                raise ValueError("INVALID: hours must be between 0 and 5000")
+            c = s["cmms"]["pm_counters"][asset]
+            c["since_pm_h"] += hours
+            c["total_h"] += hours
+            ref = _id("RUN")
+            self._pm_log(asset, "ADVANCE", hours, ref, req.get("by"), params.get("reason") or "운전시간 빨리 감기 (수업 원인)")
+            return ref, f"{asset} 운전시간 +{hours:g} h — 마지막 정기 정비 뒤 {c['since_pm_h']:g} h / 주기 {data.PM_SETTINGS['interval_h']} h"
+        if skill == "skill:pm-reset":                      # 시운전 통과 뒤: 계수기 리셋 · 다음 기한 기록
+            c = s["cmms"]["pm_counters"][asset]
+            done = c["since_pm_h"]
+            c.update(since_pm_h=0, cycle=c["cycle"] + 1, last_done_at=_now())
+            ref = _id("PMR")
+            self._pm_log(asset, "RESET", -done, ref, req.get("by"), params.get("reason") or f"정기 정비 완료 ({params.get('ref') or '-'})")
+            return ref, (f"{asset} 운전시간 계수기 리셋 ({done:g} h 에 정기 정비) — 다음 기한 {data.PM_SETTINGS['interval_h']} h "
+                         f"(허용 {data.PM_SETTINGS['interval_h'] * (1 - data.PM_SETTINGS['tolerance_pct'] / 100):g}~"
+                         f"{data.PM_SETTINGS['interval_h'] * (1 + data.PM_SETTINGS['tolerance_pct'] / 100):g} h)")
+        if skill == "skill:delay-delivery":                # 수업 버튼: 공급사 납기 지연 (열린 발주 한 건)
+            days = params.get("days", 3)
+            if isinstance(days, bool) or not isinstance(days, (int, float)) or not 0 < days <= 60:
+                raise ValueError("INVALID: days must be between 0 and 60")
+            open_po = [p for p in s["erp"]["purchase_requests"] if p.get("status") == PO_OPEN and p.get("qty")
+                       and (params.get("ref") in (None, p["id"])) and (params.get("part_no") in (None, p.get("part_no")))]
+            if not open_po:
+                raise ValueError("INVALID: no open purchase order to delay")
+            pr = open_po[0]
+            pr["delay_d"] = (pr.get("delay_d") or 0) + days
+            pr["expected_at"] = (datetime.fromisoformat(pr["expected_at"]) + timedelta(days=days)).isoformat()
+            return pr["id"], f"발주 {pr['id']} 납기 {days:g}일 지연 통보 — 리드타임 {pr['lead_d']}+{pr['delay_d']:g}일"
         if skill == "skill:reallocate-production":
             order = next((o for o in s["mes"]["orders"] if o["asset"] == asset), None)
             if order is None:
@@ -329,10 +421,11 @@ class EnterpriseState:
                 if "amount" in params and float(params["amount"]) != quote["price"] * qty:
                     raise ValueError(f"INVALID: approved amount {params['amount']} differs from quote {qty} x {quote['price']}")
                 part = data.SPARE_BASE.get(part_no, {}).get("name") or part
-                pr.update(part=part, part_no=part_no, qty=qty, unit_price=quote["price"], amount=quote["price"] * qty, lead_d=quote["lead_d"],
+                pr.update(part=part, part_no=part_no, qty=qty, unit_price=quote["price"], amount=quote["price"] * qty, lead_d=quote["lead_d"], delay_d=0,
                           expected_at=(datetime.now(timezone.utc) + timedelta(days=quote["lead_d"])).isoformat(), received_at=None)
                 if part_no in s["erp"]["spare_stock"]:
                     s["erp"]["spare_stock"][part_no]["on_order"] += qty
+                    self._move(part_no, "ORDER", qty, asset, pr["id"], req.get("by"), f"발주 {pr['id']} 입고 예정")
                 s["erp"]["purchase_requests"].insert(0, pr)
                 return pr["id"], f"{part} {qty}개 발주 — {name}, {pr['amount']:g}만원, 리드타임 {quote['lead_d']}일"
             s["erp"]["purchase_requests"].insert(0, pr)

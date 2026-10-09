@@ -387,8 +387,8 @@ services:
       #   승인 뒤 MCP 호출 서버 (기본 hyd-effects = effects-mcp). JSON {이름: tenants.mcp 와 같은 설정}
       EFFECT_MCP_SERVERS: ${EFFECT_MCP_SERVERS:-}
       #   ERP 재고 감시(재주문점 이탈 → 시나리오 C 처리 건). 0 이면 끔
-      ERP_STOCK_MONITOR: ${ERP_STOCK_MONITOR:-1}
-      ERP_STOCK_MONITOR_INTERVAL_S: ${ERP_STOCK_MONITOR_INTERVAL_S:-15}
+      BUSINESS_MONITOR: ${BUSINESS_MONITOR:-1}
+      BUSINESS_MONITOR_INTERVAL_S: ${BUSINESS_MONITOR_INTERVAL_S:-15}
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redpanda: { condition: service_healthy }

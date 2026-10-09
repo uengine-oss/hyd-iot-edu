@@ -7,7 +7,11 @@
 --   4. 발주(purchase_requests)에 부품 번호 · 수량 · 단가 · 금액 · 리드타임 · 입고 예정, 입고 표(ent.goods_receipts).
 --   5. 작업지시(work_orders)에 정비창 id · 시작 시각 · 완료 시각, CMMS 일정(ent.cmms_calendar) · 처리 건 기록(ent.case_records).
 --   6. ent.exec_skill: procure-part 가 수량 · 금액을 싣고 재고의 입고 예정을 올린다. 새 스킬 receive-goods(입고 · 검수) ·
---      complete-maintenance(정비 완료 · 부품 소모) · calendar-entry(CMMS 일정) · record-case(처리 건 기록) · issue-spare(예비품 출고, 수업 원인 버튼).
+--      complete-maintenance(정비 완료 · 부품 소모) · calendar-entry(CMMS 일정) · record-case(처리 건 기록) · issue-spare(예비품 출고, 수업 원인 버튼) ·
+--      pm-advance(운전시간 빨리 감기, 수업 원인 버튼) · pm-reset(시운전 통과 뒤 계수기 리셋) · delay-delivery(공급사 납기 지연, 수업 미달 버튼).
+--   7. 시나리오 B 정기 정비: 정비 계획 · 운전시간 계수기(ent.pm_counters, 설정 ent.pm_settings) → 설비별 한 행 ent.pm_status(뷰, 판단 입력의
+--      물리 출처로 묶을 수 있다). 감시기가 pm_due 를 보고 PM_DUE 처리 건을 연다.
+-- 가용 재고 = 현재고 − 정비 예약 + 입고 예정 (PR-07 7.2, 온톨로지 in:spare-gap = 가용 − 재주문점).
 -- 금액 만원, 시간은 실제 시각(timestamptz). 교육용 가상 값.
 
 -- ---------------------------------------------------------------- 1. 예비품 재고 · 이동
@@ -16,7 +20,7 @@ create table if not exists ent.spare_stock (                 -- ERP: 중요 예�
   on_hand integer not null check (on_hand >= 0),             -- 창고 실물
   reserved integer not null default 0 check (reserved >= 0), -- 예정된 정비에 묶인 수량
   on_order integer not null default 0 check (on_order >= 0), -- 발주 후 입고 예정
-  reorder_point integer not null check (reorder_point >= 0), -- 가용(on_hand - reserved)이 이보다 작으면 재고 기준 이탈
+  reorder_point integer not null check (reorder_point >= 0), -- 가용(on_hand - reserved + on_order)이 이보다 작으면 재고 기준 이탈
   target_stock integer not null check (target_stock >= 0),   -- 보충 목표 (필요량 = 목표 - 가용 - 입고 예정)
   reserved_for text,                                        -- 예약한 설비 (경보의 설비 키, ent.assets.code — 자산 행은 seed 가 넣으므로 FK 없음)
   base_on_hand integer not null,                            -- 수업 초기화 값
@@ -24,12 +28,12 @@ create table if not exists ent.spare_stock (                 -- ERP: 중요 예�
   below_since timestamptz,                                  -- 재주문점 아래로 내려간 시각 (경보 회차 키, 회복하면 null)
   updated_at timestamptz not null default now()
 );
-comment on table ent.spare_stock is 'C2: ERP 중요 예비품 재고. 가용 = on_hand - reserved, 가용 < reorder_point 면 재고 기준 이탈(SPARE_BELOW_MIN)';
+comment on table ent.spare_stock is 'C2: ERP 중요 예비품 재고. 가용 = on_hand - reserved + on_order, 가용 < reorder_point 면 재고 기준 이탈(SPARE_BELOW_MIN)';
 
 create table if not exists ent.stock_movements (             -- ERP: 재고 이동 원장 (출고 · 소모 · 입고 · 초기화)
   id bigserial primary key,
   part_no text not null references ent.parts(part_no),
-  kind text not null check (kind in ('ISSUE', 'CONSUME', 'RECEIPT', 'RESET')),
+  kind text not null check (kind in ('ISSUE', 'CONSUME', 'ORDER', 'RECEIPT', 'RESET')),
   qty integer not null,
   asset text,
   ref text,                                                 -- 출고 번호 · 작업지시 · 입고 번호
@@ -43,13 +47,13 @@ create table if not exists ent.stock_movements (             -- ERP: 재고 이�
 -- 쿨러 코어 부품 행은 seed.sql 이 넣는다(같은 값, on conflict do nothing). 이 마이그레이션의 재고 행이 참조하므로 먼저 둔다.
 insert into ent.parts (part_no, name, std_price) values ('P-CLR-CORE', '쿨러 코어', 250) on conflict (part_no) do nothing;
 insert into ent.spare_stock (part_no, on_hand, reserved, on_order, reorder_point, target_stock, reserved_for, base_on_hand, base_reserved) values
-  ('P-PMP-SEAL', 4, 2, 0, 2, 7, 'HYD-03', 4, 2),   -- HYD-03 예방 교체에 2개 예약 · 가용 2 = 재주문점 (B 교체 1개 소모로 이탈)
+  ('P-PMP-SEAL', 5, 2, 0, 2, 7, 'HYD-03', 5, 2),   -- HYD-03 예방 교체에 2개 예약 · 가용 3. 수업 '자재 출고 −2' → 가용 1 < 2, 필요량 6 (B-OEM 330만원)
   ('P-FAN-BRG', 3, 0, 0, 1, 3, 'HYD-03', 3, 0),
   ('P-CLR-CORE', 2, 0, 0, 1, 2, 'HYD-01', 2, 0)
 on conflict (part_no) do nothing;
 
 create or replace function ent.refresh_spare_flag(p_part text) returns void language sql as $$
-  update ent.spare_stock set below_since = case when on_hand - reserved < reorder_point then coalesce(below_since, now()) else null end,
+  update ent.spare_stock set below_since = case when on_hand - reserved + on_order < reorder_point then coalesce(below_since, now()) else null end,
          updated_at = now()
    where part_no = p_part
 $$;
@@ -82,30 +86,82 @@ $$;
 -- ---------------------------------------------------------------- 3. 정비창
 create table if not exists ent.maintenance_window_rules (     -- CMMS: 반복 정비창 (야간 · 주말)
   asset text not null,                                      -- ent.assets.code (자산 행은 seed 가 넣으므로 FK 없음)
-  kind text not null check (kind in ('N', 'W')),            -- N 야간 정비창 · W 주말 계획 정지
+  kind text not null check (kind in ('N', 'W', 'M')),       -- N 야간 정비 시간 · W 주말 계획 정지 · M 월간 계획 정지
   label text not null,
   first_at timestamptz not null,
   period_h numeric not null check (period_h > 0),
   duration_h numeric not null check (duration_h > 0),
   primary key (asset, kind)
 );
-insert into ent.maintenance_window_rules (asset, kind, label, first_at, period_h, duration_h)
-select a.code, k.kind, k.label, now() + make_interval(hours => k.first_h), k.period_h, k.duration_h
-  from (values ('HYD-01'), ('HYD-02'), ('HYD-03')) a(code) cross join (values ('N', '야간 정비창', 9, 24, 4), ('W', '주말 계획 정지', 105, 168, 24)) k(kind, label, first_h, period_h, duration_h)
-on conflict (asset, kind) do nothing;
+-- 같은 이름의 표가 옛 판(N · W 만)으로 이미 있을 수 있다 — 칸 · 검사를 넓힌다
+alter table ent.maintenance_window_rules add column if not exists crew_jobs integer not null default 1;  -- 정비 인력이 한 창에 할 수 있는 작업 수
+alter table ent.maintenance_window_rules drop constraint if exists maintenance_window_rules_kind_check;
+alter table ent.maintenance_window_rules add constraint maintenance_window_rules_kind_check check (kind in ('N', 'W', 'M'));
+insert into ent.maintenance_window_rules (asset, kind, label, first_at, period_h, duration_h, crew_jobs)
+select a.code, k.kind, k.label, now() + make_interval(hours => k.first_h), k.period_h, k.duration_h, k.crew
+  from (values ('HYD-01'), ('HYD-02'), ('HYD-03')) a(code)
+ cross join (values ('N', '야간 정비 시간', 9, 24, 4, 1), ('W', '주말 계획 정지', 105, 168, 24, 2), ('M', '월간 계획 정지', 330, 720, 48, 3))
+       k(kind, label, first_h, period_h, duration_h, crew)
+on conflict (asset, kind) do update set label = excluded.label, crew_jobs = excluded.crew_jobs;
 
 -- 다가오는(또는 진행 중인) 정비창 p_n 개씩. id 는 설비 · 종류 · 시작 시각으로 정해져 같은 창은 같은 id 다.
+-- 돌려주는 칸이 옛 판보다 늘었으므로(crew_jobs) 먼저 지운다(그것에 기대는 뷰 ent.pm_status 는 아래에서 다시 만든다).
+drop function if exists ent.next_maintenance_windows(text, integer) cascade;
 create or replace function ent.next_maintenance_windows(p_asset text, p_n integer default 3)
-returns table (id text, asset text, kind text, label text, starts_at timestamptz, ends_at timestamptz)
+returns table (id text, asset text, kind text, label text, starts_at timestamptz, ends_at timestamptz, crew_jobs integer)
 language sql stable as $$
   select 'MW-' || r.asset || '-' || r.kind || '-' || to_char(st at time zone 'UTC', 'YYYYMMDDHH24MI'), r.asset, r.kind, r.label, st,
-         st + make_interval(secs => r.duration_h * 3600)
+         st + make_interval(secs => r.duration_h * 3600), r.crew_jobs
     from ent.maintenance_window_rules r
     cross join lateral (select greatest(0, ceil(extract(epoch from (now() - r.first_at)) / 3600 / r.period_h - r.duration_h / r.period_h))::int k0) b
     cross join lateral generate_series(b.k0, b.k0 + greatest(p_n, 1) - 1) g(k)
     cross join lateral (select r.first_at + make_interval(secs => g.k * r.period_h * 3600) st) s
    where r.asset = p_asset
    order by st
+$$;
+
+-- ---------------------------------------------------------------- 3b. 시나리오 B 정기 정비 계획 · 운전시간 계수기 (CMMS)
+create table if not exists ent.pm_settings (                  -- 회사 설정(교육용): 주기 · 허용 오차 · 사전 알림 · 정비 패키지 · 소모 부품
+  id integer primary key default 1 check (id = 1),
+  interval_h numeric not null default 2000 check (interval_h > 0),
+  tolerance_pct numeric not null default 10 check (tolerance_pct >= 0 and tolerance_pct < 100),
+  notice_h numeric not null default 50 check (notice_h >= 0),
+  package text not null default '2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)',
+  kit_part_no text references ent.parts(part_no),
+  kit_qty integer not null default 1 check (kit_qty >= 0)
+);
+insert into ent.pm_settings (id, kit_part_no) values (1, 'P-PMP-SEAL') on conflict (id) do nothing;
+
+create table if not exists ent.pm_counters (                  -- 설비별 운전시간 계수기 (마지막 정기 정비 뒤 운전시간 · 누적)
+  asset text primary key,                                   -- ent.assets.code (자산 행은 seed 가 넣으므로 FK 없음)
+  since_pm_h numeric not null check (since_pm_h >= 0),
+  total_h numeric not null check (total_h >= 0),
+  cycle integer not null default 1,                         -- 정기 정비 회차 (리셋마다 +1, 감시 경보 회차 키)
+  last_done_at timestamptz,
+  due_since timestamptz,                                    -- PM_DUE 가 된 시각 (리셋하면 null)
+  base_since_pm_h numeric not null, base_total_h numeric not null,   -- 수업 초기화 값
+  updated_at timestamptz not null default now()
+);
+insert into ent.pm_counters (asset, since_pm_h, total_h, base_since_pm_h, base_total_h) values
+  ('HYD-01', 1200, 9200, 1200, 9200), ('HYD-02', 1650, 11650, 1650, 11650), ('HYD-03', 1580, 7580, 1580, 7580)
+on conflict (asset) do nothing;   -- 수업 '운전시간 빨리 감기 +300 h' → HYD-02 1,950 h(PM_DUE) · HYD-03 1,880 h(허용 오차 안, 묶음 후보)
+
+create table if not exists ent.pm_counter_log (               -- 계수기 원장 (ADVANCE 빨리 감기 · RESET 정비 완료 · BASE 수업 초기화)
+  id bigserial primary key,
+  asset text not null,
+  kind text not null check (kind in ('ADVANCE', 'RESET', 'BASE')),
+  delta_h numeric not null,
+  since_after numeric not null,
+  total_after numeric not null,
+  cycle integer not null,
+  ref text, by_whom text, reason text,
+  at timestamptz not null default now()
+);
+
+create or replace function ent.refresh_pm_flag(p_asset text) returns void language sql as $$
+  update ent.pm_counters c set due_since = case when c.since_pm_h >= s.interval_h - s.notice_h then coalesce(c.due_since, now()) else null end,
+         updated_at = now()
+    from ent.pm_settings s where c.asset = p_asset
 $$;
 
 -- ---------------------------------------------------------------- 4 · 5. 발주 · 입고 · 작업지시 · 일정 · 기록
@@ -116,6 +172,7 @@ alter table ent.purchase_requests add column if not exists amount numeric;
 alter table ent.purchase_requests add column if not exists lead_d integer;
 alter table ent.purchase_requests add column if not exists expected_at timestamptz;
 alter table ent.purchase_requests add column if not exists received_at timestamptz;
+alter table ent.purchase_requests add column if not exists delay_d numeric not null default 0;   -- 공급사가 알린 납기 지연(일, 수업 버튼)
 comment on column ent.purchase_requests.amount is 'C2: 발주 금액(만원) = 수량 × 단가. 승인 경로가 확정한 값';
 comment on column ent.purchase_requests.expected_at is 'C2: 입고 예정(업무 시각 = 발주 + 리드타임). 수업에서는 process 의 대기 압축으로 몇 분 뒤 입고된다';
 
@@ -130,6 +187,7 @@ create table if not exists ent.goods_receipts (               -- ERP: 입고 · 
   received_at timestamptz not null default now(),
   unique (pr_id)
 );
+alter table ent.goods_receipts add column if not exists created_at timestamptz not null default now();   -- enterprise-sim 화면(snapshot)의 정렬 칸
 
 alter table ent.work_orders add column if not exists window_id text;
 alter table ent.work_orders add column if not exists window_starts_at timestamptz;
@@ -161,7 +219,8 @@ create table if not exists ent.case_records (                 -- 처리 건 기�
 do $$
 declare t text;
 begin
-  foreach t in array array['spare_stock', 'stock_movements', 'part_quotes', 'maintenance_window_rules', 'goods_receipts', 'cmms_calendar', 'case_records'] loop
+  foreach t in array array['spare_stock', 'stock_movements', 'part_quotes', 'maintenance_window_rules', 'goods_receipts', 'cmms_calendar', 'case_records',
+                           'pm_settings', 'pm_counters', 'pm_counter_log'] loop
     execute format('alter table ent.%I enable row level security', t);
     execute format('drop policy if exists %I on ent.%I', t || '_read_all', t);
     execute format('create policy %I on ent.%I for select to anon, authenticated using (true)', t || '_read_all', t);
@@ -173,22 +232,65 @@ end $$;
 grant select on ent.part_quotes, ent.suppliers to hyd_enterprise_reader;
 
 -- ---------------------------------------------------------------- 읽기 RPC (enterprise-sim · enterprise-mcp 같은 값)
+create or replace function ent.spare_row(s ent.spare_stock) returns jsonb language sql stable as $$
+  select jsonb_build_object('part_no', s.part_no, 'name', (select name from ent.parts where part_no = s.part_no), 'on_hand', s.on_hand,
+                            'reserved', s.reserved, 'on_order', s.on_order, 'available', s.on_hand - s.reserved + s.on_order,
+                            'spare_gap', s.on_hand - s.reserved + s.on_order - s.reorder_point,
+                            'reorder_point', s.reorder_point, 'target_stock', s.target_stock,
+                            'need_qty', greatest(s.target_stock - (s.on_hand - s.reserved + s.on_order), 0),
+                            'below_reorder_point', s.on_hand - s.reserved + s.on_order < s.reorder_point, 'below_since', s.below_since,
+                            'reserved_for', s.reserved_for, 'updated_at', s.updated_at)
+$$;
+
 create or replace function ent.spare_stock_read(p_part text) returns jsonb language sql stable as $$
   select jsonb_build_object('system', 'ERP',
-    'facts', (select jsonb_build_object('part_no', s.part_no, 'on_hand', s.on_hand, 'reserved', s.reserved, 'available', s.on_hand - s.reserved,
-                                        'on_order', s.on_order, 'reorder_point', s.reorder_point, 'target_stock', s.target_stock,
-                                        'need_qty', greatest(s.target_stock - (s.on_hand - s.reserved) - s.on_order, 0),
-                                        'below_reorder_point', s.on_hand - s.reserved < s.reorder_point, 'below_since', s.below_since,
-                                        'reserved_for', s.reserved_for)
-                from ent.spare_stock s where s.part_no = p_part or p_part is null order by s.part_no limit 1),
-    'records', coalesce((select jsonb_agg(jsonb_build_object('part_no', s.part_no, 'name', p.name, 'on_hand', s.on_hand, 'reserved', s.reserved,
-                                        'available', s.on_hand - s.reserved, 'on_order', s.on_order, 'reorder_point', s.reorder_point,
-                                        'target_stock', s.target_stock, 'need_qty', greatest(s.target_stock - (s.on_hand - s.reserved) - s.on_order, 0),
-                                        'below_reorder_point', s.on_hand - s.reserved < s.reorder_point, 'below_since', s.below_since,
-                                        'reserved_for', s.reserved_for) order by s.part_no)
-                from ent.spare_stock s join ent.parts p on p.part_no = s.part_no where s.part_no = p_part or p_part is null), '[]'::jsonb),
+    'facts', (select ent.spare_row(s) from ent.spare_stock s where s.part_no = p_part or p_part is null order by s.part_no limit 1),
+    'records', coalesce((select jsonb_agg(ent.spare_row(s) order by s.part_no) from ent.spare_stock s where s.part_no = p_part or p_part is null), '[]'::jsonb),
     'movements', coalesce((select jsonb_agg(to_jsonb(m) order by m.id desc) from (select * from ent.stock_movements m
                  where m.part_no = p_part or p_part is null order by m.id desc limit 20) m), '[]'::jsonb),
+    'as_of', now())
+$$;
+
+-- 시나리오 B: 설비별 정기 정비 상태 한 행 (판단 입력의 물리 출처 — ent.pm_status.<칸> 을 asset 으로 한 행 읽는다).
+-- 운전시간은 실제 시간과 같이 흐른다고 보고(24 h 운전) 정비 시간까지의 시간을 허용 한계까지 남은 시간과 비교한다. entsim/data.py pm_row 와 같은 계산.
+create or replace view ent.pm_status as
+select c.asset, 'PM-' || c.asset || '-2000' as plan_id, st.package, c.cycle,
+       c.since_pm_h as pm_since_h, c.total_h as pm_total_h, st.interval_h as pm_interval_h, st.tolerance_pct as pm_tolerance_pct,
+       st.notice_h as pm_notice_h, st.interval_h - c.since_pm_h as pm_due_in_h,
+       round(st.interval_h * (1 + st.tolerance_pct / 100) - c.since_pm_h, 2) as pm_limit_in_h,
+       c.since_pm_h >= st.interval_h * (1 - st.tolerance_pct / 100) as pm_window_open,
+       c.since_pm_h >= st.interval_h - st.notice_h as pm_due,
+       c.since_pm_h > st.interval_h * (1 + st.tolerance_pct / 100) as pm_over_limit,
+       n.id as night_window_id, n.starts_at as night_window_at, ent.hours_from_now(n.starts_at) as night_window_in_h,
+       ent.hours_from_now(w.starts_at) as weekend_window_in_h, ent.hours_from_now(m.starts_at) as monthly_window_in_h,
+       st.interval_h * (1 + st.tolerance_pct / 100) - c.since_pm_h >= ent.hours_from_now(n.starts_at) as night_within_limit,
+       st.interval_h * (1 + st.tolerance_pct / 100) - c.since_pm_h >= ent.hours_from_now(w.starts_at) as weekend_within_limit,
+       st.interval_h * (1 + st.tolerance_pct / 100) - c.since_pm_h >= ent.hours_from_now(m.starts_at) as monthly_within_limit,
+       p.asset as bundle_peer, p.since_pm_h as bundle_peer_since_h,
+       round(st.interval_h * (1 + st.tolerance_pct / 100) - p.since_pm_h, 2) as bundle_peer_limit_in_h,
+       n.crew_jobs as night_crew_jobs, n.crew_jobs >= 2 as bundle_crew_ok,
+       st.kit_part_no, st.kit_qty,
+       sp.on_hand - sp.reserved + sp.on_order - st.kit_qty - sp.reorder_point as spare_gap_after_pm,
+       sp.on_hand - sp.reserved + sp.on_order - 2 * st.kit_qty - sp.reorder_point as spare_gap_after_bundle,
+       c.last_done_at, c.due_since, c.updated_at
+  from ent.pm_counters c cross join ent.pm_settings st
+  left join lateral (select * from ent.next_maintenance_windows(c.asset, 1) x where x.kind = 'N' order by x.starts_at limit 1) n on true
+  left join lateral (select * from ent.next_maintenance_windows(c.asset, 1) x where x.kind = 'W' order by x.starts_at limit 1) w on true
+  left join lateral (select * from ent.next_maintenance_windows(c.asset, 1) x where x.kind = 'M' order by x.starts_at limit 1) m on true
+  left join lateral (select o.asset, o.since_pm_h from ent.pm_counters o
+                      where o.asset <> c.asset and o.since_pm_h >= st.interval_h * (1 - st.tolerance_pct / 100)
+                      order by o.since_pm_h desc, o.asset limit 1) p on true
+  left join ent.spare_stock sp on sp.part_no = st.kit_part_no;
+comment on view ent.pm_status is 'C2 시나리오 B: 설비별 정기 정비 상태(운전시간 · 주기 · 허용 오차 · 예정된 정비 시간까지 · 묶음 후보 · 부품 영향). 판단 입력의 물리 출처';
+grant select on ent.pm_status to anon, authenticated, hyd_enterprise_reader;
+
+create or replace function ent.pm_status_read(p_asset text) returns jsonb language sql stable as $$
+  select jsonb_build_object('system', 'CMMS',
+    'facts', (select to_jsonb(v) from ent.pm_status v where v.asset = p_asset or p_asset is null order by v.asset limit 1),
+    'records', coalesce((select jsonb_agg(to_jsonb(v) order by v.asset) from ent.pm_status v where v.asset = p_asset or p_asset is null), '[]'::jsonb),
+    'log', coalesce((select jsonb_agg(to_jsonb(l) order by l.id desc) from (select * from ent.pm_counter_log l
+                     where l.asset = p_asset or p_asset is null order by l.id desc limit 20) l), '[]'::jsonb),
+    'settings', (select to_jsonb(s) - 'id' from ent.pm_settings s),
     'as_of', now())
 $$;
 
@@ -205,10 +307,10 @@ create or replace function ent.maintenance_windows_read(p_asset text) returns js
   select jsonb_build_object('system', 'CMMS',
     'facts', case when not exists (select 1 from ent.assets where code = p_asset) then null else
              (select jsonb_build_object('next_window_id', w.id, 'next_window_label', w.label, 'next_window_at', w.starts_at,
-                                        'next_window_in_h', ent.hours_from_now(w.starts_at))
+                                        'next_window_in_h', ent.hours_from_now(w.starts_at), 'next_window_crew_jobs', w.crew_jobs)
                 from ent.next_maintenance_windows(p_asset, 1) w order by w.starts_at limit 1) end,
     'records', coalesce((select jsonb_agg(jsonb_build_object('id', w.id, 'kind', w.kind, 'label', w.label, 'starts_at', w.starts_at,
-                                          'ends_at', w.ends_at, 'starts_in_h', ent.hours_from_now(w.starts_at)) order by w.starts_at)
+                                          'ends_at', w.ends_at, 'starts_in_h', ent.hours_from_now(w.starts_at), 'crew_jobs', w.crew_jobs) order by w.starts_at)
                          from ent.next_maintenance_windows(p_asset, 3) w), '[]'::jsonb),
     'calendar', coalesce((select jsonb_agg(to_jsonb(c) order by c.starts_at) from ent.cmms_calendar c where c.asset = p_asset), '[]'::jsonb),
     'as_of', now())
@@ -216,12 +318,12 @@ $$;
 
 create or replace function ent.purchase_order_read(p_ref text) returns jsonb language sql stable as $$
   select jsonb_build_object('system', 'ERP',
-    'facts', (select to_jsonb(r) || jsonb_build_object('expected_in_h', ent.hours_from_now(r.expected_at)) from ent.purchase_requests r where r.id = p_ref),
+    'facts', (select to_jsonb(r) || jsonb_build_object('expected_in_h', ent.hours_from_now(r.expected_at)) from ent.purchase_requests r where r.id = p_ref),  -- delay_d 포함
     'records', coalesce((select jsonb_agg(to_jsonb(g)) from ent.goods_receipts g where g.pr_id = p_ref), '[]'::jsonb))
 $$;
 
 grant execute on function ent.spare_stock_read(text), ent.part_quotes_read(text), ent.maintenance_windows_read(text), ent.purchase_order_read(text),
-                          ent.next_maintenance_windows(text, integer), ent.quote_rows(text)
+                          ent.next_maintenance_windows(text, integer), ent.quote_rows(text), ent.spare_row(ent.spare_stock), ent.pm_status_read(text)
   to anon, authenticated, service_role, hyd_enterprise_reader;
 
 -- ---------------------------------------------------------------- 6. 실행 (process 만 부른다 — 사람 승인 뒤 또는 수업 원인 버튼)
@@ -243,13 +345,15 @@ declare
   -- C2
   v_part_no text; v_qty integer; v_quote record; v_window record; v_window_label text; v_window_id text; v_window_at timestamptz;
   v_pr ent.purchase_requests; v_wo ent.work_orders; v_stock ent.spare_stock; v_std ent.task_standards; v_at timestamptz;
+  v_pm ent.pm_counters; v_pmset ent.pm_settings; v_hours numeric; v_days numeric; v_done numeric;
 begin
   v_system := case v_skill
     when 'skill:schedule-maintenance' then 'sys:cmms' when 'skill:reallocate-production' then 'sys:mes'
     when 'skill:procure-part' then 'sys:erp' when 'skill:hold-lot' then 'sys:qms' when 'skill:release-lot' then 'sys:qms'
     when 'skill:substitute-shipment' then 'sys:erp' when 'skill:demand-control' then 'sys:ems'
     when 'skill:receive-goods' then 'sys:erp' when 'skill:complete-maintenance' then 'sys:cmms'
-    when 'skill:calendar-entry' then 'sys:cmms' when 'skill:record-case' then 'sys:cmms' when 'skill:issue-spare' then 'sys:erp' end;
+    when 'skill:calendar-entry' then 'sys:cmms' when 'skill:record-case' then 'sys:cmms' when 'skill:issue-spare' then 'sys:erp'
+    when 'skill:pm-advance' then 'sys:cmms' when 'skill:pm-reset' then 'sys:cmms' when 'skill:delay-delivery' then 'sys:scm' end;
   if v_system is null then
     raise exception 'unknown or non-enterprise skill %', v_skill using errcode = '22023';
   end if;
@@ -334,7 +438,13 @@ begin
                                          part_no, qty, unit_price, amount, lead_d, expected_at)
       values (v_ref, v_part, v_sup, v_sup_name, v_asset, v_decision, p->>'option', p->>'by',
               v_part_no, v_qty, v_quote.price, v_quote.price * v_qty, v_quote.lead_d, now() + make_interval(days => v_quote.lead_d));
-      update ent.spare_stock set on_order = on_order + v_qty, updated_at = now() where part_no = v_part_no;
+      update ent.spare_stock set on_order = on_order + v_qty, updated_at = now() where part_no = v_part_no returning * into v_stock;
+      if v_stock.part_no is not null then
+        perform ent.refresh_spare_flag(v_part_no);
+        insert into ent.stock_movements (part_no, kind, qty, asset, ref, by_whom, reason, on_hand_after, available_after)
+        values (v_part_no, 'ORDER', v_qty, v_asset, v_ref, p->>'by', format('발주 %s 입고 예정', v_ref), v_stock.on_hand,
+                v_stock.on_hand - v_stock.reserved + v_stock.on_order);
+      end if;
       v_detail := format('%s %s개 발주 — %s, %s만원, 리드타임 %s일', v_part, v_qty, v_sup_name, v_quote.price * v_qty, v_quote.lead_d);
     else
       insert into ent.purchase_requests (id, part, supplier, supplier_name, asset, decision_id, option_id, requested_by)
@@ -361,7 +471,8 @@ begin
     if v_stock.part_no is not null then
       perform ent.refresh_spare_flag(v_pr.part_no);
       insert into ent.stock_movements (part_no, kind, qty, asset, ref, by_whom, reason, on_hand_after, available_after)
-      values (v_pr.part_no, 'RECEIPT', v_pr.qty, v_asset, v_ref, p->>'by', format('발주 %s 입고', v_pr.id), v_stock.on_hand, v_stock.on_hand - v_stock.reserved);
+      values (v_pr.part_no, 'RECEIPT', v_pr.qty, v_asset, v_ref, p->>'by', format('발주 %s 입고', v_pr.id), v_stock.on_hand,
+              v_stock.on_hand - v_stock.reserved + v_stock.on_order);
     end if;
     v_detail := format('%s %s개 입고 · 검수 %s (발주 %s, 로트 %s)', v_pr.part, v_pr.qty, coalesce(v_params->>'inspection', '합격'), v_pr.id, v_lot);
     select to_jsonb(g) into v_after from ent.goods_receipts g where g.id = v_ref;
@@ -382,7 +493,7 @@ begin
         perform ent.refresh_spare_flag(v_std.part_no);
         insert into ent.stock_movements (part_no, kind, qty, asset, ref, by_whom, reason, on_hand_after, available_after)
         values (v_std.part_no, 'CONSUME', v_std.part_qty, v_wo.asset, v_wo.id, p->>'by', format('%s 정비 소모', v_params->>'sop'),
-                v_stock.on_hand, v_stock.on_hand - v_stock.reserved);
+                v_stock.on_hand, v_stock.on_hand - v_stock.reserved + v_stock.on_order);
       end if;
     end if;
     v_ref := v_wo.id;
@@ -421,10 +532,58 @@ begin
     perform ent.refresh_spare_flag(v_part_no);
     v_ref := 'GI-' || to_char(now(), 'MMDD') || '-' || upper(substr(md5(random()::text), 1, 4));
     insert into ent.stock_movements (part_no, kind, qty, asset, ref, by_whom, reason, on_hand_after, available_after)
-    values (v_part_no, 'ISSUE', v_qty, v_asset, v_ref, p->>'by', coalesce(v_params->>'reason', '예비품 출고'), v_stock.on_hand, v_stock.on_hand - v_stock.reserved);
+    values (v_part_no, 'ISSUE', v_qty, v_asset, v_ref, p->>'by', coalesce(v_params->>'reason', '예비품 출고'), v_stock.on_hand,
+            v_stock.on_hand - v_stock.reserved + v_stock.on_order);
     v_detail := format('%s %s개 출고 (%s) — 가용 %s / 재주문점 %s', v_part_no, v_qty, coalesce(v_params->>'reason', '예비품 출고'),
-                       v_stock.on_hand - v_stock.reserved, v_stock.reorder_point);
+                       v_stock.on_hand - v_stock.reserved + v_stock.on_order, v_stock.reorder_point);
     select to_jsonb(s) into v_after from ent.spare_stock s where s.part_no = v_part_no;
+
+  elsif v_skill = 'skill:pm-advance' then                 -- C2 시나리오 B: 운전시간 빨리 감기 (수업 원인 버튼, 설비 한 대)
+    v_hours := coalesce((v_params->>'hours')::numeric, 300);
+    if v_hours <= 0 or v_hours > 5000 then raise exception 'INVALID: hours must be between 0 and 5000' using errcode = '22023'; end if;
+    select * into v_pm from ent.pm_counters where asset = v_asset for update;
+    if not found then raise exception 'INVALID: % has no maintenance plan', v_asset using errcode = '22023'; end if;
+    v_before := to_jsonb(v_pm);
+    update ent.pm_counters set since_pm_h = since_pm_h + v_hours, total_h = total_h + v_hours where asset = v_asset;
+    perform ent.refresh_pm_flag(v_asset);
+    select * into v_pm from ent.pm_counters where asset = v_asset;
+    v_ref := 'RUN-' || to_char(now(), 'MMDD') || '-' || upper(substr(md5(random()::text), 1, 4));
+    insert into ent.pm_counter_log (asset, kind, delta_h, since_after, total_after, cycle, ref, by_whom, reason)
+    values (v_asset, 'ADVANCE', v_hours, v_pm.since_pm_h, v_pm.total_h, v_pm.cycle, v_ref, p->>'by', coalesce(v_params->>'reason', '운전시간 빨리 감기 (수업 원인)'));
+    select * into v_pmset from ent.pm_settings where id = 1;
+    v_detail := format('%s 운전시간 +%s h — 마지막 정기 정비 뒤 %s h / 주기 %s h', v_asset, v_hours, v_pm.since_pm_h, v_pmset.interval_h);
+    v_after := to_jsonb(v_pm);
+
+  elsif v_skill = 'skill:pm-reset' then                   -- C2 시나리오 B: 시운전 통과 뒤 계수기 리셋 · 다음 기한 기록
+    select * into v_pm from ent.pm_counters where asset = v_asset for update;
+    if not found then raise exception 'INVALID: % has no maintenance plan', v_asset using errcode = '22023'; end if;
+    v_before := to_jsonb(v_pm); v_done := v_pm.since_pm_h;
+    update ent.pm_counters set since_pm_h = 0, cycle = cycle + 1, last_done_at = now() where asset = v_asset;
+    perform ent.refresh_pm_flag(v_asset);
+    select * into v_pm from ent.pm_counters where asset = v_asset;
+    select * into v_pmset from ent.pm_settings where id = 1;
+    v_ref := 'PMR-' || to_char(now(), 'MMDD') || '-' || upper(substr(md5(random()::text), 1, 4));
+    insert into ent.pm_counter_log (asset, kind, delta_h, since_after, total_after, cycle, ref, by_whom, reason)
+    values (v_asset, 'RESET', -v_done, 0, v_pm.total_h, v_pm.cycle, v_ref, p->>'by',
+            coalesce(v_params->>'reason', format('정기 정비 완료 (%s)', coalesce(v_params->>'ref', '-'))));
+    v_detail := format('%s 운전시간 계수기 리셋 (%s h 에 정기 정비) — 다음 기한 %s h (허용 %s~%s h)', v_asset, v_done, v_pmset.interval_h,
+                       trim_scale(round(v_pmset.interval_h * (1 - v_pmset.tolerance_pct / 100), 1)), trim_scale(round(v_pmset.interval_h * (1 + v_pmset.tolerance_pct / 100), 1)));
+    v_after := to_jsonb(v_pm);
+
+  elsif v_skill = 'skill:delay-delivery' then             -- C2 시나리오 C 미달 가지: 공급사 납기 지연 통보 (수업 버튼)
+    v_days := coalesce((v_params->>'days')::numeric, 3);
+    if v_days <= 0 or v_days > 60 then raise exception 'INVALID: days must be between 0 and 60' using errcode = '22023'; end if;
+    select * into v_pr from ent.purchase_requests r
+     where r.status = '승인됨 → 발주' and r.qty is not null
+       and (not v_params ? 'ref' or r.id = v_params->>'ref') and (not v_params ? 'part_no' or r.part_no = v_params->>'part_no')
+     order by r.created_at desc limit 1 for update;
+    if not found then raise exception 'INVALID: no open purchase order to delay' using errcode = '22023'; end if;
+    v_before := to_jsonb(v_pr);
+    update ent.purchase_requests set delay_d = delay_d + v_days, expected_at = expected_at + make_interval(secs => v_days * 86400)
+     where id = v_pr.id returning * into v_pr;
+    v_ref := v_pr.id;
+    v_detail := format('발주 %s 납기 %s일 지연 통보 — 리드타임 %s+%s일', v_pr.id, v_days, v_pr.lead_d, v_pr.delay_d);
+    v_after := to_jsonb(v_pr);
 
   elsif v_skill = 'skill:hold-lot' then
     select * into v_q from ent.quality_profiles where asset = v_asset;
@@ -476,6 +635,19 @@ begin
   return ent.spare_stock_read(p_part);
 end $$;
 
+-- 수업 초기화: 운전시간 계수기를 시작값으로 (빨리 감기 버튼 되돌리기). 원장에 BASE 를 남긴다.
+create or replace function ent.reset_pm_counters(p_asset text default null) returns jsonb language plpgsql as $$
+declare r ent.pm_counters;
+begin
+  for r in select * from ent.pm_counters where p_asset is null or asset = p_asset for update loop
+    update ent.pm_counters set since_pm_h = base_since_pm_h, total_h = base_total_h, cycle = 1, last_done_at = null, due_since = null,
+           updated_at = now() where asset = r.asset;
+    insert into ent.pm_counter_log (asset, kind, delta_h, since_after, total_after, cycle, ref, by_whom, reason)
+    values (r.asset, 'BASE', r.base_since_pm_h - r.since_pm_h, r.base_since_pm_h, r.base_total_h, 1, 'RESET', 'instructor', '수업 초기화');
+  end loop;
+  return ent.pm_status_read(p_asset);
+end $$;
+
 -- 시나리오 시각 · 실행 초기화에 C2 표를 포함한다(본문은 migration 17 + 아래 추가)
 create or replace function ent.reanchor_scenario_times() returns void language plpgsql as $$
 begin
@@ -489,7 +661,7 @@ begin
     from (values ('WO-HIST-01-1', 21), ('WO-HIST-01-2', 38), ('WO-HIST-01-3', 55), ('WO-HIST-02-1', 21), ('WO-HIST-03-P', 80)) s(wo, d)
    where h.wo = s.wo;
   -- C2: 정비창 규칙의 첫 창 = 지금 + 9 h(야간, maintenance_profiles.night_window_at 과 같음) · + 105 h(주말)
-  update ent.maintenance_window_rules set first_at = now() + make_interval(hours => case kind when 'N' then 9 else 105 end);
+  update ent.maintenance_window_rules set first_at = now() + make_interval(hours => case kind when 'N' then 9 when 'W' then 105 else 330 end);
 end $$;
 
 create or replace function ent.reset_executions() returns void language plpgsql as $$
@@ -500,9 +672,12 @@ begin
   delete from ent.maintenance_history where wo not like 'WO-HIST-%';
   update ent.production_orders set asset = moved_from, moved_from = null where moved_from is not null;
   perform ent.reset_spare_stock(null);
+  perform ent.reset_pm_counters(null);
   perform ent.reanchor_scenario_times();
 end $$;
 
-revoke execute on function ent.reanchor_scenario_times(), ent.reset_executions(), ent.reset_spare_stock(text), ent.refresh_spare_flag(text)
+revoke execute on function ent.reanchor_scenario_times(), ent.reset_executions(), ent.reset_spare_stock(text), ent.refresh_spare_flag(text),
+                           ent.reset_pm_counters(text), ent.refresh_pm_flag(text)
   from public, anon, authenticated;
-grant execute on function ent.reanchor_scenario_times(), ent.reset_executions(), ent.reset_spare_stock(text), ent.refresh_spare_flag(text) to service_role;
+grant execute on function ent.reanchor_scenario_times(), ent.reset_executions(), ent.reset_spare_stock(text), ent.refresh_spare_flag(text),
+                          ent.reset_pm_counters(text), ent.refresh_pm_flag(text) to service_role;
