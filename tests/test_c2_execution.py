@@ -537,6 +537,9 @@ class Outside:
             return {"records": deepcopy(self.QUOTES)}
         if name == "purchase_order":
             return {"facts": {"id": params["ref"], "lead_d": self.lead_d, "delay_d": self.delay_d}}
+        if name == "spare_stock":               # C3: 입고 뒤 재고(결과 보고의 가용 재고 대 재주문점)
+            return {"facts": {"part_no": params["part"], "on_hand": 9, "reserved": 2, "on_order": 0, "available": 7, "reorder_point": 2,
+                              "below_reorder_point": False}}
         raise KeyError(name)
 
     def exec_skill(self, d, item):

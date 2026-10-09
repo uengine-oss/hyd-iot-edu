@@ -244,10 +244,12 @@ class ServicePartsRuntime:
         if "stock_after" not in state and self.hooks.enterprise_read is not None:
             # C3: 입고 뒤 재고(가용 · 재주문점)를 결과 보고에 싣는다 — '재고 보충 필요' 표시가 꺼졌는지의 근거
             part_no = (state["receipt"].get("after") or {}).get("part_no") or (po.get("after") or {}).get("part_no") or v.get("approved_part_no")
-            try:
-                facts = (self.hooks.enterprise_read("spare_stock", {"part": part_no}) or {}).get("facts") or {} if part_no else {}
-            except Exception:  # noqa: BLE001 — 보조 정보, 읽기 실패로 입고 확인을 막지 않는다
-                facts = {}
+            if not part_no:
+                raise ValueError(f"입고 뒤 재고를 읽을 부품 번호가 없습니다 — 발주 {po['ref']} 영수증 · 승인 값(approved_part_no)")
+            # 읽기 실패는 이 task 의 실패(재시도 · PENDING, 사유 보존)다 — 입고 거래는 이미 저장돼 재시도에서 다시 하지 않는다
+            facts = (self.hooks.enterprise_read("spare_stock", {"part": part_no}) or {}).get("facts")
+            if not facts:
+                raise ValueError(f"ERP 재고에 {part_no} 행이 없습니다 — 입고 뒤 가용 재고를 확인할 수 없습니다")
             state = self._save_state(wi, stock_after={k: facts.get(k) for k in ("part_no", "on_hand", "reserved", "on_order", "available",
                                                                                  "reorder_point", "below_reorder_point") if k in facts})
         receipt = dict(state["receipt"], stock_after=state.get("stock_after") or None)

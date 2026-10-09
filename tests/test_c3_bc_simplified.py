@@ -28,13 +28,7 @@ def deploy(world, did):
     return r["definition"]
 
 
-class Stock(c2.Outside):
-    """입고 뒤 재고 읽기(spare_stock)까지 답하는 업무 시스템 대역."""
-    def read(self, name, params):
-        if name == "spare_stock":
-            return {"facts": {"part_no": params["part"], "on_hand": 9, "reserved": 2, "on_order": 0, "available": 7, "reorder_point": 2,
-                              "below_reorder_point": False}}
-        return super().read(name, params)
+Stock = c2.Outside          # 업무 시스템 대역(입고 뒤 재고 읽기 포함)
 
 
 @pytest.mark.parametrize("did,tasks", [("c3_pm", 4), ("c3_spare", 5)])
@@ -248,3 +242,21 @@ def test_the_lesson_reset_keeps_executions_in_the_archive_and_reanchors_times():
     assert client.get("/api/archive", params={"ref": "D-ARC"}).json()["records"]     # 판단 id 로도 따라간다
     assert client.post("/api/reanchor").json() == {"ok": True}
     entmain.ent.st.reset()
+
+
+def test_a_missing_stock_row_after_receipt_fails_the_task_loudly(world):
+    """입고 뒤 재고를 읽지 못하면 결과 보고를 지어내지 않는다 — 입고 task 가 사유와 함께 실패(재시도 · PENDING)."""
+    deploy(world, "c3_spare")
+    out = Stock(world)
+    out.read = lambda name, params: {"facts": None} if name == "spare_stock" else c2.Outside.read(out, name, params)
+    world["rt"].hooks.enterprise_read = out.read
+    rt = world["rt"]
+    inst = rt.on_alert_raise(SB.build_alert("C", entstate.EnterpriseState().spare_stock("P-PMP-SEAL")["facts"], now=NOW), now=NOW)
+    inc = world["incidents"][engine.variables(inst)["incident"]]
+    d = c2.c_decision(inc.id)
+    world["book"][d["id"]] = d
+    rt.submit(_row(rt, inst, "T_agent")["id"], {"decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
+    rt.select(_row(rt, inst, "T_approve")["id"], d["id"], d["options"][0]["id"], "정구매", "role:prod-mgr", now=NOW)
+    w = _row(rt, inst, "T_gr")
+    assert w["status"] == "SUBMITTED" and "ERP 재고에 P-PMP-SEAL 행이 없습니다" in w["log"]
+    assert "result_report" not in engine.variables(rt.repo.get_instance(inst["proc_inst_id"]))
