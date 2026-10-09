@@ -334,3 +334,33 @@ def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only:
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'cmdId':inc.cmd_id, 'workOrder':inc.work_order,
                                                 'work_order_only':work_order_only})
     _go(inc, 'CLOSED')
+
+
+
+@_transition
+def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
+    """C2: 설비 명령 · 작업지시 없이 업무 효과로 끝나는 처리 건(예비품 구매: 발주 → 입고 확인)의 사건 종결. 승인 대기(AWAITING_APPROVAL)에서
+    효과 확인 영수증으로 닫는다. 이미 끝난 사건은 그대로 둔다(False). 명령이 나간 사건은 재관측 · 작업지시로 닫히므로 거절한다."""
+    ref = receipt.get('ref')
+    if receipt.get('ok') is not True or not isinstance(ref, str) or not ref.strip():
+        raise ValueError('업무 효과 종결에는 실제 영수증 번호가 필요합니다')
+    if inc.state in d.TERMINAL:
+        return False
+    if inc.state != 'AWAITING_APPROVAL' or inc.cmd_id:
+        raise ValueError(f'업무 효과로 닫을 수 없는 사건 상태입니다: {inc.state}')
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'businessEffect': dict(receipt), 'cmdId': None})
+    _go(inc, 'CLOSED', f"business effect {receipt.get('kind') or ''} {ref}".strip())
+    return True
+
+
+@_transition
+def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
+    """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김).
+    이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
+    if level not in ('ok', 'fail'):
+        raise ValueError('결과 보고 등급은 ok 또는 fail 입니다')
+    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
+        return False
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
+    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"result report: {summary}"[:300])
+    return True

@@ -139,7 +139,7 @@ class ApprovalDelivery:
                 else:
                     results = [self.hooks.exec_enterprise(row['decision_id'], item)
                                for item in row['payload']['plan'].get('enterprise', [])
-                               if item.get('code') != 'WO_CREATE']
+                               if item.get('code') not in set(row['payload'].get('deferred') or ['WO_CREATE'])]
                 if any(r.get('ok') is not True for r in results):
                     raise RuntimeError(str([r for r in results if r.get('ok') is not True]))
             except Exception as error:

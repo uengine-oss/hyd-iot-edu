@@ -10,13 +10,28 @@ from __future__ import annotations
 import psycopg
 
 from agentsvc import card as cardlib, decide as decidelib, llm
-from agentsvc.tools import mcp_kg, mcp_prom, mcp_tsdb
+from agentsvc.tools import mcp_ent, mcp_kg, mcp_prom, mcp_tsdb
 from agentsvc.tools.prometheus import Prometheus
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS, Fabric
 
 
 #: Recorded in a decision's origin: where the cause argument of evaluate_cards/submit_decision was checked against.
 CAUSE_BASIS = "ontology T1 (pattern → symptom → failure mode ← cause), same query as diagnose"
+#: C2: 업무 경보(재고 · 운전시간)에는 증상(T1)이 없다. 원인은 업무 근거로 이어진 것만 받는다(business_causes 와 같은 질의).
+BUSINESS_CAUSE_BASIS = {
+    "SPARE_BELOW_MIN": "ontology: cause -INVOLVES_PART-> part (ERP 재주문점 아래 부품), cause -CAUSES-> failure mode",
+    "PM_DUE": "ontology: failure mode -PREVENTED_BY-> skill (정기 정비가 막는 고장), cause -CAUSES-> failure mode",
+}
+BUSINESS_CAUSES = {
+    # 재고가 모자란 부품을 쓰는 원인(그 부품을 교체해 고치는 고장) — 구매 SOP 가 ADDRESSES 로 그 원인을 가리킨다
+    "SPARE_BELOW_MIN": "MATCH (c:Cause)-[:INVOLVES_PART]->(p:Part) WHERE p.partNo IN $parts MATCH (c)-[:CAUSES]->(fm:FailureMode) "
+                       "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, p.partNo AS partNo, "
+                       "c.prior AS prior ORDER BY c.prior DESC",
+    # 정기 정비가 막는 고장과 그 원인
+    "PM_DUE": "MATCH (fm:FailureMode)-[:PREVENTED_BY]->(:Skill) WITH DISTINCT fm MATCH (c:Cause)-[:CAUSES]->(fm) "
+              "RETURN c.id AS causeId, c.name AS cause, fm.id AS failureModeId, fm.name AS failureMode, null AS partNo, "
+              "c.prior AS prior ORDER BY c.prior DESC",
+}
 
 
 def ok(document) -> dict:
@@ -168,6 +183,20 @@ class DmnTools:
                            "approver": (o.get("approver") or {}).get("name")} for o in res.get("options", [])],
                 "error": rec.get("error")}
 
+    def business_causes(self, asset: str, pattern: str) -> dict:
+        """C2: 업무 경보(SPARE_BELOW_MIN · PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 업무 근거로 그래프에서 읽는다.
+        재고: ERP 에서 재주문점 아래인 부품 → 그 부품을 쓰는 원인. 정기 정비: 정비가 막는(PREVENTED_BY) 고장의 원인.
+        돌려준 cause · failure_mode 를 evaluate_cards · submit_decision 에 그대로 넘긴다(원인 한정 SOP 가 후보에서 빠지지 않게)."""
+        if pattern not in BUSINESS_CAUSES:
+            raise ValueError(f"{pattern} 은(는) 업무 경보가 아닙니다 — 센서 경보는 diagnose 를 쓰세요")
+        parts = []
+        if pattern == "SPARE_BELOW_MIN":
+            rows = (mcp_ent.fetch("/erp/spare_stock", asset).get("records") or [])
+            parts = [r["part_no"] for r in rows if r.get("below_reorder_point")]
+        causes = self._graph(BUSINESS_CAUSES[pattern], parts=parts)
+        return {"pattern": pattern, "basis": BUSINESS_CAUSE_BASIS[pattern], "parts_below_reorder_point": parts, "causes": causes,
+                "top_cause": causes[0]["causeId"] if causes else None, "failure_mode": causes[0]["failureModeId"] if causes else None}
+
     def precedents(self, failure_mode: str) -> list[dict]:
         return self.kg.precedents(failure_mode)
 
@@ -186,7 +215,14 @@ class DmnTools:
         (→ INVALID envelope): the caller must diagnose first, or fix its arguments."""
         if not isinstance(cause, str) or not cause or not isinstance(failure_mode, str) or not failure_mode:
             raise ValueError("cause와 failure_mode는 비어 있지 않은 노드 id여야 합니다")
-        listed = [r for r in self.kg.t1_causes(pattern, asset) if r.get("causeId") == cause]
+        t1 = self.kg.t1_causes(pattern, asset)
+        if not t1 and pattern in BUSINESS_CAUSES:
+            # C2: 업무 경보는 업무 근거로 이어진 원인만 받는다(business_causes 와 같은 질의)
+            listed = [r for r in self.business_causes(asset, pattern)["causes"] if r.get("causeId") == cause]
+            if not listed:
+                raise ValueError(f"{cause}는 {pattern}의 업무 근거({BUSINESS_CAUSE_BASIS[pattern]})에 없는 원인입니다. business_causes 결과를 쓰세요")
+        else:
+            listed = [r for r in t1 if r.get("causeId") == cause]
         if not listed:
             raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다. diagnose 결과의 원인 id를 쓰세요")
         match = [r for r in listed if r.get("failureModeId") == failure_mode]

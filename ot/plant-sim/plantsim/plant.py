@@ -17,6 +17,9 @@ FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
                "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
                "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
 HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+# C2: 정비 수행 모사의 복구 대상 부품 → 외란 변수 (온톨로지 Component id 도 받는다). 없으면 설비 전체를 되돌린다(이전과 같음).
+COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak",
+              "fan": "bearing_wear", "comp:fan": "bearing_wear"}
 # Named fault strengths. "high" is every kind's default (the lecture scenes that end in a PLC trip keep using it);
 # "moderate" is defined for the cooler only: TS1 settles at ~62.5 C, so the alarm stays up without the 65 C trip
 # (the window a coding-agent worker needs at TIME_SCALE 20, A146). The trip itself is untouched (plc.check_interlock).
@@ -88,7 +91,7 @@ class Plant:
 
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
-               severity: str | None = None) -> dict:
+               severity: str | None = None, component: str | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
         strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
@@ -99,7 +102,11 @@ class Plant:
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
-                plan = {attr: healthy for attr, healthy in HEALTHY.items() if getattr(u.state, attr) != healthy or attr in u.faults}
+                if component is not None and component not in COMPONENTS:
+                    raise ValueError(f"unknown component {component} (known: {sorted(COMPONENTS)})")
+                only = COMPONENTS.get(component) if component else None
+                plan = {attr: healthy for attr, healthy in HEALTHY.items()
+                        if (only is None or attr == only) and (getattr(u.state, attr) != healthy or attr in u.faults)}
             elif kind in FAULT_KINDS:
                 attr, default = FAULT_KINDS[kind]
                 if target is None and severity is not None:

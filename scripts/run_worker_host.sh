@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 case "${OSTYPE:-}" in msys*|cygwin*) SEP=";"; HERE="$(pwd -W)";; *) SEP=":"; HERE="$PWD";; esac
 export PYTHONPATH="it/agent-worker${SEP}it/process${SEP}common"
 export SUPABASE_DSN="${SUPABASE_DSN:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
-export MCP_HOST_REWRITE="${MCP_HOST_REWRITE:-neo4j:7687=127.0.0.1:7687,enterprise-mcp:8199=127.0.0.1:8199,dmn-mcp:8198=127.0.0.1:8198}"
+export MCP_HOST_REWRITE="${MCP_HOST_REWRITE:-neo4j:7687=127.0.0.1:7687,enterprise-mcp:8199=127.0.0.1:8199,dmn-mcp:8198=127.0.0.1:8198,enterprise-mcp-maint:8196=127.0.0.1:8196,enterprise-mcp-purchase:8195=127.0.0.1:8195}"
 export CLIAGENTS_WORKSPACE_ROOT="${CLIAGENTS_WORKSPACE_ROOT:-$HERE/.evidence/workspace}"
 export SCHEMA_PROMPT="${SCHEMA_PROMPT:-$HERE/it/neo4j/v2/schema_prompt.md}"
 export CONSUMER_ID="${CONSUMER_ID:-agent-worker:host}"

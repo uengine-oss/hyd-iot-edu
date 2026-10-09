@@ -59,7 +59,9 @@ insert into public.tenants (id, name, owner, mcp) values ('hyd', '유압설비 �
     "neo4j":      {"command": "uvx", "args": ["--with", "fastmcp==2.13.0.2", "mcp-neo4j-cypher@0.4.1", "--transport", "stdio"],
                    "env": {"NEO4J_URI": "bolt://neo4j:7687", "NEO4J_USERNAME": "neo4j", "NEO4J_PASSWORD": "hydpass123", "NEO4J_READ_ONLY": "true"}},
     "enterprise": {"type": "url", "url": "http://enterprise-mcp:8199/mcp", "transport": "streamable_http"},
-    "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"}
+    "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"},
+    "enterprise-maint":    {"type": "url", "url": "http://enterprise-mcp-maint:8196/mcp", "transport": "streamable_http"},
+    "enterprise-purchase": {"type": "url", "url": "http://enterprise-mcp-purchase:8195/mcp", "transport": "streamable_http"}
   }}'::jsonb)
 on conflict (id) do update set name = excluded.name, owner = excluded.owner, mcp = excluded.mcp;
 

@@ -32,7 +32,9 @@ from copy import deepcopy
 from . import mcp_check
 
 #: seed.sql:57-63 의 tenants.mcp 세 서버 = 워커 DEFAULT_ALLOWED_TOOLS 가 적는 세 서버(tests/test_b2_mcp_registry.py 가 대조)
-BASE_SERVERS = ("neo4j", "enterprise", "hyd-dmn")
+# C2 (확정 2026-10-09): 업무 MCP 를 보전용(enterprise-maint) · 구매용(enterprise-purchase)으로 나눈 두 서버도 기준이다(같은 읽기 전용 코드,
+# it/enterprise-mcp ENTERPRISE_MCP_TOOLSET). 시나리오 에이전트는 필요한 서버만 붙인다(사용자 tools).
+BASE_SERVERS = ("neo4j", "enterprise", "hyd-dmn", "enterprise-maint", "enterprise-purchase")
 META_KEY = "hyd"
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")      # 도구 이름 mcp__<서버>__<도구> 가 갈라지지 않게 '_' 없음
 STDIO_LAUNCHERS = ("npx", "uvx", "uv", "node", "python", "python3", "deno", "bunx", "bun", "pipx")

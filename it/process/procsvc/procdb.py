@@ -33,6 +33,10 @@ from .effect_store import MemoryEffects, PgEffects
 from .projection_repo import MemoryProjection, PgProjection
 from .agents_store import MemoryAgents, PgAgents          # U2: tenant skills · agent ↔ skill (read side)
 from .agent_authoring import MemoryAuthoring, PgAuthoring  # B1: 에이전트 · 스킬 · 배정 쓰기 + 되돌리기
+from .effect_parts import TOOLS as C2_SERVICE_TOOLS
+
+#: process 가 다시 돌려 보는 서비스 줄(멱등 처리기만): 사건 경로 · CMMS 작업지시 + C2 승인 뒤 실행 부품(기다리는 부품은 끝날 때까지 여기서 다시 본다)
+SERVICE_QUEUE_TOOLS = ('incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *C2_SERVICE_TOOLS)
 
 SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
 
@@ -217,7 +221,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         with self._lock:
             rows=[w for w in self.workitems.values() if w.get('tenant_id')==tenant_id and w['status']=='SUBMITTED'
                   and w.get('agent_orch')=='hyd-process' and w.get('consumer') and not w.get('output')
-                  and w.get('tool') in ('incident:command','incident:reobserve','enterprise:WO_CREATE')
+                  and w.get('tool') in SERVICE_QUEUE_TOOLS
                   and self.instances.get(w['proc_inst_id'],{}).get('status')=='RUNNING'
                   and self.instances[w['proc_inst_id']].get('tenant_id')==tenant_id
                   and not self.instances[w['proc_inst_id']].get('is_deleted')
@@ -638,9 +642,9 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 where w.tenant_id=%s and i.tenant_id=%s and i.status='RUNNING' and not i.is_deleted
                 and w.status='SUBMITTED' and w.agent_orch='hyd-process' and w.consumer is not null
                 and coalesce(w.output,'{}'::jsonb)='{}'::jsonb
-                and w.tool in ('incident:command','incident:reobserve','enterprise:WO_CREATE')
+                and w.tool = any(%s)
                 and (%s::uuid is null or w.id>%s::uuid) order by w.id limit %s""",
-                (tenant_id,tenant_id,after_id,after_id,limit)).fetchall()]
+                (tenant_id,tenant_id,list(SERVICE_QUEUE_TOOLS),after_id,after_id,limit)).fetchall()]
 
     def _val(self, col: str, v):
         if col in JSON_COLS and v is not None:

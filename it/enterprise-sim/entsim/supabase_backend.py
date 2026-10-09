@@ -14,8 +14,12 @@ READS = {
     "mes_orders": ("ent.mes_orders", ("asset",)), "erp_contract": ("ent.erp_contract", ("asset",)), "erp_inventory": ("ent.erp_inventory", ("asset",)),
     "cmms_history": ("ent.cmms_history", ("asset",)), "cmms_tasks": ("ent.cmms_tasks", ("asset",)), "qms_lots": ("ent.qms_lots", ("asset",)), "scm_suppliers": ("ent.scm_suppliers", ("part",)),
     "ems_demand": ("ent.ems_demand", ()),
+    # C2 (migration 20261009000045)
+    "spare_stock": ("ent.spare_stock_read", ("part",)), "part_quotes": ("ent.part_quotes_read", ("part",)),
+    "maintenance_windows": ("ent.maintenance_windows_read", ("asset",)), "purchase_order": ("ent.purchase_order_read", ("ref",)),
+    "pm_status": ("ent.pm_status_read", ("asset",)),
 }
-WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions")
+WRITE_TABLES = ("work_orders", "purchase_requests", "shipments", "lot_dispositions", "ems_actions", "goods_receipts")
 
 
 def _json(value):
@@ -35,7 +39,7 @@ class SupabaseEnterprise:
             row = cur.fetchone()
         out = _json(row[0]) if row else None
         if not out or out.get("facts") is None:
-            raise KeyError(params.get("asset") or params.get("part") or name)
+            raise KeyError(params.get("asset") or params.get("part") or params.get("ref") or name)
         return out
 
     # ---- writes (process service only)
@@ -71,6 +75,20 @@ class SupabaseEnterprise:
                 out.setdefault(_system_of(table), {})[table] = [_json(r[0]) for r in cur.fetchall()]
         return out
 
+    def reset_spare_stock(self, part: str | None = None) -> dict:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("select ent.reset_spare_stock(%s)", (part,))
+            out = _json(cur.fetchone()[0])
+            conn.commit()
+        return out
+
+    def reset_pm_counters(self, asset: str | None = None) -> dict:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("select ent.reset_pm_counters(%s)", (asset,))
+            out = _json(cur.fetchone()[0])
+            conn.commit()
+        return out
+
     def reset(self) -> None:
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute("select ent.reset_executions()")
@@ -86,4 +104,5 @@ class SupabaseEnterprise:
 
 
 def _system_of(table: str) -> str:
-    return {"work_orders": "cmms", "purchase_requests": "erp", "shipments": "erp", "lot_dispositions": "qms", "ems_actions": "ems"}[table]
+    return {"work_orders": "cmms", "purchase_requests": "erp", "shipments": "erp", "lot_dispositions": "qms", "ems_actions": "ems",
+            "goods_receipts": "erp"}[table]

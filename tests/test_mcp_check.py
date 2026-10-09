@@ -205,7 +205,8 @@ def test_unsupported_transport_and_bad_url_are_config_errors():
 def test_seed_shapes_normalize_to_the_three_transports():
     seed = json.loads((ROOT / "it" / "supabase" / "seed.sql").read_text(encoding="utf-8").split("'{\n  \"mcpServers\"")[1].split("}'::jsonb")[0].join(['{\n  "mcpServers"', "}"]))
     kinds = {name: mcp_check.normalize(spec)["transport"] for name, spec in seed["mcpServers"].items()}
-    assert kinds == {"neo4j": "stdio", "enterprise": "streamable_http", "hyd-dmn": "streamable_http"}
+    assert kinds == {"neo4j": "stdio", "enterprise": "streamable_http", "hyd-dmn": "streamable_http",
+                     "enterprise-maint": "streamable_http", "enterprise-purchase": "streamable_http"}   # C2: 업무 MCP 보전용 · 구매용
     assert mcp_check.normalize({"type": "sse", "url": "http://x/sse"})["transport"] == "sse"
     assert mcp_check.normalize({"type": "http", "url": "http://x/mcp"})["transport"] == "streamable_http"
 
@@ -276,7 +277,8 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
         src = (ROOT / path).read_text(encoding="utf-8")
         assert "@mcp.tool\n" not in src, f"{path}: 표시 없는 도구가 있습니다"
         marks.update(dict((name, mark) for mark, name in re.findall(r"@mcp\.tool\(annotations=(READ|WRITE)\)\ndef (\w+)", src)))
-    assert len(marks) == 25 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]   # A11: dmn fabric_query (read) added → 15 + 10
+    # A11: dmn fabric_query (read) added → 15 + 10; C2: enterprise spare_stock · part_quotes · maintenance_windows · pm_status (read) + dmn business_causes → 16 + 14
+    assert len(marks) == 30 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]
     for name, mark in marks.items():
         ok, _ = mcp_check.read_only_verdict({"name": name, "annotations": {"readOnlyHint": mark == "READ"}})
         assert ok is (mark == "READ"), name

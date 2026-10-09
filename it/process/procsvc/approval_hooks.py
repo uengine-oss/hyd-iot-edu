@@ -120,8 +120,10 @@ class DecisionDelivery:
             d.update(snapshot, process_approval_id=row['todo_id'], executions=executions)
             self.ctx.persist()
         results = []
+        # C2: 흐름의 시스템 task 가 실행하는 거래(작업지시, 흐름에 발주 task 가 있으면 발주)는 여기서 실행하지 않는다
+        deferred = set(payload.get('deferred') or ['WO_CREATE'])
         for item in payload['plan'].get('enterprise', []):
-            if item.get('code') == 'WO_CREATE':
+            if item.get('code') in deferred:
                 continue
             result = self.ctx.exec_skill(d, deepcopy(item))
             if result.get('ok') is not True:

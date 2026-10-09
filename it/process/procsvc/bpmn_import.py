@@ -25,7 +25,7 @@ import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 
-from . import engine
+from . import engine, effect_parts
 from .definition_registry import PROTECTED_OUTPUTS, validate_definition
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -58,7 +58,11 @@ ALERT_START_VALUES = ("asset", "alert", "pattern", "alert_id", "incident")
 APPROVAL_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident"}))
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
-EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시"}   # 바깥 시스템에 효과를 내는 서비스
+EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시",   # 바깥 시스템에 효과를 내는 서비스
+                **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
+# C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
+SERVER_VALUE_TYPES = {"approved_amount": "Number", "approved_qty": "Number", "approved_unit_price": "Number",
+                      "approved_supplier": "Text", "approved_part_no": "Text"}
 FIELD_TYPES = ("text", "textarea", "number", "integer", "boolean", "select", "object", "array")
 DATA_TYPE = {"text": "Text", "textarea": "Text", "select": "Text", "number": "Number", "integer": "Number",
              "boolean": "Boolean", "object": "Object", "array": "Array"}
@@ -193,8 +197,7 @@ def parse_bpmn(xml_text: str) -> dict:
                 if parts.get("timeDate") or parts.get("timeCycle"):
                     out["problems"].append(problem(item, "timer", "타이머는 기간(timeDuration)만 씁니다 — 날짜 · 반복 타이머는 실행하지 않습니다"))
                 timer = parts.get("timeDuration") or None
-            if not item["interrupting"]:
-                out["problems"].append(problem(item, "event", "멈추지 않는(non-interrupting) 경계 타이머는 실행하지 않습니다 — 실선 타이머를 쓰세요"))
+            # C2: 멈추지 않는(점선) 경계 타이머 = 알림 가지(예: 승인 지연 알림). 붙은 task 는 계속 기다리고, 타이머 가지가 따로 흐른다(engine.non_interrupting)
             item["timer"] = timer
             out["boundaries"].append(item)
         elif tag in GATEWAY_TYPES:
@@ -283,10 +286,36 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                       "inputs": list(a.get("inputData") or []), "outputs": list(a.get("outputData") or []),
                       "approval": tool == APPROVAL_TOOL, "effect": EFFECT_TOOLS.get(tool),
                       "default_timer": timers[0] if timers else None, "contract": contract})
+    # C2 (확정 흐름 2026-10-09): '판단 · 제안' 에이전트 task 하나 — 기준의 순위 · 카드 작성(task:rank) 계약을 그대로 쓰되(같은 폼 · 같은 결과
+    # decision · decision_id, 승인 경로가 믿는 값), 앞 단계 없이 경보 값만 받는다. 에이전트가 그 안에서 진단 → 후보 → 규정 → 순위(evaluate_cards)를
+    # 하고 카드를 낸다(submit_decision). 과정은 실행 화면의 실시간 기록으로 보인다. 지시문은 매핑의 instruction 으로 바꿀 수 있다.
+    rank = next((p for p in parts if p["key"] == "task:rank" and p["kind"] == "agent"), None)
+    diag = next((p for p in parts if p["key"] == "task:diagnose" and p["kind"] == "agent"), None)
+    if rank is not None and diag is not None and rank.get("form") and diag.get("form"):
+        # 결과 = 진단(cause · failure_mode · guide_card — 설비 명령 승인은 가이드 카드에 있는 조치만 받는다) + 카드(decision · decision_id)
+        # 진단 칸은 선택(업무 경보 — 재고 · 운전시간 — 에는 센서 진단이 없을 수 있다). 명령 카드는 가이드 카드가 없으면 사건이 승인을 거절한다
+        fields = [dict(f, required=False) for f in deepcopy(diag["form"].get("fields_json") or [])] + deepcopy(rank["form"].get("fields_json") or [])
+        outs = [f["key"] for f in fields]
+        contract = deepcopy(rank["contract"])
+        contract.update(name="판단 · 제안", description="판단 · 제안", inputData=list(ALERT_START_VALUES), outputData=outs,
+                        tool="formHandler:decide",
+                        instruction="이 처리 건의 근거를 모두 조회해 원인 · 상황을 진단하고(diagnose), 후보 조치를 규정 · 회사 목표(BSC) · 성과 지표로 "
+                                    "비교해 순위를 매긴 뒤(evaluate_cards) 추천 1장과 지는 대안을 카드로 제출한다(submit_decision). "
+                                    "승인 전에는 조회 · 계산만 한다.")
+        parts.append(dict(deepcopy(rank), key="task:decide", name="판단 · 제안 (에이전트 한 번)", inputs=list(ALERT_START_VALUES),
+                          outputs=outs, tool="formHandler:decide", form_id="decide", form={"fields_json": fields},
+                          contract=contract, group="general",
+                          help="경보 하나에 에이전트 task 하나: 진단 · 후보 · 규정 · 순위를 한 번에 하고 카드(추천 1장 + 지는 대안)를 냅니다. "
+                               "결과는 담당자 승인 task 가 받습니다. 지시문을 시나리오에 맞게 바꿀 수 있습니다."))
     general = [{"key": "human", "group": "general", "name": "사람 task", "kind": "human",
                 "help": "담당 역할 · 폼 칸을 정합니다. 폼 칸이 이 task 가 내는 값입니다."},
                {"key": "agent", "group": "general", "name": "에이전트 task", "kind": "agent",
                 "help": "맡길 에이전트 · 지시문 · 결과 값 이름을 정합니다. 승인 전 에이전트는 조회 · 계산 · 보고서만 합니다."}]
+    # C2: 승인 뒤 실행 부품(시스템 task) — 시나리오에 묶이지 않은 일반 부품. 설정은 매핑의 tasks[<id>].config (effect_parts.PARTS 의 config 설명)
+    general += [{"key": key, "group": "general", "name": spec["name"], "kind": "service", "tool": spec["tool"],
+                 "effect": EFFECT_TOOLS.get(spec["tool"]), "approval": False, "outputs": list(spec["outputs"]),
+                 "inputs": list(spec.get("inputs") or []), "config": deepcopy(spec["config"]), "help": spec["help"]}
+                for key, spec in effect_parts.PARTS.items()]
     role_list = []
     for r in base.get("roles") or []:
         role_list.append({"name": r["name"], "endpoint": r.get("endpoint"), "resolutionRule": r.get("resolutionRule"),
@@ -309,14 +338,18 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     start_event = next((e for e in events if e.get("type") == "startEvent"), {})
     # B7: 사람 입력 경보 패턴(오일 분석 등, human_alert.PATTERNS)도 경보 시작으로 고를 수 있다 — 기준 정의의 경보 정책은 그대로 두고
     # 이 목록에만 보탠다(기준 흐름은 이 패턴을 받지 않으므로 배포 흐름이 없으면 사람 검토로 간다).
-    from . import human_alert
-    human = ({p: c for p, c in human_alert.policy_patterns().items() if p not in (policy.get("patterns") or {})}
-             if policy.get("patterns") and start_event.get("eventDefinition") == "message" else {})
-    if human:
-        policy["patterns"] = dict(policy["patterns"], **human)
+    from . import human_alert, business_monitor
+    # C2: 업무 데이터 감시 경보(ERP 재고 기준 이탈 SPARE_BELOW_MIN)도 같은 방식으로 보탠다(business_monitor.PATTERNS)
+    offered = policy.get("patterns") and start_event.get("eventDefinition") == "message"
+    human = ({p: c for p, c in human_alert.policy_patterns().items() if p not in (policy.get("patterns") or {})} if offered else {})
+    business = ({p: c for p, c in business_monitor.policy_patterns().items() if p not in (policy.get("patterns") or {})}
+                if offered else {})
+    if human or business:
+        policy["patterns"] = dict(policy["patterns"], **human, **business)
     return {"base": {"id": base.get("processDefinitionId"), "version": base.get("version"), "name": base.get("processDefinitionName")},
             "parts": parts + general, "roles": role_list, "agents": agents, "agent_role": agent_role,
             "patterns": list((policy.get("patterns") or {}).keys()), "alert_policy": policy, "human_patterns": list(human),
+            "business_patterns": list(business),
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
             "data": {d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")},
             "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES),
@@ -352,7 +385,7 @@ def merge_mapping(parsed: dict, old: dict | None, cat: dict) -> tuple[dict, dict
         m["start"] = deepcopy(start)
     else:
         message = any(s.get("definition") == "message" for s in parsed["starts"])
-        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력은 사람이 고름)
+        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or []) + (cat.get("business_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력 · 업무 감시는 사람이 고름)
         m["start"] = ({"kind": "alert", "patterns": sensor} if message and sensor
                       else {"kind": "human", "fields": []})
     role_names = {r["name"] for r in cat["roles"]}
@@ -572,7 +605,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         bad = [v for v in inputs if not _identifier(v)]
         if bad:
             problems.append(problem(t, "inputs", f"받을 값 이름 {', '.join(bad)} 을(를) 쓸 수 없습니다")); continue
-        if p["group"] == "scenario":
+        if p["group"] == "scenario" or p.get("contract"):     # 기준 정의 부품과 그 계약을 쓰는 일반 부품(task:decide)
             a = deepcopy(p["contract"])
             a["id"], a["name"] = t["id"], t["name"] or p["name"]
             if p["kind"] == "human" and m.get("role"):
@@ -580,6 +613,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 if r is None or not r["human"]:
                     problems.append(problem(t, "role", f"'{m['role']}'은(는) 사람 역할이 아닙니다")); continue
                 a["role"] = r["name"]
+            if p["key"] == "task:decide" and str(m.get("instruction") or "").strip():
+                a["instruction"] = str(m["instruction"]).strip()          # C2: 시나리오마다 판단 지시문(시나리오 에이전트)을 바꾼다
             if p["kind"] == "agent" and m.get("agent"):
                 if m["agent"] not in agents:
                     problems.append(problem(t, "agent", f"에이전트 {m['agent']} 가 에이전트 목록에 없습니다")); continue
@@ -588,6 +623,21 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 forms[p["form_id"]] = deepcopy(p["form"])
             if lane_r and lane_r != a.get("role") and p["kind"] != "human":
                 pass                                           # 시스템 · 에이전트 부품은 부품 담당이 정한다(칸 이름은 그림 정보)
+            if p["tool"] == "enterprise:WO_CREATE" and isinstance(m.get("config"), dict) and m["config"]:
+                # C2: 작업지시 부품의 선택 설정 — 정비 시점 값 이름(window_var) · 생산팀 공지 메일(mail)
+                a["service"] = deepcopy(m["config"])
+                try:
+                    effect_parts.validate(a)
+                except ValueError as e:
+                    problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
+        elif key in effect_parts.PARTS:                        # C2: 승인 뒤 실행 부품
+            config = m.get("config") if isinstance(m.get("config"), dict) else {}
+            sys_role = next((r["name"] for r in cat["roles"] if r.get("endpoint") == engine.SYSTEM_USER), None)
+            a = effect_parts.activity_for(key, t, config, inputs, sys_role)
+            try:
+                effect_parts.validate(a)
+            except ValueError as e:
+                problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
         elif key == "human":
             rname = m.get("role") or lane_r
             r = roles.get(rname or "")
@@ -665,8 +715,11 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 ok = False
             if not ok:
                 problems.append(problem(b, "timer", f"기간 '{timer}'을(를) 읽을 수 없습니다 (예: PT10M)"))
-        events.append({"id": b["id"], "name": b["name"] or "시간 초과", "type": "boundaryEvent", "eventDefinition": "timer",
-                       "timer": timer, "attachedTo": b["attached_to"]})
+        ev = {"id": b["id"], "name": b["name"] or "시간 초과", "type": "boundaryEvent", "eventDefinition": "timer",
+              "timer": timer, "attachedTo": b["attached_to"]}
+        if b.get("interrupting") is False:
+            ev["cancelActivity"] = False
+        events.append(ev)
 
     # -- 분기 · 선
     flow_map = mapping.get("flows") if isinstance(mapping.get("flows"), dict) else {}
@@ -797,7 +850,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     field_type = {f["key"]: f["type"] for form in forms.values() for f in form["fields_json"]}
     if start_form:
         field_type.update({f["key"]: f["type"] for f in start_form["fields_json"]})
-    data = [deepcopy(cat["data"][v]) if v in cat["data"] else {"name": v, "type": DATA_TYPE.get(field_type.get(v), "Text")}
+    data = [deepcopy(cat["data"][v]) if v in cat["data"] else
+            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or DATA_TYPE.get(field_type.get(v), "Text")}
             for v in used]
     role_rows = []
     for rname in used_roles:
