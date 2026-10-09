@@ -11,6 +11,14 @@
   const who = id => UI.who(id);
   const chip = s => UI.chip(s);
   const isHuman = t => !t.agent_orch && !t.agent_mode;
+  // C3: 끝난 처리 건의 결과(정상 · 미달 · 지연 · 입고 완료)를 상태 칩 옆에 — 미달(ESCALATED) 종결도 "완료"로만 보이지 않게
+  const outcomeChip = inst => {
+    if (!inst || inst.status !== 'COMPLETED' || !window.hydResultReport) return '';
+    const rep = hydResultReport.fromValues(Object.fromEntries((inst.variables_data || []).map(r => [r.key, r.value])));
+    if (!rep || !rep.verdict) return '';
+    const tone = rep.verdict === 'ok' ? 'success' : rep.verdict === 'fail' ? 'danger' : 'neutral';
+    return UI.chipText(rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '확인 결과'), tone);
+  };
 
   /* ------------------------------------------------ load */
   async function load(force) {
@@ -288,7 +296,7 @@
       const when = x.status === 'RUNNING' ? `${span < 1 ? UI.t('inst.justStarted') : Math.round(span) + UI.t('inst.elapsed')}` : `${ended ? Math.max(1, Math.round(span)) + UI.t('inst.took') + ' ' : ''}${UI.status(x.status)}`;
       const names = I.defNames[`${x.proc_def_id}@${x.proc_def_version}`] || {};
       const steps = (x.current_activity_ids || []).map(id => `<span class="chip step-chip">${esc(UI.flowName(names[id] || id.replace(/^task:|^ev:/, '')))}</span>`).join('');
-      const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}</div>
+      const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}${outcomeChip(x)}</div>
         <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
         <span class="sub">${esc(UI.dateTime(x.start_date))} · ${esc(when)}</span>`);
       keyboardItem(it);
@@ -336,7 +344,7 @@
     const st = stepsOf(view);
     const s = st ? st.summary : null;
     const trace = ensureTrace(view);
-    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}</div><div id="instNow"></div></div>
+    const head = `<div class="detail-head"><div class="row"><h2>${esc(inst.proc_inst_name)}</h2>${chip(inst.status)}${outcomeChip(inst)}</div><div id="instNow"></div></div>
       <div id="instSummary">${trace && trace.model ? hydTrace.summaryHtml(trace.model) : ''}</div>`
       + UI.metaFold([[UI.t('inst.started'), esc(UI.dateTime(inst.start_date))], [UI.t('inst.ended'), inst.end_date ? esc(UI.dateTime(inst.end_date)) : ''], ['ID', `<span class="mono">${esc(inst.proc_inst_id)}</span>`]]);
     const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.workitems.length };

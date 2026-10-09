@@ -16,11 +16,18 @@
     const s = String(raw ?? '').trim().toLowerCase();
     return OK.has(s) ? 'ok' : FAIL.has(s) ? 'fail' : s ? 'other' : '';
   }
+  const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니오' : x);
   const LABEL = { ok: '정상', fail: '미달', other: '확인 결과', wait: '확인 중' };
 
   function fromValues(v) {
     const r = v.result_report;
-    if (r && typeof r === 'object') return { verdict: verdictOf(r.verdict ?? r.ok ?? r.status), label: r.verdict && !OK.has(String(r.verdict).toLowerCase()) && !FAIL.has(String(r.verdict).toLowerCase()) ? String(r.verdict) : '', title: r.title, summary: r.summary || r.text, values: Array.isArray(r.values) ? r.values : [] };
+    if (r && typeof r === 'object') {
+      // C2/C3 계약: outcome(화면 배지 문구: 정상 · 미달 · 지연 · 입고 완료 · 승인 지연 · 알림) + level/verdict(ok · fail · info → 색)
+      const level = String(r.level ?? r.verdict ?? '').toLowerCase();
+      const verdict = level === 'info' ? 'other' : verdictOf(r.level ?? r.verdict ?? r.ok ?? r.status ?? r.outcome);
+      const free = r.verdict && !OK.has(String(r.verdict).toLowerCase()) && !FAIL.has(String(r.verdict).toLowerCase()) && String(r.verdict).toLowerCase() !== 'info' ? String(r.verdict) : '';
+      return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: r.summary || r.text, values: Array.isArray(r.values) ? r.values : [] };
+    }
     if (v.test_run && typeof v.test_run === 'object') return { verdict: verdictOf(v.test_run.ok ?? v.test_run.verdict), title: '시운전 확인', summary: v.test_run.summary || '', values: Array.isArray(v.test_run.values) ? v.test_run.values : [] };
     if (typeof v.recovered === 'boolean') return { verdict: v.recovered ? 'ok' : 'fail', title: '재관측 확인', summary: v.recovered ? '경보가 풀리고 기준 안으로 돌아왔습니다' : '기준 안으로 돌아오지 않았습니다', values: [] };
     if (typeof v.received === 'boolean' || (v.goods_receipt && typeof v.goods_receipt === 'object')) {
@@ -54,7 +61,7 @@
     const tone = verdict === 'ok' ? 'ok' : verdict === 'fail' ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
     const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
     const chosen = (v.chosen_option && v.chosen_option.name) || '';
-    const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(x.value)}${e(x.unit || '')}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
+    const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
     const steps = sys.map(w => {
       const st = w.status === 'DONE' ? 'done' : 'run';
       const ref = refOf(w.output);

@@ -10,11 +10,21 @@
       run: () => postJ(API.plant + '/api/fault', { asset: 'HYD-01', type: 'cooler_degradation' }) },
     { key: 'B', title: '정기 정비', who: '운전시간 계수기가 알려 줌', button: '운전시간 +300 h', asset: 'HYD-02',
       desc: 'HYD-02 운전시간을 300시간 앞당깁니다. 정비 주기에 닿으면 정비 계획 처리 건이 시작됩니다.',
-      probe: null, run: null },
+      needs: ['process', '/api/simulate/pm-advance'],
+      run: () => postJ(API.process + '/api/simulate/pm-advance', { hours: 300, by: '수업 버튼', reason: '수업 시나리오 B 원인 만들기' }) },
     { key: 'C', title: '예비품 구매', who: '창고 재고가 알려 줌', button: '자재 출고 −2', asset: 'HYD-03',
       desc: '씰 키트 2개를 출고합니다. 재고가 재주문점 아래로 내려가면 구매 처리 건이 시작됩니다.',
       needs: ['process', '/api/simulate/spare-issue'],
       run: () => postJ(API.process + '/api/simulate/spare-issue', { qty: 2, asset: 'HYD-03', by: '수업 버튼', reason: '수업 시나리오 C 원인 만들기' }) },
+  ];
+  // 보조 도구(접어 둠): 미달 가지 만들기 · 수업 시작값으로 되돌리기. 카드 하나에 행동 하나를 지키려고 카드 밖에 둔다.
+  const TOOLS = [
+    { key: 'C-late', label: 'C 공급사 납기 +3일 지연', hint: '발주 뒤 누르면 납기 초과 타이머가 먼저 울려 "지연" 결과 보고로 갑니다',
+      needs: ['process', '/api/simulate/delivery-delay'], run: () => postJ(API.process + '/api/simulate/delivery-delay', { days: 3, part_no: 'P-PMP-SEAL' }) },
+    { key: 'B-reset', label: 'B 운전시간 되돌리기', hint: '세 대의 운전시간 계수기를 수업 시작값으로',
+      needs: ['process', '/api/simulate/pm-reset'], run: () => postJ(API.process + '/api/simulate/pm-reset', {}) },
+    { key: 'C-reset', label: 'C 재고 되돌리기', hint: '예비품 재고를 수업 시작값으로',
+      needs: ['process', '/api/simulate/spare-reset'], run: () => postJ(API.process + '/api/simulate/spare-reset', {}) },
   ];
   const ready = {};
   const say = t => { const m = document.getElementById('scenarioMsg'); if (m) m.textContent = t; };
@@ -26,14 +36,18 @@
         return `<article class="trig-card ${ok ? '' : 'off'}"><div class="trig-head"><span class="trig-key">${esc(t.key)}</span><div><h3>${esc(t.title)}</h3><span class="muted">${esc(t.who)} · ${esc(t.asset)}</span></div></div>
           <p>${esc(t.desc)}</p>
           <button type="button" class="btn ${ok ? 'primary' : ''}" data-trig="${esc(t.key)}" ${ok ? '' : 'disabled'}>${esc(ok ? t.button : wait ? '확인 중…' : `${t.button} · 준비 중`)}</button></article>`;
-      }).join('')}</div>`;
+      }).join('')}</div>
+      ${UI.fold('수업 도구 — 미달 가지 만들기 · 시작값으로 되돌리기', `<div class="row-wrap">${TOOLS.map(t => {
+        const ok = ready[t.key] === true;
+        return `<button type="button" class="btn small" data-tool="${esc(t.key)}" title="${esc(t.hint)}" ${ok ? '' : 'disabled'}>${esc(ok ? t.label : `${t.label} · 준비 중`)}</button>`;
+      }).join(' ')}</div><p class="muted small">B 미달 가지: "정비 완료" 알림 뒤 시운전 확인 중에 고장 시뮬레이션의 펌프 누설을 주입합니다.</p>`, { cls: 'small' })}`;
   }
   const specs = {};
   const paths = svc => specs[svc] || (specs[svc] = getJ(API[svc] + '/openapi.json').then(j => Object.keys(j.paths || {})).catch(() => []));
   let probed = false;
   async function probeAll(host) {
     if (probed) return; probed = true;
-    await Promise.all(TRIGGERS.map(async t => {
+    await Promise.all([...TRIGGERS, ...TOOLS].map(async t => {
       if (!t.run) { ready[t.key] = false; return; }
       if (!t.needs) { ready[t.key] = true; return; }
       ready[t.key] = (await paths(t.needs[0])).includes(t.needs[1]);
@@ -48,6 +62,15 @@
     if (view.classList.contains('active') || location.hash.includes('scenario')) probeAll(host);
     document.addEventListener('click', e => { if (e.target.closest('[data-tab="scenario"]')) probeAll(host); });
     host.addEventListener('click', async e => {
+      const tool = e.target.closest('[data-tool]');
+      if (tool) {
+        const t = TOOLS.find(x => x.key === tool.dataset.tool); if (!t) return;
+        tool.disabled = true; say(`${t.label} 요청 중…`);
+        try { await t.run(); say(`${t.label} 완료.`); if (typeof logLine === 'function') logLine(t.label); }
+        catch (err) { say(`${t.label}: 실패 — ${err.message}`); }
+        finally { tool.disabled = false; }
+        return;
+      }
       const b = e.target.closest('[data-trig]'); if (!b) return;
       const t = TRIGGERS.find(x => x.key === b.dataset.trig); if (!t || !t.run) return;
       b.disabled = true; say(`${t.title}: ${t.button} 요청 중…`);
@@ -56,6 +79,6 @@
       finally { b.disabled = false; }
     });
   }
-  window.hydTriggers = { TRIGGERS, mount };
+  window.hydTriggers = { TRIGGERS, TOOLS, mount };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();
