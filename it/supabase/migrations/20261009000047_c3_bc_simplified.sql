@@ -20,9 +20,11 @@ update ent.pm_counters c set since_pm_h = v.s, total_h = v.t, updated_at = now()
 update ent.pm_counters c set base_since_pm_h = v.s, base_total_h = v.t
   from (values ('HYD-01', 1500, 9500), ('HYD-02', 1950, 11950), ('HYD-03', 1880, 7880)) v(a, s, t) where c.asset = v.a;
 
--- 정기 정비 오더 표시: 정기 정비 도래 설비에 작업지시가 등록되면 이번 회차의 오더로 남긴다(한 회차에 하나 — 먼저 등록된 것).
+-- 정기 정비 오더 표시: 정기 정비 도래 설비에 '예정된 정비 시간'(window_id)으로 잡힌 작업지시가 등록되면 이번 회차의 오더로 남긴다
+-- (한 회차에 하나 — 먼저 등록된 것). 고장 대응의 즉시 작업지시(예: 펌프 누설 → 예비 펌프 전환)는 정기 정비 오더가 아니다(라이브 회귀에서 확인).
 create or replace function ent.mark_pm_plan() returns trigger language plpgsql as $$
 begin
+  if new.window_id is null then return new; end if;
   update ent.pm_counters c set plan_wo = new.id, plan_window = new.window_label, planned_at = now(), updated_at = now()
     from ent.pm_settings s
    where c.asset = new.asset and c.plan_wo is null and c.since_pm_h >= s.interval_h - s.notice_h;

@@ -137,7 +137,8 @@ def test_buttons_show_the_alerts_refuse_when_handled_running_or_undeployed_and_r
     assert s["B"]["running"]["instance"] == "c3_pm.1" and s["C"]["running"] is None
     prep = SB.prepare("B", read, FakeRt(), route)
     assert prep["alert"]["pattern"] == "PM_DUE" and prep["alert"]["evidence"]["hours_since_pm"] == 1950
-    st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "정기 점검"}})
+    st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02",
+                "params": {"task": "정기 점검", "window_id": st.pm_status("HYD-02")["facts"]["night_window_id"]}})
     assert SB.status(read)["scenarios"]["B"]["alert"] is False                     # 처리됨 → 표시 꺼짐
     with pytest.raises(SB.Refused, match="이미 처리"):
         SB.prepare("B", read, FakeRt(), route)
@@ -161,3 +162,15 @@ def test_the_button_presser_and_time_are_recorded_on_the_case_itself(world):
     assert len(rows) == 1 and rows[0]["data"]["by"] == "박정비" and rows[0]["data"]["at"] == ev["requested_at"] and rows[0]["data"]["button"] == "정기 점검"
     assert engine.variables(rt.repo.get_instance(out["instance"]))["alert"]["evidence"]["requested_by"] == "박정비"
     assert SB.who({})["by"] == "나 미선택"                                         # 고르지 않았으면 지어내지 않는다
+
+
+@pytest.mark.parametrize("did,agent", [("c3_pm", "agent:pm-plan"), ("c3_spare", "agent:spare-buy")])
+def test_the_scenario_agent_chosen_in_the_flow_is_the_task_performer(world, did, agent):
+    """흐름 가져오기에서 고른 시나리오 에이전트가 판단 task 의 담당자(user_id)다 — 워커는 담당자 프로필의 SKILL · MCP 서버로 돈다."""
+    deploy(world, did)
+    rt = world["rt"]
+    st = entstate.EnterpriseState()
+    row = st.pm_status("HYD-02")["facts"] if did == "c3_pm" else st.spare_stock("P-PMP-SEAL")["facts"]
+    inst = rt.on_alert_raise(SB.build_alert("B" if did == "c3_pm" else "C", row, now=NOW), now=NOW)
+    t = _row(rt, inst, "T_agent")
+    assert t["user_id"] == agent and t["assignees"][0]["endpoint"] == agent

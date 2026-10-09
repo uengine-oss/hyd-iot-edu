@@ -300,9 +300,10 @@ class EnterpriseState:
             wo = {"id": _id("WO"), "asset": asset, "task": params.get("task", "쿨러 핀 세척 (SOP-COOL-02)"), "window": when, "status": "배정됨",
                   "window_id": window_id, "window_starts_at": starts_at}
             s["cmms"]["work_orders"].insert(0, wo)
-            # C3 B · C 단순화: 정기 정비 도래 설비의 작업지시 = 이번 회차 정기 정비 오더(마이그레이션 47 트리거 ent.mark_pm_plan 과 같음)
+            # C3 B · C 단순화: 정기 정비 도래 설비에 예정된 정비 시간(window_id)으로 잡힌 작업지시 = 이번 회차 정기 정비 오더(마이그레이션 47 트리거 ent.mark_pm_plan 과 같음)
             c = s["cmms"].get("pm_counters", {}).get(asset)
-            if c is not None and not c.get("plan_wo") and c["since_pm_h"] >= data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]:
+            if (c is not None and window_id and not c.get("plan_wo")
+                    and c["since_pm_h"] >= data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]):
                 c.update(plan_wo=wo["id"], plan_window=when, planned_at=_now())
             return wo["id"], f"{asset} {wo['task']} — {when}"
         if skill == "skill:receive-goods":

@@ -123,17 +123,20 @@ def test_pm_due_monitor_opens_one_case_per_maintenance_cycle_from_the_class_butt
 
 
 def test_pm_alert_turns_off_when_this_cycles_work_order_is_registered_and_reset_brings_it_back():
-    """C3 B · C 단순화: '정기 점검 도래' 표시(pm_alert) = 도래 · 이번 회차 오더 없음. 도래 설비의 작업지시가 이번 회차 오더가 되고(먼저 등록된 것),
+    """C3 B · C 단순화: '정기 점검 도래' 표시(pm_alert) = 도래 · 이번 회차 오더 없음. 도래 설비에 예정된 정비 시간으로 잡힌 작업지시가 이번 회차 오더가 되고(먼저 등록된 것),
     도래가 아닌 설비의 작업지시는 표시와 무관하다. 수업 초기화가 오더 표시를 지워 표시가 다시 켜진다(마이그레이션 47과 같은 규칙)."""
     st = state.EnterpriseState()
     f = st.pm_status("HYD-02")["facts"]
     assert (f["pm_due"], f["pm_alert"], f["pm_planned_wo"], bool(f["due_since"])) == (True, True, None, True)
     other = st.execute({"decision": "D-A", "skill": "skill:schedule-maintenance", "asset": "HYD-01", "params": {"task": "쿨러 핀 세척"}})
     assert st.pm_status("HYD-01")["facts"]["pm_planned_wo"] is None and other["ref"].startswith("WO")
-    wo = st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "정기 점검"}})
-    st.execute({"decision": "D-B2", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "두 번째"}})
+    st.execute({"decision": "D-P", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "예비 펌프 전환"}})
+    assert st.pm_status("HYD-02")["facts"]["pm_alert"] is True                    # 고장 대응 즉시 작업지시는 정기 정비 오더가 아니다
+    win = f["night_window_id"]
+    wo = st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "정기 점검", "window_id": win}})
+    st.execute({"decision": "D-B2", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "두 번째", "window_id": win}})
     f = st.pm_status("HYD-02")["facts"]
-    assert (f["pm_due"], f["pm_alert"], f["pm_planned_wo"]) == (True, False, wo["ref"]) and f["pm_planned_window"] == "즉시"
+    assert (f["pm_due"], f["pm_alert"], f["pm_planned_wo"]) == (True, False, wo["ref"]) and f["pm_planned_window"].startswith("야간 정비 시간")
     f = st.reset_pm_counters()["records"][1]
     assert (f["asset"], f["pm_since_h"], f["pm_alert"], f["pm_planned_wo"]) == ("HYD-02", 1950, True, None)
 
