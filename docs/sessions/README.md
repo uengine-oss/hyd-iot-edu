@@ -1,6 +1,6 @@
 # docs/sessions — 75시간 25회차 "실행 장면" 절차 (GOAL DoD 1)
 
-회차마다 학생·강사가 그대로 따라 하는 1쪽 절차다. 커리큘럼(`docs/curriculum-75h.md`, 전부 예상치)의 회차 내용을 **지금 실제로 있는 기능·API·스크립트·화면**에 연결했다. 2026-10-07 제작자 배포본 기준(`.env`: `PROCESS_MODE=instance`, `AGENT_BRIDGE=legacy`, `TIME_SCALE=20`, `ENTERPRISE_BACKEND=supabase`, 정의 2.2). 기동·확인·종료는 `docs/RUNBOOK.md`.
+회차마다 학생·강사가 그대로 따라 하는 1쪽 절차다. 예전 커리큘럼(`curriculum-75h.md`, 2026-10-09 삭제 — 지금 실라버스는 `docs/실라버스.xlsx`)의 회차 내용을 **지금 실제로 있는 기능·API·스크립트·화면**에 연결했다. 2026-10-07 제작자 배포본 기준(`.env`: `PROCESS_MODE=instance`, `AGENT_BRIDGE=legacy`, `TIME_SCALE=20`, `ENTERPRISE_BACKEND=supabase`, 정의 2.2). 기동·확인·종료는 `docs/RUNBOOK.md`.
 
 ## 회차 표
 

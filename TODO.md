@@ -2,7 +2,7 @@
 
 ## 확정 TODO C — 시나리오 3개(업무 주제별) 구현 + UI/UX (2026-10-09, 사용자 결정) — 상태: [~] 착수
 
-근거: 사용자 비판 `../실라버스의 문제.txt`, 조사 `docs/handoff/verification/2026-10-09/scenario-research.md`, 실라버스 재작성 `…/2026-10-09/syllabus-v10.md`(작성 중).
+근거: 사용자 비판 `../실라버스의 문제.txt`, 조사 `docs/handoff/verification/2026-10-09/scenario-research.md`, 실라버스 `docs/실라버스.xlsx` · 설명 `docs/실라버스.md`(작성 중, 버전 없이 한 개만 유지).
 
 원칙
 - 설비·아키텍처·온톨로지 스키마 v2는 고정한다(기존 것은 바꾸지 않음. 같은 스타일의 추가 확장만 허용하고, 이번 세 주제는 확장 없이 된다).

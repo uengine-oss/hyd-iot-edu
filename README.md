@@ -119,7 +119,7 @@ it/   redpanda/ detector/ (features.py · cep.py) connect-sink/ timescaledb/ gra
 tests/   단위 테스트 (pytest)
 scripts/ run_regression.py (회귀 러너 core · worker)  run_scenario_evidence.py (instance 쿨러)  run_scenario_pump_fan_evidence.py  run_worker_host.sh · stop_worker_host.ps1  host_libpq.sh  scenario_test.py (legacy 모드 전용)
 video/   scenes.py · narration.py · record_demo.py   → docs/video/hyd-iot-edu-demo.mp4
-docs/    RUNBOOK.md  sessions/ (25회차 실행 장면)  curriculum-75h.md  handoff/ (GOAL · HANDOFF · DECISIONS …)  student-guide.md  scenario-walkthrough.md  definition-authoring.md  topics.md  payload-schemas/  wslconfig.example
+docs/    RUNBOOK.md  sessions/ (25회차 실행 장면)  실라버스.xlsx  handoff/ (GOAL · HANDOFF · DECISIONS …)  student-guide.md  scenario-walkthrough.md  definition-authoring.md  topics.md  payload-schemas/  wslconfig.example
 ```
 
 ## 테스트
