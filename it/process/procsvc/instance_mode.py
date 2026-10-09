@@ -451,11 +451,16 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                 "criterion": f"{tag} {op} {limit}"}
 
     def mcp_call(server: str, tool: str, arguments: dict, key: str) -> dict:
-        from . import mcp_check
+        from . import mcp_check, mcp_secrets
         try:
             spec = mcp_check.normalize(_effect_server(server))
         except (LookupError, ValueError) as e:
             return {"status": "failed", "error": str(e), "error_kind": "config"}
+        try:            # G2: ${SECRET:KEY} 는 승인 뒤 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
+            rt = current()
+            spec = mcp_secrets.runtime_spec(rt.repo if rt is not None else None, rt.tenant_id if rt is not None else "", server, spec)
+        except mcp_secrets.SecretError as e:
+            return {"status": "failed", "error": e.reason, "error_kind": "secret"}
         return mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0)
 
     def _effect_server(name: str) -> dict:

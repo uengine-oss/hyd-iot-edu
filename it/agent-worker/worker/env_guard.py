@@ -31,10 +31,25 @@ def secret_keys(environ, block=DEFAULT_BLOCK, suffixes=BLOCK_SUFFIXES, keep=()) 
     return sorted(out)
 
 
+#: G2 (capstone): values for MCP `${SECRET:KEY}` placeholders the lecturer put in the worker's environment as HYD_SECRET_<KEY>.
+#: They are held here and removed from the environment like every other secret — bridge.install writes them only into the
+#: run's .mcp.json headers/env (cleared after the run), never into the CLI's environment.
+SECRET_PREFIX = "HYD_SECRET_"
+_HELD: dict[str, str] = {}
+
+
+def held_secrets() -> dict[str, str]:
+    """HYD_SECRET_* values scrub() took out of the environment (name with the prefix -> value)."""
+    return dict(_HELD)
+
+
 def scrub(environ=None, *, keep=()) -> list[str]:
     """Remove the secret keys from the process environment (default: os.environ). Returns what was removed."""
     env = os.environ if environ is None else environ
-    removed = secret_keys(env, keep=keep)
+    held = sorted(k for k in env if k.upper().startswith(SECRET_PREFIX))
+    removed = sorted(set(secret_keys(env, keep=keep)) | set(held))
     for k in removed:
+        if k in held:
+            _HELD[k] = env[k]
         del env[k]
     return removed

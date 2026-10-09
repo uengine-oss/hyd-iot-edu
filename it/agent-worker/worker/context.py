@@ -5,10 +5,17 @@ same bundle: form_def by the row's tool, users split into agents/users, tenants.
 """
 from __future__ import annotations
 
+import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 from hydcommon.process_contracts import pinned_form
+from procsvc import mcp_secrets
 from procsvc.agents_store import activity_capabilities as _activity_capabilities
+
+from . import bridge, env_guard
+
+log = logging.getLogger("worker.context")
 
 FREEFORM_FIELDS = [{"key": "freeform", "type": "textarea", "text": "자유형식 입력"}]
 
@@ -32,7 +39,7 @@ class Context:
     @property
     def extras(self) -> dict[str, Any]:
         return {"id": self.row.get("id"), "proc_inst_id": self.row.get("root_proc_inst_id") or self.row.get("proc_inst_id"),
-                "activity_name": self.row.get("activity_name"), "agents": self.agents, "users": self.users, "tenant_mcp": self.tenant_mcp,
+                "activity_name": self.row.get("activity_name"), "agents": self.agents, "users": self.users, "tenant_mcp": bridge.without_secrets(self.tenant_mcp),
                 "form_fields": self.form_fields, "form_html": self.form_html, "form_id": self.form_id,
                 "notify_user_emails": self.notify_user_emails, "summarized_feedback": self.feedback, "sources": self.sources,
                 "process_scope": process_scope(self.row)}
@@ -72,13 +79,29 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
     agents = [u for u in people if u.get("is_agent")]
     users = [u for u in people if not u.get("is_agent")]
     tenant = repo.get_tenant(tenant_id) or {}
+    tenant_mcp = with_secrets(repo, tenant_id, tenant.get("mcp"))
     feedback = row.get("feedback") or {}
     if isinstance(feedback, str):
         feedback = {"text": feedback}
     return Context(row=row, form_id=form_id or "freeform", form_fields=fields, form_html=(form or {}).get("html"), agents=agents, users=users,
-                   tenant_mcp=tenant.get("mcp"), notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
+                   tenant_mcp=tenant_mcp, notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
                    feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
                    sources=[], definition=definition, profile=agent_profile(agents))
+
+
+def with_secrets(repo, tenant_id: str, tenant_mcp: dict | None) -> dict | None:
+    """G2: the values of the `${SECRET:KEY}` placeholders the tenant's servers name (mcp_secrets table, then HYD_SECRET_* the
+    worker held back from its environment — env_guard). Only bridge.install reads them; a lookup failure leaves them out, and the
+    gate then names the missing secret instead of starting the server with an empty token."""
+    if not isinstance(tenant_mcp, dict) or not any(mcp_secrets.references(s) for s in (tenant_mcp.get("mcpServers") or {}).values()
+                                                   if isinstance(tenant_mcp.get("mcpServers"), dict)):
+        return tenant_mcp
+    try:
+        values = mcp_secrets.load(repo, tenant_id, environ={**os.environ, **env_guard.held_secrets()})
+    except Exception as e:  # noqa: BLE001 — a missing table or a DB hiccup must not fail the claim
+        log.warning("MCP secret lookup failed: %s", e)
+        values = mcp_secrets.env_values({**os.environ, **env_guard.held_secrets()})
+    return bridge.attach_secrets(tenant_mcp, values)
 
 
 def agent_profile(agents: list[dict]) -> dict | None:

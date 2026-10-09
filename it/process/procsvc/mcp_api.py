@@ -20,7 +20,7 @@ import re
 
 from fastapi import HTTPException
 
-from . import mcp_calls, mcp_check, mcp_registry
+from . import mcp_calls, mcp_check, mcp_registry, mcp_secrets
 
 CALL_SEMAPHORE = asyncio.Semaphore(3)           # 동시에 세 연결까지만 — 스레드 풀과 메모리(A131)를 지킨다
 LIST_TIMEOUT = (0.5, 6.0, 4.0)                  # (최소, 최대, 기본) 초 — 포털 GET 8초 제한 안
@@ -133,9 +133,17 @@ def register(app, *, runtime_factory, audit):
         if raw is None:
             raise KeyError(f"MCP 서버 '{name}' 가 설정(tenants.mcp)에 없습니다")
         try:
-            return mcp_check.normalize(raw)
+            spec = mcp_check.normalize(raw)
         except ValueError as e:
             raise HTTPException(422, f"MCP 서버 '{name}' 설정 오류 — {e}")
+        try:                                                     # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다(응답에는 싣지 않는다)
+            return mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, name, spec)
+        except mcp_secrets.SecretError as e:
+            raise HTTPException(e.status, e.reason)
+
+    def confirmed_of(rt, name: str) -> frozenset:
+        """G2 ②: 강사가 읽기로 확인한 도구 — 써 보기에서도 같은 판정(호출 직전 다시 받은 목록에서 여전히 confirmable 일 때만)."""
+        return frozenset(mcp_registry.confirmed_of(servers_of(rt).get(name)))
 
     @app.get("/api/mcp/servers")
     async def list_servers():
@@ -172,7 +180,8 @@ def register(app, *, runtime_factory, audit):
         limit = _timeout(body.get("timeout"), CALL_TIMEOUT)
         spec = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
-            result = await run(lambda: mcp_check.call(spec, tool, arguments, limit))
+            confirmed = await run(lambda: confirmed_of(rt, name))
+            result = await run(lambda: mcp_check.call(spec, tool, arguments, limit, confirmed=confirmed))
         audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),
                "arguments": mcp_calls.brief(mcp_check.mask_value(arguments), 300)})
