@@ -15,6 +15,8 @@ import re
 
 from hydcommon.daq_contract import ALWAYS, AUX, DEADBAND
 
+from . import kgadmin
+
 KINDS = ('failure_modes', 'causes', 'evidence', 'rules')
 LIMITS = {'failure_modes': 50, 'causes': 100, 'evidence': 200, 'rules': 200}
 ID_RE = {'failure_modes': re.compile(r'^fm:[a-z0-9]+(?:-[a-z0-9]+)*$'), 'causes': re.compile(r'^cause:[a-z0-9]+(?:-[a-z0-9]+)*$'),
@@ -27,7 +29,7 @@ OPERATORS = ('<', '<=', '>', '>=', '==', '!=')
 AGGREGATES = ('avg', 'max', 'min', 'range')
 EXPECTS = {'lt': '<', 'gt': '>', 'gte': '>='}
 TAGS = frozenset(ALWAYS | AUX | set(DEADBAND))
-RELATIONS = ('MITIGATED_BY', 'REMEDIED_BY')
+RELATIONS = kgadmin.FAILURE_RELATIONS      # 즉시 완화 · 근본 조치 · 예방 조치(정기 정비)
 SKILL_KINDS = ('control', 'work_order')
 ACTIONS_MAX = 10
 
@@ -124,7 +126,7 @@ def validate_link(sop, link, *, sops, require_failure_mode):
         out['failureMode'] = _ref(fm, 'fm', f'{sop} 고장 유형')
     if link.get('relation') is not None:
         if link['relation'] not in RELATIONS:
-            raise ValueError(f'{sop}: 관계는 MITIGATED_BY(즉시 완화) 또는 REMEDIED_BY(근본 조치)')
+            raise ValueError(f'{sop}: ' + kgadmin.FAILURE_RELATION_HELP)
         out['relation'] = link['relation']
     if link.get('kind') is not None:
         if link['kind'] not in SKILL_KINDS:

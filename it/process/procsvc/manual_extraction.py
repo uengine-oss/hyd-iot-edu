@@ -46,7 +46,7 @@ SOP로 삼을 장의 범위: 운전·점검·정비·고장 조치(트러블슈�
             "outputs":["SELECT일 때: 진단은 cause:…, 후보는 이 문서의 SOP ID 또는 기존 skill:…"],"applies_to":["EXCLUDE/WARN/PENALTY일 때 대상 SOP ID(비우면 모든 후보)"],
             "penalty":"PENALTY일 때 감점액(만원)","penalizes":"PENALTY일 때 msr:…","annotation":"사람이 읽는 설명","section":"근거 절 ref","anchor":ANCHOR}]}
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
- 각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
+ 각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
  actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
  승인 역할 · 값이 문서에 없으면 비워 두고 warnings에 적으세요. 승인 · 선행 조건 문장은 단계가 아니라 link와 warnings로 옮깁니다.

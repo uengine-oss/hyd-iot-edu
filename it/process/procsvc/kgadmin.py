@@ -108,9 +108,15 @@ def validate_affects(raw) -> list:
     return out
 
 
+# 고장 유형 ↔ 스킬(SOP) 관계: 즉시 완화 · 근본 조치 · 예방 조치(정기 정비, 2026-10-09 확정 추가 — schema.json PREVENTED_BY).
+# 관계 이름은 이 한 곳에서만 정한다(manual_knowledge · skill_graph가 가져다 쓴다).
+FAILURE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY", "PREVENTED_BY")
+FAILURE_RELATION_HELP = "고장 유형과의 관계는 MITIGATED_BY(즉시 완화) · REMEDIED_BY(근본 조치) · PREVENTED_BY(예방 조치 = 정기 정비)"
+CORRECTIVE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY")      # 경보(고장) 대응 후보 규칙에 자동으로 합류하는 관계
+
 def validate_skill(body: dict, create: bool = False) -> dict:
     """Skill edit (name, description, approver). A new skill (create=True) is an SOP matched to a failure mode
-    (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY-> Skill ≥ 1)."""
+    (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY|PREVENTED_BY-> Skill ≥ 1)."""
     name = str(body.get("name") or "").strip()
     if not name:
         raise ValueError("스킬 이름이 비어 있다")
@@ -126,8 +132,8 @@ def validate_skill(body: dict, create: bool = False) -> dict:
         # offer the skill (meeting L253~302: ingested knowledge must reach the runtime judgment).
         if body.get("failureMode"):
             relation = body.get("relation") or "REMEDIED_BY"
-            if relation not in ("MITIGATED_BY", "REMEDIED_BY"):
-                raise ValueError("고장 유형과의 관계는 MITIGATED_BY(즉시 완화) 또는 REMEDIED_BY(근본 조치)")
+            if relation not in FAILURE_RELATIONS:
+                raise ValueError(FAILURE_RELATION_HELP)
             out.update(failureMode=str(body["failureMode"]).strip(), relation=relation)
         return out
     sop = str(body.get("sopId") or "").strip().upper()
@@ -145,8 +151,8 @@ def validate_skill(body: dict, create: bool = False) -> dict:
     if kind not in ("control", "work_order"):
         raise ValueError("스킬 종류는 control 또는 work_order")
     relation = body.get("relation") or "REMEDIED_BY"
-    if relation not in ("MITIGATED_BY", "REMEDIED_BY"):
-        raise ValueError("고장 유형과의 관계는 MITIGATED_BY(즉시 완화) 또는 REMEDIED_BY(근본 조치)")
+    if relation not in FAILURE_RELATIONS:
+        raise ValueError(FAILURE_RELATION_HELP)
     out.update(sopId=sop, steps=steps[:30], failureMode=str(body["failureMode"]).strip(), kind=kind, relation=relation)
     return out
 

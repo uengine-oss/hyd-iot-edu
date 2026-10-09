@@ -14,7 +14,7 @@
 - 모든 클래스는 label_ko(한글 이름)를 가진다. 표와 그림은 이 이름을 쓴다.
 - 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.
 - 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.
-- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다.
+- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)` (즉시 완화 · 근본 조치 · 예방 조치 = 정기 정비). 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다. 경보(고장) 대응 후보는 MITIGATED_BY · REMEDIED_BY만 따라가고, 정기 정비 도래(PM_DUE) 후보는 PREVENTED_BY 스킬이다.
 - 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다.
 
 ## 가치 계층 (BSC) — BSC (Balanced Scorecard) — 관점 · 전략목표 · 성과지표 · 인과관계
@@ -67,9 +67,9 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 조치 방법(스킬 = SOP)과, 어떤 규칙으로 후보를 고르고 걸러 내는지. 규칙마다 출처(KnowledgeSource)가 있다.
 
-- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order], _manual_document, citation, source_id})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 또는 근본 조치로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.
+- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order], _manual_document, citation, source_id})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.
   - 필수: SOP 단계가 하나 이상 있어야 한다 (`HAS_STEP` out, 최소 1)
-  - 필수: 고장 유형 하나 이상에 매칭되어야 한다 (`MITIGATED_BY|REMEDIED_BY` in, 최소 1)
+  - 필수: 고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나) (`MITIGATED_BY|REMEDIED_BY|PREVENTED_BY` in, 최소 1)
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
 - `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED|COMMENT_CHANGED], sourceLiveType, sourceLiveComment, sourceBaseComment, sourceCheckedAt, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
@@ -145,6 +145,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:Cause)-[:EVIDENCED_BY]->(:Evidence)` 1:N. 원인을 확정하는 증거
 - `(:FailureMode)-[:MITIGATED_BY {_manual_document}]->(:Skill)` N:M. 고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)
 - `(:FailureMode)-[:REMEDIED_BY {_manual_document}]->(:Skill)` N:M. 고장 유형을 근본적으로 없애는 조치 방법(스킬 = SOP). 특정 원인에만 맞으면 ADDRESSES로 원인을 함께 단다
+- `(:FailureMode)-[:PREVENTED_BY {_manual_document}]->(:Skill)` N:M. 예방 조치 — 고장 유형을 미리 막는 정기 정비(스킬 = SOP). 운전시간 · 달력 주기로 시행하며, 생긴 고장을 없애는 REMEDIED_BY와 구분한다(준용 EN 13306 preventive maintenance · ISO 14224 PM)
 - `(:Skill)-[:ADDRESSES]->(:Cause)` N:M. 조치 방법이 특정 원인에만 맞을 때 그 원인. 없으면 고장 유형의 모든 원인에 쓸 수 있다
 - `(:Skill)-[:HAS_STEP {_manual_document}]->(:Step)` 1:N. 스킬(SOP)의 단계
 - `(:Step)-[:REFERS_TO {_manual_document}]->(:ManualSection)` N:1. 단계의 근거 매뉴얼 절

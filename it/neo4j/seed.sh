@@ -55,5 +55,5 @@ if [ "$FAILED" != "0" ]; then echo "kg-seed FAILED read-back"; exit 1; fi
 echo "--- node counts by label ---"
 cy "MATCH (n) UNWIND labels(n) AS l RETURN l AS label, count(*) AS n ORDER BY l"
 echo "--- 고장 유형별 조치 방법 (스킬 = SOP) ---"
-cy "MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY]->(s:Skill) RETURN fm.name, type(k), s.sopId, s.name ORDER BY fm.name, type(k) DESC, s.sopId"
+cy "MATCH (fm:FailureMode)-[k:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(s:Skill) RETURN fm.name, type(k), s.sopId, s.name ORDER BY fm.name, type(k) DESC, s.sopId"
 echo "kg-seed done ($EDITION)"

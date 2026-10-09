@@ -154,6 +154,27 @@ def test_a_documents_own_candidate_rule_is_not_widened_into_other_candidate_rule
     assert len(outs) == len(set(outs)) and not any(r == 'rule:cand-cooler' for r, _ in outs)
 
 
+
+def test_prevented_by_is_accepted_and_never_joins_incident_candidate_rules(archive):
+    """예방 조치(PREVENTED_BY, 2026-10-09 확정)는 검토 · 적재가 받는 세 번째 관계다. 경보 대응 후보 규칙(A075 자동 연결)에는 합류하지 않는다."""
+    from procsvc import kgadmin
+    assert kgadmin.FAILURE_RELATIONS == ('MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY')
+    assert manual_knowledge.validate_link('SOP-X-1', dict(relation='PREVENTED_BY'), sops=set(), require_failure_mode=False)['relation'] == 'PREVENTED_BY'
+    with pytest.raises(ValueError, match='PREVENTED_BY'):
+        manual_knowledge.validate_link('SOP-X-1', dict(relation='PREVENTS'), sops=set(), require_failure_mode=False)
+    assert kgadmin.validate_skill(dict(name='점검', sopId='SOP-X-01', steps=['a'], failureMode='fm:x', relation='PREVENTED_BY'), create=True)['relation'] == 'PREVENTED_BY'
+    plan = plan_of(archive, 'A')
+    for p in plan['procedures']:
+        if p['id'] == 'SOP-FAN-11':
+            p['relation'] = 'PREVENTED_BY'
+    plan['knowledge']['rules'] = [r for r in plan['knowledge']['rules'] if r['table'] != 'dt:action-candidates']
+    plan['candidate_rules'] = {'fm:cooling-loss': ['rule:cand-cooler']}
+    after = manual_graph.desired(plan)
+    joined = {e['to_id'] for e in edges(after, 'OUTPUTS') if e['from_id'] == 'rule:cand-cooler'}
+    assert 'skill:sop-fan-11' not in joined and 'skill:sop-fan-12' in joined
+    pv = [e for e in edges(after, 'PREVENTED_BY')]
+    assert [(e['from_id'], e['to_id']) for e in pv] == [('fm:cooling-loss', 'skill:sop-fan-11')] and '_manual_document' in pv[0]['props']
+
 @pytest.mark.parametrize('mutate, message', [
     (lambda k, l: k['evidence'][0].update(tag='XX9'), 'tag'),
     (lambda k, l: k['evidence'][0].update(window_seconds=0), 'window_seconds'),

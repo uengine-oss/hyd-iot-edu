@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 from .manual_review import canonical
 from .kgadmin import skill_id
-from . import manual_knowledge
+from . import kgadmin, manual_knowledge
 
 
 class Conflict(ValueError):
@@ -29,7 +29,8 @@ class Conflict(ValueError):
 TAGGED_LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')          # carry _manual_document (schema-declared)
 KNOWLEDGE_LABELS = ('FailureMode', 'Cause', 'Evidence', 'Rule')                # C1: owned through the journal
 LABELS = TAGGED_LABELS + KNOWLEDGE_LABELS
-TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS', 'AFFECTS')
+TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS',
+                    'AFFECTS')
 KNOWLEDGE_RELATIONS = ('OCCURS_IN', 'INDICATES', 'LEADS_TO', 'CAUSES', 'INVOLVES_PART', 'DISTURBS', 'EVIDENCED_BY', 'ADDRESSES',
                        'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM')
 RELATIONS = TAGGED_RELATIONS + KNOWLEDGE_RELATIONS
@@ -123,7 +124,8 @@ def desired(plan):
                      description=f"매뉴얼 {plan['filename']}에서 검토한 SOP", source_id=plan['source_id'],
                      citation=canonical(p['anchor']))
         edge(fms.get(p['failureMode'], ('FailureMode', p['failureMode'])), p['relation'], skill)
-        if skill[1] not in own_candidates:      # C1: a document that states its own candidate rule is not widened
+        # C1: a document that states its own candidate rule is not widened; a preventive (PREVENTED_BY) SOP never joins incident rules
+        if skill[1] not in own_candidates and p['relation'] in kgadmin.CORRECTIVE_RELATIONS:
             for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
                 if rule not in own_rules:
                     edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules

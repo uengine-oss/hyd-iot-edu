@@ -130,7 +130,7 @@ def gen_prompt(s: dict) -> str:
     out += [f"- {v}" for v in s["conventions"].values()]
     out += ["- 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.",
             "- 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.",
-            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다.",
+            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)` (즉시 완화 · 근본 조치 · 예방 조치 = 정기 정비). 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다. 경보(고장) 대응 후보는 MITIGATED_BY · REMEDIED_BY만 따라가고, 정기 정비 도래(PM_DUE) 후보는 PREVENTED_BY 스킬이다.",
             "- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다.", ""]
     for l in sorted(s["layers"], key=lambda x: (x["order"], x["id"])):
         out += [f"## {l['name']} — {l['standard']}", "", l["description"], ""]
