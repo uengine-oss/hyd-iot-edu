@@ -87,6 +87,19 @@ def test_a_missing_skill_body_is_named_in_the_skills_row():
     assert ev.as_dict()["type"] == "skills_provided" and ev.data["missing"] == ["ghost"] and "ghost" in ev.data["content"]
 
 
+def test_a_skill_file_missing_from_the_workspace_is_not_recorded_as_had(tmp_path):
+    from types import SimpleNamespace
+    from worker.runner import _provided_skills
+    skill = {"skill_name": "pm-check", "description": "d", "content": SKILL_MD}
+    (tmp_path / ".claude" / "skills" / "written-one").mkdir(parents=True)
+    (tmp_path / ".claude" / "skills" / "written-one" / "SKILL.md").write_text("# w", encoding="utf-8")
+    out = _provided_skills(SimpleNamespace(path=tmp_path), [skill, dict(skill, skill_name="written-one")], "claude-code", activity_skills=[])
+    assert out[0]["written"] is False and ".claude/skills/pm-check/SKILL.md" in out[0]["error"]
+    assert "written" not in out[1] and out[1]["sha256"] == hashlib.sha256(b"# w").hexdigest()     # 쓴 파일은 그 파일의 해시
+    content = ui_events.skills_provided(out, cli="claude-code", missing=[]).data["content"]
+    assert "읽을 수 없었음: pm-check" in content
+
+
 def test_codex_shell_reads_and_windows_paths_are_recognised():
     reads = ui_events.SkillReads([{"name": "pm-check", "sha256": "x" * 64, "version": "x" * 12, "source": "activity"}])
     out = reads.on_tool_start(ExecEvent(kind=ExecEventKind.TOOL_START, tool="shell",
@@ -132,7 +145,8 @@ def test_a_result_the_cli_moved_to_a_file_is_stored_whole_and_referenced(tmp_pat
     inst, row = _run_with_tool_end(tmp_path, repo, _cli_message(f))
     full = row["data"]["full_output"]
     assert row["data"]["output"].startswith("Error: result (161,234 characters)")       # the row still says what the agent saw
-    assert full["stored"] is True and full["ref"] == hashlib.sha256(inner.encode("utf-8")).hexdigest() == full["sha256"]
+    digest = hashlib.sha256(inner.encode("utf-8")).hexdigest()
+    assert full["stored"] is True and full["sha256"] == digest and full["ref"] == payloads.payload_id(inst["proc_inst_id"], digest)
     assert full["source"] == "cli_saved_file" and full["content_type"] == "json" and full["chars"] == len(inner) and full["cut"] is False
     assert "JSON 객체 · 키 2개: cards[4000], asset" in full["summary"]
     stored = repo.get_event_payload(full["ref"])
@@ -185,11 +199,43 @@ def test_a_store_failure_is_said_in_the_row_and_the_run_still_completes(tmp_path
     assert any(e["event_type"] == "task_completed" for e in repo.events)
 
 
+def test_the_same_result_in_two_cases_is_kept_per_case_and_read_only_through_its_own_case(monkeypatch):
+    repo = _payload_repo()
+    first, second = skill_start(repo, repo._defn), skill_start(repo, repo._defn)
+    text = "같은 큰 결과 " * 1000
+    refs = []
+    for inst, todo in ((first, "w1"), (second, "w2")):
+        row, summary = payloads.payload_row({"content": text, "source": "event_text", "meta": {}}, tool="t", tool_use_id=todo,
+                                            job_id="j", todo_id=todo, proc_inst_id=inst["proc_inst_id"])
+        repo.store_event_payload(row)
+        refs.append(payloads.reference(row, summary, stored=True))
+    assert refs[0]["sha256"] == refs[1]["sha256"] and refs[0]["ref"] != refs[1]["ref"]       # 같은 원문, 처리 건마다 한 행
+    rt = instances.InstanceRuntime(repo, engine.Definition.load(instance_mode_def()), instances.Hooks())
+    c = _client(rt, monkeypatch)
+    assert c.get(f"/api/event-payloads/{refs[1]['ref']}").json()["todo_id"] == "w2"            # 다른 처리 건의 todo 를 보이지 않는다
+    repo.instances[first["proc_inst_id"]]["is_deleted"] = True                                 # 첫 처리 건을 지워도
+    assert c.get(f"/api/event-payloads/{refs[0]['ref']}").status_code == 404
+    assert c.get(f"/api/event-payloads/{refs[1]['ref']}").status_code == 200                   # 둘째 처리 건의 원문은 그대로 읽힌다
+    orphan, _ = payloads.payload_row({"content": text, "source": "event_text", "meta": {}}, tool="t", tool_use_id=None,
+                                     job_id="j", todo_id="w", proc_inst_id=None)
+    repo.event_payloads[orphan["id"]] = orphan
+    assert c.get(f"/api/event-payloads/{orphan['id']}").status_code == 404                    # 처리 건 없는 행은 아무도 못 읽는다
+
+
+def test_a_work_item_without_a_case_does_not_store_and_says_so(tmp_path):
+    repo = _payload_repo()
+    runner = _runner(tmp_path, repo, lambda request: iter(()))
+    ev = ExecEvent(kind=ExecEventKind.TOOL_END, tool="t", text="x" * 5000, tool_use_id="e9", session_id="s1")
+    ui = runner._keep_full_output(ui_events.UiEvent("tool_end", {"tool": "t"}), ev, {"id": "w", "proc_inst_id": None}, "j")
+    assert ui.data["full_output"]["stored"] is False and "proc_inst_id" in ui.data["full_output"]["error"] and repo.event_payloads == {}
+
+
 def test_payload_content_is_cut_at_the_cap_and_says_so(monkeypatch):
     monkeypatch.setattr(payloads, "MAX_CHARS", 10)
     row, summary = payloads.payload_row({"content": "0123456789ABC", "source": "event_text", "meta": {}}, tool="t", tool_use_id=None,
                                         job_id="j", todo_id="w", proc_inst_id=None)
-    assert row["content"] == "0123456789" and row["meta"] == {"original_chars": 13, "cut": True}
+    assert row["content"] == "0123456789" and row["meta"] == {"original_chars": 13, "cut": True,
+                                                              "content_sha256": hashlib.sha256(b"0123456789").hexdigest()}
     assert payloads.reference(row, summary, stored=True)["cut"] is True
 
 
@@ -276,7 +322,7 @@ def test_work_order_reobservation_keeps_the_series_on_the_event_and_the_incident
     assert "series" not in json.dumps(report.get("values"))                    # the result report reads the plain value as before
 
 
-def test_a_failing_series_read_does_not_stop_the_verdict(world):
+def test_a_failing_series_read_does_not_stop_the_verdict_and_the_gap_is_recorded(world):
     def window(inc, after, since):
         raise OSError("tsdb down")
     world["ctx"].window_series = window
@@ -285,7 +331,30 @@ def test_a_failing_series_read_does_not_stop_the_verdict(world):
     inc.cleared = True
     rt.reconcile_services(now=NOW + timedelta(seconds=80))
     done = rt.repo.get_instance(inst["proc_inst_id"])
-    assert engine.variables(done)["recovered"] is True and inc.reobs_series is None
+    assert engine.variables(done)["recovered"] is True
+    # "값을 못 읽었다"가 "값이 없었다"와 구별되게 기록된다(조용히 비우지 않는다)
+    assert inc.reobs_series["samples"] == 0 and "tsdb down" in inc.reobs_series["error"] and inc.reobs_series["after"] == "work_order"
+    ev = next(e for e in rt.repo.list_events(proc_inst_id=inst["proc_inst_id"]) if e["job_id"] == "REOBSERVATION")
+    assert "tsdb down" in ev["data"]["reading"]["series"]["error"]
+
+
+def test_the_command_path_records_why_a_window_could_not_be_read(monkeypatch):
+    from procsvc import main as procmain
+
+    def down(*a, **k):
+        raise OSError("connection refused")
+    monkeypatch.setattr(procmain, "tag_series", down)
+    inc = _observing()
+    tag, op, limit = inc.recovery
+    s = procmain.window_series(inc, "command")
+    assert s["samples"] == 0 and s["points"] == [] and "connection refused" in s["error"] and s["criterion"] == f"{tag} {op} {limit}"
+    inc.history = [h for h in inc.history if h["state"] != "RE_OBSERVING"]
+    assert "RE_OBSERVING" in procmain.window_series(inc, "command")["error"]               # 창 시작을 못 찾아도 사유로
+    fx = _Fx()
+    inc.history.append({"state": "RE_OBSERVING", "t": "2026-10-09T12:00:00Z"})
+    inc.cleared = True
+    machine.on_timer(inc, "reobs", NOW, 50.0, fx, series=s)
+    assert inc.state == "RESOLVED" and "connection refused" in fx.audits[-1]["detail"]["series"]["error"]
 
 
 # ================================================================ G4 events paging
@@ -335,7 +404,11 @@ def test_events_pages_backwards_without_gaps_or_repeats(paged):
             break
         before = body["before"]
     assert seen == list(range(25))
-    assert c.get(f"/api/events?proc_inst_id={inst['proc_inst_id']}&before=no-such-id").json() == []
+    unknown = c.get(f"/api/events?proc_inst_id={inst['proc_inst_id']}&before=no-such-id")
+    assert unknown.status_code == 404 and "no-such-id" in unknown.json()["detail"]        # 빈 쪽("더 없음")으로 보이지 않는다
+    repo.record_events([{"id": "other-1", "job_id": "j", "todo_id": "w2", "proc_inst_id": "another-case", "event_type": "task_working",
+                         "timestamp": "2026-10-09T12:00:09.900Z", "data": {}}])
+    assert c.get(f"/api/events?proc_inst_id={inst['proc_inst_id']}&before=other-1").status_code == 404   # 다른 처리 건의 커서
 
 
 def test_instance_view_carries_the_page_cursor(paged, monkeypatch):

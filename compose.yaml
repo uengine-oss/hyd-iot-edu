@@ -16,6 +16,7 @@ x-py-health: &py-health
 networks:
   ot-net: {}
   it-net: {}
+  sim-net: {}                              # 실습 시뮬레이터 API 전용: process(정비 수행 모사) ↔ plant-sim 만. OT 망(emqx · PLC)은 DMZ 만 넘는다
 
 volumes:
   tsdb-data: {}
@@ -52,7 +53,7 @@ services:
     mem_limit: 96m
     build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
     profiles: [ot]
-    networks: [ot-net]
+    networks: [ot-net, sim-net]           # sim-net: process 의 정비 수행 모사가 시뮬레이터 API(:8000)만 부른다(OT MQTT 에는 닿지 않음)
     ports: ["127.0.0.1:8000:8000"]
     environment:
       MQTT_HOST: emqx
@@ -359,7 +360,8 @@ services:
     mem_limit: ${PROCESS_MEM_LIMIT:-512m}
     build: { context: ., dockerfile: it/process/Dockerfile }
     profiles: [process]
-    networks: [it-net, ot-net]            # ot-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가)
+    networks: [it-net, sim-net]           # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
+                                          # ot-net 에는 붙이지 않는다 — IT 서비스가 OT(emqx)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
     ports: ["127.0.0.1:8080:8080"]
     volumes: ["process-data:/data"]
     environment:
@@ -384,7 +386,7 @@ services:
       # C2 승인 뒤 실행 부품 (docs/handoff/verification/2026-10-09/c2-execution.md)
       #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
       PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
-      #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 은 ot-net 에 있고 process 도 ot-net 에 붙어 있어 compose 서비스 이름으로 간다
+      #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다
       #   (호스트 포트 127.0.0.1:8000 은 Linux 컨테이너에서 닿지 않는다. Mac/Windows Docker Desktop 에서도 같은 값이 동작)
       PLANT_SIM_URL: ${PLANT_SIM_URL:-http://plant-sim:8000}
       #   승인 뒤 MCP 호출 서버 (기본 hyd-effects = effects-mcp). JSON {이름: tenants.mcp 와 같은 설정}

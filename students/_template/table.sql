@@ -1,5 +1,6 @@
 -- T3 학생 업무 표 DDL 출발본 (전체 과정 랩업 G5 — docs/handoff/verification/2026-10-09/capstone-lab.md 5.2 · 6.1).
--- s00 을 내 ID 로 바꿔 Supabase SQL 편집기(또는 psql -h 127.0.0.1 -p 54322 -U postgres)에서 실행한다. 암호도 바꾼다.
+-- s00 을 내 ID 로 바꿔 Supabase SQL 편집기(또는 psql -h 127.0.0.1 -p 54322 -U postgres)에서 실행한다. 암호(change-me)도 바꾼다 —
+-- T4 서버는 STUDENT_DSN 암호가 change-me 그대로면 뜨지 않는다.
 -- 만드는 것: 스키마 stu_s00 · 읽기 전용 계정 stu_s00_reader(이 스키마 SELECT 만) · 예시 표 2개와 행(3절 회의 준비 예시).
 -- 수업 업무 DB(ent)와 같은 규칙: 읽기 계정은 슈퍼유저 · 역할 만들기 · RLS 우회 권한이 없다(T4 서버가 접속 때 확인한다).
 -- 지우기(수업 뒤): drop schema stu_s00 cascade; drop role stu_s00_reader;

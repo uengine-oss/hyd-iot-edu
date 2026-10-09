@@ -39,8 +39,7 @@ class FakeCur:
         if "from pg_class" in text:
             self.result = TABLES
         elif "from pg_attribute" in text:
-            table = params[0].split(".")[1].strip('"')
-            self.result = COLUMNS[table]
+            self.result = COLUMNS[params[1]] if params[0] == "stu_s00" else []
         elif text.startswith("select") and "stu_s00" in text:
             self.result = ROWS[: params[-1]]
         else:
@@ -102,7 +101,12 @@ def test_read_rows_quotes_names_binds_values_and_reports_truncation(reader):
     (lambda r: r.read_rows("meeting", columns=["id; drop table x"]), "없는 칸"),
     (lambda r: r.read_rows("meeting", where={"pwd": "x"}), "없는 칸: pwd"),
     (lambda r: r.read_rows("meeting", limit=500), "limit 은 1~200"),
+    (lambda r: r.read_rows("meeting", limit=0), "limit 은 1~200"),                      # 0 을 몰래 최대로 바꾸지 않는다
+    (lambda r: r.read_rows("meeting", limit="5"), "limit 은 1~200 사이 정수"),
+    (lambda r: r.read_rows("meeting", limit=True), "limit 은 1~200 사이 정수"),
+    (lambda r: r.read_rows("meeting", columns="name"), "columns 는 칸 이름 목록"),
     (lambda r: r.read_rows("meeting", where="id = 1"), "where 는"),
+    (lambda r: r.read_rows('meeting" ; drop table x; --'), "표가 stu_s00 에 없습니다"),
 ])
 def test_unknown_names_and_bad_inputs_are_refused_before_any_select(reader, call, phrase):
     out = srv.guarded(call)(reader)
@@ -124,3 +128,83 @@ def test_ddl_template_makes_a_select_only_reader_for_the_same_schema():
     assert "create schema if not exists stu_s00" in ddl and "nosuperuser nocreaterole nocreatedb nobypassrls" in ddl
     assert "grant select on all tables in schema stu_s00 to stu_s00_reader" in ddl
     assert "grant insert" not in ddl.lower() and "grant all" not in ddl.lower()
+
+
+def test_a_columns_query_binds_schema_and_table_as_values():
+    log = []
+    r = srv.TableReader(lambda: FakeConn(log), "stu_s00")
+    r.describe_table("meeting")
+    text, params = next((t, p) for t, p in log if "from pg_attribute" in t)
+    assert params == ("stu_s00", "meeting") and "meeting" not in text            # 표 이름도 문장이 아니라 값으로
+
+
+def test_no_limit_means_the_named_maximum_and_duplicate_columns_are_read_once(reader):
+    out = reader.read_rows("attendee", columns=["email", "email", "response"])
+    assert reader.log[-1][1] == [srv.MAX_ROWS + 1] and out["document"]["columns"] == ["email", "response"]
+
+
+class BrokenConn(FakeConn):
+    def cursor(self):
+        cur = FakeCur(self.log)
+
+        def boom(stmt, params=None):
+            raise srv.psycopg.errors.QueryCanceled("canceling statement due to statement timeout\nCONTEXT: x")
+        cur.execute = boom
+        return cur
+
+
+def test_database_failures_come_back_as_unknown_with_the_reason():
+    r = srv.TableReader(lambda: BrokenConn([]), "stu_s00")
+    out = srv.guarded(r.list_tables)()
+    assert out == {"result": "error", "error_kind": "UNKNOWN", "message": "database: canceling statement due to statement timeout"}
+
+    def refuse():
+        raise srv.psycopg.OperationalError("connection refused")
+    assert srv.guarded(srv.TableReader(refuse, "stu_s00").read_rows)("meeting")["message"] == "database: connection refused"
+
+
+class RoleConn:
+    def __init__(self, row):
+        self.row, self.closed = row, False
+
+    def execute(self, q):
+        return self
+
+    def fetchone(self):
+        return self.row
+
+    def rollback(self):
+        pass
+
+    def close(self):
+        self.closed = True
+
+
+def test_a_privileged_account_is_refused_and_its_connection_closed(monkeypatch):
+    conns = []
+
+    def fake_connect(dsn, **kw):
+        assert kw["connect_timeout"] == srv.CONNECT_TIMEOUT_S
+        conns.append(RoleConn((True, False, False, False)))                         # 슈퍼유저
+        return conns[-1]
+    monkeypatch.setattr(srv.psycopg, "connect", fake_connect)
+    with pytest.raises(RuntimeError, match="읽기 전용 계정으로 접속해야"):
+        srv.connect_reader("postgresql://postgres@x/db")
+    assert conns[-1].closed
+    monkeypatch.setattr(srv.psycopg, "connect", lambda dsn, **kw: RoleConn((False, False, False, False)))
+    assert srv.connect_reader("postgresql://stu_s00_reader@x/db").row == (False, False, False, False)
+
+
+def test_the_server_does_not_start_without_its_contract_settings():
+    with pytest.raises(SystemExit, match="STUDENT_DSN · STUDENT_SCHEMA 가 없습니다"):
+        srv.config_from_env({})
+    with pytest.raises(SystemExit, match="자리표시자"):
+        srv.config_from_env({"STUDENT_DSN": "postgresql://stu_s00_reader:change-me@127.0.0.1:54322/postgres", "STUDENT_SCHEMA": "stu_s00"})
+    cfg = srv.config_from_env({"STUDENT_DSN": "postgresql://stu_s01_reader:pw@h/db", "STUDENT_SCHEMA": "stu_s01", "STUDENT_TABLES": "meeting, attendee"})
+    assert cfg == {"dsn": "postgresql://stu_s01_reader:pw@h/db", "schema": "stu_s01", "allowed": ["meeting", "attendee"], "port": srv.DEFAULT_PORT}
+
+
+def test_ddl_example_rows_walk_the_unhappy_branches():
+    ddl = (ROOT / "students" / "_template" / "table.sql").read_text(encoding="utf-8")
+    assert "'customer_review', null, 4)" in ddl                                     # 고객 회의인데 좌석 4 < 6 (좌석 미달)
+    assert "'customer@example.com', true, 'none')" in ddl                           # 필수 참석자 무응답(미확정 가지)

@@ -79,3 +79,17 @@ def test_reset_removes_made_roles_and_their_members_only(env):  # noqa: F811
     assert out["roles"] == 1 and out["role_members"] == 1
     assert sorted(u["id"] for u in rt.repo.list_users(None, "hyd")) == seed_users
     assert not [m for m in rt.repo.list_role_members("hyd") if m["role_id"] == rid]
+
+
+def test_a_role_with_unfinished_work_is_kept_whatever_the_status(env):  # noqa: F811
+    """열린 작업 = 진행(IN_PROGRESS)뿐 아니라 기다림(TODO) · 제출 뒤 처리 대기(SUBMITTED) · 보류(PENDING), 담당이 쉼표 목록이어도."""
+    client, rt = env
+    rid = client.post("/api/roles", json={"name": "자료 담당", "key": "s02-docs"}).json()["id"]
+    row = {"id": "wi-role", "proc_inst_id": "p-role", "activity_id": "a", "tenant_id": "hyd", "start_date": "2026-10-09T00:00:00Z",
+           "user_id": f"role:operator,{rid}"}
+    for status in ("TODO", "SUBMITTED", "PENDING", "IN_PROGRESS"):
+        rt.repo.workitems["wi-role"] = dict(row, status=status)
+        r = client.delete(f"/api/roles/{rid}")
+        assert r.status_code == 409 and "끝나지 않은 작업이 1건" in r.json()["detail"], status
+    rt.repo.workitems["wi-role"] = dict(row, status="DONE")
+    assert client.delete(f"/api/roles/{rid}").status_code == 200

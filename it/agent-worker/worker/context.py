@@ -91,17 +91,20 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
 
 def with_secrets(repo, tenant_id: str, tenant_mcp: dict | None) -> dict | None:
     """G2: the values of the `${SECRET:KEY}` placeholders the tenant's servers name (mcp_secrets table, then HYD_SECRET_* the
-    worker held back from its environment — env_guard). Only bridge.install reads them; a lookup failure leaves them out, and the
-    gate then names the missing secret instead of starting the server with an empty token."""
-    if not isinstance(tenant_mcp, dict) or not any(mcp_secrets.references(s) for s in (tenant_mcp.get("mcpServers") or {}).values()
-                                                   if isinstance(tenant_mcp.get("mcpServers"), dict)):
+    worker held back from its environment — env_guard). Only bridge.install reads them. A lookup failure does not fail the claim
+    (the other servers still run): the table's values are left out, and the failure travels with the config so the gate's drop
+    reason — reported on the case by the runner — says the table could not be read, not just that a value is missing."""
+    servers = tenant_mcp.get("mcpServers") if isinstance(tenant_mcp, dict) else None
+    if not isinstance(servers, dict) or not any(mcp_secrets.references(s) for s in servers.values()):
         return tenant_mcp
+    environ = {**os.environ, **env_guard.held_secrets()}
     try:
-        values = mcp_secrets.load(repo, tenant_id, environ={**os.environ, **env_guard.held_secrets()})
-    except Exception as e:  # noqa: BLE001 — a missing table or a DB hiccup must not fail the claim
-        log.warning("MCP secret lookup failed: %s", e)
-        values = mcp_secrets.env_values({**os.environ, **env_guard.held_secrets()})
-    return bridge.attach_secrets(tenant_mcp, values)
+        values, error = mcp_secrets.load(repo, tenant_id, environ=environ), None
+    except Exception as e:  # noqa: BLE001 — a missing table or a DB hiccup must not fail the claim; it is named on the drop reason
+        error = getattr(e, "reason", None) or f"{type(e).__name__}: {str(e)[:200]}"
+        log.warning("MCP secret lookup failed for tenant %s: %s", tenant_id, error)
+        values = mcp_secrets.env_values(environ)
+    return bridge.attach_secrets(tenant_mcp, values, error=error)
 
 
 def agent_profile(agents: list[dict]) -> dict | None:

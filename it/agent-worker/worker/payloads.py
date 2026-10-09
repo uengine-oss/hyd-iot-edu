@@ -8,7 +8,11 @@ Two ways a result used to disappear from the trace:
 
 Both now store the full text once in public.event_payloads (migration 20261009000048), content-addressed by sha256 like the
 product's run journal snapshots (process-gpt cli-agent core/journal.py:187-201), and the tool_end row carries
-`full_output` = {ref, chars, sha256, source, content_type, summary, …}. The product keeps only the preview
+`full_output` = {ref, chars, sha256, source, content_type, summary, …}. The row id is the hash of the case id and the content
+(payload_id): the same text in one case is one row, but two cases (or two tenants) that got the same tool result each keep
+their own row — a bare content hash let the first case own the row, so the second case's reference read another case's
+row (its todo · job · tool_use ids) or, across tenants or after the first case was removed, nothing. `sha256` stays the
+content hash. The product keeps only the preview
 (cli-agent core/events.py _truncate_value → file_preview_max_bytes); HYD keeps the original too because the case record has to
 show what the agent was handed (차이 있음: 제품에 없는 저장, 처리 기록 블랙박스 요구).
 
@@ -124,21 +128,28 @@ def capture(output: Any, *, preview_cut: bool) -> dict | None:
     return None
 
 
+def payload_id(proc_inst_id: str | None, content_sha256: str) -> str:
+    """The event_payloads row id: one row per (case, content) — see the module note."""
+    return hashlib.sha256(f"{proc_inst_id or ''}\n{content_sha256}".encode("utf-8")).hexdigest()
+
+
 def payload_row(captured: dict, *, tool: str, tool_use_id: str | None, job_id: str, todo_id: str, proc_inst_id: str | None) -> tuple[dict, str]:
     """(event_payloads row, readable summary) for captured content."""
     content = captured["content"].replace("\x00", "")          # PostgreSQL text holds no NUL
     original_chars, cut = len(content), len(content) > MAX_CHARS
     content = content[:MAX_CHARS]
     content_type, summary = summarize(content)
-    row = {"id": hashlib.sha256(content.encode("utf-8")).hexdigest(), "content": content, "chars": len(content),
+    digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    row = {"id": payload_id(proc_inst_id, digest), "content": content, "chars": len(content),
            "content_type": content_type, "source": captured["source"], "tool": tool, "tool_use_id": tool_use_id, "job_id": job_id,
-           "todo_id": todo_id, "proc_inst_id": proc_inst_id, "meta": dict(captured.get("meta") or {}, original_chars=original_chars, cut=cut)}
+           "todo_id": todo_id, "proc_inst_id": proc_inst_id,
+           "meta": dict(captured.get("meta") or {}, original_chars=original_chars, cut=cut, content_sha256=digest)}
     return row, summary
 
 
 def reference(row: dict, summary: str, *, stored: bool, error: str | None = None) -> dict:
     """The `full_output` field of the tool_end event (what the portal reads)."""
-    ref = {"ref": row["id"] if stored else None, "sha256": row["id"], "chars": row["chars"], "original_chars": row["meta"]["original_chars"],
+    ref = {"ref": row["id"] if stored else None, "sha256": row["meta"]["content_sha256"], "chars": row["chars"], "original_chars": row["meta"]["original_chars"],
            "cut": row["meta"]["cut"], "source": row["source"], "content_type": row["content_type"], "summary": summary, "stored": stored}
     if error:
         ref["error"] = error

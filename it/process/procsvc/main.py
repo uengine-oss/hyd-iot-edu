@@ -121,31 +121,33 @@ def latest_tag(asset: str, tag: str = "TS1") -> float | None:
 
 def tag_series(asset: str, tag: str, since: str, until: str | None = None) -> list[tuple[str, float]]:
     """A161-G3: the 1 s rows of one tag from `since` (ISO) to `until` (default now), oldest first, at most reobs_series.MAX_ROWS
-    (the newest ones when the window is longer). [] when TimescaleDB cannot be read — the verdict never waits for the trend."""
-    try:
-        with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
-            cur.execute("SELECT time, value FROM tag_1s WHERE asset=%s AND name=%s AND time >= %s::timestamptz"
-                        " AND (%s::timestamptz IS NULL OR time <= %s::timestamptz) ORDER BY time DESC LIMIT %s",
-                        (asset, tag, since, until, until, reobs_series.MAX_ROWS))
-            rows = cur.fetchall()
-    except Exception as e:  # noqa: BLE001
-        log.warning("tag_series %s failed: %s", tag, e)
-        return []
+    (the newest ones when the window is longer). A read failure raises — window_series records it as the window's error."""
+    with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
+        cur.execute("SELECT time, value FROM tag_1s WHERE asset=%s AND name=%s AND time >= %s::timestamptz"
+                    " AND (%s::timestamptz IS NULL OR time <= %s::timestamptz) ORDER BY time DESC LIMIT %s",
+                    (asset, tag, since, until, until, reobs_series.MAX_ROWS))
+        rows = cur.fetchall()
     return [(t.isoformat() if hasattr(t, "isoformat") else str(t), float(v)) for t, v in reversed(rows) if v is not None]
 
 
 def window_series(inc: machine.Incident, after: str, since: str | None = None) -> dict | None:
     """A161-G3: the Incident's recovery tag over its re-observation window (since: the window start; default the last
-    RE_OBSERVING entry), sampled for the Incident record."""
+    RE_OBSERVING entry), sampled for the Incident record. A window that cannot be read is recorded with its reason
+    (reobs_series.unavailable) instead of disappearing — the verdict itself never waits for the trend."""
     if inc.recovery is None:
-        return None
-    since = since or reobs_series.window_start(inc.history)
-    if not since:
         return None
     tag, op, limit = inc.recovery
     until = now_iso()
-    return reobs_series.build(tag_series(inc.asset, tag, since, until), tag=tag, op=op, limit=limit, since=since, until=until,
-                              after=after, extensions=inc.reobs_extensions)
+    since = since or reobs_series.window_start(inc.history)
+    where = dict(tag=tag, op=op, limit=limit, since=since, until=until, after=after, extensions=inc.reobs_extensions)
+    if not since:
+        return reobs_series.unavailable("재관측 시작 시각(RE_OBSERVING 기록)을 찾지 못해 창의 값을 읽지 않았습니다", **where)
+    try:
+        rows = tag_series(inc.asset, tag, since, until)
+    except Exception as e:  # noqa: BLE001 — TimescaleDB down: said on the record, the verdict goes on
+        log.warning("re-observation series %s %s failed: %s", inc.id, tag, e)
+        return reobs_series.unavailable(f"시계열(tag_1s)을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", **where)
+    return reobs_series.build(rows, **where)
 
 
 def latest_ts1(asset: str) -> float | None:

@@ -412,10 +412,13 @@
     if (t.dataset.unmember) { const [r, u] = t.dataset.unmember.split('|'); return member(r, u, false); }
     if (t.hasAttribute('data-role-add')) {
       const name = (st.host.querySelector('[data-role-name]') || {}).value || '', key = (st.host.querySelector('[data-role-key]') || {}).value || '';
-      if (await act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'(${r.id})을 만들었습니다 — 사람을 넣으세요`)) { await loadBoard(); render(); }
+      if (await act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'을 만들었습니다 — 아래 표에서 사람을 넣으세요`)) { await loadBoard(); render(); }
       return;
     }
     if (t.dataset.roleDel) {
+      const role = ((st.board && st.board.roles) || []).find(r => r.id === t.dataset.roleDel) || {};
+      if (!await UI.confirm({ title: `역할 '${role.name || UI.performers[t.dataset.roleDel] || t.dataset.roleDel}'을 지울까요?`,
+        body: '넣어 둔 사람 배정도 함께 지워집니다. 흐름 정의가 이 역할을 쓰거나 끝나지 않은 작업이 있으면 서버가 사유와 함께 거절합니다.', ok: '지우기', danger: true })) return;
       if (await act(() => del(api('/api/roles/' + encodeURIComponent(t.dataset.roleDel))), '역할을 지웠습니다')) { await loadBoard(); render(); }
       return;
     }

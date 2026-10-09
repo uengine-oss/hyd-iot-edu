@@ -29,7 +29,7 @@
   /* ---------------------------------------------------------------- 값 이름 · 단위 (센서 태그 · 판단 사실 · 업무 값) */
   const F = {
     ts1: ['유온', '℃'], ts2: ['유온 2', '℃'], ts4: ['캐비닛 온도', '℃'], t_amb: ['주변 온도', '℃'], ce: ['냉각 효율', '%'], ps1: ['토출 압력', 'bar'], fs1: ['유량', 'L/min'],
-    vs1: ['진동', 'mm/s'], load: ['펌프 부하', '%'], load_pct: ['펌프 부하', '%'], fan_pct: ['팬 속도', '%'], score: ['경보 점수', ''], ts1_slope: ['유온 상승 속도', '℃/s'],
+    vs1: ['진동', 'mm/s'], load: ['펌프 부하', '%'], loadsp: ['펌프 부하 설정', '%'], fanspeedsp: ['쿨러 팬 속도 설정', '%'], valvesp: ['메인 밸브 개도 설정', '%'], load_pct: ['펌프 부하', '%'], fan_pct: ['팬 속도', '%'], score: ['경보 점수', ''], ts1_slope: ['유온 상승 속도', '℃/s'],
     vs1_slope: ['진동 상승 속도', 'mm/s²'], cooler_health: ['쿨러 상태', ''], plc_mode: ['운전 모드', ''], plc_state: ['설비 상태', ''], hot_lot_qty: ['출하 대기 로트', '개'],
     order_due_h: ['납기까지', 'h'], fan100_hours: ['팬 100 % 운전 누적', 'h'], standby_ready: ['예비 설비 준비', ''], order_customer_tier: ['고객 등급', ''],
     order_penalty_per_h: ['지연 보상', '만원/h'], hot_lot_claim: ['출하 로트 클레임', '만원'], oil_analysis_out_of_spec: ['오일 분석 기준 밖', ''],
@@ -65,7 +65,7 @@
     if (v == null || v === '') return '–';
     if (v === true) return '예';
     if (v === false) return '아니요';
-    if (typeof v === 'number') { const u = W.unit(key); return `${W.num(v)}${u ? (/^[%℃]/.test(u) ? ' ' : ' ') + u : ''}`; }
+    if (typeof v === 'number') { const u = W.unit(key); return `${W.num(v)}${u ? ' ' + u : ''}`; }
     if (typeof v === 'string') {
       if (/^\d{4}-\d\d-\d\dT/.test(v)) return UI.dateTime(v);
       if (STATES[v]) return STATES[v];
@@ -83,17 +83,20 @@
   W.op = op => OPS[op] || op;
   W.sym = op => ({ '>=': '≥', '<=': '≤', '==': '=', '!=': '≠' })[op] || op;
   // "TS1 > 55 and CE < 70 and slope(TS1) > 0" → "유온 > 55 ℃ 그리고 냉각 효율 < 70 % 그리고 유온 오르는 중"
+  // 설비 태그: 센서(TS1 · PS1 …) · 냉각 효율(CE) · 구동 설정값(LoadSP · FanSpeedSP · ValveSP, it/neo4j/v2/instances.cypher 의 Actuator resource)
+  const TAG = String.raw`[A-Z]{2,3}\d|CE|LoadSP|FanSpeedSP|ValveSP`;
   W.rule = expr => {
     if (!expr) return '';
     return String(expr)
+      .replace(/PLC\.state\s*==\s*'(\w+)'/g, (m, st) => `설비 상태 ${STATES[st] || st}`)
       .replace(/slope\((\w+)\)\s*>\s*0(?:\.0+)?/gi, (m, t) => `${W.fieldName(t.toLowerCase())} 오르는 중`)
       .replace(/slope\((\w+)\)\s*<=\s*0(?:\.0+)?/gi, (m, t) => `${W.fieldName(t.toLowerCase())} 더 오르지 않음`)
-      .replace(/\b([A-Z]{2,3}\d)\s*(>=|<=|>|<|==)\s*(-?[\d.]+)/g, (m, t, op, n) => `${W.fieldName(t.toLowerCase())} ${op} ${n}${W.unit(t.toLowerCase()) ? ' ' + W.unit(t.toLowerCase()) : ''}`)
-      .replace(/\b([A-Z]{2,3}\d|CE)\b/g, t => W.fieldName(t.toLowerCase()))
+      .replace(new RegExp(String.raw`\b(${TAG})\s*(>=|<=|>|<|==)\s*(-?[\d.]+)`, 'g'), (m, t, op, n) => `${W.fieldName(t.toLowerCase())} ${op} ${n}${W.unit(t.toLowerCase()) ? ' ' + W.unit(t.toLowerCase()) : ''}`)
+      .replace(new RegExp(String.raw`\b(${TAG})\b`, 'g'), t => W.fieldName(t.toLowerCase()))
       .replace(/\s+and\s+/gi, ' 그리고 ').replace(/\s+or\s+/gi, ' 또는 ').replace(/>=/g, '≥').replace(/<=/g, '≤');
   };
   // 기준 [tag, op, limit] → "유온 < 55 ℃"
-  W.criterion = c => Array.isArray(c) && c.length === 3 ? `${W.fieldName(String(c[0]).toLowerCase())} ${c[1]} ${W.num(c[2])}${W.unit(String(c[0]).toLowerCase()) ? ' ' + W.unit(String(c[0]).toLowerCase()) : ''}` : '';
+  W.criterion = c => Array.isArray(c) && c.length === 3 ? `${W.fieldName(String(c[0]).toLowerCase())} ${W.sym(c[1])} ${W.num(c[2])}${W.unit(String(c[0]).toLowerCase()) ? ' ' + W.unit(String(c[0]).toLowerCase()) : ''}` : '';
 
   /* ---------------------------------------------------------------- 실행 코드 (승인 뒤 시스템이 하는 일) */
   const CODES = {
@@ -203,21 +206,22 @@
   // 물은 것 한 줄
   W.ask = (raw, input) => {
     const s = spec(raw), i = parse(input) || {};
-    try { if (s.ask) { const a = s.ask(typeof i === 'object' ? i : {}); if (a) return UI.clean(a); } } catch (_) { /* 사전이 모양을 모르면 아래 일반 요약 */ }
+    // 사전이 모양을 모르면 아래 일반 요약(원래 값은 화면의 "물은 원문"에 그대로 있다). 사전 결함은 콘솔에 도구 이름과 함께 남긴다
+    try { if (s.ask) { const a = s.ask(typeof i === 'object' ? i : {}); if (a) return UI.clean(a); } } catch (err) { console.warn('[hydWords] 물음 요약 실패', raw, err); }
     if (typeof i !== 'object') return UI.clean(String(i)).slice(0, 80);
     return Object.entries(i).filter(([, v]) => v != null && typeof v !== 'object').slice(0, 3).map(([k, v]) => `${W.fieldName(k)} ${UI.clean(UI.idText(String(v))).slice(0, 30)}`).join(' · ');
   };
   // 받은 것 한 줄 (잘림 · 막힘 · 실패는 상태로 따로)
   W.got = (raw, output) => {
     const s = spec(raw);
-    try { if (s.got) { const g = s.got(output); if (g) return UI.clean(g); } } catch (_) { /* 아래 일반 요약 */ }
+    try { if (s.got) { const g = s.got(output); if (g) return UI.clean(g); } } catch (err) { console.warn('[hydWords] 받음 요약 실패', raw, err); }
     return window.hydTrace ? hydTrace.outBrief(output, 120) : '';
   };
 
   /* ---------------------------------------------------------------- id → 이름: 이 처리 건이 아는 이름(판단 · 진단 카드 · 역할) → 사전(names.json) → 종류 + 꼬리
      사전에 아직 없는 id(새로 적재한 시나리오의 조치 · 역할)도 원래 id 를 그대로 드러내지 않는다. 원래 id 는 "원래 이름 보기"에서. */
   const KIND = { cause: '원인', skill: '조치', fm: '고장 유형', sv: '상태 값', msr: '성과 지표', role: '역할', sup: '공급사', part: '부품', rule: '규칙', evd: '증거',
-    pattern: '경보 패턴', sys: '시스템', dec: '판단 규칙', sym: '증상', action: '동작', actr: '구동부', sen: '센서', comp: '부품', asset: '설비', dept: '부서' };
+    pattern: '경보 패턴', sys: '시스템', dec: '판단 규칙', sym: '증상', action: '동작', actr: '구동부', sen: '센서', comp: '부품', asset: '설비', dept: '부서', user: '사용자' };
   W.caseNames = {};
   W.idName = id => {
     if (id == null || id === '') return '';
@@ -230,6 +234,27 @@
     return k;
   };
   W.text = t => UI.words(String(t ?? '').replace(UI.ID_RE, m => W.idName(m)));
+
+  /* ---------------------------------------------------------------- 조사: 앞말 끝소리로 고른다 ("발주를" · "씰 마모를" · "WO-1009-E85A를" · "김운전이")
+     pair = '을/를' · '이/가' · '은/는' · '과/와' · '으로/로'. 끝 글자가 한글 · 숫자 · 영문이 아니면 "을(를)" 처럼 둘 다 쓴다 */
+  const DIGIT_FINAL = { 0: 21, 1: 8, 2: 0, 3: 16, 4: 0, 5: 0, 6: 1, 7: 8, 8: 8, 9: 0 };      // 영 · 일 · 이 · 삼 · 사 · 오 · 육 · 칠 · 팔 · 구 의 받침(0 없음, 8 ㄹ)
+  const LETTER_FINAL = { L: 8, M: 16, N: 4, R: 8 };                                          // 엘 · 엠 · 엔 · 알 (나머지 영문 이름은 받침 없음)
+  function finalOf(word) {
+    const c = String(word ?? '').trim().replace(/[\s’'")\]]+$/, '').slice(-1);
+    if (!c) return null;
+    const code = c.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) return (code - 0xAC00) % 28;
+    if (/\d/.test(c)) return DIGIT_FINAL[c];
+    if (/[A-Za-z]/.test(c)) return LETTER_FINAL[c.toUpperCase()] || 0;
+    if (c === '%' || c === '℃') return 0;                                                    // 퍼센트 · 도
+    return null;
+  }
+  W.josa = (word, pair) => {
+    const [withFinal, without] = pair.split('/'), f = finalOf(word);
+    if (f == null) return `${withFinal}(${without})`;
+    if (withFinal === '으로') return f && f !== 8 ? '으로' : '로';
+    return f ? withFinal : without;
+  };
   W.who = id => (UI.performers && UI.performers[id]) || W.idName(id) || '–';
 
   /* ---------------------------------------------------------------- 원래 이름(id) 보이기 */

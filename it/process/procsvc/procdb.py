@@ -129,10 +129,11 @@ class Repo(Protocol):
     # events · notifications
     def record_events(self, events: list[dict]) -> None: ...
     def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
-    # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first
+    # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first.
+    # A cursor that is not an event of the same filter raises LookupError — an empty page would read as "no older rows"
     def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500, before: str | None = None) -> list[dict]: ...
     def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
-    # A161-G2: full tool results too large for an events row (migration 20261009000047), content-addressed by sha256
+    # A161-G2: full tool results too large for an events row (migration 20261009000048), one row per (case, content sha256)
     def store_event_payload(self, payload: dict) -> None: ...
     def get_event_payload(self, payload_id: str) -> dict | None: ...
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
@@ -508,8 +509,10 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
 
     def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         rows = [e for e in self.events if (proc_inst_id is None or e.get("proc_inst_id") == proc_inst_id) and (todo_id is None or e.get("todo_id") == todo_id)]
-        if before is not None:                 # A161-G4: keyset page — rows older than the cursor event (unknown cursor → none)
-            pos = next((i for i, e in enumerate(rows) if e.get("id") == before), 0)
+        if before is not None:                 # A161-G4: keyset page — rows older than the cursor event
+            pos = next((i for i, e in enumerate(rows) if e.get("id") == before), None)
+            if pos is None:
+                raise LookupError(f"events cursor '{before}' is not an event of this case")
             rows = rows[:pos]
         return [_copy(e) for e in rows[-limit:]] if limit > 0 else []
 
@@ -945,8 +948,13 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             where.append("todo_id = %s"); args.append(todo_id)
         if before is not None:
             # A161-G4: keyset cursor on (timestamp, id) — the same order the page is read in, so no row is skipped or repeated
-            # when rows arrive between two page reads (offset paging would shift). An unknown cursor id compares to NULL → no rows.
-            where.append("(timestamp, id) < (select b.timestamp, b.id from events b where b.id = %s)"); args.append(before)
+            # when rows arrive between two page reads (offset paging would shift). The cursor must be an event of this filter.
+            with self._conn() as c:
+                cursor = c.execute("select timestamp, id from events where id = %s" + "".join(" and " + w for w in where),
+                                   [before] + args).fetchone()
+            if cursor is None:
+                raise LookupError(f"events cursor '{before}' is not an event of this case")
+            where.append("(timestamp, id) < (%s, %s)"); args += [cursor["timestamp"], cursor["id"]]
         # A161-U1: the newest `limit` rows, oldest first (MemoryRepo's rows[-limit:]). It returned the OLDEST rows, so a long
         # agent run (hundreds of usage rows) cut the newest tool calls out of the instance view and the screen stopped moving.
         sql = ("select * from (select * from events" + (" where " + " and ".join(where) if where else "")

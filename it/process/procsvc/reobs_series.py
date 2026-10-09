@@ -9,6 +9,8 @@ Shape (Incident.reobs_series → to_dict()["reobsSeries"], also the work-order r
     {"tag": "TS1", "op": "<", "limit": 55.0, "criterion": "TS1 < 55.0", "from": iso, "to": iso,
      "samples": 45, "points": [{"t": iso, "v": 53.1}, …], "min": …, "max": …, "first": …, "last": …,
      "inside_last": true, "inside_share": 0.8, "step_s": 1.0, "after": "command" | "work_order", "extensions": 0}
+A window that could not be read (TimescaleDB down, no window start) is still recorded — samples 0 with `error` saying why
+(unavailable) — so "no values" and "values not read" never look the same on the case record. The verdict does not wait for it.
 Pure functions only; the I/O (main.tag_series) is the caller's.
 """
 from __future__ import annotations
@@ -56,6 +58,12 @@ def build(rows: Iterable[tuple[str, float]], *, tag: str, op: str, limit: float,
         if len(series["points"]) > 1 and len(rows) > 1:
             series["step_s"] = round(len(rows) / len(series["points"]), 2)     # raw rows per point (1 s rows → seconds per point)
     return series
+
+
+def unavailable(error: str, *, tag: str, op: str, limit: float, since: str | None, until: str | None, after: str,
+                extensions: int = 0) -> dict:
+    """The record of a window whose values could not be read: same shape, no points, and the reason."""
+    return dict(build([], tag=tag, op=op, limit=limit, since=since, until=until, after=after, extensions=extensions), error=error)
 
 
 def window_start(history: list[dict]) -> str | None:

@@ -327,7 +327,8 @@ def _keep_series(inc: Incident, series: dict | None, *, extending: bool) -> dict
     if not series:
         return {}
     inc.reobs_series = dict(series, extensions=inc.reobs_extensions + (1 if extending else 0))
-    return {"series": {k: series.get(k) for k in ("samples", "min", "max", "first", "last", "inside_share", "from", "to")}}
+    return {"series": {k: series.get(k) for k in ("samples", "min", "max", "first", "last", "inside_share", "from", "to", "error")
+                       if k != "error" or series.get("error")}}
 
 
 @_transition

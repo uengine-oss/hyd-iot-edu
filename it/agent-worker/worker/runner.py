@@ -342,6 +342,8 @@ class Runner:
         try:
             if store is None:
                 raise RuntimeError("이 저장소는 도구 결과 원문 저장을 지원하지 않습니다")
+            if not payload["proc_inst_id"]:      # the portal reads a payload only through its case (tenant check) — none, no row
+                raise RuntimeError("처리 건(proc_inst_id)이 없는 작업이라 원문을 저장하지 않았습니다")
             store(payload)
             ref = payloads.reference(payload, summary, stored=True)
         except Exception as e:  # noqa: BLE001 — the trace keeps going; the row says the original was not kept
@@ -442,17 +444,23 @@ def _deliver_prompt(text: str, ws, max_inline: int) -> str:
 
 def _provided_skills(ws, skills: list[dict], provider_id: str, *, activity_skills) -> list[dict]:
     """A161-G1: each skill as written into this run's workspace (the hash is of that file). source: "activity" when the step
-    names it (definition activity.skills), "agent" when it came from the agent's agent_skills rows."""
+    names it (definition activity.skills), "agent" when it came from the agent's agent_skills rows. A skill whose file is not in
+    the workspace is still listed (hash of the stored text) but marked written=false with the reason — the agent could not
+    read it, and the record must not say it had it."""
     root = SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"])
     named = {str(n) for n in activity_skills}
     out = []
     for skill in skills:
         rel = f"{root}/{skill['skill_name']}/SKILL.md"
+        source = "activity" if skill["skill_name"] in named else "agent"
         try:
             text = (ws.path / rel).read_text(encoding="utf-8")
-        except OSError:
-            text = skill_markdown(skill)
-        out.append(ui_events.skill_entry(skill, text=text, path=rel, source="activity" if skill["skill_name"] in named else "agent"))
+        except OSError as e:
+            log.warning("skill %s was not written into the workspace (%s): %s", skill["skill_name"], rel, e)
+            entry = ui_events.skill_entry(skill, text=skill_markdown(skill), path=rel, source=source)
+            out.append(dict(entry, written=False, error=f"작업 폴더에 {rel} 이(가) 없어 에이전트가 읽을 수 없었습니다 ({type(e).__name__})"))
+            continue
+        out.append(ui_events.skill_entry(skill, text=text, path=rel, source=source))
     return out
 
 

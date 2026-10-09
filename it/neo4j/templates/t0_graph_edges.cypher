@@ -9,6 +9,8 @@ WHERE NOT (a:ProcessVersion OR a:ProcessInstance OR a:WorkItem OR a:IngestionCon
   AND (NOT a:DecisionCase OR EXISTS { (a)-[:FOR_INCIDENT]->(:Incident)-[:ON_ASSET]->(:Asset {code: $asset}) })
   AND (NOT b:Incident OR EXISTS { (b)-[:ON_ASSET]->(:Asset {code: $asset}) })
   AND (NOT b:DecisionCase OR EXISTS { (b)-[:FOR_INCIDENT]->(:Incident)-[:ON_ASSET]->(:Asset {code: $asset}) })
-  // G4 이름 공간: 수업 기준이면 양 끝 모두 ns 없음, 학생 ID 면 한쪽 끝이 그 학생 노드인 관계(다리 관계 포함)
-  AND CASE WHEN coalesce($ns, '') = '' THEN a.ns IS NULL AND b.ns IS NULL ELSE a.ns = $ns OR b.ns = $ns END
+  // G4 이름 공간: 수업 기준이면 양 끝 모두 ns 없음, 학생 ID 면 한쪽 끝이 그 학생 노드인 관계(다리 관계 포함).
+  // 다른 끝은 같은 학생 노드이거나 수업 기준 노드다(다른 학생 노드는 노드 목록에 없으니 그 쪽 관계도 뺀다)
+  AND CASE WHEN coalesce($ns, '') = '' THEN a.ns IS NULL AND b.ns IS NULL
+           ELSE (a.ns = $ns OR b.ns = $ns) AND coalesce(a.ns, $ns) = $ns AND coalesce(b.ns, $ns) = $ns END
 RETURN a.id AS from, b.id AS to, type(r) AS type

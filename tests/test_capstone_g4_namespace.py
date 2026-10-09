@@ -10,6 +10,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("ontology_v2_g4", ROOT / "scripts" / "ontology_v2.py")
 ov = importlib.util.module_from_spec(spec)
@@ -59,12 +61,25 @@ def test_template_passes_and_the_confirmed_schema_is_not_touched():
     assert ov.main(["check-extra", "--extra", str(TEMPLATE)]) == 0
 
 
-def test_folder_name_is_the_namespace_when_the_file_has_none(tmp_path):
+def test_the_namespace_comes_from_the_file_and_must_match_the_student_folder(tmp_path):
     folder = tmp_path / "students" / "s07"
     folder.mkdir(parents=True)
+    path = folder / "schema.json"
     extra = _extra(); extra.pop("ns")
-    (folder / "schema.json").write_text(json.dumps(extra, ensure_ascii=False), encoding="utf-8")
-    assert ov.load_extra(folder / "schema.json")["ns"] == "s07"
+    path.write_text(json.dumps(extra, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"schema\.json: \"ns\" 칸이 없다"):                       # 폴더 이름으로 몰래 채우지 않는다
+        ov.load_extra(path)
+    path.write_text(json.dumps(_extra("s00"), ensure_ascii=False), encoding="utf-8")       # 출발본 복사 뒤 ns 를 안 바꿈
+    with pytest.raises(ValueError, match="ns 's00' 가 폴더 이름 's07' 와 다르다"):
+        ov.load_extra(path)
+    path.write_text("{ broken", encoding="utf-8")
+    with pytest.raises(ValueError, match="schema.json: 학생 스키마 파일을 읽을 수 없다"):
+        ov.load_extra(path)
+    path.write_text(json.dumps(_extra("s07"), ensure_ascii=False), encoding="utf-8")
+    assert ov.load_extra(path)["ns"] == "s07"
+    assert ov.main(["check-extra", "--extra", str(path)]) == 0
+    path.write_text(json.dumps(_extra("s00"), ensure_ascii=False), encoding="utf-8")
+    assert ov.main(["check-extra", "--extra", str(path)]) == 1                               # CLI 도 시끄럽게 실패(추적 없이 좌표 한 줄)
 
 
 def test_student_schema_cannot_redefine_v2_names_and_must_use_the_same_format():
@@ -76,9 +91,14 @@ def test_student_schema_cannot_redefine_v2_names_and_must_use_the_same_format():
     bad["relationships"].append({"type": "BOOKS", "from": ["Meeting"], "to": ["Ghost"], "cardinality": "N:1"})
     bad["relationships"].append({"type": "LINKS_V2", "from": ["Task"], "to": ["System"], "cardinality": "N:1"})
     bad["relationships"].append({"type": "NO_CARD", "from": ["Meeting"], "to": ["Material"]})
+    bad["relationships"].append({"type": "STR_END", "from": "Meeting", "to": ["Material"], "cardinality": "many"})
+    bad["classes"].append({"name": "Room2", "label_ko": "방", "layer": "resource", "properties": [
+        {"name": "id", "type": "string"}, {"name": "name", "type": "text"}, {"name": "size", "type": "enum"}, {"type": "string"}]})
     errs = "\n".join(ov.check_extra(BASE, bad))
     for phrase in ("ns:", "class Role: 확정 스키마 v2 에 있는 클래스", "layer 'space'", "ns 는 검사기가", "class Note: label_ko",
-                   "class Note: id · name", "rel PERFORMED_BY: 확정 스키마 v2 에 있는 관계", "끝점 Ghost", "양 끝이 모두 v2", "rel NO_CARD: cardinality"):
+                   "class Note: id · name", "rel PERFORMED_BY: 확정 스키마 v2 에 있는 관계", "끝점 Ghost", "양 끝이 모두 v2", "rel NO_CARD: cardinality",
+                   "rel STR_END: from 는 클래스 이름 목록", "rel STR_END: cardinality 'many'", "class Room2.name: type 'text'",
+                   "class Room2.size: enum 은 values", "class Room2: properties[3] 에 name 이 없다"):
         assert phrase in errs, phrase
 
 
@@ -108,9 +128,27 @@ def test_ns_rules_catch_missing_ns_wrong_prefix_and_schema_violations():
 def test_another_students_node_on_my_class_is_reported_and_ns_is_not_a_v2_property():
     nodes, rels = _student_graph()
     nodes.append(_node(["Meeting"], id="s02:meeting", name="남의 회의", kind="internal", ns="s02"))
-    assert any("다른 이름 공간(s02)" in e for e in ov.validate_ns(nodes, rels, BASE, _extra()))
+    errs = ov.validate_ns(nodes, rels, BASE, _extra())
+    assert [e for e in errs if "s02:meeting" in e] == ["node s02:meeting: 다른 이름 공간(s02)의 노드가 내 클래스를 쓴다"]   # 한 결함은 한 줄
     # 수업 기준 검사(--extra 없음)는 지금처럼 v2 만 안다 — ns 를 단 노드는 v2 위반으로 보인다(학생 것은 --extra 로 검사)
     assert any("스키마에 없는 속성 ns" in e for e in ov.validate([_node(["Role"], id="s01:r", name="r", level=1, ns="s01")], [], BASE))
+
+
+def test_an_empty_namespace_fails_instead_of_passing():
+    base_only = [_node(["Role"], id="role:operator", name="운전원", level=1)]                     # 수업 기준 노드만 있는 그래프
+    assert ov.validate_ns(base_only, [], BASE, _extra("s09")) == [
+        "ns s09: 이 이름 공간의 노드가 그래프에 0개다 — 적재했는가, 접속(--uri)이 적재한 그래프인가"]
+
+
+def test_input_source_rule_still_applies_to_my_inputs_but_not_to_base_inputs():
+    nodes, rels = _student_graph()
+    nodes += [_node(["Task", "FlowNode"], id="s01:task:check", name="참석 확인", taskType="service", ns="s01"),
+              _node(["InputData"], id="s01:in:due-by", name="자료 마감", variable="due_by", ns="s01"),
+              _node(["InputData"], id="in:ts1", name="TS1", variable="ts1")]                               # 수업 기준 입력(출처는 내 조각 밖)
+    rels += [_rel("READS", "s01:task:check", ["Task", "FlowNode"], "s01:in:due-by", ["InputData"]),
+             _rel("READS", "s01:task:check", ["Task", "FlowNode"], "in:ts1", ["InputData"])]
+    errs = [e for e in ov.validate_ns(nodes, rels, BASE, _extra()) if e.startswith("input ")]
+    assert errs == ["input s01:in:due-by: 출처(SOURCED_FROM)도 만드는 작업(PRODUCES)도 없다"]
 
 
 # ---------------------------------------------------------------- 지식 지도 이름 공간 고르기(기본 = 수업 기준)
@@ -118,7 +156,8 @@ def test_knowledge_map_templates_filter_by_namespace():
     nodes_q = (TEMPLATES / "t0_graph_nodes.cypher").read_text(encoding="utf-8")
     edges_q = (TEMPLATES / "t0_graph_edges.cypher").read_text(encoding="utf-8")
     assert "coalesce($ns, '') = '' THEN n.ns IS NULL" in nodes_q and "m.ns = $ns" in nodes_q
-    assert "THEN a.ns IS NULL AND b.ns IS NULL ELSE a.ns = $ns OR b.ns = $ns" in edges_q
+    assert "THEN a.ns IS NULL AND b.ns IS NULL" in edges_q
+    assert "ELSE (a.ns = $ns OR b.ns = $ns) AND coalesce(a.ns, $ns) = $ns AND coalesce(b.ns, $ns) = $ns END" in edges_q
     assert "n.ns IS NOT NULL" in (TEMPLATES / "t0_namespaces.cypher").read_text(encoding="utf-8")
 
 

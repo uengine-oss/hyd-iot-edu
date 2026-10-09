@@ -128,7 +128,8 @@ def register(app, *, runtime_factory, audit):
         except KeyError as exc:
             raise HTTPException(404, str(exc.args[0]) if exc.args else "찾을 수 없습니다") from exc
 
-    def spec_of(rt, name: str) -> dict:
+    def spec_of(rt, name: str) -> tuple[dict, list[str]]:
+        """(부를 설정, 채운 비밀 값) — 비밀 값은 결과 · 오류 · 감사에서 지우는 데만 쓴다(mcp_secrets.redact)."""
         raw = servers_of(rt).get(name)
         if raw is None:
             raise KeyError(f"MCP 서버 '{name}' 가 설정(tenants.mcp)에 없습니다")
@@ -164,9 +165,9 @@ def register(app, *, runtime_factory, audit):
     async def server_tools(name: str, timeout: float | None = None):
         rt = runtime()
         limit = _timeout(timeout, LIST_TIMEOUT)
-        spec = await run(lambda: spec_of(rt, name))
+        spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
-            result = await run(lambda: mcp_check.check(spec, limit))
+            result = mcp_secrets.redact(await run(lambda: mcp_check.check(spec, limit)), used)
         return {"name": name, "timeout_s": limit, **{k: result[k] for k in ("status", "tools", "error", "error_kind", "checked_at",
                                                                            "elapsed_ms", "server_info", "protocol_version", "transport")}}
 
@@ -178,10 +179,10 @@ def register(app, *, runtime_factory, audit):
         if not isinstance(arguments, dict):
             raise HTTPException(400, "arguments: 이름→값 객체여야 합니다")
         limit = _timeout(body.get("timeout"), CALL_TIMEOUT)
-        spec = await run(lambda: spec_of(rt, name))
+        spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
             confirmed = await run(lambda: confirmed_of(rt, name))
-            result = await run(lambda: mcp_check.call(spec, tool, arguments, limit, confirmed=confirmed))
+            result = mcp_secrets.redact(await run(lambda: mcp_check.call(spec, tool, arguments, limit, confirmed=confirmed)), used)
         audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),
                "arguments": mcp_calls.brief(mcp_check.mask_value(arguments), 300)})

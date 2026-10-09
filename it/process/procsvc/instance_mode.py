@@ -28,7 +28,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from hydcommon.timeutil import now_iso
-from . import decisions as declib, definition, engine, instances, machine, procdb, work_orders
+from . import decisions as declib, definition, engine, instances, machine, procdb, reobs_series, work_orders
 from .definition_registry import validate_definition
 from .approval_hooks import DecisionDelivery, record_execution as _record_execution
 from . import task_deferral
@@ -459,9 +459,10 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             # REOBSERVATION event) and on the Incident (reobsSeries), like the command path's timer
             try:
                 series = ctx.window_series(inc, "work_order", since)
-            except Exception:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it
+            except Exception as e:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it, but the gap is recorded
                 log.warning("re-observation series for %s could not be read", inc_id, exc_info=True)
-                series = None
+                series = reobs_series.unavailable(f"재관측 창의 값을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", tag=tag, op=op,
+                                                  limit=limit, since=since, until=None, after="work_order", extensions=inc.reobs_extensions)
             if series:
                 reading["series"] = series
                 machine.record_reobs_series(inc, series)
@@ -474,12 +475,15 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             spec = mcp_check.normalize(_effect_server(server))
         except (LookupError, ValueError) as e:
             return {"status": "failed", "error": str(e), "error_kind": "config"}
+        rt = current()
+        if rt is None:
+            return {"status": "failed", "error": "instance 실행 서비스가 없어 비밀 값 표를 읽을 수 없습니다", "error_kind": "config"}
         try:            # G2: ${SECRET:KEY} 는 승인 뒤 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
-            rt = current()
-            spec = mcp_secrets.runtime_spec(rt.repo if rt is not None else None, rt.tenant_id if rt is not None else "", server, spec)
+            spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, spec)
         except mcp_secrets.SecretError as e:
             return {"status": "failed", "error": e.reason, "error_kind": "secret"}
-        return mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0)
+        # 서버가 토큰을 되돌려 줘도(오류 본문 · 에코) 영수증 · 감사 · 처리 기록에 값이 남지 않게
+        return mcp_secrets.redact(mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0), used)
 
     def _effect_server(name: str) -> dict:
         if name in EFFECT_MCP_SERVERS:
@@ -1185,7 +1189,10 @@ def mount(app: FastAPI, process_mode: str) -> None:
             except KeyError:
                 raise HTTPException(404,'no such work item')
         limit = max(1, min(int(limit), EVENTS_PAGE_MAX))
-        rows = await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit + 1, before)
+        try:
+            rows = await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit + 1, before)
+        except LookupError as e:                       # an unknown cursor is an error, not an empty "no older rows" page
+            raise HTTPException(404, str(e)) from e
         has_more = len(rows) > limit
         rows = rows[-limit:]
         cursor = rows[0]["id"] if has_more and rows else None
@@ -1203,12 +1210,12 @@ def mount(app: FastAPI, process_mode: str) -> None:
         row = await _in_executor(rt.repo.get_event_payload, payload_id)
         if not row:
             raise HTTPException(404, "no such payload")
-        if row.get("proc_inst_id"):
-            try:
-                if await _in_executor(rt.instance_view, row["proc_inst_id"]) is None:
-                    raise HTTPException(404, "no such payload")      # another tenant's instance
-            except instances.InstanceRemoved as e:
-                raise HTTPException(404, str(e))
+        # a payload is read only through its case: no case or another tenant's case → not found (fail closed)
+        inst = await _in_executor(rt.repo.get_instance, row["proc_inst_id"]) if row.get("proc_inst_id") else None
+        if not inst or inst.get("tenant_id") != rt.tenant_id:
+            raise HTTPException(404, "no such payload")
+        if inst.get("is_deleted"):
+            raise HTTPException(404, instances.REMOVED_REASON)
         content = row.get("content") or ""
         offset, limit = max(0, int(offset)), max(1, min(int(limit), PAYLOAD_CHUNK_CHARS))
         end = offset + limit

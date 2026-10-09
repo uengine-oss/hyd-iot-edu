@@ -282,6 +282,141 @@ def test_system_task_resolves_secrets_or_stops_with_a_reason():
         mcp_secrets.runtime_spec(repo, "hyd", "my-drive", spec, environ={})
     assert "DRIVE_TOKEN" in e.value.reason and "my-drive" in e.value.reason
     mcp_secrets.store_for(repo).put("hyd", "DRIVE_TOKEN", TOKEN, "강사", "t")
-    assert mcp_secrets.runtime_spec(repo, "hyd", "my-drive", spec, environ={})["headers"]["Authorization"] == f"Bearer {TOKEN}"
+    filled, used = mcp_secrets.runtime_spec(repo, "hyd", "my-drive", spec, environ={})
+    assert filled["headers"]["Authorization"] == f"Bearer {TOKEN}" and used == [TOKEN]
     plain = {"transport": "streamable_http", "url": "https://d/mcp", "headers": {}}
-    assert mcp_secrets.runtime_spec(repo, "hyd", "x", plain) is plain
+    assert mcp_secrets.runtime_spec(repo, "hyd", "x", plain) == (plain, [])
+
+
+# ---------------------------------------------------------------- 실패 · 경계 (검토 보강 2026-10-09)
+class _NoTableConn:
+    """PgSecretStore 가 보는 연결: to_regclass 가 null — 마이그레이션 20261009000050 을 적용하지 않은 DB."""
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def execute(self, sql, args=None):
+        assert "to_regclass" in sql, f"표가 없는데 다음 질의로 갔습니다: {sql}"
+        return SimpleNamespace(fetchone=lambda: {"ok": False})
+
+
+def test_a_missing_secret_table_stops_every_operation_with_the_migration_named():
+    repo = SimpleNamespace(dsn="postgresql://x", _conn=lambda: _NoTableConn())
+    store = mcp_secrets.store_for(repo)
+    assert isinstance(store, mcp_secrets.PgSecretStore)
+    for call in (lambda: store.values("hyd"), lambda: store.keys("hyd"), lambda: store.put("hyd", "K", "v", "b", "t"),
+                 lambda: store.delete("hyd", "K"), lambda: store.delete_all("hyd")):
+        with pytest.raises(mcp_secrets.SecretError) as e:
+            call()
+        assert e.value.status == 503 and "20261009000050" in e.value.reason     # '값이 없음' · 0건 · 404 로 보이지 않는다
+    spec = {"transport": "streamable_http", "url": "https://d/mcp", "headers": {"Authorization": PLACEHOLDER}}
+    with pytest.raises(mcp_secrets.SecretError) as e:
+        mcp_secrets.runtime_spec(repo, "hyd", "my-drive", spec, environ={})
+    assert e.value.status == 503
+
+
+def test_servers_without_placeholders_do_not_need_the_secret_table(api, token_url, monkeypatch):
+    def no_table(*a, **k):
+        raise mcp_secrets.SecretError(503, "비밀 값 표가 없습니다")
+    monkeypatch.setattr(mcp_secrets, "load", no_table)
+    plain = {"name": "my-plain", "transport": "streamable_http", "url": token_url(), "headers": {"Authorization": f"Bearer {TOKEN}"}}
+    assert api.post("/api/mcp/servers", json=plain).status_code == 201                   # 비밀 없는 서버는 표를 읽지 않는다
+    r = api.post("/api/mcp/servers", json=DRIVE(token_url()))
+    assert r.status_code == 503 and "비밀 값 표" in r.json()["detail"]                   # 500 이 아니라 사유로
+
+
+def test_reset_stops_before_removing_servers_when_secrets_cannot_be_deleted(api, token_url, monkeypatch):
+    api.put("/api/mcp/secrets/DRIVE_TOKEN", json={"value": TOKEN})
+    assert api.post("/api/mcp/servers", json=DRIVE(token_url())).status_code == 201
+
+    def no_table(self, tenant_id):
+        raise mcp_secrets.SecretError(503, "비밀 값 표가 없습니다")
+    monkeypatch.setattr(mcp_secrets.MemorySecretStore, "delete_all", no_table)
+    r = api.post("/api/mcp/reset", json={})
+    assert r.status_code == 503 and "my-drive" in servers(api)                         # 반만 되돌린 상태를 남기지 않는다
+
+
+def test_a_token_echoed_by_the_server_never_reaches_the_record_the_answer_or_the_audit(api, token_url, monkeypatch):
+    api.put("/api/mcp/secrets/DRIVE_TOKEN", json={"value": TOKEN})
+    assert api.post("/api/mcp/servers", json=DRIVE(token_url())).status_code == 201
+    leak = f"server said: Authorization=Bearer {TOKEN}"
+    failed = {"status": "failed", "error": leak, "error_kind": "server", "tools": [], "checked_at": "t", "elapsed_ms": 1,
+              "server_info": None, "protocol_version": None, "transport": "streamable_http"}
+    monkeypatch.setattr(mcp_check, "check", lambda spec, timeout=None: dict(failed))
+    checked = api.post("/api/mcp/servers/my-drive/check", json={})
+    assert TOKEN not in checked.text and mcp_secrets.REDACTED in checked.json()["check"]["error"]
+    assert TOKEN not in json.dumps(list(api.repo._mcp_checks.values()), ensure_ascii=False, default=str)    # 저장된 검사 기록
+    tools = api.get("/api/mcp/servers/my-drive/tools")
+    assert TOKEN not in tools.text and mcp_secrets.REDACTED in tools.json()["error"]
+    monkeypatch.setattr(mcp_check, "call", lambda *a, **k: {"status": "failed", "error": leak, "error_kind": "server"})
+    called = api.post("/api/mcp/servers/my-drive/tools/greet/call", json={"arguments": {}})
+    assert called.status_code == 502 and TOKEN not in called.text
+    assert TOKEN not in json.dumps(api.audits, ensure_ascii=False, default=str)
+
+
+def test_redact_skips_values_too_short_to_be_secrets():
+    assert mcp_secrets.redact({"a": ["xyz abc"], "b": "k-1"}, ["abc", "k-1"]) == {"a": ["xyz abc"], "b": "k-1"}
+    assert mcp_secrets.redact({"a": ("long-secret!",)}, ["long-secret!"]) == {"a": (mcp_secrets.REDACTED,)}
+
+
+def test_a_failed_secret_lookup_in_the_worker_is_named_on_the_drop_reason(monkeypatch):
+    for k in [k for k in list(__import__("os").environ) if k.startswith(mcp_secrets.ENV_PREFIX)]:
+        monkeypatch.delenv(k)
+    monkeypatch.setattr(env_guard, "_HELD", {})
+
+    def down(*a, **k):
+        raise mcp_secrets.SecretError(503, "비밀 값 표(public.mcp_secrets)가 없습니다")
+    monkeypatch.setattr(mcp_secrets, "load", down)
+    drive = _gated({"type": "url", "url": "https://drive.example/mcp", "headers": {"Authorization": PLACEHOLDER}})
+    out = context.with_secrets(procdb.MemoryRepo(), "hyd", {"mcpServers": {"my-drive": drive}})
+    assert out[bridge.SECRETS_KEY] == {} and "mcp_secrets" in out[bridge.SECRETS_ERROR_KEY]
+    assert bridge.SECRETS_ERROR_KEY not in bridge.without_secrets(out)
+    gate = bridge.gate_servers(out, trusted=set())
+    assert "DRIVE_TOKEN" in gate.dropped["my-drive"] and "비밀 값 표를 읽지 못함" in gate.dropped["my-drive"]
+
+
+def test_read_confirm_rejects_a_non_boolean_on_and_revokes_even_on_a_stale_check(api, token_url):
+    api.put("/api/mcp/secrets/DRIVE_TOKEN", json={"value": TOKEN})
+    url = token_url()
+    assert api.post("/api/mcp/servers", json=DRIVE(url)).status_code == 201
+    ok = api.post("/api/mcp/servers/my-drive/read-confirm", json={"tool": "greet", "by": "강사", "reason": "인사만"})
+    assert ok.status_code == 200
+    api.post("/api/mcp/servers/my-drive/read-confirm", json={"tool": "greet", "on": False, "by": "강사"})
+    bad = api.post("/api/mcp/servers/my-drive/read-confirm", json={"tool": "greet", "on": "false", "by": "강사", "reason": "취소 뜻"})
+    assert bad.status_code == 422 and "read_confirmed" not in servers(api)["my-drive"]["hyd"]           # "false" 를 확인으로 읽지 않았다
+    assert api.post("/api/mcp/servers/my-drive/read-confirm", json={"tool": "greet", "by": "강사", "reason": "인사만"}).status_code == 200
+    # 설정을 손으로 바꿔 검사가 낡은 상태 — 확인은 못 해도 취소는 된다(믿음을 거두는 쪽), 도장은 내린다
+    api.repo.tenants["hyd"]["mcp"]["mcpServers"]["my-drive"]["headers"]["X-New"] = "1"
+    assert api.post("/api/mcp/servers/my-drive/read-confirm",
+                    json={"tool": "greet", "by": "강사", "reason": "다시"}).status_code == 409
+    off = api.post("/api/mcp/servers/my-drive/read-confirm", json={"tool": "greet", "on": False, "by": "강사"})
+    assert off.status_code == 200 and off.json()["gate"] is None
+    assert "gate" not in servers(api)["my-drive"]["hyd"] and "read_confirmed" not in servers(api)["my-drive"]["hyd"]
+
+
+class _AnyCtx:
+    """ProcessContext 대역: mcp_call 은 ctx 를 쓰지 않는다 — 훅을 만드는 동안 읽는 칸은 모두 None."""
+    def __getattr__(self, name):
+        return None
+
+
+def test_the_system_task_after_approval_redacts_an_echoed_token(monkeypatch):
+    from procsvc import instance_mode
+    repo = procdb.MemoryRepo()
+    mcp_secrets.store_for(repo).put("hyd", "DRIVE_TOKEN", TOKEN, "강사", "t")
+    monkeypatch.setattr(instance_mode, "_runtime", SimpleNamespace(repo=repo, tenant_id="hyd"))
+    monkeypatch.setattr(instance_mode, "EFFECT_MCP_SERVERS", {"my-drive": {"transport": "streamable_http", "url": "https://d/mcp",
+                                                                           "headers": {"Authorization": PLACEHOLDER}}})
+    sent = {}
+
+    def echo(spec, tool, arguments, **kw):
+        sent.update(spec["headers"])
+        return {"status": "failed", "error": f"401 for {spec['headers']['Authorization']}", "result": {"echo": TOKEN}}
+    monkeypatch.setattr(mcp_check, "call_effect", echo)
+    out = instance_mode._hooks(_AnyCtx()).mcp_call("my-drive", "send", {}, "k1")
+    assert sent["Authorization"] == f"Bearer {TOKEN}"                                     # 서버에는 진짜 값으로 부른다
+    assert TOKEN not in json.dumps(out, ensure_ascii=False) and mcp_secrets.REDACTED in out["error"]
+    monkeypatch.setattr(instance_mode, "_runtime", None)
+    assert instance_mode._hooks(_AnyCtx()).mcp_call("my-drive", "send", {}, "k2")["status"] == "failed"

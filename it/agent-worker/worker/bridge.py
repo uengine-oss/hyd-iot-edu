@@ -32,6 +32,9 @@ CONFIG_HOME_DIRNAME = ".agent-home"
 META_KEY = "hyd"
 #: G2: top-level key of the run's tenant_mcp copy that carries secret values from context.prepare to install(). Never written out.
 SECRETS_KEY = "hydSecrets"
+#: G2: why the secret lookup failed (context.with_secrets) — the drop reason names it instead of "no value"
+SECRETS_ERROR_KEY = "hydSecretsError"
+_PRIVATE_KEYS = (SECRETS_KEY, SECRETS_ERROR_KEY)
 
 
 @dataclass
@@ -85,27 +88,38 @@ def select_servers(tenant_mcp: dict | None, tools: list[str] | None) -> tuple[di
     return dict(tenant_mcp, mcpServers=chosen), missing
 
 
-def attach_secrets(tenant_mcp: dict | None, values: dict[str, str] | None) -> dict | None:
-    """G2: a copy of tenant_mcp carrying the values of the secrets its servers name (only those) under SECRETS_KEY."""
+def attach_secrets(tenant_mcp: dict | None, values: dict[str, str] | None, *, error: str | None = None) -> dict | None:
+    """G2: a copy of tenant_mcp carrying the values of the secrets its servers name (only those) under SECRETS_KEY.
+    error: the secret table could not be read — carried so a server left without its value says why."""
     config = (tenant_mcp or {}).get("mcpServers")
     if not isinstance(config, dict):
         return tenant_mcp
     wanted = {k for spec in config.values() for k in mcp_secrets.references(spec)}
     if not wanted:
         return tenant_mcp
-    return dict(tenant_mcp, **{SECRETS_KEY: {k: v for k, v in (values or {}).items() if k in wanted}})
+    out = dict(tenant_mcp, **{SECRETS_KEY: {k: v for k, v in (values or {}).items() if k in wanted}})
+    if error:
+        out[SECRETS_ERROR_KEY] = error
+    return out
 
 
 def without_secrets(tenant_mcp: dict | None) -> dict | None:
     """The tenant config as anything but install() may see it (prompt extras, logs)."""
-    if isinstance(tenant_mcp, dict) and SECRETS_KEY in tenant_mcp:
-        return {k: v for k, v in tenant_mcp.items() if k != SECRETS_KEY}
+    if isinstance(tenant_mcp, dict) and any(k in tenant_mcp for k in _PRIVATE_KEYS):
+        return {k: v for k, v in tenant_mcp.items() if k not in _PRIVATE_KEYS}
     return tenant_mcp
 
 
 def _secret_values(tenant_mcp: dict | None) -> dict[str, str]:
     held = (tenant_mcp or {}).get(SECRETS_KEY) if isinstance(tenant_mcp, dict) else None
     return dict(held) if isinstance(held, dict) else {}
+
+
+def _missing_reason(tenant_mcp: dict | None, missing: list[str], tail: str) -> str:
+    """Why a server was left out: the secrets without a value, and the lookup failure when that is the cause."""
+    error = tenant_mcp.get(SECRETS_ERROR_KEY) if isinstance(tenant_mcp, dict) else None
+    why = "비밀 값 " + " · ".join(missing) + " 이(가) 없" + tail
+    return f"{why} — 비밀 값 표를 읽지 못함: {error}" if error else why
 
 
 def config_fingerprint(entry: dict) -> str:
@@ -138,7 +152,7 @@ def gate_servers(tenant_mcp: dict | None, trusted: set[str] | list[str]) -> Gate
     for name, spec in config.items():
         missing = [k for k in mcp_secrets.references(spec) if not values.get(k)]
         if missing:                     # G2: never start a server with an empty token — say which secret is missing
-            out.dropped[name] = "비밀 값 " + " · ".join(missing) + " 이(가) 없는 서버(포털 MCP 화면 '비밀 값'에 넣기)"
+            out.dropped[name] = _missing_reason(tenant_mcp, missing, "는 서버(포털 MCP 화면 '비밀 값'에 넣기)")
             continue
         if name in trusted or not isinstance(spec, dict):
             kept[name] = spec
@@ -168,7 +182,7 @@ def _resolved(tenant_mcp: dict | None) -> tuple[dict | None, dict[str, str]]:
     for name, spec in config.items():
         filled, missing = mcp_secrets.resolve(spec, values)
         if missing:
-            dropped[name] = "비밀 값 " + " · ".join(missing) + " 이(가) 없음"
+            dropped[name] = _missing_reason(tenant_mcp, missing, "음")
         else:
             kept[name] = filled
     return dict(without_secrets(tenant_mcp), mcpServers=kept), dropped

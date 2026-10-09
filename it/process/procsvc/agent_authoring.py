@@ -446,6 +446,16 @@ def roles_in_definitions(rt) -> dict[str, list[str]]:
     return out
 
 
+#: 아직 끝나지 않은 작업 — 기다림(TODO) · 진행(IN_PROGRESS) · 제출 뒤 처리 대기(SUBMITTED) · 보류(PENDING). 그 담당 역할을 지우면 작업이 갈 곳을 잃는다
+OPEN_STATUSES = ("TODO", "IN_PROGRESS", "SUBMITTED", "PENDING")
+
+
+def role_open_rows(repo, tenant_id: str, role_id: str) -> list[dict]:
+    """이 역할이 담당(user_id — 여러 담당이면 쉼표 목록)인 끝나지 않은 작업."""
+    return [w for status in OPEN_STATUSES for w in repo.list_workitems(status=status, tenant_id=tenant_id, limit=None)
+            if role_id in csv_list(w.get("user_id") or "")]
+
+
 def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
     """학생 흐름의 레인(담당자)을 받을 역할을 만든다: users 행 role:<키>, 사람 아님, origin='user'.
     키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문."""
@@ -484,9 +494,9 @@ def delete_role(rt, role_id: str, *, by: str | None = None) -> dict:
     used = roles_in_definitions(rt).get(role_id)
     if used:
         raise AuthoringError(f"흐름 정의 {', '.join(used)} 가 이 역할을 담당자로 씁니다 — 흐름을 먼저 지우거나 바꾸세요", 409)
-    open_rows = repo.list_workitems(status="IN_PROGRESS", user_id=role_id, tenant_id=tenant_id, limit=None)
+    open_rows = role_open_rows(repo, tenant_id, role_id)
     if open_rows:
-        raise AuthoringError(f"이 역할에 열린 작업이 {len(open_rows)}건 있습니다 — 끝난 뒤 지우세요", 409)
+        raise AuthoringError(f"이 역할에 끝나지 않은 작업이 {len(open_rows)}건 있습니다 — 끝난 뒤 지우세요", 409)
     repo.remove_role(tenant_id, role_id)
     log.info("role %s deleted by %s", role_id, by)
     return {"id": role_id, "deleted": True}

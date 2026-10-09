@@ -343,6 +343,7 @@
   function ensureRecord(view) {
     if (!window.hydRecord) return null;
     if (!I.record || I.recordFor !== view.instance.proc_inst_id) {
+      if (I.record) hydRecord.mounted.delete(I.record);   // keep=true 라 SSE 정리가 지우지 않는다 — 지난 처리 건 기록이 이벤트 · 다시 그리기를 계속 받지 않게
       I.recordHost = document.createElement('div'); I.recordHost.id = 'instRecord';
       I.record = hydRecord.mount(I.recordHost); I.record.keep = true;
       I.recordFor = view.instance.proc_inst_id;

@@ -178,6 +178,9 @@ def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiE
     content = (f"배정된 스킬 {len(entries)}개를 작업 폴더에 넣고 실행합니다: {names}" if entries else "배정된 스킬 없이 실행합니다")
     if missing:
         content += f" (본문이 없어 넣지 못함: {', '.join(missing)})"
+    unwritten = [e["name"] for e in entries if e.get("written") is False]
+    if unwritten:
+        content += f" (작업 폴더에 파일이 없어 읽을 수 없었음: {', '.join(unwritten)})"
     return UiEvent("skills_provided", {"content": content, "cli": cli, "skills": entries, "missing": list(missing)})
 
 

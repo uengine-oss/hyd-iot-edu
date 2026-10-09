@@ -167,44 +167,44 @@ class MemorySecretStore:
 
 
 class PgSecretStore:
+    """public.mcp_secrets (migration 20261009000050). 표가 없으면 모든 동작이 503 사유로 멈춘다 — 표가 없는 것을
+    '값이 없음'(빈 dict · 0건)으로 보이면 강사는 값을 넣으라는 엉뚱한 안내만 받는다."""
+    MISSING = "비밀 값 표(public.mcp_secrets)가 없습니다 — it/supabase/migrations/20261009000050_mcp_secrets.sql 을 적용하세요"
+
     def __init__(self, repo):
         self.repo = repo
 
-    def _ready(self, c) -> bool:
-        return bool(c.execute("select to_regclass('public.mcp_secrets') is not null as ok").fetchone()["ok"])
+    def _require(self, c) -> None:
+        if not c.execute("select to_regclass('public.mcp_secrets') is not null as ok").fetchone()["ok"]:
+            raise SecretError(503, self.MISSING)
 
     def values(self, tenant_id) -> dict[str, str]:
         with self.repo._conn() as c:
-            if not self._ready(c):
-                return {}
+            self._require(c)
             return {r["key"]: r["value"] for r in c.execute("select key, value from mcp_secrets where tenant_id = %s", (tenant_id,)).fetchall()}
 
     def keys(self, tenant_id) -> list[dict]:
         with self.repo._conn() as c:
-            if not self._ready(c):
-                raise SecretError(503, "비밀 값 표(mcp_secrets)가 없습니다 — 마이그레이션 20261009000050 을 적용하세요")
+            self._require(c)
             rows = c.execute("select key, updated_at, updated_by from mcp_secrets where tenant_id = %s order by key", (tenant_id,)).fetchall()
         return [{"key": r["key"], "updated_at": r["updated_at"].isoformat() if hasattr(r["updated_at"], "isoformat") else r["updated_at"],
                  "updated_by": r["updated_by"]} for r in rows]
 
     def put(self, tenant_id, key, value, by, now) -> None:
         with self.repo._conn() as c:
-            if not self._ready(c):
-                raise SecretError(503, "비밀 값 표(mcp_secrets)가 없습니다 — 마이그레이션 20261009000050 을 적용하세요")
+            self._require(c)
             c.execute("insert into mcp_secrets (tenant_id, key, value, updated_by, updated_at) values (%s, %s, %s, %s, now()) "
                       "on conflict (tenant_id, key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = now()",
                       (tenant_id, key, value, by))
 
     def delete(self, tenant_id, key) -> bool:
         with self.repo._conn() as c:
-            if not self._ready(c):
-                return False
+            self._require(c)
             return c.execute("delete from mcp_secrets where tenant_id = %s and key = %s", (tenant_id, key)).rowcount == 1
 
     def delete_all(self, tenant_id) -> int:
         with self.repo._conn() as c:
-            if not self._ready(c):
-                return 0
+            self._require(c)
             return c.execute("delete from mcp_secrets where tenant_id = %s", (tenant_id,)).rowcount or 0
 
 
@@ -222,14 +222,43 @@ def load(repo, tenant_id: str, environ=None) -> dict[str, str]:
     return values
 
 
-def runtime_spec(repo, tenant_id: str, name: str, entry: dict, environ=None) -> dict:
-    """실행 직전 설정: 자리표시자를 채운 사본. 값이 없으면 SecretError(422, 사유) — 빈 토큰으로 부르지 않는다."""
-    if not references(entry):
-        return entry
-    resolved, missing = resolve(entry, load(repo, tenant_id, environ))
+def runtime_spec(repo, tenant_id: str, name: str, entry: dict, environ=None) -> tuple[dict, list[str]]:
+    """실행 직전 설정: (자리표시자를 채운 사본, 채운 비밀 값들 — 결과 · 오류를 redact 할 때 쓴다).
+    값이 없으면 SecretError(422, 사유) — 빈 토큰으로 부르지 않는다. 자리표시자가 없으면 표를 읽지 않는다."""
+    keys = references(entry)
+    if not keys:
+        return entry, []
+    values = load(repo, tenant_id, environ)
+    resolved, missing = resolve(entry, values)
     if missing:
         raise SecretError(422, missing_reason(name, missing))
-    return resolved
+    return resolved, [values[k] for k in keys]
+
+
+#: 이보다 짧은 값은 가리지 않는다 — 한두 글자 값으로 응답 전체를 망가뜨리지 않게(그런 값은 비밀이라 볼 수 없다)
+REDACT_MIN = 4
+REDACTED = "[비밀 값 가림]"
+
+
+def redact(obj, used: list[str]):
+    """응답 · 감사 · 검사 기록에 실릴 값에서 실행 때 채운 비밀 값을 지운다. 서버가 토큰을 되돌려 주거나(오류 본문 · 에코 도구)
+    stdio 서버가 stderr 에 환경 변수를 찍어도 값이 화면 · 저장소로 새지 않게 한다."""
+    secrets = sorted({v for v in used or [] if isinstance(v, str) and len(v) >= REDACT_MIN}, key=len, reverse=True)
+    if not secrets:
+        return obj
+
+    def walk(v):
+        if isinstance(v, str):
+            for s in secrets:
+                if s in v:
+                    v = v.replace(s, REDACTED)
+            return v
+        if isinstance(v, dict):
+            return {walk(k) if isinstance(k, str) else k: walk(x) for k, x in v.items()}
+        if isinstance(v, (list, tuple)):
+            return type(v)(walk(x) for x in v)
+        return v
+    return walk(obj)
 
 
 # ---------------------------------------------------------------- 동작 (API 가 부른다)

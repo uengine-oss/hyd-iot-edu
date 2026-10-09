@@ -223,7 +223,7 @@
       return `<li class="mcp-tool${open ? ' open' : ''}" data-tool="${esc(t.name)}"><div class="mcp-tool-head"><div><b>${esc(toolLabel(s.name, t.name))}</b> ` + chip +
         `<span class="mcp-desc">${esc(t.description || '설명 없음')}</span>${usable ? '' : `<span class="mcp-why">${esc(t.refuse_reason || '')}</span>`}</div>` +
         `<div class="row-wrap">${confirmBtn}<button class="btn small${open ? ' primary' : ''}" data-try="${esc(t.name)}" ${usable ? '' : 'disabled'} title="${esc(usable ? '' : t.refuse_reason || '')}">${open ? '닫기' : '써 보기'}</button></div></div>` +
-        (S.confirming === t.name ? confirmForm(t) : '') +
+        (S.confirming === t.name ? confirmForm(s, t) : '') +
         UI.fold(`입력 형식 · ${fields.length}칸`, shape) + (open ? tryForm(s, t, fields) : '') + '</li>';
     }).join('')}</ul>`;
     pane.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => { S.trying = S.trying === b.dataset.try ? null : b.dataset.try; renderTools(s, r); }));
@@ -233,10 +233,10 @@
     if (S.trying) wireTry(s, r.tools.find(t => t.name === S.trying));
   }
 
-  function confirmForm(t) {
+  function confirmForm(s, t) {
     return `<div class="form mcp-confirm">${UI.section('', UI.field({ label: '확인한 사람', required: true, input: '<input id="mcpConfirmBy" placeholder="강사 이름">' }) +
       UI.field({ label: '읽기라고 본 이유', required: true, input: '<input id="mcpConfirmReason" placeholder="예: 서버 문서상 검색 결과만 돌려주고 아무것도 바꾸지 않는다">',
-        hint: `서버가 ${esc(t.name)} 에 읽기 전용 표시를 붙이지 않았습니다. 확인하면 에이전트 도구로 붙고 써 보기도 됩니다. 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없습니다` }))}` +
+        hint: `서버가 ‘${toolLabel(s.name, t.name)}’에 읽기 전용 표시를 붙이지 않았습니다. 확인하면 에이전트 도구로 붙고 써 보기도 됩니다. 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없습니다` }))}` +
       `${UI.actions('<button class="btn primary" id="mcpConfirmSave">읽기로 확인</button>')}</div>`;
   }
 
@@ -245,8 +245,8 @@
     const reason = on ? (S.el.querySelector('#mcpConfirmReason') || {}).value : '';
     try {
       await postJ(api(`/api/mcp/servers/${encodeURIComponent(s.name)}/read-confirm`), { tool, on, by, reason });
-      UI.toast(`${s.name}: ${tool} ${on ? '읽기로 확인했습니다' : '확인을 취소했습니다'}`, { tone: 'ok' }); S.confirming = null;
-    } catch (e) { UI.toast(`${s.name}: ${e.message}`, { tone: 'neg' }); return; }
+      UI.toast(`${serverLabel(s.name)}: ‘${toolLabel(s.name, tool)}’ ${on ? '읽기로 확인했습니다' : '확인을 취소했습니다'}`, { tone: 'ok' }); S.confirming = null;
+    } catch (e) { UI.toast(`${serverLabel(s.name)}: ${e.message}`, { tone: 'neg' }); return; }
     await load();
   }
 
@@ -448,12 +448,16 @@
       `<p class="field-hint">${esc((S.secrets && S.secrets.rule) || '')}</p>` + rows + form, { cls: 'plain', open: missing > 0 });
     box.querySelector('#mcpSecretSave')?.addEventListener('click', async () => {
       const key = box.querySelector('#mcpSecretKey').value.trim(), value = box.querySelector('#mcpSecretValue').value;
+      if (!key) { UI.toast('비밀 값 이름을 적으세요 (대문자 · 숫자 · 밑줄)', { tone: 'neg' }); return; }
       try { await postJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}`), { value, by: '포털' }, 'PUT'); UI.toast(`${key}: 저장했습니다`, { tone: 'ok' }); }
       catch (e) { UI.toast(e.message, { tone: 'neg' }); return; }
       await loadSecrets();
     });
     box.querySelectorAll('[data-secret-del]').forEach(b => b.addEventListener('click', async () => {
-      try { await requestJ(api(`/api/mcp/secrets/${encodeURIComponent(b.dataset.secretDel)}?by=${encodeURIComponent('포털')}`), { method: 'DELETE' }); }
+      const key = b.dataset.secretDel, users = (list.find(x => x.key === key) || {}).used_by || [];
+      if (!await UI.confirm({ title: `비밀 값 ${key} 을 지울까요?`, ok: '지우기', danger: true,
+        body: users.length ? `이 값을 쓰는 서버(${users.join(', ')})는 다시 넣을 때까지 연결 · 호출이 실패합니다. 지운 값은 되살릴 수 없습니다.` : '지운 값은 되살릴 수 없습니다.' })) return;
+      try { await requestJ(api(`/api/mcp/secrets/${encodeURIComponent(key)}?by=${encodeURIComponent('포털')}`), { method: 'DELETE' }); UI.toast(`${key}: 지웠습니다`, { tone: 'ok' }); }
       catch (e) { UI.toast(e.message, { tone: 'neg' }); return; }
       await loadSecrets();
     }));
