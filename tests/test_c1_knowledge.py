@@ -28,9 +28,12 @@ ACTIONS = [dict(id='action:set-fan', code='FAN_SET', kind='command', min=0, max=
            dict(id='action:work-order', code='WO_CREATE', kind='transaction', min=None, max=None),
            dict(id='action:purchase-request', code='PR_CREATE', kind='transaction', min=None, max=None)]
 INPUTS = {'dt:diagnose-cause': ['in:pattern:pattern', 'in:ce:ce', 'in:ts1:ts1', 'in:ps1:ps1'],
-          'dt:action-candidates': ['in:failure-mode:failure_mode', 'in:pattern:pattern', 'in:cause:cause', 'in:plc-state:plc_state'],
-          'dt:compliance': ['in:skill-kind:skill_kind', 'in:plc-mode:plc_mode', 'in:forecast-ts1:forecast_ts1', 'in:fan100-hours:fan100_hours',
-                            'in:supplier-avl:supplier_avl', 'in:pattern:pattern', 'in:po-amount:po_amount', 'in:lead-slack-days:lead_slack_days']}
+          'dt:action-candidates': ['in:failure-mode:failure_mode', 'in:pattern:pattern', 'in:cause:cause', 'in:plc-state:plc_state',
+                                   'in:hours-since-pm:hours_since_pm'],
+          'dt:compliance': ['in:skill-kind:skill_kind', 'in:skill-code:skill_code', 'in:plc-mode:plc_mode', 'in:forecast-ts1:forecast_ts1', 'in:fan100-hours:fan100_hours',
+                            'in:supplier-avl:supplier_avl', 'in:pattern:pattern', 'in:po-amount:po_amount', 'in:lead-slack-days:lead_slack_days',
+                            'in:next-scheduled-time:hours_at_next_window', 'in:hours-if-deferred:hours_at_following_window',
+                            'in:order-due:order_due_h', 'in:pm-crew:pm_crew_available', 'in:spare-available:spare_available']}
 
 
 class FakeTx:
@@ -75,7 +78,7 @@ def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
         assert word in manual_extraction.INSTRUCTION, word
 
 
-@pytest.mark.parametrize('key', ['A', 'C'])
+@pytest.mark.parametrize('key', ['A', 'B', 'C'])
 def test_every_knowledge_item_is_cited_from_the_document(archive, key):
     source, prop = load(archive, key)
     checked = manual_extraction.validate_proposal(source, prop)

@@ -47,10 +47,17 @@ def test_container_bash_filter_and_host_python_filter_agree(edition):
 
 
 def test_full_edition_runs_every_statement_of_the_seed_files():
-    """전체판은 표시를 무시한 것과 같다 — 시드 파일의 모든 문장이 실행된다(회귀 동작 불변). 구조판 전용 문장은 없다."""
+    """전체판은 구조판 전용 문장만 빼고 시드 파일의 모든 문장을 실행한다(회귀 동작 불변).
+    구조판 전용 문장은 하나뿐이다: 회사 규정 rule:avl을 구매요청 스킬로 좁히는 검사(전체판 시드 스킬이 없을 때 '모든 후보'로 번지지 않게)."""
     for f in FILES:
-        assert ov.split_statements(ov.edition_filter(text(f), "full")) == ov.split_statements(text(f)), f
-        assert "// @edition structure" not in text(f), f
+        whole = ov.split_statements(text(f))
+        structure_only = [s for s in whole if s not in ov.split_statements(ov.edition_filter(text(f), "full"))]
+        assert ov.split_statements(ov.edition_filter(text(f), "full")) == [s for s in whole if s not in structure_only], f
+        if f == "scenario_structure.cypher":
+            assert text(f).count("// @edition structure") == 1 and len(structure_only) == 1
+            assert "rule:avl" in structure_only[0] and "PR_CREATE" in structure_only[0] and "NOT (r)-[:APPLIES_TO]->(:Skill)" in structure_only[0]
+        else:
+            assert "// @edition structure" not in text(f) and not structure_only, f
 
 
 def test_structure_edition_has_no_scenario_failure_knowledge():
@@ -92,6 +99,18 @@ def test_read_back_pattern_check_skips_the_stock_pattern_only():
     assert "p.detectionMode IN ['held','plc-trip']" in q and "EXISTS { (p)-[:DETECTS]->(:Symptom) }" in q
     s = "\n".join(l for l in text("scenario_structure.cypher").splitlines() if not l.strip().startswith("//"))
     assert "SPARE_BELOW_MIN" in s and "detectionMode" not in s and "DETECTS" not in s
+    assert "PM_DUE" in s                                     # B 정기 정비 도래도 같은 모양(CMMS 계수기, 증상 없음)
+
+
+def test_scenario_b_structure_is_seeded_but_its_knowledge_is_not():
+    """B 정기 정비: 시드는 시작 패턴 · 판단 입력 · 부품 자리만 둔다. 시행 방식 · 패키지 SOP · 규칙은 문서 PM-02 적재가 만든다."""
+    s = text("scenario_structure.cypher")
+    assert "p.code = 'PM_DUE'" in s and "t.operator = '>=', t.value = 1950, t.unit = 'h'" in s
+    for iid in ("in:hours-since-pm", "in:next-scheduled-time", "in:hours-if-deferred", "in:pm-crew", "in:spare-available"):
+        assert f"'{iid}'" in s, iid
+    assert "['dec:action-candidates','task:candidates','in:hours-since-pm']" in s and "'part:return-filter'" in s
+    for f in FILES:
+        assert "SOP-PM-" not in text(f) and "rule:cand-pm" not in text(f) and "PREVENTED_BY" not in text(f), f
 
 
 def test_seed_sh_selects_the_edition_and_defaults_to_the_teaching_structure():

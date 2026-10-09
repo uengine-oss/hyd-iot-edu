@@ -33,7 +33,7 @@ echo "seeding ontology v2: instances (가치 BSC · 프로세스 BPMN · 리소�
 load instances.cypher
 echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량→생산량 · 작동유 열화 원인/증상 · 저압/고진동 트립) ..."
 load knowledge_a098.cypher
-echo "seeding ontology v2: scenario_structure (시나리오 C 구조: 구매 담당 역할 · 재고 기준 이탈 패턴 · 판단 입력) ..."
+echo "seeding ontology v2: scenario_structure (시나리오 B · C 구조: 정기 정비 도래 · 재고 기준 이탈 패턴, 구매 담당 역할, 판단 입력, 리턴 필터) ..."
 load scenario_structure.cypher
 # A156: the detector reads only AnomalyPatterns with detectionMode='held' (it/detector/det/pattern_source.py). Without this file
 # a fresh volume leaves the detector unhealthy ("catalog must contain 1..64 held patterns") — seen on the first cloud boot.

@@ -1,5 +1,5 @@
 // T2 — 원인 → 고장 유형 → 조치 방법(스킬 = SOP) → 원자 조치 · 단계 · 매뉴얼   (parameter: $cause e.g. 'cause:cooler-fin-fouling')
-// relation = MITIGATED_BY(즉시 완화) | REMEDIED_BY(근본 조치). 특정 원인에만 맞는 스킬(ADDRESSES)은 그 원인일 때만 나온다.
+// relation = MITIGATED_BY(즉시 완화) | REMEDIED_BY(근본 조치). 특정 원인에만 맞는 스킬(ADDRESSES)은 그 원인일 때만 나온다. 예방 조치(PREVENTED_BY, 정기 정비)는 경보 대응 후보가 아니므로 따라가지 않는다(정기 정비 도래 후보는 문서 규칙이 고른다).
 MATCH (c:Cause {id: $cause})-[:CAUSES]->(fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY]->(k:Skill)
 WHERE NOT (k)-[:ADDRESSES]->(:Cause) OR (k)-[:ADDRESSES]->(c)
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
