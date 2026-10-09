@@ -48,6 +48,9 @@ class Unit:
     ctrl: plc.PlcState = field(default_factory=plc.PlcState)
     faults: dict[str, Fault] = field(default_factory=dict)   # attr -> ramp in progress
     dirty_status: bool = True
+    # C3: who asked for the last fault injection/restore on this unit ({id, kind, by, user_id, roles, at}) — published in
+    # plant.status so the process links the case this injection causes to the button press by id (no time-window guess)
+    injection: dict | None = None
 
     @property
     def fault(self) -> Fault | None:
@@ -91,7 +94,7 @@ class Plant:
 
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
-               severity: str | None = None, component: str | None = None) -> dict:
+               severity: str | None = None, component: str | None = None, origin: dict | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
         strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
@@ -119,10 +122,12 @@ class Plant:
             for attr, tgt in plan.items():
                 rate = (tgt - getattr(u.state, attr)) / max(1.0, float(ramp_sim_s))
                 u.faults[attr] = Fault(kind, attr, tgt, rate)
-            if plan:
+            if origin is not None:
+                u.injection = dict(origin, kind=kind, at=now_iso())
+            if plan or origin is not None:
                 u.dirty_status = True
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
-                    "target_health": plan.get("cooler_health", u.state.cooler_health)}
+                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection}
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
@@ -157,6 +162,7 @@ class Plant:
         st["sim_t"] = round(self.sim_t, 1)
         st["time_scale"] = self.time_scale
         st['disturbance_ramps'] = sorted(u.faults)
+        st['injection'] = u.injection
         return st
 
     def snapshot(self) -> dict:

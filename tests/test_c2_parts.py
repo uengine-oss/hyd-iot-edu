@@ -96,32 +96,49 @@ def test_monitor_raises_one_alert_per_episode_in_the_sensor_alert_contract():
 
 
 def test_pm_due_monitor_opens_one_case_per_maintenance_cycle_from_the_class_button():
-    """시나리오 B: '운전시간 빨리 감기 +300 h'(세 대) → HYD-02 1,950 h 만 PM_DUE(HYD-03 1,880 h 는 허용 오차 안 묶음 후보), 같은 회차는 한 번,
-    계수기 리셋(정비 완료) 뒤에는 다음 회차가 될 때까지 경보 없음. 같은 감시 루프 · 같은 경보 계약(재고 규칙과 공용)."""
+    """시나리오 B: 수업 시작 상태가 곧 HYD-02 1,950 h(PM_DUE, C3 B · C 단순화) — HYD-03 1,880 h 는 허용 오차 안 묶음 후보. 같은 회차는 한 번,
+    계수기 리셋(정비 완료) 뒤에는 다음 회차가 될 때까지 경보 없음. 같은 감시 루프 · 같은 경보 계약(재고 규칙과 공용). 감시는 기본 꺼짐 — 포털
+    [정기 점검] 버튼(scenario_buttons)이 같은 계약의 경보를 낸다."""
     st = state.EnterpriseState()
     read = lambda name, params: {"spare_stock": st.spare_stock, "pm_status": st.pm_status}[name]()
     seen: set[str] = set()
-    assert BM.scan_once(read, seen, now=NOW) == []
-    for a in data.ASSETS:
-        st.execute({"skill": "skill:pm-advance", "decision": f"cls-{a}", "asset": a, "params": {"hours": 300}})
-    alerts = BM.scan_once(read, seen, now=NOW)
+    alerts = [a for a in BM.scan_once(read, seen, now=NOW) if a["pattern"] == "PM_DUE"]
     assert [a["alertId"] for a in alerts] == ["CMMS-PM_DUE-HYD-02-C1"]
     a = alerts[0]
     assert (a["source"], a["pattern"], a["asset"], a["severity"], a["state"]) == ("cmms", "PM_DUE", "HYD-02", "info", "RAISE")
     ev = a["evidence"]
     assert (ev["pm_since_h"], ev["pm_interval_h"], ev["pm_limit_in_h"], ev["bundle_peer"], ev["bundle_peer_since_h"]) == (1950, 2000, 250, "HYD-03", 1880)
     assert ev["night_within_limit"] is True and ev["monthly_within_limit"] is False and ev["bundle_crew_ok"] is False
-    assert ev["spare_gap_after_pm"] == 0 and ev["spare_gap_after_bundle"] == -1          # 묶으면 씰 키트가 재주문점 아래로 (C 예고)
+    assert ev["spare_gap_after_pm"] == -2 and ev["spare_gap_after_bundle"] == -3        # 씰 키트가 이미 재주문점 아래 (C 와 이어짐)
     assert BM.is_business_alert(a) and not BM.is_business_alert(dict(a, source="erp"))
-    seen.add(a["alertId"])
+    seen.update(x["alertId"] for x in BM.scan_once(read, set(), now=NOW))
     assert BM.scan_once(read, seen, now=NOW) == []                                            # 같은 회차 = 같은 처리 건
     st.execute({"skill": "skill:pm-reset", "decision": "D-PM", "asset": "HYD-02", "params": {"ref": "WO-1"}})
     f = st.pm_status("HYD-02")["facts"]
-    assert (f["pm_since_h"], f["cycle"], f["pm_due"], f["due_since"]) == (0, 2, False, None) and f["last_done_at"]
+    assert (f["pm_since_h"], f["cycle"], f["pm_due"], f["due_since"], f["pm_alert"]) == (0, 2, False, None, False) and f["last_done_at"]
     assert BM.scan_once(read, seen, now=NOW) == []
     st.execute({"skill": "skill:pm-advance", "decision": "cls-2", "asset": "HYD-03", "params": {"hours": 100}})
     assert [x["alertId"] for x in BM.scan_once(read, seen, now=NOW)] == ["CMMS-PM_DUE-HYD-03-C1"]
     assert {"SPARE_BELOW_MIN", "PM_DUE"} <= set(BM.policy_patterns())
+
+
+def test_pm_alert_turns_off_when_this_cycles_work_order_is_registered_and_reset_brings_it_back():
+    """C3 B · C 단순화: '정기 점검 도래' 표시(pm_alert) = 도래 · 이번 회차 오더 없음. 도래 설비에 예정된 정비 시간으로 잡힌 작업지시가 이번 회차 오더가 되고(먼저 등록된 것),
+    도래가 아닌 설비의 작업지시는 표시와 무관하다. 수업 초기화가 오더 표시를 지워 표시가 다시 켜진다(마이그레이션 47과 같은 규칙)."""
+    st = state.EnterpriseState()
+    f = st.pm_status("HYD-02")["facts"]
+    assert (f["pm_due"], f["pm_alert"], f["pm_planned_wo"], bool(f["due_since"])) == (True, True, None, True)
+    other = st.execute({"decision": "D-A", "skill": "skill:schedule-maintenance", "asset": "HYD-01", "params": {"task": "쿨러 핀 세척"}})
+    assert st.pm_status("HYD-01")["facts"]["pm_planned_wo"] is None and other["ref"].startswith("WO")
+    st.execute({"decision": "D-P", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "예비 펌프 전환"}})
+    assert st.pm_status("HYD-02")["facts"]["pm_alert"] is True                    # 고장 대응 즉시 작업지시는 정기 정비 오더가 아니다
+    win = f["night_window_id"]
+    wo = st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "정기 점검", "window_id": win}})
+    st.execute({"decision": "D-B2", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "두 번째", "window_id": win}})
+    f = st.pm_status("HYD-02")["facts"]
+    assert (f["pm_due"], f["pm_alert"], f["pm_planned_wo"]) == (True, False, wo["ref"]) and f["pm_planned_window"].startswith("야간 정비 시간")
+    f = st.reset_pm_counters()["records"][1]
+    assert (f["asset"], f["pm_since_h"], f["pm_alert"], f["pm_planned_wo"]) == ("HYD-02", 1950, True, None)
 
 
 def test_one_business_system_down_does_not_stop_the_other_rule():
@@ -135,21 +152,24 @@ def test_one_business_system_down_does_not_stop_the_other_rule():
 
 
 def test_pm_counter_and_delivery_delay_class_buttons_over_http():
+    """enterprise-sim: 계수기 진행 · 공급사 납기 지연은 업무 거래(/api/exec skill:pm-advance · skill:delay-delivery), 초기화는 수업 API."""
     from fastapi.testclient import TestClient
     from entsim import main as entmain
     entmain.ent.st.reset()
     client = TestClient(entmain.app)
-    r = client.post("/cmms/pm/advance", json={"hours": 300})
-    assert r.status_code == 200 and len(r.json()["transactions"]) == 3
-    rows = {x["asset"]: x for x in r.json()["pm"]["records"]}
-    assert (rows["HYD-02"]["pm_due"], rows["HYD-03"]["pm_due"], rows["HYD-03"]["pm_window_open"]) == (True, False, True)
-    assert client.post("/cmms/pm/advance", json={"hours": -5, "asset": "HYD-01"}).status_code == 400
-    assert client.get("/cmms/pm_status", params={"asset": "HYD-02"}).json()["facts"]["pm_since_h"] == 1950
-    assert client.post("/cmms/pm/reset", json={}).json()["records"][1]["pm_since_h"] == 1650
-    assert client.post("/erp/purchase_orders/delay", json={"days": 3}).status_code == 400          # 열린 발주가 없으면 거절
+    f = client.get("/cmms/pm_status", params={"asset": "HYD-02"}).json()["facts"]
+    assert (f["pm_since_h"], f["pm_due"], f["pm_alert"]) == (1950, True, True)              # 수업 시작 상태 = 정기 점검 도래
+    r = client.post("/api/exec", json={"skill": "skill:pm-advance", "decision": "RUN-1", "asset": "HYD-01", "params": {"hours": 300}})
+    assert r.status_code == 200 and r.json()["skill"] == "skill:pm-advance"
+    rows = {x["asset"]: x for x in client.get("/cmms/pm_status").json()["records"]}
+    assert (rows["HYD-01"]["pm_since_h"], rows["HYD-03"]["pm_due"], rows["HYD-03"]["pm_window_open"]) == (1800, False, True)
+    assert client.post("/api/exec", json={"skill": "skill:pm-advance", "decision": "RUN-2", "asset": "HYD-01", "params": {"hours": -5}}).status_code == 400
+    assert [x["pm_since_h"] for x in client.post("/cmms/pm/reset", json={}).json()["records"]] == [1500, 1950, 1880]
+    delay = {"skill": "skill:delay-delivery", "asset": "HYD-03", "params": {"days": 3}}
+    assert client.post("/api/exec", json=dict(delay, decision="DLY-1")).status_code == 400            # 열린 발주가 없으면 거절
     entmain.ent.st.execute({"decision": "D-C", "skill": "skill:procure-part", "asset": "HYD-03",
                             "params": {"supplier": "sup:b", "part_no": "P-PMP-SEAL", "qty": 6, "amount": 330}})
-    d = client.post("/erp/purchase_orders/delay", json={"days": 3}).json()["transaction"]
+    d = client.post("/api/exec", json=dict(delay, decision="DLY-2")).json()
     po = client.get(f"/erp/purchase_orders/{d['ref']}").json()["facts"]
     assert po["delay_d"] == 3 and po["lead_d"] == 5 and po["expected_in_h"] > 7 * 24 - 1
     entmain.ent.st.reset()
@@ -159,11 +179,8 @@ def test_pm_counter_and_delivery_delay_class_buttons_over_http():
 def test_stock_issue_order_receipt_and_consumption_move_the_spare_stock():
     st = state.EnterpriseState()
     f = st.spare_stock("P-PMP-SEAL")["facts"]
-    assert (f["available"], f["reorder_point"], f["below_reorder_point"], f["spare_gap"]) == (3, 2, False, 1)
-    issue = st.execute({"skill": "skill:issue-spare", "asset": "HYD-03", "by": "강사", "params": {"part_no": "P-PMP-SEAL", "qty": 2}})
-    f = st.spare_stock("P-PMP-SEAL")["facts"]
-    assert issue["ref"].startswith("GI-") and f["available"] == 1 and f["below_reorder_point"] and f["below_since"] and f["need_qty"] == 6
-    assert f["spare_gap"] == -1                                            # 온톨로지 in:spare-gap (가용 − 재주문점) < 0
+    # C3 B · C 단순화: 수업 시작 상태가 곧 '재고 보충 필요'(실물 3 − 예약 2 = 가용 1 < 재주문점 2), 필요량 6
+    assert (f["available"], f["reorder_point"], f["below_reorder_point"], f["spare_gap"], f["need_qty"]) == (1, 2, True, -1, 6) and f["below_since"]
     for bad, phrase in (({"supplier": "sup:c", "part_no": "P-PMP-SEAL", "qty": 6}, "AVL"),
                         ({"supplier": "sup:b", "part_no": "P-PMP-SEAL", "qty": 6, "amount": 300}, "amount"),
                         ({"supplier": "sup:b", "part_no": "P-PMP-SEAL", "qty": 0}, "quantity")):
@@ -186,10 +203,13 @@ def test_stock_issue_order_receipt_and_consumption_move_the_spare_stock():
     wo = st.execute({"decision": "D-B", "skill": "skill:schedule-maintenance", "asset": "HYD-02", "params": {"task": "SOP-PMP-04 씰 교체"}})
     done = st.execute({"decision": "D-B", "skill": "skill:complete-maintenance", "asset": "HYD-02", "params": {"ref": wo["ref"], "sop": "SOP-PMP-04"}})
     assert "1개 소모" in done["detail"] and st.spare_stock("P-PMP-SEAL")["facts"]["on_hand"] == 8
+    issue = st.execute({"skill": "skill:issue-spare", "asset": "HYD-03", "by": "강사", "params": {"part_no": "P-PMP-SEAL", "qty": 2}})
+    assert issue["ref"].startswith("GI-") and st.spare_stock("P-PMP-SEAL")["facts"]["available"] == 4
     kinds = [m["kind"] for m in st.spare_stock("P-PMP-SEAL")["movements"]]
-    assert kinds == ["CONSUME", "RECEIPT", "ORDER", "ISSUE"]
+    assert kinds == ["ISSUE", "CONSUME", "RECEIPT", "ORDER"]
     reset = st.reset_spare_stock()
-    assert reset["records"][2]["available"] == 3 and reset["movements"][0]["kind"] == "RESET"
+    seal = reset["records"][2]
+    assert (seal["available"], seal["below_reorder_point"], bool(seal["below_since"])) == (1, True, True) and reset["movements"][0]["kind"] == "RESET"
 
 
 def test_work_order_takes_the_approved_maintenance_window(monkeypatch):
@@ -214,12 +234,13 @@ def test_spare_issue_button_and_reset_over_http(tmp_path, monkeypatch):
     from entsim import main as entmain
     entmain.ent.st.reset()
     client = TestClient(entmain.app)
-    r = client.post("/erp/spare/issue", json={"reason": "타 라인 긴급 사용"})          # 기본 = 씰 키트 2개 (수업 버튼 '자재 출고 −2')
-    assert r.status_code == 200 and r.json()["stock"]["facts"]["below_reorder_point"] is True
-    assert r.json()["transaction"]["skill"] == "skill:issue-spare"
-    assert client.post("/erp/spare/issue", json={"part_no": "P-PMP-SEAL", "qty": 99}).status_code == 400
-    assert client.get("/erp/spare_stock", params={"part": "P-PMP-SEAL"}).json()["facts"]["available"] == 1
-    assert client.post("/erp/spare/reset", json={}).json()["records"][2]["available"] == 3
+    assert client.get("/erp/spare_stock", params={"part": "P-PMP-SEAL"}).json()["facts"]["available"] == 1   # 시작 상태 = 재고 보충 필요
+    issue = {"skill": "skill:issue-spare", "asset": "HYD-03", "params": {"part_no": "P-PMP-SEAL", "qty": 1, "reason": "타 라인 긴급 사용"}}
+    r = client.post("/api/exec", json=dict(issue, decision="GI-1"))                    # ERP 출고 거래
+    assert r.status_code == 200 and r.json()["skill"] == "skill:issue-spare"
+    assert client.get("/erp/spare_stock", params={"part": "P-PMP-SEAL"}).json()["facts"]["available"] == 0
+    assert client.post("/api/exec", json=dict(issue, decision="GI-2", params={"part_no": "P-PMP-SEAL", "qty": 99})).status_code == 400
+    assert client.post("/erp/spare/reset", json={}).json()["records"][2]["available"] == 1
     assert client.get("/scm/quotes", params={"part": "P-PMP-SEAL"}).status_code == 200
     assert client.get("/cmms/windows", params={"asset": "HYD-02"}).json()["system"] == "CMMS"
     assert client.get("/erp/purchase_orders/PR-none").status_code == 404

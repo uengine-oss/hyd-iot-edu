@@ -146,3 +146,82 @@
 3. 반려 버튼은 없다. 서버에 반려 API가 없다(U1 §7.2). 확정 흐름(승인 1회)에서는 그리지 않았다.
 4. `scripts/ui_regression.py`는 구조판에서 줄 파서 미리보기로 HM-8을 적재하면 고장 유형(`fm:cooling-loss`)이 없어 막힐 수 있다. 전체판에서 돌린다.
 5. 시험 잔재: Supabase에 흐름 초안 3개(c3_*)가 남아 있다. 완주 때 쓴다. 쓰지 않을 거면 `/api/flows/reset`으로 지운다.
+
+---
+
+## 7. B · C 단순화와 실제 워커 완주 (2026-10-09 밤)
+
+**지시**(코디네이터 전달, 감독 발화): 포털 "결함 실험" 버튼 [쿨러 열화 주입][쿨러 복구] | [정기 점검][초기화] | [재고 보충][초기화].
+처음 화면에 HYD-02 "정기 점검 도래" · HYD-03 "재고 보충 필요"가 기본으로 뜬다. B · C는 **설비까지 가지 않는다**(처리되면 끝).
+5절의 워커 문제는 해소됐다(남의 워커 없음, 이 워크트리 워커 1개, PID 51665).
+
+**비유 한 줄**: 정비 · 구매 담당 책상 위에 "할 일" 쪽지가 미리 붙어 있고, 버튼을 누르면 AI가 안을 가져오고, 담당자가 도장을 찍으면 총무팀이 오더 · 발주를 내고 쪽지를 뗀다.
+
+**스스로 판정할 체크 질문**
+- 화면을 처음 열면 HYD-02 · HYD-03 위에 표시가 있는가? 있다(`B-1-start-1440.png`).
+- B · C 흐름에 예정된 정비 시간 대기 · 정비 수행 · 시운전 · 납기 타이머가 남아 있는가? 없다(`test_b_and_c_are_small_three_lane_flows…`).
+- 처리 건이 끝나면 표시가 꺼지고 [초기화]로 다시 켜지는가? 그렇다(`B-5-after`, `R-after-reset`).
+- 누가 언제 눌렀는지가 처리 건 자체에 남는가? 남는다(처리 기록 `SCENARIO_BUTTON`, 시작 경보 근거 `requested_by · requested_at`).
+
+### 7.1 바뀐 것
+
+| 무엇 | 내용 | 파일 |
+|---|---|---|
+| 시작 상태 = 기본값 | 마이그레이션 47: HYD-02 1,950 h · HYD-03 1,880 h · HYD-01 1,500 h, 씰 키트 실물 3 − 예약 2 = 가용 1 < 재주문점 2. 판단 사실은 C2와 같다(1,950 / 1,959 / 2,230 h, 필요량 6). 메모리 백엔드 같은 값 | `it/supabase/migrations/20261009000047_c3_bc_simplified.sql`, `entsim/data.py · state.py` |
+| B 표시가 꺼지는 때 | `ent.pm_status.pm_alert` = 도래 · 이번 회차 정비 오더 없음. 도래 설비에 **예정된 정비 시간(window_id)으로 잡힌** 작업지시가 오더로 남는다(트리거). 고장 대응 즉시 작업지시(펌프 회귀의 예비 펌프 전환)는 오더가 아니다 — 처음 판은 이것까지 셌다가 회귀 뒤 표시가 꺼져 고침 | 같은 마이그레이션 |
+| 버튼 API | `GET /api/scenario/status`, `POST /api/scenario/{B,C}/start`(업무 감시와 같은 경보 계약 · 같은 접수 경로, 표시 없음 · 진행 중 · 흐름 미배포는 409), `POST /api/scenario/{B,C}/reset`, `POST /api/scenario/A/{degrade,restore}` | `procsvc/scenario_buttons.py`, `main.py` |
+| 옛 원인 버튼 | +300 h · 출고 −2 · 납기 지연을 포털 · process 에서 없앰. enterprise-sim API(`/cmms/pm/advance` 등)는 시험 · 강사용으로 남김. 업무 감시 기본 끔(`BUSINESS_MONITOR=0`) — 켜 두면 시작 상태가 곧 도래라 바로 처리 건이 열린다 | `compose.yaml`, `.env.example` |
+| 흐름 | B: 제안 → 설비보전팀장 승인 → 정비 오더 등록 · 공지 메일 → 결과 보고(task 4). C: 제안 → 구매 담당 승인 → ERP 발주 · 공급사 메일 → 입고 · 재고 반영(`immediate`) → 결과 보고(task 5). 레인 3, 분기 · 타이머 없음 | `scripts/c3_flows.py`, `service_parts.py`, `effect_parts.py` |
+| 결과 보고 값 | B: 정비 오더 · 정비 시점 · 공지 메일. C: 입고 수량 · 현재고 · 가용 재고(기준 ≥ 재주문점) · 공급사 메일 | `effect_parts.report_values` |
+| 포털 | 설비 카드마다 시나리오 하나, 카드 머리 표시(도래 · 필요 · 처리 중 → · 처리됨), 위쪽 원인 버튼 패널 삭제, 결과 카드 줄바꿈 · 승인자 이름 · '구매 담당' 역할 이름 | `app.js`, `resultReport.js`, `ui.js`, `names.json`, `theme.css` |
+| 누른 사람 · 때 | 포털이 고른 '나'(이름 · id · 역할)를 보냄 → 시작 경보 근거 + 처리 기록 `SCENARIO_BUTTON`, 모든 누름은 감사 기록 `SCENARIO_BUTTON`. 설비 카드 버튼 아래 "마지막: [버튼] 누가 · 때"(처리 건이 없는 [초기화]도 보인다, `/api/scenario/status presses`) | `scenario_buttons.py`, `main.py`, `app.js` |
+| A 누름 → 처리 건 연결 | 누름 id(`PRESS-…`)를 plant-sim 주입 요청 `origin`에 싣는다 → 설비 상태(plant.status `injection`)에 남는다 → 그 주입이 낸 경보로 처리 건이 열릴 때 `case_started` 훅이 같은 id 로 기록을 붙인다. [쿨러 복구]는 지금 주입 id 로 연결된 처리 건에 기록한다. 시간 창 추정 없음(라이브 3차: `injection_id` 가 처리 건 기록에 남음 확인) | `ot/plant-sim/plantsim/plant.py · main.py`, `instances.py Hooks.case_started`, `main.py _link_injection` |
+| A 열화 세기 | 포털 버튼은 moderate(쿨러 0.55, 평형 62.5 ℃ — 경보만, 보호 정지 없음) = 시나리오 A "서기 전에 식힌다"의 설정(A146 열모델 · 회귀 기본과 같음). high(0.43)는 평형 70 ℃라 주입 뒤 시뮬레이션 약 30분에 보호 정지한다. 20배속은 설비 물리만 빠르게 하고 에이전트 판단(실측 46~79초 = 시뮬레이션 15~26분)은 줄이지 못하므로 high 는 "판단이 늦어 서 버린" 장면이다(라이브 2회 `live/failed-high-severity/`). 이름 있는 상수 `scenario_buttons.A_SEVERITY` | `scenario_buttons.py` |
+| 시나리오 시각 기준점 | `ent.reanchor_scenario_times()`(생산 오더 납기 · 예정된 정비 시간 · 출하)를 버튼 시작(A · B · C) · [초기화] · enterprise-sim 시작 때 다시 맞춘다(`POST /api/reanchor`). 전에는 업무 실행 초기화 때만 돌아 C 판단에 "OEM 오더 납기까지 −1.27 h"가 나왔다 | `entsim/main.py · supabase_backend.py`, `procsvc/main.py` |
+| 업무 초기화가 기록을 지움 | `ent.reset_executions()`가 작업지시 · 발주 · 입고 · 원장을 지우기 전에 `ent.execution_archive`(초기화 회차 · 표 · ref · 판단 id · 행)로 옮긴다. 운영 상태(진행 중 오더 · 재고 · 계수기 · 시각)는 전과 같이 시작값이라 검사기의 출발점은 같다. `GET /api/archive?ref=` 로 따라간다. 메모리 백엔드 같은 규칙 | 마이그레이션 47, `entsim/state.py` |
+| neo4j 재시작 뒤 끊긴 연결 | 볼륨 교체로 neo4j 가 다시 뜬 뒤 agent 서비스 풀의 끊긴 연결이 승인 조건 검사를 ServiceUnavailable 로 실패시켰다(회귀 2차 cooler 24/25). 드라이버에 `liveness_check_timeout=0`(쓰기 전 연결 확인) | `agentsvc/tools/mcp_kg.py`, `procsvc/main.py _kg` |
+| 옛 수업 버튼 경로 삭제 | enterprise-sim `/erp/spare/issue` · `/cmms/pm/advance` · `/erp/purchase_orders/delay` · process `/api/simulate/*` 삭제, `scripts/c2_live_check.py` · `c2_live_in_container.sh` 삭제(C2 시작값 기준 검사 — 이 7절 완주 · `test_c3_bc_simplified` 가 대신한다). 업무 거래 skill:issue-spare · pm-advance · delay-delivery 는 ERP · CMMS 거래로 남는다(`/api/exec`) | 위 파일 |
+| **결함 수정: 시나리오 에이전트가 실제로 쓰이지 않음** | 흐름 가져오기가 task 에 고른 에이전트(agent:pm-plan · agent:spare-buy)가 담당자(user_id)가 아니라 역할 기본(sys:agent)이었다. 워커는 담당자 프로필로 도구를 정하므로 B · C 에이전트가 전체 `enterprise` 서버로 돌았다(1차 완주 `live/run1-default-agent/`). `engine.new_workitem` 이 활동의 `agent` 를 담당자로 둔다 → 2차 완주에서 `enterprise-maint` · `enterprise-purchase` 만 씀 | `engine.py` |
+
+### 7.2 실제 워커 완주 (포털 버튼, 한 번에 한 건, 20배속)
+
+준비: neo4j를 새 볼륨 `hyd-iot-edu_neo4j-data-c3`(구조판)로 띄움(기존 볼륨 그대로) → `scripts/c3_ingest.py`로 HM-8 → PM-02 → PR-07 실제 추출 · 적재(192 · 227 · 161초, 절차 7 · 7 · 3, 규칙 8 · 9 · 5) → `c3_flows.py deploy`.
+
+4차(근본 수정 뒤, 2026-10-10 00:28~00:36 UTC+9 새벽, `durations.json`):
+
+| | 처리 건 | 버튼 → 처리 건 | 에이전트 | 승인 대기 | 시스템 | 버튼 → 끝 | 결과 |
+|---|---|---|---|---|---|---|---|
+| A | c3_cooling (agent:cooling) | 45초 | 106초 (도구 11) | 7초 | 명령 0.8 · 재관측 60 · 작업지시 0.5초 | 219초 | 정상. 누름 `PRESS-…` 기록 · 복구 기록 같은 처리 건 |
+| B | c3_pm.5fccea88… (agent:pm-plan) | 1.6초 | 47초 (enterprise-maint 3개 도구) | 12초 | 오더 · 메일 0.6초 | 64초 | 정상, 표시 꺼짐 → [초기화]로 다시 켜짐 |
+| C | c3_spare.50e1d3d4… (agent:spare-buy) | 1.6초 | 49초 (enterprise-purchase 3개 도구) | 12초 | 발주 · 메일 0.3 · 입고 0.5초 | 67초 | 입고 완료, 가용 7 ≥ 2, 표시 꺼짐 → [초기화]로 다시 켜짐 |
+
+- 판단 사실의 납기: A 5.98 h · B 19.99 h · C 2.99 h(기준점 다시 맞춘 뒤 — 2차에서는 −1.27 h).
+- 1~3차는 `live/run1-default-agent/`(기본 에이전트) · `run2-before-rootfix/` · `run3-hostgap/`(호스트가 17분씩 두 번 멈춰 센서 데이터 공백 — 진단이 공백을 보고 기다림, 무효)에 남겼다.
+- B 경쟁: 추천 "이번 예정된 정비 시간 단독". 지금 정지 → 오더 손실 감점, 미루기 → 허용 한계 초과 제외, 두 대 묶기 → 씰 키트 부족 제외 + 인원 감점, 넷 다 씰 키트 부족 경고(C와 이어짐).
+- C 경쟁: 추천 "최단 납기 긴급 발주"(210만 원). OEM 표준 발주(330만 원)는 전결 경고. **설계와 다르다** — 8절.
+- 판단 기록 provenance: A · B · C 모두 35개(값 · 시스템 · 읽은 방법). 카드마다 달라지는 값(발주 금액 · 납기 여유)은 결정 수준에서 "후보마다 계산"으로 비어 있고, 각 카드의 facts 에 값이 있다.
+- 끝난 처리 건(A 1건, B · C 각 2건 — 1차는 기본 에이전트)은 지우지 않았다. 실패한 A 시도 2건과 그때 생긴 사람 검토(미지원 경보) 2건, 옛 감시기가 만든 사람 검토 2건은 `cleanup_residue_instances.py`로 숨겼다(백업 `.evidence/a161-c3/residue-*`).
+- 화면: `.evidence/a161-c3/live/` — `X-1-start`(처음) · `X-3-approval`(승인 대기) · `X-4-result`(결과) · `X-5-after`(표시 꺼짐) · `X-6-*-390`(휴대폰 결과 카드 · 처리 과정) · `R-after-reset-*`(초기화 뒤).
+
+### 7.3 기준 복원 · 시험
+
+- 흐름 `deploy-reset`, neo4j 원래 볼륨(전체판, FailureMode 7), 설비 초기화, 업무 데이터는 새 시작값. 구조판 볼륨 `neo4j-data-c3`는 남겨 두었다(지우려면 사용자 확인).
+- 단위 시험 1,835 통과 · 4 건너뜀(엔진 수정 전), 엔진 수정 뒤 관련 시험 통과.
+- 회귀(실제 워커): 1차 cooler 40/40 · pump-fan 43/43. 엔진 수정 뒤 2차는 아래 보고에 적는다.
+- 주의: 회귀 검사기의 `/api/reset`(업무 실행 초기화)이 완주 때 만든 업무 행(WO · PR · GR)을 지운다. 처리 건 기록은 남는다.
+
+### 7.4 블랙박스 점검 — 기록 · 화면에 없는 곳 (근본 수정 뒤)
+
+| 곳 | 지금 | 비고 |
+|---|---|---|
+| C 지식의 "불량 기대비용" | 실제 추출이 PR-7.4 비교 원칙을 판정 규칙으로 만들지 않았고, SOP-PUR-13(최단 납기)을 A정밀로 연결했다 → 추천이 설계(B-OEM)와 다름 | 원문이 "총비용으로 비교한다"는 원칙만 있고 판정할 문턱이 없다. 적재 스크립트(`c3_ingest.py`)는 검토 단계를 손대지 않고 승인했다 — 사람 검토에서 규칙 추가 · 연결 수정이 필요(C1 몫, 열림) |
+| 결정 수준 provenance 의 카드별 값 | po_amount · lead_slack_days · supplier_avl 은 결정 수준에서 "후보마다 계산"(값 없음) | 값은 각 카드 facts 에 있다. 화면의 카드별 출처 표시는 확인 안 함 |
+| 승인 화면 캡처 | 승인 카드(추천 · 진 안 · 근거)가 화면 아래라 캡처에 잘림 | 판단 원본 `X-decision.json` |
+
+### 7.5 검증 상태 (2026-10-10 새벽)
+
+- 라이브 4차 A · B · C 완주 · 표시 꺼짐 · [초기화] 복원 · 누른 사람 기록 · A 누름 id 연결: **검증됨**(7.2).
+- 회귀 3차(기준 복원 뒤 — 흐름 deploy-reset · neo4j 전체판 · 설비 초기화, 워커 1개): cooler `scenario_instance_test.py --worker` **40/40**, pump-fan `--worker` 32/33(펌프 진단이 2분 평균 미충족으로 보류 — 스크립트 안내대로 실제 워커는 `--reassess-held`) → `--worker --reassess-held` **47/47**. process 재시작 0. 증거 `.evidence/a161-c3/reg3-*.log`, `reg3b-pumpfan.log`.
+- 단위 시험 전체 1,842 통과 · 4 건너뜀(한 번은 1 실패 — 다시 돌리면 통과하는 흔들림).
+- 워커(PID 51665, 이전 에이전트가 이 워크트리에서 띄운 것을 이어 씀) 멈춤, 8097/8098 내려감 확인.
+- 회귀 2차 pump-fan(21/23)은 무효 — 검사가 도는 중에 이미지 재빌드를 했다(CLAUDE.md §3 위반, 내 실수). 같은 때 워커 LLM 이 세션 한도에 걸렸다.

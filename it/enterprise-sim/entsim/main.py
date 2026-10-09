@@ -68,6 +68,12 @@ class MemoryEnterprise:
         self.st.reset()
         data.reanchor()          # A086: the teaching scenario's times start again from now (Supabase: ent.reanchor_scenario_times)
 
+    def reanchor(self) -> None:
+        data.reanchor()
+
+    def archive(self, ref: str | None = None) -> dict:
+        return self.st.archive(ref)
+
     def ping(self) -> bool:
         return True
 
@@ -160,23 +166,9 @@ def purchase_order(ref: str):
     return _read("ERP", "purchase_order", ref=ref)
 
 
-@app.post("/erp/spare/issue")
-def issue_spare(body: dict):
-    """수업 원인 버튼(시나리오 C '자재 출고 −2'): 예비품 출고 처리 — 실제 출고처럼 재고 이동을 남기고 가용을 줄인다. 재주문점 아래로 내려가면
-    process 의 업무 기준값 감시가 스스로 처리 건을 연다. body = {part_no, qty, asset, by, reason, request_id?} (기본 P-PMP-SEAL 2개, HYD-03)."""
-    import uuid
-    # 원장의 멱등 키(decision + skill)가 출고마다 달라야 한다 — 버튼을 두 번 누르면 두 번 출고(같은 요청 재전송은 request_id 로 한 번)
-    req = {"skill": "skill:issue-spare", "decision": f"SPARE-ISSUE:{body.get('request_id') or uuid.uuid4()}",
-           "asset": body.get("asset") or "HYD-03", "by": body.get("by") or "instructor",
-           "params": {"part_no": body.get("part_no") or "P-PMP-SEAL", "qty": body.get("qty") if body.get("qty") is not None else 2,
-                      "reason": body.get("reason") or "예비품 출고 (수업 원인)"}}
-    tx = execute(req)
-    return {"transaction": tx, "stock": ent.read("spare_stock", part=req["params"]["part_no"])}
-
-
 @app.post("/erp/spare/reset")
 def reset_spare(body: dict | None = None):
-    """수업 초기화: 예비품 재고를 기준값으로(출고 버튼 되돌리기). body = {part_no} (없으면 전부)."""
+    """수업 초기화(포털 [초기화] → process /api/scenario/C/reset): 예비품 재고를 기준값으로. body = {part_no} (없으면 전부)."""
     return ent.reset_spare_stock((body or {}).get("part_no"))
 
 
@@ -186,37 +178,10 @@ def pm_status(asset: str | None = Query(default=None)):
     return _read("CMMS", "pm_status", asset=asset)
 
 
-def _class_tx(skill: str, asset: str, body: dict, params: dict) -> dict:
-    import uuid
-    # 원장의 멱등 키(decision + skill)가 누를 때마다 달라야 한다(같은 요청 재전송은 request_id 로 한 번)
-    return execute({"skill": skill, "decision": f"CLASS:{skill}:{asset}:{body.get('request_id') or uuid.uuid4()}", "asset": asset,
-                    "by": body.get("by") or "instructor", "params": params})
-
-
-@app.post("/cmms/pm/advance")
-def pm_advance(body: dict | None = None):
-    """수업 원인 버튼(시나리오 B '운전시간 빨리 감기 +300 h'): 운전시간 계수기를 앞으로 돌린다. 1,950 h(주기 2,000 h − 사전 알림 50 h)에 닿으면
-    process 의 업무 기준값 감시가 PM_DUE 처리 건을 스스로 연다. body = {hours: 300, asset: <없으면 세 대 모두>, by, reason, request_id?}."""
-    body = body or {}
-    assets = [body["asset"]] if body.get("asset") else list(data.ASSETS)
-    params = {"hours": body.get("hours", 300), "reason": body.get("reason") or "운전시간 빨리 감기 (수업 원인)"}
-    txs = [_class_tx("skill:pm-advance", a, body, params) for a in assets]
-    return {"transactions": txs, "pm": ent.read("pm_status", asset=None)}
-
-
 @app.post("/cmms/pm/reset")
 def pm_reset(body: dict | None = None):
-    """수업 초기화: 운전시간 계수기를 수업 시작값으로. body = {asset} (없으면 전부)."""
+    """수업 초기화(포털 [초기화] → process /api/scenario/B/reset): 운전시간 계수기 · 이번 회차 오더 표시를 수업 시작값으로. body = {asset} (없으면 전부)."""
     return ent.reset_pm_counters((body or {}).get("asset"))
-
-
-@app.post("/erp/purchase_orders/delay")
-def delay_delivery(body: dict | None = None):
-    """수업 원인 버튼(시나리오 C 미달 가지 '공급사 납기 지연'): 열린 발주 한 건의 입고 예정을 days 만큼 늦춘다. 입고 확인 task 가 늦어진 예정을
-    다시 읽으므로 납기 초과 타이머가 먼저 울려 '지연' 결과 보고로 간다. body = {days: 3, ref | part_no (없으면 가장 최근 열린 발주), by}."""
-    body = body or {}
-    params = {"days": body.get("days", 3), **{k: body[k] for k in ("ref", "part_no") if body.get(k)}}
-    return {"transaction": _class_tx("skill:delay-delivery", body.get("asset") or "HYD-03", body, params)}
 
 
 @app.post("/api/exec")
@@ -247,5 +212,25 @@ def snapshot():
 
 @app.post("/api/reset")
 def reset():
+    """수업 · 검사 초기화: 운영 상태(진행 중 오더 · 재고 · 계수기 · 시각 기준점)를 시작값으로. 실행 기록은 지우지 않고 보관한다(GET /api/archive)."""
     ent.reset()
     return {"ok": True}
+
+
+@app.post("/api/reanchor")
+def reanchor():
+    """시나리오 시각 기준점을 지금으로(생산 오더 납기 · 예정된 정비 시간 · 출하). 시나리오를 시작하거나 초기화할 때 process 가 부른다."""
+    ent.reanchor()
+    return {"ok": True}
+
+
+@app.get("/api/archive")
+def archive(ref: str | None = Query(default=None)):
+    """초기화가 보관한 실행 기록(작업지시 · 발주 · 입고 · 거래 원장). ref = WO · PR · GR · TX id 또는 판단 id."""
+    return ent.archive(ref)
+
+
+@app.on_event("startup")
+def _anchor_on_start():
+    # 스택이 뜰 때 시나리오 시각 기준점을 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로 판단하지 않게
+    ent.reanchor()

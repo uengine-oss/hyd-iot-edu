@@ -36,6 +36,7 @@ class FaultReq(BaseModel):
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
     ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)
     component: str | None = None        # C2 restore only: cooler | pump | fan (or comp:* id) — None restores every disturbance
+    origin: dict | None = None          # C3: the button press behind this request {id, by, user_id, roles} — kept as the unit's injection
 
 
 class ModeReq(BaseModel):
@@ -89,7 +90,9 @@ def fault(req: FaultReq):
         raise HTTPException(404, "unknown asset")
     target = req.target if req.target is not None else (req.target_health if req.type == "cooler_degradation" else None)
     try:
-        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity, component=req.component)
+        if req.origin is not None and not str(req.origin.get("id") or "").strip():
+            raise ValueError("origin needs an id (the press that asked for this injection)")
+        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity, component=req.component, origin=req.origin)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -131,6 +134,7 @@ def reset():
     with plant.lock:
         for a, u in plant.units.items():
             u.faults.clear()
+            u.injection = None
             u.state.cooler_health, u.state.leak, u.state.bearing_wear, u.state.pump = 1.0, 0.0, 0.0, "A"
             u.state.fan_pct, u.state.load_pct = 60.0, 90.0
             u.state.ts1 = 48.0

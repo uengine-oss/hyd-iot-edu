@@ -20,9 +20,11 @@ class KnowledgeGraph:
     def __init__(self):
         uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
         user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
+        # liveness_check_timeout=0: 풀에서 꺼낸 연결을 쓰기 전에 살아 있는지 확인한다. neo4j 가 다시 뜨면(볼륨 교체 · 재시작) 풀에 남은
+        # 끊긴 연결이 다음 조회를 ServiceUnavailable 로 실패시켰다(2026-10-09 회귀: 승인 조건 검사 실패). 재시도 없이(bounded) 새 연결을 쓴다.
         self.driver = GraphDatabase.driver(uri, auth=(user, pwd),
                                           connection_timeout=3, connection_acquisition_timeout=5,
-                                          max_transaction_retry_time=0)
+                                          max_transaction_retry_time=0, liveness_check_timeout=0)
         self._cache: dict[str, str] = {}
 
     def template(self, name: str) -> str:

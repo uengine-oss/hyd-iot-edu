@@ -224,7 +224,7 @@ pre { background: var(--paper); border-radius: 8px; }
 .rr-card.tone-wait { box-shadow: inset 3px 0 0 var(--focus); }
 .rr-card.tone-wait .rr-badge { background: var(--it-bg); color: var(--it); }
 .rr-vals { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.rr-val { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.rr-val { min-width: 0; overflow-wrap: anywhere;  border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
 .rr-val span, .rr-val small { font-size: 12px; color: var(--ink-3); }
 .rr-val b { font-size: 18px; font-weight: 600; }
 .rr-val.bad b { color: var(--alarm); } .rr-val.good b { color: var(--ok); }
@@ -238,17 +238,6 @@ pre { background: var(--paper); border-radius: 8px; }
 .rr-time { margin-left: auto; font-size: 12px; }
 @keyframes rr-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .rr-steps li.run .rr-dot { animation: none; } }
-/* ---------------- A161-U1 수업 시나리오 원인 버튼 (scenarioTriggers.js) ---------------- */
-.trig-panel { margin-bottom: var(--s5); }
-.trig-panel .sec-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.trig-panel .sec-head h2 { margin: 0 0 8px; }
-.trig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.trig-card { border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-.trig-card p { margin: 0; font-size: 13px; color: var(--ink-2); flex: 1; }
-.trig-card .btn { align-self: flex-start; }
-.trig-card.off { background: var(--surface-soft); }
-.trig-head { display: flex; gap: 10px; align-items: center; }
-.trig-head h3 { margin: 0; font-size: 14px; }
-.trig-head .muted { font-size: 12px; }
-.trig-key { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; background: var(--ink); color: #fff; font-size: 13px; }
-.trig-card.off .trig-key { background: var(--ink-4); }
+/* ---------------- C3 B · C 단순화: 결함 실험 카드 머리의 시나리오 표시 (app.js bizAlertHtml) ---------------- */
+.unit header .biz-alert { margin-left: auto; margin-right: 8px; }
+.unit header .biz-alert a.chip { text-decoration: none; }

@@ -61,6 +61,8 @@
     const tone = verdict === 'ok' ? 'ok' : verdict === 'fail' ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
     const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
     const chosen = (v.chosen_option && v.chosen_option.name) || '';
+    // 승인자는 사람 id(user:…)로 저장된다 — 화면에는 이름으로 (C3: 블랙박스 점검에서 id만 보이던 곳)
+    const personName = id => { const p = window.hydInbox && window.hydInbox.X && (window.hydInbox.X.people || []).find(x => x.id === id); return p ? p.name : id; };
     const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
     const steps = sys.map(w => {
       const st = w.status === 'DONE' ? 'done' : 'run';
@@ -70,7 +72,7 @@
     return `<section class="rr-card tone-${tone}" aria-label="결과 보고">
       <div class="rr-head"><span class="rr-badge">${e(label)}</span><div><h4>${e((rep && rep.title) || '결과 보고')}</h4>${rep && rep.summary ? `<p>${e(UI.idText(rep.summary))}</p>` : !done ? '<p>시스템이 실행하고 확인하는 중입니다. 끝나면 여기에 결과가 올라옵니다.</p>' : ''}</div></div>
       ${values ? `<div class="rr-vals">${values}</div>` : ''}
-      ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${v.approved_by ? ` · ${e(v.approved_by)}${v.approved_role ? ` (${e(UI.who(v.approved_role))})` : ''}` : ''}</p>` : ''}
+      ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${v.approved_by ? ` · ${e(personName(v.approved_by))}${v.approved_role ? ` (${e(UI.who(v.approved_role))})` : ''}` : ''}</p>` : ''}
       ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
       ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">무엇으로 시작해 무엇을 보고 · 누가 승인해 · 시스템이 무엇을 했는지 단계별로</span></div>` : ''}
     </section>`;

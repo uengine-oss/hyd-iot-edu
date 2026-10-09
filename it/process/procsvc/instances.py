@@ -104,6 +104,7 @@ class Hooks:
     recovery_reading: Callable[[str], dict | None] | None = None     # 사건의 회복 기준 태그 최신값 · 경보 해제 (작업지시 뒤 재관측)
     read_tag: Callable[[str, str], float | None] | None = None        # (설비, 태그) → 최신값 (시운전 확인)
     close_incident_result: Callable[[str, str, str], bool] | None = None   # (사건, 등급 ok|fail, 요약) → 결과 보고로 사건 종결
+    case_started: Callable[[dict], None] | None = None                # C3: 처리 건이 막 열렸을 때(수업 버튼 연결 — 설비 주입 id 로)
 
 
 class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePartsRuntime):
@@ -263,6 +264,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.hooks.audit(values.get('asset','-'),'process','INSTANCE_STARTED',
                          {'instance':inst['proc_inst_id'],'event_id':event_id,'definition':def_id,'version':version},
                          incident=values.get('incident'))
+        if self.hooks.case_started is not None:
+            try:
+                self.hooks.case_started(inst)
+            except Exception as e:  # noqa: BLE001 — 연결 기록 실패가 처리 건 시작을 되돌리지 않는다. 대신 감사 기록에 좌표를 남긴다
+                log.exception("case_started hook failed for %s", inst['proc_inst_id'])
+                self.hooks.audit(values.get('asset','-'),'process','CASE_LINK_FAILED',
+                                 {'instance':inst['proc_inst_id'],'error':str(e)[:300]},incident=values.get('incident'))
         self._project(inst)
         return inst
 
