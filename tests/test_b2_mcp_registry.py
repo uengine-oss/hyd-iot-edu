@@ -253,7 +253,8 @@ def test_reset_removes_student_servers_and_checks_and_keeps_the_seed(api):
     out = api.post("/api/mcp/reset", json={}).json()
     assert sorted(out["removed_servers"]) == ["my-fake", "sql-added"] and out["removed_checks"] == 2
     assert servers(api) == SEED_MCP["mcpServers"] and api.repo._mcp_checks == {}
-    assert api.post("/api/mcp/reset", json={}).json() == {"removed_servers": [], "removed_checks": 0, "kept": list(SEED_MCP["mcpServers"])}
+    assert api.post("/api/mcp/reset", json={}).json() == {"removed_servers": [], "removed_checks": 0, "removed_secrets": 0,   # G2: 비밀 값도 지운다
+                                                          "kept": list(SEED_MCP["mcpServers"])}
 
 
 def test_legacy_mode_answers_503():

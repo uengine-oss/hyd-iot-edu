@@ -1,0 +1,25 @@
+{
+  "_comment": "T1 학생 이름 공간 스키마 틀(전체 과정 랩업, docs/handoff/verification/2026-10-09/capstone-lab.md 3.3 · 6.1). students/<내ID>/schema.json 으로 복사하고 ns 를 내 ID 로 바꾼다. 형식은 확정 스키마(it/neo4j/v2/schema.json)와 같다: classes[name · label_ko · layer · properties] · relationships[type · from · to · cardinality]. v2 클래스 · 관계는 다시 정의하지 않고 그대로 쓴다(Process · Task · Role · Rule · KnowledgeSource …). 아래는 3절 예시(분기 고객 리뷰 회의 준비)다. 검사: python scripts/ontology_v2.py check-extra --extra students/<내ID>/schema.json",
+  "ns": "s00",
+  "name": "학생 업무 사전 — 분기 고객 리뷰 회의 준비 (예시)",
+  "version": "0.1.0",
+  "classes": [
+    {"name": "Meeting", "label_ko": "회의", "layer": "resource", "description": "준비하고 여는 회의 한 건. 확정 조건(필수 참석자 전원 가능)은 Rule 로 둔다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "kind", "type": "enum", "values": ["customer_review", "internal"], "required": true},
+                    {"name": "minAttendees", "type": "integer", "description": "회의실을 고를 때 쓰는 최소 인원"}]},
+    {"name": "AgendaItem", "label_ko": "안건", "layer": "resource", "description": "회의에서 다룰 안건. 지난 회의록의 미결 이슈에서 온다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "status", "type": "enum", "values": ["open", "closed"], "required": true}]},
+    {"name": "Material", "label_ko": "회의 자료", "layer": "resource", "description": "회의 전에 공유할 자료(구글 드라이브 파일 등). 실제 파일 위치는 link 로만 둔다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "link", "type": "string"}]}
+  ],
+  "relationships": [
+    {"type": "HAS_AGENDA", "from": ["Meeting"], "to": ["AgendaItem"], "cardinality": "1:N", "description": "회의의 안건"},
+    {"type": "NEEDS_MATERIAL", "from": ["Meeting"], "to": ["Material"], "cardinality": "1:N", "description": "회의 전에 공유할 자료"},
+    {"type": "ORGANIZED_BY", "from": ["Meeting"], "to": ["Role"], "cardinality": "N:1", "description": "다리 관계 — 회의 주관 역할(v2 Role)"},
+    {"type": "RAISED_IN", "from": ["AgendaItem"], "to": ["KnowledgeSource"], "cardinality": "N:1", "description": "다리 관계 — 안건이 나온 문서(v2 KnowledgeSource, 원문 근거)"},
+    {"type": "PREPARED_BY_PROCESS", "from": ["Meeting"], "to": ["Process"], "cardinality": "N:1", "description": "다리 관계 — 이 회의를 준비하는 흐름(v2 Process, G8 투영)"}
+  ]
+}

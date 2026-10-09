@@ -3,7 +3,18 @@
 Tools reach a CLI agent as MCP servers registered per run. The servers come from `tenants.mcp` in the product's own
 shape — `mcpServers: {name: {command, args, env}}` for stdio servers, `{type: "url", url, transport}` for streamable-HTTP
 servers (the shape process-gpt-sample-app-wms documents). Claude Code reads a project-scoped `.mcp.json`, so one run's
-tools stay in one run's workspace; HTTP servers are written in Claude Code's native `{type: "http", url}` form.
+tools stay in one run's workspace; HTTP servers are written in Claude Code's native `{type: "http", url, headers}` form.
+
+G2 (capstone, docs/handoff/verification/2026-10-09/capstone-lab.md 5.2):
+  ⓪ an HTTP server's `headers` (a token-protected server such as Google's) are written into .mcp.json with it — the
+     portal's connection check (procsvc/mcp_check._StreamableHttp) and the system task after approval already send them,
+     so without this the agent alone failed authentication. Claude Code's .mcp.json takes `headers` for http/sse servers;
+     Codex takes `http_headers`. cleanup() removes them after the run like `env`.
+  ① `${SECRET:KEY}` placeholders in headers/env are filled here, right before the file is written (ProcessGPT mcp-hub
+     catalog.py resolve_template, 115~137). The values come from context.prepare (the mcp_secrets table + HYD_SECRET_*),
+     carried next to mcpServers under SECRETS_KEY so select_servers/gate_servers pass them through without a runner change;
+     the gate leaves out a server whose secret has no value, with a reason the runner already reports. Fingerprints are
+     computed on the placeholder form, so swapping a token keeps the connection-check stamp.
 """
 from __future__ import annotations
 
@@ -13,11 +24,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from cliagents import McpServer
+from procsvc import mcp_secrets
 
 MCP_CONFIG_FILENAME = ".mcp.json"
 CONFIG_HOME_DIRNAME = ".agent-home"
 #: B2: the HYD-only key of a tenants.mcp entry (origin · connection-check stamp). Never written to .mcp.json / codex config.
 META_KEY = "hyd"
+#: G2: top-level key of the run's tenant_mcp copy that carries secret values from context.prepare to install(). Never written out.
+SECRETS_KEY = "hydSecrets"
 
 
 @dataclass
@@ -26,6 +40,7 @@ class BridgeResult:
     config_path: str | None = None
     env: dict[str, str] = field(default_factory=dict)       # environment the run must inherit (config-dir isolation)
     extra_args: list[str] = field(default_factory=list)
+    dropped: dict[str, str] = field(default_factory=dict)   # G2: server -> why install left it out (a secret without a value)
 
 
 def cleanup(workdir: Path) -> list[str]:
@@ -46,7 +61,9 @@ def cleanup(workdir: Path) -> list[str]:
     except json.JSONDecodeError:
         return []
     entries = config.get("mcpServers") if isinstance(config.get("mcpServers"), dict) else {}
-    removed = [name for name, entry in entries.items() if isinstance(entry, dict) and entry.pop("env", None)]
+    # G2 ⓪: an HTTP server's headers carry its token the same way a stdio server's env does
+    removed = [name for name, entry in entries.items()
+               if isinstance(entry, dict) and [entry.pop(k) for k in ("env", "headers") if entry.get(k)]]
     if removed:
         path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return removed
@@ -66,6 +83,29 @@ def select_servers(tenant_mcp: dict | None, tools: list[str] | None) -> tuple[di
     chosen = {name: spec for name, spec in config.items() if name in wanted}
     missing = [t for t in wanted if t not in config]
     return dict(tenant_mcp, mcpServers=chosen), missing
+
+
+def attach_secrets(tenant_mcp: dict | None, values: dict[str, str] | None) -> dict | None:
+    """G2: a copy of tenant_mcp carrying the values of the secrets its servers name (only those) under SECRETS_KEY."""
+    config = (tenant_mcp or {}).get("mcpServers")
+    if not isinstance(config, dict):
+        return tenant_mcp
+    wanted = {k for spec in config.values() for k in mcp_secrets.references(spec)}
+    if not wanted:
+        return tenant_mcp
+    return dict(tenant_mcp, **{SECRETS_KEY: {k: v for k, v in (values or {}).items() if k in wanted}})
+
+
+def without_secrets(tenant_mcp: dict | None) -> dict | None:
+    """The tenant config as anything but install() may see it (prompt extras, logs)."""
+    if isinstance(tenant_mcp, dict) and SECRETS_KEY in tenant_mcp:
+        return {k: v for k, v in tenant_mcp.items() if k != SECRETS_KEY}
+    return tenant_mcp
+
+
+def _secret_values(tenant_mcp: dict | None) -> dict[str, str]:
+    held = (tenant_mcp or {}).get(SECRETS_KEY) if isinstance(tenant_mcp, dict) else None
+    return dict(held) if isinstance(held, dict) else {}
 
 
 def config_fingerprint(entry: dict) -> str:
@@ -94,7 +134,12 @@ def gate_servers(tenant_mcp: dict | None, trusted: set[str] | list[str]) -> Gate
         return Gate(config=tenant_mcp)
     kept: dict = {}
     out = Gate(config=None)
+    values = _secret_values(tenant_mcp)
     for name, spec in config.items():
+        missing = [k for k in mcp_secrets.references(spec) if not values.get(k)]
+        if missing:                     # G2: never start a server with an empty token — say which secret is missing
+            out.dropped[name] = "비밀 값 " + " · ".join(missing) + " 이(가) 없는 서버(포털 MCP 화면 '비밀 값'에 넣기)"
+            continue
         if name in trusted or not isinstance(spec, dict):
             kept[name] = spec
             continue
@@ -112,6 +157,28 @@ def gate_servers(tenant_mcp: dict | None, trusted: set[str] | list[str]) -> Gate
             out.blocked_tools[name] = [str(t) for t in stamp.get("blocked_tools") or []]
     out.config = dict(tenant_mcp, mcpServers=kept)
     return out
+
+
+def _resolved(tenant_mcp: dict | None) -> tuple[dict | None, dict[str, str]]:
+    """G2: tenant_mcp with every server's ${SECRET:KEY} filled (SECRETS_KEY dropped); servers whose secret has no value are left out."""
+    config = (tenant_mcp or {}).get("mcpServers")
+    if not isinstance(config, dict):
+        return without_secrets(tenant_mcp), {}
+    values, kept, dropped = _secret_values(tenant_mcp), {}, {}
+    for name, spec in config.items():
+        filled, missing = mcp_secrets.resolve(spec, values)
+        if missing:
+            dropped[name] = "비밀 값 " + " · ".join(missing) + " 이(가) 없음"
+        else:
+            kept[name] = filled
+    return dict(without_secrets(tenant_mcp), mcpServers=kept), dropped
+
+
+def _headers(tenant_mcp: dict | None, name: str) -> dict[str, str]:
+    """G2 ⓪: an HTTP server's headers as registered (already resolved by install)."""
+    spec = ((tenant_mcp or {}).get("mcpServers") or {}).get(name) or {}
+    headers = spec.get("headers") if isinstance(spec, dict) else None
+    return {str(k): str(v) for k, v in headers.items()} if isinstance(headers, dict) else {}
 
 
 def servers_of(tenant_mcp: dict | None, *, extra_env: dict[str, str] | None = None,
@@ -167,6 +234,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     """Register the tenant's servers for one run in `workdir` (idempotent: rewrites the same entries).
     read_tools (B2, from gate_servers): a gated server's read-only tools — Codex enables only those (Claude Code gets them
     through --allowedTools / --disallowedTools in the runner)."""
+    tenant_mcp, dropped = _resolved(tenant_mcp)
     stdio, http = servers_of(tenant_mcp, extra_env=extra_env, host_rewrite=host_rewrite)
     if provider_id == "codex":
         # cliagents' installed McpServer/install_bridge only supports stdio.
@@ -174,7 +242,8 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         # user's config, login and session store intact. Never register tenant
         # servers globally: another tenant could overwrite them during a run.
         entries = {s.name: {"command": s.command, "args": s.args, "env": s.env} for s in stdio}
-        entries.update({name: {"url": url} for name, url in http.items()})
+        entries.update({name: dict({"url": url}, **({"http_headers": _headers(tenant_mcp, name)} if _headers(tenant_mcp, name) else {}))
+                        for name, url in http.items()})
         for name, entry in entries.items():
             entry.update(required=True, startup_timeout_sec=60, default_tools_approval_mode="approve")
             if name == "neo4j":
@@ -184,7 +253,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         path = workdir / "codex-mcp.toml"
         config = "mcp_servers=" + _inline_toml(entries)
         path.write_text(config + "\n", encoding="utf-8")
-        return BridgeResult(servers=list(entries), config_path=str(path),
+        return BridgeResult(servers=list(entries), config_path=str(path), dropped=dropped,
                             extra_args=["--ignore-user-config", "--disable", "apps",
                                         "-c", "project_doc_max_bytes=0", "-c", config])
     path = workdir / MCP_CONFIG_FILENAME
@@ -202,9 +271,15 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         entries[s.name] = entry
     for name, url in http.items():
         entries[name] = {"type": _http_type(tenant_mcp, name), "url": url}
+        headers = _headers(tenant_mcp, name)
+        if headers:                     # G2 ⓪: was dropped — a token-protected server failed only for the agent
+            entries[name]["headers"] = headers
+    for name in dropped:
+        entries.pop(name, None)         # an earlier run's entry for a server this run cannot start
     config["mcpServers"] = entries
     path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir, provider_id, isolate_config_dir))
+    return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir, provider_id, isolate_config_dir),
+                        dropped=dropped)
 
 
 def _inline_toml(value) -> str:

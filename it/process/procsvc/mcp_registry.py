@@ -20,6 +20,12 @@ HYD 는 이름으로 정한다 — 시드에 표시 칸이 없고, 워커의 기
 
 stdio(명령형) 등록은 연결 검사가 process 컨테이너 안에서 그 명령을 실제로 띄운다. 웹 폼 입력이 컨테이너 안 명령이 되므로
 실행기(npx · uvx · node · python …)만 받고 셸(sh · bash · cmd · powershell)은 거절한다.
+
+G2(전체 과정 랩업 — 구글처럼 토큰이 필요한 서버):
+  * 비밀 자리표시자: headers · env 값에 ${SECRET:KEY} 를 쓰면 검사 직전에 mcp_secrets 표(또는 HYD_SECRET_<KEY>)로 채운다.
+    해시는 자리표시자가 든 설정으로 계산하므로 토큰을 갈아 끼워도 도장은 그대로다. 값이 없으면 검사가 사유(error_kind=secret)와 함께 실패.
+  * 강사 확인 읽기 목록(hyd.read_confirmed): readOnlyHint 표시가 없을 뿐 이름 · 표시가 쓰기가 아닌 도구(mcp_check.confirmable)를
+    강사가 "읽기"로 확인하면 도장의 read_tools 에 넣는다(확인자 · 이유 · 시각 기록). 쓰기로 표시했거나 이름이 쓰기인 도구는 확인할 수 없다.
 """
 from __future__ import annotations
 
@@ -29,7 +35,7 @@ import os
 import re
 from copy import deepcopy
 
-from . import mcp_check
+from . import mcp_check, mcp_secrets
 
 #: seed.sql:57-63 의 tenants.mcp 세 서버 = 워커 DEFAULT_ALLOWED_TOOLS 가 적는 세 서버(tests/test_b2_mcp_registry.py 가 대조)
 # C2 (확정 2026-10-09): 업무 MCP 를 보전용(enterprise-maint) · 구매용(enterprise-purchase)으로 나눈 두 서버도 기준이다(같은 읽기 전용 코드,
@@ -102,6 +108,9 @@ def entry_from_body(body: dict, old: dict | None = None) -> dict:
         spec = mcp_check.normalize(raw)
     except ValueError as e:
         raise RegistryError(422, f"설정 오류 — {e}") from e
+    wrong = mcp_secrets.misplaced(spec)
+    if wrong:
+        raise RegistryError(422, "설정 오류 — " + " / ".join(wrong))
     if spec["transport"] == "stdio":
         exe = os.path.basename(spec["command"]).lower()
         exe = exe[:-4] if exe.endswith((".exe", ".cmd", ".bat")) else exe
@@ -145,22 +154,45 @@ def _check_limit(raw) -> float:
     return value
 
 
-def run_check(entry: dict, timeout: float) -> dict:
-    """실제 연결 검사(기존 검사기) → 저장할 기록 모양. 입력 형식(input_schema)은 싣지 않는다(도구 지도가 그때그때 읽는다)."""
+def run_check(entry: dict, timeout: float, secrets: dict | None = None) -> dict:
+    """실제 연결 검사(기존 검사기) → 저장할 기록 모양. 입력 형식(input_schema)은 싣지 않는다(도구 지도가 그때그때 읽는다).
+    G2: ${SECRET:KEY} 는 검사 직전에 secrets 로 채운다(해시는 채우기 전 설정). 값이 없으면 연결하지 않고 사유와 함께 실패."""
     spec = mcp_check.normalize(entry)
-    result = mcp_check.check(spec, timeout)
+    resolved, missing = mcp_secrets.resolve(spec, secrets)
+    if missing:
+        result = {"status": "failed", "error": mcp_secrets.missing_reason(None, missing),
+                  "error_kind": "secret", "tools": [], "elapsed_ms": 0, "checked_at": mcp_check._now_z(), "transport": spec.get("transport")}
+    else:
+        result = mcp_check.check(resolved, timeout)
     tools = [{"name": t["name"], "title": t.get("title"), "description": t.get("description") or "", "annotations": t.get("annotations") or {},
-              "read_only": bool(t.get("callable")), "reason": t.get("refuse_reason")} for t in result.get("tools") or []]
+              "read_only": bool(t.get("callable")), "reason": t.get("refuse_reason"), "confirmable": bool(t.get("confirmable"))}
+             for t in result.get("tools") or []]
     return {"fingerprint": fingerprint(entry), "status": "ok" if result["status"] == "ok" else "failed", "error": result.get("error"),
             "error_kind": result.get("error_kind"), "transport": result.get("transport"), "server_info": result.get("server_info"),
             "tools": tools, "elapsed_ms": result.get("elapsed_ms"), "checked_at": result.get("checked_at")}
 
 
-def gate_of(check: dict) -> dict:
-    """워커가 읽는 승인 도장: 검사한 설정 해시 + 읽기 전용 도구 / 막을 도구."""
-    return {"fingerprint": check["fingerprint"], "checked_at": check["checked_at"],
-            "read_tools": [t["name"] for t in check["tools"] if t["read_only"]],
-            "blocked_tools": [t["name"] for t in check["tools"] if not t["read_only"]]}
+def confirmed_of(entry) -> dict:
+    """G2 ②: 강사가 읽기로 확인한 도구 {도구: {by, reason, at}} (hyd.read_confirmed)."""
+    meta = entry.get(META_KEY) if isinstance(entry, dict) and isinstance(entry.get(META_KEY), dict) else {}
+    found = meta.get("read_confirmed")
+    return dict(found) if isinstance(found, dict) else {}
+
+
+def counts_as_read(tool: dict, confirmed) -> bool:
+    """서버가 읽기로 표시한 도구, 또는 강사가 확인한 도구(표시만 없고 이름 · 표시가 쓰기가 아닌 것)."""
+    return bool(tool.get("read_only")) or (tool.get("name") in (confirmed or {}) and bool(tool.get("confirmable")))
+
+
+def gate_of(check: dict, confirmed: dict | None = None) -> dict:
+    """워커가 읽는 승인 도장: 검사한 설정 해시 + 읽기 전용 도구(+ 강사 확인) / 막을 도구."""
+    out = {"fingerprint": check["fingerprint"], "checked_at": check["checked_at"],
+           "read_tools": [t["name"] for t in check["tools"] if counts_as_read(t, confirmed)],
+           "blocked_tools": [t["name"] for t in check["tools"] if not counts_as_read(t, confirmed)]}
+    by_person = [t["name"] for t in check["tools"] if not t.get("read_only") and counts_as_read(t, confirmed)]
+    if by_person:
+        out["confirmed_tools"] = by_person
+    return out
 
 
 # ---------------------------------------------------------------- 저장소 (tenants.mcp + mcp_server_checks)
@@ -356,25 +388,30 @@ def selectable(store, tenant_id: str) -> dict:
         # 기준 서버(seed)는 기본 에이전트가 이미 쓰는 구성 — 워커가 기본 허용 목록으로 실행하므로 포털 연결 검사 없이 고를 수 있다.
         # (process 컨테이너에는 stdio 서버 명령(uvx 등)이 없어 neo4j 는 포털 검사가 늘 "명령 없음"이다 — 검사 결과는 참고로만 보인다)
         reason = None if origin == "seed" and not entry_error else _not_selectable_reason(state, entry_error)
+        confirmed = confirmed_of(entry)
         tools = []
         for t in (records.get(name) or {}).get("tools") or []:
+            readable = counts_as_read(t, confirmed)
             if reason:
                 ok, why = False, reason
             else:
-                ok, why = bool(t.get("read_only")), (None if t.get("read_only") else
-                                                     "에이전트에는 읽기 전용 도구만 붙입니다 — " + (t.get("reason") or "읽기 전용 표시가 없습니다"))
+                ok, why = readable, (None if readable else
+                                     "에이전트에는 읽기 전용 도구만 붙입니다 — " + (t.get("reason") or "읽기 전용 표시가 없습니다"))
             tools.append({"name": t["name"], "title": t.get("title"), "description": t.get("description") or "", "read_only": bool(t.get("read_only")),
+                          "confirmable": bool(t.get("confirmable")) and not t.get("read_only"),
+                          "confirmed": (confirmed.get(t["name"]) if readable and not t.get("read_only") else None),
                           "selectable": ok, "reason": why, "tool_id": f"mcp__{name}__{t['name']}"})
             if ok:
                 picks.append({"server": name, "tool": t["name"], "tool_id": f"mcp__{name}__{t['name']}"})
         if not reason and origin != "seed" and not any(t["selectable"] for t in tools):
-            reason = "읽기 전용(readOnlyHint=true)으로 표시한 도구가 없습니다 — 에이전트에 붙일 도구가 없습니다"
+            reason = ("읽기 전용(readOnlyHint=true)으로 표시한 도구가 없습니다 — 에이전트에 붙일 도구가 없습니다"
+                      + (" (표시만 없는 도구는 강사가 '읽기로 확인'하면 붙일 수 있습니다)" if any(t["confirmable"] for t in tools) else ""))
         out.append({"name": name, "origin": origin, "origin_text": ORIGIN_WORDS[origin], "mine": origin != "seed", "editable": origin != "seed",
                     "transport": spec.get("transport"), "check": state, "selectable": reason is None, "reason": reason, "agent_value": name,
                     "tools": tools})
     return {"tenant": tenant_id, "servers": out, "selectable_tools": picks,
-            "rule": "연결 검사를 통과했고 그 뒤 설정이 바뀌지 않은 서버의, 서버가 읽기 전용(readOnlyHint=true)으로 표시한 도구만 고를 수 있습니다. "
-                    "에이전트에는 서버 이름을 적고, 실행 때 워커가 읽기 전용 도구만 허용합니다."}
+            "rule": "연결 검사를 통과했고 그 뒤 설정이 바뀌지 않은 서버의, 서버가 읽기 전용(readOnlyHint=true)으로 표시한 도구(또는 표시가 없어 "
+                    "강사가 읽기로 확인한 도구)만 고를 수 있습니다. 에이전트에는 서버 이름을 적고, 실행 때 워커가 읽기 전용 도구만 허용합니다."}
 
 
 def refuse_reasons(store, tenant_id: str, server_names) -> list[str]:
@@ -407,11 +444,24 @@ def _now() -> str:
     return mcp_check._now_z()
 
 
-def dry_check(body: dict) -> dict:
+def secrets_of(store, tenant_id: str) -> dict:
+    """G2: 검사 직전에 채울 비밀 값(표 + HYD_SECRET_*). 값은 이 함수 밖으로 응답에 실리지 않는다."""
+    return mcp_secrets.load(getattr(store, "repo", None), tenant_id)
+
+
+def warnings_of(entry: dict) -> list[str]:
+    """비밀처럼 보이는 칸에 값을 그대로 넣었으면 ${SECRET:KEY} 로 바꾸라는 경고(거절하지 않는다 — 기존 랩업 서버와 호환)."""
+    found = mcp_secrets.literal_secrets(entry)
+    return [f"{' · '.join(found)}: 비밀 값을 설정에 그대로 넣었습니다 — 값은 '비밀 값'에 넣고 설정에는 ${{SECRET:이름}} 을 쓰세요 "
+            "(설정은 내보내기 · 도구 지도에 실립니다)"] if found else []
+
+
+def dry_check(body: dict, secrets: dict | None = None) -> dict:
     """등록 전 검사: 저장 없이 형식 → 연결 → 도구 판정."""
     entry = entry_from_body(body)
-    record = run_check(entry, _check_limit(body.get("timeout")))
-    return {"check": record, "config": mcp_check.masked(mcp_check.normalize(entry)), "gate": gate_of(record) if record["status"] == "ok" else None}
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets)
+    return {"check": record, "config": mcp_check.masked(mcp_check.normalize(entry)), "gate": gate_of(record) if record["status"] == "ok" else None,
+            "warnings": warnings_of(entry)}
 
 
 def _require_pass(record: dict, verb: str) -> None:
@@ -426,14 +476,14 @@ def register(store, tenant_id: str, body: dict, by: str = "포털") -> dict:
     if name in store.servers(tenant_id):
         raise RegistryError(409, f"'{name}' 서버가 이미 있습니다 — 고치기를 쓰거나 다른 이름을 쓰세요")
     entry = entry_from_body(body)
-    record = run_check(entry, _check_limit(body.get("timeout")))
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id))
     _require_pass(record, "등록하지")
     now = _now()
     entry[META_KEY] = {"origin": "user", "created_at": now, "updated_at": now, "by": by, "gate": gate_of(record)}
     if not store.insert_server(tenant_id, name, entry):
         raise RegistryError(409, f"'{name}' 서버가 이미 있습니다")
     store.save_check(tenant_id, name, record, by)
-    return {"name": name, "check": record, "gate": entry[META_KEY]["gate"]}
+    return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
 def update(store, tenant_id: str, name: str, body: dict, by: str = "포털") -> dict:
@@ -444,16 +494,19 @@ def update(store, tenant_id: str, name: str, body: dict, by: str = "포털") -> 
     if old is None:
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     entry = entry_from_body(body, old if isinstance(old, dict) else {})
-    record = run_check(entry, _check_limit(body.get("timeout")))
+    record = run_check(entry, _check_limit(body.get("timeout")), secrets_of(store, tenant_id))
     _require_pass(record, "고치지")
     old_meta = old.get(META_KEY) if isinstance(old, dict) and isinstance(old.get(META_KEY), dict) else {}
+    confirmed = confirmed_of(old)                                      # 강사 확인은 도구 이름에 붙는다 — 고쳐도 남고, 도장은 새 검사로 다시 계산
     now = _now()
     entry[META_KEY] = {"origin": old_meta.get("origin") or "external", "created_at": old_meta.get("created_at") or now, "updated_at": now,
-                       "by": by, "gate": gate_of(record)}
+                       "by": by, "gate": gate_of(record, confirmed)}
+    if confirmed:
+        entry[META_KEY]["read_confirmed"] = confirmed
     if not store.replace_server(tenant_id, name, entry):
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     store.save_check(tenant_id, name, record, by)
-    return {"name": name, "check": record, "gate": entry[META_KEY]["gate"]}
+    return {"name": name, "check": record, "gate": entry[META_KEY]["gate"], "warnings": warnings_of(entry)}
 
 
 def remove(store, repo, tenant_id: str, name: str, *, force: bool = False) -> dict:
@@ -475,7 +528,7 @@ def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str = "�
     if entry is None:
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     try:
-        record = run_check(entry, _check_limit(timeout))
+        record = run_check(entry, _check_limit(timeout), secrets_of(store, tenant_id))
     except ValueError as e:
         raise RegistryError(422, f"MCP 서버 '{name}' 설정 오류 — {e}")
     store.save_check(tenant_id, name, record, by)
@@ -483,19 +536,60 @@ def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str = "�
         meta = dict(entry.get(META_KEY) or {}) if isinstance(entry.get(META_KEY), dict) else {}
         meta.setdefault("origin", "external")
         if record["status"] == "ok":
-            meta["gate"] = gate_of(record)
+            meta["gate"] = gate_of(record, confirmed_of(entry))
         else:
             meta.pop("gate", None)                        # 실패한 서버는 워커가 연결하지 않는다
         store.set_meta(tenant_id, name, meta)
     return {"name": name, "check": record, "state": check_state(name, entry, record)}
 
 
+def confirm_read(store, tenant_id: str, name: str, tool: str, *, on: bool = True, by: str = "", reason: str = "") -> dict:
+    """G2 ②: 강사가 readOnlyHint 표시가 없는 도구를 "읽기"로 확인(on) · 확인 취소(off). 확인자 · 이유가 있어야 하고,
+    마지막 검사가 지금 설정에 대해 통과했어야 하며, 그 검사에서 confirmable(표시 없음뿐 · 이름이 쓰기 아님)이었던 도구만 된다.
+    확인하면 워커 도장(hyd.gate)을 다시 계산한다 — 그 도구가 read_tools 로 옮겨 간다."""
+    if name in BASE_SERVERS:
+        raise RegistryError(403, f"'{name}' 는 기준(기본 제공) 서버라 도구 판정을 바꿀 수 없습니다")
+    entry = store.servers(tenant_id).get(name)
+    if not isinstance(entry, dict):
+        raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
+    by, reason = str(by or "").strip()[:60], str(reason or "").strip()[:300]
+    if on and (not by or not reason):
+        raise RegistryError(422, "확인한 사람(by)과 읽기라고 본 이유(reason)를 적어야 합니다 — 도구 설명 · 서버 문서에서 쓰기가 없는지 본 근거")
+    record = store.checks(tenant_id).get(name)
+    if record is None or record.get("status") != "ok" or record.get("fingerprint") != fingerprint(entry):
+        raise RegistryError(409, "지금 설정으로 통과한 연결 검사가 없습니다 — '연결 검사'를 먼저 하세요")
+    found = next((t for t in record.get("tools") or [] if t.get("name") == tool), None)
+    if found is None:
+        raise RegistryError(404, f"마지막 검사의 도구 목록에 '{tool}' 가 없습니다")
+    confirmed = confirmed_of(entry)
+    if on:
+        if found.get("read_only"):
+            raise RegistryError(409, f"'{tool}' 는 서버가 이미 읽기 전용으로 표시했습니다 — 확인할 필요가 없습니다")
+        if not found.get("confirmable"):
+            raise RegistryError(422, f"'{tool}' 는 읽기로 확인할 수 없습니다 — {found.get('reason') or '쓰기 도구'} "
+                                     "(서버가 쓰기로 표시했거나 이름이 쓰기 · 실행을 뜻하는 도구는 승인 뒤 시스템 task 로만 씁니다)")
+        confirmed[tool] = {"by": by, "reason": reason, "at": _now()}
+    elif confirmed.pop(tool, None) is None:
+        raise RegistryError(404, f"'{tool}' 는 읽기로 확인한 도구가 아닙니다")
+    meta = dict(entry.get(META_KEY) or {})
+    meta.setdefault("origin", "external")
+    meta["read_confirmed"] = confirmed
+    meta["gate"] = gate_of(record, confirmed)
+    if not confirmed:
+        meta.pop("read_confirmed")
+    store.set_meta(tenant_id, name, meta)
+    return {"name": name, "tool": tool, "confirmed": on, "read_confirmed": confirmed, "gate": meta["gate"]}
+
+
 def reset(store, tenant_id: str) -> dict:
-    """기준으로 되돌리기: 기준 서버가 아닌 서버(포털 등록 · 랩업 SQL)와 검사 기록을 모두 지운다. 기준 세 서버의 설정은 그대로."""
+    """기준으로 되돌리기: 기준 서버가 아닌 서버(포털 등록 · 랩업 SQL)와 검사 기록을 모두 지운다. 기준 세 서버의 설정은 그대로.
+    G2: 비밀 값(mcp_secrets)도 지운다 — 수업 뒤 학생 · 강사 자격 증명이 남지 않게(설계 6.2 '마친 뒤 정리')."""
     removed = [n for n in store.servers(tenant_id) if n not in BASE_SERVERS]
     for n in removed:
         store.delete_server(tenant_id, n)
-    return {"removed_servers": removed, "removed_checks": store.delete_checks(tenant_id), "kept": [n for n in store.servers(tenant_id)]}
+    secrets = mcp_secrets.store_for(store.repo).delete_all(tenant_id) if getattr(store, "repo", None) is not None else 0
+    return {"removed_servers": removed, "removed_checks": store.delete_checks(tenant_id), "removed_secrets": secrets,
+            "kept": [n for n in store.servers(tenant_id)]}
 
 
 def annotate(store, tenant_id: str, servers: dict) -> dict[str, dict]:
@@ -512,8 +606,10 @@ def annotate(store, tenant_id: str, servers: dict) -> dict[str, dict]:
             err = f"설정 오류 — {e}"
         out[name] = {"origin": origin, "origin_text": ORIGIN_WORDS[origin], "mine": origin != "seed", "editable": origin != "seed",
                      "check": state, "selectable": _not_selectable_reason(state, err) is None
-                     and any(t.get("read_only") for t in (records.get(name) or {}).get("tools") or []),
-                     "description": entry.get("description") if isinstance(entry, dict) else None}
+                     and any(counts_as_read(t, confirmed_of(entry)) for t in (records.get(name) or {}).get("tools") or []),
+                     "description": entry.get("description") if isinstance(entry, dict) else None,
+                     "read_confirmed": sorted(confirmed_of(entry)),                     # G2 ②: 강사가 읽기로 확인한 도구(이름만)
+                     "secrets": mcp_secrets.references(entry)}                          # G2 ①: 이 서버가 쓰는 비밀 이름(값 아님)
     return out
 
 
@@ -548,8 +644,8 @@ def mount(app, *, runtime_factory, audit):
 
     @app.post("/api/mcp/check")
     async def dry_check_route(body: dict | None = None):
-        runtime()
-        out = await run(lambda: dry_check(body or {}))
+        rt = runtime()
+        out = await run(lambda: dry_check(body or {}, secrets_of(store_for(rt.repo), rt.tenant_id)))
         return out
 
     @app.post("/api/mcp/servers", status_code=201)
@@ -596,6 +692,20 @@ def mount(app, *, runtime_factory, audit):
     async def check_route(name: str, body: dict | None = None):
         rt = runtime()
         return await run(lambda: check_saved(store_for(rt.repo), rt.tenant_id, name, timeout=(body or {}).get("timeout"), by=by_of(body)))
+
+    @app.post("/api/mcp/servers/{name}/read-confirm")
+    async def read_confirm_route(name: str, body: dict | None = None):
+        """G2 ②: {tool, on(기본 true), by, reason} — 강사가 표시 없는 도구를 읽기로 확인 · 취소."""
+        rt = runtime()
+        body = body or {}
+
+        def work():
+            out = confirm_read(store_for(rt.repo), rt.tenant_id, name, str(body.get("tool") or ""), on=body.get("on", True) is not False,
+                               by=body.get("by") or "", reason=body.get("reason") or "")
+            note("MCP_READ_CONFIRMED" if out["confirmed"] else "MCP_READ_UNCONFIRMED", name, by_of(body),
+                 {"tool": out["tool"], "reason": str(body.get("reason") or "")[:300]})
+            return out
+        return await run(work)
 
     @app.post("/api/mcp/reset")
     async def reset_route(body: dict | None = None):

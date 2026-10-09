@@ -1105,6 +1105,9 @@ mcp_api.register(app, runtime_factory=instance_mode.current, audit=_audit)
 # B2: MCP 서버 등록 · 고치기 · 지우기 · 연결 검사 게이트 · 되돌리기 (procsvc/mcp_registry.py)
 from . import mcp_registry
 mcp_registry.mount(app, runtime_factory=instance_mode.current, audit=_audit)
+# G2 (전체 과정 랩업): MCP 설정의 ${SECRET:KEY} 값 — 쓰기만 하고 돌려주지 않는다 (procsvc/mcp_secrets.py)
+from . import mcp_secrets
+mcp_secrets.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 
 # A11 데이터 패브릭 미니: 업무 DB · 시계열 DB 읽기 전용 묶어 보기 (전용 읽기 계정만, fabric_api.py)
 from . import fabric_api

@@ -11,6 +11,7 @@
     GET    /api/agent-assignments                        단계 → 담당 에이전트(기본 · 배정) 표
     PUT    /api/agent-assignments                        {definition_id, activity_id, agent_id}
     DELETE /api/agent-assignments/{definition_id}/{activity_id}   배정 지우기 → 다음에 열리는 단계부터 기본 담당
+    POST   /api/roles                                    {name, key?, kind?} 역할 만들기(G10) · DELETE /api/roles/{role_id} (만든 것 · 흐름이 안 쓰는 것만)
     POST   /api/role-members                             {role_id, user_id} 역할에 사람 넣기 · DELETE /api/role-members?role_id=&user_id= (넣은 것만)
     POST   /api/agents/reset                             기준으로 되돌리기: 내가 만든 에이전트 · 스킬 · 배정 · 업무분장만 지움
 
@@ -62,6 +63,13 @@ class MapReq(BaseModel):
 class MemberReq(BaseModel):
     role_id: str = Field(min_length=1, max_length=200)
     user_id: str = Field(min_length=1, max_length=200)
+
+
+class RoleReq(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    key: str | None = Field(default=None, max_length=40)
+    kind: str | None = Field(default=None, max_length=20)
+    by: str | None = None
 
 
 class ResetReq(BaseModel):
@@ -154,6 +162,17 @@ def mount(app: FastAPI) -> None:
     async def clear_assignment(definition_id: str, activity_id: str):
         rt = _rt()
         return await _call(A.clear_assignment, rt, definition_id, activity_id)
+
+    @app.post("/api/roles", status_code=201)
+    async def create_role(req: RoleReq):
+        """G10: 학생 흐름의 레인을 받을 역할 만들기 — users role:<키>(origin user). 흐름 가져오기 역할 목록에 바로 보인다."""
+        rt = _rt()
+        return await _call(A.create_role, rt.repo, rt.tenant_id, req.model_dump(), by=req.by)
+
+    @app.delete("/api/roles/{role_id}")
+    async def delete_role(role_id: str, by: str | None = None):
+        rt = _rt()
+        return await _call(A.delete_role, rt, role_id, by=by)
 
     @app.post("/api/role-members", status_code=201)
     async def add_member(req: MemberReq):

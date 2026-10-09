@@ -83,8 +83,12 @@ class KnowledgeGraph:
     def patterns(self) -> list[dict]:
         return self._run("t0_patterns")
 
-    def graph(self, asset: str) -> dict:
-        return {"nodes": self._run("t0_graph_nodes", asset=asset), "edges": self._run("t0_graph_edges", asset=asset)}
+    def graph(self, asset: str, ns: str = "") -> dict:
+        """ns (G4): 학생 이름 공간 — 비면 수업 기준(ns 없는 노드)만, 학생 ID 면 그 학생 노드와 바로 닿는 기준 노드."""
+        return {"nodes": self._run("t0_graph_nodes", asset=asset, ns=ns or ""), "edges": self._run("t0_graph_edges", asset=asset, ns=ns or "")}
+
+    def namespaces(self) -> list[dict]:
+        return self._run("t0_namespaces")
 
     def template_text(self, name: str) -> str:
         return (TEMPLATES / f"{name}.cypher").read_text(encoding="utf-8")

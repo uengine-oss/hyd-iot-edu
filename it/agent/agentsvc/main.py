@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import urllib.request
 from urllib.parse import quote
 
@@ -265,9 +266,21 @@ def _kg():
     return kg
 
 
+_NS_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
+
+
 @app.get("/api/ontology/graph")
-def ontology_graph(asset: str = "HYD-01"):
-    return _kg().graph(asset)
+def ontology_graph(asset: str = "HYD-01", ns: str = ""):
+    """ns (G4 전체 과정 랩업): 학생 이름 공간. 비면 수업 기준 — 학생 노드는 섞이지 않는다."""
+    if ns and not _NS_RE.match(ns):
+        raise HTTPException(422, "ns: 소문자로 시작하는 소문자 · 숫자 · 하이픈 32자 이내")
+    return _kg().graph(asset, ns)
+
+
+@app.get("/api/ontology/namespaces")
+def ontology_namespaces():
+    """G4: 그래프에 있는 학생 이름 공간(ns)과 노드 수 — 지식 지도의 '이름 공간' 고르기."""
+    return _kg().namespaces()
 
 
 @app.get("/api/ontology/template/{name}")

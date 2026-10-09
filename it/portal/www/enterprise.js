@@ -12,6 +12,8 @@ const ONTO_GROUPS = [
   { key: 'diagnosis', title: '설비 진단', color: '#b42318', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
   { key: 'skill', title: '조치 방법과 규칙', color: '#0f766e', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
   { key: 'external', title: '외부 변수 · 예측 · 사례', color: '#9a6700', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
+  // G4: 학생 이름 공간의 업무 고유 클래스(students/<ID>/schema.json) — v2 에 없는 레이블은 모두 이 칸에 그린다
+  { key: 'student', title: '내 업무 개념', color: '#be185d', labels: [], other: true },
 ];
 const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '성과 지표', Process: '프로세스', Event: '이벤트', Task: '단계', Gateway: '분기',
   OrgUnit: '부서', Role: '역할', System: '시스템', Asset: '설비', Component: '구성 요소', Sensor: '센서', Actuator: '구동기', StateVariable: '상태 변수',
@@ -50,18 +52,30 @@ async function loadPatterns() {
 }
 
 /* ================================================= 지식 지도 */
+async function loadNamespaces() {
+  // G4: 학생 이름 공간 목록(기본 = 수업 기준). 실패해도 지도는 수업 기준으로 그린다
+  const sel = $('#ontoNs'); if (!sel || sel.dataset.loaded) return;
+  try {
+    const list = await getJ(API.agent + '/api/ontology/namespaces');
+    list.forEach(x => sel.append(new Option(`${x.ns} · ${x.nodes}`, x.ns)));
+    sel.dataset.loaded = '1';
+  } catch (e) { /* 목록이 없으면 수업 기준만 */ }
+}
 async function loadGraph(force) {
-  const asset = $('#ontoAsset').value;
+  const asset = $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   if (ent.graph && ent.graphAsset === asset && !force) { drawGraph(); return; }
   $('#ontoStats').textContent = UI.t('loading');
+  loadNamespaces();
+  const [code, ns] = asset.split('|');
+  const current = () => $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   try {
-    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(asset));
-    if ($('#ontoAsset').value !== asset) return;
+    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(code) + (ns ? '&ns=' + encodeURIComponent(ns) : ''));
+    if (current() !== asset) return;
     if (ent.graphAsset !== asset) ent.sel = null;
     ent.graph = graph; ent.graphAsset = asset;
   }
   catch (e) {
-    if ($('#ontoAsset').value !== asset) return;
+    if (current() !== asset) return;
     ent.graph = null; // A reopened tab must retry, not present cached data as recovered.
     $('#ontoNode').innerHTML = '';
     $('#ontoStats').textContent = UI.t('error.load');
@@ -73,7 +87,10 @@ async function loadGraph(force) {
   if (sel.options.length <= 1) pats.forEach(p => sel.append(new Option(p.name, p.id)));
   drawGraph();
 }
-function groupOf(label) { return ONTO_GROUPS.findIndex(g => g.labels.includes(label)); }
+function groupOf(label) {
+  const i = ONTO_GROUPS.findIndex(g => g.labels.includes(label));
+  return i >= 0 ? i : ONTO_GROUPS.findIndex(g => g.other);
+}
 // A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
 const nodeName = n => String(n.name && n.name !== n.id ? n.name : UI.name(n.id));
 function focusSet() {
@@ -114,7 +131,8 @@ function drawGraph() {
   const pos = new Map(); let maxY = 0;
   visibleGroups.forEach(({ gr, i }, ci) => {
     let y = TOP;
-    for (const lab of gr.labels) {
+    const labs = gr.other ? [...new Set(cols[i].map(n => n.label))].sort() : gr.labels;   // G4: 학생 클래스 레이블은 그때그때
+    for (const lab of labs) {
       const ns = cols[i].filter(n => n.label === lab).sort((a, b) => String(a.id).localeCompare(String(b.id)));
       if (!ns.length) continue;
       pos.set('hdr:' + gr.key + ':' + lab, { x: ci * W + 8, y: y + 10, text: `${LABEL_KO[lab] || lab} · ${ns.length}`, hdr: true });
@@ -205,6 +223,7 @@ function initOntology() {
     chips.append(b);
   });
   $('#ontoAsset').addEventListener('change', () => loadGraph(true));
+  $('#ontoNs')?.addEventListener('change', () => { ent.sel = null; loadGraph(true); });
   $('#ontoFocus').addEventListener('change', ev => { ent.focus = ev.target.value || null; ent.sel = null; drawGraph(); renderNodePanel(); });
   $('#ontoSearch').addEventListener('input', ev => { ent.search = ev.target.value; drawGraph(); });
   $('#ontoReload').addEventListener('click', () => loadGraph(true));

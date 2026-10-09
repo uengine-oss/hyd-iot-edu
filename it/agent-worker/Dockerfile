@@ -13,6 +13,7 @@ COPY it/process/procsvc/procdb.py /srv/procsvc/procdb.py
 COPY it/process/procsvc/task_deferral.py /srv/procsvc/task_deferral.py
 COPY it/process/procsvc/agents_store.py /srv/procsvc/agents_store.py
 COPY it/process/procsvc/agent_authoring.py /srv/procsvc/agent_authoring.py
+COPY it/process/procsvc/mcp_secrets.py /srv/procsvc/mcp_secrets.py
 RUN touch /srv/procsvc/__init__.py
 COPY it/neo4j/v2/schema_prompt.md /srv/ontology/schema_prompt.md
 COPY it/agent-worker/worker /srv/worker
