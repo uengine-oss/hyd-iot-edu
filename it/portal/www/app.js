@@ -291,12 +291,12 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · 누름 ${r.injection_id} · ${pressedBy().by}`); await refreshBiz(); }
-    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ` · 처리 건 ${r.instance}에 기록` : ' · 연결된 처리 건 없음(감사 기록만)'}`); await refreshBiz(); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}`); await refreshBiz(); }
+    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록' : ' · 연결된 처리 건 없음(감사 기록에 남김)'}`); await refreshBiz(); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
       const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());
-      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 ${r.instance || '(접수됨)'} 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence && r.evidence.hours_since_pm} h` : `가용 ${r.evidence && r.evidence.available} 개`}`);
+      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}`);
       await refreshBiz();
     }
     else if (act === 'biz-reset') {

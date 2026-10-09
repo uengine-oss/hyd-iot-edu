@@ -61,8 +61,8 @@
     const tone = verdict === 'ok' ? 'ok' : verdict === 'fail' ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
     const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
     const chosen = (v.chosen_option && v.chosen_option.name) || '';
-    // 승인자는 사람 id(user:…)로 저장된다 — 화면에는 이름(id)으로 (C3: 블랙박스 점검에서 id만 보이던 곳)
-    const personName = id => { const p = window.hydInbox && window.hydInbox.X && (window.hydInbox.X.people || []).find(x => x.id === id); return p ? `${p.name} (${id})` : id; };
+    // 승인자는 사람 id(user:…)로 저장된다 — 화면에는 이름으로 (C3: 블랙박스 점검에서 id만 보이던 곳)
+    const personName = id => { const p = window.hydInbox && window.hydInbox.X && (window.hydInbox.X.people || []).find(x => x.id === id); return p ? p.name : id; };
     const values = (rep && rep.values || []).map(x => `<div class="rr-val ${x.ok === false ? 'bad' : x.ok === true ? 'good' : ''}"><span>${e(UI.idText(x.name))}</span><b class="num">${e(num(x.value))}${x.unit ? ' ' + e(x.unit) : ''}</b>${x.limit != null ? `<small>기준 ${e(x.limit)}</small>` : ''}</div>`).join('');
     const steps = sys.map(w => {
       const st = w.status === 'DONE' ? 'done' : 'run';
