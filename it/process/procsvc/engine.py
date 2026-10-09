@@ -56,6 +56,31 @@ TERMINAL_STATUSES = {"DONE", "CANCELLED"}
 LIVE_STATUSES = {"IN_PROGRESS", "SUBMITTED", "PENDING"}
 PROCESS_ORCH = "hyd-process"          # service tasks the process service executes itself
 SYSTEM_USER = "sys:process"           # performer of event work items (the product writes nextUserEmail="system")
+# C2 (확정 TODO C, 결정 4): 기다리는 부품(시간 대기 · 입고 확인)은 업무 시간(정비창까지 몇 시간, 납기 며칠)을 기다린다. 배속(TIME_SCALE)만으로는
+# 20배속에서도 납기 5일이 6시간이라 수업에서 볼 수 없으므로, 그 부품과 그 부품에 붙은 경계 타이머에만 수업용 압축 배율을 한 번 더 곱한다.
+# 설비 물리 · 감지기 · 재관측 · 사람 응답 타이머(TIME_SCALE 규칙)는 그대로다. 값은 instance_mode.build 가 PROCESS_WAIT_COMPRESSION 으로 정한다.
+WAIT_TOOLS = ("process:wait", "enterprise:GR_CONFIRM")
+_WAIT_COMPRESSION = [1.0]
+
+
+def configure_wait_compression(factor: float) -> float:
+    """수업용 대기 압축 배율(1 이상)을 정한다. 돌려준 값이 이후 기다리는 부품 · 그 경계 타이머에 쓰인다."""
+    value = float(factor)
+    if not value >= 1.0 or value != value or value == float("inf"):
+        raise ValueError("대기 압축 배율은 1 이상의 유한한 수여야 합니다")
+    _WAIT_COMPRESSION[0] = value
+    return value
+
+
+def wait_compression() -> float:
+    return _WAIT_COMPRESSION[0]
+
+
+def timer_scale(activity: dict | None, time_scale: float) -> float:
+    """경계 타이머의 배율: 기다리는 부품에 붙은 타이머는 배속 × 수업 압축, 그 밖은 배속 그대로."""
+    if activity and activity.get("tool") in WAIT_TOOLS:
+        return max(1.0, time_scale) * wait_compression()
+    return time_scale
 
 
 def now_iso(now: datetime | None = None) -> str:
@@ -426,7 +451,7 @@ def reach(defn: Definition, inst: dict, row: dict, workitems: list[dict], now: d
             'sources':{key:deepcopy((inst.get('variable_sources') or {}).get(key)) for key in condition_data}}
     if row.get("user_id") and row["user_id"] not in inst.setdefault("participants", []):
         inst["participants"].append(row["user_id"])
-    events = [new_event_workitem(defn, inst, ev, now, time_scale) for ev in defn.attached_events(activity["id"])]
+    events = [new_event_workitem(defn, inst, ev, now, timer_scale(activity, time_scale)) for ev in defn.attached_events(activity["id"])]
     for event in events:
         prior = _by_activity(workitems).get(event['activity_id'])
         if prior and event['generation'] > int(prior.get('generation') or 0):

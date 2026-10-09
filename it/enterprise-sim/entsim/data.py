@@ -6,6 +6,7 @@ that system's screen. Money is in 만원 (KRW 10k), times in hours unless the ke
 """
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta, timezone
 
 ASSETS = ("HYD-01", "HYD-02", "HYD-03")
@@ -151,6 +152,58 @@ def cmms_tasks(asset: str) -> dict:
 
 def ems_demand() -> dict:
     return {"system": "EMS", "facts": dict(_EMS), "records": [dict(_EMS, site="창원 1공장 (교육용 가상)")]}
+
+
+# ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 부품별 견적 · 정비창
+# Supabase 백엔드(migration 20261009000045)와 같은 값 · 같은 응답 모양. 재고는 바뀌는 값이라 state.py 가 들고, 여기에는 기준값만 둔다.
+SPARE_BASE = {
+    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 4, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03"},
+    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03"},
+    "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01"},
+}
+# 온톨로지 SUPPLIED_BY 와 같은 값(만원 · 불량률 · 리드타임 일). 쿨러 코어는 _SUPPLIERS 를 그대로 쓴다(같은 값을 두 곳에 두지 않음).
+_PART_QUOTES = {
+    "P-PMP-SEAL": [("sup:a", 35, 0.12, 2), ("sup:b", 55, 0.02, 5), ("sup:c", 20, 0.30, 1)],
+    "P-FAN-BRG": [("sup:a", 18, 0.10, 1), ("sup:b", 28, 0.03, 3)],
+}
+_WINDOW_RULES = [("N", "야간 정비창", 9, 24, 4), ("W", "주말 계획 정지", 105, 168, 24)]   # (종류, 이름, 첫 창 h, 주기 h, 길이 h)
+
+
+def quote_rows(part: str) -> list[dict]:
+    names = {s["id"]: s for s in _SUPPLIERS}
+    if part in _PART_QUOTES:
+        return [{"supplier": sid, "name": names[sid]["name"], "price": p, "fail_rate": f, "lead_d": d, "avl": names[sid]["avl"]}
+                for sid, p, f, d in _PART_QUOTES[part]]
+    return [{"supplier": s["id"], "name": s["name"], "price": s["price"], "fail_rate": s["fail"], "lead_d": s["lead_d"], "avl": s["avl"]}
+            for s in _SUPPLIERS if s["part_no"] == part]
+
+
+def part_quotes(part: str) -> dict:
+    if part not in _STD_PRICE:
+        raise KeyError(part)
+    return {"system": "SCM", "facts": {"part_no": part, "std_price": _STD_PRICE[part]}, "records": quote_rows(part)}
+
+
+def next_windows(asset: str, n: int = 3) -> list[dict]:
+    """ent.next_maintenance_windows 와 같은 계산: 규칙의 첫 창(시나리오 시작 + 9 h / 105 h)에서 주기마다, 끝나지 않은 창부터 n 개씩."""
+    _check(asset)
+    now, out = _now(), []
+    for kind, label, first_h, period_h, dur_h in _WINDOW_RULES:
+        first = _at(first_h)
+        k0 = max(0, math.ceil(((now - first).total_seconds() / 3600 - dur_h) / period_h))
+        for k in range(k0, k0 + max(n, 1)):
+            st = first + timedelta(hours=k * period_h)
+            out.append({"id": f"MW-{asset}-{kind}-{st.astimezone(timezone.utc):%Y%m%d%H%M}", "asset": asset, "kind": kind, "label": label,
+                        "starts_at": st.isoformat(), "ends_at": (st + timedelta(hours=dur_h)).isoformat(), "starts_in_h": hours_from_now(st)})
+    return sorted(out, key=lambda w: w["starts_at"])
+
+
+def maintenance_windows(asset: str) -> dict:
+    rows = next_windows(asset, 3)
+    first = rows[0]
+    return {"system": "CMMS", "facts": {"next_window_id": first["id"], "next_window_label": first["label"], "next_window_at": first["starts_at"],
+                                        "next_window_in_h": first["starts_in_h"]},
+            "records": rows, "as_of": _now().isoformat()}
 
 
 def prefixed(resp: dict) -> dict:

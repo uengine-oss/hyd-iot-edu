@@ -334,3 +334,20 @@ def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only:
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'cmdId':inc.cmd_id, 'workOrder':inc.work_order,
                                                 'work_order_only':work_order_only})
     _go(inc, 'CLOSED')
+
+
+
+@_transition
+def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
+    """C2: 설비 명령 · 작업지시 없이 업무 효과로 끝나는 처리 건(예비품 구매: 발주 → 입고 확인)의 사건 종결. 승인 대기(AWAITING_APPROVAL)에서
+    효과 확인 영수증으로 닫는다. 이미 끝난 사건은 그대로 둔다(False). 명령이 나간 사건은 재관측 · 작업지시로 닫히므로 거절한다."""
+    ref = receipt.get('ref')
+    if receipt.get('ok') is not True or not isinstance(ref, str) or not ref.strip():
+        raise ValueError('업무 효과 종결에는 실제 영수증 번호가 필요합니다')
+    if inc.state in d.TERMINAL:
+        return False
+    if inc.state != 'AWAITING_APPROVAL' or inc.cmd_id:
+        raise ValueError(f'업무 효과로 닫을 수 없는 사건 상태입니다: {inc.state}')
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'businessEffect': dict(receipt), 'cmdId': None})
+    _go(inc, 'CLOSED', f"business effect {receipt.get('kind') or ''} {ref}".strip())
+    return True

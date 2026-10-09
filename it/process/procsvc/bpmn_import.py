@@ -25,7 +25,7 @@ import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 
-from . import engine
+from . import engine, effect_parts
 from .definition_registry import PROTECTED_OUTPUTS, validate_definition
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -58,7 +58,11 @@ ALERT_START_VALUES = ("asset", "alert", "pattern", "alert_id", "incident")
 APPROVAL_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident"}))
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
-EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시"}   # 바깥 시스템에 효과를 내는 서비스
+EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시",   # 바깥 시스템에 효과를 내는 서비스
+                **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
+# C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
+SERVER_VALUE_TYPES = {"approved_amount": "Number", "approved_qty": "Number", "approved_unit_price": "Number",
+                      "approved_supplier": "Text", "approved_part_no": "Text"}
 FIELD_TYPES = ("text", "textarea", "number", "integer", "boolean", "select", "object", "array")
 DATA_TYPE = {"text": "Text", "textarea": "Text", "select": "Text", "number": "Number", "integer": "Number",
              "boolean": "Boolean", "object": "Object", "array": "Array"}
@@ -287,6 +291,11 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                 "help": "담당 역할 · 폼 칸을 정합니다. 폼 칸이 이 task 가 내는 값입니다."},
                {"key": "agent", "group": "general", "name": "에이전트 task", "kind": "agent",
                 "help": "맡길 에이전트 · 지시문 · 결과 값 이름을 정합니다. 승인 전 에이전트는 조회 · 계산 · 보고서만 합니다."}]
+    # C2: 승인 뒤 실행 부품(시스템 task) — 시나리오에 묶이지 않은 일반 부품. 설정은 매핑의 tasks[<id>].config (effect_parts.PARTS 의 config 설명)
+    general += [{"key": key, "group": "general", "name": spec["name"], "kind": "service", "tool": spec["tool"],
+                 "effect": EFFECT_TOOLS.get(spec["tool"]), "approval": False, "outputs": list(spec["outputs"]),
+                 "inputs": list(spec.get("inputs") or []), "config": deepcopy(spec["config"]), "help": spec["help"]}
+                for key, spec in effect_parts.PARTS.items()]
     role_list = []
     for r in base.get("roles") or []:
         role_list.append({"name": r["name"], "endpoint": r.get("endpoint"), "resolutionRule": r.get("resolutionRule"),
@@ -309,14 +318,18 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     start_event = next((e for e in events if e.get("type") == "startEvent"), {})
     # B7: 사람 입력 경보 패턴(오일 분석 등, human_alert.PATTERNS)도 경보 시작으로 고를 수 있다 — 기준 정의의 경보 정책은 그대로 두고
     # 이 목록에만 보탠다(기준 흐름은 이 패턴을 받지 않으므로 배포 흐름이 없으면 사람 검토로 간다).
-    from . import human_alert
-    human = ({p: c for p, c in human_alert.policy_patterns().items() if p not in (policy.get("patterns") or {})}
-             if policy.get("patterns") and start_event.get("eventDefinition") == "message" else {})
-    if human:
-        policy["patterns"] = dict(policy["patterns"], **human)
+    from . import human_alert, business_monitor
+    # C2: 업무 데이터 감시 경보(ERP 재고 기준 이탈 SPARE_BELOW_MIN)도 같은 방식으로 보탠다(business_monitor.PATTERNS)
+    offered = policy.get("patterns") and start_event.get("eventDefinition") == "message"
+    human = ({p: c for p, c in human_alert.policy_patterns().items() if p not in (policy.get("patterns") or {})} if offered else {})
+    business = ({p: c for p, c in business_monitor.policy_patterns().items() if p not in (policy.get("patterns") or {})}
+                if offered else {})
+    if human or business:
+        policy["patterns"] = dict(policy["patterns"], **human, **business)
     return {"base": {"id": base.get("processDefinitionId"), "version": base.get("version"), "name": base.get("processDefinitionName")},
             "parts": parts + general, "roles": role_list, "agents": agents, "agent_role": agent_role,
             "patterns": list((policy.get("patterns") or {}).keys()), "alert_policy": policy, "human_patterns": list(human),
+            "business_patterns": list(business),
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
             "data": {d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")},
             "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES),
@@ -352,7 +365,7 @@ def merge_mapping(parsed: dict, old: dict | None, cat: dict) -> tuple[dict, dict
         m["start"] = deepcopy(start)
     else:
         message = any(s.get("definition") == "message" for s in parsed["starts"])
-        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력은 사람이 고름)
+        sensor = [p for p in cat["patterns"] if p not in (cat.get("human_patterns") or []) + (cat.get("business_patterns") or [])]   # 메시지 시작의 기본값은 감지기 경보(사람 입력 · 업무 감시는 사람이 고름)
         m["start"] = ({"kind": "alert", "patterns": sensor} if message and sensor
                       else {"kind": "human", "fields": []})
     role_names = {r["name"] for r in cat["roles"]}
@@ -588,6 +601,14 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 forms[p["form_id"]] = deepcopy(p["form"])
             if lane_r and lane_r != a.get("role") and p["kind"] != "human":
                 pass                                           # 시스템 · 에이전트 부품은 부품 담당이 정한다(칸 이름은 그림 정보)
+        elif key in effect_parts.PARTS:                        # C2: 승인 뒤 실행 부품
+            config = m.get("config") if isinstance(m.get("config"), dict) else {}
+            sys_role = next((r["name"] for r in cat["roles"] if r.get("endpoint") == engine.SYSTEM_USER), None)
+            a = effect_parts.activity_for(key, t, config, inputs, sys_role)
+            try:
+                effect_parts.validate(a)
+            except ValueError as e:
+                problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
         elif key == "human":
             rname = m.get("role") or lane_r
             r = roles.get(rname or "")
@@ -797,7 +818,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     field_type = {f["key"]: f["type"] for form in forms.values() for f in form["fields_json"]}
     if start_form:
         field_type.update({f["key"]: f["type"] for f in start_form["fields_json"]})
-    data = [deepcopy(cat["data"][v]) if v in cat["data"] else {"name": v, "type": DATA_TYPE.get(field_type.get(v), "Text")}
+    data = [deepcopy(cat["data"][v]) if v in cat["data"] else
+            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or DATA_TYPE.get(field_type.get(v), "Text")}
             for v in used]
     role_rows = []
     for rname in used_roles:

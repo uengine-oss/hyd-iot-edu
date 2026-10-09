@@ -25,6 +25,7 @@ volumes:
   detector-data: {}
   enterprise-data: {}
   worker-data: {}                          # agent-worker: 인스턴스별 작업공간 · Claude Code 세션 (재시작 뒤 resume)
+  effects-data: {}                         # C2 effects-mcp: 쓰기 도구 멱등 키 기록
 
 services:
   # ───────────────────────────── OT (ot-net) ─────────────────────────────
@@ -378,6 +379,16 @@ services:
       WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}
       # A131: 1 mounts GET /debug/memory (tracemalloc · RSS · container sizes) for OOM diagnosis; off in the product default
       PROCESS_MEMDEBUG: ${PROCESS_MEMDEBUG:-0}
+      # C2 승인 뒤 실행 부품 (docs/handoff/verification/2026-10-09/c2-execution.md)
+      #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
+      PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
+      #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 은 ot-net 에만 있어 호스트 공개 포트(127.0.0.1:8000)로 간다
+      PLANT_SIM_URL: ${PLANT_SIM_URL:-http://host.docker.internal:8000}
+      #   승인 뒤 MCP 호출 서버 (기본 hyd-effects = effects-mcp). JSON {이름: tenants.mcp 와 같은 설정}
+      EFFECT_MCP_SERVERS: ${EFFECT_MCP_SERVERS:-}
+      #   ERP 재고 감시(재주문점 이탈 → 시나리오 C 처리 건). 0 이면 끔
+      ERP_STOCK_MONITOR: ${ERP_STOCK_MONITOR:-1}
+      ERP_STOCK_MONITOR_INTERVAL_S: ${ERP_STOCK_MONITOR_INTERVAL_S:-15}
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redpanda: { condition: service_healthy }
@@ -403,6 +414,25 @@ services:
     volumes: ["enterprise-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
+      <<: *py-health
+
+  effects-mcp:                            # C2: 사람 승인 뒤 시스템 task 가 부르는 쓰기 MCP (메일 → Inbucket · CMMS 일정 · 처리 건 기록). 에이전트에는 붙이지 않는다
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: it/effects-mcp/Dockerfile }
+    profiles: [process]
+    networks: [it-net]
+    ports: ["127.0.0.1:8197:8197"]
+    environment:
+      SMTP_HOST: ${EFFECTS_SMTP_HOST:-host.docker.internal}      # Supabase 로컬 Inbucket (it/supabase/config.toml [inbucket] smtp_port)
+      SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}
+      ENTERPRISE_URL: http://enterprise-sim:8095
+      EFFECTS_STATE_PATH: /data/effects.sqlite3
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["effects-data:/data"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8197/healthz')"]
       <<: *py-health
 
   portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA)

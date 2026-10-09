@@ -27,6 +27,10 @@ READ_RPCS = {
     "qms_lots": ("ent.qms_lots", ("asset",)),
     "scm_suppliers": ("ent.scm_suppliers", ("part",)),
     "ems_demand": ("ent.ems_demand", ()),
+    # C2 (migration 20261009000045): 예비품 재고 · 부품별 공급사 견적 · 다가오는 정비창
+    "spare_stock": ("ent.spare_stock_read", ("part",)),
+    "part_quotes": ("ent.part_quotes_read", ("part",)),
+    "maintenance_windows": ("ent.maintenance_windows_read", ("asset",)),
 }
 
 def ok(document) -> dict:

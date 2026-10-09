@@ -431,7 +431,8 @@ def _instance_context() -> instance_mode.ProcessContext:
                                         cypher=_q, exec_skill=exec_skill, record_decision=record_decision, approve_incident=_approve_incident,
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
                                         reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
-                                        accept_evaluation=_publish_legacy_evaluation, exec_compensation=_exec_compensation)
+                                        accept_evaluation=_publish_legacy_evaluation, exec_compensation=_exec_compensation,
+                                        latest_tag=latest_tag)
 
 
 def _exec_compensation(body: dict) -> dict:
@@ -486,6 +487,11 @@ async def _startup():
         plant_status.update(await instance_mode.retry_startup(lambda: asyncio.to_thread(source_inbox.latest_states), 'plant status', state))
         source_delivery=SourceDelivery(source_inbox,rt,_apply_source_event,owner=rt.consumer+'-source')
         asyncio.create_task(_source_loop()).add_done_callback(_watch)
+        if os.getenv('ERP_STOCK_MONITOR','1')!='0':
+            # C2: ERP 재고 감시 — 재주문점 이탈이 시나리오 C 처리 건을 스스로 연다(business_monitor.py)
+            from . import business_monitor
+            asyncio.create_task(business_monitor.run(instance_mode.enterprise_read,_admit_human_alert,
+                                                     float(os.getenv('ERP_STOCK_MONITOR_INTERVAL_S','15')),audit=_audit))
     case_projector = CaseProjector(store, _q, _incident_projected)
     active_runtime=instance_mode.current()
     knowledge_reconciler=KnowledgeReconciler(store,_q,os.getenv('TENANT_ID','hyd'),active_runtime.repo if active_runtime else None)
@@ -710,7 +716,25 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
 
 
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them
-TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procure-part"}
+TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procure-part",
+           # C2 승인 뒤 실행 부품: 입고 확인 · 정비 수행 모사(작업지시 완료)
+           "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance"}
+
+
+def _window_params(window, opt: dict) -> dict:
+    """C2: 승인된 정비 시점 → CMMS window 인자. 정비창 id('MW-…') · {id|window_id, label, starts_at} · 글 라벨을 받는다."""
+    if isinstance(window, dict):
+        out = {}
+        if window.get("id") or window.get("window_id"):
+            out["window_id"] = window.get("id") or window.get("window_id")
+        if window.get("label"):
+            out["window"] = str(window["label"])
+        if window.get("starts_at") and "window_id" not in out:
+            out["window_starts_at"] = window["starts_at"]
+        return out or {"window": "즉시"}
+    if isinstance(window, str) and window.strip():
+        return {"window_id": window.strip()} if window.strip().startswith("MW-") else {"window": window.strip()}
+    return {"window": "야간 정비창" if "night" in opt["id"] else "즉시"}
 
 
 def exec_skill(d: dict, item: dict) -> dict:
@@ -722,9 +746,15 @@ def exec_skill(d: dict, item: dict) -> dict:
         return out | {"ok": False, "error": f"실행할 수 없는 트랜잭션 {item.get('code')}"}
     if item["code"] == "WO_CREATE":
         params = {"task": f"{item.get('sop') or opt.get('sopId')} {opt.get('name')} → 작업지시 {item.get('value')}",
-                  "window": "야간 정비창" if "night" in opt["id"] else "즉시"}
-    else:
+                  **_window_params(item.get("window"), opt)}
+    elif item["code"] == "PR_CREATE":
         params = {"supplier": item.get("value") or "sup:b", "part": opt.get("name")}
+        if item.get("part_no"):          # C2: 승인 경로가 확정한 부품 · 수량 · 금액 (ERP 가 견적 · AVL · 금액을 다시 확인)
+            params.update(part_no=item["part_no"], qty=item["qty"], amount=item["amount"])
+    else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) — 대상 기록 번호
+        params = {"ref": item.get("ref")}
+        if item.get("sop"):
+            params["sop"] = item["sop"]
     body = {"decision": d["id"], "option": opt["id"], "skill": job, "system": item.get("system"), "asset": d.get("asset"),
             "by": d.get("approvedBy"), "params": params}
     try:
@@ -734,7 +764,7 @@ def exec_skill(d: dict, item: dict) -> dict:
             tx = json.loads(r.read())
         if not isinstance(tx.get('ref'), str) or not tx['ref'].strip():
             raise ValueError('enterprise response has no actual transaction reference')
-        return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail")}
+        return out | {"ok": True, "ref": tx.get("ref"), "detail": tx.get("detail"), "after": tx.get("after")}
     except Exception as e:  # noqa: BLE001
         return out | {"ok": False, "error": str(e)[:200]}
 
@@ -1078,6 +1108,36 @@ async def _admit_human_alert(alert: dict) -> None:
         await source_delivery.wait_for(receipt)
     else:
         await asyncio.get_running_loop().run_in_executor(None, rt.on_alert_raise, alert)
+
+
+# C2 수업 원인 버튼(시나리오 C): 예비품 출고 처리 · 재고 초기화 — enterprise-sim 에 그대로 전달한다(포털 고장 모사 화면이 부른다).
+@app.post("/api/simulate/spare-issue")
+async def simulate_spare_issue(body: dict | None = None):
+    """body = {part_no, qty, asset, by, reason} (기본 P-PMP-SEAL 1개, HYD-03). 출고로 가용이 재주문점 아래로 내려가면 ERP 재고 감시가
+    다음 주기(ERP_STOCK_MONITOR_INTERVAL_S)에 처리 건을 연다."""
+    return await asyncio.to_thread(_entsim_post, "/erp/spare/issue", body or {})
+
+
+@app.post("/api/simulate/spare-reset")
+async def simulate_spare_reset(body: dict | None = None):
+    """body = {part_no} (없으면 전부) — 예비품 재고를 수업 기준값으로."""
+    return await asyncio.to_thread(_entsim_post, "/erp/spare/reset", body or {})
+
+
+@app.get("/api/simulate/spare-stock")
+async def simulate_spare_stock(part: str | None = None):
+    from . import instance_mode as _im
+    return await asyncio.to_thread(_im.enterprise_read, "spare_stock", {"part": part})
+
+
+def _entsim_post(path: str, body: dict) -> dict:
+    req = urllib.request.Request(ENTERPRISE_URL + path, data=json.dumps(body, ensure_ascii=False).encode(),
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise HTTPException(e.code if e.code in (400, 404, 409) else 502, e.read().decode(errors="replace")[:300])
 
 
 from . import human_alert

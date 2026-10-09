@@ -635,3 +635,34 @@ def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOU
     out["tool"] = tool
     out.setdefault("result", None)
     return out
+
+
+IDEMPOTENCY_ARG = "idempotency_key"
+
+
+def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str | None = None, timeout: float = DEFAULT_TIMEOUT,
+                max_chars: int = MAX_RESULT_CHARS) -> dict:
+    """C2: 사람 승인 뒤 시스템 task(effect_parts 'mcp:call')만 부르는 쓰기 호출. 포털 써 보기 · 에이전트 도구 목록과는 다른 길이다 —
+    읽기 전용 판정(read_only_verdict)을 하지 않는 대신 이 함수는 process 의 승인 뒤 부품에서만 불린다(instances._run_mcp_call).
+    도구의 입력 형식에 idempotency_key 가 있으면 처리 건 · 작업 키를 넣어, 재시도해도 서버가 같은 호출로 알아보게 한다.
+    status: ok(결과 — 도구 오류도 result.is_error 로) · refused(없는 도구) · failed(연결 · 프로토콜)."""
+    if not isinstance(arguments, dict):
+        return {"status": "refused", "error": "입력은 이름→값 객체여야 합니다", "error_kind": "input", "result": None, "tool": tool}
+
+    def work(session):
+        tools = {t["name"]: t for t in _list_tools(session)}
+        meta = tools.get(tool)
+        if meta is None:
+            return {"status": "refused", "error": f"서버에 '{tool}' 도구가 없습니다", "error_kind": "no_tool", "result": None}
+        args = dict(arguments)
+        props = (meta.get("input_schema") or {}).get("properties") or {}
+        if idempotency_key and IDEMPOTENCY_ARG in props and IDEMPOTENCY_ARG not in args:
+            args[IDEMPOTENCY_ARG] = idempotency_key
+        res = session.request("tools/call", {"name": tool, "arguments": args})
+        return {"status": "ok", "result": shape_result(res, max_chars), "arguments": mask_value(args),
+                "idempotent": IDEMPOTENCY_ARG in args, "annotations": meta.get("annotations") or {}}
+
+    out = _with_session(spec, _clamp(timeout), work)
+    out["tool"] = tool
+    out.setdefault("result", None)
+    return out

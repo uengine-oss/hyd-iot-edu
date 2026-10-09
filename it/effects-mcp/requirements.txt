@@ -1,0 +1,2 @@
+fastmcp==2.13.0.2
+uvicorn[standard]==0.34.0

@@ -60,13 +60,14 @@ def test_describe_schema_answers_in_the_envelope_with_the_ddl_as_document():
     assert "comment on table \"ent\".\"assets\" is '설비'" in out["document"]
 
 
-def test_server_lists_all_ten_tools_and_guards_each_one():
+def test_server_lists_all_thirteen_tools_and_guards_each_one():
     text = (ROOT / "it" / "enterprise-mcp" / "enterprise_mcp" / "server.py").read_text(encoding="utf-8")
     head = text.split('"""')[1]
     for name in ("mes_orders", "erp_contract", "erp_inventory", "cmms_history", "qms_lots", "scm_suppliers", "ems_demand",
+                 "spare_stock", "part_quotes", "maintenance_windows",          # C2
                  "describe_schema", "describe_catalog", "query"):
         assert name in head, name
-    assert text.count("@mcp.tool(annotations=READ)\n") == 10 and text.count("return guarded(") == 10 and "def describe_schema() -> dict" in text
+    assert text.count("@mcp.tool(annotations=READ)\n") == 13 and text.count("return guarded(") == 13 and "def describe_schema() -> dict" in text
     assert sql_guard.__all__ == ["MAX_ROWS", "READ_FUNCTIONS", "SqlRejected", "guard"] and sql_guard.guard is __import__("hydcommon.sql_read", fromlist=["guard"]).guard
 
 

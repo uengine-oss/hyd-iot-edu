@@ -2,7 +2,8 @@
 
     docker: ENTERPRISE_DSN=<dedicated reader DSN> MCP_PORT=8199
     tools : mes_orders · erp_contract · erp_inventory · cmms_history · qms_lots · scm_suppliers · ems_demand (7 fixed reads) ·
-            describe_schema · describe_catalog · query   (10; all read-only, all answer in the {result, document} envelope —
+            spare_stock · part_quotes · maintenance_windows (C2: 3 fixed reads) ·
+            describe_schema · describe_catalog · query   (13; all read-only, all answer in the {result, document} envelope —
             a DB failure is {"result": "error", "error_kind": "UNKNOWN"}, never a raised exception)
 """
 from __future__ import annotations
@@ -71,6 +72,24 @@ def scm_suppliers(part: Annotated[str, Field(description="부품 번호 (기본 
 def ems_demand() -> dict:
     """EMS: 오늘 오후 전력 수요 대 계약 전력, 팬 증속 부하, 피크 시간대."""
     return guarded(tools.read)("ems_demand")
+
+
+@mcp.tool(annotations=READ)
+def spare_stock(part: Annotated[str | None, Field(description="부품 번호 (예: P-PMP-SEAL). 비우면 모든 중요 예비품")] = None) -> dict:
+    """ERP: 중요 예비품 재고 — 실물 · 예약 · 가용(실물-예약) · 입고 예정 · 재주문점 · 목표 재고 · 필요량(목표-가용-입고 예정) · 재주문점 이탈 여부와 최근 재고 이동."""
+    return guarded(tools.read)("spare_stock", part=part)
+
+
+@mcp.tool(annotations=READ)
+def part_quotes(part: Annotated[str, Field(description="부품 번호 (예: P-PMP-SEAL 펌프 축 씰 키트)")] = "P-PMP-SEAL") -> dict:
+    """SCM: 부품별 공급사 견적 — 단가(만원) · 불량률 · 리드타임(일) · 승인 공급사(avl). 발주 금액 = 단가 × 수량."""
+    return guarded(tools.read)("part_quotes", part=part)
+
+
+@mcp.tool(annotations=READ)
+def maintenance_windows(asset: Asset) -> dict:
+    """CMMS: 다가오는 정비창(야간 정비창 · 주말 계획 정지)의 id · 시작 · 끝 · 지금부터 몇 시간, 등록된 정비 일정."""
+    return guarded(tools.read)("maintenance_windows", asset=asset)
 
 
 @mcp.tool(annotations=READ)

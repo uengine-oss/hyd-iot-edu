@@ -117,6 +117,24 @@ def _notify_task(repo, tenant, inst, row, endpoint):
                                   "user_id": user_id, "tenant_id": tenant, "url": task_url(row["proc_inst_id"], row["id"]), "from_user_id": "sys:process"})
 
 
+TYPE_NOTICE = "process_notice"         # C2: 시스템 task 의 공지(정비 완료 · 입고 확인) — 처리 건 참여자에게
+
+
+def notify_participants(repo, tenant, inst, title, description, url=None) -> int:
+    """C2: 처리 건 참여자(사람)에게 포털 알림 한 줄씩. 보낸 수를 돌려준다."""
+    seen: list[str] = []
+    for p in inst.get("participants") or []:
+        if str(p).startswith("sys:"):
+            continue
+        for user_id in notification_targets(repo, tenant, p):
+            if user_id not in seen:
+                seen.append(user_id)
+    for user_id in seen:
+        repo.insert_notification({"title": title, "type": TYPE_NOTICE, "description": description, "user_id": user_id, "tenant_id": tenant,
+                                  "url": url or f"/instances/{inst['proc_inst_id']}", "from_user_id": "sys:process"})
+    return len(seen)
+
+
 def _notify_end(repo, tenant, inst, end_name):
     name = inst.get("proc_inst_name") or inst.get("proc_inst_id")
     seen: list[str] = []

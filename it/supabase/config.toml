@@ -32,8 +32,10 @@ enabled = true
 port = 54323
 api_url = "http://127.0.0.1"
 
+# C2: 승인 뒤 메일(effects-mcp send_mail)을 받는 수업용 메일함. 실제 발송 없음 — 웹 http://localhost:54324, SMTP 54325.
+# 다음 `supabase start` 부터 뜬다(이미 떠 있는 스택은 재시작해야 반영).
 [inbucket]
-enabled = false
+enabled = true
 port = 54324
 smtp_port = 54325
 pop3_port = 54326

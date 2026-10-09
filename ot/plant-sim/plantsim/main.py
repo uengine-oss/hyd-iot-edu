@@ -35,6 +35,7 @@ class FaultReq(BaseModel):
     target_health: float | None = None   # legacy name for cooler_degradation
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
     ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)
+    component: str | None = None        # C2 restore only: cooler | pump | fan (or comp:* id) — None restores every disturbance
 
 
 class ModeReq(BaseModel):
@@ -88,7 +89,7 @@ def fault(req: FaultReq):
         raise HTTPException(404, "unknown asset")
     target = req.target if req.target is not None else (req.target_health if req.type == "cooler_degradation" else None)
     try:
-        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity)
+        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity, component=req.component)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
