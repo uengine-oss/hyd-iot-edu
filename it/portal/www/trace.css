@@ -175,3 +175,5 @@ details.tr-code { margin-top: 4px; }
 .ask-history .item { text-align: left; width: 100%; cursor: pointer; font: inherit; }
 .ask-history .item strong { font-size: 13px; font-weight: 600; }
 @media (max-width: 1000px) { .ask-layout { grid-template-columns: minmax(0, 1fr); } }
+/* A161-U1: 좁은 화면에서 도구 인자(질의문 등)는 두 줄까지만, 전체는 펼친 요청 상자에 */
+@media (max-width: 640px) { .tr-row .tr-txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; } }

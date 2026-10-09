@@ -292,13 +292,13 @@
     const roles = (b.roles || []).map(r => {
       const ids = new Set(r.members.map(m => m.id));
       const members = r.members.length ? r.members.map(m => `<span class="chip tone-${m.origin === 'user' ? 'success' : 'neutral'}">${esc(m.name)}${m.origin === 'user'
-        ? ` <button type="button" class="btn small" data-unmember="${esc(r.id)}|${esc(m.id)}" aria-label="${esc(m.name)} 빼기">빼기</button>` : ''}</span>`).join(' ')
+        ? `<button type="button" class="chip-x" data-unmember="${esc(r.id)}|${esc(m.id)}" aria-label="${esc(m.name)} 빼기" title="빼기">×</button>` : ''}</span>`).join(' ')
         : '<span class="neg">아무도 없음 — 이 역할의 사람 단계는 누구의 작업함에도 뜨지 않습니다</span>';
       const can = (b.people || []).filter(p => !ids.has(p.id));
-      const add = can.length ? `<select data-member-pick="${esc(r.id)}" aria-label="${esc(r.name)}에 넣을 사람">${can.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>` +
+      const add = can.length ? `<select data-member-pick="${esc(r.id)}" aria-label="${esc(UI.performers[r.id] || r.name)}에 넣을 사람">${can.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>` +
         ` <button type="button" class="btn small" data-member-add="${esc(r.id)}">넣기</button>` : '';
       const rule = r.members.length === 1 ? '한 명 → 그 사람에게 바로 배정' : r.members.length > 1 ? '여러 명 → 역할 공용' : '';
-      return `<tr><td>${esc(r.name)}</td><td>${members}${rule ? `<br><span class="muted">${esc(rule)}</span>` : ''}</td><td>${add}</td></tr>`;
+      return `<tr><td>${esc(UI.performers[r.id] || r.name)}</td><td>${members}${rule ? `<br><span class="muted">${esc(rule)}</span>` : ''}</td><td>${add}</td></tr>`;
     }).join('');
     const people = UI.card({ title: '역할 → 사람 (업무분장)',
       body: `<p class="muted">기본 업무분장은 뺄 수 없고, 넣은 사람만 뺄 수 있습니다. 사람 단계는 이 표로 담당자가 정해집니다.</p>` +

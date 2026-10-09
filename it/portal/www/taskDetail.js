@@ -176,7 +176,7 @@
       return why + table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
     },
     chosen_option(o) { return o.name ? `<span class="kv">${esc(UI.idText(o.name))}</span>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
-    work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(w.detail)}</p>` : ''}` : ''; },
+    work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(UI.idText(w.detail))}</p>` : ''}` : ''; },
     alert(a) { return a.alertId ? `<p class="kv-line">${esc(a.alertId)} · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc((typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[a.pattern]) || UI.idText(a.pattern)) : ''}</p>` : ''; },
     // 매뉴얼 추출 처리 건: 원문 전문(pages)은 쏟지 않고 문서 · 쪽 수 · 글자 수만, 원문은 접기
     manual_source(s) {

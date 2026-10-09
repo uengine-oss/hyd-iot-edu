@@ -185,3 +185,24 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
+
+/* A161-U1 (A160 결함 10 · 18): 화면 모듈이 자기 머리글(제목 + 행동 버튼)을 그리면 바깥 제목을 숨겨 제목이 두 번 나오지 않게 한다.
+   모듈의 첫 제목이 바깥 h1 과 같은 글자일 때만("에이전트" ↔ "AI 에이전트"도 같은 화면으로 본다). */
+(function () {
+  const norm = t => String(t || '').replace(/\s+/g, ' ').replace(/^AI\s*/, '').trim();
+  function check(view) {
+    const head = view.querySelector(':scope > .page-head'), h1 = head && head.querySelector('h1'), mount = view.querySelector('.shell-mount');
+    if (!h1 || !mount) return;
+    const inner = mount.querySelector('h1, h2, .card-head h3');
+    const a = inner ? norm(inner.textContent) : '', b = norm(h1.textContent);
+    head.classList.toggle('dup-head', !!a && (a === b || (/^H[12]$/.test(inner.tagName) && a.startsWith(b))));
+  }
+  function boot() {
+    document.querySelectorAll('section.view').forEach(view => {
+      const mount = view.querySelector('.shell-mount'); if (!mount) return;
+      new MutationObserver(() => check(view)).observe(mount, { childList: true, subtree: true });
+      check(view);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();

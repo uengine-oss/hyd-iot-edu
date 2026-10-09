@@ -147,7 +147,7 @@
     const target = path === 'worker' ? '' : `<p class="field-hint">채점할 항목: ${picked.length ? picked.map(it => esc(it.title)).join(' · ') : `정답표 전체 (${E.golden.length}개)`}</p>`;
     q('[data-r="runform"]').innerHTML =
       `<div class="form-grid">` +
-      UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: E.paths[path] || '' , cls: 'wide' }) +
+      UI.field({ label: '판단 경로', input: `<select data-f="path">${Object.entries(PATH).map(([k, l]) => `<option value="${k}" ${k === path ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`, hint: UI.clean(String(E.paths[path] || '').replace(/\s*\((?:agent|process)\s+\/api\/[^)]*\)/g, '').replace(/N>1 은/g, '여러 번은')), cls: 'wide' })   // A161-U1 (결함 18): 내부 API 경로는 화면에 두지 않는다 +
       (path === 'worker' ? '' : UI.field({ label: '반복 횟수', input: `<input data-f="repeats" type="number" min="1" max="${E.maxRepeats}" value="${esc(E.repeats || 1)}">`,
         hint: path === 'decide' ? '규칙 판단은 결정론적이라 1회면 충분합니다. 여러 번 돌려 모두 같으면 "N회 모두 같음"으로 보입니다.' : '같은 경보를 여러 번 판단해 흔들림을 잽니다.' })) +
       UI.field({ label: UI.t('form.by'), required: true, input: `<input data-f="runBy" value="${esc(E.by || '')}">` }) +

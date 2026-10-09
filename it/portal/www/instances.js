@@ -211,24 +211,26 @@
     const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).sort((a, b) => a[1].level - b[1].level);
     if (!I.form.role) I.form.role = (chosen.approver || {}).id || (roles[0] || [''])[0];
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
-    const cards = opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: I.form.option === o.id, pending: true, maxAbs })).join('');
-    const timer = timerFor(task);
+        const timer = timerFor(task);
     const maintenance = (chosen.actions || []).filter(a => a.code === 'WO_CREATE');
     const hasWorkOrder = (I.view?.definition?.activities || []).some(a => a.tool === 'enterprise:WO_CREATE');
     const maintenanceText = maintenance.length ? maintenance.map(a => a.value ?? a.name ?? UI.t('workOrder')).join(', ') : `선택한 조치 이후 정비 점검: ${chosen.name || ''}`;
     const sc = d.scenario || {};
     const inst = I.view?.instance || {};
-    // A141: 사건 정보(설비 · 고장 유형 · 원인 · 함께 발행될 정비 요청)는 접기로. 화면에는 제목 · 기한 · 한 줄 요약 · 선택 카드 · 조치값 · 사유 · 결정 버튼만
-    box.innerHTML = `<section class="todo-panel"><div class="detail-head"><div class="row"><h3 style="margin:0">${esc(UI.t('select'))}</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span></div><div class="sub">${esc(inst.proc_inst_name || '')}${timer && timer.due_date ? ` · ${esc(UI.t('form.deadline'))} ${esc(UI.time(timer.due_date))} · ${esc(UI.t('form.timeout'))}` : ''}</div></div>
-      ${summaryBlock(d.explanation)}
-      ${UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case')}
+    // A161-U1: 승인 화면 = 요약 카드 한 장(추천안 · 짧은 이유 · 핵심 근거 · 승인 한 번). 진 안 · 값 조정 · 사건 정보는 접기 (approvalCard.js)
+    const adjust = fanA || loadA || pumpA ? UI.fold('조치 값 조정 · 미리 보기', `<div class="form-grid">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}</div>` +
+      `<div id="tdReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>` +
+      `<div class="form-actions"><button class="btn small outline" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button></div>`, { cls: 'small', open: !!changed || !!reviewed }) : '';
+    const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
+    const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
+    const dueLeft = dueS == null ? null : dueS < 60 ? `${dueS}초` : `${Math.round(dueS / 60)}분`;
+    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${dueLeft != null ? UI.chipText(`기한까지 ${dueLeft}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
+      ${window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo })}
       <div class="form">
-      ${UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${cards}</div>` +
-        (fanA || loadA || pumpA ? `<div class="form-grid wide">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('tdFan', UI.t('form.fan'), fanA, I.form.fan) : ''}${loadA ? hydCards.rangeField('tdLoad', UI.t('form.load'), loadA, I.form.load) : ''}</div>` : '') +
-        `<div class="wide" id="tdReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.dateTime(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`)}
       ${hydCards.whoFields('td', I.form, roles)}
-      ${UI.actions(`<button class="btn outline" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button><button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.decide'))}</button>`, I.msg)}
+      ${UI.actions(`<button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, I.msg || (!canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : ''))}
       </div></section>`;
+    box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.form.review = null; I.msg = ''; const o = opts.find(x => x.id === I.form.option); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); });
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.form.review = null; I.msg = ''; const o = opts.find(x => x.id === r.value); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); }));
     const on = (id, ev, fn) => { const e = document.getElementById(id); if (e) e.addEventListener(ev, fn); };
     const invalidate = () => { I.form.review = null; $('#tdGo').disabled = true; $('#tdReviewed').innerHTML = `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`; };
@@ -287,7 +289,7 @@
       const names = I.defNames[`${x.proc_def_id}@${x.proc_def_version}`] || {};
       const steps = (x.current_activity_ids || []).map(id => `<span class="chip step-chip">${esc(UI.flowName(names[id] || id.replace(/^task:|^ev:/, '')))}</span>`).join('');
       const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}</div>
-        <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
+        <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
         <span class="sub">${esc(UI.dateTime(x.start_date))} · ${esc(when)}</span>`);
       keyboardItem(it);
       it.addEventListener('click', () => { I.sel = x.proc_inst_id; load(true); });
@@ -381,10 +383,12 @@
     const reW = view.workitems.filter(w => w.activity_id === 'task:reobserve').sort((a, b) => (b.generation || 0) - (a.generation || 0))[0];
     if (reW && reW.status !== 'CANCELLED' && reW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('reobserve')), chips: v.recovered === true ? UI.chipText('회복', 'success') : v.recovered === false ? UI.chipText('미회복', 'danger') : chip(reW.status), sub: reW.end_date ? esc(UI.dateTime(reW.end_date)) : '' }));
     const woW = view.workitems.filter(w => w.activity_id === 'task:work-order').sort((a, b) => (b.generation || 0) - (a.generation || 0))[0];
-    if (woW && woW.status !== 'CANCELLED' && woW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('workOrder')), chips: chip(woW.status), value: v.work_order && (v.work_order.ref || v.work_order.id) ? `<span class="kv mono">${esc(v.work_order.ref || v.work_order.id)}</span>` : '', sub: esc((v.work_order && v.work_order.detail) || '') }));
+    if (woW && woW.status !== 'CANCELLED' && woW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('workOrder')), chips: chip(woW.status), value: v.work_order && (v.work_order.ref || v.work_order.id) ? `<span class="kv mono">${esc(v.work_order.ref || v.work_order.id)}</span>` : '', sub: esc(UI.idText((v.work_order && v.work_order.detail) || '')) }));
     const esW = view.workitems.filter(w => w.activity_id === 'task:escalate').sort((a, b) => (b.generation || 0) - (a.generation || 0))[0];
     if (esW && esW.status !== 'CANCELLED' && esW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('escalate')), chips: chip(esW.status), sub: esc(UI.logText(v.note || esW.log || '')) }));
-    let html = cards.length ? `<div class="cards two">${cards.join('')}</div>` : UI.empty(UI.t('inst.noResult'), inst.status === 'RUNNING' ? UI.t('inst.noResultSub') : '', 'compact');
+    const report = window.hydResultReport ? hydResultReport.html(view) : '';
+    // A161-U1: 결과 보고 카드가 있으면 단계별 결과 카드는 접기(같은 내용을 두 번 크게 보이지 않게)
+    let html = report + (cards.length ? (report ? UI.fold(`단계별 결과 <span class="chip tone-neutral sm">${cards.length}</span>`, `<div class="cards two">${cards.join('')}</div>`) : `<div class="cards two">${cards.join('')}</div>`) : UI.empty(UI.t('inst.noResult'), inst.status === 'RUNNING' ? UI.t('inst.noResultSub') : '', 'compact'));
     // 값: label = definition data name, key as small text, structured values folded (R5 read-only form)
     const internal = new Set(['decision', 'decision_id', 'guide_card', 'candidates', 'compliance', 'incident', 'commands', 'chosen_option', 'alert', 'alert_id']);
     const varRows = (inst.variables_data || []).filter(row => !internal.has(row.key)).map(row => {
@@ -419,6 +423,7 @@
       const reason = missingInitial.length ? `시작 값 ${missingInitial.join(', ')}이 없습니다. 입력을 확인해 새 처리 건을 시작하세요.`
         : (spec.waiting_for || []).some(x => x.reason === 'fresh_output_unavailable') ? '필요한 결과값이 없어 대기 중입니다.' : `${producers.map(UI.flowName.bind(UI)).join(', ')}의 결과가 확정되면 시작합니다.`;
       return `<p><b>${esc(UI.flowName(task?.activity_name || spec.activity))}</b>: ${esc(reason)}</p>`; }).join('') });
+    html += window.hydResultReport ? hydResultReport.html(view) : '';   // A161-U1: 승인 뒤 시스템 실행 · 확인 → 결과 보고(보기만)
     html += `<div class="sec-row"><h3>${esc(UI.t('trace.title'))}</h3>${inst.status === 'RUNNING' ? `<span class="live-conn ${window.hydStream && hydStream.connected() ? 'on' : 'off'}" data-live-conn>${esc(UI.t(window.hydStream && hydStream.connected() ? 'header.connected' : 'header.connecting'))}</span>` : ''}</div><div id="instTrace"></div>`;
     html += `<div class="stack-list" style="margin-top:var(--s4)">${approvalHtml(view)}${workOrderRetryHtml(view)}<div id="taskDeferralPanel"></div><div id="effectsPanel"></div><div id="reworkPanel"></div>` +
       ((view.reworks || []).length ? UI.fold(`${esc(UI.t('inst.reworkHistory'))} <span class="chip tone-neutral sm">${view.reworks.length}</span>`, view.reworks.map(r => `<p>${esc(r.generation)}${esc(UI.t('inst.gen'))} · ${esc(r.request.by)} (${esc(who(r.request.role))}) · ${esc(r.request.reason)}</p>`).join('')) : '') + '</div>';

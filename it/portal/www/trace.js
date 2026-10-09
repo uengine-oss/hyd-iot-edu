@@ -73,7 +73,7 @@
     if (!w.agent_orch && !w.agent_mode) return 'human';
     return 'system';
   }
-  // 시스템 · 사람 단계가 하는 일(아이콘 · 칩). B(예약 · 정비창 대기 · 교체) · C(발주 · 메일 · 입고 확인) 같은 단계도 tool · 이름으로 잡힌다.
+  // 시스템 · 사람 단계가 하는 일(아이콘 · 칩). B(예약 · 예정된 정비 시간 대기 · 교체) · C(발주 · 메일 · 입고 확인) 같은 단계도 tool · 이름으로 잡힌다.
   function actionOf(w, act) {
     const s = `${(act && act.tool) || w.tool || ''} ${w.activity_name || ''} ${(act && act.name) || ''}`.toLowerCase();
     if (/incident:command|명령|command/.test(s)) return 'command';
@@ -114,13 +114,26 @@
     if (typeof o === 'object') Object.values(o).forEach(x => values(x, out, depth + 1));
     return out;
   }
+  // A161-U1: 잘린 JSON 글(도구 결과가 길어 서버가 자른 것)은 짧은 글 값만 골라 한 줄로 — 원문 JSON 은 펼친 상자에만
+  function clipped(t, n) {
+    const vals = [...unescapeU(t).matchAll(/"([A-Za-z_]+)"\s*:\s*"([^"\\]{1,60})"/g)].map(m => m[2]).filter(x => !/^(ok|true|false|null)$/i.test(x)).slice(0, 4);
+    return vals.length ? UI.clean(UI.idText(vals.join(' · '))).slice(0, n) : '결과를 받았습니다 (펼쳐서 보기)';
+  }
+  // 코딩 에이전트 도구의 영문 결과 문구 → 화면 말
+  function plainResult(t) {
+    if (/^File created successfully/i.test(t)) return '파일을 만들었습니다';
+    if (/has been updated|updated successfully/i.test(t) && /file/i.test(t)) return '파일을 고쳤습니다';
+    if (/^No files found/i.test(t)) return '찾은 파일 없음';
+    if (/^No matches found/i.test(t)) return '찾은 내용 없음';
+    return '';
+  }
   function outBrief(x, n = 120) {
     if (x == null) return '';
     let v = x;
     if (typeof x === 'string') {
       const t = x.trim();
-      if (/^[[{]/.test(t)) { try { v = JSON.parse(t); } catch (_) { return UI.clean(unescapeU(t).replace(/\s+/g, ' ')).slice(0, n); } }
-      else return brief(x, n);
+      if (/^[[{]/.test(t)) { try { v = JSON.parse(t); } catch (_) { return clipped(t, n); } }
+      else return plainResult(t) || brief(x, n);
     }
     if (Array.isArray(v) && v.length && v.every(y => y && typeof y === 'object' && typeof y.tool_name === 'string')) return brief(v, n);
     if (Array.isArray(v) && v.length && v.every(y => y && typeof y === 'object' && y.type === 'text' && typeof y.text === 'string')) return outBrief(v.map(y => y.text).join('\n'), n);
