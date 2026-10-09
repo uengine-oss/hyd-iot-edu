@@ -37,7 +37,7 @@
     return UI.card({ title: esc(UI.idText(ch.name || d.chosen || UI.t('decision'))), chips: UI.chip(d.state) + (d.override ? UI.chipText(UI.t('proc.override'), 'warning') : ''),
       value: `<span class="kv">${esc(d.approvedBy || '–')}<small>${esc(roleName)}</small></span>`,
       sub: d.reason ? `${esc(UI.t('inc.reasonLabel'))}: ${esc(d.reason)}` : '',
-      body: (d.executions || []).length ? `<div class="cards two">${d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + hydCards.actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('')}</div>` : '' });
+      body: (d.executions || []).length ? `<div class="cards two">${d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + hydCards.actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(UI.idText(x.detail || '')), cls: 'soft' })).join('')}</div>` : '' });
   }
   function renderHitl() {
     const box = document.getElementById('hitlPanel'); const inc = H.inc, d = H.dec;
@@ -307,7 +307,7 @@
   async function fetchGolden(batch) {
     const g = H.golden[batch] = H.golden[batch] || {};
     try {
-      const next = await getJ(goldenUrl(batch, 'report'));
+      const next = await getJ(goldenUrl(batch, 'report') + '?optional=1');   // A161-U1: 200 + null when there is none (no console 404)
       const changed = JSON.stringify(next) !== JSON.stringify(g.report); g.report = next; g.error = ''; return changed;
     } catch (e) {
       if (e.status === 404) { const changed = g.report !== null; g.report = null; g.error = ''; return changed; }

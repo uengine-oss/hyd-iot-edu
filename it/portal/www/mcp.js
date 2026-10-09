@@ -115,6 +115,8 @@
     if (!r) return UI.chipText('연결 확인 중', 'neutral');
     if (r.loading) return UI.chipText('연결 확인 중', 'neutral');
     if (r.status === 'ok') return UI.chipText('연결됨', 'success');
+    // A161-U1 (결함 10): 명령형(stdio) 서버는 워커 PC 에서 뜬다 — 포털 쪽 컨테이너에 명령이 없는 것은 고장이 아니다
+    if (s && s.transport === 'stdio' && r.error_kind === 'exec') return UI.chipText('워커에서 실행', 'neutral');
     return UI.chipText(KIND[r.error_kind] || '연결 실패', 'danger');
   }
 
@@ -142,15 +144,16 @@
     box.innerHTML = S.servers.map(s => {
       const r = S.tools[s.name] || {};
       const n = r.status === 'ok' ? r.tools.length : null;
-      const sub = s.config_error ? esc(s.config_error) : r.status === 'failed' ? esc(r.error || '') : esc(target(s));
+      const workerSide = s.transport === 'stdio' && r.error_kind === 'exec';
+      const sub = s.config_error ? esc(s.config_error) : workerSide ? '이 서버는 워커 PC 에서 실행됩니다. 포털에서는 도구 목록을 미리 볼 수 없습니다' : r.status === 'failed' ? esc(UI.clean(r.error || '')) : esc(target(s));
       const who = s.agents.length ? s.agents.map(a => esc(a.name)).join(', ') : '쓰는 에이전트 없음';
       const tasks = new Set(s.tasks.map(t => t.activity_name)).size;
       return UI.card({
         title: esc(serverLabel(s.name)), chips: statusChip(s.name) + UI.chipText(T[s.transport] || '?', 'neutral') + originChip(s),
         value: n != null ? `<span class="kv">도구 <b class="num">${n}</b><small>개</small></span>` : '',
         sub, body: `<p class="kv-line">${who}${tasks ? ` · 맡은 task <b>${tasks}</b>개` : ''}</p>` +
-          `<p class="kv-line">${s.selectable ? '에이전트 도구로 고를 수 있음' : `<span class="muted">에이전트 도구로 고를 수 없음 — ${esc(CHECK[(s.check || {}).status] || '검사 필요')}</span>`}</p>`,
-        cls: 'clickable mcp-card' + (s.name === S.sel ? ' sel' : '') + (s.config_error || r.status === 'failed' ? ' failed' : ''),
+          `<p class="kv-line">${s.selectable ? '에이전트 도구로 고를 수 있음' : s.origin === 'seed' ? '<span class="muted">기본 에이전트가 쓰는 서버</span>' : `<span class="muted">에이전트 도구로 고르려면 연결 검사 필요 · ${esc(CHECK[(s.check || {}).status] || '검사 필요')}</span>`}</p>`,
+        cls: 'clickable mcp-card' + (s.name === S.sel ? ' sel' : '') + (s.config_error || (r.status === 'failed' && !workerSide) ? ' failed' : ''),
         attrs: `data-name="${esc(s.name)}" tabindex="0" role="button" aria-pressed="${s.name === S.sel}"`,
         actions: `<button class="btn small" data-open="${esc(s.name)}">도구 보기</button>`,
       });

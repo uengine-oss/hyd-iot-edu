@@ -32,6 +32,7 @@
     'td.cards': '받은 조치 카드', 'td.chosen': '고른 조치', 'td.reason': '사유', 'td.approver': '승인자', 'td.delivery': '승인 전달', 'td.sent': '보낸 명령', 'td.response': '설비 응답',
     'td.instruction': '에이전트에게 준 지시', 'td.tokens': '모델 사용량', 'td.options': '선택지', 'td.outputKeys': '출력', 'td.prose': '서술 결과',
     'td.planned': '아직 시작하지 않은 단계', 'td.plannedSub': '정의에 적힌 입력과 출력입니다', 'td.expects': '읽을 값', 'td.produces': '만들 값', 'td.who': '수행',
+    'td.otherRound': '다음 회차 값', 'td.otherRoundSub': '이 단계는 다시 수행됐습니다. 아래는 이 회차가 받은 값이 아니라 처리 건의 지금 값입니다.',
     'td.loadFail': '단계 상세를 읽지 못했습니다', 'td.liveOn': '실시간', 'td.model': '모델',
     // U1 추가: 판단 근거 · 사람 · 시스템 · 매뉴얼 · 지금
     'td.note': '에이전트 판단', 'td.noteMore': '판단 전문', 'td.basis': '판단 근거', 'td.finalText': '에이전트 최종 답변',
@@ -70,7 +71,13 @@
   const kindOf = w => (w.agent_orch === 'cliagents' || w.agent_mode) ? 'agent' : (!w.agent_orch && !w.agent_mode) ? 'human' : 'system';
   function varName(key, v) {
     const row = ((v.definition || {}).data || []).find(d => d.name === key);
-    return UI.terms['var.' + key] || (row && row.description ? UI.idText(row.description.replace(/\s*[\(—(].*$/, '')) : key);
+    if (UI.terms['var.' + key]) return UI.terms['var.' + key];
+    if (row && row.description) return UI.idText(row.description.replace(/\s*[\(—(].*$/, ''));
+    // A161-U1 (A160 결함 6): a flow made in the portal names its values in its forms (fields_json text) — use that label, not the key
+    const forms = (v.definition || {}).forms || {};
+    for (const f of Object.values(forms)) { const x = ((f && f.fields_json) || []).find(y => y && y.key === key && y.text && y.text !== key); if (x) return x.text; }
+    for (const a of (v.definition || {}).activities || []) { const x = (((a.form || {}).fields_json) || []).find(y => y && y.key === key && y.text && y.text !== key); if (x) return x.text; }
+    return row && row.name && row.name !== key ? row.name : key;
   }
   function fmtMs(ms) { return ms < 1000 ? `${Math.round(ms)} ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)} s` : ms < 3600000 ? `${Math.floor(ms / 60000)}분 ${Math.round((ms % 60000) / 1000)}초` : `${Math.floor(ms / 3600000)}시간 ${Math.round((ms % 3600000) / 60000)}분`; }
   const num = x => typeof x === 'number' && Number.isFinite(x) ? (Number.isInteger(x) ? x.toLocaleString('ko-KR') : String(Math.round(x * 100) / 100)) : (x == null ? '–' : String(x));
@@ -111,6 +118,7 @@
     if (typeof value === 'number') return esc(value.toLocaleString('ko-KR'));
     if (key === 'chosen_skill_kind' && (value === 'control' || value === 'work_order')) return esc(value === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder'));
     if (typeof value === 'string' && key === 'pattern' && typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[value]) return esc(PATTERN_LABEL[value]);
+    if (typeof value === 'string' && UI.terms['val.' + value]) return esc(UI.terms['val.' + value]);   // A161-U1 (결함 4): answered → 답함 …
     if (typeof value === 'string') return value.length > 240 ? `<span class="prose">${esc(UI.idText(value.slice(0, 240)))}…</span>${rawFold(value, 'raw:' + key)}` : esc(UI.idText(value));
     if (Array.isArray(value)) {
       if (!value.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
@@ -168,7 +176,7 @@
       return why + table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
     },
     chosen_option(o) { return o.name ? `<span class="kv">${esc(UI.idText(o.name))}</span>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
-    work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(w.detail)}</p>` : ''}` : ''; },
+    work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(UI.idText(w.detail))}</p>` : ''}` : ''; },
     alert(a) { return a.alertId ? `<p class="kv-line">${esc(a.alertId)} · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc((typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[a.pattern]) || UI.idText(a.pattern)) : ''}</p>` : ''; },
     // 매뉴얼 추출 처리 건: 원문 전문(pages)은 쏟지 않고 문서 · 쪽 수 · 글자 수만, 원문은 접기
     manual_source(s) {
@@ -252,7 +260,11 @@
     const sources = (item && item.input_sources) || v.instance.variable_sources || {};
     const state = item ? item.input_state : 'current';
     const rows = keys.map(k => UI.readonly(varName(k, v), valueHtml(k, values[k], v), originText(sources[k], v))).join('');
-    return `<p class="field-hint">${esc(UI.t(state === 'captured' ? 'td.captured' : state === 'waiting' ? 'td.waiting' : 'td.current'))}</p><div class="ro-grid">${rows}</div>`;
+    // A161-U1 (A160 결함 16): an earlier round of a step that ran again shows the case's current values — say so plainly
+    const newer = state === 'current' && v.workitems.some(x => x.activity_id === w.activity_id && (x.generation || 0) > (w.generation || 0));
+    const hint = newer ? `<p class="field-hint warn-hint">${UI.chipText(UI.t('td.otherRound'), 'warning')} ${esc(UI.t('td.otherRoundSub'))}</p>`
+      : `<p class="field-hint">${esc(UI.t(state === 'captured' ? 'td.captured' : state === 'waiting' ? 'td.waiting' : 'td.current'))}</p>`;
+    return `${hint}<div class="ro-grid">${rows}</div>`;
   }
 
   /* ---------- ② 처리 과정 타임라인 (events + 작업 행 자체) ---------- */
@@ -298,7 +310,25 @@
     }
     return items;
   }
+  // A161-U1: 처리 건 상세의 실시간 처리 과정(trace.js)과 같은 행 — 도구 한 줄(소요 시간, 누르면 요청 · 응답), 에이전트 말, 사람 질문 상자.
+  // 판단 근거(evidence)는 이 패널만의 표(원인 점수 · 카드 점수 구성)를 그대로 쓴다. trace.js 가 없으면 예전 타임라인.
   function timelineHtml(w, evs, v, live) {
+    if (window.hydTrace && hydTrace.rowsOf) {
+      const m = hydTrace.build({ view: { ...v, workitems: [w], events: evs }, onlyWorkitem: w.id });
+      const s = m.steps[0] || { rows: [], live: false };
+      const rows = s.rows.slice();
+      const human = kindOf(w) === 'human';
+      if (!evs.some(e => e.event_type === 'task_started') && w.start_date) rows.unshift({ key: 'assigned', kind: 'start', status: 'ok', t0: w.start_date, title: human ? UI.t('td.assigned') : UI.t('td.start'), text: UI.who(w.user_id) });
+      if (!evs.some(e => ['task_completed', 'task_cancelled'].includes(e.event_type)) && w.end_date) rows.push({ key: 'end', kind: w.status === 'CANCELLED' ? 'stop' : 'done', status: w.status === 'CANCELLED' ? 'fail' : 'ok', t0: w.end_date, title: UI.status(w.status), text: '' });
+      const byId = Object.fromEntries(evs.map(e => [e.id, e]));
+      const html = rows.map(r => {
+        const ev = r.key.startsWith('ev:') ? byId[r.key.slice(3)] : null;
+        if (ev) return `<div class="tr-row tr-k-note ok">${r.t0 ? `<time title="${esc(UI.dateTime(r.t0))}">${esc(hydTrace.hhmmss(r.t0))}</time>` : '<time></time>'}<span class="tr-mark">${hydTrace.icon('note', 'k-note')}</span><div class="tr-main"><div class="tr-line"><b>${esc(r.title)}</b></div>${evidenceHtml(ev.data || {})}</div></div>`;
+        return hydTrace.rowHtml(r, live);
+      }).join('') + (live && s.waitText ? hydTrace.waitRowHtml(s) : '');
+      if (!html) return `<p class="muted">${esc(UI.t('td.noTrace'))}</p>`;
+      return `<div class="tr td-trace" data-td-timeline><div class="tr-rows">${html}</div></div>`;
+    }
     const items = timelineItems(w, evs, v, live);
     if (!items.length) return `<p class="muted">${esc(UI.t('td.noTrace'))}</p>`;
     return `<div class="timeline td-timeline" data-td-timeline>${items.map(it => `<div class="tl ${esc(it.cls)}${it.small ? ' small' : ''}${it.live ? ' live' : ''}"><div class="dot"></div><div class="tl-body">
@@ -431,10 +461,13 @@
       const mine = src && src.kind === 'workitem' && src.id === w.id;
       const value = (w.output || {})[key] !== undefined ? w.output[key] : (mine ? current[key] : undefined);
       const state = mine ? UI.chipText(UI.t('td.delivered'), 'success') : src && src.kind === 'workitem' ? UI.chipText(UI.t('td.superseded'), 'warning') : UI.chipText(UI.t('td.notYet'));
-      const consumers = acts.filter(a => a.id !== w.activity_id && ((a.inputData || []).includes(key) || Object.keys(a.inputBindings || {}).includes(key))).map(a => { const c = latestFor(v, a.id); return `${UI.flowName(a.name)}${c ? ` (${UI.status(c.status)})` : ''}`; });
+      // A161-U1 (A160 결함 7): only steps that really took the value — a branch the engine cancelled is not "받는 단계"
+      const consumers = acts.filter(a => a.id !== w.activity_id && ((a.inputData || []).includes(key) || Object.keys(a.inputBindings || {}).includes(key)))
+        .map(a => ({ a, c: latestFor(v, a.id) })).filter(x => !x.c || x.c.status !== 'CANCELLED')
+        .map(({ a, c }) => `${UI.flowName(a.name)}${c ? ` (${UI.status(c.status)})` : ` (${UI.status('TODO')})`}`);
       const shown = value === undefined ? `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`
         : value !== null && typeof value === 'object' && (w.output || {})[key] !== undefined ? `<span class="muted">${esc(UI.t('td.seeOutput'))}</span>` : valueHtml(key, value, v);
-      return UI.readonly(varName(key, v), `${state} ${shown}`, `${UI.t('td.consumers')}: ${consumers.join(', ') || UI.t('td.noConsumer')}`);
+      return UI.readonly(varName(key, v), `${state} ${shown}`, consumers.length ? `${UI.t('td.consumers')}: ${consumers.join(', ')}` : '');
     }).join('')}</div>`;
   }
 

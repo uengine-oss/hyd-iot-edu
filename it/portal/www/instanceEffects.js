@@ -63,7 +63,7 @@
         ${pending.size === 0 && (d.effects || []).length ? `<p class="rework-success" role="status">모든 효과가 해결됐습니다. ${esc(UI.t('inst.rework'))}에서 새 차수를 요청할 수 있습니다.</p>` : ''}
         ${receipts ? UI.fold(`확인 기록 ${(d.receipts || []).length}건`, `<ul>${receipts}</ul>`, { cls: 'small' }) : ''}
         ${s.notice ? `<p role="status">${esc(s.notice)}</p>` : ''}`;
-      host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`미해결 ${pending.size}`, 'warning') : ''}`, body, { open: pending.size > 0 || !!s.pending });
+      host.innerHTML = UI.fold(`${esc(UI.t('inst.effects'))} ${pending.size ? UI.chipText(`확인할 조치 ${pending.size}`, 'neutral') : ''}`, body, { open: !!s.pending });   // A161-U1 결함 8: 끝난 처리 건에서 폼이 펼쳐져 나오지 않게(필요할 때 연다)
       host.querySelectorAll('input[data-effect]').forEach(cb => cb.addEventListener('change', e => { e.target.checked ? s.picked.add(e.target.dataset.effect) : s.picked.delete(e.target.dataset.effect); draw(); }));
       host.querySelector('#efBy')?.addEventListener('input', e => s.by = e.target.value);
       host.querySelector('#efRole')?.addEventListener('change', e => s.role = e.target.value);

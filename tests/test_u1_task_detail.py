@@ -214,6 +214,9 @@ def visible(html: str) -> str:
     """What a person reads without opening anything: raw folds (원문) dropped, tags and attributes stripped."""
     # folded verbatim text is kept on purpose: 원문 (raw JSON), 에이전트에게 준 지시 (the prompt as the agent got it), 에이전트 최종 답변
     html = _re.sub(r'<details class="fold small"[^>]*><summary>(?:원문|에이전트에게 준 지시|에이전트 최종 답변)</summary>.*?</details>', "", html, flags=_re.S)
+    # A161-U1 (trace.js): a tool row opens to its 요청 · 응답 blocks; other verbatim blocks are closed <details class="tr-code">
+    html = _re.sub(r'<div class="tr-io">.*?</div></details>', "</details>", html, flags=_re.S)
+    html = _re.sub(r'<details class="tr-code"[^>]*>.*?</details>', "", html, flags=_re.S)
     html = _re.sub(r"<code>.*?</code>", " ", html, flags=_re.S)          # score formulas are code on purpose (점수 식)
     return _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", " ", html)).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').strip()
 

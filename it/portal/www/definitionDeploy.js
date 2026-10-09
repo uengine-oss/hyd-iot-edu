@@ -45,7 +45,7 @@
     const select = $d('deployChoice'); const current = selected || select.value; select.replaceChildren();
     ids.forEach(id => {
       const row = rows.find(r => r.id === id), option = document.createElement('option');
-      option.value = id; option.textContent = `${UI.defName(id)} · ${id}` + (row.deployed_version ? ` (운영 ${row.deployed_version})` : ' (배포 전)');
+      option.value = id; option.textContent = `${row.name || UI.defName(id)}` + (row.deployed_version ? ` · 운영 판본 ${row.deployed_version}` : ' · 배포 전');   // A161-U1 결함 11: 내부 id 를 보이지 않는다
       select.appendChild(option);
     });
     if (ids.includes(current)) select.value = current;
@@ -92,8 +92,8 @@
     const d = await getJ(API.process + `/api/flows/deploy-compare?definition=${encodeURIComponent(status.id)}&version=${encodeURIComponent(version)}`);
     box('deployRefDiff', 'deployCompare').innerHTML = UI.section(`기준(${d.reference.version})과 비교 — 판본 ${version}`,
       d.same ? UI.empty('기준 흐름과 같습니다') :
-        `<p class="muted">${esc(d.summary)}</p>` + (d.steps.length ? `<ul>${d.steps.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="muted">바뀐 단계·연결은 없습니다</p>') +
-        UI.fold(`바뀐 것 전체 ${d.changes.length}`, `<div class="list">${d.changes.map(ch => `<div class="item"><strong>${esc(ch.text)}</strong></div>`).join('')}</div>`, { cls: 'small' }));
+        `<p class="muted">${esc(UI.plain(d.summary))}</p>` + (d.steps.length ? `<ul>${d.steps.map(t => `<li>${esc(UI.plain(t))}</li>`).join('')}</ul>` : '<p class="muted">바뀐 단계·연결은 없습니다</p>') +
+        UI.fold(`바뀐 것 전체 ${d.changes.length}`, `<div class="list">${d.changes.map(ch => `<div class="item"><strong>${esc(UI.plain(ch.text))}</strong></div>`).join('')}</div>`, { cls: 'small' }));
   }
   async function runCompare() {
     const from = $d('deployFrom').value, to = $d('deployTo').value;
@@ -102,8 +102,8 @@
     const c = diff.counts;
     $d('deployDiff').innerHTML = diff.same ? UI.empty('차이가 없습니다', `${from} → ${to}: 단계·연결·조건·변수·역할·폼이 같습니다`) :
       `<p class="muted">${esc(from)} → ${esc(to)}: ${UI.chipText('추가 ' + c['추가'], 'success')} ${UI.chipText('삭제 ' + c['삭제'], 'danger')} ${UI.chipText('변경 ' + c['변경'], 'warning')}</p>` +
-      `<div class="list">${diff.changes.map(ch => `<div class="item"><div class="row"><strong>${esc(ch.text)}</strong>${UI.chipText(ch.change, { '추가': 'success', '삭제': 'danger', '변경': 'warning' }[ch.change])}</div>` +
-        (ch.fields && ch.fields.length ? UI.fold(`바뀐 항목 ${ch.fields.length}`, `<table class="compact-table"><tbody>${ch.fields.map(f => `<tr><th>${esc(f.label)}</th><td>${esc(f.before)}</td><td>→ ${esc(f.after)}</td></tr>`).join('')}</tbody></table>`, { cls: 'small', open: ch.change === '변경' }) : '') +
+      `<div class="list">${diff.changes.map(ch => `<div class="item"><div class="row"><strong>${esc(UI.plain(ch.text))}</strong>${UI.chipText(ch.change, { '추가': 'success', '삭제': 'danger', '변경': 'warning' }[ch.change])}</div>` +
+        (ch.fields && ch.fields.length ? UI.fold(`바뀐 항목 ${ch.fields.length}`, `<table class="compact-table"><tbody>${ch.fields.map(f => `<tr><th>${esc(UI.plain(f.label))}</th><td>${esc(UI.plain(f.before))}</td><td>→ ${esc(UI.plain(f.after))}</td></tr>`).join('')}</tbody></table>`, { cls: 'small', open: ch.change === '변경' }) : '') +
         '</div>').join('')}</div>`;
   }
   $d('definitionDeployPanel').addEventListener('toggle', () => {

@@ -52,7 +52,7 @@ const UI = {
     'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 'inst.activity': '에이전트 활동', 'inst.list': '처리 건', 'inst.recent': '최근 50건', 'inst.filterRunning': '진행 중', 'inst.filterDone': '완료',
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '경보가 나면 여기에 나타납니다', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
     'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.off': '처리 건 기능이 꺼져 있습니다. 관리자에게 문의하세요.', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
-    'inst.tab.result': '결과', 'inst.tab.flow': '흐름', 'inst.tab.log': '기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
+    'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
     'inst.values': '값', 'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 'inst.now': '지금', 'inst.next': '다음', 'inst.finished': '끝',
     'inst.stepsDone': '단계 완료', 'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
     'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.woFailed': '정비 요청 전달 실패',
@@ -126,6 +126,10 @@ const UI = {
     'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
+    // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
+    'val.answered': '답함', 'val.unanswerable': '답할 수 없음', 'val.not_answerable': '답할 수 없음', 'val.ok': '정상', 'val.normal': '정상', 'val.abnormal': '비정상',
+    'val.recovered': '회복', 'val.not_recovered': '미회복', 'val.approved': '승인', 'val.rejected': '반려', 'val.pending': '대기',
+    'inst.cannotOpen': '이 처리 건은 열 수 없습니다',
     'empty.noData': '없음', 'loading': '불러오는 중…', 'error.load': '불러오지 못했습니다', 'more': '자세히', 'raw': '원문', 'yes': '예', 'no': '아니요', 'and': '·',
   },
   t(key, vars) {
@@ -144,7 +148,9 @@ const UI = {
   names: {}, namesVersion: 0,
   ID_RE: /\b(?:pattern|fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
   name(id) { return (id && this.names[id]) || id || ''; },
-  idText(text) { return String(text ?? '').replace(this.ID_RE, m => this.names[m] || m); },
+  idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
+  // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
+  words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간'); },
   async loadNames() {
     try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
   },
@@ -185,6 +191,26 @@ const UI = {
     [/^source handler lease expired$/, () => '원천 처리기 임대 만료'],
     [/^[A-Z_]{4,}$/, (m, U) => U.status(m[0])],
   ],
+  /* ---------- A161-U1 화면 정리: 호스트 경로 → 파일 이름, 모델 이름 → "AI 모델", 내부 오류 문구 → 사용자 말 (원문은 접기에만) ---------- */
+  PATH_RE: /(?:[A-Za-z]:\\|\/(?:Users|home|private|tmp|var|root|opt|mnt|workspace|app)\/)[^\s"'`<>()\],;]*|(?:\.evidence|\.claude)\/[^\s"'`<>()\],;]*/g,
+  MODEL_RE: /\b(?:claude-(?:opus|sonnet|haiku)[\w.-]*|claude-\d[\w.-]*|gpt-[\w.-]+|o\d-[\w.-]+|gemini-[\w.-]+|frentis-[\w.-]+)\b/gi,
+  baseName(p) { const parts = String(p || '').split(/[\\/]+/).filter(Boolean); return parts.length ? parts[parts.length - 1] : ''; },
+  // 흐름 정의의 단계 · 이벤트 id(task:x · ev:x · gw:x)와 온톨로지 id 를 화면 이름으로 (A160 결함 11)
+  plain(text) {
+    return this.idText(String(text ?? '')).replace(/\b(?:task|ev|gw):([A-Za-z0-9_-]+)/g, (m, id) => { const n = this.flowName(id); return n !== id ? n : (this.names[m] || id.replace(/[-_]/g, ' ')); });
+  },
+  clean(text) {
+    if (text == null) return '';
+    return this.words(String(text).replace(this.PATH_RE, m => this.baseName(m) || '작업 폴더').replace(this.MODEL_RE, 'AI 모델'));
+  },
+  // 도구 결과 문구로 본 상태: ok | warn(잘림 · 막힘) | fail. 칩이 "완료"인데 실제로는 잘린 결과를 받은 경우를 가려낸다(A160 결함 5)
+  outcome(output, isError) {
+    const s = typeof output === 'string' ? output : (output && typeof output === 'object' && typeof output.error === 'string' ? output.error : '');
+    if (/exceeds maximum allowed tokens|result \(\d[\d,]*\s*characters\) exceeds/i.test(s)) return { tone: 'warn', label: this.t('trace.truncated'), text: this.t('trace.truncatedText') };
+    if (/Contains brace with quote|requires approval|was blocked|not allowed|permission denied for this tool|denied by/i.test(s)) return { tone: 'blocked', label: this.t('trace.blocked'), text: this.t('trace.blockedText') };
+    if (isError) return { tone: 'fail', label: this.t('trace.failed'), text: '' };
+    return { tone: 'ok', label: '', text: '' };
+  },
   logText(raw) {
     const text = String(raw ?? '').trim(); if (!text) return '';
     return text.split(/;\s*/).map(s => s.trim()).filter(Boolean).map(seg => {
@@ -318,7 +344,7 @@ const UI = {
     failure_cost: ['돌발 고장 비용', '만원'], claim_cost: ['품질 클레임 비용', '만원'],
     fg_item: ['완제품 품목', ''], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', '시간'],
     cleans_60d: ['최근 60일 세척 횟수', '회'], last_clean_days: ['마지막 세척 후', '일'], clean_h: ['세척 소요', '시간'],
-    clean_cost: ['세척 비용', '만원'], night_in_h: ['야간 정비창까지', '시간'], oil_risk_per_h: ['시간당 작동유 위험 비용', '만원/시간'], mtbf_h: ['평균 고장 간격', '시간'],
+    clean_cost: ['세척 비용', '만원'], night_in_h: ['예정된 정비 시간까지', '시간'], oil_risk_per_h: ['시간당 작동유 위험 비용', '만원/시간'], mtbf_h: ['평균 고장 간격', '시간'],
     hot_min: ['과열 지속 시간', '분'], auto_lot: ['자동차 고객 로트', ''], auto_qty: ['자동차 고객 수량', '개'],
     gen_lot: ['일반 고객 로트', ''], gen_qty: ['일반 고객 수량', '개'], inspect_h: ['검사 소요', '시간'],
     inspect_cost: ['전수검사 비용', '만원'], sample_cost: ['표본검사 비용', '만원'],
@@ -445,6 +471,25 @@ Object.assign(UI.terms, {
     if (timeout > 0) setTimeout(() => node.remove(), timeout);
     return node;
   };
+
+  // A161-U1 (A160 결함 11): 브라우저 기본 파일 칸("Choose File / No file chosen")을 한국어 파일 고르기(지식 관리와 같은 모양)로 바꾼다.
+  // input 자체는 그대로 두고 감싸기만 하므로 각 화면의 change 처리 · files 읽기는 바뀌지 않는다.
+  UI.enhanceFiles = function (root = document) {
+    root.querySelectorAll('input[type=file]').forEach(input => {
+      if (input.closest('.file-picker') || input.dataset.enhanced) return;
+      input.dataset.enhanced = '1';
+      const wrap = document.createElement('label'); wrap.className = 'file-picker';
+      const btn = document.createElement('span'); btn.className = 'btn small'; btn.textContent = '파일 선택';
+      const name = document.createElement('span'); name.className = 'file-name'; name.textContent = '선택한 파일 없음';
+      input.parentNode.insertBefore(wrap, input); wrap.append(btn, input, name);
+      if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', '파일 선택');
+      input.addEventListener('change', () => { name.textContent = input.files && input.files[0] ? input.files[0].name : '선택한 파일 없음'; });
+    });
+  };
+  if (typeof document !== 'undefined' && document.addEventListener && typeof MutationObserver !== 'undefined') {
+    const boot = () => { UI.enhanceFiles(); let t = 0; new MutationObserver(() => { if (!t) t = setTimeout(() => { t = 0; UI.enhanceFiles(); }, 50); }).observe(document.body, { childList: true, subtree: true }); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else if (document.body) boot();
+  }
 
   // 확인 대화상자: Promise<boolean>. 위험한 행동(danger)은 확인 버튼이 빨강이고, 기본 초점은 취소에 둔다.
   UI.confirm = function ({ title = '', body = '', ok, cancel, danger = false } = {}) {

@@ -927,7 +927,10 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             where.append("proc_inst_id = %s"); args.append(proc_inst_id)
         if todo_id is not None:
             where.append("todo_id = %s"); args.append(todo_id)
-        sql = "select * from events" + (" where " + " and ".join(where) if where else "") + " order by timestamp limit %s"
+        # A161-U1: the newest `limit` rows, oldest first (MemoryRepo's rows[-limit:]). It returned the OLDEST rows, so a long
+        # agent run (hundreds of usage rows) cut the newest tool calls out of the instance view and the screen stopped moving.
+        sql = ("select * from (select * from events" + (" where " + " and ".join(where) if where else "")
+               + " order by timestamp desc, id desc limit %s) x order by timestamp, id")
         with self._conn() as c:
             return [self._row(r) for r in c.execute(sql, args + [limit]).fetchall()]
 
