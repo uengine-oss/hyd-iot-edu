@@ -8,16 +8,20 @@ MERGE (n:Role {id: 'role:purchasing'}) SET n.name = '구매 담당', n.level = 1
 WITH n MATCH (d:OrgUnit {id: 'dept:purchasing'}) MERGE (n)-[:MEMBER_OF]->(d);
 
 // 판단 입력: [id, name, typeRef, variable, source, represents]. 값은 실행 중에 온다(ERP 재고 감시 · 에이전트 계산). 지식에는 자리만 둔다.
+// in:supplier-fail-rate (2026-10-10): PR-7.4 "불량률이 10 %를 넘는 승인 공급사에 발주할 때는 … 전수 검사 비용 20만 원을 더해 비교한다"가
+// 시험할 자리. 이 자리가 없어 실제 추출(라이브 4차)도 사람 검토도 이 규칙을 적재할 수 없었다(check_graph가 REQUIRES_INPUT 밖 입력을 거부).
+// 값은 후보 카드의 공급사 견적(SCM)에서 카드마다 온다(cards.candidate_facts).
 UNWIND [['in:spare-gap','예비품 가용 재고 − 재주문점 (개)','number','spare_gap','sys:erp',null],
         ['in:po-amount','발주 금액 (만원)','number','po_amount','sys:agent','msr:part-cost'],
-        ['in:lead-slack-days','필요일 − 공급사 리드타임 (일)','number','lead_slack_days','sys:agent',null]] AS r
+        ['in:lead-slack-days','필요일 − 공급사 리드타임 (일)','number','lead_slack_days','sys:agent',null],
+        ['in:supplier-fail-rate','후보 공급사 불량률 (견적, 0~1)','number','supplier_fail_rate','sys:scm','msr:part-quality']] AS r
 MERGE (n:InputData {id: r[0]}) SET n.name = r[1], n.typeRef = r[2], n.variable = r[3]
 WITH n, r MATCH (src {id: r[4]}) MERGE (n)-[:SOURCED_FROM]->(src)
 WITH n, r OPTIONAL MATCH (x:Measure {id: r[5]})
 FOREACH (_ IN CASE WHEN x IS NULL THEN [] ELSE [1] END | MERGE (n)-[:REPRESENTS]->(x));
 
 // 규정 검토가 문서 규칙으로 검사할 수 있는 입력(규칙이 검사하는 입력은 결정의 REQUIRES_INPUT · 작업의 READS로 선언한다 — validate 규칙).
-UNWIND ['in:pattern','in:po-amount','in:lead-slack-days'] AS iid
+UNWIND ['in:pattern','in:po-amount','in:lead-slack-days','in:supplier-fail-rate'] AS iid
 MATCH (d:Decision {id: 'dec:compliance'}), (t:Task {id: 'task:compliance'}), (i:InputData {id: iid})
 MERGE (d)-[:REQUIRES_INPUT]->(i) MERGE (t)-[:READS]->(i);
 

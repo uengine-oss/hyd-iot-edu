@@ -10,7 +10,7 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.0'          # 2.0 (확정 TODO C1): optional knowledge part (고장 유형 · 원인 · 증거 · 규칙) and per-SOP suggested link (고장 유형 · 관계 · 종류 · 승인 · 원자 조치 값 · 대상 원인 · 영향) against the pinned ontology_catalog; 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
+VERSION = '2.1'          # 2.1 (2026-10-10, C 라이브 4차): link 값은 단계의 선택 기준을 그대로 적용하고, 같은 절차의 적용 조건('…이 아니면 이 절차를 쓰지 않는다')은 값을 바꾸는 데 쓰지 않고 규정 규칙으로 옮긴다; 2.0 (확정 TODO C1): optional knowledge part (고장 유형 · 원인 · 증거 · 규칙) and per-SOP suggested link (고장 유형 · 관계 · 종류 · 승인 · 원자 조치 값 · 대상 원인 · 영향) against the pinned ontology_catalog; 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
 
 INSTRUCTION = '''보관된 manual_source의 모든 pages를 읽고 기존 ManualSection → Skill → Step 스키마로 추출 제안을 작성하세요.
@@ -49,6 +49,9 @@ SOP로 삼을 장의 범위: 운전·점검·정비·고장 조치(트러블슈�
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
  actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
+ 값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
+ 같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
+ 그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.
  승인 역할 · 값이 문서에 없으면 비워 두고 warnings에 적으세요. 승인 · 선행 조건 문장은 단계가 아니라 link와 warnings로 옮깁니다.
 입력에 review_feedback이 있으면 사람이 이전 제안을 검토한 판정입니다. WRONG 항목은 원문을 다시 읽어 고치고, MISSING 항목은 원문에서 찾아 추가하되
 원문에 없으면 warnings에 그 이유를 적으세요. OK 항목은 그대로 유지하세요. 판정을 근거 없이 따르지 말고 원문이 우선입니다.

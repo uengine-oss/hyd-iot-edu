@@ -120,7 +120,7 @@ def main():
               f'빠진 노드 {len(old_n - new_n)} · 빠진 관계 {len(old_r - new_r)}')
         added_n = sorted(json.loads(x)['p']['id'] for x in new_n - old_n)
         check('전체판: 더해진 노드는 scenario_structure 추가분뿐', set(added_n) == {'role:purchasing', 'in:spare-gap', 'in:po-amount',
-              'in:lead-slack-days', 'pattern:spare-below-min', 'ks:pm-plan', 'part:return-filter', 'in:hours-since-pm',
+              'in:lead-slack-days', 'in:supplier-fail-rate', 'pattern:spare-below-min', 'ks:pm-plan', 'part:return-filter', 'in:hours-since-pm',
               'in:next-scheduled-time', 'in:hours-if-deferred', 'in:pm-crew', 'in:spare-available', 'pattern:pm-due'}, ', '.join(added_n))
         check('전체판: 되읽기 단언 통과', not run_checks(s, 'full'), str(run_checks(s, 'full')))
         full_errs = validate(s)
@@ -194,7 +194,11 @@ def main():
         # 재고 경보에는 진단 원인이 없다. 구매 SOP는 원인 한정(ADDRESSES)이므로, 부족한 부품을 쓰는 원인(Cause -INVOLVES_PART-> Part)을
         # 그래프에서 읽어 사실로 준다 — C 판단 에이전트가 할 일(C2/C3)과 같은 조회다.
         seal_cause = [r['c'] for r in s.run("MATCH (c:Cause)-[:INVOLVES_PART]->(:Part {id:'part:pump-seal'}) RETURN c.id AS c").data()]
-        cr = live_rank(s, fx.C_PURCHASE, dict(pattern='SPARE_BELOW_MIN', spare_gap=-1, po_amount=330, lead_slack_days=2,
+        # 카드마다 발주 금액 · 납기 여유 · 공급사 불량률은 견적에서 계산된다(cards.candidate_facts) — 그래프의 씰 키트 견적(SUPPLIED_BY)을 판단 사실로 준다
+        quotes = {r['sup']: dict(price=r['price'], lead_d=r['lead'], fail_rate=r['fail'], avl=r['avl']) for r in s.run(
+            "MATCH (:Part {id:'part:pump-seal'})-[x:SUPPLIED_BY]->(u:Supplier) "
+            "RETURN u.id AS sup, x.price AS price, x.leadDays AS lead, x.failRate AS fail, u.avl AS avl").data()}
+        cr = live_rank(s, fx.C_PURCHASE, dict(pattern='SPARE_BELOW_MIN', spare_gap=-1, spare_quotes=quotes, need_qty=6, need_by_days=6,
                                                  plc_mode='REMOTE_AUTO', plc_state='RUN', cause=seal_cause[0] if seal_cause else None,
                                                  failure_mode='fm:volumetric-loss'))
         co = {x['sopId']: x for x in cr['options']}

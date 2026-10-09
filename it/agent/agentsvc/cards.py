@@ -2,7 +2,7 @@
 
   1. 후보 선택  dec:action-candidates 규칙(SELECT)의 임계값 검사(TESTS)를 사실에 대어 맞으면 OUTPUTS 스킬이 후보가 된다 (COLLECT).
                 원인 한정 스킬(ADDRESSES)은 그 원인일 때만 남긴다.
-  2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인)에 대어
+  2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인 · 공급사 불량률)에 대어
                 EXCLUDE(제외) · PENALTY(감점) · WARN(경고)을 정한다. APPLIES_TO가 없는 규칙은 모든 후보에 적용된다.
   3. 순위       dec:rank-actions 규칙의 `rankingPolicy`(검토된 명시 식, A069)로 계산한다. 기본 정책은 BSC 득실 + 예측 유온 여유
                 − 경고 − 감점 + 선례 + 납기 긴급도 × 생산 영향 − 품질 클레임 위험이며(회의 2026-10-01 L385~404), 납기·품질·계약·재고 같은
@@ -97,17 +97,17 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     f["skill_code"] = [a["code"] for a in skill.get("actions") or [] if a.get("code")]
     sup = next((a.get("value") for a in skill.get("actions") or [] if a.get("code") == "PR_CREATE"), None)
     f["supplier_avl"] = suppliers.get(sup, {}).get("avl") if sup else None
-    # C2: 구매 카드마다 발주 금액 · 납기 여유(온톨로지 in:po-amount · in:lead-slack-days, 출처 sys:agent = 후보마다 계산) — ERP 필요량 × SCM 견적
+    # C2: 구매 카드마다 발주 금액 · 납기 여유(온톨로지 in:po-amount · in:lead-slack-days, 출처 sys:agent = 후보마다 계산) — ERP 필요량 × SCM 견적.
+    # 공급사 불량률(in:supplier-fail-rate, 출처 sys:scm)은 그 카드가 고른 공급사의 견적 값이다. 감점은 SOP 번호가 아니라 공급사에 따라간다.
     quote = (base.get("spare_quotes") or {}).get(sup) if sup else None
     qty, need_by = _num(base.get("need_qty")), _num(base.get("need_by_days"))
+    f["supplier_fail_rate"] = _num(quote.get("fail_rate")) if quote else None
     if quote and qty is not None:
         price, lead = _num(quote.get("price")), _num(quote.get("lead_d"))
         f["po_amount"] = round(price * qty, 2) if price is not None else None
         f["lead_slack_days"] = round(need_by - lead, 2) if need_by is not None and lead is not None else None
-        fail = _num(quote.get("fail_rate"))
-        f["expected_defect_cost"] = round(price * qty * fail, 2) if price is not None and fail is not None else None
     elif sup:
-        f["po_amount"] = f["lead_slack_days"] = f["expected_defect_cost"] = None
+        f["po_amount"] = f["lead_slack_days"] = None
     return f
 
 
@@ -264,7 +264,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
              "selectedBy": selected_by.get(sid, []),
              "precedent": {"n": p["n"], "share": round(p["n"] / total_prec, 2), "reasons": p.get("reasons") or []} if p and total_prec else None,
              "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl",
-                                             "po_amount", "lead_slack_days", "expected_defect_cost") if k2 in cf}}
+                                             "po_amount", "lead_slack_days", "supplier_fail_rate") if k2 in cf}}
         o["production"] = production_effect(o)
         window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
         if window:

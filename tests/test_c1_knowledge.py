@@ -32,8 +32,22 @@ INPUTS = {'dt:diagnose-cause': ['in:pattern:pattern', 'in:ce:ce', 'in:ts1:ts1', 
                                    'in:hours-since-pm:hours_since_pm'],
           'dt:compliance': ['in:skill-kind:skill_kind', 'in:skill-code:skill_code', 'in:plc-mode:plc_mode', 'in:forecast-ts1:forecast_ts1', 'in:fan100-hours:fan100_hours',
                             'in:supplier-avl:supplier_avl', 'in:pattern:pattern', 'in:po-amount:po_amount', 'in:lead-slack-days:lead_slack_days',
+                            'in:supplier-fail-rate:supplier_fail_rate',
                             'in:next-scheduled-time:hours_at_next_window', 'in:hours-if-deferred:hours_at_following_window',
                             'in:order-due:order_due_h', 'in:pm-crew:pm_crew_available', 'in:spare-available:spare_available']}
+
+
+def seed_compliance_inputs():
+    """구조판 시드가 규정 결정(dec:compliance)에 실제로 선언한 입력 id → 변수 이름. instances.cypher의 판단 정의 행 +
+    scenario_structure.cypher의 REQUIRES_INPUT 추가분(C · B). 위 가짜 그래프가 시드에 없는 입력을 지어내지 않는지 대조한다."""
+    import re
+    v2 = fx.ROOT / 'it' / 'neo4j' / 'v2'
+    inst, struct = (v2 / 'instances.cypher').read_text(encoding='utf-8'), (v2 / 'scenario_structure.cypher').read_text(encoding='utf-8')
+    declared = set(re.search(r"\['dec:compliance','[^']*','[^']*','dt:compliance','COLLECT',\[([^\]]*)\]", inst)[1].replace("'", '').split(','))
+    declared |= set(re.search(r"UNWIND \[([^\]]*)\] AS iid\s*\nMATCH \(d:Decision \{id: 'dec:compliance'\}\)", struct)[1].replace("'", '').split(','))
+    declared |= set(re.findall(r"\['dec:compliance','task:compliance','(in:[a-z0-9-]+)'\]", struct))
+    variables = dict(re.findall(r"\['(in:[a-z0-9-]+)','[^']*','[a-z]+','([a-z0-9_]+)'", inst + struct))
+    return {i: variables.get(i) for i in declared}
 
 
 class FakeTx:
@@ -69,9 +83,23 @@ def edges(after, kind):
     return [e for e in after['edges'] if e['type'] == kind]
 
 
+def test_fake_catalog_compliance_inputs_are_declared_by_the_seed():
+    """가짜 그래프의 규정 입력은 시드가 선언한 것과 같다(id · 변수). 시드에 자리가 없으면 실제 추출도 사람 검토도 그 규칙을 적재할 수 없다
+    (check_graph가 거부) — 라이브 4차에서 PR-7.4 불량률 규칙이 그렇게 빠졌다."""
+    seed = seed_compliance_inputs()
+    fake = dict(i.rsplit(':', 1) for i in INPUTS['dt:compliance'])
+    assert {i: seed.get(i) for i in fake} == fake, set(fake.items()) - set(seed.items())
+    used = {t['input'] for spec in (fx.A_KNOWLEDGE, fx.B_KNOWLEDGE, fx.C_KNOWLEDGE) for r in spec['rules'] if r['table'] == 'dt:compliance'
+            for t in r['tests']}
+    assert used <= set(seed), used - set(seed)
+    assert seed['in:supplier-fail-rate'] == 'supplier_fail_rate'
+
+
 def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
     d = manual_extraction.definition()
-    assert d['version'] == manual_extraction.VERSION == '2.0'
+    assert d['version'] == manual_extraction.VERSION == '2.1'
+    # 2.1: 단계의 선택 기준과 절차의 적용 조건을 나눈다(라이브 4차 SOP-PUR-13 — 조건을 값 고르기에 미리 적용해 다른 공급사를 골랐다)
+    assert '선택 기준을 그대로 적용' in manual_extraction.INSTRUCTION and 'dt:compliance EXCLUDE 규칙으로 옮겨' in manual_extraction.INSTRUCTION
     act = d['activities'][0]
     assert 'ontology_catalog' in act['inputData'] and any(x['name'] == 'ontology_catalog' for x in d['data'])
     for word in ('"knowledge"', 'failure_modes', 'causes', 'evidence', 'rules', '"link"', 'actions', 'addresses', 'ontology_catalog'):
@@ -137,6 +165,10 @@ def test_document_c_yields_purchase_rules_and_supplier_values_without_new_failur
     rules = {n['props']['id']: n['props'] for n in after['nodes'] if n['labels'] == ['Rule']}
     assert rules['rule:cand-spare-purchase']['when'] == "pattern == 'SPARE_BELOW_MIN'"
     assert rules['rule:pur-amount']['when'] == 'po_amount > 300' and rules['rule:pur-avl']['when'] == 'supplier_avl == false'
+    # PR-7.4 불량률 문턱: 감점은 공급사 견적의 불량률을 시험한다(SOP 번호가 아니라) — 구매 SOP 셋 모두에 걸린다
+    assert rules['rule:pur-inspection']['when'] == 'supplier_fail_rate > 0.1' and rules['rule:pur-inspection']['penalty'] == 20
+    assert {e['to_id'] for e in edges(after, 'APPLIES_TO') if e['from_id'] == 'rule:pur-inspection'} == \
+        {'skill:sop-pur-11', 'skill:sop-pur-12', 'skill:sop-pur-13'}
     assert {(e['from_id'], e['props']['value']) for e in edges(after, 'CONSISTS_OF')} == \
         {('skill:sop-pur-11', 'sup:b'), ('skill:sop-pur-12', 'sup:a'), ('skill:sop-pur-13', 'sup:c')}
     # 구매 SOP는 기존(다른 문서의) 고장 유형 · 원인을 가리킨다 — 새로 만들지 않는다

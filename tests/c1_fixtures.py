@@ -113,10 +113,12 @@ C_KNOWLEDGE = {
              tests=[dict(input='in:po-amount', operator='>', value=300, unit='만원')], applies_to=C_PURCHASE,
              annotation='300만 원 초과 — 전결 기준 초과 표시(승인은 구매 담당 1회)', section='PR-7.5',
              quote='300만 원을 넘으면 발주안 요약에 전결 기준 초과를 표시하고'),
+        # 입력 in:supplier-fail-rate(시드 구조, 2026-10-10)가 생기기 전에는 skill_code == PR_CREATE + applies_to SOP-PUR-12로
+        # "SOP-PUR-12의 공급사는 불량 10 % 초과"를 손으로 박았다 — 다른 SOP가 같은 공급사를 가리키면 감점이 빠졌다(라이브 4차).
         dict(id='rule:pur-inspection', table='dt:compliance', effect='PENALTY', penalty=20, penalizes='msr:part-quality',
-             tests=[dict(input='in:skill-code', operator='==', value='PR_CREATE')], applies_to=['SOP-PUR-12'],
-             annotation='불량률 10 % 초과 공급사(대체 승인 공급사) — 전수 검사 비용 감점', section='PR-7.4',
-             quote='전수 검사 비용 20만 원을 더해 비교한다.'),
+             tests=[dict(input='in:supplier-fail-rate', operator='>', value=0.1)], applies_to=C_PURCHASE,
+             annotation='불량률 10 % 초과 승인 공급사 — 전수 검사 비용 20만 원 감점', section='PR-7.4',
+             quote='불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.'),
         dict(id='rule:pur-lead', table='dt:compliance', effect='WARN',
              tests=[dict(input='in:lead-slack-days', operator='<', value=0, unit='일')], applies_to=C_PURCHASE,
              annotation='리드타임이 필요일보다 길면 결품 위험', section='PR-7.4',

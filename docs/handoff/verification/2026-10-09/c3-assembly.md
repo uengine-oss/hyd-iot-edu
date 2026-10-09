@@ -170,7 +170,7 @@
 | 시작 상태 = 기본값 | 마이그레이션 47: HYD-02 1,950 h · HYD-03 1,880 h · HYD-01 1,500 h, 씰 키트 실물 3 − 예약 2 = 가용 1 < 재주문점 2. 판단 사실은 C2와 같다(1,950 / 1,959 / 2,230 h, 필요량 6). 메모리 백엔드 같은 값 | `it/supabase/migrations/20261009000047_c3_bc_simplified.sql`, `entsim/data.py · state.py` |
 | B 표시가 꺼지는 때 | `ent.pm_status.pm_alert` = 도래 · 이번 회차 정비 오더 없음. 도래 설비에 **예정된 정비 시간(window_id)으로 잡힌** 작업지시가 오더로 남는다(트리거). 고장 대응 즉시 작업지시(펌프 회귀의 예비 펌프 전환)는 오더가 아니다 — 처음 판은 이것까지 셌다가 회귀 뒤 표시가 꺼져 고침 | 같은 마이그레이션 |
 | 버튼 API | `GET /api/scenario/status`, `POST /api/scenario/{B,C}/start`(업무 감시와 같은 경보 계약 · 같은 접수 경로, 표시 없음 · 진행 중 · 흐름 미배포는 409), `POST /api/scenario/{B,C}/reset`, `POST /api/scenario/A/{degrade,restore}` | `procsvc/scenario_buttons.py`, `main.py` |
-| 옛 원인 버튼 | +300 h · 출고 −2 · 납기 지연을 포털 · process 에서 없앰. enterprise-sim API(`/cmms/pm/advance` 등)는 시험 · 강사용으로 남김. 업무 감시 기본 끔(`BUSINESS_MONITOR=0`) — 켜 두면 시작 상태가 곧 도래라 바로 처리 건이 열린다 | `compose.yaml`, `.env.example` |
+| 옛 원인 버튼 | +300 h · 출고 −2 · 납기 지연 버튼을 포털 · process · enterprise-sim 에서 없앰(아래 '옛 수업 버튼 경로 삭제'). 같은 업무 변화는 ERP · CMMS 거래(`/api/exec` skill:pm-advance · issue-spare · delay-delivery)로만 남는다. 업무 감시 기본 끔(`BUSINESS_MONITOR=0`) — 켜 두면 시작 상태가 곧 도래라 바로 처리 건이 열린다 | `compose.yaml`, `.env.example` |
 | 흐름 | B: 제안 → 설비보전팀장 승인 → 정비 오더 등록 · 공지 메일 → 결과 보고(task 4). C: 제안 → 구매 담당 승인 → ERP 발주 · 공급사 메일 → 입고 · 재고 반영(`immediate`) → 결과 보고(task 5). 레인 3, 분기 · 타이머 없음 | `scripts/c3_flows.py`, `service_parts.py`, `effect_parts.py` |
 | 결과 보고 값 | B: 정비 오더 · 정비 시점 · 공지 메일. C: 입고 수량 · 현재고 · 가용 재고(기준 ≥ 재주문점) · 공급사 메일 | `effect_parts.report_values` |
 | 포털 | 설비 카드마다 시나리오 하나, 카드 머리 표시(도래 · 필요 · 처리 중 → · 처리됨), 위쪽 원인 버튼 패널 삭제, 결과 카드 줄바꿈 · 승인자 이름 · '구매 담당' 역할 이름 | `app.js`, `resultReport.js`, `ui.js`, `names.json`, `theme.css` |
@@ -214,7 +214,7 @@
 
 | 곳 | 지금 | 비고 |
 |---|---|---|
-| C 지식의 "불량 기대비용" | 실제 추출이 PR-7.4 비교 원칙을 판정 규칙으로 만들지 않았고, SOP-PUR-13(최단 납기)을 A정밀로 연결했다 → 추천이 설계(B-OEM)와 다름 | 원문이 "총비용으로 비교한다"는 원칙만 있고 판정할 문턱이 없다. 적재 스크립트(`c3_ingest.py`)는 검토 단계를 손대지 않고 승인했다 — 사람 검토에서 규칙 추가 · 연결 수정이 필요(C1 몫, 열림) |
+| C 지식의 "불량 기대비용" | 실제 추출이 PR-7.4 비교 원칙을 판정 규칙으로 만들지 않았고, SOP-PUR-13(최단 납기)을 A정밀로 연결했다 → 추천이 설계(B-OEM)와 다름 | 원문이 "총비용으로 비교한다"는 원칙만 있고 판정할 문턱이 없다. 적재 스크립트(`c3_ingest.py`)는 검토 단계를 손대지 않고 승인했다 — 사람 검토에서 규칙 추가 · 연결 수정이 필요(C1 몫, 열림). **정정(2026-10-10)**: 원문 PR-7.4에 10 % 문턱이 있다. 규칙이 빠진 것은 시드 구조에 공급사 불량률 입력이 없어서였다(사람 검토로도 넣을 수 없었음) — `docs/handoff/verification/2026-10-10/c-knowledge-gap.md` |
 | 결정 수준 provenance 의 카드별 값 | po_amount · lead_slack_days · supplier_avl 은 결정 수준에서 "후보마다 계산"(값 없음) | 값은 각 카드 facts 에 있다. 화면의 카드별 출처 표시는 확인 안 함 |
 | 승인 화면 캡처 | 승인 카드(추천 · 진 안 · 근거)가 화면 아래라 캡처에 잘림 | 판단 원본 `X-decision.json` |
 

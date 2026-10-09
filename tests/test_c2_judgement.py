@@ -144,10 +144,11 @@ def c_rules():
         rule("rule:pur-avl", "dec:compliance", "EXCLUDE", [("supplier_avl", "==", False)], list(C_SKILLS)),
         rule("rule:pur-amount", "dec:compliance", "WARN", [("po_amount", ">", 300)], list(C_SKILLS)),
         rule("rule:pur-lead", "dec:compliance", "WARN", [("lead_slack_days", "<", 0)], list(C_SKILLS)),
-        rule("rule:pur-defect", "dec:compliance", "PENALTY", [("expected_defect_cost", ">", 20)], list(C_SKILLS), penalty=40)]
+        # PR-7.4 "불량률이 10 %를 넘는 승인 공급사에 발주할 때는 … 전수 검사 비용 20만 원을 더해 비교한다"(입력 in:supplier-fail-rate)
+        rule("rule:pur-inspection", "dec:compliance", "PENALTY", [("supplier_fail_rate", ">", 0.1)], list(C_SKILLS), penalty=20)]
 
 
-C_INPUTS = inputs(("spare_gap", "sys:erp"), ("po_amount", "sys:agent"), ("lead_slack_days", "sys:agent"))
+C_INPUTS = inputs(("spare_gap", "sys:erp"), ("po_amount", "sys:agent"), ("lead_slack_days", "sys:agent"), ("supplier_fail_rate", "sys:scm"))
 
 
 def c_judge(monkeypatch):
@@ -167,8 +168,21 @@ def test_c_amount_and_lead_slack_are_computed_per_card_from_erp_need_and_scm_quo
     assert (b["facts"]["lead_slack_days"], a["facts"]["lead_slack_days"]) == (1, 4)
     assert not c["feasible"] and c["violations"][0]["rule"] == "rule:pur-avl"                 # 가장 싸지만 비승인 → 제외
     assert [w["rule"] for w in b["warnings"]] == ["rule:pur-amount"]                       # 300만 원 초과 — 표시만(2차 승인 없음)
-    assert [p["rule"] for p in a["penalties"]] == ["rule:pur-defect"]                      # 싸지만 불량 기대비용 25.2만원
+    assert (a["facts"]["supplier_fail_rate"], b["facts"]["supplier_fail_rate"]) == (0.12, 0.02)    # SCM 견적 그대로
+    assert [p["rule"] for p in a["penalties"]] == ["rule:pur-inspection"] and not b["penalties"]   # 싸지만 불량 12 % → 전수 검사 감점
+    assert "expected_defect_cost" not in a["facts"]           # PR-7.4와 다른 식으로 계산되던, 어떤 지식도 시험할 수 없던 사실은 없다
     assert result["recommended"] == "skill:pur-11"
+
+
+def test_c_defect_penalty_follows_the_supplier_not_the_sop_number(enterprise, monkeypatch):
+    """라이브 4차: 추출이 SOP-PUR-13(최단 납기)을 A정밀에 연결했다. 불량 감점은 SOP 번호가 아니라 카드가 고른 공급사의 견적 불량률을 본다 —
+    어느 SOP가 A정밀을 가리켜도 같은 감점이 붙고, 비승인 C트레이딩을 가리키면 AVL 규정이 제외한다."""
+    monkeypatch.setitem(C_SKILLS, "skill:pur-13", pur("skill:pur-13", "SOP-PUR-13", "sup:a"))
+    _, result = c_judge(monkeypatch)
+    o = {x["sopId"]: x for x in result["options"]}
+    assert o["SOP-PUR-13"]["feasible"] and o["SOP-PUR-13"]["facts"]["supplier_fail_rate"] == 0.12
+    assert [p["rule"] for p in o["SOP-PUR-13"]["penalties"]] == ["rule:pur-inspection"]
+    assert not o["SOP-PUR-11"]["penalties"]
 
 
 def test_c_lead_time_longer_than_the_need_date_warns_the_card(enterprise, monkeypatch):
