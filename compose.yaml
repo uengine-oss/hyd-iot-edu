@@ -307,6 +307,8 @@ services:
     profiles: [knowledge]
     networks: [it-net]
     entrypoint: ["/bin/bash", "/seed/seed.sh"]
+    environment:
+      SEED_EDITION: ${SEED_EDITION:-structure}   # 확정 TODO C1: structure 수업용 구조판(강의 기본, 고장 · 조치 지식은 문서 적재) | full 회귀용 전체판(회귀 · 통합 시험)
     volumes: ["./it/neo4j:/seed:ro"]
     depends_on:
       neo4j: { condition: service_healthy }

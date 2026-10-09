@@ -3,7 +3,11 @@
 // 전체 스키마 검사는 scripts/ontology_v2.py validate(파이썬, 호스트)가 한다. 여기는 컨테이너(cypher-shell만 있음)에서
 // 적재가 끝까지 들어갔는지 보는 최소 단언이다: 시드 파일이 MERGE하는 모든 레이블이 비어 있지 않고, 수업 시나리오가 기대는 연결이 있다.
 // 아래 레이블 목록은 tests/test_ontology_schema.py가 instances.cypher·knowledge_a098.cypher의 MERGE 레이블과 대조한다(빠지면 시험 실패).
+// 전체판: 시드 파일이 MERGE하는 모든 레이블. 구조판: 문서 적재가 만드는 고장 · 원인 · 증거 · 스킬 · 단계 · 매뉴얼 절 · 예측 · 선례 · 사건 레이블은 빈 채로 시작한다.
+// @edition full
 MATCH (n) WITH collect(DISTINCT labels(n)) AS have UNWIND ['Action','Actuator','AnomalyPattern','Asset','Cause','Component','Decision','DecisionCase','DecisionTable','Event','Evidence','ExternalVariable','FailureMode','FlowNode','Forecast','Gateway','Incident','InputData','KnowledgeSource','ManualSection','Measure','Objective','OrgUnit','Part','Perspective','Process','Role','Rule','Sensor','Skill','StateVariable','Step','Supplier','Symptom','System','Task'] AS want WITH want, [l IN have WHERE want IN l] AS hit WHERE size(hit) = 0 RETURN 'empty label ' + want AS problem
+// @edition structure
+MATCH (n) WITH collect(DISTINCT labels(n)) AS have UNWIND ['Action','Actuator','AnomalyPattern','Asset','Component','Decision','DecisionTable','Event','ExternalVariable','FlowNode','Gateway','InputData','KnowledgeSource','Measure','Objective','OrgUnit','Part','Perspective','Process','Role','Rule','Sensor','StateVariable','Supplier','Symptom','System','Task'] AS want WITH want, [l IN have WHERE want IN l] AS hit WHERE size(hit) = 0 RETURN 'empty label ' + want AS problem
 MATCH (m:Measure) WHERE m.kpiRole IS NULL OR m.direction IS NULL OR m.unit IS NULL RETURN 'measure without kpiRole/direction/unit ' + m.id AS problem
 MATCH (a:Measure {kpiRole:'lagging'})-[:INFLUENCES]->(b:Measure {kpiRole:'leading'}) RETURN 'lagging influences leading ' + a.id + ' -> ' + b.id AS problem
 MATCH (m:Measure {kpiRole:'leading'}) WHERE NOT EXISTS { (m)-[:INFLUENCES*1..6]->(:Measure {kpiRole:'lagging'}) } RETURN 'leading measure reaches no lagging measure ' + m.id AS problem
@@ -14,11 +18,17 @@ MATCH (k:Skill) WHERE NOT (k)-[:HAS_STEP]->(:Step) RETURN 'skill without steps '
 MATCH (k:Skill) WHERE NOT (:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(k) RETURN 'skill not matched to a failure mode ' + k.id AS problem
 MATCH (r:Rule) WHERE NOT (:DecisionTable)-[:HAS_RULE]->(r) RETURN 'rule outside a decision table ' + r.id AS problem
 MATCH (d:Decision) WHERE NOT (d)-[:IMPLEMENTED_BY]->(:DecisionTable) RETURN 'decision without table ' + d.id AS problem
-MATCH (p:AnomalyPattern) WHERE NOT EXISTS { (p)-[:DETECTS]->(:Symptom)-[:INDICATES]->(:FailureMode) } RETURN 'pattern not linked to a failure mode ' + p.id AS problem
+// 결정 1(가): 재고 · 공급 이상 패턴(SPARE_BELOW_MIN, ERP 감시)은 설비 증상이 아니므로 Symptom을 잇지 않는다. 설비 패턴(held · plc-trip)이나 증상을 잇는 패턴만 고장 유형까지 이어져야 한다.
+// @edition full
+MATCH (p:AnomalyPattern) WHERE (p.detectionMode IN ['held','plc-trip'] OR EXISTS { (p)-[:DETECTS]->(:Symptom) }) AND NOT EXISTS { (p)-[:DETECTS]->(:Symptom)-[:INDICATES]->(:FailureMode) } RETURN 'pattern not linked to a failure mode ' + p.id AS problem
+// 구조판: 고장 유형은 문서 적재가 만든다. 설비 패턴이 증상까지는 이어져 있어야 문서가 증상 → 고장 유형을 이을 수 있다.
+// @edition structure
+MATCH (p:AnomalyPattern) WHERE p.detectionMode IN ['held','plc-trip'] AND NOT EXISTS { (p)-[:DETECTS]->(:Symptom) } RETURN 'equipment pattern without symptom ' + p.id AS problem
 MATCH (c:Cause) WHERE NOT (c)-[:CAUSES]->(:FailureMode) RETURN 'cause without failure mode ' + c.id AS problem
 MATCH (a:Asset) WHERE a.forecastModel IS NULL OR a.forecastRevision IS NULL OR a.forecastHorizonS IS NULL RETURN 'asset without explicit forecast model binding ' + a.id AS problem
 MATCH (p:Process) WHERE NOT (p)-[:ACHIEVES]->(:Objective) OR NOT (p)-[:ACTS_ON]->(:Asset) RETURN 'process without objective/asset ' + p.id AS problem
 // A156: the detector needs held patterns (detector-patterns.cypher); none means a fresh volume would start it unhealthy
 MATCH (p:AnomalyPattern) WITH count(CASE WHEN p.detectionMode = 'held' THEN 1 END) AS held WHERE held = 0 RETURN 'no held AnomalyPattern: detector-patterns.cypher not loaded' AS problem
 // B4 (DECISIONS 110 ④): 선례 조회는 seeded=true 사례만 센다 — 시드 선례가 하나도 표시되지 않았으면 선례 몫이 모두 0이 된다
+// @edition full
 MATCH (c:DecisionCase) WHERE c.seeded = true WITH count(c) AS n WHERE n = 0 RETURN 'no seeded DecisionCase (precedent query would count nothing)' AS problem

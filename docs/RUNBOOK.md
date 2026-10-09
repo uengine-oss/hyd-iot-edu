@@ -16,6 +16,9 @@
 
 가상환경 준비(한 번): `"/c/Users/$USERNAME/AppData/Local/Programs/Python/Python314/python.exe" -m venv .venv314 && .venv314/Scripts/python.exe -m pip install -r requirements-dev.txt` (루트 `requirements-dev.txt`가 `it/agent`·`it/process`의 requirements를 포함한다; 워커용 `cliagents`·`psycopg`·`neo4j`는 `it/agent-worker` 요구 파일 확인. 3.14에는 고정 버전 휠이 없어 상위 호환 설치됐다 — HANDOFF §4).
 `.env`가 없으면 `cp .env.example .env`. 강의 배포본은 `.env`에 `PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`을 둔다(2026-10-07 현재 제작자 `.env` 값).
+온톨로지 시드 판(확정 TODO C1): 강의 배포본은 `SEED_EDITION=structure`(수업용 구조판, compose 기본값 — 고장 · 원인 · 조치 지식은 학생이 문서 A · C를 적재해 만든다).
+회귀 · 통합 시험(`run_regression` · `scenario_*_test.py`)은 시드 스킬 · 규칙 · 선례를 전제하므로 **`SEED_EDITION=full`로 새 neo4j 볼륨에 적재한 스택**에서 돌린다.
+kg-seed는 MERGE만 하므로 판을 바꿀 때는 neo4j 볼륨을 새로 만든다(이미 있는 지식은 structure로 다시 돌려도 지워지지 않는다). 확인: `docker compose logs kg-seed | grep "seed edition"`.
 
 ## 1. 기동 순서
 

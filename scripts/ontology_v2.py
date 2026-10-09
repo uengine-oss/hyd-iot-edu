@@ -294,6 +294,53 @@ def cmd_gen(_args) -> int:
 
 
 # ------------------------------------------------------------------ database
+SEED_FILES = ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "scenario_structure.cypher", "detector-patterns.cypher")
+EDITIONS = ("structure", "full")
+EDITION_MARK = "// @edition "
+
+
+def edition_filter(text: str, edition: str) -> str:
+    """확정 TODO C1 시드 두 판: '// @edition full|structure' 표시 바로 뒤의 문장(다음 주석 아닌 줄부터 ';'로 끝나는 줄까지)은
+    그 판에서만 남긴다. it/neo4j/edition.sh seed_edition_filter와 같은 규칙이다(tests/test_seed_editions.py가 대조)."""
+    if edition not in EDITIONS:
+        raise ValueError(f"edition must be one of {EDITIONS}")
+    out, pending, active, keep = [], None, False, True
+    for line in text.split("\n"):
+        trimmed = line.lstrip()
+        if not active:
+            if trimmed in (EDITION_MARK + "full", EDITION_MARK + "structure"):
+                pending = trimmed[len(EDITION_MARK):]
+                continue
+            if trimmed.startswith("//") or trimmed == "":
+                out.append(line)
+                continue
+            active, keep, pending = True, (pending is None or pending == edition), None
+        elif trimmed.startswith("//"):
+            if keep:
+                out.append(line)
+            continue
+        if keep:
+            out.append(line)
+        if line.rstrip().endswith(";"):
+            active, keep = False, True
+    return "\n".join(out)
+
+
+def edition_checks(text: str, edition: str) -> list[str]:
+    """seed_checks.cypher에서 이 판이 실행할 질의 줄(표시는 바로 뒤의 질의 한 줄에만 적용). edition.sh seed_edition_checks와 같다."""
+    out, want = [], None
+    for line in text.split("\n"):
+        if line in (EDITION_MARK + "full", EDITION_MARK + "structure"):
+            want = line[len(EDITION_MARK):]
+            continue
+        if not line or line.startswith("//"):
+            continue
+        if want is None or want == edition:
+            out.append(line)
+        want = None
+    return out
+
+
 def split_statements(text: str) -> list[str]:
     body = "\n".join(l for l in text.splitlines() if not l.strip().startswith("//"))
     return [st.strip() for st in re.split(r";\s*\n", body + "\n") if st.strip()]
@@ -312,8 +359,8 @@ def cmd_load(args) -> int:
                 ses.run(f"DROP CONSTRAINT `{r['name']}` IF EXISTS").consume()
             for r in list(ses.run("SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP' RETURN name")):
                 ses.run(f"DROP INDEX `{r['name']}` IF EXISTS").consume()
-        for f in ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "detector-patterns.cypher"):
-            sts = split_statements((V2 / f).read_text(encoding="utf-8"))
+        for f in SEED_FILES:
+            sts = split_statements(edition_filter((V2 / f).read_text(encoding="utf-8"), args.edition))
             for i, st in enumerate(sts, 1):
                 try:
                     ses.run(st).consume()
@@ -567,6 +614,7 @@ def main(argv=None) -> int:
     ap.add_argument("--user", default="neo4j")
     ap.add_argument("--password", default=os.getenv("V2_NEO4J_PASSWORD", "hydpass123"))
     ap.add_argument("--wipe", action="store_true", help="load: 적재 전에 그래프를 비운다 (검증용 DB에서만)")
+    ap.add_argument("--edition", choices=EDITIONS, default="full", help="load: 시드 판 (structure 수업용 구조판 · full 회귀용 전체판)")
     ap.add_argument("--only", help="queries: 이 이름의 질의만")
     ap.add_argument("--limit", type=int, default=8)
     a = ap.parse_args(argv)
