@@ -16,13 +16,14 @@ import inspect
 import json
 import logging
 import os
+import re
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 from functools import partial
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -83,10 +84,13 @@ class ProcessContext:
     accept_evaluation: Callable | None = None
     exec_compensation: Callable | None = None     # (request) → enterprise /api/exec with a compensation skill (A072)
     latest_tag: Callable[[str, str], float | None] | None = None   # C2: (asset, tag) → 최신값 (작업지시 뒤 재관측)
+    window_series: Callable | None = None     # A161-G3: (incident, after, since) → 재관측 창의 값 흐름 (reobs_series.build 모양)
 
 
 _runtime: instances.InstanceRuntime | None = None
 _ctx: ProcessContext | None = None
+EVENTS_PAGE_MAX = 5000        # A161-G4: one /api/events page at most (the instance view itself reads instances.EVENTS_WINDOW)
+PAYLOAD_CHUNK_CHARS = 200_000 # A161-G2: one /api/event-payloads chunk
 stream_clients = 0            # A131: open /api/events/stream generators (memory diagnostics; must return to 0 after disconnects)
 
 
@@ -441,15 +445,28 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                 ctx.after_incident(inc)
         return changed
 
-    def recovery_reading(inc_id: str) -> dict | None:
+    def recovery_reading(inc_id: str, since: str | None = None) -> dict | None:
         inc = ctx.incidents.get(inc_id)
         if inc is None or inc.recovery is None:
             return None
         tag, op, limit = inc.recovery
         value = ctx.latest_tag(inc.asset, tag) if ctx.latest_tag else None
         inside = value is not None and (value < limit if op == "<" else value >= limit)
-        return {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
-                "criterion": f"{tag} {op} {limit}"}
+        reading = {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
+                   "criterion": f"{tag} {op} {limit}"}
+        if since and ctx.window_series is not None:
+            # A161-G3: the work-order re-observation window (since = its start) — the trend goes on the reading (the step's
+            # REOBSERVATION event) and on the Incident (reobsSeries), like the command path's timer
+            try:
+                series = ctx.window_series(inc, "work_order", since)
+            except Exception:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it
+                log.warning("re-observation series for %s could not be read", inc_id, exc_info=True)
+                series = None
+            if series:
+                reading["series"] = series
+                machine.record_reobs_series(inc, series)
+                ctx.persist()
+        return reading
 
     def mcp_call(server: str, tool: str, arguments: dict, key: str) -> dict:
         from . import mcp_check
@@ -1143,7 +1160,12 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(409,str(e))
 
     @app.get("/api/events")
-    async def list_events(proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500):
+    async def list_events(response: Response, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500,
+                          before: str | None = None, page: bool = False):
+        """Newest `limit` events, oldest first (unchanged default). A161-G4 paging: `before=<event id>` returns the page just
+        older than that event (keyset on timestamp · id). Every answer says whether older rows remain — headers
+        X-Events-Has-More (1/0) and X-Events-Before (the cursor for the next older page) — and `page=true` wraps the rows as
+        {events, has_more, before} for a client that cannot read headers."""
         rt = _rt()
         if not proc_inst_id and not todo_id:
             raise HTTPException(400,'proc_inst_id 또는 todo_id를 지정하세요')
@@ -1157,7 +1179,37 @@ def mount(app: FastAPI, process_mode: str) -> None:
                 await _in_executor(rt.workitem_view,todo_id)
             except KeyError:
                 raise HTTPException(404,'no such work item')
-        return await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit)
+        limit = max(1, min(int(limit), EVENTS_PAGE_MAX))
+        rows = await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit + 1, before)
+        has_more = len(rows) > limit
+        rows = rows[-limit:]
+        cursor = rows[0]["id"] if has_more and rows else None
+        response.headers["X-Events-Has-More"] = "1" if has_more else "0"
+        if cursor:
+            response.headers["X-Events-Before"] = str(cursor)
+        return {"events": rows, "has_more": has_more, "before": cursor} if page else rows
+
+    @app.get("/api/event-payloads/{payload_id}")
+    async def get_event_payload(payload_id: str, offset: int = 0, limit: int = PAYLOAD_CHUNK_CHARS):
+        """A161-G2: the full tool result an events row points at (data.full_output.ref), in chunks of `limit` characters."""
+        rt = _rt()
+        if not re.fullmatch(r"[0-9a-f]{64}", payload_id or ""):
+            raise HTTPException(400, "payload id 는 sha256 16진수 64자입니다")
+        row = await _in_executor(rt.repo.get_event_payload, payload_id)
+        if not row:
+            raise HTTPException(404, "no such payload")
+        if row.get("proc_inst_id"):
+            try:
+                if await _in_executor(rt.instance_view, row["proc_inst_id"]) is None:
+                    raise HTTPException(404, "no such payload")      # another tenant's instance
+            except instances.InstanceRemoved as e:
+                raise HTTPException(404, str(e))
+        content = row.get("content") or ""
+        offset, limit = max(0, int(offset)), max(1, min(int(limit), PAYLOAD_CHUNK_CHARS))
+        end = offset + limit
+        return {**{k: row.get(k) for k in ("id", "chars", "content_type", "source", "tool", "tool_use_id", "job_id", "todo_id",
+                                         "proc_inst_id", "meta", "created_at")},
+                "offset": offset, "content": content[offset:end], "next_offset": end if end < len(content) else None}
 
     @app.get("/api/users")
     async def list_users():

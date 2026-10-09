@@ -23,7 +23,7 @@ from hydcommon.kafka import consumer as make_consumer, producer as make_producer
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from hydcommon.timeutil import now, now_iso
-from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, work_orders, current_approval, engine
+from . import decisions as declib, definition, ingest, graph_ingest, instance_mode, kgadmin, machine, work_orders, current_approval, engine, reobs_series
 from .store import Store
 from . import skill_graph
 from . import ranking_policy
@@ -94,7 +94,11 @@ async def fire_timer(inc_id: str, name: str, seconds: float, cmd_id: str | None 
     if not inc:
         return
     value = await asyncio.get_running_loop().run_in_executor(None, latest_tag, inc.asset, inc.recovery[0]) if name == "reobs" and inc.recovery else None
-    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE, cmd_id=cmd_id)
+    series = None
+    if name == "reobs" and inc.recovery and inc.state == "RE_OBSERVING" and (cmd_id is None or cmd_id == inc.cmd_id):
+        # A161-G3: the values the verdict is about, not just the last one (sampled; reobs_series.py)
+        series = await asyncio.get_running_loop().run_in_executor(None, window_series, inc, "command")
+    machine.on_timer(inc, name, now(), value, Fx(inc), time_scale=TIME_SCALE, cmd_id=cmd_id, series=series)
     _after(inc)
     if inc.state == 'RESOLVED':
         rt = instance_mode.current()
@@ -113,6 +117,35 @@ def latest_tag(asset: str, tag: str = "TS1") -> float | None:
     except Exception as e:  # noqa: BLE001
         log.warning("latest_tag %s failed: %s", tag, e)
         return None
+
+
+def tag_series(asset: str, tag: str, since: str, until: str | None = None) -> list[tuple[str, float]]:
+    """A161-G3: the 1 s rows of one tag from `since` (ISO) to `until` (default now), oldest first, at most reobs_series.MAX_ROWS
+    (the newest ones when the window is longer). [] when TimescaleDB cannot be read — the verdict never waits for the trend."""
+    try:
+        with psycopg.connect(PG_DSN, autocommit=True, connect_timeout=5) as conn, conn.cursor() as cur:
+            cur.execute("SELECT time, value FROM tag_1s WHERE asset=%s AND name=%s AND time >= %s::timestamptz"
+                        " AND (%s::timestamptz IS NULL OR time <= %s::timestamptz) ORDER BY time DESC LIMIT %s",
+                        (asset, tag, since, until, until, reobs_series.MAX_ROWS))
+            rows = cur.fetchall()
+    except Exception as e:  # noqa: BLE001
+        log.warning("tag_series %s failed: %s", tag, e)
+        return []
+    return [(t.isoformat() if hasattr(t, "isoformat") else str(t), float(v)) for t, v in reversed(rows) if v is not None]
+
+
+def window_series(inc: machine.Incident, after: str, since: str | None = None) -> dict | None:
+    """A161-G3: the Incident's recovery tag over its re-observation window (since: the window start; default the last
+    RE_OBSERVING entry), sampled for the Incident record."""
+    if inc.recovery is None:
+        return None
+    since = since or reobs_series.window_start(inc.history)
+    if not since:
+        return None
+    tag, op, limit = inc.recovery
+    until = now_iso()
+    return reobs_series.build(tag_series(inc.asset, tag, since, until), tag=tag, op=op, limit=limit, since=since, until=until,
+                              after=after, extensions=inc.reobs_extensions)
 
 
 def latest_ts1(asset: str) -> float | None:
@@ -432,7 +465,7 @@ def _instance_context() -> instance_mode.ProcessContext:
                                         get_loop=lambda: loop, check_approval=_check_current_approval, after_incident=_after,
                                         reviews=_review_service, record_incident=record_incident, approval_receipts=_approval_receipts,
                                         accept_evaluation=_publish_legacy_evaluation, exec_compensation=_exec_compensation,
-                                        latest_tag=latest_tag)
+                                        latest_tag=latest_tag, window_series=window_series)
 
 
 def _exec_compensation(body: dict) -> dict:

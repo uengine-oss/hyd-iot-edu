@@ -332,7 +332,8 @@ class ServicePartsRuntime:
         state = self._state(wi)
         if "reobserve" not in state:
             secs = incident_def.REOBSERVE_SIM_S / max(1.0, self.time_scale)
-            plan = {"kind": "work_order", "due_at": engine.now_iso(clock + _td(secs)), "window_s": round(secs, 1), "extensions": 0}
+            plan = {"kind": "work_order", "started_at": engine.now_iso(clock), "due_at": engine.now_iso(clock + _td(secs)),
+                    "window_s": round(secs, 1), "extensions": 0}
             wi["due_date"] = plan["due_at"]
             wi["log"] = (wi.get("log") or "") + f"re-observing after the work order for {secs:.0f} s; "
             state = self._save_state(wi, reobserve=plan)
@@ -340,7 +341,9 @@ class ServicePartsRuntime:
         plan = state["reobserve"]
         if effect_parts.parse_time(plan["due_at"]) > clock:
             return
-        reading = self.hooks.recovery_reading(inc_id) if self.hooks.recovery_reading is not None else None
+        # A161-G3: with the window start, the reading carries the values seen during the window (reading.series)
+        reading = (self.hooks.recovery_reading(inc_id, since=plan["started_at"]) if plan.get("started_at")
+                   else self.hooks.recovery_reading(inc_id)) if self.hooks.recovery_reading is not None else None
         if not reading or not reading.get("criterion"):
             recovered, reading = False, dict(reading or {}, reason="회복 기준이 없거나 읽을 수 없습니다")
         else:

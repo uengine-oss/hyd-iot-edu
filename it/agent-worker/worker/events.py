@@ -6,7 +6,9 @@ Two rules: an event with nothing to show produces nothing; an event we do not re
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -20,7 +22,8 @@ NOTE_MAX = 1_500           #: U1: one assistant note (the agent's own words betw
 #: UI event type → events.event_type (enum). UI events without a row type are streamed only.
 #: permission_request is streamed only: the pause (runner._pause) records the one human_asked row with its job id and signature.
 ROW_TYPE = {"run_start": "task_working", "tool_start": "tool_usage_started", "tool_end": "tool_usage_finished",
-            "error": "error", "usage": "task_working", "file_artifact": "task_working", "assistant_note": "task_working"}
+            "error": "error", "usage": "task_working", "file_artifact": "task_working", "assistant_note": "task_working",
+            "skills_provided": "task_working", "skill_used": "task_working"}
 
 
 @dataclass(frozen=True)
@@ -118,6 +121,8 @@ class ConsoleLog:
             return f"[오류] {where} · {console_summary(d.get('content'))}"
         if ui.type == "assistant_note":
             return f"[판단] {where} · {console_summary(d.get('content'))}"
+        if ui.type == "skill_used":
+            return f"[스킬 읽음] {where} · {d.get('skill')} · {d.get('file')} · {d.get('via')}"
         return None
 
 
@@ -151,6 +156,76 @@ class NoteBuffer:
 #: ExecEvent kinds that close the agent's current paragraph (the note is recorded before them, so the order is kept)
 NOTE_BOUNDARY = frozenset({ExecEventKind.TOOL_START, ExecEventKind.TOOL_END, ExecEventKind.ERROR, ExecEventKind.RESULT,
                            ExecEventKind.PERMISSION_REQUEST, ExecEventKind.FILE_CHANGE, ExecEventKind.PLAN})
+
+
+# ---------------------------------------------------------------- A161-G1: which skills the run had, and which it read
+#: a skill file named anywhere in a tool's input: Claude Code `Read .claude/skills/<name>/SKILL.md`, Codex `cat .agents/skills/…`
+SKILL_PATH = re.compile(r"(?:\.claude|\.agents)[/\\]+skills[/\\]+(?P<name>[a-z0-9][a-z0-9-]{0,63})[/\\]+(?P<file>[^\s\"'`,;|&<>]+)")
+#: Claude Code's Skill tool (the CLI loads the skill itself; the input names it)
+SKILL_TOOLS = frozenset({"Skill"})
+
+
+def skill_entry(skill: dict, *, text: str, path: str, source: str) -> dict:
+    """One provided skill as the run had it: the hash is of the SKILL.md written into the workspace, so the record says which
+    text the run saw even after the skill row is edited (tenant_skills keeps no versions)."""
+    return {"name": skill["skill_name"], "path": path, "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "version": hashlib.sha256(text.encode("utf-8")).hexdigest()[:12], "chars": len(text),
+            "description": str(skill.get("description") or ""), "source": source, "updated_at": _iso(skill.get("updated_at"))}
+
+
+def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiEvent:
+    names = ", ".join(e["name"] for e in entries)
+    content = (f"배정된 스킬 {len(entries)}개를 작업 폴더에 넣고 실행합니다: {names}" if entries else "배정된 스킬 없이 실행합니다")
+    if missing:
+        content += f" (본문이 없어 넣지 못함: {', '.join(missing)})"
+    return UiEvent("skills_provided", {"content": content, "cli": cli, "skills": entries, "missing": list(missing)})
+
+
+class SkillReads:
+    """Emits one skill_used event the first time the agent reads a given file of a skill (Read / Bash / Grep naming a path
+    under the skill folders, or Claude Code's Skill tool). Paths outside the provided set are still reported (known=false)."""
+
+    def __init__(self, provided: list[dict] | None = None):
+        self._by_name = {e["name"]: e for e in provided or []}
+        self._seen: set[tuple[str, str]] = set()
+
+    def on_tool_start(self, event: ExecEvent) -> list[UiEvent]:
+        found: list[tuple[str, str]] = []
+        if (event.tool or "") in SKILL_TOOLS:
+            data = event.tool_input if isinstance(event.tool_input, dict) else {}
+            name = str(data.get("skill") or data.get("command") or data.get("name") or "").strip().lstrip("/")
+            if name:
+                found.append((name, "SKILL.md"))
+        text = event.tool_input if isinstance(event.tool_input, str) else json.dumps(event.tool_input, ensure_ascii=False, default=str)
+        for m in SKILL_PATH.finditer(text or ""):
+            found.append((m.group("name"), re.sub(r"[\\/]+", "/", m.group("file")).rstrip("/")))
+        out = []
+        for name, file in found:
+            if (name, file) in self._seen:
+                continue
+            self._seen.add((name, file))
+            known = self._by_name.get(name)
+            data = {"content": f"스킬 \u2018{name}\u2019의 {file} 을(를) 읽었습니다", "skill": name, "file": file, "via": event.tool or "tool",
+                    "tool_use_id": event.tool_use_id, "known": known is not None}
+            if known:
+                data.update(sha256=known["sha256"], version=known["version"], source=known["source"])
+            out.append(UiEvent("skill_used", data))
+        return out
+
+
+def _iso(value: Any) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+
+def preview_cut(value: Any) -> bool:
+    """True when _truncate would shorten this tool output (the row then holds a preview only)."""
+    if isinstance(value, str):
+        return len(value) > PREVIEW_MAX
+    if isinstance(value, (dict, list)):
+        return len(repr(value)) > PREVIEW_MAX
+    return False
 
 
 def _truncate(value: Any) -> Any:

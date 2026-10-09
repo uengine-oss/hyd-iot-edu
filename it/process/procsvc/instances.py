@@ -42,6 +42,7 @@ log = logging.getLogger("process.instances")
 
 MAX_RETRIES = 3                            # stop retrying after three failures; block for recovery, never imply success
 ENGINE_CONSUMER = "process-engine"
+EVENTS_WINDOW = 1500                       # A161-U1: events the instance view carries (newest); older pages via /api/events?before=
 
 
 def workitem_transition(fn):
@@ -1145,8 +1146,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise InstanceRemoved(REMOVED_REASON)
         items = self.repo.list_workitems(proc_inst_id=proc_inst_id, limit=None)
         defn = self.definition_for(inst)
+        # A161-U1: newest EVENTS_WINDOW rows (a worker run writes ~40 rows per step). A161-G4: one row more is read to tell the
+        # screen whether older rows exist; `events_page.before` is the cursor for GET /api/events?before=… (the next older page).
+        events = self.repo.list_events(proc_inst_id=proc_inst_id, limit=EVENTS_WINDOW + 1)
+        more = len(events) > EVENTS_WINDOW
+        events = events[-EVENTS_WINDOW:]
         return {"instance": inst, "definition":defn.raw, "workitems": items, "timeline": engine.timeline(defn, inst, items),
-                "events": self.repo.list_events(proc_inst_id=proc_inst_id, limit=1500),   # A161-U1: newest 1,500 (a worker run writes ~40 rows per step)
+                "events": events,
+                "events_page": {"limit": EVENTS_WINDOW, "has_more": more, "before": events[0]["id"] if more and events else None},
                 "approvals":self.repo.list_approvals(proc_inst_id, self.tenant_id),
                 "reworks":self.repo.list_reworks(self.tenant_id, proc_inst_id),
                 "effects":self.repo.list_effect_receipts(self.tenant_id, proc_inst_id)}

@@ -129,8 +129,12 @@ class Repo(Protocol):
     # events · notifications
     def record_events(self, events: list[dict]) -> None: ...
     def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
-    def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500) -> list[dict]: ...
+    # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first
+    def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500, before: str | None = None) -> list[dict]: ...
     def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
+    # A161-G2: full tool results too large for an events row (migration 20261009000047), content-addressed by sha256
+    def store_event_payload(self, payload: dict) -> None: ...
+    def get_event_payload(self, payload_id: str) -> dict | None: ...
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
     def insert_notification(self, note: dict) -> dict: ...
     # U5 (inbox): 역할 → 사람 업무분장 · 담당자 변경 이력 · 사용자별 알림 조회 (migration 000029)
@@ -171,6 +175,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self.instances: dict[str, dict] = {}
         self.workitems: dict[str, dict] = {}
         self.events: list[dict] = []
+        self.event_payloads: dict[str, dict] = {}
         self.notifications: list[dict] = []
         self.role_members: list[dict] = []
         self.assignments: list[dict] = []
@@ -501,9 +506,20 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
     def insert_event(self, evt: dict) -> None:
         self.record_events([evt])
 
-    def list_events(self, proc_inst_id=None, todo_id=None, limit=500) -> list[dict]:
+    def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         rows = [e for e in self.events if (proc_inst_id is None or e.get("proc_inst_id") == proc_inst_id) and (todo_id is None or e.get("todo_id") == todo_id)]
-        return [_copy(e) for e in rows[-limit:]]
+        if before is not None:                 # A161-G4: keyset page — rows older than the cursor event (unknown cursor → none)
+            pos = next((i for i, e in enumerate(rows) if e.get("id") == before), 0)
+            rows = rows[:pos]
+        return [_copy(e) for e in rows[-limit:]] if limit > 0 else []
+
+    def store_event_payload(self, payload: dict) -> None:
+        with self._lock:
+            self.event_payloads.setdefault(payload["id"], dict(payload, created_at=datetime.now(timezone.utc).isoformat()))
+
+    def get_event_payload(self, payload_id: str) -> dict | None:
+        row = self.event_payloads.get(payload_id)
+        return dict(row) if row else None
 
     def list_events_since(self, since=None, limit=300) -> list[dict]:
         """Events at or after `since` (ISO), oldest first; the caller drops ids it has seen (A091 SSE cursor)."""
@@ -921,12 +937,16 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
     def insert_event(self, evt: dict) -> None:
         self.record_events([evt])
 
-    def list_events(self, proc_inst_id=None, todo_id=None, limit=500) -> list[dict]:
+    def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         where, args = [], []
         if proc_inst_id is not None:
             where.append("proc_inst_id = %s"); args.append(proc_inst_id)
         if todo_id is not None:
             where.append("todo_id = %s"); args.append(todo_id)
+        if before is not None:
+            # A161-G4: keyset cursor on (timestamp, id) — the same order the page is read in, so no row is skipped or repeated
+            # when rows arrive between two page reads (offset paging would shift). An unknown cursor id compares to NULL → no rows.
+            where.append("(timestamp, id) < (select b.timestamp, b.id from events b where b.id = %s)"); args.append(before)
         # A161-U1: the newest `limit` rows, oldest first (MemoryRepo's rows[-limit:]). It returned the OLDEST rows, so a long
         # agent run (hundreds of usage rows) cut the newest tool calls out of the instance view and the screen stopped moving.
         sql = ("select * from (select * from events" + (" where " + " and ".join(where) if where else "")
@@ -941,6 +961,19 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             else:
                 rows = c.execute("select * from events where timestamp >= %s::timestamptz order by timestamp, id limit %s", (since, limit)).fetchall()
             return [self._row(r) for r in rows]
+
+    def store_event_payload(self, payload: dict) -> None:
+        with self._conn() as c:
+            c.execute("""insert into event_payloads (id, content, chars, content_type, source, tool, tool_use_id, job_id, todo_id, proc_inst_id, meta)
+                values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) on conflict (id) do nothing""",
+                      (payload["id"], payload["content"], payload.get("chars"), payload.get("content_type"), payload.get("source"),
+                       payload.get("tool"), payload.get("tool_use_id"), payload.get("job_id"), payload.get("todo_id"),
+                       payload.get("proc_inst_id"), self._Jsonb(payload.get("meta") or {})))
+
+    def get_event_payload(self, payload_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("select * from event_payloads where id = %s", (payload_id,)).fetchone()
+            return self._row(row) if row else None
 
     def find_task_event(self, todo_id, job_id, event_type):
         with self._conn() as c:
