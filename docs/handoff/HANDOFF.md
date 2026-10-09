@@ -13,6 +13,8 @@
 
 ## 0. 30초 브리핑
 
+**현재(10-10, 로컬 macOS)**: A161 갈래(C3 B·C 단순화 · 블랙박스 없는 처리 기록 c3-trace-ui · 검증 빈틈 c3-fixes · 캡스톤 빈틈 capstone-gaps)를 통합 브랜치 `merge-preview`에 합치고 점검표(헌법 · 해피패스 금지 · 클린코드) 점검으로 결함을 원인에서 고쳤다. 스택은 merge-preview 기준으로 다시 띄웠다(마이그레이션 048 · 050, sim-net). 전체 단위 시험 1954 통과 · 1 흔들림(test_mcp_check 단독 32/32). 남은 것: 라이브 최종 확인(`verification/2026-10-10/live-final.md`), 캡스톤 G1/G7 · G3 · G9 · G6 · 키트, main 합침 · push는 사용자 결정. 상세는 §9 A161.
+
 **현재(10-08 밤 늦게)**: 미니 ProcessGPT의 포털 "직접 만들기" 기능 B1~B7(에이전트 · 스킬 · MCP 등록, bpmn.io 흐름 가져오기 · 배포 · 비교, 에이전트에게 묻기 · KPI/What-if 바꿔 보기, 출발본 내보내기/가져오기, 작동유 열화)이 구현 · 합침 · push됐다(단위 시험 1692 통과). 라이브 확인은 B1~B6 통과, B7은 원인 진단까지 통과. 남은 것: B7 라이브 완주 → core 회귀 재실행 → 기능 통합 검증(시나리오 4개) — **기능은 완주 검증까지가 완료 조건**. 병렬로 실라버스를 DECISIONS 111 구조(온톨로지 → 에이전트 → BPMN, 막마다 보기 · 따라하기 · 다른걸로 해보기, 가치 · 스토리텔링)로 다시 짠다. 그 뒤 UI/UX. 상세는 §9 A159.
 
 (이전 브리핑 — 10-08 이전 상태 기록)
@@ -265,8 +267,15 @@ A073 실행: 1배속 워커 회귀에서 에이전트 작업이 모두 끝난 �
 - [~] C2 실행(승인 뒤 메일 · 발주 · 대기 · 정비 모사 · 입고, 재고 감시기) — worktree 서브에이전트, 보고 `…/c2-execution.md`
 - [~] U1 UI/UX(실시간 스트리밍 최우선 · 결함 1~18) — worktree 서브에이전트, 메인 스택 담당, 보고 `…/u1-uiux.md`
 - [~] S 실라버스 — 버전 없이 한 개만 둔다(사용자 10-09): `docs/실라버스.xlsx` · 설명 `docs/실라버스.md`. 옛 판(v6 · v7 xlsx · v7 pdf · 반영표 · 추천안 · 생성기 · curriculum-75h · v8 · v9 구조안 · 비율 근거)은 삭제했다. 지금은 "시간은 내용이 정한다"(한 행 = 한 내용, 50분 채우기 · 묶기 금지)에 맞춰 행을 다시 자르는 중
-- [x] C3 조립 + B · C 단순화(설비까지 안 감, 결함 실험 버튼 · 시작 표시 · 초기화) · 실제 워커 A · B · C 완주(4차: A 219초 · B 64초 · C 67초, 버튼 → 끝), 회귀 cooler 40/40 · pump-fan 47/47 — `verification/2026-10-09/c3-assembly.md` 7절, 증거 `.evidence/a161-c3/live/`. 남은 것: C 지식(불량 기대비용 · PUR-13 연결) 검토 수정
+- [x] C3 조립 + B · C 단순화(설비까지 안 감, 결함 실험 버튼 · 시작 표시 · 초기화) · 실제 워커 A · B · C 완주(4차: A 219초 · B 64초 · C 67초, 버튼 → 끝), 회귀 cooler 40/40 · pump-fan 47/47 — `verification/2026-10-09/c3-assembly.md` 7절, 증거 `.evidence/a161-c3/live/`. 남은 것: C 지식(불량 기대비용 · PUR-13 연결) 검토 → 아래 C 지식 공백 근본 수정 수정
 - [ ] U2 시나리오 B · C 화면 — C3 뒤
+- [x] (10-09 밤 ~ 10-10) **통합 브랜치 `merge-preview`**(7fa5664 기준): c3-fixes(Linux PLANT_SIM_URL · 블랙박스 빈틈 G1~G4) · c3-trace-ui(처리 기록 화면 caseRecord.js) · capstone-gaps(G2⓪ · G2 · G10 · G4 · G5 키트 · G8) · c3-assembly(B · C 단순화) 합침. 점검 3갈래(백엔드 · 포털 · 스크립트/키트) `verification/2026-10-09/review-*.md`, C3 점검 `verification/2026-10-10/review-c3-bc.md`(결함 11건: 기준점은 설비 처리 건이 없을 때만 옮김 · 지난 누름 잔재 연결 · 매직 limit · 빈 성공 · 삼킨 읽기 실패 · 처리 기록에 수업 버튼 · '설비 명령 없음'). 뮤테이션 확인 포함.
+- [x] **C 지식 공백 근본 수정**(`verification/2026-10-10/c-knowledge-gap.md`): 규정 판단에 공급사 불량률 입력 `in:supplier-fail-rate`(PR-7.4 원문) 선언, 카드 사실 `supplier_fail_rate`(원문과 다른 불량 기대비용 식 제거), 추출 지시 2.1(선택 기준과 적용 조건 분리), `scripts/c3_ingest.py` 무조건 승인 제거(사람 검토 기록 필수). 원문 보강은 불필요(판정 문장 있음).
+- [x] 전체 단위 시험 **1954 passed · 1 failed(흔들림, 단독 32/32) · 4 skipped**(merge-preview d5d73a9). 스택 merge-preview 기준 재빌드(process · agent · dmn-mcp · plant-sim · enterprise-sim · enterprise-mcp 3 · effects-mcp · portal), 마이그레이션 048 · 050 적용, process ↔ plant-sim sim-net · PLANT_SIM_URL=http://plant-sim:8000 docker inspect 확인, 재시작 0.
+- [~] 라이브 최종 확인: C 재추출(지시 2.1) · A · B · C 버튼 완주 · 처리 기록 화면 1440/390 · C 추천 B-OEM 대조 · 쿨러 회귀 1회 — `verification/2026-10-10/live-final.md`
+- [ ] 캡스톤 G1/G7(사람 승인 일반화 · 카드) · G3(MCP 결과 추출) · G9(업무 중립 에이전트 규칙) · G6(격리) · 키트 T0/T5~T8 · 예시 사례 실제 1회 — `verification/2026-10-09/capstone-lab.md`
+- [ ] 별건: EFFECT_COMPENSATION · EFFECT_REVIEW 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — review-c3-bc.md 4절), test_mcp_check 전체 실행 때만 흔들림
+- 결정 대기(사용자): main 합침 · push, 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3` 삭제 여부, 업무 감시(BUSINESS_MONITOR, 기본 끔) 유지 여부
 
 **A160(10-08, 새 클라우드 세션) — 작업 B 이어받기(GOAL 맨 위 "작업 B" DoD 1~5, 순서 USER_UTTERANCES S2: 개발 완주 검증 → 실라버스 → UI/UX).** 증거 `.evidence/a160/`(클라우드).
 - [x] 인계 대조(S3): 세션 시작 체크아웃(7c00eb0)에는 GOAL "작업 B" 절·`scripts/probe_b7_oil_live.py`가 없었으나, 원격에는 그 뒤 다른 세션의 인계 정리(f8bc23b~26e06b6: GOAL 작업 B·HANDOFF 현재화·QA·발화 대응표·A159 단계 출력형 검사기)가 올라와 있었다 → 합침: GOAL·HANDOFF는 원격 것, 검사기는 PASS/FAIL 판정이 있는 A160 판(같은 동선 + 운전원 403 · 사건 superseded · 업무 DB 2행 · 감사 · cmd-gateway 명령 줄 정규식 · 실제 워커 도구 이벤트)으로 교체. `.evidence/a159/`·Docker 이미지·`.venv` 없음(새 컨테이너) → 스택 처음부터.
