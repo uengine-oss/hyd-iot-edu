@@ -50,9 +50,14 @@
         let r = byTool.get(d.tool_use_id);
         if (!r) { r = { key: 't:' + (d.tool_use_id || ev.id), kind: 'tool', t0: ev.timestamp, tool: d.tool, minor: W().minorTool(d.tool) }; rows.push(r); }
         const o = UI.outcome(d.output, d.is_error);
-        Object.assign(r, { t1: ev.timestamp, output: d.output, status: o.tone === 'ok' ? 'ok' : o.tone, badge: o.label });
+        Object.assign(r, { t1: ev.timestamp, output: d.output, status: o.tone === 'ok' ? 'ok' : o.tone, badge: o.label, full: d.full_output || null });
       } else if (ev.event_type === 'task_working' && d.type === 'text' && d.content) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content)) });
+      } else if (ev.event_type === 'task_working' && d.type === 'skill_used') {
+        // A161-G1: 에이전트가 스킬 파일을 연 순간 (어떤 도구로)
+        rows.push({ key: 'k:' + ev.id, kind: 'skill', t0: ev.timestamp, data: d });
+      } else if (ev.event_type === 'task_working' && d.type === 'skills_provided') {
+        rows.push({ key: 'kp:' + ev.id, kind: 'note', t0: ev.timestamp, minor: true, text: UI.clean(d.content || '') });
       } else if (ev.event_type === 'task_working' && d.type === 'file_artifact') {
         rows.push({ key: 'f:' + ev.id, kind: 'file', t0: ev.timestamp, minor: true, text: UI.baseName(d.path || '') });
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
@@ -86,7 +91,7 @@
     const sources = inst.variable_sources || {};
     const producedBy = wid => Object.entries(sources).filter(([, s]) => s && s.kind === 'workitem' && s.id === wid).map(([k]) => k);
     W().caseNames = caseNames(v, d, ext.agents);
-    const ctx = { inst, v, d, inc, agents, view, running, byTodo, acts, evDefs, gaps: [], producedBy };
+    const ctx = { inst, v, d, inc, agents, view, running, byTodo, acts, evDefs, gaps: [], producedBy, olderDone: !!ext.olderDone };
     const steps = [];
     steps.push(startStep(ctx));
     const neverRan = w => w.status === 'CANCELLED' && !byTodo.has(w.id) && /^cancelled:/i.test(String(w.log || '').trim());
@@ -186,7 +191,23 @@
     if (instr || ag) sections.push(sec('받은 일', `${instr ? `<p>${e(UI.clean(W().text(instr.trim())))}</p>` : ''}${ag && ag.goal ? `<p class="muted">이 AI 일꾼의 목표: ${e(ag.goal)}</p>` : ''}`, { open: true }));
     // 스킬 · 붙인 도구 묶음 (설정 기준 — 처리 건에는 기록되지 않음)
     const skillCalls = tools.filter(r => r.tool === 'Skill');
-    if (ag || skillCalls.length) {
+    const sd = started && started.data ? started.data : {};
+    if (Array.isArray(sd.skills)) {
+      // A161-G1: 이 실행이 받은 스킬(그때의 본문 해시)과 실제로 연 스킬 파일 — 처리 건 기록 그대로
+      const used = b.rows.filter(r => r.kind === 'skill');
+      const servers = (ag && ag.tools) || [];
+      const src = x => x === 'activity' ? '이 단계가 지정' : x === 'agent' ? 'AI 일꾼 설정' : (x || '');
+      const prov = sd.skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${
+        sd.skills.map(k => `<tr><td><b>${e(k.name)}</b>${W().id(k.path)}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="muted">제공된 스킬 없음 — 받은 일 지시문만 따랐습니다.</p>';
+      const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.skill)}</b>의 ${e(x.file || 'SKILL.md')} — ${e(W().toolName(x.via))}로 열었습니다${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}</li>`; }).join('')}</ul>`
+        : sd.skills.length ? `<p class="muted">${b.live ? '아직 스킬 파일을 연 기록이 없습니다.' : '이 실행에서 스킬 파일을 연 기록이 없습니다 — 작업 폴더에는 있었지만 AI 일꾼이 열어 보지 않았습니다.'}</p>` : '';
+      sections.push(sec(`쓴 스킬 · 도구 묶음`, `<h6>제공된 스킬 ${sd.skills.length}개 <span class="muted">(실행 시작 때 작업 폴더에 넣은 본문)</span></h6>${prov}${miss}
+        ${sd.skills.length ? `<h6>실제로 읽은 스킬 ${used.length}건</h6>${read}` : ''}
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
+      if (sd.skills.length) chips.push(chip(`스킬 ${sd.skills.map(k => k.name).join(', ')}${used.length ? ` · 읽음 ${used.length}` : ' · 안 읽음'}`, used.length ? 'accent' : 'neutral'));
+    } else if (ag || skillCalls.length) {
       const servers = (ag && ag.tools) || [];
       sections.push(sec('쓴 스킬 · 도구 묶음', `${skillCalls.length ? `<p>이 처리 건에서 읽은 스킬: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
         ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div>
@@ -442,11 +463,20 @@
       const valTxt = m ? `${W().fieldName(tag)} ${W().num(+m[2])} ${W().unit(tag)}` : '';
       sentence = rec == null ? `설비가 기준 안으로 돌아오는지 지켜보는 중입니다${obs && obs.note ? ` (${UI.logText(obs.note)})` : ''}.`
         : `${obs && obs.note ? UI.logText(obs.note) + ' 동안 ' : ''}지켜본 뒤 ${valTxt || '값'}${crit ? ` — 기준 ‘${W().criterion(crit)}’` : ''}${rec ? ' 안이라 회복으로' : ' 밖이라 미회복으로'} 판정했습니다.`;
+      // A161-G3: 지켜본 동안의 값 흐름 (사건 reobsSeries, 작업지시 뒤 재관측은 REOBSERVATION 이벤트 reading.series)
+      const evSeries = (b.rows.find(r => r.data && r.data.reading && r.data.reading.series) || {}).data;
+      const series = (inc && inc.reobsSeries) || (evSeries && evSeries.reading.series) || (out.reading && out.reading.series) || null;
+      if (series && (series.points || []).length) {
+        b.series = series;
+        sentence = `${seriesSentence(series)} — ${rec == null ? '판정 중' : rec ? '회복으로 판정' : '미회복으로 판정'}했습니다.`;
+        sections.unshift(sec('지켜본 동안의 값', seriesHtml(series), { open: true }));
+        chips.push(chip(`기준 안 ${Math.round((series.inside_share || 0) * 100)} %`, series.inside_last ? 'success' : 'danger'));
+      }
       if (valTxt) chips.push(chip(valTxt, rec ? 'success' : 'danger'));
       if (crit) chips.push(chip(`기준 ${W().criterion(crit)}`));
       if (inc && inc.cleared != null) chips.push(chip(`경보 해제 ${inc.cleared ? '예' : '아니요'}`, inc.cleared ? 'success' : 'warning'));
       if (hist.length) sections.push(sec('사건 기록', `<ul class="cr-list">${hist.filter(h => /RE_OBSERV|RESOLVED|ESCALATED|RECOVER|CLOSED/.test(h.state)).map(h => `<li>${e(hhmmss(h.t))} ${e(UI.status(h.state))}${h.note ? ` · ${e(W().rule(UI.logText(h.note)))}` : ''}</li>`).join('')}</ul>`, { open: true }));
-      if (rec != null) ctx.gaps.push({ key: 'reobs', text: '재관측은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록 DB 에는 있음).' });
+      if (rec != null && !b.series) ctx.gaps.push({ key: 'reobs', text: '재관측은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록 DB 에는 있음).' });
     } else if (w.tool === 'plant:test-run') {
       const tr = out.test_run || v.test_run || null;
       const settle = b.rows.find(r => r.job === 'TEST_RUN_STARTED');
@@ -472,6 +502,34 @@
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: w.tool === 'incident:reobserve' ? '설비 · 센서' : w.tool === 'plant:test-run' ? '설비 · 센서' : 'ERP', sentence, chips, sections, verdict,
       state: w.status === 'DONE' && verdict === false ? 'bad' : undefined, now: b.live ? '확인하는 중' : '', ids: [w.tool] });
+  }
+
+  const SIDE = { '<': '아래', '<=': '이하', '>': '위', '>=': '이상' };
+  function seriesSentence(x) {
+    const tag = String(x.tag || '').toLowerCase(), u = W().unit(tag);
+    const span = x.from && x.to ? fmtMs(ts(x.to) - ts(x.from)) : '';
+    return `${span ? span + ' 동안 ' : ''}${W().fieldName(tag)} ${W().num(x.first)}→${W().num(x.last)}${u ? ' ' + u : ''}, 기준 ${W().num(x.limit)}${u ? ' ' + u : ''} ${SIDE[x.op] || ''} ${Math.round((x.inside_share || 0) * 100)} %`;
+  }
+  // 작은 선 그림: 값 흐름 + 기준선(점선) + 마지막 점
+  function seriesHtml(x) {
+    const pts = (x.points || []).filter(p => Number.isFinite(+p.v));
+    const W0 = 280, H0 = 64, pad = 4;
+    const vals = pts.map(p => +p.v).concat([+x.limit]);
+    let lo = Math.min(...vals), hi = Math.max(...vals); if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
+    const t0 = ts(pts[0].t), t1 = ts(pts[pts.length - 1].t) || t0 + 1;
+    const X = t => pad + (W0 - 2 * pad) * ((ts(t) - t0) / Math.max(1, t1 - t0));
+    const Y = v => pad + (H0 - 2 * pad) * (1 - (v - lo) / (hi - lo));
+    const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)},${Y(+p.v).toFixed(1)}`).join(' ');
+    const last = pts[pts.length - 1], tag = String(x.tag || '').toLowerCase(), u = W().unit(tag);
+    const svg = `<svg class="cr-spark" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${e(seriesSentence(x))}">
+      <line x1="${pad}" x2="${W0 - pad}" y1="${Y(+x.limit).toFixed(1)}" y2="${Y(+x.limit).toFixed(1)}" class="lim"/>
+      <path d="${line}" class="val"/><circle cx="${X(last.t).toFixed(1)}" cy="${Y(+last.v).toFixed(1)}" r="3" class="${x.inside_last ? 'ok' : 'bad'}"/></svg>`;
+    return `<div class="cr-series">${svg}<dl class="cr-kv"><div><dt>처음 → 마지막</dt><dd class="num">${e(W().num(x.first))} → ${e(W().num(x.last))}${u ? ' ' + e(u) : ''}</dd></div>
+      <div><dt>가장 낮음 · 높음</dt><dd class="num">${e(W().num(x.min))} · ${e(W().num(x.max))}${u ? ' ' + e(u) : ''}</dd></div>
+      <div><dt>기준</dt><dd>${e(W().fieldName(tag))} ${e(W().sym(x.op))} ${e(W().num(x.limit))}${u ? ' ' + e(u) : ''} <span class="muted">(점선)</span></dd></div>
+      <div><dt>기준 안에 있던 몫</dt><dd class="num">${Math.round((x.inside_share || 0) * 100)} %</dd></div>
+      <div><dt>잰 값 수</dt><dd class="num">${e(x.samples)}개${x.step_s ? ` <span class="muted">(점 하나 ≈ ${e(W().num(x.step_s))}초 평균)</span>` : ''}</dd></div>
+      ${x.extensions ? `<div><dt>관측 연장</dt><dd>${e(x.extensions)}회</dd></div>` : ''}</dl></div>`;
   }
 
   /* ---------------------------------------------------------------- 타이머 (정해 둔 시간이 지나 울림) */
@@ -518,18 +576,20 @@
   function gapsOf(ctx, steps, evs) {
     const G = ctx.gaps;
     const tools = steps.flatMap(s => (s.rows || []).filter(r => r.kind === 'tool'));
-    const cut = tools.filter(r => r.status === 'warn'), blocked = tools.filter(r => r.status === 'blocked');
+    const cut = tools.filter(r => r.status === 'warn' && !(r.full && r.full.stored)), blocked = tools.filter(r => r.status === 'blocked');
     if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 일꾼은 그 결과를 다 보지 못했고, 원래 결과는 워커 PC 의 임시 파일에만 있어 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
     if (blocked.length) G.push({ key: 'blocked', text: `안전 장치가 막은 명령 ${blocked.length}건 — 실행되지 않았고, 막힌 명령의 결과는 없습니다.` });
+    const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => ((ctx.byTodo.get(s.key) || []).find(x => x.event_type === 'task_started') || { data: {} }).data && Array.isArray(((ctx.byTodo.get(s.key) || []).find(x => x.event_type === 'task_started') || { data: {} }).data.skills));
     if (steps.some(s => s.type === 'agent')) {
-      if (!tools.some(r => r.tool === 'Skill')) G.push({ key: 'skill', strong: true, text: '어떤 스킬(SKILL.md)을 실제로 읽었는지는 처리 건에 기록되지 않습니다. 화면의 스킬은 AI 일꾼의 지금 설정이라, 처리 뒤 설정을 바꾸면 달라 보일 수 있습니다.' });
+      if (!skillsRecorded && !tools.some(r => r.tool === 'Skill')) G.push({ key: 'skill', strong: true, text: '어떤 스킬(SKILL.md)을 실제로 읽었는지는 처리 건에 기록되지 않습니다. 화면의 스킬은 AI 일꾼의 지금 설정이라, 처리 뒤 설정을 바꾸면 달라 보일 수 있습니다.' });
       G.push({ key: 'think', text: 'AI 모델 안쪽의 생각은 기록되지 않습니다. 남는 것은 AI 일꾼이 쓴 말 · 부른 도구 · 받은 결과 · 낸 결과 값입니다. (모델 사용량 줄은 일부러 숨김)' });
       steps.filter(s => s.type === 'agent' && !(s.rows || []).length && !s.live).forEach(s => G.push({ key: 'noev:' + s.key, strong: true, text: `‘${s.title}’ 단계는 도구 호출 기록이 없습니다 (결과 값만 남음).` }));
     }
     const start = steps[0];
     if (start && start.biz) G.push({ key: 'button', strong: true, text: '수업 버튼(재고 출고 · 운전시간 빨리 감기)을 누른 사람과 시각은 처리 건에 없습니다. 처리 건은 업무 데이터 감시가 이탈을 본 시각부터 기록합니다 (버튼 기록은 업무 DB 의 재고 이동 · 계수기 원장에만 있음).' });
     if (steps.some(s => s.type === 'approve' && s.w && s.w.status === 'DONE')) G.push({ key: 'who', text: '승인한 사람 이름은 승인 화면에 입력한 값입니다. 로그인으로 본인 확인을 하지 않습니다.' });
-    if ((ctx.view.events || []).length >= 1500) G.push({ key: 'cap', strong: true, text: '이 처리 건은 기록이 많아 가장 최근 1,500줄만 받았습니다. 앞쪽 도구 호출 일부가 빠졌을 수 있습니다.' });
+    const pg = ctx.view.events_page;
+    if (pg ? pg.has_more && !ctx.olderDone : (ctx.view.events || []).length >= 1500) G.push({ key: 'cap', strong: true, text: pg ? '이 처리 건은 기록이 많아 가장 최근 줄부터 받았습니다. 맨 위 "이전 기록 더 보기"로 앞쪽 기록을 더 받을 수 있습니다.' : '이 처리 건은 기록이 많아 가장 최근 1,500줄만 받았습니다. 앞쪽 도구 호출 일부가 빠졌을 수 있습니다.' });
     if (ctx.v.decision_id && !ctx.d) G.push({ key: 'dec', strong: true, text: `판단 ${ctx.v.decision_id}을 읽지 못해 대안 · 가져온 데이터 · 지식 경로를 보이지 못했습니다.` });
     if (ctx.d && !(ctx.d.provenance || []).length) G.push({ key: 'prov', text: '판단에 가져온 데이터의 출처 목록(provenance)이 없습니다. 도구 호출의 받은 값으로만 확인할 수 있습니다.' });
     if (steps.some(s => s.type === 'system' && /메일/.test(s.sentence || ''))) G.push({ key: 'mail', text: '메일은 보냄 결과(성공)까지만 기록됩니다. 받는 사람이 읽었는지는 알 수 없습니다 (수업 메일함 Inbucket 에서 확인).' });
@@ -551,23 +611,65 @@
     return UI.clean(JSON.stringify(o, null, 2)).slice(0, 12000);
   }
   const rawBlock = x => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : `<pre class="cr-pre">${e(pretty(x))}</pre>`;
+  /* A161-G2: 큰 도구 결과 원문 — GET /api/event-payloads/{ref}?offset&limit 로 나눠 받아 붙이고, 다 받은 JSON 은 키마다 접어 보인다 */
+  const PAY = new Map();
+  const PAY_CHUNK = 60000;
+  function fullHtml(fo, k) {
+    const src = fo.source === 'cli_saved_file' ? 'AI 일꾼이 받지 못한 큰 결과(CLI 가 임시 파일로 뺌)' : '화면 기록에서 잘린 결과';
+    const head = `<div class="cr-full"><div class="cr-full-h"><b>원문</b> <span class="muted">${e(src)}${fo.chars != null ? ` · ${e(W().num(fo.chars))}자` : ''}${fo.cut ? ' · 보관 한도에서 잘림' : ''}${fo.content_type ? ` · ${e(fo.content_type === 'json' ? 'JSON' : '글')}` : ''}</span>${fo.sha256 ? `<code class="cr-id" title="sha256">${e(String(fo.sha256).slice(0, 12))}</code>` : ''}</div>`;
+    if (!fo.stored || !fo.ref) return head + `<p class="cr-gapline">원문을 보관하지 못했습니다: ${e(fo.error || '이유가 기록되지 않음')}</p></div>`;
+    const st = PAY.get(fo.ref);
+    const summary = fo.summary ? `<pre class="cr-pre small">${e(String(fo.summary))}</pre>` : '';
+    if (!st) return head + summary + `<button type="button" class="btn small" data-cr-payload="${e(fo.ref)}">원문 보기</button></div>`;
+    if (st.error) return head + summary + `<p class="cr-gapline">원문을 읽지 못했습니다: ${e(st.error)}</p><button type="button" class="btn small" data-cr-payload="${e(fo.ref)}">다시 읽기</button></div>`;
+    const done = st.next == null;
+    let body = '';
+    if (done && fo.content_type === 'json') { try { body = jsonFold(JSON.parse(st.text), k); } catch (_) { body = ''; } }
+    if (!body) body = `<pre class="cr-pre">${e(st.text)}</pre>`;
+    return head + `<p class="muted">받은 만큼 ${e(W().num(st.text.length))} / ${e(W().num(st.total || fo.chars || 0))}자</p>${body}${st.loading ? '<p class="muted">받는 중…</p>' : !done ? `<button type="button" class="btn small" data-cr-payload="${e(fo.ref)}" data-offset="${e(st.next)}">다음 부분 더 보기</button>` : ''}</div>`;
+  }
+  // JSON 을 키마다 접기(두 단계까지), 배열은 건수 · 짧은 값은 한 줄
+  function jsonFold(v, k, depth = 0) {
+    const small = x => x == null || typeof x !== 'object';
+    if (small(v)) return `<code>${e(JSON.stringify(v))}</code>`;
+    const entries = Array.isArray(v) ? v.map((x, i) => [i, x]) : Object.entries(v);
+    if (depth >= 2) return `<pre class="cr-pre">${e(JSON.stringify(v, null, 2).slice(0, 20000))}</pre>`;
+    return `<ul class="cr-json">${entries.slice(0, 200).map(([key, x]) => small(x) ? `<li><span class="cr-jk">${e(key)}</span> <code>${e(String(JSON.stringify(x)).slice(0, 300))}</code></li>`
+      : `<li><details data-k="${e(k + ':j:' + depth + ':' + key)}"><summary><span class="cr-jk">${e(key)}</span> <span class="muted">${Array.isArray(x) ? x.length + '건' : '{' + Object.keys(x).length + '칸}'}</span></summary>${jsonFold(x, k + ':' + key, depth + 1)}</details></li>`).join('')}${entries.length > 200 ? `<li class="muted">… ${entries.length - 200}개 더</li>` : ''}</ul>`;
+  }
+  async function loadPayload(ref, offset) {
+    const st = PAY.get(ref) || { text: '', next: 0 };
+    if (st.loading) return;
+    st.loading = true; st.error = null; PAY.set(ref, st); redrawAll();
+    try {
+      const r = await getJ(`${API.process}/api/event-payloads/${encodeURIComponent(ref)}?offset=${encodeURIComponent(offset || 0)}&limit=${PAY_CHUNK}`);
+      st.text = (offset ? st.text : '') + (r.content || ''); st.next = r.next_offset == null ? null : r.next_offset; st.total = r.chars;
+    } catch (err) { st.error = err.status === 404 ? '보관된 원문이 없습니다 (지워졌거나 다른 처리 건)' : err.message; }
+    finally { st.loading = false; redrawAll(); }
+  }
+  function redrawAll() { mounted.forEach(C => C.draw && C.draw(true)); }
+
   function toolListHtml(rows, live, stepKey) {
     const minor = rows.filter(r => r.minor).length;
     const items = rows.map(r => {
       const time = `<time>${e(hhmmss(r.t0))}</time>`;
       if (r.kind === 'note') return `<li class="cr-r note">${time}<span class="cr-rm">${icon('note')}</span><div><q>${e(r.text.slice(0, 600))}${r.text.length > 600 ? '…' : ''}</q></div></li>`;
+      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm ok">${icon('file')}</span><div><b>스킬 읽음</b> ${e(r.data.skill)} · ${e(r.data.file || '')} <span class="muted">(${e(W().toolName(r.data.via))})</span></div></li>`;
       if (r.kind === 'file') return `<li class="cr-r minor">${time}<span class="cr-rm">${icon('file')}</span><div>결과 파일 ${e(r.text)}</div></li>`;
       if (r.kind === 'sys') return `<li class="cr-r sys">${time}<span class="cr-rm">${icon('system')}</span><div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
       if (r.kind === 'error') return `<li class="cr-r err">${time}<span class="cr-rm">${icon('warn')}</span><div><b>${e(r.text)}</b>${UI.fold('원문', `<pre class="cr-pre">${e(pretty(r.data))}</pre>`, { cls: 'small' })}</div></li>`;
       const sys = W().toolSystem(r.tool);
       const ask = W().ask(r.tool, r.input);
-      const got = r.status === 'running' ? '' : r.status === 'warn' ? '결과가 너무 커서 잘림 — 받은 내용 없음' : r.status === 'blocked' ? '안전 장치가 막아 실행 안 됨' : W().got(r.tool, r.output);
+      const fo = r.full;
+      const got = r.status === 'running' ? '' : fo && fo.stored && fo.summary ? `원문 ${W().num(fo.original_chars || fo.chars || 0)}자를 따로 보관 — ${String(fo.summary).split('\n')[0]}`
+        : fo && fo.stored === false ? `원문을 보관하지 못함 — ${fo.error || '이유 모름'}` : r.status === 'warn' ? '결과가 너무 커서 잘림 — 받은 내용 없음' : r.status === 'blocked' ? '안전 장치가 막아 실행 안 됨' : W().got(r.tool, r.output);
       const mark = r.status === 'running' ? (live && TR() ? TR().spinner('sm') : icon('event')) : icon(r.status === 'ok' ? 'check' : r.status === 'fail' ? 'x' : 'warn');
       const dur = r.t0 && r.t1 ? `<span class="cr-dur">${e(fmtMs(ts(r.t1) - ts(r.t0)))}</span>` : '';
-      const io = `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>받은 원문</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+      const full = fo ? fullHtml(fo, stepKey + ':' + r.key) : '';
+      const io = full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>받은 원문</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
       return `<li class="cr-r tool ${e(r.status)}${r.minor ? ' minor' : ''}">${time}<span class="cr-rm ${e(r.status)}">${mark}</span><div>
         <details class="cr-call" data-k="${e(stepKey + ':' + r.key)}"><summary><b>${e(W().toolName(r.tool))}</b>${sys ? `<span class="cr-sys">${e(sys)}</span>` : ''}${r.badge ? UI.chipText(r.badge, r.status === 'fail' ? 'danger' : 'warning') : ''}${dur}${W().id(r.tool)}
-        <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details></div></li>`;
+        <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details></div></li>`;
     }).join('');
     return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}<ol class="cr-rows">${items}</ol>`;
   }
@@ -642,13 +744,16 @@
   function mount(host) {
     const C = { host, view: null, live: new Map(), ext: {}, open: new Set(), userTouched: new Set(), raf: 0, fetching: false, pid: null };
     host.classList.add('cr');
-    host.innerHTML = '<div data-cr-head></div><ol class="cr-story" data-cr-steps></ol><div data-cr-gaps></div>';
+    host.innerHTML = '<div data-cr-head></div><div data-cr-older></div><ol class="cr-story" data-cr-steps></ol><div data-cr-gaps></div>';
     host.addEventListener('click', ev => {
       const t = ev.target;
       const tog = t.closest('[data-cr-toggle]');
       if (tog && host.contains(tog)) { const li = tog.closest('[data-key]'); setOpen(li, !li.classList.contains('open'), true); return; }
       const go = t.closest('[data-cr-go],[data-cr-next]');
       if (go) { const i = +(go.dataset.crGo ?? go.dataset.crNext); const li = host.querySelectorAll('[data-cr-steps] > li')[i]; if (li) { setOpen(li, true, true); li.scrollIntoView({ block: 'start', behavior: 'smooth' }); li.querySelector('[data-cr-toggle]')?.focus({ preventScroll: true }); } return; }
+      const pay = t.closest('[data-cr-payload]');
+      if (pay) { loadPayload(pay.dataset.crPayload, +(pay.dataset.offset || 0)); return; }
+      if (t.closest('[data-cr-older-btn]')) { loadOlder(); return; }
       if (t.closest('[data-cr-all]')) { const lis = [...host.querySelectorAll('[data-cr-steps] > li')]; const openAll = lis.some(li => !li.classList.contains('open')); lis.forEach(li => setOpen(li, openAll, true)); t.closest('[data-cr-all]').textContent = openAll ? '모두 접기' : '모두 펼치기'; }
     });
     host.addEventListener('change', ev => {
@@ -664,7 +769,7 @@
     }
     C.update = view => {
       if (!view || !view.instance) return;
-      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.ext = {}; C.open.clear(); C.userTouched.clear(); C.lastHtml = {}; }
+      if (C.pid !== view.instance.proc_inst_id) { C.pid = view.instance.proc_inst_id; C.live.clear(); C.ext = {}; C.open.clear(); C.userTouched.clear(); C.lastHtml = {}; C.olderBefore = undefined; C.olderCount = 0; C.olderErr = null; }
       C.view = view; fetchExt(); schedule();
     };
     C.ingest = ev => {
@@ -672,6 +777,28 @@
       C.live.set(ev.id, ev); if (C.live.size > 3000) C.live.delete(C.live.keys().next().value);
       schedule();
     };
+    // A161-G4: 처리 건 화면은 최신 기록 한 창만 준다 — 더 오래된 기록은 /api/events?before=… 로 한 쪽씩
+    async function loadOlder() {
+      const pg = C.view && C.view.events_page; if (!pg || C.olderBusy) return;
+      const before = C.olderBefore !== undefined ? C.olderBefore : pg.before;
+      if (!before) return;
+      C.olderBusy = true; drawOlder();
+      try {
+        const r = await getJ(`${API.process}/api/events?proc_inst_id=${encodeURIComponent(C.pid)}&before=${encodeURIComponent(before)}&limit=500&page=true`);
+        const rows = Array.isArray(r) ? r : r.events || [];
+        rows.forEach(x => { if (x && x.id && !C.live.has(x.id)) C.live.set(x.id, x); });
+        C.olderCount = (C.olderCount || 0) + rows.length;
+        C.olderBefore = Array.isArray(r) ? null : (r.has_more ? r.before : null);
+        if (!C.olderBefore) C.ext.olderDone = true;
+      } catch (err) { C.olderErr = err.message; }
+      finally { C.olderBusy = false; draw(true); }
+    }
+    function drawOlder() {
+      const box = host.querySelector('[data-cr-older]'); const pg = C.view && C.view.events_page;
+      const more = pg && pg.has_more && !C.ext.olderDone;
+      box.innerHTML = more ? `<div class="cr-older"><button type="button" class="btn small" data-cr-older-btn ${C.olderBusy ? 'disabled' : ''}>${C.olderBusy ? '받는 중…' : '이전 기록 더 보기'}</button><span class="muted">최근 ${e(W().num(pg.limit || 0))}줄${C.olderCount ? ` + 이전 ${e(W().num(C.olderCount))}줄` : ''}을 보고 있습니다. 앞쪽 기록이 더 있습니다.</span>${C.olderErr ? `<span class="neg">${e(C.olderErr)}</span>` : ''}</div>`
+        : C.olderCount ? `<p class="muted cr-older">이전 기록 ${e(W().num(C.olderCount))}줄을 더 받아 처음부터 모두 보고 있습니다.</p>` : '';
+    }
     async function fetchExt() {
       if (C.fetching || !C.view) return;
       const inst = C.view.instance, v = vars(inst), running = inst.status === 'RUNNING', now = Date.now();
@@ -696,6 +823,7 @@
       let m;
       try { m = C.model = build(C.view, C.ext, [...C.live.values()]); }
       catch (err) { host.querySelector('[data-cr-steps]').innerHTML = `<li class="cr-error">${e('처리 기록을 그리지 못했습니다: ' + err.message)}</li>`; return; }
+      drawOlder();
       const head = headHtml(m);
       const headBox = host.querySelector('[data-cr-head]');
       if (force || headBox._html !== head) { headBox.innerHTML = head; headBox._html = head; }
