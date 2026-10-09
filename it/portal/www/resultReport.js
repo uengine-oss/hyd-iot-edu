@@ -72,6 +72,7 @@
       ${values ? `<div class="rr-vals">${values}</div>` : ''}
       ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${v.approved_by ? ` · ${e(v.approved_by)}${v.approved_role ? ` (${e(UI.who(v.approved_role))})` : ''}` : ''}</p>` : ''}
       ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
+      ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">무엇으로 시작해 무엇을 보고 · 누가 승인해 · 시스템이 무엇을 했는지 단계별로</span></div>` : ''}
     </section>`;
   }
   window.hydResultReport = { html, verdictOf, fromValues };

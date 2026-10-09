@@ -300,7 +300,8 @@
         <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
         <span class="sub">${esc(UI.dateTime(x.start_date))} · ${esc(when)}</span>`);
       keyboardItem(it);
-      it.addEventListener('click', () => { I.sel = x.proc_inst_id; load(true); });
+      // A161: 끝난 처리 건은 처리 기록부터(가르칠 때 "설명한 대로 됐나"를 바로 본다), 진행 중이면 진행 상황부터
+      it.addEventListener('click', () => { if (I.sel !== x.proc_inst_id && window.hydRecord) I.tab = x.status === 'RUNNING' ? 'flow' : 'record'; I.sel = x.proc_inst_id; load(true); });
       box.appendChild(it);
     });
     if (paged.rest) { const more = el('div', '', UI.moreButton(paged.rest)); more.querySelector('button').addEventListener('click', () => { I.listShown += UI.PAGE; renderList(); }); box.appendChild(more); }
@@ -336,6 +337,17 @@
   function feedTrace() {
     if (I.view && window.hydStream) hydStream.fromPoll(I.view.events);
     if (I.view && I.trace && I.traceFor === I.view.instance.proc_inst_id) { hydTrace.TR.mounted.add(I.trace); I.trace.update(I.view); }
+    if (I.view && I.record && I.recordFor === I.view.instance.proc_inst_id) I.record.update(I.view);   // A161 처리 기록도 2초 다시 읽기를 받는다
+  }
+  /* A161 처리 기록: 처리 건 하나 = 시작 → AI 일꾼 → 승인 → 시스템 처리 → 확인 → 결과 보고 이야기 (caseRecord.js). 처리 과정(trace)과 같이 DOM 을 옮겨 붙여 펼친 칸을 지킨다 */
+  function ensureRecord(view) {
+    if (!window.hydRecord) return null;
+    if (!I.record || I.recordFor !== view.instance.proc_inst_id) {
+      I.recordHost = document.createElement('div'); I.recordHost.id = 'instRecord';
+      I.record = hydRecord.mount(I.recordHost); I.record.keep = true;
+      I.recordFor = view.instance.proc_inst_id;
+    }
+    return I.record;
   }
   function renderDetail() {
     const box = $('#instDetail');
@@ -348,15 +360,21 @@
       <div id="instSummary">${trace && trace.model ? hydTrace.summaryHtml(trace.model) : ''}</div>`
       + UI.metaFold([[UI.t('inst.started'), esc(UI.dateTime(inst.start_date))], [UI.t('inst.ended'), inst.end_date ? esc(UI.dateTime(inst.end_date)) : ''], ['ID', `<span class="mono">${esc(inst.proc_inst_id)}</span>`]]);
     const counts = { flow: st ? st.steps.filter(x => x.state === 'current').length || null : null, log: view.workitems.length };
-    const tabs = UI.tabs([['flow', UI.t('inst.tab.flow'), counts.flow], ['result', UI.t('inst.tab.result')], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
+    const tabs = UI.tabs([['flow', UI.t('inst.tab.flow'), counts.flow], ['record', UI.t('inst.tab.record')], ['result', UI.t('inst.tab.result')], ['log', UI.t('inst.tab.log'), counts.log]], I.tab, 'data-inst-tab');
+    const record = ensureRecord(view);
     const keepTd = box.querySelector('#taskDetailPanel');
     keepOpen(box, () => {
-      box.innerHTML = head + tabs + `<div class="inst-detail-tabs"><div class="tab-pane ${I.tab === 'flow' ? 'on' : ''}" data-pane="flow">${flowPane(view, st)}</div><div class="tab-pane ${I.tab === 'result' ? 'on' : ''}" data-pane="result">${resultPane(view, v)}</div><div class="tab-pane ${I.tab === 'log' ? 'on' : ''}" data-pane="log">${logPane(view)}</div></div>`;
+      box.innerHTML = head + tabs + `<div class="inst-detail-tabs"><div class="tab-pane ${I.tab === 'flow' ? 'on' : ''}" data-pane="flow">${flowPane(view, st)}</div><div class="tab-pane ${I.tab === 'record' ? 'on' : ''}" data-pane="record"><div id="instRecord"></div></div><div class="tab-pane ${I.tab === 'result' ? 'on' : ''}" data-pane="result">${resultPane(view, v)}</div><div class="tab-pane ${I.tab === 'log' ? 'on' : ''}" data-pane="log">${logPane(view)}</div></div>`;
       const slot = box.querySelector('#instTrace'); if (slot && I.traceHost) slot.replaceWith(I.traceHost);
+      const rslot = box.querySelector('#instRecord'); if (rslot && I.recordHost) rslot.replaceWith(I.recordHost);
       const td = box.querySelector('#taskDetailPanel'); if (td && keepTd && keepTd !== td) td.replaceWith(keepTd);
     });
     if (trace) trace.update(view);
-    box.querySelectorAll('[data-inst-tab]').forEach(b => b.addEventListener('click', () => { I.tab = b.dataset.instTab; box.querySelectorAll('[data-inst-tab]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); }); box.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === I.tab)); if (I.tab === 'flow') mountFlow(view); }));
+    if (record) record.update(view);
+    const showTab = k => { I.tab = k; box.querySelectorAll('[data-inst-tab]').forEach(x => { x.classList.toggle('on', x.dataset.instTab === k); x.setAttribute('aria-selected', String(x.dataset.instTab === k)); }); box.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === I.tab)); if (I.tab === 'flow') mountFlow(view); };
+    box.querySelectorAll('[data-inst-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.instTab)));
+    // A161: 결과 보고 카드의 "처리 기록 보기" → 처리 기록 탭
+    box.querySelectorAll('[data-open-record]').forEach(b => b.addEventListener('click', () => { showTab('record'); box.querySelector('.inst-detail-tabs')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }));
     box.querySelector('[data-events-more]')?.addEventListener('click', () => { I.eventsShown += 40; renderDetail(); });
     if (I.tab === 'flow') mountFlow(view);
     window.hydRework?.mount(box.querySelector('#reworkPanel'), { view, by: I.form.by, changed: () => load(true) });

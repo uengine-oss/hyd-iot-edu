@@ -52,7 +52,7 @@ const UI = {
     'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 'inst.activity': '에이전트 활동', 'inst.list': '처리 건', 'inst.recent': '최근 50건', 'inst.filterRunning': '진행 중', 'inst.filterDone': '완료',
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '경보가 나면 여기에 나타납니다', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
     'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.off': '처리 건 기능이 꺼져 있습니다. 관리자에게 문의하세요.', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
-    'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
+    'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
     'inst.values': '값', 'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 'inst.now': '지금', 'inst.next': '다음', 'inst.finished': '끝',
     'inst.stepsDone': '단계 완료', 'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
     'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.woFailed': '정비 요청 전달 실패',
