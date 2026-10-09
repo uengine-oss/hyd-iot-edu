@@ -47,8 +47,9 @@ STALE_CLEANUP_EVERY = 150                                              # × POLL
 STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
 # C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (docs/handoff/verification/2026-10-09/c2-execution.md)
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
-# 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. plant-sim 은 ot-net 에만 있어 호스트 공개 포트로 간다.
-PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://host.docker.internal:8000")
+# 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
+# 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).
+PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://plant-sim:8000")
 # 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 60 이면 20배속에서 납기 5일 → 6분.
 WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "60"))
 # 승인 뒤 MCP 호출 부품이 부르는 서버(이름 → tenants.mcp 와 같은 설정). 기본은 수업용 hyd-effects(메일 → Inbucket · CMMS 일정 · 처리 건 기록).
