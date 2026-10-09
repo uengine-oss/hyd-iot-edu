@@ -29,7 +29,7 @@
     try { I.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { I.mode = { error: e.message }; }
     if (!I.mode || I.mode.mode !== 'instance') { renderBanner(); return; }
     // A083: the server filters by status; without it a RUNNING case older than the newest 50 is unreachable from the portal
-    try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); } catch (e) { I.instances = []; }
+    try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); I.listError = ''; } catch (e) { I.instances = []; I.listError = e.message; }
     // A157: list chips name each row's step from that row's own definition (it showed raw ids like extract-manual when another
     // definition's instance was selected). Each definition version is fetched once; a failed fetch is reported, not hidden.
     const defKey = x => `${x.proc_def_id}@${x.proc_def_version}`;
@@ -287,6 +287,7 @@
   /* ------------------------------------------------ list (Camunda card order: name / status / step / started · elapsed) */
   function renderList() {
     const box = $('#instList');
+    if (I.listError) { box.innerHTML = UI.empty('처리 건 목록을 읽지 못했습니다', I.listError, 'compact'); return; }
     if (!I.instances.length) { box.innerHTML = UI.empty(UI.t('inst.empty'), UI.t('inst.emptySub'), 'compact'); return; }
     box.innerHTML = '';
     const paged = UI.page(I.instances, I.listShown, x => x.proc_inst_id === I.sel);

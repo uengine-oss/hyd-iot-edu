@@ -214,7 +214,7 @@
       const servers = (ag && ag.tools) || [];
       const src = x => x === 'activity' ? '이 단계가 지정' : x === 'agent' ? 'AI 일꾼 설정' : (x || '');
       const prov = sd.skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${
-        sd.skills.map(k => `<tr><td><b>${e(k.name)}</b>${W().id(k.path)}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`).join('')}</tbody></table></div>`
+        sd.skills.map(k => `<tr><td><b>${e(k.name)}</b>${W().id(k.path)}${k.written === false ? ` ${UI.chipText('작업 폴더에 못 넣음', 'danger')}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}` : ''}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`).join('')}</tbody></table></div>`
         : '<p class="muted">제공된 스킬 없음 — 받은 일 지시문만 따랐습니다.</p>';
       const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
       const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.skill)}</b>의 ${e(x.file || 'SKILL.md')} — ${e(W().toolName(x.via))}로 열었습니다${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}</li>`; }).join('')}</ul>`
@@ -503,7 +503,12 @@
       // A161-G3: 지켜본 동안의 값 흐름 (사건 reobsSeries, 작업지시 뒤 재관측은 REOBSERVATION 이벤트 reading.series)
       const evSeries = (b.rows.find(r => r.data && r.data.reading && r.data.reading.series) || {}).data;
       const series = (inc && inc.reobsSeries) || (evSeries && evSeries.reading.series) || (out.reading && out.reading.series) || null;
-      if (series && (series.points || []).length) {
+      if (series && series.error) {
+        // 백엔드가 값 흐름을 읽지 못한 경우 — "값이 없었다"와 구별해 사유를 그대로 보인다
+        b.series = series;
+        sections.unshift(sec('지켜본 동안의 값', `<p class="cr-gapline">값 흐름을 읽지 못했습니다: ${e(series.error)}</p>`, { open: true }));
+        chips.push(chip('값 흐름 못 읽음', 'warning'));
+      } else if (series && (series.points || []).length) {
         b.series = series;
         sentence = `${seriesSentence(series)} — ${rec == null ? '판정 중' : rec ? '회복으로 판정' : '미회복으로 판정'}했습니다.`;
         sections.unshift(sec('지켜본 동안의 값', seriesHtml(series), { open: true }));
