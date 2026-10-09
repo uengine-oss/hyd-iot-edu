@@ -85,21 +85,39 @@ def status(read: Callable[[str, dict], dict], rt=None) -> dict:
     return {"scenarios": out, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
-def build_alert(key: str, row: dict, by: str | None = None, now: datetime | None = None) -> dict:
-    """업무 감시와 같은 계약의 경보. 근거 값은 감시 규칙의 evidence 그대로 + 누가 · 무엇으로 시작했는지."""
+def who(body: dict | None) -> dict:
+    """포털이 보낸 누름 주체(지금 고른 '나' — 로그인 없음). 없으면 '나 미선택'이라고 남긴다(지어내지 않는다)."""
+    body = body or {}
+    roles = body.get("roles") if isinstance(body.get("roles"), list) else ([body["role"]] if body.get("role") else [])
+    return {"by": str(body.get("by") or "나 미선택")[:80], "user_id": str(body.get("user_id") or "")[:80] or None,
+            "roles": [str(r)[:60] for r in roles][:5]}
+
+
+def press_event(proc_inst_id: str, button: str, asset: str, person: dict, at: str, extra: dict | None = None) -> dict:
+    """처리 건 자체에 남는 '버튼을 누른 사람 · 때' 기록(처리 기록 화면 · 실시간 기록이 읽는 events 표)."""
+    return {"job_id": "SCENARIO_BUTTON", "todo_id": None, "proc_inst_id": proc_inst_id, "crew_type": "human", "event_type": "task_working",
+            "data": dict(extra or {}, name=f"수업 버튼 [{button}] — {person['by']}", button=button, asset=asset, by=person["by"],
+                         user_id=person.get("user_id"), roles=person.get("roles"), at=at)}
+
+
+def build_alert(key: str, row: dict, by: str | None = None, now: datetime | None = None, person: dict | None = None) -> dict:
+    """업무 감시와 같은 계약의 경보. 근거 값은 감시 규칙의 evidence 그대로 + 누가 · 언제 · 무엇으로 시작했는지."""
     spec = SCENARIOS[key]
     rule = _rule(spec["pattern"])
     pat = business_monitor.PATTERNS[spec["pattern"]]
     clock = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     source = pat["source"]
-    evidence = dict(rule.evidence(row), trigger=f"포털 결함 실험 · [{spec['button']}] 버튼", requested_by=by or "수업 버튼")
+    person = person or who({"by": by})
+    evidence = dict(rule.evidence(row), trigger=f"포털 결함 실험 · [{spec['button']}] 버튼", requested_by=person["by"],
+                    requested_user=person.get("user_id"), requested_roles=person.get("roles"),
+                    requested_at=clock.isoformat(timespec="seconds"))
     return {"alertId": event_prefix(spec) + clock.strftime("%Y%m%d%H%M%S"), "asset": spec["asset"], "pattern": spec["pattern"],
             "severity": pat["severity"], "state": "RAISE", "t": clock.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "evidence": evidence, "source": source,
             "observedBy": {"id": f"sys:{source}-monitor", "name": f"{pat['name']} — [{spec['button']}] 버튼"}}
 
 
-def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None]) -> dict:
+def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[str], str | None], person: dict | None = None) -> dict:
     """시작 전 확인 → 경보. route(pattern) = 그 패턴을 여는 배포 흐름 id(기준 흐름이면 None)."""
     if key not in SCENARIOS:
         raise KeyError(key)
@@ -112,11 +130,20 @@ def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
         raise Refused(f"{spec['title']} 처리 건이 이미 진행 중입니다 ({running['proc_inst_id']})")
     if not route(spec["pattern"]):
         raise Refused(f"{spec['pattern']} 경보를 여는 {spec['title']} 흐름이 배포되어 있지 않습니다 — 흐름 가져오기에서 배포하세요")
-    return {"alert": build_alert(key, row), "row": row}
+    return {"alert": build_alert(key, row, person=person), "row": row}
 
 
-def started(rt, key: str, alert: dict, definition: str) -> dict:
+def started(rt, key: str, alert: dict, definition: str, person: dict | None = None) -> dict:
     inst = rt.repo.find_event_instance(rt.tenant_id, definition, alert["alertId"])
+    if inst and person:
+        ev = alert["evidence"]
+        rt.repo.record_events([press_event(inst["proc_inst_id"], SCENARIOS[key]["button"], alert["asset"], person, ev.get("requested_at"),
+                                           {"alertId": alert["alertId"]})])
     return {"scenario": key, "alertId": alert["alertId"], "definition": definition,
             "instance": inst["proc_inst_id"] if inst else None, "incident": engine.variables(inst).get("incident") if inst else None,
             "evidence": alert["evidence"]}
+
+
+def last_instance(rt, key: str) -> dict | None:
+    runs = _runs(rt, SCENARIOS[key])
+    return runs[0] if runs else None

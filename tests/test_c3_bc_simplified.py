@@ -145,3 +145,19 @@ def test_buttons_show_the_alerts_refuse_when_handled_running_or_undeployed_and_r
     assert SB.status(read)["scenarios"]["B"]["alert"] is True                      # [초기화] → 다시 켜짐
     with pytest.raises(KeyError):
         SB.prepare("A", read, FakeRt(), route)
+
+
+def test_the_button_presser_and_time_are_recorded_on_the_case_itself(world):
+    """누가 · 언제 눌렀나 — 업무 DB 원장만이 아니라 처리 건 자체(시작 경보 근거 + SCENARIO_BUTTON 기록)에 남는다."""
+    deploy(world, "c3_pm")
+    rt = world["rt"]
+    person = SB.who({"by": "박정비", "user_id": "user:park-maint", "roles": ["role:maint-mgr"]})
+    alert = SB.build_alert("B", entstate.EnterpriseState().pm_status("HYD-02")["facts"], now=NOW, person=person)
+    ev = alert["evidence"]
+    assert (ev["requested_by"], ev["requested_user"], ev["requested_roles"]) == ("박정비", "user:park-maint", ["role:maint-mgr"]) and ev["requested_at"]
+    rt.on_alert_raise(alert, now=NOW)
+    out = SB.started(rt, "B", alert, "c3_pm", person)
+    rows = [e for e in rt.repo.list_events(proc_inst_id=out["instance"]) if e["job_id"] == "SCENARIO_BUTTON"]
+    assert len(rows) == 1 and rows[0]["data"]["by"] == "박정비" and rows[0]["data"]["at"] == ev["requested_at"] and rows[0]["data"]["button"] == "정기 점검"
+    assert engine.variables(rt.repo.get_instance(out["instance"]))["alert"]["evidence"]["requested_by"] == "박정비"
+    assert SB.who({})["by"] == "나 미선택"                                         # 고르지 않았으면 지어내지 않는다

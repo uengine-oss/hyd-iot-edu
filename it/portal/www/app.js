@@ -273,6 +273,11 @@ document.addEventListener('click', e => {
   const a = e.target.closest('[data-open-inst]'); if (!a) return;
   e.preventDefault(); selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(a.dataset.openInst);
 });
+// 누가 눌렀나: 포털에서 고른 '나'(로그인 없음 — inbox.js). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
+function pressedBy(extra = {}) {
+  const me = window.hydInbox && window.hydInbox.me && window.hydInbox.me();
+  return { ...extra, by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
+}
 async function refreshBiz() {
   try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = null; }
 }
@@ -280,17 +285,18 @@ async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 시작`); }
-    else if (act === 'restore') { await postJ(API.plant + '/api/fault', { asset, type: 'restore', component: 'cooler', ramp_sim_s: 60 }); logLine(`${asset} 쿨러 복구`); }
+    if (act === 'degrade' && asset === 'HYD-01') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy({ asset })); logLine(`${asset} 쿨러 열화 시작 · ${r.at} · ${pressedBy().by}`); }
+    else if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 시작`); }
+    else if (act === 'restore') { await postJ(API.process + '/api/scenario/A/restore', pressedBy({ asset })); logLine(`${asset} 쿨러 복구`); }
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
-      const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, { by: '수업 버튼' });
+      const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());
       logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 ${r.instance || '(접수됨)'} 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence && r.evidence.hours_since_pm} h` : `가용 ${r.evidence && r.evidence.available} 개`}`);
       await refreshBiz();
     }
     else if (act === 'biz-reset') {
       const exp = EXPERIMENT[asset];
-      state.biz = await postJ(API.process + `/api/scenario/${exp.key}/reset`, {});
+      state.biz = await postJ(API.process + `/api/scenario/${exp.key}/reset`, pressedBy());
       logLine(`${asset} ${exp.title} 초기화 — 업무 데이터를 수업 시작값으로`);
     }
     else if (act === 'mode') { await postJ(API.plant + '/api/mode', { asset, mode }); logLine(`${asset} 운전 모드 → ${UI.status(mode)}`); }

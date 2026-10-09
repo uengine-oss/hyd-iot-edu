@@ -8,6 +8,7 @@ POST /api/todolist/{id}/select (instance mode); POST /api/incidents/{id}/approve
 import asyncio
 import copy
 import json
+from datetime import datetime, timezone
 import logging
 import os
 import urllib.error
@@ -1137,25 +1138,26 @@ async def scenario_start(key: str, body: dict | None = None):
     if PROCESS_MODE != "instance":
         raise HTTPException(409, "처리 건 모드(PROCESS_MODE=instance)에서만 시작합니다")
     rt = instance_mode.current()
+    person = scenario_buttons.who(body)
     try:
-        prep = await asyncio.to_thread(scenario_buttons.prepare, key.upper(), instance_mode.enterprise_read, rt, _scenario_route)
+        prep = await asyncio.to_thread(scenario_buttons.prepare, key.upper(), instance_mode.enterprise_read, rt, _scenario_route, person)
     except KeyError:
         raise HTTPException(404, f"모르는 시나리오 {key}")
     except scenario_buttons.Refused as e:
         raise HTTPException(409, str(e))
     alert = prep["alert"]
-    if (body or {}).get("by"):
-        alert["evidence"]["requested_by"] = str(body["by"])[:80]
     await _admit_human_alert(alert)
-    _audit(alert["asset"], alert["observedBy"]["id"], "BUSINESS_ALERT_RAISED",
-           {"alertId": alert["alertId"], "pattern": alert["pattern"], "evidence": alert["evidence"], "trigger": "scenario-button"})
-    return await asyncio.to_thread(scenario_buttons.started, rt, key.upper(), alert, _scenario_route(alert["pattern"]))
+    _audit(alert["asset"], person["by"], "BUSINESS_ALERT_RAISED",
+           {"alertId": alert["alertId"], "pattern": alert["pattern"], "evidence": alert["evidence"], "trigger": "scenario-button", **person})
+    return await asyncio.to_thread(scenario_buttons.started, rt, key.upper(), alert, _scenario_route(alert["pattern"]), person)
 
 
 @app.post("/api/scenario/{key}/reset")
-async def scenario_reset(key: str):
-    """[초기화]: B = 운전시간 계수기 세 대(묶음 후보 HYD-03 포함) · 이번 회차 오더 표시, C = 씰 키트 재고를 수업 시작값으로. 끝난 처리 건 기록은 남는다."""
+async def scenario_reset(key: str, body: dict | None = None):
+    """[초기화]: B = 운전시간 계수기 세 대(묶음 후보 HYD-03 포함) · 이번 회차 오더 표시, C = 씰 키트 재고를 수업 시작값으로. 끝난 처리 건 기록은 남는다.
+    누가 · 언제 눌렀는지는 감사 기록과 그 시나리오의 마지막 처리 건 기록(SCENARIO_BUTTON)에 남긴다."""
     key = key.upper()
+    person = scenario_buttons.who(body)
     if key == "B":
         await asyncio.to_thread(_entsim_post, "/cmms/pm/reset", {})
     elif key == "C":
@@ -1163,7 +1165,62 @@ async def scenario_reset(key: str):
     else:
         raise HTTPException(404, f"모르는 시나리오 {key}")
     rt = instance_mode.current() if PROCESS_MODE == "instance" else None
+    spec = scenario_buttons.SCENARIOS[key]
+    at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    _audit(spec["asset"], person["by"], "SCENARIO_RESET", {"scenario": key, "at": at, **person})
+    if rt is not None:
+        last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
+        if last:
+            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
+                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
     return await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt)
+
+
+# A 쿨러 버튼도 처리 건에 누른 사람 · 때를 남긴다: 포털이 plant-sim 을 직접 부르지 않고 여기를 거친다. 열화 주입은 그 뒤 HYD-01 에 처음
+# 열리는 처리 건(감지기 경보 → 흐름)에, 복구는 HYD-01 의 마지막 처리 건에 SCENARIO_BUTTON 기록을 붙인다.
+# 열화 세기는 moderate(쿨러 성능 0.55 → 유온 약 62.5 ℃, 보호 정지 없음 — A146 회귀 기본값과 같음). high(0.43)는 실제 에이전트가 판단하는
+# 1분 남짓 사이에 65 ℃ 보호 정지가 먼저 와 사건이 '조치 전 해소'로 끝난다(2026-10-09 라이브 두 번 확인).
+_A_FAULTS = {"degrade": ("쿨러 열화 주입", {"type": "cooler_degradation", "severity": "moderate"}), "restore": ("쿨러 복구", {"type": "restore", "component": "cooler", "ramp_sim_s": 60})}
+
+
+@app.post("/api/scenario/A/{act}")
+async def scenario_a_button(act: str, body: dict | None = None):
+    if act not in _A_FAULTS:
+        raise HTTPException(404, f"모르는 A 버튼 {act}")
+    button, fault = _A_FAULTS[act]
+    asset = (body or {}).get("asset") or "HYD-01"
+    person = scenario_buttons.who(body)
+    pressed = datetime.now(timezone.utc)
+    at = pressed.isoformat(timespec="seconds")
+    req = urllib.request.Request(os.getenv("PLANT_SIM_URL", "http://host.docker.internal:8000").rstrip("/") + "/api/fault",
+                                 data=json.dumps(dict(fault, asset=asset)).encode(), headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        res = await asyncio.to_thread(lambda: json.loads(urllib.request.urlopen(req, timeout=10).read() or b"{}"))
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"설비 시뮬레이터 응답 없음: {e}")
+    _audit(asset, person["by"], "SCENARIO_BUTTON", {"button": button, "at": at, **person})
+    if PROCESS_MODE == "instance":
+        asyncio.create_task(_attach_a_press(asset, button, person, at, pressed, act))
+    return {"ok": True, "button": button, "asset": asset, "at": at, "plant": res}
+
+
+async def _attach_a_press(asset, button, person, at, pressed, act):
+    rt = instance_mode.current()
+    def mine(i):
+        v = engine.variables(i)
+        return v.get("asset") == asset and i.get("proc_def_id") not in ("alert_triage", "manual_source_extraction")
+    deadline = 1 if act == "restore" else 600
+    t0 = asyncio.get_running_loop().time()
+    while True:
+        rows = await asyncio.to_thread(rt.repo.list_instances, None, 30, rt.tenant_id)
+        hit = next((i for i in rows if mine(i) and (act == "restore" or str(i.get("start_date") or "") >= pressed.isoformat()[:19])), None)
+        if hit:
+            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(hit["proc_inst_id"], button, asset, person, at)])
+            return
+        if asyncio.get_running_loop().time() - t0 > deadline:
+            log.info("A button %s: no instance to attach the press to", button)
+            return
+        await asyncio.sleep(3)
 
 
 # C2 수업 초기화(포털에서는 [초기화]가 위 API 를 쓴다): enterprise-sim 에 그대로 전달

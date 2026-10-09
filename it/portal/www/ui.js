@@ -263,7 +263,7 @@ const UI = {
 
   /* ---------- 수행 주체 (명칭표 "행위자") ---------- */
   performers: { 'sys:agent': 'AI 에이전트', agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
-    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
+    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
     'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
   who(id) { return this.performers[id] || id || '–'; },
 
