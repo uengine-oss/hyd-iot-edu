@@ -99,3 +99,27 @@ def test_reviewer_can_drop_and_add_rules_only_with_a_quote_from_the_source(doc):
 def test_commit_without_a_review_file_does_not_run():
     assert c3_ingest.main(['commit', 'PR-07']) == 2
     assert c3_ingest.main(['load', 'PR-07']) == 2
+
+
+def _history(monkeypatch, status, rows):
+    monkeypatch.setattr(c3_ingest, 'call', lambda method, path, body=None, timeout=120: (status, rows))
+
+
+def test_reextraction_revises_the_loaded_document_instead_of_creating_a_new_one(monkeypatch):
+    """같은 파일을 다시 뽑을 때는 지금 적재된 문서 id 로 올린다(포털 [개정]과 같은 계약). 새 문서로 올리면 적재가 옛 문서의 절차를
+    덮어쓰지 못해 409 — 2026-10-10 라이브에서 실제로 났다. 지난 판 · 다른 파일은 고르지 않는다."""
+    _history(monkeypatch, 200, [dict(filename='PR-07_spare-parts-standard.md', document_id='doc-old', current=False),
+                                dict(filename='PR-07_spare-parts-standard.md', document_id='doc-now', current=True),
+                                dict(filename='HM-8_cooler-fan-manual.md', document_id='doc-hm8', current=True)])
+    assert c3_ingest.loaded_document('PR-07_spare-parts-standard.md') == 'doc-now'
+    assert c3_ingest.loaded_document('PM-02_powerpack-pm-checklist.md') is None    # 처음 적재는 새 문서
+
+
+@pytest.mark.parametrize('status, rows, message', [
+    (500, {'error': 'neo4j down'}, '적재 이력 읽기 실패'),
+    (200, [dict(filename='PR-07_spare-parts-standard.md', document_id=d, current=True) for d in ('doc-a', 'doc-b')], '2개'),
+])
+def test_unreadable_or_ambiguous_load_history_stops_instead_of_guessing(monkeypatch, status, rows, message):
+    _history(monkeypatch, status, rows)
+    with pytest.raises(SystemExit, match=message):
+        c3_ingest.loaded_document('PR-07_spare-parts-standard.md')

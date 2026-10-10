@@ -121,10 +121,24 @@ def apply_review(key: str, preview: dict, source: dict, review: dict) -> tuple[d
     return body, changes
 
 
+def loaded_document(fname: str) -> str | None:
+    """그래프에 지금 적재된(current) 같은 파일의 문서 id. 다시 뽑을 때 이 id 로 올려야 같은 문서의 새 판이 된다 — 포털 지식 관리의
+    [개정] 버튼과 같은 계약(hitl.js data-manual-revise → preview document_id). 없이 올리면 새 문서가 생겨, 적재가 옛 문서가 소유한
+    절차를 덮어쓰지 못하고 409 로 거절된다(manual_graph._validate_targets, 2026-10-10 라이브)."""
+    st, rows = call("GET", "/api/kg/manuals")
+    if st != 200:
+        raise SystemExit(f"적재 이력 읽기 실패 {st}: {rows}")
+    ids = sorted({r["document_id"] for r in rows if r.get("current") and r.get("filename") == fname})
+    if len(ids) > 1:
+        raise SystemExit(f"{fname}: 지금 적재된 문서가 {len(ids)}개입니다({', '.join(ids)}) — 어느 판을 개정할지 정할 수 없습니다")
+    return ids[0] if ids else None
+
+
 def extract(key: str, reuse: bool) -> dict:
     fname = DOCS[key]
     raw = (ROOT / "docs" / "samples" / fname).read_bytes()
-    st, pv = call("POST", "/api/kg/manuals/preview", {"filename": fname, "data": base64.b64encode(raw).decode()})
+    st, pv = call("POST", "/api/kg/manuals/preview",
+                  {"filename": fname, "data": base64.b64encode(raw).decode(), "document_id": loaded_document(fname)})
     if st != 200:
         raise SystemExit(f"{key} preview failed {st}: {pv}")
     sid = pv["source_id"]
