@@ -97,6 +97,8 @@ def test_skill_template_has_five_steps_rule_table_and_the_card_promise(path):
     steps = re.findall(r"^([1-5])\. ", body.split("## 절차", 1)[1].split("##", 1)[0], re.M)
     assert steps == list("12345")
     assert "## 규칙으로 빼기" in body and "승인 전에는 조회 · 계산 · 요약만" in body
+    # 라이브 실측(K-capstone.md): 에이전트가 같은 시각에 회의실만 다른 안 둘을 내 승인이 막혔다 — 구분 값 규칙을 요령에 적는다
+    assert "안마다 달라야 한다" in body and "http(s) 주소만" in body
     keys = _result_block(body)["keys"]
     assert set(PROMISE) | {"proposal", "slot", "reason", "score", "why", "title", "link"} <= keys
 
@@ -105,6 +107,8 @@ def test_example_proposal_keeps_the_promise_and_has_real_losers():
     p = json.loads(read(EX / "agent" / "proposal.example.json"))["proposal"]
     assert set(PROMISE) <= set(p)
     assert all({"slot", "reason", "score"} <= set(o) for o in p["options"])
+    assert len({o["slot"] for o in p["options"]}) == len(p["options"])                  # 구분 값은 안마다 다르다
+    assert all(d["link"].startswith(("http://", "https://")) for d in p["docs"])
     scores = [o["score"] for o in p["options"]]
     assert scores == sorted(scores, reverse=True) and p["recommended"] == p["options"][0]["slot"]
     assert len(p["losers"]) >= 2 and all(re.search(r"D1 \d", l["why"]) for l in p["losers"])   # 규칙 번호로 진다
