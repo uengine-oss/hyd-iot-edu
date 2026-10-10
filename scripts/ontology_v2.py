@@ -724,12 +724,17 @@ def usage_report(records_nodes, records_rels, s: dict) -> list[str]:
     return out
 
 
+def read_rows(ses):
+    """그래프 전체를 검사기가 읽는 행 모양으로. ses 는 run() 이 있는 세션 또는 트랜잭션(T2 적재가 커밋 전 검사에 같은 읽기를 쓴다)."""
+    nodes = [{"labels": r["l"], "props": dict(r["p"])} for r in ses.run("MATCH (n) RETURN labels(n) AS l, properties(n) AS p")]
+    rels = [{"type": r["t"], "a": r["a"], "b": r["b"], "la": r["la"], "lb": r["lb"], "props": dict(r["p"])} for r in ses.run(
+        "MATCH (a)-[x]->(b) RETURN type(x) AS t, a.id AS a, b.id AS b, labels(a) AS la, labels(b) AS lb, properties(x) AS p")]
+    return nodes, rels
+
+
 def _graph_rows(args):
     with driver(args) as d, d.session() as ses:
-        nodes = [{"labels": r["l"], "props": dict(r["p"])} for r in ses.run("MATCH (n) RETURN labels(n) AS l, properties(n) AS p")]
-        rels = [{"type": r["t"], "a": r["a"], "b": r["b"], "la": r["la"], "lb": r["lb"], "props": dict(r["p"])} for r in ses.run(
-            "MATCH (a)-[x]->(b) RETURN type(x) AS t, a.id AS a, b.id AS b, labels(a) AS la, labels(b) AS lb, properties(x) AS p")]
-    return nodes, rels
+        return read_rows(ses)
 
 
 def _report(errs: list[str], noun: str) -> int:

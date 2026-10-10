@@ -7,7 +7,7 @@
 |---|---|---|---|
 | `docs/d1.md · d2.md · d3.md` | 1 | 회의 운영 규칙 · 준비 절차(SOP) · 지난 회의록 예시본. 문서마다 "답할 질문" 3개 | — |
 | `schema.json` | 2 | 학생 업무 사전(Meeting · Customer · Attendee · AgendaItem · Document · PrepGuide)과 v2 다리 관계 | `python scripts/ontology_v2.py check-extra --extra students/_template/example_meeting/schema.json` |
-| `graph.json` | 3 | 이름 공간 demo 의 지식(규칙 6 · 원문 절 · 단계 5 · 입력 자리 9 · 회의 1건). 값 노드 없음 | 시험이 `validate_ns`(= `validate --extra` 의 검사 함수)로 위반 0 확인 |
+| `graph.json` · `questions.cypher` | 3 | 이름 공간 demo 의 지식(규칙 6 · 원문 절 · 단계 5 · 입력 자리 9 · 회의 1건), 값 노드 없음. 문서의 "답할 질문" 9개를 옮긴 질의 | `python students/_template/load_graph.py check --dir students/_template/example_meeting`(그래프 없이) → `load` → `ask` → 되돌리기 `wipe`(T2) |
 | `table.sql` | 4 | 업무 표 `stu_demo`(meeting_request · attendee · room) · 읽기 전용 계정 · 예시 행 | T3 형식 대조(시험) |
 | `agent/agent.json · SKILL.md · proposal.example.json` | 6 | 포털 에이전트 칸 값, 요령, 결과 값 예 | 시험: 승인 카드 칸 이름 약속 |
 | `flow.bpmn · mapping.json` | 7 · 8 | 레인 3 · task 8 · 승인 1(+지연 타이머) · 분기 1 그림과 부품 매핑 | bpmn.io 파서 경고 0, 포털 가져오기 파서로 읽힘 |
