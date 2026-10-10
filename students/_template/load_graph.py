@@ -14,7 +14,7 @@ graph.json: {"ns": "<내ID>", "nodes": [{"labels": ["Meeting"], "props": {"id": 
   · 모든 노드는 ns = <내ID>, id 는 '<내ID>:' 로 시작한다. 같은 id 의 남의 노드(수업 기준 · 다른 학생)가 그래프에 있으면 덮어쓰지 않는다.
   · 관계의 한쪽 끝은 내 파일의 노드다. 다른 끝이 파일에 없으면 그래프의 수업 기준 노드(ns 없음)여야 한다(다리 관계).
   · 적재한 뒤, 커밋하기 전에 그래프에서 내 이름 공간을 다시 읽어 v2 + 내 스키마로 검사한다(scripts/ontology_v2.py validate --extra 와 같은 검사).
-    위반이 하나라도 있으면 되돌리고 실패한다. 수업 기준 노드 수가 달라져도 되돌린다.
+    위반이 하나라도 있으면 되돌리고 실패한다. 다리 끝(수업 기준 노드)의 속성이 달라져도 되돌린다.
 파일에서 뺀 노드 · 관계는 load 가 지우지 않는다(그래프에만 있는 내 것을 목록으로 알린다). 지우려면 wipe 뒤 load.
 wipe 는 흐름 투영(scripts/project_student_flow.py, G8)이 만든 내 흐름 노드도 함께 지운다 — 지우기 전에 종류별 개수를 보여 준다.
 questions.cypher 형식은 it/neo4j/v2/queries.cypher 와 같다(// @query 이름 · // @ask 질문 · // @params {…}). 질문은 $ns 로 내 이름 공간을 봐야 한다.
@@ -159,8 +159,7 @@ def stale(graph: dict, nodes: list[dict], rels: list[dict]) -> list[str]:
     return sorted(out)
 
 
-BASE_COUNT = "MATCH (n) WHERE n.ns IS NULL RETURN count(n) AS c"
-FIND = "MATCH (n) WHERE n.id IN $ids RETURN n.id AS id, labels(n) AS labels, n.ns AS ns"
+FIND = "MATCH (n) WHERE n.id IN $ids RETURN n.id AS id, labels(n) AS labels, n.ns AS ns, properties(n) AS props"
 MINE = "MATCH (n {ns: $ns}) RETURN CASE WHEN n.source_type = $flow THEN 'flow' ELSE 'knowledge' END AS kind, count(n) AS c"
 WIPE = "MATCH (n {ns: $ns}) DETACH DELETE n"
 LEFTOVER = "MATCH (n) WHERE n.id STARTS WITH $prefix RETURN n.id AS id, n.ns AS ns ORDER BY id"
@@ -185,7 +184,7 @@ def load_into(tx, graph: dict, base: dict, extra: dict) -> dict:
         problems = ov.validate_ns(*rows_for_check(graph, outside), base, extra)
     if problems:
         raise Refused(problems)
-    base_before = tx.run(BASE_COUNT).single()["c"]
+    bridge_ends = sorted(outside)
     for stmt, params in write_batches(graph):
         tx.run(stmt, params).consume()
     nodes, rels = ov.read_rows(tx)
@@ -195,29 +194,29 @@ def load_into(tx, graph: dict, base: dict, extra: dict) -> dict:
     problems += [f"rel {r['type']} ({r['a']} → {r['b']}): 적재 뒤 그래프에 없다" for r in graph["rels"] if (r["type"], r["a"], r["b"]) not in written]
     ids = [n["props"]["id"] for n in mine]
     problems += [f"node {i}: 같은 id 의 노드가 그래프에 {ids.count(i)}개다 — 예전에 다른 클래스로 적재했는가(wipe 뒤 load)" for i in sorted(set(ids)) if ids.count(i) > 1]
-    base_after = sum(1 for n in nodes if n["props"].get(ov.NS_PROP) is None)
-    if base_after != base_before:
-        problems.append(f"수업 기준 노드 수가 {base_before} → {base_after} 로 달라졌다")
+    # 다리 끝(수업 기준 노드)은 잇기만 한다 — 적재 전과 속성이 같아야 한다(다른 사람이 그사이 쓴 무관한 노드와는 상관없는, 내 적재만 보는 검사)
+    before = {f["id"]: (sorted(f["labels"]), f["props"]) for f in found if f["id"] in outside}
+    after = {f["id"]: (sorted(f["labels"]), f["props"]) for f in tx.run(FIND, {"ids": bridge_ends}).data()}
+    problems += [f"끝점 {end}: 적재 중에 수업 기준 노드가 달라졌다" for end in bridge_ends if after.get(end) != before[end]]
     if problems:
         raise Refused(problems)
-    return {"nodes": len(graph["nodes"]), "rels": len(graph["rels"]), "in_graph": len(mine), "base": base_after, "stale": stale(graph, mine, my_rels)}
+    return {"nodes": len(graph["nodes"]), "rels": len(graph["rels"]), "in_graph": len(mine), "bridge_ends": len(bridge_ends), "stale": stale(graph, mine, my_rels)}
 
 
 def wipe_from(tx, ns: str) -> dict:
-    """내 이름 공간 노드만 지운다. 지울 것이 없거나, 수업 기준 노드 수가 달라지거나, 내 접두어 id 가 남으면 Refused."""
+    """내 이름 공간 노드만 지운다. 지울 것이 없거나, 지운 수가 내 노드 수와 다르거나, 내 접두어 id 가 남으면 Refused."""
     kinds = {r["kind"]: r["c"] for r in tx.run(MINE, {"ns": ns, "flow": FLOW_SOURCE})}
     if not kinds:
         raise Refused([f"ns {ns}: 이 이름 공간의 노드가 그래프에 0개다 — 되돌릴 것이 없다(접속 --uri 가 적재한 그래프인가)"])
-    base_before = tx.run(BASE_COUNT).single()["c"]
-    tx.run(WIPE, {"ns": ns}).consume()
-    base_after = tx.run(BASE_COUNT).single()["c"]
+    expected = sum(kinds.values())
+    deleted = tx.run(WIPE, {"ns": ns}).consume().counters.nodes_deleted
     left = tx.run(LEFTOVER, {"prefix": f"{ns}:"}).data()
     problems = [f"node {l['id']}: id 는 '{ns}:' 인데 ns 가 {l['ns']!r} 라 지우지 않았다 — 누가 만든 노드인지 확인한다" for l in left]
-    if base_after != base_before:
-        problems.append(f"수업 기준 노드 수가 {base_before} → {base_after} 로 달라졌다")
+    if deleted != expected:
+        problems.append(f"지운 노드 {deleted}개가 내 이름 공간 노드 {expected}개와 다르다")
     if problems:
         raise Refused(problems)
-    return {"knowledge": kinds.get("knowledge", 0), "flow": kinds.get("flow", 0), "base": base_after}
+    return {"knowledge": kinds.get("knowledge", 0), "flow": kinds.get("flow", 0)}
 
 
 def read_questions(path: Path) -> list[dict]:
@@ -316,11 +315,11 @@ def main(argv=None) -> int:
                 return _fail(e.problems, f"그래프 {a.uri} 는 바뀌지 않았다(되돌림)")
             tx.commit()
     if a.cmd == "wipe":
-        print(f"PASS — ns {ns!r} @ {a.uri}: 흐름 노드 {done['flow']} · 그 밖의 내 노드 {done['knowledge']} 삭제, 수업 기준 노드 {done['base']} 그대로")
+        print(f"PASS — ns {ns!r} @ {a.uri}: 흐름 노드 {done['flow']} · 그 밖의 내 노드 {done['knowledge']} 삭제(이 이름 공간 노드만)")
         return 0
     for s in done["stale"]:
         print(f" ! 그래프에만 있는 내 것: {s}")
-    print(f"PASS — ns {ns!r} @ {a.uri}: 노드 {done['nodes']} · 관계 {done['rels']} 적재(그래프의 내 노드 {done['in_graph']}), 수업 기준 노드 {done['base']} 그대로"
+    print(f"PASS — ns {ns!r} @ {a.uri}: 노드 {done['nodes']} · 관계 {done['rels']} 적재(그래프의 내 노드 {done['in_graph']}), 다리 끝 수업 기준 노드 {done['bridge_ends']}개는 잇기만 함"
           + (f" · 그래프에만 있는 내 것 {len(done['stale'])}개(예전 적재분이면 wipe 뒤 load)" if done["stale"] else ""))
     return 0
 
