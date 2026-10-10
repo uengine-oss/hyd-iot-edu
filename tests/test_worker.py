@@ -27,7 +27,7 @@ def _repo(def_path=DEF_PATH):
     repo.upsert_proc_def(defn.raw)
     repo.upsert_form(FORM_DIAGNOSE)
     repo.upsert_tenant({"id": "hyd", "name": "hyd", "mcp": TENANT_MCP})
-    repo.upsert_user({"id": "sys:agent", "username": "AI 에이전트", "is_agent": True, "agent_type": "agent", "goal": "원인 진단"})
+    repo.upsert_user({"id": "sys:agent", "username": "AI 에이전트", "is_agent": True, "agent_type": "agent", "goal": "원인 진단", "work_rules": "hyd-plant"})
     repo.upsert_user({"id": "role:operator", "username": "운전원", "email": "operator@hyd.local", "is_agent": False})
     inst = engine.new_instance(defn, {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "alert": {"alertId": "A"}, "incident": "INC-1"}, now=NOW)
     adv = engine.start(defn, inst, now=NOW)
@@ -641,8 +641,9 @@ def test_standing_instructions_carry_the_sql_rules(tmp_path, agent_id):
     """A115 (r14 A9, neo4j-text2sql controller_repair_prompt.md: no invented tables/columns, SELECT only, smallest repair):
     the SQL rules used to live only in a probe's instruction (probe_codex_sql_repair.py); every run now gets them."""
     from worker import workspace
-    ws = workspace.for_run(tmp_path, "a115-sql")
-    workspace.provision(ws, agent_id=agent_id, schema_prompt="schema", task={"id": "t"})
+    from procsvc import work_rules
+    ws = workspace.for_run(tmp_path, "a115-sql")      # G9: the SQL rules are the HYD business part (work_rules hyd-plant)
+    workspace.provision(ws, agent_id=agent_id, constitution=work_rules.constitution(work_rules.HYD_PLANT), schema_prompt="schema", task={"id": "t"})
     text = "\n".join(p.read_text(encoding="utf-8") for p in ws.files() if p.suffix == ".md" and p.parent == ws.path)
     for rule in ("describe_schema", "지어내지 않습니다", "SELECT 한 문장", "최대 두 번", "실패를 0이나 빈 값으로 바꿔"):
         assert rule in text, rule

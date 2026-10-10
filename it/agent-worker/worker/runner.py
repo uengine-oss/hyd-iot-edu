@@ -24,7 +24,7 @@ from dataclasses import asdict, replace
 from typing import Callable, Iterable
 
 from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface, registry, stream_exec
-from procsvc import task_deferral
+from procsvc import task_deferral, work_rules
 from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
 
 from . import bridge, context, hitl, outcome, payloads, prompt, workspace
@@ -39,6 +39,9 @@ _PERMISSION_BY_NAME = {p.value: p for p in Permission}
 # agreed on casing); HYD's earlier cli/agent stay last for definitions written before.
 _AGENT_KEYS = ("agent_cli", "agentCli", "cli_agent", "cliAgent", "cli", "agent")
 _PERMISSION_KEYS = ("agent_permission", "agentPermission", "permission")
+# G9: said on the case when the agent has no business part — the student sees which rules the agent ran under
+NO_WORK_RULES_NOTICE = ("이 에이전트에는 업무 규칙이 붙어 있지 않아 공통 규칙만 넣었습니다 — 작업 폴더 밖 금지 · 도구로 확인 · "
+                        "지어내지 않기 · 승인 전 쓰기 금지 · 근거 인용. 업무 고유 규칙은 에이전트 목표 · 스킬에 적으세요.")
 
 
 def _first(config: dict, keys) -> str | None:
@@ -117,12 +120,18 @@ class Runner:
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
         ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result
-        written = workspace.provision(ws, agent_id=provider_id, schema_prompt=self.schema_prompt,
+        # G9: the constitution = common part + the agent's business part (users.work_rules). An unknown key fails the run
+        # (UnknownWorkRules, its reason on the case); no key = common part only, said on the case — never a silent default business.
+        rules = work_rules.rules_for(agent.work_rules)
+        constitution = work_rules.constitution(rules)
+        written = workspace.provision(ws, agent_id=provider_id, constitution=constitution, schema_prompt=self.schema_prompt,
                             task={"id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "activity_id": row.get("activity_id"),
                                   "activity_name": row.get("activity_name"), "form_id": ctx.form_id, "form_fields": ctx.form_fields,
                                   "process_scope": context.process_scope(row), "query": row.get("query"),
                                   "draft": row.get("draft"), "output": row.get("output"), "agent": agent.summary() if agent.agent_id else None},
                             skills=agent.skills)
+        if rules is None:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": NO_WORK_RULES_NOTICE}, crew_type="agent")
         if agent.skills:
             log.info("%s %s skills in the workspace: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(written) or "-")
         # A161-G1: the skills this run actually had (name · content hash · where it came from), recorded on the instance before the
@@ -165,7 +174,7 @@ class Runner:
         if provider_id == "codex":
             # This is a business task, not a developer resuming the parent repo.
             # Codex skips inherited AGENTS files; supply only this run's contract.
-            text = workspace.CONSTITUTION + "\n\n## Ontology schema\n" + self.schema_prompt + "\n\n" + text
+            text = constitution + "\n\n## Ontology schema\n" + self.schema_prompt + "\n\n" + text
             extra_args += ["-c", "model_reasoning_effort=" + json.dumps(config.get("reasoning_effort") or self.s.reasoning_effort)]
             if self.s.codex_model_provider_base_url:
                 # Codex 0.151 accepts only wire_api="responses"; SGLang serves /v1/responses (live check 2026-10-06, PONG).

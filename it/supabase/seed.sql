@@ -85,6 +85,9 @@ insert into public.users (id, email, username, role, is_agent, agent_type, goal,
    '예비품 재고 기준 이탈 경보에서 필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정(AVL)으로 비교해 발주 카드를 올린다', 'neo4j,hyd-dmn,enterprise-purchase', 'hyd')
 on conflict (id) do update set email = excluded.email, username = excluded.username, role = excluded.role, is_agent = excluded.is_agent,
   agent_type = excluded.agent_type, goal = excluded.goal, tools = excluded.tools;
+-- G9 (migration 20261010000051): 기준 에이전트 넷은 HYD 설비 업무 규칙(procsvc/work_rules.py hyd-plant) 아래에서 돈다 — 분리 전과 같은 글
+update public.users set work_rules = 'hyd-plant'
+ where tenant_id = 'hyd' and id in ('sys:agent', 'agent:cooling', 'agent:pm-plan', 'agent:spare-buy');
 
 -- 폼 = 작업의 결과 계약 (에이전트의 JSON 제출 형식 · 사람의 입력 폼). key 는 정의의 outputData 와 같다.
 insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_json) values

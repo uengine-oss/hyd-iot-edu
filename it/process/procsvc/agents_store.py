@@ -113,6 +113,7 @@ class AgentSettings:
     tools_source: str | None = None          # "agent+activity" | "agent" | "activity"
     skills: list[dict] = field(default_factory=list)          # tenant_skills rows, in assignment order
     missing_skills: list[str] = field(default_factory=list)   # assigned names without a tenant_skills row
+    work_rules: str | None = None            # G9: users.work_rules — the business part of the run's constitution (work_rules.py); None = common only
 
     @property
     def skill_names(self) -> list[str]:
@@ -144,7 +145,8 @@ class AgentSettings:
         """JSON shape for task.json and the portal: names only, no skill bodies."""
         p = self.profile or {}
         return {"id": self.agent_id, "name": p.get("username") or self.agent_id, "model": self.model, "model_source": self.model_source,
-                "tools": self.tools, "tools_source": self.tools_source, "skills": self.skill_names, "missing_skills": list(self.missing_skills)}
+                "tools": self.tools, "tools_source": self.tools_source, "skills": self.skill_names, "missing_skills": list(self.missing_skills),
+                "work_rules": self.work_rules}
 
 
 def agent_settings(repo, tenant_id: str, agent, *, activity: dict | None = None) -> AgentSettings:
@@ -189,7 +191,8 @@ def agent_settings(repo, tenant_id: str, agent, *, activity: dict | None = None)
     names = list(dict.fromkeys(names))
     rows = {r["skill_name"]: r for r in repo.list_skills(tenant_id, names)} if names else {}
     return AgentSettings(agent_id=agent_id, profile=profile, model=model, model_source=model_source, tools=tools, tools_source=tools_source,
-                         skills=[rows[n] for n in names if n in rows], missing_skills=[n for n in names if n not in rows])
+                         skills=[rows[n] for n in names if n in rows], missing_skills=[n for n in names if n not in rows],
+                         work_rules=(str(profile.get("work_rules") or "").strip() or None) if profile else None)
 
 
 # ---------------------------------------------------------------- repositories (read only; MemoryRepo also seeds for tests)

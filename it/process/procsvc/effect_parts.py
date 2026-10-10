@@ -3,7 +3,7 @@
 사람 승인 1회 뒤 process 가 실행한다(CLAUDE.md §4). 에이전트는 읽기 도구만 쓰고, 아래 쓰기는 모두 이 부품(시스템 task)이 한다.
 
   부품(카탈로그 key)        tool                      하는 일                                              효과?
-  svc:mcp-call             mcp:call                  등록된 MCP 서버의 도구 하나를 부른다(메일 · 일정 · 기록) — 인자 틀에 처리 건 값 치환   예
+  svc:mcp-call             mcp:call                  등록된 MCP 서버의 도구 하나를 부른다(메일 · 일정 · 기록) — 인자 틀에 처리 건 값 치환   예 (effect: false 면 읽기 확인)
   svc:erp-po               enterprise:PR_CREATE      ERP 발주 — 승인 경로가 확정한 공급사 · 수량 · 금액(approved_*)으로             예
   svc:wait                 process:wait              시간 대기 — 기간(ISO) 또는 처리 건 값의 시각까지. 배속 × 수업 압축 배율        아니오
   svc:maintenance          plant:restore             정비 수행 모사 — 작업지시 완료(부품 소모) + 시뮬레이터 복구 + 완료 공지         예
@@ -19,6 +19,8 @@
 """
 from __future__ import annotations
 
+import ast
+import json
 import re
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
@@ -59,7 +61,11 @@ PARTS = {
                 "인자 값의 {값 이름}은 처리 건 값으로 바뀝니다. 수업 기본 서버 hyd-effects: send_mail(메일 → 수업 메일함 Inbucket, 실제 발송 없음).",
         "config": {"server": "MCP 서버 이름 (예: hyd-effects)", "tool": "도구 이름 (예: send_mail)",
                    "arguments": "인자 틀 {이름: 값} — 문자열 안 {asset} · {approved_amount} · {work_order.ref} 처럼 처리 건 값을 넣는다",
-                   "output": "결과를 담을 값 이름 (기본 mcp_receipt)"},
+                   "output": "결과를 담을 값 이름 (기본 mcp_receipt)",
+                   "extract": "결과(JSON)에서 꺼내 처리 건 값으로 낼 것 {값 이름: {path: 'attendees.0.status', type: Boolean · Number · Text}} — "
+                              "분기 조건에 쓴다. 못 읽거나 경로가 없거나 자료형이 다르면 이 task 가 사유와 함께 실패한다",
+                   "effect": "false 면 읽기 확인 — 효과로 세지 않아 승인 앞에 둘 수 있고, 부르기 직전 다시 받은 도구 목록에서 "
+                             "읽기 도구로 판정된 것만 부른다(쓰기 도구면 부르지 않고 실패). 기본 true"},
     },
     "svc:erp-po": {
         "tool": PR_TOOL, "name": "ERP 발주", "outputs": ["purchase_order"], "inputs": ["approved_amount"],
@@ -151,6 +157,10 @@ def validate(activity: dict) -> None:
     cfg = activity.get("service") if activity.get("service") is not None else {}
     if not isinstance(cfg, dict):
         raise ValueError(f"활동 {aid}: service 설정은 객체여야 합니다")
+    known = PARTS[BY_TOOL[tool]]["config"]
+    unknown = sorted(str(k) for k in cfg if k not in known)
+    if unknown:                     # 오타(extarct 등)가 조용히 무시되어 설정한 줄 알게 하지 않는다
+        raise ValueError(f"활동 {aid}: 모르는 설정 칸 {', '.join(unknown)} — {PARTS[BY_TOOL[tool]]['name']} 이(가) 받는 칸: {', '.join(known)}")
     if tool == PR_TOOL:
         try:
             notice_spec(cfg.get("mail"))
@@ -171,8 +181,11 @@ def validate(activity: dict) -> None:
         output = cfg.get("output", "mcp_receipt")
         if not isinstance(output, str) or not IDENT_RE.match(output):
             raise ValueError(f"활동 {aid}: 결과 값 이름이 올바르지 않습니다")
-        if outs != [output]:
-            raise ValueError(f"활동 {aid}: MCP 호출의 outputData 는 [{output}] 이어야 합니다")
+        if "effect" in cfg and not isinstance(cfg["effect"], bool):
+            raise ValueError(f"활동 {aid}: effect 는 true/false 입니다 (false = 읽기 도구만 부르는 확인)")
+        types = _extract_types(aid, cfg.get("extract"), output)
+        if outs != [output, *types]:
+            raise ValueError(f"활동 {aid}: MCP 호출의 outputData 는 {[output, *types]} 이어야 합니다")
         return
     if tool == WAIT_TOOL:
         has_d, has_u = cfg.get("duration") not in (None, ""), cfg.get("until") not in (None, "")
@@ -229,24 +242,126 @@ def activity_for(key: str, task: dict, config: dict | None, inputs: list[str], r
     """가져오기(bpmn_import)가 그림의 task 하나를 이 부품의 활동으로 만든다. 검사는 validate 가 한다."""
     part = PARTS[key]
     cfg = deepcopy(config) if isinstance(config, dict) else {}
-    outs = [cfg.get("output") or "mcp_receipt"] if part["tool"] == MCP_TOOL else list(part["outputs"])
+    if part["tool"] == MCP_TOOL:
+        extract = cfg.get("extract")
+        outs = [cfg.get("output") or "mcp_receipt", *(extract if isinstance(extract, dict) else {})]
+    else:
+        outs = list(part["outputs"])
     ins = list(dict.fromkeys([*(part.get("inputs") or []), *inputs]))
     act = {"id": task["id"], "name": task.get("name") or part["name"], "type": "serviceTask", "tool": part["tool"], "service": cfg,
-           "inputData": ins, "outputData": outs, "checkpoints": ["사람 승인 뒤 process 가 실행한다"] if part["tool"] in EFFECTS else [],
-           "duration": 1, "description": task.get("name") or part["name"]}
+           "inputData": ins, "outputData": outs, "checkpoints": [], "duration": 1, "description": task.get("name") or part["name"]}
+    if part["tool"] in EFFECTS:
+        act["checkpoints"] = [READ_CHECKPOINT] if is_read_check(act) else ["사람 승인 뒤 process 가 실행한다"]
     if role:
         act["role"] = role
     return act
 
 
+# ---------------------------------------------------------------- G3: MCP 결과 → 처리 건 값 · 읽기 확인
+#: 꺼낸 값의 자료형(정의 data 의 type 과 같은 이름) → 받는 JSON 값. bool 은 int 의 하위형이라 Number 에서 뺀다
+EXTRACT_TYPES = {"Boolean": lambda x: isinstance(x, bool),
+                 "Number": lambda x: isinstance(x, (int, float)) and not isinstance(x, bool),
+                 "Text": lambda x: isinstance(x, str)}
+JSON_PATH_RE = re.compile(r"^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$")          # 점으로 안쪽 칸 · 숫자는 목록 순번 (예: attendees.0.responseStatus)
+RESULT_HEAD_CHARS = 200                                                  # 실패 사유에 싣는 결과 앞부분 글자 수
+READ_CHECKPOINT = "읽기 도구만 부른다 — 쓰기 도구면 부르지 않고 실패한다"
+
+
+def _extract_types(aid, extract, output: str) -> dict:
+    """extract 설정 검사 → {값 이름: 자료형}. 이름은 처리 건 값 이름이고, 서버 승인 경로 값(approved_* · decision_id …)은 낼 수 없다."""
+    if extract in (None, {}):
+        return {}
+    if not isinstance(extract, dict):
+        raise ValueError(f"활동 {aid}: extract 는 {{값 이름: {{path, type}}}} 객체여야 합니다")
+    from .definition_registry import PROTECTED_OUTPUTS          # 지연 읽기 — definition_registry 가 이 모듈을 읽는다
+    out = {}
+    for name, spec in extract.items():
+        if not isinstance(name, str) or not IDENT_RE.match(name) or name == output:
+            raise ValueError(f"활동 {aid}: extract 의 값 이름 '{name}'을(를) 쓸 수 없습니다 (글자로 시작, 결과 값 이름과 달라야 함)")
+        if name in PROTECTED_OUTPUTS or name == "decision_id":
+            raise ValueError(f"활동 {aid}: 값 이름 '{name}'은(는) 서버 승인 경로만 만들 수 있습니다")
+        if not isinstance(spec, dict) or set(spec) - {"path", "type"}:
+            raise ValueError(f"활동 {aid}: extract.{name} 은 {{path, type}} 이어야 합니다")
+        if not isinstance(spec.get("path"), str) or not JSON_PATH_RE.match(spec["path"]):
+            raise ValueError(f"활동 {aid}: extract.{name} 의 JSON 경로 '{spec.get('path')}'을(를) 읽을 수 없습니다 (예: attendees.0.status)")
+        if spec.get("type") not in EXTRACT_TYPES:
+            raise ValueError(f"활동 {aid}: extract.{name} 의 자료형은 {', '.join(EXTRACT_TYPES)} 중 하나입니다")
+        out[name] = spec["type"]
+    return out
+
+
+def extract_types(activity: dict) -> dict:
+    """MCP 호출 활동이 결과에서 꺼내 내는 값의 자료형 {값 이름: Boolean · Number · Text}. 다른 부품은 {}."""
+    if activity.get("tool") != MCP_TOOL:
+        return {}
+    extract = (activity.get("service") or {}).get("extract")
+    return {name: spec["type"] for name, spec in extract.items()} if isinstance(extract, dict) else {}
+
+
+def is_read_check(activity: dict) -> bool:
+    """MCP 호출에 effect: false 를 적은 읽기 확인인가 — 효과로 세지 않는(승인 앞에 둘 수 있는) 대신, 실행 때 읽기 판정을 통과한 도구만 부른다."""
+    return activity.get("tool") == MCP_TOOL and (activity.get("service") or {}).get("effect") is False
+
+
+def extract_values(extract: dict, result: dict | None) -> dict:
+    """MCP 결과(mcp_check.shape_result 모양: text · json · truncated)에서 값을 꺼낸다. 못 꺼내면 ValueError(경로 · 결과 앞부분) —
+    빈 값으로 넘기지 않는다."""
+    text = str((result or {}).get("text") or "")
+    head = text[:RESULT_HEAD_CHARS] or "(빈 결과)"
+    if (result or {}).get("truncated"):
+        raise ValueError(f"결과가 {result.get('size_chars')}자로 커서 잘렸습니다 — 잘린 JSON 에서는 값을 꺼내지 않습니다. 결과 앞부분: {head}")
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        raise ValueError(f"결과가 JSON 이 아니라 값을 꺼낼 수 없습니다. 결과 앞부분: {head}") from None
+    out = {}
+    for name, spec in extract.items():
+        try:
+            value = _walk(doc, spec["path"].split("."), spec["path"])
+        except KeyError:
+            raise ValueError(f"결과에 경로 '{spec['path']}'(값 {name})이(가) 없습니다. 결과 앞부분: {head}") from None
+        if not EXTRACT_TYPES[spec["type"]](value):
+            raise ValueError(f"결과의 '{spec['path']}' 값 {json.dumps(value, ensure_ascii=False)[:60]} 은(는) {spec['type']} 가 아닙니다 (값 {name}). 결과 앞부분: {head}")
+        out[name] = value
+    return out
+
+
+_OP_TEXT_AST = {ast.Eq: "==", ast.NotEq: "!=", ast.Lt: "<", ast.LtE: "<=", ast.Gt: ">", ast.GtE: ">=", ast.In: "in", ast.NotIn: "not in",
+                ast.Is: "is", ast.IsNot: "is not"}
+_COMPARE_OK = {"Boolean": (ast.Eq, ast.NotEq, ast.Is, ast.IsNot),
+               "Number": (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE),
+               "Text": (ast.Eq, ast.NotEq, ast.In, ast.NotIn)}
+
+
+def condition_type_problems(text: str, types: dict) -> list[str]:
+    """분기 조건이 꺼낸 값을 선언한 자료형대로 쓰는가. 예: Boolean 값을 > 3 과 비교 · Number 값을 '예' 와 비교 · Text 값을 그대로 참/거짓으로."""
+    tree = engine.compile_condition(text)
+    problems, compared = [], set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Compare):
+            continue
+        operands = [node.left, *node.comparators]
+        for op, a, b in zip(node.ops, operands, operands[1:]):
+            compared |= {id(a), id(b)}
+            for named, other in ((a, b), (b, a)):
+                kind = types.get(named.id) if isinstance(named, ast.Name) else None
+                if kind is None:
+                    continue
+                if not isinstance(op, _COMPARE_OK[kind]):
+                    problems.append(f"{named.id}({kind})에는 '{_OP_TEXT_AST[type(op)]}' 비교를 쓸 수 없습니다")
+                elif isinstance(other, ast.Constant) and not (other.value is None or EXTRACT_TYPES[kind](other.value)):
+                    problems.append(f"{named.id}({kind})을(를) {other.value!r} 와 비교합니다 — 자료형이 다릅니다")
+                elif isinstance(other, ast.Name) and other.id in types and types[other.id] != kind:
+                    problems.append(f"{named.id}({kind})을(를) {other.id}({types[other.id]})와 비교합니다 — 자료형이 다릅니다")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and id(node) not in compared and types.get(node.id) not in (None, "Boolean"):
+            problems.append(f"{node.id}({types[node.id]})은(는) 참/거짓 값이 아니라 그대로 조건으로 쓸 수 없습니다")
+    return problems
+
+
 # ---------------------------------------------------------------- 값 읽기 · 인자 틀
-def lookup(values: dict, path: str):
-    """'work_order.after.window_starts_at' → 처리 건 값 안쪽. 없으면 KeyError(경로)."""
-    head, *rest = path.split(".")
-    if head not in values:
-        raise KeyError(path)
-    cur = values[head]
-    for part in rest:
+def _walk(cur, parts: list[str], path: str):
+    for part in parts:
         if isinstance(cur, dict) and part in cur:
             cur = cur[part]
         elif isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
@@ -254,6 +369,14 @@ def lookup(values: dict, path: str):
         else:
             raise KeyError(path)
     return cur
+
+
+def lookup(values: dict, path: str):
+    """'work_order.after.window_starts_at' → 처리 건 값 안쪽. 없으면 KeyError(경로)."""
+    head, *rest = path.split(".")
+    if head not in values:
+        raise KeyError(path)
+    return _walk(values[head], rest, path)
 
 
 def placeholders(value) -> list[str]:
@@ -370,7 +493,6 @@ def report_values(v: dict) -> list[dict]:
 
 
 def _text(v) -> str:
-    import json
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
     return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)

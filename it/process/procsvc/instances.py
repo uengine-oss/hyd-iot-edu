@@ -99,6 +99,8 @@ class Hooks:
     # C2 승인 뒤 실행 부품 (service_parts.py). 없으면 그 부품은 사유와 함께 실패한다.
     enterprise_read: Callable[[str, dict], dict] | None = None        # (읽기 이름, 인자) → enterprise-sim 응답 {system, facts, records}
     mcp_call: Callable[[str, str, dict, str], dict] = lambda server, tool, arguments, key: {"status": "failed", "error": "MCP 호출이 연결되지 않았습니다"}
+    # G3: 읽기 확인(svc:mcp-call effect: false) — 부르기 직전 도구 목록을 다시 받아 읽기 판정(mcp_check.call)을 통과한 도구만 부른다
+    mcp_read: Callable[[str, str, dict], dict] = lambda server, tool, arguments: {"status": "failed", "error": "MCP 읽기 호출이 연결되지 않았습니다"}
     plant_restore: Callable[[str, str | None], dict] = lambda asset, component: {"ok": False, "error": "설비 시뮬레이터가 연결되지 않았습니다"}
     close_incident_effect: Callable[[str, dict], bool] | None = None   # 업무 효과(입고 확인)로 사건을 닫는다 (machine.on_business_effect)
     recovery_reading: Callable[[str], dict | None] | None = None     # 사건의 회복 기준 태그 최신값 · 경보 해제 (작업지시 뒤 재관측)
@@ -147,6 +149,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         active=getattr(self._local,'transition',None)
         if active is None:return fn(*args,**kwargs)
         active['effects'].append((fn,args,kwargs))
+        audits=getattr(self._local,'service_audits',None)
+        if audits is not None and fn is self.hooks.audit:   # 시스템 task 시도가 실패해도 감사 기록은 남긴다 (_keep_failed_attempt_record)
+            audits.append((args,kwargs))
 
     def _check_deadline(self,wi,inst,defn,now):
         if inst.get('status')!='RUNNING':raise ValueError('instance is not running')
@@ -906,6 +911,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         return str(activity.get("tool") or "")
 
     def _run_service(self, inst: dict, wi: dict, now: datetime | None) -> None:
+        # 블랙박스 없음: 실패한 시도의 도구 호출 사건 · 감사 기록은 전이와 함께 버려지므로, 이 호출이 전이를 여는 경우에만 따로 모았다가 되돌린 뒤 남긴다
+        owns_transition = getattr(self._local, 'transition', None) is None
+        self._local.service_trace = [] if owns_transition else None
+        self._local.service_audits = [] if owns_transition else None
         try:
             with self._transition(wi['proc_inst_id']):
                 fresh=self.repo.get_workitem(wi['id'])
@@ -922,7 +931,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 handler(inst,fresh,now)
         except Exception as e:  # noqa: BLE001
             log.exception("service task %s failed", wi["activity_id"])
+            self._keep_failed_attempt_record()
             self._fail(wi, e, now)
+        finally:
+            self._local.service_trace = self._local.service_audits = None
 
     def _run_command(self, inst: dict, wi: dict, now) -> None:
         """Issue the chosen skill's PLC commands through the Incident (machine.on_approve). Completes when the ACK arrives."""

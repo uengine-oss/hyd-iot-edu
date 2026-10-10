@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import json
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -51,8 +52,28 @@ class ServicePartsRuntime:
         return state
 
     def _event(self, wi: dict, job: str, name: str, data: dict, *, event_type: str = "task_working", crew: str = "result") -> None:
-        self.repo.record_events([{"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": crew,
-                                  "event_type": event_type, "data": dict(data, name=name)}])
+        row = {"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": crew, "event_type": event_type,
+               "data": dict(data, name=name)}
+        self.repo.record_events([row])
+        trace = getattr(self._local, "service_trace", None)
+        if crew == "tool" and trace is not None:      # 이 시도가 실패해 전이가 되돌려져도 무엇을 불렀고 무엇이 돌아왔는지 남긴다
+            trace.append(deepcopy(row))
+
+    def _keep_failed_attempt_record(self) -> None:
+        """실패한 시도의 기록을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록과 감사 기록은 상태가 아니라 일지다
+        (ProcessGPT processgpt_agent_sdk database.record_events_bulk 도 상태 변경과 따로 남긴다). 상태 변경은 되돌린 그대로 둔다.
+          * 도구 호출 사건(서버.도구 · 입력 · 출력/오류) — attempt_failed 표시
+          * 감사 기록(MCP_*_FAILED · SKILL_FAILED …, 성공했다면 커밋 뒤 실행됐을 것) — detail 에 attempt_failed
+        왜 실패했는지는 이어서 _fail 의 error 사건이 남긴다. 성공한 시도는 이 길을 타지 않아 두 번 남지 않는다."""
+        rows = getattr(self._local, "service_trace", None) or []
+        if rows:
+            self.repo.record_events([dict(r, data=dict(r["data"], attempt_failed=True)) for r in rows])
+        for args, kwargs in getattr(self._local, "service_audits", None) or []:
+            asset, actor, event, detail, *rest = args
+            try:
+                self.hooks.audit(asset, actor, event, dict(detail or {}, attempt_failed=True), *rest, **kwargs)
+            except Exception:  # noqa: BLE001 — 커밋 뒤 효과와 같은 규칙: 감사 저장 실패가 task 실패 처리를 막지 않는다(로그에 남김)
+                log.exception("audit of a failed attempt could not be written: %s", event)
 
     def _require_approval(self, inst: dict, wi: dict) -> dict:
         v = engine.variables(inst)
@@ -75,10 +96,26 @@ class ServicePartsRuntime:
 
     # ---------------------------------------------------------------- 승인 뒤 MCP 호출
     def _run_mcp_call(self, inst: dict, wi: dict, now) -> None:
-        v = self._require_approval(inst, wi)
-        cfg = self._activity_of(wi).get("service") or {}
-        receipt = self._call_mcp(inst, wi, v, cfg, f"{inst['proc_inst_id']}:{wi['id']}", now)
-        self.submit(wi["id"], {cfg.get("output") or "mcp_receipt": receipt}, by="process", now=now)
+        """승인 뒤 MCP 호출. G3: extract 가 있으면 결과 JSON 에서 값을 꺼내 함께 낸다(못 꺼내면 이 task 실패 → 정해진 재시도 뒤 PENDING.
+        재시도는 다시 부른다 — 읽기는 해가 없고, 쓰기는 같은 idempotency_key 로 부른다). effect: false(읽기 확인)는 승인 없이,
+        읽기 판정을 통과한 도구만 부른다."""
+        activity = self._activity_of(wi)
+        cfg = activity.get("service") or {}
+        read_only = effect_parts.is_read_check(activity)
+        v = engine.variables(inst) if read_only else self._require_approval(inst, wi)
+        extract = cfg.get("extract") or {}
+        receipt, result = self._call_mcp(inst, wi, v, cfg, f"{inst['proc_inst_id']}:{wi['id']}", now, read_only=read_only)
+        out = {cfg.get("output") or "mcp_receipt": receipt}
+        if extract:
+            try:
+                values = effect_parts.extract_values(extract, result)
+            except ValueError as e:
+                raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}' ({cfg['server']}.{cfg['tool']}): {e}") from e
+            self._event(wi, "MCP_RESULT_VALUES", "MCP 결과에서 값을 꺼냄", {
+                "values": values, "extract": deepcopy(extract),
+                "content": ", ".join(f"{k} = {json.dumps(x, ensure_ascii=False)} (경로 {extract[k]['path']})" for k, x in values.items())})
+            out.update(values)
+        self.submit(wi["id"], out, by="process", now=now)
 
     def _send_notice(self, inst: dict, wi: dict, values: dict, mail, now) -> dict | None:
         """시스템 task 끝의 메일 공지(발주 → 공급사 · 입고 부서, 정비 오더 → 생산팀). 같은 작업의 재시도는 같은 키라 한 통만 간다."""
@@ -88,11 +125,12 @@ class ServicePartsRuntime:
         state = self._state(wi)
         if "notice" in state:
             return state["notice"]
-        receipt = self._call_mcp(inst, wi, values, spec, f"{inst['proc_inst_id']}:{wi['id']}:notice", now)
+        receipt, _ = self._call_mcp(inst, wi, values, spec, f"{inst['proc_inst_id']}:{wi['id']}:notice", now)
         self._save_state(wi, notice=receipt)
         return receipt
 
-    def _call_mcp(self, inst: dict, wi: dict, v: dict, cfg: dict, key: str, now) -> dict:
+    def _call_mcp(self, inst: dict, wi: dict, v: dict, cfg: dict, key: str, now, *, read_only: bool = False) -> tuple[dict, dict]:
+        """(영수증, 도구 결과 — mcp_check.shape_result 모양). read_only 면 읽기 경로(hooks.mcp_read: 호출 직전 읽기 판정)로 부른다."""
         context = dict(v, proc_inst_id=inst["proc_inst_id"], proc_inst_name=inst.get("proc_inst_name"),
                        task_name=wi.get("activity_name"))
         try:
@@ -103,22 +141,24 @@ class ServicePartsRuntime:
         use_id = f"{key}:{int(wi.get('retry') or 0)}"
         raw_tool = f"mcp__{server}__{tool}"
         # 이벤트 본문: HYD 도구 호출 기록(mcp_calls: tool · input · output)과 제품 화면(tool_name · args · result · is_error) 두 이름을 함께 둔다
-        self._event(wi, "MCP_EFFECT_CALL", "승인 뒤 MCP 호출", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "input": arguments,
+        job, label = ("MCP_READ_CALL", "읽기 확인 MCP 호출") if read_only else ("MCP_EFFECT_CALL", "승인 뒤 MCP 호출")
+        self._event(wi, job, label, {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "input": arguments,
                                                               "args": arguments, "idempotency_key": key}, event_type="tool_usage_started", crew="tool")
-        res = self.hooks.mcp_call(server, tool, arguments, key)
+        res = self.hooks.mcp_read(server, tool, arguments) if read_only else self.hooks.mcp_call(server, tool, arguments, key)
         result = res.get("result") or {}
         failed = res.get("status") != "ok" or result.get("is_error")
-        self._event(wi, "MCP_EFFECT_CALL", "승인 뒤 MCP 호출 결과", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "output": result.get("text") or res.get("error"),
+        self._event(wi, job, label + " 결과", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "output": result.get("text") or res.get("error"),
                                                                   "result": result.get("text") or res.get("error"), "is_error": bool(failed)}, event_type="tool_usage_finished", crew="tool")
-        self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "MCP_EFFECT_FAILED" if failed else "MCP_EFFECT_CALLED",
+        self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", ("MCP_READ_FAILED" if failed else "MCP_READ_CALLED") if read_only else ("MCP_EFFECT_FAILED" if failed else "MCP_EFFECT_CALLED"),
                            {"instance": inst["proc_inst_id"], "server": server, "tool": tool, "idempotency_key": key,
                             "error": res.get("error")}, incident=v.get("incident"))
         if failed:
             from .instances import ServiceExecutionError
             raise ServiceExecutionError({"error": res.get("error") or (result.get("text") or "")[:300] or "MCP 도구가 오류를 돌려줬습니다",
                                          "server": server, "tool": tool, "status": res.get("status"), "error_kind": res.get("error_kind")})
-        return {"server": server, "tool": tool, "arguments": res.get("arguments", arguments), "idempotency_key": key,
-                "idempotent": res.get("idempotent"), "result": result.get("text"), "called_at": engine.now_iso(_clock(now))}
+        receipt = {"server": server, "tool": tool, "arguments": res.get("arguments", arguments), "idempotency_key": key,
+                   "idempotent": res.get("idempotent"), "result": result.get("text"), "called_at": engine.now_iso(_clock(now))}
+        return receipt, result
 
     # ---------------------------------------------------------------- ERP 발주
     def _run_purchase_order(self, inst: dict, wi: dict, now) -> None:
