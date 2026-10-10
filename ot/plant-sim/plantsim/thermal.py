@@ -40,6 +40,7 @@ DEGRADED_BEARING = 0.8   # default fault-injection target: fan bearing wear 0..1
 K_LEAK = 0.08            # leakage flow -> heat (sv:leak -> sv:ts1, low)
 LEAK_PS1_DROP = 130.0    # bar of discharge pressure lost per unit leakage (0.15 -> ~19.5 bar)
 K_VIB = 1.0              # mm/s of fan vibration per unit bearing wear at fan 60 %
+NORMAL_FAN_PCT, NORMAL_LOAD_PCT = 60.0, 90.0   # the normal operating point: set-points before any mitigation command
 
 
 @dataclass
@@ -58,8 +59,8 @@ class UnitState:
     fs1: float = 9.0    # flow (l/min)
     fs2: float = 10.0
     vs1: float = 0.6    # vibration (mm/s)
-    fan_pct: float = 60.0
-    load_pct: float = 90.0
+    fan_pct: float = NORMAL_FAN_PCT
+    load_pct: float = NORMAL_LOAD_PCT
     cooler_health: float = 1.0
     leak: float = 0.0          # pump A internal leakage fraction (sv:leak); pump B is sound
     bearing_wear: float = 0.0  # fan bearing wear 0..1 (sv:bearing-wear)

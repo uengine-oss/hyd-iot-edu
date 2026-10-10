@@ -1248,7 +1248,8 @@ async def scenario_reset(key: str, body: dict | None = None):
 @app.post("/api/scenario/A/{act}")
 async def scenario_a_button(act: str, body: dict | None = None):
     """[쿨러 열화 주입] · [쿨러 복구] (HYD-01). 누름 id(origin)를 plant-sim 주입에 실어 보낸다 — 설비 상태(plant.status injection)에 남고, 그
-    주입이 일으킨 경보로 열린 처리 건에 case_started 가 같은 id 로 기록을 붙인다. 복구는 지금 주입 id 로 연결된 처리 건에 기록한다."""
+    주입이 일으킨 경보로 열린 처리 건에 case_started 가 같은 id 로 기록을 붙인다. 복구는 지금 주입 id 로 연결된 처리 건에 기록한다.
+    복구는 팬 · 부하 지령도 평소 운전점으로 되돌린다 — 바뀐 값(setpoints 전 · 후)을 그 기록과 감사 기록에 남긴다."""
     rt = _scenario_rt()
     if act not in scenario_buttons.A_BUTTONS:
         raise HTTPException(404, f"모르는 A 버튼 {act}")
@@ -1264,8 +1265,10 @@ async def scenario_a_button(act: str, body: dict | None = None):
         linked = await asyncio.to_thread(scenario_buttons.case_of_injection, rt, asset, caused_by)
         if linked:
             await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
-                linked, spec["button"], asset, person, origin["at"], {"injection_id": origin["id"], "restores": caused_by["id"]})])
-    _press_audit(asset, person, spec["button"], "A", origin["at"], injection_id=origin["id"], instance=linked, reanchored=reanchored)
+                linked, spec["button"], asset, person, origin["at"],
+                {"injection_id": origin["id"], "restores": caused_by["id"], "setpoints": res.get("setpoints")})])
+    _press_audit(asset, person, spec["button"], "A", origin["at"], injection_id=origin["id"], instance=linked, reanchored=reanchored,
+                 setpoints=res.get("setpoints"))
     return {"ok": True, "button": spec["button"], "asset": asset, "at": origin["at"], "injection_id": origin["id"], "instance": linked,
             "plant": res, "reanchored": reanchored}
 

@@ -37,6 +37,7 @@ class FaultReq(BaseModel):
     ramp_sim_s: float | None = None     # None = the kind's default ramp (plant.DEFAULT_RAMP_S)
     component: str | None = None        # C2 restore only: cooler | pump | fan (or comp:* id) — None restores every disturbance
     origin: dict | None = None          # C3: the button press behind this request {id, by, user_id, roles} — kept as the unit's injection
+    operating_point: bool = False       # restore only: also put FanSpeedSP · LoadSP back to the normal operating point (ends a mitigation)
 
 
 class ModeReq(BaseModel):
@@ -92,7 +93,8 @@ def fault(req: FaultReq):
     try:
         if req.origin is not None and not str(req.origin.get("id") or "").strip():
             raise ValueError("origin needs an id (the press that asked for this injection)")
-        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity, component=req.component, origin=req.origin)
+        return plant.inject(req.asset, req.type, target, req.ramp_sim_s, severity=req.severity, component=req.component, origin=req.origin,
+                            operating_point=req.operating_point)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -136,7 +138,7 @@ def reset():
             u.faults.clear()
             u.injection = None
             u.state.cooler_health, u.state.leak, u.state.bearing_wear, u.state.pump = 1.0, 0.0, 0.0, "A"
-            u.state.fan_pct, u.state.load_pct = 60.0, 90.0
+            u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
             u.state.ts1 = 48.0
             u.ctrl.mode, u.ctrl.state, u.ctrl.trip = "REMOTE_AUTO", "RUN", None
             u.ctrl.last_cmd_id = u.ctrl.last_result = u.ctrl.last_reason = None

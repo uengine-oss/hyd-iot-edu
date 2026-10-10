@@ -45,7 +45,9 @@ A_ASSET = "HYD-01"
 A_SEVERITY = "moderate"
 A_BUTTONS: dict[str, dict] = {
     "degrade": {"button": "쿨러 열화 주입", "fault": {"type": "cooler_degradation", "severity": A_SEVERITY}},
-    "restore": {"button": "쿨러 복구", "fault": {"type": "restore", "component": "cooler"}},
+    # 복구 = 쿨러를 정상으로 + 승인한 조치가 바꾼 팬 · 부하 지령을 평소 운전점으로(operating_point). 지령을 그대로 두면 팬 100 % · 부하 80 % 라
+    # moderate 열화의 평형이 경보선(55 ℃) 아래여서 다음 [쿨러 열화 주입]이 경보를 내지 못한다
+    "restore": {"button": "쿨러 복구", "fault": {"type": "restore", "component": "cooler", "operating_point": True}},
 }
 
 

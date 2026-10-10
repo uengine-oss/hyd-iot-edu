@@ -94,14 +94,23 @@ class Plant:
 
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
-               severity: str | None = None, component: str | None = None, origin: dict | None = None) -> dict:
+               severity: str | None = None, component: str | None = None, origin: dict | None = None,
+               operating_point: bool = False) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
-        strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
+        strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S.
+
+        `operating_point` (restore only) also puts the fan and load set-points back to the normal operating point, at once
+        (set-points are stepped, not ramped). A disturbance restore alone leaves the set-points an approved mitigation wrote
+        (fan 100 %, load 80 %): with those, moderate cooler fouling settles under the 55 C alarm line, so the next cooler
+        degradation would never raise an alert. The process's maintenance restore does not ask for it — only the lecture
+        button that ends a scene does."""
         if ramp_sim_s is None:
             if kind not in DEFAULT_RAMP_S:
                 raise ValueError(f"unknown fault kind {kind}")
             ramp_sim_s = DEFAULT_RAMP_S[kind]
+        if operating_point and kind != "restore":
+            raise ValueError(f"operating_point goes with restore only (got {kind})")
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
@@ -128,8 +137,20 @@ class Plant:
             if plan or injection != u.injection:
                 u.dirty_status = True
             u.injection = injection
+            setpoints = self._to_operating_point(u) if operating_point else None
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
-                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection}
+                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection,
+                    "setpoints": setpoints}
+
+    @staticmethod
+    def _to_operating_point(u: Unit) -> dict:
+        """Fan and load set-points back to normal. Returns what they were and what they are now (the caller shows both)."""
+        before = {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}
+        u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
+        after = {"FanSpeedSP": u.state.fan_pct, "LoadSP": u.state.load_pct}
+        if after != before:
+            u.dirty_status = True
+        return {"before": before, "after": after}
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
