@@ -68,3 +68,45 @@
 - **기존 라이브 검사기 사본 실행**: `probe_manual_graph.py`를 버릴 Neo4j로 향하게 한 사본 → **17/17 PASS**(동시 8요청 1배치, 규칙 참조 거절, 외부 속성 거절, 되돌리기 복원 등 기존 계약 회귀 없음).
   증거 `.evidence/a161-final/manual-revision-fix/probe-manual-graph-throwaway.json`, 사본 `probe_throwaway.py`.
 - **미검증**: 실제 구조판 그래프(`hyd-iot-edu_neo4j-data-c3`)에서 PR-07 새 판 적재(SOP-PUR-13에 CHOSE 3건). Cause 쪽 이력(`Incident-DIAGNOSED_AS->Cause`)은 판별 단위 시험만(문서 소유 Cause를 만드는 지식 적재까지 실제 그래프로는 안 돌림).
+
+## 3. F-3 — 워커가 실패로 끝낸 에이전트 task — 끝내기 경로는 이미 있음(운용 오해), 추출 결과 API의 실패 표시는 결함 → 고침
+
+생산자 → 소비자 추적(파일:줄):
+1. 워커: `it/agent-worker/worker/runner.py:96` 실행 예외 → `_fail`(412-421) → `repo.update_task_error`(413) = `procdb.py:898` `set_draft_status('FAILED')` —
+   행은 `status=IN_PROGRESS`, `draft_status=FAILED`, `consumer=None`. 같은 곳에서 `TASK_ERROR` error 이벤트(원문 `raw_error`, 안내 "담당자가 확인한 뒤 다시 보낼 수 있습니다").
+   라이브 실물 일치: 정리 백업 `.evidence/a161-final/residue-extract-limit/backup.json`의 todo `866a2c12…` = IN_PROGRESS · FAILED · consumer None, `worker2.log:15` `failed: RunFailed: You've hit your session limit`.
+2. 처리 건 화면: `it/portal/www/trace.js:233` · `caseRecord.js:132` — `draft_status === 'FAILED'`면 단계 상태 'fail'(실패로 보임).
+3. 끝내기: `instances.py:766-818` `close_agent_task`(A082) — `IN_PROGRESS + draft FAILED/CANCELLED` 또는 PENDING을 사유와 함께 CANCELLED, 혼자 남은 처리 건은 `closed-by-human`으로 끝냄.
+   API `POST /api/todolist/{wid}/close`(`instance_mode.py:1048-1058`), 포털 '단계 닫기' 버튼(`instances.js:392`, 정확히 같은 조건). 시험 `tests/test_close_agent_task.py`(문서 추출 + `update_task_error`로 죽은 실행을 닫는 사례 그대로) 10 passed.
+   `/cancel`(1060-1070, `cancel_agent_task` 744-764)은 **실행 중(STARTED · 점유 있음)인 실행을 멈추라는 요청**이라 실패한 행을 거절하는 것이 맞다.
+4. 다시 하기: 문서 추출은 같은 원천에 새 추출 요청(`POST …/extractions`, 포털 '에이전트 추출 요청') — 라이브 2-3이 실제로 그렇게 다시 돌렸다. 사건 처리 건의 에이전트 단계는 '다시 수행'(rework).
+
+- **분류 ①(끝내기 · 실패 표시)**: 오해 — 경로가 있는데 라이브 운용이 `/cancel`을 썼다. `live-final.md` F-3의 "실패한 task를 끝낼 API가 없다"는 틀린 진단. **고치지 않음.**
+- **분류 ②(추출 결과의 상태)**: 결함 — `manual_extraction._task_state`(고치기 전 258행)가 `status=wi['status']`만 내서 죽은 실행을 계속 `IN_PROGRESS`로 돌려줬다.
+  그래서 `scripts/c3_ingest.py:159`(FAILED · CANCELLED면 멈춤)가 실패를 못 보고 시간 한도까지 폴링(라이브에서 pkill), 지식 화면 '추출 상태'(`hitl.js:494`)도 '진행 중'으로 표시.
+  구간 추출의 `STATUS_RANK`(`'FAILED':0`)도 행 status가 FAILED가 될 일이 없어 죽은 값이었다.
+- **조치**: `it/process/procsvc/manual_extraction.py` `STOPPED_RUNS=('FAILED','CANCELLED')` — 행이 IN_PROGRESS이고 draft가 그중 하나면 추출 상태를 그 값으로 보고.
+  사람이 닫으면 행이 CANCELLED라 CANCELLED. instances.py · instance_mode.py · 포털은 건드리지 않음(다른 담당 작업 중 파일).
+- **시험**: `tests/test_manual_extraction.py::test_f3_a_failed_worker_run_reads_as_failed_and_a_person_can_close_it_and_extract_again` — 실제 `Runner`가 CLI 오류 결과
+  (`You've hit your session limit …`, is_error)로 task를 실패시킴 → 행 IN_PROGRESS · FAILED, TASK_ERROR 원문 → 결과 API `status: FAILED`, preview 없음 → `close_agent_task` → `CANCELLED`, 처리 건 COMPLETED → 새 추출 요청은 새 처리 건으로 IN_PROGRESS. 통과.
+- **뮤테이션**: 상태를 `wi['status']`로 되돌림 → `'IN_PROGRESS' == 'FAILED'` 실패(라이브 증상). 되돌린 뒤 파일 34 passed.
+- **참고 레포**: 경로가 이미 있어 새로 맞출 것이 없음(A082/A097이 process-gpt-vue3 FormWorkItem 취소 · 닫기를 따른 것). 대조하지 않음.
+
+## 4. 회귀 · 정리 — 검증됨(단위)
+
+- 관련 파일(`test_manual_*` · `test_c1_knowledge` · `test_c1_scenario_b` · `test_b7_oil` · `test_c3_bc_review`, 버릴 Neo4j 포함): 215 passed(F-3 전). `test_close_agent_task.py` 10 passed.
+- 전체 스위트 1회(F-1~F-3 반영, Neo4j 환경변수 없음): **1967 passed · 9 skipped · 1 failed** — 실패는 알려진 흔들림
+  `tests/test_mcp_check.py::test_html_page_is_not_an_mcp_endpoint`, 단독 재실행 1 passed. skipped 9 중 5는 이번 Neo4j 시험(환경변수 없으면 건너뜀).
+- 버릴 Neo4j 컨테이너 `mrf-neo4j-throwaway`와 그 익명 볼륨 2개 지움. 라이브 스택 미접촉(process StartedAt 2026-10-09T20:58:13Z, RestartCount 0 그대로). docker compose · 워커 · push 없음.
+
+## 5. 라이브에서 확인할 절차(메인 몫 — 미검증)
+
+1. process 이미지에 반영(`manual_graph.py` · `manual_review.py` · `manual_api.py` · `manual_extraction.py`) 뒤 `docker inspect hyd-iot-edu-process-1 --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정 확인.
+2. neo4j를 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3`로(live-final 2-1과 같은 덮어쓰기). 판단 이력 확인:
+   `MATCH (c:DecisionCase)-[:CHOSE]->(k:Skill {id:'skill:sop-pur-13'}) RETURN count(c)` = 3, `elementId(k)` 기록.
+3. F-1: `GET /api/kg/manuals/sources/{PR-07 새 판 source}/extractions/{059b0927…}` → `preview.conflicts`에 SOP-PUR-11/12/13이 **없어야** 한다(자기 문서).
+4. F-2: `c3_ingest.py commit PR-07 --review review3-PR-07.json`(또는 같은 추출로 새 검토) → 200, 영수증 `history_kept`에 `Skill skill:sop-pur-13 · CHOSE · 3`.
+   적재 뒤 2의 질의가 같은 elementId에 3건, 문서 head가 새 배치, SOP-PUR-13 link 값 · 불량률 규칙이 새 판대로.
+   (새 판에서 빠지는 노드에 이력이 있으면 409 메시지가 노드 · 관계 · 건수를 말해야 함 — PR-07은 SOP 셋이 그대로라 해당 없음 예상.)
+5. F-3(선택): 실패한 에이전트 task는 처리 건 화면 '단계 닫기'(또는 `POST /api/todolist/{wid}/close` `{by, reason}`)로 끝낸다 — `/cancel` 아님.
+   추출 결과 `GET …/extractions/{id}`가 실패 실행에 `status: FAILED`를 돌려주는지(워커 실패를 다시 일으키기는 어려우므로 다음 실패 때 확인).

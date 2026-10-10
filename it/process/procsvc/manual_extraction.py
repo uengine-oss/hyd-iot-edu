@@ -251,11 +251,17 @@ def coverage(source, proposal):
     return dict(pages=pages,chars=total_chars,cited=total_cited,ratio=round(total_cited/total_chars,3) if total_chars else 0.0)
 
 
+# A worker run that died (runner._fail → draft FAILED) or a run a person cancelled (draft CANCELLED) leaves the row
+# IN_PROGRESS until a person closes it (A082 /close) — the extraction is not progressing, so it is reported as such.
+STOPPED_RUNS=('FAILED','CANCELLED')
+
+
 def _task_state(rt, inst):
     """The extraction task of one instance: its latest work item, status and (A077) correction rounds."""
     items=rt.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
     wi=max([w for w in items if w['activity_id']==ACTIVITY],key=engine.workitem_order)
-    state=dict(instance=inst['proc_inst_id'],workitem=wi['id'],status=wi['status'],log=wi.get('log'))
+    stopped=wi['status']=='IN_PROGRESS' and wi.get('draft_status') in STOPPED_RUNS
+    state=dict(instance=inst['proc_inst_id'],workitem=wi['id'],status=wi['draft_status'] if stopped else wi['status'],log=wi.get('log'))
     feedback=wi.get('feedback') if isinstance(wi.get('feedback'),dict) else {}
     if feedback.get('kind')=='validation':      # A077: every rejected round stays visible to the reviewer
         state['corrections']=dict(attempts=feedback.get('attempt'),reasons=list(feedback.get('history') or []),

@@ -396,3 +396,38 @@ def test_f1_review_conflicts_do_not_call_the_documents_own_sops_another_document
     owners['SOP-EXTRACT-1']=owners.pop('SOP-OTHER')
     r=TestClient(app).get('/api/kg/manuals/sources/'+source['source_id']+'/extractions/'+inst['proc_inst_id'])
     assert [(c['sop'],c['kind']) for c in r.json()['preview']['conflicts']]==[('SOP-EXTRACT-1','other_document')]
+
+
+def test_f3_a_failed_worker_run_reads_as_failed_and_a_person_can_close_it_and_extract_again(rt,document,tmp_path):
+    """F-3 (live-final 2-2): the worker ended the extraction task as failed (session limit → runner._fail → draft FAILED, row
+    still IN_PROGRESS). The extraction result said IN_PROGRESS forever, so the knowledge screen and scripts/c3_ingest.py
+    (which stops on FAILED) never saw the failure. It must read FAILED; the person's way out is close (A082), then a new
+    extraction request."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api
+    runtime,_=rt;archive,source,_=document
+    source=archive.get('hyd',source['source_id'])
+    inst=extraction.start(runtime,source,str(uuid4()))
+    runner=Runner(_settings(tmp_path/'worker'),runtime.repo,exec_fn=_fake_exec("You've hit your session limit · resets 10:30am (Asia/Seoul)",is_error=True),
+                  schema_prompt='ManualSection Skill Step',resolve_provider=lambda _:object())
+    assert runner.poll_once()==1
+    wi=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert wi['status']=='IN_PROGRESS' and wi['draft_status']=='FAILED'
+    assert any(e['job_id']=='TASK_ERROR' and 'session limit' in e['data']['raw_error'] for e in runtime.repo.list_events(todo_id=wi['id']))
+    class NoHead:                       # graph: this document has no committed batch yet (manual_graph.head)
+        def __enter__(self):return self
+        def __exit__(self,*a):return False
+        def session(self):return self
+        def run(self,q,**kw):
+            return type('R',(),{'single':lambda self:None})()
+    app=FastAPI()
+    manual_api.register(app,archive_factory=lambda:archive,driver_factory=NoHead,tenant='hyd',audit=lambda *a:None,runtime_factory=lambda:runtime)
+    client=TestClient(app);path='/api/kg/manuals/sources/'+source['source_id']+'/extractions/'
+    got=client.get(path+inst['proc_inst_id']).json()
+    assert got['status']=='FAILED' and got['preview'] is None
+    runtime.close_agent_task(wi['id'],'지식 관리자','워커 세션 한도로 실패 — 다시 추출')
+    assert client.get(path+inst['proc_inst_id']).json()['status']=='CANCELLED'
+    assert runtime.repo.get_instance(inst['proc_inst_id'])['status']=='COMPLETED'
+    again=extraction.start(runtime,source,str(uuid4()))          # 다시 하기: a new extraction request (portal 「에이전트 추출 요청」)
+    assert again['proc_inst_id']!=inst['proc_inst_id'] and client.get(path+again['proc_inst_id']).json()['status']=='IN_PROGRESS'
