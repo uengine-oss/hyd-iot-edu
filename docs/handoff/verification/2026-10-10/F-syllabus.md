@@ -16,3 +16,104 @@
 - **수업용 비정상 입력은 원인 쪽**: 결과 값을 넣지 않는다. plant-sim(팬 구동부 고장 · 정비 불량)과 enterprise-sim(공급사 납기 지연 통보)에 원인을 주고 흐름이 실제 판정으로 그 결말에 이른다.
 
 (아래 절은 작업하면서 채운다.)
+
+## 1. 조사 판정 다시 확인 (구현 전, 근거 파일을 직접 열어 봄)
+
+| 조사(`슬라이드/실라버스_구현_빈틈.md`) | 다시 본 결과 |
+|---|---|
+| 정기 정비 · 예비품 구매 배포 흐름이 단순판 | 맞음 — `scripts/c3_flows.py`(5e30f4f) B = 승인 → 오더 · 공지 → 보고, C = 발주 · 메일 → `immediate` 입고 → 보고 |
+| 부품과 단위 시험은 남아 있음 | 맞음 — `svc:wait` · `svc:maintenance` · `svc:test-run` · `svc:goods-receipt`(대기 · 지연 재확인) · 경계 타이머, `tests/test_c2_execution.py` |
+| A 에 승인 거절 경로 없음 | 맞음 — `/select` 는 승인만, 일반 승인 부품(`human:approve`)만 반려 값을 냄. `REJECTED_BY_OPERATOR` 종결은 이미 있었다(`machine.on_reject`, 결과 보고 등급 `rejected` → `machine.on_result_report`) — 새 종결을 만들지 않고 이것을 썼다 |
+| 흐름 사전 검사가 승인 앞 설비 명령 · 끊긴 선을 거절 | 이미 있음(`bpmn_import.check`: "…부품 앞 경로에 사람 승인이 없습니다", `_graph_problems` "끊긴 선"). 반려 경로 검사는 일반 승인 부품에만 있었다 → 조치 카드 승인까지 넓힘 |
+| 발주 뒤 메일만 보내는 부품이 있는지 미확인(불분명 3) | 있음 — `svc:mcp-call`(hyd-effects.send_mail). 발주와 메일을 두 task 로 나눴다 |
+| 업무 백엔드가 납기 지연 · 계수기 리셋을 지원 | 메모리 · Supabase 둘 다 지원(`entsim/state.py`, 마이그레이션 45 `ent.exec_skill`) — **새 마이그레이션 없음**(052 안 씀) |
+| 조치 미달 = "조치로 회복되지 않는 세기의 열화" | **쿨러 열화 세기만으로는 불가능**(계산 · 시험 `test_cooler_fouling_alone_cannot_…`): 조치(팬 100 · 부하 80)가 55 ℃ 로 못 내리는 세기(건전도 ≤ 0.32)는 조치 전에 65 ℃ 보호 정지(건전도 < 0.50)를 넘는다. 시간에 기대는 점진 열화는 20배속에서 에이전트 · 사람 시간에 따라 흔들린다. → 원인을 "팬 구동부가 지령을 따르지 않음"으로 정했다(아래 2.3) |
+
+## 2. 한 일 (커밋 5f67aec)
+
+### 2.1 흐름 세 개 — `scripts/c3_flows.py` (정의 id · 파일 이름은 그대로 c3_cooling · c3_pm · c3_spare)
+- **설비 결함 인지 · 조치**: 경보 → 제안 → 운전원 승인 ◇ 승인: 냉각 명령 → 재관측 ◇ 정상: 작업지시 → 결과 보고(정상) → `E_ok` / 미달: 결과 보고(미달) → `E_fail`. ◇ 거절: 결과 보고(반려) → `E_rejected`. 끝 이벤트를 결말마다 따로 두었다(92행 "올바른 종료점").
+- **정기 정비**: 정비 제안 → 보전팀장 승인 → 정비 오더 · 생산 공지(`task:work-order` + 메일) → 예약 시각 대기(`svc:wait` until `work_order.after.window_starts_at`) → 정비(`svc:maintenance` component pump — PM-2.6 2,000 h 패키지의 주 펌프 씰 교체) → 시운전 확인(`svc:test-run`) ◇ 정상: 결과 보고(다음 정비 시점 갱신) / 미달: 결과 보고(갱신 안 함).
+  시운전 기준 · 시간은 매뉴얼 PM-02 의 PM-2.9 그대로(PS1 ≥ 178 bar · FS1 ≥ 8.8 l/min · VS1 < 1.2 mm/s, 15분) — 전에는 부품 기본값(경보선 165 · 8.0)이었다. 시험이 매뉴얼 글과 흐름 설정을 대조한다.
+- **예비품 구매**: 구매 제안 → 구매 담당 승인 → ERP 발주(`svc:erp-po`) → 공급사 메일(`svc:mcp-call`, 인자에 발주 번호 · 품목 · 수량 · 입고 예정) → 입고 대기 · 확인(`svc:goods-receipt`, 납기 기한 경계 타이머 `P6D`) → 결과 보고(입고 완료) / 타이머 → 결과 보고(지연).
+- 정비 · 구매의 승인 단계는 승인만 하는 부품(`task:select`) 그대로다 — 실라버스 110 · 113행 그림에 거절 가지가 없다(아래 "사용자 확인 필요" 3).
+- 실제 대기 시간(TIME_SCALE 20 × 수업 압축 60, 라이브 컨테이너 값 확인): 예약 시각까지 9 h → 27초, 시운전 15분 → 45초(배속만), 리드타임 5일 → 6분, 납기 기한 6일 → 7.2분.
+
+### 2.2 조치 카드 거절
+- 부품 `task:select-or-reject`("조치 카드 승인 · 거절", `bpmn_import._rejectable`): `task:select` 계약 + `approval`('승인'|'반려') · `approval_reason`. `task:select`(승인만)과 그것으로 등록된 흐름 · 기준 정의는 그대로다(전부 always-on 으로 바꾸면 이미 내보낸 구성 묶음 · B7 · C2 흐름이 사전 검사에서 거절된다 — 해 보고 되돌림: 78개 시험 실패).
+- 런타임 `InstanceRuntime.reject_card`(instances.py) · API `POST /api/todolist/{id}/reject-card`: 승인 값(`approved_*` · `commands` · `chosen_option`)을 비우고 `{approval: 반려, approval_reason}` 만 제출 → 흐름의 반려 가지. 권한 = 그 판단의 안을 하나라도 승인할 수 있는 역할(`decisions.may_approve`)의 구성원. 사유 필수. 판단 원문은 커밋 뒤 REJECTED. 거절 값을 내지 않는 흐름에서는 사유와 함께 거절(400).
+- 승인(`select`)도 같은 단계에서는 `approval: 승인`을 함께 낸다(분기 조건 `approval == '승인'`).
+- 사전 검사(`bpmn_import.check`): ① 반려(또는 조건 없는) 경로로 효과 부품에 닿으면 거절(일반 승인과 같은 검사를 조치 카드 승인에도) ② 경보로 시작한 흐름의 반려 경로가 결과 보고(반려) 없이 끝나면 거절(사건이 승인 대기로 열린 채 남음) ③ 한 흐름에 두 승인 부품을 섞으면 거절(같은 폼 id).
+- 사건은 결과 보고(반려)가 `REJECTED_BY_OPERATOR` 로 닫는다(기존 `machine.on_result_report` 의 rejected 등급).
+
+### 2.3 수업 입력 — 원인 쪽 (결과 값을 넣지 않는다)
+| 결말 | 입력 | 시뮬레이터에서 바뀌는 원인 | 결말에 이르는 실제 판정 |
+|---|---|---|---|
+| A 조치 미달 | `POST /api/scenario/A/degrade-stuck-fan` | plant-sim `fan_drive_fault`: 팬 한계 60 %(= 평소 팬 속도) + 쿨러 열화 moderate. 경보까지는 보통 주입과 같은 물리 | 승인한 팬 100 % 명령을 PLC 가 접수(DONE)해도 팬이 60 % 에 머묾 → 재관측 창 끝 유온 ≥ 55 ℃ → 사건 ESCALATED → 결과 보고(미달) |
+| B 시운전 미달 | `POST /api/scenario/B/poor-maintenance` | plant-sim `maintenance_defect`: HYD-02 의 **다음 정비**가 내부 누설 0.05 를 남김(지금 값은 그대로) | 정비 뒤 PS1 ≈ 175.5 bar · FS1 ≈ 8.55 l/min → PM-2.9 기준 미달(경보선보다는 높아 새 경보 없음) → 계수기 리셋 안 함 → 결과 보고(미달) |
+| C 납기 초과 | `POST /api/scenario/C/delay-delivery` | enterprise-sim `skill:delay-delivery`: 열린 발주의 입고 예정이 늦어짐 | 입고 대기가 늦어진 예정을 다시 읽어 더 기다림 → 납기 기한 타이머가 먼저 → 입고 기록 없이 결과 보고(지연) |
+- `[쿨러 복구]`(`/api/scenario/A/restore`)는 쿨러 · 팬 구동부 복구에 더해 팬 · 부하 지령을 평소 운전점으로 되돌린다(plant-sim `operating_point`). 전에는 조치 뒤 팬이 100 % 로 남아 **두 번째 열화 주입이 경보를 내지 못했다**(평형 49.8 ℃) — 세 결말을 이어서 돌릴 수 없던 원인.
+- B `[초기화]`는 HYD-02 설비 시뮬레이터도 되돌린다(예약된 정비 불량 해제 + 복구).
+- 수업 입력은 처리 건 기록에 "수업 입력 [버튼]" 줄(누가 · 언제 · 어떤 원인 · "결과 값을 넣지 않고 원인만")과 감사 기록(SCENARIO_BUTTON, class_input)으로 남는다. 처리 건을 열기 전에 누른 정비 불량 예약은 처리 건이 열릴 때 그 기록으로 옮긴다.
+
+### 2.4 처리 기록 (블랙박스 없음 — 93 · 113행)
+새 줄(모두 `data.name` · `data.content` 가 한국어): `WORK_ORDER_REGISTERED`(정비 오더 · 정비 시점 · 예약 시각을 다음 단계로), `PURCHASE_ORDERED`(발주 번호 · 품목 · 수량 · 공급사 · 금액 · 리드타임 · 입고 예정), `RECEIPT_WAIT`(무엇을 언제까지 기다리는지 `expecting`), `RECEIPT_MATCH`(입고 기록 ↔ 발주: 발주 번호 · 품목 · 수량), `PM_COUNTER_RESET`(다음 정비 시점 갱신) / `PM_COUNTER_KEPT`(미달 값 목록), `MAINTENANCE_DONE.simulator`(정비가 남긴 값), `APPROVAL_REJECTED`(거절 접수 · 사유 · "설비 명령 · 업무 거래 없음"). 공급사 메일은 `MCP_EFFECT_CALL` 입력에 발주 번호 · 입고 예정이 그대로 보인다.
+결과 보고 값: 다음 정비 시점(갱신 / 갱신하지 않음), 입고 기록 ↔ 발주(일치), 납기 초과 때 발주 번호 · "입고: 기한 안에 확인되지 않음".
+
+### 2.5 그 밖에 (NOW.md 3.3 중 같은 흐름에 걸린 것)
+- `svc:goods-receipt` 의 `immediate` 설정을 지웠다(단순판 전용 경로 — 쓰는 흐름이 없어짐. 낡은 설정을 주면 "모르는 설정 칸"으로 거절).
+- 입고 확인은 입고 기록이 발주와 일치할 때만 완료한다(`effect_parts.receipt_match`, 114행). 어긋나면 입고 task 가 사유와 함께 멈춘다.
+- 발주 카드에 붙던 `window: 즉시 (지금 정지하고 시행)`: 정비 작업지시(WO_CREATE)가 있는 작업지시 카드에만 붙게 고쳤다(`agentsvc/cards.py option_window`). A 의 작업지시 카드(SOP-COOL-14)는 그대로 — A 화면 고정본(`tests/fixtures/a_cards_before.json`)에 그 글이 있어 건드리지 않았다.
+- `svc:wait` 도 승인한 카드가 '즉시'면 예약 시각 대기를 건너뛴다(전에는 `svc:maintenance` 의 `until` 에만 있던 처리 — `_planned_wait` 로 합침).
+
+### 2.6 하지 않은 것 (사유)
+- **C 승인 순간 재확인이 설비 예측 문맥을 대조하는 문제**(`agentsvc/approval.py assess` 의 `forecasting.consent_changes` · `forecast` 비교): 코드를 읽어 확인만 했다. 승인 재확인(낡은 승인 차단)의 계약을 바꾸는 일이고 실측 재현이 없어 이번에 고치지 않았다. HYD-03 의 팬 · 부하 지령을 승인 사이에 바꾸지 않는 한 일어나지 않는다. → NOW.md 3.3 에 그대로 둔다.
+- **기준 흐름(anomaly_response)의 거절**: 기준 정의의 승인 단계는 거절 값을 내지 않는다(요청하면 사유와 함께 400). 기준 정의를 새 판으로 올리는 일이라 범위 밖.
+- **B · C 진행 중 [초기화]**: 사용자 결정 대기 그대로. 이제 B · C 가 몇 분씩 기다리므로 진행 중에 누를 일이 늘었다 — 아래 "사용자 확인 필요" 5.
+- bpmn.io 에서 열리는 참조 `.bpmn`(그림 좌표)은 묶음 4 몫 — `c3_flows.py export` 는 여전히 좌표가 없다.
+
+## 3. 시험
+- 새 파일 `tests/test_syllabus_flows.py`(47개): 일곱 결말을 실제 런타임 · 실제 Incident 로, 조치 미달 · 시운전 미달은 **실제 설비 모델(plantsim)이 낸 값**을 판정에 넣는다. 거절 권한 · 사유 · 두 번 거절 · 거절 값 없는 흐름, 사전 검사 5종, 발주와 어긋난 입고, 수업 입력 API 의 거절 사유, HTTP 경로.
+- 지운 파일 `tests/test_c3_bc_simplified.py`(단순판 기대값) — 그대로 유효한 시험 9개는 새 파일로 옮겼다. `test_c3_bc_review.py` · `test_c3_assembly.py` · `test_pump_fan.py` · `test_c2_execution.py`(업무 대역이 입고 행을 돌려주게) 갱신.
+- 뮤테이션 22개(구현을 일부러 깨뜨림) 모두 새 시험이 잡음: 거절이 승인 값을 냄 · 권한 검사 없음 · 승인 값 누락 · 승인 값 안 비움 · 판단 미표시 · 사전 검사 두 종 무력화 · 팬이 고장에도 지령을 따름 · 정비 불량 무시 · 어긋난 입고 통과 · 빈 칸을 일치로 · 지연 일수 부족 · 즉시 카드가 기다림 · 미달에도 계수기 리셋 · 시운전 기준을 경보선으로 · 구매 카드에 즉시 창 · 예약된 불량이 기록에 안 옮겨짐 · 수업 입력 표시 누락 · 입고 뒤 지연 허용 · B 초기화가 설비를 안 되돌림 · 발주 인계 기록 없음 · 복구가 운전점을 안 되돌림. (첫 회에 스크립트 쪽 pyc 가 남아 5개가 거짓 '잡음'으로 나와, 캐시를 끄고 다시 돌려 확인했다.)
+- 전체: **2106 통과 · 9 건너뜀 · 0 실패**(210초, 루트 `.venv`, `-p no:cacheprovider`).
+
+## 4. 포털 작업자에게 넘길 것 (`it/portal/www/**` 는 고치지 않았다)
+
+### 4.1 API 계약
+| 무엇 | 요청 | 응답 · 오류 | 권한 |
+|---|---|---|---|
+| 조치 카드 거절 | `POST /api/todolist/{workitem_id}/reject-card` body `{decision, by, role, reason}`(reason 1~2000자) | 200 `{instance, workitem, approval: "반려", rejected: true, …}` · 400 사유 없음(공백) · 이미 처리됨 · 그 흐름이 거절 값을 내지 않음 · 판단 불일치 · 403 권한 없음 · 404 없는 task · 422 reason 누락 | `by` 가 `user:*` 면 그 사람이 `role` 구성원이어야 하고, `role` 은 그 판단의 안을 하나라도 승인할 수 있는 역할(카드 승인자 또는 그보다 높은 등급). 승인(`/select`)과 같은 사람이 누를 수 있다 |
+| 거절할 수 있는 단계인지 | `GET /api/todolist/{id}` 의 흐름 정의에서 그 활동의 `outputData` 에 `approval` 이 있으면 [거절]을 보인다(없으면 숨김 — 누르면 400) | — | — |
+| 수업 입력 목록 | `GET /api/scenario/status` → `class_inputs: [{scenario, asset, path, button, outcome, when}]`(3개) | — | — |
+| A 조치 미달 | `POST /api/scenario/A/degrade-stuck-fan` body `{by, user_id?, roles?}`(다른 버튼과 같음) | `{ok, button, asset, at, injection_id, instance, plant: [주입 응답…], reanchored, class_input: "조치 미달"}` | 없음(다른 결함 실험 버튼과 같음) |
+| B 시운전 미달 | `POST /api/scenario/B/poor-maintenance` body `{by…}` | `{ok, button, asset, at, class_input: "시운전 미달", cause, instance(진행 중이면), plant}` · 409 그 처리 건의 정비가 이미 끝남 | 없음 |
+| C 납기 초과 | `POST /api/scenario/C/delay-delivery` body `{by…, days?}`(비우면 납기 기한을 넘기는 가장 작은 일수) | `{ok, button, asset, at, class_input: "납기 초과", cause, instance, purchase_order, days, transaction}` · 409 처리 건 없음 · 발주 전 · 이미 입고 · 400 days 범위(0 초과 60 이하) | 없음 |
+- **바뀐 응답**: `POST /api/scenario/A/{act}` 의 `plant` 가 객체 → **목록**(주입이 여러 개). `app.js` 는 지금 이 값을 읽지 않는다(`r.at` · `r.instance` 만).
+- 승인(`/select`) 응답 · 요청은 그대로.
+
+### 4.2 이름 바꿀 곳 (실라버스 표기)
+- `it/portal/www/app.js:256` `title: 'A 긴급 대응'` → 'A 설비 결함 인지 · 조치'
+- `it/portal/www/app.js:257` 버튼 `'정기 점검'` → `'정기 정비'`, `:258` 버튼 `'재고 보충'` → `'예비품 구매'`. 서버 값은 이미 바뀌었다(`/api/scenario/status` 의 `button` · `label`: '정기 정비' · '정기 정비 도래' / '예비품 구매' · '재고 보충 필요') — 화면이 서버 값을 쓰면 글자를 따로 둘 필요가 없다.
+- `it/portal/www/app.js:252-254` 주석("B · C 는 설비까지 가지 않는다")과 `:253` 표시 이름.
+- `it/portal/www/approvalCard.js:1` 주석의 "긴급 대응".
+- 처리 기록의 "수업 버튼 [정기 정비] …" 줄은 서버 값이라 새 처리 건부터 새 이름이다(옛 처리 건은 옛 글 그대로).
+- 흐름 이름은 서버가 준다(설비 결함 인지 · 조치 / 정기 정비 / 예비품 구매).
+
+### 4.3 화면에 새로 필요한 것
+- 조치 카드 승인 패널(`instances.js renderSelectPanel`)에 [거절] + 사유 칸(4.1). 일반 승인 패널(`renderApprovePanel`)의 반려와 같은 모양이면 된다.
+- 결함 실험 화면에 수업 입력 버튼 3개(`class_inputs` 를 그대로 그리면 된다. `when` 이 누를 때의 안내 글).
+- 새 기록 줄의 일반인 말(`plainWords.js`): `WORK_ORDER_REGISTERED` · `PURCHASE_ORDERED` · `RECEIPT_MATCH` · `PM_COUNTER_RESET` · `PM_COUNTER_KEPT` · `WAIT_SKIPPED`, 그리고 `SCENARIO_BUTTON` 줄의 `class_input` · `cause`(수업 입력 표시). 줄마다 `data.name` · `data.content` 가 한국어라 사전이 없어도 읽히지만 `handed_over` · `expecting` · `match.rows` 는 표로 그리는 편이 낫다.
+- `caseRecord.js:188` "이 흐름은 업무 시스템에서 끝납니다 — … 정비 수행 · 시운전 단계가 없습니다": 정기 정비에는 이제 나오지 않는다(설비 단계가 있어 `plantBound`). 예비품 구매에는 그대로 나온다 — 글이 맞는지 한 번 볼 것("입고 대기"가 있다는 말은 없다).
+- 흐름 가져오기 부품 목록에 "조치 카드 승인 · 거절"이 새로 보인다(서버 카탈로그). 분기 조건 값으로 `approval` 을 고를 수 있는지(값 목록 '승인' · '반려') 화면에서 한 번 확인.
+- 승인 지연 · 거절 · 미달 끝 이벤트 이름: `E_ok` 정상 종료 · `E_fail` 미달 종료 · `E_rejected` 거절 종료 · `E_late` 지연 종료(전에는 모두 `E_end`).
+
+## 5. 사용자 확인 필요
+1. **A 조치 미달의 원인을 "팬 구동부 고장"으로 정했다.** 지시 예시는 "조치로 회복되지 않는 세기의 열화"였지만 쿨러 열화 세기만으로는 물리적으로 나오지 않는다(1절 마지막 줄). 지식 그래프에는 이 원인이 없다(스키마 v2 고정 — 에이전트는 진단하지 못하고, 재관측이 찾아낸다: "명령 접수 ≠ 조치 완료", 103행). 다른 원인을 원하면 알려 달라.
+2. **A 거절 뒤**: 결과 보고(반려)로 닫고 사건은 '운전원 거부'. 상급자 확인으로 넘기지 않는다(가장 좁은 해석). 설비는 경보 상태로 남는다 — 강사가 [쿨러 복구]를 누른다.
+3. **정기 정비 · 예비품 구매에는 거절 가지를 넣지 않았다**(실라버스 110 · 113행 그림에 없음). 넣으려면 승인 부품을 `task:select-or-reject` 로 바꾸고 분기 하나를 더하면 된다.
+4. **"시운전 미달이면 정비 오더를 닫지 않는다"(PM-2.9)와 다르다**: 지금 정비 부품은 정비 때 작업지시를 완료 처리한다(부품 소모와 한 거래). 미달이어도 CMMS 작업지시는 '완료'다. 고치려면 CMMS 거래를 나눠야 한다(완료 ≠ 부품 소모) — 하지 않았다.
+5. **정기 정비의 사건은 정비 오더 등록 때 닫힌다**(기존 사건 모델: 작업지시 = 종결). 시운전 미달은 처리 건의 결과 보고에만 남고 사건은 CLOSED 다. 예비품 구매는 입고 때 닫히고 지연이면 ESCALATED 다.
+6. **B · C 진행 중 [초기화]**(NOW.md 4절 대기 항목): 이제 B 는 약 1.5분, C 는 6~7분 기다린다. 진행 중에 [초기화]를 누르면 업무 값 · 설비만 되돌고 처리 건은 계속 간다. 거절할지 결정이 필요하다.
+7. **예비품 구매의 기다림이 길다**(정상 입고 6분, 납기 초과 7.2분 — 수업 압축 60배). 114행 40분 안에 두 번 돌리면 약 16분이다. 줄이려면 `PROCESS_WAIT_COMPRESSION` 을 올리면 된다(정비 대기도 같이 줄어든다).
+8. 실라버스 109 · 112행의 "기존 처리 기록"은 강사가 미리 한 건씩 돌려 둔 기록으로 가정했다(내보내기 · 가져오기 기능은 만들지 않았다).
