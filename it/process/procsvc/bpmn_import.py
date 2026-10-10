@@ -5,7 +5,8 @@
   parse_bpmn(xml)            표준 xml 파서(xml.etree)로 task · 시작/끝/경계 타이머 · exclusive/parallel gateway · sequenceFlow ·
                              lane 을 읽는다. 지원하지 않는 요소는 요소 id · 이름과 사유로 problems 에 남긴다.
   catalog(base, users)       부품 목록. 시나리오 부품은 **기준 정의 파일의 activity 에서 읽어 만든다**(폼 · 입출력 · orchestration
-                             계약을 그대로) — 코드에 부품 내용을 복사해 두지 않는다. 일반 부품: 사람 task · 에이전트 task.
+                             계약을 그대로) — 코드에 부품 내용을 복사해 두지 않는다. 일반 부품: 사람 task · 에이전트 task ·
+                             사람 승인(안 고르기, approval_part) · 승인 뒤 실행 부품(effect_parts).
   merge_mapping(parsed, old) 다시 가져오기: 같은 task id(·lane · 선 · 타이머 id)의 앞선 매핑을 유지한다.
   check(parsed, mapping, ctx) 정의 JSON 을 만들고 사전 검사(칸 위치와 사유): 부품 · 담당 · 값 연결 · 설비 명령 앞 사람 승인 ·
                              끝 닫힘 · 분기 조건 · 끊긴 선 · 되돌아가는 선(루프). 통과하면 등록 검사(validate_definition)까지.
@@ -25,7 +26,7 @@ import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 
-from . import engine, effect_parts
+from . import engine, effect_parts, approval_part
 from .definition_registry import PROTECTED_OUTPUTS, validate_definition
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -54,15 +55,16 @@ KIND_LABEL = {"task": "작업", "event": "이벤트", "start": "시작", "end": 
 #   경보: instances.InstanceRuntime.start_definition 이 경보에서 넣는 값(values.update(asset, alert, alert_id, pattern, incident)).
 #   사람 입력/직접 시작: 시작 폼 칸.
 ALERT_START_VALUES = ("asset", "alert", "pattern", "alert_id", "incident")
-# 사람 승인(조치 선택)이 끝나면 서버 승인 경로가 넣는 값(PROTECTED_OUTPUTS 중 Incident 를 뺀 것).
-APPROVAL_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident"}))
+# 사람 승인(조치 선택)이 끝나면 서버 승인 경로가 넣는 값(PROTECTED_OUTPUTS 중 Incident 와 일반 승인의 고른 안을 뺀 것).
+# 일반 사람 승인(안 고르기)이 넣는 값은 approval_part.SERVER_VALUES — 부품마다 server_values 로 싣는다.
+SELECT_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident", "approved_option"}))
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
 EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시",   # 바깥 시스템에 효과를 내는 서비스
                 **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
 # C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
 SERVER_VALUE_TYPES = {"approved_amount": "Number", "approved_qty": "Number", "approved_unit_price": "Number",
-                      "approved_supplier": "Text", "approved_part_no": "Text"}
+                      "approved_supplier": "Text", "approved_part_no": "Text", "approved_option": "Object"}
 FIELD_TYPES = ("text", "textarea", "number", "integer", "boolean", "select", "object", "array")
 DATA_TYPE = {"text": "Text", "textarea": "Text", "select": "Text", "number": "Number", "integer": "Number",
              "boolean": "Boolean", "object": "Object", "array": "Array"}
@@ -285,6 +287,7 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                       "form": deepcopy(forms.get(form_id)) if form_id else None,
                       "inputs": list(a.get("inputData") or []), "outputs": list(a.get("outputData") or []),
                       "approval": tool == APPROVAL_TOOL, "effect": EFFECT_TOOLS.get(tool),
+                      "server_values": list(SELECT_SERVER_VALUES) if tool == APPROVAL_TOOL else [],
                       "default_timer": timers[0] if timers else None, "contract": contract})
     # C2 (확정 흐름 2026-10-09): '판단 · 제안' 에이전트 task 하나 — 기준의 순위 · 카드 작성(task:rank) 계약을 그대로 쓰되(같은 폼 · 같은 결과
     # decision · decision_id, 승인 경로가 믿는 값), 앞 단계 없이 경보 값만 받는다. 에이전트가 그 안에서 진단 → 후보 → 규정 → 순위(evaluate_cards)를
@@ -310,7 +313,8 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     general = [{"key": "human", "group": "general", "name": "사람 task", "kind": "human",
                 "help": "담당 역할 · 폼 칸을 정합니다. 폼 칸이 이 task 가 내는 값입니다."},
                {"key": "agent", "group": "general", "name": "에이전트 task", "kind": "agent",
-                "help": "맡길 에이전트 · 지시문 · 결과 값 이름을 정합니다. 승인 전 에이전트는 조회 · 계산 · 보고서만 합니다."}]
+                "help": "맡길 에이전트 · 지시문 · 결과 값 이름을 정합니다. 승인 전 에이전트는 조회 · 계산 · 보고서만 합니다."},
+               deepcopy(approval_part.PART)]                  # 캡스톤 G1: 에이전트가 낸 안 중 하나를 고르고 승인 · 반려
     # C2: 승인 뒤 실행 부품(시스템 task) — 시나리오에 묶이지 않은 일반 부품. 설정은 매핑의 tasks[<id>].config (effect_parts.PARTS 의 config 설명)
     general += [{"key": key, "group": "general", "name": spec["name"], "kind": "service", "tool": spec["tool"],
                  "effect": EFFECT_TOOLS.get(spec["tool"]), "approval": False, "outputs": list(spec["outputs"]),
@@ -352,8 +356,7 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
             "business_patterns": list(business),
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
             "data": {d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")},
-            "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES),
-            "approval_values": list(APPROVAL_SERVER_VALUES)}
+            "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES)}
 
 
 # ---------------------------------------------------------------- 3. 매핑 (기본값 · 다시 가져오기)
@@ -638,13 +641,20 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 effect_parts.validate(a)
             except ValueError as e:
                 problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
-        elif key == "human":
-            rname = m.get("role") or lane_r
-            r = roles.get(rname or "")
+        elif key == approval_part.KEY:                       # 캡스톤 G1: 일반 사람 승인(안 고르기) — 설정은 tasks[<id>].config
+            r = _human_role(m.get("role") or lane_r, roles, t, problems)
             if r is None:
-                problems.append(problem(t, "role", "담당 역할을 고르세요 (칸 이름이 역할 이름과 다르면 직접 고릅니다)")); continue
-            if not r["human"]:
-                problems.append(problem(t, "role", f"'{rname}'은(는) 사람 역할이 아닙니다 — 시스템 · 에이전트 일은 해당 부품을 고르세요")); continue
+                continue
+            a = approval_part.activity_for(t, m.get("config"), inputs, r["name"])
+            try:
+                approval_part.validate(a)
+            except ValueError as e:
+                problems.append(problem(t, "config", str(e).split(": ", 1)[-1])); continue
+            forms[approval_part.FORM_ID] = deepcopy(approval_part.FORM)
+        elif key == "human":
+            r = _human_role(m.get("role") or lane_r, roles, t, problems)
+            if r is None:
+                continue
             fields = _fields(m.get("fields"), t, "fields", problems)
             if fields is None:
                 continue
@@ -683,7 +693,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         activities.append(a)
         if a.get("role") and a["role"] not in used_roles:
             used_roles.append(a["role"])
-        outs = list(a.get("outputData") or []) + (list(APPROVAL_SERVER_VALUES) if p.get("approval") else [])
+        outs = list(a.get("outputData") or []) + list(p.get("server_values") or [])
         for v in outs:
             produced_by.setdefault(v, []).append(t["id"])
     acts = {a["id"]: a for a in activities}
@@ -806,7 +816,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
 
     # -- 안전: 효과 부품(설비 명령 · 작업지시) 앞 경로에 사람 승인(조치 선택)이 있는가
     approvals = {a["id"] for a in activities if a["_part"].get("approval")}
-    approval_name = next((p["name"] for p in cat["parts"] if p.get("approval")), "사람 승인")
+    approval_name = "' 또는 '".join(dict.fromkeys(p["name"] for p in cat["parts"] if p.get("approval"))) or "사람 승인"
     if start_node:
         free = g.reach([start_node["id"]], stop=lambda n: n in approvals)
         for a in activities:
@@ -887,6 +897,18 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                                     "registration", f"등록 검사: {e}"))
     return {"ok": not problems, "problems": problems, "definition": raw, "available": available,
             "loops": [sorted(c) for c in loops]}
+
+
+def _human_role(rname: str | None, roles: dict, t: dict, problems: list) -> dict | None:
+    """사람 task 의 담당 역할(고른 역할, 없으면 칸 이름과 같은 역할). 없거나 사람 역할이 아니면 problems 에 사유를 남기고 None."""
+    r = roles.get(rname or "")
+    if r is None:
+        problems.append(problem(t, "role", "담당 역할을 고르세요 (칸 이름이 역할 이름과 다르면 직접 고릅니다)"))
+        return None
+    if not r["human"]:
+        problems.append(problem(t, "role", f"'{rname}'은(는) 사람 역할이 아닙니다 — 시스템 · 에이전트 일은 해당 부품을 고르세요"))
+        return None
+    return r
 
 
 def _form_id(task_id: str, forms: dict) -> str:

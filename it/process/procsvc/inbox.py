@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 
 from hydcommon.timeutil import parse_iso
 
+from . import approval_part
+
 log = logging.getLogger("process.inbox")
 
 PERSON = "user:"
@@ -211,7 +213,7 @@ def _kind(rt, inst, w) -> str:
         tool = (rt.definition_for(inst).activities.get(w["activity_id"]) or {}).get("tool") or ""
     except (LookupError, ValueError):
         tool = ""
-    return "select" if tool == "formHandler:select_card" else "form"
+    return {"formHandler:select_card": "select", approval_part.TOOL: "approve"}.get(tool, "form")
 
 
 def _item(rt, inst, w, timers, kind, assignment, now=None) -> dict:

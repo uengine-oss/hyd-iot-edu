@@ -33,6 +33,7 @@ const pick = (file, re) => { const m = fs.readFileSync(path.join(www, file), 'ut
 vm.runInContext(pick('app.js', /^const PATTERN_LABEL = .*;$/m), ctx);
 vm.runInContext(pick('enterprise.js', /^const ACTION_KO = [\s\S]*?\n}\n/m) + '\nwindow.hydCards = { actionLabel };', ctx);
 vm.runInContext(fs.readFileSync(path.join(www, 'trace.js'), 'utf8'), ctx, { filename: 'trace.js' });   // A161-U1: 처리 과정 행은 trace.js 와 같은 그리기
+vm.runInContext(fs.readFileSync(path.join(www, 'approvalCard.js'), 'utf8'), ctx, { filename: 'approvalCard.js' });   // 캡스톤 G7: 사람 승인(안 고르기) 카드
 vm.runInContext(fs.readFileSync(path.join(www, 'taskDetail.js'), 'utf8'), ctx, { filename: 'taskDetail.js' });
 
 (async () => {

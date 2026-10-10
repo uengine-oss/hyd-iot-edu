@@ -40,7 +40,8 @@ EFFECTS = {MCP_TOOL: "MCP 쓰기(메일)", PR_TOOL: "ERP 발주", RESTORE_TOOL: 
 TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}
 TEST_RUN_OPS = (">=", ">", "<=", "<")
 #: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · info 알림만, 사건은 그대로)
-REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info"}
+#: 반려(캡스톤 G1 사람 승인의 반려 가지)는 실행하지 않았다는 알림이다 — 사건이 있으면 그대로 둔다(사람이 조치를 거절했을 뿐 사건은 남는다)
+REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info", "반려": "info"}
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")         # mcp_registry.NAME_RE 와 같음
 TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -100,7 +101,7 @@ PARTS = {
         "tool": REPORT_TOOL, "name": "결과 보고", "outputs": ["result_report"],
         "help": "처리 결과(정상 · 미달 · 지연 · 알림)를 담당자 화면에 알리고 기록합니다. 정상 · 미달은 사건을 닫고, 알림은 사건을 그대로 둡니다. "
                 "사람 task 가 아닙니다 — 담당자는 보기만 합니다.",
-        "config": {"outcome": "결과: 정상 · 입고 완료 · 미달 · 지연 · 알림 · 승인 지연", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
+        "config": {"outcome": "결과: 정상 · 입고 완료 · 미달 · 지연 · 알림 · 승인 지연 · 반려", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
                    "summary": "요약 틀 — 처리 건 값 {이름} 을 넣는다. 없는 값은 '(없음)'"},
     },
 }

@@ -123,6 +123,7 @@
     const task = I.taskView;
     if (!task) { box.innerHTML = ''; return; }
     if (task.tool === 'formHandler:select_card') { renderSelectPanel(task); return; }
+    if (task.tool === 'formHandler:approve') { renderApprovePanel(task); return; }
     const fields = task.form && task.form.fields_json;
     if (!fields) { box.innerHTML = `<div class="neg">${esc(UI.t('inst.noForm'))}</div>`; return; }
     if (I.fieldTask !== task.id) { I.fieldTask = task.id; I.fieldValues = {}; }
@@ -250,6 +251,42 @@
     on('tdReason', 'input', e => I.form.reason = e.target.value);
     on('tdGo', 'click', () => selectCard(task));
     on('tdPreview', 'click', () => previewCard(task, parameters));
+  }
+
+  /* 캡스톤 G1 · G7 사람 승인(안 고르기): 에이전트 제안 카드(추천 1 + 지는 안 펼치기) → 승인 한 번(반려는 사유와 함께). 승인자 = "나" */
+  function renderApprovePanel(task) {
+    const box = $('#todoPanel');
+    if (I.form.approveFor !== task.id) { I.form = { ...I.form, option: null, reason: '', approveFor: task.id }; I.msg = ''; }
+    const act = ((I.view && I.view.instance.proc_inst_id === task.proc_inst_id && I.view.definition) || {}).activities?.find(a => a.id === task.activity_id);
+    if (!act) { box.innerHTML = `<section class="todo-panel"><h3>${esc(UI.flowName(task.activity_name))}</h3><p class="muted">${esc(UI.t('loading'))}</p></section>`; return; }
+    const m = window.hydApprove.proposal(task.inputs, act.approval);
+    if (!I.form.option && m.usable) I.form.option = String(((m.rec || m.options[0]) || {})[m.key]);
+    const endpoint = (((I.view.definition || {}).roles || []).find(r => r.name === act.role) || {}).endpoint || '';
+    const who = window.hydInbox && window.hydInbox.whoFields('td', I.form, [[endpoint, { name: UI.who(endpoint) }]], { reasonHint: '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.' });
+    const timer = timerFor(task);
+    const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
+    const ready = !!who && !I.busy;
+    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.who(endpoint) : UI.who(task.user_id))}</span>${dueS != null ? UI.chipText(`기한까지 ${dueS < 60 ? dueS + '초' : Math.round(dueS / 60) + '분'}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
+      ${window.hydApprove.proposalHtml(m, I.form.option, { pending: true })}
+      <div class="form">${who || `<p class="field-hint">승인하려면 먼저 내 작업함에서 나를 고르세요 — 누가 승인했는지 모르는 승인은 서버가 받지 않습니다.</p>`}
+      ${UI.actions(`<button class="btn ghost" id="tdReject" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`,
+        I.msg || (!m.usable ? '고를 안이 약속과 달라 승인할 수 없습니다 — 반려하거나 에이전트 단계를 다시 하세요' : ''))}</div></section>`;
+    box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.msg = ''; renderTodoPanel(); });
+    box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.msg = ''; renderTodoPanel(); }));
+    $('#tdRole')?.addEventListener('change', e => { I.form.role = e.target.value; I.msg = ''; });
+    $('#tdReason')?.addEventListener('input', e => I.form.reason = e.target.value);
+    $('#tdGo').addEventListener('click', () => approveTask(task, '승인'));
+    $('#tdReject').addEventListener('click', () => approveTask(task, '반려'));
+  }
+
+  async function approveTask(task, decision) {
+    if (I.busy) return; I.busy = true;
+    try {
+      await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/approve`, { decision, option: decision === '승인' ? I.form.option : null,
+        by: I.form.by, role: I.form.role, reason: I.form.reason });
+      I.msg = ''; I.form.approveFor = null;
+    } catch (e) { I.msg = e.message; }
+    finally { I.busy = false; await load(true); }
   }
 
   async function previewCard(task, parameters) {

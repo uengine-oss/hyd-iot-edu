@@ -195,6 +195,10 @@
     } else if (part && part.key === 'human') {
       detail = `<textarea data-fields="${h(t.id)}" rows="2" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류">${h(fieldsText(m.fields))}</textarea>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
+    } else if (part && part.key === 'human:approve') {     // 캡스톤 G1: 고를 안이 든 값 · 구분 칸 · 추천 · 지는 안 · 근거 자료 (part.config 가 칸 설명)
+      const cfg = m.config || {};
+      detail = Object.entries(part.config).map(([k, hint]) => `<input data-approval="${h(t.id)}" data-cfg="${h(k)}" value="${h(cfg[k] || '')}" placeholder="${h(k)} — ${h(hint)}">`).join('')
+        + `<p class="kv-line">받을 수 있는 값 ${avail(t.id).map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 <code>approval</code> <code>approval_reason</code> · <b>사람 승인</b></p>`;
     } else if (part && part.key === 'agent') {
       detail = `<textarea data-instruction="${h(t.id)}" rows="2" placeholder="지시문 — 무엇을 조회 · 계산해 무엇을 낼지">${h(m.instruction || '')}</textarea>
         <textarea data-outputs="${h(t.id)}" rows="2" spellcheck="false" placeholder="결과 값 — 값이름 | 표시 이름 | 종류">${h(fieldsText(m.outputs))}</textarea>
@@ -267,6 +271,7 @@
     set('outputs', (t, x) => { t.outputs = parseFields(x.value); });
     set('instruction', (t, x) => { t.instruction = x.value.trim(); });
     set('inputs', (t, x) => { t.inputs = x.value.split(',').map(s => s.trim()).filter(Boolean); });
+    set('approval', (t, x) => { t.config = t.config || {}; if (x.value.trim()) t.config[x.dataset.cfg] = x.value.trim(); else delete t.config[x.dataset.cfg]; });
     box.querySelectorAll('[data-timer]').forEach(x => { const iso = isoOf(x.value); if (iso) m.timers[x.dataset.timer] = iso; else delete m.timers[x.dataset.timer]; });
     box.querySelectorAll('[data-default]').forEach(x => {
       const id = x.dataset.default;
