@@ -187,6 +187,19 @@ def scope_to_ns(records_nodes, records_rels, ns: str, student_classes=()):
     return nodes, rels
 
 
+def base_scope(records_nodes, records_rels):
+    """수업 기준 검사(validate, --extra 없음)의 범위: 이름 공간이 없는 노드와 그 노드끼리의 관계. 학생 노드와 거기 닿는 관계(다리 관계 포함)는
+    학생 검사(validate --extra) 몫이라 여기서 빼고, 이름 공간별로 몇 개를 뺐는지 돌려준다 — 학생 적재가 반 전체 검사를 깨지 않는다."""
+    skipped: dict[str, int] = {}
+    for n in records_nodes:
+        ns = n["props"].get(NS_PROP)
+        if ns is not None:
+            skipped[str(ns)] = skipped.get(str(ns), 0) + 1
+    nodes = [n for n in records_nodes if n["props"].get(NS_PROP) is None]
+    ids = {n["props"].get("id") for n in nodes}
+    return nodes, [r for r in records_rels if r["a"] in ids and r["b"] in ids], skipped
+
+
 def validate_ns(records_nodes, records_rels, base: dict, extra: dict) -> list[str]:
     """학생 이름 공간 검사: 학생 파일 형식 → 내 노드 · 관계를 v2 + 학생 스키마로 → ns 규칙. ns 속성은 모든 클래스에 허용한다.
     내 노드가 0개면 통과가 아니라 실패다(빈 성공 금지 — 다른 그래프에 붙었거나 적재 전)."""
@@ -776,8 +789,10 @@ def cmd_validate(args) -> int:
     if getattr(args, "extra", None):
         return cmd_validate_ns(args)
     s = load_schema()
-    nodes, rels = _graph_rows(args)
+    nodes, rels, skipped = base_scope(*_graph_rows(args))
     errs = validate(nodes, rels, s)
+    for ns, count in sorted(skipped.items()):
+        print(f"namespace {ns!r}: {count} nodes skipped here — checked by validate --extra <that namespace's schema.json>")
     used = {l for n in nodes for l in n["labels"]}
     unused = [c["name"] for c in s["classes"] if c["name"] not in used]
     print(f"checked {len(nodes)} nodes, {len(rels)} relationships against {len(s['classes'])} classes / {len(s['relationships'])} relationship types")

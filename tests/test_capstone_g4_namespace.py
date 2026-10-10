@@ -112,6 +112,20 @@ def test_a_clean_student_slice_passes_and_base_nodes_are_out_of_scope():
     assert len(my_rels) == 4
 
 
+def test_the_base_check_skips_student_nodes_and_says_how_many():
+    """라이브 실측(K-capstone.md): 학생 이름 공간을 적재하면 수업 기준 검사(validate, --extra 없음)가 학생 노드 때문에 깨졌다."""
+    nodes, rels = _student_graph()
+    rels.append(_rel("ORGANIZED_BY", "s01:meeting-q3", ["Meeting"], "role:operator", ["Role"]))        # 다리 관계 — 한쪽이 학생 노드
+    nodes.append(_node(["OrgUnit"], id="org:ops", name="운전팀"))
+    rels.append(_rel("MEMBER_OF", "role:operator", ["Role"], "org:ops", ["OrgUnit"]))                  # 수업 기준끼리의 관계는 남는다
+    nodes.append(_node(["Role"], id="s02:organizer", name="다른 학생", level=1, ns="s02"))
+    assert any("s01:meeting-q3" in e for e in ov.validate(nodes, rels, BASE))                           # 거르지 않으면 학생 노드가 위반으로 나온다
+    base_nodes, base_rels, skipped = ov.base_scope(nodes, rels)
+    assert [n["props"]["id"] for n in base_nodes] == ["role:operator", "org:ops"] and [r["type"] for r in base_rels] == ["MEMBER_OF"]
+    assert skipped == {"s01": 5, "s02": 1}
+    assert ov.validate(base_nodes, base_rels, BASE) == []
+
+
 def test_ns_rules_catch_missing_ns_wrong_prefix_and_schema_violations():
     nodes, rels = _student_graph()
     nodes[0]["props"].pop("ns")                                                       # 학생 클래스인데 ns 없음

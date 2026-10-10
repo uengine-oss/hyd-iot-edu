@@ -294,7 +294,8 @@ def main(argv=None) -> int:
         return 0
 
     import neo4j
-    with neo4j.GraphDatabase.driver(a.uri, auth=(a.user, a.password)) as driver:
+    # 알림(없는 레이블 · 속성 경고)은 끈다 — 틀린 이름은 검사 위반이나 0행(못 답함)으로 드러난다
+    with neo4j.GraphDatabase.driver(a.uri, auth=(a.user, a.password), notifications_min_severity="OFF") as driver:
         if a.cmd == "ask":
             with driver.session(default_access_mode=neo4j.READ_ACCESS) as ses:
                 results = ask(lambda cypher, params: ses.execute_read(lambda tx: tx.run(cypher, params).data()), questions, ns)
