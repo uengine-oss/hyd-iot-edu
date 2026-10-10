@@ -169,7 +169,9 @@
       const pressed = biz && !!ev.trigger;                           // 업무 감시가 아니라 수업 버튼이 연 처리 건(근거 값은 감시와 같은 칸)
       const who = pressed ? (ev.requested_by || '나 미선택') : (alert.observedBy && alert.observedBy.name) || (biz ? `${String(alert.source).toUpperCase()} 감시` : '센서 경보 감지기');
       const defn = ev.definition || {};
-      const caseRows = rowsOf((ctx.byTodo.get('') || []).filter(x => CASE_LEVEL.has(x.job_id)));
+      // 버튼 기록 줄의 시각은 누른 때(data.at)다 — 기록 줄의 timestamp 는 처리 건에 붙인 때라 센서 경보로 열린 A 에서는 경보 뒤 시각이 된다
+      const caseRows = rowsOf((ctx.byTodo.get('') || []).filter(x => CASE_LEVEL.has(x.job_id)))
+        .map(r => r.job === 'SCENARIO_BUTTON' && r.data && r.data.at ? Object.assign(r, { t0: r.data.at }) : r);
       const plantBound = (ctx.view.definition && ctx.view.definition.activities || []).some(a => PLANT.test(a.tool || ''));
       const shown = biz ? Object.entries(ev).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object' && !/^(spare_below_min|pm_due)$/.test(k))
         : Object.entries(ev.values || {}).map(([k, x]) => [k.toLowerCase(), x]).concat(Object.entries(ev).filter(([k, x]) => /^(ts1|ce|ps1|fs1|vs1|load)$/.test(k) && typeof x === 'number' && !(ev.values || {})[k.toUpperCase()]));
@@ -338,6 +340,9 @@
     const rec = opts.find(o => o.id === d.recommended) || opts[0];
     const said = o => window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, o.name).replace(/^\s*\d+순위\s*/, '')) : '';
     const fc = o => (o.forecast || []).slice(0, 2).map(f => `${W().text(f.name)} ${W().num(+f.value)}${f.unit || ''}`).join(' · ');
+    // 카드마다 다른 사실(결정 수준에서는 "후보마다 계산"으로 비어 있는 값 — 발주 금액 · 공급사 불량률 등): 규칙이 이 값으로 감점 · 제외한다
+    const own = o => Object.entries(o.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object' && (d.facts || {})[k] == null)
+      .map(([k, x]) => `${W().fieldName(k)} ${W().value(k, x)}`).join(' · ');
     const why = o => {
       if (o.id === rec.id) return (window.hydApprove ? hydApprove.reasons(o) : []).join(' · ');
       if (!o.feasible) return `제외 — ${W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반')}`;
@@ -351,7 +356,7 @@
     const rows = opts.map(o => {
       const tag = o.id === rec.id ? UI.chipText('추천', 'success') : !o.feasible ? UI.chipText('제외', 'danger') : UI.chipText('짐', 'neutral');
       return `<li class="cr-alt ${o.id === rec.id ? 'win' : !o.feasible ? 'out' : ''}"><div class="cr-alt-head">${tag}<b>${e(W().text(o.name))}</b>${W().id(o.id)}<span class="num muted">${Number.isFinite(+o.score) && o.score !== null ? e(W().num(+o.score)) + '점' : ''}</span>${o.approver && o.approver.name ? `<span class="muted">승인 ${e(o.approver.name)}</span>` : ''}</div>
-        ${fc(o) ? `<p class="muted">예측 ${e(fc(o))}</p>` : ''}<p>${o.id === rec.id ? why(o) : e(why(o))}</p>${o.id !== rec.id && said(o) ? `<p class="cr-said">AI 일꾼: “${e(said(o))}”</p>` : ''}</li>`;
+        ${fc(o) ? `<p class="muted">예측 ${e(fc(o))}</p>` : ''}${own(o) ? `<p class="muted">이 안의 값 ${e(own(o))}</p>` : ''}<p>${o.id === rec.id ? why(o) : e(why(o))}</p>${o.id !== rec.id && said(o) ? `<p class="cr-said">AI 일꾼: “${e(said(o))}”</p>` : ''}</li>`;
     }).join('');
     return `<ol class="cr-alts">${rows}</ol>${d.explanation ? UI.fold('AI 일꾼의 판단 설명 전문', `<p class="prose">${e(W().text(d.explanation))}</p>`, { cls: 'small' }) : ''}`;
   }
@@ -612,7 +617,7 @@
         ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '작업지시', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
         ${rep.incident_closed != null ? `<p class="muted">사건 ${rep.incident_closed ? '닫음' : '그대로'} · 담당자 알림 보냄</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
-      if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
+      if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
     }
     sections.push(sec('결과 보고 원문', rawBlock(rep), { raw: true }));
     return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: '처리 엔진 → 담당자 알림',

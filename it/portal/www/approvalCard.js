@@ -39,7 +39,8 @@
   // 핵심 근거: 지식 그래프 경로 하나(조치 → … → 지표) + 출처 절(매뉴얼 · 규칙 근거)
   function evidence(o) {
     const path = (o.tradeoffEvaluation || []).find(p => (p.nodes || []).length > 1) || null;
-    const pathHtml = path ? path.nodes.map(n => `<span class="ap-node">${e(UI.name ? UI.name(n) : n)}</span>`).join('<span class="ap-arrow" aria-hidden="true">→</span>') : '';
+    // 경로의 첫 노드는 이 안(스킬) 자신이다 — 문서에서 적재한 스킬 id 는 정적 이름 사전(names.json)에 없으므로 카드의 이름을 쓴다
+    const pathHtml = path ? path.nodes.map(n => `<span class="ap-node">${e(n === o.id ? UI.idText(o.name || n) : UI.name ? UI.name(n) : n)}</span>`).join('<span class="ap-arrow" aria-hidden="true">→</span>') : '';
     const refs = new Map();
     (o.steps || []).forEach(s => { if (s.manual && s.manual.ref) refs.set(s.manual.ref, s.manual.title || ''); });
     (o.selectedBy || []).forEach(r => (r.sources || []).forEach(src => { if (!refs.has(src)) refs.set(src, ''); }));

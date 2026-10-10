@@ -42,9 +42,9 @@
     kit_part_no: ['키트 부품', ''], bundle_peer: ['함께 정비할 설비', ''], bundle_peer_since_h: ['함께 정비할 설비 운전시간', 'h'], pm_window_open: ['정비 시간 열림', ''],
     // 예비품 (ERP 재고 · 견적)
     part_no: ['부품 번호', ''], name: ['이름', ''], on_hand: ['현재고', '개'], reserved: ['정비 예약', '개'], available: ['가용 재고', '개'], on_order: ['입고 예정', '개'],
-    spare_gap: ['가용 재고', '개'], reorder_point: ['재주문점', '개'], target_stock: ['목표 재고', '개'], need_qty: ['필요 수량', '개'], need_by_days: ['필요일까지', '일'],
+    spare_gap: ['가용 재고 − 재주문점', '개'], reorder_point: ['재주문점', '개'], target_stock: ['목표 재고', '개'], need_qty: ['필요 수량', '개'], need_by_days: ['필요일까지', '일'],
     below_since: ['기준 아래로 내려간 시각', ''], spare_quotes: ['공급사 견적', ''], po_amount: ['발주 금액', '만원'], lead_slack_days: ['납기 여유', '일'],
-    supplier_fail_rate: ['공급사 불량률(비율)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''],
+    supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''],
     approved_unit_price: ['단가', '만원'], approved_part_no: ['부품', ''], lead_d: ['리드타임', '일'], delay_d: ['공급사 지연', '일'],
     // 업무 사실 (MES · ERP)
     due_in_h: ['납기까지', 'h'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/h'], alt_rate_per_h: ['대체 설비 시간당', '개/h'], alt_free_h: ['대체 설비 빌 때까지', 'h'],

@@ -103,3 +103,92 @@
 
 - F-3 "실패한 에이전트 task를 끝낼 API가 없다"는 틀린 진단이었다. `POST /api/todolist/{wid}/close`(포털 '단계 닫기', instances.close_agent_task)가 IN_PROGRESS + draft FAILED를 끝낸다. `/cancel`은 실행 중(STARTED) 실행을 멈추는 요청이라 거절이 맞다. 실제 결함은 추출 결과 API가 멈춘 실행을 '진행 중'으로 보고한 것 — ced4dee에서 고침(`manual-revision-fix.md` 4절).
 - F-1(278b722) · F-2(8429c29: 판단 이력은 지우지 않고 남는 노드는 제자리 개정) 고침. 라이브 재확인은 캡스톤 갈래 합친 뒤 한 번에.
+
+---
+
+# 3차 — F-1 · F-2 · F-3 수정 반영 뒤(스택 02:09Z 재빌드, 8090310) 다시 (2026-10-10 11:10~)
+
+## 3-1. neo4j 구조판 · 시드 — 검증됨
+- 11:10:23 neo4j → c3 볼륨(`neo4j-structure-up3.log`), kg-seed 구조판 exit 0, 25초(`kg-seed-structure3.log`). process StartedAt 02:09:19Z, RestartCount 0.
+
+## 3-2. PR-07 적재 — 검증됨 (200, 판단 이력 유지)
+- 적재 전 `skill:sop-pur-13` CHOSE 3건 elementId(`chose-before.txt`): 관계 `5:…:1736`(DEC-1009-006-c5bd) · `5:…:1459`(DEC-1009-010-618d) · `5:…:1803`(DEC-1009-030-84ab), 스킬 노드 `4:…:432`.
+- 추출 059b0927 결과 다시 읽기(`extraction-059b-reread.json`): `conflicts` **[]**(F-1 수정 효과), `knowledge_conflicts` [], `previous_batch` 0092c109. 새 추출 불필요.
+- 11:11:17 `commit PR-07 --review review3-PR-07.json` → **200**(`commit4-PR-07.log`, `ingest4-PR-07.json`). 영수증 `history_kept` = `[{node: "Skill skill:sop-pur-13", type: "CHOSE", count: 3}]`, 새 배치 `6d921c06-…`.
+- 적재 뒤(`kg-after-commit4.txt`): CHOSE 3건의 관계 · 사례 · 스킬 elementId가 **적재 전과 같다**(제자리 갱신). 문서 head = `6d921c06…`. `rule:pur*` 6개 = 제안의 6개(옛 배치에만 있던 규칙 0 — 옛 5개는 같은 id로 제자리 갱신, 새로 `rule:pur-penalty-full-inspection` `supplier_fail_rate > 0.1 and supplier_avl == true` PENALTY 20 → msr:cost, APPLIES_TO 11 · 12 · 13). `skill:sop-pur-13 -CONSISTS_OF {value: "sup:c"}-> action:purchase-request`.
+
+## 3-3. 흐름 배포 · 워커 — 검증됨
+- 11:11:50 `c3_flows.py deploy` → c3_cooling · c3_pm · c3_spare 사전 검사 ok, 판 4 배포(`flows-deploy.log`).
+- 워커 1개(PID 94132, 8097, `worker3.log`, `PYTHON=../agent-afd136e4b22934cb9/.venv/bin/python bash scripts/run_worker_host.sh`).
+
+## 3-4. 포털 버튼 완주 A → B → C (한 건씩, 승인 1회) — 검증됨
+구동: 세션 스크래치 `final/run_final.py`(C3 run_live.py 기반: 포털 버튼 클릭 → 처리 건 대기 → 승인 task 를 포털에서 열어 승인자 역할로 [승인] 클릭 → 끝까지). 증거 `.evidence/a161-final/live/`.
+
+| | 처리 건 | 버튼 → 처리 건 | 에이전트 | 승인 대기* | 승인 → 끝(시스템) | 버튼 → 끝 | 결과 |
+|---|---|---|---|---|---|---|---|
+| A [쿨러 열화 주입] (김운전 · 운전원) | c3_cooling.4f93a9d0… | 43.5초 | 94.4초(도구 10) | 13.2초 | 63.7초(명령 0.9 · 재관측 60.0 · 작업지시 0.8 · 보고 0.3) | 214.8초 | 정상, WO-1010-C058 |
+| B [정기 점검] (박정비 · 설비보전팀장) | c3_pm.a49bb840… | 1.6초 | 64.7초(도구 13) | 39.4초* | 1.1초(오더 · 메일 0.8 · 보고 0.3) | 105.2초* | 정상, WO-1010-2E26 · 메일 1통 |
+| C [재고 보충] (정구매 · 구매 담당) | c3_spare.4af595fb… | 1.6초 | 51.8초(도구 9) | 16.2초 | 1.5초(발주 · 메일 0.2 · 입고 0.9 · 보고 0.3) | 75.3초 | 입고 완료, PR-1010-E7ED · GR-1010-71A8 |
+
+\* 승인 대기는 캡처(1440 · 390) 시간 포함 — 사람 손 시간이 아니다. B는 승인 직전에 구동 스크립트를 멈추고(캡처 결함 수정, 아래 3-5) 같은 처리 건에 다시 붙어(resume) 승인했으므로 승인 대기 39.4초 · 버튼 → 끝 105.2초가 늘었다(처리 건 기록 시각 기준: T_agent 02:17:54.9 → 02:18:59.6, T_approve → 02:19:38.9, 끝 02:19:40.1).
+- 표시: B · C 끝난 뒤 `/api/scenario/status` alert **false**(표시 꺼짐, `B-5-after-1440.png` · `C-5-after-1440.png`) → [초기화](박정비 · 정구매) 뒤 둘 다 **true**(`R-B-after-reset-1440.png` · `R-C-after-reset-1440.png`).
+- A: [쿨러 복구](김운전) "HYD-01 쿨러 복구 · 열화로 열린 처리 건에 기록" — 복구 누름이 같은 A 처리 건 기록(`SCENARIO_BUTTON`, `restores: PRESS-ec25a7d4735f`)으로 붙음(`A-8-after-restore-1440.png`).
+- 재관측 값 흐름(A): 60초 동안 유온 61.4 → 51.5 ℃, 기준 55 ℃ 아래 58 %, 경보 해제 예, 관측 연장 1회 — 처리 기록 5단계에 그래프 · 수치로 보임.
+- **G9**: A 에이전트 작업 폴더 `.evidence/workspace/hyd/67b1b15d-…/CLAUDE.md` 와 `tests/fixtures/constitution_hyd_2fbefff.md` `cmp` 같음.
+
+## 3-5. C 판단 대조 (c-knowledge-gap 5절 6) — 검증됨, 기대와 일치
+`C-decision.json`(DEC-1010-006-b837):
+
+| 카드 | 공급사 사실 | 점수 | 점수 성분 | 규정 결과 | 기대 |
+|---|---|---|---|---|---|
+| SOP-PUR-11 순정(OEM) | fail_rate 0.02 · AVL 예 · 330만 원 | **2.82 · 1위(추천)** | bsc 0 · warn −0.5 · delivery 1.32 · forecast 2 | 경고 `po_amount > 300`만 | 추천 ✓ (기대 점수 약 1.82와 다른 것은 BSC: 새 추출의 득실이 "부품 품질 ↑ · 재고량 ↑"라 4차의 −1이 0이 됨) |
+| SOP-PUR-12 대체 승인(A정밀) | fail_rate **0.12** · AVL 예 · 210만 원 | 1.32 · 2위 | bsc −1 · **penalty −1.0** | 감점 `rule:pur-penalty-full-inspection` 20 | 감점 · 약 1.32 ✓ |
+| SOP-PUR-13 최단 납기(C트레이딩) | fail_rate 0.3 · AVL 아니요 · 120만 원 | 2.32(제외) | — | **feasible false**, 위반 `rule:avl` · `rule:pur-exclude-non-avl` | 제외 ✓ |
+
+- `expected_defect_cost` 결정 문서 어디에도 없음, 카드 사실에 `supplier_fail_rate` 있음.
+- 참고: 처리 건 변수에 다른 판단 id `DEC-1010-005-cc60`(GET 404)이 함께 보임 — 에이전트가 판단을 두 번 낸 흔적으로 보이나 원인 미확인(근거 부족).
+
+## 3-6. 처리 기록 화면(caseRecord) 점검 — A · B · C 1440 · 390
+캡처: `X-7-record-{1440,390}.png`(기본) · `X-7-record-open-{1440,390}.png`('모두 펼치기' + 모든 접기 열고 원문 불러온 뒤 전체 높이) · `X-7-record-text.txt`(화면 글). 승인 화면 `X-3-approval-{1440,390}.png`. 수정 전 캡처는 `live/before-fix/`.
+
+| 볼 것 | A | B | C |
+|---|---|---|---|
+| 시작 단계 | '센서 경보로 시작' + 수업 버튼 기록 줄([쿨러 열화 주입] 김운전, 수정 뒤 누른 시각 11:12:25) · 경보 규칙 · 들어온 값 | '수업 버튼으로 시작' · 누른 사람 박정비 · 누른 시각 · 근거 값 | '수업 버튼으로 시작' · 정구매 · 시각 · 재고 값 |
+| 가져온 값과 출처 | 36건(값 · 시스템 · 읽은 방법) | 같은 표 | 같은 표 |
+| 지식 그래프 경로 · 스킬 | 경보 → 증상 → 고장 유형 ← 원인, 원인 → 고장 유형 → 완화 조치, 스킬 cooling-emergency-response 읽음 1 | 스킬 pm-schedule-planning | 스킬 spare-purchase-planning |
+| 도구 호출 입력/출력 | 물음 · 받음 한 줄씩, 긴 원문(13,763자 · 128,466자)은 '원문 보관' → 펼치면 event-payloads로 불러옴 | 같음 | 같음 |
+| 경쟁 안과 진 이유 | 4개(추천 팬 최대 운전, 짐 2 · 짐 1) 점수 차 · 감점 문장 | 4개(추천 단독 시행, 짐 지금 정지 오더 손실 감점, 제외 미루기 · 두 대 묶기) | 3개(추천 OEM, 짐 A정밀 불량률 감점 문장, 제외 13 AVL) |
+| 승인 · 실행 · 확인 | 김운전 11:14:56, 승인 순간 다시 확인한 값, 명령 CMD-1010-0001 응답, 재관측 그래프, 작업지시 | 박정비, 정비 오더 · 공지 메일(받는 사람 · 제목 · 본문) | 정구매, ERP 발주 · 메일, 입고 · 재고 반영(가용 7 ≥ 2) |
+| '설비 명령 없음' · '이 흐름의 끝' | 해당 없음(설비 흐름) | 있음 | 있음 |
+| 기록에 없는 것 | 2줄(모델 안쪽 생각 · 로그인 없음) | 3줄(+메일 읽음 여부) | 3줄 |
+
+**찾은 화면 결함과 조치**(포털, 근본 수정 · 캐시 `20261010-lf1` · `node --check` · 관련 시험 `test_c3_bc_review` · `test_capstone_g7_card` · `test_u1_task_detail` 20 통과, `test_worker -k instances` 1 통과):
+
+| # | 결함 | 원인(파일:줄, 수정 전) | 조치 | 확인 |
+|---|---|---|---|---|
+| P-1 | A 시작 단계의 수업 버튼 줄 시각이 누른 때(11:12:25)가 아니라 처리 건에 붙인 때(11:13:09) | `caseRecord.js:172` 버튼 기록 줄 t0 = 기록 줄 timestamp(`rowsOf` 57-83의 sys 줄) | 버튼 기록 줄은 `data.at`(누른 시각) | 다시 캡처: A 11:12:25 · B 11:17:54 · C 11:21:25 |
+| P-2 | 결과 보고 '보고에 실은 값'의 승인자가 `user:kim-op` · `user:jung-buy` | `caseRecord.js:615` approved_role 만 이름으로 바꿈 | approved_by 도 `W().who` | 김운전 · 정구매 |
+| P-3 | C 카드별 사실(공급사 불량률 · 발주 금액 · 납기 여유 · AVL)이 화면 어디에도 없음 — 결정 표는 "후보마다 계산"이라고만 적음(블랙박스) | `caseRecord.js:338-358` altHtml 이 카드의 `facts`를 그리지 않음 | 결정 수준에서 비어 있는 사실만 카드마다 "이 안의 값" 한 줄(이름표 있는 것만), `plainWords.js` 에 `supplier_avl` 이름표 | C: "공급사 불량률(비율) 0.02 / 0.12 / 0.3 · 승인 공급사(AVL) 예/예/아니요 · 발주 금액 330/210/120 만원" |
+| P-4 | 승인 화면 '승인하면 시스템이 구매 요청 **sup:b**' | `enterprise.js:262-263` actionLabel 이 값 id 를 그대로 | 값은 `UI.idText`(숫자는 그대로) | node vm 으로 실제 파일 렌더: 수정 전 `sup:b`, 수정 뒤 "B-OEM (순정)"(`C-approval-card-render-{before,after}.json`) |
+| P-5 | 승인 화면 '지식 그래프 근거 **skill:sop-pur-11** → 부품 품질'(B: skill:sop-pm-11) | `approvalCard.js:42` 경로 첫 노드(이 안의 스킬)를 정적 사전 `names.json` 에서 찾음 — 문서 적재 스킬은 사전에 없음 | 첫 노드가 이 안이면 카드 이름 | 수정 뒤 "순정(OEM) 공급사 표준 발주 → 부품 품질" |
+| P-6 | '가용 재고 -1 개'(실제 가용은 1개, 값은 가용 − 재주문점) | `plainWords.js:45` spare_gap 이름표가 '가용 재고' — 온톨로지 `in:spare-gap` '예비품 가용 재고 − 재주문점' | 이름표 '가용 재고 − 재주문점' | C 기록 화면 |
+| P-7 | 처리 건 목록 카드 칩 **E_end** | `instances.js:38` 이름 사전에 활동만 넣고 이벤트 이름은 뺌, `:338` 칩이 id 로 떨어짐 | 이름 사전에 이벤트 이름도, 칩은 그 이름 먼저 | 목록 글에 E_end 없음 · '끝'(`L-list-after-fix-1440.png`) |
+| P-8 | 승인 화면 캡처가 승인 카드 위쪽을 잘라 찍음 | 시험 도구(구동 스크립트) — 안쪽 스크롤 칸이 내려간 채 전체 페이지 캡처 | 캡처 전 모든 스크롤 0 · 높이 다시 잼. A 승인 캡처(`A-3-approval-*`)는 수정 전이라 위쪽 잘림 — B · C는 온전 | `B-3` · `C-3-approval-1440.png` |
+
+**백엔드 · 보고만**(고치지 않음):
+- B-1 수업 버튼 기록 이름 중복 "수업 버튼 [쿨러 열화 주입] — 김운전 김운전": `it/process/procsvc/scenario_buttons.py:129` 가 `name`에 누른 사람을 넣고 `by`도 따로 실어, 포털의 일반 줄 그리기(`caseRecord.js:741` sysDetail · `trace.js:179`)가 `by`를 한 번 더 붙인다. 이름에서 사람을 빼는 쪽이 근본(다른 기록 줄과 같은 꼴).
+- B-2 B 공지 메일 본문에 `(승인 user:park-maint)` — 흐름 정의의 메일 본문 틀 `scripts/c3_flows.py:104` `"… (승인 {approved_by})"`가 사람 id 변수를 넣음(화면은 보낸 원문을 그대로 보여 줄 뿐). 받는 사람에게 가는 글이라 이름 변수가 필요(흐름 · 부품 쪽 결정).
+- B-3 C 판단 id 두 개(`DEC-1010-005-cc60` 404) — 근거 부족, 위 3-5.
+- 사소(유지): 출처 칩이 "PR-7.6 PR-7.6 발주 절차"처럼 절 번호를 두 번 보임(ref + 번호를 품은 제목).
+
+## 3-7. 회귀 1회(빌드 없이, 기준 복원 뒤) — 검증됨
+- 기준 복원 먼저: 실행 중 처리 건 0 → 흐름 `POST /api/flows/deploy-reset`(c3_cooling · c3_pm · c3_spare 경보 경로에서 내림, 운영 = 기준 흐름 anomaly_response 2.2, `flows-deploy-reset-api.json`) → neo4j 원래 볼륨(전체판 FailureMode 7, `neo4j-back3.log`) → 설비 `POST :8000/api/reset`. 워커 1개 그대로.
+  - **내 실수 하나**: 처음에 `c3_flows.py deploy-reset`을 불렀는데 이 스크립트에는 그런 명령이 없어 `deploy`처럼 동작해 세 흐름 판 5를 한 번 더 등록 · 배포했다(내용은 판 4와 같음, `flows-deploy-reset.log`). 곧바로 위 API로 되돌렸다. 스크립트가 모르는 명령을 배포로 처리하는 것은 도구 결함(`scripts/c3_flows.py:167-176` — check/export 말고는 모두 배포).
+- 11:34:13 `scenario_instance_test.py --worker` → **ALL PASS 40/40**, exit 0, 11:40:13 끝(6분, `reg-cooler.log`). process StartedAt 02:09:19Z · RestartCount 0(전후 같음, `reg-before.txt`).
+- 참고: 회귀의 `/api/reset`(업무 실행 초기화)이 라이브 완주의 업무 행(WO · PR · GR)을 보관 표로 옮긴다(C3 7.3과 같음). 처리 건 기록은 남는다.
+
+## 3-8. 정리 — 검증됨
+- 워커 `pkill -f worker.main` → 프로세스 0, 8097/8098 LISTEN 0.
+- 실행 중 처리 건 0. 잔재 검사 `cleanup_residue_instances.py --before 2026-10-10T02:41Z`(dry run) → 0건(숨길 것 없음, 백업 `residue-final/backup.json`). 앞 2차의 한도 잔재 1건은 이미 숨김(8-2).
+- 설비 초기화 200. B · C 표시 켜짐(수업 시작 상태). 흐름 운영 = 기준 흐름(c3 흐름 0). neo4j 원래 볼륨(전체판). 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3`는 남김(PR-07 새 판 6d921c06 적재 상태).
+- 고친 파일(커밋 안 함): `it/portal/www/caseRecord.js` · `approvalCard.js` · `enterprise.js` · `plainWords.js` · `instances.js` · `index.html`(캐시 `20261010-lf1`), 이 문서.

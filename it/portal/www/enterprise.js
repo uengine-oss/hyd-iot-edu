@@ -259,8 +259,10 @@ const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SEL
 function actionLabel(a) {
   const spec = ACTION_KO[a.code];
   if (spec && spec[0] === null) return UI.t('workOrder');
-  if (spec) return `${spec[0]}${a.value != null ? ' ' + a.value + spec[1] : ''}`;
-  return `${a.name || a.code}${a.value != null ? ' ' + a.value : ''}`;
+  // 값이 id(구매요청의 공급사 sup:… 등)면 이름으로 — 숫자 값(팬 % 등)은 그대로
+  const value = a.value != null ? UI.idText(String(a.value)) : null;
+  if (spec) return `${spec[0]}${value != null ? ' ' + value + spec[1] : ''}`;
+  return `${a.name || a.code}${value != null ? ' ' + value : ''}`;
 }
 function forecastLine(o) {
   const ts1 = (o.forecast || []).find(f => /유온|ts1/i.test(f.name || ''));

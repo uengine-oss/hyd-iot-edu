@@ -32,10 +32,11 @@
     try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); I.listError = ''; } catch (e) { I.instances = []; I.listError = e.message; }
     // A157: list chips name each row's step from that row's own definition (it showed raw ids like extract-manual when another
     // definition's instance was selected). Each definition version is fetched once; a failed fetch is reported, not hidden.
+    // 활동과 이벤트 이름 — 끝 이벤트 이름도 실어 목록 칩이 E_end 같은 id 를 보이지 않게
     const defKey = x => `${x.proc_def_id}@${x.proc_def_version}`;
     await Promise.all([...new Set(I.instances.filter(x => !(defKey(x) in I.defNames)).map(defKey))].map(async k => {
       const [id, version] = k.split('@');
-      try { const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`); I.defNames[k] = Object.fromEntries((d.activities || []).map(a => [a.id, a.name])); }
+      try { const d = await getJ(API.process + `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`); I.defNames[k] = Object.fromEntries([...(d.activities || []), ...(d.events || [])].filter(a => a.name).map(a => [a.id, a.name])); }
       catch (e) { I.msg = `흐름 정의 ${id} ${version}을(를) 읽지 못했습니다: ${e.message}`; }
     }));
     let todoRows = [];
@@ -335,7 +336,7 @@
       const names = I.defNames[`${x.proc_def_id}@${x.proc_def_version}`] || {};
       const steps = (x.current_activity_ids || []).map(id => `<span class="chip step-chip">${esc(UI.flowName(names[id] || id.replace(/^task:|^ev:/, '')))}</span>`).join('');
       const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}${outcomeChip(x)}</div>
-        <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
+        <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(names[x.end_event] || UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
         <span class="sub">${esc(UI.dateTime(x.start_date))} · ${esc(when)}</span>`);
       keyboardItem(it);
       // A161: 끝난 처리 건은 처리 기록부터(가르칠 때 "설명한 대로 됐나"를 바로 본다), 진행 중이면 진행 상황부터
