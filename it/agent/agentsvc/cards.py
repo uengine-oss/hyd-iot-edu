@@ -111,10 +111,14 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     return f
 
 
+MAINTENANCE_ORDER = "WO_CREATE"      # 정비 작업지시 — 이 동작이 있는 카드만 정비 시점(창 · 즉시)을 가진다
+
+
 def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict | None) -> dict | None:
     """C3: 카드가 고른 정비 시점. 일정 판단(사실에 windows_by_variable 이 있음)에서 이 카드에만 걸린 규정이 시험하는 변수가 가리키는
     예정된 정비 시간을 카드에 싣는다(예: 이번 정비 시간의 운전시간 → 이번 창, 미룬 정비 시간의 운전시간 → 그다음 창).
-    어떤 창 변수도 시험하지 않는 정비 카드는 '즉시'다. 일정 판단이 아니면 None(작업지시는 흐름의 window_var 를 쓴다)."""
+    어떤 창 변수도 시험하지 않는 정비 카드(정비 작업지시 WO_CREATE 를 내는 작업지시 카드)는 '즉시'다. 정비 작업이 없는 카드 — 예: 발주만 하는
+    구매 카드 — 에는 정비 시점이 없다. 일정 판단이 아니면 None(작업지시는 흐름의 window_var 를 쓴다)."""
     if not isinstance(windows, dict) or not windows:
         return None
     for r in compliance:
@@ -124,7 +128,7 @@ def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict |
             w = windows.get(t.get("variable"))
             if isinstance(w, dict) and w.get("id"):
                 return dict(w, basis=t.get("variable"))
-    if skill.get("kind") == "work_order":
+    if skill.get("kind") == "work_order" and any(a.get("code") == MAINTENANCE_ORDER for a in skill.get("actions") or []):
         return {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
     return None
 

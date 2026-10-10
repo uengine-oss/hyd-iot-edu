@@ -60,6 +60,14 @@ ALERT_START_VALUES = ("asset", "alert", "pattern", "alert_id", "incident")
 SELECT_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident", "approved_option"}))
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
+# 조치 카드 승인 · 거절(실라버스 92 · 101 · 102 · 104행): 조치 카드 승인(task:select) 계약에 일반 사람 승인과 같은 값(approval '승인'|'반려' ·
+# approval_reason)을 더한 부품. 승인은 /select, 거절은 /reject-card 로만 제출된다(둘 다 역할 검사). task:select(승인만) 계약과 그것으로
+# 등록한 흐름은 그대로다 — 거절 값을 내지 않으므로 거절 요청을 받지 않는다.
+SELECT_PART, REJECTABLE_SELECT_PART = "task:select", "task:select-or-reject"
+REJECTABLE_SELECT_NAME = "조치 카드 승인 · 거절"
+REJECTABLE_SELECT_HELP = ("담당자가 조치 카드 하나를 승인하거나 거절합니다. 승인하면 approval 값이 '승인', 거절하면 '반려'(사유는 approval_reason)가 되고 "
+                          "거절에는 고른 조치가 없습니다. 효과 부품(설비 명령 · 작업지시 · 발주 …)으로 가는 분기 선에 approval == '승인' 조건을 두고, "
+                          "그 밖의 선은 결과 보고(결과: 반려)로 보내세요.")
 EFFECT_TOOLS = {"incident:command": "설비 명령", "enterprise:WO_CREATE": "작업지시",   # 바깥 시스템에 효과를 내는 서비스
                 **effect_parts.EFFECTS}                                                 # C2: MCP 쓰기 · ERP 발주 · 정비 수행 모사 · 입고 확인
 # C2: 승인 경로가 확정하는 발주 값의 자료형 (분기 조건 approved_amount > 300 의 값)
@@ -289,6 +297,9 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                       "approval": tool == APPROVAL_TOOL, "effect": EFFECT_TOOLS.get(tool),
                       "server_values": list(SELECT_SERVER_VALUES) if tool == APPROVAL_TOOL else [],
                       "default_timer": timers[0] if timers else None, "contract": contract})
+    select = next((p for p in parts if p["key"] == SELECT_PART and p["tool"] == APPROVAL_TOOL and p.get("form")), None)
+    if select is not None:
+        parts.append(_rejectable(select))
     # C2 (확정 흐름 2026-10-09): '판단 · 제안' 에이전트 task 하나 — 기준의 순위 · 카드 작성(task:rank) 계약을 그대로 쓰되(같은 폼 · 같은 결과
     # decision · decision_id, 승인 경로가 믿는 값), 앞 단계 없이 경보 값만 받는다. 에이전트가 그 안에서 진단 → 후보 → 규정 → 순위(evaluate_cards)를
     # 하고 카드를 낸다(submit_decision). 과정은 실행 화면의 실시간 기록으로 보인다. 지시문은 매핑의 instruction 으로 바꿀 수 있다.
@@ -697,6 +708,12 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         for v in outs:
             produced_by.setdefault(v, []).append(t["id"])
     acts = {a["id"]: a for a in activities}
+    card_steps = [a for a in activities if a.get("tool") == APPROVAL_TOOL]
+    if len({_rejects(a) for a in card_steps}) > 1:           # 같은 폼(select_card)을 두 계약이 나눠 쓸 수 없다
+        for a in card_steps:
+            if not _rejects(a):
+                problems.append(problem(g.nodes[a["id"]], "part", f"한 흐름에 '{a['_part']['name']}'와(과) '{REJECTABLE_SELECT_NAME}'을(를) 함께 쓸 수 "
+                                                                  "없습니다 — 승인 단계의 부품을 한 가지로 맞추세요"))
 
     # -- 이벤트
     events = []
@@ -833,16 +850,27 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             elif a["id"] in g.reach(g.succ(a["id"]), stop=lambda n: n in approvals):
                 problems.append(problem(t, "part", f"되돌아가는 선이 {effect} 부품을 사람 승인 없이 다시 실행합니다 — "
                                                    f"되돌아가는 선이 '{approval_name}'을(를) 다시 거치게 그리세요"))
-        # 캡스톤 G1: 사람 승인(안 고르기)은 반려도 낸다 — 그 뒤 효과 부품까지의 모든 경로가 '승인' 조건 선을 지나야 한다
+        # 사람 승인(안 고르기 · 조치 카드)은 반려도 낸다 — 그 뒤 효과 부품까지의 모든 경로가 '승인' 조건 선을 지나야 한다
         effects = {a["id"]: a["_part"]["effect"] for a in activities if a["_part"].get("effect")}
+        closes_rejection = {a["id"] for a in activities if a.get("tool") == effect_parts.REPORT_TOOL
+                            and effect_parts.REPORT_OUTCOMES.get((a.get("service") or {}).get("outcome")) == "rejected"}
+        ends = {e["id"] for e in parsed["ends"]}
         for a in activities:
-            if a["_part"].get("key") != approval_part.KEY:
+            if not _rejects(a):
                 continue
-            for eid, path in _effects_past_rejection(g, a["id"], approvals, cond_of, effects):
+            for eid, path in _reached_past_rejection(g, a["id"], approvals, cond_of, set(effects)):
                 route = " → ".join(_label(g.nodes[n]) for n in path)
                 problems.append(problem(g.nodes[eid], "part",
                                         f"{_label(g.nodes[a['id']])}의 반려(또는 조건 없는) 경로로 {effects[eid]} 부품에 닿습니다 — 경로: {route}. "
                                         f"효과로 가는 분기 선에 approval == '{approval_part.APPROVE}' 조건을 두세요"))
+            if kind != "alert":
+                continue
+            # 경보로 열린 처리 건에는 사건이 있다 — 반려 경로가 결과 보고(반려) 없이 끝나면 사건이 승인 대기로 열린 채 남는다
+            for eid, path in _reached_past_rejection(g, a["id"], approvals | closes_rejection | set(effects), cond_of, ends):
+                route = " → ".join(_label(g.nodes[n]) for n in path)
+                problems.append(problem(g.nodes[eid], "flow",
+                                        f"{_label(g.nodes[a['id']])}의 반려 경로가 결과 보고(반려) 없이 끝납니다 — 경로: {route}. "
+                                        "사건이 승인 대기로 열린 채 남지 않게 끝 이벤트 앞에 결과 보고(결과: 반려)를 두세요"))
 
     # -- 되돌아가는 선(루프): 빠져나갈 배타 분기가 있어야, 병렬 분기는 안에 둘 수 없음
     loops = g.sccs()
@@ -912,6 +940,24 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             "loops": [sorted(c) for c in loops]}
 
 
+def _rejectable(select: dict) -> dict:
+    """조치 카드 승인(task:select) 부품 → 거절 값을 함께 내는 부품. 결과 = 기준 계약(chosen_skill · chosen_skill_kind) + approval ·
+    approval_reason. 거절에는 고른 조치가 없으므로 기준 칸은 선택으로 바뀌고 approval 은 반드시 있어야 한다. 도구는 같은
+    formHandler:select_card(승인 경로 · 받은 일 화면 계약 그대로)라 폼 id 도 같다 — 한 흐름에 두 부품을 섞으면 check 가 거절한다."""
+    part = deepcopy(select)
+    fields = [dict(f, required=False) for f in part["form"].get("fields_json") or []] + deepcopy(approval_part.FORM["fields_json"])
+    outputs = [*part["outputs"], *approval_part.OUTPUTS]
+    part.update(key=REJECTABLE_SELECT_PART, group="general", name=REJECTABLE_SELECT_NAME, form={"fields_json": fields}, outputs=outputs,
+                help=REJECTABLE_SELECT_HELP)
+    part["contract"].update(name=REJECTABLE_SELECT_NAME, description=REJECTABLE_SELECT_NAME, outputData=list(outputs))
+    return part
+
+
+def _rejects(activity: dict) -> bool:
+    """거절(반려) 값을 내는 사람 승인인가 — 일반 사람 승인과, 거절 값을 함께 내는 조치 카드 승인."""
+    return approval_part.OUTPUTS[0] in (activity.get("outputData") or [])
+
+
 def _approves(text: str) -> bool:
     """분기 조건이 사람 승인(안 고르기)의 '승인'을 요구하는가: approval == '승인' · approval != '반려' (그리고 다른 조건과 and 로 묶여도)."""
     def ok(n) -> bool:
@@ -928,9 +974,10 @@ def _approves(text: str) -> bool:
     return ok(engine.compile_condition(text))
 
 
-def _effects_past_rejection(g: _Graph, start: str, approvals: set, cond_of: dict, effects: dict) -> list[tuple[str, list[str]]]:
-    """사람 승인(안 고르기) start 에서 나가 '승인' 조건 선을 지나지 않고 닿는 효과 부품과 그 경로(노드 id). 다른 승인 부품에서는 멈춘다
-    (그 승인이 다시 정한다). start 의 경계 타이머 가지는 승인 결정 전이라 여기서 보지 않는다(앞의 '승인 없는 효과' 검사가 본다)."""
+def _reached_past_rejection(g: _Graph, start: str, stops: set, cond_of: dict, targets: set) -> list[tuple[str, list[str]]]:
+    """사람 승인 start 에서 나가 '승인' 조건 선을 지나지 않고 닿는 targets(효과 부품 · 끝 이벤트)와 그 경로(노드 id). stops(다른 승인 부품 —
+    그 승인이 다시 정한다 —, 반려를 닫는 결과 보고)에서는 멈춘다. start 의 경계 타이머 가지는 승인 결정 전이라 여기서 보지 않는다
+    (앞의 '승인 없는 효과' 검사가 본다)."""
     parent: dict[str, str | None] = {start: None}
     todo, hits = [start], []
     while todo:
@@ -941,12 +988,12 @@ def _effects_past_rejection(g: _Graph, start: str, approvals: set, cond_of: dict
             if (cond and _approves(cond)) or m in parent:
                 continue
             parent[m] = n
-            if m in effects:
+            if m in targets:
                 path, x = [], m
                 while x is not None:
                     path.append(x); x = parent[x]
                 hits.append((m, path[::-1]))
-            elif m not in approvals:
+            elif m not in stops:
                 todo.append(m)
     return hits
 

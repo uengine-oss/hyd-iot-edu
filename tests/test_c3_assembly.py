@@ -33,7 +33,7 @@ COMPLIANCE = [
 
 
 def test_each_pm_card_carries_the_window_its_own_rules_test_and_a_stop_card_is_immediate():
-    wo = {"kind": "work_order"}
+    wo = {"kind": "work_order", "actions": [{"code": "WO_CREATE", "kind": "transaction"}]}
     assert cards.option_window(COMPLIANCE, "skill:pm-11", wo, WINDOWS)["id"] == "MW-HYD-02-N-1"
     assert cards.option_window(COMPLIANCE, "skill:pm-14", wo, WINDOWS)["id"] == "MW-HYD-02-N-1"
     w13 = cards.option_window(COMPLIANCE, "skill:pm-13", wo, WINDOWS)
@@ -42,6 +42,9 @@ def test_each_pm_card_carries_the_window_its_own_rules_test_and_a_stop_card_is_i
     # 일정 판단이 아니면(창 사실 없음) 카드에 시점이 없다 — A · C 카드는 그대로
     assert cards.option_window(COMPLIANCE, "skill:pm-11", wo, None) is None
     assert cards.option_window(COMPLIANCE, "skill:fan-max", {"kind": "control"}, WINDOWS) is None
+    # 정비 작업이 없는 카드(발주만 하는 구매 카드)는 작업지시 종류여도 정비 시점이 없다 — 발주 카드에 '즉시 (지금 정지하고 시행)'이 붙지 않는다
+    buy = {"kind": "work_order", "actions": [{"code": "PR_CREATE", "kind": "transaction", "value": "sup:b"}]}
+    assert cards.option_window(COMPLIANCE, "skill:sop-pur-11", buy, WINDOWS) is None
 
 
 def test_pm_windows_come_from_the_cmms_row_and_the_memory_row_has_the_following_window():

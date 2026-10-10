@@ -11,6 +11,10 @@ A 흐름 모양 · 부품 · 설정은 C2 시험(tests/test_c2_execution.py)의 
 공급사 메일 → 입고 · 재고 반영(바로) → 결과 보고. 예정된 정비 시간 대기 · 정비 모사 · 시운전 · 납기 대기는 없다. C2 와 다른 점은 더 있다:
   1) 판단 · 제안 task 를 시나리오 에이전트에 묶는다(agent:cooling · agent:pm-plan · agent:spare-buy — seed.sql, 에이전트마다 SKILL · MCP 서버가 다름).
   2) 담당자 승인 task 의 역할을 시나리오 승인자로 둔다(A 운전원 · B 설비보전팀장 · C 구매 담당).
+승인 단계는 세 흐름이 같다(사용자 결정 2026-10-10): 담당자가 승인하거나 거절한다(부품 task:select-or-reject). 승인하지 않으면 그 단계에서
+그대로 기다리고, 기한(PT10M, 배속 적용)이 지나면 멈추지 않는 '승인 지연' 타이머가 알림 보고만 낸다(자동 취소 · 자동 거절 없음). 거절하면 설비
+명령 · 업무 처리 없이 결과 보고(반려)로 닫힌다 — 사건은 '운전원 거부', B · C 의 업무 표시(정기 점검 도래 · 재고 보충 필요)는 처리되지 않았으므로
+켜진 채 남는다.
 처리 건 시작은 경보다(A 쿨러 과열 COOLER_DEGRADATION — 감지기, B 정기 정비 도래 PM_DUE · C 재고 기준 이탈 SPARE_BELOW_MIN — 포털 결함 실험의
 [정기 점검] · [재고 보충] 버튼이 업무 감시와 같은 계약의 경보를 낸다, POST /api/scenario/{B|C}/start).
 """
@@ -46,60 +50,83 @@ def report(outcome: str, title: str, summary: str = "") -> dict:
     return {"part": "svc:report", "config": {"outcome": outcome, "title": title, "summary": summary}}
 
 
+# ---------------------------------------------------------------- 승인 단계 (세 흐름 공통): 승인 · 거절 분기 + 멈추지 않는 승인 지연 알림
+APPROVAL_OVERDUE = "PT10M"                                       # 승인 지연 알림 기한(세 흐름 같은 기준, 사람 응답 타이머라 배속만 적용)
+APPROVED = {"var": "approval", "op": "==", "value": "승인"}      # 효과 부품으로 가는 선은 이 조건을 지나야 한다(사전 검사)
+APPROVAL_NODES = ["T_notice", "R_rejected"]                      # 시스템 칸에 놓이는 승인 단계의 시스템 task
+
+
+def approval_xml(approver: str, approved_target: str) -> str:
+    """승인 task · 지연 타이머 · 승인/거절 분기 · 반려 결과 보고 · 끝 이벤트 둘(알림 · 거절 종결). T_agent 다음, approved_target 앞에 놓인다."""
+    return f"""
+  <bpmn:userTask id="T_approve" name="{approver} 승인"/>
+  <bpmn:boundaryEvent id="B_overdue" name="승인 지연" attachedToRef="T_approve" cancelActivity="false"><bpmn:timerEventDefinition id="TD1"/></bpmn:boundaryEvent>
+  <bpmn:serviceTask id="T_notice" name="승인 지연 알림"/>
+  <bpmn:exclusiveGateway id="G_approved" name="승인?"/>
+  <bpmn:serviceTask id="R_rejected" name="결과 보고: 거절"/>
+  <bpmn:endEvent id="E_notice" name="알림"/>
+  <bpmn:endEvent id="E_rejected" name="거절 종결"/>
+  <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
+  <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="G_approved"/>
+  <bpmn:sequenceFlow id="F_approved" name="승인" sourceRef="G_approved" targetRef="{approved_target}"/>
+  <bpmn:sequenceFlow id="F_rejected" name="거절" sourceRef="G_approved" targetRef="R_rejected"/>
+  <bpmn:sequenceFlow id="F_rej_end" sourceRef="R_rejected" targetRef="E_rejected"/>
+  <bpmn:sequenceFlow id="F_overdue" sourceRef="B_overdue" targetRef="T_notice"/>
+  <bpmn:sequenceFlow id="F_notice_end" sourceRef="T_notice" targetRef="E_notice"/>"""
+
+
+def approval_tasks(role: str, subject: str, untouched: str) -> dict:
+    """승인 단계의 매핑: 승인 · 거절 부품, 지연 알림, 반려 결과 보고. subject = 제목 틀의 대상, untouched = 거절로 하지 않은 일."""
+    return {"T_approve": {"part": "task:select-or-reject", "role": role},
+            "T_notice": report("승인 지연", f"{subject} 승인 지연", "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다"),
+            "R_rejected": report("반려", f"{subject} 결과", f"담당자가 거절했습니다 — 사유: {{approval_reason}}. {untouched}")}
+
+
+APPROVAL_FLOWS = {"F_approved": APPROVED, "F_rejected": {"default": True}}
+
+
 # ================================================================ A 냉각 긴급 대응
 A_XML = xml("""
   <bpmn:startEvent id="Start" name="쿨러 과열 경보"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
   <bpmn:task id="T_agent" name="원인 진단 · 냉각 조치 제안"/>
-  <bpmn:userTask id="T_approve" name="운전원 승인"/>
-  <bpmn:boundaryEvent id="B_overdue" name="승인 지연" attachedToRef="T_approve" cancelActivity="false"><bpmn:timerEventDefinition id="TD1"/></bpmn:boundaryEvent>
-  <bpmn:serviceTask id="T_notice" name="승인 지연 알림"/>
   <bpmn:serviceTask id="T_cmd" name="냉각 명령"/>
   <bpmn:serviceTask id="T_reobs" name="재관측"/>
   <bpmn:exclusiveGateway id="G_ok" name="유온 정상?"/>
   <bpmn:serviceTask id="T_wo" name="작업지시 등록"/>
   <bpmn:serviceTask id="R_ok" name="결과 보고: 정상"/>
   <bpmn:serviceTask id="R_fail" name="결과 보고: 미달"/>
-  <bpmn:endEvent id="E_notice" name="알림"/>
   <bpmn:endEvent id="E_end" name="끝"/>
   <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent"/>
-  <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
-  <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_cmd"/>
   <bpmn:sequenceFlow id="F4" sourceRef="T_cmd" targetRef="T_reobs"/>
   <bpmn:sequenceFlow id="F5" sourceRef="T_reobs" targetRef="G_ok"/>
   <bpmn:sequenceFlow id="F_yes" name="예" sourceRef="G_ok" targetRef="T_wo"/>
   <bpmn:sequenceFlow id="F_no" name="아니오" sourceRef="G_ok" targetRef="R_fail"/>
   <bpmn:sequenceFlow id="F6" sourceRef="T_wo" targetRef="R_ok"/>
   <bpmn:sequenceFlow id="F7" sourceRef="R_ok" targetRef="E_end"/>
-  <bpmn:sequenceFlow id="F8" sourceRef="R_fail" targetRef="E_end"/>
-  <bpmn:sequenceFlow id="F9" sourceRef="B_overdue" targetRef="T_notice"/>
-  <bpmn:sequenceFlow id="F10" sourceRef="T_notice" targetRef="E_notice"/>""", "Process_A", "냉각 긴급 대응",
-            lanes(["T_approve"], ["T_agent"], ["T_notice", "T_cmd", "T_reobs", "T_wo", "R_ok", "R_fail"]))
+  <bpmn:sequenceFlow id="F8" sourceRef="R_fail" targetRef="E_end"/>""" + approval_xml("운전원", "T_cmd"), "Process_A", "냉각 긴급 대응",
+            lanes(["T_approve"], ["T_agent"], [*APPROVAL_NODES, "T_cmd", "T_reobs", "T_wo", "R_ok", "R_fail"]))
 
 A_MAPPING = {
     "name": "냉각 긴급 대응", "start": {"kind": "alert", "patterns": ["COOLER_DEGRADATION"]}, "lanes": {},
     "tasks": {"T_agent": decide("agent:cooling", "쿨러 과열의 원인을 진단하고 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 낸다"),
-              "T_approve": {"part": "task:select", "role": "운전원"},
-              "T_notice": report("승인 지연", "{asset} 냉각 조치 승인 지연", "승인 대기 중 — 경보 {alert.alertId}"),
+              **approval_tasks("운전원", "{asset} 냉각 조치", "설비 명령은 내지 않았습니다"),
               "T_cmd": {"part": "task:command"}, "T_reobs": {"part": "task:reobserve"}, "T_wo": {"part": "task:work-order"},
               "R_ok": report("정상", "{asset} 긴급 대응 결과", "유온 정상 · 경보 해제, 작업지시 {work_order.ref}"),
               "R_fail": report("미달", "{asset} 긴급 대응 결과", "재관측 기준 미달 — 승인자 {approved_by_name}")},
-    "timers": {"B_overdue": "PT10M"},
-    "flows": {"F_yes": {"var": "recovered", "op": "==", "value": True}, "F_no": {"default": True}}}
+    "timers": {"B_overdue": APPROVAL_OVERDUE},
+    "flows": {**APPROVAL_FLOWS, "F_yes": {"var": "recovered", "op": "==", "value": True}, "F_no": {"default": True}}}
 
 # ================================================================ B 정기 정비 (C3 단순화: 설비까지 가지 않음 — 오더 등록 · 공지로 끝)
 B_XML = xml("""
   <bpmn:startEvent id="Start" name="정기 점검 요청"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
   <bpmn:task id="T_agent" name="정비 계획 제안"/>
-  <bpmn:userTask id="T_approve" name="설비보전팀장 승인"/>
   <bpmn:serviceTask id="T_wo" name="정비 오더 등록 · 공지 메일"/>
   <bpmn:serviceTask id="R_ok" name="결과 보고"/>
   <bpmn:endEvent id="E_end" name="끝"/>
   <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent"/>
-  <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
-  <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_wo"/>
   <bpmn:sequenceFlow id="F4" sourceRef="T_wo" targetRef="R_ok"/>
-  <bpmn:sequenceFlow id="F5" sourceRef="R_ok" targetRef="E_end"/>""", "Process_B", "정기 정비",
-            lanes(["T_approve"], ["T_agent"], ["T_wo", "R_ok"]))
+  <bpmn:sequenceFlow id="F5" sourceRef="R_ok" targetRef="E_end"/>""" + approval_xml("설비보전팀장", "T_wo"), "Process_B", "정기 정비",
+            lanes(["T_approve"], ["T_agent"], [*APPROVAL_NODES, "T_wo", "R_ok"]))
 
 # 값 틀은 두 업무 백엔드(Supabase · 메모리)가 같은 칸으로 내는 영수증 값만 쓴다(ref · detail)
 PRODUCTION_NOTICE = {"to": "production@hyd.local", "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}",
@@ -107,39 +134,36 @@ PRODUCTION_NOTICE = {"to": "production@hyd.local", "subject": "[정비 공지] {
 B_MAPPING = {
     "name": "정기 정비", "start": {"kind": "alert", "patterns": ["PM_DUE"]}, "lanes": {},
     "tasks": {"T_agent": decide("agent:pm-plan", "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다"),
-              "T_approve": {"part": "task:select", "role": "설비보전팀장"},
+              **approval_tasks("설비보전팀장", "{asset} 정기 정비", "정비 오더를 내지 않았습니다(정기 점검 도래 표시는 그대로)"),
               # 정비 시간은 승인한 카드가 실어 온 시점이 우선이다(C3). window_var 는 카드에 시점이 없을 때의 기본(경보의 이번 야간 창)
               "T_wo": {"part": "task:work-order", "config": {"mail": PRODUCTION_NOTICE, "window_var": "alert.evidence.night_window_id"}},
               "R_ok": report("정상", "{asset} 정기 정비 결과", "정비 오더 {work_order.ref} 등록 · 생산팀 공지 — {work_order.detail}")},
-    "timers": {}, "flows": {}}
+    "timers": {"B_overdue": APPROVAL_OVERDUE}, "flows": dict(APPROVAL_FLOWS)}
 
 # ================================================================ C 예비품 구매 (C3 단순화: 발주 · 메일 · 바로 입고 → 재고가 재주문점 위로)
 C_XML = xml("""
   <bpmn:startEvent id="Start" name="재고 보충 요청"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>
   <bpmn:task id="T_agent" name="발주안 제안"/>
-  <bpmn:userTask id="T_approve" name="구매 담당 승인"/>
   <bpmn:serviceTask id="T_po" name="ERP 발주 · 공급사 메일"/>
   <bpmn:serviceTask id="T_gr" name="입고 · 재고 반영"/>
   <bpmn:serviceTask id="R_ok" name="결과 보고"/>
   <bpmn:endEvent id="E_end" name="끝"/>
   <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent"/>
-  <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve"/>
-  <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_po"/>
   <bpmn:sequenceFlow id="F4" sourceRef="T_po" targetRef="T_gr"/>
   <bpmn:sequenceFlow id="F5" sourceRef="T_gr" targetRef="R_ok"/>
-  <bpmn:sequenceFlow id="F6" sourceRef="R_ok" targetRef="E_end"/>""", "Process_C", "예비품 구매",
-            lanes(["T_approve"], ["T_agent"], ["T_po", "T_gr", "R_ok"]))
+  <bpmn:sequenceFlow id="F6" sourceRef="R_ok" targetRef="E_end"/>""" + approval_xml("구매 담당", "T_po"), "Process_C", "예비품 구매",
+            lanes(["T_approve"], ["T_agent"], [*APPROVAL_NODES, "T_po", "T_gr", "R_ok"]))
 
 SUPPLIER_MAIL = {"to": "supplier@hyd.local, receiving@hyd.local", "subject": "[발주] {approved_part_no} {approved_qty}개",
                  "body": "공급사 {approved_supplier}, 금액 {approved_amount}만원, 발주 번호 {purchase_order.ref}"}
 C_MAPPING = {
     "name": "예비품 구매", "start": {"kind": "alert", "patterns": ["SPARE_BELOW_MIN"]}, "lanes": {},
     "tasks": {"T_agent": decide("agent:spare-buy", "필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정으로 비교해 발주 카드를 낸다"),
-              "T_approve": {"part": "task:select", "role": "구매 담당"},
+              **approval_tasks("구매 담당", "예비품 구매", "발주하지 않았습니다(재고 보충 필요 표시는 그대로)"),
               "T_po": {"part": "svc:erp-po", "config": {"mail": SUPPLIER_MAIL}},
               "T_gr": {"part": "svc:goods-receipt", "config": {"immediate": True}},
               "R_ok": report("입고 완료", "{approved_part_no} 재고 보충 결과", "{goods_receipt.detail}")},
-    "timers": {}, "flows": {}}
+    "timers": {"B_overdue": APPROVAL_OVERDUE}, "flows": dict(APPROVAL_FLOWS)}
 
 FLOWS = {"c3_cooling": ("cooling-emergency.bpmn", A_XML, A_MAPPING),
          "c3_pm": ("pm-planning.bpmn", B_XML, B_MAPPING),
