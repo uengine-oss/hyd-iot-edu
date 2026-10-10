@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_cap_t8" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collaboration_cap_t8">
+    <bpmn:participant id="Participant_cap_t8" name="분기 고객 리뷰 회의 준비 (예시)" processRef="Process_qbr_prep" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_qbr_prep" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_cap_t8">
+      <bpmn:lane id="Lane_organizer" name="회의 주관자">
+        <bpmn:flowNodeRef>StartEvent_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_approve_delay</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_agent" name="회의 준비 에이전트">
+        <bpmn:flowNodeRef>Activity_propose</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_system" name="시스템">
+        <bpmn:flowNodeRef>Activity_report_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_invite</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_accepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_report_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_report_ng</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_request" name="회의 요청 접수">
+      <bpmn:outgoing>Flow_request</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_propose" name="자료 · 시간 후보 제안">
+      <bpmn:incoming>Flow_request</bpmn:incoming>
+      <bpmn:outgoing>Flow_proposal</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_approve" name="주관자 승인">
+      <bpmn:incoming>Flow_proposal</bpmn:incoming>
+      <bpmn:outgoing>Flow_approved</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_report_delay" name="결과 보고: 승인 지연 알림">
+      <bpmn:incoming>Flow_delay</bpmn:incoming>
+      <bpmn:outgoing>Flow_delay_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_delay" name="끝 (승인 지연 알림)">
+      <bpmn:incoming>Flow_delay_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_invite" name="일정 등록 · 초대 발송">
+      <bpmn:incoming>Flow_approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_invited</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_wait" name="응답 마감까지 대기">
+      <bpmn:incoming>Flow_invited</bpmn:incoming>
+      <bpmn:outgoing>Flow_waited</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_check" name="참석 응답 확인">
+      <bpmn:incoming>Flow_waited</bpmn:incoming>
+      <bpmn:outgoing>Flow_checked</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_accepted" name="필수 참석자 전원 수락?">
+      <bpmn:incoming>Flow_checked</bpmn:incoming>
+      <bpmn:outgoing>Flow_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_report_ok" name="결과 보고: 확정">
+      <bpmn:incoming>Flow_yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_ok_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_report_ng" name="결과 보고: 미확정">
+      <bpmn:incoming>Flow_no</bpmn:incoming>
+      <bpmn:outgoing>Flow_ng_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_done" name="끝">
+      <bpmn:incoming>Flow_ok_end</bpmn:incoming>
+      <bpmn:incoming>Flow_ng_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="Event_approve_delay" name="승인 지연 (4시간)" cancelActivity="false" attachedToRef="Activity_approve">
+      <bpmn:outgoing>Flow_delay</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_Event_approve_delay">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT4H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_request" sourceRef="StartEvent_request" targetRef="Activity_propose" />
+    <bpmn:sequenceFlow id="Flow_proposal" sourceRef="Activity_propose" targetRef="Activity_approve" />
+    <bpmn:sequenceFlow id="Flow_approved" sourceRef="Activity_approve" targetRef="Activity_invite" />
+    <bpmn:sequenceFlow id="Flow_delay" sourceRef="Event_approve_delay" targetRef="Activity_report_delay" />
+    <bpmn:sequenceFlow id="Flow_delay_end" sourceRef="Activity_report_delay" targetRef="EndEvent_delay" />
+    <bpmn:sequenceFlow id="Flow_invited" sourceRef="Activity_invite" targetRef="Activity_wait" />
+    <bpmn:sequenceFlow id="Flow_waited" sourceRef="Activity_wait" targetRef="Activity_check" />
+    <bpmn:sequenceFlow id="Flow_checked" sourceRef="Activity_check" targetRef="Gateway_accepted" />
+    <bpmn:sequenceFlow id="Flow_yes" name="예" sourceRef="Gateway_accepted" targetRef="Activity_report_ok" />
+    <bpmn:sequenceFlow id="Flow_no" name="아니오 (거절 · 무응답)" sourceRef="Gateway_accepted" targetRef="Activity_report_ng" />
+    <bpmn:sequenceFlow id="Flow_ok_end" sourceRef="Activity_report_ok" targetRef="EndEvent_done" />
+    <bpmn:sequenceFlow id="Flow_ng_end" sourceRef="Activity_report_ng" targetRef="EndEvent_done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_cap_t8">
+    <bpmndi:BPMNPlane id="BPMNPlane_cap_t8" bpmnElement="Collaboration_cap_t8">
+      <bpmndi:BPMNShape id="Participant_cap_t8_di" bpmnElement="Participant_cap_t8" isHorizontal="true">
+        <dc:Bounds x="120" y="60" width="1400" height="600" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_organizer_di" bpmnElement="Lane_organizer" isHorizontal="true">
+        <dc:Bounds x="150" y="60" width="1370" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_agent_di" bpmnElement="Lane_agent" isHorizontal="true">
+        <dc:Bounds x="150" y="220" width="1370" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_system_di" bpmnElement="Lane_system" isHorizontal="true">
+        <dc:Bounds x="150" y="380" width="1370" height="280" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_request_di" bpmnElement="StartEvent_request">
+        <dc:Bounds x="200" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_propose_di" bpmnElement="Activity_propose">
+        <dc:Bounds x="290" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_approve_di" bpmnElement="Activity_approve">
+        <dc:Bounds x="450" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_delay_di" bpmnElement="Activity_report_delay">
+        <dc:Bounds x="450" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_delay_di" bpmnElement="EndEvent_delay">
+        <dc:Bounds x="610" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_invite_di" bpmnElement="Activity_invite">
+        <dc:Bounds x="610" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_wait_di" bpmnElement="Activity_wait">
+        <dc:Bounds x="770" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_check_di" bpmnElement="Activity_check">
+        <dc:Bounds x="930" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_accepted_di" bpmnElement="Gateway_accepted" isMarkerVisible="true">
+        <dc:Bounds x="1090" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_ok_di" bpmnElement="Activity_report_ok">
+        <dc:Bounds x="1200" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_ng_di" bpmnElement="Activity_report_ng">
+        <dc:Bounds x="1200" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_done_di" bpmnElement="EndEvent_done">
+        <dc:Bounds x="1360" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_approve_delay_di" bpmnElement="Event_approve_delay">
+        <dc:Bounds x="508" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_request_di" bpmnElement="Flow_request">
+        <di:waypoint x="236" y="140" />
+        <di:waypoint x="263" y="140" />
+        <di:waypoint x="263" y="300" />
+        <di:waypoint x="290" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_proposal_di" bpmnElement="Flow_proposal">
+        <di:waypoint x="390" y="300" />
+        <di:waypoint x="420" y="300" />
+        <di:waypoint x="420" y="140" />
+        <di:waypoint x="450" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_approved_di" bpmnElement="Flow_approved">
+        <di:waypoint x="550" y="140" />
+        <di:waypoint x="580" y="140" />
+        <di:waypoint x="580" y="460" />
+        <di:waypoint x="610" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_delay_di" bpmnElement="Flow_delay">
+        <di:waypoint x="526" y="198" />
+        <di:waypoint x="526" y="540" />
+        <di:waypoint x="500" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_delay_end_di" bpmnElement="Flow_delay_end">
+        <di:waypoint x="550" y="580" />
+        <di:waypoint x="610" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_invited_di" bpmnElement="Flow_invited">
+        <di:waypoint x="710" y="460" />
+        <di:waypoint x="770" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_waited_di" bpmnElement="Flow_waited">
+        <di:waypoint x="870" y="460" />
+        <di:waypoint x="930" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_checked_di" bpmnElement="Flow_checked">
+        <di:waypoint x="1030" y="460" />
+        <di:waypoint x="1090" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_yes_di" bpmnElement="Flow_yes">
+        <di:waypoint x="1140" y="460" />
+        <di:waypoint x="1200" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_no_di" bpmnElement="Flow_no">
+        <di:waypoint x="1115" y="485" />
+        <di:waypoint x="1115" y="580" />
+        <di:waypoint x="1200" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ok_end_di" bpmnElement="Flow_ok_end">
+        <di:waypoint x="1300" y="460" />
+        <di:waypoint x="1360" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ng_end_di" bpmnElement="Flow_ng_end">
+        <di:waypoint x="1300" y="580" />
+        <di:waypoint x="1330" y="580" />
+        <di:waypoint x="1330" y="460" />
+        <di:waypoint x="1360" y="460" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

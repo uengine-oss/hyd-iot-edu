@@ -1,0 +1,25 @@
+{
+  "_comment": "T8 예시 — 에이전트 task 의 결과 값 proposal 한 건(output/result.json 의 {\"proposal\": …}). 칸 이름은 승인 카드(G1 · G7)와의 약속: options[].slot · reason · score, losers, docs. 시각은 가상 예시(요청 접수 2026-10-12 월 09:00 기준).",
+  "proposal": {
+    "options": [
+      {"slot": "2026-10-16T10:00:00+09:00", "room": "room-b", "attendees_ok": "6/6", "prep_hours": 97, "score": 90,
+       "reason": "필수 2명 모두 가능, 자료 공유 97시간 전(D1 2 통과), 6인실(D1 4 통과), 요청 마감 당일"},
+      {"slot": "2026-10-16T15:00:00+09:00", "room": "room-c", "attendees_ok": "5/6", "prep_hours": 102, "score": 82,
+       "reason": "필수 2명 가능, 선택 참석자 1명(최기술) 불가 — 규칙 위반은 없지만 참석 인원이 적다"},
+      {"slot": "2026-10-20T15:00:00+09:00", "room": "room-b", "attendees_ok": "6/6", "prep_hours": 198, "score": 80,
+       "reason": "모두 가능하나 요청 마감(2026-10-16)을 넘김 — D1 6 감점 10"}
+    ],
+    "recommended": "2026-10-16T10:00:00+09:00",
+    "losers": [
+      {"slot": "2026-10-13T10:00:00+09:00", "why": "가장 빠르지만 자료 공유 25시간 전 — D1 2(48시간) 위반으로 제외"},
+      {"slot": "2026-10-15T14:00:00+09:00", "why": "6명 중 5명 가능하나 필수 참석자 박임원(가상) 불가 — D1 1 위반으로 제외"},
+      {"slot": "2026-10-16T10:00:00+09:00 (room-a)", "why": "같은 시간 4인실 — D1 4(고객 회의 6인 이상) 위반으로 제외"}
+    ],
+    "docs": [
+      {"title": "D3 지난 분기 회의록", "link": "https://drive.google.com/ (예시 — 실제 파일 링크로 바뀐다)"},
+      {"title": "D1 회의 운영 규칙", "link": "https://drive.google.com/ (예시)"},
+      {"title": "계약 · 이슈 요약 (에이전트 작성)", "link": "https://drive.google.com/ (예시)"}
+    ],
+    "agenda": ["납품 지연 재발 방지책", "2분기 청구 오류 정정", "신규 담당자 인수인계"]
+  }
+}
