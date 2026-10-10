@@ -191,23 +191,19 @@ def _example_check():
                                 "file_name": "flow.bpmn", "xml_sha256": "x"})
 
 
-# G1 · G3 합친 뒤 가져오기 검사: 이 시험은 지금 파서가 거절하는 사유를 그대로 적는다. G1(human:approve) · G3(extract)이
-# 들어오면 이 기대값이 깨진다 — 그때 "거절 0"으로 바꾼다. 다른 사유(그림 · 값 연결 · 타이머 · 보고 부품)는 지금도 0 이어야 한다.
-EXPECTED_BEFORE_G1_G3 = sorted([
-    ("Activity_approve", "part", "고른 부품이 부품 목록에 없습니다"),                         # G1 일반 승인 부품 없음
-    ("Activity_invite", "inputs", "받을 값 approved_option 을(를) 앞 단계(또는 시작)가 내지 않습니다"),   # G1 이 내는 값
-    ("Activity_check", "inputs", "받을 값 event_id 을(를) 앞 단계(또는 시작)가 내지 않습니다"),          # G3 extract
-    ("Flow_yes", "condition", "조건 값 all_required_accepted 을(를) 분기 앞 단계가 내지 않습니다"),       # G3 extract
-    ("Activity_invite", "part", "앞 경로에 사람 승인"),                                       # G1 승인이 없어 효과 부품 거절
-    ("Activity_check", "part", "앞 경로에 사람 승인"),                                        # G3 effect:false 전까지 읽기도 효과로 셈
+# G1 · G3 합친 뒤(10-10): 다른 사유(그림 · 값 연결 · 타이머 · 보고 부품 · 승인 경로)는 0 이고, 남는 거절은 강사가 구글 서버를 고른 뒤 채울 결과 경로 자리뿐이다. 경로를 지어내지 않는다(T5 표).
+EXPECTED_UNTIL_SERVER_CHOSEN = sorted([
+    ("Activity_check", "config", "extract.all_required_accepted 의 JSON 경로"),   # 일정 읽기 결과 경로 — 서버를 고른 뒤 채움
+    ("Activity_invite", "config", "extract.event_id 의 JSON 경로"),              # 일정 만들기 결과 경로 — 서버를 고른 뒤 채움
+    ("Flow_yes", "condition", "조건 값 all_required_accepted"),                  # 위 경로가 비어 값이 아직 안 생김
 ])
 
 
-def test_example_flow_is_rejected_only_for_the_missing_g1_g3_parts():
+def test_example_flow_is_rejected_only_for_the_result_paths_the_instructor_fills():
     _, _, r = _example_check()
     got = sorted(((x.get("where") or {}).get("id"), x["field"], x["reason"]) for x in r["problems"])
-    assert not r["ok"] and len(got) == len(EXPECTED_BEFORE_G1_G3)
-    for (gid, gfield, greason), (eid, efield, ephrase) in zip(got, EXPECTED_BEFORE_G1_G3):
+    assert not r["ok"] and len(got) == len(EXPECTED_UNTIL_SERVER_CHOSEN), got
+    for (gid, gfield, greason), (eid, efield, ephrase) in zip(got, EXPECTED_UNTIL_SERVER_CHOSEN):
         assert (gid, gfield) == (eid, efield) and ephrase in greason, (gid, gfield, greason)
 
 
@@ -215,7 +211,7 @@ def test_example_mapping_uses_design_names_for_g1_g3_and_valid_current_parts():
     m = json.loads(read(EX / "mapping.json"))
     assert m["tasks"]["Activity_approve"]["part"] == "human:approve"
     assert m["tasks"]["Activity_check"]["config"]["effect"] is False and "extract" in m["tasks"]["Activity_check"]["config"]
-    assert "G1 · G3 합친 뒤 가져오기 검사" in m["_comment"] and "G1 · G3 합친 뒤 가져오기 검사" in read(EX / "README.md")
+    assert "결과 경로는 강사가 채움" in m["_comment"] and "결과 경로는 강사가 채움" in read(EX / "README.md")
     outcomes = {t["config"]["outcome"] for t in m["tasks"].values() if t["part"] == "svc:report"}
     assert outcomes == {"정상", "미달", "승인 지연"}                                       # 확정 · 미확정 · 승인 지연 가지
 

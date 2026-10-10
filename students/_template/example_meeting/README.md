@@ -16,12 +16,11 @@
 - 내일 10시 — 자료 공유 48시간(D1 2) 위반 제외 · 목 14시 — 필수 참석자 불가(D1 1) 제외 · 같은 시간 4인실 A — 6인 규칙(D1 4) 제외 · 다음 주 화 15시 — 요청 마감 넘김 감점.
 - 필수 참석자 박임원(가상) 시험 계정으로 거절 또는 무응답 → "미확정" 보고. 승인을 4시간 미루면 "승인 지연" 알림만, 일정은 안 만든다.
 
-## 아직 끝까지 돌릴 수 없는 곳 (G1 · G3 합친 뒤 가져오기 검사)
-| 자리 | 지금 | 필요한 것 |
+## 강사가 채울 곳 (결과 경로는 강사가 채움)
+| 자리 | 지금 | 채우는 법 |
 |---|---|---|
-| 주관자 승인 `human:approve` | 포털 부품 목록에 없음 → 가져오기 거절 | G1 일반 승인 부품(승인 뒤 `approved_option` 값). 반려 가지도 G1 과 함께 그린다 |
-| 일정 등록 · 응답 확인 `svc:mcp-call` 의 `extract` · `effect: false` | 결과가 영수증 하나뿐 → `event_id` · `all_required_accepted` 값이 안 생겨 거절 | G3 결과 추출 |
-| 서버 `gcal` · 도구 `create_event` · `get_event` · 결과 경로 | 설계 문서의 자리 이름 | 강사가 고른 구글 서버의 실제 이름(T5 표) |
+| 서버 `gcal` · 도구 `create_event` · `get_event` | 설계 문서의 자리 이름 | 강사가 고른 구글 서버의 실제 이름(T5 표) |
+| `extract` 결과 경로(`event_id` Text · `all_required_accepted` Boolean) | `<…>` 자리 → 가져오기가 경로를 읽을 수 없다고 거절 | 그 서버로 도구를 한 번 불러 본 결과 모양에서 경로를 적는다(예: `attendees.0.status`). 전원 수락 여부를 참/거짓으로 돌려주지 않는 서버면 확인 단계를 내 MCP 서버(T4)나 에이전트 task로 바꾼다 |
 | 흐름 → 지식 그래프 Task 투영 | graph.json 에는 Process 만 | 판본 등록 뒤 `scripts/project_student_flow.py`(G8) |
 
-지금 가져오면 나오는 거절 6줄은 `tests/test_capstone_kit.py` 에 기대값으로 적혀 있다. G1 · G3 이 합쳐지면 그 시험이 깨지고, 그때 "거절 0"으로 바꾼다.
+승인 부품 `human:approve`(G1, 반려 가지 포함)와 `extract` · `effect: false`(G3)는 포털에 있다. 지금 가져오면 나오는 거절 3줄(위 경로 자리 두 칸과 그 값을 쓰는 분기 조건)은 `tests/test_capstone_kit.py` 에 기대값으로 적혀 있다.
