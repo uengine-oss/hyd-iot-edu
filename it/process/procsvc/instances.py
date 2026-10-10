@@ -26,7 +26,7 @@ from typing import Callable
 
 from hydcommon.timeutil import now_iso, parse_iso
 from hydcommon.process_contracts import pinned_form, validate_output
-from . import engine, inbox
+from . import dependency_schedule, engine, inbox
 from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
 from .execution_graph import INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection
@@ -868,12 +868,15 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                   'data': {'name': '에이전트 작업 닫음', 'by': by.strip(), 'reason': reason.strip()[:1000], 'previous': previous}}])
         rows = self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'], limit=None)
         defn = self.definition_for_workitem(wi)
-        live = [r for r in rows if r['id'] != wi['id'] and r['status'] in ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING')
-                and r['activity_id'] not in defn.events]
+        # 엔진과 같은 기준(engine.advance 의 live): 닿은 단계만 열린 일이다. 엔진은 단계마다 TODO 행을 미리 만들어 두므로(아직 닿지 않은
+        # 단계) TODO 를 열린 일로 세면 단계가 여럿인 흐름은 닫아도 끝나지 않고 RUNNING 으로 남는다(캡스톤 라이브 실측 — K-capstone.md).
+        # 흐름은 이미 닿았고 예정 시각만 기다리는 TODO 행(dependency_schedule.waiting)은 열린 일이다.
+        others = [r for r in rows if r['id'] != wi['id']]
+        live = [r for r in others if r['status'] in ('IN_PROGRESS', 'SUBMITTED', 'PENDING') and r['activity_id'] not in defn.events]
         ended = False
-        if not live:
-            for r in rows:
-                if r['id'] != wi['id'] and r['status'] in ('TODO', 'IN_PROGRESS') and r['activity_id'] in defn.events:
+        if not live and not dependency_schedule.waiting(inst, others):
+            for r in others:
+                if r['status'] == 'TODO' or (r['status'] == 'IN_PROGRESS' and r['activity_id'] in defn.events):
                     r.update(status='CANCELLED', end_date=engine.now_iso(now), log=(r.get('log') or '') + 'cancelled: instance closed by a person; ')
                     self.repo.update_workitem(r)
             inst.update(status='COMPLETED', end_event=self.HUMAN_CLOSE_END_EVENT, end_date=engine.now_iso(now), current_activity_ids=[])
