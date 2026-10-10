@@ -104,3 +104,13 @@
   승인 대기가 아닌 사건의 반려 종결 거절. 사건 없는 흐름의 반려 보고는 incident_closed False.
 - 관련 시험 c2_execution · c2_parts · machine · c3_assembly · c3_bc_simplified · c3_bc_review · incident_abort + 새 파일: 142 passed.
 - 뮤테이션: 반려를 info 로(옛 동작) → 2 실패 · 상태 검사 제거 → 1 · 반려 사유 안 실음 → 1.
+
+## 11. 후속 3 보완 — 같은 가짜 서버를 물려받는 시험 고침 (8절 커밋이 반쯤 고친 자산이었음)
+- 발견: 8절에서 `_serve_mcp(mode)` → `_serve_mcp(mode, msg)` 로 바꿨는데 `tests/test_capstone_g2_mcp_secrets.py:35 _TokenHandler` 가 옛 모양으로 불러
+  전체 스위트에서 9건 실패(연결 검사 'closed' → 422). 8절 커밋 때 물려받는 곳(grep `from test_mcp_check import`)을 보지 않은 내 잘못.
+- 조치: `_TokenHandler.do_POST` 도 본문을 먼저 읽고(401 경로의 같은 RST 위험도 없앰) `_serve_mcp("json", msg)`. 나머지 사용처 b2 · b6 은
+  `_Handler` · `_serve` 만 쓰고 do_POST 를 덮지 않음(grep 0).
+- 검증: g2 + mcp_check 3회 반복 55 passed ×3.
+
+## 12. 전체 스위트 (후속 3건 뒤 1회)
+- 1988 passed, 4 skipped, 0 failed (192 s).

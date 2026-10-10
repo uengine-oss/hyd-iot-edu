@@ -38,9 +38,10 @@ class _TokenHandler(_Handler):
     expected = TOKEN
 
     def do_POST(self):
+        msg = self._read()                    # 본문을 먼저 읽는다(읽지 않고 닫으면 RST — test_mcp_check._Handler.do_POST 와 같은 이유)
         if self.headers.get("Authorization") != f"Bearer {self.expected}":
             self.send_response(401); self.end_headers(); return
-        self._serve_mcp("json")
+        self._serve_mcp("json", msg)
 
 
 @pytest.fixture
