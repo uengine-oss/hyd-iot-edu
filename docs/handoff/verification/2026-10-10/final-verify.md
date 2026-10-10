@@ -117,3 +117,11 @@
 4. `F-20261010-keep` 작업 트리는 이제 스택과 무관하다 — 다른 끝난 작업 트리와 함께 정리할지.
 5. 이전(F-keep) 이미지 꼬리표가 없다(3절). 되돌릴 일이 있으면 그 작업 트리에서 다시 빌드해야 한다.
 6. push 는 하지 않았다.
+
+## 10. 회귀 두 개 — 한도가 풀린 뒤 이어서 (10-11 02:42 ~ 03:07) — **검증됨**
+5절에서 미완으로 남긴 것만 했다. 시작 상태 실측: 잠금 없음 · 워커 0 · RUNNING 0 · 기준 흐름 · 그래프 전체판 · 설비 정상 · process 는 00:06 빌드(`4e5f535`) 그대로(RestartCount 0). 잠금 → 워커 1개(opus) → 두 명령. 검사기 · 기대값은 고치지 않았다.
+- 쿨러 `scripts/scenario_instance_test.py --worker` → **ALL PASS 40/40**, exit 0(경보 42초, 에이전트 작업 넷 234초).
+- pump-fan `scripts/scenario_pump_fan_test.py --worker --reassess-held` → **ALL PASS 43/43**, exit 0(펌프 누설 → 예비 펌프 전환 종결 / 팬 베어링 마모 → 종결 / 가림: 경보는 꺼지지만 PS1 미회복 → 에스컬레이션). 보류된 진단의 재평가는 이번 회에 일어나지 않았다(`reassessments.json` 빈 목록).
+- 워커 한도(RunFailed) 없음. 증거 `.evidence/a164-final/regression2/`(`reg-cooler.log` · `reg-pump-fan.log` · `worker.log` · `pump-fan/` · `final-state.log`).
+- 끝난 뒤(03:07 실측): 워커 멈춤(8097 듣는 것 0) → 설비 `/api/reset` → B · C [초기화] → 잠금 지움. 잠금 없음 · 워커 0 · RUNNING 0 · 기준 흐름(`at_reference: true`) · B · C 표시 켜짐 · 설비 세 대 정상 · 감지기 전부 IDLE · 그래프 전체판 · process RestartCount 0. 컨테이너별 코드 · 작업 폴더는 7절 표 그대로(compose 는 건드리지 않았다).
+- 이로써 5절 "미검증으로 남는 것"과 9절 1번은 닫혔다.
