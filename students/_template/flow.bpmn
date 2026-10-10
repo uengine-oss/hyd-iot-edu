@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_cap_t7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collaboration_cap_t7">
+    <bpmn:participant id="Participant_cap_t7" name="내 업무 흐름 (이름을 바꾸세요)" processRef="Process_capstone_blank" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_capstone_blank" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_cap_t7">
+      <bpmn:lane id="Lane_owner" name="담당자">
+        <bpmn:flowNodeRef>StartEvent_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_approve</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_agent" name="에이전트">
+        <bpmn:flowNodeRef>Activity_agent</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_system" name="시스템">
+        <bpmn:flowNodeRef>Activity_do</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_report_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_report_ng</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_start" name="시작">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_agent">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_approve">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_do">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_check">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_result">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_report_ok">
+      <bpmn:incoming>Flow_yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_report_ng">
+      <bpmn:incoming>Flow_no</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_end" name="끝">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_start" targetRef="Activity_agent" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_agent" targetRef="Activity_approve" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Activity_approve" targetRef="Activity_do" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Activity_do" targetRef="Activity_check" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Activity_check" targetRef="Gateway_result" />
+    <bpmn:sequenceFlow id="Flow_yes" name="예" sourceRef="Gateway_result" targetRef="Activity_report_ok" />
+    <bpmn:sequenceFlow id="Flow_no" name="아니오 (미달)" sourceRef="Gateway_result" targetRef="Activity_report_ng" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Activity_report_ok" targetRef="EndEvent_end" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Activity_report_ng" targetRef="EndEvent_end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_cap_t7">
+    <bpmndi:BPMNPlane id="BPMNPlane_cap_t7" bpmnElement="Collaboration_cap_t7">
+      <bpmndi:BPMNShape id="Participant_cap_t7_di" bpmnElement="Participant_cap_t7" isHorizontal="true">
+        <dc:Bounds x="120" y="60" width="1240" height="600" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_owner_di" bpmnElement="Lane_owner" isHorizontal="true">
+        <dc:Bounds x="150" y="60" width="1210" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_agent_di" bpmnElement="Lane_agent" isHorizontal="true">
+        <dc:Bounds x="150" y="220" width="1210" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_system_di" bpmnElement="Lane_system" isHorizontal="true">
+        <dc:Bounds x="150" y="380" width="1210" height="280" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_start_di" bpmnElement="StartEvent_start">
+        <dc:Bounds x="200" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_agent_di" bpmnElement="Activity_agent">
+        <dc:Bounds x="290" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_approve_di" bpmnElement="Activity_approve">
+        <dc:Bounds x="450" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_do_di" bpmnElement="Activity_do">
+        <dc:Bounds x="610" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_check_di" bpmnElement="Activity_check">
+        <dc:Bounds x="770" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_result_di" bpmnElement="Gateway_result" isMarkerVisible="true">
+        <dc:Bounds x="930" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_ok_di" bpmnElement="Activity_report_ok">
+        <dc:Bounds x="1040" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_ng_di" bpmnElement="Activity_report_ng">
+        <dc:Bounds x="1040" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_end_di" bpmnElement="EndEvent_end">
+        <dc:Bounds x="1200" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="236" y="140" />
+        <di:waypoint x="263" y="140" />
+        <di:waypoint x="263" y="300" />
+        <di:waypoint x="290" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="390" y="300" />
+        <di:waypoint x="420" y="300" />
+        <di:waypoint x="420" y="140" />
+        <di:waypoint x="450" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="550" y="140" />
+        <di:waypoint x="580" y="140" />
+        <di:waypoint x="580" y="460" />
+        <di:waypoint x="610" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="710" y="460" />
+        <di:waypoint x="770" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="870" y="460" />
+        <di:waypoint x="930" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_yes_di" bpmnElement="Flow_yes">
+        <di:waypoint x="980" y="460" />
+        <di:waypoint x="1040" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_no_di" bpmnElement="Flow_no">
+        <di:waypoint x="955" y="485" />
+        <di:waypoint x="955" y="580" />
+        <di:waypoint x="1040" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1140" y="460" />
+        <di:waypoint x="1200" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1140" y="580" />
+        <di:waypoint x="1170" y="580" />
+        <di:waypoint x="1170" y="460" />
+        <di:waypoint x="1200" y="460" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
