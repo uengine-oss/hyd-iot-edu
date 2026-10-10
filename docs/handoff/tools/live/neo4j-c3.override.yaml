@@ -1,0 +1,5 @@
+services:
+  neo4j:
+    volumes: !override ["neo4j-data-c3:/data"]
+volumes:
+  neo4j-data-c3: {}

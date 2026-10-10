@@ -13,11 +13,13 @@
 
 ## 0. 30초 브리핑
 
-**현재(10-10, 로컬 macOS)**: A161 갈래(C3 B·C 단순화 · 블랙박스 없는 처리 기록 · 검증 빈틈 · 캡스톤 G1~G5 · G7~G10 · 강사 키트)를 통합 브랜치 `merge-preview`에 합치고 점검표(헌법 · 해피패스 금지 · 클린코드) 점검으로 결함을 원인에서 고쳤다. 전체 단위 시험 2076 통과 · 0 실패, 라이브 최종 확인 3 · 4차 통과(A · B · C 버튼 완주, C 추천 B-OEM, 쿨러 40/40 — `verification/2026-10-10/live-final.md`). 스택은 merge-preview 기준(마이그레이션 048 · 050 · 051). **다음 일: 이론 슬라이드(PPTX) — 사용자가 실라버스를 주면 시작, `HANDOFF_실라버스교재.md` §10.** 시스템 쪽 남은 것은 §9 A161의 `[ ]`.
+**병렬 세션 시작점은 [`NOW.md`](NOW.md)다 — 이 파일은 길어서 통독하지 않아도 되게, 갈래별 시작 문서 · 열린 일 · 병렬 규칙을 그쪽에 모았다.**
 
-**현재(10-08 밤 늦게)**: 미니 ProcessGPT의 포털 "직접 만들기" 기능 B1~B7(에이전트 · 스킬 · MCP 등록, bpmn.io 흐름 가져오기 · 배포 · 비교, 에이전트에게 묻기 · KPI/What-if 바꿔 보기, 출발본 내보내기/가져오기, 작동유 열화)이 구현 · 합침 · push됐다(단위 시험 1692 통과). 라이브 확인은 B1~B6 통과, B7은 원인 진단까지 통과. 남은 것: B7 라이브 완주 → core 회귀 재실행 → 기능 통합 검증(시나리오 4개) — **기능은 완주 검증까지가 완료 조건**. 병렬로 실라버스를 DECISIONS 111 구조(온톨로지 → 에이전트 → BPMN, 막마다 보기 · 따라하기 · 다른걸로 해보기, 가치 · 스토리텔링)로 다시 짠다. 그 뒤 UI/UX. 상세는 §9 A159.
+**현재(10-10, 로컬 macOS)**: A161 갈래(C3 B·C 단순화 · 블랙박스 없는 처리 기록 · 검증 빈틈 · 캡스톤 G1~G5 · G7~G10 · 강사 키트)를 작업 브랜치에 합쳤다. 전체 단위 시험 2076 통과 · 0 실패, 라이브 최종 확인 3 · 4차 통과(A · B · C 버튼 완주, C 추천 B-OEM — `verification/2026-10-10/live-final.md`; 쿨러 회귀 40/40은 3차 빌드에서만). **다음 일은 갈래별로 `NOW.md` 3절**(S 이론 슬라이드 · U UI/UX · F 기능 · K 캡스톤).
 
 (이전 브리핑 — 10-08 이전 상태 기록)
+
+**(10-08 밤 늦게)**: 미니 ProcessGPT의 포털 "직접 만들기" 기능 B1~B7(에이전트 · 스킬 · MCP 등록, bpmn.io 흐름 가져오기 · 배포 · 비교, 에이전트에게 묻기 · KPI/What-if 바꿔 보기, 출발본 내보내기/가져오기, 작동유 열화)이 구현 · 합침 · push됐다(단위 시험 1692 통과). 라이브 확인은 B1~B6 통과, B7은 원인 진단까지 통과. 남은 것: B7 라이브 완주 → core 회귀 재실행 → 기능 통합 검증(시나리오 4개) — **기능은 완주 검증까지가 완료 조건**. 병렬로 실라버스를 DECISIONS 111 구조(온톨로지 → 에이전트 → BPMN, 막마다 보기 · 따라하기 · 다른걸로 해보기, 가치 · 스토리텔링)로 다시 짠다. 그 뒤 UI/UX. 상세는 §9 A159.
 
 전체 Goal은 미완료다. 회의 원문·고정 참고코드에 근거한 시스템 개발만 대상이며 교재/리허설은 제외한다. 재개점은 §9 G의 A072 후속이다. A066 47스냅샷/채택표와 A067~A070 물리 원천·현재값·명시 순위·BSC 경로/조건을 유지했다. A071은 별도 분기의 선행 검토를 새 세대에 포함하고 정확한 새 입력 생산·제어 도달을 기다리도록 연결했다. 실제 시험에서 이전 timeout 작업이 새 타이머 전에 열리는 결함도 찾아 수정했다. 전체982/6warnings, 실제HTTP·PG·kill/start·타이머·Neo4j24/24, 같은배포 쿨러42/42다. 18서비스 running/unhealthy0, worker·probe0, 실패포함6시험인스턴스 모두종결, 개인Codex설정불변. 다음은 전체미결표의 실제효과 보상 계약과 원천→의미/지식→판단의 변경 수용이며 새 엔진 기능만 확장하지 않는다. 전체 의미/실제추출·변경질의·47레포 깊은채택은 남는다. 새Codex/직접UI는 기존정책차단으로 미검증이며 우회하지 않는다. **A072(10-06):** 실제효과 보상 계약을 구현·배포하고 실제 HTTP/PG/PLC/CMMS/DMN MCP 22검사와 전체991로 검증했다. 실제 실행이 영수증 응답 형태와 폐기 명령 타이머 결함 2건을 드러내 수정했다. 플랜 한도 해소 뒤 실제 Claude Code 워커를 돌렸다: npm `claude.cmd` 셸이 인자를 망가뜨리던 결함을 네이티브 exe 직접 호출로 고치고, 1배속에서 네 에이전트 작업(실제 DMN·Neo4j·기업 MCP 174 도구 이벤트)→사람 승인→실제 PLC ACK까지 실제 통과했다. 종결은 재관측 끝 수 초 뒤에 CLEAR가 와서 MITIGATION_FAILED 에스컬레이션(타이밍 경쟁, 미결 결함). GPU 모델(Qwen3.8-27B SGLang)과 Codex 기본 모델로 같은 매뉴얼을 실제 추출해 내용·인용 12/12 동등, GPU는 JSON 닫힘 누락 2/2를 확인했다(A073). 스택은 20배속·legacy로 복구했다.
 
@@ -262,13 +264,13 @@ A073 실행: 1배속 워커 회귀에서 에이전트 작업이 모두 끝난 �
 
 **A158 완료(10-08 밤, 클라우드) — A1~A11 합침 · 통합 검증 1회.** 사용자 "외출하는 동안 검증 완주까지 다 마무리". 증거 `.evidence/a158/`(클라우드; 명령은 `pre/*cmd.txt`). **합침**: 확정 TODO A1~A11 12단위를 `claude/hyd-handoff-work-xziutz`에 합침(A4 db7da6e · A2 1c56f84/39d93f8 · A6 20663d4 · A3 8a7d3f3 · A1 5f5d1c8 · A9 8de7d8c · A5 0acb561 · A11 f85bddb · A8 7e679bd · A10 bf64b80 · A7 f32a4a2, 충돌 정리 b61f912), 마이그레이션 026·029·030·037·040 라이브 적용, 전체 pytest 1507 통과. **배포 결함 1**: dmn-mcp가 시작하자마자 `NameError: CROSS_QUERIES` 재시작 반복 — `fabric_query` 타입 힌트의 이름을 server.py가 import하지 않음(pydantic이 모듈 전역에서 평가) → import + 도구 타입 힌트 이름 AST 시험(d284c84). **core 회귀(AGENT_BRIDGE=legacy, 워커 정지) 11/11**: cooler-42 42/42 · pump-fan 66/66 · effect-compensation 22/22 · work-order-only 19/19 · ddl-drift · scm-sync · time-anchors · evidence-coverage · knowledge-to-judgment 10/10 · parallel-join 7/7 · schema-validate(`core/results.md`), process 재시작 0. **worker 회귀(AGENT_BRIDGE=off, 호스트 워커 2)**: rule-questions 15/15 · business-questions 21/21 · expert-answers 9/9 · ingest-hm9 8/8 · semantic-audit **23/23**(A157의 22/23은 HM-9 인제스천 뒤로 옮겨 해소) · cancel-running 7/7 · worker-lease **6/6**(재실행 `worker-rerun/`: 검사기가 Windows PowerShell로 워커를 찾아 Linux에서 즉시 실패 → /proc·lsof·SIGKILL 지원, d978f81) · timeseries-questions **18/18**(재실행 `worker-ts2/`: 1차는 선택 프로필 prometheus가 꺼져 연결 거부 → `--no-deps`로만 켬; 2차 17/18은 직전 가림 시나리오로 HYD-01 "지금" 값도 1.0이라 검사기 전제 "과거 시점 값 ≠ 지금"이 성립 안 함 — 에이전트는 물은 시점으로 평가(PASS), HYD-01이 가라앉은 뒤 18/18). **쿨러·펌프·팬(실제 워커)**: 쿨러 `scenario_instance_test.py --worker` **40/40**(`scenarios/cooler_worker.log`, 에이전트 4단계 cliagents host·host2). 펌프·팬·가림 1차 10/13은 검사기 대기 150 s(내장 경로 기준)가 실제 워커 4단계(3~4분)보다 짧아 생긴 거짓 실패 → `--worker`(900 s, 쿨러 검사기와 같음) · `--reassess-held` 46/47 → 남은 1건은 A3 이후 상급자 확인이 역할 구성원 한 명(user:lee-prod, via role:prod-mgr)으로 풀리는데 검사기가 `role:prod-mgr`만 기대 → 둘 다 인정(de21d3a), 가림 재실행 **16/16**. 실제 워커는 펌프·가림에서 2분 평균이 증거 규칙에 못 미치자 원인을 지어내지 않고 보류(UNSUPPORTED, 한국어 사유·온톨로지 경로·SQL), 명시 재평가 뒤 진행 — 설계대로. **화면(`screens/` 20화면 × 2폭, `screens-detail/`, `screens-live/`)**: 콘솔 오류 0, 가로 넘침 0(지식 지도 캔버스 제외). 실행 중 하이라이트가 원인 진단 → 조치 후보 조회 → 규정 검토 → 조치 후보 정리로 옮겨 가는 것을 실제 워커로 12장 확인. 영문 노출 고친 것: 에이전트 "맡은 단계"가 정의 id(`rule-question-40eb00cb`·`manual source extraction`) → 정의 이름(agents_api·agents.js), 효과 패널 "되돌릴 수 있음 → skill:cancel-work-order" → "정비 작업지시 취소", task 상세의 조치 순위가 실제 워커 출력(객체 목록)에서 `[object Object]` → 이름·SOP·점수·승인자, 규정 판정 표에 워커가 붙인 `_basis`가 후보 행으로 보임 → "판정 근거" 한 줄로, 도구 검색 입력 `select:mcp__…` → 도구 이름, 에이전트가 친 명령·질의·원결과는 코드 글꼴, 워커 지시문에 "설명·마지막 메시지는 한국어"(조치 후보 정리 단계의 판단 근거가 영어 문장이었음). **유지(의도)**: KPI 계산 불가 사유의 표·열 이름(`fg_inventory` 등 — 원천 좌표, 한국어 설명과 함께), MCP 서버 등록 이름(`hyd-dmn` 등 설정값). **잔재**: 펌프·팬 1차가 남긴 상급자 확인 대기 3건은 검사기와 같은 방식(이생산 제출, "[회귀 검사]" 메모)으로 닫음. 표식 잔재 일괄 정리(`mark_regression_residue.py`·`cleanup_residue_cases.py --marker --legacy` dry-run: 처리 건 15 · 선례 19)와 RUNNING 정리 `--apply`는 클라우드 자동 모드가 막아 **사용자 몫**(명령은 a6-residue.md §3). 회귀가 등록한 검사용 정의(`rule-question-*`·`parallel_probe_*` 등)는 에이전트 화면 "맡은 단계"에 이름으로 남는다 — 로컬 `cleanup_invalid_definitions.py` 대상.
 
-**A161(10-09, 로컬 macOS 세션) — 실라버스 구조 재검토 → 시나리오 3개(업무 주제별) 구현 + UI/UX (TODO 확정 TODO C).** 사용자 비판(`../실라버스의 문제.txt`)에 따라 시나리오를 A 긴급 대응(HYD-01 쿨러 과열) / B 정비 계획(HYD-02 펌프 효율 저하) / C 예비품 구매(씰 키트)로 다시 정했다. 설비 · 아키텍처 · 스키마 v2는 고정하고, 시나리오마다 문서 · 지식 · 에이전트 · MCP · 스킬 · 담당자 · BPMN이 모두 다르다. 사람은 승인만 하고, 시작은 자동이며, 확인 뒤 종결한다. 조사 `verification/2026-10-09/scenario-research.md`(세 주제 모두 스키마 확장 없이 표현됨, 막히는 곳은 적재와 승인 뒤 실행 부품). 열린 결정 7개는 권장안으로 진행한다(TODO C 목록). 이전 클라우드 세션의 UI/UX 세 갈래 worktree는 원격에 올라오지 않아 다시 시작한다. 실라버스는 처음부터 다시 짠다(v10: 막마다 이론 → 포털(A·B·C) → 랩업, 기본 25~30분 단위, 이론 외부 서비스는 arrows.app · bpmn.io만, 이론은 설명만으로도 됨).
-- [~] C1 지식(시드 두 판 · 추출/적재 확장 · 문서 B·C) — worktree 서브에이전트, 보고 `verification/2026-10-09/c1-knowledge.md`
-- [~] C2 실행(승인 뒤 메일 · 발주 · 대기 · 정비 모사 · 입고, 재고 감시기) — worktree 서브에이전트, 보고 `…/c2-execution.md`
-- [~] U1 UI/UX(실시간 스트리밍 최우선 · 결함 1~18) — worktree 서브에이전트, 메인 스택 담당, 보고 `…/u1-uiux.md`
-- [~] S 실라버스 — 버전 없이 한 개만 둔다(사용자 10-09): `docs/실라버스.xlsx` · 설명 `docs/실라버스.md`. 옛 판(v6 · v7 xlsx · v7 pdf · 반영표 · 추천안 · 생성기 · curriculum-75h · v8 · v9 구조안 · 비율 근거)은 삭제했다. 지금은 "시간은 내용이 정한다"(한 행 = 한 내용, 50분 채우기 · 묶기 금지)에 맞춰 행을 다시 자르는 중
+**A161(10-09, 로컬 macOS 세션) — 실라버스 구조 재검토 → 시나리오 3개(업무 주제별) 구현 + UI/UX (TODO 확정 TODO C).** 사용자 비판(`../실라버스의 문제.txt`)에 따라 시나리오를 A 긴급 대응(HYD-01 쿨러 과열) / B 정비 계획(HYD-02 펌프 효율 저하) / C 예비품 구매(씰 키트)로 다시 정했다. 설비 · 아키텍처 · 스키마 v2는 고정하고, 시나리오마다 문서 · 지식 · 에이전트 · MCP · 스킬 · 담당자 · BPMN이 모두 다르다. 사람은 승인만 하고, 시작은 자동이며, 확인 뒤 종결한다. 조사 `verification/2026-10-09/scenario-research.md`(세 주제 모두 스키마 확장 없이 표현됨, 막히는 곳은 적재와 승인 뒤 실행 부품). 열린 결정 7개는 권장안으로 진행한다(TODO C 목록). 이전 클라우드 세션의 UI/UX 세 갈래 worktree는 원격에 올라오지 않아 다시 시작한다. 실라버스는 처음부터 다시 짠다(v10: 막마다 이론 → 포털(A·B·C) → 랩업, 기본 25~30분 단위, 이론 외부 서비스는 arrows.app · bpmn.io만, 이론은 설명만으로도 됨). **(정정 10-10: 시나리오 이름은 B 정기 점검 · C 재고 보충이고 B · C는 설비까지 가지 않는다 — DECISIONS 112. 실라버스 고정 값은 `NOW.md` 0.1.)**
+- [x] C1 지식(시드 두 판 · 추출/적재 확장 · 문서 B·C) — worktree 서브에이전트, 보고 `verification/2026-10-09/c1-knowledge.md`
+- [x] C2 실행(승인 뒤 메일 · 발주 · 대기 · 정비 모사 · 입고, 재고 감시기) — worktree 서브에이전트, 보고 `…/c2-execution.md`
+- [x] U1 UI/UX(실시간 스트리밍 최우선 · 결함 1~18) — worktree 서브에이전트, 메인 스택 담당, 보고 `…/u1-uiux.md`
+- [x] S 실라버스 — 한 개만 둔다: `docs/실라버스.xlsx`(커밋 0a4cee2) · 설명 `docs/실라버스.md`. 사용자 10-09 "실라버스 작업은 필요없고요"로 중단 — 사용자가 새 판을 주면 그것이 기준. 고정 값은 `NOW.md` 0.1 끝 줄. 생성 스크립트는 레포에 없다(세션 임시 폴더에 있었음)
 - [x] C3 조립 + B · C 단순화(설비까지 안 감, 결함 실험 버튼 · 시작 표시 · 초기화) · 실제 워커 A · B · C 완주(4차: A 219초 · B 64초 · C 67초, 버튼 → 끝), 회귀 cooler 40/40 · pump-fan 47/47 — `verification/2026-10-09/c3-assembly.md` 7절, 증거 `.evidence/a161-c3/live/`. 남은 것: C 지식(불량 기대비용 · PUR-13 연결) 검토 → 아래 C 지식 공백 근본 수정 수정
-- [ ] U2 시나리오 B · C 화면 — C3 뒤
+- [ ] U2 시나리오 B · C 화면 — `NOW.md` 3.2
 - [x] (10-09 밤 ~ 10-10) **통합 브랜치 `merge-preview`**(7fa5664 기준): c3-fixes(Linux PLANT_SIM_URL · 블랙박스 빈틈 G1~G4) · c3-trace-ui(처리 기록 화면 caseRecord.js) · capstone-gaps(G2⓪ · G2 · G10 · G4 · G5 키트 · G8) · c3-assembly(B · C 단순화) 합침. 점검 3갈래(백엔드 · 포털 · 스크립트/키트) `verification/2026-10-09/review-*.md`, C3 점검 `verification/2026-10-10/review-c3-bc.md`(결함 11건: 기준점은 설비 처리 건이 없을 때만 옮김 · 지난 누름 잔재 연결 · 매직 limit · 빈 성공 · 삼킨 읽기 실패 · 처리 기록에 수업 버튼 · '설비 명령 없음'). 뮤테이션 확인 포함.
 - [x] **C 지식 공백 근본 수정**(`verification/2026-10-10/c-knowledge-gap.md`): 규정 판단에 공급사 불량률 입력 `in:supplier-fail-rate`(PR-7.4 원문) 선언, 카드 사실 `supplier_fail_rate`(원문과 다른 불량 기대비용 식 제거), 추출 지시 2.1(선택 기준과 적용 조건 분리), `scripts/c3_ingest.py` 무조건 승인 제거(사람 검토 기록 필수). 원문 보강은 불필요(판정 문장 있음).
 - [x] 전체 단위 시험 **1954 passed · 1 failed(흔들림, 단독 32/32) · 4 skipped**(merge-preview d5d73a9). 스택 merge-preview 기준 재빌드(process · agent · dmn-mcp · plant-sim · enterprise-sim · enterprise-mcp 3 · effects-mcp · portal), 마이그레이션 048 · 050 적용, process ↔ plant-sim sim-net · PLANT_SIM_URL=http://plant-sim:8000 docker inspect 확인, 재시작 0.
@@ -276,8 +278,8 @@ A073 실행: 1배속 워커 회귀에서 에이전트 작업이 모두 끝난 �
 - [x] 캡스톤 합침: G1 · G7(승인 부품 · 카드 · 반려 경로 사전 검사 · 반려 = 운전원 거부 종결), G3 · G9(extract · effect:false · 모르는 칸 거절 · 실패 시도 기록/감사 보존 · 작업 규칙 공통부/업무부, 마이그레이션 051 적용), 키트 T0 · T5~T8. 전체 단위 시험 2076 통과 · 0 실패
 - [ ] 남은 것: 출처 번호 중복은 HM-8 · PR-07 추출 2.2 재적재 뒤 사라짐, 제출 안 된 판단의 DEC- id 404 · 발주 카드 window '즉시' · C 승인 재확인이 예측 문맥 대조(보고만, live-leftovers.md), 캡스톤 G6(격리) · 예시 사례 실제 1회(구글 인증 = 사용자)
 - [x] 라이브 3차 남은 것 6건 근본 수정(코드 · 단위 시험, 라이브 미검증) — 카드 머리말(예측은 고르는 근거일 때만, 업무 안은 업무 값) · 업무 경보 원인 근거 기록(cause_route) · 버튼 기록 이름 한 번 · 메일 승인자 이름(approved_by_name) · c3_flows 모르는 명령 거절 · 읽기 평가 id EVAL- · 추출 계약 2.2(절 제목에 번호 없음) — `verification/2026-10-10/live-leftovers.md`
-- [ ] 캡스톤 G1/G7(사람 승인 일반화 · 카드) · G3(MCP 결과 추출) · G9(업무 중립 에이전트 규칙) · G6(격리) · 키트 T0/T5~T8 · 예시 사례 실제 1회 — `verification/2026-10-09/capstone-lab.md`
-- [ ] 별건: EFFECT_COMPENSATION · EFFECT_REVIEW 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — review-c3-bc.md 4절), test_mcp_check 전체 실행 때만 흔들림
+- [ ] 캡스톤 남은 것: G6(격리) · T2 · 예시 사례 실제 1회 · G1/G3/G9 라이브 확인 — `NOW.md` 3.4
+- [ ] 별건: EFFECT_COMPENSATION · EFFECT_REVIEW 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — review-c3-bc.md 4절)(test_mcp_check 흔들림은 ee5ec6a · 0b3b241로 고침)
 - 결정 대기(사용자): main 합침 · push, 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3` 삭제 여부, 업무 감시(BUSINESS_MONITOR, 기본 끔) 유지 여부
 
 **A160(10-08, 새 클라우드 세션) — 작업 B 이어받기(GOAL 맨 위 "작업 B" DoD 1~5, 순서 USER_UTTERANCES S2: 개발 완주 검증 → 실라버스 → UI/UX).** 증거 `.evidence/a160/`(클라우드).
@@ -1237,6 +1239,8 @@ A033 추가: 처리owner/lease/token·설비별단일claim·지연CLEAR/ACK·실
 
 ## 10. 새 세션용 복붙 대사
 
+> **(10-10) 아래 대사는 A159 때 것이다. 지금은 쓰지 않는다.** 새 세션 대사: "`docs/handoff/NOW.md`를 읽고 <S | U | F | K> 갈래를 이어간다."
+
 ```text
 의도(Why & Value)
 노베이스 수강생이 공장 사건 하나의 처리 과정을 따라가며(왜 → 어떻게 → 결과) 미니 ProcessGPT를 직접 만들어 자기 것으로 만들게 하기 위해, 포털 "직접 만들기" 기능 B1~B7을 완주 검증까지 끝내고, 실라버스를 가치 · 스토리텔링 구조로 다시 짠다.
@@ -1263,5 +1267,5 @@ DECISIONS §111 폐기 목록과 §110 ⑥(시나리오 나선형)을 되살리�
 | 방향이 결정됨 | §2에 추가 + 이유(경위는 DECISIONS), §6에서 제거 |
 | 시도가 틀린 것으로 밝혀짐 | DECISIONS에 경위, §2 · §4에서 제거 |
 | 외부 답변이 옴 | §7에서 제거하고 §2 또는 §4로 |
-| 작업이 진행됨 | §9 A159 갱신(첫 `[ ]`/`[~]`가 다음 일), §0 다시 확인 |
+| 작업이 진행됨 | 병렬 중에는 갈래 파일(`NOW.md` 1절 4번), 합친 뒤 §9 A161 · `NOW.md` |
 | 사용자 발화 | USER_UTTERANCES 원문 + 반영 위치 |
