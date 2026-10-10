@@ -27,6 +27,13 @@ INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:pr
 IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어가 되돌릴 수 없다",
                 "skill:substitute-shipment": "대체 출하는 물류가 움직여 되돌릴 수 없다",
                 "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}
+# C2 승인 뒤 실행 부품의 거래 (entsim.state.C2_IRREVERSIBLE 와 같은 사유)
+C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
+                   "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
+                   "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
+                   "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
+                   "skill:pm-reset": "정기 정비가 끝나 다음 주기가 시작됐다(정정은 새 기록으로)",
+                   "skill:delay-delivery": "공급사가 알린 납기 변경이라 되돌리지 않는다"}
 PLC_REASON = "물리 명령은 자동 역명령으로 보상하지 않는다. 설비 상태를 확인한 사람의 승인 뒤 사건을 다시 연다"
 # Terminal incidents (ESCALATED · CLOSED · REJECTED · RESOLVED_WITHOUT_ACTION) end their own path; they are not reopened.
 REOPENABLE = {"AWAITING_APPROVAL", "ACKED", "RE_OBSERVING", "RESOLVED", "WORK_ORDER_CREATED"}
@@ -51,7 +58,7 @@ def inventory(evidence: dict) -> list[dict]:
             effects.append({"id": f"tx:{tx.get('id')}", "kind": "enterprise", "decision": did, "tx": tx.get("id"),
                             "skill": skill, "system": tx.get("system"), "ref": tx.get("ref"), "detail": tx.get("detail"),
                             "reversible": skill in INVERSE_OF, "inverse": INVERSE_OF.get(skill),
-                            "irreversible_reason": IRREVERSIBLE.get(skill) or (None if skill in INVERSE_OF else "되돌리기 계약이 없는 거래"),
+                            "irreversible_reason": IRREVERSIBLE.get(skill) or C2_IRREVERSIBLE.get(skill) or (None if skill in INVERSE_OF else "되돌리기 계약이 없는 거래"),
                             "compensated_by": undo.get("id") if undo else None,
                             "fingerprint": _fp(["tx", did, tx.get("id"), skill, tx.get("ref")])})
     ledger_refs = {e["ref"] for e in effects}

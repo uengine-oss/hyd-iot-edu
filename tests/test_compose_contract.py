@@ -34,6 +34,10 @@ def _env_read_anywhere(key: str, dirs: list[Path]) -> bool:
     return False
 
 
+#: compose.yaml '# DMZ (ot-net + it-net)' 절의 두 서비스
+DMZ_SERVICES = frozenset({"connect-ingest", "cmd-gateway"})
+
+
 def check(compose: dict) -> list[str]:
     errs = []
     for name, s in compose["services"].items():
@@ -60,6 +64,10 @@ def check(compose: dict) -> list[str]:
                     continue
                 if not _env_read_anywhere(key, dirs):
                     errs.append(f"{name}: environment {key} is read by no file under {dirs[0].relative_to(ROOT)} or hydcommon")
+    for name, s in compose["services"].items():                   # IT ↔ OT 는 DMZ 두 서비스만 넘는다(cmd-gateway = 유일한 하향 통로)
+        nets = set(s.get("networks") or [])
+        if {"ot-net", "it-net"} <= nets and name not in DMZ_SERVICES:
+            errs.append(f"{name}: on both ot-net and it-net — only the DMZ ({', '.join(sorted(DMZ_SERVICES))}) bridges IT and OT")
     worker_env = compose["services"]["agent-worker"].get("environment") or {}
     allowed = str(worker_env.get("ALLOWED_TOOLS", ""))
     if not re.fullmatch(r"\$\{ALLOWED_TOOLS:-\}", allowed.strip()):
@@ -81,11 +89,12 @@ def test_checker_catches_each_broken_invariant():
     c["services"]["dmn-mcp"].pop("extra_hosts")
     c["services"]["agent"]["environment"]["PG_DSN"] = "postgresql://hyd:hyd@timescaledb:5432/hyd"
     c["services"]["agent-worker"]["environment"]["ALLOWED_TOOLS"] = "${ALLOWED_TOOLS:-Read,Glob}"
+    c["services"]["process"]["networks"] = ["it-net", "ot-net"]
     errs = "\n".join(check(c))
     for needle in ["detector: port 0.0.0.0:8092:8092", "detector: no mem_limit", "connect-sink: no profile",
                    "cmd-gateway: built long-running service without healthcheck", "agent: long-running service without log rotation",
                    "dmn-mcp: environment points at host.docker.internal", "agent: environment PG_DSN is read by no file",
-                   "agent-worker: ALLOWED_TOOLS must pass through"]:
+                   "agent-worker: ALLOWED_TOOLS must pass through", "process: on both ot-net and it-net"]:
         assert needle in errs, needle
 
 

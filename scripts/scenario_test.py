@@ -208,13 +208,15 @@ def knowledge_admin_checks():
     sample = Path(__file__).resolve().parents[1] / "docs" / "samples" / "HM-8_cooler-fan-manual.md"
     import uuid
     suffix = uuid.uuid4().hex[:8].upper()
-    raw = sample.read_text(encoding='utf-8').replace('SOP-FAN-11', 'SOP-TEST-' + suffix + '-11').replace('SOP-FAN-12', 'SOP-TEST-' + suffix + '-12').encode()
+    import re   # C1: HM-8은 문서 A(쿨러 과열)로 보강됐다(절 8 · SOP 7 · 단계 25). 모든 SOP 번호를 시험용으로 바꿔 시드 SOP와 겹치지 않게 한다
+    raw = re.sub(r'SOP-(FAN|COOL)-(\d+)', lambda m: f'SOP-TEST-{suffix}-{m[1]}{m[2]}', sample.read_text(encoding='utf-8')).encode()
     pv = post(f"{PROCESS}/api/kg/manuals/preview", {"filename": 'scenario-' + sample.name, "data": base64.b64encode(raw).decode()}, timeout=30)
-    check("manual preview: 2 sections, 2 SOPs, 8 steps", len(pv.get("sections", [])) == 2 and sum(p["stepCount"] for p in pv.get("procedures", [])) == 8,
+    check("manual preview: 8 sections, 7 SOPs, 25 steps", len(pv.get("sections", [])) == 8 and len(pv.get("procedures", [])) == 7
+          and sum(p["stepCount"] for p in pv.get("procedures", [])) == 25,
           str([(p["id"], p.get("suggestedFailureMode")) for p in pv.get("procedures", [])]))
     links = {p["id"]: {"failureMode": "fm:bearing-degradation", "relation": "REMEDIED_BY", "kind": "work_order"} for p in pv.get("procedures", [])}
     out = post(f"{PROCESS}/api/kg/manuals/commit", dict(pv, links=links, by="[회귀 검사] 시나리오 검사기", reviewed=True), timeout=30)
-    check("manual committed: 2 SOP skills matched to the fan bearing failure mode", out.get("procedures") == 2 and out.get("steps") == 8
+    check("manual committed: 7 SOP skills matched to the fan bearing failure mode", out.get("procedures") == 7 and out.get("steps") == 25
           and all(v["failureMode"] == "fm:bearing-degradation" for v in (out.get("skills") or {}).values()), json.dumps(out.get("skills"), ensure_ascii=False))
     undone = post(f"{PROCESS}/api/kg/manuals/batches/{pv['batch']}/rollback", {'by': '[회귀 검사] 시나리오 검사기'}, timeout=30)
     check('fixture manual graph rolled back while source remains readable', undone.get('status') == 'ROLLED_BACK' and

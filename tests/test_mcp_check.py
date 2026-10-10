@@ -56,6 +56,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(404); self.end_headers()
 
     def do_POST(self):
+        # 요청 본문을 먼저 다 읽는다. 읽지 않은 바이트를 남기고 소켓을 닫으면 커널이 RST 를 보내, 클라이언트가 응답을 읽기 전에
+        # 연결 끊김(mcp_check 'closed')을 받는 일이 시점에 따라 생긴다(html 60회 중 7회 실측) — 실제 HTTP 서버처럼 본문을 소비한다.
+        msg = self._read()
         mode = self.mode
         if mode == "auth":
             self.send_response(401); self.end_headers(); return
@@ -65,12 +68,11 @@ class _Handler(BaseHTTPRequestHandler):
         if mode == "slow":
             time.sleep(2.0)
         try:
-            self._serve_mcp(mode)
+            self._serve_mcp(mode, msg)
         except (BrokenPipeError, ConnectionResetError):      # 느린 서버 시험: 클라이언트가 먼저 끊는다
             pass
 
-    def _serve_mcp(self, mode):
-        msg = self._read()
+    def _serve_mcp(self, mode, msg):
         if mode == "sse-transport":
             out = respond(msg)
             self.send_response(202); self.end_headers()
@@ -205,7 +207,8 @@ def test_unsupported_transport_and_bad_url_are_config_errors():
 def test_seed_shapes_normalize_to_the_three_transports():
     seed = json.loads((ROOT / "it" / "supabase" / "seed.sql").read_text(encoding="utf-8").split("'{\n  \"mcpServers\"")[1].split("}'::jsonb")[0].join(['{\n  "mcpServers"', "}"]))
     kinds = {name: mcp_check.normalize(spec)["transport"] for name, spec in seed["mcpServers"].items()}
-    assert kinds == {"neo4j": "stdio", "enterprise": "streamable_http", "hyd-dmn": "streamable_http"}
+    assert kinds == {"neo4j": "stdio", "enterprise": "streamable_http", "hyd-dmn": "streamable_http",
+                     "enterprise-maint": "streamable_http", "enterprise-purchase": "streamable_http"}   # C2: 업무 MCP 보전용 · 구매용
     assert mcp_check.normalize({"type": "sse", "url": "http://x/sse"})["transport"] == "sse"
     assert mcp_check.normalize({"type": "http", "url": "http://x/mcp"})["transport"] == "streamable_http"
 
@@ -276,7 +279,8 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
         src = (ROOT / path).read_text(encoding="utf-8")
         assert "@mcp.tool\n" not in src, f"{path}: 표시 없는 도구가 있습니다"
         marks.update(dict((name, mark) for mark, name in re.findall(r"@mcp\.tool\(annotations=(READ|WRITE)\)\ndef (\w+)", src)))
-    assert len(marks) == 25 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]   # A11: dmn fabric_query (read) added → 15 + 10
+    # A11: dmn fabric_query (read) added → 15 + 10; C2: enterprise spare_stock · part_quotes · maintenance_windows · pm_status (read) + dmn business_causes → 16 + 14
+    assert len(marks) == 30 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]
     for name, mark in marks.items():
         ok, _ = mcp_check.read_only_verdict({"name": name, "annotations": {"readOnlyHint": mark == "READ"}})
         assert ok is (mark == "READ"), name

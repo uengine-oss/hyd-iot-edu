@@ -139,6 +139,42 @@
           <button class="btn" id="flowCheck">검사</button><button class="btn primary" id="flowRegister">판본 등록</button></div>
       </section>`;
     wire(box);
+    fieldEditors(box);
+  }
+
+  /* A161-U1 (A160 결함 6): "값이름 | 표시 이름 | 종류 | 고를 값" 한 줄 문법을 화면에 보이지 않고, 칸마다 입력 행(값 이름 · 화면 이름 · 종류 · 고를 값)으로 받는다.
+     행을 고치면 숨긴 글 칸에 같은 문법으로 다시 써 넣으므로 검사 · 등록(collect → parseFields)은 그대로다. process-gpt-vue3 FormDefinition.vue 의 칸 목록 편집과 같은 모양. */
+  function fieldEditors(box) {
+    box.querySelectorAll('textarea[data-fields], textarea[data-outputs], #flowStartFields').forEach(ta => {
+      if (ta.dataset.rows) return;
+      let rows; try { rows = parseFields(ta.value); } catch (_) { return; }      // a hand-written text that does not parse stays as text
+      ta.dataset.rows = '1'; ta.hidden = true;
+      const ed = document.createElement('div'); ed.className = 'field-rows';
+      const sync = () => { ta.value = fieldsText(rows.filter(r => r.key)); ta.dispatchEvent(new Event('input', { bubbles: true })); };
+      const draw = () => {
+        ed.innerHTML = (rows.length ? `<div class="field-row head"><span>값 이름</span><span>화면 이름</span><span>종류</span><span>고를 값</span><span></span></div>` : '')
+          + rows.map((r, i) => `<div class="field-row" data-i="${i}"><input data-k="key" value="${h(r.key)}" placeholder="예) oil_iso" aria-label="값 이름">
+            <input data-k="text" value="${h(r.text && r.text !== r.key ? r.text : '')}" placeholder="예) ISO 청정도" aria-label="화면 이름">
+            <select data-k="type" aria-label="종류">${TYPES.map(t => `<option value="${t}" ${t === (r.type || 'text') ? 'selected' : ''}>${h(TYPE_LABEL[t] || t)}</option>`).join('')}</select>
+            <input data-k="items" value="${h((r.items || []).join(', '))}" placeholder="${r.type === 'select' ? '쉼표로 구분' : '고르기일 때만'}" ${r.type === 'select' ? '' : 'disabled'} aria-label="고를 값">
+            <button type="button" class="chip-x" data-del aria-label="칸 빼기" title="칸 빼기">×</button></div>`).join('')
+          + `<button type="button" class="btn small ghost" data-add>+ 칸 추가</button>`;
+      };
+      ed.addEventListener('input', e => {
+        const row = e.target.closest('[data-i]'); if (!row) return;
+        const r = rows[+row.dataset.i], k = e.target.dataset.k;
+        if (k === 'items') r.items = e.target.value.split(',').map(x => x.trim()).filter(Boolean);
+        else if (k === 'text') r.text = e.target.value.trim() || r.key; else if (k === 'key') r.key = e.target.value.trim();
+        sync();
+      });
+      ed.addEventListener('change', e => { if (e.target.dataset.k === 'type') { rows[+e.target.closest('[data-i]').dataset.i].type = e.target.value; sync(); draw(); } });
+      ed.addEventListener('click', e => {
+        if (e.target.closest('[data-add]')) { rows.push({ key: '', text: '', type: 'text' }); draw(); ed.querySelector('.field-row:last-of-type input')?.focus(); }
+        const del = e.target.closest('[data-del]'); if (del) { rows.splice(+del.closest('[data-i]').dataset.i, 1); sync(); draw(); }
+      });
+      draw(); ta.after(ed);
+    });
+    box.querySelectorAll('.field-hint').forEach(p => { if (/^한 줄에 칸 하나/.test(p.textContent)) p.textContent = '사람이 입력할 칸을 한 줄씩 추가합니다. 고르기 칸은 고를 값을 쉼표로 적습니다.'; });
   }
 
   function taskRow(t) {
@@ -159,6 +195,10 @@
     } else if (part && part.key === 'human') {
       detail = `<textarea data-fields="${h(t.id)}" rows="2" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류">${h(fieldsText(m.fields))}</textarea>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
+    } else if (part && part.key === 'human:approve') {     // 캡스톤 G1: 고를 안이 든 값 · 구분 칸 · 추천 · 지는 안 · 근거 자료 (part.config 가 칸 설명)
+      const cfg = m.config || {};
+      detail = Object.entries(part.config).map(([k, hint]) => `<input data-approval="${h(t.id)}" data-cfg="${h(k)}" value="${h(cfg[k] || '')}" placeholder="${h(k)} — ${h(hint)}">`).join('')
+        + `<p class="kv-line">받을 수 있는 값 ${avail(t.id).map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 <code>approval</code> <code>approval_reason</code> · <b>사람 승인</b></p>`;
     } else if (part && part.key === 'agent') {
       detail = `<textarea data-instruction="${h(t.id)}" rows="2" placeholder="지시문 — 무엇을 조회 · 계산해 무엇을 낼지">${h(m.instruction || '')}</textarea>
         <textarea data-outputs="${h(t.id)}" rows="2" spellcheck="false" placeholder="결과 값 — 값이름 | 표시 이름 | 종류">${h(fieldsText(m.outputs))}</textarea>
@@ -231,6 +271,7 @@
     set('outputs', (t, x) => { t.outputs = parseFields(x.value); });
     set('instruction', (t, x) => { t.instruction = x.value.trim(); });
     set('inputs', (t, x) => { t.inputs = x.value.split(',').map(s => s.trim()).filter(Boolean); });
+    set('approval', (t, x) => { t.config = t.config || {}; if (x.value.trim()) t.config[x.dataset.cfg] = x.value.trim(); else delete t.config[x.dataset.cfg]; });
     box.querySelectorAll('[data-timer]').forEach(x => { const iso = isoOf(x.value); if (iso) m.timers[x.dataset.timer] = iso; else delete m.timers[x.dataset.timer]; });
     box.querySelectorAll('[data-default]').forEach(x => {
       const id = x.dataset.default;

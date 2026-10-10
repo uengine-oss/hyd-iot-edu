@@ -60,13 +60,14 @@ def test_describe_schema_answers_in_the_envelope_with_the_ddl_as_document():
     assert "comment on table \"ent\".\"assets\" is '설비'" in out["document"]
 
 
-def test_server_lists_all_ten_tools_and_guards_each_one():
+def test_server_lists_all_fourteen_tools_and_guards_each_one():
     text = (ROOT / "it" / "enterprise-mcp" / "enterprise_mcp" / "server.py").read_text(encoding="utf-8")
     head = text.split('"""')[1]
     for name in ("mes_orders", "erp_contract", "erp_inventory", "cmms_history", "qms_lots", "scm_suppliers", "ems_demand",
+                 "spare_stock", "part_quotes", "maintenance_windows", "pm_status",          # C2
                  "describe_schema", "describe_catalog", "query"):
         assert name in head, name
-    assert text.count("@mcp.tool(annotations=READ)\n") == 10 and text.count("return guarded(") == 10 and "def describe_schema() -> dict" in text
+    assert text.count("@mcp.tool(annotations=READ)\n") == 14 and text.count("return guarded(") == 14 and "def describe_schema() -> dict" in text
     assert sql_guard.__all__ == ["MAX_ROWS", "READ_FUNCTIONS", "SqlRejected", "guard"] and sql_guard.guard is __import__("hydcommon.sql_read", fromlist=["guard"]).guard
 
 
@@ -74,7 +75,8 @@ def test_server_lists_all_ten_tools_and_guards_each_one():
 def test_evaluate_cards_refuses_a_cause_without_diagnosis_basis():
     t = dmn.DmnTools(kg=FakeKG(), tsdb=FakeTSDB())
     verified = t._diagnosed_cause("HYD-01", "COOLER_DEGRADATION", "cause:cooler-fin-fouling", "fm:cooling-loss")
-    assert verified == {"id": "cause:cooler-fin-fouling", "name": "쿨러 핀 오염", "failureModeId": "fm:cooling-loss", "failureMode": "냉각 능력 상실"}
+    assert verified == ({"id": "cause:cooler-fin-fouling", "name": "쿨러 핀 오염", "failureModeId": "fm:cooling-loss", "failureMode": "냉각 능력 상실"},
+                        {"cause_basis": dmn.CAUSE_BASIS, "cause_route": "diagnosis"})
     assert t.kg.calls[-1] == ("t1", "COOLER_DEGRADATION", "HYD-01")
     with pytest.raises(ValueError, match="진단 지식\\(T1\\)에 없는 원인"):
         t._diagnosed_cause("HYD-01", "COOLER_DEGRADATION", "cause:made-up", "fm:cooling-loss")
@@ -99,6 +101,7 @@ def test_evaluate_cards_records_the_cause_basis_in_the_decision_origin(monkeypat
     monkeypatch.setattr(dmn.decidelib, "decide", fake_decide)
     t.evaluate_cards("HYD-01", "COOLER_DEGRADATION", "cause:cooler-fin-fouling", "fm:cooling-loss")
     assert seen["cause"]["name"] == "쿨러 핀 오염" and seen["origin"]["cause_basis"] == dmn.CAUSE_BASIS and seen["do_submit"] is False
+    assert seen["origin"]["cause_route"] == "diagnosis"
     assert "T1" in dmn.CAUSE_BASIS and "diagnose" in dmn.CAUSE_BASIS
 
 
@@ -164,3 +167,21 @@ def test_allowed_tools_default_lives_in_settings_and_includes_the_python_script_
     assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",")
     monkeypatch.setenv("ALLOWED_TOOLS", "Read, Glob")
     assert Settings().allowed_tools == ["Read", "Glob"]
+
+
+def test_business_mcp_is_split_into_maintenance_and_purchasing_servers_without_overlap():
+    """C2 (확정 2026-10-09): 같은 서버 코드를 보전용 · 구매용으로 띄운다. 두 도구 묶음은 겹치지 않고 자유 SQL 은 없다(경계를 넘지 않게)."""
+    import asyncio, importlib, os, sys
+    names = {}
+    for toolset in ("maintenance", "purchasing"):
+        os.environ["ENTERPRISE_MCP_TOOLSET"] = toolset
+        try:
+            sys.modules.pop("enterprise_mcp.server", None)
+            server = importlib.import_module("enterprise_mcp.server")
+            names[toolset] = set(asyncio.run(server.mcp.get_tools()))
+        finally:
+            os.environ.pop("ENTERPRISE_MCP_TOOLSET", None)
+            sys.modules.pop("enterprise_mcp.server", None)
+    assert names["maintenance"] == {"pm_status", "maintenance_windows", "cmms_history", "mes_orders"}
+    assert names["purchasing"] == {"spare_stock", "part_quotes", "scm_suppliers"}
+    assert not names["maintenance"] & names["purchasing"] and not {"query", "describe_schema"} & (names["maintenance"] | names["purchasing"])

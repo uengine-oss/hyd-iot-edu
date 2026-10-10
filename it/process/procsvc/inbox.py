@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 
 from hydcommon.timeutil import parse_iso
 
+from . import approval_part
+
 log = logging.getLogger("process.inbox")
 
 PERSON = "user:"
@@ -117,6 +119,24 @@ def _notify_task(repo, tenant, inst, row, endpoint):
                                   "user_id": user_id, "tenant_id": tenant, "url": task_url(row["proc_inst_id"], row["id"]), "from_user_id": "sys:process"})
 
 
+TYPE_NOTICE = "process_notice"         # C2: 시스템 task 의 공지(정비 완료 · 입고 확인) — 처리 건 참여자에게
+
+
+def notify_participants(repo, tenant, inst, title, description, url=None) -> int:
+    """C2: 처리 건 참여자(사람)에게 포털 알림 한 줄씩. 보낸 수를 돌려준다."""
+    seen: list[str] = []
+    for p in inst.get("participants") or []:
+        if str(p).startswith("sys:"):
+            continue
+        for user_id in notification_targets(repo, tenant, p):
+            if user_id not in seen:
+                seen.append(user_id)
+    for user_id in seen:
+        repo.insert_notification({"title": title, "type": TYPE_NOTICE, "description": description, "user_id": user_id, "tenant_id": tenant,
+                                  "url": url or f"/instances/{inst['proc_inst_id']}", "from_user_id": "sys:process"})
+    return len(seen)
+
+
 def _notify_end(repo, tenant, inst, end_name):
     name = inst.get("proc_inst_name") or inst.get("proc_inst_id")
     seen: list[str] = []
@@ -147,6 +167,17 @@ def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str |
         held = ", ".join(names.get(r, r) for r in mine) or "없음"
         raise PermissionError(f"{user.get('username') or by} 님은 {names.get(role, role)} 역할이 아니어서 그 역할로 승인할 수 없습니다(내 역할: {held})")
     return by
+
+
+def person_name(repo, tenant_id: str, by: str | None) -> str:
+    """승인자 이름(메일 · 결과 보고 틀의 {approved_by_name}). 사람 사용자 id(user:*)면 사용자 표의 이름, 아니면 by 자체가 이미 이름이다
+    (회귀 검사기 · 옛 화면의 자유 입력 — check_actor 와 같은 갈래). 사람 id 인데 사용자 표에 이름이 없으면 LookupError(좌표: id)."""
+    if not str(by or "").startswith(PERSON):
+        return str(by or "")
+    user = next(iter(repo.list_users([by], tenant_id)), None)
+    if user is None or not user.get("username"):
+        raise LookupError(f"승인자 {by} 의 이름이 사용자 표(tenant {tenant_id})에 없습니다")
+    return user["username"]
 
 
 # ---------------------------------------------------------------- 내 작업함
@@ -193,7 +224,7 @@ def _kind(rt, inst, w) -> str:
         tool = (rt.definition_for(inst).activities.get(w["activity_id"]) or {}).get("tool") or ""
     except (LookupError, ValueError):
         tool = ""
-    return "select" if tool == "formHandler:select_card" else "form"
+    return {"formHandler:select_card": "select", approval_part.TOOL: "approve"}.get(tool, "form")
 
 
 def _item(rt, inst, w, timers, kind, assignment, now=None) -> dict:

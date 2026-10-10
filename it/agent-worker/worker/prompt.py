@@ -48,7 +48,14 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
                     '{"__human_input__":{"question":"담당자가 답할 구체적인 질문","options":[]}}. '
                     "options에는 필요할 때 선택지 문자열을 넣습니다. 이 응답은 완료 결과가 아닙니다. "
                     "도구 접근 거절이나 설비 조치 승인 우회에는 쓰지 마세요. 답변은 실행 권한을 바꾸지 않습니다.")
+    sections.append(LANGUAGE_RULE)
     return "\n\n".join(s for s in sections if s.strip())
+
+
+# C3 (U1 남은 것 1): the agent's narration between tool calls streamed in English ("Next I'll look up …"). The rule now closes
+# the prompt too, where the model reads it last, and names the narration explicitly.
+LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이유, 마지막 메시지까지 모든 자연어 문장을 한국어로 쓰세요. "
+                 "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다.")
 
 
 def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = False) -> str:

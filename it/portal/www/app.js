@@ -5,6 +5,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const HTTP_DEFAULT_DETAIL = { 'Not Found': '서버에 이 기능의 주소가 없습니다 — 서비스가 이 화면보다 이전 판일 수 있습니다', 'Method Not Allowed': '서버가 이 요청 방식을 받지 않습니다',
+  'Internal Server Error': '서버 내부 오류', 'Bad Gateway': '중계 서버 오류', 'Service Unavailable': '서비스를 쓸 수 없는 상태입니다' };
 async function requestJ(url, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.method ? 30000 : 8000);
@@ -12,7 +14,8 @@ async function requestJ(url, options = {}) {
     const r = await fetch(url, { cache: 'no-store', ...options, signal: controller.signal });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
-      const detail = j.detail;
+      // 서버 프레임워크 기본 문구(영문)는 한국어 + 상태 번호로. 404 "Not Found" 는 그 주소가 없는 것 — 실행 중인 서비스가 이 화면보다 이전 판일 때 흔하다
+      const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : j.detail;
       const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
       error.status = r.status;
       throw error;
@@ -192,7 +195,7 @@ function renderUnits() {
     let card = box.querySelector(`[data-asset="${asset}"]`);
     if (!card) {
       card = el('div', 'unit'); card.dataset.asset = asset;
-      card.innerHTML = `<header><strong>${asset}</strong><span class="mode"></span></header>
+      card.innerHTML = `<header><strong>${asset}</strong><span class="biz-alert"></span><span class="mode"></span></header>
         <div class="big num"><span class="v"></span><small>℃ ${esc(UI.t('plant.ts1'))}</small></div>
         <div class="bar"><i></i><b style="left:65%"></b></div><div class="threshold-note">${esc(UI.t('plant.trip'))}</div>
         <div class="kv"><span>${tagLabel('plant.ce', 'CE')}</span><em class="num ce"></em><span>${tagLabel('plant.cp', 'CP')}</span><em class="num cp"></em>
@@ -204,12 +207,9 @@ function renderUnits() {
         <svg class="spark" role="img" aria-label="압력 추이"></svg><div class="muted">${esc(UI.t('plant.spark'))}</div>
         <div class="fault"></div>
         <div class="ctl">
-          <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}</legend><div>
-          <button class="btn danger" data-act="degrade">쿨러 열화</button>
-          <button class="btn danger" data-act="leak">펌프 누설</button>
-          <button class="btn danger" data-act="wear">팬 베어링 마모</button>
-          <button class="btn" data-act="restore">결함 복구</button>
-          </div></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
+          <fieldset class="ctl-group"><legend>${esc(UI.t('plant.faults'))}${EXPERIMENT[asset] ? ` · ${esc(EXPERIMENT[asset].title)}` : ''}</legend><div>
+          ${(EXPERIMENT[asset] ? EXPERIMENT[asset].buttons : []).map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${esc(label)}</button>`).join('\n          ')}
+          </div><p class="muted small biz-press" aria-live="polite"></p></fieldset><fieldset class="ctl-group"><legend>${esc(UI.t('plant.modes'))}</legend><div>
           <button class="btn" data-act="mode" data-mode="REMOTE_AUTO">원격 자동</button>
           <button class="btn" data-act="mode" data-mode="REMOTE_MANUAL">원격 수동</button>
           <button class="btn" data-act="mode" data-mode="LOCAL">현장 제어</button>
@@ -245,16 +245,73 @@ function renderUnits() {
     const ramps = (u.faults || []).map(k => FAULT_LABEL[k] || k);
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${UI.t('plant.current')}: ${active.join(' · ')}` : '');
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
+    card.querySelector('.biz-alert').innerHTML = bizAlertHtml(asset);
+    card.querySelector('.biz-press').textContent = bizPressLine(asset);
   }
 }
+/* C3 B · C 단순화 — 결함 실험: 설비 카드마다 시나리오 하나(왼쪽부터 A 쿨러 · B 정기 점검 · C 재고 보충). B · C 는 설비까지 가지 않는다 —
+   버튼이 처리 건을 바로 열고(POST /api/scenario/{B|C}/start), 처리가 끝나면 카드 머리의 표시(정기 점검 도래 · 재고 보충 필요)가 꺼진다.
+   [초기화]는 그 시나리오의 업무 데이터를 수업 시작값으로 되돌려 표시를 다시 켠다. 표시 · 근거 값은 GET /api/scenario/status. */
+const EXPERIMENT = {
+  'HYD-01': { title: 'A 긴급 대응', buttons: [['degrade', '쿨러 열화 주입', 'danger'], ['restore', '쿨러 복구', '']] },
+  'HYD-02': { title: 'B 정기 정비', key: 'B', buttons: [['biz-start', '정기 점검', 'primary'], ['biz-reset', '초기화', '']] },
+  'HYD-03': { title: 'C 예비품 구매', key: 'C', buttons: [['biz-start', '재고 보충', 'primary'], ['biz-reset', '초기화', '']] },
+};
+function bizOf(asset) {
+  const key = (EXPERIMENT[asset] || {}).key;
+  return key && state.biz && state.biz.scenarios ? state.biz.scenarios[key] : null;
+}
+// 표시 칩: 읽는 중 · 상태를 못 읽음(사유) · 처리 중 · 도래/필요 · 처리됨 · 업무 시스템 응답 없음 — 못 읽은 것을 '표시 없음'으로 보이지 않는다
+function bizAlertHtml(asset) {
+  if (!(EXPERIMENT[asset] || {}).key) return '';
+  if (state.biz === undefined) return '<span class="chip tone-neutral">표시 확인 중…</span>';
+  if (state.biz && state.biz.failed) return `<span class="chip tone-danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
+  const b = bizOf(asset); if (!b) return '';
+  if (b.running) return `<a href="#" class="chip tone-accent" data-open-inst="${esc(b.running.instance)}" title="처리 건 화면에서 보기">${esc(b.title)} 처리 중 →</a>`;
+  if (b.alert) return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
+  if (b.alert === false && b.last) return `<a href="#" class="chip tone-success" data-open-inst="${esc(b.last.instance)}" title="처리 건 화면에서 보기">처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}</a>`;
+  return b.error ? `<span class="chip tone-neutral" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
+}
+// 마지막 수업 버튼(감사 기록 — 처리 건이 없는 [초기화]도 여기서 보인다)
+function bizPressLine(asset) {
+  const p = state.biz && state.biz.presses && state.biz.presses[asset];
+  return p ? `마지막: [${p.button}] ${p.by} · ${UI.time ? UI.time(p.at) : p.at}` : '';
+}
+function bizFactLine(b) {
+  const f = b.facts || {};
+  if (b.key === 'B') return `운전시간 ${fmt(f.pm_since_h, 0)} h / 주기 ${fmt(f.pm_interval_h, 0)} h — 기한까지 ${fmt(f.pm_due_in_h, 0)} h`;
+  return `${f.name || f.part_no || ''} 가용 ${f.available} 개 < 재주문점 ${f.reorder_point} 개 — 필요량 ${f.need_qty} 개`;
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-open-inst]'); if (!a) return;
+  e.preventDefault(); selectTab('instances'); if (window.hydInstancesSelect) window.hydInstancesSelect(a.dataset.openInst);
+});
+// 누가 눌렀나: 포털에서 고른 '나'(로그인 없음 — inbox.js). 처리 건 기록(SCENARIO_BUTTON)과 시작 경보 근거에 남는다
+function pressedBy() {
+  const me = window.hydInbox && window.hydInbox.me && window.hydInbox.me();
+  return { by: me ? me.name : '나 미선택', user_id: me ? me.id : null, roles: me ? me.roles : [] };
+}
+async function refreshBiz() {
+  try { state.biz = await getJ(API.process + '/api/scenario/status'); } catch (e) { state.biz = { failed: e.message }; }
+}
+const anchorNote = r => r && r.reanchored === false ? ' · 시나리오 시각 기준점은 그대로(진행 중인 처리 건이 있음)' : '';
 async function unitAction(asset, act, mode, button) {
   if (button) button.disabled = true;
   scenarioMessage(`${asset} 처리 중…`);
   try {
-    if (act === 'degrade') { await postJ(API.plant + '/api/fault', { asset, type: 'cooler_degradation' }); logLine(`${asset} 쿨러 열화 시작`); }
-    else if (act === 'leak') { await postJ(API.plant + '/api/fault', { asset, type: 'pump_leakage' }); logLine(`${asset} 펌프 누설 시작 · 압력 · 유량 하락`); }
-    else if (act === 'wear') { await postJ(API.plant + '/api/fault', { asset, type: 'fan_vibration' }); logLine(`${asset} 팬 베어링 마모 시작 · 진동 상승`); }
-    else if (act === 'restore') { await postJ(API.plant + '/api/fault', { asset, type: 'restore', ramp_sim_s: 60 }); logLine(`${asset} 결함 복구`); }
+    if (act === 'degrade') { const r = await postJ(API.process + '/api/scenario/A/degrade', pressedBy()); logLine(`${asset} 쿨러 열화 시작 · ${pressedBy().by} · ${UI.time(r.at)}${anchorNote(r)}`); await refreshBiz(); }
+    else if (act === 'restore') { const r = await postJ(API.process + '/api/scenario/A/restore', pressedBy()); logLine(`${asset} 쿨러 복구${r.instance ? ' · 열화로 열린 처리 건에 기록' : ' · 연결된 처리 건 없음(감사 기록에 남김)'}`); await refreshBiz(); }
+    else if (act === 'biz-start') {
+      const exp = EXPERIMENT[asset];
+      const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());
+      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}${anchorNote(r)}`);
+      await refreshBiz();
+    }
+    else if (act === 'biz-reset') {
+      const exp = EXPERIMENT[asset];
+      state.biz = await postJ(API.process + `/api/scenario/${exp.key}/reset`, pressedBy());
+      logLine(`${asset} ${exp.title} 초기화 — 업무 데이터를 수업 시작값으로${anchorNote(state.biz)}`);
+    }
     else if (act === 'mode') { await postJ(API.plant + '/api/mode', { asset, mode }); logLine(`${asset} 운전 모드 → ${UI.status(mode)}`); }
     else if (act === 'fan') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { FanSpeedSP: 80 } }); logLine(`${asset} 수동 팬 80 % → ${UI.status(r.result)} ${r.reason || ''}`); }
     else if (act === 'load') { const r = await postJ(API.plant + '/api/manual', { asset, writes: { LoadSP: 70 } }); logLine(`${asset} 수동 부하 70 % → ${UI.status(r.result)} ${r.reason || ''}`); }
@@ -332,7 +389,7 @@ function renderScada() {
     const inc = openIncidentFor(asset);
     const alarm = d.phase === 'RAISED' || d.phase === 'CANDIDATE' || d.phase === 'CLEARING' || s.state === 'TRIP';
     card.classList.toggle('alarm', alarm); card.classList.toggle('trip', s.state === 'TRIP'); card.classList.toggle('sel', state.selectedAsset === asset);
-    card.querySelector('.chips').innerHTML = UI.chip(s.mode) + UI.chip(s.state, UI.status(s.state) + (s.trip ? ' ' + s.trip : ''));
+    card.querySelector('.chips').innerHTML = UI.chip(s.mode) + UI.chip(s.state, UI.status(s.state) + (s.trip ? ' ' + s.trip : '')) + bizAlertHtml(asset);
     const set = (cls, v) => { const n = card.querySelector('.' + cls); if (n) n.textContent = v; };
     set('v-ts1', fmt(t.TS1, 1) + ' ℃'); set('v-ts3', fmt(t.TS3, 0)); set('v-ce', fmt(t.CE, 0)); set('v-fan', fmt(t.FanSpeedSP, 0));
     set('v-load', fmt(t.LoadSP, 0)); set('v-eps', fmt(t.EPS1, 1)); set('v-ps1', fmt(t.PS1, 0));
@@ -559,6 +616,7 @@ async function refreshSlow() {
     try { state.incidents = await getJ(API.process + '/api/incidents'); } catch (e) { incidentError = true; }
     try { state.runs = await getJ(API.agent + '/api/agent/runs'); } catch (e) { state.runs = []; }
     try { state.audit = await getJ(API.process + '/api/audit'); } catch (e) { state.audit = []; }
+    if (state.tab === 'scenario' || state.tab === 'incidents' || !state.biz || state.biz.failed) await refreshBiz();
     if (!state.definition) { try { state.definition = await getJ(API.process + '/api/definition'); } catch (e) { } }
     $('#openCount').textContent = incidentError ? '–' : state.incidents.filter(i => !i.terminal).length;
     if (state.tab === 'incidents') { renderScada(); renderIncList(); if (state.selected) await loadDetail(); else if (state.selectedAsset) { const o = openIncidentFor(state.selectedAsset); if (o) { state.selected = o.id; await loadDetail(); } else renderDetail(); } }

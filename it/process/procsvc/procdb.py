@@ -33,6 +33,10 @@ from .effect_store import MemoryEffects, PgEffects
 from .projection_repo import MemoryProjection, PgProjection
 from .agents_store import MemoryAgents, PgAgents          # U2: tenant skills · agent ↔ skill (read side)
 from .agent_authoring import MemoryAuthoring, PgAuthoring  # B1: 에이전트 · 스킬 · 배정 쓰기 + 되돌리기
+from .effect_parts import TOOLS as C2_SERVICE_TOOLS
+
+#: process 가 다시 돌려 보는 서비스 줄(멱등 처리기만): 사건 경로 · CMMS 작업지시 + C2 승인 뒤 실행 부품(기다리는 부품은 끝날 때까지 여기서 다시 본다)
+SERVICE_QUEUE_TOOLS = ('incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *C2_SERVICE_TOOLS)
 
 SUPABASE_DSN = os.getenv("SUPABASE_DSN", "postgresql://postgres:postgres@host.docker.internal:54322/postgres")
 
@@ -97,7 +101,8 @@ class Repo(Protocol):
     def insert_instance(self, inst: dict) -> None: ...
     def update_instance(self, inst: dict) -> None: ...
     def get_instance(self, proc_inst_id: str) -> dict | None: ...
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]: ...
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]: ...
     def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0) -> list[dict]: ...
     def hide_instances(self, tenant_id, def_id, ids) -> int: ...   # B5: finished instances of one definition → is_deleted (rows kept)
     # work items
@@ -125,8 +130,13 @@ class Repo(Protocol):
     # events · notifications
     def record_events(self, events: list[dict]) -> None: ...
     def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
-    def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500) -> list[dict]: ...
+    # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first.
+    # A cursor that is not an event of the same filter raises LookupError — an empty page would read as "no older rows"
+    def list_events(self, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500, before: str | None = None) -> list[dict]: ...
     def list_events_since(self, since: str | None = None, limit: int = 300) -> list[dict]: ...   # A091 live stream cursor
+    # A161-G2: full tool results too large for an events row (migration 20261009000048), one row per (case, content sha256)
+    def store_event_payload(self, payload: dict) -> None: ...
+    def get_event_payload(self, payload_id: str) -> dict | None: ...
     def agent_task_origins(self, proc_inst_id: str, tenant_id: str) -> list[str]: ...
     def insert_notification(self, note: dict) -> dict: ...
     # U5 (inbox): 역할 → 사람 업무분장 · 담당자 변경 이력 · 사용자별 알림 조회 (migration 000029)
@@ -167,6 +177,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self.instances: dict[str, dict] = {}
         self.workitems: dict[str, dict] = {}
         self.events: list[dict] = []
+        self.event_payloads: dict[str, dict] = {}
         self.notifications: list[dict] = []
         self.role_members: list[dict] = []
         self.assignments: list[dict] = []
@@ -217,7 +228,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         with self._lock:
             rows=[w for w in self.workitems.values() if w.get('tenant_id')==tenant_id and w['status']=='SUBMITTED'
                   and w.get('agent_orch')=='hyd-process' and w.get('consumer') and not w.get('output')
-                  and w.get('tool') in ('incident:command','incident:reobserve','enterprise:WO_CREATE')
+                  and w.get('tool') in SERVICE_QUEUE_TOOLS
                   and self.instances.get(w['proc_inst_id'],{}).get('status')=='RUNNING'
                   and self.instances[w['proc_inst_id']].get('tenant_id')==tenant_id
                   and not self.instances[w['proc_inst_id']].get('is_deleted')
@@ -338,11 +349,12 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         return any(any(v.get('key')=='incident' and v.get('value')==incident_id
                        for v in i.get('variables_data') or []) for i in self.instances.values())
 
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]:
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]:
+        has = lambda i, key, val: any(v.get('key') == key and v.get('value') == val for v in i.get('variables_data') or [])
         rows = [i for i in self.instances.values() if not i.get("is_deleted",False)
                 and (status is None or i["status"] == status) and (tenant_id is None or i.get("tenant_id") == tenant_id)
-                and (incident_id is None or any(v.get('key')=='incident' and v.get('value')==incident_id
-                    for v in i.get('variables_data') or []))]
+                and (incident_id is None or has(i, 'incident', incident_id)) and (asset is None or has(i, 'asset', asset))]
         return [_copy(i) for i in sorted(rows, key=lambda i: i["start_date"], reverse=True)[:limit]]
 
     # ---- work items
@@ -497,9 +509,22 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
     def insert_event(self, evt: dict) -> None:
         self.record_events([evt])
 
-    def list_events(self, proc_inst_id=None, todo_id=None, limit=500) -> list[dict]:
+    def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         rows = [e for e in self.events if (proc_inst_id is None or e.get("proc_inst_id") == proc_inst_id) and (todo_id is None or e.get("todo_id") == todo_id)]
-        return [_copy(e) for e in rows[-limit:]]
+        if before is not None:                 # A161-G4: keyset page — rows older than the cursor event
+            pos = next((i for i, e in enumerate(rows) if e.get("id") == before), None)
+            if pos is None:
+                raise LookupError(f"events cursor '{before}' is not an event of this case")
+            rows = rows[:pos]
+        return [_copy(e) for e in rows[-limit:]] if limit > 0 else []
+
+    def store_event_payload(self, payload: dict) -> None:
+        with self._lock:
+            self.event_payloads.setdefault(payload["id"], dict(payload, created_at=datetime.now(timezone.utc).isoformat()))
+
+    def get_event_payload(self, payload_id: str) -> dict | None:
+        row = self.event_payloads.get(payload_id)
+        return dict(row) if row else None
 
     def list_events_since(self, since=None, limit=300) -> list[dict]:
         """Events at or after `since` (ISO), oldest first; the caller drops ids it has seen (A091 SSE cursor)."""
@@ -638,9 +663,9 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 where w.tenant_id=%s and i.tenant_id=%s and i.status='RUNNING' and not i.is_deleted
                 and w.status='SUBMITTED' and w.agent_orch='hyd-process' and w.consumer is not null
                 and coalesce(w.output,'{}'::jsonb)='{}'::jsonb
-                and w.tool in ('incident:command','incident:reobserve','enterprise:WO_CREATE')
+                and w.tool = any(%s)
                 and (%s::uuid is null or w.id>%s::uuid) order by w.id limit %s""",
-                (tenant_id,tenant_id,after_id,after_id,limit)).fetchall()]
+                (tenant_id,tenant_id,list(SERVICE_QUEUE_TOOLS),after_id,after_id,limit)).fetchall()]
 
     def _val(self, col: str, v):
         if col in JSON_COLS and v is not None:
@@ -796,13 +821,15 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return c.execute('select exists(select 1 from bpm_proc_inst where variables_data @> %s::jsonb) as owned',
                              (self._Jsonb([{'key':'incident','value':incident_id}]),)).fetchone()['owned']
 
-    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None) -> list[dict]:
+    def list_instances(self, status: str | None = None, limit: int = 100, tenant_id: str | None = None, incident_id: str | None = None,
+                       asset: str | None = None) -> list[dict]:
         with self._conn() as c:
             rows = c.execute("""select * from bpm_proc_inst where is_deleted=false
                     and (%s::text is null or status::text=%s) and (%s::text is null or tenant_id=%s)
                     and (%s::text is null or variables_data @> %s::jsonb)
+                    and (%s::text is null or variables_data @> %s::jsonb)
                     order by start_date desc limit %s""", (status,status,tenant_id,tenant_id,incident_id,
-                        self._Jsonb([{'key':'incident','value':incident_id}]),limit)).fetchall()
+                        self._Jsonb([{'key':'incident','value':incident_id}]),asset,self._Jsonb([{'key':'asset','value':asset}]),limit)).fetchall()
             return [self._row(r) for r in rows]
 
     def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0):
@@ -917,13 +944,25 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
     def insert_event(self, evt: dict) -> None:
         self.record_events([evt])
 
-    def list_events(self, proc_inst_id=None, todo_id=None, limit=500) -> list[dict]:
+    def list_events(self, proc_inst_id=None, todo_id=None, limit=500, before=None) -> list[dict]:
         where, args = [], []
         if proc_inst_id is not None:
             where.append("proc_inst_id = %s"); args.append(proc_inst_id)
         if todo_id is not None:
             where.append("todo_id = %s"); args.append(todo_id)
-        sql = "select * from events" + (" where " + " and ".join(where) if where else "") + " order by timestamp limit %s"
+        if before is not None:
+            # A161-G4: keyset cursor on (timestamp, id) — the same order the page is read in, so no row is skipped or repeated
+            # when rows arrive between two page reads (offset paging would shift). The cursor must be an event of this filter.
+            with self._conn() as c:
+                cursor = c.execute("select timestamp, id from events where id = %s" + "".join(" and " + w for w in where),
+                                   [before] + args).fetchone()
+            if cursor is None:
+                raise LookupError(f"events cursor '{before}' is not an event of this case")
+            where.append("(timestamp, id) < (%s, %s)"); args += [cursor["timestamp"], cursor["id"]]
+        # A161-U1: the newest `limit` rows, oldest first (MemoryRepo's rows[-limit:]). It returned the OLDEST rows, so a long
+        # agent run (hundreds of usage rows) cut the newest tool calls out of the instance view and the screen stopped moving.
+        sql = ("select * from (select * from events" + (" where " + " and ".join(where) if where else "")
+               + " order by timestamp desc, id desc limit %s) x order by timestamp, id")
         with self._conn() as c:
             return [self._row(r) for r in c.execute(sql, args + [limit]).fetchall()]
 
@@ -934,6 +973,19 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             else:
                 rows = c.execute("select * from events where timestamp >= %s::timestamptz order by timestamp, id limit %s", (since, limit)).fetchall()
             return [self._row(r) for r in rows]
+
+    def store_event_payload(self, payload: dict) -> None:
+        with self._conn() as c:
+            c.execute("""insert into event_payloads (id, content, chars, content_type, source, tool, tool_use_id, job_id, todo_id, proc_inst_id, meta)
+                values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) on conflict (id) do nothing""",
+                      (payload["id"], payload["content"], payload.get("chars"), payload.get("content_type"), payload.get("source"),
+                       payload.get("tool"), payload.get("tool_use_id"), payload.get("job_id"), payload.get("todo_id"),
+                       payload.get("proc_inst_id"), self._Jsonb(payload.get("meta") or {})))
+
+    def get_event_payload(self, payload_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("select * from event_payloads where id = %s", (payload_id,)).fetchone()
+            return self._row(row) if row else None
 
     def find_task_event(self, todo_id, job_id, event_type):
         with self._conn() as c:

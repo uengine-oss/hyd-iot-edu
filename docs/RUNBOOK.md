@@ -16,6 +16,9 @@
 
 가상환경 준비(한 번): `"/c/Users/$USERNAME/AppData/Local/Programs/Python/Python314/python.exe" -m venv .venv314 && .venv314/Scripts/python.exe -m pip install -r requirements-dev.txt` (루트 `requirements-dev.txt`가 `it/agent`·`it/process`의 requirements를 포함한다; 워커용 `cliagents`·`psycopg`·`neo4j`는 `it/agent-worker` 요구 파일 확인. 3.14에는 고정 버전 휠이 없어 상위 호환 설치됐다 — HANDOFF §4).
 `.env`가 없으면 `cp .env.example .env`. 강의 배포본은 `.env`에 `PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`을 둔다(2026-10-07 현재 제작자 `.env` 값).
+온톨로지 시드 판(확정 TODO C1): 강의 배포본은 `SEED_EDITION=structure`(수업용 구조판, compose 기본값 — 고장 · 원인 · 조치 지식은 학생이 문서 A · C를 적재해 만든다).
+회귀 · 통합 시험(`run_regression` · `scenario_*_test.py`)은 시드 스킬 · 규칙 · 선례를 전제하므로 **`SEED_EDITION=full`로 새 neo4j 볼륨에 적재한 스택**에서 돌린다.
+kg-seed는 MERGE만 하므로 판을 바꿀 때는 neo4j 볼륨을 새로 만든다(이미 있는 지식은 structure로 다시 돌려도 지워지지 않는다). 확인: `docker compose logs kg-seed | grep "seed edition"`.
 
 ## 1. 기동 순서
 
@@ -89,6 +92,7 @@ curl -s http://127.0.0.1:8097/health     # 호스트 워커 (8098은 둘째)
 | 승인하지 않은 명령이 `action.cmd`에 올라와도 PLC가 움직이면 안 된다 | cmd-gateway 검사 ⑤ APPROVAL(2026-10-08): process가 승인마다 audit 토픽에 `CMD_APPROVAL_RECORDED`(cmdId·approvalId·HMAC 지문)를 먼저 쓰고, 관문은 그 기록이 있고 지문이 맞는 명령만 보낸다. `curl 127.0.0.1:8090/api/gateway/log`에 `check: APPROVAL`로 거절이 남는다. 키는 `.env` `CMD_FINGERPRINT_KEY`(process·cmd-gateway 동일) | `dmz/cmd-gateway/gw/validate.py`, `.evidence/a148/69/` |
 | Supabase 포트 충돌·기동 실패 | `( cd it/supabase && supabase stop )` 뒤 다시 `supabase start`; 포트는 `it/supabase/config.toml` 54321~54329 | config.toml |
 | 처음 `docker compose up`이 오래 걸린다 | 이미지 내려받기·빌드 5~10분(student-guide §1). 10분 목표는 **두 번째 기동부터** | — |
+| 정비 수행 · 시운전(재관측)이 PENDING에 머문다, process 로그에 `설비 시뮬레이터 복구 요청 실패` (Linux 수업 서버) | `.env`의 `PLANT_SIM_URL`이 `http://plant-sim:8000`(기본)인지 확인한다. process와 plant-sim만 시뮬레이터 API 전용 망 `sim-net`을 함께 쓰고, process는 compose 서비스 이름으로 plant-sim을 부른다(IT·OT 망을 함께 가진 서비스는 DMZ 둘뿐 — `tests/test_compose_contract.py`). 옛 값 `http://host.docker.internal:8000`·`127.0.0.1:8000`이 `.env`에 남아 있으면 지우고 `docker compose up -d process`. 호스트에서 process를 직접 띄울 때만 `PLANT_SIM_URL=http://127.0.0.1:8000`. Mac/Windows Docker Desktop도 같은 기본값으로 동작 | `compose.yaml` process, `docs/handoff/verification/2026-10-09/c2-execution.md` §10-4 |
 
 핵심 회귀(core 12)는 호스트 워커를 **끈 상태**에서 `.venv314/Scripts/python.exe scripts/run_regression.py --group core --out .evidence/reaudit/reg-<태그> --kill-workers --restart-workers 2`, 워커 묶음(6)은 워커 2개를 켠 상태에서 `--group worker`(`scripts/run_regression.py` 머리말). 2026-10-08 결과: core 13/13 PASS(약 15분), worker 5/6(rule-questions r1 하나는 검사 기대값이 낡음 — HYD-03 `standby_ready` 결측 가정), `.evidence/reaudit/reg-a148-core/`·`reg-a148-worker/`. 10분을 넘는 측정은 먼저 알린다.
 

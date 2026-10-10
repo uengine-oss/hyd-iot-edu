@@ -4,6 +4,16 @@
   python scripts/ontology_v2.py load     [--uri ...] # 제약 + 인스턴스 적재
   python scripts/ontology_v2.py validate [--uri ...] # 그래프가 스키마를 지키는지 검사 (위반 0건이면 통과)
   python scripts/ontology_v2.py queries  [--uri ...] # queries.cypher의 예시 질의 실행
+  python scripts/ontology_v2.py check-extra --extra students/<ID>/schema.json   # 학생 스키마 파일만 검사 (Neo4j 없이)
+  python scripts/ontology_v2.py validate --extra students/<ID>/schema.json      # 학생 이름 공간(ns) 노드만, v2 + 학생 스키마로 검사
+
+G4 (전체 과정 랩업, docs/handoff/verification/2026-10-09/capstone-lab.md 3.3 안 다): 학생은 확정 스키마(schema.json)를 고치지 않고
+같은 형식의 학생 스키마 파일(students/<ID>/schema.json, "ns": "<ID>")에 업무 고유 클래스 · 관계만 더한다. 검사기는 그 파일을 "추가 층"으로
+합쳐 쓴다: v2 클래스 · 관계는 그대로 검사하고, 학생 클래스는 학생 파일로 검사한다. 학생 노드 규칙: ns = "<ID>" 필수, id 는 "<ID>:" 로 시작.
+학생 파일의 "ns" 는 필수이고 students/<ID>/ 폴더 이름과 같아야 한다. 그 이름 공간 노드가 0개면 PASS 가 아니라 FAIL(접속 그래프 확인).
+학생 스키마는 v2 클래스 · 관계 이름을 다시 정의할 수 없다(공용 사전은 그대로, 내 용어집만 덧댄다).
+참고: ProcessGPT ontology-studio 는 스키마 묶음(/api/schemas/{schema_id}, backend/src/modules/ontology/api.py 232~326)을 클래스 이름으로 가른다.
+여기서는 v2 상위 클래스(Process · Task · Role · Rule …)를 학생도 쓰므로 클래스 이름이 아니라 노드의 ns 속성으로 가른다(차이 있음, 유지).
 
 기본 접속은 bolt://127.0.0.1:7688 (검증용 별도 Neo4j). 운영 중인 v1 그래프(7687)와 섞지 않는다.
 """
@@ -23,6 +33,176 @@ SCHEMA = V2 / "schema.json"
 
 def load_schema() -> dict:
     return json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+
+# ------------------------------------------------------------------ G4 학생 이름 공간 (추가 층)
+NS_RE = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
+NS_PROP = "ns"
+
+
+def load_extra(path) -> dict:
+    """학생 스키마 파일. ns 칸은 필수다(폴더 이름으로 채우지 않는다). students/<폴더>/schema.json 이면 ns 가 폴더 이름과 같아야 한다
+    (출발본을 복사하고 ns 를 안 바꾼 실수를 잡는다). '_' 로 시작하는 폴더(출발본 _template)는 예시라 대조하지 않는다.
+    형식이 틀리면 파일 좌표가 있는 ValueError."""
+    path = Path(path)
+    try:
+        extra = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        raise ValueError(f"{path}: 학생 스키마 파일을 읽을 수 없다 — {e}") from e
+    if not isinstance(extra, dict):
+        raise ValueError(f"{path}: 맨 바깥은 {{\"ns\": …, \"classes\": […], \"relationships\": […]}} 객체여야 한다")
+    if not extra.get(NS_PROP):
+        raise ValueError(f"{path}: \"ns\" 칸이 없다 — 내 ID 를 적는다 (예: \"ns\": \"s01\")")
+    folder = path.resolve().parent
+    if folder.parent.name == "students" and not folder.name.startswith("_") and extra[NS_PROP] != folder.name:
+        raise ValueError(f"{path}: ns {extra[NS_PROP]!r} 가 폴더 이름 {folder.name!r} 와 다르다 — 출발본의 ns 를 내 ID 로 바꿨는가")
+    return extra
+
+
+def _prop_types(base: dict) -> set[str]:
+    """학생 속성 자료형은 v2 가 쓰는 것만 허용한다."""
+    return {p["type"] for c in base["classes"] for p in c["properties"]}
+
+
+def _check_props(name: str, props, allowed_types: set[str]) -> list[str]:
+    errs = []
+    if not isinstance(props, list):
+        return [f"class {name}: properties 는 목록이어야 한다"]
+    for i, p in enumerate(props):
+        if not isinstance(p, dict) or not isinstance(p.get("name"), str) or not p["name"]:
+            errs.append(f"class {name}: properties[{i}] 에 name 이 없다")
+            continue
+        if p.get("type") not in allowed_types:
+            errs.append(f"class {name}.{p['name']}: type {p.get('type')!r} 는 v2 자료형({' · '.join(sorted(allowed_types))})이 아니다")
+        elif p["type"] == "enum" and not (isinstance(p.get("values"), list) and p["values"]):
+            errs.append(f"class {name}.{p['name']}: enum 은 values 목록이 있어야 한다")
+    return errs
+
+
+def check_extra(base: dict, extra: dict) -> list[str]:
+    """학생 스키마 파일 자체의 형식 검사 — 확정 스키마와 같은 형식이고, v2 이름을 다시 정의하지 않는가."""
+    errs = []
+    ns = extra.get(NS_PROP)
+    if not isinstance(ns, str) or not NS_RE.match(ns):
+        errs.append(f"ns: 소문자로 시작하는 소문자 · 숫자 · 하이픈 32자 이내여야 한다 (지금 {ns!r})")
+    base_classes, base_rels = classes_by_name(base), {r["type"] for r in base["relationships"]}
+    layers = {l["id"] for l in base.get("layers") or []}
+    cardinalities = {r["cardinality"] for r in base["relationships"]}
+    prop_types = _prop_types(base)
+    declared = [c for c in extra.get("classes") or [] if isinstance(c, dict)]
+    mine = {}
+    for c in extra.get("classes") or []:
+        name = c.get("name") if isinstance(c, dict) else None
+        if not isinstance(name, str) or not re.match(r"^[A-Z][A-Za-z0-9]*$", name):
+            errs.append(f"class {name!r}: name 은 대문자로 시작하는 영문 낱말이어야 한다 (예: Meeting)")
+            continue
+        if name in base_classes:
+            errs.append(f"class {name}: 확정 스키마 v2 에 있는 클래스다 — 다시 정의하지 말고 v2 클래스를 그대로 쓴다")
+        if name in mine:
+            errs.append(f"class {name}: 두 번 정의했다")
+        mine[name] = c
+        for key in ("label_ko", "layer", "properties"):
+            if key not in c:
+                errs.append(f"class {name}: {key} 칸이 없다 (확정 스키마와 같은 형식)")
+        if c.get("layer") and layers and c["layer"] not in layers:
+            errs.append(f"class {name}: layer {c['layer']!r} 는 v2 층({' · '.join(sorted(layers))})이 아니다")
+        errs += _check_props(name, c.get("properties") or [], prop_types)
+        props = {p.get("name") for p in c.get("properties") or [] if isinstance(p, dict)}
+        if not c.get("extends") and not {"id", "name"} <= props:
+            errs.append(f"class {name}: id · name 속성이 있어야 한다")
+        if NS_PROP in props:
+            errs.append(f"class {name}: ns 는 검사기가 모든 학생 노드에 요구하는 칸이라 따로 정의하지 않는다")
+        if c.get("extends") and c["extends"] not in base_classes and c["extends"] not in {x.get("name") for x in declared}:
+            errs.append(f"class {name}: extends {c['extends']!r} 클래스가 없다")
+    known = set(base_classes) | set(mine)
+    seen = set()
+    for r in extra.get("relationships") or []:
+        t = r.get("type") if isinstance(r, dict) else None
+        if not isinstance(t, str) or not re.match(r"^[A-Z][A-Z0-9_]*$", t):
+            errs.append(f"rel {t!r}: type 은 대문자 · 밑줄 낱말이어야 한다 (예: HAS_AGENDA)")
+            continue
+        if t in base_rels:
+            errs.append(f"rel {t}: 확정 스키마 v2 에 있는 관계다 — v2 끝점 그대로 쓰거나 새 이름을 짓는다")
+        if t in seen:
+            errs.append(f"rel {t}: 두 번 정의했다")
+        seen.add(t)
+        for key in ("from", "to", "cardinality"):
+            if key not in r:
+                errs.append(f"rel {t}: {key} 칸이 없다 (확정 스키마와 같은 형식)")
+        if "cardinality" in r and r["cardinality"] not in cardinalities:
+            errs.append(f"rel {t}: cardinality {r['cardinality']!r} 는 v2 값({' · '.join(sorted(cardinalities))})이 아니다")
+        ends = {}
+        for key in ("from", "to"):
+            v = r.get(key)
+            if key in r and not (isinstance(v, list) and v and all(isinstance(x, str) for x in v)):
+                errs.append(f"rel {t}: {key} 는 클래스 이름 목록이어야 한다 (예: [\"Meeting\"]) — 지금 {v!r}")
+                v = []
+            ends[key] = v or []
+        for end in ends["from"] + ends["to"]:
+            if end not in known:
+                errs.append(f"rel {t}: 끝점 {end} 클래스가 v2 에도 학생 스키마에도 없다")
+        if ends["from"] and ends["to"] and not set(ends["from"]) & set(mine) and not set(ends["to"]) & set(mine):
+            errs.append(f"rel {t}: 양 끝이 모두 v2 클래스다 — 학생 관계는 한쪽 끝이 내 클래스여야 한다(v2 사이 관계는 확정 스키마 몫)")
+    return errs
+
+
+def merge_schema(base: dict, extra: dict) -> dict:
+    """v2 + 학생 스키마(추가 층). base 는 바꾸지 않는다(확정 스키마 변경 0)."""
+    out = dict(base)
+    out["classes"] = list(base["classes"]) + [dict(c, ns=extra.get(NS_PROP)) for c in extra.get("classes") or []]
+    out["relationships"] = list(base["relationships"]) + [dict(r, ns=extra.get(NS_PROP)) for r in extra.get("relationships") or []]
+    return out
+
+
+def ns_rules(records_nodes, ns: str, student_classes) -> list[str]:
+    """학생 노드 규칙: 학생 클래스 노드 · ns 를 단 노드 · id 가 '<ns>:' 로 시작하는 노드는 모두 ns = '<ns>' 이고 id 가 '<ns>:' 로 시작한다.
+    다른 이름 공간의 노드가 내 클래스 레이블을 쓰면 그 사실 한 줄로만 알린다."""
+    errs, prefix, student_classes = [], f"{ns}:", set(student_classes)
+    for n in records_nodes:
+        props, nid = n["props"], str(n["props"].get("id", "?"))
+        other = props.get(NS_PROP)
+        if other not in (None, ns):
+            if set(n["labels"]) & student_classes:
+                errs.append(f"node {nid}: 다른 이름 공간({other})의 노드가 내 클래스를 쓴다")
+            elif nid.startswith(prefix):
+                errs.append(f"node {nid}: id 는 '{prefix}' 인데 ns 가 {other!r} 다")
+            continue
+        mine = bool(set(n["labels"]) & student_classes) or other == ns or nid.startswith(prefix)
+        if not mine:
+            continue
+        if other != ns:
+            errs.append(f"node {nid}: 학생 노드는 ns = {ns!r} 가 있어야 한다 (지금 {other!r})")
+        if not nid.startswith(prefix):
+            errs.append(f"node {nid}: 학생 노드 id 는 '{prefix}' 로 시작해야 한다")
+    return errs
+
+
+def scope_to_ns(records_nodes, records_rels, ns: str, student_classes=()):
+    """검사 범위: 내 노드(ns · id 접두어 · 학생 클래스)와 그 노드에 닿는 관계. 끝점의 v2 노드(다리 관계)는 레이블로만 검사된다."""
+    prefix, student_classes = f"{ns}:", set(student_classes)
+    nodes = [n for n in records_nodes if n["props"].get(NS_PROP) == ns or str(n["props"].get("id", "")).startswith(prefix)
+             or set(n["labels"]) & student_classes]
+    ids = {n["props"].get("id") for n in nodes}
+    rels = [r for r in records_rels if r["a"] in ids or r["b"] in ids]
+    return nodes, rels
+
+
+def validate_ns(records_nodes, records_rels, base: dict, extra: dict) -> list[str]:
+    """학생 이름 공간 검사: 학생 파일 형식 → 내 노드 · 관계를 v2 + 학생 스키마로 → ns 규칙. ns 속성은 모든 클래스에 허용한다.
+    내 노드가 0개면 통과가 아니라 실패다(빈 성공 금지 — 다른 그래프에 붙었거나 적재 전)."""
+    errs = check_extra(base, extra)
+    if errs:
+        return errs
+    ns, merged = extra[NS_PROP], merge_schema(base, extra)
+    student = [c["name"] for c in extra.get("classes") or []]
+    nodes, rels = scope_to_ns(records_nodes, records_rels, ns, student)
+    if not nodes:
+        return [f"ns {ns}: 이 이름 공간의 노드가 그래프에 0개다 — 적재했는가, 접속(--uri)이 적재한 그래프인가"]
+    # 다리 관계의 v2 끝점은 내 범위 밖 노드라 그 노드 자체는 검사하지 않는다(끝점 레이블은 관계 정의로 본다).
+    # 출처(SOURCED_FROM · PRODUCES) 검사는 내 입력(InputData)에만 — v2 입력의 출처는 내 조각 밖에 있다.
+    errs = validate(nodes, rels, merged, extra_props=(NS_PROP,), input_scope={n["props"].get("id") for n in nodes})
+    errs += ns_rules(nodes, ns, student)
+    return errs
 
 
 def classes_by_name(s: dict) -> dict:
@@ -130,7 +310,7 @@ def gen_prompt(s: dict) -> str:
     out += [f"- {v}" for v in s["conventions"].values()]
     out += ["- 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.",
             "- 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.",
-            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다.",
+            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)` (즉시 완화 · 근본 조치 · 예방 조치 = 정기 정비). 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다. 경보(고장) 대응 후보는 MITIGATED_BY · REMEDIED_BY만 따라가고, 정기 정비 도래(PM_DUE) 후보는 PREVENTED_BY 스킬이다.",
             "- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다.", ""]
     for l in sorted(s["layers"], key=lambda x: (x["order"], x["id"])):
         out += [f"## {l['name']} — {l['standard']}", "", l["description"], ""]
@@ -294,6 +474,53 @@ def cmd_gen(_args) -> int:
 
 
 # ------------------------------------------------------------------ database
+SEED_FILES = ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "scenario_structure.cypher", "detector-patterns.cypher")
+EDITIONS = ("structure", "full")
+EDITION_MARK = "// @edition "
+
+
+def edition_filter(text: str, edition: str) -> str:
+    """확정 TODO C1 시드 두 판: '// @edition full|structure' 표시 바로 뒤의 문장(다음 주석 아닌 줄부터 ';'로 끝나는 줄까지)은
+    그 판에서만 남긴다. it/neo4j/edition.sh seed_edition_filter와 같은 규칙이다(tests/test_seed_editions.py가 대조)."""
+    if edition not in EDITIONS:
+        raise ValueError(f"edition must be one of {EDITIONS}")
+    out, pending, active, keep = [], None, False, True
+    for line in text.split("\n"):
+        trimmed = line.lstrip()
+        if not active:
+            if trimmed in (EDITION_MARK + "full", EDITION_MARK + "structure"):
+                pending = trimmed[len(EDITION_MARK):]
+                continue
+            if trimmed.startswith("//") or trimmed == "":
+                out.append(line)
+                continue
+            active, keep, pending = True, (pending is None or pending == edition), None
+        elif trimmed.startswith("//"):
+            if keep:
+                out.append(line)
+            continue
+        if keep:
+            out.append(line)
+        if line.rstrip().endswith(";"):
+            active, keep = False, True
+    return "\n".join(out)
+
+
+def edition_checks(text: str, edition: str) -> list[str]:
+    """seed_checks.cypher에서 이 판이 실행할 질의 줄(표시는 바로 뒤의 질의 한 줄에만 적용). edition.sh seed_edition_checks와 같다."""
+    out, want = [], None
+    for line in text.split("\n"):
+        if line in (EDITION_MARK + "full", EDITION_MARK + "structure"):
+            want = line[len(EDITION_MARK):]
+            continue
+        if not line or line.startswith("//"):
+            continue
+        if want is None or want == edition:
+            out.append(line)
+        want = None
+    return out
+
+
 def split_statements(text: str) -> list[str]:
     body = "\n".join(l for l in text.splitlines() if not l.strip().startswith("//"))
     return [st.strip() for st in re.split(r";\s*\n", body + "\n") if st.strip()]
@@ -312,8 +539,8 @@ def cmd_load(args) -> int:
                 ses.run(f"DROP CONSTRAINT `{r['name']}` IF EXISTS").consume()
             for r in list(ses.run("SHOW INDEXES YIELD name, type WHERE type <> 'LOOKUP' RETURN name")):
                 ses.run(f"DROP INDEX `{r['name']}` IF EXISTS").consume()
-        for f in ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "detector-patterns.cypher"):
-            sts = split_statements((V2 / f).read_text(encoding="utf-8"))
+        for f in SEED_FILES:
+            sts = split_statements(edition_filter((V2 / f).read_text(encoding="utf-8"), args.edition))
             for i, st in enumerate(sts, 1):
                 try:
                     ses.run(st).consume()
@@ -327,8 +554,11 @@ def cmd_load(args) -> int:
     return 0
 
 
-def validate(records_nodes, records_rels, s: dict) -> list[str]:
-    """Pure check of graph rows against the schema. Returns a list of violations."""
+def validate(records_nodes, records_rels, s: dict, *, extra_props=(), input_scope=None) -> list[str]:
+    """Pure check of graph rows against the schema. Returns a list of violations.
+    extra_props (G4): property names allowed on every node (the student namespace's `ns`).
+    input_scope (G4): when only one student's slice is checked, the input-source check covers only these node ids
+    (a base InputData read by a student task has its source outside the slice) — see validate_ns."""
     by = classes_by_name(s)
     rel_by = {r["type"]: r for r in s["relationships"]}
     errs = []
@@ -350,7 +580,7 @@ def validate(records_nodes, records_rels, s: dict) -> list[str]:
                     errs.append(f"node {nid} ({l}): 필수 속성 {p['name']} 없음")
                 if v is not None and p.get("values") and p["type"] == "enum" and v not in p["values"]:
                     errs.append(f"node {nid} ({l}): {p['name']}={v!r} 허용값 아님 {p['values']}")
-            declared = {p["name"] for p in all_props(s, l)}
+            declared = {p["name"] for p in all_props(s, l)} | set(extra_props)
             for k in props:
                 if k not in declared and not any(k in {p["name"] for p in all_props(s, o)} for o in concrete):
                     errs.append(f"node {nid} ({l}): 스키마에 없는 속성 {k}")
@@ -388,7 +618,7 @@ def validate(records_nodes, records_rels, s: dict) -> list[str]:
                               and (not req.get("fromClass") or req["fromClass"] in r["la"]))
                 if cnt < req.get("min", 1):
                     errs.append(f"node {nid} ({l}): 필수 관계 위반 — {req['description']} ({'/'.join(req['type'])} {cnt}개)")
-    errs += integrity(records_nodes, records_rels)
+    errs += integrity(records_nodes, records_rels, input_scope=input_scope)
     return errs
 
 
@@ -396,8 +626,9 @@ def _out(rels, t, a=None):
     return [(r["a"], r["b"], r["props"]) for r in rels if r["type"] == t and (a is None or r["a"] == a)]
 
 
-def integrity(records_nodes, records_rels) -> list[str]:
-    """Cross-layer checks the scenarios rely on (DMN consistency, BPMN data connectivity)."""
+def integrity(records_nodes, records_rels, *, input_scope=None) -> list[str]:
+    """Cross-layer checks the scenarios rely on (DMN consistency, BPMN data connectivity).
+    input_scope: check the "every read input has a source or a producer" rule only for these input ids (None = all)."""
     errs = []
     props = {n["props"].get("id"): n["props"] for n in records_nodes}
     # DMN: a rule's TESTS read inputs its decision declares; the readable 'when' states the same thresholds
@@ -423,6 +654,8 @@ def integrity(records_nodes, records_rels) -> list[str]:
             if inp not in reads:
                 errs.append(f"task {task}: 부르는 판단 {dec}의 입력 {inp}를 READS로 잇지 않았다")
     for _, inp, _ in _out(records_rels, "READS"):
+        if input_scope is not None and inp not in input_scope:
+            continue
         if inp not in produced and inp not in sourced:
             errs.append(f"input {inp}: 출처(SOURCED_FROM)도 만드는 작업(PRODUCES)도 없다")
     errs += kpi_role_integrity(records_nodes, records_rels)
@@ -491,12 +724,54 @@ def usage_report(records_nodes, records_rels, s: dict) -> list[str]:
     return out
 
 
-def cmd_validate(args) -> int:
-    s = load_schema()
+def _graph_rows(args):
     with driver(args) as d, d.session() as ses:
         nodes = [{"labels": r["l"], "props": dict(r["p"])} for r in ses.run("MATCH (n) RETURN labels(n) AS l, properties(n) AS p")]
         rels = [{"type": r["t"], "a": r["a"], "b": r["b"], "la": r["la"], "lb": r["lb"], "props": dict(r["p"])} for r in ses.run(
             "MATCH (a)-[x]->(b) RETURN type(x) AS t, a.id AS a, b.id AS b, labels(a) AS la, labels(b) AS lb, properties(x) AS p")]
+    return nodes, rels
+
+
+def _report(errs: list[str], noun: str) -> int:
+    for e in errs:
+        print(" -", e)
+    print("PASS" if not errs else f"FAIL ({len(errs)} {noun})")
+    return 0 if not errs else 1
+
+
+def cmd_check_extra(args) -> int:
+    if not args.extra:
+        print("check-extra 에는 --extra students/<ID>/schema.json 이 필요하다")
+        return 2
+    base = load_schema()
+    try:
+        extra = load_extra(args.extra)
+    except ValueError as e:
+        return _report([str(e)], "problems")
+    errs = check_extra(base, extra)
+    print(f"student schema {args.extra}: ns={extra.get(NS_PROP)!r}, {len(extra.get('classes') or [])} classes, "
+          f"{len(extra.get('relationships') or [])} relationships (v2 {len(base['classes'])} classes unchanged)")
+    return _report(errs, "problems")
+
+
+def cmd_validate_ns(args) -> int:
+    base = load_schema()
+    try:
+        extra = load_extra(args.extra)
+    except ValueError as e:
+        return _report([str(e)], "violations")
+    nodes, rels = _graph_rows(args)
+    errs = validate_ns(nodes, rels, base, extra)
+    mine, my_rels = scope_to_ns(nodes, rels, extra[NS_PROP], [c.get("name") for c in extra.get("classes") or [] if isinstance(c, dict)])
+    print(f"namespace {extra[NS_PROP]!r} @ {args.uri}: checked {len(mine)} nodes, {len(my_rels)} relationships against v2 + {args.extra}")
+    return _report(errs, "violations")
+
+
+def cmd_validate(args) -> int:
+    if getattr(args, "extra", None):
+        return cmd_validate_ns(args)
+    s = load_schema()
+    nodes, rels = _graph_rows(args)
     errs = validate(nodes, rels, s)
     used = {l for n in nodes for l in n["labels"]}
     unused = [c["name"] for c in s["classes"] if c["name"] not in used]
@@ -562,15 +837,17 @@ def cmd_queries(args) -> int:
 def main(argv=None) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["gen", "load", "validate", "queries"])
+    ap.add_argument("cmd", choices=["gen", "load", "validate", "queries", "check-extra"])
     ap.add_argument("--uri", default=os.getenv("V2_NEO4J_URI", "bolt://127.0.0.1:7688"))
     ap.add_argument("--user", default="neo4j")
     ap.add_argument("--password", default=os.getenv("V2_NEO4J_PASSWORD", "hydpass123"))
     ap.add_argument("--wipe", action="store_true", help="load: 적재 전에 그래프를 비운다 (검증용 DB에서만)")
+    ap.add_argument("--edition", choices=EDITIONS, default="full", help="load: 시드 판 (structure 수업용 구조판 · full 회귀용 전체판)")
     ap.add_argument("--only", help="queries: 이 이름의 질의만")
     ap.add_argument("--limit", type=int, default=8)
+    ap.add_argument("--extra", help="validate · check-extra: 학생 스키마 파일(students/<ID>/schema.json) — 그 이름 공간 노드만 v2 + 학생 스키마로 검사 (G4)")
     a = ap.parse_args(argv)
-    return {"gen": cmd_gen, "load": cmd_load, "validate": cmd_validate, "queries": cmd_queries}[a.cmd](a)
+    return {"gen": cmd_gen, "load": cmd_load, "validate": cmd_validate, "queries": cmd_queries, "check-extra": cmd_check_extra}[a.cmd](a)
 
 
 if __name__ == "__main__":

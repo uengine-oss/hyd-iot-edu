@@ -20,9 +20,11 @@ class KnowledgeGraph:
     def __init__(self):
         uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
         user, pwd = os.getenv("NEO4J_AUTH", "neo4j/hydpass123").split("/", 1)
+        # liveness_check_timeout=0: 풀에서 꺼낸 연결을 쓰기 전에 살아 있는지 확인한다. neo4j 가 다시 뜨면(볼륨 교체 · 재시작) 풀에 남은
+        # 끊긴 연결이 다음 조회를 ServiceUnavailable 로 실패시켰다(2026-10-09 회귀: 승인 조건 검사 실패). 재시도 없이(bounded) 새 연결을 쓴다.
         self.driver = GraphDatabase.driver(uri, auth=(user, pwd),
                                           connection_timeout=3, connection_acquisition_timeout=5,
-                                          max_transaction_retry_time=0)
+                                          max_transaction_retry_time=0, liveness_check_timeout=0)
         self._cache: dict[str, str] = {}
 
     def template(self, name: str) -> str:
@@ -83,8 +85,12 @@ class KnowledgeGraph:
     def patterns(self) -> list[dict]:
         return self._run("t0_patterns")
 
-    def graph(self, asset: str) -> dict:
-        return {"nodes": self._run("t0_graph_nodes", asset=asset), "edges": self._run("t0_graph_edges", asset=asset)}
+    def graph(self, asset: str, ns: str = "") -> dict:
+        """ns (G4): 학생 이름 공간 — 비면 수업 기준(ns 없는 노드)만, 학생 ID 면 그 학생 노드와 바로 닿는 기준 노드."""
+        return {"nodes": self._run("t0_graph_nodes", asset=asset, ns=ns or ""), "edges": self._run("t0_graph_edges", asset=asset, ns=ns or "")}
+
+    def namespaces(self) -> list[dict]:
+        return self._run("t0_namespaces")
 
     def template_text(self, name: str) -> str:
         return (TEMPLATES / f"{name}.cypher").read_text(encoding="utf-8")

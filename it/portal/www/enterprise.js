@@ -12,6 +12,8 @@ const ONTO_GROUPS = [
   { key: 'diagnosis', title: '설비 진단', color: '#b42318', labels: ['AnomalyPattern', 'Symptom', 'FailureMode', 'Cause', 'Evidence', 'ManualSection'] },
   { key: 'skill', title: '조치 방법과 규칙', color: '#0f766e', labels: ['Skill', 'Step', 'Action', 'Decision', 'DecisionTable', 'Rule', 'InputData', 'KnowledgeSource'] },
   { key: 'external', title: '외부 변수 · 예측 · 사례', color: '#9a6700', labels: ['ExternalVariable', 'Forecast', 'Incident', 'DecisionCase'] },
+  // G4: 학생 이름 공간의 업무 고유 클래스(students/<ID>/schema.json) — v2 에 없는 레이블은 모두 이 칸에 그린다
+  { key: 'student', title: '내 업무 개념', color: '#be185d', labels: [], other: true },
 ];
 const LABEL_KO = { Perspective: '관점', Objective: '전략 목표', Measure: '성과 지표', Process: '프로세스', Event: '이벤트', Task: '단계', Gateway: '분기',
   OrgUnit: '부서', Role: '역할', System: '시스템', Asset: '설비', Component: '구성 요소', Sensor: '센서', Actuator: '구동기', StateVariable: '상태 변수',
@@ -25,7 +27,7 @@ const RELATION_KO = {
   MEMBER_OF: '소속 부서', HAS_COMPONENT: '구성 요소', MONITORED_BY: '관측 센서', ACTUATED_BY: '구동 장치', OBSERVES: '읽는 상태 변수', MANIPULATES: '바꾸는 변수',
   USES_PART: '교체 부품', SUPPLIED_BY: '공급사', HAS_SKILL: '수행 가능한 조치 방법', SOURCED_FROM: '데이터 출처', REPRESENTS: '나타내는 변수 · 지표',
   DETECTS: '감지 증상', OBSERVED_BY: '관측 센서', INDICATES: '나타내는 고장', OCCURS_IN: '발생 위치', LEADS_TO: '이어지는 고장', CAUSES: '일으키는 고장',
-  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화', REMEDIED_BY: '근본 조치',
+  INVOLVES_PART: '관련 부품', DISTURBS: '움직이는 외란', EVIDENCED_BY: '확증 근거', MITIGATED_BY: '즉시 완화', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치',
   ADDRESSES: '해당 원인', HAS_STEP: '절차 단계', REFERS_TO: '근거 매뉴얼', PART_OF: '속한 문서', CONSISTS_OF: '세부 동작', TARGETS: '조치 대상',
   APPROVED_BY: '승인 역할', AFFECTS: '움직이는 변수 · 지표', REQUIRES_INPUT: '필요한 입력', REQUIRES_DECISION: '먼저 내릴 판단', IMPLEMENTED_BY: '결정표',
   GOVERNED_BY: '통제 출처', HAS_RULE: '규칙', TESTS: '임계값 검사', OUTPUTS: '고르는 결과', APPLIES_TO: '적용 대상', PENALIZES: '감점 지표',
@@ -50,18 +52,41 @@ async function loadPatterns() {
 }
 
 /* ================================================= 지식 지도 */
+async function loadNamespaces(force) {
+  // G4: 학생 이름 공간 목록(맨 위 = 수업 기준). 못 읽으면 고르기 칸에 사유를 보이고 다음 "다시 읽기"에 또 읽는다
+  const sel = $('#ontoNs'); if (!sel || (sel.dataset.loaded && !force)) return;
+  const keep = sel.value;
+  let list;
+  try { list = await getJ(API.agent + '/api/ontology/namespaces'); }
+  catch (e) {   // 이미 받은 이름 공간은 그대로 두고 사유 한 줄만 붙인다(고른 것이 사라지지 않게)
+    sel.querySelectorAll('option[data-note]').forEach(o => o.remove());
+    sel.append(nsNote(`학생 이름 공간 목록을 읽지 못함 — ${e.message}`));
+    sel.title = `학생 이름 공간 목록을 읽지 못했습니다: ${e.message}`; delete sel.dataset.loaded;
+    return;
+  }
+  sel.querySelectorAll('option:not([value=""]), option[data-note]').forEach(o => o.remove());
+  list.forEach(x => sel.append(new Option(`${x.ns} · 항목 ${x.nodes}개`, x.ns)));
+  if (!list.length) sel.append(nsNote('학생 이름 공간 없음'));
+  sel.title = ''; sel.dataset.loaded = '1';
+  if (list.some(x => x.ns === keep)) sel.value = keep;
+  else if (keep) { sel.value = ''; UI.toast(`이름 공간 ${keep} 이 그래프에 없어 수업 기준으로 돌아갑니다`, { tone: 'neg' }); loadGraph(true); }
+}
+const nsNote = text => { const o = new Option(text, ''); o.disabled = true; o.dataset.note = '1'; return o; };
 async function loadGraph(force) {
-  const asset = $('#ontoAsset').value;
+  const asset = $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   if (ent.graph && ent.graphAsset === asset && !force) { drawGraph(); return; }
   $('#ontoStats').textContent = UI.t('loading');
+  loadNamespaces(force);
+  const [code, ns] = asset.split('|');
+  const current = () => $('#ontoAsset').value + '|' + (($('#ontoNs') || {}).value || '');
   try {
-    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(asset));
-    if ($('#ontoAsset').value !== asset) return;
+    const graph = await getJ(API.agent + '/api/ontology/graph?asset=' + encodeURIComponent(code) + (ns ? '&ns=' + encodeURIComponent(ns) : ''));
+    if (current() !== asset) return;
     if (ent.graphAsset !== asset) ent.sel = null;
     ent.graph = graph; ent.graphAsset = asset;
   }
   catch (e) {
-    if ($('#ontoAsset').value !== asset) return;
+    if (current() !== asset) return;
     ent.graph = null; // A reopened tab must retry, not present cached data as recovered.
     $('#ontoNode').innerHTML = '';
     $('#ontoStats').textContent = UI.t('error.load');
@@ -73,7 +98,10 @@ async function loadGraph(force) {
   if (sel.options.length <= 1) pats.forEach(p => sel.append(new Option(p.name, p.id)));
   drawGraph();
 }
-function groupOf(label) { return ONTO_GROUPS.findIndex(g => g.labels.includes(label)); }
+function groupOf(label) {
+  const i = ONTO_GROUPS.findIndex(g => g.labels.includes(label));
+  return i >= 0 ? i : ONTO_GROUPS.findIndex(g => g.other);
+}
 // A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
 const nodeName = n => String(n.name && n.name !== n.id ? n.name : UI.name(n.id));
 function focusSet() {
@@ -91,7 +119,7 @@ function focusSet() {
     for (const fm of add(walk(sy, ['INDICATES']))) {
       add(walk(fm, ['OCCURS_IN']));
       for (const c of add(walk(fm, ['CAUSES'], 'in'))) add(walk(c, ['EVIDENCED_BY', 'DISTURBS']));
-      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY']))) {
+      for (const s of add(walk(fm, ['MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY']))) {
         add(walk(s, ['APPROVED_BY', 'CONSISTS_OF', 'ADDRESSES']));
         for (const st of add(walk(s, ['HAS_STEP']))) add(walk(st, ['REFERS_TO']));
         add(walk(s, ['AFFECTS']));
@@ -114,7 +142,8 @@ function drawGraph() {
   const pos = new Map(); let maxY = 0;
   visibleGroups.forEach(({ gr, i }, ci) => {
     let y = TOP;
-    for (const lab of gr.labels) {
+    const labs = gr.other ? [...new Set(cols[i].map(n => n.label))].sort() : gr.labels;   // G4: 학생 클래스 레이블은 그때그때
+    for (const lab of labs) {
       const ns = cols[i].filter(n => n.label === lab).sort((a, b) => String(a.id).localeCompare(String(b.id)));
       if (!ns.length) continue;
       pos.set('hdr:' + gr.key + ':' + lab, { x: ci * W + 8, y: y + 10, text: `${LABEL_KO[lab] || lab} · ${ns.length}`, hdr: true });
@@ -205,6 +234,7 @@ function initOntology() {
     chips.append(b);
   });
   $('#ontoAsset').addEventListener('change', () => loadGraph(true));
+  $('#ontoNs')?.addEventListener('change', () => { ent.sel = null; loadGraph(true); });
   $('#ontoFocus').addEventListener('change', ev => { ent.focus = ev.target.value || null; ent.sel = null; drawGraph(); renderNodePanel(); });
   $('#ontoSearch').addEventListener('input', ev => { ent.search = ev.target.value; drawGraph(); });
   $('#ontoReload').addEventListener('click', () => loadGraph(true));
@@ -229,14 +259,24 @@ const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SEL
 function actionLabel(a) {
   const spec = ACTION_KO[a.code];
   if (spec && spec[0] === null) return UI.t('workOrder');
-  if (spec) return `${spec[0]}${a.value != null ? ' ' + a.value + spec[1] : ''}`;
-  return `${a.name || a.code}${a.value != null ? ' ' + a.value : ''}`;
+  // 값이 id(구매요청의 공급사 sup:… 등)면 이름으로 — 숫자 값(팬 % 등)은 그대로
+  const value = a.value != null ? UI.idText(String(a.value)) : null;
+  if (spec) return `${spec[0]}${value != null ? ' ' + value + spec[1] : ''}`;
+  return `${a.name || a.code}${value != null ? ' ' + value : ''}`;
 }
 function forecastLine(o) {
   const ts1 = (o.forecast || []).find(f => /유온|ts1/i.test(f.name || ''));
   if (ts1 && Number.isFinite(Number(ts1.value))) return `${UI.t('card.forecastTs1')} <b>${Number(ts1.value).toFixed(0)} ℃</b>`;
   const f = (o.forecast || [])[0];
   return f ? `${esc(f.name)} <b>${esc(f.value)}${esc(f.unit || '')}</b>` : '';
+}
+// 머리말 값: 예측이 고르는 근거인 안만 예측, 아니면 이 안의 업무 값(규칙은 approvalCard.js forecastDecides · ownValues 한 곳)
+// decision: 같은 판단 {options, facts} — 카드 한 장만으로는 "안마다 예측이 갈리는가"를 알 수 없다
+function headValue(o, decision) {
+  if (!decision || !Array.isArray(decision.options)) throw new Error('cardHtml: opt.decision({options, facts})이 필요합니다');
+  if (hydApprove.forecastDecides(o, decision.options)) return forecastLine(o);
+  const v = hydApprove.ownValues(o, decision);
+  return v.length ? `이 안의 값 <b>${esc(v.join(' · '))}</b>` : '';
 }
 function forecastContextHtml(c) {
   if (!c) return '';
@@ -255,7 +295,7 @@ function cardHtml(o, opt = {}) {
   const ranking = o.rankingEvidence;
   const chips = [o.id === opt.rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
-  const line = [forecastLine(o), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+  const line = [headValue(o, opt.decision), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
   // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
   const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
   const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;
@@ -269,14 +309,14 @@ function cardHtml(o, opt = {}) {
     ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')} <span class="muted">(${esc(f.method)})</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
     ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.idText(r.annotation || UI.name(r.rule)))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')}</dd></div>` : ''}
-    ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol style="margin:0;padding-left:18px">${(o.steps || []).map(s => `<li>${esc(s.text)}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
+    ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol style="margin:0;padding-left:18px">${(o.steps || []).map(s => `<li>${esc(UI.idText(s.text))}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
     ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
     ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
     ${ranking ? UI.fold(esc(UI.t('card.scoreHow')), `${Object.entries(ranking.policy?.components || {}).map(([key, expr]) => `<div>${esc(scoreLabels[key] || key)}: <code>${esc(expr)}</code> = ${esc(sp[key])}</div>`).join('')}<div class="muted">${esc(ranking.conditionMode || '')}</div>`, { cls: 'small' }) : ''}
     ${(o.tradeoffEvaluation || []).length ? UI.fold(`${esc(UI.t('kpi'))} 경로와 조건 판정 ${o.tradeoffEvaluation.length}건`, o.tradeoffEvaluation.map(p => `<div><b>${esc({ TRUE: '적용', FALSE: '미적용', UNKNOWN: '미확인' }[p.status] || p.status)}</b> ${esc(p.name)} · 강도 ${esc(p.weight)}<br><span class="muted">${esc((p.nodes || []).join(' → '))}</span>${(p.checks || []).filter(c => c.description || c.status !== 'TRUE').map(c => `<p>${esc(c.description)} · ${esc(c.status)}<br>${Object.entries(c.inputs || {}).map(([alias, v]) => `${esc(alias)}: ${esc(v.source === 'forecast' ? '후보 예측' : '현재 사실')} ${esc(v.variable)} = ${esc(v.value ?? '미확인')}`).join(' · ')}${c.error ? `<br>${esc(c.error)}` : ''}</p>`).join('')}</div>`).join(''), { cls: 'small' }) : ''}`;
   const head = `<span class="hrank">${o.feasible ? o.rank : '–'}</span>
     <span class="hbody"><span class="htitle">${esc(UI.idText(o.name))} ${chips}</span>
-      ${o.description ? `<span class="hsub">${esc(o.description)}</span>` : ''}
+      ${o.description ? `<span class="hsub">${esc(UI.idText(o.description))}</span>` : ''}
       <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">${esc(UI.t('card.score'))} ${signNum(o.score || 0)}</b></span>
       <span class="hline">${line}</span>
       ${(o.violations || []).length ? `<span class="hmeta">${ruleChip(o.violations[0], 'hard', UI.t('chip.excluded'))}${o.violations.length > 1 ? `<span class="muted">+${o.violations.length - 1}</span>` : ''}</span>` : ''}
@@ -358,7 +398,7 @@ function renderDecision() {
     html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(UI.idText(top.name)), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(UI.idText(top.failureMode), 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
       (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<div style="margin-bottom:var(--s2)"><b>${esc(UI.idText(c.name))}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(UI.idText(c.failureMode)) : ''}${evidenceHtml(c)}</div>`).join(''), { cls: 'small' }) : '') });
   }
-  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs })).join('') + '</div>';
+  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { options: opts, facts: d.facts } })).join('') + '</div>';
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   if (r.rankRule) html += UI.fold(esc(UI.t('card.scoreHow')), `<p style="margin:0">${esc(r.rankRule.annotation || '')}</p>`);
   // 적용한 규칙 (D5: folded; F2: fired rows first, rule id and condition inside the row)
@@ -441,11 +481,11 @@ function renderDecisionApproval() {
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
   if (pending) {
     html += `<div class="form">` +
-      UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt' })).join('')}</div>`) +
+      UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt', decision: d })).join('')}</div>`) +
       whoFields('dec', ent.form, roles) +
       UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove">${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';
   } else {
-    html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>';
+    html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
   if ((d.executions || []).length) html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('proc.executions'))}</h3><div class="cards two">` +
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';

@@ -32,6 +32,8 @@ vm.runInContext(`UI.names = ${fs.readFileSync(path.join(www, 'names.json'), 'utf
 const pick = (file, re) => { const m = fs.readFileSync(path.join(www, file), 'utf8').match(re); if (!m) throw new Error(`${file}: ${re} 를 찾지 못했습니다`); return m[0]; };
 vm.runInContext(pick('app.js', /^const PATTERN_LABEL = .*;$/m), ctx);
 vm.runInContext(pick('enterprise.js', /^const ACTION_KO = [\s\S]*?\n}\n/m) + '\nwindow.hydCards = { actionLabel };', ctx);
+vm.runInContext(fs.readFileSync(path.join(www, 'trace.js'), 'utf8'), ctx, { filename: 'trace.js' });   // A161-U1: 처리 과정 행은 trace.js 와 같은 그리기
+vm.runInContext(fs.readFileSync(path.join(www, 'approvalCard.js'), 'utf8'), ctx, { filename: 'approvalCard.js' });   // 캡스톤 G7: 사람 승인(안 고르기) 카드
 vm.runInContext(fs.readFileSync(path.join(www, 'taskDetail.js'), 'utf8'), ctx, { filename: 'taskDetail.js' });
 
 (async () => {

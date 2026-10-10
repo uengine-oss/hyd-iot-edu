@@ -59,20 +59,35 @@ insert into public.tenants (id, name, owner, mcp) values ('hyd', '유압설비 �
     "neo4j":      {"command": "uvx", "args": ["--with", "fastmcp==2.13.0.2", "mcp-neo4j-cypher@0.4.1", "--transport", "stdio"],
                    "env": {"NEO4J_URI": "bolt://neo4j:7687", "NEO4J_USERNAME": "neo4j", "NEO4J_PASSWORD": "hydpass123", "NEO4J_READ_ONLY": "true"}},
     "enterprise": {"type": "url", "url": "http://enterprise-mcp:8199/mcp", "transport": "streamable_http"},
-    "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"}
+    "hyd-dmn":    {"type": "url", "url": "http://dmn-mcp:8198/mcp", "transport": "streamable_http"},
+    "enterprise-maint":    {"type": "url", "url": "http://enterprise-mcp-maint:8196/mcp", "transport": "streamable_http"},
+    "enterprise-purchase": {"type": "url", "url": "http://enterprise-mcp-purchase:8195/mcp", "transport": "streamable_http"}
   }}'::jsonb)
 on conflict (id) do update set name = excluded.name, owner = excluded.owner, mcp = excluded.mcp;
 
 insert into public.users (id, email, username, role, is_agent, agent_type, goal, tools, tenant_id) values
   ('role:operator',  'operator@hyd.local',  '운전원',     'operator',  false, null,     null, null, 'hyd'),
   ('role:prod-mgr',  'prodmgr@hyd.local',   '생산관리자', 'manager',   false, null,     null, null, 'hyd'),
-  ('role:maint-mgr', 'maintmgr@hyd.local',  '정비관리자', 'manager',   false, null,     null, null, 'hyd'),
+  ('role:maint-mgr', 'maintmgr@hyd.local',  '설비보전팀장', 'manager', false, null,     null, null, 'hyd'),
+  ('role:purchasing',     'purchasing@hyd.local',    '구매 담당', 'manager', false, null, null, null, 'hyd'),
+  ('role:purchasing-mgr', 'purchasingmgr@hyd.local', '구매팀장',  'manager', false, null, null, null, 'hyd'),
   ('sys:agent',      null, 'AI 에이전트 (Claude Code)', 'agent', true, 'agent',  '경보의 원인을 진단하고 조치 카드를 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
   ('sys:scada',      null, 'SCADA',        'system',    true,  'system', 'PLC 명령 발행 (Incident 경로)', null, 'hyd'),
   ('sys:process',    null, '프로세스',     'system',    true,  'system', '타이머 · 재관측', null, 'hyd'),
-  ('sys:cmms',       null, 'CMMS',         'system',    true,  'system', '작업지시', null, 'hyd')
+  ('sys:cmms',       null, 'CMMS',         'system',    true,  'system', '작업지시', null, 'hyd'),
+  -- C3 (2026-10-09): 시나리오 에이전트 셋 — 흐름마다 판단 · 제안 task 에 하나씩 묶는다(흐름 매핑의 agent). 붙이는 MCP 서버(tools)가 서로 다르다:
+  -- A 는 지금처럼(neo4j · enterprise · hyd-dmn), B 는 보전용 업무 MCP, C 는 구매용 업무 MCP. 둘은 도구가 겹치지 않고 자유 SQL 이 없다(C2 §6).
+  ('agent:cooling',   null, '냉각 긴급 대응 에이전트', 'agent', true, 'agent',
+   '쿨러 과열 경보의 원인을 진단하고, 냉각 조치 후보를 규정 · 회사 목표로 비교해 추천 카드 한 장과 지는 대안을 올린다', 'neo4j,enterprise,hyd-dmn', 'hyd'),
+  ('agent:pm-plan',   null, '정기 정비 계획 에이전트', 'agent', true, 'agent',
+   '정기 정비 도래 경보에서 운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지(정비 시간) 카드를 올린다', 'neo4j,hyd-dmn,enterprise-maint', 'hyd'),
+  ('agent:spare-buy', null, '예비품 구매 에이전트', 'agent', true, 'agent',
+   '예비품 재고 기준 이탈 경보에서 필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정(AVL)으로 비교해 발주 카드를 올린다', 'neo4j,hyd-dmn,enterprise-purchase', 'hyd')
 on conflict (id) do update set email = excluded.email, username = excluded.username, role = excluded.role, is_agent = excluded.is_agent,
   agent_type = excluded.agent_type, goal = excluded.goal, tools = excluded.tools;
+-- G9 (migration 20261010000051): 기준 에이전트 넷은 HYD 설비 업무 규칙(procsvc/work_rules.py hyd-plant) 아래에서 돈다 — 분리 전과 같은 글
+update public.users set work_rules = 'hyd-plant'
+ where tenant_id = 'hyd' and id in ('sys:agent', 'agent:cooling', 'agent:pm-plan', 'agent:spare-buy');
 
 -- 폼 = 작업의 결과 계약 (에이전트의 JSON 제출 형식 · 사람의 입력 폼). key 는 정의의 outputData 와 같다.
 insert into public.form_def (id, tenant_id, proc_def_id, activity_id, fields_json) values
@@ -86,20 +101,93 @@ on conflict (id, tenant_id) do update set proc_def_id = excluded.proc_def_id, ac
 
 -- ============================================================================
 -- U5 (2026-10-08) 사람 사용자 · 업무분장 (migration 000029 role_members). 역할 사용자(role:*)는 위 users 에 있다.
--- 운전원은 2명이라 조치 선택 단계는 역할 공용으로 남고, 생산관리자·정비관리자는 1명이라 그 사람에게 바로 배정된다(procsvc/inbox.py).
+-- 운전원은 2명이라 조치 선택 단계는 역할 공용으로 남고, 생산관리자·설비보전팀장·구매 담당은 1명이라 그 사람에게 바로 배정된다(procsvc/inbox.py).
 -- ============================================================================
 insert into public.users (id, email, username, role, is_agent, agent_type, tenant_id) values
   ('user:kim-op',     'kim.op@hyd.local',     '김운전', 'operator', false, null, 'hyd'),
   ('user:choi-op',    'choi.op@hyd.local',    '최운전', 'operator', false, null, 'hyd'),
   ('user:lee-prod',   'lee.prod@hyd.local',   '이생산', 'manager',  false, null, 'hyd'),
-  ('user:park-maint', 'park.maint@hyd.local', '박정비', 'manager',  false, null, 'hyd')
+  ('user:park-maint', 'park.maint@hyd.local', '박정비', 'manager',  false, null, 'hyd'),
+  ('user:jung-buy',   'jung.buy@hyd.local',   '정구매', 'manager',  false, null, 'hyd'),
+  ('user:han-buymgr', 'han.buymgr@hyd.local', '한구매', 'manager',  false, null, 'hyd')
 on conflict (id) do update set email = excluded.email, username = excluded.username, role = excluded.role;
 
 insert into public.role_members (tenant_id, role_id, user_id) values
   ('hyd', 'role:operator',  'user:kim-op'),
   ('hyd', 'role:operator',  'user:choi-op'),
   ('hyd', 'role:prod-mgr',  'user:lee-prod'),
-  ('hyd', 'role:maint-mgr', 'user:park-maint')
+  ('hyd', 'role:maint-mgr', 'user:park-maint'),
+  ('hyd', 'role:purchasing', 'user:jung-buy'),
+  ('hyd', 'role:purchasing-mgr', 'user:han-buymgr')
+on conflict do nothing;
+
+-- ============================================================================
+-- C3 (2026-10-09) 시나리오 에이전트의 스킬(SKILL.md 본문) — 워커가 작업 공간의 .claude/skills/<이름>/SKILL.md 로 넣는다(agents_store).
+-- ============================================================================
+insert into public.tenant_skills (tenant_id, skill_name, description, content, origin) values
+  ('hyd', 'cooling-emergency-response', '쿨러 과열 경보 — 원인 진단 · 냉각 조치 카드 (시나리오 A)', $skill$# 냉각 긴급 대응 (시나리오 A)
+
+쿨러 과열 경보(COOLER_DEGRADATION) 한 건에서 원인을 진단하고, 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 올린다.
+승인 전에는 조회 · 계산만 한다. 설비 명령은 사람 승인 뒤 시스템이 낸다.
+
+## 절차
+1. `context/task.json` 의 입력에서 asset · pattern · alert.alertId · incident 를 읽는다.
+2. hyd-dmn `diagnose(asset, pattern, alert_id)` — 원인 1순위(top cause) · 고장 유형 · 가이드 카드(권장 조치)를 얻는다.
+   withheld 이면 원인을 지어내지 말고 보류(__deferred__)로 낸다.
+3. 필요하면 enterprise 로 납기 오더 · 출하 대기 로트를 확인한다(조회만).
+4. hyd-dmn `evaluate_cards(asset, pattern, cause, failure_mode)` — 후보 · 규정(제외 · 감점 · 경고) · 예측 유온 · 성과 지표 득실 · 순위를 본다.
+   추천 안이 왜 이기고 다른 안이 어디서 지는지(예측 유온 · 생산 손실 · 규정) 한 줄씩 정리한다.
+5. hyd-dmn `submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, process_scope)` — 돌려준 id 가 decision_id 다.
+
+## 결과
+cause · failure_mode · guide_card(diagnose 결과의 가이드 카드) · decision{recommended, explanation, order} · decision_id.
+explanation 은 한국어 두세 문장: 원인, 추천 안, 지는 안의 이유.
+$skill$, 'seed'),
+  ('hyd', 'pm-schedule-planning', '정기 정비 도래 — 언제 정비할지 카드 (시나리오 B)', $skill$# 정기 정비 계획 (시나리오 B)
+
+정기 정비 도래 경보(PM_DUE, CMMS 운전시간 계수기) 한 건에서 '언제 · 어떻게 정비할지'를 정한다.
+시행 방식(이번 예정된 정비 시간 단독 · 지금 정지 · 그다음 정비 시간으로 미루기 · 두 대 묶기)을 같은 판단 엔진으로 경쟁시킨다.
+센서 증상이 없는 업무 경보라 diagnose 대신 business_causes 를 쓴다. 승인 전에는 조회 · 계산만 한다.
+
+## 절차
+1. `context/task.json` 의 입력에서 asset · pattern(PM_DUE) · alert.evidence(운전시간 · 정비 시간) · incident 를 읽는다.
+2. hyd-dmn `business_causes(asset, pattern)` — 정비가 막는 고장 유형 · 원인(top_cause · failure_mode)을 얻는다.
+3. enterprise-maint 로 사실을 확인한다(조회만): `pm_status`(운전시간 · 허용 오차 · 정비 키트 영향) ·
+   `maintenance_windows`(이번 · 그다음 예정된 정비 시간, 인원) · `mes_orders`(납기 오더) · 필요하면 `cmms_history`.
+4. hyd-dmn `evaluate_cards(asset, pattern, cause, failure_mode)` — 네 시행 방식의 규정(허용 오차 한계 · 납기 · 인원 · 키트) · 득실 · 순위.
+   각 카드에는 정비 시간이 실려 있다(이번 · 그다음 · 즉시). 미루면 허용 오차를 넘는지, 지금 정지하면 어떤 오더가 손실인지,
+   두 대 묶기는 인원 · 키트가 되는지 한 줄씩 정리한다.
+5. hyd-dmn `submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, process_scope)` — 돌려준 id 가 decision_id 다.
+
+## 결과
+cause · failure_mode · decision{recommended, explanation, order} · decision_id (guide_card 는 비워 둔다).
+explanation 은 한국어 두세 문장: 추천 시점과 이유, 지는 안의 이유.
+$skill$, 'seed'),
+  ('hyd', 'spare-purchase-planning', '예비품 재고 기준 이탈 — 발주 카드 (시나리오 C)', $skill$# 예비품 구매 (시나리오 C)
+
+예비품 재고 기준 이탈 경보(SPARE_BELOW_MIN, ERP 재고) 한 건에서 필요량을 정하고 공급사를 비교해 발주 카드를 올린다.
+센서 증상이 없는 업무 경보라 diagnose 대신 business_causes 를 쓴다. 승인 전에는 조회 · 계산만 한다. 발주 · 메일은 승인 뒤 시스템이 한다.
+
+## 절차
+1. `context/task.json` 의 입력에서 asset · pattern(SPARE_BELOW_MIN) · alert.evidence(부품 · 가용 · 부족량 · 필요량) · incident 를 읽는다.
+2. hyd-dmn `business_causes(asset, pattern)` — 부족한 부품을 쓰는 원인 · 고장 유형(top_cause · failure_mode)을 얻는다.
+3. enterprise-purchase 로 사실을 확인한다(조회만): `spare_stock`(현재고 · 예약 · 입고 예정 · 재주문점 · 필요일) ·
+   `part_quotes`(공급사별 단가 · 리드타임 · 불량률) · `scm_suppliers`(AVL 승인 공급사).
+4. hyd-dmn `evaluate_cards(asset, pattern, cause, failure_mode)` — 카드마다 발주 금액 · 납기 여유 · AVL · 불량 비용 · 순위.
+   300만 원 초과는 전결 기준 초과 '표시'일 뿐 추가 승인이 아니다(승인은 구매 담당 한 번).
+5. hyd-dmn `submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, process_scope)` — 돌려준 id 가 decision_id 다.
+
+## 결과
+cause · failure_mode · decision{recommended, explanation, order} · decision_id (guide_card 는 비워 둔다).
+explanation 은 한국어 두세 문장: 추천 공급사 · 수량 · 금액과 이유, 지는 공급사의 이유(AVL · 납기 · 불량).
+$skill$, 'seed')
+on conflict (tenant_id, skill_name) do update set description = excluded.description, content = excluded.content
+  where public.tenant_skills.origin = 'seed';
+
+insert into public.agent_skills (user_id, tenant_id, skill_name) values
+  ('agent:cooling', 'hyd', 'cooling-emergency-response'),
+  ('agent:pm-plan', 'hyd', 'pm-schedule-planning'),
+  ('agent:spare-buy', 'hyd', 'spare-purchase-planning')
 on conflict do nothing;
 
 select ent.reanchor_scenario_times();

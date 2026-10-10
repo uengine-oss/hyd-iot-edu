@@ -58,7 +58,7 @@ def _seed(repo):
     """seed.sql 모양의 기준: 기준 MCP 세 서버 · 기본 에이전트 · 시스템 수행자 · 역할 · 사람 · 업무분장 · 랩업 스킬(origin 없음 = 기준)."""
     repo.upsert_tenant({"id": "hyd", "name": "hyd", "mcp": deepcopy(SEED_MCP)})
     repo.upsert_user({"id": "sys:agent", "username": "AI 에이전트 (Claude Code)", "role": "agent", "is_agent": True, "agent_type": "agent",
-                      "goal": "경보의 원인을 진단하고 조치 카드를 올린다", "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd"})
+                      "goal": "경보의 원인을 진단하고 조치 카드를 올린다", "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd", "work_rules": "hyd-plant"})
     repo.upsert_user({"id": "sys:scada", "username": "SCADA", "role": "system", "is_agent": True, "agent_type": "system", "tenant_id": "hyd"})
     for uid, name in (("role:operator", "운전원"), ("role:prod-mgr", "생산관리자"), ("role:maint-mgr", "정비관리자"),
                       (KIM, "김운전"), (CHOI, "최운전"), (LEE, "이생산")):
@@ -265,6 +265,7 @@ BAD_CASES = [
     ("정의가 다름", lambda b: b["content"]["flows"][0]["versions"][0].update(definition_sha256="0" * 64), "다시 만든 정의가 내보낼 때와 다릅니다"),
     ("사람 단계 배정", lambda b: b["content"]["assignments"][0].update(activity_id="Activity_0slct3h"), "에이전트가 맡는 단계가 아닙니다"),
     ("없는 역할", lambda b: b["content"]["role_members"][0].update(role_id="role:nobody"), "역할 'role:nobody'"),
+    ("모르는 업무 규칙", lambda b: b["content"]["agents"][0].update(work_rules="meeting-room"), "업무 규칙 'meeting-room'이(가) 없습니다"),   # G9
 ]
 
 
@@ -278,6 +279,7 @@ def test_bad_files_are_refused_with_reason_and_change_nothing(env, http, label, 
     r = c.post("/api/config/import", json={"bundle": _bad(bundle, fn), "secrets": secrets})
     assert r.status_code == 422, r.text
     assert needle in r.text, r.json()
+    assert "failed_step" not in r.text, r.json()                                   # 적용 단계가 아니라 검사 단계에서 거절(G9 업무 규칙 키 포함)
     assert state(c) == before                                                      # 검증에서 거절 → 되돌리기도 하지 않았다
 
 

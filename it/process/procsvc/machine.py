@@ -72,6 +72,7 @@ class Incident:
     closed: str | None = None
     recovery_policy: dict | None = None
     superseded: list[dict] = field(default_factory=list)   # commands/work orders of generations retired by rework (A072)
+    reobs_series: dict | None = None    # A161-G3: the recovery tag's sampled values during the re-observation window (reobs_series.py)
 
     @property
     def pattern(self) -> str | None:
@@ -103,7 +104,7 @@ class Incident:
                 "actions": self.actions, "ack": self.ack, "cleared": self.cleared, "workOrder": self.work_order,
                 "workOrderRequest": self.work_order_request,
                 "reobsExtensions": self.reobs_extensions,
-                "recoveryPolicy": self.recovery_policy, "superseded": self.superseded,
+                "recoveryPolicy": self.recovery_policy, "superseded": self.superseded, "reobsSeries": self.reobs_series,
                 "created": self.created, "closed": self.closed, "card": self.card, "terminal": self.state in d.TERMINAL}
 
 
@@ -274,11 +275,12 @@ def on_alert(inc: Incident, alert: dict, fx: Effects) -> None:
 
 @_transition
 def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, fx: Effects, time_scale: float = 20.0,
-             cmd_id: str | None = None) -> None:
+             cmd_id: str | None = None, series: dict | None = None) -> None:
     """latest_ts1: the latest value of the incident's recovery tag (inc.recovery[0]); the name is historical — for a
     cooler incident it is TS1, for a pump incident PS1, for a fan incident VS1.
     cmd_id: the command that armed this timer. A timer armed for a command that a rework has since superseded (A072) must
-    not judge the next command's window; it is recorded and ignored."""
+    not judge the next command's window; it is recorded and ignored.
+    series: A161-G3 — the window's sampled values (reobs_series.build), kept on the Incident and summarised in the audit."""
     if cmd_id is not None and cmd_id != inc.cmd_id:
         _audit(inc, fx, "process", "TIMER_IGNORED", {"timer": name, "armedFor": cmd_id, "current": inc.cmd_id, "state": inc.state})
         return
@@ -296,17 +298,20 @@ def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, 
         value = latest_ts1
         inside = value is not None and {'<':lambda:value<limit,'>=':lambda:value>=limit}[op]()
         ok = inc.cleared and inside
+        trend = _keep_series(inc, series, extending=not ok and inside and inc.reobs_extensions < d.REOBSERVE_MAX_EXTENSIONS)
         if not ok and inside and inc.reobs_extensions < d.REOBSERVE_MAX_EXTENSIONS:
             # the value is already inside the limit but the detector's CLEAR (hysteresis line held 60 s) has not landed yet:
             # give it one more third of the window instead of escalating a recovery that is visibly under way
             inc.reobs_extensions += 1
             secs = d.REOBSERVE_SIM_S / max(1.0, time_scale) / 3
             _audit(inc, fx, "process", "REOBSERVATION_EXTENDED", {"tag": tag, "value": value, "ts1": value if tag == "TS1" else None,
-                                                                  "cleared": inc.cleared, "extension": inc.reobs_extensions, "seconds": round(secs, 1)})
+                                                                  "cleared": inc.cleared, "extension": inc.reobs_extensions, "seconds": round(secs, 1),
+                                                                  **trend})
             fx.set_timer("reobs", secs)
             return
         _audit(inc, fx, "process", "REOBSERVATION", {"cleared": inc.cleared, "tag": tag, "value": value, "criterion": f"{tag} {op} {limit}",
-                                                     "ts1": value if tag == "TS1" else None, "passed": ok, "extensions": inc.reobs_extensions})
+                                                     "ts1": value if tag == "TS1" else None, "passed": ok, "extensions": inc.reobs_extensions,
+                                                     **trend})
         if not ok:
             inc.reason = "MITIGATION_FAILED"
             _go(inc, "ESCALATED", f"cleared={inc.cleared} {tag}={value} (criterion {tag} {op} {limit})")
@@ -314,6 +319,23 @@ def on_timer(inc: Incident, name: str, now: datetime, latest_ts1: float | None, 
         _go(inc, "RESOLVED", f"{tag} {value} {op} {limit}")
         # Recovery is an observation. The CMMS service supplies an actual receipt
         # before this Incident can claim a work order and close.
+
+
+def _keep_series(inc: Incident, series: dict | None, *, extending: bool) -> dict:
+    """A161-G3: store the window's values on the Incident (the extension count it covers included) and return the compact
+    audit summary {"series": {samples · min · max · first · last · inside_share}} — the points stay on the Incident only."""
+    if not series:
+        return {}
+    inc.reobs_series = dict(series, extensions=inc.reobs_extensions + (1 if extending else 0))
+    return {"series": {k: series.get(k) for k in ("samples", "min", "max", "first", "last", "inside_share", "from", "to", "error")
+                       if k != "error" or series.get("error")}}
+
+
+@_transition
+def record_reobs_series(inc: Incident, series: dict | None) -> None:
+    """A161-G3: the work-order re-observation (service_parts) reads its window outside on_timer; it keeps its series here."""
+    if series:
+        inc.reobs_series = dict(series)
 
 
 @_transition
@@ -334,3 +356,41 @@ def on_work_order(inc: Incident, receipt: dict, fx: Effects, *, work_order_only:
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'cmdId':inc.cmd_id, 'workOrder':inc.work_order,
                                                 'work_order_only':work_order_only})
     _go(inc, 'CLOSED')
+
+
+
+@_transition
+def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
+    """C2: 설비 명령 · 작업지시 없이 업무 효과로 끝나는 처리 건(예비품 구매: 발주 → 입고 확인)의 사건 종결. 승인 대기(AWAITING_APPROVAL)에서
+    효과 확인 영수증으로 닫는다. 이미 끝난 사건은 그대로 둔다(False). 명령이 나간 사건은 재관측 · 작업지시로 닫히므로 거절한다."""
+    ref = receipt.get('ref')
+    if receipt.get('ok') is not True or not isinstance(ref, str) or not ref.strip():
+        raise ValueError('업무 효과 종결에는 실제 영수증 번호가 필요합니다')
+    if inc.state in d.TERMINAL:
+        return False
+    if inc.state != 'AWAITING_APPROVAL' or inc.cmd_id:
+        raise ValueError(f'업무 효과로 닫을 수 없는 사건 상태입니다: {inc.state}')
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED', {'businessEffect': dict(receipt), 'cmdId': None})
+    _go(inc, 'CLOSED', f"business effect {receipt.get('kind') or ''} {ref}".strip())
+    return True
+
+
+@_transition
+def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
+    """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김),
+    반려(rejected, 캡스톤 G1 사람 승인의 반려 가지)는 on_reject 와 같은 REJECTED_BY_OPERATOR(명령 전 승인 대기 사건만).
+    이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
+    if level not in ('ok', 'fail', 'rejected'):
+        raise ValueError('결과 보고 등급은 ok · fail · rejected 입니다')
+    if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
+        return False
+    if level == 'rejected':
+        if inc.state != 'AWAITING_APPROVAL':
+            raise ValueError(f'반려 결과 보고는 승인 대기 중인 사건만 닫습니다 (사건 {inc.id} 상태 {inc.state})')
+        inc.reason = summary
+        _audit(inc, fx, 'process', 'GUIDE_REJECTED', {'resultReport': summary, 'level': level})
+        _go(inc, 'REJECTED_BY_OPERATOR', f"result report: {summary}"[:300])
+        return True
+    _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
+    _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"result report: {summary}"[:300])
+    return True

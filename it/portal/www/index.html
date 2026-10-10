@@ -17,6 +17,9 @@
 <link rel="stylesheet" href="kpi.css?v=20261008-a8">
 <link rel="stylesheet" href="flows.css?v=20261008-b3">
 <link rel="stylesheet" href="compare.css?v=20261008-a10">
+<link rel="stylesheet" href="trace.css?v=20261009-u1b">
+<link rel="stylesheet" href="caseRecord.css?v=20261009-a161g">
+<link rel="stylesheet" href="theme.css?v=20261010-a161m">
 </head>
 <body>
 <a class="skip-link" href="#content">본문으로 건너뛰기</a>
@@ -92,6 +95,7 @@
     <div class="page-head"><h1>지식 지도</h1></div>
     <div class="toolbar">
       <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
+      <label>이름 공간 <select id="ontoNs"><option value="">수업 기준</option></select></label>
       <label>이상 패턴 경로 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
       <input type="search" id="ontoSearch" placeholder="이름 검색" aria-label="항목 검색">
       <button class="btn small" id="ontoReload">다시 읽기</button>
@@ -152,16 +156,17 @@
   <section class="view" id="view-instances">
     <div class="page-head"><h1>처리 건</h1></div>
     <div id="instBanner"></div>
-    <!-- A141: 행동(내 차례 → 선택 · 승인 · 입력)이 먼저, 에이전트 활동 스트림은 접기 -->
+    <!-- A141: 행동(내 차례 → 선택 · 승인 · 입력)이 먼저 -->
     <section class="todo-wrap"><div class="sec-head" style="margin-top:0"><h2>내 차례</h2></div>
       <div class="list todo-grid" id="todoList"></div></section>
     <div id="todoPanel"></div>
-    <details class="fold stream-fold" id="streamFold"><summary>에이전트 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
-    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 지금 일하는 AI 일꾼 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
     <div class="split inst-split">
       <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
       <div class="detail" id="instDetail"></div>
     </div>
+    <!-- A161-U1: 선택한 처리 건의 실시간 처리 과정은 상세(진행 탭)에 있다. 여기는 모든 처리 건을 한꺼번에 보는 보조 정보라 접어 둔다 -->
+    <details class="fold stream-fold" id="streamFold"><summary>모든 처리 건의 실시간 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
+    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 지금 일하는 AI 일꾼 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
   </section>
 
 
@@ -208,7 +213,7 @@
     <h2 class="sec">매뉴얼 등록</h2>
     <div class="upload card" id="manualUpload">
       <div class="form-grid">
-        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · <a href="samples/HM-8_cooler-fan-manual.md" download>예시 매뉴얼</a></p></div>
+        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · 예시 문서 <a href="samples/HM-8_cooler-fan-manual.md" download>A 쿨러 · 팬(HM-8)</a> → <a href="samples/PM-02_powerpack-pm-checklist.md" download>B 정기 점검표(PM-02)</a> → <a href="samples/PR-07_spare-parts-standard.md" download>C 예비품 기준(PR-07)</a> 순서로 적재</p></div>
         <div class="field"><label for="manualBy">담당자</label><input id="manualBy" value="지식 관리자"></div>
         <div class="field"><label for="manualDocumentId">개정할 문서 ID</label><input id="manualDocumentId" placeholder="새 문서는 비워 둠"></div>
       </div>
@@ -349,38 +354,43 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261008-a158c"></script>
+<script src="ui.js?v=20261010-lo1"></script>
 <script src="layers.js?v=20261008-a147"></script>
-<script src="app.js?v=20261008-a147"></script>
-<script src="enterprise.js?v=20261008-a147"></script>
+<script src="app.js?v=20261010-c3rv"></script>
+<script src="trace.js?v=20261009-u1b"></script>
+<script src="enterprise.js?v=20261010-lo1"></script>
 <script src="main.js?v=20261008-a147"></script>
-<script src="flow.js?v=20261008-a147"></script>
+<script src="flow.js?v=20261009-u1"></script>
 <script src="legacyMeaning.js?v=20261008-a9"></script>
-<script src="hitl.js?v=20261008-a147"></script>
+<script src="hitl.js?v=20261010-lo1"></script>
 <script src="instanceSteps.js?v=20261008-a147"></script>
 <script src="instanceRework.js?v=20261008-a147"></script>
-<script src="instanceEffects.js?v=20261008-a158"></script>
+<script src="instanceEffects.js?v=20261009-u1"></script>
 <script src="taskDeferral.js?v=20261008-a147"></script>
-<script src="instances.js?v=20261008-a147"></script>
-<script src="liveStream.js?v=20261008-a147"></script>
-<script src="inbox.js?v=20261008-u5"></script>
-<script src="taskDetail.js?v=20261008-a158c"></script>
-<script src="agentsPanel.js?v=20261008-u1"></script>
+<script src="approvalCard.js?v=20261010-lo1"></script>
+<script src="plainWords.js?v=20261010-lo1"></script>
+<script src="caseRecord.js?v=20261010-lo1"></script>
+<script src="resultReport.js?v=20261010-a161m"></script>
+<script src="instances.js?v=20261010-lo1"></script>
+<script src="liveStream.js?v=20261009-u1"></script>
+<script src="inbox.js?v=20261010-capg1g7"></script>
+<script src="taskDetail.js?v=20261010-capg1g7"></script>
+<script src="agentsPanel.js?v=20261009-u1"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
-<script src="agents.js?v=20261008-b1"></script>
-<script src="definitionDeploy.js?v=20261008-b4"></script>
+<script src="agents.js?v=20261009-a161rv"></script>
+<script src="definitionDeploy.js?v=20261009-u1"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
-<script src="evaluation.js?v=20261008-u6"></script>
-<script src="mcp.js?v=20261008-u3"></script>
+<script src="evaluation.js?v=20261009-u1"></script>
+<script src="mcp.js?v=20261009-a161rv"></script>
 <script src="whatif.js?v=20261008-b5"></script>
 <!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
 <script src="fabric.js?v=20261008-a11"></script>
 <script src="kpi.js?v=20261008-b5"></script>
-<script src="ask.js?v=20261008-b5"></script>
+<script src="ask.js?v=20261009-u1"></script>
 <script src="compare.js?v=20261008-a10"></script>
-<script src="flows.js?v=20261008-b3"></script>
+<script src="flows.js?v=20261010-capg1g7"></script>
 <script src="configBundle.js?v=20261008-b6"></script>
 <script src="oilInput.js?v=20261008-b7"></script>
-<script src="shell.js?v=20261008-b7"></script>
+<script src="shell.js?v=20261009-u1"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ UNWIND [['sv:fs1','msr:throughput',1,'medium','FS1 < 8.0 l/min에서 사이클 �
 MATCH (a {id: r[0]}), (b {id: r[1]}) MERGE (a)-[i:INFLUENCES]->(b) SET i.sign = r[2], i.strength = r[3], i.condition = r[4], i.note = r[5];
 
 // Q2-(가): 작동유 열화는 고장 유형으로 둔다. 원인 4 · 증상(정기 오일 분석, 사람 입력) · 패턴(사람 입력 경보) · 입력 · 진단 규칙.
+// @edition full
 UNWIND [['cause:oil-oxidation','고온 운전에 의한 산화',['산화','열 열화'],0.4,'fm:oil-degradation'],
         ['cause:water-ingress','수분 혼입',['수분','물 혼입','결로'],0.25,'fm:oil-degradation'],
         ['cause:particle-contamination','오염 입자 유입',['오염','마모 입자','청정도 저하'],0.25,'fm:oil-degradation'],
@@ -14,8 +15,9 @@ MERGE (n:Cause {id: r[0]}) SET n.name = r[1], n.aliases = r[2], n.prior = r[3]
 WITH n, r MATCH (f:FailureMode {id: r[4]}) MERGE (n)-[:CAUSES]->(f);
 MERGE (sy:Symptom {id: 'sym:oil-analysis-out-of-spec'})
   SET sy.name = '오일 분석 기준 이탈', sy.aliases = ['TAN 상승','수분 2,500 ppm 초과','ISO 4406 등급 2단계 악화','점도 변화'],
-      sy.note = '실시간 센서가 없다. 정기 오일 분석(점도 · 산가 TAN · 수분 Karl Fischer · 청정도 ISO 4406) 결과를 사람이 입력한다.'
-WITH sy MATCH (f:FailureMode {id: 'fm:oil-degradation'}) MERGE (sy)-[:INDICATES]->(f);
+      sy.note = '실시간 센서가 없다. 정기 오일 분석(점도 · 산가 TAN · 수분 Karl Fischer · 청정도 ISO 4406) 결과를 사람이 입력한다.';
+// @edition full
+MATCH (sy:Symptom {id: 'sym:oil-analysis-out-of-spec'}), (f:FailureMode {id: 'fm:oil-degradation'}) MERGE (sy)-[:INDICATES]->(f);
 MERGE (p:AnomalyPattern {id: 'pattern:oil-analysis'})
   SET p.name = '오일 분석 기준 이탈 (사람 입력)', p.code = 'OIL_ANALYSIS',
       p.rule = 'TAN delta >= 2 or water > 2500 ppm or ISO 4406 +2 codes or viscosity out of grade', p.holdSeconds = 0
@@ -33,6 +35,7 @@ WITH n MATCH (i:InputData {id: 'in:plc-state'}) MERGE (n)-[t:TESTS]->(i) SET t.o
 WITH n MATCH (m:ManualSection {id: 'HM-9.4'}) MERGE (n)-[:DERIVED_FROM]->(m);
 UNWIND [['pattern:low-pressure-trip','sym:ps1-drop'],['pattern:high-vibration-trip','sym:vs1-rise']] AS r
 MATCH (p:AnomalyPattern {id: r[0]}), (s:Symptom {id: r[1]}) MERGE (p)-[:DETECTS]->(s);
+// @edition full
 UNWIND [['fm:low-pressure-trip','저압 정지','comp:pump-a','sym:ps1-drop','fm:volumetric-loss'],
         ['fm:high-vibration-trip','고진동 정지','comp:fan','sym:vs1-rise','fm:bearing-degradation']] AS r
 MERGE (n:FailureMode {id: r[0]}) SET n.name = r[1]
@@ -41,6 +44,7 @@ WITH n, r MATCH (s:Symptom {id: r[3]}) MERGE (s)-[:INDICATES]->(n)
 WITH n, r MATCH (prev:FailureMode {id: r[4]}) MERGE (prev)-[:LEADS_TO]->(n);
 
 // 리셋 스킬 2종: 원인 조치 확인 → 값 복귀 확인 → 리셋 (HM-9.4 트립 후 재기동)
+// @edition full
 UNWIND [
   ['skill:reset-after-pressure','압력 복귀 후 리셋','SOP-TRIP-02','control','누설 조치(예비 펌프 전환 또는 씰 교체) 뒤 토출 압력이 130 bar 이상으로 돌아온 것을 확인하고 저압 인터록을 리셋한다.','role:prod-mgr','sys:scada',[['action:reset',1]],
     [['저압 원인 조치(예비 펌프 전환 · 씰 교체)가 끝났는지 확인한다.','HM-9.4'],['PS1이 130 bar 이상으로 회복했는지 확인한다.','HM-5.2'],['PLC를 리셋하고 재관측한다.','HM-9.4']]],
@@ -57,8 +61,10 @@ WITH DISTINCT n, r UNWIND range(0, size(r[8]) - 1) AS j
 MERGE (st:Step {id: r[2] + '/' + (j + 1)}) SET st.order = j + 1, st.text = coalesce(st.text, r[8][j][0])
 MERGE (n)-[:HAS_STEP]->(st)
 WITH st, r, j MATCH (m:ManualSection {id: r[8][j][1]}) MERGE (st)-[:REFERS_TO]->(m);
+// @edition full
 UNWIND [['fm:low-pressure-trip','skill:reset-after-pressure'],['fm:high-vibration-trip','skill:reset-after-vibration']] AS r
 MATCH (f:FailureMode {id: r[0]}), (s:Skill {id: r[1]}) MERGE (f)-[:MITIGATED_BY]->(s);
+// @edition full
 UNWIND [['skill:reset-after-pressure','msr:availability',1,null,null,'재기동'],['skill:reset-after-vibration','msr:availability',1,null,null,'재기동']] AS r
 MATCH (s:Skill {id: r[0]}), (t {id: r[1]}) MERGE (s)-[a:AFFECTS]->(t) SET a.sign = r[2], a.delta = r[3], a.unit = r[4], a.note = r[5];
 
@@ -67,6 +73,7 @@ MATCH (d:Decision {id: 'dec:action-candidates'}), (i:InputData {id: 'in:pattern'
 MATCH (t:Task {id: 'task:candidates'}), (i:InputData {id: 'in:pattern'}) MERGE (t)-[:READS]->(i);
 
 // 후보 · 진단 규칙. 기존 rule:cand-trip은 과열 트립에만 쓰도록 instances.cypher에서 조건을 좁혔다.
+// @edition full
 UNWIND [
   ['rule:cand-trip-lp','dt:action-candidates',6,"plc_state == 'TRIP' and pattern == 'LOW_PRESSURE_TRIP'",'SELECT',null,'저압 트립이면 누설 조치 확인 뒤 압력 복귀 후 리셋',['skill:reset-after-pressure'],['HM-9.4'],
     [['in:plc-state','==','TRIP',null],['in:pattern','==','LOW_PRESSURE_TRIP',null]]],
@@ -82,6 +89,7 @@ WITH DISTINCT n, r UNWIND r[8] AS src MATCH (x {id: src}) WHERE x:KnowledgeSourc
 WITH DISTINCT n, r UNWIND r[9] AS tst MATCH (i:InputData {id: tst[0]}) MERGE (n)-[c:TESTS]->(i) SET c.operator = tst[1], c.value = tst[2], c.unit = tst[3];
 
 // 고장 유형으로 판정된 트립에도 같은 리셋 카드(과열 트립의 rule:cand-trip-fm과 같은 모양; Q22: 고장 유형의 조치는 failure_mode 규칙이 내놓는다).
+// @edition full
 UNWIND [['rule:cand-trip-lp-fm',8,"failure_mode == 'fm:low-pressure-trip'",'저압 정지로 판정되면 압력 복귀 후 리셋','fm:low-pressure-trip','skill:reset-after-pressure'],
         ['rule:cand-trip-hv-fm',9,"failure_mode == 'fm:high-vibration-trip'",'고진동 정지로 판정되면 진동 확인 후 리셋','fm:high-vibration-trip','skill:reset-after-vibration']] AS r
 MERGE (n:Rule {id: r[0]}) SET n.order = r[1], n.when = r[2], n.effect = 'SELECT', n.annotation = r[3]
@@ -92,6 +100,7 @@ WITH n, r MATCH (s:Skill {id: r[5]}) MERGE (n)-[:OUTPUTS]->(s);
 
 // 작동유 열화의 조치 후보 규칙: 매뉴얼 HM-9에서 적재한 스킬(SOP-OIL-21 교환 · HM-9.2 점검)을 내놓는다(A075·Q22: 온톨로지에 있는 조치는 후보 규칙이 내놓아야 판단에 닿는다).
 // 스킬 노드는 적재 파이프라인이 만들므로(문서 적재 전에는 없음) 있는 것만 잇는다 — 적재 뒤 다시 적용하면 채워진다.
+// @edition full
 MERGE (n:Rule {id: 'rule:cand-oil'}) SET n.order = 8, n.when = "failure_mode == 'fm:oil-degradation'", n.effect = 'SELECT',
   n.annotation = '작동유 열화로 판정되면 작동유 교환(SOP-OIL-21) · 열화 점검 절차를 후보로 (A098, 사람 입력 오일 분석)'
 WITH n MATCH (t:DecisionTable {id: 'dt:action-candidates'}) MERGE (t)-[:HAS_RULE]->(n)

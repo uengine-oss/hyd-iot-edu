@@ -186,6 +186,7 @@ UNWIND [['ks:manual-hm','HYD 유압 파워팩 운전 · 정비 매뉴얼','manua
         ['ks:strategy-map','경남유압 BSC 전략맵','strategy','BSC-2026']] AS r
 MERGE (n:KnowledgeSource {id: r[0]}) SET n.name = r[1], n.kind = r[2], n.ref = r[3];
 
+// @edition full
 UNWIND [['HM-3.1','정비를 위한 LOCAL 전환','정비 작업 전 현장 패널에서 LOCAL로 전환하고 원격 명령을 차단한다.'],
         ['HM-3.2','운전 모드와 원격 조치 권한','REMOTE_AUTO에서만 IT 승인 조치를 받는다. 수동 조작이 들어오면 REMOTE_MANUAL로 바뀐다.'],
         ['HM-5.2','예비 펌프 전환','주 펌프 이상 시 예비 펌프로 무부하 전환한다. 전환 후 30초 안에 압력이 회복되어야 한다.'],
@@ -217,6 +218,7 @@ MERGE (n:Symptom {id: r[0]}) SET n.name = r[1], n.aliases = r[2]
 WITH n, r UNWIND r[3] AS sid MATCH (s:Sensor {id: sid}) MERGE (n)-[:OBSERVED_BY]->(s)
 WITH DISTINCT n, r UNWIND r[4] AS pid MATCH (p:AnomalyPattern {id: pid}) MERGE (p)-[:DETECTS]->(n);
 
+// @edition full
 UNWIND [['fm:cooling-loss','쿨러 냉각 성능 상실','comp:cooler',['sym:ts1-rise','sym:ce-drop']],
         ['fm:volumetric-loss','펌프 체적 효율 저하','comp:pump-a',['sym:ps1-drop','sym:fs1-drop']],
         ['fm:bearing-degradation','팬 베어링 열화','comp:fan',['sym:vs1-rise']],
@@ -226,9 +228,11 @@ MERGE (n:FailureMode {id: r[0]}) SET n.name = r[1]
 WITH n, r MATCH (c:Component {id: r[2]}) MERGE (n)-[:OCCURS_IN]->(c)
 WITH n, r UNWIND (CASE WHEN size(r[3]) = 0 THEN [null] ELSE r[3] END) AS sid
 OPTIONAL MATCH (s:Symptom {id: sid}) FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END | MERGE (s)-[:INDICATES]->(n));
+// @edition full
 UNWIND [['fm:cooling-loss','fm:overheat-trip'],['fm:cooling-loss','fm:oil-degradation'],['fm:volumetric-loss','fm:oil-degradation'],['fm:bearing-degradation','fm:cooling-loss']] AS r
 MATCH (a:FailureMode {id: r[0]}), (b:FailureMode {id: r[1]}) MERGE (a)-[:LEADS_TO]->(b);
 
+// @edition full
 UNWIND [['cause:cooler-fin-fouling','쿨러 핀 오염 (먼지 · 유막)',['핀 막힘','쿨러 오염'],0.6,'fm:cooling-loss','part:cooler-core'],
         ['cause:high-ambient','주변 온도 상승',['폭염','외기 고온'],0.2,'fm:cooling-loss',null],
         ['cause:pump-seal-wear','펌프 축 씰 마모',['씰 마모','내부 누설'],0.7,'fm:volumetric-loss','part:pump-seal'],
@@ -237,11 +241,13 @@ MERGE (n:Cause {id: r[0]}) SET n.name = r[1], n.aliases = r[2], n.prior = r[3]
 WITH n, r MATCH (f:FailureMode {id: r[4]}) MERGE (n)-[:CAUSES]->(f)
 WITH n, r OPTIONAL MATCH (p:Part {id: r[5]}) FOREACH (_ IN CASE WHEN p IS NULL THEN [] ELSE [1] END | MERGE (n)-[:INVOLVES_PART]->(p));
 // 원인은 상태 변수(외란)를 통해 물리 영향 경로에 들어간다
+// @edition full
 UNWIND [['cause:cooler-fin-fouling','sv:fouling'],['cause:pump-seal-wear','sv:leak'],['cause:fan-bearing-wear','sv:bearing-wear']] AS r
 MATCH (c:Cause {id: r[0]}), (v:StateVariable {id: r[1]}) MERGE (c)-[d:DISTURBS]->(v) SET d.sign = 1;
 
 // 증거: [id, cause, name, rule, weight, expect, threshold, sql, tag, windowSeconds]. sql은 %(asset)s 하나를 받아 숫자 하나(value)를 돌려준다.
 // tag · windowSeconds는 sql이 읽는 태그와 구간이다. 구간에 수집 계약보다 긴 관측 공백이 있으면 판정하지 않는다(A083).
+// @edition full
 UNWIND [
   ['evd:ce-low','cause:cooler-fin-fouling','냉각 효율 평균 70 % 미만 (최근 30초)','avg(CE) over 30s < 70',0.6,'lt',70,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'CE\' AND time > now() - interval \'30 seconds\'','CE',30],
   ['evd:fan-normal','cause:cooler-fin-fouling','팬 진동 정상 (팬 고장 아님)','avg(VS1) over 2m < 0.9',0.4,'lt',0.9,'SELECT avg(value) AS value FROM tag_1s WHERE asset = %(asset)s AND name = \'VS1\' AND time > now() - interval \'2 minutes\'','VS1',120],
@@ -270,6 +276,7 @@ WITH n, r MATCH (t {id: r[7]}) MERGE (n)-[:TARGETS]->(t);
 
 // 조치 방법 = Skill = SOP. 스킬 하나가 SOP 하나다 (절차 번호 sopId와 단계를 직접 갖는다). 조치 가이드 카드 한 장이 스킬 하나다.
 // [id, name, sopId, kind, description, approver, executor, [[action, value]], steps[[text, manual]]]
+// @edition full
 UNWIND [
   ['skill:fan-max','팬 최대','SOP-COOL-01','control','팬만 100 %로 올린다. 생산은 그대로 유지한다.','role:operator','sys:scada',[['action:set-fan',100]],
     [['PLC 운전 모드가 REMOTE_AUTO인지 확인한다.','HM-3.2'],['팬 속도를 100 %로 올린다 (연속 24시간 이내).','HM-7.3'],['15분 재관측: TS1 55 ℃ 미만이고 경보 해제면 완화 성공.','HM-7.5']]],
@@ -310,11 +317,13 @@ WITH DISTINCT n, r UNWIND range(0, size(r[8]) - 1) AS j
 MERGE (st:Step {id: r[2] + '/' + (j + 1)}) SET st.order = j + 1, st.text = coalesce(st.text, r[8][j][0])
 MERGE (n)-[:HAS_STEP]->(st)
 WITH st, r, j MATCH (m:ManualSection {id: r[8][j][1]}) MERGE (st)-[:REFERS_TO]->(m);
+// @edition full
 UNWIND [['role:operator',['skill:fan-max','skill:derate-70','skill:fan-slow']],
         ['role:maint-mgr',['skill:wo-cooler-clean','skill:wo-ventilation','skill:wo-pump-seal','skill:wo-fan-bearing']]] AS r
 UNWIND r[1] AS sid MATCH (ro:Role {id: r[0]}), (s:Skill {id: sid}) MERGE (ro)-[:HAS_SKILL]->(s);
 
 // 고장 유형 → 조치 방법 (즉시 완화 / 근본 조치). 조치 방법(스킬 = SOP)은 고장 유형에 매칭된다.
+// @edition full
 UNWIND [['fm:cooling-loss','MITIGATED_BY',['skill:fan-max','skill:fan-max-derate','skill:derate-night-clean']],
         ['fm:cooling-loss','REMEDIED_BY',['skill:wo-cooler-clean','skill:wo-ventilation']],
         ['fm:volumetric-loss','MITIGATED_BY',['skill:switch-standby-pump','skill:derate-70','skill:raise-pressure']],
@@ -326,6 +335,7 @@ UNWIND r[2] AS sid MATCH (f:FailureMode {id: r[0]}), (s:Skill {id: sid})
 FOREACH (_ IN CASE WHEN r[1] = 'MITIGATED_BY' THEN [1] ELSE [] END | MERGE (f)-[:MITIGATED_BY]->(s))
 FOREACH (_ IN CASE WHEN r[1] = 'REMEDIED_BY' THEN [1] ELSE [] END | MERGE (f)-[:REMEDIED_BY]->(s));
 // 근본 조치가 특정 원인에만 맞을 때 (같은 냉각 성능 상실이라도 핀 오염이면 세척, 외기 고온이면 환기 개선)
+// @edition full
 UNWIND [['skill:wo-cooler-clean','cause:cooler-fin-fouling'],['skill:derate-night-clean','cause:cooler-fin-fouling'],
         ['skill:wo-ventilation','cause:high-ambient'],['skill:wo-pump-seal','cause:pump-seal-wear'],
         ['skill:planned-stop','cause:fan-bearing-wear'],['skill:wo-fan-bearing','cause:fan-bearing-wear']] AS r
@@ -333,6 +343,7 @@ MATCH (s:Skill {id: r[0]}), (c:Cause {id: r[1]}) MERGE (s)-[:ADDRESSES]->(c);
 
 // 스킬이 움직이는 것 (스킬 → 상태 변수 · Measure). 여기서 INFLUENCES 경로를 따라 영업이익까지 간다.
 // [skill, target, sign, delta, unit, note]
+// @edition full
 UNWIND [
   ['skill:fan-max','sv:fan-speed',1,40,'%','60 → 100'],
   ['skill:fan-max-derate','sv:fan-speed',1,40,'%','60 → 100'],
@@ -399,6 +410,7 @@ UNWIND [['pattern:cooler-degradation','in:ts1','>',55,'℃'],['pattern:cooler-de
 MATCH (a:AnomalyPattern {id: r[0]}), (i:InputData {id: r[1]})
 MERGE (a)-[x:TESTS]->(i) SET x.operator = r[2], x.value = r[3], x.unit = r[4];
 // 탐지 임계값의 근거 매뉴얼 절
+// @edition full
 UNWIND [['pattern:cooler-degradation','HM-7.3'],['pattern:pump-leakage','HM-5.2'],['pattern:fan-vibration','HM-8.1'],['pattern:overheat-trip','HM-9.4']] AS r
 MATCH (a:AnomalyPattern {id: r[0]}), (m:ManualSection {id: r[1]}) MERGE (a)-[:DERIVED_FROM]->(m);
 
@@ -419,6 +431,27 @@ MATCH (a:Decision {id: r[0]}), (b:Decision {id: r[1]}) MERGE (a)-[:REQUIRES_DECI
 
 // 규칙 = 결정표의 한 행. 임계값은 TESTS 관계로: [input, operator, value, unit]. 한 행의 검사는 모두 AND.
 // [id, table, order, when, effect, penalty, annotation, outputs(SELECT)/applies(other), penalizes, sources, tests]
+// 회사 규정(설비안전규정 SR-04 · 구매규정 PR-07)과 순위 정책: 두 판 모두에 둔다(확정 TODO C 결정 2).
+UNWIND [
+  ['rule:ts1-hard','dt:compliance',2,'forecast_ts1 >= 65','EXCLUDE',null,'예측 유온이 인터록 한계 이상이면 제외 (모든 제어 후보에 예측값으로 적용)',[],null,['ks:sr-04'],
+    [['in:forecast-ts1','>=',65,'℃']]],
+  ['rule:avl','dt:compliance',7,'supplier_avl == false','EXCLUDE',null,'핵심 부품은 승인 공급사에서만 구매',['skill:wo-pump-seal'],null,['ks:pr-07'],
+    [['in:supplier-avl','==',false,null]]],
+  ['rule:rank-value','dt:rank-actions',1,'true','RANK',null,'점수 = BSC 득실(스킬 → 처음 닿는 성과 지표, 강도 high 1 · medium 0.6 · low 0.3, 조건부는 절반) + 예측 유온 여유 (55 − 예측)/3 (±2 한도) − 경고 0.5 − 감점/20 + 선례 비율 × 1.5 + 납기 긴급도((24 − 남은 h)/24 × 지연 보상/100, 0~1) × 생산 영향(유지 +1 · 감산 +0.4 · 정지 −1) × 1.5 − 품질 위험(고온 구간 출하 대기 로트가 있고 예측 유온 ≥ 55 ℃ 면 클레임/1000, ≤ 1) × 1.5. 제외된 카드는 뒤로, 동점이면 승인 직급이 낮은 쪽',[],null,['ks:strategy-map'],[]]
+] AS r
+MERGE (n:Rule {id: r[0]}) SET n.order = r[2], n.when = r[3], n.effect = r[4], n.penalty = r[5], n.annotation = r[6]
+WITH n, r MATCH (t:DecisionTable {id: r[1]}) MERGE (t)-[:HAS_RULE]->(n)
+WITH n, r UNWIND (CASE WHEN size(r[7]) = 0 THEN [null] ELSE r[7] END) AS sid
+OPTIONAL MATCH (s {id: sid}) WHERE s:Skill OR s:Cause
+FOREACH (_ IN CASE WHEN s IS NOT NULL AND r[4] = 'SELECT' THEN [1] ELSE [] END | MERGE (n)-[:OUTPUTS]->(s))
+FOREACH (_ IN CASE WHEN s IS NOT NULL AND r[4] <> 'SELECT' THEN [1] ELSE [] END | MERGE (n)-[:APPLIES_TO]->(s))
+WITH DISTINCT n, r OPTIONAL MATCH (k:Measure {id: r[8]}) FOREACH (_ IN CASE WHEN k IS NULL THEN [] ELSE [1] END | MERGE (n)-[:PENALIZES]->(k))
+WITH n, r UNWIND r[9] AS src MATCH (x {id: src}) WHERE x:KnowledgeSource OR x:ManualSection MERGE (n)-[:DERIVED_FROM]->(x)
+WITH DISTINCT n, r UNWIND (CASE WHEN size(r[10]) = 0 THEN [null] ELSE r[10] END) AS tst
+OPTIONAL MATCH (i:InputData {id: tst[0]})
+FOREACH (_ IN CASE WHEN i IS NULL THEN [] ELSE [1] END | MERGE (n)-[x:TESTS]->(i) SET x.operator = tst[1], x.value = tst[2], x.unit = tst[3]);
+// 매뉴얼(HM)에서 온 진단 · 후보 · 규정 규칙: 회귀용 전체판에만 넣는다. 수업용 구조판에서는 문서 인제스천이 만든다(확정 TODO C1).
+// @edition full
 UNWIND [
   ['rule:dx-cooler','dt:diagnose-cause',1,"pattern == 'COOLER_DEGRADATION' and ce < 70",'SELECT',null,'냉각 효율이 낮으면 쿨러 핀 오염이 1순위 (근거 evd:ce-low)',['cause:cooler-fin-fouling'],null,['HM-7.3'],
     [['in:pattern','==','COOLER_DEGRADATION',null],['in:ce','<',70,'%']]],
@@ -438,8 +471,6 @@ UNWIND [
     [['in:failure-mode','==','fm:overheat-trip',null]]],
   ['rule:no-pressure-raise','dt:compliance',1,"skill_code == 'PRESSURE_SET' and failure_mode == 'fm:volumetric-loss'",'EXCLUDE',null,'누설 의심 시 압력 설정 상향 금지',['skill:raise-pressure'],null,['HM-5.4'],
     [['in:skill-code','==','PRESSURE_SET',null],['in:failure-mode','==','fm:volumetric-loss',null]]],
-  ['rule:ts1-hard','dt:compliance',2,'forecast_ts1 >= 65','EXCLUDE',null,'예측 유온이 인터록 한계 이상이면 제외 (모든 제어 후보에 예측값으로 적용)',[],null,['ks:sr-04'],
-    [['in:forecast-ts1','>=',65,'℃']]],
   ['rule:auto-mode','dt:compliance',3,"skill_kind == 'control' and plc_mode != 'REMOTE_AUTO'",'EXCLUDE',null,'원격 제어는 REMOTE_AUTO에서만',['skill:fan-max','skill:fan-max-derate','skill:derate-night-clean','skill:switch-standby-pump','skill:derate-70','skill:fan-slow-derate','skill:fan-slow'],null,['HM-3.2'],
     [['in:skill-kind','==','control',null],['in:plc-mode','!=','REMOTE_AUTO',null]]],
   ['rule:standby','dt:compliance',4,'standby_ready == false','EXCLUDE',null,'예비 펌프가 정비 중이면 전환 불가',['skill:switch-standby-pump'],null,['HM-5.2'],
@@ -450,11 +481,8 @@ UNWIND [
     [['in:forecast-ps1','<',165,'bar']]],
   ['rule:fan-24h','dt:compliance',6,'fan100_hours > 24','PENALTY',20,'팬 100 % 연속 24시간 초과 시 수명 감점',['skill:fan-max','skill:fan-max-derate'],'msr:mtbf',['HM-7.3'],
     [['in:fan100-hours','>',24,'h']]],
-  ['rule:avl','dt:compliance',7,'supplier_avl == false','EXCLUDE',null,'핵심 부품은 승인 공급사에서만 구매',['skill:wo-pump-seal'],null,['ks:pr-07'],
-    [['in:supplier-avl','==',false,null]]],
   ['rule:trip-reset-only','dt:compliance',8,"plc_state == 'TRIP' and skill_code != 'RESET'",'EXCLUDE',null,'트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 (냉각 후 리셋만)',[],null,['HM-9.4'],
-    [['in:plc-state','==','TRIP',null],['in:skill-code','!=','RESET',null]]],
-  ['rule:rank-value','dt:rank-actions',1,'true','RANK',null,'점수 = BSC 득실(스킬 → 처음 닿는 성과 지표, 강도 high 1 · medium 0.6 · low 0.3, 조건부는 절반) + 예측 유온 여유 (55 − 예측)/3 (±2 한도) − 경고 0.5 − 감점/20 + 선례 비율 × 1.5 + 납기 긴급도((24 − 남은 h)/24 × 지연 보상/100, 0~1) × 생산 영향(유지 +1 · 감산 +0.4 · 정지 −1) × 1.5 − 품질 위험(고온 구간 출하 대기 로트가 있고 예측 유온 ≥ 55 ℃ 면 클레임/1000, ≤ 1) × 1.5. 제외된 카드는 뒤로, 동점이면 승인 직급이 낮은 쪽',[],null,['ks:strategy-map'],[]]
+    [['in:plc-state','==','TRIP',null],['in:skill-code','!=','RESET',null]]]
 ] AS r
 MERGE (n:Rule {id: r[0]}) SET n.order = r[2], n.when = r[3], n.effect = r[4], n.penalty = r[5], n.annotation = r[6]
 WITH n, r MATCH (t:DecisionTable {id: r[1]}) MERGE (t)-[:HAS_RULE]->(n)
@@ -528,7 +556,9 @@ UNWIND [['task:diagnose',['in:failure-mode','in:cause']],
         ['task:candidates',['in:forecast-ts1','in:forecast-ps1','in:skill-kind','in:skill-code']],
         ['task:select',['in:chosen-skill']]] AS r
 UNWIND r[1] AS iid MATCH (t:Task {id: r[0]}), (i:InputData {id: iid}) MERGE (t)-[:PRODUCES]->(i);
+// @edition full
 MATCH (t:Task {id:'task:command'}), (s:Skill {kind:'control'}) MERGE (t)-[:EXECUTES]->(s);
+// @edition full
 MATCH (t:Task {id:'task:work-order'}), (s:Skill {kind:'work_order'}) MERGE (t)-[:EXECUTES]->(s);
 
 // A079: 미지원 경보 현장 검토(proc:alert-triage)의 흐름 노드 — 실행 정의 alert_triage_v1.json을 그대로 옮긴 것(실행 버전 MAPS_TO 대응용)
@@ -565,6 +595,7 @@ MERGE (a)-[i:INFLUENCES]->(b) SET i.sign = r[2], i.strength = r[3], i.condition 
 
 // 조치별 예측 (카드에 보이는 예측값). 쿨러 시나리오는 설비 모델의 평형식으로 계산한 값, 나머지는 설계 목표값이다.
 // [id, cause, skill, variable, value, unit, method]
+// @edition full
 UNWIND [
   ['fc:cooler-none','cause:cooler-fin-fouling',null,'sv:ts1',70.0,'℃','열평형 모델 (thermal.equilibrium_ts1)'],
   ['fc:cooler-fan-max','cause:cooler-fin-fouling','skill:fan-max','sv:ts1',55.4,'℃','열평형 모델 (thermal.equilibrium_ts1)'],
@@ -581,12 +612,14 @@ WITH f, r MATCH (c:Cause {id: r[1]}), (v:StateVariable {id: r[3]}) MERGE (f)-[:G
 WITH f, r OPTIONAL MATCH (s:Skill {id: r[2]}) FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END | MERGE (f)-[:ASSUMES]->(s));
 
 // ============================================================== 7. 운영 기록 (예시 — 선례 질의 시연용)
+// @edition full
 UNWIND [['inc:demo-1','ALT-hyd01-0001-demo',datetime('2026-09-25T10:12:00+09:00'),'pattern:cooler-degradation','cause:cooler-fin-fouling'],
         ['inc:demo-2','ALT-hyd01-0002-demo',datetime('2026-09-28T14:40:00+09:00'),'pattern:cooler-degradation','cause:cooler-fin-fouling'],
         ['inc:demo-3','ALT-hyd01-0003-demo',datetime('2026-09-30T09:05:00+09:00'),'pattern:pump-leakage','cause:pump-seal-wear']] AS r
 MERGE (i:Incident {id: r[0]}) SET i.alertId = r[1], i.openedAt = r[2]
 WITH i, r MATCH (a:Asset {id:'asset:hyd-01'}), (p:AnomalyPattern {id: r[3]}), (c:Cause {id: r[4]})
 MERGE (i)-[:ON_ASSET]->(a) MERGE (i)-[:RAISED_BY]->(p) MERGE (i)-[:DIAGNOSED_AS]->(c);
+// @edition full
 UNWIND [['case:demo-1','inc:demo-1','skill:fan-max-derate','role:prod-mgr',true,'OEM 납기 우선, 야간 세척 예정',datetime('2026-09-25T10:20:00+09:00')],
         ['case:demo-2','inc:demo-2','skill:derate-night-clean','role:prod-mgr',false,'팬 100 % 운전이 이번 주 이미 30시간 — 팬 수명 보호',datetime('2026-09-28T14:47:00+09:00')],
         ['case:demo-3','inc:demo-3','skill:switch-standby-pump','role:prod-mgr',true,'예비 펌프 정비 완료 상태 확인',datetime('2026-09-30T09:11:00+09:00')]] AS r

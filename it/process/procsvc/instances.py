@@ -35,11 +35,14 @@ from .approval_delivery import ApprovalDelivery
 from .rework_runtime import ReworkRuntime
 from .effect_compensation import EffectRuntime
 from .current_approval import ApprovalReviewRequired
+from .service_parts import ServicePartsRuntime
+from . import effect_parts, approval_part
 
 log = logging.getLogger("process.instances")
 
 MAX_RETRIES = 3                            # stop retrying after three failures; block for recovery, never imply success
 ENGINE_CONSUMER = "process-engine"
+EVENTS_WINDOW = 1500                       # A161-U1: events the instance view carries (newest); older pages via /api/events?before=
 
 
 def workitem_transition(fn):
@@ -93,9 +96,20 @@ class Hooks:
     record_cypher: Callable[..., list] = lambda q, **params: []
     query_cypher: Callable[..., list] = lambda q, **params: []          # read the projected Execution layer back (monitoring)
     audit: Callable[..., None] = lambda asset, actor, event, detail, incident=None: None
+    # C2 승인 뒤 실행 부품 (service_parts.py). 없으면 그 부품은 사유와 함께 실패한다.
+    enterprise_read: Callable[[str, dict], dict] | None = None        # (읽기 이름, 인자) → enterprise-sim 응답 {system, facts, records}
+    mcp_call: Callable[[str, str, dict, str], dict] = lambda server, tool, arguments, key: {"status": "failed", "error": "MCP 호출이 연결되지 않았습니다"}
+    # G3: 읽기 확인(svc:mcp-call effect: false) — 부르기 직전 도구 목록을 다시 받아 읽기 판정(mcp_check.call)을 통과한 도구만 부른다
+    mcp_read: Callable[[str, str, dict], dict] = lambda server, tool, arguments: {"status": "failed", "error": "MCP 읽기 호출이 연결되지 않았습니다"}
+    plant_restore: Callable[[str, str | None], dict] = lambda asset, component: {"ok": False, "error": "설비 시뮬레이터가 연결되지 않았습니다"}
+    close_incident_effect: Callable[[str, dict], bool] | None = None   # 업무 효과(입고 확인)로 사건을 닫는다 (machine.on_business_effect)
+    recovery_reading: Callable[[str], dict | None] | None = None     # 사건의 회복 기준 태그 최신값 · 경보 해제 (작업지시 뒤 재관측)
+    read_tag: Callable[[str, str], float | None] | None = None        # (설비, 태그) → 최신값 (시운전 확인)
+    close_incident_result: Callable[[str, str, str], bool] | None = None   # (사건, 등급 ok|fail, 요약) → 결과 보고로 사건 종결
+    case_started: Callable[[dict], None] | None = None                # C3: 처리 건이 막 열렸을 때(수업 버튼 연결 — 설비 주입 id 로)
 
 
-class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
+class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePartsRuntime):
     def __init__(self, repo, defn: engine.Definition, hooks: Hooks, time_scale: float = 20.0, tenant_id: str = "hyd",
                  consumer: str = ENGINE_CONSUMER):
         self.repo, self.defn, self.hooks, self.time_scale, self.tenant_id, self.consumer = repo, defn, hooks, time_scale, tenant_id, consumer
@@ -135,11 +149,15 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         active=getattr(self._local,'transition',None)
         if active is None:return fn(*args,**kwargs)
         active['effects'].append((fn,args,kwargs))
+        audits=getattr(self._local,'service_audits',None)
+        if audits is not None and fn is self.hooks.audit:   # 시스템 task 시도가 실패해도 감사 기록은 남긴다 (_keep_failed_attempt_record)
+            audits.append((args,kwargs))
 
     def _check_deadline(self,wi,inst,defn,now):
         if inst.get('status')!='RUNNING':raise ValueError('instance is not running')
         clock=now or datetime.now(timezone.utc)
-        event_ids={e['id'] for e in defn.attached_events(wi['activity_id'])}
+        # C2: 멈추지 않는(알림) 타이머는 마감이 아니다 — 알림 뒤에도 담당자는 승인할 수 있다
+        event_ids={e['id'] for e in defn.attached_events(wi['activity_id']) if e.get('cancelActivity') is not False}
         if any(w['activity_id'] in event_ids and w['status']=='IN_PROGRESS'
                and w.get('due_date') and parse_iso(w['due_date'])<=clock
                for w in self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'],limit=None)):
@@ -252,6 +270,17 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                          {'instance':inst['proc_inst_id'],'event_id':event_id,'definition':def_id,'version':version},
                          incident=values.get('incident'))
         self._project(inst)
+        if self.hooks.case_started is not None:
+            try:
+                self.hooks.case_started(inst)
+            except Exception as e:  # noqa: BLE001 — 연결 기록 실패가 이미 열린 처리 건을 되돌리지 않는다. 대신 처리 건 기록과 감사 기록에 남긴다
+                log.exception("case_started hook failed for %s", inst['proc_inst_id'])
+                self.hooks.audit(values.get('asset','-'),'process','CASE_LINK_FAILED',
+                                 {'instance':inst['proc_inst_id'],'error':str(e)[:300]},incident=values.get('incident'))
+                # 처리 기록 화면의 시작 단계에 보인다. 이 기록마저 못 쓰면(저장소 장애) 예외가 호출자에게 간다 — 경보 재전송은 같은 처리 건을 찾는다
+                self.repo.record_events([{'job_id':'CASE_LINK_FAILED','todo_id':None,'proc_inst_id':inst['proc_inst_id'],'crew_type':'result',
+                                          'event_type':'error','data':{'name':'수업 버튼 연결 실패',
+                                                                       'friendly':f'수업 버튼 누름을 이 처리 건에 붙이지 못했습니다 — {str(e)[:300]}'}}])
         return inst
 
     # ---------------------------------------------------------------- start
@@ -646,6 +675,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         if opt is None:
             raise ValueError("unknown option")
         person = inbox.check_actor(self.repo, self.tenant_id, by, role)   # U5: "나"로 승인하면 그 역할의 구성원인지(아니면 403)
+        by_name = inbox.person_name(self.repo, self.tenant_id, by)       # 메일 · 보고 틀이 쓰는 승인자 이름(없으면 승인 전에 실패)
         # Validation must be pure: this hook returns an approved COPY, never mutates the external book.
         if review_id:
             if self.hooks.approve_review is None:
@@ -655,14 +685,25 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             plan = self.hooks.approve_decision(decision_id, option_id, by, role, reason)
         opt = plan.get('option') or opt
         commands = _commands_of(opt, fan_pct, load_pct)
-        payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'role':role,
-                   'reason':reason, 'commands':commands, 'asset':values.get('asset'), 'incident':values.get('incident')}
+        defn_now = self.definition_for(inst)
+        flow_tools = {a.get('tool') for a in defn_now.activities.values()}
+        # C2: 흐름이 시스템 task 로 실행하는 업무 거래는 승인 전달 때 실행하지 않는다(작업지시처럼) — 발주는 금액 분기 · 구매팀장 승인 뒤 발주 task 가 낸다
+        deferred = sorted({'WO_CREATE'} | ({'PR_CREATE'} if effect_parts.PR_TOOL in flow_tools else set()))
+        purchase = None
+        if effect_parts.PR_TOOL in flow_tools:
+            # C2 (TODO C 실행 3): 승인 경로가 승인한 카드의 발주 금액을 확정해 처리 건 값으로 낸다 — '발주서 확정' 에이전트 task 가 필요 없다
+            purchase = effect_parts.purchase_quote(opt, values, self._purchase_quotes(values))
+        payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'by_name':by_name, 'role':role,
+                   'reason':reason, 'commands':commands, 'asset':values.get('asset'), 'incident':values.get('incident'),
+                   'deferred':deferred, 'purchase':purchase}
         self.hooks.validate_approval(payload)
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         kind = "control" if any(a.get("kind") == "command" for a in opt.get("actions") or []) else "work_order"
-        engine.set_variables(self.definition_for(inst), inst, {"commands": commands,
-                                               "chosen_option": dict(deepcopy(opt), kind=kind),
-                                               "approved_by": by, "approved_role": role})
+        approved = {"commands": commands, "chosen_option": dict(deepcopy(opt), kind=kind), "approved_by": by,
+                    "approved_by_name": by_name, "approved_role": role}
+        if purchase:
+            approved.update({k: purchase[k] for k in effect_parts.PURCHASE_VALUES})
+        engine.set_variables(self.definition_for(inst), inst, approved)
         if role and role not in (inst.get("participants") or []):      # a higher role may take the operator's task: they took part too
             inst.setdefault("participants", []).append(role)
         if person and person not in inst.setdefault("participants", []):                # U5: 승인한 사람도 참여자 — 종결 알림을 받는다
@@ -693,7 +734,79 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             'crew_type':'human', 'event_type':'task_working', 'data':{'name':'승인 접수', 'decision':decision_id, 'by':by, 'role':role}}])
         self._after_commit(self.deliver_approval, wi['id'], now)
         return {'instance':inst, 'workitem':wi, 'accepted':True, 'approval_status':'PENDING',
-                'plan':{k:v for k,v in plan.items() if k!='_snapshot'}, 'enterprise_results':[]}
+                'plan':{k:v for k,v in plan.items() if k!='_snapshot'}, 'enterprise_results':[], 'purchase':purchase}
+
+    # ---------------------------------------------------------------- 캡스톤 G1: 일반 사람 승인 (formHandler:approve, 안 고르기)
+    @workitem_transition
+    def approve(self, workitem_id: str, decision: str, option, by: str, role: str, reason: str = "",
+                now: datetime | None = None) -> dict:
+        """에이전트가 낸 안 중 하나를 승인하거나 반려한다(approval_part). 승인자는 포털의 "나"(user:*)이고 이 단계 담당 역할의 구성원이어야
+        한다(inbox.check_actor, 아니면 PermissionError → 403). 승인하면 서버가 approved_by · approved_role · approved_option(고른 안 사본)을
+        넣고, 반려하면 그 값을 비운다. 그 뒤 폼 결과 {approval, approval_reason} 를 제출해 흐름이 분기로 간다."""
+        wi = self.repo.get_workitem(workitem_id)
+        if not wi or self._tool_of(wi) != approval_part.TOOL:
+            raise KeyError(workitem_id)
+        if wi["status"] != "IN_PROGRESS":
+            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 이미 처리된 승인입니다({wi['status']}) — 다시 승인 · 반려하지 않습니다")
+        if decision not in (approval_part.APPROVE, approval_part.REJECT):
+            raise ValueError(f"승인 결정은 '{approval_part.APPROVE}' 또는 '{approval_part.REJECT}'입니다 (받은 값: {decision!r})")
+        inst = self.repo.get_instance(wi["proc_inst_id"])
+        defn = self.definition_for(inst)
+        self._check_deadline(wi, inst, defn, now)
+        activity = defn.activities[wi["activity_id"]]
+        person = self._approval_actor(defn, inst, activity, by, role)
+        reason = (reason or "").strip()
+        if decision == approval_part.APPROVE:
+            chosen = approval_part.choose(engine.variables(inst), approval_part.config_of(activity), option)
+            consent = {"approved_by": by, "approved_by_name": inbox.person_name(self.repo, self.tenant_id, by),
+                       "approved_role": role, "approved_option": chosen}
+        else:
+            if not reason:
+                raise ValueError("반려 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다")
+            chosen, consent = None, dict.fromkeys(approval_part.SERVER_VALUES)      # 앞 회차의 승인이 남아 효과를 내지 않게 비운다
+        engine.set_variables(defn, inst, consent)
+        participants = inst.setdefault("participants", [])
+        for who in (role, person):
+            if who and who not in participants:
+                participants.append(who)
+        self.repo.update_instance(inst)
+        job = "APPROVAL_ACCEPTED" if decision == approval_part.APPROVE else "APPROVAL_REJECTED"
+        self.repo.record_events([{"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": "human",
+                                  "event_type": "task_working",
+                                  "data": {"name": "승인 접수" if chosen is not None else "반려 접수", "by": by, "role": role,
+                                           "option": chosen, "reason": reason}}])
+        values = engine.variables(inst)
+        self._after_commit(self.hooks.audit, values.get("asset", "-"), by, job,
+                           {"instance": inst["proc_inst_id"], "task": wi["activity_id"], "role": role,
+                            "option": (chosen or {}).get(approval_part.option_key(approval_part.config_of(activity))), "reason": reason},
+                           incident=values.get("incident"))
+        out = self.submit(wi["id"], {"approval": decision, "approval_reason": reason}, by=by, now=now)
+        return dict(out, approval=decision, approved_option=chosen)
+
+    def _approval_actor(self, defn, inst: dict, activity: dict, by: str, role: str) -> str:
+        """일반 승인의 승인자: 포털의 "나"(사람 사용자)이고, 이 단계 담당(처리 건의 역할 바인딩)과 맞아야 한다. 판단 엔진 카드처럼 역할 등급
+        (Skill -APPROVED_BY-> Role)이 없으므로 담당 역할 그 자체만 받는다. 아니면 PermissionError(사유)."""
+        if not str(by or "").startswith(inbox.PERSON):
+            raise PermissionError("승인은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 승인했는지 모르는 승인은 받지 않습니다")
+        endpoint = (engine.instance_binding(defn, inst, activity.get("role")) or {}).get("endpoint") or ""
+        if endpoint.startswith(inbox.ROLE):
+            if role != endpoint:
+                names = {r["id"]: r.get("username") or r["id"] for r in inbox.role_users(self.repo, self.tenant_id)}
+                raise PermissionError(f"이 승인은 {names.get(endpoint, endpoint)} 역할의 일입니다 — {names.get(role, role) or '역할 없음'}(으)로는 승인할 수 없습니다")
+        elif endpoint.startswith(inbox.PERSON):
+            if by != endpoint:
+                raise PermissionError(f"이 승인은 {endpoint} 에게 배정된 일입니다")
+        else:
+            raise PermissionError(f"승인 단계 '{activity.get('name') or activity['id']}'의 담당({endpoint or '없음'})이 사람 역할이 아닙니다")
+        return inbox.check_actor(self.repo, self.tenant_id, by, role)
+
+    def _purchase_quotes(self, values: dict) -> list[dict]:
+        part, _ = effect_parts.purchase_inputs(values)
+        if not part:
+            return []
+        if self.hooks.enterprise_read is None:
+            raise ValueError('ERP 견적 조회가 연결되지 않아 발주 금액을 확정할 수 없습니다')
+        return list((self.hooks.enterprise_read('part_quotes', {'part': part}) or {}).get('records') or [])
 
     # ---------------------------------------------------------------- a person closes an agent task that cannot continue (A082)
     HUMAN_CLOSE_END_EVENT = 'closed-by-human'
@@ -818,6 +931,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         defn=self.definition_for_workitem(wi)
         if (defn.events.get(wi['activity_id']) or {}).get('eventDefinition')!='timer':return False
         rows=self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'],limit=None)
+        # C2: 발화한 타이머 행은 목록의 사본이 아니라 이 행 자신이어야 한다 — 사본이 IN_PROGRESS 로 남으면 타이머가 바로 끝 이벤트로
+        # 가는 흐름(납기 초과 → 지연 통보)이 '아직 진행 중인 행'을 보고 끝나지 않았다(process_workitem 과 같은 교체)
+        rows=[r if r['id']!=wi['id'] else wi for r in rows]
         adv=engine.fire_event(defn,inst,wi,rows,now=now,time_scale=self.time_scale)
         inbox.apply_advance(self,inst,adv)
         for row in adv.updated:self.repo.update_workitem(row)
@@ -827,6 +943,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                            {'instance':inst['proc_inst_id'],'event':wi['activity_id'],'next':[w['activity_id'] for w in adv.reached]},
                            incident=engine.variables(inst).get('incident'))
         self._after_commit(self._project,inst)
+        # C2: 타이머 가지가 시스템 task(승인 지연 알림 · 지연 결과 보고)에 닿으면 바로 실행한다(submit 경로와 같음 — 기다리면 2초 폴링이 잡는다)
+        for row in adv.reached:
+            if row["status"] == "SUBMITTED" and row.get("agent_orch") == engine.PROCESS_ORCH:
+                self._after_commit(self._run_service,inst,row,now)
         return True
 
     def reconcile_services(self,now=None):
@@ -857,6 +977,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         return str(activity.get("tool") or "")
 
     def _run_service(self, inst: dict, wi: dict, now: datetime | None) -> None:
+        # 블랙박스 없음: 실패한 시도의 도구 호출 사건 · 감사 기록은 전이와 함께 버려지므로, 이 호출이 전이를 여는 경우에만 따로 모았다가 되돌린 뒤 남긴다
+        owns_transition = getattr(self._local, 'transition', None) is None
+        self._local.service_trace = [] if owns_transition else None
+        self._local.service_audits = [] if owns_transition else None
         try:
             with self._transition(wi['proc_inst_id']):
                 fresh=self.repo.get_workitem(wi['id'])
@@ -865,7 +989,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                         or fresh.get('consumer')!=wi.get('consumer')):return
                 tool = self._tool_of(fresh)
                 handler = {"incident:command": self._run_command, "incident:reobserve": self._run_reobserve,
-                           "enterprise:WO_CREATE": self._run_work_order}.get(tool)
+                           "enterprise:WO_CREATE": self._run_work_order, **self._service_handlers()}.get(tool)
                 if handler is None:
                     raise ValueError(f"unsupported service tool: {tool!r} ({fresh['activity_id']})")
                 fresh['consumer']=f'{self.consumer}:service'
@@ -873,7 +997,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
                 handler(inst,fresh,now)
         except Exception as e:  # noqa: BLE001
             log.exception("service task %s failed", wi["activity_id"])
+            self._keep_failed_attempt_record()
             self._fail(wi, e, now)
+        finally:
+            self._local.service_trace = self._local.service_audits = None
 
     def _run_command(self, inst: dict, wi: dict, now) -> None:
         """Issue the chosen skill's PLC commands through the Incident (machine.on_approve). Completes when the ACK arrives."""
@@ -898,6 +1025,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             wi['log']='waiting for the incident re-observation verdict; '
             self.repo.update_workitem(wi)
         inc_id=engine.variables(inst).get('incident')
+        snap=self.hooks.incident_snapshot(inc_id) if inc_id else None
+        if snap and snap.get('state')=='CLOSED' and not snap.get('cmdId') and snap.get('workOrder'):
+            # C2: 명령 없이 작업지시로 닫힌 사건(정비형 흐름)의 재관측은 사건 상태가 아니라 실제 관측으로 판정한다
+            self._reobserve_after_work_order(inst,wi,now,inc_id)
+            return
         state=self.hooks.incident_state(inc_id)
         if state:self.on_incident_update(state,inc_id,False,now)
 
@@ -906,13 +1038,31 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         v = engine.variables(inst)
         opt = v.get("chosen_option") or {}
         item = request_for_option(opt)
+        # C2 (TODO C 실행 3): 승인된 정비 시점이 작업지시에 실린다 — 처리 건 값(기본 maintenance_window: 예정된 정비 시간 id 'MW-…' · {id, label, starts_at} ·
+        # 글 라벨)을 CMMS 요청의 window 로. 없으면 전과 같다(카드 id 로 '예정된 정비 시간 (야간)'/'즉시').
+        # window_var 는 점으로 안쪽 칸을 가리킬 수 있다(예: alert.evidence.night_window_id — PM_DUE 경보가 실어 온 다음 야간 정비 시간)
+        window_var = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('window_var') or 'maintenance_window'
+        try:
+            window = effect_parts.lookup(v, window_var)
+        except KeyError:
+            window = None
+        # C3: 승인한 카드가 정비 시점을 실어 왔으면(agentsvc.cards.option_window — 이번 · 그다음 예정된 정비 시간 · 즉시) 그것이 우선이다.
+        # 담당자가 추천이 아닌 '미루기' 카드를 골라도 작업지시가 경보의 이번 야간 창으로 가지 않는다.
+        card_window = opt.get('window') if isinstance(opt.get('window'), dict) else None
+        if card_window:
+            window = {k: card_window[k] for k in ('id', 'label', 'starts_at') if card_window.get(k)} or None
+        if window not in (None, ''):
+            item['window'] = deepcopy(window)
         res = self.hooks.exec_enterprise(v.get("decision_id") or inst["proc_inst_id"], item)
         self._after_commit(self.hooks.audit,v.get("asset", "-"), "process", "SKILL_EXECUTED" if res.get("ok") else "SKILL_FAILED",
                          {"instance": inst["proc_inst_id"], "code": "WO_CREATE", "ref": res.get("ref"), "detail": res.get("detail") or res.get("error")},
                          incident=v.get("incident"))
         if res.get("ok") is not True or not isinstance(res.get('ref'), str) or not res['ref'].strip():
             raise ServiceExecutionError(res)
-        self.submit(wi["id"], {"work_order": res}, by="process", now=now)
+        # C2: 정비 오더 뒤 생산팀 공지(선택) — 승인 뒤 MCP 메일(수업 메일함), 같은 작업의 재시도는 한 통
+        mail = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('mail')
+        notice = self._send_notice(inst, wi, dict(v, work_order=res), mail, now) if mail else None
+        self.submit(wi["id"], {"work_order": dict(res, notice=notice) if notice else res}, by="process", now=now)
 
     @workitem_transition
     def retry_work_order(self, workitem_id: str, by: str, role: str, now=None):
@@ -962,6 +1112,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
         if inc_state in ("RE_OBSERVING", "ACKED") and cmd:
             self.submit(cmd["id"], {}, by="process", now=now)
         elif inc_state in ("RESOLVED", "WORK_ORDER_CREATED", "CLOSED", "ESCALATED", "RESOLVED_WITHOUT_ACTION"):
+            if reobs and not cmd and inc_state in ("WORK_ORDER_CREATED", "CLOSED"):
+                snap = self.hooks.incident_snapshot(inc_id) or {}
+                if not snap.get("cmdId") and snap.get("workOrder"):
+                    reobs = None      # C2: 작업지시로 닫힌 사건의 재관측은 실제 관측으로(_reobserve_after_work_order)
             if cmd:
                 self.submit(cmd["id"], {}, by="process", now=now)
                 reobs = self._open_tool(inst, "incident:reobserve")
@@ -976,7 +1130,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
 
     CONTROL_PATH = ("task:command", "task:reobserve", "task:work-order")
     # B3: a flow imported from bpmn.io keeps its drawn task ids; its parts carry the same tool contract as these activities
-    CONTROL_TOOLS = ("incident:command", "incident:reobserve", "enterprise:WO_CREATE")
+    # C2: 승인 뒤 바깥 효과를 내는 부품(MCP 쓰기 · 발주 · 정비 모사 · 입고)이 시작됐으면 '조치 전 종료'가 아니다
+    CONTROL_TOOLS = ("incident:command", "incident:reobserve", "enterprise:WO_CREATE", *effect_parts.EFFECTS)
     ESCALATE_TOOL = "formHandler:escalate"
 
     @staticmethod
@@ -1081,8 +1236,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime):
             raise InstanceRemoved(REMOVED_REASON)
         items = self.repo.list_workitems(proc_inst_id=proc_inst_id, limit=None)
         defn = self.definition_for(inst)
+        # A161-U1: newest EVENTS_WINDOW rows (a worker run writes ~40 rows per step). A161-G4: one row more is read to tell the
+        # screen whether older rows exist; `events_page.before` is the cursor for GET /api/events?before=… (the next older page).
+        events = self.repo.list_events(proc_inst_id=proc_inst_id, limit=EVENTS_WINDOW + 1)
+        more = len(events) > EVENTS_WINDOW
+        events = events[-EVENTS_WINDOW:]
         return {"instance": inst, "definition":defn.raw, "workitems": items, "timeline": engine.timeline(defn, inst, items),
-                "events": self.repo.list_events(proc_inst_id=proc_inst_id),
+                "events": events,
+                "events_page": {"limit": EVENTS_WINDOW, "has_more": more, "before": events[0]["id"] if more and events else None},
                 "approvals":self.repo.list_approvals(proc_inst_id, self.tenant_id),
                 "reworks":self.repo.list_reworks(self.tenant_id, proc_inst_id),
                 "effects":self.repo.list_effect_receipts(self.tenant_id, proc_inst_id)}

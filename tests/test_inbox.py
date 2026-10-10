@@ -15,8 +15,8 @@ KIM, CHOI, LEE, PARK = "user:kim-op", "user:choi-op", "user:lee-prod", "user:par
 
 
 def _people(repo):
-    """seed.sql 과 같은 업무분장: 운전원 2명(역할 공용) · 생산관리자 1명(그 사람에게 바로) · 정비관리자 1명."""
-    for uid, name in (("role:operator", "운전원"), ("role:prod-mgr", "생산관리자"), ("role:maint-mgr", "정비관리자")):
+    """seed.sql 과 같은 업무분장: 운전원 2명(역할 공용) · 생산관리자 1명(그 사람에게 바로) · 설비보전팀장 1명."""
+    for uid, name in (("role:operator", "운전원"), ("role:prod-mgr", "생산관리자"), ("role:maint-mgr", "설비보전팀장")):
         repo.upsert_user({"id": uid, "username": name, "is_agent": False, "tenant_id": "hyd"})
     repo.upsert_user({"id": "sys:agent", "username": "AI 에이전트", "is_agent": True, "agent_type": "agent", "tenant_id": "hyd"})
     for uid, name in ((KIM, "김운전"), (CHOI, "최운전"), (LEE, "이생산"), (PARK, "박정비")):

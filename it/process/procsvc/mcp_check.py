@@ -35,6 +35,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from .mcp_secrets import is_reference_only
+
 PROTOCOL_VERSION = "2025-06-18"
 CLIENT_INFO = {"name": "hyd-process-mcp-check", "version": "1.0"}
 DEFAULT_TIMEOUT = 10.0
@@ -132,7 +134,8 @@ def masked(spec: dict) -> dict:
     out = json.loads(json.dumps(spec))
     for field in ("env", "headers"):
         if isinstance(out.get(field), dict):
-            out[field] = {k: (MASK if is_secret_key(k) and v != "" else v) for k, v in out[field].items()}
+            # G2: '${SECRET:KEY}' · 'Bearer ${SECRET:KEY}' 는 비밀이 아니라 비밀의 이름이라 그대로 보인다(값은 mcp_secrets 표에만)
+            out[field] = {k: (MASK if is_secret_key(k) and v != "" and not is_reference_only(v) else v) for k, v in out[field].items()}
     if isinstance(out.get("url"), str):
         out["url"] = mask_url(out["url"])
     return out
@@ -251,7 +254,7 @@ def _list_tools(session: _Session) -> list[dict]:
                      "description": str(tool.get("description") or "").strip(), "input_schema": schema,
                      "annotations": {k: notes[k] for k in ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint") if k in notes}}
             ok, reason = read_only_verdict(entry)
-            entry.update(callable=ok, refuse_reason=reason)
+            entry.update(callable=ok, refuse_reason=reason, confirmable=confirmable(entry))
             tools.append(entry)
         cursor = res.get("nextCursor")
         if not cursor:
@@ -288,6 +291,16 @@ def read_only_verdict(tool: dict) -> tuple[bool, str | None]:
         return False, ("서버가 이 도구를 읽기 전용(readOnlyHint)으로 표시하지 않았습니다 — 서버 코드에서 도구에 "
                        "readOnlyHint=true 표시를 붙이면 써 볼 수 있습니다")
     return True, None
+
+
+def confirmable(tool: dict) -> bool:
+    """G2 ②: 강사가 "이 도구는 읽기"로 확인해 줄 수 있는 도구 — 거부 사유가 '읽기 전용 표시 없음' 하나뿐일 때만.
+    서버가 쓰기(readOnlyHint=false)나 되돌릴 수 없는 쓰기(destructiveHint)로 표시했거나 이름이 쓰기 · 실행을 뜻하면 확인할 수 없다
+    (공개 구글 MCP 서버처럼 표시를 안 붙인 서버의 search · list · get 도구만 사람이 풀어 준다)."""
+    notes = tool.get("annotations") or {}
+    if notes.get("readOnlyHint") is True or notes.get("readOnlyHint") is False or notes.get("destructiveHint") is True:
+        return False
+    return not any(w in _WRITE_WORDS for w in _words(str(tool.get("name") or "")))
 
 
 # ---------------------------------------------------------------- 도구 결과 정리
@@ -408,7 +421,9 @@ def _http_error(exc: Exception, url: str, timeout: float) -> CheckError:
     if isinstance(exc, urllib.error.HTTPError):
         code = exc.code
         if code in (401, 403):
-            return CheckError("auth", f"인증 실패 (HTTP {code}) — 접속 헤더의 토큰·키를 확인하세요")
+            # G2 ③: 토큰이 필요한 서버(구글 등)는 만료가 흔하다 — 일반 연결 실패와 갈라 무엇을 할지 말한다(OAuth 갱신은 사용자 몫)
+            return CheckError("auth", f"인증 실패 (HTTP {code}) — 인증이 만료되었거나 없습니다. 연결을 다시 하세요: 토큰을 새로 받아 "
+                                      "포털 MCP 화면 '비밀 값'(${SECRET:이름})에 넣고 연결 검사를 다시 누르세요")
         if code in (404, 405, 406, 415):
             return CheckError("not_mcp", f"MCP 끝점이 아닙니다 (HTTP {code}) — 주소 경로(보통 /mcp 또는 /sse)를 확인하세요")
         return CheckError("server", f"서버 오류 (HTTP {code}) — 서버 로그를 확인하세요")
@@ -615,8 +630,10 @@ def check(spec: dict, timeout: float = DEFAULT_TIMEOUT) -> dict:
     return out
 
 
-def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOUT, *, max_chars: int = MAX_RESULT_CHARS) -> dict:
+def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOUT, *, max_chars: int = MAX_RESULT_CHARS,
+         confirmed: set[str] | frozenset[str] | None = None) -> dict:
     """읽기 전용 도구 하나를 실제로 부른다. 호출 직전 같은 세션에서 tools/list 를 다시 받아 판정한다.
+    confirmed(G2 ②): 강사가 읽기로 확인한 도구 이름 — 그 자리에서 다시 받은 도구가 여전히 confirmable(표시 없음뿐)일 때만 부른다.
     status: ok(결과 있음 — 도구가 오류를 돌려줘도 result.is_error 로 보인다) · refused(쓰기·표시 없음 · 없는 도구) · failed(연결·프로토콜)."""
     if not isinstance(arguments, dict):
         return {"status": "refused", "error": "입력은 이름→값 객체여야 합니다", "error_kind": "input", "result": None, "tool": tool}
@@ -626,10 +643,41 @@ def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOU
         meta = tools.get(tool)
         if meta is None:
             return {"status": "refused", "error": f"서버에 '{tool}' 도구가 없습니다 (도구 목록을 다시 읽으세요)", "error_kind": "no_tool", "result": None}
-        if not meta["callable"]:
+        if not meta["callable"] and not (confirmed and tool in confirmed and meta.get("confirmable")):
             return {"status": "refused", "error": meta["refuse_reason"], "error_kind": "not_read_only", "result": None}
         res = session.request("tools/call", {"name": tool, "arguments": arguments})
         return {"status": "ok", "result": shape_result(res, max_chars)}
+
+    out = _with_session(spec, _clamp(timeout), work)
+    out["tool"] = tool
+    out.setdefault("result", None)
+    return out
+
+
+IDEMPOTENCY_ARG = "idempotency_key"
+
+
+def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str | None = None, timeout: float = DEFAULT_TIMEOUT,
+                max_chars: int = MAX_RESULT_CHARS) -> dict:
+    """C2: 사람 승인 뒤 시스템 task(effect_parts 'mcp:call')만 부르는 쓰기 호출. 포털 써 보기 · 에이전트 도구 목록과는 다른 길이다 —
+    읽기 전용 판정(read_only_verdict)을 하지 않는 대신 이 함수는 process 의 승인 뒤 부품에서만 불린다(instances._run_mcp_call).
+    도구의 입력 형식에 idempotency_key 가 있으면 처리 건 · 작업 키를 넣어, 재시도해도 서버가 같은 호출로 알아보게 한다.
+    status: ok(결과 — 도구 오류도 result.is_error 로) · refused(없는 도구) · failed(연결 · 프로토콜)."""
+    if not isinstance(arguments, dict):
+        return {"status": "refused", "error": "입력은 이름→값 객체여야 합니다", "error_kind": "input", "result": None, "tool": tool}
+
+    def work(session):
+        tools = {t["name"]: t for t in _list_tools(session)}
+        meta = tools.get(tool)
+        if meta is None:
+            return {"status": "refused", "error": f"서버에 '{tool}' 도구가 없습니다", "error_kind": "no_tool", "result": None}
+        args = dict(arguments)
+        props = (meta.get("input_schema") or {}).get("properties") or {}
+        if idempotency_key and IDEMPOTENCY_ARG in props and IDEMPOTENCY_ARG not in args:
+            args[IDEMPOTENCY_ARG] = idempotency_key
+        res = session.request("tools/call", {"name": tool, "arguments": args})
+        return {"status": "ok", "result": shape_result(res, max_chars), "arguments": mask_value(args),
+                "idempotent": IDEMPOTENCY_ARG in args, "annotations": meta.get("annotations") or {}}
 
     out = _with_session(spec, _clamp(timeout), work)
     out["tool"] = tool

@@ -4,7 +4,7 @@
 <marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M0 0L12 6L0 12z" fill="#fff" stroke="#374151"/></marker>
 </defs>
 <rect width="2336" height="1390" fill="#ffffff"/>
-<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.5.0 — 클래스 46개 · 관계 72종</text>
+<text x="30" y="34" font-size="22" font-weight="700" fill="#111827">hyd-iot-edu ontology v2.6.0 — 클래스 46개 · 관계 73종</text>
 <text x="30" y="58" font-size="13" fill="#4b5563">BSC(관점 · 전략 목표 · 성과 지표) → 프로세스(BPMN) → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = Skill = SOP · 규칙(DMN) → 외부 변수 · 예측 · 운영 기록. 화살표 = 관계 방향, 점선 삼각형 = 상속</text>
 <text x="30" y="120" font-size="14" font-weight="700" fill="#6d28d9">가치 계층 (BSC)</text>
 <text x="430" y="120" font-size="14" font-weight="700" fill="#1d4ed8">프로세스 계층</text>
@@ -66,6 +66,7 @@
 <path d="M1426.0,399.0 C1482.0,399.0 1482.0,479.0 1426.0,479.0" fill="none" stroke="#b42318" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Cause -[EVIDENCED_BY]-> Evidence</title></path>
 <path d="M1426.0,319.0 C1517.8,319.0 1538.2,159.0 1630.0,159.0" fill="none" stroke="#b42318" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>FailureMode -[MITIGATED_BY]-> Skill</title></path>
 <path d="M1426.0,319.0 C1517.8,319.0 1538.2,159.0 1630.0,159.0" fill="none" stroke="#b42318" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>FailureMode -[REMEDIED_BY]-> Skill</title></path>
+<path d="M1426.0,319.0 C1517.8,319.0 1538.2,159.0 1630.0,159.0" fill="none" stroke="#b42318" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>FailureMode -[PREVENTED_BY]-> Skill</title></path>
 <path d="M1630.0,159.0 C1538.2,159.0 1517.8,399.0 1426.0,399.0" fill="none" stroke="#0f766e" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Skill -[ADDRESSES]-> Cause</title></path>
 <path d="M1630.0,159.0 C1538.2,159.0 1517.8,559.0 1426.0,559.0" fill="none" stroke="#0f766e" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Skill -[HAS_STEP]-> Step</title></path>
 <path d="M1426.0,559.0 C1482.0,559.0 1482.0,639.0 1426.0,639.0" fill="none" stroke="#b42318" stroke-width="1.2" stroke-opacity="0.55" marker-end="url(#arr)"><title>Step -[REFERS_TO]-> ManualSection</title></path>
@@ -171,6 +172,7 @@
 <text x="1468" y="464" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">EVIDENCED_BY</text>
 <text x="1528" y="242" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">MITIGATED_BY</text>
 <text x="1511" y="266" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">REMEDIED_BY</text>
+<text x="1545" y="218" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">PREVENTED_BY</text>
 <text x="1528" y="282" font-size="9.5" text-anchor="middle" fill="#0f766e" stroke="#fff" stroke-width="3" paint-order="stroke">ADDRESSES</text>
 <text x="1528" y="362" font-size="9.5" text-anchor="middle" fill="#0f766e" stroke="#fff" stroke-width="3" paint-order="stroke">HAS_STEP</text>
 <text x="1468" y="602" font-size="9.5" text-anchor="middle" fill="#b42318" stroke="#fff" stroke-width="3" paint-order="stroke">REFERS_TO</text>

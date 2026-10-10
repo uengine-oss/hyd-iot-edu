@@ -13,6 +13,8 @@
 
 ## 0. 30초 브리핑
 
+**현재(10-10, 로컬 macOS)**: A161 갈래(C3 B·C 단순화 · 블랙박스 없는 처리 기록 · 검증 빈틈 · 캡스톤 G1~G5 · G7~G10 · 강사 키트)를 통합 브랜치 `merge-preview`에 합치고 점검표(헌법 · 해피패스 금지 · 클린코드) 점검으로 결함을 원인에서 고쳤다. 전체 단위 시험 2076 통과 · 0 실패, 라이브 최종 확인 3 · 4차 통과(A · B · C 버튼 완주, C 추천 B-OEM, 쿨러 40/40 — `verification/2026-10-10/live-final.md`). 스택은 merge-preview 기준(마이그레이션 048 · 050 · 051). **다음 일: 이론 슬라이드(PPTX) — 사용자가 실라버스를 주면 시작, `HANDOFF_실라버스교재.md` §10.** 시스템 쪽 남은 것은 §9 A161의 `[ ]`.
+
 **현재(10-08 밤 늦게)**: 미니 ProcessGPT의 포털 "직접 만들기" 기능 B1~B7(에이전트 · 스킬 · MCP 등록, bpmn.io 흐름 가져오기 · 배포 · 비교, 에이전트에게 묻기 · KPI/What-if 바꿔 보기, 출발본 내보내기/가져오기, 작동유 열화)이 구현 · 합침 · push됐다(단위 시험 1692 통과). 라이브 확인은 B1~B6 통과, B7은 원인 진단까지 통과. 남은 것: B7 라이브 완주 → core 회귀 재실행 → 기능 통합 검증(시나리오 4개) — **기능은 완주 검증까지가 완료 조건**. 병렬로 실라버스를 DECISIONS 111 구조(온톨로지 → 에이전트 → BPMN, 막마다 보기 · 따라하기 · 다른걸로 해보기, 가치 · 스토리텔링)로 다시 짠다. 그 뒤 UI/UX. 상세는 §9 A159.
 
 (이전 브리핑 — 10-08 이전 상태 기록)
@@ -265,8 +267,18 @@ A073 실행: 1배속 워커 회귀에서 에이전트 작업이 모두 끝난 �
 - [~] C2 실행(승인 뒤 메일 · 발주 · 대기 · 정비 모사 · 입고, 재고 감시기) — worktree 서브에이전트, 보고 `…/c2-execution.md`
 - [~] U1 UI/UX(실시간 스트리밍 최우선 · 결함 1~18) — worktree 서브에이전트, 메인 스택 담당, 보고 `…/u1-uiux.md`
 - [~] S 실라버스 — 버전 없이 한 개만 둔다(사용자 10-09): `docs/실라버스.xlsx` · 설명 `docs/실라버스.md`. 옛 판(v6 · v7 xlsx · v7 pdf · 반영표 · 추천안 · 생성기 · curriculum-75h · v8 · v9 구조안 · 비율 근거)은 삭제했다. 지금은 "시간은 내용이 정한다"(한 행 = 한 내용, 50분 채우기 · 묶기 금지)에 맞춰 행을 다시 자르는 중
-- [ ] C3 조립(에이전트 3 · BPMN 3 · 판단만 하는 흐름 · 실제 워커 완주) — C1 · C2 합친 뒤
+- [x] C3 조립 + B · C 단순화(설비까지 안 감, 결함 실험 버튼 · 시작 표시 · 초기화) · 실제 워커 A · B · C 완주(4차: A 219초 · B 64초 · C 67초, 버튼 → 끝), 회귀 cooler 40/40 · pump-fan 47/47 — `verification/2026-10-09/c3-assembly.md` 7절, 증거 `.evidence/a161-c3/live/`. 남은 것: C 지식(불량 기대비용 · PUR-13 연결) 검토 → 아래 C 지식 공백 근본 수정 수정
 - [ ] U2 시나리오 B · C 화면 — C3 뒤
+- [x] (10-09 밤 ~ 10-10) **통합 브랜치 `merge-preview`**(7fa5664 기준): c3-fixes(Linux PLANT_SIM_URL · 블랙박스 빈틈 G1~G4) · c3-trace-ui(처리 기록 화면 caseRecord.js) · capstone-gaps(G2⓪ · G2 · G10 · G4 · G5 키트 · G8) · c3-assembly(B · C 단순화) 합침. 점검 3갈래(백엔드 · 포털 · 스크립트/키트) `verification/2026-10-09/review-*.md`, C3 점검 `verification/2026-10-10/review-c3-bc.md`(결함 11건: 기준점은 설비 처리 건이 없을 때만 옮김 · 지난 누름 잔재 연결 · 매직 limit · 빈 성공 · 삼킨 읽기 실패 · 처리 기록에 수업 버튼 · '설비 명령 없음'). 뮤테이션 확인 포함.
+- [x] **C 지식 공백 근본 수정**(`verification/2026-10-10/c-knowledge-gap.md`): 규정 판단에 공급사 불량률 입력 `in:supplier-fail-rate`(PR-7.4 원문) 선언, 카드 사실 `supplier_fail_rate`(원문과 다른 불량 기대비용 식 제거), 추출 지시 2.1(선택 기준과 적용 조건 분리), `scripts/c3_ingest.py` 무조건 승인 제거(사람 검토 기록 필수). 원문 보강은 불필요(판정 문장 있음).
+- [x] 전체 단위 시험 **1954 passed · 1 failed(흔들림, 단독 32/32) · 4 skipped**(merge-preview d5d73a9). 스택 merge-preview 기준 재빌드(process · agent · dmn-mcp · plant-sim · enterprise-sim · enterprise-mcp 3 · effects-mcp · portal), 마이그레이션 048 · 050 적용, process ↔ plant-sim sim-net · PLANT_SIM_URL=http://plant-sim:8000 docker inspect 확인, 재시작 0.
+- [x] 라이브 최종 확인(`verification/2026-10-10/live-final.md` 3 · 4차): PR-07 개정 적재 200 · 판단 이력 CHOSE 3건 같은 elementId 유지, A · B · C 버튼 완주(A 215 · B 72~105 · C 75~84초), C 추천 SOP-PUR-11(B-OEM) · 12 불량률 감점 · 13 AVL 제외, 기준 에이전트 CLAUDE.md 바이트 동일(G9), 쿨러 회귀 40/40, 화면 결함 7 + 남은 것 6건 수정 뒤 4차 재확인 통과. 그 사이 근본 수정: c3_ingest 문서 id(e556be3), 개정 적재가 판단 이력 보존(F-2 8429c29), SOP 충돌 키(F-1), 추출 실패 상태(F-3), 카드 머리말 · 원인 근거 · 승인자 이름 · EVAL id · 추출 2.2(2190a84)
+- [x] 캡스톤 합침: G1 · G7(승인 부품 · 카드 · 반려 경로 사전 검사 · 반려 = 운전원 거부 종결), G3 · G9(extract · effect:false · 모르는 칸 거절 · 실패 시도 기록/감사 보존 · 작업 규칙 공통부/업무부, 마이그레이션 051 적용), 키트 T0 · T5~T8. 전체 단위 시험 2076 통과 · 0 실패
+- [ ] 남은 것: 출처 번호 중복은 HM-8 · PR-07 추출 2.2 재적재 뒤 사라짐, 제출 안 된 판단의 DEC- id 404 · 발주 카드 window '즉시' · C 승인 재확인이 예측 문맥 대조(보고만, live-leftovers.md), 캡스톤 G6(격리) · 예시 사례 실제 1회(구글 인증 = 사용자)
+- [x] 라이브 3차 남은 것 6건 근본 수정(코드 · 단위 시험, 라이브 미검증) — 카드 머리말(예측은 고르는 근거일 때만, 업무 안은 업무 값) · 업무 경보 원인 근거 기록(cause_route) · 버튼 기록 이름 한 번 · 메일 승인자 이름(approved_by_name) · c3_flows 모르는 명령 거절 · 읽기 평가 id EVAL- · 추출 계약 2.2(절 제목에 번호 없음) — `verification/2026-10-10/live-leftovers.md`
+- [ ] 캡스톤 G1/G7(사람 승인 일반화 · 카드) · G3(MCP 결과 추출) · G9(업무 중립 에이전트 규칙) · G6(격리) · 키트 T0/T5~T8 · 예시 사례 실제 1회 — `verification/2026-10-09/capstone-lab.md`
+- [ ] 별건: EFFECT_COMPENSATION · EFFECT_REVIEW 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — review-c3-bc.md 4절), test_mcp_check 전체 실행 때만 흔들림
+- 결정 대기(사용자): main 합침 · push, 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3` 삭제 여부, 업무 감시(BUSINESS_MONITOR, 기본 끔) 유지 여부
 
 **A160(10-08, 새 클라우드 세션) — 작업 B 이어받기(GOAL 맨 위 "작업 B" DoD 1~5, 순서 USER_UTTERANCES S2: 개발 완주 검증 → 실라버스 → UI/UX).** 증거 `.evidence/a160/`(클라우드).
 - [x] 인계 대조(S3): 세션 시작 체크아웃(7c00eb0)에는 GOAL "작업 B" 절·`scripts/probe_b7_oil_live.py`가 없었으나, 원격에는 그 뒤 다른 세션의 인계 정리(f8bc23b~26e06b6: GOAL 작업 B·HANDOFF 현재화·QA·발화 대응표·A159 단계 출력형 검사기)가 올라와 있었다 → 합침: GOAL·HANDOFF는 원격 것, 검사기는 PASS/FAIL 판정이 있는 A160 판(같은 동선 + 운전원 403 · 사건 superseded · 업무 DB 2행 · 감사 · cmd-gateway 명령 줄 정규식 · 실제 워커 도구 이벤트)으로 교체. `.evidence/a159/`·Docker 이미지·`.venv` 없음(새 컨테이너) → 스택 처음부터.

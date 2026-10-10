@@ -143,6 +143,7 @@
 "role:operator": "운전원",
 "role:plant-mgr": "공장장",
 "role:prod-mgr": "생산관리자",
+"role:purchasing": "구매 담당",
 "role:purchasing-mgr": "구매팀장",
 "role:quality-mgr": "품질팀장",
 "rule:auto-mode": "원격 제어는 REMOTE_AUTO에서만",

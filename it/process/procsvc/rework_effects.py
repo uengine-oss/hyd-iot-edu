@@ -8,7 +8,7 @@ from copy import deepcopy
 from . import engine, rework
 from . import effect_compensation as effects_mod
 
-RUNTIME_CONSENT = {'commands', 'chosen_option', 'approved_by', 'approved_role'}
+RUNTIME_CONSENT = {'commands', 'chosen_option', 'approved_by', 'approved_by_name', 'approved_role'}
 
 
 def no_effects(evidence, approvals):
@@ -50,7 +50,8 @@ def unissued_commands(defn, inst, work, approvals, evidence):
             or d.get('chosen') != p.get('option') or a['decision_id'] != v.get('decision_id')
             or p.get('incident') != inc['id'] or p.get('asset') != inc['asset']
             or not p.get('commands') or p['commands'] != v.get('commands')
-            or p.get('by') != v.get('approved_by') or p.get('role') != v.get('approved_role')):
+            or p.get('by') != v.get('approved_by') or p.get('by_name') != v.get('approved_by_name')
+            or p.get('role') != v.get('approved_role')):
         return set()
     option = deepcopy(p['plan']['option']); option['kind'] = 'control'
     if v.get('chosen_option') != option:
@@ -149,7 +150,7 @@ def admit(proposal, defn, inst, work, approvals, evidence, receipts=()):
             continue
         p = approval['payload']; option = deepcopy(p['plan']['option'])
         option['kind'] = 'control' if any(a.get('kind') == 'command' for a in option.get('actions', [])) else 'work_order'
-        owned.update(commands=p['commands'], chosen_option=option, approved_by=p['by'], approved_role=p['role'])
+        owned.update(commands=p['commands'], chosen_option=option, approved_by=p['by'], approved_by_name=p['by_name'], approved_role=p['role'])
     clear = {k for k in RUNTIME_CONSENT if k in owned and values.get(k) == owned[k]
              and (inst.get('variable_sources') or {}).get(k, {}).get('kind') == 'runtime'}
     # Started services whose external effect the receipts settle (command → PLC ack, work order → ledger) clear with them;

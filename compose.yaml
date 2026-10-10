@@ -16,6 +16,7 @@ x-py-health: &py-health
 networks:
   ot-net: {}
   it-net: {}
+  sim-net: {}                              # 실습 시뮬레이터 API 전용: process(정비 수행 모사) ↔ plant-sim 만. OT 망(emqx · PLC)은 DMZ 만 넘는다
 
 volumes:
   tsdb-data: {}
@@ -25,6 +26,7 @@ volumes:
   detector-data: {}
   enterprise-data: {}
   worker-data: {}                          # agent-worker: 인스턴스별 작업공간 · Claude Code 세션 (재시작 뒤 resume)
+  effects-data: {}                         # C2 effects-mcp: 쓰기 도구 멱등 키 기록
 
 services:
   # ───────────────────────────── OT (ot-net) ─────────────────────────────
@@ -51,7 +53,7 @@ services:
     mem_limit: 96m
     build: { context: ., dockerfile: ot/plant-sim/Dockerfile }
     profiles: [ot]
-    networks: [ot-net]
+    networks: [ot-net, sim-net]           # sim-net: process 의 정비 수행 모사가 시뮬레이터 API(:8000)만 부른다(OT MQTT 에는 닿지 않음)
     ports: ["127.0.0.1:8000:8000"]
     environment:
       MQTT_HOST: emqx
@@ -307,6 +309,8 @@ services:
     profiles: [knowledge]
     networks: [it-net]
     entrypoint: ["/bin/bash", "/seed/seed.sh"]
+    environment:
+      SEED_EDITION: ${SEED_EDITION:-structure}   # 확정 TODO C1: structure 수업용 구조판(강의 기본, 고장 · 조치 지식은 문서 적재) | full 회귀용 전체판(회귀 · 통합 시험)
     volumes: ["./it/neo4j:/seed:ro"]
     depends_on:
       neo4j: { condition: service_healthy }
@@ -356,7 +360,8 @@ services:
     mem_limit: ${PROCESS_MEM_LIMIT:-512m}
     build: { context: ., dockerfile: it/process/Dockerfile }
     profiles: [process]
-    networks: [it-net]
+    networks: [it-net, sim-net]           # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
+                                          # ot-net 에는 붙이지 않는다 — IT 서비스가 OT(emqx)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
     ports: ["127.0.0.1:8080:8080"]
     volumes: ["process-data:/data"]
     environment:
@@ -378,6 +383,17 @@ services:
       WORKER_URL: ${WORKER_URL:-http://agent-worker:8097}
       # A131: 1 mounts GET /debug/memory (tracemalloc · RSS · container sizes) for OOM diagnosis; off in the product default
       PROCESS_MEMDEBUG: ${PROCESS_MEMDEBUG:-0}
+      # C2 승인 뒤 실행 부품 (docs/handoff/verification/2026-10-09/c2-execution.md)
+      #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
+      PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
+      #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다
+      #   (호스트 포트 127.0.0.1:8000 은 Linux 컨테이너에서 닿지 않는다. Mac/Windows Docker Desktop 에서도 같은 값이 동작)
+      PLANT_SIM_URL: ${PLANT_SIM_URL:-http://plant-sim:8000}
+      #   승인 뒤 MCP 호출 서버 (기본 hyd-effects = effects-mcp). JSON {이름: tenants.mcp 와 같은 설정}
+      EFFECT_MCP_SERVERS: ${EFFECT_MCP_SERVERS:-}
+      #   업무 표 감시(재고 C · 정기 정비 B → 처리 건 자동 시작). 기본 0 = 끔: C3 부터 B · C 는 포털 결함 실험 버튼이 연다(시작 상태가 곧 도래 · 이탈이라 켜 두면 바로 열림)
+      BUSINESS_MONITOR: ${BUSINESS_MONITOR:-0}
+      BUSINESS_MONITOR_INTERVAL_S: ${BUSINESS_MONITOR_INTERVAL_S:-15}
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
       redpanda: { condition: service_healthy }
@@ -403,6 +419,24 @@ services:
     volumes: ["enterprise-data:/data"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8095/healthz')"]
+      <<: *py-health
+
+  effects-mcp:                            # C2: 사람 승인 뒤 시스템 task 가 부르는 쓰기 MCP (메일 → Inbucket · CMMS 일정 · 처리 건 기록). 에이전트에는 붙이지 않는다
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 128m
+    build: { context: ., dockerfile: it/effects-mcp/Dockerfile }
+    profiles: [process]
+    networks: [it-net]
+    ports: ["127.0.0.1:8197:8197"]
+    environment:
+      SMTP_HOST: ${EFFECTS_SMTP_HOST:-host.docker.internal}      # Supabase 로컬 Inbucket (it/supabase/config.toml [inbucket] smtp_port)
+      SMTP_PORT: ${EFFECTS_SMTP_PORT:-54325}
+      EFFECTS_STATE_PATH: /data/effects.sqlite3
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["effects-data:/data"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8197/healthz')"]
       <<: *py-health
 
   portal:                                 # L9 운전원 가이드 앱 · 설비 포탈 (정적 SPA)
@@ -432,6 +466,40 @@ services:
     extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8199/healthz')"]
+      <<: *py-health
+
+  enterprise-mcp-maint:                   # C2: 업무 MCP 보전용(정비 계획 · 운전시간 계수기 · 작업지시 · 생산 오더) — 같은 코드, 도구 묶음만 다름
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 160m
+    build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
+    profiles: [cliagents]
+    networks: [it-net]
+    ports: ["127.0.0.1:8196:8196"]
+    environment:
+      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_MCP_TOOLSET: maintenance
+      MCP_PORT: "8196"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8196/healthz')"]
+      <<: *py-health
+
+  enterprise-mcp-purchase:                # C2: 업무 MCP 구매용(ERP 예비품 재고 · SCM 공급사 견적)
+    restart: unless-stopped
+    logging: *log
+    mem_limit: 160m
+    build: { context: ., dockerfile: it/enterprise-mcp/Dockerfile }
+    profiles: [cliagents]
+    networks: [it-net]
+    ports: ["127.0.0.1:8195:8195"]
+    environment:
+      ENTERPRISE_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
+      ENTERPRISE_MCP_TOOLSET: purchasing
+      MCP_PORT: "8195"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8195/healthz')"]
       <<: *py-health
 
   dmn-mcp:                                # 결정론 판단 엔진(agentsvc cards · decide)을 MCP 도구로 — 반복 판단은 DMN, LLM 은 수집·설명

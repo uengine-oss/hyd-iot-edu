@@ -1,0 +1,243 @@
+/* A161-U1 — 화면 공통 모양을 process-gpt-vue3 최신(2026-10, GitHub HEAD) 디자인 시스템에 맞춘다. 마지막에 읽혀 앞 시트들의 토큰 · 기본 부품을 덮는다.
+   토큰 출처: process-gpt-vue3 src/ds/styles/tokens.css (surface #f9f9f7 · 글자 #0b0b0b/#52514e/#898781 · hairline hsl(0 0% 4.3%/10%) · brand #d97757 ·
+             radius 8/10/12 · shadow sm/md · 글자 22/15/14/13/12), src/ds/styles/motion.css (ease-out cubic-bezier(.165,.84,.44,1)),
+   부품: src/ds/components/PgButton.vue(32px · radius 8 · primary=검정 채움), PgTextField.vue(34px), PgField.vue(라벨 13/500 위 · 간격 6), PgCard.vue(16px),
+         src/ds/vuetify-bridge/overrides.css(목록 행 32px · 탭 밑줄 2px brand · 칩 24/20px radius 6), layouts/full/vertical-sidebar(사이드바 272 · surface-0 · 오른쪽 hairline).
+   색은 토큰만 바꾼다(브랜드 로고 · 그림은 쓰지 않음). 화면 구조는 그대로, 간격 · 위계 · 정렬을 한 규칙으로. */
+:root {
+  --brand: #d97757;
+  --focus: #3b78c4;
+  --ease: cubic-bezier(.165, .84, .44, 1);
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-3: #76746e;      /* tokens.css text-muted #898781 을 흰 바탕 4.5:1 로 한 단계 진하게 */
+  --ink-4: #a3a19a;
+  --paper: #f9f9f7;
+  --panel: #ffffff;
+  --surface-soft: #f4f3f0;
+  --rule: rgba(11, 11, 11, .09);
+  --rule-strong: rgba(11, 11, 11, .16);
+  --accent: #184f95;
+  --accent-hover: #123c73;
+  --it: #184f95;
+  --it-bg: #e9f1fb;
+  --ok: #067647;
+  --ok-bg: #e7f4e5;
+  --warn: #b54708;
+  --alarm: #b42318;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 2px hsl(0 0% 4.3% / 4%);
+  --shadow-md: 0 2px 4px hsl(0 0% 4.3% / 6%), 0 6px 16px hsl(0 0% 4.3% / 7%);
+  --code-fg: #14181f;
+  --s5: 20px;
+  --control-height: 34px;
+  --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", "Segoe UI", system-ui, Roboto, sans-serif;
+}
+
+/* ---------------- 바탕 · 셸 (VerticalSidebar.vue · VerticalHeader.vue) ---------------- */
+body { background: var(--paper); color: var(--ink); font: 14px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+@media (min-width: 721px) { body { grid-template-columns: 248px minmax(0, 1fr); grid-template-rows: 56px minmax(0, 1fr) 52px; } }
+@media (max-width: 720px) { body { grid-template-rows: 56px minmax(0, 1fr) 56px; } .rail { box-shadow: var(--shadow-md); } }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+a { color: var(--accent); }
+.rail { background: var(--paper); border-right: 1px solid var(--rule); padding: 14px 10px; gap: 14px; }
+.brand { padding: 2px 8px; gap: 10px; }
+.brand-mark { width: 30px; height: 30px; border-radius: 8px; font-size: 15px; background: var(--ink); }
+.brand strong { font-size: 15px; letter-spacing: -.01em; font-weight: 650; }
+.brand small { font-size: 11px; }
+.rail nav { gap: 1px; }
+.rail nav button { min-height: 32px; padding: 6px 8px; gap: 10px; border-radius: 8px; font-size: 13.5px; font-weight: 400; color: var(--ink-2); transition: background-color .12s var(--ease), color .12s var(--ease); }
+.rail nav button svg { width: 16px; height: 16px; color: #808080; }
+.rail nav button:hover { background: rgba(11, 11, 11, .05); color: var(--ink); }
+.rail nav button.active { background: rgba(11, 11, 11, .07); color: var(--ink); font-weight: 600; }
+.rail nav button.active svg { color: var(--ink); }
+.rail nav .navgroup { font-size: 11.5px; font-weight: 500; color: var(--ink-3); padding: 14px 8px 4px; }
+.rail .foot { border-top: 1px solid var(--rule); }
+.strip { background: var(--paper); border-bottom: 1px solid var(--rule); gap: var(--s4); }
+.breadcrumb b { font-weight: 600; font-size: 13px; }
+main { padding: 24px var(--page-pad) 40px; }
+.page-head { margin-bottom: var(--s5); }
+.page-head h1, h1 { font-size: 22px; line-height: 28px; font-weight: 650; letter-spacing: -.015em; margin: 0; }
+h2 { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; margin: var(--s6) 0 var(--s3); }
+h3 { font-size: 14px; font-weight: 600; }
+.sec-head h2, h2.sec { font-size: 15px; }
+.page-navigation { background: var(--paper); border-top: 1px solid var(--rule); }
+
+/* ---------------- 카드 (PgCard · Dify panel) ---------------- */
+.card, .detail, .todo-panel, .upload.card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card { padding: var(--card-pad); }
+.card .card-head h3 { font-size: 14px; font-weight: 600; }
+.card-sub { color: var(--ink-3); font-size: 12.5px; }
+.card.soft { background: var(--surface-soft); box-shadow: none; }
+.detail { padding: 20px 22px; }
+.stat-cards { gap: 10px; }
+.stat-cards .card { padding: 12px 16px; box-shadow: none; }
+.stat-cards .card span { font-size: 12px; color: var(--ink-3); }
+.stat-cards .card b { font-size: 22px; line-height: 28px; font-weight: 600; }
+.stat-cards .card.hot { border-color: rgba(217, 119, 87, .45); background: #fffaf7; }
+.stat-cards .card.hot b { color: var(--brand); }
+
+/* ---------------- 버튼 (PgButton.vue) ---------------- */
+.btn { height: 32px; min-height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13.5px; font-weight: 500; background: #fff; color: var(--ink); border: 1px solid var(--rule-strong); box-shadow: none; transition: background-color .12s var(--ease), border-color .12s var(--ease), color .12s var(--ease); }
+.btn:hover { background: var(--surface-soft); border-color: rgba(11, 11, 11, .22); text-decoration: none; }
+.btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn.primary:hover { background: #2a2a29; border-color: #2a2a29; }
+.btn.primary:disabled { background: #b9b8b3; border-color: #b9b8b3; opacity: 1; }
+.btn.danger { background: #b42318; border-color: #b42318; color: #fff; }
+.btn.outline { background: #fff; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { background: rgba(11, 11, 11, .05); color: var(--ink); }
+.btn.small { height: 28px; min-height: 28px; padding: 0 10px; border-radius: 7px; font-size: 12.5px; }
+button:disabled, .btn:disabled { opacity: .45; }
+
+/* ---------------- 칩 (overrides.css .v-chip) ---------------- */
+.chip, .pill, .state { height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.chip.sm { height: 20px; padding: 0 6px; font-size: 11px; }
+
+/* ---------------- 탭 (overrides.css .v-tab: 밑줄 2px brand) ---------------- */
+.tabs { border-bottom: 1px solid var(--rule); gap: 4px; }
+.tabs .tab { height: 36px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); padding: 8px 10px; border-radius: 8px 8px 0 0; }
+.tabs .tab:hover { color: var(--ink); background: rgba(11, 11, 11, .03); }
+.tabs .tab.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--brand); border-bottom-color: transparent; }
+
+/* ---------------- 접기 (R12) ---------------- */
+details.fold { border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+details.fold > summary { min-height: 40px; padding: 9px 14px; font-size: 13.5px; font-weight: 500; color: var(--ink); border-radius: 10px; }
+details.fold > summary:hover { background: rgba(11, 11, 11, .025); }
+details.fold.small { border-radius: 8px; }
+details.fold.small > summary { min-height: 30px; padding: 5px 10px; font-size: 12.5px; color: var(--ink-2); }
+details.fold.plain { border: 0; background: transparent; }
+.fold-body { padding: 4px 14px 14px; }
+
+/* ---------------- 폼 (PgField · PgTextField) ---------------- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea {
+  border: 1px solid #d8d7d3; border-radius: 8px; background: #fff; color: var(--ink); font-size: 14px; transition: border-color .12s var(--ease), box-shadow .12s var(--ease); }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select { min-height: 34px; padding: 0 10px; }
+textarea { padding: 8px 10px; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(59, 120, 196, .16); }
+.field { gap: 6px; }
+.field > label, .field label:first-child { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.req { color: #8e2626; font-style: normal; }
+.field-hint { font-size: 12px; color: var(--ink-3); }
+.form-section { border-top: 1px solid var(--rule); padding-top: var(--s4); }
+.form-section:first-child { border-top: 0; padding-top: 0; }
+.form-section h4 { font-size: 13px; font-weight: 600; color: var(--ink); }
+.form-actions { gap: 8px; }
+
+/* ---------------- 목록 행 (Linear식: 얇은 경계 · 선택은 옅은 바탕 + 왼쪽 막대) ---------------- */
+.list { gap: 6px; }
+.list .item { border: 1px solid var(--rule); border-radius: 10px; background: #fff; padding: 10px 12px; box-shadow: none; transition: background-color .12s var(--ease), border-color .12s var(--ease); }
+.list .item:hover { border-color: var(--rule-strong); background: #fdfdfc; }
+.list .item.sel { border-color: rgba(11, 11, 11, .28); background: #fff; box-shadow: inset 3px 0 0 var(--ink); }
+.list .item .sub { color: var(--ink-3); font-size: 12px; }
+.listhead { font-size: 13px; font-weight: 600; color: var(--ink); }
+
+/* ---------------- 비어 있음 · 표 · 기타 ---------------- */
+.empty { padding: 28px 16px; gap: 4px; }
+.empty b { font-size: 14px; font-weight: 600; }
+.empty span { font-size: 12.5px; color: var(--ink-3); }
+.empty.compact { padding: 16px; }
+table th { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.inst-table td, .inst-table th { border-color: var(--rule); }
+pre { background: var(--paper); border-radius: 8px; }
+.muted, .hint { color: var(--ink-3); }
+
+/* ---------------- 처리 건 화면 (process-gpt-vue3 apps/todolist/WorkItem.vue · Camunda Operate 목록↔상세) ---------------- */
+.inst-split { grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: var(--s4); align-items: start; }
+.inst-split > div:first-child { position: sticky; top: 0; }
+#instDetail .detail-head h2 { margin: 0; font-size: 18px; line-height: 24px; }
+#instDetail .detail-head .sub { color: var(--ink-3); font-size: 13px; }
+.todo-wrap { margin-bottom: var(--s4); }
+.stream-fold { margin-top: var(--s3); }
+.inst-card .steps { margin: 4px 0; }
+.step-chip { background: #fbeee9; color: #8a3c22; }
+@media (max-width: 1100px) { .inst-split { grid-template-columns: minmax(0, 1fr); } .inst-split > div:first-child { position: static; } }
+
+/* 흐름도: 진행 중 단계는 테두리가 흐른다 (process-gpt-vue3 assets/css/globalStyle.css running-animation 1.5s linear, 색만 brand) */
+.f-node.current rect, .f-node.current path, .f-node.current circle { stroke: var(--brand) !important; stroke-width: 2.4 !important; stroke-dasharray: 10 6; animation: f-run 1.5s linear infinite; fill: #fff7f3 !important; }
+.f-node.current text { fill: #8a3c22; font-weight: 600; }
+@keyframes f-run { to { stroke-dashoffset: -32; } }
+@media (prefers-reduced-motion: reduce) { .f-node.current rect, .f-node.current path, .f-node.current circle { animation: none; } }
+
+/* 머리글 실시간 한 줄 */
+.stream-ticker { border-radius: 999px; background: #fff; border: 1px solid var(--rule); }
+
+@media (max-width: 640px) {
+  main { padding: 16px 16px 32px; }
+  .detail { padding: 14px; }
+}
+.page-head.dup-head { display: none; }
+/* A161-U1 결함 9: 칩 안의 빼기 = 작은 ×(칩 높이 안), 버튼이 칩을 덮지 않는다 */
+.chip-x { all: unset; cursor: pointer; margin-left: 4px; width: 16px; height: 16px; border-radius: 4px; display: inline-grid; place-items: center; font-size: 13px; line-height: 1; color: currentColor; opacity: .7; }
+.chip-x:hover { opacity: 1; background: rgba(11,11,11,.08); }
+.chip-x:focus-visible { outline: 2px solid var(--focus); }
+/* 흐름 가져오기 · 입력 칸 행 편집 (flows.js fieldEditors) */
+.field-rows { display: flex; flex-direction: column; gap: 6px; }
+.field-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(90px, 1fr) 96px minmax(90px, 1fr) 20px; gap: 6px; align-items: center; }
+.field-row.head span { font-size: 11.5px; color: var(--ink-3); font-weight: 500; }
+.field-row input:disabled { background: var(--surface-soft); }
+.field-rows [data-add] { align-self: flex-start; }
+@media (max-width: 640px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row.head { display: none; } }
+/* A161-U1 결함 2: 표 숫자 · 코드가 글자 단위로 쪼개지지 않게(좁으면 표만 가로로 밀림) */
+.inst-table td, .inst-table th, .compact-table td, .compact-table th, .td-table td, .td-table th { overflow-wrap: normal; word-break: keep-all; }
+.td-table td:not(:last-child), .td-table th { white-space: nowrap; }
+.table-scroll { overflow-x: auto; }
+.task-detail { scroll-margin-top: 16px; }
+/* ---------------- A161-U1 승인 요약 카드 (approvalCard.js · Camunda Tasklist 작업 상세 + PgCard) ---------------- */
+.todo-panel.approve { padding: 18px 20px; border-radius: var(--radius); box-shadow: var(--shadow-md); }
+.ap-card { border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 16px 18px; margin: 12px 0 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: inset 3px 0 0 var(--brand); }
+.ap-card.changed { box-shadow: inset 3px 0 0 var(--warn); }
+.ap-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ap-kicker { font-size: 12px; font-weight: 600; color: var(--brand); letter-spacing: .01em; }
+.ap-card.changed .ap-kicker { color: var(--warn); }
+.ap-title { margin: 0; font-size: 18px; line-height: 24px; font-weight: 650; letter-spacing: -.01em; }
+.ap-desc { margin: 0; color: var(--ink-2); }
+.ap-reasons { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px; }
+.ap-reasons li::marker { color: var(--ink-4); }
+.neg-soft { color: #8e3b14; }
+.ap-do { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ap-label { font-size: 12px; color: var(--ink-3); font-weight: 500; min-width: 92px; }
+.ap-evidence { display: grid; gap: 6px; padding: 10px 12px; border-radius: 8px; background: var(--surface-soft); }
+.ap-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.ap-path { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.ap-node { padding: 1px 7px; border-radius: 6px; background: #fff; border: 1px solid var(--rule); font-size: 12.5px; }
+.ap-arrow { color: var(--ink-4); font-size: 12px; }
+.ap-lost-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ap-lost { padding: 8px 10px; border: 1px solid var(--rule); border-radius: 8px; }
+.ap-lost-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ap-lost p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-2); }
+.ap-lost.out { background: #fcf7f6; }
+.ap-switch { margin-left: auto; font-size: 12px; color: var(--ink-2); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+@media (max-width: 640px) { .ap-card { padding: 12px 14px; } .ap-label { min-width: 0; width: 100%; } }
+/* ---------------- A161-U1 결과 보고 카드 (resultReport.js · Dify run status 카드 + n8n 실행 배지) ---------------- */
+.rr-card { border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 14px 16px; margin: 14px 0; display: grid; gap: 10px; }
+.rr-head { display: flex; gap: 12px; align-items: flex-start; }
+.rr-head h4 { margin: 0; font-size: 15px; font-weight: 600; }
+.rr-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; }
+.rr-badge { flex: none; min-width: 56px; height: 28px; padding: 0 10px; border-radius: 8px; display: inline-grid; place-items: center; font-weight: 650; font-size: 13.5px; background: var(--surface-soft); color: var(--ink-2); }
+.rr-card.tone-ok { border-color: rgba(6, 118, 71, .35); background: linear-gradient(0deg, #fff, #fff) padding-box; box-shadow: inset 3px 0 0 var(--ok); }
+.rr-card.tone-ok .rr-badge { background: var(--ok-bg); color: var(--ok); }
+.rr-card.tone-fail { border-color: rgba(180, 35, 24, .35); box-shadow: inset 3px 0 0 var(--alarm); }
+.rr-card.tone-fail .rr-badge { background: #fdecea; color: var(--alarm); }
+.rr-card.tone-wait { box-shadow: inset 3px 0 0 var(--focus); }
+.rr-card.tone-wait .rr-badge { background: var(--it-bg); color: var(--it); }
+.rr-vals { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.rr-val { min-width: 0; overflow-wrap: anywhere;  border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.rr-val span, .rr-val small { font-size: 12px; color: var(--ink-3); }
+.rr-val b { font-size: 18px; font-weight: 600; }
+.rr-val.bad b { color: var(--alarm); } .rr-val.good b { color: var(--ok); }
+.rr-who { margin: 0; }
+.rr-steps-wrap { display: grid; gap: 4px; }
+.rr-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.rr-steps li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.rr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.rr-steps li.run .rr-dot { background: var(--focus); animation: rr-pulse 1.2s var(--ease) infinite; }
+.rr-ref { font-size: 12px; color: var(--ink-2); }
+.rr-time { margin-left: auto; font-size: 12px; }
+@keyframes rr-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .rr-steps li.run .rr-dot { animation: none; } }
+/* ---------------- C3 B · C 단순화: 결함 실험 카드 머리의 시나리오 표시 (app.js bizAlertHtml) ---------------- */
+.unit header .biz-alert { margin-left: auto; margin-right: 8px; }
+.unit header .biz-alert a.chip { text-decoration: none; }

@@ -292,17 +292,23 @@
     const roles = (b.roles || []).map(r => {
       const ids = new Set(r.members.map(m => m.id));
       const members = r.members.length ? r.members.map(m => `<span class="chip tone-${m.origin === 'user' ? 'success' : 'neutral'}">${esc(m.name)}${m.origin === 'user'
-        ? ` <button type="button" class="btn small" data-unmember="${esc(r.id)}|${esc(m.id)}" aria-label="${esc(m.name)} 빼기">빼기</button>` : ''}</span>`).join(' ')
+        ? `<button type="button" class="chip-x" data-unmember="${esc(r.id)}|${esc(m.id)}" aria-label="${esc(m.name)} 빼기" title="빼기">×</button>` : ''}</span>`).join(' ')
         : '<span class="neg">아무도 없음 — 이 역할의 사람 단계는 누구의 작업함에도 뜨지 않습니다</span>';
       const can = (b.people || []).filter(p => !ids.has(p.id));
-      const add = can.length ? `<select data-member-pick="${esc(r.id)}" aria-label="${esc(r.name)}에 넣을 사람">${can.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>` +
+      const add = can.length ? `<select data-member-pick="${esc(r.id)}" aria-label="${esc(UI.performers[r.id] || r.name)}에 넣을 사람">${can.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>` +
         ` <button type="button" class="btn small" data-member-add="${esc(r.id)}">넣기</button>` : '';
       const rule = r.members.length === 1 ? '한 명 → 그 사람에게 바로 배정' : r.members.length > 1 ? '여러 명 → 역할 공용' : '';
-      return `<tr><td>${esc(r.name)}</td><td>${members}${rule ? `<br><span class="muted">${esc(rule)}</span>` : ''}</td><td>${add}</td></tr>`;
+      // G10: 포털에서 만든 역할은 표시하고 지울 수 있다(흐름 정의가 쓰면 서버가 사유와 함께 거절)
+      const mine = r.origin === 'user' ? ` ${UI.chipText('내가 만든', 'accent')} <button type="button" class="btn small" data-role-del="${esc(r.id)}">지우기</button>` : '';
+      return `<tr><td>${esc(UI.performers[r.id] || r.name)}${mine}</td><td>${members}${rule ? `<br><span class="muted">${esc(rule)}</span>` : ''}</td><td>${add}</td></tr>`;
     }).join('');
+    const newRole = `<div class="row-wrap" role="group" aria-label="역할 만들기"><input data-role-name placeholder="역할 이름 (내 흐름의 레인 이름과 같게)" aria-label="새 역할 이름">` +
+      `<input data-role-key placeholder="키 (선택, 예: s01-organizer)" aria-label="새 역할 키"><button type="button" class="btn small" data-role-add>역할 만들기</button></div>` +
+      `<p class="muted">흐름 가져오기는 레인 이름이 역할 이름과 같으면 그 역할로 잇습니다. 만든 역할에 사람을 넣어야 그 사람 작업함에 뜹니다.</p>`;
     const people = UI.card({ title: '역할 → 사람 (업무분장)',
       body: `<p class="muted">기본 업무분장은 뺄 수 없고, 넣은 사람만 뺄 수 있습니다. 사람 단계는 이 표로 담당자가 정해집니다.</p>` +
-        (roles ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>역할</th><th>사람</th><th>넣기</th></tr></thead><tbody>${roles}</tbody></table></div>` : UI.empty('역할이 없습니다', '', 'compact')) });
+        (roles ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>역할</th><th>사람</th><th>넣기</th></tr></thead><tbody>${roles}</tbody></table></div>` : UI.empty('역할이 없습니다', '', 'compact')) +
+        UI.fold('역할 만들기', newRole, { cls: 'plain' }) });
     return steps + people;
   }
   async function setMap(sel) {
@@ -404,6 +410,18 @@
     }
     if (t.dataset.memberAdd) { const sel = st.host.querySelector(`[data-member-pick="${CSS.escape(t.dataset.memberAdd)}"]`); return sel && member(t.dataset.memberAdd, sel.value, true); }
     if (t.dataset.unmember) { const [r, u] = t.dataset.unmember.split('|'); return member(r, u, false); }
+    if (t.hasAttribute('data-role-add')) {
+      const name = (st.host.querySelector('[data-role-name]') || {}).value || '', key = (st.host.querySelector('[data-role-key]') || {}).value || '';
+      if (await act(() => postJ(api('/api/roles'), { name: name.trim(), key: key.trim() || null }), r => `역할 '${r.name}'을 만들었습니다 — 아래 표에서 사람을 넣으세요`)) { await loadBoard(); render(); }
+      return;
+    }
+    if (t.dataset.roleDel) {
+      const role = ((st.board && st.board.roles) || []).find(r => r.id === t.dataset.roleDel) || {};
+      if (!await UI.confirm({ title: `역할 '${role.name || UI.performers[t.dataset.roleDel] || t.dataset.roleDel}'을 지울까요?`,
+        body: '넣어 둔 사람 배정도 함께 지워집니다. 흐름 정의가 이 역할을 쓰거나 끝나지 않은 작업이 있으면 서버가 사유와 함께 거절합니다.', ok: '지우기', danger: true })) return;
+      if (await act(() => del(api('/api/roles/' + encodeURIComponent(t.dataset.roleDel))), '역할을 지웠습니다')) { await loadBoard(); render(); }
+      return;
+    }
     if (t.dataset.foldText) {
       st.open[t.dataset.foldText] = !st.open[t.dataset.foldText];
       const box = st.host.querySelector('[data-ag-detail]');

@@ -16,21 +16,23 @@ import inspect
 import json
 import logging
 import os
+import re
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 from functools import partial
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from hydcommon.timeutil import now_iso
-from . import decisions as declib, definition, engine, instances, machine, procdb, work_orders
+from . import decisions as declib, definition, engine, instances, machine, procdb, reobs_series, work_orders
 from .definition_registry import validate_definition
 from .approval_hooks import DecisionDelivery, record_execution as _record_execution
 from . import task_deferral
+from . import approval_part
 from .legacy_assessment import LegacyAssessment
 
 log = logging.getLogger("process.instance_mode")
@@ -45,6 +47,20 @@ WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cli
 STALE_CLEANUP_EVERY = 150                                              # × POLL_INTERVAL_S ≈ 5 min (the product's cleanup_task)
 # A151 (A148 item 70-A): how long startup waits for an unreachable DB before giving up and letting the restart policy act
 STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
+# C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (docs/handoff/verification/2026-10-09/c2-execution.md)
+ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
+# 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
+# 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).
+PLANT_SIM_URL = os.getenv("PLANT_SIM_URL", "http://plant-sim:8000")
+# 수업용 대기 압축(결정 4): 기다리는 부품(시간 대기 · 입고 확인)과 그 경계 타이머만 배속 × 이 배율로 줄인다. 60 이면 20배속에서 납기 5일 → 6분.
+WAIT_COMPRESSION = float(os.getenv("PROCESS_WAIT_COMPRESSION", "60"))
+# 승인 뒤 MCP 호출 부품이 부르는 서버(이름 → tenants.mcp 와 같은 설정). 기본은 수업용 hyd-effects(메일 → Inbucket · CMMS 일정 · 처리 건 기록).
+# 여기에 없는 이름은 tenants.mcp 에서 연결 검사를 통과한(설정 해시가 같은) 서버만 쓴다.
+EFFECT_MCP_SERVERS = json.loads(os.getenv("EFFECT_MCP_SERVERS") or json.dumps(
+    {"hyd-effects": {"type": "url", "url": "http://effects-mcp:8197/mcp", "transport": "streamable_http"}}))
+ENTERPRISE_READS = {"part_quotes": ("/scm/quotes", "part"), "purchase_order": ("/erp/purchase_orders/{ref}", None),
+                    "spare_stock": ("/erp/spare_stock", "part"), "maintenance_windows": ("/cmms/windows", "asset"),
+                    "pm_status": ("/cmms/pm_status", "asset")}
 
 
 @dataclass
@@ -68,10 +84,14 @@ class ProcessContext:
     approval_receipts: Callable | None = None
     accept_evaluation: Callable | None = None
     exec_compensation: Callable | None = None     # (request) → enterprise /api/exec with a compensation skill (A072)
+    latest_tag: Callable[[str, str], float | None] | None = None   # C2: (asset, tag) → 최신값 (작업지시 뒤 재관측)
+    window_series: Callable | None = None     # A161-G3: (incident, after, since) → 재관측 창의 값 흐름 (reobs_series.build 모양)
 
 
 _runtime: instances.InstanceRuntime | None = None
 _ctx: ProcessContext | None = None
+EVENTS_PAGE_MAX = 5000        # A161-G4: one /api/events page at most (the instance view itself reads instances.EVENTS_WINDOW)
+PAYLOAD_CHUNK_CHARS = 200_000 # A161-G2: one /api/event-payloads chunk
 stream_clients = 0            # A131: open /api/events/stream generators (memory diagnostics; must return to 0 after disconnects)
 
 
@@ -80,7 +100,7 @@ def current() -> instances.InstanceRuntime | None:
 
 
 # ---------------------------------------------------------------- lifecycle
-async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.7, keepalive_s: float = 15.0,
+async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.5, keepalive_s: float = 15.0,
                        fetch: Callable | None = None, ts_key: str = "timestamp", history: int = 60):
     """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
     timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects.
@@ -94,13 +114,21 @@ async def event_stream(repo, since: str | None, is_disconnected, interval: float
         stream_clients -= 1
 
 
+def _sse_id(e: dict, ts_key: str) -> str:
+    """A161-U1: every frame carries its timestamp as the SSE id. A browser that loses the connection reconnects by itself
+    with `Last-Event-ID: <ts>`; the stream resumes from there (>=, the client drops ids it has) instead of replaying the
+    60-row history — events written while the line was down are delivered, not skipped."""
+    ts = str(e.get(ts_key) or "").replace("\n", "")
+    return f"id: {ts}\n" if ts else ""
+
+
 async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch, ts_key, history):
     seen: set[str] = set()
     cursor = since
     if cursor is None:
         for e in await asyncio.to_thread(fetch, None, history):          # a short history so the panel is not empty
             seen.add(e["id"]); cursor = max(cursor or "", str(e.get(ts_key) or ""))
-            yield "event: history\ndata: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+            yield "event: history\n" + _sse_id(e, ts_key) + "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
     idle = 0.0
     while not await is_disconnected():
         rows = await asyncio.to_thread(fetch, cursor, 300)
@@ -112,7 +140,7 @@ async def _event_frames(repo, since, is_disconnected, interval, keepalive_s, fet
                     cursor, seen = ts, {e["id"]}
                 else:
                     seen.add(e["id"])
-                yield "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
+                yield _sse_id(e, ts_key) + "data: " + json.dumps(e, ensure_ascii=False, default=str) + "\n\n"
             idle = 0.0
         else:
             idle += interval
@@ -128,6 +156,7 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     _ctx = ctx
     repo = procdb.make_repo()
     defn = _bootstrap_definition(repo, os.getenv('TENANT_ID','hyd'))
+    engine.configure_wait_compression(WAIT_COMPRESSION)
     _runtime = instances.InstanceRuntime(repo, defn, _hooks(ctx), time_scale=ctx.time_scale,
                                         tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}")
     triage = _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
@@ -389,6 +418,101 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
             work_orders.confirm(ctx, inc, item, result)
         return result
 
+    def close_incident_effect(inc_id: str, receipt: dict) -> bool:
+        inc = ctx.incidents.get(inc_id)
+        if inc is None:
+            raise ValueError(f"no such incident {inc_id}")
+        fx = work_orders._Audit()
+        changed = machine.on_business_effect(inc, receipt, fx)
+        if changed:
+            ctx.persist()
+            for event in fx.events:
+                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
+            if ctx.after_incident:
+                ctx.after_incident(inc)
+        return changed
+
+    def close_incident_result(inc_id: str, level: str, summary: str) -> bool:
+        inc = ctx.incidents.get(inc_id)
+        if inc is None:
+            raise ValueError(f"no such incident {inc_id}")
+        fx = work_orders._Audit()
+        changed = machine.on_result_report(inc, level, summary, fx)
+        if changed:
+            ctx.persist()
+            for event in fx.events:
+                ctx.audit(event["asset"], event["actor"], event["event"], event["detail"], incident=inc.id)
+            if ctx.after_incident:
+                ctx.after_incident(inc)
+        return changed
+
+    def recovery_reading(inc_id: str, since: str | None = None) -> dict | None:
+        inc = ctx.incidents.get(inc_id)
+        if inc is None or inc.recovery is None:
+            return None
+        tag, op, limit = inc.recovery
+        value = ctx.latest_tag(inc.asset, tag) if ctx.latest_tag else None
+        inside = value is not None and (value < limit if op == "<" else value >= limit)
+        reading = {"tag": tag, "op": op, "limit": limit, "value": value, "inside": inside, "cleared": bool(inc.cleared),
+                   "criterion": f"{tag} {op} {limit}"}
+        if since and ctx.window_series is not None:
+            # A161-G3: the work-order re-observation window (since = its start) — the trend goes on the reading (the step's
+            # REOBSERVATION event) and on the Incident (reobsSeries), like the command path's timer
+            try:
+                series = ctx.window_series(inc, "work_order", since)
+            except Exception as e:  # noqa: BLE001 — the trend is supporting evidence; the verdict never waits for it, but the gap is recorded
+                log.warning("re-observation series for %s could not be read", inc_id, exc_info=True)
+                series = reobs_series.unavailable(f"재관측 창의 값을 읽지 못했습니다: {type(e).__name__}: {str(e)[:200]}", tag=tag, op=op,
+                                                  limit=limit, since=since, until=None, after="work_order", extensions=inc.reobs_extensions)
+            if series:
+                reading["series"] = series
+                machine.record_reobs_series(inc, series)
+                ctx.persist()
+        return reading
+
+    def _runtime_server(server: str, call) -> dict:
+        """등록 · 검사 도장 확인 → 비밀 자리표시자 채우기 → call(spec, entry) → 비밀 값 가리기. 실패는 status · error 로 답한다."""
+        from . import mcp_check, mcp_secrets
+        try:
+            entry = _effect_server(server)
+            spec = mcp_check.normalize(entry)
+        except (LookupError, ValueError) as e:
+            return {"status": "failed", "error": str(e), "error_kind": "config"}
+        rt = current()
+        if rt is None:
+            return {"status": "failed", "error": "instance 실행 서비스가 없어 비밀 값 표를 읽을 수 없습니다", "error_kind": "config"}
+        try:            # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
+            spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, spec)
+        except mcp_secrets.SecretError as e:
+            return {"status": "failed", "error": e.reason, "error_kind": "secret"}
+        # 서버가 토큰을 되돌려 줘도(오류 본문 · 에코) 영수증 · 감사 · 처리 기록에 값이 남지 않게
+        return mcp_secrets.redact(call(spec, entry), used)
+
+    def mcp_call(server: str, tool: str, arguments: dict, key: str) -> dict:
+        from . import mcp_check
+        return _runtime_server(server, lambda spec, entry: mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0))
+
+    def mcp_read(server: str, tool: str, arguments: dict) -> dict:
+        """G3 읽기 확인: 포털 써 보기와 같은 판정(mcp_check.call — 호출 직전 다시 받은 목록에서 read_only_verdict, 강사 확인 목록 포함).
+        쓰기 도구면 tools/call 없이 status=refused 로 돌아온다."""
+        from . import mcp_check, mcp_registry
+        return _runtime_server(server, lambda spec, entry: mcp_check.call(spec, tool, arguments, 20.0,
+                                                                         confirmed=frozenset(mcp_registry.confirmed_of(entry))))
+
+    def _effect_server(name: str) -> dict:
+        if name in EFFECT_MCP_SERVERS:
+            return EFFECT_MCP_SERVERS[name]
+        from . import mcp_registry
+        rt = current()
+        servers = mcp_registry.store_for(rt.repo).servers(rt.tenant_id) if rt is not None else {}
+        entry = servers.get(name)
+        if entry is None:
+            raise LookupError(f"MCP 서버 '{name}' 이(가) 없습니다 (EFFECT_MCP_SERVERS 또는 MCP 서버 등록)")
+        gate = ((entry.get(mcp_registry.META_KEY) or {}).get("gate") or {}) if isinstance(entry, dict) else {}
+        if name not in mcp_registry.BASE_SERVERS and gate.get("fingerprint") != mcp_registry.fingerprint(entry):
+            raise LookupError(f"MCP 서버 '{name}' 은(는) 연결 검사를 통과한 설정이 아닙니다 — 포털 MCP 화면에서 다시 검사하세요")
+        return entry
+
     return instances.Hooks(new_incident=open_incident, update_incident_card=update_incident_card, approve_commands=approve_commands,
                            incident_state=incident_state, incident_snapshot=incident_snapshot,
                            decision_option=decision_option, get_decision=lambda did: ctx.book.get(did), approve_decision=delivery.prepare,
@@ -396,7 +520,36 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            validate_approval=delivery.validate, deliver_approval=delivery.deliver, record_approval=delivery.record,
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
-                           exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit)
+                           exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit,
+                           enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
+                           close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
+                           read_tag=ctx.latest_tag, close_incident_result=close_incident_result)
+
+
+def enterprise_read(name: str, params: dict) -> dict:
+    """C2: enterprise-sim 읽기(견적 · 발주 · 재고 · 예정된 정비 시간). 실패는 예외 — 값 없이 진행하지 않는다."""
+    from urllib.parse import quote, urlencode
+    path, key = ENTERPRISE_READS[name]
+    params = dict(params or {})
+    if "{ref}" in path:
+        path = path.replace("{ref}", quote(str(params.pop("ref")), safe=""))
+    url = ENTERPRISE_URL + path + (("?" + urlencode({k: v for k, v in params.items() if v is not None})) if params else "")
+    with urllib.request.urlopen(url, timeout=10) as r:
+        return json.loads(r.read())
+
+
+def plant_restore(asset: str, component: str | None) -> dict:
+    """C2 정비 수행 모사: plant-sim POST /api/fault {asset, type: restore[, component]}. 응답을 그대로 돌려준다(ok 표시 추가)."""
+    body = {"asset": asset, "type": "restore"}
+    if component:
+        body["component"] = component
+    req = urllib.request.Request(PLANT_SIM_URL + "/api/fault", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"},
+                                 method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return dict(json.loads(r.read()), ok=True, url=PLANT_SIM_URL)
+    except Exception as e:  # noqa: BLE001 — 사유를 남기고 실패로
+        return {"ok": False, "error": f"설비 시뮬레이터 복구 요청 실패({PLANT_SIM_URL}): {str(e)[:200]}"}
 
 
 def _open_incident_for(ctx: ProcessContext, alert_id: str | None) -> machine.Incident | None:
@@ -602,6 +755,14 @@ class SubmitReq(BaseModel):
     by: str | None = None
 
 
+class ApproveReq(BaseModel):
+    decision: str                       # approval_part.APPROVE | approval_part.REJECT
+    option: str | None = None           # 고른 안의 구분 값(설정 key, 기본 slot) — 반려에는 없다
+    by: str
+    role: str
+    reason: str = ""
+
+
 class CloseReq(BaseModel):
     by: str
     reason: str
@@ -753,6 +914,7 @@ def mount(app: FastAPI, process_mode: str) -> None:
     async def events_stream(request: Request, since: str | None = None):
         """A091: server-sent stream of the product's events table (agent tool calls, task transitions, human answers …).
         The portal shows them as they happen instead of re-reading an instance every two seconds."""
+        since = since or request.headers.get("last-event-id") or None     # A161-U1: browser reconnect resumes at its last id
         return StreamingResponse(event_stream(_rt().repo, since, request.is_disconnected), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
@@ -897,6 +1059,8 @@ def mount(app: FastAPI, process_mode: str) -> None:
             item = await _in_executor(rt.workitem_view,wid)
             if item['tool'] == 'formHandler:select_card':
                 raise HTTPException(403,'조치 카드 승인은 /select의 역할 검사를 거쳐야 합니다')
+            if item['tool'] == approval_part.TOOL:
+                raise HTTPException(403,'사람 승인(안 고르기)은 /approve의 역할 검사를 거쳐야 합니다')
             if item.get('agent_mode') or item.get('agent_orch'):
                 raise HTTPException(403,'사람 작업만 이 경로로 제출할 수 있습니다')
             return await _in_executor(rt.submit, wid, req.output, req.by)
@@ -953,6 +1117,19 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(404, "no such selection task")
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
+            raise HTTPException(403, str(e))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/todolist/{wid}/approve")
+    async def approve_option(wid: str, req: ApproveReq):
+        """캡스톤 G1 일반 사람 승인(formHandler:approve): 에이전트가 낸 안 하나를 승인하거나 반려한다. 승인자 = "나"(역할 구성원 검사)."""
+        try:
+            return await _in_executor(_rt().approve, wid, req.decision, req.option, req.by, req.role, req.reason)
+        except KeyError:
+            raise HTTPException(404, "no such approval task")
+        except PermissionError as e:
+            _ctx.audit("-", req.by, "APPROVAL_DENIED", {"workitem": wid, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
         except ValueError as e:
             raise HTTPException(400, str(e))
@@ -1029,7 +1206,12 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(409,str(e))
 
     @app.get("/api/events")
-    async def list_events(proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500):
+    async def list_events(response: Response, proc_inst_id: str | None = None, todo_id: str | None = None, limit: int = 500,
+                          before: str | None = None, page: bool = False):
+        """Newest `limit` events, oldest first (unchanged default). A161-G4 paging: `before=<event id>` returns the page just
+        older than that event (keyset on timestamp · id). Every answer says whether older rows remain — headers
+        X-Events-Has-More (1/0) and X-Events-Before (the cursor for the next older page) — and `page=true` wraps the rows as
+        {events, has_more, before} for a client that cannot read headers."""
         rt = _rt()
         if not proc_inst_id and not todo_id:
             raise HTTPException(400,'proc_inst_id 또는 todo_id를 지정하세요')
@@ -1043,7 +1225,40 @@ def mount(app: FastAPI, process_mode: str) -> None:
                 await _in_executor(rt.workitem_view,todo_id)
             except KeyError:
                 raise HTTPException(404,'no such work item')
-        return await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit)
+        limit = max(1, min(int(limit), EVENTS_PAGE_MAX))
+        try:
+            rows = await _in_executor(rt.repo.list_events, proc_inst_id, todo_id, limit + 1, before)
+        except LookupError as e:                       # an unknown cursor is an error, not an empty "no older rows" page
+            raise HTTPException(404, str(e)) from e
+        has_more = len(rows) > limit
+        rows = rows[-limit:]
+        cursor = rows[0]["id"] if has_more and rows else None
+        response.headers["X-Events-Has-More"] = "1" if has_more else "0"
+        if cursor:
+            response.headers["X-Events-Before"] = str(cursor)
+        return {"events": rows, "has_more": has_more, "before": cursor} if page else rows
+
+    @app.get("/api/event-payloads/{payload_id}")
+    async def get_event_payload(payload_id: str, offset: int = 0, limit: int = PAYLOAD_CHUNK_CHARS):
+        """A161-G2: the full tool result an events row points at (data.full_output.ref), in chunks of `limit` characters."""
+        rt = _rt()
+        if not re.fullmatch(r"[0-9a-f]{64}", payload_id or ""):
+            raise HTTPException(400, "payload id 는 sha256 16진수 64자입니다")
+        row = await _in_executor(rt.repo.get_event_payload, payload_id)
+        if not row:
+            raise HTTPException(404, "no such payload")
+        # a payload is read only through its case: no case or another tenant's case → not found (fail closed)
+        inst = await _in_executor(rt.repo.get_instance, row["proc_inst_id"]) if row.get("proc_inst_id") else None
+        if not inst or inst.get("tenant_id") != rt.tenant_id:
+            raise HTTPException(404, "no such payload")
+        if inst.get("is_deleted"):
+            raise HTTPException(404, instances.REMOVED_REASON)
+        content = row.get("content") or ""
+        offset, limit = max(0, int(offset)), max(1, min(int(limit), PAYLOAD_CHUNK_CHARS))
+        end = offset + limit
+        return {**{k: row.get(k) for k in ("id", "chars", "content_type", "source", "tool", "tool_use_id", "job_id", "todo_id",
+                                         "proc_inst_id", "meta", "created_at")},
+                "offset": offset, "content": content[offset:end], "next_offset": end if end < len(content) else None}
 
     @app.get("/api/users")
     async def list_users():

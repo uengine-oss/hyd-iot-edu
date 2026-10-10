@@ -6,6 +6,7 @@ that system's screen. Money is in 만원 (KRW 10k), times in hours unless the ke
 """
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta, timezone
 
 ASSETS = ("HYD-01", "HYD-02", "HYD-03")
@@ -151,6 +152,124 @@ def cmms_tasks(asset: str) -> dict:
 
 def ems_demand() -> dict:
     return {"system": "EMS", "facts": dict(_EMS), "records": [dict(_EMS, site="창원 1공장 (교육용 가상)")]}
+
+
+# ---------------------------------------------------------------- C2 (확정 TODO C): 예비품 재고 · 부품별 견적 · 예정된 정비 시간
+# Supabase 백엔드(migration 20261009000045)와 같은 값 · 같은 응답 모양. 재고는 바뀌는 값이라 state.py 가 들고, 여기에는 기준값만 둔다.
+SPARE_BASE = {
+    # 가용 = 실물 − 예약 + 입고 예정(PR-07 7.2). 씰 키트: 실물 3 · HYD-03 예방 교체 예약 2 → 가용 1 < 재주문점 2 — 수업 시작 상태가 곧
+    # '재고 보충 필요'다(C3 B · C 단순화, 마이그레이션 47). 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 구매 처리 건이 입고까지 하면 가용 7.
+    "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 3, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
+                   "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
+    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
+    "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},
+}
+# 온톨로지 SUPPLIED_BY 와 같은 값(만원 · 불량률 · 리드타임 일). 쿨러 코어는 _SUPPLIERS 를 그대로 쓴다(같은 값을 두 곳에 두지 않음).
+_PART_QUOTES = {
+    "P-PMP-SEAL": [("sup:a", 35, 0.12, 2), ("sup:b", 55, 0.02, 5), ("sup:c", 20, 0.30, 1)],
+    "P-FAN-BRG": [("sup:a", 18, 0.10, 1), ("sup:b", 28, 0.03, 3)],
+}
+# (종류, 이름, 첫 창 h, 주기 h, 길이 h, 그 시간의 정비 인원 명). 사용자 화면 이름은 "예정된 정비 시간"이다(MES 생산 계획의 비생산 시간).
+# 정기 정비(B)의 '이번 예정된 정비 시간' = 다음 야간(N, 9 h 뒤, 인원 2명), '그다음 예정된 정비 시간' = 계획 정지(M, 280 h 뒤 — 1,950 h 에서
+# 미루면 2,230 h 로 허용 상한 2,200 h 를 넘는다, PM-02 PM-2.5). 두 대를 묶으려면 4명이 필요하다.
+_WINDOW_RULES = [("N", "야간 정비 시간", 9, 24, 4, 2), ("W", "주말 계획 정지", 105, 168, 24, 4), ("M", "월간 계획 정지", 280, 720, 48, 6)]
+BUNDLE_CREW = 4
+WINDOW_KINDS = {k: label for k, label, *_ in _WINDOW_RULES}
+
+# ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기 (CMMS)
+# 회사 설정(교육용): 주기 2,000 h, 허용 오차 ±10 %(1,800~2,200 h 안에 하면 보증 기록 요건 충족), 사전 알림 50 h(1,950 h 에 PM_DUE).
+PM_SETTINGS = {"interval_h": 2000, "tolerance_pct": 10, "notice_h": 50}
+PM_PACKAGE = "2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)"
+PM_KIT = {"part_no": "P-PMP-SEAL", "qty": 1}
+# 수업 시작값(마지막 정기 정비 뒤 운전시간) — 시작 상태가 곧 'HYD-02 정기 점검 도래'다(C3 B · C 단순화, 마이그레이션 47):
+# HYD-02 1,950 h(PM_DUE) · HYD-03 1,880 h(허용 오차 안, 묶음 후보) · HYD-01 1,500 h
+PM_BASE = {"HYD-01": {"since_pm_h": 1500, "total_h": 9500}, "HYD-02": {"since_pm_h": 1950, "total_h": 11950}, "HYD-03": {"since_pm_h": 1880, "total_h": 7880}}
+
+
+def quote_rows(part: str) -> list[dict]:
+    names = {s["id"]: s for s in _SUPPLIERS}
+    if part in _PART_QUOTES:
+        return [{"supplier": sid, "name": names[sid]["name"], "price": p, "fail_rate": f, "lead_d": d, "avl": names[sid]["avl"]}
+                for sid, p, f, d in _PART_QUOTES[part]]
+    return [{"supplier": s["id"], "name": s["name"], "price": s["price"], "fail_rate": s["fail"], "lead_d": s["lead_d"], "avl": s["avl"]}
+            for s in _SUPPLIERS if s["part_no"] == part]
+
+
+def part_quotes(part: str) -> dict:
+    if part not in _STD_PRICE:
+        raise KeyError(part)
+    return {"system": "SCM", "facts": {"part_no": part, "std_price": _STD_PRICE[part]}, "records": quote_rows(part)}
+
+
+def next_windows(asset: str, n: int = 3) -> list[dict]:
+    """ent.next_maintenance_windows 와 같은 계산: 규칙의 첫 창(시나리오 시작 + 9 h / 105 h)에서 주기마다, 끝나지 않은 창부터 n 개씩."""
+    _check(asset)
+    now, out = _now(), []
+    for kind, label, first_h, period_h, dur_h, crew in _WINDOW_RULES:
+        first = _at(first_h)
+        k0 = max(0, math.ceil(((now - first).total_seconds() / 3600 - dur_h) / period_h))
+        for k in range(k0, k0 + max(n, 1)):
+            st = first + timedelta(hours=k * period_h)
+            out.append({"id": f"MW-{asset}-{kind}-{st.astimezone(timezone.utc):%Y%m%d%H%M}", "asset": asset, "kind": kind, "label": label,
+                        "starts_at": st.isoformat(), "ends_at": (st + timedelta(hours=dur_h)).isoformat(), "starts_in_h": hours_from_now(st),
+                        "crew_size": crew})
+    return sorted(out, key=lambda w: w["starts_at"])
+
+
+def first_window(asset: str, kind: str) -> dict:
+    return next(w for w in next_windows(asset, 1) if w["kind"] == kind)
+
+
+def pm_row(asset: str, counter: dict, spare: dict | None, peers: dict[str, dict]) -> dict:
+    """ent.pm_status 한 행과 같은 계산(설비별 한 행 — 판단 입력의 물리 출처로 묶을 수 있다). counter = {since_pm_h, total_h, cycle, …},
+    spare = 정비 부품(씰 키트)의 재고 보기, peers = 다른 설비의 계수기. 운전시간은 실제 시간과 같이 흐른다고 보고(24 h 운전) 창까지의 시간을 더한다."""
+    st = PM_SETTINGS
+    since, interval, tol = float(counter["since_pm_h"]), float(st["interval_h"]), float(st["tolerance_pct"])
+    limit = interval * (1 + tol / 100)
+    lower = interval * (1 - tol / 100)
+    wins = {k: first_window(asset, k) for k in WINDOW_KINDS}
+    limit_in = round(limit - since, 2)
+    peer = None
+    for a, c in sorted(peers.items()):
+        if a != asset and float(c["since_pm_h"]) >= lower and (peer is None or c["since_pm_h"] > peer[1]["since_pm_h"]):
+            peer = (a, c)
+    kit = PM_KIT["qty"]
+    gap_after = gap_bundle = None
+    if spare is not None:
+        gap_after = spare["available"] - kit - spare["reorder_point"]
+        gap_bundle = spare["available"] - 2 * kit - spare["reorder_point"]
+    night = wins["N"]
+    return {"asset": asset, "plan_id": f"PM-{asset}-2000", "package": PM_PACKAGE, "cycle": int(counter.get("cycle") or 1),
+            "pm_since_h": since, "pm_total_h": float(counter["total_h"]), "pm_interval_h": interval, "pm_tolerance_pct": tol,
+            "pm_notice_h": float(st["notice_h"]), "pm_due_in_h": round(interval - since, 2), "pm_limit_in_h": limit_in,
+            "pm_window_open": since >= lower, "pm_due": since >= interval - st["notice_h"], "pm_over_limit": since > limit,
+            "night_window_id": night["id"], "night_window_at": night["starts_at"], "night_window_in_h": night["starts_in_h"],
+            "weekend_window_in_h": wins["W"]["starts_in_h"], "monthly_window_in_h": wins["M"]["starts_in_h"],
+            "night_within_limit": limit_in >= night["starts_in_h"], "weekend_within_limit": limit_in >= wins["W"]["starts_in_h"],
+            "monthly_within_limit": limit_in >= wins["M"]["starts_in_h"],
+            "bundle_peer": peer[0] if peer else None, "bundle_peer_since_h": float(peer[1]["since_pm_h"]) if peer else None,
+            "bundle_peer_limit_in_h": round(limit - float(peer[1]["since_pm_h"]), 2) if peer else None,
+            "night_crew_size": night["crew_size"], "bundle_crew_ok": night["crew_size"] >= BUNDLE_CREW,
+            # 온톨로지 B 판단 입력(scenario_structure in:hours-since-pm · in:next-scheduled-time · in:hours-if-deferred · in:pm-crew ·
+            # in:spare-available)의 변수 이름 그대로 — 판단 엔진이 CMMS 에서 읽는 값
+            "hours_since_pm": since, "hours_at_next_window": round(since + night["starts_in_h"], 2),
+            "hours_at_following_window": round(since + wins["M"]["starts_in_h"], 2), "pm_crew_available": night["crew_size"],
+            "spare_available": spare["available"] if spare is not None else None,
+            "kit_part_no": PM_KIT["part_no"], "kit_qty": kit, "spare_gap_after_pm": gap_after, "spare_gap_after_bundle": gap_bundle,
+            "last_done_at": counter.get("last_done_at"), "due_since": counter.get("due_since"), "updated_at": counter.get("updated_at"),
+            # C3: 그다음 예정된 정비 시간(월간 창) — 카드가 고른 시점을 작업지시에 싣는다 (SQL 뷰 ent.pm_status 와 같은 칸, 마이그레이션 46)
+            "following_window_id": wins["M"]["id"], "following_window_at": wins["M"]["starts_at"],
+            # C3 B · C 단순화: 이번 회차 정기 정비 오더(등록되면 화면의 '정기 점검 도래'가 꺼진다, SQL 뷰와 같은 칸 — 마이그레이션 47)
+            "pm_planned_wo": counter.get("plan_wo"), "pm_planned_window": counter.get("plan_window"), "pm_planned_at": counter.get("planned_at"),
+            "pm_alert": since >= interval - st["notice_h"] and not counter.get("plan_wo")}
+
+
+def maintenance_windows(asset: str) -> dict:
+    rows = next_windows(asset, 3)
+    first = rows[0]
+    return {"system": "CMMS", "facts": {"next_window_id": first["id"], "next_window_label": first["label"], "next_window_at": first["starts_at"],
+                                        "next_window_in_h": first["starts_in_h"]},
+            "records": rows, "as_of": _now().isoformat()}
 
 
 def prefixed(resp: dict) -> dict:

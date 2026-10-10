@@ -5,10 +5,14 @@ HYD deliberately requires an exact version and rejects unsupported execution sha
 """
 from copy import deepcopy
 from hydcommon.process_contracts import pinned_form, validate_fields
-from . import engine, alert_policy
+from . import engine, alert_policy, effect_parts, approval_part
 
-SERVICE_TOOLS = {'incident:command', 'incident:reobserve', 'enterprise:WO_CREATE'}
-PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_role','chosen_option'}
+# C2: 승인 뒤 실행 부품(effect_parts.TOOLS — MCP 호출 · ERP 발주 · 시간 대기 · 정비 수행 모사 · 입고 확인)도 process 가 실행하는 서비스다
+SERVICE_TOOLS = {'incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *effect_parts.TOOLS}
+# C2: 승인 경로가 승인한 카드의 발주 값(공급사 · 부품 · 수량 · 단가 · 금액)을 확정해 넣는다 — 금액 분기(구매팀장 추가 승인)의 근거라 task 가 낼 수 없다
+# 캡스톤 G1: 일반 사람 승인(approval_part)이 고른 안의 사본(approved_option)도 승인 경로만 넣는다
+PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_by_name','approved_role','chosen_option', *approval_part.SERVER_VALUES,
+                     *effect_parts.PURCHASE_VALUES}
 
 
 def validate_definition(raw):
@@ -70,6 +74,7 @@ def validate_definition(raw):
                 raise ValueError(f"지원하지 않는 서비스 도구: {a.get('tool')}")
             if a.get('agentMode') not in engine.NO_MODE or a.get('orchestration') not in (None,'hyd-process'):
                 raise ValueError('서비스 작업은 hyd-process에서 실행합니다')
+            effect_parts.validate(a)
         else:
             form = pinned_form(raw, a.get('tool'))
             if form is None:
@@ -77,6 +82,9 @@ def validate_definition(raw):
             fields = {f['key'] for f in form['fields_json']}
             if fields != set(a.get('outputData') or []):
                 raise ValueError(f"활동 {a['id']}의 outputData와 폼 key가 다릅니다")
+            if a.get('tool') == approval_part.TOOL:
+                approval_part.validate(a)
+                approval_part.validate_form(form, a['id'])
             if engine.is_agent(a):
                 if a.get('orchestration') != engine.AGENT_ORCH:
                     raise ValueError(f"에이전트 활동 {a['id']}: HYD는 orchestration {engine.AGENT_ORCH}만 실행합니다 ({a.get('orchestration')})")
@@ -102,6 +110,8 @@ def validate_definition(raw):
                 raise ValueError('boundaryEvent는 활동에 연결된 timer여야 합니다')
             if engine.iso_duration_seconds(e.get('timer')) <= 0:
                 raise ValueError('timer 기간은 0보다 커야 합니다')
+            if 'cancelActivity' in e and not isinstance(e['cancelActivity'], bool):
+                raise ValueError('boundaryEvent cancelActivity는 true/false입니다 (false = 멈추지 않는 알림 타이머)')
     # Loop re-entry exists in the engine; joins/cancellation across iterations still
     # need integration coverage before the public registration contract accepts it.
     # B3: a definition that declares loopPolicy "guarded" (bpmn_import writes it for a drawn back edge) is checked by

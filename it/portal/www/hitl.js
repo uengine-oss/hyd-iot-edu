@@ -37,7 +37,7 @@
     return UI.card({ title: esc(UI.idText(ch.name || d.chosen || UI.t('decision'))), chips: UI.chip(d.state) + (d.override ? UI.chipText(UI.t('proc.override'), 'warning') : ''),
       value: `<span class="kv">${esc(d.approvedBy || '–')}<small>${esc(roleName)}</small></span>`,
       sub: d.reason ? `${esc(UI.t('inc.reasonLabel'))}: ${esc(d.reason)}` : '',
-      body: (d.executions || []).length ? `<div class="cards two">${d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + hydCards.actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('')}</div>` : '' });
+      body: (d.executions || []).length ? `<div class="cards two">${d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + hydCards.actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(UI.idText(x.detail || '')), cls: 'soft' })).join('')}</div>` : '' });
   }
   function renderHitl() {
     const box = document.getElementById('hitlPanel'); const inc = H.inc, d = H.dec;
@@ -66,21 +66,21 @@
     html += summaryBlock(d.explanation);
     if (pending && !legacy) {
       // 409 in instance mode: the choice is made in the 처리 건 screen — one link, no dead form (UIUX_PLAN §1.2)
-      html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>';
+      html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
       html += UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`);
     } else if (pending) {
       const live = inc.state === 'AWAITING_APPROVAL';
       // A141: 사건 정보(설비 · 고장 유형 · 원인 · 경보 시각)는 접기로
       html += UI.metaFold([[UI.t('dec.asset'), esc(inc.asset)], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))]], 'fold.case');
       html += `<div class="form">` +
-        UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: H.form.option === o.id, pending, maxAbs })).join('')}</div>` +
+        UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: H.form.option === o.id, pending, maxAbs, decision: d })).join('')}</div>` +
           (live && (fanA || loadA || pumpA) ? `<div class="form-grid wide">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('hFan', UI.t('form.fan'), fanA, H.form.fan) : ''}${loadA ? hydCards.rangeField('hLoad', UI.t('form.load'), loadA, H.form.load) : ''}</div>` : '') +
-          `<div class="wide" id="hReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.time(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`) +
+          `<div class="wide" id="hReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.time(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`) +
         hydCards.whoFields('h', H.form, roles) +
         UI.actions(`<button class="btn outline" id="hPreview" ${live && !H.busy && H.form.option ? '' : 'disabled'}>${esc(UI.t('btn.preview'))}</button><button class="btn primary" id="hGo" ${live && canApprove && !H.busy ? '' : 'disabled'}>${esc(UI.t('btn.decide'))}</button>`, H.msg) + '</div>';
     } else {
       html += decidedCard(d, inc);
-      html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>', { cls: 'plain' });
+      html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>', { cls: 'plain' });
     }
     html += '</section>';
     box.innerHTML = html;
@@ -165,7 +165,7 @@
   setInterval(refreshProcBpmn, 2000);
 
   /* ================================================= 조치 방법 — Skill = SOP, matched to a failure mode */
-  const REL_KO = { MITIGATED_BY: UI.t('skill.rel.mitigate'), REMEDIED_BY: UI.t('skill.rel.remedy') };
+  const REL_KO = { MITIGATED_BY: UI.t('skill.rel.mitigate'), REMEDIED_BY: UI.t('skill.rel.remedy'), PREVENTED_BY: UI.t('skill.rel.prevent') };
   const draftKey = key => 'hyd:skill-edit:' + key;
   function saveSkillDraft(key, draft) {
     H.skillDrafts.set(key, draft);
@@ -205,7 +205,7 @@
     const newForm = H.skillNew ? UI.section('대상과 종류',
       UI.field({ label: UI.t('skill.sop'), required: true, input: `<input id="skSop" placeholder="SOP-FAN-05" maxlength="40">` }) +
       UI.field({ label: UI.t('skill.fm'), required: true, input: sel('skFm', c.failureModes || [], '') }) +
-      UI.field({ label: UI.t('skill.relation'), input: `<select id="skRel"><option value="REMEDIED_BY">${esc(UI.t('skill.rel.remedy'))}</option><option value="MITIGATED_BY">${esc(UI.t('skill.rel.mitigate'))}</option></select>` }) +
+      UI.field({ label: UI.t('skill.relation'), input: `<select id="skRel"><option value="REMEDIED_BY">${esc(UI.t('skill.rel.remedy'))}</option><option value="MITIGATED_BY">${esc(UI.t('skill.rel.mitigate'))}</option><option value="PREVENTED_BY">${esc(UI.t('skill.rel.prevent'))}</option></select>` }) +
       UI.field({ label: UI.t('skill.kind'), input: `<select id="skKind"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control">${esc(UI.t('skill.kind.control'))}</option></select>` }) +
       UI.field({ label: UI.t('skill.steps'), required: true, cls: 'wide', input: `<textarea id="skSteps" rows="5" placeholder="현장 제어로 전환하고 잠근다.&#10;벨트를 교체한다.&#10;재가동 후 진동 0.9 mm/s 미만을 확인한다."></textarea>` })) : '';
     const linked = H.skillNew ? '' : `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('skill.stepsTitle'))}</h3><ol class="steps">${(k.steps || []).map(s => `<li>${esc(s.text)} ${s.manual ? `<span class="muted">[${esc(s.manual)}]</span>` : ''}</li>`).join('') || `<li class="muted">${esc(UI.t('skill.noSteps'))}</li>`}</ol>
@@ -307,7 +307,7 @@
   async function fetchGolden(batch) {
     const g = H.golden[batch] = H.golden[batch] || {};
     try {
-      const next = await getJ(goldenUrl(batch, 'report'));
+      const next = await getJ(goldenUrl(batch, 'report') + '?optional=1');   // A161-U1: 200 + null when there is none (no console 404)
       const changed = JSON.stringify(next) !== JSON.stringify(g.report); g.report = next; g.error = ''; return changed;
     } catch (e) {
       if (e.status === 404) { const changed = g.report !== null; g.report = null; g.error = ''; return changed; }
@@ -421,7 +421,8 @@
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
     if (!r) { box.innerHTML = ''; return; }
-    const fms = (H.catalog || {}).failureModes || [];
+    const known = (H.catalog || {}).failureModes || [];
+    const fms = known.concat(((r.knowledge || {}).failure_modes || []).filter(f => f && f.id && !known.some(k => k.id === f.id)).map(f => ({ id: f.id, name: `${f.name || f.id} (이 문서에서 새로)` })));
     const citation = a => a ? UI.fold(`원문 인용 · ${a.page}쪽`, `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.quote)}</pre>`, { cls: 'small' }) : '';
     box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개${r.warnings.length ? ' · <span class="neg">' + r.warnings.map(esc).join(' ') + '</span>' : ''}</div>
       <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
@@ -430,9 +431,9 @@
       ${r.page_reviews ? UI.fold('페이지별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join(''), { cls: 'small' }) : ''}
       <div class="mcols"><div><h3>매뉴얼 절</h3>${r.sections.map(s => `<div class="msec"><b>${esc(s.ref)}</b> ${esc(s.title)}${UI.fold('절 본문 전체', `<div class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.excerpt)}</div>`, { cls: 'small' })}${citation(s.anchor)}</div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div>
       <div><h3>등록할 조치 방법</h3>${r.procedures.map(p => `<div class="mproc"><div class="form-grid">${UI.field({ label: UI.t('skill.sop'), input: `<input aria-label="절차 번호" data-manual-id="${esc(p.id)}" value="${esc(p.id)}">` })}${UI.field({ label: UI.t('skill.name'), input: `<input aria-label="이름" data-manual-name="${esc(p.id)}" value="${esc(p.name)}">` })}
-        ${UI.field({ label: UI.t('skill.fm'), required: true, input: `<select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === p.suggestedFailureMode ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` })}
-        ${UI.field({ label: UI.t('skill.relation'), input: `<select data-rel="${esc(p.id)}"><option value="REMEDIED_BY">${esc(UI.t('skill.rel.remedy'))}</option><option value="MITIGATED_BY">${esc(UI.t('skill.rel.mitigate'))}</option></select>` })}
-        ${UI.field({ label: UI.t('skill.kind'), input: `<select data-kind="${esc(p.id)}"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control">${esc(UI.t('skill.kind.control'))}</option></select>` })}
+        ${UI.field({ label: UI.t('skill.fm'), required: true, input: `<select data-fm="${esc(p.id)}"><option value="">(고르세요)</option>${fms.map(f => `<option value="${esc(f.id)}" ${f.id === (p.suggestedFailureMode || (p.link || {}).failureMode) ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>` })}
+        ${UI.field({ label: UI.t('skill.relation'), input: `<select data-rel="${esc(p.id)}">${['REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY'].map(v => `<option value="${v}" ${(p.link || {}).relation === v ? 'selected' : ''}>${esc(REL_KO[v])}</option>`).join('')}</select>` })}
+        ${UI.field({ label: UI.t('skill.kind'), input: `<select data-kind="${esc(p.id)}"><option value="work_order">${esc(UI.t('skill.kind.workOrder'))}</option><option value="control" ${(p.link || {}).kind === 'control' ? 'selected' : ''}>${esc(UI.t('skill.kind.control'))}</option></select>` })}
         ${UI.field({ label: UI.t('skill.affects'), hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` })}</div>${citation(p.anchor)}
         <ol>${p.steps.map(s => `<li><textarea aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea> <span class="muted">${esc(s.manual || '')}</span>${citation(s.anchor)}</li>`).join('')}</ol></div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div></div>
       <label class="check"><input type="checkbox" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
@@ -499,7 +500,7 @@
     const c = $('#manualCommit'); if (c) c.addEventListener('click', async () => {
       if (!$('#manualReviewed').checked) { $('#manualMsg').textContent = '원문을 대조하고 검토 완료를 표시하세요.'; return; }
       const links = {};
-      box.querySelectorAll('[data-fm]').forEach(s => { const id = s.dataset.fm; links[id] = { failureMode: s.value || null, relation: box.querySelector(`[data-rel="${CSS.escape(id)}"]`).value, kind: box.querySelector(`[data-kind="${CSS.escape(id)}"]`).value, affects: parseAffects(box.querySelector(`[data-affects="${CSS.escape(id)}"]`).value) }; });
+      box.querySelectorAll('[data-fm]').forEach(s => { const id = s.dataset.fm; const sug = (r.procedures.find(p => p.id === id) || {}).link || {}; links[id] = { ...sug, failureMode: s.value || null, relation: box.querySelector(`[data-rel="${CSS.escape(id)}"]`).value, kind: box.querySelector(`[data-kind="${CSS.escape(id)}"]`).value, affects: parseAffects(box.querySelector(`[data-affects="${CSS.escape(id)}"]`).value) }; });
       const missing = Object.entries(links).filter(([, v]) => !v.failureMode).map(([k]) => k);
       if (missing.length) { $('#manualMsg').textContent = `고장 유형을 고르세요: ${missing.join(', ')}`; return; }
       c.disabled = true;

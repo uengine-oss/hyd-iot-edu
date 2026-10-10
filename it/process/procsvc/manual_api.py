@@ -8,7 +8,7 @@ from fastapi.responses import Response
 
 from uuid import uuid4
 
-from . import manual_graph, manual_review, manual_extraction, manual_golden
+from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge
 from .manual_sources import MAX_BYTES
 
 
@@ -39,7 +39,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
-            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'))
+            catalog = graph(manual_knowledge.catalog)          # C1: the ids the document may point at, pinned with the run
+            inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'),catalog=catalog)
             seg = manual_extraction.engine.variables(inst).get('segment') or {}
             return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
         return await run(work)
@@ -51,10 +52,16 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
             value = manual_extraction.result(runtime(),source,instance_id,previous)
             if value.get('preview'):
+                # The graph tags a document's nodes with its tenant-scoped key, not the raw document id (F-1: the raw id
+                # made this document's own SOPs show up as another document's).
+                document = manual_review.document_key(tenant, source['document_id'])
                 # A077 (ontology-studio merge_warning): tell the reviewer *before* commit which proposed SOP ids another
                 # document or admin knowledge already owns. Read-only; the commit-time Conflict stays as the hard rule.
                 value['preview']['conflicts'] = graph(lambda session: manual_graph.sop_conflicts(
-                    session, source['document_id'], [p['id'] for p in value['preview']['procedures']]))
+                    session, document, [p['id'] for p in value['preview']['procedures']]))
+                # C1: knowledge ids that already exist (seed or another document) — drop the item and refer to the existing id
+                value['preview']['knowledge_conflicts'] = graph(lambda session: manual_knowledge.conflicts(
+                    session, value['preview'].get('knowledge'), document))
             return value
         return await run(work)
 
@@ -130,6 +137,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 plan['page_reviews'] = current['page_reviews']
             def commit_with_rules(session):
                 from . import skill_graph
+                manual_knowledge.check_graph(session, plan, manual_graph.skill_id)   # C1: action values · rule inputs, before any write
                 fms = sorted({p['failureMode'] for p in plan['procedures']})
                 plan['candidate_rules'] = {fm: session.execute_read(lambda tx, fm=fm: skill_graph.candidate_rules(tx, fm)) for fm in fms}
                 return manual_graph.commit(session, plan)
@@ -155,7 +163,16 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         return await run(lambda: start_golden(batch, body.get('questions'), body.get('by'), body.get('request_id')))
 
     @app.get('/api/kg/manuals/batches/{batch}/golden-report')
-    async def golden_report(batch: str):
+    async def golden_report(batch: str, optional: bool = False):
+        # A161-U1 (A160 결함 12): the portal asks "is there a report yet?" for every batch on screen; a 404 there is a red
+        # console error in the browser for a normal state. optional=1 answers 200 with null instead; without it, 404 as before.
+        if optional:
+            def maybe():
+                try:
+                    return manual_golden.result(runtime(), batch)
+                except KeyError:
+                    return None
+            return await run(maybe)
         return await run(lambda: manual_golden.result(runtime(), batch))
 
     @app.post('/api/kg/manuals/batches/{batch}/rollback')
@@ -165,6 +182,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             audit('-', body['by'], 'MANUAL_ROLLED_BACK', result)
             return result
         return await run(work)
+
+    @app.get('/api/kg/manuals/catalog')
+    async def catalog():
+        """C1: what a reviewed document may point at (components · symptoms · parts/suppliers · state variables · measures ·
+        atomic actions with min/max · roles · decision tables with their inputs · existing failure modes/causes/skills).
+        The review screen's pickers read this; the extraction agent gets the same object pinned as ontology_catalog."""
+        return await run(lambda: graph(manual_knowledge.catalog))
 
     @app.get('/api/kg/manuals')
     async def history():

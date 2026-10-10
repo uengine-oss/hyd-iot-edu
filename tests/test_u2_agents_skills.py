@@ -163,10 +163,10 @@ def test_codex_gets_the_skill_in_its_own_folder(tmp_path):
 
 def test_a_skill_from_an_earlier_attempt_does_not_stay_in_the_workspace(tmp_path):
     ws = workspace.for_run(tmp_path, "rerun")
-    first = workspace.provision(ws, agent_id="claude-code", schema_prompt="s", task={"id": "t"},
+    first = workspace.provision(ws, agent_id="claude-code", constitution="# 규칙", schema_prompt="s", task={"id": "t"},
                                 skills=[{"skill_name": "old-skill", "content": "# 옛 절차"}])
     assert first == [".claude/skills/old-skill/SKILL.md"]
-    assert workspace.provision(ws, agent_id="claude-code", schema_prompt="s", task={"id": "t"}, skills=[]) == []
+    assert workspace.provision(ws, agent_id="claude-code", constitution="# 규칙", schema_prompt="s", task={"id": "t"}, skills=[]) == []
     assert not (ws.path / ".claude" / "skills" / "old-skill").exists()
 
 

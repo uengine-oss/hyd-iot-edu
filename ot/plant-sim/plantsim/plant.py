@@ -17,6 +17,9 @@ FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
                "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
                "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
 HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+# C2: 정비 수행 모사의 복구 대상 부품 → 외란 변수 (온톨로지 Component id 도 받는다). 없으면 설비 전체를 되돌린다(이전과 같음).
+COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak",
+              "fan": "bearing_wear", "comp:fan": "bearing_wear"}
 # Named fault strengths. "high" is every kind's default (the lecture scenes that end in a PLC trip keep using it);
 # "moderate" is defined for the cooler only: TS1 settles at ~62.5 C, so the alarm stays up without the 65 C trip
 # (the window a coding-agent worker needs at TIME_SCALE 20, A146). The trip itself is untouched (plc.check_interlock).
@@ -45,6 +48,9 @@ class Unit:
     ctrl: plc.PlcState = field(default_factory=plc.PlcState)
     faults: dict[str, Fault] = field(default_factory=dict)   # attr -> ramp in progress
     dirty_status: bool = True
+    # C3: who asked for the last fault injection/restore on this unit ({id, kind, by, user_id, roles, at}) — published in
+    # plant.status so the process links the case this injection causes to the button press by id (no time-window guess)
+    injection: dict | None = None
 
     @property
     def fault(self) -> Fault | None:
@@ -88,7 +94,7 @@ class Plant:
 
     # ---- fault injection API ----
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
-               severity: str | None = None) -> dict:
+               severity: str | None = None, component: str | None = None, origin: dict | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
         step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
         strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
@@ -99,7 +105,11 @@ class Plant:
         with self.lock:
             u = self.units[asset]
             if kind == "restore":
-                plan = {attr: healthy for attr, healthy in HEALTHY.items() if getattr(u.state, attr) != healthy or attr in u.faults}
+                if component is not None and component not in COMPONENTS:
+                    raise ValueError(f"unknown component {component} (known: {sorted(COMPONENTS)})")
+                only = COMPONENTS.get(component) if component else None
+                plan = {attr: healthy for attr, healthy in HEALTHY.items()
+                        if (only is None or attr == only) and (getattr(u.state, attr) != healthy or attr in u.faults)}
             elif kind in FAULT_KINDS:
                 attr, default = FAULT_KINDS[kind]
                 if target is None and severity is not None:
@@ -112,10 +122,14 @@ class Plant:
             for attr, tgt in plan.items():
                 rate = (tgt - getattr(u.state, attr)) / max(1.0, float(ramp_sim_s))
                 u.faults[attr] = Fault(kind, attr, tgt, rate)
-            if plan:
+            # the unit's injection is always the *last* request: one without a press (the process's maintenance restore, a test
+            # script) clears the previous press, so a later alert is never linked to a press that no longer describes the unit
+            injection = dict(origin, kind=kind, at=now_iso()) if origin is not None else None
+            if plan or injection != u.injection:
                 u.dirty_status = True
+            u.injection = injection
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
-                    "target_health": plan.get("cooler_health", u.state.cooler_health)}
+                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection}
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
@@ -150,6 +164,7 @@ class Plant:
         st["sim_t"] = round(self.sim_t, 1)
         st["time_scale"] = self.time_scale
         st['disturbance_ramps'] = sorted(u.faults)
+        st['injection'] = u.injection
         return st
 
     def snapshot(self) -> dict:

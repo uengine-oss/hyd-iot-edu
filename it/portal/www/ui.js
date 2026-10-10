@@ -52,14 +52,14 @@ const UI = {
     'inst.running': '진행 중', 'inst.myTurn': '내 차례', 'inst.asked': '질문', 'inst.activity': '에이전트 활동', 'inst.list': '처리 건', 'inst.recent': '최근 50건', 'inst.filterRunning': '진행 중', 'inst.filterDone': '완료',
     'inst.empty': '아직 처리 건이 없습니다', 'inst.emptySub': '경보가 나면 여기에 나타납니다', 'inst.select': '처리 건을 선택하세요', 'inst.selectSub': '결과 · 흐름 · 기록을 볼 수 있습니다',
     'inst.noTodo': '지금 할 일이 없습니다', 'inst.noTodoSub': '차례가 오면 여기에 나타납니다', 'inst.off': '처리 건 기능이 꺼져 있습니다. 관리자에게 문의하세요.', 'inst.noConn': '처리 서비스에 연결할 수 없습니다',
-    'inst.tab.result': '결과', 'inst.tab.flow': '흐름', 'inst.tab.log': '기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
+    'inst.tab.result': '결과', 'inst.tab.flow': '진행 상황', 'inst.tab.log': '단계 표', 'inst.tab.record': '처리 기록', 'inst.started': '시작', 'inst.ended': '종료', 'inst.justStarted': '방금 시작', 'inst.elapsed': '분 경과', 'inst.took': '분 만에',
     'inst.values': '값', 'inst.initial': '시작 값', 'inst.steps': '단계', 'inst.events': '에이전트 활동', 'inst.graph': '지식 반영', 'inst.now': '지금', 'inst.next': '다음', 'inst.finished': '끝',
     'inst.stepsDone': '단계 완료', 'inst.waitingResult': '새 결과를 기다리는 단계', 'inst.endWaiting': '일부 경로가 종료 지점에 닿았습니다. 남은 단계가 끝나면 처리 건이 종료됩니다.',
     'inst.approval': '승인 전달', 'inst.effects': '이전 조치의 영향', 'inst.rework': '다시 수행', 'inst.reworkHistory': '다시 수행 이력', 'inst.reassess': '다시 평가', 'inst.woFailed': '정비 요청 전달 실패',
     'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'inst.noResult': '아직 결정된 조치가 없습니다', 'inst.noResultSub': '단계가 끝나면 결과가 여기에 나타납니다',
-    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_role': '승인 역할', 'var.alert_id': '경보',
+    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보',
     'inst.output': '출력', 'inst.gateway': '분기 판정', 'inst.due': '기한', 'inst.prevTask': '이전 단계', 'inst.inputs': '전달된 값', 'inst.raw': '원문',
     'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '질의 보기',
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',
@@ -106,7 +106,7 @@ const UI = {
     'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 DB 묶어 보기',
     'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
-    'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
+    'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
     'skill.allCauses': '고장 유형의 모든 원인', 'skill.noSteps': '절차 없음', 'skill.none': '없음', 'skill.noFm': '대상 고장 유형 없음', 'skill.add': '추가', 'skill.unsaved': '저장하지 않은 변경 사항',
     'skill.saved': '저장했습니다', 'skill.nameRequired': '이름을 입력하세요', 'skill.fromDoc': '등록한 매뉴얼에서 만든 조치 방법입니다. 매뉴얼 개정 화면에서 수정합니다.', 'skill.openDoc': '매뉴얼 개정 열기',
@@ -126,6 +126,10 @@ const UI = {
     'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
+    // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
+    'val.answered': '답함', 'val.unanswerable': '답할 수 없음', 'val.not_answerable': '답할 수 없음', 'val.ok': '정상', 'val.normal': '정상', 'val.abnormal': '비정상',
+    'val.recovered': '회복', 'val.not_recovered': '미회복', 'val.approved': '승인', 'val.rejected': '반려', 'val.pending': '대기',
+    'inst.cannotOpen': '이 처리 건은 열 수 없습니다',
     'empty.noData': '없음', 'loading': '불러오는 중…', 'error.load': '불러오지 못했습니다', 'more': '자세히', 'raw': '원문', 'yes': '예', 'no': '아니요', 'and': '·',
   },
   t(key, vars) {
@@ -144,7 +148,9 @@ const UI = {
   names: {}, namesVersion: 0,
   ID_RE: /\b(?:pattern|fm|cause|rule|skill|sym|ap|evd|msr|sv|dec|dt|act|part|sup|comp|sens|actr|role|org|sys|asset|obj|persp|ks|ms|step|ev|src|proc|task|gw|inp|xv|fc):[A-Za-z0-9_][A-Za-z0-9_.:-]*/g,
   name(id) { return (id && this.names[id]) || id || ''; },
-  idText(text) { return String(text ?? '').replace(this.ID_RE, m => this.names[m] || m); },
+  idText(text) { return this.words(String(text ?? '').replace(this.ID_RE, m => this.names[m] || m)); },
+  // A161-U1: 화면에 쓰지 않는 말(데이터 · 온톨로지 원문에 남은 것) → 화면 말. "정비창"은 "예정된 정비 시간"으로 부른다(사용자 결정 2026-10-09).
+  words(text) { return String(text ?? '').replace(/야간\s*정비창/g, '야간 정비 시간').replace(/정비창/g, '예정된 정비 시간'); },
   async loadNames() {
     try { const r = await fetch('names.json', { cache: 'no-store' }); if (r.ok) { this.names = await r.json(); this.namesVersion = Object.keys(this.names).length; } } catch (e) { /* 사전이 없으면 id 그대로 보인다 */ }
   },
@@ -185,6 +191,26 @@ const UI = {
     [/^source handler lease expired$/, () => '원천 처리기 임대 만료'],
     [/^[A-Z_]{4,}$/, (m, U) => U.status(m[0])],
   ],
+  /* ---------- A161-U1 화면 정리: 호스트 경로 → 파일 이름, 모델 이름 → "AI 모델", 내부 오류 문구 → 사용자 말 (원문은 접기에만) ---------- */
+  PATH_RE: /(?:[A-Za-z]:\\|\/(?:Users|home|private|tmp|var|root|opt|mnt|workspace|app)\/)[^\s"'`<>()\],;]*|(?:\.evidence|\.claude)\/[^\s"'`<>()\],;]*/g,
+  MODEL_RE: /\b(?:claude-(?:opus|sonnet|haiku)[\w.-]*|claude-\d[\w.-]*|gpt-[\w.-]+|o\d-[\w.-]+|gemini-[\w.-]+|frentis-[\w.-]+)\b/gi,
+  baseName(p) { const parts = String(p || '').split(/[\\/]+/).filter(Boolean); return parts.length ? parts[parts.length - 1] : ''; },
+  // 흐름 정의의 단계 · 이벤트 id(task:x · ev:x · gw:x)와 온톨로지 id 를 화면 이름으로 (A160 결함 11)
+  plain(text) {
+    return this.idText(String(text ?? '')).replace(/\b(?:task|ev|gw):([A-Za-z0-9_-]+)/g, (m, id) => { const n = this.flowName(id); return n !== id ? n : (this.names[m] || id.replace(/[-_]/g, ' ')); });
+  },
+  clean(text) {
+    if (text == null) return '';
+    return this.words(String(text).replace(this.PATH_RE, m => this.baseName(m) || '작업 폴더').replace(this.MODEL_RE, 'AI 모델'));
+  },
+  // 도구 결과 문구로 본 상태: ok | warn(잘림 · 막힘) | fail. 칩이 "완료"인데 실제로는 잘린 결과를 받은 경우를 가려낸다(A160 결함 5)
+  outcome(output, isError) {
+    const s = typeof output === 'string' ? output : (output && typeof output === 'object' && typeof output.error === 'string' ? output.error : '');
+    if (/exceeds maximum allowed tokens|result \(\d[\d,]*\s*characters\) exceeds/i.test(s)) return { tone: 'warn', label: this.t('trace.truncated'), text: this.t('trace.truncatedText') };
+    if (/Contains brace with quote|requires approval|was blocked|not allowed|permission denied for this tool|denied by/i.test(s)) return { tone: 'blocked', label: this.t('trace.blocked'), text: this.t('trace.blockedText') };
+    if (isError) return { tone: 'fail', label: this.t('trace.failed'), text: '' };
+    return { tone: 'ok', label: '', text: '' };
+  },
   logText(raw) {
     const text = String(raw ?? '').trim(); if (!text) return '';
     return text.split(/;\s*/).map(s => s.trim()).filter(Boolean).map(seg => {
@@ -208,7 +234,7 @@ const UI = {
   states: {
     PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
     ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", CLOSED: "종결",
-    ESCALATED: "책임자 확인 중", REJECTED_BY_OPERATOR: "조치 거부", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
+    ESCALATED: "미달", REJECTED_BY_OPERATOR: "조치 거부", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
     PARTIAL: "일부 실행", REJECTED: "반려", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
     RUN: "운전 중", TRIP: "보호 정지", STOP: "계획 정지", RAISED: "경보 발생", RAISE: "경보 발생", CLEAR: "경보 해제", CLEARING: "회복 확인 중",
     CANDIDATE: "이상 징후", IDLE: "감시 중", VIA_HITL: "사람 승인 필요", REMOTE_AUTO: "원격 자동", REMOTE_MANUAL: "원격 수동", LOCAL: "현장 제어",
@@ -224,8 +250,8 @@ const UI = {
     neutral: ['TODO', 'NEW', 'SKIPPED', 'IDLE', 'STOP', 'NOT_APPLICABLE', 'GUIDE_RECEIVED', 'LOCAL', 'DISCARDED'],
     accent: ['IN_PROGRESS', 'SUBMITTED', 'RUNNING', 'STARTED', 'FB_REQUESTED', 'APPROVED', 'CMD_ISSUED', 'AWAITING_ACK', 'REMOTE_AUTO', 'RE_OBSERVING', 'DELIVERED'],
     success: ['DONE', 'COMPLETED', 'CLOSED', 'EXECUTED', 'RESOLVED', 'RESOLVED_WITHOUT_ACTION', 'RUN', 'ACKED', 'WORK_ORDER_CREATED', 'EVALUATED', 'CLEAR', 'OK'],
-    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'ESCALATED', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE'],
-    danger: ['CANCELLED', 'FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
+    warning: ['PENDING', 'HUMAN_ASKED', 'PENDING_APPROVAL', 'AWAITING_APPROVAL', 'PARTIAL', 'VIA_HITL', 'WITHHELD', 'REMOTE_MANUAL', 'CLEARING', 'CANDIDATE'],
+    danger: ['ESCALATED', 'CANCELLED', 'FAILED', 'REJECTED', 'REJECTED_BY_OPERATOR', 'REJECTED_BY_GUARDRAIL', 'NO_FEASIBLE_OPTION', 'TRIP', 'RAISED', 'RAISE'],
   },
   status(value) { return this.states[value] || value || "–"; },
   toneOf(value) { for (const [tone, list] of Object.entries(this.tones)) if (list.includes(value)) return tone; return 'neutral'; },
@@ -237,7 +263,7 @@ const UI = {
 
   /* ---------- 수행 주체 (명칭표 "행위자") ---------- */
   performers: { 'sys:agent': 'AI 에이전트', agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
-    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
+    'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
     'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
   who(id) { return this.performers[id] || id || '–'; },
 
@@ -318,7 +344,7 @@ const UI = {
     failure_cost: ['돌발 고장 비용', '만원'], claim_cost: ['품질 클레임 비용', '만원'],
     fg_item: ['완제품 품목', ''], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', '시간'],
     cleans_60d: ['최근 60일 세척 횟수', '회'], last_clean_days: ['마지막 세척 후', '일'], clean_h: ['세척 소요', '시간'],
-    clean_cost: ['세척 비용', '만원'], night_in_h: ['야간 정비창까지', '시간'], oil_risk_per_h: ['시간당 작동유 위험 비용', '만원/시간'], mtbf_h: ['평균 고장 간격', '시간'],
+    clean_cost: ['세척 비용', '만원'], night_in_h: ['예정된 정비 시간까지', '시간'], oil_risk_per_h: ['시간당 작동유 위험 비용', '만원/시간'], mtbf_h: ['평균 고장 간격', '시간'],
     hot_min: ['과열 지속 시간', '분'], auto_lot: ['자동차 고객 로트', ''], auto_qty: ['자동차 고객 수량', '개'],
     gen_lot: ['일반 고객 로트', ''], gen_qty: ['일반 고객 수량', '개'], inspect_h: ['검사 소요', '시간'],
     inspect_cost: ['전수검사 비용', '만원'], sample_cost: ['표본검사 비용', '만원'],
@@ -445,6 +471,25 @@ Object.assign(UI.terms, {
     if (timeout > 0) setTimeout(() => node.remove(), timeout);
     return node;
   };
+
+  // A161-U1 (A160 결함 11): 브라우저 기본 파일 칸("Choose File / No file chosen")을 한국어 파일 고르기(지식 관리와 같은 모양)로 바꾼다.
+  // input 자체는 그대로 두고 감싸기만 하므로 각 화면의 change 처리 · files 읽기는 바뀌지 않는다.
+  UI.enhanceFiles = function (root = document) {
+    root.querySelectorAll('input[type=file]').forEach(input => {
+      if (input.closest('.file-picker') || input.dataset.enhanced) return;
+      input.dataset.enhanced = '1';
+      const wrap = document.createElement('label'); wrap.className = 'file-picker';
+      const btn = document.createElement('span'); btn.className = 'btn small'; btn.textContent = '파일 선택';
+      const name = document.createElement('span'); name.className = 'file-name'; name.textContent = '선택한 파일 없음';
+      input.parentNode.insertBefore(wrap, input); wrap.append(btn, input, name);
+      if (!input.getAttribute('aria-label')) input.setAttribute('aria-label', '파일 선택');
+      input.addEventListener('change', () => { name.textContent = input.files && input.files[0] ? input.files[0].name : '선택한 파일 없음'; });
+    });
+  };
+  if (typeof document !== 'undefined' && document.addEventListener && typeof MutationObserver !== 'undefined') {
+    const boot = () => { UI.enhanceFiles(); let t = 0; new MutationObserver(() => { if (!t) t = setTimeout(() => { t = 0; UI.enhanceFiles(); }, 50); }).observe(document.body, { childList: true, subtree: true }); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else if (document.body) boot();
+  }
 
   // 확인 대화상자: Promise<boolean>. 위험한 행동(danger)은 확인 버튼이 빨강이고, 기본 초점은 취소에 둔다.
   UI.confirm = function ({ title = '', body = '', ok, cancel, danger = false } = {}) {

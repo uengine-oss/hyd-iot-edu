@@ -131,6 +131,31 @@ def test_skill_is_an_sop_matched_to_a_failure_mode():
     assert ov.validate([skill, step, fm], ok, S) == []
 
 
+
+def test_prevented_by_is_an_additive_preventive_maintenance_relation():
+    """2026-10-09 확정: 예방 조치(정기 정비) 관계 하나만 더한다. 기존 두 관계와 같은 양식이고, 스킬 필수 조건만 넓힌다."""
+    by = {r["type"]: r for r in S["relationships"]}
+    pv = by["PREVENTED_BY"]
+    assert pv["from"] == ["FailureMode"] and pv["to"] == ["Skill"] and pv["cardinality"] == "N:M"
+    assert [p["name"] for p in pv["properties"]] == ["_manual_document"] == [p["name"] for p in by["REMEDIED_BY"]["properties"]]
+    assert "EN 13306" in pv["description"] and "ISO 14224" in pv["description"]
+    assert {"MITIGATED_BY", "REMEDIED_BY"} <= set(by)                              # 기존 관계는 그대로
+    req = next(r for r in ov.classes_by_name(S)["Skill"]["requiredRelationships"] if r.get("fromClass") == "FailureMode")
+    assert req["type"] == ["MITIGATED_BY", "REMEDIED_BY", "PREVENTED_BY"]
+    skill = _node(["Skill"], id="skill:pm", name="PM", sopId="SOP-PM-01", description="d", kind="work_order")
+    step = _node(["Step"], id="SOP-PM-01/1", order=1, text="t")
+    fm = _node(["FailureMode"], id="fm:x", name="F")
+    ok = [_rel("HAS_STEP", "skill:pm", ["Skill"], "SOP-PM-01/1", ["Step"]),
+          _rel("PREVENTED_BY", "fm:x", ["FailureMode"], "skill:pm", ["Skill"], _manual_document="doc")]
+    assert ov.validate([skill, step, fm], ok, S) == []
+    wrong = [ok[0], _rel("PREVENTED_BY", "skill:pm", ["Skill"], "fm:x", ["FailureMode"])]
+    assert "PREVENTED_BY" in "\n".join(ov.validate([skill, step, fm], wrong, S))
+    gen = {"schema_prompt.md": ov.gen_prompt(S), "ontology-schema.ttl": ov.gen_ttl(S)}
+    for name, text in gen.items():
+        assert "PREVENTED_BY" in text and text == (ov.V2 / name).read_text(encoding="utf-8"), name   # 생성 파일이 원본과 같다
+    checks = (ov.V2 / "seed_checks.cypher").read_text(encoding="utf-8")
+    assert checks.count("MITIGATED_BY|REMEDIED_BY|PREVENTED_BY") == 2 and "MITIGATED_BY|REMEDIED_BY]" not in checks
+
 def test_minimal_set_bpmn_dmn_bsc_links_exist():
     """BPMN 시작 · 대상 · 데이터 출력, DMN 임계값 검사, 입력 데이터 → 상태 변수 · 성과 지표 연결이 스키마에 있다."""
     by = {r["type"]: r for r in S["relationships"]}

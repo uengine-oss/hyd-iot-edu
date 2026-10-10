@@ -1,0 +1,41 @@
+{
+  "_comment": "T8 예시 — flow.bpmn 을 포털 흐름 가져오기에서 고를 부품 · 칸 · 조건(가져오기 매핑 모양: name · start · lanes · tasks · timers · flows). 채울 칸: agent 의 '<내 에이전트 id>' 는 포털이 만든 id(agent:u-…), 레인 역할 '회의 주관자' 는 업무분장 '역할 만들기'로 만든 역할. 서버 gcal 과 도구 create_event · get_event, extract 의 결과 경로는 설계 문서(3.6)의 자리 이름이다 — 강사가 고른 구글 서버의 실제 도구 이름 · 결과 모양으로 바꾼다(T5 표). 'human:approve'(G1)와 svc:mcp-call 의 extract({값이름: {path, type}}) · effect(G3)는 포털에 있다. 결과 경로는 강사가 채움 — 서버를 고르기 전에는 그 경로 자리 때문에 가져오기가 거절되고, 그 사유는 tests/test_capstone_kit.py 에 기대값으로 적혀 있다.",
+  "name": "분기 고객 리뷰 회의 준비 (예시)",
+  "start": {"kind": "human", "fields": [{"key": "request_id", "text": "회의 요청 번호 (예: QBR-2026-Q4-01)", "type": "text"}]},
+  "lanes": {"Lane_organizer": "회의 주관자"},
+  "tasks": {
+    "Activity_propose": {
+      "part": "agent", "agent": "<내 에이전트 id>", "inputs": ["request_id"],
+      "instruction": "회의 요청 request_id 한 건에 대해 qbr-prep 요령대로 자료를 찾아 요약하고, 운영 규칙(D1)을 지키는 시간 후보를 순위와 함께 proposal 로 낸다. 뺀 안은 losers 에 규칙 번호와 수치로 이유를 쓴다. 승인 전에는 조회 · 계산 · 요약만 한다.",
+      "outputs": [{"key": "proposal", "text": "제안(추천 1 + 지는 안 · 자료 · 안건)", "type": "object"}]
+    },
+    "Activity_approve": {
+      "part": "human:approve", "inputs": ["proposal"],
+      "config": {"options": "proposal.options", "recommended": "proposal.recommended", "losers": "proposal.losers", "docs": "proposal.docs"}
+    },
+    "Activity_invite": {
+      "part": "svc:mcp-call", "inputs": ["approved_option", "proposal"],
+      "config": {"server": "gcal", "tool": "create_event",
+                 "arguments": {"summary": "가온상사 4분기 리뷰 ({request_id})", "start": "{approved_option.slot}", "room": "{approved_option.room}",
+                               "attachments": "{proposal.docs}"},
+                 "output": "calendar_event", "extract": {"event_id": {"path": "<일정 만들기 결과에서 일정 id 가 든 JSON 경로>", "type": "Text"}}}
+    },
+    "Activity_wait": {"part": "svc:wait", "config": {"duration": "P1D", "label": "응답 마감까지 대기"}},
+    "Activity_check": {
+      "part": "svc:mcp-call", "inputs": ["event_id"],
+      "config": {"server": "gcal", "tool": "get_event", "arguments": {"event_id": "{event_id}"}, "output": "attendance",
+                 "extract": {"all_required_accepted": {"path": "<일정 읽기 결과에서 필수 참석자 전원 수락 여부(참/거짓)가 든 JSON 경로>", "type": "Boolean"}}, "effect": false}
+    },
+    "Activity_report_ok": {"part": "svc:report", "inputs": ["request_id"],
+                           "config": {"outcome": "정상", "title": "{request_id} 회의 확정", "summary": "필수 참석자 전원 수락 — 일정 {event_id}"}},
+    "Activity_report_ng": {"part": "svc:report", "inputs": ["request_id"],
+                           "config": {"outcome": "미달", "title": "{request_id} 회의 미확정", "summary": "필수 참석자 거절 또는 무응답 — 다시 조율 필요"}},
+    "Activity_report_delay": {"part": "svc:report", "inputs": ["request_id"],
+                              "config": {"outcome": "승인 지연", "title": "{request_id} 승인 지연", "summary": "주관자 승인이 4시간 넘게 없습니다 — 일정은 아직 만들지 않았습니다"}}
+  },
+  "timers": {"Event_approve_delay": "PT4H"},
+  "flows": {
+    "Flow_yes": {"var": "all_required_accepted", "op": "==", "value": true},
+    "Flow_no": {"default": true}
+  }
+}

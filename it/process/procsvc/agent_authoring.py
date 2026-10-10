@@ -7,7 +7,10 @@
   activity_agent_map  (정의 id, 단계 id) → 에이전트. 정의(BPMN) 원본은 그대로 두고, 흐름이 그 단계에 닿을 때 작업 행의 user_id 를
                   그 에이전트로 쓴다(apply_agent_map — inbox.apply_advance 가 엔진의 다섯 자리에서 부른다). 워커는 작업 행 user_id 로
                   프로필을 읽으므로(agent-worker context.prepare) 배정 = 실제 실행 담당. 적용 기록은 task_assignments(kind='agent_map').
-  reset           포털에서 만든 것(origin='user' 에이전트 · 스킬 · 업무분장, 모든 단계 배정)만 지운다. 기본은 그대로.
+  reset           포털에서 만든 것(origin='user' 에이전트 · 스킬 · 업무분장 · 역할, 모든 단계 배정)만 지운다. 기본은 그대로.
+  역할 만들기     G10(전체 과정 랩업): users 의 role:<키> 행(사람 아님, origin='user'). 흐름 가져오기는 레인 이름 = 역할 이름이면 그 역할로
+                  잇는다(bpmn_import.merge_mapping) — 그래서 역할 이름은 테넌트 안에서 겹치지 않게 받는다. 흐름 정의가 쓰는 역할은
+                  지우지 않는다(지우기 · 되돌리기 모두).
 
 원본(process-gpt-vue3@867e8cf): AgentField.vue:64-170(이름 · 역할 · 목표 · 성격 · 도구(등록된 MCP 서버) · 스킬 · 모델),
 ProcessGPTBackend.ts:4250-4306(putAgent · deleteAgent), :4393-4441(replaceAgentSkills · deleteAgentSkill · deleteAgentSkillsBySkill),
@@ -30,6 +33,8 @@ USER = "user"
 SEED = "seed"
 KIND_MAP = "agent_map"
 MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,99}$")
+ROLE_KEY_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")
+ROLE_KINDS = ("manager", "operator")          # users.role — agents_store.ROLE_WORDS 의 사람 쪽 두 낱말(시드와 같은 값)
 LIMITS = {"name": 60, "role": 200, "goal": 500, "persona": 2000, "description": 300, "content": 60000}
 
 
@@ -137,8 +142,17 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
         missing = [s for s in skills if s not in stored]
         if missing:
             raise AuthoringError(f"없는 스킬은 붙일 수 없습니다: {', '.join(missing)}")
-    return {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None,
-            "tools": ",".join(tools) if tools else None, "skills": skills}
+    out = {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None,
+           "tools": ",".join(tools) if tools else None, "skills": skills}
+    if "work_rules" in body:            # G9: 업무 규칙 키 — 칸이 없으면 고치기에서 지금 값을 그대로 둔다
+        key = str(body.get("work_rules") or "").strip() or None
+        from . import work_rules
+        try:
+            work_rules.rules_for(key)
+        except work_rules.UnknownWorkRules as e:
+            raise AuthoringError(str(e)) from e
+        out["work_rules"] = key
+    return out
 
 
 def _new_agent_id(repo, tenant_id: str) -> str:
@@ -152,7 +166,8 @@ def _new_agent_id(repo, tenant_id: str) -> str:
 def create_agent(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
     f = _agent_fields(repo, tenant_id, body)
     skills = f.pop("skills")
-    row = {"id": _new_agent_id(repo, tenant_id), **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id, "origin": USER}
+    row = {"id": _new_agent_id(repo, tenant_id), "work_rules": None, **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id,
+           "origin": USER}                                  # G9: 칸을 안 주면 업무 규칙 없음(공통부만) — Pg 의 null 과 같은 모양
     repo.write_agent(row, skills, create=True)
     log.info("agent created %s by %s", row["id"], by)
     return _agent(repo, tenant_id, row["id"])
@@ -182,7 +197,8 @@ def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *
             name, n = f"{base} {n}", n + 1
     skills = [r["skill_name"] for r in repo.list_agent_skills(tenant_id, agent_id)]
     payload = {"name": name, "goal": src.get("goal") or "", "role": src.get("role") or "", "persona": src.get("persona") or "",
-               "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills}
+               "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills,
+               "work_rules": src.get("work_rules") or ""}             # G9: 사본도 원본과 같은 업무 규칙 아래에서 돈다
     if not payload["goal"].strip():
         payload["goal"] = f"{_name(src)}의 사본"
     return create_agent(repo, tenant_id, payload, by=by)
@@ -358,7 +374,7 @@ def assignment_board(rt) -> dict:
     from . import inbox, instance_mode
     bridge = getattr(instance_mode, "AGENT_BRIDGE", None)
     members = repo.list_role_members(tenant_id)
-    roles = [{"id": r["id"], "name": _name(r),
+    roles = [{"id": r["id"], "name": _name(r), "origin": origin_of(r),
               "members": [{"id": m["user_id"], "name": names.get(m["user_id"], m["user_id"]), "origin": origin_of(m)}
                           for m in members if m["role_id"] == r["id"]]} for r in inbox.role_users(repo, tenant_id)]
     return {"steps": steps, "roles": roles, "people": [{"id": u["id"], "name": _name(u)} for u in inbox.person_users(repo, tenant_id)],
@@ -420,6 +436,83 @@ def apply_agent_map(rt, inst: dict, adv) -> None:
             participants.append(agent["id"])
 
 
+# ---------------------------------------------------------------- G10 역할 만들기 · 지우기
+def _role_rows(repo, tenant_id: str) -> list[dict]:
+    from . import inbox
+    return [u for u in inbox.role_users(repo, tenant_id) if not u.get("is_agent")]
+
+
+def roles_in_definitions(rt) -> dict[str, list[str]]:
+    """흐름 정의(모든 판본)의 roles[].endpoint → 그 역할을 쓰는 정의 이름. 쓰는 역할은 지우지 않는다(작업이 갈 곳을 잃는다)."""
+    out: dict[str, list[str]] = {}
+    rows = list(rt.repo.list_definitions(rt.tenant_id)) + [{"id": rt.defn.id, "name": rt.defn.name, "definition": rt.defn.raw}]
+    for d in rows:
+        raw = d.get("definition") or {}
+        for r in raw.get("roles") or []:
+            ep = str((r or {}).get("endpoint") or "") if isinstance(r, dict) else ""
+            for one in csv_list(ep):
+                name = d.get("name") or raw.get("processDefinitionName") or d.get("id")
+                if one.startswith("role:") and name not in out.setdefault(one, []):
+                    out[one].append(name)
+    return out
+
+
+#: 아직 끝나지 않은 작업 — 기다림(TODO) · 진행(IN_PROGRESS) · 제출 뒤 처리 대기(SUBMITTED) · 보류(PENDING). 그 담당 역할을 지우면 작업이 갈 곳을 잃는다
+OPEN_STATUSES = ("TODO", "IN_PROGRESS", "SUBMITTED", "PENDING")
+
+
+def role_open_rows(repo, tenant_id: str, role_id: str) -> list[dict]:
+    """이 역할이 담당(user_id — 여러 담당이면 쉼표 목록)인 끝나지 않은 작업."""
+    return [w for status in OPEN_STATUSES for w in repo.list_workitems(status=status, tenant_id=tenant_id, limit=None)
+            if role_id in csv_list(w.get("user_id") or "")]
+
+
+def create_role(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
+    """학생 흐름의 레인(담당자)을 받을 역할을 만든다: users 행 role:<키>, 사람 아님, origin='user'.
+    키를 비우면 role:u-<6자리>. 이름은 테넌트 안 역할끼리 겹치면 거절 — 흐름 가져오기가 레인 이름으로 역할을 잇기 때문."""
+    name = _text(body, "name", "역할 이름", required=True)
+    key = str(body.get("key") or "").strip().lower()
+    if key and not ROLE_KEY_RE.match(key):
+        raise AuthoringError("키는 소문자 · 숫자 · 하이픈(-) 1~40자, 첫 글자는 소문자나 숫자여야 합니다 (예: s01-organizer)")
+    kind = str(body.get("kind") or "manager").strip()
+    if kind not in ROLE_KINDS:
+        raise AuthoringError(f"역할 종류는 {' · '.join(ROLE_KINDS)} 가운데 하나여야 합니다")
+    existing = _role_rows(repo, tenant_id)
+    taken = {u["id"] for u in repo.list_users(None, tenant_id)}
+    if not key:
+        key = "u-" + secrets.token_hex(3)
+        while "role:" + key in taken:
+            key = "u-" + secrets.token_hex(3)
+    rid = "role:" + key
+    if rid in taken:
+        raise AuthoringError(f"이미 있는 id 입니다: {rid}", 409)
+    same = next((u for u in existing if _name(u).strip().casefold() == name.casefold()), None)
+    if same is not None:
+        raise AuthoringError(f"같은 이름의 역할이 이미 있습니다: {_name(same)} ({same['id']}) — 흐름 가져오기는 레인 이름으로 역할을 잇습니다", 409)
+    row = {"id": rid, "username": name, "role": kind, "is_agent": False, "agent_type": None, "tenant_id": tenant_id, "origin": USER}
+    repo.write_role(row)
+    log.info("role %s (%s) created by %s", rid, name, by)
+    return {"id": rid, "name": name, "kind": kind, "origin": USER, "members": []}
+
+
+def delete_role(rt, role_id: str, *, by: str | None = None) -> dict:
+    repo, tenant_id = rt.repo, rt.tenant_id
+    row = next((u for u in _role_rows(repo, tenant_id) if u["id"] == role_id), None)
+    if row is None:
+        raise AuthoringError(f"그런 역할이 없습니다: {role_id}", 404)
+    if origin_of(row) != USER:
+        raise AuthoringError(f"기본 역할({_name(row)})은 지울 수 없습니다 — 수업 기준이라 보호합니다", 403)
+    used = roles_in_definitions(rt).get(role_id)
+    if used:
+        raise AuthoringError(f"흐름 정의 {', '.join(used)} 가 이 역할을 담당자로 씁니다 — 흐름을 먼저 지우거나 바꾸세요", 409)
+    open_rows = role_open_rows(repo, tenant_id, role_id)
+    if open_rows:
+        raise AuthoringError(f"이 역할에 끝나지 않은 작업이 {len(open_rows)}건 있습니다 — 끝난 뒤 지우세요", 409)
+    repo.remove_role(tenant_id, role_id)
+    log.info("role %s deleted by %s", role_id, by)
+    return {"id": role_id, "deleted": True}
+
+
 # ---------------------------------------------------------------- 역할 → 사람
 def add_member(repo, tenant_id: str, role_id: str, user_id: str) -> dict:
     from . import inbox
@@ -459,9 +552,11 @@ def reset(rt, *, by: str | None = None) -> dict:
     if busy:
         raise AuthoringError(f"내가 만든 에이전트가 지금 실행 중인 작업이 {len(busy)}건 있습니다 — 끝난 뒤 다시 되돌리세요(아무것도 지우지 않았습니다)", 409)
     moved = return_open_rows(rt, ids, "기준으로 되돌리기 — 기본 담당으로", by)
-    counts = repo.reset_user_authoring(tenant_id)
+    used = roles_in_definitions(rt)                       # G10: 흐름 정의가 쓰는 역할은 남긴다(흐름을 지우면 다음 되돌리기에서 지워진다)
+    kept_roles = [u["id"] for u in _role_rows(repo, tenant_id) if origin_of(u) == USER and u["id"] in used]
+    counts = repo.reset_user_authoring(tenant_id, keep_roles=kept_roles)
     log.info("agents reset by %s: %s", by, counts)
-    return {**counts, "returned_tasks": moved}
+    return {**counts, "kept_roles": kept_roles, "returned_tasks": moved}
 
 
 # ---------------------------------------------------------------- 저장소 (Memory · Pg)
@@ -529,7 +624,21 @@ class MemoryAuthoring:
             if m["tenant_id"] == tenant_id and m["role_id"] == role_id and m["user_id"] == user_id:
                 m["origin"] = origin
 
-    def reset_user_authoring(self, tenant_id: str) -> dict:
+    def write_role(self, row: dict) -> None:
+        if row["id"] in self.users:
+            raise AuthoringError(f"이미 있는 id 입니다: {row['id']}", 409)
+        self.users[row["id"]] = dict(row, updated_at=now_iso(), created_at=now_iso())
+
+    def remove_role(self, tenant_id: str, role_id: str) -> None:
+        u = self.users.get(role_id)
+        if not u or u.get("is_agent") or origin_of(u) != USER or u.get("tenant_id", "hyd") != tenant_id:
+            raise AuthoringError("기본 역할이거나 이미 지워진 역할이라 지우지 않았습니다", 409)
+        del self.users[role_id]
+        self.role_members = [m for m in self.role_members if m["role_id"] != role_id]      # Pg 는 FK on delete cascade
+
+    def reset_user_authoring(self, tenant_id: str, keep_roles: list[str] | tuple = ()) -> dict:
+        roles = [uid for uid, u in self.users.items() if u.get("tenant_id", "hyd") == tenant_id and not u.get("is_agent")
+                 and uid.startswith("role:") and origin_of(u) == USER and uid not in keep_roles]
         agents = [uid for uid, u in self.users.items() if u.get("tenant_id", "hyd") == tenant_id and u.get("is_agent") and origin_of(u) == USER]
         skills = [n for (t, n), s in self._skill_rows().items() if t == tenant_id and origin_of(s) == USER]
         maps = [k for k in self._maps() if k[0] == tenant_id]
@@ -542,25 +651,28 @@ class MemoryAuthoring:
         for n in skills:
             self.remove_skill(tenant_id, n)
         self.role_members = [m for m in self.role_members if m not in members]
+        for rid in roles:
+            self.users.pop(rid, None)
+            self.role_members = [m for m in self.role_members if m["role_id"] != rid]
         return {"agents": len(agents), "skills": len(skills), "attachments": before - len(self._agent_skill_rows()),
-                "assignments": len(maps), "role_members": len(members)}
+                "assignments": len(maps), "role_members": len(members), "roles": len(roles)}
 
 
 class PgAuthoring:
-    AGENT_COLS = ("username", "role", "goal", "persona", "model", "tools")
+    AGENT_COLS = ("username", "role", "goal", "persona", "model", "tools", "work_rules")
 
     def write_agent(self, row: dict, skills: list[str], *, create: bool) -> None:
         with self._conn() as c, c.transaction():
             if create:
-                c.execute("insert into users (id, username, role, is_agent, agent_type, goal, persona, model, tools, tenant_id, origin, updated_at) "
-                          "values (%s, %s, %s, true, 'agent', %s, %s, %s, %s, %s, %s, now())",
+                c.execute("insert into users (id, username, role, is_agent, agent_type, goal, persona, model, tools, work_rules, tenant_id, origin, updated_at) "
+                          "values (%s, %s, %s, true, 'agent', %s, %s, %s, %s, %s, %s, %s, now())",
                           (row["id"], row["username"], row.get("role"), row.get("goal"), row.get("persona"), row.get("model"), row.get("tools"),
-                           row.get("tenant_id") or "hyd", row.get("origin") or USER))
+                           row.get("work_rules"), row.get("tenant_id") or "hyd", row.get("origin") or USER))
             else:
-                n = c.execute("update users set username=%s, role=%s, goal=%s, persona=%s, model=%s, tools=%s, updated_at=now() "
+                n = c.execute("update users set username=%s, role=%s, goal=%s, persona=%s, model=%s, tools=%s, work_rules=%s, updated_at=now() "
                               "where id=%s and tenant_id=%s and is_agent and origin='user'",
                               (row["username"], row.get("role"), row.get("goal"), row.get("persona"), row.get("model"), row.get("tools"),
-                               row["id"], row.get("tenant_id") or "hyd")).rowcount
+                               row.get("work_rules"), row["id"], row.get("tenant_id") or "hyd")).rowcount
                 if n != 1:
                     raise AuthoringError("기본 에이전트이거나 이미 지워진 에이전트라 고치지 않았습니다", 409)
             c.execute("delete from agent_skills where user_id=%s and tenant_id=%s", (row["id"], row.get("tenant_id") or "hyd"))
@@ -620,7 +732,21 @@ class PgAuthoring:
             c.execute("insert into role_members (tenant_id, role_id, user_id, origin) values (%s, %s, %s, %s) on conflict do nothing",
                       (tenant_id, role_id, user_id, origin))
 
-    def reset_user_authoring(self, tenant_id: str) -> dict:
+    def write_role(self, row: dict) -> None:
+        with self._conn() as c:
+            n = c.execute("insert into users (id, username, role, is_agent, agent_type, tenant_id, origin, updated_at) "
+                          "values (%s, %s, %s, false, null, %s, 'user', now()) on conflict (id) do nothing",
+                          (row["id"], row["username"], row.get("role"), row.get("tenant_id") or "hyd")).rowcount
+        if n != 1:
+            raise AuthoringError(f"이미 있는 id 입니다: {row['id']}", 409)
+
+    def remove_role(self, tenant_id: str, role_id: str) -> None:
+        with self._conn() as c:      # role_members 는 FK on delete cascade
+            if c.execute("delete from users where id=%s and tenant_id=%s and not is_agent and id like 'role:%%' and origin='user'",
+                         (role_id, tenant_id)).rowcount != 1:
+                raise AuthoringError("기본 역할이거나 이미 지워진 역할이라 지우지 않았습니다", 409)
+
+    def reset_user_authoring(self, tenant_id: str, keep_roles: list[str] | tuple = ()) -> dict:
         with self._conn() as c, c.transaction():
             maps = c.execute("delete from activity_agent_map where tenant_id=%s", (tenant_id,)).rowcount
             attachments = c.execute("""delete from agent_skills a where a.tenant_id=%s and (
@@ -630,4 +756,6 @@ class PgAuthoring:
             agents = c.execute("delete from users where tenant_id=%s and is_agent and origin='user'", (tenant_id,)).rowcount
             skills = c.execute("delete from tenant_skills where tenant_id=%s and origin='user'", (tenant_id,)).rowcount
             members = c.execute("delete from role_members where tenant_id=%s and origin='user'", (tenant_id,)).rowcount
-        return {"agents": agents, "skills": skills, "attachments": attachments, "assignments": maps, "role_members": members}
+            roles = c.execute("delete from users where tenant_id=%s and not is_agent and id like 'role:%%' and origin='user' and not (id = any(%s))",
+                              (tenant_id, list(keep_roles))).rowcount
+        return {"agents": agents, "skills": skills, "attachments": attachments, "assignments": maps, "role_members": members, "roles": roles}

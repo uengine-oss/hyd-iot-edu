@@ -24,40 +24,6 @@ _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 #: is what the worker stored after the run; keep the two apart.)
 RESULT_FILE = "output/result.json"
 
-CONSTITUTION = """# HYD 설비 이상 조치 — ProcessGPT 업무 에이전트 작업 규칙
-
-당신은 ProcessGPT 업무 프로세스 안에서 실행되는 에이전트입니다. 프로세스 인스턴스의 한 작업(todolist 한 줄)만 맡습니다.
-
-## 반드시
-- 작업 디렉터리 밖의 파일을 읽거나 수정하지 마세요. 홈 디렉터리(`~/.claude` 등)를 찾아보지 마세요.
-- 연결된 MCP 도구가 있으면 추측 대신 도구로 확인하세요. 지식은 온톨로지(Neo4j MCP), 현황·업무 값은 업무 DB(enterprise MCP),
-  규칙 판정은 DMN 도구(hyd-dmn MCP)의 결정론적 결과를 씁니다. 규칙을 임의로 해석해 바꾸지 않습니다.
-- 모든 판단에 온톨로지 노드 id(cause:…, fm:…, skill:…, rule:…, ms:…)를 인용합니다.
-- 확실하지 않은 값을 지어내지 말고, 모르면 모른다고 결과에 적으세요. 조회 실패와 값 없음을 구분합니다.
-- 결과는 지시된 제출 형식(JSON 객체)으로 작업 디렉터리의 `output/result.json` 파일에 쓰거나 마지막 메시지에 냅니다.
-  파일에 썼으면 마지막 메시지는 짧은 확인 한 줄만 쓰고 결과 JSON을 되풀이하지 않습니다. 긴 결과(절·단계가 많은 추출 등)는 반드시 파일로 냅니다.
-- 계산 스크립트가 필요하면 작업 디렉터리 안에 파일로 쓰고 `python <파일>` 한 명령으로 실행하세요. `cd`·`;`·환경변수 설정을 섞은 명령은 승인되지 않습니다.
-- 근거가 없어 완료할 수 없으면 값을 꾸며 폼을 채우지 마세요. 보류만 담은 JSON
-  {"__deferred__":{"status":"UNKNOWN","reason":"보류 이유","evidence":{}}}를 제출하세요.
-  조회 실패/결측은 UNKNOWN, 조회했으나 모든 원인 근거가 불일치하면 UNSUPPORTED입니다.
-  evidence에는 실제 도구 응답·출처를 보존합니다. 보류와 완료 폼을 함께 제출하지 않습니다.
-  재평가 요청에서는 원천을 새로 조회하며 사람의 요청을 근거 충족이나 설비 승인으로 간주하지 않습니다.
-- 제출 요약·메모·사람에게 보내는 질문 문장은 한국어로 씁니다(코드·식별자·SQL·원문 인용은 원문 그대로).
-
-## SQL을 직접 쓸 때 (업무 DB·시계열 조회)
-- 먼저 스키마 도구(enterprise describe_schema 등)로 실제 표·열을 확인하고, 거기 있는 표·열만 씁니다. 표·열 이름을 지어내지 않습니다.
-- SELECT 한 문장만 씁니다. SQL 주석(-- 또는 /* */)과 끝의 세미콜론을 넣지 않습니다.
-- 오류가 나면 오류 문구와 스키마를 대조해 필요한 부분만 고칩니다. 업무 의도(무엇을 세고 거르는지)는 바꾸지 않습니다. 고치기는 최대 두 번입니다.
-- 끝내 실패하거나 결과가 0행이면 그대로 적습니다. 실패를 0이나 빈 값으로 바꿔 성공처럼 제출하지 않습니다. 실행한 SQL과 오류를 근거로 남깁니다.
-
-## 절대 금지
-- 설비 명령(PLC 쓰기), 업무 시스템 조치 실행, 사람 대신 승인. 사람이 승인하기 전에는 어떤 조치도 실행하지 않습니다.
-- 온톨로지 스키마·규칙·스킬의 수정. Neo4j는 조회 도구만 사용합니다.
-- hyd-dmn.submit_decision은 선택할 카드의 제출만 허용합니다. 설비/업무 조치의 승인이나 실행이 아닙니다.
-
-온톨로지 스키마 설명은 `context/schema_prompt.md` 에 있습니다.
-"""
-
 
 def _safe(component: str, *, fallback: str = "run") -> str:
     cleaned = _UNSAFE.sub("_", (component or "").strip())[:120].strip("._-")
@@ -120,15 +86,16 @@ def for_run(root: Path, run_id: str, *, tenant_id: str = "") -> Workspace:
     return ws
 
 
-def provision(ws: Workspace, *, agent_id: str, schema_prompt: str, task: dict, skills: list[dict] | None = None) -> list[str]:
-    """Write what the CLI reads before it starts: the constitution (CLAUDE.md), the schema brief, the task record, and (U2)
+def provision(ws: Workspace, *, agent_id: str, constitution: str, schema_prompt: str, task: dict, skills: list[dict] | None = None) -> list[str]:
+    """Write what the CLI reads before it starts: the constitution (CLAUDE.md — work_rules.constitution of the agent's
+    business part, G9), the schema brief, the task record, and (U2)
     the assigned agent's skills in the CLI's own layout — cliagents puts a skill at `.claude/skills/<name>/SKILL.md` for
     Claude Code and `.agents/skills/<name>/SKILL.md` for Codex (process-gpt-cli-agent core/skills.py build_bundle → emit).
     Idempotent — a resumed run rewrites the same files; skills left from an earlier attempt are removed first, so the
     folder holds exactly this run's skills. Returns the skill files written (workspace-relative)."""
     for root in SKILL_ROOTS.values():
         shutil.rmtree(ws.path / root, ignore_errors=True)
-    bundle = ArtifactBundle().add_constitution(CONSTITUTION)
+    bundle = ArtifactBundle().add_constitution(constitution)
     for skill in skills or []:
         bundle.add_skill(skill["skill_name"], skill_markdown(skill), description=str(skill.get("description") or ""))
     registry.get(agent_id).emit(bundle, DirectorySink(str(ws.path)))

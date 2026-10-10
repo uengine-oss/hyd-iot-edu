@@ -26,9 +26,9 @@ def _seed(repo):
     repo.upsert_form(FORM)
     repo.upsert_tenant({"id": "hyd", "name": "hyd", "mcp": MCP})
     repo.upsert_user({"id": "sys:agent", "username": "AI 에이전트 (Claude Code)", "role": "agent", "is_agent": True, "agent_type": "agent",
-                      "goal": "경보의 원인을 진단하고 조치 카드를 올린다", "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd"})
+                      "goal": "경보의 원인을 진단하고 조치 카드를 올린다", "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd", "work_rules": "hyd-plant"})
     repo.upsert_user({"id": "sys:scada", "username": "SCADA", "role": "system", "is_agent": True, "agent_type": "system", "tenant_id": "hyd"})
-    for uid, name in (("role:operator", "운전원"), ("role:prod-mgr", "생산관리자"), ("role:maint-mgr", "정비관리자"),
+    for uid, name in (("role:operator", "운전원"), ("role:prod-mgr", "생산관리자"), ("role:maint-mgr", "설비보전팀장"),
                       (KIM, "김운전"), (CHOI, "최운전"), (LEE, "이생산")):
         repo.upsert_user({"id": uid, "username": name, "is_agent": False, "tenant_id": "hyd"})
     for role, uid in (("role:operator", KIM), ("role:operator", CHOI), ("role:prod-mgr", LEE)):

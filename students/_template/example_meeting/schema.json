@@ -1,0 +1,42 @@
+{
+  "_comment": "T8 예시 묶음 — 학생 업무 사전(설계 docs/handoff/verification/2026-10-09/capstone-lab.md 3.3 클래스 · 관계). 정답이 아니라 강사 시연용 참고. ns 는 시연용 'demo' (T1 · T3 의 s00 과 섞이지 않게). 확정 스키마(it/neo4j/v2/schema.json)는 바꾸지 않는다 — 가치 · 프로세스 · 규칙 층은 v2 클래스(Objective · Measure · Process · Role · System · Step · Decision · DecisionTable · Rule · InputData · KnowledgeSource · ManualSection)를 그대로 쓴다. 검사: python scripts/ontology_v2.py check-extra --extra students/_template/example_meeting/schema.json",
+  "ns": "demo",
+  "name": "학생 업무 사전 — 고객사 분기 리뷰 회의 준비 (T8 예시)",
+  "version": "0.1.0",
+  "classes": [
+    {"name": "Meeting", "label_ko": "회의", "layer": "resource", "description": "준비하는 회의 한 건. name 이 회의 제목이다. 확정 조건(필수 참석자 전원 가능)은 v2 Rule 로 둔다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true, "description": "회의 제목"},
+                    {"name": "kind", "type": "enum", "values": ["qbr", "weekly"], "required": true, "description": "qbr = 고객사 분기 리뷰"},
+                    {"name": "durationMin", "type": "integer", "required": true, "description": "회의 길이(분)"},
+                    {"name": "dueBy", "type": "string", "description": "고객이 요청한 마감 날짜(YYYY-MM-DD) — 값은 업무 표 meeting_request.due_by 가 원본, 여기는 그 회의의 요청 마감 표시"}]},
+    {"name": "Customer", "label_ko": "고객사", "layer": "resource", "description": "회의 상대 고객사",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "tier", "type": "enum", "values": ["A", "B", "C"]}]},
+    {"name": "Attendee", "label_ko": "참석자", "layer": "resource", "description": "회의에 부를 사람. required = 필수 참석자(전원 가능해야 확정)",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "email", "type": "string", "required": true}, {"name": "required", "type": "boolean", "required": true}]},
+    {"name": "AgendaItem", "label_ko": "안건", "layer": "resource", "description": "회의에서 다룰 안건. 지난 회의록의 미결 이슈에서 온다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "status", "type": "enum", "values": ["open", "closed"], "required": true}]},
+    {"name": "Document", "label_ko": "자료", "layer": "resource", "description": "구글 드라이브에 있는 문서 파일(D1 · D2 · D3). 원문 근거는 절(v2 ManualSection)로 잇는다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "driveFileId", "type": "string", "required": true, "description": "드라이브 파일 id (예시본은 가상 값)"},
+                    {"name": "modifiedAt", "type": "datetime"}]},
+    {"name": "PrepGuide", "label_ko": "업무 요령(SOP)", "layer": "skill", "description": "D2 준비 절차. v2 Skill 은 kind 가 control · work_order 뿐이라(확정 스키마) 회의 준비 요령은 학생 클래스로 두고 v2 Step 에 잇는다.",
+     "properties": [{"name": "id", "type": "string", "required": true}, {"name": "name", "type": "string", "required": true},
+                    {"name": "skillName", "type": "string", "required": true, "description": "포털 스킬 폴더 이름(SKILL.md) — 예: qbr-prep"}]}
+  ],
+  "relationships": [
+    {"type": "FOR_CUSTOMER", "from": ["Meeting"], "to": ["Customer"], "cardinality": "N:1", "description": "어느 고객사와의 회의인가"},
+    {"type": "HAS_CONTACT", "from": ["Customer"], "to": ["Attendee"], "cardinality": "1:N", "description": "고객사 쪽 참석자"},
+    {"type": "INVITES", "from": ["Meeting"], "to": ["Attendee"], "cardinality": "N:M", "description": "이 회의에 부를 사람(우리 쪽 포함)"},
+    {"type": "PLAYS", "from": ["Attendee"], "to": ["Role"], "cardinality": "N:1", "description": "다리 관계 — 참석자의 역할(v2 Role)"},
+    {"type": "ABOUT", "from": ["AgendaItem"], "to": ["Customer"], "cardinality": "N:1", "description": "어느 고객의 안건인가"},
+    {"type": "RAISED_IN", "from": ["AgendaItem"], "to": ["Document"], "cardinality": "N:1", "description": "안건이 나온 문서(지난 회의록)"},
+    {"type": "STORED_IN", "from": ["Document"], "to": ["System"], "cardinality": "N:1", "description": "다리 관계 — 문서가 있는 시스템(v2 System: 구글 드라이브)"},
+    {"type": "HAS_SECTION", "from": ["Document"], "to": ["ManualSection"], "cardinality": "1:N", "description": "다리 관계 — 문서의 절(v2 ManualSection, 원문 근거)"},
+    {"type": "PREPARED_BY_PROCESS", "from": ["Meeting"], "to": ["Process"], "cardinality": "N:1", "description": "다리 관계 — 이 회의를 준비하는 흐름(v2 Process). 설계 3.3 의 'Process-[:ACTS_ON]->Meeting' 은 v2 관계 이름이라 다시 정의할 수 없어 T1 과 같은 이름으로 둔다"},
+    {"type": "GUIDE_STEP", "from": ["PrepGuide"], "to": ["Step"], "cardinality": "1:N", "description": "다리 관계 — 요령의 단계(v2 Step, REFERS_TO 로 원문 절에 닿는다)"},
+    {"type": "GUIDES", "from": ["PrepGuide"], "to": ["Process"], "cardinality": "N:1", "description": "다리 관계 — 이 요령을 쓰는 흐름(v2 Process)"}
+  ]
+}

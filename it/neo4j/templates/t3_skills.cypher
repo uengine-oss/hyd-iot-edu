@@ -1,7 +1,7 @@
 // T3-a — 스킬 상세 (parameter: $ids). t2_skills와 같은 모양. 후보 선택 규칙이 고른 스킬의 카드 내용을 채운다.
 MATCH (k:Skill) WHERE k.id IN $ids
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
-OPTIONAL MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY]->(k)
+OPTIONAL MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k)
 WITH k, r, head(collect(type(m))) AS relation, head(collect(fm.id)) AS fmId
 RETURN k.id AS skillId, k.sopId AS sopId, k.name AS name, k.kind AS kind, k.description AS description,
        relation, fmId AS failureModeId,

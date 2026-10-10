@@ -2,7 +2,7 @@
 
   1. 후보 선택  dec:action-candidates 규칙(SELECT)의 임계값 검사(TESTS)를 사실에 대어 맞으면 OUTPUTS 스킬이 후보가 된다 (COLLECT).
                 원인 한정 스킬(ADDRESSES)은 그 원인일 때만 남긴다.
-  2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인)에 대어
+  2. 규정 판정  dec:compliance 규칙을 후보마다 그 후보의 사실(예측 유온 · 스킬 종류 · 명령 코드 · 공급사 승인 · 공급사 불량률)에 대어
                 EXCLUDE(제외) · PENALTY(감점) · WARN(경고)을 정한다. APPLIES_TO가 없는 규칙은 모든 후보에 적용된다.
   3. 순위       dec:rank-actions 규칙의 `rankingPolicy`(검토된 명시 식, A069)로 계산한다. 기본 정책은 BSC 득실 + 예측 유온 여유
                 − 경고 − 감점 + 선례 + 납기 긴급도 × 생산 영향 − 품질 클레임 위험이며(회의 2026-10-01 L385~404), 납기·품질·계약·재고 같은
@@ -97,7 +97,36 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     f["skill_code"] = [a["code"] for a in skill.get("actions") or [] if a.get("code")]
     sup = next((a.get("value") for a in skill.get("actions") or [] if a.get("code") == "PR_CREATE"), None)
     f["supplier_avl"] = suppliers.get(sup, {}).get("avl") if sup else None
+    # C2: 구매 카드마다 발주 금액 · 납기 여유(온톨로지 in:po-amount · in:lead-slack-days, 출처 sys:agent = 후보마다 계산) — ERP 필요량 × SCM 견적.
+    # 공급사 불량률(in:supplier-fail-rate, 출처 sys:scm)은 그 카드가 고른 공급사의 견적 값이다. 감점은 SOP 번호가 아니라 공급사에 따라간다.
+    quote = (base.get("spare_quotes") or {}).get(sup) if sup else None
+    qty, need_by = _num(base.get("need_qty")), _num(base.get("need_by_days"))
+    f["supplier_fail_rate"] = _num(quote.get("fail_rate")) if quote else None
+    if quote and qty is not None:
+        price, lead = _num(quote.get("price")), _num(quote.get("lead_d"))
+        f["po_amount"] = round(price * qty, 2) if price is not None else None
+        f["lead_slack_days"] = round(need_by - lead, 2) if need_by is not None and lead is not None else None
+    elif sup:
+        f["po_amount"] = f["lead_slack_days"] = None
     return f
+
+
+def option_window(compliance: list[dict], sid: str, skill: dict, windows: dict | None) -> dict | None:
+    """C3: 카드가 고른 정비 시점. 일정 판단(사실에 windows_by_variable 이 있음)에서 이 카드에만 걸린 규정이 시험하는 변수가 가리키는
+    예정된 정비 시간을 카드에 싣는다(예: 이번 정비 시간의 운전시간 → 이번 창, 미룬 정비 시간의 운전시간 → 그다음 창).
+    어떤 창 변수도 시험하지 않는 정비 카드는 '즉시'다. 일정 판단이 아니면 None(작업지시는 흐름의 window_var 를 쓴다)."""
+    if not isinstance(windows, dict) or not windows:
+        return None
+    for r in compliance:
+        if not (r.get("applies") and sid in r["applies"]):
+            continue
+        for t in r.get("tests") or []:
+            w = windows.get(t.get("variable"))
+            if isinstance(w, dict) and w.get("id"):
+                return dict(w, basis=t.get("variable"))
+    if skill.get("kind") == "work_order":
+        return {"immediate": True, "name": "즉시 (지금 정지하고 시행)", "label": "즉시"}
+    return None
 
 
 def production_effect(o: dict) -> str:
@@ -234,8 +263,12 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
              "violations": violations, "penalties": penalties, "warnings": warnings, "feasible": not violations,
              "selectedBy": selected_by.get(sid, []),
              "precedent": {"n": p["n"], "share": round(p["n"] / total_prec, 2), "reasons": p.get("reasons") or []} if p and total_prec else None,
-             "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl")}}
+             "facts": {k2: cf[k2] for k2 in ("forecast_ts1", "forecast_ps1", "skill_kind", "skill_code", "supplier_avl",
+                                             "po_amount", "lead_slack_days", "supplier_fail_rate") if k2 in cf}}
         o["production"] = production_effect(o)
+        window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
+        if window:
+            o["window"] = window
         if forecast_contexts is not None:
             o['forecastContext'] = forecast_context
         o['policy_sha256'] = policy_digest(dmn, k)

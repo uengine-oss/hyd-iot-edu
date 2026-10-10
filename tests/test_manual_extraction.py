@@ -331,3 +331,121 @@ def test_instance_name_uses_the_markdown_title_and_keeps_the_filename_otherwise(
     assert extraction.display_name(bare)=='general.txt'
     inst=extraction.start(runtime,titled,str(uuid4()))
     assert inst['proc_inst_name']=='작동유 관리 매뉴얼 (HM-9) 추출 제안'
+
+
+def test_a161_golden_report_optional_probe_answers_null_instead_of_404(rt, document):
+    """A161-U1 (A160 결함 12): the portal's "is there a golden report yet?" probe must not be a 404 (a red console error
+    for a normal state). Without optional=1 the API still says 404."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api
+    runtime, _ = rt; archive, _source, _ = document
+    app = FastAPI()
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=lambda: None,
+                        tenant='hyd', audit=lambda *a: None, runtime_factory=lambda: runtime)
+    client = TestClient(app)
+    assert client.get('/api/kg/manuals/batches/nothing-here/golden-report').status_code == 404
+    r = client.get('/api/kg/manuals/batches/nothing-here/golden-report?optional=1')
+    assert r.status_code == 200 and r.json() is None
+
+
+def test_f1_review_conflicts_do_not_call_the_documents_own_sops_another_documents(rt,document,monkeypatch):
+    """F-1 (live-final 2-3): the extraction result asked the graph with the raw document id while the graph tags a
+    document's nodes with its tenant-scoped key, so a revision listed its own SOPs as 'other_document'. Both review aids
+    must ask with the same key the commit writes (manual_graph.desired via manual_review.validate)."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api, manual_graph, manual_knowledge
+    runtime,_=rt;archive,source,proposal=document
+    source=archive.get('hyd',source['source_id'])            # the API reads the archived source the same way
+    inst=extraction.start(runtime,source,str(uuid4()))
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    runtime.repo.save_task_result(wi['id'],{'proposal':proposal},final=True);runtime.poll_once()
+    reviewed=dict(extraction.result(runtime,source,inst['proc_inst_id'],None)['preview'],reviewed=True,by='검토자',links={'SOP-EXTRACT-1':{'failureMode':'fm:bearing-degradation'}})
+    plan=manual_review.validate(archive,'hyd',reviewed)
+    tag=next(n['props']['_manual_document'] for n in manual_graph.desired(plan)['nodes'] if n['labels']==['Skill'])
+    assert tag==plan['document']==manual_review.document_key('hyd',source['document_id'])
+    owners={'SOP-EXTRACT-1':tag,'SOP-OTHER':manual_review.document_key('hyd','another-document')}
+
+    class Rows:
+        def __init__(self,rows):self.rows=rows
+        def data(self):return self.rows
+        def single(self):return self.rows[0] if self.rows else None
+    class Tx:
+        def run(self,q,**kw):
+            assert 'k.sopId IN $ids' in q, q
+            return Rows([dict(sop=s,id='skill:'+s,owner=owners[s]) for s in kw['ids'] if s in owners])
+    class Session:
+        def __enter__(self):return self
+        def __exit__(self,*a):return False
+        def execute_read(self,fn):return fn(Tx())
+        def run(self,q,**kw):            # manual_graph.head: no batch committed yet
+            assert 'ManualIngestionDocument' in q and kw['id']==tag, (q,kw)
+            return Rows([])
+    class Driver(Session):
+        def session(self):return Session()
+    knowledge_key=[]
+    monkeypatch.setattr(manual_knowledge,'conflicts',lambda session,knowledge,document=None:knowledge_key.append(document) or [])
+    app=FastAPI()
+    manual_api.register(app,archive_factory=lambda:archive,driver_factory=Driver,tenant='hyd',audit=lambda *a:None,runtime_factory=lambda:runtime)
+    r=TestClient(app).get('/api/kg/manuals/sources/'+source['source_id']+'/extractions/'+inst['proc_inst_id'])
+    assert r.status_code==200, r.text
+    assert r.json()['preview']['conflicts']==[]          # its own SOP is not someone else's
+    assert knowledge_key==[tag]
+    # another document's SOP of the same number is still reported
+    owners['SOP-EXTRACT-1']=owners.pop('SOP-OTHER')
+    r=TestClient(app).get('/api/kg/manuals/sources/'+source['source_id']+'/extractions/'+inst['proc_inst_id'])
+    assert [(c['sop'],c['kind']) for c in r.json()['preview']['conflicts']]==[('SOP-EXTRACT-1','other_document')]
+
+
+def test_f3_a_failed_worker_run_reads_as_failed_and_a_person_can_close_it_and_extract_again(rt,document,tmp_path):
+    """F-3 (live-final 2-2): the worker ended the extraction task as failed (session limit → runner._fail → draft FAILED, row
+    still IN_PROGRESS). The extraction result said IN_PROGRESS forever, so the knowledge screen and scripts/c3_ingest.py
+    (which stops on FAILED) never saw the failure. It must read FAILED; the person's way out is close (A082), then a new
+    extraction request."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api
+    runtime,_=rt;archive,source,_=document
+    source=archive.get('hyd',source['source_id'])
+    inst=extraction.start(runtime,source,str(uuid4()))
+    runner=Runner(_settings(tmp_path/'worker'),runtime.repo,exec_fn=_fake_exec("You've hit your session limit · resets 10:30am (Asia/Seoul)",is_error=True),
+                  schema_prompt='ManualSection Skill Step',resolve_provider=lambda _:object())
+    assert runner.poll_once()==1
+    wi=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert wi['status']=='IN_PROGRESS' and wi['draft_status']=='FAILED'
+    assert any(e['job_id']=='TASK_ERROR' and 'session limit' in e['data']['raw_error'] for e in runtime.repo.list_events(todo_id=wi['id']))
+    class NoHead:                       # graph: this document has no committed batch yet (manual_graph.head)
+        def __enter__(self):return self
+        def __exit__(self,*a):return False
+        def session(self):return self
+        def run(self,q,**kw):
+            return type('R',(),{'single':lambda self:None})()
+    app=FastAPI()
+    manual_api.register(app,archive_factory=lambda:archive,driver_factory=NoHead,tenant='hyd',audit=lambda *a:None,runtime_factory=lambda:runtime)
+    client=TestClient(app);path='/api/kg/manuals/sources/'+source['source_id']+'/extractions/'
+    got=client.get(path+inst['proc_inst_id']).json()
+    assert got['status']=='FAILED' and got['preview'] is None
+    runtime.close_agent_task(wi['id'],'지식 관리자','워커 세션 한도로 실패 — 다시 추출')
+    assert client.get(path+inst['proc_inst_id']).json()['status']=='CANCELLED'
+    assert runtime.repo.get_instance(inst['proc_inst_id'])['status']=='COMPLETED'
+    again=extraction.start(runtime,source,str(uuid4()))          # 다시 하기: a new extraction request (portal 「에이전트 추출 요청」)
+    assert again['proc_inst_id']!=inst['proc_inst_id'] and client.get(path+again['proc_inst_id']).json()['status']=='IN_PROGRESS'
+
+
+def test_a_section_title_carrying_its_own_number_goes_back_to_the_agent(rt,document):
+    """2.2 (라이브 3차 출처 칩 'PR-7.6 PR-7.6 발주 절차'): title 은 번호를 뺀 제목. 번호를 품은 제목은 같은 task 의 교정으로 돌아가고,
+    번호 없는 제목은 그대로 받는다. 이미 저장된 옛 판 제안은 구조 검사(validate_proposal)만으로 계속 읽힌다."""
+    runtime,_=rt;_,source,proposal=document
+    numbered=copy.deepcopy(proposal);numbered['sections'][0]['title']='section-1 정비 절차'
+    assert extraction.validate_proposal(source,numbered)['sections'][0]['title']=='section-1 정비 절차'   # 옛 저장본은 읽힌다
+    with pytest.raises(ValueError,match="절 section-1의 title .*절 번호"):
+        extraction.check_section_titles(numbered)
+    extraction.check_section_titles(proposal)
+    assert '"## PR-7.6 발주 절차" → ref "PR-7.6", title "발주 절차"' in extraction.INSTRUCTION
+    extraction.start(runtime,source,str(uuid4()))
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    assert runtime.repo.save_task_result(wi['id'],{'proposal':numbered},final=True)
+    runtime.poll_once()
+    row=runtime.repo.get_workitem(wi['id'])
+    assert row['draft_status']=='FB_REQUESTED' and '절 번호' in row['feedback']['text']
