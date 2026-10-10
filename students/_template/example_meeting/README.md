@@ -22,6 +22,11 @@
 |---|---|---|
 | 서버 `gcal` · 도구 `create_event` · `get_event` | 설계 문서의 자리 이름 | 강사가 고른 구글 서버의 실제 이름(T5 표) |
 | `extract` 결과 경로(`event_id` Text · `all_required_accepted` Boolean) | `<…>` 자리 → 가져오기가 경로를 읽을 수 없다고 거절 | 그 서버로 도구를 한 번 불러 본 결과 모양에서 경로를 적는다(예: `attendees.0.status`). 전원 수락 여부를 참/거짓으로 돌려주지 않는 서버면 확인 단계를 내 MCP 서버(T4)나 에이전트 task로 바꾼다 |
-| 흐름 → 지식 그래프 Task 투영 | graph.json 에는 Process 만 | 판본 등록 뒤 `scripts/project_student_flow.py`(G8) |
+| 흐름 → 지식 그래프 Task 투영 | graph.json 에는 Process(`demo:proc:qbr-prep`)만 | 판본 등록 뒤 `scripts/project_student_flow.py`(G8). 투영은 Process 를 `<ns>:proc:<흐름 id>` 로 만든다 — 흐름을 가져올 때 흐름 id 를 `qbr-prep` 로 적어야 graph.json 의 Process(회의 · 요령이 이어진 노드)와 같은 노드가 된다. 다른 id 로 가져오면 Process 가 둘이 된다 |
+| 에이전트 도구 `gdrive` · `gcal` | `agent.json` 의 tools 에 적혀 있음 | 포털에 등록되지 않은 서버 이름이 있으면 에이전트 만들기가 "등록되지 않은 도구 서버입니다"로 거절된다. 구글 서버를 먼저 등록(T5)하거나, 등록 전에는 tools 를 `neo4j` · `my-biz` 로 줄여 만든 뒤 나중에 더한다 |
+
+## 구글 서버 없이 돌리면 (2026-10-10 실측)
+캘린더 도구가 없으면 에이전트는 시간 후보를 지어내지 않고 "빈 시간을 조회하지 못해 후보를 낼 수 없습니다"로 **보류**한다(단계가 멈춘다). 드라이브 없이는 자료 요약이 "확인 못 함"이 된다.
+끝까지 돌리려면 캘린더 · 드라이브 서버(T5)가 필요하다. 기록: `docs/handoff/verification/2026-10-10/K-capstone.md` 5.3.
 
 승인 부품 `human:approve`(G1, 반려 가지 포함)와 `extract` · `effect: false`(G3)는 포털에 있다. 지금 가져오면 나오는 거절 3줄(위 경로 자리 두 칸과 그 값을 쓰는 분기 조건)은 `tests/test_capstone_kit.py` 에 기대값으로 적혀 있다.
