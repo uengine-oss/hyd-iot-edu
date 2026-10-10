@@ -277,3 +277,56 @@ def test_api_routes_approval_through_the_role_check_and_blocks_the_generic_submi
     assert r.status_code == 200, r.text
     assert len(cal.calls) == 1
     assert c.post(url + "/approve", json={"decision": AP.APPROVE, "option": "금 10:00", "by": ORG, "role": ROLE}).status_code == 400
+
+
+# ---------------------------------------------------------------- 사전 검사: 반려(또는 조건 없는) 경로로 효과에 닿으면 거절
+def _effect_problems(r):
+    return [p for p in r["problems"] if (p.get("where") or {}).get("id") == "T_event" and "반려(또는 조건 없는) 경로" in p["reason"]]
+
+
+def test_rejection_branch_leading_to_the_effect_is_refused_with_the_path(world):
+    m = mapping()
+    m["flows"] = {"F_yes": {"var": "approval", "op": "==", "value": AP.REJECT}, "F_no": {"default": True}}   # 반려 → 일정 등록 (뒤바뀜)
+    _, r = imported(world, m)
+    found = _effect_problems(r)
+    assert not r["ok"] and len(found) == 1, r["problems"]
+    assert found[0]["field"] == "part" and "경로: '주관자 승인' → '승인?' → '일정 등록'" in found[0]["reason"]
+    assert "approval == '승인'" in found[0]["reason"]
+
+
+def test_approval_wired_straight_to_the_effect_without_a_branch_is_refused(world):
+    src = FLOW.replace('<bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="G_ok"/>',
+                       '<bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="T_event"/>')
+    src = src.replace('<bpmn:sequenceFlow id="F_yes" name="승인" sourceRef="G_ok" targetRef="T_event"/>',
+                      '<bpmn:sequenceFlow id="F_yes" name="승인" sourceRef="G_ok" targetRef="R_ok"/>')
+    src = src.replace('<bpmn:sequenceFlow id="F4" sourceRef="T_event" targetRef="R_ok"/>',
+                      '<bpmn:sequenceFlow id="F4" sourceRef="T_event" targetRef="G_ok"/>')
+    rt = world["rt"]
+    base = rt.definition_for({"proc_def_id": rt.defn.id, "proc_def_version": rt.base_version, "tenant_id": rt.tenant_id}).raw
+    cat = B.catalog(base, USERS)
+    r = B.check(B.parse_bpmn(src), mapping(), {"catalog": cat, "definition_id": "qbr", "version": "1", "file_name": "x.bpmn", "xml_sha256": "x"})
+    found = _effect_problems(r)
+    assert len(found) == 1 and "경로: '주관자 승인' → '일정 등록'" in found[0]["reason"], r["problems"]
+
+
+def test_not_rejected_condition_also_counts_as_the_approval_gate(world):
+    m = mapping()
+    m["flows"]["F_yes"] = {"var": "approval", "op": "!=", "value": AP.REJECT}
+    _, r = imported(world, m)
+    assert r["ok"], r["problems"]
+
+
+def test_reference_and_c3_flows_still_pass_the_approval_path_check(world):
+    """판단 엔진 카드 승인(select_card)은 반려를 내지 않는다 — 기준 흐름 A · B · C · 정비형과 C3 흐름 세 개 모두 그대로 통과한다."""
+    import test_c2_execution as c2
+    import test_c3_assembly as c3
+    for src, m, did in ((c2.A_FLOW, c2.a_mapping(), "a"), (c2.B_FLOW, c2.b_mapping(), "b"), (c2.C_FLOW, c2.c_mapping(), "c"),
+                        (c2.MAINT, c2.maint_mapping(), "maint")):
+        _, r = c2.imported(world, src, m, did)
+        assert r["ok"], (did, r["problems"])
+    rt = world["rt"]
+    base = rt.definition_for({"proc_def_id": rt.defn.id, "proc_def_version": rt.base_version, "tenant_id": rt.tenant_id}).raw
+    cat = B.catalog(base, c3.AGENTS)
+    for did, (_, src, m) in c3._flows().FLOWS.items():
+        r = B.check(B.parse_bpmn(src), deepcopy(m), {"catalog": cat, "definition_id": did, "version": "1", "file_name": "x", "xml_sha256": "x"})
+        assert r["ok"], (did, r["problems"])

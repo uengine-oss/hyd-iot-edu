@@ -830,6 +830,16 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             elif a["id"] in g.reach(g.succ(a["id"]), stop=lambda n: n in approvals):
                 problems.append(problem(t, "part", f"되돌아가는 선이 {effect} 부품을 사람 승인 없이 다시 실행합니다 — "
                                                    f"되돌아가는 선이 '{approval_name}'을(를) 다시 거치게 그리세요"))
+        # 캡스톤 G1: 사람 승인(안 고르기)은 반려도 낸다 — 그 뒤 효과 부품까지의 모든 경로가 '승인' 조건 선을 지나야 한다
+        effects = {a["id"]: a["_part"]["effect"] for a in activities if a["_part"].get("effect")}
+        for a in activities:
+            if a["_part"].get("key") != approval_part.KEY:
+                continue
+            for eid, path in _effects_past_rejection(g, a["id"], approvals, cond_of, effects):
+                route = " → ".join(_label(g.nodes[n]) for n in path)
+                problems.append(problem(g.nodes[eid], "part",
+                                        f"{_label(g.nodes[a['id']])}의 반려(또는 조건 없는) 경로로 {effects[eid]} 부품에 닿습니다 — 경로: {route}. "
+                                        f"효과로 가는 분기 선에 approval == '{approval_part.APPROVE}' 조건을 두세요"))
 
     # -- 되돌아가는 선(루프): 빠져나갈 배타 분기가 있어야, 병렬 분기는 안에 둘 수 없음
     loops = g.sccs()
@@ -897,6 +907,45 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                                     "registration", f"등록 검사: {e}"))
     return {"ok": not problems, "problems": problems, "definition": raw, "available": available,
             "loops": [sorted(c) for c in loops]}
+
+
+def _approves(text: str) -> bool:
+    """분기 조건이 사람 승인(안 고르기)의 '승인'을 요구하는가: approval == '승인' · approval != '반려' (그리고 다른 조건과 and 로 묶여도)."""
+    def ok(n) -> bool:
+        if isinstance(n, ast.Expression):
+            return ok(n.body)
+        if isinstance(n, ast.BoolOp) and isinstance(n.op, ast.And):
+            return any(ok(v) for v in n.values)
+        if isinstance(n, ast.Compare) and len(n.ops) == 1 and isinstance(n.comparators[0], ast.Constant):
+            sides = (n.left, n.comparators[0].value)
+            if isinstance(sides[0], ast.Name) and sides[0].id == approval_part.OUTPUTS[0]:
+                return ((isinstance(n.ops[0], ast.Eq) and sides[1] == approval_part.APPROVE)
+                        or (isinstance(n.ops[0], ast.NotEq) and sides[1] == approval_part.REJECT))
+        return False
+    return ok(engine.compile_condition(text))
+
+
+def _effects_past_rejection(g: _Graph, start: str, approvals: set, cond_of: dict, effects: dict) -> list[tuple[str, list[str]]]:
+    """사람 승인(안 고르기) start 에서 나가 '승인' 조건 선을 지나지 않고 닿는 효과 부품과 그 경로(노드 id). 다른 승인 부품에서는 멈춘다
+    (그 승인이 다시 정한다). start 의 경계 타이머 가지는 승인 결정 전이라 여기서 보지 않는다(앞의 '승인 없는 효과' 검사가 본다)."""
+    parent: dict[str, str | None] = {start: None}
+    todo, hits = [start], []
+    while todo:
+        n = todo.pop(0)
+        edges = [(f["id"], f["target"]) for f in g.out.get(n, [])] + ([(None, b) for b in g.attached.get(n, [])] if n != start else [])
+        for fid, m in edges:
+            cond = (cond_of.get(fid) or {}).get("condition") if fid else None
+            if (cond and _approves(cond)) or m in parent:
+                continue
+            parent[m] = n
+            if m in effects:
+                path, x = [], m
+                while x is not None:
+                    path.append(x); x = parent[x]
+                hits.append((m, path[::-1]))
+            elif m not in approvals:
+                todo.append(m)
+    return hits
 
 
 def _human_role(rname: str | None, roles: dict, t: dict, problems: list) -> dict | None:

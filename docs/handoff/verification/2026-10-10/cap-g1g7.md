@@ -80,3 +80,14 @@
 - 실측(같은 판정 60회): 고치기 전 html → not_mcp 53 · closed 7 / auth → auth 60. 고친 뒤 html → not_mcp 60 / auth 60.
 - 조치: do_POST 가 모든 모드에서 본문을 먼저 읽고(`_serve_mcp(mode, msg)` 로 넘김) 응답한다.
 - 검증: `tests/test_mcp_check.py` 10회 반복 실행 — 10회 모두 32 passed(흔들림 0). 뮤테이션 = 고치기 전 상태(위 실측 7/60).
+
+## 9. 후속 1 — 반려 경로로 효과 부품에 닿는 흐름을 사전 검사가 거절 (결함: 빈틈)
+- 전: 효과 앞 승인 검사는 "승인 부품을 지났는가"만 봤다. 사람 승인(안 고르기)은 반려도 내므로, 반려 가지(또는 분기 없이)로 효과에 닿는
+  흐름이 등록되고 실행 때에야 approved_by 없음으로 PENDING 이 됐다.
+- 조치 `bpmn_import.py` `_effects_past_rejection` · `_approves`: 안 고르기 승인 task 마다 그 뒤를 따라가며, `approval == '승인'`
+  (또는 `approval != '반려'`, and 로 묶여도 됨) 조건 선을 지나지 않고 닿는 효과 부품을 찾는다. 다른 승인 부품에서는 멈춘다.
+  문제는 효과 task 좌표 + 경로(예: '주관자 승인' → '승인?' → '일정 등록') + 고칠 방법으로 낸다. select_card 는 반려를 내지 않아 대상이 아니다.
+- 시험(4건 추가, 모두 통과): 반려 조건 → 효과 거절(경로 문구) · 분기 없이 바로 효과 거절 · `!= '반려'` 도 승인 조건으로 인정 ·
+  기준 흐름 A · B · C · 정비형과 C3 흐름 세 개(scripts/c3_flows.py FLOWS) 모두 통과 고정.
+- 관련 시험 bpmn_import · c2_execution · c3_assembly · c3_bc_simplified · b7_oil · flow_deploy: 121 passed, 1 skipped.
+- 뮤테이션: 모든 조건을 승인으로 봄 → 1 실패 · 승인 조건 선도 막음 → 2 실패 + 17 오류 · 검사 끔 → 2 실패.
