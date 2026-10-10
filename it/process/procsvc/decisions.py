@@ -30,6 +30,13 @@ def _level(d: dict, role: str) -> int:
     return int(r["level"]) if r else 0
 
 
+def may_approve(d: dict, opt: dict, role: str) -> bool:
+    """The option's approver role itself, or any role ranked above it (ontology Skill -APPROVED_BY-> Role and role levels)."""
+    need = (opt.get("approver") or {}).get("id")
+    need_level = int((opt.get("approver") or {}).get("level") or _level(d, need or ""))
+    return not need or role == need or _level(d, role) > need_level
+
+
 @_transition
 def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> dict:
     if d["state"] != "PENDING_APPROVAL":
@@ -40,9 +47,8 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
     if not opt.get("feasible", False):
         why = "; ".join(v.get("annotation") or v.get("name") or v.get("rule", "") for v in opt.get("violations") or []) or "infeasible"
         raise ValueError(f"'{opt['name']}'은(는) 규정상 고를 수 없다: {why}")
-    need = (opt.get("approver") or {}).get("id")
-    need_level = int((opt.get("approver") or {}).get("level") or _level(d, need or ""))
-    if need and role != need and _level(d, role) <= need_level:
+    if not may_approve(d, opt, role):
+        need = (opt.get("approver") or {}).get("id")
         raise PermissionError(f"승인 권한 없음: '{opt['name']}'은(는) {(opt.get('approver') or {}).get('name', need)} 이상이 승인해야 한다")
     d.update(state="APPROVED", chosen=option_id, approvedBy=by, approvedRole=role, override=option_id != d.get("recommended"), reason=reason)
     d["history"].append({"state": "APPROVED", "t": _now(), "by": by, "role": role, "option": option_id, "reason": reason})

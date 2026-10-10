@@ -518,6 +518,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            decision_option=decision_option, get_decision=lambda did: ctx.book.get(did), approve_decision=delivery.prepare,
                            preview_decision=delivery.preview, approve_review=delivery.prepare_review,
                            validate_approval=delivery.validate, deliver_approval=delivery.deliver, record_approval=delivery.record,
+                           check_rejection=delivery.check_rejection, reject_decision=delivery.reject,
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit,
@@ -777,6 +778,13 @@ class SelectReq(BaseModel):
     fan_pct: float | None = None
     load_pct: float | None = None
     review_id: str | None = None
+
+
+class RejectCardReq(BaseModel):
+    decision: str
+    by: str
+    role: str
+    reason: str = Field(min_length=1, max_length=2000)
 
 
 class ReviewReq(BaseModel):
@@ -1117,6 +1125,19 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(404, "no such selection task")
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
+            raise HTTPException(403, str(e))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/todolist/{wid}/reject-card")
+    async def reject_card(wid: str, req: RejectCardReq):
+        """조치 카드 승인 단계(formHandler:select_card)의 거절: 설비 명령 · 업무 거래 없이 흐름의 반려 가지로 간다. 승인(/select)과 같은 역할 검사."""
+        try:
+            return await _in_executor(_rt().reject_card, wid, req.decision, req.by, req.role, req.reason)
+        except KeyError:
+            raise HTTPException(404, "no such selection task")
+        except PermissionError as e:
+            _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": None, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
         except ValueError as e:
             raise HTTPException(400, str(e))

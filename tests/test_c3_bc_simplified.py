@@ -31,7 +31,7 @@ def deploy(world, did):
 Stock = c2.Outside          # 업무 시스템 대역(입고 뒤 재고 읽기 포함)
 
 
-@pytest.mark.parametrize("did,tasks", [("c3_pm", 4), ("c3_spare", 5)])
+@pytest.mark.parametrize("did,tasks", [("c3_pm", 6), ("c3_spare", 7)])      # 승인 단계의 지연 알림 · 반려 결과 보고 task 둘 포함
 def test_b_and_c_are_small_three_lane_flows_with_one_approval_and_no_plant_parts(world, did, tasks):
     d = deploy(world, did)
     parsed = B.parse_bpmn(c3._flows().FLOWS[did][1])
@@ -39,7 +39,9 @@ def test_b_and_c_are_small_three_lane_flows_with_one_approval_and_no_plant_parts
     tools = [a.get("tool") for a in d["activities"]]
     assert sum(1 for t in tools if str(t).startswith("formHandler:select")) == 1
     assert not {effect_parts.RESTORE_TOOL, effect_parts.TEST_RUN_TOOL, effect_parts.WAIT_TOOL, "incident:command"} & set(tools)
-    assert parsed["boundaries"] == [] and parsed["gateways"] == []              # 납기 · 승인 지연 타이머 · 정상/미달 분기 없음
+    # 타이머 · 분기는 승인 단계 것뿐이다(멈추지 않는 승인 지연, 승인/거절) — 납기 타이머 · 정상/미달 분기 없음
+    assert [(b["id"], b["attached_to"], b["interrupting"]) for b in parsed["boundaries"]] == [("B_overdue", "T_approve", False)]
+    assert [g["id"] for g in parsed["gateways"]] == ["G_approved"]
 
 
 def test_b_button_case_registers_the_work_order_mails_and_ends_without_going_to_the_plant(world):
