@@ -92,5 +92,92 @@
       ${opt.extra || ''}
     </div>`;
   }
-  window.hydApprove = { html, reasons, sentenceAbout };
+  /* ---------------- 캡스톤 G7: 일반 사람 승인(formHandler:approve)의 "추천 1 + 지는 안 펼치기" 카드 ----------------
+     에이전트 task 가 낸 처리 건 값(예: proposal)을 승인 부품 설정(approval: options · key · recommended · losers · docs)으로 읽는다.
+     칸 약속(출발본 T6 요령): options[{<key, 기본 slot>, reason, score, …}] · recommended = 추천 안의 key 값 · losers[{<key>, why}] · docs[{title, link}].
+     약속에서 벗어난 곳은 숨기지 않는다 — 무엇이 다른지 적고 받은 값을 JSON 그대로 펼쳐 보인다(problems). 서버 검사는 procsvc/approval_part.py. */
+  const KEY_DEFAULT = 'slot';
+  const isObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  function at(values, path) {
+    let cur = values;
+    for (const part of String(path).split('.')) {
+      if (Array.isArray(cur) && /^\d+$/.test(part) && +part < cur.length) cur = cur[+part];
+      else if (isObj(cur) && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
+      else return undefined;
+    }
+    return cur;
+  }
+
+  /* values: 이 task 가 받은 값, cfg: 활동의 approval 설정 → { key, options, usable, rec, losers, docs, problems, raw } */
+  function proposal(values, cfg) {
+    cfg = cfg || {};
+    const key = cfg.key || KEY_DEFAULT, problems = [], raw = {};
+    if (!cfg.options) return { key, options: [], usable: false, rec: null, losers: [], docs: [], raw, problems: ['승인 설정에 고를 안 값(options)이 없습니다'] };
+    const options = at(values || {}, cfg.options);
+    raw[cfg.options] = options;
+    let usable = Array.isArray(options) && options.length > 0;
+    if (options === undefined) problems.push(`고를 안 '${cfg.options}' 이(가) 받은 값에 없습니다`);
+    else if (!usable) problems.push(`고를 안 '${cfg.options}' 이(가) 비어 있거나 목록이 아닙니다`);
+    const list = usable ? options : [];
+    const seen = new Set();
+    list.forEach((o, i) => {
+      const n = i + 1;
+      if (!isObj(o) || o[key] == null || o[key] === '') { problems.push(`${n}번째 안에 구분 칸 '${key}' 이(가) 없습니다`); usable = false; return; }
+      if (seen.has(String(o[key]))) { problems.push(`'${key}' 값 ${o[key]} 이(가) 두 번 있습니다`); usable = false; }
+      seen.add(String(o[key]));
+      if (typeof o.reason !== 'string' || !o.reason.trim()) problems.push(`${n}번째 안(${o[key]})에 이유 칸 'reason' 이(가) 없습니다`);
+      if (!Number.isFinite(o.score)) problems.push(`${n}번째 안(${o[key]})의 점수 칸 'score' 가 숫자가 아닙니다`);
+    });
+    let rec = null;
+    if (cfg.recommended) {
+      const r = at(values || {}, cfg.recommended);
+      raw[cfg.recommended] = r;
+      rec = list.find(o => isObj(o) && String(o[key]) === String(r)) || null;
+      if (r === undefined) problems.push(`추천 값 '${cfg.recommended}' 이(가) 받은 값에 없습니다`);
+      else if (!rec) problems.push(`추천 '${r}' 이(가) 고를 안 목록에 없습니다`);
+    }
+    const listOf = (field, ok, what) => {
+      if (!cfg[field]) return [];
+      const v = at(values || {}, cfg[field]);
+      raw[cfg[field]] = v;
+      if (v === undefined) { problems.push(`${what} '${cfg[field]}' 이(가) 받은 값에 없습니다`); return []; }
+      if (!Array.isArray(v)) { problems.push(`${what} '${cfg[field]}' 이(가) 목록이 아닙니다`); return []; }
+      v.forEach((x, i) => { const why = ok(x); if (why) problems.push(`${what} ${i + 1}번째: ${why}`); });
+      return v.filter(x => !ok(x));
+    };
+    const losers = listOf('losers', x => !isObj(x) || x[key] == null ? `구분 칸 '${key}' 이(가) 없습니다` : typeof x.why !== 'string' || !x.why.trim() ? `진 이유 칸 'why' 가 없습니다` : '', '지는 안');
+    const docs = listOf('docs', x => !isObj(x) || typeof x.title !== 'string' ? `제목 칸 'title' 이(가) 없습니다` : !/^https?:\/\//.test(String(x.link || '')) ? `링크 칸 'link' 가 http(s) 주소가 아닙니다` : '', '근거 자료');
+    return { key, options: list.filter(isObj), usable, rec, losers, docs, problems, raw };
+  }
+
+  const shown = v => (v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v));
+  function optionFacts(o, key) {
+    return Object.entries(o).filter(([k, v]) => ![key, 'reason', 'score'].includes(k) && v != null && v !== '')
+      .map(([k, v]) => `<span class="chip tone-neutral sm">${e(k)} ${e(shown(v))}</span>`).join(' ');
+  }
+
+  /* m: proposal(...) 결과, chosenId: 지금 고른(또는 승인된) 안의 key 값, opt: { pending, extra(html) } */
+  function proposalHtml(m, chosenId, opt = {}) {
+    const key = m.key;
+    const rec = m.rec || m.options[0] || null;
+    const cur = m.options.find(o => String(o[key]) === String(chosenId)) || rec;
+    const changed = !!(cur && rec && cur !== rec);
+    const others = m.options.filter(o => o !== cur);
+    const pick = o => opt.pending && m.usable ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o[key])}"> 이 안으로 바꾸기</label>` : '';
+    const otherRows = others.map(o => `<li class="ap-lost"><div class="ap-lost-head"><b>${e(o[key])}</b><span class="muted num">${e(scoreText(o))}</span>${pick(o)}</div>${o.reason ? `<p>${e(o.reason)}</p>` : ''}${optionFacts(o, key) ? `<p class="row-wrap">${optionFacts(o, key)}</p>` : ''}</li>`);
+    const loserRows = m.losers.map(x => `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(x[key])}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>${e(x.why)}</p></li>`);
+    const docs = m.docs.map(d => `<a class="chip tone-neutral sm" href="${e(d.link)}" target="_blank" rel="noopener noreferrer">${e(d.title)}</a>`).join(' ');
+    const off = m.problems.length ? `<div class="ap-off" role="alert"><p class="field-error"><b>에이전트 제안이 칸 약속과 다릅니다</b> — 아래에 받은 값을 그대로 보입니다.</p><ul>${m.problems.map(p => `<li>${e(p)}</li>`).join('')}</ul></div>`
+      + UI.fold('받은 값 그대로 (JSON)', `<pre class="mono">${e(JSON.stringify(m.raw, null, 2))}</pre>`, { cls: 'small', open: true }) : '';
+    const head = cur ? `<div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : m.rec ? 'AI 에이전트 추천' : '첫 번째 안 (추천 표시 없음)'}</span>${changed && opt.pending ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec[key])}">추천안으로 되돌리기</button>` : ''}</div>
+      <h4 class="ap-title">${e(cur[key])}</h4>${cur.reason ? `<p class="ap-desc">${e(cur.reason)}</p>` : ''}
+      <ul class="ap-reasons">${Number.isFinite(cur.score) ? `<li>점수 <b class="num">${e(scoreText(cur))}</b></li>` : ''}${optionFacts(cur, key) ? `<li class="row-wrap">${optionFacts(cur, key)}</li>` : ''}</ul>` : `<p class="muted">고를 안이 없습니다.</p>`;
+    const lost = otherRows.length + loserRows.length;
+    return `<div class="ap-card ${changed ? 'changed' : ''}">${head}
+      ${docs ? `<div class="ap-evidence"><div class="ap-row"><span class="ap-label">근거 자료</span><span class="row-wrap">${docs}</span></div></div>` : ''}
+      ${lost ? UI.fold(`다른 안 ${otherRows.length}개 · 빠진 안 ${loserRows.length}개는 왜 졌나`, `<ul class="ap-lost-list">${[...otherRows, ...loserRows].join('')}</ul>`, { cls: 'small' }) : ''}
+      ${off}${opt.extra || ''}</div>`;
+  }
+
+  window.hydApprove = { html, reasons, sentenceAbout, proposal, proposalHtml };
 })();

@@ -108,8 +108,9 @@
   function taskRow(t) {
     const label = t.kind === 'question' ? `AI 질문 — ${UI.flowName(t.activity_name)}` : UI.flowName(t.activity_name);
     const whom = t.assignment === 'me' ? UI.chipText('나에게', 'accent') : UI.chipText(`역할 공용 · ${roleName(t.user_id)}`, 'neutral');
+    const kind = t.kind === 'approve' ? ' ' + UI.chipText('승인 요청', 'warning') : '';      // 캡스톤 G1 사람 승인(안 고르기)
     const due = t.due_date ? ` · 기한 ${UI.time(t.due_date)}` : '';
-    return `<a class="item" href="${esc(t.link)}" data-inbox-link="${esc(t.link)}"><div class="row"><strong>${esc(label)}</strong>${t.kind === 'question' ? UI.chip('HUMAN_ASKED') : whom}</div>
+    return `<a class="item" href="${esc(t.link)}" data-inbox-link="${esc(t.link)}"><div class="row"><strong>${esc(label)}</strong>${t.kind === 'question' ? UI.chip('HUMAN_ASKED') : whom + kind}</div>
       <span class="sub">${esc(t.proc_inst_name || UI.defName(t.proc_def_id))} · ${esc(ago(t.elapsed_s))}${esc(due)}</span></a>`;
   }
 

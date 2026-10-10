@@ -374,6 +374,23 @@
     ];
     return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>${esc(UI.t('td.cards'))}</b></p>${cards}${rawFold(w.output, 'raw:output')}`;
   }
+  // 캡스톤 G1 · G7 사람 승인(안 고르기): 받은 제안 카드(추천 1 + 지는 안) · 결정 · 고른 안 · 사유 · 승인자. 승인자 · 고른 안은 이 단계의 접수 기록에서 읽는다
+  function approveHtml(w, item, v, evs) {
+    const act = activityOf(v, w.activity_id) || {};
+    const got = [...evs].reverse().find(x => x.job_id === 'APPROVAL_ACCEPTED' || x.job_id === 'APPROVAL_REJECTED');
+    const d = (got && got.data) || {}, out = w.output || {};
+    const m = window.hydApprove.proposal((item && item.inputs) || {}, act.approval);
+    const chosen = d.option ? d.option[m.key] : null;
+    const none = `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`;
+    const rows = [
+      UI.readonly('결정', out.approval ? UI.chipText(out.approval, out.approval === '승인' ? 'success' : 'danger') : none),
+      UI.readonly(UI.t('td.chosen'), chosen != null ? `<span class="kv">${esc(chosen)}</span>${m.rec && String(m.rec[m.key]) !== String(chosen) ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : none),
+      UI.readonly(UI.t('td.reason'), out.approval_reason ? esc(out.approval_reason) : none),
+      UI.readonly(UI.t('td.approver'), d.by ? `${esc(UI.who(d.by))}${d.role ? ` (${esc(UI.who(d.role))})` : ''}` : none),
+      waitRow(w),
+    ];
+    return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>받은 제안</b></p>${window.hydApprove.proposalHtml(m, chosen, { pending: false })}${rawFold(w.output, 'raw:output')}`;
+  }
   function incidentHtml(w, v) {
     const current = vars(v.instance);
     if (!current.incident) return '';
@@ -430,6 +447,7 @@
   function outputHtml(w, item, v, evs) {
     const k = kindOf(w), tool = (item && item.tool) || w.tool || ((activityOf(v, w.activity_id) || {}).tool) || '';
     if (tool === 'formHandler:select_card') return selectHtml(w, item, v);
+    if (tool === 'formHandler:approve') return approveHtml(w, item, v, evs);
     if (k === 'system') {
       const rows = [];
       Object.entries(w.output || {}).filter(([key]) => !HIDDEN_OUTPUT.has(key)).forEach(([key, val]) => rows.push(UI.readonly(varName(key, v), valueHtml(key, val, v))));

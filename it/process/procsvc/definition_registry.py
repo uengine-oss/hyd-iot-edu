@@ -5,12 +5,14 @@ HYD deliberately requires an exact version and rejects unsupported execution sha
 """
 from copy import deepcopy
 from hydcommon.process_contracts import pinned_form, validate_fields
-from . import engine, alert_policy, effect_parts
+from . import engine, alert_policy, effect_parts, approval_part
 
 # C2: 승인 뒤 실행 부품(effect_parts.TOOLS — MCP 호출 · ERP 발주 · 시간 대기 · 정비 수행 모사 · 입고 확인)도 process 가 실행하는 서비스다
 SERVICE_TOOLS = {'incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *effect_parts.TOOLS}
 # C2: 승인 경로가 승인한 카드의 발주 값(공급사 · 부품 · 수량 · 단가 · 금액)을 확정해 넣는다 — 금액 분기(구매팀장 추가 승인)의 근거라 task 가 낼 수 없다
-PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_role','chosen_option', *effect_parts.PURCHASE_VALUES}
+# 캡스톤 G1: 일반 사람 승인(approval_part)이 고른 안의 사본(approved_option)도 승인 경로만 넣는다
+PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_role','chosen_option', *approval_part.SERVER_VALUES,
+                     *effect_parts.PURCHASE_VALUES}
 
 
 def validate_definition(raw):
@@ -80,6 +82,9 @@ def validate_definition(raw):
             fields = {f['key'] for f in form['fields_json']}
             if fields != set(a.get('outputData') or []):
                 raise ValueError(f"활동 {a['id']}의 outputData와 폼 key가 다릅니다")
+            if a.get('tool') == approval_part.TOOL:
+                approval_part.validate(a)
+                approval_part.validate_form(form, a['id'])
             if engine.is_agent(a):
                 if a.get('orchestration') != engine.AGENT_ORCH:
                     raise ValueError(f"에이전트 활동 {a['id']}: HYD는 orchestration {engine.AGENT_ORCH}만 실행합니다 ({a.get('orchestration')})")

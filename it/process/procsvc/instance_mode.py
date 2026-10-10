@@ -32,6 +32,7 @@ from . import decisions as declib, definition, engine, instances, machine, procd
 from .definition_registry import validate_definition
 from .approval_hooks import DecisionDelivery, record_execution as _record_execution
 from . import task_deferral
+from . import approval_part
 from .legacy_assessment import LegacyAssessment
 
 log = logging.getLogger("process.instance_mode")
@@ -754,6 +755,14 @@ class SubmitReq(BaseModel):
     by: str | None = None
 
 
+class ApproveReq(BaseModel):
+    decision: str                       # approval_part.APPROVE | approval_part.REJECT
+    option: str | None = None           # 고른 안의 구분 값(설정 key, 기본 slot) — 반려에는 없다
+    by: str
+    role: str
+    reason: str = ""
+
+
 class CloseReq(BaseModel):
     by: str
     reason: str
@@ -1050,6 +1059,8 @@ def mount(app: FastAPI, process_mode: str) -> None:
             item = await _in_executor(rt.workitem_view,wid)
             if item['tool'] == 'formHandler:select_card':
                 raise HTTPException(403,'조치 카드 승인은 /select의 역할 검사를 거쳐야 합니다')
+            if item['tool'] == approval_part.TOOL:
+                raise HTTPException(403,'사람 승인(안 고르기)은 /approve의 역할 검사를 거쳐야 합니다')
             if item.get('agent_mode') or item.get('agent_orch'):
                 raise HTTPException(403,'사람 작업만 이 경로로 제출할 수 있습니다')
             return await _in_executor(rt.submit, wid, req.output, req.by)
@@ -1106,6 +1117,19 @@ def mount(app: FastAPI, process_mode: str) -> None:
             raise HTTPException(404, "no such selection task")
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
+            raise HTTPException(403, str(e))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/todolist/{wid}/approve")
+    async def approve_option(wid: str, req: ApproveReq):
+        """캡스톤 G1 일반 사람 승인(formHandler:approve): 에이전트가 낸 안 하나를 승인하거나 반려한다. 승인자 = "나"(역할 구성원 검사)."""
+        try:
+            return await _in_executor(_rt().approve, wid, req.decision, req.option, req.by, req.role, req.reason)
+        except KeyError:
+            raise HTTPException(404, "no such approval task")
+        except PermissionError as e:
+            _ctx.audit("-", req.by, "APPROVAL_DENIED", {"workitem": wid, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
         except ValueError as e:
             raise HTTPException(400, str(e))

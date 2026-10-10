@@ -377,12 +377,20 @@ def on_business_effect(inc: Incident, receipt: dict, fx: Effects) -> bool:
 
 @_transition
 def on_result_report(inc: Incident, level: str, summary: str, fx: Effects) -> bool:
-    """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김).
+    """C2: 결과 보고(svc:report)가 흐름의 끝에서 사건을 닫는다 — 정상(ok)은 CLOSED, 미달 · 지연(fail)은 ESCALATED(사람 task 없이 결과만 남김),
+    반려(rejected, 캡스톤 G1 사람 승인의 반려 가지)는 on_reject 와 같은 REJECTED_BY_OPERATOR(명령 전 승인 대기 사건만).
     이미 끝난 사건 · 설비 명령이 진행 중인 사건(명령 · ACK · 재관측은 사건이 스스로 판정)은 그대로 둔다(False)."""
-    if level not in ('ok', 'fail'):
-        raise ValueError('결과 보고 등급은 ok 또는 fail 입니다')
+    if level not in ('ok', 'fail', 'rejected'):
+        raise ValueError('결과 보고 등급은 ok · fail · rejected 입니다')
     if inc.state in d.TERMINAL or inc.state in ('CMD_ISSUED', 'AWAITING_ACK', 'RE_OBSERVING'):
         return False
+    if level == 'rejected':
+        if inc.state != 'AWAITING_APPROVAL':
+            raise ValueError(f'반려 결과 보고는 승인 대기 중인 사건만 닫습니다 (사건 {inc.id} 상태 {inc.state})')
+        inc.reason = summary
+        _audit(inc, fx, 'process', 'GUIDE_REJECTED', {'resultReport': summary, 'level': level})
+        _go(inc, 'REJECTED_BY_OPERATOR', f"result report: {summary}"[:300])
+        return True
     _audit(inc, fx, 'process', 'INCIDENT_CLOSED' if level == 'ok' else 'INCIDENT_ESCALATED', {'resultReport': summary, 'level': level})
     _go(inc, 'CLOSED' if level == 'ok' else 'ESCALATED', f"result report: {summary}"[:300])
     return True

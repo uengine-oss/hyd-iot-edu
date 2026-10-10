@@ -36,7 +36,7 @@ from .rework_runtime import ReworkRuntime
 from .effect_compensation import EffectRuntime
 from .current_approval import ApprovalReviewRequired
 from .service_parts import ServicePartsRuntime
-from . import effect_parts
+from . import effect_parts, approval_part
 
 log = logging.getLogger("process.instances")
 
@@ -733,6 +733,69 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self._after_commit(self.deliver_approval, wi['id'], now)
         return {'instance':inst, 'workitem':wi, 'accepted':True, 'approval_status':'PENDING',
                 'plan':{k:v for k,v in plan.items() if k!='_snapshot'}, 'enterprise_results':[], 'purchase':purchase}
+
+    # ---------------------------------------------------------------- 캡스톤 G1: 일반 사람 승인 (formHandler:approve, 안 고르기)
+    @workitem_transition
+    def approve(self, workitem_id: str, decision: str, option, by: str, role: str, reason: str = "",
+                now: datetime | None = None) -> dict:
+        """에이전트가 낸 안 중 하나를 승인하거나 반려한다(approval_part). 승인자는 포털의 "나"(user:*)이고 이 단계 담당 역할의 구성원이어야
+        한다(inbox.check_actor, 아니면 PermissionError → 403). 승인하면 서버가 approved_by · approved_role · approved_option(고른 안 사본)을
+        넣고, 반려하면 그 값을 비운다. 그 뒤 폼 결과 {approval, approval_reason} 를 제출해 흐름이 분기로 간다."""
+        wi = self.repo.get_workitem(workitem_id)
+        if not wi or self._tool_of(wi) != approval_part.TOOL:
+            raise KeyError(workitem_id)
+        if wi["status"] != "IN_PROGRESS":
+            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 이미 처리된 승인입니다({wi['status']}) — 다시 승인 · 반려하지 않습니다")
+        if decision not in (approval_part.APPROVE, approval_part.REJECT):
+            raise ValueError(f"승인 결정은 '{approval_part.APPROVE}' 또는 '{approval_part.REJECT}'입니다 (받은 값: {decision!r})")
+        inst = self.repo.get_instance(wi["proc_inst_id"])
+        defn = self.definition_for(inst)
+        self._check_deadline(wi, inst, defn, now)
+        activity = defn.activities[wi["activity_id"]]
+        person = self._approval_actor(defn, inst, activity, by, role)
+        reason = (reason or "").strip()
+        if decision == approval_part.APPROVE:
+            chosen = approval_part.choose(engine.variables(inst), approval_part.config_of(activity), option)
+            consent = {"approved_by": by, "approved_role": role, "approved_option": chosen}
+        else:
+            if not reason:
+                raise ValueError("반려 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다")
+            chosen, consent = None, dict.fromkeys(approval_part.SERVER_VALUES)      # 앞 회차의 승인이 남아 효과를 내지 않게 비운다
+        engine.set_variables(defn, inst, consent)
+        participants = inst.setdefault("participants", [])
+        for who in (role, person):
+            if who and who not in participants:
+                participants.append(who)
+        self.repo.update_instance(inst)
+        job = "APPROVAL_ACCEPTED" if decision == approval_part.APPROVE else "APPROVAL_REJECTED"
+        self.repo.record_events([{"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": "human",
+                                  "event_type": "task_working",
+                                  "data": {"name": "승인 접수" if chosen is not None else "반려 접수", "by": by, "role": role,
+                                           "option": chosen, "reason": reason}}])
+        values = engine.variables(inst)
+        self._after_commit(self.hooks.audit, values.get("asset", "-"), by, job,
+                           {"instance": inst["proc_inst_id"], "task": wi["activity_id"], "role": role,
+                            "option": (chosen or {}).get(approval_part.option_key(approval_part.config_of(activity))), "reason": reason},
+                           incident=values.get("incident"))
+        out = self.submit(wi["id"], {"approval": decision, "approval_reason": reason}, by=by, now=now)
+        return dict(out, approval=decision, approved_option=chosen)
+
+    def _approval_actor(self, defn, inst: dict, activity: dict, by: str, role: str) -> str:
+        """일반 승인의 승인자: 포털의 "나"(사람 사용자)이고, 이 단계 담당(처리 건의 역할 바인딩)과 맞아야 한다. 판단 엔진 카드처럼 역할 등급
+        (Skill -APPROVED_BY-> Role)이 없으므로 담당 역할 그 자체만 받는다. 아니면 PermissionError(사유)."""
+        if not str(by or "").startswith(inbox.PERSON):
+            raise PermissionError("승인은 포털에서 '나'(사람 사용자)를 고른 뒤 합니다 — 누가 승인했는지 모르는 승인은 받지 않습니다")
+        endpoint = (engine.instance_binding(defn, inst, activity.get("role")) or {}).get("endpoint") or ""
+        if endpoint.startswith(inbox.ROLE):
+            if role != endpoint:
+                names = {r["id"]: r.get("username") or r["id"] for r in inbox.role_users(self.repo, self.tenant_id)}
+                raise PermissionError(f"이 승인은 {names.get(endpoint, endpoint)} 역할의 일입니다 — {names.get(role, role) or '역할 없음'}(으)로는 승인할 수 없습니다")
+        elif endpoint.startswith(inbox.PERSON):
+            if by != endpoint:
+                raise PermissionError(f"이 승인은 {endpoint} 에게 배정된 일입니다")
+        else:
+            raise PermissionError(f"승인 단계 '{activity.get('name') or activity['id']}'의 담당({endpoint or '없음'})이 사람 역할이 아닙니다")
+        return inbox.check_actor(self.repo, self.tenant_id, by, role)
 
     def _purchase_quotes(self, values: dict) -> list[dict]:
         part, _ = effect_parts.purchase_inputs(values)

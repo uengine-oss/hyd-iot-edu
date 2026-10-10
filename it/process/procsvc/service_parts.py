@@ -350,7 +350,7 @@ class ServicePartsRuntime:
         title = effect_parts.render_report(cfg.get("title") or "{asset} 처리 결과: {outcome}", context)
         summary = effect_parts.render_report(cfg.get("summary") or "", context)
         keep = ("asset", "pattern", "approved_by", "approved_role", "approved_amount", "approved_qty", "approved_supplier", "recovered",
-                "passed", "received", "decision_id")
+                "passed", "received", "decision_id", "approval", "approval_reason", "approved_option")   # 끝 셋: 캡스톤 G1 사람 승인(안 고르기)
         # C3: 재관측으로 판정한 흐름(A)은 사건의 회복 기준 태그 최신값을 결과 보고 시점에 읽어 측정값으로 싣는다. 재관측 task 의 출력 계약
         # (recovered 하나)은 배포된 정의가 정하므로 바꾸지 않는다 — 결과 보고는 재관측 바로 뒤라 같은 값을 본다.
         measured = dict(v)
@@ -369,7 +369,9 @@ class ServicePartsRuntime:
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
         closed = False
         if level != "info" and v.get("incident") and self.hooks.close_incident_result is not None:
-            closed = self.hooks.close_incident_result(v["incident"], level, f"{outcome} — {title}")
+            # 반려는 사건의 사유(on_reject 의 reason 과 같은 자리)가 곧 사람이 적은 반려 사유다 — 요약(사유 틀)을 함께 싣는다
+            note = f"{outcome} — {title}" + (f": {summary}" if level == "rejected" and summary else "")
+            closed = self.hooks.close_incident_result(v["incident"], level, note)
         report["incident_closed"] = bool(closed)
         self._event(wi, "RESULT_REPORT", "결과 보고", {"report": report}, event_type="task_completed")
         self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), f"[{outcome}] {title}", summary or title)
