@@ -149,6 +149,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         active=getattr(self._local,'transition',None)
         if active is None:return fn(*args,**kwargs)
         active['effects'].append((fn,args,kwargs))
+        audits=getattr(self._local,'service_audits',None)
+        if audits is not None and fn is self.hooks.audit:   # 시스템 task 시도가 실패해도 감사 기록은 남긴다 (_keep_failed_attempt_record)
+            audits.append((args,kwargs))
 
     def _check_deadline(self,wi,inst,defn,now):
         if inst.get('status')!='RUNNING':raise ValueError('instance is not running')
@@ -908,9 +911,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         return str(activity.get("tool") or "")
 
     def _run_service(self, inst: dict, wi: dict, now: datetime | None) -> None:
-        # 블랙박스 없음: 실패한 시도의 도구 호출 기록은 전이와 함께 되돌려지므로, 이 호출이 전이를 여는 경우에만 따로 모았다가 되돌린 뒤 남긴다
+        # 블랙박스 없음: 실패한 시도의 도구 호출 사건 · 감사 기록은 전이와 함께 버려지므로, 이 호출이 전이를 여는 경우에만 따로 모았다가 되돌린 뒤 남긴다
         owns_transition = getattr(self._local, 'transition', None) is None
         self._local.service_trace = [] if owns_transition else None
+        self._local.service_audits = [] if owns_transition else None
         try:
             with self._transition(wi['proc_inst_id']):
                 fresh=self.repo.get_workitem(wi['id'])
@@ -927,10 +931,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 handler(inst,fresh,now)
         except Exception as e:  # noqa: BLE001
             log.exception("service task %s failed", wi["activity_id"])
-            self._keep_failed_attempt_trace()
+            self._keep_failed_attempt_record()
             self._fail(wi, e, now)
         finally:
-            self._local.service_trace = None
+            self._local.service_trace = self._local.service_audits = None
 
     def _run_command(self, inst: dict, wi: dict, now) -> None:
         """Issue the chosen skill's PLC commands through the Incident (machine.on_approve). Completes when the ACK arrives."""

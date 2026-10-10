@@ -59,13 +59,21 @@ class ServicePartsRuntime:
         if crew == "tool" and trace is not None:      # 이 시도가 실패해 전이가 되돌려져도 무엇을 불렀고 무엇이 돌아왔는지 남긴다
             trace.append(deepcopy(row))
 
-    def _keep_failed_attempt_trace(self) -> None:
-        """실패한 시도의 도구 호출 기록(서버.도구 · 입력 · 출력/오류)을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록은 상태가 아니라 일지다
+    def _keep_failed_attempt_record(self) -> None:
+        """실패한 시도의 기록을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록과 감사 기록은 상태가 아니라 일지다
         (ProcessGPT processgpt_agent_sdk database.record_events_bulk 도 상태 변경과 따로 남긴다). 상태 변경은 되돌린 그대로 둔다.
-        왜 실패했는지는 이어서 _fail 의 error 사건이 남긴다."""
+          * 도구 호출 사건(서버.도구 · 입력 · 출력/오류) — attempt_failed 표시
+          * 감사 기록(MCP_*_FAILED · SKILL_FAILED …, 성공했다면 커밋 뒤 실행됐을 것) — detail 에 attempt_failed
+        왜 실패했는지는 이어서 _fail 의 error 사건이 남긴다. 성공한 시도는 이 길을 타지 않아 두 번 남지 않는다."""
         rows = getattr(self._local, "service_trace", None) or []
         if rows:
             self.repo.record_events([dict(r, data=dict(r["data"], attempt_failed=True)) for r in rows])
+        for args, kwargs in getattr(self._local, "service_audits", None) or []:
+            asset, actor, event, detail, *rest = args
+            try:
+                self.hooks.audit(asset, actor, event, dict(detail or {}, attempt_failed=True), *rest, **kwargs)
+            except Exception:  # noqa: BLE001 — 커밋 뒤 효과와 같은 규칙: 감사 저장 실패가 task 실패 처리를 막지 않는다(로그에 남김)
+                log.exception("audit of a failed attempt could not be written: %s", event)
 
     def _require_approval(self, inst: dict, wi: dict) -> dict:
         v = engine.variables(inst)

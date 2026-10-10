@@ -57,4 +57,12 @@
 - 조치: 상태 정합성은 그대로(되돌림 유지). 이 호출이 전이를 여는 경우에만(instances.py:912, 중첩이면 되돌림이 없으므로 모으지 않음 — 중복 방지) 시도 동안 도구 호출 사건(crew tool)을 따로 모으고(service_parts.py:54 _event), 실패하면 되돌린 뒤 그것을 attempt_failed=true 로 남기고(service_parts.py:62 _keep_failed_attempt_trace) 이어서 기존 _fail 이 error 사건(사유 · 회차)을 남긴다. 성공하면 지금처럼 전이 안에서 한 번만 남는다.
 - 시험 tests/test_failed_attempt_trace.py 3개: 도구가 오류를 돌려주는 읽기 확인을 3회 재시도 → PENDING 까지 회차마다 started(서버.도구 · 입력) · finished(오류 본문, attempt_failed) · error(retry 1,2,3 · 사유)가 그 순서로 남음, 출력 · 다음 단계 없음(되돌림 유지) / 성공 시 한 번만 / task 상세 패널(node 렌더)에 회차마다 도구 줄과 오류 문구가 보임.
 - 뮤테이션: T1 남기기 끔 → 2 실패, T2 모으기 끔 → 2 실패. 관련 시험 7개 파일 113 통과. 전체 스위트 1995 통과 · 4 건너뜀 · 0 실패.
-- 남은 것(기록): 실패한 시도의 감사(audit, _after_commit 로 미룬 MCP_*_FAILED 등)는 여전히 전이와 함께 버려진다 — 감사 표는 사건 기록과 다른 저장소라 이번 범위 밖. 라이브(Pg)에서 같은 동작은 미검증(Pg 경로는 같은 record_events 를 전이 밖에서 부름 — 코드 확인만).
+- (7.1 에서 고침) 실패한 시도의 감사 기록도 전이와 함께 버려지던 것. 라이브(Pg)에서 같은 동작은 미검증(Pg 경로는 같은 record_events 를 전이 밖에서 부름 — 코드 확인만).
+
+### 7.1 추가 근본 수정(코디네이터): 실패한 시도의 감사 기록
+- 원인(같은 원인): `_transition` 은 `_after_commit` 으로 미룬 일(감사 포함)을 커밋에 성공한 뒤에만 실행한다(instances.py 140~145행). 실패하면 그 목록이 상태와 함께 버려져 MCP_READ_FAILED · MCP_EFFECT_FAILED · SKILL_FAILED 같은 실패 사실이 감사 기록에서 사라졌다. 분류: 결함.
+- 조치: 시스템 task 시도가 전이를 소유할 때만 `_after_commit(self.hooks.audit, …)` 을 따로도 모은다(instances.py `_after_commit` — 감사 훅만, 다른 커밋 뒤 일(알림 · 투영)은 모으지 않음). 실패하면 되돌린 뒤 `_keep_failed_attempt_record`(service_parts.py, 사건 기록과 같은 자리 — 이름을 `_keep_failed_attempt_trace` 에서 바꿈, 옛 이름 검색 0)가 감사를 detail 에 attempt_failed=true 로 한 번씩 남긴다. 감사 저장 실패는 커밋 뒤 일과 같은 규칙으로 로그에 남기고 task 실패 처리를 막지 않는다. 성공한 시도는 커밋 뒤 한 번만(이 길을 타지 않음).
+- 시험 tests/test_failed_attempt_trace.py 5개 통과: 3회 재시도 → MCP_READ_FAILED 감사 3건(attempt_failed · 서버 · 도구 · 처리 건), MCP_READ_CALLED 0 / 성공 시 MCP_READ_CALLED 1건 · attempt_failed 없음 / 이미 열린 전이 안에서 불리면(되돌림 없음) 도구 사건 · 감사 모두 한 번씩.
+- 뮤테이션: A1 감사 모으기 끔 → 1 실패, A2 감사 버퍼가 전이 소유 무시 → 1 실패, A3 사건 버퍼가 전이 소유 무시 → 1 실패(앞 커밋의 중첩 방지 가드도 이번에 시험으로 덮음).
+- 관련 시험 7개 파일 115 통과. 전체 스위트 1997 통과 · 4 건너뜀 · 0 실패.
+- 관찰(이번 범위 밖, 기록): 이미 열린 전이 안에서 실패하면 `_fail` 이 기존 consumer 가드로 일찍 돌아가 error 사건이 남지 않는다. 지금 그 경로를 부르는 코드는 없다(_run_service 호출처는 poll_once · reconcile_services 뿐).
