@@ -52,8 +52,20 @@ class ServicePartsRuntime:
         return state
 
     def _event(self, wi: dict, job: str, name: str, data: dict, *, event_type: str = "task_working", crew: str = "result") -> None:
-        self.repo.record_events([{"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": crew,
-                                  "event_type": event_type, "data": dict(data, name=name)}])
+        row = {"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": crew, "event_type": event_type,
+               "data": dict(data, name=name)}
+        self.repo.record_events([row])
+        trace = getattr(self._local, "service_trace", None)
+        if crew == "tool" and trace is not None:      # 이 시도가 실패해 전이가 되돌려져도 무엇을 불렀고 무엇이 돌아왔는지 남긴다
+            trace.append(deepcopy(row))
+
+    def _keep_failed_attempt_trace(self) -> None:
+        """실패한 시도의 도구 호출 기록(서버.도구 · 입력 · 출력/오류)을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록은 상태가 아니라 일지다
+        (ProcessGPT processgpt_agent_sdk database.record_events_bulk 도 상태 변경과 따로 남긴다). 상태 변경은 되돌린 그대로 둔다.
+        왜 실패했는지는 이어서 _fail 의 error 사건이 남긴다."""
+        rows = getattr(self._local, "service_trace", None) or []
+        if rows:
+            self.repo.record_events([dict(r, data=dict(r["data"], attempt_failed=True)) for r in rows])
 
     def _require_approval(self, inst: dict, wi: dict) -> dict:
         v = engine.variables(inst)

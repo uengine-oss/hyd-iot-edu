@@ -50,3 +50,11 @@
 3. 포털에서 새 에이전트(업무 규칙 없음)를 만들어 흐름 하나에 묶고 한 건: CLAUDE.md 에 HYD · Neo4j 문구 없음, 처리 기록에 알림 한 줄.
 4. G3: 읽기 도구가 있는 학생 MCP(연결 검사 통과)로 `svc:mcp-call` effect:false + extract 흐름을 가져와 한 건 — task 상세에 "MCP 결과에서 값을 꺼냄"과 넘긴 값, 분기 하이라이트. 같은 흐름에 쓰기 도구(예: hyd-effects send_mail)를 effect:false 로 두면 PENDING + 거절 사유, 수업 메일함에 메일 0통.
 - 전체 스위트 최종 1회: 1992 통과 · 4 건너뜀 · 0 실패 (191 s).
+
+## 7. 추가 근본 수정(코디네이터): 실패한 시도의 도구 호출 기록이 사라지던 것
+- 원인(실물 확인): 서비스 처리기는 처리 건 전이 안에서 돈다(instances._run_service → _transition → repo.instance_transaction). 사건 쓰기도 같은 연결을 쓴다(procdb Pg record_events 가 전이의 연결을 재사용, MemoryRepo instance_transaction 206~214행은 실패하면 events 까지 되돌림). 그래서 실패한 시도의 tool_usage_started/finished 가 상태와 함께 사라지고 error 사건(_fail, 전이 밖)만 남았다. 분류: 결함(요구 '처리 과정에 블랙박스 없음').
+- 참고 레포: ProcessGPT processgpt_agent_sdk database.py 211~251행 record_events_bulk · record_event — 사건은 상태 변경과 따로 남기는 일지. 같은 원칙을 따름.
+- 조치: 상태 정합성은 그대로(되돌림 유지). 이 호출이 전이를 여는 경우에만(instances.py:912, 중첩이면 되돌림이 없으므로 모으지 않음 — 중복 방지) 시도 동안 도구 호출 사건(crew tool)을 따로 모으고(service_parts.py:54 _event), 실패하면 되돌린 뒤 그것을 attempt_failed=true 로 남기고(service_parts.py:62 _keep_failed_attempt_trace) 이어서 기존 _fail 이 error 사건(사유 · 회차)을 남긴다. 성공하면 지금처럼 전이 안에서 한 번만 남는다.
+- 시험 tests/test_failed_attempt_trace.py 3개: 도구가 오류를 돌려주는 읽기 확인을 3회 재시도 → PENDING 까지 회차마다 started(서버.도구 · 입력) · finished(오류 본문, attempt_failed) · error(retry 1,2,3 · 사유)가 그 순서로 남음, 출력 · 다음 단계 없음(되돌림 유지) / 성공 시 한 번만 / task 상세 패널(node 렌더)에 회차마다 도구 줄과 오류 문구가 보임.
+- 뮤테이션: T1 남기기 끔 → 2 실패, T2 모으기 끔 → 2 실패. 관련 시험 7개 파일 113 통과. 전체 스위트 1995 통과 · 4 건너뜀 · 0 실패.
+- 남은 것(기록): 실패한 시도의 감사(audit, _after_commit 로 미룬 MCP_*_FAILED 등)는 여전히 전이와 함께 버려진다 — 감사 표는 사건 기록과 다른 저장소라 이번 범위 밖. 라이브(Pg)에서 같은 동작은 미검증(Pg 경로는 같은 record_events 를 전이 밖에서 부름 — 코드 확인만).
