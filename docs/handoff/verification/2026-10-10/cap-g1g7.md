@@ -91,3 +91,16 @@
   기준 흐름 A · B · C · 정비형과 C3 흐름 세 개(scripts/c3_flows.py FLOWS) 모두 통과 고정.
 - 관련 시험 bpmn_import · c2_execution · c3_assembly · c3_bc_simplified · b7_oil · flow_deploy: 121 passed, 1 skipped.
 - 뮤테이션: 모든 조건을 승인으로 봄 → 1 실패 · 승인 조건 선도 막음 → 2 실패 + 17 오류 · 검사 끔 → 2 실패.
+
+## 10. 후속 2 — 사건이 있는 흐름에서 반려 뒤 사건이 열린 채 남음 (판정: 결함, 1절의 "반려 → info" 를 대체)
+- 근거: 사건 모델이 이미 명령 전 사람 거부를 종결 상태로 둔다 — `definition.py:20-23` FAILURE_STATES · TERMINAL 의 REJECTED_BY_OPERATOR("운전원 거부"),
+  `machine.py:233 on_reject`(AWAITING_APPROVAL 에서만, 사유 보관, main.py:701 옛 경로). DECISIONS.md:396 도 "운전원 거부"를 사건을 끝내는 일로 적는다.
+  참고 레포 process-gpt `ApprovalStatePanel.vue` 도 반려(rejected)를 끝 상태로 보이고 반려자 · 사유를 남긴다. info 로 두면 처리 건은 끝났는데
+  사건은 AWAITING_APPROVAL 로 영원히 남는다 → 계약이 아니라 결함.
+- 조치: `effect_parts.REPORT_OUTCOMES` 반려 → `rejected`. `machine.on_result_report` 가 rejected 면 AWAITING_APPROVAL 사건을 REJECTED_BY_OPERATOR 로
+  닫고(감사 GUIDE_REJECTED, 사유 보관), 다른 열린 상태면 사건 id · 상태와 함께 ValueError. `service_parts._run_report` 는 반려일 때 사건 사유에
+  보고 요약(반려 사유 틀)을 함께 싣는다(정상 · 미달 종결 문구는 그대로 — A · B · C 영향 0). 포털: level rejected 는 결과 배지 '반려', 중립색(other).
+- 시험(3건 추가 + 1건 기대값 수정, 31 passed): 경보 흐름에서 반려 → 사건 REJECTED_BY_OPERATOR · 사유 · 바깥 호출 0 / 같은 흐름 승인 → 사건 CLOSED /
+  승인 대기가 아닌 사건의 반려 종결 거절. 사건 없는 흐름의 반려 보고는 incident_closed False.
+- 관련 시험 c2_execution · c2_parts · machine · c3_assembly · c3_bc_simplified · c3_bc_review · incident_abort + 새 파일: 142 passed.
+- 뮤테이션: 반려를 info 로(옛 동작) → 2 실패 · 상태 검사 제거 → 1 · 반려 사유 안 실음 → 1.

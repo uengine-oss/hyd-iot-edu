@@ -39,9 +39,9 @@ EFFECTS = {MCP_TOOL: "MCP 쓰기(메일)", PR_TOOL: "ERP 발주", RESTORE_TOOL: 
 #: 시운전 기준 기본값(파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s, 경보선 = 사건 회복 기준과 같은 값 — definition.RECOVERY)
 TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}
 TEST_RUN_OPS = (">=", ">", "<=", "<")
-#: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · info 알림만, 사건은 그대로)
-#: 반려(캡스톤 G1 사람 승인의 반려 가지)는 실행하지 않았다는 알림이다 — 사건이 있으면 그대로 둔다(사람이 조치를 거절했을 뿐 사건은 남는다)
-REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info", "반려": "info"}
+#: 결과 보고의 결과 → 등급(ok 정상 종결 · fail 미달 종결 · rejected 반려 종결 · info 알림만, 사건은 그대로)
+#: 반려(캡스톤 G1 사람 승인의 반려 가지)도 처리 건의 끝이다 — 사건이 있으면 사건 모델의 '운전원 거부'(REJECTED_BY_OPERATOR)로 닫는다
+REPORT_OUTCOMES = {"정상": "ok", "입고 완료": "ok", "미달": "fail", "지연": "fail", "알림": "info", "승인 지연": "info", "반려": "rejected"}
 
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9]|-(?!-)){0,39}$")         # mcp_registry.NAME_RE 와 같음
 TOOL_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")

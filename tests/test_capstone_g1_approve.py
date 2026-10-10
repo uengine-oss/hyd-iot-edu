@@ -198,7 +198,7 @@ def test_reject_needs_a_reason_writes_nothing_outside_and_reports_rejection(case
     assert cal.calls == [] and v["approval"] == AP.REJECT and v["approved_by"] is None and v["approved_option"] is None
     done = rt.repo.get_instance(inst["proc_inst_id"])
     rep = v["result_report"]
-    assert done["status"] == "COMPLETED" and (rep["outcome"], rep["level"]) == ("반려", "info")
+    assert done["status"] == "COMPLETED" and (rep["outcome"], rep["level"]) == ("반려", "rejected") and rep["incident_closed"] is False
     assert rep["summary"] == "사유: 고객이 다음 분기로 미룸" and _row(rt, inst, "T_event")["status"] not in ("SUBMITTED", "DONE")
     assert any(e["job_id"] == "APPROVAL_REJECTED" for e in rt.repo.list_events(proc_inst_id=inst["proc_inst_id"]))
 
@@ -330,3 +330,58 @@ def test_reference_and_c3_flows_still_pass_the_approval_path_check(world):
     for did, (_, src, m) in c3._flows().FLOWS.items():
         r = B.check(B.parse_bpmn(src), deepcopy(m), {"catalog": cat, "definition_id": did, "version": "1", "file_name": "x", "xml_sha256": "x"})
         assert r["ok"], (did, r["problems"])
+
+
+# ---------------------------------------------------------------- 사건이 있는 흐름: 반려도 처리 건의 끝 → 사건을 '운전원 거부'로 닫는다
+def _alert_case(world):
+    from test_instance_mode import ALERT
+    rt = world["rt"]
+    for uid, name in ((ROLE, "주관자"), (ORG, "한주관")):
+        rt.repo.upsert_user({"id": uid, "username": name, "is_agent": False, "tenant_id": "hyd"})
+    rt.repo.set_role_member("hyd", ROLE, ORG, True)
+    src = FLOW.replace('<bpmn:startEvent id="Start" name="회의 요청 접수"/>',
+                       '<bpmn:startEvent id="Start" name="경보"><bpmn:messageEventDefinition id="M1"/></bpmn:startEvent>')
+    m = mapping()
+    m["start"] = {"kind": "alert", "patterns": ["COOLER_DEGRADATION"]}
+    m["tasks"]["T_agent"]["inputs"] = ["asset"]
+    m["tasks"]["R_ok"] = report("정상", "{asset} 조치 결과", "{approved_option.slot}")
+    m["tasks"]["R_rej"] = report("반려", "{asset} 조치 반려", "사유: {approval_reason}")
+    base = rt.definition_for({"proc_def_id": rt.defn.id, "proc_def_version": rt.base_version, "tenant_id": rt.tenant_id}).raw
+    r = B.check(B.parse_bpmn(src), m, {"catalog": B.catalog(base, USERS), "definition_id": "alert_qbr", "version": "1",
+                                       "file_name": "x.bpmn", "xml_sha256": "x"})
+    assert r["ok"], r["problems"]
+    rt.register_definition(r["definition"])
+    rt.deploy_definition("alert_qbr", "1", "tester", "G1 사건 흐름 시험")
+    rt.hooks.mcp_call = Calendar()
+    inst = rt.on_alert_raise(dict(ALERT, alertId="HYD-01-G1-REJ"), now=NOW)
+    assert inst["proc_def_id"] == "alert_qbr"
+    inc = world["incidents"][engine.variables(inst)["incident"]]
+    assert inc.state == "AWAITING_APPROVAL"
+    rt.submit(_row(rt, inst, "T_agent")["id"], {"proposal": deepcopy(PROPOSAL)}, now=NOW)
+    return rt, inst, inc
+
+
+def test_rejection_report_closes_the_incident_as_rejected_by_operator(world):
+    rt, inst, inc = _alert_case(world)
+    rt.approve(_row(rt, inst, "T_approve")["id"], AP.REJECT, None, ORG, ROLE, "현장 확인 결과 조치 불필요", now=NOW)
+    done = rt.repo.get_instance(inst["proc_inst_id"])
+    rep = engine.variables(done)["result_report"]
+    assert done["status"] == "COMPLETED" and rep["incident_closed"] is True and rep["level"] == "rejected"
+    assert inc.state == "REJECTED_BY_OPERATOR" and "현장 확인 결과 조치 불필요" in inc.reason
+    assert rt.hooks.mcp_call.calls == []
+
+
+def test_approval_report_closes_the_same_kind_of_incident_as_closed(world):
+    rt, inst, inc = _alert_case(world)
+    rt.approve(_row(rt, inst, "T_approve")["id"], AP.APPROVE, "금 10:00", ORG, ROLE, now=NOW)
+    assert inc.state == "CLOSED" and rt.repo.get_instance(inst["proc_inst_id"])["status"] == "COMPLETED"
+    assert len(rt.hooks.mcp_call.calls) == 1
+
+
+def test_rejection_report_refuses_an_incident_that_is_not_waiting_for_approval():
+    from procsvc import machine
+    from test_instance_mode import NoFx
+    inc = machine.Incident(id="INC-X", asset="HYD-01", alert_id="A-1", card={}, state="WORK_ORDER_CREATED")
+    with pytest.raises(ValueError, match="승인 대기 중인 사건만"):
+        machine.on_result_report(inc, "rejected", "반려", NoFx())
+    assert inc.state == "WORK_ORDER_CREATED"

@@ -329,7 +329,9 @@ class ServicePartsRuntime:
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
         closed = False
         if level != "info" and v.get("incident") and self.hooks.close_incident_result is not None:
-            closed = self.hooks.close_incident_result(v["incident"], level, f"{outcome} — {title}")
+            # 반려는 사건의 사유(on_reject 의 reason 과 같은 자리)가 곧 사람이 적은 반려 사유다 — 요약(사유 틀)을 함께 싣는다
+            note = f"{outcome} — {title}" + (f": {summary}" if level == "rejected" and summary else "")
+            closed = self.hooks.close_incident_result(v["incident"], level, note)
         report["incident_closed"] = bool(closed)
         self._event(wi, "RESULT_REPORT", "결과 보고", {"report": report}, event_type="task_completed")
         self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), f"[{outcome}] {title}", summary or title)
