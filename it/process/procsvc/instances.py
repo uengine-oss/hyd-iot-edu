@@ -99,6 +99,8 @@ class Hooks:
     # C2 승인 뒤 실행 부품 (service_parts.py). 없으면 그 부품은 사유와 함께 실패한다.
     enterprise_read: Callable[[str, dict], dict] | None = None        # (읽기 이름, 인자) → enterprise-sim 응답 {system, facts, records}
     mcp_call: Callable[[str, str, dict, str], dict] = lambda server, tool, arguments, key: {"status": "failed", "error": "MCP 호출이 연결되지 않았습니다"}
+    # G3: 읽기 확인(svc:mcp-call effect: false) — 부르기 직전 도구 목록을 다시 받아 읽기 판정(mcp_check.call)을 통과한 도구만 부른다
+    mcp_read: Callable[[str, str, dict], dict] = lambda server, tool, arguments: {"status": "failed", "error": "MCP 읽기 호출이 연결되지 않았습니다"}
     plant_restore: Callable[[str, str | None], dict] = lambda asset, component: {"ok": False, "error": "설비 시뮬레이터가 연결되지 않았습니다"}
     close_incident_effect: Callable[[str, dict], bool] | None = None   # 업무 효과(입고 확인)로 사건을 닫는다 (machine.on_business_effect)
     recovery_reading: Callable[[str], dict | None] | None = None     # 사건의 회복 기준 태그 최신값 · 경보 해제 (작업지시 뒤 재관측)

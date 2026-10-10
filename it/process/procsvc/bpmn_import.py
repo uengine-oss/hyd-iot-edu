@@ -779,6 +779,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     _graph_problems(parsed, g, start_node, problems)
 
     # -- 값 연결: 다음 단계가 기다리는 값을 앞 단계(또는 시작)가 내는가
+    extracted_types = {k: t for a in activities for k, t in effect_parts.extract_types(a).items()}
     available = {}
     for nid in g.nodes:
         anc = g.ancestors(nid) if start_node else set()
@@ -803,6 +804,8 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
         miss = sorted(need - have)
         if miss:
             problems.append(problem(f, "condition", f"조건 값 {', '.join(miss)} 을(를) 분기 앞 단계가 내지 않습니다"))
+        for reason in effect_parts.condition_type_problems(c["condition"], extracted_types):    # G3: MCP 결과에서 꺼낸 값의 자료형
+            problems.append(problem(f, "condition", reason))
 
     # -- 안전: 효과 부품(설비 명령 · 작업지시) 앞 경로에 사람 승인(조치 선택)이 있는가
     approvals = {a["id"] for a in activities if a["_part"].get("approval")}
@@ -810,7 +813,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     if start_node:
         free = g.reach([start_node["id"]], stop=lambda n: n in approvals)
         for a in activities:
-            effect = a["_part"].get("effect")
+            effect = None if effect_parts.is_read_check(a) else a["_part"].get("effect")    # G3: 읽기 확인은 효과가 아니다
             if not effect:
                 continue
             t = g.nodes[a["id"]]
@@ -851,7 +854,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     if start_form:
         field_type.update({f["key"]: f["type"] for f in start_form["fields_json"]})
     data = [deepcopy(cat["data"][v]) if v in cat["data"] else
-            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or DATA_TYPE.get(field_type.get(v), "Text")}
+            {"name": v, "type": SERVER_VALUE_TYPES.get(v) or extracted_types.get(v) or DATA_TYPE.get(field_type.get(v), "Text")}
             for v in used]
     role_rows = []
     for rname in used_roles:

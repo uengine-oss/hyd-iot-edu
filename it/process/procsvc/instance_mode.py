@@ -469,21 +469,34 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                 ctx.persist()
         return reading
 
-    def mcp_call(server: str, tool: str, arguments: dict, key: str) -> dict:
+    def _runtime_server(server: str, call) -> dict:
+        """등록 · 검사 도장 확인 → 비밀 자리표시자 채우기 → call(spec, entry) → 비밀 값 가리기. 실패는 status · error 로 답한다."""
         from . import mcp_check, mcp_secrets
         try:
-            spec = mcp_check.normalize(_effect_server(server))
+            entry = _effect_server(server)
+            spec = mcp_check.normalize(entry)
         except (LookupError, ValueError) as e:
             return {"status": "failed", "error": str(e), "error_kind": "config"}
         rt = current()
         if rt is None:
             return {"status": "failed", "error": "instance 실행 서비스가 없어 비밀 값 표를 읽을 수 없습니다", "error_kind": "config"}
-        try:            # G2: ${SECRET:KEY} 는 승인 뒤 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
+        try:            # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
             spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, spec)
         except mcp_secrets.SecretError as e:
             return {"status": "failed", "error": e.reason, "error_kind": "secret"}
         # 서버가 토큰을 되돌려 줘도(오류 본문 · 에코) 영수증 · 감사 · 처리 기록에 값이 남지 않게
-        return mcp_secrets.redact(mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0), used)
+        return mcp_secrets.redact(call(spec, entry), used)
+
+    def mcp_call(server: str, tool: str, arguments: dict, key: str) -> dict:
+        from . import mcp_check
+        return _runtime_server(server, lambda spec, entry: mcp_check.call_effect(spec, tool, arguments, idempotency_key=key, timeout=20.0))
+
+    def mcp_read(server: str, tool: str, arguments: dict) -> dict:
+        """G3 읽기 확인: 포털 써 보기와 같은 판정(mcp_check.call — 호출 직전 다시 받은 목록에서 read_only_verdict, 강사 확인 목록 포함).
+        쓰기 도구면 tools/call 없이 status=refused 로 돌아온다."""
+        from . import mcp_check, mcp_registry
+        return _runtime_server(server, lambda spec, entry: mcp_check.call(spec, tool, arguments, 20.0,
+                                                                         confirmed=frozenset(mcp_registry.confirmed_of(entry))))
 
     def _effect_server(name: str) -> dict:
         if name in EFFECT_MCP_SERVERS:
@@ -507,7 +520,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
                            exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit,
-                           enterprise_read=enterprise_read, mcp_call=mcp_call, plant_restore=plant_restore,
+                           enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
                            read_tag=ctx.latest_tag, close_incident_result=close_incident_result)
 
