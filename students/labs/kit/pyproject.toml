@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cooler-lab-kit"
+version = "1.0.0"
+description = "소형 냉각장치 랩 키트의 공용 도구(labkit)와 자동 확인(labcheck)"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["labkit", "labcheck"]

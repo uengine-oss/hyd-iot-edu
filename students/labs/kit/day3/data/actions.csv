@@ -1,0 +1,4 @@
+action_id,name,kind
+ACT-FAN-UP,팬 속도 올리기,운전 조정
+ACT-LOAD-DOWN,부하 낮추기,운전 조정
+ACT-FIN-CLEAN,정지 후 핀 세척,정비 작업

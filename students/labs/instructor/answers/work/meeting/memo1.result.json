@@ -1,0 +1,29 @@
+{
+  "title": "주간 품질 회의 메모",
+  "date": "2026-10-05",
+  "decisions": [
+    "포장 상자를 두꺼운 것으로 바꾼다",
+    "반품 사유를 매주 월요일에 집계해서 공유한다"
+  ],
+  "todos": [
+    {
+      "task": "새 상자 견적 받아 오기",
+      "owner": "박준서",
+      "due": "2026-10-08",
+      "unassigned": false
+    },
+    {
+      "task": "지난달 반품 사유를 표로 정리",
+      "owner": "이도윤",
+      "due": "2026-10-07",
+      "unassigned": false
+    },
+    {
+      "task": "택배사에 파손 보상 기준 문의",
+      "owner": "김하늘",
+      "due": "2026-10-10",
+      "unassigned": false
+    }
+  ],
+  "unassigned_todos": []
+}

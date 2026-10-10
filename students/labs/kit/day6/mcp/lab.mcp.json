@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "lab-neo4j": {
+      "command": "uvx",
+      "args": ["--with", "fastmcp==2.13.0.2", "mcp-neo4j-cypher@0.4.1", "--transport", "stdio"],
+      "env": {
+        "NEO4J_URI": "${LAB_NEO4J_URI}",
+        "NEO4J_USERNAME": "${LAB_NEO4J_USER}",
+        "NEO4J_PASSWORD": "${LAB_NEO4J_PASSWORD}",
+        "NEO4J_READ_ONLY": "true"
+      }
+    },
+    "lab-judge": {
+      "type": "http",
+      "url": "${LAB_JUDGE_MCP_URL}"
+    }
+  }
+}

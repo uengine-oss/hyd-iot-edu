@@ -1,0 +1,7 @@
+# 학생 결과와 개인 설정은 저장소에 넣지 않는다.
+kit/.env
+kit/.mcp.json
+kit/.claude/
+kit/work/*
+!kit/work/.gitkeep
+kit/cooler_lab_kit.egg-info/

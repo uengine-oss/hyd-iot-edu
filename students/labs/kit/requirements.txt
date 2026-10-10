@@ -1,0 +1,5 @@
+neo4j==5.27.0
+psycopg[binary]==3.2.3
+fastmcp==2.13.0.2
+anthropic>=1.12
+-e .

@@ -1,0 +1,698 @@
+{
+  "actions": {
+    "ACT-FAN-UP": "팬 속도 올리기",
+    "ACT-LOAD-DOWN": "부하 낮추기",
+    "ACT-FIN-CLEAN": "정지 후 핀 세척"
+  },
+  "rules": {
+    "F1": [
+      "ACT-FAN-UP",
+      "제외"
+    ],
+    "F2": [
+      "ACT-FAN-UP",
+      "경고"
+    ],
+    "F3": [
+      "ACT-FAN-UP",
+      "허용"
+    ],
+    "F4": [
+      "ACT-FAN-UP",
+      "제외"
+    ],
+    "L1": [
+      "ACT-LOAD-DOWN",
+      "허용"
+    ],
+    "L2": [
+      "ACT-LOAD-DOWN",
+      "경고"
+    ],
+    "L3": [
+      "ACT-LOAD-DOWN",
+      "제외"
+    ],
+    "L4": [
+      "ACT-LOAD-DOWN",
+      "제외"
+    ],
+    "C1": [
+      "ACT-FIN-CLEAN",
+      "제외"
+    ],
+    "C2": [
+      "ACT-FIN-CLEAN",
+      "경고"
+    ],
+    "C3": [
+      "ACT-FIN-CLEAN",
+      "허용"
+    ]
+  },
+  "cases": [
+    {
+      "name": "normal.json",
+      "input": {
+        "temp_c": 38,
+        "fan_state": "정상",
+        "load_pct": 50
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      },
+      "applied": {
+        "ACT-FAN-UP": "F4",
+        "ACT-LOAD-DOWN": "L3",
+        "ACT-FIN-CLEAN": "C3"
+      }
+    },
+    {
+      "name": "just_above.json",
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정상",
+        "load_pct": 50
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      },
+      "applied": {
+        "ACT-FAN-UP": "F3",
+        "ACT-LOAD-DOWN": "L2",
+        "ACT-FIN-CLEAN": "C3"
+      }
+    },
+    {
+      "name": "overlap.json",
+      "input": {
+        "temp_c": 62,
+        "fan_state": "약함",
+        "load_pct": 85
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "제외"
+      },
+      "applied": {
+        "ACT-FAN-UP": "F2",
+        "ACT-LOAD-DOWN": "L1",
+        "ACT-FIN-CLEAN": "C1"
+      }
+    }
+  ],
+  "boundaries": [
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정상",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정상",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정상",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정상",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "약함",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "약함",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "약함",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "약함",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정지",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정지",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정지",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45,
+        "fan_state": "정지",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정상",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정상",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정상",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정상",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "약함",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "약함",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "약함",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "약함",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정지",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정지",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정지",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 45.1,
+        "fan_state": "정지",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정상",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정상",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정상",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정상",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "약함",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "약함",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "약함",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "약함",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정지",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정지",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정지",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "허용"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60,
+        "fan_state": "정지",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "경고",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정상",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정상",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정상",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정상",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "허용",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "약함",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "약함",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "약함",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "약함",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "경고",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정지",
+        "load_pct": 30
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "제외",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정지",
+        "load_pct": 30.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정지",
+        "load_pct": 80
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "경고"
+      }
+    },
+    {
+      "input": {
+        "temp_c": 60.1,
+        "fan_state": "정지",
+        "load_pct": 80.1
+      },
+      "results": {
+        "ACT-FAN-UP": "제외",
+        "ACT-LOAD-DOWN": "허용",
+        "ACT-FIN-CLEAN": "제외"
+      }
+    }
+  ],
+  "invalid_inputs": {
+    "팬 상태 '모름'": {
+      "temp_c": 50,
+      "fan_state": "모름",
+      "load_pct": 50
+    },
+    "부하 값 없음": {
+      "temp_c": 50,
+      "fan_state": "정상"
+    }
+  }
+}

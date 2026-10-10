@@ -1,0 +1,103 @@
+{
+  "case_id": "CASE-CL01-HIGH-LOAD",
+  "asset_id": "CL-01",
+  "failure_mode": "과열",
+  "condition": {
+    "temp_c": 63,
+    "fan_state": "정상",
+    "load_pct": 85
+  },
+  "available_minutes": 120,
+  "candidates": [
+    {
+      "action_id": "ACT-FAN-UP",
+      "name": "팬 속도 올리기",
+      "effect": {
+        "row": "E-1",
+        "temp_drop_c": 6,
+        "benefit_manwon": 40
+      },
+      "cost": {
+        "cost_manwon": 8,
+        "required_minutes": 0
+      },
+      "judgement": {
+        "result": "허용",
+        "applied_rule": "F3"
+      },
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 14,
+          "quote": "과열일 때 먼저 팬 속도 올리기를 한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-1"
+        }
+      ]
+    },
+    {
+      "action_id": "ACT-LOAD-DOWN",
+      "name": "부하 낮추기",
+      "effect": {
+        "row": "E-2",
+        "temp_drop_c": 10,
+        "benefit_manwon": 60
+      },
+      "cost": {
+        "cost_manwon": 45,
+        "required_minutes": 0
+      },
+      "judgement": {
+        "result": "허용",
+        "applied_rule": "L1"
+      },
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 15,
+          "quote": "팬 속도 올리기로 10분 안에 온도가 내려가지 않으면 과열을 풀기 위해 부하 낮추기를 한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-2"
+        }
+      ]
+    },
+    {
+      "action_id": "ACT-FIN-CLEAN",
+      "name": "정지 후 핀 세척",
+      "effect": {
+        "row": "E-3",
+        "temp_drop_c": 15,
+        "benefit_manwon": 90
+      },
+      "cost": {
+        "cost_manwon": 30,
+        "required_minutes": 90
+      },
+      "judgement": {
+        "result": "제외",
+        "applied_rule": "C1"
+      },
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 16,
+          "quote": "방열핀 막힘이 원인인 과열은 정지 후 핀 세척으로 해결한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-3"
+        }
+      ]
+    }
+  ]
+}

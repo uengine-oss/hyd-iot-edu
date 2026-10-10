@@ -1,0 +1,81 @@
+{
+  "case_id": "CASE-CL01-OVERHEAT",
+  "asset_id": "CL-01",
+  "condition": {
+    "temp_c": 63,
+    "fan_state": "정상",
+    "load_pct": 70
+  },
+  "available_minutes": 120,
+  "ranking": [
+    {
+      "action_id": "ACT-FIN-CLEAN",
+      "name": "정지 후 핀 세척",
+      "net_benefit_manwon": 60,
+      "judgement": "경고",
+      "warning": true,
+      "reason": "순편익 60만원(효과 90 − 비용 30), 결정표 규칙 C2 경고가 있어 주의가 필요하다",
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 16,
+          "quote": "방열핀 막힘이 원인인 과열은 정지 후 핀 세척으로 해결한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-3"
+        }
+      ],
+      "rank": 1
+    },
+    {
+      "action_id": "ACT-FAN-UP",
+      "name": "팬 속도 올리기",
+      "net_benefit_manwon": 32,
+      "judgement": "허용",
+      "warning": false,
+      "reason": "순편익 32만원(효과 40 − 비용 8)",
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 14,
+          "quote": "과열일 때 먼저 팬 속도 올리기를 한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-1"
+        }
+      ],
+      "rank": 2
+    },
+    {
+      "action_id": "ACT-LOAD-DOWN",
+      "name": "부하 낮추기",
+      "net_benefit_manwon": 15,
+      "judgement": "허용",
+      "warning": false,
+      "reason": "순편익 15만원(효과 60 − 비용 45)",
+      "evidence": [
+        {
+          "kind": "문서",
+          "doc": "CM-01",
+          "section": "2",
+          "line": 15,
+          "quote": "팬 속도 올리기로 10분 안에 온도가 내려가지 않으면 과열을 풀기 위해 부하 낮추기를 한다."
+        },
+        {
+          "kind": "비교표",
+          "row": "E-2"
+        }
+      ],
+      "rank": 3
+    }
+  ],
+  "excluded": [],
+  "recommended": "ACT-FIN-CLEAN",
+  "control_executed": false
+}

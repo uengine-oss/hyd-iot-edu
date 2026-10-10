@@ -1,0 +1,37 @@
+{
+  "memo1": {
+    "date": "2026-10-05",
+    "decisions": [["상자"], ["월요일"]],
+    "todos": [
+      {"owner": "박준서", "keywords": ["견적"], "due": "2026-10-08"},
+      {"owner": "이도윤", "keywords": ["반품"], "due": "2026-10-07"},
+      {"owner": "김하늘", "keywords": ["보상"], "due": "2026-10-10"}
+    ]
+  },
+  "memo2": {
+    "date": "2026-10-06",
+    "decisions": [["이틀"], ["교재"]],
+    "todos": [
+      {"owner": "정민호", "keywords": ["규정"], "due": "2026-10-13"},
+      {"owner": "한지우", "keywords": ["교육장"], "due": "2026-10-09"},
+      {"owner": "최서연", "keywords": ["강사"], "due": "2026-10-14"}
+    ]
+  },
+  "memo3": {
+    "date": "2026-10-07",
+    "decisions": [["24"]],
+    "todos": [
+      {"owner": "오세훈", "keywords": ["계약"], "due": "2026-10-15"},
+      {"owner": "윤가은", "keywords": ["배치도"], "due": "2026-10-17"}
+    ]
+  },
+  "memo4": {
+    "date": "2026-10-08",
+    "decisions": [["온라인"]],
+    "todos": [
+      {"owner": "임수아", "keywords": ["문항"], "due": "2026-10-16"},
+      {"owner": null, "keywords": ["계정"], "due": "2026-10-14"},
+      {"owner": null, "keywords": ["양식"], "due": null}
+    ]
+  }
+}

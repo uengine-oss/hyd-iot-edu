@@ -1,0 +1,6 @@
+sensor_id,asset_id,component_id,name,kind,unit,tag
+CL-01-TT-OUT,CL-01,CL-01-FIN,1호 출구 온도 센서,출구 온도,℃,CL01_TT_OUT
+CL-01-FT,CL-01,CL-01-PUMP,1호 유량 센서,유량,L/min,CL01_FT
+CL-01-ST-FAN,CL-01,CL-01-FAN,1호 팬 회전수 센서,팬 회전수,rpm,CL01_ST_FAN
+CL-02-TT-OUT,CL-02,CL-02-FIN,2호 출구 온도 센서,출구 온도,℃,CL02_TT_OUT
+CL-02-ST-FAN,CL-02,CL-02-FAN,2호 팬 회전수 센서,팬 회전수,rpm,CL02_ST_FAN

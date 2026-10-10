@@ -1,0 +1,10 @@
+{
+  "title": "사무실 이사 준비 회의",
+  "date": "2026-10-07",
+  "decisions": ["이사 날짜를 10월 24일로 확정"],
+  "todos": [
+    {"task": "이사 업체와 계약", "owner": "오세훈", "due": "2026-10-15", "unassigned": false},
+    {"task": "새 사무실 좌석 배치도 그리기", "owner": "윤가은", "due": "2026-10-17", "unassigned": false}
+  ],
+  "unassigned_todos": []
+}

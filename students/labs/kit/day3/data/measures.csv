@@ -1,0 +1,5 @@
+measure_id,name,unit,better
+KPI-OUT-TEMP,출구 온도,℃,낮을수록 좋음
+KPI-POWER-COST,전력비,원/일,낮을수록 좋음
+KPI-OUTPUT,생산량,개/일,높을수록 좋음
+KPI-UPTIME,가동 시간,시간/일,높을수록 좋음

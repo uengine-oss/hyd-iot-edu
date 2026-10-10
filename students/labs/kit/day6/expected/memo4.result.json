@@ -1,0 +1,11 @@
+{
+  "title": "고객 설문 준비 회의",
+  "date": "2026-10-08",
+  "decisions": ["설문은 온라인으로만 받는다"],
+  "todos": [
+    {"task": "설문 문항 초안 쓰기", "owner": "임수아", "due": "2026-10-16", "unassigned": false},
+    {"task": "설문 도구 계정 만들기", "owner": null, "due": "2026-10-14", "unassigned": true},
+    {"task": "결과 보고 양식 정하기", "owner": null, "due": null, "unassigned": true}
+  ],
+  "unassigned_todos": ["설문 도구 계정 만들기", "결과 보고 양식 정하기"]
+}

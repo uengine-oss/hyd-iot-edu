@@ -1,0 +1,9 @@
+{
+  "questions": [
+    {"id": "q1", "asset_id": "CL-01", "question": "CL-01 온도가 높다. 관련 고장 원인과 근거를 알려 줘."},
+    {"id": "q2", "asset_id": "CL-01", "question": "CL-01 의 지금 출구 온도는 얼마이고, 그 값에 해당하는 판정 기준과 조치는 무엇인가?"},
+    {"id": "q3", "asset_id": "CL-01", "question": "CL-01 의 압축기에 문제가 생기면 어떻게 조치하나?"},
+    {"id": "q4", "asset_id": "CL-02", "question": "CL-02 의 팬 회전수는 지금 얼마인가? 정상인가?"},
+    {"id": "q5", "asset_id": "CL-99", "question": "CL-99 의 과열 원인은 무엇인가?"}
+  ]
+}

@@ -1,0 +1,60 @@
+# 소형 냉각장치 랩 전용 실행 환경.
+# 수업 스택(유압설비 공장)과 이름·포트·저장 공간이 모두 다르다. 이 폴더에서만 켜고 끈다.
+#   켜기: docker compose up -d --wait
+#   끄기: docker compose down          (저장한 연습 자료는 남는다)
+name: cooler-lab
+
+services:
+  lab-neo4j:                              # 연습용 지식 그래프 (화면 http://127.0.0.1:17474)
+    image: neo4j:5.26-community
+    restart: unless-stopped
+    mem_limit: 900m
+    ports: ["127.0.0.1:17474:7474", "127.0.0.1:17687:7687"]
+    environment:
+      NEO4J_AUTH: neo4j/${LAB_NEO4J_PASSWORD:?.env 파일에 LAB_NEO4J_PASSWORD 를 정해 주세요}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.meta.*
+      NEO4J_server_bolt_advertised__address: "127.0.0.1:17687"   # Browser 가 연습용 그래프로 바로 붙게 한다
+      NEO4J_server_memory_heap_initial__size: 128m
+      NEO4J_server_memory_heap_max__size: 384m
+      NEO4J_server_memory_pagecache_size: 32m
+    volumes: ["lab-neo4j-data:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/7687' || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 20s
+
+  lab-db:                                 # 연습용 DB (센서의 현재 값)
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    ports: ["127.0.0.1:15432:5432"]
+    environment:
+      POSTGRES_DB: coolerlab
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: ${LAB_DB_PASSWORD:?.env 파일에 LAB_DB_PASSWORD 를 정해 주세요}
+    volumes:
+      - ./day4/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - lab-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab -d coolerlab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  lab-judge-mcp:                          # 판단 MCP (조치를 허용·경고·제외로 판정)
+    build: ./day6/judge_mcp
+    restart: unless-stopped
+    mem_limit: 256m
+    ports: ["127.0.0.1:18198:18198"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket;socket.create_connection(('127.0.0.1',18198),2).close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  lab-neo4j-data:
+  lab-db-data:

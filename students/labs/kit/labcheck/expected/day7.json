@@ -1,0 +1,22 @@
+{
+  "what_if": [
+    {"available_minutes": 120, "ranking": ["ACT-FIN-CLEAN", "ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": []},
+    {"available_minutes": 90, "ranking": ["ACT-FIN-CLEAN", "ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": []},
+    {"available_minutes": 89, "ranking": ["ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": ["ACT-FIN-CLEAN"]},
+    {"available_minutes": 30, "ranking": ["ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": ["ACT-FIN-CLEAN"]},
+    {"available_minutes": 0, "ranking": ["ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": ["ACT-FIN-CLEAN"]}
+  ],
+  "net_benefit_manwon": {"ACT-FAN-UP": 32, "ACT-LOAD-DOWN": 15, "ACT-FIN-CLEAN": 60},
+  "highload": {"ranking": ["ACT-FAN-UP", "ACT-LOAD-DOWN"], "excluded": ["ACT-FIN-CLEAN"]},
+  "reviews": [
+    {"name": "정상 추천안", "case": "day7/inputs/case_base.json", "proposal": "day7/inputs/proposal_ok.json", "verdict": "통과", "types": []},
+    {"name": "근거가 빠진 추천안", "case": "day7/inputs/case_base.json", "proposal": "day7/inputs/proposal_missing_evidence.json", "verdict": "반려", "types": ["근거 누락"]},
+    {"name": "결정표에서 제외인 조치를 추천한 추천안", "case": "labcheck/fixtures/day7/case_highload.json", "proposal": "labcheck/fixtures/day7/proposal_rule_violation.json", "verdict": "반려", "types": ["조건 위반"]},
+    {"name": "작업 가능 시간보다 긴 조치를 추천한 추천안", "case": "day7/inputs/case_base.json", "proposal": "labcheck/fixtures/day7/proposal_time_violation.json", "verdict": "반려", "types": ["조건 위반"]},
+    {"name": "순편익 숫자와 순위가 비교표와 다른 추천안", "case": "day7/inputs/case_base.json", "proposal": "labcheck/fixtures/day7/proposal_reason_mismatch.json", "verdict": "반려", "types": ["이유 불일치"]}
+  ],
+  "resume": [
+    {"answer": "30", "recommended": "ACT-FAN-UP"},
+    {"answer": "120", "recommended": "ACT-FIN-CLEAN"}
+  ]
+}

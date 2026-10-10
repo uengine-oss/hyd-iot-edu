@@ -1,0 +1,8 @@
+action_id,measure_id,effect,basis,note
+ACT-FAN-UP,KPI-OUT-TEMP,긍정,풍량이 늘어 열이 더 빨리 빠진다,
+ACT-FAN-UP,KPI-POWER-COST,부정,팬이 전기를 더 쓴다,전력비 15 % 증가로 추정(계산하지 않은 값)
+ACT-LOAD-DOWN,KPI-OUT-TEMP,긍정,들어오는 열이 줄어든다,
+ACT-LOAD-DOWN,KPI-OUTPUT,부정,가공 속도를 늦추므로 생산량이 준다,
+ACT-FIN-CLEAN,KPI-OUT-TEMP,긍정,막힌 핀이 뚫려 바람이 지나간다,온도 15 ℃ 하강 예상(확정 아님)
+ACT-FIN-CLEAN,KPI-UPTIME,부정,세척하는 동안 장치를 멈춘다,
+ACT-FIN-CLEAN,KPI-POWER-COST,긍정,팬을 세게 돌리지 않아도 된다,

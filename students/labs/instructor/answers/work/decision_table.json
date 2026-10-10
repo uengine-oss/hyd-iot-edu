@@ -1,0 +1,27 @@
+{
+  "name": "소형 냉각장치 조치 판단 결정표",
+  "inputs": {
+    "temp_c": {"label": "출구 온도", "type": "number", "unit": "℃"},
+    "fan_state": {"label": "팬 상태", "type": "enum", "values": ["정상", "약함", "정지"]},
+    "load_pct": {"label": "부하", "type": "number", "unit": "%", "min": 0, "max": 100}
+  },
+  "priority": ["제외", "경고", "허용"],
+  "actions": {
+    "ACT-FAN-UP": "팬 속도 올리기",
+    "ACT-LOAD-DOWN": "부하 낮추기",
+    "ACT-FIN-CLEAN": "정지 후 핀 세척"
+  },
+  "rules": [
+    {"id": "F1", "action": "ACT-FAN-UP", "when": [{"input": "fan_state", "op": "==", "value": "정지"}], "result": "제외", "reason": "돌지 않는 팬은 속도를 올릴 수 없다"},
+    {"id": "F2", "action": "ACT-FAN-UP", "when": [{"input": "fan_state", "op": "==", "value": "약함"}], "result": "경고", "reason": "올려도 효과가 작을 수 있다"},
+    {"id": "F3", "action": "ACT-FAN-UP", "when": [{"input": "fan_state", "op": "==", "value": "정상"}, {"input": "temp_c", "op": ">", "value": 45}], "result": "허용", "reason": "바람을 늘려 식힐 수 있다"},
+    {"id": "F4", "action": "ACT-FAN-UP", "when": [{"input": "temp_c", "op": "<=", "value": 45}], "result": "제외", "reason": "정상 온도라 할 필요가 없다"},
+    {"id": "L1", "action": "ACT-LOAD-DOWN", "when": [{"input": "temp_c", "op": ">", "value": 60}], "result": "허용", "reason": "과열이라 열을 줄여야 한다"},
+    {"id": "L2", "action": "ACT-LOAD-DOWN", "when": [{"input": "temp_c", "op": ">", "value": 45}, {"input": "temp_c", "op": "<=", "value": 60}], "result": "경고", "reason": "생산량이 줄어드니 다른 조치를 먼저 본다"},
+    {"id": "L3", "action": "ACT-LOAD-DOWN", "when": [{"input": "temp_c", "op": "<=", "value": 45}], "result": "제외", "reason": "정상 온도라 할 필요가 없다"},
+    {"id": "L4", "action": "ACT-LOAD-DOWN", "when": [{"input": "load_pct", "op": "<=", "value": 30}], "result": "제외", "reason": "더 낮출 여유가 없다"},
+    {"id": "C1", "action": "ACT-FIN-CLEAN", "when": [{"input": "load_pct", "op": ">", "value": 80}], "result": "제외", "reason": "바쁘게 도는 동안에는 멈출 수 없다"},
+    {"id": "C2", "action": "ACT-FIN-CLEAN", "when": [{"input": "temp_c", "op": ">", "value": 60}], "result": "경고", "reason": "뜨거우니 식힌 뒤 작업한다"},
+    {"id": "C3", "action": "ACT-FIN-CLEAN", "when": [{"input": "temp_c", "op": "<=", "value": 60}, {"input": "load_pct", "op": "<=", "value": 80}], "result": "허용", "reason": "멈추고 작업할 수 있다"}
+  ]
+}

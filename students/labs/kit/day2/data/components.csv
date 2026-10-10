@@ -1,0 +1,8 @@
+component_id,asset_id,name,kind
+CL-01-FAN,CL-01,냉각 팬,팬
+CL-01-FIN,CL-01,방열핀,방열핀
+CL-01-PUMP,CL-01,순환 펌프,펌프
+CL-01-HOSE,CL-01,냉각수 호스,호스
+CL-02-FAN,CL-02,냉각 팬,팬
+CL-02-FIN,CL-02,방열핀,방열핀
+CL-02-PUMP,CL-02,순환 펌프,펌프
