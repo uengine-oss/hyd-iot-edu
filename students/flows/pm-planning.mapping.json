@@ -1,0 +1,69 @@
+{
+  "name": "정기 정비",
+  "start": {
+    "kind": "alert",
+    "patterns": [
+      "PM_DUE"
+    ]
+  },
+  "lanes": {},
+  "tasks": {
+    "T_agent": {
+      "part": "task:decide",
+      "agent": "agent:pm-plan",
+      "instruction": "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다"
+    },
+    "T_approve": {
+      "part": "task:select-or-reject",
+      "role": "설비보전팀장"
+    },
+    "T_notice": {
+      "part": "svc:report",
+      "config": {
+        "outcome": "승인 지연",
+        "title": "{asset} 정기 정비 승인 지연",
+        "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다"
+      }
+    },
+    "R_rejected": {
+      "part": "svc:report",
+      "config": {
+        "outcome": "반려",
+        "title": "{asset} 정기 정비 결과",
+        "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 정비 오더를 내지 않았습니다(정기 점검 도래 표시는 그대로)"
+      }
+    },
+    "T_wo": {
+      "part": "task:work-order",
+      "config": {
+        "mail": {
+          "to": "production@hyd.local",
+          "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}",
+          "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by_name})"
+        },
+        "window_var": "alert.evidence.night_window_id"
+      }
+    },
+    "R_ok": {
+      "part": "svc:report",
+      "config": {
+        "outcome": "정상",
+        "title": "{asset} 정기 정비 결과",
+        "summary": "정비 오더 {work_order.ref} 등록 · 생산팀 공지 — {work_order.detail}"
+      }
+    }
+  },
+  "timers": {
+    "B_overdue": "PT10M"
+  },
+  "flows": {
+    "F_approved": {
+      "var": "approval",
+      "op": "==",
+      "value": "승인"
+    },
+    "F_rejected": {
+      "default": true
+    }
+  }
+}

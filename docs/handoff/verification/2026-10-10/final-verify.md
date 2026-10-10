@@ -19,3 +19,10 @@
 - **검증됨(단위)**: 새 `tests/test_cooler_restore_rerun.py` 6개 — 열화 → 경보 → 조치 지령 → 해제 → 복구 → **곧바로** 열화 → detector 실제 규칙(`det.cep.evaluate`)이 다시 RAISE(보호 정지 없음) / 운전점 없이 복구하면 6000초가 지나도 경보 0(원인 고정) / 버튼 정의 · 정비 복구는 요청하지 않음 / restore 아닌 종류 거절 · 이미 평소면 변화 없음 · 다른 설비 그대로 / HTTP 요청 → 설비, 잘못된 짝 400 / process 버튼 API → 요청 본문 → 처리 건 기록 · 감사 기록 · 마지막 주입 종류.
   뮤테이션 7개 모두 잡힘(버튼에서 값 뺌 4실패 · 부하 지령 안 되돌림 2 · 거절 없앰 2 · HTTP 가 값 안 넘김 1 · 기록에 지령 안 남김 1 · 요청 없이도 되돌림 1 · 평소 값 상수를 조치 값으로 3).
 - 라이브 확인은 4절.
+
+## 2. 수업 준비물 — bpmn.io 에서 열리는 참조 흐름 (`students/flows/`)
+- 만든 것: `cooling-emergency.bpmn`(A) · `pm-planning.bpmn`(B) · `spare-purchase.bpmn`(C) — bpmn.io 가 내보내는 형태(풀 하나 · 칸 셋 · incoming/outgoing · 그림 배치 `bpmndi` · 메시지 시작), 승인 · 거절 · 승인 지연 알림이 든 지금 모양. 연결 값 `*.mapping.json`(= `c3_flows.py` 의 매핑 그대로), 한 쪽 안내 `README.md`(가져오는 순서, 시작 조건, 단계별 부품 · 담당, 분기 조건, 타이머, 화면에 칸이 없는 설정을 연결 값 파일로 넣는 법).
+- 요소 id · 이름 · 선은 `c3_flows.py` 에서 읽고 자리(좌표)만 정해 그렸다 — 도구 `docs/handoff/tools/live/draw_flows.py`(`c3_flows.py` 를 고치면 다시 돌린다. 다시 돌린 결과가 커밋한 파일과 같음을 확인).
+- **검증됨(bpmn.io 형식)**: bpmn.io 의 그리기 라이브러리(bpmn-js 17.11.1, process-gpt `node_modules` 를 읽기만 — K 가 쓴 방법)로 열어 경고 0 · 페이지 오류 0: A 도형 21 · 선 15, B 17 · 10, C 18 · 11. 일부러 끊은 선은 "unresolved reference" 경고로 잡힘. 그림 `.evidence/a164-final/bpmn/A-cooling.png` · `B-pm.png` · `C-spare.png` · `open.log`. A 그림은 눈으로 봤다(칸 · 선 · 점선 타이머 · 이름표). demo.bpmn.io 사이트에 직접 올려 보지는 않았다(미검증).
+- **검증됨(단위)**: 새 `tests/test_student_reference_flows.py` 7개 — 흐름마다 ① 포털 가져오기가 읽은 구조(요소 종류 · 이름 · 붙은 곳 · 멈춤 여부 · 선 · 칸 · task 의 칸)가 `c3_flows` 와 같고, 연결 값 파일이 `c3_flows` 매핑과 같고, 그 둘로 사전 검사를 통과해 나온 **실행 정의가 같다**(원본 파일 칸만 제외) ② bpmn.io 형태(모든 요소 · 선에 자리, 요소가 그려진 칸 = 속한 칸, incoming/outgoing 이 선과 맞음) ③ 안내문의 표가 실제 선택과 같다(포털에 보이는 부품 이름 · 에이전트 이름 · 역할 · 시작 경보 · 조건 · 기한 · 결과 값). 뮤테이션 11개 모두 잡힘(그림의 이름 · 멈춤 여부 · 선 · 메시지 시작 · 자리 · 칸, 연결 값 파일, `c3_flows` 의 기한 · 부품, 안내문의 에이전트 · 결과 값). 안내문에 처음 `recovered == true` 로 적었던 것을 이 시험이 잡았다(시스템 표기는 `recovered == True`).
+- 라이브(이 A 파일을 학생 순서로 가져와 완주)는 4절.
