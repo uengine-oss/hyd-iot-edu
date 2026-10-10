@@ -56,7 +56,7 @@ def main():
 
     def snapshot(plan):
         with driver.session() as session:
-            return session.execute_write(lambda tx: manual_graph._snapshot(tx, plan['document']))
+            return session.execute_write(lambda tx: manual_graph._snapshot(tx, plan['document'])[0])   # (graph, history)
 
     def conflict(fn):
         try:
@@ -83,8 +83,8 @@ def main():
         check('missing target rolls back whole graph', conflict(lambda: commit(invalid)) and not snapshot(invalid)['nodes'])
         rev = make('A', document_id=a['document_id'], previous=a['batch'], variant='변경된 장력을 확인한다.')
         real_replace = manual_graph._replace
-        def fail_after_write(tx, document, state):
-            real_replace(tx, document, state)
+        def fail_after_write(tx, *args):
+            real_replace(tx, *args)
             raise RuntimeError('probe after all graph writes, before receipt')
         manual_graph._replace = fail_after_write
         try:

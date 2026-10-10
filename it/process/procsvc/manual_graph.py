@@ -1,15 +1,20 @@
 """Atomic, source-owned SOP graph replacement with checked, latest-first undo.
 
 Originals and extraction coordinates live in ManualSources. Graph batches retain
-the reviewed before/after snapshots. A referenced or externally edited graph is
-never silently replaced; its owner must reconcile that conflict first.
+the reviewed before/after snapshots. An externally edited graph is never silently
+replaced; its owner must reconcile that conflict first.
+
+Execution history (F-2, DECISIONS 35): the case projection records which SOP a person chose and which cause an incident
+was diagnosed as by pointing at document-owned nodes (HISTORY_RELATIONS). That history is an audit record, not part of the
+document's graph: it is split off before the drift check, a revision updates surviving nodes in place so it stays attached,
+and a revision or rollback that would drop a node it points at is refused, naming the node and the history.
 
 Ownership (C1): which nodes a document owns is the document's journal (ManualIngestionDocument.snapshot = the reviewed
 after-state of its head batch). The original four labels (KnowledgeSource · ManualSection · Skill · Step) and their edges
 still carry `_manual_document` because schema v2 declares it there and other readers use it (admin skill edit, AFFECTS).
 The knowledge labels added by C1 (FailureMode · Cause · Evidence · Rule) and their relationships carry no extra property —
 schema v2 stays unchanged — and are owned through the journal only. The snapshot of a document is every owned node and
-every relationship touching one, so a foreign reference to an owned node is still detected as drift.
+every relationship touching one except listed execution history, so any other foreign reference is still detected as drift.
 """
 from __future__ import annotations
 
@@ -17,7 +22,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
-from .manual_review import canonical
+from .manual_review import canonical, document_key
 from .kgadmin import skill_id
 from . import kgadmin, manual_knowledge
 
@@ -34,6 +39,9 @@ TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATE
 KNOWLEDGE_RELATIONS = ('OCCURS_IN', 'INDICATES', 'LEADS_TO', 'CAUSES', 'INVOLVES_PART', 'DISTURBS', 'EVIDENCED_BY', 'ADDRESSES',
                        'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM')
 RELATIONS = TAGGED_RELATIONS + KNOWLEDGE_RELATIONS
+# Execution history the case projection attaches to document-owned nodes (procsvc/case_projection.py DECISION_CASE_Q ·
+# INCIDENT_Q): (outside label, relation, owned label). Only these are kept across revisions; any other foreign edge is drift.
+HISTORY_RELATIONS = (('DecisionCase', 'CHOSE', 'Skill'), ('Incident', 'DIAGNOSED_AS', 'Cause'))
 # labels a document's edges may point at outside the document (existing structure or another source's knowledge)
 TARGET_LABELS = LABELS + ('Role', 'System', 'StateVariable', 'Measure', 'Component', 'Symptom', 'Part', 'Action',
                           'DecisionTable', 'InputData')
@@ -64,9 +72,17 @@ def owned_keys(snapshot):
     return sorted({(n['labels'][0], n['props']['id']) for n in (snapshot or {}).get('nodes') or []})
 
 
+def _is_history(edge, from_owned, to_owned):
+    return not from_owned and to_owned and any(
+        out in edge['from_labels'] and kind == edge['type'] and own in edge['to_labels'] for out, kind, own in HISTORY_RELATIONS)
+
+
 def _snapshot(tx, document, owned=()):
-    """The current graph state of what the document owns: its journal-owned nodes (plus any node still tagged with the
-    document, so a tagged node missing from the journal shows up as drift) and every relationship touching one of them."""
+    """The current graph state of what the document owns, as (graph, history).
+
+    graph: its journal-owned nodes (plus any node still tagged with the document, so a tagged node missing from the journal
+    shows up as drift) and every relationship touching one of them, except history: the HISTORY_RELATIONS edges that come
+    from outside the document into an owned node."""
     by_label = {}
     for label, nid in owned:
         by_label.setdefault(label, []).append(nid)
@@ -81,13 +97,66 @@ def _snapshot(tx, document, owned=()):
                     'RETURN elementId(n) AS eid, labels(n) AS labels, properties(n) AS props', document=document).data():
         rows[r['eid']] = r
     nodes = [dict(labels=sorted(r['labels']), props=r['props']) for r in rows.values()]
-    edges = tx.run('MATCH (a)-[r]->(b) WHERE elementId(a) IN $e OR elementId(b) IN $e '
-                   'RETURN labels(a) AS from_labels, a.id AS from_id, labels(b) AS to_labels, b.id AS to_id, '
+    found = tx.run('MATCH (a)-[r]->(b) WHERE elementId(a) IN $e OR elementId(b) IN $e '
+                   'RETURN elementId(a) AS from_eid, labels(a) AS from_labels, a.id AS from_id, '
+                   'elementId(b) AS to_eid, labels(b) AS to_labels, b.id AS to_id, '
                    'type(r) AS type, properties(r) AS props', e=list(rows)).data() if rows else []
-    for edge in edges:
+    edges, history = [], []
+    for edge in found:
+        from_owned, to_owned = edge.pop('from_eid') in rows, edge.pop('to_eid') in rows
         edge['from_labels'].sort()
         edge['to_labels'].sort()
-    return _sort({'nodes': nodes, 'edges': edges})
+        (history if _is_history(edge, from_owned, to_owned) else edges).append(edge)
+    return _sort({'nodes': nodes, 'edges': edges}), sorted(history, key=canonical)
+
+
+def _node_text(labels, nid):
+    return f"{':'.join(labels)} {nid}"
+
+
+def _edge_text(edge):
+    return f"({_node_text(edge['from_labels'], edge['from_id'])})-[:{edge['type']}]->({_node_text(edge['to_labels'], edge['to_id'])})"
+
+
+DRIFT_SHOWN = 5          # items named per kind in a drift refusal; the rest are counted
+
+
+def _drift(expected, current):
+    """What differs between the journal and the graph, named, for the refusal message ('' when equal)."""
+    def keyed(snapshot):
+        return {(tuple(n['labels']), n['props'].get('id')): n['props'] for n in snapshot['nodes']}
+    want, have = keyed(expected), keyed(current)
+    want_edges = [canonical(e) for e in expected['edges']]
+    have_edges = [canonical(e) for e in current['edges']]
+    extra = [e for e in current['edges'] if have_edges.count(canonical(e)) > want_edges.count(canonical(e))]
+    missing = [e for e in expected['edges'] if want_edges.count(canonical(e)) > have_edges.count(canonical(e))]
+    parts = []
+    for title, items in (('기록에 없는 노드', [_node_text(*k) for k in have if k not in want]),
+                         ('사라진 노드', [_node_text(*k) for k in want if k not in have]),
+                         ('속성이 바뀐 노드', [_node_text(*k) for k in want if k in have and want[k] != have[k]]),
+                         ('기록에 없는 관계(사람이 고쳤거나 이력으로 허용되지 않은 바깥 관계)', sorted({_edge_text(e) for e in extra})),
+                         ('사라지거나 바뀐 관계', sorted({_edge_text(e) for e in missing}))):
+        if items:
+            more = f' 외 {len(items) - DRIFT_SHOWN}건' if len(items) > DRIFT_SHOWN else ''
+            parts.append(f"{title} {len(items)}건: {', '.join(items[:DRIFT_SHOWN])}{more}")
+    return '; '.join(parts)
+
+
+def _check_unchanged(expected, current, message):
+    """Equality with the journal is the rule; _drift only names what differs."""
+    expected = _sort(expected)
+    if current != expected:
+        drift = _drift(expected, current)
+        raise Conflict(f'{message} — {drift}' if drift else message)
+
+
+def _history_summary(history):
+    """Kept history per owned node and relation type, e.g. [{node: 'Skill skill:sop-pur-13', type: 'CHOSE', count: 3}]."""
+    counts = {}
+    for edge in history:
+        key = (_node_text(edge['to_labels'], edge['to_id']), edge['type'])
+        counts[key] = counts.get(key, 0) + 1
+    return [dict(node=node, type=kind, count=n) for (node, kind), n in sorted(counts.items())]
 
 
 def desired(plan):
@@ -180,10 +249,29 @@ def _validate_targets(tx, snapshot, owned):
                 raise Conflict(f'{pattern} {nid}: 대상이 없거나 유형이 변경됐습니다')
 
 
-def _replace(tx, current, target):
-    # Caller verified the current graph equals the journal, so every relationship touching an owned node is the
-    # document's own; each is removed by its identity. No DETACH DELETE is used: an unexpected foreign reference
-    # makes the node delete fail and the whole transaction roll back.
+def _node_key(node):
+    label = node['labels'][0]
+    if label not in LABELS or len(node['labels']) != 1:
+        raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
+    return label, node['props']['id']
+
+
+def _replace(tx, current, target, history):
+    """Turn the document graph `current` into `target` in place.
+
+    Caller verified `current` equals the journal, so every relationship in it is the document's own; each is removed by its
+    identity and the target's are created. A node kept by the target (same label and id) is updated in place, so the execution
+    history pointing at it (`history`, never deleted) stays attached. A node the target drops is deleted — unless history
+    points at it: then the whole revision is refused before any write. No DETACH DELETE is used: an unexpected foreign
+    reference makes the node delete fail and the whole transaction roll back."""
+    have = {_node_key(n) for n in current['nodes']}
+    keep = {_node_key(n) for n in target['nodes']}
+    dropped = have - keep
+    blocked = _history_summary([e for e in history if (':'.join(e['to_labels']), e['to_id']) in dropped])
+    if blocked:
+        named = ', '.join(f"{h['node']} ← {h['type']} {h['count']}건" for h in blocked)
+        raise Conflict(f'새 판에서 빠지는 노드에 판단 이력이 연결돼 있어 거절했습니다(이력은 지우지 않습니다): {named}. '
+                       '그 노드를 새 판에도 남기거나, 이력을 검토한 뒤 다시 적재하세요')
     for edge in current['edges']:
         a, b = ':'.join(edge['from_labels']), ':'.join(edge['to_labels'])
         if edge['type'] not in RELATIONS:
@@ -192,16 +280,16 @@ def _replace(tx, current, target):
                      'WITH r LIMIT 1 DELETE r RETURN count(*) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
         if row['n'] != 1:
             raise Conflict('지울 관계가 기록과 달라 전체 적재를 취소했습니다')
-    for node in current['nodes']:
-        label = node['labels'][0]
-        if label not in LABELS or len(node['labels']) != 1:
-            raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
-        tx.run(f'MATCH (n:{label} {{id:$id}}) DELETE n', id=node['props']['id']).consume()
+    for label, nid in sorted(dropped):
+        tx.run(f'MATCH (n:{label} {{id:$id}}) DELETE n', id=nid).consume()
     for node in target['nodes']:
-        label = node['labels'][0]
-        if label not in LABELS or len(node['labels']) != 1:
-            raise Conflict('보관된 노드 유형이 지원 계약과 다릅니다')
-        tx.run(f'CREATE (n:{label}) SET n=$props', props=node['props']).consume()
+        label, nid = _node_key(node)
+        if (label, nid) in have:
+            row = tx.run(f'MATCH (n:{label} {{id:$id}}) SET n=$props RETURN count(n) AS n', id=nid, props=node['props']).single()
+            if row['n'] != 1:
+                raise Conflict(f'{label} {nid}: 제자리에서 바꿀 노드가 기록과 달라 전체 적재를 취소했습니다')
+        else:
+            tx.run(f'CREATE (n:{label}) SET n=$props', props=node['props']).consume()
     for edge in target['edges']:
         if edge['type'] not in RELATIONS:
             raise Conflict('보관된 관계 유형이 지원 계약과 다릅니다')
@@ -250,12 +338,11 @@ def commit(session, plan):
         if (head['head'] if head else None) != plan['previous_batch']:
             raise Conflict('현재 문서 판본이 미리보기 이후 변경됐습니다. 다시 검토하세요')
         expected = json.loads(head['snapshot']) if head else {'nodes': [], 'edges': []}
-        before = _snapshot(tx, plan['document'], owned_keys(expected))
-        if before != _sort(expected):
-            raise Conflict('적재 뒤 속성/규칙/실행 등의 참조가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
+        before, history = _snapshot(tx, plan['document'], owned_keys(expected))
+        _check_unchanged(expected, before, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
         _validate_targets(tx, after, owned_keys(before))
-        _replace(tx, before, after)
-        receipt = _receipt(plan, at)
+        _replace(tx, before, after, history)
+        receipt = dict(_receipt(plan, at), history_kept=_history_summary(history))
         tx.run('CREATE (b:ManualIngestionBatch) SET b=$props', props=dict(id=plan['batch'], tenant=plan['tenant'],
                document=plan['document'], previous=plan['previous_batch'], fingerprint=fingerprint, status='ACTIVE',
                before=canonical(before), after=canonical(after), plan=canonical(plan), receipt=canonical(receipt), createdAt=at)).consume()
@@ -284,17 +371,17 @@ def rollback(session, tenant, batch, by):
         if not head or head['head'] != batch:
             raise Conflict('최신 판본부터 순서대로 되돌려야 합니다')
         after = json.loads(record['after'])
-        current = _snapshot(tx, document, owned_keys(after))
-        if current != _sort(after):
-            raise Conflict('외부 속성/규칙/실행 참조가 있어 되돌릴 수 없습니다. 먼저 변경을 검토하세요')
+        current, history = _snapshot(tx, document, owned_keys(after))
+        _check_unchanged(after, current, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌어 되돌릴 수 없습니다. 먼저 변경을 검토하세요')
         before = json.loads(record['before'])
         _validate_targets(tx, before, owned_keys(current))
-        _replace(tx, current, before)
+        _replace(tx, current, before, history)
         tx.run('MATCH (d:ManualIngestionDocument {id:$id}) SET d.head=$head, d.snapshot=$snapshot',
                id=document, head=record.get('previous'), snapshot=record['before']).consume()
         tx.run('MATCH (b:ManualIngestionBatch {id:$id}) SET b.status="ROLLED_BACK", b.rolledBackBy=$by, b.rolledBackAt=$at',
                id=batch, by=by.strip(), at=datetime.now(timezone.utc).isoformat()).consume()
-        return dict(batch=batch, status='ROLLED_BACK', replayed=False, restored_batch=record.get('previous'))
+        return dict(batch=batch, status='ROLLED_BACK', replayed=False, restored_batch=record.get('previous'),
+                    history_kept=_history_summary(history))
     return session.execute_write(run)
 
 
@@ -308,7 +395,6 @@ def history(session, tenant):
 
 
 def head(session, tenant, document_id):
-    key = hashlib.sha256(tenant.encode()).hexdigest() + ':' + document_id
     row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) RETURN d.head AS head',
-                      id=key, tenant=tenant).single()
+                      id=document_key(tenant, document_id), tenant=tenant).single()
     return row['head'] if row else None
