@@ -118,7 +118,13 @@ lecture-deck 스킬은 레포 밖(`/Users/uengine/agent-provider/안치윤/.clau
 - 기준: `UIUX.md`(사용자 지시 — process-gpt-vue3 최신 · Dify 모방, 핵심만, 폼은 섹션, 화면 말에서 내부 용어 빼기), `UIUX_PLAN.md`, `docs/ui-design-contract.md`, CLAUDE.md §4(카드 하나에 행동 1개, "학생이 10초 안에 할 일을 찾는가"). 캡처 없이 "비슷하게"로 끝내지 않는다 — 참고 화면과 우리 화면을 나란히.
 - 지금 화면의 실물: `.evidence/a161-final/live/` · `live4/`(A · B · C 승인 카드 · 처리 기록, 1440 · 390), `.evidence/a161-u1/`. 이전 보고 `verification/2026-10-09/u1-uiux.md` · `review-portal.md`.
 - 코드: 처리 기록 `caseRecord.js` · `caseRecord.css` · `plainWords.js`(일반인 말 사전). 승인 카드 `approvalCard.js`(머리말 규칙 `forecastDecides` · `ownValues`). 시험 `tests/js/*.js`(node vm에 실제 파일을 올려 그림) + `tests/test_c3_bc_review.py` · `test_live_leftovers_cards.py` · `test_capstone_g7_card.py`. A 화면을 일부러 바꿀 때는 고정본(`tests/fixtures/a_cards_before.json`)도 근거와 함께 갱신한다.
-- 열린 것:
+- **(10-10 저녁) 사용자 결정: 포털 화면은 기능 칸 · 다듬기를 가리지 않고 다른 세션(U)에서 일괄 작업한다.** L · F · K 갈래는 포털 파일(`it/portal/www/**`)을 건드리지 않고 아래로 넘겼다. U 세션은 시작할 때 0.2의 세 갈래가 작업 브랜치에 합쳐졌는지 먼저 본다(합쳐지지 않았으면 F · K 작업 트리의 갈래 파일을 그 자리에서 읽는다 — API가 그 브랜치에만 있다).
+  - [ ] **흐름 가져오기 화면에 시스템 부품 설정 칸**(승인 뒤 MCP 호출 · 시간 대기 · 결과 보고): 지금은 칸이 없어 학생이 포털만으로 자기 흐름을 등록하지 못하고 매핑 JSON을 API로 넣어야 한다(`it/portal/www/flows.js` taskRow 180~206행). 종합 랩(개인 시나리오)의 가장 큰 막힘 — K 기록 `verification/2026-10-10/K-capstone.md`
+  - [ ] **F가 넘긴 화면 연결**: 설비 결함 인지 · 조치의 승인 · 거절(부품 `task:select-or-reject` — 거절 사유 입력), 수업용 원인 입력(조치 미달 · 시운전 미달 · 납기 초과를 만드는 입력)의 버튼, 정기 정비 · 예비품 구매가 실라버스 모양으로 바뀐 뒤의 처리 건 화면(예약 대기 · 시운전 · 주기 갱신 · 입고 대기 · 납기 초과), 화면 이름을 실라버스 표기 「정기 정비」「예비품 구매」로 — API 계약과 정확한 위치는 F 기록 `verification/2026-10-10/F-syllabus.md`의 "포털 작업자에게 넘길 것"
+  - [ ] K가 본 화면 결함: 시스템 task가 PENDING으로 멈춘 학생 처리 건을 닫는 길 · 학생 흐름 하나만 지우는 길이 화면에 없음, 내부 id · 영문 값 이름이 드러나는 곳(K 기록 10절)
+  - [ ] 조사 묶음 3의 나머지: `/Users/uengine/agent-provider/안치윤/슬라이드/실라버스_구현_빈틈.md` 3절 묶음 3(실라버스 9~10일차 포털 실습 행이 요구하는 화면 — 흐름 가져오기 · 작업 매핑 · 흐름 검사 결과 · 가져오기 설정 칸 확인)
+  - [ ] 슬라이드에 넣을 실제 화면 캡처가 없다(0.2 「알려진 문제」): 지금 포털의 시스템 구성 · 지식 지도 · 조치 방법 · 매뉴얼을 넣은 뒤의 지식 관리 · 질의 결과. 화면을 고친 뒤 1440 폭으로 찍어 `.evidence`에 두면 슬라이드 쪽이 가져다 쓴다
+- 열린 것(이전부터):
   - [ ] U2 시나리오 B · C 화면 다듬기(지금은 A와 같은 틀에 B · C 값이 들어간 상태. 구매 · 정비 담당 눈높이로 카드 · 결과 보고를 본다)
   - [ ] `EFFECT_COMPENSATION` · `EFFECT_REVIEW` 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — `review-c3-bc.md` 4절)
   - [ ] 화면에서 본 적 없는 표시: 재관측 실패(`reobsSeries.error`) · 스킬을 작업 폴더에 못 넣음(`skills[].written`)(`review-backend.md` 4-4 · 10절), 처리 건 목록 읽기 실패, `app.js`의 표시 확인 중/못 읽음 · 기준점 문구(`review-c3-bc.md` 3절 ②), `MCP_RESULT_VALUES` · 실패 시도(`attempt_failed`) 줄(`cap-g3g9.md` 5절)
