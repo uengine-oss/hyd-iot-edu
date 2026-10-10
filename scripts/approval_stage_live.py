@@ -1,14 +1,17 @@
 """승인 단계(승인 · 거절 · 무응답)를 라이브 스택에서 한 번에 하나씩 끝까지 돌리고 확인한다(실제 워커 필요).
 
-  .venv/bin/python scripts/approval_stage_live.py CASE OUTDIR
+  .venv/bin/python scripts/approval_stage_live.py CASE OUTDIR [--flow 흐름id] [--no-settle]
   CASE: {A|B|C}-approve | {A|B|C}-reject | {A|B|C}-wait   (wait = 승인하지 않고 두어 지연 알림이 나가고도 기다리는지 본 뒤 거절로 닫는다)
+  --flow       그 시나리오 경보를 여는 흐름 id 가 수업 흐름(c3_*)이 아닐 때(예: 학생이 가져와 배포한 사본) — 열린 처리 건이 그 흐름인지 확인한다
+  --no-settle  A 만: [쿨러 복구]를 누르고 설비가 가라앉기를 기다리지 않는다(곧바로 다음 [쿨러 열화 주입]을 누르는 확인용)
 
 앞서 할 일(docs/handoff/NOW.md 2절 '버튼 완주 순서'): 잠금 → 그래프 구조판 → `scripts/c3_flows.py deploy` → 워커 1개.
 포털 버튼이 부르는 것과 같은 process API 만 쓴다: 시작 POST /api/scenario/A/degrade · /api/scenario/{B|C}/start, 승인 POST /api/todolist/{id}/select
 (에이전트 추천 카드), 거절 POST /api/todolist/{id}/reject-card, 정리 POST /api/scenario/A/restore · /api/scenario/{B|C}/reset.
 확인은 처리 건의 끝 이벤트 · 결과 보고 · 사건 상태 · 처리 기록 · 업무 표시를 읽어서 하고, OUTDIR 에 처리 건 원문과 확인 표를 남긴다.
 확인이 하나라도 틀리면 종료 1. 에이전트 task 가 실패(워커 한도 등)로 멈추면 사유를 적고 종료 2 — 끝난 척하지 않는다.
-A 를 승인으로 끝낸 뒤에는 팬 지령이 100 % 로 남아 다음 열화 주입이 경보를 내지 못한다(설비 `/api/reset` 필요) — A 승인은 A 의 마지막에 돌린다."""
+[쿨러 복구]는 팬 · 부하 지령도 평소 운전점으로 되돌린다 — A 는 설비 `/api/reset` 없이 연달아 돌릴 수 있다. 거절 · 무응답으로 끝난 A 는 경보가
+올라간 채이므로, 정리는 감지기가 그 경보를 내릴 때까지 기다린다(--no-settle 은 경보가 이미 내려간 승인 완주 뒤에만 쓴다)."""
 from __future__ import annotations
 
 import json
@@ -22,6 +25,8 @@ from pathlib import Path
 
 API = os.environ.get("PROCESS_URL", "http://127.0.0.1:8080")
 PLANT = os.environ.get("PLANT_SIM_HOST_URL", "http://127.0.0.1:8000")
+DETECTOR = os.environ.get("DETECTOR_URL", "http://127.0.0.1:8092")
+NORMAL_SETPOINTS = {"FanSpeedSP": 60.0, "LoadSP": 90.0}      # 평소 운전점(plant-sim thermal.NORMAL_FAN_PCT · NORMAL_LOAD_PCT)
 AGENT_WAIT_S, END_WAIT_S, NOTICE_WAIT_S, POLL_S = 900, 600, 120, 3
 STAY_AFTER_NOTICE_S = 20      # 지연 알림 뒤에도 승인 대기인지 다시 보기까지 두는 시간
 CLEAR_TS1 = 50.0              # [쿨러 복구] 뒤 유온이 이 아래(경보 해제선 52 ℃ 아래)로 올 때까지 기다린다
@@ -142,27 +147,46 @@ def plant_unit(asset: str) -> dict:
     return call("GET", PLANT + "/api/state")["units"][asset]
 
 
-def clean_up(key: str, spec: dict) -> None:
+def cooler_alert_phase() -> str:
+    """감지기가 보는 HYD-01 쿨러 경보 단계(IDLE = 올라간 경보 없음)."""
+    unit = call("GET", DETECTOR + "/api/detector/state")["assets"]["HYD-01"]
+    return (unit.get("patterns") or {}).get("COOLER_DEGRADATION", unit)["phase"]
+
+
+def clean_up(key: str, spec: dict, settle: bool = True) -> None:
     res = post(spec["after"], {"by": "강사 (수업 정리)"})
     log(f"정리 {spec['after']}: {json.dumps({k: res.get(k) for k in ('button', 'instance', 'reanchored')}, ensure_ascii=False)}")
     if key != "A":
         return
+    tags = plant_unit("HYD-01")["tags"]
+    now = {k: tags[k] for k in NORMAL_SETPOINTS}
+    check("[쿨러 복구] 직후 팬 · 부하 지령이 평소 운전점", now == NORMAL_SETPOINTS, f"{now} (복구 응답 {(res.get('plant') or {}).get('setpoints')})")
+    if not settle:
+        log(f"가라앉기를 기다리지 않음 — 유온 {tags['TS1']} ℃, 감지기 쿨러 경보 단계 {cooler_alert_phase()}")
+        return
     t0 = time.time()
     while time.time() - t0 < 600:
         unit = plant_unit("HYD-01")
-        if unit["tags"]["TS1"] < CLEAR_TS1 and unit["disturbances"]["cooler_health"] == 1.0:
-            log(f"HYD-01 유온 {unit['tags']['TS1']} ℃ — 정상으로 돌아옴 ({time.time() - t0:.0f}초)")
+        if unit["tags"]["TS1"] < CLEAR_TS1 and unit["disturbances"]["cooler_health"] == 1.0 and cooler_alert_phase() == "IDLE":
+            log(f"HYD-01 유온 {unit['tags']['TS1']} ℃ · 감지기 경보 없음 — 정상으로 돌아옴 ({time.time() - t0:.0f}초)")
             return
         time.sleep(5)
-    raise SystemExit("HYD-01 이 600초 안에 정상으로 돌아오지 않았습니다")
+    raise SystemExit(f"HYD-01 이 600초 안에 정상으로 돌아오지 않았습니다 (감지기 쿨러 경보 단계 {cooler_alert_phase()})")
 
 
 def main(argv: list[str]) -> int:
-    key, _, mode = (argv[1] if len(argv) == 3 else "").partition("-")
-    if key not in SCENARIOS or mode not in ("approve", "reject", "wait"):
+    args, flow, settle = list(argv[1:]), None, True
+    if "--no-settle" in args:
+        args.remove("--no-settle")
+        settle = False
+    if "--flow" in args[:-1]:
+        flow = args.pop(args.index("--flow") + 1)
+        args.remove("--flow")
+    key, _, mode = (args[0] if len(args) == 2 else "").partition("-")
+    if key not in SCENARIOS or mode not in ("approve", "reject", "wait") or (not settle and (key, mode) != ("A", "approve")):
         print(__doc__, file=sys.stderr)
         return 2
-    name, out, spec = argv[1], Path(argv[2]), SCENARIOS[key]
+    name, out, spec = args[0], Path(args[1]), dict(SCENARIOS[key], **({"flow": flow} if flow else {}))
     out.mkdir(parents=True, exist_ok=True)
     me, role = spec["me"]
     known = {i["proc_inst_id"] for i in get("/api/instances?limit=100")}
@@ -170,6 +194,8 @@ def main(argv: list[str]) -> int:
     started = post(spec["start"], {"by": "강사", "user_id": me, "roles": [role]})
     pid = started.get("instance") or wait_instance(spec["flow"], known)
     log(f"시작 {spec['start']} → 처리 건 {pid}")
+    opened = get(f"/api/instances/{pid}")["instance"]
+    check(f"처리 건을 연 흐름이 {spec['flow']}", opened.get("proc_def_id") == spec["flow"], f"{opened.get('proc_def_id')} 판본 {opened.get('proc_def_version')}")
     view = wait_approval(pid)
     decision_id = values(view)["decision_id"]
     decision = get(f"/api/decisions/{decision_id}")
@@ -231,7 +257,7 @@ def main(argv: list[str]) -> int:
         check("판단 원문 REJECTED", get(f"/api/decisions/{decision_id}").get("state") == "REJECTED")
         if key != "A":
             check("업무 표시가 켜진 채다 (처리되지 않음)", flag(key) is True, str(flag(key)))
-    clean_up(key, spec)
+    clean_up(key, spec, settle)
     failed = [c for c in CHECKS if not c["ok"]]
     (out / f"{name}-checks.json").write_text(json.dumps({"case": name, "instance": pid, "result_report": report, "checks": CHECKS, "log": LOG},
                                                         ensure_ascii=False, indent=1, default=str), encoding="utf-8")
