@@ -85,6 +85,10 @@ class Hooks:
     preview_decision: Callable | None = None
     approve_review: Callable | None = None
     validate_approval: Callable[[dict], None] = lambda payload: None
+    # 조치 카드 거절: check_rejection(판단, 역할)은 거절 권한을 본다(고치지 않음, 아니면 PermissionError · ValueError),
+    # reject_decision(판단, 누가, 사유)은 커밋 뒤 판단 원문을 REJECTED 로 남긴다
+    check_rejection: Callable[[str, str], None] = lambda decision_id, role: None
+    reject_decision: Callable[[str, str, str], None] = lambda decision_id, by, reason: None
     deliver_approval: Callable[[dict], list[dict]] | None = None
     record_approval: Callable[[dict], None] = lambda row: None
     approval_effects: Callable | None = None  # authoritative read only; absent means unknown
@@ -715,6 +719,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self.repo.insert_approval(approval)
         defn = self.definition_for(inst)
         output = {'chosen_skill':opt.get('id'), 'chosen_skill_kind':kind}
+        if self._card_step_rejects(defn, wi):          # 거절 값을 내는 승인 단계: 승인도 같은 값으로 낸다(분기 조건 approval == '승인')
+            output.update(approval=approval_part.APPROVE, approval_reason=(reason or '').strip())
         form = pinned_form(defn.raw, self._tool_of(wi))
         if form is not None:
             validate_output(form, output)
@@ -735,6 +741,56 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self._after_commit(self.deliver_approval, wi['id'], now)
         return {'instance':inst, 'workitem':wi, 'accepted':True, 'approval_status':'PENDING',
                 'plan':{k:v for k,v in plan.items() if k!='_snapshot'}, 'enterprise_results':[], 'purchase':purchase}
+
+    # ---------------------------------------------------------------- 조치 카드 승인의 거절 (실라버스 92 · 101 · 102 · 104행)
+    @staticmethod
+    def _card_step_rejects(defn, wi) -> bool:
+        """이 승인 단계가 거절 값(approval)을 내는가 — 흐름 가져오기가 만든 조치 카드 승인. 기준 정의 · 전에 등록한 정의는 내지 않는다."""
+        return approval_part.OUTPUTS[0] in ((defn.activities.get(wi['activity_id']) or {}).get('outputData') or [])
+
+    @workitem_transition
+    def reject_card(self, workitem_id: str, decision_id: str, by: str, role: str, reason: str, now: datetime | None = None) -> dict:
+        """담당자가 조치 카드를 승인하지 않고 거절한다. 설비 · 업무 효과는 하나도 내지 않는다: 승인 값(approved_* · commands · chosen_option)을
+        비우고 폼 결과 {approval: '반려', approval_reason} 만 제출해 흐름이 반려 가지(결과 보고: 반려 → 사건 '운전원 거부')로 간다.
+        거절할 수 있는 사람 = 그 판단의 안을 하나라도 승인할 수 있는 역할(판단의 역할 등급)의 구성원. 판단 원문은 커밋 뒤 REJECTED 로 남긴다."""
+        wi = self.repo.get_workitem(workitem_id)
+        if not wi or self._tool_of(wi) != self.APPROVAL_TOOL:
+            raise KeyError(workitem_id)
+        if wi['status'] != 'IN_PROGRESS':
+            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 이미 처리된 승인입니다({wi['status']}) — 다시 승인 · 거절하지 않습니다")
+        inst = self.repo.get_instance(wi['proc_inst_id'])
+        defn = self.definition_for(inst)
+        self._check_deadline(wi, inst, defn, now)
+        if not self._card_step_rejects(defn, wi):
+            raise ValueError(f"이 흐름({inst.get('proc_def_id')} {inst.get('proc_def_version')})의 승인 단계는 거절 값을 내지 않아 거절 뒤 갈 길이 없습니다 — "
+                             "거절 경로가 있는 흐름(흐름 가져오기에서 승인 뒤 분기에 approval 조건)을 배포한 뒤 연 처리 건에서 거절하세요")
+        reason = (reason or '').strip()
+        if not reason:
+            raise ValueError('거절 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다')
+        values = engine.variables(inst)
+        self._require_new_generation_decision(inst, decision_id)
+        if values.get('decision_id') != decision_id:
+            raise ValueError('decision does not belong to this instance')
+        person = inbox.check_actor(self.repo, self.tenant_id, by, role)
+        by_name = inbox.person_name(self.repo, self.tenant_id, by)
+        self.hooks.check_rejection(decision_id, role)
+        cleared = dict.fromkeys(('commands', 'chosen_option', 'approved_by', 'approved_by_name', 'approved_role', *effect_parts.PURCHASE_VALUES))
+        engine.set_variables(defn, inst, cleared)          # 앞 회차의 승인이 남아 효과를 내지 않게 비운다
+        participants = inst.setdefault('participants', [])
+        for who in (role, person):
+            if who and who not in participants:
+                participants.append(who)
+        self.repo.update_instance(inst)
+        self.repo.record_events([{'job_id': 'APPROVAL_REJECTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
+                                  'event_type': 'task_working',
+                                  'data': {'name': '거절 접수', 'decision': decision_id, 'by': by_name, 'user_id': person, 'role': role,
+                                           'reason': reason, 'effects': '설비 명령 · 업무 거래 없음'}}])
+        self._after_commit(self.hooks.audit, values.get('asset', '-'), by, 'APPROVAL_REJECTED',
+                           {'instance': inst['proc_inst_id'], 'task': wi['activity_id'], 'decision': decision_id, 'role': role, 'reason': reason},
+                           incident=values.get('incident'))
+        self._after_commit(self.hooks.reject_decision, decision_id, by, reason)
+        out = self.submit(wi['id'], {'approval': approval_part.REJECT, 'approval_reason': reason}, by=by, now=now)
+        return dict(out, approval=approval_part.REJECT, rejected=True)
 
     # ---------------------------------------------------------------- 캡스톤 G1: 일반 사람 승인 (formHandler:approve, 안 고르기)
     @workitem_transition
@@ -1060,6 +1116,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if res.get("ok") is not True or not isinstance(res.get('ref'), str) or not res['ref'].strip():
             raise ServiceExecutionError(res)
         # C2: 정비 오더 뒤 생산팀 공지(선택) — 승인 뒤 MCP 메일(수업 메일함), 같은 작업의 재시도는 한 통
+        after = res.get('after') if isinstance(res.get('after'), dict) else {}
+        handed = {'정비 오더': res['ref'], '정비 시점': after.get('window'), '예약 시각': after.get('window_starts_at')}
+        # 블랙박스 없음(실라버스 110행): 정비 오더가 다음 task(생산 공지 · 예약 시각 대기 · 정비)에 넘기는 값을 처리 기록에 남긴다
+        self._event(wi, 'WORK_ORDER_REGISTERED', '정비 오더 등록 — 다음 단계로 넘기는 값', {
+            'work_order': res['ref'], 'handed_over': handed, 'value_name': 'work_order',
+            'content': ', '.join(f'{k} {x}' for k, x in handed.items() if x is not None)})
         mail = ((self.definition_for(inst).activities.get(wi['activity_id']) or {}).get('service') or {}).get('mail')
         notice = self._send_notice(inst, wi, dict(v, work_order=res), mail, now) if mail else None
         self.submit(wi["id"], {"work_order": dict(res, notice=notice) if notice else res}, by="process", now=now)

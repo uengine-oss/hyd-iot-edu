@@ -318,7 +318,8 @@ def test_not_rejected_condition_also_counts_as_the_approval_gate(world):
 
 
 def test_reference_and_c3_flows_still_pass_the_approval_path_check(world):
-    """판단 엔진 카드 승인(select_card)은 반려를 내지 않는다 — 기준 흐름 A · B · C · 정비형과 C3 흐름 세 개 모두 그대로 통과한다."""
+    """승인만 하는 조치 카드 승인(task:select)은 반려를 내지 않는다 — 그 부품을 쓰는 기준 흐름 A · B · C · 정비형은 그대로 통과한다.
+    수업 흐름 세 개도 통과한다(설비 결함 인지 · 조치는 거절 값을 내는 부품 + 승인 조건 선 — tests/test_syllabus_flows.py 가 그 검사를 지킨다)."""
     import test_c2_execution as c2
     import test_c3_assembly as c3
     for src, m, did in ((c2.A_FLOW, c2.a_mapping(), "a"), (c2.B_FLOW, c2.b_mapping(), "b"), (c2.C_FLOW, c2.c_mapping(), "c"),

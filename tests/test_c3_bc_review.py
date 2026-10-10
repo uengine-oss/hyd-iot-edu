@@ -21,7 +21,7 @@ from fastapi import HTTPException
 from entsim import state as entstate
 from procsvc import engine, scenario_buttons as SB
 from test_instance_mode import world, NOW, ALERT  # noqa: F401  (world 는 fixture)
-from test_c3_bc_simplified import deploy
+from test_syllabus_flows import deploy
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE = shutil.which("node")
@@ -166,7 +166,10 @@ def _text(html):
 
 
 def test_the_case_record_shows_the_press_and_that_the_flow_ends_in_the_business_system(world, tmp_path):
+    """수업 버튼 기록은 시작 단계에 보인다. '업무 시스템에서 끝남 · 설비 명령 없음'은 설비 단계가 하나도 없는 흐름(예비품 구매)에만 적는다 —
+    정기 정비는 실라버스(10-10) 모양으로 정비 · 시운전 단계가 있다."""
     deploy(world, "c3_pm")
+    deploy(world, "c3_spare")
     rt, st = world["rt"], entstate.EnterpriseState()
     person = SB.who({"by": "박정비", "user_id": "user:park-maint"})
     alert = SB.build_alert("B", st.pm_status("HYD-02")["facts"], now=NOW, person=person)
@@ -175,14 +178,21 @@ def test_the_case_record_shows_the_press_and_that_the_flow_ends_in_the_business_
     a = rt.on_alert_raise(dict(ALERT, alertId="ALT-HYD-01-A1"), now=NOW)["proc_inst_id"]
     press = dict(SB.injection_origin("쿨러 열화 주입", SB.who({"by": "김운전"})), at=NOW.isoformat())
     rt.repo.record_events([SB.press_event(a, press["button"], "HYD-01", press, press["at"], {"injection_id": press["id"]})])
-    out = _record(tmp_path, [{"name": "B", "view": rt.instance_view(b)}, {"name": "A", "view": rt.instance_view(a)}])
+    c_alert = SB.build_alert("C", st.spare_stock("P-PMP-SEAL")["facts"], now=NOW, person=SB.who({"by": "정구매"}))
+    rt.on_alert_raise(c_alert, now=NOW)
+    c = SB.started(rt, "C", c_alert, "c3_spare", SB.who({"by": "정구매"}))["instance"]
+    out = _record(tmp_path, [{"name": "B", "view": rt.instance_view(b)}, {"name": "A", "view": rt.instance_view(a)},
+                             {"name": "C", "view": rt.instance_view(c)}])
     start = out["B"]["steps"][0]
     body = " ".join(x["title"] + " " + x["body"] for x in start["sections"])
-    assert start["title"] == "수업 버튼으로 시작" and start["actor"] == "박정비" and "[정기 점검] 버튼을 눌러" in start["sentence"]
+    assert start["title"] == "수업 버튼으로 시작" and start["actor"] == "박정비" and "[정기 정비] 버튼을 눌러" in start["sentence"]
     assert "수업 버튼 기록 1줄" in body and "누른 사람" in body
     # 버튼 기록 줄: 무엇을 눌렀나 + 누른 사람 한 번(생산자 name 에는 사람이 없고 by 한 칸만 — 라이브 3차 "박정비 박정비")
-    assert _text(body).count("수업 버튼 [정기 점검] 박정비") == 1 and "박정비 박정비" not in _text(body)
-    assert "이 흐름의 끝" in body and "설비 명령 없음" in start["chips"]
+    assert _text(body).count("수업 버튼 [정기 정비] 박정비") == 1 and "박정비 박정비" not in _text(body)
+    assert "이 흐름의 끝" not in body and "설비 명령 없음" not in start["chips"]      # 정비 · 시운전 단계가 있는 흐름
+    c_start = out["C"]["steps"][0]
+    assert "이 흐름의 끝" in " ".join(x["title"] for x in c_start["sections"]) and "설비 명령 없음" in c_start["chips"]
+    assert "수업 버튼 [예비품 구매] 정구매" in _text(" ".join(x["title"] + " " + x["body"] for x in c_start["sections"]))
     assert not [g for g in out["B"]["gaps"] if "수업 버튼" in g]                 # 버튼 기록이 처리 건에 있다 — '없다'고 적지 않는다
     a_start = out["A"]["steps"][0]
     a_body = " ".join(x["title"] + " " + x["body"] for x in a_start["sections"])

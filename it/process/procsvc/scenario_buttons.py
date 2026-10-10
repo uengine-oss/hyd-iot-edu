@@ -1,8 +1,17 @@
-"""C3 B · C 단순화 (2026-10-09 확정 지시 — '설비까지 안 가기로 함, 처리되면 끝'): 포털 '결함 실험'의 시나리오 버튼.
+"""포털 '결함 실험'의 시나리오 버튼과 수업 입력. 시나리오 이름은 실라버스(2026-10-10) 표기를 쓴다:
+설비 결함 인지 · 조치(A, HYD-01) / 정기 정비(B, HYD-02) / 예비품 구매(C, HYD-03).
 
-  [정기 점검] (B, HYD-02)  — 화면 표시 '정기 점검 도래' = CMMS ent.pm_status.pm_alert (운전시간 ≥ 1,950 h 이고 이번 회차 정비 오더 없음)
-  [재고 보충] (C, HYD-03)  — 화면 표시 '재고 보충 필요' = ERP ent.spare_stock 씰 키트 가용 < 재주문점
-  [초기화]                 — 그 시나리오의 업무 데이터를 수업 시작값으로(표시가 다시 켜진다)
+  [정기 정비] (B)    — 화면 표시 '정기 정비 도래' = CMMS ent.pm_status.pm_alert (운전시간 ≥ 1,950 h 이고 이번 회차 정비 오더 없음)
+  [예비품 구매] (C)  — 화면 표시 '재고 보충 필요' = ERP ent.spare_stock 씰 키트 가용 < 재주문점
+  [초기화]           — 그 시나리오의 업무 데이터를 수업 시작값으로(표시가 다시 켜진다). B 는 HYD-02 설비 시뮬레이터도 정상으로 되돌린다
+                       (정비 · 시운전이 설비 값을 읽고, 수업 입력 '정비 불량'이 설비에 남기 때문)
+
+수업 입력(CLASS_INPUTS, 실라버스 104 · 111 · 114행의 비정상 결말) — 결과 값을 넣지 않는다. 시뮬레이터의 **원인**을 바꾸고, 흐름이 실제
+재관측 · 시운전 · 납기 타이머로 그 결말에 이른다:
+  A 조치 미달    [쿨러 열화 + 팬 구동부 고장 주입]  plant-sim: 쿨러 열화(moderate) + 팬이 지령을 따르지 않음 → 승인한 냉각 명령이 접수돼도
+                                                    유온이 회복 기준 안으로 오지 않는다(재관측 미달)
+  B 시운전 미달  [정비 불량 예약]                   plant-sim: 다음 정비가 내부 누설을 남긴다 → 시운전 값이 PM-02 기준에 못 미친다
+  C 납기 초과    [공급사 납기 지연 통보]            enterprise-sim: 열린 발주의 입고 예정이 늦어진다 → 납기 기한 타이머가 먼저 울린다
 
 버튼은 지금 업무 DB 한 행을 읽어, 업무 감시(business_monitor)와 **같은 계약**의 경보(alertId · asset · pattern · evidence · source)를 만들어
 같은 원천 접수 경로로 보낸다(main._admit_human_alert → 경보 정책 → 배포된 B · C 흐름 → 처리 건 + 사건). 처리 건 시작이 사람 버튼이라는 것만
@@ -25,15 +34,15 @@ from typing import Callable
 
 from hydcommon import topics
 
-from . import business_monitor, engine
+from . import business_monitor, effect_parts, engine
 
 SCENARIOS: dict[str, dict] = {
     "B": {"pattern": "PM_DUE", "asset": "HYD-02", "read": "pm_status", "params": {"asset": "HYD-02"}, "flag": "pm_alert",
-          "subject": "HYD-02", "label": "정기 점검 도래", "button": "정기 점검", "title": "정기 정비",
+          "subject": "HYD-02", "label": "정기 정비 도래", "button": "정기 정비", "title": "정기 정비",
           "show": ("pm_since_h", "pm_interval_h", "pm_due_in_h", "pm_limit_in_h", "night_window_at", "pm_planned_wo", "pm_planned_window"),
           "reset": ("/cmms/pm/reset", {})},       # 세 대 모두 — 묶음 후보 HYD-03 계수기도 판단 사실이다
     "C": {"pattern": "SPARE_BELOW_MIN", "asset": "HYD-03", "read": "spare_stock", "params": {"part": "P-PMP-SEAL"},
-          "flag": "below_reorder_point", "subject": "P-PMP-SEAL", "label": "재고 보충 필요", "button": "재고 보충", "title": "예비품 구매",
+          "flag": "below_reorder_point", "subject": "P-PMP-SEAL", "label": "재고 보충 필요", "button": "예비품 구매", "title": "예비품 구매",
           "show": ("part_no", "name", "on_hand", "reserved", "on_order", "available", "reorder_point", "target_stock", "need_qty"),
           "reset": ("/erp/spare/reset", {"part_no": "P-PMP-SEAL"})},
 }
@@ -43,10 +52,36 @@ A_ASSET = "HYD-01"
 #: high(0.43)는 평형 70 ℃로 주입 뒤 시뮬레이션 약 30분(20배속 실제 90초)에 보호 정지한다(A146 열모델). 20배속은 설비 물리만 빠르게 하고
 #: 에이전트 판단(실측 46~79초)은 빠르게 하지 못하므로 high 는 실제 시간으로 약 25분의 판단 지연과 같다 — 보호 정지 장면을 보일 때만 쓴다.
 A_SEVERITY = "moderate"
+A_TITLE = "설비 결함 인지 · 조치"
+_COOLER_FAULT = {"type": "cooler_degradation", "severity": A_SEVERITY}
+#: faults = plant-sim 주입 목록(한 번 누름 = 같은 누름 id). opens_case = 이 누름이 경보 → 처리 건을 일으킨다(시각 기준점을 먼저 맞춘다)
 A_BUTTONS: dict[str, dict] = {
-    "degrade": {"button": "쿨러 열화 주입", "fault": {"type": "cooler_degradation", "severity": A_SEVERITY}},
-    "restore": {"button": "쿨러 복구", "fault": {"type": "restore", "component": "cooler"}},
+    "degrade": {"button": "쿨러 열화 주입", "faults": [_COOLER_FAULT], "opens_case": True},
+    # 수업 입력(조치 미달): 경보까지는 [쿨러 열화 주입]과 같은 물리다(팬 한계 60 % = 지금 팬 속도). 승인한 '팬 100 %' 명령은 PLC 가 접수하지만
+    # 팬이 따라오지 않아 냉각이 모자란다. 쿨러 열화 세기만으로는 이 결말이 나오지 않는다(ot/plant-sim thermal.py 머리말의 계산)
+    "degrade-stuck-fan": {"button": "쿨러 열화 + 팬 구동부 고장 주입", "faults": [_COOLER_FAULT, {"type": "fan_drive_fault"}],
+                          "opens_case": True, "class_input": "조치 미달",
+                          "cause": "설비 시뮬레이터: 쿨러 열화에 더해 팬 구동부가 속도 지령을 따르지 않는다(팬이 지금 속도에 머묾)"},
+    # 복구 = 쿨러 · 팬 구동부를 정상으로 + 조치로 바뀐 팬 · 부하 지령을 평소 운전점으로(안 그러면 팬 100 % 인 채라 다음 열화 주입이 경보를 내지 못한다)
+    "restore": {"button": "쿨러 복구", "faults": [{"type": "restore", "component": "cooler"}, {"type": "restore", "component": "fan-drive"},
+                                                {"type": "operating_point"}]},
 }
+B_ASSET, C_ASSET = SCENARIOS["B"]["asset"], SCENARIOS["C"]["asset"]
+#: B [초기화]가 설비 시뮬레이터에 보내는 것: 예약된 정비 불량을 풀고(잔류 0) HYD-02 를 정상으로
+B_PLANT_RESET = [{"type": "maintenance_defect", "target": 0}, {"type": "restore"}]
+B_POOR_MAINTENANCE = {"button": "정비 불량 예약", "fault": {"type": "maintenance_defect"}, "class_input": "시운전 미달"}
+#: fallback_days = 흐름에 납기 기한 타이머가 없을 때의 지연 일수. 타이머가 있으면 그 기한을 넘기는 가장 작은 일수를 쓴다(default_delay_days)
+C_DELAY = {"button": "공급사 납기 지연 통보", "skill": "skill:delay-delivery", "fallback_days": 3, "class_input": "납기 초과"}
+DELAY_DAYS_MAX = 60      # enterprise-sim skill:delay-delivery 가 받는 범위(0 초과 60 이하)
+#: 포털이 그릴 수업 입력 목록(GET /api/scenario/status 의 class_inputs) — 요청 경로 · 버튼 글 · 어떤 결말을 위한 입력인지 · 누를 때
+CLASS_INPUTS = [
+    {"scenario": "A", "asset": A_ASSET, "path": "/api/scenario/A/degrade-stuck-fan", "button": A_BUTTONS["degrade-stuck-fan"]["button"],
+     "outcome": "조치 미달", "when": "[쿨러 열화 주입] 대신 누른다 — 경보 · 추천 · 승인은 같고, 재관측에서 미달로 끝난다"},
+    {"scenario": "B", "asset": B_ASSET, "path": "/api/scenario/B/poor-maintenance", "button": B_POOR_MAINTENANCE["button"],
+     "outcome": "시운전 미달", "when": "정비 단계가 시작되기 전(처리 건을 열기 전이나 예약 시각 대기 중)에 누른다"},
+    {"scenario": "C", "asset": C_ASSET, "path": "/api/scenario/C/delay-delivery", "button": C_DELAY["button"],
+     "outcome": "납기 초과", "when": "발주가 난 뒤 입고 대기 중에 누른다 (body days: 늦어지는 일수 — 비우면 납기 기한을 넘기는 가장 작은 일수)"},
+]
 
 
 class Refused(Exception):
@@ -112,7 +147,67 @@ def status(read: Callable[[str, dict], dict], rt=None, last_press: Callable[[str
             item["last"] = _brief(runs[0] if runs else None)
         out[key] = item
     presses = {a: last_press(a) for a in (A_ASSET, *(sp["asset"] for sp in SCENARIOS.values()))} if last_press else {}
-    return {"scenarios": out, "presses": presses, "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    return {"scenarios": out, "presses": presses, "class_inputs": [dict(i) for i in CLASS_INPUTS],
+            "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
+def running_case(rt, key: str) -> dict | None:
+    """그 시나리오의 진행 중 처리 건(없으면 None)."""
+    return next((i for i in _runs(rt, SCENARIOS[key]) if i.get("status") == "RUNNING"), None)
+
+
+def open_purchase_order(rt) -> tuple[dict, dict]:
+    """예비품 구매 처리 건 중 발주가 났고 아직 입고 대기인 것 → (처리 건, 발주 영수증). 없으면 Refused(사람이 읽는 사유)."""
+    inst = running_case(rt, "C")
+    if inst is None:
+        raise Refused("진행 중인 예비품 구매 처리 건이 없습니다 — [예비품 구매]로 처리 건을 열고 발주가 난 뒤에 누르세요")
+    values = engine.variables(inst)
+    po = values.get("purchase_order")
+    if not isinstance(po, dict) or not po.get("ref"):
+        raise Refused("아직 발주 전입니다 — 구매 담당이 승인해 ERP 발주가 난 뒤(입고 대기 중)에 누르세요")
+    if values.get("goods_receipt"):
+        raise Refused(f"발주 {po['ref']} 는 이미 입고됐습니다 — 납기 지연을 알릴 열린 발주가 없습니다")
+    return inst, po
+
+
+def requested_delay_days(body: dict | None) -> float | None:
+    """요청이 준 지연 일수(없으면 None — default_delay_days 가 정한다). 숫자가 아니거나 범위 밖이면 ValueError."""
+    if "days" not in (body or {}):
+        return None
+    days = body["days"]
+    if isinstance(days, bool) or not isinstance(days, (int, float)) or not 0 < days <= DELAY_DAYS_MAX:
+        raise ValueError(f"days 는 0 보다 크고 {DELAY_DAYS_MAX} 이하인 숫자입니다 (받은 값: {days!r})")
+    return float(days)
+
+
+def default_delay_days(rt, inst: dict, po: dict) -> float:
+    """지연 일수를 주지 않았을 때: 그 처리 건 흐름의 입고 대기에 붙은 납기 기한 타이머를 넘기는 가장 작은 정수 일수
+    (리드타임 + 이미 알린 지연 + 일수 > 기한). 승인한 공급사의 리드타임이 달라도 지연 결과에 이른다. 기한 타이머가 없으면 fallback_days."""
+    defn = rt.definition_for(inst)
+    receipt = next((a["id"] for a in defn.activities.values() if a.get("tool") == effect_parts.GR_TOOL), None)
+    timers = [e["timer"] for e in (defn.attached_events(receipt) if receipt else []) if e.get("eventDefinition") == "timer" and e.get("timer")]
+    if not timers:
+        return float(C_DELAY["fallback_days"])
+    after = po.get("after") if isinstance(po.get("after"), dict) else {}
+    deadline_d = min(engine.iso_duration_seconds(t) for t in timers) / 86400
+    slack = deadline_d - float(after.get("lead_d") or 0) - float(after.get("delay_d") or 0)
+    return float(max(1, int(slack // 1) + 1))
+
+
+def injection_event(proc_inst_id: str, asset: str, injection: dict, extra: dict) -> dict:
+    """설비 주입이 연 처리 건의 누름 기록. 수업 입력으로 한 주입이면(누름에 class_input 이 실려 있다) '수업 입력' 줄로 남긴다."""
+    spec = next((b for b in A_BUTTONS.values() if b["button"] == injection.get("button") and b.get("class_input")), None)
+    if spec is None or injection.get("class_input") != spec["class_input"]:
+        return press_event(proc_inst_id, injection["button"], asset, injection, injection["at"], extra)
+    return class_input_event(proc_inst_id, spec, asset, injection, injection["at"], spec["cause"], extra)
+
+
+def class_input_event(proc_inst_id: str, spec: dict, asset: str, person: dict, at: str, cause: str, extra: dict | None = None) -> dict:
+    """처리 건 기록의 '수업 입력' 줄: 어떤 버튼 · 누가 · 언제 · 시뮬레이터의 무엇을 바꿨는지(cause). 결과가 아니라 원인을 바꿨다는 것을 적는다."""
+    row = press_event(proc_inst_id, spec["button"], asset, person, at, dict(extra or {}, class_input=spec["class_input"], cause=cause))
+    row["data"]["name"] = f"수업 입력 [{spec['button']}]"
+    row["data"]["content"] = f"{cause} — 결과 값을 넣지 않고 원인만 바꿨다(결말은 흐름의 실제 판정이 낸다)"
+    return row
 
 
 def who(body: dict | None) -> dict:

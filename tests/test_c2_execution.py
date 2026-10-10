@@ -517,6 +517,7 @@ def test_effect_part_refuses_to_run_without_an_approval_record(world):
 class Outside:
     def __init__(self, world, lead_d=5):
         self.calls, self.mails, self.restores, self.lead_d, self.delay_d = [], [], [], lead_d, 0
+        self.ordered, self.received, self.defect_left = {}, {}, {}
         ctx, rt = world["ctx"], world["rt"]
         ctx.exec_skill = self.exec_skill
         rt.hooks.enterprise_read = self.read
@@ -546,10 +547,13 @@ class Outside:
         self.calls.append(deepcopy(item))
         code = item["code"]
         out = {"ok": True, "skill": item["skill"], "code": code, "system": item.get("system")}
-        if code == "PR_CREATE":
-            return out | {"ref": "PR-1", "detail": f"{item['qty']}개 발주", "after": {"lead_d": self.lead_d, "delay_d": 0, "amount": item["amount"]}}
-        if code == "GR_CONFIRM":
-            return out | {"ref": "GR-1", "detail": "입고 · 검수 합격"}
+        if code == "PR_CREATE":                 # after = ERP 발주 행(ent.purchase_requests 와 같은 칸)
+            self.ordered = {"pr_id": "PR-1", "part_no": item["part_no"], "qty": item["qty"]}
+            return out | {"ref": "PR-1", "detail": f"{item['qty']}개 발주",
+                          "after": {"lead_d": self.lead_d, "delay_d": 0, "amount": item["amount"], "part_no": item["part_no"], "qty": item["qty"],
+                                    "expected_at": engine.now_iso(NOW + timedelta(days=self.lead_d))}}
+        if code == "GR_CONFIRM":                # after = ERP 입고 행(ent.goods_receipts: 발주 번호 · 품목 · 수량) — received 로 바꿔 어긋난 입고를 만든다
+            return out | {"ref": "GR-1", "detail": "입고 · 검수 합격", "after": dict(self.ordered, id="GR-1", **self.received)}
         if code == "WO_CREATE":
             return out | {"ref": "WO-1", "detail": "작업지시", "after": {"window": "야간 정비 시간 10-03 21:00",
                                                                      "window_starts_at": engine.now_iso(NOW + timedelta(hours=9))}}
@@ -565,7 +569,8 @@ class Outside:
 
     def restore(self, asset, component):
         self.restores.append((asset, component))
-        return {"ok": True, "asset": asset, "kind": "restore", "targets": {"leak": 0.0}}
+        return {"ok": True, "asset": asset, "kind": "restore", "targets": {"leak": 0.0, **self.defect_left},
+                "maintenance_defect_left": dict(self.defect_left)}
 
 
 # ================================================================ 일반 정비형: 작업지시(정비 시간) → 대기 → 정비 모사 → 작업지시 뒤 재관측

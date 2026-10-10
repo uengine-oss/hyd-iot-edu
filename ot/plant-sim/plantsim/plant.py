@@ -13,24 +13,36 @@ from . import thermal, plc
 
 # fault kind -> (UnitState attribute it ramps, default target). Each kind is one ontology disturbance variable:
 # cooler_degradation = sv:fouling (cooler_health), pump_leakage = sv:leak, fan_vibration = sv:bearing-wear.
+# fan_drive_fault (syllabus row 104 "조치 미달") is a lecture cause the knowledge graph does not model: the fan stops following
+# set-points above its limit, so an approved and ACKed fan command has no effect and only the re-observation finds out.
 FAULT_KINDS = {"cooler_degradation": ("cooler_health", thermal.DEGRADED_HEALTH),
                "pump_leakage": ("leak", thermal.DEGRADED_LEAK),
-               "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING)}
-HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0}
+               "fan_vibration": ("bearing_wear", thermal.DEGRADED_BEARING),
+               "fan_drive_fault": ("fan_limit", thermal.STUCK_FAN_LIMIT)}
+HEALTHY = {"cooler_health": 1.0, "leak": 0.0, "bearing_wear": 0.0, "fan_limit": thermal.FAN_LIMIT_HEALTHY}
+# maintenance_defect (syllabus row 111 "시운전 미달"): not a disturbance now but the quality of the NEXT maintenance on this unit.
+# The next restore that covers the variable leaves this residual instead of the healthy value (one maintenance, then used up).
+MAINTENANCE_DEFECT = "maintenance_defect"
+# operating_point: lecture clean-up after a mitigation — fan and load set-points back to the normal operating point. Without it a
+# unit left at fan 100 % never raises the cooler alarm again (moderate fouling then settles at ~50 C), so the next run cannot start.
+OPERATING_POINT = "operating_point"
+DEFECT_ATTR, DEFECT_DEFAULT = "leak", thermal.RESIDUAL_LEAK
 # C2: 정비 수행 모사의 복구 대상 부품 → 외란 변수 (온톨로지 Component id 도 받는다). 없으면 설비 전체를 되돌린다(이전과 같음).
 COMPONENTS = {"cooler": "cooler_health", "comp:cooler": "cooler_health", "pump": "leak", "pump-a": "leak", "comp:pump-a": "leak",
-              "fan": "bearing_wear", "comp:fan": "bearing_wear"}
+              "fan": "bearing_wear", "comp:fan": "bearing_wear", "fan-drive": "fan_limit"}
 # Named fault strengths. "high" is every kind's default (the lecture scenes that end in a PLC trip keep using it);
 # "moderate" is defined for the cooler only: TS1 settles at ~62.5 C, so the alarm stays up without the 65 C trip
 # (the window a coding-agent worker needs at TIME_SCALE 20, A146). The trip itself is untouched (plc.check_interlock).
 SEVERITY = {"cooler_degradation": {"high": thermal.DEGRADED_HEALTH, "moderate": thermal.MODERATE_HEALTH},
             "pump_leakage": {"high": thermal.DEGRADED_LEAK},
-            "fan_vibration": {"high": thermal.DEGRADED_BEARING}}
+            "fan_vibration": {"high": thermal.DEGRADED_BEARING},
+            "fan_drive_fault": {"high": thermal.STUCK_FAN_LIMIT}}
 # Default ramp per kind (simulated seconds) when the caller gives none. Bearing wear ramps over 900 s: FAN_VIBRATION needs
 # VS1 > 1.2 *and still rising* for its 60 s hold, and over 300 s VS1 rose above 1.2 for only ~57 s (noise-free) — at
 # TIME_SCALE 20 (one sample = 20 sim-s) the raise then hung on sample phase and noise (A160: live miss after 151 s).
 # 900 s gives ~169 s of rise above the line (> hold + three samples). The detection rule (pattern:fan-vibration) is unchanged.
-DEFAULT_RAMP_S = {"cooler_degradation": 300.0, "pump_leakage": 300.0, "fan_vibration": 900.0, "restore": 300.0}
+DEFAULT_RAMP_S = {"cooler_degradation": 300.0, "pump_leakage": 300.0, "fan_vibration": 900.0, "fan_drive_fault": 300.0, "restore": 300.0,
+                  MAINTENANCE_DEFECT: 0.0, OPERATING_POINT: 0.0}
 
 
 @dataclass
@@ -51,6 +63,8 @@ class Unit:
     # C3: who asked for the last fault injection/restore on this unit ({id, kind, by, user_id, roles, at}) — published in
     # plant.status so the process links the case this injection causes to the button press by id (no time-window guess)
     injection: dict | None = None
+    # what the next maintenance (restore) leaves behind instead of a healthy value {attr: residual} — set by `maintenance_defect`
+    maintenance_defect: dict[str, float] = field(default_factory=dict)
 
     @property
     def fault(self) -> Fault | None:
@@ -96,20 +110,40 @@ class Plant:
     def inject(self, asset: str, kind: str, target: float | None = None, ramp_sim_s: float | None = None,
                severity: str | None = None, component: str | None = None, origin: dict | None = None) -> dict:
         """Ramp one disturbance variable towards `target` over `ramp_sim_s` simulated seconds (a slow degradation, not a
-        step). `restore` ramps every disturbance back to its healthy value. Without `target`, `severity` picks a named
-        strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
+        step). `restore` ramps every disturbance back to its healthy value — it is the maintenance of those variables, so an
+        armed `maintenance_defect` it covers ends at the armed residual instead and is used up. `maintenance_defect` arms that
+        residual (target, default DEFECT_DEFAULT; 0 disarms) and changes nothing now. `operating_point` puts the fan and load
+        set-points back to normal at once (no ramp, no disturbance). Without `target`, `severity` picks a
+        named strength from SEVERITY ("high" = the kind's default). Without `ramp_sim_s`, the kind's DEFAULT_RAMP_S."""
         if ramp_sim_s is None:
             if kind not in DEFAULT_RAMP_S:
                 raise ValueError(f"unknown fault kind {kind}")
             ramp_sim_s = DEFAULT_RAMP_S[kind]
         with self.lock:
             u = self.units[asset]
+            left: dict[str, float] = {}     # residuals a poorly done maintenance leaves (restore only)
             if kind == "restore":
                 if component is not None and component not in COMPONENTS:
                     raise ValueError(f"unknown component {component} (known: {sorted(COMPONENTS)})")
                 only = COMPONENTS.get(component) if component else None
                 plan = {attr: healthy for attr, healthy in HEALTHY.items()
                         if (only is None or attr == only) and (getattr(u.state, attr) != healthy or attr in u.faults)}
+                # a poorly done maintenance: the variables it covers end at the armed residual, and the defect is used up
+                left = {attr: u.maintenance_defect.pop(attr) for attr in list(u.maintenance_defect) if only is None or attr == only}
+                plan.update(left)
+            elif kind == MAINTENANCE_DEFECT:
+                residual = DEFECT_DEFAULT if target is None else float(target)
+                if not 0.0 <= residual < 1.0:
+                    raise ValueError(f"maintenance defect residual must be in [0, 1) (got {residual})")
+                if residual:
+                    u.maintenance_defect[DEFECT_ATTR] = residual
+                else:
+                    u.maintenance_defect.pop(DEFECT_ATTR, None)       # 0 = disarm
+                plan = {}
+            elif kind == OPERATING_POINT:
+                u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
+                u.dirty_status = True
+                plan = {}
             elif kind in FAULT_KINDS:
                 attr, default = FAULT_KINDS[kind]
                 if target is None and severity is not None:
@@ -129,7 +163,8 @@ class Plant:
                 u.dirty_status = True
             u.injection = injection
             return {"asset": asset, "kind": kind, "targets": plan, "ramp_sim_s": ramp_sim_s,
-                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection}
+                    "target_health": plan.get("cooler_health", u.state.cooler_health), "injection": u.injection,
+                    "maintenance_defect_left": left, "maintenance_defect_armed": dict(u.maintenance_defect)}
 
     # ---- commands (called from MQTT thread) ----
     def command(self, asset: str, cmd: dict, source: str) -> plc.CmdResult:
@@ -165,6 +200,7 @@ class Plant:
         st["time_scale"] = self.time_scale
         st['disturbance_ramps'] = sorted(u.faults)
         st['injection'] = u.injection
+        st['maintenance_defect'] = dict(u.maintenance_defect)
         return st
 
     def snapshot(self) -> dict:
@@ -176,6 +212,8 @@ class Plant:
                               "fault": (u.fault.kind if u.fault else None),
                               "faults": [f.kind for f in u.faults.values()],
                               "disturbances": {"cooler_health": round(u.state.cooler_health, 3), "leak": round(u.state.leak, 3),
-                                               "bearing_wear": round(u.state.bearing_wear, 3), "pump": u.state.pump}}
+                                               "bearing_wear": round(u.state.bearing_wear, 3), "pump": u.state.pump,
+                                               "fan_limit": round(u.state.fan_limit, 1)},
+                              "maintenance_defect": dict(u.maintenance_defect)}
                           for a, u in self.units.items()},
             }

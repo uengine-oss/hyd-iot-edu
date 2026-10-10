@@ -30,7 +30,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 class FaultReq(BaseModel):
     asset: str = "HYD-01"
-    type: str = "cooler_degradation"     # cooler_degradation | pump_leakage | fan_vibration | restore
+    type: str = "cooler_degradation"     # cooler_degradation | pump_leakage | fan_vibration | fan_drive_fault | maintenance_defect | operating_point | restore
     target: float | None = None          # ramp target of the fault's disturbance variable (default per kind)
     target_health: float | None = None   # legacy name for cooler_degradation
     severity: str | None = None          # named strength when no target is given: "high" (default, trips) | "moderate" (cooler only, alarm without trip)
@@ -135,8 +135,10 @@ def reset():
         for a, u in plant.units.items():
             u.faults.clear()
             u.injection = None
+            u.maintenance_defect.clear()
             u.state.cooler_health, u.state.leak, u.state.bearing_wear, u.state.pump = 1.0, 0.0, 0.0, "A"
-            u.state.fan_pct, u.state.load_pct = 60.0, 90.0
+            u.state.fan_limit = thermal.FAN_LIMIT_HEALTHY
+            u.state.fan_pct, u.state.load_pct = thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT
             u.state.ts1 = 48.0
             u.ctrl.mode, u.ctrl.state, u.ctrl.trip = "REMOTE_AUTO", "RUN", None
             u.ctrl.last_cmd_id = u.ctrl.last_result = u.ctrl.last_reason = None

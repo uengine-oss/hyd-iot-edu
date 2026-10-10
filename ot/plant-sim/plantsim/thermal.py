@@ -20,6 +20,12 @@ Constants were solved so that
     mitigated(load 80, fan 100, health 0.43) settles near 49 C -> clears the 52 C CLEAR line (health 0.55: ~44.6 C)
     leaking  (load 90, leak 0.15, pump A)    PS1 ~162 bar < 165, FS1 ~7.65 < 8.0 -> PUMP_LEAKAGE; pump B restores 182 (fc:pump-switch)
     worn fan (fan 60, wear 0.8)              VS1 ~1.35 > 1.2 -> FAN_VIBRATION; fan 40 -> ~0.9 (fc:fan-slow-vs1); fan 100 -> ~2.8 >= 2.0 interlock
+    stuck fan (health 0.55, fan limit 60)    alarm exactly as "moderate"; the approved FanSpeedSP 100 is ACKed but the fan stays at 60:
+                                             load 80 -> equilibrium 54.6 C, ~57.6 C when the 15 min re-observation ends (>= 55: not recovered).
+                                             Cooler fouling alone cannot give this ending: the fan-max action fails only below health ~0.32,
+                                             and any health below ~0.50 passes the 65 C trip before a person can approve.
+    poor PM  (residual leak 0.05)            PS1 ~175.5 bar, FS1 ~8.55 l/min: under the test-run line of manual PM-02 (PM-2.9: 178 bar,
+                                             8.8 l/min) but far above the PUMP_LEAKAGE alarm line (165 bar, 8.0 l/min) — no new alarm
 """
 from dataclasses import dataclass, field
 import math
@@ -40,6 +46,10 @@ DEGRADED_BEARING = 0.8   # default fault-injection target: fan bearing wear 0..1
 K_LEAK = 0.08            # leakage flow -> heat (sv:leak -> sv:ts1, low)
 LEAK_PS1_DROP = 130.0    # bar of discharge pressure lost per unit leakage (0.15 -> ~19.5 bar)
 K_VIB = 1.0              # mm/s of fan vibration per unit bearing wear at fan 60 %
+NORMAL_FAN_PCT, NORMAL_LOAD_PCT = 60.0, 90.0   # the normal operating point (set-points before any mitigation command)
+FAN_LIMIT_HEALTHY = 100.0  # highest fan speed (%) the drive can reach when sound
+STUCK_FAN_LIMIT = 60.0   # default fault-injection target: the fan drive no longer follows a set-point above the normal 60 %
+RESIDUAL_LEAK = 0.05     # default leak a poorly done maintenance leaves behind (seal reassembly) — fails the PM test run, no alarm
 
 
 @dataclass
@@ -58,11 +68,12 @@ class UnitState:
     fs1: float = 9.0    # flow (l/min)
     fs2: float = 10.0
     vs1: float = 0.6    # vibration (mm/s)
-    fan_pct: float = 60.0
-    load_pct: float = 90.0
+    fan_pct: float = NORMAL_FAN_PCT
+    load_pct: float = NORMAL_LOAD_PCT
     cooler_health: float = 1.0
     leak: float = 0.0          # pump A internal leakage fraction (sv:leak); pump B is sound
     bearing_wear: float = 0.0  # fan bearing wear 0..1 (sv:bearing-wear)
+    fan_limit: float = FAN_LIMIT_HEALTHY  # highest fan speed the drive reaches (%); below fan_pct = the set-point is not followed
     pump: str = "A"            # running pump (sv:pump-select, actr:pump-selector)
     ce: float = 100.0   # cooler efficiency (virtual)
     cp: float = 1.5     # cooling power (virtual)
@@ -83,6 +94,12 @@ def effective_leak(s: UnitState) -> float:
     return s.leak if s.pump == "A" else 0.0
 
 
+def effective_fan(s: UnitState) -> float:
+    """The speed the fan really turns at: the set-point (FanSpeedSP), capped by what the drive can reach. The PLC accepts and
+    ACKs the set-point either way — a command that was delivered is not an effect that happened (the re-observation finds out)."""
+    return min(s.fan_pct, s.fan_limit)
+
+
 def vibration(s: UnitState, fan_pct: float) -> float:
     """Fan vibration without noise: thermal part + bearing wear amplified by fan speed (ontology AFFECTS sv:fan-speed -> sv:vs1)."""
     return 0.55 + 0.004 * max(0.0, s.ts1 - 48.0) + K_VIB * s.bearing_wear * (fan_pct / 60.0) ** 2
@@ -93,7 +110,8 @@ def step(s: UnitState, dt: float, running: bool) -> UnitState:
     load = s.load_pct if running else 0.0
     leak = effective_leak(s)
     heat = (K_HEAT + K_LEAK * leak) * (load / 100.0) ** 2
-    cool_coef = K_BASE + K_COOL * (s.fan_pct / 100.0) * s.cooler_health
+    fan = effective_fan(s)
+    cool_coef = K_BASE + K_COOL * (fan / 100.0) * s.cooler_health
     cool = cool_coef * (s.ts1 - s.t_amb)
     s.ts1 += (heat - cool) / C * dt
     s.sim_t += dt
@@ -112,9 +130,9 @@ def step(s: UnitState, dt: float, running: bool) -> UnitState:
     s.eps1 = 0.0 if not running else 0.032 * load + 0.0004 * (s.ts1 - 48.0) + 0.01 * n
     s.fs1 = 0.0 if not running else 10.0 * load / 100.0 * (1.0 - leak) + 0.05 * n
     s.fs2 = s.fs1 * 1.02
-    s.vs1 = vibration(s, s.fan_pct if running else 0.0) + 0.02 * abs(n)
+    s.vs1 = vibration(s, fan if running else 0.0) + 0.02 * abs(n)
 
-    s.ce = 100.0 * s.cooler_health * (0.6 + 0.4 * s.fan_pct / 100.0)
+    s.ce = 100.0 * s.cooler_health * (0.6 + 0.4 * fan / 100.0)
     s.cp = cool_coef * d * 10.0
     s.se = 100.0 * (1 - 0.35 * (load / 100.0) ** 2) * (1 - max(0.0, s.ts1 - 50.0) / 100.0)
     return s

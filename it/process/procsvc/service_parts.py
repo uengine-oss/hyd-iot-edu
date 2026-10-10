@@ -171,52 +171,60 @@ class ServicePartsRuntime:
                 "value": v["approved_supplier"], "part_no": v["approved_part_no"], "qty": v["approved_qty"],
                 "amount": v["approved_amount"], "source": "approved-purchase"}
         res = self._exec(inst, v, item, "ERP 발주")
+        after = res.get("after") if isinstance(res.get("after"), dict) else {}
+        handed = {"발주 번호": res["ref"], "품목": v["approved_part_no"], "수량": v["approved_qty"], "공급사": v["approved_supplier"],
+                  "금액(만원)": v["approved_amount"], "리드타임(일)": after.get("lead_d"), "입고 예정": after.get("expected_at")}
+        # 블랙박스 없음(실라버스 113행): 발주가 다음 task(공급사 메일 · 입고 대기)에 넘기는 값을 처리 기록에 남긴다
+        self._event(wi, "PURCHASE_ORDERED", "ERP 발주 접수 — 다음 단계로 넘기는 값", {
+            "purchase_order": res["ref"], "handed_over": handed, "value_name": "purchase_order",
+            "content": ", ".join(f"{k} {x}" for k, x in handed.items() if x is not None)})
         notice = self._send_notice(inst, wi, dict(v, purchase_order=res), (self._activity_of(wi).get("service") or {}).get("mail"), now)
         self.submit(wi["id"], {"purchase_order": dict(res, notice=notice) if notice else res}, by="process", now=now)
 
     # ---------------------------------------------------------------- 시간 대기
     def _run_wait(self, inst: dict, wi: dict, now) -> None:
         clock = _clock(now)
-        state = self._state(wi)
-        if "wait" not in state:
-            cfg = self._activity_of(wi).get("service") or {}
-            try:
-                plan = effect_parts.wait_for(cfg, engine.variables(inst), clock, self.time_scale)
-            except KeyError as e:
-                raise ValueError(f"기다릴 시각 값 {e.args[0]} 이(가) 처리 건에 없습니다") from e
-            wi["due_date"] = plan["due_at"]
-            wi["log"] = (wi.get("log") or "") + (f"waiting {plan['virtual_s']:.0f} virtual s = {plan['real_s']:.0f} s "
-                                                 f"(x{plan['time_scale']:g} x{plan['compression']:g}); ")
-            state = self._save_state(wi, wait=plan)
-            self._event(wi, "WAIT_STARTED", "시간 대기 시작", {"plan": plan})
-        plan = state["wait"]
+        cfg = self._activity_of(wi).get("service") or {}
+        plan = self._planned_wait(wi, engine.variables(inst), cfg, cfg.get("label") or "시간 대기 시작", now)
         if not effect_parts.due(plan, clock):
             return
-        self._event(wi, "WAIT_ENDED", "시간 대기 끝", {"plan": plan})
+        if not plan.get("immediate"):
+            self._event(wi, "WAIT_ENDED", "시간 대기 끝", {"plan": plan})
         self.submit(wi["id"], {"waited": dict(plan, ended_at=engine.now_iso(clock))}, by="process", now=now)
+
+    def _planned_wait(self, wi: dict, v: dict, cfg: dict, label: str, now) -> dict:
+        """대기 계획(끝 시각)을 처음 한 번 정해 행에 저장하고 돌려준다 — 폴링 · 재시작은 저장한 계획을 쓴다. 예약 시각(until)을 기다리는데
+        승인한 카드가 '즉시(지금 정지하고 시행)'면 기다릴 예약 시각이 없다: 대기 없음으로 남기고 바로 끝난 계획을 돌려준다."""
+        state = self._state(wi)
+        if "wait" in state:
+            return state["wait"]
+        clock = _clock(now)
+        window = (v.get("chosen_option") or {}).get("window") or {}
+        if cfg.get("until") and window.get("immediate"):
+            plan = {"due_at": engine.now_iso(clock), "real_s": 0, "label": "즉시 시행", "immediate": True}
+            self._save_state(wi, wait=plan)
+            self._event(wi, "WAIT_SKIPPED", "즉시 시행 — 예정된 정비 시간 대기 없음", {"window": window})
+            return plan
+        try:
+            plan = effect_parts.wait_for(cfg, v, clock, self.time_scale)
+        except KeyError as e:
+            raise ValueError(f"기다릴 시각 값 {e.args[0]} 이(가) 처리 건에 없습니다") from e
+        wi["due_date"] = plan["due_at"]
+        wi["log"] = (wi.get("log") or "") + (f"waiting {plan['virtual_s']:.0f} virtual s = {plan['real_s']:.0f} s "
+                                             f"(x{plan['time_scale']:g} x{plan['compression']:g}); ")
+        self._save_state(wi, wait=plan)
+        self._event(wi, "WAIT_STARTED", label, {"plan": plan})
+        return plan
 
     # ---------------------------------------------------------------- 정비 수행 모사
     def _run_maintenance(self, inst: dict, wi: dict, now) -> None:
         v = self._require_approval(inst, wi)
         cfg = self._activity_of(wi).get("service") or {}
-        state = self._state(wi)
-        immediate = bool(((v.get("chosen_option") or {}).get("window") or {}).get("immediate"))
-        if cfg.get("until") and immediate and "wait" not in state:
-            # C3: 승인한 카드가 '즉시(지금 정지하고 시행)'면 기다릴 예정된 정비 시간이 없다 — 바로 정비한다
-            state = self._save_state(wi, wait={"due_at": engine.now_iso(_clock(now)), "real_s": 0, "label": "즉시 시행", "immediate": True})
-            self._event(wi, "WAIT_SKIPPED", "즉시 시행 — 예정된 정비 시간 대기 없음", {"window": (v.get("chosen_option") or {}).get("window")})
         if cfg.get("until"):                       # 예정된 정비 시간까지 먼저 기다린다(시간 대기와 같은 계산 · 같은 수업 압축)
-            clock = _clock(now)
-            if "wait" not in state:
-                try:
-                    plan = effect_parts.wait_for({"until": cfg["until"], "label": "예정된 정비 시간까지"}, v, clock, self.time_scale)
-                except KeyError as e:
-                    raise ValueError(f"예정된 정비 시간 값 {e.args[0]} 이(가) 처리 건에 없습니다") from e
-                wi["due_date"] = plan["due_at"]
-                state = self._save_state(wi, wait=plan)
-                self._event(wi, "WAIT_STARTED", "예정된 정비 시간까지 대기", {"plan": plan})
-            if not effect_parts.due(state["wait"], clock):
+            plan = self._planned_wait(wi, v, {"until": cfg["until"], "label": "예정된 정비 시간까지"}, "예정된 정비 시간까지 대기", now)
+            if not effect_parts.due(plan, _clock(now)):
                 return
+        state = self._state(wi)
         wo = v.get(cfg.get("work_order_var") or "work_order")
         opt = v.get("chosen_option") or {}
         if isinstance(wo, dict) and wo.get("ref") and "completed" not in state:
@@ -231,10 +239,15 @@ class ServicePartsRuntime:
             state = self._save_state(wi, restored=res)
         notice = (f"{v.get('asset')} 정비 완료 — " + ((state.get("completed") or {}).get("detail") or "설비 시뮬레이터 복구")
                   + (f", 대상 {cfg['component']}" if cfg.get("component") else ""))
+        # 수업 입력 '정비 불량'이 예약돼 있었으면 시뮬레이터가 남긴 잔류 값을 그대로 기록한다(현장은 모른 채 시운전이 찾아낸다)
+        left = (state["restored"].get("maintenance_defect_left") or {}) if isinstance(state.get("restored"), dict) else {}
         out = {"asset": v.get("asset"), "component": cfg.get("component") or "all", "work_order": (wo or {}).get("ref") if isinstance(wo, dict) else None,
                "completed": state.get("completed"), "restored": state.get("restored"), "notice": notice,
                "done_at": engine.now_iso(_clock(now))}
-        self._event(wi, "MAINTENANCE_DONE", "정비 완료 공지", {"notice": notice})
+        self._event(wi, "MAINTENANCE_DONE", "정비 완료 공지", {
+            "notice": notice, "simulator": {"targets": (state.get("restored") or {}).get("targets"), "defect_left": left},
+            **({"content": "설비 시뮬레이터: 이번 정비가 잔류 결함을 남김(수업 입력 '정비 불량') — " + ", ".join(f"{k} {x:g}" for k, x in left.items())}
+               if left else {})})
         self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), "정비 완료", notice)
         self.submit(wi["id"], {"maintenance": out}, by="process", now=now)
 
@@ -247,10 +260,6 @@ class ServicePartsRuntime:
             raise ValueError("입고를 확인할 발주 영수증(purchase_order.ref)이 처리 건에 없습니다")
         clock = _clock(now)
         state = self._state(wi)
-        if cfg.get("immediate") and "wait" not in state:
-            # C3 B · C 단순화: 발주 뒤 바로 입고 · 재고 반영(리드타임을 기다리지 않는다 — '처리되면 끝')
-            state = self._save_state(wi, wait={"due_at": engine.now_iso(clock), "real_s": 0, "label": "즉시 입고", "immediate": True})
-            self._event(wi, "RECEIPT_IMMEDIATE", "입고 대기 없음 — 발주 수량을 바로 입고 · 재고 반영", {"purchase_order": po["ref"]})
         if "wait" not in state:
             after = po.get("after") or {}
             lead_d, delay_d = after.get("lead_d"), after.get("delay_d") or 0
@@ -262,10 +271,15 @@ class ServicePartsRuntime:
             plan.update(lead_d=lead_d, delay_d=float(delay_d))
             wi["due_date"] = plan["due_at"]
             state = self._save_state(wi, wait=plan)
-            self._event(wi, "RECEIPT_WAIT", "입고 대기 시작", {"purchase_order": po["ref"], "plan": plan})
+            expecting = {"발주 번호": po["ref"], "품목": v.get("approved_part_no"), "수량": v.get("approved_qty"), "리드타임(일)": lead_d,
+                         "입고 예정": after.get("expected_at")}
+            # 블랙박스 없음(실라버스 113행): 무엇을(발주 번호 · 품목 · 수량) 언제까지 기다리는지 — 이 task 는 입고가 확인될 때까지 남는다
+            self._event(wi, "RECEIPT_WAIT", "입고 대기 시작 — 외부 결과(공급사 납품)를 기다림", {
+                "purchase_order": po["ref"], "plan": plan, "expecting": expecting, "received_from": "purchase_order",
+                "content": ", ".join(f"{k} {x}" for k, x in expecting.items() if x is not None) + f" — 실제 대기 {plan['real_s']:g}초"})
         if not effect_parts.due(state["wait"], clock):
             return
-        if "receipt" not in state and self.hooks.enterprise_read is not None and not state["wait"].get("immediate"):
+        if "receipt" not in state and self.hooks.enterprise_read is not None:
             # 공급사가 납기 지연을 알렸으면(ERP skill:delay-delivery) 늦어진 입고 예정까지 더 기다린다 — 그 사이 납기 초과 타이머가 울릴 수 있다
             facts = (self.hooks.enterprise_read("purchase_order", {"ref": po["ref"]}) or {}).get("facts") or {}
             delay_d = float(facts.get("delay_d") or 0)
@@ -281,6 +295,13 @@ class ServicePartsRuntime:
             item = {"skill": (v.get("chosen_option") or {}).get("id"), "code": "GR_CONFIRM", "name": "입고 · 검수", "system": "sys:erp",
                     "ref": po["ref"], "source": "approved-purchase"}
             state = self._save_state(wi, receipt=self._exec(inst, v, item, "입고 확인"))
+        if "match" not in state:
+            # 실라버스 114행: 입고 기록이 발주 내용과 일치할 때만 구매 완료다 — 어긋나면 이 task 가 사유와 함께 멈춘다(완료로 넘기지 않는다)
+            match = effect_parts.receipt_match(po["ref"], v, state["receipt"])
+            self._event(wi, "RECEIPT_MATCH", "입고 기록 ↔ 발주 대조", {"match": match, "content": match["text"]})
+            if not match["ok"]:
+                raise ValueError(f"입고 기록이 발주와 일치하지 않습니다 — {match['text']}")
+            state = self._save_state(wi, match=match)
         if "stock_after" not in state and self.hooks.enterprise_read is not None:
             # C3: 입고 뒤 재고(가용 · 재주문점)를 결과 보고에 싣는다 — '재고 보충 필요' 표시가 꺼졌는지의 근거
             part_no = (state["receipt"].get("after") or {}).get("part_no") or (po.get("after") or {}).get("part_no") or v.get("approved_part_no")
@@ -292,7 +313,7 @@ class ServicePartsRuntime:
                 raise ValueError(f"ERP 재고에 {part_no} 행이 없습니다 — 입고 뒤 가용 재고를 확인할 수 없습니다")
             state = self._save_state(wi, stock_after={k: facts.get(k) for k in ("part_no", "on_hand", "reserved", "on_order", "available",
                                                                                  "reorder_point", "below_reorder_point") if k in facts})
-        receipt = dict(state["receipt"], stock_after=state.get("stock_after") or None)
+        receipt = dict(state["receipt"], stock_after=state.get("stock_after") or None, match=state["match"])
         if v.get("incident") and self.hooks.close_incident_effect is not None:
             self.hooks.close_incident_effect(v["incident"], {"ok": True, "ref": receipt.get("ref"), "detail": receipt.get("detail"), "kind": "goods_receipt"})
         notice = f"입고 확인 — {receipt.get('detail') or receipt.get('ref')}"
@@ -332,7 +353,14 @@ class ServicePartsRuntime:
                 item = {"skill": (v.get("chosen_option") or {}).get("id"), "code": "PM_RESET", "name": "운전시간 계수기 리셋", "system": "sys:cmms",
                         "ref": (wo or {}).get("ref") if isinstance(wo, dict) else None, "source": "approved-maintenance"}
                 state = self._save_state(wi, counter=self._exec(inst, v, item, "계수기 리셋"))
+                self._event(wi, "PM_COUNTER_RESET", "다음 정비 시점 갱신", {"counter": {k: state["counter"].get(k) for k in ("ref", "detail", "after")},
+                                                                         "content": state["counter"].get("detail")})
             counter = state["counter"]
+        elif not verdict["passed"] and "kept" not in state:
+            state = self._save_state(wi, kept=True)
+            self._event(wi, "PM_COUNTER_KEPT", "시운전 미달 — 다음 정비 시점을 갱신하지 않음", {
+                "failed": [r for r in verdict["readings"] if not r["ok"]],
+                "content": "기준 미달: " + ", ".join(f"{r['tag']} {r['value']} (기준 {r['op']} {r['limit']:g})" for r in verdict["readings"] if not r["ok"])})
         out = dict(verdict, counter={k: counter.get(k) for k in ("ref", "detail", "after")} if counter else None)
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "TEST_RUN",
                            {"instance": inst["proc_inst_id"], "passed": verdict["passed"],

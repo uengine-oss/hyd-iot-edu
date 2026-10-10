@@ -117,7 +117,8 @@ def test_plant_injects_each_fault_kind_as_a_ramp_and_restore_undoes_all():
     assert abs(u.leak - thermal.DEGRADED_LEAK / 2) < 0.01 and abs(u.bearing_wear - thermal.DEGRADED_BEARING / 2) < 0.02
     pl.tick(60)
     assert u.leak == thermal.DEGRADED_LEAK and u.bearing_wear == thermal.DEGRADED_BEARING and not pl.units["HYD-01"].faults
-    assert pl.snapshot()["units"]["HYD-01"]["disturbances"] == {"cooler_health": 1.0, "leak": 0.15, "bearing_wear": 0.8, "pump": "A"}
+    assert pl.snapshot()["units"]["HYD-01"]["disturbances"] == {"cooler_health": 1.0, "leak": 0.15, "bearing_wear": 0.8, "pump": "A",
+                                                                     "fan_limit": 100.0}
     pl.inject("HYD-01", "restore", ramp_sim_s=10)
     pl.tick(20)
     assert (u.cooler_health, u.leak, u.bearing_wear) == (1.0, 0.0, 0.0)

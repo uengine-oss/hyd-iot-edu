@@ -76,6 +76,27 @@ class DecisionDelivery:
         plan = decisions.approve(snapshot, option_id, by, role, reason)
         return plan | {'_snapshot':snapshot}
 
+    def check_rejection(self, decision_id, role):
+        """조치 카드를 거절할 수 있는 역할인가: 이 판단의 안을 하나라도 승인할 수 있는 역할이면 거절도 할 수 있다(고치지 않는다)."""
+        d = self.ctx.book.get(decision_id)
+        if d is None:
+            raise ValueError('no such decision')
+        if d['state'] != 'PENDING_APPROVAL':
+            raise ValueError(f"decision is {d['state']}")
+        if not any(decisions.may_approve(d, option, role) for option in d.get('options') or []):
+            raise PermissionError('거절 권한 없음: 이 판단의 조치를 승인할 수 있는 역할만 거절할 수 있습니다')
+
+    def reject(self, decision_id, by, reason):
+        """커밋된 거절을 판단 원문에 남긴다(REJECTED · 누가 · 사유). 이미 거절로 남은 판단이면 그대로 둔다(재실행에 안전)."""
+        d = self.ctx.book.get(decision_id)
+        if d is None:
+            raise ValueError('no such decision')
+        if d['state'] == 'REJECTED':
+            return
+        decisions.reject(d, by, reason)
+        self.ctx.persist()
+        self.ctx.record_decision(deepcopy(d))
+
     def preview(self, decision_id, option_id, parameters, scope):
         if self.ctx.reviews is None:
             raise ValueError('검토본 저장소가 연결되지 않았습니다')

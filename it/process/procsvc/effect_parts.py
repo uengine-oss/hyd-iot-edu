@@ -91,10 +91,10 @@ PARTS = {
     },
     "svc:goods-receipt": {
         "tool": GR_TOOL, "name": "입고 확인", "outputs": ["goods_receipt", "received"], "inputs": ["purchase_order"],
-        "help": "발주의 입고 예정(리드타임)까지 기다린 뒤 입고 · 검수를 ERP 에 기록하고 재고를 올립니다. 확인되면 사건을 닫습니다. "
-                "납기 초과를 보이려면 경계 타이머(예: P7D)를 붙입니다(같은 수업 압축 배율).",
-        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)",
-                   "immediate": "true 면 리드타임을 기다리지 않고 바로 입고 · 재고 반영 (C3 수업 흐름 — 설비까지 가지 않고 처리되면 끝)"},
+        "help": "발주의 입고 예정(리드타임, 공급사가 지연을 알리면 늦어진 예정)까지 기다린 뒤 입고 · 검수를 ERP 에 기록하고, 입고 기록이 발주"
+                "(발주 번호 · 품목 · 수량)와 일치하는지 대조한 다음 재고를 올립니다. 일치하면 사건을 닫습니다. "
+                "납기 초과를 보이려면 경계 타이머(예: P6D)를 붙입니다(같은 수업 압축 배율).",
+        "config": {"purchase_order_var": "발주 영수증 값 이름 (기본 purchase_order)"},
     },
     "svc:test-run": {
         "tool": TEST_RUN_TOOL, "name": "시운전 확인", "outputs": ["test_run", "passed"], "inputs": ["asset"],
@@ -229,8 +229,6 @@ def validate(activity: dict) -> None:
             for name in placeholders(cfg.get(key) or ""):
                 if not PATH_RE.match(name):
                     raise ValueError(f"활동 {aid}: {key} 틀의 {{{name}}} 을(를) 읽을 수 없습니다")
-    if tool == GR_TOOL and "immediate" in cfg and not isinstance(cfg["immediate"], bool):
-        raise ValueError(f"활동 {aid}: immediate 는 true/false 입니다")
     for key in ("work_order_var", "purchase_order_var"):
         if cfg.get(key) is not None and (not isinstance(cfg[key], str) or not IDENT_RE.match(cfg[key])):
             raise ValueError(f"활동 {aid}: {key} 는 값 이름이어야 합니다")
@@ -422,6 +420,18 @@ def render_report(template: str | None, values: dict) -> str:
     return PLACEHOLDER.sub(text, template or "")
 
 
+def receipt_match(po_ref: str, values: dict, receipt: dict) -> dict:
+    """입고 기록(ERP 입고 거래의 결과 행)이 승인한 발주와 같은가: 발주 번호 · 품목 · 수량. 입고 기록에 그 칸이 없으면 일치가 아니다
+    (모르는 것을 일치로 치지 않는다). 돌려줌 {ok, rows:[{name, ordered, received, ok}], text}."""
+    got = receipt.get("after") if isinstance(receipt.get("after"), dict) else {}
+    rows = [{"name": name, "ordered": ordered, "received": got.get(key), "ok": ordered is not None and got.get(key) == ordered}
+            for name, ordered, key in (("발주 번호", po_ref, "pr_id"), ("품목", values.get("approved_part_no"), "part_no"),
+                                       ("수량", values.get("approved_qty"), "qty"))]
+    text = ", ".join(f"{r['name']} 발주 {_text(r['ordered']) if r['ordered'] is not None else '(없음)'} / 입고 "
+                     f"{_text(r['received']) if r['received'] is not None else '(없음)'} {'일치' if r['ok'] else '불일치'}" for r in rows)
+    return {"ok": all(r["ok"] for r in rows), "rows": rows, "text": text}
+
+
 def test_run_verdict(criteria: dict, readings: dict) -> tuple[bool, list[dict]]:
     """시운전 판정: 기준마다 최신값이 기준 안인지. 값이 없으면 미달(모르는 것을 통과로 치지 않는다)."""
     rows, ok_all = [], True
@@ -476,9 +486,15 @@ def report_values(v: dict) -> list[dict]:
                 if key == "available" and isinstance(stock.get("reorder_point"), (int, float)):
                     row.update(limit=f"≥ {_text(stock['reorder_point'])} 개 (재주문점)", ok=val >= stock["reorder_point"])
                 rows.append(row)
-    # C3 B · C 단순화: 정기 정비는 정비 오더 등록 · 공지로 끝난다 — 오더 번호 · 정비 시점 · 공지 메일을 결과 값으로
+    if isinstance(tr, dict):
+        counter = tr.get("counter") if isinstance(tr.get("counter"), dict) else None
+        rows.append({"name": "다음 정비 시점", "value": counter.get("detail") or "갱신함", "ok": True} if counter else
+                    {"name": "다음 정비 시점", "value": "갱신하지 않음 (시운전 미달)", "ok": False})
+    if isinstance(gr, dict) and isinstance(gr.get("match"), dict):
+        rows.append({"name": "입고 기록 ↔ 발주", "value": "일치" if gr["match"].get("ok") else "불일치", "ok": bool(gr["match"].get("ok"))})
+    # 정기 정비: 정비 오더 번호 · 정비 시점 · 공지 메일을 결과 값으로(재관측으로 끝나는 흐름 A 의 후속 작업지시는 요약 글에만 둔다)
     wo = v.get("work_order")
-    if isinstance(wo, dict) and wo.get("ref") and not isinstance(tr, dict) and not (isinstance(ro, dict) and ro.get("tag")):
+    if isinstance(wo, dict) and wo.get("ref") and not (isinstance(ro, dict) and ro.get("tag")):
         after = wo.get("after") if isinstance(wo.get("after"), dict) else {}
         rows.append({"name": "정비 오더", "value": wo["ref"]})
         when = after.get("window_label") or after.get("window")
@@ -488,6 +504,9 @@ def report_values(v: dict) -> list[dict]:
         if notice is not None:
             rows.append({"name": "공지 메일", "value": "보냄" + (" (재전송 아님)" if notice.get("idempotent") is False else ""), "ok": True})
     po = v.get("purchase_order")
+    if isinstance(po, dict) and po.get("ref") and not isinstance(gr, dict):     # 납기 초과: 발주는 났지만 입고 기록이 없다
+        rows.append({"name": "발주 번호", "value": po["ref"]})
+        rows.append({"name": "입고", "value": "기한 안에 확인되지 않음", "ok": False})
     if isinstance(po, dict) and isinstance(po.get("notice"), dict):
         rows.append({"name": "공급사 메일", "value": "보냄", "ok": True})
     return rows
