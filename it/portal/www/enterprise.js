@@ -270,6 +270,14 @@ function forecastLine(o) {
   const f = (o.forecast || [])[0];
   return f ? `${esc(f.name)} <b>${esc(f.value)}${esc(f.unit || '')}</b>` : '';
 }
+// 머리말 값: 예측이 고르는 근거인 안만 예측, 아니면 이 안의 업무 값(규칙은 approvalCard.js forecastDecides · ownValues 한 곳)
+// decision: 같은 판단 {options, facts} — 카드 한 장만으로는 "안마다 예측이 갈리는가"를 알 수 없다
+function headValue(o, decision) {
+  if (!decision || !Array.isArray(decision.options)) throw new Error('cardHtml: opt.decision({options, facts})이 필요합니다');
+  if (hydApprove.forecastDecides(o, decision.options)) return forecastLine(o);
+  const v = hydApprove.ownValues(o, decision);
+  return v.length ? `이 안의 값 <b>${esc(v.join(' · '))}</b>` : '';
+}
 function forecastContextHtml(c) {
   if (!c) return '';
   if (c.error) return `<p class="neg">${esc(c.error)}</p>`;
@@ -287,7 +295,7 @@ function cardHtml(o, opt = {}) {
   const ranking = o.rankingEvidence;
   const chips = [o.id === opt.rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
-  const line = [forecastLine(o), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+  const line = [headValue(o, opt.decision), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
   // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
   const kpiAll = `<span class="hkpi">${(o.gains || []).filter(uncond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(uncond).map(x => effChip(x, 'neg')).join('')}</span>`;
   const softAll = `${(o.penalties || []).map(v => ruleChip(v, 'soft', `${UI.t('card.penalty')} ${v.penalty}`)).join('')}${(o.warnings || []).map(v => ruleChip(v, 'soft', UI.t('card.warn'))).join('')}`;
@@ -390,7 +398,7 @@ function renderDecision() {
     html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(UI.idText(top.name)), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(UI.idText(top.failureMode), 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
       (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<div style="margin-bottom:var(--s2)"><b>${esc(UI.idText(c.name))}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(UI.idText(c.failureMode)) : ''}${evidenceHtml(c)}</div>`).join(''), { cls: 'small' }) : '') });
   }
-  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs })).join('') + '</div>';
+  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { options: opts, facts: d.facts } })).join('') + '</div>';
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   if (r.rankRule) html += UI.fold(esc(UI.t('card.scoreHow')), `<p style="margin:0">${esc(r.rankRule.annotation || '')}</p>`);
   // 적용한 규칙 (D5: folded; F2: fired rows first, rule id and condition inside the row)
@@ -473,11 +481,11 @@ function renderDecisionApproval() {
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
   if (pending) {
     html += `<div class="form">` +
-      UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt' })).join('')}</div>`) +
+      UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt', decision: d })).join('')}</div>`) +
       whoFields('dec', ent.form, roles) +
       UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove">${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';
   } else {
-    html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>';
+    html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }
   if ((d.executions || []).length) html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('proc.executions'))}</h3><div class="cards two">` +
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';

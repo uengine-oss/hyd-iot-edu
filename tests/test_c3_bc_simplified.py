@@ -69,6 +69,43 @@ def test_b_button_case_registers_the_work_order_mails_and_ends_without_going_to_
     assert vals["정비 오더"]["value"] == "WO-1" and vals["정비 시점"]["value"].startswith("야간 정비 시간") and vals["공지 메일"]["ok"] is True
 
 
+def test_b_notice_mail_names_the_approver_by_name_not_by_user_id(world):
+    """라이브 3차: 공지 메일 본문이 "(승인 user:park-maint)". 받는 사람에게 가는 글의 틀은 서버가 사용자 표에서 찾은 이름(approved_by_name)을 쓴다."""
+    deploy(world, "c3_pm")
+    out = c2.Outside(world)
+    rt = world["rt"]
+    rt.repo.upsert_user({"id": "user:park-maint", "username": "박정비", "is_agent": False, "tenant_id": "hyd"})
+    rt.repo.set_role_member("hyd", "role:prod-mgr", "user:park-maint", True)
+    row = entstate.EnterpriseState().pm_status("HYD-02")["facts"]
+    inst = rt.on_alert_raise(SB.build_alert("B", row, now=NOW, person=SB.who({"by": "박정비", "user_id": "user:park-maint"})), now=NOW)
+    d = c2.b_decision(engine.variables(inst)["incident"])
+    world["book"][d["id"]] = d
+    rt.submit(_row(rt, inst, "T_agent")["id"], {"decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
+    rt.select(_row(rt, inst, "T_approve")["id"], d["id"], d["options"][0]["id"], "user:park-maint", "role:prod-mgr", now=NOW)
+    v = engine.variables(rt.repo.get_instance(inst["proc_inst_id"]))
+    assert (v["approved_by"], v["approved_by_name"]) == ("user:park-maint", "박정비")      # id 는 권한 · 감사, 이름은 사람이 읽는 글
+    body = out.mails[0][2]["body"]
+    assert body.endswith("(승인 박정비)") and "user:" not in body
+    # 틀 자체에도 id 변수를 쓰지 않는다(메일 · 결과 보고 틀 전부)
+    for did, (_, _, m) in c3._flows().FLOWS.items():
+        texts = [str(t.get("config")) for t in m["tasks"].values()]
+        assert not [t for t in texts if "{approved_by}" in t], did
+
+
+def test_an_approver_id_without_a_name_in_the_user_table_fails_loudly(world):
+    deploy(world, "c3_pm")
+    c2.Outside(world)
+    rt = world["rt"]
+    rt.repo.upsert_user({"id": "user:nameless", "username": "", "is_agent": False, "tenant_id": "hyd"})
+    rt.repo.set_role_member("hyd", "role:prod-mgr", "user:nameless", True)
+    inst = rt.on_alert_raise(SB.build_alert("B", entstate.EnterpriseState().pm_status("HYD-02")["facts"], now=NOW), now=NOW)
+    d = c2.b_decision(engine.variables(inst)["incident"])
+    world["book"][d["id"]] = d
+    rt.submit(_row(rt, inst, "T_agent")["id"], {"decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
+    with pytest.raises(LookupError, match="user:nameless"):
+        rt.select(_row(rt, inst, "T_approve")["id"], d["id"], d["options"][0]["id"], "user:nameless", "role:prod-mgr", now=NOW)
+
+
 def test_c_button_case_orders_mails_and_receives_at_once_then_stock_is_above_the_reorder_line(world):
     deploy(world, "c3_spare")
     out = Stock(world)

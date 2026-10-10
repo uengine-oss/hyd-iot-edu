@@ -78,6 +78,21 @@
 
   /* ---------------------------------------------------------------- 경보 패턴 · 규칙 식 */
   const PATTERNS = { PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' };
+  /* 원인 이름표 — 판단 origin.cause_route(dmn-mcp 가 실제로 원인을 받아 준 근거). 센서 진단(증상 → 고장 유형 ← 원인)이 아닌 업무 경보의
+     원인은 고장 판정이 아니라 "왜 이 부품인가"(재고: 부품 → 그 부품이 고치는 원인) · "왜 이 정비인가"(정기 정비: 정비가 막는 고장의 원인)다.
+     칸이 없는 판단(이 칸 이전 기록)은 진단 이름표 — 그때 판단 기록은 모두 진단 근거 문장으로 적혔다. 모르는 값은 지어내지 않고 실패한다. */
+  const CAUSE_WORDS = {
+    diagnosis: { cause: '원인', failureMode: '고장 유형', found: c => `원인을 ‘${c}’${W.josa(c, '으로/로')} 보고`, input: null, inputFm: null },
+    part: { cause: '이 부품이 고치는 원인', failureMode: '그 원인이 일으키는 고장', found: c => `이 부품이 고치는 원인 ‘${c}’${W.josa(c, '을/를')} 찾고`,
+            input: '이 부품이 고치는 원인', inputFm: '그 원인이 일으키는 고장' },
+    prevention: { cause: '정기 정비로 막는 원인', failureMode: '정기 정비로 막는 고장', found: c => `정기 정비로 막는 원인 ‘${c}’${W.josa(c, '을/를')} 찾고`,
+                  input: '정기 정비로 막는 원인', inputFm: '정기 정비로 막는 고장' },
+  };
+  W.causeWords = route => {
+    if (route == null) return CAUSE_WORDS.diagnosis;
+    if (!CAUSE_WORDS[route]) throw new Error(`판단 origin.cause_route 를 모릅니다: ${route}`);
+    return CAUSE_WORDS[route];
+  };
   W.pattern = code => (typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[code]) || PATTERNS[code] || UI.idText(code || '');
   const OPS = { '>': '보다 높음', '>=': '이상', '<': '보다 낮음', '<=': '이하', '==': '같음', '!=': '다름' };
   W.op = op => OPS[op] || op;

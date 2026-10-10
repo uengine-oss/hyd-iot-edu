@@ -172,6 +172,7 @@ def test_approve_records_who_and_the_chosen_option_then_the_effect_uses_it(case)
     v = values(rt, inst)
     assert (v["approved_by"], v["approved_role"], v["approved_option"]["slot"]) == (ORG, ROLE, "금 10:00")
     assert v["approval"] == AP.APPROVE and v["approval_reason"] == "추천안대로"
+    assert v["approved_by_name"] == next(u["username"] for u in rt.repo.list_users([ORG]))     # 사람이 읽는 글의 틀은 이름을 쓴다
     assert cal.calls == [("gcal", "create_event", {"slot": "금 10:00", "room": "6인실 B", "organizer": ORG}, cal.calls[0][3])]
     done = rt.repo.get_instance(inst["proc_inst_id"])
     rep = engine.variables(done)["result_report"]

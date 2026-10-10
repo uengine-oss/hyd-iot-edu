@@ -11,7 +11,7 @@ from . import engine, alert_policy, effect_parts, approval_part
 SERVICE_TOOLS = {'incident:command', 'incident:reobserve', 'enterprise:WO_CREATE', *effect_parts.TOOLS}
 # C2: 승인 경로가 승인한 카드의 발주 값(공급사 · 부품 · 수량 · 단가 · 금액)을 확정해 넣는다 — 금액 분기(구매팀장 추가 승인)의 근거라 task 가 낼 수 없다
 # 캡스톤 G1: 일반 사람 승인(approval_part)이 고른 안의 사본(approved_option)도 승인 경로만 넣는다
-PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_role','chosen_option', *approval_part.SERVER_VALUES,
+PROTECTED_OUTPUTS = {'incident','commands','approved_by','approved_by_name','approved_role','chosen_option', *approval_part.SERVER_VALUES,
                      *effect_parts.PURCHASE_VALUES}
 
 

@@ -75,7 +75,8 @@ def test_server_lists_all_fourteen_tools_and_guards_each_one():
 def test_evaluate_cards_refuses_a_cause_without_diagnosis_basis():
     t = dmn.DmnTools(kg=FakeKG(), tsdb=FakeTSDB())
     verified = t._diagnosed_cause("HYD-01", "COOLER_DEGRADATION", "cause:cooler-fin-fouling", "fm:cooling-loss")
-    assert verified == {"id": "cause:cooler-fin-fouling", "name": "쿨러 핀 오염", "failureModeId": "fm:cooling-loss", "failureMode": "냉각 능력 상실"}
+    assert verified == ({"id": "cause:cooler-fin-fouling", "name": "쿨러 핀 오염", "failureModeId": "fm:cooling-loss", "failureMode": "냉각 능력 상실"},
+                        {"cause_basis": dmn.CAUSE_BASIS, "cause_route": "diagnosis"})
     assert t.kg.calls[-1] == ("t1", "COOLER_DEGRADATION", "HYD-01")
     with pytest.raises(ValueError, match="진단 지식\\(T1\\)에 없는 원인"):
         t._diagnosed_cause("HYD-01", "COOLER_DEGRADATION", "cause:made-up", "fm:cooling-loss")
@@ -100,6 +101,7 @@ def test_evaluate_cards_records_the_cause_basis_in_the_decision_origin(monkeypat
     monkeypatch.setattr(dmn.decidelib, "decide", fake_decide)
     t.evaluate_cards("HYD-01", "COOLER_DEGRADATION", "cause:cooler-fin-fouling", "fm:cooling-loss")
     assert seen["cause"]["name"] == "쿨러 핀 오염" and seen["origin"]["cause_basis"] == dmn.CAUSE_BASIS and seen["do_submit"] is False
+    assert seen["origin"]["cause_route"] == "diagnosis"
     assert "T1" in dmn.CAUSE_BASIS and "diagnose" in dmn.CAUSE_BASIS
 
 

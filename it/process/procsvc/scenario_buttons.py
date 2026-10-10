@@ -124,9 +124,10 @@ def who(body: dict | None) -> dict:
 
 
 def press_event(proc_inst_id: str, button: str, asset: str, person: dict, at: str, extra: dict | None = None) -> dict:
-    """처리 건 자체에 남는 '버튼을 누른 사람 · 때' 기록(처리 기록 화면 · 실시간 기록이 읽는 events 표)."""
+    """처리 건 자체에 남는 '버튼을 누른 사람 · 때' 기록(처리 기록 화면 · 실시간 기록이 읽는 events 표).
+    name 은 무엇을 눌렀나만, 누른 사람은 by 한 칸에만 싣는다 — 다른 기록 줄처럼 화면이 name 옆에 by 를 붙인다(이름 두 번 금지)."""
     return {"job_id": "SCENARIO_BUTTON", "todo_id": None, "proc_inst_id": proc_inst_id, "crew_type": "human", "event_type": "task_working",
-            "data": dict(extra or {}, name=f"수업 버튼 [{button}] — {person['by']}", button=button, asset=asset, by=person["by"],
+            "data": dict(extra or {}, name=f"수업 버튼 [{button}]", button=button, asset=asset, by=person["by"],
                          user_id=person.get("user_id"), roles=person.get("roles"), at=at)}
 
 

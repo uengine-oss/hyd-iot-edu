@@ -21,11 +21,44 @@
   }
   const scoreText = o => Number.isFinite(+o.score) ? `${num(o.score, 2)}점` : '';
 
-  // 짧은 이유(최대 4줄): 예측 값 · 좋아지는 지표 · 나빠지는 지표 · 같은 선택 선례 · 주의(감점 · 경고)
-  function reasons(o) {
+  /* 머리말 값(라이브 3차): 예측은 "이 안을 고르면 설비가 어떻게 되나"다. 판단 엔진은 모든 안에 예측을 붙인다(순위 식의 예측 · 품질 성분,
+     규정의 예측 유온 검사, 승인 순간 재확인이 쓴다). 그러나 머리말에는 고르는 근거일 때만 둔다 — 설비를 바꾸는 안(kind control)이거나,
+     안마다 예측이 달라 비교가 되는 때. 설비 명령이 없는 업무 안(발주 · 정비 오더)끼리 예측이 모두 같으면 그 값은 '지금 설비 그대로'라
+     고르는 데 쓰이지 않으므로, 그 안의 업무 값(카드마다 다른 사실 · 작업지시의 정비 시점)을 머리말로 둔다. 시나리오 이름으로 가르지 않는다. */
+  const fcKey = o => (o.forecast || []).map(f => `${f.variable}=${num(f.value)}`).join('|');
+  function forecastDecides(o, options) {
+    if (!Array.isArray(options)) throw new Error('forecastDecides: 같은 판단의 안 목록(options)이 필요합니다');
+    if (!(o.forecast || []).length) return false;
+    if (o.kind === 'control') return true;
+    return options.some(x => x.id !== o.id && (x.forecast || []).length && fcKey(x) !== fcKey(o));
+  }
+  // 이 안의 업무 값(글): 판단 수준에서는 비어 있는 카드별 사실(발주 금액 · 공급사 불량률 · 납기 여유 · AVL — 규칙이 이 값으로 감점 · 제외)
+  // + 예측이 머리말이 아닌 업무 안이 작업지시를 내면 카드가 실어 온 정비 시점과 그때의 운전시간
+  function ownValues(o, d) {
+    const W = window.hydWords, facts = d.facts || {};
+    const out = Object.entries(o.facts || {}).filter(([k, x]) => W.known(k) && x != null && typeof x !== 'object' && facts[k] == null)
+      .map(([k, x]) => `${W.fieldName(k)} ${W.value(k, x)}`);
+    const w = o.window;
+    if (w && !forecastDecides(o, d.options) && (o.actions || []).some(a => a.code === 'WO_CREATE')) {
+      out.push(`정비 시점 ${w.name}${w.starts_at ? ` (${UI.dateTime(w.starts_at)})` : ''}`);
+      if (w.basis && W.known(w.basis) && facts[w.basis] != null) out.push(`${W.fieldName(w.basis)} ${W.value(w.basis, facts[w.basis])}`);
+    }
+    return out;
+  }
+
+  // 짧은 이유(최대 4줄): 머리말 값(예측 또는 이 안의 업무 값) · 좋아지는 지표 · 나빠지는 지표 · 같은 선택 선례 · 주의(감점 · 경고)
+  // d: 같은 판단({options, facts}). opt.head=false 면 머리말 값을 빼고(처리 기록처럼 머리말을 따로 그린 곳)
+  function reasons(o, d, opt = {}) {
     const out = [];
-    const f = (o.forecast || []).slice(0, 2).map(x => `${e(UI.idText(x.name))} <b class="num">${e(num(x.value))}${e(x.unit || '')}</b>`);
-    if (f.length) out.push(`예측 ${f.join(' · ')}`);
+    if (opt.head !== false) {
+      if (forecastDecides(o, d.options)) {
+        const f = (o.forecast || []).slice(0, 2).map(x => `${e(UI.idText(x.name))} <b class="num">${e(num(x.value))}${e(x.unit || '')}</b>`);
+        out.push(`예측 ${f.join(' · ')}`);
+      } else {
+        const v = ownValues(o, d);
+        if (v.length) out.push(`이 안의 값 ${v.map(e).join(' · ')}`);
+      }
+    }
     const g = (o.gains || []).filter(x => !x.conditional).map(x => e(x.name));
     if (g.length) out.push(`좋아지는 것 ${g.join(' · ')}`);
     const l = (o.losses || []).filter(x => !x.conditional).map(x => e(x.name));
@@ -51,22 +84,23 @@
   }
 
   // 추천안과 견준 점수 항목 차이(지는 쪽 큰 것 2개 · 이기는 쪽 큰 것 1개) — "어디서 졌나"를 숫자 대신 말로
-  function partDiff(o, rec) {
+  function partDiff(o, rec, options) {
     const a = o.scoreParts || {}, b = (rec && rec.scoreParts) || {};
     const d = Object.keys({ ...a, ...b }).map(k => [k, (+a[k] || 0) - (+b[k] || 0)]).filter(([, x]) => Math.abs(x) >= 0.05);
     const lose = d.filter(([, x]) => x < 0).sort((x, y) => x[1] - y[1]).slice(0, 2).map(([k]) => UI.t('score.' + k));
     const win = d.filter(([, x]) => x > 0).sort((x, y) => y[1] - x[1]).slice(0, 1).map(([k]) => UI.t('score.' + k));
-    const f = (o.forecast || [])[0], rf = rec && (rec.forecast || []).find(x => f && x.variable === f.variable);
+    const f = forecastDecides(o, options) ? (o.forecast || [])[0] : null, rf = rec && (rec.forecast || []).find(x => f && x.variable === f.variable);
     const fc = f && rf ? `${UI.idText(f.name)} ${num(f.value)}${f.unit || ''} (추천 ${num(rf.value)}${rf.unit || ''})` : '';
     return [lose.length ? `${lose.join(' · ')}에서 뒤짐` : '', win.length ? `${win.join(' · ')}에서 앞섬` : '', fc].filter(Boolean).join(' · ');
   }
 
   // 진 안 한 줄: 이름 · 점수 · 진 이유(제외 규칙 > 점수 항목 차이 + 에이전트 설명의 그 문장)
-  function lostRow(o, rec, explanation, chosenId, pending) {
+  function lostRow(o, rec, d, chosenId, pending) {
+    const explanation = d.explanation;
     const out = !o.feasible;
     const said = UI.idText(sentenceAbout(explanation, o.name).replace(/^\s*\d+순위\s*/, ''));
     const why = out && (o.violations || [])[0] ? `제외 — ${e(UI.idText(o.violations[0].annotation || o.violations[0].message || o.violations[0].rule || ''))}`
-      : e(partDiff(o, rec) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score, 2)} 낮습니다` : ''));
+      : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score, 2)} 낮습니다` : ''));
     const pick = pending && o.feasible ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 바꾸기</label>` : '';
     return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
   }
@@ -78,7 +112,7 @@
     const cur = opts.find(o => o.id === chosenId) || rec;
     const changed = cur.id !== rec.id;
     const others = opts.filter(o => o.id !== cur.id).sort((a, b) => (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
-    const rs = reasons(cur);
+    const rs = reasons(cur, d);
     const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a) : a.name).filter(Boolean);
     return `<div class="ap-card ${changed ? 'changed' : ''}">
       <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : 'AI 에이전트 추천'}</span>${changed ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
@@ -88,7 +122,7 @@
       ${actions.length ? `<p class="ap-do"><span class="ap-label">승인하면 시스템이</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
       ${evidence(cur)}
       ${opt.adjust || ''}
-      ${others.length ? UI.fold(`다른 안 ${others.length}개는 왜 졌나`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d.explanation, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
+      ${others.length ? UI.fold(`다른 안 ${others.length}개는 왜 졌나`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
       ${d.explanation ? UI.fold('에이전트 설명 전문', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
       ${opt.extra || ''}
     </div>`;
@@ -180,5 +214,5 @@
       ${off}${opt.extra || ''}</div>`;
   }
 
-  window.hydApprove = { html, reasons, sentenceAbout, proposal, proposalHtml };
+  window.hydApprove = { html, reasons, forecastDecides, ownValues, sentenceAbout, proposal, proposalHtml };
 })();

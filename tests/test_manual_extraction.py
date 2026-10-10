@@ -431,3 +431,21 @@ def test_f3_a_failed_worker_run_reads_as_failed_and_a_person_can_close_it_and_ex
     assert runtime.repo.get_instance(inst['proc_inst_id'])['status']=='COMPLETED'
     again=extraction.start(runtime,source,str(uuid4()))          # 다시 하기: a new extraction request (portal 「에이전트 추출 요청」)
     assert again['proc_inst_id']!=inst['proc_inst_id'] and client.get(path+again['proc_inst_id']).json()['status']=='IN_PROGRESS'
+
+
+def test_a_section_title_carrying_its_own_number_goes_back_to_the_agent(rt,document):
+    """2.2 (라이브 3차 출처 칩 'PR-7.6 PR-7.6 발주 절차'): title 은 번호를 뺀 제목. 번호를 품은 제목은 같은 task 의 교정으로 돌아가고,
+    번호 없는 제목은 그대로 받는다. 이미 저장된 옛 판 제안은 구조 검사(validate_proposal)만으로 계속 읽힌다."""
+    runtime,_=rt;_,source,proposal=document
+    numbered=copy.deepcopy(proposal);numbered['sections'][0]['title']='section-1 정비 절차'
+    assert extraction.validate_proposal(source,numbered)['sections'][0]['title']=='section-1 정비 절차'   # 옛 저장본은 읽힌다
+    with pytest.raises(ValueError,match="절 section-1의 title .*절 번호"):
+        extraction.check_section_titles(numbered)
+    extraction.check_section_titles(proposal)
+    assert '"## PR-7.6 발주 절차" → ref "PR-7.6", title "발주 절차"' in extraction.INSTRUCTION
+    extraction.start(runtime,source,str(uuid4()))
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    assert runtime.repo.save_task_result(wi['id'],{'proposal':numbered},final=True)
+    runtime.poll_once()
+    row=runtime.repo.get_workitem(wi['id'])
+    assert row['draft_status']=='FB_REQUESTED' and '절 번호' in row['feedback']['text']

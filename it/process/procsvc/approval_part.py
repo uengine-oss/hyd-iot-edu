@@ -33,7 +33,8 @@ FORM_ID = TOOL.split(":", 1)[1]
 APPROVE, REJECT = "승인", "반려"
 OUTPUTS = ("approval", "approval_reason")
 #: 승인 경로가 넣는 값 — 흐름의 어떤 task 도 낼 수 없다(PROTECTED_OUTPUTS)
-SERVER_VALUES = ("approved_by", "approved_role", "approved_option")
+#: approved_by 는 사람 id(권한 · 감사 계약), approved_by_name 은 사람이 읽는 글(메일 · 보고 틀)에 쓰는 이름 — 틀에 id 를 쓰지 않는다
+SERVER_VALUES = ("approved_by", "approved_by_name", "approved_role", "approved_option")
 DEFAULT_OPTION_KEY = "slot"
 FORM = {"fields_json": [{"key": "approval", "text": "승인 / 반려", "type": "select", "items": [APPROVE, REJECT]},
                         {"key": "approval_reason", "text": "사유", "type": "textarea", "required": False}]}

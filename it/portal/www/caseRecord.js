@@ -247,9 +247,11 @@
     }
     // 가져온 데이터 (판단이 쓴 사실의 출처 + 도구로 직접 읽은 값)
     const prov = owns('decision') && d && Array.isArray(d.provenance) ? d.provenance : [];
+    const pw = W().causeWords(d && d.origin && d.origin.cause_route);
+    const provName = p => (p.variable === 'cause' && pw.input) || (p.variable === 'failure_mode' && pw.inputFm) || p.name || W().fieldName(p.variable);
     const dataCalls = major.filter(r => /업무|ERP|MES|CMMS|SCM|센서|정비|구매|생산|공급/.test(W().toolSystem(r.tool)));
     if (prov.length || dataCalls.length) {
-      const provRows = prov.map(p => `<tr><td>${named(p.name || W().fieldName(p.variable), p.variable)}</td><td class="num">${e(W().value(p.variable, p.value))}</td><td>${e(p.sourceName || W().system(p.source))}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
+      const provRows = prov.map(p => `<tr><td>${named(provName(p), p.variable)}</td><td class="num">${e(W().value(p.variable, p.value))}</td><td>${e(p.sourceName || W().system(p.source))}${W().id(p.source)}</td><td class="muted">${e(UI.clean(p.how || ''))}</td></tr>`).join('');
       sections.push(sec(`가져온 데이터 ${prov.length ? prov.length + '건' : ''}`, `${prov.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>값</th><th>읽은 값</th><th>어느 시스템</th><th>어떻게</th></tr></thead><tbody>${provRows}</tbody></table></div>` : ''}
         ${dataCalls.length ? `<p class="muted">도구로 직접 읽은 곳: ${[...new Set(dataCalls.map(r => W().toolSystem(r.tool)))].map(x => e(x)).join(' · ')} (아래 도구 호출에 물음 · 받음)</p>` : ''}`, { open: !!prov.length }));
       chips.push(chip(`데이터 ${prov.length || dataCalls.length}건`));
@@ -275,13 +277,14 @@
         : `<p class="cr-gapline">판단 기록${W().id(v.decision_id)}을 읽지 못했습니다 — ${e(r.error || '이유 모름')}</p>`, { open: true }));
     }
     const cause = owns('cause') && v.cause ? (((v.guide_card || {}).causes || []).find(c => c.id === v.cause) || {}).name || nm(v.cause) : '';
-    if (cause) chips.push(chip(`원인 ${cause}`, 'warning'));
+    const cw = W().causeWords(d && d.origin && d.origin.cause_route);
+    if (cause) chips.push(chip(`${cw.cause} ${cause}`, 'warning'));
     if (done && done.data && done.data.text) sections.push(sec('AI 일꾼이 남긴 말', `<p class="prose">${e(UI.clean(W().text(done.data.text)).replace(/`/g, ''))}</p>`));
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
     // 한 문장
     const parts = [];
     if (tools.length) parts.push(`도구를 ${tools.length}번 써서`);
-    if (cause) parts.push(`원인을 ‘${cause}’${W().josa(cause, '으로/로')} 보고`);
+    if (cause) parts.push(cw.found(cause));
     let sentence;
     if (rec) sentence = `${parts.join(' ')} 대안 ${d.options.length}개를 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 추천했습니다.`;
     else if (cause) sentence = `${parts.join(' ')} 판단을 넘겼습니다.`;
@@ -307,8 +310,8 @@
       if (o.cause_basis) out.push(`<p class="muted">원인을 정한 근거: ${e(basisText(o.cause_basis))}</p>`);
       if (rec) {
         const REL = { MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치' };
-        const fm = o.failureMode, cause = o.cause;
-        out.push(`<h6>추천안에 이른 길</h6>` + pathHtml([['원인', nm(cause), cause], ['고장 유형', nm(fm), fm], [REL[rec.relation] || '조치', W().text(rec.name), rec.id]], ['→', '→']));
+        const fm = o.failureMode, cause = o.cause, cw = W().causeWords(o.cause_route);
+        out.push(`<h6>추천안에 이른 길</h6>` + pathHtml([[cw.cause, nm(cause), cause], [cw.failureMode, nm(fm), fm], [REL[rec.relation] || '조치', W().text(rec.name), rec.id]], ['→', '→']));
         const rules = (rec.selectedBy || []).map(r => `<li>${UI.chipText('후보로 고른 규칙', 'accent')} ${e(W().text(r.annotation || nm(r.rule)))}${W().id(r.rule)}${(r.sources || []).length ? ` <span class="muted">출처 ${r.sources.map(x => e(x)).join(', ')}</span>` : ''}</li>`).join('');
         const steps = (rec.steps || []).map(s => `<li><b>${e(s.order || '')}.</b> ${e(W().text(s.text || ''))}${s.manual ? `<div class="cr-src">${UI.chipText(s.manual.ref || s.manual.id, 'neutral')} <b>${e(s.manual.title || '')}</b>${s.manual.excerpt ? ` — <span class="muted">“${e(W().text(s.manual.excerpt))}”</span>` : ''}</div>` : ''}</li>`).join('');
         if (rules) out.push(`<ul class="cr-list">${rules}</ul>`);
@@ -322,7 +325,8 @@
   }
   const basisText = s => String(s).replace(/ontology/gi, '지식 그래프').replace(/same query as diagnose/i, '원인 진단과 같은 질의').replace(/via business_causes/i, '— 업무 경보 원인 찾기 도구')
     .replace(/failure mode/gi, '고장 유형').replace(/FailureMode/g, '고장 유형').replace(/\bpattern\b/gi, '경보 패턴').replace(/\bsymptom\b/gi, '증상').replace(/\bcause\b/gi, '원인').replace(/\bCause\b/g, '원인')
-    .replace(/\bSkill\b/g, '조치').replace(/\bPart\b/g, '부품').replace(/-PREVENTED_BY->/g, '→ 예방 조치 →').replace(/-INVOLVES_PART->/g, '→ 쓰는 부품 →').replace(/\bT1\b/g, '').replace(/\s+/g, ' ').trim();
+    .replace(/\bSkill\b/g, '조치').replace(/\bPart\b/g, '부품').replace(/-PREVENTED_BY->/g, '→ 예방 조치 →').replace(/-INVOLVES_PART->/g, '→ 쓰는 부품 →')
+    .replace(/-CAUSES->/g, '→ 일으키는 고장 →').replace(/\bpart\b/g, '부품').replace(/\bskill\b/g, '조치').replace(/\bT1\b/g, '').replace(/\s+/g, ' ').trim();
   function chainText(p, rec) {
     if ((p.nodes || []).length) return p.nodes.map(n => e(nm(n))).join(' → ');
     const edges = p.edges || [];
@@ -339,12 +343,14 @@
     const opts = [...(d.options || [])].sort((a, b) => (b.id === d.recommended) - (a.id === d.recommended) || (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
     const rec = opts.find(o => o.id === d.recommended) || opts[0];
     const said = o => window.hydApprove ? W().text(hydApprove.sentenceAbout(d.explanation, o.name).replace(/^\s*\d+순위\s*/, '')) : '';
-    const fc = o => (o.forecast || []).slice(0, 2).map(f => `${W().text(f.name)} ${W().num(+f.value)}${f.unit || ''}`).join(' · ');
+    // 머리말 값: 예측이 고르는 근거인 안(설비를 바꾸는 안 · 안마다 예측이 갈림)만 예측, 아니면 이 안의 업무 값(approvalCard.js forecastDecides)
+    const fcFirst = o => hydApprove.forecastDecides(o, d.options);
+    const fc = o => fcFirst(o) ? (o.forecast || []).slice(0, 2).map(f => `${W().text(f.name)} ${W().num(+f.value)}${f.unit || ''}`).join(' · ') : '';
     // 카드마다 다른 사실(결정 수준에서는 "후보마다 계산"으로 비어 있는 값 — 발주 금액 · 공급사 불량률 등): 규칙이 이 값으로 감점 · 제외한다
-    const own = o => Object.entries(o.facts || {}).filter(([k, x]) => W().known(k) && x != null && typeof x !== 'object' && (d.facts || {})[k] == null)
-      .map(([k, x]) => `${W().fieldName(k)} ${W().value(k, x)}`).join(' · ');
+    const own = o => hydApprove.ownValues(o, d).join(' · ');
     const why = o => {
-      if (o.id === rec.id) return (window.hydApprove ? hydApprove.reasons(o) : []).join(' · ');
+      // 추천안의 이유 줄: 위에 그린 머리말이 이 안의 값이면 다시 적지 않는다(예측 머리말은 예전대로 이유 줄 앞에도 둔다)
+      if (o.id === rec.id) return hydApprove.reasons(o, d, { head: fcFirst(o) }).join(' · ');
       if (!o.feasible) return `제외 — ${W().text(((o.violations || [])[0] || {}).annotation || ((o.violations || [])[0] || {}).rule || '규정 위반')}`;
       const a = o.scoreParts || {}, b = rec.scoreParts || {};
       const diff = Object.keys({ ...a, ...b }).map(k => [k, (+a[k] || 0) - (+b[k] || 0)]).filter(([, x]) => Math.abs(x) >= 0.05);
@@ -934,5 +940,5 @@
   function wireBus() { if (window.hydStream && hydStream.subscribe) hydStream.subscribe(onEvent); else setTimeout(wireBus, 500); }
   wireBus();
 
-  window.hydRecord = { mount, build, rowsOf, mounted };
+  window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

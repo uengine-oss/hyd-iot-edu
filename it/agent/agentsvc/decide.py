@@ -34,16 +34,23 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+ID_KINDS = ("DEC", "EVAL")
+
+
 class DecisionRegistry:
     def __init__(self):
         self._lock = threading.Lock()
         self._items: dict[str, dict] = {}
         self._seq = 0
 
-    def new_id(self) -> str:
+    def new_id(self, kind: str) -> str:
+        """kind: DEC = process 에 제출해 저장되는 판단(GET /api/decisions/{id}), EVAL = 제출하지 않는 읽기 평가(evaluate_cards · 가정 실험).
+        라이브 3차: 읽기 평가도 DEC- id 를 받아 처리 기록에 '저장되지 않은 판단 id'(GET 404)가 판단처럼 보였다."""
+        if kind not in ID_KINDS:
+            raise ValueError(f"판단 기록 id 종류는 {', '.join(ID_KINDS)} 중 하나입니다 (받은 값: {kind!r})")
         with self._lock:
             self._seq += 1
-            return f"DEC-{datetime.now():%m%d}-{self._seq:03d}-{secrets.token_hex(2)}"
+            return f"{kind}-{datetime.now():%m%d}-{self._seq:03d}-{secrets.token_hex(2)}"
 
     def put(self, d: dict) -> None:
         with self._lock:
@@ -230,7 +237,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
     def step(name, output, note, status="DONE"):
         steps.append({"name": name, "status": status, "t": _now(), "note": note, "output": output})
 
-    rec = {"id": registry.new_id(), "created": _now(), "schema": "v2", "asset": asset, "origin": origin or {"kind": "manual"},
+    rec = {"id": registry.new_id("DEC" if do_submit else "EVAL"), "created": _now(), "schema": "v2", "asset": asset, "origin": origin or {"kind": "manual"},
            "status": "RUNNING", "steps": steps}
     registry.put(rec)
     try:

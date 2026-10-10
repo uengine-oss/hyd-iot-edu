@@ -675,6 +675,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if opt is None:
             raise ValueError("unknown option")
         person = inbox.check_actor(self.repo, self.tenant_id, by, role)   # U5: "나"로 승인하면 그 역할의 구성원인지(아니면 403)
+        by_name = inbox.person_name(self.repo, self.tenant_id, by)       # 메일 · 보고 틀이 쓰는 승인자 이름(없으면 승인 전에 실패)
         # Validation must be pure: this hook returns an approved COPY, never mutates the external book.
         if review_id:
             if self.hooks.approve_review is None:
@@ -692,13 +693,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if effect_parts.PR_TOOL in flow_tools:
             # C2 (TODO C 실행 3): 승인 경로가 승인한 카드의 발주 금액을 확정해 처리 건 값으로 낸다 — '발주서 확정' 에이전트 task 가 필요 없다
             purchase = effect_parts.purchase_quote(opt, values, self._purchase_quotes(values))
-        payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'role':role,
+        payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'by_name':by_name, 'role':role,
                    'reason':reason, 'commands':commands, 'asset':values.get('asset'), 'incident':values.get('incident'),
                    'deferred':deferred, 'purchase':purchase}
         self.hooks.validate_approval(payload)
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         kind = "control" if any(a.get("kind") == "command" for a in opt.get("actions") or []) else "work_order"
-        approved = {"commands": commands, "chosen_option": dict(deepcopy(opt), kind=kind), "approved_by": by, "approved_role": role}
+        approved = {"commands": commands, "chosen_option": dict(deepcopy(opt), kind=kind), "approved_by": by,
+                    "approved_by_name": by_name, "approved_role": role}
         if purchase:
             approved.update({k: purchase[k] for k in effect_parts.PURCHASE_VALUES})
         engine.set_variables(self.definition_for(inst), inst, approved)
@@ -756,7 +758,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         reason = (reason or "").strip()
         if decision == approval_part.APPROVE:
             chosen = approval_part.choose(engine.variables(inst), approval_part.config_of(activity), option)
-            consent = {"approved_by": by, "approved_role": role, "approved_option": chosen}
+            consent = {"approved_by": by, "approved_by_name": inbox.person_name(self.repo, self.tenant_id, by),
+                       "approved_role": role, "approved_option": chosen}
         else:
             if not reason:
                 raise ValueError("반려 사유를 적으세요 — 결과 보고와 처리 기록에 남습니다")

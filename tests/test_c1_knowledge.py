@@ -97,7 +97,7 @@ def test_fake_catalog_compliance_inputs_are_declared_by_the_seed():
 
 def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
     d = manual_extraction.definition()
-    assert d['version'] == manual_extraction.VERSION == '2.1'
+    assert d['version'] == manual_extraction.VERSION == '2.2'
     # 2.1: 단계의 선택 기준과 절차의 적용 조건을 나눈다(라이브 4차 SOP-PUR-13 — 조건을 값 고르기에 미리 적용해 다른 공급사를 골랐다)
     assert '선택 기준을 그대로 적용' in manual_extraction.INSTRUCTION and 'dt:compliance EXCLUDE 규칙으로 옮겨' in manual_extraction.INSTRUCTION
     act = d['activities'][0]

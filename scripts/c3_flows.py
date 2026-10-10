@@ -3,6 +3,8 @@
   .venv/bin/python scripts/c3_flows.py deploy            # 세 흐름 가져오기 → 사전 검사 → 등록 → 배포
   .venv/bin/python scripts/c3_flows.py check             # 사전 검사만 (등록 안 함)
   .venv/bin/python scripts/c3_flows.py export DIR        # bpmn.io 로 열 수 있는 .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다
+  .venv/bin/python scripts/c3_flows.py deploy-reset BY   # 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset — c3 흐름을 경보 경로에서 내림)
+모르는 명령은 사용법과 함께 거절한다(종료 코드 2) — 배포로 넘어가지 않는다.
 
 A 흐름 모양 · 부품 · 설정은 C2 시험(tests/test_c2_execution.py)의 A 그림 · 매핑과 같다. B · C 는 C3 단순화(2026-10-09 확정 지시 '설비까지 안
 가기로 함, 처리되면 끝')로 줄였다: B = 제안 → 설비보전팀장 승인 → 정비 오더 등록 · 공지 메일 → 결과 보고, C = 제안 → 구매 담당 승인 → ERP 발주 ·
@@ -80,7 +82,7 @@ A_MAPPING = {
               "T_notice": report("승인 지연", "{asset} 냉각 조치 승인 지연", "승인 대기 중 — 경보 {alert.alertId}"),
               "T_cmd": {"part": "task:command"}, "T_reobs": {"part": "task:reobserve"}, "T_wo": {"part": "task:work-order"},
               "R_ok": report("정상", "{asset} 긴급 대응 결과", "유온 정상 · 경보 해제, 작업지시 {work_order.ref}"),
-              "R_fail": report("미달", "{asset} 긴급 대응 결과", "재관측 기준 미달 — 승인자 {approved_by}")},
+              "R_fail": report("미달", "{asset} 긴급 대응 결과", "재관측 기준 미달 — 승인자 {approved_by_name}")},
     "timers": {"B_overdue": "PT10M"},
     "flows": {"F_yes": {"var": "recovered", "op": "==", "value": True}, "F_no": {"default": True}}}
 
@@ -101,7 +103,7 @@ B_XML = xml("""
 
 # 값 틀은 두 업무 백엔드(Supabase · 메모리)가 같은 칸으로 내는 영수증 값만 쓴다(ref · detail)
 PRODUCTION_NOTICE = {"to": "production@hyd.local", "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}",
-                     "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by})"}
+                     "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by_name})"}
 B_MAPPING = {
     "name": "정기 정비", "start": {"kind": "alert", "patterns": ["PM_DUE"]}, "lanes": {},
     "tasks": {"T_agent": decide("agent:pm-plan", "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다"),
@@ -154,27 +156,58 @@ def call(method: str, path: str, body=None) -> dict:
         raise SystemExit(f"{method} {path} → {e.code}: {e.read().decode(errors='replace')[:800]}")
 
 
-def main(argv: list[str]) -> int:
-    cmd = argv[1] if len(argv) > 1 else "check"
-    if cmd == "export":
-        out = Path(argv[2])
-        out.mkdir(parents=True, exist_ok=True)
-        for did, (fname, src, mapping) in FLOWS.items():
-            (out / fname).write_text(src, encoding="utf-8")
-            (out / f"{did}.mapping.json").write_text(json.dumps(mapping, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"wrote {len(FLOWS)} flows to {out}")
-        return 0
+USAGE = ("사용: c3_flows.py check | deploy | export DIR | deploy-reset BY\n"
+         "  check         세 흐름 가져오기 → 사전 검사만 (등록 · 배포 안 함)\n"
+         "  deploy        사전 검사 → 등록 → 배포\n"
+         "  export DIR    .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다\n"
+         "  deploy-reset BY  기준 흐름으로 되돌리기 (BY = 되돌린 사람, POST /api/flows/deploy-reset)")
+
+
+def export(out: Path) -> int:
+    out.mkdir(parents=True, exist_ok=True)
+    for did, (fname, src, mapping) in FLOWS.items():
+        (out / fname).write_text(src, encoding="utf-8")
+        (out / f"{did}.mapping.json").write_text(json.dumps(mapping, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"wrote {len(FLOWS)} flows to {out}")
+    return 0
+
+
+def check_and_deploy(deploy: bool) -> int:
+    failed = 0
     for did, (fname, src, mapping) in FLOWS.items():
         call("POST", "/api/flows/import", {"xml": src, "file_name": fname, "definition_id": did})
         view = call("POST", f"/api/flows/{did}/check", {"mapping": mapping})
         problems = (view.get("check") or view).get("problems") or []
         print(did, "check:", "ok" if not problems else json.dumps(problems, ensure_ascii=False)[:600])
-        if cmd == "check" or problems:
+        if problems:
+            failed += 1
+            continue
+        if not deploy:
             continue
         reg = call("POST", f"/api/flows/{did}/register", {"mapping": mapping})
         dep = call("POST", f"/api/process/definitions/{did}/deploy", {"version": reg["version"], "by": "c3-assembly", "reason": "C3 확정 흐름 배포"})
         print(did, "registered", reg["version"], "deployed", json.dumps(dep, ensure_ascii=False)[:200])
+    return 1 if failed else 0
+
+
+def deploy_reset(by: str) -> int:
+    out = call("POST", "/api/flows/deploy-reset", {"by": by, "reason": "C3 흐름 내리기 — 기준 흐름으로"})
+    for change in out.get("changes") or []:
+        print(change.get("text"))
+    print(out.get("message"))
     return 0
+
+
+def main(argv: list[str]) -> int:
+    """명령은 정확히 하나를 고른다. 인자 수가 맞지 않거나 모르는 명령이면 사용법을 stderr 에 쓰고 2 — 어떤 API 도 부르지 않는다."""
+    args = argv[1:]
+    commands = {("check", 0): lambda: check_and_deploy(False), ("deploy", 0): lambda: check_and_deploy(True),
+                ("export", 1): lambda: export(Path(args[1])), ("deploy-reset", 1): lambda: deploy_reset(args[1])}
+    run = commands.get((args[0], len(args) - 1)) if args else None
+    if run is None:
+        print(f"알 수 없는 명령 또는 인자 수: {' '.join(args) or '(없음)'}\n{USAGE}", file=sys.stderr)
+        return 2
+    return run()
 
 
 if __name__ == "__main__":

@@ -81,7 +81,7 @@ def a_mapping():
                       "T_notice": report("승인 지연", "{asset} 냉각 조치 승인 지연", "승인 대기 중 — 경보 {alert.alertId}"),
                       "T_cmd": {"part": "task:command"}, "T_reobs": {"part": "task:reobserve"}, "T_wo": {"part": "task:work-order"},
                       "R_ok": report("정상", "{asset} 긴급 대응 결과", "유온 정상 · 경보 해제, 작업지시 {work_order.ref}"),
-                      "R_fail": report("미달", "{asset} 긴급 대응 결과", "재관측 기준 미달 — 승인자 {approved_by}")},
+                      "R_fail": report("미달", "{asset} 긴급 대응 결과", "재관측 기준 미달 — 승인자 {approved_by_name}")},
             "timers": {"B_overdue": "PT10M"},
             "flows": {"F_yes": {"var": "recovered", "op": "==", "value": True}, "F_no": {"default": True}}}
 

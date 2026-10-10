@@ -169,6 +169,17 @@ def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str |
     return by
 
 
+def person_name(repo, tenant_id: str, by: str | None) -> str:
+    """승인자 이름(메일 · 결과 보고 틀의 {approved_by_name}). 사람 사용자 id(user:*)면 사용자 표의 이름, 아니면 by 자체가 이미 이름이다
+    (회귀 검사기 · 옛 화면의 자유 입력 — check_actor 와 같은 갈래). 사람 id 인데 사용자 표에 이름이 없으면 LookupError(좌표: id)."""
+    if not str(by or "").startswith(PERSON):
+        return str(by or "")
+    user = next(iter(repo.list_users([by], tenant_id)), None)
+    if user is None or not user.get("username"):
+        raise LookupError(f"승인자 {by} 의 이름이 사용자 표(tenant {tenant_id})에 없습니다")
+    return user["username"]
+
+
 # ---------------------------------------------------------------- 내 작업함
 def inbox_view(rt, user_id: str, now=None) -> dict:
     """나에게 배정된 것 · 내 역할 공용인 것 · 내 역할에 온 에이전트 질문. 각 항목은 처리 건 이름 · 단계 이름 · 기한(붙은 타이머)을 품는다."""

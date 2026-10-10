@@ -66,21 +66,21 @@
     html += summaryBlock(d.explanation);
     if (pending && !legacy) {
       // 409 in instance mode: the choice is made in the 처리 건 screen — one link, no dead form (UIUX_PLAN §1.2)
-      html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>';
+      html += '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
       html += UI.actions(`<button class="btn primary" id="hGoInstance">${esc(UI.t('btn.goInstance'))}</button>`);
     } else if (pending) {
       const live = inc.state === 'AWAITING_APPROVAL';
       // A141: 사건 정보(설비 · 고장 유형 · 원인 · 경보 시각)는 접기로
       html += UI.metaFold([[UI.t('dec.asset'), esc(inc.asset)], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('inc.alertAt'), esc(UI.dateTime(inc.created))]], 'fold.case');
       html += `<div class="form">` +
-        UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: H.form.option === o.id, pending, maxAbs })).join('')}</div>` +
+        UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, reviewable: true, selected: H.form.option === o.id, pending, maxAbs, decision: d })).join('')}</div>` +
           (live && (fanA || loadA || pumpA) ? `<div class="form-grid wide">${pumpA ? UI.readonly(UI.t('form.pump'), esc(pumpA.value)) : ''}${fanA ? hydCards.rangeField('hFan', UI.t('form.fan'), fanA, H.form.fan) : ''}${loadA ? hydCards.rangeField('hLoad', UI.t('form.load'), loadA, H.form.load) : ''}</div>` : '') +
-          `<div class="wide" id="hReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.time(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`) +
+          `<div class="wide" id="hReviewed">${reviewed ? `<p class="kv-line"><b>${esc(UI.t('card.reviewed'))}</b> · ${esc(UI.time(review.created))}</p>${hydCards.cardHtml(reviewed, { maxAbs, decision: review.snapshot })}` : `<p class="field-hint">${esc(UI.t('form.hint.preview'))}</p>`}</div>`) +
         hydCards.whoFields('h', H.form, roles) +
         UI.actions(`<button class="btn outline" id="hPreview" ${live && !H.busy && H.form.option ? '' : 'disabled'}>${esc(UI.t('btn.preview'))}</button><button class="btn primary" id="hGo" ${live && canApprove && !H.busy ? '' : 'disabled'}>${esc(UI.t('btn.decide'))}</button>`, H.msg) + '</div>';
     } else {
       html += decidedCard(d, inc);
-      html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs })).join('') + '</div>', { cls: 'plain' });
+      html += UI.fold(`${esc(UI.t('candidate'))} <span class="chip tone-neutral sm">${opts.length}</span>`, '<div class="hitl-opts">' + opts.map(o => hydCards.cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>', { cls: 'plain' });
     }
     html += '</section>';
     box.innerHTML = html;

@@ -158,3 +158,33 @@ def test_worker_prompt_ends_with_the_korean_narration_rule():
     assert text.rstrip().endswith(prompt.LANGUAGE_RULE) and "Next I'll" in prompt.LANGUAGE_RULE
     from procsvc import work_rules
     assert "모든 자연어 문장은 한국어" in work_rules.constitution(None)          # G9: 공통부 — 업무 규칙이 없는 에이전트도 받는다
+
+
+# ---------------------------------------------------------------- 조립 스크립트 명령 (라이브 3차: 없는 명령 deploy-reset 이 배포로 처리됨)
+@pytest.mark.parametrize("argv", [["deploy-reset"], ["deploy_reset", "x"], ["depoly"], ["export"], ["check", "extra"], []])
+def test_c3_flows_refuses_unknown_commands_without_calling_any_api(argv, monkeypatch, capsys):
+    mod = _flows()
+    calls = []
+    monkeypatch.setattr(mod, "call", lambda *a, **k: calls.append(a) or {})
+    assert mod.main(["c3_flows.py", *argv]) == 2
+    assert calls == []                                                           # 모르는 명령은 배포로 넘어가지 않는다
+    assert "사용: c3_flows.py" in capsys.readouterr().err
+
+
+def test_c3_flows_deploy_reset_is_an_explicit_command_on_the_reset_api(monkeypatch):
+    mod = _flows()
+    calls = []
+    monkeypatch.setattr(mod, "call", lambda *a, **k: calls.append(a) or {"changes": [], "message": "이미 기준 흐름입니다"})
+    assert mod.main(["c3_flows.py", "deploy-reset", "강사"]) == 0
+    assert [(m, p) for m, p, *_ in calls] == [("POST", "/api/flows/deploy-reset")] and calls[0][2]["by"] == "강사"
+
+
+def test_c3_flows_check_never_registers_and_a_failed_check_is_a_failing_exit(monkeypatch):
+    mod = _flows()
+    calls = []
+    def fake(method, path, body=None):
+        calls.append((method, path))
+        return {"check": {"problems": ["틀림"] if path.endswith("c3_pm/check") else []}}
+    monkeypatch.setattr(mod, "call", fake)
+    assert mod.main(["c3_flows.py", "check"]) == 1
+    assert not [p for _, p in calls if p.endswith("/register") or p.endswith("/deploy")]

@@ -59,7 +59,7 @@ const UI = {
     'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'inst.noResult': '아직 결정된 조치가 없습니다', 'inst.noResultSub': '단계가 끝나면 결과가 여기에 나타납니다',
-    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_role': '승인 역할', 'var.alert_id': '경보',
+    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보',
     'inst.output': '출력', 'inst.gateway': '분기 판정', 'inst.due': '기한', 'inst.prevTask': '이전 단계', 'inst.inputs': '전달된 값', 'inst.raw': '원문',
     'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '질의 보기',
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',

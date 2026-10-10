@@ -273,6 +273,7 @@ A073 실행: 1배속 워커 회귀에서 에이전트 작업이 모두 끝난 �
 - [x] **C 지식 공백 근본 수정**(`verification/2026-10-10/c-knowledge-gap.md`): 규정 판단에 공급사 불량률 입력 `in:supplier-fail-rate`(PR-7.4 원문) 선언, 카드 사실 `supplier_fail_rate`(원문과 다른 불량 기대비용 식 제거), 추출 지시 2.1(선택 기준과 적용 조건 분리), `scripts/c3_ingest.py` 무조건 승인 제거(사람 검토 기록 필수). 원문 보강은 불필요(판정 문장 있음).
 - [x] 전체 단위 시험 **1954 passed · 1 failed(흔들림, 단독 32/32) · 4 skipped**(merge-preview d5d73a9). 스택 merge-preview 기준 재빌드(process · agent · dmn-mcp · plant-sim · enterprise-sim · enterprise-mcp 3 · effects-mcp · portal), 마이그레이션 048 · 050 적용, process ↔ plant-sim sim-net · PLANT_SIM_URL=http://plant-sim:8000 docker inspect 확인, 재시작 0.
 - [~] 라이브 최종 확인: C 재추출(지시 2.1) · A · B · C 버튼 완주 · 처리 기록 화면 1440/390 · C 추천 B-OEM 대조 · 쿨러 회귀 1회 — `verification/2026-10-10/live-final.md`
+- [x] 라이브 3차 남은 것 6건 근본 수정(코드 · 단위 시험, 라이브 미검증) — 카드 머리말(예측은 고르는 근거일 때만, 업무 안은 업무 값) · 업무 경보 원인 근거 기록(cause_route) · 버튼 기록 이름 한 번 · 메일 승인자 이름(approved_by_name) · c3_flows 모르는 명령 거절 · 읽기 평가 id EVAL- · 추출 계약 2.2(절 제목에 번호 없음) — `verification/2026-10-10/live-leftovers.md`
 - [ ] 캡스톤 G1/G7(사람 승인 일반화 · 카드) · G3(MCP 결과 추출) · G9(업무 중립 에이전트 규칙) · G6(격리) · 키트 T0/T5~T8 · 예시 사례 실제 1회 — `verification/2026-10-09/capstone-lab.md`
 - [ ] 별건: EFFECT_COMPENSATION · EFFECT_REVIEW 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — review-c3-bc.md 4절), test_mcp_check 전체 실행 때만 흔들림
 - 결정 대기(사용자): main 합침 · push, 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3` 삭제 여부, 업무 감시(BUSINESS_MONITOR, 기본 끔) 유지 여부

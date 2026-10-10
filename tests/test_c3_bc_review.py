@@ -9,6 +9,7 @@
 """
 import asyncio
 import json
+import re
 import shutil
 import subprocess
 from datetime import timedelta
@@ -159,6 +160,11 @@ def _record(tmp_path, scenarios):
     return json.loads(out.stdout)
 
 
+def _text(html):
+    """화면 글: 태그를 지우고 빈칸을 하나로(사람이 읽는 줄 그대로)."""
+    return " ".join(re.sub(r"<[^>]+>", " ", html).split())
+
+
 def test_the_case_record_shows_the_press_and_that_the_flow_ends_in_the_business_system(world, tmp_path):
     deploy(world, "c3_pm")
     rt, st = world["rt"], entstate.EnterpriseState()
@@ -173,9 +179,46 @@ def test_the_case_record_shows_the_press_and_that_the_flow_ends_in_the_business_
     start = out["B"]["steps"][0]
     body = " ".join(x["title"] + " " + x["body"] for x in start["sections"])
     assert start["title"] == "수업 버튼으로 시작" and start["actor"] == "박정비" and "[정기 점검] 버튼을 눌러" in start["sentence"]
-    assert "수업 버튼 기록 1줄" in body and "수업 버튼 [정기 점검] — 박정비" in body and "누른 사람" in body
+    assert "수업 버튼 기록 1줄" in body and "누른 사람" in body
+    # 버튼 기록 줄: 무엇을 눌렀나 + 누른 사람 한 번(생산자 name 에는 사람이 없고 by 한 칸만 — 라이브 3차 "박정비 박정비")
+    assert _text(body).count("수업 버튼 [정기 점검] 박정비") == 1 and "박정비 박정비" not in _text(body)
     assert "이 흐름의 끝" in body and "설비 명령 없음" in start["chips"]
     assert not [g for g in out["B"]["gaps"] if "수업 버튼" in g]                 # 버튼 기록이 처리 건에 있다 — '없다'고 적지 않는다
     a_start = out["A"]["steps"][0]
     a_body = " ".join(x["title"] + " " + x["body"] for x in a_start["sections"])
-    assert a_start["title"] == "센서 경보로 시작" and "수업 버튼 [쿨러 열화 주입] — 김운전" in a_body and "이 흐름의 끝" not in a_body
+    assert a_start["title"] == "센서 경보로 시작" and "수업 버튼 [쿨러 열화 주입] 김운전" in _text(a_body) and "이 흐름의 끝" not in a_body
+    assert "김운전 김운전" not in _text(a_body)
+
+
+def test_c_agent_step_reads_the_cause_as_why_this_part_not_a_diagnosis(world, tmp_path):
+    """라이브 3차: C 기록의 '원인을 ‘축 씰 마모’로 보고' · '판정 원인' · '판정 고장 유형'이 발주를 고장 진단처럼 읽게 했다. 판단 origin.cause_route
+    (dmn-mcp 가 실제로 원인을 받아 준 근거)가 부품 경로면 '이 부품이 고치는 원인'으로 읽는다. 진단 근거면 예전 이름표 그대로."""
+    import test_c2_execution as c2
+    deploy(world, "c3_spare")
+    rt, st = world["rt"], entstate.EnterpriseState()
+    inst = rt.on_alert_raise(SB.build_alert("C", st.spare_stock("P-PMP-SEAL")["facts"], now=NOW, person=SB.who({"by": "정구매"})), now=NOW)
+    d = c2.c_decision(engine.variables(inst)["incident"])
+    world["book"][d["id"]] = d
+    rt.submit(_row_of(rt, inst, "T_agent")["id"], {"cause": "cause:pump-shaft-seal-wear", "failure_mode": "fm:pump-volumetric-efficiency-loss",
+                                                   "decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
+    prov = [{"variable": "cause", "name": "판정 원인", "value": "cause:pump-shaft-seal-wear", "source": "sys:agent", "sourceName": "AI 에이전트",
+             "how": "파이프라인이 이미 가진 값"},
+            {"variable": "failure_mode", "name": "판정 고장 유형", "value": "fm:pump-volumetric-efficiency-loss", "source": "sys:agent",
+             "sourceName": "AI 에이전트", "how": "파이프라인이 이미 가진 값"}]
+    def decision(route):
+        return dict(d, provenance=prov, origin=dict(d["origin"], cause="cause:pump-shaft-seal-wear", failureMode="fm:pump-volumetric-efficiency-loss",
+                                                  cause_route=route, cause_basis="ontology: cause -INVOLVES_PART-> part"))
+    view = rt.instance_view(inst["proc_inst_id"])
+    out = _record(tmp_path, [{"name": "part", "view": view, "ext": {"decision": decision("part")}},
+                             {"name": "diagnosis", "view": view, "ext": {"decision": decision("diagnosis")}}])
+    part = next(s for s in out["part"]["steps"] if s["type"] == "agent")
+    body = _text(" ".join(x["body"] for x in part["sections"]))
+    assert "이 부품이 고치는 원인 ‘" in part["sentence"] and "원인을 ‘" not in part["sentence"]
+    assert "이 부품이 고치는 원인" in part["chips"] and "판정 원인" not in body and "판정 고장 유형" not in body
+    assert "이 부품이 고치는 원인" in body and "그 원인이 일으키는 고장" in body
+    diag = next(s for s in out["diagnosis"]["steps"] if s["type"] == "agent")
+    assert "원인을 ‘" in diag["sentence"] and "판정 원인" in _text(" ".join(x["body"] for x in diag["sections"]))
+
+
+def _row_of(rt, inst, activity):
+    return next(w for w in rt.repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == activity and w["status"] == "IN_PROGRESS")

@@ -192,9 +192,10 @@ def test_c_lead_time_longer_than_the_need_date_warns_the_card(enterprise, monkey
     assert b["facts"]["lead_slack_days"] == -2 and {w["rule"] for w in b["warnings"]} == {"rule:pur-amount", "rule:pur-lead"}
 
 
-def test_business_cause_comes_from_the_graph_path_not_from_a_sensor_diagnosis(enterprise):
+def test_business_cause_comes_from_the_graph_path_not_from_a_sensor_diagnosis(enterprise, monkeypatch):
     """C 재고 경보에는 증상이 없다: 원인은 '모자란 부품을 쓰는 원인'(Cause -INVOLVES_PART-> Part)으로 읽는다. 엉뚱한 원인은 거절."""
-    from dmn_mcp.tools import DmnTools
+    from dmn_mcp.tools import DmnTools, BUSINESS_CAUSE_BASIS
+    from agentsvc import decide as decidelib
     calls = []
 
     class KG:
@@ -210,7 +211,14 @@ def test_business_cause_comes_from_the_graph_path_not_from_a_sensor_diagnosis(en
     tools._graph = graph
     out = tools.business_causes("HYD-03", "SPARE_BELOW_MIN")
     assert out["parts_below_reorder_point"] == ["P-PMP-SEAL"] and out["top_cause"] == "cause:pump-seal-wear"
-    assert tools._diagnosed_cause("HYD-03", "SPARE_BELOW_MIN", "cause:pump-seal-wear", "fm:volumetric-loss")["name"] == "축 씰 마모"
+    cause, basis = tools._diagnosed_cause("HYD-03", "SPARE_BELOW_MIN", "cause:pump-seal-wear", "fm:volumetric-loss")
+    assert cause["name"] == "축 씰 마모"
+    # 라이브 3차: 업무 경보의 판단 origin 에는 실제로 원인을 받아 준 업무 근거(부품 경로)를 적는다 — T1(증상) 문장이 아니라
+    assert basis == {"cause_basis": BUSINESS_CAUSE_BASIS["SPARE_BELOW_MIN"], "cause_route": "part"} and "INVOLVES_PART" in basis["cause_basis"]
+    seen = {}
+    monkeypatch.setattr(decidelib, "decide", lambda *a, origin=None, **k: seen.update(origin=origin) or {"id": "DEC-1", "status": "SUBMITTED", "result": {"options": []}})
+    tools.submit_decision("HYD-03", "SPARE_BELOW_MIN", "cause:pump-seal-wear", "fm:volumetric-loss", "INC-1")
+    assert (seen["origin"]["cause_route"], seen["origin"]["cause_basis"]) == ("part", BUSINESS_CAUSE_BASIS["SPARE_BELOW_MIN"])
     with pytest.raises(ValueError, match="업무 근거"):
         tools._diagnosed_cause("HYD-03", "SPARE_BELOW_MIN", "cause:cooler-fin-fouling", "fm:cooling-loss")
     with pytest.raises(ValueError, match="업무 경보가 아닙니다"):

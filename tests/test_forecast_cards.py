@@ -144,3 +144,7 @@ def test_runtime_decide_saves_dynamic_context_and_keeps_what_if_read_only(monkey
     trial=decide.decide(graph,decide.DecisionRegistry(),None,'TEST-ASSET','COOLER_DEGRADATION',cause,
                         overrides={'plc_mode':'REMOTE_MANUAL'},do_submit=False)
     assert trial['status']=='NO_FEASIBLE_OPTION' and len(sent)==1
+    # 라이브 3차 C: 읽기 평가(evaluate_cards)가 DEC- id 를 받아 저장되지 않은 '판단 id'(GET 404)로 보였다 — 제출되는 판단만 DEC-
+    assert sent[0]['id']==record['id'] and record['id'].startswith('DEC-') and trial['id'].startswith('EVAL-')
+    with pytest.raises(ValueError,match='id 종류'):
+        decide.DecisionRegistry().new_id('DECISION')
