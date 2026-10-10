@@ -1,0 +1,19 @@
+{
+ "_comment": "T2 지식 파일 틀(전체 과정 랩업 단계 3). students/<내ID>/graph.json 으로 복사하고 s00 을 내 ID 로 바꾼다(ns 칸, 모든 노드의 ns, 모든 id 접두어). 형식: nodes[{labels, props}] · rels[{type, a, b, props}]. 클래스 · 관계는 확정 스키마 v2 와 내 schema.json(T1)에 있는 것만 쓴다. 값(행 · 지금 수치)은 넣지 않는다 — 바뀌는 값은 업무 표(T3)에 두고 여기에는 규칙 · 원문 근거 · 개념만. 아래는 T1 예시(분기 고객 리뷰 회의 준비)의 가장 작은 조각이다: 문서 한 개 · 원문 절 둘 · 회의 한 건 · 안건 한 건 · 자료 한 건. 검사 · 적재 · 되돌리기: python students/<내ID>/load_graph.py check | load | ask | wipe",
+ "ns": "s00",
+ "nodes": [
+  {"labels": ["KnowledgeSource"], "props": {"id": "s00:ks:d1", "ns": "s00", "name": "D1 회의 운영 규칙", "kind": "policy", "ref": "students/s00/docs/d1.md"}},
+  {"labels": ["ManualSection"], "props": {"id": "s00:ms:d1-1", "ns": "s00", "ref": "D1 §1", "title": "필수 참석", "excerpt": "필수 참석자 전원이 가능한 시간에만 회의를 확정한다."}},
+  {"labels": ["ManualSection"], "props": {"id": "s00:ms:d1-4", "ns": "s00", "ref": "D1 §4", "title": "회의실", "excerpt": "고객 회의는 6인 이상 회의실에서 한다."}},
+  {"labels": ["Meeting"], "props": {"id": "s00:meeting-q3", "ns": "s00", "name": "3분기 고객 리뷰", "kind": "customer_review", "minAttendees": 6}},
+  {"labels": ["AgendaItem"], "props": {"id": "s00:agenda:1", "ns": "s00", "name": "납품 지연 재발 방지책", "status": "open"}},
+  {"labels": ["Material"], "props": {"id": "s00:material:1", "ns": "s00", "name": "지난 분기 회의록"}}
+ ],
+ "rels": [
+  {"type": "PART_OF", "a": "s00:ms:d1-1", "b": "s00:ks:d1", "props": {}},
+  {"type": "PART_OF", "a": "s00:ms:d1-4", "b": "s00:ks:d1", "props": {}},
+  {"type": "HAS_AGENDA", "a": "s00:meeting-q3", "b": "s00:agenda:1", "props": {}},
+  {"type": "NEEDS_MATERIAL", "a": "s00:meeting-q3", "b": "s00:material:1", "props": {}},
+  {"type": "RAISED_IN", "a": "s00:agenda:1", "b": "s00:ks:d1", "props": {}}
+ ]
+}

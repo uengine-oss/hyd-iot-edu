@@ -40,3 +40,5 @@ description: (한 줄) 어떤 요청 한 건에서 무엇을 준비해 무엇을
 ```
 `options[].slot · reason · score`, `recommended`, `losers[].slot · why`, `docs[].title · link` 는 승인 카드가 읽는 칸 이름이다 — 이름을 바꾸지 않는다.
 내 업무에 필요한 칸(예: room · prep_hours)은 options 항목에 더해도 된다.
+- `slot` 은 안을 가리는 구분 값이다 — **안마다 달라야 한다.** 같은 `slot` 이 둘이면 승인자가 어느 안인지 고를 수 없어 승인이 막힌다(반려만 된다).
+- `docs[].link` 는 http(s) 주소만 넣는다. 주소가 없는 자료는 `docs` 에 넣지 않는다.

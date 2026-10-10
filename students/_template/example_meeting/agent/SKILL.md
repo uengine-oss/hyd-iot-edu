@@ -40,3 +40,5 @@ description: 고객사 분기 리뷰 회의 요청 한 건 — 자료를 찾아 
 }}
 ```
 칸 이름(`options[].slot · reason · score`, `losers`, `docs`)은 승인 카드가 읽는 약속이다. 바꾸지 않는다. 예: `proposal.example.json`.
+- `slot` 은 안을 가리는 구분 값이다 — **안마다 달라야 한다.** 같은 시각에 회의실만 다른 안은 가장 나은 회의실 하나만 `options` 에 넣고 나머지는 `losers` 에 이유와 함께 낸다. 같은 `slot` 이 둘이면 주관자가 어느 안인지 고를 수 없어 승인이 막힌다(반려만 된다).
+- `docs[].link` 는 http(s) 주소만 넣는다. 주소가 없는 자료는 `docs` 에 넣지 않고 `agenda` 나 `reason` 에 문서 이름 · 절로 적는다.
