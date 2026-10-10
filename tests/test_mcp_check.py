@@ -56,6 +56,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(404); self.end_headers()
 
     def do_POST(self):
+        # 요청 본문을 먼저 다 읽는다. 읽지 않은 바이트를 남기고 소켓을 닫으면 커널이 RST 를 보내, 클라이언트가 응답을 읽기 전에
+        # 연결 끊김(mcp_check 'closed')을 받는 일이 시점에 따라 생긴다(html 60회 중 7회 실측) — 실제 HTTP 서버처럼 본문을 소비한다.
+        msg = self._read()
         mode = self.mode
         if mode == "auth":
             self.send_response(401); self.end_headers(); return
@@ -65,12 +68,11 @@ class _Handler(BaseHTTPRequestHandler):
         if mode == "slow":
             time.sleep(2.0)
         try:
-            self._serve_mcp(mode)
+            self._serve_mcp(mode, msg)
         except (BrokenPipeError, ConnectionResetError):      # 느린 서버 시험: 클라이언트가 먼저 끊는다
             pass
 
-    def _serve_mcp(self, mode):
-        msg = self._read()
+    def _serve_mcp(self, mode, msg):
         if mode == "sse-transport":
             out = respond(msg)
             self.send_response(202); self.end_headers()

@@ -72,3 +72,11 @@
 3. 직접 시작 → 에이전트 task 가 proposal 을 낸 뒤 내 작업함 "승인 요청" → 카드(추천 · 지는 안 펼치기 · 자료 링크) 확인 → 다른 안 고르고 승인 →
    승인 뒤 MCP 호출 인자에 고른 안 값 · 결과 보고 확정.
 4. 비해피: 다른 사람으로 승인(403 문구) · 반려 사유 없이 반려(400) · 반려 → 결과 보고(반려), 바깥 호출 0건 · 약속 어긴 proposal(카드에 위반 + JSON).
+
+## 8. 후속 3 — test_mcp_check html 시험 흔들림 (결함: 시험의 가짜 서버)
+- 원인: `tests/test_mcp_check.py` `_Handler.do_POST`(고치기 전 54-59행)가 html · auth 모드에서 요청 본문을 읽지 않고 응답 뒤 소켓을 닫았다.
+  읽지 않은 바이트가 남은 채 닫으면 커널이 RST 를 보내고, 클라이언트가 200 text/html 을 읽기 전에 RST 를 받으면
+  `mcp_check.py:437` 이 ConnectionResetError → 'closed' 로 판정한다. mcp_check 의 판정은 맞다(실제로 끊긴 연결). 결함은 가짜 서버 쪽.
+- 실측(같은 판정 60회): 고치기 전 html → not_mcp 53 · closed 7 / auth → auth 60. 고친 뒤 html → not_mcp 60 / auth 60.
+- 조치: do_POST 가 모든 모드에서 본문을 먼저 읽고(`_serve_mcp(mode, msg)` 로 넘김) 응답한다.
+- 검증: `tests/test_mcp_check.py` 10회 반복 실행 — 10회 모두 32 passed(흔들림 0). 뮤테이션 = 고치기 전 상태(위 실측 7/60).
