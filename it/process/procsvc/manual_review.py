@@ -15,6 +15,12 @@ from . import kgadmin, manual_knowledge
 STEP_RE = re.compile(r'^\s*(\d+)[.)]\s+(.+?)\s*$')
 
 
+def document_key(tenant, document_id):
+    """The graph identity of a reviewed document: `_manual_document` on its nodes and the ManualIngestionDocument id.
+    The one place this key is made — previews, conflicts, commit and head lookups all ask the graph with it."""
+    return hashlib.sha256(tenant.encode()).hexdigest() + ':' + document_id
+
+
 def canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
@@ -188,8 +194,7 @@ def validate(archive, tenant, body):
                  **{k: extra[k] for k in ('actions', 'addresses') if extra.get(k)}))
     # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙). Existence in the graph is checked at commit.
     knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor)
-    tenant_key = hashlib.sha256(tenant.encode()).hexdigest()
-    return dict(batch=batch, tenant=tenant, document=tenant_key + ':' + source['document_id'],
+    return dict(batch=batch, tenant=tenant, document=document_key(tenant, source['document_id']),
                 source_id=source['source_id'], document_id=source['document_id'],
                 sha256=source['sha256'], filename=source['filename'], extractor=source['extractor'],
                 previous_batch=body.get('previous_batch'), by=str(body['by']).strip(),

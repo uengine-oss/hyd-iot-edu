@@ -1,6 +1,5 @@
 """Original → source-backed preview → human review → atomic graph endpoints."""
 import asyncio
-import hashlib
 import base64
 from urllib.parse import quote
 
@@ -53,14 +52,16 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
             value = manual_extraction.result(runtime(),source,instance_id,previous)
             if value.get('preview'):
+                # The graph tags a document's nodes with its tenant-scoped key, not the raw document id (F-1: the raw id
+                # made this document's own SOPs show up as another document's).
+                document = manual_review.document_key(tenant, source['document_id'])
                 # A077 (ontology-studio merge_warning): tell the reviewer *before* commit which proposed SOP ids another
                 # document or admin knowledge already owns. Read-only; the commit-time Conflict stays as the hard rule.
                 value['preview']['conflicts'] = graph(lambda session: manual_graph.sop_conflicts(
-                    session, source['document_id'], [p['id'] for p in value['preview']['procedures']]))
+                    session, document, [p['id'] for p in value['preview']['procedures']]))
                 # C1: knowledge ids that already exist (seed or another document) — drop the item and refer to the existing id
                 value['preview']['knowledge_conflicts'] = graph(lambda session: manual_knowledge.conflicts(
-                    session, value['preview'].get('knowledge'),
-                    hashlib.sha256(tenant.encode()).hexdigest() + ':' + source['document_id']))
+                    session, value['preview'].get('knowledge'), document))
             return value
         return await run(work)
 

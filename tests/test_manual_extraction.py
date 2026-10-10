@@ -347,3 +347,52 @@ def test_a161_golden_report_optional_probe_answers_null_instead_of_404(rt, docum
     assert client.get('/api/kg/manuals/batches/nothing-here/golden-report').status_code == 404
     r = client.get('/api/kg/manuals/batches/nothing-here/golden-report?optional=1')
     assert r.status_code == 200 and r.json() is None
+
+
+def test_f1_review_conflicts_do_not_call_the_documents_own_sops_another_documents(rt,document,monkeypatch):
+    """F-1 (live-final 2-3): the extraction result asked the graph with the raw document id while the graph tags a
+    document's nodes with its tenant-scoped key, so a revision listed its own SOPs as 'other_document'. Both review aids
+    must ask with the same key the commit writes (manual_graph.desired via manual_review.validate)."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api, manual_graph, manual_knowledge
+    runtime,_=rt;archive,source,proposal=document
+    source=archive.get('hyd',source['source_id'])            # the API reads the archived source the same way
+    inst=extraction.start(runtime,source,str(uuid4()))
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    runtime.repo.save_task_result(wi['id'],{'proposal':proposal},final=True);runtime.poll_once()
+    reviewed=dict(extraction.result(runtime,source,inst['proc_inst_id'],None)['preview'],reviewed=True,by='검토자',links={'SOP-EXTRACT-1':{'failureMode':'fm:bearing-degradation'}})
+    plan=manual_review.validate(archive,'hyd',reviewed)
+    tag=next(n['props']['_manual_document'] for n in manual_graph.desired(plan)['nodes'] if n['labels']==['Skill'])
+    assert tag==plan['document']==manual_review.document_key('hyd',source['document_id'])
+    owners={'SOP-EXTRACT-1':tag,'SOP-OTHER':manual_review.document_key('hyd','another-document')}
+
+    class Rows:
+        def __init__(self,rows):self.rows=rows
+        def data(self):return self.rows
+        def single(self):return self.rows[0] if self.rows else None
+    class Tx:
+        def run(self,q,**kw):
+            assert 'k.sopId IN $ids' in q, q
+            return Rows([dict(sop=s,id='skill:'+s,owner=owners[s]) for s in kw['ids'] if s in owners])
+    class Session:
+        def __enter__(self):return self
+        def __exit__(self,*a):return False
+        def execute_read(self,fn):return fn(Tx())
+        def run(self,q,**kw):            # manual_graph.head: no batch committed yet
+            assert 'ManualIngestionDocument' in q and kw['id']==tag, (q,kw)
+            return Rows([])
+    class Driver(Session):
+        def session(self):return Session()
+    knowledge_key=[]
+    monkeypatch.setattr(manual_knowledge,'conflicts',lambda session,knowledge,document=None:knowledge_key.append(document) or [])
+    app=FastAPI()
+    manual_api.register(app,archive_factory=lambda:archive,driver_factory=Driver,tenant='hyd',audit=lambda *a:None,runtime_factory=lambda:runtime)
+    r=TestClient(app).get('/api/kg/manuals/sources/'+source['source_id']+'/extractions/'+inst['proc_inst_id'])
+    assert r.status_code==200, r.text
+    assert r.json()['preview']['conflicts']==[]          # its own SOP is not someone else's
+    assert knowledge_key==[tag]
+    # another document's SOP of the same number is still reported
+    owners['SOP-EXTRACT-1']=owners.pop('SOP-OTHER')
+    r=TestClient(app).get('/api/kg/manuals/sources/'+source['source_id']+'/extractions/'+inst['proc_inst_id'])
+    assert [(c['sop'],c['kind']) for c in r.json()['preview']['conflicts']]==[('SOP-EXTRACT-1','other_document')]
