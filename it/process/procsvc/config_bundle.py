@@ -40,7 +40,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from . import agent_authoring as A
-from . import bpmn_import, mcp_check, mcp_registry
+from . import bpmn_import, mcp_check, mcp_registry, work_rules
 from .agents_store import SKILL_NAME_RE, csv_list
 from .bpmn_store import FlowStore, next_version
 
@@ -189,6 +189,7 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
             continue
         agents.append({"id": u["id"], "name": u.get("username") or "", "role": u.get("role") or "", "goal": u.get("goal") or "",
                        "persona": u.get("persona") or "", "model": u.get("model") or "", "tools": csv_list(u.get("tools")),
+                       "work_rules": u.get("work_rules") or "",
                        "skills": [r["skill_name"] for r in repo.list_agent_skills(tenant, u["id"])]})
     names = {u["id"]: u.get("username") or u["id"] for u in repo.list_users(None, tenant)}
     members = [{"role_id": m["role_id"], "user_id": m["user_id"], "role_name": names.get(m["role_id"], m["role_id"]),
@@ -447,8 +448,13 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         for sk in csv_list(a.get("skills")):
             if sk not in file_skills and sk not in seed_skills:
                 problems.append(_problem(where, f"스킬 '{sk}' 가 파일에도 기본 스킬에도 없습니다(참조 없는 스킬)"))
+        rules_key = _text(a.get("work_rules")).strip()
+        try:
+            work_rules.rules_for(rules_key)
+        except work_rules.UnknownWorkRules as e:
+            problems.append(_problem(where, str(e)))
         plan_agents.append({"id": aid, "body": {"name": name, "goal": _text(a.get("goal")), "role": _text(a.get("role")),
-                                                "persona": _text(a.get("persona")), "model": model, "tools": tools},
+                                                "persona": _text(a.get("persona")), "model": model, "tools": tools, "work_rules": rules_key},
                             "skills": list(dict.fromkeys(csv_list(a.get("skills"))))})
     agent_ids = {a["id"] for a in plan_agents} | {u for u, r in seed_users.items() if r.get("is_agent") and (r.get("agent_type") or "agent") == "agent"}
 
@@ -708,7 +714,7 @@ def _expected(bundle_content: dict, plan: dict) -> dict:
     for s in c["skills"]:
         s["description"] = _text(s.get("description"))
     for a in c["agents"]:
-        for k in ("role", "persona", "model"):
+        for k in ("role", "persona", "model", "work_rules"):
             a[k] = _text(a.get(k))
         a["skills"] = list(dict.fromkeys(csv_list(a.get("skills"))))
     for f in c["flows"]:

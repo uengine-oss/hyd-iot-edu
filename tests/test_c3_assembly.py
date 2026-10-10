@@ -153,7 +153,8 @@ def test_seed_has_three_scenario_agents_with_distinct_servers_and_skills():
 def test_worker_prompt_ends_with_the_korean_narration_rule():
     import sys
     sys.path.insert(0, str(ROOT / "it" / "agent-worker"))
-    from worker import prompt, workspace
+    from worker import prompt
     text = prompt.build({"activity_name": "판단 · 제안"}, {}, workdir="/tmp/x")
     assert text.rstrip().endswith(prompt.LANGUAGE_RULE) and "Next I'll" in prompt.LANGUAGE_RULE
-    assert "모든 자연어 문장은 한국어" in workspace.CONSTITUTION
+    from procsvc import work_rules
+    assert "모든 자연어 문장은 한국어" in work_rules.constitution(None)          # G9: 공통부 — 업무 규칙이 없는 에이전트도 받는다

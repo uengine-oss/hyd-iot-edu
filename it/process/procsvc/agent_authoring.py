@@ -142,8 +142,17 @@ def _agent_fields(repo, tenant_id: str, body: dict, *, self_id: str | None = Non
         missing = [s for s in skills if s not in stored]
         if missing:
             raise AuthoringError(f"없는 스킬은 붙일 수 없습니다: {', '.join(missing)}")
-    return {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None,
-            "tools": ",".join(tools) if tools else None, "skills": skills}
+    out = {"username": name, "goal": goal, "role": role or None, "persona": persona or None, "model": model or None,
+           "tools": ",".join(tools) if tools else None, "skills": skills}
+    if "work_rules" in body:            # G9: 업무 규칙 키 — 칸이 없으면 고치기에서 지금 값을 그대로 둔다
+        key = str(body.get("work_rules") or "").strip() or None
+        from . import work_rules
+        try:
+            work_rules.rules_for(key)
+        except work_rules.UnknownWorkRules as e:
+            raise AuthoringError(str(e)) from e
+        out["work_rules"] = key
+    return out
 
 
 def _new_agent_id(repo, tenant_id: str) -> str:
@@ -157,7 +166,8 @@ def _new_agent_id(repo, tenant_id: str) -> str:
 def create_agent(repo, tenant_id: str, body: dict, *, by: str | None = None) -> dict:
     f = _agent_fields(repo, tenant_id, body)
     skills = f.pop("skills")
-    row = {"id": _new_agent_id(repo, tenant_id), **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id, "origin": USER}
+    row = {"id": _new_agent_id(repo, tenant_id), "work_rules": None, **f, "is_agent": True, "agent_type": "agent", "tenant_id": tenant_id,
+           "origin": USER}                                  # G9: 칸을 안 주면 업무 규칙 없음(공통부만) — Pg 의 null 과 같은 모양
     repo.write_agent(row, skills, create=True)
     log.info("agent created %s by %s", row["id"], by)
     return _agent(repo, tenant_id, row["id"])
@@ -187,7 +197,8 @@ def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *
             name, n = f"{base} {n}", n + 1
     skills = [r["skill_name"] for r in repo.list_agent_skills(tenant_id, agent_id)]
     payload = {"name": name, "goal": src.get("goal") or "", "role": src.get("role") or "", "persona": src.get("persona") or "",
-               "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills}
+               "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills,
+               "work_rules": src.get("work_rules") or ""}             # G9: 사본도 원본과 같은 업무 규칙 아래에서 돈다
     if not payload["goal"].strip():
         payload["goal"] = f"{_name(src)}의 사본"
     return create_agent(repo, tenant_id, payload, by=by)
@@ -648,20 +659,20 @@ class MemoryAuthoring:
 
 
 class PgAuthoring:
-    AGENT_COLS = ("username", "role", "goal", "persona", "model", "tools")
+    AGENT_COLS = ("username", "role", "goal", "persona", "model", "tools", "work_rules")
 
     def write_agent(self, row: dict, skills: list[str], *, create: bool) -> None:
         with self._conn() as c, c.transaction():
             if create:
-                c.execute("insert into users (id, username, role, is_agent, agent_type, goal, persona, model, tools, tenant_id, origin, updated_at) "
-                          "values (%s, %s, %s, true, 'agent', %s, %s, %s, %s, %s, %s, now())",
+                c.execute("insert into users (id, username, role, is_agent, agent_type, goal, persona, model, tools, work_rules, tenant_id, origin, updated_at) "
+                          "values (%s, %s, %s, true, 'agent', %s, %s, %s, %s, %s, %s, %s, now())",
                           (row["id"], row["username"], row.get("role"), row.get("goal"), row.get("persona"), row.get("model"), row.get("tools"),
-                           row.get("tenant_id") or "hyd", row.get("origin") or USER))
+                           row.get("work_rules"), row.get("tenant_id") or "hyd", row.get("origin") or USER))
             else:
-                n = c.execute("update users set username=%s, role=%s, goal=%s, persona=%s, model=%s, tools=%s, updated_at=now() "
+                n = c.execute("update users set username=%s, role=%s, goal=%s, persona=%s, model=%s, tools=%s, work_rules=%s, updated_at=now() "
                               "where id=%s and tenant_id=%s and is_agent and origin='user'",
                               (row["username"], row.get("role"), row.get("goal"), row.get("persona"), row.get("model"), row.get("tools"),
-                               row["id"], row.get("tenant_id") or "hyd")).rowcount
+                               row.get("work_rules"), row["id"], row.get("tenant_id") or "hyd")).rowcount
                 if n != 1:
                     raise AuthoringError("기본 에이전트이거나 이미 지워진 에이전트라 고치지 않았습니다", 409)
             c.execute("delete from agent_skills where user_id=%s and tenant_id=%s", (row["id"], row.get("tenant_id") or "hyd"))
