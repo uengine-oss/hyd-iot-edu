@@ -9,11 +9,14 @@
         <bpmn:flowNodeRef>StartEvent_request</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_approve</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_approve_delay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_approved</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_agent" name="회의 준비 에이전트">
         <bpmn:flowNodeRef>Activity_propose</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_system" name="시스템">
+        <bpmn:flowNodeRef>Activity_report_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_reject</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_report_delay</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_delay</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_invite</bpmn:flowNodeRef>
@@ -43,8 +46,20 @@
     <bpmn:endEvent id="EndEvent_delay" name="끝 (승인 지연 알림)">
       <bpmn:incoming>Flow_delay_end</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:serviceTask id="Activity_invite" name="일정 등록 · 초대 발송">
+    <bpmn:exclusiveGateway id="Gateway_approved" name="승인?">
       <bpmn:incoming>Flow_approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_approve_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_approve_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_report_reject" name="결과 보고: 반려">
+      <bpmn:incoming>Flow_approve_no</bpmn:incoming>
+      <bpmn:outgoing>Flow_reject_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_reject" name="끝 (반려)">
+      <bpmn:incoming>Flow_reject_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_invite" name="일정 등록 · 초대 발송">
+      <bpmn:incoming>Flow_approve_yes</bpmn:incoming>
       <bpmn:outgoing>Flow_invited</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Activity_wait" name="응답 마감까지 대기">
@@ -80,7 +95,10 @@
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_request" sourceRef="StartEvent_request" targetRef="Activity_propose" />
     <bpmn:sequenceFlow id="Flow_proposal" sourceRef="Activity_propose" targetRef="Activity_approve" />
-    <bpmn:sequenceFlow id="Flow_approved" sourceRef="Activity_approve" targetRef="Activity_invite" />
+    <bpmn:sequenceFlow id="Flow_approved" sourceRef="Activity_approve" targetRef="Gateway_approved" />
+    <bpmn:sequenceFlow id="Flow_approve_yes" name="승인" sourceRef="Gateway_approved" targetRef="Activity_invite" />
+    <bpmn:sequenceFlow id="Flow_approve_no" name="반려" sourceRef="Gateway_approved" targetRef="Activity_report_reject" />
+    <bpmn:sequenceFlow id="Flow_reject_end" sourceRef="Activity_report_reject" targetRef="EndEvent_reject" />
     <bpmn:sequenceFlow id="Flow_delay" sourceRef="Event_approve_delay" targetRef="Activity_report_delay" />
     <bpmn:sequenceFlow id="Flow_delay_end" sourceRef="Activity_report_delay" targetRef="EndEvent_delay" />
     <bpmn:sequenceFlow id="Flow_invited" sourceRef="Activity_invite" targetRef="Activity_wait" />
@@ -94,16 +112,16 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_cap_t8">
     <bpmndi:BPMNPlane id="BPMNPlane_cap_t8" bpmnElement="Collaboration_cap_t8">
       <bpmndi:BPMNShape id="Participant_cap_t8_di" bpmnElement="Participant_cap_t8" isHorizontal="true">
-        <dc:Bounds x="120" y="60" width="1400" height="600" />
+        <dc:Bounds x="120" y="60" width="1560" height="600" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_organizer_di" bpmnElement="Lane_organizer" isHorizontal="true">
-        <dc:Bounds x="150" y="60" width="1370" height="160" />
+        <dc:Bounds x="150" y="60" width="1530" height="160" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_agent_di" bpmnElement="Lane_agent" isHorizontal="true">
-        <dc:Bounds x="150" y="220" width="1370" height="160" />
+        <dc:Bounds x="150" y="220" width="1530" height="160" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_system_di" bpmnElement="Lane_system" isHorizontal="true">
-        <dc:Bounds x="150" y="380" width="1370" height="280" />
+        <dc:Bounds x="150" y="380" width="1530" height="280" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_request_di" bpmnElement="StartEvent_request">
         <dc:Bounds x="200" y="122" width="36" height="36" />
@@ -118,31 +136,40 @@
         <dc:Bounds x="450" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_delay_di" bpmnElement="EndEvent_delay">
-        <dc:Bounds x="610" y="562" width="36" height="36" />
+        <dc:Bounds x="572" y="562" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_invite_di" bpmnElement="Activity_invite">
-        <dc:Bounds x="610" y="420" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_wait_di" bpmnElement="Activity_wait">
         <dc:Bounds x="770" y="420" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_check_di" bpmnElement="Activity_check">
+      <bpmndi:BPMNShape id="Activity_wait_di" bpmnElement="Activity_wait">
         <dc:Bounds x="930" y="420" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_check_di" bpmnElement="Activity_check">
+        <dc:Bounds x="1090" y="420" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_accepted_di" bpmnElement="Gateway_accepted" isMarkerVisible="true">
-        <dc:Bounds x="1090" y="435" width="50" height="50" />
+        <dc:Bounds x="1250" y="435" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_report_ok_di" bpmnElement="Activity_report_ok">
-        <dc:Bounds x="1200" y="420" width="100" height="80" />
+        <dc:Bounds x="1360" y="420" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_report_ng_di" bpmnElement="Activity_report_ng">
-        <dc:Bounds x="1200" y="540" width="100" height="80" />
+        <dc:Bounds x="1360" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_done_di" bpmnElement="EndEvent_done">
-        <dc:Bounds x="1360" y="442" width="36" height="36" />
+        <dc:Bounds x="1520" y="442" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_approve_delay_di" bpmnElement="Event_approve_delay">
         <dc:Bounds x="508" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_approved_di" bpmnElement="Gateway_approved" isMarkerVisible="true">
+        <dc:Bounds x="610" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_report_reject_di" bpmnElement="Activity_report_reject">
+        <dc:Bounds x="640" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_reject_di" bpmnElement="EndEvent_reject">
+        <dc:Bounds x="770" y="562" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_request_di" bpmnElement="Flow_request">
         <di:waypoint x="236" y="140" />
@@ -158,9 +185,7 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_approved_di" bpmnElement="Flow_approved">
         <di:waypoint x="550" y="140" />
-        <di:waypoint x="580" y="140" />
-        <di:waypoint x="580" y="460" />
-        <di:waypoint x="610" y="460" />
+        <di:waypoint x="610" y="140" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_delay_di" bpmnElement="Flow_delay">
         <di:waypoint x="526" y="198" />
@@ -169,38 +194,53 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_delay_end_di" bpmnElement="Flow_delay_end">
         <di:waypoint x="550" y="580" />
-        <di:waypoint x="610" y="580" />
+        <di:waypoint x="572" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_invited_di" bpmnElement="Flow_invited">
-        <di:waypoint x="710" y="460" />
-        <di:waypoint x="770" y="460" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_waited_di" bpmnElement="Flow_waited">
         <di:waypoint x="870" y="460" />
         <di:waypoint x="930" y="460" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_checked_di" bpmnElement="Flow_checked">
+      <bpmndi:BPMNEdge id="Flow_waited_di" bpmnElement="Flow_waited">
         <di:waypoint x="1030" y="460" />
         <di:waypoint x="1090" y="460" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_checked_di" bpmnElement="Flow_checked">
+        <di:waypoint x="1190" y="460" />
+        <di:waypoint x="1250" y="460" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_yes_di" bpmnElement="Flow_yes">
-        <di:waypoint x="1140" y="460" />
-        <di:waypoint x="1200" y="460" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_no_di" bpmnElement="Flow_no">
-        <di:waypoint x="1115" y="485" />
-        <di:waypoint x="1115" y="580" />
-        <di:waypoint x="1200" y="580" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ok_end_di" bpmnElement="Flow_ok_end">
         <di:waypoint x="1300" y="460" />
         <di:waypoint x="1360" y="460" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_no_di" bpmnElement="Flow_no">
+        <di:waypoint x="1275" y="485" />
+        <di:waypoint x="1275" y="580" />
+        <di:waypoint x="1360" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ok_end_di" bpmnElement="Flow_ok_end">
+        <di:waypoint x="1460" y="460" />
+        <di:waypoint x="1520" y="460" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ng_end_di" bpmnElement="Flow_ng_end">
-        <di:waypoint x="1300" y="580" />
-        <di:waypoint x="1330" y="580" />
-        <di:waypoint x="1330" y="460" />
-        <di:waypoint x="1360" y="460" />
+        <di:waypoint x="1460" y="580" />
+        <di:waypoint x="1490" y="580" />
+        <di:waypoint x="1490" y="460" />
+        <di:waypoint x="1520" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_approve_yes_di" bpmnElement="Flow_approve_yes">
+        <di:waypoint x="660" y="140" />
+        <di:waypoint x="820" y="140" />
+        <di:waypoint x="820" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_approve_no_di" bpmnElement="Flow_approve_no">
+        <di:waypoint x="635" y="165" />
+        <di:waypoint x="635" y="360" />
+        <di:waypoint x="690" y="360" />
+        <di:waypoint x="690" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_reject_end_di" bpmnElement="Flow_reject_end">
+        <di:waypoint x="740" y="580" />
+        <di:waypoint x="770" y="580" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

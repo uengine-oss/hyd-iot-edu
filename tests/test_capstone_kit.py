@@ -142,7 +142,7 @@ def test_blank_flow_template_has_three_lanes_unnamed_tasks_and_full_di():
     p = B.parse_bpmn(xml)
     assert p["problems"] == []
     assert [l["name"] for l in p["lanes"]] == ["담당자", "에이전트", "시스템"]
-    assert len(p["starts"]) == 1 and len(p["ends"]) == 1 and len(p["gateways"]) == 1
+    assert len(p["starts"]) == 1 and len(p["ends"]) == 2 and len(p["gateways"]) == 2      # 승인? 분기(반려 → 반려 보고 → 끝)와 결과 분기
     assert p["tasks"] and all(t["name"] == "" for t in p["tasks"])                    # task 이름은 학생이 채운다
     assert sum(t["bpmn_type"] == "userTask" for t in p["tasks"]) == 1                # 승인 자리 하나
 
@@ -158,16 +158,24 @@ def test_blank_flow_template_imports_cleanly_once_parts_are_chosen():
     m["start"] = {"kind": "human", "fields": [{"key": "case_id", "text": "요청 번호"}]}
     m["tasks"] = {"Activity_agent": {"part": "agent", "agent": AGENT_ID, "instruction": "후보를 낸다", "inputs": ["case_id"],
                                      "outputs": [{"key": "proposal", "type": "object"}]},
-                  "Activity_approve": {"part": "human", "role": "회의 주관자", "inputs": ["proposal"],
-                                       "fields": [{"key": "choice", "type": "select", "items": ["1안", "2안"]}]},
-                  "Activity_do": {"part": "svc:wait", "config": {"duration": "PT1H"}},
+                  "Activity_approve": {"part": "human:approve", "role": "회의 주관자", "inputs": ["proposal"], "config": {"options": "proposal.options"}},
+                  "Activity_report_reject": {"part": "svc:report", "config": {"outcome": "반려"}},
+                  "Activity_do": {"part": "svc:mcp-call", "inputs": ["approved_option"],             # 승인 뒤 쓰기 — 승인 선으로만 닿아야 한다
+                                  "config": {"server": "hyd-effects", "tool": "send_mail", "output": "mail",
+                                             "arguments": {"to": "a@example.com", "subject": "x", "body": "{approved_option.slot}"}}},
                   "Activity_check": {"part": "svc:wait", "config": {"duration": "PT1H"}},
                   "Activity_report_ok": {"part": "svc:report", "config": {"outcome": "정상"}},
                   "Activity_report_ng": {"part": "svc:report", "config": {"outcome": "미달"}}}
     assert set(m["tasks"]) == set(t)
-    m["flows"] = {"Flow_yes": {"var": "choice", "op": "==", "value": "1안"}, "Flow_no": {"default": True}}
-    r = B.check(p, m, {"catalog": cat, "definition_id": "blank", "version": "1", "file_name": "flow.bpmn", "xml_sha256": "x"})
+    m["flows"] = {"Flow_approve_yes": {"var": "approval", "op": "==", "value": "승인"}, "Flow_approve_no": {"default": True},
+                  "Flow_yes": {"var": "approval", "op": "==", "value": "승인"}, "Flow_no": {"default": True}}
+    ctx = {"catalog": cat, "definition_id": "blank", "version": "1", "file_name": "flow.bpmn", "xml_sha256": "x"}
+    r = B.check(p, m, ctx)
     assert r["ok"], r["problems"]
+    # 승인? 분기의 조건을 빼면(반려도 쓰기 부품으로 흐른다) 거절 — 틀이 이 분기를 갖는 이유
+    m["flows"]["Flow_approve_yes"], m["flows"]["Flow_approve_no"] = {"default": True}, {"var": "approval", "op": "==", "value": "반려"}
+    bad = B.check(p, m, ctx)
+    assert not bad["ok"] and any("반려(또는 조건 없는) 경로" in x["reason"] for x in bad["problems"]), bad["problems"]
 
 
 def test_example_flow_reads_with_lanes_timer_and_branch():
@@ -176,7 +184,7 @@ def test_example_flow_reads_with_lanes_timer_and_branch():
     p = B.parse_bpmn(xml)
     assert p["problems"] == []
     assert [l["name"] for l in p["lanes"]] == ["회의 주관자", "회의 준비 에이전트", "시스템"]
-    assert len(p["tasks"]) == 8 and [g["name"] for g in p["gateways"]] == ["필수 참석자 전원 수락?"]
+    assert len(p["tasks"]) == 9 and sorted(g["name"] for g in p["gateways"]) == ["승인?", "필수 참석자 전원 수락?"]
     (timer,) = p["boundaries"]
     assert timer["attached_to"] == "Activity_approve" and timer["timer"] == "PT4H" and timer["interrupting"] is False
 
@@ -207,13 +215,24 @@ def test_example_flow_is_rejected_only_for_the_result_paths_the_instructor_fills
         assert (gid, gfield) == (eid, efield) and ephrase in greason, (gid, gfield, greason)
 
 
+def test_example_flow_passes_once_the_result_paths_are_filled():
+    """라이브 실측(K-capstone.md): 경로 자리 3줄만 채우면 등록돼야 한다. 전에는 그 뒤에 '반려 경로로 쓰기 부품에 닿는다'는 네 번째 거절이
+    가려져 있었다(그림에 승인? 분기가 없었다)."""
+    p, m, _ = _example_check()
+    m["tasks"]["Activity_invite"]["config"]["extract"]["event_id"]["path"] = "id"
+    m["tasks"]["Activity_check"]["config"]["extract"]["all_required_accepted"]["path"] = "all_accepted"
+    r = B.check(p, m, {"catalog": B.catalog(BASE_DEF, USERS), "definition_id": "qbr_prep", "version": "1", "file_name": "flow.bpmn", "xml_sha256": "x"})
+    assert r["ok"], r["problems"]
+
+
 def test_example_mapping_uses_design_names_for_g1_g3_and_valid_current_parts():
     m = json.loads(read(EX / "mapping.json"))
     assert m["tasks"]["Activity_approve"]["part"] == "human:approve"
     assert m["tasks"]["Activity_check"]["config"]["effect"] is False and "extract" in m["tasks"]["Activity_check"]["config"]
     assert "결과 경로는 강사가 채움" in m["_comment"] and "결과 경로는 강사가 채움" in read(EX / "README.md")
     outcomes = {t["config"]["outcome"] for t in m["tasks"].values() if t["part"] == "svc:report"}
-    assert outcomes == {"정상", "미달", "승인 지연"}                                       # 확정 · 미확정 · 승인 지연 가지
+    assert outcomes == {"정상", "미달", "승인 지연", "반려"}                               # 확정 · 미확정 · 승인 지연 · 반려 가지
+    assert m["flows"]["Flow_approve_yes"] == {"var": "approval", "op": "==", "value": "승인"}
 
 
 # ---------------------------------------------------------------- T8 스키마 · 지식 · DDL

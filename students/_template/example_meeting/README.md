@@ -10,11 +10,12 @@
 | `graph.json` · `questions.cypher` | 3 | 이름 공간 demo 의 지식(규칙 6 · 원문 절 · 단계 5 · 입력 자리 9 · 회의 1건), 값 노드 없음. 문서의 "답할 질문" 9개를 옮긴 질의 | `python students/_template/load_graph.py check --dir students/_template/example_meeting`(그래프 없이) → `load` → `ask` → 되돌리기 `wipe`(T2) |
 | `table.sql` | 4 | 업무 표 `stu_demo`(meeting_request · attendee · room) · 읽기 전용 계정 · 예시 행 | T3 형식 대조(시험) |
 | `agent/agent.json · SKILL.md · proposal.example.json` | 6 | 포털 에이전트 칸 값, 요령, 결과 값 예 | 시험: 승인 카드 칸 이름 약속 |
-| `flow.bpmn · mapping.json` | 7 · 8 | 레인 3 · task 8 · 승인 1(+지연 타이머) · 분기 1 그림과 부품 매핑 | bpmn.io 파서 경고 0, 포털 가져오기 파서로 읽힘 |
+| `flow.bpmn · mapping.json` | 7 · 8 | 레인 3 · task 9 · 승인 1(+지연 타이머) · 분기 2(승인? · 필수 참석자 전원 수락?) 그림과 부품 매핑 | bpmn.io 파서 경고 0, 포털 가져오기 파서로 읽힘 |
 
 ## 지는 안 · 미달 가지 (해피패스 아님)
 - 내일 10시 — 자료 공유 48시간(D1 2) 위반 제외 · 목 14시 — 필수 참석자 불가(D1 1) 제외 · 같은 시간 4인실 A — 6인 규칙(D1 4) 제외 · 다음 주 화 15시 — 요청 마감 넘김 감점.
 - 필수 참석자 박임원(가상) 시험 계정으로 거절 또는 무응답 → "미확정" 보고. 승인을 4시간 미루면 "승인 지연" 알림만, 일정은 안 만든다.
+- 주관자가 반려(사유 필수) → "승인?" 분기의 반려 선 → "반려" 보고로 끝난다. 일정 등록으로 가는 선은 `approval == '승인'` 하나뿐이다.
 
 ## 강사가 채울 곳 (결과 경로는 강사가 채움)
 | 자리 | 지금 | 채우는 법 |

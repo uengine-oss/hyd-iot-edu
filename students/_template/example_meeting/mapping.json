@@ -1,5 +1,5 @@
 {
-  "_comment": "T8 예시 — flow.bpmn 을 포털 흐름 가져오기에서 고를 부품 · 칸 · 조건(가져오기 매핑 모양: name · start · lanes · tasks · timers · flows). 채울 칸: agent 의 '<내 에이전트 id>' 는 포털이 만든 id(agent:u-…), 레인 역할 '회의 주관자' 는 업무분장 '역할 만들기'로 만든 역할. 서버 gcal 과 도구 create_event · get_event, extract 의 결과 경로는 설계 문서(3.6)의 자리 이름이다 — 강사가 고른 구글 서버의 실제 도구 이름 · 결과 모양으로 바꾼다(T5 표). 'human:approve'(G1)와 svc:mcp-call 의 extract({값이름: {path, type}}) · effect(G3)는 포털에 있다. 결과 경로는 강사가 채움 — 서버를 고르기 전에는 그 경로 자리 때문에 가져오기가 거절되고, 그 사유는 tests/test_capstone_kit.py 에 기대값으로 적혀 있다.",
+  "_comment": "T8 예시 — flow.bpmn 을 포털 흐름 가져오기에서 고를 부품 · 칸 · 조건(가져오기 매핑 모양: name · start · lanes · tasks · timers · flows). 채울 칸: agent 의 '<내 에이전트 id>' 는 포털이 만든 id(agent:u-…), 레인 역할 '회의 주관자' 는 업무분장 '역할 만들기'로 만든 역할. 서버 gcal 과 도구 create_event · get_event, extract 의 결과 경로는 설계 문서(3.6)의 자리 이름이다 — 강사가 고른 구글 서버의 실제 도구 이름 · 결과 모양으로 바꾼다(T5 표). 'human:approve'(G1 — 승인 · 반려 둘 다 낸다. 그래서 일정 등록 앞에 '승인?' 분기를 두고 approval == '승인' 선만 일정 등록으로 간다. 이 선이 없으면 가져오기가 '반려 경로로 쓰기 부품에 닿는다'고 거절한다)와 svc:mcp-call 의 extract({값이름: {path, type}}) · effect(G3)는 포털에 있다. 결과 경로는 강사가 채움 — 서버를 고르기 전에는 그 경로 자리 때문에 가져오기가 거절되고, 그 사유는 tests/test_capstone_kit.py 에 기대값으로 적혀 있다.",
   "name": "분기 고객 리뷰 회의 준비 (예시)",
   "start": {"kind": "human", "fields": [{"key": "request_id", "text": "회의 요청 번호 (예: QBR-2026-Q4-01)", "type": "text"}]},
   "lanes": {"Lane_organizer": "회의 주관자"},
@@ -30,11 +30,15 @@
                            "config": {"outcome": "정상", "title": "{request_id} 회의 확정", "summary": "필수 참석자 전원 수락 — 일정 {event_id}"}},
     "Activity_report_ng": {"part": "svc:report", "inputs": ["request_id"],
                            "config": {"outcome": "미달", "title": "{request_id} 회의 미확정", "summary": "필수 참석자 거절 또는 무응답 — 다시 조율 필요"}},
+    "Activity_report_reject": {"part": "svc:report", "inputs": ["request_id"],
+                               "config": {"outcome": "반려", "title": "{request_id} 회의 반려", "summary": "주관자가 제안을 반려했습니다 — 사유: {approval_reason}. 일정은 만들지 않았습니다"}},
     "Activity_report_delay": {"part": "svc:report", "inputs": ["request_id"],
                               "config": {"outcome": "승인 지연", "title": "{request_id} 승인 지연", "summary": "주관자 승인이 4시간 넘게 없습니다 — 일정은 아직 만들지 않았습니다"}}
   },
   "timers": {"Event_approve_delay": "PT4H"},
   "flows": {
+    "Flow_approve_yes": {"var": "approval", "op": "==", "value": "승인"},
+    "Flow_approve_no": {"default": true},
     "Flow_yes": {"var": "all_required_accepted", "op": "==", "value": true},
     "Flow_no": {"default": true}
   }
