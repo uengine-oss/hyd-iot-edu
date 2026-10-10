@@ -12,7 +12,9 @@ from plantsim import plant as plantmod, thermal
 from procsvc import scenario_buttons as SB
 
 ASSET = SB.A_ASSET
-MITIGATION = {"FanSpeedSP": 100.0, "LoadSP": 80.0}        # A 에서 승인되는 조치(팬 최대 + 부하 조정)가 PLC 에 쓰는 지령
+# 승인한 조치가 PLC 에 쓰는 지령: 팬 최대(라이브에서 추천되는 SOP-COOL-11 — 부하는 그대로) · 팬 최대 + 부하 조정
+MITIGATIONS = [{"FanSpeedSP": 100.0, "LoadSP": 90.0}, {"FanSpeedSP": 100.0, "LoadSP": 80.0}]
+NORMAL = {"FanSpeedSP": 60.0, "LoadSP": 90.0}
 SAMPLE_S = 20                                              # 20배속에서 표본 하나 = 시뮬레이션 20초
 BUTTON_DEGRADE = SB.A_BUTTONS["degrade"]["fault"]
 BUTTON_RESTORE = SB.A_BUTTONS["restore"]["fault"]
@@ -36,38 +38,40 @@ def alerts_over(pl, st, sim_seconds):
     return out
 
 
-def mitigated_and_cleared():
+def mitigated_and_cleared(mitigation):
     """열화 주입 → 경보 → 승인한 조치 지령 → 경보 해제까지 간 설비와 detector 상태."""
     pl, st = plantmod.Plant(time_scale=1.0), cep.CepState()
     press(pl, BUTTON_DEGRADE)
     assert alerts_over(pl, st, 3000) == ["RAISE"]
     u = pl.units[ASSET].state
-    u.fan_pct, u.load_pct = MITIGATION["FanSpeedSP"], MITIGATION["LoadSP"]
+    u.fan_pct, u.load_pct = mitigation["FanSpeedSP"], mitigation["LoadSP"]
     assert alerts_over(pl, st, 3000) == ["CLEAR"]
     return pl, st
 
 
-def test_restore_then_immediate_degrade_raises_the_alarm_again():
-    pl, st = mitigated_and_cleared()
+@pytest.mark.parametrize("mitigation", MITIGATIONS)
+def test_restore_then_immediate_degrade_raises_the_alarm_again(mitigation):
+    pl, st = mitigated_and_cleared(mitigation)
     r = press(pl, BUTTON_RESTORE)
     u = pl.units[ASSET].state
     assert (u.fan_pct, u.load_pct) == (thermal.NORMAL_FAN_PCT, thermal.NORMAL_LOAD_PCT)        # 지령은 그 자리에서 평소 값
-    assert r["setpoints"] == {"before": MITIGATION, "after": {"FanSpeedSP": 60.0, "LoadSP": 90.0}}
+    assert r["setpoints"] == {"before": mitigation, "after": NORMAL}
     assert r["targets"] == {"cooler_health": 1.0} and pl.units[ASSET].dirty_status
     press(pl, BUTTON_DEGRADE)                                                                  # 곧바로(복구 램프가 끝나기 전)
     assert alerts_over(pl, st, 3000) == ["RAISE"]
     assert u.ts1 < plantmod.plc.TRIP_TS1 and pl.units[ASSET].ctrl.state == "RUN"               # moderate: 경보만, 보호 정지는 아님
 
 
-def test_without_the_operating_point_the_next_degrade_never_alarms():
+@pytest.mark.parametrize("mitigation", MITIGATIONS)
+def test_without_the_operating_point_the_next_degrade_never_alarms(mitigation):
     """고치기 전 동작의 원인 고정: 외란만 되돌리면 지령이 조치 값으로 남아 다음 주입의 평형이 경보선 아래다."""
-    pl, st = mitigated_and_cleared()
+    pl, st = mitigated_and_cleared(mitigation)
     r = pl.inject(ASSET, "restore", component="cooler")
     u = pl.units[ASSET].state
-    assert r["setpoints"] is None and (u.fan_pct, u.load_pct) == (100.0, 80.0)
+    assert r["setpoints"] is None and {"FanSpeedSP": u.fan_pct, "LoadSP": u.load_pct} == mitigation
     press(pl, BUTTON_DEGRADE)
     assert alerts_over(pl, st, 6000) == []
-    assert thermal.equilibrium_ts1(80.0, 100.0, thermal.MODERATE_HEALTH) < cep.RAISE_TS1
+    assert thermal.equilibrium_ts1(mitigation["LoadSP"], mitigation["FanSpeedSP"], thermal.MODERATE_HEALTH) < cep.RAISE_TS1
     assert thermal.equilibrium_ts1(thermal.NORMAL_LOAD_PCT, thermal.NORMAL_FAN_PCT, thermal.MODERATE_HEALTH) > cep.RAISE_TS1
 
 
