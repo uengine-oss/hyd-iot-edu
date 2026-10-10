@@ -4,18 +4,18 @@
 새 세션 첫 대사: "`docs/handoff/NOW.md`를 읽고 <S | U | F | K> 갈래를 이어간다."
 이 파일의 숫자 · 상태는 10-10 기준이다. 시작할 때 `git log -1` · `docker ps` · 시험 실행으로 다시 잰다(헌법 §2).
 
-## 0. 현재 상태 (10-10 실측)
+## 0. 현재 상태 (10-11 00:55 실측 — 브랜치 · 단위 시험 · 라이브 · 스택 · 쉬는 상태 줄. 나머지 줄은 10-10)
 
 | 항목 | 값 |
 |---|---|
-| 브랜치 | `claude/hyd-handoff-work-xziutz`. A161 갈래 전부 합쳐짐. 시작할 때 `git log -1`로 이 파일이 든 커밋인지 본다 |
-| 단위 시험 | 2076 통과 · 9 건너뜀 · 0 실패 (루트에서 `.venv/bin/python -m pytest -q -p no:cacheprovider`, 약 3분 30초) |
-| 라이브 | A · B · C 버튼 완주 통과, C 추천 = SOP-PUR-11(B-OEM) — `verification/2026-10-10/live-final.md` 3 · 4차. 쿨러 회귀 40/40은 3차(8090310 빌드)에서만 돌렸다. 그 뒤 2190a84로 process · agent · dmn-mcp를 다시 빌드했고 **그 빌드로는 회귀를 돌리지 않았다** |
-| 스택 | 떠 있음. compose 작업 폴더는 `.claude/worktrees/merge-preview`. 파일을 직접 물고 있는 컨테이너: portal ← `merge-preview`, grafana ← `agent-aed004354f1cd7a4c`, timescaledb · supabase studio ← `agent-afd136e4b22934cb9`. **이 세 작업 트리는 스택을 루트로 옮기기 전에 지우지 않는다.** process · agent · dmn-mcp 등 10-10에 다시 빌드한 서비스의 코드는 지금 브랜치와 같다(detector · redpanda · emqx 등 OT · 백본 쪽 이미지는 비교하지 않음) |
-| 쉬는 상태 | 그래프 = 전체판, 흐름 = 기준 흐름(c3 흐름은 내려감), 워커 0, B · C 경보 표시 켜짐. **이 상태에서는 A · B · C 버튼 완주가 바로 되지 않는다**(2절 "버튼 완주 순서") |
+| 브랜치 | `claude/hyd-handoff-work-xziutz` 하나. A161 갈래 + `K-20261010-capstone` + `F-20261010-keep` 합쳐짐, 그 위에 10-11 새벽 final-verify 커밋(쿨러 복구 수정 · `students/flows` · 라이브 기록). **push 하지 않았다**(원격은 `fc76db5`). 시작할 때 `git log -1`로 이 파일이 든 커밋인지 본다 |
+| 단위 시험 | **2149 통과 · 9 건너뜀 · 0 실패** (10-11 00:55, 합친 뒤 첫 전체 실행 — 루트에서 `.venv/bin/python -m pytest -q -p no:cacheprovider`, 약 3분 30초) |
+| 라이브 | **합친 코드(`4e5f535` 빌드)로 10-11 00:07~00:34**: A · B · C 각각 승인 · 거절, A · C 무응답(지연 알림 뒤에도 승인 대기) → 거절, A 승인 뒤 [쿨러 복구] → 곧바로 [쿨러 열화 주입] → 다시 처리 건(설비 reset 없이), 단계 닫기 뒤 처리 건 종료, 손으로 그린 A 사본(`students/flows`)을 가져와 배포한 흐름으로 A 완주 — 모두 통과(`verification/2026-10-10/final-verify.md` 4절, 증거 `.evidence/a164-final/`). 포털 화면이 아니라 process API 로 눌렀다. **쿨러 회귀 · pump-fan 회귀는 이 빌드로 통과 기록이 없다** — 쿨러 회귀가 에이전트 넷째 작업에서 워커 구독 한도(00:39, 02:40 재설정)에 걸려 멈췄고 pump-fan 은 돌리지 못했다(같은 문서 5절). 이전 통과: 쿨러 40/40 은 F-keep 빌드(10-10 23시), pump-fan 은 10-10 새벽 빌드 |
+| 스택 | 떠 있음. **process · agent · plant-sim · neo4j = 레포 루트의 작업 브랜치 코드(`4e5f535` 빌드), compose 작업 폴더도 루트.** 나머지는 그대로: dmn-mcp · effects-mcp · enterprise-* · portal ← `.claude/worktrees/merge-preview`, detector · cmd-gateway · connect-* · emqx · redpanda · fuxa · grafana ← `agent-aed004354f1cd7a4c`, timescaledb ← `agent-afd136e4b22934cb9`(빌드한 서비스의 소스는 지금 브랜치와 `git diff` 차이 0). 파일을 직접 물고 있는 컨테이너: portal ← `merge-preview`, grafana ← `agent-aed004354f1cd7a4c`, timescaledb · supabase studio ← `agent-afd136e4b22934cb9`. **이 세 작업 트리는 스택을 루트로 옮기기 전에 지우지 않는다.** `F-20261010-keep` · `F-20261010-syllabus` 작업 트리를 물고 있는 컨테이너는 이제 없다. 표: `final-verify.md` 7절 |
+| 쉬는 상태 | 그래프 = 전체판, 흐름 = 기준 흐름(c3 흐름은 내려감), 워커 0, B · C 경보 표시 켜짐, 잠금 없음, RUNNING 0(10-11 00:47 실측). **이 상태에서는 A · B · C 버튼 완주가 바로 되지 않는다**(2절 "버튼 완주 순서"). A 는 [쿨러 복구]만으로 연달아 돌릴 수 있다(설비 reset 불필요 — 복구가 팬 · 부하 지령도 평소 운전점으로 되돌린다) |
 | DB | Supabase 로컬(54322). 마이그레이션 45~48 · 50 · 51(049는 없음)은 `psql`로 직접 적용했다(`supabase_migrations` 장부는 44까지) |
 | 지식 그래프 | 기본 볼륨 `hyd-iot-edu_neo4j-data` = 전체판. 구조판 + 수업 문서(HM-8 · PM-02 · PR-07 새 판)는 볼륨 `hyd-iot-edu_neo4j-data-c3` |
-| 증거 | 화면 캡처 · 로그는 루트 `.evidence/`(gitignore — **이 PC에만 있다**). 최종 확인 `a161-final/live/` · `live4/`, U1 `a161-u1/`, C3 `a161-c3/` |
+| 증거 | 화면 캡처 · 로그는 루트 `.evidence/`(gitignore — **이 PC에만 있다**). 최종 확인 `a161-final/live/` · `live4/`, U1 `a161-u1/`, C3 `a161-c3/`, 승인 단계 `a163-restore/`, 합친 코드 검증 `a164-final/` |
 
 ## 0.1 확정된 것 — 다시 정하지 않는다 (근거: DECISIONS 112, 검증 기록)
 
@@ -37,8 +37,8 @@
 
 ## 0.2 10-10 저녁 진행 상태 — 아직 합치지 않은 갈래 (다음 세션은 여기부터)
 
-> **(10-10 밤, 가장 최신) 브랜치는 하나다 — `claude/hyd-handoff-work-xziutz`.** 사용자 지시("브랜치는 하나로, 하나에 다 반영")로 `K-20261010-capstone`(종합 랩 결함 수정)과 `F-20261010-keep`(승인 단계를 세 시나리오에 똑같이: 승인 · 거절 · 무응답은 지연 알림만 + 발주 카드의 '즉시' 창 제거)을 이 브랜치에 `--no-ff`로 합쳤다(충돌 없음). **합친 뒤 전체 단위 시험은 아직 돌리지 않았다**(갈래별로는 K 2113 통과, F-keep 2097 통과 · 쿨러 회귀 40/40 · 라이브 7경우 통과 — `verification/2026-10-10/F-keep.md`, 증거 `.evidence/a163-restore/`). 합치지 않은 것: `F-20261010-syllabus`(채택하지 않음, 기록용), `L-20261010-labs`(랩 자료, 지금 쓰지 않음). 아래 표와 그 밑 문단의 "미합침 · 진행 중" 서술은 이 단락이 대체한다.
-> 지금 떠 있는 process · agent · plant-sim 컨테이너는 F-keep 코드(`c4920d7`)이고 compose 작업 폴더가 `.claude/worktrees/F-20261010-keep`다 — 스택을 루트로 옮기기 전에는 그 작업 트리를 지우지 않는다. K의 `close_agent_task` 수정은 떠 있는 빌드에 없다(라이브 미확인). 알려진 것: A를 승인으로 끝낸 뒤 [쿨러 복구]를 눌러도 팬 지령이 100 %로 남아 다음 [쿨러 열화 주입]이 경보를 내지 못한다(원래부터 있던 문제 — 다시 돌리려면 설비 `POST :8000/api/reset`). 포털에는 [거절] 버튼이 아직 없다(3.2).
+> **(10-11 새벽, 가장 최신) 브랜치는 하나다 — `claude/hyd-handoff-work-xziutz`. 합친 코드가 떠 있고, 그 코드로 라이브 검증을 했다.** 사용자 지시("브랜치는 하나로, 하나에 다 반영")로 `K-20261010-capstone`(종합 랩 결함 수정)과 `F-20261010-keep`(승인 단계를 세 시나리오에 똑같이: 승인 · 거절 · 무응답은 지연 알림만 + 발주 카드의 '즉시' 창 제거)을 `--no-ff`로 합쳤고(충돌 없음), 그 위에 작업 브랜치에서 직접 한 일(`verification/2026-10-10/final-verify.md`): ① **[쿨러 복구]가 팬 · 부하 지령도 평소 운전점으로 되돌린다** — A 를 승인으로 끝낸 뒤 설비 reset 없이 곧바로 다시 돌릴 수 있다(원인: 복구가 외란만 되돌리고 조치 지령 팬 100 %를 남겨 다음 열화의 평형이 경보선 아래였다) ② 수업 준비물 `students/flows/`(bpmn.io 에서 열리는 A · B · C 참조 흐름 + 연결 값 + 한 쪽 안내, `c3_flows.py`와 시험으로 묶음) ③ 합친 뒤 전체 단위 시험 2149 통과 · 0 실패 ④ process · agent · plant-sim 을 루트 코드로 다시 빌드해 올리고 라이브 확인(0절 「라이브」 줄). 합치지 않은 것: `F-20261010-syllabus`(채택하지 않음, 기록용), `L-20261010-labs`(랩 자료, 지금 쓰지 않음). 아래 표와 그 밑 문단의 "미합침 · 진행 중" 서술, "스택이 F 갈래 코드"라는 서술은 이 단락이 대체한다.
+> **닫지 못한 것**: 쿨러 회귀 · pump-fan 회귀(워커 구독 한도 — 0절, 3.3 첫 줄). **보지 않은 것**: 포털 화면(반려 결과 · 지연 알림 · 손으로 그린 흐름의 처리 건 · [쿨러 복구] 기록의 지령 변화가 어떻게 보이는지 — 모두 API 로만 확인). 포털에는 [거절] 버튼이 아직 없다(3.2). 거절 · 무응답으로 끝난 A 는 경보가 올라간 채라 [쿨러 복구] 뒤 감지기가 경보를 내릴 때까지(약 65초) 다음 주입이 새 처리 건을 열지 않는다(같은 경보가 이어지는 것 — 결함 아님). 구조판 그래프 볼륨에는 이번 실행의 투영(시험 흐름 `my_cooling@1` · `fv_close_probe@1` 포함)이 남아 있다 — 정의 투영을 지우는 길이 제품에 없다(3.3).
 
 사용자 지시(10-10 저녁, 원문 요지): "실라버스대로 가면 됨. 실라버스 참고해서 미구현인 것, 원래 하기로 했던 것까지 기능 · UI/UX 빠짐없이 구현." "개인 시나리오 가져와서 해 보기"(= 11일차 종합 랩. 사용자는 「캡스톤」이라는 말을 낯설어했다 — 보고와 학생 · 강사 문구에는 「종합 랩(개인 시나리오)」을 쓴다). "Claude Code로 온톨로지를 만들어 온톨로지 MCP로 활용"(= 2~7일차 랩). "UI/UX도 매우 중요." "잘게 쪼개 반복하지 말고 큰 덩어리로."
 기준 실라버스는 사용자가 준 **`/Users/uengine/agent-provider/안치윤/피지컬ai_실라버스_최종.xlsx`**(통합반 온라인 44H 등 4시트)다. 레포의 `docs/실라버스.md`(0a4cee2)보다 이 파일이 이긴다. 전문을 옮긴 것: `/Users/uengine/agent-provider/안치윤/슬라이드/실라버스_통합반.md`.
@@ -128,6 +128,7 @@ lecture-deck 스킬은 레포 밖(`/Users/uengine/agent-provider/안치윤/.clau
 - **(10-10 저녁) 사용자 결정: 포털 화면은 기능 칸 · 다듬기를 가리지 않고 다른 세션(U)에서 일괄 작업한다.** L · F · K 갈래는 포털 파일(`it/portal/www/**`)을 건드리지 않고 아래로 넘겼다. U 세션은 시작할 때 0.2의 세 갈래가 작업 브랜치에 합쳐졌는지 먼저 본다(합쳐지지 않았으면 F · K 작업 트리의 갈래 파일을 그 자리에서 읽는다 — API가 그 브랜치에만 있다).
   - [ ] **흐름 가져오기 화면에 시스템 부품 설정 칸**(승인 뒤 MCP 호출 · 시간 대기 · 결과 보고): 지금은 칸이 없어 학생이 포털만으로 자기 흐름을 등록하지 못하고 매핑 JSON을 API로 넣어야 한다(`it/portal/www/flows.js` taskRow 180~206행). 종합 랩(개인 시나리오)의 가장 큰 막힘 — K 기록 `verification/2026-10-10/K-capstone.md`
   - [ ] **세 시나리오 승인 패널에 [거절] + 사유, 반려 결과 표시, 승인 지연 알림 표시**(API 계약은 `verification/2026-10-10/F-keep.md`가 나오면 그 4절). F가 넘겼던 나머지(수업용 원인 입력 버튼, 정비 · 구매의 대기 · 시운전 · 입고 화면, 이름 변경)는 10-10 밤 결정으로 없어졌다 — 0.2 맨 위 참조
+  - [ ] **[쿨러 복구] 기록의 지령 변화 표시** · 거절/무응답 뒤 A 를 다시 누를 때의 안내 · 흐름 가져오기 화면 표기와 `students/flows/README.md`의 맞춤 — `verification/2026-10-10/final-verify.md` 6절(API 값은 이미 실려 있다: 누름 기록 `data.setpoints {before, after}`)
   - [ ] K가 본 화면 결함: 시스템 task가 PENDING으로 멈춘 학생 처리 건을 닫는 길 · 학생 흐름 하나만 지우는 길이 화면에 없음, 내부 id · 영문 값 이름이 드러나는 곳(K 기록 10절)
   - [ ] 조사 묶음 3의 나머지: `/Users/uengine/agent-provider/안치윤/슬라이드/실라버스_구현_빈틈.md` 3절 묶음 3(실라버스 9~10일차 포털 실습 행이 요구하는 화면 — 흐름 가져오기 · 작업 매핑 · 흐름 검사 결과 · 가져오기 설정 칸 확인)
   - [ ] 슬라이드에 넣을 실제 화면 캡처가 없다(0.2 「알려진 문제」): 지금 포털의 시스템 구성 · 지식 지도 · 조치 방법 · 매뉴얼을 넣은 뒤의 지식 관리 · 질의 결과. 화면을 고친 뒤 1440 폭으로 찍어 `.evidence`에 두면 슬라이드 쪽이 가져다 쓴다
@@ -142,11 +143,15 @@ lecture-deck 스킬은 레포 밖(`/Users/uengine/agent-provider/안치윤/.clau
 ### 3.3 F 기능 · 남은 결함
 - 기준: `HANDOFF.md` §9 A161, `DECISIONS.md` 112, 검증 기록 `verification/2026-10-10/*.md` · `2026-10-09/review-backend.md`.
 - 열린 것:
-  - [ ] 지금 스택(2190a84 빌드)에서 회귀 1회: 쿨러 `scripts/scenario_instance_test.py --worker`(약 6분), pump-fan `scripts/scenario_pump_fan_test.py --worker --reassess-held`(마지막 통과는 각각 8090310 빌드 · 10-10 새벽 빌드)
+  - [ ] **지금 스택(`4e5f535` 빌드)에서 회귀 1회**: 쿨러 `scripts/scenario_instance_test.py --worker`(약 6분), pump-fan `scripts/scenario_pump_fan_test.py --worker --reassess-held`. 10-11 00:34 에 쿨러를 돌리다 에이전트 넷째 작업에서 워커 구독 한도(02:40 재설정)로 멈췄다 — 그때까지 13개 확인 통과, 기준 흐름이 경보를 여는 것까지 봄. pump-fan 은 돌리지 못함. 두 시험은 기준 흐름(`task:select`)을 재므로 승인 단계 변경으로 기대값이 달라지지 않는다(코드로 판정 — `final-verify.md` 5절). 쉬는 상태에서 잠금 → 워커 1개 → 두 명령이면 된다(마지막 통과: 쿨러 F-keep 빌드 10-10 23시, pump-fan 10-10 새벽 빌드)
+  - [x] A 를 승인으로 끝낸 뒤 [쿨러 복구]를 눌러도 팬 지령이 100 %로 남아 다음 주입이 경보를 내지 못하던 것 — 복구가 지령도 평소 운전점으로(`plant.inject(..., operating_point=True)`), 단위 시험 8개 · 라이브 확인(`final-verify.md` 1 · 4.2절)
+  - [x] A · C 무응답(지연 알림 뒤에도 승인 대기) 라이브 — `final-verify.md` 4.1절
+  - [ ] 호스트 워커의 Claude Code 가 강사 개인 claude.ai 연결 도구를 에이전트에게 보인다(허용 목록이 거절은 함 — `it/agent-worker/worker/runner.py:187-194`, K 기록 4절)
+  - [ ] 시스템 task 가 PENDING 으로 멈춘 처리 건을 닫는 길 · 학생 흐름 하나만 지우는 길 · 정의를 지운 뒤 실행 그래프의 정의 투영 정리가 제품에 없다(K 기록 5.3 관찰 — 시험 흐름을 지울 때마다 손으로 좁힌 SQL 을 쓰게 된다. `final-verify.md` 7절)
   - [ ] HM-8 · PR-07을 추출 지시 2.2로 다시 추출 · 검토 · 적재(출처 번호 중복이 사라지는지) — `scripts/c3_ingest.py`(extract → 사람 검토 기록 → commit), 구조판 볼륨, 워커 필요
   - [ ] 개정 적재 라이브 미확인: 새 판에서 빠지는 노드에 판단 이력이 있을 때의 409 문구, 배치 되돌리기(rollback)가 같은 검사를 받는지(`manual-revision-fix.md` 5절). 추출 실패가 FAILED로 보이는지는 다음 실패 때 확인
   - [ ] 제출되지 않은 판단(가드레일 거절 · 후보 없음)의 `DEC-` id가 404(`live-leftovers.md` 5)
-  - [ ] 발주 카드 · A 작업지시 카드에 `window: 즉시 (지금 정지하고 시행)`(`cards.py:114 option_window` — process가 읽는 값이라 영향 확인 필요, `live-leftovers.md` 끝의 보고만 한 것)
+  - [x] 발주 카드에 붙던 `window: 즉시 (지금 정지하고 시행)` — F-keep(c4920d7)에서 제거, 정비 작업지시가 있는 작업지시 카드에만 남는다(`it/agent/agentsvc/cards.py option_window`, 뮤테이션 확인 `F-keep.md` 2절). 합친 빌드에서 C 승인 완주 통과
   - [ ] C 승인 순간 재확인이 설비 예측 문맥을 대조 — 그사이 설비 값이 바뀌면 발주 승인이 막힐 수 있음(코드만 읽음, 실측 없음 — 같은 절)
   - [ ] B · C 처리 건이 진행 중일 때 [초기화]를 누르면 업무 값만 되돌리고 처리 건은 계속 간다 — 거절할지는 사용자 결정(`review-c3-bc.md` 4절)
   - [ ] Pg 경로 미검증: `list_instances(asset=…)` SQL, 이벤트 커서 페이지(모르는 커서 404) · 비밀 값 저장소(`review-backend.md` 5-1 · 10절), 실패 시도 기록 · 감사 기록 보존, `agent_authoring`의 work_rules insert/update
@@ -159,12 +164,15 @@ lecture-deck 스킬은 레포 밖(`/Users/uengine/agent-provider/안치윤/.clau
 - 흐름 배포 · 되돌리기: `scripts/c3_flows.py check|deploy|export DIR|deploy-reset BY`(모르는 명령은 종료 2).
 
 ### 3.4 K 캡스톤(전체 과정 랩업)
-- 설계 `verification/2026-10-09/capstone-lab.md`, 구현 기록 `verification/2026-10-10/cap-g1g7.md` · `cap-g3g9.md` · `cap-kit.md`, 키트 `students/_template/`(T0 · T1 · T3~T8).
+- 설계 `verification/2026-10-09/capstone-lab.md`, 구현 기록 `verification/2026-10-10/cap-g1g7.md` · `cap-g3g9.md` · `cap-kit.md` · `K-capstone.md`, 키트 `students/_template/`(T0 ~ T8). 수업 흐름을 따라 그려 올리는 준비물은 `students/flows/`(A · B · C 참조 흐름 — `final-verify.md` 2 · 4.4절).
 - 열린 것:
   - [ ] G6 학생 것 격리(노트북별 운영이면 "내 사례" 꼬리표 · 거르기 · 내보내기 — 설계 5.2)
-  - [ ] T2(적재 · 되돌리기 스크립트 틀)가 `students/_template/`에 없음
-  - [ ] G1 · G3 · G9 라이브 확인(한 번도 돌리지 않음): 승인 패널(`instances.js renderApprovePanel`) · 흐름 가져오기 설정 칸(`flows.js`)은 문법 검사만 했다. 절차는 `cap-g1g7.md` 7절, `cap-g3g9.md` "라이브에서 확인할 절차"
-  - [ ] 키트 미검증(`review-scripts-kit.md` 7절, `cap-kit.md` 4절): 학생 노드가 있는 지식 지도 화면, G8 흐름 투영 실제 적재 · 재적재, T3 DDL 실제 실행, T4 서버 기동 → 포털 MCP 등록 → 에이전트 호출, `validate --extra`를 실제 그래프에, bpmn.io에서 T7 · T8 열기
+  - [x] T2(적재 · 되돌리기 · 질문 검사) `students/_template/load_graph.py` — K, 라이브 확인(`K-capstone.md` 1 · 2절)
+  - [x] G1 · G3 · G9 라이브 확인 — K(`K-capstone.md` 4 · 5절). G9 는 A 완주 대신 "에이전트에게 질문하기"로 확인했다
+  - [x] `close_agent_task`(단계가 여럿인 흐름에서 에이전트 단계를 닫아도 처리 건이 RUNNING 으로 남던 것) 라이브 — 합친 빌드에서 닫은 뒤 COMPLETED · `closed-by-human`(`final-verify.md` 4.3절. 사람이 취소해 멈춘 단계로 확인했고, 에이전트가 스스로 보류(PENDING)한 단계는 단위 시험만)
+  - [x] 손으로 그린 흐름 사본으로 A 완주 — bpmn.io 형태의 `.bpmn`을 가져오기 API 로 등록 · 배포해 그 흐름의 처리 건이 승인 → 설비 명령 → 재확인 → 종결, 경보 → 흐름 표에 "내가 배포한 흐름", 되돌리면 기준 흐름(`final-verify.md` 4.4절). 포털 화면만으로는 아직 못 한다(시스템 부품 설정 칸 — 3.2)
+  - [x] 키트 확인 — K: 학생 노드가 있는 지식 지도, G8 투영 적재 · 재적재, T3 DDL, T4 서버 → 포털 MCP 등록 → 에이전트 호출, `validate --extra`, bpmn-js 로 T7 · T8 열기(`K-capstone.md` 2 · 3 · 5 · 6절)
+  - [ ] 키트에서 남은 미검증: 지식 지도에서 학생 항목을 눌렀을 때의 상세, demo.bpmn.io 사이트에 직접 올려 보기(로컬 bpmn-js 로만 열어 봄 — `students/flows`도 같다), 구성 내보내기 → 되돌리기 → 가져오기(`K-capstone.md` 9절)
   - [ ] 예시 사례(회의 준비) 실제 1회: 구글 인증은 사용자 몫. 예시 흐름은 결과 경로 자리 3줄 때문에 지금 가져오기가 거절된다(강사가 서버를 고른 뒤 채움 — `students/_template/example_meeting/README.md`). 전원 수락 여부를 참/거짓으로 주지 않는 서버면 확인 단계를 바꿔야 한다
 
 ## 4. 사용자 결정 대기
@@ -178,4 +186,5 @@ lecture-deck 스킬은 레포 밖(`/Users/uengine/agent-provider/안치윤/.clau
 - macOS에서의 작업보고 위치(CLAUDE.md §2의 `D:/work/작업보고/`는 이 PC에 없다)
 - (10-10 저녁 추가) 슬라이드 수정 방향(사용자: "질이 안 좋아 수정해야 함") · 실전반 덱을 만들지 · 노션 덱과 실라버스 8 · 9행의 차이 · 노션 덱 본문에 남은 다른 강의 문구(10장 "60분 뒤", 41장 "이틀 뒤 … 수료")
 - (10-10 저녁 추가) L · F · K 갈래를 작업 브랜치에 합칠지, 갈래 파일마다 적힌 "사용자 확인 필요"(L 8건: 5일차 에이전트의 모양과 학생 키 · 7일차 검토 에이전트 · 35행의 틀린 초안 · 랩 번호 표기 등 / F: 거절 뒤 종결 · 정비 · 구매 승인의 거절 가지 · 시운전 미달 때 작업지시 완료 처리 등)
+- (10-11 추가) `final-verify.md` 9절: 회귀 두 개를 한도가 풀린 뒤 다시 돌릴지, `students/flows`의 연결 값 파일 · 흐름 이름, 구조판 볼륨에 남은 시험 흐름 투영, `F-20261010-keep` 작업 트리 정리, 작업 브랜치 push
 - (10-10 저녁 추가) 0.2에서 기본값으로 진행한 것의 추인: 실라버스가 DECISIONS 112를 대체, 연습용 그래프 · DB는 HYD와 따로, 랩 출발본은 자료 + 요구사항 뼈대(정답 예는 강사용), Notion은 설정 틀만

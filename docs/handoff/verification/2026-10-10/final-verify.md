@@ -52,7 +52,7 @@
 | C 거절 | `c3_spare.52fe11af…` | `E_rejected` · 반려 "발주하지 않았습니다", 표시 켜진 채 | 12/12 |
 | **C 무응답 → 거절** | `c3_spare.5a8b0ed3…` | 승인 대기 31초 뒤 지연 알림, 그 뒤에도 승인 대기 · 처리 0건 → 거절로 닫음 | 15/15 |
 - B 무응답은 다시 돌리지 않았다(F-keep 에서 확인된 것 — `.evidence/a163-restore/B-wait-*`, 그때는 F-keep 빌드).
-- 실측 시간(20배속, 실제 AI): 에이전트 A 80~91초 · B 58초 · C 약 58초, A 승인 → 끝 64초.
+- 실측 시간(20배속, 실제 AI, 버튼 → 승인 대기): A 79~91초(연달아 돌린 회는 131초) · B 52~58초 · C 55~61초, A 승인 → 끝 64초.
 
 ### 4.2 1절 수정 확인 — A 승인 완주 → [쿨러 복구] → 곧바로 [쿨러 열화 주입] — 검증됨
 - `A-approve … --no-settle`: 처리 건 `c3_cooling.32aca7de…` 이 00:25:12 에 끝남 → 00:25:13 [쿨러 복구] — 응답 `setpoints` 전 `{FanSpeedSP 100, LoadSP 90}` → 후 `{60, 90}`, 설비 태그도 그 자리에서 60 · 90(확인 통과), 그때 유온 51.15 ℃ · 감지기 경보 없음.
@@ -74,3 +74,46 @@
 - [쿨러 열화 주입] → **`my_cooling.795d6572…`**(연 흐름 확인 통과) → 에이전트 79초 → 승인 → 냉각 명령(`CMD-1010-0003-539d`) → 재관측 회복 → 작업지시 WO-1010-BB30 → 정상 종결 `E_end`, 사건 CLOSED — 12/12(`handdrawn/A-approve-*`).
 - "기준 흐름으로 되돌리기"(`POST /api/flows/deploy-reset`) → 학생 흐름 넷(`my_cooling` · `c3_*`) 내림, 표가 `COOLER_DEGRADATION → anomaly_response 2.2 (기준 흐름)` · 배포된 학생 흐름 0. 되돌린 뒤 실제로 기준 흐름이 여는지는 5절 쿨러 회귀가 본다.
 - **포털 화면으로는 하지 않았다**(API 만). 화면에 시스템 부품 설정 칸이 없어 2번은 화면만으로 끝낼 수 없다(NOW 3.2) — 연결 값 파일을 API 로 넣는 길을 `students/flows/README.md` 에 적었다.
+
+## 5. 회귀 두 개 — **끝내지 못함(워커 구독 한도)**
+- 먼저 판정(지금도 유효한 시험인가): 두 회귀는 기준 흐름 `anomaly_response`(부품 `task:select` — 승인만, 이번에 바뀌지 않음)와 전체판 그래프에서 돈다. 승인 단계 변경은 수업 흐름(`c3_*`, 부품 `task:select-or-reject`)에만 들어갔고 기준 정의 · `task:select` 는 그대로라 기대값은 달라지지 않는다. 1절 수정은 [쿨러 복구] 버튼 요청에만 붙고 회귀는 `/api/fault` · `/api/reset` 을 직접 부른다. → 유효, 고칠 것 없음(코드 읽고 판정. 실행으로는 아래까지만).
+- 준비: 흐름 기준으로(4.4) → 워커 멈춤 → 그래프 전체판(루트에서 `up -d --no-deps neo4j`) → 설비 `/api/reset` → 워커 1개 다시.
+- 쿨러 `scripts/scenario_instance_test.py --worker`(00:34 시작): 0 · 1단계 13개 확인 통과 — 경보 41초 뒤 올라옴, **기준 흐름 처리 건 `anomaly_response.802bf16d…` 이 열림**(= "기준 흐름으로 되돌리기" 뒤 기준 흐름이 다시 연다는 4.4 의 실측), 사건 AWAITING_APPROVAL, 에이전트 작업 셋(진단 · 후보 조회 · 규정 검토) DONE. 네 번째 `task:rank` 에서 워커가 **`RunFailed: You've hit your session limit · resets 2:40am (Asia/Seoul)`**(00:39:08, `regression/worker.log`). 지시대로 반복하지 않고 멈췄다. 로그 `regression/reg-cooler.log`(검사기는 내가 끊었다 — 판정 줄 없음).
+- pump-fan `scripts/scenario_pump_fan_test.py --worker --reassess-held`: **돌리지 않음**(같은 한도).
+- **미검증으로 남는 것**: 이 빌드(4e5f535)에서의 쿨러 회귀 전체 · pump-fan 회귀. 한도가 풀린 뒤(02:40 이후) 잠금을 잡고 "흐름 기준 · 그래프 전체판 · 설비 reset · 워커 1개" 상태에서 두 명령을 한 번씩 돌리면 된다(지금 쉬는 상태가 그 상태다 — 워커만 켜면 됨).
+
+## 6. 포털에 넘길 것 (`it/portal/www/**` 미수정)
+1. **[쿨러 복구] 기록에 지령 변화 표시**: 그 누름의 처리 기록 줄(`SCENARIO_BUTTON`, `data.setpoints = {before: {FanSpeedSP, LoadSP}, after: {…}}`)과 버튼 응답(`plant.setpoints`)에 값이 실린다. 화면은 아직 이 값을 읽지 않는다 — "팬 지령 100 % → 60 %, 부하 90 % 그대로"처럼 일반인 말로 보이게. 복구가 조치 지령까지 되돌린다는 것이 화면에서 읽혀야 블랙박스가 아니다.
+2. **거절 · 무응답으로 끝난 A 뒤의 [쿨러 열화 주입]**: 경보가 올라간 채라 [쿨러 복구] 뒤 감지기가 경보를 내릴 때까지(실측 약 65초) 새 처리 건이 열리지 않는다. 버튼 옆 상태(감지기 단계)를 보고 누르라는 안내가 화면에 있는지 확인.
+3. **흐름 가져오기**(K 가 넘긴 것과 같은 자리): 시스템 부품 설정 칸이 생기기 전까지 `students/flows/README.md` 는 연결 값 파일을 API 로 넣게 안내한다. 칸이 생기면 README 의 마지막 절을 화면 순서로 바꾼다. 가져온 직후 시작 조건에 감지기 경보 셋이 모두 체크돼 있고(학생이 둘을 꺼야 한다), 시작 조건 칸의 `PM_DUE` · `SPARE_BELOW_MIN` 은 영문 그대로, 분기 조건은 `recovered == True` 로 보인다 — 안내문은 지금 표기를 따랐다. 화면 표기를 바꾸면 `tests/test_student_reference_flows.py` 의 안내문 대조가 알려 준다.
+4. F-keep 4절의 세 가지([거절] + 사유, 반려 결과, B · C 승인 지연 알림 표시)는 그대로 열려 있다. 이번 라이브는 모두 API 로 눌렀고 **포털 화면에서 반려 · 지연 알림 · 손으로 그린 흐름의 처리 건이 어떻게 보이는지는 보지 않았다**(캡처 없음).
+
+## 7. 복원 · 끝난 뒤 스택 (10-11 00:47)
+- 한도에 걸린 쿨러 회귀의 처리 건: 설비 `/api/reset` → 감지기 경보 내려감 → 사건 `RESOLVED_WITHOUT_ACTION`, 처리 건은 사람 작업 `task:escalate` 에서 RUNNING. 중단된 검사 잔재라 `scripts/cleanup_residue_instances.py`(dry-run 으로 1건뿐임을 본 뒤 `--apply`, 백업 `restore/residue/backup.json`)로 정리.
+- 내 시험 흐름 둘(`my_cooling` · `fv_close_probe`)만 지움: K 가 쓴 문장(포털 '기준으로 되돌리기'와 같은 문장을 흐름 id 로 좁힌 것)에 id 만 바꿔 실행, 지우기 전 행 백업 `restore/backup-*.json` · `remove-my-flows.sql`. 학생 흐름 하나만 지우는 API 가 없어서 손으로 했다(K 11절의 열린 일 그대로). `c3_*` 초안 · 판본은 그대로.
+- **남긴 것(손대지 않음)**: 구조판 그래프 볼륨(`neo4j-data-c3`)에 이번 실행의 투영(처리 건 · 흐름 판본 `c3_*@9` · `my_cooling@1` · `fv_close_probe@1`)이 남아 있다. 정의 투영을 지우는 길이 제품에 없고(K 11절), 수업 문서가 든 볼륨을 손 질의로 고치지 않았다.
+- B · C [초기화] → 표시 켜짐. 워커 0(8097 듣는 것 없음). RUNNING 처리 건 0. 경보 → 흐름 표 = 기준 흐름(`at_reference: true`). 설비 세 대 정상(유온 48 · 팬 60 · 부하 90 · RUN · REMOTE_AUTO), 감지기 전부 IDLE. 그래프 = 전체판(노드 1476 · 관계 3480, 이름 공간 노드 0). process RestartCount 0. 잠금 지움. 원문 `restore/final-state.log`.
+- 회귀 검사기의 시작 단계가 업무 `/api/reset` 을 불러 라이브 완주의 업무 행(WO · PR · GR)은 보관 표로 옮겨졌다(처리 건 기록은 남음 — NOW 2절에 적힌 동작).
+
+| 컨테이너 | 코드 | compose 작업 폴더 |
+|---|---|---|
+| process · agent · plant-sim | **작업 브랜치 `4e5f535` 빌드**(10-11 00:06, 컨테이너 안 파일 해시 = 루트. 그 뒤 커밋은 시험 · 문서 · `students/flows` 뿐) | **레포 루트** |
+| neo4j | 이미지 `neo4j:5.26-community`(빌드 없음), 볼륨 `hyd-iot-edu_neo4j-data`(전체판) | **레포 루트** |
+| dmn-mcp · effects-mcp · enterprise-mcp(· maint · purchase) · enterprise-sim | 10-09 · 10-10 빌드, `merge-preview`(693c56f) 기준 — 지금 브랜치와 소스 차이 0 | `.claude/worktrees/merge-preview` |
+| portal | nginx, `merge-preview` 의 `it/portal/www` · `nginx.conf` 를 **직접 물고 있음** | `.claude/worktrees/merge-preview` |
+| detector · cmd-gateway · connect-ingest · connect-sink | 10-09 빌드, `agent-aed004354f1cd7a4c`(ba4b7f2) 기준 — 지금 브랜치와 소스 차이 0 | `.claude/worktrees/agent-aed004354f1cd7a4c` |
+| emqx · redpanda · fuxa | 공개 이미지 | `.claude/worktrees/agent-aed004354f1cd7a4c` |
+| grafana | 공개 이미지, 그 작업 트리의 `it/grafana/provisioning` 을 **직접 물고 있음** | `.claude/worktrees/agent-aed004354f1cd7a4c` |
+| timescaledb | 공개 이미지, 그 작업 트리의 `init.sql` · `reader.sql` 을 **직접 물고 있음** | `.claude/worktrees/agent-afd136e4b22934cb9` |
+- **`F-20261010-keep` 작업 트리를 물고 있는 컨테이너는 이제 없다.** 지우면 안 되는 작업 트리는 `merge-preview` · `agent-aed004354f1cd7a4c` · `agent-afd136e4b22934cb9` 셋으로 돌아왔다. portal 등은 이번 범위에서 건드리지 않았다.
+
+## 8. 전체 단위 시험
+`.venv/bin/python -m pytest -q -p no:cacheprovider` → **2149 통과 · 9 건너뜀 · 0 실패**(211초, 커밋 `d07b298` 의 코드 · 시험). 합친 뒤 처음 돌린 전체 시험이다. 로그 `.evidence/a164-final/pytest-full.log`.
+
+## 9. 사용자 확인이 필요한 것
+1. 회귀 두 개(쿨러 · pump-fan)를 한도가 풀린 뒤(02:40 이후) 다시 돌릴지 — 이 빌드로는 통과 기록이 없다(5절).
+2. `students/flows/` 에 연결 값 파일(`*.mapping.json`)을 같이 둔 것 — 포털에 시스템 부품 설정 칸이 생기면 뺄지. 흐름 이름은 `c3_flows.py` 그대로("냉각 긴급 대응" · "정기 정비" · "예비품 구매")라 시나리오 이름(긴급 대응 · 정기 점검 · 재고 보충)과 낱말이 다르다 — 고친 실라버스를 받으면 대조.
+3. 구조판 그래프 볼륨에 남은 이번 실행의 투영(7절)을 둘지 — 그 볼륨의 삭제 여부(NOW 4절)와 같이 정하면 된다.
+4. `F-20261010-keep` 작업 트리는 이제 스택과 무관하다 — 다른 끝난 작업 트리와 함께 정리할지.
+5. 이전(F-keep) 이미지 꼬리표가 없다(3절). 되돌릴 일이 있으면 그 작업 트리에서 다시 빌드해야 한다.
+6. push 는 하지 않았다.
