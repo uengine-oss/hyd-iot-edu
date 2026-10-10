@@ -1,6 +1,6 @@
 """실라버스 9 · 10일차의 일곱 결말을 라이브 스택에서 한 번에 하나씩 끝까지 돌리고 처리 기록 · 결과 보고를 확인한다(실제 워커 필요).
 
-  .venv/bin/python scripts/syllabus_endings_live.py ENDING OUTDIR
+  .venv/bin/python scripts/syllabus_endings_live.py ENDING OUTDIR [처리 건 id — 승인 대기에서 끊긴 처리 건을 이어서]
   ENDING: A-normal | A-reject | A-shortfall | B-normal | B-shortfall | C-normal | C-late
 
 앞서 할 일(docs/handoff/NOW.md 2절 '버튼 완주 순서'): 잠금 → 그래프 구조판 → `scripts/c3_flows.py deploy` → 워커 1개.
@@ -91,7 +91,7 @@ def check(name: str, ok: bool, detail="") -> None:
 
 
 def values(view: dict) -> dict:
-    return {v["name"]: v.get("value") for v in view["instance"].get("variables_data") or []}
+    return {v["key"]: v.get("value") for v in view["instance"].get("variables_data") or []}
 
 
 def rows(view: dict) -> dict:
@@ -172,7 +172,7 @@ def restore_and_wait_clear(spec: dict) -> None:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in ENDINGS:
+    if len(argv) not in (3, 4) or argv[1] not in ENDINGS:
         print(__doc__, file=sys.stderr)
         return 2
     name, out = argv[1], Path(argv[2])
@@ -181,12 +181,16 @@ def main(argv: list[str]) -> int:
     me, role = spec["me"]
     known = {i["proc_inst_id"] for i in get("/api/instances?limit=100")}
     fan_before = plant_unit(spec["asset"])["tags"]["FanSpeedSP"]
-    if spec.get("before"):
-        res = post(spec["before"], {"by": "강사 (수업 입력)"})
-        log(f"수업 입력 {spec['before']}: {res.get('cause')}")
-    started = post(spec["start"], {"by": "강사", "user_id": me, "roles": [role]})
-    log(f"시작 {spec['start']}: {json.dumps({k: started.get(k) for k in ('button', 'instance', 'class_input', 'reanchored')}, ensure_ascii=False)}")
-    pid = started.get("instance") or wait_instance(spec["flow"], known, 600)
+    if len(argv) == 4:
+        pid = argv[3]
+        log(f"이어서: 이미 열린 처리 건 {pid}")
+    else:
+        if spec.get("before"):
+            res = post(spec["before"], {"by": "강사 (수업 입력)"})
+            log(f"수업 입력 {spec['before']}: {res.get('cause')}")
+        started = post(spec["start"], {"by": "강사", "user_id": me, "roles": [role]})
+        log(f"시작 {spec['start']}: {json.dumps({k: started.get(k) for k in ('button', 'instance', 'class_input', 'reanchored')}, ensure_ascii=False)}")
+        pid = started.get("instance") or wait_instance(spec["flow"], known, 600)
     log(f"처리 건 {pid}")
     view = wait_approval(pid)
     decision_id = values(view)["decision_id"]
@@ -239,7 +243,7 @@ def main(argv: list[str]) -> int:
               f"FanSpeedSP {unit['tags']['FanSpeedSP']}, 팬 한계 {unit['disturbances']['fan_limit']}, TS1 {unit['tags']['TS1']}")
     if name.startswith("B"):
         tr = v.get("test_run") or {}
-        check("시운전 값이 PM-2.9 기준과 비교됨", [x["limit"] for x in tr.get("readings", [])] == [178.0, 8.8, 1.2],
+        check("시운전 값이 PM-2.9 기준과 비교됨", {x["tag"]: x["limit"] for x in tr.get("readings", [])} == {"PS1": 178.0, "FS1": 8.8, "VS1": 1.2},
               ", ".join(f"{x['tag']} {x['value']} {x['op']} {x['limit']} {'통과' if x['ok'] else '미달'}" for x in tr.get("readings", [])))
         check("다음 정비 시점: " + ("갱신" if name == "B-normal" else "갱신 안 함"), bool(tr.get("counter")) is (name == "B-normal"),
               str((tr.get("counter") or {}).get("detail")))
