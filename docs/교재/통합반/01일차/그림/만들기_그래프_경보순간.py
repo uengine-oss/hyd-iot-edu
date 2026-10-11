@@ -43,6 +43,6 @@ ax.text(cross + (alert - cross) / 2, 49.6, "조건이\n이어진 시간", ha="ce
 ax.xaxis.set_major_locator(mdates.SecondLocator(bysecond=[0, 10, 20, 30, 40, 50]))
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
 ax.set_xlabel("2026-10-10 실제 시각", color=MUTED, fontsize=11)
-fig.subplots_adjust(left=0.1, right=0.985, top=0.92, bottom=0.12)
+fig.subplots_adjust(left=0.1, right=0.95, top=0.92, bottom=0.12)
 fig.savefig(HERE / "그래프_경보순간_TS1.png", facecolor="white")
 print("cross", cross, "alert", alert, "sec", (alert - cross).total_seconds())
