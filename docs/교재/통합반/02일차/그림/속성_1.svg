@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520">
+<rect x="40" y="40" width="300" height="460" rx="14" ry="14" fill="#FFFFFF" stroke="#13294B" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="40" y="40" width="300" height="70" rx="14" ry="14" fill="#F3F6F9" stroke="#13294B" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="54" y1="188" x2="326" y2="188" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="54" y1="266" x2="326" y2="266" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="54" y1="344" x2="326" y2="344" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="54" y1="422" x2="326" y2="422" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="460" y="40" width="320" height="460" rx="14" ry="14" fill="#FFFFFF" stroke="#D3D9E1" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="460" y="40" width="320" height="70" rx="14" ry="14" fill="#F3F6F9" stroke="#D3D9E1" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="474" y1="188" x2="766" y2="188" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="474" y1="266" x2="766" y2="266" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="474" y1="344" x2="766" y2="344" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="474" y1="422" x2="766" y2="422" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="840" y="40" width="320" height="460" rx="14" ry="14" fill="#FFFFFF" stroke="#D3D9E1" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="840" y="40" width="320" height="70" rx="14" ry="14" fill="#F3F6F9" stroke="#D3D9E1" stroke-width="4" stroke-dasharray="11 9" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="854" y1="188" x2="1146" y2="188" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="854" y1="266" x2="1146" y2="266" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="854" y1="344" x2="1146" y2="344" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="854" y1="422" x2="1146" y2="422" stroke="#D3D9E1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
