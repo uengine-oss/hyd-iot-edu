@@ -253,6 +253,8 @@ def delete_agent(rt, agent_id: str, *, by: str | None = None) -> dict:
     moved = return_open_rows(rt, [agent_id], f"에이전트 '{_name(row)}' 삭제 — 기본 담당으로", by)
     maps = [m for m in repo.list_agent_map(tenant_id) if m["agent_id"] == agent_id]
     repo.remove_agent(tenant_id, agent_id)
+    from .student_cases import Store
+    Store(repo, tenant_id).remove('agents', agent_id)
     log.info("agent deleted %s by %s", agent_id, by)
     return {"deleted": agent_id, "name": _name(row), "returned_tasks": moved,
             "removed_assignments": [{"definition_id": m["proc_def_id"], "activity_id": m["activity_id"]} for m in maps]}
@@ -309,6 +311,8 @@ def delete_skill(repo, tenant_id: str, name: str, *, by: str | None = None) -> d
         raise AuthoringError(f"기본 스킬 '{name}'은(는) 지울 수 없습니다 — 수업 기준이라 보호합니다.", 403)
     attached = [r["user_id"] for r in repo.list_agent_skills(tenant_id) if r["skill_name"] == name]
     repo.remove_skill(tenant_id, name)
+    from .student_cases import Store
+    Store(repo, tenant_id).remove('skills', name)
     return {"deleted": name, "detached_from": attached}
 
 
@@ -555,6 +559,9 @@ def reset(rt, *, by: str | None = None) -> dict:
     used = roles_in_definitions(rt)                       # G10: 흐름 정의가 쓰는 역할은 남긴다(흐름을 지우면 다음 되돌리기에서 지워진다)
     kept_roles = [u["id"] for u in _role_rows(repo, tenant_id) if origin_of(u) == USER and u["id"] in used]
     counts = repo.reset_user_authoring(tenant_id, keep_roles=kept_roles)
+    from .student_cases import Store
+    Store(repo, tenant_id).remove('agents')
+    Store(repo, tenant_id).remove('skills')
     log.info("agents reset by %s: %s", by, counts)
     return {**counts, "kept_roles": kept_roles, "returned_tasks": moved}
 

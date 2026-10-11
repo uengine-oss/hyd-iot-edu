@@ -61,7 +61,7 @@
         let r = byTool.get(d.tool_use_id);
         if (!r) { r = { key: 't:' + (d.tool_use_id || ev.id), kind: 'tool', t0: ev.timestamp, tool: d.tool, minor: W().minorTool(d.tool) }; rows.push(r); }
         const o = UI.outcome(d.output, d.is_error);
-        Object.assign(r, { t1: ev.timestamp, output: d.output, status: o.tone === 'ok' ? 'ok' : o.tone, badge: o.label, full: d.full_output || null });
+        Object.assign(r, { t1: ev.timestamp, output: d.output, status: d.attempt_failed ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, badge: d.attempt_failed ? '실패한 시도' : o.label, full: d.full_output || null });
       } else if (ev.event_type === 'task_working' && d.type === 'text' && d.content) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content)) });
       } else if (ev.event_type === 'task_working' && d.type === 'skill_used') {
@@ -74,7 +74,7 @@
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content || d.name || '')) });
       } else if (ev.event_type === 'task_working' && d.name && !d.type) {
-        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: UI.clean(UI.logText(d.name)), data: d });
+        rows.push({ key: 's:' + ev.id, kind: 'sys', t0: ev.timestamp, job: ev.job_id, text: UI.clean(UI.logText(d.name)) + (d.attempt_failed ? ' · 실패한 시도' : ''), data: d });
       } else if (ev.event_type === 'error') {
         rows.push({ key: 'e:' + ev.id, kind: 'error', t0: ev.timestamp, text: UI.clean(d.friendly || d.message || d.name || '오류'), data: d });
       } else if (ev.event_type === 'human_asked') {
@@ -102,6 +102,10 @@
     const sources = inst.variable_sources || {};
     const producedBy = wid => Object.entries(sources).filter(([, s]) => s && s.kind === 'workitem' && s.id === wid).map(([k]) => k);
     W().caseNames = caseNames(v, d, ext.agents, ext.people);
+    (view.definition?.roles || []).forEach(r => { if (r.endpoint && r.name) W().caseNames[r.endpoint] = r.name; });
+    W().caseFields = Object.fromEntries((inst.variables_data || []).filter(r => r.name && r.name !== r.key).map(r => [r.key, r.name]));
+    const forms = [view.definition?.startForm, ...Object.values(view.definition?.forms || {}), ...(view.definition?.activities || []).map(a => a.form)];
+    forms.forEach(f => (f?.fields_json || []).forEach(x => { if (x.key && x.text && x.text !== x.key) W().caseFields[x.key] = x.text; }));
     const read = {
       decision: { state: extState(ext.decision, v.decision_id), error: ext.decision && ext.decision.error },
       incident: { state: extState(ext.incident, v.incident), error: ext.incident && ext.incident.error },
@@ -125,7 +129,7 @@
       let s;
       if (evDefs[w.activity_id]) s = timerStep(ctx, base);
       else if (isAgent(w)) s = agentStep(ctx, base, agentCount);
-      else if (isHuman(w)) s = humanStep(ctx, base);
+      else if (isHuman(w) && act.type !== 'serviceTask') s = humanStep(ctx, base);
       else if (w.tool === 'process:report') s = reportStep(ctx, base);
       else if (CHECK.test(w.tool || '')) s = checkStep(ctx, base);
       else s = systemStep(ctx, base);
@@ -133,6 +137,14 @@
       if (w.status === 'CANCELLED' && !s.stopNote) s.stopNote = UI.logText(w.log) || '취소됨';
       steps.push(s);
     });
+    for (const ev of byTodo.get('') || []) {
+      if (!['EFFECT_COMPENSATION', 'EFFECT_REVIEW'].includes(ev.job_id)) continue;
+      const data = ev.data || {}, failed = ev.event_type === 'error' || (data.results || []).some(r => r.ok === false);
+      steps.push({ key: 'effect:' + ev.id, type: 'effect', lane: 'person', icon: failed ? 'warn' : 'check',
+        title: ev.job_id === 'EFFECT_REVIEW' ? '이전 조치 영향 확인' : '이전 조치 되돌리기', actor: W().who(data.by),
+        t0: ev.timestamp, t1: ev.timestamp, sentence: W().effectText(ev.job_id, data), state: failed ? 'fail' : 'ok',
+        sections: [sec('기록 원문', rawBlock(data), { raw: true })] });
+    }
     if (!running && !steps.some(s => s.type === 'report')) { const r = endStep(ctx); if (r) steps.push(r); }
     gapsOf(ctx, steps);
     const t0 = inst.start_date, t1 = inst.end_date;
@@ -197,7 +209,7 @@
     const init = inst.initial_variables || {};
     const rows = Object.entries(init).filter(([, x]) => x != null && typeof x !== 'object').slice(0, 8);
     return { key: 'start', type: 'start', lane: 'person', icon: 'flag', title: '시작', actor: '시작한 사람 · 화면', t0: inst.start_date, t1: inst.start_date,
-      sentence: `‘${UI.defName(inst.proc_def_id)}’ 처리 건이 시작됐습니다.`, chips: rows.slice(0, 4).map(([k, x]) => chip(`${W().fieldName(k)} ${UI.clean(String(x)).slice(0, 40)}`)),
+      sentence: `‘${ctx.view.definition?.processDefinitionName || inst.proc_inst_name || UI.defName(inst.proc_def_id)}’ 처리 건이 시작됐습니다.`, chips: rows.slice(0, 4).map(([k, x]) => chip(`${W().fieldName(k)} ${UI.clean(String(x)).slice(0, 40)}`)),
       sections: [rows.length ? sec('시작 값', kvTable(rows.map(([k, x]) => [W().fieldName(k), UI.clean(String(x)), k])), { open: true }) : '', sec('시작 값 원문', rawBlock(init), { raw: true })], state: 'ok' };
   }
 
@@ -379,6 +391,13 @@
         chips: [chip('반려', 'danger')], sections: [sec('거절 사유', `<p>${e(reason)}</p>`, { open: true })] });
     }
     const appr = (view.approvals || []).find(a => a.todo_id === w.id) || null;
+    const accepted = [...(ctx.byTodo.get(w.id) || [])].reverse().find(x => x.job_id === 'APPROVAL_ACCEPTED');
+    if (w.tool === 'formHandler:approve' && accepted) {
+      const data = accepted.data || {}, key = b.act.approval?.key || 'slot', option = data.option || {}, who = W().who(data.by);
+      return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: b.name, actor: who,
+        sentence: `${who}${W().josa(who, '이/가')} ‘${option[key] ?? '선택 기록 없음'}’ 안을 승인했습니다.`, chips: [chip('승인', 'success')],
+        sections: [sec('담당자의 결정', kvTable([['승인 역할', W().who(data.role), ''], ['고른 안', option[key] ?? '기록 없음', ''], ['사유', data.reason || '기록 없음', '']]), { open: true }), sec('고른 안 원문', rawBlock(option), { raw: true })] });
+    }
     const hist = d && (d.history || []).filter(h => h.state === 'APPROVED').pop();
     // 판단의 승인 이력은 처리 건 전체 것이다 — 승인 카드 단계(select_card · 승인 전달 기록)가 따로 있으면 그 단계에만 붙인다(책임자 확인 같은 다른 사람 단계에 같은 승인을 또 그리지 않게)
     const claimed = (view.workitems || []).some(x => x.tool === 'formHandler:select_card' || (view.approvals || []).some(a => a.todo_id === x.id));
@@ -755,6 +774,9 @@
   }
   function sysDetail(r) {
     const d = r.data || {};
+    if (r.job === 'MCP_RESULT_VALUES') return kvTable(Object.entries(d.values || {}).map(([k, value]) => [W().fieldName(k), W().value(k, value), k]));
+    if (d.setpoints) return ` <span class="muted">${e(W().who(d.by))} · ${e(W().setpointsText(d))}</span>`;
+    if (W().effectText(r.job, d)) return ` <span class="muted">${e(W().effectText(r.job, d))}</span>`;
     if (d.plan) return ` <span class="muted">${e(d.plan.label || '')} ${e(virtual(d.plan))}${d.plan.source ? ` · ${e(W().text(d.plan.source))}` : ''}</span>`;
     if (d.notice) return ` <span class="muted">${e(W().text(d.notice))}</span>`;
     if (d.by) return ` <span class="muted">${e(W().who(d.by))}${d.role ? ' · ' + e(W().who(d.role)) : ''}${d.reason ? ' · ' + e(d.reason) : ''}</span>`;

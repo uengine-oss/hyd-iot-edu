@@ -8,6 +8,11 @@ from contextlib import contextmanager
 
 
 class MemoryProjection:
+    def enqueue_projection_cleanup(self, tenant, pid):
+        with self._lock:
+            if not self.projection_status(tenant, pid)['pending']:
+                self._enqueue_projection(dict(tenant_id=tenant, proc_inst_id=pid))
+
     def enqueue_knowledge_projections(self,tenant):
         with self._lock:
             pids={p['proc_inst_id'] for p in self.instances.values() if p['tenant_id']==tenant}
@@ -65,6 +70,12 @@ class MemoryProjection:
 
 
 class PgProjection:
+    def enqueue_projection_cleanup(self, tenant, pid):
+        with self._conn() as c:
+            c.execute('''insert into execution_projection_outbox(tenant_id,proc_inst_id)
+                select %s,%s where not exists(select 1 from execution_projection_outbox
+                    where tenant_id=%s and proc_inst_id=%s and processed_at is null)''', (tenant,pid,tenant,pid))
+
     def enqueue_knowledge_projections(self,tenant):
         # Retain deleted source identities too so reconciliation preserves their
         # graph tombstones. Append behind in-flight snapshots, never mark them done.

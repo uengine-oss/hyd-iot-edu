@@ -1,7 +1,10 @@
 // 지식 지도 관계: 위 노드들 사이의 관계 (다른 설비 노드와 그 설비의 사건 쪽 관계는 뺀다)
+// 노드 조회와 같은 내부 기록 제외를 양끝 모두에 적용한다.
 MATCH (a)-[r]->(b)
-WHERE NOT (a:ProcessVersion OR a:ProcessInstance OR a:WorkItem OR a:IngestionControl OR a:IngestionBatch)
-  AND NOT (b:ProcessVersion OR b:ProcessInstance OR b:WorkItem OR b:IngestionControl OR b:IngestionBatch)
+WHERE NOT (a:ProcessVersion OR a:ProcessInstance OR a:WorkItem OR a:IngestionControl OR a:IngestionBatch
+           OR a:ExecutionProjection OR a:CaseProjection OR a:KnowledgeEdit OR a:ManualIngestionDocument OR a:ManualIngestionBatch)
+  AND NOT (b:ProcessVersion OR b:ProcessInstance OR b:WorkItem OR b:IngestionControl OR b:IngestionBatch
+           OR b:ExecutionProjection OR b:CaseProjection OR b:KnowledgeEdit OR b:ManualIngestionDocument OR b:ManualIngestionBatch)
   AND NOT EXISTS { (:ProcessVersion)-[:HAS_NODE]->(a) }
   AND NOT EXISTS { (:ProcessVersion)-[:HAS_NODE]->(b) }
   AND (NOT a:Asset OR a.code = $asset) AND (NOT b:Asset OR b.code = $asset)

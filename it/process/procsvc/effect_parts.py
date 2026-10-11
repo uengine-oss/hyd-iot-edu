@@ -185,7 +185,9 @@ def validate(activity: dict) -> None:
         if "effect" in cfg and not isinstance(cfg["effect"], bool):
             raise ValueError(f"활동 {aid}: effect 는 true/false 입니다 (false = 읽기 도구만 부르는 확인)")
         types = _extract_types(aid, cfg.get("extract"), output)
-        if outs != [output, *types]:
+        # extract is a JSON object: PostgreSQL JSONB may reorder its keys. The
+        # primary receipt stays first; named extracted values form an exact set.
+        if not outs or outs[0] != output or len(outs) != 1 + len(types) or set(outs[1:]) != set(types):
             raise ValueError(f"활동 {aid}: MCP 호출의 outputData 는 {[output, *types]} 이어야 합니다")
         return
     if tool == WAIT_TOOL:

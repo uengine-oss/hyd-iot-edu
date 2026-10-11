@@ -264,6 +264,7 @@
     const newer = state === 'current' && v.workitems.some(x => x.activity_id === w.activity_id && (x.generation || 0) > (w.generation || 0));
     const hint = newer ? `<p class="field-hint warn-hint">${UI.chipText(UI.t('td.otherRound'), 'warning')} ${esc(UI.t('td.otherRoundSub'))}</p>`
       : `<p class="field-hint">${esc(UI.t(state === 'captured' ? 'td.captured' : state === 'waiting' ? 'td.waiting' : 'td.current'))}</p>`;
+    if (newer) return `<p class="field-error">이 회차가 받은 값은 저장되어 있지 않습니다.</p>${UI.fold('처리 건의 현재 값 (이 회차 입력 아님)', `${hint}<div class="ro-grid">${rows}</div>`)}`;
     return `${hint}<div class="ro-grid">${rows}</div>`;
   }
 
@@ -287,7 +288,7 @@
           if (d.type === 'text') { items.push({ t: e.timestamp, cls: 'note', title: UI.t('td.note'), html: noteHtml(d.content, 'note:' + e.id), k: 'note:' + e.id }); return; }
           if (d.type === 'evidence') { items.push({ t: e.timestamp, cls: 'note', title: d.name || UI.t('td.basis'), html: evidenceHtml(d), k: 'ev:' + e.id }); return; }
           if (d.type === 'usage') { items.push({ t: e.timestamp, cls: 'done', small: true, title: UI.t('td.tokens'), text: `${UI.t('stream.tokens')} ${(d.usage || {}).input_tokens ?? '–'} / ${(d.usage || {}).output_tokens ?? '–'}` }); return; }
-          if (d.name === '승인 접수') { items.push({ t: e.timestamp, cls: 'done', title: d.name, text: `${d.by || ''}${d.role ? ' (' + UI.who(d.role) + ')' : ''}`, raw: d, k: 'w:' + e.id }); return; }
+          if (d.name === '승인 접수') { items.push({ t: e.timestamp, cls: 'done', title: d.name, text: `${d.by || ''}${d.role ? ' (' + UI.roleName(d.role, v.definition) + ')' : ''}`, raw: d, k: 'w:' + e.id }); return; }
           if (d.session_id || d.model) { items.push({ t: e.timestamp, cls: 'done', title: UI.t('td.start'), text: d.model ? `${UI.t('td.model')} ${d.model}` : '', small: true }); return; }
           items.push({ t: e.timestamp, cls: 'done', title: UI.logText(d.name || UI.t('stream.working')), text: UI.logText(d.content || d.message || ''), code: d.type === 'file_artifact' || /^\s*(```|\{|\[)/.test(d.content || d.message || ''), raw: d.content || d.message ? null : d, k: 'w:' + e.id }); return;   // 에이전트가 쓴 파일 내용 · 결과 JSON을 그대로 말한 메시지는 코드로
         case 'human_asked': items.push({ t: e.timestamp, cls: 'ask', title: UI.t('stream.asked'), text: humanQuestionText(d), options: Array.isArray(d.options) ? d.options.filter(x => typeof x === 'string') : [], k: 'ask:' + e.id }); return;
@@ -386,7 +387,7 @@
       UI.readonly('결정', out.approval ? UI.chipText(out.approval, out.approval === '승인' ? 'success' : 'danger') : none),
       UI.readonly(UI.t('td.chosen'), chosen != null ? `<span class="kv">${esc(chosen)}</span>${m.rec && String(m.rec[m.key]) !== String(chosen) ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : none),
       UI.readonly(UI.t('td.reason'), out.approval_reason ? esc(out.approval_reason) : none),
-      UI.readonly(UI.t('td.approver'), d.by ? `${esc(UI.who(d.by))}${d.role ? ` (${esc(UI.who(d.role))})` : ''}` : none),
+      UI.readonly(UI.t('td.approver'), d.by ? `${esc(UI.who(d.by))}${d.role ? ` (${esc(UI.roleName(d.role, v.definition))})` : ''}` : none),
       waitRow(w),
     ];
     return `<div class="ro-grid">${rows.join('')}</div><p class="kv-line" style="margin-top:var(--s3)"><b>받은 제안</b></p>${window.hydApprove.proposalHtml(m, chosen, { pending: false })}${rawFold(w.output, 'raw:output')}`;

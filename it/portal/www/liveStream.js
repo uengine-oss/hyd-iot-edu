@@ -103,13 +103,27 @@
     S.lastKey = e.id;
     const kind = KIND[e.event_type];
     const { title } = describe(e);
-    t.innerHTML = `<i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(kind ? UI.t(kind[1]) : UI.eventName(e.event_type))}</span><b>${esc(title)}</b>`;
+    const isTool=e.event_type==='tool_usage_started'||e.event_type==='tool_usage_finished';
+    const raw=(e.data||{}).tool||'';
+    const name=isTool ? (window.hydToolNames?.resolve(raw) || {name:UI.terms['tool.'+raw]||'',raw,reason:'도구 표시 이름 목록을 읽지 못했습니다.'}) : null;
+    const label=isTool ? (e.event_type==='tool_usage_started'?'도구 실행 중':(e.data?.is_error||e.data?.attempt_failed)?'도구 호출 실패':'도구 호출 끝남') : kind ? UI.t(kind[1]) : UI.eventName(e.event_type);
+    const body=isTool ? `<p>${esc(name.reason || '등록된 표시 이름입니다.')}</p><p>도구 식별 원문</p><code>${esc(raw)}</code>` : `<p>${esc(title)}</p>`;
+    t.innerHTML = `<summary><i class="live-dot ${kind ? kind[0] : ''}"></i><span>${esc(label)}</span><b>${esc(isTool ? name.name : title)}</b></summary><div class="ticker-detail">${body}</div>`;
+    if(isTool&&!name.name&&window.hydToolNames){
+      window.hydToolNames.load().then(()=>{if(S.lastKey===e.id && S.connected) tickerNameRefresh(e);});
+    }
     t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+  }
+  function tickerNameRefresh(e) {
+    const t=document.getElementById('streamTicker');if(!t)return;
+    const n=window.hydToolNames.resolve((e.data||{}).tool);
+    const title=t.querySelector('summary b');if(title)title.textContent=n.name;
+    const reason=t.querySelector('.ticker-detail p');if(reason)reason.textContent=n.reason||'등록된 표시 이름입니다.';
   }
   function connState(text, ok) {
     const c = document.getElementById('streamConn'); if (c) { c.textContent = text; c.className = 'stream-conn ' + (ok ? 'on' : 'off'); }
     const t = document.getElementById('streamTicker');
-    if (t && !ok) t.innerHTML = `<i class="live-dot off"></i><span>${esc(text)}</span>`;
+    if (t && !ok) t.innerHTML = `<summary><i class="live-dot off"></i><span>${esc(text)}</span></summary>`;
     document.querySelectorAll('[data-live-conn]').forEach(n => { n.textContent = text; n.className = 'live-conn ' + (ok ? 'on' : 'off'); });
   }
 
@@ -164,7 +178,7 @@
     es.onopen = () => {
       S.connected = true; S.backoff = 0; S.openedAt = Date.now(); connState(UI.t('header.connected'), true);
       const t = document.getElementById('streamTicker');
-      if (t && !S.lastKey) t.innerHTML = `<i class="live-dot on"></i><span>${esc(UI.t('header.waiting'))}</span>`;
+      if (t && !S.lastKey) t.innerHTML = `<summary><i class="live-dot on"></i><span>${esc(UI.t('header.waiting'))}</span></summary>`;
     };
     es.addEventListener('history', ev => { try { push(JSON.parse(ev.data), false); } catch (e) { /* ignore a bad frame */ } renderSoon(); });
     es.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (_) { return; } if (push(e, true)) renderSoon(); };

@@ -40,7 +40,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from . import agent_authoring as A
-from . import bpmn_import, mcp_check, mcp_registry, work_rules
+from . import bpmn_import, mcp_check, mcp_registry, work_rules, student_cases
 from .agents_store import SKILL_NAME_RE, csv_list
 from .bpmn_store import FlowStore, next_version
 
@@ -113,7 +113,16 @@ def server_item(name: str, entry: dict, *, include_secrets: bool = False) -> dic
             host = (p.hostname or "") + (f":{p.port}" if p.port else "")
             user = urllib.parse.unquote(p.username) if p.username else ""
             url = urllib.parse.urlunsplit((p.scheme, f"{user}:{hide('url.password', '주소의 비밀번호', '')}@{host}", p.path, p.query, p.fragment))
-        item["url"] = url
+        # Preserve order, repeated keys and nonsecret bytes. Slots use the pair
+        # index so two credentials with the same key remain distinct.
+        p = urllib.parse.urlsplit(url)
+        query = []
+        for i, pair in enumerate(p.query.split('&')):
+            key, sep, value = pair.partition('=')
+            if sep and _secret_value(urllib.parse.unquote_plus(key), urllib.parse.unquote_plus(value)):
+                pair = key + '=' + hide(f'url.query.{i}', f'주소 매개변수 {urllib.parse.unquote_plus(key)} ({i + 1})', value)
+            query.append(pair)
+        item["url"] = urllib.parse.urlunsplit((p.scheme, p.netloc, p.path, '&'.join(query), p.fragment))
         item["headers"] = {k: (hide(f"headers.{k}", f"접속 헤더 {k}", v) if _secret_value(k, v) else v) for k, v in (spec.get("headers") or {}).items()}
     if isinstance(entry, dict) and entry.get("description"):
         item["description"] = entry["description"]
@@ -139,6 +148,9 @@ def register_body(item: dict, values: dict | None = None) -> dict:
         url = str(item.get("url") or "")
         if "url.password" in values and _token("url.password") in url:
             url = url.replace(_token("url.password"), urllib.parse.quote(values["url.password"], safe=""))
+        for slot in SECRET_RE.findall(url):
+            if slot.startswith('url.query.'):
+                url = url.replace(_token(slot), urllib.parse.quote(values[slot], safe=""))
         body["url"] = url
         body["headers"] = {k: _fill(str(v), values) for k, v in (item.get("headers") or {}).items()}
     if item.get("description"):
@@ -236,7 +248,7 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
                         "flows": len(flows), "flow_versions": sum(len(f["versions"]) for f in flows.values()),
                         "assignments": len(assignments), "deployments": len(deployed) + (1 if reference else 0),
                         "secrets_needed": sum(len(s["secrets"]) for s in servers)},
-            "not_included": not_included, "content": content}
+            "not_included": not_included, "content": content, "case_tags": student_cases.live_tags(rt, content)}
 
 
 # ---------------------------------------------------------------- 진행 중 확인 · 하나의 되돌리기
@@ -283,6 +295,10 @@ def _reset_steps(rt, by: str, *, ask: bool) -> list[dict]:
                               not_done=[s for s, _ in work if s not in {d['step'] for d in done} and s != step]) from e
         if step == "deploy_reset":
             result = {k: result.get(k) for k in ("changes", "already_reference", "message")}
+        if step == "flows_reset":
+            for pid in result.pop("projection_instances", []):
+                rt._project({"proc_inst_id": pid})
+            rt.cleanup_removed_definitions()
         done.append({"step": step, "label": labels[step], "result": result, "text": _reset_text(step, result)})
     return done
 
@@ -594,8 +610,10 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
     if needs:
         raise BundleError(422, "비밀값이 필요한 MCP 서버가 있습니다 — " + ", ".join(f"{n['server']}({', '.join(s['label'] for s in n['slots'])})" for n in needs)
                           + ". 값을 넣어 다시 불러오거나 '그 서버만 건너뛰기'를 고르세요(아무것도 바꾸지 않았습니다)", needs_secrets=needs)
+    case_tags = student_cases.validate_tags(bundle.get('case_tags', []), content)
     return {"mcp": plan_servers, "skills": plan_skills, "agents": plan_agents, "role_members": plan_members, "flows": plan_flows,
-            "assignments": plan_maps, "deployments": plan_deploys, "reference": plan_ref, "skipped": skipped}
+            "assignments": plan_maps, "deployments": plan_deploys, "reference": plan_ref, "skipped": skipped,
+            "case_tags": [r for r in case_tags if r['kind'] != 'mcp_servers' or r['asset_id'] in {s['name'] for s in plan_servers}]}
 
 
 # ---------------------------------------------------------------- 적용
@@ -682,6 +700,7 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
             rt.deploy_definition(r["definition_id"], r["version"], by, "출발본 불러오기(기준 흐름 운영 판본)")
             current["items"].append(f"{r['definition_id']} 판본 {r['version']}")
         done()
+        student_cases.Store(repo, tenant).replace(plan.get('case_tags', []))
     except Exception as e:  # noqa: BLE001 — 어느 단계 · 어느 항목에서 왜 실패했는지 그대로 올린다
         reason = getattr(e, "message", None) or getattr(e, "reason", None) or str(e)
         raise _StepFailed(current["step"], reason, applied, list(current["items"])) from e
@@ -781,7 +800,8 @@ def _verify(rt, base_loader, bundle_content: dict, plan: dict) -> list[str]:
         for i, v in enumerate(f.get("versions") or []):
             if v.get("definition_sha256") is None and mine and i < len(mine["versions"]):
                 v["definition_sha256"] = mine["versions"][i]["definition_sha256"]
-    return [_say(p) for p in _diff_paths(want, got)]
+    labels = student_cases.Store(rt.repo, rt.tenant_id).rows()
+    return [_say(p) for p in _diff_paths(want, got)] + ([] if labels == plan.get('case_tags', []) else ['사례 꼬리표'])
 
 
 def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
@@ -871,11 +891,16 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=No
             raise HTTPException(e.status, e.detail()) from e
 
     @app.get("/api/config/export")
-    async def config_export():
+    async def config_export(case: str | None = None):
         rt = runtime()
-        out = await run(lambda: export_bundle(rt, base_loader))
+        def make():
+            bundle = export_bundle(rt, base_loader)
+            return student_cases.select_bundle(rt, bundle, case) if case is not None else bundle
+        out = await run(make)
         stamp = out["created_at"][:16].replace(":", "").replace("-", "").replace("T", "-")
         return JSONResponse(out, headers={"Content-Disposition": f'attachment; filename="hyd-starter-{stamp}.json"'})
+
+    student_cases.register(app, runtime, base_loader, run)
 
     @app.post("/api/config/import")
     async def config_import(body: dict | None = None):

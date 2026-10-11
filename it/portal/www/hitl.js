@@ -177,7 +177,7 @@
   }
   async function loadSkills() {
     if (!H.skills.length) $('#skillList').innerHTML = `<div class="muted" role="status">${esc(UI.t('loading'))}</div>`;
-    try { H.skills = await getJ(API.process + '/api/kg/skills'); } catch (e) { $('#skillList').innerHTML = UI.empty(UI.t('error.load'), e.message, 'compact'); return; }
+    try { H.skills = requireList(await getJ(API.process + '/api/kg/skills'), '조치 방법 목록'); } catch (e) { $('#skillList').innerHTML = UI.empty(UI.t('error.load'), e.message, 'compact'); return; }
     if (!H.catalog) { try { H.catalog = await getJ(API.process + '/api/kg/catalog'); } catch (e) { H.catalog = { roles: [], failureModes: [], manualSections: [] }; } }
     if (!H.skillSel && H.skills.length && !H.skillNew) H.skillSel = H.skills[0].id;
     renderSkillList(); renderSkillDetail();
@@ -226,8 +226,19 @@
       `<span id="skMsg" class="muted" role="status"></span></div>
       ${k.source_document ? `<p class="kv-line">${esc(UI.t('skill.fromDoc'))} <button class="btn small" id="skSource">${esc(UI.t('skill.openDoc'))}</button></p>` : ''}${linked}`;
     const fields = [...box.querySelectorAll('input, textarea, select')];
-    let draft = H.skillDrafts.get(key);
-    if (!draft) { try { draft = JSON.parse(sessionStorage.getItem(draftKey(key)) || 'null'); } catch (_) { /* Use the viewed revision. */ } }
+    let draft = H.skillDrafts.get(key), draftError = '';
+    if (!draft) { try { draft = JSON.parse(sessionStorage.getItem(draftKey(key)) || 'null'); } catch (_) { draftError = '저장한 초안을 읽을 수 없습니다.'; } }
+    if (draft && (typeof draft !== 'object' || !draft.fields || typeof draft.fields !== 'object' || Array.isArray(draft.fields))) draftError = '저장한 초안의 형식이 올바르지 않습니다.';
+    if (draftError) {
+      fields.forEach(n => { n.disabled = true; });
+      $('#skSave').disabled = true;
+      $('#skMsg').textContent = draftError + ' 초안은 보존되어 있습니다. 취소를 누르면 이 초안을 버리고 서버의 저장본을 다시 읽습니다.';
+      $('#skReload').addEventListener('click', async () => {
+        if (!await UI.confirm({ title: '읽을 수 없는 초안을 버릴까요?', body: '이 브라우저의 초안만 버립니다. 서버의 저장본은 바뀌지 않습니다.', ok: '초안 버리기', danger: true })) return;
+        clearSkillDraft(key); box.dataset.key = ''; await loadSkills();
+      });
+      return;
+    }
     draft = draft || { revision: k.revision, fields: {}, pending: null };
     fields.forEach(e => { if (draft.fields?.[e.id] != null) e.value = draft.fields[e.id]; });
     const remember = () => { draft.fields = Object.fromEntries(fields.map(e => [e.id, e.value])); saveSkillDraft(key, draft); $('#skMsg').textContent = UI.t('skill.unsaved'); };

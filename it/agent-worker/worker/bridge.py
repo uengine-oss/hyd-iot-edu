@@ -271,13 +271,10 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
                             extra_args=["--ignore-user-config", "--disable", "apps",
                                         "-c", "project_doc_max_bytes=0", "-c", config])
     path = workdir / MCP_CONFIG_FILENAME
+    # A resumed workspace may have had a different capability selection. Rebuild
+    # the entire run-local registry instead of retaining previously allowed tools.
     config: dict = {}
-    if path.exists():
-        try:
-            config = json.loads(path.read_text(encoding="utf-8")) or {}
-        except json.JSONDecodeError:
-            config = {}
-    entries = config.get("mcpServers") if isinstance(config.get("mcpServers"), dict) else {}
+    entries: dict = {}
     for s in stdio:
         entry: dict = {"command": s.command, "args": list(s.args)}
         if s.env:
@@ -293,7 +290,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     config["mcpServers"] = entries
     path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir, provider_id, isolate_config_dir),
-                        dropped=dropped)
+                        dropped=dropped, extra_args=["--mcp-config", str(path), "--strict-mcp-config"])
 
 
 def _inline_toml(value) -> str:
@@ -307,8 +304,11 @@ def _inline_toml(value) -> str:
 def runtime_env(workdir: Path, provider_id: str, isolate_config_dir: bool) -> dict[str, str]:
     """Per-run config home for Claude Code (the product's RuntimeLease) — only when an API key authenticates the CLI;
     a subscription login lives in the shared config dir and would be lost (docs/handoff/DECISIONS.md 12)."""
-    if provider_id != "claude-code" or not isolate_config_dir:
+    if provider_id != "claude-code":
         return {}
+    env = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
+    if not isolate_config_dir:
+        return env
     home = workdir / CONFIG_HOME_DIRNAME / provider_id
     home.mkdir(parents=True, exist_ok=True)
-    return {"CLAUDE_CONFIG_DIR": str(home)}
+    return {**env, "CLAUDE_CONFIG_DIR": str(home)}

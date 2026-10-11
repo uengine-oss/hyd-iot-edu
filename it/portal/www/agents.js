@@ -30,7 +30,7 @@
     return esc(t.slice(0, SHORT)) + '… ' + `<button type="button" class="btn small" data-fold-text="${esc(key)}">펼치기</button>`;
   }
   const clip = (t, n = 48) => (t.length > n ? t.slice(0, n) + '…' : t);
-  const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저(영문 id 노출 0)
+  const stepLabel = s => `${s.definition_name || UI.defName(s.definition_id)} · ${UI.flowName(s.name)}`;   // 정의에 등록된 이름 먼저
   const chips = (items, tone = 'neutral') => items.length ? items.map(t => UI.chipText(t, tone)).join(' ') : '<span class="muted">없음</span>';
   function checkChip(c) {
     if (!c) return '';
@@ -46,6 +46,7 @@
     try {
       const [agents, skills] = await Promise.all([getJ(api('/api/agents')), getJ(api('/api/skills'))]);
       if (seq !== st.seq) return;
+      requireList(agents, '에이전트 목록'); requireList(skills, '스킬 목록');
       st.agents = agents; st.skills = skills; st.error = '';
       registerNames(agents);
       if (st.pick.agents && !agents.some(a => a.id === st.pick.agents)) st.pick.agents = null;
@@ -144,7 +145,8 @@
       : '<span class="muted">맡은 단계가 없습니다. "담당 배정" 탭에서 단계를 맡기면 그 단계가 이 에이전트로 실행됩니다.</span>';
     const rows = [['역할', esc(d.role || '–')], ['목표', longText('goal:' + d.id, d.goal || '–')]];
     if (isAgent) rows.push(['성격 · 말투', d.persona ? longText('persona:' + d.id, d.persona) : '<span class="muted">적혀 있지 않습니다</span>'],
-      ['모델', esc(modelText(d.model))], ['쓰는 도구', toolChips], ['스킬', skillBtns]);
+      ['모델', esc(modelText(d.model))], ['쓰는 도구', toolChips], ['스킬', skillBtns],
+      ['업무 규칙', d.work_rules_detail?.error ? `<span class="neg">${esc(d.work_rules_detail.error)}</span>` : d.work_rules_detail ? UI.fold(esc(d.work_rules_detail.label), `<pre>${esc(d.work_rules_detail.content)}</pre>`) : d.work_rules ? `<span class="neg">업무 규칙 내용을 읽지 못했습니다</span>` : '공통 안전 규칙만 적용']);
     rows.push(['맡은 단계', steps]);
     const summary = `<dl class="meta-list" style="grid-template-columns:1fr">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
     const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 에이전트 설정은 쓰지 않습니다.'
@@ -202,9 +204,9 @@
   /* ---------- 만들기 · 고치기 폼 ---------- */
   function openForm(kind, d) {
     if (kind === 'agent') {
-      st.form = { kind, id: d ? d.id : null, error: '', draft: d ? { name: d.name, role: d.role || '', goal: d.goal || '', persona: d.persona || '', model: d.model || '',
+      st.form = { kind, id: d ? d.id : null, error: '', draft: d ? { name: d.name, role: d.role || '', goal: d.goal || '', persona: d.persona || '', model: d.model || '', work_rules: d.work_rules || '',
         tools: d.tools.filter(t => t.registered !== false).map(t => t.name || t), skills: d.skills.map(s => s.skill_name || s) }
-        : { name: '', role: '', goal: '', persona: '', model: '', tools: [], skills: [] } };
+        : { name: '', role: '', goal: '', persona: '', model: '', work_rules: '', tools: [], skills: [] } };
     } else {
       st.form = { kind, id: d ? d.skill_name : null, error: '', draft: d ? { skill_name: d.skill_name, description: d.description || '', content: d.content || '' }
         : { skill_name: '', description: '', content: '---\nname: \ndescription: \n---\n\n# 제목\n\n1. 먼저 조회할 값과 도구\n2. 판정 기준\n3. 모를 때 적는 법\n' } };
@@ -229,6 +231,8 @@
           UI.field({ label: '모델', input: `<input data-f="model" list="agModels" value="${esc(d.model)}"><datalist id="agModels">${o.models.map(m => `<option value="${esc(m)}">`).join('')}</datalist>`, hint: '비우면 실행기 기본 모델' })) +
         UI.section('쓸 도구 (등록된 MCP 서버)', `<div>${tools}<p class="field-hint">하나도 고르지 않으면 등록된 서버를 모두 씁니다.</p></div>`) +
         UI.section('스킬', `<div>${skills}</div>`) +
+        UI.section('업무 규칙', UI.field({ label: '적용할 업무 규칙', input: `<select data-f="work_rules"><option value="">공통 안전 규칙만 적용</option>${d.work_rules && !(o.work_rules || []).some(r => r.key === d.work_rules) ? `<option value="${esc(d.work_rules)}" selected>등록되지 않은 업무 규칙 — 다시 선택하세요</option>` : ''}${(o.work_rules || []).map(r => `<option value="${esc(r.key)}" ${d.work_rules === r.key ? 'selected' : ''}>${esc(r.label)}</option>`).join('')}</select>` }) +
+          (o.work_rules || []).map(r => UI.fold(esc(r.label) + ' 내용', `<pre>${esc(r.content)}</pre>`)).join('')) +
         UI.actions(`<button type="button" class="btn" data-f-cancel>취소</button><button type="submit" class="btn primary" ${st.busy ? 'disabled' : ''}>저장</button>`, f.error) +
         `</form>`;
     }

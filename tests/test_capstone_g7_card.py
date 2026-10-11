@@ -3,15 +3,18 @@
 약속(options[{slot, reason, score}] · recommended · losers[{slot, why}] · docs[{title, link}])을 지키면 카드, 벗어나면 무엇이 다른지 + 받은 값 JSON."""
 import html
 import json
+import re
+from copy import deepcopy
 
 from procsvc import approval_part as AP
-from test_capstone_g1_approve import PROPOSAL, ORG, ROLE, case  # noqa: F401  (case 는 fixture)
+from test_capstone_g1_approve import PROPOSAL, ORG, OTHER, ROLE, case  # noqa: F401  (case 는 fixture)
 from test_instance_mode import world, NOW, _row  # noqa: F401
 from test_u1_task_detail import _render
 
 
 def _scenario(rt, inst, wi, name):
     return {"name": name, "view": rt.instance_view(inst["proc_inst_id"]), "wid": wi["id"],
+            "people": rt.repo.list_users(tenant_id=rt.tenant_id),
             "http": {f"/api/todolist/{wi['id']}": rt.workitem_view(wi["id"])}}
 
 
@@ -32,8 +35,37 @@ def test_card_shows_the_recommendation_the_losers_the_docs_and_who_approved_whic
     assert "칸 약속과 다릅니다" not in before and "이 안으로 바꾸기" not in before            # 상세 패널은 보기만(고르기는 승인 패널)
     # 승인 뒤: 담당자가 바꾼 안이 카드 머리 · 결정 · 사유 · 승인자(이름 · 역할)
     assert "담당자가 바꾼 안" in after and "다음 주 화 15:00" in after and "고객이 다음 주를 원함" in after
-    # 승인자: 이 단계의 접수 기록(APPROVAL_ACCEPTED)에서 — 이름표(UI.performers)는 포털에서 inbox.js 가 채우므로 여기서는 id 로 보인다
-    assert f"{ORG} ({ROLE})" in after and "결정" in after and "다른 안 1개 · 빠진 안 2개" in after
+    # U10: 실제 인물 목록과 정의 역할명을 사용한다. API 감사 식별자는 바꾸지 않는다.
+    view = rt.instance_view(inst["proc_inst_id"])
+    role_name = next(r["name"] for r in view["definition"]["roles"] if r["endpoint"] == ROLE)
+    actor_name = next(u["username"] for u in rt.repo.list_users() if u["id"] == ORG)
+    assert f"{actor_name} ({role_name})" in after and "결정" in after and "다른 안 1개 · 빠진 안 2개" in after
+    approval = next(e for e in rt.workitem_view(wi["id"])["events"] if e["job_id"] == "APPROVAL_ACCEPTED")
+    assert approval["data"]["by"] == ORG and approval["data"]["role"] == ROLE
+    approver = re.search(r'<div class="ro-value">([^<]*' + re.escape(actor_name) + r'[^<]*)</div>', after).group(1)
+    assert ORG not in approver and ROLE not in approver
+
+
+def test_approval_names_and_choice_stay_with_their_own_case_and_event(tmp_path, case):
+    rt, _, start = case
+    first, first_wi = start(event="QBR-names-first")
+    rt.approve(first_wi["id"], AP.APPROVE, "다음 주 화 15:00", ORG, ROLE, "첫 회의 사유", now=NOW)
+    historical = _scenario(rt, first, first_wi, "first")
+    rt.repo.set_role_member(rt.tenant_id, ROLE, OTHER, True)
+    second, second_wi = start(event="QBR-names-second")
+    rt.approve(second_wi["id"], AP.APPROVE, "금 10:00", OTHER, ROLE, "두 번째 회의 사유", now=NOW)
+    # 현재 처리 건 값이 다음 회차 값으로 달라도 단계의 접수 기록으로 표시해야 한다.
+    for row in historical["view"]["instance"]["variables_data"]:
+        if row["key"] == "approved_by": row["value"] = OTHER
+        if row["key"] == "approved_option": row["value"] = {"slot": "금 10:00"}
+    copy_of_first = deepcopy(historical)
+    copy_of_first["name"] = "first_again"
+    result = _render(tmp_path, [historical, _scenario(rt, second, second_wi, "second"), copy_of_first])
+    for key, person, wrong, chosen in [("first", "한주관", "유주관", "다음 주 화 15:00"), ("second", "유주관", "한주관", "금 10:00"), ("first_again", "한주관", "유주관", "다음 주 화 15:00")]:
+        panel = _text(result[key]["panel"])
+        assert f"{person} (주관자)" in panel and f"{wrong} (주관자)" not in panel
+        assert f'<span class="kv">{chosen}</span>' in panel
+        assert f"{ORG} ({ROLE})" not in panel and f"{OTHER} ({ROLE})" not in panel
 
 
 def test_off_contract_proposal_is_shown_raw_with_what_is_off_not_hidden(tmp_path, case):

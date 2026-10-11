@@ -123,11 +123,18 @@ def _cli_message(path) -> str:
             "Format: JSON array with schema: [{type: string, text: string}]\nUse offset and limit parameters to read specific portions.")
 
 
-def _run_with_tool_end(tmp_path, repo, text):
+def _run_with_tool_end(tmp_path, repo, text, *, saved_content=None):
     repo_inst = skill_start(repo, repo._defn)
     def calls(request):
+        actual_text = text
+        if saved_content is not None:
+            directory = payloads.result_directory(request.workdir, "s1")
+            directory.mkdir(parents=True, exist_ok=True)
+            result_file = directory / "mcp-hyd-dmn-evaluate_cards-1.txt"
+            result_file.write_text(saved_content, encoding="utf-8")
+            actual_text = _cli_message(result_file)
         yield ExecEvent(kind=ExecEventKind.TOOL_START, tool="mcp__hyd-dmn__evaluate_cards", tool_input={"asset": "HYD-01"}, tool_use_id="e1", session_id="s1")
-        yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__hyd-dmn__evaluate_cards", text=text, tool_use_id="e1", session_id="s1", is_error=True)
+        yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__hyd-dmn__evaluate_cards", text=actual_text, tool_use_id="e1", session_id="s1", is_error=True)
     assert _runner(tmp_path / "ws", repo, calls).poll_once() == 1
     return repo_inst, next(e for e in repo.events if e["event_type"] == "tool_usage_finished")
 
@@ -140,9 +147,9 @@ def _payload_repo():
 
 def test_a_result_the_cli_moved_to_a_file_is_stored_whole_and_referenced(tmp_path, monkeypatch):
     inner = json.dumps({"cards": [{"id": f"c{i}", "score": i} for i in range(4000)], "asset": "HYD-01"}, ensure_ascii=False)
-    f = _saved(tmp_path, json.dumps([{"type": "text", "text": inner}]))
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "cli-config"))
     repo = _payload_repo()
-    inst, row = _run_with_tool_end(tmp_path, repo, _cli_message(f))
+    inst, row = _run_with_tool_end(tmp_path, repo, "", saved_content=json.dumps([{"type": "text", "text": inner}]))
     full = row["data"]["full_output"]
     assert row["data"]["output"].startswith("Error: result (161,234 characters)")       # the row still says what the agent saw
     digest = hashlib.sha256(inner.encode("utf-8")).hexdigest()

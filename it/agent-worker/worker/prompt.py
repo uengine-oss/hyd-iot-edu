@@ -38,6 +38,10 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     sections.append("## 작업 공간\n" f"작업 디렉터리는 `{workdir}` 입니다. 산출 파일은 이 디렉터리 안에 만드세요. 이 디렉터리 밖에는 쓰지 마세요. "
                     "온톨로지 스키마 설명은 `context/schema_prompt.md` 에 있습니다.")
     sections.append(output_contract(extras.get("form_fields")))
+    from procsvc.result_correction import instructions
+    contract_note = instructions(extras.get('form_contract'))
+    if contract_note:
+        sections.append('## 폼 계약 상세\n' + contract_note)
     if any(field.get('key') == 'decision_id' for field in field_list(extras.get('form_fields'))):
         sections.append('## 판단 등록의 생산 작업\nsubmit_decision 호출 시 process_scope에 아래 객체를 그대로 전달하세요. '
                         '이 작업의 새 판단 ID만 출력하며 이전 작업/세대의 판단을 재사용하지 마세요.\n'
@@ -61,20 +65,21 @@ LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이�
 def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = False) -> str:
     """How to continue after a person answered (the product's hitl.plan_resume prompts)."""
     if not restarted:
-        return f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요."
+        return f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요.\n\n{LANGUAGE_RULE}"
     text = f"담당자 응답: {answer}\n"
     if previous_summary:
         text += f"\n## 이전 진행 요약\n{previous_summary}\n"
-    return text + "\n위 맥락을 참고해 작업을 새로 진행하세요."
+    return text + "\n위 맥락을 참고해 작업을 새로 진행하세요.\n\n" + LANGUAGE_RULE
 
 
-def format_correction(reason: str, form_fields: Any) -> str:
+def format_correction(reason: str, form_fields: Any, *, form_contract=None) -> str:
     """A086: the result had the right content but not the contract's shape (e.g. an array sent as a JSON string). Same session,
     the exact defect, no new queries — the product's validate → correct → recheck loop (bpmn-extractor process_validator)."""
+    from procsvc.result_correction import instructions
     return (f"방금 제출한 결과가 출력 형식 검사에서 거절됐습니다: {reason}\n"
             "조회나 분석을 다시 하지 말고, 같은 내용을 아래 형식에 맞춰 다시 제출하세요. 배열 필드는 JSON 배열 그대로(문자열로 감싸지 않음), "
             "숫자는 숫자로 쓰세요. 결과를 `output/result.json` 파일로 냈다면 그 파일을 고쳐 다시 쓰고 마지막 메시지에는 확인만 적으세요.\n\n"
-            + output_contract(form_fields))
+            + output_contract(form_fields) + "\n\n" + instructions(form_contract) + "\n\n" + LANGUAGE_RULE)
 
 
 def output_contract(form_fields: Any) -> str:

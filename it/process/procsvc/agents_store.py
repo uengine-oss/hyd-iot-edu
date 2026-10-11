@@ -119,7 +119,7 @@ class AgentSettings:
     def skill_names(self) -> list[str]:
         return [s["skill_name"] for s in self.skills]
 
-    def instructions(self, skill_root: str = SKILL_ROOTS["claude-code"]) -> str:
+    def instructions(self, skill_root: str = SKILL_ROOTS["claude-code"], *, skills_inline: bool = False) -> str:
         """The section the worker adds to the run's prompt (process-gpt-cli-agent core/subagents.py:36-46 joins
         role · goal · persona the same way). Empty for a work item without an agent profile."""
         p = self.profile or {}
@@ -136,9 +136,12 @@ class AgentSettings:
         if self.skills:
             listed = "\n".join(f"- `{s['skill_name']}`" + (f": {s['description']}" if s.get("description") else "")
                                + f" — `{skill_root}/{s['skill_name']}/SKILL.md`" for s in self.skills)
-            text += (("\n\n" if text else "") + "## 배정된 스킬\n"
-                     f"작업 디렉터리의 `{skill_root}/<이름>/SKILL.md` 에 이 에이전트의 스킬이 있습니다. 업무에 해당하는 스킬을 먼저 읽고 "
-                     "그 절차를 따르세요. 스킬은 결과 제출 형식을 바꾸지 않습니다.\n" + listed)
+            delivery = ('이 지시에 등록·검증된 스킬 본문이 함께 제공됩니다. 아래 본문에서 업무에 해당하는 절차를 따르세요. '
+                        '목록의 경로는 출처 표시이며 본문을 받기 위해 파일 읽기 도구를 호출할 필요가 없습니다. '
+                        if skills_inline else
+                        f"작업 디렉터리의 `{skill_root}/<이름>/SKILL.md` 에 이 에이전트의 스킬이 있습니다. 업무에 해당하는 스킬을 먼저 읽고 그 절차를 따르세요. ")
+            text += (("\n\n" if text else "") + "## 배정된 스킬\n" + delivery
+                     + "스킬은 결과 제출 형식을 바꾸지 않습니다.\n" + listed)
         return text
 
     def summary(self) -> dict:

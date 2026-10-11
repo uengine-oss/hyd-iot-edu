@@ -193,12 +193,12 @@ class FlowStore:
                     where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id and v.version=i.proc_def_version and v.origin='user')
                     order by start_date""", (self.tenant_id,)).fetchall()]
 
-    def reset(self) -> dict:
+    def reset(self, def_id: str | None = None) -> dict:
         """학생이 가져온 정의 · 판본 · 초안만 지운다. 그 판본으로 끝난 처리 건은 목록에서 숨긴다(is_deleted — 정의가 없어지므로).
         진행 중(NEW · RUNNING) 처리 건이 있으면 아무것도 지우지 않고 FlowBusy."""
         if self.memory:
             with _MEM_LOCK:
-                keys = [k for k in self.mem["versions"] if k[1] == self.tenant_id]
+                keys = [k for k in self.mem["versions"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id)]
                 pinned = {(d, v) for d, t, v in keys}
                 insts = [i for i in self.repo.instances.values() if i.get("tenant_id") == self.tenant_id and not i.get("is_deleted")
                          and (i.get("proc_def_id"), i.get("proc_def_version")) in pinned]
@@ -207,29 +207,33 @@ class FlowStore:
                     raise FlowBusy([{k: i.get(k) for k in ("proc_inst_id", "proc_def_id", "proc_def_version")} for i in running])
                 for i in insts:
                     i["is_deleted"] = True
+                    self.repo.update_instance(i)
                 for k in keys:
                     self.repo.def_versions.pop(k, None)
                     self.mem["versions"].pop(k, None)
-                heads = [k for k in self.mem["heads"] if k[1] == self.tenant_id]
+                heads = [k for k in self.mem["heads"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id)]
                 for k in heads:
                     self.mem["heads"].pop(k, None)
                     self.repo.defs.pop(k, None)
-                drafts = [k for k in self.mem["drafts"] if k[1] == self.tenant_id]
+                drafts = [k for k in self.mem["drafts"] if k[1] == self.tenant_id and (def_id is None or k[0] == def_id)]
                 for k in drafts:
                     self.mem["drafts"].pop(k, None)
-            return {"versions": len(keys), "definitions": len(heads), "drafts": len(drafts), "hidden_instances": len(insts)}
+            from .student_cases import Store
+            Store(self.repo, self.tenant_id).remove('flows', def_id)
+            return {"versions": len(keys), "definitions": len(heads), "drafts": len(drafts), "hidden_instances": len(insts), "projection_instances": [i["proc_inst_id"] for i in insts]}
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow-reset:{self.tenant_id}",))
             pinned = """exists (select 1 from proc_def_version v where v.tenant_id=i.tenant_id and v.proc_def_id=i.proc_def_id
-                        and v.version=i.proc_def_version and v.origin='user')"""
+                        and v.version=i.proc_def_version and v.origin='user' and (%s::text is null or v.proc_def_id=%s))"""
             running = c.execute(f"""select proc_inst_id, proc_def_id, proc_def_version from bpm_proc_inst i
                                     where tenant_id=%s and not is_deleted and status in ('NEW','RUNNING') and {pinned}
-                                    order by start_date""", (self.tenant_id,)).fetchall()
+                                    order by start_date""", (self.tenant_id, def_id, def_id)).fetchall()
             if running:
                 raise FlowBusy([dict(r) for r in running])
-            hidden = c.execute(f"update bpm_proc_inst i set is_deleted=true where tenant_id=%s and not is_deleted and {pinned}",
-                               (self.tenant_id,)).rowcount
-            versions = c.execute("delete from proc_def_version where tenant_id=%s and origin='user'", (self.tenant_id,)).rowcount
-            definitions = c.execute("delete from proc_def where tenant_id=%s and origin='user'", (self.tenant_id,)).rowcount
-            drafts = c.execute("delete from proc_bpmn_draft where tenant_id=%s", (self.tenant_id,)).rowcount
-        return {"versions": versions, "definitions": definitions, "drafts": drafts, "hidden_instances": hidden}
+            hidden = c.execute(f"update bpm_proc_inst i set is_deleted=true where tenant_id=%s and not is_deleted and {pinned} returning proc_inst_id",
+                               (self.tenant_id, def_id, def_id)).fetchall()
+            versions = c.execute("delete from proc_def_version where tenant_id=%s and origin='user' and (%s::text is null or proc_def_id=%s)", (self.tenant_id, def_id, def_id)).rowcount
+            definitions = c.execute("delete from proc_def where tenant_id=%s and origin='user' and (%s::text is null or id=%s)", (self.tenant_id, def_id, def_id)).rowcount
+            drafts = c.execute("delete from proc_bpmn_draft where tenant_id=%s and (%s::text is null or proc_def_id=%s)", (self.tenant_id, def_id, def_id)).rowcount
+            c.execute("delete from hyd_student_case_tags where tenant_id=%s and kind='flows' and (%s::text is null or asset_id=%s)", (self.tenant_id, def_id, def_id))
+        return {"versions": versions, "definitions": definitions, "drafts": drafts, "hidden_instances": len(hidden), "projection_instances": [i["proc_inst_id"] for i in hidden]}

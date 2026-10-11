@@ -128,8 +128,32 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 out = FlowStore(rt.repo, rt.tenant_id).reset()
             except FlowBusy as e:
                 raise HTTPException(409, {"reason": str(e), "running": e.running})
+            for pid in out.pop("projection_instances", []):
+                rt._project({"proc_inst_id": pid})
+            rt.cleanup_removed_definitions()
             audit("-", "portal", "FLOWS_RESET", out)
             return out
+        return await run(work)
+
+    @app.delete("/api/flows/{def_id}")
+    async def flows_delete(def_id: str, by: str = "portal"):
+        rt = runtime()
+        def work():
+            store = FlowStore(rt.repo, rt.tenant_id)
+            if store.is_protected(def_id):
+                raise HTTPException(403, {"reason": "수업 기준 흐름은 삭제할 수 없습니다"})
+            if not store.get_draft(def_id) and not store.versions(def_id):
+                raise HTTPException(404, {"reason": "삭제할 학생 흐름이 없습니다"})
+            try:
+                out = store.reset(def_id)
+            except FlowBusy as e:
+                raise HTTPException(409, {"reason": str(e), "running": e.running})
+            for pid in out.get("projection_instances", []):
+                rt._project({"proc_inst_id": pid})
+            rt.cleanup_removed_definitions()
+            out["projection_pending"] = sum(bool(rt.repo.projection_status(rt.tenant_id, pid)["pending"]) for pid in out.get("projection_instances", []))
+            audit("-", by, "FLOW_DELETED", {"definition_id": def_id, **out})
+            return {"definition_id": def_id, **out}
         return await run(work)
 
     @app.get("/api/flows/{def_id}")

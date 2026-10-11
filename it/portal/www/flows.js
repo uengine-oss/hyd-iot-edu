@@ -398,15 +398,35 @@
     const ids = [...new Set([...L.drafts.map(d => d.proc_def_id), ...L.versions.map(v => v.id)])];
     box.innerHTML = ids.map(id => {
       const vs = L.versions.filter(v => v.id === id), d = L.drafts.find(x => x.proc_def_id === id);
-      const name = (vs[vs.length - 1] || {}).name || (d && d.mapping && d.mapping.name) || id;
+      const registeredName = (vs[vs.length - 1] || {}).name || (d && d.mapping && d.mapping.name);
+      const name = registeredName && registeredName !== id ? registeredName : UI.terms['def.' + id] || '이름 미등록 흐름';
       const rows = vs.map(v => `<li>판본 <b>${h(v.version)}</b> · ${h(UI.dateTime(v.registered_at))}
         <a class="btn small" href="${h(api(`/api/flows/${encodeURIComponent(id)}/versions/${encodeURIComponent(v.version)}/bpmn`))}" download>그림 받기</a>
         <button class="btn small" data-start="${h(id)}" data-version="${h(v.version)}">직접 시작</button><div data-startbox="${h(id + '@' + v.version)}"></div></li>`).join('');
-      return UI.card({ title: h(name), sub: `흐름 id ${h(id)}${d ? ' · 매핑 초안 있음' : ''}`, body: rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>',
-        actions: d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '' });
+      return UI.card({ title: h(name), sub: d ? '매핑 초안 있음' : '', body: (rows ? `<ul class="flow-versions">${rows}</ul>` : '<p class="muted">등록한 판본 없음</p>') + UI.metaFold([['흐름 식별자', h(id)]]),
+        actions: (d ? `<button class="btn small" data-open="${h(id)}">매핑 열기</button>` : '') + `<button class="btn small danger" data-delete-flow="${h(id)}">이 흐름 지우기</button><div data-delete-box="${h(id)}"></div>` });
     }).join('');
     box.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openDraft(b.dataset.open)));
     box.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => startForm(b.dataset.start, b.dataset.version)));
+    box.querySelectorAll('[data-delete-flow]').forEach(b => b.addEventListener('click', () => deleteForm(b.dataset.deleteFlow)));
+  }
+
+  function deleteForm(id) {
+    const box = S.el.querySelector(`[data-delete-box="${CSS.escape(id)}"]`);
+    box.innerHTML = `<div class="form"><p class="field-hint">선택한 학생 흐름의 모든 판본과 초안을 지웁니다. 진행 중인 처리 건이나 기준 흐름은 지울 수 없습니다.</p>${UI.field({ label: '담당자', required: true, input: '<input data-delete-by>' })}<div class="form-actions"><span class="form-msg" role="status"></span><button class="btn small" data-delete-cancel>취소</button><button class="btn small danger" data-delete-confirm>이 흐름 지우기</button></div></div>`;
+    box.querySelector('[data-delete-cancel]').onclick = () => { box.innerHTML = ''; };
+    box.querySelector('[data-delete-confirm]').onclick = async ev => {
+      const by = box.querySelector('[data-delete-by]').value.trim(), msg = box.querySelector('.form-msg');
+      if (!by) { msg.textContent = '담당자를 적어 주세요.'; return; }
+      if (S.deleting) return;
+      S.deleting = true; box.querySelectorAll('button,input').forEach(n => { n.disabled = true; });
+      try {
+        const result = await call('DELETE', '/api/flows/' + encodeURIComponent(id) + '?by=' + encodeURIComponent(by));
+        if (S.view?.definition_id === id) { S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; }
+        UI.toast(result.projection_pending ? `흐름을 지웠습니다. 그래프 기록 ${result.projection_pending}건은 정리를 다시 시도하고 있습니다.` : '선택한 흐름을 지웠습니다.', { tone: result.projection_pending ? 'warning' : 'ok' }); await loadList();
+      } catch (e) { msg.textContent = e.message; box.querySelectorAll('button,input').forEach(n => { n.disabled = false; }); }
+      finally { S.deleting = false; }
+    };
   }
 
   async function startForm(id, version) {

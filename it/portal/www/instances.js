@@ -8,7 +8,7 @@
 (function () {
   const I = { defNames: {}, mode: null, taskSel: null, taskView: null, fieldValues: {}, fieldTask: null, instances: [], sel: null, view: null, todo: [], dec: null, decId: null, asked: [],
               form: { option: null, role: null, by: 'OP-17', reason: '', fan: null, load: null }, msg: '', busy: false, sig: null, tab: 'flow', closing: null, listShown: 20, todoShown: 6, eventsShown: 20 };
-  const who = id => UI.who(id);
+  const who = id => UI.roleName(id, I.view?.definition);
   const chip = s => UI.chip(s);
   const isHuman = t => !t.agent_orch && !t.agent_mode;
   // C3: 끝난 처리 건의 결과(정상 · 미달 · 지연 · 입고 완료)를 상태 칩 옆에 — 미달(ESCALATED) 종결도 "완료"로만 보이지 않게
@@ -29,7 +29,7 @@
     try { I.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { I.mode = { error: e.message }; }
     if (!I.mode || I.mode.mode !== 'instance') { renderBanner(); return; }
     // A083: the server filters by status; without it a RUNNING case older than the newest 50 is unreachable from the portal
-    try { I.instances = await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')); I.listError = ''; } catch (e) { I.instances = []; I.listError = e.message; }
+    try { I.instances = requireList(await getJ(API.process + '/api/instances?limit=50' + (I.status ? '&status=' + encodeURIComponent(I.status) : '')), '처리 건 목록'); I.listError = ''; } catch (e) { I.instances = []; I.listError = e.message; }
     // A157: list chips name each row's step from that row's own definition (it showed raw ids like extract-manual when another
     // definition's instance was selected). Each definition version is fetched once; a failed fetch is reported, not hidden.
     // 활동과 이벤트 이름 — 끝 이벤트 이름도 실어 목록 칩이 E_end 같은 id 를 보이지 않게
@@ -40,18 +40,21 @@
       catch (e) { I.msg = `흐름 정의 ${id} ${version}을(를) 읽지 못했습니다: ${e.message}`; }
     }));
     let todoRows = [];
-    try { todoRows = await getJ(API.process + '/api/todolist?status=IN_PROGRESS'); } catch (e) { I.msg = e.message; }
+    try { todoRows = requireList(await getJ(API.process + '/api/todolist?status=IN_PROGRESS'), '담당 작업 목록'); } catch (e) { I.msg = e.message; }
     I.todo = todoRows.filter(isHuman); I.asked = todoRows.filter(t => t.draft_status === 'HUMAN_ASKED');
     if (!I.sel && I.instances[0]) I.sel = I.instances[0].proc_inst_id;
-    I.view = null;
-    I.viewErr = null;
-    if (I.sel) { try { I.view = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel)); } catch (e) { I.view = null; I.viewErr = e.message; } }   // A161-U1 (결함 1): 열 수 없는 이유를 보인다
+    // Polling must not erase the snapshot used by an already visible action.
+    // A click can render synchronously while any of these requests is waiting.
+    let nextView = null, nextViewErr = null;
+    if (I.sel) { try { nextView = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel)); } catch (e) { nextViewErr = e.message; } }   // A161-U1 (결함 1): 열 수 없는 이유를 보인다
+    I.view = nextView; I.viewErr = nextViewErr;
     I.graph = null;
     if (I.sel) { try { I.graph = await getJ(API.process + '/api/instances/' + encodeURIComponent(I.sel) + '/graph'); } catch (e) { I.graph = { error: e.message }; } }
     try { I.caseProjection = await getJ(API.process + '/api/graph-projections'); } catch (e) { I.caseProjection = { error: e.message }; }
     const task = I.todo.find(t => t.id === I.taskSel && t.proc_inst_id === I.sel) || I.todo.find(t => t.proc_inst_id === I.sel);
-    I.taskView = null;
-    if (task) { try { I.taskView = await getJ(API.process + '/api/todolist/' + encodeURIComponent(task.id)); } catch (e) { I.msg = e.message; } }
+    let nextTaskView = null;
+    if (task) { try { nextTaskView = await getJ(API.process + '/api/todolist/' + encodeURIComponent(task.id)); } catch (e) { I.msg = e.message; } }
+    I.taskView = nextTaskView;
     const selectTask = I.taskView && I.taskView.tool === 'formHandler:select_card' ? I.taskView : null;
     const decId = selectTask ? await decisionIdOf(selectTask) : null;
     if (decId !== I.decId) { I.decId = decId; I.dec = null; I.form = { option: null, role: null, by: I.form.by, reason: '', fan: null, load: null }; }
@@ -282,11 +285,11 @@
     const m = window.hydApprove.proposal(task.inputs, act.approval);
     if (!I.form.option && m.usable) I.form.option = String(((m.rec || m.options[0]) || {})[m.key]);
     const endpoint = (((I.view.definition || {}).roles || []).find(r => r.name === act.role) || {}).endpoint || '';
-    const who = window.hydInbox && window.hydInbox.whoFields('td', I.form, [[endpoint, { name: UI.who(endpoint) }]], { reasonHint: '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.' });
+    const who = window.hydInbox && window.hydInbox.whoFields('td', I.form, [[endpoint, { name: UI.roleName(endpoint, I.view.definition) }]], { reasonHint: '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.' });
     const timer = timerFor(task);
     const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
     const ready = !!who && !I.busy;
-    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.who(endpoint) : UI.who(task.user_id))}</span>${dueS != null ? UI.chipText(`기한까지 ${dueS < 60 ? dueS + '초' : Math.round(dueS / 60) + '분'}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
+    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.roleName(endpoint, I.view.definition) : UI.roleName(task.user_id, I.view.definition))}</span>${dueS != null ? UI.chipText(`기한까지 ${dueS < 60 ? dueS + '초' : Math.round(dueS / 60) + '분'}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
       ${window.hydApprove.proposalHtml(m, I.form.option, { pending: true })}
       <div class="form">${who || `<p class="field-hint">승인하려면 먼저 내 작업함에서 나를 고르세요 — 누가 승인했는지 모르는 승인은 서버가 받지 않습니다.</p>`}
       ${UI.actions(`<button class="btn ghost" id="tdReject" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`,
@@ -462,9 +465,11 @@
   function stepExtra(s) {
     const view = I.view, w = s.w; if (!view || !w) return '';
     const inst = view.instance;
-    const closeBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && (w.draft_status === 'FAILED' || w.draft_status === 'CANCELLED'))) ? `<button class="btn small outline" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
+    const act = (view.definition?.activities || []).find(a => a.id === w.activity_id);
+    const canClose = (w.agent_orch && w.agent_mode && (w.status === 'PENDING' || (w.status === 'IN_PROGRESS' && ['FAILED', 'CANCELLED'].includes(w.draft_status)))) || (act?.type === 'serviceTask' && w.status === 'PENDING');
+    const closeBtn = canClose && inst.status === 'RUNNING' ? `<button class="btn small outline" data-close-task="${esc(w.id)}">${esc(UI.t('btn.closeTask'))}</button>` : '';
     const cancelBtn = w.agent_orch && w.agent_mode && inst.status === 'RUNNING' && w.status === 'IN_PROGRESS' && w.draft_status === 'STARTED' && w.consumer ? `<button class="btn small outline" data-cancel-task="${esc(w.id)}">${esc(UI.t('btn.cancelTask'))}</button>` : '';
-    const reasonForm = I.closing && I.closing.id === w.id ? `<div class="form inline-form" data-reason-form><div class="form-grid">${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small outline" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go>${esc(UI.t('btn.confirm'))}</button>`, I.msg)}</div>` : '';
+    const reasonForm = I.closing && I.closing.id === w.id ? `<div class="form inline-form" data-reason-form><p class="field-hint">멈춘 단계를 취소로 닫습니다. 업무 실행 성공이나 설비 복구로 기록하지 않습니다.</p><div class="form-grid">${UI.field({ label: '담당자', required: true, input: `<input data-close-by value="${esc(I.closing.by || '')}">` })}${UI.field({ label: I.closing.kind === 'close' ? UI.t('inst.closeReason') : UI.t('inst.cancelReason'), required: true, cls: 'wide', input: `<input data-close-reason value="${esc(I.closing.reason || '')}">` })}</div>${UI.actions(`<button class="btn small outline" data-close-abort>${esc(UI.t('btn.cancel'))}</button><button class="btn small primary" data-close-go ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.confirm'))}</button>`, I.msg)}</div>` : '';
     return `<div class="row-wrap tr-actions"><button type="button" class="btn small ghost" data-td-open="${esc(w.id)}">${esc(UI.t('trace.detail'))}</button>${closeBtn}${cancelBtn}</div>${reasonForm}`;
   }
   function mountFlow(view) {
@@ -497,7 +502,7 @@
       const shown = row.key === 'pattern' && typeof PATTERN_LABEL !== 'undefined' ? (PATTERN_LABEL[value] || value) : row.key === 'chosen_skill_kind' ? (value === 'control' ? UI.t('chip.control') : value === 'work_order' ? UI.t('chip.workOrder') : value)
         : row.key === 'cause' ? (((v.guide_card || {}).causes || []).find(c => c.id === value) || (v.guide_card || {}).topCause || {}).name || UI.name(value)
         : row.key === 'failure_mode' ? UI.idText((typeof (v.guide_card || {}).failureMode === 'object' ? (v.guide_card.failureMode || {}).name : (v.decision || {}).failureMode) || UI.name(value))
-        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? UI.who(value) : typeof value === 'string' ? UI.idText(value) : value;
+        : row.key === 'chosen_skill' ? ((v.chosen_option || {}).name || UI.name(value)) : row.key === 'approved_role' ? who(value) : typeof value === 'string' ? UI.idText(value) : value;
       const body = value !== null && typeof value === 'object' ? UI.fold(esc(UI.t('inst.structured')), `<pre>${esc(JSON.stringify(value, null, 2))}</pre>`, { cls: 'small' }) : esc(shown === true ? UI.t('yes') : shown === false ? UI.t('no') : shown ?? UI.t('inst.noValue'));
       const source = (inst.variable_sources || {})[row.key];
       const producer = source?.kind === 'workitem' ? view.workitems.find(w => w.id === source.id) : null;
@@ -629,17 +634,18 @@
     if (box._stepWired) return; box._stepWired = true;
     box.addEventListener('click', async e => {
       const b = e.target.closest('[data-close-task],[data-cancel-task]');
-      if (b) { I.closing = { id: b.dataset.closeTask || b.dataset.cancelTask, kind: b.dataset.closeTask ? 'close' : 'cancel', reason: '' }; I.msg = ''; I.trace?.draw(); return; }
+      if (b) { I.closing = { id: b.dataset.closeTask || b.dataset.cancelTask, kind: b.dataset.closeTask ? 'close' : 'cancel', reason: '', by: I.form.by || '' }; I.msg = ''; I.trace?.draw(); return; }
       if (e.target.closest('[data-close-abort]')) { I.closing = null; I.trace?.draw(); return; }
       const go = e.target.closest('[data-close-go]'); if (!go || I.busy || !I.closing) return;
-      const reason = (I.closing.reason || '').trim();
+      const reason = (I.closing.reason || '').trim(), by = (I.closing.by || '').trim();
+      if (!by) { I.msg = '담당자를 적어 주세요.'; I.trace?.draw(); return; }
       if (!reason) { I.msg = UI.t('form.err.reason'); I.trace?.draw(); return; }
       I.busy = true; go.disabled = true;
-      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(I.closing.id)}/${I.closing.kind}`, { by: I.form.by || '확인자', reason }); I.msg = ''; I.closing = null; }
+      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(I.closing.id)}/${I.closing.kind}`, { by, reason }); I.msg = ''; I.closing = null; }
       catch (err) { I.msg = err.message; }
       finally { I.busy = false; await load(true); I.trace?.draw(); }
     });
-    box.addEventListener('input', e => { if (e.target.matches('[data-close-reason]') && I.closing) I.closing.reason = e.target.value; });
+    box.addEventListener('input', e => { if (e.target.matches('[data-close-reason]') && I.closing) I.closing.reason = e.target.value; if (e.target.matches('[data-close-by]') && I.closing) I.closing.by = e.target.value; });
   }
   async function sendDiscard(wid) {
     const req = discardPending(wid); if (!req || I.busy) return;

@@ -99,7 +99,9 @@ const UI = {
     // A141 다이어트: 보조 정보 접기 · 에이전트 도구 이름 · 정의 이름
     'fold.meta': '상세 정보', 'fold.case': '사건 정보', 'fold.kpi': '성과 지표 영향', 'fold.penalty': '감점 · 경고', 'fold.violations': '제외 사유', 'golden.summary': '집계 · 요약',
     'inst.eventsMore': '이전 활동 더 보기', 'inst.valuesFold': '값', 'card.sop': '절차 번호', 'log.raw': '원문',
-    'def.anomaly_response': '설비 이상 조치', 'def.manual_extraction': '매뉴얼 추출', 'def.manual_source_extraction': '문서 원천 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
+    'def.anomaly_response': '설비 이상 조치', 'def.alert_triage': '미지원 경보 현장 검토', 'def.ask_agent': '에이전트에게 질문하기',
+    'def.c3_cooling': '냉각 긴급 대응', 'def.c3_pm': '정기 정비', 'def.c3_spare': '예비품 구매',
+    'def.manual_extraction': '매뉴얼 추출', 'def.manual_source_extraction': '문서 원천 추출', 'def.golden_questions': '매뉴얼 확인 질문', 'def.timeseries_question': '시계열 질문', 'def.business_question': '업무 질문', 'def.rule_question': '규칙 질문',
     'tool.Write': '파일 쓰기', 'tool.Read': '파일 읽기', 'tool.Edit': '파일 수정', 'tool.Glob': '파일 찾기', 'tool.Grep': '내용 검색', 'tool.PowerShell': '명령 실행', 'tool.Bash': '명령 실행', 'tool.ToolSearch': '도구 검색', 'tool.WebFetch': '웹 읽기', 'tool.WebSearch': '웹 검색', 'tool.Agent': '하위 에이전트',
     'tool.mcp__neo4j__read_neo4j_cypher': '지식 그래프 조회', 'tool.mcp__neo4j__write_neo4j_cypher': '지식 그래프 쓰기', 'tool.mcp__neo4j__get_neo4j_schema': '지식 그래프 구조 조회',
     'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
@@ -266,6 +268,7 @@ const UI = {
     'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
     'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
   who(id) { return this.performers[id] || id || '–'; },
+  roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
 
   dateTime(value) {
     const date = new Date(value);
@@ -420,7 +423,7 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
 /* A5 (U7 포털 셸): 수강생 동선 메뉴 이름 · 새 화면 아이콘 · 토스트 · 확인 대화상자 · 로딩/오류 블록.
    덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: docs/handoff/verification/2026-10-08/u7-shell.md */
 Object.assign(UI.terms, {
-  'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고',
+  'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구(MCP)', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
   'nav.whatif': '손익 · What-if', 'nav.kpi': 'KPI', 'nav.fabric': '데이터 연결',
   'nav.ask': '에이전트에게 질문',   // B5

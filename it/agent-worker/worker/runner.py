@@ -138,6 +138,10 @@ class Runner:
         # CLI starts — the portal showed the agent's *current* setting, which an edit after the run silently changes.
         # Every run's task_started row carries the list (empty = no skill); a run with skills also gets its own skills_provided row.
         provided = _provided_skills(ws, agent.skills, provider_id, activity_skills=caps.get("skills") or [])
+        skill_text = ''
+        if provider_id == 'codex':
+            from .skill_context import inline_skills
+            skill_text = inline_skills(ws, agent.skills, provided, provider_id)
         if provided or agent.missing_skills:
             self._event(row, job_id, "task_working", ui_events.skills_provided(provided, cli=provider_id, missing=agent.missing_skills).as_dict(),
                         crew_type="agent")
@@ -156,7 +160,8 @@ class Runner:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
             self._event(row, job_id, "task_working", {"type": "notice", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
-        extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"])))
+        extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
+                                                                      skills_inline=provider_id == 'codex'))
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools)
         if ctx.human_answer:
@@ -171,10 +176,14 @@ class Runner:
             text = prompt.build(row, extras, workdir=str(ws.path))
             resume_session = _session_of(row)
         extra_args = list(bridged.extra_args)
+        if provider_id == "claude-code":
+            extra_args += ["--append-system-prompt", prompt.LANGUAGE_RULE]
         if provider_id == "codex":
             # This is a business task, not a developer resuming the parent repo.
             # Codex skips inherited AGENTS files; supply only this run's contract.
             text = constitution + "\n\n## Ontology schema\n" + self.schema_prompt + "\n\n" + text
+            if skill_text:
+                text += '\n\n' + skill_text
             extra_args += ["-c", "model_reasoning_effort=" + json.dumps(config.get("reasoning_effort") or self.s.reasoning_effort)]
             if self.s.codex_model_provider_base_url:
                 # Codex 0.151 accepts only wire_api="responses"; SGLang serves /v1/responses (live check 2026-10-06, PONG).
@@ -190,7 +199,7 @@ class Runner:
             denied = run_disallowed_tools(gate.blocked_tools)
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
-        text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars)
+        text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"
         self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", provider_id)),
@@ -223,7 +232,10 @@ class Runner:
         while not result.contract_met and session_id and corrections < self.s.max_format_corrections:
             corrections += 1
             self._event(row, job_id, "task_working", {"type": "notice", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
-            request = replace(request, prompt=_deliver_prompt(prompt.format_correction(result.mismatch_reason, ctx.form_fields), ws, self.s.max_inline_prompt_chars),
+            correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
+            if skill_text:
+                correction += '\n\n' + skill_text
+            request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
                               resume_session=session_id)
             final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
                                                   skills=provided)
@@ -312,7 +324,9 @@ class Runner:
                         emit(note)
                 for ui in ui_events.translate(ev):
                     if ui.type == "tool_end":
-                        ui = self._keep_full_output(ui, ev, row, job_id)
+                        ui = self._keep_full_output(ui, ev, row, job_id,
+                            allowed_directory=payloads.result_directory(request.workdir, session_id, env)
+                            if crew.endswith(":claude-code") else None)
                     emit(ui)
                 if ev.kind is ExecEventKind.TOOL_START:
                     for ui in skill_reads.on_tool_start(ev):
@@ -336,11 +350,11 @@ class Runner:
             raise RunFailed(last_error)
         return (final_text or "".join(streamed)).strip(), session_id, pause_reason
 
-    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str) -> ui_events.UiEvent:
+    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str, *, allowed_directory: Path | None = None) -> ui_events.UiEvent:
         """A161-G2: a tool result the row cannot hold whole (the CLI moved it to a temp file, or the preview cut it) is stored once in
         event_payloads and the tool_end row gets `full_output` (ref · summary). A storage failure is said in the row, never fatal."""
         raw = ev.text or ev.tool_output
-        captured = payloads.capture(raw, preview_cut=ui_events.preview_cut(raw))
+        captured = payloads.capture(raw, preview_cut=ui_events.preview_cut(raw), allowed_directory=allowed_directory)
         if captured is None:
             return ui
         if captured.get("content") is None:
@@ -423,7 +437,8 @@ class Runner:
             self.repo.release_worker_claim(row['id'],row['consumer'])
             self._event(row,job_id,'task_cancelled',{'name':'실행 결과 폐기','goal':'작업 취소 또는 점유 변경 후 도착한 오류'},crew_type='agent')
             return
-        msg = f"{type(err).__name__}: {str(err)[:600]}"
+        from .diagnostics import excerpt
+        msg = excerpt(f"{type(err).__name__}: {err}")
         log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), msg)
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
                                   "event_type": "error", "data": {"name": "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
@@ -437,11 +452,13 @@ class Runner:
 PROMPT_FILE = "context/prompt.md"
 
 
-def _deliver_prompt(text: str, ws, max_inline: int) -> str:
-    """A077: the CLI receives the prompt as one argv element, and Windows CreateProcess refuses command lines over ~32 K
+def _deliver_prompt(text: str, ws, max_inline: int, *, provider_id: str = "claude-code") -> str:
+    """Codex receives the complete text through stdin at the process boundary.
+
+    A077: Claude receives the prompt as one argv element, and Windows CreateProcess refuses command lines over ~32 K
     characters (WinError 206, seen on a correction round that carried the previous 21 KB proposal). Long prompts are written
     into the run workspace and the argv prompt becomes a short pointer; short prompts stay inline so nothing else changes."""
-    if len(text) <= max_inline:
+    if provider_id == "codex" or len(text) <= max_inline:
         return text
     path = ws.path / PROMPT_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -463,7 +480,7 @@ def _provided_skills(ws, skills: list[dict], provider_id: str, *, activity_skill
         rel = f"{root}/{skill['skill_name']}/SKILL.md"
         source = "activity" if skill["skill_name"] in named else "agent"
         try:
-            text = (ws.path / rel).read_text(encoding="utf-8")
+            text = (ws.path / rel).read_bytes().decode("utf-8")
         except OSError as e:
             log.warning("skill %s was not written into the workspace (%s): %s", skill["skill_name"], rel, e)
             entry = ui_events.skill_entry(skill, text=skill_markdown(skill), path=rel, source=source)
@@ -496,7 +513,12 @@ def _exec_stream(provider, request, env, *, check_stop=None):
     # Pinned cliagents records process exit/stderr only in its thread-local
     # result slot; stream_exec itself emits a blank success on startup failure.
     # The controlled adapter reads it after exhaustion in its own pump thread.
-    yield from controlled_stream(stream_exec,provider,request,env,check_stop or (lambda:None),RunFailed)
+    stream = stream_exec
+    if getattr(provider, "id", None) == "codex":
+        from functools import partial
+        from .codex_provider import stream_with_prompt_stdin
+        stream = partial(stream_with_prompt_stdin, stream_exec)
+    yield from controlled_stream(stream,provider,request,env,check_stop or (lambda:None),RunFailed)
 
 
 def _asker_of(row: dict) -> str:

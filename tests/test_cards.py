@@ -56,6 +56,16 @@ def test_candidates_come_from_the_failure_mode_rule_and_cause_limited_skills_are
     assert all(o["selectedBy"][0]["rule"] == "rule:cand-cool" for o in r["options"])
 
 
+def test_evaluated_totals_include_every_published_component():
+    # F14's a_cards_before.json is a hand-authored UI fixture, not an engine
+    # result. Exercise real DMN/ranking output over penalties and exclusions.
+    for facts in ({}, {'fan100_hours': 30}, {'plc_mode': 'REMOTE_MANUAL'}, {'plc_state': 'TRIP'}):
+        result = run(facts, precedents=[{'skill': 'skill:fan', 'n': 2}, {'skill': 'skill:mix', 'n': 5}])
+        assert result['options']
+        for option in result['options']:
+            assert option['score'] == round(sum(option['scoreParts'].values()), 2)
+
+
 def test_forecast_and_warning_rank_the_cooler_card_first():
     r = run()
     assert r["recommended"] == "skill:mix" and r["options"][0]["id"] == "skill:mix"

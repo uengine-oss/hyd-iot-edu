@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -40,8 +41,19 @@ def oversized(text: Any) -> bool:
     return isinstance(text, str) and bool(TOO_LARGE.search(text))
 
 
-def saved_path(text: str) -> Path | None:
-    """The temp file the CLI named, only when it lies under a `tool-results` folder and is a regular file."""
+def result_directory(workdir: str, session_id: str, env: dict | None = None) -> Path | None:
+    """Claude's project/session store, derived from invocation context, never tool output."""
+    if not session_id or not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+        return None
+    config = Path((env or {}).get("CLAUDE_CONFIG_DIR") or os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude").resolve()
+    project = re.sub(r"[^A-Za-z0-9]", "-", str(Path(workdir).resolve()))
+    return config / "projects" / project / session_id / SAVED_DIR
+
+
+def saved_path(text: str, *, allowed_directory: Path | None = None) -> Path | None:
+    """Read only this invocation's exact session result directory; fail closed without context."""
+    if allowed_directory is None:
+        return None
     m = SAVED_TO.search(text or "")
     if not m:
         return None
@@ -50,7 +62,9 @@ def saved_path(text: str) -> Path | None:
         resolved = path.resolve()
     except OSError:
         return None
-    if SAVED_DIR not in resolved.parts[:-1] or not resolved.is_file():
+    # Compare against the declared directory, not its resolved symlink target.
+    # A junction/symlink below config must not turn session scope into home access.
+    if not resolved.is_relative_to(allowed_directory.absolute()) or not resolved.is_file():
         return None
     return resolved
 
@@ -110,11 +124,11 @@ def _shape(value: Any) -> str:
     return "JSON 값"
 
 
-def capture(output: Any, *, preview_cut: bool) -> dict | None:
+def capture(output: Any, *, preview_cut: bool, allowed_directory: Path | None = None) -> dict | None:
     """What should be kept whole for one tool result, or None when the row already holds all of it.
     Returns {content, source, meta, unread?} — `unread` (with no content) when the CLI's file could not be read."""
     if oversized(output):
-        path = saved_path(output)
+        path = saved_path(output, allowed_directory=allowed_directory)
         raw = read_saved(path) if path else None
         if raw is None:
             return {"content": None, "source": "cli_saved_file", "meta": {"cli_message": output[:500]},

@@ -39,7 +39,10 @@ vm.runInContext(fs.readFileSync(path.join(www, 'taskDetail.js'), 'utf8'), ctx, {
 (async () => {
   const out = {};
   const TD = ctx.hydTaskDetail;
+  const ui = vm.runInContext('UI', ctx);
+  const defaultPerformers = { ...ui.performers };
   for (const sc of fx.scenarios) {
+    ui.performers = { ...defaultPerformers, ...Object.fromEntries((sc.people || []).map(p => [p.id, p.username])) };
     ctx.__http = sc.http || {};
     ctx.hydInstances = { I: { view: sc.view, mode: sc.mode || { mode: 'instance', time_scale: 20 } } };
     Object.assign(TD.T, { wid: null, act: null, item: null, error: null, rendered: null, dec: null, decId: null, decErr: null, inc: null, incId: null, incErr: null, incAt: 0, incLoading: false, last: {}, pending: null });

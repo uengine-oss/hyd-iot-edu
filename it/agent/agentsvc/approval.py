@@ -130,7 +130,8 @@ def assess(kg, tsdb, decision, option_id, role):
         reasons.append('적용 가능한 규칙의 필수 사실을 확인할 수 없습니다')
     if current:
         reasons.extend(guardrail.check_cards({'options':[current],'recommended':option_id}))
-        reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext')))
+        if forecasting.requires_plant_consent(old.get('actions')) or forecasting.requires_plant_consent(current.get('actions')):
+            reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext')))
         # The chosen action, work content and consent context must remain what the
         # human saw. Continuous sensor changes matter through reevaluated rules.
         for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence'):

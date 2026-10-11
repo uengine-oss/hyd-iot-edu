@@ -45,6 +45,15 @@
     }
     return out;
   }
+  function businessContext(o, d) {
+    if (o.kind === 'control' || forecastDecides(o, d.options)) return '';
+    const values = { ...(d.facts || {}), ...(o.facts || {}) }, W = window.hydWords;
+    const purchase = (o.actions || []).some(a => a.code === 'PO_CREATE');
+    const maintenance = (o.actions || []).some(a => a.code === 'WO_CREATE');
+    const keys = purchase ? ['part_no', 'need_qty', 'po_amount', 'lead_slack_days'] : maintenance ? ['hours_since_pm', 'pm_interval_h', 'pm_due_in_h', 'spare_available'] : [];
+    const rows = keys.filter(k => values[k] != null).map(k => `<div><dt>${e(W.fieldName(k))}</dt><dd>${e(W.value(k, values[k]))}</dd></div>`).join('');
+    return rows ? `<section class="ap-business" aria-label="${purchase ? '구매 요청' : '정비 요청'}"><b>${purchase ? '구매 요청' : '정비 요청'}</b><dl class="meta-list">${rows}</dl></section>` : '';
+  }
 
   // 짧은 이유(최대 4줄): 머리말 값(예측 또는 이 안의 업무 값) · 좋아지는 지표 · 나빠지는 지표 · 같은 선택 선례 · 주의(감점 · 경고)
   // d: 같은 판단({options, facts}). opt.head=false 면 머리말 값을 빼고(처리 기록처럼 머리말을 따로 그린 곳)
@@ -118,6 +127,7 @@
       <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : 'AI 에이전트 추천'}</span>${changed ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
+      ${businessContext(cur, d)}
       ${rs.length ? `<ul class="ap-reasons">${rs.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
       ${actions.length ? `<p class="ap-do"><span class="ap-label">승인하면 시스템이</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
       ${evidence(cur)}

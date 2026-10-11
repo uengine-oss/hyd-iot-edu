@@ -35,12 +35,13 @@ class Context:
     sources: list[dict] = field(default_factory=list)
     definition: dict | None = None     # proc_def.definition — the designer's agentConfig/skills per activity live here
     profile: dict | None = None        # U2: the agent this item is assigned to (users row) — its settings: agents_store.agent_settings
+    form_contract: str | None = None
 
     @property
     def extras(self) -> dict[str, Any]:
         return {"id": self.row.get("id"), "proc_inst_id": self.row.get("root_proc_inst_id") or self.row.get("proc_inst_id"),
                 "activity_name": self.row.get("activity_name"), "agents": self.agents, "users": self.users, "tenant_mcp": bridge.without_secrets(self.tenant_mcp),
-                "form_fields": self.form_fields, "form_html": self.form_html, "form_id": self.form_id,
+                "form_fields": self.form_fields, "form_html": self.form_html, "form_id": self.form_id, "form_contract": self.form_contract,
                 "notify_user_emails": self.notify_user_emails, "summarized_feedback": self.feedback, "sources": self.sources,
                 "process_scope": process_scope(self.row)}
 
@@ -86,7 +87,7 @@ def prepare(repo, row: dict, tenant_id: str) -> Context:
     return Context(row=row, form_id=form_id or "freeform", form_fields=fields, form_html=(form or {}).get("html"), agents=agents, users=users,
                    tenant_mcp=tenant_mcp, notify_user_emails=",".join(u.get("email") for u in users if u.get("email")),
                    feedback=str(feedback.get("text") or "") if feedback else "", human_answer=str(feedback.get("human_answer") or "") if feedback else "",
-                   sources=[], definition=definition, profile=agent_profile(agents))
+                   sources=[], definition=definition, profile=agent_profile(agents), form_contract=(form or {}).get('contract'))
 
 
 def with_secrets(repo, tenant_id: str, tenant_mcp: dict | None) -> dict | None:

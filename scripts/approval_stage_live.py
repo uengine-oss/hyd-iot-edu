@@ -109,8 +109,10 @@ def wait_approval(pid: str) -> dict:
         if agent.get("status") == "DONE" and approve.get("status") == "IN_PROGRESS":
             log(f"승인 대기 — 에이전트 {time.time() - t0:.0f}초")
             return view
-        if agent.get("status") == "PENDING" or view["instance"]["status"] != "RUNNING":
-            print(f"미완: 에이전트 task 가 {agent.get('status')} 로 멈췄습니다\n{agent.get('log')}", file=sys.stderr)
+        if (agent.get("status") in {"PENDING", "CANCELLED"}
+                or agent.get("draft_status") in {"FAILED", "CANCELLED"}
+                or view["instance"]["status"] != "RUNNING"):
+            print(f"미완: 에이전트 task 가 {agent.get('status')} / {agent.get('draft_status')} 로 멈췄습니다\n{agent.get('log')}", file=sys.stderr)
             raise SystemExit(2)
         time.sleep(POLL_S)
     print(f"미완: {AGENT_WAIT_S}초 안에 승인 task 가 열리지 않았습니다(워커가 도는지 확인)", file=sys.stderr)

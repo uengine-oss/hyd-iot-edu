@@ -36,7 +36,8 @@ const RELATION_KO = {
 };
 const ent = { graph: null, graphAsset: null, sel: null, hidden: new Set(), focus: null, search: '', patterns: null, result: null,
   decisions: [], decSel: null, decDetail: null, entState: null, tx: [], roles: null, busy: false,
-  form: { by: '홍길동', role: null, reason: '', option: null }, lastDetailSig: null, decShown: 20 };
+  form: { by: '홍길동', role: null, reason: '', option: null }, lastDetailSig: null, decShown: 20,
+  definitionNames: {}, definitionNamesError: '' };
 
 /* ------------------------------------------------ tab hooks */
 const _selectTab = selectTab;
@@ -93,6 +94,20 @@ async function loadGraph(force) {
     $('#ontoMap').innerHTML = `<div role="alert" title="${esc(e.message)}">${UI.empty(UI.t('onto.loadFail'), UI.t('onto.loadFailSub'))}</div>`;
     return;
   }
+  // Relational definitions own user-created flow names; a graph id is not a display name.
+  try {
+    const defs = requireList(await getJ(API.process + '/api/process/definitions'), '흐름 이름 목록');
+    if (current() !== asset) return;
+    const names = {};
+    defs.filter(d => d.name && d.name !== d.id).forEach(d => {
+      names[d.id + '@' + d.version] = d.name;
+      if (!names[d.id] || d.deployed) names[d.id] = d.name;
+    });
+    ent.definitionNames = names; ent.definitionNamesError = '';
+  } catch (e) {
+    if (current() !== asset) return;
+    ent.definitionNames = {}; ent.definitionNamesError = '흐름 이름 조회 실패: ' + e.message;
+  }
   const pats = await loadPatterns();
   const sel = $('#ontoFocus');
   if (sel.options.length <= 1) pats.forEach(p => sel.append(new Option(p.name, p.id)));
@@ -103,7 +118,20 @@ function groupOf(label) {
   return i >= 0 ? i : ONTO_GROUPS.findIndex(g => g.other);
 }
 // A141: the graph API fills `name` with the id when a node has no name (Rule nodes) — then the names.json dictionary (annotation) applies
-const nodeName = n => String(n.name && n.name !== n.id ? n.name : UI.name(n.id));
+const nodeName = n => {
+  if (n.name && n.name !== n.id) return String(n.name);
+  if (n.props?.annotation || n.props?.title) return String(n.props.annotation || n.props.title);
+  const id = n.props?.definition_id || n.id;
+  if (n.label === 'Process' || n.label === 'ProcessVersion') {
+    const registered = ent.definitionNames[id + '@' + n.props?.version] || ent.definitionNames[id];
+    if (registered) return String(registered);
+    if (UI.terms['def.' + id]) return UI.terms['def.' + id];
+    const known = UI.name(n.id);
+    if (known !== n.id) return String(known);
+    return ent.definitionNamesError ? '흐름 이름 확인 불가' : '이름 미등록 흐름';
+  }
+  return String(UI.name(n.id));
+};
 function focusSet() {
   // the path the agent walks for one anomaly pattern: pattern → symptoms → failure modes → causes · evidence → skills
   // → steps · manual · atomic actions · approver, the rules that select / limit each skill, its first KPI effects and forecasts
@@ -207,7 +235,8 @@ function drawGraph() {
   const matches = [...box.querySelectorAll('.o-node.match')];
   const fmtN = n => Number(n).toLocaleString('ko-KR');
   $('#ontoStats').textContent = UI.t('onto.stats', { n: fmtN(g.nodes.length), e: fmtN(g.edges.length), s: counts.Skill || 0, r: counts.Rule || 0, k: counts.Measure || 0 })
-    + (focus ? ' · ' + UI.t('onto.path', { n: focus.size }) : '') + (q ? ' · ' + UI.t('onto.found', { n: matches.length }) : '') + (box.scrollWidth > box.clientWidth ? ' · ' + UI.t('onto.scroll') : '');
+    + (focus ? ' · ' + UI.t('onto.path', { n: focus.size }) : '') + (q ? ' · ' + UI.t('onto.found', { n: matches.length }) : '') + (box.scrollWidth > box.clientWidth ? ' · ' + UI.t('onto.scroll') : '')
+    + (ent.definitionNamesError ? ' · ' + ent.definitionNamesError : '');
   if (q && matches.length) { const r = matches[0].getBBox(); box.scrollLeft = Math.max(0, r.x - 20); box.scrollTop = Math.max(0, r.y - 60); }
   renderNodePanel();
 }
@@ -220,6 +249,7 @@ function renderNodePanel() {
   const nm = id => nodeName(g.nodes.find(y => y.id === id) || { id });
   const rel = (list, dir) => list.map(e => { const other = dir === 'out' ? e.to : e.from; return `<li><span>${dir === 'out' ? '→' : '←'} ${esc(RELATION_KO[e.type] || e.type)}</span> <a href="#" data-go="${esc(other)}">${esc(nm(other))}</a></li>`; }).join('');
   box.innerHTML = `<div class="col"><div class="o-kind">${esc(LABEL_KO[n.label] || n.label)}</div><h3>${esc(nodeName(n))}</h3>` +
+    (['Process', 'ProcessVersion'].includes(n.label) ? UI.metaFold([['흐름 식별자', esc(n.id)]]) : '') +
     (props.length ? '<table class="kvt">' + props.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</td></tr>`).join('') + '</table>' : '') + '</div><div class="col">' +
     (outE.length ? `<h4>${esc(UI.t('onto.out'))} ${outE.length}</h4><ul class="rels">${rel(outE, 'out')}</ul>` : '') + (inE.length ? `<h4>${esc(UI.t('onto.in'))} ${inE.length}</h4><ul class="rels">${rel(inE, 'in')}</ul>` : '') + '</div>';
   box.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); ent.sel = a.dataset.go; drawGraph(); renderNodePanel(); const node = [...$('#ontoMap').querySelectorAll('.o-node')].find(n => n.dataset.id === ent.sel); if (node) { const r = node.getBBox(); $('#ontoMap').scrollTo({ left: Math.max(0, r.x - 20), top: Math.max(0, r.y - 60) }); } }));

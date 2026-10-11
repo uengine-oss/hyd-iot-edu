@@ -46,11 +46,22 @@
   }
   const trialOn = st => Object.keys(st.applied || {}).length > 0;
 
+  // 표시 문구만 바꾼다. 원천 식·열과 API 값은 계산 근거에 그대로 보존한다.
+  const businessNames = {
+    'production_orders.hour_value': '계획 시간당 생산 가치', 'production_orders.rate_per_h': '계획 생산 속도',
+    'ent.fg_inventory': '완제품 재고', 'fg_inventory': '완제품 재고', 'production_orders': '생산 오더',
+    'sales_contracts': '판매 계약', 'penalty_per_h': '시간당 지체상금 단가', 'due_at': '납기',
+    'shipments': '대체 출하 기록', 'quality_profiles': '품질 위험 기준', 'lot_dispositions': '로트 처분 기록',
+    'LoadSP': '부하 지령', 'TS1': '유온', 'EPS1': '주 모터 전력', 'tag_1m': '센서 1분 집계',
+  };
+  const reasonText = value => String(value || '').replace(/production_orders\.(?:hour_value|rate_per_h)|ent\.fg_inventory|\b(?:fg_inventory|production_orders|sales_contracts|penalty_per_h|due_at|shipments|quality_profiles|lot_dispositions|LoadSP|TS1|EPS1|tag_1m)\b/g, key => businessNames[key]);
+  const unitText = unit => unit === 'ea' ? '개' : unit || '';
+
   /* ---------------- 지표 카드 ---------------- */
   function valueLine(m) {
-    const unit = escH(m.displayUnit || m.unit || '');
+    const unit = escH(unitText(m.displayUnit || m.unit));
     if (m.value == null) return `<span class="kv"><b>–</b></span>`;
-    const target = m.target == null ? '' : `<span class="kv"><small>목표</small>${num(m.target)} ${escH(m.unit || '')}</span>`;
+    const target = m.target == null ? '' : `<span class="kv"><small>목표</small>${num(m.target)} ${escH(unitText(m.unit))}</span>`;
     return `<span class="kv"><b>${num(m.value)}</b><small>${unit}</small></span>${target}`;
   }
   function rateBar(m) {
@@ -81,9 +92,9 @@
   function card(m) {
     const [roleLabel, roleTone] = ROLE[m.kpiRole] || ['역할 없음', 'neutral'];
     const status = chip(STATUS[m.status] || m.status, TONE[m.status]);
-    const reason = m.reason ? `<p class="card-sub kpi-reason">${escH(m.reason)}</p>` : '';
+    const reason = m.reason ? `<p class="card-sub kpi-reason">${escH(reasonText(m.reason))}</p>` : '';
     const o = m.original;          // B5: 시험 목표가 걸린 지표 — 원래 목표 · 원래 판정을 옆에
-    const trial = o ? `<p class="card-sub">${chip('시험 목표', 'warning')} 원래 목표 ${o.target == null ? '없음' : num(o.target) + ' ' + escH(m.unit || '')} · 원래 판정 ${escH(STATUS[o.status] || o.status)}${o.rate == null ? '' : ` (달성률 ${num(o.rate)} %)`}</p>` : '';
+    const trial = o ? `<p class="card-sub">${chip('시험 목표', 'warning')} 원래 목표 ${o.target == null ? '없음' : num(o.target) + ' ' + escH(unitText(m.unit))} · 원래 판정 ${escH(STATUS[o.status] || o.status)}${o.rate == null ? '' : ` (달성률 ${num(o.rate)} %)`}</p>` : '';
     const action = m.status === 'missed' ? `<button type="button" class="btn small primary" data-kpi-trace="${escH(m.id)}">원인 찾기</button>` : '';
     const body = (m.status === 'unavailable' ? '' : fold('계산 근거', basis(m)));
     const html = `<section class="card kpi-card${m.status === 'missed' ? ' kpi-missed' : ''}" data-kpi="${escH(m.id)}">
@@ -101,8 +112,8 @@
     if (t.loading) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="card-sub">영향 경로와 같은 기간 처리 기록을 맞춰 보는 중…</p></section>`;
     if (t.error) return `<section class="card kpi-trace" id="kpiTrace">${head}<p class="card-sub kpi-reason">역추적 실패: ${escH(t.error)}</p></section>`;
     const d = t.data, m = d.measure;
-    const summary = `<p class="kv-line">실적 <b>${num(m.value)} ${escH(m.displayUnit || m.unit || '')}</b> · 목표 ${num(m.target)} ${escH(m.unit || '')} · ${escH(d.window.label)} · 처리 건 ${num(d.instancesRead)}건 중 관련 ${num(d.instanceTotal)}건</p>`;
-    const assets = d.assets.length ? `<ol class="stack-list kpi-list">${d.assets.map(a => `<li><b>${escH(a.asset)}</b> ${a.value == null ? '' : num(a.value) + ' ' + escH(m.unit || '')} ${a.met === false ? chip('미달', 'danger') : a.met === true ? chip('달성', 'success') : ''}
+    const summary = `<p class="kv-line">실적 <b>${num(m.value)} ${escH(unitText(m.displayUnit || m.unit))}</b> · 목표 ${num(m.target)} ${escH(unitText(m.unit))} · ${escH(d.window.label)} · 처리 건 ${num(d.instancesRead)}건 중 관련 ${num(d.instanceTotal)}건</p>`;
+    const assets = d.assets.length ? `<ol class="stack-list kpi-list">${d.assets.map(a => `<li><b>${escH(a.asset)}</b> ${a.value == null ? '' : num(a.value) + ' ' + escH(unitText(m.unit))} ${a.met === false ? chip('미달', 'danger') : a.met === true ? chip('달성', 'success') : ''}
         <span class="kv-line">관련 처리 건 ${a.instances}건${a.events.length ? ' · ' + a.events.map(escH).join(' · ') : ''}</span></li>`).join('')}</ol>` : empty('설비별 값이 없습니다');
     const insts = d.instances.length ? `<ol class="stack-list kpi-list">${d.instances.map(i => `<li>
         <div class="row-wrap"><b>${escH(i.asset || '설비 미상')}</b><span>${escH(i.patternName || (String(i.pattern || '').endsWith('_TRIP') ? '보호 정지 경보' : '이상 경보'))}</span>
@@ -131,7 +142,7 @@
         ${changed.length ? `<ul class="kpi-why">${changed.map(c => `<li><b>${escH(c.name)}</b> 실적 ${num(c.value)} ${escH(c.unit || '')} — 목표 ${c.before.target == null ? '없음' : num(c.before.target)} → <b>${num(c.after.target)}</b> · ${escH(STATUS[c.before.status] || c.before.status)} → <b>${escH(STATUS[c.after.status] || c.after.status)}</b></li>`).join('')}</ul>`
           : '<p class="kv-line" style="margin:0">판정이 바뀐 지표가 없습니다 (실적이 없거나 계산 불가인 지표는 목표를 바꿔도 그대로입니다).</p>'}
         <div class="form-actions"><button type="button" class="btn small" data-kpi-trial-reset>원래대로</button></div></div>` : '';
-    const rows = all.map(m => `<tr><td>${escH(m.name)}</td><td>${(m.original ? m.original.target : m.target) == null ? '–' : num(m.original ? m.original.target : m.target) + ' ' + escH(m.unit || '')}</td>
+    const rows = all.map(m => `<tr><td>${escH(m.name)}</td><td>${(m.original ? m.original.target : m.target) == null ? '–' : num(m.original ? m.original.target : m.target) + ' ' + escH(unitText(m.unit))}</td>
       <td><input type="number" step="any" data-kpi-target="${escH(m.id)}" value="${st.targets[m.id] ?? ''}" placeholder="그대로" aria-label="${escH(m.name)} 시험 목표" style="width:8em"></td>
       <td>${escH(STATUS[m.status] || m.status)}</td></tr>`).join('');
     const form = `<p class="field-hint">비운 칸은 지식 그래프의 목표 그대로입니다. 시험 판정은 이 화면 계산에만 쓰고 원본 목표는 바꾸지 않습니다.</p>
@@ -162,7 +173,7 @@
       const defs = `<table class="compact-table"><thead><tr><th>지표</th><th>목표</th><th>원천 (표 · 열)</th><th>식 또는 계산 불가 사유</th></tr></thead><tbody>${all.map(m => {
         const df = m.definition || {};
         const src = (df.sources || []).map(x => `${escH(x.system)} <code>${escH(x.table)}</code> ${escH(x.columns)}`).join('<br>') || '–';
-        return `<tr><td>${escH(m.name)}</td><td>${m.target == null ? '–' : num(m.target) + ' ' + escH(m.unit || '')}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가 — ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
+        return `<tr><td>${escH(m.name)}</td><td>${m.target == null ? '–' : num(m.target) + ' ' + escH(unitText(m.unit))}</td><td>${src}</td><td>${df.kind === 'unavailable' ? '계산 불가 — ' + escH(df.reason) : escH(df.formula)}</td></tr>`;
       }).join('')}</tbody></table>`;
       body = stats + win + trialPanel(st, all, d) + tracePanel(st) + persp + `<h2 class="sec">계산 정의</h2>` + fold(`지표별 계산 정의 표 (${all.length}개)`, defs);
     }

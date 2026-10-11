@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
-from . import engine, instance_mode
+from . import engine, instance_mode, work_rules
 from .agent_authoring import origin_of
 from .agents_store import activity_capabilities, agent_settings, csv_list, role_text, skill_title
 
@@ -68,6 +68,8 @@ def _card(user: dict, attached: list[str], steps: list[dict]) -> dict:
             "origin": origin_of(user), "editable": origin_of(user) == "user",
             "role": role_text(user.get("role")), "goal": user.get("goal") or "", "model": user.get("model") or None,
             "tools": csv_list(user.get("tools")), "skills": attached,
+            "work_rules": user.get("work_rules") or None,
+            "work_rules_detail": work_rules.rule_card(user.get("work_rules")),
             "steps": [{k: s[k] for k in ("definition_id", "definition_name", "version", "activity_id", "name", "agent", "assigned")} for s in mine]}
 
 

@@ -20,6 +20,11 @@ REVIEW_POLICY = {'version': 'simulator-consent-v2',
                  'max_review_age_sim_s': 1800}
 
 
+def requires_plant_consent(actions):
+    """Business requests do not authorize immediate plant changes (forecast.predict contract)."""
+    return any(a.get('kind') == 'command' for a in actions or [])
+
+
 def stack_time_scale():
     """Simulated seconds per wall-clock second: the process service publishes the stack's TIME_SCALE; env, then 1."""
     try:

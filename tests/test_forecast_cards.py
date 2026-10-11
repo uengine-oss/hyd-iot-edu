@@ -148,3 +148,28 @@ def test_runtime_decide_saves_dynamic_context_and_keeps_what_if_read_only(monkey
     assert sent[0]['id']==record['id'] and record['id'].startswith('DEC-') and trial['id'].startswith('EVAL-')
     with pytest.raises(ValueError,match='id 종류'):
         decide.DecisionRegistry().new_id('DECISION')
+
+
+@pytest.mark.parametrize('failure', ['guardrail', 'no-candidates', 'submit-failed'])
+def test_unsubmitted_attempts_keep_evaluation_identity(monkeypatch, failure):
+    graph = kg()
+    graph.dmn=lambda:DMN; graph.inputs=lambda:[]; graph.skills=lambda ids:list(skills().values())
+    graph.tradeoffs=lambda ids:TRADE; graph.precedents=lambda fm:[]; graph.suppliers=lambda:{}; graph.roles=lambda:[]
+    monkeypatch.setattr(decide, 'gather_facts', lambda *args,**kw:(dict(BASE), []))
+    monkeypatch.setattr(decide, '_get_json', lambda url:snapshot(thermal.UnitState(cooler_health=.43)))
+    sent=[]
+    def submit(value):
+        sent.append(value)
+        raise ConnectionError('submission unavailable')
+    monkeypatch.setattr(decide, 'submit', submit)
+    if failure == 'guardrail':
+        monkeypatch.setattr(decide.guardrail, 'check_cards', lambda result:['missing evidence'])
+    elif failure == 'no-candidates':
+        graph.skills=lambda ids:[]
+    registry=decide.DecisionRegistry()
+    record=decide.decide(graph,registry,None,'TEST-ASSET','COOLER_DEGRADATION',
+                         {'id':'cause:fouling','failureModeId':'fm:cool'},do_submit=True)
+    assert record['status'] == {'guardrail':'REJECTED_BY_GUARDRAIL','no-candidates':'NO_FEASIBLE_OPTION','submit-failed':'FAILED'}[failure]
+    assert record['id'].startswith('EVAL-') and registry.get(record['id']) is record
+    assert len(registry.all()) == 1 and all(r['id'].startswith('EVAL-') for r in registry.all())
+    assert len(sent) == (1 if failure == 'submit-failed' else 0)

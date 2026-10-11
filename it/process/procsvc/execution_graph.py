@@ -54,9 +54,39 @@ WITH f
 
 DELETE_INSTANCE_Q = FENCE_Q + '''
 OPTIONAL MATCH (pi:ProcessInstance {id:$id})
+OPTIONAL MATCH (pi)-[:USES_VERSION]->(pv:ProcessVersion {tenant_id:$tenant})
 OPTIONAL MATCH (w:WorkItem)-[:IN_INSTANCE]->(pi)
 DETACH DELETE w,pi
+WITH DISTINCT pv
+CALL (pv) {
+  WITH pv WHERE $delete_definition AND pv IS NOT NULL
+    AND NOT EXISTS { MATCH (:ProcessInstance)-[:USES_VERSION]->(pv) }
+  OPTIONAL MATCH (pv)-[:HAS_NODE]->(n:FlowNode)
+  DETACH DELETE n,pv
+  RETURN count(*) AS removed_definitions
+}
 RETURN $id AS projection_key,$revision AS projection_revision,$payload_hash AS projection_hash
+'''
+
+# The graph itself retains orphan candidates across outages; source definitions
+# are checked again before every deletion. Only version-scoped execution nodes
+# belong here, never semantic Process/HAS_NODE definitions.
+ORPHAN_VERSIONS_Q = '''
+MATCH (pv:ProcessVersion {tenant_id:$tenant})
+WHERE NOT pv.id IN $registered_versions
+OPTIONAL MATCH (pi:ProcessInstance)-[:USES_VERSION]->(pv)
+RETURN pv.id AS id,pv.definition_id AS definition_id,pv.version AS version,
+       collect(pi.id) AS instances
+ORDER BY id LIMIT $limit
+'''
+
+DELETE_ORPHAN_VERSION_Q = '''
+MATCH (pv:ProcessVersion {id:$id,tenant_id:$tenant})
+WHERE NOT EXISTS { MATCH (:ProcessInstance)-[:USES_VERSION]->(pv) }
+OPTIONAL MATCH (pv)-[:HAS_NODE]->(n:FlowNode)
+WHERE n.tenant_id=$tenant AND n.definition_id=$definition_id AND n.version=$version
+DETACH DELETE n,pv
+RETURN count(*) AS removed
 '''
 
 INSTANCE_Q = FENCE_Q + '''

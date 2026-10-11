@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 import json
-import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,9 +75,16 @@ def validate_answer(output) -> None:
     for i, item in enumerate(ev, 1):
         if not isinstance(item, dict):
             raise ValueError(f'evidence {i}번 항목은 {{"tool", "query", "result"}} 객체여야 합니다')
-        for key in ('tool', 'query'):
-            if not isinstance(item.get(key), str) or not item[key].strip():
-                raise ValueError(f'evidence {i}번 항목의 {key}가 비어 있습니다 (실행한 도구 이름과 질의 그대로)')
+        if not isinstance(item.get('tool'), str) or not item['tool'].strip():
+            raise ValueError(f'evidence {i}번 항목의 tool이 비어 있습니다 (서버를 포함한 실제 도구 이름)')
+        query = item.get('query')
+        if not (isinstance(query, str) and query.strip()) and not isinstance(query, dict):
+            raise ValueError(f'evidence {i}번 항목의 query는 실제 질의 문자열 또는 실행한 인자 JSON 객체여야 합니다 (인자 없는 호출은 {{}})')
+        if isinstance(query, dict):
+            try:
+                json.dumps(query, sort_keys=True, allow_nan=False)
+            except (TypeError, ValueError) as error:
+                raise ValueError(f'evidence {i}번 항목의 query는 유효한 JSON 객체여야 합니다') from error
 
 
 def validate_result(form, inst, output) -> None:
@@ -224,27 +230,48 @@ def tool_calls(events) -> list[dict]:
 
 
 def _norm(text) -> str:
-    return re.sub(r'\s+', ' ', str(text or '')).strip().rstrip(';').strip().lower()
+    # Compare the entire query. Do not fold quoted values/identifiers or accept
+    # substrings (a different WHERE clause must never become verified evidence).
+    return str(text or '').strip().rstrip(';').strip()
 
 
-def _strings(value):
+def _queries(value):
+    """Legacy query-text contracts; generic argument objects use exact matching."""
     if isinstance(value, str):
         yield value
     elif isinstance(value, dict):
-        for v in value.values():
-            yield from _strings(v)
-    elif isinstance(value, list):
-        for v in value:
-            yield from _strings(v)
+        for key in ('sql', 'query', 'cypher', 'promql'):
+            if isinstance(value.get(key), str):
+                yield value[key]
 
 
-def _matches(query, call) -> bool:
-    q = _norm(query)
-    if len(q) < 4:
+def _matches(item, call) -> bool:
+    def advertised(name):
+        # Codex exposes a hyphenated MCP server with underscores in its
+        # function namespace. Preserve the complete server and tool identity;
+        # verdict rejects collisions instead of guessing between real servers.
+        server, sep, tool = short_tool(str(name or '').strip()).partition('/')
+        return (server.replace('-', '_'), tool) if sep else None
+    claimed = advertised(item.get('tool'))
+    if claimed is None or claimed != advertised(call.get('tool')):
         return False
-    for s in _strings(call.get('input')):
+    query = item.get('query')
+    if isinstance(query, dict):
+        actual = call.get('input')
+        if not isinstance(actual, dict):
+            return False
+        try:
+            # JSON equality keeps bool distinct from number and checks every
+            # argument recursively, including empty objects and list ordering.
+            return json.dumps(query, sort_keys=True, allow_nan=False) == json.dumps(actual, sort_keys=True, allow_nan=False)
+        except (TypeError, ValueError):
+            return False
+    q = _norm(query)
+    if not isinstance(query, str) or not q:
+        return False
+    for s in _queries(call.get('input')):
         n = _norm(s)
-        if n and (n == q or (len(n) >= 12 and (q in n or n in q))):
+        if n and n == q:
             return True
     return False
 
@@ -262,7 +289,11 @@ def verdict(output, calls) -> dict:
                 'reason': '에이전트가 답을 냈지만 이 질문을 처리하며 성공한 도구 조회가 하나도 없습니다 — 근거 없는 답이라 답으로 보이지 않습니다'}
     evidence = []
     for item in output.get('evidence') or []:
-        hit = next((c for c in data_ok if _matches(item.get('query'), c)), None)
+        matches = [c for c in data_ok if _matches(item, c)]
+        # Repeated calls to one real tool are valid; distinct servers collapsing
+        # to the same advertised name with identical arguments are ambiguous.
+        identities = {c['tool'] for c in matches}
+        hit = matches[0] if len(identities) == 1 else None
         evidence.append({'tool': item.get('tool'), 'query': item.get('query'), 'result': item.get('result'),
                          'verified': hit is not None, 'call': hit and hit['id']})
     if not any(e['verified'] for e in evidence):

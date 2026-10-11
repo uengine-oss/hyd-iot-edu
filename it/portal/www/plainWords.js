@@ -51,7 +51,18 @@
     changeover_h: ['전환 시간', 'h'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', 'h'], penalty_per_h: ['지연 보상', '만원/h'], failure_cost: ['고장 비용', '만원'],
     claim_cost: ['클레임 비용', '만원'], customer_tier: ['고객 등급', ''], order_id: ['생산 주문', ''], sales_order: ['판매 계약', ''],
   };
-  W.fieldName = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[0] : (UI.terms['var.' + k] || k.replace(/_/g, ' ')); };
+  W.fieldName = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return W.caseFields?.[k] || (f ? f[0] : (UI.terms['var.' + k] || k.replace(/_/g, ' '))); };
+  W.setpointsText = data => {
+    const s = data?.setpoints;
+    if (!s) return '';
+    return [['FanSpeedSP', '팬 지령'], ['LoadSP', '부하 지령']].map(([k, label]) =>
+      s.before?.[k] != null && s.after?.[k] != null ? `${label} ${s.before[k]} % → ${s.after[k]} %` : '').filter(Boolean).join(' · ');
+  };
+  W.effectText = (job, d) => {
+    if (!['EFFECT_COMPENSATION', 'EFFECT_REVIEW'].includes(job)) return '';
+    const results = (d.results || []).map(r => `${r.ok ? '되돌림 완료' : '되돌림 실패'}${r.error ? ': ' + r.error : ''}`).join(' · ');
+    return `${W.who(d.by)}${d.role ? ' · ' + W.who(d.role) : ''} · 사유: ${d.reason || '기록 없음'}${results ? ' · ' + results : ''}${job === 'EFFECT_REVIEW' ? ' · 되돌릴 수 없는 기존 조치의 영향을 확인했습니다. 조치를 되돌린 것은 아닙니다.' : ''}`;
+  };
   W.unit = key => { const k = String(key || ''); const f = F[k] || F[k.toLowerCase()]; return f ? f[1] : ''; };
   W.known = key => !!(F[key] || F[String(key || '').toLowerCase()]);
   const STATES = { REMOTE_AUTO: '원격 자동', REMOTE_MANUAL: '원격 수동', LOCAL: '현장 제어', RUN: '운전 중', STOP: '정지', TRIP: '보호 정지', PASS: '통과', DONE: '완료' };

@@ -110,10 +110,12 @@ def test_bridge_writes_stdio_and_http_servers_from_tenant_mcp(tmp_path):
     cfg = json.loads((tmp_path / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]
     assert cfg["neo4j"] == {"command": "uvx", "args": ["mcp-neo4j-cypher@0.4.1", "--transport", "stdio"], "env": {"NEO4J_URI": "bolt://neo4j:7687"}}
     assert cfg["enterprise"] == {"type": "http", "url": "http://enterprise-mcp:8199/mcp"} and sorted(res.servers) == ["enterprise", "hyd-dmn", "neo4j"]
-    assert res.env == {}                                                     # subscription login: config dir is not relocated
+    assert res.env == {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}                # keep subscription login, omit personal remote tools
+    assert res.extra_args == ["--mcp-config", str(tmp_path / ".mcp.json"), "--strict-mcp-config"]
     isolated = bridge.install(tmp_path, TENANT_MCP, provider_id="claude-code", isolate_config_dir=True)
     assert isolated.env["CLAUDE_CONFIG_DIR"].endswith("claude-code") and Path(isolated.env["CLAUDE_CONFIG_DIR"]).is_dir()
-    assert sorted(bridge.install(tmp_path, None).servers) == ["enterprise", "hyd-dmn", "neo4j"]   # idempotent merge keeps earlier entries
+    assert bridge.install(tmp_path, None).servers == []                       # no selection must revoke earlier run capabilities
+    assert json.loads((tmp_path / ".mcp.json").read_text(encoding="utf-8")) == {"mcpServers": {}}
 
 
 def test_codex_bridge_native_transports_and_provider_specific_arguments(tmp_path):
@@ -199,7 +201,9 @@ def test_runner_claims_runs_traces_and_submits_through_the_worker_rpcs(tmp_path)
     assert [e["event_type"] for e in repo.list_events(todo_id=row["id"])] == ["task_started", "task_working", "tool_usage_started", "tool_usage_finished", "task_completed"]
     assert repo.list_events(todo_id=row["id"])[0]["crew_type"] == "result" and repo.list_events(todo_id=row["id"])[0]["data"]["goal"] == "원인 진단"
     request, env = reqs[0]
-    assert request.permission is Permission.WORKSPACE_WRITE and request.resume_session is None and "--allowedTools" in request.extra_args and env is None
+    assert request.permission is Permission.WORKSPACE_WRITE and request.resume_session is None and "--allowedTools" in request.extra_args
+    assert env == {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
+    assert request.extra_args[request.extra_args.index("--append-system-prompt") + 1] == prompt.LANGUAGE_RULE
     assert "## 결과 제출 형식" in request.prompt and "`cause`: 원인 노드 id" in request.prompt and "- 에이전트: AI 에이전트" in request.prompt
     ws = Path(request.workdir)
     assert ws == tmp_path / "hyd" / row["id"] and (ws / ".mcp.json").exists() and (ws / "CLAUDE.md").exists() and (ws / "outputs" / "result.json").exists()

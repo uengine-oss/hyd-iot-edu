@@ -524,6 +524,8 @@ def remove(store, repo, tenant_id: str, name: str, *, force: bool = False) -> di
         raise RegistryError(409, f"에이전트 {', '.join(users)} 가 이 서버를 도구로 쓰고 있습니다 — 에이전트에서 먼저 빼거나 강제로 지우세요")
     store.delete_server(tenant_id, name)
     store.delete_checks(tenant_id, [name])
+    from .student_cases import Store
+    Store(repo, tenant_id).remove('mcp_servers', name)
     return {"name": name, "deleted": True, "agents_still_naming_it": users}
 
 
@@ -600,6 +602,8 @@ def reset(store, tenant_id: str) -> dict:
     removed = [n for n in store.servers(tenant_id) if n not in BASE_SERVERS]
     for n in removed:
         store.delete_server(tenant_id, n)
+    from .student_cases import Store
+    Store(store.repo, tenant_id).remove('mcp_servers')
     return {"removed_servers": removed, "removed_checks": store.delete_checks(tenant_id), "removed_secrets": secrets,
             "kept": [n for n in store.servers(tenant_id)]}
 

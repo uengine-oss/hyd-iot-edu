@@ -70,6 +70,7 @@
     const evDef = ((def || {}).events || []).find(e => e.id === w.activity_id);
     if (evDef) return evDef.eventDefinition === 'timer' ? 'timer' : 'event';
     if (isAgent(w)) return 'agent';
+    if ((def?.activities || []).find(a => a.id === w.activity_id)?.type === 'serviceTask') return 'system';
     if (!w.agent_orch && !w.agent_mode) return 'human';
     return 'system';
   }
@@ -166,13 +167,24 @@
           let r = byTool.get(d.tool_use_id);
           if (!r) { r = { key: 'tool:' + (d.tool_use_id || e.id), kind: 'tool', t0: null, tool: d.tool, title: UI.toolName(d.tool), text: '' }; rows.push(r); }
           const o = UI.outcome(d.output, d.is_error);
-          Object.assign(r, { status: o.tone === 'ok' ? 'ok' : o.tone, t1: e.timestamp, output: d.output, result: o.text || outBrief(d.output, 140), badge: o.label });
+          Object.assign(r, { status: d.attempt_failed ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, t1: e.timestamp, output: d.output, result: o.text || outBrief(d.output, 140), badge: d.attempt_failed ? '실패한 시도' : o.label });
           break;
         }
         case 'task_started':
           rows.push({ key: 'start:' + e.id, kind: 'start', status: 'ok', t0: e.timestamp, title: UI.t('trace.picked'), text: w && isAgent(w) ? UI.t('agent') : UI.who(d.name || d.role || ''), fold: d.task_description ? [UI.t('trace.instruction'), UI.clean(UI.idText(d.task_description))] : null });
           break;
         case 'task_working':
+          if (e.job_id === 'MCP_RESULT_VALUES') {
+            rows.push({ key: 'w:' + e.id, kind: 'system', status: d.attempt_failed ? 'fail' : 'ok', t0: e.timestamp,
+              title: '도구 결과에서 가져온 값', text: Object.entries(d.values || {}).map(([k, v]) => window.hydWords ? `${hydWords.fieldName(k)}: ${hydWords.value(k, v)}` : `${UI.terms['var.' + k] || k}: ${v}`).join(' · ') + (d.attempt_failed ? ' · 실패한 시도' : ''), raw: d });
+            break;
+          }
+          if (d.setpoints || ['EFFECT_COMPENSATION', 'EFFECT_REVIEW'].includes(e.job_id)) {
+            rows.push({ key: 'w:' + e.id, kind: 'system', status: (d.results || []).some(r => r.ok === false) ? 'fail' : 'ok', t0: e.timestamp,
+              title: e.job_id === 'EFFECT_REVIEW' ? '이전 조치 영향 확인' : e.job_id === 'EFFECT_COMPENSATION' ? '이전 조치 되돌리기' : UI.logText(d.name),
+              text: window.hydWords ? hydWords.effectText(e.job_id, d) || `${hydWords.who(d.by)} · ${hydWords.setpointsText(d)}` : brief(d), raw: d });
+            break;
+          }
           if (e.job_id === 'APPROVAL_REJECTED') {
             rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: '거절 접수', text: `${UI.who(d.by)} · 사유: ${d.reason || ''} · ${d.effects || '승인 뒤 조치 없음'}`, raw: d });
             break;
@@ -200,6 +212,10 @@
           rows.push({ key: 'c:' + e.id, kind: 'stop', status: 'fail', t0: e.timestamp, title: e.job_id === 'TASK_CANCEL_REQUESTED' ? UI.t('stream.cancelReq') : e.job_id === 'TASK_CLOSED' ? UI.t('stream.closed') : UI.t('stream.stopped'), text: UI.clean(UI.logText(brief(d.goal || d.reason, 200))) });
           break;
         case 'error':
+          if (e.job_id === 'EFFECT_COMPENSATION' && window.hydWords) {
+            rows.push({ key: 'err:' + e.id, kind: 'error', status: 'fail', t0: e.timestamp, title: '이전 조치 되돌리기 실패', text: hydWords.effectText(e.job_id, d), raw: d });
+            break;
+          }
           rows.push({ key: 'err:' + e.id, kind: 'error', status: 'fail', t0: e.timestamp, title: d.name ? UI.clean(d.name) : UI.t('stream.error'), text: UI.clean(d.friendly || d.message || brief(d.raw_error || d.content, 200)), fold: d.raw_error ? [UI.t('raw'), UI.clean(d.raw_error)] : null });
           break;
         default: {

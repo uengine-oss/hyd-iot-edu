@@ -10,6 +10,7 @@ import queue
 import signal
 import subprocess
 import threading
+from .diagnostics import excerpt
 
 
 class _WindowsJob:
@@ -106,11 +107,11 @@ def controlled_stream(stream,provider,request,env,check_stop,failed):
                 if stop.is_set():break
                 send(event)
             if not stop.is_set() and _LAST_RUN.returncode != 0:
-                raise failed(f'CLI exit {_LAST_RUN.returncode}: {_LAST_RUN.stderr[-2000:]}')
+                raise failed(excerpt(f'CLI exit {_LAST_RUN.returncode}: {_LAST_RUN.stderr}', 2000))
             if not stop.is_set() and (_LAST_RUN.stderr or '').strip():
                 # A096 (cliagents keeps stderr only in its result slot): a run that exits 0 may still have warned
                 # (deprecated flag, MCP server start-up noise); keep the tail in the worker log instead of dropping it.
-                logging.getLogger('worker.process').warning('CLI exit 0 with stderr: %s', _LAST_RUN.stderr[-1000:].strip())
+                logging.getLogger('worker.process').warning('CLI exit 0 with stderr: %s', excerpt(_LAST_RUN.stderr.strip(), 1000))
         except BaseException as error:
             failure.append(error)
         finally:

@@ -96,6 +96,15 @@ HYD_PLANT = BusinessRules(
 RULES = {r.key: r for r in (HYD_PLANT,)}
 
 
+def rule_card(key) -> dict | None:
+    """Expose the same complete instructions the worker provisions, without a UI copy."""
+    try:
+        rule = rules_for(key)
+    except UnknownWorkRules as exc:
+        return {"key": str(key), "label": None, "content": None, "error": str(exc)}
+    return {"key": rule.key, "label": rule.title, "content": constitution(rule)} if rule else None
+
+
 class UnknownWorkRules(LookupError):
     pass
 

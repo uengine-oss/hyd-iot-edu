@@ -61,6 +61,13 @@ class DecisionRegistry:
     def get(self, did: str) -> dict | None:
         return self._items.get(did)
 
+    def submitted(self, record: dict, decision_id: str) -> None:
+        """Only a confirmed process submission earns a persisted-decision id."""
+        with self._lock:
+            self._items.pop(record["id"], None)
+            record["id"] = decision_id
+            self._items[decision_id] = record
+
     def all(self) -> list[dict]:
         return sorted(self._items.values(), key=lambda d: d["created"], reverse=True)
 
@@ -237,7 +244,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
     def step(name, output, note, status="DONE"):
         steps.append({"name": name, "status": status, "t": _now(), "note": note, "output": output})
 
-    rec = {"id": registry.new_id("DEC" if do_submit else "EVAL"), "created": _now(), "schema": "v2", "asset": asset, "origin": origin or {"kind": "manual"},
+    rec = {"id": registry.new_id("EVAL"), "created": _now(), "schema": "v2", "asset": asset, "origin": origin or {"kind": "manual"},
            "status": "RUNNING", "steps": steps}
     registry.put(rec)
     try:
@@ -295,11 +302,13 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         if not result["recommended"]:
             rec["status"] = "NO_FEASIBLE_OPTION"
         if do_submit and result["options"]:
-            payload = {"id": rec["id"], "schema": "v2", "scenario": scenario, "asset": asset, "origin": rec["origin"],
+            decision_id = registry.new_id("DEC")
+            payload = {"id": decision_id, "schema": "v2", "scenario": scenario, "asset": asset, "origin": rec["origin"],
                        "recommended": result["recommended"], "explanation": result["explanation"], "options": result["options"],
                        "rankRule": result.get("rankRule"), "roles": roles, "facts": facts,
                        "provenance": prov, "applicable": True}
             res = submit(payload)
+            registry.submitted(rec, decision_id)
             step("submit", res, "process API에 조치 카드 제출 (에이전트의 유일한 쓰기) — 실행은 사람이 고른 뒤 L9가 한다")
             rec["status"] = "SUBMITTED"
         elif rec["status"] == "RUNNING":

@@ -39,6 +39,33 @@ def test_unchanged_current_choice_allowed(context):
     assert result['allowed'] and result['policy_sha256'] and result['checked_at']
 
 
+def test_business_request_does_not_require_plant_actuation_consent(context, monkeypatch):
+    state, kg, decision = context
+    skill = state['skills']['skill:mix']
+    skill['kind'] = 'purchase'
+    skill['actions'] = [{'kind': 'transaction', 'code': 'PR_CREATE', 'value': 'supplier-a', 'name': '구매 요청'}]
+    current = approval.current_options(kg, None, decision, 'skill:mix')
+    decision['options'] = deepcopy(current['result']['options'])
+    # The business card and its policy remain identical; only the simulator's
+    # disturbance/model inputs changed behind an informational plant forecast.
+    old = next(o for o in decision['options'] if o['id'] == 'skill:mix')
+    old['forecastContext']['inputs']['cooler_health'] = -123
+    report = approval.assess(kg, None, decision, 'skill:mix', 'role:x')
+    assert report['allowed'], report['reasons']
+    # Supplier/action changes still require renewed human consent.
+    skill['actions'][0]['value'] = 'supplier-b'
+    report = approval.assess(kg, None, decision, 'skill:mix', 'role:x')
+    assert not report['allowed'] and any('actions' in r for r in report['reasons'])
+
+
+def test_plant_command_still_rejects_changed_simulator_inputs(context, monkeypatch):
+    monkeypatch.setattr(forecasting, 'stack_time_scale', lambda: 1)
+    _, _, decision = context
+    next(o for o in decision['options'] if o['id'] == 'skill:mix')['forecastContext']['inputs']['cooler_health'] = -123
+    report = assess(context)
+    assert not report['allowed'] and any('cooler_health' in r for r in report['reasons'])
+
+
 def test_bsc_change_requires_new_review_even_with_same_actions(context):
     state, kg, decision = context
     changed = deepcopy(TRADE)

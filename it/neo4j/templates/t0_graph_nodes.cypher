@@ -1,7 +1,9 @@
 // 지식 지도 노드: 고른 설비 하나 + 설비와 무관한 지식 노드 전부 (다른 설비 노드와 그 설비의 사건은 뺀다). $ns: 이름 공간(G4, 비면 수업 기준)
 // 실행 버전/작업은 인스턴스 화면에서 조회한다. 이 지도는 업무 지식과 사례를 표시한다.
+// 투영 잠금·편집 영수증·매뉴얼 적재 이력도 내부 기록이므로 제외한다 (v2 schema standard="내부 기록").
 MATCH (n)
-WHERE NOT (n:ProcessVersion OR n:ProcessInstance OR n:WorkItem OR n:IngestionControl OR n:IngestionBatch)
+WHERE NOT (n:ProcessVersion OR n:ProcessInstance OR n:WorkItem OR n:IngestionControl OR n:IngestionBatch
+           OR n:ExecutionProjection OR n:CaseProjection OR n:KnowledgeEdit OR n:ManualIngestionDocument OR n:ManualIngestionBatch)
   AND NOT EXISTS { (:ProcessVersion)-[:HAS_NODE]->(n) }
   AND (NOT n:Asset OR n.code = $asset)
   AND (NOT n:Incident OR EXISTS { (n)-[:ON_ASSET]->(:Asset {code: $asset}) })

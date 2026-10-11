@@ -178,15 +178,20 @@ PG_DSN = __import__("os").getenv("HYD_TRIAL_PG_DSN")
 
 
 @pytest.mark.skipif(not PG_DSN, reason="HYD_TRIAL_PG_DSN 이 없으면 Supabase 표 검사는 건너뛴다 (migration 000001 + 000040 적용된 빈 DB)")
-def test_pg_store_round_trip_and_first_read_wins():
+def test_pg_store_round_trip_and_first_read_wins(request):
     from procsvc.procdb import PgRepo
     repo = PgRepo(PG_DSN)
     with repo._conn() as c:
+        original = c.execute("select mcp from tenants where id='hyd'").fetchone()
         c.execute("insert into tenants (id, name, mcp) values ('hyd', 'hyd', %s) on conflict (id) do update set mcp = excluded.mcp",
                   (__import__("json").dumps(MCP),))
         c.execute("insert into users (id, username, is_agent, agent_type, tools, tenant_id) values "
                   "('sys:agent', 'AI 에이전트', true, 'agent', 'neo4j,enterprise,hyd-dmn', 'hyd') on conflict (id) do nothing")
         before = c.execute("select (select count(*) from bpm_proc_inst) + (select count(*) from todolist) + (select count(*) from events) as n").fetchone()["n"]
+    def restore_mcp():
+        with repo._conn() as c:
+            c.execute("update tenants set mcp=%s where id='hyd'", (repo._Jsonb(original['mcp']) if original else None,))
+    request.addfinalizer(restore_mcp)
     world = FakeWorld()
 
     def evaluate(scenario, agent, entries, servers):

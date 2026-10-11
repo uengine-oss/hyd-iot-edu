@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="enterprise.css?v=20261008-a147">
 <link rel="stylesheet" href="main.css?v=20261008-a147">
 <link rel="stylesheet" href="hitl.css?v=20261008-a147">
-<link rel="stylesheet" href="instances.css?v=20261011-portal">
+<link rel="stylesheet" href="instances.css?v=20261012-toolnames">
 <link rel="stylesheet" href="components.css?v=20261008-a147">
 <link rel="stylesheet" href="taskDetail.css?v=20261008-u1">
 <link rel="stylesheet" href="mcp.css?v=20261008-u3">
@@ -64,7 +64,7 @@
 <header class="strip">
   <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
   <div class="breadcrumb"><span id="pageGroup">시스템</span><b id="pageLocation">홈</b></div>
-  <div class="strip-status"><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><span class="stream-ticker" id="streamTicker" aria-live="polite"><i class="live-dot off"></i><span>연결 중</span></span><div class="dots" id="healthDots"></div></div>
+  <div class="strip-status"><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
   <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
   <!-- A5 (U7): "나" 자리 · 알림 배지. 내용은 window.hydInbox 가 채운다(없으면 비어 있음 표시). -->
   <div class="shell-me" id="shellMe" aria-label="나"></div>
@@ -301,7 +301,7 @@
       <div id="deployHistory"></div>
       </div>
     </details>
-    <details class="fold admin-panel" id="configBundlePanel"><summary>출발본 내보내기 · 불러오기 · 기준으로 되돌리기</summary><div class="fold-body" id="configBundleView"></div></details>
+    <details class="fold admin-panel" id="configBundlePanel"><summary>내 사례 · 출발본 내보내기 · 불러오기 · 기준으로 되돌리기</summary><div class="fold-body" id="configBundleView"></div></details>
   </section>
 
   <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
@@ -354,30 +354,31 @@
   </nav>
 
 <div id="caption"></div>
-<script src="ui.js?v=20261011-portal"></script>
+<script src="ui.js?v=20261012-names2"></script>
 <script src="layers.js?v=20261008-a147"></script>
-<script src="app.js?v=20261011-portal"></script>
-<script src="trace.js?v=20261011-portal"></script>
-<script src="enterprise.js?v=20261010-lo1"></script>
+<script src="app.js?v=20261012-remaining"></script>
+<script src="trace.js?v=20261012-remaining"></script>
+<script src="enterprise.js?v=20261012-names"></script>
 <script src="main.js?v=20261008-a147"></script>
 <script src="flow.js?v=20261009-u1"></script>
 <script src="legacyMeaning.js?v=20261008-a9"></script>
-<script src="hitl.js?v=20261010-lo1"></script>
+<script src="hitl.js?v=20261012-remaining"></script>
 <script src="instanceSteps.js?v=20261008-a147"></script>
 <script src="instanceRework.js?v=20261008-a147"></script>
 <script src="instanceEffects.js?v=20261009-u1"></script>
 <script src="taskDeferral.js?v=20261008-a147"></script>
-<script src="approvalCard.js?v=20261010-lo1"></script>
-<script src="plainWords.js?v=20261011-portal"></script>
-<script src="caseRecord.js?v=20261011-portal"></script>
-<script src="resultReport.js?v=20261011-portal"></script>
-<script src="instances.js?v=20261011-portal"></script>
-<script src="liveStream.js?v=20261009-u1"></script>
+<script src="approvalCard.js?v=20261012-remaining"></script>
+<script src="plainWords.js?v=20261012-remaining"></script>
+<script src="caseRecord.js?v=20261012-remaining"></script>
+<script src="resultReport.js?v=20261012-remaining"></script>
+<script src="instances.js?v=20261012-remaining2"></script>
+<script src="toolNames.js?v=20261012-toolnames"></script>
+<script src="liveStream.js?v=20261012-toolnames"></script>
 <script src="inbox.js?v=20261010-capg1g7"></script>
-<script src="taskDetail.js?v=20261010-capg1g7"></script>
+<script src="taskDetail.js?v=20261012-remaining"></script>
 <script src="agentsPanel.js?v=20261009-u1"></script>
 <script src="definitionRegistry.js?v=20261008-a147"></script>
-<script src="agents.js?v=20261009-a161rv"></script>
+<script src="agents.js?v=20261012-names2"></script>
 <script src="definitionDeploy.js?v=20261009-u1"></script>
 <script src="sourceEvents.js?v=20261008-a147"></script>
 <script src="evaluation.js?v=20261009-u1"></script>
@@ -385,11 +386,12 @@
 <script src="whatif.js?v=20261008-b5"></script>
 <!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
 <script src="fabric.js?v=20261008-a11"></script>
-<script src="kpi.js?v=20261008-b5"></script>
+<script src="kpi.js?v=20261012-remaining"></script>
 <script src="ask.js?v=20261009-u1"></script>
 <script src="compare.js?v=20261008-a10"></script>
-<script src="flows.js?v=20261011-portal"></script>
-<script src="configBundle.js?v=20261008-b6"></script>
+<script src="flows.js?v=20261012-names"></script>
+<script src="studentCases.js?v=20261012-k1"></script>
+<script src="configBundle.js?v=20261012-k1"></script>
 <script src="oilInput.js?v=20261008-b7"></script>
 <script src="shell.js?v=20261009-u1"></script>
 </body>

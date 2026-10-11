@@ -29,7 +29,8 @@ from hydcommon.process_contracts import pinned_form, validate_output
 from . import dependency_schedule, engine, inbox
 from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
-from .execution_graph import INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection
+from .execution_graph import (INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection,
+                              ORPHAN_VERSIONS_Q, DELETE_ORPHAN_VERSION_Q, scoped)
 from .projection_receipt import digest as projection_digest,require as require_projection_receipt
 from .approval_delivery import ApprovalDelivery
 from .rework_runtime import ReworkRuntime
@@ -452,16 +453,16 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         defn = self.definition_for_workitem(wi)
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
         if form is not None:
-            validate_output(form, wi.get('output'))
             from .manual_extraction import validate_result, CORRECTABLE_CONTRACTS
             try:
+                validate_output(form, wi.get('output'))
                 validate_result(form, inst, wi.get('output'))
             except ValueError as rejected:
                 if form.get('contract') not in CORRECTABLE_CONTRACTS:
                     raise
                 # A077: a cited-extraction defect goes back to the agent as feedback (same CLI session) instead of
                 # re-judging the identical output three times. Bounded like the product's validator loop.
-                return self._return_for_correction(wi, inst, str(rejected))
+                return self._return_for_correction(wi, inst, str(rejected), form=form)
         if (int(inst.get('rework_generation') or 0) > 0 and engine.variables(inst).get('incident')
                 and 'decision_id' in (wi.get('output') or {})):
             from .decision_scope import validate_output as validate_decision_output
@@ -574,27 +575,26 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
     CORRECTION_ROUNDS = 3   # product process_validator: bounded correction rounds, then stop with the best-known state
 
-    def _return_for_correction(self, wi: dict, inst: dict, reason: str) -> dict:
+    def _return_for_correction(self, wi: dict, inst: dict, reason: str, *, form=None) -> dict:
         """A077 (meeting L253~302): the extraction proposal failed the citation/structure contract. Hand the exact reason
         back to the agent as feedback and let it correct the *same* proposal in the same CLI session; after
         CORRECTION_ROUNDS rejections the task blocks as PENDING for a person, with every reason kept."""
         feedback = wi.get('feedback') if isinstance(wi.get('feedback'), dict) else {}
         history = list(feedback.get('history') or []) + [reason]
         attempt = len(history)
+        from .result_correction import guidance
+        label, check, instruction = guidance(form)
         wi['log'] = (wi.get('log') or '') + f'[Rejected {attempt}/{self.CORRECTION_ROUNDS}] {reason[:300]}; '
         wi['feedback'] = {'kind': 'validation', 'attempt': attempt, 'history': history,
-                          'text': (f'추출 제안이 원문 검증에서 거부되었습니다({attempt}/{self.CORRECTION_ROUNDS}): {reason}\n'
-                                   '입력 데이터의 이전 proposal을 고쳐 같은 형식으로 다시 제출하세요. 인용(anchor)은 page.text의 '
-                                   '정확한 부분 문자열과 좌표여야 하며, 모든 페이지에 page_reviews가 있어야 합니다. '
-                                   '원문에 없는 절차를 추가하지 마세요.')}
+                          'text': f'{label}이 {check}에서 거부되었습니다({attempt}/{self.CORRECTION_ROUNDS}): {reason}\n{instruction}'}
         wi['draft'] = deepcopy(wi.get('output'))          # the previous proposal (and its cliagents_session_id) stays readable
         wi['output'] = None
         if attempt >= self.CORRECTION_ROUNDS:
             wi.update(status='PENDING', consumer=None, end_date=None)
-            event = {'name': '추출 제안 거부 · 사람 확인 필요', 'recovery': 'human_review', 'attempt': attempt, 'reasons': history}
+            event = {'name': f'{label} 거부 · 사람 확인 필요', 'recovery': 'human_review', 'attempt': attempt, 'reasons': history}
         else:
             wi.update(status='IN_PROGRESS', draft_status='FB_REQUESTED', consumer=None, end_date=None)
-            event = {'name': '추출 제안 거부 · 에이전트 재작업', 'recovery': 'agent_correction', 'attempt': attempt, 'reasons': history}
+            event = {'name': f'{label} 거부 · 에이전트 재작업', 'recovery': 'agent_correction', 'attempt': attempt, 'reasons': history}
         self.repo.update_workitem(wi)
         self.repo.record_events([{'job_id': 'TASK_REJECTED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'agent',
                                   'event_type': 'error', 'data': event}])
@@ -890,6 +890,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                            'consumer': wi.get('consumer')}}])
         return dict(workitem=wi['id'], status=wi['status'], draft_status='CANCELLED', consumer=wi.get('consumer'))
 
+    @workitem_transition
     def close_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
         """A082: PENDING after bounded retries/corrections, or a worker run that died (draft FAILED) — the product's task
         cancel for the HYD case. Human tasks and live tasks are refused; an instance whose Incident is still open is
@@ -900,11 +901,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise KeyError(workitem_id)
         if not isinstance(by, str) or not by.strip() or not isinstance(reason, str) or not reason.strip():
             raise ValueError('닫는 사람과 사유가 필요합니다')
-        if not wi.get('agent_mode') or not wi.get('agent_orch'):
-            raise PermissionError('에이전트 작업만 이 경로로 닫습니다. 사람 작업은 제출로, 서비스 작업은 사건 경과·에스컬레이션으로 끝납니다')
+        defn = self.definition_for_workitem(wi)
+        service = (defn.activities.get(wi['activity_id']) or {}).get('type') == 'serviceTask'
+        if not service and (not wi.get('agent_mode') or not wi.get('agent_orch')):
+            raise PermissionError('멈춘 에이전트·시스템 작업만 닫을 수 있습니다. 사람 작업은 제출로 끝내세요')
         stuck = wi['status'] == 'PENDING' or (wi['status'] == 'IN_PROGRESS' and wi.get('draft_status') in ('FAILED', 'CANCELLED'))
-        if not stuck:
-            raise ValueError('멈춘 에이전트 작업(PENDING, 실행 실패 또는 취소된 실행)만 닫을 수 있습니다')
+        if not stuck or (service and wi['status'] != 'PENDING'):
+            raise ValueError('멈춘 작업만 닫을 수 있습니다. 시스템 작업은 PENDING, 에이전트 작업은 PENDING 또는 실패·취소된 실행이어야 합니다')
         inst = self.repo.get_instance(wi['proc_inst_id'])
         if not inst or inst.get('status') != 'RUNNING':
             raise ValueError('실행 중인 인스턴스의 작업만 닫을 수 있습니다')
@@ -921,7 +924,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         # event_type is the product's enum (no 'task_closed'); the person's close is a task_cancelled with job_id TASK_CLOSED
         self.repo.record_events([{'job_id': 'TASK_CLOSED', 'todo_id': wi['id'], 'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'human',
                                   'event_type': 'task_cancelled',
-                                  'data': {'name': '에이전트 작업 닫음', 'by': by.strip(), 'reason': reason.strip()[:1000], 'previous': previous}}])
+                                  'data': {'name': '시스템 작업 닫음' if service else '에이전트 작업 닫음', 'by': by.strip(), 'reason': reason.strip()[:1000], 'previous': previous}}])
         rows = self.repo.list_workitems(proc_inst_id=wi['proc_inst_id'], limit=None)
         defn = self.definition_for_workitem(wi)
         # 엔진과 같은 기준(engine.advance 의 live): 닿은 단계만 열린 일이다. 엔진은 단계마다 TODO 행을 미리 만들어 두므로(아직 닿지 않은
@@ -938,7 +941,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             inst.update(status='COMPLETED', end_event=self.HUMAN_CLOSE_END_EVENT, end_date=engine.now_iso(now), current_activity_ids=[])
             self.repo.update_instance(inst)
             ended = True
-        self._after_commit(self.hooks.audit, engine.variables(inst).get('asset', '-'), by.strip(), 'AGENT_TASK_CLOSED',
+        self._after_commit(self.hooks.audit, engine.variables(inst).get('asset', '-'), by.strip(), 'SYSTEM_TASK_CLOSED' if service else 'AGENT_TASK_CLOSED',
                            {'workitem': wi['id'], 'instance': wi['proc_inst_id'], 'reason': reason.strip()[:300], 'instance_ended': ended})
         self._after_commit(self._project, inst)
         return {'workitem': wi['id'], 'status': wi['status'], 'instance': wi['proc_inst_id'],
@@ -1323,6 +1326,37 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def reconcile_projections(self, limit=20):
         for pid in self.repo.pending_projections(self.tenant_id, limit):
             self._project({"proc_inst_id": pid})
+        self.cleanup_removed_definitions(limit)
+
+    def cleanup_removed_definitions(self, limit=20):
+        """Repair old source deletions too, including versions with no surviving case.
+
+        Graph candidates are durable and retried on the normal projection poll.
+        Registered source versions and live cases are never garbage-collected.
+        """
+        try:
+            registered = [scoped('proc-version', self.tenant_id, d['id'], d['prod_version'])
+                          for d in self.repo.list_definitions(self.tenant_id) if d.get('prod_version')]
+            candidates = self.hooks.query_cypher(ORPHAN_VERSIONS_Q, tenant=self.tenant_id,
+                                                registered_versions=registered, limit=limit)
+            for row in candidates:
+                did, version = row.get('definition_id'), row.get('version')
+                if not did or not version or row.get('id') != scoped('proc-version', self.tenant_id, did, version):
+                    continue
+                if self.repo.get_proc_def(did, self.tenant_id, version=version):
+                    continue
+                for pid in row.get('instances') or []:
+                    inst = self.repo.get_instance(pid)
+                    if inst and (inst.get('tenant_id') != self.tenant_id or not inst.get('is_deleted')):
+                        continue
+                    self.repo.enqueue_projection_cleanup(self.tenant_id, pid)
+                    self._project({'proc_inst_id': pid})
+                # Recheck the source immediately before the graph's own no-case guard.
+                if not self.repo.get_proc_def(did, self.tenant_id, version=version):
+                    self.hooks.record_cypher(DELETE_ORPHAN_VERSION_Q, id=row['id'], tenant=self.tenant_id,
+                                             definition_id=did, version=version)
+        except Exception as exc:
+            log.warning('removed definition projection cleanup pending: %s', exc)
 
     def _project(self, inst: dict) -> None:
         """Caller supplies identity only; durable source changes drive delivery."""
@@ -1344,7 +1378,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
     def _write_projection(self, pid, snapshot):
         inst = snapshot['instance']
         if not inst or inst.get('is_deleted'):
-            self._confirmed_projection(DELETE_INSTANCE_Q,dict(id=pid,tenant=self.tenant_id,revision=snapshot['revision']))
+            # Source deletion is the authority. A hidden instance alone must not
+            # remove a registered version that other cases may still use.
+            deleted_definition = bool(inst and inst.get('is_deleted') and not self.repo.get_proc_def(
+                inst['proc_def_id'], self.tenant_id, version=inst['proc_def_version']))
+            self._confirmed_projection(DELETE_INSTANCE_Q,dict(id=pid,tenant=self.tenant_id,revision=snapshot['revision'],
+                                                               delete_definition=deleted_definition))
             return
         if inst['tenant_id'] != self.tenant_id:
             raise ValueError('projection tenant mismatch')

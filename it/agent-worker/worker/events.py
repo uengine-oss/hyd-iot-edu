@@ -176,6 +176,8 @@ def skill_entry(skill: dict, *, text: str, path: str, source: str) -> dict:
 def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiEvent:
     names = ", ".join(e["name"] for e in entries)
     content = (f"배정된 스킬 {len(entries)}개를 작업 폴더에 넣고 실행합니다: {names}" if entries else "배정된 스킬 없이 실행합니다")
+    if entries and all(e.get('delivery') == 'prompt' for e in entries):
+        content = f"배정된 스킬 {len(entries)}개의 등록 본문을 확인해 작업 지시에 제공합니다: {names}"
     if missing:
         content += f" (본문이 없어 넣지 못함: {', '.join(missing)})"
     unwritten = [e["name"] for e in entries if e.get("written") is False]

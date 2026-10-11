@@ -1,22 +1,34 @@
-# NOW — 새 세션은 이 문서 하나로 시작한다 (2026-10-11 정리)
+# NOW — 새 세션은 이 문서 하나로 시작한다 (2026-10-12 검증·종료 갱신)
 
 이 문서를 새로 썼다. 이전 판(갈래 L·F·K·U·S 병렬 서술)과 지난 경위는 git 이력과 `archive/`에 있다.
-숫자·상태는 10-11 기준이다. 시작할 때 `git log -1` · `docker ps` · 단위 시험으로 다시 잰다.
+최신 숫자·상태는 10-12 검증·종료 기록이다. 이전 macOS와 10-11 종료 상태는 당시 기록으로 구분한다. 시작할 때 `git log -1` · `docker ps` · 단위 시험으로 다시 잰다.
 
 ## 1. 한눈에 보기
 
 | 항목 | 값 |
 |---|---|
-| 브랜치 | `claude/hyd-handoff-work-xziutz` **하나**. 다른 갈래(A161, `K-20261010-capstone`, `F-20261010-keep`)는 모두 합쳐졌다. 인계 문서 정리까지 원격에 올렸다(10-11). 이후 커밋은 사용자가 맡긴 범위 안에서 push하고, main에 합치는 것은 사용자에게 묻는다 |
+| 브랜치 | 작업 `codex/portal-20261011` / `.claude/worktrees/codex-portal-20261011`. 기준 통합 브랜치 `claude/hyd-handoff-work-xziutz`. 코드 반영 해시는 git log와 최종 보고 참조 |
 | 기능 | 기본 기능은 구현되어 있다. 이번 포털 U1~U4·U7·U8 구현·자동검증을 진행했고 캡처 사용자 시각 판정은 대기다. 나머지 UI/환경/학생 동선은 4절 |
-| 전체 회귀 시험 | Windows 최종 **2173 통과 · 10 건너뜀 · 0 실패/오류 · 64 경고, 110.71초**, exit 0. 명령 `python -m pytest -q -n 4 -p no:cacheprovider --durations=15 --junitxml=.../pytest-final-parallel.xml`. 로그/XML: 루트 `.evidence/portal-20261011/pytest-final-parallel.*`. 독립 PG 4·Neo4j 5 환경변수 미지정 및 Windows symlink 권한 1건 건너뜀. 기존 macOS 2149 통과·9 건너뜀은 이전 결과다 |
-| 실제 스택 검증 | 합친 코드(`4e5f535` 빌드)로 A·B·C 각각 승인·거절, A·C 무응답, A 승인 뒤 [쿨러 복구]→바로 다시 주입, 단계 닫기, 손으로 그린 흐름으로 A 완주 — 모두 통과. 회귀 쿨러 40/40 · pump-fan 43/43 |
-| 한계 | 위 macOS 완주는 process API 기준이다. 이번 Windows 포털에는 [거절]·사유·반려·지연 표시를 구현했고 Chromium+FastAPI/MemoryRepo 시험 및 실제 스택 read-only 46화면 캡처를 남겼다. 실제 LLM·설비 재완주 및 사용자 시각 승인은 별도다(`verification/2026-10-11/portal-20261011.md`) |
+| 전체 회귀 시험 | `pytest-final-source.log/xml` **2275 통과·21 건너뜀·64 경고,195.06초,exit0**. K1 메일 의존·URL query 비밀값 마지막 두 수정 포함. 후속 UI 변경은 해당 검증과 별도로 기록한다 |
+| 실제 스택 검증 | 현재 Windows: 최신 adapter·엄격 근거 alias 적용 `student-release` **18 checks PASS/exit0**. 실제 B는 도구 실행 후 지식 부족(causes=[]·PREVENTED_BY 없음)으로 자율보류 PENDING. A/B/C 현재 완주는 완료하지 않았다. **이전 macOS `4e5f535`의 A/B/C 완주·쿨러40/40·pump-fan43/43은 과거 증거**이며 현재 결과를 대신하지 않는다 |
+| 한계 | 실제 `live-release` 46화면과 후속 `ui-f21-final` 6화면 모두 console/pageerror 0·무시 0·문서폭 넘침 0. 후속 ontology/flows의 식별자 검색 결과는 0이고 기존 작성명 `read_only` 1건은 보존했다. SVG 경계 초과 12개는 지도 내부 스크롤이며, 두 화면 폭에서 오른쪽 노드 이동·상세 클릭·키보드 선택 해제를 확인했다. 전체 국문화와 최종 디자인 승인은 별도다. `target-capture-final`의 기능 준비 7개는 통과했지만 health no-cors ERR_ABORTED로 전체 검사기는 exit1이다. 별도 CDP에서 HTTP200 뒤 opaque 응답 본문 취소·정상 health를 확인했고 원래 실패 결과를 보존했다. F3 사람 검토/적재·현재 A/B/C 지식 부족·K3 Google 외부 인증은 미완료 |
 | 실라버스 | **최종본이 나왔다(10-11).** 기준은 `docs/교재/기준/피지컬AI_실라버스_최종본.xlsx`다(네 시트: 통합반 온라인 44H · 11일, 실전반 온라인 32H · 8일, 통합반 오프라인 정규 10회, 실전반 오프라인 정규 9회). 통합반 1~4일차는 이전 확정안(`1~4일차 실라버스 확정안.xlsx`)과 행 단위로 같다 |
-| 교재(슬라이드) | 레포 안 `docs/교재/`(안내 `README.md`). 기준 `docs/교재/기준/제작기준.md`, 통합반 1~4일차 덱 `docs/교재/통합반/0N일차/`(101 · 100 · 94 · 64장), 실전반 1~3일차 덱 `docs/교재/실전반/0N일차/`(101 · 93 · 75장, 통합반 덱에서 조립 — 제작 기준 13-1절). 통합반 5일차 이후와 실전반 4일차 이후는 아직 없다, 컨펌받은 그림체 샘플 `통합반/샘플/`. 만드는 도구는 `.claude/skills/lecture-deck/`. 랩 자료는 만들지 않는다 |
-| 쉬는 상태(스택) | 이번 Windows는 캡처 뒤 hyd/Supabase 컨테이너를 모두 정지해 원래 상태로 복원했다. docker ps 비어 있음, 8088/8080/8097/8098/54322 LISTEN 없음, 워커 시작 안 함, 정지 직전 RUNNING 0, 본인 LIVE_LOCK 해제. 데이터 볼륨과 작업 트리 마운트는 보존. 이전 macOS 03:07 상태는 아래 기록 참고 |
+| 교재(슬라이드) | 레포 안 `docs/교재/`(안내 `README.md`). 기준 `docs/교재/기준/제작기준.md`, 통합반 1~4일차 덱 `docs/교재/통합반/0N일차/`(101 · 100 · 94 · 64장), 실전반 1~3일차 덱 `docs/교재/실전반/0N일차/`(101 · 93 · 75장, 통합반 덱에서 조립 — 제작 기준 13-1절). 원격 추가 교재4커밋은 통합반5일차66장·6일차73장·7일차57장·9일차72장으로 통합 시 보존한다. 8·10·11일차 존재는 추측하지 않는다. 실전반4일차 이후는 이 추가 목록에 없다, 컨펌받은 그림체 샘플 `통합반/샘플/`. 만드는 도구는 `.claude/skills/lecture-deck/`. 랩 자료는 만들지 않는다 |
+| 현재 스택 | **10-12 02:53 KST 정리 완료.** 실행 컨테이너0·관련 포트0·Docker Desktop/backend0·본인 LIVE_LOCK 해제. 두 Supabase backup=true, 볼륨/작업 트리 보존. 실제 B의 RUNNING/PENDING·열린 incident는 종료 전 상태 그대로 보존. 최신 지시로 재기동도 Sol 6.1만 사용한다. 코드 반영 해시는 git log와 최종 보고 참조 |
 
 ## 2. 스택 올리고 확인하는 방법
+
+**10-12 최종 상태가 우선**: 실제 검증에 사용한 제품 스택·독립 Supabase55322·Neo4j7787·학생 MCP8311·워커·Docker Desktop은 종료했다. services-off.json/cleanup-final.json에서 실행 컨테이너·관련 포트·Desktop/backend0과 LIVE_LOCK 해제를 확인했다. 데이터 볼륨/작업 트리를 보존했고 B의 열린 incident/PENDING도 그대로 남긴다.
+
+**현재 Windows 재기동은 Sol 전용 지시를 명시한다.** 제품 서비스를 먼저 준비하고 LIVE_LOCK 아래 워커1개만 실행한다. run_worker_host.sh와 settings의 다중 provider 기본값을 임의 변경하거나 개인 Codex 설정을 고치지 않는다. 아래 값은 이번 사용자 지시를 재현하는 실행별 환경변수다(실제 증거 worker-sol-only.log).
+
+```powershell
+$env:CLIAGENTS_DEFAULT_CLI = 'codex'
+$env:CLI_MODEL = 'gpt-6.1-sol'
+bash scripts/run_worker_host.sh
+```
+
+기준 사용자·역할·스킬 누락은 공식 seed public 부분만 보완했고 누락된 정비/구매 MCP만 추가했다. ent 데이터·tenant 설정 전체를 덮지 않았다. uvx 없는 환경의 동일 버전 Neo4j MCP 별도 venv/서명 Python과 원래 명령 snapshot도 보존했다. 아래 10-11 종료 및 macOS Claude 설명은 과거 환경이며 현재 Sol 전용 재기동 값과 구분한다.
 
 이번 Windows(2026-10-11)에서는 Docker 29.7.2로 제품 서비스를 빌드·기동했고 포털 8088은 `codex-portal-20261011` 작업 트리를 사용했다. 기존 Supabase DB는 `migration up --local`로 25→51 적용했다(새 DB 재현 시험 아님). 기존 `neo4j-data` 전체판, 워커 0, RUNNING 0을 확인했고 지식을 수동 교정하거나 새 추출/사람 검토를 대신 만들지 않았다. process StartedAt `2026-10-11T14:03:54.003148877Z`, RestartCount 0. 캡처 후 hyd compose stop과 supabase stop으로 정지, 열린 해당 포트 없음 및 본인 LIVE_LOCK 해제를 확인했다. 볼륨·컨테이너 마운트 작업 트리는 보존했다.
 
@@ -54,6 +66,8 @@
 
 ## 4. 남은 일
 
+2026-10-12 최신 사용자 지시 「아예 싹 다 밤새 진행 / 목표 설정」으로 U5·U6·U9~U21, F1~F21, K1~K4 전수 구현/검증과 서비스 정리를 수행했다(최신 지시: 모든 작업과 실제 워커는 Sol 6.1만). 사용자가 Claude 한도 뒤 Codex 워커 전환과 통상 구현 판단 자율 진행을 승인했다. 현재 판정·증거·차단 원인은 [overnight-status.md](verification/2026-10-12/overnight-status.md)에 모으며 체크는 명시한 검증 범위 완료를 뜻한다. 교재 수정은 제외한다. 전체 회귀2275개·실제46화면·Codex student-release18개·독립PG K1 17개를 확인했다. 후속 변경은 해당 묶음의 검증으로 구분하며 실제 A/B/C 완주·사람 검토/적재·외부 인증 잔여는 아래에 남긴다. 앞선 실패 기록은 보존한다.
+
 ### 4.1 포털 화면 (UI/UX 세션) — 확정된 일
 10-11 이번 작업의 **U1~U4·U7·U8은 구현·자동검증 완료, 사용자 캡처 시각 판정 대기**다. 아래 체크는 구현/자동시험 범위를 뜻하며 UIUX 최종 승인과 구분한다. 근거는 `verification/2026-10-11/approval-ui.md`·`flows-ui.md`·`portal-20261011.md`. 브라우저·MemoryRepo API 검증과 실제 LLM·설비 스택 완주를 구분한다.
 
@@ -64,57 +78,65 @@
 - [x] U2. **반려 결과 표시**. 결과·처리 기록·실시간 단계·업무 경보 직전 결과의 반려 표시, 실제 엔진 거절 뒤 설비/업무 효과 없음 확인. 사용자 시각 판정 대기
 - [x] U3. **승인 지연 알림 표시**. A/B/C 실제 타이머 뒤 승인 작업이 열리고 화면에서 승인 가능. 알림만 들어오는 poll·입력 포커스 보존 확인. 사용자 시각 판정 대기
 - [x] U4. 흐름 가져오기 부품 목록의 "조치 카드 승인 · 거절"과 분기 `approval`('승인'·'반려')를 실제 A/B/C 가져오기·검사·등록으로 확인. 사용자 시각 판정 대기
-- [ ] U5. **[쿨러 복구] 기록의 지령 변화 표시**: 누름 기록 `data.setpoints {before, after}`("팬 지령 100 % → 60 %"처럼 일반인 말로)
-- [ ] U6. 거절/무응답 뒤 A를 다시 누를 때의 안내(감지기 단계를 보고 누르라는 안내가 있는지)
+- [x] U5. 복구 지령 전후 표시 구현·자동검증. 팬/부하 이름으로 표시한다(`2026-10-12/portal-remaining.md`). 실제 A 재완주와 사용자 시각 판정은 별도.
+- [x] U6. 감지기 상태에 따라 복원→준비→재주입 안내 구현·자동검증. 실제 A 거절/무응답 재완주는 별도.
 
 종합 랩(개인 시나리오 — 「캡스톤」이라는 말은 쓰지 않는다) 때문에 필요한 화면 (출처 `K-capstone.md` 5.2 · 10절, `final-verify.md` 6절):
 - [x] U7. **흐름 가져오기 시스템 부품 설정 칸** 구현. 메일·보고·대기·MCP 연결 값을 실제 UI→API→저장 매핑으로 대조했고 README를 화면 순서로 갱신했다. 가변 구조는 객체 입력 유지. 사용자 시각 판정 대기
 - [x] U8. 새 가져오기 시작 조건 기본 미선택, 업무 경보·분기 값 한국어 표시, 무선택 거절 및 A/B/C 올바른 매핑 등록 시험. 사용자 시각 판정 대기
-- [ ] U9. K가 본 결함: 시스템 task가 PENDING으로 멈춘 학생 처리 건을 닫는 길 · 학생 흐름 하나만 지우는 길이 화면에 없음
+- [x] U9. PENDING 시스템 단계 닫기·단일 학생 흐름 삭제 UI/API 구현. 실제 실패→진행 중 삭제 409→닫기→단일 삭제·404·그래프 정리 확인(`student-codex-stdin` 18 checks).
 - [ ] U10. 내부 id·영문 노출: 학생이 만든 역할이 `role:demo-organizer`로 보임(승인 패널 머리 칩·역할 고르기·결과 보고), 처리 기록의 시작 문장이 흐름 id, 시작 값·승인 값이 값 이름 그대로("request id", "approval 승인"), 승인 단계에 고른 안이 안 보임(결과 보고에만), 그래프 도구 결과의 한글이 `\uXXXX`, 지식 지도 규칙 카드가 id로 보임
 
 이전부터 열린 것:
-- [ ] U11. 시나리오 B·C 화면 다듬기(지금은 A와 같은 틀에 B·C 값이 들어간 상태. 구매·정비 담당 눈높이로 카드·결과 보고) — `HANDOFF.md:273`
-- [ ] U12. `EFFECT_COMPENSATION` · `EFFECT_REVIEW` 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — `review-c3-bc.md` 4절)
+- [x] U11. B·C 카드·결과를 정비/구매 실제 업무 값으로 분리, 독립 브라우저·회귀 검증 완료. 실제 시나리오 재완주와 최종 시각 판정은 별도.
+- [x] U12. 단계 없는 보상·검토 사건과 실행자·역할·사유·실패 표시 구현·자동검증. 검토를 실제 되돌림으로 표시하지 않는다.
 - [ ] U13. 화면에서 본 적 없는 표시: 재관측 실패(`reobsSeries.error`), 스킬을 작업 폴더에 못 넣음(`skills[].written`)(`2026-10-09/review-backend.md` 4-4 · 10절), 처리 건 목록 읽기 실패, `app.js`의 표시 확인 중/못 읽음·기준점 문구(`review-c3-bc.md` 3절), `MCP_RESULT_VALUES` · 실패 시도(`attempt_failed`) 줄(`cap-g3g9.md` 5절)
-  10-11 Windows 실제 46화면 read-only 캡처에서 skills-1440의 `Cannot convert undefined or null to object` 1건과 별도 `refreshSlow`의 `state.incidents.filter is not a function` 1회가 관찰됐다. 이번 대상 탭 오류는 0건이나 전체 오류 0으로 기록하지 않는다. 원인 확인은 후속 범위다.
-- [ ] U14. 에이전트 화면에 업무 규칙(work_rules) 표시 없음(`cap-g3g9.md` 5절 ②)
+  10-11 skills null·incidents.filter 오류는 이전 실패다. 10-12 목록/설비 응답 검증·손상 초안 보호·실패 표시를 구현/시험했고 최종 실제 46화면은 console/pageerror 0이었다. 과거 스택 없는 null 오류 원인을 완전히 특정했다는 뜻은 아니다. 전체 실패 상태별 화면 확인은 항목별 증거와 구분한다.
+- [x] U14. 업무 규칙 표시·생성/변경/해제 구현, 실제 API·PG 저장 및 학생 동선 검증. 미등록 키는 원 키·오류를 보존한다.
 - [ ] U15. U1 남은 것: 에이전트 혼잣말이 영어(워커 지시 문제 — 4.2의 F와 조율), 결함 16·17(`2026-10-09/u1-uiux.md` 7절)
 - [ ] U16. 슬라이드에 넣을 실제 화면 캡처가 없다: 지금 포털의 시스템 구성 · 지식 지도 · 조치 방법 · 매뉴얼을 넣은 뒤의 지식 관리 · 질의 결과. 화면을 고친 뒤 1440 폭으로 찍어 `.evidence`에 두면 슬라이드 쪽이 가져간다
 최종 실라버스가 요구하는 화면 검증(기능 부재 판정이 아님; `verification/2026-10-11/portal-syllabus.md`):
-- [ ] U17. 학생 에이전트 이름·목표·역할·읽기 도구 설정 → 질문 → 근거·호출 기록 확인(통합반 온라인 49행).
-- [ ] U18. 도구(MCP) 등록 상태 → 연결 검사 → 읽기 호출 → 입력·반환 행·호출 기록 → 기존 에이전트 연결 확인(60행).
+- [x] U17. 이름·목표·역할·읽기 도구·업무 규칙 설정 → 실제 Codex 질문 → MCP 근거·호출 기록 검증 완료(`student-codex-stdin`, F16 후속 엄격 검증은 별도).
+- [x] U18. 실제 학생 MCP 등록·연결 검사·read_rows 입력/반환·호출 기록·에이전트 연결 검증 완료(`student-codex-stdin`).
 - [ ] U19. 처리 건·내 작업함의 역할·승인 대기, 승인·거절 후 상태 변화, 쓰기 권한 없는 계정의 제한 확인(69행). U1~U4와 연결하되 학생 계정 권한 검증까지 끝났다고 간주하지 않는다.
 - [ ] U20. A·B·C의 이벤트·에이전트·역할·시스템 매핑 → 검사 → 등록·배포 및 담당·대기·결과 추적 확인(94·95·102·104행). U7·U8과 연결하며 제공 mapping.json/API 보완 경로도 확인한다.
-- [ ] U21. 지원하는 준비 예제 범위의 개인 흐름 등록 → 실행 → 결과 보고 확인(115행). 지원되지 않는 외부 쓰기를 성공으로 표시하지 않는다.
+- [x] U21. 로컬 읽기 개인 흐름 등록 → 실제 Codex MCP 호출 → 결과 보고 DONE 확인(`student-codex-stdin`). Google 일정 등 외부 쓰기와 K3 완료를 뜻하지 않는다.
 
 - 고치지 않는 것: 옛 기록의 이름 중복·출처 번호 중복은 저장된 값이 옛 값이라 보이는 것이다(코드는 고침). 화면에서 가리지 않는다.
 - 화면 검사: `scripts/ui_capture_all_tabs.py`(콘솔 오류 0 · 가로 넘침 0은 전제일 뿐, 완료는 사용자가 캡처를 보고 판정).
 
 ### 4.2 기능·환경 잔여 (작고 급하지 않음)
-- [ ] F1. 호스트 워커의 Claude Code가 강사 개인 claude.ai 연결 도구를 에이전트에게 보인다(허용 목록이 거절은 함) — `it/agent-worker/worker/runner.py:187-194`, `K-capstone.md` 4절
-- [ ] F2. 정의를 지운 뒤 실행 그래프의 정의 투영을 정리하는 길이 제품에 없다(시험 흐름을 지울 때마다 손으로 좁힌 SQL — `final-verify.md` 7절, `K-capstone.md` 5.3·11절). 구조판 볼륨에 시험 흐름 `my_cooling@1` · `fv_close_probe@1` 투영이 남아 있다
-- [ ] F3. HM-8 · PR-07을 추출 지시 2.2로 다시 추출·검토·적재(출처 번호 중복이 사라지는지) — `scripts/c3_ingest.py`(extract → 사람 검토 기록 → commit), 구조판 볼륨, 워커 필요
-- [ ] F4. 개정 적재 라이브 미확인: 새 판에서 빠지는 노드에 판단 이력이 있을 때의 409 문구, 배치 되돌리기(rollback)가 같은 검사를 받는지(`manual-revision-fix.md` 5절)
-- [ ] F5. 제출되지 않은 판단(가드레일 거절 · 후보 없음)의 `DEC-` id가 404(`live-leftovers.md` 5)
-- [ ] F6. C 승인 순간 재확인이 설비 예측 문맥을 대조 — 그사이 설비 값이 바뀌면 발주 승인이 막힐 수 있음(코드만 읽음, 실측 없음 — `F-keep.md`가 아니라 `live-leftovers.md`)
-- [ ] F7. Pg 경로 미검증: `list_instances(asset=…)` SQL, 이벤트 커서 페이지(모르는 커서 404), 비밀 값 저장소(`review-backend.md` 5-1 · 10절), 실패 시도 기록·감사 기록 보존, `agent_authoring`의 work_rules insert/update
-- [ ] F8. 워커 `saved_path`가 `tool-results` 이름 폴더 아래면 어느 파일이든 읽는 잔여 위험(`review-backend.md` 3-5, 고치지 않음)
-- [ ] F9. 시험 환경 재현: `requirements-dev.txt`에 `fastmcp`가 없고 서비스 요구 파일끼리 공용 패키지 버전이 맞지 않는다. CLAUDE.md §5 명령만으로는 전체 시험이 통과하지 않는다(실패 2건: `test_a144_mcp_worker` · `test_capstone_g5_table_reader`). 이번 Windows venv에는 freeze와 같은 fastmcp 2.13.0.2를 설치했으나 깨끗한 환경 재현 문제를 닫은 것은 아니다
-- [ ] F10. 새 DB에서 `supabase start`가 51까지 올리는지 확인. 이전 macOS 장부는 44까지였고 이번 Windows **기존 DB**는 migration up --local로 25→51 적용했다. 신규 DB 시험은 여전히 미확인
-- [ ] F11. `docs/보고서/2026-10-09_HYD_시나리오_3개.md:221`이 "C 추천이 A정밀"로 남아 있다 — 지금은 B-OEM(`live-final.md` 3-5)
+- [x] F1. 현재 Codex 제품 경로는 run-local 등록 도구만 허용하고 ignore-user-config·apps=false·명시 MCP 구성을 유지한다. 실제 학생 읽기 도구 호출18 checks로 확인. 과거 Claude 개인 연결의live 재현은 현재 Sol 전용 지시 밖이며 Codex 필수 미완으로 남기지 않는다.
+- [x] F2. 단일 학생 흐름 삭제와 durable projection 정리 구현. 실제 Neo4j 3개 시험 및 학생 live 삭제 뒤 ProcessVersion/Instance 없음 확인. 정상 ExecutionProjection fence는 보존한다. 과거 수업 잔재 수동 삭제는 하지 않았다.
+- [ ] F3. HM-8·PM-02·PR-07 재추출→실제 사람 검토→적재 미완료. 첫 신규 정의2.3·기존2.2 불변. PR-07 구매 절차 범위 제품결함을 신규2.4로 보완했고 실제 Sol 재추출COMPLETED·SOP6/단계21을 확인했다. 이전2.3 제안도 보존한다. HM-8 실제 추출 제안 `activeworktree/.evidence/a161-c3/proposal-HM-8.json` 생성(8 procedures·18 warnings)만 확인. 모델 전환 전 완료된 Astra 산출물이다. PM-02 Astra 실행은 사용자 Sol 전용 지시로 공식 취소(`astra-cancel.json`)했고 Sol 6.1 PM-02 실제 제안 생성(절10·절차8·단계33)을 확인했으며 첫 PR-07 절차0은 범위 결함의 이력으로 보존하며 신규2.4는 절7·절차6·단계21·warnings14·rules7이다. 사람 검토 쟁점은 `manual-review-packet.md`에 연결한다. 제안을 reviewed/적재 완료로 표시하지 않는다.
+- [x] F4. 독립 실제 Neo4j·HTTP 보호 검증16개 통과(8.98초). 개정/rollback의 판단 이력 보호·409 경로 확인, 시험 전 빈 그래프·시험 후 정리. `manual-http-neo4j.log/xml`.
+- [x] F5. 제출 성공 전 EVAL, 성공 후 DEC로 전환하도록 수정·회귀 확인. 거절·후보 없음·연결 실패를 제출된 판단으로 표시하지 않는다.
+- [x] F6. 설비 물리 명령에만 forecast 동의 재확인 적용, 업무 공급사·정책·순위·필수 사실 검사는 유지. 예측만 변경/공급사 변경/설비 명령 세 경로 회귀 확인. 실제 C 재완주는 별도.
+- [x] F7. 독립 실제 PG에서 자산 필터·커서 404·비밀 저장·실패/감사 보존·work_rules 저장 3개 계약 시험 통과, 기존 PG4 순차 실행도 통과.
+- [x] F8. 신뢰하는 작업/프로젝트/세션 문맥의 결과 파일만 읽도록 수정·회귀 확인. 위장 폴더·다른 작업·링크 탈출 거절, 원문 미보존 안내 유지.
+- [x] F9. requirements-dev 의존 조합 수정, 새 venv 설치·pip check·전체 시험2275 통과로 재현. 독립 Docker 서비스 pin은 그대로다.
+- [x] F10. 새 Supabase 프로젝트에서 42 SQL 파일·최종 20261010000051·seed 적용 확인. 기존 DB migration up와 구분한 신규 DB 검증이다.
+- [x] F11. 보고서의 A정밀은 당시 기록임을 명시하고 10-10 B-OEM 추천 근거로 연결했다(`backend-remaining.md`).
 - [ ] F12. 근거 부족으로 남긴 것: kg-seed 컨테이너 기동 16분 지연, 고아 문서 `b7379c5e…`(`live-final.md`), `scripts/ui_regression.py`는 전체판에서만(`c3-assembly.md` 6절)
-- [ ] F13. 옛 `HANDOFF.md` §9의 `[ ]`(10-08 기록) 가운데 아직 유효한지 판정이 필요한 것: 기능 통합 검증 V(학생 동선으로 시나리오를 포털 직접 만들기로 끝까지, `HANDOFF.md:312`), 기능 보고서 갱신(`:313`). 사용자가 다시 요구한 기록은 못 찾았다 — 필요할 때만 한다
-- [ ] F14. 순위 점수 고정본의 내역 불일치 — `tests/fixtures/a_cards_before.json`에서 카드의 성분(성과 지표 · 경고 · 감점 · 품질 · 납기 · 예측 · 과거 선택)을 더한 값이 총점과 다르다: 1순위 성분 합 2.86(납기 +1.12, 예측 +1.74) vs 총점 3.38(차 0.52), 2 · 3순위 성분 합 2.23 vs 총점 2.75(차 0.52), 4순위 성분 합 -1.60 vs 총점 -1.58(차 0.02). 교재 3일차 제작 중 발견, 원인 미확인(고정본만 읽었고 점수 계산 코드는 보지 않았다)
+- [ ] F13. 최신 밤샘 전수 지시로 학생 직접 작성 통합 검증·보고를 진행한다. 로컬 읽기 학생 동선 18개는 완료, A/B/C 실제 재완주와 최종 기능 보고는 진행 중이다.
+- [x] F14. 차이 0.52/0.02는 수동 renderer fixture의 총점·성분 독립 상수 때문임을 확인했다. 실제 ranking.score 합산 계약을 시험했고 golden은 보존했다. 이 fixture를 계산 교육자료로 사용하지 않는다.
 
-최종 실라버스 대조만으로 F15 이후 새 기능 결함을 만들지는 않는다. 남은 수업 운영 검증은 학생별 환경 또는 순차 배포, 외부 MCP 설치·권한·접속, Notion 쓰기 권한, SDD 실패 재현 입력, 수강생 실행 시간 리허설이다(통합 온라인 122·124행 및 다른 세 시트 대응 행; `verification/2026-10-11/portal-syllabus.md`). U17~U21에서 실제 기능 결함이 재현되면 F15 이후로 등록한다.
+- [x] F15. Codex 최초·재개·교정에 전체 UTF-8 본문 stdin 전달 구현, 관련 86개 시험 및 실제 학생 동선 18개 통과. 이전 실패 기록은 보존한다.
+- [x] F16. 질문 근거를 실제 서버/도구·전체 인자로 엄격 대조하고 폼별 교정 계약을 분리했다. 관련 179개 시험 통과. 이 후속 변경의 live 재검증은 별도로 추적한다(`backend-remaining.md`).
+- [x] F17. 신규 매뉴얼 추출 2.3은 배포 provider를 따르며 기존 2.2 immutable 정의는 보존한다. 관련 시험은 F16 묶음에 포함. 실제 첫2.3 제안3건은 생성됐다. PR-07 신규2.4 실제 Sol 재추출은 완료했다. 사람 검토/적재는 F3에서 추적한다.
+- [x] F18. 워커 시작 실패의 Fatal 꼬리 보존·알려진 비밀 표식 가림, live 검사기의 FAILED 즉시 미완 종료 구현. 관련 55개 시험 통과. 현재 B 재진단 결과는 별도다.
+- [x] F19. Codex에 배정된 등록 스킬 본문·출처·SHA-256을 stdin으로 전달하고 snapshot/실제 제공파일/audit 해시 일치 검증. 관련75개 시험 통과, 실제 B에서 도구 실행까지 확인. 지식 부족 자율보류를 성공 결과로 바꾸지 않는다.
+- [x] F20. 매뉴얼 추출 지시가 구매 SOP를 제외한 제품 범위 결함을 신규2.4로 수정. 기존2.3 정의 실제 불변·79개/확대247개 회귀·실제 Sol PR-07 COMPLETED/6SOP21단계 확인. 첫2.3 절차0 제안과 준비 전 GET 실패도 보존한다. 사람 검토·적재 완료와는 구분한다.
+- [x] F21. 지식 지도 query에서 내부 투영/적재 기록5종 조회제외 수정·독립Neo4j/API45pass·3skip·실제 운영배포 확인. API1592→636, DB저장420/428/50/27/31 불변, Incident187·DecisionCase99·ManualSection18·KnowledgeSource7 유지. 최신6화면console0·폭0이며ontologySVG12는내부스크롤로접근가능함을실제검증했고기존작성명read_only1은보존한다.
+
+최종 실라버스 대조만으로 새 기능 결함을 만들지는 않는다. F15는 U17·U21 실제 실행에서 재현된 결함이다. 남은 수업 운영 검증은 학생별 환경 또는 순차 배포, 외부 MCP 설치·권한·접속, Notion 쓰기 권한, SDD 실패 재현 입력, 수강생 실행 시간 리허설이다(통합 온라인 122·124행 및 다른 세 시트 대응 행; `verification/2026-10-11/portal-syllabus.md`).
 
 ### 4.3 종합 랩(개인 시나리오) 키트 잔여
 설계 `verification/2026-10-09/capstone-lab.md`, 구현 기록 `2026-10-10/cap-g1g7.md` · `cap-g3g9.md` · `cap-kit.md` · `K-capstone.md`, 키트 `students/_template/`(T0~T8), 참조 흐름 `students/flows/`. T2·G1·G3·G9·T3·T4·G8·`validate --extra`·`close_agent_task`·손으로 그린 흐름 A 완주는 끝났다.
-- [ ] K1. G6 학생 것 격리(노트북별 운영이면 "내 사례" 꼬리표·거르기·내보내기 — 설계 5.2). 꼬리표를 누가 어디서 붙이는지 · 값 모양이 설계에 없어 구현하지 않았다(사용자 결정 필요)
-- [ ] K2. 지식 지도에서 학생 항목을 눌렀을 때의 상세, demo.bpmn.io 사이트에 직접 올려 보기(로컬 bpmn-js로만 열어 봄 — `students/flows`도 같다), 구성 내보내기 → 되돌리기 → 가져오기
+- [x] K1. 구성 꼬리표·필터·선택 내보내기 구현/검증. 최종 두 수정(메일 의존·URL query 비밀값) 포함 독립 PG17개·전체2275개 통과. 실제1440/1024 태그 저장→필터→export1flow·1agent·1MCP→제거 확인. 해당 캡처는 두 수정 전이며 최종process재빌드02:23:44 KST 확인과 구분한다. 인증 기반 공용 서버 격리는 아니다.
+- [x] K2. 실제 bpmn.io A/B/C 및 생성 구성 왕복differences=[]에 더해 공식 T2 학생지식65nodes/107rels 적재→실제 질문9개 모두pass→학생 노드 상세 캡처 확인→공식ns wipe65개/remaining0까지 확인. 최신 target7개 기능 준비는 모두pass지만 health 요청abort로 전체exit1이므로 모든 캡처 검사 통과를 주장하지 않는다.
 - [ ] K3. 예시 사례(회의 준비) 실제 1회: 구글 인증은 사용자 몫. 예시 흐름은 결과 경로 자리 3줄 때문에 가져오기가 거절된다(`students/_template/example_meeting/README.md`). 전원 수락 여부를 참/거짓으로 주지 않는 서버면 확인 단계를 바꿔야 한다
-- [ ] K4. `close_agent_task`의 PENDING 쪽(에이전트가 스스로 보류한 단계를 닫기)은 단위 시험만(`tests/test_close_agent_task.py`), 라이브 미검증
+- [x] K4. 실제 Sol6.1이 read_rows로 필수 customer 미응답을 확인→self-deferred PENDING→공식 close→task/미도달 Report CANCELLED·instance COMPLETED/closed-by-human을7 checks 모두 PASS로 확인(`k4-live/summary.json`). 업무 보고/일정 확정은 실행하지 않았다. B 열린 incident의close409와 별도 개인 흐름 검증이다.
 
 ### 4.4 최종 실라버스 대조 결과 (2026-10-11)
 최종 xlsx 네 시트를 대조했고 결과를 사용자에게 먼저 제시했다. 행별 근거는 `verification/2026-10-11/portal-syllabus.md`. 옛 `syllabus-gap.md`의 있음 29·부분 12·없음 22·다름 4·시스템 밖 13은 최종본 구현 현황으로 쓰지 않는다.
@@ -130,7 +152,7 @@
 - 업무 감시(BUSINESS_MONITOR) 유지 여부(기본 끔)
 - B·C 처리 건이 진행 중일 때 [초기화]를 거절할지(지금은 업무 값만 되돌리고 처리 건은 계속 간다 — `review-c3-bc.md` 4절)
 - `students/flows/`에 연결 값 파일(`*.mapping.json`)을 같이 둔 것 — 포털에 시스템 부품 설정 칸이 생기면 뺄지. 흐름 이름은 `c3_flows.py` 그대로("냉각 긴급 대응" · "정기 정비" · "예비품 구매")라 시나리오 이름(긴급 대응 · 정기 점검 · 재고 보충)과 낱말이 다르다 — 확정안과 대조
-- G6(K1) 설계 결정
+- G6(K1)은 독립 노트북의 구성 꼬리표·필터·선택 export 구현으로 처리했다. 공용 서버 인증 격리는 별도 범위이며 현재 사용자 결정 대기로 중단하지 않는다
 - 이전 이미지 꼬리표가 없다(`final-verify.md` 3절). 되돌릴 일이 있으면 `F-20261010-keep` 작업 트리에서 다시 빌드
 - macOS에서의 작업보고 위치(CLAUDE.md §2의 `D:/work/작업보고/`는 이 PC에 없다)
 - 끝난 작업 트리 정리: 10-11 한 번 했다(4.6절). 남은 것의 정리 시점
@@ -160,7 +182,7 @@
 - 망: IT/OT를 잇는 것은 DMZ 서비스뿐. process ↔ plant-sim은 `sim-net` 전용(`tests/test_compose_contract.py`가 지킴). MCP 비밀값은 `${SECRET:KEY}` 자리표시자. 판단 id: 제출 `DEC-`, 읽기 평가 `EVAL-`.
 - 승인 카드 머리말: 예측(유온 등)은 설비를 바꾸는 안이거나 안마다 예측이 다를 때만. 업무 안은 그 안의 업무 값. A 화면은 고정본(`tests/fixtures/a_cards_before.json`)과 같아야 한다.
 - 수업 구성(막마다 이론 → 설비 체험 → 랩업 등 옛 실라버스의 구조)은 이제 제약이 아니다. 실라버스는 사용자가 직접 쓰며 최종본이 기준이다(1절). 랩업을 Claude Code 바이브 코딩으로 한다는 방식과 그 계약 원문은 `archive/HANDOFF_실라버스교재.md` §7에 있다. 학생 AI는 키로 제공되니 계정 걱정·결정론 대비 경로를 설계하지 않는다.
-- **fable 모델은 쓰지 않는다**(메인 · 서브에이전트 · 워커 모두, 서브에이전트는 `opus`). `.env`는 키 이름만 읽는다. push · 데이터 볼륨 삭제 · 외부 게시는 사용자에게 묻는다. 커밋은 경로 지정(`git add .` · `-A` 금지).
+- **최신 사용자 지시: 메인·하위 작업·워커 모두 Sol 6.1만 사용한다.** 기존 fable 금지와 opus/Astra 배정 규칙보다 이 최신 지시가 우선한다. `.env`는 키 이름만 읽는다. push · 데이터 볼륨 삭제 · 외부 게시는 사용자에게 묻는다. 커밋은 경로 지정(`git add .` · `-A` 금지).
 - 여러 세션이 같이 일할 때: 작업 트리 하나씩(`git worktree add -b <이름> .claude/worktrees/<이름> claude/hyd-handoff-work-xziutz`), 레포 루트는 합치는 자리. 새 마이그레이션 번호는 052부터 이어서(미사용 053 · 054), 겹침 위험 파일은 `it/portal/www/index.html`(캐시 버전 줄) · `instances.py` · `instance_mode.py` · `service_parts.py` · `bpmn_import.py` · `procdb.py` · `caseRecord.js` · `approvalCard.js` · `instances.js`. 기록은 `verification/<날짜>/<이름>.md`에 쓰고 `NOW.md` · `HANDOFF.md` · `DECISIONS.md`는 합치는 세션만 고친다.
 
 ## 6. 문서 지도
@@ -174,7 +196,7 @@
 | 점검표 | `docs/handoff/REVIEW_CHECKLIST.md` |
 | 화면 작업(다른 세션이 쓴다) | `docs/handoff/UIUX.md` · `UIUX_PLAN.md` · `docs/ui-design-contract.md` |
 | 코드가 가리키는 근거 원장 | `docs/handoff/REPO_GAP.md`(제품 ProcessGPT 대조, engine.py · instances.py 주석) · `docs/handoff/AUDIT.md`(회의·레포 대조, ingest.py 주석) |
-| 검증 기록 (구조 불변) | `docs/handoff/verification/<날짜>/` — 최신 근거 `2026-10-10/final-verify.md`(합친 코드 라이브 검증·회귀), `F-keep.md`(승인 단계·포털에 넘길 API), `K-capstone.md`(종합 랩), `cap-*.md`, `live-final.md`, `live-leftovers.md`, `manual-revision-fix.md`, `review-c3-bc.md`, `c-knowledge-gap.md`. **`syllabus-gap.md` · `syllabus-portal-underuse.md`와 10-09 이전 기록 안의 실라버스 언급은 옛 실라버스 기준이다** |
+| 검증 기록 (구조 불변) | `docs/handoff/verification/<날짜>/` — 현재 근거 `2026-10-12/overnight-status.md`·`student-cases.md`·`student-probe.md`·`capture-review.md`·`manual-review-packet.md`, 이전 근거 `2026-10-10/final-verify.md`(합친 코드 라이브 검증·회귀), `F-keep.md`(승인 단계·포털에 넘길 API), `K-capstone.md`(종합 랩), `cap-*.md`, `live-final.md`, `live-leftovers.md`, `manual-revision-fix.md`, `review-c3-bc.md`, `c-knowledge-gap.md`. **`syllabus-gap.md` · `syllabus-portal-underuse.md`와 10-09 이전 기록 안의 실라버스 언급은 옛 실라버스 기준이다** |
 | 회의 원문·출처 | `docs/handoff/sources/` |
 | 라이브 도구 · 고정 패키지 목록 | `docs/handoff/tools/live/` · `tools/venv-py312-freeze.txt` |
 | 끝난 작업·옛 목표·옛 실라버스 보관 (한 줄 안내) | `docs/handoff/archive/README.md` |

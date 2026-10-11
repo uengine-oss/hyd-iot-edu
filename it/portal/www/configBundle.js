@@ -29,7 +29,7 @@
   const counts = s => Object.entries(COUNT_WORDS).filter(([k]) => s && s[k]).map(([k, w]) => `${w} ${s[k]}`).join(' · ') || '내가 만든 것 없음(기준 그대로)';
 
   function render(el) {
-    el.innerHTML =
+    el.innerHTML = '<div id="studentCasesView"></div>' +
       UI.card({ title: '출발본 내보내기', sub: '지금 내가 만든 구성만 파일 하나로 받습니다. 기준 구성과 비밀값은 들어가지 않습니다.',
         body: `<div class="form-actions"><span class="form-msg" id="cfgExportMsg" role="status"></span><button type="button" class="btn primary" id="cfgExport">파일 받기</button></div>` }) +
       UI.card({ title: '출발본 불러오기', sub: '강사가 준 출발본 파일을 올리면 지금 구성을 기준으로 되돌린 뒤 파일 내용으로 다시 세웁니다. 망쳐도 다시 불러오면 됩니다.',
@@ -41,6 +41,7 @@
         body: `<div class="form-actions"><span class="form-msg" id="cfgResetMsg" role="status"></span><button type="button" class="btn danger" id="cfgReset">기준으로 되돌리기</button></div>
           <div id="cfgResetResult"></div>` });
     const $ = id => el.querySelector('#' + id);
+    window.hydStudentCases?.mount($('studentCasesView'));
     const msg = (id, text, bad) => { $(id).textContent = text; $(id).className = 'form-msg ' + (bad ? 'neg' : 'pos'); };
     let pending = null;                                   // 비밀값을 기다리는 파일
 

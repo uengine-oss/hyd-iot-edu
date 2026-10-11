@@ -234,6 +234,37 @@ def test_browser_delay_keeps_approval_open_and_accepts_approval(browser, world, 
         p.close()
 
 
+@pytest.mark.parametrize('blocked_resource', ['instance', 'task'])
+def test_click_during_poll_keeps_complete_approval_snapshot(browser, world, blocked_resource):
+    p = Portal(browser, world, 'c3_spare')
+    held = []
+    try:
+        p.settle()
+        p.page.locator('#tdReason').fill('폴링 중에도 같은 승인 요청을 처리합니다.')
+        task_id = _row(p.rt, p.inst, 'T_approve')['id']
+        path = '/api/instances/' + p.inst['proc_inst_id'] if blocked_resource == 'instance' else '/api/todolist/' + task_id
+        pattern = '**' + path
+        p.page.route(pattern, lambda route: held.append(route))
+        with p.page.expect_request(lambda request: urlsplit(request.url).path == path):
+            p.page.evaluate('void hydInstances.load(false)')
+        p.page.wait_for_function('hydInstances.I.loading')
+        # Network latency exposes the real poll/click interleaving deterministically.
+        # Assertions are the same as the original duplicate-submit contract.
+        p.page.evaluate("""() => { const go=document.querySelector('#tdGo'); go.click(); go.click();
+          window.locked = document.querySelector('#tdGo').disabled && document.querySelector('#tdRejectCard').disabled; }""")
+        assert p.page.evaluate('window.locked')
+        assert p.page.locator('#tdReason').input_value() == '폴링 중에도 같은 승인 요청을 처리합니다.'
+        p.page.unroute(pattern)
+        for route in held:
+            p.route(route)
+        p.settle()
+        assert len(p.posts) == 1 and p.posts[0][0].endswith('/select')
+        assert _row(p.rt, p.inst, 'T_approve')['output']['approval'] == '승인'
+        assert not p.errors
+    finally:
+        p.close()
+
+
 def test_browser_event_only_poll_preserves_focus_and_reject_is_single_submission(browser, world):
     p = Portal(browser, world, 'c3_pm')
     try:

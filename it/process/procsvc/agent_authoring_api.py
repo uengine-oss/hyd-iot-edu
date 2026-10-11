@@ -23,6 +23,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import agent_authoring as A
+from . import work_rules
 from .instance_mode import _in_executor, _rt
 
 
@@ -34,6 +35,7 @@ class AgentReq(BaseModel):
     model: str = ""
     tools: list[str] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
+    work_rules: str | None = None
     by: str | None = None
 
 
@@ -94,7 +96,8 @@ def mount(app: FastAPI) -> None:
             return {"servers": A.server_options(rt.repo, rt.tenant_id),
                     "skills": [{"skill_name": s["skill_name"], "description": s.get("description") or "", "origin": A.origin_of(s)}
                                for s in rt.repo.list_skills(rt.tenant_id)],
-                    "models": models}
+                    "models": models,
+                    "work_rules": [work_rules.rule_card(key) for key in sorted(work_rules.RULES)]}
         return await _in_executor(work)
 
     @app.post("/api/agents/reset")
@@ -105,12 +108,12 @@ def mount(app: FastAPI) -> None:
     @app.post("/api/agents", status_code=201)
     async def create_agent(req: AgentReq):
         rt = _rt()
-        return await _call(A.create_agent, rt.repo, rt.tenant_id, req.model_dump(), by=req.by)
+        return await _call(A.create_agent, rt.repo, rt.tenant_id, req.model_dump(exclude_unset=True), by=req.by)
 
     @app.put("/api/agents/{agent_id}")
     async def update_agent(agent_id: str, req: AgentReq):
         rt = _rt()
-        return await _call(A.update_agent, rt.repo, rt.tenant_id, agent_id, req.model_dump(), by=req.by)
+        return await _call(A.update_agent, rt.repo, rt.tenant_id, agent_id, req.model_dump(exclude_unset=True), by=req.by)
 
     @app.delete("/api/agents/{agent_id}")
     async def delete_agent(agent_id: str, by: str | None = None):
