@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520">
+<rect x="60" y="74" width="360" height="400" rx="12" ry="12" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="84" y="106" width="150" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="104" y="142" width="230" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="104" y="178" width="180" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="124" y="214" width="120" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="124" y="308" width="200" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="104" y="344" width="160" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="104" y="380" width="240" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="84" y="416" width="90" height="13" rx="6.5" ry="6.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="76" y="238" width="328" height="44" rx="10" ry="10" fill="#E7F3FD" stroke="#1A6FC4" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="556" y="36" width="168" height="132" rx="16" ry="16" fill="#F3F6F9" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 585.25,90.5 L 585.25,73.0 A 18.75 18.75 0 0 1 622.75,73.0 L 622.75,90.5" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="574.0" y="90.5" width="60.0" height="50.0" rx="7" ry="7" fill="#5CB8F2" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="604" cy="110.5" r="6.25" fill="#13294B" stroke="#13294B" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="604" y1="113.0" x2="604" y2="125.5" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="660.0" cy="102" r="11.700000000000001" fill="#5CB8F2" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="671.7" y1="102" x2="705.0" y2="102" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="692.4" y1="102" x2="692.4" y2="112.8" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="703.2" y1="102" x2="703.2" y2="112.8" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 640.0,172.0 L 640.0,230.9" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="640.0,240.0 633.9,228.5 646.1,228.5" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 424.0,260.0 L 610.9,260.0" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="620.0,260.0 608.5,266.1 608.5,253.9" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 660.0,260.0 L 916.2,260.0" stroke="#1A6FC4" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="926.0,260.0 913.6,266.6 913.6,253.4" fill="#1A6FC4" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="640" cy="260" r="16" fill="#5CB8F2" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(980 260) scale(1.0)">
+<rect x="-44" y="-48" width="88" height="96" rx="8" ry="8" fill="#FFFFFF" stroke="#13294B" stroke-width="2.98" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-44" y1="-16" x2="44" y2="-16" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-44" y1="16" x2="44" y2="16" stroke="#13294B" stroke-width="2.98" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-28" cy="-32" r="5" fill="#5CB8F2" stroke="#13294B" stroke-width="1.70" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-12" y1="-32" x2="30" y2="-32" stroke="#13294B" stroke-width="2.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-28" cy="0" r="5" fill="#5CB8F2" stroke="#13294B" stroke-width="1.70" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-12" y1="0" x2="30" y2="0" stroke="#13294B" stroke-width="2.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-28" cy="32" r="5" fill="#5CB8F2" stroke="#13294B" stroke-width="1.70" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-12" y1="32" x2="30" y2="32" stroke="#13294B" stroke-width="2.55" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M 980.0,316.0 L 980.0,363.6" stroke="#13294B" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="980.0,372.0 974.4,361.4 985.6,361.4" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="900" y="380" width="160" height="86" rx="8" ry="8" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="925" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="947" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="969" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="991" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1013" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1035" cy="423" r="7" fill="#13294B" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
