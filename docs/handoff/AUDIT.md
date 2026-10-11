@@ -1,11 +1,11 @@
 # 회의 요구 · 관련 레포 · HYD 실제 구현 대조
 
-현재 계약은 [GOAL](GOAL.md) 상단, 재개 순서는 [HANDOFF §9 G](HANDOFF.md). 이 문서는 조사/검증 원장이며 새 요구를 임의로 만드는 문서가 아니다.
+현재 계약은 [GOAL](archive/GOAL.md) 상단, 재개 순서는 [HANDOFF §9 G](HANDOFF.md). 이 문서는 조사/검증 원장이며 새 요구를 임의로 만드는 문서가 아니다.
 
 ## 판정과 증거
 
 - 상태: 미검토 / 문서 확인 / 코드 대조 / 실행 검증 / 결함 확정 / 수정 후 검증. 클론/파일 존재는 열람이나 구현 증거가 아니다.
-- 원문 기준: [회의 2](sources/meeting-2.txt) 1~461행. 사용자 최신 확장은 [발화 원문](USER_UTTERANCES_CODEX_20261004.md).
+- 원문 기준: [회의 2](sources/meeting-2.txt) 1~461행. 사용자 최신 확장은 [발화 원문](archive/USER_UTTERANCES_CODEX_20261004.md).
 - 원자료 바이트/해시: [provenance.json](sources/provenance.json). [47개 지도](sources/repository-map/REPOSITORY_MAP.md), [67개 연결](sources/repository-map/CONNECTIONS.md), 내부 경로 8개·미확정 4개도 보존한다.
 - HYD 기준 HEAD `aad500b47c928d0fc2d6bb65bc20dadc5ccd3f5d` + 기존 WIP. 참고 17개 커밋/변경 상태는 `.evidence/reaudit/2026-10-04-baseline/repository-snapshots.json`. 이 스냅샷은 원격 최신이라는 주장이 아니다.
 - 이전 REPO_GAP는 과거 기록이다. 각 항목에 이번 실제 확인을 추가하기 전에는 재검증됨으로 표시하지 않는다.
@@ -69,7 +69,7 @@ C17에 따라 시스템 개발·실제 검증이 대상이다. 아래 R13/R14의
 | process-gpt-completion / b272c9ab458f3ca3e18fe286e4e770d291b99e89 | polling_service/polling_service.py 1~150; workitem_processor.py 5026~5258 | 정의/버전을 조회해 활동 type으로 분기; 업무 도구 결과/실패 집계. 원본 전체 실행은 미검증 |
 | HYD / 기준 HEAD+WIP | ingest.py 1~319, kgadmin.py 전문, worker/prompt.py·context.py 전문, dmn_mcp/tools.py·enterprise_mcp/tools.py 전문; instances.py 1~150,219~342; main.py 645~718 | 단순 정규식 문서 파서, DDL 계획/적재/SQL 경로, 고정 service ID와 실제 데이터 읽기 도구가 함께 존재. '전부 하드코딩'으로 단정하지 않음 |
 
-[저장소 전체 관련성](REPOSITORY_REVIEW.md)은 47개 지도 항목 각각의 다음 조사 목적을 관리한다. 코드 대조 완료와 구분한다.
+[저장소 전체 관련성](archive/REPOSITORY_REVIEW.md)은 47개 지도 항목 각각의 다음 조사 목적을 관리한다. 코드 대조 완료와 구분한다.
 
 ## 다음 작업
 
@@ -101,7 +101,7 @@ A011 두 번째 20배속 통합 시험도 완주하지 못함: 실제 LLM 작업
 
 A012 명령 미발행을 완료 처리: `_run_command`가 incident/commands 없음 또는 approve_commands의 ValueError를 빈 성공 submit으로 바꿨다. 명령 없음을 오류로, ValueError는 서비스 실패로 보존, cmdId 없는 응답도 실패 처리하도록 수정. 거부 명령이 PENDING/재시도 3회, 재관측 TODO인 검사 포함 관련 17 passed. 진행 중 통합 컨테이너에는 아직 미반영. terminal 상태 콜백과 현재 설비 상태 재검증은 별도 후속이다.
 
-상세 후속 구현 순서와 수용 조건은 [REBUILD.md](REBUILD.md). 문서는 작업 계획이며 완료 증거가 아니다.
+상세 후속 구현 순서와 수용 조건은 [REBUILD.md](archive/REBUILD.md). 문서는 작업 계획이며 완료 증거가 아니다.
 
 A007 수정/DB 검증: `start_event_id` + tenant/definition/event unique index, 이벤트 잠금 안에서 인스턴스와 초기 작업을 한 트랜잭션으로 기록. 관련 단위 34 passed, 전체 **271 passed, 2 warnings**(`event-identity-regression.xml`). `probe_event_identity.py` 실제 PostgreSQL 별도 schema에서 **7/7**(16개 동시 요청→인스턴스 1·작업 9, 완료 뒤 중복 없음, DB unique 위반 확인, 부분 저장 롤백·재시도, 다른 tenant 독립). 임시 schema 제거 확인. 실제 마이그레이션 기존 20/20 backfill, 중복 그룹 0. Incident/graph는 외부 저장이므로 SQL 트랜잭션 범위를 넘어선 exactly-once 주장은 하지 않는다(DECISIONS 18). process 컨테이너 배포는 현재 F 시험 종료 뒤.
 ## A004 원천 식별 수정 및 실측 (2026-10-04 04:09 KST)
@@ -373,7 +373,7 @@ PowerShell종료 `a021-lock-final-stop.json`: worker0/자식0. 기본20×/legacy
 
 ## A025 승인 의도와 전달 복구 (2026-10-04 08:12)
 
-승인복사본 검증→같은PG트랜잭션에승인의도/사람제출/타이머취소→커밋뒤전달→전달완료뒤후속작업으로구조를바꿨다. 외부업무응답실패는FAILED/작업SUBMITTED이며역할검사후같은스냅샷재전달만허용한다. legacyAPI우회도차단했다. 상세 [APPROVAL_RECOVERY.md](APPROVAL_RECOVERY.md).
+승인복사본 검증→같은PG트랜잭션에승인의도/사람제출/타이머취소→커밋뒤전달→전달완료뒤후속작업으로구조를바꿨다. 외부업무응답실패는FAILED/작업SUBMITTED이며역할검사후같은스냅샷재전달만허용한다. legacyAPI우회도차단했다. 상세 [APPROVAL_RECOVERY.md](archive/APPROVAL_RECOVERY.md).
 
 실패11개→수정후API포함14개, 전체348passed/기존경고2. 실제Pg/SQLite/HTTP4/4(실제child os._exit73 뒤 PR-1003-17EC 한건유지; PLC/graph는대역), 기존Pg복구11/11. 배포뒤legacy실제설비36/36/e8e0dff5-fa85-4d9b-8485-b8b78acc98f6/WO-1003-0CC5, 승인DELIVERED/attempt1. 새Codex38검사실행중; 아직성공판정안함. 포털은문법검사와API경로검사만이며직접클릭미검수. 교재추가절1280/390직접렌더검토/check_book0. 일반outbox/현재조건재검증/전체강의검수는별도미완료다.
 
@@ -401,7 +401,7 @@ PowerShell `a025-worker-stop.json`08:33: worker0/자식0. `a025-restored.json`:2
 
 ### A028 수정/검증 (2026-10-04 09:25)
 
-구현과 실패증거를 [WORK_ORDER_RECOVERY.md](WORK_ORDER_RECOVERY.md)에 연결했다. 신규7실패에서 출발해 실제요청/영수증/종결경계와 승인옵션 actions 유실, claim뒤 service표식 전 강제종료 회수를 수정했다. 전체382passed, 실제Pg/SQLite/HTTP6/6(PLC/graph대역), 실제20×legacy bridge 인스턴스40/40, 직접legacy48/48 exit0다. 실제CMMS ref/접수뒤종결과8경쟁자HTTP1회까지 검사했다. 교재13장1280/390 정적렌더·JS문법통과이며 포털클릭검수는 아니다. 새Codex 시작명령은 자동 승인 심사 blocked by policy로 거절돼 미실행, 우회하지 않고 instance/20×/legacy·설비3RUN·PowerShellworker0·개인config불변으로 복구했다. A026 원문 연결, A027 현재조건, 일반outbox/claim지연/전체강의검수는 여전히 미완료다.
+구현과 실패증거를 [WORK_ORDER_RECOVERY.md](archive/WORK_ORDER_RECOVERY.md)에 연결했다. 신규7실패에서 출발해 실제요청/영수증/종결경계와 승인옵션 actions 유실, claim뒤 service표식 전 강제종료 회수를 수정했다. 전체382passed, 실제Pg/SQLite/HTTP6/6(PLC/graph대역), 실제20×legacy bridge 인스턴스40/40, 직접legacy48/48 exit0다. 실제CMMS ref/접수뒤종결과8경쟁자HTTP1회까지 검사했다. 교재13장1280/390 정적렌더·JS문법통과이며 포털클릭검수는 아니다. 새Codex 시작명령은 자동 승인 심사 blocked by policy로 거절돼 미실행, 우회하지 않고 instance/20×/legacy·설비3RUN·PowerShellworker0·개인config불변으로 복구했다. A026 원문 연결, A027 현재조건, 일반outbox/claim지연/전체강의검수는 여전히 미완료다.
 
 08:40 추가실측: `scripts/probe_work_order_consistency.py`를위인스턴스에실행해2/4 exit1(`a028-closure-first.json/log`). 실제CMMS일치영수증과태스크완료시간은통과, Incident참조와종결순서는실패다. 읽기전용검사이며임의수정/새업무발행없음. 이실패를수정후검사와대조한다.
 
@@ -421,7 +421,7 @@ A027 실제 시험 중 저장된 판단이 있음에도 네 번째 rank가 IN_PR
 
 
 ### A027 후속 — 현재 승인 경계 연결/실행 (10:49)
-[CURRENT_APPROVAL](CURRENT_APPROVAL.md)에 상세계약/미완료를정리했다. 전체431passed, 배포모드변경5/5, 실제legacy bridge 인스턴스40/40, 실제원천변경7/7이다. 새Codex 미실행. 첫정상39/40·첫원천exit1을삭제하거나성공으로바꾸지않았다. 현재조건검사는선택접수/전달/명령직전이며source오류는통과값으로대체하지않는다. WARN미확인은공개경고로유지하고EXCLUDE/PENALTY미확인은보류한다. 신규경고/카드내용/업무판단조건변경은새검토대상이다. 교재13 current-approval-contract 구조0·1280/390직접렌더확인. 포털클릭/실제모델이전일반재작업은미완료.
+[CURRENT_APPROVAL](archive/CURRENT_APPROVAL.md)에 상세계약/미완료를정리했다. 전체431passed, 배포모드변경5/5, 실제legacy bridge 인스턴스40/40, 실제원천변경7/7이다. 새Codex 미실행. 첫정상39/40·첫원천exit1을삭제하거나성공으로바꾸지않았다. 현재조건검사는선택접수/전달/명령직전이며source오류는통과값으로대체하지않는다. WARN미확인은공개경고로유지하고EXCLUDE/PENALTY미확인은보류한다. 신규경고/카드내용/업무판단조건변경은새검토대상이다. 교재13 current-approval-contract 구조0·1280/390직접렌더확인. 포털클릭/실제모델이전일반재작업은미완료.
 
 ### A030 — 펌프의 필수 예측 누락과 정적 예측 적용 범위 (발견 당시; 후속 연결은 아래)
 실제CMMS readiness=true여도 pump판단이 NO_FEASIBLE_OPTION이다. 원본그래프 it/neo4j/v2/instances.cypher549~550은PS1설계예측만정의하지만rule:ts1-hard는모든후보의forecast_ts1을검사한다. 예전에는unknown규칙을발동하지않아통과했으나현재는미확인실행을보류한다. `a027-live-sources.log`가최초반례, `a027-live-sources-fixed/pump-ready.json`가현재원시조건/미확인규칙이다. 확인된경계를검사한7/7은펌프실행성공을뜻하지않는다. 실제상태·고장조합·사용자조치값을입력으로받고유효범위를표시하는예측계약이필요하다. 쿨러정상40/40을다른시나리오정상으로확대하지않는다.
@@ -519,7 +519,7 @@ finally에서 process의 원래 환경변수 전체가 같음을 확인하고 20
 
 실제 API/PG를 재조회했다. d6a2392c… 인스턴스는 RUNNING, 승인6e50dcef…는 FAILED/1시도이지만 Incident INC-1004-07-b30f는 RESOLVED_WITHOUT_ACTION/cmdId 없음이다. OpenAPI에는 동일 승인 재시도만 있고 일반 rework/discard가 없다. 현재 상태는 `a035-rework-baseline/`에 보존했다. cmdId 없음만으로 기업 효과까지 없다고 판정하지 않는다.
 
-completion b272c9a의 process_engine.py791~1040을 재대조해 새 UUID/rework_count/원본 보존 구조를 확인했다. HEAD·clean working tree·SHA·발췌본을 같은 증거 폴더에 기록했다. HYD는 변수 시작 원문/출력 소유권·명시 세대·실패 승인 폐기·실제 효과 확인 계약이 추가로 필요하다. [REWORK.md](REWORK.md)에 구현 순서와 실제 수용 기준을 작성했다. 설계 문서이며 아직 A035 코드 변경/완주 증거가 아니다. 종료된 사건의 명시 정리와 활성 사건의 새 판단 경로를 각각 구현한다.
+completion b272c9a의 process_engine.py791~1040을 재대조해 새 UUID/rework_count/원본 보존 구조를 확인했다. HEAD·clean working tree·SHA·발췌본을 같은 증거 폴더에 기록했다. HYD는 변수 시작 원문/출력 소유권·명시 세대·실패 승인 폐기·실제 효과 확인 계약이 추가로 필요하다. [REWORK.md](archive/REWORK.md)에 구현 순서와 실제 수용 기준을 작성했다. 설계 문서이며 아직 A035 코드 변경/완주 증거가 아니다. 종료된 사건의 명시 정리와 활성 사건의 새 판단 경로를 각각 구현한다.
 
 ### A035 실패 승인 폐기 — 실제 연결·검증, 일반 재작업은 미완료
 
@@ -591,19 +591,19 @@ instance anomaly_response.e3dfb2bb-e2ef-410d-b8c0-120e18bc9d36, Incident INC-100
 
 원래 Incident/모든 관련 판단/기업 전체 원장을 대조하고, 효과 없는 승인 대기 사건에 새 판단 세대를 연결했다. PENDING/FAILED 원래 승인은 역할 검사 뒤 같은 PG 거래에서 폐기하되 payload/error/history와 SQLite 원문은 보존한다. 새 세대의 새 판단·새 사람 승인이 필수이며, 기존 효과가 있으면 보상 검토로 남긴다. 현재 인스턴스의 decision_id로 명령 대상을 선택한다.
 
-최종전체652passed/경고2,process build/deploy0. 실제PG/SQLite/기업HTTP13/13(강제종료/rollback/동시replay/옛판단거절/새승인;PLC대역), 가동HTTP/PG/DMNMCP/Neo4j18/18(실제 세대1 새판단·별도사람선택대기·옛카드거절·정상검토종료;앞3작업기록출력). 실제Codex/세대1PLC완주는미검증. 첫PG9검사뒤의반복재작업결함과수정/원본은 [REWORK A040](REWORK.md)에 기록했다. 증거 a040-final-tests.*, a040-incident-pg-retry/, a040-incident-live/.
+최종전체652passed/경고2,process build/deploy0. 실제PG/SQLite/기업HTTP13/13(강제종료/rollback/동시replay/옛판단거절/새승인;PLC대역), 가동HTTP/PG/DMNMCP/Neo4j18/18(실제 세대1 새판단·별도사람선택대기·옛카드거절·정상검토종료;앞3작업기록출력). 실제Codex/세대1PLC완주는미검증. 첫PG9검사뒤의반복재작업결함과수정/원본은 [REWORK A040](archive/REWORK.md)에 기록했다. 증거 a040-final-tests.*, a040-incident-pg-retry/, a040-incident-live/.
 
 다음은 포털의 재작업 요청·영향/효과 검토와 실패/새판단 대기를 실제 사용 동선에 연결하고, 진단부터 변경 원천을 읽는 실제 실행을 확인한다. 효과 보상/의존 작업 스케줄러/일반문서AI추출/그래프 outbox도 남는다. 새Codex의 기존 도구 정책 거절은 우회하지 않았으며 가동MCP 검사를 Codex 성공으로 세지 않는다. 시스템 작업이며 교재·시수·강의리허설은 제외한다.
 
 
 ### A041 포털 재작업 접수·응답 복구
 
-일반 정의의 실제 브라우저/HTTP13항목 통과: 영향 검토/명시 확인, 전송 전 실패·새로고침·같은본문 재시도, 접수 후 응답 유실의 receipt 복구, 동시 사람 작업 뒤409, 옛 결과 보존/새 결과8/정상 종결,390px 폼. 삭제된 approve export의 초기화 오류와 input/change 상태 반영을 실제 화면에서 수정했다. 상세·주입기 최초 실패·경계는 [REWORK A041](REWORK.md). 새 Incident UI 전체/Codex/PLC 검증을 대신하지 않는다.
+일반 정의의 실제 브라우저/HTTP13항목 통과: 영향 검토/명시 확인, 전송 전 실패·새로고침·같은본문 재시도, 접수 후 응답 유실의 receipt 복구, 동시 사람 작업 뒤409, 옛 결과 보존/새 결과8/정상 종결,390px 폼. 삭제된 approve export의 초기화 오류와 input/change 상태 반영을 실제 화면에서 수정했다. 상세·주입기 최초 실패·경계는 [REWORK A041](archive/REWORK.md). 새 Incident UI 전체/Codex/PLC 검증을 대신하지 않는다.
 
 
 ### A042 변경 MES의 새 판단·포털 동의·실행
 
-실제 납기6→36/0h 변경이 옛카드 거절·새세대 점수/권고역전으로 이어졌다. Incident 포털 재작업/역할/효과보류 및 새세대PLC·CMMS까지 실제 연결했다. 첫 CLEAR 누락과 두번째 검사기ACK결함/승인FAILED는 보존했으며, 수정후 동의재전달/별도 합성CLEAR로 두번째 finish exit0. 최종 대조17/17의 정확한 범위·실패/복원은 [REWORK A042](REWORK.md). 새Codex/실제고장 재진단 증거가 아니다. 공용 카드의 납기·품질 점수 내역도 표시했다.
+실제 납기6→36/0h 변경이 옛카드 거절·새세대 점수/권고역전으로 이어졌다. Incident 포털 재작업/역할/효과보류 및 새세대PLC·CMMS까지 실제 연결했다. 첫 CLEAR 누락과 두번째 검사기ACK결함/승인FAILED는 보존했으며, 수정후 동의재전달/별도 합성CLEAR로 두번째 finish exit0. 최종 대조17/17의 정확한 범위·실패/복원은 [REWORK A042](archive/REWORK.md). 새Codex/실제고장 재진단 증거가 아니다. 공용 카드의 납기·품질 점수 내역도 표시했다.
 
 
 ### A043 R11/R12 실행 투영 복구 보강

@@ -49,7 +49,7 @@
 
 아래 Q1~Q16은 이전 시점 질문 기록이다. 'D4만 남음', 컨테이너 대기, 'Codex로 된다'는 현재 완료/실행 판정으로 사용하지 않는다. 현재 재개 위치는 HANDOFF §9 G다.
 
-원문은 [USER_UTTERANCES.md](USER_UTTERANCES.md). 답이 바뀐 질문은 최종 답만 적는다. 새 세션은 이 파일부터 읽어 같은 질문에 같은 답을 해야 한다.
+원문은 [USER_UTTERANCES.md](archive/USER_UTTERANCES.md). 답이 바뀐 질문은 최종 답만 적는다. 새 세션은 이 파일부터 읽어 같은 질문에 같은 답을 해야 한다.
 
 ## 기준이 되는 사용자 원문
 
@@ -168,7 +168,7 @@ PowerShell종료 `a021-lock-final-stop.json`: worker0/자식0. 기본20×/legacy
 
 ## A025 승인 의도와 전달 복구 (2026-10-04 08:12)
 
-승인복사본 검증→같은PG트랜잭션에승인의도/사람제출/타이머취소→커밋뒤전달→전달완료뒤후속작업으로구조를바꿨다. 외부업무응답실패는FAILED/작업SUBMITTED이며역할검사후같은스냅샷재전달만허용한다. legacyAPI우회도차단했다. 상세 [APPROVAL_RECOVERY.md](APPROVAL_RECOVERY.md).
+승인복사본 검증→같은PG트랜잭션에승인의도/사람제출/타이머취소→커밋뒤전달→전달완료뒤후속작업으로구조를바꿨다. 외부업무응답실패는FAILED/작업SUBMITTED이며역할검사후같은스냅샷재전달만허용한다. legacyAPI우회도차단했다. 상세 [APPROVAL_RECOVERY.md](archive/APPROVAL_RECOVERY.md).
 
 실패11개→수정후API포함14개, 전체348passed/기존경고2. 실제Pg/SQLite/HTTP4/4(실제child os._exit73 뒤 PR-1003-17EC 한건유지; PLC/graph는대역), 기존Pg복구11/11. 배포뒤legacy실제설비36/36/e8e0dff5-fa85-4d9b-8485-b8b78acc98f6/WO-1003-0CC5, 승인DELIVERED/attempt1. 새Codex38검사실행중; 아직성공판정안함. 포털은문법검사와API경로검사만이며직접클릭미검수. 교재추가절1280/390직접렌더검토/check_book0. 일반outbox/현재조건재검증/전체강의검수는별도미완료다.
 
@@ -294,7 +294,7 @@ HYD 문서 추출은 Codex CLI가 수행하는 에이전트 작업이므로 GPU 
 
 ## 2026-10-07 새 세션 (A115~A123) — 질문과 확정 답
 
-원문은 [USER_UTTERANCES.md](USER_UTTERANCES.md) "2026-10-07 새 세션". 근거는 HANDOFF §9 A115~A121·DECISIONS 100~105.
+원문은 [USER_UTTERANCES.md](archive/USER_UTTERANCES.md) "2026-10-07 새 세션". 근거는 HANDOFF §9 A115~A121·DECISIONS 100~105.
 
 ### "아니 뭔지 설명을 해야 내가 수락을 하지" — r14 B1~B8이 뭔가?
 

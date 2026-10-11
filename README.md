@@ -1,11 +1,11 @@
 # hyd-iot-edu — 유압설비 IoT-SCADA 학생용 프로토타입
 
-**현재 상태(2026-10-08):** 목표와 완료 조건은 [GOAL](docs/handoff/GOAL.md) 상단 "완주 목표"의 DoD 7개다. DoD 1(회차 25개 실행 장면·제작자 증거)·2(쿨러·펌프·팬 인스턴스 완주)·3(참고 레포 구조 변경 반영)·5(회귀 18/18)는 검증됨, 4(포털 UI/UX)는 사용자 판정 대기, 6(재부팅 뒤 10분 기동)은 미실측이다. 재개 위치·근거는 [HANDOFF](docs/handoff/HANDOFF.md) §9, 기동·확인·종료는 **[RUNBOOK](docs/RUNBOOK.md)**, 회차별 실행 절차는 [docs/sessions/](docs/sessions/README.md)다. 아래의 L1~L9 설명은 2026-09-30 첫 판에서 시작한 개요이며, 바뀐 곳은 이 문서에서 고쳤다.
+**현재 상태는 [docs/handoff/NOW.md](docs/handoff/NOW.md) 한 문서에 있다**(구현·검증은 끝났고 포털 화면만 남음). 기동·확인·종료는 **[RUNBOOK](docs/RUNBOOK.md)**, 회차별 실행 절차는 [docs/sessions/](docs/sessions/README.md)다. 옛 목표(DoD 7개)와 인계 기록은 [docs/handoff/archive/](docs/handoff/archive/README.md). 아래의 L1~L9 설명은 2026-09-30 첫 판에서 시작한 개요이며, 바뀐 곳은 이 문서에서 고쳤다.
 
 `유압설비_IoT-SCADA_아키텍처_v3.pdf` 4쪽 구조도(L1~L9, OT·DMZ·IT)를 학생 노트북에서 `docker compose up` 한 번으로 돌리는 구성입니다.
 IoT·SCADA 층의 무거운 제품(Flink+ONNX, Kafka Connect, EdgeX, Alertmanager/Mailpit, MinIO)은 **같은 이름·같은 메시지 계약을 지키는 작은 파이썬 서비스(대역)**로 바꿨고,
 가벼운 실제 제품(EMQX, FUXA, Redpanda, TimescaleDB, Grafana, Neo4j, Supabase)은 그대로 씁니다. 이것은 첫 커밋부터 의도한 선택이며 설계서 v3와 다르다(2026-10-08 사용자 결정: 현 구조 유지, DECISIONS 106; 대조 보고 `docs/보고/설계서v3_대비_실제구현.html`). 제품 교체 방향은 정했으나 보류다(DECISIONS 107).
-L9의 프로세스 엔진은 ProcessGPT 제품을 설치하지 않고 제품의 데이터 모양(`proc_def`·`bpm_proc_inst`·`todolist`·`events`, 에이전트 작업 `userTask + agentMode`)을 따라 HYD가 구현했다(`docs/handoff/REFERENCE_ADOPTION.md`).
+L9의 프로세스 엔진은 ProcessGPT 제품을 설치하지 않고 제품의 데이터 모양(`proc_def`·`bpm_proc_inst`·`todolist`·`events`, 에이전트 작업 `userTask + agentMode`)을 따라 HYD가 구현했다(`docs/handoff/archive/REFERENCE_ADOPTION.md`).
 
 **강의의 초점은 L7~L9입니다.** L1~L6은 경보가 나면 팬을 올리는 즉각 제어까지입니다. L7 온톨로지 v2는 BSC(관점 · 전략 목표 · 성과 지표) → BPMN 프로세스 → 리소스 → 설비 진단(ISO 13374) → 조치 방법 = 스킬 = SOP · DMN 규칙(온도 · 압력 임계값) 계층을 잇고, L8 에이전트는 이상 원인의 고장 유형에 매칭된 SOP 스킬을 규칙 · 예측 · BSC 득실 · 선례로 골라 카드 2~3장을 내밀며, L9는 사람이 고른 카드를 승인 역할에 따라 PLC와 기업 시스템에서 실행합니다. 설계는 [docs/ontology/schema-v2.md](docs/ontology/schema-v2.md), 클래스 표는 [docs/ontology/class-table.md](docs/ontology/class-table.md), 클래스 연관 그림은 [docs/ontology/ontology-classes.svg](docs/ontology/ontology-classes.svg), 스키마 파일은 [it/neo4j/v2/](it/neo4j/v2/)에 있습니다. v1 설계(전사 판단 시나리오)는 [docs/l7-l9-ontology-decisions.md](docs/l7-l9-ontology-decisions.md)에 기록으로 남겨 두었습니다.
 
@@ -119,7 +119,7 @@ it/   redpanda/ detector/ (features.py · cep.py) connect-sink/ timescaledb/ gra
 tests/   단위 테스트 (pytest)
 scripts/ run_regression.py (회귀 러너 core · worker)  run_scenario_evidence.py (instance 쿨러)  run_scenario_pump_fan_evidence.py  run_worker_host.sh · stop_worker_host.ps1  host_libpq.sh  scenario_test.py (legacy 모드 전용)
 video/   scenes.py · narration.py · record_demo.py   → docs/video/hyd-iot-edu-demo.mp4
-docs/    RUNBOOK.md  sessions/ (25회차 실행 장면)  실라버스.xlsx  handoff/ (GOAL · HANDOFF · DECISIONS …)  student-guide.md  scenario-walkthrough.md  definition-authoring.md  topics.md  payload-schemas/  wslconfig.example
+docs/    RUNBOOK.md  sessions/ (25회차 실행 장면)  handoff/ (NOW · DECISIONS · HANDOFF · archive/ …)  student-guide.md  scenario-walkthrough.md  definition-authoring.md  topics.md  payload-schemas/  wslconfig.example
 ```
 
 ## 테스트

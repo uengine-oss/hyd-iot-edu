@@ -2,7 +2,7 @@
 
 ## 확정 TODO C — 시나리오 3개(업무 주제별) 구현 + UI/UX (2026-10-09, 사용자 결정) — 상태: [~] 착수
 
-근거: 사용자 비판 `../실라버스의 문제.txt`, 조사 `docs/handoff/verification/2026-10-09/scenario-research.md`, 실라버스 `docs/실라버스.xlsx` · 설명 `docs/실라버스.md`(작성 중, 버전 없이 한 개만 유지).
+근거: 사용자 비판 `../실라버스의 문제.txt`, 조사 `docs/handoff/verification/2026-10-09/scenario-research.md`, 실라버스 `docs/handoff/archive/실라버스.xlsx` · 설명 `docs/handoff/archive/실라버스.md`(작성 중, 버전 없이 한 개만 유지).
 
 원칙
 - 설비·아키텍처·온톨로지 스키마 v2는 고정한다(기존 것은 바꾸지 않음. 같은 스타일의 추가 확장만 허용하고, 이번 세 주제는 확장 없이 된다).
@@ -173,7 +173,7 @@
 온톨로지와 에이전트 중심 강의를 듣는 수강생을 위해, HYD 사례로 ProcessGPT를 직접 구현하고 그 개발 과정에서 온톨로지·이벤트·프로세스 인스턴스·에이전트 Task·사람 승인·실행이 하나로 이어지는 이유와 동작을 이해하게 한다.
 
 작업요령과 컨텍스트
-`docs/handoff/GOAL.md`의 현재 인수조건과 목적, `docs/handoff/HANDOFF.md`의 최신 §0·§9 G, `AUDIT.md`·`PROGRESS.md`, 회의 원문 `docs/handoff/sources/meeting-2.txt`의 HYD 관련 1~461행에서 이어간다. 이전 사용자 지시는 `docs/handoff/USER_UTTERANCES.md`와 Codex 발화 기록을 확인한다.
+`docs/handoff/archive/GOAL.md`의 현재 인수조건과 목적, `docs/handoff/HANDOFF.md`의 최신 §0·§9 G, `AUDIT.md`·`PROGRESS.md`, 회의 원문 `docs/handoff/sources/meeting-2.txt`의 HYD 관련 1~461행에서 이어간다. 이전 사용자 지시는 `docs/handoff/archive/USER_UTTERANCES.md`와 Codex 발화 기록을 확인한다.
 
 먼저 현재 코드·배포·미커밋 변경을 실제 상태와 대조한다. 특히 진행 중인 효과 보상 WIP는 덮어쓰지 말고 의도·구현·검증·배포 상태를 구분한다. A071의 검증은 당시 범위의 근거로 보존하며 새 코드의 통과를 대신하지 않는다.
 
@@ -229,7 +229,7 @@ DoD: 장이 실라버스 단원을 빠짐없이 덮는다 / 각 장이 장면·�
 10. 사람이 그린 상충 관계를 데이터로 검증해 "가설"과 "단언"을 구분하기 — What-if 범위의 "인과 자동 발견 제외"와 겹침, 넣을지 따로 결정.
 
 현재 상태 — 2026-10-08 (A145 정리)
-- 위 인수조건 1~7은 2026-10-06 목표의 것이다. 2026-10-07 사용자가 목표를 "남은 작업 없이 75시간 전 회차를 채울 수 있는 상태"로 다시 정했고(DECISIONS 105), 현재 완료 조건과 상태의 정본은 `docs/handoff/GOAL.md` 상단 DoD 7개와 DoD 상태표다.
+- 위 인수조건 1~7은 2026-10-06 목표의 것이다. 2026-10-07 사용자가 목표를 "남은 작업 없이 75시간 전 회차를 채울 수 있는 상태"로 다시 정했고(DECISIONS 105), 현재 완료 조건과 상태의 정본은 `docs/handoff/archive/GOAL.md` 상단 DoD 7개와 DoD 상태표다.
 - 2026-10-08 상태: DoD 1(회차 25개 실행 장면·제작자 증거)·2(쿨러 42/42·펌프 40/40·팬 34/34)·3(r14 B5·B2·B3·B1 반영, B4 하지 않음)·5(회귀 같은 배포본 1회 18/18, A130→A131 OOM 근본 수정→A134) 검증됨. DoD 4 포털 UI/UX는 사용자 "됐다" 대기, DoD 6 10분 기동은 미실측, DoD 7 문서 정리.
 - 사용자 실행 대기: 그래프 고아 노드 `skill:sop-fan-11`·`sop-fan-12` 삭제(HANDOFF A133 명령). 보류(사용자 결정): IoT·SCADA 층 제품 교체(DECISIONS 107), 회의 AI 층 굵직한 블록 후보(`verification/2026-10-08/teachable-candidates.md`).
 - 기동·확인·종료는 `docs/RUNBOOK.md`, 회귀는 `scripts/run_regression.py`(core·worker), 진행 근거는 HANDOFF §9 A115~A134. 기본 배율 20배속(HANDOFF §6).
