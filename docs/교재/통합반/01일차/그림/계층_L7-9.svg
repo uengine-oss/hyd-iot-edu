@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520">
+<rect x="1016" y="36" width="48" height="478.0" rx="12" ry="12" fill="#F3F6F9" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1076" y="36" width="48" height="478.0" rx="12" ry="12" fill="#F3F6F9" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1136" y="36" width="48" height="478.0" rx="12" ry="12" fill="#F3F6F9" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="14" y="40.0" width="990" height="152.66666666666666" rx="10" ry="10" fill="#E7F3FD" stroke="#5CB8F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(100 116.33333333333333) scale(0.95)">
+<circle cx="-10" cy="-22" r="17" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M -44,38 Q -44,4 -10,4 Q 24,4 24,38 Z" stroke="#13294B" stroke-width="3.13" fill="#FFFFFF" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="30" cy="20" r="19" fill="#5CB8F2" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 21,20 L 28,27 L 40,13" stroke="#13294B" stroke-width="3.58" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="1040" cy="116.33333333333333" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1100" cy="116.33333333333333" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1160" cy="116.33333333333333" r="12" fill="#5CB8F2" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="14" y="198.66666666666666" width="990" height="152.66666666666666" rx="10" ry="10" fill="#E7F3FD" stroke="#5CB8F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(100 275.0) scale(0.95)">
+<line x1="0" y1="-44" x2="0" y2="-30" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="0" cy="-48" r="5" fill="#5CB8F2" stroke="#13294B" stroke-width="2.24" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="-40" y="-30" width="80" height="62" rx="14" ry="14" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-16" cy="-4" r="7" fill="#5CB8F2" stroke="#13294B" stroke-width="2.24" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="16" cy="-4" r="7" fill="#5CB8F2" stroke="#13294B" stroke-width="2.24" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-14" y1="16" x2="14" y2="16" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-48" y1="-6" x2="-40" y2="-6" stroke="#13294B" stroke-width="4.47" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="40" y1="-6" x2="48" y2="-6" stroke="#13294B" stroke-width="4.47" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="1040" cy="275.0" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1100" cy="275.0" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1160" cy="275.0" r="12" fill="#5CB8F2" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="14" y="357.3333333333333" width="990" height="152.66666666666666" rx="10" ry="10" fill="#E7F3FD" stroke="#5CB8F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(100 433.66666666666663) scale(0.95)">
+<line x1="-30" y1="-22" x2="4" y2="6" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="32" y1="-30" x2="4" y2="6" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="4" y1="6" x2="-34" y2="30" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="4" y1="6" x2="36" y2="28" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="-30" y1="-22" x2="32" y2="-30" stroke="#13294B" stroke-width="3.13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-30" cy="-22" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32" cy="-30" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="4" cy="6" r="13" fill="#5CB8F2" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-34" cy="30" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="36" cy="28" r="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.13" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="1040" cy="433.66666666666663" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1100" cy="433.66666666666663" r="3.5" fill="#D3D9E1" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1160" cy="433.66666666666663" r="12" fill="#5CB8F2" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
