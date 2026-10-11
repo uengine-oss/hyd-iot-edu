@@ -234,7 +234,7 @@ const UI = {
   states: {
     PENDING_APPROVAL: "승인 대기", AWAITING_APPROVAL: "조치 선택 대기", GUIDE_RECEIVED: "분석 완료", CMD_ISSUED: "명령 전송", AWAITING_ACK: "설비 응답 대기",
     ACKED: "설비 응답", RE_OBSERVING: "효과 확인 중", RESOLVED: "이상 완화", WORK_ORDER_CREATED: "정비 요청 완료", CLOSED: "종결",
-    ESCALATED: "미달", REJECTED_BY_OPERATOR: "조치 거부", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
+    ESCALATED: "미달", REJECTED_BY_OPERATOR: "반려", RESOLVED_WITHOUT_ACTION: "자연 회복", APPROVED: "승인됨", EXECUTED: "실행 완료",
     PARTIAL: "일부 실행", REJECTED: "반려", FAILED: "실패", SUBMITTED: "제출됨", DONE: "완료", RUNNING: "진행 중",
     RUN: "운전 중", TRIP: "보호 정지", STOP: "계획 정지", RAISED: "경보 발생", RAISE: "경보 발생", CLEAR: "경보 해제", CLEARING: "회복 확인 중",
     CANDIDATE: "이상 징후", IDLE: "감시 중", VIA_HITL: "사람 승인 필요", REMOTE_AUTO: "원격 자동", REMOTE_MANUAL: "원격 수동", LOCAL: "현장 제어",
@@ -311,7 +311,8 @@ const UI = {
   },
   // field: 라벨 위 · 입력 아래 · 필수 * · 도움말 1줄 (R5)
   field({ label, input, hint = '', required = false, cls = '', error = '' }) {
-    return `<div class="field ${cls}"><label>${esc(label)}${required ? ' <i class="req" aria-hidden="true">*</i>' : ''}</label>${input}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
+    const inputId = /\bid="([^"]+)"/.exec(input)?.[1];
+    return `<div class="field ${cls}"><label${inputId ? ` for="${inputId}"` : ''}>${esc(label)}${required ? ' <i class="req" aria-hidden="true">*</i>' : ''}</label>${input}${error ? `<p class="field-error" role="alert">${esc(error)}</p>` : hint ? `<p class="field-hint">${esc(hint)}</p>` : ''}</div>`;
   },
   // form section: 제목 + 필드 격자 (R6)
   section(title, body, cls = '') { return `<section class="form-section ${cls}">${title ? `<h4>${esc(title)}</h4>` : ''}<div class="form-grid">${body}</div></section>`; },
@@ -419,6 +420,7 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
 /* A5 (U7 포털 셸): 수강생 동선 메뉴 이름 · 새 화면 아이콘 · 토스트 · 확인 대화상자 · 로딩/오류 블록.
    덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: docs/handoff/verification/2026-10-08/u7-shell.md */
 Object.assign(UI.terms, {
+  'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고',
   'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구(MCP)', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
   'nav.whatif': '손익 · What-if', 'nav.kpi': 'KPI', 'nav.fabric': '데이터 연결',
   'nav.ask': '에이전트에게 질문',   // B5

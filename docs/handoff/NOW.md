@@ -8,17 +8,21 @@
 | 항목 | 값 |
 |---|---|
 | 브랜치 | `claude/hyd-handoff-work-xziutz` **하나**. 다른 갈래(A161, `K-20261010-capstone`, `F-20261010-keep`)는 모두 합쳐졌다. 인계 문서 정리까지 원격에 올렸다(10-11). 이후 커밋은 사용자가 맡긴 범위 안에서 push하고, main에 합치는 것은 사용자에게 묻는다 |
-| 기능 | **끝났다.** 남은 것은 포털 화면(UI/UX)뿐이다(4.1절). UI/UX는 다른 세션이 일괄로 한다 |
-| 단위 시험 | 2149 통과 · 9 건너뜀 · 0 실패 (10-11 00:55). 명령 `.venv/bin/python -m pytest -q -p no:cacheprovider`(레포 루트, 약 3분 30초) |
+| 기능 | 기본 기능은 구현되어 있다. 이번 포털 U1~U4·U7·U8 구현·자동검증을 진행했고 캡처 사용자 시각 판정은 대기다. 나머지 UI/환경/학생 동선은 4절 |
+| 전체 회귀 시험 | Windows 최종 **2173 통과 · 10 건너뜀 · 0 실패/오류 · 64 경고, 110.71초**, exit 0. 명령 `python -m pytest -q -n 4 -p no:cacheprovider --durations=15 --junitxml=.../pytest-final-parallel.xml`. 로그/XML: 루트 `.evidence/portal-20261011/pytest-final-parallel.*`. 독립 PG 4·Neo4j 5 환경변수 미지정 및 Windows symlink 권한 1건 건너뜀. 기존 macOS 2149 통과·9 건너뜀은 이전 결과다 |
 | 실제 스택 검증 | 합친 코드(`4e5f535` 빌드)로 A·B·C 각각 승인·거절, A·C 무응답, A 승인 뒤 [쿨러 복구]→바로 다시 주입, 단계 닫기, 손으로 그린 흐름으로 A 완주 — 모두 통과. 회귀 쿨러 40/40 · pump-fan 43/43 |
-| 한계 | 위 검증은 **포털 화면이 아니라 process API로** 눌렀다. 포털에는 [거절] 버튼이 아직 없다. 화면에서 어떻게 보이는지는 본 적이 없다 |
+| 한계 | 위 macOS 완주는 process API 기준이다. 이번 Windows 포털에는 [거절]·사유·반려·지연 표시를 구현했고 Chromium+FastAPI/MemoryRepo 시험 및 실제 스택 read-only 46화면 캡처를 남겼다. 실제 LLM·설비 재완주 및 사용자 시각 승인은 별도다(`verification/2026-10-11/portal-20261011.md`) |
 | 실라버스 | **최종본이 나왔다(10-11).** 기준은 `docs/교재/기준/피지컬AI_실라버스_최종본.xlsx`다(네 시트: 통합반 온라인 44H · 11일, 실전반 온라인 32H · 8일, 통합반 오프라인 정규 10회, 실전반 오프라인 정규 9회). 통합반 1~4일차는 이전 확정안(`1~4일차 실라버스 확정안.xlsx`)과 행 단위로 같다 |
 | 교재(슬라이드) | 레포 안 `docs/교재/`(안내 `README.md`). 기준 `docs/교재/기준/제작기준.md`, 통합반 1~4일차 덱 `docs/교재/통합반/0N일차/`(101 · 100 · 94 · 64장), 컨펌받은 그림체 샘플 `통합반/샘플/`. 만드는 도구는 `.claude/skills/lecture-deck/`. 랩 자료는 만들지 않는다 |
-| 쉬는 상태(스택) | 그래프 = 전체판, 흐름 = 기준 흐름, 워커 0, 잠금 없음, RUNNING 0, B·C 표시 켜짐(10-11 03:07 실측). 이 상태에서 A·B·C 완주는 3절 순서로 준비해야 한다. A는 [쿨러 복구]만으로 연달아 돌릴 수 있다 |
+| 쉬는 상태(스택) | 이번 Windows는 캡처 뒤 hyd/Supabase 컨테이너를 모두 정지해 원래 상태로 복원했다. docker ps 비어 있음, 8088/8080/8097/8098/54322 LISTEN 없음, 워커 시작 안 함, 정지 직전 RUNNING 0, 본인 LIVE_LOCK 해제. 데이터 볼륨과 작업 트리 마운트는 보존. 이전 macOS 03:07 상태는 아래 기록 참고 |
 
 ## 2. 스택 올리고 확인하는 방법
 
-환경: 이 PC는 macOS + colima. 전체 기동 절차는 `docs/RUNBOOK.md`(Windows/Git Bash 기준)이고, macOS 차이는 아래다.
+이번 Windows(2026-10-11)에서는 Docker 29.7.2로 제품 서비스를 빌드·기동했고 포털 8088은 `codex-portal-20261011` 작업 트리를 사용했다. 기존 Supabase DB는 `migration up --local`로 25→51 적용했다(새 DB 재현 시험 아님). 기존 `neo4j-data` 전체판, 워커 0, RUNNING 0을 확인했고 지식을 수동 교정하거나 새 추출/사람 검토를 대신 만들지 않았다. process StartedAt `2026-10-11T14:03:54.003148877Z`, RestartCount 0. 캡처 후 hyd compose stop과 supabase stop으로 정지, 열린 해당 포트 없음 및 본인 LIVE_LOCK 해제를 확인했다. 볼륨·컨테이너 마운트 작업 트리는 보존했다.
+
+실제 Docker 빌드·46화면 캡처 뒤 시작 조건 가져오기 API 호환성과 Windows 워커 artifact의 LF 바이트 보존을 추가 수정했다. 해당 마지막 변경까지 컨테이너 재빌드·실제 LLM 완주를 수행한 근거는 아니다. 최종 코드 회귀 시험과 당시 실제 스택 화면을 구분한다. Docker Desktop도 종료했으며 데이터 볼륨은 보존했다.
+
+아래는 **이전 macOS + colima 실측 기록**이다. 그 환경의 세 작업 트리 마운트를 이번 Windows 상태와 혼동하지 않는다. 전체 기동 절차는 `docs/RUNBOOK.md`(Windows/Git Bash 기준)이고, macOS 차이는 아래다.
 
 - 파이썬: 레포 루트 `.venv`(3.12). 작업 트리에서는 `<루트 절대 경로>/.venv/bin/python`. 다시 만들 때 `uv venv --python 3.12 .venv && uv pip sync --python .venv/bin/python docs/handoff/tools/venv-py312-freeze.txt`. `host_libpq.sh`는 필요 없다. `requirements-dev.txt`만 깔면 `fastmcp`가 없어 시험 2건이 실패한다(4.2절).
 - compose: `export COMPOSE_PROFILES=ot,backbone,detect,knowledge,agent,enterprise,process,cliagents` 뒤 `docker compose -p hyd-iot-edu …`. `.env`의 `COMPOSE_PROFILES`에는 `cliagents`가 없다. zsh는 `$변수`의 서비스 목록을 나누지 않으니 서비스 이름을 직접 적는다. `.env` 값은 열지 않는다. `PLANT_SIM_URL`은 두지 않는다(기본, `sim-net`).
@@ -51,19 +55,21 @@
 ## 4. 남은 일
 
 ### 4.1 포털 화면 (UI/UX 세션) — 확정된 일
+10-11 이번 작업의 **U1~U4·U7·U8은 구현·자동검증 완료, 사용자 캡처 시각 판정 대기**다. 아래 체크는 구현/자동시험 범위를 뜻하며 UIUX 최종 승인과 구분한다. 근거는 `verification/2026-10-11/approval-ui.md`·`flows-ui.md`·`portal-20261011.md`. 브라우저·MemoryRepo API 검증과 실제 LLM·설비 스택 완주를 구분한다.
+
 기준: `UIUX.md`(사용자 지시: process-gpt-vue3 최신·Dify 모방, 핵심만, 폼은 섹션, 화면 말에서 내부 용어 빼기), `UIUX_PLAN.md`, `docs/ui-design-contract.md`, CLAUDE.md §4(카드 하나에 행동 1개, "학생이 10초 안에 할 일을 찾는가"). 캡처 없이 "비슷하게"로 끝내지 않는다 — 참고 화면과 우리 화면을 나란히. 코드: `it/portal/www/**`, 시험 `tests/js/*.js`(node vm에 실제 파일을 올려 그림) + `tests/test_c3_bc_review.py` · `test_live_leftovers_cards.py` · `test_capstone_g7_card.py`. A 화면을 일부러 바꿀 때는 고정본 `tests/fixtures/a_cards_before.json`도 근거와 함께 갱신한다. 화면 실물 캡처 `.evidence/a161-final/live/` · `live4/` · `a161-u1/`.
 
 승인 단계 (출처 `F-keep.md` 4절 · `final-verify.md` 6절):
-- [ ] U1. 세 시나리오 승인 패널에 **[거절] + 사유**(`instances.js renderSelectPanel`). `POST /api/todolist/{workitem_id}/reject-card` body `{decision, by, role, reason}`; 그 단계가 거절을 받는지는 활동 `outputData`에 `approval`이 있는지로 안다(없으면 [거절] 숨김). 계약 전문 `F-keep.md` 4절
-- [ ] U2. **반려 결과 표시**: 결과 보고 `outcome: "반려"` · `level: "rejected"`, 처리 기록 줄 `APPROVAL_REJECTED`, 끝 이벤트 `E_rejected`, 사건 `REJECTED_BY_OPERATOR`, `/api/scenario/status last.outcome`
-- [ ] U3. **승인 지연 알림 표시**: B·C에도 A와 같은 「승인 지연」 타이머와 알림 task(`outcome: "승인 지연"`, `level: "info"`). 알림 뒤에도 승인 task는 열려 있다
-- [ ] U4. 흐름 가져오기 부품 목록의 "조치 카드 승인 · 거절"과 분기 조건 값 `approval`('승인'·'반려') 선택 확인
+- [x] U1. 세 시나리오 승인 패널의 **[거절] + 사유**. 기존 reject-card API와 outputData 계약 유지, 1~2000자·권한 오류·서버 실패·입력 보존·중복제출 방지 시험. 사용자 시각 판정 대기
+- [x] U2. **반려 결과 표시**. 결과·처리 기록·실시간 단계·업무 경보 직전 결과의 반려 표시, 실제 엔진 거절 뒤 설비/업무 효과 없음 확인. 사용자 시각 판정 대기
+- [x] U3. **승인 지연 알림 표시**. A/B/C 실제 타이머 뒤 승인 작업이 열리고 화면에서 승인 가능. 알림만 들어오는 poll·입력 포커스 보존 확인. 사용자 시각 판정 대기
+- [x] U4. 흐름 가져오기 부품 목록의 "조치 카드 승인 · 거절"과 분기 `approval`('승인'·'반려')를 실제 A/B/C 가져오기·검사·등록으로 확인. 사용자 시각 판정 대기
 - [ ] U5. **[쿨러 복구] 기록의 지령 변화 표시**: 누름 기록 `data.setpoints {before, after}`("팬 지령 100 % → 60 %"처럼 일반인 말로)
 - [ ] U6. 거절/무응답 뒤 A를 다시 누를 때의 안내(감지기 단계를 보고 누르라는 안내가 있는지)
 
 종합 랩(개인 시나리오 — 「캡스톤」이라는 말은 쓰지 않는다) 때문에 필요한 화면 (출처 `K-capstone.md` 5.2 · 10절, `final-verify.md` 6절):
-- [ ] U7. **흐름 가져오기 화면에 시스템 부품 설정 칸**(승인 뒤 MCP 호출 · 시간 대기 · 결과 보고; `it/portal/www/flows.js` taskRow 180~206행 근방). 칸이 없어 학생이 포털만으로 흐름을 등록하지 못한다 — 가장 큰 막힘. 칸이 생기면 `students/flows/README.md` 마지막 절을 화면 순서로 바꾼다
-- [ ] U8. 흐름 가져오기 직후 시작 조건에 감지기 경보 셋이 모두 체크돼 있음, 시작 조건 칸 `PM_DUE` · `SPARE_BELOW_MIN`이 영문 그대로, 분기 조건이 `recovered == True`로 보임 — 화면 표기를 바꾸면 `tests/test_student_reference_flows.py`의 안내문 대조가 알려 준다
+- [x] U7. **흐름 가져오기 시스템 부품 설정 칸** 구현. 메일·보고·대기·MCP 연결 값을 실제 UI→API→저장 매핑으로 대조했고 README를 화면 순서로 갱신했다. 가변 구조는 객체 입력 유지. 사용자 시각 판정 대기
+- [x] U8. 새 가져오기 시작 조건 기본 미선택, 업무 경보·분기 값 한국어 표시, 무선택 거절 및 A/B/C 올바른 매핑 등록 시험. 사용자 시각 판정 대기
 - [ ] U9. K가 본 결함: 시스템 task가 PENDING으로 멈춘 학생 처리 건을 닫는 길 · 학생 흐름 하나만 지우는 길이 화면에 없음
 - [ ] U10. 내부 id·영문 노출: 학생이 만든 역할이 `role:demo-organizer`로 보임(승인 패널 머리 칩·역할 고르기·결과 보고), 처리 기록의 시작 문장이 흐름 id, 시작 값·승인 값이 값 이름 그대로("request id", "approval 승인"), 승인 단계에 고른 안이 안 보임(결과 보고에만), 그래프 도구 결과의 한글이 `\uXXXX`, 지식 지도 규칙 카드가 id로 보임
 
@@ -71,9 +77,17 @@
 - [ ] U11. 시나리오 B·C 화면 다듬기(지금은 A와 같은 틀에 B·C 값이 들어간 상태. 구매·정비 담당 눈높이로 카드·결과 보고) — `HANDOFF.md:273`
 - [ ] U12. `EFFECT_COMPENSATION` · `EFFECT_REVIEW` 이벤트가 처리 기록 화면에 안 보임(단계 없는 events — `review-c3-bc.md` 4절)
 - [ ] U13. 화면에서 본 적 없는 표시: 재관측 실패(`reobsSeries.error`), 스킬을 작업 폴더에 못 넣음(`skills[].written`)(`2026-10-09/review-backend.md` 4-4 · 10절), 처리 건 목록 읽기 실패, `app.js`의 표시 확인 중/못 읽음·기준점 문구(`review-c3-bc.md` 3절), `MCP_RESULT_VALUES` · 실패 시도(`attempt_failed`) 줄(`cap-g3g9.md` 5절)
+  10-11 Windows 실제 46화면 read-only 캡처에서 skills-1440의 `Cannot convert undefined or null to object` 1건과 별도 `refreshSlow`의 `state.incidents.filter is not a function` 1회가 관찰됐다. 이번 대상 탭 오류는 0건이나 전체 오류 0으로 기록하지 않는다. 원인 확인은 후속 범위다.
 - [ ] U14. 에이전트 화면에 업무 규칙(work_rules) 표시 없음(`cap-g3g9.md` 5절 ②)
 - [ ] U15. U1 남은 것: 에이전트 혼잣말이 영어(워커 지시 문제 — 4.2의 F와 조율), 결함 16·17(`2026-10-09/u1-uiux.md` 7절)
 - [ ] U16. 슬라이드에 넣을 실제 화면 캡처가 없다: 지금 포털의 시스템 구성 · 지식 지도 · 조치 방법 · 매뉴얼을 넣은 뒤의 지식 관리 · 질의 결과. 화면을 고친 뒤 1440 폭으로 찍어 `.evidence`에 두면 슬라이드 쪽이 가져간다
+최종 실라버스가 요구하는 화면 검증(기능 부재 판정이 아님; `verification/2026-10-11/portal-syllabus.md`):
+- [ ] U17. 학생 에이전트 이름·목표·역할·읽기 도구 설정 → 질문 → 근거·호출 기록 확인(통합반 온라인 49행).
+- [ ] U18. 도구(MCP) 등록 상태 → 연결 검사 → 읽기 호출 → 입력·반환 행·호출 기록 → 기존 에이전트 연결 확인(60행).
+- [ ] U19. 처리 건·내 작업함의 역할·승인 대기, 승인·거절 후 상태 변화, 쓰기 권한 없는 계정의 제한 확인(69행). U1~U4와 연결하되 학생 계정 권한 검증까지 끝났다고 간주하지 않는다.
+- [ ] U20. A·B·C의 이벤트·에이전트·역할·시스템 매핑 → 검사 → 등록·배포 및 담당·대기·결과 추적 확인(94·95·102·104행). U7·U8과 연결하며 제공 mapping.json/API 보완 경로도 확인한다.
+- [ ] U21. 지원하는 준비 예제 범위의 개인 흐름 등록 → 실행 → 결과 보고 확인(115행). 지원되지 않는 외부 쓰기를 성공으로 표시하지 않는다.
+
 - 고치지 않는 것: 옛 기록의 이름 중복·출처 번호 중복은 저장된 값이 옛 값이라 보이는 것이다(코드는 고침). 화면에서 가리지 않는다.
 - 화면 검사: `scripts/ui_capture_all_tabs.py`(콘솔 오류 0 · 가로 넘침 0은 전제일 뿐, 완료는 사용자가 캡처를 보고 판정).
 
@@ -86,12 +100,14 @@
 - [ ] F6. C 승인 순간 재확인이 설비 예측 문맥을 대조 — 그사이 설비 값이 바뀌면 발주 승인이 막힐 수 있음(코드만 읽음, 실측 없음 — `F-keep.md`가 아니라 `live-leftovers.md`)
 - [ ] F7. Pg 경로 미검증: `list_instances(asset=…)` SQL, 이벤트 커서 페이지(모르는 커서 404), 비밀 값 저장소(`review-backend.md` 5-1 · 10절), 실패 시도 기록·감사 기록 보존, `agent_authoring`의 work_rules insert/update
 - [ ] F8. 워커 `saved_path`가 `tool-results` 이름 폴더 아래면 어느 파일이든 읽는 잔여 위험(`review-backend.md` 3-5, 고치지 않음)
-- [ ] F9. 시험 환경 재현: `requirements-dev.txt`에 `fastmcp`가 없고 서비스 요구 파일끼리 공용 패키지 버전이 맞지 않는다. CLAUDE.md §5 명령만으로는 전체 시험이 통과하지 않는다(실패 2건: `test_a144_mcp_worker` · `test_capstone_g5_table_reader`). 위 freeze 목록으로는 통과
-- [ ] F10. `supabase_migrations` 장부가 44에서 멈춤 — 새 DB에서 `supabase start`가 51까지 올리는지 확인
+- [ ] F9. 시험 환경 재현: `requirements-dev.txt`에 `fastmcp`가 없고 서비스 요구 파일끼리 공용 패키지 버전이 맞지 않는다. CLAUDE.md §5 명령만으로는 전체 시험이 통과하지 않는다(실패 2건: `test_a144_mcp_worker` · `test_capstone_g5_table_reader`). 이번 Windows venv에는 freeze와 같은 fastmcp 2.13.0.2를 설치했으나 깨끗한 환경 재현 문제를 닫은 것은 아니다
+- [ ] F10. 새 DB에서 `supabase start`가 51까지 올리는지 확인. 이전 macOS 장부는 44까지였고 이번 Windows **기존 DB**는 migration up --local로 25→51 적용했다. 신규 DB 시험은 여전히 미확인
 - [ ] F11. `docs/보고서/2026-10-09_HYD_시나리오_3개.md:221`이 "C 추천이 A정밀"로 남아 있다 — 지금은 B-OEM(`live-final.md` 3-5)
 - [ ] F12. 근거 부족으로 남긴 것: kg-seed 컨테이너 기동 16분 지연, 고아 문서 `b7379c5e…`(`live-final.md`), `scripts/ui_regression.py`는 전체판에서만(`c3-assembly.md` 6절)
 - [ ] F13. 옛 `HANDOFF.md` §9의 `[ ]`(10-08 기록) 가운데 아직 유효한지 판정이 필요한 것: 기능 통합 검증 V(학생 동선으로 시나리오를 포털 직접 만들기로 끝까지, `HANDOFF.md:312`), 기능 보고서 갱신(`:313`). 사용자가 다시 요구한 기록은 못 찾았다 — 필요할 때만 한다
 - [ ] F14. 순위 점수 고정본의 내역 불일치 — `tests/fixtures/a_cards_before.json`에서 카드의 성분(성과 지표 · 경고 · 감점 · 품질 · 납기 · 예측 · 과거 선택)을 더한 값이 총점과 다르다: 1순위 성분 합 2.86(납기 +1.12, 예측 +1.74) vs 총점 3.38(차 0.52), 2 · 3순위 성분 합 2.23 vs 총점 2.75(차 0.52), 4순위 성분 합 -1.60 vs 총점 -1.58(차 0.02). 교재 3일차 제작 중 발견, 원인 미확인(고정본만 읽었고 점수 계산 코드는 보지 않았다)
+
+최종 실라버스 대조만으로 F15 이후 새 기능 결함을 만들지는 않는다. 남은 수업 운영 검증은 학생별 환경 또는 순차 배포, 외부 MCP 설치·권한·접속, Notion 쓰기 권한, SDD 실패 재현 입력, 수강생 실행 시간 리허설이다(통합 온라인 122·124행 및 다른 세 시트 대응 행; `verification/2026-10-11/portal-syllabus.md`). U17~U21에서 실제 기능 결함이 재현되면 F15 이후로 등록한다.
 
 ### 4.3 종합 랩(개인 시나리오) 키트 잔여
 설계 `verification/2026-10-09/capstone-lab.md`, 구현 기록 `2026-10-10/cap-g1g7.md` · `cap-g3g9.md` · `cap-kit.md` · `K-capstone.md`, 키트 `students/_template/`(T0~T8), 참조 흐름 `students/flows/`. T2·G1·G3·G9·T3·T4·G8·`validate --extra`·`close_agent_task`·손으로 그린 흐름 A 완주는 끝났다.
@@ -100,13 +116,13 @@
 - [ ] K3. 예시 사례(회의 준비) 실제 1회: 구글 인증은 사용자 몫. 예시 흐름은 결과 경로 자리 3줄 때문에 가져오기가 거절된다(`students/_template/example_meeting/README.md`). 전원 수락 여부를 참/거짓으로 주지 않는 서버면 확인 단계를 바꿔야 한다
 - [ ] K4. `close_agent_task`의 PENDING 쪽(에이전트가 스스로 보류한 단계를 닫기)은 단위 시험만(`tests/test_close_agent_task.py`), 라이브 미검증
 
-### 4.4 확정 전이라 보류 (옛 실라버스에서 나온 항목 — 본 목록에 섞지 않는다)
-**최종본이 나왔으므로(1절) 아래 항목을 최종본의 5~11일차 실습 행과 대조해야 한다.** 포털 · 기능에 실제로 필요한 것은 4.1 · 4.2절로 올리고 필요 없는 것은 지운다(대조 결과는 사용자에게 먼저 보인다). 대조가 끝나기 전까지 아래는 「정해진 것」이 아니다.
-- 옛 실라버스(`archive/실라버스.md` 등)와 `피지컬ai_실라버스_최종.xlsx`(이제 없음)에서 나온 「미구현」 판정 전부. 근거 사본 `verification/2026-10-10/syllabus-gap.md`(통합반 80행: 있음 29 · 부분 12 · 없음 22 · 다름 4 · 시스템 밖 13) — 옛 실라버스 기준이다.
-- 9~10일차 포털 실습 행이 요구한다고 적힌 화면: 흐름 가져오기·작업 매핑·흐름 검사 결과·가져오기 설정 칸(대기·시운전·입고 부품의 `until` · `criteria` · 타이머). 시스템 부품 설정 칸(U7)은 실라버스와 무관하게 종합 랩에 필요해서 4.1에 두었다.
-- 실라버스를 덜 쓰는 포털 메뉴 조사(`verification/2026-10-10/syllabus-portal-underuse.md`): 시험 비교 · 판단 채점 · 조치 판단 규칙 · 손익·What-if · 데이터 연결 · 오일 분석 입력이 학생 손으로 어디까지 되는지 화면에서 확인한다는 제안 — 실라버스가 정해진 뒤 한다.
-- 폐기된 것(사용자 결정): 예약 대기·시운전·입고 대기·조치 미달·시운전 미달·납기 초과·수업용 원인 입력 버튼, 시나리오 이름 변경, 정비·구매의 실라버스 모양 흐름(`F-20261010-syllabus` 브랜치, 기록용). 옛 실라버스의 8~10일차 문구는 원래 결정보다 나간 것이었다.
-- 슬라이드 쪽 열린 질문(실라버스 8·9행의 빈 노트 틀만 vs 노션 덱의 데이터베이스·템플릿·링크 게시, 노션 덱 본문에 남은 다른 강의 문구)은 슬라이드 세션 몫이다.
+### 4.4 최종 실라버스 대조 결과 (2026-10-11)
+최종 xlsx 네 시트를 대조했고 결과를 사용자에게 먼저 제시했다. 행별 근거는 `verification/2026-10-11/portal-syllabus.md`. 옛 `syllabus-gap.md`의 있음 29·부분 12·없음 22·다름 4·시스템 밖 13은 최종본 구현 현황으로 쓰지 않는다.
+- 실제 포털 실습의 화면 검증은 **U17~U21**로 옮겼다. 메뉴 존재만으로 학생 실습 완료를 선언하지 않는다.
+- **U7은 기존 종합 랩 요구로 유지**한다. 최종본 94·102행은 화면 밖 연결을 제공 mapping.json·API 절차로 보완한다고 명시하므로 설정 칸 부재를 최종 실라버스의 필수 UI 결함이라고 과장하지 않는다.
+- **추가하지 않는 기능**: 예약 대기·시운전·입고 대기·미달·납기 초과·고장 원인 입력 버튼. B는 승인 후 오더·생산 공지·종료(102행), C는 발주·통지·시뮬레이션상 즉시 입고·재고 반영·종료(104행)여서 기존 결정과 맞는다. 옛 흐름·이름 변경 요구를 되살리지 않는다.
+- VS Code 제작 실습(50~52·61~63·70~74·80~83·112~114행)은 새 포털 메뉴 근거가 아니다. 83행도 다중 출처 인수인계 실습이며 새 데이터 플랫폼 구축이 아니다. 옛 메뉴 활용 조사에서 새 기능을 추론하지 않는다.
+- **Notion 학습노트 자체는 필수**(7·117행)이고 API/MCP 연동만 조건부다. 코치는 Markdown·텍스트 우선(63행), Notion 쓰기 권한 검증 시 MCP를 시연하며 미연결 환경은 직접 정리한다(117행). 교재·슬라이드 변경은 이번 범위에 없다.
 
 ### 4.5 사용자 결정 대기
 - 작업 브랜치를 main에 합칠지

@@ -14,10 +14,10 @@
   function verdictOf(raw) {
     if (raw === true) return 'ok'; if (raw === false) return 'fail';
     const s = String(raw ?? '').trim().toLowerCase();
-    return OK.has(s) ? 'ok' : FAIL.has(s) ? 'fail' : s ? 'other' : '';
+    return ['rejected', '반려'].includes(s) ? 'rejected' : OK.has(s) ? 'ok' : FAIL.has(s) ? 'fail' : s ? 'other' : '';
   }
   const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니오' : x);
-  const LABEL = { ok: '정상', fail: '미달', other: '확인 결과', wait: '확인 중' };
+  const LABEL = { ok: '정상', fail: '미달', rejected: '반려', other: '확인 결과', wait: '확인 중' };
 
   function fromValues(v) {
     const r = v.result_report;
@@ -25,8 +25,11 @@
       // C2/C3 계약: outcome(화면 배지 문구: 정상 · 미달 · 지연 · 입고 완료 · 승인 지연 · 알림) + level/verdict(ok · fail · info → 색)
       const level = String(r.level ?? r.verdict ?? '').toLowerCase();
       const verdict = level === 'info' ? 'other' : verdictOf(r.level ?? r.verdict ?? r.ok ?? r.status ?? r.outcome);
-      const free = r.verdict && !OK.has(String(r.verdict).toLowerCase()) && !FAIL.has(String(r.verdict).toLowerCase()) && String(r.verdict).toLowerCase() !== 'info' ? String(r.verdict) : '';
-      return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: r.summary || r.text, values: Array.isArray(r.values) ? r.values : [] };
+      const free = r.verdict && !OK.has(String(r.verdict).toLowerCase()) && !FAIL.has(String(r.verdict).toLowerCase()) && !['info', 'rejected'].includes(String(r.verdict).toLowerCase()) ? String(r.verdict) : '';
+      const alertId = v.alert_id || v.alert?.alertId;
+      const summary = r.summary || r.text;
+      const shownSummary = alertId && typeof summary === 'string' ? summary.split(`경보 ${alertId}. `).join('') : summary;
+      return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: shownSummary, values: Array.isArray(r.values) ? r.values : [] };
     }
     if (v.test_run && typeof v.test_run === 'object') return { verdict: verdictOf(v.test_run.ok ?? v.test_run.verdict), title: '시운전 확인', summary: v.test_run.summary || '', values: Array.isArray(v.test_run.values) ? v.test_run.values : [] };
     if (typeof v.recovered === 'boolean') return { verdict: v.recovered ? 'ok' : 'fail', title: '재관측 확인', summary: v.recovered ? '경보가 풀리고 기준 안으로 돌아왔습니다' : '기준 안으로 돌아오지 않았습니다', values: [] };
@@ -41,7 +44,8 @@
   function systemSteps(view) {
     const human = w => !w.agent_orch && !w.agent_mode;
     const agent = w => !!w.agent_mode || w.agent_orch === 'cliagents';
-    return (view.workitems || []).filter(w => !human(w) && !agent(w) && ['DONE', 'IN_PROGRESS', 'SUBMITTED', 'PENDING'].includes(w.status) && !/timeout/.test(w.activity_id || ''))
+    const events = new Set((view.definition?.events || []).map(ev => ev.id));
+    return (view.workitems || []).filter(w => !human(w) && !agent(w) && !events.has(w.activity_id) && ['DONE', 'IN_PROGRESS', 'SUBMITTED', 'PENDING'].includes(w.status) && !/timeout/.test(w.activity_id || ''))
       .sort((a, b) => String(a.start_date || '').localeCompare(String(b.start_date || '')));
   }
   function refOf(out) {
@@ -58,7 +62,7 @@
     if (!rep && !v.approved_by && !sys.length) return '';
     const done = inst.status === 'COMPLETED';
     const verdict = rep ? rep.verdict || 'other' : done ? 'other' : 'wait';
-    const tone = verdict === 'ok' ? 'ok' : verdict === 'fail' ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
+    const tone = verdict === 'ok' ? 'ok' : ['fail', 'rejected'].includes(verdict) ? 'fail' : verdict === 'wait' ? 'wait' : 'other';
     const label = (rep && rep.label) || (verdict === 'other' && done && !rep ? '처리 끝' : LABEL[verdict]);
     const chosen = (v.chosen_option && v.chosen_option.name) || '';
     // 승인자는 사람 id(user:…)로 저장된다 — 화면에는 이름으로 (C3: 블랙박스 점검에서 id만 보이던 곳)
@@ -74,7 +78,7 @@
       ${values ? `<div class="rr-vals">${values}</div>` : ''}
       ${chosen || v.approved_by ? `<p class="rr-who"><span class="ap-label">승인한 안</span> <b>${e(UI.idText(chosen || '–'))}</b>${v.approved_by ? ` · ${e(personName(v.approved_by))}${v.approved_role ? ` (${e(UI.who(v.approved_role))})` : ''}` : ''}</p>` : ''}
       ${steps ? `<div class="rr-steps-wrap"><span class="ap-label">시스템이 한 일</span><ol class="rr-steps">${steps}</ol></div>` : ''}
-      ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">무엇으로 시작해 무엇을 보고 · 누가 승인해 · 시스템이 무엇을 했는지 단계별로</span></div>` : ''}
+      ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">시작부터 담당자의 결정과 시스템 처리까지 단계별로</span></div>` : ''}
     </section>`;
   }
   window.hydResultReport = { html, verdictOf, fromValues };

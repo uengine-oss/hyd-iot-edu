@@ -16,7 +16,7 @@
     if (!inst || inst.status !== 'COMPLETED' || !window.hydResultReport) return '';
     const rep = hydResultReport.fromValues(Object.fromEntries((inst.variables_data || []).map(r => [r.key, r.value])));
     if (!rep || !rep.verdict) return '';
-    const tone = rep.verdict === 'ok' ? 'success' : rep.verdict === 'fail' ? 'danger' : 'neutral';
+    const tone = rep.verdict === 'ok' ? 'success' : ['fail', 'rejected'].includes(rep.verdict) ? 'danger' : 'neutral';
     return UI.chipText(rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '확인 결과'), tone);
   };
 
@@ -59,6 +59,7 @@
     const sig = JSON.stringify([I.status, I.listShown, I.instances.map(x => [x.proc_inst_id, x.status, x.current_activity_ids]), I.todo.map(t => t.id), I.asked.map(t => [t.id, t.draft_status]), I.sel, I.taskView,
       I.view && I.view.workitems.map(w => [w.id, w.status, w.draft_status, w.log]),
       I.view && (I.view.approvals || []).map(a => [a.todo_id, a.status, a.attempts, a.error]), I.dec && I.dec.state, I.msg,
+      I.view && I.view.events, I.view && I.view.instance.variables_data,
       I.viewErr, I.graph && (I.graph.error || I.graph.graph || 'none'), I.graph && I.graph.projection, I.caseProjection, I.tab, I.todoShown, I.eventsShown, UI.namesVersion]);
     feedTrace();                                   // A161-U1: the live trace takes the fresh view every poll (events · statuses), without a redraw
     if (!force && sig === I.sig) return;
@@ -205,6 +206,9 @@
   /* 조치 선택 폼 — ① 사건 ② 선택 ③ 사유·담당 ④ 결정 (UIUX_PLAN §1.3) */
   function renderSelectPanel(task) {
     const box = $('#todoPanel');
+    const focused = box.contains(document.activeElement) ? document.activeElement : null;
+    const caret = focused && typeof focused.selectionStart === 'number' ? [focused.selectionStart, focused.selectionEnd] : null;
+    const folds = new Map([...box.querySelectorAll('details')].map(el => [el.querySelector('summary')?.textContent, el.open]));
     const d = I.dec;
     if (!d) { box.innerHTML = `<section class="todo-panel"><h3>${esc(UI.t('select'))}</h3><p class="muted">${esc(UI.t('inst.loadingCards'))}</p></section>`; return; }
     const opts = d.options || [];
@@ -218,10 +222,13 @@
     const reviewed = review?.snapshot?.options?.[0];
     const changed = (fanA && I.form.fan !== fanA.value) || (loadA && I.form.load !== loadA.value);
     const canApprove = reviewed ? reviewed.feasible : chosen.feasible && !changed;
-    const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).sort((a, b) => a[1].level - b[1].level);
+    const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).map(([id, role]) => [id, { ...role, name: role.name || UI.who(id) }]).sort((a, b) => a[1].level - b[1].level);
     if (!I.form.role) I.form.role = (chosen.approver || {}).id || (roles[0] || [''])[0];
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
-        const timer = timerFor(task);
+    const timer = timerFor(task);
+    const activity = (I.view?.definition?.activities || []).find(a => a.id === task.activity_id);
+    const canReject = (activity?.outputData || []).includes('approval');
+    const delayed = (I.view?.events || []).some(e => e.data?.report?.outcome === '승인 지연') || vars(I.view?.instance || {}).result_report?.outcome === '승인 지연';
     const maintenance = (chosen.actions || []).filter(a => a.code === 'WO_CREATE');
     const hasWorkOrder = (I.view?.definition?.activities || []).some(a => a.tool === 'enterprise:WO_CREATE');
     const maintenanceText = maintenance.length ? maintenance.map(a => a.value ?? a.name ?? UI.t('workOrder')).join(', ') : `선택한 조치 이후 정비 점검: ${chosen.name || ''}`;
@@ -233,12 +240,12 @@
       `<div class="form-actions"><button class="btn small outline" id="tdPreview" ${I.busy || !I.form.option ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button></div>`, { cls: 'small', open: !!changed || !!reviewed }) : '';
     const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
     const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
-    const dueLeft = dueS == null ? null : dueS < 60 ? `${dueS}초` : `${Math.round(dueS / 60)}분`;
-    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${dueLeft != null ? UI.chipText(`기한까지 ${dueLeft}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
+    box.innerHTML = `<section class="todo-panel approve" aria-busy="${I.busy}"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${dueS != null ? `<span class="chip tone-warning" data-approval-until="${esc(timer.due_date)}"></span>` : ''}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
       ${window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo })}
+      ${delayed ? '<p class="approval-delay" role="status">승인 지연 알림을 보냈습니다. 담당자가 승인하거나 거절할 때까지 기다립니다.</p>' : ''}
       <div class="form">
-      ${hydCards.whoFields('td', I.form, roles)}
-      ${UI.actions(`<button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, I.msg || (!canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : ''))}
+      ${hydCards.whoFields('td', I.form, roles, canReject ? { reasonHint: '거절할 때는 사유를 1~2000자로 적으세요. 반려 결과와 처리 기록에 남습니다.' } : {})}
+      ${UI.actions(`${canReject ? `<button class="btn danger" id="tdRejectCard" ${I.busy ? 'disabled' : ''}>거절</button>` : ''}<button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, I.msg || (!canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : ''))}
       </div></section>`;
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.form.review = null; I.msg = ''; const o = opts.find(x => x.id === I.form.option); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); });
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.form.review = null; I.msg = ''; const o = opts.find(x => x.id === r.value); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); }));
@@ -251,7 +258,19 @@
     on('tdRole', 'change', e => { I.form.role = e.target.value; I.msg = ''; });
     on('tdReason', 'input', e => I.form.reason = e.target.value);
     on('tdGo', 'click', () => selectCard(task));
+    on('tdRejectCard', 'click', () => rejectCard(task));
     on('tdPreview', 'click', () => previewCard(task, parameters));
+    box.querySelectorAll('details').forEach(el => { const key = el.querySelector('summary')?.textContent; if (folds.has(key)) el.open = folds.get(key); });
+    if (I.busy) box.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = true; });
+    else if (focused?.id) { const next = document.getElementById(focused.id); next?.focus({ preventScroll: true }); if (caret && next?.setSelectionRange) next.setSelectionRange(...caret); }
+    updateApprovalClock();
+  }
+
+  function updateApprovalClock() {
+    document.querySelectorAll('[data-approval-until]').forEach(el => {
+      const left = Math.max(0, Math.ceil((Date.parse(el.dataset.approvalUntil) - Date.now()) / 1000));
+      el.textContent = left ? `지연 알림까지 ${left < 60 ? left + '초' : Math.ceil(left / 60) + '분'}` : '기한 지남 · 승인 대기';
+    });
   }
 
   /* 캡스톤 G1 · G7 사람 승인(안 고르기): 에이전트 제안 카드(추천 1 + 지는 안 펼치기) → 승인 한 번(반려는 사유와 함께). 승인자 = "나" */
@@ -300,8 +319,24 @@
     finally { I.busy = false; renderTodoPanel(); }
   }
 
+  async function rejectCard(task) {
+    if (I.busy) return;
+    const reason = I.form.reason.trim();
+    if (!reason || Array.from(reason).length > 2000) { I.msg = '거절 사유를 1~2000자로 적으세요.'; renderTodoPanel(); $('#tdReason')?.focus(); return; }
+    if (!I.form.by.trim() || !I.form.role) { I.msg = '담당자와 역할을 고르세요.'; renderTodoPanel(); return; }
+    I.busy = true; I.msg = ''; renderTodoPanel();
+    try {
+      await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/reject-card`, {
+        decision: I.decId, by: I.form.by.trim(), role: I.form.role, reason
+      });
+      I.msg = ''; I.dec = null;
+    } catch (e) { I.msg = e.message; }
+    finally { I.busy = false; await load(true); }
+  }
+
   async function selectCard(task) {
     if (I.busy) return; I.busy = true;
+    I.msg = ''; renderTodoPanel();
     try {
       await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/select`, { decision: I.decId, option: I.form.option, by: I.form.by || '승인자', role: I.form.role,
         reason: I.form.reason, fan_pct: I.form.fan, load_pct: I.form.load, review_id: matchingReviewId(task) });
@@ -454,7 +489,7 @@
     if (esW && esW.status !== 'CANCELLED' && esW.status !== 'TODO') cards.push(UI.card({ title: esc(UI.t('escalate')), chips: chip(esW.status), sub: esc(UI.logText(v.note || esW.log || '')) }));
     const report = window.hydResultReport ? hydResultReport.html(view) : '';
     // A161-U1: 결과 보고 카드가 있으면 단계별 결과 카드는 접기(같은 내용을 두 번 크게 보이지 않게)
-    let html = report + (cards.length ? (report ? UI.fold(`단계별 결과 <span class="chip tone-neutral sm">${cards.length}</span>`, `<div class="cards two">${cards.join('')}</div>`) : `<div class="cards two">${cards.join('')}</div>`) : UI.empty(UI.t('inst.noResult'), inst.status === 'RUNNING' ? UI.t('inst.noResultSub') : '', 'compact'));
+    let html = report + (cards.length ? (report ? UI.fold(`단계별 결과 <span class="chip tone-neutral sm">${cards.length}</span>`, `<div class="cards two">${cards.join('')}</div>`) : `<div class="cards two">${cards.join('')}</div>`) : report ? '' : UI.empty(UI.t('inst.noResult'), inst.status === 'RUNNING' ? UI.t('inst.noResultSub') : '', 'compact'));
     // 값: label = definition data name, key as small text, structured values folded (R5 read-only form)
     const internal = new Set(['decision', 'decision_id', 'guide_card', 'candidates', 'compliance', 'incident', 'commands', 'chosen_option', 'alert', 'alert_id']);
     const varRows = (inst.variables_data || []).filter(row => !internal.has(row.key)).map(row => {
@@ -673,5 +708,6 @@
   $('#instReload').addEventListener('click', () => load(true));
   $('#instStatus').addEventListener('change', e => { I.status = e.target.value || null; I.sel = null; I.listShown = UI.PAGE; load(true); });
   setInterval(() => load(false), 2000);
+  setInterval(updateApprovalClock, 1000);
   window.hydInstances = { I, load };
 })();

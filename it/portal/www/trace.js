@@ -75,6 +75,7 @@
   }
   // 시스템 · 사람 단계가 하는 일(아이콘 · 칩). B(예약 · 예정된 정비 시간 대기 · 교체) · C(발주 · 메일 · 입고 확인) 같은 단계도 tool · 이름으로 잡힌다.
   function actionOf(w, act) {
+    if (w.output?.result_report || /(?:^|:)report/.test((act && act.tool) || w.tool || '')) return '';
     const s = `${(act && act.tool) || w.tool || ''} ${w.activity_name || ''} ${(act && act.name) || ''}`.toLowerCase();
     if (/incident:command|명령|command/.test(s)) return 'command';
     if (/mail|메일|smtp/.test(s)) return 'mail';
@@ -172,6 +173,10 @@
           rows.push({ key: 'start:' + e.id, kind: 'start', status: 'ok', t0: e.timestamp, title: UI.t('trace.picked'), text: w && isAgent(w) ? UI.t('agent') : UI.who(d.name || d.role || ''), fold: d.task_description ? [UI.t('trace.instruction'), UI.clean(UI.idText(d.task_description))] : null });
           break;
         case 'task_working':
+          if (e.job_id === 'APPROVAL_REJECTED') {
+            rows.push({ key: 'w:' + e.id, kind: 'system', status: 'ok', t0: e.timestamp, title: '거절 접수', text: `${UI.who(d.by)} · 사유: ${d.reason || ''} · ${d.effects || '승인 뒤 조치 없음'}`, raw: d });
+            break;
+          }
           if (HIDDEN(d)) break;
           if (d.type === 'text') { rows.push({ key: 'note:' + e.id, kind: 'note', status: 'ok', t0: e.timestamp, title: UI.t('td.note') || '에이전트 판단', note: UI.clean(UI.idText(d.content || '')) }); break; }
           if (d.type === 'file_artifact') { rows.push({ key: 'file:' + e.id, kind: 'file', status: 'ok', t0: e.timestamp, title: UI.t('trace.file'), text: UI.baseName(d.path || '') || '', fold: [UI.t('trace.response'), pretty(d.content)] }); break; }
@@ -277,7 +282,8 @@
   function stepHeadHtml(s) {
     const ik = s.kind === 'agent' ? 'agent' : s.kind === 'timer' ? 'timer' : s.kind === 'event' ? 'event' : ACT_ICON[s.action] || (s.kind === 'human' ? 'human' : 'system');
     const due = s.due ? (() => { const left = ts(s.due) - Date.now(); return `<span class="tr-due${left < 0 ? ' over' : ''}" data-until="${esc(s.due)}">${esc(left >= 0 ? `${fmtMs(left)} ${UI.t('trace.left')}` : UI.t('trace.overdue'))}</span>`; })() : '';
-    const actChip = s.action ? `<span class="tr-act">${esc(UI.t('trace.act.' + s.action))}</span>` : '';
+    const rejected = s.w?.output?.approval === '반려';
+    const actChip = rejected ? '<span class="chip tone-danger sm">반려</span>' : s.action ? `<span class="tr-act">${esc(UI.t('trace.act.' + s.action))}</span>` : '';
     return `<span class="tr-chev">${icon('chevron')}</span><span class="tr-block k-${esc(s.kind)}${s.live ? ' live' : ''}">${icon(ik)}</span>
       <span class="tr-name"><b>${esc(s.name)}</b><span class="tr-who">${esc(s.who)}</span>${actChip}${s.gen ? `<span class="tr-gen">${esc(s.gen + 1)}${esc(UI.t('trace.gen'))}</span>` : ''}</span>
       <span class="tr-meta">${s.tools ? `<span class="tr-count">${icon('tool')}${s.tools}</span>` : ''}${due}${durHtml(s.t0, s.t1, s.live)}${stateMark(s.state)}</span>`;

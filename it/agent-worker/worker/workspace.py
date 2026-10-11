@@ -7,14 +7,41 @@ outlives the run: a paused run resumes into it and retention sweeps it later.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import time
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from cliagents import ArtifactBundle, DirectorySink, registry
 from procsvc.agents_store import SKILL_ROOTS, skill_markdown
+
+class Utf8DirectorySink(DirectorySink):
+    """Worker artifact boundary: preserve source UTF-8 bytes on every OS.
+
+    cliagents' text-mode DirectorySink translates LF to CRLF on Windows.
+    Keep its resolved-root containment and same-directory atomic replacement,
+    but encode once and write binary so constitutions and skills stay exact.
+    """
+
+    def write(self, path: str, content: str) -> None:
+        target = (self.root / path).resolve()
+        if not target.is_relative_to(self.root):
+            raise ValueError(f"artifact path escapes the project root: {path!r}")
+        payload = content.encode("utf-8")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
+        try:
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(payload)
+            os.replace(temporary, target)
+        except BaseException:
+            Path(temporary).unlink(missing_ok=True)
+            raise
+        self.written.append(path)
+
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -98,9 +125,10 @@ def provision(ws: Workspace, *, agent_id: str, constitution: str, schema_prompt:
     bundle = ArtifactBundle().add_constitution(constitution)
     for skill in skills or []:
         bundle.add_skill(skill["skill_name"], skill_markdown(skill), description=str(skill.get("description") or ""))
-    registry.get(agent_id).emit(bundle, DirectorySink(str(ws.path)))
-    (ws.context_dir / "schema_prompt.md").write_text(schema_prompt, encoding="utf-8")
-    (ws.context_dir / "task.json").write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding="utf-8")
+    sink = Utf8DirectorySink(str(ws.path))
+    registry.get(agent_id).emit(bundle, sink)
+    sink.write("context/schema_prompt.md", schema_prompt)
+    sink.write("context/task.json", json.dumps(task, ensure_ascii=False, indent=2))
     roots = [ws.path / r for r in SKILL_ROOTS.values()]
     return sorted(str(p.relative_to(ws.path)).replace("\\", "/") for r in roots if r.exists() for p in r.rglob("SKILL.md"))
 

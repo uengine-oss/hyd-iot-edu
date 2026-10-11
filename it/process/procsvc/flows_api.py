@@ -1,7 +1,7 @@
 """B3: bpmn.io 그림 가져오기 API — 매핑 · 사전 검사 · 판본 등록 · 그림 다시 받기 · 기준으로 되돌리기.
 
   GET  /api/flows/catalog                        부품(기준 정의에서 읽은 시나리오 부품 + 일반 부품) · 역할 · 에이전트 · 경보 패턴
-  POST /api/flows/import {xml, file_name, definition_id?}
+  POST /api/flows/import {xml, file_name, definition_id?, start_patterns?}
                                                  .bpmn 읽기 → 같은 흐름 id 의 앞선 매핑 유지 → 초안 저장 → 사전 검사 결과
   GET  /api/flows                                내가 가져온 흐름(초안) · 등록한 판본
   GET  /api/flows/{id}                           초안 하나(읽은 그림 · 매핑 · 사전 검사 · 판본)
@@ -31,6 +31,8 @@ class ImportReq(BaseModel):
     xml: str
     file_name: str | None = None
     definition_id: str | None = None
+    # 새 경보 초안에만 적용. None은 기존 센서 기본값, []는 명시적으로 미선택.
+    start_patterns: list[str] | None = None
 
 
 class MappingReq(BaseModel):
@@ -102,6 +104,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             cat = catalog_of(rt)
             old = store.get_draft(def_id)
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
+            if old is None and req.start_patterns is not None and mapping["start"].get("kind") == "alert":
+                mapping["start"]["patterns"] = list(req.start_patterns)
             report["previous"] = old is not None
             draft = {"bpmn": req.xml, "file_name": req.file_name}
             store.save_draft(def_id, req.xml, req.file_name, mapping)

@@ -268,8 +268,8 @@ function bizAlertHtml(asset) {
   if (state.biz && state.biz.failed) return `<span class="chip tone-danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
   const b = bizOf(asset); if (!b) return '';
   if (b.running) return `<a href="#" class="chip tone-accent" data-open-inst="${esc(b.running.instance)}" title="처리 건 화면에서 보기">${esc(b.title)} 처리 중 →</a>`;
-  if (b.alert) return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
-  if (b.alert === false && b.last) return `<a href="#" class="chip tone-success" data-open-inst="${esc(b.last.instance)}" title="처리 건 화면에서 보기">처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}</a>`;
+  if (b.alert && b.last?.outcome !== '반려') return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
+  if (b.last && !b.running) return `<a href="#" class="chip tone-${b.last.outcome === '반려' ? 'danger' : 'success'}" data-open-inst="${esc(b.last.instance)}" title="처리 건 화면에서 보기">${b.last.outcome === '반려' ? '반려' : `처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}`}</a>`;
   return b.error ? `<span class="chip tone-neutral" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
 }
 // 마지막 수업 버튼(감사 기록 — 처리 건이 없는 [초기화]도 여기서 보인다)

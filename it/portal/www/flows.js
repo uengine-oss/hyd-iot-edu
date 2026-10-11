@@ -38,7 +38,28 @@
   }
   const minutesOf = iso => { const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(String(iso || '')); return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) + (+(m[3] || 0)) / 60 : null; };
   const isoOf = minutes => { const n = Number(minutes); return isFinite(n) && n > 0 ? (Number.isInteger(n) ? `PT${n}M` : `PT${Math.round(n * 60)}S`) : ''; };
-  const pure = { parseFields, fieldsText, parseValue, minutesOf, isoOf };
+  const CONFIG = {
+    server: ['연결 서버', 'text'], tool: ['실행할 도구', 'text'], arguments: ['도구에 보낼 값', 'object'],
+    output: ['결과를 담을 값 이름', 'text'], extract: ['결과에서 꺼낼 값', 'object'], effect: ['호출 목적', 'boolean'],
+    duration: ['기다릴 시간', 'text'], until: ['기다릴 시각이 담긴 값', 'text'], label: ['대기 중 표시할 이름', 'text'],
+    outcome: ['처리 결과', 'outcome'], title: ['보고 제목', 'text'], summary: ['보고 내용', 'textarea'],
+    mail: ['공지 메일', 'object'], component: ['정비할 부품', 'component'], sop: ['조치 방법', 'text'],
+    work_order_var: ['정비 요청이 담긴 값', 'text'], purchase_order_var: ['발주가 담긴 값', 'text'],
+    immediate: ['바로 입고 처리', 'boolean'], criteria: ['확인 기준', 'object'], settle: ['안정될 때까지 기다릴 시간', 'text'],
+    reset_counter: ['통과하면 운전시간 초기화', 'boolean'], window_var: ['정비 예정 시간이 담긴 값', 'text']
+  };
+  function configValue(key, raw) {
+    if (raw.trim() === '') return undefined;
+    const [label, type] = CONFIG[key] || [key, 'text'];
+    if (type === 'boolean') { if (!['true', 'false'].includes(raw)) throw Error(`${label}: 예 또는 아니요를 고르세요`); return raw === 'true'; }
+    if (type === 'object') {
+      let value; try { value = JSON.parse(raw); } catch (_) { throw Error(`${label}: 입력한 묶음의 문법을 확인하세요`); }
+      if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(`${label}: 이름과 값으로 된 묶음을 넣으세요`);
+      return value;
+    }
+    return raw.trim();
+  }
+  const pure = { parseFields, fieldsText, parseValue, minutesOf, isoOf, configValue };
 
   if (typeof document === 'undefined') { window.hydFlows = { pure }; return; }
 
@@ -57,9 +78,9 @@
     }
     return j;
   }
-  const partName = p => p ? UI.flowName(p.name) : '';
+  const partName = p => p ? ({ human: '담당자 입력', agent: '에이전트 작업' }[p.key] || UI.flowName(p.name)) : '';
   const roleOpts = (sel, human) => S.cat.roles.filter(r => !human || r.human).map(r => `<option value="${h(r.name)}" ${r.name === sel ? 'selected' : ''}>${h(r.name)}</option>`).join('');
-  const agentOpts = sel => S.cat.agents.map(a => `<option value="${h(a.id)}" ${a.id === sel ? 'selected' : ''}>${h(UI.who(a.id) !== a.id ? UI.who(a.id) : a.name)}</option>`).join('');
+  const agentOpts = sel => S.cat.agents.map(a => `<option value="${h(a.id)}" ${a.id === sel ? 'selected' : ''}>${h(a.name && a.name !== a.id ? a.name : UI.who(a.id) !== a.id ? UI.who(a.id) : 'AI 에이전트')}</option>`).join('');
   const nodeName = id => { const p = S.view && S.view.parsed; if (!p) return id; for (const k of ['tasks', 'starts', 'ends', 'boundaries', 'gateways']) { const n = p[k].find(x => x.id === id); if (n) return n.name || '(이름 없음)'; } return id; };
 
   function mount(el) {
@@ -96,10 +117,10 @@
     msg.textContent = '읽는 중…'; msg.className = 'form-msg';
     try {
       const xml = await file.text();
-      S.view = await call('POST', '/api/flows/import', { xml, file_name: file.name, definition_id: S.el.querySelector('#flowId').value.trim() || null });
+      S.view = await call('POST', '/api/flows/import', { xml, file_name: file.name, start_patterns: [], definition_id: S.el.querySelector('#flowId').value.trim() || null });
       S.mapping = S.view.mapping;
       const r = S.view.reimport || {};
-      msg.textContent = r.previous ? `다시 가져옴 — 매핑 유지 ${r.kept.length} · 새 task ${r.new.length} · 사라진 task ${r.dropped.length}` : `가져옴 — task ${S.view.parsed.tasks.length}개`;
+      msg.textContent = r.previous ? `다시 가져옴 — 매핑 유지 ${r.kept.length} · 새 단계 ${r.new.length} · 사라진 단계 ${r.dropped.length}` : `가져옴 — 단계 ${S.view.parsed.tasks.length}개`;
       msg.className = 'form-msg pos';
       renderEditor(); loadList();
     } catch (e) {
@@ -118,21 +139,22 @@
     const v = S.view, p = v.parsed, m = S.mapping, box = S.el.querySelector('#flowEditor');
     const lanes = p.lanes.length ? p.lanes.map(l => `<tr><td>${h(l.name || '(이름 없음)')}</td><td><select data-lane="${h(l.id)}"><option value="">(고르지 않음)</option>${roleOpts(m.lanes[l.id] || '', false)}</select></td></tr>`).join('') : '';
     const start = m.start || {};
-    const patterns = S.cat.patterns.map(pt => `<label class="chk"><input type="checkbox" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}> ${h(typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[pt] || pt)}</label>`).join(' ');
+    const patternNames = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 누설', FAN_VIBRATION: '팬 진동', OIL_ANALYSIS: '오일 분석', PM_DUE: '정기 점검 도래', SPARE_BELOW_MIN: '재고 보충 필요' };
+    const patterns = S.cat.patterns.map(pt => `<label class="chk"><input type="checkbox" data-pattern="${h(pt)}" ${(start.patterns || []).includes(pt) ? 'checked' : ''}> ${h(patternNames[pt] || (typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[pt]) || UI.idText(pt))}</label>`).join(' ');
     box.innerHTML = `
       <section class="card form" aria-label="매핑">
-        <h3>${h(m.name || p.process.name || v.definition_id)} <span class="muted">· 흐름 id ${h(v.definition_id)} · 다음 판본 ${h(v.next_version)}</span></h3>
+        <h3>${h(m.name || p.process.name || '가져온 흐름')} <span class="muted">· 다음 판본 ${h(v.next_version)}</span></h3>
         <div class="form-grid">${UI.field({ label: '흐름 이름', input: `<input id="flowName" value="${h(m.name || p.process.name || '')}">` })}
-          ${UI.readonly('그림 파일', h(v.file_name || '–'), `task ${p.tasks.length} · 분기 ${p.gateways.length} · 선 ${p.flows.length}`)}</div>
+          ${UI.readonly('그림 파일', h(v.file_name || '–'), `단계 ${p.tasks.length} · 분기 ${p.gateways.length} · 선 ${p.flows.length}`)}</div>
         ${UI.section('시작 조건', `
-          <div class="field wide"><label class="chk"><input type="radio" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}> 설비 경보로 시작</label>
+          <div class="field wide"><label class="chk"><input type="radio" name="flowStart" value="alert" ${start.kind === 'alert' ? 'checked' : ''}> 경보로 시작</label>
             <div class="chk-row">${patterns}</div><p class="field-hint">경보 정책(회복 기준)은 기준 흐름의 계약을 그대로 씁니다.</p></div>
           <div class="field wide"><label class="chk"><input type="radio" name="flowStart" value="human" ${start.kind === 'human' ? 'checked' : ''}> 사람 입력 · 직접 시작</label>
             <textarea id="flowStartFields" rows="3" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류 | 고를 값&#10;예) oil_iso | ISO 청정도 | text">${h(fieldsText(start.fields))}</textarea>
             <p class="field-hint">한 줄에 칸 하나. 종류: ${TYPES.map(t => TYPE_LABEL[t] + ' ' + t).join(' · ')}</p></div>`)}
-        ${lanes ? UI.section('칸(레인) → 담당 역할', `<table class="compact-table"><thead><tr><th>그림의 칸</th><th>역할</th></tr></thead><tbody>${lanes}</tbody></table>`) : ''}
-        ${UI.section('task → 부품 · 담당', `<table class="compact-table flow-map"><thead><tr><th>그림의 task</th><th>부품</th><th>담당</th><th>세부</th></tr></thead><tbody>${p.tasks.map(taskRow).join('')}</tbody></table>`)}
-        ${p.boundaries.length ? UI.section('시간 초과(경계 타이머)', p.boundaries.map(timerRow).join('')) : ''}
+        ${lanes ? UI.section('담당 구역별 역할', `<table class="compact-table"><thead><tr><th>그림의 칸</th><th>역할</th></tr></thead><tbody>${lanes}</tbody></table>`) : ''}
+        ${UI.section('단계별 부품 · 담당 · 설정', `<table class="compact-table flow-map"><thead><tr><th>그림의 단계</th><th>부품</th><th>담당</th><th>설정</th></tr></thead><tbody>${p.tasks.map(taskRow).join('')}</tbody></table>`)}
+        ${p.boundaries.length ? UI.section('알림 기한', p.boundaries.map(timerRow).join('')) : ''}
         ${branchSection()}
         <div id="flowProblems">${resultBlock(v.check)}</div>
         <div class="form-actions"><span class="form-msg" id="flowMsg" role="status"></span>
@@ -184,14 +206,14 @@
     const wo = S.cat.parts.find(x => x.effect === '작업지시');
     const opt = x => `<option value="${h(x.key)}" ${x.key === m.part ? 'selected' : ''}>${h(partName(x))}</option>`;
     const sel = `<select data-part="${h(t.id)}"><option value="">(부품 고르기)</option><optgroup label="시나리오 부품">${scen.map(opt).join('')}</optgroup>
-      <optgroup label="일반 부품">${S.cat.parts.filter(x => x.group === 'general').map(opt).join('')}${wo ? `<option value="${h(wo.key)}" ${wo.key === m.part ? 'selected' : ''}>작업지시</option>` : ''}</optgroup></select>`;
+      <optgroup label="일반 부품">${S.cat.parts.filter(x => x.group === 'general').map(opt).join('')}${wo ? `<option value="${h(wo.key)}" ${wo.key === m.part ? 'selected' : ''}>정비 요청</option>` : ''}</optgroup></select>`;
     let who = '<span class="muted">–</span>', detail = '';
     if (part && part.kind === 'human') who = `<select data-role="${h(t.id)}"><option value="">${part.group === 'scenario' ? '부품 기본: ' + h(part.role) : '(칸의 역할)'}</option>${roleOpts(m.role || '', true)}</select>`;
     if (part && part.kind === 'agent') who = `<select data-agent="${h(t.id)}">${agentOpts(m.agent || part.agent || (S.cat.agents[0] || {}).id)}</select>`;
-    if (part && part.kind === 'service') who = `<span>${h(part.role)}</span>`;
+    if (part && part.kind === 'service') who = '<span>시스템</span>';
     if (part && part.group === 'scenario') {
       const outs = (part.form && part.form.fields_json || []).map(f => `<code>${h(f.key)}</code>`).join(' ');
-      detail = `<p class="kv-line">받는 값 ${part.inputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 ${outs || (part.outputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–')}${part.approval ? ' · <b>사람 승인</b>' : ''}${part.effect ? ` · <b>${h(part.effect)}</b>(승인 뒤)` : ''}</p>`;
+      detail = `<details class="flow-contract"><summary>연결 값 보기</summary><p class="kv-line">받는 값 ${part.inputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–'} · 내는 값 ${outs || (part.outputs.map(x => `<code>${h(x)}</code>`).join(' ') || '–')}${part.approval ? ' · <b>사람 승인</b>' : ''}${part.effect ? ` · <b>${h(UI.flowName(part.effect))}</b>(승인 뒤)` : ''}</p></details>`;
     } else if (part && part.key === 'human') {
       detail = `<textarea data-fields="${h(t.id)}" rows="2" spellcheck="false" placeholder="값이름 | 표시 이름 | 종류">${h(fieldsText(m.fields))}</textarea>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
@@ -204,12 +226,32 @@
         <textarea data-outputs="${h(t.id)}" rows="2" spellcheck="false" placeholder="결과 값 — 값이름 | 표시 이름 | 종류">${h(fieldsText(m.outputs))}</textarea>
         <input data-inputs="${h(t.id)}" value="${h((m.inputs || []).join(', '))}" placeholder="받을 값 (쉼표) — ${h(avail(t.id).join(', '))}">`;
     }
+    if (part?.key === 'task:decide') detail += UI.field({ label: '에이전트 지시문', input: `<textarea data-instruction="${h(t.id)}" rows="3">${h(m.instruction ?? part.contract?.instruction ?? '')}</textarea>` });
+    if (part?.config && part.kind === 'service') detail += serviceFields(t, part, m.config || {});
     const lane = (S.view.parsed.lanes.find(l => l.id === t.lane) || {}).name;
-    return `<tr data-row="${h(t.id)}"><td><b>${h(t.name || '(이름 없음)')}</b><br><small class="muted">${h(t.type_label)}${lane ? ' · ' + h(lane) : ''}</small></td><td>${sel}</td><td>${who}</td><td>${detail}</td></tr>`;
+    return `<tr data-row="${h(t.id)}"><td data-label="단계"><b>${h(t.name || '(이름 없음)')}</b><br><small class="muted">${h(t.type_label)}${lane ? ' · ' + h(lane) : ''}</small></td><td data-label="부품">${sel}</td><td data-label="담당">${who}</td><td data-label="설정">${detail}</td></tr>`;
   }
   const avail = id => [...new Set(((S.view.check.available || {})[id] || []).map(x => x.value))];
+  function serviceFields(task, part, config) {
+    return `<div class="flow-service-fields">${Object.keys(part.config).map(key => {
+      const [label, type] = CONFIG[key] || [key, 'text'], value = config[key];
+      if (key === 'mail' && !config.mail?.arguments && !config.mail?.server && !config.mail?.tool) return `<fieldset class="flow-mail"><legend>공지 메일</legend>${[['to','받는 사람'],['cc','참조'],['subject','메일 제목'],['body','메일 내용']].map(([k,label]) => UI.field({label,input: k === 'body' ? `<textarea data-mail="${h(task.id)}" data-mail-key="${k}" rows="3">${h(config.mail?.[k] ?? '')}</textarea>` : `<input data-mail="${h(task.id)}" data-mail-key="${k}" value="${h(config.mail?.[k] ?? '')}">`})).join('')}</fieldset>`;
+      const attrs = `data-service="${h(task.id)}" data-cfg="${h(key)}" aria-label="${h(label)}"`;
+      let input;
+      if (['boolean', 'outcome', 'component'].includes(type)) {
+        const choices = type === 'boolean' ? (key === 'effect' ? [['true', '변경 실행'], ['false', '조회만']] : [['true', '예'], ['false', '아니요']])
+          : type === 'component' ? [['cooler', '쿨러'], ['pump', '펌프'], ['fan', '팬']]
+          : ['정상', '입고 완료', '미달', '지연', '알림', '승인 지연', '반려'].map(x => [x, x]);
+        input = `<select ${attrs}><option value="">기본값 사용</option>${choices.map(([v, name]) => `<option value="${h(v)}" ${String(value) === v ? 'selected' : ''}>${h(name)}</option>`).join('')}</select>`;
+      } else if (type === 'object' || type === 'textarea') input = `<textarea ${attrs} rows="3" spellcheck="false">${h(value === undefined ? '' : type === 'object' ? JSON.stringify(value, null, 2) : value)}</textarea>`;
+      else input = `<input ${attrs} value="${h(value ?? '')}">`;
+      return UI.field({ label, input, hint: type === 'object' ? '이름과 값을 중괄호로 묶어 입력합니다. 처리 건 값은 {값 이름}으로 연결합니다.' : ['duration', 'settle'].includes(key) ? '예: PT10M은 10분, PT2H는 2시간입니다.' : '' });
+    }).join('')}</div>`;
+  }
   // 값 이름 → 사람이 읽는 이름(부품 폼 · 내가 적은 폼 칸의 표시 이름). 없으면 값 이름 그대로.
   function valueLabel(key) {
+    const known = { approval: '승인 결과', approval_reason: '거절 사유', recovered: '설비 회복 여부', passed: '확인 통과 여부', received: '입고 확인 여부' };
+    if (known[key]) return known[key];
     for (const p of S.cat.parts) for (const f of (p.form && p.form.fields_json) || []) if (f.key === key && f.text) return f.text.split(' (')[0];
     const m = S.mapping || {};
     for (const f of [...((m.start || {}).fields || []), ...Object.values(m.tasks || {}).flatMap(t => [...(t.fields || []), ...(t.outputs || [])])]) if (f.key === key && f.text && f.text !== key) return f.text;
@@ -235,9 +277,9 @@
         const c = S.mapping.flows[f.id] || {};
         return `<tr data-row="${h(f.id)}"><td>→ ${h(nodeName(f.target))}${f.name ? `<br><small class="muted">${h(f.name)}</small>` : ''}</td>
           <td><label class="chk"><input type="checkbox" data-default="${h(f.id)}" ${c.default ? 'checked' : ''}> 그 밖의 경우</label></td>
-          <td><select data-var="${h(f.id)}" ${c.default ? 'disabled' : ''}><option value="">(값)</option>${vals.map(x => `<option value="${h(x)}" ${x === c.var ? 'selected' : ''}>${h(valueLabel(x) ? valueLabel(x) + ' · ' + x : x)}</option>`).join('')}</select></td>
-          <td><select data-op="${h(f.id)}" ${c.default ? 'disabled' : ''}>${S.cat.ops.map(o => `<option ${o === (c.op || '==') ? 'selected' : ''}>${h(o)}</option>`).join('')}</select></td>
-          <td><input data-value="${h(f.id)}" value="${h(c.value === undefined ? '' : c.value === true ? '예' : c.value === false ? '아니요' : c.value)}" placeholder="기준 (예/아니요 · 숫자 · 글)" ${c.default ? 'disabled' : ''}></td></tr>`;
+          <td><select data-var="${h(f.id)}" aria-label="분기할 값" ${c.default ? 'disabled' : ''}><option value="">값 선택</option>${vals.map(x => `<option value="${h(x)}" ${x === c.var ? 'selected' : ''}>${h(valueLabel(x) || x)}</option>`).join('')}</select></td>
+          <td><select data-op="${h(f.id)}" aria-label="비교 방법" ${c.default ? 'disabled' : ''}>${S.cat.ops.map(o => `<option value="${h(o)}" ${o === (c.op || '==') ? 'selected' : ''}>${h(({ '==': '같음', '!=': '다름', '>': '초과', '>=': '이상', '<': '미만', '<=': '이하' })[o] || o)}</option>`).join('')}</select></td>
+          <td>${c.var === 'approval' ? `<select data-value="${h(f.id)}" aria-label="승인 결과" ${c.default ? 'disabled' : ''}><option value="">결과 선택</option>${['승인', '반려'].map(x => `<option ${c.value === x ? 'selected' : ''}>${x}</option>`).join('')}</select>` : `<input data-value="${h(f.id)}" aria-label="비교할 값" value="${h(c.value === undefined ? '' : c.value === true ? '예' : c.value === false ? '아니요' : c.value)}" placeholder="기준 (예/아니요 · 숫자 · 글)" ${c.default ? 'disabled' : ''}>`}</td></tr>`;
       }).join('')}</tbody></table></div>`;
     }).join('');
     return rows ? UI.section('분기 조건 (앞 단계 값 기준)', rows) : '';
@@ -253,7 +295,8 @@
   const resultBlock = c => c && c.ok ? `<p class="kv-line pos" role="status">사전 검사 통과 — 판본으로 등록할 수 있습니다 (등록해도 운영 판본은 그대로, 배포는 따로).</p>` : problemsBlock(c && c.problems);
 
   function collect() {
-    const box = S.el.querySelector('#flowEditor'), m = S.mapping;
+    const box = S.el.querySelector('#flowEditor'), m = structuredClone(S.mapping);
+    const switched = new Set();
     m.name = box.querySelector('#flowName').value.trim();
     const kind = (box.querySelector('input[name=flowStart]:checked') || {}).value;
     m.start = kind === 'alert' ? { kind, patterns: [...box.querySelectorAll('[data-pattern]')].filter(c => c.checked).map(c => c.dataset.pattern) }
@@ -261,10 +304,11 @@
     box.querySelectorAll('[data-lane]').forEach(s => { if (s.value) m.lanes[s.dataset.lane] = s.value; else delete m.lanes[s.dataset.lane]; });
     box.querySelectorAll('[data-part]').forEach(s => {
       const id = s.dataset.part, prev = m.tasks[id] || {};
+      if (prev.part !== s.value) switched.add(id);
       m.tasks[id] = s.value ? (prev.part === s.value ? prev : { part: s.value }) : {};
       if (!s.value) delete m.tasks[id];
     });
-    const set = (attr, fn) => box.querySelectorAll(`[data-${attr}]`).forEach(x => { const t = m.tasks[x.dataset[attr]]; if (t) fn(t, x); });
+    const set = (attr, fn) => box.querySelectorAll(`[data-${attr}]`).forEach(x => { const t = m.tasks[x.dataset[attr]]; if (t && !switched.has(x.dataset[attr])) fn(t, x); });
     set('role', (t, x) => { if (x.value) t.role = x.value; else delete t.role; });
     set('agent', (t, x) => { t.agent = x.value; });
     set('fields', (t, x) => { t.fields = parseFields(x.value); });
@@ -272,6 +316,12 @@
     set('instruction', (t, x) => { t.instruction = x.value.trim(); });
     set('inputs', (t, x) => { t.inputs = x.value.split(',').map(s => s.trim()).filter(Boolean); });
     set('approval', (t, x) => { t.config = t.config || {}; if (x.value.trim()) t.config[x.dataset.cfg] = x.value.trim(); else delete t.config[x.dataset.cfg]; });
+    set('service', (t, x) => {
+      const value = configValue(x.dataset.cfg, x.value);
+      t.config = t.config || {};
+      if (value === undefined) delete t.config[x.dataset.cfg]; else t.config[x.dataset.cfg] = value;
+    });
+    set('mail', (t, x) => { t.config ||= {}; t.config.mail ||= {}; if (x.value.trim()) t.config.mail[x.dataset.mailKey] = x.value.trim(); else delete t.config.mail[x.dataset.mailKey]; if (!Object.keys(t.config.mail).length) delete t.config.mail; });
     box.querySelectorAll('[data-timer]').forEach(x => { const iso = isoOf(x.value); if (iso) m.timers[x.dataset.timer] = iso; else delete m.timers[x.dataset.timer]; });
     box.querySelectorAll('[data-default]').forEach(x => {
       const id = x.dataset.default;
@@ -280,18 +330,31 @@
       if (!v) { delete m.flows[id]; return; }
       m.flows[id] = { var: v, op: box.querySelector(`[data-op="${CSS.escape(id)}"]`).value, value: parseValue(box.querySelector(`[data-value="${CSS.escape(id)}"]`).value) };
     });
+    for (const task of Object.values(m.tasks)) {
+      const part = S.cat.parts.find(p => p.key === task.part);
+      if (task.config && part?.kind === 'service') {
+        const allowed = new Set(Object.keys(part.config || {}));
+        task.config = Object.fromEntries(Object.entries(task.config).filter(([key]) => allowed.has(key)));
+        if (!Object.keys(task.config).length) delete task.config;
+      }
+    }
+    S.mapping = m;
     return m;
   }
 
   function wire(box) {
-    box.addEventListener('change', e => {
+    S.events?.abort(); S.events = new AbortController();
+    const on = (type, fn) => box.addEventListener(type, fn, { signal: S.events.signal });
+    on('input', () => { S.revision = (S.revision || 0) + 1; });
+    on('change', e => {
+      S.revision = (S.revision || 0) + 1;
       try { collect(); } catch (err) { S.el.querySelector('#flowMsg').textContent = err.message; S.el.querySelector('#flowMsg').className = 'form-msg neg'; return; }
-      if (e.target.matches('[data-part],[data-default],input[name=flowStart]')) renderEditor();
+      if (e.target.matches('[data-part],[data-default],[data-var],input[name=flowStart]')) renderEditor();
       clearTimeout(S.timer); S.timer = setTimeout(() => recheck(false), 300);
     });
     box.querySelector('#flowCheck').addEventListener('click', () => recheck(true));
     box.querySelector('#flowRegister').addEventListener('click', doRegister);
-    box.addEventListener('click', e => {
+    on('click', e => {
       const li = e.target.closest('[data-goto]'); if (!li) return;
       const row = box.querySelector(`[data-row="${CSS.escape(li.dataset.goto)}"]`);
       if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1500); }
@@ -300,10 +363,13 @@
 
   async function recheck(save) {
     const msg = S.el.querySelector('#flowMsg');
+    if (save) msg.textContent = '검사 중…';
     try {
       collect();
+      const revision = S.revision, view = S.view;
       const id = encodeURIComponent(S.view.definition_id);
       const v = save ? await call('PUT', `/api/flows/${id}/mapping`, { mapping: S.mapping }) : await call('POST', `/api/flows/${id}/check`, { mapping: S.mapping });
+      if (view !== S.view || revision !== S.revision) return;
       const changed = JSON.stringify(v.check.available) !== JSON.stringify(S.view.check.available);
       S.view = Object.assign(S.view, { check: v.check, next_version: v.next_version, versions: v.versions });
       if (changed) renderEditor(); else S.el.querySelector('#flowProblems').innerHTML = resultBlock(v.check);
@@ -347,7 +413,7 @@
     const slot = S.el.querySelector(`[data-startbox="${CSS.escape(id + '@' + version)}"]`);
     try {
       const d = await call('GET', `/api/process/definitions/${encodeURIComponent(id)}?version=${encodeURIComponent(version)}`);
-      if (d.alertPolicy) { slot.innerHTML = '<p class="field-hint">설비 경보로 시작하는 흐름입니다 — 배포한 뒤 경보가 들어오면 시작됩니다.</p>'; return; }
+      if (d.alertPolicy) { slot.innerHTML = '<p class="field-hint">경보로 시작하는 흐름입니다 — 배포한 뒤 경보가 들어오면 시작됩니다.</p>'; return; }
       const fields = (d.startForm && d.startForm.fields_json) || [];
       slot.innerHTML = `<div class="form-grid">${fields.map(f => UI.field({ label: f.text || f.key, input: f.type === 'select'
         ? `<select data-sv="${h(f.key)}">${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`

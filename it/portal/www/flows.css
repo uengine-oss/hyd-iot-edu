@@ -10,3 +10,31 @@
 .flow-versions { list-style: none; padding: 0; margin: 0; }
 .flow-versions li { padding: 4px 0; border-top: 1px solid var(--line, #e5e5e5); }
 [data-row].flash { outline: 2px solid var(--accent, #2f6fed); outline-offset: 2px; }
+/* PgCard/PgField: each step is one card; labels precede controls. */
+#flowEditor .flow-map { display:block; width:100%; }
+#flowEditor .flow-map thead { display:none; }
+#flowEditor .flow-map tbody { display:grid; gap:16px; }
+#flowEditor .flow-map tr { display:grid; grid-template-columns:minmax(180px,1fr) minmax(180px,1fr); gap:16px; padding:20px; border:1px solid var(--rule); border-radius:12px; background:var(--panel); }
+#flowEditor .flow-map td { display:block; padding:0; border:0; min-width:0; }
+#flowEditor .flow-map td:first-child { grid-column:1/-1; }
+#flowEditor .flow-map td:last-child { grid-column:1/-1; }
+#flowEditor .flow-map td[data-label='부품']::before, #flowEditor .flow-map td[data-label='담당']::before { content:attr(data-label); display:block; color:var(--ink-3); font-size:13px; margin-bottom:6px; }
+#flowEditor .flow-service-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+#flowEditor .flow-service-fields .field { min-width:0; margin:0; }
+#flowEditor .flow-mail { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; border:1px solid var(--rule); padding:16px; border-radius:8px; }
+#flowEditor .flow-mail legend { font-size:14px; padding:0 8px; }
+#flowEditor input, #flowEditor select, #flowEditor textarea { max-width:100%; box-sizing:border-box; }
+#flowEditor .flow-map code { overflow-wrap:anywhere; }
+#flowEditor .form-grid > .flow-map { grid-column:1/-1; }
+@media(max-width:700px) { #flowEditor .flow-service-fields, #flowEditor .flow-mail, #flowEditor .flow-map tr { grid-template-columns:minmax(0,1fr); } }
+
+#flowEditor .flow-service-fields .field:has([data-cfg="summary"]), #flowEditor .flow-mail .field:has([data-mail-key="body"]) { grid-column:1/-1; }
+#flowEditor .field.wide > .compact-table { width:100%; table-layout:fixed; }
+#flowEditor .field.wide > .compact-table td { padding:8px; }
+#flowEditor .field.wide > .compact-table td:nth-child(1) { width:24%; }
+#flowEditor .field.wide > .compact-table td:nth-child(2) { width:18%; }
+#flowEditor .field.wide > .compact-table td:nth-child(3) { width:24%; }
+#flowEditor .field.wide > .compact-table td:nth-child(4) { width:15%; }
+#flowEditor .field.wide > .compact-table td:nth-child(5) { width:19%; }
+#flowEditor .field.wide > .compact-table select, #flowEditor .field.wide > .compact-table input:not([type="checkbox"]) { width:100%; }
+#flowEditor .flow-contract { color:var(--ink-3); font-size:13px; margin-bottom:12px; }

@@ -137,3 +137,6 @@
 
 .rework-fold > summary { cursor: pointer; color: var(--ink-3); font-size: 12px; padding: 10px 0; }
 .rework-fold .rework-panel { margin-top: 6px; }
+
+/* ProcessGPT PgAlert: one status message beside the approval form. */
+.approval-delay { margin: var(--s4) 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--warn-bg, #fff6dc); color: var(--ink-2); line-height: 1.6; }

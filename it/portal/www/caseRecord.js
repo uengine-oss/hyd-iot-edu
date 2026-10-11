@@ -370,6 +370,14 @@
   /* ---------------------------------------------------------------- 사람 */
   function humanStep(ctx, b) {
     const { d, v, view } = ctx, w = b.w;
+    const rejected = b.rows.find(r => r.job === 'APPROVAL_REJECTED');
+    if (rejected || w.output?.approval === '반려') {
+      const data = rejected?.data || {}, reason = data.reason || w.output?.approval_reason || '';
+      const person = W().who(data.by || w.user_id);
+      return Object.assign(b, { type: 'approve', lane: 'person', icon: 'human', title: '승인 요청 반려', actor: person,
+        sentence: `${person}${W().josa(person, '이/가')} 요청을 거절했습니다. 승인 뒤 조치는 실행하지 않았습니다.`,
+        chips: [chip('반려', 'danger')], sections: [sec('거절 사유', `<p>${e(reason)}</p>`, { open: true })] });
+    }
     const appr = (view.approvals || []).find(a => a.todo_id === w.id) || null;
     const hist = d && (d.history || []).filter(h => h.state === 'APPROVED').pop();
     // 판단의 승인 이력은 처리 건 전체 것이다 — 승인 카드 단계(select_card · 승인 전달 기록)가 따로 있으면 그 단계에만 붙인다(책임자 확인 같은 다른 사람 단계에 같은 승인을 또 그리지 않게)
@@ -614,12 +622,12 @@
   /* ---------------------------------------------------------------- 결과 보고 */
   function reportStep(ctx, b) {
     const w = b.w, rep = (w.output || {}).result_report || null;
-    const vv = rep && window.hydResultReport ? hydResultReport.fromValues({ result_report: rep }) : null;
-    const tone = vv ? (vv.verdict === 'ok' ? 'success' : vv.verdict === 'fail' ? 'danger' : 'neutral') : 'neutral';
+    const vv = rep && window.hydResultReport ? hydResultReport.fromValues({ ...ctx.v, result_report: rep }) : null;
+    const tone = vv ? (vv.verdict === 'ok' ? 'success' : ['fail', 'rejected'].includes(vv.verdict) ? 'danger' : 'neutral') : 'neutral';
     const chips = rep ? [chip(rep.outcome || (vv && vv.label) || '결과', tone)].concat((rep.values || []).map(x => chip(`${W().text(x.name)} ${W().num(x.value)}${x.unit ? ' ' + x.unit : ''}${x.limit != null ? ` (기준 ${x.limit})` : ''}`, x.ok === false ? 'danger' : x.ok === true ? 'success' : 'neutral'))) : [];
     const sections = [];
     if (rep) {
-      sections.push(sec('보고 내용', `<p><b>${e(W().text(rep.title || ''))}</b></p>${rep.summary ? `<p>${e(W().text(rep.summary))}</p>` : ''}
+      sections.push(sec('보고 내용', `<p><b>${e(W().text(rep.title || ''))}</b></p>${rep.summary ? `<p>${e(W().text(vv?.summary || rep.summary))}</p>` : ''}
         ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '작업지시', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
         ${rep.incident_closed != null ? `<p class="muted">사건 ${rep.incident_closed ? '닫음' : '그대로'} · 담당자 알림 보냄</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
@@ -627,7 +635,7 @@
     }
     sections.push(sec('결과 보고 원문', rawBlock(rep), { raw: true }));
     return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: '처리 엔진 → 담당자 알림',
-      sentence: rep ? `${W().text(rep.title || '결과')}: ${rep.outcome || ''}${rep.summary ? ' — ' + W().text(rep.summary) : ''}` : '결과를 정리하는 중입니다.', chips, sections,
+      sentence: rep ? `${W().text(rep.title || '결과')}: ${rep.outcome || ''}${rep.summary ? ' — ' + W().text(vv?.summary || rep.summary) : ''}` : '결과를 정리하는 중입니다.', chips, sections,
       state: rep && vv && vv.verdict === 'fail' ? 'bad' : undefined, ids: [w.tool] });
   }
   // 결과 보고 단계가 없는 흐름: 처리 건 값으로 결과를 만든다(끝난 경우만)
@@ -749,7 +757,7 @@
     const d = r.data || {};
     if (d.plan) return ` <span class="muted">${e(d.plan.label || '')} ${e(virtual(d.plan))}${d.plan.source ? ` · ${e(W().text(d.plan.source))}` : ''}</span>`;
     if (d.notice) return ` <span class="muted">${e(W().text(d.notice))}</span>`;
-    if (d.by) return ` <span class="muted">${e(W().who(d.by))}${d.role ? ' · ' + e(W().who(d.role)) : ''}</span>`;
+    if (d.by) return ` <span class="muted">${e(W().who(d.by))}${d.role ? ' · ' + e(W().who(d.role)) : ''}${d.reason ? ' · ' + e(d.reason) : ''}</span>`;
     if (d.readings) return ` <span class="muted">${e(d.passed ? '통과' : '미달')}</span>`;
     if (d.receipt) return ` <span class="muted">${e(d.receipt.ref || '')} ${e(W().text(d.receipt.detail || ''))}</span>`;
     if (d.report) return ` <span class="muted">${e(d.report.outcome || '')}</span>`;
@@ -786,7 +794,7 @@
   function headHtml(m) {
     const inst = m.inst, rep = m.outcome;
     const el = m.t0 ? (m.t1 ? fmtMs(ts(m.t1) - ts(m.t0)) : null) : null;
-    const tone = m.running ? 'accent' : rep && rep.verdict === 'ok' ? 'success' : rep && rep.verdict === 'fail' ? 'danger' : inst.status === 'COMPLETED' ? 'success' : 'neutral';
+    const tone = m.running ? 'accent' : rep && rep.verdict === 'ok' ? 'success' : rep && ['fail', 'rejected'].includes(rep.verdict) ? 'danger' : inst.status === 'COMPLETED' ? 'success' : 'neutral';
     const label = m.running ? '진행 중' : rep ? (rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '끝')) : UI.status(inst.status);
     const people = m.steps.filter(s => s.lane === 'person' && s.type !== 'start').length, ai = m.steps.filter(s => s.lane === 'agent').length, sys = m.steps.filter(s => s.lane === 'system' && s.type !== 'start').length;
     const strip = m.steps.map((s, i) => `<button type="button" class="cr-pill lane-${e(s.lane)} st-${e(s.state)}" data-cr-go="${i}" title="${e(s.sentence || '')}">${icon(s.icon)}<span>${e(s.title)}</span></button>`).join('<span class="cr-pill-arrow" aria-hidden="true">›</span>');

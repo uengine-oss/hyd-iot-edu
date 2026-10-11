@@ -270,7 +270,7 @@
     if (withFinal === '으로') return f && f !== 8 ? '으로' : '로';
     return f ? withFinal : without;
   };
-  W.who = id => (UI.performers && UI.performers[id]) || W.idName(id) || '–';
+  W.who = id => W.caseNames[id] || UI.names?.[id] || UI.performers?.[id] || (/^agent:/.test(id || '') ? 'AI 에이전트' : /^user:/.test(id || '') ? '담당자 (이름 확인 안 됨)' : W.idName(id)) || '–';
 
   /* ---------------------------------------------------------------- 원래 이름(id) 보이기 */
   W.id = id => W.showIds && id ? ` <code class="cr-id">${esc(id)}</code>` : '';

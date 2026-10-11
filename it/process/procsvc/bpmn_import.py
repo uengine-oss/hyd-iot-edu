@@ -297,6 +297,9 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                       "approval": tool == APPROVAL_TOOL, "effect": EFFECT_TOOLS.get(tool),
                       "server_values": list(SELECT_SERVER_VALUES) if tool == APPROVAL_TOOL else [],
                       "default_timer": timers[0] if timers else None, "contract": contract})
+    for part in parts:
+        if part["tool"] == "enterprise:WO_CREATE":
+            part["config"] = {"window_var": "정비 예정 시간이 담긴 값", "mail": "정비 요청 뒤 공지 메일"}
     select = next((p for p in parts if p["key"] == SELECT_PART and p["tool"] == APPROVAL_TOOL and p.get("form")), None)
     if select is not None:
         parts.append(_rejectable(select))
