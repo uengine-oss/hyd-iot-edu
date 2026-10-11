@@ -65,10 +65,11 @@
       } else if (ev.event_type === 'task_working' && d.type === 'text' && d.content) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content)) });
       } else if (ev.event_type === 'task_working' && d.type === 'skill_used') {
-        // A161-G1: 에이전트가 스킬 파일을 연 순간 (어떤 도구로)
-        rows.push({ key: 'k:' + ev.id, kind: 'skill', t0: ev.timestamp, data: d });
+        // TOOL_START audit: a read request, not proof of successful reading/use.
+        rows.push({ key: 'k:' + ev.id, kind: 'skill', t0: ev.timestamp, job: ev.job_id, data: d });
       } else if (ev.event_type === 'task_working' && d.type === 'skills_provided') {
-        rows.push({ key: 'kp:' + ev.id, kind: 'note', t0: ev.timestamp, minor: true, text: UI.clean(d.content || '') });
+        rows.push({ key: 'kp:' + ev.id, kind: 'note', t0: ev.timestamp, minor: true, data: d,
+          text: Array.isArray(d.skills) ? UI.skillDeliverySummary(d.skills) + ((d.missing || []).length ? ` · 본문 없음: ${d.missing.join(', ')}` : '') : '스킬 전달 상태 기록 없음' });
       } else if (ev.event_type === 'task_working' && d.type === 'file_artifact') {
         rows.push({ key: 'f:' + ev.id, kind: 'file', t0: ev.timestamp, minor: true, text: UI.baseName(d.path || '') });
       } else if (ev.event_type === 'task_working' && (d.type === 'notice' || d.type === 'evidence')) {
@@ -232,30 +233,44 @@
     if (instr || ag) sections.push(sec('받은 일', `${instr ? `<p>${e(UI.clean(W().text(instr.trim())))}</p>` : ''}${ag && ag.goal ? `<p class="muted">이 AI 일꾼의 목표: ${e(ag.goal)}</p>` : ''}`, { open: true }));
     // 스킬 · 붙인 도구 묶음 (설정 기준 — 처리 건에는 기록되지 않음)
     const skillCalls = tools.filter(r => r.tool === 'Skill');
-    const sd = started && started.data ? started.data : {};
-    if (Array.isArray(sd.skills)) {
-      // A161-G1: 이 실행이 받은 스킬(그때의 본문 해시)과 실제로 연 스킬 파일 — 처리 건 기록 그대로
+    const provided = evs.filter(x => x.event_type === 'task_working' && x.data?.type === 'skills_provided');
+    const starts = evs.filter(x => x.event_type === 'task_started');
+    // Keep each execution's delivery snapshot separate. A later read request
+    // must not turn an earlier failed/missing delivery into a successful one.
+    const runs = starts.length ? starts.map(x => {
+      const fallback = x.job_id && provided.find(p => p.job_id === x.job_id);
+      return {event:x, data:Array.isArray(x.data?.skills) ? x.data : fallback ? {...fallback.data, skills_missing:fallback.data.missing} : x.data || {}};
+    }) : provided.map(x => ({event:x, data:{...x.data, skills_missing:x.data.missing}}));
+    if (runs.length) {
       const used = b.rows.filter(r => r.kind === 'skill');
       const servers = (ag && ag.tools) || [];
       const src = x => x === 'activity' ? '이 단계가 지정' : x === 'agent' ? 'AI 일꾼 설정' : (x || '');
-      const prov = sd.skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${
-        sd.skills.map(k => `<tr><td><b>${e(k.name)}</b>${W().id(k.path)}${k.written === false ? ` ${UI.chipText('작업 폴더에 못 넣음', 'danger')}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}` : ''}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`).join('')}</tbody></table></div>`
-        : '<p class="muted">제공된 스킬 없음 — 받은 일 지시문만 따랐습니다.</p>';
-      const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
-      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.skill)}</b>의 ${e(x.file || 'SKILL.md')} — ${e(W().toolName(x.via))}로 열었습니다${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}</li>`; }).join('')}</ul>`
-        : sd.skills.length ? `<p class="muted">${b.live ? '아직 스킬 파일을 연 기록이 없습니다.' : '이 실행에서 스킬 파일을 연 기록이 없습니다 — 작업 폴더에는 있었지만 AI 일꾼이 열어 보지 않았습니다.'}</p>` : '';
-      sections.push(sec(`쓴 스킬 · 도구 묶음`, `<h6>제공된 스킬 ${sd.skills.length}개 <span class="muted">(실행 시작 때 작업 폴더에 넣은 본문)</span></h6>${prov}${miss}
-        ${sd.skills.length ? `<h6>실제로 읽은 스킬 ${used.length}건</h6>${read}` : ''}
+      const delivery = runs.map(({event, data:sd}, i) => {
+        const skills = Array.isArray(sd.skills) ? sd.skills : null;
+        const head = `<h6>실행 ${i + 1} · 스킬 전달 기록${event.timestamp ? ` <span class="muted">${e(UI.dateTime(event.timestamp))}</span>` : ''}</h6>`;
+        if (!skills) return head + '<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>';
+        const table = skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
+          const status = UI.skillDelivery(k);
+          return `<tr><td><b>${e(k.name)}</b>${W().id(k.path)} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
+        }).join('')}</tbody></table></div>` : '';
+        const note = skills.some(k => UI.skillDelivery(k).kind === 'prompt') ? '<p class="muted">프롬프트로 본문을 전달했습니다. 파일 읽기 없이 작업 지시에서 본문을 받을 수 있습니다.</p>' : '';
+        const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
+        return head + `<p>${e(UI.skillDeliverySummary(skills))}</p>` + table + note + miss;
+      }).join('');
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.skill)}</b>의 ${e(x.file || 'SKILL.md')} — ${e(W().toolName(x.via))} 파일 읽기 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
+      sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
+        <p class="muted">파일 읽기 요청은 읽기 성공을 뜻하지 않습니다. 본문을 업무에 적용했는지는 이 기록만으로 확인할 수 없습니다.</p>
         ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
-      if (sd.skills.length) chips.push(chip(`스킬 ${sd.skills.map(k => k.name).join(', ')}${used.length ? ` · 읽음 ${used.length}` : ' · 안 읽음'}`, used.length ? 'accent' : 'neutral'));
-    } else if (ag || skillCalls.length) {
+      const skills = runs.flatMap(r => Array.isArray(r.data.skills) ? r.data.skills : []);
+      if (skills.length) chips.push(chip(UI.skillDeliverySummary(skills), skills.some(k=>k.written === false) ? 'danger' : 'neutral'));
+      chips.push(chip(used.length ? `파일 읽기 요청 ${used.length}건` : '파일 읽기 기록 없음', 'neutral'));
+    } else {
       const servers = (ag && ag.tools) || [];
-      sections.push(sec('쓴 스킬 · 도구 묶음', `${skillCalls.length ? `<p>이 처리 건에서 읽은 스킬: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
+      sections.push(sec('스킬 전달 · 파일 읽기 기록', `<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>${skillCalls.length ? `<p>이 처리 건의 스킬 도구 호출: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
         ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div>
-          <div><dt>스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="chip tone-accent sm">${e(s)}</span>`).join(' ') : '<span class="muted">없음 — 받은 일 지시문만 따름</span>'}</dd></div>
+          <div><dt>현재 설정의 스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="chip tone-neutral sm">${e(s)}</span>`).join(' ') : '<span class="muted">설정 없음</span>'}</dd></div>
           <div><dt>쓸 수 있는 도구</dt><dd>${servers.map(s => `<span class="chip tone-neutral sm">${e(W().system(s))}</span>`).join(' ') || '–'}</dd></div></dl>
-          ${skillCalls.length ? '' : '<p class="cr-gapline">스킬은 AI 일꾼의 지금 설정입니다. 이 처리 건에서 실제로 읽었는지는 기록되지 않습니다.</p>'}` : ''}`));
-      if (ag && (ag.skills || []).length) chips.push(chip(`스킬 ${ag.skills.join(', ')}`, 'accent'));
+          <p class="cr-gapline">현재 설정은 이 처리 건에 전달된 스킬의 기록이 아닙니다.</p>` : ''}`, {open:true}));
     }
     // 가져온 데이터 (판단이 쓴 사실의 출처 + 도구로 직접 읽은 값)
     const prov = owns('decision') && d && Array.isArray(d.provenance) ? d.provenance : [];
@@ -675,11 +690,14 @@
     const cut = tools.filter(r => r.status === 'warn' && !(r.full && r.full.stored)), blocked = tools.filter(r => r.status === 'blocked');
     if (cut.length) G.push({ key: 'cut', strong: true, text: `도구 결과 ${cut.length}건이 너무 커서 잘렸습니다 (${[...new Set(cut.map(r => W().toolName(r.tool)))].join(', ')}). AI 일꾼은 그 결과를 다 보지 못했고, 원래 결과는 워커 PC 의 임시 파일에만 있어 처리 건에 남지 않습니다. 그 뒤 판단은 판단 엔진이 저장한 값(아래 대안 · 데이터)으로 확인할 수 있습니다.` });
     if (blocked.length) G.push({ key: 'blocked', text: `안전 장치가 막은 명령 ${blocked.length}건 — 실행되지 않았고, 막힌 명령의 결과는 없습니다.` });
-    const startedData = s => ((ctx.byTodo.get(s.key) || []).find(x => x.event_type === 'task_started') || {}).data || {};
-    const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => Array.isArray(startedData(s).skills));
+    const skillsRecorded = steps.filter(s => s.type === 'agent').every(s => {
+      const evs = ctx.byTodo.get(s.key) || [], starts = evs.filter(x=>x.event_type === 'task_started');
+      const provided = evs.filter(x=>x.data?.type === 'skills_provided' && Array.isArray(x.data.skills));
+      return starts.length ? starts.every(x=>Array.isArray(x.data?.skills) || (x.job_id && provided.some(p=>p.job_id === x.job_id))) : provided.length > 0;
+    });
     if (steps.some(s => s.type === 'agent')) {
       if (ctx.read.agents.state === 'error') G.push({ key: 'agents', strong: true, text: `AI 일꾼 설정(목표 · 스킬 · 쓸 수 있는 도구)을 읽지 못했습니다 — ${ctx.read.agents.error}. 다시 읽는 중입니다.` });
-      if (!skillsRecorded && !tools.some(r => r.tool === 'Skill')) G.push({ key: 'skill', strong: true, text: '어떤 스킬(SKILL.md)을 실제로 읽었는지는 처리 건에 기록되지 않습니다. 화면의 스킬은 AI 일꾼의 지금 설정이라, 처리 뒤 설정을 바꾸면 달라 보일 수 있습니다.' });
+      if (!skillsRecorded) G.push({ key: 'skill', strong: true, text: '일부 실행의 스킬 전달 상태가 기록되지 않았습니다. 현재 AI 일꾼 설정으로 누락된 실행의 전달 여부를 확인할 수 없습니다.' });
       G.push({ key: 'think', text: 'AI 모델 안쪽의 생각은 기록되지 않습니다. 남는 것은 AI 일꾼이 쓴 말 · 부른 도구 · 받은 결과 · 낸 결과 값입니다. (모델 사용량 줄은 일부러 숨김)' });
       steps.filter(s => s.type === 'agent' && !(s.rows || []).length && !s.live).forEach(s => G.push({ key: 'noev:' + s.key, strong: true, text: `‘${s.title}’ 단계는 도구 호출 기록이 없습니다 (결과 값만 남음).` }));
     }
@@ -752,8 +770,8 @@
     const minor = rows.filter(r => r.minor).length;
     const items = rows.map(r => {
       const time = `<time>${e(hhmmss(r.t0))}</time>`;
-      if (r.kind === 'note') return `<li class="cr-r note">${time}<span class="cr-rm">${icon('note')}</span><div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q></div></li>`;
-      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm ok">${icon('file')}</span><div><b>스킬 읽음</b> ${e(r.data.skill)} · ${e(r.data.file || '')} <span class="muted">(${e(W().toolName(r.data.via))})</span></div></li>`;
+      if (r.kind === 'note') return `<li class="cr-r note">${time}<span class="cr-rm">${icon('note')}</span><div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? UI.fold('원문', rawBlock(r.data), {cls:'small'}) : ''}</div></li>`;
+      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm">${icon('file')}</span><div><b>스킬 파일 읽기 요청</b> ${e(r.data.skill)} · ${e(r.data.file || '')} <span class="muted">(${e(W().toolName(r.data.via))})</span>${UI.fold('원문', rawBlock(r.data), {cls:'small'})}</div></li>`;
       if (r.kind === 'file') return `<li class="cr-r minor">${time}<span class="cr-rm">${icon('file')}</span><div>결과 파일 ${e(r.text)}</div></li>`;
       if (r.kind === 'sys') return `<li class="cr-r sys">${time}<span class="cr-rm">${icon('system')}</span><div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
       if (r.kind === 'error') return `<li class="cr-r err">${time}<span class="cr-rm">${icon('warn')}</span><div><b>${e(r.text)}</b>${UI.fold('원문', `<pre class="cr-pre">${e(pretty(r.data))}</pre>`, { cls: 'small' })}</div></li>`;

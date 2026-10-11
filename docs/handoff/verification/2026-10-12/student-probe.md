@@ -53,3 +53,9 @@ D:/work/study/hyd-iot-edu/.venv314/Scripts/python.exe scripts/probe_overnight_st
 실제 agent task PENDING과 소유 대상이 그대로임을 재확인한 뒤 공식 close를 호출했다. 처리 건은 COMPLETED/closed-by-human, agent 및 미도달 Report는 CANCELLED이며 업무 결과 보고는 실행하지 않았다. `k4-live.log`와 closed-instance 원문을 보존했다. 이는 이전 RunFailed 닫기나 시스템 PENDING 검사를 소급한 것이 아닌 실제 자율보류 에이전트의 별도 실행이다. B의 열린 incident close409나 외부 일정 확정과 구분한다.
 
 PR-07 후속 신규2.4 실제 Sol 재추출은 COMPLETED/6절차21단계이며 기존2.3 정의 불변을 확인했다. 이는 학생18 checks나 매뉴얼 사람 검토/적재 성공으로 소급하지 않는 별도 실제 실행이다.
+
+## U15 실제 사용자 설명 언어 대조
+
+보존된 실제 실행 표본을 별도로 읽었다. `student-release/personal-agent-detail.json`의 진행 설명과 결과 요약, `ask-final.json`의 질문 답변은 한국어다. `k4-live/pending-agent-detail.json`의 진행 설명과 필수 참석자 미응답으로 보류한 사유도 한국어다. `worker-sol-only.log`의 PM-02 실행 진행 설명(35·60·75행)과 최종 PR-07 2.4 진행 설명(156·191·228행) 역시 한국어다.
+
+남은 영문은 실제 도구 이름·서버 이름·JSON 필드·반환값·자료 인용이다. 이를 다른 값으로 바꿔 표시하지 않았다. CLI의 shell_snapshot/auth_storage 경고는 진단 로그이며 모델의 사용자 진행 설명과 구분했다. 확인한 실제 표본에서 영어 설명문은 발견하지 못했다. 이는 지시 추가만의 주장이나 모든 미래 출력에 대한 보증이 아니라, 위 실행 원문을 대조한 결과다.

@@ -12,7 +12,7 @@
 
 | 범위 | 확인 결과 | 실제 증거와 제한 |
 |---|---|---|
-| 전체 소스 회귀 | **2275 passed·21 skipped·64 warnings·195.06초,exit0** | `pytest-final-source.log/xml`; K1 메일 의존·URL query 비밀값 최종 두 수정 포함. 후속 UI 변경까지 소급하지 않음 |
+| 전체 소스 회귀 | **2298 passed·23 skipped·64 warnings·129.97초,exit0** | `pytest-final-integrated.log/xml`; F20/F21·전달 상태 UI까지 포함. 이전2275는 당시 코드 검증으로 보존 |
 | 실제 학생 동선 | **student-release18 checks 모두 PASS,exit0** | 최신 Windows adapter·엄격 MCP alias/전체 인자 대조 적용 후 별도 실행. 질문 verified·읽기 입력/기록·개인 흐름 DONE·시스템 PENDING close·F2 projection_pending0 |
 | K1 독립 PostgreSQL | **17 passed,18.91초** | `k1-pg-final.log/xml`. 명시 transaction 원자성 및 최종 선택 export·URL 비밀값 회귀 포함 |
 | K1 실제 브라우저 | 태그 저장→사례 필터→파일 받기→태그 제거 통과 | `k1-live/checks.json`·1440/1024 PNG·student-case.json. export 흐름1·에이전트1·MCP1, errors=[]; 마지막 두 코드 수정 후 실제 재빌드 증거와는 구분 |
@@ -23,7 +23,7 @@
 | F3 PM-02·PR-07 | Sol6.1 PM-02·PR-07 제안 생성 | Astra PM-02는 사용자 전용 모델 지시에 따라 공식 cancel 후 close(`astra-close.json`:COMPLETED/closed-by-human). `manual-extraction-sol.log`에서 첫 PM-02·PR-07 제안을 생성했고 PR-07은 신규2.4로 실제 Sol 재추출COMPLETED/6SOP21단계를 확인했고 실제 worker model=gpt-6.1-sol을 메인이 확인했다. 기존 미완 로그도 보존. 추출·검토·적재를 서로 구분 |
 | 실제 B | **자율보류 PENDING** | 실제 MCP는 정상 실행했지만 causes=[]·PREVENTED_BY 없음. 열린 incident 때문에 close409 정상. 현재 A/B/C 완주를 완료했다고 쓰지 않음 |
 | K4 | **실제 Sol6.1 자율보류→공식 close 7 checks 모두 PASS,exit0** | `k4-live/summary.json`·k4-live.log. 실제 customer 필수 미응답/read_rows trace·self-deferred PENDING·close 전 소유/상태 대조·기술 종료/미도달 Report CANCELLED·업무 보고 미실행 |
-| 스택·통합 | 02:53 KST 서비스 종료·본인 LIVE_LOCK 해제 | K1 수정 포함 process 재빌드02:23:44 KST·RestartCount0, 추출2.4 process 재빌드02:38:52 KST. 최종 서비스 정리 완료. 코드 반영 해시는 git log와 최종 보고 참조. 원격 추가 교재 변경은 메인이 통합하며 이 작업에서 교재 수정 없음 |
+| 스택·통합 | 03:28 KST 최종 서비스 종료·본인 LIVE_LOCK 해제 | K1 수정 포함 process 재빌드02:23:44 KST·RestartCount0, 추출2.4 process 재빌드02:38:52 KST. 최종 서비스 정리 완료. 코드 반영 해시는 git log와 최종 보고 참조. 원격 추가 교재 변경은 메인이 통합하며 이 작업에서 교재 수정 없음 |
 
 문서 담당은 위 전체 pytest·K1 PG·F4 로그의 마지막 결과와 student-release18개 passed, k1-live checks, target-capture 결과를 직접 확인했다. 이번 결과와 이전 macOS A/B/C 완주, 10-11 Windows 종료를 구분한다.
 
@@ -31,7 +31,7 @@
 
 `pytest-all`의1 failed·2206 passed·17 skipped는 승인 폴링이 view/taskView를 먼저 null로 지운 경합이었다. 시험 로더에서 이전 동작을 복원하면2개 회귀가 실패했고, 제품 수정 후 승인13개·UI34개가 통과했다. `pytest-final`2213/17/64(151.29초)는 이후 변경 전 결과다.
 
-`pytest-complete`2258/18/1은 신규 추출2.3에 대한 옛2.2 고정 기대였으며 새2.3와 기존2.2 immutable 보존을 함께 검증하도록 갱신했다. `pytest-release`2272/21/64(184.55초)는 K1 마지막 두 수정과 동시에 실행돼 중간 결과다. 현재 전체 기준은 위2275이며 모든 최초 실패 로그는 보존했다.
+`pytest-complete`2258/18/1은 신규 추출2.3에 대한 옛2.2 고정 기대였으며 새2.3와 기존2.2 immutable 보존을 함께 검증하도록 갱신했다. `pytest-release`2272/21/64(184.55초)는 K1 마지막 두 수정과 동시에 실행돼 중간 결과다. 당시 전체 기준은2275였고 최신 전체 기준은2298이며 모든 최초 실패 로그는 보존했다.
 
 F16·F17 질문 근거/폼별 교정/추출provider179개, F18 시작 실패 진단55개, F19 등록 스킬 본문/해시75개, Windows bounded sandbox adapter104개의 세부는 `backend-remaining.md`를 따른다. F19 실제 B 도구 실행 정상은 업무 완주와 구분한다. HM-8 첫 Windows 파일 쓰기 실패 후 `workspace-write` 및 개인설정 차단을 유지한 실행별 backend 선택을 적용했다.
 
@@ -53,13 +53,13 @@ UI U5·U6·U9~U14는 `portal-remaining.md`에 구현 및 자동검증을 기록�
 | U10 내부 값 노출 | 진행 중 / UI | `K-capstone.md`, NOW 세부 목록 | 역할·흐름·시작 값·승인 선택·도구 한글·규칙 이름의 각 표시를 캡처로 확인 |
 | U11 B·C 업무 화면 | 구현·독립 브라우저/회귀 확인 / UI | `HANDOFF.md` 기존 273행, `review-c3-bc.md` | 정비·구매 값에 맞는 카드·결과 보고 및 A 회귀, 사용자 시각 판정 |
 | U12 보상·검토 기록 | 구현·자동검증 / UI | `review-c3-bc.md` 4절 | 단계 없는 `EFFECT_COMPENSATION`·`EFFECT_REVIEW`를 실제 이벤트 입력으로 표시 |
-| U13 실패·빈 값 표시 | 진행 중 / UI·백엔드 | `2026-10-09/review-backend.md`, `review-c3-bc.md`, `cap-g3g9.md`; 전일 skills null 오류·incidents.filter 오류 | 재관측·스킬 설치·목록 읽기 실패·상태 조회·MCP 반환·실패 시도별 확인. 전일 오류 2종 재현/수정/브라우저 확인 |
+| U13 실패·빈 값 표시 | 구현·독립 화면 검증 완료 / UI·백엔드 | `portal-remaining.md`; u13-delivery-related-complete149pass; review-complete15상태×2폭 | 파일 전달 실패/본문 전달/기록 누락과 회차 분리, 읽기 요청을 성공으로 단정하지 않음. 합성 기록·독립 HTTP 오류 주입이며 운영 장애 재현과 구분 |
 | U14 업무 규칙 | 구현·PG/학생 동선 확인 / UI·백엔드 | `cap-g3g9.md` 5절 ② | 에이전트 work_rules 저장값과 표시 일치; PG 저장 경로는 F7 |
-| U15 영어 혼잣말 | 진행 중 / UI·백엔드·root | `2026-10-09/u1-uiux.md` 7절 결함 16·17 | 워커 지시와 실제 발화 확인; 문구만 수정해서 LLM 결과 완료 주장 금지 |
+| U15 영어 혼잣말 | 구현·자동검증·실제 표본 대조 완료 / UI·백엔드·root | `student-probe.md` U15; student-release·k4-live·worker-sol-only 실제 기록 | 최초/재개/교정 지시와 실제 학생 조회·보류·PM-02/PR-07 진행 설명의 한국어 확인. 원문 도구 필드·값은 보존하며 모든 미래 발화를 보증하는 뜻은 아님 |
 | U16 교재용 화면 증거 | 진행 중 / UI·root | 전일 `portal-20261011.md` 46화면 캡처 | 수정 후 시스템·지식 지도·조치·매뉴얼 적재 후 관리·질의 1440폭 캡처. 교재 파일 자체는 수정하지 않음 |
 | U17 학생 에이전트 | 실제 학생 동선 통과 / UI·root | student-codex-stdin 18 checks 중 프로필·규칙·실제 MCP·근거 답변 | 이전 실패는 보존. 성공 이후 F16 후속 엄격 계약은 별도 검증 |
 | U18 MCP 실습 | 실제 MCP·워커 호출 확인 / UI·root | 학생 서버 등록·재연결·read_rows 반환·입력 일치·에이전트 연결·호출 기록 | student-codex-stdin 통과. 외부 Google 서버까지 검증한 뜻 아님 |
-| U19 역할·승인 실습 | 진행 중 / UI·root | 69행; 전일 `approval-ui.md` 실제 엔진/MemoryRepo 검증 | 학생 역할 선택과 권한 부족 403, 승인·거절 후 상태. 로그인 인증 증명과 혼동하지 않음 |
+| U19 역할·승인 실습 | 독립 엔진·화면 검증 완료 / UI·root | 69행; approval-existing·review-complete | 역할 거부403·입력 유지, 담당자 승인200·반려·HTTP500 재시도. MemoryRepo와 외부 실행 double이며 로그인 인증 증명이 아님 |
 | U20 A·B·C 학생 흐름 | 진행 중 / UI·백엔드·root | 94·95·102·104행; 전일 `flows-ui.md` 매핑 UI→API 저장 대조 | 검사·등록·배포·담당/대기/결과, 실제 스택 완주. mapping.json/API 허용 경로 유지 |
 | U21 개인 예제 | 실제 로컬 읽기 흐름 통과 / UI·root | student-codex-stdin 실제 도구 trace·응답 내용·Read/Report DONE | 이전 한도/근거 없는 DONE 실패는 보존. 외부 쓰기·K3 성공 주장 없음 |
 
@@ -86,7 +86,7 @@ U1~U4·U7·U8은 전일 구현·자동검증 완료이며 이번 잔여표에서
 | F15 Codex 긴 작업 본문 | 구현·86개 시험·학생 live 18 checks 통과 / 백엔드·root | codex-transport-tests.log, student-codex-stdin/summary.json | 이전 student-codex 실패 결과 유지. 후속 F16 근거 강화는 별도 |
 | F16 질문 근거·폼별 교정 | 구현·자동검증 완료 / 백엔드 | ask-provider-tests.log 179 passed 묶음 | 실제 서버/도구·전체 인자 일치, 타입/키/배열순서 보존. result 요약 의미까지 검증됐다는 뜻 아님 |
 | F17 추출 provider | 새 2.3 구현·자동검증 완료 / 백엔드 | 같은 179 passed 묶음 | 기존 2.2 보존. 실제 새 추출·사람 검토 적재는 F3 |
-| F18 시작 실패 진단 | 구현·자동검증 완료 / 백엔드 | worker-diagnostics-tests.log 55 passed | Fatal 꼬리·가림·FAILED 즉시 미완 종료. B 실제 재진단 진행 중 |
+| F18 시작 실패 진단 | 구현·자동검증 완료 / 백엔드 | worker-diagnostics-tests.log 55 passed | Fatal 꼬리·가림·FAILED 즉시 미완 종료. B 실제 재진단은 도구 실행 뒤 지식 부족으로 PENDING |
 | F19 등록 스킬 본문 | 구현·75개 시험·실제 B 도구실행 / 백엔드·root | 등록 snapshot/실제 제공파일/audit SHA-256 일치 후 stdin 전달 | 실제 B는 지식 부족으로 자율보류. 스킬 전달 성공과 업무 완료를 구분 |
 
 ## 종합 랩 항목 전수표
@@ -172,3 +172,12 @@ SVG 경계 초과12개는 접근 불가한 잘림의 증거가 아니며 의도�
 독립 Supabase 첫 종료는 PATH에 docker가 빠져 실패했고 PATH 보완 후 재실행했다. main Supabase 첫 --workdir it/supabase는 project_id_filter=supabase로 대상이 달랐으며 Docker 실측 후 --workdir it로 hyd-iot-edu를 종료했다. 실패/재시도 원본 로그를 보존한다.
 
 종료 전 `final-scenario-state.json`의 실제 B는 RUNNING1/에이전트 PENDING이며 열린 incident와 함께 보존했다. 실제 시나리오 완주나 지식 부족 해소를 주장하지 않는다. 코드 반영 해시는 git log와 최종 보고를 참조한다.
+
+
+## 최종 코드 회귀와 추가 라이브 캡처 제한
+
+최종 소스의 전체 회귀는 `pytest-final-integrated.log/xml`: **2298 passed, 23 skipped, 64 warnings, 129.97초, exit0**다. F20/F21과 스킬 전달/읽기 요청 표시 수정까지 포함한다. 건너뜀은 독립 DB 접속 조건21개와 Windows 심볼릭 링크 권한2개이며, 기존 독립 PostgreSQL/Neo4j 실측 결과를 이 전체 실행에서 다시 수행한 것으로 세지 않는다. 관련149개와 15상태×두 화면 폭의 최종 UI 증거는 별도다. 최초 실패와 이전 회귀 수치는 당시 증거로 보존한다.
+
+저장된 실제 B를 최신 렌더러로 다시 캡처하려고 본인 LIVE_LOCK을 새로 잡았으나, 제품 서비스 시작 명령이 자동 승인 검토에서 `blocked by policy`로 거절됐다. 구체적 추가 사유는 반환되지 않았다. `skill-delivery-live/blocked.json`에 남겼다. `skill-delivery-capture.py`는 준비만 했으며 최신 실제 B 캡처 완료 증거가 아니다. 켜진 Supabase는 backup을 유지하여 정지했고 워커·시뮬레이션은 시작하지 않았다. 기존 실제 실행/화면과 최신 독립 브라우저 시험을 구분한다. 도구 제한을 우회해 같은 명령을 다시 실행하지 않았다.
+
+03:28 KST 추가 준비 종료도 `skill-delivery-live/services-off.json`·`cleanup-final.json`으로 확인했다: 실행 컨테이너0·관련 포트0·Docker Desktop/backend0·LIVE_LOCK 없음. 원격 통합 직전 교재 보호 경로와 소스 blob 불변을 확인하며 코드 해시는 git log/작업보고에 남긴다.

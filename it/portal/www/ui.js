@@ -2,6 +2,20 @@
    A122 (docs/handoff/UIUX_PLAN.md §2 명칭표 · §3 공통 컴포넌트 · §5.2 상태): every user-facing phrase comes from UI.terms,
    every status chip from UI.chip(), every form field from UI.field(). Change the wording here and all screens follow. */
 const UI = {
+  // _provided_skills omits written on a verified file; Codex adds prompt
+  // delivery after checking registered bytes/hash. Missing metadata is unknown.
+  skillDelivery(k) {
+    if (k.written === false) return {kind:'failed', label:'작업 폴더에 못 넣음', tone:'danger'};
+    if (k.delivery === 'prompt') return {kind:'prompt', label:'프롬프트로 본문 전달', tone:'neutral'};
+    if ((k.delivery == null || k.delivery === 'file') && (k.written === true || (k.path && k.sha256))) return {kind:'file', label:'파일 전달', tone:'neutral'};
+    return {kind:'unknown', label:'전달 상태 기록 없음', tone:'warning'};
+  },
+  skillDeliverySummary(entries) {
+    const counts = {file:0,prompt:0,failed:0,unknown:0};
+    entries.forEach(k => counts[this.skillDelivery(k).kind]++);
+    return [['file','파일 전달'],['prompt','프롬프트로 본문 전달'],['failed','전달 실패'],['unknown','전달 상태 기록 없음']]
+      .filter(([k])=>counts[k]).map(([k,n])=>`${n} ${counts[k]}개`).join(' · ') || '제공된 스킬 없음';
+  },
   /* ---------- 명칭표 (UIUX_PLAN §2) — 화면 문구만. 코드·API·DB 이름은 그대로다. ---------- */
   terms: {
     // 메뉴 · 헤더

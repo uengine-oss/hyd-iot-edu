@@ -174,6 +174,17 @@
           rows.push({ key: 'start:' + e.id, kind: 'start', status: 'ok', t0: e.timestamp, title: UI.t('trace.picked'), text: w && isAgent(w) ? UI.t('agent') : UI.who(d.name || d.role || ''), fold: d.task_description ? [UI.t('trace.instruction'), UI.clean(UI.idText(d.task_description))] : null });
           break;
         case 'task_working':
+          if (d.type === 'skills_provided') {
+            const entries = Array.isArray(d.skills) ? d.skills : null;
+            rows.push({key:'w:' + e.id, kind:'system', status:entries?.some(k=>k.written === false) ? 'fail' : 'idle', t0:e.timestamp,
+              title:'스킬 전달 기록', text:entries ? UI.skillDeliverySummary(entries) + ((d.missing || []).length ? ` · 본문 없음: ${d.missing.join(', ')}` : '') : '전달 상태 기록 없음', raw:d});
+            break;
+          }
+          if (d.type === 'skill_used') {
+            rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 파일 읽기 요청',
+              text:`${d.skill || ''} · ${d.file || 'SKILL.md'} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
+            break;
+          }
           if (e.job_id === 'MCP_RESULT_VALUES') {
             rows.push({ key: 'w:' + e.id, kind: 'system', status: d.attempt_failed ? 'fail' : 'ok', t0: e.timestamp,
               title: '도구 결과에서 가져온 값', text: Object.entries(d.values || {}).map(([k, v]) => window.hydWords ? `${hydWords.fieldName(k)}: ${hydWords.value(k, v)}` : `${UI.terms['var.' + k] || k}: ${v}`).join(' · ') + (d.attempt_failed ? ' · 실패한 시도' : ''), raw: d });

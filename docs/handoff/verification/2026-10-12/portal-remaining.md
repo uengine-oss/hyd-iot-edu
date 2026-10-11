@@ -84,3 +84,27 @@ ProcessGPT 모노레포 README의 프로세스 정의/실행 분리, Vue PgCard/
 `ui-f21-final/layout.json`의 SVG/자식 경계 초과 12건은 지식 지도 내부 스크롤 내용이다. 실제 Chromium 1440/1024px에서 map 폭 1111/711px, 내용 폭 1354px, 높이 646px·max-height 648px·overflow X/Y auto를 확인했다. 가로 스크롤 243/643px로 오른쪽 끝 열의 ‘외기 온도’에 이동하여 실제 클릭→선택 상세 제목→키보드 Enter 해제를 확인했고 노드 전체 경계가 map 안에 들어왔다. 문서 폭은 viewport와 같고 실제 문서 높이는 900px였다. 캡처의 10,731/10,804px 높이는 `scripts/ui_capture_all_tabs.py:24`의 UNLOCK_CSS가 `.onto-map` max-height를 해제하여 내부 세로 내용을 펼친 결과다. 접근 불가 잘림으로 판정하지 않으며 소스 수정은 없다.
 
 ProcessGPT BpmnUengineViewer의 pan/zoom/확대와 ontology-studio OntologyGraphPanel의 pan/fit·선택 상세 원칙을 대조했다. HYD는 native scroll+선택 상세 방식이라는 차이를 유지한다. 전체 지도를 한 화면에 읽기 위해 축소한 것이 아니다. 증거 `.evidence/overnight-20261012/ontology-scroll-probe/{result.json,rightmost-selected-1440.png,rightmost-selected-1024.png}` 및 로그. PNG는 오른쪽 열 이동 후 키보드 선택 해제 시점이며 선택/상세 성공 값은 JSON에 별도로 보존했다. pageerror 0, 업무 쓰기 0, 브라우저 종료 확인.
+
+### U13 실패 상태 화면 추가 검증과 전달 기록 모순 수정 (Sol 6.1)
+
+기존 Chromium page/Portal fixture와 실제 제품 렌더러로 재관측 기록 읽기 오류·조치 방법 파일 쓰기 실패·처리 건 목록 HTTP 오류·업무 표시 확인 중/읽기 실패/시나리오 시각 기준점 유지·실패한 도구 시도와 MCP 추출 값의 실제 DOM 및 화면을 검증했다. 서비스 재기동이나 운영 장애 주입 없이 독립 HTTP 오류 주입과 합성 기록을 사용했다. 승인/반려는 기존 FastAPI TestClient·MemoryRepo 엔진 시험과 연결했다. 브라우저 역할 선택은 인증이 아니다. 증거 경로는 `.evidence/overnight-20261012/u13-failure-review/`다.
+
+최초 제품 변경 없는 추가 Chromium 묶음은 **5 passed, 7.04초**, 기존 실패 기록 회귀까지 합치면 **10 passed, 9.21초**였다. 기존 승인 시험의 반려 1440/1024 및 비담당자 반려 403·입력 유지·독립 HTTP 500·재시도는 **3 passed, 10 deselected, 13.87초**다. 로그 `u13-failure-review-second.log`, `u13-failure-review-final.log`, `u13-failure-review-approval.log`. 원래 `final/`에는 8상태 × 1440/1024px의 full/panel PNG와 출처·visible_text JSON을 보존했다. 기존 승인 캡처는 `approval-existing/`다. 반려 시 E_rejected·실행/발주/메일 없음과 결과/기록/흐름 사유 표시를 실제 엔진으로 검증한다. 승인 역할 거부 403 뒤 같은 입력으로 담당 역할 승인 200·실행 double 호출·승인 기록도 새 화면으로 확인했다. 이는 운영 인증이나 외부 업무 시스템 실제 실행 증거가 아니다.
+
+최초 성공 PNG의 육안 감사에서 새 제품 결함이 발견됐다. `written=false`/권한 거부 아래 ‘작업 폴더에는 있었지만 열어 보지 않았다’가 나타났고, Codex `delivery=prompt`도 ‘안 읽음’으로 표시했다. `skills_provided`의 설명도 실패 항목까지 작업 폴더에 넣었다고 말한 뒤 실패를 덧붙였다. 자동 검증 통과를 이유로 완료 처리하지 않았다. 실제 접기를 키보드로 연 새 부정/상태 검증을 옛 제품에서 먼저 실행해 **7 failed, 4 deselected, 4.34초**를 입증했다(`u13-delivery-original-proof-open.log`). 그 앞의 harness 준비 실패/초기 로그도 보존했다.
+
+- `worker/runner.py::_provided_skills`의 정상 파일은 written 키가 생략되고 파일 경로·본문 해시가 남는다. 이 생산자 계약을 정상 파일 전달로 해석한다. `written=false`는 실패, `delivery=prompt`는 프롬프트 본문 전달, 기타 값/메타데이터 누락은 확인 불가다. JS와 Python의 분류는 None/null 또는 명시적 file만 파일 경로로 해석하도록 맞췄다. Codex `skill_context.inline_skills`의 bytes/등록 본문/sha 검증과 불일치 시 fail-closed 동작, artifact/provider 권한은 변경하지 않았다.
+- `caseRecord.js`는 task_started의 실행별 전달 스냅샷을 따로 표시하고 같은 job의 skills_provided만 누락을 보충한다. 뒤 회차 호출이 앞 회차 실패를 성공으로 바꾸지 않는다. 빈 skills 배열의 ‘제공된 스킬 없음’과 전달 metadata 자체 없음도 구별한다. 현재 AI 설정으로 과거 실행의 전달/사용을 보충하지 않는다.
+- `SkillReads.on_tool_start`는 결과 전 호출 감사다. 생성 설명/콘솔/기록/trace는 ‘파일 읽기 요청’으로 표시하며 읽기 성공이나 업무 적용을 단정하지 않는다. 기존 skill_used 이름·해시·known·호출 ID·dedup·저장 계약은 유지했다. trace의 기본 도구명은 기존 공통 표시명을 쓰고 원문은 접힌 원문으로 보존했다. 파일 전달·프롬프트 전달 배지도 스킬 준수 성공의 배지가 아니다.
+- 실제 metadata를 만든 workspace/_provided_skills/inline_skills로 파일 전달과 Codex 본문 전달을 검증했다. 두 workspace의 다른 해시, 첫 전달 실패, 뒤 본문 전달, 뒤의 실패 Read 응답을 함께 넣어 원래 회차별 해시와 실패 상태 보존을 확인했다. 보조 작업 checkbox도 실제 hydRecord.mount의 change 핸들러와 키보드 Space로 열었다. 처음 custom stepHtml만 넣은 새 harness에서는 숨김 항목에 포커스가 가지 않아 **148 passed/1 failed, 21.35초**, 단독 재확인 **12 passed/1 failed, 13.08초**가 발생했다. 실제 컨트롤러 바인딩을 적용했으며 검사 조건을 완화하지 않았다. 최종 추가 화면 묶음은 **13 passed, 13.48초**(`u13-delivery-capture-final3.log`). 기존 시험의 문자열 기대값을 바꾸지 않았다.
+
+ProcessGPT 모노레포 README의 실행 감사 기록, Vue PgToolStep/EventTimeline의 호출별 표시와 ontology-studio ContextPanel의 컨텍스트 표시를 대조했다. 참고 UI와 다르게 HYD는 전달 상태와 관측 기록을 구별한다. 생성 설명과 UI의 관측 사실이 모순되는 결함이므로 단순 디자인 차이로 유지하지 않았다. ui.js/trace.js/caseRecord.js cache 키는 `20261012-delivery`다. 수정 전 `final/`과 수정 후 `delivery-fix*/`, 최종 `review-complete/`를 구분하여 원래 성공/실패 증거를 덮지 않는다. 전체 회귀와 최신 실제 B 기록의 읽기 캡처는 메인이 별도 수행한다.
+
+최종 관련 회귀 11파일(`test_portal_failure_states_ui`, `test_portal_remaining_ui`, `test_portal_approval_ui`, `test_codex_skill_context`, `test_a161_trace_gaps`, `test_failed_attempt_trace`, `test_live_leftovers_cards`, `test_u1_task_detail`, `test_u2_agents_skills`, `test_worker`, `test_capstone_g7_card`)은 **149 passed, 2 warnings, 21.85초, exit 0**다. 로그 `u13-delivery-related-complete.log`. 경고는 기존 FastAPI on_event 폐기 예정 안내다. 최종 `review-complete/`는 15상태 × 1440/1024px, 전체/패널 PNG 60개와 출처·visible_text JSON 30개다. pageerror·문서 가로 overflow 검증을 유지했고 독립 503/500의 브라우저 콘솔 로그를 운영 연결 장애로 해석하거나 별도 콘솔 0 검사로 주장하지 않았다. `git diff --check` 오류 없음. 이후 제품/시험 변경은 하지 않는다.
+
+
+## 최종 코드 회귀와 추가 라이브 캡처 제한
+
+최종 소스의 전체 회귀는 `pytest-final-integrated.log/xml`: **2298 passed, 23 skipped, 64 warnings, 129.97초, exit0**다. F20/F21과 스킬 전달/읽기 요청 표시 수정까지 포함한다. 건너뜀은 독립 DB 접속 조건21개와 Windows 심볼릭 링크 권한2개이며, 기존 독립 PostgreSQL/Neo4j 실측 결과를 이 전체 실행에서 다시 수행한 것으로 세지 않는다. 관련149개와 15상태×두 화면 폭의 최종 UI 증거는 별도다. 최초 실패와 이전 회귀 수치는 당시 증거로 보존한다.
+
+저장된 실제 B를 최신 렌더러로 다시 캡처하려고 본인 LIVE_LOCK을 새로 잡았으나, 제품 서비스 시작 명령이 자동 승인 검토에서 `blocked by policy`로 거절됐다. 구체적 추가 사유는 반환되지 않았다. `skill-delivery-live/blocked.json`에 남겼다. `skill-delivery-capture.py`는 준비만 했으며 최신 실제 B 캡처 완료 증거가 아니다. 켜진 Supabase는 backup을 유지하여 정지했고 워커·시뮬레이션은 시작하지 않았다. 기존 실제 실행/화면과 최신 독립 브라우저 시험을 구분한다. 도구 제한을 우회해 같은 명령을 다시 실행하지 않았다.

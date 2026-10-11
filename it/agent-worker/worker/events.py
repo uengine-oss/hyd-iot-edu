@@ -122,7 +122,7 @@ class ConsoleLog:
         if ui.type == "assistant_note":
             return f"[판단] {where} · {console_summary(d.get('content'))}"
         if ui.type == "skill_used":
-            return f"[스킬 읽음] {where} · {d.get('skill')} · {d.get('file')} · {d.get('via')}"
+            return f"[스킬 읽기 요청] {where} · {d.get('skill')} · {d.get('file')} · {d.get('via')}"
         return None
 
 
@@ -174,15 +174,28 @@ def skill_entry(skill: dict, *, text: str, path: str, source: str) -> dict:
 
 
 def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiEvent:
-    names = ", ".join(e["name"] for e in entries)
-    content = (f"배정된 스킬 {len(entries)}개를 작업 폴더에 넣고 실행합니다: {names}" if entries else "배정된 스킬 없이 실행합니다")
-    if entries and all(e.get('delivery') == 'prompt' for e in entries):
-        content = f"배정된 스킬 {len(entries)}개의 등록 본문을 확인해 작업 지시에 제공합니다: {names}"
+    groups = {"file": [], "prompt": [], "failed": [], "unknown": []}
+    for entry in entries:
+        if entry.get("written") is False:
+            kind = "failed"
+        elif entry.get("delivery") == "prompt":
+            kind = "prompt"
+        elif entry.get("delivery") in (None, "file") and (entry.get("written") is True or (entry.get("path") and entry.get("sha256"))):
+            kind = "file"  # successful _provided_skills entries omit written
+        else:
+            kind = "unknown"
+        groups[kind].append(entry)
+    labels = {"file": "파일 전달", "prompt": "프롬프트로 본문 전달", "failed": "전달 실패", "unknown": "전달 상태 기록 없음"}
+    content = " · ".join(f"{labels[kind]} {len(group)}개: {', '.join(e['name'] for e in group)}"
+                         for kind, group in groups.items() if group) or "제공된 스킬 없음"
     if missing:
         content += f" (본문이 없어 넣지 못함: {', '.join(missing)})"
-    unwritten = [e["name"] for e in entries if e.get("written") is False]
+    unwritten = [e["name"] for e in groups["failed"]]
     if unwritten:
         content += f" (작업 폴더에 파일이 없어 읽을 수 없었음: {', '.join(unwritten)})"
+        errors = [str(e["error"]) for e in groups["failed"] if e.get("error")]
+        if errors:
+            content += " (" + "; ".join(errors) + ")"
     return UiEvent("skills_provided", {"content": content, "cli": cli, "skills": entries, "missing": list(missing)})
 
 
@@ -210,7 +223,7 @@ class SkillReads:
                 continue
             self._seen.add((name, file))
             known = self._by_name.get(name)
-            data = {"content": f"스킬 \u2018{name}\u2019의 {file} 을(를) 읽었습니다", "skill": name, "file": file, "via": event.tool or "tool",
+            data = {"content": f"스킬 \u2018{name}\u2019의 {file} 파일 읽기를 요청했습니다", "skill": name, "file": file, "via": event.tool or "tool",
                     "tool_use_id": event.tool_use_id, "known": known is not None}
             if known:
                 data.update(sha256=known["sha256"], version=known["version"], source=known["source"])

@@ -135,7 +135,7 @@ skills_provided/task_started metadata에 `delivery=prompt`, `verified_registered
 
 기존 worker·Codex stdin/등록 스킬·구간추출·원문 저장·인용·사람 검토·골든/의미 폼까지 확대 검증 **247 passed, 2 warnings (11.53초)**. 루트 `extraction-24-regression.log/xml`; 경고는 기존 FastAPI on_event deprecation이다. 별도 메모리 변이 검증은 정확한 옛2.3 instruction을 새 계약에 넣었을 때 신규 scope 검사가 실패하는 것을 확인했다(`extraction-24-scope-mutation.json`); 제품 파일·라이브는 변경하지 않았다. 최초 변이 스크립트는 PowerShell stdin의 한글 문자열 교체가 적용되지 않아 변이 발생 assert가 실패했고, 옛 정의 파일을 UTF-8로 읽는 방식으로 수정했다. 첫 단위/변이 실패 요약은 `extraction-24-first-failures.json`에 보존했다.
 
-## F21 지식 지도에 노출된 내부 투영·적재 기록 (수정·검증 진행)
+## F21 지식 지도에 노출된 내부 투영·적재 기록 (수정·실제 배포 검증 완료)
 
 root의 실제 API 조회에서 ExecutionProjection420·CaseProjection428·KnowledgeEdit50·ManualIngestionDocument27·ManualIngestionBatch31개가 지식 지도에 포함되어 높이가 약33000px가 됐다. Process 이름 번역 문제로 판정하지 않는다. `t0_graph_nodes/edges`는 이미 ProcessVersion/ProcessInstance/WorkItem/IngestionControl/IngestionBatch 및 버전 소유 FlowNode를 제외하며, 주석도 지도는 업무 지식·사례이고 실행 버전/작업은 인스턴스 화면에서 조회한다고 정한다. schema.json의 위 다섯 클래스는 모두 standard="내부 기록", 설명은 잠금·멱등 영수증·적재 판본 머리다. 새 내부 메타데이터 클래스 추가 시 지도 조회의 제외 목록을 갱신하지 않은 결함이다.
 
@@ -146,3 +146,7 @@ root의 실제 API 조회에서 ExecutionProjection420·CaseProjection428·Knowl
 추가로 다섯 신규 제외만 메모리에서 제거한 옛 query를 같은 실제 fixture에 실행해 노드와 관계 양끝에서 내부 기록 누출이 재현되는지 확인한다. 이 변이는 제품 파일·운영 그래프를 바꾸지 않는다. ProcessGPT/ontology-studio의 지식 모델·문서 근거와 실행 인스턴스 구분은 기존 참고 대조(`c1-knowledge.md` 5절, `REPO_GAP.md`)에 따른다. 내부 잠금/영수증 라벨 및 정확한 제외 목록은 HYD 구현의 책임이며 참고 서비스에 동일 라벨이 있다는 주장은 하지 않는다.
 
 옛 query 누출을 실제 DB에서 재현한 후 새 query가 내부 노드·양방향 관계를 모두 제외하는 부정/정상 검증까지 포함해 **45 passed, 3 skipped, 4 warnings (5.52초)**. 루트 `knowledge-map-internal-regression.log/xml`. 건너뜀3개는 별도 HYD_CLEANUP_NEO4J_URI 미설정의 기존 flow cleanup 시험이며 새 지도 실제7787 시험 두 건은 통과했다. 경고는 기존 FastAPI on_event deprecation이다. 제품 diff whitespace 검사도 통과했다. 운영 API/화면 재조회는 root의 안전한 배포 시점에 수행하며 이 단위/독립 DB 결과로 최종 화면 완료를 선언하지 않는다. KnowledgeGraph.template은 최초 조회 내용을 메모리에 cache하므로 운영 agent 재시작 후 조회가 필요하다.
+
+메인의 후속 실제 배포도 완료했다. `build-agent-f21.log`·`up-agent-f21.log` 뒤 `f21-before.json`/`f21-after.json`에서 API 노드 1592→636, 내부 기록 956개 조회 제외를 확인했다. 내부 다섯 종류의 실제 저장 수 420/428/50/27/31은 전후 동일하며 Incident 187·DecisionCase 99·ManualSection 18·KnowledgeSource 7은 조회에 남았다. `ui-f21-final`의 두 폭 지도/흐름/에이전트 6화면은 console/pageerror 0·문서 가로 넘침 0이다. 지도 내부 스크롤의 실제 클릭·키보드 접근은 `ontology-scroll-probe`로 따로 검증했다.
+
+F20 실제 후속 결과도 `extraction24-live-proof.json`에서 COMPLETED/2.4·기존2.3 정의 불변·PR-07 절차6을 확인했다. 원문 명시 절차3개의 각5단계 보존과 사람 검토 전 쟁점은 `manual-review-packet.md`에 있다. 제안 생성은 적재 완료가 아니다. 위 실제 배포/검증 뒤 서비스를 종료하고 볼륨·작업 트리·B 대기 건을 보존했다.
