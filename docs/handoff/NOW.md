@@ -7,7 +7,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 브랜치 | `claude/hyd-handoff-work-xziutz` **하나**. 다른 갈래(A161, `K-20261010-capstone`, `F-20261010-keep`)는 모두 합쳐졌다. 원격보다 앞서 있고 **push는 사용자가 한다** |
+| 브랜치 | `claude/hyd-handoff-work-xziutz` **하나**. 다른 갈래(A161, `K-20261010-capstone`, `F-20261010-keep`)는 모두 합쳐졌다. 인계 문서 정리까지 원격에 올렸다(10-11). 이후 커밋은 사용자가 맡긴 범위 안에서 push하고, main에 합치는 것은 사용자에게 묻는다 |
 | 기능 | **끝났다.** 남은 것은 포털 화면(UI/UX)뿐이다(4.1절). UI/UX는 다른 세션이 일괄로 한다 |
 | 단위 시험 | 2149 통과 · 9 건너뜀 · 0 실패 (10-11 00:55). 명령 `.venv/bin/python -m pytest -q -p no:cacheprovider`(레포 루트, 약 3분 30초) |
 | 실제 스택 검증 | 합친 코드(`4e5f535` 빌드)로 A·B·C 각각 승인·거절, A·C 무응답, A 승인 뒤 [쿨러 복구]→바로 다시 주입, 단계 닫기, 손으로 그린 흐름으로 A 완주 — 모두 통과. 회귀 쿨러 40/40 · pump-fan 43/43 |
@@ -108,7 +108,7 @@
 - 슬라이드 쪽 열린 질문(실라버스 8·9행의 빈 노트 틀만 vs 노션 덱의 데이터베이스·템플릿·링크 게시, 노션 덱 본문에 남은 다른 강의 문구)은 슬라이드 세션 몫이다.
 
 ### 4.5 사용자 결정 대기
-- 작업 브랜치 push, 그리고 main에 합칠지
+- 작업 브랜치를 main에 합칠지
 - 구조판 볼륨 `hyd-iot-edu_neo4j-data-c3` 삭제 여부(수업 문서 새 판 HM-8 · PM-02 · PR-07이 들어 있음 — 지우지 않는 쪽이 안전)
 - 업무 감시(BUSINESS_MONITOR) 유지 여부(기본 끔)
 - B·C 처리 건이 진행 중일 때 [초기화]를 거절할지(지금은 업무 값만 되돌리고 처리 건은 계속 간다 — `review-c3-bc.md` 4절)
@@ -142,7 +142,7 @@
 - 지식 적재는 사람 검토 기록이 있어야 한다. 문서 개정은 판단 이력(DecisionCase-CHOSE, Incident-DIAGNOSED_AS)을 지우지 않고 노드를 제자리에서 고친다. 그래프·데이터를 손으로 고쳐 증상을 지우지 않는다(화면에서 가리는 것도 같다).
 - 망: IT/OT를 잇는 것은 DMZ 서비스뿐. process ↔ plant-sim은 `sim-net` 전용(`tests/test_compose_contract.py`가 지킴). MCP 비밀값은 `${SECRET:KEY}` 자리표시자. 판단 id: 제출 `DEC-`, 읽기 평가 `EVAL-`.
 - 승인 카드 머리말: 예측(유온 등)은 설비를 바꾸는 안이거나 안마다 예측이 다를 때만. 업무 안은 그 안의 업무 값. A 화면은 고정본(`tests/fixtures/a_cards_before.json`)과 같아야 한다.
-- 랩업 계약: 막마다 이론 → 설비 체험(시나리오 3개) → 랩업. 랩업은 VS Code 터미널의 Claude Code 바이브 코딩(`archive/HANDOFF_실라버스교재.md` §7). 실라버스 행 길이는 내용이 정한다(50분 채우기·여러 내용 묶기 금지). 학생 AI는 키로 제공되니 계정 걱정·결정론 대비 경로를 설계하지 않는다.
+- 수업 구성(막마다 이론 → 설비 체험 → 랩업 등 옛 실라버스의 구조)은 이제 제약이 아니다. 실라버스는 사용자가 직접 쓰며 확정안(1~4일차)이 기준이다(4.4절). 랩업을 Claude Code 바이브 코딩으로 한다는 방식과 그 계약 원문은 `archive/HANDOFF_실라버스교재.md` §7에 있다. 학생 AI는 키로 제공되니 계정 걱정·결정론 대비 경로를 설계하지 않는다.
 - **fable 모델은 쓰지 않는다**(메인 · 서브에이전트 · 워커 모두, 서브에이전트는 `opus`). `.env`는 키 이름만 읽는다. push · 데이터 볼륨 삭제 · 외부 게시는 사용자에게 묻는다. 커밋은 경로 지정(`git add .` · `-A` 금지).
 - 여러 세션이 같이 일할 때: 작업 트리 하나씩(`git worktree add -b <이름> .claude/worktrees/<이름> claude/hyd-handoff-work-xziutz`), 레포 루트는 합치는 자리. 새 마이그레이션 번호는 052부터 이어서(미사용 053 · 054), 겹침 위험 파일은 `it/portal/www/index.html`(캐시 버전 줄) · `instances.py` · `instance_mode.py` · `service_parts.py` · `bpmn_import.py` · `procdb.py` · `caseRecord.js` · `approvalCard.js` · `instances.js`. 기록은 `verification/<날짜>/<이름>.md`에 쓰고 `NOW.md` · `HANDOFF.md` · `DECISIONS.md`는 합치는 세션만 고친다.
 
