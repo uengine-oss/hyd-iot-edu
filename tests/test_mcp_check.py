@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import copy
 import queue
 import sys
 import threading
@@ -226,8 +227,23 @@ def test_read_only_tool_call_returns_the_real_result(http_server):
     assert out["status"] == "ok", out["error"]
     assert json.loads(out["result"]["text"]) == {"sum": 5.5} and out["result"]["is_error"] is False and out["result"]["truncated"] is False
     assert mcp_fake_server.CALLS == ["add"]
-    bad = mcp_check.call(spec, "add", {"a": "x", "b": 1}, timeout=5)            # 도구가 오류를 돌려주면 숨기지 않는다
-    assert bad["status"] == "ok" and bad["result"]["is_error"] is True and "숫자" in bad["result"]["text"]
+    bad = mcp_check.call(spec, "add", {"a": "x", "b": 1}, timeout=5)            # schema 불일치는 서버 호출 전에 거절
+    assert bad["status"] == "refused" and bad["error_kind"] == "input" and bad["result"] is None
+    assert mcp_fake_server.CALLS == ["add"]
+
+
+def test_valid_input_server_error_is_not_hidden(http_server, monkeypatch):
+    original = mcp_fake_server.call
+
+    def server_error(name, args):
+        original(name, args)  # 실제 HTTP tools/call 도달 기록
+        return {"content": [{"type": "text", "text": "업무 조회를 완료할 수 없습니다"}], "isError": True}
+
+    monkeypatch.setattr(mcp_fake_server, "call", server_error)
+    mcp_fake_server.CALLS.clear()
+    out = mcp_check.call(mcp_check.normalize({"url": http_server("json")}), "add", {"a": 2, "b": 1}, timeout=5)
+    assert out["status"] == "ok" and out["result"]["is_error"] is True
+    assert "업무 조회" in out["result"]["text"] and mcp_fake_server.CALLS == ["add"]
 
 
 @pytest.mark.parametrize("tool,phrase", [("submit_note", "쓰기 도구(readOnlyHint=false)"), ("greet", "읽기 전용(readOnlyHint)으로 표시하지 않았습니다"),
@@ -346,6 +362,26 @@ def client(http_server):
     c = TestClient(app)
     c.repo, c.audits, c.url = repo, audits, url
     return c
+
+
+def test_invalid_call_input_is_422_and_audited_without_call(client):
+    mcp_fake_server.CALLS.clear()
+    response = client.post("/api/mcp/servers/fake/tools/add/call", json={"arguments": {"a": "bad", "b": 1}})
+    assert response.status_code == 422 and "inputSchema" in response.json()["detail"]
+    assert mcp_fake_server.CALLS == []
+    assert client.audits[-1][2] == "MCP_TOOL_TRIED" and client.audits[-1][3]["status"] == "refused"
+
+
+def test_invalid_server_schema_is_502_and_audited_without_call(client, monkeypatch):
+    # Actual tools/list response in this protocol fixture, not a fabricated Google schema.
+    tools = copy.deepcopy(mcp_fake_server.TOOLS)
+    tools[0]["inputSchema"] = {"type": "unknown"}
+    monkeypatch.setattr(mcp_fake_server, "TOOLS", tools)
+    mcp_fake_server.CALLS.clear()
+    response = client.post("/api/mcp/servers/fake/tools/add/call", json={"arguments": {"a": 2, "b": 1}})
+    assert response.status_code == 502 and "inputSchema" in response.json()["detail"]
+    assert mcp_fake_server.CALLS == []
+    assert client.audits[-1][2] == "MCP_TOOL_TRIED" and client.audits[-1][3]["status"] == "refused"
 
 
 def test_tool_map_lists_servers_masked_with_agents_and_tasks(client):

@@ -164,9 +164,12 @@ class DmnTools:
         The (cause, failure_mode) pair must be one the diagnosis knowledge (T1) lists for this pattern and asset; an
         argument with no diagnosis basis is refused (INVALID) instead of silently filtering candidates by a made-up cause."""
         c, basis = self._diagnosed_cause(asset, pattern, cause, failure_mode)
-        return decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c,
+        rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c,
                                 origin={"kind": "mcp", "pattern": pattern, "cause": cause, "failureMode": failure_mode, **basis},
                                 overrides=overrides or None, do_submit=False)
+        if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
+            raise ValueError(rec['error'])
+        return rec
 
     def submit_decision(self, asset: str, pattern: str, cause: str, failure_mode: str, incident: str, alert_id: str | None = None,
                         overrides: dict | None = None, process_scope: dict | None = None) -> dict:
@@ -180,6 +183,8 @@ class DmnTools:
         if process_scope is not None:
             origin['process_scope'] = dict(process_scope)
         rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c, origin=origin, overrides=overrides or None, do_submit=True)
+        if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
+            raise ValueError(rec['error'])
         res = rec.get("result") or {}
         return {"id": rec["id"], "status": rec["status"], "recommended": rec.get("recommended"), "explanation": rec.get("explanation"),
                 "cards": [{"rank": o["rank"], "id": o["id"], "sopId": o["sopId"], "name": o["name"], "feasible": o["feasible"], "score": o["score"],
@@ -220,15 +225,15 @@ class DmnTools:
         business path of a business alarm), recorded in the decision origin."""
         if not isinstance(cause, str) or not cause or not isinstance(failure_mode, str) or not failure_mode:
             raise ValueError("cause와 failure_mode는 비어 있지 않은 노드 id여야 합니다")
-        t1 = self.kg.t1_causes(pattern, asset)
         basis = {"cause_basis": CAUSE_BASIS, "cause_route": DIAGNOSIS_ROUTE}
-        if not t1 and pattern in BUSINESS_CAUSES:
+        if pattern in BUSINESS_CAUSES:
             basis = {"cause_basis": BUSINESS_CAUSE_BASIS[pattern], "cause_route": BUSINESS_CAUSE_ROUTE[pattern]}
             # C2: 업무 경보는 업무 근거로 이어진 원인만 받는다(business_causes 와 같은 질의)
             listed = [r for r in self.business_causes(asset, pattern)["causes"] if r.get("causeId") == cause]
             if not listed:
                 raise ValueError(f"{cause}는 {pattern}의 업무 근거({BUSINESS_CAUSE_BASIS[pattern]})에 없는 원인입니다. business_causes 결과를 쓰세요")
         else:
+            t1 = self.kg.t1_causes(pattern, asset)
             listed = [r for r in t1 if r.get("causeId") == cause]
         if not listed:
             raise ValueError(f"{cause}는 {pattern}의 진단 지식(T1)에 없는 원인입니다. diagnose 결과의 원인 id를 쓰세요")

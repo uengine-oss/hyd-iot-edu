@@ -317,8 +317,9 @@ async function unitAction(asset, act, mode, button) {
     else if (act === 'biz-start') {
       const exp = EXPERIMENT[asset];
       const r = await postJ(API.process + `/api/scenario/${exp.key}/start`, pressedBy());
-      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}${anchorNote(r)}`);
       await refreshBiz();
+      if (state.tab === 'scenario') renderUnits();
+      logLine(`${asset} ${button ? button.textContent : exp.title} → 처리 건 시작 · 근거 ${exp.key === 'B' ? `운전시간 ${r.evidence.hours_since_pm} h` : `가용 ${r.evidence.available} 개`}${anchorNote(r)}`);
     }
     else if (act === 'biz-reset') {
       const exp = EXPERIMENT[asset];

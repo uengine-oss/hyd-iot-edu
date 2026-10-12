@@ -16,7 +16,7 @@
     const select=$r('definitionChoice');select.replaceChildren();
     definitions.forEach(d => {
       const option=document.createElement('option');option.value=JSON.stringify([d.id,d.version]);
-      option.textContent=`${d.name || d.id} · ${d.id} @ ${d.version}${d.form_source==='legacy-live'?' (기존 폼)':''}`;
+      option.textContent=`${d.name && d.name !== d.id ? d.name : UI.defName(d.id)} · 판본 ${d.version}${d.form_source==='legacy-live'?' (기존 폼)':''}`;
       select.appendChild(option);
     });
     if ([...select.options].some(o => o.value===current)) select.value=current;
@@ -59,7 +59,7 @@
     const data={definition_id:id,version,event_id:event,variables:objectJson($r('definitionValues').value,'시작 변수'),name:$r('definitionRunName').value.trim() || null};
     if (alertText) data.alert=objectJson(alertText,'경보');
     const inst=await postJ(API.process+'/api/instances/start',data);
-    message('실행 시작: '+inst.proc_inst_id);
+    message('처리 건을 시작했습니다');
     window.hydInstancesSelect(inst.proc_inst_id);
   }));
 })();

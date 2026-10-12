@@ -199,6 +199,23 @@ def policy_digest(dmn, skill):
         ensure_ascii=False,sort_keys=True,separators=(',', ':')).encode()).hexdigest()
 
 
+def scoped_skills(pattern: str, skills: dict[str, dict]) -> dict[str, dict]:
+    """A spare-parts request may only produce purchasing actions, never a plant remedy.
+
+    This is an execution-domain boundary, not a new candidate/ranking rule.
+    The registered DMN must still select the eligible purchase skills.
+    """
+    if pattern == 'PM_DUE':
+        return {sid: skill for sid, skill in skills.items() if skill.get('relation') == 'PREVENTED_BY'}
+    if pattern != 'SPARE_BELOW_MIN':
+        return skills
+    return {sid: skill for sid, skill in skills.items()
+            if skill.get('kind') == 'work_order'
+            and any(a.get('code') == 'PR_CREATE' for a in skill.get('actions') or [])
+            and all(a.get('code') == 'PR_CREATE' and a.get('kind') != 'command'
+                    for a in skill.get('actions') or [])}
+
+
 def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecasts: dict[str, dict], tradeoffs: list[dict],
              precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None,
              measure_weights: dict[str, float] | None = None) -> dict:
@@ -207,6 +224,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     measure_weights (B5 What-if 시험 실행만): 성과 지표별 중요도 배수 — BSC 득실의 무게에 곱한다. 없으면 지금과 같다."""
     tables = _by_decision(dmn)
     trace = []
+    skills = scoped_skills(base_facts.get('pattern'), skills)
     cand_ids: list[str] = []
     selected_by: dict[str, list[dict]] = {}
     for r in tables.get("dec:action-candidates", []):

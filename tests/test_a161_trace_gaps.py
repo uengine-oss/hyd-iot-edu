@@ -59,7 +59,8 @@ def test_a_run_records_the_skills_it_had_and_the_skill_files_it_read(tmp_path):
     sha = hashlib.sha256(SKILL_MD.encode("utf-8")).hexdigest()
     started = _events(repo, event_type="task_started")[0]["data"]
     assert started["skills"][0] | {"updated_at": None} == {
-        "name": "fan-vibration-check", "path": ".claude/skills/fan-vibration-check/SKILL.md", "sha256": sha, "version": sha[:12],
+        "name": "fan-vibration-check", "title": "팬 진동 점검",
+        "path": ".claude/skills/fan-vibration-check/SKILL.md", "sha256": sha, "version": sha[:12],
         "chars": len(SKILL_MD), "description": "팬 진동 점검 순서", "source": "agent", "updated_at": None}
     assert started["skills_missing"] == []
     provided = [e["data"] for e in _events(repo, event_type="task_working") if e["data"].get("type") == "skills_provided"]
@@ -71,6 +72,7 @@ def test_a_run_records_the_skills_it_had_and_the_skill_files_it_read(tmp_path):
         ("fan-vibration-check", "SKILL.md", "Read", True),          # the repeat read of the same file is not recorded twice
         ("someone-else", "notes.md", "Bash", False)]                # a path outside the provided set is still said
     assert used[0]["sha256"] == sha and used[0]["source"] == "agent" and used[0]["tool_use_id"] == "r1"
+    assert used[0]["title"] == "팬 진동 점검" and "title" not in used[1]
 
 
 def test_a_run_without_skills_says_so_on_task_started_and_adds_no_row(tmp_path):

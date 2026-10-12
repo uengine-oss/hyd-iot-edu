@@ -282,7 +282,7 @@ function effChip(x, cls) {
   return `<span class="${cls}" title="영향 강도 ${x.weight}${x.conds && x.conds.length ? ' · 조건: ' + x.conds.join(', ') : ''}">${esc(t)}</span>`;
 }
 function ruleChip(r, cls, label) {
-  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.idText(r.annotation || UI.name(r.rule)))}</span>`;
+  return `<span class="${cls}" title="${esc((r.when || '') + (r.sources && r.sources.length ? ' · 근거 ' + r.sources.join(', ') : ''))}">${esc(label)} · ${esc(UI.ruleLabel(r))}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}</span>`;
 }
 // FAN_SET=100 → "팬 100 %" (명칭표 "카드"): the action code and target stay in the evidence fold
 const ACTION_KO = { FAN_SET: ['팬', ' %'], LOAD_SET: ['부하', ' %'], PUMP_SELECT: ['펌프', ''], WO_CREATE: [null, ''], PR_CREATE: ['구매 요청', ''] };
@@ -338,7 +338,7 @@ function cardHtml(o, opt = {}) {
     <div><dt>${esc(UI.t('skill.actions'))}</dt><dd>${(o.actions || []).map(a => `${esc(actionLabel(a))} <span class="muted">(${esc(a.code)}${a.value != null ? '=' + esc(a.value) : ''}${a.targetName ? ' → ' + esc(a.targetName) : ''})</span>`).join(' · ') || esc(UI.t('card.noAction'))}</dd></div>
     ${(o.forecast || []).length ? `<div><dt>${esc(UI.t('score.forecast'))}</dt><dd>${(o.forecast || []).map(f => `${esc(f.name)} ${esc(f.value)}${esc(f.unit || '')} <span class="muted">(${esc(f.method)})</span>`).join(' · ')}</dd></div>` : ''}
     ${(o.gains || []).some(cond) || (o.losses || []).some(cond) ? `<div><dt>${esc(UI.t('card.expected'))}</dt><dd><span class="hkpi">${(o.gains || []).filter(cond).map(x => effChip(x, 'pos')).join('')}${(o.losses || []).filter(cond).map(x => effChip(x, 'neg')).join('')}</span></dd></div>` : ''}
-    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.idText(r.annotation || UI.name(r.rule)))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}`).join('<br>')}</dd></div>` : ''}
+    ${(o.selectedBy || []).length ? `<div><dt>${esc(UI.t('skill.rules'))}</dt><dd>${(o.selectedBy || []).map(r => `${esc(UI.ruleLabel(r))}${(r.sources || []).length ? ` <span class="muted">(${esc(r.sources.join(', '))})</span>` : ''}${r.annotation || UI.names[r.rule] ? '' : UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}`).join('<br>')}</dd></div>` : ''}
     ${(o.steps || []).length ? `<div><dt>${esc(UI.t('card.steps'))}</dt><dd><ol style="margin:0;padding-left:18px">${(o.steps || []).map(s => `<li>${esc(UI.idText(s.text))}${s.manual ? ` <span class="muted" title="${esc(s.manual.excerpt || '')}">[${esc(s.manual.ref)} ${esc(s.manual.title || '')}]</span>` : ''}</li>`).join('')}</ol></dd></div>` : ''}
     ${o.precedent && o.precedent.reasons && o.precedent.reasons.length ? `<div><dt>${esc(UI.t('card.precedent'))}</dt><dd>${o.precedent.reasons.map(esc).join(' / ')}</dd></div>` : ''}</dl>
     ${o.forecastContext ? UI.fold(esc(UI.t('card.forecastLimits')), forecastContextHtml(o.forecastContext), { cls: 'small' }) : ''}
@@ -436,7 +436,7 @@ function renderDecision() {
   const target = t => t.skill ? ((opts.find(o => o.id === t.skill) || {}).name || t.skill) : '';
   html += UI.fold(`${esc(UI.t('dec.rules'))} <span class="chip tone-neutral sm">${tr.length}</span>`,
     `<table class="compact-table"><thead><tr><th>${esc(UI.t('dec.col.rule'))}</th><th>${esc(UI.t('dec.col.target'))}</th><th>${esc(UI.t('dec.col.result'))}</th></tr></thead><tbody>` +
-    tr.map(t => `<tr class="${t.fired ? 'rec' : ''}"><td>${esc(UI.idText(t.annotation || UI.name(t.rule)))}<br><small class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</small>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`, { cls: 'small' })}</td><td>${esc(target(t))}</td>` +
+    tr.map(t => `<tr class="${t.fired ? 'rec' : ''}"><td>${esc(UI.ruleLabel(t))}<br><small class="muted">${esc(t.decision === 'dec:action-candidates' ? UI.t('dec.ruleSelect') : UI.t('dec.ruleCompliance'))}</small>${UI.fold(esc(UI.t('raw')), `<code>${esc(t.rule)}</code> <code>${esc(t.when || '')}</code>`, { cls: 'small' })}</td><td>${esc(target(t))}</td>` +
       `<td>${t.fired ? `<b>${esc(UI.t('dec.fired'))}</b>` : (t.unknown && t.unknown.length ? `<span class="muted">${esc(UI.t('dec.noFact'))}: ${esc(t.unknown.join(', '))}</span>` : esc(UI.t('dec.notApplicable')))}</td></tr>`).join('') + '</tbody></table>');
   html += UI.fold(`${esc(UI.t('dec.inputs'))} <span class="chip tone-neutral sm">${(d.provenance || []).length}</span>`,
     `<table class="compact-table"><thead><tr><th>${esc(UI.t('dec.col.input'))}</th><th>${esc(UI.t('dec.col.source'))}</th><th>${esc(UI.t('dec.col.value'))}</th><th>${esc(UI.t('dec.col.how'))}</th></tr></thead><tbody>` +

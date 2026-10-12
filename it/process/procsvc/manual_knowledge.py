@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 
 from hydcommon.daq_contract import ALWAYS, AUX, DEADBAND
 
@@ -351,53 +352,69 @@ def conflicts(session, knowledge, document=None):
     return session.execute_read(read)
 
 
-def check_graph(session, plan, skill_id):
-    """Commit-time semantic checks against the live graph, before the write transaction. Attaches each rule test's InputData
-    variable (the rule's readable `when` is written from it). Raises ValueError with every problem found."""
-    knowledge = plan.get('knowledge') or {}
-    errors = []
-    own_sops = {p['id'] for p in plan['procedures']}
+def graph_semantics(plan, catalog):
+    """Pure Action/Rule checks shared by preview and commit. Never changes the proposal.
 
-    def read(tx):
-        actions = {r['id']: r for r in tx.run(CATALOG_Q['actions']).data()}
-        suppliers = {r['id'] for r in tx.run('MATCH (s:Supplier) RETURN s.id AS id').data()}
-        sops = {r['sop'] for r in tx.run('MATCH (k:Skill) RETURN k.sopId AS sop').data()}
-        tables = {r['id']: r for r in tx.run(CATALOG_Q['decision_tables']).data()}
-        return actions, suppliers, sops, tables
-    actions, suppliers, sops, tables = session.execute_read(read)
+    Returns a copy with resolved rule variables and structured issues. The
+    catalog is supplied by the caller; an unavailable catalog is not an empty one.
+    """
+    plan = deepcopy(plan)
+    knowledge = plan.get('knowledge') or {}
+    issues = []
+    own_sops = {p['id'] for p in plan['procedures']}
+    actions = {r['id']: r for r in catalog['actions']}
+    suppliers = {r['id'] for r in catalog['suppliers']}
+    sops = {r.get('sopId', r.get('sop')) for r in catalog['skills']}
+    tables = {r['id']: r for r in catalog['decision_tables']}
+
+    def issue(code, owner, field, message):
+        issues.append(dict(code=code, sop=owner, field=field, message=message))
     for p in plan['procedures']:
         for seq, a in enumerate(p.get('actions') or [], 1):
             act = actions.get(a['action'])
             where = f"{p['id']} 원자 조치 {seq}"
             if not act:
-                errors.append(f"{where}: Action {a['action']}이 온톨로지에 없습니다(문서는 새 원자 조치를 만들지 않습니다)")
+                issue('ACTION_NOT_FOUND', p['id'], 'link.actions', f"{where}: Action {a['action']}이 온톨로지에 없습니다(문서는 새 원자 조치를 만들지 않습니다)")
                 continue
             v = a['value']
             if act['kind'] == 'command':
                 if act['min'] is not None or act['max'] is not None:
                     if type(v) not in (int, float) or isinstance(v, bool) or \
                             (act['min'] is not None and v < act['min']) or (act['max'] is not None and v > act['max']):
-                        errors.append(f"{where}: {act['code']} 값 {v!r}은 {act['min']}~{act['max']} 범위여야 합니다")
+                        issue('ACTION_VALUE_RANGE', p['id'], 'link.actions', f"{where}: {act['code']} 값 {v!r}은 {act['min']}~{act['max']} 범위여야 합니다")
             elif act['code'] == 'PR_CREATE' and v not in suppliers:
-                errors.append(f"{where}: 구매요청 값은 공급사 id여야 합니다({v!r})")
+                issue('SUPPLIER_NOT_FOUND', p['id'], 'link.actions', f"{where}: 구매요청 값은 공급사 id여야 합니다({v!r})")
             elif act['code'] == 'WO_CREATE' and v not in own_sops and v not in sops:
-                errors.append(f"{where}: 작업지시 값은 SOP 번호여야 합니다({v!r})")
+                issue('SOP_NOT_FOUND', p['id'], 'link.actions', f"{where}: 작업지시 값은 SOP 번호여야 합니다({v!r})")
             if act['kind'] == 'command' and p['kind'] != 'control':
-                errors.append(f"{where}: 설비 명령({act['code']})은 control 스킬에만 둡니다")
+                issue('COMMAND_IN_WORK_ORDER', p['id'], 'link.actions', f"{where}: 설비 명령({act['code']})은 control 스킬에만 둡니다")
     for r in knowledge.get('rules') or []:
         table = tables.get(r['table'])
         if not table:
-            errors.append(f"{r['id']}: 결정표 {r['table']}이 없습니다")
+            issue('DECISION_TABLE_NOT_FOUND', r['id'], 'knowledge.rules.table', f"{r['id']}: 결정표 {r['table']}이 없습니다")
             continue
         inputs = {i['id']: i for i in table['inputs']}
         for t in r['tests']:
             if t['input'] not in inputs:
-                errors.append(f"{r['id']}: {table['decision']}이 입력 {t['input']}을 선언하지 않았습니다(REQUIRES_INPUT). "
-                              f"선언된 입력: {sorted(inputs)}")
+                issue('RULE_INPUT_NOT_DECLARED', r['id'], 'knowledge.rules.tests',
+                      f"{r['id']}: {table['decision']}이 입력 {t['input']}을 선언하지 않았습니다(REQUIRES_INPUT). 선언된 입력: {sorted(inputs)}")
             else:
                 t['variable'] = inputs[t['input']]['variable']
-    if errors:
-        raise ValueError(' / '.join(errors))
+    return plan, issues
+
+
+def check_graph(session, plan, skill_id):
+    """Commit rechecks the live catalog before writes and keeps its legacy plan contract."""
+    def read(tx):
+        return dict(actions=tx.run(CATALOG_Q['actions']).data(),
+                    suppliers=tx.run('MATCH (s:Supplier) RETURN s.id AS id').data(),
+                    skills=tx.run('MATCH (k:Skill) RETURN k.sopId AS sop').data(),
+                    decision_tables=tx.run(CATALOG_Q['decision_tables']).data())
+    checked, issues = graph_semantics(plan, session.execute_read(read))
+    if issues:
+        raise ValueError(' / '.join(i['message'] for i in issues))
+    if 'knowledge' in checked:
+        plan['knowledge'] = checked['knowledge']
     return plan
 
 

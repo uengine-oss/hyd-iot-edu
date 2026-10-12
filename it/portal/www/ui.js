@@ -2,6 +2,21 @@
    A122 (docs/handoff/UIUX_PLAN.md §2 명칭표 · §3 공통 컴포넌트 · §5.2 상태): every user-facing phrase comes from UI.terms,
    every status chip from UI.chip(), every form field from UI.field(). Change the wording here and all screens follow. */
 const UI = {
+  skillLabel(k, historical = false) {
+    const raw = k.name || k.skill_name || k.skill || '';
+    if (k.title && k.title !== raw && /[가-힣]/.test(k.title)) return {label:k.title, note:'', raw};
+    if (k.description && /[가-힣]/.test(k.description)) return {label:k.description, note:historical ? '당시 설명' : '등록 설명', raw};
+    return {label:'스킬의 한국어 표시 이름 기록 없음', note:'', raw};
+  },
+  ruleLabel(r) { return this.idText(r.annotation || this.names[r.rule || r.id] || '규칙 표시 이름 미등록'); },
+  toolKey(t) {
+    const raw=String(t || ''), alias=/^([^/\s]+)\/([^/\s]+)$/.exec(raw);
+    return alias ? `mcp__${alias[1]}__${alias[2]}` : raw;
+  },
+  standardToolName(t) {
+    const key=this.toolKey(t), family=key.replace(/^mcp__enterprise-(?:maint|purchase)__/, 'mcp__enterprise__');
+    return this.terms['tool.'+key] || this.terms['tool.'+family] || '';
+  },
   // _provided_skills omits written on a verified file; Codex adds prompt
   // delivery after checking registered bytes/hash. Missing metadata is unknown.
   skillDelivery(k) {
@@ -121,6 +136,11 @@ const UI = {
     'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
     'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 DB 묶어 보기',
     'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
+    'tool.mcp__enterprise__pm_status':'정비 계수기 · 계획 조회', 'tool.mcp__enterprise__maintenance_windows':'정비 시간 계획 조회',
+    'tool.mcp__enterprise__cmms_history':'정비 이력 조회', 'tool.mcp__enterprise__spare_stock':'예비품 재고 조회',
+    'tool.mcp__enterprise__part_quotes':'공급사 견적 조회', 'tool.mcp__enterprise__scm_suppliers':'공급사 조회',
+    'tool.mcp__hyd-dmn__business_causes':'업무 경보 원인 조회',
+    'tool.mcp__codex__list_mcp_resources':'참고 자료 목록 조회', 'tool.mcp__codex__list_mcp_resource_templates':'참고 자료 형식 조회',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
     'skill.steps': '절차 — 한 줄에 한 단계', 'skill.stepsTitle': '절차', 'skill.linked': '연결된 지식', 'skill.causes': '해당 원인', 'skill.actions': '세부 동작', 'skill.rules': '적용 규칙', 'skill.affects': '영향 지표',
@@ -156,8 +176,18 @@ const UI = {
   /* definition names (process definition JSON) → display names; the definition itself is not changed */
   flowName(name) { return this.terms['flow.name.' + name] || name; },
   flowSeq(name) { return this.terms['flow.seq.' + name] || name || ''; },
-  defName(id) { const base = String(id || '').split('.')[0]; return this.terms['def.' + base] || base.replace(/_/g, ' '); },
-  toolName(t) { const raw = String(t || ''); return this.terms['tool.' + raw] || raw.replace(/^mcp__/, '').replace(/__/g, ' · '); },
+  defName(id) { const base=String(id || '').split('.')[0]; return this.terms['def.'+base] || this.names[id] || '흐름 표시 이름 미등록'; },
+  toolName(t) {
+    const raw=String(t || ''), standard=this.standardToolName(raw);
+    if(standard)return standard;
+    const registered=window.hydToolNames?.resolve(raw);
+    if(registered?.name)return registered.name;
+    return registered?.state === 'error' ? '도구 표시 이름 읽기 실패' : ['loading','unread'].includes(registered?.state) ? '도구 표시 이름 확인 중' : registered?.state === 'missing' ? '도구 표시 이름 미등록' : '도구 표시 이름 기록 없음';
+  },
+  toolIdentityFold(raw) {
+    if (!raw || this.standardToolName(raw) || window.hydToolNames?.resolve(raw).name) return '';
+    return this.fold('호출 도구 원문',`<pre>${esc(raw)}</pre>`,{cls:'small'});
+  },
 
   /* ---------- A141 원문 id → 이름 (names.json: scripts/portal_names.py 가 Neo4j 실제 이름으로 생성) ----------
      응답에 이름이 있으면 그것을 쓰고, 없을 때만 이 사전으로 바꾼다. 사전에 없는 id 는 그대로 둔다(지어내지 않음). */

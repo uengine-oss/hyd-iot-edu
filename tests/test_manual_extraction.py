@@ -373,6 +373,8 @@ def test_f1_review_conflicts_do_not_call_the_documents_own_sops_another_document
         def single(self):return self.rows[0] if self.rows else None
     class Tx:
         def run(self,q,**kw):
+            if q in manual_knowledge.CATALOG_Q.values():
+                return Rows([])  # This API ownership fixture has an explicitly empty semantic catalog.
             assert 'k.sopId IN $ids' in q, q
             return Rows([dict(sop=s,id='skill:'+s,owner=owners[s]) for s in kw['ids'] if s in owners])
     class Session:

@@ -178,6 +178,8 @@
     return '';
   }
   const TOOLS = {
+    'mcp__codex__list_mcp_resources': {name:'참고 자료 목록 조회', minor:true},
+    'mcp__codex__list_mcp_resource_templates': {name:'참고 자료 형식 조회', minor:true},
     ToolSearch: { name: '쓸 도구 불러오기', minor: true, ask: i => list(String(i.query || '').replace(/^select:/, '').split(',').map(t => W.toolName(t.trim())), 4), got: o => Array.isArray(o) ? `${o.length}개 준비됨` : '' },
     Write: { name: '파일 쓰기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '썼음' },
     Edit: { name: '파일 고치기', minor: true, ask: i => UI.baseName(i.file_path || ''), got: () => '고침' },
@@ -219,12 +221,12 @@
     erp_contract: TOOLS['mcp__enterprise__erp_contract'], erp_inventory: TOOLS['mcp__enterprise__erp_inventory'], query: TOOLS['mcp__enterprise__query'],
   };
   function spec(raw) {
-    const t = String(raw || '');
+    const t = UI.toolKey(raw);
     if (TOOLS[t]) return TOOLS[t];
     const m = /^mcp__([^_]+(?:[-_][^_]+)*?)__(.+)$/.exec(t);
     if (m && /^enterprise/.test(m[1]) && BIZ[m[2]]) return Object.assign({ ask: i => i.asset || i.part || '', got: o => factsLine((doc(parse(o)) || {}).facts) || rowsGot((doc(parse(o)))) }, BIZ[m[2]], { sys: BIZ[m[2]].sys || SERVERS[m[1]] });
-    if (m) return { name: (UI.terms['tool.' + t]) || m[2].replace(/_/g, ' '), sys: SERVERS[m[1]] || m[1] };
-    return { name: UI.terms['tool.' + t] || t };
+    if (m) return { name:UI.toolName(raw), sys:SERVERS[m[1]] || '도구 서버 표시 이름 미등록' };
+    return { name:UI.toolName(raw) };
   }
   W.toolName = raw => spec(raw).name;
   W.toolSystem = raw => spec(raw).sys || '';
@@ -256,7 +258,7 @@
     if (UI.names && UI.names[k]) return UI.names[k];
     if (UI.performers && UI.performers[k]) return UI.performers[k];
     const m = /^([a-z]+):(.+)$/.exec(k);
-    if (m && KIND[m[1]]) return `${KIND[m[1]]} ${m[2].replace(/[-_]+/g, ' ')}`;
+    if (m && KIND[m[1]]) return `${KIND[m[1]]} 표시 이름 미등록`;
     return k;
   };
   W.text = t => UI.words(String(t ?? '').replace(UI.ID_RE, m => W.idName(m)));

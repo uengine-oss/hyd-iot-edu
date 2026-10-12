@@ -21,7 +21,8 @@
 | 자리 | 지금 | 채우는 법 |
 |---|---|---|
 | 서버 `gcal` · 도구 `create_event` · `get_event` | 설계 문서의 자리 이름 | 강사가 고른 구글 서버의 실제 이름(T5 표) |
-| `extract` 결과 경로(`event_id` Text · `all_required_accepted` Boolean) | `<…>` 자리 → 가져오기가 경로를 읽을 수 없다고 거절 | 그 서버로 도구를 한 번 불러 본 결과 모양에서 경로를 적는다(예: `attendees.0.status`). 전원 수락 여부를 참/거짓으로 돌려주지 않는 서버면 확인 단계를 내 MCP 서버(T4)나 에이전트 task로 바꾼다 |
+| `extract` 결과 경로(`event_id` Text · `all_required_accepted` Boolean) | `<…>` 자리 → 가져오기가 경로를 읽을 수 없다고 거절 | 실제 결과의 일정 id 경로와 전원 수락 Boolean 경로를 적는다. `attendees.0.status`처럼 한 명의 문자열 응답을 전원 수락 Boolean으로 쓰지 않는다. Boolean을 돌려주지 않는 서버면 확인 단계를 내 MCP 서버(T4)나 에이전트 task로 바꾼다. 쓰기 결과는 승인된 실행의 기록이나 해당 서버의 공식 계약으로 확인하며, 경로를 알아내려고 승인 전 일정을 만들지 않는다 |
+| 일정 생성·읽기 도구의 입력 | `summary/start/room/attachments/event_id`는 설계용 칸 이름 | 등록 서버의 실제 `inputSchema`에 맞춰 arguments 전체를 수정한다. 필수 캘린더 id·종료 시각·시간대·초대 대상·회의실·첨부 형식은 서버마다 다르다. 결과 경로만 채웠다고 실제 Google 입력 계약을 검증한 것은 아니다 |
 | 흐름 → 지식 그래프 Task 투영 | graph.json 에는 Process(`demo:proc:qbr-prep`)만 | 판본 등록 뒤 `scripts/project_student_flow.py`(G8). 투영은 Process 를 `<ns>:proc:<흐름 id>` 로 만든다 — 흐름을 가져올 때 흐름 id 를 `qbr-prep` 로 적어야 graph.json 의 Process(회의 · 요령이 이어진 노드)와 같은 노드가 된다. 다른 id 로 가져오면 Process 가 둘이 된다 |
 | 에이전트 도구 `gdrive` · `gcal` | `agent.json` 의 tools 에 적혀 있음 | 포털에 등록되지 않은 서버 이름이 있으면 에이전트 만들기가 "등록되지 않은 도구 서버입니다"로 거절된다. 구글 서버를 먼저 등록(T5)하거나, 등록 전에는 tools 를 `neo4j` · `my-biz` 로 줄여 만든 뒤 나중에 더한다 |
 
@@ -30,3 +31,11 @@
 끝까지 돌리려면 캘린더 · 드라이브 서버(T5)가 필요하다. 기록: `docs/handoff/verification/2026-10-10/K-capstone.md` 5.3.
 
 승인 부품 `human:approve`(G1, 반려 가지 포함)와 `extract` · `effect: false`(G3)는 포털에 있다. 지금 가져오면 나오는 거절 3줄(위 경로 자리 두 칸과 그 값을 쓰는 분기 조건)은 `tests/test_capstone_kit.py` 에 기대값으로 적혀 있다.
+
+## 실제 시연 전에 확인할 계약
+
+1. T5에서 실제 Drive 검색·읽기, Calendar 빈 시간·일정 읽기·일정 생성 도구의 이름과 입력 형식을 확인한다. 에이전트에는 읽기 도구만 제공한다. 실제 문서·캘린더·수업 참석자가 접근 가능한지 읽기 호출로 확인한다. 예제 `example.com` 주소·가상 room id·Drive 링크를 실제 초대 대상으로 그대로 쓰지 않는다.
+2. 입력값을 채운 `mapping.json` 사본으로 검사→등록한다. 구조 검사 통과는 도구 연결·입력 계약·결과 모양·업무 의미의 실제 검증을 대신하지 않는다. process는 호출 직전 서버 도구 목록을 다시 읽고 입력 schema의 필수값·타입·enum 등을 검사한다. 계약이 맞지 않으면 호출하지 않는다.
+3. 일정 등록·초대 발송은 주관자 승인 뒤 시스템 task에서만 한다. 거절·승인 지연 경로에서는 일정 생성 호출이 없어야 한다. 서버가 idempotency key를 지원하지 않으면 타임아웃 뒤 무조건 재시도하지 말고 실제 생성 여부를 먼저 확인한다.
+4. 업무 표의 `required=true` 참석자 명단과 일정의 참석자 응답을 대조한다. 필수 참석자 모두가 해당 일정에 `accepted`로 응답해야 전원 수락이다. 누락·무응답·거절·tentative는 전원 수락이 아니며, 빈 명단도 확인 완료 근거가 아니다. 선택 참석자의 거절만으로 필수 참석자 미달로 바꾸지 않는다. 서버가 다른 응답 값을 쓰면 실제 의미를 먼저 확인한다.
+5. 실제 등록 결과·일정 id·조회 응답·필수 명단 대조·확정 또는 미확정 보고를 기록한다. 단위 시험에서 사용하는 `id/all_accepted` 경로와 `proposal.example.json`은 구조 시험 예시이며 Google 완료 증거가 아니다.

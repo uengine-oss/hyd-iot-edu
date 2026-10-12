@@ -182,7 +182,7 @@
           }
           if (d.type === 'skill_used') {
             rows.push({key:'w:' + e.id, kind:'system', status:'idle', t0:e.timestamp, title:'스킬 파일 읽기 요청',
-              text:`${d.skill || ''} · ${d.file || 'SKILL.md'} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
+              text:`${UI.skillLabel(d,true).label} · ${window.hydWords ? hydWords.toolName(d.via) : UI.toolName(d.via || '') || '도구'} · 읽기 성공 여부는 이 기록만으로 확인할 수 없습니다`, raw:d});
             break;
           }
           if (e.job_id === 'MCP_RESULT_VALUES') {
@@ -292,12 +292,12 @@
     if (r.kind === 'tool') {
       // Dify tool-detail: the line is the toggle; open it for 요청 · 응답 (원문은 여기에만)
       const sec = (title, body) => body ? `<div class="tr-code"><div class="tr-code-h">${esc(title)}</div><pre>${esc(body)}</pre></div>` : '';
-      const io = sec(UI.t('trace.request'), pretty(r.input)) + sec(UI.t('trace.response'), pretty(r.output));
+      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), pretty(r.input)) + sec(UI.t('trace.response'), pretty(r.output));
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
       const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="chip tone-${r.status === 'fail' ? 'danger' : 'warning'} sm">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">
         ${io ? `<details class="tr-tool" data-k="${esc(r.key)}"><summary class="tr-sum"><div class="tr-line">${line}</div>${r.result && r.status !== 'running' ? `<div class="tr-res">${esc(r.result)}</div>` : ''}</summary><div class="tr-io">${io}</div></details>`
-          : `<div class="tr-line">${line}</div>${r.result && r.status !== 'running' ? `<div class="tr-res">${esc(r.result)}</div>` : ''}`}</div></div>`;
+          : `<div class="tr-line">${line}</div>${r.result && r.status !== 'running' ? `<div class="tr-res">${esc(r.result)}</div>` : ''}`}${UI.toolIdentityFold(r.tool)}</div></div>`;
     }
     const ic = { start: 'flag', note: 'note', file: 'file', ask: 'ask', answer: 'human', done: 'check', stop: 'x', error: 'warn', system: 'system' }[r.kind] || 'event';
     const body = r.kind === 'note' ? `<blockquote class="tr-note">${esc(r.note.slice(0, 700))}${r.note.length > 700 ? '…' : ''}</blockquote>${r.note.length > 700 ? codeBlock(UI.t('more'), r.note, r.key + ':more') : ''}`

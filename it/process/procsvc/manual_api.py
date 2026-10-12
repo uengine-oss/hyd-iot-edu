@@ -8,7 +8,7 @@ from fastapi.responses import Response
 
 from uuid import uuid4
 
-from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge
+from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge, manual_preflight
 from .manual_sources import MAX_BYTES
 
 
@@ -32,6 +32,14 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         if rt is None or rt.tenant_id != tenant:
             raise HTTPException(503, '문서 추출에는 같은 tenant의 instance 실행 서비스가 필요합니다')
         return rt
+
+    def preflight(session, proposal):
+        try:
+            current_catalog = manual_knowledge.catalog(session)
+        except Exception as exc:
+            # Do not turn a graph outage into an empty catalog or checked success.
+            raise HTTPException(503, '적재 전 검사용 현재 지식을 읽지 못했습니다. 다시 조회하세요') from exc
+        return manual_preflight.validate(proposal, current_catalog)
 
     @app.post('/api/kg/manuals/sources/{source_id}/extractions')
     async def extract(source_id: str, body: dict):
@@ -62,6 +70,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 # C1: knowledge ids that already exist (seed or another document) — drop the item and refer to the existing id
                 value['preview']['knowledge_conflicts'] = graph(lambda session: manual_knowledge.conflicts(
                     session, value['preview'].get('knowledge'), document))
+                value['preview']['validation'] = graph(lambda session: preflight(session, value['preview']))
             return value
         return await run(work)
 
@@ -81,6 +90,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                                 "RETURN f.id AS id, f.name + ' ' + coalesce(c.name, '') AS name").data()
             result = manual_review.proposal(source, modes)
             result['previous_batch'] = manual_graph.head(session, tenant, source['document_id'])
+            result['validation'] = preflight(session, result)
             return result
         return graph(with_catalog)
 
@@ -116,6 +126,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                             headers={'Content-Disposition': "attachment; filename*=UTF-8''" + quote(stored['filename'], safe='')})
         return await run(work)
 
+    @app.get('/api/kg/manuals/sources/{source_id}/preview')
     @app.post('/api/kg/manuals/sources/{source_id}/preview')
     async def reopen(source_id: str):
         return await run(lambda: preview(archive_factory().get(tenant, source_id)))

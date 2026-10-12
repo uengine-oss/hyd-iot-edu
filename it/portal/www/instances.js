@@ -26,6 +26,7 @@
     if (I.loading) { I.reload = I.reload || force; return; }
     I.loading = true;
     try {
+    if (window.hydToolNames) await hydToolNames.load();
     try { I.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { I.mode = { error: e.message }; }
     if (!I.mode || I.mode.mode !== 'instance') { renderBanner(); return; }
     // A083: the server filters by status; without it a RUNNING case older than the newest 50 is unreachable from the portal

@@ -1,7 +1,7 @@
 """U3 (A2 MCP 부분) — MCP 서버 읽기 전용 클라이언트: 연결 상태 · 도구 목록 · 읽기 전용 도구 시험 호출.
 
 process-gpt-mcp-validator(validator.py)의 절차(세션 열기 → initialize → 도구 적재 → 시간 제한 → 실패 사유)를 따르되
-langchain_mcp_adapters 대신 표준 라이브러리만 쓴다(process 컨테이너의 requirements 를 늘리지 않는다).
+langchain_mcp_adapters 대신 표준 라이브러리 transport와 JSON Schema 입력 검증을 쓴다.
 서버 설정은 읽기만 한다(tenants.mcp — 랩업에서 추가한 서버도 같은 칸). 저장·등록·수정·삭제는 없다.
 
 transport
@@ -34,6 +34,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+
+from jsonschema import exceptions as schema_errors
+from jsonschema.validators import validator_for
+from referencing import Registry
+from referencing.exceptions import NoSuchResource, Unresolvable
 
 from .mcp_secrets import is_reference_only
 
@@ -248,7 +253,7 @@ def _list_tools(session: _Session) -> list[dict]:
         for tool in page:
             if not isinstance(tool, dict) or not tool.get("name"):
                 raise CheckError("protocol", "프로토콜 오류 — 이름 없는 도구가 있습니다")
-            schema = tool.get("inputSchema") if isinstance(tool.get("inputSchema"), dict) else {"type": "object", "properties": {}}
+            schema = tool.get("inputSchema") if isinstance(tool.get("inputSchema"), dict) else None
             notes = tool.get("annotations") if isinstance(tool.get("annotations"), dict) else {}
             entry = {"name": str(tool["name"]), "title": str(tool.get("title") or notes.get("title") or "").strip() or None,
                      "description": str(tool.get("description") or "").strip(), "input_schema": schema,
@@ -645,6 +650,9 @@ def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOU
             return {"status": "refused", "error": f"서버에 '{tool}' 도구가 없습니다 (도구 목록을 다시 읽으세요)", "error_kind": "no_tool", "result": None}
         if not meta["callable"] and not (confirmed and tool in confirmed and meta.get("confirmable")):
             return {"status": "refused", "error": meta["refuse_reason"], "error_kind": "not_read_only", "result": None}
+        invalid = _argument_problem(meta, arguments)
+        if invalid:
+            return invalid
         res = session.request("tools/call", {"name": tool, "arguments": arguments})
         return {"status": "ok", "result": shape_result(res, max_chars)}
 
@@ -655,6 +663,37 @@ def call(spec: dict, tool: str, arguments: dict, timeout: float = DEFAULT_TIMEOU
 
 
 IDEMPOTENCY_ARG = "idempotency_key"
+
+
+def _no_schema_retrieval(uri):
+    # A tool schema may use its own $defs, but validation must not fetch URLs or
+    # open files supplied by an MCP server.
+    raise NoSuchResource(ref=uri)
+
+
+def _argument_problem(meta: dict, arguments: dict) -> dict | None:
+    """Validate against this session's advertised contract before tools/call.
+
+    Never put ValidationError.message in the response: it includes rejected
+    values, which may contain credentials. JSON Schema format is an annotation
+    unless the schema's dialect says otherwise; no extra format policy is added.
+    """
+    schema = meta.get("input_schema")
+    try:
+        if not isinstance(schema, dict):
+            raise ValueError("missing input schema")
+        if schema.get("$schema") and validator_for(schema, default=None) is None:
+            raise ValueError("unsupported schema dialect")
+        validator = validator_for(schema)
+        validator.check_schema(schema)
+        error = next(validator(schema, registry=Registry(retrieve=_no_schema_retrieval)).iter_errors(arguments), None)
+    except (schema_errors.SchemaError, Unresolvable, ValueError, TypeError, RecursionError):
+        return {"status": "refused", "error": "도구의 입력 형식을 검증할 수 없습니다 — 서버의 inputSchema를 확인하세요",
+                "error_kind": "input_schema", "result": None}
+    if error is None:
+        return None
+    return {"status": "refused", "error": f"도구 입력이 서버의 inputSchema 계약을 지키지 않습니다 ({error.validator})",
+            "error_kind": "input", "result": None}
 
 
 def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str | None = None, timeout: float = DEFAULT_TIMEOUT,
@@ -675,6 +714,9 @@ def call_effect(spec: dict, tool: str, arguments: dict, *, idempotency_key: str 
         props = (meta.get("input_schema") or {}).get("properties") or {}
         if idempotency_key and IDEMPOTENCY_ARG in props and IDEMPOTENCY_ARG not in args:
             args[IDEMPOTENCY_ARG] = idempotency_key
+        invalid = _argument_problem(meta, args)
+        if invalid:
+            return invalid
         res = session.request("tools/call", {"name": tool, "arguments": args})
         return {"status": "ok", "result": shape_result(res, max_chars), "arguments": mask_value(args),
                 "idempotent": IDEMPOTENCY_ARG in args, "annotations": meta.get("annotations") or {}}

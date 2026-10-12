@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import secrets
 import threading
@@ -265,12 +266,30 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
              status="DONE" if not any(p.get("error") for p in prov) else "FAILED")
         cand_ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
         skills = {r["skillId"]: r for r in kg.skills(cand_ids)}
+        skills = cards.scoped_skills(pattern, skills)
+        if pattern == 'PM_DUE' and not skills:
+            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
+            raise ValueError('PM_DUE 예방 정비 후보 지식이 없습니다: PREVENTED_BY 스킬과 후보 규칙을 확인하세요. 고장 대응 카드로 대체하지 않습니다')
+        if pattern == 'SPARE_BELOW_MIN' and not skills:
+            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
+            raise ValueError('SPARE_BELOW_MIN 구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요. 운전·정비 카드로 대체하지 않습니다')
+        if pattern == 'SPARE_BELOW_MIN':
+            missing = [key for key in ERP_SPARE_FACTS if type(facts.get(key)) not in (int, float)
+                       or not math.isfinite(facts[key])]
+            if missing or facts['need_qty'] <= 0:
+                rec['error_code'] = 'BUSINESS_FACTS_MISSING'
+                raise ValueError('SPARE_BELOW_MIN 구매 판단의 실제 업무 사실을 확인할 수 없습니다: ' + ', '.join(missing or ['need_qty']))
+        cand_ids = [sid for sid in cand_ids if sid in skills]
         forecasts, forecast_contexts = forecasting.candidates(kg, asset, skills)
         step('forecast', forecast_contexts, '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
         tradeoffs = kg.tradeoffs(cand_ids)
         precedents = kg.precedents(cause.get("failureModeId") or "")
         suppliers = kg.suppliers()
         result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, suppliers, forecast_contexts)
+        if pattern == 'SPARE_BELOW_MIN' and not result['options']:
+            rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
+            step('candidates', result['trace'], '현재 업무 사실·원인으로 선택된 구매 후보 없음', status='FAILED')
+            raise ValueError('SPARE_BELOW_MIN의 현재 업무 사실·원인에 맞게 발화한 구매 후보가 없습니다. 후보 규칙과 구매 지식을 확인하세요')
         if capture is not None:
             capture.update(dmn=dmn, skills=skills, facts=dict(facts), forecasts=forecasts, tradeoffs=tradeoffs, precedents=precedents,
                            suppliers=suppliers, forecast_contexts=forecast_contexts)

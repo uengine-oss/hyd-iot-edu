@@ -220,8 +220,8 @@ def test_example_flow_is_rejected_only_for_the_result_paths_the_instructor_fills
 
 
 def test_example_flow_passes_once_the_result_paths_are_filled():
-    """라이브 실측(K-capstone.md): 경로 자리 3줄만 채우면 등록돼야 한다. 전에는 그 뒤에 '반려 경로로 쓰기 부품에 닿는다'는 네 번째 거절이
-    가려져 있었다(그림에 승인? 분기가 없었다)."""
+    """구조 계약만 검사한다. id/all_accepted는 시험 경로이며 Google schema/실행 증거가 아니다.
+    이전에는 반려 경로로 쓰기 부품에 닿는 결함도 가려져 있었다(승인? 분기 없음)."""
     p, m, _ = _example_check()
     m["tasks"]["Activity_invite"]["config"]["extract"]["event_id"]["path"] = "id"
     m["tasks"]["Activity_check"]["config"]["extract"]["all_required_accepted"]["path"] = "all_accepted"

@@ -88,7 +88,7 @@ def test_record_failure_reasons_are_visible_in_open_steps(page):
     # Opening the real details is keyboard accessible; failure reasons must not
     # become success labels or disappear when the student opens another fold.
     if folds.count():
-        summary = folds.first.locator('summary')
+        summary = folds.first.locator(':scope > summary')
         summary.focus()
         before = folds.first.evaluate('e=>e.open')
         page.keyboard.press('Enter')

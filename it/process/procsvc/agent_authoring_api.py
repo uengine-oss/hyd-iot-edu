@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 
 from . import agent_authoring as A
 from . import work_rules
+from .agents_store import skill_title
 from .instance_mode import _in_executor, _rt
 
 
@@ -94,7 +95,8 @@ def mount(app: FastAPI) -> None:
             agents = [u for u in rt.repo.list_users(None, rt.tenant_id) if u.get("is_agent")]
             models = sorted({str(u.get("model")).strip() for u in agents if str(u.get("model") or "").strip()})
             return {"servers": A.server_options(rt.repo, rt.tenant_id),
-                    "skills": [{"skill_name": s["skill_name"], "description": s.get("description") or "", "origin": A.origin_of(s)}
+                    "skills": [{"skill_name": s["skill_name"], "title": skill_title(s),
+                                "description": s.get("description") or "", "origin": A.origin_of(s)}
                                for s in rt.repo.list_skills(rt.tenant_id)],
                     "models": models,
                     "work_rules": [work_rules.rule_card(key) for key in sorted(work_rules.RULES)]}

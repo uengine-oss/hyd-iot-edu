@@ -148,7 +148,9 @@ class AgentSettings:
         """JSON shape for task.json and the portal: names only, no skill bodies."""
         p = self.profile or {}
         return {"id": self.agent_id, "name": p.get("username") or self.agent_id, "model": self.model, "model_source": self.model_source,
-                "tools": self.tools, "tools_source": self.tools_source, "skills": self.skill_names, "missing_skills": list(self.missing_skills),
+                "tools": self.tools, "tools_source": self.tools_source, "skills": self.skill_names,
+                "skill_labels": [{"name": s["skill_name"], "title": skill_title(s)} for s in self.skills],
+                "missing_skills": list(self.missing_skills),
                 "work_rules": self.work_rules}
 
 

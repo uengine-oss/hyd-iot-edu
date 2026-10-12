@@ -94,15 +94,24 @@
   const register = { bodyFrom, pairsFrom };
 
   // ---------------------------------------------------------------- 화면
-  const SERVER_LABEL = { enterprise: '업무 DB', 'hyd-dmn': '판단 엔진', neo4j: '지식 그래프' };   // 이름표만 — 동작은 서버 이름과 무관
-  const T = { streamable_http: 'HTTP', stdio: '명령형', sse: 'SSE' };
+  const SERVER_LABEL = {enterprise:'업무 자료', 'enterprise-maint':'정비 업무 자료', 'enterprise-purchase':'구매 업무 자료', 'hyd-dmn':'판단 엔진', neo4j:'지식 그래프', 'hyd-effects':'알림 처리'};
+  const T = {streamable_http:'주소 연결', stdio:'명령 실행', sse:'이벤트 연결'};
   const KIND = { exec: '명령 없음', refused: '연결 거부', unreachable: '주소 없음', timeout: '시간 초과', auth: '인증 실패', not_mcp: 'MCP 아님',
     protocol: '프로토콜 오류', server: '서버 오류', closed: '연결 끊김', too_large: '응답 너무 큼', config: '설정 오류', secret: '비밀 값 없음' };
   const S = { el: null, servers: [], tools: {}, sel: null, tab: 'tools', trying: null, results: {}, calls: {}, callTool: '', busy: false, form: null,
     confirming: null, secrets: null };
   const api = p => API.process + p;
-  const serverLabel = n => SERVER_LABEL[n] ? `${SERVER_LABEL[n]} (${n})` : n;
-  const toolLabel = (srv, t) => { const k = UI.toolName(`mcp__${srv}__${t}`); return k.includes(' · ') ? t : `${k} (${t})`; };
+  const serverLabel = n => {
+    const description=S.servers.find(s=>s.name === n)?.description;
+    return description && /[가-힣]/.test(description) ? description : SERVER_LABEL[n] || '서버 표시 이름 미등록';
+  };
+  const toolLabel = (srv, name) => {
+    const tool=(S.tools[srv]?.tools || []).find(t=>t.name === name);
+    return tool?.title && /[가-힣]/.test(tool.title) ? tool.title : (tool?.description && /[가-힣]/.test(tool.description) ? tool.description.split('\n')[0] : '') || UI.toolName(`${srv}/${name}`);
+  };
+  const fieldLabel = f => {
+    return [f.label,f.description,window.hydWords?.fieldName(f.key),UI.terms['var.'+f.key]].find(label=>label && /[가-힣]/.test(label)) || '입력 표시 이름 미등록';
+  };
   const target = s => s.transport === 'stdio' ? [s.command, ...(s.args || [])].join(' ') : (s.url || '');
 
   const ORIGIN = { seed: ['기준', 'neutral'], user: ['내가 등록', 'accent'], external: ['포털 밖에서 추가', 'warning'] };
@@ -146,13 +155,13 @@
       const r = S.tools[s.name] || {};
       const n = r.status === 'ok' ? r.tools.length : null;
       const workerSide = s.transport === 'stdio' && r.error_kind === 'exec';
-      const sub = s.config_error ? esc(s.config_error) : workerSide ? '이 서버는 워커 PC 에서 실행됩니다. 포털에서는 도구 목록을 미리 볼 수 없습니다' : r.status === 'failed' ? esc(UI.clean(r.error || '')) : esc(target(s));
+      const sub = s.config_error ? '연결 설정 오류' : workerSide ? '실행할 때 연결됩니다' : r.status === 'failed' ? esc(KIND[r.error_kind] || '연결 검사 실패') : s.description && /[가-힣]/.test(s.description) ? esc(s.description) : '연결 설정은 선택 상세에서 확인합니다';
       const who = s.agents.length ? s.agents.map(a => esc(a.name)).join(', ') : '쓰는 에이전트 없음';
       const tasks = new Set(s.tasks.map(t => t.activity_name)).size;
       return UI.card({
         title: esc(serverLabel(s.name)), chips: statusChip(s.name) + UI.chipText(T[s.transport] || '?', 'neutral') + originChip(s),
         value: n != null ? `<span class="kv">도구 <b class="num">${n}</b><small>개</small></span>` : '',
-        sub, body: `<p class="kv-line">${who}${tasks ? ` · 맡은 task <b>${tasks}</b>개` : ''}</p>` +
+        sub, body: `<p class="kv-line">${who}${tasks ? ` · 맡은 단계 <b>${tasks}</b>개` : ''}</p>` +
           `<p class="kv-line">${s.selectable ? '에이전트 도구로 고를 수 있음' : s.origin === 'seed' ? '<span class="muted">기본 에이전트가 쓰는 서버</span>' : `<span class="muted">에이전트 도구로 고르려면 연결 검사 필요 · ${esc(CHECK[(s.check || {}).status] || '검사 필요')}</span>`}</p>`,
         cls: 'clickable mcp-card' + (s.name === S.sel ? ' sel' : '') + (s.config_error || (r.status === 'failed' && !workerSide) ? ' failed' : ''),
         attrs: `data-name="${esc(s.name)}" tabindex="0" role="button" aria-pressed="${s.name === S.sel}"`,
@@ -183,16 +192,16 @@
     const tasks = taskNames.length ? taskNames.map(esc).join(' · ') + (undeclared ? ' <span class="muted">(단계에 도구 지정이 없어 테넌트 서버 전부를 씁니다)</span>' : '') : '<span class="muted">없음</span>';
     const status = s.config_error ? `<p class="field-error" role="alert">${esc(s.config_error)}</p>`
       : r.loading ? `<p class="muted" role="status">연결 확인 중… (최대 4초)</p>`
-      : r.status === 'ok' ? `<p class="kv-line">연결됨 · 도구 <b>${tools.length}</b>개 · ${esc((r.server_info && r.server_info.name) || '')} ${esc((r.server_info && r.server_info.version) || '')} · ${r.elapsed_ms} ms · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
+      : r.status === 'ok' ? `<p class="kv-line">연결됨 · 도구 <b>${tools.length}</b>개 · ${r.elapsed_ms} ms · ${esc(UI.dateTime(r.checked_at))} 확인</p>`
       : `<p class="field-error" role="alert">${esc(r.error || '연결 실패')}</p><p class="field-hint">${esc(r.checked_at ? UI.dateTime(r.checked_at) + ' 확인 · 제한 ' + (r.timeout_s || 4) + '초' : '')}</p>`;
-    const settings = [['종류', T[s.transport] || s.transport || '–'], [s.transport === 'stdio' ? '명령' : '주소', target(s) || '–'],
+    const settings = [['서버 식별자',s.name], ['등록한 설명 원문',s.description || '–'], ['연결 오류 원문',s.config_error || r.error || '없음'], ['서버가 보고한 이름',r.server_info?.name || '–'], ['종류',s.transport || '–'], [s.transport === 'stdio' ? '명령' : '주소', target(s) || '–'],
       ...Object.entries(s.env || {}).map(([k, v]) => ['환경변수 ' + k, v]), ...Object.entries(s.headers || {}).map(([k, v]) => ['접속 헤더 ' + k, v])];
     box.innerHTML = `<section class="card mcp-detail"><header class="card-head"><div class="card-title"><h3>${esc(serverLabel(s.name))}</h3>${statusChip(s.name)}</div>` +
       `<div class="card-actions"><button class="btn small" id="mcpProbe" ${r.loading || s.config_error ? 'disabled' : ''}>연결 검사</button>` +
       (s.editable ? `<button class="btn small" id="mcpEdit">고치기</button><button class="btn small" id="mcpDelete">지우기</button>` : '') +
       `</div></header>` +
       status + gateLine(s) +
-      `<p class="kv-line">쓰는 에이전트: ${agents}</p><p class="kv-line">맡은 task: ${tasks}</p>` +
+      `<p class="kv-line">쓰는 에이전트: ${agents}</p><p class="kv-line">맡은 단계: ${tasks}</p>` +
       UI.fold('설정 보기 (비밀값은 ******** 로 가림)', `<dl class="mcp-kv">${settings.map(([k, v]) => `<dt>${esc(k)}</dt><dd><code>${esc(v)}</code></dd>`).join('')}</dl>` +
         `<p class="field-hint">설정 원천: tenants.mcp. ${s.editable ? '고치기는 연결 검사를 통과해야 저장됩니다.' : '기준(기본 제공) 서버는 고치거나 지울 수 없습니다 — 새 이름으로 등록해 쓰세요.'}</p>`) +
       UI.tabs([['tools', '도구', tools.length], ['calls', '호출 기록']], S.tab, 'data-mcp-tab') +
@@ -213,15 +222,15 @@
     pane.innerHTML = `<ul class="mcp-tools">${r.tools.map(t => {
       const fields = fieldsOf(t.input_schema);
       const usable = t.callable || (confirmed.has(t.name) && t.confirmable);
-      const shape = fields.length ? `<table class="compact-table"><thead><tr><th>입력</th><th>형</th><th>설명</th></tr></thead><tbody>${fields.map(f =>
-        `<tr><td><code>${esc(f.key)}</code>${f.required ? ' <i class="req">*</i>' : ''}</td><td>${esc(typeName(f))}</td><td>${esc(f.description || '–')}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">입력 없음</p>';
+      const shape = `<p>도구 식별자 <code>${esc(t.name)}</code></p>` + (fields.length ? `<table class="compact-table"><thead><tr><th>입력</th><th>형</th><th>설명</th></tr></thead><tbody>${fields.map(f =>
+        `<tr><td><code>${esc(f.key)}</code>${f.required ? ' <i class="req">*</i>' : ''}</td><td>${esc(typeName(f))}</td><td>${esc(f.description || '–')}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">입력 없음</p>');
       const open = S.trying === t.name;
       // G2 ②: 표시(readOnlyHint)만 없는 도구는 강사가 읽기로 확인할 수 있다 — 확인한 도구는 에이전트 도구 · 써 보기에 들어간다
       const chip = t.callable ? UI.chipText('읽기 전용', 'success') : usable ? UI.chipText('강사 확인 읽기', 'success') : UI.chipText('써 보기 불가', 'warning');
       const confirmBtn = !s.editable || t.callable ? '' : usable ? `<button class="btn small" data-unconfirm="${esc(t.name)}">확인 취소</button>`
         : t.confirmable ? `<button class="btn small" data-confirm="${esc(t.name)}">읽기로 확인</button>` : '';
       return `<li class="mcp-tool${open ? ' open' : ''}" data-tool="${esc(t.name)}"><div class="mcp-tool-head"><div><b>${esc(toolLabel(s.name, t.name))}</b> ` + chip +
-        `<span class="mcp-desc">${esc(t.description || '설명 없음')}</span>${usable ? '' : `<span class="mcp-why">${esc(t.refuse_reason || '')}</span>`}</div>` +
+        `<span class="mcp-desc">${t.description && /[가-힣]/.test(t.description) ? esc(t.description) : UI.fold('설명 원문',`<p>${esc(t.description || '설명 없음')}</p>`,{cls:'small'})}</span>${usable ? '' : `<span class="mcp-why">${esc(t.refuse_reason || '')}</span>`}</div>` +
         `<div class="row-wrap">${confirmBtn}<button class="btn small${open ? ' primary' : ''}" data-try="${esc(t.name)}" ${usable ? '' : 'disabled'} title="${esc(usable ? '' : t.refuse_reason || '')}">${open ? '닫기' : '써 보기'}</button></div></div>` +
         (S.confirming === t.name ? confirmForm(s, t) : '') +
         UI.fold(`입력 형식 · ${fields.length}칸`, shape) + (open ? tryForm(s, t, fields) : '') + '</li>';
@@ -263,8 +272,8 @@
 
   function tryForm(s, t, fields) {
     const res = S.results[s.name + '/' + t.name];
-    const body = fields.length ? UI.section('', fields.map(f => UI.field({ label: f.description ? f.description.split(/[.(:]/)[0].slice(0, 40).trim() || f.key : f.key, required: f.required,
-      input: inputFor(f), hint: `입력 이름 ${f.key} · ${typeName(f)}${f.description && f.description.length > 40 ? ' · ' + f.description : ''}` })).join('')) : '<p class="muted">입력 없이 부릅니다</p>';
+    const body = fields.length ? UI.section('', fields.map(f => UI.field({label:fieldLabel(f),required:f.required,
+      input:inputFor(f),hint:typeName(f)}) + UI.fold('입력 식별자 · 설명 원문',`<code>${esc(f.key)}</code><p>${esc(f.description)}</p>`,{cls:'small'})).join('')) : '<p class="muted">입력 없이 부릅니다</p>';
     return `<div class="mcp-try"><div class="form">${body}${UI.actions('<button class="btn primary" id="mcpCall">호출</button>')}</div>` +
       `<p class="field-hint">실제 서버를 부릅니다. 읽기 전용 도구만 허용되며 처리 건 · 설비 · 업무 DB 를 바꾸지 않습니다. 결과는 최대 2만 자까지 보입니다.</p>` +
       `<div id="mcpResult" aria-live="polite">${res ? resultHtml(res) : ''}</div></div>`;
@@ -285,7 +294,7 @@
     const key = s.name + '/' + t.name;
     S.el.querySelector('#mcpCall').addEventListener('click', async () => {
       const raws = {}; S.el.querySelectorAll('.mcp-try [data-key]').forEach(i => { raws[i.dataset.key] = i.value; });
-      const { args, errors } = argsFrom(fields, raws);
+      const { args, errors } = argsFrom(fields.map(f=>({...f,description:fieldLabel(f)})),raws);
       const out = S.el.querySelector('#mcpResult');
       if (errors.length) { out.innerHTML = `<p class="field-error" role="alert">${errors.map(esc).join('<br>')}</p>`; return; }
       const btn = S.el.querySelector('#mcpCall'); btn.disabled = true;

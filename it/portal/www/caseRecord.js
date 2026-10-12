@@ -251,13 +251,14 @@
         if (!skills) return head + '<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>';
         const table = skills.length ? `<div class="cr-scroll"><table class="cr-table"><thead><tr><th>스킬 · 전달 상태</th><th>판(본문 해시)</th><th>어디서 왔나</th><th>길이</th><th>설명</th></tr></thead><tbody>${skills.map(k => {
           const status = UI.skillDelivery(k);
-          return `<tr><td><b>${e(k.name)}</b>${W().id(k.path)} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
+          const name=UI.skillLabel(k,true);
+          return `<tr><td><b>${e(name.label)}</b>${name.note ? ` <span class="muted">(${e(name.note)})</span>` : ''} ${UI.chipText(status.label, status.tone)}${k.error ? ` <span class="muted">${e(k.error)}</span>` : ''}${status.kind === 'prompt' ? `<span class="muted"> · ${k.verified_registered_content === true ? '등록 본문 확인됨' : '등록 본문 확인 기록 없음'}</span>` : ''}${UI.fold('스킬 식별자 · 전달 원문',rawBlock(k),{cls:'small'})}</td><td><code class="cr-ver" title="${e(k.sha256 || '')}">${e(k.version || '')}</code>${k.updated_at ? ` <span class="muted">${e(UI.dateTime(k.updated_at))} 저장본</span>` : ''}</td><td>${e(src(k.source))}</td><td class="num">${k.chars != null ? e(W().num(k.chars)) + '자' : ''}</td><td class="muted">${e(UI.clean(k.description || ''))}</td></tr>`;
         }).join('')}</tbody></table></div>` : '';
         const note = skills.some(k => UI.skillDelivery(k).kind === 'prompt') ? '<p class="muted">프롬프트로 본문을 전달했습니다. 파일 읽기 없이 작업 지시에서 본문을 받을 수 있습니다.</p>' : '';
         const miss = (sd.skills_missing || []).length ? `<p class="cr-gapline">배정됐지만 본문이 없어 넣지 못한 스킬: ${e(sd.skills_missing.join(', '))}</p>` : '';
         return head + `<p>${e(UI.skillDeliverySummary(skills))}</p>` + table + note + miss;
       }).join('');
-      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(x.skill)}</b>의 ${e(x.file || 'SKILL.md')} — ${e(W().toolName(x.via))} 파일 읽기 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
+      const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 파일 읽기 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
         <p class="muted">파일 읽기 요청은 읽기 성공을 뜻하지 않습니다. 본문을 업무에 적용했는지는 이 기록만으로 확인할 수 없습니다.</p>
         ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
@@ -771,7 +772,7 @@
     const items = rows.map(r => {
       const time = `<time>${e(hhmmss(r.t0))}</time>`;
       if (r.kind === 'note') return `<li class="cr-r note">${time}<span class="cr-rm">${icon('note')}</span><div><q>${e(r.text.slice(0, NOTE_MAX_CHARS))}${r.text.length > NOTE_MAX_CHARS ? '…' : ''}</q>${r.data ? UI.fold('원문', rawBlock(r.data), {cls:'small'}) : ''}</div></li>`;
-      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm">${icon('file')}</span><div><b>스킬 파일 읽기 요청</b> ${e(r.data.skill)} · ${e(r.data.file || '')} <span class="muted">(${e(W().toolName(r.data.via))})</span>${UI.fold('원문', rawBlock(r.data), {cls:'small'})}</div></li>`;
+      if (r.kind === 'skill') return `<li class="cr-r skill">${time}<span class="cr-rm">${icon('file')}</span><div><b>스킬 파일 읽기 요청</b> ${e(UI.skillLabel(r.data,true).label)} <span class="muted">(${e(W().toolName(r.data.via))})</span>${UI.fold('원문', rawBlock(r.data), {cls:'small'})}</div></li>`;
       if (r.kind === 'file') return `<li class="cr-r minor">${time}<span class="cr-rm">${icon('file')}</span><div>결과 파일 ${e(r.text)}</div></li>`;
       if (r.kind === 'sys') return `<li class="cr-r sys">${time}<span class="cr-rm">${icon('system')}</span><div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
       if (r.kind === 'error') return `<li class="cr-r err">${time}<span class="cr-rm">${icon('warn')}</span><div><b>${e(r.text)}</b>${UI.fold('원문', `<pre class="cr-pre">${e(pretty(r.data))}</pre>`, { cls: 'small' })}</div></li>`;
@@ -783,10 +784,10 @@
       const mark = r.status === 'running' ? (live && TR() ? TR().spinner('sm') : icon('event')) : icon(r.status === 'ok' ? 'check' : r.status === 'fail' ? 'x' : 'warn');
       const dur = r.t0 && r.t1 ? `<span class="cr-dur">${e(fmtMs(ts(r.t1) - ts(r.t0)))}</span>` : '';
       const full = fo ? fullHtml(fo, stepKey + ':' + r.key) : '';
-      const io = full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>받은 원문</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>받은 원문</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
       return `<li class="cr-r tool ${e(r.status)}${r.minor ? ' minor' : ''}">${time}<span class="cr-rm ${e(r.status)}">${mark}</span><div>
         <details class="cr-call" data-k="${e(stepKey + ':' + r.key)}"><summary><b>${e(W().toolName(r.tool))}</b>${sys ? `<span class="cr-sys">${e(sys)}</span>` : ''}${r.badge ? UI.chipText(r.badge, r.status === 'fail' ? 'danger' : 'warning') : ''}${dur}${W().id(r.tool)}
-        <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details></div></li>`;
+        <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details>${UI.toolIdentityFold(r.tool)}</div></li>`;
     }).join('');
     return `${minor ? `<label class="cr-minor-toggle"><input type="checkbox" data-cr-minor> 보조 작업 ${minor}건도 보기 <span class="muted">(쓸 도구 불러오기 · 파일 쓰기 · 명령 실행)</span></label>` : ''}<ol class="cr-rows">${items}</ol>`;
   }

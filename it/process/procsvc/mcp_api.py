@@ -187,7 +187,8 @@ def register(app, *, runtime_factory, audit):
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),
                "arguments": mcp_calls.brief(mcp_check.mask_value(arguments), 300)})
         if result["status"] == "refused":
-            raise HTTPException(403 if result.get("error_kind") == "not_read_only" else 404, result["error"])
+            status = {"not_read_only": 403, "no_tool": 404, "input": 422, "input_schema": 502}.get(result.get("error_kind"), 404)
+            raise HTTPException(status, result["error"])
         if result["status"] != "ok":
             raise HTTPException(502, f"{name}: {result['error']}")
         return {"server": name, "tool": tool, "arguments": mcp_check.mask_value(arguments), "result": result["result"],

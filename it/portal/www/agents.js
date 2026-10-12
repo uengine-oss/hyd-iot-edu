@@ -7,14 +7,15 @@
    레이아웃: process-gpt-vue3 AgentChatInfo.vue(목표 → 성격 → 도구 → 스킬 → 모델) · AgentField.vue:64-170(편집 폼) · SkillDetail.vue(사용 중 에이전트).
    셸(U7)은 window.hydAgents.mount(el) 로 아무 컨테이너에나 그릴 수 있다. */
 (function () {
-  const SERVER_WORDS = { neo4j: '지식 그래프', enterprise: '업무 DB', 'hyd-dmn': '판단 규칙 · 시계열' };
+  const SERVER_WORDS = { neo4j:'지식 그래프', enterprise:'업무 자료', 'hyd-dmn':'판단 규칙 · 센서 기록', 'enterprise-maint':'정비 업무 자료', 'enterprise-purchase':'구매 업무 자료', 'hyd-effects':'알림 처리' };
   const MODEL_FROM = { activity: '단계 설정', agent: '에이전트 설정' };
   const TOOLS_FROM = { agent: '에이전트 설정', activity: '단계 설정', 'agent+activity': '에이전트 도구 중 단계가 허용한 것' };
   const SHORT = 80;
   const st = { host: null, tab: 'agents', agents: null, skills: null, pick: { agents: null, skills: null }, detail: null, error: '', open: {}, seq: 0,
     form: null, options: null, board: null, boardError: '', busy: false };
 
-  const serverName = (name, description) => description || SERVER_WORDS[name] || name;
+  const serverName = (name, description) => description && /[가-힣]/.test(description) ? description : SERVER_WORDS[name] || '서버 표시 이름 미등록';
+  const skillName = (name, labels=[]) => UI.skillLabel(labels.find(s=>(s.name || s.skill_name) === name) || (st.skills || []).find(s=>s.skill_name === name) || {name}).label;
   const modelText = m => m || '실행기 기본 모델';
   const api = path => API.process + path;
   const del = url => requestJ(url, { method: 'DELETE' });
@@ -162,7 +163,7 @@
         const tools = x.tools == null ? '등록된 도구 서버 전부' : x.tools.length ? x.tools.map(t => serverName(t)).join(', ') : '없음(겹치는 도구가 없음)';
         return `<tr><td>${esc(UI.flowName(s.name))}</td><td>${esc(modelText(x.model))}${x.model_source ? `<br><span class="muted">${esc(MODEL_FROM[x.model_source] || '')}</span>` : ''}</td>` +
           `<td>${esc(tools)}${x.tools_source ? `<br><span class="muted">${esc(TOOLS_FROM[x.tools_source] || '')}</span>` : ''}</td>` +
-          `<td>${esc(x.skills.length ? x.skills.join(', ') : '없음')}${x.missing_skills.length ? `<br><span class="neg">본문 없음: ${esc(x.missing_skills.join(', '))}</span>` : ''}</td></tr>`;
+          `<td>${esc(x.skills.length ? x.skills.map(n=>skillName(n,x.skill_labels || [])).join(', ') : '없음')}${x.missing_skills.length ? `<br><span class="neg">본문 없는 스킬 ${x.missing_skills.length}개</span>` : ''}${UI.fold('설정 식별자 원문',`<pre>${esc(JSON.stringify({skills:x.skills,missing_skills:x.missing_skills,tools:x.tools},null,2))}</pre>`,{cls:'small'})}</td></tr>`;
       }).join('');
       html += UI.fold(`단계별 실제 실행 설정 <span class="chip tone-neutral sm">${(run.steps || []).length}</span>`,
         stepRows ? `<div class="table-scroll"><table class="compact-table"><thead><tr><th>단계</th><th>모델</th><th>도구 서버</th><th>스킬 파일</th></tr></thead><tbody>${stepRows}</tbody></table></div>`
@@ -197,7 +198,7 @@
     return `<div class="detail-head"><div class="row"><h2>${esc(s.title)}</h2>${mineChip(s.origin)}</div>` +
       `<div class="sub">${mine ? '붙은 에이전트가 실행될 때 작업 폴더에 이 문서가 SKILL.md 로 들어갑니다.' : '기본 스킬은 수업 기준이라 고칠 수 없습니다. 새 스킬을 만들어 쓰세요.'}</div></div>` +
       UI.card({ title: '요약', body: summary, actions }) +
-      UI.card({ title: '스킬 문서', body: `<pre style="max-height:480px;overflow:auto">${esc(s.content || '')}</pre>` }) +
+      UI.card({ title:'스킬 문서', body:UI.fold('문서 원문',`<pre style="max-height:480px;overflow:auto">${esc(s.content || '')}</pre>`) }) +
       UI.metaFold([['폴더 이름', `<span class="mono">${esc(s.skill_name)}</span>`], ['저장 위치', '스킬 저장소(tenant_skills 표)'], ['길이', esc((s.content || '').length.toLocaleString('ko-KR') + '자')]]);
   }
 
@@ -220,7 +221,7 @@
       const tools = o.servers.length ? o.servers.map(s => `<label class="check"><input type="checkbox" data-f-tool value="${esc(s.name)}" ${d.tools.includes(s.name) ? 'checked' : ''}> ` +
         `<span>${esc(serverName(s.name, s.description))}${checkChip(s.check)}</span></label>`).join('') : '<span class="muted">등록된 도구 서버가 없습니다</span>';
       const skills = o.skills.length ? o.skills.map(s => `<label class="check"><input type="checkbox" data-f-skill value="${esc(s.skill_name)}" ${d.skills.includes(s.skill_name) ? 'checked' : ''}> ` +
-        `<span>${esc(s.description || s.skill_name)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다 — 스킬 탭에서 먼저 만드세요</span>';
+        `<span>${esc(UI.skillLabel(s).label)} ${mineChip(s.origin)}</span></label>`).join('') : '<span class="muted">아직 스킬이 없습니다 — 스킬 탭에서 먼저 만드세요</span>';
       return `<div class="detail-head"><div class="row"><h2>${f.id ? '에이전트 고치기' : '새 에이전트'}</h2>${UI.chipText('내가 만든', 'success')}</div>` +
         `<div class="sub">저장하면 다음 실행부터 이 설정으로 실행됩니다. 단계를 맡기려면 저장 뒤 "담당 배정" 탭에서 고르세요.</div></div>` +
         `<form data-ag-form>` +

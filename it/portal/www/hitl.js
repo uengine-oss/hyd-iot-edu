@@ -188,7 +188,7 @@
       const it = el('div', 'item' + (k.id === H.skillSel && !H.skillNew ? ' sel' : ''));
       keyboardItem(it);
       const fm = (k.failureModes || []).map(f => `${f.name} (${REL_KO[f.relation] || f.relation})`).join(', ');
-      it.innerHTML = `<div class="row"><strong>${esc(k.name)}</strong>${UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning')}</div><span class="sub">${esc(k.sopId || '')} · ${esc(fm || UI.t('skill.noFm'))} · ${esc(UI.t('card.approver'))} ${esc((k.approver || {}).name || '–')}</span>`;
+      it.innerHTML = `<div class="row"><strong>${esc(k.name)}</strong>${UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning')}</div><span class="sub">${esc(fm || UI.t('skill.noFm'))} · ${esc(UI.t('card.approver'))} ${esc((k.approver || {}).name || '–')}</span>`;
       it.addEventListener('click', () => { H.skillSel = k.id; H.skillNew = false; renderSkillList(); renderSkillDetail(); UI.revealDetail($('#skillDetail')); });
       list.append(it);
     }
@@ -213,9 +213,9 @@
         <tr><th>${esc(UI.t('skill.fm'))}</th><td>${(k.failureModes || []).map(f => `${esc(f.name)} <span class="muted">(${esc(REL_KO[f.relation] || f.relation)})</span>`).join('<br>') || esc(UI.t('skill.none'))}</td></tr>
         <tr><th>${esc(UI.t('skill.causes'))}</th><td>${(k.causes || []).map(x => esc(x.name)).join(', ') || esc(UI.t('skill.allCauses'))}</td></tr>
         <tr><th>${esc(UI.t('skill.actions'))}</th><td>${(k.actions || []).map(a => `${esc(hydCards.actionLabel(a))} <span class="muted">${esc(a.name)}</span>`).join('<br>') || esc(UI.t('skill.none'))}</td></tr>
-        <tr><th>${esc(UI.t('skill.rules'))}</th><td>${(k.rules || []).map(r => `<span class="${r.effect === 'EXCLUDE' ? 'hard' : r.effect === 'SELECT' ? '' : 'soft'}">${esc({ EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') }[r.effect] || r.effect)} · ${esc(UI.idText(r.annotation || UI.name(r.id)))}</span>`).join(' ') || esc(UI.t('skill.none'))}</td></tr>
+        <tr><th>${esc(UI.t('skill.rules'))}</th><td>${(k.rules || []).map(r => `<span class="${r.effect === 'EXCLUDE' ? 'hard' : r.effect === 'SELECT' ? '' : 'soft'}">${esc({ EXCLUDE: UI.t('chip.excluded'), SELECT: '후보', PENALTY: UI.t('card.penalty'), WARN: UI.t('card.warn') }[r.effect] || r.effect)} · ${esc(UI.ruleLabel(r))}${UI.fold('규칙 원문',`<pre>${esc(JSON.stringify(r,null,2))}</pre>`,{cls:'small'})}</span>`).join(' ') || esc(UI.t('skill.none'))}</td></tr>
         <tr><th>${esc(UI.t('skill.affects'))}</th><td>${(k.affects || []).map(a => `${esc(a.name)} ${a.sign > 0 ? '↑' : '↓'}`).join(', ') || esc(UI.t('skill.none'))}</td></tr></table>`;
-    box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(H.skillNew ? UI.t('skill.new') : k.name)}</h2>${k.kind ? UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning') : ''}</div>${k.sopId ? `<div class="sub">${esc(k.sopId)}</div>` : ''}</div>
+    box.innerHTML = `<div class="detail-head"><div class="row"><h2>${esc(H.skillNew ? UI.t('skill.new') : k.name)}</h2>${k.kind ? UI.chipText(k.kind === 'control' ? UI.t('skill.kind.control') : UI.t('skill.kind.workOrder'), k.kind === 'control' ? 'accent' : 'warning') : ''}</div></div>${H.skillNew ? '' : UI.metaFold([['조치 식별자',esc(k.id)],['절차 번호',esc(k.sopId || '')]])}
       <div class="form skill-edit">` +
       UI.section(UI.t('method'),
         UI.field({ label: UI.t('skill.name'), required: true, input: `<input id="skName" value="${esc(k.name)}" maxlength="80">` }) +
@@ -259,7 +259,7 @@
     $('#skSource')?.addEventListener('click', async (ev) => {
       ev.currentTarget.disabled = true;
       try {
-        const preview = await postJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(k.source_id) + '/preview', {});
+        const preview = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(k.source_id) + '/preview');
         selectTab('knowledge'); H.preview = preview;
         $('#manualDocumentId').value = preview.document_id; renderPreview();
         $('#manualFile').scrollIntoView({ block: 'center' });
@@ -300,7 +300,7 @@
         b.disabled = true;
         try {
           if (!H.catalog) H.catalog = await getJ(API.process + '/api/kg/catalog');
-          H.preview = await postJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(b.dataset.manualReopen) + '/preview', {});
+          H.preview = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(b.dataset.manualReopen) + '/preview');
           $('#manualDocumentId').value = H.preview.document_id; renderPreview();
         } catch (e) { $('#manualSourcesMsg').textContent = '원문 다시 읽기 실패: ' + e.message; }
         finally { b.disabled = false; }
@@ -429,13 +429,56 @@
       }));
     } catch (e) { $('#manualHistory').textContent = '등록 이력을 읽지 못했습니다: ' + e.message; }
   }
+  function manualIssueMessage(issue, preview, catalog) {
+    const names = new Map();
+    const remember = row => {
+      if (!row || typeof row !== 'object') return;
+      const label = row.name || row.annotation;
+      if (typeof label === 'string' && /[가-힣]/.test(label) && label !== row.id) {
+        if (row.id) names.set(row.id, label);
+        if (row.sopId) names.set(row.sopId, `${label} (${row.sopId})`);
+        if (row.code) names.set(row.code, label);
+      }
+      if (Array.isArray(row.inputs)) row.inputs.forEach(remember);
+    };
+    Object.values(catalog || {}).filter(Array.isArray).forEach(rows => rows.forEach(remember));
+    Object.values(preview.knowledge || {}).filter(Array.isArray).forEach(rows => rows.forEach(remember));
+    (preview.procedures || []).forEach(p => {
+      if (typeof p.name === 'string' && /[가-힣]/.test(p.name) && p.name !== p.id) names.set(p.id, `${p.name} (${p.id})`);
+    });
+    const kinds = {fm:'고장 유형',cause:'원인',skill:'조치 방법',rule:'규칙',action:'원자 조치',comp:'부품',part:'부품',sup:'공급사',role:'담당 역할',sv:'상태 변수',msr:'성과 지표',dt:'결정표',dec:'판단',in:'입력',sym:'증상',pat:'이상 유형',evidence:'근거'};
+    const labelOf = id => names.get(id) || `${kinds[String(id).split(':')[0]] || '검사 대상'} 표시 이름 미등록`;
+    let text = String(issue.message || '검사 설명 기록 없음');
+    // Exact metadata keys only: labels never change the stored issue or proposal.
+    const owner = issue.sop;
+    if (owner && !String(owner).startsWith('SOP-')) text = text.split(owner).join(labelOf(owner));
+    text = text.replace(/\bSOP-[A-Za-z0-9_-]+\b/g, id => names.get(id) || id);
+    text = text.replace(/\b[A-Za-z][A-Za-z0-9_-]*:[A-Za-z0-9_.-]+\b/g, labelOf);
+    const fields = {'link.failureMode':'고장 유형 연결','link.approver':'승인 담당자 연결','link.addresses':'관련 원인 연결','link.affects':'영향 연결','knowledge.rules.table':'규칙의 결정표','knowledge.rules.tests':'규칙 입력 조건','failure_mode':'고장 유형','leads_to':'이어지는 고장 유형','component':'대상 부품','symptoms':'증상','disturbs':'상태 영향','penalizes':'감점 지표','applies_to':'적용 대상','outputs':'출력 대상','parts':'부품','cause':'원인'};
+    if (fields[issue.field]) text = text.split(issue.field).join(fields[issue.field]);
+    text = text.replace(/\b(?:failureMode|approver|relation|addresses|affects)\b/g, key => ({failureMode:'고장 유형',approver:'승인 담당자',relation:'고장 유형 관계',addresses:'관련 원인',affects:'영향'})[key]);
+    text = text.replace(/\b(?:control|work_order|Action|REQUIRES_INPUT)\b/g, key => ({control:'설비 제어',work_order:'정비 요청',Action:'원자 조치',REQUIRES_INPUT:'필수 입력 연결'})[key]);
+    // Action codes in diagnostic sentences resolve through the same real catalog.
+    text = text.replace(/\b[A-Z][A-Z0-9_]+\b/g, key => names.get(key) || key);
+    return text;
+  }
+  function manualValidationHtml(v, preview, catalog) {
+    if (!v) return UI.card({title:'현재 지식 기준 검사', body:'기계 검사 결과가 없습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
+    if (v.checked !== true || typeof v.technical_ready !== 'boolean' || v.needs_human_review !== true || v.can_commit !== false || !Array.isArray(v.issues)) return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText('검사 정보 읽기 실패','danger'), body:'기계 검사 응답 형식이 올바르지 않습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
+    const issues=v.issues;
+    return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText(v.technical_ready === true ? '기계 검사 통과' : '수정할 항목 있음',v.technical_ready === true ? 'neutral' : 'warning'),
+      body:`<p>사람 검토는 별도로 필요합니다. 이 검사는 검토 완료나 적재 승인이 아닙니다.</p>` +
+        (issues.length ? `<ul>${issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}${UI.fold('검사 항목 원문',`<pre>${esc(JSON.stringify(x,null,2))}</pre>`,{cls:'small'})}</li>`).join('')}</ul>` : '<p class="muted">현재 지식에서 기계가 찾은 수정 항목은 없습니다.</p>')});
+  }
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
     if (!r) { box.innerHTML = ''; return; }
     const known = (H.catalog || {}).failureModes || [];
     const fms = known.concat(((r.knowledge || {}).failure_modes || []).filter(f => f && f.id && !known.some(k => k.id === f.id)).map(f => ({ id: f.id, name: `${f.name || f.id} (이 문서에서 새로)` })));
     const citation = a => a ? UI.fold(`원문 인용 · ${a.page}쪽`, `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.quote)}</pre>`, { cls: 'small' }) : '';
-    box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개${r.warnings.length ? ' · <span class="neg">' + r.warnings.map(esc).join(' ') + '</span>' : ''}</div>
+    box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개${r.warnings.length ? ' · 추출 경고 ' + r.warnings.length + '개' : ''}</div>
+      ${r.warnings.length ? `<p class="muted">추출 경고를 원문과 대조하고 제안의 단계 · 연결을 검토하세요.</p>${UI.fold(`추출 경고 원문 ${r.warnings.length}개`, `<ol>${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`, {cls:'small'})}` : ''}
+      ${manualValidationHtml(r.validation,r,H.catalog)}
       <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
       <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>에이전트 추출 요청</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '에이전트 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 일반 문서는 에이전트 추출을 요청하세요.'}</span></p>
       <div class="form-grid">${UI.field({ label: '이 문서의 추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button>

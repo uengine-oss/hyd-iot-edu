@@ -337,6 +337,7 @@
         ${it.text ? `<div class="tl-text">${it.code ? `<code>${esc(it.text)}</code>` : esc(it.text)}</div>` : ''}${it.html || ''}${it.result != null ? `<div class="tl-text res${it.error ? ' neg' : ''}">→ <code>${esc(it.result)}</code></div>` : ''}
         ${it.options && it.options.length ? `<div class="row-wrap">${it.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}
         ${it.foldTitle ? `<details class="fold small" data-k="${esc(it.k)}"><summary>${esc(it.foldTitle)}</summary><pre>${esc(it.foldBody)}</pre></details>` : ''}
+        ${UI.toolIdentityFold(it.raw?.tool || it.rawOut?.tool)}
         ${it.raw || it.rawOut ? `<details class="fold small" data-k="${esc(it.k)}:raw"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(it.rawOut ? { ...(it.raw || {}), ...it.rawOut } : it.raw, null, 2).slice(0, 6000))}</pre></details>` : ''}
       </div></div>`).join('')}</div>`;
   }

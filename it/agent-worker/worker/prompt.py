@@ -37,6 +37,7 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
         sections.append(f"## 참고 자료\n{sources}")
     sections.append("## 작업 공간\n" f"작업 디렉터리는 `{workdir}` 입니다. 산출 파일은 이 디렉터리 안에 만드세요. 이 디렉터리 밖에는 쓰지 마세요. "
                     "온톨로지 스키마 설명은 `context/schema_prompt.md` 에 있습니다.")
+    sections.append(FILE_READ_RULE)
     sections.append(output_contract(extras.get("form_fields")))
     from procsvc.result_correction import instructions
     contract_note = instructions(extras.get('form_contract'))
@@ -61,15 +62,21 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
 LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이유, 마지막 메시지까지 모든 자연어 문장을 한국어로 쓰세요. "
                  "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다.")
 
+FILE_READ_RULE = ("## 작업 파일 읽기\n작업 파일과 등록 스킬은 BOM 없는 UTF-8 원문입니다. "
+                  "Windows PowerShell에서 읽을 때는 기본 인코딩을 쓰지 말고 "
+                  "`Get-Content -Raw -Encoding UTF8 -LiteralPath 'context/task.json'`처럼 UTF8을 명시하세요. "
+                  "Python에서는 `Path(...).read_text(encoding='utf-8')`를 사용하세요. "
+                  "깨진 문자열을 추측해 복원하거나 원본 파일에 BOM을 붙여 고치지 마세요.")
+
 
 def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = False) -> str:
     """How to continue after a person answered (the product's hitl.plan_resume prompts)."""
     if not restarted:
-        return f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요.\n\n{LANGUAGE_RULE}"
+        return f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요.\n\n{FILE_READ_RULE}\n\n{LANGUAGE_RULE}"
     text = f"담당자 응답: {answer}\n"
     if previous_summary:
         text += f"\n## 이전 진행 요약\n{previous_summary}\n"
-    return text + "\n위 맥락을 참고해 작업을 새로 진행하세요.\n\n" + LANGUAGE_RULE
+    return text + "\n위 맥락을 참고해 작업을 새로 진행하세요.\n\n" + FILE_READ_RULE + "\n\n" + LANGUAGE_RULE
 
 
 def format_correction(reason: str, form_fields: Any, *, form_contract=None) -> str:
@@ -79,7 +86,7 @@ def format_correction(reason: str, form_fields: Any, *, form_contract=None) -> s
     return (f"방금 제출한 결과가 출력 형식 검사에서 거절됐습니다: {reason}\n"
             "조회나 분석을 다시 하지 말고, 같은 내용을 아래 형식에 맞춰 다시 제출하세요. 배열 필드는 JSON 배열 그대로(문자열로 감싸지 않음), "
             "숫자는 숫자로 쓰세요. 결과를 `output/result.json` 파일로 냈다면 그 파일을 고쳐 다시 쓰고 마지막 메시지에는 확인만 적으세요.\n\n"
-            + output_contract(form_fields) + "\n\n" + instructions(form_contract) + "\n\n" + LANGUAGE_RULE)
+            + output_contract(form_fields) + "\n\n" + instructions(form_contract) + "\n\n" + FILE_READ_RULE + "\n\n" + LANGUAGE_RULE)
 
 
 def output_contract(form_fields: Any) -> str:

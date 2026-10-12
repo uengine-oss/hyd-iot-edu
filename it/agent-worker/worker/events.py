@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from cliagents import ExecEvent, ExecEventKind
+from procsvc.agents_store import skill_title
 
 PREVIEW_MAX = 4_000
 CONSOLE_MAX = 120
@@ -168,7 +169,8 @@ SKILL_TOOLS = frozenset({"Skill"})
 def skill_entry(skill: dict, *, text: str, path: str, source: str) -> dict:
     """One provided skill as the run had it: the hash is of the SKILL.md written into the workspace, so the record says which
     text the run saw even after the skill row is edited (tenant_skills keeps no versions)."""
-    return {"name": skill["skill_name"], "path": path, "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    return {"name": skill["skill_name"], "title": skill_title({**skill, "content": text}),
+            "path": path, "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
             "version": hashlib.sha256(text.encode("utf-8")).hexdigest()[:12], "chars": len(text),
             "description": str(skill.get("description") or ""), "source": source, "updated_at": _iso(skill.get("updated_at"))}
 
@@ -200,8 +202,8 @@ def skills_provided(entries: list[dict], *, cli: str, missing: list[str]) -> UiE
 
 
 class SkillReads:
-    """Emits one skill_used event the first time the agent reads a given file of a skill (Read / Bash / Grep naming a path
-    under the skill folders, or Claude Code's Skill tool). Paths outside the provided set are still reported (known=false)."""
+    """Records the first tool request referring to each skill file; this is not proof of a successful read.
+    Paths outside the provided set are still reported (known=false)."""
 
     def __init__(self, provided: list[dict] | None = None):
         self._by_name = {e["name"]: e for e in provided or []}
@@ -227,6 +229,8 @@ class SkillReads:
                     "tool_use_id": event.tool_use_id, "known": known is not None}
             if known:
                 data.update(sha256=known["sha256"], version=known["version"], source=known["source"])
+                if known.get("title"):
+                    data["title"] = known["title"]
             out.append(UiEvent("skill_used", data))
         return out
 
