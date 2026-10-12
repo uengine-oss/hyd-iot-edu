@@ -1,0 +1,17 @@
+{
+  "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\b-stock-lineage\\PM-02-original-source-GET.json",
+  "sha256": "c5dd6833eb027fffccdf66742b63ecf2a49bc0994687e6eb174d2c302af95d06",
+  "bytes": 8894,
+  "full_body_portable": false,
+  "reason": "Original complete licensed manual GET retained only in local evidence.",
+  "anchors": [
+    "PM-2.2",
+    "SOP-PM-22",
+    "SOP-PM-23"
+  ],
+  "meaning": {
+    "base": "seal1 and return filter1",
+    "4000h": "base plus oil sampling; no oil replacement",
+    "8000h_bundle": "base plus oil replacement; real oil part number and quantity unknown"
+  }
+}

@@ -1,0 +1,2 @@
+# Preserve the recorded hashes of original evidence across Git checkouts.
+* -text whitespace=cr-at-eol

@@ -9,6 +9,43 @@
     skills: [], catalog: null, manualCatalog: null, manualCatalogError: '', skillSel: null, skillNew: false, skillDrafts: new Map(), preview: null, mode: null, instByIncident: new Map() };
   getJ(API.process + '/api/process/mode').then(m => { H.mode = m; }).catch(() => { H.mode = null; });
   const instanceMode = () => !H.mode || H.mode.mode === 'instance';
+  // Selection values are exact document identities; filenames are business labels.
+  function selectManualDocument(id, filename) {
+    const select = $('#manualDocumentId'); if (!select) return;
+    const value = id || '';
+    let option = Array.from(select.options).find(o => o.value === value);
+    if (!option) {
+      const historical = H.manualDocuments?.get(value);
+      filename = filename || historical?.filename;
+      option = new Option(filename ? `${filename} · 검토 중인 원문` : '선택한 문서를 등록 이력에서 확인할 수 없습니다', value);
+      select.add(option);
+    }
+    select.value = value;
+  }
+  function updateManualDocuments(uploads) {
+    const select = $('#manualDocumentId'); if (!select) return;
+    const selected = select.value;
+    const docs = new Map();
+    const allDocs = new Map();
+    uploads.forEach(u => {
+      if (!u.document_id) return;
+      if (!allDocs.has(u.document_id) || u.current) allDocs.set(u.document_id, u);
+      if (u.current && u.status !== 'ROLLED_BACK') docs.set(u.document_id, u);
+    });
+    H.manualDocuments = allDocs;
+    select.replaceChildren(new Option('새 문서 등록', ''));
+    const filenameCounts = new Map();
+    docs.forEach(u => filenameCounts.set(u.filename, (filenameCounts.get(u.filename) || 0) + 1));
+    docs.forEach(u => {
+      const disambiguation = filenameCounts.get(u.filename) > 1 ? ` · ${u.t ? UI.dateTime(u.t) : '등록 시각 미상'}${u.by ? ' · ' + u.by : ''}` : '';
+      select.add(new Option(`${u.filename || '파일 이름 없는 문서'}${disambiguation} · 문서 개정`, u.document_id));
+    });
+    if (selected && !docs.has(selected)) {
+      const source = H.preview?.document_id === selected ? H.preview.filename : allDocs.get(selected)?.filename;
+      select.add(new Option(source ? `${source} · 검토 중인 원문` : '선택한 문서를 등록 이력에서 확인할 수 없습니다', selected));
+    }
+    select.value = selected;
+  }
 
   /* ================================================= 조치 선택 패널 (이상 확인 · 조치) */
   async function refreshHitl(force) {
@@ -262,7 +299,7 @@
         await loadManualCatalog();
         const preview = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(k.source_id) + '/preview');
         selectTab('knowledge'); H.preview = preview;
-        $('#manualDocumentId').value = preview.document_id; renderPreview();
+        selectManualDocument(preview.document_id, preview.filename); renderPreview();
         $('#manualFile').scrollIntoView({ block: 'center' });
       } catch (e) { if (box.dataset.key === key) $('#skMsg').textContent = '원문 확인 실패: ' + e.message; }
       finally { const button = box.querySelector('#skSource'); if (button) button.disabled = false; }
@@ -316,7 +353,7 @@
           if (!H.catalog) H.catalog = await getJ(API.process + '/api/kg/catalog');
           await loadManualCatalog();
           H.preview = await getJ(API.process + '/api/kg/manuals/sources/' + encodeURIComponent(b.dataset.manualReopen) + '/preview');
-          $('#manualDocumentId').value = H.preview.document_id; renderPreview();
+          selectManualDocument(H.preview.document_id, H.preview.filename); renderPreview();
         } catch (e) { $('#manualSourcesMsg').textContent = '원문 다시 읽기 실패: ' + e.message; }
         finally { b.disabled = false; }
       }));
@@ -413,6 +450,7 @@
     await loadManualSources();
     try {
       const ups = await getJ(API.process + '/api/kg/manuals');
+      updateManualDocuments(ups);
       const history = $('#manualHistory'), wasOpen = !!history.querySelector('details.manual-history[open]');
       const goldenOpen = {}; history.querySelectorAll('[data-golden]').forEach(d => { goldenOpen[d.dataset.golden] = d.querySelector('details.golden')?.open; });
       const current = ups.filter(u => u.current);
@@ -430,7 +468,7 @@
       wireGolden(history);
       current.forEach(u => fetchGolden(u.batch).then(() => renderGolden(u.batch)));
       history.querySelectorAll('[data-manual-revise]').forEach(b => b.addEventListener('click', () => {
-        $('#manualDocumentId').value = b.dataset.manualRevise;
+        selectManualDocument(b.dataset.manualRevise);
         $('#manualHistoryMsg').textContent = '개정할 문서를 선택했습니다. 새 판본 파일을 선택하고 미리보기에서 다시 검토하세요.';
         H.preview = null; renderPreview();
       }));
@@ -526,6 +564,7 @@
   }
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
+    $('#manualDocumentId').disabled = !!r;
     if (!r) { box.innerHTML = ''; return; }
     const known = (H.catalog || {}).failureModes || [];
     const fms = known.concat(((r.knowledge || {}).failure_modes || []).filter(f => f && f.id && !known.some(k => k.id === f.id)).map(f => ({ id: f.id, name: `${f.name || f.id} (이 문서에서 새로)` })));
@@ -726,7 +765,7 @@
       await loadManualCatalog();
       const preview = await postJ(API.process + '/api/kg/manuals/preview', { filename: f.name, data: b64, document_id: $('#manualDocumentId').value.trim() || null });
       if ($('#manualFile').files[0] !== f) return;
-      H.preview = preview; renderPreview();
+      H.preview = preview; selectManualDocument(preview.document_id, preview.filename); renderPreview();
       await loadManualSources();
     } catch (e) { if ($('#manualFile').files[0] === f) $('#manualResult').innerHTML = `<div class="neg">미리보기 실패: ${esc(e.message)}</div>`; }
     finally { b.disabled = false; b.textContent = UI.t('kn.preview'); }

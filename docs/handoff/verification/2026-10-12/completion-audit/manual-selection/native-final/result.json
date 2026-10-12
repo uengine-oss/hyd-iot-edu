@@ -1,0 +1,131 @@
+{
+  "created_utc": "2026-10-12T11:00:46.857223+00:00",
+  "method": "Native actual GET named-document selection and stored source reopening only; no upload, ingestion or model calls",
+  "checks": [
+    {
+      "label": "mounted it/portal/www/index.html",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "mounted it/portal/www/hitl.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "selector is named select",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "initial new-document choice",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "only current documents plus new in primary list",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "no opaque ids in displayed option text",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "no document ID label",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "named selection preserves exact current id",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "named selection shows original source filename",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "actual original-source preview GET",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "preview stays bound to exact source document",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "preview target cannot change underneath draft",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "preview does not mark reviewed",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "installed history unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "source unchanged during capture",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "page errors zero",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "console errors zero",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "writes attempted zero",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "pageerrors": [],
+  "consoleErrors": [],
+  "blockedWrites": [],
+  "source_before": {
+    "it/portal/www/index.html": "8d4ae76547c650b2827e4d01ef50780c8b387f428e13b01906ef6f3ebf0eb966",
+    "it/portal/www/hitl.js": "575b878e252394cec7f574bfd04eb587e3f557ff2217a935dd7f6f5487488f51",
+    "tests/test_portal_manual_document_selection_ui.py": "98543f301fc9f8a7fa8a2192bb82f1e1eae8d3a8fc9115201af5b0b3cbbb23c5"
+  },
+  "screenshots": [
+    {
+      "file": "form-named-document-1440.png",
+      "sha256": "87186af39777485c9d84aa5fa108ece90c3b5073a505449f99cf1351eb4e0a78"
+    },
+    {
+      "file": "form-named-document-1024.png",
+      "sha256": "3c2adc34242de4da415dd43b515a20d2de71b4794b5e972215585c00ab11c831"
+    },
+    {
+      "file": "form-review-document-locked-1440.png",
+      "sha256": "8b14ed9fd063344932c6b13f6b7d2c3154d2400ff6de1cb343a9d258fab52552"
+    },
+    {
+      "file": "form-review-document-locked-1024.png",
+      "sha256": "ccb4f3b9fe4e509b6e227f76bcbf0b13befb7dbb92826fe121f29418d7387309"
+    }
+  ],
+  "whole_reruns": 0,
+  "llm_reruns": 0,
+  "source_after": {
+    "it/portal/www/index.html": "8d4ae76547c650b2827e4d01ef50780c8b387f428e13b01906ef6f3ebf0eb966",
+    "it/portal/www/hitl.js": "575b878e252394cec7f574bfd04eb587e3f557ff2217a935dd7f6f5487488f51",
+    "tests/test_portal_manual_document_selection_ui.py": "98543f301fc9f8a7fa8a2192bb82f1e1eae8d3a8fc9115201af5b0b3cbbb23c5"
+  },
+  "driver_sha256": "326ca8187ff51388e62bc37e4389341b9ffb57c21ca94c6c37eae8afdd7653e8",
+  "passed": true
+}

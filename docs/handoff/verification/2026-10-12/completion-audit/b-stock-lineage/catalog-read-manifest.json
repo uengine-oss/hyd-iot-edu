@@ -1,0 +1,23 @@
+[
+  {
+    "method": "GET",
+    "url": "http://127.0.0.1:8080/api/fabric/sources/hyd-enterprise/tables/parts/sample?limit=20",
+    "status": 200,
+    "sha256": "a3aa78129dfe202af68959403dfedd2521616eb9ff751956c040b141cd5827bf",
+    "observed_at": "2026-10-12T10:48:19.309358+00:00"
+  },
+  {
+    "method": "GET",
+    "url": "http://127.0.0.1:8080/api/fabric/sources/hyd-enterprise/tables/spare_stock/sample?limit=20",
+    "status": 200,
+    "sha256": "cff4a3d1841c32835c4d7b948b6e3fc085ef462bd2f2a2022ba06046995ef828",
+    "observed_at": "2026-10-12T10:48:19.377294+00:00"
+  },
+  {
+    "method": "GET",
+    "url": "http://127.0.0.1:8080/api/fabric/sources/hyd-enterprise/tables/task_standards/sample?limit=20",
+    "status": 200,
+    "sha256": "de7344f66e76aaad5ffd5775c4269846da4664b78eb6fb41a6bdee7e5aff7429",
+    "observed_at": "2026-10-12T10:48:19.450388+00:00"
+  }
+]

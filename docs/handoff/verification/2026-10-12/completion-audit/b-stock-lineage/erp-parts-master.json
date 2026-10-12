@@ -1,0 +1,1 @@
+{"source":"hyd-enterprise","label":"업무 DB","table":"parts","statement":"select * from \"ent\".\"parts\" limit 20","columns":["part_no","name","std_price"],"rows":[["P-CLR-CORE","쿨러 코어",250],["P-PMP-SEAL","펌프 축 씰 키트",50],["P-FAN-BRG","팬 베어링",25]],"row_count":3,"row_limit":20}

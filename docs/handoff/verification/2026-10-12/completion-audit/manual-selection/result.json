@@ -1,0 +1,48 @@
+{
+  "source_freeze": [
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\index.html",
+      "sha256": "8d4ae76547c650b2827e4d01ef50780c8b387f428e13b01906ef6f3ebf0eb966"
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\hitl.js",
+      "sha256": "575b878e252394cec7f574bfd04eb587e3f557ff2217a935dd7f6f5487488f51"
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\test_portal_manual_document_selection_ui.py",
+      "sha256": "98543f301fc9f8a7fa8a2192bb82f1e1eae8d3a8fc9115201af5b0b3cbbb23c5"
+    }
+  ],
+  "validation": [
+    {
+      "command": "pytest -q tests/test_portal_manual_document_selection_ui.py tests/test_portal_display_metadata_ui.py",
+      "result": "1 failed,20 passed,1 skipped in33.10s",
+      "failure": "New test raced initial asynchronous history loading; selector rows overwritten by legitimate initial GET response. Product unchanged; test waits actual history heading."
+    },
+    {
+      "command": "pytest -q tests/test_portal_manual_document_selection_ui.py",
+      "result": "4 passed in6.31s"
+    },
+    {
+      "command": "focused new6 + existing reopen2",
+      "result": "8 passed in12.34s"
+    },
+    {
+      "command": "extended native upload identity test",
+      "result": "1 passed in2.34s"
+    },
+    {
+      "command": "mistyped nearest test node",
+      "result": "no tests ran; corrected exact node and ran8"
+    },
+    {
+      "command": "new historical-only + named/duplicate/unknown/source selection checks",
+      "result": "5 passed,2 deselected in7.36s"
+    }
+  ],
+  "closest_existing_file": "17 passed,1 skipped in combined run; existing tests untouched",
+  "live_HTTP": 0,
+  "model_calls": 0,
+  "writes": "Only owned two product files, new tests, and own evidence",
+  "limitations": "Final native GET screenshot root-owned; no live calls. Selector locked during existing preview, next file clears preview and unlocks. Source-only option explicitly under review, exact preview ID never rebound."
+}

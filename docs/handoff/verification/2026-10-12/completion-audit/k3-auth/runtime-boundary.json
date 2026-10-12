@@ -1,0 +1,234 @@
+{
+  "created_utc": "2026-10-12T10:45:03.471683+00:00",
+  "method": "GET and file existence only",
+  "registration_http_status": 200,
+  "registered_servers": [
+    {
+      "name": "neo4j",
+      "row_field_names": [
+        "agents",
+        "args",
+        "check",
+        "command",
+        "config_error",
+        "description",
+        "editable",
+        "env",
+        "headers",
+        "mine",
+        "name",
+        "origin",
+        "origin_text",
+        "read_confirmed",
+        "secrets",
+        "selectable",
+        "tasks",
+        "transport",
+        "url"
+      ],
+      "transport": "stdio",
+      "type": null,
+      "configuration_field_names": []
+    },
+    {
+      "name": "hyd-dmn",
+      "row_field_names": [
+        "agents",
+        "args",
+        "check",
+        "command",
+        "config_error",
+        "description",
+        "editable",
+        "env",
+        "headers",
+        "mine",
+        "name",
+        "origin",
+        "origin_text",
+        "read_confirmed",
+        "secrets",
+        "selectable",
+        "tasks",
+        "transport",
+        "url"
+      ],
+      "transport": "streamable_http",
+      "type": null,
+      "configuration_field_names": [],
+      "endpoint": {
+        "scheme": "http",
+        "host": "dmn-mcp",
+        "port": 8198,
+        "path": "/mcp",
+        "has_query": false
+      }
+    },
+    {
+      "name": "enterprise",
+      "row_field_names": [
+        "agents",
+        "args",
+        "check",
+        "command",
+        "config_error",
+        "description",
+        "editable",
+        "env",
+        "headers",
+        "mine",
+        "name",
+        "origin",
+        "origin_text",
+        "read_confirmed",
+        "secrets",
+        "selectable",
+        "tasks",
+        "transport",
+        "url"
+      ],
+      "transport": "streamable_http",
+      "type": null,
+      "configuration_field_names": [],
+      "endpoint": {
+        "scheme": "http",
+        "host": "enterprise-mcp",
+        "port": 8199,
+        "path": "/mcp",
+        "has_query": false
+      }
+    },
+    {
+      "name": "enterprise-maint",
+      "row_field_names": [
+        "agents",
+        "args",
+        "check",
+        "command",
+        "config_error",
+        "description",
+        "editable",
+        "env",
+        "headers",
+        "mine",
+        "name",
+        "origin",
+        "origin_text",
+        "read_confirmed",
+        "secrets",
+        "selectable",
+        "tasks",
+        "transport",
+        "url"
+      ],
+      "transport": "streamable_http",
+      "type": null,
+      "configuration_field_names": [],
+      "endpoint": {
+        "scheme": "http",
+        "host": "enterprise-mcp-maint",
+        "port": 8196,
+        "path": "/mcp",
+        "has_query": false
+      }
+    },
+    {
+      "name": "enterprise-purchase",
+      "row_field_names": [
+        "agents",
+        "args",
+        "check",
+        "command",
+        "config_error",
+        "description",
+        "editable",
+        "env",
+        "headers",
+        "mine",
+        "name",
+        "origin",
+        "origin_text",
+        "read_confirmed",
+        "secrets",
+        "selectable",
+        "tasks",
+        "transport",
+        "url"
+      ],
+      "transport": "streamable_http",
+      "type": null,
+      "configuration_field_names": [],
+      "endpoint": {
+        "scheme": "http",
+        "host": "enterprise-mcp-purchase",
+        "port": 8195,
+        "path": "/mcp",
+        "has_query": false
+      }
+    }
+  ],
+  "google_named_registered_servers": [],
+  "live_capabilities": [],
+  "credential_file_existence": [
+    {
+      "kind": "default_token",
+      "path": "C:\\Users\\roede\\AppData\\Local\\HYD\\google-meeting\\token.json",
+      "exists": false
+    },
+    {
+      "kind": "documented_client_location",
+      "path": "C:\\Users\\roede\\AppData\\Local\\HYD\\google-meeting\\client.json",
+      "exists": false
+    }
+  ],
+  "credential_contents_read": false,
+  "environment_file_keys_only": {
+    "D:\\work\\study\\hyd-iot-edu\\.env": [
+      "AGENT_BRIDGE",
+      "ANTHROPIC_API_KEY",
+      "COMPOSE_PROFILES",
+      "DAQ_PROFILE",
+      "ENTERPRISE_BACKEND",
+      "LLM_API_KEY",
+      "LLM_EXTRA_BODY",
+      "LLM_MODEL",
+      "LLM_PROVIDER",
+      "LLM_TIMEOUT_SECONDS",
+      "OPENAI_API_KEY",
+      "OPENAI_BASE_URL",
+      "PROCESS_MEM_LIMIT",
+      "PROCESS_MODE",
+      "PROCESS_REPO",
+      "SUPABASE_DSN",
+      "TIME_SCALE"
+    ],
+    "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\.env": null
+  },
+  "local_google_server_health": [
+    {
+      "port": 8511,
+      "status": null,
+      "error_type": "URLError"
+    },
+    {
+      "port": 8512,
+      "status": null,
+      "error_type": "URLError"
+    }
+  ],
+  "override_boundary": "Process env override checked by existence; .env values are not read. A different external configured token location is not inferred.",
+  "source_sha256": {
+    "it/process/procsvc/mcp_api.py": "ac82294b581e5a4ce6cb04101319ed724aa26096211e2f98f151f393cc34cdee",
+    "it/process/procsvc/mcp_check.py": "82b137910440f594eff95f35af817066b77188695d75b6ca9b38d442408ea386",
+    "it/process/procsvc/mcp_secrets.py": "b3131c8ee667a9593a74b499002d7a09d435bdf2a29c93e738b15b5fac4c5f7c",
+    "it/agent-worker/worker/bridge.py": "d46844c2a8ca5db2070147bab3c16e7cd2e0b168074ad98d3b432c8970016008",
+    "it/agent-worker/worker/context.py": "bab52eebca0898869ac9f0a8356fcbba6746811a16df08639e12f64cc3df1a1a",
+    "students/_template/google_meeting_mcp/auth.py": "0676421170de1510b2859c8ea553f7d86a4bf485c181e961b1b6d21cb3e49021",
+    "students/_template/google_meeting_mcp/server.py": "05edaa3d35007e3966fa5b279ad5f7b9af6463bc33061d57f2682a2358719a4c",
+    "scripts/google_meeting_auth.py": "34e2ca9d228daf1f3140e8e32c777a447032ad1a56ad1ded4fe510250aedd8aa"
+  },
+  "tests_run": 0,
+  "writes_or_registration": 0,
+  "google_calendar_calls": 0,
+  "cli_settings_read": false
+}

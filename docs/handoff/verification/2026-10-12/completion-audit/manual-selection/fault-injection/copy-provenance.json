@@ -1,0 +1,22 @@
+[
+  {
+    "file": "pytest-corrected.log",
+    "sha256": "6aaf0efc0145cbae010138dfb616d12d6b71ecf493e14512828b447b4c5dfacd",
+    "bytes": 3720
+  },
+  {
+    "file": "pytest.log",
+    "sha256": "eb54984d369d4777a1d94b552ccdd330c09161d1e9761ee751b0cad4bc8832ec",
+    "bytes": 3058
+  },
+  {
+    "file": "result.json",
+    "sha256": "b3e68711b7d93798b7cd2b03298cc839282ed941a062c502b79d01b6b6481781",
+    "bytes": 2311
+  },
+  {
+    "file": "test_silent_reset.py",
+    "sha256": "67d360e7ebf3524f810d180a82488db5d33bdf3c426dd884dbc4946f90f641ab",
+    "bytes": 805
+  }
+]

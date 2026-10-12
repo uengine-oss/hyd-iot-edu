@@ -1,0 +1,38 @@
+[
+  {
+    "name": "erp-all-stock",
+    "url": "http://127.0.0.1:8095/erp/spare_stock",
+    "method": "GET",
+    "status": 200,
+    "bytes": 1772,
+    "sha256": "d33b4ddb4ac5d7376e0cd159807f84136f2925051cbd70c241222473bc0e9755",
+    "observed_at": "2026-10-12T10:46:30.056013+00:00"
+  },
+  {
+    "name": "cmms-all-pm",
+    "url": "http://127.0.0.1:8095/cmms/pm_status",
+    "method": "GET",
+    "status": 200,
+    "bytes": 6208,
+    "sha256": "57b6dfea980269a142b20b62d1a8d8794a69db7c568c809492a8026462344db2",
+    "observed_at": "2026-10-12T10:46:30.158785+00:00"
+  },
+  {
+    "name": "enterprise-state",
+    "url": "http://127.0.0.1:8095/api/state",
+    "method": "GET",
+    "status": 200,
+    "bytes": 3774,
+    "sha256": "fec5d82d8c6b352b857a512e325f68cebac3acc3ff69ea30c4e7e9cb50920a3d",
+    "observed_at": "2026-10-12T10:46:30.234985+00:00"
+  },
+  {
+    "name": "actual-B-case",
+    "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+    "method": "GET",
+    "status": 200,
+    "bytes": 292227,
+    "sha256": "9b54965cd57ebb4491fbfe1762efbe6584925ab85274520aec1a1a3f111cb228",
+    "observed_at": "2026-10-12T10:46:30.508092+00:00"
+  }
+]

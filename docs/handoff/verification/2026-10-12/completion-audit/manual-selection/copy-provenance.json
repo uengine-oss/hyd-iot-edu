@@ -1,0 +1,82 @@
+{
+    "method":  "Exact explicit manual-selection evidence copy; original first failure preserved in result.json",
+    "files":  [
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-readonly.log",
+                      "portable":  "native-readonly.log",
+                      "bytes":  136,
+                      "sha256":  "cefec167008611f05d62f0b159b356d965085732ad27514eb04a639c4075a8fd",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-readonly.py",
+                      "portable":  "native-readonly.py",
+                      "bytes":  6659,
+                      "sha256":  "326ca8187ff51388e62bc37e4389341b9ffb57c21ca94c6c37eae8afdd7653e8",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\result.json",
+                      "portable":  "result.json",
+                      "bytes":  2177,
+                      "sha256":  "0f83ef0b88fdd4efad1b968d599d536f634c5fba84d7ff7a24242b8d803b76f2",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\spec.md",
+                      "portable":  "spec.md",
+                      "bytes":  1883,
+                      "sha256":  "a9342612812e68e533a4aa5b189cd59e202826ec3e104b5cb06c6a6f150777cc",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\actual-preview-identity.json",
+                      "portable":  "native-final\\actual-preview-identity.json",
+                      "bytes":  239,
+                      "sha256":  "9cebaa5a9752818a07354e12aaaa127a22eee405f0f034f7eaf336182477523f",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\form-named-document-1024.png",
+                      "portable":  "native-final\\form-named-document-1024.png",
+                      "bytes":  68901,
+                      "sha256":  "3c2adc34242de4da415dd43b515a20d2de71b4794b5e972215585c00ab11c831",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\form-named-document-1440.png",
+                      "portable":  "native-final\\form-named-document-1440.png",
+                      "bytes":  78163,
+                      "sha256":  "87186af39777485c9d84aa5fa108ece90c3b5073a505449f99cf1351eb4e0a78",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\form-review-document-locked-1024.png",
+                      "portable":  "native-final\\form-review-document-locked-1024.png",
+                      "bytes":  91810,
+                      "sha256":  "ccb4f3b9fe4e509b6e227f76bcbf0b13befb7dbb92826fe121f29418d7387309",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\form-review-document-locked-1440.png",
+                      "portable":  "native-final\\form-review-document-locked-1440.png",
+                      "bytes":  105278,
+                      "sha256":  "8b14ed9fd063344932c6b13f6b7d2c3154d2400ff6de1cb343a9d258fab52552",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\initial-options.json",
+                      "portable":  "native-final\\initial-options.json",
+                      "bytes":  572,
+                      "sha256":  "8f17a5097f122c475f43432a58074e6dac42918874b6b98847b8a79c13a5af3e",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\completion-audit-20261012\\manual-selection\\native-final\\result.json",
+                      "portable":  "native-final\\result.json",
+                      "bytes":  3764,
+                      "sha256":  "3d3eb4edd60ae419b107e53d86a8c7a4e24e943b6ae143369cf941b936f866d8",
+                      "exact_copy":  true
+                  }
+              ]
+}

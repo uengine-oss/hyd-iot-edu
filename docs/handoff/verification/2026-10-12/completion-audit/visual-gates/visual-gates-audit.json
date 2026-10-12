@@ -1,0 +1,181 @@
+{
+  "head": "63e50ecb9eeb41b6a1820015bcc1a3634364c7d4",
+  "method": "Read-only git origin reconstruction and explicitly named artifact paths; no live HTTP/capture/test/model/process action.",
+  "historical_173": {
+    "origin_commit": "8b440883f6330ca974e98407fe24d4e3e7449e7f",
+    "source_baseline_commit": "8803443",
+    "ledger_sha256": "1027efe4c4fe004328da93c455a96a090c38c0d57e9dccaf9a7ca21665b616d8",
+    "coverage": {
+      "entries": 173,
+      "unique_numbers": 173,
+      "source_hashes": 173,
+      "after_hashes": 173,
+      "observations": 173
+    },
+    "removed_commit": "a0f4ba3f026941cdaf2dc4e973069fb83d0ed72b",
+    "removal_reason": "Keep local UI evidence outside repository; README names single HTML outside repository; .gitignore excludes UIUX folders and numbered ledger.",
+    "original_path_checks": [
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\UIUX_캡처_2026-10-01_120504",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\UIUX_캡처_2026-10-01_173장_검수후",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\UIUX_캡처_2026-10-01_120504",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\UIUX_캡처_2026-10-01_173장_검수후",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\UIUX_캡처_2026-10-01_120504",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\UIUX_캡처_2026-10-01_173장_검수후",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\UIUX_캡처_2026-10-01_120504",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\UIUX_캡처_2026-10-01_173장_검수후",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\_삭제\\UIUX_캡처_2026-10-01_120504",
+        "exists": false
+      },
+      {
+        "path": "D:\\work\\study\\hyd-iot-edu\\_삭제\\UIUX_캡처_2026-10-01_173장_검수후",
+        "exists": false
+      }
+    ],
+    "interpretation": "Historical numbered/hash/observation ledger is FOUND in immutable git history. Exact named PNG directories absent at explicitly checked Windows roots; this does not prove globally nonexistent. Ledger counts are historical author review claims, not this audit rereading173PNG or current-source approval."
+  },
+  "official_ingestion_current_screen": {
+    "status": "PROVEN_CURRENT_INSTALLED_HISTORY_SCREEN",
+    "visible_strings": [
+      {
+        "width": 1440,
+        "exact_history_rows": [
+          "PR-07_spare-parts-standard.md",
+          "PM-02_powerpack-pm-checklist.md",
+          "HM-8_cooler-fan-manual.md",
+          "PR-07_spare-parts-standard.md\t절 7 · 조치 방법 6 · 단계 21\t사용자 위임 Codex\t10. 12. 17:05\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "PR-07_spare-parts-standard.md\t절 7 · 조치 방법 6 · 단계 21\t사용자 위임 Codex\t10. 12. 16:16\t이전 판본 이 문서 개정",
+          "PM-02_powerpack-pm-checklist.md\t절 10 · 조치 방법 8 · 단계 33\t사용자 위임 Codex\t10. 12. 16:16\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "HM-8_cooler-fan-manual.md\t절 8 · 조치 방법 8 · 단계 28\t사용자 위임 Codex\t10. 12. 16:16\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 7. 19:45\t되돌림 이 문서 개정",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 4. 09:47\t되돌림 이 문서 개정",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 4. 09:45\t되돌림 이 문서 개정"
+        ]
+      },
+      {
+        "width": 1024,
+        "exact_history_rows": [
+          "PR-07_spare-parts-standard.md",
+          "PM-02_powerpack-pm-checklist.md",
+          "HM-8_cooler-fan-manual.md",
+          "PR-07_spare-parts-standard.md\t절 7 · 조치 방법 6 · 단계 21\t사용자 위임 Codex\t10. 12. 17:05\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "PR-07_spare-parts-standard.md\t절 7 · 조치 방법 6 · 단계 21\t사용자 위임 Codex\t10. 12. 16:16\t이전 판본 이 문서 개정",
+          "PM-02_powerpack-pm-checklist.md\t절 10 · 조치 방법 8 · 단계 33\t사용자 위임 Codex\t10. 12. 16:16\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "HM-8_cooler-fan-manual.md\t절 8 · 조치 방법 8 · 단계 28\t사용자 위임 Codex\t10. 12. 16:16\t현재 판본 이 문서 개정이 판본 되돌리기",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 7. 19:45\t되돌림 이 문서 개정",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 4. 09:47\t되돌림 이 문서 개정",
+          "scenario-HM-8_cooler-fan-manual.md\t절 2 · 조치 방법 2 · 단계 8\tscenario_test\t10. 4. 09:45\t되돌림 이 문서 개정"
+        ]
+      }
+    ],
+    "distinction": "Extraction proposals at02:25/02:39 are historical draft screens; installed-history screenshots at both widths and accepted HTTP/history records independently prove actual ingestion. Codex delegated source review is not final user visual approval.",
+    "latest_difference": "F27 modifies shared tool-output consumer Record/Trace/TaskDetail. Its scoped96+native14 captures do not invalidate unchanged installed knowledge history or require recapturing173 old states."
+  },
+  "closure_map": {
+    "U16": "Official3doc latest installed history subgate already evidenced at1440/1024; do not report missing solely because draft source screens exist. Current final user visual acceptance remains distinct.",
+    "U20": "Actual A negative completion, B legitimatePENDING and C ERPcompleted are evidenced. Do not require forced physical recovery/happy-pathB; verify only genuinely uncovered student syllabus/external flows.",
+    "F13": "Source-scoped functional checks and current affected native screenshots exist; full classroom/external auth is not proved. No whole recapture justified by historic173 wording alone."
+  },
+  "scope_authority": {
+    "CLAUDE": "lines15-16: latest user direction determines scope; past GOAL/autoresume requirements must not be resurrected.",
+    "contract": "docs/ui-design-contract.md:45 records October1 original173 paired review standard, fulfilled by historic ledger claim but does not establish current173 newest-source review.",
+    "latest_user": "Parent-provided latest instruction: necessary partial verification and one actual completion. Direct user archive line coordinates not inferred.",
+    "references": "ProcessGPT monorepo and ontology-studio comparison stays scoped to actual defect or meeting/contract requirement; difference alone is preserved, not broad redesign."
+  },
+  "next_actions": [
+    "Correct historical173 ledger UNVERIFIED to historical ledger recovered173/173; PNG availability at exact checkedroots absent, current173 rereview notclaimed.",
+    "Use existing installed-history1440/1024 and accepted/history records for official3doc screen gate; no duplicate ingestion/no proposal-as-receipt.",
+    "Present latest partial screenshot comparison for user visual acceptance; isolate external OAuth/meeting readiness from completed local UI/product gates."
+  ],
+  "evidence": [
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\CLAUDE.md",
+      "sha256": "ad33fa982751b3c0fb62e283ea57e5c26e3f1703cfcc23b96969936b6a5d9da3",
+      "bytes": 10580
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\ui-design-contract.md",
+      "sha256": "9e10f30b434f202da9db027a036c0d509469eaf2d9156ba149de531fa057ee13",
+      "bytes": 6865
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\UIUX.md",
+      "sha256": "08bd20d8b46e4e6f67a1d8a3092d8bfe4da774cba1e80188a63279b0639cb986",
+      "bytes": 8583
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\UIUX_PLAN.md",
+      "sha256": "32ae3c6b25797b214dca86843a984e18259da8e8db04191116658c8bcd319fc2",
+      "bytes": 45990
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\NOW.md",
+      "sha256": "2faec4d53d7497f6b6e9b4504ae639759429d8de49a7466579dc8037739427ec",
+      "bytes": 57815
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\HM-8-official-ingest-accepted.json",
+      "sha256": "115d7b161760a06edf7281cc89d9d60f876898bd008dc8d1c33d6d71357de86d",
+      "bytes": 266
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\PM-02-official-ingest-accepted.json",
+      "sha256": "74f1488482a7c5d9354be4b76f64beaf315e17f33f4568663edfd0a78dba917d",
+      "bytes": 266
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\PR-07-official-ingest-accepted.json",
+      "sha256": "63a5f13531c3162f28a082581aeeb9a1d11939819fad2160740cd6920b706336",
+      "bytes": 266
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\manual-history-after-official-ingest.json",
+      "sha256": "07fbcc9c9214f3c135d8f99f51caa42fcbd0ce5a1fcab577d7caf9f91ae0ae5f",
+      "bytes": 32384
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\knowledge-history-1440.json",
+      "sha256": "f3ec22cbdbbf77ee33b7451a717698111aa3cdc75c20b2a6718315e8e62d95b3",
+      "bytes": 5209
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\knowledge-history-1024.json",
+      "sha256": "5c291a1f65580150f2666cf67c5c5460b8e704394faa3d159fb30c4fa5eb73af",
+      "bytes": 5206
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\knowledge-history-1440.png",
+      "sha256": "ab7868604f70d25a89a7be62252771687cd8bc681acbb1afd8e2315fd4e8a51f",
+      "bytes": 79112
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\knowledge-history-1024.png",
+      "sha256": "2fb0becfd5327118c7411108a28c772caf1344efb4bc6f819859bc0059d57352",
+      "bytes": 74063
+    }
+  ]
+}

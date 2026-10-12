@@ -1,0 +1,38 @@
+{
+  "fault": "In-memory updateManualDocuments final select.value=selected replaced by empty string; disk production unchanged.",
+  "assertion": "Original new test line32 expected unknown-private-id, got empty string.",
+  "result": "1 expected failure in2.33s",
+  "log": "pytest-corrected.log",
+  "initial_collection_error": "pytest.log retained; explicit worktree pytest.ini fixed module paths",
+  "sha_unchanged": true,
+  "files": [
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\index.html",
+      "before": "8d4ae76547c650b2827e4d01ef50780c8b387f428e13b01906ef6f3ebf0eb966",
+      "after": "8d4ae76547c650b2827e4d01ef50780c8b387f428e13b01906ef6f3ebf0eb966"
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\hitl.js",
+      "before": "575b878e252394cec7f574bfd04eb587e3f557ff2217a935dd7f6f5487488f51",
+      "after": "575b878e252394cec7f574bfd04eb587e3f557ff2217a935dd7f6f5487488f51"
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\test_portal_manual_document_selection_ui.py",
+      "before": "98543f301fc9f8a7fa8a2192bb82f1e1eae8d3a8fc9115201af5b0b3cbbb23c5",
+      "after": "98543f301fc9f8a7fa8a2192bb82f1e1eae8d3a8fc9115201af5b0b3cbbb23c5"
+    }
+  ],
+  "live_HTTP": 0,
+  "model_calls": 0,
+  "reference_disclosure": "Implementation referenced preserved final-delegated comparison/README rather than directly claiming original clone files were read beforehand. Follow-up read now verified actual monorepo README and ontology FilePanel original filename/title/emits contract.",
+  "reference_files": [
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\process-gpt\\README.md",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\ontology-studio\\frontend\\src\\features\\files\\FilePanel.vue"
+  ],
+  "consumer_wiring": [
+    "manualDocumentId exact select value -> preview POST document_id",
+    "preview response exact identity -> named select -> renderPreview selector lock",
+    "filechange clears H.preview -> renderPreview unlock",
+    "history current map for main options/all-history map for explicit historical identity"
+  ]
+}
