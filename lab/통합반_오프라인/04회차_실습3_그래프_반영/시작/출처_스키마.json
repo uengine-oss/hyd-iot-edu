@@ -1,0 +1,61 @@
+{
+  "name": "문서에서 온 지식의 출처를 받는 자리",
+  "description": "지난_시간/schema.json 에 더해 쓰는 클래스와 관계다. 조치의 단계와, 그 단계가 나온 매뉴얼의 절, 그 절이 속한 문서를 받는다.",
+  "classes": [
+    {
+      "name": "Step",
+      "label_ko": "작업 단계",
+      "description": "조치의 한 단계. 근거가 된 매뉴얼의 절을 가리킨다.",
+      "properties": [
+        {"name": "id", "type": "string", "required": true},
+        {"name": "order", "type": "integer", "required": true},
+        {"name": "text", "type": "string", "required": true},
+        {"name": "citation", "type": "string", "required": true}
+      ]
+    },
+    {
+      "name": "ManualSection",
+      "label_ko": "매뉴얼 절",
+      "description": "기술 문서의 절. 지식의 출처로 인용된다.",
+      "properties": [
+        {"name": "id", "type": "string", "required": true},
+        {"name": "ref", "type": "string", "required": true},
+        {"name": "title", "type": "string", "required": true}
+      ]
+    },
+    {
+      "name": "KnowledgeSource",
+      "label_ko": "문서",
+      "description": "지식의 출처가 되는 문서 한 편.",
+      "properties": [
+        {"name": "id", "type": "string", "required": true},
+        {"name": "name", "type": "string", "required": true},
+        {"name": "kind", "type": "enum", "values": ["manual"], "required": true},
+        {"name": "ref", "type": "string", "required": true}
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "type": "HAS_STEP",
+      "from": ["Skill"],
+      "to": ["Step"],
+      "cardinality": "1:N",
+      "description": "조치는 작업 단계를 가진다"
+    },
+    {
+      "type": "REFERS_TO",
+      "from": ["Step", "Skill", "Cause"],
+      "to": ["ManualSection"],
+      "cardinality": "N:M",
+      "description": "작업 단계, 조치, 원인은 근거가 된 매뉴얼의 절을 가리킨다"
+    },
+    {
+      "type": "PART_OF",
+      "from": ["ManualSection"],
+      "to": ["KnowledgeSource"],
+      "cardinality": "N:1",
+      "description": "매뉴얼의 절은 문서에 속한다"
+    }
+  ]
+}

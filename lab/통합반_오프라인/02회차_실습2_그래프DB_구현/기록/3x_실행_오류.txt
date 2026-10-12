@@ -1,0 +1,2 @@
+Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Sensor {tag}) ):
+Property existence constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.

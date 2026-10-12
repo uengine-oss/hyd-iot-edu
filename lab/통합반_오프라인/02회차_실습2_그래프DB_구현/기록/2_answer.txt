@@ -1,0 +1,75 @@
+계획만 말씀드립니다. 파일은 확인을 받은 뒤에 만들겠습니다.
+
+## 차례
+
+`01_제약` → `02_적재` → `03_조회` → `04_검사` 차례로 만들고, 실행도 이 차례입니다. 네 파일을 다 만든 뒤 `graph.json`과 한 줄씩 다시 대조해(문장 수 36 + 53, 값의 글자) 결과를 알려 드리겠습니다. 실행은 Neo4j Browser에서 직접 하시고, 결과를 알려 주시면 그다음을 봅니다.
+
+## 01_제약.cypher — 문장 11개
+
+클래스 11개의 `id`에 유일 제약을 하나씩, `schema.json`의 클래스 차례로 겁니다. 이름은 `lab_asset_id` … `lab_statevariable_id`, `lab_failuremode_id` … `lab_supplier_id`입니다.
+
+```cypher
+CREATE CONSTRAINT lab_asset_id IF NOT EXISTS FOR (n:Asset) REQUIRE n.id IS UNIQUE;
+```
+
+여기의 `CREATE`는 제약을 만드는 것이라 규칙 5(노드와 관계를 `CREATE`로 만들지 않는다)와 부딪히지 않습니다.
+
+## 02_적재.cypher — 문장 89개 (노드 36, 그 뒤에 관계 53)
+
+- **모양:** 문장 하나를 한 줄에 적고, `graph.json`과 같은 차례, 같은 묶음(빈 줄)으로 둡니다. 묶음마다 위에 `// Asset 3개` 같은 설명 줄을 둡니다.
+- **노드:** `MERGE`에는 레이블과 `id`만 적고, 나머지는 `SET`에서 속성마다 대입해 덮어씁니다. `graph.json`에 없는 속성은 적지 않습니다.
+- **관계:** 양 끝을 레이블과 `id`로 `MATCH`한 뒤 `MERGE`로 잇습니다. 끝의 레이블은 `graph.json`에서 그 `id`를 가진 노드의 레이블입니다.
+- **SUPPLIED_BY:** `MERGE`에는 속성을 넣지 않고 `SET`으로 세 속성을 덮어씁니다. 그래야 한 짝에 관계가 하나만 남습니다.
+- **수의 표기:** `0.30`, `0.10`, `2.0`은 적힌 그대로 적습니다.
+
+```cypher
+MERGE (n:Actuator {id: 'actr:loadsp'}) SET n.name = '펌프 부하 설정', n.signal = 'LoadSP', n.min = 60, n.max = 100, n.note = '60 % 미만으로 내리지 않는다';
+MATCH (a:Sensor {id: 'sen:ts1'}), (b:Component {id: 'comp:oil-cooler'}) MERGE (a)-[:MOUNTED_ON]->(b);
+MATCH (a:Part {id: 'part:p-pmp-seal'}), (b:Supplier {id: 'sup:c'}) MERGE (a)-[r:SUPPLIED_BY]->(b) SET r.price = 20, r.fail_rate = 0.30, r.lead_days = 1;
+```
+
+끝 노드가 없으면 그 문장은 오류 없이 아무것도 만들지 않습니다. 이렇게 빠진 관계는 검사 (1)의 수로 잡습니다.
+
+## 03_조회.cypher — 질의 3개
+
+물음의 말은 `name`이 같거나 `aliases`에 들어 있는 것으로 찾습니다. Part는 스키마에 `aliases`가 없으므로 `name`만으로 찾습니다.
+
+| 번호 | 따라가는 길 | 거르는 조건 | 내는 것 |
+|---|---|---|---|
+| 1 | Component('열교환기') ← MOUNTED_ON ← Sensor → MEASURES → StateVariable | `virtual = false` | 센서의 `name`·`tag`, 상태 변수의 `name`·`limit`·`unit`·`limit_direction`·`limit_note` |
+| 2 | Asset(`code` 'HYD-02') → HAS_COMPONENT → Component('유압 펌프') → USES_PART → Part → SUPPLIED_BY → Supplier | `approved = true`, 부품마다 `price`가 가장 낮은 것 | 부품의 `name`·`part_no`, 공급사의 `name`, `price` |
+| 3 | Part('팬 베어링') → SUPPLIED_BY → Supplier | `grade = '순정'` | 공급사의 `name`, `price`, `lead_days` |
+
+- **질의 2의 「가장 싸게」:** 부품마다 최저가를 내고, 값이 같은 공급사가 여럿이면 모두 냅니다. `LIMIT 1`로 한 줄만 내면 부품이 둘 이상일 때 하나가 빠지기 때문입니다.
+- **질의 3의 승인 여부:** 물음에 없으므로 `approved`는 조건에 넣지 않습니다.
+- **기대되는 답:** `graph.json`을 읽어 따라가 본 것이고, 실행 결과가 아닙니다.
+  1. 유온 센서(TS1), 한계 65 ℃, upper
+  2. 펌프 축 씰 키트, A정밀 (저가), 35
+  3. B-OEM (순정), 28, 3일
+
+## 04_검사.cypher — 질의 5개
+
+| 번호 | 보는 것 | 내는 것 |
+|---|---|---|
+| 1 | 레이블별 노드 수와 관계 유형별 관계 수 | 종류, 이름, 수 (한 질의에 `UNION ALL`로 이어 붙임) |
+| 2 | 레이블과 상관없이 같은 `id`의 노드가 둘 이상인 곳 | `id`, 노드 수, 레이블 목록 |
+| 3 | 필수 속성이 빠진 노드와 SUPPLIED_BY 관계 | 레이블 또는 유형, `id`(관계는 양 끝의 `id`), 빠진 속성 이름 |
+| 4 | 양 끝의 레이블이 `from`, `to`와 다른 관계 | 유형, 양 끝의 `id`와 레이블 |
+| 5 | `limit_direction`, `grade`의 값이 허용값 밖인 노드 | 레이블, `id`, 속성 이름, 값 |
+
+- **(1):** DB 전체를 세므로 스키마에 없는 레이블이나 유형이 있으면 여기에 함께 드러납니다. 맞춰 볼 수(노드 36, 관계 53과 클래스별·유형별 수)는 질의 위의 설명 줄에 적어 두겠습니다.
+- **(3), (4):** 필수 속성의 목록과 `from`·`to`의 목록은 `schema.json`에서 옮겨 질의 안에 글자 그대로 적습니다. 매개변수는 쓰지 않습니다.
+- **(3)의 「빠진」:** 속성이 아예 없는 것만 잡습니다. 빈 문자열은 잡지 않습니다.
+- **(5):** `limit_direction`은 필수가 아니므로 없는 것은 통과입니다. `grade`가 없는 것은 (3)이 잡습니다.
+
+네 파일 어디에도 `DELETE`, `DETACH DELETE`, `REMOVE`, `DROP`, 매개변수, APOC은 쓰지 않습니다.
+
+## 확인해 주실 것
+
+이대로면 「시작」이라고만 해 주시면 됩니다. 제가 정해 넣은 것은 세 가지입니다.
+
+1. 02의 문장 하나를 한 줄에 적는 것 (속성이 많은 줄은 길어집니다).
+2. 조회 2에서 부품마다 최저가를 내고 값이 같으면 모두 내는 것.
+3. 검사 1을 질의 하나로 합치는 것.
+
+만든 파일과 고친 파일: 없음.

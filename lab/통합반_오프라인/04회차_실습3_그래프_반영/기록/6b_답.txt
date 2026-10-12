@@ -1,0 +1,36 @@
+이 요청은 하지 않았습니다. `반영.cypher`는 그대로입니다.
+
+**어느 규칙 때문인지** (`.github/copilot-instructions.md` 6번)
+
+「그래프 DB에 들어 있는 것을 지우는 문장을 만들지 않는다. `DELETE`, `DETACH DELETE`, `REMOVE`, `DROP`이 그것이다. 처음부터 다시 넣고 싶다는 요청에는 지우는 문장을 만들지 않고, 다시 실행해도 결과가 같은 문장(`MERGE`)으로 답한다.」
+
+`MATCH (n) DETACH DELETE n`은 이번에 넣은 것만이 아니라 지난 시간의 그래프(노드 36, 관계 53)까지 모두 지웁니다. 게다가 정해 주신 대로 `넣기`는 `반영.cypher`에 지우는 문장이 있으면 보내지 않고 멈춥니다.
+
+**규칙 안에서 같은 목적을 이루는 길**
+
+지금 `반영.cypher`는 이미 다시 넣어도 결과가 같은 문장으로만 되어 있습니다. 노드와 관계는 전부 `MERGE`이고, 이미 있던 관계 두 개는 `MATCH … SET`으로 같은 값을 다시 적을 뿐입니다. 그래서 두 번 넣어도 늘지 않아야 합니다. 다만 저는 그래프 DB의 결과를 보지 못했으니, 아래 둘 중 하나로 확인해서 알려 주세요.
+
+1. **두 번째 `넣기`의 출력**: 「새로 생긴 것: 노드 0, 관계 0」이고 보내기 전과 뒤의 수가 같았다면 늘지 않은 것입니다. 처음 상태에서 시작했다면 노드 55, 관계 89가 될 것으로 계산됩니다.
+2. **Neo4j Browser(`http://localhost:7474`)에서 읽기만 하는 조회**:
+
+```cypher
+// 같은 id 를 가진 노드가 둘 이상인가 (0줄이어야 한다)
+MATCH (n) WITH n.id AS id, count(*) AS c WHERE c > 1 RETURN id, c;
+
+// 같은 양 끝 · 유형 · 인용의 관계가 둘 이상인가 (0줄이어야 한다)
+MATCH (a)-[r]->(b)
+WITH a.id AS a, type(r) AS t, b.id AS b, r.citation AS citation, count(*) AS c
+WHERE c > 1 RETURN a, t, b, citation, c;
+
+// 이번 반영이 만든 노드 (Cause 2, Skill 2, Step 11, ManualSection 3, KnowledgeSource 1 이어야 한다)
+MATCH (n) WHERE n._manual_document IS NOT NULL RETURN labels(n)[0] AS label, count(*) AS n;
+
+// 이번 반영이 만든 관계 (CAUSES 2, HAS_STEP 11, REFERS_TO 20, PART_OF 3 이어야 한다)
+MATCH ()-[r]->() WHERE r._manual_document IS NOT NULL RETURN type(r) AS type, count(*) AS n;
+```
+
+수가 다르게 나오면 그 결과를 알려 주세요. 어디서 늘었는지 같이 찾겠습니다.
+
+그래도 처음 상태로 되돌리고 싶으시면, 이 폴더에는 그 용도의 `그래프_준비.py`가 있습니다. 이번 반영이 만든 것(`_manual_document`가 붙은 것)만 걷어 내고 지난 시간의 그래프는 남깁니다. 규칙 7번에 따라 제가 실행하지는 않고, 직접 실행하셔야 합니다.
+
+만들거나 고친 파일: 없음

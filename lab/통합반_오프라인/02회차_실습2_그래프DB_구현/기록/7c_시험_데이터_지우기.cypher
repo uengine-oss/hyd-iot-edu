@@ -1,0 +1,1 @@
+MATCH (n) WHERE n.name STARTS WITH '시험용' DETACH DELETE n;

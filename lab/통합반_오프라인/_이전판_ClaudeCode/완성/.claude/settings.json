@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(/회의록/**)",
+      "Edit(/CLAUDE.md)",
+      "Bash",
+      "WebFetch",
+      "WebSearch"
+    ]
+  }
+}

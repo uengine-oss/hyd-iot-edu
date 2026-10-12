@@ -1,0 +1,1 @@
+먼저 .github/copilot-instructions.md 를 읽고 그 규칙을 따라 줘. 결과/04_검사.cypher 가 좀 부족한 것 같아. 보완해 줘.

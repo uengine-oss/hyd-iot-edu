@@ -1,0 +1,109 @@
+계획만 말씀드리고, 확인을 받기 전에는 파일을 만들지 않겠습니다.
+
+## 만드는 순서
+
+1. **`결과/schema.json`**: 클래스 10개, 관계 11개, `conventions`(식별자 규칙, 노드 공유, aliases, 값이 없으면 속성을 적지 않음)를 적습니다.
+2. **`결과/graph.json`**: 노드 33개, 관계 46개를 적습니다.
+3. **`결과/대조표.md`**: `화살표_목록.md`의 15개를 번호 순서로 대조합니다.
+4. **점검**: 세 파일을 다시 읽어 눈으로 확인합니다(스크립트는 쓰지 않습니다). 볼 것은 id 중복, `a`·`b`가 nodes에 있는지, 관계의 from·to 클래스가 맞는지, 정의에 없는 속성이 없는지입니다.
+
+`자료/`는 읽기만 하고, 이 세 파일 말고는 만들지 않습니다.
+
+## 클래스와 속성 (제안)
+
+| 클래스 | label_ko | 속성 (굵은 것은 필수) | 노드 수 |
+|---|---|---|---|
+| Asset | 설비 | **id**, **name** | 3 |
+| Component | 구성 요소 | **id**, **name**, aliases(string[]) | 6 |
+| Sensor | 센서 | **id**, **name**, **virtual**(boolean), tag | 5 |
+| Actuator | 구동기 | **id**, **name**, min, max(number), signal | 3 |
+| StateVariable | 상태 변수 | **id**, **name**, aliases, normal, limit(number), unit | 8 |
+| Part | 부품 | **id**, **name**, part_no | 3 |
+| Symptom | 증상 | **id**, **name** | 2 |
+| FailureMode | 고장 유형 | **id**, **name** | 1 |
+| Cause | 원인 | **id**, **name** | 1 |
+| Skill | 조치 | **id**, **name** | 1 |
+
+`tag`, `signal`, `part_no`, `unit`은 정해 주신 것에 없어서 제가 넣은 제안입니다(아래 질문 2).
+
+## 식별자 표
+
+| id | name | 목록의 줄 | 적을 값 |
+|---|---|---|---|
+| asset:hyd-01 | HYD-01 유압 파워팩 | 1 | |
+| asset:hyd-02 | HYD-02 유압 파워팩 | 19 | |
+| asset:hyd-03 | HYD-03 유압 파워팩 | 37 | |
+| comp:cooler | 오일 쿨러 | 2, 20, 38, 55 | aliases: 열교환기, 쿨러 |
+| comp:fan | 쿨러 팬 | 3, 21, 39 | aliases: 송풍기, 팬 |
+| comp:pump-a | 주 펌프 (A) | 4, 22, 40 | aliases: 유압 펌프, 펌프 |
+| comp:pump-b | 예비 펌프 (B) | 5, 23, 41 | aliases: 스탠바이 펌프 |
+| comp:motor | 구동 모터 | 6, 24, 42 | aliases: 모터 |
+| comp:tank | 작동유 탱크 | 7, 25, 43 | aliases: 리저버, 탱크 |
+| sen:ts1 | 유온 센서 | 8, 26, 44 | virtual: false |
+| sen:ce | 냉각 효율 (가상) | 9, 27, 45 | virtual: true |
+| sen:ps1 | 토출 압력 센서 | 10, 28, 46 | virtual: false |
+| sen:fs1 | 유량 센서 | 11, 29, 47 | virtual: false |
+| sen:vs1 | 팬 진동 센서 | 12, 30, 48 | virtual: false |
+| actr:fan-inverter | 팬 인버터 | 13, 31, 49 | min 0, max 100 |
+| actr:pump-load | 펌프 부하 설정 | 14, 32, 50 | min 60, max 100 |
+| actr:pump-select | 펌프 전환 밸브 | 15, 33, 51 | min · max 없음 |
+| sv:ts1 | 유온 | 8 | normal 48, limit 65, aliases: 오일 온도 |
+| sv:ce | 냉각 효율 | 9 | normal 84, aliases: 쿨러 효율 |
+| sv:ps1 | 토출 압력 | 10 | normal 182, limit 130, aliases: 펌프 압력 |
+| sv:fs1 | 유량 | 11 | normal 9, aliases: 토출 유량 |
+| sv:vs1 | 팬 진동 | 12 | normal 0.6, limit 2.0, aliases: 진동 |
+| sv:fan-speed | 팬 속도 | 13 | normal 60, aliases: 팬 회전수 |
+| sv:pump-load | 펌프 부하 | 14 | normal 90, aliases: 부하 |
+| sv:pump-select | 운전 펌프 선택 | 15 | 값 없음, aliases: 펌프 전환 |
+| part:cooler-core | 쿨러 코어 | 16, 34, 52 | |
+| part:pump-seal-kit | 펌프 축 씰 키트 | 17, 35, 53 | |
+| part:fan-bearing | 팬 베어링 | 18, 36, 54 | |
+| sym:oil-temp-rise | 유온 상승 | 관계도 | |
+| sym:cooling-efficiency-drop | 냉각 효율 저하 | 관계도 | |
+| fm:cooler-performance-loss | 쿨러 냉각 성능 상실 | 관계도 | |
+| cause:cooler-fin-fouling | 쿨러 핀 오염 | 관계도 | |
+| skill:fan-max-run | 팬 최대 운전 | 관계도 | |
+
+- 값은 모두 HYD-01 줄(8~15번)에서 가져옵니다. HYD-02 줄(26~33번)의 값과 같습니다.
+- 상태 변수의 aliases는 HYD-02 줄의 「재는 것 · 바꾸는 것」 이름입니다. 목록에 「다른 이름」이라고 적혀 있지는 않고, 태그가 같다는 점으로 같은 것으로 본 것입니다.
+- 설비 id에는 숫자와 붙임표가 들어갑니다(hyd-01).
+
+## 관계 (제안)
+
+| type | from → to | 읽는 문장 | 개수 |
+|---|---|---|---|
+| HAS_COMPONENT | Asset → Component | 설비는 구성 요소를 가진다 | 18 |
+| ATTACHED_TO | Sensor, Actuator → Component | 센서와 구동기는 구성 요소에 붙어 있다 | 9 |
+| MEASURES | Sensor → StateVariable | 센서는 상태 변수를 잰다 | 5 |
+| CONTROLS | Actuator → StateVariable | 구동기는 상태 변수를 바꾼다 | 3 |
+| USES_PART | Component → Part | 구성 요소는 부품을 쓴다 | 3 |
+| SHOWS | Sensor → Symptom | 센서는 증상을 보여 준다 | 2 |
+| INDICATES | Symptom → FailureMode | 증상은 고장 유형을 가리킨다 | 2 |
+| CAUSES | Cause → FailureMode | 원인은 고장 유형을 일으킨다 | 1 |
+| MITIGATED_BY | FailureMode → Skill | 고장 유형은 조치로 완화된다 | 1 |
+| OCCURS_AT | FailureMode → Component | 고장 유형은 구성 요소에서 일어난다 | 1 |
+| RELATED_TO | Cause → Part | 원인은 부품과 관련된다 | 1 |
+
+- **방향**: 1조 관계도의 방향을 그대로 따랐습니다.
+- **ATTACHED_TO 9개**: 센서 5개에 구동기 4개입니다. 펌프 전환 밸브가 주 펌프와 예비 펌프 둘에 붙어서 구동기 쪽이 4개입니다.
+- **HAS_COMPONENT 18개**: 설비 3대 × 구성 요소 6개입니다.
+
+## 대조표 예상 판정
+
+| 번호 | 판정 | 까닭 |
+|---|---|---|
+| 1~4, 7~15 | 같음 | 같은 두 대상을 같은 방향으로 이은 관계가 있음 |
+| 5 (TS1 종류다 센서) | 다르게 표현 | 관계가 아니라 `labels: ["Sensor"]`로 적힘 |
+| 6 (TS1 한계 65 ℃) | 다르게 표현 | sen:ts1 → MEASURES → sv:ts1의 `limit: 65`로 적힘 |
+
+## 정해 주셔야 할 것
+
+1. **새 클래스 넷의 접두사**: 정해 주신 접두사는 여섯뿐입니다. `sym:`, `fm:`, `cause:`, `skill:`로 해도 될까요?
+2. **태그 · 품번 · 단위 속성**: 넣지 않으면 TS1, FanSpeedSP, P-CLR-CORE, ℃가 파일에서 사라집니다(센서 태그만 id에 소문자로 남습니다). Sensor에 `tag`, Actuator에 `signal`, Part에 `part_no`, StateVariable에 `unit`을 선택 속성으로 두는 것을 권합니다.
+3. **한계의 방향**: `limit` 숫자만으로는 65(넘으면 안 됨)와 130(밑돌면 안 됨)이 구분되지 않습니다. 근거는 비고의 「130 bar 미만에서 저압 인터록」입니다. StateVariable에 `limit_type`(`upper` 또는 `lower`)을 더하는 것을 권합니다. 더하지 않으면 방향과 인터록 사실은 파일에 남지 않습니다.
+4. **펌프 전환의 「A|B」**: 단위가 아니라 고를 수 있는 값입니다. Actuator에 `options: ["A", "B"]`(string[])를 두고 sv:pump-select에는 unit을 적지 않는 것을 권합니다. 아니면 아예 적지 않을 수도 있습니다.
+5. **증상을 무엇에 잇는지**: 관계도는 센서 → 증상(「TS1은 유온 상승을 보여 준다」)입니다. 정상과 한계를 상태 변수에 두기로 하셨으니 상태 변수 → 증상도 가능하지만, 그러면 8, 9번이 「다르게 표현」이 됩니다. 관계도 그대로 센서 → 증상을 권합니다.
+6. **「HYD-01 본체」**: 「붙은 곳」 칸에서만 쓰인 이름입니다. Asset에 aliases를 두어 넣을지, 버릴지 정해 주세요. 저는 버리는 쪽을 권합니다. HAS_COMPONENT 관계로 이미 표현되기 때문입니다.
+7. **2조 관계도에만 있는 관계**: 「팬 최대 운전은 팬 속도를 올린다」(Skill → StateVariable)를 이번 파일에 넣을까요? 이번에 만드는 대조표는 1조 것뿐이라 저는 넣지 않는 쪽으로 잡았습니다.
+
+만든 파일: 없음 / 고친 파일: 없음

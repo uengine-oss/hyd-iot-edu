@@ -1,0 +1,1 @@
+결과/schema.json 에서 Part 의 part_no 를 partNo 로, 클래스의 칸 이름 label_ko 를 korean_name 으로 바꿔 줘. 결과/graph.json 도 거기에 맞춰 줘.

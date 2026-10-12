@@ -1,0 +1,28 @@
+세 파일을 새 규칙대로 고쳤습니다. 구동기 3개와 부품 3개의 id, 그 id를 쓰는 관계 11개의 `a`·`b`, 대조표의 7번·15번 줄이 바뀌었습니다. 고친 뒤 파일을 다시 열어 확인하지는 않았고, 편집 도구가 전부 바꿨다고 보고한 것까지만 확인했습니다.
+
+## 바뀐 식별자
+
+| 클래스 | 이전 id | 새 id | 근거 (`graph.json`에 적힌 값) |
+|---|---|---|---|
+| Actuator | `actr:fan-inverter` | `actr:fanspeedsp` | signal `FanSpeedSP` |
+| Actuator | `actr:pump-load-setting` | `actr:loadsp` | signal `LoadSP` |
+| Actuator | `actr:pump-changeover-valve` | `actr:pumpselect` | signal `PumpSelect` |
+| Part | `part:cooler-core` | `part:p-clr-core` | part_no `P-CLR-CORE` |
+| Part | `part:pump-shaft-seal-kit` | `part:p-pmp-seal` | part_no `P-PMP-SEAL` |
+| Part | `part:fan-bearing` | `part:p-fan-brg` | part_no `P-FAN-BRG` |
+
+## `schema.json`의 conventions
+
+「그 밖의 식별자는 … 이름을 영어로 옮긴 말을 쓴다」 한 문장을 아래 세 문장으로 바꿨습니다. 나머지 문장과 클래스·속성·관계의 정의는 그대로입니다.
+
+1. 구동기는 `actr:` 뒤에 신호 이름을, 부품은 `part:` 뒤에 품번을 소문자로 바꾸어 적는다. 품번에 든 붙임표는 그대로 둔다.
+2. 설비는 설비 번호를 소문자로 적는다. 목록에 태그, 신호 이름, 품번 같은 번호가 없는 대상은 이름을 영어로 옮긴 짧은 말을 적는다. 구동기가 바꾸는 상태 변수도 신호 이름이 아니라 이름을 영어로 옮긴 말을 쓴다.
+3. 한번 붙인 식별자는 바꾸지 않는다. 새 노드를 만들기 전에 `graph.json`에 같은 name의 노드가 있는지 먼저 찾고, 있으면 그 식별자를 그대로 쓴다.
+
+요청에 없던 말을 두 군데 넣었습니다.
+- **품번의 붙임표**: 「품번에 든 붙임표는 그대로 둔다」를 덧붙였습니다. `P-CLR-CORE`를 `p-clr-core`로 적을지 `pclrcore`로 적을지 갈리지 않게 하려는 것입니다.
+- **구동기가 바꾸는 상태 변수**: `sv:fan-speed`, `sv:pump-load`, `sv:running-pump-selection`은 그 밖의 노드라 건드리지 않았고, 규칙에도 이름을 옮긴 말을 쓴다고 남겼습니다. 그래서 센서 쪽 상태 변수는 태그를 쓰고(`sv:ts1`) 구동기 쪽은 이름을 쓰는 차이가 남아 있습니다. 이쪽도 신호 이름으로 맞추려면 말씀해 주세요.
+
+## 파일 경로
+- 고친 파일: `결과/schema.json`, `결과/graph.json`, `결과/대조표.md`
+- 만든 파일: 없음

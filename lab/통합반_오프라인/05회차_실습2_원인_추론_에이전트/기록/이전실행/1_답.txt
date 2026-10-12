@@ -1,0 +1,67 @@
+일곱 파일을 모두 읽었고, 파일은 만들지 않았습니다. S01은 증거 넷이 모두 비교되고, S07은 TS4 값이 없어 증거 하나를 비교할 수 없습니다. `구분`과 `근거_상태`는 규칙이 정하지 않아 두 사례 모두 비워 두었습니다.
+
+## COOLER_DEGRADATION이 따라가는 관계
+
+1. `pattern:cooler-degradation` (code `COOLER_DEGRADATION`) ─DETECTS→ `sym:ts1-rise` 유온 상승
+2. `pattern:cooler-degradation` ─DETECTS→ `sym:ce-drop` 냉각 효율 저하
+3. `sym:ts1-rise` ─INDICATES→ `fm:cooler-performance-loss` 쿨러 냉각 성능 상실
+4. `sym:ts1-rise` ─INDICATES→ `fm:overheat-trip` 과열 정지
+5. `sym:ce-drop` ─INDICATES→ `fm:cooler-performance-loss`
+6. `fm:cooler-performance-loss` ←CAUSES─ `cause:cooler-fin-fouling` 쿨러 핀 오염 (prior 0.6)
+7. `fm:cooler-performance-loss` ←CAUSES─ `cause:ambient-high-temp` 주변 온도 상승 (prior 0.2)
+8. `fm:cooler-performance-loss` ←CAUSES─ `cause:fan-drive-fault` 팬 구동 불량 (prior 0.2)
+9. `fm:overheat-trip` ←CAUSES─ 없음 (앞선 고장이 `LEADS_TO`로 이어진 결과여서 자체 원인이 등록되어 있지 않음)
+10. `cause:cooler-fin-fouling` ─EVIDENCED_BY→ `evd:fin-fouling-ce-low` (CE, avg, 30초, lt 70, HM-8.4)
+11. `cause:cooler-fin-fouling` ─EVIDENCED_BY→ `evd:fin-fouling-vs1-normal` (VS1, avg, 120초, lt 0.9, HM-8.4)
+12. `cause:ambient-high-temp` ─EVIDENCED_BY→ `evd:ambient-ts4-high` (TS4, avg, 120초, gte 35, HM-8.4)
+13. `cause:fan-drive-fault` ─EVIDENCED_BY→ `evd:fan-drive-vs1-high` (VS1, avg, 120초, gte 0.9, HM-8.4)
+
+`fm:bearing-degradation ─LEADS_TO→ fm:cooler-performance-loss`도 그래프에 있지만, 읽는 법의 길과 `원인_후보` 도구의 정의에 `LEADS_TO`가 없어 따라가지 않았습니다.
+
+## 손으로 대어 본 결과
+
+두 사례 모두 신선도는 한도 안입니다(S01 0.6초, S07 0.7초, 한도 60초).
+
+| 사례 | 원인 | 증거 | 기준 | 읽은 값 | coverage | 대어 본 결과 |
+|---|---|---|---|---|---|---|
+| S01 | 쿨러 핀 오염 | `evd:fin-fouling-ce-low` | CE avg 30초 lt 70 | 46.2 | covered | 맞음 (46.2 < 70) |
+| S01 | 쿨러 핀 오염 | `evd:fin-fouling-vs1-normal` | VS1 avg 120초 lt 0.9 | 0.575 | covered | 맞음 (0.575 < 0.9) |
+| S01 | 주변 온도 상승 | `evd:ambient-ts4-high` | TS4 avg 120초 gte 35 | 28.0 | covered | 아님 (28.0 ≥ 35가 아님) |
+| S01 | 팬 구동 불량 | `evd:fan-drive-vs1-high` | VS1 avg 120초 gte 0.9 | 0.575 | covered | 아님 (0.575 ≥ 0.9가 아님) |
+| S07 | 쿨러 핀 오염 | `evd:fin-fouling-ce-low` | CE avg 30초 lt 70 | 51.0 | covered | 맞음 (51.0 < 70) |
+| S07 | 쿨러 핀 오염 | `evd:fin-fouling-vs1-normal` | VS1 avg 120초 lt 0.9 | 0.58 | covered | 맞음 (0.58 < 0.9) |
+| S07 | 주변 온도 상승 | `evd:ambient-ts4-high` | TS4 avg 120초 gte 35 | null | samples 0, covered false | 비교할 수 없음 |
+| S07 | 팬 구동 불량 | `evd:fan-drive-vs1-high` | VS1 avg 120초 gte 0.9 | 0.58 | covered | 아님 (0.58 ≥ 0.9가 아님) |
+
+## 정해 주셔야 하는 것
+
+1. **`구분`을 가르는 기준**
+   - 증거가 모두 맞는 원인(S01·S07의 쿨러 핀 오염)은 `확인됨`입니까?
+   - 증거가 모두 아닌 원인(S01의 주변 온도 상승, 두 사례의 팬 구동 불량)은 `해당_없음`입니까, `가설`로 남깁니까?
+   - 일부만 맞는 경우는 이 두 사례에는 없지만 다른 사례에 나오니 함께 정해 주십시오.
+
+2. **값이 없는 증거(S07의 TS4)**
+   - 판정을 `확인하지_못함`으로 적어도 됩니까? schema는 관측 공백이 수집 계약보다 길면 "판정하지 않는다(미확인)"고 하지만, 규칙은 이 처리를 요청하는 분이 정한다고 합니다.
+   - 그 증거 하나뿐인 주변 온도 상승의 `구분`은 무엇입니까(`가설`, `해당_없음`, 그 밖)?
+   - 값은 있는데 `covered`가 false인 증거와 신선도가 한도를 넘은 사례도 다른 사례에 나옵니다. 같은 방식으로 다룰지 함께 정해 주십시오.
+
+3. **`근거_상태`**
+   - S01처럼 한 원인은 증거가 모두 맞고 나머지는 모두 아닐 때 무엇입니까?
+   - S07처럼 증거가 모두 맞는 원인과 비교하지 못한 증거가 섞여 있을 때는 `SUPPORTED`입니까, `UNKNOWN`입니까?
+   - `UNSUPPORTED`는 어떤 경우에 씁니까?
+
+4. **`점검_순서`**
+   - 무엇을 넣습니까: 조치 방법(SOP)의 단계, 비교하지 못한 증거의 재확인(S07의 TS4), 또는 둘 다?
+   - 무엇을 앞에 둡니까: `구분` 순, `prior` 순, 즉시 완화(MITIGATED_BY)와 근본 조치(REMEDIED_BY) 중 어느 쪽?
+   - `ADDRESSES`가 달린 조치는 그 원인이 `확인됨`일 때만 넣습니까?
+   - `근거` 칸에는 무엇을 적습니까(단계의 매뉴얼 절, 증거의 절, 둘 다)?
+
+5. **원인이 없는 고장 유형 `fm:overheat-trip`**
+   - 4번 관계로 길에 들어오지만 원인이 없어 `후보_원인`에 적을 것이 없습니다. 그대로 두고 지나갑니까, 그 조치(`SOP-TRIP-01`)를 `점검_순서`에 넣습니까?
+
+6. **`에이전트_정의.json`의 도구 목록**
+   - 지금 목록에는 `원인_후보`와 `증거_기준` 둘뿐입니다. `센서_집계`가 없으면 에이전트는 센서 값을 읽을 수 없어 위 표의 비교를 하지 못합니다.
+   - `조치_방법`이 없으면 SOP를 `점검_순서`에 넣을 수 없습니다.
+   - 규칙 4에 따라 이 목록은 제가 고치지 않고, 파일을 직접 읽는 길로 대신하지도 않습니다. 두 도구를 직접 더해 주실지, 지금 목록 그대로 만들지 정해 주십시오.
+
+만든 파일과 고친 파일: 없음

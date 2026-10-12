@@ -1,0 +1,15 @@
+레이블, 전체, 문서에서_온_것
+"Actuator", 3, 0
+"Asset", 3, 0
+"Cause", 3, 2
+"Component", 6, 0
+"FailureMode", 1, 0
+"KnowledgeSource", 1, 1
+"ManualSection", 4, 4
+"Part", 3, 0
+"Sensor", 5, 0
+"Skill", 4, 3
+"StateVariable", 8, 0
+"Step", 14, 14
+"Supplier", 3, 0
+"Symptom", 2, 0

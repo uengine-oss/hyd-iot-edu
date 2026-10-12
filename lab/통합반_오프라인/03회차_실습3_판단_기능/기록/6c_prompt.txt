@@ -1,0 +1,1 @@
+결과 JSON의 칸 이름이 한글이라 다른 프로그램에서 쓰기 불편해. 결과/판정_결과.json 의 칸 이름 후보, 판정, 맞은_규칙, 근거를 candidate, verdict, matched_rules, evidence 로 바꾸도록 판정.py 를 고치고 다시 실행해 줘.

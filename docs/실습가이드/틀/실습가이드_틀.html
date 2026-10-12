@@ -46,7 +46,7 @@
 
 <!-- [블록] 자리 지도: 이 실습에서 오가는 곳 두세 군데 -->
 <div class="place-map">
-<div><b>〔곳 1: 예 VS Code의 Claude Code〕</b><br>〔여기서 하는 일〕</div>
+<div><b>〔곳 1: 예 VS Code의 Copilot 채팅〕</b><br>〔여기서 하는 일〕</div>
 <div><b>〔곳 2: 예 VS Code 터미널〕</b><br>〔여기서 하는 일〕</div>
 <div><b>〔곳 3: 예 브라우저〕</b><br>〔여기서 보는 것〕</div>
 </div>
@@ -114,11 +114,11 @@
 <p><strong>〔할 일〕</strong><br>〔이 걸음에서 AI에게 시킬 일 한 줄.〕</p></div>
 </section>
 <section>
-<h3 class="action-title"><span>〔Claude Code〕</span>〔요청을 보낸다〕</h3>
+<h3 class="action-title"><span>〔Copilot 채팅〕</span>〔요청을 보낸다〕</h3>
 <!-- [블록] AI에게 줄 요청(프롬프트) 복사 상자: 머리 + 복사 버튼 + 요청 글 + 붙여넣는 곳 안내 -->
-<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="prompt-H01" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<div class="block prompt"><div class="block-head"><span>〔Copilot 채팅에 보낼 요청〕</span><button data-copy="prompt-H01" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <pre id="prompt-H01">〔실제로 보내 확인한 요청 글. 예: 이 폴더의 자료를 읽고 무엇이 있고 어떻게 이어지는지 정리해 줘. 아직 아무것도 만들지 마.〕</pre>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div></div>
 <!-- [블록] 풀이 상자: 「왜 이렇게 시키는가」 한두 줄 -->
 <div class="check-explanation"><h4>〔왜 이렇게 시키는가〕</h4>
 <p>〔한두 줄. 예: 먼저 읽게 하지 않으면 AI가 자료에 없는 것을 넣어 만들기 시작한다.〕</p></div>
@@ -156,21 +156,21 @@
 </aside>
 <div class="block write-card"><div class="block-head"><label for="draft-H02">〔내가 쓴 요청〕</label><button data-copy="draft-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <textarea id="draft-H02" data-draft="H02" placeholder="〔여기에 쓴다〕"></textarea>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div>
 <div class="actions"><span class="draft-status"></span><button data-download="draft-H02">저장</button></div></div>
 </div>
 <!-- [블록] 접어 둔 예: 앞 실습에서는 펼쳐 주고, 뒤 실습으로 갈수록 접거나 뺀다 -->
 <details class="example answer-help"><summary>〔쓴 뒤에 견주어 볼 예〕</summary>
 <p>〔먼저 직접 쓰고 나서 펼친다.〕</p>
-<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="example-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<div class="block prompt"><div class="block-head"><span>〔Copilot 채팅에 보낼 요청〕</span><button data-copy="example-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <pre id="example-H02">〔실제로 보내 확인한 요청 글: 목표, 결과물의 항목, 건드리면 안 되는 것, 값이 없을 때의 처리〕</pre>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div></details>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div></div></details>
 </section>
 <section>
-<h3 class="action-title"><span>〔Claude Code〕</span>〔계획부터 받는다〕</h3>
-<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="plan-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<h3 class="action-title"><span>〔Copilot 채팅〕</span>〔계획부터 받는다〕</h3>
+<div class="block prompt"><div class="block-head"><span>〔Copilot 채팅에 보낼 요청〕</span><button data-copy="plan-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <pre id="plan-H02">〔실제로 보내 확인한 요청 글. 예: 어떻게 할지 단계로 먼저 말해 줘. 내가 확인한 다음에 시작해.〕</pre>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div></div>
 <div class="check-explanation"><h4>〔왜 이렇게 시키는가〕</h4><p>〔한두 줄.〕</p></div>
 <div class="h01-output-sample"><div class="h01-output-label"><strong>〔출력 예〕</strong><span>〔발췌〕</span></div>
 <pre class="output-example" aria-label="〔계획 출력 예〕">〔AI가 낸 계획에서 옮긴 줄〕
@@ -218,9 +218,9 @@
 <p class="result"><strong>〔무엇이 달라졌나〕</strong>〔두 출력의 차이 한두 줄.〕</p>
 <details><summary>〔오류가 났을 때〕</summary>
 <p>〔오류 글을 그대로 AI에게 보여 준다.〕</p>
-<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="error-H03" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<div class="block prompt"><div class="block-head"><span>〔Copilot 채팅에 보낼 요청〕</span><button data-copy="error-H03" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <pre id="error-H03">〔실제로 보내 확인한 요청 글〕</pre>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div></details>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div></div></details>
 </section>
 <section class="route-checkpoint" data-route-stage="H03"><h3>다음으로 가는 기준</h3>
 <label><input type="checkbox" data-route-check="H03-0"><span>〔표시한 세 줄이 내 출력에도 있다〕</span></label>
@@ -269,7 +269,7 @@
 <p>〔이 실습에서 실제로 겪은 것 한두 가지. 예: AI가 없는 값을 지어냈다, 시키지 않은 파일까지 고쳤다.〕</p></div>
 </section>
 <section>
-<h3 class="action-title"><span>〔Claude Code〕</span>〔되돌려 주는 요청〕</h3>
+<h3 class="action-title"><span>〔Copilot 채팅〕</span>〔되돌려 주는 요청〕</h3>
 <!-- [블록] 주의 상자: 막히는 곳과 되돌리는 법 -->
 <p class="route-recovery">〔막히는 곳 1: 이런 출력이 나오면 … 이렇게 한다.〕</p>
 <div class="block prompt"><div class="block-head"><span>〔나쁜 예〕</span><button data-copy="bad-H05" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
@@ -277,7 +277,7 @@
 <div class="paste-destination">〔이렇게 보내면: 실제로 받은 결과 한 줄〕</div></div>
 <div class="block prompt"><div class="block-head"><span>〔좋은 예〕</span><button data-copy="good-H05" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
 <pre id="good-H05">〔실제로 보내 본 요청 글. 무엇이 틀렸는지, 근거가 무엇인지, 어떻게 해야 하는지를 적는다〕</pre>
-<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<div class="paste-destination">〔붙여넣는 곳: Copilot 채팅 입력 칸〕</div></div>
 <p class="result"><strong>〔결과 확인〕</strong>〔고친 결과에서 볼 것.〕</p>
 </section>
 <section class="route-checkpoint" data-route-stage="H05"><h3>끝내는 기준</h3>
@@ -300,7 +300,7 @@ function say(text){notice.textContent=text;clearTimeout(noticeTimer);noticeTimer
 function show(id,focus=false){if(!/^(S00|H\d\d)$/.test(id)||!document.getElementById(id))return;document.querySelectorAll('.task').forEach(el=>el.hidden=el.id!==id);document.querySelectorAll('nav [data-step]').forEach(el=>{if(el.dataset.step===id)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current')});if(focus)history.replaceState(null,'','#'+id);if(focus)document.querySelector('#'+id+' h2').focus()}
 document.querySelectorAll('[data-step]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.step,true)));
 document.querySelectorAll('[data-draft]').forEach(field=>{try{field.value=localStorage.getItem(guideKey+'-prompt-'+field.dataset.draft)||''}catch{}field.addEventListener('input',()=>{const status=field.parentElement.querySelector('.draft-status');try{localStorage.setItem(guideKey+'-prompt-'+field.dataset.draft,field.value);status.textContent='이 브라우저에 저장됨'}catch{status.textContent='자동 저장 불가 · 텍스트로 저장하세요'}})});
-document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{const target=document.getElementById(button.dataset.copy),text=target.value??target.textContent;if(!text.trim()){say('먼저 요청을 쓰세요.');return}const destination=button.dataset.destination==='file'?'VS Code에서 Ctrl+P(Mac: Cmd+P)를 누르고 파일 경로를 붙여넣은 뒤 Enter를 누르세요.':button.dataset.destination==='terminal'?'VS Code 터미널의 실습 폴더에 붙여넣고 Enter를 누르세요.':button.dataset.destination==='browser'?'브라우저 화면의 입력 칸에 붙여넣고 실행하세요.':'Claude Code 입력창에 붙여넣고 전송하세요.';try{await navigator.clipboard.writeText(text);say('복사했습니다. '+destination)}catch{if(target.select)target.select();else{const range=document.createRange();range.selectNodeContents(target);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range)}say('선택된 내용을 Ctrl+C(Mac: Cmd+C)로 복사한 뒤 '+destination)}}));
+document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{const target=document.getElementById(button.dataset.copy),text=target.value??target.textContent;if(!text.trim()){say('먼저 요청을 쓰세요.');return}const destination=button.dataset.destination==='file'?'VS Code에서 Ctrl+P(Mac: Cmd+P)를 누르고 파일 경로를 붙여넣은 뒤 Enter를 누르세요.':button.dataset.destination==='terminal'?'VS Code 터미널의 실습 폴더에 붙여넣고 Enter를 누르세요.':button.dataset.destination==='browser'?'브라우저 화면의 입력 칸에 붙여넣고 실행하세요.':'Copilot 채팅 입력 칸에 붙여넣고 전송하세요.';try{await navigator.clipboard.writeText(text);say('복사했습니다. '+destination)}catch{if(target.select)target.select();else{const range=document.createRange();range.selectNodeContents(target);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range)}say('선택된 내용을 Ctrl+C(Mac: Cmd+C)로 복사한 뒤 '+destination)}}));
 document.querySelectorAll('[data-download]').forEach(button=>button.addEventListener('click',()=>{const field=document.getElementById(button.dataset.download);if(!field.value.trim()){say('먼저 요청을 쓰세요.');return}const url=URL.createObjectURL(new Blob([field.value],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=guideKey+'-'+field.dataset.draft+'-요청.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}));
 document.querySelectorAll('[data-complete]').forEach(box=>{try{box.checked=localStorage.getItem(guideKey+'-reviewed-'+box.dataset.complete)==='yes'}catch{}box.addEventListener('change',()=>{try{localStorage.setItem(guideKey+'-reviewed-'+box.dataset.complete,box.checked?'yes':'no')}catch{}})});
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)||'S00',true));

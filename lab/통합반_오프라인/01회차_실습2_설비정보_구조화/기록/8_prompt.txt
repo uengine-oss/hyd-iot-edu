@@ -1,0 +1,1 @@
+graph.json 의 칸 이름이 읽기 어려워. rels 를 edges 로, a 와 b 를 source 와 target 으로 바꿔 줘.
