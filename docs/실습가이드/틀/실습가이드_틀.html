@@ -1,0 +1,328 @@
+<!doctype html>
+<!--
+  HYD 실습 가이드의 빈 틀.
+  - 형식(스타일, 스크립트, 블록 구성)만 있다. 본문은 모두 〔 〕로 싼 자리표시 글이고 그림 자리는 빈 상자다.
+  - 블록 종류와 쓰는 법: 같은 폴더의 형식.md
+  - 가이드 하나를 만들 때: 이 파일을 복사하지 않고 MD 원고를 변환해 같은 구조의 HTML을 낸다(변환 스크립트는 아직 없다).
+  - 외부 자원을 쓰지 않는다. 이 파일 하나로 열린다.
+-->
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HYD 실습 가이드 틀</title>
+<style>
+.reply-example{margin:16px 0;padding:18px 22px;border-left:4px solid #338369;background:#f4f7f5;overflow-wrap:anywhere}.writing-hints p{margin-bottom:16px}
+.output-example{margin:12px 0;padding:16px;background:#172a30;color:#eff8f2;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 Consolas,"Malgun Gothic",monospace}.check-explanation{margin:12px 0 24px;padding:14px 18px;background:#f0f6f2;border-radius:9px}.check-explanation h4{margin:0 0 8px}
+
+*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#172327;font:16px/1.65 "Segoe UI","Malgun Gothic",sans-serif}button,textarea{font:inherit}button,summary{cursor:pointer}button{border:1px solid #dce2e4;border-radius:8px;padding:8px 14px;background:white;color:inherit}button:hover{background:#e9f4ee}button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid #298b6a;outline-offset:3px}[hidden]{display:none!important}header{background:#fff;border-bottom:1px solid #e1e5e7;padding:18px 5%;display:flex;align-items:center;gap:18px}header b{font-size:19px}header span{color:#6b787c;font-size:13px}.layout{max-width:1180px;margin:28px auto;display:grid;grid-template-columns:240px minmax(0,820px);gap:36px;padding:0 20px}aside{position:sticky;top:24px;align-self:start}nav{display:grid;gap:7px}.step-link{display:flex;gap:12px;text-align:left;border:0;background:transparent;font-size:14px;padding:12px}.step-link span{color:#7d8c8b}.step-link[aria-current=step]{background:#183e32;color:white}.step-link[aria-current=step] span{color:#91d5b5}.task{background:#fff;border:1px solid #e1e5e7;border-radius:16px;padding:32px}.eyebrow{font-size:12px;letter-spacing:2px;color:#338369;margin:0}h2{font-size:28px;line-height:1.35;margin:8px 0 16px}h3{font-size:18px;margin:0 0 12px}p{margin:10px 0}.situation{font-size:17px;color:#526268}.goal{font-weight:600}.screen-example{margin:22px 0 30px}.screen-example figcaption{font-size:13px;color:#546764;margin-bottom:8px}.screen-zoom{width:100%;padding:0;background:#edf1f2;overflow:hidden}.screen-zoom img{display:block;width:100%;height:auto;max-height:330px;object-fit:contain}.block{border:1px solid #d8e3df;border-radius:12px;overflow:hidden;margin:14px 0}.block-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#eef5f1;font-size:12px;font-weight:700;letter-spacing:.5px}.block-head button{font-size:13px;padding:6px 12px}.block pre{margin:0;padding:18px;font:14px/1.8 Consolas,"Malgun Gothic",monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:460px;overflow:auto}.terminal{border-color:#26383f;background:#16292f;color:#e6f1ed}.terminal .block-head{background:#20363e;color:#9ecbb8}.terminal button{background:#30474f;color:white;border-color:#496069}.terminal pre{font-size:15px}.task section{margin:28px 0}details{margin:12px 0;border-top:1px solid #e4e9e6;padding:13px 0}summary{font-size:14px;color:#52665b}textarea{width:100%;display:block;border:0;padding:18px;min-height:180px;resize:vertical;font:15px/1.7 Consolas,"Malgun Gothic",monospace;background:#fff;color:#243b32}.actions{display:flex;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #edf0ee}.draft-status{font-size:12px;color:#6e7e74}.requirements{padding-left:20px;font-size:14px;color:#53635c}.requirements li{margin:5px 0}.result{background:#f0f6f2;padding:15px 18px;border-radius:9px;font-size:14px}.next{margin-top:30px;border-top:1px solid #e1e8e4;padding-top:20px;display:flex;gap:16px;justify-content:space-between;align-items:center}.next label{font-size:13px;color:#52665b}.next button{background:#1d674a;color:white;border:0;white-space:nowrap}.setup{font-size:13px}.setup ol{padding-left:20px}.setup h3{font-size:15px}.copy-icon{width:15px;height:15px;vertical-align:-2px;margin-right:6px}#notice{pointer-events:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:12px 20px;background:#163d30;color:white;border-radius:10px;max-width:90%;font-size:14px}#notice:empty{display:none}#screen-dialog{max-width:96vw;max-height:94vh;border:0;border-radius:12px;padding:12px}#screen-dialog::backdrop{background:#10231cbb}#screen-dialog img{display:block;max-width:100%;height:auto}#screen-dialog.original img{max-width:none;width:1440px}.viewer-controls{display:flex;gap:8px;justify-content:flex-end;position:sticky;top:0;background:white}.footnote{font-size:12px;color:#6e7d76;margin-top:24px}main{min-width:0}footer{text-align:center;padding:20px;color:#708077;font-size:12px}.extension{max-width:820px;margin:24px auto;padding:20px;background:white;border-radius:12px}@media(max-width:800px){header{padding:15px 20px}header span{display:none}.layout{display:block;margin:16px auto;padding:0 14px}aside{position:static;margin-bottom:20px}nav{grid-template-columns:1fr 1fr}.step-link{font-size:12px;padding:9px}.task{padding:22px}h2{font-size:24px}.next{flex-wrap:wrap}.screen-zoom img{max-height:260px}}
+
+.layout{display:block;max-width:900px;margin:24px auto}.reading-key{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;font-size:12px;font-weight:700}.reading-key span{padding:7px 11px;border-radius:6px}.key-read{background:#fff2cb;color:#704b00}.key-action{background:#dcf3e6;color:#145b39}.key-prompt{background:#efe5ff;color:#593299}.key-terminal{background:#16292f;color:#e6f1ed}.setup{background:white;padding:18px 24px;border:1px solid #dfe6e2;border-radius:12px}.setup summary{font-weight:700;color:#194b34}.step-menu{border:0;margin:16px 0}.step-menu nav{margin-top:12px}.read-card{overflow-wrap:anywhere;background:#fff8e6;border-left:4px solid #d49a29;padding:16px 20px;border-radius:8px}.role-label{font-size:12px;font-weight:800;color:#865c12}.read-card .situation{color:#574d37;font-size:16px}.read-card .goal{font-size:15px}.action-title{display:flex;gap:12px;align-items:flex-start;font-size:17px}.action-title span{white-space:nowrap;padding:3px 10px;border-radius:6px;background:#dff4e8;color:#176039;font-size:13px}.prompt{border:1px solid #cbb8e6;border-left:4px solid #865cba;background:#faf7ff}.prompt .block-head{background:#eee6f8;color:#593482}.prompt pre{font-family:"Segoe UI","Malgun Gothic",sans-serif;font-size:15px}.paste-destination{padding:10px 16px;background:#f0eaf7;color:#583f7a;font-size:13px;border-top:1px solid #e0d5ef}.terminal{border-left:4px solid #709b94}.terminal .paste-destination{background:#253c42;color:#c4e5d9;border-color:#3d5359}.write-card{border:2px dashed #91b7a1;background:#f5fbf7}.write-card .block-head{background:#e8f5ed;color:#1b5b38}.write-card .paste-destination{background:#e8f5ed;color:#1b5b38;border-color:#d4e5da}.result strong{display:block;color:#1d674a}.screen-example{padding:0}.task section+section{border-top:1px solid #e7ece9;padding-top:26px}.next{background:#f6faf7;padding:20px;border-radius:10px}.extension{margin:24px 0}.terminal pre{font-family:Consolas,"Cascadia Code",monospace;font-size:15px}@media(max-width:800px){.layout{margin:16px auto}.action-title{font-size:16px}.task{padding:18px}.reading-key{gap:6px}.reading-key span{font-size:11px}.setup{padding:16px}}
+.viewer-image{position:relative;line-height:0}#screen-dialog.original .viewer-image{width:1440px}.screen-zoom{position:relative;display:block}.screen-zoom img{max-height:none!important;width:100%;height:auto}.photo-mark{position:absolute;border:3px solid #d62828;border-radius:5px;pointer-events:none;box-shadow:0 0 0 1px white}.photo-check{border-top:0!important}.photo-check .result{margin-top:10px}.task-brief{background:#f4f8fb;border:1px solid #d2dfe8;border-radius:10px;padding:16px 20px;margin:16px 0}.task-brief h4{margin:0;color:#244e68;font-size:15px}.task-brief>p{margin:8px 0 14px;font-weight:600}.task-brief dl{display:grid;grid-template-columns:85px 1fr;gap:8px 12px;margin:0;font-size:14px}.task-brief dt{font-weight:700}.task-brief dd{margin:0;overflow-wrap:anywhere}.compose-brief{background:#f1f8f3;border-color:#c7dfce}.compose-brief h4{color:#245c36}@media(max-width:600px){.task-brief dl{grid-template-columns:1fr;gap:4px}.task-brief dd{margin-bottom:10px}}[data-copy]{white-space:nowrap;flex-shrink:0}.next{justify-content:flex-end}.next button{margin-left:auto}h2:focus{outline:2px solid #338369;outline-offset:4px;border-radius:4px}
+.step-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 20px;padding:10px;border:1px solid #dce6e0;border-radius:12px;background:white}.step-link{font-size:13px;padding:10px;border-radius:6px}.place-map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0}.place-map>div{padding:15px;border:1px solid #d8e5dc;border-radius:10px;font-size:13px}.step-number{display:inline-block;padding:3px 9px;margin-right:12px;background:#dff4e8;color:#175b3e;border-radius:6px}.observed{background:#f4f6f7;border:1px solid #dce2e4;border-radius:10px;padding:16px;font-size:13px}.observed pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.7 Consolas,monospace}.setup-step h3{font-size:20px}.screen-example figcaption{line-height:1.7}.result p{margin:0}@media(max-width:600px){.step-menu{grid-template-columns:repeat(2,minmax(0,1fr))}.place-map{grid-template-columns:1fr}.task h2{font-size:24px}}
+.result-criteria{background:#f0f6f2;border-left:4px solid #37795a;padding:16px 20px;margin:16px 0;border-radius:8px}.result-criteria h4{margin:0 0 12px}.result-criteria li{margin:8px 0}.result-criteria pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.implementation-location{font-size:14px;overflow-wrap:anywhere}.result-criteria{overflow-wrap:anywhere}.task .setup-step p{overflow-wrap:anywhere}.service-table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:.95em}.service-table th,.service-table td{border:1px solid #d9e2ec;padding:6px 10px;text-align:left;vertical-align:top}.service-table th{background:#eef3f8}.service-table code{color:#1f3b5a}.story-work>.read-card{margin-bottom:24px}.writing-studio{display:grid;grid-template-columns:minmax(230px,1fr) minmax(300px,1.2fr);gap:20px;align-items:start}.writing-hints{position:sticky;top:18px;background:#f5f7fa;border-left:3px solid #8da6b8;padding:14px 18px;border-radius:5px}.writing-hints h4{font-size:15px;margin:0 0 14px}.writing-hints p{margin:12px 0;font-size:14px;line-height:1.7}.writing-hints p span{display:block}.comment-label{font-family:Consolas,monospace;color:#567a60;font-weight:600}.writing-studio .write-card{margin:0}.writing-studio textarea{min-height:390px}.conversation-order p{font-size:14px}.conversation-order{margin:18px 0}.screen-note{font-size:14px;color:#455a68}.writing-hints,.writing-studio .write-card{min-width:0;overflow-wrap:anywhere}.writing-studio textarea{width:100%;min-width:0}@media(max-width:700px){.writing-studio{grid-template-columns:minmax(0,1fr)}.writing-hints{position:static}.writing-studio textarea{min-height:260px}}.task .terminal{background:#142635;border:2px solid #29516a;border-left:6px solid #327da5;box-shadow:0 2px 8px #18344718}.task .terminal .block-head{background:#213e51;color:#e4f5ff}.task .terminal .paste-destination{background:#213e51;color:#d7ecf7}.task .output-example{display:block;background:#edf6fc;color:#17384e;border:2px solid #9bc4dc;border-left:6px solid #3685b2;box-shadow:0 2px 8px #1c5c8214;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font:14px/1.65 Consolas,"Cascadia Code","Malgun Gothic",monospace}.task .output-hit{color:inherit;padding:1px 3px;border-radius:4px;font-weight:700}.task .hit-success,.task .hit-id,.task .hit-state{background:transparent;color:inherit;outline:2px solid #d52b2b;outline-offset:1px}.task .check-explanation{background:#f5faff;border:1px solid #c7ddeb}.task .route-results{background:#f5faff;padding:18px;border:1px solid #c7ddeb;border-radius:10px}@media(max-width:600px){.task .output-example{font-size:12px}}.task .h01-output-sample{margin:12px 0;border:2px solid #9bc4dc;border-left:6px solid #3685b2;border-radius:9px;background:#edf6fc;overflow:hidden}.task .h01-output-label{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;background:#dceefa;border-bottom:1px solid #b8d4e6;color:#17496a;font-size:13px}.task .h01-output-label strong{font-weight:800}.task .h01-output-sample .output-example{margin:0;border:0;border-radius:0;box-shadow:none;background:transparent}
+.route-entry{margin:16px 0;padding:14px 18px;background:#edf5fa;border-left:4px solid #3c7595;border-radius:8px;font-size:14px}.route-recovery{background:#fff4e1;border-left:4px solid #b97d27;padding:14px 18px;border-radius:6px;font-size:14px}.route-checkpoint{padding:22px!important;background:#f1f7f3;border:1px solid #bad3c4!important;border-radius:12px}.route-checkpoint>label:not(.route-note-label){display:flex;gap:12px;align-items:flex-start;padding:10px 0;font-size:14px}.route-checkpoint input{width:20px;height:20px;flex-shrink:0;margin-top:3px;accent-color:#246749}.route-status{font-weight:600;font-size:14px}.route-checkpoint button{background:#215c43;color:#fff}.route-checkpoint button:disabled{background:#e0e5e2;color:#626d66;cursor:not-allowed}.route-finish{font-weight:bold;color:#1a5d3f}.step-link[data-reviewed=yes]::after{content:'✓';margin-left:auto;color:#338369}.decision-route li{margin:12px 0}@media(max-width:600px){.route-checkpoint{padding:16px!important}.route-checkpoint button{white-space:normal;text-align:left;width:100%}}
+</style></head>
+<body data-guide="hyd-lab-template">
+<header><b>HYD 실습 가이드 틀</b><span>자리표시 글이다 · 실습 하나의 본문으로 바꾼다</span></header>
+<div class="layout"><main>
+
+<!-- [블록] 단계 메뉴: 단계마다 버튼 하나. data-step 값은 아래 article의 id와 같다(S00, H01, H02 …). -->
+<nav class="step-menu" aria-label="실습 단계">
+<button class="step-link" data-step="S00" aria-controls="S00"><span>00</span>시작 전에</button>
+<button class="step-link" data-step="H01" aria-controls="H01"><span>01</span>파악시키기</button>
+<button class="step-link" data-step="H02" aria-controls="H02"><span>02</span>끝난 모습과 계획</button>
+<button class="step-link" data-step="H03" aria-controls="H03"><span>03</span>작게 만들고 확인</button>
+<button class="step-link" data-step="H04" aria-controls="H04"><span>04</span>화면에서 결과 보기</button>
+<button class="step-link" data-step="H05" aria-controls="H05"><span>05</span>틀렸을 때 되돌려 주기</button>
+</nav>
+
+<!-- ================= S00 시작 전에 ================= -->
+<article class="task" id="S00">
+<!-- [블록] 단계 머리: eyebrow(작은 글) + h2(단계 제목) + goal(한 줄 목표) -->
+<p class="eyebrow">〔과정 · 일차 · 실습 번호〕</p>
+<h2 tabindex="-1">〔실습 제목: 덱의 실습 간지 제목과 같게〕</h2>
+<p class="goal">〔이 실습에서 만드는 것 한 줄〕</p>
+
+<!-- [블록] 읽을거리 카드: 상황을 글로 설명한다 -->
+<div class="read-card"><span class="role-label">〔읽기〕</span>
+<p>〔이 실습이 놓인 상황 서너 문장. 덱의 실습 설명 장(무엇을 하고 무엇이 만들어지는지)과 같은 말로 쓴다. 실라버스의 실습 시간과, 끝났을 때 남는 것을 적는다.〕</p></div>
+
+<!-- [블록] 자리 지도: 이 실습에서 오가는 곳 두세 군데 -->
+<div class="place-map">
+<div><b>〔곳 1: 예 VS Code의 Claude Code〕</b><br>〔여기서 하는 일〕</div>
+<div><b>〔곳 2: 예 VS Code 터미널〕</b><br>〔여기서 하는 일〕</div>
+<div><b>〔곳 3: 예 브라우저〕</b><br>〔여기서 보는 것〕</div>
+</div>
+<p>〔아래 준비를 차례로 마친다.〕</p>
+
+<!-- [블록] 준비 걸음: 번호 + 제목 + 설명 + (표) + 명령어 복사 상자 + 결과 한 줄 -->
+<section class="setup-step">
+<h3><span class="step-number">〔준비 1〕</span>〔준비 걸음의 제목〕</h3>
+<p>〔무엇을 왜 준비하는지 한두 문장.〕</p>
+<!-- [블록] 표: 이름 · 쓰임 · 확인할 것 -->
+<table class="service-table"><thead><tr><th>〔이름〕</th><th>〔쓰임〕</th><th>〔확인할 것〕</th></tr></thead><tbody>
+<tr><td><code>〔항목 1〕</code></td><td>〔쓰임〕</td><td>〔보이면 되는 것〕</td></tr>
+<tr><td><code>〔항목 2〕</code></td><td>〔쓰임〕</td><td>〔보이면 되는 것〕</td></tr>
+</tbody></table>
+
+<!-- [블록] 명령어 복사 상자: 머리(어디에 넣는 명령인가) + 복사 버튼 + 명령 + 붙여넣는 곳 안내 -->
+<div class="block terminal"><div class="block-head"><span>〔터미널에 넣는 명령〕</span><button data-copy="setup-01" data-destination="terminal"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="setup-01">〔실제로 돌려 확인한 명령 한 줄〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: VS Code 터미널의 실습 폴더〕</div></div>
+
+<!-- [블록] 사진(예외): 수업 PC에서 찍어 받은 설치 · 로그인 화면만 여기에 넣는다. 지금은 빈 상자다 -->
+<figure class="screen-example terminal-example"><figcaption>〔받은 사진의 설명 · 눌러서 확대〕</figcaption>
+<button class="screen-zoom" aria-label="〔사진 설명〕 확대해서 보기"><img loading="lazy" width="1440" height="320" src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201440%20320%22%3E%3Crect%20width=%221440%22%20height=%22320%22%20fill=%22%23edf1f2%22/%3E%3Crect%20x=%2212%22%20y=%2212%22%20width=%221416%22%20height=%22296%22%20fill=%22none%22%20stroke=%22%239aa9ad%22%20stroke-width=%224%22%20stroke-dasharray=%2224%2016%22/%3E%3Cpath%20d=%22M680%20160h80M720%20120v80%22%20stroke=%22%239aa9ad%22%20stroke-width=%226%22/%3E%3C/svg%3E" alt="〔사진 자리〕"></button></figure>
+<p class="result"><strong>〔결과 확인〕</strong>〔이것이 보이면 준비가 끝난 것이다.〕</p>
+</section>
+
+<section class="setup-step">
+<h3><span class="step-number">〔준비 2〕</span>〔자료 둘러보기〕</h3>
+<p>〔실습 폴더에 무엇이 들어 있는지 본다.〕</p>
+<div class="block terminal"><div class="block-head"><span>〔터미널에 넣는 명령〕</span><button data-copy="setup-02" data-destination="terminal"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="setup-02">〔실제로 돌려 확인한 명령 한 줄〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: VS Code 터미널의 실습 폴더〕</div></div>
+
+<!-- [블록] 터미널 재현 상자: 출력을 사진이 아니라 글자로 싣는다. 머리(출력 예 · 발췌 여부) + 출력 -->
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔출력 예〕</strong><span>〔발췌〕</span></div>
+<pre class="output-example" aria-label="〔준비 2 출력 예〕">〔실제 출력에서 옮긴 줄 1〕
+〔실제 출력에서 옮긴 줄 2〕
+〔실제 출력에서 옮긴 줄 3〕</pre></div>
+<p class="result"><strong>〔결과 확인〕</strong>〔글자가 똑같지 않아도 된다. 이 항목들이 들어 있으면 된다: …〕</p>
+</section>
+
+<!-- [블록] 접어 두는 도움말: 막혔을 때만 펼친다 -->
+<details><summary>〔여기서 막혔을 때〕</summary>
+<ul><li>〔증상 1 → 확인할 것〕</li><li>〔증상 2 → 확인할 것〕</li></ul>
+<div class="block terminal"><div class="block-head"><span>〔상태를 보는 명령〕</span><button data-copy="setup-help" data-destination="terminal"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="setup-help">〔실제로 돌려 확인한 명령 한 줄〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: VS Code 터미널의 실습 폴더〕</div></div>
+<p>〔그래도 안 되면 강사에게 무엇을 보여 주면 되는지.〕</p></details>
+
+<!-- [블록] 다음으로 가는 기준: 체크해야 다음 단계 버튼이 켜진다. data-route-stage = 이 article의 id -->
+<section class="route-checkpoint" data-route-stage="S00"><h3>다음으로 가는 기준</h3>
+<label><input type="checkbox" data-route-check="S00-0"><span>〔준비 1과 2의 결과 확인을 직접 보았다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<button disabled data-route-next data-step="H01">〔다음: 파악시키기〕</button></section>
+</article>
+
+<!-- ================= H01 파악시키기 ================= -->
+<article id="H01" class="task" hidden>
+<p class="eyebrow">〔걸음 1 · 파악시키기〕</p>
+<h2 tabindex="-1">〔만들기 전에 먼저 읽게 한다〕</h2>
+<section class="story-work">
+<!-- [블록] 상황과 할 일 카드 -->
+<div class="read-card"><h3 class="action-title"><span>〔읽기〕</span>〔이 걸음의 상황〕</h3>
+<p><strong>〔상황〕</strong><br>〔지금 무엇이 주어져 있는지.〕</p>
+<p><strong>〔할 일〕</strong><br>〔이 걸음에서 AI에게 시킬 일 한 줄.〕</p></div>
+</section>
+<section>
+<h3 class="action-title"><span>〔Claude Code〕</span>〔요청을 보낸다〕</h3>
+<!-- [블록] AI에게 줄 요청(프롬프트) 복사 상자: 머리 + 복사 버튼 + 요청 글 + 붙여넣는 곳 안내 -->
+<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="prompt-H01" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="prompt-H01">〔실제로 보내 확인한 요청 글. 예: 이 폴더의 자료를 읽고 무엇이 있고 어떻게 이어지는지 정리해 줘. 아직 아무것도 만들지 마.〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<!-- [블록] 풀이 상자: 「왜 이렇게 시키는가」 한두 줄 -->
+<div class="check-explanation"><h4>〔왜 이렇게 시키는가〕</h4>
+<p>〔한두 줄. 예: 먼저 읽게 하지 않으면 AI가 자료에 없는 것을 넣어 만들기 시작한다.〕</p></div>
+<!-- [블록] 터미널 재현 상자 + 확인할 줄 표시(mark) -->
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔출력 예〕</strong><span>〔발췌〕</span></div>
+<pre class="output-example" aria-label="〔걸음 1 출력 예〕">〔실제 출력에서 옮긴 줄〕
+<mark class="output-hit hit-state">〔확인할 줄: 표시가 붙는다〕</mark>
+〔실제 출력에서 옮긴 줄〕</pre></div>
+<p class="result"><strong>〔확인할 것〕</strong>〔출력은 실행마다 다르다. 다음이 들어 있으면 된다: ① … ② … ③ …〕</p>
+</section>
+<section class="route-checkpoint" data-route-stage="H01"><h3>다음으로 가는 기준</h3>
+<label><input type="checkbox" data-route-check="H01-0"><span>〔AI의 정리에 자료의 항목이 빠짐없이 들어 있고, 아무 파일도 만들어지지 않았다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<button disabled data-route-next data-step="H02">〔다음: 끝난 모습과 계획〕</button></section>
+</article>
+
+<!-- ================= H02 끝난 모습과 계획 ================= -->
+<article id="H02" class="task" hidden>
+<p class="eyebrow">〔걸음 2 · 3 · 할 일과 끝난 모습 정하기, 계획부터 받기〕</p>
+<h2 tabindex="-1">〔끝난 모습을 내 말로 적는다〕</h2>
+<section class="story-work">
+<div class="read-card"><h3 class="action-title"><span>〔읽기〕</span>〔이 걸음의 상황〕</h3>
+<p><strong>〔상황〕</strong><br>〔무엇을 만들어야 하는지.〕</p>
+<p><strong>〔할 일〕</strong><br>〔요청을 직접 쓴다.〕</p></div>
+<h3 class="action-title"><span>〔직접 쓰기〕</span>〔요청을 내 말로 쓴다〕</h3>
+<p class="conversation-order">〔왼쪽의 물음에 답하며 오른쪽에 쓴다.〕</p>
+<!-- [블록] 직접 쓰는 칸: 왼쪽에 쓸 거리(힌트), 오른쪽에 글 칸. 쓴 글은 이 브라우저에 저장되고 복사 · 내려받기가 된다 -->
+<div class="writing-studio">
+<aside class="writing-hints" aria-label="요청에 넣을 것">
+<h4>〔요청에 넣을 것〕</h4>
+<p><span class="comment-label">〔# 목표〕</span><span>〔무엇을 만들고자 하는가〕</span></p>
+<p><span class="comment-label">〔# 결과물의 항목〕</span><span>〔결과에 반드시 있어야 하는 것〕</span></p>
+<p><span class="comment-label">〔# 건드리면 안 되는 것〕</span><span>〔고치면 안 되는 파일 · 값〕</span></p>
+<p><span class="comment-label">〔# 값이 없을 때〕</span><span>〔지어내지 않고 어떻게 적을지〕</span></p>
+</aside>
+<div class="block write-card"><div class="block-head"><label for="draft-H02">〔내가 쓴 요청〕</label><button data-copy="draft-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<textarea id="draft-H02" data-draft="H02" placeholder="〔여기에 쓴다〕"></textarea>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div>
+<div class="actions"><span class="draft-status"></span><button data-download="draft-H02">저장</button></div></div>
+</div>
+<!-- [블록] 접어 둔 예: 앞 실습에서는 펼쳐 주고, 뒤 실습으로 갈수록 접거나 뺀다 -->
+<details class="example answer-help"><summary>〔쓴 뒤에 견주어 볼 예〕</summary>
+<p>〔먼저 직접 쓰고 나서 펼친다.〕</p>
+<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="example-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="example-H02">〔실제로 보내 확인한 요청 글: 목표, 결과물의 항목, 건드리면 안 되는 것, 값이 없을 때의 처리〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div></details>
+</section>
+<section>
+<h3 class="action-title"><span>〔Claude Code〕</span>〔계획부터 받는다〕</h3>
+<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="plan-H02" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="plan-H02">〔실제로 보내 확인한 요청 글. 예: 어떻게 할지 단계로 먼저 말해 줘. 내가 확인한 다음에 시작해.〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<div class="check-explanation"><h4>〔왜 이렇게 시키는가〕</h4><p>〔한두 줄.〕</p></div>
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔출력 예〕</strong><span>〔발췌〕</span></div>
+<pre class="output-example" aria-label="〔계획 출력 예〕">〔AI가 낸 계획에서 옮긴 줄〕
+〔AI가 낸 계획에서 옮긴 줄〕</pre></div>
+<p class="result"><strong>〔확인할 것〕</strong>〔계획에 다음이 들어 있으면 시작하라고 답한다: ① … ② …〕</p>
+</section>
+<section class="route-checkpoint" data-route-stage="H02"><h3>다음으로 가는 기준</h3>
+<label><input type="checkbox" data-route-check="H02-0"><span>〔계획을 읽고, 빠진 것을 고쳐 달라고 한 뒤 시작하라고 답했다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<button disabled data-route-next data-step="H03">〔다음: 작게 만들고 확인〕</button></section>
+</article>
+
+<!-- ================= H03 작게 만들고 확인 ================= -->
+<article id="H03" class="task" hidden>
+<p class="eyebrow">〔걸음 4 · 작게 만들고 확인하기〕</p>
+<h2 tabindex="-1">〔덩어리 하나를 만들고 기준으로 확인한다〕</h2>
+<section class="story-work">
+<div class="read-card"><h3 class="action-title"><span>〔읽기〕</span>〔이 걸음의 상황〕</h3>
+<p><strong>〔상황〕</strong><br>〔계획의 첫 덩어리.〕</p>
+<p><strong>〔할 일〕</strong><br>〔만들게 하고, 돌려서 확인한다.〕</p></div>
+</section>
+<section>
+<h3 class="action-title"><span>〔터미널〕</span>〔만든 것을 돌려 본다〕</h3>
+<div class="block terminal"><div class="block-head"><span>〔터미널에 넣는 명령〕</span><button data-copy="run-H03" data-destination="terminal"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="run-H03">〔실제로 돌려 확인한 명령 한 줄〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: VS Code 터미널의 실습 폴더〕</div></div>
+<!-- [블록] 결과 묶음: 출력 예와 그 읽는 법을 한 상자에 -->
+<section class="route-results"><h3>〔이것이 보이면 된다〕</h3>
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔출력 예〕</strong><span>〔발췌〕</span></div>
+<pre class="output-example" aria-label="〔걸음 4 출력 예〕">〔실제 출력에서 옮긴 줄〕
+<mark class="output-hit hit-id">〔확인할 줄: 식별자〕</mark>
+<mark class="output-hit hit-state">〔확인할 줄: 상태〕</mark>
+<mark class="output-hit hit-success">〔확인할 줄: 끝났다는 표시〕</mark></pre></div>
+<p>〔표시한 줄을 읽는 법. <code>〔낱말〕</code>이 무엇을 뜻하는지.〕</p></section>
+</section>
+<section>
+<h3 class="action-title"><span>〔견주기〕</span>〔나쁜 요청과 좋은 요청의 실제 출력〕</h3>
+<!-- [조합] 본보기에는 없는 쓰임이다. 두 칸 그리드(writing-studio)에 출력 상자 둘을 나란히 놓았다. 쓸지는 본보기 실습에서 확인한다 -->
+<div class="writing-studio">
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔나쁜 요청〕</strong><span>〔요청 글 한 줄〕</span></div>
+<pre class="output-example" aria-label="〔나쁜 요청의 출력〕">〔실제로 받은 출력에서 옮긴 줄〕</pre></div>
+<div class="h01-output-sample"><div class="h01-output-label"><strong>〔좋은 요청〕</strong><span>〔요청 글 한 줄〕</span></div>
+<pre class="output-example" aria-label="〔좋은 요청의 출력〕">〔실제로 받은 출력에서 옮긴 줄〕</pre></div>
+</div>
+<p class="result"><strong>〔무엇이 달라졌나〕</strong>〔두 출력의 차이 한두 줄.〕</p>
+<details><summary>〔오류가 났을 때〕</summary>
+<p>〔오류 글을 그대로 AI에게 보여 준다.〕</p>
+<div class="block prompt"><div class="block-head"><span>〔Claude Code에 보낼 요청〕</span><button data-copy="error-H03" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="error-H03">〔실제로 보내 확인한 요청 글〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div></details>
+</section>
+<section class="route-checkpoint" data-route-stage="H03"><h3>다음으로 가는 기준</h3>
+<label><input type="checkbox" data-route-check="H03-0"><span>〔표시한 세 줄이 내 출력에도 있다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<button disabled data-route-next data-step="H04">〔다음: 화면에서 결과 보기〕</button></section>
+</article>
+
+<!-- ================= H04 화면에서 결과 보기 ================= -->
+<article id="H04" class="task" hidden>
+<p class="eyebrow">〔결과 확인 · 브라우저〕</p>
+<h2 tabindex="-1">〔만든 것을 화면에서 본다〕</h2>
+<section class="story-work">
+<div class="read-card"><h3 class="action-title"><span>〔읽기〕</span>〔이 걸음의 상황〕</h3>
+<p><strong>〔상황〕</strong><br>〔만든 것이 어디에 나타나는지.〕</p>
+<p><strong>〔할 일〕</strong><br>〔브라우저에서 연다.〕</p></div>
+</section>
+<section>
+<!-- [블록] 화면에서 따라가는 순서 -->
+<section class="decision-route"><h3 class="action-title"><span>〔브라우저〕</span>〔화면을 여는 순서〕</h3>
+<ol><li>〔<strong>메뉴 이름</strong>을 누른다〕</li><li>〔<strong>항목</strong>을 고른다〕</li><li>〔<strong>버튼</strong>을 누르고 결과를 기다린다〕</li></ol></section>
+<!-- [블록] 브라우저에 넣는 질의 복사 상자(data-destination="browser") -->
+<div class="block terminal"><div class="block-head"><span>〔브라우저의 입력 칸에 넣는 질의〕</span><button data-copy="query-H04" data-destination="browser"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="query-H04">〔실제로 돌려 확인한 질의〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: 브라우저 화면의 입력 칸〕</div></div>
+</section>
+<!-- [블록] 화면 사진과 확대: 사진은 브라우저 화면에만 쓴다. 누르면 크게 열린다. photo-mark는 볼 곳에 치는 빨간 테두리(자리와 크기는 %) -->
+<section class="photo-check">
+<h3 class="action-title"><span>〔결과 확인〕</span>〔화면에서 볼 곳〕</h3>
+<p class="screen-purpose"><strong>〔볼 곳〕</strong>〔빨간 테두리 안에서 무엇을 확인하는지.〕</p>
+<figure class="screen-example"><figcaption><strong>〔화면 이름〕</strong>〔 · 눌러서 확대〕</figcaption>
+<button class="screen-zoom" aria-label="〔화면 이름〕 확대해서 보기"><img src="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201440%201000%22%3E%3Crect%20width=%221440%22%20height=%221000%22%20fill=%22%23edf1f2%22/%3E%3Crect%20x=%2212%22%20y=%2212%22%20width=%221416%22%20height=%22976%22%20fill=%22none%22%20stroke=%22%239aa9ad%22%20stroke-width=%224%22%20stroke-dasharray=%2224%2016%22/%3E%3Cpath%20d=%22M680%20500h80M720%20460v80%22%20stroke=%22%239aa9ad%22%20stroke-width=%226%22/%3E%3C/svg%3E" alt="〔화면 사진 자리〕" width="1440" height="1000" loading="lazy"><span class="photo-mark" style="left:44%;top:30%;width:50%;height:40%" aria-hidden="true"></span></button></figure>
+<p class="result"><strong>〔결과 확인〕</strong>〔내 화면에도 이것이 보이면 된다. 값은 달라도 된다: …〕</p>
+</section>
+<section class="route-checkpoint" data-route-stage="H04"><h3>다음으로 가는 기준</h3>
+<label><input type="checkbox" data-route-check="H04-0"><span>〔빨간 테두리 안의 항목을 내 화면에서 찾았다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<button disabled data-route-next data-step="H05">〔다음: 틀렸을 때 되돌려 주기〕</button></section>
+</article>
+
+<!-- ================= H05 틀렸을 때 되돌려 주기 ================= -->
+<article id="H05" class="task" hidden>
+<p class="eyebrow">〔걸음 5 · 틀렸을 때 되돌려 주기〕</p>
+<h2 tabindex="-1">〔무엇이 왜 틀렸는지 말해 준다〕</h2>
+<section class="story-work">
+<div class="read-card"><h3 class="action-title"><span>〔읽기〕</span>〔흔히 막히는 곳〕</h3>
+<p>〔이 실습에서 실제로 겪은 것 한두 가지. 예: AI가 없는 값을 지어냈다, 시키지 않은 파일까지 고쳤다.〕</p></div>
+</section>
+<section>
+<h3 class="action-title"><span>〔Claude Code〕</span>〔되돌려 주는 요청〕</h3>
+<!-- [블록] 주의 상자: 막히는 곳과 되돌리는 법 -->
+<p class="route-recovery">〔막히는 곳 1: 이런 출력이 나오면 … 이렇게 한다.〕</p>
+<div class="block prompt"><div class="block-head"><span>〔나쁜 예〕</span><button data-copy="bad-H05" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="bad-H05">〔실제로 보내 본 요청 글. 예: 다시 해 줘〕</pre>
+<div class="paste-destination">〔이렇게 보내면: 실제로 받은 결과 한 줄〕</div></div>
+<div class="block prompt"><div class="block-head"><span>〔좋은 예〕</span><button data-copy="good-H05" data-destination="agent"><svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>복사</button></div>
+<pre id="good-H05">〔실제로 보내 본 요청 글. 무엇이 틀렸는지, 근거가 무엇인지, 어떻게 해야 하는지를 적는다〕</pre>
+<div class="paste-destination">〔붙여넣는 곳: Claude Code 입력창〕</div></div>
+<p class="result"><strong>〔결과 확인〕</strong>〔고친 결과에서 볼 것.〕</p>
+</section>
+<section class="route-checkpoint" data-route-stage="H05"><h3>끝내는 기준</h3>
+<label><input type="checkbox" data-route-check="H05-0"><span>〔결과물이 끝난 모습(걸음 2에서 적은 것)과 맞는다〕</span></label>
+<p class="route-status" aria-live="polite"></p>
+<p class="route-finish" hidden>〔모든 단계를 확인했다. 이 실습에서 남은 것: …〕</p></section>
+</article>
+
+</main></div>
+<div id="notice" role="status" aria-live="polite"></div>
+<script>
+const guideKey=document.body.dataset.guide||'hyd-lab';
+const notice=document.querySelector('#notice');let noticeTimer;
+const viewer=document.createElement('dialog');viewer.id='screen-dialog';viewer.setAttribute('aria-label','실습 화면 확대');viewer.innerHTML='<div class="viewer-controls"><button type="button" data-size>원본 크기로 보기</button><button type="button" data-close autofocus>닫기 · Esc</button></div><div class="viewer-image"><img alt=""></div>';document.body.append(viewer);
+viewer.querySelector('[data-close]').addEventListener('click',()=>viewer.close());
+viewer.querySelector('[data-size]').addEventListener('click',event=>{const original=viewer.classList.toggle('original');event.target.textContent=original?'화면에 맞추기':'원본 크기로 보기'});
+document.querySelectorAll('.screen-zoom').forEach(button=>button.addEventListener('click',()=>{const source=button.querySelector('img'),target=viewer.querySelector('img');target.src=source.src;target.alt=source.alt;viewer.querySelector('.photo-mark')?.remove();const mark=button.querySelector('.photo-mark');if(mark)viewer.querySelector('.viewer-image').append(mark.cloneNode(true));viewer.classList.remove('original');viewer.querySelector('[data-size]').textContent='원본 크기로 보기';viewer.showModal()}));
+viewer.addEventListener('click',event=>{if(event.target===viewer)viewer.close()});
+function say(text){notice.textContent=text;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>notice.textContent='',4000)}
+function show(id,focus=false){if(!/^(S00|H\d\d)$/.test(id)||!document.getElementById(id))return;document.querySelectorAll('.task').forEach(el=>el.hidden=el.id!==id);document.querySelectorAll('nav [data-step]').forEach(el=>{if(el.dataset.step===id)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current')});if(focus)history.replaceState(null,'','#'+id);if(focus)document.querySelector('#'+id+' h2').focus()}
+document.querySelectorAll('[data-step]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.step,true)));
+document.querySelectorAll('[data-draft]').forEach(field=>{try{field.value=localStorage.getItem(guideKey+'-prompt-'+field.dataset.draft)||''}catch{}field.addEventListener('input',()=>{const status=field.parentElement.querySelector('.draft-status');try{localStorage.setItem(guideKey+'-prompt-'+field.dataset.draft,field.value);status.textContent='이 브라우저에 저장됨'}catch{status.textContent='자동 저장 불가 · 텍스트로 저장하세요'}})});
+document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{const target=document.getElementById(button.dataset.copy),text=target.value??target.textContent;if(!text.trim()){say('먼저 요청을 쓰세요.');return}const destination=button.dataset.destination==='file'?'VS Code에서 Ctrl+P(Mac: Cmd+P)를 누르고 파일 경로를 붙여넣은 뒤 Enter를 누르세요.':button.dataset.destination==='terminal'?'VS Code 터미널의 실습 폴더에 붙여넣고 Enter를 누르세요.':button.dataset.destination==='browser'?'브라우저 화면의 입력 칸에 붙여넣고 실행하세요.':'Claude Code 입력창에 붙여넣고 전송하세요.';try{await navigator.clipboard.writeText(text);say('복사했습니다. '+destination)}catch{if(target.select)target.select();else{const range=document.createRange();range.selectNodeContents(target);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range)}say('선택된 내용을 Ctrl+C(Mac: Cmd+C)로 복사한 뒤 '+destination)}}));
+document.querySelectorAll('[data-download]').forEach(button=>button.addEventListener('click',()=>{const field=document.getElementById(button.dataset.download);if(!field.value.trim()){say('먼저 요청을 쓰세요.');return}const url=URL.createObjectURL(new Blob([field.value],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=guideKey+'-'+field.dataset.draft+'-요청.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}));
+document.querySelectorAll('[data-complete]').forEach(box=>{try{box.checked=localStorage.getItem(guideKey+'-reviewed-'+box.dataset.complete)==='yes'}catch{}box.addEventListener('change',()=>{try{localStorage.setItem(guideKey+'-reviewed-'+box.dataset.complete,box.checked?'yes':'no')}catch{}})});
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)||'S00',true));
+show(location.hash.slice(1)||'S00');
+
+const routeKey=guideKey+'-route-';
+function routeRefresh(){
+ const panels=[...document.querySelectorAll('[data-route-stage]')];
+ let completed=0;
+ panels.forEach(panel=>{
+  const boxes=[...panel.querySelectorAll('[data-route-check]')], done=boxes.filter(b=>b.checked).length, all=done===boxes.length;
+  if(all)completed++;
+  panel.querySelector('.route-status').textContent=all?'확인했습니다. 다음 단계로 진행하세요.':'직접 확인 '+done+' / '+boxes.length+' · 남은 항목을 확인하면 다음으로 이동할 수 있습니다.';
+  const next=panel.querySelector('[data-route-next]');if(next)next.disabled=!all;
+  const nav=document.querySelector('nav [data-step="'+panel.dataset.routeStage+'"]');if(nav)nav.dataset.reviewed=all?'yes':'no';
+ });
+ const finish=document.querySelector('.route-finish');if(finish)finish.hidden=completed!==panels.length;
+}
+document.querySelectorAll('[data-route-check]').forEach(box=>{
+ try{box.checked=localStorage.getItem(routeKey+box.dataset.routeCheck)==='yes'}catch{}
+ box.addEventListener('change',()=>{try{localStorage.setItem(routeKey+box.dataset.routeCheck,box.checked?'yes':'no')}catch{}routeRefresh()});
+});
+routeRefresh();
+</script>
+</body></html>

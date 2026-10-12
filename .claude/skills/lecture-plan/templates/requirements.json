@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "project_root": "../../..",
+  "sources": [
+    {"id": "school", "path": "학교요구.md", "sha256": "REPLACE_WITH_SHA256", "read_scope": "전체", "reviewed": false}
+  ],
+  "requirements": [
+    {
+      "id": "REQ-001", "source_id": "school", "source_anchor": "해당 절 또는 페이지",
+      "text": "원문 요구를 누락 없이 작성", "required": true,
+      "acceptance": "실물에서 판단 가능한 수용 기준",
+      "targets": [{"path": "실습가이드.md", "anchor": "해당 절", "sha256": "REPLACE_WITH_SHA256"}],
+      "status": "unverified", "review_note": "",
+      "evidence": []
+    }
+  ]
+}

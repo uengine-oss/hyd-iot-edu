@@ -1,0 +1,144 @@
+[
+  {
+    "prompt": "이 리서치와 학교 계약을 바탕으로 2시간 수업을 준비해줘.",
+    "primary": "lecture-plan",
+    "required_helpers": [
+      "lecture-deck",
+      "lecture-lab"
+    ],
+    "check": "원문 요구를 원장·수용 기준으로 정리하고 대표 단위부터 제작해 산출물과 검증에 연결한다."
+  },
+  {
+    "prompt": "모아 온 자료를 제작 요구사항으로 정리해줘.",
+    "primary": "lecture-plan",
+    "required_helpers": [],
+    "check": "요구와 참고 사실을 구분하고 출처와 수용 기준을 남긴다. 정리만 요청이므로 제작으로 넘어가지 않는다."
+  },
+  {
+    "prompt": "16시간 과정 커리큘럼을 짜줘.",
+    "primary": "lecture-plan",
+    "required_helpers": [],
+    "check": "학습목표·모듈별 시간·활동·결과를 연결하고 총 시간과 맞춘다. 양식이 없으면 기본 목차를 쓴다."
+  },
+  {
+    "prompt": "학교 검토 의견을 계획서·덱·가이드에 전부 반영해줘.",
+    "primary": "lecture-plan",
+    "required_helpers": [
+      "lecture-deck",
+      "lecture-lab"
+    ],
+    "check": "반영표를 남기고 같은 사실을 쓰는 모든 문서를 맞춘다. 강사 손질본은 덮어쓰지 않는다."
+  },
+  {
+    "prompt": "계획서랑 실습가이드 숫자가 달라. 자료끼리 맞춰줘.",
+    "primary": "lecture-plan",
+    "required_helpers": [],
+    "check": "사실의 소유 위치를 고치고 영향 문서만 갱신한다. 분량 증가를 실패로 보지 않는다."
+  },
+  {
+    "prompt": "학교 요구가 실습가이드에 빠짐없이 들어갔는지 검토만 해줘.",
+    "primary": "lecture-verify",
+    "required_helpers": [
+      "lecture-plan"
+    ],
+    "check": "원문과 실물을 대조하고 파일 수정이나 ZIP 생성을 하지 않는다."
+  },
+  {
+    "prompt": "이 강의 수업에 써도 되는지 완료 판정해줘.",
+    "primary": "lecture-verify",
+    "required_helpers": [],
+    "check": "원장이 있으면 check_contract.py --require-complete를 실행하고 구조 검사와 의미 검토를 구분한다."
+  },
+  {
+    "prompt": "강의 덱과 대본을 계약에 맞게 고쳐줘.",
+    "primary": "lecture-deck",
+    "required_helpers": [
+      "lecture-plan"
+    ],
+    "check": "요구 위치를 연결하고 분량 증가를 무조건 금지하지 않는다."
+  },
+  {
+    "prompt": "초보자 설명과 복습을 보강해줘. 덱 MD만 필요해.",
+    "primary": "lecture-deck",
+    "required_helpers": [],
+    "check": "승인 예시와 덱과대본-작성기준을 적용해 덱 MD를 작성한다. PPTX·TTS·녹화는 실행하지 않는다."
+  },
+  {
+    "prompt": "덱 v6.1과 대본 v7.6처럼 다른 주제의 덱과 대본을 만들어줘.",
+    "primary": "lecture-deck",
+    "required_helpers": [],
+    "check": "화면 내용·화면 구성·제작 기준과 화면독립 낭독을 분리한다. 15장·제조 사례를 다른 주제에 강제하지 않는다."
+  },
+  {
+    "prompt": "실습을 가이드대로 돌려보고 막히는 부분까지 고쳐줘.",
+    "primary": "lecture-lab",
+    "required_helpers": [],
+    "check": "실제 실행 범위를 기록하고 문법 검사를 완주로 보고하지 않는다."
+  },
+  {
+    "prompt": "이 캡처들로 초보 학생용 설치 가이드 PDF를 만들어줘.",
+    "primary": "lecture-lab",
+    "required_helpers": [],
+    "check": "세팅가이드-PDF 참조와 기준 디자인을 읽고 행동·화면·확인을 연결한다. 예시 제품/설치를 자동 복사하지 않는다."
+  },
+  {
+    "prompt": "이전 세팅 PDF와 같은 디자인으로 새 강의의 환경 준비 문서를 만들어줘.",
+    "primary": "lecture-lab",
+    "required_helpers": [],
+    "check": "디자인은 보존하고 OS·날짜·시리즈·실제 설치 내용은 현재 계약에 맞춘다."
+  },
+  {
+    "prompt": "설치 가이드 PDF가 초보자가 따라가기 쉬운지 검토만 해줘.",
+    "primary": "lecture-verify",
+    "required_helpers": [],
+    "check": "실제 페이지와 요구를 검토하고 요청 없이 새 PDF를 만들거나 프로그램을 설치하지 않는다."
+  },
+  {
+    "prompt": "학생 배포 ZIP을 만들어줘.",
+    "primary": "lecture-deliver",
+    "required_helpers": [],
+    "check": "명시 목록으로 실제 파일 구성을 검사하고 전송은 하지 않는다."
+  },
+  {
+    "prompt": "드라이브에 올릴 자료를 ZIP 형태로만 만들어줘.",
+    "primary": "lecture-deliver",
+    "required_helpers": [],
+    "check": "로컬 묶음을 제작하고 Drive 연결·업로드·PPTX 생성을 실행하지 않는다."
+  },
+  {
+    "prompt": "검증된 배포 ZIP을 드라이브 강의 폴더에 올려줘.",
+    "primary": "lecture-deliver",
+    "required_helpers": [],
+    "check": "명시 요청 절을 적용한다. 갱신은 조회한 파일 ID로 하고, 실패 뒤 원격 메타를 재확인해 중복을 만들지 않으며 공유 범위를 유지한다."
+  },
+  {
+    "prompt": "UI 시연에서 결과보다 음성이 먼저 나와. 이 장면만 고쳐줘.",
+    "primary": "demo-video",
+    "required_helpers": [],
+    "check": "공용 영상 스킬이 맡는다. lecture-lab은 영상 범위를 다루지 않는다."
+  },
+  {
+    "prompt": "다음 세션이 이어받게 인계 정리해줘.",
+    "primary": "handoff",
+    "required_helpers": [],
+    "check": "공용 인계 스킬로 인계 위치를 갱신한다. 강의 파일은 바꾸지 않는다."
+  },
+  {
+    "prompt": "오늘 강의 작업보고 정리해줘.",
+    "primary": "work-report",
+    "required_helpers": [],
+    "check": "날짜별 보고 정본 하나에 통합한다. 프로젝트 아래 보고 폴더를 만들지 않는다."
+  },
+  {
+    "prompt": "어디까지 됐는지만 알려줘.",
+    "primary": null,
+    "required_helpers": [],
+    "check": "스킬 없이 CLAUDE.md의 재개 규칙대로 인계와 실제 파일을 대조해 답한다. 보고서 파일을 자동 생성하지 않는다."
+  },
+  {
+    "prompt": "강의 스킬끼리 역할이 겹치지 않게 정리해줘.",
+    "primary": null,
+    "required_helpers": [],
+    "check": "강의 파일을 만들지 않는다. .claude/skills/lecture-common/rules/스킬-공식규격.md와 skill-admission.md 절차, workflow_doctor.py 구조 검사를 따른다."
+  }
+]
