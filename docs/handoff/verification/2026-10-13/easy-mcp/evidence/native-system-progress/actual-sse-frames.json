@@ -1,0 +1,84 @@
+[
+  {
+    "event": {
+      "id": "4853f6d1-9d1a-421d-8c2e-089567f8debd",
+      "job_id": "MCP_EFFECT_CALL",
+      "todo_id": "a3faf5d0-e5e7-4948-ac8d-ce1a68c33629",
+      "proc_inst_id": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec",
+      "event_type": "tool_usage_started",
+      "status": null,
+      "crew_type": "tool",
+      "data": {
+        "args": {
+          "asset": "isolated-asset"
+        },
+        "name": "승인 뒤 MCP 호출",
+        "tool": "mcp__isolated__confirm_progress",
+        "input": {
+          "asset": "isolated-asset"
+        },
+        "tool_name": "confirm_progress",
+        "attempt_id": "5d81d588-3a44-488f-af46-bdb834ce3a44",
+        "tool_use_id": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec:a3faf5d0-e5e7-4948-ac8d-ce1a68c33629:5d81d588-3a44-488f-af46-bdb834ce3a44:0",
+        "idempotency_key": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec:a3faf5d0-e5e7-4948-ac8d-ce1a68c33629",
+        "owner_claim_hash": "ea2d465f77170715330f0b3574ed78666048190d8b7e661200ac5e6076636f07",
+        "system_observation": true
+      },
+      "timestamp": "2026-10-12T18:03:44.728Z"
+    },
+    "fresh": true,
+    "received_at": 1791828225152
+  },
+  {
+    "event": {
+      "id": "fcd077f7-ad80-4a80-9d74-e6f9947ded9b",
+      "job_id": "MCP_EFFECT_CALL",
+      "todo_id": "a3faf5d0-e5e7-4948-ac8d-ce1a68c33629",
+      "proc_inst_id": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec",
+      "event_type": "tool_usage_finished",
+      "status": null,
+      "crew_type": "tool",
+      "data": {
+        "name": "승인 뒤 MCP 호출 결과",
+        "tool": "mcp__isolated__confirm_progress",
+        "output": "격리된 실제 HTTP 응답을 확인했습니다",
+        "result": "격리된 실제 HTTP 응답을 확인했습니다",
+        "is_error": false,
+        "tool_name": "confirm_progress",
+        "attempt_id": "5d81d588-3a44-488f-af46-bdb834ce3a44",
+        "tool_use_id": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec:a3faf5d0-e5e7-4948-ac8d-ce1a68c33629:5d81d588-3a44-488f-af46-bdb834ce3a44:0",
+        "attempt_failed": false,
+        "owner_claim_hash": "ea2d465f77170715330f0b3574ed78666048190d8b7e661200ac5e6076636f07",
+        "system_observation": true
+      },
+      "timestamp": "2026-10-12T18:03:45.612Z"
+    },
+    "fresh": true,
+    "received_at": 1791828225686
+  },
+  {
+    "event": {
+      "id": "0849002d-3219-477b-beee-58dd7666a358",
+      "job_id": "SYSTEM_ATTEMPT_COMMITTED",
+      "todo_id": "a3faf5d0-e5e7-4948-ac8d-ce1a68c33629",
+      "proc_inst_id": "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec",
+      "event_type": "task_working",
+      "status": null,
+      "crew_type": "result",
+      "data": {
+        "name": "도구 응답을 처리 건에 반영했습니다",
+        "content": "도구의 실제 응답과 처리 건의 저장 결과를 구분해 기록합니다. 외부 도구의 실행을 되돌렸다는 뜻은 아닙니다.",
+        "attempt_id": "5d81d588-3a44-488f-af46-bdb834ce3a44",
+        "tool_use_ids": [
+          "native-system-progress-2cde1ab4f3394baba044dfa7d0b7f0db.2c2e9c87-af35-4710-8d67-c4e120e9b4ec:a3faf5d0-e5e7-4948-ac8d-ce1a68c33629:5d81d588-3a44-488f-af46-bdb834ce3a44:0"
+        ],
+        "attempt_failed": false,
+        "system_observation": true,
+        "transaction_outcome": "committed"
+      },
+      "timestamp": "2026-10-12T18:03:45.834Z"
+    },
+    "fresh": true,
+    "received_at": 1791828226221
+  }
+]

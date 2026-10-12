@@ -1,0 +1,170 @@
+{
+  "removed_owned_tmpfs_container": "hyd-system-progress-20261013",
+  "project_volumes_deleted": false,
+  "running_containers": [
+    {
+      "name": "hyd-iot-edu-process-1",
+      "status": "Up About a minute (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-sim-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-agent-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-dmn-mcp-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-portal-1",
+      "status": "Up 3 hours"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-purchase-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-maint-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "supabase_studio_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_pg_meta_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_edge_runtime_hyd-iot-edu",
+      "status": "Up 18 hours"
+    },
+    {
+      "name": "supabase_rest_hyd-iot-edu",
+      "status": "Up 18 hours"
+    },
+    {
+      "name": "supabase_realtime_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_inbucket_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_auth_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_kong_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "supabase_db_hyd-iot-edu",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-connect-sink-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-connect-ingest-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-cmd-gateway-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-detector-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-fuxa-1",
+      "status": "Up 3 hours"
+    },
+    {
+      "name": "hyd-iot-edu-grafana-1",
+      "status": "Up 3 hours"
+    },
+    {
+      "name": "hyd-iot-edu-plant-sim-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-effects-mcp-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-timescaledb-1",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-redpanda-1",
+      "status": "Up 18 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-neo4j-1",
+      "status": "Up 3 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-emqx-1",
+      "status": "Up 17 hours (healthy)"
+    }
+  ],
+  "ports": {
+    "55757": {
+      "open": false
+    },
+    "8764": {
+      "open": false
+    },
+    "8765": {
+      "open": false
+    },
+    "8766": {
+      "open": false
+    },
+    "8767": {
+      "open": false
+    },
+    "8097": {
+      "open": false
+    }
+  },
+  "health": {
+    "ok": true,
+    "kafka": true,
+    "incidents": 246,
+    "mode": "instance",
+    "supabase": true,
+    "runtime": {
+      "status": "ready",
+      "last_success_at": "2026-10-12T18:06:24.867Z",
+      "failure_kind": null,
+      "ready": true
+    }
+  },
+  "registered_server_names": [
+    "neo4j",
+    "hyd-dmn",
+    "enterprise",
+    "enterprise-maint",
+    "enterprise-purchase"
+  ],
+  "source_and_served_sha": {
+    "mcpConnections.js": "fc1ad34d1b8231da1de7625e2da870b6ee6ce3f8838a5a6e70c5a1d43341196a",
+    "mcpConnections.css": "07a2c892bb36705b92842804893ec7e217f8b29f68363d47525d2499c75b478f",
+    "mcp.js": "e0a4da791effe5c97c667bb8d5b7e87077e0eb92ba6c65210f2526122b391376",
+    "index.html": "986b01c6960974ee913ec7f5e07390eb8d4c4d4ec9aba1705bec4b6b497796b7"
+  },
+  "container_stability": "/hyd-iot-edu-process-1 2026-10-12T18:04:27.714026201Z 0\n/hyd-iot-edu-portal-1 2026-10-12T15:25:25.486708989Z 0\n",
+  "ok": true
+}

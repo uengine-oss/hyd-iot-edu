@@ -129,6 +129,7 @@ class Repo(Protocol):
     def cleanup_stale_consumers(self, minutes: int = STALE_MINUTES) -> int: ...
     # events · notifications
     def record_events(self, events: list[dict]) -> None: ...
+    def record_service_progress(self, tenant_id: str, proc_inst_id: str, todo_id: str, consumer: str, events: list[dict]) -> None: ...
     def find_task_event(self, todo_id: str, job_id: str, event_type: str) -> dict | None: ...
     # A161-G4: `before` = an event id (keyset cursor): the newest `limit` rows strictly older than that event, oldest first.
     # A cursor that is not an event of the same filter raises LookupError — an empty page would read as "no older rows"
@@ -177,6 +178,8 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self.instances: dict[str, dict] = {}
         self.workitems: dict[str, dict] = {}
         self.events: list[dict] = []
+        self._durable_service_progress_ids = set()
+        self._progress_local = threading.local()
         self.event_payloads: dict[str, dict] = {}
         self.notifications: list[dict] = []
         self.role_members: list[dict] = []
@@ -208,10 +211,16 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             inst=self.instances.get(proc_inst_id)
             if not inst or inst.get('tenant_id')!=tenant_id:raise KeyError('no such instance')
             before=deepcopy((self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments))
+            self._progress_local.claims = deepcopy((self.instances, self.workitems))
             try:yield
             except Exception:
+                previous_ids = {e['id'] for e in before[2]}
+                durable = [deepcopy(e) for e in self.events if e['id'] in self._durable_service_progress_ids and e['id'] not in previous_ids]
                 self.instances,self.workitems,self.events,self.notifications,self.approvals,self.reworks,self.projection_jobs,self.assignments=before
+                self.events.extend(durable)
                 raise
+            finally:
+                self._progress_local.claims = None
 
     def due_timers(self, tenant_id: str, now: datetime, limit: int = 100) -> list[dict]:
         with self._lock:
@@ -497,6 +506,19 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         return 0
 
     # ---- events · notifications
+    def record_service_progress(self, tenant_id, proc_inst_id, todo_id, consumer, events):
+        from . import service_progress as progress
+        progress.validate_rows(events, proc_inst_id, todo_id)
+        claims = getattr(self._progress_local, 'claims', None) or (self.instances, self.workitems)
+        for row in events:
+            if row['job_id'] in ('SYSTEM_ATTEMPT_COMMITTED', 'SYSTEM_ATTEMPT_ROLLED_BACK'):
+                start = next((e for e in self.events if e.get('event_type') == 'tool_usage_started' and e.get('todo_id') == todo_id and (e.get('data') or {}).get('attempt_id') == row['data']['attempt_id']), None)
+                progress.require_closure(self.instances.get(proc_inst_id), self.workitems.get(todo_id), start, tenant_id, proc_inst_id, todo_id, consumer, row)
+            else:
+                progress.require_owner(claims[0].get(proc_inst_id), claims[1].get(todo_id), tenant_id, proc_inst_id, todo_id, consumer)
+        self.record_events(events)
+        self._durable_service_progress_ids.update(e['id'] for e in events)
+
     def record_events(self, events: list[dict]) -> None:
         with self._lock:
             for evt in events:
@@ -516,7 +538,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             if pos is None:
                 raise LookupError(f"events cursor '{before}' is not an event of this case")
             rows = rows[:pos]
-        return [_copy(e) for e in rows[-limit:]] if limit > 0 else []
+        return [_copy(e) for e in rows] if limit is None else ([_copy(e) for e in rows[-limit:]] if limit > 0 else [])
 
     def store_event_payload(self, payload: dict) -> None:
         with self._lock:
@@ -935,6 +957,23 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             return int(c.execute("select cleanup_stale_consumers(%s)", (minutes,)).fetchone()["cleanup_stale_consumers"])
 
     # ---- events · notifications
+    def record_service_progress(self, tenant_id, proc_inst_id, todo_id, consumer, events):
+        """Only the observation journal uses its own transaction; no business flush."""
+        from . import service_progress as progress
+        progress.validate_rows(events, proc_inst_id, todo_id)
+        # Deliberately bypass _conn(): it reuses the locked business connection.
+        with self._psycopg.connect(self.dsn, connect_timeout=5, row_factory=self._dict_row) as c:
+            c.execute("set local statement_timeout='5000ms'")
+            inst = c.execute('select proc_inst_id,tenant_id,status,is_deleted from bpm_proc_inst where proc_inst_id=%s', (proc_inst_id,)).fetchone()
+            wi = c.execute('select id,proc_inst_id,tenant_id,status,agent_orch,user_id,consumer from todolist where id=%s', (todo_id,)).fetchone()
+            for row in events:
+                if row['job_id'] in ('SYSTEM_ATTEMPT_COMMITTED', 'SYSTEM_ATTEMPT_ROLLED_BACK'):
+                    start = c.execute("select data from events where proc_inst_id=%s and todo_id=%s and event_type='tool_usage_started' and data->>'attempt_id'=%s order by timestamp limit 1", (proc_inst_id, todo_id, row['data']['attempt_id'])).fetchone()
+                    progress.require_closure(inst, wi, start, tenant_id, proc_inst_id, todo_id, consumer, row)
+                else:
+                    progress.require_owner(inst, wi, tenant_id, proc_inst_id, todo_id, consumer)
+            c.execute('select record_events_bulk(%s)', (self._Jsonb(events),))
+
     def record_events(self, events: list[dict]) -> None:
         if not events:
             return

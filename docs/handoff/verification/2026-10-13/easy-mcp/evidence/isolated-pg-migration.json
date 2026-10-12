@@ -1,0 +1,203 @@
+{
+  "kind": "isolated postgres15 tmpfs; no production DB",
+  "files": [
+    {
+      "name": "20261003000001_process_engine.sql",
+      "sha256": "9788eb8e30b21452323e3541facb2a16f32a22da988eff6df80019ae11809a61"
+    },
+    {
+      "name": "20261003000002_enterprise.sql",
+      "sha256": "8d804cdb0095c2fc2661549e4f8b523b7ed7007cccb2685c1f1f67735d5b09ef"
+    },
+    {
+      "name": "20261004000001_start_event_identity.sql",
+      "sha256": "31e378c307f50669913c100be6539aa966a6813653efe881f1adeffab0d5384b"
+    },
+    {
+      "name": "20261004000002_immutable_definitions.sql",
+      "sha256": "aaafed33cb5ea210c868f17909161b4ed9d3ba23e1613aa25ef4649060ec8d15"
+    },
+    {
+      "name": "20261004000003_enterprise_reader.sql",
+      "sha256": "21c3e1a0ff2054b21194244f68ef895ce95f614aa614a08ffb081a2dc8a5bc4b"
+    },
+    {
+      "name": "20261004000004_process_lock_order.sql",
+      "sha256": "4b51fc7cee658fbc0adba50ea8d6ea12a5b07c1d6dcb6c2b0c5d6a9d334fc5ff"
+    },
+    {
+      "name": "20261004000005_approval_outbox.sql",
+      "sha256": "0fe75b52b3099d5aec9c1569df02c30d9379cfb31d1b0b89f59ff8041201bf6c"
+    },
+    {
+      "name": "20261004000006_cmms_readiness.sql",
+      "sha256": "89a5421cdfdc3891e533e11a2b63ba6956e61ce1add6b17a4944b2429b91bd81"
+    },
+    {
+      "name": "20261004000007_source_inbox.sql",
+      "sha256": "fdd42c9502c2bdd963dc973979f1d9ad63b8e56ef9cc2df0ce7cd4c31b233b01"
+    },
+    {
+      "name": "20261004000008_approval_discard.sql",
+      "sha256": "4b5b5c4002ef929327f1105809921344bac14bfb351cecb6131f86bd6d475855"
+    },
+    {
+      "name": "20261004000009_variable_provenance.sql",
+      "sha256": "2b5c1d21f95f3b2026042226b6513d1f8062dfe5b7bb2b70a51c3b64783cb51e"
+    },
+    {
+      "name": "20261004000010_rework_generations.sql",
+      "sha256": "8df20437cd86fd4f77eb6b3d9b1d48683af2399414698294ce5110153e8b7854"
+    },
+    {
+      "name": "20261004000011_execution_projection_outbox.sql",
+      "sha256": "5b5363c132600deca0f2dc770723ecf65e3b6121224bd093a34c9ab1fefb26fb"
+    },
+    {
+      "name": "20261004000012_projection_repairs.sql",
+      "sha256": "dcc550b480048b9564bb4991b40306e7f729367580c6917b9e7907a1b6f1386f"
+    },
+    {
+      "name": "20261005000013_task_deferral.sql",
+      "sha256": "c79d3628b5b80b26af785de75b907030227a3f61e2e13e1931159e9388c64578"
+    },
+    {
+      "name": "20261005000014_flow_state.sql",
+      "sha256": "c60161714a697c88c63df50233dadbf6be25ffb44c476d8042ebdff46bfceba1"
+    },
+    {
+      "name": "20261005000015_enterprise_compensation.sql",
+      "sha256": "77e640cf6a3bc8be345f588b70dd83b1954a1a5caf1ceb51ccf9fa616088207e"
+    },
+    {
+      "name": "20261005000016_effect_receipts.sql",
+      "sha256": "7a1a9eb4b99751da5608b66018c37867572b2a21965804f1096956e4318210ae"
+    },
+    {
+      "name": "20261007000017_enterprise_time_anchors.sql",
+      "sha256": "369b466285a662d7af1060fd09dd59f7303b7d73946a451e047b22b9799c27dc"
+    },
+    {
+      "name": "20261007000018_worker_lease.sql",
+      "sha256": "9cc4907c87fc608fc8f0d2faff44699341718fe943178132a7b509650da4f8b0"
+    },
+    {
+      "name": "20261007000019_transactions_before_after.sql",
+      "sha256": "e8d6fb140845f97a358e1c39980c3b21c40916bd8f4592369cc15a4efd83a64f"
+    },
+    {
+      "name": "20261007000020_compensation_before_after.sql",
+      "sha256": "13d98b65933cd474449ab8465834771f32d21ad0182439657a324d7e6b5e07ff"
+    },
+    {
+      "name": "20261007000021_claim_count_reclaim_only.sql",
+      "sha256": "559553e7d84d8597d819f976abb18c10b8226307bb3bc5cba16a3088b533400e"
+    },
+    {
+      "name": "20261007000022_enterprise_exec_locks_inputs.sql",
+      "sha256": "b4afe1942ab82d0abe2b1173a2ea90a84143164d7a71e57696156b733a69e7e7"
+    },
+    {
+      "name": "20261008000023_standby_ready_backfill.sql",
+      "sha256": "c5486878f50b3e9c79e01fb0e953a11b066e0805c9271eec9abe948847cdd21a"
+    },
+    {
+      "name": "20261008000024_lease_lock_order.sql",
+      "sha256": "70a100cdad9f3ee39775567e783c6326bf30725aa45d2fc0954a2f95e3e2a706"
+    },
+    {
+      "name": "20261008000025_ent_drop_legacy_hour_columns.sql",
+      "sha256": "77fd7c8af728df86df39bbfd41016919d30aac4a382f023055b5d7d8858da73b"
+    },
+    {
+      "name": "20261008000026_agents_skills.sql",
+      "sha256": "45c9379d1b2815fbd16acd24f2c01dbd7562424461049625ec201aa74d85049c"
+    },
+    {
+      "name": "20261008000029_inbox_assignment.sql",
+      "sha256": "b56272e6903a0531685e5535b1f97fec0ef139857ee61698077e95435cbefb35"
+    },
+    {
+      "name": "20261008000030_judgment_eval_runs.sql",
+      "sha256": "50910c9a9bfe494633eebc417723a9f252d125b9d111f17967b7b0d4d2707d43"
+    },
+    {
+      "name": "20261008000037_cmms_task_standards.sql",
+      "sha256": "44fa7785464412a9759a44c12b30069ac79e9f37d4b9cc280d9bc5b20b4614b4"
+    },
+    {
+      "name": "20261008000040_agent_trials.sql",
+      "sha256": "2ddc417a776094f39d08c126611ddc83cd55b7941c0d9f98487418648cba138f"
+    },
+    {
+      "name": "20261008000041_agent_authoring.sql",
+      "sha256": "121bf0aef8701657c6f80b99bb7d90f2520e0dd846bf5e313ff1b53b4b5531f0"
+    },
+    {
+      "name": "20261008000042_mcp_server_checks.sql",
+      "sha256": "80966b2e2213af064d202aab2b0412c3dfa247f6b2af7a3af291a6ac2654fc6c"
+    },
+    {
+      "name": "20261008000043_flow_import.sql",
+      "sha256": "5dfd532cdfed011953bb419937e088caeb504c868bf10ba2c3380a7f7a23fc87"
+    },
+    {
+      "name": "20261008000044_definition_deployment.sql",
+      "sha256": "17a8d5f3140fc662e0312530db113f5340cfdbd9b7b15cbb3fbe0fedec6d7931"
+    },
+    {
+      "name": "20261009000045_c2_execution.sql",
+      "sha256": "c3150fb0da0fe5cb43774f278706b13834444050e80fadba04cbab5a5f6f7d5e"
+    },
+    {
+      "name": "20261009000046_c3_pm_card_window.sql",
+      "sha256": "0e436b98eb4d5a88bf4ef2fa4ab9f2bc6211f26dfe5be04ade7c60a6f7085819"
+    },
+    {
+      "name": "20261009000047_c3_bc_simplified.sql",
+      "sha256": "3adb46e9e39e54d51e04bb1450e8cf034ad0c2b8025bbb4982e3ec31a91e1398"
+    },
+    {
+      "name": "20261009000048_event_payloads.sql",
+      "sha256": "f3b3135eacceea6a0be92b2ce9671dcb0efbe8e979aeaf2b87b85858f9943516"
+    },
+    {
+      "name": "20261009000050_mcp_secrets.sql",
+      "sha256": "87dc0154b0c72c8ace1d94c7ced2ddde9f26d2b03bbd732a89093eadaeeb2b48"
+    },
+    {
+      "name": "20261010000051_agent_work_rules.sql",
+      "sha256": "8022fe0d65e908e8e00ea67e788cb677b37b7e4b2f07dfe7cf698da7fee04499"
+    },
+    {
+      "name": "20261012000052_student_case_tags.sql",
+      "sha256": "ac78ca8c8ec45905a084accbdff4e6ff5f81de59ae230ed69dc52ba738dbb376"
+    },
+    {
+      "name": "20261012000053_purchase_part_skill.sql",
+      "sha256": "a6fb26791c28c2013d205b5a15097f59dc2a6731cb5d3d351f0191687c60a4d5"
+    },
+    {
+      "name": "20261012000054_pm_reschedule.sql",
+      "sha256": "ed3e9500ad44ea5cbdbf790e6f31bb271c362045c5b33bce3a69b06f1829e21a"
+    },
+    {
+      "name": "20261012000056_pm_scoped_schedule.sql",
+      "sha256": "b4ace212359d99116c0ec3b53fbc59d172c3894d4be278952a65e589595ea50a"
+    },
+    {
+      "name": "20261012000057_b_return_filter_fixture.sql",
+      "sha256": "b8fb2541e153f9b4822749a1328db40d501b7f1778b0e50ee511313a5f7cc857"
+    },
+    {
+      "name": "20261012000058_pm_receipt_korean.sql",
+      "sha256": "78505041e629395f7690f8d1091269b57951e63af151a144f4c949fd075b64c2"
+    },
+    {
+      "name": "seed.sql",
+      "sha256": "b431de7ea131e387ea13f2ea2bcbeaf99ede5a9c5320e9dfe4e735784bac5e83"
+    }
+  ],
+  "tenant_count": 1,
+  "ok": true
+}

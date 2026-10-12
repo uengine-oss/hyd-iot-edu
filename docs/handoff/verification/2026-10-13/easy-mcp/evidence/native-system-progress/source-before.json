@@ -1,0 +1,19 @@
+{
+  "it/process/procsvc/instances.py": "dea508faa98b122f025a00b20fd216d5859b561a1dc37a5b6dac35a09ae9792d",
+  "it/process/procsvc/instance_mode.py": "b72e28673c487b86a26e6a5f90700551fb54db95fee2deb879968af047aa8891",
+  "it/process/procsvc/service_parts.py": "a056ddbb56d8526dde9b4abd2c6b1af1f4600faa9f4e71cd282548f47772a01c",
+  "it/process/procsvc/service_progress.py": "845b6e0e9b923e6e6220a707b609ba90e2be2ba1074fceb377d0fddbf0af271d",
+  "it/process/procsvc/procdb.py": "1d8aa694f4a2f93190aaa4ac586b7eadc00907fad39b2363b9548900811001cf",
+  "it/process/procsvc/engine.py": "5a636ed1b41b2b535d57f1a8b046247f03937596ac8d73f5456523ade9aa2e68",
+  "it/process/procsvc/mcp_check.py": "256d838522a8b9ced015b85aa29c9a9f132246ea05cfaf6c74e5c92890f245fb",
+  "it/portal/www/liveStream.js": "d650e0d8fcb3b2d34228539d218be56cc014a962ccdce1d9547df8d5eecba703",
+  "it/portal/www/ui.js": "8b5c67c52e13f1c6a77e8f7b4432a93d7c24d7134d638da4d1245f1bfa5e338d",
+  "it/portal/www/plainWords.js": "91ac536559f90c1799ee442664026b0093327fb9b4521930bdeb285cc7bd933b",
+  "it/portal/www/trace.js": "f766c9d2b252ce0955e11b92e882d44c90bc9595bf19d94d6399fa0e663248c0",
+  "it/portal/www/tokens.css": "2f415bfc0d09ceeccddd67bf1cab29fb5c0fdc7bd8ec05cda43928c70e211bd9",
+  "it/portal/www/styles.css": "9ff30c1b9c66605c8d141a28f1af55e1766e7dbf3b3b4c426e01adac80af7d23",
+  "it/portal/www/instances.css": "166bd33c45db2b87c8a33b2aa4627ef096211d4489808acd89f40b699a4df410",
+  "it/portal/www/trace.css": "531613336be78bd0a935c6d976da013435cdd8176e1a93c546d3050dd31d4a88",
+  "it/portal/www/theme.css": "838109e36b81a8f1724e2e8a6b90f1ad3f76ad19f7b244c697fa07558ec3591a",
+  "it/portal/www/names.json": "01a472e6a84d9428f65dd5878a2ae3efe612afe3959d8ec15f342b2b05a87efc"
+}

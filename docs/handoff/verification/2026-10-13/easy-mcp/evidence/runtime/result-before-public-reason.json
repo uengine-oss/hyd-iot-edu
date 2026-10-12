@@ -1,0 +1,89 @@
+﻿{
+    "notes":  [
+                  "Optional MCP GET streaming explicitly 405; POST JSON/SSE supported",
+                  "OAuth legacy SSE explicitly rejected",
+                  "Current claim lease checked every request; capability maximum1800s",
+                  "No upstream OAuth token/global worker key in CLI config",
+                  "Root owns process health main integration and deployment"
+              ],
+    "live_db_writes":  0,
+    "llm_runs":  0,
+    "references":  [
+                       {
+                           "path":  "D:/work/study/hyd-iot-edu/.evidence/reaudit/references-latest/process-gpt/docs/en/architecture.md",
+                           "sha256":  "c20fddac3e6a5c7be582936aa4579cad0cce0530a85cab8629689b6a9076c23e",
+                           "direct_read":  true
+                       },
+                       {
+                           "path":  "D:/work/study/hyd-iot-edu/.evidence/reaudit/references-latest/ontology-studio/frontend/src/features/files/FilePanel.vue",
+                           "sha256":  "7b0ac1dfe2eaf4ee488d00a645c2500da16a5a5c38c911da6feae607c70d5943",
+                           "direct_read":  true
+                       }
+                   ],
+    "business_runs":  0,
+    "external_account_auth":  0,
+    "files":  [
+                  {
+                      "path":  "it/process/procsvc/instance_mode.py",
+                      "sha256":  "b72e28673c487b86a26e6a5f90700551fb54db95fee2deb879968af047aa8891",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "it/process/procsvc/worker_credentials.py",
+                      "sha256":  "e4f8e9c914b6978d26e030b2cf2ec0a6dc9a68f6711d21dbd77fa2f4c56ac685",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "it/process/procsvc/mcp_worker_relay.py",
+                      "sha256":  "762d985e438617f5451b00166341281eeffbcd6da0e076c0cd92d81284fb24fc",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "it/agent-worker/worker/bridge.py",
+                      "sha256":  "1f227bf3a37bb15dc4cdcc1f118c3b9c6b3833a2fd6eaae116e7d59a661a6ef1",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "it/agent-worker/worker/runner.py",
+                      "sha256":  "e26eae96285e9472afee630b1094cb95cb15edd58a8091237701914362bdd685",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "it/agent-worker/worker/runtime_credentials.py",
+                      "sha256":  "7bb4198b9eaac1e5c94f2701f98e48e69976517279a33a71a525d3fe230a4a83",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "tests/test_instance_runtime_readiness.py",
+                      "sha256":  "7ab629fe44d8839ddde680d8f4baf46fecc95070a6bb0f0aec6a09514bd1bf67",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "tests/test_worker_oauth_runtime.py",
+                      "sha256":  "2d4819ec1ae2af3f439deed3c46cc6e9cb3b786f798b4ff15d97f99066d010c4",
+                      "unchanged":  true
+                  },
+                  {
+                      "path":  "tests/test_worker_mcp_relay.py",
+                      "sha256":  "b6fb26b1261ca38350c1806061a939ad939c2ce8eecf69fdf43635fe351feb38",
+                      "unchanged":  true
+                  }
+              ],
+    "docker_actions":  0,
+    "ok":  true,
+    "final_focused":  {
+                          "scope":  "35 new runtime tests plus 2 nearest unchanged legacy tests",
+                          "seconds":  8.41,
+                          "sha256":  "8a566c30f7322f82333eb03beb5407934a92640c5566918a9c8ea3f754852173",
+                          "log":  "final-focused.log",
+                          "passed":  37
+                      },
+    "fault":  {
+                  "exit_code":  1,
+                  "failed":  1,
+                  "assertion":  "actual refresh requests 0 != expected 1",
+                  "expected_failure":  true,
+                  "product_mutated":  false,
+                  "log":  "fault-start-only-token.log"
+              }
+}

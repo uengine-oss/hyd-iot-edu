@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
 
@@ -53,11 +54,56 @@ class ServicePartsRuntime:
 
     def _event(self, wi: dict, job: str, name: str, data: dict, *, event_type: str = "task_working", crew: str = "result") -> None:
         row = {"job_id": job, "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": crew, "event_type": event_type,
-               "data": dict(data, name=name)}
+               "id": str(uuid.uuid4()), "data": dict(data, name=name)}
+        context = getattr(self._local, "service_progress_context", None)
+        if crew == "tool" and context is not None:
+            from .service_progress import owner_hash
+            row["data"].update(system_observation=True, attempt_id=context["attempt_id"], owner_claim_hash=owner_hash(context["consumer"]))
+            self.repo.record_service_progress(self.tenant_id, wi["proc_inst_id"], wi["id"], context["consumer"], [row])
+            context["observed"] = True
+            if data.get('tool_use_id') not in context.setdefault('tool_use_ids', []):
+                context['tool_use_ids'].append(data.get('tool_use_id'))
+            return  # Durable observations are not replayed as failed business writes.
         self.repo.record_events([row])
         trace = getattr(self._local, "service_trace", None)
         if crew == "tool" and trace is not None:      # 이 시도가 실패해 전이가 되돌려져도 무엇을 불렀고 무엇이 돌아왔는지 남긴다
             trace.append(deepcopy(row))
+
+    def _recover_service_progress(self, wi):
+        """A recovered committed claim cannot promise a crashed call's outcome."""
+        rows = self.repo.list_events(todo_id=wi['id'], limit=None)
+        finished = {r.get('data', {}).get('tool_use_id') for r in rows if r.get('event_type') == 'tool_usage_finished'}
+        from .service_progress import owner_hash
+        for start in rows:
+            data = start.get('data') or {}
+            if (start.get('event_type') != 'tool_usage_started' or not data.get('system_observation')
+                    or not data.get('tool_use_id') or data['tool_use_id'] in finished):
+                continue
+            row = {'id': str(uuid.uuid4()), 'job_id': start['job_id'], 'todo_id': wi['id'],
+                   'proc_inst_id': wi['proc_inst_id'], 'crew_type': 'tool', 'event_type': 'tool_usage_finished',
+                   'data': {'name': '이전 도구 호출의 응답을 확인하지 못했습니다',
+                            'content': '처리가 중단되어 이전 호출의 실제 응답은 확인되지 않았습니다. 외부 실행을 되돌렸다는 뜻은 아닙니다.',
+                            'output': '이전 호출의 응답이 확인되지 않았습니다.', 'is_error': True,
+                            'response_unconfirmed': True, 'interrupted': True, 'system_observation': True,
+                            'attempt_id': data['attempt_id'], 'tool_use_id': data['tool_use_id'],
+                            'owner_claim_hash': owner_hash(wi['consumer']),
+                            'original_owner_claim_hash': data.get('owner_claim_hash')}}
+            self.repo.record_service_progress(self.tenant_id, wi['proc_inst_id'], wi['id'], wi['consumer'], [row])
+            finished.add(data['tool_use_id'])
+
+    def _close_service_progress(self, context, outcome):
+        if not context or not context.get("observed"):
+            return
+        wi = context["workitem"]
+        committed = outcome == "committed"
+        row = {"id": str(uuid.uuid4()), "job_id": "SYSTEM_ATTEMPT_COMMITTED" if committed else "SYSTEM_ATTEMPT_ROLLED_BACK",
+               "todo_id": wi["id"], "proc_inst_id": wi["proc_inst_id"], "crew_type": "result", "event_type": "task_working",
+               "data": {"name": "도구 응답을 처리 건에 반영했습니다" if committed else "이번 시도의 처리를 확정하지 못했습니다",
+                        "content": "도구의 실제 응답과 처리 건의 저장 결과를 구분해 기록합니다. 외부 도구의 실행을 되돌렸다는 뜻은 아닙니다.",
+                        "system_observation": True, "attempt_id": context["attempt_id"], "transaction_outcome": outcome,
+                        "tool_use_ids": context.get('tool_use_ids', []),
+                        "attempt_failed": not committed}}
+        self.repo.record_service_progress(self.tenant_id, wi["proc_inst_id"], wi["id"], context["consumer"], [row])
 
     def _keep_failed_attempt_record(self) -> None:
         """실패한 시도의 기록을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록과 감사 기록은 상태가 아니라 일지다
@@ -141,16 +187,25 @@ class ServicePartsRuntime:
             raise ValueError(f"MCP 인자 틀의 값 {e.args[0]} 이(가) 처리 건에 없습니다 — 빈 값으로 보내지 않습니다") from e
         server, tool = cfg["server"], cfg["tool"]
         use_id = f"{key}:{int(wi.get('retry') or 0)}"
+        context = getattr(self._local, "service_progress_context", None)
+        if context is not None:
+            use_id = f"{key}:{context['attempt_id']}:{int(wi.get('retry') or 0)}"
         raw_tool = f"mcp__{server}__{tool}"
         # 이벤트 본문: HYD 도구 호출 기록(mcp_calls: tool · input · output)과 제품 화면(tool_name · args · result · is_error) 두 이름을 함께 둔다
         job, label = ("MCP_READ_CALL", "읽기 확인 MCP 호출") if read_only else ("MCP_EFFECT_CALL", "승인 뒤 MCP 호출")
         self._event(wi, job, label, {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "input": arguments,
                                                               "args": arguments, "idempotency_key": key}, event_type="tool_usage_started", crew="tool")
-        res = self.hooks.mcp_read(server, tool, arguments) if read_only else self.hooks.mcp_call(server, tool, arguments, key)
+        try:
+            res = self.hooks.mcp_read(server, tool, arguments) if read_only else self.hooks.mcp_call(server, tool, arguments, key)
+        except Exception:
+            self._event(wi, job, label + " 호출 실패", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id,
+                        "output": "도구 호출이 정상 응답을 반환하지 않았습니다.", "result": "도구 호출이 정상 응답을 반환하지 않았습니다.",
+                        "is_error": True, "attempt_failed": bool(context and context.get('owns_transition')), "error_kind": "invocation_exception"}, event_type="tool_usage_finished", crew="tool")
+            raise
         result = res.get("result") or {}
         failed = res.get("status") != "ok" or result.get("is_error")
         self._event(wi, job, label + " 결과", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "output": result.get("text") or res.get("error"),
-                                                                  "result": result.get("text") or res.get("error"), "is_error": bool(failed)}, event_type="tool_usage_finished", crew="tool")
+                                                                  "result": result.get("text") or res.get("error"), "is_error": bool(failed), "attempt_failed": bool(failed and context and context.get('owns_transition'))}, event_type="tool_usage_finished", crew="tool")
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", ("MCP_READ_FAILED" if failed else "MCP_READ_CALLED") if read_only else ("MCP_EFFECT_FAILED" if failed else "MCP_EFFECT_CALLED"),
                            {"instance": inst["proc_inst_id"], "server": server, "tool": tool, "idempotency_key": key,
                             "error": res.get("error")}, incident=v.get("incident"))

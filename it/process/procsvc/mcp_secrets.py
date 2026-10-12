@@ -42,7 +42,7 @@ class SecretError(Exception):
 
 
 def valid_key(key: str) -> bool:
-    return bool(KEY_RE.match(str(key or "")))
+    return bool(KEY_RE.match(str(key or ""))) and not str(key).startswith("HYD_OAUTH_")
 
 
 def is_reference_only(value) -> bool:
@@ -122,7 +122,7 @@ def resolve(entry: dict, values: dict[str, str] | None) -> tuple[dict, list[str]
 
             def fill(m):
                 key = m.group(1)
-                if key in values and values[key] not in (None, ""):
+                if valid_key(key) and key in values and values[key] not in (None, ""):
                     return str(values[key])
                 if key not in missing:
                     missing.append(key)
@@ -218,7 +218,7 @@ def load(repo, tenant_id: str, environ=None) -> dict[str, str]:
     """실행 직전에 채울 값: 환경 변수 HYD_SECRET_* 위에 비밀 값 표를 덮는다(표가 이긴다). 표가 없으면 환경 변수만."""
     values = env_values(environ)
     if repo is not None:
-        values.update(store_for(repo).values(tenant_id))
+        values.update({k: v for k, v in store_for(repo).values(tenant_id).items() if not k.startswith("HYD_OAUTH_")})
     return values
 
 
@@ -226,13 +226,23 @@ def runtime_spec(repo, tenant_id: str, name: str, entry: dict, environ=None) -> 
     """실행 직전 설정: (자리표시자를 채운 사본, 채운 비밀 값들 — 결과 · 오류를 redact 할 때 쓴다).
     값이 없으면 SecretError(422, 사유) — 빈 토큰으로 부르지 않는다. 자리표시자가 없으면 표를 읽지 않는다."""
     keys = references(entry)
-    if not keys:
-        return entry, []
-    values = load(repo, tenant_id, environ)
+    values = load(repo, tenant_id, environ) if keys else {}
     resolved, missing = resolve(entry, values)
     if missing:
         raise SecretError(422, missing_reason(name, missing))
-    return resolved, [values[k] for k in keys]
+    used = [values[k] for k in keys]
+    if (entry.get("hyd") or {}).get("oauth_connection"):
+        from . import mcp_oauth
+        try:
+            headers = mcp_oauth.access_headers(repo, tenant_id, name, entry, environ)
+        except mcp_oauth.OAuthError as exc:
+            raise SecretError(exc.status, exc.reason) from None
+        resolved = deepcopy(resolved)
+        resolved["headers"] = dict(resolved.get("headers") or {}, **headers)
+        resolved["_oauth_transport"] = True
+        used.extend(OAuthSecret(v) for v in headers.values())
+        used.extend(OAuthSecret(v.removeprefix("Bearer ")) for v in headers.values())
+    return resolved, used
 
 
 #: 이보다 짧은 값은 가리지 않는다 — 한두 글자 값으로 응답 전체를 망가뜨리지 않게(그런 값은 비밀이라 볼 수 없다)
@@ -240,10 +250,14 @@ REDACT_MIN = 4
 REDACTED = "[비밀 값 가림]"
 
 
+class OAuthSecret(str):
+    """Opaque OAuth/key material is redacted even when unusually short."""
+
+
 def redact(obj, used: list[str]):
     """응답 · 감사 · 검사 기록에 실릴 값에서 실행 때 채운 비밀 값을 지운다. 서버가 토큰을 되돌려 주거나(오류 본문 · 에코 도구)
     stdio 서버가 stderr 에 환경 변수를 찍어도 값이 화면 · 저장소로 새지 않게 한다."""
-    secrets = sorted({v for v in used or [] if isinstance(v, str) and len(v) >= REDACT_MIN}, key=len, reverse=True)
+    secrets = sorted({v for v in used or [] if isinstance(v, str) and (len(v) >= REDACT_MIN or isinstance(v, OAuthSecret) and v)}, key=len, reverse=True)
     if not secrets:
         return obj
 
@@ -264,7 +278,7 @@ def redact(obj, used: list[str]):
 # ---------------------------------------------------------------- 동작 (API 가 부른다)
 def overview(repo, tenant_id: str, servers: dict, environ=None) -> dict:
     """이름 · 고친 시각 · 쓰는 서버 · 값 있음 여부. 값은 싣지 않는다."""
-    stored = {r["key"]: r for r in store_for(repo).keys(tenant_id)}
+    stored = {r["key"]: r for r in store_for(repo).keys(tenant_id) if not r["key"].startswith("HYD_OAUTH_")}
     env = env_values(environ)
     used: dict[str, list[str]] = {}
     for name, entry in (servers or {}).items():
@@ -292,6 +306,8 @@ def put(repo, tenant_id: str, key: str, value, by: str, now: str) -> dict:
 
 
 def remove(repo, tenant_id: str, key: str) -> dict:
+    if not valid_key(key):
+        raise SecretError(422, "이 비밀 이름은 연결 서비스에서 관리합니다.")
     if not store_for(repo).delete(tenant_id, key):
         raise SecretError(404, f"비밀 값 '{key}' 가 없습니다")
     return {"key": key, "deleted": True}

@@ -1,0 +1,33 @@
+{
+  "kind": "actual deployed portal native browser; GET only",
+  "checks": [
+    {
+      "name": "new connection UI loaded from deployed index",
+      "passed": true
+    },
+    {
+      "name": "operator settings closed initially",
+      "passed": true
+    },
+    {
+      "name": "shared educational connection explicitly explained",
+      "passed": true
+    },
+    {
+      "name": "Google Drive and Calendar presets present",
+      "passed": true
+    },
+    {
+      "name": "no portal login form",
+      "passed": true
+    },
+    {
+      "name": "preset hides custom address visually",
+      "passed": false
+    }
+  ],
+  "page_errors": [],
+  "console_errors": [],
+  "writes": [],
+  "screens": []
+}

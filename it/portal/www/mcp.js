@@ -94,9 +94,9 @@
   const register = { bodyFrom, pairsFrom };
 
   // ---------------------------------------------------------------- 화면
-  const SERVER_LABEL = {enterprise:'업무 자료', 'enterprise-maint':'정비 업무 자료', 'enterprise-purchase':'구매 업무 자료', 'hyd-dmn':'판단 엔진', neo4j:'지식 그래프', 'hyd-effects':'알림 처리'};
+  const SERVER_LABEL = {enterprise:'업무 자료', 'enterprise-maint':'정비 업무 자료', 'enterprise-purchase':'구매 업무 자료', 'hyd-dmn':'판단 시스템', neo4j:'지식 그래프', 'hyd-effects':'알림 처리'};
   const T = {streamable_http:'주소 연결', stdio:'명령 실행', sse:'이벤트 연결'};
-  const KIND = { exec: '명령 없음', refused: '연결 거부', unreachable: '주소 없음', timeout: '시간 초과', auth: '인증 실패', not_mcp: 'MCP 아님',
+  const KIND = { exec: '명령 없음', refused: '연결 거부', unreachable: '주소 없음', timeout: '시간 초과', auth: '인증 실패', not_mcp: '도구 연결 형식 아님',
     protocol: '프로토콜 오류', server: '서버 오류', closed: '연결 끊김', too_large: '응답 너무 큼', config: '설정 오류', secret: '비밀 값 없음' };
   const S = { el: null, servers: [], tools: {}, sel: null, tab: 'tools', trying: null, results: {}, calls: {}, callTool: '', busy: false, form: null,
     confirming: null, secrets: null };
@@ -150,7 +150,7 @@
 
   function renderServers() {
     const box = S.el.querySelector('#mcpServers');
-    if (!S.servers.length) { box.innerHTML = UI.empty('등록된 도구 서버가 없습니다', '"서버 등록"으로 내 서버를 등록하거나 랩업에서 tenants.mcp 에 넣으면 여기 나타납니다', 'compact'); return; }
+    if (!S.servers.length) { box.innerHTML = UI.empty('등록된 도구 서버가 없습니다', '위에서 서비스를 선택해 연결하세요. 직접 관리하는 서버는 운영자 설정에서 등록할 수 있습니다.', 'compact'); return; }
     box.innerHTML = S.servers.map(s => {
       const r = S.tools[s.name] || {};
       const n = r.status === 'ok' ? r.tools.length : null;
@@ -354,6 +354,7 @@
       env: Object.entries(s.env || {}).map(([k, x]) => `${k}=${x}`).join('\n'), headers: Object.entries(s.headers || {}).map(([k, x]) => `${k}=${x}`).join('\n'),
       description: s.description || '' } : { name: '', transport: 'streamable_http', command: '', args: '', url: '', env: '', headers: '', description: '' };
     S.form = { editing, v, result: null, busy: false, error: '' };
+    S.el.querySelector('#mcpOperator').open = true;
     renderForm(); S.el.querySelector('#mcpForm').scrollIntoView({ block: 'nearest' });
   }
 
@@ -485,14 +486,16 @@
   function mount(el) {
     if (!el) return;
     S.el = el;
-    el.innerHTML = `<div class="page-head"><h1>도구(MCP)</h1><div class="page-tools"><button class="btn small primary" id="mcpAdd">서버 등록</button>` +
-      `<button class="btn small" id="mcpReload">다시 읽기</button><button class="btn small" id="mcpReset">기준으로 되돌리기</button></div></div>` +
+    el.innerHTML = `<div class="page-head"><h1>도구 연결</h1><div class="page-tools"><button class="btn small" id="mcpReload">다시 읽기</button></div></div>` +
+      `<div id="mcpConnections"></div>` +
       `<p class="muted">에이전트가 쓰는 도구 서버와 그 도구를 봅니다. 내 서버를 등록하면 연결 검사를 통과해야 저장되고, 그 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있습니다. ` +
       `읽기 전용 도구는 직접 불러 결과를 보고, 처리 건에서 언제 불렸는지 확인합니다.</p>` +
-      `<div id="mcpSecrets"></div><div id="mcpForm"></div><div class="mcp-grid" id="mcpServers"></div><div id="mcpDetail"></div>`;
+      `<details class="fold" id="mcpOperator"><summary>운영자 직접 등록 · 연결 설정</summary><p class="field-hint">서비스 연결은 위에서 시작하세요. 아래는 직접 관리하는 서버와 수업 운영 설정입니다.</p><div class="row"><button class="btn small" id="mcpAdd">서버 직접 등록</button><button class="btn small" id="mcpReset">기준으로 되돌리기</button></div><div id="mcpSecrets"></div><div id="mcpForm"></div></details><div class="mcp-grid" id="mcpServers"></div><div id="mcpDetail"></div>`;
     el.querySelector('#mcpReload').addEventListener('click', load);
     el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
     el.querySelector('#mcpReset').addEventListener('click', resetAll);
+    if (window.hydMcpConnections) hydMcpConnections.mount(el.querySelector('#mcpConnections'), {onConnected:load});
+    else el.querySelector('#mcpConnections').innerHTML=UI.empty('서비스 연결 화면을 준비하지 못했습니다','화면을 다시 읽거나 운영자에게 확인해 주세요. 기존 도구 목록은 계속 사용할 수 있습니다.','compact');
     load(); loadSecrets();
   }
 

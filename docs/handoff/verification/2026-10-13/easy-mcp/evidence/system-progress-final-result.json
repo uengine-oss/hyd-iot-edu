@@ -1,0 +1,34 @@
+{
+  "status": "source_frozen",
+  "running_tests": 0,
+  "focused_result": {
+    "passed": 84,
+    "deselected": 2,
+    "new_system_cases": 24,
+    "new_pg_cases": 12,
+    "log": "system-progress-final-backend.log"
+  },
+  "consumer_result": {
+    "passed": 1,
+    "log": "system-progress-direct-consumer-fourth.log",
+    "full_production_enterprise_js_loaded": true,
+    "legacy_inspector_edited": false
+  },
+  "known_legacy_results": {
+    "nested_contract": "failed; original immutable; immediate nested IO/no rollback expectation conflicts with approved after-commit ownership contract",
+    "crlf_harness": "original load failed before product logic; direct full-source VM passed"
+  },
+  "live_business_calls": 0,
+  "source_sha256": {
+    "it/process/procsvc/instances.py": "dea508faa98b122f025a00b20fd216d5859b561a1dc37a5b6dac35a09ae9792d",
+    "it/process/procsvc/service_parts.py": "a056ddbb56d8526dde9b4abd2c6b1af1f4600faa9f4e71cd282548f47772a01c",
+    "it/process/procsvc/procdb.py": "1d8aa694f4a2f93190aaa4ac586b7eadc00907fad39b2363b9548900811001cf",
+    "it/process/procsvc/service_progress.py": "845b6e0e9b923e6e6220a707b609ba90e2be2ba1074fceb377d0fddbf0af271d",
+    "tests/test_system_service_progress.py": "f0afadf519d1851275d9164c6cd0ff9a10cd136e60521e1e7b3d204326765cb9"
+  },
+  "evidence_sha256": {
+    "system-progress-final-backend.log": "23048b8aad722ba364bf375c68d8d789769ea8d3a2f03d7af3f4764e7e2449b7",
+    "system-progress-direct-consumer-fourth.log": "1b223df1f6f0dfd5aa17fc6003a30606f55d8d82c5bd36abd8203b736bcbe8cb",
+    "render-system-progress-direct.js": "7406aaf90e38ab5d937dc59503128a5b8d246fa9d3330e98aae544c3fe44917a"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "status": "focused_ui_contracts_pass",
+  "command": [
+    "node",
+    "tests/js/test_mcp_connections.js"
+  ],
+  "exit": 0,
+  "stdout": "MCP connection contracts PASS: automatic check, callback boundaries, popup recovery, cancel/expiry, failed permissions, preparation, reconnect, stale results and generic input\n",
+  "stderr": "",
+  "legacy_focused_command": [
+    "D:/work/study/hyd-iot-edu/.venv314/Scripts/python.exe",
+    "-m",
+    "pytest",
+    "tests/test_mcp_check.py::test_portal_form_builds_fields_and_rejects_bad_input",
+    "tests/test_b2_mcp_registry.py::test_portal_register_form_builds_the_request_body",
+    "-q"
+  ],
+  "legacy_focused_observed": "2 passed in 0.90s; no test expectations altered",
+  "sha256": {
+    "it/portal/www/mcp.js": "e0a4da791effe5c97c667bb8d5b7e87077e0eb92ba6c65210f2526122b391376",
+    "it/portal/www/mcpConnections.js": "f62eacb59ef37917f51e3dcd4a4a485b273e53811d8ce61622a1773699f0bf8c",
+    "tests/js/test_mcp_connections.js": "7dce52c1bbf26e3f6c770f6592219f9908c95469d157a1481065746d81fa7e3d",
+    "docs/handoff/verification/2026-10-13/easy-mcp/frontend-progress.md": "d5d550d1a9b6811b44b1a54c2d07459b7b0290e5632ceee007c589c3d80c85ca"
+  },
+  "negative": "guard-removal-expected-failure.json",
+  "scope": "UI connection controller and legacy mount integration only. Node fixtures are synthetic protocol tests, not real Google consent or API completion.",
+  "native_plan": "Root-owned script/proxy integration and 1440/1024 captures; real isolated noauth/OAuth fake backend separately.",
+  "limitations": "Actual Google consent/execution remains unperformed; operator preparation and provider preview availability may prevent connection.",
+  "final_sha256": {
+    "it/portal/www/mcp.js": "e0a4da791effe5c97c667bb8d5b7e87077e0eb92ba6c65210f2526122b391376",
+    "it/portal/www/mcpConnections.js": "fc1ad34d1b8231da1de7625e2da870b6ee6ce3f8838a5a6e70c5a1d43341196a",
+    "tests/js/test_mcp_connections.js": "e6e0d08ec72a9c975f1ea43e68e744d20a3f00ed2e410bb7ed818387c0060c98",
+    "docs/handoff/verification/2026-10-13/easy-mcp/frontend-progress.md": "d5d550d1a9b6811b44b1a54c2d07459b7b0290e5632ceee007c589c3d80c85ca",
+    "it/portal/www/mcpConnections.css": "07a2c892bb36705b92842804893ec7e217f8b29f68363d47525d2499c75b478f"
+  },
+  "final_node": {
+    "command": "node tests/js/test_mcp_connections.js",
+    "exit_code": 0,
+    "stdout": "MCP connection contracts PASS: automatic check, callback boundaries, popup recovery, cancel/expiry, failed permissions, preparation, reconnect, stale results and generic input\n",
+    "stderr": ""
+  },
+  "identity_followup": "Preset reuse requires the exact catalog URL; a non-shared saved row cannot start an external authorization.",
+  "service_title_followup": "Known preset labels are Korean in actual mounted selector and operator summary; unknown titles and provider metadata remain unchanged.",
+  "hidden_css_followup": {
+    "defect_evidence": "native-live/mcp-connections-1440.png",
+    "fix": "Component-scoped hidden display override; global styles unchanged",
+    "verification": "Node verifies scoped rule only; real CSS visibility belongs to root native capture, not boolean hidden assertions"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "tests/js/test_mcp_connections.js",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\easy-mcp-20261013\\frontend\\mcpConnections-guard-disabled.js"
+  ],
+  "exit": 1,
+  "stdout": "",
+  "stderr": "AssertionError [ERR_ASSERTION]: true == false\n    at D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\js\\test_mcp_connections.js:20:191 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: true,\n  expected: false,\n  operator: '==',\n  diff: 'simple'\n}\n"
+}

@@ -27,7 +27,7 @@ from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface
 from procsvc import task_deferral, work_rules
 from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
 
-from . import bridge, context, hitl, outcome, payloads, prompt, workspace
+from . import bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
 from . import events as ui_events
 from .settings import Settings, effective_permission, run_allowed_tools, run_disallowed_tools
 from .process_control import controlled_stream
@@ -149,6 +149,7 @@ class Runner:
             log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, agent.tools)      # A095 + U2: the agent's / activity's servers only
+        tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id)
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
@@ -205,7 +206,8 @@ class Runner:
         self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", provider_id)),
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
-                                                       trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided)
+                                                       trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
+                                                       redaction_values=bridged.redaction_values)
         assessment = task_deferral.control(final_text)
         if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
             file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
@@ -238,7 +240,7 @@ class Runner:
             request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
                               resume_session=session_id)
             final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
-                                                  skills=provided)
+                                                  skills=provided, redaction_values=bridged.redaction_values)
             session_id = resumed or session_id
             result = interpret(final_text)
         if not result.contract_met:
@@ -256,7 +258,7 @@ class Runner:
         log.info("%s %s submitted (%s) from %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text", result.source)
 
     def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, crew: str, trace_path=None,
-                skills: list[dict] | None = None) -> tuple[str, str | None, str | None]:
+                skills: list[dict] | None = None, redaction_values: list[str] | None = None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
         last_check, deadline = time.monotonic(), time.monotonic() + self.s.run_timeout_s
@@ -301,6 +303,9 @@ class Runner:
                 pending_rows.append(r)
         try:
             for ev in gen:
+                if redaction_values:
+                    from procsvc.mcp_secrets import redact
+                    ev = replace(ev, **redact(asdict(ev), redaction_values))
                 if trace:
                     trace.write(json.dumps(asdict(ev), ensure_ascii=False, default=str) + "\n")
                     trace.flush()
@@ -342,7 +347,6 @@ class Runner:
                         public_last_sent = None
                 for ui in ui_events.translate(ev):
                     if ui.type == 'tool_start':
-                        from dataclasses import replace
                         raw_input = ev.tool_input
                         # Inputs are data, never a CLI result-file instruction.
                         input_event = replace(ev,text=json.dumps(raw_input,ensure_ascii=False,default=str),tool_output=None)
@@ -353,7 +357,7 @@ class Runner:
                     if ui.type == "tool_end":
                         ui = self._keep_full_output(ui, ev, row, job_id,
                             allowed_directory=payloads.result_directory(request.workdir, session_id, env)
-                            if crew.endswith(":claude-code") else None)
+                            if crew.endswith(":claude-code") else None, redaction_values=redaction_values)
                     emit(ui)
                 if ev.kind is ExecEventKind.TOOL_START:
                     for ui in skill_reads.on_tool_start(ev):
@@ -362,6 +366,11 @@ class Runner:
                     self.repo.record_events(pending_rows)
                     pending_rows = []
                 check_stop()
+        except Exception as exc:
+            if redaction_values and not isinstance(exc, Cancelled):
+                from procsvc.mcp_secrets import redact
+                raise RunFailed(redact(str(exc), redaction_values)) from None
+            raise
         finally:
             if trace:
                 trace.close()
@@ -379,13 +388,17 @@ class Runner:
             raise RunFailed(last_error)
         return (final_text or "".join(streamed)).strip(), session_id, pause_reason
 
-    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str, *, allowed_directory: Path | None = None) -> ui_events.UiEvent:
+    def _keep_full_output(self, ui: ui_events.UiEvent, ev: ExecEvent, row: dict, job_id: str, *, allowed_directory: Path | None = None,
+                          redaction_values: list[str] | None = None) -> ui_events.UiEvent:
         """A161-G2: a tool result the row cannot hold whole (the CLI moved it to a temp file, or the preview cut it) is stored once in
         event_payloads and the tool_end row gets `full_output` (ref · summary). A storage failure is said in the row, never fatal."""
         raw = ev.text or ev.tool_output
         captured = payloads.capture(raw, preview_cut=ui_events.preview_cut(raw), allowed_directory=allowed_directory)
         if captured is None:
             return ui
+        if redaction_values:
+            from procsvc.mcp_secrets import redact
+            captured = redact(captured, redaction_values)
         if captured.get("content") is None:
             return ui_events.UiEvent(ui.type, dict(ui.data, full_output=payloads.unread_reference(captured)))
         payload, summary = payloads.payload_row(captured, tool=ui.data.get("tool") or "tool", tool_use_id=ev.tool_use_id, job_id=job_id,
@@ -469,9 +482,10 @@ class Runner:
         from .diagnostics import excerpt
         msg = excerpt(f"{type(err).__name__}: {err}")
         log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), msg)
+        connection_error = isinstance(err, runtime_credentials.RuntimeConnectionError)
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
-                                  "event_type": "error", "data": {"name": "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
-                                                                 "friendly": "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다.", "raw_error": msg}}])
+                                  "event_type": "error", "data": {"name": "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
+                                                                 "friendly": str(err) if connection_error else "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다.", "raw_error": msg}}])
 
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:
         self.repo.record_events([{"job_id": job_id, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": crew_type,

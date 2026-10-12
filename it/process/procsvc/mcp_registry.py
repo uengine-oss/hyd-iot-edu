@@ -535,7 +535,12 @@ def check_saved(store, tenant_id: str, name: str, *, timeout=None, by: str = "�
     if entry is None:
         raise RegistryError(404, f"MCP 서버 '{name}' 가 없습니다")
     try:
-        record = run_check(entry, _check_limit(timeout), secrets_of(store, tenant_id, entry))
+        if (entry.get(META_KEY) or {}).get("oauth_connection"):
+            resolved, used = mcp_secrets.runtime_spec(store.repo, tenant_id, name, entry)
+            record = mcp_secrets.redact(run_check(resolved, _check_limit(timeout)), used)
+            record["fingerprint"] = fingerprint(entry)
+        else:
+            record = run_check(entry, _check_limit(timeout), secrets_of(store, tenant_id, entry))
     except ValueError as e:
         raise RegistryError(422, f"MCP 서버 '{name}' 설정 오류 — {e}")
     store.save_check(tenant_id, name, record, by)

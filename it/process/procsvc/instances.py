@@ -1039,10 +1039,33 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         return str(activity.get("tool") or "")
 
     def _run_service(self, inst: dict, wi: dict, now: datetime | None) -> None:
+        # A reached SYSTEM row must first have a committed executor claim. Never
+        # authorize observational writes with ownership still inside a parent tx.
+        if getattr(self._local, 'transition', None) is not None:
+            self._after_commit(self._run_service, inst, deepcopy(wi), now)
+            return
+        with self.repo.instance_transaction(self.tenant_id, wi['proc_inst_id']):
+            claimed = self.repo.get_workitem(wi['id'])
+            current = self.repo.get_instance(wi['proc_inst_id'])
+            if (not claimed or not current or current.get('tenant_id') != self.tenant_id
+                    or current.get('status') != 'RUNNING' or current.get('is_deleted')
+                    or claimed.get('tenant_id') != self.tenant_id
+                    or claimed.get('status') != 'SUBMITTED' or claimed.get('agent_orch') != 'hyd-process'
+                    or claimed.get('consumer') != wi.get('consumer')):
+                return
+            import uuid
+            claimed['consumer'] = f'{self.consumer}:service:{uuid.uuid4()}'
+            self.repo.update_workitem(claimed)
+            wi = deepcopy(claimed)
+        self._recover_service_progress(wi)
         # 블랙박스 없음: 실패한 시도의 도구 호출 사건 · 감사 기록은 전이와 함께 버려지므로, 이 호출이 전이를 여는 경우에만 따로 모았다가 되돌린 뒤 남긴다
         owns_transition = getattr(self._local, 'transition', None) is None
         self._local.service_trace = [] if owns_transition else None
         self._local.service_audits = [] if owns_transition else None
+        previous_progress = getattr(self._local, 'service_progress_context', None)
+        import uuid
+        progress = {'attempt_id': str(uuid.uuid4()), 'consumer': wi.get('consumer'), 'workitem': deepcopy(wi), 'observed': False, 'owns_transition': owns_transition}
+        self._local.service_progress_context = progress
         try:
             with self._transition(wi['proc_inst_id']):
                 fresh=self.repo.get_workitem(wi['id'])
@@ -1054,15 +1077,22 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                            "enterprise:WO_CREATE": self._run_work_order, **self._service_handlers()}.get(tool)
                 if handler is None:
                     raise ValueError(f"unsupported service tool: {tool!r} ({fresh['activity_id']})")
-                fresh['consumer']=f'{self.consumer}:service'
-                self.repo.update_workitem(fresh)
                 handler(inst,fresh,now)
+                self._after_commit(self._close_service_progress, progress, 'committed')
         except Exception as e:  # noqa: BLE001
             log.exception("service task %s failed", wi["activity_id"])
             self._keep_failed_attempt_record()
+            try:
+                if owns_transition:
+                    self._close_service_progress(progress, 'rolled_back')
+                else:
+                    self._after_commit(self._close_service_progress, progress, 'committed')
+            except Exception:
+                log.exception('SYSTEM attempt rollback observation could not be saved')
             self._fail(wi, e, now)
         finally:
             self._local.service_trace = self._local.service_audits = None
+            self._local.service_progress_context = previous_progress
 
     def _run_command(self, inst: dict, wi: dict, now) -> None:
         """Issue the chosen skill's PLC commands through the Incident (machine.on_approve). Completes when the ACK arrives."""

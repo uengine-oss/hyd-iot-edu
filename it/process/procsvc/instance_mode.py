@@ -90,6 +90,8 @@ class ProcessContext:
 
 _runtime: instances.InstanceRuntime | None = None
 _ctx: ProcessContext | None = None
+_poll_task: asyncio.Task | None = None
+_poll_status: dict = {"status": "preparing", "last_success_at": None, "failure_kind": None}
 EVENTS_PAGE_MAX = 5000        # A161-G4: one /api/events page at most (the instance view itself reads instances.EVENTS_WINDOW)
 PAYLOAD_CHUNK_CHARS = 200_000 # A161-G2: one /api/event-payloads chunk
 stream_clients = 0            # A131: open /api/events/stream generators (memory diagnostics; must return to 0 after disconnects)
@@ -97,6 +99,16 @@ stream_clients = 0            # A131: open /api/events/stream generators (memory
 
 def current() -> instances.InstanceRuntime | None:
     return _runtime
+
+
+def runtime_readiness() -> dict:
+    """Read the actual loop state without I/O or exposing connection exceptions."""
+    status = dict(_poll_status)
+    if _poll_task is None:
+        status["status"] = "preparing"
+    elif _poll_task.done():
+        status["status"] = "cancelled" if _poll_task.cancelled() else "stopped"
+    return {**status, "ready": status["status"] == "ready"}
 
 
 # ---------------------------------------------------------------- lifecycle
@@ -200,7 +212,11 @@ def start(ctx: ProcessContext) -> instances.InstanceRuntime:
 
 def start_loops(rt: instances.InstanceRuntime, ctx: ProcessContext) -> None:
     """The background loops of start(), split off so main.py can retry build() alone without starting a loop twice."""
-    asyncio.create_task(_polling())
+    global _poll_task
+    if _poll_task is not None and not _poll_task.done():
+        raise RuntimeError("instance polling already running")
+    _poll_status.update(status="preparing", last_success_at=None, failure_kind=None)
+    _poll_task = asyncio.create_task(_polling())
     if AGENT_BRIDGE == 'legacy':
         asyncio.create_task(_legacy_polling(rt,ctx))
 
@@ -270,18 +286,32 @@ async def _legacy_polling(rt,ctx):
 async def _polling() -> None:
     """The completion polling of ProcessGPT: SUBMITTED rows → engine; boundary timers; stale consumers every ~5 min."""
     tick = 0
-    while True:
-        await asyncio.sleep(POLL_INTERVAL_S)
-        tick += 1
-        try:
-            await _in_executor(_runtime.poll_once)
-            if AGENT_BRIDGE == 'legacy':
-                await _in_executor(reconcile_legacy_decisions)
-            await _in_executor(_runtime.fire_timeouts)
-            if tick % STALE_CLEANUP_EVERY == 0:
-                await _in_executor(_runtime.repo.cleanup_stale_consumers)
-        except Exception as e:  # noqa: BLE001
-            log.warning("polling: %s", e)
+    try:
+        while True:
+            await asyncio.sleep(POLL_INTERVAL_S)
+            tick += 1
+            try:
+                await _in_executor(_runtime.poll_once)
+                if AGENT_BRIDGE == 'legacy':
+                    await _in_executor(reconcile_legacy_decisions)
+                await _in_executor(_runtime.fire_timeouts)
+                if tick % STALE_CLEANUP_EVERY == 0:
+                    await _in_executor(_runtime.repo.cleanup_stale_consumers)
+            except Exception as e:  # noqa: BLE001
+                _poll_status.update(status="failed", failure_kind=type(e).__name__)
+                log.warning("instance polling failed (%s)", type(e).__name__)
+            else:
+                _poll_status.update(status="ready", last_success_at=now_iso(), failure_kind=None)
+    except asyncio.CancelledError:
+        _poll_status.update(status="cancelled")
+        raise
+    except Exception as exc:
+        _poll_status.update(status="stopped", failure_kind=type(exc).__name__)
+        log.warning("instance polling stopped (%s)", type(exc).__name__)
+        raise
+    finally:
+        if _poll_status["status"] != "cancelled":
+            _poll_status.update(status="stopped")
 
 
 def _in_executor(fn, *args):
@@ -482,7 +512,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
         if rt is None:
             return {"status": "failed", "error": "instance 실행 서비스가 없어 비밀 값 표를 읽을 수 없습니다", "error_kind": "config"}
         try:            # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다 — 값이 없으면 빈 토큰으로 부르지 않고 사유로 멈춘다
-            spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, spec)
+            spec, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, server, entry)
+            spec = mcp_check.normalize(spec)
         except mcp_secrets.SecretError as e:
             return {"status": "failed", "error": e.reason, "error_kind": "secret"}
         # 서버가 토큰을 되돌려 줘도(오류 본문 · 에코) 영수증 · 감사 · 처리 기록에 값이 남지 않게
@@ -832,6 +863,35 @@ def _rt() -> instances.InstanceRuntime:
 
 
 def mount(app: FastAPI, process_mode: str) -> None:
+    @app.post("/internal/worker/mcp-runtime")
+    async def worker_mcp_runtime(request: Request):
+        from .worker_credentials import resolve
+        raw = bytearray()
+        async for chunk in request.stream():
+            raw.extend(chunk)
+            if len(raw) > 16_384:
+                raise HTTPException(413, "실행 연결 요청이 허용 크기를 초과했습니다")
+        try:
+            body = json.loads(raw)
+        except (ValueError, UnicodeError):
+            raise HTTPException(422, "실행 연결 요청은 올바른 JSON이어야 합니다") from None
+        if not isinstance(body, dict):
+            raise HTTPException(422, "실행 연결 요청은 객체여야 합니다")
+        from fastapi.responses import JSONResponse
+        result = await _in_executor(resolve, _rt(), body, request.headers.get("authorization"))
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+    @app.api_route("/internal/worker/mcp/{name}", methods=["POST", "GET", "DELETE"])
+    async def worker_mcp_relay(name: str, request: Request):
+        from .mcp_worker_relay import forward, MAX_BODY
+        raw = bytearray()
+        async for chunk in request.stream():
+            raw.extend(chunk)
+            if len(raw) > MAX_BODY:
+                raise HTTPException(413, "도구 요청이 허용 크기를 초과했습니다")
+        return await _in_executor(partial(forward, _rt(), name, request.headers.get("authorization"),
+                                          request.method, dict(request.headers), bytes(raw)))
+
     @app.get("/api/process/mode")
     def process_mode_info():
         rt = _runtime

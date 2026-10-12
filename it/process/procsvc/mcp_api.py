@@ -138,13 +138,22 @@ def register(app, *, runtime_factory, audit):
         except ValueError as e:
             raise HTTPException(422, f"MCP 서버 '{name}' 설정 오류 — {e}")
         try:                                                     # G2: ${SECRET:KEY} 는 부르기 직전에만 채운다(응답에는 싣지 않는다)
-            return mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, name, spec)
+            resolved, used = mcp_secrets.runtime_spec(rt.repo, rt.tenant_id, name, raw)
+            return mcp_check.normalize(resolved), used
         except mcp_secrets.SecretError as e:
             raise HTTPException(e.status, e.reason)
 
     def confirmed_of(rt, name: str) -> frozenset:
         """G2 ②: 강사가 읽기로 확인한 도구 — 써 보기에서도 같은 판정(호출 직전 다시 받은 목록에서 여전히 confirmable 일 때만)."""
         return frozenset(mcp_registry.confirmed_of(servers_of(rt).get(name)))
+
+    def auth_result(rt, name, result):
+        if result.get("error_kind") == "auth":
+            from . import mcp_oauth
+            try:
+                mcp_oauth.mark_auth_failure(rt.repo, rt.tenant_id, name, servers_of(rt).get(name) or {})
+            except mcp_oauth.OAuthError:
+                pass  # Preserve the original safe call failure; never replay a request.
 
     @app.get("/api/mcp/servers")
     async def list_servers():
@@ -168,6 +177,7 @@ def register(app, *, runtime_factory, audit):
         spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
             result = mcp_secrets.redact(await run(lambda: mcp_check.check(spec, limit)), used)
+        await run(lambda: auth_result(rt, name, result))
         return {"name": name, "timeout_s": limit, **{k: result[k] for k in ("status", "tools", "error", "error_kind", "checked_at",
                                                                            "elapsed_ms", "server_info", "protocol_version", "transport")}}
 
@@ -183,6 +193,7 @@ def register(app, *, runtime_factory, audit):
         async with CALL_SEMAPHORE:
             confirmed = await run(lambda: confirmed_of(rt, name))
             result = mcp_secrets.redact(await run(lambda: mcp_check.call(spec, tool, arguments, limit, confirmed=confirmed)), used)
+        await run(lambda: auth_result(rt, name, result))
         audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),
                "arguments": mcp_calls.brief(mcp_check.mask_value(arguments), 300)})

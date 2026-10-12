@@ -34,7 +34,8 @@ META_KEY = "hyd"
 SECRETS_KEY = "hydSecrets"
 #: G2: why the secret lookup failed (context.with_secrets) — the drop reason names it instead of "no value"
 SECRETS_ERROR_KEY = "hydSecretsError"
-_PRIVATE_KEYS = (SECRETS_KEY, SECRETS_ERROR_KEY)
+RUNTIME_KEY = "hydRuntimeCredentials"
+_PRIVATE_KEYS = (SECRETS_KEY, SECRETS_ERROR_KEY, RUNTIME_KEY)
 
 
 @dataclass
@@ -42,8 +43,9 @@ class BridgeResult:
     servers: list[str] = field(default_factory=list)
     config_path: str | None = None
     env: dict[str, str] = field(default_factory=dict)       # environment the run must inherit (config-dir isolation)
-    extra_args: list[str] = field(default_factory=list)
+    extra_args: list[str] = field(default_factory=list, repr=False)
     dropped: dict[str, str] = field(default_factory=dict)   # G2: server -> why install left it out (a secret without a value)
+    redaction_values: list[str] = field(default_factory=list, repr=False)
 
 
 def cleanup(workdir: Path) -> list[str]:
@@ -150,6 +152,10 @@ def gate_servers(tenant_mcp: dict | None, trusted: set[str] | list[str]) -> Gate
     out = Gate(config=None)
     values = _secret_values(tenant_mcp)
     for name, spec in config.items():
+        if isinstance(spec, dict) and (spec.get(META_KEY) or {}).get("oauth_connection"):
+            held = ((tenant_mcp or {}).get(RUNTIME_KEY) or {}).get(name) or {}
+            if held.get("fingerprint") != config_fingerprint(spec) or not held.get("headers"):
+                raise RuntimeError("로그인 연결의 실행 자격증명이 없습니다. 다시 연결을 확인하세요")
         missing = [k for k in mcp_secrets.references(spec) if not values.get(k)]
         if missing:                     # G2: never start a server with an empty token — say which secret is missing
             out.dropped[name] = _missing_reason(tenant_mcp, missing, "는 서버(포털 MCP 화면 '비밀 값'에 넣기)")
@@ -184,6 +190,11 @@ def _resolved(tenant_mcp: dict | None) -> tuple[dict | None, dict[str, str]]:
         if missing:
             dropped[name] = _missing_reason(tenant_mcp, missing, "음")
         else:
+            held = ((tenant_mcp or {}).get(RUNTIME_KEY) or {}).get(name) or {}
+            if isinstance(spec, dict) and (spec.get(META_KEY) or {}).get("oauth_connection"):
+                if held.get("fingerprint") != config_fingerprint(spec) or not held.get("headers"):
+                    raise RuntimeError("로그인 연결의 실행 자격증명이 없습니다")
+                filled = dict(filled, url=held["url"], headers=dict(held["headers"]))
             kept[name] = filled
     return dict(without_secrets(tenant_mcp), mcpServers=kept), dropped
 
@@ -248,6 +259,10 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     """Register the tenant's servers for one run in `workdir` (idempotent: rewrites the same entries).
     read_tools (B2, from gate_servers): a gated server's read-only tools — Codex enables only those (Claude Code gets them
     through --allowedTools / --disallowedTools in the runner)."""
+    private = ((tenant_mcp or {}).get(RUNTIME_KEY) or {}).values()
+    redaction_values = [value for held in private for value in (held.get("headers") or {}).values()]
+    redaction_values += [value.removeprefix("Bearer ") for value in redaction_values]
+    redaction_values += [value.removeprefix("HydRuntime ") for value in redaction_values]
     tenant_mcp, dropped = _resolved(tenant_mcp)
     stdio, http = servers_of(tenant_mcp, extra_env=extra_env, host_rewrite=host_rewrite)
     if provider_id == "codex":
@@ -267,7 +282,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         path = workdir / "codex-mcp.toml"
         config = "mcp_servers=" + _inline_toml(entries)
         path.write_text(config + "\n", encoding="utf-8")
-        return BridgeResult(servers=list(entries), config_path=str(path), dropped=dropped,
+        return BridgeResult(servers=list(entries), config_path=str(path), dropped=dropped, redaction_values=redaction_values,
                             extra_args=["--ignore-user-config", "--disable", "apps",
                                         "-c", "project_doc_max_bytes=0", "-c", config])
     path = workdir / MCP_CONFIG_FILENAME
@@ -290,7 +305,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     config["mcpServers"] = entries
     path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return BridgeResult(servers=list(entries), config_path=str(path), env=runtime_env(workdir, provider_id, isolate_config_dir),
-                        dropped=dropped, extra_args=["--mcp-config", str(path), "--strict-mcp-config"])
+                        dropped=dropped, redaction_values=redaction_values, extra_args=["--mcp-config", str(path), "--strict-mcp-config"])
 
 
 def _inline_toml(value) -> str:

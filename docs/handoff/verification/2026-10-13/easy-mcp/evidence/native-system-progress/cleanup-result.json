@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "owned_only": [
+    {
+      "tenant": "native-progress-e73ea91c26fc490e858182b55161805b",
+      "remaining_tenants": 0
+    },
+    {
+      "tenant": "native-progress-4d9d23a4217a4ea684ff2a3f5c85323f",
+      "remaining_tenants": 0
+    }
+  ]
+}

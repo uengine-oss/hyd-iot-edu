@@ -108,6 +108,8 @@ def normalize(spec) -> dict:
         out["url"] = url
         out["type"] = "url"                                     # bridge.py 가 읽는 제품 형태를 유지한다
         out["headers"] = _str_map(spec.get("headers"), "headers")
+    if spec.get("_oauth_transport"):
+        out["_oauth_transport"] = True
     return out
 
 
@@ -444,13 +446,40 @@ def _http_error(exc: Exception, url: str, timeout: float) -> CheckError:
     return CheckError("unreachable", f"{host} 에 연결하지 못했습니다: {str(reason)[:160]}")
 
 
-def _open(req: urllib.request.Request, timeout: float):
+class _OAuthResponse:
+    def __init__(self, connection, response):
+        self.connection, self.response = connection, response
+    def __getattr__(self, key):
+        return getattr(self.response, key)
+    def __iter__(self):
+        return iter(self.response)
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        self.close()
+    def close(self):
+        self.response.close()
+        self.connection.close()
+
+
+def _open(req: urllib.request.Request, timeout: float, *, oauth=False):
+    if oauth:
+        from .mcp_oauth import Transport, OAuthError
+        try:
+            conn, response = Transport().open(req.get_method(), req.full_url, req.data, dict(req.header_items()), max(0.05, timeout))
+            if response.status >= 400:
+                conn.close()
+                raise CheckError("auth" if response.status in (401, 403) else "http", "외부 도구 서버가 요청을 승인하지 않았습니다.")
+            return _OAuthResponse(conn, response)
+        except OAuthError:
+            raise CheckError("auth_transport", "외부 도구의 안전한 연결을 확인하지 못했습니다.") from None
     return _NO_PROXY.open(req, timeout=max(0.05, timeout))
 
 
 class _StreamableHttp:
     def __init__(self, spec: dict):
         self.url, self.headers, self.session_id, self.protocol = spec["url"], dict(spec.get("headers") or {}), None, None
+        self.oauth = bool(spec.get("_oauth_transport"))
         self.pending: list[dict] = []
 
     def _headers(self) -> dict:
@@ -465,7 +494,7 @@ class _StreamableHttp:
         left = session.remaining()
         req = urllib.request.Request(self.url, data=json.dumps(payload).encode(), headers=self._headers(), method="POST")
         try:
-            with _open(req, left) as resp:
+            with _open(req, left, oauth=self.oauth) as resp:
                 sid = resp.headers.get("Mcp-Session-Id")
                 if sid:
                     self.session_id = sid
@@ -508,7 +537,7 @@ class _StreamableHttp:
         if not self.session_id:
             return
         try:                                                     # 스펙: 클라이언트는 세션을 DELETE 로 끝내는 것이 좋다(서버가 405 여도 무방)
-            with _open(urllib.request.Request(self.url, headers=self._headers(), method="DELETE"), 2.0):
+            with _open(urllib.request.Request(self.url, headers=self._headers(), method="DELETE"), 2.0, oauth=self.oauth):
                 pass
         except Exception:  # noqa: BLE001
             pass

@@ -33,9 +33,11 @@ from .knowledge_projection import KnowledgeReconciler
 from .case_projection import CaseProjector, incident_params as _incident_params
 from .source_inbox import PgSourceInbox, kafka_record, source_record
 from .source_delivery import SourceDelivery, SourcePending
+from .oauth_access_log import install as _install_oauth_access_log_filter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("process")
+_install_oauth_access_log_filter()
 TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
 PG_DSN = os.getenv("PG_DSN", "postgresql://hyd:hyd@timescaledb:5432/hyd")
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
@@ -402,9 +404,20 @@ async def _source_loop():
             await asyncio.sleep(1)
 
 
+def _health_state():
+    """Report actual processing readiness without opening another DB connection."""
+    ready = state["kafka"] and not any(state.get(k) for k in
+        ('consumer_dead', 'source_receive_error', 'source_handler_error', 'source_policy_error', 'startup_db_error'))
+    snapshot = {**state, "ok": bool(ready)}
+    if PROCESS_MODE == 'instance':
+        runtime = instance_mode.runtime_readiness()
+        snapshot['runtime'] = runtime
+        snapshot['ok'] = bool(ready and runtime['ready'])
+    return snapshot
+
+
 app = make_app("process (L9: mini-BPMN — approval, action.cmd, ACK, re-observation, work order)", reg,
-               lambda: {**state, "ok": state["kafka"] and not any(state.get(k) for k in
-                    ('consumer_dead','source_receive_error','source_handler_error','source_policy_error','startup_db_error'))})
+               _health_state)
 instance_mode.mount(app, PROCESS_MODE)      # /api/instances · /api/todolist · … (409 unless PROCESS_MODE=instance)
 from . import agents_api
 agents_api.mount(app)                       # U2: /api/agents · /api/skills · /api/agent-bindings (instance mode)
@@ -1138,6 +1151,10 @@ mcp_registry.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 # G2 (전체 과정 랩업): MCP 설정의 ${SECRET:KEY} 값 — 쓰기만 하고 돌려주지 않는다 (procsvc/mcp_secrets.py)
 from . import mcp_secrets
 mcp_secrets.mount(app, runtime_factory=instance_mode.current, audit=_audit)
+
+# Browser consent belongs to the external service; no portal login is added.
+from . import mcp_oauth
+mcp_oauth.mount(app, runtime_factory=instance_mode.current, audit=_audit)
 
 # A11 데이터 패브릭 미니: 업무 DB · 시계열 DB 읽기 전용 묶어 보기 (전용 읽기 계정만, fabric_api.py)
 from . import fabric_api

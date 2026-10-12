@@ -1,0 +1,55 @@
+{
+  "reason": "Pass optional operator client/private-origin settings into process; no new image build",
+  "attempts": [
+    "RemoteDisconnected",
+    "HTTPError"
+  ],
+  "health": {
+    "ok": true,
+    "kafka": true,
+    "incidents": 246,
+    "mode": "instance",
+    "supabase": true,
+    "runtime": {
+      "status": "ready",
+      "last_success_at": "2026-10-12T17:35:55.998Z",
+      "failure_kind": null,
+      "ready": true
+    }
+  },
+  "connections": {
+    "catalog": [
+      {
+        "id": "google-drive",
+        "title": "Google Drive",
+        "url": "https://drivemcp.googleapis.com/mcp/v1",
+        "scopes": [
+          "https://www.googleapis.com/auth/drive.readonly"
+        ],
+        "preview": true,
+        "shared": true,
+        "operator_requirements": "Google Cloud 프로젝트의 MCP API 활성화(미리보기)와 OAuth 앱 사전 등록이 필요합니다."
+      },
+      {
+        "id": "google-calendar",
+        "title": "Google Calendar",
+        "url": "https://calendarmcp.googleapis.com/mcp/v1",
+        "scopes": [
+          "https://www.googleapis.com/auth/calendar.events.readonly"
+        ],
+        "preview": true,
+        "shared": true,
+        "operator_requirements": "Google Cloud 프로젝트의 MCP API 활성화(미리보기)와 OAuth 앱 사전 등록이 필요합니다."
+      }
+    ],
+    "connections": [],
+    "configuration": {
+      "storage_ready": true,
+      "callback_ready": true,
+      "shared": true,
+      "reason": null,
+      "reason_code": null
+    }
+  },
+  "ok": true
+}

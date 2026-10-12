@@ -1,0 +1,4 @@
+/* Connection controls are revealed only when the verified connection state needs them. */
+#mcpConnections [hidden] {
+  display: none !important;
+}

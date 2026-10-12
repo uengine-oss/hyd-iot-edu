@@ -1,0 +1,4 @@
+# Evidence and collectors preserve captured bytes and their recorded SHA-256.
+evidence/** -text
+collectors/** -text
+copied-evidence-sha.json -text
