@@ -2,6 +2,8 @@
 
 사용: python 만들기_삽화.py            → 이 폴더에 SVG를 쓴다
 화풍(색 · 선 굵기 · 그림 조각)은 1일차의 `만들기_삽화.py`를 복사한 `조각_1일차.py`에서 그대로 가져온다.
+앞 일차의 그림을 그대로 다시 쓰는 장은 그 파일을 이 폴더에 복사해 둔다(이 스크립트가 만들지 않는다):
+관계.svg · 경로_1~3.svg · 흩어진정보.svg · 원인후보.svg(1일차), 두층_3.svg(2일차), 성과경로_5.svg · 그래프_조치후보_예측유온.png(3일차).
 """
 from __future__ import annotations
 
@@ -402,9 +404,46 @@ def one_sentence() -> str:
     return svg(o)
 
 
+# ───────────────────────── 7. 세 층: 스키마, 인스턴스 데이터, 값 ─────────────────────────
+
+def three_layers() -> str:
+    """위에서 아래로 스키마(점선 상자) · 인스턴스 데이터(원) · 값(원천). 위 두 층이 지식 그래프, 맨 아래는 그래프 밖."""
+    from 조각_1일차 import broken_cooler, calendar_icon, dusty_cooler
+    o: list[str] = []
+    cols = (430, 710, 990)                 # 고장 유형 · 원인 · 증거
+    ys = (82, 247, 438)                    # 층의 가운데
+    bx, bw, bhs = 250, 936, (144, 150, 140)
+    yc, yi, yv = ys[0] + 14, ys[1] - 16, ys[2] - 20   # 클래스 상자 · 인스턴스 원 · 원천 그림의 가운데(이름을 얹을 자리를 둔다)
+    for k, (y, bh) in enumerate(zip(ys, bhs)):
+        o.append(rect(bx, y - bh / 2, bw, bh, 14, fill=PALE if k == 2 else LIGHT, stroke=SKY if k == 2 else "none", sw=3 if k == 2 else 0))
+    # 스키마: 클래스(점선 상자)와 관계 유형 / 인스턴스 데이터: 그 정의에 맞추어 놓인 대상과 관계
+    for a, b in ((1, 0), (1, 2)):
+        s = 1 if cols[b] > cols[a] else -1
+        o.append(arrow([(cols[a] + s * 82, yc), (cols[b] - s * 84, yc)], NAVY, sw=4, size=13))
+        o.append(arrow([(cols[a] + s * 48, yi), (cols[b] - s * 50, yi)], NAVY, sw=4, size=13))
+    for x in cols:
+        o += dots(x, yc + 46, x, yi - 52, color=GREY, gap=12, r=2.8)
+        o.append(rect(x - 78, yc - 36, 156, 72, 12, fill=WHITE, stroke=NAVY, sw=4, stroke_dasharray="11 9"))
+        o.append(circle(x, yi, 44, fill=WHITE, stroke=NAVY, sw=4))
+    o += g(cols[0], yi, 0.56, broken_cooler(0, 0, NORM), boost=1.3)
+    o += g(cols[1], yi, 0.56, dusty_cooler(0, 0, NORM), boost=1.3)
+    # 증거: 기준값이 그어진 눈금 막대(기준보다 낮은 쪽을 칠했다)
+    ex = cols[2]
+    o += [rect(ex - 28, yi - 8, 56, 16, 6, fill=WHITE, stroke=NAVY, sw=3), rect(ex - 28, yi - 8, 34, 16, 6, fill=SKY, stroke=NAVY, sw=3),
+          line(ex + 6, yi - 20, ex + 6, yi + 20, stroke=NAVY, sw=4)]
+    # 값: 그래프 밖의 원천. 증거의 기준에 대는 값은 판단하는 순간에 읽는다
+    o += dots(ex, ys[1] + bhs[1] / 2 + 6, ex, yv - 42, color=BLUE, gap=11, r=3.4)
+    o += gauge(ex - 56, yv, ON, r=28, hot=True, ang=-140)
+    o += g(ex + 40, yv + 2, 0.6, cylinder_db(0, 0, ON)[:4], boost=1.3)
+    o += g(cols[1], yv + 2, 0.56, plc(0, 0, NORM), boost=1.3)
+    o += g(cols[0], yv + 2, 0.56, calendar_icon(0, 0, NORM), boost=1.3)
+    return svg(o)
+
+
 def main():
     out = {"인제스천_전체.svg": ingest_pipeline(0), **{f"인제스천_{k}.svg": ingest_pipeline(k) for k in range(1, 8)}, "인용.svg": citation(), "적재묶음_사슬.svg": batch_chain(),
-           "입력데이터_자리.svg": input_slot(), "네일차_흐름.svg": four_days(), "한문장.svg": one_sentence()}
+           "입력데이터_자리.svg": input_slot(), "네일차_흐름.svg": four_days(), "한문장.svg": one_sentence(),
+           "세층.svg": three_layers()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")

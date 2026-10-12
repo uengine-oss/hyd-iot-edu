@@ -148,9 +148,9 @@ def candidates(focus) -> str:
 
 # ───────────────────────── 2. SOP 문서와 구성요소 ─────────────────────────
 
-SOP_BLOCKS = {"target": (26, 40), "pre": (76, 40), "steps": (156, 84), "role": (248, 28), "safety": (322, 32),
-              "done": (372, 40), "forbid": (428, 40)}
-SOP_TITLES = (124, 290)   # SOP 제목 줄(SOP-COOL-11, SOP-COOL-14)
+SOP_BLOCKS = {"target": (20, 40), "pre": (70, 40), "prep": (148, 28), "steps": (184, 84), "role": (276, 28),
+              "safety": (338, 32), "done": (384, 40), "forbid": (434, 40)}   # 구성요소 여덟(준비사항 포함)
+SOP_TITLES = (118, 310)   # SOP 제목 줄(SOP-COOL-11, SOP-COOL-14)
 
 
 def sopdoc(focus: str) -> str:
