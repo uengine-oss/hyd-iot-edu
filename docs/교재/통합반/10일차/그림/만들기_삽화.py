@@ -297,34 +297,32 @@ def flow(which: str) -> str:
     return svg(o)
 
 
-# ───────────────────────── 7. 단계별 걸린 시간 (실제 기록) ─────────────────────────
+# ───────────────────────── 7. 병목: 세 프로세스의 단계와 승인 단계 ─────────────────────────
 
-# 승인된 처리 건 세 건의 단계별 걸린 시간(초). 순서: 에이전트 단계, 승인 단계, 시스템 단계들.
-DUR = {"A": (82.3, 1.3, (1.1, 60.2, 1.0, 0.3)), "B": (55.3, 3.7, (1.0, 0.4)), "C": (54.4, 1.7, (0.3, 0.9, 0.4))}
-BAR_X0, BAR_K = 190, 6.2
+# 세 프로세스의 단계를 순서대로 놓는다: 에이전트 단계, 승인 단계, 시스템 단계들(수는 4 · 2 · 3).
+# 상자의 폭은 시간을 뜻하지 않는다. 승인 단계만 길게 그리고 끊긴 표시를 넣어 끝나는 때가 정해져 있지 않음을 보인다.
+BN_Y = (132, 272, 412)
+BN_H = 72
+BN_SYS_X0, BN_SYS_W, BN_SYS_GAP = 716, 104, 8
 
 
 def bottleneck() -> str:
     o: list[str] = []
-    for sec in (0, 30, 60, 90, 120, 150):
-        x = BAR_X0 + sec * BAR_K
-        o.append(line(x, 70, x, 470, stroke=GREY, sw=2.5))
-    o.append(line(BAR_X0, 470, BAR_X0 + 150 * BAR_K, 470, sw=3.5))
-    for key, y in zip("ABC", (140, 270, 400)):
-        agent, human, systems = DUR[key]
-        x = BAR_X0
-        h = 62
-        w = agent * BAR_K
-        o.append(rect(x, y - h / 2, w, h, 6, fill=SKY))
-        o += g(x + 46, y, 0.44, agent_icon(0, 4, ON))
-        x += w
-        w = max(human * BAR_K, 7)
-        o.append(rect(x, y - h / 2, w, h, 2, fill=NAVY))
-        x += w
-        for s in systems:
-            w = max(s * BAR_K, 5)
-            o.append(rect(x, y - h / 2, w, h, 3 if w > 20 else 1, fill=PALE, sw=2.5 if w < 20 else 3.5))
-            x += w
+    o.append(rect(384, 58, 324, 404, 14, fill="none", stroke=BLUE, sw=3, stroke_dasharray="9 7"))
+    for y, n in zip(BN_Y, ROW_TASKS):
+        top = y - BN_H / 2
+        o.append(rect(180, top, 200, BN_H, 8, fill=SKY))
+        o += g(214, y, 0.36, agent_icon(0, 6, ON))
+        o.append(rect(392, top, 308, BN_H, 8, fill=WHITE, sw=4))
+        o += clock(424, y, 16, ON)
+        bx = 652
+        o.append(poly([(bx - 2, top - 9), (bx + 16, top - 9), (bx + 2, top + BN_H + 9), (bx - 16, top + BN_H + 9)], fill=WHITE))
+        o.append(line(bx - 2, top - 9, bx - 16, top + BN_H + 9, sw=3))
+        o.append(line(bx + 16, top - 9, bx + 2, top + BN_H + 9, sw=3))
+        for i in range(n):
+            x = BN_SYS_X0 + i * (BN_SYS_W + BN_SYS_GAP)
+            o.append(rect(x, top, BN_SYS_W, BN_H, 8, fill=PALE))
+            o += gear_mark(x + BN_SYS_W / 2 - 11, y - 12, ON, 1.0)
     return svg(o)
 
 
