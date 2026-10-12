@@ -28,3 +28,8 @@ WO_RESCHEDULE 예측 등록 수정 후 [현재 MCP 평가](B-current-after-forec
 후속 성공은 공개 스트림87, 긴 도구 입출력25, 구매 신규16, schema16, UI78/15, 예측73, 보류 UI46의 각 집중 범위다. 사용자 요청대로 전체 재실행0·추가 B LLM 재실행0이다. 소스 판본은 [phase2 SHA](final-runtime-phase2-source-manifest.json)와 [검증 범위](final-runtime-phase2-verification-coverage.json)로 구분한다.
 
 남은 것은 B 실제 부품/재고 자료에 따른 업무 완료, 인증된 외부 Calendar/Drive MCP·실제 회의 K3, 전체 화면의 사용자 시각 인수다. U16/U20/F13을 전체 완료로 변경하지 않는다. UIUX.md 인수 조건6은 “사용자가 캡처를 보고 ‘됐다’고 해야 완료”이며 자동 검사는 전제 조건이다. 학생 포털 로그인이나 GCP 프로젝트를 공통 필수로 추가하지 않았다. 서비스는 포털8088에서 열어 두고 AI 작업을 가져가는 owned 워커8097은 종료했다.
+
+
+최종 전체21경고는 FastAPI on_event 수명주기 폐기예고20회와 FastMCP 의존 Authlib jose 폐기예고1회다. 현재 MCP 읽기에는 streamable_http_client 이전 명칭 폐기예고도 있다. 실행 실패나 데이터 손실로 해석하지 않으며 경고를 숨기거나 무관한 전체 수명주기/인증 라이브러리를 이번 UI 수정에 섞지 않았다. 마지막 보류 UI46개는 경고0이다.
+
+원격 pull --rebase의 NOW 충돌은 교재 세션의 최신 교재 행·4.7절과 이번 최신 스택 행을 모두 보존해 해결했다. Git의 줄바꿈 변환24파일은 의미 변경 없이 이미 검증한 원래 바이트로 복원했고 source800개 SHA가 정확히 일치한다. [리베이스 후 확인](post-rebase-source-check-final.json)을 남겼으며 시험 재실행0이다. 최종 서비스29개는 유지하고 본인 잠금만 해제했다.

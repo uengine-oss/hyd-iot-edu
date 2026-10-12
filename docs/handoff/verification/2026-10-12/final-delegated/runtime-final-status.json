@@ -1,0 +1,127 @@
+{
+  "at": "2026-10-12T08:54:25.108572+00:00",
+  "portal": "http://127.0.0.1:8088/",
+  "portal_http": 200,
+  "worker_8097_listening": false,
+  "own_live_lock_released": true,
+  "services_kept_running": [
+    {
+      "name": "hyd-iot-edu-agent-1",
+      "status": "Up 20 minutes (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-dmn-mcp-1",
+      "status": "Up 20 minutes (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-process-1",
+      "status": "Up 20 minutes (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-portal-1",
+      "status": "Up About an hour"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-sim-1",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-1",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-purchase-1",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-enterprise-mcp-maint-1",
+      "status": "Up 2 hours (healthy)"
+    },
+    {
+      "name": "supabase_studio_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_pg_meta_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_edge_runtime_hyd-iot-edu",
+      "status": "Up 8 hours"
+    },
+    {
+      "name": "supabase_rest_hyd-iot-edu",
+      "status": "Up 8 hours"
+    },
+    {
+      "name": "supabase_realtime_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_inbucket_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_auth_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_kong_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "supabase_db_hyd-iot-edu",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-connect-sink-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-connect-ingest-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-cmd-gateway-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-detector-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-fuxa-1",
+      "status": "Up 8 hours"
+    },
+    {
+      "name": "hyd-iot-edu-grafana-1",
+      "status": "Up 8 hours"
+    },
+    {
+      "name": "hyd-iot-edu-plant-sim-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-effects-mcp-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-timescaledb-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-redpanda-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-neo4j-1",
+      "status": "Up 8 hours (healthy)"
+    },
+    {
+      "name": "hyd-iot-edu-emqx-1",
+      "status": "Up 8 hours (healthy)"
+    }
+  ],
+  "volumes_deleted": false,
+  "protected_worktrees_deleted": false
+}
