@@ -415,6 +415,21 @@ def compensation() -> str:
     return svg(o)
 
 
+def devices() -> str:
+    """처리 건 한 건에서 두 쪽의 장치가 일한 자리. 위: 프로세스 쪽(전체를 덮는 정의 · 인스턴스의 괄호, 승인 기록의 선,
+    시스템 실행의 괄호). 아래: 에이전트 쪽(둘째 자리의 점선 상자, 실행에 앞서 정해 둔 명세와 시나리오 문서)."""
+    o: list[str] = []
+    y = 250
+    o += chain_nodes(y, [NORM, ON, NORM, NORM, NORM, NORM, NORM, NORM])
+    o.append(brace(CH_X[0] - 58, CH_X[7] + 40, 58, False, NAVY, 5))
+    o.append(line(CH_X[2], y - 56, CH_X[2], 160, stroke=BLUE, sw=4))
+    o.append(brace(CH_X[3] - 58, CH_X[5] + 58, 168, False, BLUE, 5))
+    o.append(rect(CH_X[1] - 68, y - 68, 136, 136, 16, fill="none", stroke=BLUE, sw=4, stroke_dasharray="10 8"))
+    o += put(92, 408, 0.8, doc_icon(-10, -8, NORM) + doc_icon(10, 8, ON, "check"), 1.2)
+    o.append(arrow([(142, 408), (182, 408), (182, 356)], BLUE, sw=5, size=14))
+    return svg(o)
+
+
 def person_pin(cx, cy, r=26):
     return [circle(cx, cy, r, fill=WHITE, stroke=BLUE, sw=4)] + put(cx, cy + 2, r / 62, person_icon(0, 0, ON), 1.6)
 
@@ -462,7 +477,8 @@ def main():
     out = {"사건선_전체.svg": event_line("all"), "사건선_영역.svg": event_line("areas"), "사건선_지식에서판단.svg": event_line("u1"),
            "사건선_승인에서끝.svg": event_line("u2"), "호출과지식.svg": calls_knowledge(), "시스템실행.svg": system_exec(),
            "세영역.svg": three_areas(), "다섯계층.svg": five_layers(), "작업목록.svg": work_list(),
-           "통제자리.svg": controls(), "세처리건.svg": three_cases(), "사람자리.svg": people_spots(), "보상.svg": compensation()}
+           "통제자리.svg": controls(), "세처리건.svg": three_cases(), "사람자리.svg": people_spots(), "보상.svg": compensation(),
+           "장치자리.svg": devices()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")
