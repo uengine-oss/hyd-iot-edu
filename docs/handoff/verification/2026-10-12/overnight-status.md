@@ -181,3 +181,14 @@ SVG 경계 초과12개는 접근 불가한 잘림의 증거가 아니며 의도�
 저장된 실제 B를 최신 렌더러로 다시 캡처하려고 본인 LIVE_LOCK을 새로 잡았으나, 제품 서비스 시작 명령이 자동 승인 검토에서 `blocked by policy`로 거절됐다. 구체적 추가 사유는 반환되지 않았다. `skill-delivery-live/blocked.json`에 남겼다. `skill-delivery-capture.py`는 준비만 했으며 최신 실제 B 캡처 완료 증거가 아니다. 켜진 Supabase는 backup을 유지하여 정지했고 워커·시뮬레이션은 시작하지 않았다. 기존 실제 실행/화면과 최신 독립 브라우저 시험을 구분한다. 도구 제한을 우회해 같은 명령을 다시 실행하지 않았다.
 
 03:28 KST 추가 준비 종료도 `skill-delivery-live/services-off.json`·`cleanup-final.json`으로 확인했다: 실행 컨테이너0·관련 포트0·Docker Desktop/backend0·LIVE_LOCK 없음. 원격 통합 직전 교재 보호 경로와 소스 blob 불변을 확인하며 코드 해시는 git log/작업보고에 남긴다.
+
+
+## 사용자 요청 후 재시도 — 2026-10-12
+
+사용자가 다시 실행하라고 요청하여 Docker Desktop·Supabase를 준비했지만, `docker compose start neo4j agent process portal enterprise-sim`은 명령 실행 도구가 다시 `Rejected: blocked by policy`로 거부했다. 이전 기록의 ‘자동 승인 검토’는 정확한 원인을 단정한 표현이었다. 확인된 사실은 도구의 거부뿐이며 구체적인 정책 사유는 반환되지 않았다. 운영체제 권한·레포·제품 오류라고 판정하지 않는다. 같은 제한을 우회하는 다른 시작 명령은 실행하지 않았다.
+
+B의 전체 API 응답 사본은 없어서 최신 B 라이브 캡처는 여전히 미완료다. 저장된 실제 Codex 학생 완료 건(`target-capture-final/personal-instance.json`)의 **응답 bytes를 변경하지 않고** 최신 제품 index/CSS/UI/기록 컨트롤러로 재생했다. `skill-delivery-retry/saved-record-result.json`의 source SHA와 1440/1024px 화면을 보존했다. 원 응답의 task_started는 skills=[]를 명시하며 화면은 ‘제공된 스킬 없음’·파일 읽기 요청0건을 표시한다. pageerror0·문서폭 넘침0·쓰기0이다. 저장되지 않은 추가 GET은503과 ‘저장된 응답 없음’을 표시했으며 성공 응답을 만들지 않았다. 현재 운영 상태나 B의 본문 전달 완료를 증명하는 캡처가 아니다.
+
+최초 캡처 준비 스크립트는 빈 배열을 metadata 누락으로 가정하여 기다리다 timeout했고, 첫 문자열 교정은 PowerShell 입력 인코딩 때문에 적용되지 않았다. 원본 스크립트와 두 실패 로그·진단 로그를 보존했다. 실제 source의 skills=[]를 먼저 검증하고 UTF-8 입력을 지정한 마지막 스크립트는 성공했다. 제품 코드·기존 시험 기대값은 변경하지 않았으며 전체2298통과 결과는 동일한 제품 코드의 증거다.
+
+추가 준비 후 Supabase backup 유지 종료, Docker Desktop/backend0·관련 포트0·본인 잠금 없음·볼륨/작업 트리 보존을 `skill-delivery-retry/cleanup-final.json`으로 확인했다. 재시도 결과는 blocked-retry.json, 캡처는 saved-student-record-1440/1024.png·saved-student-skill-1440/1024.png다.
