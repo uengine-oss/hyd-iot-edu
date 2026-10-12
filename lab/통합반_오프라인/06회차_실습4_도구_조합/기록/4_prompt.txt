@@ -1,0 +1,1 @@
+먼저 .github/copilot-instructions.md 를 읽고 그 규칙을 따라 줘. work-items 스킬로 회의록/회의록_1.txt 의 업무 항목을 만들어 줘.

@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "time": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/서버/시간_서버.py", "--local-timezone", "Asia/Seoul"]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/서버/파일시스템_서버.py", "--read-only", "${workspaceFolder}/업무자료"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/서버/깃_서버.py", "--repository", "${workspaceFolder}/업무자료"]
+    }
+  }
+}

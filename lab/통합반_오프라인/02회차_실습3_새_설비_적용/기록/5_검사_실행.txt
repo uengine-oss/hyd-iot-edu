@@ -1,0 +1,26 @@
+[1] 스키마
+  결과/schema.json 은 처음 받은 것과 같다
+  클래스 11 · 관계 12 · conventions 30문장
+[2] 지금 들어 있는 것
+  노드 48: Asset 4, Component 9, Sensor 9, Actuator 3, StateVariable 12, Part 3, Symptom 2, FailureMode 1, Cause 1, Skill 1, Supplier 3
+  관계 70: HAS_COMPONENT 25, MOUNTED_ON 13, MEASURES 9, CONTROLS 3, USES_PART 5, SHOWS 2, INDICATES 2, CAUSES 1, MITIGATED_BY 1, OCCURS_IN 1, RELATED_TO 1, SUPPLIED_BY 7
+[3] 처음 받은 것에서 달라진 것
+  처음부터 있던 노드 36: 사라진 것 0, 값이 바뀐 것 0
+  처음부터 있던 관계 53: 사라진 것 0, 값이 바뀐 것 0
+  새로 들어온 노드 12: Asset 1, Component 3, Sensor 4, StateVariable 4
+    Asset asset:hyd-04 HYD-04 유압 파워팩
+    Component comp:large-oil-cooler 대형 오일 쿨러
+    Component comp:cooler-fan-1 쿨러 팬 1
+    Component comp:cooler-fan-2 쿨러 팬 2
+    Sensor sen:ts2 쿨러 입구 유온 센서
+    Sensor sen:ts3 쿨러 출구 유온 센서
+    Sensor sen:vs2 팬 1 진동 센서
+    Sensor sen:vs3 팬 2 진동 센서
+    StateVariable sv:ts2 쿨러 입구 유온
+    StateVariable sv:ts3 쿨러 출구 유온
+    StateVariable sv:vs2 팬 1 진동
+    StateVariable sv:vs3 팬 2 진동
+  새로 들어온 관계 17: HAS_COMPONENT 7, MOUNTED_ON 4, MEASURES 4, USES_PART 2
+[4] 스키마와 맞지 않는 곳 0
+[5] 카디널리티와 다르게 이어진 곳 1
+  - USES_PART 는 1:N 인데 part:p-fan-brg 하나에 시작이 3개 이어져 있다: comp:cooler-fan, comp:cooler-fan-1, comp:cooler-fan-2

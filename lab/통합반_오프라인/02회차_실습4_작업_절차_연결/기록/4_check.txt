@@ -1,0 +1,31 @@
+노드 45개
+  Asset          3
+  Component      6
+  Sensor         5
+  Actuator       3
+  StateVariable  8
+  Part           3
+  Symptom        2
+  FailureMode    1
+  Cause          1
+  Skill          5
+  Supplier       3
+  Condition      5
+관계 65개
+  HAS_COMPONENT  18
+  MOUNTED_ON     9
+  MEASURES       5
+  CONTROLS       3
+  USES_PART      3
+  SHOWS          2
+  INDICATES      2
+  CAUSES         1
+  MITIGATED_BY   3
+  OCCURS_IN      1
+  RELATED_TO     1
+  SUPPLIED_BY    7
+  REMEDIED_BY    2
+  HAS_CONDITION  8
+문서의 절 8개, 절차 7편
+
+어긋남 0건

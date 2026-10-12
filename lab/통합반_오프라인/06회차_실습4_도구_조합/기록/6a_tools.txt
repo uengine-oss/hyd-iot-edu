@@ -1,0 +1,4 @@
+서버 상태: filesystem=connected, git=connected
+1. mcp__git__git_log {"path": "생산/생산_계획표.csv", "max_count": 100} -> 실패: Git 저장소가 아니다: 회의록 폴더에 .git 이 없다. 서버의 --repository 설정을 확인한다.
+2. mcp__git__git_log {"path": "점검/쿨러_핀_점검_기록.csv", "max_count": 100} -> 실패: Git 저장소가 아니다: 회의록 폴더에 .git 이 없다. 서버의 --repository 설정을 확인한다.
+3. mcp__git__git_status {} -> 실패: Git 저장소가 아니다: 회의록 폴더에 .git 이 없다. 서버의 --repository 설정을 확인한다.

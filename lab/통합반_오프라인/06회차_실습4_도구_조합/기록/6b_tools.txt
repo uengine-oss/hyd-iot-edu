@@ -1,0 +1,2 @@
+서버 상태: filesystem=connected, git=connected
+

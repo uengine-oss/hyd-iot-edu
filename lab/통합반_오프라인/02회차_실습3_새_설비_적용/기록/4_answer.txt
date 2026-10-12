@@ -1,0 +1,19 @@
+계획대로 `결과/graph.json`의 `nodes`와 `rels` 맨 뒤에 더했습니다. 검사와 질의는 말씀하신 대로 실행하지 않았습니다.
+
+- **노드 12개**
+  - Asset 1: `asset:hyd-04`
+  - Component 3: `comp:large-oil-cooler`, `comp:cooler-fan-1`, `comp:cooler-fan-2`
+  - Sensor 4: `sen:ts2`, `sen:ts3`, `sen:vs2`, `sen:vs3`
+  - StateVariable 4: `sv:ts2`, `sv:ts3`, `sv:vs2`, `sv:vs3`
+- **관계 17줄**
+  - `HAS_COMPONENT` 7: `asset:hyd-04`에서 새 구성 요소 셋과 기존 넷(`comp:main-pump`, `comp:standby-pump`, `comp:drive-motor`, `comp:oil-tank`)으로
+  - `MOUNTED_ON` 4: TS2·TS3은 대형 오일 쿨러, VS2는 쿨러 팬 1, VS3은 쿨러 팬 2
+  - `MEASURES` 4: 센서마다 같은 태그의 상태 변수로
+  - `USES_PART` 2: 쿨러 팬 1·2에서 `part:p-fan-brg`로
+
+더한 뒤 전체는 노드 48, 관계 70입니다. 이미 있던 줄은 건드리지 않았습니다. 다만 맨 뒤에 이어 붙이느라 기존 마지막 노드 줄과 마지막 관계 줄 끝에 쉼표가 하나씩 붙었습니다(값은 그대로입니다).
+
+자료와 다르게 적은 것은 계획에서 밝힌 그대로입니다. TS3 두 줄은 노드 하나로 보았고, 둘째 줄의 「출구 온도」는 옮기지 않았습니다. 목록의 「2번 팬」은 name 「쿨러 팬 2」의 aliases로 넣었습니다. 「1번 팬」은 메모에만 있는 말입니다. VS3의 단위와 새 센서 넷의 정상값·한계는 적지 않았습니다.
+
+고친 파일: `결과/graph.json`
+만든 파일: 없음

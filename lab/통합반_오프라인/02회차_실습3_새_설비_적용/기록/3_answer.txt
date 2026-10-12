@@ -1,0 +1,86 @@
+계획만 말씀드립니다. 아직 아무것도 고치지 않았고, 확인해 주시면 `결과/graph.json`의 `nodes`와 `rels` 맨 뒤에 아래를 더합니다.
+
+## 더할 노드 12개
+
+| # | 클래스 | id | name | 그 밖의 속성 |
+|---|---|---|---|---|
+| 1 | Asset | `asset:hyd-04` | HYD-04 유압 파워팩 | code `HYD-04` |
+| 2 | Component | `comp:large-oil-cooler` | 대형 오일 쿨러 | aliases `["대형 쿨러"]` |
+| 3 | Component | `comp:cooler-fan-1` | 쿨러 팬 1 | aliases `["1번 팬"]` |
+| 4 | Component | `comp:cooler-fan-2` | 쿨러 팬 2 | aliases `["2번 팬"]` |
+| 5 | Sensor | `sen:ts2` | 쿨러 입구 유온 센서 | tag `TS2`, virtual `false` |
+| 6 | Sensor | `sen:ts3` | 쿨러 출구 유온 센서 | tag `TS3`, virtual `false` |
+| 7 | Sensor | `sen:vs2` | 팬 1 진동 센서 | tag `VS2`, virtual `false` |
+| 8 | Sensor | `sen:vs3` | 팬 2 진동 센서 | tag `VS3`, virtual `false` |
+| 9 | StateVariable | `sv:ts2` | 쿨러 입구 유온 | unit `℃` |
+| 10 | StateVariable | `sv:ts3` | 쿨러 출구 유온 | unit `℃` |
+| 11 | StateVariable | `sv:vs2` | 팬 1 진동 | unit `mm/s` |
+| 12 | StateVariable | `sv:vs3` | 팬 2 진동 | (unit 없음) |
+
+- 상태 변수 넷에는 `normal`, `limit`, `limit_note`, `limit_direction`을 적지 않습니다.
+- 새 구성 요소 셋은 번호가 없는 대상이라 id를 이름의 영어 옮김으로 붙였습니다. 이 세 id는 제가 지은 것이니 다른 말을 원하시면 알려 주세요.
+- 같은 `name`의 노드가 이미 있는지 찾아보았고, 열두 개 모두 없습니다.
+
+## 더할 관계 17줄
+
+| # | type | a | b |
+|---|---|---|---|
+| 1 | HAS_COMPONENT | `asset:hyd-04` | `comp:large-oil-cooler` |
+| 2 | HAS_COMPONENT | `asset:hyd-04` | `comp:cooler-fan-1` |
+| 3 | HAS_COMPONENT | `asset:hyd-04` | `comp:cooler-fan-2` |
+| 4 | HAS_COMPONENT | `asset:hyd-04` | `comp:main-pump` |
+| 5 | HAS_COMPONENT | `asset:hyd-04` | `comp:standby-pump` |
+| 6 | HAS_COMPONENT | `asset:hyd-04` | `comp:drive-motor` |
+| 7 | HAS_COMPONENT | `asset:hyd-04` | `comp:oil-tank` |
+| 8 | MOUNTED_ON | `sen:ts2` | `comp:large-oil-cooler` |
+| 9 | MOUNTED_ON | `sen:ts3` | `comp:large-oil-cooler` |
+| 10 | MOUNTED_ON | `sen:vs2` | `comp:cooler-fan-1` |
+| 11 | MOUNTED_ON | `sen:vs3` | `comp:cooler-fan-2` |
+| 12 | MEASURES | `sen:ts2` | `sv:ts2` |
+| 13 | MEASURES | `sen:ts3` | `sv:ts3` |
+| 14 | MEASURES | `sen:vs2` | `sv:vs2` |
+| 15 | MEASURES | `sen:vs3` | `sv:vs3` |
+| 16 | USES_PART | `comp:cooler-fan-1` | `part:p-fan-brg` |
+| 17 | USES_PART | `comp:cooler-fan-2` | `part:p-fan-brg` |
+
+- `props`는 모두 `{}`입니다.
+- `HAS_COMPONENT` 일곱 줄은 `구성요소_목록.csv`의 줄 순서(메모 2절의 순서와 같음)로 적습니다. 질의 표의 줄 순서가 이것을 따릅니다.
+- PS1, FS1과 주 펌프의 `USES_PART`(P-PMP-SEAL)는 이미 있어 더하지 않습니다. HYD-04는 4번 줄을 거쳐 거기에 닿습니다.
+
+## 수
+
+| | 지금 | 더함 | 더한 뒤 |
+|---|---|---|---|
+| Asset | 3 | 1 | 4 |
+| Component | 6 | 3 | 9 |
+| Sensor | 5 | 4 | 9 |
+| StateVariable | 8 | 4 | 12 |
+| Actuator, Part, Symptom, FailureMode, Cause, Skill, Supplier | 3, 3, 2, 1, 1, 1, 3 | 0 | 그대로 |
+| **노드 전체** | **36** | **12** | **48** |
+| HAS_COMPONENT | 18 | 7 | 25 |
+| MOUNTED_ON | 9 | 4 | 13 |
+| MEASURES | 5 | 4 | 9 |
+| USES_PART | 3 | 2 | 5 |
+| CONTROLS, SHOWS, INDICATES, CAUSES, MITIGATED_BY, OCCURS_IN, RELATED_TO, SUPPLIED_BY | 3, 2, 2, 1, 1, 1, 1, 7 | 0 | 그대로 |
+| **관계 전체** | **53** | **17** | **70** |
+
+## 자료와 다르게 적거나 옮기지 않는 것
+
+- **쿨러 팬 2**: 목록의 구성요소 칸은 「2번 팬」이고 「쿨러 팬 2」는 비고와 메모에 있습니다. 정해 주신 대로 name은 「쿨러 팬 2」, 「2번 팬」은 aliases입니다.
+- **「1번 팬」**: 목록에는 없고 메모 2절에만 있는 말입니다.
+- **「대형 쿨러」**: 센서 목록 TS3 둘째 줄의 붙은곳 칸에서 온 말입니다.
+- **TS3 두 줄**: 노드 하나로 봅니다. 둘째 줄의 센서명 「출구 온도」는 옮기지 않습니다.
+- **같은 대상으로 본 표기**: 「스탠바이 펌프」는 `comp:standby-pump`, 「탱크」는 `comp:oil-tank`, FS1의 붙은곳 「유압 펌프」는 `comp:main-pump`로 봅니다. 교체부품 칸의 「팬 베어링 (P-FAN-BRG)」와 「P-FAN-BRG」는 같은 `part:p-fan-brg`입니다.
+- **옮기지 않는 칸**: 비고(「코어 품번 미정. P-CLR-CORE는 맞지 않음」, 「시운전 전」, 「단위 칸 비어 있음」 등), 작성자, 대장의 구분·비고는 받을 속성이 없어 옮기지 않습니다.
+
+## 더한 뒤 확인할 것
+
+`python 도구/검사.py`와 `python 결과/질의.py HYD-01 HYD-04`를 실행해 아래와 같은지 봅니다.
+
+- **검사 [3]**: 사라진 것 0, 바뀐 것 0, 새 노드 12, 새 관계 17.
+- **검사 [4]**: 0.
+- **검사 [5]**: 1줄. `USES_PART`가 `1:N`인데 `part:p-fan-brg`에 시작이 셋(`comp:cooler-fan`, `comp:cooler-fan-1`, `comp:cooler-fan-2`) 이어졌다고 나옵니다. 알고 가기로 하신 부분입니다.
+- **질의 HYD-01**: 지금과 같은 표(구성 요소 6 · 센서 5 · 부품 3).
+- **질의 HYD-04**: 구성 요소 7 · 센서 6(TS2, TS3, VS2, VS3, PS1, FS1) · 부품 2(P-FAN-BRG, P-PMP-SEAL). 대형 오일 쿨러의 부품 칸은 `-`, 팬 2의 재는 값은 단위 없이 「팬 2 진동」입니다.
+
+만든 파일: 없음 / 고친 파일: 없음

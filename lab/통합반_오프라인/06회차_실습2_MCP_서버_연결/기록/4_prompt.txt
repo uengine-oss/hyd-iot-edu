@@ -1,0 +1,1 @@
+time 서버가 연결된 것을 확인했어. 이제 .vscode/mcp.json 에 filesystem 과 git 서버를 더해 줘. time 항목은 건드리지 마. 결과 파일은 아직 만들지 마.

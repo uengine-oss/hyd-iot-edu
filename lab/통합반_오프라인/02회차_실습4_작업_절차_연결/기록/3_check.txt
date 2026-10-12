@@ -1,0 +1,3 @@
+
+어긋남 - skill:fan-maximum-run: 필수 속성 sop_id 이 없다
+어긋남 1건

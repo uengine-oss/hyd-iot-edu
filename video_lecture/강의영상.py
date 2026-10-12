@@ -219,13 +219,13 @@ name = f"통합반_{a.day}일차_SLIDE{a.first:03d}-{a.last:03d}" + ("_윤문2" 
 run("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(OUT / f"{name}.mp4"))
 for s in segs: s.unlink()
 (OUT / "list.txt").unlink()
-(OUT / "자막").mkdir(exist_ok=True); (OUT / "기록").mkdir(exist_ok=True)   # 영상 폴더에는 영상만 둔다
-(OUT / "자막" / f"{name}.srt").write_text("\n".join(srt), encoding="utf-8")
+SIDE = OUT.parent / "_작업" / "영상_자막_기록"; SIDE.mkdir(parents=True, exist_ok=True)   # 영상 폴더에는 영상만 둔다. 자막과 길이 기록은 옆의 _작업 폴더로
+(SIDE / f"{name}.srt").write_text("\n".join(srt), encoding="utf-8")
 rep = [f"# {name}", "", f"- 음성 {a.voice} · 모델 {a.model} · " + ("빠르기 설정 없음" if V4 else f"속도 {a.speed}"), f"- 글자 {chars}자 · 이번에 쓴 크레딧 {spent}",
        (f"- 말한 시간 합 {speech:.1f}초 · 장 안에는 쉼을 넣지 않음(모델이 읽은 그대로) · 장 넘김 {gap:.2f}초" if a.natural else
         f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(gpt-6-astra가 자리를 정함): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {PQ*scale:.2f}초 · 문단 사이 최소 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
         f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {PS*scale:.2f}초 · 물음 {PQ*scale:.2f}초 · 문단 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
        f"- 영상 길이 {dur(OUT / (name + '.mp4')):.1f}초 · 목표 {a.target:.0f}초", "", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
 rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d} | {r['d2']:.1f} |" for r in rows]
-(OUT / "기록" / f"{name}_시간표.md").write_text("\n".join(rep) + "\n", encoding="utf-8")
+(SIDE / f"{name}_시간표.md").write_text("\n".join(rep) + "\n", encoding="utf-8")
 print("\n".join(rep[2:6]))

@@ -1,0 +1,33 @@
+
+■ filesystem
+  실행: python ${workspaceFolder}/서버/파일시스템_서버.py ${workspaceFolder}/업무자료 ${workspaceFolder}/구매팀_자료
+  연결됨: 서버 이름 filesystem · 판 1.0.0 · 규약의 판 2025-06-18
+  도구 6개
+    도구                        읽기 전용     필수 인수 (선택 인수)
+    list_allowed_directories  true         없음
+    list_directory            true         path
+    read_text_file            true         path (head)
+    get_file_info             true         path
+    search_files              true         path, query
+    write_file                false        path, content
+}
+
+결과의 글 (isError: false)
+구매팀 발주 대기 목록 (구매팀 내부 자료)
+
+갱신: 2026-10-12, 백승우
+
+| 번호 | 품목 | 수량 | 요청 부서 | 상태 |
+
+결과의 글 (isError: true)
+입력 오류: 필수 인수가 없다 — target_timezone
+결과의 글 (isError: false)
+커밋 42f785f | 2026-10-13 | 문태오 | 쿨러 점검 메모에 3호기 점검 완료와 1호기 필터 망 시험 설치를 적는다
+
+M	점검/쿨러_점검_메모.md
+커밋 adf41f1 | 2026-10-08 | 한서윤 | 쿨러 점검 메모를 만든다: 청소 주기 변경과 호기별 핀 점검
+
+A	점검/쿨러_점검_메모.md
+커밋 82d7a79 | 2026-10-08 | 오민재 | 10월 2주차 주간 협의 메모를 올린다
+
+A	회의록/2026-10-08_주간협의.txt

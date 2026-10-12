@@ -1,0 +1,3 @@
+graph.json 에 fm:none 라는 고장 유형이 없다.
+있는 고장 유형:
+  fm:cooler-cooling-performance-loss  쿨러 냉각 성능 상실

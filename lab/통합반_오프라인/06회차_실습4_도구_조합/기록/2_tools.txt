@@ -1,0 +1,3 @@
+서버 상태: filesystem=connected, git=connected
+1. mcp__filesystem__read_text_file {"path": "<임시 폴더>/자료/README.md"} -> 성공
+2. mcp__filesystem__list_directory {"path": "<임시 폴더>/회의록"} -> 성공

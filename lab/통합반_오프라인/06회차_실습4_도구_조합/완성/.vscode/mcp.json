@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/서버/파일시스템_서버.py", "--read-only", "${workspaceFolder}/회의록", "${workspaceFolder}/자료"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/서버/깃_서버.py", "--repository", "${workspaceFolder}/자료"]
+    }
+  }
+}

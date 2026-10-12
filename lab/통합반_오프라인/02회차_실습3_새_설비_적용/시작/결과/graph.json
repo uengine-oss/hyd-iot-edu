@@ -1,0 +1,116 @@
+{
+  "nodes": [
+    {"labels": ["Asset"], "props": {"id": "asset:hyd-01", "name": "HYD-01 유압 파워팩", "code": "HYD-01"}},
+    {"labels": ["Asset"], "props": {"id": "asset:hyd-02", "name": "HYD-02 유압 파워팩", "code": "HYD-02"}},
+    {"labels": ["Asset"], "props": {"id": "asset:hyd-03", "name": "HYD-03 유압 파워팩", "code": "HYD-03"}},
+
+    {"labels": ["Component"], "props": {"id": "comp:oil-cooler", "name": "오일 쿨러", "aliases": ["열교환기", "쿨러"]}},
+    {"labels": ["Component"], "props": {"id": "comp:cooler-fan", "name": "쿨러 팬", "aliases": ["송풍기", "팬"]}},
+    {"labels": ["Component"], "props": {"id": "comp:main-pump", "name": "주 펌프 (A)", "aliases": ["유압 펌프", "펌프", "주 펌프 A", "A 펌프"]}},
+    {"labels": ["Component"], "props": {"id": "comp:standby-pump", "name": "예비 펌프 (B)", "aliases": ["스탠바이 펌프"]}},
+    {"labels": ["Component"], "props": {"id": "comp:drive-motor", "name": "구동 모터", "aliases": ["모터"]}},
+    {"labels": ["Component"], "props": {"id": "comp:oil-tank", "name": "작동유 탱크", "aliases": ["리저버", "탱크"]}},
+
+    {"labels": ["Sensor"], "props": {"id": "sen:ts1", "name": "유온 센서", "tag": "TS1", "virtual": false}},
+    {"labels": ["Sensor"], "props": {"id": "sen:ce", "name": "냉각 효율 (가상)", "tag": "CE", "virtual": true}},
+    {"labels": ["Sensor"], "props": {"id": "sen:ps1", "name": "토출 압력 센서", "tag": "PS1", "virtual": false}},
+    {"labels": ["Sensor"], "props": {"id": "sen:fs1", "name": "유량 센서", "tag": "FS1", "virtual": false}},
+    {"labels": ["Sensor"], "props": {"id": "sen:vs1", "name": "팬 진동 센서", "tag": "VS1", "virtual": false}},
+
+    {"labels": ["Actuator"], "props": {"id": "actr:fanspeedsp", "name": "팬 인버터", "signal": "FanSpeedSP", "min": 0, "max": 100}},
+    {"labels": ["Actuator"], "props": {"id": "actr:loadsp", "name": "펌프 부하 설정", "signal": "LoadSP", "min": 60, "max": 100, "note": "60 % 미만으로 내리지 않는다"}},
+    {"labels": ["Actuator"], "props": {"id": "actr:pumpselect", "name": "펌프 전환 밸브", "signal": "PumpSelect", "options": ["A", "B"]}},
+
+    {"labels": ["StateVariable"], "props": {"id": "sv:ts1", "name": "유온", "aliases": ["오일 온도", "작동유 온도"], "unit": "℃", "normal": 48, "limit": 65, "limit_note": "65 ℃에서 인터록", "limit_direction": "upper"}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:ce", "name": "냉각 효율", "aliases": ["쿨러 효율"], "unit": "%", "normal": 84}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:ps1", "name": "토출 압력", "aliases": ["펌프 압력"], "unit": "bar", "normal": 182, "limit": 130, "limit_note": "130 bar 미만에서 저압 인터록", "limit_direction": "lower"}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:fs1", "name": "유량", "aliases": ["토출 유량"], "unit": "l/min", "normal": 9}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:vs1", "name": "팬 진동", "aliases": ["진동"], "unit": "mm/s", "normal": 0.6, "limit": 2.0, "limit_note": "2.0 mm/s 이상에서 진동 인터록", "limit_direction": "upper"}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:fan-speed", "name": "팬 속도", "aliases": ["팬 회전수"], "unit": "%", "normal": 60}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:pump-load", "name": "펌프 부하", "aliases": ["부하"], "unit": "%", "normal": 90}},
+    {"labels": ["StateVariable"], "props": {"id": "sv:running-pump-selection", "name": "운전 펌프 선택", "aliases": ["펌프 전환"]}},
+
+    {"labels": ["Part"], "props": {"id": "part:p-clr-core", "name": "쿨러 코어", "part_no": "P-CLR-CORE"}},
+    {"labels": ["Part"], "props": {"id": "part:p-pmp-seal", "name": "펌프 축 씰 키트", "part_no": "P-PMP-SEAL"}},
+    {"labels": ["Part"], "props": {"id": "part:p-fan-brg", "name": "팬 베어링", "part_no": "P-FAN-BRG"}},
+
+    {"labels": ["Symptom"], "props": {"id": "sym:oil-temperature-rise", "name": "유온 상승"}},
+    {"labels": ["Symptom"], "props": {"id": "sym:cooling-efficiency-drop", "name": "냉각 효율 저하"}},
+
+    {"labels": ["FailureMode"], "props": {"id": "fm:cooler-cooling-performance-loss", "name": "쿨러 냉각 성능 상실"}},
+
+    {"labels": ["Cause"], "props": {"id": "cause:cooler-fin-fouling", "name": "쿨러 핀 오염"}},
+
+    {"labels": ["Skill"], "props": {"id": "skill:fan-maximum-run", "name": "팬 최대 운전"}},
+
+    {"labels": ["Supplier"], "props": {"id": "sup:a", "name": "A정밀 (저가)", "approved": true, "grade": "저가"}},
+    {"labels": ["Supplier"], "props": {"id": "sup:b", "name": "B-OEM (순정)", "approved": true, "grade": "순정"}},
+    {"labels": ["Supplier"], "props": {"id": "sup:c", "name": "C트레이딩 (최저가 · 비승인)", "approved": false, "grade": "최저가"}}
+  ],
+  "rels": [
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:oil-cooler", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:cooler-fan", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:main-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:standby-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:drive-motor", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-01", "b": "comp:oil-tank", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:oil-cooler", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:cooler-fan", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:main-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:standby-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:drive-motor", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-02", "b": "comp:oil-tank", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:oil-cooler", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:cooler-fan", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:main-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:standby-pump", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:drive-motor", "props": {}},
+    {"type": "HAS_COMPONENT", "a": "asset:hyd-03", "b": "comp:oil-tank", "props": {}},
+
+    {"type": "MOUNTED_ON", "a": "sen:ts1", "b": "comp:oil-cooler", "props": {}},
+    {"type": "MOUNTED_ON", "a": "sen:ce", "b": "comp:oil-cooler", "props": {}},
+    {"type": "MOUNTED_ON", "a": "sen:ps1", "b": "comp:main-pump", "props": {}},
+    {"type": "MOUNTED_ON", "a": "sen:fs1", "b": "comp:main-pump", "props": {}},
+    {"type": "MOUNTED_ON", "a": "sen:vs1", "b": "comp:cooler-fan", "props": {}},
+    {"type": "MOUNTED_ON", "a": "actr:fanspeedsp", "b": "comp:cooler-fan", "props": {}},
+    {"type": "MOUNTED_ON", "a": "actr:loadsp", "b": "comp:drive-motor", "props": {}},
+    {"type": "MOUNTED_ON", "a": "actr:pumpselect", "b": "comp:main-pump", "props": {}},
+    {"type": "MOUNTED_ON", "a": "actr:pumpselect", "b": "comp:standby-pump", "props": {}},
+
+    {"type": "MEASURES", "a": "sen:ts1", "b": "sv:ts1", "props": {}},
+    {"type": "MEASURES", "a": "sen:ce", "b": "sv:ce", "props": {}},
+    {"type": "MEASURES", "a": "sen:ps1", "b": "sv:ps1", "props": {}},
+    {"type": "MEASURES", "a": "sen:fs1", "b": "sv:fs1", "props": {}},
+    {"type": "MEASURES", "a": "sen:vs1", "b": "sv:vs1", "props": {}},
+
+    {"type": "CONTROLS", "a": "actr:fanspeedsp", "b": "sv:fan-speed", "props": {}},
+    {"type": "CONTROLS", "a": "actr:loadsp", "b": "sv:pump-load", "props": {}},
+    {"type": "CONTROLS", "a": "actr:pumpselect", "b": "sv:running-pump-selection", "props": {}},
+
+    {"type": "USES_PART", "a": "comp:oil-cooler", "b": "part:p-clr-core", "props": {}},
+    {"type": "USES_PART", "a": "comp:main-pump", "b": "part:p-pmp-seal", "props": {}},
+    {"type": "USES_PART", "a": "comp:cooler-fan", "b": "part:p-fan-brg", "props": {}},
+
+    {"type": "SHOWS", "a": "sen:ts1", "b": "sym:oil-temperature-rise", "props": {}},
+    {"type": "SHOWS", "a": "sen:ce", "b": "sym:cooling-efficiency-drop", "props": {}},
+
+    {"type": "INDICATES", "a": "sym:oil-temperature-rise", "b": "fm:cooler-cooling-performance-loss", "props": {}},
+    {"type": "INDICATES", "a": "sym:cooling-efficiency-drop", "b": "fm:cooler-cooling-performance-loss", "props": {}},
+
+    {"type": "CAUSES", "a": "cause:cooler-fin-fouling", "b": "fm:cooler-cooling-performance-loss", "props": {}},
+
+    {"type": "MITIGATED_BY", "a": "fm:cooler-cooling-performance-loss", "b": "skill:fan-maximum-run", "props": {}},
+
+    {"type": "OCCURS_IN", "a": "fm:cooler-cooling-performance-loss", "b": "comp:oil-cooler", "props": {}},
+
+    {"type": "RELATED_TO", "a": "cause:cooler-fin-fouling", "b": "part:p-clr-core", "props": {}},
+
+    {"type": "SUPPLIED_BY", "a": "part:p-pmp-seal", "b": "sup:a", "props": {"price": 35, "fail_rate": 0.12, "lead_days": 2}},
+    {"type": "SUPPLIED_BY", "a": "part:p-pmp-seal", "b": "sup:b", "props": {"price": 55, "fail_rate": 0.02, "lead_days": 5}},
+    {"type": "SUPPLIED_BY", "a": "part:p-pmp-seal", "b": "sup:c", "props": {"price": 20, "fail_rate": 0.30, "lead_days": 1}},
+    {"type": "SUPPLIED_BY", "a": "part:p-fan-brg", "b": "sup:a", "props": {"price": 18, "fail_rate": 0.10, "lead_days": 1}},
+    {"type": "SUPPLIED_BY", "a": "part:p-fan-brg", "b": "sup:b", "props": {"price": 28, "fail_rate": 0.03, "lead_days": 3}},
+    {"type": "SUPPLIED_BY", "a": "part:p-clr-core", "b": "sup:a", "props": {"price": 180, "fail_rate": 0.12, "lead_days": 3}},
+    {"type": "SUPPLIED_BY", "a": "part:p-clr-core", "b": "sup:b", "props": {"price": 260, "fail_rate": 0.02, "lead_days": 5}}
+  ]
+}

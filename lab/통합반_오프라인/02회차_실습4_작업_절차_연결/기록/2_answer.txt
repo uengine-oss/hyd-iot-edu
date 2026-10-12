@@ -1,0 +1,96 @@
+결정하신 여덟 가지를 그대로 적용한 계획입니다. 파일은 고치지 않았고, 확인이 필요한 것은 끝의 세 가지입니다.
+
+## `결과/schema.json`에 더할 것
+
+이미 있는 클래스, 속성, 관계, `conventions` 문장은 건드리지 않고 아래만 더합니다.
+
+| 자리 | 더할 것 |
+|---|---|
+| `Skill`의 속성 | `sop_id` (`string`, 필수) |
+| 새 클래스 | `Condition`, 한글 이름 「조건」, 속성은 `id`, `name`, `kind`, `text`, `source` (모두 필수) |
+| `Condition.kind` | `enum`, 허용값 `전제 조건`, `안전 조건`, `금지 사항` |
+| `Condition.text`, `Condition.source` | 둘 다 `string` |
+| 새 관계 `REMEDIED_BY` | `FailureMode` → `Skill`, `N:M`, 「고장 유형은 원인을 없애는 조치로 해결된다」 |
+| 새 관계 `HAS_CONDITION` | `Skill` → `Condition`, `N:M`, 「조치는 조건을 가진다」 |
+
+`HAS_CONDITION`을 `N:M`으로 두는 까닭은 REMOTE_AUTO 조건 하나를 세 조치가 함께 가리키기 때문입니다.
+
+`conventions`에는 뒤에 문장을 더합니다.
+
+- **식별자**: `Condition`의 접두사는 `cond:`이고 뒤에는 내용을 영어로 옮긴 짧은 말을 적는다. 조치는 절차 번호가 있어도 이름을 영어로 옮긴 말을 쓴다.
+- **조치**: 절차(SOP) 한 편이 조치 노드 하나이고, `sop_id`가 같으면 같은 노드다. `sop_id`는 문서에 적힌 글자 그대로 적는다.
+- **관계 나누기**: 완화하는 조치는 `MITIGATED_BY`, 원인을 없애는 조치는 `REMEDIED_BY`로 잇는다.
+- **조건**: 조건 하나는 문서의 문장 하나이고, `text`에는 그 문장을 글자 그대로, `source`에는 그 절의 번호를 적는다. `kind`는 말투가 아니라 뜻으로 정한다.
+- **중복 처리**: 같은 뜻의 문장이 여러 곳에 있으면 조건은 하나만 둔다. 원문은 조치가 실린 절의 문장으로 삼고, 단계와 머리글이 같은 뜻이면 머리글의 문장으로 한다.
+- **잇는 조치**: 어느 조치의 것인지 적지 않은 문장은 그 조작을 단계에서 실제로 하는 조치에만 잇는다. 단계 안의 문장은 그 절차에만 잇는다.
+
+이미 있는 문장과 어긋나는 곳이 세 군데 있어서, 그 문장은 그대로 두고 달라진 점을 적은 문장을 더합니다(규칙 5).
+
+- 「증상, 고장 유형, 원인, 조치는 id 와 name 만 가진다.」 → 조치는 이제 `sop_id`도 가진다.
+- 「목록과 관계도에 없는 관계는 만들지 않는다.」 → 매뉴얼에 적힌 절차와 조건에서 나온 관계도 만든다.
+- `Skill`의 설명 「고장 유형을 완화하려고 하는 일」 → 원인을 없애는 조치도 `Skill`로 받는다.
+
+## `결과/graph.json`에 더할 것
+
+### 조치 (새 노드 4개, 기존 노드 1개에 속성 추가)
+
+| `id` | `name` | `sop_id` | 고장 유형과의 관계 | 비고 |
+|---|---|---|---|---|
+| `skill:fan-maximum-run` | 팬 최대 운전 | SOP-COOL-11 | `MITIGATED_BY` (이미 있음) | 기존 노드, `sop_id`만 더함 |
+| `skill:fan-maximum-run-and-load-80` | 팬 최대 운전과 부하 80 % | SOP-COOL-12 | `MITIGATED_BY` | 새로 |
+| `skill:load-70-and-night-fin-cleaning` | 부하 70 %와 야간 핀 세척 | SOP-COOL-13 | `MITIGATED_BY` | 새로 |
+| `skill:cooler-fin-cleaning` | 쿨러 핀 세척 | SOP-COOL-14 | `REMEDIED_BY` | 새로 |
+| `skill:cabinet-ventilation-reinforcement` | 캐비닛 환기 보강 | SOP-COOL-15 | `REMEDIED_BY` | 새로 |
+
+### 조건 (새 노드 5개)
+
+| `id` | 구분 | 원문 (`text`) | 절 (`source`) | 이어지는 조치 |
+|---|---|---|---|---|
+| `cond:remote-auto-mode` | 전제 조건 | 원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다. | HM-8.5 | SOP-COOL-11, 12, 13 |
+| `cond:pump-load-minimum-60` | 금지 사항 | 펌프 부하는 60 % 아래로 내리지 않는다(최소 부하 인터록). | HM-8.5 | SOP-COOL-12, 13 |
+| `cond:fan-full-speed-within-24-hours` | 금지 사항 | 100 % 연속 운전은 24시간 이내로 한다. | HM-8.5 | SOP-COOL-11 |
+| `cond:stop-local-lockout` | 안전 조건 (확인 1) | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | HM-8.7 | SOP-COOL-14 |
+| `cond:no-high-pressure-water` | 금지 사항 | 고압수는 쓰지 않는다. | HM-8.7 | SOP-COOL-14 |
+
+- **하나로 합친 문장**: REMOTE_AUTO 조건은 세 절차의 1단계 문장과 HM-8.8 문장을, 60 % 조건은 HM-8.8 문장을 합쳤습니다. 이 문장들은 따로 노드로 두지 않습니다.
+- **60 %의 구분**: 정해 주신 「뜻으로」 기준에 따라 금지 사항으로 두었습니다.
+- **SOP-COOL-15**: 조건이 하나도 없습니다. 이 절차에는 세 구분에 드는 문장이 없습니다.
+
+### 관계 (새로 12개)
+
+| 관계 | 시작 | 끝 |
+|---|---|---|
+| `MITIGATED_BY` | `fm:cooler-cooling-performance-loss` | `skill:fan-maximum-run-and-load-80` |
+| `MITIGATED_BY` | `fm:cooler-cooling-performance-loss` | `skill:load-70-and-night-fin-cleaning` |
+| `REMEDIED_BY` | `fm:cooler-cooling-performance-loss` | `skill:cooler-fin-cleaning` |
+| `REMEDIED_BY` | `fm:cooler-cooling-performance-loss` | `skill:cabinet-ventilation-reinforcement` |
+| `HAS_CONDITION` | `skill:fan-maximum-run` | `cond:remote-auto-mode` |
+| `HAS_CONDITION` | `skill:fan-maximum-run` | `cond:fan-full-speed-within-24-hours` |
+| `HAS_CONDITION` | `skill:fan-maximum-run-and-load-80` | `cond:remote-auto-mode` |
+| `HAS_CONDITION` | `skill:fan-maximum-run-and-load-80` | `cond:pump-load-minimum-60` |
+| `HAS_CONDITION` | `skill:load-70-and-night-fin-cleaning` | `cond:remote-auto-mode` |
+| `HAS_CONDITION` | `skill:load-70-and-night-fin-cleaning` | `cond:pump-load-minimum-60` |
+| `HAS_CONDITION` | `skill:cooler-fin-cleaning` | `cond:stop-local-lockout` |
+| `HAS_CONDITION` | `skill:cooler-fin-cleaning` | `cond:no-high-pressure-water` |
+
+확인을 받으면 두 파일을 고친 뒤 `python 검사.py`로 `어긋남 0건`인지 봅니다. 지난번에는 실행 승인이 나지 않아 돌려 보지 못했으니, 그때 승인해 주셔야 합니다. `따라가기.py`는 요청받지 않았으므로 만들지 않습니다.
+
+## 확인이 필요한 것
+
+1. **SOP-COOL-14의 잠금 문장을 어느 구분으로 둘까요?** 한 문장 안에 설비 정지 · LOCAL 전환(시작 전에 성립할 상태)과 잠금(작업자를 지키는 조치)이 함께 있어서 결정 5만으로는 갈립니다. 문장은 쪼갤 수 없으므로 하나를 골라야 하고, 저는 잠금이 들어 있으니 `안전 조건`을 권합니다.
+
+2. **SOP-COOL-12에는 24시간 조건이 이어지지 않는데 괜찮을까요?** 이 절차도 팬을 100 %로 올리지만, 24시간 문장은 SOP-COOL-11의 단계 안에만 있어서 결정 6에 따라 SOP-COOL-11에만 이었습니다. SOP-COOL-12에도 이으시려면 말씀해 주세요.
+
+3. **조건의 `name`을 아래처럼 지어도 될까요?** 스키마상 모든 클래스에 `name`이 필수인데 조건의 이름은 문서에 따로 없어서, 원문에 나오는 말로만 짧게 지었습니다.
+
+   | `id` | `name` 제안 |
+   |---|---|
+   | `cond:remote-auto-mode` | REMOTE_AUTO 운전 모드 |
+   | `cond:pump-load-minimum-60` | 최소 부하 60 % |
+   | `cond:fan-full-speed-within-24-hours` | 100 % 연속 운전 24시간 이내 |
+   | `cond:stop-local-lockout` | 설비 정지 · LOCAL 전환 · 잠금(LOTO) |
+   | `cond:no-high-pressure-water` | 고압수 쓰지 않음 |
+
+HM-8.7 머리글의 「원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다.」는 세 구분에 들지 않는 발행 방법으로 보아 담지 않았습니다. 조건으로 보신다면 알려 주세요.
+
+만든 파일과 고친 파일: 없음.
