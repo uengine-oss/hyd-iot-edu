@@ -1,0 +1,15 @@
+{
+  "source_files": 812,
+  "changed": [
+    "it/enterprise-sim/entsim/data.py",
+    "it/enterprise-sim/entsim/state.py",
+    "it/portal/www/caseRecord.js",
+    "it/portal/www/resultReport.js",
+    "it/supabase/migrations/20261012000057_b_return_filter_fixture.sql",
+    "it/supabase/migrations/20261012000058_pm_receipt_korean.sql",
+    "it/supabase/seed.sql",
+    "tests/js/test_pm_report_receipt_meaning.js",
+    "tests/test_education_pm_inventory_fixture.py"
+  ],
+  "scope": "Official B initializer, typed Korean receipt/report display and focused tests; previous whole suite remains historical"
+}

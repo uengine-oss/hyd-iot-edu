@@ -1,0 +1,19 @@
+isolated_roles PASS
+20261003000002_enterprise.sql PASS
+20261004000003_enterprise_reader.sql PASS
+20261004000006_cmms_readiness.sql PASS
+20261005000015_enterprise_compensation.sql PASS
+20261007000017_enterprise_time_anchors.sql PASS
+20261007000019_transactions_before_after.sql PASS
+20261007000020_compensation_before_after.sql PASS
+20261007000022_enterprise_exec_locks_inputs.sql PASS
+20261008000023_standby_ready_backfill.sql PASS
+20261008000025_ent_drop_legacy_hour_columns.sql PASS
+20261008000037_cmms_task_standards.sql PASS
+20261009000045_c2_execution.sql PASS
+20261009000046_c3_pm_card_window.sql PASS
+20261009000047_c3_bc_simplified.sql PASS
+20261012000054_pm_reschedule.sql PASS
+20261012000056_pm_scoped_schedule.sql PASS
+20261012000057_b_return_filter_fixture.sql PASS
+enterprise-only source seed PASS

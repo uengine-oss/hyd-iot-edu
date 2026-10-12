@@ -1,0 +1,171 @@
+{
+  "kind": "public",
+  "identity": {
+    "id": "5cf883c7-d3a2-449e-b01d-1822de50f251",
+    "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+    "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+    "job_id": "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+    "event_type": "task_working",
+    "timestamp": "2026-10-12T13:41:10.556Z",
+    "type": "public_text",
+    "public_run": "1eafc8d8d04d429aa430ba41f20c595d",
+    "message_id": "1eafc8d8d04d429aa430ba41f20c595d:0",
+    "sequence": 1,
+    "complete": false,
+    "truncated": false,
+    "tool_use_id": null
+  },
+  "sse_arrival": "2026-10-12T13:41:10.989187+00:00",
+  "run_started": {
+    "id": "f702c287-8a30-43e1-bf4f-9983452533f8",
+    "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+    "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+    "job_id": "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+    "event_type": "task_started",
+    "timestamp": "2026-10-12T13:40:54.642Z",
+    "type": null,
+    "public_run": null,
+    "message_id": null,
+    "sequence": null,
+    "complete": null,
+    "truncated": null,
+    "tool_use_id": null
+  },
+  "capture_begin": "2026-10-12T13:41:12.461945+00:00",
+  "capture_end": "2026-10-12T13:41:12.659518+00:00",
+  "png": "B-public-before-completion-1.png",
+  "native_row_text": "22:41:10\n에이전트 판단\n정기 정비 계획 스킬에 따라 원문 패키지와 최신 CMMS·ERP 자료를 다시 조회하겠습니다. 교육용 재고 초기값의 출처를 구분하고, 묶음 정비의 작동유·인원과 연기 상한을 판단 엔진으로 재검사하겠습니다.\n",
+  "native_row_sha256": "22ba862311f43d4f0cbd7bf2a5b265a126a50d3552c138e61504a9615715ba03",
+  "native_bounds": {
+    "x": 673,
+    "y": 446.421875,
+    "width": 663,
+    "height": 111.890625
+  },
+  "api_before": {
+    "observed_at": "2026-10-12T13:41:12.175146+00:00",
+    "case_status": "RUNNING",
+    "workitem": {
+      "id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+      "activity_id": "T_agent",
+      "status": "IN_PROGRESS",
+      "draft_status": "STARTED",
+      "consumer": "agent-worker:edu-fixture-sol61-20261012:c44bccffeb6043d2b302a4e82283f6da",
+      "generation": 1,
+      "start_date": "2026-10-11T16:52:56.318Z",
+      "end_date": null
+    },
+    "completed_events": [],
+    "deferred_events": [
+      {
+        "id": "f4bd6c2e-e74d-4daf-aad8-6d7c3e78726c",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-3d9109d296614c63aa4a4a3f90958fc5",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-11T16:53:24.114Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      {
+        "id": "f7fb92e4-6699-46c7-bf4d-4a70383a682a",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-a5656d1246ff402cb3ecc770c70d977d",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-11T17:00:13.494Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      {
+        "id": "19855790-cb15-4777-af14-b6b333b510c9",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-12T08:11:17.866Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      }
+    ]
+  },
+  "api_after": {
+    "observed_at": "2026-10-12T13:41:13.277235+00:00",
+    "case_status": "RUNNING",
+    "workitem": {
+      "id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+      "activity_id": "T_agent",
+      "status": "IN_PROGRESS",
+      "draft_status": "STARTED",
+      "consumer": "agent-worker:edu-fixture-sol61-20261012:c44bccffeb6043d2b302a4e82283f6da",
+      "generation": 1,
+      "start_date": "2026-10-11T16:52:56.318Z",
+      "end_date": null
+    },
+    "completed_events": [],
+    "deferred_events": [
+      {
+        "id": "f4bd6c2e-e74d-4daf-aad8-6d7c3e78726c",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-3d9109d296614c63aa4a4a3f90958fc5",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-11T16:53:24.114Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      {
+        "id": "f7fb92e4-6699-46c7-bf4d-4a70383a682a",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-a5656d1246ff402cb3ecc770c70d977d",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-11T17:00:13.494Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      {
+        "id": "19855790-cb15-4777-af14-b6b333b510c9",
+        "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+        "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+        "job_id": "deferral:run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+        "event_type": "task_deferred",
+        "timestamp": "2026-10-12T08:11:17.866Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      }
+    ]
+  },
+  "boundary_seen_at_capture": false,
+  "contains_public_snapshot": true
+}

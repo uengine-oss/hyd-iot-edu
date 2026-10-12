@@ -1,0 +1,65 @@
+{
+  "method": "Actual native result/report detail/raw fold at1440/1024; stored final result, no new business run",
+  "blockedWrites": [],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "captures": [
+    {
+      "png": "B-final-report-original-tail-1440.png",
+      "width": 1440,
+      "sha256": "f921e7b9530f2c0d6d24232f7ced111a7c0de1575458e4a7e293890b8431c1a0",
+      "text_sha256": "cd5176783cb53da5a07553b7da59d97449530c2779fb9a97e4d37a636764682b"
+    },
+    {
+      "png": "B-final-report-original-tail-1024.png",
+      "width": 1024,
+      "sha256": "5ddc23e3ac470cdc3f898705a5195f7726eaf8c9a35265f501391f92e18b0aa9",
+      "text_sha256": "cd5176783cb53da5a07553b7da59d97449530c2779fb9a97e4d37a636764682b"
+    }
+  ],
+  "incidentGET": [
+    {
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1011-01-96e7",
+      "status": 200,
+      "method": "GET"
+    }
+  ],
+  "normal_display_text": "12\n결과 보고\n시스템 · 처리 엔진 → 담당자 알림\n22:48:17\n4.4 s\n끝남\n\nHYD-02 정기 정비 결과: 정상 — 정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 오더 등록\n\n정상\n정비 오더 WO-B6F6633D2BF9E6FA\n공지 메일 보냄",
+  "incident_display_text": "보고 내용\n\nHYD-02 정기 정비 결과\n\n정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 오더 등록\n\n남긴 번호 작업지시 WO-B6F6633D2BF9E6FA\n\n이 보고에서 사건 종결 처리: 수행 안 함 · 현재 사건: 종결 · 담당자 알림 보냄",
+  "original_report": {
+    "at": "2026-10-12T13:48:21.398Z",
+    "by": "sys:process",
+    "refs": {
+      "work_order": "WO-B6F6633D2BF9E6FA"
+    },
+    "facts": {
+      "asset": "HYD-02",
+      "pattern": "PM_DUE",
+      "approval": "승인",
+      "approved_by": "user:park-maint",
+      "decision_id": "DEC-1012-004-50aa",
+      "approved_role": "role:maint-mgr",
+      "approval_reason": "사용자 위임 Codex: PM-02 단독 4,000h 원문 패키지, 새로 읽은 CMMS·교육 ERP 재고, 실행 계획과 다른 후보의 인원·작동유·연기 상한 제외 사유를 확인한 실습 승인. 물리 정비 완료 승인이 아닌 작업지시 등록·생산팀 공지 승인."
+    },
+    "level": "ok",
+    "title": "HYD-02 정기 정비 결과",
+    "values": [
+      {
+        "name": "정비 오더",
+        "value": "WO-B6F6633D2BF9E6FA"
+      },
+      {
+        "ok": true,
+        "name": "공지 메일",
+        "value": "보냄"
+      }
+    ],
+    "outcome": "정상",
+    "summary": "정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — Source-scoped maintenance orders registered",
+    "verdict": "ok",
+    "incident_closed": false
+  },
+  "business_unchanged": true,
+  "source_unchanged": true,
+  "passed": true
+}

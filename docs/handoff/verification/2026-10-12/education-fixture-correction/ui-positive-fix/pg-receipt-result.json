@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "isolated_port": 55757,
+  "actual_production_function": true,
+  "migration_sha256": "c88e417b6eefd2aeedf378400a7f2c1e55716f762675f98e9f6affd18a2fa40f",
+  "existing_business_rows_unchanged": true,
+  "migration_twice_unchanged": true,
+  "original_receipt_replay_exact": true,
+  "future_receipt_matches_memory": true,
+  "future_detail": "원문 정비 범위 HYD-02 오더 등록",
+  "new_reservations": [
+    {
+      "part_no": "P-PMP-SEAL",
+      "qty": 1.0
+    },
+    {
+      "part_no": "P-RTN-FLT",
+      "qty": 1.0
+    }
+  ],
+  "all_test_effects_rolled_back": true,
+  "operating_DB_writes": 0,
+  "models": 0
+}

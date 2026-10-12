@@ -1,6 +1,18 @@
 -- 교육용 가상 데이터 (it/enterprise-sim/entsim/data.py 와 같은 값). 회사 · 고객 · 금액은 모두 예시. 금액 만원, 시간 h.
 -- `supabase start` / `supabase db reset` 이 마이그레이션 뒤에 실행한다. 멱등.
 
+-- B-ERP-20261012-v1: 원문 PM-02 기본·4,000h 패키지가 요구하는 리턴 필터의 공식 초기 실습 데이터.
+-- 12만원·실물2·기준1·목표2는 교육용 설계값이며 제조사 원문/실제 창고/시장 견적이 아니다.
+-- 설계 근거: docs/handoff/verification/2026-10-12/education-fixture-correction/b-spec.md
+-- migration 057과 동일. 기존 운영 품목·실물·예약·발주를 덮어쓰지 않는다. 작동유는 미상으로 남긴다.
+insert into ent.parts (part_no, name, std_price) values
+  ('P-RTN-FLT', '리턴 필터 엘리먼트', 12)
+on conflict (part_no) do nothing;
+insert into ent.spare_stock (part_no, on_hand, reserved, on_order, reorder_point, target_stock,
+                            reserved_for, base_on_hand, base_reserved, need_by_days) values
+  ('P-RTN-FLT', 2, 0, 0, 1, 2, 'HYD-02', 2, 0, null)
+on conflict (part_no) do nothing;
+
 insert into ent.assets (code, name, line) values
   ('HYD-01', '유압 파워팩 1호기', '창원 1공장 A라인'),
   ('HYD-02', '유압 파워팩 2호기', '창원 1공장 A라인'),

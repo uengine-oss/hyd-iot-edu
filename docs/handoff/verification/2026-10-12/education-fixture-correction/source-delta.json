@@ -1,0 +1,11 @@
+{
+  "source_files": 810,
+  "changed": [
+    "it/enterprise-sim/entsim/data.py",
+    "it/enterprise-sim/entsim/state.py",
+    "it/supabase/migrations/20261012000057_b_return_filter_fixture.sql",
+    "it/supabase/seed.sql",
+    "tests/test_education_pm_inventory_fixture.py"
+  ],
+  "scope": "Official B educational initializer and focused tests; previous whole suite remains historical"
+}

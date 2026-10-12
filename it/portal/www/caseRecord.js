@@ -506,7 +506,7 @@
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
       if(scoped) sections.push(sec('설비별 정비 범위 · 오더 영수증',scoped,{open:true}));
-      else if (wo.detail) sections.push(sec('등록한 내용', `<p>${e(W().text(wo.detail))}</p>`, { open: true }));
+      else if (wo.detail) sections.push(sec('등록한 내용', `<p>${e(W().text(hydResultReport.receiptDetail(wo)))}</p>`, { open: true }));
       const m = mailOf(wo); if (m) { sentence += ` 그리고 ${m.arguments.to}에게 메일을 보냈습니다.`; chips.push(chip('메일 1통')); sections.push(sec('보낸 메일', mailHtml(m), { open: true })); }
     } else if (/PR_CREATE/.test(tool)) {
       icon = 'order'; target = 'ERP';
@@ -685,7 +685,7 @@
     if (rep) {
       sections.push(sec('보고 내용', `<p><b>${e(W().text(rep.title || ''))}</b></p>${rep.summary ? `<p>${e(W().text(vv?.summary || rep.summary))}</p>` : ''}
         ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '작업지시', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
-        ${rep.incident_closed != null ? `<p class="muted">사건 ${rep.incident_closed ? '닫음' : '그대로'} · 담당자 알림 보냄</p>` : ''}`, { open: true }));
+        ${rep.incident_closed != null ? `<p class="muted">${e(hydResultReport.incidentMeaning(rep, ctx.inc, ctx.read.incident))} · 담당자 알림 보냄</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
       if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
     }

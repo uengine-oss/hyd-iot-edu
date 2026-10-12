@@ -1,0 +1,34 @@
+결과 보고 원문
+{
+  "at": "2026-10-12T13:48:21.398Z",
+  "by": "sys:process",
+  "refs": {
+    "work_order": "WO-B6F6633D2BF9E6FA"
+  },
+  "facts": {
+    "asset": "HYD-02",
+    "pattern": "PM_DUE",
+    "approval": "승인",
+    "approved_by": "user:park-maint",
+    "decision_id": "DEC-1012-004-50aa",
+    "approved_role": "role:maint-mgr",
+    "approval_reason": "사용자 위임 Codex: PM-02 단독 4,000h 원문 패키지, 새로 읽은 CMMS·교육 ERP 재고, 실행 계획과 다른 후보의 인원·작동유·연기 상한 제외 사유를 확인한 실습 승인. 물리 정비 완료 승인이 아닌 작업지시 등록·생산팀 공지 승인."
+  },
+  "level": "ok",
+  "title": "HYD-02 정기 정비 결과",
+  "values": [
+    {
+      "name": "정비 오더",
+      "value": "WO-B6F6633D2BF9E6FA"
+    },
+    {
+      "ok": true,
+      "name": "공지 메일",
+      "value": "보냄"
+    }
+  ],
+  "outcome": "정상",
+  "summary": "정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — Source-scoped maintenance orders registered",
+  "verdict": "ok",
+  "incident_closed": false
+}

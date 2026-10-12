@@ -19,6 +19,29 @@
   const num = x => (typeof x === 'number' && Number.isFinite(x) ? x.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) : x == null || x === '' ? '–' : x === true ? '예' : x === false ? '아니오' : x);
   const LABEL = { ok: '정상', fail: '미달', rejected: '반려', other: '확인 결과', wait: '확인 중' };
 
+  // Stored receipt and report remain immutable; derive only this known system receipt's display.
+  function receiptDetail(receipt) {
+    const original = receipt?.detail;
+    const plan = receipt?.after?.plan, orders = receipt?.after?.orders;
+    if (original !== 'Source-scoped maintenance orders registered' || receipt?.ok !== true || receipt?.code !== 'WO_CREATE' ||
+        plan?.code !== 'WO_CREATE' || !Array.isArray(plan.assets) || !plan.assets.length || !Array.isArray(orders) || orders.length !== plan.assets.length ||
+        !orders.some(o => o.id === receipt.ref) || orders.some(o => !o.id || !o.asset || !plan.assets.some(a => a.asset === o.asset)) ||
+        new Set(orders.map(o => o.asset)).size !== orders.length) return original;
+    return '원문 정비 범위 ' + orders.map(o => o.asset).join(', ') + ' 오더 등록';
+  }
+  function reportSummary(report, values) {
+    const original = report?.summary || report?.text;
+    const receipt = values?.work_order, detail = receiptDetail(receipt);
+    const expected = receipt?.ref && `정비 오더 ${receipt.ref} 등록 · 생산팀 공지 — ${receipt.detail}`;
+    return detail !== receipt?.detail && report?.refs?.work_order === receipt?.ref && original === expected
+      ? `정비 오더 ${receipt.ref} 등록 · 생산팀 공지 — ${detail}` : original;
+  }
+  function incidentMeaning(report, incident, read) {
+    const action = report?.incident_closed === true ? '이 보고에서 사건 종결 처리: 수행함' : report?.incident_closed === false ? '이 보고에서 사건 종결 처리: 수행 안 함' : '이 보고의 사건 종결 처리 기록 없음';
+    const current = read?.state === 'loading' ? '현재 사건 상태: 조회 중' : read?.state === 'error' ? '현재 사건 상태: 조회 실패' : incident?.state === 'CLOSED' ? '현재 사건: 종결' : incident?.state ? '현재 사건 상태: ' + (UI.status ? UI.status(incident.state) : incident.state) : '현재 사건 상태: 확인 기록 없음';
+    return action + ' · ' + current;
+  }
+
   function fromValues(v) {
     const r = v.result_report;
     if (r && typeof r === 'object') {
@@ -27,7 +50,7 @@
       const verdict = level === 'info' ? 'other' : verdictOf(r.level ?? r.verdict ?? r.ok ?? r.status ?? r.outcome);
       const free = r.verdict && !OK.has(String(r.verdict).toLowerCase()) && !FAIL.has(String(r.verdict).toLowerCase()) && !['info', 'rejected'].includes(String(r.verdict).toLowerCase()) ? String(r.verdict) : '';
       const alertId = v.alert_id || v.alert?.alertId;
-      const summary = r.summary || r.text;
+      const summary = reportSummary(r, v);
       const shownSummary = alertId && typeof summary === 'string' ? summary.split(`경보 ${alertId}. `).join('') : summary;
       return { verdict: verdict || verdictOf(r.outcome), label: r.outcome ? String(r.outcome) : free, title: r.title, summary: shownSummary, values: Array.isArray(r.values) ? r.values : [] };
     }
@@ -82,5 +105,5 @@
       ${window.hydRecord ? `<div class="rr-foot"><button type="button" class="btn small" data-open-record>처리 기록 보기</button><span class="muted">시작부터 담당자의 결정과 시스템 처리까지 단계별로</span></div>` : ''}
     </section>`;
   }
-  window.hydResultReport = { html, verdictOf, fromValues };
+  window.hydResultReport = { html, verdictOf, fromValues, receiptDetail, reportSummary, incidentMeaning };
 })();

@@ -1,0 +1,8 @@
+{
+  "decision": "DEC-1012-004-50aa",
+  "option": "skill:sop-pm-11",
+  "by": "user:park-maint",
+  "role": "role:maint-mgr",
+  "reason": "사용자 위임 Codex: PM-02 단독 4,000h 원문 패키지, 새로 읽은 CMMS·교육 ERP 재고, 실행 계획과 다른 후보의 인원·작동유·연기 상한 제외 사유를 확인한 실습 승인. 물리 정비 완료 승인이 아닌 작업지시 등록·생산팀 공지 승인.",
+  "review_id": "REV-5326d165-73f8-4575-bc1e-2d8ad04b447c"
+}

@@ -1,0 +1,11 @@
+{
+  "same_processing_case": true,
+  "old_events_preserved": 58,
+  "new_events": 94,
+  "old_event_values_exact": true,
+  "original_deferral_preserved": true,
+  "report_closure_action": false,
+  "actual_incident_state": "CLOSED",
+  "report_closure_action_is_not_current_incident_state": true,
+  "mail_result": "Actual prior SMTP receipt preserved; no resending or body rewriting"
+}

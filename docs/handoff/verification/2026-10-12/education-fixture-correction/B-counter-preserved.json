@@ -1,0 +1,41 @@
+{
+  "before": {
+    "asset": "HYD-02",
+    "cycle": 1,
+    "plan_wo": null,
+    "total_h": 11950,
+    "due_since": "2026-10-11T14:02:01.980687+00:00",
+    "planned_at": null,
+    "since_pm_h": 1950,
+    "updated_at": "2026-10-11T14:02:01.980687+00:00",
+    "plan_window": null,
+    "base_total_h": 11950,
+    "last_done_at": null,
+    "base_since_pm_h": 1950,
+    "service_position": null
+  },
+  "after": {
+    "asset": "HYD-02",
+    "cycle": 1,
+    "plan_wo": "WO-B6F6633D2BF9E6FA",
+    "total_h": 11950,
+    "due_since": "2026-10-11T14:02:01.980687+00:00",
+    "planned_at": "2026-10-12T13:48:11.851216+00:00",
+    "since_pm_h": 1950,
+    "updated_at": "2026-10-12T13:48:11.851216+00:00",
+    "plan_window": "예정된 정비 시간",
+    "base_total_h": 11950,
+    "last_done_at": null,
+    "base_since_pm_h": 1950,
+    "service_position": null
+  },
+  "unchanged_operating_counters": [
+    "cycle",
+    "total_h",
+    "since_pm_h",
+    "last_done_at",
+    "service_position"
+  ],
+  "physical_repair_or_counter_reset_claimed": false,
+  "verified_change": "Only plan/order linkage recorded; no physical maintenance or counter reset"
+}

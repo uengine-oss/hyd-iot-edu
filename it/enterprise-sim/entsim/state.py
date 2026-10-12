@@ -142,12 +142,15 @@ class EnterpriseState:
     def _c2_defaults(self) -> None:
         """C2 칸이 없는 옛 저장 상태도 같은 모양으로 맞춘다(재고는 기준값에서 시작)."""
         s = self._s
-        s["erp"].setdefault("spare_stock", {p: {"part_no": p, "on_hand": b["on_hand"], "reserved": b["reserved"], "on_order": 0,
-                                                "reorder_point": b["reorder_point"], "target_stock": b["target_stock"],
-                                                "reserved_for": b["reserved_for"],
-                                                # C3: 시작값이 재주문점 아래면(씰 키트) 시작부터 '재고 보충 필요'
-                                                "below_since": _now() if b["on_hand"] - b["reserved"] < b["reorder_point"] else None}
-                                            for p, b in data.SPARE_BASE.items()})
+        # B-ERP-20261012-v1: migration 057과 같이 없는 초기 품목만 추가한다.
+        # 저장된 실물·예약·발주와 다른 현재 행은 그대로 보존한다(수업 reset과 구별).
+        stocks = s["erp"].setdefault("spare_stock", {})
+        for p, b in data.SPARE_BASE.items():
+            stocks.setdefault(p, {"part_no": p, "on_hand": b["on_hand"], "reserved": b["reserved"], "on_order": 0,
+                                  "reorder_point": b["reorder_point"], "target_stock": b["target_stock"],
+                                  "reserved_for": b["reserved_for"],
+                                  # C3: 시작값이 재주문점 아래면(씰 키트) 시작부터 '재고 보충 필요'
+                                  "below_since": _now() if b["on_hand"] - b["reserved"] < b["reorder_point"] else None})
         s["erp"].setdefault("stock_movements", [])
         s["erp"].setdefault("goods_receipts", [])
         due_h = data.PM_SETTINGS["interval_h"] - data.PM_SETTINGS["notice_h"]

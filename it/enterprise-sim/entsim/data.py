@@ -75,7 +75,9 @@ _SUPPLIERS = [
     {"id": "sup:b", "key": "b", "name": "B-OEM (순정)", "part_no": "P-CLR-CORE", "price": 260, "fail": 0.02, "lead_d": 5, "avl": True, "quality_score": 0.97},
     {"id": "sup:c", "key": "c", "name": "C트레이딩 (최저가)", "part_no": "P-CLR-CORE", "price": 120, "fail": 0.20, "lead_d": 2, "avl": False, "quality_score": 0.61},
 ]
-_STD_PRICE = {"P-CLR-CORE": 250, "P-PMP-SEAL": 50, "P-FAN-BRG": 25}          # A7: 씰 · 베어링 표준단가 (migration 20261008000037)
+# B-ERP-20261012-v1: 필터 12만원은 공식 교육용 설계 단가이며 원문·시장 가격이 아니다.
+# 출처·선택 근거: docs/handoff/verification/2026-10-12/education-fixture-correction/b-spec.md
+_STD_PRICE = {"P-CLR-CORE": 250, "P-PMP-SEAL": 50, "P-FAN-BRG": 25, "P-RTN-FLT": 12}  # 기존 A/C 단가는 유지
 # A7 CMMS 표준 작업: SOP별 계획 정지 시간(h) · 작업비(만원) · 필요 부품. 쿨러 핀 세척은 설비별 정비 기준(_CMMS clean_h · clean_cost)을 따른다.
 _TASKS = [
     {"sop": "SOP-COOL-04", "name": "쿨러 핀 세척", "stop_h": None, "labor_cost": None, "part_no": None, "part_qty": 0, "from_profile": True},
@@ -163,6 +165,11 @@ SPARE_BASE = {
                    "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
     "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
     "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},
+    # B-ERP-20261012-v1 / migration 057: PM-02 기본·4천h 패키지의 필터1개를 실제 초기 ERP 행으로 공급.
+    # 실물2·예약0·목표2는 교육용 초기값이다. 단독 시행 후1개가 남으며 초기 C 경보를 추가하지 않는다.
+    # 작동유 번호·교환량·공급 견적은 추정하지 않는다. 기존 운영 행의 값은 state.py에서 덮어쓰지 않는다.
+    "P-RTN-FLT": {"name": "리턴 필터 엘리먼트", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2,
+                  "reserved_for": "HYD-02", "need_by_days": None},
 }
 # 온톨로지 SUPPLIED_BY 와 같은 값(만원 · 불량률 · 리드타임 일). 쿨러 코어는 _SUPPLIERS 를 그대로 쓴다(같은 값을 두 곳에 두지 않음).
 _PART_QUOTES = {

@@ -1,0 +1,123 @@
+{
+    "method":  "Explicit minimal source-byte copies only; no live calls, mutations, or tests",
+    "files":  [
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\official-fixture-applied.json",
+                      "portable":  "official-fixture-applied.json",
+                      "bytes":  862,
+                      "sha256":  "ce5358c0a2624df8b31a8f88cccad90b87f44b9bc0756657eab5c31c62e7ff97",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\single-service-deployment.json",
+                      "portable":  "single-service-deployment.json",
+                      "bytes":  682,
+                      "sha256":  "7889341a7f0881ca80041860f06f848a2f6e087a3420679af06785b551e40788",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\isolated-db-cleanup.json",
+                      "portable":  "isolated-db-cleanup.json",
+                      "bytes":  264,
+                      "sha256":  "7471e570b6d2207b6a0777db506806711488a54aaa825edcf96b6fe982b17751",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\source-delta.json",
+                      "portable":  "source-delta.json",
+                      "bytes":  396,
+                      "sha256":  "17d5537ef2adb6377afafb12e348d549422d344aee65dc475949c2a67a0a427c",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\apply-official-fixture.py",
+                      "portable":  "apply-official-fixture.py",
+                      "bytes":  2952,
+                      "sha256":  "5b9d956659862b0d7135199f434b4e5592fc42e06b21d495f83208265bba9746",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-data\\result.json",
+                      "portable":  "b-data/result.json",
+                      "bytes":  3019,
+                      "sha256":  "3e38b45597467e63bdb5a65e7eaaf93a9a65f02d6f21c136a44f907048382b3a",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-data\\before.json",
+                      "portable":  "b-data/before.json",
+                      "bytes":  1446,
+                      "sha256":  "1e2f05a84b5557d0a20c09a6fe4d78dee8ca380d42086e9e484e9cc14acef763",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\result.json",
+                      "portable":  "b-verification/result.json",
+                      "bytes":  3847,
+                      "sha256":  "f3d96903c1bf33a6cf7fe33e4a5761a14f9d4c1ea6a094c78dd63b7b22d56b2e",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\initial.json",
+                      "portable":  "b-verification/initial.json",
+                      "bytes":  776,
+                      "sha256":  "a20d85f6150d5fc0b8b37c78a532825c0fe464e7acea1a452144d8d1ddd1f2d0",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\bootstrap.json",
+                      "portable":  "b-verification/bootstrap.json",
+                      "bytes":  4549,
+                      "sha256":  "067d7221f344de2fc46613d5c11a10ba6aa9f585ba4dc470e2060529c11e3c9d",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\bootstrap.log",
+                      "portable":  "b-verification/bootstrap.log",
+                      "bytes":  830,
+                      "sha256":  "a03bcfcffd7cd09a778c2031e41d13210ad3ce32d46d45d7e008ad37b8437ecc",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\bootstrap.py",
+                      "portable":  "b-verification/bootstrap.py",
+                      "bytes":  1695,
+                      "sha256":  "f02cc5948127ec6a2311da9db649ec7833ca65693b2d11425418f055f8af80dd",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\focused-first.log",
+                      "portable":  "b-verification/focused-first.log",
+                      "bytes":  204,
+                      "sha256":  "a36cf46edc6ca887e48db1c1c27989d74449f0016f0cb94d5585a5cd2172be73",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\nearest-pg.log",
+                      "portable":  "b-verification/nearest-pg.log",
+                      "bytes":  202,
+                      "sha256":  "9f5d73e1cbe4583e5e794165c3a974a4f640863393d206c1634fcfa5057157fb",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\missing-filter-fault.log",
+                      "portable":  "b-verification/missing-filter-fault.log",
+                      "bytes":  22806,
+                      "sha256":  "d99545df1b2f4502edec8c689350d81b9bb39bbe1bb6207361887323e2562160",
+                      "exact_copy":  true
+                  },
+                  {
+                      "source":  "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\b-verification\\test_missing_filter_fault.py",
+                      "portable":  "b-verification/test_missing_filter_fault.py",
+                      "bytes":  493,
+                      "sha256":  "03dc6a4bdcb52de7766e3b95a99983c5342115c71090c45f0633d5295b3f1d18",
+                      "exact_copy":  true
+                  }
+              ],
+    "omitted":  "Current huge B GET retained in local H; prior B/C histories not duplicated",
+    "completion_claims":  {
+                              "fixture_applied":  true,
+                              "B_process_completion":  false,
+                              "Google_execution":  false
+                          }
+}

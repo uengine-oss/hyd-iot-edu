@@ -1,0 +1,61 @@
+{
+  "status": "verified",
+  "fixture_version": "B-ERP-20261012-v1",
+  "test": {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\test_education_pm_inventory_fixture.py",
+    "sha256": "95fe99388d0e46c46afb35e14cbcf8f864da8e860e844f2a436666293e106f47"
+  },
+  "source_before": {
+    "it/enterprise-sim/entsim/data.py": "701b649820b0d7911423f2f76bc5192b0d5e2b9b6ea97fb082f51235cfc79a17",
+    "it/enterprise-sim/entsim/state.py": "a62640e3fead2e7432f0e5bb9d3ed829efc6168d2671058760751abffe20a9e8",
+    "it/supabase/seed.sql": "b431de7ea131e387ea13f2ea2bcbeaf99ede5a9c5320e9dfe4e735784bac5e83",
+    "it/supabase/migrations/20261012000057_b_return_filter_fixture.sql": "b8fb2541e153f9b4822749a1328db40d501b7f1778b0e50ee511313a5f7cc857"
+  },
+  "source_after": {
+    "it/enterprise-sim/entsim/data.py": "701b649820b0d7911423f2f76bc5192b0d5e2b9b6ea97fb082f51235cfc79a17",
+    "it/enterprise-sim/entsim/state.py": "a62640e3fead2e7432f0e5bb9d3ed829efc6168d2671058760751abffe20a9e8",
+    "it/supabase/seed.sql": "b431de7ea131e387ea13f2ea2bcbeaf99ede5a9c5320e9dfe4e735784bac5e83",
+    "it/supabase/migrations/20261012000057_b_return_filter_fixture.sql": "b8fb2541e153f9b4822749a1328db40d501b7f1778b0e50ee511313a5f7cc857"
+  },
+  "source_unchanged": true,
+  "source_policy": {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\reviews\\PM-02.review.json",
+    "sha256": "20e5fa5fff828fbfdbc28364a5b1d24ea1ca35c06c26a7ac0bc67ef1b8008807",
+    "semantics": "Reviewed PM02 policySOP11 seal1/filter1, actual initialHYD02 phase next12000h4kh; newstock2 andprice12 are educational design, not source/warehouse observation."
+  },
+  "results": [
+    {
+      "log": "focused-first.log",
+      "result": "12 passed in0.89s",
+      "scope": "Memory initial and persisted lifecycle, production policy negative branches, portable SQLseed/parity/twice, actual isolatedPG consumer+execution+reservation/idempotency+twicemigration whole-row preservation"
+    },
+    {
+      "log": "nearest-pg.log",
+      "result": "1 passed in0.46s",
+      "scope": "Existing scopedPG two-order/idempotency integration; original test untouched"
+    },
+    {
+      "log": "missing-filter-fault.log",
+      "result": "1 expected failure in0.15s",
+      "scope": "RemovefilterrowfromSPARE_BASE in memory; original positive acceptance fails productionScopeError atmaintenance_policy194, no caught success substitute"
+    }
+  ],
+  "isolated_database": {
+    "port": 55757,
+    "container": "hyd-edu-fixture-pg-20261012",
+    "bootstrap": "bootstrap.json/log;17 actual ent migrations +enterprise-only source seed",
+    "shared_DB_writes": 0,
+    "test_transactions": "Every test PG effect/mutation rolled back; bootstrap persists only in rootowneddisposabletmpfs",
+    "cleanup_owner": "root"
+  },
+  "live_HTTP": 0,
+  "model_calls": 0,
+  "operating_B_case_changes": 0,
+  "references_directly_read": [
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\process-gpt\\docs\\en\\architecture.md",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\ontology-studio\\frontend\\src\\features\\files\\FilePanel.vue",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\portal-20261011\\refs\\ontology-studio\\desktop\\resources\\tutorial\\manufacturing\\README.md",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\portal-20261011\\refs\\ontology-studio\\desktop\\resources\\tutorial\\manufacturing\\procedures\\FN_CHECK_BOM_SHORTAGE.sql"
+  ],
+  "limitations": "No real B approval/process run or operating DB seed application. SQLite syntax check separately identified; actualPG15 verification supplements it. Whole2673/UI18/F27 not repeated. Operating immutableB identity GET rootowned."
+}

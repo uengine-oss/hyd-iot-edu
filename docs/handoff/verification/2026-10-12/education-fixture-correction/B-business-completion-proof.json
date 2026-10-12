@@ -1,0 +1,1536 @@
+{
+  "case": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+  "status": "COMPLETED",
+  "incident": {
+    "id": "INC-1011-01-96e7",
+    "asset": "HYD-02",
+    "alertId": "CMMS-PM_DUE-HYD-02-20261011164819",
+    "state": "CLOSED",
+    "reason": null,
+    "history": [
+      {
+        "state": "GUIDE_RECEIVED",
+        "t": "2026-10-11T16:48:20.325Z",
+        "note": "alert CMMS-PM_DUE-HYD-02-20261011164819"
+      },
+      {
+        "state": "AWAITING_APPROVAL",
+        "t": "2026-10-11T16:48:20.325Z",
+        "note": null
+      },
+      {
+        "state": "WORK_ORDER_CREATED",
+        "t": "2026-10-12T13:48:12.706Z",
+        "note": "WO-B6F6633D2BF9E6FA"
+      },
+      {
+        "state": "CLOSED",
+        "t": "2026-10-12T13:48:12.706Z",
+        "note": null
+      }
+    ],
+    "cmdId": null,
+    "approvalId": null,
+    "expiresAt": null,
+    "approvedBy": "user:park-maint",
+    "actions": [],
+    "ack": null,
+    "cleared": false,
+    "workOrder": {
+      "skill": "skill:sop-pm-11",
+      "code": "WO_CREATE",
+      "system": "sys:cmms",
+      "ok": true,
+      "ref": "WO-B6F6633D2BF9E6FA",
+      "detail": "Source-scoped maintenance orders registered",
+      "after": {
+        "plan": {
+          "code": "WO_CREATE",
+          "scope": "single",
+          "assets": [
+            {
+              "asset": "HYD-02",
+              "parts": [
+                {
+                  "qty": 1,
+                  "name": "펌프 축 씰 키트",
+                  "on_hand": 9,
+                  "part_no": "P-PMP-SEAL",
+                  "reserved": 2,
+                  "verified": true,
+                  "available": 7,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                },
+                {
+                  "qty": 1,
+                  "name": "리턴 필터 엘리먼트",
+                  "on_hand": 2,
+                  "part_no": "P-RTN-FLT",
+                  "reserved": 0,
+                  "verified": true,
+                  "available": 2,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                }
+              ],
+              "window": {
+                "id": "MW-HYD-02-N-202610122244",
+                "immediate": false,
+                "starts_at": "2026-10-12T22:44:28.272736+00:00"
+              },
+              "service": {
+                "total_h": 11950,
+                "interval_h": 2000,
+                "since_pm_h": 1950,
+                "package_sop": "SOP-PM-22",
+                "package_name": "4,000시간 정기 점검",
+                "next_due_total_h": 12000,
+                "service_position": 6,
+                "package_interval_h": 4000,
+                "last_service_total_h": 10000
+              },
+              "applicability": {
+                "limit_hours": 2200.0,
+                "lower_hours": 1800.0,
+                "common_start": "2026-10-12T22:44:28.272736+00:00",
+                "target_hours": 1958.94,
+                "within_limit": true,
+                "observed_hours": 1950,
+                "lower_hours_met": true,
+                "actual_window_id": "MW-HYD-02-N-202610122244",
+                "model_source_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "source_model_member": true,
+                "common_window_verified": true
+              },
+              "expected_counter": {
+                "cycle": 1,
+                "pm_since_h": 1950,
+                "pm_total_h": 11950,
+                "pm_planned_wo": null,
+                "service_position": null
+              }
+            }
+          ],
+          "policy": {
+            "scope": "single",
+            "anchor": {
+              "end": 725,
+              "page": 1,
+              "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+              "start": 290,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "version": 1,
+            "packages": [
+              {
+                "sop": "SOP-PM-21",
+                "name": "2,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 2000
+              },
+              {
+                "sop": "SOP-PM-22",
+                "name": "4,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 4000
+              },
+              {
+                "sop": "SOP-PM-23",
+                "name": "8,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  },
+                  {
+                    "qty": null,
+                    "name": "작동유",
+                    "part_no": null,
+                    "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+                  }
+                ],
+                "interval_h": 8000
+              }
+            ],
+            "interval_h": 2000,
+            "model_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "model_assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "stock_effect": "reserve",
+            "tolerance_pct": 10
+          },
+          "window": {
+            "id": "MW-HYD-02-N-202610122244",
+            "name": "이번 예정된 정비 시간",
+            "basis": "hours_at_next_window",
+            "starts_at": "2026-10-12T22:44:28.272736+00:00"
+          },
+          "staffing": {
+            "required": null,
+            "available": 2,
+            "confirmed": false,
+            "shortfall": null,
+            "arrangement_required": null
+          },
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+          "parts_totals": [
+            {
+              "qty": 1,
+              "part_no": "P-PMP-SEAL",
+              "available": 7
+            },
+            {
+              "qty": 1,
+              "part_no": "P-RTN-FLT",
+              "available": 2
+            }
+          ],
+          "stock_effect": "reserve",
+          "model_applicability": {
+            "assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "source_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            }
+          }
+        },
+        "orders": [
+          {
+            "id": "WO-B6F6633D2BF9E6FA",
+            "ref": "WO-B6F6633D2BF9E6FA",
+            "task": "SOP-PM-11 이번 예정된 정비 시간에 단독 시행 → 작업지시 SOP-PM-11",
+            "asset": "HYD-02",
+            "status": "배정됨",
+            "package": {
+              "total_h": 11950,
+              "interval_h": 2000,
+              "since_pm_h": 1950,
+              "package_sop": "SOP-PM-22",
+              "package_name": "4,000시간 정기 점검",
+              "next_due_total_h": 12000,
+              "service_position": 6,
+              "package_interval_h": 4000,
+              "last_service_total_h": 10000
+            },
+            "option_id": "skill:sop-pm-11",
+            "window_id": "MW-HYD-02-N-202610122244",
+            "created_at": "2026-10-12T13:48:11.851216+00:00",
+            "decision_id": "DEC-1012-004-50aa",
+            "scope_group": "PM-SCOPE-61679e2974592103d6aabc8e38dfaa3f",
+            "cancelled_at": null,
+            "completed_at": null,
+            "requested_by": "user:park-maint",
+            "window_label": "예정된 정비 시간",
+            "maintenance_plan": {
+              "code": "WO_CREATE",
+              "scope": "single",
+              "assets": [
+                {
+                  "asset": "HYD-02",
+                  "parts": [
+                    {
+                      "qty": 1,
+                      "name": "펌프 축 씰 키트",
+                      "on_hand": 9,
+                      "part_no": "P-PMP-SEAL",
+                      "reserved": 2,
+                      "verified": true,
+                      "available": 7,
+                      "owned_qty": null,
+                      "stock_effect": "reserve"
+                    },
+                    {
+                      "qty": 1,
+                      "name": "리턴 필터 엘리먼트",
+                      "on_hand": 2,
+                      "part_no": "P-RTN-FLT",
+                      "reserved": 0,
+                      "verified": true,
+                      "available": 2,
+                      "owned_qty": null,
+                      "stock_effect": "reserve"
+                    }
+                  ],
+                  "window": {
+                    "id": "MW-HYD-02-N-202610122244",
+                    "immediate": false,
+                    "starts_at": "2026-10-12T22:44:28.272736+00:00"
+                  },
+                  "service": {
+                    "total_h": 11950,
+                    "interval_h": 2000,
+                    "since_pm_h": 1950,
+                    "package_sop": "SOP-PM-22",
+                    "package_name": "4,000시간 정기 점검",
+                    "next_due_total_h": 12000,
+                    "service_position": 6,
+                    "package_interval_h": 4000,
+                    "last_service_total_h": 10000
+                  },
+                  "applicability": {
+                    "limit_hours": 2200.0,
+                    "lower_hours": 1800.0,
+                    "common_start": "2026-10-12T22:44:28.272736+00:00",
+                    "target_hours": 1958.94,
+                    "within_limit": true,
+                    "observed_hours": 1950,
+                    "lower_hours_met": true,
+                    "actual_window_id": "MW-HYD-02-N-202610122244",
+                    "model_source_anchor": {
+                      "end": 288,
+                      "page": 1,
+                      "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                      "start": 173,
+                      "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                    },
+                    "source_model_member": true,
+                    "common_window_verified": true
+                  },
+                  "expected_counter": {
+                    "cycle": 1,
+                    "pm_since_h": 1950,
+                    "pm_total_h": 11950,
+                    "pm_planned_wo": null,
+                    "service_position": null
+                  }
+                }
+              ],
+              "policy": {
+                "scope": "single",
+                "anchor": {
+                  "end": 725,
+                  "page": 1,
+                  "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+                  "start": 290,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "version": 1,
+                "packages": [
+                  {
+                    "sop": "SOP-PM-21",
+                    "name": "2,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      }
+                    ],
+                    "interval_h": 2000
+                  },
+                  {
+                    "sop": "SOP-PM-22",
+                    "name": "4,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      }
+                    ],
+                    "interval_h": 4000
+                  },
+                  {
+                    "sop": "SOP-PM-23",
+                    "name": "8,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      },
+                      {
+                        "qty": null,
+                        "name": "작동유",
+                        "part_no": null,
+                        "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+                      }
+                    ],
+                    "interval_h": 8000
+                  }
+                ],
+                "interval_h": 2000,
+                "model_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "model_assets": [
+                  "HYD-01",
+                  "HYD-02",
+                  "HYD-03"
+                ],
+                "stock_effect": "reserve",
+                "tolerance_pct": 10
+              },
+              "window": {
+                "id": "MW-HYD-02-N-202610122244",
+                "name": "이번 예정된 정비 시간",
+                "basis": "hours_at_next_window",
+                "starts_at": "2026-10-12T22:44:28.272736+00:00"
+              },
+              "staffing": {
+                "required": null,
+                "available": 2,
+                "confirmed": false,
+                "shortfall": null,
+                "arrangement_required": null
+              },
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+              "parts_totals": [
+                {
+                  "qty": 1,
+                  "part_no": "P-PMP-SEAL",
+                  "available": 7
+                },
+                {
+                  "qty": 1,
+                  "part_no": "P-RTN-FLT",
+                  "available": 2
+                }
+              ],
+              "stock_effect": "reserve",
+              "model_applicability": {
+                "assets": [
+                  "HYD-01",
+                  "HYD-02",
+                  "HYD-03"
+                ],
+                "source_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                }
+              }
+            },
+            "window_starts_at": "2026-10-12T22:44:28.272736+00:00"
+          }
+        ]
+      },
+      "name": "정비 작업지시 발행",
+      "sop": "SOP-PM-11",
+      "requested_value": "SOP-PM-11",
+      "source": "approved-action",
+      "decision": "DEC-1012-004-50aa",
+      "id": "WO-B6F6633D2BF9E6FA",
+      "t": "2026-10-12T13:48:12.706Z"
+    },
+    "workOrderRequest": {
+      "decision": "DEC-1012-004-50aa",
+      "option": "skill:sop-pm-11",
+      "option_name": "이번 예정된 정비 시간에 단독 시행",
+      "by": "user:park-maint",
+      "item": {
+        "skill": "skill:sop-pm-11",
+        "sop": "SOP-PM-11",
+        "code": "WO_CREATE",
+        "name": "정비 작업지시 발행",
+        "system": "sys:cmms",
+        "value": "SOP-PM-11",
+        "param": "sop",
+        "source": "approved-action",
+        "schedule_plan": {
+          "code": "WO_CREATE",
+          "scope": "single",
+          "assets": [
+            {
+              "asset": "HYD-02",
+              "parts": [
+                {
+                  "qty": 1,
+                  "name": "펌프 축 씰 키트",
+                  "on_hand": 9,
+                  "part_no": "P-PMP-SEAL",
+                  "reserved": 2,
+                  "verified": true,
+                  "available": 7,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                },
+                {
+                  "qty": 1,
+                  "name": "리턴 필터 엘리먼트",
+                  "on_hand": 2,
+                  "part_no": "P-RTN-FLT",
+                  "reserved": 0,
+                  "verified": true,
+                  "available": 2,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                }
+              ],
+              "window": {
+                "id": "MW-HYD-02-N-202610122244",
+                "immediate": false,
+                "starts_at": "2026-10-12T22:44:28.272736+00:00"
+              },
+              "service": {
+                "total_h": 11950,
+                "interval_h": 2000,
+                "since_pm_h": 1950,
+                "package_sop": "SOP-PM-22",
+                "package_name": "4,000시간 정기 점검",
+                "next_due_total_h": 12000,
+                "service_position": 6,
+                "package_interval_h": 4000,
+                "last_service_total_h": 10000
+              },
+              "applicability": {
+                "limit_hours": 2200.0,
+                "lower_hours": 1800.0,
+                "common_start": "2026-10-12T22:44:28.272736+00:00",
+                "target_hours": 1958.94,
+                "within_limit": true,
+                "observed_hours": 1950,
+                "lower_hours_met": true,
+                "actual_window_id": "MW-HYD-02-N-202610122244",
+                "model_source_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "source_model_member": true,
+                "common_window_verified": true
+              },
+              "expected_counter": {
+                "cycle": 1,
+                "pm_since_h": 1950,
+                "pm_total_h": 11950,
+                "pm_planned_wo": null,
+                "service_position": null
+              }
+            }
+          ],
+          "policy": {
+            "scope": "single",
+            "anchor": {
+              "end": 725,
+              "page": 1,
+              "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+              "start": 290,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "version": 1,
+            "packages": [
+              {
+                "sop": "SOP-PM-21",
+                "name": "2,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 2000
+              },
+              {
+                "sop": "SOP-PM-22",
+                "name": "4,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 4000
+              },
+              {
+                "sop": "SOP-PM-23",
+                "name": "8,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  },
+                  {
+                    "qty": null,
+                    "name": "작동유",
+                    "part_no": null,
+                    "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+                  }
+                ],
+                "interval_h": 8000
+              }
+            ],
+            "interval_h": 2000,
+            "model_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "model_assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "stock_effect": "reserve",
+            "tolerance_pct": 10
+          },
+          "window": {
+            "id": "MW-HYD-02-N-202610122244",
+            "name": "이번 예정된 정비 시간",
+            "basis": "hours_at_next_window",
+            "starts_at": "2026-10-12T22:44:28.272736+00:00"
+          },
+          "staffing": {
+            "required": null,
+            "available": 2,
+            "confirmed": false,
+            "shortfall": null,
+            "arrangement_required": null
+          },
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+          "parts_totals": [
+            {
+              "qty": 1,
+              "part_no": "P-PMP-SEAL",
+              "available": 7
+            },
+            {
+              "qty": 1,
+              "part_no": "P-RTN-FLT",
+              "available": 2
+            }
+          ],
+          "stock_effect": "reserve",
+          "model_applicability": {
+            "assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "source_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            }
+          }
+        },
+        "window": {
+          "id": "MW-HYD-02-N-202610122244",
+          "starts_at": "2026-10-12T22:44:28.272736+00:00"
+        }
+      },
+      "work_order_only": true
+    },
+    "reobsExtensions": 0,
+    "recoveryPolicy": {
+      "route": "response",
+      "target": {
+        "version": "1",
+        "definition": "c3_pm"
+      },
+      "pattern": "PM_DUE",
+      "version": "1",
+      "criterion": [
+        "CMMS_PM_DUE",
+        "<",
+        1.0
+      ],
+      "definition": "c3_pm"
+    },
+    "superseded": [],
+    "reobsSeries": null,
+    "created": "2026-10-11T16:48:20.325Z",
+    "closed": "2026-10-12T13:48:12.706Z",
+    "card": {
+      "incident": "INC-1011-01-96e7",
+      "alert": {
+        "t": "2026-10-11T16:48:19.995Z",
+        "asset": "HYD-02",
+        "state": "RAISE",
+        "source": "cmms",
+        "alertId": "CMMS-PM_DUE-HYD-02-20261011164819",
+        "pattern": "PM_DUE",
+        "evidence": {
+          "cycle": 1,
+          "pm_due": true,
+          "kit_qty": 1,
+          "package": "2,000 h 정기 점검 (축 씰 · 리턴 필터 교체, 잔압 해제, 시운전)",
+          "plan_id": "PM-HYD-02-2000",
+          "trigger": "포털 결함 실험 · [정기 점검] 버튼",
+          "due_since": "2026-10-11T14:02:01.980687+00:00",
+          "pm_since_h": 1950,
+          "bundle_peer": "HYD-03",
+          "kit_part_no": "P-PMP-SEAL",
+          "pm_due_in_h": 50,
+          "pm_notice_h": 50,
+          "requested_at": "2026-10-11T16:48:19+00:00",
+          "requested_by": "강사",
+          "pm_interval_h": 2000,
+          "pm_limit_in_h": 250.0,
+          "bundle_crew_ok": false,
+          "hours_since_pm": 1950,
+          "pm_window_open": true,
+          "requested_user": "user:park-maint",
+          "night_window_at": "2026-10-12T01:48:19.595495+00:00",
+          "night_window_id": "MW-HYD-02-N-202610120148",
+          "requested_roles": [
+            "role:maint-mgr"
+          ],
+          "spare_available": 1,
+          "pm_tolerance_pct": 10,
+          "night_window_in_h": 9.0,
+          "pm_crew_available": 2,
+          "night_within_limit": true,
+          "spare_gap_after_pm": -2,
+          "bundle_peer_since_h": 1880,
+          "hours_at_next_window": 1959.0,
+          "monthly_within_limit": false,
+          "weekend_within_limit": true,
+          "spare_gap_after_bundle": -3,
+          "hours_at_following_window": 2230.0
+        },
+        "severity": "info",
+        "observedBy": {
+          "id": "sys:cmms-monitor",
+          "name": "정기 정비 도래 (CMMS 운전시간 계수기) — [정기 점검] 버튼"
+        }
+      }
+    },
+    "terminal": true,
+    "processOwned": true
+  },
+  "new_work_order": {
+    "id": "WO-B6F6633D2BF9E6FA",
+    "task": "SOP-PM-11 이번 예정된 정비 시간에 단독 시행 → 작업지시 SOP-PM-11",
+    "asset": "HYD-02",
+    "status": "배정됨",
+    "package": {
+      "total_h": 11950,
+      "interval_h": 2000,
+      "since_pm_h": 1950,
+      "package_sop": "SOP-PM-22",
+      "package_name": "4,000시간 정기 점검",
+      "next_due_total_h": 12000,
+      "service_position": 6,
+      "package_interval_h": 4000,
+      "last_service_total_h": 10000
+    },
+    "option_id": "skill:sop-pm-11",
+    "window_id": "MW-HYD-02-N-202610122244",
+    "created_at": "2026-10-12T13:48:11.851216+00:00",
+    "decision_id": "DEC-1012-004-50aa",
+    "scope_group": "PM-SCOPE-61679e2974592103d6aabc8e38dfaa3f",
+    "cancelled_at": null,
+    "completed_at": null,
+    "requested_by": "user:park-maint",
+    "window_label": "예정된 정비 시간",
+    "maintenance_plan": {
+      "code": "WO_CREATE",
+      "scope": "single",
+      "assets": [
+        {
+          "asset": "HYD-02",
+          "parts": [
+            {
+              "qty": 1,
+              "name": "펌프 축 씰 키트",
+              "on_hand": 9,
+              "part_no": "P-PMP-SEAL",
+              "reserved": 2,
+              "verified": true,
+              "available": 7,
+              "owned_qty": null,
+              "stock_effect": "reserve"
+            },
+            {
+              "qty": 1,
+              "name": "리턴 필터 엘리먼트",
+              "on_hand": 2,
+              "part_no": "P-RTN-FLT",
+              "reserved": 0,
+              "verified": true,
+              "available": 2,
+              "owned_qty": null,
+              "stock_effect": "reserve"
+            }
+          ],
+          "window": {
+            "id": "MW-HYD-02-N-202610122244",
+            "immediate": false,
+            "starts_at": "2026-10-12T22:44:28.272736+00:00"
+          },
+          "service": {
+            "total_h": 11950,
+            "interval_h": 2000,
+            "since_pm_h": 1950,
+            "package_sop": "SOP-PM-22",
+            "package_name": "4,000시간 정기 점검",
+            "next_due_total_h": 12000,
+            "service_position": 6,
+            "package_interval_h": 4000,
+            "last_service_total_h": 10000
+          },
+          "applicability": {
+            "limit_hours": 2200.0,
+            "lower_hours": 1800.0,
+            "common_start": "2026-10-12T22:44:28.272736+00:00",
+            "target_hours": 1958.94,
+            "within_limit": true,
+            "observed_hours": 1950,
+            "lower_hours_met": true,
+            "actual_window_id": "MW-HYD-02-N-202610122244",
+            "model_source_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "source_model_member": true,
+            "common_window_verified": true
+          },
+          "expected_counter": {
+            "cycle": 1,
+            "pm_since_h": 1950,
+            "pm_total_h": 11950,
+            "pm_planned_wo": null,
+            "service_position": null
+          }
+        }
+      ],
+      "policy": {
+        "scope": "single",
+        "anchor": {
+          "end": 725,
+          "page": 1,
+          "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+          "start": 290,
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+        },
+        "version": 1,
+        "packages": [
+          {
+            "sop": "SOP-PM-21",
+            "name": "2,000시간 정기 점검",
+            "parts": [
+              {
+                "qty": 1,
+                "name": "펌프 축 씰 키트",
+                "part_no": "P-PMP-SEAL"
+              },
+              {
+                "qty": 1,
+                "name": "리턴 필터 엘리먼트",
+                "part_no": "P-RTN-FLT"
+              }
+            ],
+            "interval_h": 2000
+          },
+          {
+            "sop": "SOP-PM-22",
+            "name": "4,000시간 정기 점검",
+            "parts": [
+              {
+                "qty": 1,
+                "name": "펌프 축 씰 키트",
+                "part_no": "P-PMP-SEAL"
+              },
+              {
+                "qty": 1,
+                "name": "리턴 필터 엘리먼트",
+                "part_no": "P-RTN-FLT"
+              }
+            ],
+            "interval_h": 4000
+          },
+          {
+            "sop": "SOP-PM-23",
+            "name": "8,000시간 정기 점검",
+            "parts": [
+              {
+                "qty": 1,
+                "name": "펌프 축 씰 키트",
+                "part_no": "P-PMP-SEAL"
+              },
+              {
+                "qty": 1,
+                "name": "리턴 필터 엘리먼트",
+                "part_no": "P-RTN-FLT"
+              },
+              {
+                "qty": null,
+                "name": "작동유",
+                "part_no": null,
+                "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+              }
+            ],
+            "interval_h": 8000
+          }
+        ],
+        "interval_h": 2000,
+        "model_anchor": {
+          "end": 288,
+          "page": 1,
+          "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+          "start": 173,
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+        },
+        "model_assets": [
+          "HYD-01",
+          "HYD-02",
+          "HYD-03"
+        ],
+        "stock_effect": "reserve",
+        "tolerance_pct": 10
+      },
+      "window": {
+        "id": "MW-HYD-02-N-202610122244",
+        "name": "이번 예정된 정비 시간",
+        "basis": "hours_at_next_window",
+        "starts_at": "2026-10-12T22:44:28.272736+00:00"
+      },
+      "staffing": {
+        "required": null,
+        "available": 2,
+        "confirmed": false,
+        "shortfall": null,
+        "arrangement_required": null
+      },
+      "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+      "parts_totals": [
+        {
+          "qty": 1,
+          "part_no": "P-PMP-SEAL",
+          "available": 7
+        },
+        {
+          "qty": 1,
+          "part_no": "P-RTN-FLT",
+          "available": 2
+        }
+      ],
+      "stock_effect": "reserve",
+      "model_applicability": {
+        "assets": [
+          "HYD-01",
+          "HYD-02",
+          "HYD-03"
+        ],
+        "source_anchor": {
+          "end": 288,
+          "page": 1,
+          "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+          "start": 173,
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+        }
+      }
+    },
+    "window_starts_at": "2026-10-12T22:44:28.272736+00:00"
+  },
+  "new_reservations": [
+    {
+      "qty": 1,
+      "part_no": "P-PMP-SEAL",
+      "work_order": "WO-B6F6633D2BF9E6FA",
+      "released_at": null,
+      "stock_effect": "reserve"
+    },
+    {
+      "qty": 1,
+      "part_no": "P-RTN-FLT",
+      "work_order": "WO-B6F6633D2BF9E6FA",
+      "released_at": null,
+      "stock_effect": "reserve"
+    }
+  ],
+  "filter_available": 1,
+  "seal_available": 6,
+  "physical_maintenance_completed": false,
+  "counter_reset": false,
+  "owned_worker_stopped": true,
+  "model": "gpt-6.1-sol",
+  "llm_runs": 1,
+  "whole_suite_reruns": 0,
+  "original_B_deferral_preserved": true,
+  "original_decision_preserved": "DEC-1012-004-50aa",
+  "execution_review": "REV-5326d165-73f8-4575-bc1e-2d8ad04b447c",
+  "work_order_task_output": {
+    "work_order": {
+      "ok": true,
+      "ref": "WO-B6F6633D2BF9E6FA",
+      "code": "WO_CREATE",
+      "after": {
+        "plan": {
+          "code": "WO_CREATE",
+          "scope": "single",
+          "assets": [
+            {
+              "asset": "HYD-02",
+              "parts": [
+                {
+                  "qty": 1,
+                  "name": "펌프 축 씰 키트",
+                  "on_hand": 9,
+                  "part_no": "P-PMP-SEAL",
+                  "reserved": 2,
+                  "verified": true,
+                  "available": 7,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                },
+                {
+                  "qty": 1,
+                  "name": "리턴 필터 엘리먼트",
+                  "on_hand": 2,
+                  "part_no": "P-RTN-FLT",
+                  "reserved": 0,
+                  "verified": true,
+                  "available": 2,
+                  "owned_qty": null,
+                  "stock_effect": "reserve"
+                }
+              ],
+              "window": {
+                "id": "MW-HYD-02-N-202610122244",
+                "immediate": false,
+                "starts_at": "2026-10-12T22:44:28.272736+00:00"
+              },
+              "service": {
+                "total_h": 11950,
+                "interval_h": 2000,
+                "since_pm_h": 1950,
+                "package_sop": "SOP-PM-22",
+                "package_name": "4,000시간 정기 점검",
+                "next_due_total_h": 12000,
+                "service_position": 6,
+                "package_interval_h": 4000,
+                "last_service_total_h": 10000
+              },
+              "applicability": {
+                "limit_hours": 2200.0,
+                "lower_hours": 1800.0,
+                "common_start": "2026-10-12T22:44:28.272736+00:00",
+                "target_hours": 1958.94,
+                "within_limit": true,
+                "observed_hours": 1950,
+                "lower_hours_met": true,
+                "actual_window_id": "MW-HYD-02-N-202610122244",
+                "model_source_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "source_model_member": true,
+                "common_window_verified": true
+              },
+              "expected_counter": {
+                "cycle": 1,
+                "pm_since_h": 1950,
+                "pm_total_h": 11950,
+                "pm_planned_wo": null,
+                "service_position": null
+              }
+            }
+          ],
+          "policy": {
+            "scope": "single",
+            "anchor": {
+              "end": 725,
+              "page": 1,
+              "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+              "start": 290,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "version": 1,
+            "packages": [
+              {
+                "sop": "SOP-PM-21",
+                "name": "2,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 2000
+              },
+              {
+                "sop": "SOP-PM-22",
+                "name": "4,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  }
+                ],
+                "interval_h": 4000
+              },
+              {
+                "sop": "SOP-PM-23",
+                "name": "8,000시간 정기 점검",
+                "parts": [
+                  {
+                    "qty": 1,
+                    "name": "펌프 축 씰 키트",
+                    "part_no": "P-PMP-SEAL"
+                  },
+                  {
+                    "qty": 1,
+                    "name": "리턴 필터 엘리먼트",
+                    "part_no": "P-RTN-FLT"
+                  },
+                  {
+                    "qty": null,
+                    "name": "작동유",
+                    "part_no": null,
+                    "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+                  }
+                ],
+                "interval_h": 8000
+              }
+            ],
+            "interval_h": 2000,
+            "model_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            },
+            "model_assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "stock_effect": "reserve",
+            "tolerance_pct": 10
+          },
+          "window": {
+            "id": "MW-HYD-02-N-202610122244",
+            "name": "이번 예정된 정비 시간",
+            "basis": "hours_at_next_window",
+            "starts_at": "2026-10-12T22:44:28.272736+00:00"
+          },
+          "staffing": {
+            "required": null,
+            "available": 2,
+            "confirmed": false,
+            "shortfall": null,
+            "arrangement_required": null
+          },
+          "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+          "parts_totals": [
+            {
+              "qty": 1,
+              "part_no": "P-PMP-SEAL",
+              "available": 7
+            },
+            {
+              "qty": 1,
+              "part_no": "P-RTN-FLT",
+              "available": 2
+            }
+          ],
+          "stock_effect": "reserve",
+          "model_applicability": {
+            "assets": [
+              "HYD-01",
+              "HYD-02",
+              "HYD-03"
+            ],
+            "source_anchor": {
+              "end": 288,
+              "page": 1,
+              "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+              "start": 173,
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+            }
+          }
+        },
+        "orders": [
+          {
+            "id": "WO-B6F6633D2BF9E6FA",
+            "ref": "WO-B6F6633D2BF9E6FA",
+            "task": "SOP-PM-11 이번 예정된 정비 시간에 단독 시행 → 작업지시 SOP-PM-11",
+            "asset": "HYD-02",
+            "status": "배정됨",
+            "package": {
+              "total_h": 11950,
+              "interval_h": 2000,
+              "since_pm_h": 1950,
+              "package_sop": "SOP-PM-22",
+              "package_name": "4,000시간 정기 점검",
+              "next_due_total_h": 12000,
+              "service_position": 6,
+              "package_interval_h": 4000,
+              "last_service_total_h": 10000
+            },
+            "option_id": "skill:sop-pm-11",
+            "window_id": "MW-HYD-02-N-202610122244",
+            "created_at": "2026-10-12T13:48:11.851216+00:00",
+            "decision_id": "DEC-1012-004-50aa",
+            "scope_group": "PM-SCOPE-61679e2974592103d6aabc8e38dfaa3f",
+            "cancelled_at": null,
+            "completed_at": null,
+            "requested_by": "user:park-maint",
+            "window_label": "예정된 정비 시간",
+            "maintenance_plan": {
+              "code": "WO_CREATE",
+              "scope": "single",
+              "assets": [
+                {
+                  "asset": "HYD-02",
+                  "parts": [
+                    {
+                      "qty": 1,
+                      "name": "펌프 축 씰 키트",
+                      "on_hand": 9,
+                      "part_no": "P-PMP-SEAL",
+                      "reserved": 2,
+                      "verified": true,
+                      "available": 7,
+                      "owned_qty": null,
+                      "stock_effect": "reserve"
+                    },
+                    {
+                      "qty": 1,
+                      "name": "리턴 필터 엘리먼트",
+                      "on_hand": 2,
+                      "part_no": "P-RTN-FLT",
+                      "reserved": 0,
+                      "verified": true,
+                      "available": 2,
+                      "owned_qty": null,
+                      "stock_effect": "reserve"
+                    }
+                  ],
+                  "window": {
+                    "id": "MW-HYD-02-N-202610122244",
+                    "immediate": false,
+                    "starts_at": "2026-10-12T22:44:28.272736+00:00"
+                  },
+                  "service": {
+                    "total_h": 11950,
+                    "interval_h": 2000,
+                    "since_pm_h": 1950,
+                    "package_sop": "SOP-PM-22",
+                    "package_name": "4,000시간 정기 점검",
+                    "next_due_total_h": 12000,
+                    "service_position": 6,
+                    "package_interval_h": 4000,
+                    "last_service_total_h": 10000
+                  },
+                  "applicability": {
+                    "limit_hours": 2200.0,
+                    "lower_hours": 1800.0,
+                    "common_start": "2026-10-12T22:44:28.272736+00:00",
+                    "target_hours": 1958.94,
+                    "within_limit": true,
+                    "observed_hours": 1950,
+                    "lower_hours_met": true,
+                    "actual_window_id": "MW-HYD-02-N-202610122244",
+                    "model_source_anchor": {
+                      "end": 288,
+                      "page": 1,
+                      "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                      "start": 173,
+                      "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                    },
+                    "source_model_member": true,
+                    "common_window_verified": true
+                  },
+                  "expected_counter": {
+                    "cycle": 1,
+                    "pm_since_h": 1950,
+                    "pm_total_h": 11950,
+                    "pm_planned_wo": null,
+                    "service_position": null
+                  }
+                }
+              ],
+              "policy": {
+                "scope": "single",
+                "anchor": {
+                  "end": 725,
+                  "page": 1,
+                  "quote": "## PM-2.2 점검 주기와 패키지\n누적 운전시간에 따라 아래 패키지 중 하나를 시행한다. 큰 패키지는 작은 패키지의 내용을 모두 포함한다.\n\n| 패키지 | 시행 차례 (누적 운전시간) | 내용 | 부품 |\n|---|---|---|---|\n| 2,000 h | 2,000 · 6,000 · 10,000 h … | 주 펌프 축 씰 키트 교체, 리턴 필터 교체, 누유 · 호스 육안 점검 | 펌프 축 씰 키트 1, 리턴 필터 엘리먼트 1 |\n| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |\n| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
+                  "start": 290,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "version": 1,
+                "packages": [
+                  {
+                    "sop": "SOP-PM-21",
+                    "name": "2,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      }
+                    ],
+                    "interval_h": 2000
+                  },
+                  {
+                    "sop": "SOP-PM-22",
+                    "name": "4,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      }
+                    ],
+                    "interval_h": 4000
+                  },
+                  {
+                    "sop": "SOP-PM-23",
+                    "name": "8,000시간 정기 점검",
+                    "parts": [
+                      {
+                        "qty": 1,
+                        "name": "펌프 축 씰 키트",
+                        "part_no": "P-PMP-SEAL"
+                      },
+                      {
+                        "qty": 1,
+                        "name": "리턴 필터 엘리먼트",
+                        "part_no": "P-RTN-FLT"
+                      },
+                      {
+                        "qty": null,
+                        "name": "작동유",
+                        "part_no": null,
+                        "mapping_reason": "원문에 작동유 교환이 명시돼 있지만 실제 업무 부품 번호와 수량은 등록되지 않았다."
+                      }
+                    ],
+                    "interval_h": 8000
+                  }
+                ],
+                "interval_h": 2000,
+                "model_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                },
+                "model_assets": [
+                  "HYD-01",
+                  "HYD-02",
+                  "HYD-03"
+                ],
+                "stock_effect": "reserve",
+                "tolerance_pct": 10
+              },
+              "window": {
+                "id": "MW-HYD-02-N-202610122244",
+                "name": "이번 예정된 정비 시간",
+                "basis": "hours_at_next_window",
+                "starts_at": "2026-10-12T22:44:28.272736+00:00"
+              },
+              "staffing": {
+                "required": null,
+                "available": 2,
+                "confirmed": false,
+                "shortfall": null,
+                "arrangement_required": null
+              },
+              "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+              "parts_totals": [
+                {
+                  "qty": 1,
+                  "part_no": "P-PMP-SEAL",
+                  "available": 7
+                },
+                {
+                  "qty": 1,
+                  "part_no": "P-RTN-FLT",
+                  "available": 2
+                }
+              ],
+              "stock_effect": "reserve",
+              "model_applicability": {
+                "assets": [
+                  "HYD-01",
+                  "HYD-02",
+                  "HYD-03"
+                ],
+                "source_anchor": {
+                  "end": 288,
+                  "page": 1,
+                  "quote": "## PM-2.1 적용 범위\n같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다. 정기 정비는 운전시간 계수기로 관리한다. 계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
+                  "start": 173,
+                  "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a"
+                }
+              }
+            },
+            "window_starts_at": "2026-10-12T22:44:28.272736+00:00"
+          }
+        ]
+      },
+      "skill": "skill:sop-pm-11",
+      "detail": "Source-scoped maintenance orders registered",
+      "notice": {
+        "tool": "send_mail",
+        "result": "{\n  \"result\": \"ok\",\n  \"document\": {\n    \"message_id\": \"<179181289692.1.8172315387905731902@hyd.local>\",\n    \"to\": [\n      \"production@hyd.local\"\n    ],\n    \"cc\": [],\n    \"subject\": \"[정비 공지] HYD-02 정비 오더 WO-B6F6633D2BF9E6FA\",\n    \"sent_at\": \"2026-10-12T13:48:17Z\",\n    \"smtp\": \"host.docker.internal:54325\",\n    \"replayed\": false\n  }\n}",
+        "server": "hyd-effects",
+        "arguments": {
+          "to": "production@hyd.local",
+          "body": "Source-scoped maintenance orders registered — 이 시간에 HYD-02 를 정지합니다 (승인 박정비)",
+          "subject": "[정비 공지] HYD-02 정비 오더 WO-B6F6633D2BF9E6FA",
+          "idempotency_key": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7:e1f70cb2-3523-4306-a597-6a8a7dcb223c:notice"
+        },
+        "called_at": "2026-10-12T13:48:17.053Z",
+        "idempotent": true,
+        "idempotency_key": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7:e1f70cb2-3523-4306-a597-6a8a7dcb223c:notice"
+      },
+      "system": "sys:cmms"
+    }
+  },
+  "result_report": {
+    "result_report": {
+      "at": "2026-10-12T13:48:21.398Z",
+      "by": "sys:process",
+      "refs": {
+        "work_order": "WO-B6F6633D2BF9E6FA"
+      },
+      "facts": {
+        "asset": "HYD-02",
+        "pattern": "PM_DUE",
+        "approval": "승인",
+        "approved_by": "user:park-maint",
+        "decision_id": "DEC-1012-004-50aa",
+        "approved_role": "role:maint-mgr",
+        "approval_reason": "사용자 위임 Codex: PM-02 단독 4,000h 원문 패키지, 새로 읽은 CMMS·교육 ERP 재고, 실행 계획과 다른 후보의 인원·작동유·연기 상한 제외 사유를 확인한 실습 승인. 물리 정비 완료 승인이 아닌 작업지시 등록·생산팀 공지 승인."
+      },
+      "level": "ok",
+      "title": "HYD-02 정기 정비 결과",
+      "values": [
+        {
+          "name": "정비 오더",
+          "value": "WO-B6F6633D2BF9E6FA"
+        },
+        {
+          "ok": true,
+          "name": "공지 메일",
+          "value": "보냄"
+        }
+      ],
+      "outcome": "정상",
+      "summary": "정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — Source-scoped maintenance orders registered",
+      "verdict": "ok",
+      "incident_closed": false
+    }
+  }
+}
