@@ -1,0 +1,141 @@
+﻿{
+    "audit_type":  "read_only_tool_output_consumer",
+    "date":  "2026-10-12",
+    "first_divergence":  {
+                             "producer":  "it/agent-worker/worker/events.py:253 _truncate",
+                             "detail":  "Large dict/list becomes repr(value)[:4000] + … (생략됨), a truncated Python literal rather than JSON. translate at line48 uses it for tool_end.output. This is first observed contract divergence, not proof upstream CLI corrupted data.",
+                             "preservation":  "runner.py:382-404 captures original event.text or event.tool_output; payloads.py:127-143 serializes dict/list with json.dumps. full_output remains stored JSON metadata."
+                         },
+    "consumer_path":  [
+                          {
+                              "source":  "it/portal/www/plainWords.js:237-260",
+                              "detail":  "parse recognizes JSON strings via JSON.parse and text-block arrays. Python repr preview fails JSON.parse and remains string; purchaseRecord cannot unwrap it."
+                          },
+                          {
+                              "source":  "it/portal/www/plainWords.js:310-314",
+                              "detail":  "purchaseGot sees string, emits 구매 결과 기록을 확인할 수 없습니다. 원문을 확인하세요."
+                          },
+                          {
+                              "source":  "it/portal/www/trace.js:188-195",
+                              "detail":  "rowsOf uses hydWords.got(r.tool,d.output), ignoring d.full_output. UI.outcome flags token-limit messages, not worker\u0027s … (생략됨), so tone ok does not convey truncated preview."
+                          },
+                          {
+                              "source":  "it/portal/www/caseRecord.js:801-805",
+                              "detail":  "Record detailed tool list uses full_output.summary first when stored, producing 원문 ...자를 따로 보관 + structural JSON summary. It does not derive a business summary from stored payload."
+                          }
+                      ],
+    "exact_real_shapes":  [
+                              {
+                                  "path":  "C.events[39].data.output",
+                                  "tool":  "hyd-dmn/purchase_context",
+                                  "shape":  "Object {content:[{type:text,text:JSON}],structured_content:{result:ok,document:{part,procedures,...}}}",
+                                  "outcome":  "purchaseRecord unwraps structured_content; readable context supported.",
+                                  "event_id":  "099ec70e-680b-4295-95b0-feff4859012d"
+                              },
+                              {
+                                  "path":  "C.events[41].data",
+                                  "tool":  "hyd-dmn/evaluate_purchase",
+                                  "shape":  "output string 4007 characters starts {\u0027content\u0027: [{\u0027type\u0027: \u0027text\u0027, \u0027text\u0027: \u0027{\"result\":\"ok\",\"document\":{\"id\":\"EVAL-1012-001-5dc2\"...; full_output.stored=true/content_type=json/cut=false/original_chars=154302",
+                                  "event_id":  "25887c27-3604-4375-9ee5-224e0466dada",
+                                  "full_ref":  "6094688abc4ecca2703ef2817e6bb1b6388d010f88f07986409ee054c734987d",
+                                  "status_visible_in_preview":  "EVALUATED",
+                                  "classification":  "Available stored payload metadata; consumer cannot interpret shortened output. Full stored body not retrieved in this read-only audit."
+                              },
+                              {
+                                  "path":  "C.events[45].data",
+                                  "tool":  "hyd-dmn/submit_purchase",
+                                  "shape":  "output Python-repr preview4007chars; full_output.stored=true/content_type=json/cut=false/original_chars155480",
+                                  "event_id":  "f9527463-b389-42d6-96ae-8a4eb55b115f",
+                                  "full_ref":  "27caebb2f4a3eedd7b5b8dba8e909a761f69d11d8f214a7bad46e677ed34532f",
+                                  "status_visible_in_preview":  "SUBMITTED; DEC-1012-003-0869",
+                                  "classification":  "Historical agent submission; not purchase execution or current OEM approval. Summary should acknowledge stored result, not infer execution."
+                              },
+                              {
+                                  "path":  "B.events[27].data",
+                                  "tool":  "enterprise-maint/maintenance_windows",
+                                  "shape":  "output Python-repr preview4007chars; full_output stored4463chars",
+                                  "event_id":  "2067ade5-638c-4240-8a97-997c82357bc0",
+                                  "classification":  "Same producer preview loss; generic summary may report raw body length rather than available CMMS facts."
+                              },
+                              {
+                                  "path":  "B.events[48].data",
+                                  "tool":  "enterprise-maint/pm_status",
+                                  "shape":  "output Python-repr preview4007chars; full_output stored6830chars",
+                                  "event_id":  "33ce4c34-27f8-4e67-86d3-67ac041c3895",
+                                  "classification":  "Same loss; next-window/PM facts visible in preview but not safely parseable."
+                              },
+                              {
+                                  "path":  "B.events[52].data",
+                                  "tool":  "hyd-dmn/evaluate_cards",
+                                  "shape":  "output Python-repr preview4007chars; full_output stored213879chars",
+                                  "event_id":  "f455d9d8-3104-492b-91c5-dd215df304fc",
+                                  "classification":  "Same loss; no specialized evaluate_cards.got in plainWords line408; generic parser cannot derive outcome."
+                              },
+                              {
+                                  "path":  "B.events[26].data.output",
+                                  "tool":  "enterprise-maint/mes_orders",
+                                  "shape":  "small object content+structured_content; structured_content.document.facts and records are available",
+                                  "event_id":  "72d29e4d-472b-425e-a1eb-1fef6dd29cc6",
+                                  "classification":  "Independent consumer envelope gap: specialized got doc(parse(o)).facts line418 ignores structured_content; genericGot via purchaseRecord recovers rows count/names but loses specific facts summary."
+                              },
+                              {
+                                  "path":  "B.events[25].data.output",
+                                  "tool":  "hyd-dmn/business_causes",
+                                  "shape":  "object envelope structured_content.document contains causes:[],top_cause:null,failure_mode:null,parts_below_reorder_point:[]",
+                                  "event_id":  "f8ee9bea-06f3-4e74-b09c-1af7820c3e47",
+                                  "classification":  "Actual no cause present here; don\u0027t manufacture cause. Later event47 may differ. Specialized got also expects cause instead of top_cause and ignores envelope."
+                              },
+                              {
+                                  "path":  "C.events[56].data.output",
+                                  "tool":  "mcp__hyd-effects__send_mail",
+                                  "shape":  "Valid JSON string338chars with result ok/document.sent_at/message_id/to",
+                                  "event_id":  "87284e5a-5347-4b26-b13c-bc78a3cabef1",
+                                  "classification":  "No repr loss; mail got returns 보냄 without parsing status. This event has actual success document; unknown/error variants need explicit outcome contract if separately scoped."
+                              }
+                          ],
+    "actionable":  [
+                       "Maintain original payload and hash. Publish a typed, bounded semantic preview alongside full_output instead of repr; never eval Python-like strings in browser.",
+                       "Use one envelope normalizer for specialized and generic tool summaries; support document, structured_content/structuredContent, content text JSON and arrays explicitly.",
+                       "When only truncated preview/full metadata is available, say shortened preview/full result stored and expose retrieval; do not label available payload missing. Derive result only from loaded original, not current decision replacements or summary text.",
+                       "Keep genuine absent fields/unknown formats explicit and visible. Preserve historical A recommendation and separate later OEM approval."
+                   ],
+    "limitations":  "No HTTP or stored payload retrieval, model calls, tests, source edits. Exact full JSON outcomes not claimed from truncated previews. No purchaseRaw identifier found in audited tracked source; actual normalizer is purchaseRecord.",
+    "sources":  [
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\fixtures\\actual_bc_record_followup.json",
+                        "sha256":  "1ac1a79ebaf4d5efc15906e981117911bee4fa59eae6c20299eeafa4284540db"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\agent-worker\\worker\\events.py",
+                        "sha256":  "dc576e24d9aa3377059b9c52d812dc8f5bee1704c054bc2ea685d924ecb6cad3"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\agent-worker\\worker\\runner.py",
+                        "sha256":  "8cb36f835ebde0e6662b44a67f0b9012af35a91de78bc436a902e59bd82d2818"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\agent-worker\\worker\\payloads.py",
+                        "sha256":  "0e4fea9e411fe08e48f20cc28d9daf9af6f205e6b9deb9b77945788303af2e7f"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\plainWords.js",
+                        "sha256":  "41ce19a541442e4438344a791cfef9e51da38f2f15ff4d04e326c4053bda14a8"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\ui.js",
+                        "sha256":  "11c58060a4d427b63f3d3d6840a445395f0399b40f5f2483a5962a57bf303321"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\trace.js",
+                        "sha256":  "983889ae516c6e12c2670f61f5023c7047543f999786ef7511ea50a502222783"
+                    },
+                    {
+                        "path":  "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\caseRecord.js",
+                        "sha256":  "c2e10c017afb1fa92e5b34040aad48434181203e227adabe7ae6fdbe0ab9eab8"
+                    },
+                    {
+                        "path":  "D:/work/study/hyd-iot-edu/.evidence/k3-preparation-20261012/live-record-final-1/C-task-1440.txt",
+                        "sha256":  "9f0c3976b1e1f2022967483c51c7f81f18cf1aee9cc6aa717ec72588034477bb"
+                    }
+                ]
+}

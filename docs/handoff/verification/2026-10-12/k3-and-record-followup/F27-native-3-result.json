@@ -1,0 +1,723 @@
+{
+  "method": "native existing B/C GET views, no injected records or writes",
+  "checks": [
+    {
+      "label": "mounted bytes it/portal/www/agents.js",
+      "passed": true,
+      "detail": {
+        "expected": "5e1d366e6f0060589b20fecad7174346bdbaee932df3b9c4188d7fb65fbeddf6",
+        "actual": "5e1d366e6f0060589b20fecad7174346bdbaee932df3b9c4188d7fb65fbeddf6"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/agentsPanel.js",
+      "passed": true,
+      "detail": {
+        "expected": "1aa3cca7727472cf6daec4e20f845d2ec687f681c43a263b7672c1d3497244f1",
+        "actual": "1aa3cca7727472cf6daec4e20f845d2ec687f681c43a263b7672c1d3497244f1"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/app.js",
+      "passed": true,
+      "detail": {
+        "expected": "185b00abdd154cc55fff97fad0100d4e0840567a5d1411ec289c85a73c3861fc",
+        "actual": "185b00abdd154cc55fff97fad0100d4e0840567a5d1411ec289c85a73c3861fc"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/approvalCard.js",
+      "passed": true,
+      "detail": {
+        "expected": "df554c2d9d0313db7509eb3bca6d912fc6dbb9459d83c0a8e3045b162a1e1928",
+        "actual": "df554c2d9d0313db7509eb3bca6d912fc6dbb9459d83c0a8e3045b162a1e1928"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/ask.js",
+      "passed": true,
+      "detail": {
+        "expected": "a155e6d7aaaeac56c823912df9d5b9935947b589efed126a21d64c1e5ea04f57",
+        "actual": "a155e6d7aaaeac56c823912df9d5b9935947b589efed126a21d64c1e5ea04f57"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/caseRecord.js",
+      "passed": true,
+      "detail": {
+        "expected": "0032769fa73527df0cc6829d843c14151417ee2124a9100a9f7932ec54549274",
+        "actual": "0032769fa73527df0cc6829d843c14151417ee2124a9100a9f7932ec54549274"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/compare.css",
+      "passed": true,
+      "detail": {
+        "expected": "dee6476ac2bd9dcccc2cb62d8f6bda99432bbb1e984b1916c40fe88e3406e748",
+        "actual": "dee6476ac2bd9dcccc2cb62d8f6bda99432bbb1e984b1916c40fe88e3406e748"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/compare.js",
+      "passed": true,
+      "detail": {
+        "expected": "fc54a19b4b6bd25d3f005561fddd07624311ea65c7bff80eddb926fc1d9f15f4",
+        "actual": "fc54a19b4b6bd25d3f005561fddd07624311ea65c7bff80eddb926fc1d9f15f4"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/components.css",
+      "passed": true,
+      "detail": {
+        "expected": "5a71c3be870922d1c5882f87f94c0a0fb8f99605abf8789150d5623b097b7147",
+        "actual": "5a71c3be870922d1c5882f87f94c0a0fb8f99605abf8789150d5623b097b7147"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/configBundle.js",
+      "passed": true,
+      "detail": {
+        "expected": "b053bf7b9489f80a3b9ac721fdacc52906138b87d1955bb791a5847416902cfb",
+        "actual": "b053bf7b9489f80a3b9ac721fdacc52906138b87d1955bb791a5847416902cfb"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/definitionDeploy.js",
+      "passed": true,
+      "detail": {
+        "expected": "21b3640cdf4c05adf0607cfbdba9e9a0020846793b348f9560edaff65ccc7c8c",
+        "actual": "21b3640cdf4c05adf0607cfbdba9e9a0020846793b348f9560edaff65ccc7c8c"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/definitionRegistry.js",
+      "passed": true,
+      "detail": {
+        "expected": "c0758d6e406f6cb5a303c7080fc3fd1ecac74c5217ac9e0b066bf99f5ad3292e",
+        "actual": "c0758d6e406f6cb5a303c7080fc3fd1ecac74c5217ac9e0b066bf99f5ad3292e"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/enterprise.css",
+      "passed": true,
+      "detail": {
+        "expected": "4ba0345dfa996f5e6761d73b53757ca7a51498b47f597dec0118c7d3dd441f6c",
+        "actual": "4ba0345dfa996f5e6761d73b53757ca7a51498b47f597dec0118c7d3dd441f6c"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/enterprise.js",
+      "passed": true,
+      "detail": {
+        "expected": "530f5ff4b07afe6600d18f0c923426f01a5f4108424ba39ad1059e21a86b0187",
+        "actual": "530f5ff4b07afe6600d18f0c923426f01a5f4108424ba39ad1059e21a86b0187"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/evaluation.js",
+      "passed": true,
+      "detail": {
+        "expected": "a5002937d7d8c5b81a7d046403163eec0c5d870f48689fde21abed1c27b8a806",
+        "actual": "a5002937d7d8c5b81a7d046403163eec0c5d870f48689fde21abed1c27b8a806"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/fabric.js",
+      "passed": true,
+      "detail": {
+        "expected": "a7a68003ccc477f8904ad37b373d2da6c534243b3430ef9e3891cc2b5a0ef233",
+        "actual": "a7a68003ccc477f8904ad37b373d2da6c534243b3430ef9e3891cc2b5a0ef233"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/flow.js",
+      "passed": true,
+      "detail": {
+        "expected": "a7895934248665abc5b0efb9318cf19e4096c181c5894193fe596d92c4970b25",
+        "actual": "a7895934248665abc5b0efb9318cf19e4096c181c5894193fe596d92c4970b25"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/flows.css",
+      "passed": true,
+      "detail": {
+        "expected": "28c26521d9408f140a7542effc55816af362e70adcfe8b414be5405a9f4b96e6",
+        "actual": "28c26521d9408f140a7542effc55816af362e70adcfe8b414be5405a9f4b96e6"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/flows.js",
+      "passed": true,
+      "detail": {
+        "expected": "41728bbcbe8a762cd3968d09251d23cef6be6deaf98028b5a8df5f6c10ce17cd",
+        "actual": "41728bbcbe8a762cd3968d09251d23cef6be6deaf98028b5a8df5f6c10ce17cd"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/hitl.css",
+      "passed": true,
+      "detail": {
+        "expected": "a0375ccfa2a4f2dfd91fca3a1b7310b2216654575de0147eeaf2d26776b00e88",
+        "actual": "a0375ccfa2a4f2dfd91fca3a1b7310b2216654575de0147eeaf2d26776b00e88"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/hitl.js",
+      "passed": true,
+      "detail": {
+        "expected": "bf45f13407f9b6a7d432b9abac86fa71eb5467693623ee511e4482fdb43e2ffb",
+        "actual": "bf45f13407f9b6a7d432b9abac86fa71eb5467693623ee511e4482fdb43e2ffb"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/inbox.js",
+      "passed": true,
+      "detail": {
+        "expected": "d61341c0781f157c4fd3cb1086004b44f928010b2c16efb635215019ab8ebbe5",
+        "actual": "d61341c0781f157c4fd3cb1086004b44f928010b2c16efb635215019ab8ebbe5"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/index.html",
+      "passed": true,
+      "detail": {
+        "expected": "b79c26fe0cdfff30e85d281e86c4df9435cdd0c53524f61b5311c02ef1803976",
+        "actual": "b79c26fe0cdfff30e85d281e86c4df9435cdd0c53524f61b5311c02ef1803976"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/instanceEffects.js",
+      "passed": true,
+      "detail": {
+        "expected": "318db7b03b68056f4006a87d6e22d8e7e0af23e50ae93db3cd11422c6df5c1d4",
+        "actual": "318db7b03b68056f4006a87d6e22d8e7e0af23e50ae93db3cd11422c6df5c1d4"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/instanceRework.js",
+      "passed": true,
+      "detail": {
+        "expected": "51bedc99ca4c93a4eaf28d152861c570252f179506f4cfa5e19373a516e6168e",
+        "actual": "51bedc99ca4c93a4eaf28d152861c570252f179506f4cfa5e19373a516e6168e"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/instances.css",
+      "passed": true,
+      "detail": {
+        "expected": "166bd33c45db2b87c8a33b2aa4627ef096211d4489808acd89f40b699a4df410",
+        "actual": "166bd33c45db2b87c8a33b2aa4627ef096211d4489808acd89f40b699a4df410"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/instances.js",
+      "passed": true,
+      "detail": {
+        "expected": "1b530fa768cbd6e67a31acc1e0f8d17ebcfb80792263b98c97c3f16d672fce9d",
+        "actual": "1b530fa768cbd6e67a31acc1e0f8d17ebcfb80792263b98c97c3f16d672fce9d"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/instanceSteps.js",
+      "passed": true,
+      "detail": {
+        "expected": "5d70534ae7d331a2a3121d16f604e048a8fbffd096a3f93050f1fda014fccb22",
+        "actual": "5d70534ae7d331a2a3121d16f604e048a8fbffd096a3f93050f1fda014fccb22"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/kpi.css",
+      "passed": true,
+      "detail": {
+        "expected": "51602ff49c729997edbbc7c9ab9e02b8c932b646a3a98edca34583b258866092",
+        "actual": "51602ff49c729997edbbc7c9ab9e02b8c932b646a3a98edca34583b258866092"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/kpi.js",
+      "passed": true,
+      "detail": {
+        "expected": "886b9e6338d1ed37a38122a4254ddc7982abccca053586e0923fe133be5ed0e9",
+        "actual": "886b9e6338d1ed37a38122a4254ddc7982abccca053586e0923fe133be5ed0e9"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/layers.js",
+      "passed": true,
+      "detail": {
+        "expected": "ae5ebcfa2ed9209756d16c4ae765de9f9dde1ff06e63a97b71a89342b74cb1bb",
+        "actual": "ae5ebcfa2ed9209756d16c4ae765de9f9dde1ff06e63a97b71a89342b74cb1bb"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/legacyMeaning.js",
+      "passed": true,
+      "detail": {
+        "expected": "4d8f572faeb7283309dbe8a60c9265580eb6b2b7007bda56aa62295836ba36aa",
+        "actual": "4d8f572faeb7283309dbe8a60c9265580eb6b2b7007bda56aa62295836ba36aa"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/liveStream.js",
+      "passed": true,
+      "detail": {
+        "expected": "d650e0d8fcb3b2d34228539d218be56cc014a962ccdce1d9547df8d5eecba703",
+        "actual": "d650e0d8fcb3b2d34228539d218be56cc014a962ccdce1d9547df8d5eecba703"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/main.css",
+      "passed": true,
+      "detail": {
+        "expected": "a0579ff719c7a47b349caa485ba9bc728df4ed76085047ffaf405459bf44f72d",
+        "actual": "a0579ff719c7a47b349caa485ba9bc728df4ed76085047ffaf405459bf44f72d"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/main.js",
+      "passed": true,
+      "detail": {
+        "expected": "39c185aecc9d1868cac2f2b9bee1d2d640a51ac1bc028132c0506b11dda94b3f",
+        "actual": "39c185aecc9d1868cac2f2b9bee1d2d640a51ac1bc028132c0506b11dda94b3f"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/mcp.css",
+      "passed": true,
+      "detail": {
+        "expected": "fff5aaa9c1562e69f2f8259b7d6fcc0f1d669d0269e6a607299d3c08ebe0b898",
+        "actual": "fff5aaa9c1562e69f2f8259b7d6fcc0f1d669d0269e6a607299d3c08ebe0b898"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/mcp.js",
+      "passed": true,
+      "detail": {
+        "expected": "24290b7f4bc938812f845141be7d2d34abd0ab61e6149179458376c133b7566c",
+        "actual": "24290b7f4bc938812f845141be7d2d34abd0ab61e6149179458376c133b7566c"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/oilInput.js",
+      "passed": true,
+      "detail": {
+        "expected": "a82932f95ecb4583b24683e1095339391269a9db4963d01dda17a391ab0a864b",
+        "actual": "a82932f95ecb4583b24683e1095339391269a9db4963d01dda17a391ab0a864b"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/plainWords.js",
+      "passed": true,
+      "detail": {
+        "expected": "21b024a02d51dd5f9a562dc4e83baf4d229082edf6cbb5c0e038263d613d65e1",
+        "actual": "21b024a02d51dd5f9a562dc4e83baf4d229082edf6cbb5c0e038263d613d65e1"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/resultReport.js",
+      "passed": true,
+      "detail": {
+        "expected": "0f7ce7c99be54e220076265b39121f6b5306071f34940e3bfe96a3b0bdcf1c3d",
+        "actual": "0f7ce7c99be54e220076265b39121f6b5306071f34940e3bfe96a3b0bdcf1c3d"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/shell.css",
+      "passed": true,
+      "detail": {
+        "expected": "89bdecb82faf756e85aac3d6ec52eebf58a95872d3805751333653f5e0d45ff7",
+        "actual": "89bdecb82faf756e85aac3d6ec52eebf58a95872d3805751333653f5e0d45ff7"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/shell.js",
+      "passed": true,
+      "detail": {
+        "expected": "8c9172fefd843b18fbabb1997f38cd6972f9b88ee34c047af329aad534f5d231",
+        "actual": "8c9172fefd843b18fbabb1997f38cd6972f9b88ee34c047af329aad534f5d231"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/sourceEvents.js",
+      "passed": true,
+      "detail": {
+        "expected": "a80dd7f078653bdd535240d5bdc3a92b75cbdbcae744aab41712995c1f0f0bc5",
+        "actual": "a80dd7f078653bdd535240d5bdc3a92b75cbdbcae744aab41712995c1f0f0bc5"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/studentCases.js",
+      "passed": true,
+      "detail": {
+        "expected": "b202ee2342790ba0f59940f7958ffefae9a89d7bf00b884a73a4fbc4f26404c4",
+        "actual": "b202ee2342790ba0f59940f7958ffefae9a89d7bf00b884a73a4fbc4f26404c4"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/styles.css",
+      "passed": true,
+      "detail": {
+        "expected": "9ff30c1b9c66605c8d141a28f1af55e1766e7dbf3b3b4c426e01adac80af7d23",
+        "actual": "9ff30c1b9c66605c8d141a28f1af55e1766e7dbf3b3b4c426e01adac80af7d23"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/taskDeferral.js",
+      "passed": true,
+      "detail": {
+        "expected": "3c1e7ac3cd23704cf181e19111f92bdff30773b649ff764d5173140b181e98c8",
+        "actual": "3c1e7ac3cd23704cf181e19111f92bdff30773b649ff764d5173140b181e98c8"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/taskDetail.css",
+      "passed": true,
+      "detail": {
+        "expected": "7a38cc519cba9632143ecb27a9571c795415d3c5d42cb8a02856da7b55a14ffe",
+        "actual": "7a38cc519cba9632143ecb27a9571c795415d3c5d42cb8a02856da7b55a14ffe"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/taskDetail.js",
+      "passed": true,
+      "detail": {
+        "expected": "973640e8ba14ee3a004c4157a6e7245d7fa95369addd6f5ee43fce586796b73e",
+        "actual": "973640e8ba14ee3a004c4157a6e7245d7fa95369addd6f5ee43fce586796b73e"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/theme.css",
+      "passed": true,
+      "detail": {
+        "expected": "838109e36b81a8f1724e2e8a6b90f1ad3f76ad19f7b244c697fa07558ec3591a",
+        "actual": "838109e36b81a8f1724e2e8a6b90f1ad3f76ad19f7b244c697fa07558ec3591a"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/tokens.css",
+      "passed": true,
+      "detail": {
+        "expected": "2f415bfc0d09ceeccddd67bf1cab29fb5c0fdc7bd8ec05cda43928c70e211bd9",
+        "actual": "2f415bfc0d09ceeccddd67bf1cab29fb5c0fdc7bd8ec05cda43928c70e211bd9"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/toolNames.js",
+      "passed": true,
+      "detail": {
+        "expected": "eeb38f30345504c8e43e0c94b8f8af3ecc1ce783054ae915d29aa76d6f1c4020",
+        "actual": "eeb38f30345504c8e43e0c94b8f8af3ecc1ce783054ae915d29aa76d6f1c4020"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/trace.css",
+      "passed": true,
+      "detail": {
+        "expected": "531613336be78bd0a935c6d976da013435cdd8176e1a93c546d3050dd31d4a88",
+        "actual": "531613336be78bd0a935c6d976da013435cdd8176e1a93c546d3050dd31d4a88"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/trace.js",
+      "passed": true,
+      "detail": {
+        "expected": "f766c9d2b252ce0955e11b92e882d44c90bc9595bf19d94d6399fa0e663248c0",
+        "actual": "f766c9d2b252ce0955e11b92e882d44c90bc9595bf19d94d6399fa0e663248c0"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/ui.js",
+      "passed": true,
+      "detail": {
+        "expected": "62329f521db1d44dce0ca5da9960c8ed7c90c664df689893472ea72f9c6845fe",
+        "actual": "62329f521db1d44dce0ca5da9960c8ed7c90c664df689893472ea72f9c6845fe"
+      }
+    },
+    {
+      "label": "mounted bytes it/portal/www/whatif.js",
+      "passed": true,
+      "detail": {
+        "expected": "4140bcc353737c8eefb31116627dc11c5ccdeb2342049e207afd0d1d4e5307a3",
+        "actual": "4140bcc353737c8eefb31116627dc11c5ccdeb2342049e207afd0d1d4e5307a3"
+      }
+    },
+    {
+      "label": "B stored originals resolved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record no missing-object claim 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record no missing-object claim 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record exact raw original 2067ade5-638c-4240-8a97-997c82357bc0",
+      "passed": true,
+      "detail": {
+        "chars": 4463,
+        "sha256": "9cf982bf498db872c849fd553266211c9a28fe7eae104d26f99a271910c4a5d2"
+      }
+    },
+    {
+      "label": "B record exact raw original 3d13520e-353f-4c5a-9400-c56f5cc6d2a2",
+      "passed": true,
+      "detail": {
+        "chars": 5956,
+        "sha256": "dbc6e4ec003ce4f547ad8cd9d323dfc7c035a5ba41c10a2e62e9fef2c9f0dd56"
+      }
+    },
+    {
+      "label": "B record exact raw original 33ce4c34-27f8-4e67-86d3-67ac041c3895",
+      "passed": true,
+      "detail": {
+        "chars": 6830,
+        "sha256": "737e197c5c9f0faac2031ea4be55031272ab3f86503ba34ce764bbc3526fff70"
+      }
+    },
+    {
+      "label": "B record exact raw original 2cea3681-f0d1-49cd-8af3-3974f996d2e8",
+      "passed": true,
+      "detail": {
+        "chars": 4465,
+        "sha256": "403d5933dacc133e9fa6f1c214eaf1ad2665777a905e41efeebdbfb2eeac2f39"
+      }
+    },
+    {
+      "label": "B record exact raw original f455d9d8-3104-492b-91c5-dd215df304fc",
+      "passed": true,
+      "detail": {
+        "chars": 213879,
+        "sha256": "474221e4b572c1b1e0460cb805e691bdfffc050051f63bbdd5dfbc8af0108f2d"
+      }
+    },
+    {
+      "label": "B trace same original summary 2067ade5-638c-4240-8a97-997c82357bc0",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B trace same original summary 3d13520e-353f-4c5a-9400-c56f5cc6d2a2",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B trace same original summary 33ce4c34-27f8-4e67-86d3-67ac041c3895",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B trace same original summary 2cea3681-f0d1-49cd-8af3-3974f996d2e8",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B trace same original summary f455d9d8-3104-492b-91c5-dd215df304fc",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task same original summary 2067ade5-638c-4240-8a97-997c82357bc0",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task same original summary 3d13520e-353f-4c5a-9400-c56f5cc6d2a2",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task same original summary 33ce4c34-27f8-4e67-86d3-67ac041c3895",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task same original summary 2cea3681-f0d1-49cd-8af3-3974f996d2e8",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task same original summary f455d9d8-3104-492b-91c5-dd215df304fc",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C stored originals resolved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record no missing-object claim 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C evaluated and submitted distinct 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record no missing-object claim 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C evaluated and submitted distinct 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record exact raw original 9fa9ddbd-d01c-4b40-b19a-f0b981e506d9",
+      "passed": true,
+      "detail": {
+        "chars": 364799,
+        "sha256": "79d7ea4e475839e23bb59de26bee496c6ba6cc2bd6a5185a5119bce05740b245"
+      }
+    },
+    {
+      "label": "C record exact raw original e06661aa-3d20-4dfb-999f-ec681581e86b",
+      "passed": true,
+      "detail": {
+        "chars": 14552,
+        "sha256": "b6e5c84e5dea377384bd10c3a045547014ef9d456ced927f1c6a9541ff1b2a86"
+      }
+    },
+    {
+      "label": "C record exact raw original 25887c27-3604-4375-9ee5-224e0466dada",
+      "passed": true,
+      "detail": {
+        "chars": 154302,
+        "sha256": "132d62ee6871eca37d97aecee7e58c02035abd5e49779a74cedf9b94cbea2045"
+      }
+    },
+    {
+      "label": "C record exact raw original f9527463-b389-42d6-96ae-8a4eb55b115f",
+      "passed": true,
+      "detail": {
+        "chars": 155480,
+        "sha256": "e461091c3566b5147402fbe27f0f1439a9824a40b8ed31b6ffaf40e4f620a2ab"
+      }
+    },
+    {
+      "label": "C trace same original summary 9fa9ddbd-d01c-4b40-b19a-f0b981e506d9",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C trace same original summary e06661aa-3d20-4dfb-999f-ec681581e86b",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C trace same original summary 25887c27-3604-4375-9ee5-224e0466dada",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C trace same original summary f9527463-b389-42d6-96ae-8a4eb55b115f",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C task same original summary 9fa9ddbd-d01c-4b40-b19a-f0b981e506d9",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C task same original summary e06661aa-3d20-4dfb-999f-ec681581e86b",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C task same original summary 25887c27-3604-4375-9ee5-224e0466dada",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C task same original summary f9527463-b389-42d6-96ae-8a4eb55b115f",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B case/task/approval/effect unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C case/task/approval/effect unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "source stable throughout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "pageerrors zero",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "console errors zero",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "attempted writes zero",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "pageerrors": [],
+  "consoleErrors": [],
+  "blockedWrites": [],
+  "screenshots": [
+    {
+      "file": "B-record-tool-1440.png",
+      "sha256": "ffca8c54fc9618b2f531cce0e2469ebaff5b504f008c5741a6c25f03bc48b734"
+    },
+    {
+      "file": "B-record-tool-1024.png",
+      "sha256": "d90da5d1e1dcfd77aa0451e769cd8aa1b84d198f49a6c92f024f0b697ae9a84a"
+    },
+    {
+      "file": "C-record-tool-1440.png",
+      "sha256": "82f566fff34bc6fcf8b77e67d1d5d27b5154ac6de6417c39c51492ee425d8263"
+    },
+    {
+      "file": "C-record-tool-1024.png",
+      "sha256": "5b77d376fca0f63e8c5496351688ff233c92a66db137cf7c342901cab573337a"
+    },
+    {
+      "file": "C-task-submitted-original-1440.png",
+      "sha256": "eed10b094798e168c3a1940a7961410bb66eba4b48001dd3d7ea9e579418cfe0"
+    },
+    {
+      "file": "C-task-submitted-original-1024.png",
+      "sha256": "9b1cc02bcca0752b6e6c24cbd2d25e24cb8be2b063f015973709d107617933cb"
+    }
+  ],
+  "payloadRequests": [
+    "http://127.0.0.1:8080/api/event-payloads/d09f809401f2126f435be9d590ff12198d3cc444199d799e0595222bdfcb9e55?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/0f851015f107fcd48ba056ca28a98d0b343a508ad89d090a0b0270733fcb0850?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/8c7d5fdb56b4893c43e51b614d43dbdaa61cd076e8ff194dff19dafd896788bd?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/9b495e9fce4ad9300f33c1608dd64187d4721b3353f74c444464c086e3431222?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/2ae92e835956586258841c4aa0c394e0ee5ddbf20118134c9e241eecccd8c241?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/2ae92e835956586258841c4aa0c394e0ee5ddbf20118134c9e241eecccd8c241?offset=200000&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/3ae87a89ae30b54a0cce2496a2fd6f8738c78075e8eb1b51f437a7535a9b19f3?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/34c7f80e69a1fe7f24859139bc388e63090c075c62215d038d07cebd48f333be?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/6094688abc4ecca2703ef2817e6bb1b6388d010f88f07986409ee054c734987d?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/27caebb2f4a3eedd7b5b8dba8e909a761f69d11d8f214a7bad46e677ed34532f?offset=0&limit=200000",
+    "http://127.0.0.1:8080/api/event-payloads/3ae87a89ae30b54a0cce2496a2fd6f8738c78075e8eb1b51f437a7535a9b19f3?offset=200000&limit=200000"
+  ],
+  "llm_reruns": 0,
+  "whole_reruns": 0,
+  "driver_sha256": "964902dc1bf15428c048bce88613d01560eb0e6fe69cfbba8e4cb79f9d2ae9e4",
+  "passed": true
+}

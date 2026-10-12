@@ -1,0 +1,11 @@
+﻿{
+    "checked_at":  "2026-10-12T09:06:55.9869134Z",
+    "current_repo_commit":  "61bca69b1467e16955ac3d0d00d67e105d8f58ff",
+    "google_drive_plugin_installed":  true,
+    "google_calendar_plugin_installed":  false,
+    "plugin_state_means_hyd_worker_oauth":  false,
+    "default_hyd_google_token_file_exists":  false,
+    "credentials_contents_read":  false,
+    "google_business_calls":  0,
+    "scope":  "Current plugin availability and default file existence only; other arbitrary credential locations not claimed absent"
+}

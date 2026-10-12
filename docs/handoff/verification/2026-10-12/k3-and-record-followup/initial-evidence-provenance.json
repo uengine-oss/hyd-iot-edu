@@ -1,0 +1,47 @@
+[
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\manifest.json",
+    "target": "k3-manifest.json",
+    "sha256": "ed8221302ee1c3e03912f27c480fffe6dbd02c73333d01c4b64c221c8feb2c2f"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\status.txt",
+    "target": "k3-status.txt",
+    "sha256": "bfb2d81a7c3fb92942476118ca2f1d32c095d82b69ad883f63aedeb6acf6a4fe"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\reproduce.ps1.txt",
+    "target": "k3-reproduce.ps1.txt",
+    "sha256": "1b8a67cf4cd9ba11a854f68e845abaa194bdd2d6d525aadcb1f99fd195759da6"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\pytest-final.log",
+    "target": "k3-pytest-final.log",
+    "sha256": "e10d4d44f91bb24fb45738cc4588b1eed8883ff21c61c8b391785259a15aecb7"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\pytest-final.xml",
+    "target": "k3-pytest-final.xml",
+    "sha256": "af71037453c71acd3fdb434aa0ef475e412cc679dade0a75c703ac9af3a9f5c5"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\pytest-first-failure.log",
+    "target": "k3-pytest-first-failure.log",
+    "sha256": "30deff50cfa9200fc2b0b660caba785c9d2f173f3bb678ba445f46bd303f60ee"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\pytest.xml",
+    "target": "k3-pytest.xml",
+    "sha256": "392fc143b0dd00546a19dc1cb2b039e1a4953e8dac42d4dcba1e1e889cd3e551"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\external-auth-availability.json",
+    "target": "external-auth-availability.json",
+    "sha256": "62770aad9eb195c56150f0b050f95263e53007171dd9b62c02781d78c165a39c"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\static-visual-audit.json",
+    "target": "static-visual-audit.json",
+    "sha256": "3d6c709aa55ebdf4a4c7237729d279a87132694666cacf7cc3d0b78661992173"
+  }
+]

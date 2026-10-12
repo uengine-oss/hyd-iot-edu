@@ -57,15 +57,14 @@
       const d = ev.data || {};
       if (ev.event_type === 'tool_usage_started') {
         const prior=byTool.get(UI.toolCallKey(ev));
-        if (prior) { Object.assign(prior,{t0:ev.timestamp,tool:d.tool,input:d.input,fullInput:d.full_input || null,minor:W().minorTool(d.tool)}); continue; }
-        const r = { key: 't:' + UI.toolCallKey(ev), kind: 'tool', t0: ev.timestamp, tool: d.tool, input: d.input, fullInput:d.full_input || null, status: 'running', minor: W().minorTool(d.tool) };
+        if (prior) { Object.assign(prior,{t0:ev.timestamp,tool:d.tool,input:d.input,inputEvent:ev,fullInput:d.full_input || null,minor:W().minorTool(d.tool)}); continue; }
+        const r = { key: 't:' + UI.toolCallKey(ev), kind: 'tool', t0: ev.timestamp, tool: d.tool, input: d.input, inputEvent:ev, fullInput:d.full_input || null, status: 'running', minor: W().minorTool(d.tool) };
         byTool.set(UI.toolCallKey(ev), r); rows.push(r);
       } else if (ev.event_type === 'tool_usage_finished') {
         let r = byTool.get(UI.toolCallKey(ev));
         if (!r) { r = { key: 't:' + UI.toolCallKey(ev), kind: 'tool', t0: ev.timestamp, tool: d.tool, minor: W().minorTool(d.tool) }; rows.push(r); byTool.set(UI.toolCallKey(ev),r); }
-        const o = UI.outcome(d.output, d.is_error);
-        const purchaseError=W().purchaseTool(r.tool) && W().purchaseFailed(d.output);
-        Object.assign(r, { t1: ev.timestamp, output: d.output, status: d.attempt_failed || purchaseError ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, badge: d.attempt_failed ? '실패한 시도' : purchaseError ? '구매 요청 처리 실패' : o.label, full: d.full_output || null });
+        const result=UI.toolResult(ev);
+        Object.assign(r, { t1: ev.timestamp, output: d.output, status:result.status, badge:result.badge, ioEvent:ev, full: d.full_output || null });
       } else if (ev.event_type === 'task_working' && d.type === 'text' && d.content) {
         rows.push({ key: 'n:' + ev.id, kind: 'note', t0: ev.timestamp, text: UI.clean(W().text(d.content)), data:d });
       } else if (ev.event_type === 'task_working' && d.type === 'skill_used') {
@@ -128,8 +127,9 @@
     const agentCount = wis.filter(isAgent).length;
     wis.forEach(w => {
       const act = acts[w.activity_id] || {};
-      const live = running && ['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'NEW'].includes(w.status);
-      const base = { key: w.id, w, act, t0: w.start_date, t1: w.end_date, live, gen: w.generation || 0,
+      const execution = UI.taskExecution(w, byTodo.get(w.id) || [], inst);
+      const live = execution.live;
+      const base = { key: w.id, w, act, t0: w.start_date, t1: w.end_date, live, awaiting: execution.awaiting, terminal: execution.terminal, gen: w.generation || 0,
         name: UI.flowName(w.activity_name || act.name || w.activity_id), rows: rowsOf(byTodo.get(w.id) || []) };
       let s;
       if (evDefs[w.activity_id]) s = timerStep(ctx, base);
@@ -138,7 +138,7 @@
       else if (w.tool === 'process:report') s = reportStep(ctx, base);
       else if (CHECK.test(w.tool || '')) s = checkStep(ctx, base);
       else s = systemStep(ctx, base);
-      s.state = s.state || (w.status === 'DONE' || w.status === 'COMPLETED' ? 'ok' : w.status === 'CANCELLED' ? 'stop' : w.draft_status === 'FAILED' ? 'fail' : live ? (w.status === 'PENDING' ? 'wait' : 'run') : 'idle');
+      s.state = s.state || (w.status === 'DONE' || w.status === 'COMPLETED' ? 'ok' : w.status === 'CANCELLED' ? 'stop' : w.draft_status === 'FAILED' ? 'fail' : execution.awaiting || execution.terminal?.event_type === 'task_deferred' ? 'wait' : live ? (w.status === 'PENDING' ? 'wait' : 'run') : 'idle');
       if (w.status === 'CANCELLED' && !s.stopNote) s.stopNote = UI.logText(w.log) || '취소됨';
       steps.push(s);
     });
@@ -162,7 +162,7 @@
     const n = {};
     const put = (id, name) => { if (id && name && typeof name === 'string' && !n[id]) n[id] = name; };
     if (d) {
-      (d.options || []).forEach(o => { put(o.id, o.name); if (o.approver) put(o.approver.id, o.approver.name); });
+      [...(d.original_decision?.options || []),...(d.options || [])].forEach(o => { put(o.id, o.name); if (o.approver) put(o.approver.id, o.approver.name); });
       Object.entries(d.roles || {}).forEach(([id, r]) => put(id, r && r.name));
       const o = d.origin || {}, sc = d.scenario || {};
       put(o.cause, sc.cause); put(o.failureMode, sc.failureMode);
@@ -220,7 +220,11 @@
 
   /* ---------------------------------------------------------------- AI 일꾼 */
   function agentStep(ctx, b, agentCount) {
-    const { v, d, agents } = ctx, w = b.w;
+    const { v, agents } = ctx, w = b.w;
+    const recorded = w.output?.decision || w.draft?.decision;
+    const recordedId = w.output?.decision_id || w.draft?.decision_id ||
+      (ctx.producedBy(w.id).includes('decision_id') ? ctx.d?.id : null);
+    const d = recorded ? UI.recordedDecision(ctx.d,recorded,recordedId) : ctx.d;
     const evs = ctx.byTodo.get(w.id) || [];
     const started = evs.find(x => x.event_type === 'task_started');
     const done = [...evs].reverse().find(x => x.event_type === 'task_completed');
@@ -327,7 +331,8 @@
       : `${parts.join(' ')} 대안 ${d.options.length}개를 비교해 ‘${W().text(rec.name)}’${W().josa(W().text(rec.name), '을/를')} 추천했습니다.`;
     else if (cause) sentence = `${parts.join(' ')} 판단을 넘겼습니다.`;
     else if (done && done.data && done.data.text) sentence = (parts.length ? parts.join(' ') + ' ' : '') + firstSentence(done.data.text);
-    else sentence = b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 일꾼이 일을 받기를 기다리는 중입니다.') : '기록된 결과 문장이 없습니다.';
+    else sentence = b.terminal?.event_type === 'task_deferred' ? `도구를 ${tools.length}번 쓴 실행은 평가를 보류했습니다. 다시 평가할 때까지 기다립니다.` : b.awaiting ? 'AI 일꾼이 일을 받기를 기다리는 중입니다.' : b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 일꾼이 실행을 시작했습니다.') : '기록된 결과 문장이 없습니다.';
+    if (recorded && d && d!==ctx.d) sentence = `당시 ${sentence}`;
     const lastOpen = b.live ? [...b.rows].reverse().find(r => r.kind === 'tool' && r.status === 'running') : null;
     return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? ag.name : W().who(w.user_id) || 'AI 일꾼', sentence, chips, sections,
       now: lastOpen ? `${W().toolName(lastOpen.tool)} — ${W().ask(lastOpen.tool, lastOpen.input)}` : b.live ? '다음 행동을 정하는 중' : '', ids: [w.user_id, w.activity_id] });
@@ -345,11 +350,13 @@
     }
     if (d) {
       const o = d.origin || {}, rec = (d.options || []).find(x => x.id === d.recommended);
-      if (o.cause_basis) out.push(`<p class="muted">원인을 정한 근거: ${e(basisText(o.cause_basis))}</p>` + UI.fold('원인 근거 설명 원문', rawBlock({cause_basis:o.cause_basis}), {cls:'small'}));
+      if (o.cause_basis) out.push(`<p class="muted">${o.cause_route === 'purchase-part' ? '구매 부품을 정한 근거' : '원인을 정한 근거'}: ${e(basisText(o.cause_basis))}</p>` + UI.fold('판단 근거 설명 원문', rawBlock({cause_basis:o.cause_basis}), {cls:'small'}));
       if (rec) {
         const REL = { MITIGATED_BY: '완화 조치', REMEDIED_BY: '근본 조치', PREVENTED_BY: '예방 조치' };
         const fm = o.failureMode, cause = o.cause, cw = W().causeWords(o.cause_route);
-        out.push(`<h6>추천안에 이른 길</h6>` + pathHtml([[cw.cause, nm(cause), cause], [cw.failureMode, nm(fm), fm], [REL[rec.relation] || '조치', W().text(rec.name), rec.id]], ['→', '→']));
+        const path = o.cause_route === 'purchase-part' ? [['구매 대상 부품', o.part?.name || o.part?.partNo || '부품 이름 기록 없음', o.part?.id], ['구매 절차', W().text(rec.name), rec.id]]
+          : [[cw.cause, nm(cause), cause], [cw.failureMode, nm(fm), fm], [REL[rec.relation] || '조치', W().text(rec.name), rec.id]];
+        out.push(`<h6>추천안에 이른 길</h6>` + pathHtml(path, path.slice(1).map(()=>'→')));
         const rules = (rec.selectedBy || []).map(r => `<li>${UI.chipText('후보로 고른 규칙', 'accent')} ${e(W().text(r.annotation || nm(r.rule)))}${W().id(r.rule)}${(r.sources || []).length ? ` <span class="muted">출처 ${r.sources.map(x => e(x)).join(', ')}</span>` : ''}</li>`).join('');
         const steps = (rec.steps || []).map(s => `<li><b>${e(s.order || '')}.</b> ${e(W().text(s.text || ''))}${s.manual ? `<div class="cr-src">${UI.chipText(s.manual.ref || s.manual.id, 'neutral')} <b>${e(s.manual.title || '')}</b>${s.manual.excerpt ? ` — <span class="muted">“${e(W().text(s.manual.excerpt))}”</span>` : ''}</div>` : ''}</li>`).join('');
         if (rules) out.push(`<ul class="cr-list">${rules}</ul>`);
@@ -492,10 +499,10 @@
       if (!inc) incidentGap(ctx, '설비 응답(명령 번호 · 응답 · 안전 연동)');
     } else if (/WO_CREATE|WO_RESCHEDULE/.test(tool)) {
       icon = 'workorder'; target = '정비 시스템 (CMMS)';
-      const wo = out.work_order || v.work_order || {};
+      const wo = out.work_order || (w.status === 'CANCELLED' ? {} : v.work_order) || {};
       const win = (wo.after && wo.after.window) || '';
       const scoped=W().maintenanceReceiptHtml(wo);
-      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 작업지시 ${wo.ref} 일정 변경 영수증이 기록되었습니다. 정비 완료와 별도로 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 작업지시 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : `${target}에 작업지시를 등록하는 중입니다.`;
+      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 작업지시 ${wo.ref} 일정 변경 영수증이 기록되었습니다. 정비 완료와 별도로 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 작업지시 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 작업지시를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
       if(scoped) sections.push(sec('설비별 정비 범위 · 오더 영수증',scoped,{open:true}));
@@ -743,42 +750,7 @@
     return UI.clean(JSON.stringify(o, null, 2));
   }
   const rawBlock = x => x == null || (typeof x === 'object' && !Object.keys(x).length) ? '' : `<pre class="cr-pre">${e(pretty(x))}</pre>`;
-  /* A161-G2: 큰 도구 결과 원문 — GET /api/event-payloads/{ref}?offset&limit 로 나눠 받아 붙이고, 다 받은 JSON 은 키마다 접어 보인다 */
-  const PAY = new Map();
-  const PAY_CHUNK = 60000;
-  function fullHtml(fo, k) {
-    const src = fo.direction === 'input' ? '도구에 전달한 입력 전문' : fo.source === 'cli_saved_file' ? 'AI 일꾼이 받지 못한 큰 결과(CLI 가 임시 파일로 뺌)' : '화면 기록에서 잘린 결과';
-    const head = `<div class="cr-full"><div class="cr-full-h"><b>원문</b> <span class="muted">${e(src)}${fo.chars != null ? ` · ${e(W().num(fo.chars))}자` : ''}${fo.cut ? ' · 보관 한도에서 잘림' : ''}${fo.content_type ? ` · ${e(fo.content_type === 'json' ? 'JSON' : '글')}` : ''}</span>${fo.sha256 ? `<code class="cr-id" title="sha256">${e(String(fo.sha256).slice(0, 12))}</code>` : ''}</div>`;
-    if (!fo.stored || !fo.ref) return head + `<p class="cr-gapline">원문을 보관하지 못했습니다: ${e(fo.error || '이유가 기록되지 않음')}</p></div>`;
-    const st = PAY.get(fo.ref);
-    const summary = fo.summary ? `<pre class="cr-pre small">${e(String(fo.summary))}</pre>` : '';
-    if (!st) return head + summary + `<button type="button" class="btn small" data-cr-payload="${e(fo.ref)}">원문 보기</button></div>`;
-    if (st.error) return head + summary + `<p class="cr-gapline">원문을 읽지 못했습니다: ${e(st.error)}</p><button type="button" class="btn small" data-cr-payload="${e(fo.ref)}">다시 읽기</button></div>`;
-    const done = st.next == null;
-    let body = '';
-    if (done && fo.content_type === 'json') { try { body = jsonFold(JSON.parse(st.text), k); } catch (_) { body = ''; } }
-    if (!body) body = `<pre class="cr-pre">${e(st.text)}</pre>`;
-    return head + `<p class="muted">받은 만큼 ${e(W().num(st.text.length))} / ${e(W().num(st.total || fo.chars || 0))}자</p>${body}${st.loading ? '<p class="muted">받는 중…</p>' : !done ? `<button type="button" class="btn small" data-cr-payload="${e(fo.ref)}" data-offset="${e(st.next)}">다음 부분 더 보기</button>` : ''}</div>`;
-  }
-  // JSON 을 키마다 접기(두 단계까지), 배열은 건수 · 짧은 값은 한 줄
-  function jsonFold(v, k, depth = 0) {
-    const small = x => x == null || typeof x !== 'object';
-    if (small(v)) return `<code>${e(JSON.stringify(v))}</code>`;
-    const entries = Array.isArray(v) ? v.map((x, i) => [i, x]) : Object.entries(v);
-    if (depth >= 2) return `<pre class="cr-pre">${e(JSON.stringify(v, null, 2).slice(0, 20000))}</pre>`;
-    return `<ul class="cr-json">${entries.slice(0, 200).map(([key, x]) => small(x) ? `<li><span class="cr-jk">${e(key)}</span> <code>${e(String(JSON.stringify(x)).slice(0, 300))}</code></li>`
-      : `<li><details data-k="${e(k + ':j:' + depth + ':' + key)}"><summary><span class="cr-jk">${e(key)}</span> <span class="muted">${Array.isArray(x) ? x.length + '건' : '{' + Object.keys(x).length + '칸}'}</span></summary>${jsonFold(x, k + ':' + key, depth + 1)}</details></li>`).join('')}${entries.length > 200 ? `<li class="muted">… ${entries.length - 200}개 더</li>` : ''}</ul>`;
-  }
-  async function loadPayload(ref, offset) {
-    const st = PAY.get(ref) || { text: '', next: 0 };
-    if (st.loading) return;
-    st.loading = true; st.error = null; PAY.set(ref, st); redrawAll();
-    try {
-      const r = await getJ(`${API.process}/api/event-payloads/${encodeURIComponent(ref)}?offset=${encodeURIComponent(offset || 0)}&limit=${PAY_CHUNK}`);
-      st.text = (offset ? st.text : '') + (r.content || ''); st.next = r.next_offset == null ? null : r.next_offset; st.total = r.chars;
-    } catch (err) { st.error = err.status === 404 ? '보관된 원문이 없습니다 (지워졌거나 다른 처리 건)' : err.message; }
-    finally { st.loading = false; redrawAll(); }
-  }
+  // Full original retrieval and integrity state are shared with Trace/TaskDetail in UI.
   function redrawAll() { mounted.forEach(C => C.draw && C.draw(true)); }
 
   function toolListHtml(rows, live, stepKey) {
@@ -791,14 +763,15 @@
       if (r.kind === 'sys') return `<li class="cr-r sys">${time}<span class="cr-rm">${icon('system')}</span><div><b>${e(r.text)}</b>${sysDetail(r)}</div></li>`;
       if (r.kind === 'error') return `<li class="cr-r err">${time}<span class="cr-rm">${icon('warn')}</span><div><b>${e(r.text)}</b>${UI.fold('원문', `<pre class="cr-pre">${e(pretty(r.data))}</pre>`, { cls: 'small' })}</div></li>`;
       const sys = W().toolSystem(r.tool);
-      const ask = W().ask(r.tool, r.input);
+      const ask = r.inputEvent ? UI.toolAsk(r.inputEvent,true).summary : W().ask(r.tool, r.input);
       const fo = r.full;
-      const got = r.status === 'running' ? '' : fo && fo.stored && fo.summary ? `원문 ${W().num(fo.original_chars || fo.chars || 0)}자를 따로 보관 — ${String(fo.summary).split('\n')[0]}`
-        : fo && fo.stored === false ? `원문을 보관하지 못함 — ${fo.error || '이유 모름'}` : r.status === 'warn' ? '결과가 너무 커서 잘림 — 받은 내용 없음' : r.status === 'blocked' ? '안전 장치가 막아 실행 안 됨' : W().got(r.tool, r.output);
+      const result = r.ioEvent ? UI.toolResult(r.ioEvent,true) : null;
+      if(result) {r.status=result.status;r.badge=result.badge;}
+      const got = r.status === 'running' ? '' : result ? result.summary : W().got(r.tool, r.output);
       const mark = r.status === 'running' ? (live && TR() ? TR().spinner('sm') : icon('event')) : icon(r.status === 'ok' ? 'check' : r.status === 'fail' ? 'x' : 'warn');
       const dur = r.t0 && r.t1 ? `<span class="cr-dur">${e(fmtMs(ts(r.t1) - ts(r.t0)))}</span>` : '';
-      const full = (r.fullInput ? fullHtml(r.fullInput,stepKey+':'+r.key+':input') : '') + (fo ? fullHtml(fo, stepKey + ':' + r.key) : '');
-      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>받은 원문</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
+      const full = (r.fullInput && r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + (fo && r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
+      const io = `<div class="cr-io"><span>도구 식별자</span><code>${e(r.tool)}</code></div>` + full + `${r.input != null ? `<div class="cr-io"><span>물은 원문</span><pre class="cr-pre">${e(pretty(r.input))}</pre></div>` : ''}${r.output != null ? `<div class="cr-io"><span>${fo ? '화면 이벤트 미리보기' : '받은 원문'}</span><pre class="cr-pre">${e(pretty(r.output))}</pre></div>` : ''}`;
       return `<li class="cr-r tool ${e(r.status)}${r.minor ? ' minor' : ''}">${time}<span class="cr-rm ${e(r.status)}">${mark}</span><div>
         <details class="cr-call" data-k="${e(stepKey + ':' + r.key)}"><summary><b>${e(W().toolName(r.tool))}</b>${sys ? `<span class="cr-sys">${e(sys)}</span>` : ''}${r.badge ? UI.chipText(r.badge, r.status === 'fail' ? 'danger' : 'warning') : ''}${dur}${W().id(r.tool)}
         <div class="cr-qa">${ask ? `<span class="cr-q">물음</span> ${e(ask)}` : ''}${fo && fo.stored ? ` ${UI.chipText('원문 보관', 'success')}` : ''}${got || r.status !== 'running' ? `<br><span class="cr-a">받음</span> ${e(got || '결과 받음 (펼쳐서 보기)')}` : ''}</div></summary>${io}</details>${UI.toolIdentityFold(r.tool)}</div></li>`;
@@ -888,8 +861,6 @@
       if (tog && host.contains(tog)) { const li = tog.closest('[data-key]'); setOpen(li, !li.classList.contains('open'), true); return; }
       const go = t.closest('[data-cr-go],[data-cr-next]');
       if (go) { const i = +(go.dataset.crGo ?? go.dataset.crNext); const li = host.querySelectorAll('[data-cr-steps] > li')[i]; if (li) { setOpen(li, true, true); li.scrollIntoView({ block: 'start', behavior: 'smooth' }); li.querySelector('[data-cr-toggle]')?.focus({ preventScroll: true }); } return; }
-      const pay = t.closest('[data-cr-payload]');
-      if (pay) { loadPayload(pay.dataset.crPayload, +(pay.dataset.offset || 0)); return; }
       if (t.closest('[data-cr-older-btn]')) { loadOlder(); return; }
       if (t.closest('[data-cr-all]')) { const lis = [...host.querySelectorAll('[data-cr-steps] > li')]; const openAll = lis.some(li => !li.classList.contains('open')); lis.forEach(li => setOpen(li, openAll, true)); t.closest('[data-cr-all]').textContent = openAll ? '모두 접기' : '모두 펼치기'; }
     });
@@ -1002,6 +973,7 @@
   function onEvent(ev) { mounted.forEach(C => { if (!C.host.isConnected && !C.keep) { mounted.delete(C); return; } C.ingest(ev); }); }
   function wireBus() { if (window.hydStream && hydStream.subscribe) hydStream.subscribe(onEvent); else setTimeout(wireBus, 500); }
   wireBus();
+  window.addEventListener('hyd-tool-payload',redrawAll);
 
   window.hydRecord = { mount, build, rowsOf, mounted, altHtml, knowledgeHtml };   // altHtml · knowledgeHtml: 판단 한 건만으로 그리는 부분(시험 · 다른 화면)
 })();

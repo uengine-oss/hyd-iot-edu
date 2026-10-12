@@ -4,6 +4,8 @@
 
 실제 배포 화면의 마지막 GET 확인은 [result.json](result.json)의 **203항목 통과**다. 여기에는 화면 파일 SHA 대조와 B/C/지식 화면의 표시·문서폭·사례/검토 원장 불변 확인이 포함된다. pageerrors/consoleErrors/blockedWrites는0이다. requestFailures의 health no-cors/화면 이동 ERR_ABORTED는 원본에 보존했으며 모든 네트워크 요청 성공이라고 쓰지 않는다. 이전 health 응답 본문 취소 분석과 달리 이번 `/api/config/cases` 취소도 실제 기록으로 남기며 서비스 장애라고 단정하지 않는다. 제품/API를 수정하거나 실패 수를 숨겨 통과시킨 검사가 아니다.
 
+**후속 시각 재검토 정정:** 이 203항목은 실제 구매 처리 기록의 `purchase-part` 미등록 오류와 정비 긴 값 겹침·보류 단계의 잘못된 실행 중 문구를 검출하지 못했다. 통과 결과와 원래 오류 PNG는 그대로 보존하되 화면 정상의 충분한 근거로 사용하지 않는다. C의 업무 완료 영수증과 화면 오류는 구분한다. 수정·집중 재검증은 [별도 후속 기록](../k3-and-record-followup/README.md)에 남긴다.
+
 ## 화면
 
 - [참고 화면과 실제 화면 나란히 보기](reference-delegated-comparison.html): Dify 공식 문서·보존 ProcessGPT 업무 목록·Vue 원본 컴포넌트의 출처를 각각 구분한다. 옛 모노레포 PNG를 현재 최신 앱 실행 화면으로 표시하지 않는다. 원격 최신 소스는 모노레포6084127 / Vue265580f / ontology-studio20afcde를 확인했다. 보존 Vue867e8cf 이후 관련 차이는 오류 설명·CLI 마크다운 플러그인이며 PgToolStep은 같다. compile 화면은 전체 앱 실행 화면이 아니다.

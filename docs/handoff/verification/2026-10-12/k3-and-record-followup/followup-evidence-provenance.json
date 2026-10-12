@@ -1,0 +1,332 @@
+[
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-baseline-proof-configured.log",
+    "target": "record-ui-baseline-proof-configured.log",
+    "sha256": "e34e976894fa82a185cefdef606e7414402acc49496447b8113389442257a64a"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-baseline-proof-final.log",
+    "target": "record-ui-baseline-proof-final.log",
+    "sha256": "4f9f96b9b2359a3ecf7c39249a46becc02e915e384074ed8670d9be0bec82ab8"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-baseline-proof.log",
+    "target": "record-ui-baseline-proof.log",
+    "sha256": "a409da498a6c4f07324a85fec1a518e905bccc7a59d94d25274943dcadd16bf8"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-baseline-proof.py",
+    "target": "record-ui-baseline-proof.py",
+    "sha256": "0a5703e39e2ee81323a12275c237b651888a6582396f165d630be98446c85676"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-contract-findings.md",
+    "target": "record-ui-contract-findings.md",
+    "sha256": "072942cee945163b6631272d4c61a768efd3f8b6a03ea9fbaff2e031f2a698fd"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-affected.log",
+    "target": "record-ui-final-affected.log",
+    "sha256": "2496a8a7dad3e470ca59e370909dd0cb8ecfe15920e57b2bfce54f1adaa4f16a"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-binding-affected.log",
+    "target": "record-ui-final-binding-affected.log",
+    "sha256": "35554f4e32412e55e557e47ed06bd7c92cd8eb056dc0455bad0431b0ef53600c"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-contract.log",
+    "target": "record-ui-final-contract.log",
+    "sha256": "ef9a58bbf9217e43176173e9cd82f90eeb3ad2782a47c4cb59f81ccbc5741851"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-decision-binding.log",
+    "target": "record-ui-final-decision-binding.log",
+    "sha256": "eb905a54ef0c6f464774cb1ac5ffd0ef2dad2387e33d3b6822dbaf7844d33731"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-history-shared.log",
+    "target": "record-ui-final-history-shared.log",
+    "sha256": "5f7463a6763cfccd215abbd4d2318d176942db626ef7cfb6e39c43cf95cc676f"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-new.log",
+    "target": "record-ui-final-new.log",
+    "sha256": "08c5065d03f5f62a3a8dec0ccbd0ef8a106fd162a4e8ad566693476983ae794b"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-shared-affected.log",
+    "target": "record-ui-final-shared-affected.log",
+    "sha256": "6d9335899b870e435a2201a13abd2aa8932ff18bd0af6bb691ef6254f4ef9ab4"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-final-source-contract.log",
+    "target": "record-ui-final-source-contract.log",
+    "sha256": "63d7654f1064aa44ea06b46a6d8dcccffb63686d589959231da312cf7f9a75cd"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-focused-affected.log",
+    "target": "record-ui-focused-affected.log",
+    "sha256": "6911b3b95c692b71ca2890e8eb9b4ffb0315a650a056fa7794887ef4e4be8b5b"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-focused.log",
+    "target": "record-ui-focused.log",
+    "sha256": "147b78a83ab8cf273cb3d6ac13788cac9404cc05601bcfb0afd0bb96d7e773c9"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-negative.log",
+    "target": "record-ui-negative.log",
+    "sha256": "3c73725281e049891764a7f4e9cb21b06683672d1cdac26532be868fec1a372f"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-portable-final.log",
+    "target": "record-ui-portable-final.log",
+    "sha256": "3bf747773369dff81225c891ecf6b3649f80eea10ae01b870eb89e286d1b26d1"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\record-ui-project-fixture.py",
+    "target": "record-ui-project-fixture.py",
+    "sha256": "70fbde2cb7c3f4565869dac7d723808a038499a63d626f32b1aa60e84a2585fb"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\capture-record-followup.py",
+    "target": "capture-record-followup.py",
+    "sha256": "e562be7e799f5c5085addb1a85d03f5845b36b7c32d76a8df6e5495fa9a54f32"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\capture-c-output-followup.py",
+    "target": "capture-c-output-followup.py",
+    "sha256": "dfdbfa1745209af6eb08172e38a0795f9f1400e006aed3e873a90c5993e1ba76"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\C-original-decision-actual-GET.json",
+    "target": "C-original-decision-actual-GET.json",
+    "sha256": "3a144dd317c44201c260fbede4f05205692ae88cc367871c440fba11d71d87e6"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-record-1024.png",
+    "target": "first-B-record-1024.png",
+    "sha256": "332062d02416a7f5091efd9771abbf053a6880d5d9dadf8f890531a6cc2f2d06"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-record-1024.txt",
+    "target": "first-B-record-1024.txt",
+    "sha256": "b37a4c6b4c865d7ea7816b10cb3e54cf0ea05bf5eb52d973a7e705851995e5a5"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-record-1440.png",
+    "target": "first-B-record-1440.png",
+    "sha256": "edb3d2bd5f92457e98d2d68af11359181e25a34228ee36ee7df7a27a3fbb58ea"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-record-1440.txt",
+    "target": "first-B-record-1440.txt",
+    "sha256": "b37a4c6b4c865d7ea7816b10cb3e54cf0ea05bf5eb52d973a7e705851995e5a5"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-02-1024.png",
+    "target": "first-B-step-02-1024.png",
+    "sha256": "49490d556acab91a6de2ce76786091f04615dce33ea4b455c2d9695d220dcff8"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-02-1440.png",
+    "target": "first-B-step-02-1440.png",
+    "sha256": "c89088b9ccc77aa1981214a4d8c7cdeee44adc2ed39c4d2cdc29de93f87adaa7"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-03-1024.png",
+    "target": "first-B-step-03-1024.png",
+    "sha256": "e426b281eb09439bc25ea8d5f6f752aa0d05012b9589eb0376447ff2953a84df"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-03-1440.png",
+    "target": "first-B-step-03-1440.png",
+    "sha256": "56fe649d72782004428fff91af46bfb9fd04d3e1b3b13a134e50e42d9d86010d"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-04-1024.png",
+    "target": "first-B-step-04-1024.png",
+    "sha256": "d33f43f9d1283102ea65a748e7f0d57c42fdf6264de29cd5166eff4769025566"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-04-1440.png",
+    "target": "first-B-step-04-1440.png",
+    "sha256": "ac8b01d17dcbeb68528077b7f165319e78d0adec414cb8a80b9051f52f76cfc3"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-05-1024.png",
+    "target": "first-B-step-05-1024.png",
+    "sha256": "efe8c5bb2543d7e67921f8ac42c9da58094cdd9d90f036ae4b86ee59bf9e63c8"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-05-1440.png",
+    "target": "first-B-step-05-1440.png",
+    "sha256": "9eee4a04dcff9a1c8528565ed6fe87bdf6ca9106eb22dd2e9fbecfbb79552f7f"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-06-1024.png",
+    "target": "first-B-step-06-1024.png",
+    "sha256": "8e0882b88e0047b6bef835822f9a8d2b4c80274affab5cf1eca3bbbf73e695b3"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-06-1440.png",
+    "target": "first-B-step-06-1440.png",
+    "sha256": "d976532c7656a89f58a19f7a10099818ed2a8c8d67b9d672bffef4e5a94b23d9"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-07-1024.png",
+    "target": "first-B-step-07-1024.png",
+    "sha256": "3ff01df498701f80282c0794419250567365bf1d607f6b10195e40bba696c282"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-step-07-1440.png",
+    "target": "first-B-step-07-1440.png",
+    "sha256": "d7cea759ecb9f8b525731e652c7ea0e60ac2404a22b2463b4c49dbf46846e7c3"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-task-1024.png",
+    "target": "first-B-task-1024.png",
+    "sha256": "f80f238f5efafe9bd5db8b79bbc85f2feccd103e1b7956a952e4aa44d7b10611"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-task-1024.txt",
+    "target": "first-B-task-1024.txt",
+    "sha256": "4b9cfbcc22eb26243130c4a2ee144857f55290ea1cca1643a87ee46c01cf7608"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-task-1440.png",
+    "target": "first-B-task-1440.png",
+    "sha256": "c3906061c54dbf37a132d71f49b540ec1018e8a501297b57219136d685ac9dcb"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\B-task-1440.txt",
+    "target": "first-B-task-1440.txt",
+    "sha256": "4b9cfbcc22eb26243130c4a2ee144857f55290ea1cca1643a87ee46c01cf7608"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-record-1024.png",
+    "target": "first-C-record-1024.png",
+    "sha256": "4dc0dede56c75de837f05dca083b49a1b0124bd9cac00efd656e7a5f6359962a"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-record-1024.txt",
+    "target": "first-C-record-1024.txt",
+    "sha256": "4e8c0124e5f493cb3d016cd23457089cae49bea79a300fbc65bde865d662db4b"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-record-1440.png",
+    "target": "first-C-record-1440.png",
+    "sha256": "94a9e912022a2f44f55c5f3a9ed93622d28ff1f3b22ee8ff700449ae49b05284"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-record-1440.txt",
+    "target": "first-C-record-1440.txt",
+    "sha256": "4e8c0124e5f493cb3d016cd23457089cae49bea79a300fbc65bde865d662db4b"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-1024.png",
+    "target": "first-C-task-1024.png",
+    "sha256": "afacc4185fea89f11d319dc1d3dbd2d87b10bacad6641343699da47a00f0ba56"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-1024.txt",
+    "target": "first-C-task-1024.txt",
+    "sha256": "9f0c3976b1e1f2022967483c51c7f81f18cf1aee9cc6aa717ec72588034477bb"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-1440.png",
+    "target": "first-C-task-1440.png",
+    "sha256": "9c4930aa4cfc8d5d38ea450177791491ff911d410d8d5c4c10f0a133f1236b9c"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-1440.txt",
+    "target": "first-C-task-1440.txt",
+    "sha256": "9f0c3976b1e1f2022967483c51c7f81f18cf1aee9cc6aa717ec72588034477bb"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-output-1024.png",
+    "target": "first-C-task-output-1024.png",
+    "sha256": "30384ba11eae5296d165c34445c27a86d06b850146b759c7850a69b578c8bac2"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\C-task-output-1440.png",
+    "target": "first-C-task-output-1440.png",
+    "sha256": "84e394881abecc164260d485d3bcdda8e806221542163b41bf66002c287c6fc5"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\mounted-source-checks.json",
+    "target": "first-mounted-source-checks.json",
+    "sha256": "3994f83620a982ce2b45536ade94d215952dd4583a86d122bb3fc3878da09d5f"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\result.json",
+    "target": "first-result.json",
+    "sha256": "5e8cf8a61fa0a3b7b233c13bcad991bad52660ccfdb6a591e13b4270d642fbf9"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\source-after.json",
+    "target": "first-source-after.json",
+    "sha256": "b16cd0446ef51357cb38a44229b5af6e76a849429ccd5bf3827bb16fa833f426"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-record-final-1\\source-before.json",
+    "target": "first-source-before.json",
+    "sha256": "b16cd0446ef51357cb38a44229b5af6e76a849429ccd5bf3827bb16fa833f426"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-historical-agent-1024.png",
+    "target": "final-c-C-historical-agent-1024.png",
+    "sha256": "dfcc9fbf5abe97ba0069877e411fbd4120822ef8cb360e5e320c5330407b552e"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-historical-agent-1440.png",
+    "target": "final-c-C-historical-agent-1440.png",
+    "sha256": "57e8d5cf7dd2afc6c01655507f5c9c9c4fa195e6bb0e942e511ecfa416ed29d6"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-record-1024.txt",
+    "target": "final-c-C-record-1024.txt",
+    "sha256": "1c3cc63bb06c963c13857e99d0f6a1866d20704ee34c747986c477707c8927ea"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-record-1440.txt",
+    "target": "final-c-C-record-1440.txt",
+    "sha256": "1c3cc63bb06c963c13857e99d0f6a1866d20704ee34c747986c477707c8927ea"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-task-output-1024.png",
+    "target": "final-c-C-task-output-1024.png",
+    "sha256": "674bb8d4fec01506240b8c13e5037493129896b1db0968f359f6fb6386803bc4"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-task-output-1024.txt",
+    "target": "final-c-C-task-output-1024.txt",
+    "sha256": "79ee063956646297e00623b52c05b1ffb0ae8daa7664f4342e6a19e2a8378064"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-task-output-1440.png",
+    "target": "final-c-C-task-output-1440.png",
+    "sha256": "153ecee05918e4a412a7aea6daefb6ab925e71826459996bdf2e1d88d6bc6069"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\C-task-output-1440.txt",
+    "target": "final-c-C-task-output-1440.txt",
+    "sha256": "79ee063956646297e00623b52c05b1ffb0ae8daa7664f4342e6a19e2a8378064"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\result.json",
+    "target": "final-c-result.json",
+    "sha256": "f610632284e2f5758dc500becb36ebb241438377c437f3b76b06808153d22b77"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\source-after.json",
+    "target": "final-c-source-after.json",
+    "sha256": "dc4948b68aae7d59cf439b32f36e0d9292b302aae0ce084c03a7a8d69ef12813"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-c-history-final-2\\source-before.json",
+    "target": "final-c-source-before.json",
+    "sha256": "dc4948b68aae7d59cf439b32f36e0d9292b302aae0ce084c03a7a8d69ef12813"
+  }
+]

@@ -1,0 +1,42 @@
+﻿{
+    "spec":  "docs/handoff/verification/2026-10-12/k3-and-record-followup/F27-spec.md",
+    "implementation":  "events._truncate uses JSON serialization size and transport descriptor for large objects; tool_end output_truncated explicit",
+    "changed":  [
+                    "it/agent-worker/worker/events.py",
+                    "tests/test_f27_typed_tool_payloads.py"
+                ],
+    "focused":  {
+                    "command":  "python -m pytest -q tests/test_f27_typed_tool_payloads.py",
+                    "result":  "22 passed in 4.11s"
+                },
+    "next":  "Backend scope complete; runtime deployment/historical consumer hydration and live verification root/UI-owned.",
+    "negative":  {
+                     "command":  "pytest -k recorded_objects -p f27_repr_mutation",
+                     "result":  "9 failed as expected when legacy repr truncation deliberately restored",
+                     "log":  "F27-backend-negative.log"
+                 },
+    "regression":  {
+                       "logs":  [
+                                    "F27-backend-regression.log",
+                                    "F27-backend-regression-utf8.log",
+                                    "F27-backend-ui-load-followup.log"
+                                ],
+                       "result":  "69 existing tests passed across 67 initial passes + UTF8 rawfold followup pass + current UI-load followup pass; preserve initial two failures"
+                   },
+    "hashes":  [
+                   {
+                       "path":  "it/agent-worker/worker/events.py",
+                       "sha256":  "1b1ddf95f6747aae215ceedddd450aa3e4394be114ca6ed1f0b75073da2c01b3"
+                   },
+                   {
+                       "path":  "tests/test_f27_typed_tool_payloads.py",
+                       "sha256":  "e64ecc8d2a6a555c7f3693f0038f0f93c905d599d410bffc8c7daa97a439cd9d"
+                   }
+               ],
+    "shared_origin":  {
+                          "meaning":  "Same-case identical original reused by different job/task/tool shares ref and preserves first metadata; API authorized by case",
+                          "result":  "1 passed in 1.17s",
+                          "log":  "F27-backend-shared-origin.log",
+                          "focused_total":  23
+                      }
+}

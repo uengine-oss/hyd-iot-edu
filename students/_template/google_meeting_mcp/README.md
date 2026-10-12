@@ -65,6 +65,19 @@ process 컨테이너에서 연결하려면 호스트 주소로 닿는 바인딩�
 
 ## 4. 회의 흐름의 실제 필드
 
+`scripts/prepare_google_meeting_mapping.py`는 원본 `example_meeting`을 보존하면서 새 폴더에 `flow.bpmn`, 실제 도구 계약으로 교체한 `mapping.json`, 미확인 전제조건 `preconditions.json`을 만든다. agent ID·주관자 역할·Calendar/Drive 서버 이름을 필수로 받으며 기존 출력 파일을 덮지 않는다. 다음 PowerShell 명령의 변수는 등록 화면에서 확인한 값으로 먼저 설정한다.
+
+```powershell
+& $py scripts/prepare_google_meeting_mapping.py --agent-id $registeredAgentId --organizer-role $registeredOrganizerRole --calendar-server $registeredCalendarServer --drive-server $registeredDriveServer --output-dir students/flows/my-google-meeting
+& $py -m pytest tests/test_google_meeting_mapping_preparation.py -q
+```
+
+사본은 시작 입력 `meeting_calendar_id`, `meeting_title`, `meeting_time_zone`(Text), `meeting_duration_min`(Number), `meeting_attendees`, `meeting_required_emails`, `meeting_attachments`(Array), `meeting_room_resources`(Object)를 추가한다. 원래 `request_id`와 같은 요청의 확인한 값으로 채운다. 승인 후보에는 원래 `slot/reason/score`와 함께 `end/room/room_email`을 보존한다. 생성 도구의 필수값은 `calendar_id`, `summary`, `start`, `end`, `time_zone`, `room_email`, `attendees`와 런타임 실행 키이며 `attachments`는 선택 목록이다.
+
+`validate_runtime(context, approved_option, execution_key=..., proposal=...)`는 빠진 원천 값·예제 주소·기간 불일치·회의실 매핑 불일치·필수 참석자 명단 불일치·실제 파일을 식별하지 않는 링크·중복 slot·승인 카드와 첨부 불일치를 거절하는 독립 사전검사다. 실제 자료의 출처나 접근 권한을 인증하지 않으며 사본에 자동 실행 task로 설치되지 않는다. 기존 MemoryRepo 기반 가져오기와 서버의 실제 MCP 도구 목록/JSON Schema로 구조를 검사하는 시험은 등록·OAuth·외부 실행 증거와 구분한다.
+
+설계 참고는 [ProcessGPT 모노레포](https://github.com/uengine-oss/process-gpt)와 [ontology-studio](https://github.com/uengine-oss/ontology-studio)이며 저장소의 `docs/handoff/sources/repository-map/`에 연결 근거가 있다. 이 사본은 HYD의 기존 가져오기·승인·타입·실행 계약을 사용한다.
+
 `meeting-contract.json`을 기준으로 원래 `mapping.json`의 복사본을 채운다. 주요 추가 값은 실제 `calendar_id`, 승인한 시작·종료 시각·시간대, 실제 회의실 자원 이메일, 전체 초대 명단, 필수 참석자 명단이다. 원래 `summary/start/room/attachments` 설계용 입력만으로는 새 도구 필수값을 충족하지 않는다.
 
 `meeting_request.duration_min`으로 종료 시각을 계산하고 승인안에 보존한다. `attendee.required=true`에서 `required_emails`를 만들고, 전체 참석자를 `{email,required}`로 전달한다. `room_id`를 메일로 추정하지 말고 실제 자원 캘린더 주소를 사용한다. `proposal.docs`의 `{title,link}`는 실제 Google 문서 링크를 확인한 뒤 `{title,file_url}`로 바꾼다. 문서 링크를 붙이는 것은 Drive 공유 권한을 변경하지 않으므로 참석자 접근 권한도 별도로 확인한다.
@@ -76,6 +89,8 @@ process 컨테이너에서 연결하려면 호스트 주소로 닿는 바인딩�
 `idempotency_key`는 승인한 **인스턴스·task 실행을 식별하는 고정 값**이며 재시도 때 바꾸지 않는다. 같은 키에 다른 내용이 들어오거나 기존 일정이 수동 수정·취소되면 409 충돌이다. 생성 전 결정적 event ID로 조회하고, 생성 후 타임아웃에는 성공을 보고하지 않는다. 재시도 시 같은 ID를 다시 조회하여 확인한다. Google은 분산 환경의 모든 ID 충돌 탐지를 보장하지 않으므로 절대적인 exactly-once 보장으로 설명하지 않는다.
 
 ## 5. 현재 검증과 다음 실제 확인
+
+사본의 `idempotency_key`는 사용자 시작 필드나 mapping arguments에 넣지 않는다. `instances._run_mcp_call`이 전달한 고정 `instance:workitem` 키를 `mcp_check.call_effect`가 실제 tools/list 입력 스키마 확인 뒤 주입한다. helper의 실행 키 매개변수는 독립 검사 미리보기에만 쓰인다.
 
 ```powershell
 & $py -m pytest tests/test_google_meeting_mcp.py -q

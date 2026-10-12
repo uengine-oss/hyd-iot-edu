@@ -1,0 +1,21 @@
+{
+  "command": "PYTHONUTF8=1 PATH=LibreOffice/program;<inherited> clean-venv/Scripts/python.exe -m pytest -q tests/test_f27_typed_tool_payloads.py --tb=short",
+  "reason": "initial22 focused rawlog not preserved; one final23 source-scoped run records independent raw evidence; no whole suite",
+  "passed": 23,
+  "seconds": 7.4,
+  "log": "F27-backend-final-23.log",
+  "log_sha256": "d3d63ca079c4ad8d679d9c7279de7e29aea0e6038bb25aaed0328cdbf6da3073",
+  "source_checks": [
+    {
+      "path": "it/agent-worker/worker/events.py",
+      "sha256": "1b1ddf95f6747aae215ceedddd450aa3e4394be114ca6ed1f0b75073da2c01b3",
+      "matches_agent_final": true
+    },
+    {
+      "path": "tests/test_f27_typed_tool_payloads.py",
+      "sha256": "e64ecc8d2a6a555c7f3693f0038f0f93c905d599d410bffc8c7daa97a439cd9d",
+      "matches_agent_final": true
+    }
+  ],
+  "source_unchanged": true
+}

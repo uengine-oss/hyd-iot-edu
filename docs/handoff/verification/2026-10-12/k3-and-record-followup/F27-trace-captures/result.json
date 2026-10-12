@@ -1,0 +1,96 @@
+﻿{
+    "method":  "native GET-only latest actual agent step click, 1440px processing pane",
+    "checks":  [
+                   {
+                       "label":  "B latest agent step expanded by native click",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "B original semantic summary present",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "B approval/execution boundary explicit",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "B no missing/object replacement",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "C latest agent step expanded by native click",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "C original semantic summary present",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "C approval/execution boundary explicit",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "C no missing/object replacement",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "source unchanged",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "B persisted business state unchanged",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "C persisted business state unchanged",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "no pageerrors",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "no console errors",
+                       "passed":  true
+                   },
+                   {
+                       "label":  "no writes attempted",
+                       "passed":  true
+                   }
+               ],
+    "screenshots":  [
+                        {
+                            "file":  "B-latest-native-flow-trace-1440.png",
+                            "sha256":  "94e67a0ce1af2f9f65b2b2520bcf0b10670c109205c0844958373a152f340c81",
+                            "case":  "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+                            "todo_id":  "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+                            "job_id":  "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+                            "visible_target_text":  "17:10:23\n조치 후보 평가\nHYD-02 · 펌프 체적 효율 저하 · 펌프 축 씰 마모\n1.8 s\n추천 가능한 대안 없음 · 대안 4개 · 제외 4개 · 조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님"
+                        },
+                        {
+                            "file":  "C-latest-native-flow-trace-1440.png",
+                            "sha256":  "d0d7cb5e367c033bbb3a061d22612a9c3f2e854992e2639168f35ea1e55ce405",
+                            "case":  "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+                            "todo_id":  "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+                            "job_id":  "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+                            "visible_target_text":  "16:36:02\n구매 판단 등록 (승인 · 실행 아님)\nHYD-03 · 부품 번호 P-PMP-SEAL · 현재 처리 건에 구매 판단 등록 요청 · 승인과 실행 아님\n3.5 s\n구매 판단 등록됨 · 사람 승인 · ERP 실행 완료 아님 · 펌프 축 씰 키트 · P-PMP-SEAL · 필요 수량 6개 · 구매 후보 3개 · 규정 등으로 제외 1개 · 추천 ‘대체 승인 공급사 발주’ · 승인된 비순정 최저가 · A정밀 (저가) · 단가 35만원 · 납기 2일 · 등록 AVL 통과"
+                        }
+                    ],
+    "blockedWrites":  [
+
+                      ],
+    "pageerrors":  [
+
+                   ],
+    "consoleErrors":  [
+
+                      ],
+    "driver_sha256":  "76282d3c60f5955cca42594401c93b225cd77dd83a65b1e2b6dc31d9be38ed54",
+    "passed":  true,
+    "visual_inspection":  {
+                              "C":  "Visible16:36:02구매판단등록(승인실행아님) and 구매판단등록됨 사람승인ERP실행완료아님, later genuine approved/executed stages remain separate below",
+                              "method":  "view_image actual two PNGs",
+                              "limitation":  "Native C compact summary uses ellipsis; full target DOM text is preserved in result and txt. This capture does not claim entire long original summary visibly expanded.",
+                              "B":  "Visible17:10:23 조치 후보 평가 / 추천 가능한 대안 없음 / 대안4개 제외4개 / 조회계산이며 판단등록승인실행아님, followed by17:11:17보류당시평가근거"
+                          }
+}

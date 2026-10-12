@@ -45,7 +45,9 @@ def translate(event: ExecEvent) -> list[UiEvent]:
     if kind is ExecEventKind.TOOL_START:
         return [UiEvent("tool_start", {"tool": event.tool or "tool", "tool_use_id": event.tool_use_id, "input": _truncate(event.tool_input)})]
     if kind is ExecEventKind.TOOL_END:
-        return [UiEvent("tool_end", {"tool": event.tool or "tool", "tool_use_id": event.tool_use_id, "output": _truncate(event.text or event.tool_output), "is_error": event.is_error})]
+        output = event.text or event.tool_output
+        return [UiEvent("tool_end", {"tool": event.tool or "tool", "tool_use_id": event.tool_use_id, "output": _truncate(output),
+                                    "output_truncated": preview_cut(output), "is_error": event.is_error})]
     if kind is ExecEventKind.PLAN:
         return [UiEvent("plan_update", {"items": event.tool_output or []})]
     if kind is ExecEventKind.FILE_CHANGE:
@@ -246,7 +248,7 @@ def preview_cut(value: Any) -> bool:
     if isinstance(value, str):
         return len(value) > PREVIEW_MAX
     if isinstance(value, (dict, list)):
-        return len(repr(value)) > PREVIEW_MAX
+        return len(json.dumps(value, ensure_ascii=False, default=str)) > PREVIEW_MAX
     return False
 
 
@@ -254,6 +256,7 @@ def _truncate(value: Any) -> Any:
     if isinstance(value, str) and len(value) > PREVIEW_MAX:
         return value[:PREVIEW_MAX] + "\n… (생략됨)"
     if isinstance(value, (dict, list)):
-        text = repr(value)
-        return value if len(text) <= PREVIEW_MAX else text[:PREVIEW_MAX] + "… (생략됨)"
+        text = json.dumps(value, ensure_ascii=False, default=str)
+        return value if len(text) <= PREVIEW_MAX else {"kind": "tool_output_preview", "truncated": True,
+                                                     "original_chars": len(text), "content_type": "json"}
     return value

@@ -6,7 +6,6 @@
   },
   "input_sources": {
     "calendar_id": "Explicit instructor-selected real calendar; primary means the signed-in user's primary calendar",
-    "idempotency_key": "Stable instance/task execution key, unchanged by retry; not request_id alone across separate instances",
     "summary": "meeting_request.title for the same request_id",
     "start": "approved_option.slot in RFC3339 with offset",
     "end": "Approved start plus meeting_request.duration_min, preserved in approved_option.end",
@@ -22,7 +21,6 @@
     "tool": "create_event",
     "arguments": {
       "calendar_id": "{meeting_calendar_id}",
-      "idempotency_key": "{meeting_execution_key}",
       "summary": "{meeting_title}",
       "start": "{approved_option.slot}",
       "end": "{approved_option.end}",
@@ -44,6 +42,9 @@
     },
     "extract": {"all_required_accepted": {"path": "document.all_required_accepted", "type": "Boolean"}},
     "effect": false
+  },
+  "runtime_injection": {
+    "idempotency_key": "instances._run_mcp_call passes the stable instance:workitem key to mcp_check.call_effect; call_effect injects it after tools/list when the tool schema declares the property. Never expose a user mapping or start-field override."
   },
   "unresolved_before_import": [
     "Original flow only provides request_id/proposal/approved_option. Explicitly supply and review the additional typed context fields listed here; this fragment is not imported automatically.",

@@ -1,0 +1,27 @@
+{
+  "kind": "F27 scoped implementation and native verification",
+  "checks_passed": 96,
+  "native_result": "F27-native-3-result.json",
+  "source_files": 807,
+  "current_source_matches_frozen": true,
+  "previous_whole_extended": false,
+  "backend_final_passed": 23,
+  "backend_log": "F27-backend-final-23.log",
+  "ui_error_priority_passed": 3,
+  "ui_typed_text_passed": 4,
+  "counts_combined": false,
+  "failed_attempts": [
+    "F27-native-1-result.json",
+    "F27-native-2-result.json"
+  ],
+  "source_proof": "F27-final-source-verification.json",
+  "producer_live_next_start": "Unit validated; no new worker/LLM run performed",
+  "business_cases_unchanged": true,
+  "llm_reruns": 0,
+  "whole_reruns": 0,
+  "U16_U20_F13": "open",
+  "whole_UIUX_173_pair_coverage": "UNVERIFIED",
+  "K3_external_authentication": "unverified",
+  "pre_F27_manifest_sha256": "8b0c07642bdf49192ed6235a838e5aa0bf7bfa7d287f89bc041b3c499be3eb3d",
+  "pre_F27_manifest_unchanged": true
+}

@@ -1,0 +1,458 @@
+{
+  "passed": false,
+  "method": "native GET views of existing B/C; no workflow replay",
+  "checks": [
+    {
+      "label": "all mounted portal bytes match captured source",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record renderer succeeds 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record has actual steps 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B no object coercion 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B actual value ranges fit cells 1440",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "B actual source package remains visible 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 2/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 2/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 3/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 3/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 4/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 4/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 5/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 5/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 6/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 6/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 7/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 7/1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record renderer succeeds 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B record has actual steps 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B no object coercion 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B actual value ranges fit cells 1024",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "B actual source package remains visible 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 2/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 2/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 3/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 3/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 4/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 4/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 5/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 5/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 6/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 6/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no live text 7/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B inactive step no active spinner 7/1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B deferred task no live claim 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B deferred task not labeled live 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task no object coercion 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B deferred task no live claim 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B deferred task not labeled live 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B task no object coercion 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record renderer succeeds 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record has actual steps 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C no object coercion 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record renderer succeeds 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C record has actual steps 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C no object coercion 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C task no object coercion 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C purchase output no internal skill ID 1440",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C purchase scope names actual part 1440",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "C task no object coercion 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C purchase output no internal skill ID 1024",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C purchase scope names actual part 1024",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "B persisted case/task/approval/effect unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C persisted case/task/approval/effect unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "source stable throughout capture",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "no uncaught page errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "no console errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "label": "no attempted writes",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "pageerrors": [],
+  "consoleErrors": [],
+  "requestFailures": [
+    {
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "blockedWrites": [],
+  "screenshots": [
+    {
+      "file": "B-record-1440.png",
+      "sha256": "edb3d2bd5f92457e98d2d68af11359181e25a34228ee36ee7df7a27a3fbb58ea"
+    },
+    {
+      "file": "B-step-02-1440.png",
+      "sha256": "c89088b9ccc77aa1981214a4d8c7cdeee44adc2ed39c4d2cdc29de93f87adaa7"
+    },
+    {
+      "file": "B-step-03-1440.png",
+      "sha256": "56fe649d72782004428fff91af46bfb9fd04d3e1b3b13a134e50e42d9d86010d"
+    },
+    {
+      "file": "B-step-04-1440.png",
+      "sha256": "ac8b01d17dcbeb68528077b7f165319e78d0adec414cb8a80b9051f52f76cfc3"
+    },
+    {
+      "file": "B-step-05-1440.png",
+      "sha256": "9eee4a04dcff9a1c8528565ed6fe87bdf6ca9106eb22dd2e9fbecfbb79552f7f"
+    },
+    {
+      "file": "B-step-06-1440.png",
+      "sha256": "d976532c7656a89f58a19f7a10099818ed2a8c8d67b9d672bffef4e5a94b23d9"
+    },
+    {
+      "file": "B-step-07-1440.png",
+      "sha256": "d7cea759ecb9f8b525731e652c7ea0e60ac2404a22b2463b4c49dbf46846e7c3"
+    },
+    {
+      "file": "B-record-1024.png",
+      "sha256": "332062d02416a7f5091efd9771abbf053a6880d5d9dadf8f890531a6cc2f2d06"
+    },
+    {
+      "file": "B-step-02-1024.png",
+      "sha256": "49490d556acab91a6de2ce76786091f04615dce33ea4b455c2d9695d220dcff8"
+    },
+    {
+      "file": "B-step-03-1024.png",
+      "sha256": "e426b281eb09439bc25ea8d5f6f752aa0d05012b9589eb0376447ff2953a84df"
+    },
+    {
+      "file": "B-step-04-1024.png",
+      "sha256": "d33f43f9d1283102ea65a748e7f0d57c42fdf6264de29cd5166eff4769025566"
+    },
+    {
+      "file": "B-step-05-1024.png",
+      "sha256": "efe8c5bb2543d7e67921f8ac42c9da58094cdd9d90f036ae4b86ee59bf9e63c8"
+    },
+    {
+      "file": "B-step-06-1024.png",
+      "sha256": "8e0882b88e0047b6bef835822f9a8d2b4c80274affab5cf1eca3bbbf73e695b3"
+    },
+    {
+      "file": "B-step-07-1024.png",
+      "sha256": "3ff01df498701f80282c0794419250567365bf1d607f6b10195e40bba696c282"
+    },
+    {
+      "file": "B-task-1440.png",
+      "sha256": "c3906061c54dbf37a132d71f49b540ec1018e8a501297b57219136d685ac9dcb"
+    },
+    {
+      "file": "B-task-1024.png",
+      "sha256": "f80f238f5efafe9bd5db8b79bbc85f2feccd103e1b7956a952e4aa44d7b10611"
+    },
+    {
+      "file": "C-record-1440.png",
+      "sha256": "94a9e912022a2f44f55c5f3a9ed93622d28ff1f3b22ee8ff700449ae49b05284"
+    },
+    {
+      "file": "C-record-1024.png",
+      "sha256": "4dc0dede56c75de837f05dca083b49a1b0124bd9cac00efd656e7a5f6359962a"
+    },
+    {
+      "file": "C-task-1440.png",
+      "sha256": "9c4930aa4cfc8d5d38ea450177791491ff911d410d8d5c4c10f0a133f1236b9c"
+    },
+    {
+      "file": "C-task-output-1440.png",
+      "sha256": "84e394881abecc164260d485d3bcdda8e806221542163b41bf66002c287c6fc5"
+    },
+    {
+      "file": "C-task-1024.png",
+      "sha256": "afacc4185fea89f11d319dc1d3dbd2d87b10bacad6641343699da47a00f0ba56"
+    },
+    {
+      "file": "C-task-output-1024.png",
+      "sha256": "30384ba11eae5296d165c34445c27a86d06b850146b759c7850a69b578c8bac2"
+    }
+  ],
+  "whole_reruns": 0,
+  "llm_reruns": 0
+}

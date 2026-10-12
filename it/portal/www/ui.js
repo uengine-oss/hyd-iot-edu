@@ -601,4 +601,146 @@ Object.assign(UI.terms, {
       else { dlg.remove(); resolve(window.confirm(`${title}${body ? '\n' + body : ''}`)); }
     });
   };
+  // A work item may remain PENDING after its execution has ended. Match the
+  // terminal receipt to that run so late text cannot reopen it; a new start can.
+  // One envelope boundary for inline MCP results and verified stored originals.
+  UI.normalizeToolOutput = (raw,contentType) => {
+    if(contentType==='text') return typeof raw==='string' && raw.trim() ? {state:'text',raw,value:raw,isError:false} : {state:'invalid',raw,value:null,error:'보관된 텍스트 응답이 비어 있거나 읽을 수 없습니다',isError:false};
+    let value=raw, isError=false;
+    const seen=new Set();
+    while (true) {
+      if (value==null) return {state:'invalid',raw,value:null,error:'도구 응답 값이 없습니다',isError};
+      if (typeof value==='string') {
+        const text=value.trim();
+        if (/^[\[{]/.test(text)) {
+          try { value=JSON.parse(text); continue; }
+          catch (_) { return {state:'invalid',raw,value:null,error:'구조화 응답을 JSON으로 읽을 수 없습니다',isError}; }
+        }
+        return {state:'text',raw,value,isError};
+      }
+      if (typeof value!=='object') return {state:'inline',raw,value,isError};
+      if (seen.has(value)) return {state:'invalid',raw,value:null,error:'응답 봉투가 순환합니다',isError};
+      seen.add(value);
+      isError ||= value.is_error===true || value.isError===true || value.result==='error' || value.result==='failed';
+      if (value.kind==='tool_output_preview' && value.truncated===true) return {state:'needs_full',raw,value:null,error:'미리보기는 축약됐습니다. 보관된 전체 결과를 확인하세요',isError};
+      if (value.structured_content!=null || value.structuredContent!=null) { value=value.structured_content ?? value.structuredContent; continue; }
+      const content=Array.isArray(value) ? value : value.content;
+      if (Array.isArray(content) && content.length && content.every(x=>x?.type==='text' && typeof x.text==='string')) { value=content.map(x=>x.text).join(''); continue; }
+      if (!Array.isArray(value) && Array.isArray(value.content)) return {state:'invalid',raw,value:null,error:'지원하지 않거나 비어 있는 도구 응답 블록입니다',isError};
+      if (!Array.isArray(value) && Object.keys(value).length===1 && 'result' in value) { value=value.result; continue; }
+      return {state:'inline',raw,value,isError};
+    }
+  };
+  const toolPayloads=new Map();
+  const payloadKey=(ev,direction='output')=>{
+    const ref=ev.data?.[direction==='input' ? 'full_input' : 'full_output'];
+    return JSON.stringify([ev.proc_inst_id,ref?.ref,ref?.sha256,direction]);
+  };
+  const payloadReference=(ev,direction)=>ev.data?.[direction==='input' ? 'full_input' : 'full_output'];
+  const payloadChanged=()=>window.dispatchEvent(new CustomEvent('hyd-tool-payload'));
+  const charCount=s=>Array.from(s).length;
+  UI.fullToolIO = (ev,direction='output',hydrate=false) => {
+    const fo=payloadReference(ev,direction), raw=ev.data?.[direction];
+    if (!fo) {
+      if (direction==='output' && ev.data?.output_truncated) return {state:'needs_full',raw,value:null,error:'미리보기는 축약됐지만 원문 참조가 없습니다'};
+      return UI.normalizeToolOutput(raw);
+    }
+    if (!fo.stored || !fo.ref) return {state:'unavailable',raw,value:null,error:`원문을 보관하지 못했습니다: ${fo.error || '보관 참조 없음'}`,reference:fo};
+    if (!/^[0-9a-f]{64}$/.test(fo.ref) || !ev.proc_inst_id || !ev.todo_id || !ev.job_id || !fo.sha256) return {state:'invalid',raw,value:null,error:'원문 참조 · 작업 소유권 기록이 완전하지 않습니다',reference:fo};
+    const key=payloadKey(ev,direction), cached=toolPayloads.get(key);
+    if (cached && cached.event.proc_inst_id!==ev.proc_inst_id) return {state:'invalid',raw,value:null,error:'원문 처리 건과 선택한 처리 건이 다릅니다',reference:fo};
+    if (cached && ['ref','sha256','chars','original_chars','cut','content_type','source'].some(k=>cached.reference[k]!==fo[k])) return {state:'invalid',raw,value:null,error:'원문 보관 메타데이터가 기존 확인 기록과 다릅니다',reference:fo};
+    if (!cached && hydrate) queueMicrotask(()=>UI.loadFullToolIO(ev,direction));
+    return cached ? {...cached.result,reference:fo,text:cached.text} : {state:'needs_full',raw,value:null,error:'미리보기는 축약됐고 전체 결과가 보관돼 있습니다',reference:fo};
+  };
+  UI.loadFullToolIO = (ev,direction='output',retry=false) => {
+    const fo=payloadReference(ev,direction), key=payloadKey(ev,direction);
+    const prior=toolPayloads.get(key);
+    if (prior && !retry) return prior.promise ? prior.promise.then(()=>UI.fullToolIO(ev,direction)) : Promise.resolve(UI.fullToolIO(ev,direction));
+    if (!fo?.stored || !/^[0-9a-f]{64}$/.test(fo.ref || '') || !ev.proc_inst_id || !ev.todo_id || !ev.job_id || !fo.sha256) return Promise.resolve({state:'invalid',value:null,error:'원문 참조 · 작업 소유권 기록이 완전하지 않습니다'});
+    const entry={event:ev,reference:{...fo},text:'',result:{state:'loading',raw:ev.data?.[direction],value:null,error:'보관된 원문을 읽는 중입니다'}};
+    toolPayloads.set(key,entry); payloadChanged();
+    entry.promise=(async()=>{
+      try {
+        let offset=0, total=null;
+        do {
+          const chunk=await getJ(`${API.process}/api/event-payloads/${encodeURIComponent(fo.ref)}?offset=${offset}&limit=200000`);
+          if (chunk.id!==fo.ref || chunk.proc_inst_id!==ev.proc_inst_id) throw new Error('원문 식별자 · 처리 건 소유권이 일치하지 않습니다');
+          if (chunk.source!==fo.source || chunk.meta?.original_chars!==fo.original_chars || (!fo.cut && fo.original_chars!==fo.chars)) throw new Error('원문 출처 · 원래 길이가 일치하지 않습니다');
+          if (chunk.meta?.content_sha256!==fo.sha256 || chunk.content_type!==fo.content_type || chunk.meta?.cut!==!!fo.cut) throw new Error('원문 SHA · 형식 · 잘림 기록이 일치하지 않습니다');
+          if (chunk.offset!==offset || typeof chunk.content!=='string' || !Number.isSafeInteger(chunk.chars) || chunk.chars!==fo.chars || (total!=null && total!==chunk.chars)) throw new Error('원문 부분 순서 · 전체 길이가 일치하지 않습니다');
+          total=chunk.chars;
+          const end=offset+charCount(chunk.content);
+          if (end>total || (chunk.next_offset==null ? end!==total : chunk.next_offset!==end || end<=offset)) throw new Error('원문 페이지 경계가 일치하지 않습니다');
+          entry.text+=chunk.content; offset=chunk.next_offset;
+        } while (offset!=null);
+        if (charCount(entry.text)!==fo.chars) throw new Error('원문 전체 길이가 일치하지 않습니다');
+        if (!window.crypto?.subtle) throw new Error('이 주소에서는 원문 SHA 검증을 사용할 수 없습니다');
+        const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(entry.text));
+        const sha=Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
+        if (sha!==fo.sha256) throw new Error('읽은 원문의 SHA가 보관 기록과 다릅니다');
+        if (fo.cut) entry.result={state:'truncated',raw:entry.text,value:null,error:'보관 한도에서 원문이 잘렸습니다. 전체 결과를 판정할 수 없습니다'};
+        else if (fo.content_type==='json') {
+          let parsed; try { parsed=JSON.parse(entry.text); } catch (_) { throw new Error('보관된 원문이 유효한 JSON이 아닙니다'); }
+          entry.result={...UI.normalizeToolOutput(parsed),state:'complete'};
+          if (entry.result.error) entry.result.state='invalid';
+        } else if(fo.content_type==='text') {
+          entry.result=UI.normalizeToolOutput(entry.text,'text');
+          if(!entry.result.error) entry.result.state='complete';
+        } else throw new Error('보관된 원문의 형식을 지원하지 않습니다');
+      } catch (err) { entry.result={state:'unavailable',raw:entry.text,value:null,error:err.status===404 ? '보관된 원문이 없습니다 (삭제되었거나 접근 권한 없음)' : err.message}; }
+      finally { entry.promise=null; payloadChanged(); }
+      return entry.result;
+    })();
+    return entry.promise;
+  };
+  UI.toolAsk = (ev,hydrate=false) => {
+    const io=UI.fullToolIO(ev,'input',hydrate);
+    return {...io,summary:['inline','text','complete'].includes(io.state) ? window.hydWords ? hydWords.ask(ev.data?.tool,io.value) : '도구 요청 목적 기록 없음 · 원문 확인' : io.error};
+  };
+  UI.toolResult = (ev,hydrate=false) => {
+    const io=UI.fullToolIO(ev,'output',hydrate), data=ev.data || {};
+    if (data.attempt_failed) return {...io,status:'fail',badge:'실패한 시도',summary:'도구 실행이 실패했습니다'};
+    if (!['inline','text','complete'].includes(io.state)) return {...io,status:data.is_error ? 'fail' : 'warn',badge:io.state==='loading' ? '원문 읽는 중' : '원문 확인 필요',summary:io.error};
+    const outcome=UI.outcome(io.value,data.is_error || io.isError);
+    if (UI.toolKey(data.tool)==='mcp__hyd-effects__send_mail' && outcome.tone==='ok' && !window.hydWords?.mailReceipt(io.value)) return {...io,status:'warn',badge:'발송 영수증 확인 필요',summary:'메일 발송 영수증을 확인할 수 없습니다'};
+    if(io.reference?.content_type==='text' && outcome.tone==='ok') return {...io,status:'ok',badge:'텍스트 응답 확인',summary:`도구 텍스트 응답 · ${UI.clean(io.value.split('\n')[0]).slice(0,160)}`};
+    const failed=window.hydWords?.purchaseTool(data.tool) && hydWords.purchaseFailed(io.value);
+    return {...io,status:failed ? 'fail' : outcome.tone==='ok' ? 'ok' : outcome.tone,badge:failed ? '구매 요청 처리 실패' : outcome.label,
+      summary:outcome.tone==='blocked' ? outcome.text : outcome.tone==='fail' ? typeof io.value?.message==='string' ? UI.clean(io.value.message) : '도구가 오류를 반환했습니다' : window.hydWords ? hydWords.got(data.tool,io.value) : ''};
+  };
+  UI.fullToolIOHtml = (ev,direction='output') => {
+    const fo=payloadReference(ev,direction); if(!fo)return '';
+    const io=UI.fullToolIO(ev,direction,true), label=direction==='input' ? '전달한 입력 전문' : '보관된 결과 전문';
+    const raw=io.text || (io.state==='complete' && io.raw!=null ? typeof io.raw==='string' ? io.raw : JSON.stringify(io.raw,null,2) : '');
+    const key=payloadKey(ev,direction);
+    return `<div class="tr-code" data-tool-payload data-tool-ref="${esc(fo.ref || '')}" data-tool-direction="${esc(direction)}" data-tool-payload-state="${esc(io.state)}"><div class="tr-code-h">${esc(label)} · ${esc(fo.chars ?? '길이 미확인')}자</div>${io.error ? `<p class="muted">${esc(io.error)}</p>` : ''}${raw ? `<details class="fold small" data-k="payload:${esc(key)}"><summary>원문</summary><pre>${esc(raw)}</pre></details>` : ''}${['unavailable','invalid'].includes(io.state) && fo.stored ? `<button type="button" class="btn small" data-tool-payload-retry="${esc(key)}">원문 다시 읽기</button>` : ''}</div>`;
+  };
+  if(typeof document!=='undefined' && document.addEventListener) document.addEventListener('click',event=>{
+    const button=event.target.closest('[data-tool-payload-retry]'); if(!button)return;
+    const entry=toolPayloads.get(button.dataset.toolPayloadRetry); if(entry) UI.loadFullToolIO(entry.event,JSON.parse(button.dataset.toolPayloadRetry)[3],true);
+  });
+  UI.recordedDecision = (decision, recorded, id) => {
+    if (!id || decision?.id!==id) return null;
+    if (!recorded) return decision;
+    const matches = d => d?.id===id && (!recorded.recommended || d.recommended===recorded.recommended) &&
+      (recorded.order || []).every(o=>(d.options || []).some(x=>x.id===o.id && (o.rank==null || x.rank===o.rank) && (o.score==null || x.score===o.score)));
+    return [decision.original_decision,decision].find(matches) || null;
+  };
+  UI.taskExecution = (w, events = [], instance = {}) => {
+    const relevant = events.filter(ev => ev.todo_id === w.id);
+    const ordered = [...relevant].sort((a,b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+    const terminals = new Set(['task_deferred','task_completed','task_cancelled','task_failed']);
+    const runId = ev => ev.data?.receipt?.id || String(ev.job_id || '').replace(/^deferral:/,'');
+    const starts = ordered.filter(ev => ev.event_type === 'task_started');
+    const latestStart = starts.at(-1);
+    const terminal = [...ordered].reverse().find(ev => terminals.has(ev.event_type) &&
+      (!latestStart || runId(ev) === runId(latestStart)) &&
+      (!latestStart || String(ev.timestamp || '') >= String(latestStart.timestamp || '')));
+    const eligible = instance.status === 'RUNNING' && ['IN_PROGRESS','SUBMITTED','PENDING','NEW'].includes(w.status);
+    const agent = !!(w.agent_orch || w.agent_mode);
+    const awaiting = eligible && agent && !latestStart && !terminal;
+    return { live: eligible && !terminal && !awaiting, awaiting,
+      terminal: terminal || null };
+  };
 })();

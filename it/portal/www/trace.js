@@ -181,17 +181,15 @@
       switch (e.event_type) {
         case 'tool_usage_started': {
           const callKey=UI.toolCallKey(e), prior=byTool.get(callKey);
-          if (prior) { Object.assign(prior,{t0:e.timestamp,tool:d.tool,title:UI.toolName(d.tool),text:window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인',input:d.input}); break; }
-          const r = { key: 'tool:' + callKey, kind: 'tool', status: 'running', t0: e.timestamp, tool: d.tool, title: UI.toolName(d.tool), text: window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인', input: d.input };
+          if (prior) { Object.assign(prior,{t0:e.timestamp,tool:d.tool,title:UI.toolName(d.tool),text:window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인',input:d.input,inputEvent:e}); break; }
+          const r = { key: 'tool:' + callKey, kind: 'tool', status: 'running', t0: e.timestamp, tool: d.tool, title: UI.toolName(d.tool), text: window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인', input: d.input, inputEvent:e };
           byTool.set(UI.toolCallKey(e), r); rows.push(r); break;
         }
         case 'tool_usage_finished': {
           let r = byTool.get(UI.toolCallKey(e));
           if (!r) { r = { key: 'tool:' + UI.toolCallKey(e), kind: 'tool', t0: null, tool: d.tool, title: UI.toolName(d.tool), text: '' }; rows.push(r); byTool.set(UI.toolCallKey(e),r); }
-          const o = UI.outcome(d.output, d.is_error);
-          const purchaseTool=window.hydWords?.purchaseTool(r.tool), purchaseError=purchaseTool && hydWords.purchaseFailed(d.output);
-          const purchase = !d.attempt_failed && purchaseTool && (o.tone === 'ok' || purchaseError);
-          Object.assign(r, { status: d.attempt_failed || purchaseError ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, t1: e.timestamp, output: d.output, result: purchase || (!d.attempt_failed && o.tone==='ok' && window.hydWords) ? hydWords.got(r.tool,d.output) : o.text || outBrief(d.output, 140), badge: d.attempt_failed ? '실패한 시도' : purchaseError ? '구매 요청 처리 실패' : o.label });
+          const result=UI.toolResult(e);
+          Object.assign(r, { status:result.status, t1:e.timestamp, output:d.output, result:result.summary, badge:result.badge, ioEvent:e });
           break;
         }
         case 'task_deferred':
@@ -288,10 +286,11 @@
       const rows = rowsOf(byTodo.get(w.id) || [], w);
       // the engine's own notes on the row (approval accepted, command issued …) — system steps have no events of their own
       if (kind !== 'agent') String(w.log || '').split(/;\s*/).map(s => s.trim()).filter(Boolean).forEach((seg, i) => rows.push({ key: 'log:' + i + ':' + seg.slice(0, 40), kind: 'system', status: 'ok', t0: null, title: UI.clean(UI.logText(seg)), small: true }));
-      const live = running && ['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'NEW'].includes(w.status);
+      const execution = UI.taskExecution(w, byTodo.get(w.id) || [], view.instance);
+      const live = execution.live;
       const toolsOpen = rows.some(r => r.kind === 'tool' && r.status === 'running');
       let state = w.status === 'DONE' || w.status === 'COMPLETED' ? 'ok' : w.status === 'CANCELLED' ? (w.draft_status === 'FAILED' ? 'fail' : 'skip') : w.draft_status === 'FAILED' ? 'fail'
-        : !live ? 'idle' : w.status === 'PENDING' ? 'pending' : w.draft_status === 'HUMAN_ASKED' ? 'ask' : kind === 'human' ? 'wait' : kind === 'timer' ? 'timer' : 'run';
+        : execution.awaiting || execution.terminal?.event_type === 'task_deferred' ? 'pending' : !live ? 'idle' : w.status === 'PENDING' ? 'pending' : w.draft_status === 'HUMAN_ASKED' ? 'ask' : kind === 'human' ? 'wait' : kind === 'timer' ? 'timer' : 'run';
       const waitText = !live ? '' : w.draft_status === 'HUMAN_ASKED' ? UI.t('trace.asked') : w.status === 'PENDING' ? UI.t('trace.pending') : w.status === 'SUBMITTED' ? UI.t('trace.submitted')
         : kind === 'human' ? UI.t('trace.waitHuman') : kind === 'timer' ? UI.t('trace.waitTimer') : kind === 'agent' ? (w.consumer || rows.length ? (toolsOpen ? '' : UI.t('trace.thinking')) : UI.t('trace.waitAgent')) : UI.t('trace.waitSystem');
       return { key: w.id, w, kind, action: kind === 'system' || kind === 'human' ? actionOf(w, act) : '', name: UI.flowName(w.activity_name || act.name || w.activity_id), who: kind === 'agent' ? UI.t('agent') : UI.who(w.user_id),
@@ -318,11 +317,13 @@
   function rowHtml(r, live) {
     const time = r.t0 ? `<time title="${esc(UI.dateTime(r.t0))}">${esc(hhmmss(r.t0))}</time>` : '<time></time>';
     if (r.kind === 'tool') {
+      if(r.ioEvent) {const result=UI.toolResult(r.ioEvent,true);r={...r,status:result.status,badge:result.badge,result:result.summary};}
+      if(r.inputEvent) r={...r,text:UI.toolAsk(r.inputEvent,true).summary};
       // Dify tool-detail: the line is the toggle; open it for 요청 · 응답 (원문은 여기에만)
       const sec = (title, body) => body ? `<div class="tr-code"><div class="tr-code-h">${esc(title)}</div><pre>${esc(body)}</pre></div>` : '';
       const purchase=window.hydWords?.purchaseTool(r.tool);
       const original=value=>value==null ? '' : typeof value==='string' ? value : JSON.stringify(value,null,2);
-      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), original(r.input)) + sec(UI.t('trace.response'), original(r.output));
+      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), original(r.input)) + (r.inputEvent ? UI.fullToolIOHtml(r.inputEvent,'input') : '') + sec(r.ioEvent?.data.full_output ? '화면 이벤트 미리보기' : UI.t('trace.response'), original(r.output)) + (r.ioEvent ? UI.fullToolIOHtml(r.ioEvent) : '');
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
       const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="chip tone-${r.status === 'fail' ? 'danger' : 'warning'} sm">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">
@@ -475,6 +476,7 @@
   }, 1000);
   // every pushed SSE event goes to every mounted trace (each filters by its own instance / work item)
   function onEvent(e) { TR.mounted.forEach(C => C.ingest(e)); }
+  window.addEventListener('hyd-tool-payload',()=>TR.mounted.forEach(C=>{if(C.host.isConnected)C.draw();}));
 
   window.hydTrace = { mount, build, rowsOf, publicNotes, onEvent, fmtMs, outBrief, hhmmss, icon, spinner, summaryHtml, rowHtml, waitRowHtml, TR };
 })();

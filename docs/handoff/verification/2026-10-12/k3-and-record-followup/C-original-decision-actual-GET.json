@@ -1,0 +1,2642 @@
+{
+  "id": "DEC-1012-003-0869",
+  "asset": "HYD-03",
+  "facts": {
+    "ce": 84.0,
+    "fs1": 9.158,
+    "ps1": 182.32,
+    "ts1": 48.0,
+    "vs1": 0.566,
+    "load": 90.0,
+    "cause": null,
+    "pattern": "SPARE_BELOW_MIN",
+    "need_qty": 6,
+    "plc_mode": "REMOTE_AUTO",
+    "pm_cycle": 1,
+    "plc_state": "RUN",
+    "spare_gap": -1,
+    "hot_lot_qty": 400,
+    "order_due_h": 2.14,
+    "failure_mode": null,
+    "fan100_hours": 0.0,
+    "need_by_days": 6,
+    "spare_quotes": {
+      "sup:a": {
+        "avl": true,
+        "name": "A정밀 (저가)",
+        "price": 35,
+        "lead_d": 2,
+        "fail_rate": 0.12
+      },
+      "sup:b": {
+        "avl": true,
+        "name": "B-OEM (순정)",
+        "price": 55,
+        "lead_d": 5,
+        "fail_rate": 0.02
+      },
+      "sup:c": {
+        "avl": false,
+        "name": "C트레이딩 (최저가)",
+        "price": 20,
+        "lead_d": 1,
+        "fail_rate": 0.3
+      }
+    },
+    "hot_lot_claim": 3000,
+    "pm_planned_wo": null,
+    "purchase_part": "part:pump-seal",
+    "spare_part_no": "P-PMP-SEAL",
+    "standby_ready": true,
+    "hours_since_pm": 1880,
+    "pm_limit_hours": 2200.0,
+    "spare_available": 1,
+    "purchase_part_no": "P-PMP-SEAL",
+    "existing_pm_order": null,
+    "pm_crew_available": 2,
+    "production_running": true,
+    "purchase_part_name": "펌프 축 씰 키트",
+    "order_customer_tier": "OEM",
+    "order_penalty_per_h": 120,
+    "windows_by_variable": {
+      "hours_at_next_window": {
+        "id": "MW-HYD-03-N-202610121614",
+        "name": "이번 예정된 정비 시간",
+        "starts_at": "2026-10-12T16:14:33.616041+00:00"
+      },
+      "hours_at_following_window": {
+        "id": "MW-HYD-03-M-202610232314",
+        "name": "그다음 예정된 정비 시간",
+        "starts_at": "2026-10-23T23:14:33.616041+00:00"
+      }
+    },
+    "hours_at_next_window": 1888.14,
+    "oil_analysis_out_of_spec": null,
+    "hours_at_following_window": 2159.14
+  },
+  "roles": {
+    "role:operator": {
+      "id": "role:operator",
+      "name": "운전원",
+      "level": 1,
+      "deptName": "생산팀"
+    },
+    "role:prod-mgr": {
+      "id": "role:prod-mgr",
+      "name": "생산관리자",
+      "level": 2,
+      "deptName": "생산팀"
+    },
+    "role:maint-mgr": {
+      "id": "role:maint-mgr",
+      "name": "설비보전팀장",
+      "level": 2,
+      "deptName": "설비보전팀"
+    },
+    "role:plant-mgr": {
+      "id": "role:plant-mgr",
+      "name": "공장장",
+      "level": 3,
+      "deptName": "공장 경영"
+    },
+    "role:purchasing": {
+      "id": "role:purchasing",
+      "name": "구매 담당",
+      "level": 1,
+      "deptName": "구매팀"
+    },
+    "role:quality-mgr": {
+      "id": "role:quality-mgr",
+      "name": "품질팀장",
+      "level": 2,
+      "deptName": "품질팀"
+    },
+    "role:purchasing-mgr": {
+      "id": "role:purchasing-mgr",
+      "name": "구매팀장",
+      "level": 2,
+      "deptName": "구매팀"
+    }
+  },
+  "state": "EXECUTED",
+  "chosen": "skill:sop-pur-11",
+  "origin": {
+    "kind": "alert",
+    "part": {
+      "id": "part:pump-seal",
+      "name": "펌프 축 씰 키트",
+      "partNo": "P-PMP-SEAL"
+    },
+    "alertId": "ERP-SPARE_BELOW_MIN-P-PMP-SEAL-20261012011233",
+    "pattern": "SPARE_BELOW_MIN",
+    "incident": "INC-1012-02-1384",
+    "cause_basis": "실제 ERP 부족부품 → Part ← 원문 구매 Skill",
+    "cause_route": "purchase-part",
+    "process_scope": {
+      "tenant": "hyd",
+      "version": "1",
+      "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+      "instance": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "workitem": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+      "generation": 0
+    }
+  },
+  "reason": "사용자 위임 Codex: 교육용 구매 담당 역할로 원문 PR-7.4와 현재 ERP 견적·재고·납기를 검토. OEM 총비용360만원, 대체승인410만원, 미승인공급사 제외를 확인하여 OEM을 명시 선택. 과거 추천은 수정하지 않음.",
+  "schema": "v2",
+  "created": "2026-10-12T07:36:05Z",
+  "history": [
+    {
+      "t": "2026-10-12T07:36:05Z",
+      "state": "PENDING_APPROVAL"
+    },
+    {
+      "t": "2026-10-12T08:06:28Z",
+      "by": "user:jung-buy",
+      "role": "role:purchasing",
+      "state": "APPROVED",
+      "option": "skill:sop-pur-11",
+      "reason": "사용자 위임 Codex: 교육용 구매 담당 역할로 원문 PR-7.4와 현재 ERP 견적·재고·납기를 검토. OEM 총비용360만원, 대체승인410만원, 미승인공급사 제외를 확인하여 OEM을 명시 선택. 과거 추천은 수정하지 않음."
+    }
+  ],
+  "options": [
+    {
+      "id": "skill:sop-pur-11",
+      "kind": "work_order",
+      "name": "순정(OEM) 공급사 표준 발주",
+      "rank": 1,
+      "facts": {
+        "po_amount": 330.0,
+        "skill_code": [
+          "PR_CREATE"
+        ],
+        "skill_kind": "work_order",
+        "forecast_ps1": null,
+        "forecast_ts1": null,
+        "supplier_avl": true,
+        "lead_slack_days": 1.0,
+        "supplier_fail_rate": 0.02
+      },
+      "gains": [],
+      "score": -360.0,
+      "sopId": "SOP-PUR-11",
+      "steps": [
+        {
+          "id": "skill:sop-pur-11:1",
+          "text": "발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.",
+          "order": 1,
+          "manual": {
+            "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+            "ref": "PR-7.6",
+            "title": "발주 절차",
+            "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+          },
+          "citation": "{\"end\":1600,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+        },
+        {
+          "id": "skill:sop-pur-11:2",
+          "text": "순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.",
+          "order": 2,
+          "manual": {
+            "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+            "ref": "PR-7.6",
+            "title": "발주 절차",
+            "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+          },
+          "citation": "{\"end\":1640,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+        },
+        {
+          "id": "skill:sop-pur-11:3",
+          "text": "발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.",
+          "order": 3,
+          "manual": {
+            "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+            "ref": "PR-7.6",
+            "title": "발주 절차",
+            "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+          },
+          "citation": "{\"end\":1683,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+        },
+        {
+          "id": "skill:sop-pur-11:4",
+          "text": "공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.",
+          "order": 4,
+          "manual": {
+            "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+            "ref": "PR-7.6",
+            "title": "발주 절차",
+            "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+          },
+          "citation": "{\"end\":1719,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+        },
+        {
+          "id": "skill:sop-pur-11:5",
+          "text": "입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.",
+          "order": 5,
+          "manual": {
+            "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+            "ref": "PR-7.6",
+            "title": "발주 절차",
+            "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+          },
+          "citation": "{\"end\":1763,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.\\n5. 입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+        }
+      ],
+      "losses": [],
+      "actions": [
+        {
+          "id": "action:purchase-request",
+          "max": null,
+          "min": null,
+          "seq": 1,
+          "code": "PR_CREATE",
+          "kind": "transaction",
+          "name": "부품 구매요청",
+          "param": "supplier",
+          "value": "sup:b",
+          "target": "sys:erp",
+          "targetName": "ERP"
+        }
+      ],
+      "pattern": "SPARE_BELOW_MIN",
+      "approver": {
+        "id": "role:purchasing",
+        "name": "구매 담당",
+        "level": 1
+      },
+      "feasible": true,
+      "forecast": [],
+      "relation": null,
+      "warnings": [
+        {
+          "rule": "rule:pr07-amount-report",
+          "when": "po_amount > 300",
+          "effect": "WARN",
+          "measure": null,
+          "penalty": null,
+          "sources": [
+            "PR-7.5"
+          ],
+          "annotation": "발주안 요약에 전결 기준 초과를 표시하고 구매팀장에게도 결과 보고를 보낸다. 승인은 구매 담당 한 번이다."
+        }
+      ],
+      "penalties": [],
+      "precedent": null,
+      "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+      "production": "keep",
+      "scoreParts": {
+        "purchase_total_cost": -360.0
+      },
+      "selectedBy": [
+        {
+          "rule": "rule:pr07-purchase-candidates",
+          "when": "pattern == 'SPARE_BELOW_MIN'",
+          "effect": "SELECT",
+          "measure": null,
+          "penalty": null,
+          "sources": [
+            "PR-7.6"
+          ],
+          "annotation": "재고 기준 이탈 경보로 열린 처리 건에서만 세 발주 절차를 후보로 제안한다."
+        }
+      ],
+      "violations": [],
+      "description": "매뉴얼 PR-07_spare-parts-standard.md에서 검토한 SOP",
+      "policy_sha256": "a6cb867db8c9aa9d2a125ce7179ea7e7ab44c37a88394518567cd05d778d5f06",
+      "evaluation_mode": "execution",
+      "rankingEvidence": {
+        "rule": null,
+        "gains": [],
+        "paths": [],
+        "losses": [],
+        "method": "source_total_cost",
+        "policy": {
+          "anchor": {
+            "end": 1232,
+            "page": 1,
+            "quote": "## PR-7.4 공급사 비교 기준\n- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.",
+            "start": 876,
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          "version": 1,
+          "inspection_cost": 20,
+          "loss_per_failure": 250,
+          "inspection_threshold": 0.1
+        },
+        "conditionMode": "실제 부품 견적의 총비용이 낮은 순서; AVL·납기 규정은 별도 검사",
+        "policy_sha256": "69eee4a06173ad791534fffac199494e46c00714b96acbbd1887451c9998a17f",
+        "economicComparison": {
+          "avl": true,
+          "part": "part:pump-seal",
+          "policy": {
+            "anchor": {
+              "end": 1232,
+              "page": 1,
+              "quote": "## PR-7.4 공급사 비교 기준\n- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.",
+              "start": 876,
+              "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+            },
+            "version": 1,
+            "inspection_cost": 20,
+            "loss_per_failure": 250,
+            "inspection_threshold": 0.1
+          },
+          "quantity": 6,
+          "supplier": "sup:b",
+          "fail_rate": 0.02,
+          "lead_days": 5,
+          "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+          "total_cost": 360.0,
+          "unit_price": 55,
+          "need_by_days": 6,
+          "inspection_cost": 0.0,
+          "lead_slack_days": 1,
+          "purchase_amount": 330.0,
+          "expected_failure_cost": 30.0
+        },
+        "purchase_comparison_policy": {
+          "anchor": {
+            "end": 1232,
+            "page": 1,
+            "quote": "## PR-7.4 공급사 비교 기준\n- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.",
+            "start": 876,
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          "version": 1,
+          "inspection_cost": 20,
+          "loss_per_failure": 250,
+          "inspection_threshold": 0.1
+        }
+      },
+      "reviewed_choice": {
+        "parameters": {},
+        "reference_name": "순정(OEM) 공급사 표준 발주",
+        "reference_actions": [
+          {
+            "id": "action:purchase-request",
+            "max": null,
+            "min": null,
+            "seq": 1,
+            "code": "PR_CREATE",
+            "kind": "transaction",
+            "name": "부품 구매요청",
+            "param": "supplier",
+            "value": null,
+            "target": "sys:erp",
+            "targetName": "ERP"
+          }
+        ],
+        "base_policy_sha256": "4c9b1c7e1186a2b3842c117704d8bddef65c6d5c63d7a8931741fc4bee058fa9"
+      },
+      "supplier_policy": "oem",
+      "resolvedSupplier": {
+        "id": "sup:b",
+        "part": "part:pump-seal",
+        "quote": {
+          "avl": true,
+          "name": "B-OEM (순정)",
+          "price": 55,
+          "lead_d": 5,
+          "fail_rate": 0.02
+        },
+        "partNo": "P-PMP-SEAL",
+        "policy": "oem",
+        "quoteSet": {
+          "sup:a": {
+            "avl": true,
+            "name": "A정밀 (저가)",
+            "price": 35,
+            "lead_d": 2,
+            "fail_rate": 0.12
+          },
+          "sup:b": {
+            "avl": true,
+            "name": "B-OEM (순정)",
+            "price": 55,
+            "lead_d": 5,
+            "fail_rate": 0.02
+          },
+          "sup:c": {
+            "avl": false,
+            "name": "C트레이딩 (최저가)",
+            "price": 20,
+            "lead_d": 1,
+            "fail_rate": 0.3
+          }
+        },
+        "quoteSource": "/scm/quotes",
+        "classificationLabel": "B-OEM (순정)"
+      },
+      "execution_checked": true,
+      "economicComparison": {
+        "avl": true,
+        "part": "part:pump-seal",
+        "policy": {
+          "anchor": {
+            "end": 1232,
+            "page": 1,
+            "quote": "## PR-7.4 공급사 비교 기준\n- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.",
+            "start": 876,
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          "version": 1,
+          "inspection_cost": 20,
+          "loss_per_failure": 250,
+          "inspection_threshold": 0.1
+        },
+        "quantity": 6,
+        "supplier": "sup:b",
+        "fail_rate": 0.02,
+        "lead_days": 5,
+        "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+        "total_cost": 360.0,
+        "unit_price": 55,
+        "need_by_days": 6,
+        "inspection_cost": 0.0,
+        "lead_slack_days": 1,
+        "purchase_amount": 330.0,
+        "expected_failure_cost": 30.0
+      },
+      "tradeoffEvaluation": []
+    }
+  ],
+  "override": false,
+  "rankRule": null,
+  "scenario": {
+    "id": "dec:rank-actions",
+    "name": " 조치 판단",
+    "cause": null,
+    "pattern": "SPARE_BELOW_MIN",
+    "failureMode": null
+  },
+  "review_id": "REV-b26557f1-61b9-4c04-a29a-61dc7dc00f71",
+  "applicable": true,
+  "approvedBy": "user:jung-buy",
+  "executions": [
+    {
+      "skill": "skill:sop-pur-11",
+      "code": "PR_CREATE",
+      "status": "DONE",
+      "ref": "PR-1012-FE8A",
+      "system": "sys:erp",
+      "detail": "펌프 축 씰 키트 6개 발주 — B-OEM (순정), 330만원, 리드타임 5일",
+      "t": "2026-10-12T08:06:34.857Z"
+    },
+    {
+      "skill": "skill:sop-pur-11",
+      "code": "GR_CONFIRM",
+      "status": "DONE",
+      "ref": "GR-1012-C42C",
+      "system": "sys:erp",
+      "detail": "펌프 축 씰 키트 6개 입고 · 검수 합격 (발주 PR-1012-FE8A, 로트 LOT-261012-654)",
+      "t": "2026-10-12T08:06:41.153Z"
+    }
+  ],
+  "provenance": [
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "판정 원인",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "cause",
+      "represents": null,
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "TimescaleDB tag_1s CE 최신값 (1 s 전)",
+      "name": "냉각 효율",
+      "value": 84.0,
+      "source": "sen:ce",
+      "variable": "ce",
+      "represents": "냉각 효율",
+      "sourceName": "냉각 효율 (가상)",
+      "age_seconds": 0.71121
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "사람이 고른 스킬",
+      "value": null,
+      "source": "sys:process",
+      "variable": "chosen_skill",
+      "represents": null,
+      "sourceName": "HITL 프로세스 서비스"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "판정 고장 유형",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "failure_mode",
+      "represents": null,
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간 (HM-7.3; 관측 없으면 미확인)",
+      "name": "팬 100 % 연속 운전 시간",
+      "value": 0.0,
+      "source": "sys:historian",
+      "variable": "fan100_hours",
+      "represents": "팬 속도",
+      "sourceName": "Historian (TimescaleDB)",
+      "age_seconds": 1.750256
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "조치 후 예측 토출 압력",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "forecast_ps1",
+      "represents": "토출 압력",
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "조치 후 예측 유온",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "forecast_ts1",
+      "represents": "유온",
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "TimescaleDB tag_1s FS1 최신값 (1 s 전)",
+      "name": "유량",
+      "value": 9.158,
+      "source": "sen:fs1",
+      "variable": "fs1",
+      "represents": "유량",
+      "sourceName": "유량 센서",
+      "age_seconds": 0.819199
+    },
+    {
+      "how": "QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)",
+      "name": "고온 구간 출하 대기 로트의 클레임 위험 (만원)",
+      "value": 3000,
+      "source": "sys:qms",
+      "variable": "hot_lot_claim",
+      "represents": "품질 클레임",
+      "sourceName": "QMS 품질 시스템",
+      "observed_at": "2026-10-12T08:06:08.229Z",
+      "source_time": "원천이 행 시점을 주지 않음",
+      "source_as_of": null
+    },
+    {
+      "how": "QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)",
+      "name": "고온 구간 출하 대기 수량",
+      "value": 400,
+      "source": "sys:qms",
+      "variable": "hot_lot_qty",
+      "represents": null,
+      "sourceName": "QMS 품질 시스템",
+      "observed_at": "2026-10-12T08:06:08.229Z",
+      "source_time": "원천이 행 시점을 주지 않음",
+      "source_as_of": null
+    },
+    {
+      "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+      "name": "그다음 예정된 정비 시간으로 미룰 때의 운전시간 (h)",
+      "value": 2159.14,
+      "source": "sys:cmms",
+      "variable": "hours_at_following_window",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.272Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+    },
+    {
+      "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+      "name": "마지막 정기 정비 뒤 운전시간 (h)",
+      "value": 1880,
+      "source": "sys:cmms",
+      "variable": "hours_since_pm",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.272Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "필요일 − 공급사 리드타임 (일)",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "lead_slack_days",
+      "represents": null,
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "TimescaleDB tag_1s LoadSP 최신값 (1 s 전)",
+      "name": "펌프 부하 설정",
+      "value": 90.0,
+      "source": "sys:scada",
+      "variable": "load",
+      "represents": "펌프 부하",
+      "sourceName": "SCADA · PLC (cmd-gateway 경유)",
+      "age_seconds": 0.922829
+    },
+    {
+      "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+      "name": "이번 예정된 정비 시간에 닿을 때의 운전시간 (h)",
+      "value": 1888.14,
+      "source": "sys:cmms",
+      "variable": "hours_at_next_window",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.291Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+    },
+    {
+      "how": "출처 조회 방법 없음",
+      "name": "오일 분석 결과 (기준 이탈 여부)",
+      "value": null,
+      "source": "sys:cmms",
+      "variable": "oil_analysis_out_of_spec",
+      "represents": null,
+      "sourceName": "CMMS"
+    },
+    {
+      "how": "MES 생산오더 납기까지 남은 시간 (납기 일시 기준, 조회 시각에 계산)",
+      "name": "긴급 오더 남은 시간",
+      "value": 2.14,
+      "anchor": "2026-10-12T10:14:33.616041+00:00",
+      "source": "sys:mes",
+      "variable": "order_due_h",
+      "represents": "납기 준수율",
+      "sourceName": "MES",
+      "observed_at": "2026-10-12T08:06:08.318Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-03T16:00:01.495771+00:00"
+    },
+    {
+      "how": "ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)",
+      "name": "납기 지연 시 시간당 보상",
+      "value": 120,
+      "source": "sys:erp",
+      "variable": "order_penalty_per_h",
+      "represents": "지체상금",
+      "sourceName": "ERP",
+      "observed_at": "2026-10-12T08:06:08.343Z",
+      "source_time": "원천이 행 시점을 주지 않음",
+      "source_as_of": null
+    },
+    {
+      "how": "ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)",
+      "name": "고객 등급",
+      "value": "OEM",
+      "source": "sys:erp",
+      "variable": "order_customer_tier",
+      "represents": null,
+      "sourceName": "ERP",
+      "observed_at": "2026-10-12T08:06:08.343Z",
+      "source_time": "원천이 행 시점을 주지 않음",
+      "source_as_of": null
+    },
+    {
+      "how": "파이프라인이 이미 가진 값",
+      "name": "경보 패턴",
+      "value": "SPARE_BELOW_MIN",
+      "source": "sys:cep",
+      "variable": "pattern",
+      "represents": null,
+      "sourceName": "CEP 탐지기 (Flink 대체)"
+    },
+    {
+      "how": "plant.status 최신 메시지 (process 서비스가 구독)",
+      "name": "PLC 운전 모드",
+      "value": "REMOTE_AUTO",
+      "source": "sys:scada",
+      "variable": "plc_mode",
+      "represents": null,
+      "sourceName": "SCADA · PLC (cmd-gateway 경유)",
+      "age_seconds": 0.988882,
+      "observed_at": "2026-10-12T08:06:07.358Z"
+    },
+    {
+      "how": "plant.status 최신 메시지 (process 서비스가 구독)",
+      "name": "PLC 상태",
+      "value": "RUN",
+      "source": "sys:scada",
+      "variable": "plc_state",
+      "represents": null,
+      "sourceName": "SCADA · PLC (cmd-gateway 경유)",
+      "age_seconds": 0.988904,
+      "observed_at": "2026-10-12T08:06:07.358Z"
+    },
+    {
+      "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+      "name": "예정된 정비 시간의 정비 인원 (명)",
+      "value": 2,
+      "source": "sys:cmms",
+      "variable": "pm_crew_available",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.346Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "발주 금액 (만원)",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "po_amount",
+      "represents": "부품 구매비",
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "MES 현재 설비 생산 오더의 실제 RUNNING 상태",
+      "name": "현재 설비 생산 오더 가동 여부",
+      "value": true,
+      "source": "sys:mes",
+      "variable": "production_running",
+      "represents": null,
+      "sourceName": "MES",
+      "observed_at": "2026-10-12T08:06:08.392Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-03T16:00:01.495771+00:00"
+    },
+    {
+      "how": "TimescaleDB tag_1s PS1 최신값 (0 s 전)",
+      "name": "토출 압력",
+      "value": 182.32,
+      "source": "sen:ps1",
+      "variable": "ps1",
+      "represents": "토출 압력",
+      "sourceName": "토출 압력 센서",
+      "age_seconds": 0.053271
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "후보 스킬의 명령 코드",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "skill_code",
+      "represents": null,
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "후보 스킬 종류",
+      "value": null,
+      "source": "sys:agent",
+      "variable": "skill_kind",
+      "represents": null,
+      "sourceName": "AI 에이전트"
+    },
+    {
+      "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+      "name": "씰 키트 가용 재고 (CMMS 자재 키트, 개)",
+      "value": 1,
+      "source": "sys:cmms",
+      "variable": "spare_available",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.435Z",
+      "source_time": "record updated_at",
+      "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+    },
+    {
+      "how": "ERP 예비품 재고 P-PMP-SEAL (가용 = 실물 − 예약 + 입고 예정, 재주문점 · 목표 · 필요일)",
+      "name": "예비품 가용 재고 − 재주문점 (개)",
+      "value": -1,
+      "source": "sys:erp",
+      "variable": "spare_gap",
+      "represents": null,
+      "sourceName": "ERP",
+      "observed_at": "2026-10-12T08:06:08.533Z"
+    },
+    {
+      "how": "CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)",
+      "name": "예비 펌프 가용",
+      "value": true,
+      "source": "sys:cmms",
+      "variable": "standby_ready",
+      "represents": null,
+      "sourceName": "CMMS",
+      "observed_at": "2026-10-12T08:06:08.582Z",
+      "source_time": "원천이 행 시점을 주지 않음",
+      "source_as_of": null
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "공급사 승인 여부",
+      "value": null,
+      "source": "sys:scm",
+      "variable": "supplier_avl",
+      "represents": null,
+      "sourceName": "SCM 구매 포털"
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "후보 공급사 불량률 (견적, 0~1)",
+      "value": null,
+      "source": "sys:scm",
+      "variable": "supplier_fail_rate",
+      "represents": "부품 품질",
+      "sourceName": "SCM 구매 포털"
+    },
+    {
+      "how": "TimescaleDB tag_1s TS1 최신값 (0 s 전)",
+      "name": "유온",
+      "value": 48.0,
+      "source": "sen:ts1",
+      "variable": "ts1",
+      "represents": "유온",
+      "sourceName": "유온 센서",
+      "age_seconds": 0.239635
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "유온 상승률",
+      "value": null,
+      "source": "sys:cep",
+      "variable": "ts1_slope",
+      "represents": "유온",
+      "sourceName": "CEP 탐지기 (Flink 대체)"
+    },
+    {
+      "how": "TimescaleDB tag_1s VS1 최신값 (0 s 전)",
+      "name": "팬 진동",
+      "value": 0.566,
+      "source": "sen:vs1",
+      "variable": "vs1",
+      "represents": "팬 진동",
+      "sourceName": "팬 진동 센서",
+      "age_seconds": 0.284104
+    },
+    {
+      "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+      "name": "진동 상승률",
+      "value": null,
+      "source": "sys:cep",
+      "variable": "vs1_slope",
+      "represents": "팬 진동",
+      "sourceName": "CEP 탐지기 (Flink 대체)"
+    }
+  ],
+  "explanation": "펌프 축 씰 키트 — 후보 3장 중 'SOP-PUR-11 순정(OEM) 공급사 표준 발주'을(를) 권한다 (점수 -360.0). 구매금액 330 + 기대 불량비용 30 + 전수 검사비용 0 = 비교 총비용 360만 원. 실제 부품별 총비용이 낮은 순서로 비교했다. 제외: '최단 납기 긴급 발주' — 긴급 발주여도 승인되지 않은 공급사에는 발주하지 않는다..",
+  "recommended": "skill:sop-pur-11",
+  "approvedRole": "role:purchasing",
+  "evaluation_mode": "execution",
+  "execution_checked": true,
+  "original_decision": {
+    "id": "DEC-1012-003-0869",
+    "asset": "HYD-03",
+    "facts": {
+      "ce": 84.0,
+      "fs1": 8.962,
+      "ps1": 181.69,
+      "ts1": 48.0,
+      "vs1": 0.584,
+      "load": 90.0,
+      "cause": null,
+      "pattern": "SPARE_BELOW_MIN",
+      "need_qty": 6,
+      "plc_mode": "REMOTE_AUTO",
+      "pm_cycle": 1,
+      "plc_state": "RUN",
+      "spare_gap": -1,
+      "hot_lot_qty": 400,
+      "order_due_h": 2.64,
+      "failure_mode": null,
+      "fan100_hours": 0.0,
+      "need_by_days": 6,
+      "spare_quotes": {
+        "sup:a": {
+          "avl": true,
+          "name": "A정밀 (저가)",
+          "price": 35,
+          "lead_d": 2,
+          "fail_rate": 0.12
+        },
+        "sup:b": {
+          "avl": true,
+          "name": "B-OEM (순정)",
+          "price": 55,
+          "lead_d": 5,
+          "fail_rate": 0.02
+        },
+        "sup:c": {
+          "avl": false,
+          "name": "C트레이딩 (최저가)",
+          "price": 20,
+          "lead_d": 1,
+          "fail_rate": 0.3
+        }
+      },
+      "hot_lot_claim": 3000,
+      "pm_planned_wo": null,
+      "purchase_part": "part:pump-seal",
+      "spare_part_no": "P-PMP-SEAL",
+      "standby_ready": true,
+      "hours_since_pm": 1880,
+      "pm_limit_hours": 2200.0,
+      "spare_available": 1,
+      "purchase_part_no": "P-PMP-SEAL",
+      "existing_pm_order": null,
+      "failure_mode_name": null,
+      "pm_crew_available": 2,
+      "production_running": true,
+      "purchase_part_name": "펌프 축 씰 키트",
+      "order_customer_tier": "OEM",
+      "order_penalty_per_h": 120,
+      "windows_by_variable": {
+        "hours_at_next_window": {
+          "id": "MW-HYD-03-N-202610121614",
+          "name": "이번 예정된 정비 시간",
+          "starts_at": "2026-10-12T16:14:33.616041+00:00"
+        },
+        "hours_at_following_window": {
+          "id": "MW-HYD-03-M-202610232314",
+          "name": "그다음 예정된 정비 시간",
+          "starts_at": "2026-10-23T23:14:33.616041+00:00"
+        }
+      },
+      "hours_at_next_window": 1888.64,
+      "oil_analysis_out_of_spec": null,
+      "hours_at_following_window": 2159.64
+    },
+    "roles": {
+      "role:operator": {
+        "dept": "생산팀",
+        "name": "운전원",
+        "level": 1
+      },
+      "role:prod-mgr": {
+        "dept": "생산팀",
+        "name": "생산관리자",
+        "level": 2
+      },
+      "role:maint-mgr": {
+        "dept": "설비보전팀",
+        "name": "설비보전팀장",
+        "level": 2
+      },
+      "role:plant-mgr": {
+        "dept": "공장 경영",
+        "name": "공장장",
+        "level": 3
+      },
+      "role:purchasing": {
+        "dept": "구매팀",
+        "name": "구매 담당",
+        "level": 1
+      },
+      "role:quality-mgr": {
+        "dept": "품질팀",
+        "name": "품질팀장",
+        "level": 2
+      },
+      "role:purchasing-mgr": {
+        "dept": "구매팀",
+        "name": "구매팀장",
+        "level": 2
+      }
+    },
+    "state": "PENDING_APPROVAL",
+    "chosen": null,
+    "origin": {
+      "kind": "alert",
+      "part": {
+        "id": "part:pump-seal",
+        "name": "펌프 축 씰 키트",
+        "partNo": "P-PMP-SEAL"
+      },
+      "alertId": "ERP-SPARE_BELOW_MIN-P-PMP-SEAL-20261012011233",
+      "pattern": "SPARE_BELOW_MIN",
+      "incident": "INC-1012-02-1384",
+      "cause_basis": "실제 ERP 부족부품 → Part ← 원문 구매 Skill",
+      "cause_route": "purchase-part",
+      "process_scope": {
+        "tenant": "hyd",
+        "version": "1",
+        "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+        "instance": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+        "workitem": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+        "generation": 0
+      }
+    },
+    "schema": "v2",
+    "created": "2026-10-12T07:36:05Z",
+    "history": [
+      {
+        "t": "2026-10-12T07:36:05Z",
+        "state": "PENDING_APPROVAL"
+      }
+    ],
+    "options": [
+      {
+        "id": "skill:sop-pur-12",
+        "kind": "work_order",
+        "name": "대체 승인 공급사 발주",
+        "rank": 1,
+        "facts": {
+          "po_amount": 210.0,
+          "skill_code": [
+            "PR_CREATE"
+          ],
+          "skill_kind": "work_order",
+          "forecast_ps1": 182.0,
+          "forecast_ts1": 48.001,
+          "supplier_avl": true,
+          "lead_slack_days": 4.0,
+          "supplier_fail_rate": 0.12
+        },
+        "gains": [
+          {
+            "dir": -1,
+            "good": true,
+            "name": "부품 단가",
+            "conds": [],
+            "owner": "구매팀",
+            "weight": 1.0,
+            "measure": "msr:part-price",
+            "conditional": false,
+            "conditionStatus": "TRUE",
+            "supportingPaths": [
+              "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764"
+            ]
+          }
+        ],
+        "score": 2.83,
+        "sopId": "SOP-PUR-12",
+        "steps": [
+          {
+            "id": "skill:sop-pur-12:1",
+            "text": "발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.",
+            "order": 1,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1842,\"page\":1,\"quote\":\"### SOP-PUR-12 대체 승인 공급사 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1777}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-12:2",
+            "text": "단가가 낮은 대체 승인 공급사로 ERP 발주서를 작성하고 금액을 확인한다.",
+            "order": 2,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1887,\"page\":1,\"quote\":\"### SOP-PUR-12 대체 승인 공급사 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.\\n2. 단가가 낮은 대체 승인 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1777}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-12:3",
+            "text": "발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.",
+            "order": 3,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1930,\"page\":1,\"quote\":\"### SOP-PUR-12 대체 승인 공급사 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.\\n2. 단가가 낮은 대체 승인 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1777}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-12:4",
+            "text": "공급사에 발주를 통지하고 입고 부서에 전수 검사를 요청한다.",
+            "order": 4,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1967,\"page\":1,\"quote\":\"### SOP-PUR-12 대체 승인 공급사 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.\\n2. 단가가 낮은 대체 승인 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 전수 검사를 요청한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1777}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-12:5",
+            "text": "입고되면 전수 검사 결과와 로트를 기록하고 ERP에 입고 처리한다.",
+            "order": 5,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2008,\"page\":1,\"quote\":\"### SOP-PUR-12 대체 승인 공급사 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거를 적는다.\\n2. 단가가 낮은 대체 승인 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 전수 검사를 요청한다.\\n5. 입고되면 전수 검사 결과와 로트를 기록하고 ERP에 입고 처리한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1777}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          }
+        ],
+        "losses": [],
+        "actions": [
+          {
+            "id": "action:purchase-request",
+            "max": null,
+            "min": null,
+            "seq": 1,
+            "code": "PR_CREATE",
+            "kind": "transaction",
+            "name": "부품 구매요청",
+            "param": "supplier",
+            "value": "sup:a",
+            "target": "sys:erp",
+            "targetName": "ERP"
+          }
+        ],
+        "pattern": "SPARE_BELOW_MIN",
+        "approver": {
+          "id": "role:purchasing",
+          "name": "구매 담당",
+          "level": 1
+        },
+        "feasible": true,
+        "forecast": [
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-12:sv:ts1",
+            "name": "평형 유온",
+            "unit": "℃",
+            "value": 48.001,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ts1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-12:sv:ps1",
+            "name": "토출 압력",
+            "unit": "bar",
+            "value": 182.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ps1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-12:sv:fs1",
+            "name": "유량",
+            "unit": "l/min",
+            "value": 9.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:fs1"
+          }
+        ],
+        "relation": null,
+        "warnings": [
+          {
+            "rule": "rule:pr07-full-inspection-warning",
+            "when": "supplier_avl == true and supplier_fail_rate > 0.1",
+            "effect": "WARN",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.4"
+            ],
+            "annotation": "불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화한다."
+          }
+        ],
+        "penalties": [
+          {
+            "rule": "rule:pr07-full-inspection-cost",
+            "when": "supplier_avl == true and supplier_fail_rate > 0.1",
+            "effect": "PENALTY",
+            "measure": "msr:cost",
+            "penalty": 20,
+            "sources": [
+              "PR-7.4"
+            ],
+            "annotation": "불량률이 10 %를 넘는 승인 공급사에 발주할 때는 전수 검사 비용 20만 원을 더해 비교한다."
+          }
+        ],
+        "precedent": null,
+        "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+        "production": "keep",
+        "scoreParts": {
+          "bsc": 1.0,
+          "warn": -0.5,
+          "penalty": -1.0,
+          "quality": 0.0,
+          "delivery": 1.33,
+          "forecast": 2.0,
+          "precedent": 0.0
+        },
+        "selectedBy": [
+          {
+            "rule": "rule:pr07-purchase-candidates",
+            "when": "pattern == 'SPARE_BELOW_MIN'",
+            "effect": "SELECT",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.6"
+            ],
+            "annotation": "재고 기준 이탈 경보로 열린 처리 건에서만 세 발주 절차를 후보로 제안한다."
+          }
+        ],
+        "violations": [],
+        "description": "매뉴얼 PR-07_spare-parts-standard.md에서 검토한 SOP",
+        "policy_sha256": "094e8d21803f0520150f474a3da11f5526bfa9589441f5aed1f6b4747336a1d8",
+        "evaluation_mode": "execution",
+        "forecastContext": {
+          "asset": "HYD-03",
+          "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+          "inputs": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "values": {
+            "fs1": 9.0,
+            "ps1": 182.0,
+            "ts1": 48.000908677873284,
+            "vs1": 0.5500036347114932,
+            "ts1_peak": 48.000908677873284,
+            "vs1_peak": 0.5500036347114932,
+            "ts1_steady": 48.000908677873696
+          },
+          "actions": [
+            {
+              "id": "action:purchase-request",
+              "max": null,
+              "min": null,
+              "seq": 1,
+              "code": "PR_CREATE",
+              "kind": "transaction",
+              "name": "부품 구매요청",
+              "param": "supplier",
+              "value": null,
+              "target": "sys:erp",
+              "targetName": "ERP"
+            }
+          ],
+          "binding": {
+            "asset": "HYD-03",
+            "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+            "asset_id": "asset:hyd-03",
+            "model_id": "hydraulic-lumped-simulator-v1",
+            "horizon_s": 900,
+            "model_revision": "1.0"
+          },
+          "model_id": "hydraulic-lumped-simulator-v1",
+          "source_t": "2026-10-12T07:36:03.482Z",
+          "horizon_s": 900.0,
+          "operating": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "parameters": {
+            "heat": 1.0,
+            "leak_heat": 0.08,
+            "fan_cooling": 0.05036,
+            "base_cooling": 0.005,
+            "heat_capacity": 20.0,
+            "pressure_base": 155.0,
+            "pressure_leak": 130.0,
+            "pressure_load": 0.3
+          },
+          "provenance": {
+            "kind": "explicit simulator model state",
+            "asset": "HYD-03",
+            "source": "process plant.status",
+            "age_seconds": 0.809523,
+            "observed_at": "2026-10-12T07:36:03.482Z"
+          },
+          "assumptions": [
+            "observed disturbances and ambient temperature remain constant",
+            "sensor noise is not predicted",
+            "actual interlocks can interrupt this counterfactual trajectory",
+            "maintenance and purchase requests have no immediate physical repair effect"
+          ],
+          "review_policy": {
+            "version": "simulator-consent-v2",
+            "max_adverse_change": {
+              "ts1": 0.5,
+              "vs1": 0.05,
+              "ts1_peak": 2.0,
+              "vs1_peak": 0.05
+            },
+            "max_review_age_sim_s": 1800,
+            "max_adverse_rate_per_sim_min": {
+              "ts1": 1.0,
+              "vs1": 0.006,
+              "ts1_peak": 1.5,
+              "vs1_peak": 0.006
+            }
+          },
+          "model_revision": "1.0",
+          "execution_authorized": false,
+          "predicted_interlocks": []
+        },
+        "rankingEvidence": {
+          "rule": "rule:rank-value",
+          "gains": [
+            {
+              "dir": -1,
+              "good": true,
+              "name": "부품 단가",
+              "conds": [],
+              "owner": "구매팀",
+              "weight": 1.0,
+              "measure": "msr:part-price",
+              "conditional": false,
+              "conditionStatus": "TRUE",
+              "supportingPaths": [
+                "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764"
+              ]
+            }
+          ],
+          "paths": [
+            {
+              "dir": -1,
+              "good": true,
+              "name": "부품 단가",
+              "conds": [],
+              "edges": [
+                {
+                  "key": "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764",
+                  "note": "단가가 낮은 대체 승인 공급사를 선택한다. 공급사 변경에 따른 품질 저하와 클레임 증가는 가능성으로만 기술되어 확정 영향으로 제안하지 않았다.",
+                  "sign": -1,
+                  "type": "AFFECTS",
+                  "unit": null,
+                  "delta": null,
+                  "source": "skill:sop-pur-12",
+                  "target": "msr:part-price",
+                  "strength": null,
+                  "condition": null,
+                  "conditionPolicy": null
+                }
+              ],
+              "nodes": [
+                "skill:sop-pur-12",
+                "msr:part-price"
+              ],
+              "skill": "skill:sop-pur-12",
+              "owners": [
+                "구매팀"
+              ],
+              "status": "TRUE",
+              "weight": 1.0,
+              "measure": "msr:part-price",
+              "path_id": "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764",
+              "direction": "DOWN",
+              "aggregation": "individual_path_not_aggregated",
+              "conditional": false
+            }
+          ],
+          "losses": [],
+          "policy": {
+            "inputs": {
+              "due": "order_due_h",
+              "qty": "hot_lot_qty",
+              "claim": "hot_lot_claim",
+              "penalty": "order_penalty_per_h"
+            },
+            "version": 1,
+            "tieBreak": "lower_approver",
+            "components": {
+              "bsc": "bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss",
+              "warn": "-0.5 * warning_count",
+              "penalty": "-penalty_total / 20",
+              "quality": "0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)",
+              "delivery": "(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == 'keep' else (0.4 if production == 'reduce' else -1)) * 1.5",
+              "forecast": "0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)",
+              "precedent": "1.5 * precedent_share"
+            }
+          },
+          "conditionMode": "명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정",
+          "policy_sha256": "a8004e30ede70a91ca038f06e2df8989740d19aca942dacbd653019323c563d2"
+        },
+        "supplier_policy": "lowest_approved",
+        "resolvedSupplier": {
+          "id": "sup:a",
+          "part": "part:pump-seal",
+          "quote": {
+            "avl": true,
+            "name": "A정밀 (저가)",
+            "price": 35,
+            "lead_d": 2,
+            "fail_rate": 0.12
+          },
+          "partNo": "P-PMP-SEAL",
+          "policy": "lowest_approved",
+          "quoteSet": {
+            "sup:a": {
+              "avl": true,
+              "name": "A정밀 (저가)",
+              "price": 35,
+              "lead_d": 2,
+              "fail_rate": 0.12
+            },
+            "sup:b": {
+              "avl": true,
+              "name": "B-OEM (순정)",
+              "price": 55,
+              "lead_d": 5,
+              "fail_rate": 0.02
+            },
+            "sup:c": {
+              "avl": false,
+              "name": "C트레이딩 (최저가)",
+              "price": 20,
+              "lead_d": 1,
+              "fail_rate": 0.3
+            }
+          },
+          "quoteSource": "/scm/quotes",
+          "classificationLabel": "A정밀 (저가)"
+        },
+        "execution_checked": true,
+        "tradeoffEvaluation": [
+          {
+            "dir": -1,
+            "good": true,
+            "name": "부품 단가",
+            "conds": [],
+            "edges": [
+              {
+                "key": "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764",
+                "note": "단가가 낮은 대체 승인 공급사를 선택한다. 공급사 변경에 따른 품질 저하와 클레임 증가는 가능성으로만 기술되어 확정 영향으로 제안하지 않았다.",
+                "sign": -1,
+                "type": "AFFECTS",
+                "unit": null,
+                "delta": null,
+                "source": "skill:sop-pur-12",
+                "target": "msr:part-price",
+                "strength": null,
+                "condition": null,
+                "conditionPolicy": null
+              }
+            ],
+            "nodes": [
+              "skill:sop-pur-12",
+              "msr:part-price"
+            ],
+            "skill": "skill:sop-pur-12",
+            "checks": [
+              {
+                "edge": "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764",
+                "inputs": {},
+                "status": "TRUE",
+                "description": ""
+              }
+            ],
+            "owners": [
+              "구매팀"
+            ],
+            "status": "TRUE",
+            "weight": 1.0,
+            "measure": "msr:part-price",
+            "path_id": "5:413d9cbe-22d2-48dc-997d-ef57990b5e4c:10764",
+            "direction": "DOWN",
+            "aggregation": "individual_path_not_aggregated",
+            "conditional": false
+          }
+        ]
+      },
+      {
+        "id": "skill:sop-pur-11",
+        "kind": "work_order",
+        "name": "순정(OEM) 공급사 표준 발주",
+        "rank": 2,
+        "facts": {
+          "po_amount": 330.0,
+          "skill_code": [
+            "PR_CREATE"
+          ],
+          "skill_kind": "work_order",
+          "forecast_ps1": 182.0,
+          "forecast_ts1": 48.001,
+          "supplier_avl": true,
+          "lead_slack_days": 1.0,
+          "supplier_fail_rate": 0.02
+        },
+        "gains": [],
+        "score": 2.83,
+        "sopId": "SOP-PUR-11",
+        "steps": [
+          {
+            "id": "skill:sop-pur-11:1",
+            "text": "발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.",
+            "order": 1,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1600,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-11:2",
+            "text": "순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.",
+            "order": 2,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1640,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-11:3",
+            "text": "발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.",
+            "order": 3,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1683,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-11:4",
+            "text": "공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.",
+            "order": 4,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1719,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-11:5",
+            "text": "입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.",
+            "order": 5,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":1763,\"page\":1,\"quote\":\"### SOP-PUR-11 순정(OEM) 공급사 표준 발주\\n1. 발주 수량을 목표 재고 − 가용 재고로 정하고 근거(쓰는 곳 · 예약 정비)를 적는다.\\n2. 순정(OEM) 공급사로 ERP 발주서를 작성하고 금액을 확인한다.\\n3. 발주 금액이 300만 원을 넘으면 전결 기준 초과를 발주안에 표시한다.\\n4. 공급사에 발주를 통지하고 입고 부서에 입고 예정을 알린다.\\n5. 입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":1516}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          }
+        ],
+        "losses": [],
+        "actions": [
+          {
+            "id": "action:purchase-request",
+            "max": null,
+            "min": null,
+            "seq": 1,
+            "code": "PR_CREATE",
+            "kind": "transaction",
+            "name": "부품 구매요청",
+            "param": "supplier",
+            "value": "sup:b",
+            "target": "sys:erp",
+            "targetName": "ERP"
+          }
+        ],
+        "pattern": "SPARE_BELOW_MIN",
+        "approver": {
+          "id": "role:purchasing",
+          "name": "구매 담당",
+          "level": 1
+        },
+        "feasible": true,
+        "forecast": [
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-11:sv:ts1",
+            "name": "평형 유온",
+            "unit": "℃",
+            "value": 48.001,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ts1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-11:sv:ps1",
+            "name": "토출 압력",
+            "unit": "bar",
+            "value": 182.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ps1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-11:sv:fs1",
+            "name": "유량",
+            "unit": "l/min",
+            "value": 9.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:fs1"
+          }
+        ],
+        "relation": null,
+        "warnings": [
+          {
+            "rule": "rule:pr07-amount-report",
+            "when": "po_amount > 300",
+            "effect": "WARN",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.5"
+            ],
+            "annotation": "발주안 요약에 전결 기준 초과를 표시하고 구매팀장에게도 결과 보고를 보낸다. 승인은 구매 담당 한 번이다."
+          }
+        ],
+        "penalties": [],
+        "precedent": null,
+        "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+        "production": "keep",
+        "scoreParts": {
+          "bsc": 0.0,
+          "warn": -0.5,
+          "penalty": 0.0,
+          "quality": 0.0,
+          "delivery": 1.33,
+          "forecast": 2.0,
+          "precedent": 0.0
+        },
+        "selectedBy": [
+          {
+            "rule": "rule:pr07-purchase-candidates",
+            "when": "pattern == 'SPARE_BELOW_MIN'",
+            "effect": "SELECT",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.6"
+            ],
+            "annotation": "재고 기준 이탈 경보로 열린 처리 건에서만 세 발주 절차를 후보로 제안한다."
+          }
+        ],
+        "violations": [],
+        "description": "매뉴얼 PR-07_spare-parts-standard.md에서 검토한 SOP",
+        "policy_sha256": "aa52708fed3936280374dd80124ef09005145e2220f067ce61ea88d2ffcd4e52",
+        "evaluation_mode": "execution",
+        "forecastContext": {
+          "asset": "HYD-03",
+          "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+          "inputs": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "values": {
+            "fs1": 9.0,
+            "ps1": 182.0,
+            "ts1": 48.000908677873284,
+            "vs1": 0.5500036347114932,
+            "ts1_peak": 48.000908677873284,
+            "vs1_peak": 0.5500036347114932,
+            "ts1_steady": 48.000908677873696
+          },
+          "actions": [
+            {
+              "id": "action:purchase-request",
+              "max": null,
+              "min": null,
+              "seq": 1,
+              "code": "PR_CREATE",
+              "kind": "transaction",
+              "name": "부품 구매요청",
+              "param": "supplier",
+              "value": null,
+              "target": "sys:erp",
+              "targetName": "ERP"
+            }
+          ],
+          "binding": {
+            "asset": "HYD-03",
+            "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+            "asset_id": "asset:hyd-03",
+            "model_id": "hydraulic-lumped-simulator-v1",
+            "horizon_s": 900,
+            "model_revision": "1.0"
+          },
+          "model_id": "hydraulic-lumped-simulator-v1",
+          "source_t": "2026-10-12T07:36:03.482Z",
+          "horizon_s": 900.0,
+          "operating": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "parameters": {
+            "heat": 1.0,
+            "leak_heat": 0.08,
+            "fan_cooling": 0.05036,
+            "base_cooling": 0.005,
+            "heat_capacity": 20.0,
+            "pressure_base": 155.0,
+            "pressure_leak": 130.0,
+            "pressure_load": 0.3
+          },
+          "provenance": {
+            "kind": "explicit simulator model state",
+            "asset": "HYD-03",
+            "source": "process plant.status",
+            "age_seconds": 0.809523,
+            "observed_at": "2026-10-12T07:36:03.482Z"
+          },
+          "assumptions": [
+            "observed disturbances and ambient temperature remain constant",
+            "sensor noise is not predicted",
+            "actual interlocks can interrupt this counterfactual trajectory",
+            "maintenance and purchase requests have no immediate physical repair effect"
+          ],
+          "review_policy": {
+            "version": "simulator-consent-v2",
+            "max_adverse_change": {
+              "ts1": 0.5,
+              "vs1": 0.05,
+              "ts1_peak": 2.0,
+              "vs1_peak": 0.05
+            },
+            "max_review_age_sim_s": 1800,
+            "max_adverse_rate_per_sim_min": {
+              "ts1": 1.0,
+              "vs1": 0.006,
+              "ts1_peak": 1.5,
+              "vs1_peak": 0.006
+            }
+          },
+          "model_revision": "1.0",
+          "execution_authorized": false,
+          "predicted_interlocks": []
+        },
+        "rankingEvidence": {
+          "rule": "rule:rank-value",
+          "gains": [],
+          "paths": [],
+          "losses": [],
+          "policy": {
+            "inputs": {
+              "due": "order_due_h",
+              "qty": "hot_lot_qty",
+              "claim": "hot_lot_claim",
+              "penalty": "order_penalty_per_h"
+            },
+            "version": 1,
+            "tieBreak": "lower_approver",
+            "components": {
+              "bsc": "bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss",
+              "warn": "-0.5 * warning_count",
+              "penalty": "-penalty_total / 20",
+              "quality": "0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)",
+              "delivery": "(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == 'keep' else (0.4 if production == 'reduce' else -1)) * 1.5",
+              "forecast": "0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)",
+              "precedent": "1.5 * precedent_share"
+            }
+          },
+          "conditionMode": "명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정",
+          "policy_sha256": "a8004e30ede70a91ca038f06e2df8989740d19aca942dacbd653019323c563d2"
+        },
+        "supplier_policy": "oem",
+        "resolvedSupplier": {
+          "id": "sup:b",
+          "part": "part:pump-seal",
+          "quote": {
+            "avl": true,
+            "name": "B-OEM (순정)",
+            "price": 55,
+            "lead_d": 5,
+            "fail_rate": 0.02
+          },
+          "partNo": "P-PMP-SEAL",
+          "policy": "oem",
+          "quoteSet": {
+            "sup:a": {
+              "avl": true,
+              "name": "A정밀 (저가)",
+              "price": 35,
+              "lead_d": 2,
+              "fail_rate": 0.12
+            },
+            "sup:b": {
+              "avl": true,
+              "name": "B-OEM (순정)",
+              "price": 55,
+              "lead_d": 5,
+              "fail_rate": 0.02
+            },
+            "sup:c": {
+              "avl": false,
+              "name": "C트레이딩 (최저가)",
+              "price": 20,
+              "lead_d": 1,
+              "fail_rate": 0.3
+            }
+          },
+          "quoteSource": "/scm/quotes",
+          "classificationLabel": "B-OEM (순정)"
+        },
+        "execution_checked": true,
+        "tradeoffEvaluation": []
+      },
+      {
+        "id": "skill:sop-pur-13",
+        "kind": "work_order",
+        "name": "최단 납기 긴급 발주",
+        "rank": 3,
+        "facts": {
+          "po_amount": 120.0,
+          "skill_code": [
+            "PR_CREATE"
+          ],
+          "skill_kind": "work_order",
+          "forecast_ps1": 182.0,
+          "forecast_ts1": 48.001,
+          "supplier_avl": false,
+          "lead_slack_days": 5.0,
+          "supplier_fail_rate": 0.3
+        },
+        "gains": [],
+        "score": 3.33,
+        "sopId": "SOP-PUR-13",
+        "steps": [
+          {
+            "id": "skill:sop-pur-13:1",
+            "text": "견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.",
+            "order": 1,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2082,\"page\":1,\"quote\":\"### SOP-PUR-13 최단 납기 긴급 발주\\n1. 견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":2022}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-13:2",
+            "text": "그 공급사가 승인 공급사(AVL)인지 확인한다. 승인 공급사가 아니면 이 절차를 쓰지 않는다.",
+            "order": 2,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2138,\"page\":1,\"quote\":\"### SOP-PUR-13 최단 납기 긴급 발주\\n1. 견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.\\n2. 그 공급사가 승인 공급사(AVL)인지 확인한다. 승인 공급사가 아니면 이 절차를 쓰지 않는다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":2022}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-13:3",
+            "text": "ERP 발주서를 작성하고 금액을 확인한다.",
+            "order": 3,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2165,\"page\":1,\"quote\":\"### SOP-PUR-13 최단 납기 긴급 발주\\n1. 견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.\\n2. 그 공급사가 승인 공급사(AVL)인지 확인한다. 승인 공급사가 아니면 이 절차를 쓰지 않는다.\\n3. ERP 발주서를 작성하고 금액을 확인한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":2022}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-13:4",
+            "text": "공급사에 긴급 발주를 통지하고 입고 부서에 도착 예정 시각을 알린다.",
+            "order": 4,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2207,\"page\":1,\"quote\":\"### SOP-PUR-13 최단 납기 긴급 발주\\n1. 견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.\\n2. 그 공급사가 승인 공급사(AVL)인지 확인한다. 승인 공급사가 아니면 이 절차를 쓰지 않는다.\\n3. ERP 발주서를 작성하고 금액을 확인한다.\\n4. 공급사에 긴급 발주를 통지하고 입고 부서에 도착 예정 시각을 알린다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":2022}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          },
+          {
+            "id": "skill:sop-pur-13:5",
+            "text": "입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.",
+            "order": 5,
+            "manual": {
+              "id": "manual:4010c166b291e580108f81f875ed1a133af9e5fe6f7e169ecb3496752729294d:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563:section:bc6769773946e3e3dbb2ba332e7df942d945c5277d52fed9234fdb44553b96aa",
+              "ref": "PR-7.6",
+              "title": "발주 절차",
+              "excerpt": "재고 기준 이탈 경보로 열린 처리 건에서만 아래 발주 절차를 쓴다. 설비 경보로 열린 처리 건에서는 발주 절차를 후보로 내지 않는다. 정비를 언제 어떻게 할지는 정비 지침에 따라 따로 판단한다."
+            },
+            "citation": "{\"end\":2251,\"page\":1,\"quote\":\"### SOP-PUR-13 최단 납기 긴급 발주\\n1. 견적 공급사 중 리드타임이 가장 짧은 공급사를 고른다.\\n2. 그 공급사가 승인 공급사(AVL)인지 확인한다. 승인 공급사가 아니면 이 절차를 쓰지 않는다.\\n3. ERP 발주서를 작성하고 금액을 확인한다.\\n4. 공급사에 긴급 발주를 통지하고 입고 부서에 도착 예정 시각을 알린다.\\n5. 입고되면 수량 · 로트를 확인하고 입고 검사 뒤 ERP에 입고 처리한다.\",\"source_id\":\"manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563\",\"start\":2022}",
+            "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+          }
+        ],
+        "losses": [],
+        "actions": [
+          {
+            "id": "action:purchase-request",
+            "max": null,
+            "min": null,
+            "seq": 1,
+            "code": "PR_CREATE",
+            "kind": "transaction",
+            "name": "부품 구매요청",
+            "param": "supplier",
+            "value": "sup:c",
+            "target": "sys:erp",
+            "targetName": "ERP"
+          }
+        ],
+        "pattern": "SPARE_BELOW_MIN",
+        "approver": {
+          "id": "role:purchasing",
+          "name": "구매 담당",
+          "level": 1
+        },
+        "feasible": false,
+        "forecast": [
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-13:sv:ts1",
+            "name": "평형 유온",
+            "unit": "℃",
+            "value": 48.001,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ts1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-13:sv:ps1",
+            "name": "토출 압력",
+            "unit": "bar",
+            "value": 182.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:ps1"
+          },
+          {
+            "id": "hydraulic-lumped-simulator-v1@1.0:skill:sop-pur-13:sv:fs1",
+            "name": "유량",
+            "unit": "l/min",
+            "value": 9.0,
+            "method": "hydraulic-lumped-simulator-v1@1.0; constant inputs",
+            "variable": "sv:fs1"
+          }
+        ],
+        "relation": null,
+        "warnings": [],
+        "penalties": [],
+        "precedent": null,
+        "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+        "production": "keep",
+        "scoreParts": {
+          "bsc": 0.0,
+          "warn": 0.0,
+          "penalty": 0.0,
+          "quality": 0.0,
+          "delivery": 1.33,
+          "forecast": 2.0,
+          "precedent": 0.0
+        },
+        "selectedBy": [
+          {
+            "rule": "rule:pr07-purchase-candidates",
+            "when": "pattern == 'SPARE_BELOW_MIN'",
+            "effect": "SELECT",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.6"
+            ],
+            "annotation": "재고 기준 이탈 경보로 열린 처리 건에서만 세 발주 절차를 후보로 제안한다."
+          }
+        ],
+        "violations": [
+          {
+            "rule": "rule:pr07-supplier-not-avl",
+            "when": "supplier_avl == false",
+            "effect": "EXCLUDE",
+            "measure": null,
+            "penalty": null,
+            "sources": [
+              "PR-7.3"
+            ],
+            "annotation": "긴급 발주여도 승인되지 않은 공급사에는 발주하지 않는다."
+          }
+        ],
+        "description": "매뉴얼 PR-07_spare-parts-standard.md에서 검토한 SOP",
+        "policy_sha256": "b1d2cbebb686d4d6cc9ebc41084162e3b08379d80c584c9471e4a9b01450d4e4",
+        "evaluation_mode": "execution",
+        "forecastContext": {
+          "asset": "HYD-03",
+          "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+          "inputs": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "values": {
+            "fs1": 9.0,
+            "ps1": 182.0,
+            "ts1": 48.000908677873284,
+            "vs1": 0.5500036347114932,
+            "ts1_peak": 48.000908677873284,
+            "vs1_peak": 0.5500036347114932,
+            "ts1_steady": 48.000908677873696
+          },
+          "actions": [
+            {
+              "id": "action:purchase-request",
+              "max": null,
+              "min": null,
+              "seq": 1,
+              "code": "PR_CREATE",
+              "kind": "transaction",
+              "name": "부품 구매요청",
+              "param": "supplier",
+              "value": null,
+              "target": "sys:erp",
+              "targetName": "ERP"
+            }
+          ],
+          "binding": {
+            "asset": "HYD-03",
+            "scope": "HYD teaching simulator; constant-input open-loop nominal prediction",
+            "asset_id": "asset:hyd-03",
+            "model_id": "hydraulic-lumped-simulator-v1",
+            "horizon_s": 900,
+            "model_revision": "1.0"
+          },
+          "model_id": "hydraulic-lumped-simulator-v1",
+          "source_t": "2026-10-12T07:36:03.482Z",
+          "horizon_s": 900.0,
+          "operating": {
+            "ts1": 48.00090867787168,
+            "leak": 0.0,
+            "pump": "A",
+            "state": "RUN",
+            "t_amb": 25.0,
+            "fan_pct": 60.0,
+            "load_pct": 90.0,
+            "bearing_wear": 0.0,
+            "cooler_health": 1.0
+          },
+          "parameters": {
+            "heat": 1.0,
+            "leak_heat": 0.08,
+            "fan_cooling": 0.05036,
+            "base_cooling": 0.005,
+            "heat_capacity": 20.0,
+            "pressure_base": 155.0,
+            "pressure_leak": 130.0,
+            "pressure_load": 0.3
+          },
+          "provenance": {
+            "kind": "explicit simulator model state",
+            "asset": "HYD-03",
+            "source": "process plant.status",
+            "age_seconds": 0.809523,
+            "observed_at": "2026-10-12T07:36:03.482Z"
+          },
+          "assumptions": [
+            "observed disturbances and ambient temperature remain constant",
+            "sensor noise is not predicted",
+            "actual interlocks can interrupt this counterfactual trajectory",
+            "maintenance and purchase requests have no immediate physical repair effect"
+          ],
+          "review_policy": {
+            "version": "simulator-consent-v2",
+            "max_adverse_change": {
+              "ts1": 0.5,
+              "vs1": 0.05,
+              "ts1_peak": 2.0,
+              "vs1_peak": 0.05
+            },
+            "max_review_age_sim_s": 1800,
+            "max_adverse_rate_per_sim_min": {
+              "ts1": 1.0,
+              "vs1": 0.006,
+              "ts1_peak": 1.5,
+              "vs1_peak": 0.006
+            }
+          },
+          "model_revision": "1.0",
+          "execution_authorized": false,
+          "predicted_interlocks": []
+        },
+        "rankingEvidence": {
+          "rule": "rule:rank-value",
+          "gains": [],
+          "paths": [],
+          "losses": [],
+          "policy": {
+            "inputs": {
+              "due": "order_due_h",
+              "qty": "hot_lot_qty",
+              "claim": "hot_lot_claim",
+              "penalty": "order_penalty_per_h"
+            },
+            "version": 1,
+            "tieBreak": "lower_approver",
+            "components": {
+              "bsc": "bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss",
+              "warn": "-0.5 * warning_count",
+              "penalty": "-penalty_total / 20",
+              "quality": "0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)",
+              "delivery": "(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == 'keep' else (0.4 if production == 'reduce' else -1)) * 1.5",
+              "forecast": "0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)",
+              "precedent": "1.5 * precedent_share"
+            }
+          },
+          "conditionMode": "명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정",
+          "policy_sha256": "a8004e30ede70a91ca038f06e2df8989740d19aca942dacbd653019323c563d2"
+        },
+        "supplier_policy": "fastest_quote",
+        "resolvedSupplier": {
+          "id": "sup:c",
+          "part": "part:pump-seal",
+          "quote": {
+            "avl": false,
+            "name": "C트레이딩 (최저가)",
+            "price": 20,
+            "lead_d": 1,
+            "fail_rate": 0.3
+          },
+          "partNo": "P-PMP-SEAL",
+          "policy": "fastest_quote",
+          "quoteSet": {
+            "sup:a": {
+              "avl": true,
+              "name": "A정밀 (저가)",
+              "price": 35,
+              "lead_d": 2,
+              "fail_rate": 0.12
+            },
+            "sup:b": {
+              "avl": true,
+              "name": "B-OEM (순정)",
+              "price": 55,
+              "lead_d": 5,
+              "fail_rate": 0.02
+            },
+            "sup:c": {
+              "avl": false,
+              "name": "C트레이딩 (최저가)",
+              "price": 20,
+              "lead_d": 1,
+              "fail_rate": 0.3
+            }
+          },
+          "quoteSource": "/scm/quotes",
+          "classificationLabel": "C트레이딩 (최저가)"
+        },
+        "execution_checked": true,
+        "tradeoffEvaluation": []
+      }
+    ],
+    "override": false,
+    "rankRule": {
+      "rule": "rule:rank-value",
+      "when": "true",
+      "effect": "RANK",
+      "measure": null,
+      "penalty": null,
+      "sources": [
+        "BSC-2026"
+      ],
+      "annotation": "점수 = BSC 득실(스킬 → 처음 닿는 성과 지표, 강도 high 1 · medium 0.6 · low 0.3, 조건부는 절반) + 예측 유온 여유 (55 − 예측)/3 (±2 한도) − 경고 0.5 − 감점/20 + 선례 비율 × 1.5 + 납기 긴급도((24 − 남은 h)/24 × 지연 보상/100, 0~1) × 생산 영향(유지 +1 · 감산 +0.4 · 정지 −1) × 1.5 − 품질 위험(고온 구간 출하 대기 로트가 있고 예측 유온 ≥ 55 ℃ 면 클레임/1000, ≤ 1) × 1.5. 제외된 카드는 뒤로, 동점이면 승인 직급이 낮은 쪽",
+      "rankingPolicy": {
+        "inputs": {
+          "due": "order_due_h",
+          "qty": "hot_lot_qty",
+          "claim": "hot_lot_claim",
+          "penalty": "order_penalty_per_h"
+        },
+        "version": 1,
+        "tieBreak": "lower_approver",
+        "components": {
+          "bsc": "bsc_gain + 0.5 * bsc_conditional_gain - bsc_loss - 0.5 * bsc_conditional_loss",
+          "warn": "-0.5 * warning_count",
+          "penalty": "-penalty_total / 20",
+          "quality": "0 if claim is None or claim <= 0 or (qty is not None and qty <= 0) or forecast_ts1 is None or forecast_ts1 < 55 else -1.5 * round(min(1, claim / 1000), 2)",
+          "delivery": "(0 if due is None or penalty is None or penalty <= 0 else round(clamp((24 - due) / 24, 0, 1) * clamp(penalty / 100, 0, 1), 2)) * (1 if production == 'keep' else (0.4 if production == 'reduce' else -1)) * 1.5",
+          "forecast": "0 if forecast_ts1 is None else clamp((55 - forecast_ts1) / 3, -2, 2)",
+          "precedent": "1.5 * precedent_share"
+        }
+      }
+    },
+    "scenario": {
+      "id": "dec:rank-actions",
+      "name": " 조치 판단",
+      "cause": null,
+      "pattern": "SPARE_BELOW_MIN",
+      "failureMode": null
+    },
+    "applicable": true,
+    "approvedBy": null,
+    "executions": [],
+    "provenance": [
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "판정 원인",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "cause",
+        "represents": null,
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "TimescaleDB tag_1s CE 최신값 (0 s 전)",
+        "name": "냉각 효율",
+        "value": 84.0,
+        "source": "sen:ce",
+        "variable": "ce",
+        "represents": "냉각 효율",
+        "sourceName": "냉각 효율 (가상)",
+        "age_seconds": 0.413812
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "사람이 고른 스킬",
+        "value": null,
+        "source": "sys:process",
+        "variable": "chosen_skill",
+        "represents": null,
+        "sourceName": "HITL 프로세스 서비스"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "판정 고장 유형",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "failure_mode",
+        "represents": null,
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간 (HM-7.3; 관측 없으면 미확인)",
+        "name": "팬 100 % 연속 운전 시간",
+        "value": 0.0,
+        "source": "sys:historian",
+        "variable": "fan100_hours",
+        "represents": "팬 속도",
+        "sourceName": "Historian (TimescaleDB)"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "조치 후 예측 토출 압력",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "forecast_ps1",
+        "represents": "토출 압력",
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "조치 후 예측 유온",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "forecast_ts1",
+        "represents": "유온",
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "TimescaleDB tag_1s FS1 최신값 (1 s 전)",
+        "name": "유량",
+        "value": 8.962,
+        "source": "sen:fs1",
+        "variable": "fs1",
+        "represents": "유량",
+        "sourceName": "유량 센서",
+        "age_seconds": 0.521811
+      },
+      {
+        "how": "QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)",
+        "name": "고온 구간 출하 대기 로트의 클레임 위험 (만원)",
+        "value": 3000,
+        "source": "sys:qms",
+        "variable": "hot_lot_claim",
+        "represents": "품질 클레임",
+        "sourceName": "QMS 품질 시스템",
+        "observed_at": "2026-10-12T07:36:03.087Z",
+        "source_time": "원천이 행 시점을 주지 않음",
+        "source_as_of": null
+      },
+      {
+        "how": "QMS 고온 구간 출하 대기 로트 (OEM 클레임 위험)",
+        "name": "고온 구간 출하 대기 수량",
+        "value": 400,
+        "source": "sys:qms",
+        "variable": "hot_lot_qty",
+        "represents": null,
+        "sourceName": "QMS 품질 시스템",
+        "observed_at": "2026-10-12T07:36:03.087Z",
+        "source_time": "원천이 행 시점을 주지 않음",
+        "source_as_of": null
+      },
+      {
+        "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+        "name": "그다음 예정된 정비 시간으로 미룰 때의 운전시간 (h)",
+        "value": 2159.64,
+        "source": "sys:cmms",
+        "variable": "hours_at_following_window",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.172Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+      },
+      {
+        "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+        "name": "마지막 정기 정비 뒤 운전시간 (h)",
+        "value": 1880,
+        "source": "sys:cmms",
+        "variable": "hours_since_pm",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.172Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "필요일 − 공급사 리드타임 (일)",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "lead_slack_days",
+        "represents": null,
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "TimescaleDB tag_1s LoadSP 최신값 (1 s 전)",
+        "name": "펌프 부하 설정",
+        "value": 90.0,
+        "source": "sys:scada",
+        "variable": "load",
+        "represents": "펌프 부하",
+        "sourceName": "SCADA · PLC (cmd-gateway 경유)",
+        "age_seconds": 0.704201
+      },
+      {
+        "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+        "name": "이번 예정된 정비 시간에 닿을 때의 운전시간 (h)",
+        "value": 1888.64,
+        "source": "sys:cmms",
+        "variable": "hours_at_next_window",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.216Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+      },
+      {
+        "how": "출처 조회 방법 없음",
+        "name": "오일 분석 결과 (기준 이탈 여부)",
+        "value": null,
+        "source": "sys:cmms",
+        "variable": "oil_analysis_out_of_spec",
+        "represents": null,
+        "sourceName": "CMMS"
+      },
+      {
+        "how": "MES 생산오더 납기까지 남은 시간 (납기 일시 기준, 조회 시각에 계산)",
+        "name": "긴급 오더 남은 시간",
+        "value": 2.64,
+        "anchor": "2026-10-12T10:14:33.616041+00:00",
+        "source": "sys:mes",
+        "variable": "order_due_h",
+        "represents": "납기 준수율",
+        "sourceName": "MES",
+        "observed_at": "2026-10-12T07:36:03.275Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-03T16:00:01.495771+00:00"
+      },
+      {
+        "how": "ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)",
+        "name": "납기 지연 시 시간당 보상",
+        "value": 120,
+        "source": "sys:erp",
+        "variable": "order_penalty_per_h",
+        "represents": "지체상금",
+        "sourceName": "ERP",
+        "observed_at": "2026-10-12T07:36:03.324Z",
+        "source_time": "원천이 행 시점을 주지 않음",
+        "source_as_of": null
+      },
+      {
+        "how": "ERP 계약 조건 (지연 시 시간당 보상 · 고객 등급)",
+        "name": "고객 등급",
+        "value": "OEM",
+        "source": "sys:erp",
+        "variable": "order_customer_tier",
+        "represents": null,
+        "sourceName": "ERP",
+        "observed_at": "2026-10-12T07:36:03.324Z",
+        "source_time": "원천이 행 시점을 주지 않음",
+        "source_as_of": null
+      },
+      {
+        "how": "파이프라인이 이미 가진 값",
+        "name": "경보 패턴",
+        "value": "SPARE_BELOW_MIN",
+        "source": "sys:cep",
+        "variable": "pattern",
+        "represents": null,
+        "sourceName": "CEP 탐지기 (Flink 대체)"
+      },
+      {
+        "how": "plant.status 최신 메시지 (process 서비스가 구독)",
+        "name": "PLC 운전 모드",
+        "value": "REMOTE_AUTO",
+        "source": "sys:scada",
+        "variable": "plc_mode",
+        "represents": null,
+        "sourceName": "SCADA · PLC (cmd-gateway 경유)"
+      },
+      {
+        "how": "plant.status 최신 메시지 (process 서비스가 구독)",
+        "name": "PLC 상태",
+        "value": "RUN",
+        "source": "sys:scada",
+        "variable": "plc_state",
+        "represents": null,
+        "sourceName": "SCADA · PLC (cmd-gateway 경유)"
+      },
+      {
+        "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+        "name": "예정된 정비 시간의 정비 인원 (명)",
+        "value": 2,
+        "source": "sys:cmms",
+        "variable": "pm_crew_available",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.329Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "발주 금액 (만원)",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "po_amount",
+        "represents": "부품 구매비",
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "MES 현재 설비 생산 오더의 실제 RUNNING 상태",
+        "name": "현재 설비 생산 오더 가동 여부",
+        "value": true,
+        "source": "sys:mes",
+        "variable": "production_running",
+        "represents": null,
+        "sourceName": "MES",
+        "observed_at": "2026-10-12T07:36:03.385Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-03T16:00:01.495771+00:00"
+      },
+      {
+        "how": "TimescaleDB tag_1s PS1 최신값 (1 s 전)",
+        "name": "토출 압력",
+        "value": 181.69,
+        "source": "sen:ps1",
+        "variable": "ps1",
+        "represents": "토출 압력",
+        "sourceName": "토출 압력 센서",
+        "age_seconds": 0.917481
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "후보 스킬의 명령 코드",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "skill_code",
+        "represents": null,
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "후보 스킬 종류",
+        "value": null,
+        "source": "sys:agent",
+        "variable": "skill_kind",
+        "represents": null,
+        "sourceName": "AI 에이전트"
+      },
+      {
+        "how": "CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)",
+        "name": "씰 키트 가용 재고 (CMMS 자재 키트, 개)",
+        "value": 1,
+        "source": "sys:cmms",
+        "variable": "spare_available",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.423Z",
+        "source_time": "record updated_at",
+        "source_as_of": "2026-10-11T14:02:01.980687+00:00"
+      },
+      {
+        "how": "ERP 예비품 재고 P-PMP-SEAL (가용 = 실물 − 예약 + 입고 예정, 재주문점 · 목표 · 필요일)",
+        "name": "예비품 가용 재고 − 재주문점 (개)",
+        "value": -1,
+        "source": "sys:erp",
+        "variable": "spare_gap",
+        "represents": null,
+        "sourceName": "ERP",
+        "observed_at": "2026-10-12T07:36:03.540Z"
+      },
+      {
+        "how": "CMMS 설비별 예비 펌프 준비 상태 (값이 없으면 미확인)",
+        "name": "예비 펌프 가용",
+        "value": true,
+        "source": "sys:cmms",
+        "variable": "standby_ready",
+        "represents": null,
+        "sourceName": "CMMS",
+        "observed_at": "2026-10-12T07:36:03.592Z",
+        "source_time": "원천이 행 시점을 주지 않음",
+        "source_as_of": null
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "공급사 승인 여부",
+        "value": null,
+        "source": "sys:scm",
+        "variable": "supplier_avl",
+        "represents": null,
+        "sourceName": "SCM 구매 포털"
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "후보 공급사 불량률 (견적, 0~1)",
+        "value": null,
+        "source": "sys:scm",
+        "variable": "supplier_fail_rate",
+        "represents": "부품 품질",
+        "sourceName": "SCM 구매 포털"
+      },
+      {
+        "how": "TimescaleDB tag_1s TS1 최신값 (0 s 전)",
+        "name": "유온",
+        "value": 48.0,
+        "source": "sen:ts1",
+        "variable": "ts1",
+        "represents": "유온",
+        "sourceName": "유온 센서",
+        "age_seconds": 0.145644
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "유온 상승률",
+        "value": null,
+        "source": "sys:cep",
+        "variable": "ts1_slope",
+        "represents": "유온",
+        "sourceName": "CEP 탐지기 (Flink 대체)"
+      },
+      {
+        "how": "TimescaleDB tag_1s VS1 최신값 (0 s 전)",
+        "name": "팬 진동",
+        "value": 0.584,
+        "source": "sen:vs1",
+        "variable": "vs1",
+        "represents": "팬 진동",
+        "sourceName": "팬 진동 센서",
+        "age_seconds": 0.197451
+      },
+      {
+        "how": "후보마다 계산하거나 경보 · 결정 시점에 정해진다",
+        "name": "진동 상승률",
+        "value": null,
+        "source": "sys:cep",
+        "variable": "vs1_slope",
+        "represents": "팬 진동",
+        "sourceName": "CEP 탐지기 (Flink 대체)"
+      }
+    ],
+    "explanation": "펌프 축 씰 키트 — 후보 3장 중 'SOP-PUR-12 대체 승인 공급사 발주'을(를) 권한다 (점수 2.83). 예측 유온 48.001 ℃. 득: 부품 단가 ↓ [구매팀]. 제외: '최단 납기 긴급 발주' — 긴급 발주여도 승인되지 않은 공급사에는 발주하지 않는다.. 납기: OEM 오더 납기까지 2.64 h, 지연 시 120만원/h — 생산을 유지하는 카드의 실행 순위 식 결과 +1.33점.",
+    "recommended": "skill:sop-pur-12",
+    "approvedRole": null,
+    "evaluation_mode": "execution",
+    "execution_checked": true
+  },
+  "process_approval_id": "0efd2891-a51a-464e-95da-37440c1cdd3a"
+}

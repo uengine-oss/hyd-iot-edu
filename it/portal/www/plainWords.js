@@ -38,6 +38,7 @@
     hours_since_pm: ['마지막 정비 뒤 운전시간', 'h'], pm_since_h: ['마지막 정비 뒤 운전시간', 'h'], pm_interval_h: ['정비 주기', 'h'], pm_tolerance_pct: ['허용 오차', '%'],
     pm_notice_h: ['사전 알림', 'h'], pm_due_in_h: ['정비 기한까지', 'h'], pm_limit_in_h: ['허용 한도까지', 'h'], hours_at_next_window: ['이번 정비 시간의 운전시간', 'h'],
     hours_at_following_window: ['다음 정비 시간의 운전시간', 'h'], pm_crew_available: ['정비 가능 인원', '명'], spare_available: ['정비 키트 재고', '개'],
+    next_window_at: ['다음 정비 시간', ''], next_window_in_h: ['다음 정비 시간까지', 'h'], next_window_label: ['다음 정비 시간 구분', ''], next_window_crew_size: ['다음 정비 시간의 작업 인원', '명'],
     night_window_in_h: ['야간 정비 시간까지', 'h'], night_window_at: ['야간 정비 시간', ''], cycle: ['정비 회차', '회'], package: ['정비 묶음', ''], kit_qty: ['키트 수량', '개'],
     kit_part_no: ['키트 부품', ''], bundle_peer: ['함께 정비할 설비', ''], bundle_peer_since_h: ['함께 정비할 설비 운전시간', 'h'], pm_window_open: ['정비 시간 열림', ''],
     configured_base_package: ['등록된 기본 정비 내용', ''], package_semantics: ['정비 내용의 기록 의미', ''],
@@ -177,6 +178,8 @@
      원인은 고장 판정이 아니라 "왜 이 부품인가"(재고: 부품 → 그 부품이 고치는 원인) · "왜 이 정비인가"(정기 정비: 정비가 막는 고장의 원인)다.
      칸이 없는 판단(이 칸 이전 기록)은 진단 이름표 — 그때 판단 기록은 모두 진단 근거 문장으로 적혔다. 모르는 값은 지어내지 않고 실패한다. */
   const CAUSE_WORDS = {
+    'purchase-part': { cause: '구매 대상 부품', failureMode: null, input: null, inputFm: null,
+      found: () => { throw new Error('구매 부품 경로는 고장 원인을 판정하지 않습니다'); } },
     diagnosis: { cause: '원인', failureMode: '고장 유형', found: c => `원인을 ‘${c}’${W.josa(c, '으로/로')} 보고`, input: null, inputFm: null },
     part: { cause: '이 부품이 고치는 원인', failureMode: '그 원인이 일으키는 고장', found: c => `이 부품이 고치는 원인 ‘${c}’${W.josa(c, '을/를')} 찾고`,
             input: '이 부품이 고치는 원인', inputFm: '그 원인이 일으키는 고장' },
@@ -233,14 +236,7 @@
   /* ---------------------------------------------------------------- 도구 (무엇을 물었고 무엇을 받았나) */
   const unescapeU = s => String(s).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
   function parse(x) {
-    if (x == null) return null;
-    if (typeof x !== 'string') {
-      if (Array.isArray(x) && x.length && x.every(y => y && y.type === 'text' && typeof y.text === 'string')) return parse(x.map(y => y.text).join('\n'));
-      return x;
-    }
-    const t = x.trim();
-    if (/^[[{]/.test(t)) { try { return JSON.parse(t); } catch (_) { return t; } }
-    return t;
+    return UI.normalizeToolOutput(x).value;
   }
   const doc = o => (o && typeof o === 'object' && !Array.isArray(o) && 'document' in o) ? o.document : o;
   const nm = id => W.idName(id);
@@ -403,7 +399,10 @@
     'mcp__hyd-dmn__timeseries_schema': { name: '센서 기록 구조 보기', sys: '센서 기록 DB' },
     'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 엔진', ask: i => nm(i.decision || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) && d[0] ? `‘${d[0].decisionName || nm(d[0].decision)}’ 규칙 ${(d[0].rules || []).length || d.length}개` : ''; } },
-    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 엔진', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · ') },
+    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 엔진', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
+      got:o=>{const d=doc(parse(o)), options=d?.result?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과 형식을 확인할 수 없습니다 · 원문 확인';
+        const chosen=options.find(x=>x.id===(d.result.recommended ?? d.recommended));
+        return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님'].filter(Boolean).join(' · '); } },
     'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 엔진', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
       got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 엔진', ask: i => nm(i.failure_mode || ''),
@@ -417,7 +416,7 @@
     'mcp__enterprise__erp_contract': { name: '계약 조회', sys: 'ERP', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__erp_inventory': { name: '완제품 재고 조회', sys: 'ERP', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
     'mcp__enterprise__query': { name: '업무 DB 질의', sys: '업무 DB', ask: sqlAsk, got: rowsGot },
-    'mcp__hyd-effects__send_mail': { name: '메일 보내기', sys: '메일', ask: i => `${i.to || ''}${i.subject ? ` · 제목 ‘${i.subject}’` : ''}`, got: () => '보냄' },
+    'mcp__hyd-effects__send_mail': { name: '메일 보내기', sys: '메일', ask: i => `${i.to || ''}${i.subject ? ` · 제목 ‘${i.subject}’` : ''}`, got: o => W.mailReceipt(o) ? '보냄 · 발송 영수증 확인' : '메일 발송 영수증을 확인할 수 없습니다' },
   };
   // 업무 MCP 는 서버가 셋(전부 · 정비용 · 구매용)이라 도구 이름으로 한 번 더 찾는다
   const BIZ = {
@@ -447,9 +446,11 @@
   };
   // 받은 것 한 줄 (잘림 · 막힘 · 실패는 상태로 따로)
   W.got = (raw, output) => {
+    const parsed=UI.normalizeToolOutput(output);
+    if (parsed.error) return parsed.error;
     const s = spec(raw);
-    try { if (s.got) { const g = s.got(output); if (g) return UI.clean(g); } } catch (err) { console.warn('[hydWords] 받음 요약 실패', raw, err); }
-    return genericGot(output);
+    try { if (s.got) { const g = s.got(parsed.value); if (g) return UI.clean(g); } } catch (err) { console.warn('[hydWords] 받음 요약 실패', raw, err); }
+    return genericGot(parsed.value);
   };
 
   /* ---------------------------------------------------------------- id → 이름: 이 처리 건이 아는 이름(판단 · 진단 카드 · 역할) → 사전(names.json) → 종류 + 꼬리
@@ -494,6 +495,7 @@
   /* ---------------------------------------------------------------- 원래 이름(id) 보이기 */
   W.id = id => W.showIds && id ? ` <code class="cr-id">${esc(id)}</code>` : '';
   W.setShowIds = on => { W.showIds = !!on; try { localStorage.setItem('hyd:record:ids', on ? '1' : '0'); } catch (_) { /* 이 브라우저에서만 */ } };
+  W.mailReceipt = o => { const d=o?.document; return !!(o?.result==='ok' && d && typeof d.message_id==='string' && d.message_id.trim() && typeof d.sent_at==='string' && Number.isFinite(Date.parse(d.sent_at)) && Array.isArray(d.to) && d.to.length && d.to.every(x=>typeof x==='string' && x.trim())); };
   W.parse = parse; W.doc = doc;
   window.hydWords = W;
 })();

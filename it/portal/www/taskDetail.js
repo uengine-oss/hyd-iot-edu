@@ -111,6 +111,7 @@
 
   /* ---------- 값 → 읽기 쉬운 HTML (키별 특수 렌더 → 일반 규칙) ---------- */
   function valueHtml(key, value, v, depth = 0) {
+    if (['cause','failure_mode'].includes(key) && !value && boundDecision(v)?.origin?.cause_route === 'purchase-part') return '<span class="muted">구매 부품을 기준으로 판단 · 고장 원인 판정 없음</span>';
     const special = SPECIAL[key];
     if (special && value && typeof value === 'object') { const html = special(value, v); if (html) return html + rawFold(value, 'raw:' + key); }
     if (value == null) return `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`;
@@ -136,7 +137,7 @@
     const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || k)}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
     return dl + (depth === 0 ? rawFold(value, 'raw:' + key) : '');
   }
-  const optionName = o => (o && UI.idText(o.name || UI.name(o.id) || o.id)) || '';
+  const optionName = o => (o && UI.idText(o.name || (window.hydWords ? hydWords.idName(o.id) : UI.name(o.id)) || '대안 표시 이름 기록 없음')) || '';
   function condText(e) {
     const status = e.status || (e.passed === true ? 'PASS' : e.passed === false ? 'FAIL' : 'UNKNOWN');
     const tone = status === 'PASS' ? 'success' : status === 'FAIL' ? 'neutral' : 'warning';
@@ -154,17 +155,20 @@
   }
   // decision.order: 내장 경로는 "1. 이름" 문자열, 실제 워커는 {id, name, rank, score, sopId, approver} 객체 목록 — 둘 다 읽기 쉬운 줄로
   function orderItem(x) {
-    if (x && typeof x === 'object') return `<li>${esc(x.name || UI.name(x.id) || '')}${x.sopId ? ` <span class="muted">${esc(x.sopId)}</span>` : ''}${x.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(x.score))}</span>` : ''}${x.approver ? `<span class="muted"> · ${esc((String(x.approver).match(/\(([^)]+)\)\s*$/) || [])[1] || UI.idText(String(x.approver)))}</span>` : ''}</li>`;
+    if (x && typeof x === 'object') {
+      const approver = x.approver && typeof x.approver === 'object' ? x.approver.name || UI.who(x.approver.id) : x.approver ? (String(x.approver).match(/\(([^)]+)\)\s*$/) || [])[1] || UI.idText(String(x.approver)) : '';
+      return `<li>${esc(optionName(x))}${x.sopId ? ` <span class="muted">${esc(x.sopId)}</span>` : ''}${x.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(x.score))}</span>` : ''}${approver ? `<span class="muted"> · ${esc(approver)}</span>` : ''}</li>`;
+    }
     return `<li>${esc(UI.idText(String(x).replace(/^\d+\.\s*/, '')))}</li>`;
   }
   const SPECIAL = {
     _deferral(record) { return window.hydWords?.deferralEvidenceHtml(record) || ''; },
-    decision(d) {
+    decision(d, v) {
       const opts = d.options || [];
       if (!opts.length && !d.recommended && !(d.order || []).length) return '';
       const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${window.hydWords?.purchaseEconomics(o) ? `<span class="muted"> · ${esc(hydWords.purchaseCostLabel(o))}</span>` : o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
-        : (d.order || []).length ? `<ol class="td-list">${d.order.map(orderItem).join('')}</ol>` : '';
-      return `${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
+        : (d.order || []).length ? `<ol class="td-list">${d.order.map(o=>orderItem({...o,name:o.name || boundDecision(v)?.options?.find(x=>x.id===o.id)?.name})).join('')}</ol>` : '';
+      return `<p class="field-hint">이 단계가 기록한 당시 추천 · 현재 승인 선택과 별도</p>${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
     guide_card(g) {
       const causes = g.causes || [];
@@ -238,8 +242,9 @@
   function decisionHtml(d) {
     if (!d) return T.decErr ? `<p class="neg">${esc(UI.t('td.decFail'))}: ${esc(T.decErr)}</p>` : '';
     const rr = d.rankRule || {};
-    return `${cardsTable(d.options || [], { rec: d.recommended, chosen: d.chosen })}${rr.annotation || rr.rule ? `<p class="field-hint">${esc(UI.t('td.rankRule'))}: ${esc(UI.idText(rr.annotation || rr.rule))}</p>` : ''}
-      ${rr.rankingPolicy && rr.rankingPolicy.components ? UI.fold(esc(UI.t('td.formula')), Object.entries(rr.rankingPolicy.components).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''), { cls: 'small' }) : ''}`;
+    const scope = d.origin?.cause_route === 'purchase-part' ? `<p class="kv-line"><b>구매 대상 부품</b> ${esc(d.origin.part?.name || '부품 이름 기록 없음')}${d.origin.part?.partNo ? ` · ${esc(d.origin.part.partNo)}` : ''}</p>` : '';
+    return `${scope}${cardsTable(d.options || [], { rec: d.recommended, chosen: d.chosen })}${rr.annotation || rr.rule ? `<p class="field-hint">${esc(UI.t('td.rankRule'))}: ${esc(UI.idText(rr.annotation || rr.rule))}</p>` : ''}
+      ${rr.rankingPolicy && rr.rankingPolicy.components ? UI.fold(esc(UI.t('td.formula')), Object.entries(rr.rankingPolicy.components).map(([k, expr]) => `<div>${esc(scoreLabel(k))}: <code>${esc(expr)}</code></div>`).join(''), { cls: 'small' }) : ''}${rawFold(d,'raw:bound-decision')}`;
   }
   const lastOf = (evs, pred) => { for (let i = evs.length - 1; i >= 0; i--) if (pred(evs[i])) return evs[i]; return null; };
   const isNote = e => e.event_type === 'task_working' && (e.data || {}).type === 'text';
@@ -447,10 +452,11 @@
     return rows;
   }
   function basisHtml(w, evs) {
+    if (window.hydTrace) evs=hydTrace.publicNotes(evs);
     const ev = lastOf(evs, isEvidence), note = lastOf(evs, isNote);
     const parts = [];
-    if (ev) parts.push(evidenceHtml(ev.data));
-    if (note) parts.push(noteHtml(note.data.content, 'basis-note'));
+    if (ev && evidenceHtml(ev.data)) parts.push(evidenceHtml(ev.data));
+    if (note?.data?.content?.trim()) parts.push(noteHtml(note.data.content, 'basis-note'));
     return parts.length ? `<div class="td-basis"><p class="td-basis-title">${esc(UI.t('td.basis'))}</p>${parts.join('')}</div>` : '';
   }
   function outputHtml(w, item, v, evs) {
@@ -465,7 +471,7 @@
       return inc || rows.length ? `${inc}${rows.length ? `<div class="ro-grid">${rows.join('')}</div>` : ''}${rawFold(w.output, 'raw:output')}` : `<p class="muted">${esc(UI.t('td.noOutput'))}</p>`;
     }
     const basis = k === 'agent' ? basisHtml(w, evs) : '';
-    const cards = k === 'agent' && DECISION_TOOLS.has(tool) && (T.dec || T.decErr) ? `<p class="kv-line"><b>${esc(UI.t('td.parts'))}</b></p>${decisionHtml(T.dec && T.dec.id === vars(v.instance).decision_id ? T.dec : null)}` : '';
+    const cards = k === 'agent' && (boundDecision(v) || (T.decErr && T.decId===recordedDecisionId(v,w,item))) ? `<p class="kv-line"><b>${esc(UI.t('td.parts'))}</b></p>${decisionHtml(boundDecision(v))}` : '';
     const wait = k === 'human' ? `<div class="ro-grid">${waitRow(w)}</div>` : '';
     const out = w.output && Object.keys(w.output).length ? w.output : (w.draft && typeof w.draft === 'object' && !w.draft._human_request ? w.draft : null);
     if (!out) return `${basis}${cards}${wait}<p class="muted">${esc(UI.t('td.noOutput'))}</p>`;
@@ -525,8 +531,8 @@
     const item = T.item && T.item.id === w.id ? T.item : null;
     const first = T.rendered !== w.id;
     const wasOpen = new Set([...host.querySelectorAll('details[data-k][open]')].map(d => d.dataset.k));
-    const live = LIVE.has(w.status) && v.instance.status === 'RUNNING';
     const evs = eventsOf(w, v, item);
+    const live = UI.taskExecution(w, evs, v.instance).live;
     const k = kindOf(w);
     const span = w.start_date && w.end_date ? new Date(w.end_date) - new Date(w.start_date) : NaN;
     const dur = span >= 0 ? fmtMs(span) : '';
@@ -610,12 +616,38 @@
   }
 
   /* ---------- state ---------- */
+  function recordedDecisionId(v, w, item) {
+    if (!v || !w) return null;
+    for (const record of [w.output,w.draft]) {
+      if (record?.decision_id) return record.decision_id;
+      if (record?.decision?.id) return record.decision.id;
+    }
+    if (item?.input_state === 'captured') return item.inputs?.decision_id || item.inputs?.decision?.id || null;
+    const sources = v.instance.variable_sources || {};
+    if (['decision_id','decision'].some(k=>sources[k]?.kind==='workitem' && sources[k].id===w.id)) return vars(v.instance).decision_id || null;
+    return null;
+  }
+  function boundDecision(v) {
+    const w = v?.workitems?.find(x=>x.id===T.wid);
+    const id = recordedDecisionId(v,w,T.item);
+    const recorded = w?.output?.decision || w?.draft?.decision;
+    return UI.recordedDecision(T.dec,recorded,id);
+  }
   async function ensureDecision(v, w, tool) {
-    const id = vars(v.instance).decision_id;
-    if (!id || !DECISION_TOOLS.has(tool)) return;
+    if (T.wid!==w.id) return;
+    const item = T.item?.id===w.id ? T.item : null;
+    const id = recordedDecisionId(v,w,item);
+    if (!id) { T.dec=null; T.decId=null; T.decErr=null; return; }
     if (T.decId === id && T.dec && !LIVE.has(w.status)) return;
-    try { const d = await getJ(API.process + '/api/decisions/' + encodeURIComponent(id)); T.dec = d; T.decId = id; T.decErr = null; }
-    catch (e) { T.dec = null; T.decId = id; T.decErr = e.message; }
+    const wid = w.id, pid=v.instance.proc_inst_id;
+    try {
+      const d = await getJ(API.process + '/api/decisions/' + encodeURIComponent(id));
+      const current=view();
+      if (T.wid!==wid || current?.instance.proc_inst_id!==pid || recordedDecisionId(current,workitemOf(wid),T.item)!==id) return;
+      if (d?.id!==id) throw new Error('요청한 판단 기록과 응답 식별자가 다릅니다');
+      T.dec = d; T.decId = id; T.decErr = null;
+    }
+    catch (e) { if(T.wid===wid && view()?.instance.proc_inst_id===pid) {T.dec = null; T.decId = id; T.decErr = e.message;} }
   }
   async function ensureIncident(v, force) {
     const id = vars(v.instance).incident;
@@ -632,6 +664,7 @@
     const wid = T.wid;
     try {
       const item = await getJ(API.process + '/api/todolist/' + encodeURIComponent(wid)); if (T.wid === wid) { T.item = item; T.error = null; }
+      if (T.wid!==wid) return;
       const v = view(), w = workitemOf(wid);
       if (v && w) { await ensureDecision(v, w, item.tool || ''); if (/^incident:/.test(item.tool || '')) await ensureIncident(v, true); }
     }
@@ -683,7 +716,7 @@
     render();
     if (REFRESH_ON.has(e.event_type)) refresh().then(render);
   }
-  function isLive() { const w = T.wid && workitemOf(T.wid); const v = view(); return !!(w && v && LIVE.has(w.status) && v.instance.status === 'RUNNING'); }
+  function isLive() { const w = T.wid && workitemOf(T.wid); const v = view(); return !!(w && v && UI.taskExecution(w, eventsOf(w,v,T.item), v.instance).live); }
   const onInstances = () => typeof state !== 'undefined' && state.tab === 'instances';
   // a #/instances/<처리 건>/task/<단계> address (shared link, reload) selects the instance, shows its 흐름 tab and opens the step
   function fromHash() {
@@ -718,4 +751,5 @@
   }
 
   window.hydTaskDetail = { open, openActivity, close, mount, onEvent, render, renderNow, nowHtml, refresh, fromHash, T };
+  window.addEventListener('hyd-tool-payload',()=>{if(T.host?.isConnected)render();});
 })();

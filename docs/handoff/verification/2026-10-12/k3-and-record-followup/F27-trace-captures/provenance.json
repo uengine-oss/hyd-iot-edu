@@ -1,0 +1,62 @@
+{
+  "method": "Exact byte copies of two native existing processing-pane screenshots; separate from 96-check capture, no source/business changes",
+  "copied": [
+    {
+      "file": "B-latest-native-flow-trace-1440.png",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\B-latest-native-flow-trace-1440.png",
+      "sha256": "94e67a0ce1af2f9f65b2b2520bcf0b10670c109205c0844958373a152f340c81"
+    },
+    {
+      "file": "B-latest-native-flow-trace-1440.txt",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\B-latest-native-flow-trace-1440.txt",
+      "sha256": "9746fadfe6f70c346333661338e0091d7f2636163017256c40320ef74433e2ad"
+    },
+    {
+      "file": "C-latest-native-flow-trace-1440.png",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\C-latest-native-flow-trace-1440.png",
+      "sha256": "d0d7cb5e367c033bbb3a061d22612a9c3f2e854992e2639168f35ea1e55ce405"
+    },
+    {
+      "file": "C-latest-native-flow-trace-1440.txt",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\C-latest-native-flow-trace-1440.txt",
+      "sha256": "394e71cac6730962a0892649de930c6ed2a668513d66ab3ef07042c5152727a5"
+    },
+    {
+      "file": "capture.log",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\capture.log",
+      "sha256": "7755fe3db8940e9c364b15dd93bd2b06411f58d785b130b3f47009747f764ea1"
+    },
+    {
+      "file": "capture.py",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\capture.py",
+      "sha256": "76282d3c60f5955cca42594401c93b225cd77dd83a65b1e2b6dc31d9be38ed54"
+    },
+    {
+      "file": "result.json",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\result.json",
+      "sha256": "098c4707773ed326523319adcb1cc7398ed5aba3b981fa0f0c723340d0c1be46"
+    },
+    {
+      "file": "source-after.json",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\source-after.json",
+      "sha256": "3d04a6e3e26926225e04d6f42451e71e8d9bd21bcc14fa5e89038ff2362bfa0c"
+    },
+    {
+      "file": "source-before.json",
+      "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\source-before.json",
+      "sha256": "3d04a6e3e26926225e04d6f42451e71e8d9bd21bcc14fa5e89038ff2362bfa0c"
+    }
+  ],
+  "state": {
+    "B": {
+      "same": true,
+      "before_sha256": "94f0e5275e9dd6e0388791bfb23f22f9311ed7100055e7c6a095f516542dc5b4",
+      "after_sha256": "94f0e5275e9dd6e0388791bfb23f22f9311ed7100055e7c6a095f516542dc5b4"
+    },
+    "C": {
+      "same": true,
+      "before_sha256": "9cef39d8f4833893edf613652a83b8697949778d57305e16a44cca4ce8c5af41",
+      "after_sha256": "9cef39d8f4833893edf613652a83b8697949778d57305e16a44cca4ce8c5af41"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "case": "B",
+    "persisted_before_sha256": "94f0e5275e9dd6e0388791bfb23f22f9311ed7100055e7c6a095f516542dc5b4",
+    "persisted_after_sha256": "94f0e5275e9dd6e0388791bfb23f22f9311ed7100055e7c6a095f516542dc5b4",
+    "unchanged": true,
+    "status": "RUNNING"
+  },
+  {
+    "case": "C",
+    "persisted_before_sha256": "9cef39d8f4833893edf613652a83b8697949778d57305e16a44cca4ce8c5af41",
+    "persisted_after_sha256": "9cef39d8f4833893edf613652a83b8697949778d57305e16a44cca4ce8c5af41",
+    "unchanged": true,
+    "status": "COMPLETED"
+  }
+]

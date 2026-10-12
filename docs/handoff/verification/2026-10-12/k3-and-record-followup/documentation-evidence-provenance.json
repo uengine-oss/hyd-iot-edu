@@ -1,0 +1,12 @@
+[
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\tool-output-consumer-audit.json",
+    "target": "tool-output-consumer-audit.json",
+    "sha256": "007deccb6a6f51f0f718440732caf654176c75e6b44383199eef03ccc26aa123"
+  },
+  {
+    "source": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-actual-stored-payload-semantics.json",
+    "target": "F27-actual-stored-payload-semantics.json",
+    "sha256": "6ba8478bf7cb58b6ee29b3998f9e1630ab102ad5485038a23b7339bfc7998736"
+  }
+]
