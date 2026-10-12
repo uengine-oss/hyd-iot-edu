@@ -44,7 +44,7 @@ bash scripts/run_worker_host.sh
 - DB: Supabase 로컬(54322). 마이그레이션 45~48 · 50 · 51은 `psql`로 직접 적용했다(장부는 44까지, 049 없음).
 - 워커: `bash scripts/run_worker_host.sh`(작업 트리에서는 `PYTHON=<루트>/.venv/bin/python …`). **1개만.** 멈춤 `pkill -f worker.main` 뒤 포트 확인. 워커는 Claude Code 구독으로 돌아 세션 한도에 걸리면 `RunFailed`다(리셋 시각을 기록하고 기다림). 실패한 에이전트 task는 `/cancel`이 아니라 `POST /api/todolist/{wid}/close`(포털 '단계 닫기')로 끝낸다.
 - 긴 실행 전 `caffeinate -dimsu -t 28800 &`. `rtk` 훅이 git 출력을 줄인다(원문 `rtk proxy <명령>`).
-- 지금 스택이 물고 있는 코드(10-11 `docker inspect` 실측): process · agent · plant-sim · neo4j = 레포 루트. **portal · dmn-mcp · effects-mcp · enterprise-* ← `.claude/worktrees/merge-preview`, detector · cmd-gateway · connect-* · emqx · redpanda · fuxa · grafana ← `.claude/worktrees/agent-aed004354f1cd7a4c`, timescaledb ← `.claude/worktrees/agent-afd136e4b22934cb9`.** 이 세 작업 트리는 컨테이너가 파일을 직접 물고 있어 지우지 않는다(스택을 루트 기준으로 옮긴 뒤에만).
+- 10-12 macOS: 스택과 Supabase를 껐다(데이터 볼륨은 그대로). 작업 트리는 모두 지웠다(브랜치는 남김, 각 작업 트리의 `.evidence`는 루트 `.evidence/removed-worktrees/<이름>/`). 다시 켤 때는 레포 루트에서 `cd it/supabase && supabase start` 뒤 `export COMPOSE_PROFILES=ot,backbone,detect,knowledge,agent,enterprise,process,cliagents && docker compose -p hyd-iot-edu up -d` — 멈춘 컨테이너 일부가 지운 작업 트리의 파일을 물고 있었으므로 루트 기준으로 다시 만들어진다. 켠 뒤 `docker inspect hyd-iot-edu-process-1 --format '{{.State.StartedAt}} {{.RestartCount}}'`와 포털 8088을 확인한다.
 - 상태 보기: `docker inspect hyd-iot-edu-neo4j-1 --format '{{range .Mounts}}{{.Name}} {{end}}'`(`neo4j-data` = 전체판, `-c3` = 구조판) · `curl -s localhost:8080/api/scenario/status`(running이 null인지) · `lsof -iTCP:8097 -sTCP:LISTEN`.
 
 ### 라이브 잠금
@@ -160,12 +160,13 @@ bash scripts/run_worker_host.sh
 - G6(K1)은 독립 노트북의 구성 꼬리표·필터·선택 export 구현으로 처리했다. 공용 서버 인증 격리는 별도 범위이며 현재 사용자 결정 대기로 중단하지 않는다
 - 이전 이미지 꼬리표가 없다(`final-verify.md` 3절). 되돌릴 일이 있으면 `F-20261010-keep` 작업 트리에서 다시 빌드
 - macOS에서의 작업보고 위치(CLAUDE.md §2의 `D:/work/작업보고/`는 이 PC에 없다)
-- 끝난 작업 트리 정리: 10-11 한 번 했다(4.6절). 남은 것의 정리 시점
+- 끝난 작업 트리 정리: 10-11에 9개, 10-12에 남은 6개를 지웠다(4.6절). 남은 작업 트리 없음
 
 ### 4.6 작업 트리 (10-11 정리 후)
 - 지운 것: 9개 — `agent-a43cb88bab1647e3b` · `agent-afbc3de09be36a2d6` · `c3-fixes` · `c3-trace-ui` · `cap-g1g7` · `cap-g3g9` · `cap-kit` · `capstone-gaps` · `L-20261010-labs`(작업 트리만, 브랜치는 모두 남아 있다). 그 작업 트리에만 있던 무시 파일 `.evidence`는 루트 `.evidence/removed-worktrees/<이름>/`으로 복사했다(이 PC에만 있다).
 - 컨테이너가 물어 지우지 않는 것: `merge-preview` · `agent-aed004354f1cd7a4c` · `agent-afd136e4b22934cb9`.
 - 24시간 안에 수정된 파일이 있어 남긴 것: `F-20261010-keep`(합쳐짐) · `K-20261010-capstone`(합쳐짐) · `F-20261010-syllabus`(합쳐지지 않은 커밋 4개, 기록용). 하루 지나면 지워도 된다(`F-20261010-keep`은 스택과 무관).
+- 10-12 정리: 남은 6개 — `agent-aed004354f1cd7a4c` · `agent-afd136e4b22934cb9` · `F-20261010-keep` · `F-20261010-syllabus` · `K-20261010-capstone` · `merge-preview` — 도 지웠다(스택을 끈 뒤; 브랜치는 모두 남김, `.evidence`는 루트 `.evidence/removed-worktrees/<이름>/`). 남은 작업 트리 없음.
 - 합쳐지지 않은 커밋이 있는 브랜치: `F-20261010-syllabus` 4개(채택하지 않음; 기록 `F-syllabus.md`는 그 브랜치에만 있다), `L-20261010-labs` 1개(랩 자료 키트 `students/labs/`와 기록 `L-labs.md`는 그 브랜치에만 있다. 랩 자료는 만들지 않기로 했으므로 지금 쓰지 않는다). 브랜치는 지우지 않는다.
 
 ### 4.7 교재 남은 일
