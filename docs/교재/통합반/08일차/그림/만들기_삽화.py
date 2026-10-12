@@ -9,7 +9,7 @@ import math
 from pathlib import Path
 
 from 삽화_기본 import (BLUE, GREY, LIGHT, NAVY, NORM, OFF, ON, PALE, SKY, WHITE, St, agent_icon, approve_icon, arrow, bell,
-                    circle, cylinder_db, fan, g, graph_icon, head, line, path, poly, rect, svg, thermo)
+                    calendar_icon, circle, cylinder_db, fan, g, gauge, graph_icon, head, line, path, poly, rect, svg, thermo)
 
 HERE = Path(__file__).resolve().parent
 
@@ -307,9 +307,131 @@ def incident() -> str:
     return svg(o)
 
 
+# ───────────────────────── 9. 근거가 놓인 자리: 지식과 현재값 ─────────────────────────
+
+def crate(cx, cy, st: St, s=1.0, hot=False):
+    """예비품 상자: 뚜껑 띠와 가새."""
+    w, h = 64 * s, 52 * s
+    return [rect(cx - w / 2, cy - h / 2, w, h, 5, fill=st.accent if hot else st.fill, stroke=st.line),
+            line(cx - w / 2, cy - h / 2 + 14 * s, cx + w / 2, cy - h / 2 + 14 * s, stroke=st.line, sw=3),
+            line(cx - w / 2 + 8 * s, cy - h / 2 + 22 * s, cx + w / 2 - 8 * s, cy + h / 2 - 8 * s, stroke=st.line, sw=2.5),
+            line(cx + w / 2 - 8 * s, cy - h / 2 + 22 * s, cx - w / 2 + 8 * s, cy + h / 2 - 8 * s, stroke=st.line, sw=2.5)]
+
+
+def bubble(cx, cy, st: St, w=70, h=46):
+    """말풍선: 점 셋."""
+    o = [path(f"M {cx - w / 2 + 10},{cy - h / 2} L {cx + w / 2 - 10},{cy - h / 2} Q {cx + w / 2},{cy - h / 2} {cx + w / 2},{cy - h / 2 + 10} "
+              f"L {cx + w / 2},{cy + h / 2 - 10} Q {cx + w / 2},{cy + h / 2} {cx + w / 2 - 10},{cy + h / 2} L {cx - 4},{cy + h / 2} "
+              f"L {cx - 18},{cy + h / 2 + 16} L {cx - 16},{cy + h / 2} L {cx - w / 2 + 10},{cy + h / 2} Q {cx - w / 2},{cy + h / 2} {cx - w / 2},{cy + h / 2 - 10} "
+              f"L {cx - w / 2},{cy - h / 2 + 10} Q {cx - w / 2},{cy - h / 2} {cx - w / 2 + 10},{cy - h / 2} Z", fill=st.accent, stroke=st.line, sw=3)]
+    for dx in (-16, 0, 16):
+        o.append(circle(cx + dx, cy, 4, fill=st.line, stroke=st.line, sw=1))
+    return o
+
+
+def evidence_place() -> str:
+    # 위: 지식(지식 그래프의 관계) · 아래: 현재값(판단하는 순간에 읽는 값)
+    o = [rect(30, 16, 650, 226, 16, fill=LIGHT, stroke="none", sw=0), rect(30, 270, 650, 234, 16, fill=PALE, stroke=SKY, sw=3)]
+    # 지식: 원인 후보 셋 → 고장 유형 → 조치 방법(SOP)
+    for y in (58, 104, 150):
+        o.append(arrow([(286, y), (388, 104 + (y - 104) * 0.35)], NAVY, sw=3.5, size=11))
+        o.append(circle(268, y, 15, fill=WHITE, sw=3.5))
+    o.append(circle(268, 58, 15, fill=SKY, sw=3.5))
+    o += [circle(416, 104, 26, fill=PALE, sw=4), arrow([(446, 104), (530, 104)], NAVY, sw=4, size=12)]
+    o += g(586, 104, 0.8, sop_doc(0, 0, ON))
+    # 현재값: 시계열 DB(계기) · 업무 DB(표와 달력)
+    o += g(300, 352, 0.92, cylinder_db(0, 0, ON)) + gauge(246, 318, ON, r=22, hot=True)
+    o += g(540, 352, 0.92, table_icon(0, 0, ON)) + g(596, 318, 0.42, calendar_icon(0, 0, ON))
+    # 도구 호출 → 추천안
+    o += [arrow([(684, 128), (838, 128), (838, 206)], NAVY, sw=4.5, size=13), arrow([(684, 388), (838, 388), (838, 314)], BLUE, sw=4.5, size=13)]
+    o += gear(838, 260, 46, ON, hot=True)
+    o.append(arrow([(892, 260), (954, 260)], NAVY, sw=5, size=14))
+    o += g(1066, 252, 0.84, ranking(0, 0, ON))
+    return svg(o)
+
+
+# ───────────────────────── 10. 검사를 통과한 것과 승인된 것 ─────────────────────────
+
+def two_gates() -> str:
+    Y = 176
+    o = [rect(372, 76, 190, 204, 16, fill=LIGHT, stroke="none", sw=0), rect(742, 76, 190, 204, 16, fill=PALE, stroke=SKY, sw=3)]
+    o += g(96, Y + 4, 1.15, agent_icon(0, 0, ON))
+    o.append(arrow([(160, Y), (204, Y)], NAVY, sw=4.5, size=12))
+    o += g(274, Y, 0.5, ranking(0, 0, ON))
+    o.append(arrow([(342, Y), (404, Y)], NAVY, sw=4.5, size=12))
+    # 자동 검사: 검사 항목 셋이 모두 통과한 문서
+    o.append(rect(416, Y - 62, 102, 124, 10, fill=WHITE))
+    for i in range(3):
+        y = Y - 36 + i * 36
+        o += check_mark(442, y, 11) + [line(462, y, 462 + (40, 30, 36)[i], y, stroke=NAVY, sw=3)]
+    o.append(arrow([(566, Y), (606, Y)], NAVY, sw=4.5, size=12))
+    o += clock(650, Y, 32, ON)
+    o.append(arrow([(694, Y), (746, Y)], NAVY, sw=4.5, size=12))
+    # 사람의 승인
+    o += g(836, Y - 4, 1.2, approve_icon(0, 0, ON))
+    o.append(arrow([(936, Y), (1010, Y)], BLUE, sw=5.5, size=15))
+    o += fan(1078, Y, 50, ON, rot=20, hot=True)
+    # 결정 기록
+    o += dashed(836, 338, 836, 388, BLUE)
+    o += g(836, 444, 0.62, sop_doc(0, 0, ON)) + [circle(872, 470, 15, fill=SKY, sw=3)] + [path("M 865,470 L 870,476 L 880,464", stroke=NAVY, sw=3)]
+    # 에이전트 단계에서 사람이 들어가는 두 자리: 질문에 답하기, 멈춘 작업 닫기
+    o += [line(88, 246, 94, 312, stroke=NAVY, sw=3, stroke_dasharray="7 7"), line(130, 246, 290, 316, stroke=NAVY, sw=3, stroke_dasharray="7 7")]
+    o += g(95, 368, 0.8, person(0, 0, ON)) + g(143, 326, 0.62, bubble(0, 0, ON))
+    o += g(300, 368, 0.8, person(0, 0, ON)) + cross_mark(340, 334, 15)
+    return svg(o)
+
+
+# ───────────────────────── 11. 세 에이전트의 산출물 ─────────────────────────
+
+def three_outputs() -> str:
+    rows = (108, 264, 420)
+    o = [rect(262, 58, 316, 458, 16, fill=PALE, stroke=SKY, sw=3)]
+    for y in rows:
+        o += [arrow([(160, y), (256, y)], NAVY, sw=4.5, size=12), arrow([(584, y), (668, y)], BLUE, sw=5, size=14)]
+        o += g(346, y + 2, 0.82, agent_icon(0, 0, ON)) + g(486, y, 0.6, skill_doc(0, 0, ON))
+    # 업무의 시작: 경보 · 정기 정비 도래 · 재고 기준 이탈
+    o += [circle(98, rows[0], 40, fill=PALE, sw=4)] + g(98, rows[0] - 3, 1.45, bell(0, 0, ON))
+    o += g(98, rows[1] + 2, 0.72, calendar_icon(0, 0, ON))
+    o += [line(52, rows[2] + 30, 144, rows[2] + 30, sw=4), line(52, rows[2] - 26, 144, rows[2] - 26, stroke=BLUE, sw=3, stroke_dasharray="8 7")]
+    o += crate(80, rows[2] + 6, ON, s=0.7)
+    o += [rect(104, rows[2] - 16, 34, 44, 4, fill=WHITE, stroke=GREY, sw=2.5, stroke_dasharray="6 6")]
+    # 산출물: 추천안(순위와 팬) · 정비 시간(달력과 시계) · 발주안(견적 문서와 상자)
+    o += g(748, rows[0], 0.5, ranking(0, 0, ON)) + fan(860, rows[0], 32, ON, rot=20, hot=True)
+    o += g(744, rows[1] + 2, 0.86, calendar_icon(0, 0, ON)) + clock(852, rows[1], 28, ON, hot=True)
+    o += g(738, rows[2], 0.72, sop_doc(0, 0, ON)) + crate(838, rows[2] + 14, ON, s=0.8, hot=True) + crate(872, rows[2] - 22, ON, s=0.62)
+    return svg(o)
+
+
+# ───────────────────────── 12. 실습 산출물이 다음 일로 넘어가는 길 ─────────────────────────
+
+def handover() -> str:
+    o = [rect(26, 60, 300, 446, 16, fill=LIGHT, stroke="none", sw=0), rect(400, 60, 470, 446, 16, fill=PALE, stroke=SKY, sw=3)]
+    # 7일차: 확인 질문 · 명세와 기대 결과 · 초안과 검토 의견과 수정본
+    o += g(112, 108, 0.6, sop_doc(0, 0, ON)) + g(160, 80, 0.6, bubble(0, 0, ON))
+    o += spec_doc(72, 204, 86, 104, bands=2) + checklist(170, 220, 2, ON, w=96, gap=30)
+    for i, dx in enumerate((0, 44, 88)):
+        o += g(92 + dx, 424 - i * 6, 0.5, sop_doc(0, 0, ON if i == 2 else NORM))
+    # 8일차: 시나리오 → 회귀 기록, 인수인계서
+    o += checklist(440, 150, 3, ON, w=170, gap=38, marks=(None, None, None))
+    o.append(arrow([(616, 216), (670, 216)], NAVY, sw=4.5, size=13))
+    o += checklist(680, 150, 3, ON, w=170, gap=38, hot=(2,))
+    o += g(600, 426, 0.66, sop_doc(0, 0, ON)) + clock(640, 452, 17, ON, hot=True)
+    # 7일차 → 8일차
+    o += [arrow([(206, 112), (350, 112), (350, 190), (432, 190)], NAVY, sw=4, size=12),
+          arrow([(274, 256), (350, 256), (350, 240), (432, 240)], BLUE, sw=4.5, size=13)]
+    # 8일차 → 다음 변경, 다음 교대
+    o.append(arrow([(858, 216), (944, 216)], BLUE, sw=5, size=14))
+    o += spec_doc(962, 156, 96, 116, bands=2) + [circle(1058, 162, 20, fill=SKY, sw=3.5), line(1047, 162, 1069, 162, sw=4.5), line(1058, 151, 1058, 173, sw=4.5)]
+    o += checklist(1076, 186, 2, ON, w=98, gap=30)
+    o.append(arrow([(660, 426), (944, 426)], NAVY, sw=4.5, size=13))
+    o += g(1010, 426, 0.95, person(0, 0, ON)) + clock(1076, 404, 24, ON)
+    return svg(o)
+
+
 def main():
     out = {"명세와실행.svg": spec_run(), "세부분.svg": gwt(), "시나리오연결.svg": link(), "갈래.svg": branches(),
-           "경계값.svg": boundary(), "회귀.svg": regression(), "더해진것.svg": added(), "사건위장치.svg": incident()}
+           "경계값.svg": boundary(), "회귀.svg": regression(), "더해진것.svg": added(), "사건위장치.svg": incident(),
+           "근거자리.svg": evidence_place(), "두문.svg": two_gates(), "세산출물.svg": three_outputs(), "산출물이음.svg": handover()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")
