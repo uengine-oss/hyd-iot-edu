@@ -29,6 +29,17 @@ ORDER BY id
 """
 
 
+def display_name(label):
+    """UIUX의 화면 명칭 정책만 투영한다. DB·업무 원문은 수정하지 않는다.
+
+    이름 없는 값과 알 수 없는 이름은 그대로 둔다. 이 함수는 생성 사전의
+    name/Rule annotation 및 공식 스킬 이름에만 적용하며 자유문에는 쓰지 않는다.
+    """
+    if not isinstance(label, str):
+        return label
+    return label.replace("정비 작업지시", "정비 오더").replace("작업지시", "정비 오더")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--uri", default=os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687"))
@@ -40,7 +51,7 @@ def main() -> int:
     names, kinds = {}, {}
     with GraphDatabase.driver(a.uri, auth=(a.user, a.password)) as driver, driver.session() as s:
         for row in s.run(QUERY, skip=SKIP_LABELS):
-            names[row["id"]] = row["name"]
+            names[row["id"]] = display_name(row["name"])
             kinds[row["kind"]] = kinds.get(row["kind"], 0) + 1
     if not names:
         print("names: 0 — Neo4j에 id/name 노드가 없다. 생성하지 않음", file=sys.stderr)
@@ -49,7 +60,7 @@ def main() -> int:
     sys.path.insert(0, str(ROOT / "it" / "enterprise-sim"))
     from entsim.state import SKILL_NAMES  # noqa: E402
     for sid, label in SKILL_NAMES.items():
-        names.setdefault(sid, label)
+        names.setdefault(sid, display_name(label))
     kinds["BusinessSkill"] = len(SKILL_NAMES)
     print(f"names: {len(names)} · " + " · ".join(f"{k} {v}" for k, v in sorted(kinds.items(), key=lambda x: -x[1])))
     if a.check:

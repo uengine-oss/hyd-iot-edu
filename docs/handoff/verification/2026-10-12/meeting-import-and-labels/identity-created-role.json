@@ -1,0 +1,7 @@
+{
+  "id": "role:google-meeting-organizer",
+  "name": "회의 주관자",
+  "kind": "manager",
+  "origin": "user",
+  "members": []
+}

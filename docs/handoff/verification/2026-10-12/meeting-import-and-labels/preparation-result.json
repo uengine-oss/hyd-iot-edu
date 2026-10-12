@@ -1,0 +1,132 @@
+{
+  "status": "BLOCKED_MISSING_ACTUAL_MEETING_AGENT_AND_ORGANIZER",
+  "structural_import_ok": false,
+  "current_original_import_problems": [
+    {
+      "field": "role",
+      "reason": "역할 '회의 주관자'이(가) 역할 목록에 없습니다",
+      "where": {
+        "kind": "lane",
+        "kind_label": "칸(레인)",
+        "id": "Lane_organizer",
+        "name": "회의 주관자"
+      }
+    },
+    {
+      "field": "agent",
+      "reason": "맡길 에이전트를 고르세요",
+      "where": {
+        "kind": "task",
+        "kind_label": "작업",
+        "id": "Activity_propose",
+        "name": "자료 · 시간 후보 제안"
+      }
+    },
+    {
+      "field": "role",
+      "reason": "담당 역할을 고르세요 (칸 이름이 역할 이름과 다르면 직접 고릅니다)",
+      "where": {
+        "kind": "task",
+        "kind_label": "작업",
+        "id": "Activity_approve",
+        "name": "주관자 승인"
+      }
+    },
+    {
+      "field": "config",
+      "reason": "extract.event_id 의 JSON 경로 '<일정 만들기 결과에서 일정 id 가 든 JSON 경로>'을(를) 읽을 수 없습니다 (예: attendees.0.status)",
+      "where": {
+        "kind": "task",
+        "kind_label": "작업",
+        "id": "Activity_invite",
+        "name": "일정 등록 · 초대 발송"
+      }
+    },
+    {
+      "field": "config",
+      "reason": "extract.all_required_accepted 의 JSON 경로 '<일정 읽기 결과에서 필수 참석자 전원 수락 여부(참/거짓)가 든 JSON 경로>'을(를) 읽을 수 없습니다 (예: attendees.0.status)",
+      "where": {
+        "kind": "task",
+        "kind_label": "작업",
+        "id": "Activity_check",
+        "name": "참석 응답 확인"
+      }
+    },
+    {
+      "field": "condition",
+      "reason": "조건 값 approval 을(를) 분기 앞 단계가 내지 않습니다",
+      "where": {
+        "kind": "flow",
+        "kind_label": "선",
+        "id": "Flow_approve_yes",
+        "name": "승인"
+      }
+    },
+    {
+      "field": "condition",
+      "reason": "조건 값 all_required_accepted 을(를) 분기 앞 단계가 내지 않습니다",
+      "where": {
+        "kind": "flow",
+        "kind_label": "선",
+        "id": "Flow_yes",
+        "name": "예"
+      }
+    }
+  ],
+  "negative_preparation_checks": [
+    {
+      "field": "agent_id",
+      "rejected": true,
+      "message": "agent_id: 명시적인 등록 값을 입력하세요"
+    },
+    {
+      "field": "organizer_role",
+      "rejected": true,
+      "message": "organizer_role: 명시적인 등록 값을 입력하세요"
+    }
+  ],
+  "original_sha_before": {
+    "flow.bpmn": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d",
+    "graph.json": "25805969736569b65e8820334ea2f15c0ef083ea0706a0ff81d0ff2f09cceb52",
+    "mapping.json": "454f4459e3fd89e542c0de61364099a0bf97a8c588185c1ee9e5bd861a7ac572",
+    "questions.cypher": "d8d64e92e38106b666aefc9f5db912d85c7d84dca5a15fe9c4cf81ea8d195f6a",
+    "README.md": "0dab01ed7a4ab27c6ca5f90a1cfc4cd0c007582215e7f10ef80953d16a8cf6c2",
+    "schema.json": "f138707a1cb2898aadb33d23644c11a73ffa03aee2c26b6cfae4068370b647b1",
+    "table.sql": "8a17bde6efe99cb98ed4d99f78fab59d9208cc45fc049d50db218c2477f5cfd5",
+    "agent\\agent.json": "b7acb4e153505b8c46f2b7cf9824d7e2e5a920598221c53437ce7b5a6eaccdf8",
+    "agent\\proposal.example.json": "76865f74263a4671d7bad78219266950977dad73dd1aecac264f44597b360872",
+    "agent\\SKILL.md": "8a6c020e2a00fc6cd4bf9ed70761c908f7d9a54d18f71cc074d7e95ab797b38d",
+    "docs\\d1.md": "b2b2ef29d7d620719bb12470fe4e0177a5e3ba95cb7e3c8cdff0da6bfadde581",
+    "docs\\d2.md": "fbb9c0ad2497acc66656f70a191aade01b80ceac35bbf7c752d119a2024219db",
+    "docs\\d3.md": "5079b62218e05192db384ef5a548c638b15fb4d51148814c5b412e8b2bf0a8bb"
+  },
+  "original_sha_after": {
+    "flow.bpmn": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d",
+    "graph.json": "25805969736569b65e8820334ea2f15c0ef083ea0706a0ff81d0ff2f09cceb52",
+    "mapping.json": "454f4459e3fd89e542c0de61364099a0bf97a8c588185c1ee9e5bd861a7ac572",
+    "questions.cypher": "d8d64e92e38106b666aefc9f5db912d85c7d84dca5a15fe9c4cf81ea8d195f6a",
+    "README.md": "0dab01ed7a4ab27c6ca5f90a1cfc4cd0c007582215e7f10ef80953d16a8cf6c2",
+    "schema.json": "f138707a1cb2898aadb33d23644c11a73ffa03aee2c26b6cfae4068370b647b1",
+    "table.sql": "8a17bde6efe99cb98ed4d99f78fab59d9208cc45fc049d50db218c2477f5cfd5",
+    "agent\\agent.json": "b7acb4e153505b8c46f2b7cf9824d7e2e5a920598221c53437ce7b5a6eaccdf8",
+    "agent\\proposal.example.json": "76865f74263a4671d7bad78219266950977dad73dd1aecac264f44597b360872",
+    "agent\\SKILL.md": "8a6c020e2a00fc6cd4bf9ed70761c908f7d9a54d18f71cc074d7e95ab797b38d",
+    "docs\\d1.md": "b2b2ef29d7d620719bb12470fe4e0177a5e3ba95cb7e3c8cdff0da6bfadde581",
+    "docs\\d2.md": "fbb9c0ad2497acc66656f70a191aade01b80ceac35bbf7c752d119a2024219db",
+    "docs\\d3.md": "5079b62218e05192db384ef5a548c638b15fb4d51148814c5b412e8b2bf0a8bb"
+  },
+  "original_unchanged": true,
+  "offline_entrypoint": "procsvc.bpmn_import.parse_bpmn + check; same function used by flows_api; actual GET catalog context",
+  "live_POST": 0,
+  "Google_calls": 0,
+  "token_reads": 0,
+  "tests_repeated": 0,
+  "generated_executable_copy": false,
+  "proposed_server_names": [
+    "google-meeting-calendar",
+    "google-meeting-drive"
+  ],
+  "registration_verified": false,
+  "google_read_verified": false,
+  "execution_ready": false
+}

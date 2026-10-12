@@ -1,0 +1,964 @@
+{
+  "status": "PREPARED_STRUCTURAL_IMPORT_VALIDATED_NOT_EXECUTION_READY",
+  "actual_agent_id": "agent:u-24c67f1e",
+  "actual_organizer_role": "회의 주관자",
+  "actual_organizer_role_id": "role:google-meeting-organizer",
+  "model": "inherit runtime default; no GPU connectivity assertion",
+  "agent_tools_attached": false,
+  "organizer_member_assigned": false,
+  "registration_verified": false,
+  "google_read_verified": false,
+  "execution_ready": false,
+  "command": [
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Scripts\\python.exe",
+    "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\scripts\\prepare_google_meeting_mapping.py",
+    "--agent-id",
+    "agent:u-24c67f1e",
+    "--organizer-role",
+    "회의 주관자",
+    "--calendar-server",
+    "google-meeting-calendar",
+    "--drive-server",
+    "google-meeting-drive",
+    "--output-dir",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\google-meeting-import-20261012\\prepared"
+  ],
+  "cli_stdout": "사본 준비 완료. 등록/Google 연결/실제 실행 준비는 확인하지 않았습니다.\n",
+  "structural_check": {
+    "ok": true,
+    "problems": [],
+    "definition": {
+      "processDefinitionId": "google-meeting-prepared",
+      "processDefinitionName": "분기 고객 리뷰 회의 준비 (예시)",
+      "version": "1",
+      "description": "bpmn.io 그림 'flow.bpmn'에서 가져온 흐름",
+      "data": [
+        {
+          "name": "request_id",
+          "type": "Text"
+        },
+        {
+          "name": "meeting_calendar_id",
+          "type": "Text"
+        },
+        {
+          "name": "meeting_title",
+          "type": "Text"
+        },
+        {
+          "name": "meeting_duration_min",
+          "type": "Number"
+        },
+        {
+          "name": "meeting_time_zone",
+          "type": "Text"
+        },
+        {
+          "name": "meeting_attendees",
+          "type": "Array"
+        },
+        {
+          "name": "meeting_required_emails",
+          "type": "Array"
+        },
+        {
+          "name": "meeting_room_resources",
+          "type": "Object"
+        },
+        {
+          "name": "meeting_attachments",
+          "type": "Array"
+        },
+        {
+          "name": "proposal",
+          "type": "Object"
+        },
+        {
+          "name": "approval",
+          "type": "Text"
+        },
+        {
+          "name": "approval_reason",
+          "type": "Text"
+        },
+        {
+          "name": "result_report",
+          "type": "Text"
+        },
+        {
+          "name": "approved_option",
+          "type": "Object"
+        },
+        {
+          "name": "calendar_event",
+          "type": "Text"
+        },
+        {
+          "name": "event_id",
+          "type": "Text"
+        },
+        {
+          "name": "waited",
+          "type": "Text"
+        },
+        {
+          "name": "attendance",
+          "type": "Text"
+        },
+        {
+          "name": "all_required_accepted",
+          "type": "Boolean"
+        }
+      ],
+      "roles": [
+        {
+          "name": "AI 에이전트",
+          "endpoint": "sys:agent",
+          "resolutionRule": "온톨로지 System sys:agent — cliagents 워커가 Claude Code 로 수행"
+        },
+        {
+          "name": "회의 주관자",
+          "endpoint": "role:google-meeting-organizer",
+          "resolutionRule": "users 표 역할 role:google-meeting-organizer (흐름 가져오기에서 고름)"
+        },
+        {
+          "name": "프로세스",
+          "endpoint": "sys:process",
+          "resolutionRule": "process 서비스 자체 (타이머 · 재관측)"
+        }
+      ],
+      "events": [
+        {
+          "id": "StartEvent_request",
+          "name": "회의 요청 접수",
+          "type": "startEvent",
+          "eventDefinition": "none"
+        },
+        {
+          "id": "EndEvent_delay",
+          "name": "끝 (승인 지연 알림)",
+          "type": "endEvent",
+          "eventDefinition": "none"
+        },
+        {
+          "id": "EndEvent_reject",
+          "name": "끝 (반려)",
+          "type": "endEvent",
+          "eventDefinition": "none"
+        },
+        {
+          "id": "EndEvent_done",
+          "name": "끝",
+          "type": "endEvent",
+          "eventDefinition": "none"
+        },
+        {
+          "id": "Event_approve_delay",
+          "name": "승인 지연 (4시간)",
+          "type": "boundaryEvent",
+          "eventDefinition": "timer",
+          "timer": "PT4H",
+          "attachedTo": "Activity_approve",
+          "cancelActivity": false
+        }
+      ],
+      "activities": [
+        {
+          "id": "Activity_propose",
+          "name": "자료 · 시간 후보 제안",
+          "type": "userTask",
+          "role": "AI 에이전트",
+          "agent": "agent:u-24c67f1e",
+          "agentMode": "COMPLETE",
+          "orchestration": "cliagents",
+          "tool": "formHandler:u_Activity_propose",
+          "instruction": "회의 요청 request_id 한 건에 대해 qbr-prep 요령대로 자료를 찾아 요약하고, 운영 규칙(D1)을 지키는 시간 후보를 순위와 함께 proposal 로 낸다. 뺀 안은 losers 에 규칙 번호와 수치로 이유를 쓴다. 승인 전에는 조회 · 계산 · 요약만 한다. 실제 읽기 도구는 google-meeting-drive.search_files/read_file와 google-meeting-calendar.free_busy/get_event이다. 등록 agent에 해당 읽기 도구가 필요하다. 추가 시작값은 같은 request_id의 검증된 업무 원천이다. 실제 room_id는 meeting_room_resources에 등록된 주소만 쓰고 후보에 room/room_email을 함께 보존한다. 각 후보의 slot은 오프셋 있는 RFC3339이며 end는 실제 meeting_duration_min 뒤 시각이다. slot/reason/score와 기존 승인 카드 필드를 보존한다. proposal.docs는 실제 meeting_attachments의 title/file_url을 title/link로 표시하며 첨부와 다른 문서를 승인 카드에 표시하지 않는다. 읽지 못한 자료·빈 시간은 추정하지 말고 보류한다. 참석자와 문서 접근은 실제 조회로 확인한다. 일정 생성은 하지 않는다.",
+          "inputData": [
+            "request_id",
+            "meeting_calendar_id",
+            "meeting_title",
+            "meeting_duration_min",
+            "meeting_time_zone",
+            "meeting_attendees",
+            "meeting_required_emails",
+            "meeting_room_resources",
+            "meeting_attachments"
+          ],
+          "outputData": [
+            "proposal"
+          ],
+          "checkpoints": [
+            "승인 전에는 조회 · 계산 · 보고서만 한다 (설비 명령 · 업무 쓰기 없음)"
+          ],
+          "duration": 1,
+          "description": "자료 · 시간 후보 제안"
+        },
+        {
+          "id": "Activity_approve",
+          "name": "주관자 승인",
+          "type": "userTask",
+          "role": "회의 주관자",
+          "tool": "formHandler:approve",
+          "agent": null,
+          "approval": {
+            "options": "proposal.options",
+            "recommended": "proposal.recommended",
+            "losers": "proposal.losers",
+            "docs": "proposal.docs"
+          },
+          "inputData": [
+            "proposal",
+            "meeting_calendar_id",
+            "meeting_title",
+            "meeting_duration_min",
+            "meeting_time_zone",
+            "meeting_attendees",
+            "meeting_required_emails",
+            "meeting_room_resources",
+            "meeting_attachments"
+          ],
+          "outputData": [
+            "approval",
+            "approval_reason"
+          ],
+          "checkpoints": [
+            "사람 승인 1회 — 승인 경로(역할 검사)로만 제출한다"
+          ],
+          "duration": 1,
+          "description": "주관자 승인",
+          "attachedEvents": [
+            "Event_approve_delay"
+          ]
+        },
+        {
+          "id": "Activity_report_delay",
+          "name": "결과 보고: 승인 지연 알림",
+          "type": "serviceTask",
+          "tool": "process:report",
+          "service": {
+            "outcome": "승인 지연",
+            "title": "{request_id} 승인 지연",
+            "summary": "주관자 승인이 4시간 넘게 없습니다 — 일정은 아직 만들지 않았습니다"
+          },
+          "inputData": [
+            "request_id"
+          ],
+          "outputData": [
+            "result_report"
+          ],
+          "checkpoints": [],
+          "duration": 1,
+          "description": "결과 보고: 승인 지연 알림",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_report_reject",
+          "name": "결과 보고: 반려",
+          "type": "serviceTask",
+          "tool": "process:report",
+          "service": {
+            "outcome": "반려",
+            "title": "{request_id} 회의 반려",
+            "summary": "주관자가 제안을 반려했습니다 — 사유: {approval_reason}. 일정은 만들지 않았습니다"
+          },
+          "inputData": [
+            "request_id"
+          ],
+          "outputData": [
+            "result_report"
+          ],
+          "checkpoints": [],
+          "duration": 1,
+          "description": "결과 보고: 반려",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_invite",
+          "name": "일정 등록 · 초대 발송",
+          "type": "serviceTask",
+          "tool": "mcp:call",
+          "service": {
+            "server": "google-meeting-calendar",
+            "tool": "create_event",
+            "arguments": {
+              "calendar_id": "{meeting_calendar_id}",
+              "summary": "{meeting_title}",
+              "start": "{approved_option.slot}",
+              "end": "{approved_option.end}",
+              "time_zone": "{meeting_time_zone}",
+              "room_email": "{approved_option.room_email}",
+              "attendees": "{meeting_attendees}",
+              "attachments": "{meeting_attachments}"
+            },
+            "output": "calendar_event",
+            "extract": {
+              "event_id": {
+                "path": "document.event_id",
+                "type": "Text"
+              }
+            }
+          },
+          "inputData": [
+            "approved_option",
+            "proposal",
+            "meeting_calendar_id",
+            "meeting_title",
+            "meeting_duration_min",
+            "meeting_time_zone",
+            "meeting_attendees",
+            "meeting_required_emails",
+            "meeting_room_resources",
+            "meeting_attachments"
+          ],
+          "outputData": [
+            "calendar_event",
+            "event_id"
+          ],
+          "checkpoints": [
+            "사람 승인 뒤 process 가 실행한다"
+          ],
+          "duration": 1,
+          "description": "일정 등록 · 초대 발송",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_wait",
+          "name": "응답 마감까지 대기",
+          "type": "serviceTask",
+          "tool": "process:wait",
+          "service": {
+            "duration": "P1D",
+            "label": "응답 마감까지 대기"
+          },
+          "inputData": [],
+          "outputData": [
+            "waited"
+          ],
+          "checkpoints": [],
+          "duration": 1,
+          "description": "응답 마감까지 대기",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_check",
+          "name": "참석 응답 확인",
+          "type": "serviceTask",
+          "tool": "mcp:call",
+          "service": {
+            "server": "google-meeting-calendar",
+            "tool": "get_event",
+            "arguments": {
+              "calendar_id": "{meeting_calendar_id}",
+              "event_id": "{event_id}",
+              "required_emails": "{meeting_required_emails}"
+            },
+            "output": "attendance",
+            "extract": {
+              "all_required_accepted": {
+                "path": "document.all_required_accepted",
+                "type": "Boolean"
+              }
+            },
+            "effect": false
+          },
+          "inputData": [
+            "event_id",
+            "meeting_calendar_id",
+            "meeting_title",
+            "meeting_duration_min",
+            "meeting_time_zone",
+            "meeting_attendees",
+            "meeting_required_emails",
+            "meeting_room_resources",
+            "meeting_attachments"
+          ],
+          "outputData": [
+            "attendance",
+            "all_required_accepted"
+          ],
+          "checkpoints": [
+            "읽기 도구만 부른다 — 쓰기 도구면 부르지 않고 실패한다"
+          ],
+          "duration": 1,
+          "description": "참석 응답 확인",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_report_ok",
+          "name": "결과 보고: 확정",
+          "type": "serviceTask",
+          "tool": "process:report",
+          "service": {
+            "outcome": "정상",
+            "title": "{request_id} 회의 확정",
+            "summary": "필수 참석자 전원 수락 — 일정 {event_id}"
+          },
+          "inputData": [
+            "request_id"
+          ],
+          "outputData": [
+            "result_report"
+          ],
+          "checkpoints": [],
+          "duration": 1,
+          "description": "결과 보고: 확정",
+          "role": "프로세스"
+        },
+        {
+          "id": "Activity_report_ng",
+          "name": "결과 보고: 미확정",
+          "type": "serviceTask",
+          "tool": "process:report",
+          "service": {
+            "outcome": "미달",
+            "title": "{request_id} 회의 미확정",
+            "summary": "필수 참석자 거절 또는 무응답 — 다시 조율 필요"
+          },
+          "inputData": [
+            "request_id"
+          ],
+          "outputData": [
+            "result_report"
+          ],
+          "checkpoints": [],
+          "duration": 1,
+          "description": "결과 보고: 미확정",
+          "role": "프로세스"
+        }
+      ],
+      "gateways": [
+        {
+          "id": "Gateway_approved",
+          "name": "승인?",
+          "type": "exclusiveGateway",
+          "conditionData": [
+            "approval"
+          ]
+        },
+        {
+          "id": "Gateway_accepted",
+          "name": "필수 참석자 전원 수락?",
+          "type": "exclusiveGateway",
+          "conditionData": [
+            "all_required_accepted"
+          ]
+        }
+      ],
+      "sequences": [
+        {
+          "id": "Flow_request",
+          "source": "StartEvent_request",
+          "target": "Activity_propose"
+        },
+        {
+          "id": "Flow_proposal",
+          "source": "Activity_propose",
+          "target": "Activity_approve"
+        },
+        {
+          "id": "Flow_approved",
+          "source": "Activity_approve",
+          "target": "Gateway_approved"
+        },
+        {
+          "id": "Flow_approve_yes",
+          "source": "Gateway_approved",
+          "target": "Activity_invite",
+          "name": "승인",
+          "condition": "approval == '승인'"
+        },
+        {
+          "id": "Flow_approve_no",
+          "source": "Gateway_approved",
+          "target": "Activity_report_reject",
+          "name": "반려",
+          "properties": {
+            "default": true
+          }
+        },
+        {
+          "id": "Flow_reject_end",
+          "source": "Activity_report_reject",
+          "target": "EndEvent_reject"
+        },
+        {
+          "id": "Flow_delay",
+          "source": "Event_approve_delay",
+          "target": "Activity_report_delay"
+        },
+        {
+          "id": "Flow_delay_end",
+          "source": "Activity_report_delay",
+          "target": "EndEvent_delay"
+        },
+        {
+          "id": "Flow_invited",
+          "source": "Activity_invite",
+          "target": "Activity_wait"
+        },
+        {
+          "id": "Flow_waited",
+          "source": "Activity_wait",
+          "target": "Activity_check"
+        },
+        {
+          "id": "Flow_checked",
+          "source": "Activity_check",
+          "target": "Gateway_accepted"
+        },
+        {
+          "id": "Flow_yes",
+          "source": "Gateway_accepted",
+          "target": "Activity_report_ok",
+          "name": "예",
+          "condition": "all_required_accepted == True"
+        },
+        {
+          "id": "Flow_no",
+          "source": "Gateway_accepted",
+          "target": "Activity_report_ng",
+          "name": "아니오 (거절 · 무응답)",
+          "properties": {
+            "default": true
+          }
+        },
+        {
+          "id": "Flow_ok_end",
+          "source": "Activity_report_ok",
+          "target": "EndEvent_done"
+        },
+        {
+          "id": "Flow_ng_end",
+          "source": "Activity_report_ng",
+          "target": "EndEvent_done"
+        }
+      ],
+      "forms": {
+        "u_Activity_propose": {
+          "fields_json": [
+            {
+              "key": "proposal",
+              "text": "제안(추천 1 + 지는 안 · 자료 · 안건)",
+              "type": "object"
+            }
+          ]
+        },
+        "approve": {
+          "fields_json": [
+            {
+              "key": "approval",
+              "text": "승인 / 반려",
+              "type": "select",
+              "items": [
+                "승인",
+                "반려"
+              ]
+            },
+            {
+              "key": "approval_reason",
+              "text": "사유",
+              "type": "textarea",
+              "required": false
+            }
+          ]
+        }
+      },
+      "startForm": {
+        "fields_json": [
+          {
+            "key": "request_id",
+            "text": "회의 요청 번호 (예: QBR-2026-Q4-01)",
+            "type": "text"
+          },
+          {
+            "key": "meeting_calendar_id",
+            "text": "명시 선택한 실제 일정 캘린더 ID",
+            "type": "text"
+          },
+          {
+            "key": "meeting_title",
+            "text": "동일 요청의 실제 회의 제목",
+            "type": "text"
+          },
+          {
+            "key": "meeting_duration_min",
+            "text": "동일 요청의 실제 회의 시간(분)",
+            "type": "number"
+          },
+          {
+            "key": "meeting_time_zone",
+            "text": "실제 IANA 시간대",
+            "type": "text"
+          },
+          {
+            "key": "meeting_attendees",
+            "text": "동일 요청의 실제 참석자 [{email,required}]",
+            "type": "array"
+          },
+          {
+            "key": "meeting_required_emails",
+            "text": "동일 요청에서 required=true인 실제 이메일 목록",
+            "type": "array"
+          },
+          {
+            "key": "meeting_room_resources",
+            "text": "실제 room_id → 자원 캘린더 이메일 사전",
+            "type": "object"
+          },
+          {
+            "key": "meeting_attachments",
+            "text": "접근 확인한 실제 Google 문서 [{title,file_url}]",
+            "type": "array"
+          }
+        ]
+      },
+      "bpmnImport": {
+        "processId": "Process_qbr_prep",
+        "fileName": "flow.bpmn",
+        "sha256": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d",
+        "base": {
+          "id": "anomaly_response",
+          "version": "2.2"
+        },
+        "mapping": {
+          "_comment": "Google 서버 계약에 맞춘 사본. 구조 검사와 실제 계정/자료/승인 실행은 별도이다.",
+          "name": "분기 고객 리뷰 회의 준비 (예시)",
+          "start": {
+            "kind": "human",
+            "fields": [
+              {
+                "key": "request_id",
+                "text": "회의 요청 번호 (예: QBR-2026-Q4-01)",
+                "type": "text"
+              },
+              {
+                "key": "meeting_calendar_id",
+                "type": "text",
+                "text": "명시 선택한 실제 일정 캘린더 ID",
+                "required": true
+              },
+              {
+                "key": "meeting_title",
+                "type": "text",
+                "text": "동일 요청의 실제 회의 제목",
+                "required": true
+              },
+              {
+                "key": "meeting_duration_min",
+                "type": "number",
+                "text": "동일 요청의 실제 회의 시간(분)",
+                "required": true
+              },
+              {
+                "key": "meeting_time_zone",
+                "type": "text",
+                "text": "실제 IANA 시간대",
+                "required": true
+              },
+              {
+                "key": "meeting_attendees",
+                "type": "array",
+                "text": "동일 요청의 실제 참석자 [{email,required}]",
+                "required": true
+              },
+              {
+                "key": "meeting_required_emails",
+                "type": "array",
+                "text": "동일 요청에서 required=true인 실제 이메일 목록",
+                "required": true
+              },
+              {
+                "key": "meeting_room_resources",
+                "type": "object",
+                "text": "실제 room_id → 자원 캘린더 이메일 사전",
+                "required": true
+              },
+              {
+                "key": "meeting_attachments",
+                "type": "array",
+                "text": "접근 확인한 실제 Google 문서 [{title,file_url}]",
+                "required": true
+              }
+            ]
+          },
+          "lanes": {
+            "Lane_organizer": "회의 주관자"
+          },
+          "tasks": {
+            "Activity_propose": {
+              "part": "agent",
+              "agent": "agent:u-24c67f1e",
+              "inputs": [
+                "request_id",
+                "meeting_calendar_id",
+                "meeting_title",
+                "meeting_duration_min",
+                "meeting_time_zone",
+                "meeting_attendees",
+                "meeting_required_emails",
+                "meeting_room_resources",
+                "meeting_attachments"
+              ],
+              "instruction": "회의 요청 request_id 한 건에 대해 qbr-prep 요령대로 자료를 찾아 요약하고, 운영 규칙(D1)을 지키는 시간 후보를 순위와 함께 proposal 로 낸다. 뺀 안은 losers 에 규칙 번호와 수치로 이유를 쓴다. 승인 전에는 조회 · 계산 · 요약만 한다. 실제 읽기 도구는 google-meeting-drive.search_files/read_file와 google-meeting-calendar.free_busy/get_event이다. 등록 agent에 해당 읽기 도구가 필요하다. 추가 시작값은 같은 request_id의 검증된 업무 원천이다. 실제 room_id는 meeting_room_resources에 등록된 주소만 쓰고 후보에 room/room_email을 함께 보존한다. 각 후보의 slot은 오프셋 있는 RFC3339이며 end는 실제 meeting_duration_min 뒤 시각이다. slot/reason/score와 기존 승인 카드 필드를 보존한다. proposal.docs는 실제 meeting_attachments의 title/file_url을 title/link로 표시하며 첨부와 다른 문서를 승인 카드에 표시하지 않는다. 읽지 못한 자료·빈 시간은 추정하지 말고 보류한다. 참석자와 문서 접근은 실제 조회로 확인한다. 일정 생성은 하지 않는다.",
+              "outputs": [
+                {
+                  "key": "proposal",
+                  "text": "제안(추천 1 + 지는 안 · 자료 · 안건)",
+                  "type": "object"
+                }
+              ]
+            },
+            "Activity_approve": {
+              "part": "human:approve",
+              "inputs": [
+                "proposal",
+                "meeting_calendar_id",
+                "meeting_title",
+                "meeting_duration_min",
+                "meeting_time_zone",
+                "meeting_attendees",
+                "meeting_required_emails",
+                "meeting_room_resources",
+                "meeting_attachments"
+              ],
+              "config": {
+                "options": "proposal.options",
+                "recommended": "proposal.recommended",
+                "losers": "proposal.losers",
+                "docs": "proposal.docs"
+              }
+            },
+            "Activity_invite": {
+              "part": "svc:mcp-call",
+              "inputs": [
+                "approved_option",
+                "proposal",
+                "meeting_calendar_id",
+                "meeting_title",
+                "meeting_duration_min",
+                "meeting_time_zone",
+                "meeting_attendees",
+                "meeting_required_emails",
+                "meeting_room_resources",
+                "meeting_attachments"
+              ],
+              "config": {
+                "server": "google-meeting-calendar",
+                "tool": "create_event",
+                "arguments": {
+                  "calendar_id": "{meeting_calendar_id}",
+                  "summary": "{meeting_title}",
+                  "start": "{approved_option.slot}",
+                  "end": "{approved_option.end}",
+                  "time_zone": "{meeting_time_zone}",
+                  "room_email": "{approved_option.room_email}",
+                  "attendees": "{meeting_attendees}",
+                  "attachments": "{meeting_attachments}"
+                },
+                "output": "calendar_event",
+                "extract": {
+                  "event_id": {
+                    "path": "document.event_id",
+                    "type": "Text"
+                  }
+                }
+              }
+            },
+            "Activity_wait": {
+              "part": "svc:wait",
+              "config": {
+                "duration": "P1D",
+                "label": "응답 마감까지 대기"
+              }
+            },
+            "Activity_check": {
+              "part": "svc:mcp-call",
+              "inputs": [
+                "event_id",
+                "meeting_calendar_id",
+                "meeting_title",
+                "meeting_duration_min",
+                "meeting_time_zone",
+                "meeting_attendees",
+                "meeting_required_emails",
+                "meeting_room_resources",
+                "meeting_attachments"
+              ],
+              "config": {
+                "server": "google-meeting-calendar",
+                "tool": "get_event",
+                "arguments": {
+                  "calendar_id": "{meeting_calendar_id}",
+                  "event_id": "{event_id}",
+                  "required_emails": "{meeting_required_emails}"
+                },
+                "output": "attendance",
+                "extract": {
+                  "all_required_accepted": {
+                    "path": "document.all_required_accepted",
+                    "type": "Boolean"
+                  }
+                },
+                "effect": false
+              }
+            },
+            "Activity_report_ok": {
+              "part": "svc:report",
+              "inputs": [
+                "request_id"
+              ],
+              "config": {
+                "outcome": "정상",
+                "title": "{request_id} 회의 확정",
+                "summary": "필수 참석자 전원 수락 — 일정 {event_id}"
+              }
+            },
+            "Activity_report_ng": {
+              "part": "svc:report",
+              "inputs": [
+                "request_id"
+              ],
+              "config": {
+                "outcome": "미달",
+                "title": "{request_id} 회의 미확정",
+                "summary": "필수 참석자 거절 또는 무응답 — 다시 조율 필요"
+              }
+            },
+            "Activity_report_reject": {
+              "part": "svc:report",
+              "inputs": [
+                "request_id"
+              ],
+              "config": {
+                "outcome": "반려",
+                "title": "{request_id} 회의 반려",
+                "summary": "주관자가 제안을 반려했습니다 — 사유: {approval_reason}. 일정은 만들지 않았습니다"
+              }
+            },
+            "Activity_report_delay": {
+              "part": "svc:report",
+              "inputs": [
+                "request_id"
+              ],
+              "config": {
+                "outcome": "승인 지연",
+                "title": "{request_id} 승인 지연",
+                "summary": "주관자 승인이 4시간 넘게 없습니다 — 일정은 아직 만들지 않았습니다"
+              }
+            }
+          },
+          "timers": {
+            "Event_approve_delay": "PT4H"
+          },
+          "flows": {
+            "Flow_approve_yes": {
+              "var": "approval",
+              "op": "==",
+              "value": "승인"
+            },
+            "Flow_approve_no": {
+              "default": true
+            },
+            "Flow_yes": {
+              "var": "all_required_accepted",
+              "op": "==",
+              "value": true
+            },
+            "Flow_no": {
+              "default": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "negative_unknown_agent": {
+    "ok": false,
+    "problems": [
+      {
+        "field": "agent",
+        "reason": "맡길 에이전트를 고르세요",
+        "where": {
+          "kind": "task",
+          "kind_label": "작업",
+          "id": "Activity_propose",
+          "name": "자료 · 시간 후보 제안"
+        }
+      },
+      {
+        "field": "inputs",
+        "reason": "받을 값 proposal 을(를) 앞 단계(또는 시작)가 내지 않습니다",
+        "where": {
+          "kind": "task",
+          "kind_label": "작업",
+          "id": "Activity_approve",
+          "name": "주관자 승인"
+        }
+      },
+      {
+        "field": "inputs",
+        "reason": "받을 값 proposal 을(를) 앞 단계(또는 시작)가 내지 않습니다",
+        "where": {
+          "kind": "task",
+          "kind_label": "작업",
+          "id": "Activity_invite",
+          "name": "일정 등록 · 초대 발송"
+        }
+      }
+    ]
+  },
+  "negative_overwrite": {
+    "exit_code": 2,
+    "stdout": ""
+  },
+  "original_before": {
+    "flow.bpmn": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d",
+    "graph.json": "25805969736569b65e8820334ea2f15c0ef083ea0706a0ff81d0ff2f09cceb52",
+    "mapping.json": "454f4459e3fd89e542c0de61364099a0bf97a8c588185c1ee9e5bd861a7ac572",
+    "questions.cypher": "d8d64e92e38106b666aefc9f5db912d85c7d84dca5a15fe9c4cf81ea8d195f6a",
+    "README.md": "0dab01ed7a4ab27c6ca5f90a1cfc4cd0c007582215e7f10ef80953d16a8cf6c2",
+    "schema.json": "f138707a1cb2898aadb33d23644c11a73ffa03aee2c26b6cfae4068370b647b1",
+    "table.sql": "8a17bde6efe99cb98ed4d99f78fab59d9208cc45fc049d50db218c2477f5cfd5",
+    "agent\\agent.json": "b7acb4e153505b8c46f2b7cf9824d7e2e5a920598221c53437ce7b5a6eaccdf8",
+    "agent\\proposal.example.json": "76865f74263a4671d7bad78219266950977dad73dd1aecac264f44597b360872",
+    "agent\\SKILL.md": "8a6c020e2a00fc6cd4bf9ed70761c908f7d9a54d18f71cc074d7e95ab797b38d",
+    "docs\\d1.md": "b2b2ef29d7d620719bb12470fe4e0177a5e3ba95cb7e3c8cdff0da6bfadde581",
+    "docs\\d2.md": "fbb9c0ad2497acc66656f70a191aade01b80ceac35bbf7c752d119a2024219db",
+    "docs\\d3.md": "5079b62218e05192db384ef5a548c638b15fb4d51148814c5b412e8b2bf0a8bb"
+  },
+  "original_after": {
+    "flow.bpmn": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d",
+    "graph.json": "25805969736569b65e8820334ea2f15c0ef083ea0706a0ff81d0ff2f09cceb52",
+    "mapping.json": "454f4459e3fd89e542c0de61364099a0bf97a8c588185c1ee9e5bd861a7ac572",
+    "questions.cypher": "d8d64e92e38106b666aefc9f5db912d85c7d84dca5a15fe9c4cf81ea8d195f6a",
+    "README.md": "0dab01ed7a4ab27c6ca5f90a1cfc4cd0c007582215e7f10ef80953d16a8cf6c2",
+    "schema.json": "f138707a1cb2898aadb33d23644c11a73ffa03aee2c26b6cfae4068370b647b1",
+    "table.sql": "8a17bde6efe99cb98ed4d99f78fab59d9208cc45fc049d50db218c2477f5cfd5",
+    "agent\\agent.json": "b7acb4e153505b8c46f2b7cf9824d7e2e5a920598221c53437ce7b5a6eaccdf8",
+    "agent\\proposal.example.json": "76865f74263a4671d7bad78219266950977dad73dd1aecac264f44597b360872",
+    "agent\\SKILL.md": "8a6c020e2a00fc6cd4bf9ed70761c908f7d9a54d18f71cc074d7e95ab797b38d",
+    "docs\\d1.md": "b2b2ef29d7d620719bb12470fe4e0177a5e3ba95cb7e3c8cdff0da6bfadde581",
+    "docs\\d2.md": "fbb9c0ad2497acc66656f70a191aade01b80ceac35bbf7c752d119a2024219db",
+    "docs\\d3.md": "5079b62218e05192db384ef5a548c638b15fb4d51148814c5b412e8b2bf0a8bb"
+  },
+  "original_unchanged": true,
+  "output_files": {
+    "flow.bpmn": {
+      "bytes": 13798,
+      "sha256": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d"
+    },
+    "mapping.json": {
+      "bytes": 8068,
+      "sha256": "980c269bee7453e1a0aac11523df5417754973beef1d7d6dea5a45c6feddbd84"
+    },
+    "preconditions.json": {
+      "bytes": 1666,
+      "sha256": "59c07537534f39876c8e3d6ae70629eb2fa87389ce9bfad3932d218ccf230783"
+    }
+  },
+  "live_POST": 0,
+  "Google_calls": 0,
+  "token_reads": 0,
+  "whole27_repeated": 0,
+  "offline_entrypoint": "procsvc.bpmn_import.parse_bpmn/check with actual refreshed GET catalog"
+}

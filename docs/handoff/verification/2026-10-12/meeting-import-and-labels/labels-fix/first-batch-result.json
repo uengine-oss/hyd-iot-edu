@@ -1,0 +1,46 @@
+{
+  "status": "focused_pass",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "tests/js/test_maintenance_display_labels.js"
+      ],
+      "exit": 0,
+      "stdout": "Maintenance display labels PASS; original text and unknown code preserved\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "tests/js/test_pm_report_receipt_meaning.js"
+      ],
+      "exit": 0,
+      "stdout": "PM receipt/report meaning contracts PASS\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "D:/work/study/hyd-iot-edu/.venv314/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "tests/test_c3_bc_review.py",
+        "-k",
+        "case_record",
+        "-q"
+      ],
+      "exit": 0,
+      "stdout": ".                                                                        [100%]\n1 passed, 8 deselected in 0.87s\n",
+      "stderr": ""
+    }
+  ],
+  "sha256": {
+    "it/portal/www/caseRecord.js": "dc3f33d5e77c3fa3c84d711c260374069661eddfae2196ebb268716bbb220dc5",
+    "it/portal/www/plainWords.js": "198ca4af4601f042501b34b129a6ffc7c3f81315104485e2aa5ac40da7dccbaf",
+    "it/portal/www/ui.js": "e1d3a6536b837584f2f31ff8368211c5d9622359b03e6689f235def00bc7a7f9",
+    "it/portal/www/names.json": "6156fa3c38c2aa04a664794e60ff0d3dcbfa7df9c48f762801b738dd05815dd6",
+    "tests/js/test_maintenance_display_labels.js": "b1d4867148211f831e764a4efcfc7bb8a82a8e7c87f6b89ee03e4935d188e4c5"
+  },
+  "boundary": "Display labels only; domain keys, flow classifier, original folds and business values unchanged",
+  "initial_harness_failure": "ctx.UI undefined because UI is VM lexical binding; fixed harness lookup without product change"
+}

@@ -1,0 +1,40 @@
+{
+  "ok": false,
+  "method": "Actual native GET only, two detail screenshots, no fixture/projection injection",
+  "writes": [],
+  "errors": [],
+  "captures": [
+    {
+      "path": "B-report-detail-1440.png",
+      "width": 1440,
+      "sha256": "d538e4ff498a587863b4ca475b840be6539e28541a28899fa640a5207099052c"
+    },
+    {
+      "path": "B-report-detail-1024.png",
+      "width": 1024,
+      "sha256": "ea767330d901ccec604377ba10f74a6bc5dd6aba12aab406ff4c1beeeae0e101"
+    }
+  ],
+  "mounted_sha256": {
+    "it/portal/www/caseRecord.js": "dc3f33d5e77c3fa3c84d711c260374069661eddfae2196ebb268716bbb220dc5",
+    "it/portal/www/plainWords.js": "198ca4af4601f042501b34b129a6ffc7c3f81315104485e2aa5ac40da7dccbaf",
+    "it/portal/www/ui.js": "62329f521db1d44dce0ca5da9960c8ed7c90c664df689893472ea72f9c6845fe",
+    "it/portal/www/names.json": "6156fa3c38c2aa04a664794e60ff0d3dcbfa7df9c48f762801b738dd05815dd6",
+    "it/portal/www/index.html": "680a7a7e6cf028909725182ccf196292e3894a64c07fa80507054f811d63e57c"
+  },
+  "detail_texts": {
+    "1440": "보고 내용\n\nHYD-02 정기 정비 결과\n\n정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 오더 등록\n\n남긴 번호 정비 오더 WO-B6F6633D2BF9E6FA\n\n이 보고에서 사건 종결 처리: 수행 안 함 · 현재 사건: 종결 · 담당자 알림 보냄",
+    "1024": "보고 내용\n\nHYD-02 정기 정비 결과\n\n정비 오더 WO-B6F6633D2BF9E6FA 등록 · 생산팀 공지 — 원문 정비 범위 HYD-02 오더 등록\n\n남긴 번호 정비 오더 WO-B6F6633D2BF9E6FA\n\n이 보고에서 사건 종결 처리: 수행 안 함 · 현재 사건: 종결 · 담당자 알림 보냄"
+  },
+  "forbidden_terms": {
+    "1440": [
+      "정비 오더"
+    ],
+    "1024": [
+      "정비 오더"
+    ]
+  },
+  "source_unchanged": true,
+  "business_unchanged": true,
+  "api_bytes_unchanged": true
+}

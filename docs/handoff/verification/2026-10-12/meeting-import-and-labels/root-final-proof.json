@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-12T14:33:29.932285+00:00",
+  "source_files": 815,
+  "source_delta": [
+    "it/portal/www/caseRecord.js",
+    "it/portal/www/index.html",
+    "it/portal/www/names.json",
+    "it/portal/www/plainWords.js",
+    "scripts/portal_names.py",
+    "tests/fixtures/maintenance_display_names_original.json",
+    "tests/js/test_maintenance_display_labels.js",
+    "tests/test_portal_names_display_policy.py"
+  ],
+  "portal_served_bytes_match": true,
+  "old_agent_rows_unchanged": true,
+  "B_business_view_unchanged": true,
+  "B_status": "COMPLETED",
+  "registered_meeting_agent": "agent:u-24c67f1e",
+  "portal_model_inherits_default": true,
+  "root_identity_POSTs": 2,
+  "Google_calls": 0,
+  "flow_registration": 0,
+  "execution_ready": false,
+  "new_LLM_runs": 0,
+  "whole_suite_repeated": 0,
+  "enterprise_backend": "supabase",
+  "running_containers": 29,
+  "process_restarts": 0,
+  "process_started_at": "2026-10-12T08:33:31.792431157Z",
+  "own_live_lock_released": true,
+  "project_volumes_deleted": 0
+}

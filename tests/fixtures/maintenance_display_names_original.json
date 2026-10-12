@@ -1,0 +1,9 @@
+{
+  "action:work-order": "정비 작업지시 발행",
+  "proc:maintenance-wo": "정비 작업지시",
+  "rule:cand-cooler": "냉각 성능 상실 → 즉시 완화 SOP (팬 최대 · 팬 최대+부하 저감 · 부하 저감+야간 세척) + 근본 조치 작업지시 (핀 세척 · 캐비닛 환기)",
+  "rule:cand-fan": "팬 베어링 열화 → 팬 감속+부하 저감 · 팬 감속 · 계획 정지 + 근본 조치 작업지시 (베어링 교체)",
+  "rule:cand-pump": "펌프 체적 효율 저하 → 즉시 완화 SOP (예비 펌프 전환 · 부하 저감 · 압력 상향) + 근본 조치 작업지시 (축 씰 교체 · 씰 키트 구매요청)",
+  "skill:cancel-work-order": "정비 작업지시 취소",
+  "skill:schedule-maintenance": "정비 작업지시 발행"
+}

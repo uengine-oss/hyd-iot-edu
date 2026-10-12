@@ -1,0 +1,52 @@
+{
+  "status": "PREPARED_REQUESTS_NOT_EXECUTED",
+  "missing_identity_is": "HYD configuration work; not an external OAuth blocker",
+  "create_role": {
+    "method": "POST",
+    "path": "/api/roles",
+    "body": {"name": "회의 주관자", "key": "google-meeting-organizer", "kind": "manager", "by": "사용자 위임 Codex"},
+    "expected_candidate_id_not_yet_created": "role:google-meeting-organizer"
+  },
+  "create_agent": {
+    "method": "POST",
+    "path": "/api/agents",
+    "body": {
+      "name": "Google 회의 준비 에이전트",
+      "role": "회의 준비",
+      "goal": "실제 회의 요청의 자료와 참석자 빈 시간을 읽고 원문 운영 규칙을 지키는 시간 후보와 안건을 제안한다. 승인 전에는 조회·계산·요약만 수행한다. 자료나 캘린더 접근이 없으면 추정하지 않고 보류한다.",
+      "persona": "근거 문서와 실제 조회 결과를 구분하고 불명확한 입력은 보류하는 회의 준비 담당",
+      "model": "",
+      "tools": [],
+      "skills": [],
+      "by": "사용자 위임 Codex"
+    },
+    "capture_real_response_id": true,
+    "model_policy": "Inherit portal runtime GPU default; development Sol6.1 selection is separate; no connectivity assertion",
+    "note": "Server generates agent:u- ID. Empty tools is preparation-only, not runnable Google access. Existing factory agent never repurposed."
+  },
+  "after_real_google_server_registration": {
+    "method": "PUT",
+    "path_rule": "/api/agents/{actual_created_agent_id}",
+    "body_rule": "Reuse complete created agent editable fields; replace tools with checked registered Google server names only.",
+    "tools_after_checks": ["google-meeting-calendar", "google-meeting-drive"],
+    "gates": ["actual registered server names exist", "tools/list check passed", "agent selectable read-only tools only", "no write tool assigned to agent", "Google external account access verified separately"]
+  },
+  "prepare_copy_after_confirmed_identity_GET": {
+    "script": "scripts/prepare_google_meeting_mapping.py",
+    "agent_id": "actual POST response ID verified by GET; never guessed",
+    "organizer_role": "exact name from refreshed /api/flows/catalog",
+    "calendar_server": "google-meeting-calendar",
+    "drive_server": "google-meeting-drive",
+    "output_rule": "fresh H/prepared folder; no overwrite",
+    "preconditions": {"registration_verified": false, "google_read_verified": false, "execution_ready": false}
+  },
+  "rollback": {
+    "agent": "DELETE /api/agents/{actual_created_agent_id}; only owned user-origin agent, no busy running task; open assignments returned by existing API",
+    "role": "DELETE /api/roles/role:google-meeting-organizer; only owned user-origin role after no flow definitions/open work reference it",
+    "avoid": "Do not use global reset or touch baseline agents/roles. Take original GET snapshots before writes."
+  },
+  "ui_paths": {"agent": "에이전트 → 새 에이전트 → 목표/모델/도구 → 저장", "role": "에이전트 → 업무분장 → 역할 만들기 → 역할 이름/키", "membership": "업무분장의 해당 역할에 실제 선택한 사람 배정; identity creation alone is not organizer approval"},
+  "live_POST": 0,
+  "Google_calls": 0,
+  "execution_ready": false
+}

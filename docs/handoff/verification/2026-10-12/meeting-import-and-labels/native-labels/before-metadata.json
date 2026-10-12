@@ -1,0 +1,14 @@
+{
+  "case": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+  "api_sha256": "1ab1719db07088dda0e8a9e9650b15e3d03376f67620a51bce8c07bd329b0e2f",
+  "bytes": 851008,
+  "status": "COMPLETED",
+  "source": {
+    "it/portal/www/caseRecord.js": "dc3f33d5e77c3fa3c84d711c260374069661eddfae2196ebb268716bbb220dc5",
+    "it/portal/www/plainWords.js": "198ca4af4601f042501b34b129a6ffc7c3f81315104485e2aa5ac40da7dccbaf",
+    "it/portal/www/ui.js": "62329f521db1d44dce0ca5da9960c8ed7c90c664df689893472ea72f9c6845fe",
+    "it/portal/www/names.json": "6156fa3c38c2aa04a664794e60ff0d3dcbfa7df9c48f762801b738dd05815dd6",
+    "scripts/portal_names.py": "42661140f4221d3a2ee236df159d216bc03451267a5241a275a03d8e272360bd",
+    "it/portal/www/index.html": "680a7a7e6cf028909725182ccf196292e3894a64c07fa80507054f811d63e57c"
+  }
+}

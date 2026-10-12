@@ -1,0 +1,43 @@
+{
+  "purpose": "structural mapping preparation; not Google execution evidence",
+  "google_read_verified": false,
+  "execution_ready": false,
+  "registration_verified": false,
+  "names": {
+    "agent_id": "agent:u-24c67f1e",
+    "organizer_role": "회의 주관자",
+    "calendar_server": "google-meeting-calendar",
+    "drive_server": "google-meeting-drive"
+  },
+  "required_start_fields": [
+    "meeting_calendar_id",
+    "meeting_title",
+    "meeting_duration_min",
+    "meeting_time_zone",
+    "meeting_attendees",
+    "meeting_required_emails",
+    "meeting_room_resources",
+    "meeting_attachments"
+  ],
+  "approved_option_fields": [
+    "slot",
+    "end",
+    "room",
+    "room_email",
+    "reason",
+    "score"
+  ],
+  "idempotency": "process instance:workitem injected by mcp_check.call_effect",
+  "additional_checks": [
+    "실제 등록 agent/사람 역할/두 MCP 서버와 agent 읽기 도구를 확인한다.",
+    "Google OAuth와 실제 자료/필수 참석자/회의실 읽기 접근을 확인한다.",
+    "같은 요청의 명단·필수 여부·실제 회의실·기간·첨부 출처를 확인한다.",
+    "validate_runtime는 독립 사전검사이며 흐름에 자동 설치되는 task가 아니다.",
+    "주관자 승인 뒤에만 허용 캘린더에서 일정 생성/초대를 실행한다.",
+    "승인 반려/지연은 생성 호출 없이 끝나며 실제 응답을 재조회한다."
+  ],
+  "original_sha256": {
+    "mapping.json": "454f4459e3fd89e542c0de61364099a0bf97a8c588185c1ee9e5bd861a7ac572",
+    "flow.bpmn": "8a1e0b2208acb74ec1e3644d621e714934bc9b59c00069c93b6824aa48eb7c8d"
+  }
+}

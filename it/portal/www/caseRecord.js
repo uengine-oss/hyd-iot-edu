@@ -502,7 +502,7 @@
       const wo = out.work_order || (w.status === 'CANCELLED' ? {} : v.work_order) || {};
       const win = (wo.after && wo.after.window) || '';
       const scoped=W().maintenanceReceiptHtml(wo);
-      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 작업지시 ${wo.ref} 일정 변경 영수증이 기록되었습니다. 정비 완료와 별도로 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 작업지시 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 작업지시를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
+      sentence = scoped ? W().maintenanceReceiptSummary(wo) : /WO_RESCHEDULE/.test(tool) || wo.skill==='skill:reschedule-maintenance' ? (wo.ref ? `${target}의 기존 정비 오더 ${wo.ref} 일정 변경 영수증이 기록되었습니다. 정비 완료와 별도로 확인합니다.` : '기존 정비 오더 일정 변경 결과 기록을 확인할 수 없습니다.') : wo.ref ? `${target}에 정비 오더 ${wo.ref}${W().josa(wo.ref, '을/를')} 등록했습니다${win ? ` — ${UI.words(win)}` : ''}.` : b.live ? `${target}에 정비 오더를 등록하는 중입니다.` : `${target}의 정비 요청 등록 결과가 없습니다.${w.status === 'CANCELLED' ? ' 이 단계는 취소되었습니다.' : ''}`;
       if (wo.ref) chips.push(chip(wo.ref, 'accent'));
       if (win) chips.push(chip(UI.words(win)));
       if(scoped) sections.push(sec('설비별 정비 범위 · 오더 영수증',scoped,{open:true}));
@@ -523,7 +523,7 @@
       const m = out.maintenance || v.maintenance || {};
       const waitEv = b.rows.find(r => r.kind === 'sys' && r.data && r.data.plan);
       const skipped = b.rows.find(r => r.kind === 'sys' && r.job === 'WAIT_SKIPPED');
-      sentence = w.status === 'DONE' ? `${skipped ? '즉시 ' : waitEv ? '예정된 정비 시간까지 기다린 뒤 ' : ''}정비를 했고, 작업지시 ${m.work_order || ''} 완료와 설비 ${({ all: '전체', pump: '펌프', cooler: '쿨러', fan: '쿨러 팬' })[m.component] || nm(m.component) || ''} 복구를 기록했습니다.`
+      sentence = w.status === 'DONE' ? `${skipped ? '즉시 ' : waitEv ? '예정된 정비 시간까지 기다린 뒤 ' : ''}정비를 했고, 정비 오더 ${m.work_order || ''} 완료와 설비 ${({ all: '전체', pump: '펌프', cooler: '쿨러', fan: '쿨러 팬' })[m.component] || nm(m.component) || ''} 복구를 기록했습니다.`
         : waitEv ? `예정된 정비 시간까지 기다리는 중입니다 (${virtual(waitEv.data.plan)}).` : '정비를 하는 중입니다.';
       if (waitEv) chips.push(chip(`대기 ${virtual(waitEv.data.plan)}`));
       if (m.work_order) chips.push(chip(`${m.work_order} 완료`, 'success'));
@@ -684,7 +684,7 @@
     const sections = [];
     if (rep) {
       sections.push(sec('보고 내용', `<p><b>${e(W().text(rep.title || ''))}</b></p>${rep.summary ? `<p>${e(W().text(vv?.summary || rep.summary))}</p>` : ''}
-        ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '작업지시', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
+        ${Object.keys(rep.refs || {}).length ? `<p class="muted">남긴 번호 ${Object.entries(rep.refs).map(([k, r]) => `${e({ work_order: '정비 오더', purchase_order: '발주', goods_receipt: '입고', mcp_receipt: '도구 영수증' }[k] || W().fieldName(k))} ${e(r)}`).join(' · ')}</p>` : ''}
         ${rep.incident_closed != null ? `<p class="muted">${e(hydResultReport.incidentMeaning(rep, ctx.inc, ctx.read.incident))} · 담당자 알림 보냄</p>` : ''}`, { open: true }));
       const facts = Object.entries(rep.facts || {}).filter(([, x]) => x != null && typeof x !== 'object');
       if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));

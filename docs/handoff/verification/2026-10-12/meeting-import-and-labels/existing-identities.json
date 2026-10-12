@@ -1,0 +1,162 @@
+{
+  "agents": [
+    {
+      "id": "sys:agent",
+      "name": "AI 에이전트 (Claude Code)",
+      "kind": "agent",
+      "tools": [
+        "neo4j",
+        "enterprise",
+        "hyd-dmn"
+      ],
+      "skills": []
+    },
+    {
+      "id": "agent:cooling",
+      "name": "냉각 긴급 대응 에이전트",
+      "kind": "agent",
+      "tools": [
+        "neo4j",
+        "enterprise",
+        "hyd-dmn"
+      ],
+      "skills": [
+        "cooling-emergency-response"
+      ]
+    },
+    {
+      "id": "agent:spare-buy",
+      "name": "예비품 구매 에이전트",
+      "kind": "agent",
+      "tools": [
+        "neo4j",
+        "hyd-dmn",
+        "enterprise-purchase"
+      ],
+      "skills": [
+        "spare-purchase-planning"
+      ]
+    },
+    {
+      "id": "agent:pm-plan",
+      "name": "정기 정비 계획 에이전트",
+      "kind": "agent",
+      "tools": [
+        "neo4j",
+        "hyd-dmn",
+        "enterprise-maint"
+      ],
+      "skills": [
+        "pm-schedule-planning"
+      ]
+    },
+    {
+      "id": "sys:cmms",
+      "name": "CMMS",
+      "kind": "system",
+      "tools": [],
+      "skills": []
+    },
+    {
+      "id": "sys:scada",
+      "name": "SCADA",
+      "kind": "system",
+      "tools": [],
+      "skills": []
+    },
+    {
+      "id": "sys:process",
+      "name": "프로세스",
+      "kind": "system",
+      "tools": [],
+      "skills": []
+    }
+  ],
+  "roles": [
+    {
+      "name": "AI 에이전트",
+      "endpoint": "sys:agent",
+      "resolutionRule": "온톨로지 System sys:agent — cliagents 워커가 Claude Code 로 수행",
+      "human": false
+    },
+    {
+      "name": "운전원",
+      "endpoint": "role:operator",
+      "resolutionRule": "온톨로지 Role role:operator (level 1). 조치 카드 선택",
+      "human": true
+    },
+    {
+      "name": "생산관리자",
+      "endpoint": "role:prod-mgr",
+      "resolutionRule": "온톨로지 Role role:prod-mgr (level 2). 상급 승인 · 에스컬레이션",
+      "human": true
+    },
+    {
+      "name": "SCADA",
+      "endpoint": "sys:scada",
+      "resolutionRule": "PLC 명령 — process 서비스의 Incident 경로(action.cmd → cmd-gateway)만 발행",
+      "human": false
+    },
+    {
+      "name": "프로세스",
+      "endpoint": "sys:process",
+      "resolutionRule": "process 서비스 자체 (타이머 · 재관측)",
+      "human": false
+    },
+    {
+      "name": "CMMS",
+      "endpoint": "sys:cmms",
+      "resolutionRule": "enterprise 시스템 (작업지시)",
+      "human": false
+    },
+    {
+      "name": "설비보전팀장",
+      "endpoint": "role:maint-mgr",
+      "human": true,
+      "resolutionRule": "users 표 역할 role:maint-mgr (흐름 가져오기에서 고름)"
+    },
+    {
+      "name": "구매 담당",
+      "endpoint": "role:purchasing",
+      "human": true,
+      "resolutionRule": "users 표 역할 role:purchasing (흐름 가져오기에서 고름)"
+    },
+    {
+      "name": "구매팀장",
+      "endpoint": "role:purchasing-mgr",
+      "human": true,
+      "resolutionRule": "users 표 역할 role:purchasing-mgr (흐름 가져오기에서 고름)"
+    }
+  ],
+  "catalog_agents": [
+    {
+      "id": "agent:cooling",
+      "name": "냉각 긴급 대응 에이전트",
+      "goal": "쿨러 과열 경보의 원인을 진단하고, 냉각 조치 후보를 규정 · 회사 목표로 비교해 추천 카드 한 장과 지는 대안을 올린다"
+    },
+    {
+      "id": "agent:pm-plan",
+      "name": "정기 정비 계획 에이전트",
+      "goal": "정기 정비 도래 경보에서 운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지(정비 시간) 카드를 올린다"
+    },
+    {
+      "id": "agent:spare-buy",
+      "name": "예비품 구매 에이전트",
+      "goal": "예비품 재고 기준 이탈 경보에서 필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정(AVL)으로 비교해 발주 카드를 올린다"
+    },
+    {
+      "id": "sys:agent",
+      "name": "AI 에이전트 (Claude Code)",
+      "goal": "경보의 원인을 진단하고 조치 카드를 올린다"
+    }
+  ],
+  "registered_server_names": [
+    "neo4j",
+    "hyd-dmn",
+    "enterprise",
+    "enterprise-maint",
+    "enterprise-purchase"
+  ],
+  "observed_utc": "2026-10-12T14:19:18.543345+00:00",
+  "method": "GET only; no identity creation, registration, Google call or credentials"
+}
