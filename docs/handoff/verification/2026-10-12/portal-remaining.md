@@ -119,3 +119,14 @@ B의 전체 API 응답 사본은 없어서 최신 B 라이브 캡처는 여전�
 최초 캡처 준비 스크립트는 빈 배열을 metadata 누락으로 가정하여 기다리다 timeout했고, 첫 문자열 교정은 PowerShell 입력 인코딩 때문에 적용되지 않았다. 원본 스크립트와 두 실패 로그·진단 로그를 보존했다. 실제 source의 skills=[]를 먼저 검증하고 UTF-8 입력을 지정한 마지막 스크립트는 성공했다. 제품 코드·기존 시험 기대값은 변경하지 않았으며 전체2298통과 결과는 동일한 제품 코드의 증거다.
 
 추가 준비 후 Supabase backup 유지 종료, Docker Desktop/backend0·관련 포트0·본인 잠금 없음·볼륨/작업 트리 보존을 `skill-delivery-retry/cleanup-final.json`으로 확인했다. 재시도 결과는 blocked-retry.json, 캡처는 saved-student-record-1440/1024.png·saved-student-skill-1440/1024.png다.
+
+
+## 승인 후 실제 B 최신 화면 검증 완료 — 2026-10-12 09:18 KST
+
+사용자 요청으로 관리형 실행 환경의 정식 `require_escalated` 승인을 요청해 받았다. 최초 PowerShell -File 실행은 Windows의 스크립트 실행 정책으로 중단됐다. 이어 이번 프로세스에만 RemoteSigned를 적용한 정확한 캡처 스크립트 명령도 승인받아 실행했다. 영구 실행 정책은 변경하지 않았다. 이전 `blocked by policy` 결과는 당시 실패로 보존하며 이번 승인을 거친 시작·캡처는 성공했다.
+
+실제 Supabase와 기존 neo4j·agent·process·portal·enterprise-sim 컨테이너를 시작했다. 워커·감지기·설비 시뮬레이션은 시작하지 않았고 새 AI 실행이나 시나리오 버튼은 누르지 않았다. 실제 `/api/instances/{B}` 응답과 최신 포털에서 기록을 열었다. 1440/1024px 두 폭에서 실제 모두 펼치기·스킬 section 열기·프롬프트 본문 전달 표시를 확인했다. B의 세 실행은 옛 파일 전달2회와 등록 본문 확인된 prompt 전달1회를 별도 회차로 보존한다. 캡처한 첫 section은 옛 파일 전달 회차이며, 전체 기록의 prompt 표시는 result.json visible_text와 실제 before.json metadata에 남겼다. 전달 배지를 읽기 성공·실제 활용으로 해석하지 않는다.
+
+`skill-delivery-approved/result.json`: 두 폭 모두 pageerror0·문서폭 넘침0·쓰기 요청0. GET 전후 B RUNNING 및 모든 workitem ID/status가 동일함을 검사했다. before.json/after.json·record-1440/1024.png·skill-panel-1440/1024.png·capture.log가 실제 검증 증거다. 이전 저장 응답 재생과 이번 실제 스택 캡처를 구분하며 지식 부족 해결이나 A/B/C 완주 증거는 아니다. 전체2298통과 제품 코드를 변경하지 않았다.
+
+09:18:20 services-off.json 실행 컨테이너0·관련 포트0, 09:18:32 cleanup-final.json Desktop/backend0·LIVE_LOCK 없음·failure=null을 확인했다. Supabase backup 유지, 프로젝트 볼륨·작업 트리 보존. 최신 B 재캡처 잔여는 이 범위에서 해소됐고 F3 사람 검토/적재·A/B/C 지식 부족·K3 외부 인증과 최종 디자인 판정은 그대로 구분한다.
