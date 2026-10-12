@@ -1,0 +1,30 @@
+[
+  {
+    "sop": "SOP-FAN-11",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-FAN-12",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-COOL-11",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-COOL-12",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-COOL-13",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-COOL-14",
+    "pin": ""
+  },
+  {
+    "sop": "SOP-COOL-15",
+    "pin": ""
+  }
+]

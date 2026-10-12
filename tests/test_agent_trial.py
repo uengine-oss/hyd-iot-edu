@@ -148,6 +148,15 @@ def test_skill_asking_for_submission_or_writes_is_blocked_and_nothing_is_read():
     assert not any(r[0] == "tool" for r in world.reads)
 
 
+def test_purchase_submission_is_blocked_in_read_only_trial():
+    world = FakeWorld()
+    out, _ = run(agent(skills=[{"name": "purchase", "content": "submit_purchase로 구매 판단을 제출한다"}]), world)
+    blocked = [c for c in out["calls"] if c["by"] == "스킬 purchase"]
+    assert len(blocked) == 1 and blocked[0]["tool"] == "submit_purchase"
+    assert blocked[0]["status"] == "BLOCKED" and "제출하지 않습니다" in blocked[0]["reason"]
+    assert not any(r[0] == "tool" for r in world.reads)
+
+
 def test_sql_tool_without_a_code_block_fails_with_a_reason():
     out, _ = run(agent(skills=[{"name": "nosql", "content": "timeseries_query 로 본다"}]), FakeWorld())
     step = next(c for c in out["calls"] if c["tool"] == "timeseries_query")

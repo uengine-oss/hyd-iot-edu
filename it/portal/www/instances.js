@@ -225,7 +225,7 @@
     const review = window.hydCards?.reviewMatches(I.form.review, d.id, I.form.option, parameters, { workitem: task.id }) ? I.form.review : null;
     const reviewed = review?.snapshot?.options?.[0];
     const changed = (fanA && I.form.fan !== fanA.value) || (loadA && I.form.load !== loadA.value);
-    const canApprove = reviewed ? reviewed.feasible : chosen.feasible && !changed;
+    const canApprove = (reviewed ? reviewed.feasible : chosen.feasible && !changed) && !UI.executionBlocked(reviewed || chosen,review?.snapshot || d);
     const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).map(([id, role]) => [id, { ...role, name: role.name || UI.who(id) }]).sort((a, b) => a[1].level - b[1].level);
     if (!I.form.role) I.form.role = (chosen.approver || {}).id || (roles[0] || [''])[0];
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));

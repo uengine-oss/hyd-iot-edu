@@ -35,6 +35,7 @@ echo "seeding ontology v2: knowledge_a098 (전문가 질문 3건의 답: 유량�
 load knowledge_a098.cypher
 echo "seeding ontology v2: scenario_structure (시나리오 B · C 구조: 정기 정비 도래 · 재고 기준 이탈 패턴, 구매 담당 역할, 판단 입력, 리턴 필터) ..."
 load scenario_structure.cypher
+load pm_capabilities.cypher
 # A156: the detector reads only AnomalyPatterns with detectionMode='held' (it/detector/det/pattern_source.py). Without this file
 # a fresh volume leaves the detector unhealthy ("catalog must contain 1..64 held patterns") — seen on the first cloud boot.
 # Additive and idempotent (coalesce keeps edited values), same file and order as scripts/ontology_v2.py load.

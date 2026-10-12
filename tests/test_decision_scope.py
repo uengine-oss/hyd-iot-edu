@@ -77,6 +77,16 @@ def test_worker_prompt_and_mcp_pass_exact_producer_scope(monkeypatch):
     assert seen[0]['origin']['process_scope'] == scope and seen[0]['do_submit'] is True
 
 
+def test_purchase_prompt_uses_part_route_and_same_generation_scope():
+    _, _, row, scope, _ = fixture()
+    ctx = context.Context(row, 'rank', [{'key': 'decision_id', 'type': 'text'}])
+    text = prompt.build(row, ctx.extras, workdir='workspace')
+    assert 'submit_purchase' in text and 'purchase_context' in text and 'evaluate_purchase' in text
+    assert '고장 원인·고장 유형을 만들어 넣지' in text
+    assert '설비 명령·발주·입고를 실행하지' in text
+    assert str(scope['generation']) in text and row['id'] in text and row['consumer'] in text
+
+
 def test_legacy_replay_does_not_claim_new_generation(world):
     rt = world['rt']; inst = rt.on_alert_raise(ALERT); inst['rework_generation'] = 1; rt.repo.update_instance(inst)
     before = deepcopy(rt.repo.workitems)

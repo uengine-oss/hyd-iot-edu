@@ -64,6 +64,77 @@ def test_accepting_the_proposal_as_is_is_still_an_explicit_reviewed_decision(doc
     manual_review.validate(archive, 'hyd', body)
 
 
+def test_execution_body_mutation_cannot_rewrite_review_record_or_extraction(doc):
+    _, source, preview = doc
+    record = review(links=fix_13())
+    original_record, original_preview = copy.deepcopy(record), copy.deepcopy(preview)
+    body, changes = c3_ingest.apply_review('PR-07', preview, source, record)
+    body['links']['SOP-PUR-13']['actions'][0]['value'] = 'sup:b'
+    body['extraction']['instance'] = 'another-extraction'
+    assert record == original_record and preview == original_preview
+    assert changes[0]['after']['actions'][0]['value'] == 'sup:c'
+
+
+def test_delegated_review_preserves_actor_method_and_explicit_empty_link(doc):
+    _, source, preview = doc
+    preview['links'] = {'SOP-PUR-13': {}}
+    before = copy.deepcopy(preview)
+    body, _ = c3_ingest.apply_review('PR-07', preview, source,
+                                  review(by='사용자 위임 Codex', method='user-delegated-ai-review'))
+    assert body['method'] == 'user-delegated-ai-review' and body['by'] == '사용자 위임 Codex'
+    assert body['links']['SOP-PUR-13'] == {} and preview == before
+
+
+def test_delegated_review_does_not_replace_real_extraction_contract(doc):
+    from procsvc.manual_extraction import CONTRACT
+    archive, source, preview = doc
+    preview['method'] = CONTRACT
+    original = copy.deepcopy(preview)
+    body, _ = c3_ingest.apply_review('PR-07', preview, source,
+                                  review(by='사용자 위임 Codex', method='user-delegated-ai-review'))
+    assert body['method'] == CONTRACT and body['extraction'] == preview['extraction']
+    assert body['review_method'] == 'user-delegated-ai-review' and preview == original
+    plan = manual_review.validate(archive, 'hyd', body)
+    assert plan['method'] == CONTRACT and plan['review_method'] == 'user-delegated-ai-review'
+
+
+def test_commit_checks_provided_extraction_even_if_contract_marker_is_changed(doc):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from procsvc import manual_api
+    archive, source, preview = doc
+    body, _ = c3_ingest.apply_review('PR-07', preview, source, review())
+    body.update(method='human-reviewed', extraction={'instance': None})
+    graph_calls = []
+    def graph():
+        graph_calls.append(True)
+        raise AssertionError('Invalid extraction reached graph writes')
+    app = FastAPI()
+    manual_api.register(app, archive_factory=lambda: archive, driver_factory=graph, tenant='hyd', audit=lambda *a: None)
+    with TestClient(app) as client:
+        response = client.post('/api/kg/manuals/commit', json=body)
+    assert response.status_code == 400 and '실제 작업 연결' in response.json()['detail']
+    assert graph_calls == []
+
+
+def test_source_step_review_anchors_every_text_and_keeps_original_proposal(doc):
+    _, source, preview = doc
+    original = copy.deepcopy(preview)
+    p = next(p for p in preview['procedures'] if p['id'] == 'SOP-PUR-13')
+    steps = [dict(order=s['order'], manual=s['manual'], text=s['anchor']['quote'], quote=s['anchor']['quote']) for s in p['steps']]
+    record = review(procedures={'SOP-PUR-13': dict(set={'steps': steps}, quote=STEP1, reason='원문 문장과 단계별 인용을 정확히 보존')})
+    body, changes = c3_ingest.apply_review('PR-07', preview, source, record)
+    checked = next(p for p in body['procedures'] if p['id'] == 'SOP-PUR-13')['steps']
+    assert len(checked) == len(p['steps']) and changes[0]['kind'] == 'procedure'
+    for step in checked:
+        at = step['anchor']
+        assert source['pages'][at['page']-1]['text'][at['start']:at['end']] == step['text']
+    assert preview == original
+    record['procedures']['SOP-PUR-13']['set']['steps'][0]['text'] = '승인 없이 실행한다'
+    with pytest.raises(c3_ingest.ReviewError, match='정확한 원문 텍스트'):
+        c3_ingest.apply_review('PR-07', preview, source, record)
+
+
 @pytest.mark.parametrize('bad, message', [
     (dict(doc='HM-8'), '이 문서의 검토 기록이 아닙니다'),
     (dict(by=' '), '검토한 사람'),
@@ -99,6 +170,27 @@ def test_reviewer_can_drop_and_add_rules_only_with_a_quote_from_the_source(doc):
 def test_commit_without_a_review_file_does_not_run():
     assert c3_ingest.main(['commit', 'PR-07']) == 2
     assert c3_ingest.main(['load', 'PR-07']) == 2
+
+
+def test_commit_conflict_preserves_reviewed_body_and_never_drops_or_retries(doc, tmp_path, monkeypatch):
+    import json
+    _, source, preview = doc
+    preview['knowledge_conflicts'] = [{'id': preview['knowledge']['rules'][0]['id']}]
+    rec = dict(preview=preview, source_id=source['source_id'], instance=preview['extraction']['instance'])
+    (tmp_path/'proposal-PR-07.json').write_text(json.dumps(rec), encoding='utf-8')
+    review_file = tmp_path/'review.json'
+    review_file.write_text(json.dumps(review()), encoding='utf-8')
+    monkeypatch.setattr(c3_ingest, 'OUT', tmp_path)
+    writes = []
+    def call(method, path, body=None, timeout=120):
+        if method == 'GET': return 200, source
+        writes.append(copy.deepcopy(body))
+        return 409, {'error': 'Existing knowledge belongs to another document'}
+    monkeypatch.setattr(c3_ingest, 'call', call)
+    assert c3_ingest.commit('PR-07', review_file) == 409
+    assert len(writes) == 1 and writes[0]['knowledge'] == preview['knowledge']
+    result = json.loads((tmp_path/'ingest-PR-07.json').read_text(encoding='utf-8'))
+    assert result['dropped_conflicts'] == [] and result['commit_status'] == 409
 
 
 def _history(monkeypatch, status, rows):

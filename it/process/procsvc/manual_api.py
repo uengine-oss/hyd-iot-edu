@@ -33,13 +33,15 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             raise HTTPException(503, '문서 추출에는 같은 tenant의 instance 실행 서비스가 필요합니다')
         return rt
 
-    def preflight(session, proposal):
+    def current_catalog(session):
         try:
-            current_catalog = manual_knowledge.catalog(session)
+            return manual_knowledge.catalog(session)
         except Exception as exc:
             # Do not turn a graph outage into an empty catalog or checked success.
             raise HTTPException(503, '적재 전 검사용 현재 지식을 읽지 못했습니다. 다시 조회하세요') from exc
-        return manual_preflight.validate(proposal, current_catalog)
+
+    def preflight(session, proposal):
+        return manual_preflight.validate(proposal, current_catalog(session))
 
     @app.post('/api/kg/manuals/sources/{source_id}/extractions')
     async def extract(source_id: str, body: dict):
@@ -136,7 +138,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         def work():
             # All source/shape checks run before even opening the graph connection.
             plan = manual_review.validate(archive_factory(), tenant, body)
-            if body.get('method') == manual_extraction.CONTRACT:
+            if body.get('method') == manual_extraction.CONTRACT or body.get('extraction') is not None:
                 binding = body.get('extraction')
                 if not isinstance(binding,dict) or not isinstance(binding.get('instance'),str):
                     raise ValueError('추출 제안의 실제 작업 연결이 필요합니다')
@@ -149,7 +151,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             def commit_with_rules(session):
                 from . import skill_graph
                 manual_knowledge.check_graph(session, plan, manual_graph.skill_id)   # C1: action values · rule inputs, before any write
-                fms = sorted({p['failureMode'] for p in plan['procedures']})
+                fms = sorted({p['failureMode'] for p in plan['procedures'] if p.get('failureMode')})
                 plan['candidate_rules'] = {fm: session.execute_read(lambda tx, fm=fm: skill_graph.candidate_rules(tx, fm)) for fm in fms}
                 return manual_graph.commit(session, plan)
             result = graph(commit_with_rules)
@@ -199,7 +201,7 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         """C1: what a reviewed document may point at (components · symptoms · parts/suppliers · state variables · measures ·
         atomic actions with min/max · roles · decision tables with their inputs · existing failure modes/causes/skills).
         The review screen's pickers read this; the extraction agent gets the same object pinned as ontology_catalog."""
-        return await run(lambda: graph(manual_knowledge.catalog))
+        return await run(lambda: graph(current_catalog))
 
     @app.get('/api/kg/manuals')
     async def history():

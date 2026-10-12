@@ -9,7 +9,7 @@
 
 <https://uengine-oss.github.io/hyd-iot-edu/ontology> a owl:Ontology ;
   rdfs:label "hyd-iot-edu ontology"@ko ;
-  owl:versionInfo "2.6.0" ;
+  owl:versionInfo "2.7.0" ;
   rdfs:comment "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다."@ko .
 
 hyd:layer a owl:AnnotationProperty ; rdfs:label "계층"@ko .
@@ -147,7 +147,7 @@ hyd:ManualSection a owl:Class ;
   hyd:standard "지식 베이스 문서 조각"@ko .
 hyd:Skill a owl:Class ;
   rdfs:label "Skill" ;
-  rdfs:comment "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다."@ko ;
+  rdfs:comment "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다. 명시 scope=purchase 원문 SOP는 FM 대신 Part 업무 범위와 ERP 수행 관계를 갖는다. executable=false는 참고 보관, true는 PR_CREATE 실행 후보의 원문/승인/공급 관계를 검증한다. ?? kind=reference/executable=false? ?? ??? ?? FM??? ??? ???? ?? ????Action??? Rule ??? ????. ?? Skill ???? ?? Step? DOCUMENTS? ???? active HAS_STEP? ???? ???."@ko ;
   hyd:layer "스킬 · 규칙 계층"@ko ;
   hyd:standard "조치 방법 = SOP (DMN 판단의 출력 · BPMN 서비스 작업이 수행)"@ko .
 hyd:Action a owl:Class ;
@@ -452,10 +452,10 @@ hyd:CAUSES a owl:ObjectProperty ;
   rdfs:comment "원인이 일으키는 고장 모드"@ko .
 hyd:INVOLVES_PART a owl:ObjectProperty ;
   rdfs:label "INVOLVES_PART" ;
-  rdfs:domain hyd:Cause ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Cause hyd:Skill ) ] ;
   rdfs:range hyd:Part ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "원인과 관련된 부품"@ko .
+  rdfs:comment "원인과 관련된 부품; 명시 purchase Skill의 구매 업무 Part 범위"@ko .
 hyd:DISTURBS a owl:ObjectProperty ;
   rdfs:label "DISTURBS" ;
   rdfs:domain hyd:Cause ;
@@ -690,6 +690,12 @@ hyd:MAPS_TO a owl:ObjectProperty ;
   rdfs:range hyd:FlowNode ;
   hyd:cardinality "N:1" ;
   rdfs:comment "버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결"@ko .
+hyd:DOCUMENTS a owl:ObjectProperty ;
+  rdfs:label "DOCUMENTS" ;
+  rdfs:domain hyd:Step ;
+  rdfs:range hyd:Skill ;
+  hyd:cardinality "N:1" ;
+  rdfs:comment "??? ??? ? ?? Step? ??? ?? SOP/active ??? ?? Skill? ????. ?? HAS_STEP? ??? ??? active journal?????? hash pin? ????. | 관계 속성: _manual_document (필수)"@ko .
 
 # ---------------------------------------------------------------- datatype properties (node properties)
 hyd:_ingest_base a owl:DatatypeProperty ;
@@ -932,6 +938,11 @@ hyd:excerpt a owl:DatatypeProperty ;
   rdfs:label "excerpt" ;
   rdfs:domain hyd:ManualSection ;
   rdfs:range xsd:string .
+hyd:executable a owl:DatatypeProperty ;
+  rdfs:label "executable" ;
+  rdfs:domain hyd:Skill ;
+  rdfs:range xsd:boolean ;
+  rdfs:comment "purchase?? ?? ??. reference? ??? false?? ?? ????Action??? Rule ??? ?? ???. true? ?? ???? ?? ??? ????."@ko .
 hyd:expect a owl:DatatypeProperty ;
   rdfs:label "expect" ;
   rdfs:domain hyd:Evidence ;
@@ -1053,6 +1064,11 @@ hyd:lock a owl:DatatypeProperty ;
   rdfs:label "lock" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:ExecutionProjection hyd:CaseProjection ) ] ;
   rdfs:range xsd:integer .
+hyd:maintenance_policy a owl:DatatypeProperty ;
+  rdfs:label "maintenance_policy" ;
+  rdfs:domain hyd:Skill ;
+  rdfs:range xsd:string ;
+  rdfs:comment "검토된 원문 정비 적용 범위·패키지·동일모델·인용의 JSON 계약. 실행의 실제 사실은 CMMS/ERP에서 재조회한다."@ko .
 hyd:max a owl:DatatypeProperty ;
   rdfs:label "max" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Actuator hyd:Action ) ] ;
@@ -1146,6 +1162,11 @@ hyd:projection_warnings a owl:DatatypeProperty ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Incident hyd:DecisionCase hyd:ProcessInstance hyd:ProcessVersion ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "투영 중 찾지 못한 참조(설비·패턴·원인)"@ko .
+hyd:purchase_comparison_policy a owl:DatatypeProperty ;
+  rdfs:label "purchase_comparison_policy" ;
+  rdfs:domain hyd:Skill ;
+  rdfs:range xsd:string ;
+  rdfs:comment "검토 원문 구매 총비용 비교 정책 JSON. 실제 부품별 견적·수량을 재검증하며 물리 예측 순위와 분리한다."@ko .
 hyd:question a owl:DatatypeProperty ;
   rdfs:label "question" ;
   rdfs:domain hyd:Decision ;
@@ -1217,6 +1238,11 @@ hyd:schema a owl:DatatypeProperty ;
   rdfs:domain hyd:InputData ;
   rdfs:range xsd:string ;
   rdfs:comment "대소문자를 보존한 원천 스키마"@ko .
+hyd:scope a owl:DatatypeProperty ;
+  rdfs:label "scope" ;
+  rdfs:domain hyd:Skill ;
+  rdfs:range xsd:string ;
+  rdfs:comment "생략은 기존 고장 조치. purchase는 원문 기반 Part/ERP 업무 절차로 명시하며 FM을 추정하지 않는다. 허용값: fault, purchase"@ko .
 hyd:seeded a owl:DatatypeProperty ;
   rdfs:label "seeded" ;
   rdfs:domain hyd:DecisionCase ;
@@ -1347,6 +1373,11 @@ hyd:supersedes_id a owl:DatatypeProperty ;
   rdfs:domain hyd:WorkItem ;
   rdfs:range xsd:string ;
   rdfs:comment "재작업으로 대체한 이전 세대 작업 id"@ko .
+hyd:supplier_policy a owl:DatatypeProperty ;
+  rdfs:label "supplier_policy" ;
+  rdfs:domain hyd:Skill ;
+  rdfs:range xsd:string ;
+  rdfs:comment "원문 구매 실행 정책. 실제 부품별 견적에서 공급사를 선택하고 PR_CREATE 값에 바인딩. fastest_quote는 전체 최단 선택 후 AVL 규정을 검사한다. 허용값: oem, lowest_approved, fastest_quote"@ko .
 hyd:table a owl:DatatypeProperty ;
   rdfs:label "table" ;
   rdfs:domain hyd:InputData ;

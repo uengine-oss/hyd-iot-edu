@@ -286,7 +286,11 @@ class Runner:
                else self.exec_fn(provider,request,env))
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
         console = ui_events.ConsoleLog()                      # U1: tool call start/end as one terminal line each
-        notes = ui_events.NoteBuffer()                        # U1: the agent's prose between tool calls, one stored row per paragraph
+        notes = ui_events.NoteBuffer(limit=None)              # Public prose stays complete; private THINKING is never recorded.
+        from uuid import uuid4
+        public_run = uuid4().hex
+        public_message, public_sequence, public_parts = 0, 0, []
+        public_last_sent = None
         skill_reads = ui_events.SkillReads(skills)            # A161-G1: a skill file the agent opens becomes a skill_used row
         def emit(ui):
             line = console.line(ui, row)
@@ -318,11 +322,34 @@ class Runner:
                     self._event(row, job_id, "task_working", {"type": "notice", "content": f"에이전트 오류 보고(이어지는 결과를 확인합니다): {last_error[:500]}"}, crew_type=crew)
                 if ev.kind is ExecEventKind.ASSISTANT_TEXT:
                     notes.add(ev.text)
+                    public_parts.append(ev.text or '')
+                    public_now = time.monotonic()
+                    if public_last_sent is None or public_now-public_last_sent >= .25:
+                        public_last_sent = public_now
+                        public_sequence += 1
+                        emit(ui_events.UiEvent('assistant_note',dict(type='public_text',content=''.join(public_parts),
+                            public_run=public_run,message_id=f'{public_run}:{public_message}',
+                            sequence=public_sequence,complete=False,chars=sum(map(len,public_parts)),truncated=False)))
                 elif ev.kind in ui_events.NOTE_BOUNDARY:
                     note = notes.flush(final_text=ev.text if ev.kind is ExecEventKind.RESULT else None)
-                    if note:
-                        emit(note)
+                    if public_parts:
+                        public_sequence += 1
+                        emit(ui_events.UiEvent('assistant_note',dict(type='text',content=note.data['content'] if note else '',
+                            public_run=public_run,message_id=f'{public_run}:{public_message}',
+                            sequence=public_sequence,complete=True,truncated=False)))
+                        public_message += 1
+                        public_parts = []
+                        public_last_sent = None
                 for ui in ui_events.translate(ev):
+                    if ui.type == 'tool_start':
+                        from dataclasses import replace
+                        raw_input = ev.tool_input
+                        # Inputs are data, never a CLI result-file instruction.
+                        input_event = replace(ev,text=json.dumps(raw_input,ensure_ascii=False,default=str),tool_output=None)
+                        preserved = self._keep_full_output(ui,input_event,row,job_id)
+                        metadata = preserved.data.get('full_output')
+                        ui = ui_events.UiEvent(ui.type,dict(ui.data,input=raw_input,
+                            **({'full_input':dict(metadata,direction='input')} if metadata else {})))
                     if ui.type == "tool_end":
                         ui = self._keep_full_output(ui, ev, row, job_id,
                             allowed_directory=payloads.result_directory(request.workdir, session_id, env)
@@ -341,8 +368,10 @@ class Runner:
             if hasattr(gen, "close"):
                 gen.close()                                   # the library's teardown reaps the child process
             note = notes.flush(final_text=final_text or None)  # a stream that ends without a result still leaves its last words
-            if note:
-                emit(note)
+            if public_parts:
+                emit(ui_events.UiEvent('assistant_note',dict(type='text',content=note.data['content'] if note else '',
+                    public_run=public_run,message_id=f'{public_run}:{public_message}',
+                    sequence=public_sequence+1,complete=True,truncated=False)))
             if pending_rows:
                 self.repo.record_events(pending_rows)
         if self._cancelled(row):raise Cancelled()

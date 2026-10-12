@@ -754,6 +754,7 @@ def _audit(asset: str, actor: str, event: str, detail: dict, incident: str | Non
 
 # atomic system transactions of an SOP skill -> the enterprise-sim job that performs them
 TX_JOBS = {"WO_CREATE": "skill:schedule-maintenance", "PR_CREATE": "skill:procure-part",
+           "WO_RESCHEDULE": "skill:reschedule-maintenance",
            # C2 승인 뒤 실행 부품: 입고 확인 · 정비 수행 모사(작업지시 완료)
            "GR_CONFIRM": "skill:receive-goods", "WO_COMPLETE": "skill:complete-maintenance",
            # 시운전 통과 뒤 운전시간 계수기 리셋 · 다음 기한 기록 (시나리오 B)
@@ -779,6 +780,8 @@ def _window_params(window, opt: dict) -> dict:
 def exec_skill(d: dict, item: dict) -> dict:
     """POST one approved system transaction (CMMS work order, ERP purchase request) of the chosen SOP skill."""
     opt = next(o for o in d["options"] if o["id"] == d["chosen"])
+    from hydcommon.execution_scope import require_decision_option
+    require_decision_option(d, opt)
     job = TX_JOBS.get(item.get("code"))
     out = {"skill": item["skill"], "code": item.get("code"), "system": item.get("system")}
     if not job:
@@ -786,8 +789,23 @@ def exec_skill(d: dict, item: dict) -> dict:
     if item["code"] == "WO_CREATE":
         params = {"task": f"{item.get('sop') or opt.get('sopId')} {opt.get('name')} → 작업지시 {item.get('value')}",
                   **_window_params(item.get("window"), opt)}
+        if opt.get('maintenancePlan'):
+            if item.get('schedule_plan') != opt['maintenancePlan']:
+                return out | {'ok':False,'error':'승인한 원문 정비 범위 계획과 실행 인자가 다릅니다'}
+            job='skill:schedule-maintenance-scoped'
+            params={'task':params['task'],'plan':copy.deepcopy(opt['maintenancePlan'])}
+    elif item['code'] == 'WO_RESCHEDULE':
+        plan = opt.get('maintenancePlan') or {}
+        if plan.get('code') != 'WO_RESCHEDULE' or item.get('ref') != plan.get('ref') or item.get('expected_order') != plan.get('expected_order'):
+            return out | {'ok':False,'error':'승인한 PM 기존 오더의 일정 변경 계획과 실행 인자가 다릅니다'}
+        params = {'ref':plan['ref'],'expected_order':plan['expected_order'],'cycle':plan.get('cycle'),'plan':copy.deepcopy(plan),
+                  'window_id':(plan.get('window') or {}).get('id')}
+        if not params['window_id']:
+            return out | {'ok':False,'error':'실제 목표 정비 창이 없습니다'}
     elif item["code"] == "PR_CREATE":
-        params = {"supplier": item.get("value") or "sup:b", "part": opt.get("name")}
+        if not isinstance(item.get('value'), str) or not item['value'].strip():
+            return out | {'ok': False, 'error': '승인한 실제 공급사가 없습니다 — 기본 공급사로 대신 발주하지 않습니다'}
+        params = {"supplier": item['value'], "part": opt.get("name")}
         if item.get("part_no"):          # C2: 승인 경로가 확정한 부품 · 수량 · 금액 (ERP 가 견적 · AVL · 금액을 다시 확인)
             params.update(part_no=item["part_no"], qty=item["qty"], amount=item["amount"])
     else:                                # C2: GR_CONFIRM(입고) · WO_COMPLETE(작업지시 완료) · PM_RESET(계수기 리셋) — 대상 기록 번호
@@ -838,6 +856,11 @@ def _complete_legacy_work_order(inc):
             item = copy.deepcopy(saved['item'])
             option = {'id':saved['option'], 'sopId':item.get('sop'), 'name':saved['option_name'],
                       'actions':[{'kind':'command'}] if not saved['work_order_only'] else []}
+            if item.get('code') == 'WO_RESCHEDULE':
+                option['maintenancePlan'] = {k:copy.deepcopy(item[k]) for k in
+                    ('code','ref','expected_order','window','hours_at_window','limit_hours','cycle','scope','assets','staffing','parts_totals','model_applicability','source_id','policy') if k in item}
+            elif item.get('schedule_plan'):
+                option['maintenancePlan']=copy.deepcopy(item['schedule_plan'])
             d = {'id':saved['decision'], 'chosen':saved['option'], 'approvedBy':saved['by'],
                  'options':[option], 'asset':inc.asset, 'origin':{'incident':inc.id}}
         else:
@@ -1014,6 +1037,8 @@ SKILL_Q = """
 MATCH (k:Skill) WHERE $id IS NULL OR k.id = $id
 OPTIONAL MATCH (k)-[:APPROVED_BY]->(r:Role)
 RETURN k.id AS id, k.sopId AS sopId, k.name AS name, k.description AS description, k.kind AS kind, k._manual_document AS source_document, k.source_id AS source_id,
+       k.scope AS scope, k.executable AS executable,k.supplier_policy AS supplier_policy,k.maintenance_policy AS maintenance_policy,k.purchase_comparison_policy AS purchase_comparison_policy,
+       COLLECT { MATCH (k)-[:INVOLVES_PART]->(p:Part) RETURN {id:p.id,name:p.name,partNo:p.partNo} ORDER BY p.id } AS parts,
        CASE WHEN r IS NULL THEN null ELSE {id: r.id, name: r.name, level:r.level} END AS approver,
        COLLECT { MATCH (fm:FailureMode)-[m:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k) RETURN {id: fm.id, name: fm.name, relation: type(m)} } AS failureModes,
        COLLECT { MATCH (k)-[:ADDRESSES]->(c:Cause) RETURN {id: c.id, name: c.name} } AS causes,
@@ -1517,6 +1542,8 @@ class HitlDecideReq(BaseModel):
 
 def _commands_of(opt: dict, req: HitlDecideReq) -> list[dict]:
     """The chosen SOP skill's PLC commands as action.cmd items. A person may adjust fan / load inside the ontology range."""
+    from hydcommon.execution_scope import require_executable
+    require_executable(opt)
     out = []
     for a in opt.get("actions") or []:
         if a.get("kind") != "command":
@@ -1615,7 +1642,7 @@ async def hitl_decide(inc_id: str, req: HitlDecideReq):
     _after(inc)
     loop_ = asyncio.get_running_loop()
     results = [await loop_.run_in_executor(None, exec_skill, d, item)
-               for item in plan["enterprise"] if item.get('code') != 'WO_CREATE']
+               for item in plan["enterprise"] if item.get('code') not in ('WO_CREATE','WO_RESCHEDULE')]
     from .approval_hooks import record_execution
     for result in results:
         record_execution(d, result)

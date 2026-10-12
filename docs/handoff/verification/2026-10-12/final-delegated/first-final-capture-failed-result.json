@@ -1,0 +1,3834 @@
+{
+  "method": "actual deployed portal; existing saved case identities; GET/HEAD/OPTIONS only; native UI and scrolling",
+  "cases": {
+    "A": "c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb",
+    "B": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+    "C": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f"
+  },
+  "checks": [
+    {
+      "label": "actual A remains completed with recorded misdal outcome",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "actual B retains pending work rather than fabricated feasible plan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "actual C status equals root readiness expectation",
+      "passed": true,
+      "detail": "COMPLETED"
+    },
+    {
+      "label": "HM-8 actual delegated review installed",
+      "passed": true,
+      "detail": [
+        {
+          "by": "사용자 위임 Codex",
+          "status": "ACTIVE",
+          "batch": "21acf8f9-9e9d-4360-8ab7-9bdbf6a3a119"
+        }
+      ]
+    },
+    {
+      "label": "HM-8 actual stored reviewer identity",
+      "passed": true,
+      "detail": "사용자 위임 Codex"
+    },
+    {
+      "label": "HM-8 immutable source identity",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "HM-8 original source hash agrees with delegated review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "HM-8 entire immutable original bytes agree with review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "HM-8 SOP-FAN-11 stored reference equals reviewed target and pin",
+      "passed": true,
+      "detail": {
+        "document": "HM-8",
+        "source_sop": "SOP-FAN-11",
+        "target": "skill:sop-fan-11",
+        "reviewed_pin": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+        "actual_receipt": {
+          "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+          "owner": null,
+          "skill": "skill:sop-fan-11",
+          "sopId": "SOP-FAN-11",
+          "source_steps_sha256": "d7dbbde85039456de595400dc3a38cd83fb36ce876b22db9bd696eeca183bdd6"
+        },
+        "current_contract": {
+          "id": "skill:sop-fan-11",
+          "sopId": "SOP-FAN-11",
+          "owner": null,
+          "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+          "steps": [
+            {
+              "order": 1,
+              "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다."
+            },
+            {
+              "order": 2,
+              "text": "벨트 처짐을 측정한다 (기준 10~15 mm)."
+            },
+            {
+              "order": 3,
+              "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하)."
+            },
+            {
+              "order": 4,
+              "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다."
+            }
+          ],
+          "sections": [
+            {
+              "id": "HM-8.1",
+              "ref": "HM-8.1",
+              "title": "팬 진동 점검",
+              "excerpt": "VS1 1.2 mm/s 초과 시 팬 속도를 낮추고 베어링 소음 · 온도를 확인한다."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "HM-8 SOP-FAN-11 current target matches reviewed whole contract",
+      "passed": true,
+      "detail": {
+        "document": "HM-8",
+        "source_sop": "SOP-FAN-11",
+        "target": "skill:sop-fan-11",
+        "reviewed_pin": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+        "actual_receipt": {
+          "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+          "owner": null,
+          "skill": "skill:sop-fan-11",
+          "sopId": "SOP-FAN-11",
+          "source_steps_sha256": "d7dbbde85039456de595400dc3a38cd83fb36ce876b22db9bd696eeca183bdd6"
+        },
+        "current_contract": {
+          "id": "skill:sop-fan-11",
+          "sopId": "SOP-FAN-11",
+          "owner": null,
+          "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+          "steps": [
+            {
+              "order": 1,
+              "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다."
+            },
+            {
+              "order": 2,
+              "text": "벨트 처짐을 측정한다 (기준 10~15 mm)."
+            },
+            {
+              "order": 3,
+              "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하)."
+            },
+            {
+              "order": 4,
+              "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다."
+            }
+          ],
+          "sections": [
+            {
+              "id": "HM-8.1",
+              "ref": "HM-8.1",
+              "title": "팬 진동 점검",
+              "excerpt": "VS1 1.2 mm/s 초과 시 팬 속도를 낮추고 베어링 소음 · 온도를 확인한다."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "HM-8 SOP-FAN-12 stored reference equals reviewed target and pin",
+      "passed": true,
+      "detail": {
+        "document": "HM-8",
+        "source_sop": "SOP-FAN-12",
+        "target": "skill:sop-fan-12",
+        "reviewed_pin": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+        "actual_receipt": {
+          "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+          "owner": null,
+          "skill": "skill:sop-fan-12",
+          "sopId": "SOP-FAN-12",
+          "source_steps_sha256": "a7581ec724746dbd258a2281a727db77c7fc576931b1cdf58a67b1976de7f742"
+        },
+        "current_contract": {
+          "id": "skill:sop-fan-12",
+          "sopId": "SOP-FAN-12",
+          "owner": null,
+          "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+          "steps": [
+            {
+              "order": 1,
+              "text": "LOCAL 전환과 잠금(LOTO)을 확인한다."
+            },
+            {
+              "order": 2,
+              "text": "구 벨트를 분리하고 풀리 정렬을 점검한다."
+            },
+            {
+              "order": 3,
+              "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다."
+            },
+            {
+              "order": 4,
+              "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다."
+            }
+          ],
+          "sections": [
+            {
+              "id": "HM-8.2",
+              "ref": "HM-8.2",
+              "title": "쿨러 팬 벨트 교체",
+              "excerpt": "벨트 처짐이 기준을 벗어나거나 균열이 보이면 교체한다."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "HM-8 SOP-FAN-12 current target matches reviewed whole contract",
+      "passed": true,
+      "detail": {
+        "document": "HM-8",
+        "source_sop": "SOP-FAN-12",
+        "target": "skill:sop-fan-12",
+        "reviewed_pin": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+        "actual_receipt": {
+          "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+          "owner": null,
+          "skill": "skill:sop-fan-12",
+          "sopId": "SOP-FAN-12",
+          "source_steps_sha256": "a7581ec724746dbd258a2281a727db77c7fc576931b1cdf58a67b1976de7f742"
+        },
+        "current_contract": {
+          "id": "skill:sop-fan-12",
+          "sopId": "SOP-FAN-12",
+          "owner": null,
+          "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+          "steps": [
+            {
+              "order": 1,
+              "text": "LOCAL 전환과 잠금(LOTO)을 확인한다."
+            },
+            {
+              "order": 2,
+              "text": "구 벨트를 분리하고 풀리 정렬을 점검한다."
+            },
+            {
+              "order": 3,
+              "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다."
+            },
+            {
+              "order": 4,
+              "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다."
+            }
+          ],
+          "sections": [
+            {
+              "id": "HM-8.2",
+              "ref": "HM-8.2",
+              "title": "쿨러 팬 벨트 교체",
+              "excerpt": "벨트 처짐이 기준을 벗어나거나 균열이 보이면 교체한다."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "PM-02 actual delegated review installed",
+      "passed": true,
+      "detail": [
+        {
+          "by": "사용자 위임 Codex",
+          "status": "ACTIVE",
+          "batch": "dff3825b-01ef-4b7a-9488-d3cdcc1aa371"
+        }
+      ]
+    },
+    {
+      "label": "PM-02 actual stored reviewer identity",
+      "passed": true,
+      "detail": "사용자 위임 Codex"
+    },
+    {
+      "label": "PM-02 immutable source identity",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "PM-02 original source hash agrees with delegated review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "PM-02 entire immutable original bytes agree with review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "PR-07 actual delegated review installed",
+      "passed": true,
+      "detail": [
+        {
+          "by": "사용자 위임 Codex",
+          "status": "ACTIVE",
+          "batch": "1b45ca6f-6d68-4f8d-bcdc-2722ce3f91c1"
+        }
+      ]
+    },
+    {
+      "label": "PR-07 actual stored reviewer identity",
+      "passed": true,
+      "detail": "사용자 위임 Codex"
+    },
+    {
+      "label": "PR-07 immutable source identity",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "PR-07 original source hash agrees with delegated review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "PR-07 entire immutable original bytes agree with review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "A-record 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "A-record 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.984375,
+        "width": 731,
+        "height": 8270.015625
+      }
+    },
+    {
+      "label": "A-record 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "A-record 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 124.984375,
+        "width": 411,
+        "height": 13300.921875
+      }
+    },
+    {
+      "label": "actual A UI result remains misdal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "A-result 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "A-result 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 616,
+        "y": 124.65625,
+        "width": 777,
+        "height": 822.640625
+      }
+    },
+    {
+      "label": "A-result 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "A-result 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 528,
+        "y": 124.65625,
+        "width": 457,
+        "height": 870.46875
+      }
+    },
+    {
+      "label": "B-record 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-record 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.984375,
+        "width": 731,
+        "height": 6674.0625
+      }
+    },
+    {
+      "label": "B-record 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-record 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 124.984375,
+        "width": 411,
+        "height": 10267.96875
+      }
+    },
+    {
+      "label": "actual B shows partial PM asset evidence",
+      "passed": false,
+      "detail": 0
+    },
+    {
+      "label": "actual B expected source package 4000 remains visible",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "actual B next total milestone 12000 remains visible",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "actual B missing return-filter or oil remains explicit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B-step-03 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-step-03 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.609375,
+        "width": 731,
+        "height": 178.078125
+      }
+    },
+    {
+      "label": "B-step-03 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-step-03 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 124.5,
+        "width": 411,
+        "height": 426.921875
+      }
+    },
+    {
+      "label": "B-step-04 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-step-04 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.6875,
+        "width": 731,
+        "height": 326.125
+      }
+    },
+    {
+      "label": "B-step-04 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-step-04 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 125.421875,
+        "width": 411,
+        "height": 537.359375
+      }
+    },
+    {
+      "label": "B-step-05 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-step-05 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.8125,
+        "width": 731,
+        "height": 943.796875
+      }
+    },
+    {
+      "label": "B-step-05 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-step-05 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 124.78125,
+        "width": 411,
+        "height": 1435.984375
+      }
+    },
+    {
+      "label": "B-step-07 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-step-07 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 124.546875,
+        "width": 731,
+        "height": 3864.5
+      }
+    },
+    {
+      "label": "B-step-07 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-step-07 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 124.703125,
+        "width": 411,
+        "height": 5282.40625
+      }
+    },
+    {
+      "label": "B-status 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-status 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 616,
+        "y": 124.65625,
+        "width": 777,
+        "height": 476.390625
+      }
+    },
+    {
+      "label": "B-status 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-status 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 528,
+        "y": 124.65625,
+        "width": 457,
+        "height": 476.390625
+      }
+    },
+    {
+      "label": "B latest actual worker tool has unique native DOM identity",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B-latest-agent-tool-record 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "B-latest-agent-tool-record 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 673,
+        "y": 124.71875,
+        "width": 663,
+        "height": 45.5
+      }
+    },
+    {
+      "label": "B-latest-agent-tool-record 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "B-latest-agent-tool-record 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 585,
+        "y": 124.921875,
+        "width": 343,
+        "height": 45.5
+      }
+    },
+    {
+      "label": "C-record 1440 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "label": "C-record 1440 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 639,
+        "y": 219.984375,
+        "width": 731,
+        "height": 255.6875
+      }
+    },
+    {
+      "label": "C-record 1024 document overflow",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024
+      }
+    },
+    {
+      "label": "C-record 1024 actual target intersects viewport",
+      "passed": true,
+      "detail": {
+        "x": 551,
+        "y": 219.984375,
+        "width": 411,
+        "height": 407.953125
+      }
+    },
+    {
+      "label": "A case/task/approval/effect state unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "B case/task/approval/effect state unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "C case/task/approval/effect state unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "label": "manual journal unchanged by browser reads",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "failures": [
+    {
+      "label": "actual B shows partial PM asset evidence",
+      "passed": false,
+      "detail": 0
+    },
+    {
+      "label": "actual B expected source package 4000 remains visible",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "actual B next total milestone 12000 remains visible",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "capture exception",
+      "error": "Locator.inner_text: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator(\"#instRecord\").locator(\"[data-cr-steps] > li\").first.locator(\".cr-title\")\n",
+      "traceback": "Traceback (most recent call last):\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\capture-delegated-live.py\", line 255, in run_live\n    title=step.locator('.cr-title').inner_text()\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\sync_api\\_generated.py\", line 19603, in inner_text\n    self._sync(self._impl_obj.inner_text(timeout=to_milliseconds(timeout)))\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_sync_base.py\", line 115, in _sync\n    return task.result()\n           ~~~~~~~~~~~^^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_locator.py\", line 502, in inner_text\n    return await self._frame.inner_text(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_frame.py\", line 744, in inner_text\n    return await self._channel.send(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n        \"innerText\", self._timeout, locals_to_params(locals())\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_connection.py\", line 76, in send\n    return await self._connection.wrap_api_call(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_connection.py\", line 632, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Locator.inner_text: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator(\"#instRecord\").locator(\"[data-cr-steps] > li\").first.locator(\".cr-title\")\n\n"
+    }
+  ],
+  "pageerrors": [],
+  "consoleErrors": [],
+  "blockedWrites": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "responses": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/tokens.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/instances.css?v=20261012-toolnames",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/styles.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/enterprise.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/components.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/taskDetail.css?v=20261008-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/main.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/kpi.css?v=20261008-a8",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/flows.css?v=20261011-portal",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/hitl.css?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/trace.css?v=20261009-u1b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/caseRecord.css?v=20261009-a161g",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/mcp.css?v=20261008-u3",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/shell.css?v=20261008-u7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/compare.css?v=20261008-a10",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/theme.css?v=20261010-a161m",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/ui.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/layers.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/trace.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/enterprise.js?v=20261012-evaluation",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/legacyMeaning.js?v=20261008-a9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/hitl.js?v=20261012-evaluation",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/instanceSteps.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/app.js?v=20261012-bizstatus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/taskDeferral.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/instanceEffects.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/main.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/plainWords.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/caseRecord.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/flow.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/instanceRework.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/instances.js?v=20261012-evaluation",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/toolNames.js?v=20261012-display",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/approvalCard.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/taskDetail.js?v=20261012-tool-purpose-purchase-cost",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/resultReport.js?v=20261012-remaining",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/agentsPanel.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/liveStream.js?v=20261012-publicstream-full",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/sourceEvents.js?v=20261008-a147",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/inbox.js?v=20261010-capg1g7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/agents.js?v=20261012-display",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/definitionRegistry.js?v=20261012-display",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/whatif.js?v=20261012-evaluation",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/mcp.js?v=20261012-display",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/definitionDeploy.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/ask.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/compare.js?v=20261012-evaluation",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/evaluation.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/studentCases.js?v=20261012-k1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/configBundle.js?v=20261012-k1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/fabric.js?v=20261008-a11",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/kpi.js?v=20261012-remaining",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/flows.js?v=20261012-names",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/shell.js?v=20261009-u1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/oilInput.js?v=20261008-b7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8088/names.json",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/events/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/inbox/users",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/mcp/selectable",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agent-authoring/options",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/ontology/graph?asset=HYD-01",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/scenario/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/c3_cooling?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/manual_source_extraction?version=2.4",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/c3_spare?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/manual_source_extraction?version=2.3",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/c3_pm?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/manual_source_extraction?version=1.9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/anomaly_response?version=2.2",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/timeseries-question-abb7ffbd?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/parallel_probe_7ef9f799?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/rule-question-a3b31104?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/business-question-3d728fff?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/manual_golden_check?version=1.0",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/business_question?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/rule_question?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/a148-codex-human-0a16f596?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/a148-readonly-433a6788?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/definition",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/a148-human-467b9ccb?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/definitions/a148-format-d654ef0e?version=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/config/cases",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/decisions/DEC-1012-003-c9e1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1012-01-ba28",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/inbox/users",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_cooling.b2bb95c5-0984-4282-b00c-809d4b3280bb/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1011-01-96e7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1011-01-96e7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1011-01-96e7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1011-01-96e7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist/6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist/6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist/6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/decisions/DEC-1012-003-0869",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents/INC-1012-02-1384",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/mcp/selectable",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agent-authoring/options",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/effects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8093/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8090/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8094/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:18083/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:7474/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/agents/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8095/healthz",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS&agent_orch=cliagents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f/graph",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/graph-projections",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/incidents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8091/api/agent/runs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/process/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8092/api/detector/state",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/instances?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8080/api/todolist?status=IN_PROGRESS",
+      "status": 200
+    }
+  ],
+  "passed": false
+}

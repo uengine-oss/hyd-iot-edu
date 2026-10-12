@@ -61,6 +61,8 @@ def write(session, query, sid, values, *, create=False, expected_revision=None, 
     Manual-owned skills must be revised through their source review, preserving
     provenance and rollback ownership. Creating an existing SOP never replaces it.
     """
+    if values.get('scope') == 'purchase':
+        raise ValueError('원문 구매 SOP는 원문·인용·업무 범위를 검증하는 매뉴얼 검토/개정 경로에서만 변경합니다')
     if request_id is not None and not isinstance(request_id,str):raise ValueError('request_id는 UUID 문자열이어야 합니다')
     rid=str(uuid.UUID(request_id)) if request_id is not None else str(uuid.uuid4())
     intent={'skill':sid,'values':deepcopy(values),'create':create,'revision':expected_revision,'by':by}

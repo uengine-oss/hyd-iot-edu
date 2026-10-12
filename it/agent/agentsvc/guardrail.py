@@ -58,6 +58,8 @@ def check_cards(result: dict) -> list[str]:
     card is not excluded by a rule, names its approving Role and carries its SOP steps."""
     v: list[str] = []
     for o in result.get("options", []):
+        if o.get('kind') == 'reference' or o.get('executable') is False:
+            v.append(f"{o['id']}: 원문 참고 절차는 실행 카드로 제출할 수 없다")
         if not o.get("selectedBy"):
             v.append(f"{o['id']}: 후보 선택 규칙(Rule -OUTPUTS-> Skill) 인용이 없다")
     rec = next((o for o in result.get("options", []) if o["id"] == result.get("recommended")), None)

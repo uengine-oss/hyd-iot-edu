@@ -55,9 +55,13 @@ def predict(snapshot, actions, horizon_s):
             raise ValueError('action must be an object')
         code = action.get('code')
         if action.get('kind') != 'command':
-            if code not in ('WO_CREATE', 'PR_CREATE'):
+            if code not in ('WO_CREATE', 'PR_CREATE', 'WO_RESCHEDULE'):
                 raise ValueError(f'unsupported non-command effect: {code}')
-            continue  # creating a request is not a physical repair
+            if code == 'WO_RESCHEDULE' and action.get('kind') != 'transaction':
+                raise ValueError('WO_RESCHEDULE requires its registered transaction kind')
+            # Creating a request or moving an existing maintenance order's
+            # schedule does not repair the asset or change its current controls.
+            continue
         commands.append(action)
     if operating['state'] == 'TRIP' and commands and not any(a['code'] == 'RESET' for a in commands):
         raise ValueError('PLC TRIP requires an explicit eligible RESET')

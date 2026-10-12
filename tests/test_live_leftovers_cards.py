@@ -30,6 +30,7 @@ def card(sid, name, kind, rank, score, ts1, ps1, actions, parts, approver="ìš´ì 
     facts = more.pop("facts", None) or {"forecast_ts1": ts1, "forecast_ps1": ps1, "skill_kind": kind, "skill_code": [a["code"] for a in actions],
                                         "supplier_avl": None, "supplier_fail_rate": None}
     return dict({"id": sid, "sopId": sid.split(":")[1].upper(), "name": name, "kind": kind, "rank": rank, "score": score, "feasible": feasible,
+                 "evaluation_mode":"execution", "execution_checked":True,
                  "approver": {"id": "role:x", "name": approver, "level": 1}, "actions": actions, "forecast": fc(ts1, ps1, sid), "facts": facts,
                  "scoreParts": parts, "gains": [], "losses": [], "warnings": [], "penalties": [], "violations": [], "steps": [],
                  "selectedBy": [], "tradeoffEvaluation": [], "precedent": None}, **more)

@@ -76,6 +76,22 @@ def test_explicit_replacement_overrides_inline_kind_and_actions(catalog):
     assert p['procedures'][0]['link']['kind'] == 'work_order'
 
 
+def test_historical_pm_storage_structure_is_distinct_from_actual_execution(catalog):
+    p=proposal();p['sections']=[dict(ref='2')]
+    p['links']['SOP-PM-12'].update(relation='PREVENTED_BY',actions=[dict(action='action:wo',value='SOP-PM-12')])
+    catalog['actions'].append(dict(id='action:wo',code='WO_CREATE',kind='transaction',min=None,max=None))
+    catalog['decision_tables'].append(dict(id='dt:action-candidates',decision='dec:action-candidates',
+        inputs=[dict(id='in:pattern',variable='pattern')]))
+    p['knowledge']=dict(rules=[dict(id='rule:pm-storage',section='2',anchor=dict(quote='정비 시점'),
+        table='dt:action-candidates',effect='SELECT',tests=[dict(input='in:pattern',operator='==',value='PM_DUE')],outputs=['SOP-PM-12'])])
+    before=deepcopy(p);result=manual_preflight.validate(p,catalog)
+    assert result['technical_ready'] is True and result['can_commit'] is False, result['issues']
+    execution=result['execution'][0]
+    assert execution['ready'] is False and execution['execution_checked'] is False
+    assert {i['code'] for i in execution['issues']}=={'PM_SCOPE_POLICY_REQUIRED','PM_ACTUAL_CONTEXT_REQUIRED'}
+    assert p==before
+
+
 @pytest.mark.parametrize('doc', ['PM-02', 'PR-07'])
 def test_actual_stored_extraction_preview_inline_links_are_checked_without_rewriting(doc, catalog):
     path = Path(__file__).resolve().parents[1] / '.evidence' / 'a161-c3' / ('proposal-'+doc+'.json')
@@ -147,7 +163,7 @@ def test_commit_helper_requeries_current_graph_and_keeps_rule_resolution(catalog
             rows = {manual_knowledge.CATALOG_Q['actions']: catalog['actions'],
                     manual_knowledge.CATALOG_Q['decision_tables']: catalog['decision_tables'],
                     'MATCH (s:Supplier) RETURN s.id AS id': catalog['suppliers'],
-                    'MATCH (k:Skill) RETURN k.sopId AS sop': [dict(sop=r['sopId']) for r in catalog['skills']]}
+                    manual_knowledge.CATALOG_Q['skills']: catalog['skills']}
             return Rows(rows[query])
 
     class Session:
@@ -168,6 +184,17 @@ def test_ownership_and_missing_catalog_references_are_not_hidden(catalog):
     p['knowledge_conflicts'] = [dict(id='cause:collision')]
     result = manual_preflight.validate(p, catalog)
     assert {'REFERENCE_NOT_FOUND', 'SOP_OWNERSHIP_CONFLICT', 'KNOWLEDGE_OWNERSHIP_CONFLICT'} <= codes(result)
+
+
+def test_explicit_reviewed_definition_removal_does_not_reuse_stale_extraction_conflict(catalog):
+    p = proposal()
+    p['knowledge_conflicts'] = [dict(id='cause:collision')]
+    p['knowledge'] = {'failure_modes': [], 'causes': [], 'evidence': [], 'rules': []}
+    original = deepcopy(p)
+    assert 'KNOWLEDGE_OWNERSHIP_CONFLICT' not in codes(manual_preflight.validate(p, catalog))
+    assert p == original
+    p['knowledge'] = {'causes': 'invalid'}
+    assert {'KNOWLEDGE_INVALID', 'KNOWLEDGE_OWNERSHIP_CONFLICT'} <= codes(manual_preflight.validate(p, catalog))
 
 
 @pytest.fixture
@@ -227,3 +254,15 @@ def test_read_only_get_preview_and_existing_post_have_same_validation_contract(a
         assert value['validation']['needs_human_review'] is True
         assert 'NO_PROCEDURES' in codes(value['validation'])
         assert 'reviewed' not in value and 'by' not in value
+
+
+def test_manual_catalog_is_single_read_only_route_and_uses_current_catalog_errors(api, monkeypatch):
+    client, _, _ = api
+    routes = [r for r in client.app.routes if getattr(r,'path',None) == '/api/kg/manuals/catalog']
+    assert len(routes) == 1
+    response = client.get('/api/kg/manuals/catalog')
+    assert response.status_code == 200 and 'parts' in response.json() and 'roles' in response.json()
+    def fail(session): raise RuntimeError('private source failure')
+    monkeypatch.setattr(manual_knowledge,'catalog',fail)
+    response = client.get('/api/kg/manuals/catalog')
+    assert response.status_code == 503 and 'private source failure' not in response.text

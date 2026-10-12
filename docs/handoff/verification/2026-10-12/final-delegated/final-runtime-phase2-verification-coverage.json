@@ -1,0 +1,232 @@
+{
+  "whole_run": "2673 passed, 16 skipped; immutable original SHA manifest",
+  "later_whole_reruns": 0,
+  "focused_source_receipts": [
+    "focused test source; final focused command/log defines coverage",
+    "pm-deferral-ui-source-sha.json",
+    "pm-reschedule-forecast-source-sha.json",
+    "public-stream-source-sha.json",
+    "purchase-policy-source-sha.json",
+    "purchase-ui-source-sha.json"
+  ],
+  "later_source_delta": [
+    {
+      "path": "common/hydcommon/forecast.py",
+      "sha256": "87d0e8ad4298d7c43a053284fe6107d9dfb2ff301f0c5919d5aa9370fb9d94e9",
+      "changed_since_whole": true,
+      "receipt": "pm-reschedule-forecast-source-sha.json"
+    },
+    {
+      "path": "common/hydcommon/purchase_comparison.py",
+      "sha256": "442eed2a663449f15df41d2d86ce8db9d251ab56aade76e7f95bc0675199a5bd",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "common/hydcommon/skill_scope.py",
+      "sha256": "1269fa89b68b9ff933151997a3daabbc05f8548db619adf7934f2119391309cc",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/agent-worker/worker/events.py",
+      "sha256": "dc576e24d9aa3377059b9c52d812dc8f5bee1704c054bc2ea685d924ecb6cad3",
+      "changed_since_whole": true,
+      "receipt": "public-stream-source-sha.json"
+    },
+    {
+      "path": "it/agent-worker/worker/runner.py",
+      "sha256": "8cb36f835ebde0e6662b44a67f0b9012af35a91de78bc436a902e59bd82d2818",
+      "changed_since_whole": true,
+      "receipt": "public-stream-source-sha.json"
+    },
+    {
+      "path": "it/agent/agentsvc/approval.py",
+      "sha256": "3e7519b982a594753c89d1e4a7e1d6caf21531ddc04356f475c95ba7f7b1dd31",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/agent/agentsvc/cards.py",
+      "sha256": "7ddd8ba02833b1a58b640d170fdeff77f59d9d26908d18f53578d67fd33849a1",
+      "changed_since_whole": true,
+      "receipt": "pm-reschedule-forecast-source-sha.json"
+    },
+    {
+      "path": "it/agent/agentsvc/decide.py",
+      "sha256": "158243a61492c4a16b819e19669696c66ebcf1a598cfbd2023212e94944001ea",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/neo4j/templates/t3_skills.cypher",
+      "sha256": "725387daa3246dd0eb4cb2685f565b7e776e501c3845236a903d4773ed2163aa",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/neo4j/v2/ontology-schema.ttl",
+      "sha256": "44e8f2f00a98170e20ac36fdf8612be6f75be1d586e3c55c2eef7651e0fecbbe",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/neo4j/v2/schema.json",
+      "sha256": "9bc035bb3cfb8e2e22e25de373518d6a26c3331889a5a879e5d9be386027f37a",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/neo4j/v2/schema_prompt.md",
+      "sha256": "5f35b76aa7c4978acef1ca0323b6dd759a221cc7dcdcaad7f5acb3eb15c7f0fb",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/approvalCard.js",
+      "sha256": "df554c2d9d0313db7509eb3bca6d912fc6dbb9459d83c0a8e3045b162a1e1928",
+      "changed_since_whole": true,
+      "receipt": "purchase-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/caseRecord.js",
+      "sha256": "bcaa37efdba98789a5e4bbed3949e3018ddbd632ee3fe2442e332d2f73c91534",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/index.html",
+      "sha256": "b79c26fe0cdfff30e85d281e86c4df9435cdd0c53524f61b5311c02ef1803976",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/liveStream.js",
+      "sha256": "d650e0d8fcb3b2d34228539d218be56cc014a962ccdce1d9547df8d5eecba703",
+      "changed_since_whole": true,
+      "receipt": "public-stream-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/plainWords.js",
+      "sha256": "f9df05c528139c7b9bfc1f803bd9b358c9954dd730f4cd299667148c5839bbad",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/taskDetail.js",
+      "sha256": "1bf2a5e35c327e0da8b0bd5ef50219d8285c2119c05496172d128b4fc4765a84",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/trace.js",
+      "sha256": "9b803853f897b9e3b558c22658526cd3fad4e7ff52459e14bff198195a154a1d",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/portal/www/ui.js",
+      "sha256": "0ef44572c6c50976bbca87153f21f5968b970814b078fcc145a3d55ba7bd38dc",
+      "changed_since_whole": true,
+      "receipt": "pm-deferral-ui-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/kgadmin.py",
+      "sha256": "1890a75cfc953870d721c94e2262c5a328545c607a0526028b0d8ee41de19d51",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/main.py",
+      "sha256": "7050c4c45d6e53f026a85efe82e71159832524617b366d09bae8164f8c94de8a",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/manual_graph.py",
+      "sha256": "e3f62c934070f70cc56bae04937b5f247c484ba38e281eb474ccfa7a2dfb5f61",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/manual_knowledge.py",
+      "sha256": "9d3b96c6d37698df2e17430857ad32a8356a80fe2eb65d8acd637aec7c2840d3",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/manual_preflight.py",
+      "sha256": "09250e2a27e73630d1d8bbd2d4de56694b192f28945c6479c361baaebb2952d6",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/manual_references.py",
+      "sha256": "16ab9825aebc71d24ff6a3a38cbf54d824e2d4dc361bce23acb2505d19b44191",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "it/process/procsvc/manual_review.py",
+      "sha256": "f6a9388c1e022cdc9843ac2215b6dd7c50615b002670fb7961343422e0cea2a2",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "scripts/c3_ingest.py",
+      "sha256": "1aec4dbfbdfe6049a0406d3a3685a5f90b06ece59e3ba7cfb2717c54a357f9c8",
+      "changed_since_whole": true,
+      "receipt": "purchase-policy-source-sha.json"
+    },
+    {
+      "path": "tests/fixtures/portal_pm_deferral.json",
+      "sha256": "1690f24a7ba110053bf0d2ce2e40932e40113c6cf8ed2edc7223263dcf5f9c37",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_pm_reschedule_forecast.py",
+      "sha256": "ddf4483d5df2d21e917ed4d10512ce16b5310ffc0710f0a5c88d17eebb250558",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_portal_pm_deferral_ui.py",
+      "sha256": "0c24540fc7f9300255f672c398d7638b934fe9fc4dfb0d3ca9f6c51be9f85eb1",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_portal_tool_semantics_ui.py",
+      "sha256": "3346f13987e877e24df627ae2e8063e3d364b0f89d6caf4012f4d4bd3d02b2bb",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_public_assistant_stream.py",
+      "sha256": "44922bbfab0ab6416fad59f2ed51b0896a31b3505fc431d839a2929814b3a8e2",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_public_tool_verbatim.py",
+      "sha256": "77a0b443f3b1473b5dee20cfbfc11ca18d9322b8952c7b5589f9f9c6b8f40620",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_purchase_scope_model.py",
+      "sha256": "232a7bb654f17f5a4c660692f74fa0ea43c57a0890c9eb32201688477c016dea",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    },
+    {
+      "path": "tests/test_purchase_total_cost.py",
+      "sha256": "53e6430046ac0a6d769a4d6172c7ddfd150e29b0ebdf599a8bdf046699932f68",
+      "changed_since_whole": true,
+      "receipt": "focused test source; final focused command/log defines coverage"
+    }
+  ],
+  "protected_paths_changed": false,
+  "source_files": 800
+}

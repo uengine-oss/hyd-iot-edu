@@ -59,8 +59,8 @@ class FakeTx:
             return R(ACTIONS)
         if 'MATCH (s:Supplier)' in q:
             return R([dict(id=s) for s in ('sup:a', 'sup:b', 'sup:c')])
-        if 'MATCH (k:Skill)' in q:
-            return R([dict(sop='SOP-TPMP-01')])
+        if 'MATCH (k:Skill)' in q or 'MATCH (n:Skill)' in q:
+            return R([dict(id='skill:tpmp-01', sop='SOP-TPMP-01', sopId='SOP-TPMP-01')])
         if 'DecisionTable' in q:
             return R([dict(id=t, decision='dec:' + t[3:], inputs=[dict(id=i.rsplit(':', 1)[0], variable=i.rsplit(':', 1)[1]) for i in ins])
                       for t, ins in INPUTS.items()])

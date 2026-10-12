@@ -1,6 +1,6 @@
 {
   "name": "hyd-iot-edu ontology",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "namespace": "https://uengine-oss.github.io/hyd-iot-edu/ontology#",
   "description": "유압설비 교육용 온톨로지 스키마. BSC(관점 · 전략 목표 · 성과 지표) → 프로세스 → 리소스 → 스킬·규칙 계층과 외부 변수·예측으로 이루어진다. 클래스와 관계 정의만 담고 인스턴스는 담지 않는다. 표준을 준용한 부분은 각 클래스의 standard에 적었다.",
   "conventions": {
@@ -1045,7 +1045,7 @@
       "label_ko": "조치 방법 (스킬 = SOP)",
       "layer": "skill",
       "standard": "조치 방법 = SOP (DMN 판단의 출력 · BPMN 서비스 작업이 수행)",
-      "description": "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.",
+      "description": "조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다. 명시 scope=purchase 원문 SOP는 FM 대신 Part 업무 범위와 ERP 수행 관계를 갖는다. executable=false는 참고 보관, true는 PR_CREATE 실행 후보의 원문/승인/공급 관계를 검증한다. ?? kind=reference/executable=false? ?? ??? ?? FM??? ??? ???? ?? ????Action??? Rule ??? ????. ?? Skill ???? ?? Step? DOCUMENTS? ???? active HAS_STEP? ???? ???.",
       "properties": [
         {
           "name": "id",
@@ -1073,10 +1073,11 @@
           "type": "enum",
           "values": [
             "control",
-            "work_order"
+            "work_order",
+            "reference"
           ],
           "required": true,
-          "description": "control=PLC 즉시 제어, work_order=정비, business=기업 시스템 업무"
+          "description": "control=PLC ??, work_order=????/?? ??, reference=?? ?? ???? ???? ???"
         },
         {
           "name": "_manual_document",
@@ -1095,6 +1096,45 @@
           "type": "string",
           "required": false,
           "description": "보관 원문 판본 id(manual:<document>:<sha256>) — 적재 출처"
+        },
+        {
+          "name": "scope",
+          "type": "enum",
+          "values": [
+            "fault",
+            "purchase"
+          ],
+          "required": false,
+          "description": "생략은 기존 고장 조치. purchase는 원문 기반 Part/ERP 업무 절차로 명시하며 FM을 추정하지 않는다."
+        },
+        {
+          "name": "executable",
+          "type": "boolean",
+          "required": false,
+          "description": "purchase?? ?? ??. reference? ??? false?? ?? ????Action??? Rule ??? ?? ???. true? ?? ???? ?? ??? ????."
+        },
+        {
+          "name": "supplier_policy",
+          "type": "enum",
+          "values": [
+            "oem",
+            "lowest_approved",
+            "fastest_quote"
+          ],
+          "required": false,
+          "description": "원문 구매 실행 정책. 실제 부품별 견적에서 공급사를 선택하고 PR_CREATE 값에 바인딩. fastest_quote는 전체 최단 선택 후 AVL 규정을 검사한다."
+        },
+        {
+          "name": "purchase_comparison_policy",
+          "type": "string",
+          "required": false,
+          "description": "검토 원문 구매 총비용 비교 정책 JSON. 실제 부품별 견적·수량을 재검증하며 물리 예측 순위와 분리한다."
+        },
+        {
+          "name": "maintenance_policy",
+          "type": "string",
+          "required": false,
+          "description": "검토된 원문 정비 적용 범위·패키지·동일모델·인용의 JSON 계약. 실행의 실제 사실은 CMMS/ERP에서 재조회한다."
         }
       ],
       "requiredRelationships": [
@@ -1115,7 +1155,43 @@
           "direction": "in",
           "fromClass": "FailureMode",
           "min": 1,
-          "description": "고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나)"
+          "description": "고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나)",
+          "unlessProperty": {
+            "scope": [
+              "purchase"
+            ],
+            "kind": [
+              "reference"
+            ]
+          }
+        },
+        {
+          "type": [
+            "INVOLVES_PART"
+          ],
+          "direction": "out",
+          "min": 1,
+          "whenProperty": {
+            "scope": [
+              "purchase"
+            ]
+          },
+          "description": "구매 SOP는 명시한 Part 업무 범위가 필요하다"
+        },
+        {
+          "type": [
+            "HAS_SKILL"
+          ],
+          "direction": "in",
+          "fromClass": "System",
+          "fromId": "sys:erp",
+          "min": 1,
+          "whenProperty": {
+            "scope": [
+              "purchase"
+            ]
+          },
+          "description": "구매 SOP는 ERP 업무 시스템에서 수행한다"
         }
       ]
     },
@@ -2786,13 +2862,14 @@
     {
       "type": "INVOLVES_PART",
       "from": [
-        "Cause"
+        "Cause",
+        "Skill"
       ],
       "to": [
         "Part"
       ],
       "cardinality": "N:M",
-      "description": "원인과 관련된 부품"
+      "description": "원인과 관련된 부품; 명시 purchase Skill의 구매 업무 Part 범위"
     },
     {
       "type": "DISTURBS",
@@ -3407,6 +3484,25 @@
       ],
       "cardinality": "N:1",
       "description": "버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결"
+    },
+    {
+      "type": "DOCUMENTS",
+      "from": [
+        "Step"
+      ],
+      "to": [
+        "Skill"
+      ],
+      "cardinality": "N:1",
+      "description": "??? ??? ? ?? Step? ??? ?? SOP/active ??? ?? Skill? ????. ?? HAS_STEP? ??? ??? active journal?????? hash pin? ????.",
+      "properties": [
+        {
+          "name": "_manual_document",
+          "type": "string",
+          "required": true,
+          "description": "? ?? Step? provenance ??? ??? ?? ?? journal id"
+        }
+      ]
     }
   ]
 }

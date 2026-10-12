@@ -5,6 +5,17 @@ from . import machine
 
 
 def request_for_option(option):
+    from hydcommon.execution_scope import require_executable
+    require_executable(option)
+    change = [a for a in option.get('actions',[]) if a.get('code') == 'WO_RESCHEDULE']
+    if change:
+        plan = option.get('maintenancePlan')
+        if len(change) != 1 or not isinstance(plan,dict) or plan.get('code') != 'WO_RESCHEDULE':
+            raise ValueError('PM 일정 변경의 승인된 기존 오더와 목표 창 근거가 없습니다')
+        return dict(skill=option['id'],sop=option['sopId'],system='sys:cmms',
+                    value=change[0].get('value'),source='approved-action',**deepcopy(plan))
+    if option.get('source_id') and not option.get('actions'):
+        raise ValueError('원문 절차의 빈 Action을 새 정비 오더 발행으로 대체하지 않습니다')
     actions = [a for a in option.get('actions', []) if a.get('code') == 'WO_CREATE']
     if len(actions) > 1:
         raise ValueError('multiple WO_CREATE actions need distinct execution identities')
@@ -18,7 +29,8 @@ def request_for_option(option):
             'system':action.get('target') or 'sys:cmms',
             'value':action.get('value') if actions else f"선택한 조치 이후 정비 점검: {option.get('name')}",
             'param':action.get('param'),
-            'source':'approved-action' if actions else 'process-definition-followup'}
+            'source':'approved-action' if actions else 'process-definition-followup',
+            **({'schedule_plan':deepcopy(option['maintenancePlan'])} if option.get('maintenancePlan') else {})}
 
 
 def prepare(ctx, decision, item, *, allow_before_recovery=False):

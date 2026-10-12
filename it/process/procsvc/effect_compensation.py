@@ -24,11 +24,14 @@ from . import engine
 # Mirrors it/enterprise-sim/entsim/state.py (tests cross-check both tables). The process never derives an inverse itself.
 INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:procure-part": "skill:cancel-purchase-request",
               "skill:reallocate-production": "skill:restore-production", "skill:hold-lot": "skill:release-hold"}
+C2_INVERSE_OF = {"skill:schedule-maintenance-scoped": "skill:cancel-maintenance-scoped"}
+ALL_INVERSE_OF = {**INVERSE_OF, **C2_INVERSE_OF}
 IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어가 되돌릴 수 없다",
                 "skill:substitute-shipment": "대체 출하는 물류가 움직여 되돌릴 수 없다",
                 "skill:demand-control": "수요 제어 지시는 이미 외부에 전달돼 되돌릴 수 없다"}
 # C2 승인 뒤 실행 부품의 거래 (entsim.state.C2_IRREVERSIBLE 와 같은 사유)
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
+                   "skill:reschedule-maintenance": "정비 일정은 기존 오더 상태와 기한을 다시 검토한 새 일정 변경으로 정정한다",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
                    "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
                    "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
@@ -54,11 +57,11 @@ def inventory(evidence: dict) -> list[dict]:
         for tx in forward:
             skill = tx.get("skill")
             undo = next((c for c in inverse if c.get("compensates") == tx.get("id")
-                         or (c.get("skill") == INVERSE_OF.get(skill) and c.get("ref") == tx.get("ref"))), None)
+                         or (c.get("skill") == ALL_INVERSE_OF.get(skill) and c.get("ref") == tx.get("ref"))), None)
             effects.append({"id": f"tx:{tx.get('id')}", "kind": "enterprise", "decision": did, "tx": tx.get("id"),
                             "skill": skill, "system": tx.get("system"), "ref": tx.get("ref"), "detail": tx.get("detail"),
-                            "reversible": skill in INVERSE_OF, "inverse": INVERSE_OF.get(skill),
-                            "irreversible_reason": IRREVERSIBLE.get(skill) or C2_IRREVERSIBLE.get(skill) or (None if skill in INVERSE_OF else "되돌리기 계약이 없는 거래"),
+                            "reversible": skill in ALL_INVERSE_OF, "inverse": ALL_INVERSE_OF.get(skill),
+                            "irreversible_reason": IRREVERSIBLE.get(skill) or C2_IRREVERSIBLE.get(skill) or (None if skill in ALL_INVERSE_OF else "되돌리기 계약이 없는 거래"),
                             "compensated_by": undo.get("id") if undo else None,
                             "fingerprint": _fp(["tx", did, tx.get("id"), skill, tx.get("ref")])})
     ledger_refs = {e["ref"] for e in effects}

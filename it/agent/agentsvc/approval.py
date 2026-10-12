@@ -50,8 +50,18 @@ def current_options(kg, tsdb, decision, option_id, parameters=None):
     pattern = origin.get('pattern') or (decision.get('scenario') or {}).get('pattern') or prior.get('pattern')
     cause = origin.get('cause') or prior.get('cause')
     failure = origin.get('failureMode') or prior.get('failure_mode')
-    if not all(isinstance(v, str) and v for v in (decision.get('asset'), pattern, cause, failure)):
+    purchase = origin.get('cause_route') == 'purchase-part'
+    required = (decision.get('asset'), pattern) if purchase else (decision.get('asset'), pattern, cause, failure)
+    if not all(isinstance(v, str) and v for v in required):
         raise ValueError('설비·경보·원인·고장 유형의 판단 근거가 없습니다. 다시 판단해야 합니다')
+    part = None
+    if purchase:
+        declared = origin.get('part')
+        if pattern != 'SPARE_BELOW_MIN' or not isinstance(declared, dict) or not isinstance(declared.get('partNo'), str):
+            raise ValueError('명시 구매 Part 경로의 원천 근거가 올바르지 않습니다')
+        part = kg.purchase_part(declared['partNo'])
+        if part.get('id') != declared.get('id') or cause is not None or failure is not None:
+            raise ValueError('명시 구매 Part가 현재 지식과 다르거나 고장 근거가 혼합되었습니다')
     rules, inputs = kg.dmn(), kg.inputs()
     ids = sorted({sid for r in rules if r['decision'] == 'dec:action-candidates' for sid in r.get('outputs') or []})
     skills = {r['skillId']: r for r in kg.skills(ids)}
@@ -64,11 +74,21 @@ def current_options(kg, tsdb, decision, option_id, parameters=None):
         reviewed = {'parameters': normalized, 'base_policy_sha256':cards.policy_digest(rules, reference),
                     'reference_name': reference.get('name'), 'reference_actions':reference.get('actions') or []}
     known = dict(pattern=pattern, cause=cause, failure_mode=failure)
+    if part is not None:
+        known.update(purchase_part=part['id'],purchase_part_no=part['partNo'],purchase_part_name=part.get('name'))
     facts, provenance = decide.gather_facts(inputs, decision['asset'], known, tsdb, strict=True)
-    forecasts, contexts = forecasting.candidates(kg, decision['asset'], skills)
+    if part is not None and facts.get('spare_part_no') != part['partNo']:
+        raise ValueError('현재 ERP 부족부품과 명시 구매 Part가 일치하지 않습니다')
+    skills = cards.scoped_skills(pattern, skills, part['id'] if part else None)
+    if pattern == 'PM_DUE':
+        try:
+            facts['pm_context']=decide.pm_context(decision['asset'])
+        except Exception as exc:
+            facts['pm_context']=dict(asset=decision['asset'],error=str(exc))
+    forecasts, contexts = ({}, None) if part is not None else forecasting.candidates(kg, decision['asset'], skills)
     suppliers = kg.suppliers()
     tradeoffs = kg.tradeoffs(ids)
-    result = cards.evaluate(rules, skills, facts, forecasts, tradeoffs, kg.precedents(failure), suppliers, contexts)
+    result = cards.evaluate(rules, skills, facts, forecasts, tradeoffs, kg.precedents(failure), suppliers, contexts, evaluation_mode='execution')
     current = next((o for o in result['options'] if o['id'] == option_id), None)
     roles = {r['id']: r for r in kg.roles()}
     if current is not None and reviewed is not None:
@@ -100,6 +120,8 @@ def assess(kg, tsdb, decision, option_id, role):
     old = next((o for o in decision.get('options', []) if o.get('id') == option_id), None)
     if old is None:
         raise ValueError('선택할 원래 카드가 없습니다')
+    from hydcommon.execution_scope import require_decision_option
+    require_decision_option(decision, old)
     review = old.get('reviewed_choice')
     if review is not None and (not isinstance(review,dict) or not isinstance(review.get('parameters'),dict)):
         raise ValueError('검토본의 조치값 계약이 올바르지 않습니다')
@@ -118,10 +140,14 @@ def assess(kg, tsdb, decision, option_id, role):
     elif not current['feasible']:
         reasons.append('현재 규칙에서 선택한 SOP를 실행할 수 없습니다')
     if option_id in skills:
-        candidate = cards.candidate_facts(facts, skills[option_id], forecasts, suppliers)
+        candidate_skill = skills[option_id]
+        if candidate_skill.get('supplier_policy'):
+            from hydcommon.skill_scope import resolve_supplier
+            candidate_skill = resolve_supplier(candidate_skill, facts)
+        candidate = cards.candidate_facts(facts, candidate_skill, forecasts, suppliers)
         for rule in rules:
             applicable = (rule['decision'] == 'dec:action-candidates' and option_id in (rule.get('outputs') or [])) or (
-                rule['decision'] == 'dec:compliance' and (not rule.get('applies') or option_id in rule['applies']))
+                rule['decision'] == 'dec:compliance' and cards.compliance_applies(rule,candidate_skill))
             if applicable:
                 missing = unresolved(rule, candidate if rule['decision'] == 'dec:compliance' else facts)
                 if missing:
@@ -134,7 +160,7 @@ def assess(kg, tsdb, decision, option_id, role):
             reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext')))
         # The chosen action, work content and consent context must remain what the
         # human saw. Continuous sensor changes matter through reevaluated rules.
-        for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence'):
+        for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence', 'supplier_policy', 'resolvedSupplier', 'maintenancePlan', 'economicComparison'):
             if canonical(old.get(key)) != canonical(current.get(key)):
                 reasons.append(f'카드의 {key} 내용이 변경됐습니다. 새 판단을 검토하세요')
         need = current.get('approver') or {}
@@ -152,7 +178,8 @@ def assess(kg, tsdb, decision, option_id, role):
             return anchors_before.get(key) is not None and anchors_before.get(key) == anchors_after.get(key) and facts.get(key) is not None
         return prior.get(key) is not None and facts.get(key) is not None and prior.get(key) == facts.get(key)
 
-    for key in ('order_due_h', 'order_penalty_per_h', 'order_customer_tier', 'hot_lot_claim', 'hot_lot_qty'):
+    economic = bool(current and current.get('economicComparison'))
+    for key in (() if economic else ('order_due_h', 'order_penalty_per_h', 'order_customer_tier', 'hot_lot_claim', 'hot_lot_qty')):
         if key in prior or key in facts:
             if not unchanged(key):
                 reasons.append(f'업무 판단 입력 {key}가 변경됐거나 확인되지 않습니다')
@@ -163,9 +190,10 @@ def assess(kg, tsdb, decision, option_id, role):
                 (r['decision'] == 'dec:action-candidates' and option_id in (r.get('outputs') or [])) or
                 (r['decision'] == 'dec:compliance' and (not r.get('applies') or option_id in r['applies']))}
     before = {p['variable']: p.get('binding') for p in decision.get('provenance') or [] if p.get('binding')}
-    ranking_inputs = cards.ranking_variables(rules)
+    ranking_inputs = set() if economic else cards.ranking_variables(rules)
     relevant.update(ranking_inputs)
-    relevant.update(data['bsc_variables'])
+    if not economic:
+        relevant.update(data['bsc_variables'])
     for key in sorted(ranking_inputs):
         if key in anchors_before or key in anchors_after:
             changed = not unchanged(key)

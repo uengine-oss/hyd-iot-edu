@@ -1,0 +1,25 @@
+{
+  "proposal_unchanged": true,
+  "original_review_unchanged": true,
+  "extraction_method": "manual-source-proposal-v1",
+  "review_method": "user-delegated-ai-review",
+  "policy": {
+    "version": 1,
+    "loss_per_failure": 250,
+    "inspection_threshold": 0.1,
+    "inspection_cost": 20,
+    "anchor": {
+      "end": 1232,
+      "page": 1,
+      "quote": "## PR-7.4 공급사 비교 기준\n- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다.",
+      "start": 876,
+      "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563"
+    }
+  },
+  "procedures": [
+    "SOP-PUR-11",
+    "SOP-PUR-12",
+    "SOP-PUR-13"
+  ],
+  "original_review_sha256": "fffe4fcb1b44de85777d86add0215f64601b0ba85dce9f2f1e562b76d3a10ba2"
+}

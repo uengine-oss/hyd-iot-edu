@@ -1,0 +1,25 @@
+{
+  "source_manifest": "purchase-ui-source-sha.json",
+  "source_files": [
+    "it/portal/www/ui.js",
+    "it/portal/www/plainWords.js",
+    "it/portal/www/trace.js",
+    "it/portal/www/taskDetail.js",
+    "it/portal/www/approvalCard.js",
+    "it/portal/www/caseRecord.js",
+    "it/portal/www/index.html"
+  ],
+  "tests": [
+    "tests/test_portal_tool_semantics_ui.py"
+  ],
+  "initial_negative": "ui-tool-semantic-before.log: 5 failed against original renderer",
+  "regression": "ui-tool-cost-identity-final.log: 78 passed, 4 warnings,64.27sec",
+  "final_source_cost_A": "ui-cost-source-and-A-final.log:15 passed,10 deselected,25.59sec",
+  "backend_mid_edit_failure": "ui-tool-cost-focused.log:21 passed/1 failed; producer file temporarily had SyntaxError while its owner was editing; assertions unchanged",
+  "captures": "ui-tool-cost-final/: independent fixture Chromium 1440/1024 screenshots; not operating execution",
+  "actual_C_limit": "watch-C-live old tool PNG selected an old row due former reused tool ID; it does not prove newest tool visibility. Original artifact preserved.",
+  "watcher_sha": "e1620b4d66495b07351a2dcebae557a1cb15333d57112707e1abae67524b8a15",
+  "capture_script_sha": "fab4a9975562c5424f565aaf7ac8d19cac9f791aa9b15765f02a0d5a2598fd91",
+  "own_live_calls": 0,
+  "CSS_changes": 0
+}

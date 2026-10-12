@@ -1,0 +1,37 @@
+{
+  "checked": true,
+  "technical_ready": true,
+  "needs_human_review": true,
+  "can_commit": false,
+  "issues": [],
+  "execution": [
+    {
+      "sop": "SOP-PUR-11",
+      "executable": true,
+      "ready": true,
+      "issues": [],
+      "evaluation_mode": "structural",
+      "execution_checked": false,
+      "source_notice": "구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다."
+    },
+    {
+      "sop": "SOP-PUR-12",
+      "executable": true,
+      "ready": true,
+      "issues": [],
+      "evaluation_mode": "structural",
+      "execution_checked": false,
+      "source_notice": "구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다."
+    },
+    {
+      "sop": "SOP-PUR-13",
+      "executable": true,
+      "ready": true,
+      "issues": [],
+      "evaluation_mode": "structural",
+      "execution_checked": false,
+      "source_notice": "구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다."
+    }
+  ],
+  "executable_ready": true
+}

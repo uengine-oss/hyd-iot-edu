@@ -114,20 +114,39 @@ FAILURE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY", "PREVENTED_BY")
 FAILURE_RELATION_HELP = "고장 유형과의 관계는 MITIGATED_BY(즉시 완화) · REMEDIED_BY(근본 조치) · PREVENTED_BY(예방 조치 = 정기 정비)"
 CORRECTIVE_RELATIONS = ("MITIGATED_BY", "REMEDIED_BY")      # 경보(고장) 대응 후보 규칙에 자동으로 합류하는 관계
 
-def validate_skill(body: dict, create: bool = False) -> dict:
+def validate_skill(body: dict, create: bool = False, *, source_backed: bool = False) -> dict:
     """Skill edit (name, description, approver). A new skill (create=True) is an SOP matched to a failure mode
     (ontology v2: Skill.sopId, Skill -HAS_STEP-> Step ≥ 1, FailureMode -MITIGATED_BY|REMEDIED_BY|PREVENTED_BY-> Skill ≥ 1)."""
     name = str(body.get("name") or "").strip()
+    if body.get('scope') not in (None, 'fault', 'purchase'):
+        raise ValueError('스킬 영역은 기존 고장 조치 또는 purchase입니다')
+    if body.get('scope') != 'purchase' and (body.get('executable') is not None or body.get('parts') is not None or body.get('supplier_policy') is not None):
+        raise ValueError('executable·Part 업무 범위는 명시 purchase SOP에서만 사용합니다')
+    if body.get('scope') == 'purchase':
+        from hydcommon.skill_scope import purchase_shape
+        scope_fields = purchase_shape(body, source_backed=source_backed)
     if not name:
         raise ValueError("스킬 이름이 비어 있다")
     if len(name) > 80:
         raise ValueError("스킬 이름은 80자 이내")
     out = {"name": name, "description": str(body.get("description") or "").strip()[:500]}
+    if body.get('purchase_comparison_policy') is not None:
+        if not source_backed or not create or body.get('scope') != 'purchase' or body.get('executable') is not True:
+            raise ValueError('구매 비용 정책은 원문 검토의 실행 구매 생성 경로에서만 연결합니다')
+        from hydcommon.purchase_comparison import policy
+        out['purchase_comparison_policy']=policy(body['purchase_comparison_policy'])
+    if body.get('maintenance_policy') is not None:
+        if not source_backed or body.get('scope') == 'purchase' or not create:
+            raise ValueError('원문 PM 적용 정책은 매뉴얼 검토 생성 경로에서만 연결합니다')
+        from hydcommon.maintenance_policy import policy
+        out['maintenance_policy']=policy(body['maintenance_policy'])
     if body.get("approver"):
         out["approver"] = str(body["approver"])
     if body.get("affects") is not None:
         out["affects"] = validate_affects(body["affects"])
     if not create:
+        if body.get('scope') == 'purchase':
+            raise ValueError('원문 구매 SOP는 매뉴얼 개정·검토 경로에서 변경하세요')
         # A075: a reviewer may (re)link an existing skill to a failure mode; the candidate rules of that failure mode then
         # offer the skill (meeting L253~302: ingested knowledge must reach the runtime judgment).
         if body.get("failureMode"):
@@ -145,6 +164,9 @@ def validate_skill(body: dict, create: bool = False) -> dict:
     steps = [str(s).strip() for s in steps if str(s).strip()]
     if not steps:
         raise ValueError("SOP 단계가 하나 이상 있어야 한다 (한 줄에 한 단계)")
+    if body.get('scope') == 'purchase':
+        out.update(sopId=sop, steps=steps[:30], **scope_fields)
+        return out
     if not str(body.get("failureMode") or "").strip():
         raise ValueError("조치 방법은 고장 유형에 매칭되어야 한다 (failureMode)")
     kind = body.get("kind") or "work_order"

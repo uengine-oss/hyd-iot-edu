@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 from .manual_review import canonical, document_key
 from .kgadmin import skill_id
-from . import kgadmin, manual_knowledge
+from . import kgadmin, manual_knowledge, manual_references
 
 
 class Conflict(ValueError):
@@ -35,7 +35,7 @@ TAGGED_LABELS = ('KnowledgeSource', 'ManualSection', 'Skill', 'Step')          #
 KNOWLEDGE_LABELS = ('FailureMode', 'Cause', 'Evidence', 'Rule')                # C1: owned through the journal
 LABELS = TAGGED_LABELS + KNOWLEDGE_LABELS
 TAGGED_RELATIONS = ('PART_OF', 'HAS_STEP', 'REFERS_TO', 'REMEDIED_BY', 'MITIGATED_BY', 'PREVENTED_BY', 'APPROVED_BY', 'HAS_SKILL', 'OUTPUTS',
-                    'AFFECTS')
+                    'AFFECTS', 'DOCUMENTS')
 KNOWLEDGE_RELATIONS = ('OCCURS_IN', 'INDICATES', 'LEADS_TO', 'CAUSES', 'INVOLVES_PART', 'DISTURBS', 'EVIDENCED_BY', 'ADDRESSES',
                        'CONSISTS_OF', 'HAS_RULE', 'TESTS', 'APPLIES_TO', 'PENALIZES', 'DERIVED_FROM')
 RELATIONS = TAGGED_RELATIONS + KNOWLEDGE_RELATIONS
@@ -106,6 +106,10 @@ def _snapshot(tx, document, owned=()):
         from_owned, to_owned = edge.pop('from_eid') in rows, edge.pop('to_eid') in rows
         edge['from_labels'].sort()
         edge['to_labels'].sort()
+        if not from_owned and to_owned and edge['type'] == 'DOCUMENTS' and manual_references.provenance(tx, edge):
+            # Verified source dependency is not execution HISTORY. Keep it in
+            # place; _replace separately refuses deletion/contract changes.
+            continue
         (history if _is_history(edge, from_owned, to_owned) else edges).append(edge)
     return _sort({'nodes': nodes, 'edges': edges}), sorted(history, key=canonical)
 
@@ -189,23 +193,45 @@ def desired(plan):
     fms, causes = manual_knowledge.desired(plan, node, edge, sections, skill_id)
     own_candidates, own_rules = manual_knowledge.own_candidate_outputs(plan, skill_id)
     for p in plan['procedures']:
+        if p.get('kind') == 'reference':
+            manual_references.reference_shape(p['id'], p)
+            existing = p.get('existing_skill_id')
+            target = ('Skill', existing) if existing else node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'],
+                kind='reference', executable=False, description=f"매뉴얼 {plan['filename']}의 비실행 참고 절차",
+                source_id=plan['source_id'], citation=canonical(p['anchor']))
+            for step in p['steps']:
+                # Source version identity is distinct from stable active Step.
+                step_key = hashlib.sha256(p['id'].encode()).hexdigest()
+                st = node('Step', prefix + ':reference:' + step_key + ':' + str(step['order']),
+                          order=step['order'], text=step['text'], source_id=plan['source_id'], citation=canonical(step['anchor']))
+                edge(st, 'REFERS_TO', sections[step['manual']])
+                edge(st, 'DOCUMENTS', target) if existing else edge(target, 'HAS_STEP', st)
+            continue
         skill = node('Skill', skill_id(p['id']), name=p['name'], sopId=p['id'], kind=p['kind'],
                      description=f"매뉴얼 {plan['filename']}에서 검토한 SOP", source_id=plan['source_id'],
-                     citation=canonical(p['anchor']))
-        edge(fms.get(p['failureMode'], ('FailureMode', p['failureMode'])), p['relation'], skill)
+                     citation=canonical(p['anchor']), **{k: p[k] for k in ('scope', 'executable', 'supplier_policy') if k in p},
+                     **({'maintenance_policy':canonical(p['maintenance_policy'])} if p.get('maintenance_policy') else {}),
+                     **({'purchase_comparison_policy':canonical(p['purchase_comparison_policy'])} if p.get('purchase_comparison_policy') else {}))
+        if p.get('scope') == 'purchase':
+            for part in p['parts']:
+                edge(skill, 'INVOLVES_PART', ('Part', part))
+        else:
+            edge(fms.get(p['failureMode'], ('FailureMode', p['failureMode'])), p['relation'], skill)
         # C1: a document that states its own candidate rule is not widened; a preventive (PREVENTED_BY) SOP never joins incident rules
         if skill[1] not in own_candidates and p['relation'] in kgadmin.CORRECTIVE_RELATIONS:
             for rule in (plan.get('candidate_rules') or {}).get(p['failureMode'], []):
                 if rule not in own_rules:
                     edge(('Rule', rule), 'OUTPUTS', skill)          # A075: the reviewed SOP joins the failure mode's candidate rules
-        edge(skill, 'APPROVED_BY', ('Role', p['approver']))
+        if p.get('approver'):
+            edge(skill, 'APPROVED_BY', ('Role', p['approver']))
         for a in p.get('affects') or []:            # A079: reviewed impact → the SOP reaches the BSC like seeded skills
             edge(skill, 'AFFECTS', (a['label'], a['target']), sign=a['sign'], **({'note': a['note']} if a['note'] else {}))
         for seq, a in enumerate(p.get('actions') or [], 1):          # C1: atomic actions with their values (card · execution)
             edge(skill, 'CONSISTS_OF', ('Action', a['action']), seq=seq, **({'value': a['value']} if a['value'] is not None else {}))
         for c in p.get('addresses') or []:                           # C1: the cause this SOP fixes
             edge(skill, 'ADDRESSES', causes.get(c, ('Cause', c)))
-        edge(('System', 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'), 'HAS_SKILL', skill)
+        performer = 'sys:erp' if p.get('scope') == 'purchase' else 'sys:scada' if p['kind'] == 'control' else 'sys:cmms'
+        edge(('System', performer), 'HAS_SKILL', skill)
         for step in p['steps']:
             st = node('Step', skill[1] + ':' + str(step['order']), order=step['order'], text=step['text'],
                       source_id=plan['source_id'], citation=canonical(step['anchor']))
@@ -267,6 +293,23 @@ def _replace(tx, current, target, history):
     have = {_node_key(n) for n in current['nodes']}
     keep = {_node_key(n) for n in target['nodes']}
     dropped = have - keep
+    referenced_skills = [nid for label, nid in have if label == 'Skill']
+    dependencies = manual_references.incoming_dependencies(tx, referenced_skills)
+    for item in dependencies:
+        dependency = item['verified']
+        if not dependency:
+            raise Conflict('기존 Skill에 검증되지 않은 문서 참조가 있어 변경하지 않았습니다')
+        sid = dependency['skill']
+        if ('Skill', sid) in dropped:
+            raise Conflict(f"Skill {sid}: 문서 {dependency['document']}의 원문 참조가 있어 삭제/되돌리기를 거절했습니다")
+        # Contract includes active graph edges. Comparing owned nodes/edges is
+        # conservative; source-only incoming DOCUMENTS was already split off.
+        before_contract = [n for n in current['nodes'] if _node_key(n) == ('Skill', sid)]
+        after_contract = [n for n in target['nodes'] if _node_key(n) == ('Skill', sid)]
+        before_edges = [e for e in current['edges'] if e['from_id'] == sid or e['to_id'] == sid]
+        after_edges = [e for e in target['edges'] if e['from_id'] == sid or e['to_id'] == sid]
+        if before_contract != after_contract or before_edges != after_edges or current != target:
+            raise Conflict(f"Skill {sid}: 문서 {dependency['document']}가 검토한 실행 계약을 참조합니다. 의존 문서를 먼저 검토하세요")
     blocked = _history_summary([e for e in history if (':'.join(e['to_labels']), e['to_id']) in dropped])
     if blocked:
         named = ', '.join(f"{h['node']} ← {h['type']} {h['count']}건" for h in blocked)
@@ -300,18 +343,23 @@ def _replace(tx, current, target, history):
                      'SET r=$props RETURN count(r) AS n', a=edge['from_id'], b=edge['to_id'], props=edge['props']).single()
         if row['n'] != 1:
             raise Conflict('관계의 대상이 없어 전체 적재를 취소했습니다')
+    return [item['verified'] for item in dependencies]
 
 
 def _receipt(plan, at, replayed=False):
     k = plan.get('knowledge') or {}
     return dict(batch=plan['batch'], document_id=plan['document_id'], source_id=plan['source_id'],
                 filename=plan['filename'], by=plan['by'], t=at, status='ACTIVE', replayed=replayed,
+                **({'review_method': plan['review_method']} if plan.get('review_method') else {}),
                 sections=len(plan['sections']), procedures=len(plan['procedures']),
                 steps=sum(len(p['steps']) for p in plan['procedures']),
                 knowledge={kind: [i['id'] for i in k.get(kind) or []] for kind in manual_knowledge.KINDS},
                 actions=sum(len(p.get('actions') or []) for p in plan['procedures']),
                 candidate_activation=plan.get('candidate_rules') or 'NOT_CHANGED', extraction=plan.get('extraction'),
-                skills={p['id']: dict(skill=skill_id(p['id']), failureMode=p['failureMode'], relation=p['relation'])
+                references=plan.get('references') or {},
+                reference_procedures=[p['id'] for p in plan['procedures'] if p.get('kind') == 'reference'],
+                skills={p['id']: dict(skill=p.get('existing_skill_id') or skill_id(p['id']), failureMode=p['failureMode'], relation=p['relation'],
+                                     **{k: p[k] for k in ('scope', 'executable', 'parts', 'supplier_policy') if k in p})
                         for p in plan['procedures']})
 
 
@@ -323,6 +371,12 @@ def commit(session, plan):
 
     def run(tx):
         _lock(tx)
+        try:
+            references = manual_references.check_plan(tx, plan)
+        except ValueError as exc:
+            raise Conflict(str(exc)) from exc
+        if references != (plan.get('references') or {}):
+            raise Conflict('검토한 기존 Skill 참조 대상/소유권이 변경됐습니다. 다시 검토하세요')
         old = tx.run('MATCH (b:ManualIngestionBatch {id:$id}) RETURN properties(b) AS b', id=plan['batch']).single()
         if old:
             old = old['b']
@@ -333,6 +387,17 @@ def commit(session, plan):
             is_current = bool(current and current['head'] == plan['batch'])
             return dict(json.loads(old['receipt']), replayed=True, current=is_current,
                         status='ACTIVE' if is_current else 'SUPERSEDED')
+        if any(p.get('scope') == 'purchase' for p in plan['procedures']):
+            # Recheck external ERP/Part/Supplier/Role/Action contracts under the
+            # same write lock. Never silently rebuild the reviewed snapshot.
+            class ReadView:
+                def execute_read(self, fn):
+                    return fn(tx)
+            checked, issues = manual_knowledge.graph_semantics(plan, manual_knowledge.catalog(ReadView()))
+            if issues:
+                raise ValueError(' / '.join(i['message'] for i in issues))
+            if checked != plan:
+                raise Conflict('검토 뒤 구매 규칙 입력의 현재 정의가 바뀌었습니다. 다시 조회·검토하세요')
         head = tx.run('MATCH (d:ManualIngestionDocument {id:$id}) RETURN d.head AS head, d.snapshot AS snapshot',
                       id=plan['document']).single()
         if (head['head'] if head else None) != plan['previous_batch']:
@@ -341,8 +406,8 @@ def commit(session, plan):
         before, history = _snapshot(tx, plan['document'], owned_keys(expected))
         _check_unchanged(expected, before, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
         _validate_targets(tx, after, owned_keys(before))
-        _replace(tx, before, after, history)
-        receipt = dict(_receipt(plan, at), history_kept=_history_summary(history))
+        provenance_kept = _replace(tx, before, after, history)
+        receipt = dict(_receipt(plan, at), history_kept=_history_summary(history), provenance_kept=provenance_kept)
         tx.run('CREATE (b:ManualIngestionBatch) SET b=$props', props=dict(id=plan['batch'], tenant=plan['tenant'],
                document=plan['document'], previous=plan['previous_batch'], fingerprint=fingerprint, status='ACTIVE',
                before=canonical(before), after=canonical(after), plan=canonical(plan), receipt=canonical(receipt), createdAt=at)).consume()
@@ -371,17 +436,30 @@ def rollback(session, tenant, batch, by):
         if not head or head['head'] != batch:
             raise Conflict('최신 판본부터 순서대로 되돌려야 합니다')
         after = json.loads(record['after'])
+        try:
+            manual_references.check_plan(tx, json.loads(record['plan']))
+        except ValueError as exc:
+            raise Conflict(str(exc)) from exc
         current, history = _snapshot(tx, document, owned_keys(after))
         _check_unchanged(after, current, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌어 되돌릴 수 없습니다. 먼저 변경을 검토하세요')
         before = json.loads(record['before'])
+        if record.get('previous'):
+            prior = tx.run('MATCH (b:ManualIngestionBatch {id:$id,tenant:$tenant}) RETURN b.plan AS plan',
+                           id=record['previous'], tenant=tenant).single()
+            if not prior:
+                raise Conflict('복원할 이전 원문 판본의 검토 기록이 없습니다')
+            try:
+                manual_references.check_plan(tx, json.loads(prior['plan']))
+            except ValueError as exc:
+                raise Conflict(str(exc)) from exc
         _validate_targets(tx, before, owned_keys(current))
-        _replace(tx, current, before, history)
+        provenance_kept = _replace(tx, current, before, history)
         tx.run('MATCH (d:ManualIngestionDocument {id:$id}) SET d.head=$head, d.snapshot=$snapshot',
                id=document, head=record.get('previous'), snapshot=record['before']).consume()
         tx.run('MATCH (b:ManualIngestionBatch {id:$id}) SET b.status="ROLLED_BACK", b.rolledBackBy=$by, b.rolledBackAt=$at',
                id=batch, by=by.strip(), at=datetime.now(timezone.utc).isoformat()).consume()
         return dict(batch=batch, status='ROLLED_BACK', replayed=False, restored_batch=record.get('previous'),
-                    history_kept=_history_summary(history))
+                    history_kept=_history_summary(history), provenance_kept=provenance_kept)
     return session.execute_write(run)
 
 

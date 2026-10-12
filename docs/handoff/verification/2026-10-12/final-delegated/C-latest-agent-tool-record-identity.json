@@ -1,0 +1,9 @@
+{
+  "method": "saved actual record read only; no new stream or execution claim",
+  "case": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+  "workitem": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+  "job": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+  "tool_event": "f3785c8a-b6ca-49e0-a523-40b1fe6d04c7",
+  "native_key": "tool:[\"c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f\",\"83459be8-7f6b-48d4-a35b-bd0f318e99fa\",\"run-83459be8-e949559aa9394ad78626ed88b324f4c0\",\"item_9\"]",
+  "observed_at": "2026-10-12T08:40:01.501066+00:00"
+}

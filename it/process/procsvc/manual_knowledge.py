@@ -121,9 +121,29 @@ def validate_link(sop, link, *, sops, require_failure_mode):
         link = {}
     if not isinstance(link, dict):
         raise ValueError(f'{sop}: 연결은 객체여야 합니다')
+    if link.get('kind') == 'reference':
+        from .manual_references import reference_shape
+        return reference_shape(sop, link)
     out = {}
+    if link.get('purchase_comparison_policy') is not None:
+        if link.get('scope') != 'purchase' or link.get('executable') is not True:
+            raise ValueError('구매 비용 정책은 명시 실행 구매 SOP에만 연결합니다')
+        from hydcommon.purchase_comparison import policy
+        out['purchase_comparison_policy']=policy(link['purchase_comparison_policy'])
+    if link.get('maintenance_policy') is not None:
+        if link.get('scope') == 'purchase' or link.get('kind') == 'reference':
+            raise ValueError('PM 실행 정책은 구매·비실행 참고 절차에 붙이지 않습니다')
+        from hydcommon.maintenance_policy import policy
+        out['maintenance_policy']=policy(link['maintenance_policy'])
+    if link.get('scope') not in (None, 'fault', 'purchase'):
+        raise ValueError(f'{sop}: 스킬 영역은 기존 고장 조치 또는 purchase입니다')
+    if link.get('scope') != 'purchase' and (link.get('executable') is not None or link.get('parts') is not None or link.get('supplier_policy') is not None):
+        raise ValueError(f'{sop}: executable·Part 업무 범위는 명시 purchase SOP에만 둡니다')
+    if link.get('scope') == 'purchase':
+        from hydcommon.skill_scope import purchase_shape
+        out.update(purchase_shape(link, source_backed=True))
     fm = link.get('failureMode')
-    if fm is not None or require_failure_mode:
+    if fm is not None or require_failure_mode and link.get('scope') != 'purchase':
         out['failureMode'] = _ref(fm, 'fm', f'{sop} 고장 유형')
     if link.get('relation') is not None:
         if link['relation'] not in RELATIONS:
@@ -309,12 +329,14 @@ CATALOG_Q = {
     'actions': 'MATCH (n:Action) OPTIONAL MATCH (n)-[:TARGETS]->(t) RETURN n.id AS id, n.name AS name, n.code AS code, '
                'n.kind AS kind, n.param AS param, n.min AS min, n.max AS max, t.id AS target ORDER BY id',
     'roles': 'MATCH (n:Role) RETURN n.id AS id, n.name AS name, n.level AS level ORDER BY id',
+    'systems': 'MATCH (n:System) RETURN n.id AS id, n.name AS name ORDER BY id',
     'decision_tables': 'MATCH (d:Decision)-[:IMPLEMENTED_BY]->(t:DecisionTable) OPTIONAL MATCH (d)-[:REQUIRES_INPUT]->(i:InputData) '
                        'RETURN t.id AS id, t.name AS name, d.id AS decision, '
                        'collect({id:i.id, variable:i.variable, typeRef:i.typeRef, name:i.name}) AS inputs ORDER BY id',
     'failure_modes': 'MATCH (n:FailureMode) OPTIONAL MATCH (n)-[:OCCURS_IN]->(c:Component) RETURN n.id AS id, n.name AS name, c.id AS component ORDER BY id',
     'causes': 'MATCH (n:Cause) OPTIONAL MATCH (n)-[:CAUSES]->(f:FailureMode) RETURN n.id AS id, n.name AS name, collect(f.id) AS failureModes ORDER BY id',
-    'skills': 'MATCH (n:Skill) RETURN n.id AS id, n.sopId AS sopId, n.name AS name, n.kind AS kind ORDER BY id',
+    'skills': 'MATCH (n:Skill) RETURN n.id AS id, n.sopId AS sopId, n.name AS name, n.kind AS kind, '
+              'n.scope AS scope, n.executable AS executable, n.supplier_policy AS supplier_policy ORDER BY id',
 }
 
 
@@ -325,6 +347,11 @@ def catalog(session):
         out = {k: tx.run(q).data() for k, q in CATALOG_Q.items()}
         for t in out['decision_tables']:
             t['inputs'] = [i for i in t['inputs'] if i.get('id')]
+        from . import manual_references
+        pinned = manual_references.contracts(tx, [s['id'] for s in out['skills']])
+        for skill in out['skills']:
+            if skill['id'] in pinned:
+                skill['reference_contract'] = {k: v for k, v in pinned[skill['id']].items() if k != 'contract'}
         out['evidence_tags'] = sorted(TAGS)
         out['rule_tables'] = {k: list(v) for k, v in TABLES.items()}
         return out
@@ -370,6 +397,40 @@ def graph_semantics(plan, catalog):
     def issue(code, owner, field, message):
         issues.append(dict(code=code, sop=owner, field=field, message=message))
     for p in plan['procedures']:
+        if p.get('kind') == 'reference':
+            from .manual_references import reference_shape
+            try:
+                reference_shape(p['id'], p)
+            except ValueError as exc:
+                issue('REFERENCE_CONTRACT_INVALID', p['id'], 'link', str(exc))
+            continue
+        if p.get('scope') == 'purchase':
+            from hydcommon.skill_scope import purchase_shape
+            try:
+                purchase_shape(p, source_backed=True)
+            except ValueError as exc:
+                issue('PURCHASE_CONTRACT_INVALID', p['id'], 'link', f"{p['id']}: {exc}")
+            parts = {r['id']: r for r in catalog['parts']}
+            purchase_action = actions.get('action:purchase-request')
+            if p.get('executable') and (not purchase_action or purchase_action.get('code') != 'PR_CREATE' or purchase_action.get('kind') != 'transaction'):
+                issue('PURCHASE_ACTION_CONTRACT_INVALID', p['id'], 'link.actions', f"{p['id']}: 구매요청 Action의 실제 계약이 PR_CREATE transaction이 아닙니다")
+            if not any(r['id'] == 'sys:erp' for r in catalog['systems']):
+                issue('PURCHASE_SYSTEM_NOT_FOUND', p['id'], 'link.scope', f"{p['id']}: 구매 실행 시스템 sys:erp가 현재 지식에 없습니다")
+            for part in p.get('parts') or []:
+                if part not in parts:
+                    issue('PURCHASE_PART_NOT_FOUND', p['id'], 'link.parts', f"{p['id']}: 구매 범위 부품 {part}가 없습니다")
+                elif p.get('executable') and p.get('supplier_policy'):
+                    available = parts[part].get('suppliers') or []
+                    if not available:
+                        issue('PURCHASE_SUPPLIER_PART_MISMATCH', p['id'], 'link.parts', f"{p['id']}: {part}의 실제 공급 관계가 없습니다")
+                    elif p['supplier_policy'] == 'oem' and not any(s.get('name') == 'B-OEM (순정)' for s in available):
+                        issue('PURCHASE_OEM_SOURCE_MISSING', p['id'], 'link.supplier_policy', f"{p['id']}: {part}의 정본 순정 공급사 라벨 B-OEM (순정)이 없습니다")
+                elif p.get('executable') and not p.get('supplier_policy'):
+                    supplier = (p.get('actions') or [{}])[0].get('value')
+                    if not any(s.get('supplier') == supplier for s in parts[part].get('suppliers') or []):
+                        issue('PURCHASE_SUPPLIER_PART_MISMATCH', p['id'], 'link.actions', f"{p['id']}: {supplier} 공급사와 {part}의 실제 SUPPLIED_BY 관계가 없습니다")
+            if p.get('executable') and not any(r['id'] == p.get('approver') for r in catalog['roles']):
+                issue('PURCHASE_ROLE_NOT_FOUND', p['id'], 'link.approver', f"{p['id']}: 명시한 구매 승인 역할이 없습니다")
         for seq, a in enumerate(p.get('actions') or [], 1):
             act = actions.get(a['action'])
             where = f"{p['id']} 원자 조치 {seq}"
@@ -382,9 +443,9 @@ def graph_semantics(plan, catalog):
                     if type(v) not in (int, float) or isinstance(v, bool) or \
                             (act['min'] is not None and v < act['min']) or (act['max'] is not None and v > act['max']):
                         issue('ACTION_VALUE_RANGE', p['id'], 'link.actions', f"{where}: {act['code']} 값 {v!r}은 {act['min']}~{act['max']} 범위여야 합니다")
-            elif act['code'] == 'PR_CREATE' and v not in suppliers:
+            elif act['code'] == 'PR_CREATE' and v not in suppliers and not (p.get('scope') == 'purchase' and p.get('supplier_policy') and v is None):
                 issue('SUPPLIER_NOT_FOUND', p['id'], 'link.actions', f"{where}: 구매요청 값은 공급사 id여야 합니다({v!r})")
-            elif act['code'] == 'WO_CREATE' and v not in own_sops and v not in sops:
+            elif act['code'] in ('WO_CREATE','WO_RESCHEDULE') and v not in own_sops and v not in sops:
                 issue('SOP_NOT_FOUND', p['id'], 'link.actions', f"{where}: 작업지시 값은 SOP 번호여야 합니다({v!r})")
             if act['kind'] == 'command' and p['kind'] != 'control':
                 issue('COMMAND_IN_WORK_ORDER', p['id'], 'link.actions', f"{where}: 설비 명령({act['code']})은 control 스킬에만 둡니다")
@@ -400,21 +461,47 @@ def graph_semantics(plan, catalog):
                       f"{r['id']}: {table['decision']}이 입력 {t['input']}을 선언하지 않았습니다(REQUIRES_INPUT). 선언된 입력: {sorted(inputs)}")
             else:
                 t['variable'] = inputs[t['input']]['variable']
+        if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates':
+            own = {ref: p for p in plan['procedures'] for ref in (p['id'], kgadmin.skill_id(p['id']))}
+            stored = {row['id']: row for row in catalog['skills'] if row.get('id')}
+            outputs = [own.get(ref) or stored.get(ref) for ref in r.get('outputs') or []]
+            for output in outputs:
+                if output and (output.get('kind') == 'reference' or output.get('executable') is False):
+                    issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 참고 절차는 실행 후보 Rule 출력이 될 수 없습니다")
+                if output and output.get('id') in own and any(t.get('variable') == 'pattern' and t.get('value') == 'PM_DUE' for t in r['tests']):
+                    effect_codes = [actions.get(a['action'],{}).get('code') for a in output.get('actions') or []]
+                    if sum(code in ('WO_CREATE','WO_RESCHEDULE') for code in effect_codes) != 1:
+                        issue('PM_ORDER_EFFECT_REQUIRED',output['id'],'link.actions',f"{output['id']}: PM 실행 후보에는 원문 기반 오더 발행 또는 기존 오더 일정 변경 Action 하나가 필요합니다")
+            purchase = [p for p in outputs if p and p.get('scope') == 'purchase']
+            if purchase:
+                if any(p.get('executable') is not True for p in purchase):
+                    issue('RULE_OUTPUT_NOT_EXECUTABLE', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 참고 보관 구매 절차는 실행 후보 Rule의 출력이 될 수 없습니다")
+                if any(p and p.get('scope') != 'purchase' for p in outputs):
+                    issue('RULE_OUTPUT_SCOPE_MIXED', r['id'], 'knowledge.rules.outputs', f"{r['id']}: 구매 후보와 고장 조치 후보를 같은 Rule에 섞지 않습니다")
+                if not any(t.get('variable') == 'pattern' and t.get('operator') == '==' and t.get('value') == 'SPARE_BELOW_MIN' for t in r['tests']):
+                    issue('PURCHASE_RULE_PATTERN_REQUIRED', r['id'], 'knowledge.rules.tests', f"{r['id']}: 구매 후보 Rule은 pattern == SPARE_BELOW_MIN을 명시해야 합니다")
     return plan, issues
 
 
 def check_graph(session, plan, skill_id):
     """Commit rechecks the live catalog before writes and keeps its legacy plan contract."""
     def read(tx):
-        return dict(actions=tx.run(CATALOG_Q['actions']).data(),
+        out = dict(actions=tx.run(CATALOG_Q['actions']).data(),
                     suppliers=tx.run('MATCH (s:Supplier) RETURN s.id AS id').data(),
-                    skills=tx.run('MATCH (k:Skill) RETURN k.sopId AS sop').data(),
+                    skills=tx.run(CATALOG_Q['skills']).data(),
                     decision_tables=tx.run(CATALOG_Q['decision_tables']).data())
+        if any(p.get('scope') == 'purchase' for p in plan['procedures']):
+            out.update({key: tx.run(CATALOG_Q[key]).data() for key in ('parts', 'systems', 'roles')})
+        return out
     checked, issues = graph_semantics(plan, session.execute_read(read))
     if issues:
         raise ValueError(' / '.join(i['message'] for i in issues))
     if 'knowledge' in checked:
         plan['knowledge'] = checked['knowledge']
+    from . import manual_references
+    references = session.execute_read(lambda tx: manual_references.check_plan(tx, plan))
+    if references:
+        plan['references'] = references
     return plan
 
 

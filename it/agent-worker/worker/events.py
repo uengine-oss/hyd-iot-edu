@@ -134,7 +134,7 @@ class NoteBuffer:
     stream), cut at NOTE_MAX. The final answer is not stored twice: the run's result text (task_completed carries it) is cut
     off the end of the last note, so only the words before it remain."""
 
-    def __init__(self, limit: int = NOTE_MAX):
+    def __init__(self, limit: int | None = NOTE_MAX):
         self._limit = limit
         self._parts: list[str] = []
 
@@ -149,7 +149,7 @@ class NoteBuffer:
             text = text[:-len(final)].strip()                 # keep only the words before the answer
         if not text:
             return None
-        cut = len(text) > self._limit
+        cut = self._limit is not None and len(text) > self._limit
         return UiEvent("assistant_note", {"type": "text", "content": text[:self._limit] + ("… (생략됨)" if cut else ""),
                                           "chars": len(text), "truncated": cut})
 

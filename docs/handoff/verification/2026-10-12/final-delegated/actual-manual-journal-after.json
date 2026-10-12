@@ -1,0 +1,1140 @@
+[
+  {
+    "actions": 3,
+    "batch": "1b45ca6f-6d68-4f8d-bcdc-2722ce3f91c1",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "c8305e9b-b8f1-4261-b6ac-0490e36de173",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.e7d00281-5325-4b26-ab7f-21e2e31ffd74",
+      "session_id": "01a12c0c-1217-7ae0-b81a-5ccee78133bc",
+      "workitem": "e2e86178-f3a8-4ff8-a57b-45d5e5bb83c4"
+    },
+    "filename": "PR-07_spare-parts-standard.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:pr07-purchase-candidates",
+        "rule:pr07-purchase-other-pattern-exclude",
+        "rule:pr07-supplier-not-avl",
+        "rule:pr07-amount-report",
+        "rule:pr07-lead-time-warning",
+        "rule:pr07-full-inspection-warning",
+        "rule:pr07-full-inspection-cost"
+      ]
+    },
+    "procedures": 6,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-PR7-1",
+      "SOP-PR7-4",
+      "SOP-PR7-7"
+    ],
+    "references": {},
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 7,
+    "skills": {
+      "SOP-PR7-1": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-1"
+      },
+      "SOP-PR7-4": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-4"
+      },
+      "SOP-PR7-7": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-7"
+      },
+      "SOP-PUR-11": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-11",
+        "supplier_policy": "oem"
+      },
+      "SOP-PUR-12": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-12",
+        "supplier_policy": "lowest_approved"
+      },
+      "SOP-PUR-13": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-13",
+        "supplier_policy": "fastest_quote"
+      }
+    },
+    "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+    "status": "ACTIVE",
+    "steps": 21,
+    "t": "2026-10-12T08:05:06.321004+00:00",
+    "current": true
+  },
+  {
+    "actions": 3,
+    "batch": "0729247c-f26f-449c-8a90-324f4e1532c7",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "c8305e9b-b8f1-4261-b6ac-0490e36de173",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.e7d00281-5325-4b26-ab7f-21e2e31ffd74",
+      "session_id": "01a12c0c-1217-7ae0-b81a-5ccee78133bc",
+      "workitem": "e2e86178-f3a8-4ff8-a57b-45d5e5bb83c4"
+    },
+    "filename": "PR-07_spare-parts-standard.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:pr07-purchase-candidates",
+        "rule:pr07-purchase-other-pattern-exclude",
+        "rule:pr07-supplier-not-avl",
+        "rule:pr07-amount-report",
+        "rule:pr07-lead-time-warning",
+        "rule:pr07-full-inspection-warning",
+        "rule:pr07-full-inspection-cost"
+      ]
+    },
+    "procedures": 6,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-PR7-1",
+      "SOP-PR7-4",
+      "SOP-PR7-7"
+    ],
+    "references": {},
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 7,
+    "skills": {
+      "SOP-PR7-1": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-1"
+      },
+      "SOP-PR7-4": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-4"
+      },
+      "SOP-PR7-7": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-7"
+      },
+      "SOP-PUR-11": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-11",
+        "supplier_policy": "oem"
+      },
+      "SOP-PUR-12": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-12",
+        "supplier_policy": "lowest_approved"
+      },
+      "SOP-PUR-13": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-13",
+        "supplier_policy": "fastest_quote"
+      }
+    },
+    "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+    "status": "SUPERSEDED",
+    "steps": 21,
+    "t": "2026-10-12T07:16:26.527684+00:00",
+    "current": false
+  },
+  {
+    "actions": 4,
+    "batch": "dff3825b-01ef-4b7a-9488-d3cdcc1aa371",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": {
+      "fm:volumetric-loss": [
+        "rule:cand-pump"
+      ]
+    },
+    "document_id": "6c306bfa-7ac2-46a0-b48c-3402a995ab57",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.914896d0-e074-4359-a6e9-66be38267201",
+      "session_id": "01a12bff-26d0-7993-8e8e-cf0bd5891d1d",
+      "workitem": "b8f5491f-fd0f-4bc7-ad1d-7c26f9532df8"
+    },
+    "filename": "PM-02_powerpack-pm-checklist.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [
+        "cause:pm02-filter-blockage-pump-contamination"
+      ],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:pm02-candidates",
+        "rule:pm02-next-window-limit",
+        "rule:pm02-following-window-limit",
+        "rule:pm02-spare-none",
+        "rule:pm02-group-spare",
+        "rule:pm02-spare-purchase-warning",
+        "rule:pm02-group-crew-penalty",
+        "rule:pm02-pump-seal-diagnosis",
+        "rule:pm02-running-order-loss"
+      ]
+    },
+    "procedures": 8,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-PM-21",
+      "SOP-PM-22",
+      "SOP-PM-23",
+      "SOP-PM2-9"
+    ],
+    "references": {},
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 10,
+    "skills": {
+      "SOP-PM-11": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-11"
+      },
+      "SOP-PM-12": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-12"
+      },
+      "SOP-PM-13": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-13"
+      },
+      "SOP-PM-14": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-14"
+      },
+      "SOP-PM-21": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-21"
+      },
+      "SOP-PM-22": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-22"
+      },
+      "SOP-PM-23": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-23"
+      },
+      "SOP-PM2-9": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm2-9"
+      }
+    },
+    "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+    "status": "ACTIVE",
+    "steps": 33,
+    "t": "2026-10-12T07:16:20.547836+00:00",
+    "current": true
+  },
+  {
+    "actions": 0,
+    "batch": "21acf8f9-9e9d-4360-8ab7-9bdbf6a3a119",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "c2bb4c58-3d7b-4df6-ad4d-1d3023db7755",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.394d8cab-ecf9-4927-8b64-8e5116374dc1",
+      "session_id": "01a12bf6-f3bf-76b1-81e5-e10900d909b2",
+      "workitem": "4e49a7bc-cc2c-4869-86fe-492281d3a266"
+    },
+    "filename": "HM-8_cooler-fan-manual.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [
+        "cause:fan-drive-fault"
+      ],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:hm8-fouling-priority"
+      ]
+    },
+    "procedures": 8,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-FAN-11",
+      "SOP-FAN-12",
+      "SOP-COOL-11",
+      "SOP-COOL-12",
+      "SOP-COOL-13",
+      "SOP-HM8-6",
+      "SOP-COOL-14",
+      "SOP-COOL-15"
+    ],
+    "references": {
+      "SOP-FAN-11": {
+        "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+        "owner": null,
+        "skill": "skill:sop-fan-11",
+        "sopId": "SOP-FAN-11",
+        "source_steps_sha256": "d7dbbde85039456de595400dc3a38cd83fb36ce876b22db9bd696eeca183bdd6"
+      },
+      "SOP-FAN-12": {
+        "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+        "owner": null,
+        "skill": "skill:sop-fan-12",
+        "sopId": "SOP-FAN-12",
+        "source_steps_sha256": "a7581ec724746dbd258a2281a727db77c7fc576931b1cdf58a67b1976de7f742"
+      }
+    },
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 8,
+    "skills": {
+      "SOP-COOL-11": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-11"
+      },
+      "SOP-COOL-12": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-12"
+      },
+      "SOP-COOL-13": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-13"
+      },
+      "SOP-COOL-14": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-14"
+      },
+      "SOP-COOL-15": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-15"
+      },
+      "SOP-FAN-11": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-fan-11"
+      },
+      "SOP-FAN-12": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-fan-12"
+      },
+      "SOP-HM8-6": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-hm8-6"
+      }
+    },
+    "source_id": "manual:c2bb4c58-3d7b-4df6-ad4d-1d3023db7755:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256",
+    "status": "ACTIVE",
+    "steps": 28,
+    "t": "2026-10-12T07:16:09.811455+00:00",
+    "current": true
+  },
+  {
+    "batch": "333f6f65-980c-4bff-87da-91201b010694",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "9e6757f2-b191-4d5c-ae0e-13581a2ed8c2",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:9e6757f2-b191-4d5c-ae0e-13581a2ed8c2:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-08T00:18:28.898563+00:00",
+    "current": null
+  },
+  {
+    "batch": "cf75ba3e-93d2-4ca6-81c3-187505943b9f",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "7255cdec-1d11-4184-abb8-dc1f02c5eb78",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:7255cdec-1d11-4184-abb8-dc1f02c5eb78:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-07T23:57:07.332119+00:00",
+    "current": null
+  },
+  {
+    "batch": "f7a2a6d8-c15c-47d7-a991-3360346e09bb",
+    "by": "A148 검토자",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "7c10a221-c998-4a78-a896-cb1a1466d912",
+    "extraction": null,
+    "filename": "HM-A148_fan-bearing-aux.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A148-56": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a148-56"
+      }
+    },
+    "source_id": "manual:7c10a221-c998-4a78-a896-cb1a1466d912:021a8dd97fee2947b3ace06884f3ea40e4f1f9e4bb38d6ca7a2638b452951f1c",
+    "status": "ROLLED_BACK",
+    "steps": 4,
+    "t": "2026-10-07T19:36:03.290287+00:00",
+    "current": null
+  },
+  {
+    "batch": "9eb8ef14-f8fe-4ca2-80e6-c8189140e7a9",
+    "by": "A148 검토자",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "422ad3cb-faea-4026-af61-c2cc1708175a",
+    "extraction": null,
+    "filename": "HM-A148_fan-bearing-aux.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A148-56": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a148-56"
+      }
+    },
+    "source_id": "manual:422ad3cb-faea-4026-af61-c2cc1708175a:021a8dd97fee2947b3ace06884f3ea40e4f1f9e4bb38d6ca7a2638b452951f1c",
+    "status": "ROLLED_BACK",
+    "steps": 4,
+    "t": "2026-10-07T19:34:28.191586+00:00",
+    "current": null
+  },
+  {
+    "batch": "ff9901f3-b03c-4e30-a347-8961ba2e8d64",
+    "by": "A148 검토자",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "1725f3a2-9c44-4dba-9918-30d7950b62bf",
+    "extraction": null,
+    "filename": "HM-A148_fan-bearing-aux.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A148-56": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a148-56"
+      }
+    },
+    "source_id": "manual:1725f3a2-9c44-4dba-9918-30d7950b62bf:021a8dd97fee2947b3ace06884f3ea40e4f1f9e4bb38d6ca7a2638b452951f1c",
+    "status": "ROLLED_BACK",
+    "steps": 4,
+    "t": "2026-10-07T19:32:15.717810+00:00",
+    "current": null
+  },
+  {
+    "batch": "8c55b4d1-4787-4dec-b938-eb06c5c9217a",
+    "by": "A148 검토자",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "0a1bedb8-a15a-4890-840d-bae103fa7367",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.1e64cedb-f504-4389-80c7-359897a84950",
+      "session_id": "a08fbf56-bdc9-4cd0-a688-84898e90ef3a",
+      "workitem": "1797e090-ffb5-4fa0-9506-fcf7459536cc"
+    },
+    "filename": "HM-A148_fan-bearing-aux.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A148-56": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a148-56"
+      }
+    },
+    "source_id": "manual:0a1bedb8-a15a-4890-840d-bae103fa7367:021a8dd97fee2947b3ace06884f3ea40e4f1f9e4bb38d6ca7a2638b452951f1c",
+    "status": "ROLLED_BACK",
+    "steps": 4,
+    "t": "2026-10-07T19:20:42.458075+00:00",
+    "current": null
+  },
+  {
+    "batch": "c4e182fd-a58a-4fe6-8072-822462890089",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "f909d68b-8fb0-49b0-b2db-9dabdbcf080a",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:f909d68b-8fb0-49b0-b2db-9dabdbcf080a:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-07T10:50:59.626776+00:00",
+    "current": null
+  },
+  {
+    "batch": "fe9a3868-cd12-461f-9644-de807eb0d424",
+    "by": "scenario_test",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "bdd58a19-a0d6-4c72-8707-ea8c5cdda604",
+    "extraction": null,
+    "filename": "scenario-HM-8_cooler-fan-manual.md",
+    "procedures": 2,
+    "replayed": false,
+    "sections": 2,
+    "skills": {
+      "SOP-TEST-E2B07FFB-11": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-e2b07ffb-11"
+      },
+      "SOP-TEST-E2B07FFB-12": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-e2b07ffb-12"
+      }
+    },
+    "source_id": "manual:bdd58a19-a0d6-4c72-8707-ea8c5cdda604:a544d50ad5f6b644edf0446b0a8acbef377d79e42ac29164199cbb790b0ec697",
+    "status": "ROLLED_BACK",
+    "steps": 8,
+    "t": "2026-10-07T10:45:36.330345+00:00",
+    "current": null
+  },
+  {
+    "batch": "0bb60afc-a24b-4b9d-81e0-49a63bd6b5bc",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "471f3067-97e6-4ea3-8d51-cca963cfbe28",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:471f3067-97e6-4ea3-8d51-cca963cfbe28:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-07T07:23:48.512548+00:00",
+    "current": null
+  },
+  {
+    "batch": "ba1b752a-3ea7-489d-94bd-28ba4c2e4a7e",
+    "by": "A098 (업계 자료로 정한 답)",
+    "candidate_activation": {
+      "fm:oil-degradation": []
+    },
+    "document_id": "9659557a-b2a5-4b8c-8c93-e4332527ab83",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.f1d7a73d-1fa4-4230-af65-0f8e98b9b463",
+      "session_id": "ac5d6a31-505c-4289-a364-920207497646",
+      "workitem": "ecb68891-416c-4c11-b259-e861e7b5ab3f"
+    },
+    "filename": "HM-9_oil-degradation-manual.md",
+    "procedures": 2,
+    "replayed": false,
+    "sections": 4,
+    "skills": {
+      "SOP-HM9-2": {
+        "failureMode": "fm:oil-degradation",
+        "relation": "MITIGATED_BY",
+        "skill": "skill:sop-hm9-2"
+      },
+      "SOP-OIL-21": {
+        "failureMode": "fm:oil-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-oil-21"
+      }
+    },
+    "source_id": "manual:9659557a-b2a5-4b8c-8c93-e4332527ab83:2b5f1e4c9cacbe7080a693df8596526e7d01e94666a095a114e4dcdc7c6d1d88",
+    "status": "ACTIVE",
+    "steps": 11,
+    "t": "2026-10-07T06:03:15.907362+00:00",
+    "current": true
+  },
+  {
+    "batch": "5128aa1c-219e-4a85-a4f2-f6259cef5d50",
+    "by": "A083 화면 검사",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "97db0367-9aaf-4b2f-8e8a-ca77b7df89b3",
+    "extraction": null,
+    "filename": "a083-ui-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-92": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-92"
+      }
+    },
+    "source_id": "manual:97db0367-9aaf-4b2f-8e8a-ca77b7df89b3:7ed05af7325492bcc19a093ade4d1229b78eec0cbcfa52abff5d8abe0077c657",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-07T01:23:02.776092+00:00",
+    "current": null
+  },
+  {
+    "batch": "78ef1e7d-73d7-4a3e-8ad8-1237c1295318",
+    "by": "A083 화면 검사",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "85a1294f-9ee3-4dc5-aded-b668ceafc04d",
+    "extraction": null,
+    "filename": "a083-ui-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-92": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-92"
+      }
+    },
+    "source_id": "manual:85a1294f-9ee3-4dc5-aded-b668ceafc04d:7ed05af7325492bcc19a093ade4d1229b78eec0cbcfa52abff5d8abe0077c657",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T15:05:12.180982+00:00",
+    "current": null
+  },
+  {
+    "batch": "22d01ffa-e64b-40d4-b290-80c03725e322",
+    "by": "A083 화면 검사",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "dc815f9c-85fe-44fb-a7d1-1eda4872dafa",
+    "extraction": null,
+    "filename": "a083-ui-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-92": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-92"
+      }
+    },
+    "source_id": "manual:dc815f9c-85fe-44fb-a7d1-1eda4872dafa:7ed05af7325492bcc19a093ade4d1229b78eec0cbcfa52abff5d8abe0077c657",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T14:52:48.860782+00:00",
+    "current": null
+  },
+  {
+    "batch": "a29d972e-4ffa-4d71-afb7-b65e7647ad60",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "4a4c73f8-e3e9-4104-9aa7-bf47429366f7",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:4a4c73f8-e3e9-4104-9aa7-bf47429366f7:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T13:13:40.688425+00:00",
+    "current": null
+  },
+  {
+    "batch": "ca2846ca-12c9-4d32-a22f-0b386998f1fe",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "81d418c1-609f-4aab-b26c-8e20f4f63d08",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:81d418c1-609f-4aab-b26c-8e20f4f63d08:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T13:10:58.727459+00:00",
+    "current": null
+  },
+  {
+    "batch": "71f6ee87-f634-415b-8bef-677294697312",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "49ace651-ad8c-4dc4-9337-787444d28497",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:49ace651-ad8c-4dc4-9337-787444d28497:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T12:50:34.188320+00:00",
+    "current": null
+  },
+  {
+    "batch": "273f2146-ad36-4a36-9c08-c3e662ebd716",
+    "by": "A075 reviewer",
+    "candidate_activation": {
+      "fm:bearing-degradation": [
+        "rule:cand-fan"
+      ]
+    },
+    "document_id": "72fd726b-8b5b-45a0-ab7b-8362dc13fae3",
+    "extraction": null,
+    "filename": "a075-test-manual.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-TEST-91": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-91"
+      }
+    },
+    "source_id": "manual:72fd726b-8b5b-45a0-ab7b-8362dc13fae3:90902d86c4b45747e89dcb08a0509b3cd54995ba4f2c2d2b4930511de3a5f05c",
+    "status": "ROLLED_BACK",
+    "steps": 3,
+    "t": "2026-10-06T07:37:01.689529+00:00",
+    "current": null
+  },
+  {
+    "batch": "ec295665-4106-42a3-907b-9f7ff9585b45",
+    "by": "A050 explicit synthetic graph check",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "eacf1a79-906c-4d01-a84c-ea484b093876",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.490a481a-777e-4d05-af5e-072b16ef56b2",
+      "session_id": null,
+      "workitem": "f31f195a-2a2e-49da-b316-03e5a5268549"
+    },
+    "filename": "A050-938C3763FE.txt",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A050-938C3763FE": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a050-938c3763fe"
+      }
+    },
+    "source_id": "manual:eacf1a79-906c-4d01-a84c-ea484b093876:7e4794bec1dfd3940934513a30df5c051f2b1c2d593894fa8ee13ec90fa2076c",
+    "status": "ROLLED_BACK",
+    "steps": 2,
+    "t": "2026-10-04T13:20:28.113053+00:00",
+    "current": null
+  },
+  {
+    "batch": "2663399b-84c0-4525-ba3e-03e52a9bbb71",
+    "by": "A050 contract probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "eacf1a79-906c-4d01-a84c-ea484b093876",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.2ebc3e24-322e-40a2-b269-c9f4c6a98492",
+      "session_id": null,
+      "workitem": "51cc3980-71b9-4323-80e6-09e3dbd879ca"
+    },
+    "filename": "A050-938C3763FE.txt",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A050-938C3763FE": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a050-938c3763fe"
+      }
+    },
+    "source_id": "manual:eacf1a79-906c-4d01-a84c-ea484b093876:7e4794bec1dfd3940934513a30df5c051f2b1c2d593894fa8ee13ec90fa2076c",
+    "status": "ROLLED_BACK",
+    "steps": 2,
+    "t": "2026-10-04T13:13:01.860725+00:00",
+    "current": null
+  },
+  {
+    "batch": "45d1b552-adf0-4a6d-8959-a594a5c3bd76",
+    "by": "A047 isolated source check",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "dc2b728a-4dd3-4658-a9a6-1548ce169eab",
+    "filename": "A047-source-review.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-A047DOC-DD331FDD": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-a047doc-dd331fdd"
+      }
+    },
+    "source_id": "manual:dc2b728a-4dd3-4658-a9a6-1548ce169eab:1050db940eda2a2788335d25bf964336c7a2308c27e2ce42f796cb0c803b9fb3",
+    "status": "ROLLED_BACK",
+    "steps": 1,
+    "t": "2026-10-04T12:08:16.306766+00:00",
+    "current": null
+  },
+  {
+    "batch": "ea411571-0ecd-4842-ba3b-0615e31fa5c6",
+    "by": "105-step-probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "10ada5e0-f567-49d9-a5a9-1d4acee510d7",
+    "filename": "105-step-fixture.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-LONG-3BC6F199B0": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-long-3bc6f199b0"
+      }
+    },
+    "source_id": "manual:10ada5e0-f567-49d9-a5a9-1d4acee510d7:b5619fcca8be5ce87d67d9c42b46fce78fc75275c2c6f83be39faec7e8ee55d2",
+    "status": "ROLLED_BACK",
+    "steps": 105,
+    "t": "2026-10-04T00:53:49.668739+00:00",
+    "current": null
+  },
+  {
+    "batch": "77b0c1aa-1506-4644-a9a6-8341e7be594d",
+    "by": "105-step-probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "10ada5e0-f567-49d9-a5a9-1d4acee510d7",
+    "filename": "105-step-fixture.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-LONG-3BC6F199B0": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-long-3bc6f199b0"
+      }
+    },
+    "source_id": "manual:10ada5e0-f567-49d9-a5a9-1d4acee510d7:b5619fcca8be5ce87d67d9c42b46fce78fc75275c2c6f83be39faec7e8ee55d2",
+    "status": "ROLLED_BACK",
+    "steps": 105,
+    "t": "2026-10-04T00:52:54.402702+00:00",
+    "current": null
+  },
+  {
+    "batch": "a9637ab2-4e83-4ab7-bc3e-bcd16ea94eab",
+    "by": "scenario_test",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "55decd44-1f8c-40bf-8bae-d1e6bb6c3abd",
+    "filename": "scenario-HM-8_cooler-fan-manual.md",
+    "procedures": 2,
+    "replayed": false,
+    "sections": 2,
+    "skills": {
+      "SOP-TEST-76F8019E-11": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-76f8019e-11"
+      },
+      "SOP-TEST-76F8019E-12": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-76f8019e-12"
+      }
+    },
+    "source_id": "manual:55decd44-1f8c-40bf-8bae-d1e6bb6c3abd:618c3cf1a536f62982289c3435d12a3183b177ffc6cc7a6336a3915e69fc1536",
+    "status": "ROLLED_BACK",
+    "steps": 8,
+    "t": "2026-10-04T00:47:10.973231+00:00",
+    "current": null
+  },
+  {
+    "batch": "c9f24827-ca0c-40df-a0e5-64fb541c6134",
+    "by": "scenario_test",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "bb6e80cb-39ed-4bc2-886c-94fe3fd58505",
+    "filename": "scenario-HM-8_cooler-fan-manual.md",
+    "procedures": 2,
+    "replayed": false,
+    "sections": 2,
+    "skills": {
+      "SOP-TEST-2088D21F-11": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-2088d21f-11"
+      },
+      "SOP-TEST-2088D21F-12": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-test-2088d21f-12"
+      }
+    },
+    "source_id": "manual:bb6e80cb-39ed-4bc2-886c-94fe3fd58505:d1e42daa2c5851f27ad95fbcc655c012a40987674f47161aac6e8da6b1e9a469",
+    "status": "ROLLED_BACK",
+    "steps": 8,
+    "t": "2026-10-04T00:45:51.717573+00:00",
+    "current": null
+  },
+  {
+    "batch": "b18b2d4c-d99c-4cab-9574-0958c0e5707c",
+    "by": "manual-api-probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "b6258c96-f4d5-483e-8f7f-1987013cc1b1",
+    "filename": "같은 이름.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-API-0A07CC4CEC-A": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-api-0a07cc4cec-a"
+      }
+    },
+    "source_id": "manual:b6258c96-f4d5-483e-8f7f-1987013cc1b1:fd939873a11eee47dcfad110cdcfafbf33fc59c92318cd6bdbee298bb59da97e",
+    "status": "ROLLED_BACK",
+    "steps": 2,
+    "t": "2026-10-04T00:43:43.324348+00:00",
+    "current": null
+  },
+  {
+    "batch": "11e8161f-e842-47a8-86db-3c5a9abd7df5",
+    "by": "manual-api-probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "71372917-5144-4724-a14b-2a4a94ceea6a",
+    "filename": "같은 이름.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-API-0A07CC4CEC-B": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-api-0a07cc4cec-b"
+      }
+    },
+    "source_id": "manual:71372917-5144-4724-a14b-2a4a94ceea6a:b524eaa2e0c6f2d28af2a24900513bb51423620d2fe183d24b485474baa76798",
+    "status": "ROLLED_BACK",
+    "steps": 2,
+    "t": "2026-10-04T00:43:37.043647+00:00",
+    "current": null
+  },
+  {
+    "batch": "01bd1fc0-8281-42dc-a6fc-8330a09e2f57",
+    "by": "manual-api-probe",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "b6258c96-f4d5-483e-8f7f-1987013cc1b1",
+    "filename": "같은 이름.md",
+    "procedures": 1,
+    "replayed": false,
+    "sections": 1,
+    "skills": {
+      "SOP-API-0A07CC4CEC-A": {
+        "failureMode": "fm:bearing-degradation",
+        "relation": "REMEDIED_BY",
+        "skill": "skill:sop-api-0a07cc4cec-a"
+      }
+    },
+    "source_id": "manual:b6258c96-f4d5-483e-8f7f-1987013cc1b1:f2e6a75154fc8ddcc353da4de512ff06ce7cc8820af045db37c7b31298660113",
+    "status": "ROLLED_BACK",
+    "steps": 2,
+    "t": "2026-10-04T00:43:30.706824+00:00",
+    "current": null
+  }
+]

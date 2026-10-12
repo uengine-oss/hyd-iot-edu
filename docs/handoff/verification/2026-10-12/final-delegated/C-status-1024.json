@@ -1,0 +1,14 @@
+{
+  "layout": {
+    "viewport": 1024,
+    "document": 1024
+  },
+  "targetBox": {
+    "x": 528,
+    "y": 124.65625,
+    "width": 457,
+    "height": 943.40625
+  },
+  "visible_text": "예비품 구매 HYD-03\n완료\n입고 완료\n끝\n끝\n상태\n완료\n걸린 시간\n6시간 54분\n단계\n7 / 7\n도구 호출\n17\n상세 정보\n진행 상황\n처리 기록\n결과\n단계 표\n8\n입고 완료\nP-PMP-SEAL 재고 보충 결과\n\n펌프 축 씰 키트 6개 입고 · 검수 합격 (발주 PR-1012-FE8A, 로트 LOT-261012-654)\n\n입고 수량\n6 개\n현재고\n9 개\n가용 재고\n7 개\n기준 ≥ 2 개 (재주문점)\n공급사 메일\n보냄\n\n승인한 안 순정(OEM) 공급사 표준 발주 · 정구매 (구매 담당)\n\n시스템이 한 일\n승인 지연 알림\n16시 37분 21초\nERP 발주 · 공급사 메일\nPR-1012-FE8A\n17시 6분 36초\n입고 · 재고 반영\nGR-1012-C42C\n17시 6분 44초\n결과 보고\n17시 6분 46초\n처리 기록 보기\n시작부터 담당자의 결정과 시스템 처리까지 단계별로\n단계별 결과\n1\n값\n20\n시작 값",
+  "screen": "unmodified actual viewport at native scroll position"
+}

@@ -148,28 +148,56 @@
   function pretty(v) {
     if (v == null) return '';
     let s = v;
-    if (typeof v === 'string') { try { s = JSON.parse(v); } catch (_) { return UI.clean(v).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))).slice(0, 8000); } }
-    return UI.clean(JSON.stringify(s, null, 2)).slice(0, 8000);
+    if (typeof v === 'string') { try { s = JSON.parse(v); } catch (_) { return UI.clean(v).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); } }
+    return UI.clean(JSON.stringify(s, null, 2));
   }
   const codeBlock = (title, body, k) => body ? `<details class="tr-code" data-k="${esc(k)}"><summary>${esc(title)}</summary><pre>${esc(body)}</pre></details>` : '';
 
   // events of one work item → rows (chronological). tool start/end pair by tool_use_id (EventTimeline.vue 와 같은 짝짓기)
+  function publicNotes(evs) {
+    const latest = new Map();
+    for (const e of evs) {
+      const d=e.data || {};
+      if (e.event_type !== 'task_working' || !['text','public_text'].includes(d.type) || !d.message_id) continue;
+      const key=JSON.stringify([e.proc_inst_id,e.todo_id,e.job_id,d.public_run,d.message_id]);
+      const prior=latest.get(key);
+      if (!prior || Number(d.sequence)>Number(prior.data.sequence)) latest.set(key,e);
+    }
+    const shown=new Set();
+    return evs.flatMap(e=>{
+      const d=e.data || {};
+      if (e.event_type !== 'task_working' || !['text','public_text'].includes(d.type) || !d.message_id) return [e];
+      const key=JSON.stringify([e.proc_inst_id,e.todo_id,e.job_id,d.public_run,d.message_id]);
+      if (shown.has(key)) return [];
+      shown.add(key); const last=latest.get(key);
+      return last.data.content ? [{...last,id:e.id,timestamp:e.timestamp,data:{...last.data,type:'text'}}] : [];
+    });
+  }
   function rowsOf(evs, w) {
+    evs=publicNotes(evs);
     const rows = [], byTool = new Map();
     for (const e of evs) {
       const d = e.data || {};
       switch (e.event_type) {
         case 'tool_usage_started': {
-          const r = { key: 'tool:' + (d.tool_use_id || e.id), kind: 'tool', status: 'running', t0: e.timestamp, tool: d.tool, title: UI.toolName(d.tool), text: brief(d.input), input: d.input };
-          byTool.set(d.tool_use_id, r); rows.push(r); break;
+          const callKey=UI.toolCallKey(e), prior=byTool.get(callKey);
+          if (prior) { Object.assign(prior,{t0:e.timestamp,tool:d.tool,title:UI.toolName(d.tool),text:window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인',input:d.input}); break; }
+          const r = { key: 'tool:' + callKey, kind: 'tool', status: 'running', t0: e.timestamp, tool: d.tool, title: UI.toolName(d.tool), text: window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인', input: d.input };
+          byTool.set(UI.toolCallKey(e), r); rows.push(r); break;
         }
         case 'tool_usage_finished': {
-          let r = byTool.get(d.tool_use_id);
-          if (!r) { r = { key: 'tool:' + (d.tool_use_id || e.id), kind: 'tool', t0: null, tool: d.tool, title: UI.toolName(d.tool), text: '' }; rows.push(r); }
+          let r = byTool.get(UI.toolCallKey(e));
+          if (!r) { r = { key: 'tool:' + UI.toolCallKey(e), kind: 'tool', t0: null, tool: d.tool, title: UI.toolName(d.tool), text: '' }; rows.push(r); byTool.set(UI.toolCallKey(e),r); }
           const o = UI.outcome(d.output, d.is_error);
-          Object.assign(r, { status: d.attempt_failed ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, t1: e.timestamp, output: d.output, result: o.text || outBrief(d.output, 140), badge: d.attempt_failed ? '실패한 시도' : o.label });
+          const purchaseTool=window.hydWords?.purchaseTool(r.tool), purchaseError=purchaseTool && hydWords.purchaseFailed(d.output);
+          const purchase = !d.attempt_failed && purchaseTool && (o.tone === 'ok' || purchaseError);
+          Object.assign(r, { status: d.attempt_failed || purchaseError ? 'fail' : o.tone === 'ok' ? 'ok' : o.tone, t1: e.timestamp, output: d.output, result: purchase || (!d.attempt_failed && o.tone==='ok' && window.hydWords) ? hydWords.got(r.tool,d.output) : o.text || outBrief(d.output, 140), badge: d.attempt_failed ? '실패한 시도' : purchaseError ? '구매 요청 처리 실패' : o.label });
           break;
         }
+        case 'task_deferred':
+          rows.push({key:'deferred:'+e.id,kind:'system',status:'wait',t0:e.timestamp,title:'보류 당시 평가 근거',
+            evidenceHtml:window.hydWords?.deferralEvidenceHtml(d.receipt || d),raw:d});
+          break;
         case 'task_started':
           rows.push({ key: 'start:' + e.id, kind: 'start', status: 'ok', t0: e.timestamp, title: UI.t('trace.picked'), text: w && isAgent(w) ? UI.t('agent') : UI.who(d.name || d.role || ''), fold: d.task_description ? [UI.t('trace.instruction'), UI.clean(UI.idText(d.task_description))] : null });
           break;
@@ -292,7 +320,9 @@
     if (r.kind === 'tool') {
       // Dify tool-detail: the line is the toggle; open it for 요청 · 응답 (원문은 여기에만)
       const sec = (title, body) => body ? `<div class="tr-code"><div class="tr-code-h">${esc(title)}</div><pre>${esc(body)}</pre></div>` : '';
-      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), pretty(r.input)) + sec(UI.t('trace.response'), pretty(r.output));
+      const purchase=window.hydWords?.purchaseTool(r.tool);
+      const original=value=>value==null ? '' : typeof value==='string' ? value : JSON.stringify(value,null,2);
+      const io = sec('도구 식별자', r.tool) + sec(UI.t('trace.request'), original(r.input)) + sec(UI.t('trace.response'), original(r.output));
       const mark = r.status === 'running' && live ? spinner('sm') : stateMark(r.status === 'running' ? 'idle' : r.status);
       const line = `<b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}${r.badge ? `<span class="chip tone-${r.status === 'fail' ? 'danger' : 'warning'} sm">${esc(r.badge)}</span>` : ''}${r.t1 ? durHtml(r.t0, r.t1) : r.status === 'running' && live ? durHtml(r.t0, null, true) : ''}`;
       return `<div class="tr-row tr-k-tool ${esc(r.status)}">${time}<span class="tr-mark">${mark}</span><div class="tr-main">
@@ -303,7 +333,7 @@
     const body = r.kind === 'note' ? `<blockquote class="tr-note">${esc(r.note.slice(0, 700))}${r.note.length > 700 ? '…' : ''}</blockquote>${r.note.length > 700 ? codeBlock(UI.t('more'), r.note, r.key + ':more') : ''}`
       : r.kind === 'ask' ? `<div class="tr-hitl"><p>${esc(r.note || '')}</p>${r.options && r.options.length ? `<div class="row-wrap">${r.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}</div>` : '';
     return `<div class="tr-row tr-k-${esc(r.kind)} ${esc(r.status)}${r.small ? ' small' : ''}">${time}<span class="tr-mark">${icon(ic, 'k-' + r.kind)}</span><div class="tr-main">
-      <div class="tr-line"><b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}</div>${body}
+      <div class="tr-line"><b>${esc(r.title)}</b>${r.text ? `<span class="tr-txt">${esc(r.text)}</span>` : ''}</div>${body}${r.evidenceHtml || ''}
       ${r.fold ? codeBlock(r.fold[0], r.fold[1], r.key + ':f') : ''}${r.raw ? codeBlock(UI.t('raw'), pretty(r.raw), r.key + ':raw') : ''}</div></div>`;
   }
   function stepHeadHtml(s) {
@@ -446,5 +476,5 @@
   // every pushed SSE event goes to every mounted trace (each filters by its own instance / work item)
   function onEvent(e) { TR.mounted.forEach(C => C.ingest(e)); }
 
-  window.hydTrace = { mount, build, rowsOf, onEvent, fmtMs, outBrief, hhmmss, icon, spinner, summaryHtml, rowHtml, waitRowHtml, TR };
+  window.hydTrace = { mount, build, rowsOf, publicNotes, onEvent, fmtMs, outBrief, hhmmss, icon, spinner, summaryHtml, rowHtml, waitRowHtml, TR };
 })();

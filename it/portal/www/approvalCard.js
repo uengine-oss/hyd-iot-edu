@@ -19,7 +19,7 @@
     const parts = String(text).split(/(?<=[.。])\s+/);
     return parts.find(p => p.includes(`'${name}'`) || p.includes(`‘${name}’`) || p.includes(`"${name}"`)) || '';
   }
-  const scoreText = o => Number.isFinite(+o.score) ? `${num(o.score, 2)}점` : '';
+  const scoreText = o => window.hydWords?.purchaseEconomics(o) ? hydWords.purchaseCostLabel(o) : Number.isFinite(+o.score) ? `${num(o.score, 2)}점` : '';
 
   /* 머리말 값(라이브 3차): 예측은 "이 안을 고르면 설비가 어떻게 되나"다. 판단 엔진은 모든 안에 예측을 붙인다(순위 식의 예측 · 품질 성분,
      규정의 예측 유온 검사, 승인 순간 재확인이 쓴다). 그러나 머리말에는 고르는 근거일 때만 둔다 — 설비를 바꾸는 안(kind control)이거나,
@@ -37,7 +37,7 @@
   function ownValues(o, d) {
     const W = window.hydWords, facts = d.facts || {};
     const out = Object.entries(o.facts || {}).filter(([k, x]) => W.known(k) && x != null && typeof x !== 'object' && facts[k] == null)
-      .map(([k, x]) => `${W.fieldName(k)} ${W.value(k, x)}`);
+      .map(([k, x]) => `${W.fieldName(k,o.facts)} ${W.value(k, x)}`);
     const w = o.window;
     if (w && !forecastDecides(o, d.options) && (o.actions || []).some(a => a.code === 'WO_CREATE')) {
       out.push(`정비 시점 ${w.name}${w.starts_at ? ` (${UI.dateTime(w.starts_at)})` : ''}`);
@@ -46,6 +46,7 @@
     return out;
   }
   function businessContext(o, d) {
+    if((o.actions || []).some(a=>a.code==='PR_CREATE')) return window.hydWords.purchaseContextHtml(o,d);
     if (o.kind === 'control' || forecastDecides(o, d.options)) return '';
     const values = { ...(d.facts || {}), ...(o.facts || {}) }, W = window.hydWords;
     const purchase = (o.actions || []).some(a => a.code === 'PO_CREATE');
@@ -94,6 +95,8 @@
 
   // 추천안과 견준 점수 항목 차이(지는 쪽 큰 것 2개 · 이기는 쪽 큰 것 1개) — "어디서 졌나"를 숫자 대신 말로
   function partDiff(o, rec, options) {
+    const economic=window.hydWords?.purchaseCostDiff(o,rec);
+    if (economic) return economic;
     const a = o.scoreParts || {}, b = (rec && rec.scoreParts) || {};
     const d = Object.keys({ ...a, ...b }).map(k => [k, (+a[k] || 0) - (+b[k] || 0)]).filter(([, x]) => Math.abs(x) >= 0.05);
     const lose = d.filter(([, x]) => x < 0).sort((x, y) => x[1] - y[1]).slice(0, 2).map(([k]) => UI.t('score.' + k));
@@ -110,8 +113,8 @@
     const said = UI.idText(sentenceAbout(explanation, o.name).replace(/^\s*\d+순위\s*/, ''));
     const why = out && (o.violations || [])[0] ? `제외 — ${e(UI.idText(o.violations[0].annotation || o.violations[0].message || o.violations[0].rule || ''))}`
       : e(partDiff(o, rec, d.options) || (rec && Number.isFinite(+o.score) && Number.isFinite(+rec.score) ? `추천안보다 점수가 ${num(rec.score - o.score, 2)} 낮습니다` : ''));
-    const pick = pending && o.feasible ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 바꾸기</label>` : '';
-    return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
+    const pick = pending && o.feasible && !UI.executionBlocked(o,d) ? `<label class="ap-switch"><input type="radio" name="hopt" value="${e(o.id)}" ${o.id === chosenId ? 'checked' : ''}> 이 안으로 바꾸기</label>` : '';
+    return `<li class="ap-lost ${out ? 'out' : ''}"><div class="ap-lost-head"><b>${e(UI.idText(o.name))}</b>${out ? UI.chipText(UI.t('chip.excluded'), 'danger') : `<span class="muted num">${e(scoreText(o))}</span>`}${pick}</div>${UI.evaluationHtml(o,d)}${window.hydWords?.purchaseContextHtml(o,d) || ''}${window.hydWords?.maintenanceHtml(o) || ''}${why ? `<p>${why}</p>` : ''}${said && !out ? `<p class="muted">${e(said)}</p>` : ''}</li>`;
   }
 
   /* d: 판단 결과 { options, recommended, explanation }, chosenId: 지금 승인할 안, opt: { pending, adjust(html), extra(html) } */
@@ -123,18 +126,22 @@
     const others = opts.filter(o => o.id !== cur.id).sort((a, b) => (b.feasible - a.feasible) || ((a.rank || 99) - (b.rank || 99)));
     const rs = reasons(cur, d);
     const actions = (cur.actions || []).map(a => window.hydCards ? hydCards.actionLabel(a) : a.name).filter(Boolean);
+    const evaluation=UI.evaluationInfo(cur,d), blocked=UI.executionBlocked(cur,d);
     return `<div class="ap-card ${changed ? 'changed' : ''}">
-      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : 'AI 에이전트 추천'}</span>${changed ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      <div class="ap-head"><span class="ap-kicker">${changed ? '담당자가 바꾼 안' : evaluation.state==='analysis' ? '규칙 비교 · 모의 1순위' : evaluation.state==='execution' ? 'AI 에이전트 추천' : '1순위 · 실행 검사 확인 안 됨'}</span>${changed && !blocked ? `<button type="button" class="btn small ghost" data-ap-back="${e(rec.id)}">추천안으로 되돌리기</button>` : ''}</div>
+      ${UI.evaluationHtml(cur,d,{raw:false})}
       <h4 class="ap-title">${e(UI.idText(cur.name || '–'))}</h4>
       ${cur.description ? `<p class="ap-desc">${e(UI.idText(cur.description))}</p>` : ''}
       ${businessContext(cur, d)}
+      ${window.hydWords?.maintenanceHtml(cur) || ''}
       ${rs.length ? `<ul class="ap-reasons">${rs.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
-      ${actions.length ? `<p class="ap-do"><span class="ap-label">승인하면 시스템이</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
+      ${actions.length ? `<p class="ap-do"><span class="ap-label">${evaluation.state==='execution' ? '승인하면 시스템이' : '비교에 포함된 시스템 조치 · 승인 · 실행 아님'}</span> ${actions.map(a => `<span class="chip tone-neutral sm">${e(a)}</span>`).join(' ')}</p>` : ''}
       ${evidence(cur)}
       ${opt.adjust || ''}
       ${others.length ? UI.fold(`다른 안 ${others.length}개는 왜 졌나`, `<ul class="ap-lost-list">${others.map(o => lostRow(o, rec, d, chosenId, opt.pending)).join('')}</ul>`, { cls: 'small' }) : ''}
       ${d.explanation ? UI.fold('에이전트 설명 전문', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
       ${opt.extra || ''}
+      ${UI.evaluationRawHtml(cur,d)}
     </div>`;
   }
   /* ---------------- 캡스톤 G7: 일반 사람 승인(formHandler:approve)의 "추천 1 + 지는 안 펼치기" 카드 ----------------

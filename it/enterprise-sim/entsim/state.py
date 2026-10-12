@@ -15,6 +15,7 @@ _KST = timezone(timedelta(hours=9))
 from . import data
 
 SKILLS = {
+    "skill:schedule-maintenance-scoped": "sys:cmms",
     "skill:schedule-maintenance": "sys:cmms", "skill:reallocate-production": "sys:mes", "skill:procure-part": "sys:erp",
     "skill:hold-lot": "sys:qms", "skill:release-lot": "sys:qms", "skill:substitute-shipment": "sys:erp", "skill:demand-control": "sys:ems",
 }
@@ -27,9 +28,14 @@ COMPENSATION_SKILLS = {
 }
 INVERSE_OF = {"skill:schedule-maintenance": "skill:cancel-work-order", "skill:procure-part": "skill:cancel-purchase-request",
               "skill:reallocate-production": "skill:restore-production", "skill:hold-lot": "skill:release-hold"}
+C2_COMPENSATION_SKILLS = {"skill:cancel-maintenance-scoped": "sys:cmms"}
+C2_INVERSE_OF = {"skill:schedule-maintenance-scoped": "skill:cancel-maintenance-scoped"}
+ALL_COMPENSATION_SKILLS = {**COMPENSATION_SKILLS, **C2_COMPENSATION_SKILLS}
+ALL_INVERSE_OF = {**INVERSE_OF, **C2_INVERSE_OF}
 # Korean display names of the business skills (system of record for the portal's names.json — A150). The forward
 # names come from the v1 enterprise seed (it/neo4j/v1/seed_enterprise.cypher); the v2 graph does not carry these skills.
 SKILL_NAMES = {
+    "skill:cancel-maintenance-scoped": "등록한 원문 정비 범위 전체 취소",
     "skill:schedule-maintenance": "정비 작업지시 발행", "skill:reallocate-production": "생산오더 대체 설비 이관",
     "skill:procure-part": "부품 구매요청", "skill:hold-lot": "로트 격리 · 전수검사", "skill:release-lot": "로트 출하 승인",
     "skill:substitute-shipment": "완제품 재고 대체 출하", "skill:demand-control": "수요 제어 지시",
@@ -42,9 +48,11 @@ IRREVERSIBLE = {"skill:release-lot": "출하 승인은 출하 절차로 넘어�
 # C2 (확정 TODO C): 승인 뒤 실행 부품이 부르는 업무 거래 + 수업 원인 버튼(예비품 출고). ent.exec_skill(migration 20261009000045)과 같은 규칙.
 # 되돌리기 계약이 없는 거래다(입고 · 정비 완료는 실물이 움직였고, 일정 · 기록 · 출고는 새 기록으로 바로잡는다) — effect_compensation 이 사유를 보인다.
 C2_SKILLS = {"skill:receive-goods": "sys:erp", "skill:complete-maintenance": "sys:cmms", "skill:issue-spare": "sys:erp",
+             "skill:reschedule-maintenance": "sys:cmms",
              # 시나리오 B: 운전시간 계수기(운전시간 진행 · 시운전 통과 뒤 리셋), 시나리오 C: 공급사 납기 지연 통보(입고 대기 흐름의 지연 가지)
              "skill:pm-advance": "sys:cmms", "skill:pm-reset": "sys:cmms", "skill:delay-delivery": "sys:scm"}
 C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고에 들어와 되돌릴 수 없다(반품은 별도 절차)",
+                   "skill:reschedule-maintenance": "정비 일정은 기존 오더 상태와 기한을 다시 검토한 새 일정 변경으로 정정한다",
                    "skill:complete-maintenance": "정비는 현장에서 이미 수행되어 되돌릴 수 없다",
                    "skill:issue-spare": "출고된 예비품은 반납 입고로 되돌린다(수업은 재고 초기화)",
                    "skill:pm-advance": "운전시간은 흘러간 시간이라 되돌리지 않는다(수업은 계수기 초기화)",
@@ -52,10 +60,12 @@ C2_IRREVERSIBLE = {"skill:receive-goods": "입고 · 검수는 실물이 창고�
                    "skill:delay-delivery": "공급사가 알린 납기 변경이라 되돌리지 않는다"}
 SKILLS.update(C2_SKILLS)
 SKILL_NAMES.update({"skill:receive-goods": "입고 · 검수", "skill:complete-maintenance": "정비 완료 · 부품 소모",
+                    "skill:schedule-maintenance-scoped": "원문 패키지와 설비 범위 정비 오더 등록",
+                    "skill:reschedule-maintenance": "기존 PM 오더 일정 변경",
                     "skill:issue-spare": "예비품 출고",
                     "skill:pm-advance": "운전시간 계수기 진행", "skill:pm-reset": "운전시간 계수기 리셋 · 다음 기한 기록",
                     "skill:delay-delivery": "공급사 납기 지연 통보"})
-SKILLS.update(COMPENSATION_SKILLS)
+SKILLS.update(ALL_COMPENSATION_SKILLS)
 CANCELLED = "취소"
 PO_OPEN = "승인됨 → 발주"
 PO_RECEIVED = "입고 완료"
@@ -194,7 +204,15 @@ class EnterpriseState:
         counters = self._s["cmms"]["pm_counters"]
         spare = self._s["erp"]["spare_stock"].get(data.PM_KIT["part_no"])
         view = self._stock_view(spare) if spare else None
-        return [data.pm_row(a, counters[a], view, counters) for a in sorted(counters)]
+        rows=[data.pm_row(a, counters[a], view, counters) for a in sorted(counters)]
+        for row in rows:
+            row['service_position']=counters[row['asset']].get('service_position')
+            row['package_semantics']='base_interval_configuration'
+            row['configured_base_package']=row['package']
+            order=next((w for w in self._s['cmms']['work_orders'] if w.get('id')==row.get('pm_planned_wo')),None)
+            row['selected_service']=copy.deepcopy(order.get('package')) if order and order.get('maintenance_plan') else None
+            row['existing_pm_order']=copy.deepcopy(order) if order else None
+        return rows
 
     def pm_status(self, asset: str | None = None) -> dict:
         """CMMS: 정기 정비 계획 · 운전시간 계수기(설비별 한 행, ent.pm_status 와 같은 칸). asset 없으면 전부."""
@@ -204,6 +222,10 @@ class EnterpriseState:
             if asset is not None and not rows:
                 raise KeyError(asset)
             log = [m for m in self._s["cmms"]["pm_log"] if asset in (None, m["asset"])][:20]
+            for row in rows:
+                row['pm_cycle'] = row['cycle']
+                row['existing_pm_order'] = copy.deepcopy(next((w for w in self._s['cmms']['work_orders']
+                    if w.get('id') == row.get('pm_planned_wo') and w.get('asset') == row['asset']),None))
             return {"system": "CMMS", "facts": copy.deepcopy(rows[0]) if rows else None, "records": copy.deepcopy(rows),
                     "log": copy.deepcopy(log), "settings": dict(data.PM_SETTINGS), "as_of": _now()}
 
@@ -247,7 +269,7 @@ class EnterpriseState:
         asset = req.get("asset") or "HYD-01"
         params = req.get("params") or {}
         # A115 (r14 A7, wms `INVALID: unknown sku`; same checks as ent.exec_skill/exec_compensation, migration 22)
-        if (req.get("asset") is not None or skill not in COMPENSATION_SKILLS) and asset not in data.ASSETS:
+        if (req.get("asset") is not None or skill not in ALL_COMPENSATION_SKILLS) and asset not in data.ASSETS:
             raise ValueError(f"INVALID: unknown asset {asset}")
         if skill == "skill:procure-part" and params.get("supplier", "sup:b") not in {x["id"] for x in data._SUPPLIERS}:
             raise ValueError(f"INVALID: unknown supplier {params.get('supplier')}")
@@ -256,7 +278,7 @@ class EnterpriseState:
         with self._lock:
             self._c2_defaults()
             # a compensation is keyed by the record it reverses: one decision may undo several references
-            key = (json.dumps([req.get("decision"), skill, params.get("ref")]) if skill in COMPENSATION_SKILLS
+            key = (json.dumps([req.get("decision"), skill, params.get("ref")]) if skill in ALL_COMPENSATION_SKILLS
                    else json.dumps([req.get("decision"), skill])) if req.get("decision") else None
             fingerprint = json.dumps({k: req.get(k) for k in ("decision", "option", "skill", "asset", "params")}, sort_keys=True)
             if key in self._done:
@@ -264,27 +286,42 @@ class EnterpriseState:
                 if prior["fingerprint"] != fingerprint:
                     raise ValueError("idempotency conflict: decision/skill already executed with different input")
                 return copy.deepcopy(prior["tx"])
+            rollback = copy.deepcopy((self._s,self._done,self._tx)) if skill in ('skill:reschedule-maintenance','skill:schedule-maintenance-scoped','skill:cancel-maintenance-scoped') else None
             before = copy.deepcopy(self._affected(skill, asset, params.get("ref") or params.get("order")))   # A103: row before (update-type skills)
-            ref, detail = self._apply(skill, asset, params, req)
+            try:
+                ref, detail = self._apply(skill, asset, params, req)
+            except Exception:
+                if rollback is not None:self._s,self._done,self._tx=rollback
+                raise
             after = copy.deepcopy(self._affected(skill, asset, ref))
             tx = {"id": _id("TX"), "t": _now(), "system": SKILLS[skill], "skill": skill, "ref": ref, "detail": detail,
                   "asset": asset, "decision": req.get("decision"), "option": req.get("option"), "by": req.get("by"),
-                  "compensates": req.get("compensates") if skill in COMPENSATION_SKILLS else None,
-                  "before": before if skill in ("skill:reallocate-production",) or skill in COMPENSATION_SKILLS else None, "after": after}
+                  "compensates": req.get("compensates") if skill in ALL_COMPENSATION_SKILLS else None,
+                  "before": before if skill in ("skill:reallocate-production","skill:reschedule-maintenance") or skill in ALL_COMPENSATION_SKILLS else None, "after": after}
             self._tx.insert(0, tx)
             del self._tx[300:]
             if key:
                 self._done[key] = {"fingerprint": fingerprint, "tx": tx}
-            self._save()
+            try:
+                self._save()
+            except Exception:
+                if rollback is not None:
+                    self._s,self._done,self._tx = rollback
+                raise
             return tx
 
     def _affected(self, skill: str, asset: str, ref: str | None) -> dict | None:
         """A103 (product audit_events before/after): the one business row an execution creates or changes, found the way
         the ledger refers to it. Same meaning as ent.exec_skill's v_before/v_after (migration 19)."""
         s = self._s
+        if skill in ('skill:schedule-maintenance-scoped','skill:cancel-maintenance-scoped'):
+            first=next((w for w in s['cmms']['work_orders'] if w.get('id')==ref),None)
+            if first is None:return None
+            orders=[copy.deepcopy(w) for w in s['cmms']['work_orders'] if w.get('scope_group')==first.get('scope_group')]
+            return dict(plan=copy.deepcopy(first['maintenance_plan']),orders=[dict(w,ref=w['id']) for w in orders])
         if skill in ("skill:reallocate-production", "skill:restore-production"):
             return next((o for o in s["mes"]["orders"] if (o["order_id"] == ref) or (ref is None and o["asset"] == asset)), None)
-        if skill in ("skill:schedule-maintenance", "skill:cancel-work-order"):
+        if skill in ("skill:schedule-maintenance", "skill:cancel-work-order", "skill:reschedule-maintenance"):
             return next((w for w in s["cmms"]["work_orders"] if w["id"] == ref), None)
         if skill in ("skill:procure-part", "skill:cancel-purchase-request"):
             return next((p for p in s["erp"]["purchase_requests"] if p["id"] == ref), None)
@@ -311,6 +348,84 @@ class EnterpriseState:
 
     def _apply(self, skill: str, asset: str, params: dict, req: dict) -> tuple[str, str]:
         s = self._s
+        if skill == 'skill:schedule-maintenance-scoped':
+            from hydcommon.maintenance_plan import recheck
+            approved=params.get('plan')
+            if not req.get('decision') or not req.get('by') or not req.get('option'):
+                raise ValueError('INVALID: source maintenance requires approval identity')
+            context=dict(asset=asset,records=self._pm_rows(),parts=[self._stock_view(p) for p in s['erp']['spare_stock'].values()])
+            recheck(approved,context)
+            if approved.get('code')!='WO_CREATE':raise ValueError('INVALID: scheduling requires explicit WO_CREATE plan')
+            group=req['decision']+':'+req['option'];orders=[]
+            for member in approved['assets']:
+                code=member['asset'];counter=s['cmms']['pm_counters'][code]
+                if counter.get('plan_wo'):raise ValueError('INVALID: this PM cycle already has a work order')
+            for member in approved['assets']:
+                code=member['asset'];counter=s['cmms']['pm_counters'][code];win=member['window']
+                order=dict(id=_id('WO'),asset=code,task=params.get('task') or member['service']['package_name'],status='배정됨',
+                    window=approved['window'].get('label') or ('즉시' if win.get('immediate') else '예정된 정비 시간'),
+                    window_id=None if win.get('immediate') else win['id'],window_starts_at=win.get('starts_at'),
+                    scope_group=group,maintenance_plan=copy.deepcopy(approved),package=copy.deepcopy(member['service']),
+                    stock_effect=approved['stock_effect'],part_allocations=copy.deepcopy(member['parts']),
+                    reserved_parts=copy.deepcopy(member['parts']) if approved['stock_effect']=='reserve' else [],
+                    issued_parts=copy.deepcopy(member['parts']) if approved['stock_effect']=='issue' else [],reservations_released=False)
+                if any(w['id']==order['id'] for w in s['cmms']['work_orders']):raise ValueError('work order identity collision')
+                s['cmms']['work_orders'].insert(0,order);orders.append(order)
+                counter.update(plan_wo=order['id'],plan_window=order['window'],planned_at=_now(),updated_at=_now())
+            for part in approved['parts_totals']:
+                stock=s['erp']['spare_stock'][part['part_no']]
+                if approved['stock_effect']=='reserve':stock['reserved']+=part['qty']
+                elif approved['stock_effect']=='issue':stock['on_hand']-=part['qty']
+                else:raise ValueError('INVALID: new maintenance order requires reservation or actual issue')
+                stock['updated_at']=_now()
+            return orders[0]['id'],'원문 정비 범위 '+', '.join(w['asset'] for w in orders)+' 오더 등록'
+        if skill == 'skill:reschedule-maintenance':
+            if params.get('plan'):
+                from hydcommon.maintenance_plan import recheck
+                recheck(params['plan'],dict(asset=asset,records=self._pm_rows(),parts=[self._stock_view(p) for p in s['erp']['spare_stock'].values()]))
+            counter = s['cmms']['pm_counters'].get(asset) or {}
+            order = next((w for w in s['cmms']['work_orders'] if w.get('id') == counter.get('plan_wo') and w.get('asset') == asset),None)
+            row = next((r for r in self._pm_rows() if r['asset'] == asset),{})
+            if not req.get('decision') or not req.get('by') or not req.get('option') or not order or order != params.get('expected_order') \
+                    or order.get('id') != params.get('ref') or counter.get('cycle') != params.get('cycle') \
+                    or order.get('status') != '배정됨' or order.get('completed_at') is not None:
+                raise ValueError('INVALID: existing PM order changed or is not this approved cycle plan')
+            if not params.get('window_id') or params['window_id'] != row.get('following_window_id') \
+                    or row.get('hours_at_following_window') is None \
+                    or row['hours_at_following_window'] > row['pm_interval_h']*(1+row['pm_tolerance_pct']/100):
+                raise ValueError('INVALID: following maintenance window unknown or beyond PM deadline')
+            window = next((w for w in data.next_windows(asset,14) if w['id'] == params['window_id']),None)
+            if window is None: raise ValueError('INVALID: target maintenance window missing')
+            order.update(window_id=window['id'],window_starts_at=window['starts_at'],window=window['label'])
+            counter.update(plan_window=window['label'],planned_at=_now(),updated_at=_now())
+            return order['id'],'PM order rescheduled to '+window['id']
+        if skill == 'skill:cancel-maintenance-scoped':
+            first=next((w for w in s['cmms']['work_orders'] if w.get('id')==params.get('ref')),None)
+            if first is None or not first.get('maintenance_plan'):raise ValueError('INVALID: source scoped work order group missing')
+            if first.get('stock_effect')=='issue':
+                raise ValueError('출고한 부품의 실제 반납 확인 없이 정비 범위 전체 취소를 원상 복구로 기록하지 않습니다')
+            forward=next((entry['tx'] for entry in self._done.values() if entry['tx'].get('skill')=='skill:schedule-maintenance-scoped'
+                          and entry['tx'].get('ref')==first['id']),None)
+            if forward is None or req.get('compensates')!=forward['id']:
+                raise ValueError('INVALID: compensation must identify actual original scope transaction')
+            orders=[w for w in s['cmms']['work_orders'] if w.get('scope_group')==first['scope_group']]
+            if len(orders)!=len(first['maintenance_plan']['assets']):raise ValueError('INVALID: scoped order group incomplete')
+            expected={a['asset']:a for a in first['maintenance_plan']['assets']}
+            original_orders={o['id']:o for o in (forward.get('after') or {}).get('orders') or []}
+            for order in orders:
+                counter=s['cmms']['pm_counters'][order['asset']]
+                if dict(order,ref=order['id'])!=original_orders.get(order['id']) or order['status']!='배정됨' or order.get('reservations_released') or counter.get('plan_wo')!=order['id'] \
+                        or counter['cycle']!=expected[order['asset']]['expected_counter']['cycle']:
+                    raise ValueError('INVALID: one scoped order advanced; whole cancellation needs review')
+            for part in first['maintenance_plan']['parts_totals']:
+                if s['erp']['spare_stock'][part['part_no']]['reserved']<part['qty']:
+                    raise ValueError('INVALID: actual scoped part reservations changed')
+            for order in orders:
+                order.update(status=CANCELLED,cancelled_at=_now(),reservations_released=True)
+                s['cmms']['pm_counters'][order['asset']].update(plan_wo=None,plan_window=None,planned_at=None,updated_at=_now())
+            for part in first['maintenance_plan']['parts_totals']:
+                s['erp']['spare_stock'][part['part_no']]['reserved']-=part['qty']
+            return first['id'],'원문 정비 범위 전체 취소'
         if skill == "skill:schedule-maintenance":
             when, window_id, starts_at = params.get("window"), None, params.get("window_starts_at")
             if params.get("window_id"):                     # C2: 승인된 예정된 정비 시간 id → 라벨 · 시작 시각 (ent.exec_skill 과 같은 검사)
@@ -350,6 +465,9 @@ class EnterpriseState:
                 self._move(pr["part_no"], "RECEIPT", pr["qty"], asset, gr["id"], req.get("by"), f"발주 {pr['id']} 입고")
             return gr["id"], f"{pr['part']} {pr['qty']}개 입고 · 검수 {inspection} (발주 {pr['id']}, 로트 {gr['lot']})"
         if skill == "skill:complete-maintenance":
+            candidate=next((w for w in s['cmms']['work_orders'] if w.get('id')==params.get('ref')),None)
+            if candidate and candidate.get('maintenance_plan'):
+                raise ValueError('원문 패키지의 현장 점검·시운전 완료 검증 없이 기본 정비 완료로 대체하지 않습니다')
             wo = next((w for w in s["cmms"]["work_orders"] if w["id"] == params.get("ref")), None)
             if wo is None:
                 raise ValueError(f"INVALID: no such work order {params.get('ref')}")
@@ -389,6 +507,9 @@ class EnterpriseState:
             self._pm_log(asset, "ADVANCE", hours, ref, req.get("by"), params.get("reason") or "운전시간 진행")
             return ref, f"{asset} 운전시간 +{hours:g} h — 마지막 정기 정비 뒤 {c['since_pm_h']:g} h / 주기 {data.PM_SETTINGS['interval_h']} h"
         if skill == "skill:pm-reset":                      # 시운전 통과 뒤: 계수기 리셋 · 다음 기한 기록
+            planned=s['cmms']['pm_counters'].get(asset,{}).get('plan_wo')
+            if any(w.get('id')==planned and w.get('maintenance_plan') for w in s['cmms']['work_orders']):
+                raise ValueError('원문 패키지의 실제 완료 기록 없이 정비 차례와 계수기를 리셋하지 않습니다')
             c = s["cmms"]["pm_counters"][asset]
             done = c["since_pm_h"]
             c.update(since_pm_h=0, cycle=c["cycle"] + 1, last_done_at=_now(), plan_wo=None, plan_window=None, planned_at=None)
@@ -460,7 +581,7 @@ class EnterpriseState:
             act = {"action": params.get("action", "HYD-03 비긴급 오더 야간 이동에 맞춰 피크 수요 목표 설정"), "t": _now()}
             s["ems"]["actions"].insert(0, act)
             return "EMS", act["action"]
-        if skill in COMPENSATION_SKILLS:
+        if skill in ALL_COMPENSATION_SKILLS:
             return self._compensate(skill, params)
         raise ValueError(skill)
 
@@ -474,6 +595,8 @@ class EnterpriseState:
             wo = next((w for w in s["cmms"]["work_orders"] if w["id"] == ref), None)
             if wo is None:
                 raise ValueError(f"no such work order {ref}")
+            if wo.get('scope_group'):
+                raise ValueError('원문 설비 범위의 작업지시는 그룹 전체 취소가 필요합니다')
             if wo["status"] != "배정됨":
                 raise ValueError(f"work order {ref} cannot be cancelled in status {wo['status']}")
             wo.update(status=CANCELLED, cancelled_at=_now())

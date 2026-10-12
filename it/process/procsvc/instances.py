@@ -692,7 +692,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         defn_now = self.definition_for(inst)
         flow_tools = {a.get('tool') for a in defn_now.activities.values()}
         # C2: 흐름이 시스템 task 로 실행하는 업무 거래는 승인 전달 때 실행하지 않는다(작업지시처럼) — 발주는 금액 분기 · 구매팀장 승인 뒤 발주 task 가 낸다
-        deferred = sorted({'WO_CREATE'} | ({'PR_CREATE'} if effect_parts.PR_TOOL in flow_tools else set()))
+        deferred = sorted({'WO_CREATE','WO_RESCHEDULE'} | ({'PR_CREATE'} if effect_parts.PR_TOOL in flow_tools else set()))
         purchase = None
         if effect_parts.PR_TOOL in flow_tools:
             # C2 (TODO C 실행 3): 승인 경로가 승인한 카드의 발주 금액을 확정해 처리 건 값으로 낸다 — '발주서 확정' 에이전트 task 가 필요 없다
@@ -1117,7 +1117,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             item['window'] = deepcopy(window)
         res = self.hooks.exec_enterprise(v.get("decision_id") or inst["proc_inst_id"], item)
         self._after_commit(self.hooks.audit,v.get("asset", "-"), "process", "SKILL_EXECUTED" if res.get("ok") else "SKILL_FAILED",
-                         {"instance": inst["proc_inst_id"], "code": "WO_CREATE", "ref": res.get("ref"), "detail": res.get("detail") or res.get("error")},
+                         {"instance": inst["proc_inst_id"], "code": item['code'], "ref": res.get("ref"), "detail": res.get("detail") or res.get("error")},
                          incident=v.get("incident"))
         if res.get("ok") is not True or not isinstance(res.get('ref'), str) or not res['ref'].strip():
             raise ServiceExecutionError(res)

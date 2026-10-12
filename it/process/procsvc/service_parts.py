@@ -79,6 +79,8 @@ class ServicePartsRuntime:
         v = engine.variables(inst)
         if not v.get("approved_by"):
             raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 사람 승인 뒤에만 실행합니다 — 이 처리 건에 승인 기록이 없습니다")
+        from hydcommon.execution_scope import require_executable
+        require_executable(v.get('chosen_option') or {})
         return v
 
     def _decision_of(self, inst: dict, v: dict) -> str:

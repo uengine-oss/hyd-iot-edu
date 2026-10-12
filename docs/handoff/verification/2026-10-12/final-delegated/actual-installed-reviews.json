@@ -1,0 +1,317 @@
+{
+  "HM-8": {
+    "actions": 0,
+    "batch": "21acf8f9-9e9d-4360-8ab7-9bdbf6a3a119",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "c2bb4c58-3d7b-4df6-ad4d-1d3023db7755",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.394d8cab-ecf9-4927-8b64-8e5116374dc1",
+      "session_id": "01a12bf6-f3bf-76b1-81e5-e10900d909b2",
+      "workitem": "4e49a7bc-cc2c-4869-86fe-492281d3a266"
+    },
+    "filename": "HM-8_cooler-fan-manual.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [
+        "cause:fan-drive-fault"
+      ],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:hm8-fouling-priority"
+      ]
+    },
+    "procedures": 8,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-FAN-11",
+      "SOP-FAN-12",
+      "SOP-COOL-11",
+      "SOP-COOL-12",
+      "SOP-COOL-13",
+      "SOP-HM8-6",
+      "SOP-COOL-14",
+      "SOP-COOL-15"
+    ],
+    "references": {
+      "SOP-FAN-11": {
+        "contract_sha256": "4749324e984b9053af8378b1de33c5714eccbb00c75bf94d2d9fe3aac0508c87",
+        "owner": null,
+        "skill": "skill:sop-fan-11",
+        "sopId": "SOP-FAN-11",
+        "source_steps_sha256": "d7dbbde85039456de595400dc3a38cd83fb36ce876b22db9bd696eeca183bdd6"
+      },
+      "SOP-FAN-12": {
+        "contract_sha256": "92e6f7cc37935d53cdf252477ed69e4c161f52c8ae2f27d89cffb68576ad29f6",
+        "owner": null,
+        "skill": "skill:sop-fan-12",
+        "sopId": "SOP-FAN-12",
+        "source_steps_sha256": "a7581ec724746dbd258a2281a727db77c7fc576931b1cdf58a67b1976de7f742"
+      }
+    },
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 8,
+    "skills": {
+      "SOP-COOL-11": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-11"
+      },
+      "SOP-COOL-12": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-12"
+      },
+      "SOP-COOL-13": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-13"
+      },
+      "SOP-COOL-14": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-14"
+      },
+      "SOP-COOL-15": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-cool-15"
+      },
+      "SOP-FAN-11": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-fan-11"
+      },
+      "SOP-FAN-12": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-fan-12"
+      },
+      "SOP-HM8-6": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-hm8-6"
+      }
+    },
+    "source_id": "manual:c2bb4c58-3d7b-4df6-ad4d-1d3023db7755:6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256",
+    "status": "ACTIVE",
+    "steps": 28,
+    "t": "2026-10-12T07:16:09.811455+00:00",
+    "current": true
+  },
+  "PM-02": {
+    "actions": 4,
+    "batch": "dff3825b-01ef-4b7a-9488-d3cdcc1aa371",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": {
+      "fm:volumetric-loss": [
+        "rule:cand-pump"
+      ]
+    },
+    "document_id": "6c306bfa-7ac2-46a0-b48c-3402a995ab57",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.914896d0-e074-4359-a6e9-66be38267201",
+      "session_id": "01a12bff-26d0-7993-8e8e-cf0bd5891d1d",
+      "workitem": "b8f5491f-fd0f-4bc7-ad1d-7c26f9532df8"
+    },
+    "filename": "PM-02_powerpack-pm-checklist.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [
+        "cause:pm02-filter-blockage-pump-contamination"
+      ],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:pm02-candidates",
+        "rule:pm02-next-window-limit",
+        "rule:pm02-following-window-limit",
+        "rule:pm02-spare-none",
+        "rule:pm02-group-spare",
+        "rule:pm02-spare-purchase-warning",
+        "rule:pm02-group-crew-penalty",
+        "rule:pm02-pump-seal-diagnosis",
+        "rule:pm02-running-order-loss"
+      ]
+    },
+    "procedures": 8,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-PM-21",
+      "SOP-PM-22",
+      "SOP-PM-23",
+      "SOP-PM2-9"
+    ],
+    "references": {},
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 10,
+    "skills": {
+      "SOP-PM-11": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-11"
+      },
+      "SOP-PM-12": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-12"
+      },
+      "SOP-PM-13": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-13"
+      },
+      "SOP-PM-14": {
+        "failureMode": "fm:volumetric-loss",
+        "relation": "PREVENTED_BY",
+        "skill": "skill:sop-pm-14"
+      },
+      "SOP-PM-21": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-21"
+      },
+      "SOP-PM-22": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-22"
+      },
+      "SOP-PM-23": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm-23"
+      },
+      "SOP-PM2-9": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pm2-9"
+      }
+    },
+    "source_id": "manual:6c306bfa-7ac2-46a0-b48c-3402a995ab57:2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
+    "status": "ACTIVE",
+    "steps": 33,
+    "t": "2026-10-12T07:16:20.547836+00:00",
+    "current": true
+  },
+  "PR-07": {
+    "actions": 3,
+    "batch": "1b45ca6f-6d68-4f8d-bcdc-2722ce3f91c1",
+    "by": "사용자 위임 Codex",
+    "candidate_activation": "NOT_CHANGED",
+    "document_id": "c8305e9b-b8f1-4261-b6ac-0490e36de173",
+    "extraction": {
+      "generation": 0,
+      "instance": "manual_source_extraction.e7d00281-5325-4b26-ab7f-21e2e31ffd74",
+      "session_id": "01a12c0c-1217-7ae0-b81a-5ccee78133bc",
+      "workitem": "e2e86178-f3a8-4ff8-a57b-45d5e5bb83c4"
+    },
+    "filename": "PR-07_spare-parts-standard.md",
+    "history_kept": [],
+    "knowledge": {
+      "causes": [],
+      "evidence": [],
+      "failure_modes": [],
+      "rules": [
+        "rule:pr07-purchase-candidates",
+        "rule:pr07-purchase-other-pattern-exclude",
+        "rule:pr07-supplier-not-avl",
+        "rule:pr07-amount-report",
+        "rule:pr07-lead-time-warning",
+        "rule:pr07-full-inspection-warning",
+        "rule:pr07-full-inspection-cost"
+      ]
+    },
+    "procedures": 6,
+    "provenance_kept": [],
+    "reference_procedures": [
+      "SOP-PR7-1",
+      "SOP-PR7-4",
+      "SOP-PR7-7"
+    ],
+    "references": {},
+    "replayed": false,
+    "review_method": "user-delegated-ai-review",
+    "sections": 7,
+    "skills": {
+      "SOP-PR7-1": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-1"
+      },
+      "SOP-PR7-4": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-4"
+      },
+      "SOP-PR7-7": {
+        "executable": false,
+        "failureMode": null,
+        "relation": null,
+        "skill": "skill:sop-pr7-7"
+      },
+      "SOP-PUR-11": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-11",
+        "supplier_policy": "oem"
+      },
+      "SOP-PUR-12": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-12",
+        "supplier_policy": "lowest_approved"
+      },
+      "SOP-PUR-13": {
+        "executable": true,
+        "failureMode": null,
+        "parts": [
+          "part:pump-seal",
+          "part:fan-bearing",
+          "part:cooler-core"
+        ],
+        "relation": null,
+        "scope": "purchase",
+        "skill": "skill:sop-pur-13",
+        "supplier_policy": "fastest_quote"
+      }
+    },
+    "source_id": "manual:c8305e9b-b8f1-4261-b6ac-0490e36de173:7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
+    "status": "ACTIVE",
+    "steps": 21,
+    "t": "2026-10-12T08:05:06.321004+00:00",
+    "current": true
+  }
+}

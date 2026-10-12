@@ -540,6 +540,8 @@ def due(plan: dict, now: datetime) -> bool:
 # ---------------------------------------------------------------- 발주 값 (승인 경로)
 def purchase_action(option: dict) -> dict | None:
     """카드의 발주 동작(PR_CREATE, 값 = 공급사 id). 없으면 None."""
+    if option.get('kind') == 'reference' or option.get('executable') is False:
+        raise ValueError('원문 참고 절차는 구매 실행 대상이 아닙니다')
     return next((a for a in option.get("actions") or [] if a.get("code") == "PR_CREATE"), None)
 
 
@@ -567,6 +569,17 @@ def purchase_quote(option: dict, values: dict, quotes: list[dict]) -> dict | Non
     if not supplier or not part or qty is None:
         raise ValueError("발주 카드의 공급사 · 부품 · 수량을 확정할 수 없습니다 — 처리 건에 part_no · need_qty(또는 ERP 재고 경보 근거)가 있어야 "
                          "금액을 계산하고 금액 기준 승인 분기를 탈 수 있습니다")
+    if option.get('supplier_policy'):
+        evidence = option.get('resolvedSupplier')
+        if not isinstance(evidence, dict) or evidence.get('policy') != option['supplier_policy'] or \
+                evidence.get('id') != supplier or evidence.get('partNo') != part:
+            raise ValueError('동적 구매 카드의 정책·부품·확정 공급사 증거가 일치하지 않습니다')
+        current = {q.get('supplier'): {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl', 'name')}
+                   for q in quotes or []}
+        if len(current) != len(quotes or []) or current != evidence.get('quoteSet'):
+            raise ValueError('공급사 선택 이후 실제 부품별 견적이 변경되었습니다. 다시 평가한 카드로 승인하세요')
+        if current.get(supplier) != evidence.get('quote'):
+            raise ValueError('확정 공급사 견적과 승인 대상 증거가 일치하지 않습니다')
     quote = next((q for q in quotes or [] if q.get("supplier") == supplier), None)
     if quote is None:
         raise ValueError(f"ERP 에 {part} 의 {supplier} 견적이 없어 발주 금액을 확정할 수 없습니다")

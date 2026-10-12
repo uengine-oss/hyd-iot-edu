@@ -101,10 +101,10 @@
   // a JSON answer is pretty-printed (escaped \uXXXX become letters); prose stays as written
   function readable(text) {
     const s = String(text || '');
-    try { return JSON.stringify(JSON.parse(s), null, 2).slice(0, 6000); }
-    catch (_) { return s.replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))).slice(0, 6000); }   // the stored answer is cut at 2,000 chars
+    try { return JSON.stringify(JSON.parse(s), null, 2); }
+    catch (_) { return s.replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); }   // the stored answer is cut at 2,000 chars
   }
-  const rawFold = (v, k) => v == null ? '' : `<details class="fold small" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(v, null, 2).slice(0, 6000))}</pre></details>`;
+  const rawFold = (v, k) => v == null ? '' : `<details class="fold small" data-k="${esc(k)}"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(v, null, 2))}</pre></details>`;
   const table = (head, rows) => `<div class="table-scroll"><table class="inst-table td-table"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   const scoreLabel = k => UI.terms['score.' + k] || k;
   const timeScale = () => { const I = window.hydInstances && window.hydInstances.I; const x = I && I.mode && Number(I.mode.time_scale); return Number.isFinite(x) && x > 0 ? x : null; };
@@ -117,18 +117,23 @@
     if (typeof value === 'boolean') return esc(value ? UI.t('yes') : UI.t('no'));
     if (typeof value === 'number') return esc(value.toLocaleString('ko-KR'));
     if (key === 'chosen_skill_kind' && (value === 'control' || value === 'work_order')) return esc(value === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder'));
-    if (typeof value === 'string' && key === 'pattern' && typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[value]) return esc(PATTERN_LABEL[value]);
+    if (typeof value==='string' && ['incident','alert_id','alertId'].includes(key)) return esc(`${key==='incident' ? '사건' : '경보'} 식별값 있음 · 원문 확인`)+rawFold(value,'raw:'+key);
+    if (typeof value==='string' && key==='pattern') {
+      const label=window.hydWords ? hydWords.startValue(key,value) : typeof PATTERN_LABEL!=='undefined' && PATTERN_LABEL[value] || UI.terms['val.'+value] || '경보 패턴 표시 이름 기록 없음 · 원문 확인';
+      return esc(label)+rawFold(value,'raw:'+key);
+    }
     if (typeof value === 'string' && UI.terms['val.' + value]) return esc(UI.terms['val.' + value]);   // A161-U1 (결함 4): answered → 답함 …
     if (typeof value === 'string') return value.length > 240 ? `<span class="prose">${esc(UI.idText(value.slice(0, 240)))}…</span>${rawFold(value, 'raw:' + key)}` : esc(UI.idText(value));
     if (Array.isArray(value)) {
       if (!value.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
       if (value.every(x => typeof x !== 'object' || x === null)) return `<span class="row-wrap">${value.slice(0, 12).map(x => `<span class="chip tone-neutral sm">${esc(UI.name(String(x)) || UI.idText(String(x)))}</span>`).join('')}${value.length > 12 ? `<span class="muted">+${value.length - 12}</span>` : ''}</span>`;
       const cols = [...new Set(value.slice(0, 20).flatMap(x => Object.keys(x || {})))].slice(0, 6);
-      return `${table(cols, value.slice(0, 20).map(x => `<tr>${cols.map(c => `<td>${esc(brief(x[c], 60))}</td>`).join('')}</tr>`))}${value.length > 20 ? `<p class="muted">… ${value.length - 20}건 더</p>` : ''}${rawFold(value, 'raw:' + key)}`;
+      const headers=cols.map(c=>c==='package' && value.every(x=>x?.package_semantics==='base_interval_configuration') ? '등록된 기본 정비 내용' : ['package_semantics','configured_base_package'].includes(c) ? UI.terms['var.'+c] : c);
+      return `${table(headers, value.slice(0, 20).map(x => `<tr>${cols.map(c => `<td>${esc(c==='package_semantics' && UI.terms['val.'+x[c]] ? UI.terms['val.'+x[c]] : brief(x[c], 60))}</td>`).join('')}</tr>`))}${value.length > 20 ? `<p class="muted">… ${value.length - 20}건 더</p>` : ''}${rawFold(value, 'raw:' + key)}`;
     }
     const entries = Object.entries(value);
     if (!entries.length) return `<span class="muted">${esc(UI.t('empty.noData'))}</span>`;
-    const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(UI.terms['var.' + k] || k)}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
+    const dl = `<dl class="meta-list td-kv">${entries.slice(0, 16).map(([k, x]) => `<div><dt title="${esc(k)}">${esc(k==='package' && value.package_semantics==='base_interval_configuration' ? '등록된 기본 정비 내용' : UI.terms['var.' + k] || k)}</dt><dd>${x !== null && typeof x === 'object' ? (depth < 1 ? valueHtml(k, x, v, depth + 1) : esc(brief(x, 100))) : esc(k==='package_semantics' && UI.terms['val.'+x] ? UI.terms['val.'+x] : brief(x, 120) || UI.t('inst.noValue'))}</dd></div>`).join('')}</dl>`;
     return dl + (depth === 0 ? rawFold(value, 'raw:' + key) : '');
   }
   const optionName = o => (o && UI.idText(o.name || UI.name(o.id) || o.id)) || '';
@@ -153,10 +158,11 @@
     return `<li>${esc(UI.idText(String(x).replace(/^\d+\.\s*/, '')))}</li>`;
   }
   const SPECIAL = {
+    _deferral(record) { return window.hydWords?.deferralEvidenceHtml(record) || ''; },
     decision(d) {
       const opts = d.options || [];
       if (!opts.length && !d.recommended && !(d.order || []).length) return '';
-      const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
+      const list = opts.length ? `<ol class="td-list">${opts.map(o => `<li>${esc(optionName(o))} ${o.id === d.recommended ? UI.chipText(UI.t('chip.recommended'), 'accent') : ''}${o.id === d.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : ''}${o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : ''}${window.hydWords?.purchaseEconomics(o) ? `<span class="muted"> · ${esc(hydWords.purchaseCostLabel(o))}</span>` : o.score != null ? `<span class="muted"> · ${esc(UI.t('card.score'))} ${esc(num(o.score))}</span>` : ''}</li>`).join('')}</ol>`
         : (d.order || []).length ? `<ol class="td-list">${d.order.map(orderItem).join('')}</ol>` : '';
       return `${d.explanation ? `<p class="kv-line">${esc(UI.idText(d.explanation))}</p>` : ''}${list}`;
     },
@@ -176,8 +182,8 @@
       return why + table([UI.t('candidate'), UI.t('dec.col.result'), UI.t('fold.violations'), UI.t('fold.penalty')], rows.map(([id, x]) => `<tr><td>${esc(UI.name(id))}</td><td>${x.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') : UI.chipText(UI.t('inc.pass'), 'success')}</td><td>${esc((x.excluded || []).map(y => UI.idText(String(y))).join('; '))}</td><td>${esc([...(x.penalties || []), ...(x.warnings || [])].map(y => UI.idText(String(y))).join('; '))}</td></tr>`));
     },
     chosen_option(o) { return o.name ? `<span class="kv">${esc(UI.idText(o.name))}</span>${o.kind ? ' ' + UI.chipText(o.kind === 'control' ? UI.t('chip.control') : UI.t('chip.workOrder')) : ''}` : ''; },
-    work_order(w) { return (w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(UI.idText(w.detail))}</p>` : ''}` : ''; },
-    alert(a) { return a.alertId ? `<p class="kv-line">${esc(a.alertId)} · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc((typeof PATTERN_LABEL !== 'undefined' && PATTERN_LABEL[a.pattern]) || UI.idText(a.pattern)) : ''}</p>` : ''; },
+    work_order(w) { const scoped=window.hydWords?.maintenanceReceiptHtml(w); return scoped || ((w.ref || w.id) ? `<span class="kv mono">${esc(w.ref || w.id)}</span>${w.detail ? `<p class="kv-line">${esc(UI.idText(w.detail))}</p>` : ''}` : ''); },
+    alert(a) { return a.alertId ? `<p class="kv-line">경보 기록 · ${esc(UI.status(a.state))}${a.pattern ? ' · ' + esc(window.hydWords ? hydWords.value('pattern',a.pattern) : '패턴 표시 이름 기록 없음') : ''}</p>` : ''; },
     // 매뉴얼 추출 처리 건: 원문 전문(pages)은 쏟지 않고 문서 · 쪽 수 · 글자 수만, 원문은 접기
     manual_source(s) {
       if (!Array.isArray(s.pages)) return '';
@@ -226,7 +232,7 @@
       const parts = Object.entries(o.scoreParts || {}).map(([k, x]) => `<span class="td-part">${esc(scoreLabel(k))} <b>${esc(signed(x))}</b></span>`).join('');
       const verdict = [o.id === rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', o.id === chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '',
         o.feasible === false ? UI.chipText(UI.t('chip.excluded'), 'danger') + (o.violations && o.violations[0] ? ` <span class="muted">${esc(UI.idText(o.violations[0].annotation || ''))}</span>` : '') : ''].join(' ');
-      return `<tr${o.id === rec ? ' class="rec"' : ''}><td>${o.feasible === false ? '–' : esc(o.rank ?? '–')}</td><td>${esc(optionName(o))}</td><td>${esc(num(o.score))}</td><td>${parts || '<span class="muted">–</span>'}</td><td>${verdict}</td></tr>`;
+      return `<tr${o.id === rec ? ' class="rec"' : ''}><td>${o.feasible === false ? '–' : esc(o.rank ?? '–')}</td><td>${esc(optionName(o))}${window.hydWords?.maintenanceHtml(o) || ''}</td><td>${esc(num(o.score))}</td><td>${parts || '<span class="muted">–</span>'}</td><td>${verdict}</td></tr>`;
     }));
   }
   function decisionHtml(d) {
@@ -270,6 +276,7 @@
 
   /* ---------- ② 처리 과정 타임라인 (events + 작업 행 자체) ---------- */
   function timelineItems(w, evs, v, live) {
+    if (window.hydTrace) evs=hydTrace.publicNotes(evs);
     const items = [];
     const byTool = new Map();
     const hasStart = evs.some(e => e.event_type === 'task_started'), hasEnd = evs.some(e => ['task_completed', 'task_cancelled'].includes(e.event_type));
@@ -277,11 +284,11 @@
     evs.forEach(e => {
       const d = e.data || {};
       switch (e.event_type) {
-        case 'tool_usage_started': { const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: brief(d.input, 200), code: d.tool !== 'ToolSearch', raw: d, key: d.tool_use_id, running: true, k: 'tool:' + e.id }; byTool.set(d.tool_use_id, it); items.push(it); return; }
+        case 'tool_usage_started': { const prior=byTool.get(UI.toolCallKey(e)); if (prior) { Object.assign(prior,{t:e.timestamp,text:window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인',raw:d}); return; } const it = { t: e.timestamp, cls: 'current', title: UI.toolName(d.tool), text: window.hydWords ? hydWords.ask(d.tool,d.input) : '도구 요청 목적 기록 없음 · 원문 확인', code: d.tool !== 'ToolSearch', raw: d, key: UI.toolCallKey(e), running: true, k: 'tool:' + UI.toolCallKey(e) }; byTool.set(UI.toolCallKey(e), it); items.push(it); return; }
         case 'tool_usage_finished': {
-          const it = byTool.get(d.tool_use_id);
-          if (it) { it.cls = d.is_error ? 'fail' : 'done'; it.running = false; it.dur = fmtMs(new Date(e.timestamp) - new Date(it.t)); it.result = brief(d.output, 200); it.rawOut = d; it.error = !!d.is_error; return; }
-          items.push({ t: e.timestamp, cls: d.is_error ? 'fail' : 'done', title: UI.toolName(d.tool), result: brief(d.output, 200), rawOut: d, k: 'tool:' + e.id }); return;
+          const it = byTool.get(UI.toolCallKey(e));
+          if (it) { it.cls = d.is_error ? 'fail' : 'done'; it.running = false; it.dur = fmtMs(new Date(e.timestamp) - new Date(it.t)); it.result = !d.is_error && window.hydWords ? hydWords.got(d.tool,d.output) : brief(d.output, 200); it.rawOut = d; it.error = !!d.is_error; return; }
+          const orphan={t:e.timestamp,cls:d.is_error ? 'fail' : 'done',title:UI.toolName(d.tool),result:!d.is_error && window.hydWords ? hydWords.got(d.tool,d.output) : brief(d.output,200),rawOut:d,k:'tool:'+UI.toolCallKey(e)}; items.push(orphan);byTool.set(UI.toolCallKey(e),orphan);return;
         }
         case 'task_started': items.push({ t: e.timestamp, cls: 'done', title: UI.t('td.start'), text: `${UI.who(d.role || 'agent')}${d.name ? ' · ' + UI.who(d.name) : ''}`, foldTitle: d.task_description ? UI.t('td.instruction') : '', foldBody: UI.idText(d.task_description || ''), k: 'start:' + e.id }); return;
         case 'task_working':
@@ -338,7 +345,7 @@
         ${it.options && it.options.length ? `<div class="row-wrap">${it.options.map(o => `<span class="chip tone-neutral sm">${esc(o)}</span>`).join('')}</div>` : ''}
         ${it.foldTitle ? `<details class="fold small" data-k="${esc(it.k)}"><summary>${esc(it.foldTitle)}</summary><pre>${esc(it.foldBody)}</pre></details>` : ''}
         ${UI.toolIdentityFold(it.raw?.tool || it.rawOut?.tool)}
-        ${it.raw || it.rawOut ? `<details class="fold small" data-k="${esc(it.k)}:raw"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(it.rawOut ? { ...(it.raw || {}), ...it.rawOut } : it.raw, null, 2).slice(0, 6000))}</pre></details>` : ''}
+        ${it.raw || it.rawOut ? `<details class="fold small" data-k="${esc(it.k)}:raw"><summary>${esc(UI.t('raw'))}</summary><pre>${esc(JSON.stringify(it.rawOut ? { ...(it.raw || {}), ...it.rawOut } : it.raw, null, 2))}</pre></details>` : ''}
       </div></div>`).join('')}</div>`;
   }
 
@@ -560,11 +567,11 @@
       const open = new Set(); let last = null;
       evs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || ''))).forEach(e => {
         const d = e.data || {};
-        if (e.event_type === 'tool_usage_started') open.add(d.tool_use_id); else if (e.event_type === 'tool_usage_finished') open.delete(d.tool_use_id);
+        if (e.event_type === 'tool_usage_started') open.add(UI.toolCallKey(e)); else if (e.event_type === 'tool_usage_finished') open.delete(UI.toolCallKey(e));
         last = e;
       });
       const running = [...open].pop();
-      if (running != null) { const s = lastOf(evs, e => e.event_type === 'tool_usage_started' && (e.data || {}).tool_use_id === running); return [UI.t('agent'), UI.t('td.nowTool').replace('{tool}', UI.toolName(((s || {}).data || {}).tool))]; }
+      if (running != null) { const s = lastOf(evs, e => e.event_type === 'tool_usage_started' && UI.toolCallKey(e) === running); return [UI.t('agent'), UI.t('td.nowTool').replace('{tool}', UI.toolName(((s || {}).data || {}).tool))]; }
       if (last && isNote(last)) return [UI.t('agent'), UI.t('td.nowNote')];
       if (last && isEvidence(last)) return [UI.t('agent'), UI.t('td.nowBasis')];
       return [UI.t('agent'), w.consumer ? (last ? UI.t('td.nowClaimed') : UI.t('td.nowStarted')) : UI.t('td.nowQueued')];

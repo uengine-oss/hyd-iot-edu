@@ -191,6 +191,54 @@ class DmnTools:
                            "approver": (o.get("approver") or {}).get("name")} for o in res.get("options", [])],
                 "error": rec.get("error")}
 
+    def _purchase_part(self, asset: str, part_no: str) -> dict:
+        if not isinstance(part_no, str) or not part_no or len(part_no) > 120:
+            raise ValueError('실제 ERP 부족부품 번호(part_no)를 명시하세요')
+        rows = mcp_ent.fetch('/erp/spare_stock', asset).get('records') or []
+        eligible = [r for r in rows if r.get('part_no') == part_no and r.get('below_reorder_point')]
+        if len(eligible) != 1:
+            raise ValueError('요청한 부품의 재주문점 이탈을 실제 ERP에서 확인할 수 없습니다')
+        parts = self._graph('MATCH (p:Part {partNo:$part}) RETURN p.id AS id,p.name AS name,p.partNo AS partNo', part=part_no)
+        if len(parts) != 1:
+            raise ValueError('ERP 부족부품에 대응하는 Part 지식이 없거나 중복되어 구매 범위를 확정할 수 없습니다')
+        return parts[0]
+
+    def purchase_context(self, asset: str, part_no: str) -> dict:
+        """Explicit Part-scoped purchase procedures; no inferred Cause/FailureMode."""
+        part = self._purchase_part(asset, part_no)
+        procedures = self._graph("MATCH (:System {id:'sys:erp'})-[:HAS_SKILL]->(s:Skill {scope:'purchase'})-[:INVOLVES_PART]->(:Part {id:$part}) "
+                                 'RETURN s.id AS id,s.sopId AS sopId,s.name AS name,s.executable AS executable,s.source_id AS source_id', part=part['id'])
+        return dict(pattern='SPARE_BELOW_MIN', route='purchase-part', part=part, procedures=procedures,
+                    basis='실제 ERP 재주문점 이탈 부품 → Part ← INVOLVES_PART ← 원문 구매 Skill ← ERP')
+
+    def _purchase_decision(self, asset, part_no, *, incident=None, alert_id=None, overrides=None, process_scope=None, submit=False):
+        if submit and overrides:
+            raise ValueError('가정 구매 facts는 읽기 전용 evaluate_purchase에서만 사용합니다')
+        part = self._purchase_part(asset, part_no)
+        origin = dict(kind='alert' if submit else 'mcp', pattern='SPARE_BELOW_MIN', cause_route='purchase-part',
+                      part=part, cause_basis='실제 ERP 부족부품 → Part ← 원문 구매 Skill',
+                      **(dict(incident=incident, alertId=alert_id) if submit else {}))
+        if process_scope is not None:
+            origin['process_scope'] = dict(process_scope)
+        rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, 'SPARE_BELOW_MIN',
+                              dict(id=None, name=None, failureModeId=None, failureMode=None), origin=origin,
+                              overrides=overrides, do_submit=submit, purchase_part=part)
+        if rec.get('status') == 'FAILED':
+            if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING', 'PURCHASE_MODEL_INVALID'):
+                raise ValueError(rec['error'])
+            raise RuntimeError('원문 구매 후보 계산을 완료하지 못했습니다. 실제 지식·업무 원천 오류를 확인하세요')
+        return rec
+
+    def evaluate_purchase(self, asset: str, part_no: str, overrides: dict | None = None) -> dict:
+        return self._purchase_decision(asset, part_no, overrides=overrides)
+
+    def submit_purchase(self, asset: str, part_no: str, incident: str, alert_id: str | None = None,
+                        process_scope: dict | None = None) -> dict:
+        if not isinstance(incident, str) or not incident.strip():
+            raise ValueError('구매 처리 건의 실제 incident id가 필요합니다')
+        return self._purchase_decision(asset, part_no, incident=incident, alert_id=alert_id,
+                                       process_scope=process_scope, submit=True)
+
     def business_causes(self, asset: str, pattern: str) -> dict:
         """C2: 업무 경보(SPARE_BELOW_MIN · PM_DUE)의 원인 후보 — 센서 증상이 없으므로 진단(diagnose) 대신 업무 근거로 그래프에서 읽는다.
         재고: ERP 에서 재주문점 아래인 부품 → 그 부품을 쓰는 원인. 정기 정비: 정비가 막는(PREVENTED_BY) 고장의 원인.

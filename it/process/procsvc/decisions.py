@@ -32,6 +32,11 @@ def _level(d: dict, role: str) -> int:
 
 def may_approve(d: dict, opt: dict, role: str) -> bool:
     """The option's approver role itself, or any role ranked above it (ontology Skill -APPROVED_BY-> Role and role levels)."""
+    from hydcommon.execution_scope import require_decision_option
+    try:
+        require_decision_option(d, opt)
+    except ValueError:
+        return False
     need = (opt.get("approver") or {}).get("id")
     need_level = int((opt.get("approver") or {}).get("level") or _level(d, need or ""))
     return not need or role == need or _level(d, role) > need_level
@@ -44,6 +49,8 @@ def approve(d: dict, option_id: str, by: str, role: str, reason: str = "") -> di
     opt = next((o for o in d.get("options", []) if o["id"] == option_id), None)
     if opt is None:
         raise ValueError(f"unknown option {option_id}")
+    from hydcommon.execution_scope import require_decision_option
+    require_decision_option(d, opt)
     if not opt.get("feasible", False):
         why = "; ".join(v.get("annotation") or v.get("name") or v.get("rule", "") for v in opt.get("violations") or []) or "infeasible"
         raise ValueError(f"'{opt['name']}'은(는) 규정상 고를 수 없다: {why}")

@@ -53,6 +53,12 @@ class KnowledgeGraph:
     def skills(self, ids: list[str]) -> list[dict]:
         return self._run("t3_skills", ids=ids)
 
+    def purchase_part(self, part_no: str) -> dict:
+        rows = self._run('t3_purchase_part', partNo=part_no)
+        if len(rows) != 1:
+            raise ValueError('ERP 부품 번호에 대응하는 실제 Part가 없거나 중복되었습니다')
+        return rows[0]
+
     def dmn(self) -> list[dict]:
         return self._run("t3_dmn")
 

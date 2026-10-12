@@ -44,7 +44,10 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
     if contract_note:
         sections.append('## 폼 계약 상세\n' + contract_note)
     if any(field.get('key') == 'decision_id' for field in field_list(extras.get('form_fields'))):
-        sections.append('## 판단 등록의 생산 작업\nsubmit_decision 호출 시 process_scope에 아래 객체를 그대로 전달하세요. '
+        sections.append('## 판단 등록의 생산 작업\n설비 고장·정비 판단은 submit_decision, 예비품 구매 판단은 submit_purchase를 사용합니다. '
+                        '구매는 실제 ERP 부족부품 번호로 purchase_context와 evaluate_purchase를 조회하며 고장 원인·고장 유형을 만들어 넣지 마세요. '
+                        '어느 판단 등록 도구든 호출 시 process_scope에 아래 객체를 그대로 전달하세요. '
+                        '두 도구는 승인 대기 카드 등록만 하며 설비 명령·발주·입고를 실행하지 않습니다. '
                         '이 작업의 새 판단 ID만 출력하며 이전 작업/세대의 판단을 재사용하지 마세요.\n'
                         + json.dumps(extras.get('process_scope') or {}, ensure_ascii=False))
     sections.append("## 담당자에게 업무 정보 질문\n"

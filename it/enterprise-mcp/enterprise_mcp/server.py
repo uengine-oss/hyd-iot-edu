@@ -81,7 +81,11 @@ def qms_lots(asset: Asset) -> dict:
 
 @mcp.tool(annotations=READ)
 def scm_suppliers(part: Annotated[str, Field(description="부품 번호 (기본 P-CLR-CORE 쿨러 코어)")] = "P-CLR-CORE") -> dict:
-    """SCM: 부품 표준단가와 공급사 견적 (가격 · 고장률 · 납기 · 승인 공급사 여부 avl)."""
+    """SCM 공급사 원천표: 표준단가와 공급사 원천 행에 직접 등록된 단일 부품의 견적을 읽습니다.
+
+    원천표의 part_no가 요청 부품과 같은 행만 반환합니다. 이 목록 0건은 다른 원천의 부품별 견적·승인 공급사가
+    없다는 뜻이 아닙니다. 현재 구매 대상의 가격·불량률·납기·승인 여부(avl)는 part_quotes로 읽어 대조하세요.
+    """
     return guarded(tools.read)("scm_suppliers", part=part)
 
 
@@ -99,7 +103,11 @@ def spare_stock(part: Annotated[str | None, Field(description="부품 번호 (�
 
 @mcp.tool(annotations=READ)
 def part_quotes(part: Annotated[str, Field(description="부품 번호 (예: P-PMP-SEAL 펌프 축 씰 키트)")] = "P-PMP-SEAL") -> dict:
-    """SCM: 부품별 공급사 견적 — 단가(만원) · 불량률 · 리드타임(일) · 승인 공급사(avl). 발주 금액 = 단가 × 수량."""
+    """SCM 부품별 견적: 해당 부품의 견적 관계와 공급사 원천을 연결해 단가(만원)·불량률·납기(일)·승인 여부(avl)를 읽습니다.
+
+    구매 대상의 실제 공급사 비교에 사용합니다. scm_suppliers는 공급사 원천표에 직접 등록된 부품 범위만 읽으므로
+    그 목록과 부품별 견적의 자료 범위가 다릅니다. 발주 금액 = 단가 × 수량이며 기록이 없는 견적은 만들지 않습니다.
+    """
     return guarded(tools.read)("part_quotes", part=part)
 
 

@@ -1,0 +1,14 @@
+{
+  "layout": {
+    "viewport": 1440,
+    "document": 1440
+  },
+  "targetBox": {
+    "x": 639,
+    "y": 124.609375,
+    "width": 731,
+    "height": 178.078125
+  },
+  "visible_text": "3\n정비 오더 등록 · 공지 메일\n시스템 · 정비 시스템 (CMMS)\n01:48:21\n4분 35초\n다시 수행으로 대체됨\n\n정비 시스템 (CMMS)에 작업지시를 등록하는 중입니다.\n\n엔진 메모\n다음 단계 ▸",
+  "screen": "unmodified actual viewport at native scroll position"
+}

@@ -100,6 +100,8 @@ def candidate_facts(base: dict, skill: dict, forecasts: dict, suppliers: dict) -
     # C2: 구매 카드마다 발주 금액 · 납기 여유(온톨로지 in:po-amount · in:lead-slack-days, 출처 sys:agent = 후보마다 계산) — ERP 필요량 × SCM 견적.
     # 공급사 불량률(in:supplier-fail-rate, 출처 sys:scm)은 그 카드가 고른 공급사의 견적 값이다. 감점은 SOP 번호가 아니라 공급사에 따라간다.
     quote = (base.get("spare_quotes") or {}).get(sup) if sup else None
+    if base.get('purchase_part'):
+        f['supplier_avl'] = quote.get('avl') if quote else None
     qty, need_by = _num(base.get("need_qty")), _num(base.get("need_by_days"))
     f["supplier_fail_rate"] = _num(quote.get("fail_rate")) if quote else None
     if quote and qty is not None:
@@ -190,27 +192,51 @@ def ranking_variables(rules):
             for variable in ranking.validate(rule.get('rankingPolicy'))['inputs'].values()}
 
 
+def compliance_applies(rule, skill):
+    if rule.get('applies') and skill['skillId'] not in rule['applies']:
+        return False
+    physical = {'forecast_ts1', 'forecast_ps1'}
+    if skill.get('scope') == 'purchase' and any(t.get('variable') in physical for t in rule.get('tests') or []):
+        if rule.get('applies'):
+            raise ValueError('구매 SOP 규정에 물리 예측 조건을 연결할 수 없습니다')
+        return False
+    return True
+
+
 def policy_digest(dmn, skill):
     sid = skill['skillId']
-    applicable = [r for r in dmn if r['decision'] == 'dec:rank-actions'
+    cost = skill.get('scope') == 'purchase' and bool(skill.get('purchase_comparison_policy'))
+    applicable = [r for r in dmn if (r['decision'] == 'dec:rank-actions' and not cost)
         or (r['decision'] == 'dec:action-candidates' and sid in (r.get('outputs') or []))
-        or (r['decision'] == 'dec:compliance' and (not r.get('applies') or sid in r['applies']))]
+        or (r['decision'] == 'dec:compliance' and compliance_applies(r,skill))]
     return hashlib.sha256(json.dumps({'skill':skill, 'rules':applicable},
         ensure_ascii=False,sort_keys=True,separators=(',', ':')).encode()).hexdigest()
 
 
-def scoped_skills(pattern: str, skills: dict[str, dict]) -> dict[str, dict]:
+def scoped_skills(pattern: str, skills: dict[str, dict], purchase_part: str | None = None) -> dict[str, dict]:
     """A spare-parts request may only produce purchasing actions, never a plant remedy.
 
     This is an execution-domain boundary, not a new candidate/ranking rule.
     The registered DMN must still select the eligible purchase skills.
     """
+    if any(s.get('kind') == 'reference' or s.get('executable') is False for s in skills.values()):
+        skills = {sid:s for sid,s in skills.items() if s.get('kind') != 'reference' and s.get('executable') is not False}
     if pattern == 'PM_DUE':
-        return {sid: skill for sid, skill in skills.items() if skill.get('relation') == 'PREVENTED_BY'}
+        return {sid: skill for sid, skill in skills.items() if skill.get('scope') != 'purchase' and skill.get('relation') == 'PREVENTED_BY'}
     if pattern != 'SPARE_BELOW_MIN':
+        if any(k.get('scope') == 'purchase' for k in skills.values()):
+            return {sid: skill for sid, skill in skills.items() if skill.get('scope') != 'purchase'}
         return skills
     return {sid: skill for sid, skill in skills.items()
             if skill.get('kind') == 'work_order'
+            and (skill.get('scope') == 'purchase' and skill.get('executable') is True and purchase_part in (skill.get('parts') or [])
+                 and (bool(skill.get('supplier_policy')) or purchase_part in (skill.get('supplierParts') or []))
+                 and (skill.get('approver') or {}).get('id') == 'role:purchasing'
+                 and skill.get('performers') == ['sys:erp'] and bool(skill.get('source_id'))
+                 and bool(skill.get('citation')) and bool(skill.get('steps'))
+                 and all(s.get('source_id') == skill['source_id'] and s.get('citation') and s.get('manual') for s in skill['steps'])
+                 and all(a.get('id') == 'action:purchase-request' and a.get('kind') == 'transaction' for a in skill.get('actions') or [])
+                 if purchase_part is not None else skill.get('scope') != 'purchase')
             and any(a.get('code') == 'PR_CREATE' for a in skill.get('actions') or [])
             and all(a.get('code') == 'PR_CREATE' and a.get('kind') != 'command'
                     for a in skill.get('actions') or [])}
@@ -218,16 +244,21 @@ def scoped_skills(pattern: str, skills: dict[str, dict]) -> dict[str, dict]:
 
 def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecasts: dict[str, dict], tradeoffs: list[dict],
              precedents: list[dict], suppliers: dict[str, dict], forecast_contexts: dict | None = None,
-             measure_weights: dict[str, float] | None = None) -> dict:
+             measure_weights: dict[str, float] | None = None, *, evaluation_mode: str = 'rule_analysis') -> dict:
     """dmn: t3_dmn rows. skills: id -> t2/t3 skill row. forecasts: skill -> {variable -> row}. tradeoffs: t3_tradeoffs rows.
     precedents: t3_precedents rows. suppliers: id -> {avl}. Returns options ranked + recommendation + rule trace.
     measure_weights (B5 What-if 시험 실행만): 성과 지표별 중요도 배수 — BSC 득실의 무게에 곱한다. 없으면 지금과 같다."""
+    if evaluation_mode not in ('rule_analysis', 'execution'):
+        raise ValueError('카드 평가 모드는 규칙 비교 또는 실제 실행 검사여야 합니다')
     tables = _by_decision(dmn)
     trace = []
-    skills = scoped_skills(base_facts.get('pattern'), skills)
+    skills = scoped_skills(base_facts.get('pattern'), skills, base_facts.get('purchase_part'))
     cand_ids: list[str] = []
     selected_by: dict[str, list[dict]] = {}
     for r in tables.get("dec:action-candidates", []):
+        if base_facts.get('purchase_part') and any(sid in skills for sid in r.get('outputs') or []):
+            if not any(t.get('variable') == 'pattern' and t.get('operator') == '==' and t.get('value') == 'SPARE_BELOW_MIN' for t in r.get('tests') or []):
+                raise ValueError('명시 구매 범위의 후보 규칙에는 pattern == SPARE_BELOW_MIN 조건이 필요합니다')
         fired, unknown = rule_fires(r, base_facts)
         trace.append({"decision": "dec:action-candidates", "rule": r["rule"], "when": r.get("when"), "fired": fired, "unknown": unknown})
         if fired and r["effect"] == "SELECT":
@@ -244,10 +275,18 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     options = []
     for sid in cand_ids:
         k = skills[sid]
+        if k.get('supplier_policy'):
+            from hydcommon.skill_scope import resolve_supplier
+            k = resolve_supplier(k, base_facts)
+        economic = None
+        if k.get('scope') == 'purchase' and (k.get('purchase_comparison_policy') is not None or
+                (base_facts.get('purchase_part') and evaluation_mode == 'execution')):
+            from hydcommon.purchase_comparison import compare
+            economic = compare(k, base_facts)
         cf = candidate_facts(base_facts, k, forecasts, suppliers)
         violations, penalties, warnings = [], [], []
         forecast_context = (forecast_contexts or {}).get(sid)
-        if forecast_contexts is not None:
+        if forecast_contexts is not None and economic is None:
             if not forecast_context or forecast_context.get('error'):
                 violations.append({'rule':'forecast:model-unavailable', 'effect':'EXCLUDE',
                     'annotation':'현재 조치 예측을 확인할 수 없습니다: ' + str((forecast_context or {}).get('error', 'missing forecast')),
@@ -257,7 +296,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
                     'annotation':'예측 구간의 PLC 인터록: ' + ', '.join(forecast_context['predicted_interlocks']),
                     'sources':[forecast_context['model_id']]})
         for r in tables.get("dec:compliance", []):
-            if r.get("applies") and sid not in r["applies"]:
+            if not compliance_applies(r, k):
                 continue
             fired, unknown = rule_fires(r, cf)
             trace.append({"decision": "dec:compliance", "rule": r["rule"], "skill": sid, "when": r.get("when"), "fired": fired, "unknown": unknown})
@@ -277,6 +316,9 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             effects = [dict(t, baseWeight=t["weight"], weight=round(t["weight"] * measure_weights.get(t["measure"], 1.0), 6)) for t in effects]
         p = prec_by.get(sid)
         o = {"id": sid, "sopId": k.get("sopId"), "name": k.get("name"), "kind": k.get("kind"), "description": k.get("description"),
+             "source_id": k.get('source_id'), "pattern": base_facts.get('pattern'),
+             "evaluation_mode": evaluation_mode, "execution_checked": evaluation_mode == 'execution',
+             "resolvedSupplier": k.get("resolvedSupplier"), "supplier_policy": k.get("supplier_policy"),
              "relation": k.get("relation"), "approver": k.get("approver"), "actions": k.get("actions") or [], "steps": k.get("steps") or [],
              "forecast": [{"variable": v, "name": x["variableName"], "value": x["value"], "unit": x["unit"], "method": x["method"], "id": x["id"]}
                           for v, x in (forecasts.get(sid) or {}).items()],
@@ -289,18 +331,44 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
                                              "po_amount", "lead_slack_days", "supplier_fail_rate") if k2 in cf}}
         o["production"] = production_effect(o)
         window = option_window(tables.get("dec:compliance", []), sid, k, base_facts.get("windows_by_variable"))
+        if base_facts.get('pattern') == 'PM_DUE' and evaluation_mode == 'execution' and window is None \
+                and any(a.get('code') == 'STOP' and a.get('kind') == 'command' for a in k.get('actions') or []) \
+                and any(a.get('code') == 'WO_CREATE' for a in k.get('actions') or []):
+            window = dict(immediate=True,label='즉시',name='명시 정지 명령 뒤 즉시 정비')
         if window:
             o["window"] = window
-        if forecast_contexts is not None:
+        if base_facts.get('pattern') == 'PM_DUE' and evaluation_mode == 'execution':
+            from hydcommon.maintenance_plan import plan
+            try:
+                o['maintenancePlan'] = plan(k, base_facts, window)
+            except ValueError as exc:
+                if getattr(exc,'diagnostics',None):
+                    o['maintenanceDiagnostics']=exc.diagnostics
+                o['violations'].append(dict(rule='execution:pm-plan',effect='EXCLUDE',annotation=str(exc),sources=[k['source_id']] if k.get('source_id') else []))
+                o['feasible'] = False
+        if forecast_contexts is not None and economic is None:
             o['forecastContext'] = forecast_context
         o['policy_sha256'] = policy_digest(dmn, k)
-        rank_rule, policy = rank_policy(tables.get('dec:rank-actions', []), cf)
-        o['rankingEvidence'] = {'rule':rank_rule['rule'], 'policy':policy, 'policy_sha256':ranking.fingerprint(policy),
+        if economic is None:
+            rank_rule, policy = rank_policy(tables.get('dec:rank-actions', []), cf)
+        else:
+            rank_rule, policy = {'rule':None}, economic['policy']
+        o['rankingEvidence'] = {'rule':rank_rule['rule'], 'policy':policy, 'policy_sha256':(hashlib.sha256(json.dumps(policy,sort_keys=True,ensure_ascii=False).encode()).hexdigest() if economic else ranking.fingerprint(policy)),
             'gains':o['gains'], 'losses':o['losses'],
             'paths':bsc.consent_paths(paths),
             'conditionMode':'명시 조건 TRUE만 확정 반영; FALSE 제외; UNKNOWN의 추가 가능 영향은 순위 정책에 따른 추정'}
-        o.update(score_option(o, base_facts, policy))
+        if economic is not None:
+            o['economicComparison'] = economic
+            o['forecast'] = []
+            o['rankingEvidence'].update(method='source_total_cost', purchase_comparison_policy=economic['policy'],
+                economicComparison=economic, conditionMode='실제 부품 견적의 총비용이 낮은 순서; AVL·납기 규정은 별도 검사')
+            o.update(score=-economic['total_cost'], scoreParts={'purchase_total_cost':-economic['total_cost']})
+        else:
+            o.update(score_option(o, base_facts, policy))
         options.append(o)
+    compared = [o['economicComparison']['policy'] for o in options if o.get('economicComparison')]
+    if compared and (len(compared) != len(options) or any(x != compared[0] for x in compared[1:])):
+        raise ValueError('구매 후보 전체에 동일한 검토 원문 총비용 비교 정책이 필요합니다')
     lvl = lambda o: (o.get("approver") or {}).get("level") or 9
     options.sort(key=lambda o: (not o["feasible"], -o["score"], lvl(o)))
     for i, o in enumerate(options):
@@ -310,6 +378,9 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     if rank_rule is None and options:
         rank_rule = next((r for r in tables.get('dec:rank-actions', []) if r['rule']==options[0]['rankingEvidence']['rule']), None)
     return {"options": options, "recommended": rec["id"] if rec else None, "trace": trace,
+            "evaluation_mode": evaluation_mode, "execution_checked": evaluation_mode == 'execution',
+            "execution_notice": ('규칙 비교·모의 순위입니다. 실제 승인·실행 준비를 검사한 결과가 아닙니다.' if evaluation_mode == 'rule_analysis'
+                                 else '실제 실행 조건 검사 결과입니다. 별도 승인과 실행이 필요합니다.'),
             "rankRule": dict(_cite(rank_rule), rankingPolicy=ranking.validate(rank_rule['rankingPolicy'])) if rank_rule else None,
             "explanation": explain(options, rec, base_facts,
                                    [t["rule"] for t in trace if t["decision"] == "dec:action-candidates" and t["fired"]])}
@@ -320,17 +391,21 @@ def _names(xs: list[dict], n: int = 3) -> str:
 
 
 def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str] | None = None) -> str:
+    subject = facts.get('purchase_part_name') or facts.get('purchase_part_no') if facts.get('purchase_part') else facts.get('failure_mode_name') or facts.get('failure_mode')
     if not options:
         if fired:
             # B7: the rule matched but outputs no skill yet (e.g. rule:cand-oil before the oil manual is ingested)
             return (f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 선택 규칙 {', '.join(fired)} 은(는) 맞았지만 "
                     "내놓는 조치(SOP)가 없다. 이 고장 유형의 조치는 아직 지식에 없다 (매뉴얼을 적재해 조치를 고장 유형에 연결하면 후보가 된다).")
         return "이 고장 유형에 맞는 조치 후보가 없다 (후보 선택 규칙이 맞지 않음)."
-    head = f"{facts.get('failure_mode_name') or facts.get('failure_mode')} — 후보 {len(options)}장"
+    head = f"{subject} — 후보 {len(options)}장"
     if not rec:
         return head + " 모두 규정상 제외됐다: " + "; ".join(f"{o['sopId']} {o['name']} ({o['violations'][0]['annotation']})" for o in options)
     fc = next((x for x in rec["forecast"] if x["variable"] == "sv:ts1"), None)
     parts = [f"{head} 중 '{rec['sopId']} {rec['name']}'을(를) 권한다 (점수 {rec['score']})."]
+    if rec.get('economicComparison'):
+        e=rec['economicComparison']
+        parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")
     if fc:
         parts.append(f"예측 유온 {fc['value']} {fc['unit']}.")
     if rec["gains"]:

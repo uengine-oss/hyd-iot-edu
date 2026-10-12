@@ -158,6 +158,13 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                 # A086: the hours are computed from the MES due date at read time; the due date itself is the business record
                 row.update(value=facts[var], how="MES 생산오더 납기까지 남은 시간 (납기 일시 기준, 조회 시각에 계산)",
                            anchor=(mes.get("facts") or {}).get("due_at"), **source_time(mes, asset))
+            elif src == 'sys:mes' and var == 'production_running':
+                mes = mcp_ent.fetch('/mes/orders?asset={asset}', asset)
+                rows = mes.get('records')
+                if not isinstance(rows,list) or any(not isinstance(r,dict) or not isinstance(r.get('status'),str) for r in rows):
+                    raise ValueError('MES 생산 오더의 실제 상태 목록을 확인할 수 없습니다')
+                facts[var] = any(r.get('asset') == asset and r['status'] == 'RUNNING' for r in rows)
+                row.update(value=facts[var],how='MES 현재 설비 생산 오더의 실제 RUNNING 상태',**source_time(mes,asset))
             elif src == "sys:erp" and var in ("order_penalty_per_h", "order_customer_tier"):
                 # 회의 L385~404: 납기 상충은 설비 상태만이 아니라 계약(지연 보상 · 고객 등급)을 같이 봐야 판단된다
                 if erp is None:
@@ -183,12 +190,17 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                 if pm is None:
                     pm = mcp_ent.fetch('/cmms/pm_status?asset={asset}', asset)
                     facts.setdefault("windows_by_variable", pm_windows(pm.get('facts') or {}))
+                    pmfacts = pm.get('facts') or {}
+                    facts.update(existing_pm_order=pmfacts.get('existing_pm_order'),
+                                 pm_planned_wo=pmfacts.get('pm_planned_wo'),pm_cycle=pmfacts.get('pm_cycle'),
+                                 pm_limit_hours=(pmfacts.get('pm_interval_h') * (1 + pmfacts.get('pm_tolerance_pct') / 100)
+                                     if type(pmfacts.get('pm_interval_h')) in (int,float) and type(pmfacts.get('pm_tolerance_pct')) in (int,float) else None))
                 facts[var] = (pm.get('facts') or {}).get(var)
                 row.update(value=facts[var], how='CMMS 정기 정비 계획 · 운전시간 계수기 (예정된 정비 시간까지의 운전시간 · 인원 · 정비 키트 재고)',
                            **source_time(pm, asset))
             elif src == "sys:erp" and var in ERP_SPARE_FACTS:
                 if spare is None:
-                    spare = spare_facts(asset)
+                    spare = spare_facts(asset, known['purchase_part_no']) if known.get('purchase_part_no') else spare_facts(asset)
                     facts.update({k: spare.get(k) for k in ("spare_part_no", "spare_quotes", "need_qty", "need_by_days") if k not in facts})
                 facts[var] = spare.get(var)
                 row.update(value=facts[var], how=f"ERP 예비품 재고 {spare.get('spare_part_no')} (가용 = 실물 − 예약 + 입고 예정, 재주문점 · 목표 · 필요일)",
@@ -216,24 +228,42 @@ def pm_windows(row: dict) -> dict:
     return out
 
 
-def spare_facts(asset: str) -> dict:
+def pm_context(asset):
+    """Actual all-asset counters and all-part availability; no master values inferred."""
+    response=mcp_ent.fetch('/cmms/pm_status',asset)
+    stock=mcp_ent.fetch('/erp/spare_stock',asset)
+    rows=response.get('records');parts=stock.get('records')
+    if not isinstance(rows,list) or not isinstance(parts,list):
+        raise ValueError('실제 CMMS 전체 설비 상태와 ERP 전체 재고 응답이 없습니다')
+    return dict(asset=asset,records=rows,parts=parts,source='CMMS/ERP',
+                observed_at=_now(),source_as_of=response.get('as_of'))
+
+
+def spare_facts(asset: str, part_no: str | None = None) -> dict:
     """C 판단의 재고 사실: 재주문점 아래인 중요 예비품(여럿이면 차이가 큰 것), 없으면 정기 정비 키트 부품. 그 부품의 공급사 견적도 함께
     (spare_quotes: 공급사 → 단가 · 리드타임 · 불량률 · AVL — 카드마다 발주 금액 · 납기 여유를 계산하는 데 쓴다, cards.candidate_facts)."""
     stock = mcp_ent.fetch('/erp/spare_stock', asset)
     rows = [r for r in stock.get('records') or [] if isinstance(r, dict)]
     below = sorted((r for r in rows if r.get('below_reorder_point')), key=lambda r: r.get('spare_gap') or 0)
-    row = below[0] if below else next((r for r in rows if r.get('part_no') == 'P-PMP-SEAL'), rows[0] if rows else {})
+    if part_no is not None:
+        matches = [r for r in rows if r.get('part_no') == part_no and r.get('below_reorder_point')]
+        if len(matches) != 1:
+            raise ValueError('요청한 구매 부품의 실제 재주문점 이탈 행을 확인할 수 없습니다')
+        row = matches[0]
+    else:
+        row = below[0] if below else next((r for r in rows if r.get('part_no') == 'P-PMP-SEAL'), rows[0] if rows else {})
     part = row.get('part_no')
     quotes = {}
     if part:
         for q in (mcp_ent.fetch(f'/scm/quotes?part={part}', asset).get('records') or []):
-            quotes[q['supplier']] = {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl')}
+            quotes[q['supplier']] = {k: q.get(k) for k in ('price', 'lead_d', 'fail_rate', 'avl', 'name')}
     return {'spare_part_no': part, 'spare_gap': row.get('spare_gap'), 'need_qty': row.get('need_qty'),
             'need_by_days': row.get('need_by_days'), 'spare_quotes': quotes}
 
 
 def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause: dict, origin: dict | None = None,
-           overrides: dict | None = None, do_submit: bool = True, capture: dict | None = None) -> dict:
+           overrides: dict | None = None, do_submit: bool = True, capture: dict | None = None,
+           purchase_part: dict | None = None) -> dict:
     """cause: the top ranked cause of the guide card ({id, name, failureModeId, failureMode}). overrides: facts set by a person
     (portal 'what if' — e.g. plc_mode REMOTE_MANUAL) to watch the DMN rules react. capture: A7 what-if — receives the exact
     inputs cards.evaluate used, so trials re-rank the same snapshot (read-only)."""
@@ -256,6 +286,11 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         inputs = kg.inputs()
         known = {"pattern": pattern, "cause": cause["id"], "failure_mode": cause.get("failureModeId"),
                  "failure_mode_name": cause.get("failureMode")}
+        if purchase_part is not None:
+            if pattern != 'SPARE_BELOW_MIN':
+                raise ValueError('명시 구매 Part 경로는 SPARE_BELOW_MIN에서만 사용합니다')
+            known.update(purchase_part=purchase_part['id'], purchase_part_no=purchase_part['partNo'],
+                         purchase_part_name=purchase_part.get('name'))
         facts, prov = gather_facts(inputs, asset, known, tsdb)
         if overrides:
             facts.update(overrides)
@@ -266,7 +301,12 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
              status="DONE" if not any(p.get("error") for p in prov) else "FAILED")
         cand_ids = sorted({sid for r in dmn if r["decision"] == "dec:action-candidates" for sid in r.get("outputs") or []})
         skills = {r["skillId"]: r for r in kg.skills(cand_ids)}
-        skills = cards.scoped_skills(pattern, skills)
+        skills = cards.scoped_skills(pattern, skills, purchase_part['id'] if purchase_part else None)
+        if pattern == 'PM_DUE':
+            try:
+                facts['pm_context']=pm_context(asset)
+            except Exception as exc:
+                facts['pm_context']=dict(asset=asset,error=str(exc))
         if pattern == 'PM_DUE' and not skills:
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
             raise ValueError('PM_DUE 예방 정비 후보 지식이 없습니다: PREVENTED_BY 스킬과 후보 규칙을 확인하세요. 고장 대응 카드로 대체하지 않습니다')
@@ -274,18 +314,37 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
             raise ValueError('SPARE_BELOW_MIN 구매 후보 지식이 없습니다: PR_CREATE만 수행하는 work_order 스킬과 후보 규칙을 확인하세요. 운전·정비 카드로 대체하지 않습니다')
         if pattern == 'SPARE_BELOW_MIN':
+            if purchase_part is not None and facts.get('spare_part_no') != purchase_part['partNo']:
+                rec['error_code'] = 'BUSINESS_FACTS_MISSING'
+                raise ValueError('요청한 구매 Part와 실제 ERP 부족부품 사실이 다릅니다. 다른 부품의 견적으로 판단하지 않습니다')
             missing = [key for key in ERP_SPARE_FACTS if type(facts.get(key)) not in (int, float)
                        or not math.isfinite(facts[key])]
             if missing or facts['need_qty'] <= 0:
                 rec['error_code'] = 'BUSINESS_FACTS_MISSING'
                 raise ValueError('SPARE_BELOW_MIN 구매 판단의 실제 업무 사실을 확인할 수 없습니다: ' + ', '.join(missing or ['need_qty']))
         cand_ids = [sid for sid in cand_ids if sid in skills]
-        forecasts, forecast_contexts = forecasting.candidates(kg, asset, skills)
-        step('forecast', forecast_contexts, '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
+        forecasts, forecast_contexts = ({}, None) if purchase_part is not None else forecasting.candidates(kg, asset, skills)
+        step('forecast', forecast_contexts, '구매는 물리 예측을 사용하지 않고 검토된 원문 총비용과 실제 부품 견적을 비교한다' if purchase_part is not None else '설비별 명시 모델과 동일 시점 원천으로 조치별 예측; 고정 설계점으로 대체하지 않음')
         tradeoffs = kg.tradeoffs(cand_ids)
         precedents = kg.precedents(cause.get("failureModeId") or "")
         suppliers = kg.suppliers()
-        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, suppliers, forecast_contexts)
+        if purchase_part is not None:
+            for skill in skills.values():
+                if skill.get('supplier_policy'):
+                    from hydcommon.skill_scope import resolve_supplier
+                    resolve_supplier(skill, facts)
+                    continue
+                supplier = skill['actions'][0].get('value')
+                quote = (facts.get('spare_quotes') or {}).get(supplier)
+                if not isinstance(quote, dict) or type(quote.get('avl')) is not bool or any(
+                        type(quote.get(key)) not in (int, float) or not math.isfinite(quote[key])
+                        for key in ('price', 'lead_d', 'fail_rate')):
+                    rec['error_code'] = 'BUSINESS_FACTS_MISSING'
+                    raise ValueError(f'구매 범위 부품의 실제 공급사 견적·AVL을 확인할 수 없습니다: {supplier}')
+                if quote['price'] < 0 or quote['lead_d'] < 0 or not 0 <= quote['fail_rate'] <= 1:
+                    rec['error_code'] = 'BUSINESS_FACTS_MISSING'
+                    raise ValueError(f'실제 공급사 견적의 수치 범위를 확인하세요: {supplier}')
+        result = cards.evaluate(dmn, skills, facts, forecasts, tradeoffs, precedents, suppliers, forecast_contexts, evaluation_mode='execution')
         if pattern == 'SPARE_BELOW_MIN' and not result['options']:
             rec['error_code'] = 'BUSINESS_CANDIDATES_MISSING'
             step('candidates', result['trace'], '현재 업무 사실·원인으로 선택된 구매 후보 없음', status='FAILED')
@@ -325,6 +384,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             payload = {"id": decision_id, "schema": "v2", "scenario": scenario, "asset": asset, "origin": rec["origin"],
                        "recommended": result["recommended"], "explanation": result["explanation"], "options": result["options"],
                        "rankRule": result.get("rankRule"), "roles": roles, "facts": facts,
+                       "evaluation_mode": result['evaluation_mode'], "execution_checked": result['execution_checked'],
                        "provenance": prov, "applicable": True}
             res = submit(payload)
             registry.submitted(rec, decision_id)
@@ -334,6 +394,8 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             rec["status"] = "EVALUATED"
         return rec
     except Exception as e:  # noqa: BLE001
+        if purchase_part is not None and isinstance(e, ValueError) and not rec.get('error_code'):
+            rec['error_code'] = 'PURCHASE_MODEL_INVALID'
         log.exception("decision %s failed", rec["id"])
         step("error", {"error": str(e)}, "실패", status="FAILED")
         rec["status"] = "FAILED"

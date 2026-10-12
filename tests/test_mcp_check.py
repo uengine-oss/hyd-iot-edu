@@ -296,7 +296,10 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
         assert "@mcp.tool\n" not in src, f"{path}: 표시 없는 도구가 있습니다"
         marks.update(dict((name, mark) for mark, name in re.findall(r"@mcp\.tool\(annotations=(READ|WRITE)\)\ndef (\w+)", src)))
     # A11: dmn fabric_query (read) added → 15 + 10; C2: enterprise spare_stock · part_quotes · maintenance_windows · pm_status (read) + dmn business_causes → 16 + 14
-    assert len(marks) == 30 and [n for n, m in marks.items() if m == "WRITE"] == ["submit_decision"]
+    purchase = {n: marks[n] for n in ('purchase_context', 'evaluate_purchase', 'submit_purchase') if n in marks}
+    assert purchase == {'purchase_context': 'READ', 'evaluate_purchase': 'READ', 'submit_purchase': 'WRITE'}
+    original = {n: m for n, m in marks.items() if n not in purchase}
+    assert len(original) == 30 and [n for n, m in original.items() if m == "WRITE"] == ["submit_decision"]
     for name, mark in marks.items():
         ok, _ = mcp_check.read_only_verdict({"name": name, "annotations": {"readOnlyHint": mark == "READ"}})
         assert ok is (mark == "READ"), name

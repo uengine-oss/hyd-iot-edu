@@ -2,6 +2,35 @@
    A122 (docs/handoff/UIUX_PLAN.md §2 명칭표 · §3 공통 컴포넌트 · §5.2 상태): every user-facing phrase comes from UI.terms,
    every status chip from UI.chip(), every form field from UI.field(). Change the wording here and all screens follow. */
 const UI = {
+  toolCallKey(event) {
+    return JSON.stringify([event.proc_inst_id ?? null,event.todo_id ?? null,event.job_id ?? null,event.data?.tool_use_id || event.id]);
+  },
+  evaluationInfo(record, parent) {
+    const owns = value => value && typeof value === 'object' && ['evaluation_mode','execution_checked'].some(k => Object.prototype.hasOwnProperty.call(value,k));
+    const source = owns(record) ? record : owns(parent) ? parent : {};
+    const mode=source.evaluation_mode, checked=source.execution_checked;
+    const parentConflict=owns(record) && owns(parent) && (parent.evaluation_mode!==mode || parent.execution_checked!==checked);
+    const state=parentConflict ? 'unknown' : mode==='execution' && checked===true ? 'execution' : mode==='rule_analysis' && checked===false ? 'analysis' : mode==='structural' && checked===false ? 'structural' : 'unknown';
+    return {state, recorded:owns(source), raw:{evaluation_mode:mode,execution_checked:checked,pattern:source.pattern,execution_notice:source.execution_notice,...(parentConflict ? {parent:{evaluation_mode:parent.evaluation_mode,execution_checked:parent.execution_checked}} : {})}};
+  },
+  executionBlocked(record, parent) {
+    const info=this.evaluationInfo(record,parent);
+    // Historical records retain the server's approval compatibility checks.
+    return info.recorded && info.state!=='execution';
+  },
+  evaluationRawHtml(record, parent) {
+    const info=this.evaluationInfo(record,parent);
+    if(info.state==='execution') return '';
+    const escape=v=>String(v ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return this.fold('평가 범위 원문',`<pre>${escape(JSON.stringify(info.raw,null,2))}</pre>`,{cls:'small'}).replace('<details','<details data-evaluation-raw');
+  },
+  evaluationHtml(record, parent, opt = {}) {
+    const info=this.evaluationInfo(record,parent);
+    if(info.state==='execution') return '';
+    const text=info.state==='analysis' ? '규칙 비교 · 모의 순위 / 실제 승인 · 실행 준비는 확인하지 않음' : info.state==='structural' ? '구조 검사 / 실제 승인 · 실행 준비는 확인하지 않음' : '승인 · 실행 준비 검사 기록 확인 안 됨 · 실행 가능 여부 확인 안 됨';
+    const escape=v=>String(v ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return `<div class="muted" role="status" data-evaluation-notice><p>${escape(text)}</p>${opt.raw===false ? '' : this.evaluationRawHtml(record,parent)}</div>`;
+  },
   skillLabel(k, historical = false) {
     const raw = k.name || k.skill_name || k.skill || '';
     if (k.title && k.title !== raw && /[가-힣]/.test(k.title)) return {label:k.title, note:'', raw};
@@ -10,7 +39,8 @@ const UI = {
   },
   ruleLabel(r) { return this.idText(r.annotation || this.names[r.rule || r.id] || '규칙 표시 이름 미등록'); },
   toolKey(t) {
-    const raw=String(t || ''), alias=/^([^/\s]+)\/([^/\s]+)$/.exec(raw);
+    const raw=String(t || ''); if(raw==='shell')return 'Bash';
+    const alias=/^([^/\s]+)\/([^/\s]+)$/.exec(raw);
     return alias ? `mcp__${alias[1]}__${alias[2]}` : raw;
   },
   standardToolName(t) {
@@ -88,7 +118,8 @@ const UI = {
     'inst.gen': '차', 'inst.askTitle': '에이전트의 질문', 'inst.askWait': '질문을 읽는 중…', 'inst.loadingCards': '조치 후보를 불러오는 중…', 'inst.noForm': '이 단계의 입력 양식을 찾을 수 없습니다',
     'inst.followWo': '함께 발행될 정비 요청', 'inst.source.input': '시작 값', 'inst.source.runtime': '시스템', 'inst.source.none': '출처 없음', 'inst.structured': '구조화된 값', 'inst.noValue': '값 없음',
     'inst.noResult': '아직 결정된 조치가 없습니다', 'inst.noResultSub': '단계가 끝나면 결과가 여기에 나타납니다',
-    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보',
+    'var.asset': '설비', 'var.pattern': '이상 패턴', 'var.cause': '원인', 'var.failure_mode': '고장 유형', 'var.chosen_skill': '고른 조치', 'var.chosen_skill_kind': '조치 종류', 'var.recovered': '회복', 'var.work_order': '정비 요청', 'var.note': '메모', 'var.approved_by': '승인자', 'var.approved_by_name': '승인자 이름', 'var.approved_role': '승인 역할', 'var.alert_id': '경보', 'var.incident':'사건', 'var._deferral':'보류 평가 기록', 'ontology.field.AnomalyPattern.code':'이상 패턴 코드', 'ontology.class.AnomalyPattern':'이상 패턴', 'val.SPARE_BELOW_MIN':'예비품 재고 기준 이탈', 'val.PM_DUE':'정기 정비 도래',
+    'var.package_semantics':'정비 내용의 기록 의미','var.configured_base_package':'등록된 기본 정비 내용','val.base_interval_configuration':'등록된 기본 정비 설정 · 이번 차례 패키지 선택 아님',
     'inst.output': '출력', 'inst.gateway': '분기 판정', 'inst.due': '기한', 'inst.prevTask': '이전 단계', 'inst.inputs': '전달된 값', 'inst.raw': '원문',
     'inst.projectionPending': '반영 대기', 'inst.projectionAll': '사건 · 판단 반영 대기 (전체)', 'inst.projectionNone': '조회하지 못함', 'inst.query': '질의 보기',
     'inst.stepTable.step': '단계', 'inst.stepTable.status': '상태', 'inst.stepTable.who': '누가', 'inst.stepTable.when': '시각', 'inst.stepTable.result': '결과',
@@ -140,6 +171,7 @@ const UI = {
     'tool.mcp__enterprise__cmms_history':'정비 이력 조회', 'tool.mcp__enterprise__spare_stock':'예비품 재고 조회',
     'tool.mcp__enterprise__part_quotes':'공급사 견적 조회', 'tool.mcp__enterprise__scm_suppliers':'공급사 조회',
     'tool.mcp__hyd-dmn__business_causes':'업무 경보 원인 조회',
+    'tool.mcp__hyd-dmn__purchase_context':'구매 부품 근거 조회', 'tool.mcp__hyd-dmn__evaluate_purchase':'구매 후보 비교', 'tool.mcp__hyd-dmn__submit_purchase':'구매 판단 등록 (승인 · 실행 아님)',
     'tool.mcp__codex__list_mcp_resources':'참고 자료 목록 조회', 'tool.mcp__codex__list_mcp_resource_templates':'참고 자료 형식 조회',
     'skill.list': '조치 방법', 'skill.new': '새 조치 방법', 'skill.select': '조치 방법을 선택하세요', 'skill.name': '이름', 'skill.desc': '설명', 'skill.approver': '승인 역할', 'skill.kind': '종류',
     'skill.kind.control': '설비 제어', 'skill.kind.workOrder': '정비 요청', 'skill.rel.remedy': '근본 조치', 'skill.rel.mitigate': '즉시 완화', 'skill.rel.prevent': '예방 조치', 'skill.sop': '절차 번호', 'skill.fm': '대상 고장 유형', 'skill.relation': '관계',
@@ -257,8 +289,23 @@ const UI = {
     if (isError) return { tone: 'fail', label: this.t('trace.failed'), text: '' };
     return { tone: 'ok', label: '', text: '' };
   },
+  pmErrorMessage(raw) {
+    const text=String(raw ?? '').trim();
+    const errors=[
+      ['INVALID: source maintenance requires approval identity','원문 정비 실행의 실제 승인 신원을 확인할 수 없습니다.'],
+      ['INVALID: scheduling requires explicit WO_CREATE plan','명시적인 새 정비 오더 생성 계획이 없어 등록할 수 없습니다.'],
+      ['INVALID: this PM cycle already has a work order','이번 정비 차례에 이미 오더가 있어 중복 등록할 수 없습니다.'],
+      ['INVALID: source scoped work order group missing','원문 정비 범위의 실제 오더 묶음을 확인할 수 없습니다.'],
+      ['INVALID: compensation must identify actual original scope transaction','취소할 실제 원래 정비 범위 거래를 확인할 수 없습니다.'],
+      ['INVALID: scoped order group incomplete','정비 범위의 오더 묶음이 완전하지 않아 전체 처리를 할 수 없습니다.'],
+      ['INVALID: one scoped order advanced; whole cancellation needs review','대상 설비 중 정비 오더가 변경되어 전체 취소를 다시 검토해야 합니다.'],
+      ['INVALID: actual scoped part reservations changed','실제 정비 부품 예약이 변경되어 전체 취소를 다시 검토해야 합니다.'],
+    ];
+    return errors.find(([original])=>text===original || text.endsWith(': '+original))?.[1] || null;
+  },
   logText(raw) {
     const text = String(raw ?? '').trim(); if (!text) return '';
+    const pm=this.pmErrorMessage(text); if(pm) return pm;
     return text.split(/;\s*/).map(s => s.trim()).filter(Boolean).map(seg => {
       for (const [re, fn] of this.logPatterns) { const m = seg.match(re); if (m) return fn(m, this); }
       return this.idText(seg);

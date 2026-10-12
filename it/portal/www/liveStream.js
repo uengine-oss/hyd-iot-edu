@@ -55,7 +55,7 @@
         const started = S.starts[d.tool_use_id], o = UI.outcome(d.output, d.is_error);
         return { title: UI.toolName(d.tool), text: o.text || brief(d.output), dur: started ? fmtMs(new Date(e.timestamp) - started) : '', tone: o.tone };
       }
-      case 'task_working': return { title: d.type === 'text' ? '에이전트 판단' : d.type === 'file_artifact' ? UI.t('trace.file') : UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'),
+      case 'task_working': return { title: ['text','public_text'].includes(d.type) ? '에이전트 판단' : d.type === 'file_artifact' ? UI.t('trace.file') : UI.clean(UI.logText(d.name || '')) || UI.t('stream.working'),
         text: d.type === 'file_artifact' ? UI.baseName(d.path || '') : brief(d.content || d.message || '', 160) };
       case 'task_started': return { title: activityOf(e) || UI.t('step'), text: UI.t('trace.picked') };
       case 'task_completed': return { title: activityOf(e) || UI.t('step'), text: (d.output_keys || []).length ? UI.t('trace.outputs') + ' ' + d.output_keys.map(k => UI.terms['var.' + k] || k).join(', ') : brief(d.text) };
@@ -131,7 +131,8 @@
   function render() {
     const box = document.getElementById('streamList'); if (!box || S.paused) return;
     const merged = r => r.e.event_type === 'tool_usage_started' && r.e.data && S.finished.has(r.e.data.tool_use_id);   // R9: started+finished = one row
-    const rows = S.rows.filter(r => !merged(r)).filter(r => S.filter === 'all' ? true
+    const publicRows = window.hydTrace ? hydTrace.publicNotes(S.rows.map(r=>r.e)).map(e=>({e,fresh:S.rows.some(r=>r.e.id===e.id && r.fresh)})) : S.rows;
+    const rows = publicRows.filter(r => !merged(r)).filter(r => S.filter === 'all' ? true
       : S.filter === 'work' ? (KIND[r.e.event_type] || [''])[0] === 'work'
       : (KIND[r.e.event_type] || [''])[0] === S.filter || (S.filter === 'task' && !KIND[r.e.event_type]));
     if (!rows.length) { box.innerHTML = UI.empty(UI.t('stream.empty'), UI.t('stream.emptySub'), 'compact'); return; }

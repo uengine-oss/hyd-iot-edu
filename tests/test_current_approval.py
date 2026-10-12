@@ -20,7 +20,7 @@ def context(monkeypatch):
     # Isolate policy/rule tests from IO. The dynamic provider has dedicated tests.
     contexts = {sid: predict(snapshot(thermal.UnitState()), [], 900) for sid in state['skills']}
     monkeypatch.setattr(forecasting, 'candidates', lambda *args:(state['forecasts'], contexts))
-    result = cards.evaluate(state['rules'], state['skills'], state['facts'], state['forecasts'], TRADE, [], {}, contexts)
+    result = cards.evaluate(state['rules'], state['skills'], state['facts'], state['forecasts'], TRADE, [], {}, contexts, evaluation_mode='execution')
     d = dict(id='approval-test', asset='HYD-01', facts=deepcopy(state['facts']), options=deepcopy(result['options']))
     def gather(inputs, asset, known, tsdb, strict=False):
         assert strict is True

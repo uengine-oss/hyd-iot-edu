@@ -323,8 +323,9 @@ def gen_prompt(s: dict) -> str:
     out += [f"- {v}" for v in s["conventions"].values()]
     out += ["- 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.",
             "- 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.",
-            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)` (즉시 완화 · 근본 조치 · 예방 조치 = 정기 정비). 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다. 경보(고장) 대응 후보는 MITIGATED_BY · REMEDIED_BY만 따라가고, 정기 정비 도래(PM_DUE) 후보는 PREVENTED_BY 스킬이다.",
-            "- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다.", ""]
+            "- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 기존 고장 조치는 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `Skill-[:ADDRESSES]->Cause`가 있다. 고장 대응 후보는 MITIGATED_BY·REMEDIED_BY, PM_DUE 후보는 PREVENTED_BY다. 명시 scope=purchase 원문 절차만 FM 없이 `System/sys:erp-[:HAS_SKILL]->Skill-[:INVOLVES_PART]->Part`로 범위를 선언한다. executable=false는 참고 보관이며 실행 후보가 아니다. true는 원문·PR_CREATE-only·구매 승인 역할·실제 공급 관계를 검사한다. 고장 조치의 FM 조건은 그대로다.",
+            "- 명시 kind=reference/executable=false는 원문 보관만 한다. FM·승인 미상을 허용하지만 시스템·Action·후보 Rule 연결은 금지한다. 기존 Skill 재참조 원문 Step은 DOCUMENTS로 연결하며 active HAS_STEP를 바꾸지 않는다. 원문 SOP 번호·전체 단계 동일성과 검토한 대상 실행 계약 hash를 확인한다.",
+            "- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다. DOCUMENTS는 별도 원문 출처이며 실행 단계/권한이 아니다.", ""]
     for l in sorted(s["layers"], key=lambda x: (x["order"], x["id"])):
         out += [f"## {l['name']} — {l['standard']}", "", l["description"], ""]
         for c in by_layer.get(l["id"], []):
@@ -337,7 +338,12 @@ def gen_prompt(s: dict) -> str:
             labels = c["name"] + (":" + c["extends"] if c.get("extends") else "")
             out.append(f"- `(:{labels} {{{', '.join(ps)}}})` {c['description']}")
             for req in c.get("requiredRelationships", []):
-                out.append(f"  - 필수: {req['description']} (`{'|'.join(req['type'])}` {req['direction']}, 최소 {req.get('min', 1)})")
+                condition = ''
+                if req.get('whenProperty'):
+                    condition += ' 적용 조건 ' + str(req['whenProperty'])
+                if req.get('unlessProperty'):
+                    condition += ' 제외 조건 ' + str(req['unlessProperty'])
+                out.append(f"  - 필수: {req['description']} (`{'|'.join(req['type'])}` {req['direction']}, 최소 {req.get('min', 1)}){condition}")
         out.append("")
     out += ["## 관계", "", "`!`는 필수 속성이다.", ""]
     for r in s["relationships"]:
@@ -487,7 +493,7 @@ def cmd_gen(_args) -> int:
 
 
 # ------------------------------------------------------------------ database
-SEED_FILES = ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "scenario_structure.cypher", "detector-patterns.cypher")
+SEED_FILES = ("constraints.cypher", "instances.cypher", "knowledge_a098.cypher", "scenario_structure.cypher", "pm_capabilities.cypher", "detector-patterns.cypher")
 EDITIONS = ("structure", "full")
 EDITION_MARK = "// @edition "
 
@@ -622,13 +628,16 @@ def validate(records_nodes, records_rels, s: dict, *, extra_props=(), input_scop
         nid = n["props"].get("id")
         for l in n["labels"]:
             for req in by.get(l, {}).get("requiredRelationships", []):
+                if req.get('whenProperty') and not all(n['props'].get(k) in v for k, v in req['whenProperty'].items()):
+                    continue
                 if any(n["props"].get(k) in v for k, v in req.get("unlessProperty", {}).items()):
                     continue
                 if req["direction"] == "out":
                     cnt = sum(1 for r in records_rels if r["a"] == nid and r["type"] in req["type"])
                 else:
                     cnt = sum(1 for r in records_rels if r["b"] == nid and r["type"] in req["type"]
-                              and (not req.get("fromClass") or req["fromClass"] in r["la"]))
+                              and (not req.get("fromClass") or req["fromClass"] in r["la"])
+                              and (not req.get('fromId') or req['fromId'] == r['a']))
                 if cnt < req.get("min", 1):
                     errs.append(f"node {nid} ({l}): 필수 관계 위반 — {req['description']} ({'/'.join(req['type'])} {cnt}개)")
     errs += integrity(records_nodes, records_rels, input_scope=input_scope)
@@ -644,6 +653,24 @@ def integrity(records_nodes, records_rels, *, input_scope=None) -> list[str]:
     input_scope: check the "every read input has a source or a producer" rule only for these input ids (None = all)."""
     errs = []
     props = {n["props"].get("id"): n["props"] for n in records_nodes}
+    # Source-only is an explicit graph contract, not a universal FM exemption.
+    for node in records_nodes:
+        p = node['props']
+        if 'Skill' not in node['labels'] or p.get('kind') != 'reference':
+            continue
+        sid = p.get('id')
+        if p.get('executable') is not False or not p.get('source_id') or not p.get('citation') or not p.get('_manual_document'):
+            errs.append(f'{sid}: 참고 Skill은 executable=false와 검토한 원문/소유 출처가 필요합니다')
+        bad = [r for r in records_rels if (r['a'] == sid and r['type'] in ('CONSISTS_OF', 'APPROVED_BY', 'ADDRESSES', 'AFFECTS', 'INVOLVES_PART'))
+               or (r['b'] == sid and r['type'] in ('HAS_SKILL', 'OUTPUTS', 'MITIGATED_BY', 'REMEDIED_BY', 'PREVENTED_BY'))]
+        if bad:
+            errs.append(f'{sid}: 참고 Skill에는 실행/후보/승인 관계를 연결할 수 없습니다')
+    # Use the same explicit purchase-domain contract as ingestion/runtime.
+    common_root = str(ROOT / 'common')
+    if common_root not in sys.path:
+        sys.path.insert(0, common_root)
+    from hydcommon.skill_scope import purchase_graph_issues
+    errs += purchase_graph_issues(records_nodes, records_rels)
     # DMN: a rule's TESTS read inputs its decision declares; the readable 'when' states the same thresholds
     table_of_rule = {b: a for a, b, _ in _out(records_rels, "HAS_RULE")}
     decision_of_table = {b: a for a, b, _ in _out(records_rels, "IMPLEMENTED_BY")}

@@ -14,8 +14,9 @@
 - 모든 클래스는 label_ko(한글 이름)를 가진다. 표와 그림은 이 이름을 쓴다.
 - 질문에 나온 말은 먼저 전문 검색 색인으로 노드를 찾는다: `CALL db.index.fulltext.queryNodes('ont_names', $text)`.
 - 상충 관계 질문은 `AFFECTS` 한 번 뒤에 `INFLUENCES*`를 따라 `msr:op-profit`까지 가는 경로를 찾고, 경로의 sign을 곱해 방향을 정한다.
-- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)` (즉시 완화 · 근본 조치 · 예방 조치 = 정기 정비). 근본 조치가 특정 원인에만 맞으면 `(:Skill)-[:ADDRESSES]->(:Cause)`가 있다. 경보(고장) 대응 후보는 MITIGATED_BY · REMEDIED_BY만 따라가고, 정기 정비 도래(PM_DUE) 후보는 PREVENTED_BY 스킬이다.
-- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다.
+- 조치 방법은 Skill이다. 스킬 하나가 SOP 하나이고(sopId, 단계), 기존 고장 조치는 고장 유형에 매칭된다: `(:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill)`. 근본 조치가 특정 원인에만 맞으면 `Skill-[:ADDRESSES]->Cause`가 있다. 고장 대응 후보는 MITIGATED_BY·REMEDIED_BY, PM_DUE 후보는 PREVENTED_BY다. 명시 scope=purchase 원문 절차만 FM 없이 `System/sys:erp-[:HAS_SKILL]->Skill-[:INVOLVES_PART]->Part`로 범위를 선언한다. executable=false는 참고 보관이며 실행 후보가 아니다. true는 원문·PR_CREATE-only·구매 승인 역할·실제 공급 관계를 검사한다. 고장 조치의 FM 조건은 그대로다.
+- 명시 kind=reference/executable=false는 원문 보관만 한다. FM·승인 미상을 허용하지만 시스템·Action·후보 Rule 연결은 금지한다. 기존 Skill 재참조 원문 Step은 DOCUMENTS로 연결하며 active HAS_STEP를 바꾸지 않는다. 원문 SOP 번호·전체 단계 동일성과 검토한 대상 실행 계약 hash를 확인한다.
+- 조치 카드의 출처는 `Rule-[:DERIVED_FROM]->`와 `Skill-[:HAS_STEP]->Step-[:REFERS_TO]->ManualSection` 경로다. DOCUMENTS는 별도 원문 출처이며 실행 단계/권한이 아니다.
 
 ## 가치 계층 (BSC) — BSC (Balanced Scorecard) — 관점 · 전략목표 · 성과지표 · 인과관계
 
@@ -67,15 +68,17 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 
 조치 방법(스킬 = SOP)과, 어떤 규칙으로 후보를 고르고 걸러 내는지. 규칙마다 출처(KnowledgeSource)가 있다.
 
-- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order], _manual_document, citation, source_id})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다.
+- `(:Skill {id!, name!, sopId!, description!, kind![control|work_order|reference], _manual_document, citation, source_id, scope[fault|purchase], executable, supplier_policy[oem|lowest_approved|fastest_quote], purchase_comparison_policy, maintenance_policy})` 조치 방법. 하나의 스킬이 곧 하나의 SOP(표준 작업 절차)다. 절차 번호(sopId)와 단계(Step)를 직접 갖고, 고장 유형(FailureMode)에 즉시 완화 · 근본 조치 · 예방 조치(정기 정비) 중 하나로 매칭된다. 실행할 원자 조치(Action)를 파라미터 값과 함께 묶는다. 에이전트가 사람에게 내미는 조치 가이드 카드 한 장이 스킬 하나다. 명시 scope=purchase 원문 SOP는 FM 대신 Part 업무 범위와 ERP 수행 관계를 갖는다. executable=false는 참고 보관, true는 PR_CREATE 실행 후보의 원문/승인/공급 관계를 검증한다. ?? kind=reference/executable=false? ?? ??? ?? FM??? ??? ???? ?? ????Action??? Rule ??? ????. ?? Skill ???? ?? Step? DOCUMENTS? ???? active HAS_STEP? ???? ???.
   - 필수: SOP 단계가 하나 이상 있어야 한다 (`HAS_STEP` out, 최소 1)
-  - 필수: 고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나) (`MITIGATED_BY|REMEDIED_BY|PREVENTED_BY` in, 최소 1)
+  - 필수: 고장 유형 하나 이상에 매칭되어야 한다(즉시 완화 · 근본 조치 · 예방 조치 중 하나) (`MITIGATED_BY|REMEDIED_BY|PREVENTED_BY` in, 최소 1) 제외 조건 {'scope': ['purchase'], 'kind': ['reference']}
+  - 필수: 구매 SOP는 명시한 Part 업무 범위가 필요하다 (`INVOLVES_PART` out, 최소 1) 적용 조건 {'scope': ['purchase']}
+  - 필수: 구매 SOP는 ERP 업무 시스템에서 수행한다 (`HAS_SKILL` in, 최소 1) 적용 조건 {'scope': ['purchase']}
 - `(:Action {id!, name!, code!, kind![command|transaction], param, min, max})` 더 쪼갤 수 없는 조치. 제어 명령 하나 또는 시스템 트랜잭션 하나.
 - `(:Decision {id!, name!, question!})` 판단 정의. 질문 하나에 답한다. 입력 데이터와 하위 판단을 요구하고, 결정표로 구현되며, 지식 출처의 통제를 받는다.
 - `(:InputData {id!, name!, typeRef!, variable!, source_id, ingest_batch, _ingest_base, _ingest_history, _ingest_batches, _ingest_created, datasource, catalog, schema, table, column, sqlType, assetColumn, derive[hours_from_now], sourceState[OK|MISSING|TYPE_CHANGED|COMMENT_CHANGED], sourceLiveType, sourceLiveComment, sourceBaseComment, sourceCheckedAt, ingested_at})` 판단과 작업 사이를 흐르는 데이터 항목 (DMN InputData = BPMN 데이터 객체 역할). 출처(시스템 · 센서)에서 오거나 앞 작업이 만든다(PRODUCES). REPRESENTS로 온톨로지의 상태 변수나 성과 지표를 가리킨다.
 - `(:DecisionTable {id!, name!, hitPolicy![PRIORITY|COLLECT|UNIQUE]})` 규칙 묶음. hitPolicy가 여러 규칙이 맞을 때 결과를 합치는 방법을 정한다.
 - `(:Rule {id!, order!, when!, effect![SELECT|EXCLUDE|PENALTY|WARN|RANK], penalty, annotation, rankingPolicy})` 결정표의 한 행. 입력 데이터에 대한 임계값 검사(TESTS)가 모두 맞으면 effect를 낸다. 후보 선택 규칙은 스킬을, 원인 판정 규칙은 원인을 출력하고, 규정 규칙은 스킬을 제외(EXCLUDE) · 감점(PENALTY) · 경고(WARN)한다. when은 같은 조건을 사람이 읽게 쓴 문장이다.
-  - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1)
+  - 필수: 임계값 검사(TESTS)가 하나 이상 있어야 한다 (RANK 규칙 제외) (`TESTS` out, 최소 1) 제외 조건 {'effect': ['RANK']}
 - `(:KnowledgeSource {id!, name!, kind![manual|regulation|policy|strategy], ref, _manual_document, document_id, extractor, sha256, source_id})` 판단과 규칙의 권위 있는 출처. 매뉴얼, 사내 규정, 법규, 전략맵.
 
 ## 외부 변수 · 예측 — 변수 · 예측 프레임워크
@@ -140,7 +143,7 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:FailureMode)-[:OCCURS_IN]->(:Component)` N:1. 고장이 일어나는 구성 요소
 - `(:FailureMode)-[:LEADS_TO]->(:FailureMode)` N:M. 고장의 전파
 - `(:Cause)-[:CAUSES]->(:FailureMode)` N:M. 원인이 일으키는 고장 모드
-- `(:Cause)-[:INVOLVES_PART]->(:Part)` N:M. 원인과 관련된 부품
+- `(:Cause|Skill)-[:INVOLVES_PART]->(:Part)` N:M. 원인과 관련된 부품; 명시 purchase Skill의 구매 업무 Part 범위
 - `(:Cause)-[:DISTURBS {sign!}]->(:StateVariable)` N:M. 원인이 움직이는 외란 상태 변수. 여기서 물리 영향(INFLUENCES) 경로가 시작된다
 - `(:Cause)-[:EVIDENCED_BY]->(:Evidence)` 1:N. 원인을 확정하는 증거
 - `(:FailureMode)-[:MITIGATED_BY {_manual_document}]->(:Skill)` N:M. 고장 유형을 즉시 완화하는 조치 방법(스킬 = SOP)
@@ -181,3 +184,4 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:ProcessInstance)-[:ROLE_BOUND {role_name}]->(:Role|System)` N:M. 실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다.
 - `(:ProcessInstance)-[:USES_VERSION]->(:ProcessVersion)` N:1. 이 실행이 사용하는 고정 정의 버전
 - `(:FlowNode)-[:MAPS_TO]->(:FlowNode)` N:1. 버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결
+- `(:Step)-[:DOCUMENTS {_manual_document!}]->(:Skill)` N:1. ??? ??? ? ?? Step? ??? ?? SOP/active ??? ?? Skill? ????. ?? HAS_STEP? ??? ??? active journal?????? hash pin? ????.

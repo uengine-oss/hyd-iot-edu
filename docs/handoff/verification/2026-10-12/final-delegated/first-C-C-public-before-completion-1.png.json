@@ -1,0 +1,77 @@
+{
+  "kind": "public",
+  "identity": {
+    "id": "7a7e8c49-0505-4a18-bbbc-a1eeb2958761",
+    "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+    "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+    "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+    "event_type": "task_working",
+    "timestamp": "2026-10-12T07:34:51.997Z",
+    "type": "public_text",
+    "public_run": "c1be38fc8b1b4ceb9be09b3144e9d9c1",
+    "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:0",
+    "sequence": 1,
+    "complete": false,
+    "truncated": false,
+    "tool_use_id": null
+  },
+  "sse_arrival": "2026-10-12T07:34:52.444366+00:00",
+  "run_started": {
+    "id": "b9024512-2b5a-4f0d-84a1-2187dbb0955a",
+    "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+    "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+    "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+    "event_type": "task_started",
+    "timestamp": "2026-10-12T07:34:30.975Z",
+    "type": null,
+    "public_run": null,
+    "message_id": null,
+    "sequence": null,
+    "complete": null,
+    "truncated": null,
+    "tool_use_id": null
+  },
+  "capture_begin": "2026-10-12T07:34:52.958182+00:00",
+  "capture_end": "2026-10-12T07:34:53.150836+00:00",
+  "png": "C-public-before-completion-1.png",
+  "native_row_text": "16:34:51\n에이전트 판단\n예비품 구매 스킬에 따라 ERP 재고와 견적, 새로 적재된 구매 절차를 다시 조회하고 승인 대기 발주 카드를 등록하겠습니다.\n",
+  "native_row_sha256": "53d337eda5d5df2dc5c9d387131fd7747867d0111634b784f4aa0e0cd8d1b19c",
+  "native_bounds": {
+    "x": 673,
+    "y": 456.84375,
+    "width": 663,
+    "height": 91.09375
+  },
+  "api_before": {
+    "observed_at": "2026-10-12T07:34:52.891218+00:00",
+    "case_status": "RUNNING",
+    "workitem": {
+      "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+      "activity_id": "T_agent",
+      "status": "IN_PROGRESS",
+      "draft_status": "STARTED",
+      "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+      "generation": 0,
+      "start_date": "2026-10-12T01:12:46.422Z",
+      "end_date": null
+    },
+    "completed_events": []
+  },
+  "api_after": {
+    "observed_at": "2026-10-12T07:34:53.622907+00:00",
+    "case_status": "RUNNING",
+    "workitem": {
+      "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+      "activity_id": "T_agent",
+      "status": "IN_PROGRESS",
+      "draft_status": "STARTED",
+      "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+      "generation": 0,
+      "start_date": "2026-10-12T01:12:46.422Z",
+      "end_date": null
+    },
+    "completed_events": []
+  },
+  "completion_seen_at_capture": false,
+  "contains_public_snapshot": true
+}

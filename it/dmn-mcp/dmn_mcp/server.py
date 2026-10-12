@@ -23,7 +23,9 @@ mcp = FastMCP("hyd-dmn", instructions=(
     "조치 판단은 온톨로지 v2 의 DMN 결정표 dec:action-candidates(COLLECT) · dec:compliance(COLLECT) · dec:rank-actions(UNIQUE)를 "
     "실제 사실에 대어 같은 입력이면 같은 결과를 낸다. dec:diagnose-cause 규칙(rule:dx-*)은 진단 근거를 설명하는 지식이며 이 엔진이 평가하지 않는다. "
     "규칙을 임의로 해석하지 말고 이 도구의 결과를 인용하라. "
-    "submit_decision 만 쓰기이며(process /api/decisions), 설비 명령은 어디서도 나가지 않는다. 모든 도구는 {result: ok|error, document} 봉투로 답한다."))
+    "submit_decision·submit_purchase는 판단 카드를 쓰며(process /api/decisions), 설비 명령은 어디서도 나가지 않는다. "
+    "FM 없는 원문 구매 SOP는 실제 ERP 부족부품과 Part 범위를 purchase_context/evaluate_purchase로 확인하고 submit_purchase로 제출한다. "
+    "Cause/FM을 추정하거나 reference 절차를 실행 후보로 만들지 않는다. 모든 도구는 {result: ok|error, document} 봉투로 답한다."))
 tools = DmnTools()
 READ = {"readOnlyHint": True, "destructiveHint": False}       # MCP ToolAnnotations — 포털 도구 써 보기는 readOnlyHint=true 만 부른다 (procsvc/mcp_check.py)
 WRITE = {"readOnlyHint": False, "destructiveHint": False}     # submit_decision: process 에 카드 묶음을 쓴다(설비 명령 아님)
@@ -118,6 +120,26 @@ def business_causes(asset: Asset, pattern: Pattern) -> dict:
     """업무 경보(SPARE_BELOW_MIN 재고 기준 이탈 · PM_DUE 정기 정비 도래)의 원인 후보 — 센서 증상이 없어 diagnose 대신 쓴다. 재고는 재주문점 아래
     부품을 쓰는 원인, 정기 정비는 정비가 막는(PREVENTED_BY) 고장의 원인. 돌려준 top_cause · failure_mode 를 evaluate_cards · submit_decision 에 넘긴다."""
     return enveloped(lambda: tools.business_causes(asset, pattern))()
+
+
+@mcp.tool(annotations=READ)
+def purchase_context(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 재주문점 아래 부품 번호')]) -> dict:
+    """FM 없는 원문 구매 SOP의 명시 Part 범위·참고/실행 절차를 읽는다. Cause/FM을 추정하지 않는다."""
+    return enveloped(lambda: tools.purchase_context(asset, part_no))()
+
+
+@mcp.tool(annotations=READ)
+def evaluate_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')], overrides: Overrides = None) -> dict:
+    """명시 Part 범위의 실행 구매 SOP만 계산한다. 조회/계산이며 ERP 발주·메일 발송을 하지 않는다."""
+    return enveloped(lambda: tools.evaluate_purchase(asset, part_no, overrides))()
+
+
+@mcp.tool(annotations=WRITE)
+def submit_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')],
+                    incident: Annotated[str, Field(description='현재 처리 건 incident id')], alert_id: str | None = None,
+                    process_scope: Annotated[dict | None, Field(description='현재 task.json의 process_scope 원문')] = None) -> dict:
+    """원문 구매 카드의 판단 결과만 process에 제출한다. 실제 ERP/입고 효과는 사람 승인 뒤 시스템이 수행한다."""
+    return enveloped(lambda: tools.submit_purchase(asset, part_no, incident, alert_id, process_scope))()
 
 
 @mcp.tool(annotations=READ)

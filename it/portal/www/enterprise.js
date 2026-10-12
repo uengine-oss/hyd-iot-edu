@@ -318,12 +318,13 @@ function forecastContextHtml(c) {
     <p class="muted">${Object.entries(inputLabels).map(([k, label]) => `${label} ${esc(c.inputs?.[k] ?? '미확인')}`).join(' · ')}</p>`;
 }
 function cardHtml(o, opt = {}) {
+  const evaluation=UI.evaluationInfo(o,opt.decision), blocked=UI.executionBlocked(o,opt.decision);
   const hasCmd = (o.actions || []).some(a => a.kind === 'command'), hasTx = (o.actions || []).some(a => a.kind !== 'command');
   const uncond = x => !x.conditional, cond = x => x.conditional;
   const sp = o.scoreParts || {};
   const scoreLabels = { bsc: UI.t('score.bsc'), forecast: UI.t('score.forecast'), warn: UI.t('score.warn'), penalty: UI.t('score.penalty'), precedent: UI.t('score.precedent'), delivery: UI.t('score.delivery'), quality: UI.t('score.quality') };
   const ranking = o.rankingEvidence;
-  const chips = [o.id === opt.rec ? UI.chipText(UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
+  const chips = [o.id === opt.rec ? UI.chipText(evaluation.state==='analysis' ? '모의 1순위' : UI.t('chip.recommended'), 'accent') : '', hasCmd ? UI.chipText(UI.t('chip.control'), 'neutral') : '', hasTx ? UI.chipText(UI.t('chip.workOrder'), 'warning') : '',
     o.id === opt.chosen ? UI.chipText(UI.t('chip.chosen'), 'success') : '', o.feasible ? '' : UI.chipText(UI.t('chip.excluded'), 'danger')].join('');
   const line = [headValue(o, opt.decision), `${esc(UI.t('card.approver'))} <b>${esc((o.approver || {}).name || '–')}</b>`, o.precedent && o.precedent.n ? `${esc(UI.t('card.precedent'))} <b>${o.precedent.n}건 (${Math.round(o.precedent.share * 100)} %)</b> <span class="muted">${esc(UI.t('card.precedentFixed'))}</span>` : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
   // A141: 성과 지표 칩 묶음 · 감점/경고 칩 · 절차 번호는 근거 접기 안으로 (화면에는 행동 근거인 점수 · 예상 유온 · 승인 역할 · 제외 사유만)
@@ -349,13 +350,16 @@ function cardHtml(o, opt = {}) {
       ${o.description ? `<span class="hsub">${esc(UI.idText(o.description))}</span>` : ''}
       <span class="hbar"><i style="width:${Math.min(100, Math.round(Math.abs(o.score || 0) / (opt.maxAbs || 1) * 100))}%" class="${(o.score || 0) >= 0 ? 'pos' : 'neg'}"></i><b class="num">${esc(UI.t('card.score'))} ${signNum(o.score || 0)}</b></span>
       <span class="hline">${line}</span>
+      ${UI.evaluationHtml(o,opt.decision)}
+      ${window.hydWords?.purchaseContextHtml(o,opt.decision) || ''}
+      ${window.hydWords?.maintenanceHtml(o) || ''}
       ${(o.violations || []).length ? `<span class="hmeta">${ruleChip(o.violations[0], 'hard', UI.t('chip.excluded'))}${o.violations.length > 1 ? `<span class="muted">+${o.violations.length - 1}</span>` : ''}</span>` : ''}
       ${o.money && window.hydWhatif ? hydWhatif.moneyFold(o.money) : ''}
       ${UI.fold(esc(UI.t('card.evidence')), ((o.violations || []).length > 1 ? `<p><b>${esc(UI.t('fold.violations'))}</b> <span class="hmeta">${o.violations.map(v => ruleChip(v, 'hard', UI.t('chip.excluded'))).join('')}</span></p>` : '') + evidence, { cls: 'small' })}
     </span>`;
   if (!opt.selectable) return `<div class="hopt ${o.feasible ? '' : 'out'} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">${'<span></span>' + head}</div>`;
   return `<label class="hopt ${o.feasible ? '' : 'out'} ${opt.selected ? 'sel' : ''} ${o.id === opt.rec ? 'rec' : ''} ${o.id === opt.chosen ? 'chosen' : ''}">
-    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${(o.feasible || opt.reviewable) && opt.pending ? '' : 'disabled'}>${head}</label>`;
+    <input type="radio" name="${opt.name || 'hopt'}" value="${esc(o.id)}" ${opt.selected ? 'checked' : ''} ${(o.feasible || opt.reviewable) && opt.pending && !blocked ? '' : 'disabled'}>${head}</label>`;
 }
 function reviewMatches(review, decision, option, parameters, scope = {}) {
   const saved = review?.snapshot?.options?.[0]?.reviewed_choice?.parameters;
@@ -416,7 +420,7 @@ function renderDecision() {
   const maxAbs = Math.max(1, ...opts.map(o => Math.abs(o.score || 0)));
   // A141: 판단 시각 · id 는 상세 정보 접기로
   let html = `<div class="detail-head" style="margin-top:var(--s6)"><div class="row"><h2>${esc(UI.idText((d.scenario || {}).name || ''))}</h2>${UI.chip(d.status)}</div><div class="sub">${esc(d.asset || '')}</div></div>`;
-  html += summaryBlock(r.explanation);
+  html += UI.evaluationHtml(r,d) + summaryBlock(r.explanation);
   if (d.moneyError) html += `<p class="neg" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>`;
   html += UI.metaFold([[UI.t('inst.stepTable.when'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]]);
   // 원인: 1위 큰 글씨 + 고장 유형 칩 + 증거, 2위 이하 접기 (C2)
@@ -428,7 +432,7 @@ function renderDecision() {
     html += `<h2 class="sec">${esc(UI.t('dec.cause'))}</h2>` + UI.card({ title: esc(UI.idText(top.name)), chips: UI.chipText(UI.t('dec.causeTop'), 'accent') + (top.failureMode ? UI.chipText(UI.idText(top.failureMode), 'neutral') : ''), value: `<span class="kv">${esc(UI.t('card.score'))} ${esc(top.score)}</span>`, body: evidenceHtml(top) +
       (causes.length > 1 ? UI.fold(`${esc(UI.t('dec.causeMore'))} ${causes.length - 1}`, causes.slice(1).map(c => `<div style="margin-bottom:var(--s2)"><b>${esc(UI.idText(c.name))}</b> · ${esc(UI.t('card.score'))} ${esc(c.score)}${c.failureMode ? ' · ' + esc(UI.idText(c.failureMode)) : ''}${evidenceHtml(c)}</div>`).join(''), { cls: 'small' }) : '') });
   }
-  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { options: opts, facts: d.facts } })).join('') + '</div>';
+  html += `<h2 class="sec">${esc(UI.t('dec.candidates'))} <small>${opts.length}</small></h2><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: r.recommended, maxAbs, decision: { ...r, facts: d.facts, origin:d.origin } })).join('') + '</div>';
   html += '<div class="stack-list" style="margin-top:var(--s4)">';
   if (r.rankRule) html += UI.fold(esc(UI.t('card.scoreHow')), `<p style="margin:0">${esc(r.rankRule.annotation || '')}</p>`);
   // 적용한 규칙 (D5: folded; F2: fired rows first, rule id and condition inside the row)
@@ -507,13 +511,13 @@ function renderDecisionApproval() {
   const sc = d.scenario || {};
   // A141: 제출 시각 · id · 사건 정보(설비 · 고장 유형 · 원인)는 접기로. 화면에는 제목 · 상태 · 한 줄 요약 · 선택 카드 · 사유 · 승인 버튼만
   let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''}</div></div>`;
-  html += summaryBlock(d.explanation);
+  html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
   if (pending) {
     html += `<div class="form">` +
       UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt', decision: d })).join('')}</div>`) +
       whoFields('dec', ent.form, roles) +
-      UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove">${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';
+      UI.actions(`<button class="btn outline" id="decReject">${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="decApprove" ${UI.executionBlocked(opts.find(o=>o.id===ent.form.option),d) ? 'disabled' : ''}>${esc(UI.t('btn.approve'))}</button>`, ent.form.msg || '') + '</div>';
   } else {
     html += `<h3 style="font-size:14px;margin:var(--s4) 0 var(--s2)">${esc(UI.t('decisions'))}</h3><div class="hitl-opts">` + opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('') + '</div>';
   }

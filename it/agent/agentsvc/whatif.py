@@ -472,7 +472,7 @@ def rerank(bundle: dict, trial: dict | None = None, policy: dict | None = None) 
             facts[fact] = x
     dmn = apply_policy(bundle['dmn'], policy or {})
     return cards.evaluate(dmn, bundle['skills'], facts, bundle['forecasts'], bundle['tradeoffs'], bundle['precedents'],
-                          bundle['suppliers'], bundle.get('forecast_contexts'), measure_weights=measure_weights(bundle, policy))
+                          bundle['suppliers'], bundle.get('forecast_contexts'), measure_weights=measure_weights(bundle, policy), evaluation_mode='rule_analysis')
 
 
 def money_order(options: list[dict], money: dict[str, dict]) -> list[str]:
@@ -488,12 +488,14 @@ def evaluate(bundle: dict, mf: dict, trial: dict | None = None, policy: dict | N
     cards_out = []
     for o in res['options']:
         cards_out.append({'id': o['id'], 'name': o.get('name'), 'sopId': o.get('sopId'), 'kind': o.get('kind'), 'relation': o.get('relation'),
+                          'evaluation_mode':o['evaluation_mode'], 'execution_checked':o['execution_checked'],
                           'feasible': o['feasible'], 'excluded': [v.get('annotation') for v in o.get('violations') or []],
                           'decisionRank': o['rank'] if o['feasible'] else None, 'score': o['score'], 'scoreParts': o['scoreParts'],
                           'production': o.get('production'), 'moneyRank': order.index(o['id']) + 1 if o['id'] in order else None,
                           'money': money[o['id']], 'paths': [p.get('nodes') for p in o.get('tradeoffEvaluation') or [] if p.get('nodes')],
                           'bscByPerspective': bsc_by_perspective(o, bundle)})
     return {'cards': cards_out, 'top': {'decision': res['recommended'], 'money': order[0] if order else None},
+            **{key:res[key] for key in ('evaluation_mode','execution_checked','execution_notice')},
             'explanation': res['explanation']}
 
 

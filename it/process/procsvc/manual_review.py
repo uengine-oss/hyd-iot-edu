@@ -10,7 +10,7 @@ import json
 import re
 from uuid import uuid4, UUID
 
-from . import kgadmin, manual_knowledge
+from . import kgadmin, manual_knowledge, manual_references
 
 STEP_RE = re.compile(r'^\s*(\d+)[.)]\s+(.+?)\s*$')
 
@@ -116,6 +116,8 @@ def validate(archive, tenant, body):
     """Validate the entire proposal before opening any graph write transaction."""
     if body.get('reviewed') is not True or not isinstance(body.get('by'), str) or not body['by'].strip():
         raise ValueError('원문과 추출 내용을 검토한 담당자와 reviewed=true가 필요합니다')
+    if body.get('review_method') is not None and body['review_method'] not in ('human-reviewed', 'user-delegated-ai-review'):
+        raise ValueError('검토 수행 방식(review_method)이 지원 계약과 다릅니다')
     source = archive.get(tenant, body.get('source_id'))
     if source['status'] != 'READY':
         raise ValueError('텍스트가 없는 페이지를 먼저 검토/OCR해야 합니다. 부분 문서를 적재하지 않습니다')
@@ -180,6 +182,17 @@ def validate(archive, tenant, body):
         link = links.get(sop) or {}
         if not isinstance(link, dict):
             raise ValueError('SOP 연결은 객체여야 합니다')
+        if link.get('kind') == 'reference':
+            fields = manual_references.reference_shape(sop, link)
+            binding = manual_references.binding_shape(p, link)
+            if any(step['text'] not in step['anchor']['quote'] for step in values):
+                raise ValueError(f'{sop}: 참고 단계 내용은 검증한 원문 인용에 그대로 있어야 합니다')
+            checked_procedures.append(dict(id=sop, name=kgadmin.validate_skill(dict(name=p.get('name')))['name'],
+                section=p['section'], anchor=anchor(p.get('anchor')), steps=values, affects=[],
+                **fields, **binding))
+            continue
+        if p.get('existing_skill_id') or link.get('existing_skill_id') or p.get('reference_contract_sha256') or link.get('reference_contract_sha256'):
+            raise ValueError(f'{sop}: 기존 Skill 재참조는 명시 reference 분기에서만 가능합니다')
         affects = validate_affects(sop, link.get('affects'))
         extra = manual_knowledge.validate_link(sop, {k: link.get(k) for k in ('actions', 'addresses')},
                                                sops=sop_ids, require_failure_mode=False)   # C1: CONSISTS_OF · ADDRESSES
@@ -187,10 +200,20 @@ def validate(archive, tenant, body):
         fields = kgadmin.validate_skill(dict(name=p.get('name'), sopId=sop,
                     steps=[s['text'] for s in values], failureMode=link.get('failureMode'),
                     relation=link.get('relation'), kind=link.get('kind'),
-                    approver=link.get('approver') or 'role:maint-mgr'), create=True)
+                    approver=link.get('approver'),
+                    **{k: link.get(k) for k in ('scope', 'executable', 'parts', 'supplier_policy', 'maintenance_policy', 'purchase_comparison_policy', 'actions', 'addresses')}), create=True, source_backed=True)
+        if fields.get('purchase_comparison_policy'):
+            fields['purchase_comparison_policy']['anchor']=anchor(fields['purchase_comparison_policy']['anchor'])
+        if fields.get('maintenance_policy'):
+            policy=fields['maintenance_policy']
+            policy['anchor']=anchor(policy['anchor'])
+            policy['model_anchor']=anchor(policy['model_anchor'])
+            if any(package['sop'] not in sop_ids for package in policy['packages']):
+                raise ValueError('원문 정비 패키지의 실제 SOP가 같은 제안에 없습니다')
         checked_procedures.append(dict(id=sop, name=fields['name'], section=p['section'],
                  anchor=anchor(p.get('anchor')), steps=values, failureMode=fields['failureMode'],
-                 relation=fields['relation'], kind=fields['kind'], approver=fields['approver'], affects=affects,
+                 relation=fields['relation'], kind=fields['kind'], approver=fields.get('approver'), affects=affects,
+                 **{k: fields[k] for k in ('scope', 'executable', 'parts', 'supplier_policy', 'maintenance_policy', 'purchase_comparison_policy') if k in fields},
                  **{k: extra[k] for k in ('actions', 'addresses') if extra.get(k)}))
     # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙). Existence in the graph is checked at commit.
     knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor)
@@ -199,5 +222,6 @@ def validate(archive, tenant, body):
                 sha256=source['sha256'], filename=source['filename'], extractor=source['extractor'],
                 previous_batch=body.get('previous_batch'), by=str(body['by']).strip(),
                 method=str(body.get('method') or 'human-reviewed'),
+                **({'review_method': body['review_method']} if body.get('review_method') else {}),
                 sections=list(checked_sections.values()), procedures=checked_procedures,
                 **({'knowledge': knowledge} if knowledge and any(knowledge.values()) else {}))

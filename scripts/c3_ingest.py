@@ -1,7 +1,8 @@
-"""C3 조립: 수업 문서 A(HM-8) → B(PM-02) → C(PR-07)를 실제 워커(LLM)로 추출하고, 사람이 남긴 검토 기록을 적용해 그래프에 적재한다.
+"""C3 조립: 수업 문서 A(HM-8) → B(PM-02) → C(PR-07)를 실제 워커(LLM)로 추출하고, 명시 검토 기록을 적용해 그래프에 적재한다.
 포털 지식 관리 화면과 같은 API · 같은 적재 본문({...미리보기, links, knowledge, by, reviewed: true})을 쓴다.
 
-검토 없이는 적재하지 않는다(실라버스 OL7 "사람이 확인한 것만 지식에 잇는다"). 2026-10-10 전에는 이 스크립트가 제안을 손대지 않고
+검토 없이는 적재하지 않는다(실라버스 OL7 "사람이 확인한 것만 지식에 잇는다"). 사용자가 Codex에 검토를 명시 위임한 경우
+검토 방식과 신원을 별도로 기록하며, 사람이 직접 검토했다고 표시하지 않는다. 2026-10-10 전에는 이 스크립트가 제안을 손대지 않고
 reviewed=true · 지어낸 검토자 이름으로 적재했고, 라이브 4차 C 판단은 그 검토되지 않은 지식(SOP-PUR-13 → A정밀 오연결)으로 돌았다.
 
   1) 추출만  .venv/bin/python scripts/c3_ingest.py extract PR-07 [HM-8 PM-02] [--reuse]
@@ -11,16 +12,17 @@ reviewed=true · 지어낸 검토자 이름으로 적재했고, 라이브 4차 C
   2) 적재    .venv/bin/python scripts/c3_ingest.py commit PR-07 --review <검토 기록.json>
              → .evidence/a161-c3/ingest-<문서>.json (영수증 · 적용한 검토 변경 · 원문 좌표)
 
-검토 기록(문서 하나에 파일 하나, 사람이 proposal-<문서>.json 을 원문과 대조한 뒤 쓴다):
-  {"doc": "PR-07", "by": "검토한 사람", "extraction": "<proposal 의 extraction.instance>", "warnings_read": true,
+검토 기록(문서 하나에 파일 하나, proposal-<문서>.json 을 원문과 대조한 뒤 실제 검토 방식·신원으로 쓴다):
+  {"doc": "PR-07", "by": "실제 검토 신원", "extraction": "<proposal 의 extraction.instance>", "warnings_read": true,
    "links": {"SOP-…": {"set": {"actions": [...]}, "reason": "왜 고치나", "quote": "근거 원문 문장"}},
    "drop":  {"rule:…": {"reason": "…", "quote": "…"}},
    "add":   {"rules": [{…지식 항목 (anchor 대신 quote)…, "reason": "…"}]}}
-고칠 것이 없으면 links · drop · add 를 빼고 warnings_read 만 true 로 둔다(그대로 승인도 사람의 결정으로 남긴다).
+고칠 것이 없으면 links · drop · add 를 빼고 warnings_read 만 true 로 둔다(그대로 검토한 결정도 기록한다).
 """
 from __future__ import annotations
 
 import base64
+from copy import deepcopy
 import json
 import os
 import sys
@@ -34,7 +36,8 @@ API = os.environ.get("PROCESS_URL", "http://127.0.0.1:8080")
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / ".evidence" / "a161-c3"
 DOCS = {"HM-8": "HM-8_cooler-fan-manual.md", "PM-02": "PM-02_powerpack-pm-checklist.md", "PR-07": "PR-07_spare-parts-standard.md"}
-LINK_FIELDS = ("failureMode", "relation", "kind", "approver", "actions", "addresses", "affects")
+LINK_FIELDS = ("failureMode", "relation", "kind", "approver", "actions", "addresses", "affects", "scope", "executable", "parts", "supplier_policy", "maintenance_policy", "purchase_comparison_policy")
+PROCEDURE_FIELDS = ('steps', 'existing_skill_id', 'reference_contract_sha256')
 KNOWLEDGE_KINDS = ("failure_modes", "causes", "evidence", "rules")
 EXTRACTION_TIMEOUT_S = 1800
 
@@ -71,6 +74,19 @@ def _reason(change: dict, where: str) -> str:
     return reason.strip()
 
 
+def _checked_coordinates(source, value, where):
+    """An existing repeated sentence needs its exact verified source coordinates."""
+    if not isinstance(value, dict) or value.get('source_id') != source['source_id']:
+        raise ReviewError(f'{where}: 원문 좌표의 자료가 다릅니다')
+    page, start, end = (value.get(k) for k in ('page', 'start', 'end'))
+    if any(type(v) is not int for v in (page, start, end)) or not 1 <= page <= len(source['pages']):
+        raise ReviewError(f'{where}: 원문 페이지와 문자 좌표가 필요합니다')
+    text = source['pages'][page - 1]['text']
+    if not 0 <= start < end <= len(text) or text[start:end] != value.get('quote'):
+        raise ReviewError(f'{where}: 원문 좌표와 인용문이 일치하지 않습니다')
+    return dict(source_id=source['source_id'], page=page, start=start, end=end, quote=value['quote'])
+
+
 def apply_review(key: str, preview: dict, source: dict, review: dict) -> tuple[dict, list[dict]]:
     """사람의 검토 기록을 추출 제안에 적용해 적재 본문을 만든다. 순수 함수 — 네트워크 없음.
     반환: (적재 본문, 적용한 변경 목록[무엇 · 사유 · 원문 좌표]). 맞지 않는 기록은 ReviewError(좌표 포함)로 거부한다."""
@@ -84,9 +100,38 @@ def apply_review(key: str, preview: dict, source: dict, review: dict) -> tuple[d
         raise ReviewError(f"{key}: 검토 기록의 추출 {review.get('extraction')!r} 과 제안의 추출 {instance!r} 이 다릅니다 — 다른 제안을 검토했습니다")
     if review.get("warnings_read") is not True:
         raise ReviewError(f"{key}: 추출 경고 {len(preview.get('warnings') or [])}개를 읽었다는 표시(warnings_read: true)가 필요합니다")
-    links = {p["id"]: dict(p["link"]) for p in preview["procedures"] if p.get("link")}
+    procedures = deepcopy(preview['procedures'])
+    own_links = preview.get('links') or {}
+    links = {p['id']: deepcopy(own_links[p['id']] if p['id'] in own_links else p.get('link') or {}) for p in procedures}
     knowledge = {k: [dict(x) for x in (preview.get("knowledge") or {}).get(k) or []] for k in KNOWLEDGE_KINDS}
     changes = []
+    for sop, change in (review.get('procedures') or {}).items():
+        where = f'{key} {sop} 원문 절차 검토'
+        procedure = next((p for p in procedures if p['id'] == sop), None)
+        fields = change.get('set') if isinstance(change, dict) else None
+        if procedure is None or not isinstance(fields, dict) or not fields or set(fields) - set(PROCEDURE_FIELDS):
+            raise ReviewError(f'{where}: 제안에 있는 절차와 허용 검토 필드({PROCEDURE_FIELDS})가 필요합니다')
+        reason, at = _reason(change, where), anchor(source, change.get('quote'), where)
+        checked = deepcopy(fields)
+        if 'steps' in checked:
+            steps = checked['steps']
+            if not isinstance(steps, list) or not steps:
+                raise ReviewError(f'{where}: 원문 단계 목록이 필요합니다')
+            checked_steps = []
+            for order, step in enumerate(steps, 1):
+                if (not isinstance(step, dict) or step.get('order') != order or type(step.get('order')) is not int
+                        or step.get('text') != step.get('quote') or not isinstance(step.get('manual'), str)):
+                    raise ReviewError(f'{where}: 연속 번호·정확한 원문 텍스트·절 식별자가 필요합니다')
+                original = next((s for s in procedure['steps'] if s.get('order') == order
+                                 and (s.get('anchor') or {}).get('quote') == step.get('quote')
+                                 and s.get('manual') == step['manual']), None)
+                step_at = (_checked_coordinates(source, original['anchor'], f'{where} 단계{order}') if original
+                           else anchor(source, step.get('quote'), f'{where} 단계{order}'))
+                checked_steps.append(dict(order=order, text=step['text'], manual=step['manual'], anchor=step_at))
+            checked['steps'] = checked_steps
+        before = {k: deepcopy(procedure.get(k)) for k in checked}
+        procedure.update(checked)
+        changes.append(dict(kind='procedure', target=sop, before=before, after=deepcopy(checked), reason=reason, anchor=at))
     for sop, change in (review.get("links") or {}).items():
         where = f"{key} {sop} 연결"
         if sop not in {p["id"] for p in preview["procedures"]}:
@@ -96,8 +141,9 @@ def apply_review(key: str, preview: dict, source: dict, review: dict) -> tuple[d
             raise ReviewError(f"{where}: set 은 연결 필드({', '.join(LINK_FIELDS)}) 중 하나 이상이어야 합니다")
         reason, at = _reason(change, where), anchor(source, change.get("quote"), where)
         before = {k: links.get(sop, {}).get(k) for k in fields}
+        fields = deepcopy(fields)
         links[sop] = dict(links.get(sop) or {}, **fields)
-        changes.append(dict(kind="link", target=sop, before=before, after=fields, reason=reason, anchor=at))
+        changes.append(dict(kind="link", target=sop, before=before, after=deepcopy(fields), reason=reason, anchor=at))
     for item_id, change in (review.get("drop") or {}).items():
         where = f"{key} {item_id} 빼기"
         kind = next((k for k in KNOWLEDGE_KINDS if any(x.get("id") == item_id for x in knowledge[k])), None)
@@ -117,7 +163,11 @@ def apply_review(key: str, preview: dict, source: dict, review: dict) -> tuple[d
             added = {k: v for k, v in item.items() if k not in ("quote", "reason")}
             knowledge[kind].append(dict(added, anchor=at))
             changes.append(dict(kind="add", target=item["id"], reason=reason, anchor=at))
-    body = dict(preview, links=links, knowledge=knowledge, by=by.strip(), reviewed=True)
+    method = review.get('method', 'human-reviewed')
+    if method not in ('human-reviewed', 'user-delegated-ai-review'):
+        raise ReviewError(f'{key}: 검토 수행 방식(method)이 지원 계약과 다릅니다')
+    body = dict(deepcopy(preview), procedures=procedures, links=links, knowledge=knowledge, by=by.strip(), reviewed=True,
+                method=preview.get('method') or method, review_method=method)
     return body, changes
 
 
@@ -182,13 +232,9 @@ def commit(key: str, review_path: Path) -> int:
     body, changes = apply_review(key, rec["preview"], source, review)
     t0 = time.monotonic()
     st, receipt = call("POST", "/api/kg/manuals/commit", body)
-    dropped = []
-    if st == 409 and rec["preview"].get("knowledge_conflicts"):
-        # C1 §3.4: 이미 있는 id 는 항목을 빼고 그 id 를 참조한다(빠진 id 는 영수증 dropped_conflicts 에 남는다)
-        ids = {c["id"] for c in rec["preview"]["knowledge_conflicts"]}
-        dropped = sorted(ids)
-        st, receipt = call("POST", "/api/kg/manuals/commit",
-                           dict(body, knowledge={k: [x for x in v if x.get("id") not in ids] for k, v in body["knowledge"].items()}))
+    # A conflict changes the meaning of the reviewed body. Report it unchanged;
+    # only a new, source-anchored explicit review may remove/reuse knowledge.
+    dropped = [change['target'] for change in changes if change['kind'] == 'drop']
     out = {"doc": key, "source_id": rec["source_id"], "instance": rec["instance"], "commit_status": st, "by": body["by"],
            "review_file": str(review_path), "review_changes": changes, "dropped_conflicts": dropped,
            "seconds": {"extract": rec.get("extract_seconds"), "commit": round(time.monotonic() - t0, 1)},

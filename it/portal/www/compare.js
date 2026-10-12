@@ -10,6 +10,7 @@
     cmms_history: 'CMMS 정비 이력 조회', qms_lots: 'QMS 로트 조회', scm_suppliers: 'SCM 공급사 조회', ems_demand: 'EMS 전력 조회',
     read_neo4j_cypher: '지식 그래프 질의', submit_decision: '판단 제출', write_neo4j_cypher: '지식 그래프 쓰기', forecast_actions: '조치 예측',
     query: '업무 DB 자유 질의', describe_schema: '업무 DB 구조 조회', describe_catalog: '업무 DB 목록 조회', get_neo4j_schema: '그래프 구조 조회',
+    purchase_context:'구매 부품 근거 조회', evaluate_purchase:'구매 후보 비교', submit_purchase:'구매 판단 등록 (승인 · 실행 아님)',
   };
   const SERVER = { 'hyd-dmn': '판단 엔진', enterprise: '업무 DB', neo4j: '지식 그래프', '-': '' };
   const STATUS = { EVALUATED: ['판단 완료', 'success'], WITHHELD: ['근거 부족 · 보류', 'warning'], NO_ENGINE_TOOL: ['판단 도구 없음', 'danger'],
@@ -18,7 +19,7 @@
   const S = { el: null, opts: null, error: null, busy: false, form: { scenario: 'cooler', a: '', b: '', input: 'new' }, dropTools: [], dropSkills: [],
     result: null, history: null, pick: { a: '', b: '' }, histBusy: false };
   const api = path => API.process + path;
-  const toolName = t => TOOL[t] || UI.toolName(t);
+  const toolName = (t, server) => ['purchase_context','evaluate_purchase','submit_purchase'].includes(t) && server && server!=='hyd-dmn' ? UI.toolName(server+'/'+t) : TOOL[t] || UI.toolName(t);
   const serverName = s => SERVER[s] ?? s;
   const chip = ([label, tone]) => UI.chipText(label, tone);
   const statusChip = s => chip(STATUS[s] || [s || '–', 'neutral']);
@@ -27,7 +28,7 @@
   const ref = r => {
     const s = String(r || '');
     if (s.startsWith('사실:')) return '사실 · ' + esc(UI.idText(s.slice(3)));
-    if (s.startsWith('도구:')) { const [server, tool] = s.slice(3).split('/'); return `${esc(toolName(tool))} 결과 <small class="muted">${esc(serverName(server))}</small>`; }
+    if (s.startsWith('도구:')) { const [server, tool] = s.slice(3).split('/'); return `${esc(toolName(tool,server))} 결과 <small class="muted">${esc(serverName(server))}</small>`; }
     return nm(s);
   };
 
@@ -85,7 +86,7 @@
     const r = t.result, top = r.diagnosis?.top, rec = r.recommended;
     const v = t.variant || {}, cut = [...(v.without_tools || []).map(serverName), ...(v.without_skills || [])];
     const skills = (r.agent?.skills || []).map(k => `${esc(k.name)} ${k.applied ? UI.chipText(`절차 ${k.steps}개 따름`, 'accent') : UI.chipText('따르지 않음', 'neutral')}${k.reason ? ` <small class="muted">${esc(k.reason)}</small>` : ''}`);
-    const body = `<dl class="cmp-dl">
+    const body = UI.evaluationHtml(r) + `<dl class="cmp-dl">
         <div><dt>도구</dt><dd>${(r.agent?.tools || []).map(x => esc(serverName(x))).join(' · ') || '없음'}${cut.length ? ` ${UI.chipText('뺌: ' + cut.join(', '), 'warning')}` : ''}</dd></div>
         <div><dt>스킬</dt><dd>${skills.join('<br>') || '없음'}</dd></div>
         <div><dt>원인</dt><dd>${top ? `<b>${nm(top.id)}</b> <small class="muted">${esc(UI.name(top.failureModeId))}</small>` : esc(r.reason || '없음')}</dd></div>
@@ -98,8 +99,18 @@
   function callCell(c, n) {
     if (!c) return '<div class="cmp-call cmp-empty">—</div>';
     const st = CALL[c.status] || [c.status, 'neutral'];
+    const purchase=window.hydWords?.purchaseTool(c.tool);
+    if (purchase && (c.server==='hyd-dmn' || UI.toolKey(c.tool).startsWith('mcp__hyd-dmn__'))) {
+      const words=window.hydWords, output=c.output ?? c.result ?? c.value;
+      const purchaseError=output!=null && words.purchaseFailed(output);
+      const result=output!=null ? words.purchaseGot(purchase,output) : '호출 완료 · 상세 결과 값 기록 없음';
+      const reason=String(c.reason || '').replace(/\b(?:purchase_context|evaluate_purchase|submit_purchase)\b/g,key=>TOOL[key]).replaceAll('hyd-dmn','판단 엔진');
+      const why=reason && /[가-힣]/.test(reason) && !/[A-Za-z]+_[A-Za-z_]+/.test(reason) ? ' · '+words.text(reason) : '';
+      const state=c.status==='BLOCKED' ? '구매 도구 요청이 차단됐습니다.'+ (why || ' 거절 사유 원문을 확인하세요.') : c.status==='FAILED' ? '구매 도구 호출에 실패했습니다.'+ (why || ' 사유 원문을 확인하세요.') : result;
+      return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(TOOL[purchase])}</b><small class="muted">판단 엔진</small>${chip(purchaseError ? ['구매 요청 처리 실패','danger'] : CALL[c.status] || ['호출 상태 기록 확인 필요','neutral'])}</header><p>${esc(words.purchaseAsk(purchase,c.args))}</p><p>${esc(state)}</p>${UI.fold('구매 도구 호출 원문',`<pre>${esc(JSON.stringify(c,null,2))}</pre>`,{cls:'small'})}</div>`;
+    }
     const args = Object.keys(c.args || {}).length ? UI.fold('입력', `<pre>${esc(JSON.stringify(c.args, null, 2))}</pre>`, { cls: 'small' }) : '';
-    return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(toolName(c.tool))}</b><small class="muted">${esc(serverName(c.server))}${c.by && c.by !== 'engine' ? ' · ' + esc(c.by) : ''}</small>${chip(st)}</header>
+    return `<div class="cmp-call"><header><span class="num">${n}</span><b>${esc(toolName(c.tool,c.server))}</b><small class="muted">${esc(serverName(c.server))}${c.by && c.by !== 'engine' ? ' · ' + esc(c.by) : ''}</small>${chip(st)}</header>
       <p>${esc(UI.idText(c.summary || c.reason || ''))}</p>${c.status === 'DONE' && c.reason ? `<p class="muted">${esc(c.reason)}</p>` : ''}${args}</div>`;
   }
 

@@ -46,6 +46,7 @@ ENGINE_STEPS = frozenset({"diagnose", "gather_facts", "evaluate_cards"})
 # 시험 실행이 부르지 않는 도구와 그 사유(스킬이 가리키면 '막힘'으로 기록)
 REFUSED = {
     "submit_decision": "시험 실행은 판단 결과를 제출하지 않습니다",
+    "submit_purchase": "시험 실행은 구매 판단 결과를 제출하지 않습니다",
     "write_neo4j_cypher": "시험 실행은 지식 그래프에 쓰지 않습니다",
     "forecast_actions": "조치 예측은 판단 단계(evaluate_cards)가 후보마다 계산합니다 — 스킬 보조 호출로는 부르지 않습니다",
     "query": "업무 DB 자유 SQL 은 시험 실행에서 지원하지 않습니다(정해진 읽기 도구를 쓰세요)",
@@ -429,10 +430,11 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
     out["rules"] = sorted({r["rule"] for r in ctx.get("dmn") or []})
     try:
         result = cards.evaluate(ctx["dmn"], ctx["skills"], facts, ctx["forecasts"], ctx["tradeoffs"], ctx["precedents"],
-                                ctx["suppliers"], ctx.get("forecast_contexts"))
+                                ctx["suppliers"], ctx.get("forecast_contexts"), evaluation_mode='rule_analysis')
     except (ValueError, TypeError, KeyError) as e:
         calls[-1].update(status="FAILED", reason=korean_error(str(e)))
         return finish("FAILED", korean_error(str(e)))
+    out.update({key: result[key] for key in ('evaluation_mode','execution_checked','execution_notice')})
     out["candidates"] = [{"rule": t["rule"], "fired": t["fired"], "unknown": t["unknown"]}
                          for t in result["trace"] if t["decision"] == "dec:action-candidates"]
     out["compliance"] = [{"id": o["id"], "sopId": o.get("sopId"), "name": o.get("name"),
@@ -440,6 +442,7 @@ def run_trial(scenario: dict, profile: dict, world, snapshot: Snapshot, tenant_s
                           "penalty": [p.get("annotation") for p in o["penalties"]],
                           "warn": [w.get("annotation") for w in o["warnings"]]} for o in result["options"]]
     out["ranking"] = [{"rank": o["rank"], "id": o["id"], "sopId": o.get("sopId"), "name": o.get("name"),
+                       "evaluation_mode":o['evaluation_mode'], "execution_checked":o['execution_checked'],
                        "feasible": o["feasible"], "score": o.get("score"), "scoreParts": o.get("scoreParts")} for o in result["options"]]
     rec = next((o for o in result["options"] if o["id"] == result["recommended"]), None)
     out["recommended"] = {"id": rec["id"], "sopId": rec.get("sopId"), "name": rec.get("name")} if rec else None

@@ -81,7 +81,7 @@
     if (W.msg) html += `<p class="neg" role="status">${esc(W.msg)}</p>`;
     const v = W.view;
     if (!v) { W.el.innerHTML = html + UI.empty('설비와 이상 패턴을 고르고 불러오기를 누르세요', '카드별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 봅니다'); wire(); return; }
-    html += summaryHtml(v);
+    html += UI.evaluationHtml(v) + summaryHtml(v);
     html += UI.tabs([['money', '카드별 손익'], ['values', '값 바꿔 보기', Object.keys(W.values).length || null], ['weeks', '몇 주 What-if'],
       ['rules', '규칙 바꿔 보기', ruleCount() || null]], W.tab, 'data-wi-tab');
     html += `<div class="tab-pane ${W.tab === 'money' ? 'on' : ''}">${moneyPane(v)}</div><div class="tab-pane ${W.tab === 'values' ? 'on' : ''}">${valuesPane(v)}</div>`

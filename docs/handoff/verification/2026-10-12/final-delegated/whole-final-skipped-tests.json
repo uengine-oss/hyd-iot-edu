@@ -1,0 +1,66 @@
+[
+  {
+    "test": "tests.test_agent_trials_api.test_pg_store_round_trip_and_first_read_wins",
+    "reason": "HYD_TRIAL_PG_DSN 이 없으면 Supabase 표 검사는 건너뛴다 (migration 000001 + 000040 적용된 빈 DB)"
+  },
+  {
+    "test": "tests.test_b1_agent_authoring.test_pg_store_protects_seed_rows_applies_the_map_and_resets",
+    "reason": "HYD_B1_PG_DSN 이 없으면 PostgreSQL 검사는 건너뛴다 (마이그레이션 전부 + seed.sql 을 적용한 버릴 DB)"
+  },
+  {
+    "test": "tests.test_b6_config_bundle.test_pg_export_reset_import_roundtrip",
+    "reason": "HYD_B6_PG_DSN 이 없으면 PostgreSQL 왕복은 건너뛴다 (마이그레이션 전부 + seed.sql 적용한 버릴 DB)"
+  },
+  {
+    "test": "tests.test_backend_pg_contracts.test_pg_work_rules_insert_update_omit_and_clear",
+    "reason": "HYD_BACKEND_PG_DSN must identify a disposable migrated PostgreSQL"
+  },
+  {
+    "test": "tests.test_backend_pg_contracts.test_pg_secrets_values_and_metadata_do_not_cross_tenants",
+    "reason": "HYD_BACKEND_PG_DSN must identify a disposable migrated PostgreSQL"
+  },
+  {
+    "test": "tests.test_backend_pg_contracts.test_pg_failed_attempts_audit_cursor_asset_filter_and_close",
+    "reason": "HYD_BACKEND_PG_DSN must identify a disposable migrated PostgreSQL"
+  },
+  {
+    "test": "tests.test_backend_remaining.test_saved_output_symlink_cannot_escape_session",
+    "reason": "OS does not permit symlink creation"
+  },
+  {
+    "test": "tests.test_bpmn_import.test_pg_register_keeps_prod_pointer_stores_bpmn_and_reset_spares_base",
+    "reason": "HYD_FLOW_PG_DSN 이 없으면 Supabase 표 검사는 건너뛴다 (migration 000001 · 000002 · 000043 적용된 빈 DB)"
+  },
+  {
+    "test": "tests.test_flow_projection_cleanup.test_actual_delete_removes_version_and_items_but_retains_revision_fence",
+    "reason": "HYD_CLEANUP_NEO4J_URI must identify a disposable Neo4j"
+  },
+  {
+    "test": "tests.test_flow_projection_cleanup.test_reconciliation_reaches_legacy_hidden_case_and_instance_free_version",
+    "reason": "HYD_CLEANUP_NEO4J_URI must identify a disposable Neo4j"
+  },
+  {
+    "test": "tests.test_flow_projection_cleanup.test_registered_nonproduction_versions_are_excluded_from_orphan_candidates",
+    "reason": "HYD_CLEANUP_NEO4J_URI must identify a disposable Neo4j"
+  },
+  {
+    "test": "tests.test_knowledge_map_internal_records.test_real_map_queries_and_http_preserve_cases_knowledge_and_students_exclude_all_internal_ends[]",
+    "reason": "HYD_MAP_NEO4J_URI must explicitly identify the disposable test graph"
+  },
+  {
+    "test": "tests.test_knowledge_map_internal_records.test_real_map_queries_and_http_preserve_cases_knowledge_and_students_exclude_all_internal_ends[s01]",
+    "reason": "HYD_MAP_NEO4J_URI must explicitly identify the disposable test graph"
+  },
+  {
+    "test": "tests.test_portal_display_metadata_ui.test_saved_actual_b_record_uses_historical_metadata_without_changing_source",
+    "reason": "Saved actual B evidence is supplied only for the explicit display audit; other CI tests use independent records."
+  },
+  {
+    "test": "tests.test_student_cases.test_optional_postgres_label_store_transaction_and_tenant_cleanup",
+    "reason": "HYD_BACKEND_PG_DSN must be a disposable migrated database"
+  },
+  {
+    "test": "tests.test_worker_artifact_sink.test_sink_refuses_symlink_parent_escape",
+    "reason": "OS cannot create directory symlink: [WinError 1314] 클라이언트가 필요한 권한을 가지고 있지 않습니다: 'D:\\\\work\\\\study\\\\.test-temp\\\\hyd-delegated-whole-complete-second-20261012\\\\test_sink_refuses_symlink_pare0\\\\outside' -> 'D:\\\\work\\\\study\\\\.test-temp\\\\hyd-delegated-whole-complete-second-20261012\\\\test_sink_refuses_symlink_pare0\\\\run\\\\link'"
+  }
+]

@@ -1,0 +1,724 @@
+{
+  "method": "Actual browser CDP EventSource frames and native product DOM; GET only; root starts worker separately",
+  "case": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+  "viewport": 1440,
+  "armed_at": "2026-10-12T07:34:03.477597+00:00",
+  "errors": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "at": "2026-10-12T07:34:00.404702+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:00.405473+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:00.431924+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:05.289449+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:05.290658+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:05.293059+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:10.308701+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:10.316805+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:10.322895+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:15.306671+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:15.309216+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:15.313076+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:20.283170+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:20.287840+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:20.314058+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:25.284382+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:25.292205+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:25.293537+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:30.295154+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:30.298885+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:30.301339+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:35.289671+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:35.289983+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:35.290548+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:40.286672+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:40.287142+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:40.290589+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:45.284406+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:45.289489+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:45.297335+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:50.271159+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:50.276417+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:50.276792+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:55.291848+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:55.300076+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:34:55.300932+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:00.291111+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:00.292390+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:00.294881+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:05.331183+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:05.332295+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:05.338925+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:10.278611+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:10.280459+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:10.284713+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:15.286691+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:15.288190+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:15.298565+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:20.284397+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:20.290167+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:20.292479+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:25.282438+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:25.289552+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:25.290829+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:30.282355+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:30.286164+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:30.286463+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:35.278261+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:35.281241+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:35.286150+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:40.284257+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:40.285402+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:40.298238+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:45.281048+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:45.284993+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:45.286890+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:50.277993+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:50.281892+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:50.286364+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:55.286646+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:55.288994+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:35:55.292066+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:00.286898+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:00.302441+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:00.303308+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:05.281983+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:05.284228+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:05.284913+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:10.287931+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:10.290478+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:10.294780+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:15.287035+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:15.287490+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:15.287801+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:20.282959+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:20.286217+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:20.293315+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:25.276316+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:25.276470+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:25.286368+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:30.279952+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:30.280893+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:30.297976+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:35.284538+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:35.285146+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:35.286979+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:40.320409+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:40.326057+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:40.329510+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:45.276652+00:00",
+      "url": "http://127.0.0.1:3000/api/health",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:45.284707+00:00",
+      "url": "http://127.0.0.1:7474/",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-10-12T07:36:45.285245+00:00",
+      "url": "http://127.0.0.1:9644/v1/status/ready",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "blockedWrites": [],
+  "privateEvents": [],
+  "captures": [
+    {
+      "kind": "public",
+      "identity": {
+        "id": "7a7e8c49-0505-4a18-bbbc-a1eeb2958761",
+        "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+        "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+        "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+        "event_type": "task_working",
+        "timestamp": "2026-10-12T07:34:51.997Z",
+        "type": "public_text",
+        "public_run": "c1be38fc8b1b4ceb9be09b3144e9d9c1",
+        "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:0",
+        "sequence": 1,
+        "complete": false,
+        "truncated": false,
+        "tool_use_id": null
+      },
+      "sse_arrival": "2026-10-12T07:34:52.444366+00:00",
+      "run_started": {
+        "id": "b9024512-2b5a-4f0d-84a1-2187dbb0955a",
+        "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+        "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+        "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+        "event_type": "task_started",
+        "timestamp": "2026-10-12T07:34:30.975Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      "capture_begin": "2026-10-12T07:34:52.958182+00:00",
+      "capture_end": "2026-10-12T07:34:53.150836+00:00",
+      "png": "C-public-before-completion-1.png",
+      "native_row_text": "16:34:51\n에이전트 판단\n예비품 구매 스킬에 따라 ERP 재고와 견적, 새로 적재된 구매 절차를 다시 조회하고 승인 대기 발주 카드를 등록하겠습니다.\n",
+      "native_row_sha256": "53d337eda5d5df2dc5c9d387131fd7747867d0111634b784f4aa0e0cd8d1b19c",
+      "native_bounds": {
+        "x": 673,
+        "y": 456.84375,
+        "width": 663,
+        "height": 91.09375
+      },
+      "api_before": {
+        "observed_at": "2026-10-12T07:34:52.891218+00:00",
+        "case_status": "RUNNING",
+        "workitem": {
+          "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "activity_id": "T_agent",
+          "status": "IN_PROGRESS",
+          "draft_status": "STARTED",
+          "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+          "generation": 0,
+          "start_date": "2026-10-12T01:12:46.422Z",
+          "end_date": null
+        },
+        "completed_events": []
+      },
+      "api_after": {
+        "observed_at": "2026-10-12T07:34:53.622907+00:00",
+        "case_status": "RUNNING",
+        "workitem": {
+          "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "activity_id": "T_agent",
+          "status": "IN_PROGRESS",
+          "draft_status": "STARTED",
+          "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+          "generation": 0,
+          "start_date": "2026-10-12T01:12:46.422Z",
+          "end_date": null
+        },
+        "completed_events": []
+      },
+      "completion_seen_at_capture": false,
+      "contains_public_snapshot": true,
+      "completion_boundaries": [
+        {
+          "id": "a9c4cf88-ac7e-4110-8f77-1ea47e3ffa7f",
+          "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+          "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "event_type": "task_completed",
+          "timestamp": "2026-10-12T07:36:49.209Z",
+          "type": null,
+          "public_run": null,
+          "message_id": null,
+          "sequence": null,
+          "complete": null,
+          "truncated": null,
+          "tool_use_id": null
+        }
+      ],
+      "before_actual_completion": true
+    },
+    {
+      "kind": "tool",
+      "identity": {
+        "id": "f480e9a1-1e6d-4ad8-a093-5d145ee850b6",
+        "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+        "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+        "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+        "event_type": "tool_usage_started",
+        "timestamp": "2026-10-12T07:34:58.540Z",
+        "type": "tool_start",
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": "item_1"
+      },
+      "sse_arrival": "2026-10-12T07:34:58.953957+00:00",
+      "run_started": {
+        "id": "b9024512-2b5a-4f0d-84a1-2187dbb0955a",
+        "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+        "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+        "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+        "event_type": "task_started",
+        "timestamp": "2026-10-12T07:34:30.975Z",
+        "type": null,
+        "public_run": null,
+        "message_id": null,
+        "sequence": null,
+        "complete": null,
+        "truncated": null,
+        "tool_use_id": null
+      },
+      "capture_begin": "2026-10-12T07:34:59.587576+00:00",
+      "capture_end": "2026-10-12T07:34:59.760795+00:00",
+      "png": "C-tool-before-completion-2.png",
+      "native_row_text": "10:13:03\n도구 표시 이름 미등록\n\"powershell.exe\" -Command 'Get-Content -Raw context/task.json'\n384 ms\n83459be8-7f6b-48d4-a35b-bd0f318e99fa · c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f · T_agent · 諛쒖＜???쒖븞\n호출 도구 원문",
+      "native_row_sha256": "88ad16336aa6e72e1369f98bc2122c8b6fa157f9baa3d48c09a30f021ab57cdc",
+      "native_bounds": {
+        "x": 673,
+        "y": 464.15625,
+        "width": 663,
+        "height": 75.5
+      },
+      "api_before": {
+        "observed_at": "2026-10-12T07:34:59.526585+00:00",
+        "case_status": "RUNNING",
+        "workitem": {
+          "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "activity_id": "T_agent",
+          "status": "IN_PROGRESS",
+          "draft_status": "STARTED",
+          "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+          "generation": 0,
+          "start_date": "2026-10-12T01:12:46.422Z",
+          "end_date": null
+        },
+        "completed_events": []
+      },
+      "api_after": {
+        "observed_at": "2026-10-12T07:35:00.163935+00:00",
+        "case_status": "RUNNING",
+        "workitem": {
+          "id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "activity_id": "T_agent",
+          "status": "IN_PROGRESS",
+          "draft_status": "STARTED",
+          "consumer": "agent-worker:delegated-sol61-20261012:22d91ab0215c4562a75d6ce162589ff0",
+          "generation": 0,
+          "start_date": "2026-10-12T01:12:46.422Z",
+          "end_date": null
+        },
+        "completed_events": []
+      },
+      "completion_seen_at_capture": false,
+      "contains_public_snapshot": true,
+      "completion_boundaries": [
+        {
+          "id": "a9c4cf88-ac7e-4110-8f77-1ea47e3ffa7f",
+          "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+          "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "event_type": "task_completed",
+          "timestamp": "2026-10-12T07:36:49.209Z",
+          "type": null,
+          "public_run": null,
+          "message_id": null,
+          "sequence": null,
+          "complete": null,
+          "truncated": null,
+          "tool_use_id": null
+        }
+      ],
+      "before_actual_completion": true
+    }
+  ],
+  "freshFrames": 26,
+  "passed": true,
+  "source": {
+    "manifest": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\runtime-stream-source-manifest.json",
+    "sha256": "5d260778d545251608596867966eb9a99200710e16115811f7a38f8d531c7619",
+    "files": 173
+  },
+  "workitem": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+  "observed_until": "2026-10-12T07:36:49.841627+00:00"
+}
