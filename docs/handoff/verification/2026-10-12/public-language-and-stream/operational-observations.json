@@ -1,0 +1,12 @@
+{
+  "scope": "Read-only incident observations after planned process deployment; no global network change, no volume deletion, no business replay",
+  "host_memory_first_KiB": {"free": 506956, "total": 16453016},
+  "host_memory_later_KiB": {"free": 1471220, "free_virtual": 6663448},
+  "docker_stats": {"process_cpu_percent": 42.69, "process_memory_MiB": 284.1, "process_limit_MiB": 768, "database_cpu_percent": 95.02, "database_memory_MiB": 1004},
+  "database": {"source_inbox_live_rows_estimate": 848814, "source_inbox_dead_rows_estimate": 163637, "active_IO_DataFileRead_query_seconds": 117, "later_old_query_present": false, "slow_query_identity_proven": false, "latest_states_source": "process_source_state, not an 848k receipt scan"},
+  "process_DB_socket": [{"address": "192.168.65.254", "ok": true, "seconds": 0.025581338}, {"address": "fdc4:f303:9324::254", "ok": false, "error": "Errno101 Network is unreachable", "seconds": 0.000209984}],
+  "diagnosis": "The last IPv6 error alone does not prove the cause of the earlier IPv4/database/API timeout. Resource pressure and database IO wait were observed; no causal fix is claimed.",
+  "known_readiness_gap": "Current /healthz200 does not prove successful business database reads. Follow-up must expose an actual unhealthy runtime/readiness state without replacing business errors with successful empty results.",
+  "final_targeted_GET": "response-health.json",
+  "mutations": "Only root-owned draft import/mapping/check and later exact draft DELETE. Planned process deployment; no DNS policy, pool, SQL index, network, user app changes."
+}

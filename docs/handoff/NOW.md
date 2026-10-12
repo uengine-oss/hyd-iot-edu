@@ -11,6 +11,8 @@
 
 **후속 회의 구성과 표시 정리:** 정식 API로 회의 준비 에이전트와 `회의 주관자` 역할을 생성하고 실제 GET 등록값으로 가져오기 사본 3파일을 준비했다. 현재 catalog를 사용하는 실제 importer 구조 검사는 문제 0으로 통과했다. 에이전트 모델은 실행기 기본을 상속하며 개발용 Sol6.1 선택으로 포털 모델을 덮지 않았다. Google 도구 미연결·주관자 회원 미배정·OAuth/Google 실행 미확인이므로 실행 준비 완료는 아니다. 일반 보고 상세의 `작업지시` 노출도 발견해 사용자 이름·코드·기록 표시와 사전 재생성 경계를 수정했다. 영향 보고 상세1440/1024와 보존 참고 화면을 나란히 확인했다. 기존 완주·전체 회귀·LLM을 반복하지 않았고 source815·기존 B 업무 원문·supabase backend·29컨테이너·process 재시작0과 본인 잠금 해제를 확인했다. 실라버스/화면 수용 대응표에서 실제 교육 업무 완료, 외부 인증, 수업 리허설, 사용자 시각 인수를 분리했다. [이번 구성·표시·수용범위 증거](verification/2026-10-12/meeting-import-and-labels/README.md).
 
+**후속 일반 화면 용어와 연결 준비 안내 (10-13 KST):** 메뉴·알려진 시스템/기본 에이전트 표시를 국문화하고 원문·사용자 이름·모델·A 별칭을 보존했다. 가져오기 화면/API가 구조 검사와 저장된 MCP 준비 상태를 분리한다. 실제 본인 회의 초안의 구조 문제0/미등록 서버2와 native8장·참고 비교를 확인한 뒤 초안만 삭제했으며 기존 흐름/업무/에이전트 원문은 불변이다. 집중 화면7·MCP4·Node 통과, source819 고정, 새전체회귀/LLM/업무재완주0. process 계획 재생성 후 healthy·재시작0·29서비스이며 기동 시각은 이전08:33Z가 아닌 2026-10-12T15:02:19.929249034Z다. 실시간 감사에서 현재 구독 결함은 확정하지 못했고 승인/거절~시스템 종료의 모든 live 화면 증거도 아직 없다. U16/U20/F13/K3·Google 실제 실행·수업 리허설·사용자 최종 시각 인수는 열림이다. [현재 화면·검사·실시간 증거 경계](verification/2026-10-12/public-language-and-stream/README.md).
+
 ## 1. 한눈에 보기
 
 추가 실제 native 흐름14항목은 B추천없음/4개제외와 C판단등록·승인/ERP실행 구분을 확인했다([B/C실제PNG와별도근거](verification/2026-10-12/k3-and-record-followup/README.md)). 위96과 합산하지 않으며 C compact긴요약의ellipsis와 전체DOMtext보존을 구분한다. 최신 참고비교는 이미지6·참조14·console/pageerror/외부요청0으로 렌더링했고 루트가 부분시각확인했다. 전체173쌍/사용자UIUX승인을 뜻하지 않는다.
@@ -30,7 +32,7 @@
 
 ## 2. 스택 올리고 확인하는 방법
 
-**최신 Windows 상태는 B 후속 완주·SQL058 표시 수정 후다.** 제품 스택은 사용자 열람용으로 유지한다. A 미달·C 완료의 기존 기록과 B의 이전 보류를 보존하면서 B는 정식 재평가/승인 후 COMPLETED다. 첫 enterprise-sim 배포에서 ENTERPRISE_BACKEND를 생략해 memory가 된 오류를 발견했고, 승인 전에 supabase로 복원하여 현재 값(씰7/필터2)을 새 검토본에 고정한 뒤 실행했다. 이후 재배포 때는 ENTERPRISE_BACKEND=supabase를 명시한다(.env 값은 읽지 않는다). process 시작2026-10-12T08:33:31.792431157Z·재시작0을 유지했다. owned 워커28348/8097은 종료했고 임시PG를 정리했다. [실제 적용·실패·복원 범위](verification/2026-10-12/education-fixture-correction/README.md).
+**최신 Windows 상태는 B 후속 완주·SQL058 표시 수정 후다.** 제품 스택은 사용자 열람용으로 유지한다. A 미달·C 완료의 기존 기록과 B의 이전 보류를 보존하면서 B는 정식 재평가/승인 후 COMPLETED다. 첫 enterprise-sim 배포에서 ENTERPRISE_BACKEND를 생략해 memory가 된 오류를 발견했고, 승인 전에 supabase로 복원하여 현재 값(씰7/필터2)을 새 검토본에 고정한 뒤 실행했다. 이후 재배포 때는 ENTERPRISE_BACKEND=supabase를 명시한다(.env 값은 읽지 않는다). process는 이번 연결 준비 안내 배포에서 계획 재생성해 시작2026-10-12T15:02:19.929249034Z·재시작0이다. 이후 포털 등 여러 기존 컨테이너의 종료를 관찰해 다시 시작했고 최종29가동과 process healthy를 확인했다. 08:33Z는 이전 정비 완주 당시 시각이다. owned 워커28348/8097은 종료했고 임시PG를 정리했다. [실제 적용·실패·복원 범위](verification/2026-10-12/education-fixture-correction/README.md).
 
 **10-12 09:18 KST 실제 B 캡처 후 상태가 우선**: 실제 검증에 사용한 제품 스택·독립 Supabase55322·Neo4j7787·학생 MCP8311·워커·Docker Desktop은 종료했다. 최신 `skill-delivery-approved/services-off.json`·`cleanup-final.json`에서 실행 컨테이너·관련 포트·Desktop/backend0과 LIVE_LOCK 해제를 확인했다(02:53 최초 정리도 보존). 데이터 볼륨/작업 트리를 보존했고 B의 열린 incident/PENDING도 그대로 남긴다.
 
@@ -131,7 +133,7 @@ bash scripts/run_worker_host.sh
 - [x] F10. 새 Supabase 프로젝트에서 42 SQL 파일·최종 20261010000051·seed 적용 확인. 기존 DB migration up와 구분한 신규 DB 검증이다.
 - [x] F11. 보고서의 A정밀은 당시 기록임을 명시하고 10-10 B-OEM 추천 근거로 연결했다(`backend-remaining.md`).
 - [x] F12. 과거 이력과 현재 상태를 대조했다(`final-manual-infrastructure-audit.md`). 옛16분은 컨테이너 생성 대기이며 현재seed 실측59.719291초/read-back17/0과 구분한다. 원인 해결을 주장하지 않는다. 현재 GET 원천80개에서 b7379c5e 접두어match0, 동일 문서 재사용 수정은 이미 있다. 옛 UI 쓰기 검사기의 전체판 전제를 현재 일반 화면/사람 검토 우회 조건으로 쓰지 않는다. 삭제/seed 재실행 없이 조사 완료.
-- [ ] F13. 공식3문서 적재·A 부정 종결·C 발주/입고·B 작업지시/공지/부품 예약의 실제 교육 업무 종료를 확인했다. B 리턴 필터 부재는 사용자 자료 부족이 아니라 교육 ERP 초기화 결손이었으며 공식057로 수정했다. Memory/PG 신규12·기존PG1·결손 역실험1예상실패, 완료보고의 typed 한국어/사건 상태 분리 검사·SQL058 실제PG 및 최종 native를 집중 확인했다. 전체2673은 당시 판본이다. 인증된 Google 회의·전체 수업 운영/사용자 시각 인수는 아직이며 모르는 서버 URI/재고 자료를 사용자에게 요구하지 않는다. [현재 증거](verification/2026-10-12/education-fixture-correction/README.md).
+- [ ] F13. 공식3문서 적재·A 부정 종결·C 발주/입고·B 작업지시/공지/부품 예약의 실제 교육 업무 종료를 확인했다. B 리턴 필터 부재는 사용자 자료 부족이 아니라 교육 ERP 초기화 결손이었으며 공식057로 수정했다. Memory/PG 신규12·기존PG1·결손 역실험1예상실패, 완료보고의 typed 한국어/사건 상태 분리 검사·SQL058 실제PG 및 최종 native를 집중 확인했다. 전체2673은 당시 판본이다. 인증된 Google 회의·전체 수업 운영/사용자 시각 인수는 아직이며 모르는 서버 URI/재고 자료를 사용자에게 요구하지 않는다. [현재 증거](verification/2026-10-12/education-fixture-correction/README.md). 운영 진단 추가: 건강 확인200과 업무 DB조회 실패가 함께 가능하므로 준비/저하 상태를 실제 DB 오류와 연결하는 보강이 남아 있다. 현재 응답 회복과 인과 미확정은 public-language-and-stream 연결 진단에 기록했다.
 - [x] F14. 차이 0.52/0.02는 수동 renderer fixture의 총점·성분 독립 상수 때문임을 확인했다. 실제 ranking.score 합산 계약을 시험했고 golden은 보존했다. 이 fixture를 계산 교육자료로 사용하지 않는다.
 
 - [x] F15. Codex 최초·재개·교정에 전체 UTF-8 본문 stdin 전달 구현, 관련 86개 시험 및 실제 학생 동선 18개 통과. 이전 실패 기록은 보존한다.

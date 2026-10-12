@@ -66,7 +66,7 @@ const UI = {
     // 메뉴 · 헤더
     'nav.main': '홈', 'nav.home': '시스템 구성', 'nav.scenario': '결함 시뮬레이션', 'nav.incidents': '이상 확인 · 조치', 'nav.trends': '실시간 모니터링',
     'nav.ontology': '지식 지도', 'nav.skills': '조치 방법', 'nav.decision': '조치 판단 규칙', 'nav.process': '승인과 실행', 'nav.instances': '처리 건',
-    'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구(MCP)',
+    'nav.knowledge': '지식 관리', 'nav.admin': '관리', 'nav.mcp': '도구 연결',
     'nav.group.plant': '설비', 'nav.group.decide': '판단과 처리', 'nav.group.manage': '관리',
     'header.services': '서비스', 'header.noResponse': '응답 없음', 'header.connected': '연결됨', 'header.connecting': '연결 중', 'header.waiting': '연결됨 · 대기', 'header.disconnected': '끊김 · 재연결 중', 'header.streamOff': '실시간 꺼짐 (기본 처리 모드)',
     'header.open': '진행 중', 'header.simTime': '시뮬레이션 시각', 'header.scale': '시간 배율', 'header.simBadge': '시뮬레이션', 'header.menu': '메뉴',
@@ -165,7 +165,7 @@ const UI = {
     'tool.Write': '파일 쓰기', 'tool.Read': '파일 읽기', 'tool.Edit': '파일 수정', 'tool.Glob': '파일 찾기', 'tool.Grep': '내용 검색', 'tool.PowerShell': '명령 실행', 'tool.Bash': '명령 실행', 'tool.ToolSearch': '도구 검색', 'tool.WebFetch': '웹 읽기', 'tool.WebSearch': '웹 검색', 'tool.Agent': '하위 에이전트',
     'tool.mcp__neo4j__read_neo4j_cypher': '지식 그래프 조회', 'tool.mcp__neo4j__write_neo4j_cypher': '지식 그래프 쓰기', 'tool.mcp__neo4j__get_neo4j_schema': '지식 그래프 구조 조회',
     'tool.mcp__hyd-dmn__timeseries_query': '시계열 조회', 'tool.mcp__hyd-dmn__timeseries_schema': '시계열 구조 조회', 'tool.mcp__hyd-dmn__dmn_rules': '판단 규칙 조회', 'tool.mcp__hyd-dmn__evaluate_cards': '조치 후보 평가', 'tool.mcp__hyd-dmn__diagnose': '원인 진단',
-    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 DB 묶어 보기',
+    'tool.mcp__hyd-dmn__gather_facts': '사실 수집', 'tool.mcp__hyd-dmn__inputs': '판단 입력 조회', 'tool.mcp__hyd-dmn__prometheus_metadata': '지표 목록 조회', 'tool.mcp__hyd-dmn__prometheus_query': '지표 조회', 'tool.mcp__hyd-dmn__prometheus_series': '지표 시계열 조회', 'tool.mcp__hyd-dmn__precedents': '과거 선택 조회', 'tool.mcp__hyd-dmn__submit_decision': '판단 제출', 'tool.mcp__hyd-dmn__tradeoffs': '성과 지표 상충 경로', 'tool.mcp__hyd-dmn__forecast_actions': '조치 효과 예측', 'tool.mcp__hyd-dmn__fabric_query': '두 자료 묶어 보기',
     'tool.mcp__enterprise__query': '업무 데이터 조회', 'tool.mcp__enterprise__describe_catalog': '업무 데이터 목록', 'tool.mcp__enterprise__describe_schema': '업무 데이터 구조', 'tool.mcp__enterprise__mes_orders': '생산 주문 조회', 'tool.mcp__enterprise__erp_contract': '계약 조회', 'tool.mcp__enterprise__erp_inventory': '재고 조회',
     'tool.mcp__enterprise__pm_status':'정비 계수기 · 계획 조회', 'tool.mcp__enterprise__maintenance_windows':'정비 시간 계획 조회',
     'tool.mcp__enterprise__cmms_history':'정비 이력 조회', 'tool.mcp__enterprise__spare_stock':'예비품 재고 조회',
@@ -358,6 +358,7 @@ const UI = {
   performers: { 'sys:agent': 'AI 에이전트', agent: 'AI 에이전트', 'role:operator': '운전원', operator: '운전원', 'role:prod-mgr': '생산관리자', 'role:maint-mgr': '설비보전팀장',
     'role:plant-mgr': '공장장', 'role:quality-mgr': '품질팀장', 'role:purchasing-mgr': '구매팀장', 'role:purchasing': '구매 담당', 'sys:scada': '설비', plc: '설비', 'sys:process': '시스템', process: '시스템',
     'sys:cmms': '정비 시스템', detector: '탐지기', legacy: 'AI 에이전트', cliagents: 'AI 에이전트', human: '담당자', result: '시스템' },
+  actorName(id, name) { return id === 'sys:agent' && name === 'AI 에이전트 (Claude Code)' ? '인공지능 에이전트' : name; },
   who(id) { return this.performers[id] || id || '–'; },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
 
@@ -515,10 +516,10 @@ UI.loadNames();   // A141: 원문 id → 이름 사전(정적 names.json). 읽�
    덧붙이기만 한다(위 UI 객체는 그대로). 계약 문서: docs/handoff/verification/2026-10-08/u7-shell.md */
 Object.assign(UI.terms, {
   'var.approval': '승인 여부', 'var.approval_reason': '결정 사유', 'var.result_report': '결과 보고', 'var.request_id': '요청 번호', 'var.approved_option': '승인한 안',
-  'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구(MCP)', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
-  'nav.whatif': '손익 · What-if', 'nav.kpi': 'KPI', 'nav.fabric': '데이터 연결',
+  'nav.inbox': '내 작업함', 'nav.agents': '에이전트', 'nav.mcp': '도구 연결', 'nav.compare': '시험 비교', 'nav.eval': '판단 채점',
+  'nav.whatif': '조건별 손익', 'nav.kpi': '성과 지표', 'nav.fabric': '데이터 연결',
   'nav.ask': '에이전트에게 질문',   // B5
-  'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': 'AI 구성', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
+  'nav.group.work': '작업', 'nav.group.judge': '판단', 'nav.group.knowledge': '지식', 'nav.group.ai': '인공지능 설정', 'nav.group.kpi': '성과', 'nav.group.system': '시스템',
   'shell.me': '나', 'shell.meNone': '선택 안 함', 'shell.bell': '알림', 'shell.bellCount': '새 알림 {n}건',
   'shell.notReady': '준비 중', 'shell.notReadySub': '이 화면은 아직 연결되지 않았습니다. 기능이 붙으면 이 자리에 나타납니다.',
   'shell.mountFail': '화면을 그리지 못했습니다', 'shell.unknownRoute': '없는 화면 주소입니다. 홈으로 이동했습니다.',

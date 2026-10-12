@@ -1,0 +1,27 @@
+{
+  "files": [
+    "ui.js",
+    "plainWords.js",
+    "caseRecord.js",
+    "names.json",
+    "index.html",
+    "scripts/portal_names.py"
+  ],
+  "actual_defect": "Parent actual B native screenshots contain CMMS; current native sidebar What-if/KPI. Exact authored strings in before scan.",
+  "preserve": [
+    "A approved aliases/recommendations",
+    "raw folds",
+    "user text",
+    "emails",
+    "document IDs",
+    "connection/model settings",
+    "API keys"
+  ],
+  "contract": "UIUX explicitly retains system swimlane; remove technical abbreviations from known public display names, retain responsibility.",
+  "references": [
+    "ProcessGPT docs/en/architecture.md 6ad9db6",
+    "Vue InstanceOutput/PgToolStep references in caseRecord header",
+    "Dify tracing-panel/node reference in plainWords header",
+    "ontology-studio FilePanel.vue 6a229be"
+  ]
+}

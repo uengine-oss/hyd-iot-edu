@@ -1,0 +1,140 @@
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:22:33Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:22:33Z", "status": 200, "bytes": 851008, "duration_seconds": 8.049697100010235, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:22:41Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:22:41Z", "status": 200, "bytes": 356952, "duration_seconds": 6.177538699994329, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:22:47Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:22:47Z", "status": 200, "bytes": 39658, "duration_seconds": 33.236303100013174, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:23:21Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:23:21Z", "status": 200, "bytes": 41999, "duration_seconds": 4.04547700000694, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:23:25Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:23:25Z", "exception": "Traceback (most recent call last):\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 1320, in do_open\n    h.request(req.get_method(), req.selector, req.data, headers,\n    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n              encode_chunked=req.has_header('Transfer-encoding'))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1386, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1432, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1381, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1141, in _send_output\n    self.send(msg)\n    ~~~~~~~~~^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1085, in send\n    self.connect()\n    ~~~~~~~~~~~~^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\http\\client.py\", line 1051, in connect\n    self.sock = self._create_connection(\n                ~~~~~~~~~~~~~~~~~~~~~~~^\n        (self.host,self.port), self.timeout, self.source_address)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\socket.py\", line 874, in create_connection\n    raise exceptions[0]\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\socket.py\", line 859, in create_connection\n    sock.connect(sa)\n    ~~~~~~~~~~~~^^^^\nConnectionRefusedError: [WinError 10061] \ub300\uc0c1 \ucef4\ud4e8\ud130\uc5d0\uc11c \uc5f0\uacb0\uc744 \uac70\ubd80\ud588\uc73c\ubbc0\ub85c \uc5f0\uacb0\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\public-language-and-stream-20261012\\native-public\\capture.py\", line 16, in get\n    with urlopen(u,timeout=45) as response:entry['status']=response.status;body=response.read();entry['bytes']=len(body);return body\n         ~~~~~~~^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 187, in urlopen\n    return opener.open(url, data, timeout)\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 487, in open\n    response = self._open(req, data)\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 504, in _open\n    result = self._call_chain(self.handle_open, protocol, protocol +\n                              '_open', req)\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 464, in _call_chain\n    result = func(*args)\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 1349, in http_open\n    return self.do_open(http.client.HTTPConnection, req)\n           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\roede\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\urllib\\request.py\", line 1323, in do_open\n    raise URLError(err)\nurllib.error.URLError: <urlopen error [WinError 10061] \ub300\uc0c1 \ucef4\ud4e8\ud130\uc5d0\uc11c \uc5f0\uacb0\uc744 \uac70\ubd80\ud588\uc73c\ubbc0\ub85c \uc5f0\uacb0\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4>\n", "duration_seconds": 2.700804500025697, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:23:28Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:23:28Z", "status": 200, "bytes": 851008, "duration_seconds": 7.60585120000178, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:23:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:23:36Z", "status": 200, "bytes": 356952, "duration_seconds": 5.002806700009387, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:23:41Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:23:41Z", "status": 200, "bytes": 39658, "duration_seconds": 27.73734059999697, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:24:08Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:24:08Z", "status": 200, "bytes": 41999, "duration_seconds": 3.687991999962833, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:31:32Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:31:32Z", "status": 200, "bytes": 851008, "duration_seconds": 3.7120429999777116, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:31:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:31:36Z", "status": 200, "bytes": 356952, "duration_seconds": 1.8041630999650806, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:31:38Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:31:38Z", "status": 200, "bytes": 39658, "duration_seconds": 11.89533600001596, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:31:49Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:31:49Z", "status": 200, "bytes": 41999, "duration_seconds": 2.7610752999898978, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:31:52Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:31:52Z", "status": 200, "bytes": 40888, "duration_seconds": 0.17109629994956776, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 103480, "duration_seconds": 0.05390280002029613, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 20821, "duration_seconds": 0.12308079999638721, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 54303, "duration_seconds": 0.09169969998765737, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 41276, "duration_seconds": 0.0694569000042975, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 91518, "duration_seconds": 0.037788900022860616, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 29842, "duration_seconds": 0.03385140001773834, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 14060, "duration_seconds": 0.042354100034572184, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 12494, "duration_seconds": 0.033754499978385866, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 55051, "duration_seconds": 0.06883260002359748, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 81682, "duration_seconds": 0.05989079998107627, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:31:53Z", "status": 200, "bytes": 25307, "duration_seconds": 0.07305110001470894, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:32:21Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:32:21Z", "status": 200, "bytes": 41999, "duration_seconds": 1.3771874000085518, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:32:54Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:32:54Z", "status": 200, "bytes": 851008, "duration_seconds": 1.9798481999896467, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:32:56Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:32:56Z", "status": 200, "bytes": 356952, "duration_seconds": 1.0134734000312164, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:32:57Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:32:57Z", "status": 200, "bytes": 39658, "duration_seconds": 4.993470300047193, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:33:02Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:33:02Z", "status": 200, "bytes": 41999, "duration_seconds": 0.6091490000253543, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:38:32Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:38:32Z", "status": 200, "bytes": 851008, "duration_seconds": 0.629883699992206, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:38:33Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:38:33Z", "status": 200, "bytes": 356952, "duration_seconds": 0.5456816999940202, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:38:33Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:38:33Z", "status": 200, "bytes": 39658, "duration_seconds": 2.6201603999943472, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 41999, "duration_seconds": 0.23953439999604598, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 40888, "duration_seconds": 0.011428500001784414, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 103537, "duration_seconds": 0.009569899993948638, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 20821, "duration_seconds": 0.007899400021415204, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 54303, "duration_seconds": 0.008509900013450533, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 41276, "duration_seconds": 0.007748399977572262, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 91518, "duration_seconds": 0.03269639995414764, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 29841, "duration_seconds": 0.007204400026239455, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 14060, "duration_seconds": 0.007638100010808557, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 12494, "duration_seconds": 0.006700500031001866, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 55051, "duration_seconds": 0.007196999969892204, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 81682, "duration_seconds": 0.008330599986948073, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:38:36Z", "status": 200, "bytes": 25307, "duration_seconds": 0.006894899997860193, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:39:33Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:39:33Z", "status": 200, "bytes": 851008, "duration_seconds": 0.668152199999895, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:39:33Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:39:33Z", "status": 200, "bytes": 356952, "duration_seconds": 0.7354325999622233, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:39:34Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:39:34Z", "status": 200, "bytes": 39658, "duration_seconds": 4.900352199969348, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:39:39Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:39:39Z", "status": 200, "bytes": 41999, "duration_seconds": 0.4751377999782562, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:40:58Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:40:58Z", "status": 200, "bytes": 851008, "duration_seconds": 0.3902387999696657, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:40:58Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:40:58Z", "status": 200, "bytes": 356952, "duration_seconds": 0.27598069998202845, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:40:59Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:40:59Z", "status": 200, "bytes": 39658, "duration_seconds": 2.0986043000011705, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 41999, "duration_seconds": 0.19792589999269694, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/agents.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 40888, "duration_seconds": 0.009816700010560453, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/caseRecord.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 103537, "duration_seconds": 0.027263799973297864, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/compare.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 20821, "duration_seconds": 0.008941599982790649, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/enterprise.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 54303, "duration_seconds": 0.011285000015050173, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/flows.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 41276, "duration_seconds": 0.020987700030673295, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/hitl.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 91518, "duration_seconds": 0.009734499966725707, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/index.html", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 29841, "duration_seconds": 0.009018199983984232, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/main.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 14060, "duration_seconds": 0.007854799972847104, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/names.json", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 12494, "duration_seconds": 0.007642499986104667, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/plainWords.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 55051, "duration_seconds": 0.010403600055724382, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/ui.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 81682, "duration_seconds": 0.011697100009769201, "phase": "finish"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "phase": "start"}
+{"url": "http://127.0.0.1:8088/whatif.js", "method": "GET", "start_utc": "2026-10-12T15:41:01Z", "status": 200, "bytes": 25307, "duration_seconds": 0.03021729999454692, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:41:09Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", "method": "GET", "start_utc": "2026-10-12T15:41:09Z", "status": 200, "bytes": 851008, "duration_seconds": 0.5859201999846846, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:41:10Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/instances/c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f", "method": "GET", "start_utc": "2026-10-12T15:41:10Z", "status": 200, "bytes": 356952, "duration_seconds": 0.2698097999673337, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:41:10Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/agents/sys%3Aagent", "method": "GET", "start_utc": "2026-10-12T15:41:10Z", "status": 200, "bytes": 39658, "duration_seconds": 2.271481200004928, "phase": "finish"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:41:12Z", "phase": "start"}
+{"url": "http://127.0.0.1:8080/api/flows/codex-meeting-preflight-20261012-6016ea04", "method": "GET", "start_utc": "2026-10-12T15:41:12Z", "status": 200, "bytes": 41999, "duration_seconds": 0.2251125000184402, "phase": "finish"}

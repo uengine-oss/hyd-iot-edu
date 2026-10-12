@@ -1,0 +1,22 @@
+[
+  {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\reference-processgpt.png",
+    "sha256": "b77302d40f033a548428a000cfb4f817c72a75ae0c0b81c38d8cabacd3e72200",
+    "label": "Preserved historical ProcessGPT reference"
+  },
+  {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\reference-dify.png",
+    "sha256": "5f63595d05b6d6031f79e46e13d6433ec3cc0fd043a2706b9ce0a9c22887fcdd",
+    "label": "Preserved Dify documentation reference"
+  },
+  {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\public-language-and-stream-20261012\\native-public\\main-1440.png",
+    "sha256": "8677f172e156cc40276598fb61cca97a71173fdf7b0d1f3a717c80de15035027",
+    "label": "Current final HYD home native GET"
+  },
+  {
+    "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\public-language-and-stream-20261012\\native-public\\B-record-1440.png",
+    "sha256": "4c0285e46a8333e8e0839fbffa70bdd554a9d5b73cc8a5c4d2061df99b0b3714",
+    "label": "Preserved actual HYD B after actor fix"
+  }
+]

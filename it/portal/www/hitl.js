@@ -526,7 +526,7 @@
   function manualExecutionHtml(v, preview, catalog) {
     if (!preview.procedures.some(p => manualLink(preview,p).scope === 'purchase') && !v?.execution) return '';
     if (!v || typeof v.executable_ready !== 'boolean' || !Array.isArray(v.execution)) return UI.card({title:'실행 후보 검사', body:'실행 후보 검사 기록이 없습니다. 원문 보관 여부와 실행 후보 가능 여부는 별도로 확인해야 합니다.'});
-    return UI.card({title:'실행 후보 검사',body:'원문 보관과 후보 연결의 구조 검사입니다. 실제 구매 승인이나 ERP 실행 완료를 뜻하지 않습니다.' + '<ul>' + v.execution.map(row => {
+    return UI.card({title:'실행 후보 검사',body:'원문 보관과 후보 연결의 구조 검사입니다. 실제 구매 승인이나 구매 실행 완료를 뜻하지 않습니다.' + '<ul>' + v.execution.map(row => {
       const p = preview.procedures.find(p => p.id === row.sop);
       const name = p?.name ? `${p.name} (${row.sop})` : '절차 표시 이름 기록 없음';
       const valid = typeof row.executable === 'boolean' && typeof row.ready === 'boolean' && Array.isArray(row.issues);
@@ -546,8 +546,8 @@
       const ids = Array.isArray(selected) ? selected : selected ? [selected] : [];
       return (rows || []).map(row=>`<option value="${esc(row.id)}" ${ids.includes(row.id) ? 'selected' : ''}>${esc(row.name || '등록 이름 없음')}${row.partNo ? ' · '+esc(row.partNo) : ''}</option>`).join('') + ids.filter(id=>!(rows || []).some(row=>row.id===id)).map(id=>`<option value="${esc(id)}" selected>${esc(missing)}</option>`).join('');
     };
-    return UI.field({label:'절차의 업무 범위',input:`<select id="manualScope-${esc(p.id)}" data-manual-scope="${esc(p.id)}"><option value="fault" ${!link.scope ? 'selected' : ''}>고장 조치 · 고장 유형 연결 필수</option><option value="purchase" ${purchase ? 'selected' : ''}>구매 원문 절차 · ERP 업무 범위</option>${link.scope && !purchase ? `<option value="${esc(link.scope)}" selected>범위 기록을 확인하세요</option>` : ''}</select>`}) +
-      `<div class="wide" data-purchase-fields="${esc(p.id)}" ${purchase ? '' : 'hidden'}><p>고장 유형 없이 구매 대상 부품을 명시합니다. 원문 참고 보관은 실행 후보에 넣지 않으며 ERP 구매요청을 만들지 않습니다. 실행 후보는 구매요청 · 승인 담당자 · 공급 관계를 별도로 검사합니다.</p>${H.manualCatalogError ? `<p class="neg">${esc(H.manualCatalogError)}</p>` : !catalog ? '<p class="muted">구매 부품 · 담당 역할 목록 확인 전입니다.</p>' : ''}<div class="form-grid">` +
+    return UI.field({label:'절차의 업무 범위',input:`<select id="manualScope-${esc(p.id)}" data-manual-scope="${esc(p.id)}"><option value="fault" ${!link.scope ? 'selected' : ''}>고장 조치 · 고장 유형 연결 필수</option><option value="purchase" ${purchase ? 'selected' : ''}>구매 원문 절차 · 구매 업무 범위</option>${link.scope && !purchase ? `<option value="${esc(link.scope)}" selected>범위 기록을 확인하세요</option>` : ''}</select>`}) +
+      `<div class="wide" data-purchase-fields="${esc(p.id)}" ${purchase ? '' : 'hidden'}><p>고장 유형 없이 구매 대상 부품을 명시합니다. 원문 참고 보관은 실행 후보에 넣지 않으며 구매요청을 만들지 않습니다. 실행 후보는 구매요청 · 승인 담당자 · 공급 관계를 별도로 검사합니다.</p>${H.manualCatalogError ? `<p class="neg">${esc(H.manualCatalogError)}</p>` : !catalog ? '<p class="muted">구매 부품 · 담당 역할 목록 확인 전입니다.</p>' : ''}<div class="form-grid">` +
       UI.field({label:'원문 절차의 사용 방식',required:true,input:`<select id="manualExecutable-${esc(p.id)}" data-manual-executable="${esc(p.id)}"><option value="">원문을 확인하고 선택하세요</option><option value="false" ${link.executable === false ? 'selected' : ''}>원문 참고 보관 · 실행 후보 제외</option><option value="true" ${link.executable === true ? 'selected' : ''}>실행 후보로 검토 · 구매요청 연결 검사</option></select>`}) +
       UI.field({label:'구매 대상 부품',required:true,hint:'원문이 명시한 실제 등록 부품을 선택하세요. 여러 부품은 Ctrl 또는 Command를 누르고 선택합니다.',input:`<select id="manualParts-${esc(p.id)}" multiple data-manual-parts="${esc(p.id)}" ${catalog ? '' : 'disabled'}>${options(catalog?.parts,link.parts,'부품 등록 목록에서 확인되지 않음')}</select>`}) +
       UI.field({label:'구매 승인 담당 역할',hint:'실행 후보는 원문에 명시된 구매 승인 담당자가 필요합니다. 참고 보관은 미지정을 그대로 둘 수 있습니다.',input:`<select id="manualApprover-${esc(p.id)}" data-manual-approver="${esc(p.id)}" ${catalog ? '' : 'disabled'}><option value="">원문에 담당 역할 미지정</option>${options(catalog?.roles,link.approver,'담당 역할 등록 목록에서 확인되지 않음')}</select>`}) +
@@ -751,7 +751,7 @@
     });
     box.querySelectorAll('[data-manual-supplier-policy]').forEach(select => {
       const id=select.dataset.manualSupplierPolicy, usage=box.querySelector(`[data-manual-executable="${CSS.escape(id)}"]`);
-      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '참고 보관에는 선정 정책을 지정할 수 없습니다. 정책 선택을 해제하세요.' : '참고 보관 · 공급사 선택과 ERP 구매요청을 하지 않습니다.') : select.value ? '선택한 정책으로 현재 부품별 견적을 계산합니다. 고정 공급사 값을 함께 보내지 않으며, 사람 승인과 ERP 실행은 별도입니다.' : '정책 미지정 · 원문 고정 공급사 값으로 검토합니다. 미상인 값을 추정하지 않습니다.';};
+      const update=()=>{box.querySelector(`[data-supplier-review="${CSS.escape(id)}"]`).textContent=usage.value==='false' ? (select.value ? '참고 보관에는 선정 정책을 지정할 수 없습니다. 정책 선택을 해제하세요.' : '참고 보관 · 공급사 선택과 구매요청을 하지 않습니다.') : select.value ? '선택한 정책으로 현재 부품별 견적을 계산합니다. 고정 공급사 값을 함께 보내지 않으며, 사람 승인과 구매 실행은 별도입니다.' : '정책 미지정 · 원문 고정 공급사 값으로 검토합니다. 미상인 값을 추정하지 않습니다.';};
       select.addEventListener('change',update); usage.addEventListener('change',update); update();
     });
   }

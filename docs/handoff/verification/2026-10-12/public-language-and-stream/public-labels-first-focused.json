@@ -1,0 +1,46 @@
+{
+  "status": "focused_pass",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "tests/js/test_public_display_language.js"
+      ],
+      "exit": 0,
+      "stdout": "Public display language PASS; raw text, unknown values, custom names and A alias preserved\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "D:/work/study/hyd-iot-edu/.venv314/Scripts/python.exe",
+        "-m",
+        "pytest",
+        "tests/test_portal_names_display_policy.py",
+        "tests/test_c3_bc_review.py",
+        "tests/test_portal_remaining_ui.py",
+        "-k",
+        "generated_names or known_technical_names or case_record or business_approval_context or failed_tool_attempt or generic_approval_record",
+        "-q"
+      ],
+      "exit": 0,
+      "stdout": "......                                                                   [100%]\n6 passed, 23 deselected in 5.74s\n",
+      "stderr": ""
+    }
+  ],
+  "disabled_display_policy_expected_failures": 9,
+  "sha256": {
+    "it/portal/www/caseRecord.js": "630872924ced59ad27d3aab2a1b18484d7cf8b539f1a24edc0f6f4ad23559f76",
+    "it/portal/www/compare.js": "06ec17cbd9ea31bbd9b9fc091244ca925b6904db340b546ccaf31d95772090da",
+    "it/portal/www/enterprise.js": "20af9e7b70b0f15ef221f266b6054bd1017d91a814608cc67803674fd72b3285",
+    "it/portal/www/hitl.js": "4aa6271e4e48872436aa495acfa7cd295874b203fc36c4484fca050ccd896e9e",
+    "it/portal/www/index.html": "64e3325d39557ae3ffe016891492676d88b9dd4d01367adf50725b6415458401",
+    "it/portal/www/main.js": "1051fe9bb267efae9efaa7b37f1b110e6695082aaf46cffda5ae4d58066f97ff",
+    "it/portal/www/names.json": "01a472e6a84d9428f65dd5878a2ae3efe612afe3959d8ec15f342b2b05a87efc",
+    "it/portal/www/plainWords.js": "91ac536559f90c1799ee442664026b0093327fb9b4521930bdeb285cc7bd933b",
+    "it/portal/www/ui.js": "8b5c67c52e13f1c6a77e8f7b4432a93d7c24d7134d638da4d1245f1bfa5e338d",
+    "it/portal/www/whatif.js": "813403e9e652e8eeac1d1c10d1aca1a3819fbea386de20076e63e1bb24aeb5f1",
+    "scripts/portal_names.py": "f89443832655839f8975664e3f9616b4c8a351127dbb573c5916672466f93e2e"
+  },
+  "preserved": "Source data, raw folds, user-defined names, API/schema/runtime model values, document IDs, emails, A original alias and recommendation unchanged",
+  "first_harness_failure": "Test used unqualified pm_status; corrected to actual MCP tool identity mcp__enterprise-maint__pm_status; product not altered to admit unregistered tool"
+}

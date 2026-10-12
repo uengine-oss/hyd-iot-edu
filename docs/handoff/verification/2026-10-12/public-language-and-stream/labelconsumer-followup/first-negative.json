@@ -1,0 +1,9 @@
+{
+  "command": [
+    "node",
+    "tests/js/test_public_display_language.js"
+  ],
+  "exit": 1,
+  "stdout": "",
+  "stderr": "node:internal/assert/utils:77\n    throw err;\n    ^\n\nAssertionError [ERR_ASSERTION]: wait: 처리 엔진\n    at Object.<anonymous> (D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\js\\test_public_display_language.js:37:40)\n    at Module._compile (node:internal/modules/cjs/loader:1854:14)\n    at Object..js (node:internal/modules/cjs/loader:1985:10)\n    at Module.load (node:internal/modules/cjs/loader:1577:32)\n    at Module._load (node:internal/modules/cjs/loader:1379:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n\nNode.js v24.16.0\n"
+}

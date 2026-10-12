@@ -1,0 +1,15 @@
+{
+  "files": [
+    "ui.js",
+    "enterprise.js",
+    "main.js",
+    "hitl.js",
+    "plainWords.js",
+    "caseRecord.js",
+    "agents.js",
+    "whatif.js",
+    "compare.js"
+  ],
+  "sha256": "db330dd13b0c753db3012287e6e046826e0d29d510643f26560448a7b92d1501",
+  "scope": "cache only after label implementation freeze; no CSS/color change"
+}

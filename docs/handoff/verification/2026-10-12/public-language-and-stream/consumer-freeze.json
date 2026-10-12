@@ -1,0 +1,12 @@
+{
+  "changed": [
+    "it/portal/www/caseRecord.js",
+    "tests/js/test_public_display_language.js",
+    "it/portal/www/index.html"
+  ],
+  "source_count": 819,
+  "capture_count": 19,
+  "backend_changed": false,
+  "served_bind_mount": true,
+  "earlier_owned_warning_proof": "Before consumer-only change; flow diagnostic source unchanged"
+}

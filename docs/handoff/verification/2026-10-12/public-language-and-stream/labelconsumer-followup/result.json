@@ -1,0 +1,24 @@
+{
+  "status": "focused_pass_frozen",
+  "command": [
+    "node",
+    "tests/js/test_public_display_language.js"
+  ],
+  "exit": 0,
+  "stdout": "Public display language PASS; raw text, unknown values, custom names and A alias preserved\n",
+  "stderr": "",
+  "sha256": {
+    "it/portal/www/caseRecord.js": "156d96a655d9431551d1042ab556e2c5c6dee4dbadb7a2c73b5b8038873ec33c",
+    "tests/js/test_public_display_language.js": "8ae52afcfb6aa8c5ee5c8134b7489fae8154a30cd8cdaebbedfc18aef974adc4"
+  },
+  "consumer_paths": [
+    "process:wait systemStep",
+    "timerStep deadline",
+    "reportStep participant notification",
+    "endStep completion"
+  ],
+  "first_failure": "first-negative.json contains actual wait actor engine assertion, reproducing native semantic failure",
+  "harness_followup": "Raw assertion initially supplied instance result_report but reportStep correctly reads own w.output.result_report; corrected fixture to actual consumer schema, no product fallback. Original source text raw and immutable assertions PASS.",
+  "references": "ProcessGPT monorepo persistence/display separation, cached Vue InstanceOutput raw/display boundary and ontology-studio FilePanel source/output separation previously directly read.",
+  "boundary": "Known sys:process label shared via hydWords.system; unknown identifiers, raw report text, A approved names/recommendation unchanged. No live writes, deployment, backend, models or full tests."
+}

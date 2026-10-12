@@ -1,8 +1,8 @@
-/* A7 손익 · What-if · 규칙 바꿔 보기 — 시험 실행만. window.hydWhatif.mount(el)
+/* A7 조건별 손익 · 규칙 바꿔 보기 — 시험 실행만. window.hydWhatif.mount(el)
    판단 한 번을 읽기 전용으로 계산해 기준으로 삼고(POST /api/agent/whatif), 시험값 · 규칙 시험값은 그 기준의 사본에만 적용한다.
    업무 DB · 지식 그래프 · 순위 정책은 바뀌지 않는다("원래대로"는 시험값을 비우고 기준 결과로 돌아간다).
    요약(지금 1순위 · 무엇이 바뀌었나)을 먼저, 상세(항목별 출처 · 경계값 · 계수)는 접어 둔다.
-   B5: 규칙 탭의 "관점 중요도" — BSC 관점(이름은 지식 그래프에서)마다 비중을 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
+   B5: 규칙 탭의 "관점 중요도" — 성과 관점(이름은 지식 그래프에서)마다 비중을 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산된다. */
 (function () {
   const W = { el: null, asset: 'HYD-01', pattern: '', patterns: null, base: null, view: null, bounds: null, boundsMsg: '', tab: 'money',
     busy: false, msg: '', values: {}, policy: { weights: {}, penalties: {}, perspectives: {} }, perspForm: {}, weeks: null, weeksForm: { card: '', variable: 'load_pct', value: '', weeks: 4 },
@@ -51,12 +51,12 @@
   async function runWeeks() {
     if (!W.base || W.busy) return;
     const f = W.weeksForm;
-    if (!f.card) { W.msg = '몇 주 What-if를 볼 카드를 고르세요'; render(); return; }
+    if (!f.card) { W.msg = '주간 조건별 예측을 볼 카드를 고르세요'; render(); return; }
     W.busy = true; W.msg = ''; render();
     try {
       const change = f.value === '' ? {} : { [f.variable]: Number(f.value) };
       W.weeks = await call(`/${W.base.id}/weeks`, { card: f.card, weeks: Number(f.weeks) || 4, change, policy: W.policy });
-    } catch (e) { W.msg = '몇 주 What-if를 계산하지 못했습니다: ' + e.message; }
+    } catch (e) { W.msg = '주간 조건별 예측을 계산하지 못했습니다: ' + e.message; }
     finally { W.busy = false; render(); }
   }
 
@@ -82,7 +82,7 @@
     const v = W.view;
     if (!v) { W.el.innerHTML = html + UI.empty('설비와 이상 패턴을 고르고 불러오기를 누르세요', '카드별 손익(원), 1순위가 바뀌는 값, 몇 주 뒤 지표를 시험해 봅니다'); wire(); return; }
     html += UI.evaluationHtml(v) + summaryHtml(v);
-    html += UI.tabs([['money', '카드별 손익'], ['values', '값 바꿔 보기', Object.keys(W.values).length || null], ['weeks', '몇 주 What-if'],
+    html += UI.tabs([['money', '카드별 손익'], ['values', '값 바꿔 보기', Object.keys(W.values).length || null], ['weeks', '주간 조건별 예측'],
       ['rules', '규칙 바꿔 보기', ruleCount() || null]], W.tab, 'data-wi-tab');
     html += `<div class="tab-pane ${W.tab === 'money' ? 'on' : ''}">${moneyPane(v)}</div><div class="tab-pane ${W.tab === 'values' ? 'on' : ''}">${valuesPane(v)}</div>`
       + `<div class="tab-pane ${W.tab === 'weeks' ? 'on' : ''}">${weeksPane(v)}</div><div class="tab-pane ${W.tab === 'rules' ? 'on' : ''}">${rulesPane(v)}</div>`;
@@ -176,7 +176,7 @@
     const pv = v.perspectives || { available: false, reason: '관점 정보가 없습니다', perspectives: [] };
     let html = '<h3 class="sec" style="margin-top:var(--s5)">관점 중요도 바꿔 보기</h3>';
     if (!pv.available) return html + `<p class="neg">${esc(pv.reason || '')}</p>`;
-    html += '<p class="field-hint">BSC 관점마다 중요도(배)를 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산됩니다. 빈 칸은 1배, 0은 그 관점을 보지 않음. 원본 순위 정책 · 지식은 그대로입니다.</p>';
+    html += '<p class="field-hint">성과 관점마다 중요도(배)를 주면 카드 점수의 성과 지표 득실이 그 비중으로 다시 계산됩니다. 빈 칸은 1배, 0은 그 관점을 보지 않음. 원본 순위 정책 · 지식은 그대로입니다.</p>';
     html += `<div class="form-grid">${pv.perspectives.map(p => UI.field({ label: `${p.name} (배)`,
       hint: p.inUse ? '이 판단의 득실: ' + p.measures.join(', ') : '이 판단의 카드 득실에 나오지 않는 관점 — 바꿔도 순위가 그대로입니다',
       input: `<input type="number" step="any" min="0" max="10" data-wi-persp="${esc(p.id)}" value="${esc(W.perspForm[p.id] ?? '')}" placeholder="1">` })).join('')}</div>`;
@@ -260,7 +260,7 @@
       + `<div class="muted">${esc(i.formula || i.missing || '')}</div>`
       + UI.fold(`출처 ${(i.sources || []).length}`, (i.sources || []).map(x => `<div>${UI.chipText(x.kind, tone[x.kind] || 'neutral')} ${esc(x.where)}</div>`).join('') || '<span class="neg">출처 없음</span>', { cls: 'small' }) + '</div>').join('');
     return UI.fold(`예상 손익 <b class="${m.total_won < 0 ? 'neg' : ''}">${esc(won(m.total_won))}</b>${m.complete ? '' : ' <span class="chip tone-warning sm">일부 미확인</span>'}`,
-      rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '손익 · What-if' 화면에서</p>`, { cls: 'small' });
+      rows + `<p class="field-hint">${esc(m.basis || '')} · 값 바꿔 보기와 경계값은 '조건별 손익' 화면에서</p>`, { cls: 'small' });
   }
 
   window.hydWhatif = { mount, moneyFold, _W: W, _render: render };

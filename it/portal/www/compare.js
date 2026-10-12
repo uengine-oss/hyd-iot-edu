@@ -6,13 +6,13 @@
   const TOOL = {
     diagnose: '원인 진단', gather_facts: '판단 사실 수집', evaluate_cards: '후보 · 규정 · 순위 판단', precedents: '과거 선택 조회',
     tradeoffs: '성과 지표 득실 조회', dmn_rules: '판단 규칙 조회', inputs: '판단 입력 · 출처 조회', timeseries_schema: '시계열 구조 조회',
-    timeseries_query: '시계열 질의', mes_orders: 'MES 생산오더 조회', erp_contract: 'ERP 계약 조회', erp_inventory: 'ERP 재고 조회',
-    cmms_history: 'CMMS 정비 이력 조회', qms_lots: 'QMS 로트 조회', scm_suppliers: 'SCM 공급사 조회', ems_demand: 'EMS 전력 조회',
+    timeseries_query: '시계열 질의', mes_orders: '생산 오더 조회', erp_contract: '계약 조회', erp_inventory: '재고 조회',
+    cmms_history: '정비 이력 조회', qms_lots: '품질 로트 조회', scm_suppliers: '공급사 조회', ems_demand: '전력 조회',
     read_neo4j_cypher: '지식 그래프 질의', submit_decision: '판단 제출', write_neo4j_cypher: '지식 그래프 쓰기', forecast_actions: '조치 예측',
-    query: '업무 DB 자유 질의', describe_schema: '업무 DB 구조 조회', describe_catalog: '업무 DB 목록 조회', get_neo4j_schema: '그래프 구조 조회',
+    query: '업무 자료 자유 질의', describe_schema: '업무 자료 구조 조회', describe_catalog: '업무 자료 목록 조회', get_neo4j_schema: '그래프 구조 조회',
     purchase_context:'구매 부품 근거 조회', evaluate_purchase:'구매 후보 비교', submit_purchase:'구매 판단 등록 (승인 · 실행 아님)',
   };
-  const SERVER = { 'hyd-dmn': '판단 엔진', enterprise: '업무 DB', neo4j: '지식 그래프', '-': '' };
+  const SERVER = { 'hyd-dmn': '판단 엔진', enterprise: '업무 자료', neo4j: '지식 그래프', '-': '' };
   const STATUS = { EVALUATED: ['판단 완료', 'success'], WITHHELD: ['근거 부족 · 보류', 'warning'], NO_ENGINE_TOOL: ['판단 도구 없음', 'danger'],
     FAILED: ['실패', 'danger'], NO_FEASIBLE_OPTION: ['가능한 조치 없음', 'danger'], REJECTED_BY_GUARDRAIL: ['안전 규칙으로 중단', 'danger'] };
   const CALL = { DONE: ['완료', 'success'], BLOCKED: ['막힘', 'warning'], FAILED: ['실패', 'danger'] };

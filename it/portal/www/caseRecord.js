@@ -269,14 +269,14 @@
       const read = used.length ? `<ul class="cr-list">${used.map(r => { const x = r.data; return `<li>${e(hhmmss(r.t0))} <b>${e(UI.skillLabel(x,true).label)}</b> — ${e(W().toolName(x.via))} 파일 읽기 요청${x.known === false ? ` ${UI.chipText('제공 목록에 없는 스킬', 'warning')}` : x.version ? ` <span class="muted">판 ${e(x.version)}</span>` : ''}${UI.fold('읽기 요청 원문',rawBlock(x),{cls:'small'})}${W().id(r.job)}</li>`; }).join('')}</ul>` : '<p class="muted">파일 읽기 기록 없음</p>';
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `${delivery}<h6>이 단계의 파일 읽기 요청 ${used.length}건 <span class="muted">(모든 실행의 도구 호출 기록)</span></h6>${read}
         <p class="muted">파일 읽기 요청은 읽기 성공을 뜻하지 않습니다. 본문을 업무에 적용했는지는 이 기록만으로 확인할 수 없습니다.</p>
-        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(UI.actorName(w.user_id, ag.name) || W().who(w.user_id), w.user_id)}</dd></div><div><dt>쓸 수 있는 도구</dt><dd>${servers.map(x => `<span class="chip tone-neutral sm">${e(W().system(x))}</span>`).join(' ') || '–'}</dd></div></dl>` : ''}`, { open: true }));
       const skills = runs.flatMap(r => Array.isArray(r.data.skills) ? r.data.skills : []);
       if (skills.length) chips.push(chip(UI.skillDeliverySummary(skills), skills.some(k=>k.written === false) ? 'danger' : 'neutral'));
       chips.push(chip(used.length ? `파일 읽기 요청 ${used.length}건` : '파일 읽기 기록 없음', 'neutral'));
     } else {
       const servers = (ag && ag.tools) || [];
       sections.push(sec('스킬 전달 · 파일 읽기 기록', `<p class="cr-gapline">스킬 전달 기록이 없습니다. 전달 여부를 확인할 수 없습니다.</p>${skillCalls.length ? `<p>이 처리 건의 스킬 도구 호출: ${skillCalls.map(r => `<b>${e(W().ask(r.tool, r.input))}</b>`).join(', ')}</p>` : ''}
-        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(ag.name || W().who(w.user_id), w.user_id)}</dd></div>
+        ${ag ? `<dl class="cr-kv"><div><dt>AI 일꾼</dt><dd>${named(UI.actorName(w.user_id, ag.name) || W().who(w.user_id), w.user_id)}</dd></div>
           <div><dt>현재 설정의 스킬</dt><dd>${(ag.skills || []).length ? ag.skills.map(s => `<span class="chip tone-neutral sm">${e(s)}</span>`).join(' ') : '<span class="muted">설정 없음</span>'}</dd></div>
           <div><dt>쓸 수 있는 도구</dt><dd>${servers.map(s => `<span class="chip tone-neutral sm">${e(W().system(s))}</span>`).join(' ') || '–'}</dd></div></dl>
           <p class="cr-gapline">현재 설정은 이 처리 건에 전달된 스킬의 기록이 아닙니다.</p>` : ''}`, {open:true}));
@@ -334,7 +334,7 @@
     else sentence = b.terminal?.event_type === 'task_deferred' ? `도구를 ${tools.length}번 쓴 실행은 평가를 보류했습니다. 다시 평가할 때까지 기다립니다.` : b.awaiting ? 'AI 일꾼이 일을 받기를 기다리는 중입니다.' : b.live ? (tools.length ? `도구를 ${tools.length}번 썼고, 지금 일하는 중입니다.` : 'AI 일꾼이 실행을 시작했습니다.') : '기록된 결과 문장이 없습니다.';
     if (recorded && d && d!==ctx.d) sentence = `당시 ${sentence}`;
     const lastOpen = b.live ? [...b.rows].reverse().find(r => r.kind === 'tool' && r.status === 'running') : null;
-    return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? ag.name : W().who(w.user_id) || 'AI 일꾼', sentence, chips, sections,
+    return Object.assign(b, { type: 'agent', lane: 'agent', icon: 'agent', title: b.name, actor: ag ? UI.actorName(w.user_id, ag.name) : W().who(w.user_id) || 'AI 일꾼', sentence, chips, sections,
       now: lastOpen ? `${W().toolName(lastOpen.tool)} — ${W().ask(lastOpen.tool, lastOpen.input)}` : b.live ? '다음 행동을 정하는 중' : '', ids: [w.user_id, w.activity_id] });
   }
 
@@ -345,7 +345,7 @@
       const pat = (gc.alert && gc.alert.pattern) || ctx.v.pattern;
       if (top) out.push(pathHtml([['경보', W().pattern(pat), pat], ['증상', (top.symptoms || []).join(' · ')], ['고장 유형', top.failureMode, top.failureModeId], ['원인', top.name, top.id]], ['→', '→', '←']));
       const causes = (gc.causes || []);
-      if (causes.length) out.push(`<h6>원인 후보와 증거 — 센서 기록 DB 에서 잰 값</h6><div class="cr-scroll"><table class="cr-table"><thead><tr><th>원인</th><th>점수</th><th>증거</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${
+      if (causes.length) out.push(`<h6>원인 후보와 증거 — 센서 기록 에서 잰 값</h6><div class="cr-scroll"><table class="cr-table"><thead><tr><th>원인</th><th>점수</th><th>증거</th><th>잰 값</th><th>기준</th><th>판정</th></tr></thead><tbody>${
         causes.map(c => (c.evidence || [{}]).map((x, i) => `<tr class="${c.id === (top && top.id) ? 'win' : ''}">${i === 0 ? `<td rowspan="${(c.evidence || [{}]).length}">${named(c.name, c.id)}</td><td rowspan="${(c.evidence || [{}]).length}" class="num">${e(W().num(c.score))}</td>` : ''}<td>${e(x.name || '–')}</td><td class="num">${x.value != null ? e(W().num(x.value)) : '–'}</td><td class="num">${x.threshold != null ? `${x.expect === 'lt' ? '<' : x.expect === 'gte' ? '≥' : x.expect === 'gt' ? '>' : x.expect === 'lte' ? '≤' : ''} ${e(W().num(x.threshold))}` : '–'}</td><td>${x.status ? UI.chipText(x.passed ? '맞음' : '아님', x.passed ? 'success' : 'neutral') : ''}</td></tr>`).join('')).join('')}</tbody></table></div>`);
     }
     if (d) {
@@ -498,7 +498,7 @@
       if (hist.length) sections.push(sec('설비와 주고받은 기록', `<ul class="cr-list">${hist.map(h => `<li>${e(hhmmss(h.t))} ${e(UI.status(h.state))}${h.note ? ` · ${e(W().rule(UI.logText(h.note)))}` : ''}</li>`).join('')}</ul>`, { open: true }));
       if (!inc) incidentGap(ctx, '설비 응답(명령 번호 · 응답 · 안전 연동)');
     } else if (/WO_CREATE|WO_RESCHEDULE/.test(tool)) {
-      icon = 'workorder'; target = '정비 시스템 (CMMS)';
+      icon = 'workorder'; target = '정비 관리';
       const wo = out.work_order || (w.status === 'CANCELLED' ? {} : v.work_order) || {};
       const win = (wo.after && wo.after.window) || '';
       const scoped=W().maintenanceReceiptHtml(wo);
@@ -509,7 +509,7 @@
       else if (wo.detail) sections.push(sec('등록한 내용', `<p>${e(W().text(hydResultReport.receiptDetail(wo)))}</p>`, { open: true }));
       const m = mailOf(wo); if (m) { sentence += ` 그리고 ${m.arguments.to}에게 메일을 보냈습니다.`; chips.push(chip('메일 1통')); sections.push(sec('보낸 메일', mailHtml(m), { open: true })); }
     } else if (/PR_CREATE/.test(tool)) {
-      icon = 'order'; target = 'ERP';
+      icon = 'order'; target = '구매 · 재고 관리';
       const po = out.purchase_order || v.purchase_order || {};
       const sup = supplierName(ctx, v.approved_supplier);
       sentence = po.ref ? `${target}에 발주 ${po.ref}${W().josa(po.ref, '을/를')} 넣었습니다 — ${sup} ${v.approved_qty != null ? v.approved_qty + '개' : ''} ${v.approved_amount != null ? W().num(v.approved_amount) + '만원' : ''}${po.after && po.after.lead_d != null ? `, 리드타임 ${po.after.lead_d}일` : ''}.` : `${target}에 발주를 넣는 중입니다.`;
@@ -529,7 +529,7 @@
       if (m.work_order) chips.push(chip(`${m.work_order} 완료`, 'success'));
       if (m.notice) sections.push(sec('정비 완료 알림', `<p>${e(W().text(m.notice))}</p>`, { open: true }));
     } else if (tool === 'process:wait') {
-      icon = 'timer'; target = '처리 엔진';
+      icon = 'timer'; target = W().system('sys:process');
       const p = (out.waited) || ((b.rows.find(r => r.data && r.data.plan) || {}).data || {}).plan;
       sentence = p ? `${p.label || '정해진 시간'}까지 기다렸습니다 (${virtual(p)}).` : '정해진 시간까지 기다리는 중입니다.';
     } else if (tool === 'mcp:call') {
@@ -604,7 +604,7 @@
       if (crit) chips.push(chip(`기준 ${W().criterion(crit)}`));
       if (inc && inc.cleared != null) chips.push(chip(`경보 해제 ${inc.cleared ? '예' : '아니요'}`, inc.cleared ? 'success' : 'warning'));
       if (hist.length) sections.push(sec('사건 기록', `<ul class="cr-list">${hist.filter(h => /RE_OBSERV|RESOLVED|ESCALATED|RECOVER|CLOSED/.test(h.state)).map(h => `<li>${e(hhmmss(h.t))} ${e(UI.status(h.state))}${h.note ? ` · ${e(W().rule(UI.logText(h.note)))}` : ''}</li>`).join('')}</ul>`, { open: true }));
-      if (rec != null && !b.series) ctx.gaps.push({ key: 'reobs', text: '재관측은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록 DB 에는 있음).' });
+      if (rec != null && !b.series) ctx.gaps.push({ key: 'reobs', text: '재관측은 마지막에 잰 값 하나만 남습니다. 지켜본 동안의 값 흐름은 처리 건에 저장되지 않습니다 (센서 기록에는 있음).' });
     } else if (w.tool === 'plant:test-run') {
       const tr = out.test_run || v.test_run || null;
       const settle = b.rows.find(r => r.job === 'TEST_RUN_STARTED');
@@ -628,7 +628,7 @@
     }
     if (b.rows.length) sections.push(sec(`시스템 기록 ${b.rows.length}줄`, sysRowsHtml(b), { open: b.live }));
     sections.push(sec('결과 값 원문', rawBlock(out), { raw: true }));
-    return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: /^(incident:reobserve|plant:test-run)$/.test(w.tool) ? '설비 · 센서' : 'ERP', sentence, chips, sections, verdict,
+    return Object.assign(b, { type: 'check', lane: 'system', icon, title: b.name, actor: /^(incident:reobserve|plant:test-run)$/.test(w.tool) ? '설비 · 센서' : '구매 · 재고 관리', sentence, chips, sections, verdict,
       state: w.status === 'DONE' && verdict === false ? 'bad' : undefined, now: b.live ? '확인하는 중' : '', ids: [w.tool] });
   }
 
@@ -670,7 +670,7 @@
     const ev = ctx.evDefs[b.w.activity_id] || {};
     const host = ev.attachedTo ? UI.flowName((ctx.acts[ev.attachedTo] || {}).name || ev.attachedTo) : '';
     const dur = isoDur(ev.timer || ev.duration || ev.timerDuration || '');
-    return Object.assign(b, { type: 'timer', lane: 'system', icon: 'timer', title: b.name, actor: '처리 엔진 타이머', t0: b.w.end_date || b.w.start_date,
+    return Object.assign(b, { type: 'timer', lane: 'system', icon: 'timer', title: b.name, actor: `${W().system('sys:process')} · 기한 확인`, t0: b.w.end_date || b.w.start_date,
       sentence: b.w.status === 'DONE' ? `${host ? `‘${host}’에 걸어 둔 ` : ''}기한${dur ? `(${dur})` : ''}이 지나 ‘${b.name}’${W().josa(b.name, '이/가')} 울렸습니다${ev.cancelActivity === false ? ' — 원래 일은 계속됩니다' : host ? ` — ‘${host}’${W().josa(host, '은/는')} 멈춥니다` : ''}.` : `‘${b.name}’ 기한을 재는 중입니다.`,
       chips: dur ? [chip(`기한 ${dur}`, 'warning')] : [], sections: [], ids: [b.w.activity_id] });
   }
@@ -690,7 +690,7 @@
       if (facts.length) sections.push(sec('보고에 실은 값', kvTable(facts.map(([k, x]) => [W().fieldName(k) === k.replace(/_/g, ' ') ? (UI.terms['var.' + k] || k) : W().fieldName(k), k === 'approved_role' || k === 'approved_by' ? W().who(x) : k === 'approved_supplier' ? supplierName(ctx, x) : W().value(k, x), k]))));
     }
     sections.push(sec('결과 보고 원문', rawBlock(rep), { raw: true }));
-    return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: '처리 엔진 → 담당자 알림',
+    return Object.assign(b, { type: 'report', lane: 'system', icon: 'flag', title: b.name, actor: `${W().system('sys:process')} → 담당자 알림`,
       sentence: rep ? `${W().text(rep.title || '결과')}: ${rep.outcome || ''}${rep.summary ? ' — ' + W().text(vv?.summary || rep.summary) : ''}` : '결과를 정리하는 중입니다.', chips, sections,
       state: rep && vv && vv.verdict === 'fail' ? 'bad' : undefined, ids: [w.tool] });
   }
@@ -700,7 +700,7 @@
     const rep = window.hydResultReport ? hydResultReport.fromValues(v) : null;
     const end = inst.end_event ? (UI.terms['val.' + String(inst.end_event).replace(/^ev:/, '')] || UI.flowName(String(inst.end_event).replace(/^ev:/, ''))) : '';
     const label = rep ? (rep.label || (rep.verdict === 'ok' ? '정상' : rep.verdict === 'fail' ? '미달' : '확인 결과')) : UI.status(inst.status);
-    return { key: 'end', type: 'end', lane: 'system', icon: 'flag', title: '끝', actor: '처리 엔진', t0: inst.end_date, t1: inst.end_date,
+    return { key: 'end', type: 'end', lane: 'system', icon: 'flag', title: '끝', actor: W().system('sys:process'), t0: inst.end_date, t1: inst.end_date,
       sentence: `${rep && rep.title ? rep.title + ': ' : ''}${label}${rep && rep.summary ? ' — ' + W().text(rep.summary) : ''}${end ? ` (끝: ${end})` : ''}.`,
       chips: [chip(label, rep && rep.verdict === 'ok' ? 'success' : rep && rep.verdict === 'fail' ? 'danger' : 'neutral')], sections: [], state: rep && rep.verdict === 'fail' ? 'bad' : 'ok' };
   }

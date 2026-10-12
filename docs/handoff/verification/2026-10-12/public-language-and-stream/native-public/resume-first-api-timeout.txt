@@ -1,0 +1,8 @@
+Original execution session29644 exited1 before browser creation or screenshot.
+capture.py:26 before={k:get(API+'/api/instances/'+pid) for k,pid in CASES.items()}
+capture.py:13 with urlopen(u,timeout=30) as r:return r.read()
+First URL: http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7
+urllib.request.do_open -> HTTPConnection.getresponse -> HTTPResponse.begin -> _read_status -> socket.recv_into
+TimeoutError: timed out
+No external CDN/font or DOM/JavaScript request was reached by this execution.
+The full original stack remains in tool output session29644. This file does not claim host memory as a confirmed cause.

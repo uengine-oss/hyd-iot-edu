@@ -229,6 +229,8 @@
     if (part?.key === 'task:decide') detail += UI.field({ label: '에이전트 지시문', input: `<textarea data-instruction="${h(t.id)}" rows="3">${h(m.instruction ?? part.contract?.instruction ?? '')}</textarea>` });
     if (part?.config && part.kind === 'service') detail += serviceFields(t, part, m.config || {});
     const lane = (S.view.parsed.lanes.find(l => l.id === t.lane) || {}).name;
+    const dependency = ((S.view.check.dependencies || {}).items || []).find(x => x.node_id === t.id);
+    if (dependency) detail += dependencyLine(dependency);
     return `<tr data-row="${h(t.id)}"><td data-label="단계"><b>${h(t.name || '(이름 없음)')}</b><br><small class="muted">${h(t.type_label)}${lane ? ' · ' + h(lane) : ''}</small></td><td data-label="부품">${sel}</td><td data-label="담당">${who}</td><td data-label="설정">${detail}</td></tr>`;
   }
   const avail = id => [...new Set(((S.view.check.available || {})[id] || []).map(x => x.value))];
@@ -292,7 +294,15 @@
       return `<li ${w.id ? `data-goto="${h(w.id)}"` : ''}>${w.kind_label ? `<b>${h(w.kind_label)} ${h(w.name || w.id)}</b> — ` : ''}${h(x.reason)}</li>`;
     }).join('')}</ul></div>`;
   }
-  const resultBlock = c => c && c.ok ? `<p class="kv-line pos" role="status">사전 검사 통과 — 판본으로 등록할 수 있습니다 (등록해도 운영 판본은 그대로, 배포는 따로).</p>` : problemsBlock(c && c.problems);
+  function dependencyLine(item) {
+    return `<p class="field-hint flow-dependency" role="status">연결 도구 준비 상태: ${h(item.reason)}</p>`;
+  }
+  function dependenciesBlock(dependencies) {
+    if (!dependencies || !dependencies.items || !dependencies.items.length) return '';
+    const count = dependencies.attention_count || 0;
+    return `<div class="card flow-dependencies" role="status"><b>${count ? `연결 도구 준비가 필요한 단계 ${count}개` : '연결 도구의 저장된 검사 확인'}</b><ul>${dependencies.items.map(item => `<li><b>${h(item.node_name)}</b> — ${h(item.reason)}</li>`).join('')}</ul><p class="field-hint">${h(dependencies.note)}</p><p class="field-hint">구조 검사 통과는 실제 연결을 보장하지 않습니다.</p></div>`;
+  }
+  const resultBlock = c => (c && c.ok ? `<p class="kv-line pos" role="status">구조 검사 통과 — 판본으로 등록할 수 있습니다. 외부 도구 연결 성공을 뜻하지 않습니다 (운영 배포는 따로).</p>` : problemsBlock(c && c.problems)) + dependenciesBlock(c && c.dependencies);
 
   function collect() {
     const box = S.el.querySelector('#flowEditor'), m = structuredClone(S.mapping);

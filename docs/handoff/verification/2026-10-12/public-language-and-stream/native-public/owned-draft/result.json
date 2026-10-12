@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "draft_id": "codex-meeting-preflight-20261012-6016ea04",
+  "captures": [
+    {
+      "png": "owned-draft/dependency-warning-1440.png",
+      "width": 1440,
+      "sha256": "52a5069711f8bce2de58967db6d4ce0e581f1b04559046b1688fc39901a32729",
+      "text_sha256": "07835486dd8576c6cafeb381d5d17612db61fc9828ffd2c5aa9cda3640f6a7d8"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Root final source is actually mounted",
+      "passed": true
+    },
+    {
+      "name": "Owned structural check passes while two dependencies require preparation",
+      "passed": true
+    },
+    {
+      "name": "Native two-step dependency warning with structural pass",
+      "passed": true
+    },
+    {
+      "name": "Structural success explicitly does not prove connection",
+      "passed": true
+    },
+    {
+      "name": "Exact stored dependency reason Activity_check",
+      "passed": true
+    },
+    {
+      "name": "Exact stored dependency reason Activity_invite",
+      "passed": true
+    },
+    {
+      "name": "Owned draft exact selection",
+      "passed": true
+    }
+  ],
+  "writes": [],
+  "errors": [],
+  "draft_bytes_unchanged": true,
+  "source_unchanged": true
+}

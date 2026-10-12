@@ -1,0 +1,642 @@
+[
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.8537033000029624,
+    "browser_timing": {
+      "startTime": 1791819129968.2222,
+      "domainLookupStart": 41.47,
+      "domainLookupEnd": 41.499,
+      "connectStart": 41.499,
+      "secureConnectionStart": -1,
+      "connectEnd": 46.253,
+      "requestStart": 46.602,
+      "responseStart": 239.763,
+      "responseEnd": 874.577
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.7511502999695949,
+    "browser_timing": {
+      "startTime": 1791819130120.8171,
+      "domainLookupStart": 46.602,
+      "domainLookupEnd": 46.623,
+      "connectStart": 46.623,
+      "secureConnectionStart": -1,
+      "connectEnd": 111.031,
+      "requestStart": 117.913,
+      "responseStart": 230.822,
+      "responseEnd": 875.067
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 2.652077000006102,
+    "browser_timing": {
+      "startTime": 1791819129959.227,
+      "domainLookupStart": 18.375,
+      "domainLookupEnd": 18.394,
+      "connectStart": 18.394,
+      "secureConnectionStart": -1,
+      "connectEnd": 27.471,
+      "requestStart": 37.014,
+      "responseStart": 2567.062,
+      "responseEnd": 2888.05
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.05059440003242344,
+    "browser_timing": {
+      "startTime": 1791819134837.699,
+      "domainLookupStart": 0.64,
+      "domainLookupEnd": 0.661,
+      "connectStart": 0.661,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.224,
+      "requestStart": 2.409,
+      "responseStart": 26,
+      "responseEnd": 181.481
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.11402450001332909,
+    "browser_timing": {
+      "startTime": 1791819134790.088,
+      "domainLookupStart": 1.042,
+      "domainLookupEnd": 1.062,
+      "connectStart": 1.062,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.827,
+      "requestStart": 4.206,
+      "responseStart": 83.95,
+      "responseEnd": 195.958
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/incidents",
+    "duration_seconds": 4.687566100037657,
+    "browser_timing": {
+      "startTime": 1791819130351.1401,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": 153.662,
+      "responseStart": 4524.635,
+      "responseEnd": 5235.714
+    },
+    "failure": null
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.2204395000007935,
+    "browser_timing": {
+      "startTime": 1791819134775.399,
+      "domainLookupStart": 0.978,
+      "domainLookupEnd": 1.01,
+      "connectStart": 1.01,
+      "secureConnectionStart": -1,
+      "connectEnd": 7.133,
+      "requestStart": 7.446,
+      "responseStart": 191.213,
+      "responseEnd": 285.127
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/flows",
+    "duration_seconds": 5.399631600012071,
+    "browser_timing": {
+      "startTime": 1791819131688.951,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": 3219.157,
+      "responseStart": 5147.599,
+      "responseEnd": 5228.5
+    },
+    "failure": null
+  },
+  {
+    "url": "http://127.0.0.1:8091/api/ontology/graph?asset=HYD-01",
+    "duration_seconds": 7.571100300003309,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/config/cases",
+    "duration_seconds": 7.7477674999972805,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.42352980002760887,
+    "browser_timing": {
+      "startTime": 1791819140131.176,
+      "domainLookupStart": 0.464,
+      "domainLookupEnd": 0.48,
+      "connectStart": 0.48,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.765,
+      "requestStart": 3.102,
+      "responseStart": 86.57,
+      "responseEnd": 323.565
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.3863178000319749,
+    "browser_timing": {
+      "startTime": 1791819140162.139,
+      "domainLookupStart": 1.507,
+      "domainLookupEnd": 1.525,
+      "connectStart": 1.525,
+      "secureConnectionStart": -1,
+      "connectEnd": 3.4,
+      "requestStart": 3.55,
+      "responseStart": 57.029,
+      "responseEnd": 388.791
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.2177436999627389,
+    "browser_timing": {
+      "startTime": 1791819140318.534,
+      "domainLookupStart": 0.742,
+      "domainLookupEnd": 0.774,
+      "connectStart": 0.774,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.66,
+      "requestStart": 2.805,
+      "responseStart": 84.862,
+      "responseEnd": 526.343
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.14650929998606443,
+    "browser_timing": {
+      "startTime": 1791819144725.401,
+      "domainLookupStart": 0.464,
+      "domainLookupEnd": 0.931,
+      "connectStart": 0.931,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.76,
+      "requestStart": 3.224,
+      "responseStart": 87.271,
+      "responseEnd": 134.92
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.1444653999642469,
+    "browser_timing": {
+      "startTime": 1791819144761.0012,
+      "domainLookupStart": 1.195,
+      "domainLookupEnd": 1.21,
+      "connectStart": 1.21,
+      "secureConnectionStart": -1,
+      "connectEnd": 11.187,
+      "requestStart": 14.529,
+      "responseStart": 64.443,
+      "responseEnd": 150.461
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.08287990000098944,
+    "browser_timing": {
+      "startTime": 1791819144820.035,
+      "domainLookupStart": 0.527,
+      "domainLookupEnd": 0.543,
+      "connectStart": 0.543,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.946,
+      "requestStart": 2.379,
+      "responseStart": 65.076,
+      "responseEnd": 204.329
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.06278730003396049,
+    "browser_timing": {
+      "startTime": 1791819149710.109,
+      "domainLookupStart": 0.506,
+      "domainLookupEnd": 0.522,
+      "connectStart": 0.522,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.696,
+      "requestStart": 1.838,
+      "responseStart": 9.347,
+      "responseEnd": 47.869
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.06828879995737225,
+    "browser_timing": {
+      "startTime": 1791819149702.481,
+      "domainLookupStart": 0.522,
+      "domainLookupEnd": 1.034,
+      "connectStart": 1.034,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.175,
+      "requestStart": 2.314,
+      "responseStart": 21.639,
+      "responseEnd": 52.541
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.035151599964592606,
+    "browser_timing": {
+      "startTime": 1791819149750.3801,
+      "domainLookupStart": 0.532,
+      "domainLookupEnd": 0.548,
+      "connectStart": 0.548,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.769,
+      "requestStart": 1.903,
+      "responseStart": 19.039,
+      "responseEnd": 96.227
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/agents/status",
+    "duration_seconds": 7.976328999968246,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/agents/status",
+    "duration_seconds": 7.984265699982643,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/agents/status",
+    "duration_seconds": 7.979170999955386,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/instances?limit=50",
+    "duration_seconds": 8.001966800016817,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/agents/status",
+    "duration_seconds": 8.008863100025337,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/healthz",
+    "duration_seconds": 4.0125975999981165,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/incidents",
+    "duration_seconds": 8.034074600029271,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.08697449997998774,
+    "browser_timing": {
+      "startTime": 1791819154729.013,
+      "domainLookupStart": 0.577,
+      "domainLookupEnd": 0.595,
+      "connectStart": 0.595,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.706,
+      "requestStart": 1.85,
+      "responseStart": 25.32,
+      "responseEnd": 76.54
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.09597970003960654,
+    "browser_timing": {
+      "startTime": 1791819154721.4128,
+      "domainLookupStart": 0.503,
+      "domainLookupEnd": 1.014,
+      "connectStart": 1.014,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.955,
+      "requestStart": 2.092,
+      "responseStart": 55.031,
+      "responseEnd": 114.426
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.06853560003219172,
+    "browser_timing": {
+      "startTime": 1791819154756.267,
+      "domainLookupStart": 1.449,
+      "domainLookupEnd": 1.464,
+      "connectStart": 1.464,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.708,
+      "requestStart": 2.837,
+      "responseStart": 31.697,
+      "responseEnd": 122.659
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/agents/status",
+    "duration_seconds": 8.006017100007739,
+    "browser_timing": {
+      "startTime": 0,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": -1,
+      "responseStart": -1,
+      "responseEnd": -1
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.08865879999939352,
+    "browser_timing": {
+      "startTime": 1791819159714,
+      "domainLookupStart": 0.653,
+      "domainLookupEnd": 0.667,
+      "connectStart": 0.667,
+      "secureConnectionStart": -1,
+      "connectEnd": 3.945,
+      "requestStart": 4.118,
+      "responseStart": 47.104,
+      "responseEnd": 110.606
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.09365349996369332,
+    "browser_timing": {
+      "startTime": 1791819159774.031,
+      "domainLookupStart": 16.396,
+      "domainLookupEnd": 16.411,
+      "connectStart": 16.411,
+      "secureConnectionStart": -1,
+      "connectEnd": 17.62,
+      "requestStart": 20.839,
+      "responseStart": 66.491,
+      "responseEnd": 164.174
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.21283780003432184,
+    "browser_timing": {
+      "startTime": 1791819159711.509,
+      "domainLookupStart": 0.497,
+      "domainLookupEnd": 0.989,
+      "connectStart": 0.989,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.18,
+      "requestStart": 2.599,
+      "responseStart": 196.795,
+      "responseEnd": 233.326
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:8080/api/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7/graph",
+    "duration_seconds": 5.726160800026264,
+    "browser_timing": {
+      "startTime": 1791819157974.326,
+      "domainLookupStart": -1,
+      "domainLookupEnd": -1,
+      "connectStart": -1,
+      "secureConnectionStart": -1,
+      "connectEnd": -1,
+      "requestStart": 0.658,
+      "responseStart": 5714.607,
+      "responseEnd": 5723.177
+    },
+    "failure": null
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.10691909998422489,
+    "browser_timing": {
+      "startTime": 1791819165806.492,
+      "domainLookupStart": 0.436,
+      "domainLookupEnd": 0.45,
+      "connectStart": 0.45,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.382,
+      "requestStart": 1.498,
+      "responseStart": 52.592,
+      "responseEnd": 159.094
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.11658430000534281,
+    "browser_timing": {
+      "startTime": 1791819165803.8599,
+      "domainLookupStart": 0.52,
+      "domainLookupEnd": 0.535,
+      "connectStart": 0.535,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.665,
+      "requestStart": 1.794,
+      "responseStart": 59.307,
+      "responseEnd": 159.907
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.11406740004895255,
+    "browser_timing": {
+      "startTime": 1791819165824.4321,
+      "domainLookupStart": 0.512,
+      "domainLookupEnd": 0.537,
+      "connectStart": 0.537,
+      "secureConnectionStart": -1,
+      "connectEnd": 2.053,
+      "requestStart": 2.217,
+      "responseStart": 77.626,
+      "responseEnd": 184.562
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:9644/v1/status/ready",
+    "duration_seconds": 0.07352149998769164,
+    "browser_timing": {
+      "startTime": 1791819169754.7642,
+      "domainLookupStart": 0.494,
+      "domainLookupEnd": 0.51,
+      "connectStart": 0.51,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.517,
+      "requestStart": 1.674,
+      "responseStart": 63.55,
+      "responseEnd": 142.478
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:3000/api/health",
+    "duration_seconds": 0.10350989998551086,
+    "browser_timing": {
+      "startTime": 1791819169737.927,
+      "domainLookupStart": 0.515,
+      "domainLookupEnd": 0.53,
+      "connectStart": 0.53,
+      "secureConnectionStart": -1,
+      "connectEnd": 1.692,
+      "requestStart": 1.83,
+      "responseStart": 82.451,
+      "responseEnd": 146.263
+    },
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://127.0.0.1:7474/",
+    "duration_seconds": 0.38801369996508583,
+    "browser_timing": {
+      "startTime": 1791819169724.66,
+      "domainLookupStart": 0.515,
+      "domainLookupEnd": 1.041,
+      "connectStart": 1.041,
+      "secureConnectionStart": -1,
+      "connectEnd": 4.437,
+      "requestStart": 4.589,
+      "responseStart": 166.314,
+      "responseEnd": 426.348
+    },
+    "failure": "net::ERR_ABORTED"
+  }
+]

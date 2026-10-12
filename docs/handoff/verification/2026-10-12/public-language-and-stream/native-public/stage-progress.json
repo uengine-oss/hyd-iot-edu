@@ -1,0 +1,10 @@
+{
+  "stage": "owned_warning_captured_waiting_root_NEO_HEALTHY",
+  "png": {
+    "png": "owned-draft/dependency-warning-1440.png",
+    "width": 1440,
+    "sha256": "52a5069711f8bce2de58967db6d4ce0e581f1b04559046b1688fc39901a32729",
+    "text_sha256": "07835486dd8576c6cafeb381d5d17612db61fc9828ffd2c5aa9cda3640f6a7d8"
+  },
+  "writes": 0
+}

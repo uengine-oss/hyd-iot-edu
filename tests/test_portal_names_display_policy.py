@@ -23,3 +23,11 @@ def test_generated_names_keep_maintenance_display_policy():
     assert policy.display_name("미등록 외부 이름") == "미등록 외부 이름"
     assert policy.display_name("unknown:source") == "unknown:source"
     assert policy.display_name("정비 요청") == "정비 요청"
+
+
+def test_known_technical_names_are_display_projection_only():
+    expected = {"CMMS": "정비 관리", "ERP": "구매 · 재고 관리", "MES": "생산 관리", "SCM 구매 포털": "공급망 구매 창구", "Historian (TimescaleDB)": "센서 기록", "SCADA · PLC (cmd-gateway 경유)": "설비 제어", "PLC 상태": "설비 상태", "PLC 운전 모드": "설비 운전 모드", "경남유압 BSC 전략맵": "경남유압 성과 목표"}
+    for original, shown in expected.items():
+        assert policy.display_name(original) == shown
+    for original in ["CMMS-custom-user-title", "HYD-02", "SOP-PM-22", "user@example.com", "unregistered"]:
+        assert policy.display_name(original) == original

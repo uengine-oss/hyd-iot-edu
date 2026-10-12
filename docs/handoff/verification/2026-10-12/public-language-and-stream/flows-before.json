@@ -1,0 +1,268 @@
+{
+  "drafts": [
+    {
+      "proc_def_id": "c3_cooling",
+      "file_name": "cooling-emergency.bpmn",
+      "mapping": {
+        "name": "냉각 긴급 대응",
+        "flows": {
+          "F_no": {
+            "default": true
+          },
+          "F_yes": {
+            "op": "==",
+            "var": "recovered",
+            "value": true
+          },
+          "F_approved": {
+            "op": "==",
+            "var": "approval",
+            "value": "승인"
+          },
+          "F_rejected": {
+            "default": true
+          }
+        },
+        "lanes": {},
+        "start": {
+          "kind": "alert",
+          "patterns": [
+            "COOLER_DEGRADATION"
+          ]
+        },
+        "tasks": {
+          "R_ok": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 긴급 대응 결과",
+              "outcome": "정상",
+              "summary": "유온 정상 · 경보 해제, 작업지시 {work_order.ref}"
+            }
+          },
+          "T_wo": {
+            "part": "task:work-order"
+          },
+          "T_cmd": {
+            "part": "task:command"
+          },
+          "R_fail": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 긴급 대응 결과",
+              "outcome": "미달",
+              "summary": "재관측 기준 미달 — 승인자 {approved_by_name}"
+            }
+          },
+          "T_agent": {
+            "part": "task:decide",
+            "agent": "agent:cooling",
+            "instruction": "쿨러 과열의 원인을 진단하고 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 낸다"
+          },
+          "T_reobs": {
+            "part": "task:reobserve"
+          },
+          "T_notice": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 냉각 조치 승인 지연",
+              "outcome": "승인 지연",
+              "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다"
+            }
+          },
+          "T_approve": {
+            "part": "task:select-or-reject",
+            "role": "운전원"
+          },
+          "R_rejected": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 냉각 조치 결과",
+              "outcome": "반려",
+              "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 설비 명령은 내지 않았습니다"
+            }
+          }
+        },
+        "timers": {
+          "B_overdue": "PT10M"
+        }
+      },
+      "updated_at": "2026-10-11T16:47:56.666Z"
+    },
+    {
+      "proc_def_id": "c3_pm",
+      "file_name": "pm-planning.bpmn",
+      "mapping": {
+        "name": "정기 정비",
+        "flows": {
+          "F_approved": {
+            "op": "==",
+            "var": "approval",
+            "value": "승인"
+          },
+          "F_rejected": {
+            "default": true
+          }
+        },
+        "lanes": {},
+        "start": {
+          "kind": "alert",
+          "patterns": [
+            "PM_DUE"
+          ]
+        },
+        "tasks": {
+          "R_ok": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 정기 정비 결과",
+              "outcome": "정상",
+              "summary": "정비 오더 {work_order.ref} 등록 · 생산팀 공지 — {work_order.detail}"
+            }
+          },
+          "T_wo": {
+            "part": "task:work-order",
+            "config": {
+              "mail": {
+                "to": "production@hyd.local",
+                "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by_name})",
+                "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}"
+              },
+              "window_var": "alert.evidence.night_window_id"
+            }
+          },
+          "T_agent": {
+            "part": "task:decide",
+            "agent": "agent:pm-plan",
+            "instruction": "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다"
+          },
+          "T_notice": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 정기 정비 승인 지연",
+              "outcome": "승인 지연",
+              "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다"
+            }
+          },
+          "T_approve": {
+            "part": "task:select-or-reject",
+            "role": "설비보전팀장"
+          },
+          "R_rejected": {
+            "part": "svc:report",
+            "config": {
+              "title": "{asset} 정기 정비 결과",
+              "outcome": "반려",
+              "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 정비 오더를 내지 않았습니다(정기 점검 도래 표시는 그대로)"
+            }
+          }
+        },
+        "timers": {
+          "B_overdue": "PT10M"
+        }
+      },
+      "updated_at": "2026-10-11T16:47:59.595Z"
+    },
+    {
+      "proc_def_id": "c3_spare",
+      "file_name": "spare-purchase.bpmn",
+      "mapping": {
+        "name": "예비품 구매",
+        "flows": {
+          "F_approved": {
+            "op": "==",
+            "var": "approval",
+            "value": "승인"
+          },
+          "F_rejected": {
+            "default": true
+          }
+        },
+        "lanes": {},
+        "start": {
+          "kind": "alert",
+          "patterns": [
+            "SPARE_BELOW_MIN"
+          ]
+        },
+        "tasks": {
+          "R_ok": {
+            "part": "svc:report",
+            "config": {
+              "title": "{approved_part_no} 재고 보충 결과",
+              "outcome": "입고 완료",
+              "summary": "{goods_receipt.detail}"
+            }
+          },
+          "T_gr": {
+            "part": "svc:goods-receipt",
+            "config": {
+              "immediate": true
+            }
+          },
+          "T_po": {
+            "part": "svc:erp-po",
+            "config": {
+              "mail": {
+                "to": "supplier@hyd.local, receiving@hyd.local",
+                "body": "공급사 {approved_supplier}, 금액 {approved_amount}만원, 발주 번호 {purchase_order.ref}",
+                "subject": "[발주] {approved_part_no} {approved_qty}개"
+              }
+            }
+          },
+          "T_agent": {
+            "part": "task:decide",
+            "agent": "agent:spare-buy",
+            "instruction": "필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정으로 비교해 발주 카드를 낸다"
+          },
+          "T_notice": {
+            "part": "svc:report",
+            "config": {
+              "title": "예비품 구매 승인 지연",
+              "outcome": "승인 지연",
+              "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다"
+            }
+          },
+          "T_approve": {
+            "part": "task:select-or-reject",
+            "role": "구매 담당"
+          },
+          "R_rejected": {
+            "part": "svc:report",
+            "config": {
+              "title": "예비품 구매 결과",
+              "outcome": "반려",
+              "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 발주하지 않았습니다(재고 보충 필요 표시는 그대로)"
+            }
+          }
+        },
+        "timers": {
+          "B_overdue": "PT10M"
+        }
+      },
+      "updated_at": "2026-10-11T16:48:01.728Z"
+    }
+  ],
+  "versions": [
+    {
+      "id": "c3_cooling",
+      "version": "1",
+      "name": "냉각 긴급 대응",
+      "registered_at": "2026-10-11T16:47:56.719Z",
+      "file_name": "bpmn.io 가져오기: cooling-emergency.bpmn"
+    },
+    {
+      "id": "c3_pm",
+      "version": "1",
+      "name": "정기 정비",
+      "registered_at": "2026-10-11T16:47:59.681Z",
+      "file_name": "bpmn.io 가져오기: pm-planning.bpmn"
+    },
+    {
+      "id": "c3_spare",
+      "version": "1",
+      "name": "예비품 구매",
+      "registered_at": "2026-10-11T16:48:01.818Z",
+      "file_name": "bpmn.io 가져오기: spare-purchase.bpmn"
+    }
+  ]
+}

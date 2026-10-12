@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>유압설비 모니터링 · 조치 포탈</title>
+<link rel="stylesheet" href="tokens.css?v=20261008-a147">
+<link rel="stylesheet" href="styles.css?v=20261008-a147">
+<link rel="stylesheet" href="enterprise.css?v=20261008-a147">
+<link rel="stylesheet" href="main.css?v=20261008-a147">
+<link rel="stylesheet" href="hitl.css?v=20261008-a147">
+<link rel="stylesheet" href="instances.css?v=20261012-toolnames">
+<link rel="stylesheet" href="components.css?v=20261008-a147">
+<link rel="stylesheet" href="taskDetail.css?v=20261008-u1">
+<link rel="stylesheet" href="mcp.css?v=20261008-u3">
+<link rel="stylesheet" href="shell.css?v=20261008-u7">
+<link rel="stylesheet" href="kpi.css?v=20261008-a8">
+<link rel="stylesheet" href="flows.css?v=20261011-portal">
+<link rel="stylesheet" href="compare.css?v=20261008-a10">
+<link rel="stylesheet" href="trace.css?v=20261009-u1b">
+<link rel="stylesheet" href="caseRecord.css?v=20261009-a161g">
+<link rel="stylesheet" href="theme.css?v=20261010-a161m">
+</head>
+<body>
+<a class="skip-link" href="#content">본문으로 건너뛰기</a>
+<aside class="rail" id="navigation" aria-label="메뉴">
+  <button class="brand active" id="brandHome" title="홈"><span class="brand-mark" aria-hidden="true">H</span><span><strong>HYD Lab</strong><small>유압설비 조치 포탈</small></span></button>
+  <nav aria-label="주 메뉴">
+    <!-- A5 (U7): 수강생 동선 묶음. 순서가 곧 이전/다음 화면 순서다. 계약: docs/handoff/verification/2026-10-08/u7-shell.md -->
+    <div class="navgroup" data-term="nav.group.work">작업</div>
+    <button data-tab="inbox" data-icon="inbox" data-term="nav.inbox">내 작업함</button>
+    <button data-tab="instances" data-icon="process" data-term="nav.instances">처리 건</button>
+    <div class="navgroup" data-term="nav.group.plant">설비</div>
+    <button data-tab="scenario" data-icon="play" data-term="nav.scenario">결함 시뮬레이션</button>
+    <button data-tab="oil" data-icon="alert">오일 분석 입력</button>
+    <button data-tab="incidents" data-icon="alert" data-term="nav.incidents">이상 확인 · 조치</button>
+    <button data-tab="trends" data-icon="chart" data-term="nav.trends">실시간 모니터링</button>
+    <div class="navgroup" data-term="nav.group.judge">판단</div>
+    <button data-tab="decision" data-icon="decision" data-term="nav.decision">조치 판단 규칙</button>
+    <button data-tab="whatif" data-icon="whatif" data-term="nav.whatif">손익 · What-if</button>
+    <button data-tab="process" data-icon="process" data-term="nav.process">승인과 실행</button>
+    <button data-tab="flows" data-icon="process">흐름 가져오기</button>
+    <div class="navgroup" data-term="nav.group.knowledge">지식</div>
+    <button data-tab="ontology" data-icon="nodes" data-term="nav.ontology">지식 지도</button>
+    <button data-tab="skills" data-icon="skills" data-term="nav.skills">조치 방법</button>
+    <button data-tab="knowledge" data-icon="book" data-term="nav.knowledge">지식 관리</button>
+    <button data-tab="fabric" data-icon="fabric" data-term="nav.fabric">데이터 연결</button>
+    <div class="navgroup" data-term="nav.group.ai">AI 구성</div>
+    <button data-tab="ask" data-icon="agent" data-term="nav.ask">에이전트에게 질문</button>
+    <button data-tab="agents" data-icon="agent" data-term="nav.agents">에이전트</button>
+    <button data-tab="mcp" data-icon="tool" data-term="nav.mcp">도구(MCP)</button>
+    <button data-tab="compare" data-icon="compare" data-term="nav.compare">시험 비교</button>
+    <button data-tab="eval" data-icon="score" data-term="nav.eval">판단 채점</button>
+    <div class="navgroup" data-term="nav.group.kpi">성과</div>
+    <button data-tab="kpi" data-icon="kpi" data-term="nav.kpi">KPI</button>
+    <div class="navgroup" data-term="nav.group.system">시스템</div>
+    <button data-tab="main" data-icon="home" data-term="nav.main">홈</button>
+    <button data-tab="home" data-icon="map" data-term="nav.home">시스템 구성</button>
+    <button data-tab="admin" data-icon="gear" data-term="nav.admin">관리</button>
+  </nav>
+  <div class="foot"><span class="env-dot"></span><div><strong>시뮬레이션</strong></div></div>
+</aside>
+
+<header class="strip">
+  <button class="menu-toggle" id="menuToggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigation">☰</button>
+  <div class="breadcrumb"><span id="pageGroup">시스템</span><b id="pageLocation">홈</b></div>
+  <div class="strip-status"><span id="inboxBadge"></span><span class="env-badge">시뮬레이션</span><span>진행 중 <b id="openCount" class="num">–</b></span><details class="stream-ticker" id="streamTicker" aria-live="polite"><summary><i class="live-dot off"></i><span>연결 중</span></summary></details><div class="dots" id="healthDots"></div></div>
+  <details class="clock-pop"><summary aria-label="시뮬레이션 시각">시뮬레이션 시각</summary><div><span>시뮬레이션 시각 <b id="simT" class="num">–</b></span><span>시간 배율 <b id="scale" class="num">–</b>×</span></div></details>
+  <!-- A5 (U7): "나" 자리 · 알림 배지. 내용은 window.hydInbox 가 채운다(없으면 비어 있음 표시). -->
+  <div class="shell-me" id="shellMe" aria-label="나"></div>
+  <button type="button" class="shell-bell" id="shellBell" aria-label="알림"><span class="shell-badge" id="shellBadge" hidden></span></button>
+</header>
+<button class="nav-scrim" id="navScrim" aria-label="메뉴 닫기" hidden></button>
+
+<main id="content" tabindex="-1">
+  <!-- ───────── 홈 ───────── -->
+  <section class="view active" id="view-main">
+    <div class="page-head"><h1>홈</h1><div class="page-tools"><button class="btn small primary" id="mainOperate">설비 상태 확인</button><button class="btn small" id="mainArch">시스템 구성 보기</button></div></div>
+    <div class="stat-cards" id="mainStats"></div>
+    <div class="sec-head"><h2>설비 · 데이터 · AI 연결</h2><button class="btn small" id="heroZoom" aria-pressed="false">도식 확대</button></div>
+    <div class="m-hero" id="mainHero" tabindex="0" role="region" aria-label="설비와 AI 흐름도"></div>
+    <div class="sec-head"><h2>바로가기</h2></div>
+    <div class="m-go" id="mainStages"></div>
+  </section>
+
+  <!-- ───────── 시스템 구성 ───────── -->
+  <section class="view" id="view-home">
+    <div class="page-head"><h1>시스템 구성</h1></div>
+    <div class="stack" id="stack"></div>
+    <div class="legend"><span><i class="z ot">OT</i> 설비 · 실시간 운전</span><span><i class="z dmz">DMZ</i> 유일한 통로</span><span><i class="z it">IT</i> 기록 · 분석 · 지식 · 처리</span></div>
+  </section>
+
+  <!-- ───────── 지식 지도 ───────── -->
+  <section class="view" id="view-ontology">
+    <div class="page-head"><h1>지식 지도</h1></div>
+    <div class="toolbar">
+      <label>설비 <select id="ontoAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label>
+      <label>이름 공간 <select id="ontoNs"><option value="">수업 기준</option></select></label>
+      <label>이상 패턴 경로 <select id="ontoFocus"><option value="">전체 보기</option></select></label>
+      <input type="search" id="ontoSearch" placeholder="이름 검색" aria-label="항목 검색">
+      <button class="btn small" id="ontoReload">다시 읽기</button>
+    </div>
+    <div class="chips" id="ontoLayers"></div>
+    <div class="muted" id="ontoStats"></div>
+    <div class="onto">
+      <div class="onto-map" id="ontoMap"></div>
+      <aside class="onto-node" id="ontoNode"></aside>
+    </div>
+  </section>
+
+  <!-- ───────── 조치 방법 ───────── -->
+  <section class="view" id="view-skills">
+    <div class="page-head"><h1>조치 방법</h1></div>
+    <div class="split skills-split">
+      <div><div class="listhead"><span>조치 방법</span><button class="btn small" id="skillNew">새 조치 방법</button></div><div class="list" id="skillList"></div></div>
+      <div class="detail" id="skillDetail"></div>
+    </div>
+  </section>
+
+  <!-- ───────── 조치 판단 규칙 ───────── -->
+  <section class="view" id="view-decision">
+    <div class="page-head"><h1>조치 판단 규칙</h1></div>
+    <section class="card dec-form" aria-label="판단 조건">
+      <header class="card-head"><div class="card-title"><h3>판단 조건</h3></div></header>
+      <div class="form-grid">
+        <div class="field"><label for="decAsset">설비</label><select id="decAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></div>
+        <div class="field wide-2"><label for="decPattern">이상 패턴</label><select id="decPattern"></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="decMode">운전 모드</label><select id="decMode"><option value="">현재 값 사용</option><option value="REMOTE_AUTO">원격 자동</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
+        <div class="field"><label for="decState">설비 상태</label><select id="decState"><option value="">현재 값 사용</option><option value="RUN">운전 중</option><option value="TRIP">보호 정지</option></select></div>
+        <div class="field"><label for="decStandby">예비 펌프</label><select id="decStandby"><option value="">현재 값 사용</option><option value="true">가용</option><option value="false">정비 중</option></select></div>
+        <div class="field"><label for="decFan">팬 100 % 누적 (시간)</label><input id="decFan" type="number" min="0" step="1" placeholder="현재 값 사용"></div>
+      </div>
+      <div class="form-actions"><button class="btn primary" id="decRun">판단 실행</button></div>
+    </section>
+    <div id="decResult"></div>
+  </section>
+
+  <!-- ───────── 승인과 실행 ───────── -->
+  <section class="view" id="view-process">
+    <div class="page-head"><h1>승인과 실행</h1></div>
+    <h2 class="sec">업무 흐름</h2>
+    <div class="flow-wrap" id="procBpmn"></div>
+    <div class="sec-head"><h2>판단 결과</h2></div>
+    <div class="split">
+      <div><div class="list" id="decList"></div></div>
+      <div class="detail" id="decDetail"></div>
+    </div>
+    <h2 class="sec">기업 시스템 현황 <small>모의 환경</small></h2>
+    <div class="boards" id="sysBoards"></div>
+    <details class="fold" id="txFold"><summary>시스템 실행 이력</summary><div class="fold-body"><div class="audit" id="txList"></div></div></details>
+  </section>
+
+  <!-- ───────── 처리 건 ───────── -->
+  <section class="view" id="view-instances">
+    <div class="page-head"><h1>처리 건</h1></div>
+    <div id="instBanner"></div>
+    <!-- A141: 행동(내 차례 → 선택 · 승인 · 입력)이 먼저 -->
+    <section class="todo-wrap"><div class="sec-head" style="margin-top:0"><h2>내 차례</h2></div>
+      <div class="list todo-grid" id="todoList"></div></section>
+    <div id="todoPanel"></div>
+    <div class="split inst-split">
+      <div><div class="listhead"><span>처리 건</span><span class="row-wrap"><select id="instStatus" aria-label="상태"><option value="">최근 50건</option><option value="RUNNING">진행 중</option><option value="COMPLETED">완료</option></select><button class="btn small" id="instReload">다시 읽기</button></span></div><div class="list" id="instList"></div></div>
+      <div class="detail" id="instDetail"></div>
+    </div>
+    <!-- A161-U1: 선택한 처리 건의 실시간 처리 과정은 상세(진행 탭)에 있다. 여기는 모든 처리 건을 한꺼번에 보는 보조 정보라 접어 둔다 -->
+    <details class="fold stream-fold" id="streamFold"><summary>모든 처리 건의 실시간 활동 <span class="chip tone-neutral sm" id="streamFoldCount"></span></summary><div class="fold-body"><section class="stream-panel" id="streamPanel"></section></div></details>
+    <details class="fold stream-fold" id="agentsFold"><summary><i class="live-dot off" id="agentsFoldDot"></i> 지금 일하는 AI 일꾼 <span class="chip tone-neutral sm" id="agentsFoldCount"></span></summary><div class="fold-body"><div id="agentsPanel"></div></div></details><!-- U1: agentsPanel.js -->
+  </section>
+
+
+  <!-- ───────── 결함 시뮬레이션 ───────── -->
+  <section class="view" id="view-scenario">
+    <div class="page-head"><h1>결함 시뮬레이션</h1><div class="page-tools"><label class="row-wrap">시간 배율 <select id="selScale"><option>5</option><option>10</option><option selected>20</option><option>40</option></select>×</label><button class="btn small" id="btnReset">전체 초기화</button></div></div>
+    <div id="scenarioMsg" class="muted" role="status" aria-live="polite"></div>
+    <div class="units" id="units"></div>
+    <details class="fold" style="margin-top:var(--s6)"><summary>최근 제어 요청 결과</summary><div class="fold-body"><div class="log" id="gwLog"></div></div></details>
+  </section>
+
+  <!-- ───────── 이상 확인 · 조치 ───────── -->
+  <section class="view" id="view-incidents">
+    <div class="page-head"><h1>이상 확인 · 조치</h1></div>
+    <div class="scada" id="scada"></div>
+    <div id="hitlPanel"></div>
+    <div class="split scada-split">
+      <div>
+        <div class="listhead"><span id="incListTitle">사건</span><button class="btn small" id="btnAllInc">전체 보기</button></div>
+        <div class="list" id="incList"></div>
+      </div>
+      <div class="rightcol">
+        <div class="detail" id="incDetail"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── 실시간 모니터링 ───────── -->
+  <section class="view" id="view-trends">
+    <div class="page-head"><h1>실시간 모니터링</h1><div class="page-tools"><label class="row-wrap">설비 <select id="selAsset"><option>HYD-01</option><option>HYD-02</option><option>HYD-03</option></select></label><a id="grafanaLink" class="btn small" target="_blank" rel="noopener">전체 대시보드 ↗</a></div></div>
+    <div id="trendsNotice" class="inst-banner off" hidden></div>
+    <div class="wide"><iframe id="pTs1" height="330" title="유온"></iframe></div>
+    <div class="grid2">
+      <iframe id="pScore" height="240" title="이상 점수"></iframe>
+      <iframe id="pCe" height="240" title="냉각 효율"></iframe>
+      <iframe id="pSp" height="240" style="grid-column:1/-1" title="설정값"></iframe>
+      <iframe id="pAlerts" height="320" title="경보"></iframe>
+    </div>
+  </section>
+
+  <!-- ───────── 지식 관리 ───────── -->
+  <section class="view" id="view-knowledge">
+    <div class="page-head"><h1>지식 관리</h1></div>
+    <h2 class="sec">매뉴얼 등록</h2>
+    <div class="upload card" id="manualUpload">
+      <div class="form-grid">
+        <div class="field"><label>매뉴얼 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="manualFile" accept=".md,.txt,.pdf" aria-label="매뉴얼 파일 선택"><span class="file-name" id="manualFilename">선택한 파일 없음</span></label><p class="field-hint">절 제목과 번호 매긴 단계가 있는 문서 · 예시 문서 <a href="samples/HM-8_cooler-fan-manual.md" download>A 쿨러 · 팬(HM-8)</a> → <a href="samples/PM-02_powerpack-pm-checklist.md" download>B 정기 점검표(PM-02)</a> → <a href="samples/PR-07_spare-parts-standard.md" download>C 예비품 기준(PR-07)</a> 순서로 적재</p></div>
+        <div class="field"><label for="manualBy">담당자</label><input id="manualBy" value="지식 관리자"></div>
+        <div class="field"><label for="manualDocumentId">등록할 문서</label><select id="manualDocumentId" aria-describedby="manualDocumentHelp"><option value="">새 문서 등록</option></select><p id="manualDocumentHelp" class="muted">파일을 미리보기 전에 등록할 문서를 선택하세요.</p></div>
+      </div>
+      <div class="form-actions"><button class="btn" id="manualPreview">미리보기</button></div>
+      <div id="manualResult"></div>
+      <div id="manualSources"></div>
+    </div>
+    <div id="manualHistory"></div>
+    <h2 class="sec">업무 데이터 연결</h2>
+    <div class="upload card" id="ddlUpload">
+      <div class="form-grid">
+        <div class="field"><label>스키마 파일</label><label class="file-picker"><span class="btn small">파일 선택</span><input type="file" id="ddlFile" accept=".sql,.txt,.ddl" aria-label="스키마 파일 선택"><span class="file-name" id="ddlFilename">선택한 파일 없음</span></label><p class="field-hint">업무 DB의 테이블 정의(CREATE TABLE) · <a href="samples/legacy-plant-db.sql" download>옛 설비 DB 예시</a></p></div>
+        <div class="field"><label for="ddlDatasource">원천 연결</label><input id="ddlDatasource" value="hyd-enterprise"></div>
+        <div class="field"><label for="ddlCatalog">데이터베이스</label><input id="ddlCatalog" value="postgres"></div>
+        <div class="field"><label for="ddlBy">담당자</label><input id="ddlBy" value="지식 관리자"></div>
+      </div>
+      <div class="form-actions"><button class="btn" id="ddlPreview">미리보기</button></div>
+      <div id="ddlResult"></div>
+      <div id="ddlHistory"></div>
+    </div>
+    <h2 class="sec">질의 보기</h2>
+    <div class="toolbar" id="ontoTpl">
+      <button class="btn small" data-t="t1_causes">경보 → 원인 · 증거</button><button class="btn small" data-t="t2_skills">고장 유형 → 조치 방법</button>
+      <button class="btn small" data-t="t3_dmn">규칙 · 임계값</button><button class="btn small" data-t="t3_inputs">판단 입력과 출처</button>
+      <button class="btn small" data-t="t3_tradeoffs">성과 지표 득실</button><button class="btn small" data-t="t3_forecasts">조치별 예측</button>
+      <button class="btn small" data-t="t3_precedents">과거 선택</button><button class="btn small" data-t="t3_roles">승인 역할</button>
+    </div>
+    <pre class="tpl" id="ontoTplText">질의를 선택하면 내용이 표시됩니다.</pre>
+  </section>
+
+
+  <!-- ───────── 관리 ───────── -->
+  <section class="view" id="view-admin">
+    <div class="page-head"><h1>관리</h1></div>
+    <details class="fold admin-panel" id="sourceEventsPanel">
+      <summary>원천 이벤트 접수 · 오류 확인 · 재시도</summary>
+      <div class="fold-body">
+      <div class="form-grid"><div class="field"><label for="sourceEventStatus">상태</label><select id="sourceEventStatus">
+        <option value="FAILED">처리 실패</option><option value="CONFLICT">원문 충돌</option><option value="INVALID">잘못된 입력</option>
+        <option value="WAITING">연결 대기</option><option value="PENDING">처리 대기</option><option value="CLAIMED">처리 중</option>
+        <option value="HANDLED">처리 완료</option><option value="DUPLICATE">중복 접수</option><option value="">전체</option>
+      </select></div></div>
+      <div class="form-actions"><button class="btn small" id="sourceEventRefresh">처음부터 읽기</button><button class="btn small" id="sourceEventMore">다음 접수 읽기</button><button class="btn small" id="sourceEventDetailRefresh" disabled>선택 접수 다시 읽기</button></div>
+      <p id="sourceEventMessage" role="status" class="muted"></p><div id="sourceEventList" class="list"></div>
+      <div id="sourceEventDetail"></div>
+      <form id="sourceEventRetry" hidden class="form">
+        <section class="form-section"><h4>다시 처리</h4><div class="form-grid">
+          <div class="field"><label for="sourceEventActor">담당자 <i class="req">*</i></label><input id="sourceEventActor" required></div>
+          <div class="field wide"><label for="sourceEventReason">사유 <i class="req">*</i></label><textarea id="sourceEventReason" rows="3" required></textarea><p class="field-hint">원문과 접수 당시 정의를 유지해 다시 처리합니다</p></div>
+        </div></section>
+        <div class="form-actions"><button class="btn primary" type="submit">다시 처리</button></div>
+      </form>
+      </div>
+    </details>
+    <details class="fold admin-panel" id="definitionEditor">
+      <summary>프로세스 정의 등록 · 버전 선택 · 실행</summary>
+      <div class="fold-body form">
+      <section class="form-section"><h4>정의</h4><div class="form-grid">
+        <div class="field"><label for="definitionChoice">등록된 정의 · 버전</label><select id="definitionChoice"><option value="">불러오는 중</option></select></div>
+        <div class="field"><label for="definitionFile">정의 JSON 파일</label><input type="file" id="definitionFile" accept=".json,application/json"></div>
+        <div class="field wide"><label for="definitionJson">정의 JSON</label><textarea id="definitionJson" rows="10" spellcheck="false" placeholder="processDefinitionId, version, activities, events, sequences, forms"></textarea><p class="field-hint">같은 버전은 바꿀 수 없습니다. 변경할 때는 새 버전을 씁니다.</p></div>
+      </div>
+      <div class="form-actions"><button class="btn small" id="definitionRefresh">목록 새로 읽기</button><button class="btn small" id="definitionCopy">선택한 정의 가져오기</button><button class="btn" id="definitionPublish">이 정의 버전 등록</button></div></section>
+      <section class="form-section"><h4>실행</h4><div class="form-grid">
+        <div class="field"><label for="definitionEvent">시작 이벤트 ID <i class="req">*</i></label><input id="definitionEvent" placeholder="같은 요청의 중복 실행을 막는 고유 ID"></div>
+        <div class="field"><label for="definitionRunName">실행 이름</label><input id="definitionRunName"></div>
+        <div class="field wide"><label for="definitionValues">시작 변수 JSON</label><textarea id="definitionValues" rows="3" spellcheck="false">{}</textarea></div>
+        <div class="field wide"><label for="definitionAlert">경보 JSON</label><textarea id="definitionAlert" rows="3" spellcheck="false" placeholder="설비 경보로 시작할 때만"></textarea></div>
+      </div>
+      <div class="form-actions"><span id="definitionMessage" role="status" class="form-msg"></span><button class="btn primary" id="definitionStart">선택한 정의 버전으로 실행</button></div></section>
+      </div>
+    </details>
+    <details class="fold admin-panel" id="definitionDeployPanel">
+      <summary>흐름 판본 배포 · 비교 · 되돌리기 — 다음 경보부터 적용</summary>
+      <div class="fold-body form">
+      <section class="form-section"><h4>정의와 기록자</h4><div class="form-grid">
+        <div class="field"><label for="deployChoice">정의</label><select id="deployChoice"><option value="">불러오는 중</option></select></div>
+        <div class="field"><label for="deployBy">담당자 <i class="req">*</i></label><input id="deployBy" placeholder="배포 이력에 남습니다"></div>
+        <div class="field wide"><label for="deployReason">사유 <i class="req">*</i></label><textarea id="deployReason" rows="2" placeholder="왜 이 판본을 운영에 올리는지(되돌릴 때도 같은 칸)"></textarea><p class="field-hint">검사를 통과한 판본만 배포됩니다. 열린 처리 건은 자기 판본으로 끝나고, 새 경보부터 운영 판본으로 열립니다.</p></div>
+      </div>
+      <div class="form-actions"><span id="deployMessage" role="status" class="form-msg"></span><button class="btn small" id="deployRefresh">다시 읽기</button><button class="btn" id="deployRollback" disabled>이전 배포 판본으로 되돌리기</button></div></section>
+      <div id="deployStatus"></div>
+      <div id="deployVersions" class="list"></div>
+      <div id="deployCompare"></div>
+      <div id="deployHistory"></div>
+      </div>
+    </details>
+    <details class="fold admin-panel" id="configBundlePanel"><summary>내 사례 · 출발본 내보내기 · 불러오기 · 기준으로 되돌리기</summary><div class="fold-body" id="configBundleView"></div></details>
+  </section>
+
+  <!-- ───────── A5 (U7) 새 화면 자리: 각 단위가 window.hyd<X>.mount(<컨테이너>) 로 채운다 ───────── -->
+  <section class="view" id="view-inbox">
+    <div class="page-head"><h1>내 작업함</h1></div>
+    <div class="shell-mount" id="inboxView"></div>
+  </section>
+  <section class="view" id="view-ask">
+    <div class="page-head"><h1>에이전트에게 질문</h1></div>
+    <div class="shell-mount" id="askView"></div>
+  </section>
+  <section class="view" id="view-agents">
+    <div class="page-head"><h1>에이전트</h1></div>
+    <div class="shell-mount" id="agentsView"></div>
+  </section>
+  <section class="view" id="view-mcp">
+    <div class="page-head"><h1>도구(MCP)</h1></div>
+    <div class="shell-mount" id="mcpView"></div>
+  </section>
+  <section class="view" id="view-compare">
+    <div class="page-head"><h1>시험 비교</h1></div>
+    <div class="shell-mount" id="compareView"></div>
+  </section>
+  <section class="view" id="view-eval">
+    <div class="page-head"><h1>판단 채점</h1></div>
+    <div class="shell-mount" id="evalView"></div>
+  </section>
+  <section class="view" id="view-whatif">
+    <div class="page-head"><h1>손익 · What-if</h1></div>
+    <div class="shell-mount" id="whatifView"></div>
+  </section>
+  <section class="view" id="view-kpi">
+    <div class="page-head"><h1>KPI</h1></div>
+    <div class="shell-mount" id="kpiView"></div>
+  </section>
+  <section class="view" id="view-fabric">
+    <div class="page-head"><h1>데이터 연결</h1></div>
+    <div class="shell-mount" id="fabricView"></div>
+  </section>
+  <section class="view" id="view-flows">
+    <div class="page-head"><h1>흐름 가져오기</h1></div>
+    <div class="shell-mount" id="flowsView"></div>
+  </section>
+  <section class="view" id="view-oil"><div class="page-head"><h1>오일 분석 입력</h1></div><div class="shell-mount" id="oilView"></div></section>
+</main>
+  <nav class="page-navigation" aria-label="화면 순서대로 이동">
+    <button id="pagePrev" class="page-direction" type="button"></button>
+    <span id="pagePosition" class="page-position" aria-label="현재 화면 위치"></span>
+    <button id="pageNext" class="page-direction next" type="button"></button>
+  </nav>
+
+<div id="caption"></div>
+<script src="ui.js?v=20261012-pm-deferral"></script>
+<script src="layers.js?v=20261008-a147"></script>
+<script src="app.js?v=20261012-bizstatus"></script>
+<script src="trace.js?v=20261012-pm-deferral"></script>
+<script src="enterprise.js?v=20261012-evaluation"></script>
+<script src="main.js?v=20261008-a147"></script>
+<script src="flow.js?v=20261009-u1"></script>
+<script src="legacyMeaning.js?v=20261008-a9"></script>
+<script src="hitl.js?v=20261012-evaluation"></script>
+<script src="instanceSteps.js?v=20261008-a147"></script>
+<script src="instanceRework.js?v=20261008-a147"></script>
+<script src="instanceEffects.js?v=20261009-u1"></script>
+<script src="taskDeferral.js?v=20261008-a147"></script>
+<script src="approvalCard.js?v=20261012-tool-purpose-purchase-cost"></script>
+<script src="plainWords.js?v=20261012-maintenance-labels"></script>
+<script src="caseRecord.js?v=20261012-maintenance-labels"></script>
+<script src="resultReport.js?v=20261012-remaining"></script>
+<script src="instances.js?v=20261012-evaluation"></script>
+<script src="toolNames.js?v=20261012-display"></script>
+<script src="liveStream.js?v=20261012-publicstream-full"></script>
+<script src="inbox.js?v=20261010-capg1g7"></script>
+<script src="taskDetail.js?v=20261012-pm-deferral"></script>
+<script src="agentsPanel.js?v=20261009-u1"></script>
+<script src="definitionRegistry.js?v=20261012-display"></script>
+<script src="agents.js?v=20261012-display"></script>
+<script src="definitionDeploy.js?v=20261009-u1"></script>
+<script src="sourceEvents.js?v=20261008-a147"></script>
+<script src="evaluation.js?v=20261009-u1"></script>
+<script src="mcp.js?v=20261012-display"></script>
+<script src="whatif.js?v=20261012-evaluation"></script>
+<!-- 새 화면 스크립트(window.hydInbox 등)는 이 줄 위에 둔다. shell.js 는 맨 마지막: selectTab 을 감싸고 해시 주소를 맞춘다. -->
+<script src="fabric.js?v=20261008-a11"></script>
+<script src="kpi.js?v=20261012-remaining"></script>
+<script src="ask.js?v=20261009-u1"></script>
+<script src="compare.js?v=20261012-evaluation"></script>
+<script src="flows.js?v=20261012-names"></script>
+<script src="studentCases.js?v=20261012-k1"></script>
+<script src="configBundle.js?v=20261012-k1"></script>
+<script src="oilInput.js?v=20261008-b7"></script>
+<script src="shell.js?v=20261009-u1"></script>
+</body>
+</html>

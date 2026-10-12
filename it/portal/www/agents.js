@@ -64,7 +64,7 @@
   }
   function registerNames(agents) {                // 처리 건 · 작업함 화면의 "누가"가 에이전트 id 대신 이름으로 보이게
     let changed = false;
-    (agents || []).forEach(a => { if (UI.performers[a.id] !== a.name) { UI.performers[a.id] = a.name; changed = true; } });
+    (agents || []).forEach(a => { if (UI.performers[a.id] !== UI.actorName(a.id, a.name)) { UI.performers[a.id] = UI.actorName(a.id, a.name); changed = true; } });
     if (changed) UI.namesVersion = (UI.namesVersion || 0) + 1;
   }
   async function loadOptions() {
@@ -105,13 +105,13 @@
     const sel = a.id === st.pick.agents && !st.form ? ' sel' : '';
     const agentSteps = a.steps.filter(s => s.agent).length;
     const count = a.kind === 'agent' ? `맡은 단계 ${agentSteps} · 도구 ${a.tools.length} · 스킬 ${a.skills.length}` : `맡은 단계 ${a.steps.length}`;
-    return `<div class="item${sel}" role="button" tabindex="0" data-pick-agent="${esc(a.id)}" title="${esc(a.name)}">` +
-      `<div class="row"><strong>${esc(a.name)}</strong>${a.kind === 'agent' ? mineChip(a.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
+    return `<div class="item${sel}" role="button" tabindex="0" data-pick-agent="${esc(a.id)}" title="${esc(UI.actorName(a.id, a.name))}">` +
+      `<div class="row"><strong>${esc(UI.actorName(a.id, a.name))}</strong>${a.kind === 'agent' ? mineChip(a.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
       `<span class="sub">${esc(clip(a.goal || a.role || '목표가 적혀 있지 않습니다'))}</span><span class="sub">${esc(count)}</span></div>`;
   }
   function skillItem(s) {
     const sel = s.skill_name === st.pick.skills && !st.form ? ' sel' : '';
-    const who = s.agents.length ? s.agents.map(a => a.name).join(', ') : '붙은 에이전트 없음';
+    const who = s.agents.length ? s.agents.map(a => UI.actorName(a.id, a.name)).join(', ') : '붙은 에이전트 없음';
     return `<div class="item${sel}" role="button" tabindex="0" data-pick-skill="${esc(s.skill_name)}">` +
       `<div class="row"><strong>${esc(s.title)}</strong>${mineChip(s.origin)}${s.agents.length ? '' : UI.chipText('미배정', 'warning')}</div>` +
       `<span class="sub">${esc(s.description || '설명 없음')}</span><span class="sub">${esc(who)}</span></div>`;
@@ -153,7 +153,7 @@
     const note = !isAgent ? '정해진 업무를 하는 시스템입니다. 에이전트 설정은 쓰지 않습니다.'
       : d.editable ? '내가 만든 에이전트입니다. 고친 내용은 다음 실행부터 쓰입니다.'
         : '기본 에이전트는 수업 기준이라 고칠 수 없습니다. "복제해서 고치기"로 사본을 만들어 고치세요.';
-    let html = `<div class="detail-head"><div class="row"><h2>${esc(d.name)}</h2>${isAgent ? mineChip(d.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
+    let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.actorName(d.id, d.name))}</h2>${isAgent ? mineChip(d.origin) : UI.chipText('시스템 수행자', 'neutral')}</div>` +
       `<div class="sub">${esc(note)}</div></div>` +
       UI.card({ title: '요약', body: summary, actions: agentActions(d) });
     if (isAgent) {
@@ -182,11 +182,11 @@
     const attachedIds = new Set(s.agents.map(a => a.id));
     const agents = s.agents.length ? s.agents.map(a => {
       const own = mineAgents.some(m => m.id === a.id);
-      return `<span class="row" style="display:inline-flex;gap:4px"><button type="button" class="btn small" data-goto-agent="${esc(a.id)}">${esc(a.name)}</button>` +
+      return `<span class="row" style="display:inline-flex;gap:4px"><button type="button" class="btn small" data-goto-agent="${esc(a.id)}">${esc(UI.actorName(a.id, a.name))}</button>` +
         (own ? `<button type="button" class="btn small" data-detach="${esc(a.id)}" title="이 에이전트에서 떼기">떼기</button>` : '') + '</span>';
     }).join(' ') : '<span class="muted">붙은 에이전트가 없습니다. 붙이지 않은 스킬은 어떤 실행에도 들어가지 않습니다.</span>';
     const can = mineAgents.filter(a => !attachedIds.has(a.id));
-    const attach = can.length ? `<div class="row" style="gap:var(--s2);margin-top:var(--s2)"><select data-attach-to aria-label="붙일 에이전트">${can.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('')}</select>` +
+    const attach = can.length ? `<div class="row" style="gap:var(--s2);margin-top:var(--s2)"><select data-attach-to aria-label="붙일 에이전트">${can.map(a => `<option value="${esc(a.id)}">${esc(UI.actorName(a.id, a.name))}</option>`).join('')}</select>` +
       `<button type="button" class="btn small" data-attach>내 에이전트에 붙이기</button></div>`
       : `<p class="muted">붙일 수 있는 내 에이전트가 없습니다. 기본 에이전트에는 붙일 수 없으니 복제해서 붙이세요.</p>`;
     const steps = s.steps.length ? chips(s.steps.map(stepLabel)) : '<span class="muted">없음</span>';
@@ -284,7 +284,7 @@
     const rows = b.steps.map(s => {
       const cur = s.assigned ? s.assigned.agent_id : '';
       const opts = [`<option value="">기본 담당 (${esc(s.default_names.join(', '))})</option>`].concat(
-        b.agents.filter(a => !s.default_agents.includes(a.id)).map(a => `<option value="${esc(a.id)}" ${a.id === cur ? 'selected' : ''}>${esc(a.name)}${a.origin === 'user' ? ' · 내가 만든' : ''}</option>`)).join('');
+        b.agents.filter(a => !s.default_agents.includes(a.id)).map(a => `<option value="${esc(a.id)}" ${a.id === cur ? 'selected' : ''}>${esc(UI.actorName(a.id, a.name))}${a.origin === 'user' ? ' · 내가 만든' : ''}</option>`)).join('');
       return `<tr><td>${esc(stepLabel(s))}</td><td>${esc(s.default_names.join(', '))}</td>` +
         `<td><select data-map="${esc(s.definition_id)}|${esc(s.activity_id)}" aria-label="${esc(s.name)} 담당">${opts}</select></td>` +
         `<td>${s.assigned ? UI.chipText('배정됨', 'accent') : UI.chipText('기본', 'neutral')}</td></tr>`;

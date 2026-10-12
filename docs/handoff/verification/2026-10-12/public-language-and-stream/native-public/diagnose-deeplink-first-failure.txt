@@ -1,0 +1,8 @@
+Original diagnostic execution exited 1 before native tab selection.
+File: diagnose-deeplink.py line 12
+Call: page.goto('http://127.0.0.1:8088/#/instances/'+CASE,wait_until='domcontentloaded')
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://127.0.0.1:8088/#/instances/c3_pm.d99ee952-f943-42fd-ba53-745b569522f7", waiting until "domcontentloaded"
+The full unchanged exception is also preserved in original tool output session79043.
+No conclusion about deep-link product behavior can follow: diagnostic did not reach DOM selection.

@@ -552,12 +552,12 @@ function renderSystems() {
   if (!s) { box.innerHTML = UI.empty(UI.t('proc.noEnt'), '', 'compact'); return; }
   const t = (rows, cols, labels) => rows.length ? '<div class="table-scroll" tabindex="0"><table><thead><tr>' + labels.map(x => `<th>${esc(x)}</th>`).join('') + '</tr></thead><tbody>' + rows.slice(0, 6).map(r => '<tr>' + cols.map(c => `<td>${esc(r[c] ?? '–')}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>' : UI.empty(UI.t('proc.noChange'), '', 'compact');
   const boards = [
-    ['MES', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)'])],
-    ['CMMS', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['번호', '설비', '작업', '정비 시점'])],
-    ['ERP', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'], ['번호', '대상', '상태 · 출고처'])],
+    ['생산 관리', t(s.mes.orders.map(o => ({ ...o, where: o.moved_from ? `${o.moved_from} → ${o.asset}` : o.asset })), ['order_id', 'where', 'due_in_h'], ['생산오더', '설비', '납기까지 (시간)'])],
+    ['정비 관리', t(s.cmms.work_orders, ['id', 'asset', 'task', 'window'], ['번호', '설비', '작업', '정비 시점'])],
+    ['구매 · 재고 관리', t([...s.erp.purchase_requests.map(p => ({ a: p.id, b: p.supplierName, c: p.status })), ...s.erp.shipments.map(x => ({ a: x.id, b: `${x.item} ${x.qty}개`, c: x.from }))], ['a', 'b', 'c'], ['번호', '대상', '상태 · 출고처'])],
     // A098: the enterprise state exposes qms.lot_dispositions and ems.ems_actions (A086 schema)
-    ['QMS', t((s.qms?.lot_dispositions || []).map(h => ({ a: h.lot || h.lot_id || h.id, b: h.disposition || h.status || '' })), ['a', 'b'], ['로트', '처분'])],
-    ['EMS', t((s.ems?.ems_actions || []).map(x => ({ action: x.action || x.description || x.kind || JSON.stringify(x).slice(0, 80) })), ['action'], ['실행 내용'])],
+    ['품질 관리', t((s.qms?.lot_dispositions || []).map(h => ({ a: h.lot || h.lot_id || h.id, b: h.disposition || h.status || '' })), ['a', 'b'], ['로트', '처분'])],
+    ['전력 관리', t((s.ems?.ems_actions || []).map(x => ({ action: x.action || x.description || x.kind || JSON.stringify(x).slice(0, 80) })), ['action'], ['실행 내용'])],
   ];
   box.innerHTML = boards.map(([sys, body]) => `<div class="board"><header><b>${esc(UI.t('sys.' + sys))}</b><span>${esc(sys)}</span></header>${body}</div>`).join('');
   $('#txList').innerHTML = ent.tx.length ? ent.tx.slice(0, 12).map(x => UI.eventRecord({ time: x.t, name: UI.who(x.system), actor: x.by, detail: x.detail, raw: x, extra: txDiffFold(x) })).join('') : `<div class="muted">${esc(UI.t('proc.noTx'))}</div>`;

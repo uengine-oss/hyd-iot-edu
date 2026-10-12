@@ -7,9 +7,9 @@
     ['asset', 'HYD-01', 'asset', 700, 318], ['ts1', '센서 TS1', 'asset', 690, 226], ['ce', '센서 CE', 'asset', 706, 410],
     ['sym', '증상 · 유온 상승', 'obs', 800, 176], ['fm', '고장 유형 · 냉각 상실', 'failure', 822, 288], ['cause', '원인 · 쿨러 핀 오염', 'failure', 912, 200],
     ['act', '조치 · 팬 속도 상향', 'action', 990, 112], ['sop', '절차 SOP-COOL-01', 'action', 1105, 152],
-    ['agent', 'AI Agent', 'agent', 960, 326], ['scn', '판단 · 납기 vs 보전', 'decision', 1090, 262],
+    ['agent', '인공지능 에이전트', 'agent', 960, 326], ['scn', '판단 · 납기 vs 보전', 'decision', 1090, 262],
     ['kpi1', '성과 지표 · 납기 준수율', 'org', 1095, 356], ['kpi2', '성과 지표 · 부품 단가', 'org', 1012, 428], ['dept', '영업팀 · 구매팀', 'org', 1112, 472],
-    ['pol', '규정 · 유온 65 ℃', 'org', 826, 450], ['erp', 'ERP', 'sys', 770, 494], ['mes', 'MES', 'sys', 862, 516], ['cmms', 'CMMS', 'sys', 962, 516],
+    ['pol', '규정 · 유온 65 ℃', 'org', 826, 450], ['erp', '구매 · 재고', 'sys', 770, 494], ['mes', '생산 관리', 'sys', 862, 516], ['cmms', '정비 관리', 'sys', 962, 516],
     ['skill', '조치 · 정비 요청', 'sys', 1066, 526],
   ];
   const E = [['asset', 'ts1'], ['asset', 'ce'], ['sym', 'ts1'], ['sym', 'fm'], ['cause', 'fm'], ['cause', 'act'], ['act', 'sop'],
@@ -18,8 +18,12 @@
 
   function nodeSvg([id, label, g, x, y]) {
     if (id === 'agent') {
+      const [first, ...rest] = String(label).split(/\s+/);
+      // Same node geometry and colors; wrap its actual display label inside the circle.
+      const fit = text => Array.from(text).length > 3 ? ' textLength="46" lengthAdjust="spacingAndGlyphs"' : '';
+      const second = rest.join(' ');
       return `<g class="m-agent"><circle cx="${x}" cy="${y}" r="44" class="m-halo"/><circle cx="${x}" cy="${y}" r="30" fill="#1b2430" stroke="#fff" stroke-width="2"/>` +
-        `<text x="${x}" y="${y - 6}" text-anchor="middle" class="m-agent-t">AI</text><text x="${x}" y="${y + 15}" text-anchor="middle" class="m-agent-s">Agent</text></g>`;
+        `<text x="${x}" y="${y - 6}" text-anchor="middle" class="m-agent-t"${fit(first)}>${esc(first)}</text><text x="${x}" y="${y + 15}" text-anchor="middle" class="m-agent-s"${fit(second)}>${esc(second)}</text></g>`;
     }
     const w = Math.max(64, label.length * 12 + 20);
     return `<g class="m-node"><rect x="${x - w / 2}" y="${y - 13}" width="${w}" height="26" rx="13" fill="#1b2430" stroke="${G[g]}" stroke-width="1.6"/>` +

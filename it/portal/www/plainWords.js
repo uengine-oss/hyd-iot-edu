@@ -10,13 +10,13 @@
 
   /* ---------------------------------------------------------------- 시스템 (어디에 물었나 · 어디에 했나) */
   const SERVERS = {
-    neo4j: '지식 그래프', 'hyd-dmn': '판단 엔진', enterprise: '업무 DB (생산 · 구매 · 정비)', 'enterprise-maint': '정비 업무 DB',
-    'enterprise-purchase': '구매 업무 DB', 'hyd-effects': '메일 · 알림', effects: '메일 · 알림',
+    neo4j: '지식 그래프', 'hyd-dmn': '판단 시스템', enterprise: '업무 자료 (생산 · 구매 · 정비)', 'enterprise-maint': '정비 업무 자료',
+    'enterprise-purchase': '구매 업무 자료', 'hyd-effects': '메일 · 알림', effects: '메일 · 알림',
   };
   const SYSTEMS = {
-    'sys:cmms': '정비 시스템 (CMMS)', 'sys:erp': 'ERP (구매 · 재고)', 'sys:mes': '생산 시스템 (MES)', 'sys:scm': '공급망 (SCM)', 'sys:qms': '품질 시스템',
-    'sys:scada': '설비 제어', 'sys:plc': '설비 제어 (PLC)', 'sys:agent': 'AI 일꾼', 'sys:process': '처리 엔진', 'sys:erp-monitor': 'ERP 재고 감시', 'sys:cmms-monitor': '정비 계수기 감시',
-    'actr:pump-drive': '펌프 구동부', 'actr:fan-drive': '쿨러 팬 구동부', 'sys:tsdb': '센서 기록 DB', detector: '센서 경보 감지기',
+    'sys:cmms': '정비 관리', 'sys:erp': '구매 · 재고 관리', 'sys:mes': '생산 관리', 'sys:scm': '공급망 관리', 'sys:qms': '품질 시스템',
+    'sys:scada': '설비 제어', 'sys:plc': '설비 제어', 'sys:agent': '에이전트', 'sys:process': '업무 처리', 'sys:erp-monitor': '재고 감시', 'sys:cmms-monitor': '정비 계수기 감시',
+    'actr:pump-drive': '펌프 구동부', 'actr:fan-drive': '쿨러 팬 구동부', 'sys:tsdb': '센서 기록', detector: '센서 경보 감지기',
   };
   W.system = id => {
     if (!id) return '';
@@ -42,13 +42,13 @@
     night_window_in_h: ['야간 정비 시간까지', 'h'], night_window_at: ['야간 정비 시간', ''], cycle: ['정비 회차', '회'], package: ['정비 묶음', ''], kit_qty: ['키트 수량', '개'],
     kit_part_no: ['키트 부품', ''], bundle_peer: ['함께 정비할 설비', ''], bundle_peer_since_h: ['함께 정비할 설비 운전시간', 'h'], pm_window_open: ['정비 시간 열림', ''],
     configured_base_package: ['등록된 기본 정비 내용', ''], package_semantics: ['정비 내용의 기록 의미', ''],
-    // 예비품 (ERP 재고 · 견적)
+    // 예비품 (구매 · 재고 관리 재고 · 견적)
     part_no: ['부품 번호', ''], name: ['이름', ''], on_hand: ['현재고', '개'], reserved: ['정비 예약', '개'], available: ['가용 재고', '개'], on_order: ['입고 예정', '개'],
     spare_gap: ['가용 재고 − 재주문점', '개'], reorder_point: ['재주문점', '개'], target_stock: ['목표 재고', '개'], need_qty: ['필요 수량', '개'], need_by_days: ['필요일까지', '일'],
     below_since: ['기준 아래로 내려간 시각', ''], spare_quotes: ['공급사 견적', ''], po_amount: ['발주 금액', '만원'], lead_slack_days: ['납기 여유', '일'],
     supplier_fail_rate: ['공급사 불량률(비율)', ''], supplier_avl: ['승인 공급사(AVL)', ''], approved_amount: ['승인 금액', '만원'], approved_qty: ['수량', '개'], approved_supplier: ['공급사', ''],
     approved_unit_price: ['단가', '만원'], approved_part_no: ['부품', ''], lead_d: ['리드타임', '일'], delay_d: ['공급사 지연', '일'],
-    // 업무 사실 (MES · ERP)
+    // 업무 사실 (MES · 구매 · 재고 관리)
     due_in_h: ['납기까지', 'h'], remaining_qty: ['남은 수량', '개'], rate_per_h: ['시간당 생산', '개/h'], alt_rate_per_h: ['대체 설비 시간당', '개/h'], alt_free_h: ['대체 설비 빌 때까지', 'h'],
     changeover_h: ['전환 시간', 'h'], fg_stock: ['완제품 재고', '개'], ship_in_h: ['출하까지', 'h'], penalty_per_h: ['지연 보상', '만원/h'], failure_cost: ['고장 비용', '만원'],
     claim_cost: ['클레임 비용', '만원'], customer_tier: ['고객 등급', ''], order_id: ['생산 주문', ''], sales_order: ['판매 계약', ''],
@@ -220,7 +220,7 @@
   /* ---------------------------------------------------------------- 실행 코드 (승인 뒤 시스템이 하는 일) */
   const CODES = {
     FAN_SET: ['쿨러 팬 속도', '%'], LOAD_SET: ['펌프 부하', '%'], PUMP_SELECT: ['펌프 전환', ''], WO_CREATE: ['정비 오더 등록', ''], WO_RESCHEDULE: ['기존 정비 오더 일정 변경', ''], WO_COMPLETE: ['정비 오더 완료', ''],
-    PR_CREATE: ['ERP 발주', ''], GR_CONFIRM: ['입고 · 검수', ''], PM_RESET: ['운전시간 계수기 리셋', ''], MAIL: ['메일', ''],
+    PR_CREATE: ['구매 · 재고 관리 발주', ''], GR_CONFIRM: ['입고 · 검수', ''], PM_RESET: ['운전시간 계수기 리셋', ''], MAIL: ['메일', ''],
   };
   W.code = c => (CODES[c] || [c])[0];
   // {code, value} 또는 {code, load_pct: 70} → "펌프 부하 70 %"
@@ -298,7 +298,7 @@
     return `<section class="ap-business" aria-label="구매 요청"><b>구매 요청</b><dl class="meta-list">${rows.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl><p class="muted">구매요청 계획 · 승인 · 발주 완료 아님</p>${UI.fold('구매요청 근거 원문',`<pre>${esc(JSON.stringify({part:part || null,facts:values,resolvedSupplier:option.resolvedSupplier || null,economicComparison:option.economicComparison || null,actions:option.actions},null,2))}</pre>`,{cls:'small'})}</section>`;
   };
   W.purchaseAsk = (name, input) => {
-    const i=parse(input) || {}, use=name==='purchase_context' ? 'ERP 부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교 · 조회와 계산만' : '현재 처리 건에 구매 판단 등록 요청 · 승인과 실행 아님';
+    const i=parse(input) || {}, use=name==='purchase_context' ? '부족 재고와 원문 구매 절차 확인' : name==='evaluate_purchase' ? '구매 후보 비교 · 조회와 계산만' : '현재 처리 건에 구매 판단 등록 요청 · 승인과 실행 아님';
     return [i.asset,i.part_no ? `부품 번호 ${i.part_no}` : '부품 번호 기록 없음',use,name==='evaluate_purchase' && i.overrides && Object.keys(i.overrides).length ? '가정값을 넣은 비교' : ''].filter(Boolean).join(' · ');
   };
   W.purchaseGot = (name, output) => {
@@ -311,7 +311,7 @@
       const execution=d.procedures.filter(p=>p?.executable===true).length, reference=d.procedures.filter(p=>p?.executable===false).length;
       const unknown=d.procedures.length-execution-reference;
       const titles=list(d.procedures.map(p=>p?.name && p.name!==p.id ? p.name : '절차 표시 이름 기록 없음'),3);
-      return [purchasePart(d.part),`원문 구매 절차 ${d.procedures.length}개`,titles,`실행 후보 검토 대상 ${execution}개`,`참고 보관 ${reference}개`,unknown ? `사용 방식 기록 미확인 ${unknown}개` : '', 'ERP 부족부품과 등록 부품의 근거 조회 · 판단 등록 없음'].filter(Boolean).join(' · ');
+      return [purchasePart(d.part),`원문 구매 절차 ${d.procedures.length}개`,titles,`실행 후보 검토 대상 ${execution}개`,`참고 보관 ${reference}개`,unknown ? `사용 방식 기록 미확인 ${unknown}개` : '', '부족 부품과 등록 부품의 근거 조회 · 판단 등록 없음'].filter(Boolean).join(' · ');
     }
     if (!d.result || !Array.isArray(d.result.options) || d.result.options.some(o=>!o || typeof o!=='object' || Array.isArray(o))) return '구매 후보 · 판단 결과 형식을 확인하세요. 원문은 상세에 보존되어 있습니다.';
     const options=d.result.options, recommended=d.result.recommended ?? d.recommended;
@@ -323,7 +323,7 @@
       return [state,'조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님',...evidence].join(' · ');
     }
     const registered=d.status==='SUBMITTED' && typeof d.id==='string' && !!d.id;
-    return [registered ? '구매 판단 등록됨' : '구매 판단 등록 완료 기록 없음','사람 승인 · ERP 실행 완료 아님',...evidence].join(' · ');
+    return [registered ? '구매 판단 등록됨' : '구매 판단 등록 완료 기록 없음','사람 승인 · 구매 실행 완료 아님',...evidence].join(' · ');
   };
   // 지식 그래프 질의 → 사람 말 (무엇과 연결된 무엇을 찾았나)
   function cypherAsk(q) {
@@ -349,7 +349,7 @@
     return '';
   }
   const purposeLabel = label => `${label} · 조회 목적 기록 없음 · 원문 확인`;
-  function sqlAsk() { return purposeLabel('업무 DB 조회'); }
+  function sqlAsk() { return purposeLabel('업무 자료 조회'); }
   function shellAsk(i) {
     if (typeof i==='object' && typeof i.description==='string' && /[가-힣]/.test(i.description) && !/\b(?:SELECT|MATCH|CALL)\b|[A-Za-z]+_[A-Za-z_]+/.test(i.description)) return i.description;
     const original=typeof i==='string' ? i : i?.command;
@@ -388,41 +388,41 @@
     Skill: { name: '스킬 읽기', ask: i => i.skill || i.name || '' },
     'mcp__neo4j__read_neo4j_cypher': { name: '지식 그래프 조회', sys: '지식 그래프', ask: i => cypherAsk(i.query), got: rowsGot },
     'mcp__neo4j__get_neo4j_schema': { name: '지식 그래프 구조 보기', sys: '지식 그래프', ask: () => '어떤 종류의 노드 · 관계가 있나' },
-    'mcp__hyd-dmn__diagnose': { name: '원인 진단', sys: '판단 엔진', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
+    'mcp__hyd-dmn__diagnose': { name: '원인 진단', sys: '판단 시스템', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
       got: o => { const d = doc(parse(o)) || {}; const c = (d.causes || []).find(x => x.id === d.topCause) || (d.causes || [])[0]; return c ? `가장 유력한 원인 ‘${c.name}’ (점수 ${W.num(c.score)})` : ''; } },
-    'mcp__hyd-dmn__business_causes': { name: '업무 경보 원인 찾기', sys: '판단 엔진 · 지식 그래프', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
+    'mcp__hyd-dmn__business_causes': { name: '업무 경보 원인 찾기', sys: '판단 시스템 · 지식 그래프', ask: i => `${i.asset || ''} ‘${W.pattern(i.pattern)}’ 경보의 원인`,
       got: o => { const d = doc(parse(o)) || {}; return [d.cause && `원인 ‘${nm(d.cause)}’`, d.failure_mode && `고장 유형 ‘${nm(d.failure_mode)}’`, d.part && `부품 ${nm(d.part)}`].filter(Boolean).join(' · '); } },
-    'mcp__hyd-dmn__purchase_context': {name:'구매 부품 근거 조회',sys:'판단 엔진 · ERP · 지식 그래프',ask:i=>W.purchaseAsk('purchase_context',i),got:o=>W.purchaseGot('purchase_context',o)},
-    'mcp__hyd-dmn__evaluate_purchase': {name:'구매 후보 비교',sys:'판단 엔진',ask:i=>W.purchaseAsk('evaluate_purchase',i),got:o=>W.purchaseGot('evaluate_purchase',o)},
-    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 · 실행 아님)',sys:'판단 엔진 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
-    'mcp__hyd-dmn__timeseries_query': { name: '센서 기록 조회', sys: '센서 기록 DB', ask: sqlAsk },
-    'mcp__hyd-dmn__timeseries_schema': { name: '센서 기록 구조 보기', sys: '센서 기록 DB' },
-    'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 엔진', ask: i => nm(i.decision || ''),
+    'mcp__hyd-dmn__purchase_context': {name:'구매 부품 근거 조회',sys:'판단 시스템 · 구매 · 재고 관리 · 지식 그래프',ask:i=>W.purchaseAsk('purchase_context',i),got:o=>W.purchaseGot('purchase_context',o)},
+    'mcp__hyd-dmn__evaluate_purchase': {name:'구매 후보 비교',sys:'판단 시스템',ask:i=>W.purchaseAsk('evaluate_purchase',i),got:o=>W.purchaseGot('evaluate_purchase',o)},
+    'mcp__hyd-dmn__submit_purchase': {name:'구매 판단 등록 (승인 · 실행 아님)',sys:'판단 시스템 → 처리 건',ask:i=>W.purchaseAsk('submit_purchase',i),got:o=>W.purchaseGot('submit_purchase',o)},
+    'mcp__hyd-dmn__timeseries_query': { name: '센서 기록 조회', sys: '센서 기록', ask: sqlAsk },
+    'mcp__hyd-dmn__timeseries_schema': { name: '센서 기록 구조 보기', sys: '센서 기록' },
+    'mcp__hyd-dmn__dmn_rules': { name: '판단 규칙표 보기', sys: '판단 시스템', ask: i => nm(i.decision || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) && d[0] ? `‘${d[0].decisionName || nm(d[0].decision)}’ 규칙 ${(d[0].rules || []).length || d.length}개` : ''; } },
-    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 엔진', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
+    'mcp__hyd-dmn__evaluate_cards': { name: '대안 평가 (후보 · 규정 · 득실 · 순위)', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || ''), nm(i.cause || '')].filter(Boolean).join(' · '),
       got:o=>{const d=doc(parse(o)), options=d?.result?.options; if(!d || !Array.isArray(options)) return '대안 평가 결과 형식을 확인할 수 없습니다 · 원문 확인';
         const chosen=options.find(x=>x.id===(d.result.recommended ?? d.recommended));
         return [d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 대안 없음' : d.status==='EVALUATED' ? '대안 비교 완료' : '평가 상태 기록 확인 필요',`대안 ${options.length}개`,options.some(x=>x.feasible===false) ? `제외 ${options.filter(x=>x.feasible===false).length}개` : '',chosen?.name ? `당시 추천 ‘${chosen.name}’` : '', '조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님'].filter(Boolean).join(' · '); } },
-    'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 엔진', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
+    'mcp__hyd-dmn__gather_facts': { name: '판단 사실 모으기', sys: '판단 시스템', ask: i => [i.asset, nm(i.failure_mode || '')].filter(Boolean).join(' · '),
       got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 엔진', ask: i => nm(i.failure_mode || ''),
+    'mcp__hyd-dmn__precedents': { name: '과거 선택 조회', sys: '판단 시스템', ask: i => nm(i.failure_mode || ''),
       got: o => { const d = doc(parse(o)); return Array.isArray(d) ? `${d.length}건 · ${list(d.map(x => nm(x.skill)), 2)}` : ''; } },
-    'mcp__hyd-dmn__submit_decision': { name: '판단 제출', sys: '판단 엔진', ask: i => i.recommended ? `추천 ‘${nm(i.recommended)}’` : (i.asset || ''),
+    'mcp__hyd-dmn__submit_decision': { name: '판단 제출', sys: '판단 시스템', ask: i => i.recommended ? `추천 ‘${nm(i.recommended)}’` : (i.asset || ''),
       got: o => { const d = doc(parse(o)) || {}; return d.id ? `판단 ${d.id} 저장${d.recommended ? ` · 추천 ‘${nm(d.recommended)}’` : ''}` : ''; } },
-    'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 엔진' },
-    'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 엔진 · 지식 그래프' },
-    'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 엔진' },
-    'mcp__enterprise__mes_orders': { name: '생산 주문 조회', sys: '생산 시스템 (MES)', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__enterprise__erp_contract': { name: '계약 조회', sys: 'ERP', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__enterprise__erp_inventory': { name: '완제품 재고 조회', sys: 'ERP', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
-    'mcp__enterprise__query': { name: '업무 DB 질의', sys: '업무 DB', ask: sqlAsk, got: rowsGot },
+    'mcp__hyd-dmn__forecast_actions': { name: '조치 효과 예측', sys: '판단 시스템' },
+    'mcp__hyd-dmn__tradeoffs': { name: '성과 지표 득실 경로', sys: '판단 시스템 · 지식 그래프' },
+    'mcp__hyd-dmn__inputs': { name: '판단 입력 보기', sys: '판단 시스템' },
+    'mcp__enterprise__mes_orders': { name: '생산 주문 조회', sys: '생산 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
+    'mcp__enterprise__erp_contract': { name: '계약 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
+    'mcp__enterprise__erp_inventory': { name: '완제품 재고 조회', sys: '구매 · 재고 관리', ask: i => i.asset || '', got: o => factsLine((doc(parse(o)) || {}).facts) },
+    'mcp__enterprise__query': { name: '업무 자료 질의', sys: '업무 자료', ask: sqlAsk, got: rowsGot },
     'mcp__hyd-effects__send_mail': { name: '메일 보내기', sys: '메일', ask: i => `${i.to || ''}${i.subject ? ` · 제목 ‘${i.subject}’` : ''}`, got: o => W.mailReceipt(o) ? '보냄 · 발송 영수증 확인' : '메일 발송 영수증을 확인할 수 없습니다' },
   };
   // 업무 MCP 는 서버가 셋(전부 · 정비용 · 구매용)이라 도구 이름으로 한 번 더 찾는다
   const BIZ = {
-    pm_status: { name: '정비 계수기 · 계획 조회', sys: '정비 시스템 (CMMS)' }, maintenance_windows: { name: '정비 시간 계획 조회', sys: '정비 시스템 (CMMS)' },
-    cmms_history: { name: '정비 이력 조회', sys: '정비 시스템 (CMMS)' }, mes_orders: TOOLS['mcp__enterprise__mes_orders'], spare_stock: { name: '예비품 재고 조회', sys: 'ERP' },
-    part_quotes: { name: '공급사 견적 조회', sys: '공급망 (SCM)' }, scm_suppliers: { name: '공급사 조회', sys: '공급망 (SCM)' },
+    pm_status: { name: '정비 계수기 · 계획 조회', sys: '정비 관리' }, maintenance_windows: { name: '정비 시간 계획 조회', sys: '정비 관리' },
+    cmms_history: { name: '정비 이력 조회', sys: '정비 관리' }, mes_orders: TOOLS['mcp__enterprise__mes_orders'], spare_stock: { name: '예비품 재고 조회', sys: '구매 · 재고 관리' },
+    part_quotes: { name: '공급사 견적 조회', sys: '공급망 관리' }, scm_suppliers: { name: '공급사 조회', sys: '공급망 관리' },
     erp_contract: TOOLS['mcp__enterprise__erp_contract'], erp_inventory: TOOLS['mcp__enterprise__erp_inventory'], query: TOOLS['mcp__enterprise__query'],
   };
   function spec(raw) {
@@ -490,7 +490,7 @@
     if (withFinal === '으로') return f && f !== 8 ? '으로' : '로';
     return f ? withFinal : without;
   };
-  W.who = id => W.caseNames[id] || UI.names?.[id] || UI.performers?.[id] || (/^agent:/.test(id || '') ? 'AI 에이전트' : /^user:/.test(id || '') ? '담당자 (이름 확인 안 됨)' : W.idName(id)) || '–';
+  W.who = id => UI.actorName(id, W.caseNames[id] || UI.names?.[id] || UI.performers?.[id] || (/^agent:/.test(id || '') ? 'AI 에이전트' : /^user:/.test(id || '') ? '담당자 (이름 확인 안 됨)' : W.idName(id)) || '–');
 
   /* ---------------------------------------------------------------- 원래 이름(id) 보이기 */
   W.id = id => W.showIds && id ? ` <code class="cr-id">${esc(id)}</code>` : '';

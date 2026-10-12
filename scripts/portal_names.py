@@ -37,7 +37,20 @@ def display_name(label):
     """
     if not isinstance(label, str):
         return label
-    return label.replace("정비 작업지시", "정비 오더").replace("작업지시", "정비 오더")
+    label = label.replace("정비 작업지시", "정비 오더").replace("작업지시", "정비 오더")
+    known = {
+        "CMMS": "정비 관리", "ERP": "구매 · 재고 관리", "MES": "생산 관리",
+        "SCM 구매 포털": "공급망 구매 창구", "Historian (TimescaleDB)": "센서 기록",
+        "SCADA · PLC (cmd-gateway 경유)": "설비 제어",
+        "PLC 운전 모드": "설비 운전 모드", "PLC 상태": "설비 상태",
+        "경남유압 BSC 전략맵": "경남유압 성과 목표",
+        "HITL 프로세스 서비스": "업무 처리", "QMS 품질 시스템": "품질 관리",
+        "CEP 탐지기 (Flink 대체)": "센서 경보 감지기",
+    }
+    if label in known:
+        return known[label]
+    # Rule annotations are generated display labels, never stored original evidence.
+    return label.replace("PLC가", "설비 제어기가").replace("BSC 득실", "성과 득실").replace("강도 high 1 · medium 0.6 · low 0.3", "강도 높음 1 · 중간 0.6 · 낮음 0.3")
 
 
 def main() -> int:

@@ -23,7 +23,7 @@ from fastapi import HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from . import bpmn_import
+from . import bpmn_import, mcp_dependencies
 from .bpmn_store import FlowBusy, FlowStore, next_version
 
 
@@ -72,6 +72,8 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
     def view(rt, store, cat, def_id, draft, mapping, report=None) -> dict:
         parsed = bpmn_import.parse_bpmn(draft["bpmn"])
         result = bpmn_import.check(parsed, mapping, ctx_for(rt, store, cat, def_id, draft))
+        from .instance_mode import EFFECT_MCP_SERVERS
+        result['dependencies'] = mcp_dependencies.for_repo(rt.repo, rt.tenant_id, parsed, mapping, tuple(EFFECT_MCP_SERVERS))
         return {"definition_id": def_id, "file_name": draft.get("file_name"), "parsed": parsed, "mapping": mapping,
                 "reimport": report, "check": result, "next_version": result["definition"]["version"],
                 "versions": store.versions(def_id), "base": cat["base"]}

@@ -1,0 +1,15 @@
+{
+  "paths": [
+    "it/portal/www/main.js",
+    "tests/js/test_public_display_language.js",
+    "it/portal/www/index.html"
+  ],
+  "backend_unchanged": true,
+  "prior_B_C_agent_5_png_reused": true,
+  "owned_warning_1_png_reused": true,
+  "new_capture_scope": [
+    "main",
+    "whatif",
+    "reference_comparison"
+  ]
+}

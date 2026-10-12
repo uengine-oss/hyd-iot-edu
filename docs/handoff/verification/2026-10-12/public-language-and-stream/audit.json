@@ -1,0 +1,798 @@
+{
+  "method": "Independent read-only original evidence and current source audit; no live GET, test, capture, LLM, POST, business replay or injected SSE",
+  "head": "729cc8dab029c9da716dcf9e47e59c62d3af68fd",
+  "matrix": [
+    {
+      "segment": "한국어 판단 설명",
+      "real_stream_evidence": "최초 B fresh23 중 task_working8; 08:09:59Z 공개 설명 PNG. C fresh26 중 task_working9; 07:34:51Z 설명 PNG. 교육 보완 B fresh8 중 task_working4; 13:41:10Z 설명 PNG",
+      "display_and_stored_boundary": "세 실행의 공개 설명은 평가 종료 전 실제 화면 표시 확인. 공개 설명은 사적인 추론이 아니다. C PNG의 ‘판단 근거’에는 예전 실행의 내용도 있어 당시 새 문장과 구분"
+    },
+    {
+      "segment": "MCP 요청/응답",
+      "real_stream_evidence": "최초 B 도구 시작6/끝6: 업무 원인·PM 상태·정비 시간·생산 주문·후보 평가 및 shell. C 새 시작7/끝7: shell, 재고, 구매 문맥, 견적, 구매 평가, 제출, shell",
+      "display_and_stored_boundary": "B 도구 PNG의 17:10:04 행은 새 실행 시각과 일치하나 shell이고 원문 접힘. MCP 전체 요청/응답을 라이브로 열어 읽었다는 증거는 아님. C 도구 PNG는 10:13:03 과거 shell행이며 새 16:34:58 도구행 표시 증거로 사용할 수 없음. 새 MCP 전송은 실제 프레임으로 증명"
+    },
+    {
+      "segment": "전체 원문",
+      "real_stream_evidence": "기존 F27 실제 9개 보존 payload 및 96검사, 최신 B 원문 저장 일치",
+      "display_and_stored_boundary": "현재 Trace/TaskDetail/Record의 전체 payload 자동 읽기와 원문 접기는 기존 실제 GET 검증 범위. 과거 스트림 PNG가 최신 F27 소비자를 검증한 것은 아님"
+    },
+    {
+      "segment": "추천·지는 안·추천 없음",
+      "real_stream_evidence": "B 평가 도구 반환 뒤 task_deferred 08:11:17Z 수신. C 평가/구매 제출 뒤 task_completed 07:36:49Z 수신",
+      "display_and_stored_boundary": "B 당시 ‘미등록 필터’에 따른 추천 없음/평가 보류이고 교육 초기값 수정 후의 긍정 결과가 아님. C 도구 제출은 승인·발주가 아니다. 실제 카드 비교/선택·현재 OEM 결과는 저장 자료와 이후 화면으로 증명하며 해당 카드가 생성 순간 화면에 표시된 PNG는 없음"
+    },
+    {
+      "segment": "승인 대기",
+      "real_stream_evidence": "완료된 에이전트 작업과 업무 진행 상태는 구분 가능",
+      "display_and_stored_boundary": "교육 보완 B 현재 추천/승인 대기 1440/1024는 실제 GET 저장 상태 캡처. 감시는 그 이전 DOM 분리로 중단되어 승인 요청 생성 순간의 라이브 PNG 증거는 없음"
+    },
+    {
+      "segment": "승인 지연·알림",
+      "real_stream_evidence": "이번 B/C 감시의 fresh 프레임에는 없음",
+      "display_and_stored_boundary": "A 실제 저장 처리 기록에서 15분49초 대기·승인 지연·지연 알림 확인. B/C 저장 타임라인에도 지연 단계 존재. 실시간 지연 전환을 관찰했다는 증거와 구분"
+    },
+    {
+      "segment": "승인·거절",
+      "real_stream_evidence": "fresh23/26/8 감시 범위에 human_response/APPROVAL_REJECTED 없음",
+      "display_and_stored_boundary": "A/B/C 실제 승인/수정 선택과 현재 결과는 저장 승인 영수증/업무 결과. 현재 거절 렌더러 존재만으로 실제 사용자 거절 실행을 증명하지 않음. 검토한 실제 감시 범위에 거절 증거 없음"
+    },
+    {
+      "segment": "시스템 처리",
+      "real_stream_evidence": "감시는 AI 평가 종료 또는 그 이전까지만",
+      "display_and_stored_boundary": "A PLC 명령·재관측 미달, C ERP 발주·공지·입고·재고, B 정비 오더·예약·공지 메일·보고는 실제 저장 영수증/현재 native 화면으로 증명. 시스템 처리의 진행 순간을 감시한 영상/프레임 원증거 없음"
+    },
+    {
+      "segment": "자동 확인·업무 종료",
+      "real_stream_evidence": "B 초기 감시는 평가 보류까지, C 감시는 AI 작업 완료까지",
+      "display_and_stored_boundary": "A recovered=false/사건 미종결을 표시하는 업무 COMPLETED와 C 입고 완료/B 업무 COMPLETED는 저장 증거. 물리 복구 성공·물리 정비 완료와 동일하지 않음"
+    },
+    {
+      "segment": "흐름/작업 상세의 동시 표시",
+      "real_stream_evidence": "실제 watcher PNG는 처리 기록 화면",
+      "display_and_stored_boundary": "현재 세 소비자의 구독 코드는 확인했으나 같은 새 실행을 Trace와 개별 TaskDetail에서 동시에 실시간 관찰한 실제 화면 증거는 없음. 저장 F27 GET 검증을 라이브 증거로 바꾸지 않음"
+    }
+  ],
+  "streams": [
+    {
+      "directory": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live",
+      "reported_passed": true,
+      "armed_at": "2026-10-12T08:08:54.283719+00:00",
+      "total_frames": 23,
+      "fresh_frames": 23,
+      "history_frames": 0,
+      "event_types": {
+        "task_reassessment_requested": 1,
+        "task_working": 8,
+        "task_started": 1,
+        "tool_usage_started": 6,
+        "tool_usage_finished": 6,
+        "task_deferred": 1
+      },
+      "private_events_reported": [],
+      "errors": [],
+      "tools": [
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_1"
+          ],
+          "tool": "shell",
+          "start_id": "5558a2a0-b0a9-459e-a3f6-25babea66740",
+          "start_at": "2026-10-12T08:10:04.115Z",
+          "input_present": true,
+          "end_id": "0ab1429d-a487-421a-8ea5-430e545f5d7a",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_2"
+          ],
+          "tool": "hyd-dmn/business_causes",
+          "start_id": "e15e1508-660e-456c-a710-836470b9aea7",
+          "start_at": "2026-10-12T08:10:15.174Z",
+          "input_present": true,
+          "end_id": "21e6f4fa-b7a6-4f16-a3f5-7fcce1beb23c",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_3"
+          ],
+          "tool": "enterprise-maint/pm_status",
+          "start_id": "41d3e0a5-3e9f-43d4-a807-1bcd364376eb",
+          "start_at": "2026-10-12T08:10:15.202Z",
+          "input_present": true,
+          "end_id": "33ce4c34-27f8-4e67-86d3-67ac041c3895",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_4"
+          ],
+          "tool": "enterprise-maint/maintenance_windows",
+          "start_id": "5c46f1b2-2906-409f-9019-51c8bca2cc9d",
+          "start_at": "2026-10-12T08:10:15.230Z",
+          "input_present": true,
+          "end_id": "2cea3681-f0d1-49cd-8af3-3974f996d2e8",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_5"
+          ],
+          "tool": "enterprise-maint/mes_orders",
+          "start_id": "eba7164c-e78b-42b1-90e2-88c309c74112",
+          "start_at": "2026-10-12T08:10:15.263Z",
+          "input_present": true,
+          "end_id": "ed213668-0250-4e7e-aff1-0c0bb2e516b8",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "item_6"
+          ],
+          "tool": "hyd-dmn/evaluate_cards",
+          "start_id": "96ac7006-36e1-4278-9e31-90f64c97e730",
+          "start_at": "2026-10-12T08:10:23.691Z",
+          "input_present": true,
+          "end_id": "f455d9d8-3104-492b-91c5-dd215df304fc",
+          "output_present": true
+        }
+      ],
+      "public_message_identities": [
+        {
+          "id": "da61293e-3845-41c7-8657-1c0e0b5cd747",
+          "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+          "timestamp": "2026-10-12T08:09:59.362Z",
+          "message_id": "ed8cd2f309094b63bdf744c7a95c0318:0",
+          "sequence": 1,
+          "complete": false
+        },
+        {
+          "id": "15fe29c0-e7bd-4e79-beec-aa96e38824c2",
+          "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+          "timestamp": "2026-10-12T08:10:04.115Z",
+          "message_id": "ed8cd2f309094b63bdf744c7a95c0318:0",
+          "sequence": 2,
+          "complete": true
+        },
+        {
+          "id": "498aa63a-a71a-4046-847c-f390ba94e185",
+          "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+          "timestamp": "2026-10-12T08:10:46.697Z",
+          "message_id": "ed8cd2f309094b63bdf744c7a95c0318:1",
+          "sequence": 3,
+          "complete": false
+        },
+        {
+          "id": "e2127596-f377-4ece-b7cf-03cec627671e",
+          "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+          "timestamp": "2026-10-12T08:11:16.831Z",
+          "message_id": "ed8cd2f309094b63bdf744c7a95c0318:1",
+          "sequence": 4,
+          "complete": false
+        },
+        {
+          "id": "93c592d4-870e-478d-9e95-49a88442999c",
+          "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+          "timestamp": "2026-10-12T08:11:17.742Z",
+          "message_id": "ed8cd2f309094b63bdf744c7a95c0318:1",
+          "sequence": 5,
+          "complete": true
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "19855790-cb15-4777-af14-b6b333b510c9",
+          "event_type": "task_deferred",
+          "timestamp": "2026-10-12T08:11:17.866Z",
+          "job_id": "deferral:run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a"
+        }
+      ],
+      "captures": [
+        {
+          "kind": "public",
+          "png": {
+            "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\B-public-before-agent-assessment-end-1.png",
+            "sha256": "04328b1585a646634b652a07cccd777c7027eab85c0bc9d4cadcdbc9dbfbf325",
+            "bytes": 140065
+          },
+          "identity": {
+            "id": "da61293e-3845-41c7-8657-1c0e0b5cd747",
+            "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "event_type": "task_working",
+            "timestamp": "2026-10-12T08:09:59.362Z",
+            "type": "public_text",
+            "public_run": "ed8cd2f309094b63bdf744c7a95c0318",
+            "message_id": "ed8cd2f309094b63bdf744c7a95c0318:0",
+            "sequence": 1,
+            "complete": false,
+            "truncated": false,
+            "tool_use_id": null
+          },
+          "capture_begin": "2026-10-12T08:10:00.259918+00:00",
+          "native_row_text": "17:09:59\n에이전트 판단\n등록된 정기 정비 계획 스킬을 적용해 원인·고장 유형과 최신 CMMS·ERP 현황을 다시 조회하겠습니다. 부품과 재고가 확인된 범위에서 판단 엔진의 정비 카드 평가를 진행하겠습니다.\n",
+          "bounds": {
+            "x": 673,
+            "y": 456.65625,
+            "width": 663,
+            "height": 91.09375
+          },
+          "before_agent_boundary": true
+        },
+        {
+          "kind": "tool",
+          "png": {
+            "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\B-tool-before-agent-assessment-end-2.png",
+            "sha256": "ab8eb11dda2f97f7da9f3e84c8673f8825a3e71abc62b8a57a01d640e6743cb8",
+            "bytes": 162447
+          },
+          "identity": {
+            "id": "5558a2a0-b0a9-459e-a3f6-25babea66740",
+            "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "job_id": "run-6c2ddc9c-1b6c1170ce5849f5837537e125699a0a",
+            "event_type": "tool_usage_started",
+            "timestamp": "2026-10-12T08:10:04.115Z",
+            "type": "tool_start",
+            "public_run": null,
+            "message_id": null,
+            "sequence": null,
+            "complete": null,
+            "truncated": null,
+            "tool_use_id": "item_1"
+          },
+          "capture_begin": "2026-10-12T08:10:05.415137+00:00",
+          "native_row_text": "17:10:04\n도구 표시 이름 미등록\n도구 요청 목적 기록 없음 · 원문 확인\n586 ms\n결과 형식의 표시 정보 없음 · 원문 확인\n호출 도구 원문",
+          "bounds": {
+            "x": 673,
+            "y": -1518.25,
+            "width": 663,
+            "height": 75.5
+          },
+          "before_agent_boundary": true
+        }
+      ],
+      "frame_hashes_valid": true
+    },
+    {
+      "directory": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live",
+      "reported_passed": true,
+      "armed_at": "2026-10-12T07:34:03.477597+00:00",
+      "total_frames": 52,
+      "fresh_frames": 26,
+      "history_frames": 26,
+      "event_types": {
+        "task_reassessment_requested": 1,
+        "task_working": 9,
+        "task_started": 1,
+        "tool_usage_started": 7,
+        "tool_usage_finished": 7,
+        "task_completed": 1
+      },
+      "private_events_reported": [],
+      "errors": [],
+      "tools": [
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_1"
+          ],
+          "tool": "shell",
+          "start_id": "f480e9a1-1e6d-4ad8-a093-5d145ee850b6",
+          "start_at": "2026-10-12T07:34:58.540Z",
+          "input_present": true,
+          "end_id": "e2d98588-78fc-4483-a774-3687ef5cc63a",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_2"
+          ],
+          "tool": "enterprise-purchase/spare_stock",
+          "start_id": "a440857c-2dc8-4c09-95ee-df165b96af7f",
+          "start_at": "2026-10-12T07:35:07.769Z",
+          "input_present": true,
+          "end_id": "e382f52a-c5c1-4735-b417-dcf5901602e4",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_3"
+          ],
+          "tool": "hyd-dmn/purchase_context",
+          "start_id": "34080af7-4a3d-47cc-8fb6-f49c59337261",
+          "start_at": "2026-10-12T07:35:17.126Z",
+          "input_present": true,
+          "end_id": "099ec70e-680b-4295-95b0-feff4859012d",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_4"
+          ],
+          "tool": "enterprise-purchase/part_quotes",
+          "start_id": "0f6db46d-fb65-444b-ac20-2fab4c2a5fda",
+          "start_at": "2026-10-12T07:35:17.156Z",
+          "input_present": true,
+          "end_id": "17cf57eb-1ef8-42fa-808e-0e8e57ff03eb",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_5"
+          ],
+          "tool": "hyd-dmn/evaluate_purchase",
+          "start_id": "95b35d41-f509-4e59-87bb-ca21be23426d",
+          "start_at": "2026-10-12T07:35:27.248Z",
+          "input_present": true,
+          "end_id": "25887c27-3604-4375-9ee5-224e0466dada",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_7"
+          ],
+          "tool": "hyd-dmn/submit_purchase",
+          "start_id": "4de3ab0e-1ff8-49a1-84bc-bc77c367ea31",
+          "start_at": "2026-10-12T07:36:02.802Z",
+          "input_present": true,
+          "end_id": "f9527463-b389-42d6-96ae-8a4eb55b115f",
+          "output_present": true
+        },
+        {
+          "identity": [
+            "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "item_9"
+          ],
+          "tool": "shell",
+          "start_id": "f3785c8a-b6ca-49e0-a523-40b1fe6d04c7",
+          "start_at": "2026-10-12T07:36:38.487Z",
+          "input_present": true,
+          "end_id": "c5a31e45-6b44-4d66-973d-c649a36e7529",
+          "output_present": true
+        }
+      ],
+      "public_message_identities": [
+        {
+          "id": "7a7e8c49-0505-4a18-bbbc-a1eeb2958761",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:34:51.997Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:0",
+          "sequence": 1,
+          "complete": false
+        },
+        {
+          "id": "44d78b06-5b80-4c62-ba79-df0af56674f2",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:34:58.540Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:0",
+          "sequence": 2,
+          "complete": true
+        },
+        {
+          "id": "a3fce08f-81ba-414f-b3ee-b5164e7556f4",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:35:57.820Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:1",
+          "sequence": 3,
+          "complete": false
+        },
+        {
+          "id": "6a25b414-2b1b-451f-96df-32ef52c24640",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:36:02.802Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:1",
+          "sequence": 4,
+          "complete": true
+        },
+        {
+          "id": "1cffa494-8278-45c9-923b-5ac874d047fb",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:36:47.464Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:2",
+          "sequence": 5,
+          "complete": false
+        },
+        {
+          "id": "7210976c-a840-4dc0-8c2d-f09ac33cca3b",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+          "timestamp": "2026-10-12T07:36:49.108Z",
+          "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:2",
+          "sequence": 6,
+          "complete": true
+        }
+      ],
+      "boundaries": [
+        {
+          "id": "a9c4cf88-ac7e-4110-8f77-1ea47e3ffa7f",
+          "event_type": "task_completed",
+          "timestamp": "2026-10-12T07:36:49.209Z",
+          "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0"
+        }
+      ],
+      "captures": [
+        {
+          "kind": "public",
+          "png": {
+            "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\C-public-before-completion-1.png",
+            "sha256": "902329295972007167dd9551443764575fd500e602111b332cfaa972f52c7caf",
+            "bytes": 145127
+          },
+          "identity": {
+            "id": "7a7e8c49-0505-4a18-bbbc-a1eeb2958761",
+            "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "event_type": "task_working",
+            "timestamp": "2026-10-12T07:34:51.997Z",
+            "type": "public_text",
+            "public_run": "c1be38fc8b1b4ceb9be09b3144e9d9c1",
+            "message_id": "c1be38fc8b1b4ceb9be09b3144e9d9c1:0",
+            "sequence": 1,
+            "complete": false,
+            "truncated": false,
+            "tool_use_id": null
+          },
+          "capture_begin": "2026-10-12T07:34:52.958182+00:00",
+          "native_row_text": "16:34:51\n에이전트 판단\n예비품 구매 스킬에 따라 ERP 재고와 견적, 새로 적재된 구매 절차를 다시 조회하고 승인 대기 발주 카드를 등록하겠습니다.\n",
+          "bounds": {
+            "x": 673,
+            "y": 456.84375,
+            "width": 663,
+            "height": 91.09375
+          },
+          "before_agent_boundary": true
+        },
+        {
+          "kind": "tool",
+          "png": {
+            "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\C-tool-before-completion-2.png",
+            "sha256": "66b458a1e45dda7c270c62a63751d8f98f2085e1c6365cd9b00a2edcbf0fddc5",
+            "bytes": 148676
+          },
+          "identity": {
+            "id": "f480e9a1-1e6d-4ad8-a093-5d145ee850b6",
+            "proc_inst_id": "c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f",
+            "todo_id": "83459be8-7f6b-48d4-a35b-bd0f318e99fa",
+            "job_id": "run-83459be8-e949559aa9394ad78626ed88b324f4c0",
+            "event_type": "tool_usage_started",
+            "timestamp": "2026-10-12T07:34:58.540Z",
+            "type": "tool_start",
+            "public_run": null,
+            "message_id": null,
+            "sequence": null,
+            "complete": null,
+            "truncated": null,
+            "tool_use_id": "item_1"
+          },
+          "capture_begin": "2026-10-12T07:34:59.587576+00:00",
+          "native_row_text": "10:13:03\n도구 표시 이름 미등록\n\"powershell.exe\" -Command 'Get-Content -Raw context/task.json'\n384 ms\n83459be8-7f6b-48d4-a35b-bd0f318e99fa · c3_spare.01a60b8d-284d-422b-96db-113dda3dd43f · T_agent · 諛쒖＜???쒖븞\n호출 도구 원문",
+          "bounds": {
+            "x": 673,
+            "y": 464.15625,
+            "width": 663,
+            "height": 75.5
+          },
+          "before_agent_boundary": true
+        }
+      ],
+      "frame_hashes_valid": true
+    },
+    {
+      "directory": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live",
+      "reported_passed": false,
+      "armed_at": "2026-10-12T13:39:45.645677+00:00",
+      "total_frames": 31,
+      "fresh_frames": 8,
+      "history_frames": 23,
+      "event_types": {
+        "task_reassessment_requested": 1,
+        "task_working": 4,
+        "task_started": 1,
+        "tool_usage_started": 1,
+        "tool_usage_finished": 1
+      },
+      "private_events_reported": [],
+      "errors": [
+        {
+          "at": "2026-10-12T13:41:26.513360+00:00",
+          "kind": "watch exception",
+          "detail": {
+            "error": "Locator.scroll_into_view_if_needed: Element is not attached to the DOM\nCall log:\n  - attempting scroll into view action\n    - waiting for element to be stable\n    - element is not stable\n  - retrying scroll into view action\n    - waiting for element to be stable\n",
+            "traceback": "Traceback (most recent call last):\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-public-native.py\", line 246, in run\n    row.scroll_into_view_if_needed(timeout=2000)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\sync_api\\_generated.py\", line 20142, in scroll_into_view_if_needed\n    self._sync(\n    ~~~~~~~~~~^\n        self._impl_obj.scroll_into_view_if_needed(\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n            timeout=to_milliseconds(timeout)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        )\n        ^\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_sync_base.py\", line 115, in _sync\n    return task.result()\n           ~~~~~~~~~~~^^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_locator.py\", line 621, in scroll_into_view_if_needed\n    return await self._with_element(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_locator.py\", line 118, in _with_element\n    return await task(\n           ^^^^^^^^^^^\n    ...<2 lines>...\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_element_handle.py\", line 112, in scroll_into_view_if_needed\n    await self._channel.send(\n        \"scrollIntoViewIfNeeded\", self._frame._timeout, locals_to_params(locals())\n    )\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_connection.py\", line 76, in send\n    return await self._connection.wrap_api_call(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"D:\\work\\study\\hyd-iot-edu\\.evidence\\overnight-20261012\\clean-venv\\Lib\\site-packages\\playwright\\_impl\\_connection.py\", line 632, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.Error: Locator.scroll_into_view_if_needed: Element is not attached to the DOM\nCall log:\n  - attempting scroll into view action\n    - waiting for element to be stable\n    - element is not stable\n  - retrying scroll into view action\n    - waiting for element to be stable\n\n"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "identity": [
+            "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+            "item_1"
+          ],
+          "tool": "shell",
+          "start_id": "aee63d3e-e0ed-409e-9c9f-98f76dea8983",
+          "start_at": "2026-10-12T13:41:23.935Z",
+          "input_present": true,
+          "end_id": "0f66af2a-00c7-4438-b0bd-fc8775243862",
+          "output_present": true
+        }
+      ],
+      "public_message_identities": [
+        {
+          "id": "5cf883c7-d3a2-449e-b01d-1822de50f251",
+          "job_id": "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+          "timestamp": "2026-10-12T13:41:10.556Z",
+          "message_id": "1eafc8d8d04d429aa430ba41f20c595d:0",
+          "sequence": 1,
+          "complete": false
+        },
+        {
+          "id": "1557e3c6-f6da-458e-83ec-7bb73e41f697",
+          "job_id": "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+          "timestamp": "2026-10-12T13:41:23.935Z",
+          "message_id": "1eafc8d8d04d429aa430ba41f20c595d:0",
+          "sequence": 2,
+          "complete": true
+        }
+      ],
+      "boundaries": [],
+      "captures": [
+        {
+          "kind": "public",
+          "png": {
+            "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live\\B-public-before-completion-1.png",
+            "sha256": "926db9ecb84bf65a15f6a2becaaf72a7d7471b8d73e472f8bc2929fd5d72b416",
+            "bytes": 133937
+          },
+          "identity": {
+            "id": "5cf883c7-d3a2-449e-b01d-1822de50f251",
+            "proc_inst_id": "c3_pm.d99ee952-f943-42fd-ba53-745b569522f7",
+            "todo_id": "6c2ddc9c-2b89-4b05-8f6a-1b9432277728",
+            "job_id": "run-6c2ddc9c-4f66b9abd89c42b2901aacd3c77b1ac9",
+            "event_type": "task_working",
+            "timestamp": "2026-10-12T13:41:10.556Z",
+            "type": "public_text",
+            "public_run": "1eafc8d8d04d429aa430ba41f20c595d",
+            "message_id": "1eafc8d8d04d429aa430ba41f20c595d:0",
+            "sequence": 1,
+            "complete": false,
+            "truncated": false,
+            "tool_use_id": null
+          },
+          "capture_begin": "2026-10-12T13:41:12.461945+00:00",
+          "native_row_text": "22:41:10\n에이전트 판단\n정기 정비 계획 스킬에 따라 원문 패키지와 최신 CMMS·ERP 자료를 다시 조회하겠습니다. 교육용 재고 초기값의 출처를 구분하고, 묶음 정비의 작동유·인원과 연기 상한을 판단 엔진으로 재검사하겠습니다.\n",
+          "bounds": {
+            "x": 673,
+            "y": 446.421875,
+            "width": 663,
+            "height": 111.890625
+          },
+          "before_agent_boundary": null
+        }
+      ],
+      "frame_hashes_valid": true
+    }
+  ],
+  "evidence_sha256": [
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\result.json",
+      "sha256": "65de3af78a7e640760dfa2bd79a91f9f3be5562ceb187373fb8484a143d207eb",
+      "bytes": 155912
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\sse-frames.jsonl",
+      "sha256": "44b5c3dbf24e1124e08e115792dc7cf7f9cfdeebf3bbcfbf3277cd8611b5e5ef",
+      "bytes": 153442
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\native-dom.jsonl",
+      "sha256": "c92574c352d791dcc617086b5dba3a6d323e954e6bb8a4c73144b747da54f940",
+      "bytes": 115040
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\result.json",
+      "sha256": "0c210cda5f9d78211507bf1ad58d0d9a107352e09dc6491d83fa6b892838fb29",
+      "bytes": 23693
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\sse-frames.jsonl",
+      "sha256": "0d1de53cf3241752bcfc1bfb395483f3f21db69f935da8fbd2dd05369b430666",
+      "bytes": 146946
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\native-dom.jsonl",
+      "sha256": "f2986ff156303f13e6777a4dd29f7ae455478a7587ace1eeb48f5184c47b190e",
+      "bytes": 212493
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live\\result.json",
+      "sha256": "9f3cb2079484701da3fbcaee1860111cd7d868a14018018b4cd05d466d3a9552",
+      "bytes": 21224
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live\\sse-frames.jsonl",
+      "sha256": "33df7c052b08b9ebbcf25f651c972f097b13c83211af1cb08905be7a92d6f950",
+      "bytes": 173259
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live\\native-dom.jsonl",
+      "sha256": "11d73ab651ccce737569c6ea8d8caadf413bd3308abf71c75f3d241540dfaf7c",
+      "bytes": 173328
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\agent-worker\\worker\\events.py",
+      "sha256": "1b1ddf95f6747aae215ceedddd450aa3e4394be114ca6ed1f0b75073da2c01b3",
+      "bytes": 14113
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\agent-worker\\worker\\runner.py",
+      "sha256": "8cb36f835ebde0e6662b44a67f0b9012af35a91de78bc436a902e59bd82d2818",
+      "bytes": 41536
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\process\\procsvc\\instance_mode.py",
+      "sha256": "6d5e2f4f91e5d76eacebf63668ef34d0fdf71fa46c07d3284c206b9ba7249a0c",
+      "bytes": 70165
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\liveStream.js",
+      "sha256": "d650e0d8fcb3b2d34228539d218be56cc014a962ccdce1d9547df8d5eecba703",
+      "bytes": 17877
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\trace.js",
+      "sha256": "f766c9d2b252ce0955e11b92e882d44c90bc9595bf19d94d6399fa0e663248c0",
+      "bytes": 42385
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\caseRecord.js",
+      "sha256": "630872924ced59ad27d3aab2a1b18484d7cf8b539f1a24edc0f6f4ad23559f76",
+      "bytes": 103481
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\taskDetail.js",
+      "sha256": "973640e8ba14ee3a004c4157a6e7245d7fa95369addd6f5ee43fce586796b73e",
+      "bytes": 75220
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\it\\portal\\www\\ui.js",
+      "sha256": "8b5c67c52e13f1c6a77e8f7b4432a93d7c24d7134d638da4d1245f1bfa5e338d",
+      "bytes": 81682
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\process-gpt\\docs\\en\\architecture.md",
+      "sha256": "c20fddac3e6a5c7be582936aa4579cad0cce0530a85cab8629689b6a9076c23e",
+      "bytes": 22148
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\process-gpt-vue3\\src\\ds\\components\\PgToolStep.vue",
+      "sha256": "2138463be86fc1c8272ca7be3b3836d1ab2ad8626279e5bfbe1d7a9569de19dc",
+      "bytes": 1043
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\reaudit\\references-latest\\ontology-studio\\frontend\\src\\features\\files\\FilePanel.vue",
+      "sha256": "7b0ac1dfe2eaf4ee488d00a645c2500da16a5a5c38c911da6feae607c70d5943",
+      "bytes": 1436
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\reference-dify.png",
+      "sha256": "5f63595d05b6d6031f79e46e13d6433ec3cc0fd043a2706b9ce0a9c22887fcdd",
+      "bytes": 209158
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\portal-final-delegated-live\\A-record-1440.json",
+      "sha256": "e79ff3569425213e0b9f08aecb887aa353ac25e1c32f00a68c708c264958dd6e",
+      "bytes": 17151
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\portal-final-delegated-live\\A-result-1440.json",
+      "sha256": "444a7c60707c3cfd2340323d87a537a982c1ecf77886def15f6ac530400ef0ba",
+      "bytes": 1010
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\live-F27-final-3\\result.json",
+      "sha256": "470baefee9a7d3b88aa624ac967f064795604f24e36d9ff4b4142127e2b8a1af",
+      "bytes": 25766
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\k3-preparation-20261012\\F27-trace-captures\\result.json",
+      "sha256": "098c4707773ed326523319adcb1cc7398ed5aba3b981fa0f0c723340d0c1be46",
+      "bytes": 5253
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\native-B-final\\result.json",
+      "sha256": "4846419f226871fc3dcd478b452fef63de51f16ff15eec8119ced57f4f126262",
+      "bytes": 3874
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\google-meeting-import-20261012\\native-labels\\result.json",
+      "sha256": "71aa4e70a574de04b2731a36f6f0bfd1331049c2ed6f820df47dcfcfe1f07222",
+      "bytes": 2629
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\pytest-public-stream-final3.log",
+      "sha256": "717c59c46ca029096e647a21380ecd98076ec00ee274b464f97fb5daa5d64951",
+      "bytes": 2614
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\docs\\handoff\\verification\\2026-10-12\\final-delegated\\C-business-completion-proof.json",
+      "sha256": "d38b8692174da542428210ace09d5a28304fd5e8c62dd8f925d00a6508cdd1f6",
+      "bytes": 1015
+    },
+    {
+      "path": "D:\\work\\study\\hyd-iot-edu\\.claude\\worktrees\\codex-portal-20261011\\tests\\fixtures\\actual_bc_record_followup.json",
+      "sha256": "1ac1a79ebaf4d5efc15906e981117911bee4fa59eae6c20299eeafa4284540db",
+      "bytes": 736808
+    }
+  ],
+  "confirmed_product_subscription_defect": null,
+  "collector_evidence_limits": [
+    "C fresh tool identity mismatches historical 10:13:03 native row chosen in tool PNG",
+    "B first live tool PNG is shell, not full opened MCP I/O",
+    "Education-corrected B collector stopped after public PNG and eight fresh frames; completion native evidence is stored state"
+  ],
+  "remaining_gaps": [
+    "Real-time final recommendation card rendering at creation",
+    "Real-time approval waiting/delay/reject transitions",
+    "Real-time system processing and automatic verification completion",
+    "Concurrent Trace and TaskDetail native display for the same fresh run"
+  ],
+  "no_new_run_requested": true,
+  "images_inspected": [
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\B-public-before-agent-assessment-end-1.png",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-B-final-live\\B-tool-before-agent-assessment-end-2.png",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\C-public-before-completion-1.png",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\delegated-review-20261012\\watch-C-live\\C-tool-before-completion-2.png",
+    "D:\\work\\study\\hyd-iot-edu\\.evidence\\education-fixture-correction-20261012\\watch-B-live\\B-public-before-completion-1.png"
+  ],
+  "not_user_visual_approval": true,
+  "current_tool_call_identity": "ui.js:5-6 already uses case+todo+job+tool_use_id; historical collector selection does not establish current product correlation defect",
+  "stored_fixture_case_event_counts": {
+    "B": 58,
+    "C": 60
+  },
+  "source_unchanged_during_audit": true,
+  "markdown_sha256": "aefe4da13e46d89198416f9b5ff1dbf3bf441896e5e46e5b1b518e990e305546"
+}
