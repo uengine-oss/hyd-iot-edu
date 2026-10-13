@@ -196,22 +196,28 @@ table.res td small{color:var(--sub);font-size:13px}
 @media(max-width:760px){.flow li{grid-template-columns:30px 1fr}.flow span{grid-column:2}.do header,.do .body,.sect{padding-left:16px;padding-right:16px}}
 .todo li::before{background:var(--page-soft);color:var(--page)}
 
-/* 받은 폴더: VS Code 탐색기 모양 */
-.xp{border:1px solid #c3cbd8;border-radius:10px;overflow:hidden;font-size:15px}
-.xp-row{display:grid;grid-template-columns:270px 1fr;align-items:stretch}
-.xp-l{background:#f3f3f3;border-right:1px solid #d4d4d4;padding:5px 12px 5px 18px;font:13.5px/1.9 "Segoe UI","Malgun Gothic",system-ui,sans-serif;color:#3b3b3b;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.xp-r{padding:5px 18px;line-height:1.7;color:#1f2937;display:flex;align-items:center;border-top:1px solid #eef1f5}
-.xp-head .xp-l{font-size:11px;letter-spacing:.08em;color:#6b7280;padding-top:8px;padding-bottom:6px}
-.xp-head .xp-r{font-size:12px;font-weight:700;color:#6b7280;border-top:0;background:#fafbfc}
-.xp-root .xp-l{font-weight:700;font-size:12px;letter-spacing:.02em;padding-left:8px;background:#e8e8e8}
+/* 받은 폴더: VS Code 탐색기 모양(어두운 테마) */
+.xp{border:1px solid #1e1e1e;border-radius:10px;overflow:hidden;font-size:15px;background:#fff}
+.xp-row{display:grid;grid-template-columns:290px 1fr;align-items:stretch}
+.xp-row[hidden]{display:none}
+.xp-l{background:#252526;border-right:1px solid #1e1e1e;padding:4px 12px 4px 20px;font:13.5px/2 "Segoe UI","Malgun Gothic",system-ui,sans-serif;color:#cccccc;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.xp-r{padding:5px 20px;line-height:1.7;color:#1f2937;display:flex;align-items:center;border-top:1px solid #eef1f5}
+.xp-head .xp-l{font-size:11px;letter-spacing:.1em;color:#bbbbbb;padding-top:10px;padding-bottom:6px;padding-left:20px}
+.xp-head .xp-r{font-size:12px;font-weight:700;color:#6b7280;border-top:0;background:#f5f7fa}
+.xp-root .xp-l{font-weight:700;font-size:12px;letter-spacing:.02em;padding-left:6px;background:#37373d;color:#ffffff}
 .xp-root .xp-r{font-weight:700}
-.xp-new .xp-l{background:#dbe7ff;color:#1d4ed8;font-weight:700}
-.xp-new .xp-r{background:var(--accent-soft)}
-.xp .chev{font-style:normal;color:#6b7280;width:14px;text-align:center;font-size:12px}
+.xp-dir{cursor:pointer}
+.xp-dir:hover .xp-l,.xp-row:hover .xp-l{background:#2a2d2e}
+.xp-root:hover .xp-l{background:#3c3c44}
+.xp-new .xp-l{color:#73c991}
+.xp-new .xp-l u{text-decoration:none;margin-left:auto;font-size:11px;color:#73c991;border:1px solid #3f7a5c;border-radius:4px;padding:0 6px;line-height:1.6}
+.xp-new .xp-r{background:var(--ok-soft)}
+.xp .chev{font-style:normal;color:#c5c5c5;width:14px;text-align:center;font-size:12px;transition:transform .12s}
+.xp-dir.shut .chev{transform:rotate(-90deg)}
 .xp .ic{font-style:normal;width:16px;text-align:center;font:700 10px/1 Consolas,monospace;flex-shrink:0}
-.xp .ic.py::before{content:"py";color:#3572a5}
-.xp .ic.json::before{content:"{}";color:#b8860b}
-.xp .ic.md::before{content:"M↓";color:#1d6fb8}
-.xp .ic.env::before{content:"⚙";color:#6b7280;font-size:12px}
-.xp .ic.html::before{content:"<>";color:#e34c26}
+.xp .ic.py::before{content:"py";color:#4b9fd5}
+.xp .ic.json::before{content:"{}";color:#e2c08d}
+.xp .ic.md::before{content:"M↓";color:#519aba}
+.xp .ic.env::before{content:"⚙";color:#a0a0a0;font-size:12px}
+.xp .ic.html::before{content:"<>";color:#e37933}
 @media(max-width:760px){.xp-row{grid-template-columns:1fr}.xp-l{border-right:0}.xp-head .xp-r{display:none}}

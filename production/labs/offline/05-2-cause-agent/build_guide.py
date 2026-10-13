@@ -114,12 +114,14 @@ def load(path):
 
 
 def explorer(root, *rows):
-    """VS Code 탐색기 모양. rows: (깊이, 종류, 이름, 설명, 강조)"""
+    """VS Code 탐색기 모양. rows: (깊이, 종류, 이름, 설명, 강조). 폴더 줄을 누르면 접히고 펴진다."""
     out = [f'<div class="xp"><div class="xp-row xp-head"><div class="xp-l">탐색기</div><div class="xp-r">무엇인가</div></div>'
-           f'<div class="xp-row xp-root"><div class="xp-l"><i class="chev">⌄</i>{root}</div><div class="xp-r">{t("VS Code로 여는 실습 폴더")}</div></div>']
+           f'<div class="xp-row xp-root xp-dir" data-d="-1"><div class="xp-l"><i class="chev">⌄</i>{root}</div><div class="xp-r">{t("VS Code로 여는 실습 폴더")}</div></div>']
     for depth, kind, name, text, *flag in rows:
         icon = '<i class="chev">⌄</i>' if kind == "dir" else f'<i class="ic {kind}"></i>'
-        out.append(f'<div class="xp-row{" xp-new" if flag else ""}"><div class="xp-l" style="padding-left:{18 + depth * 16}px">{icon}{name}</div>'
+        cls = "xp-row" + (" xp-dir" if kind == "dir" else "") + (" xp-new" if flag else "")
+        mark = '<u>새 파일</u>' if flag else ""
+        out.append(f'<div class="{cls}" data-d="{depth}"><div class="xp-l" style="padding-left:{20 + depth * 18}px">{icon}<span>{name}</span>{mark}</div>'
                    f'<div class="xp-r">{t(text)}</div></div>')
     return "".join(out) + "</div>"
 
@@ -410,6 +412,7 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{const el=document.getElementById(b.dataset.copy);const text=(el.value??el.textContent).trim();if(!text){say('아직 쓴 글이 없습니다.');el.focus();return}
  try{await navigator.clipboard.writeText(text);say('복사했습니다.')}catch(e){if(el.select)el.select();else{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}say('글을 선택해 두었습니다. Ctrl+C로 복사하세요.')}}));
 document.querySelectorAll('[data-draft]').forEach(a=>{try{a.value=localStorage.getItem(KEY+a.dataset.draft)||''}catch(e){}a.addEventListener('input',()=>{try{localStorage.setItem(KEY+a.dataset.draft,a.value)}catch(e){}})});
+document.querySelectorAll('.xp-dir').forEach(r=>r.addEventListener('click',()=>{const d=+r.dataset.d;const shut=r.classList.toggle('shut');let n=r.nextElementSibling;while(n&&+n.dataset.d>d){if(shut){n.hidden=true}else{n.hidden=false;n.classList.remove('shut')}n=n.nextElementSibling}}));
 go(location.hash.slice(1));""".replace("__NAMES__", json.dumps(NAMES, ensure_ascii=False))
 
 dots = "".join(f'<i data-go="{i}" title="{e(n)}"></i>' for i, n in enumerate(NAMES))
