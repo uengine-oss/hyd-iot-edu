@@ -8,7 +8,6 @@ HYD 제조 AI 교육과정의 이론 교재와 그것을 만드는 기준·도�
 production/decks/
   integrated/day01 … day11/           통합반_NN일차.md(원 덱 원고), figures/(SVG, PNG, CSV, 그리는 스크립트), 대본의 원문과 1차 윤문본
   integrated/sample/                  컨펌받은 그림체 샘플(16장)
-  integrated/day11/보관/               시연으로 바꾸며 뺀 ProcessGPT 이론 단원의 원고. 덱에 쓰이지 않는다
   practical/만들기_01일차.py            실전반 1일차를 통합반 1일차 원고에서 낸다(실라버스가 같다)
   practical/day02 … day08/            조립.py(가져올 장의 순서표와 손질 목록), 새장_0N일차.md(새로 쓴 장), 실전반_0N일차.md(조립 결과. 직접 고치지 않는다)
   integrated-offline/session01 … 10/  조립.py, 새장_NN회차.md, 통합반_오프라인_NN회차.md(조립 결과. 직접 고치지 않는다)
