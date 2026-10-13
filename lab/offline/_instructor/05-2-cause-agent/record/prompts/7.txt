@@ -1,0 +1,5 @@
+agent_config.json 의 tools 목록에 get_actions를 내가 직접 더했어. tools.py 에 get_actions를 만들고, rules 끝에 아래 문장을 글자 그대로 더해 줘.
+
+- get_actions를 부를 수 있으면, CONFIRMED이거나 HYPOTHESIS인 원인이 나온 고장 유형마다 조치 방법을 읽어 그 원인에 맞는 절차 번호(sopId)를 그 점검의 actions에 적는다. HYPOTHESIS인 원인에는 근본 조치(REMEDIED_BY)만 적는다.
+
+agent.py 는 고칠 곳이 있을 때만 고치고, 고쳤다면 어디를 왜 고쳤는지 말해 줘. 실행은 내가 할게.

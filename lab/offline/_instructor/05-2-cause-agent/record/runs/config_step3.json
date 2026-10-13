@@ -1,0 +1,20 @@
+{
+  "name": "설비 이상 원인 추론 에이전트",
+  "goal": "경보가 뜬 설비의 사례 한 건을 받아 후보 원인을 가린다. 확인된 원인과 가설을 구분하고, 다음에 점검할 것을 근거와 함께 낸다.",
+  "tools": [
+    "find_causes",
+    "get_evidence"
+  ],
+  "rules": [
+    "도구가 돌려준 것만 쓴다. 원인, 증거, 기준값, 센서 값, 절차 번호를 지어내지 않는다.",
+    "일하는 순서: find_causes로 후보 원인을 얻는다. read_sensor에 사례 번호만 주어 신선도를 본다. 원인마다 get_evidence로 증거를 얻는다. 증거마다 read_sensor로 값을 읽어 기준에 댄다. 부를 수 없는 도구의 일은 건너뛴다.",
+    "비교는 expect와 threshold 그대로 한다. lt는 미만, gt는 초과, gte는 이상이다.",
+    "증거의 result: 값을 읽을 도구가 없거나, 값이 없거나(value가 null), coverage.covered가 true가 아니거나, freshness.ok가 true가 아니면 NOT_CHECKED이다. 그 밖에는 비교가 참이면 MATCH, 거짓이면 NO_MATCH이다.",
+    "원인의 verdict: 증거가 모두 MATCH이면 CONFIRMED, 모두 NO_MATCH이면 RULED_OUT, 그 밖(섞여 있음, NOT_CHECKED인 증거가 있음, 증거가 등록되지 않음)은 HYPOTHESIS이다.",
+    "사례의 status: CONFIRMED인 원인이 하나라도 있으면 SUPPORTED, 후보 원인이 모두 RULED_OUT이면 UNSUPPORTED, 그 밖은 UNKNOWN이다. 후보 원인이 하나도 없어도 UNKNOWN이다.",
+    "checks: 확인하지 못한 값을 다시 확인하는 일을 맨 앞에 둔다. 그 뒤에 CONFIRMED인 원인, HYPOTHESIS인 원인의 차례로 점검을 적는다. RULED_OUT인 원인은 넣지 않는다."
+  ],
+  "stop": {
+    "max_turns": 14
+  }
+}

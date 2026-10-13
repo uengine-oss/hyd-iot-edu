@@ -1,0 +1,5 @@
+이 폴더의 규칙(.github/copilot-instructions.md)과 ontology 폴더의 세 파일, cases 폴더의 두 파일, agent_config.json, llm_client.py 를 읽어 줘. .env 는 열지 마.
+
+경보 패턴 COOLER_DEGRADATION에서 원인 후보와 증거까지 온톨로지의 어떤 관계를 따라가는지 한 줄씩 적고, 사례 S01을 원인 후보마다 증거의 기준에 대어 본 결과를 표로 적어 줘.
+
+이 폴더의 규칙만으로는 정할 수 없는 것이 나오면 정하지 말고 나에게 물어 줘. 아직 파일은 만들거나 고치지 마.

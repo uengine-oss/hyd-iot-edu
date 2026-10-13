@@ -1,0 +1,7 @@
+S03이 횟수 한도에 닿아 답을 내지 못했어. plan.md의 호출 기록을 보면, 증거에 필요한 값을 다 읽은 뒤에도 증거에 없는 TS1을 구간만 바꿔 가며 계속 읽었어.
+
+agent_config.json 의 rules 끝에 아래 문장을 글자 그대로 더해 줘.
+
+- read_sensor는 get_evidence가 돌려준 증거의 tag, aggregate, windowSeconds 그대로만 부른다. 증거에 없는 태그나 구간은 읽지 않는다.
+
+rules에 문장을 더하는 것만 하고, agent.py 와 tools.py, 답의 모양은 건드리지 마.

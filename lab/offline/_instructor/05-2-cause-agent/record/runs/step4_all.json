@@ -1,0 +1,2919 @@
+[
+  {
+    "id": "S01",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "MATCH",
+            "value": 46.2
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "MATCH",
+            "value": 0.575
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "NO_MATCH",
+            "value": 28.0
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "NO_MATCH",
+            "value": 0.575
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "쿨러 핀 오염을 확인하기 위해 냉각 효율과 팬 진동을 점검한다",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S01"
+        },
+        "result": {
+          "case_id": "S01",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.6,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S01",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S01",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 46.2,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.004,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S01",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S01",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.575,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.009,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S01",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S01",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 28.0,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.002,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S01",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S01",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 28.0,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.002,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S02",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "MATCH",
+            "value": 62.4
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "MATCH",
+            "value": 0.61
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "MATCH",
+            "value": 36.8
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "NO_MATCH",
+            "value": 0.61
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "쿨러 핀 오염을 확인하기 위해 냉각 효율과 팬 진동을 점검한다",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 2,
+        "check": "주변 온도 상승을 확인하기 위해 캐비닛 온도를 점검한다",
+        "evidence": [
+          "evd:ambient-ts4-high"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S02"
+        },
+        "result": {
+          "case_id": "S02",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.8,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S02",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S02",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 62.4,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S02",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S02",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.61,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.011,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S02",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S02",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 36.8,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 10.998,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S02",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S02",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 36.8,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 10.998,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S03",
+    "status": "UNKNOWN",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "HYPOTHESIS",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "MATCH",
+            "value": 58.0
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "NO_MATCH",
+            "value": 1.05
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "NO_MATCH",
+            "value": 29.1
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "MATCH",
+            "value": 1.05
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "TS4 센서 커버리지 갭(11.004s)이 한계(12s)에 근접하므로 최근 2분 캐비닛 온도 TS4 평균을 재확인한다.",
+        "evidence": [
+          "evd:ambient-ts4-high"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 2,
+        "check": "팬 구동 불량을 확인하기 위해 팬 구동부를 점검한다.",
+        "evidence": [
+          "evd:fan-drive-vs1-high"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 3,
+        "check": "쿨러 핀 오염 가설을 검증하기 위해 쿨러 핀 상태를 점검한다.",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S03"
+        },
+        "result": {
+          "case_id": "S03",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.7,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S03",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S03",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 58.0,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.002,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S03",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S03",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 1.05,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.008,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S03",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S03",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 29.1,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.004,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S03",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S03",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 29.1,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.004,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "status UNKNOWN, 원인의 verdict(HYPOTHESIS, RULED_OUT, CONFIRMED)에 대면 SUPPORTED",
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S04",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:pump-seal-wear",
+        "name": "펌프 축 씰 마모",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:ps1-low",
+            "result": "MATCH",
+            "value": 158.3
+          },
+          {
+            "id": "evd:fs1-drop",
+            "result": "MATCH",
+            "value": 7.4
+          }
+        ]
+      }
+    ],
+    "checks": [],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "PUMP_LEAKAGE"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:pump-leakage",
+            "name": "펌프 내부 누설",
+            "code": "PUMP_LEAKAGE"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ps1-drop",
+              "name": "토출 압력 저하"
+            },
+            {
+              "id": "sym:fs1-drop",
+              "name": "유량 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:volumetric-loss",
+              "name": "펌프 체적 효율 저하",
+              "symptoms": [
+                "sym:ps1-drop",
+                "sym:fs1-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:pump-seal-wear",
+                  "name": "펌프 축 씰 마모",
+                  "prior": 0.7,
+                  "section": null
+                }
+              ]
+            },
+            {
+              "id": "fm:low-pressure-trip",
+              "name": "저압 정지",
+              "symptoms": [
+                "sym:ps1-drop"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S04"
+        },
+        "result": {
+          "case_id": "S04",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.5,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:pump-seal-wear"
+        },
+        "result": {
+          "cause_id": "cause:pump-seal-wear",
+          "evidence": [
+            {
+              "id": "evd:ps1-low",
+              "name": "토출 압력 평균 165 bar 미만",
+              "tag": "PS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 165,
+              "section": null
+            },
+            {
+              "id": "evd:fs1-drop",
+              "name": "유량 평균 8.0 l/min 미만",
+              "tag": "FS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 8.0,
+              "section": null
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S04",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S04",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 158.3,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.01,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S04",
+          "tag": "FS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S04",
+          "tag": "FS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 7.4,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [],
+    "stopped": "답을 냄"
+  },
+  {
+    "id": "S05",
+    "status": "UNKNOWN",
+    "causes": [
+      {
+        "id": "cause:pump-seal-wear",
+        "name": "펌프 축 씰 마모",
+        "verdict": "HYPOTHESIS",
+        "evidence": [
+          {
+            "id": "evd:ps1-low",
+            "result": "MATCH",
+            "value": 163.2
+          },
+          {
+            "id": "evd:fs1-drop",
+            "result": "NO_MATCH",
+            "value": 8.3
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "유량 평균 8.0 l/min 미만 여부를 FS1 센서로 재확인한다.",
+        "evidence": [
+          "evd:fs1-drop"
+        ],
+        "actions": []
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "PUMP_LEAKAGE"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:pump-leakage",
+            "name": "펌프 내부 누설",
+            "code": "PUMP_LEAKAGE"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ps1-drop",
+              "name": "토출 압력 저하"
+            },
+            {
+              "id": "sym:fs1-drop",
+              "name": "유량 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:volumetric-loss",
+              "name": "펌프 체적 효율 저하",
+              "symptoms": [
+                "sym:ps1-drop",
+                "sym:fs1-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:pump-seal-wear",
+                  "name": "펌프 축 씰 마모",
+                  "prior": 0.7,
+                  "section": null
+                }
+              ]
+            },
+            {
+              "id": "fm:low-pressure-trip",
+              "name": "저압 정지",
+              "symptoms": [
+                "sym:ps1-drop"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S05"
+        },
+        "result": {
+          "case_id": "S05",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.9,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:pump-seal-wear"
+        },
+        "result": {
+          "cause_id": "cause:pump-seal-wear",
+          "evidence": [
+            {
+              "id": "evd:ps1-low",
+              "name": "토출 압력 평균 165 bar 미만",
+              "tag": "PS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 165,
+              "section": null
+            },
+            {
+              "id": "evd:fs1-drop",
+              "name": "유량 평균 8.0 l/min 미만",
+              "tag": "FS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 8.0,
+              "section": null
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S05",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S05",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 163.2,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.011,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S05",
+          "tag": "FS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S05",
+          "tag": "FS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 8.3,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.008,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S05",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S05",
+          "tag": "PS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 163.2,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.011,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S06",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:fan-bearing-wear",
+        "name": "팬 베어링 마모",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:vs1-trend",
+            "result": "MATCH",
+            "value": 0.34
+          },
+          {
+            "id": "evd:ts1-normal",
+            "result": "MATCH",
+            "value": 49.2
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "팬 베어링 마모를 확인하기 위해 진동 상승폭과 유온을 점검한다.",
+        "evidence": [
+          "evd:vs1-trend",
+          "evd:ts1-normal"
+        ],
+        "actions": []
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "FAN_VIBRATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:fan-vibration",
+            "name": "팬 진동 상승",
+            "code": "FAN_VIBRATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:vs1-rise",
+              "name": "진동 증가"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:bearing-degradation",
+              "name": "팬 베어링 열화",
+              "symptoms": [
+                "sym:vs1-rise"
+              ],
+              "causes": [
+                {
+                  "id": "cause:fan-bearing-wear",
+                  "name": "팬 베어링 마모",
+                  "prior": 0.8,
+                  "section": null
+                }
+              ]
+            },
+            {
+              "id": "fm:high-vibration-trip",
+              "name": "고진동 정지",
+              "symptoms": [
+                "sym:vs1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S06"
+        },
+        "result": {
+          "case_id": "S06",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.6,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-bearing-wear"
+        },
+        "result": {
+          "cause_id": "cause:fan-bearing-wear",
+          "evidence": [
+            {
+              "id": "evd:vs1-trend",
+              "name": "진동 상승폭 0.2 mm/s 초과 (최근 5분)",
+              "tag": "VS1",
+              "aggregate": "max-min",
+              "windowSeconds": 300,
+              "expect": "gt",
+              "threshold": 0.2,
+              "section": null
+            },
+            {
+              "id": "evd:ts1-normal",
+              "name": "유온 52 ℃ 미만 (냉각 문제 아님)",
+              "tag": "TS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 52,
+              "section": null
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S06",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300
+        },
+        "result": {
+          "case_id": "S06",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300,
+          "value": 0.34,
+          "coverage": {
+            "samples": 300,
+            "max_gap_s": 1.012,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S06",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S06",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 49.2,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S06",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300
+        },
+        "result": {
+          "case_id": "S06",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300,
+          "value": 0.34,
+          "coverage": {
+            "samples": 300,
+            "max_gap_s": 1.012,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S07",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "MATCH",
+            "value": 51.0
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "MATCH",
+            "value": 0.58
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "HYPOTHESIS",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "NOT_CHECKED",
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "NO_MATCH",
+            "value": 0.58
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "TS4 캐비닛 온도 평균값을 다시 확인한다",
+        "evidence": [
+          "evd:ambient-ts4-high"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 2,
+        "check": "쿨러 핀 오염을 확인한다",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 3,
+        "check": "주변 온도 상승 여부를 확인한다",
+        "evidence": [
+          "evd:ambient-ts4-high"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S07"
+        },
+        "result": {
+          "case_id": "S07",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.7,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S07",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S07",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 51.0,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.004,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S07",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S07",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.58,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.009,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S07",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S07",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": null,
+          "coverage": {
+            "samples": 0,
+            "max_gap_s": null,
+            "limit_s": 12,
+            "covered": false
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S07",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S07",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": null,
+          "coverage": {
+            "samples": 0,
+            "max_gap_s": null,
+            "limit_s": 12,
+            "covered": false
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S08",
+    "status": "UNKNOWN",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "HYPOTHESIS",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "NOT_CHECKED",
+            "value": 66.1
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "MATCH",
+            "value": 0.6
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "NO_MATCH",
+            "value": 30.2
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "NO_MATCH",
+            "value": 0.6
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "CE 센서의 커버리지 공백을 해소하여 최근 30초 냉각 효율 평균을 다시 확인한다.",
+        "evidence": [
+          "evd:fin-fouling-ce-low"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      },
+      {
+        "order": 2,
+        "check": "쿨러 핀 오염 여부를 확인한다.",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S08"
+        },
+        "result": {
+          "case_id": "S08",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.9,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S08",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S08",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 66.1,
+          "coverage": {
+            "samples": 9,
+            "max_gap_s": 14.2,
+            "limit_s": 3,
+            "covered": false
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S08",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S08",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.6,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.009,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S08",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S08",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 30.2,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.002,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S08",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S08",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 66.1,
+          "coverage": {
+            "samples": 9,
+            "max_gap_s": 14.2,
+            "limit_s": 3,
+            "covered": false
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S09",
+    "status": "SUPPORTED",
+    "causes": [
+      {
+        "id": "cause:cooler-fin-fouling",
+        "name": "쿨러 핀 오염",
+        "verdict": "CONFIRMED",
+        "evidence": [
+          {
+            "id": "evd:fin-fouling-ce-low",
+            "result": "MATCH",
+            "value": 48.9
+          },
+          {
+            "id": "evd:fin-fouling-vs1-normal",
+            "result": "MATCH",
+            "value": 0.57
+          }
+        ]
+      },
+      {
+        "id": "cause:ambient-high-temp",
+        "name": "주변 온도 상승",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:ambient-ts4-high",
+            "result": "NO_MATCH",
+            "value": 28.3
+          }
+        ]
+      },
+      {
+        "id": "cause:fan-drive-fault",
+        "name": "팬 구동 불량",
+        "verdict": "RULED_OUT",
+        "evidence": [
+          {
+            "id": "evd:fan-drive-vs1-high",
+            "result": "NO_MATCH",
+            "value": 0.57
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "신선도가 만료된 TS1 유온 값을 최신 데이터로 다시 확인한다.",
+        "evidence": [],
+        "actions": []
+      },
+      {
+        "order": 2,
+        "check": "쿨러 핀 오염을 확인하기 위해 HM-8.4 절차에 따라 핀 상태를 점검한다.",
+        "evidence": [
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "actions": [
+          "HM-8.4"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "COOLER_DEGRADATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "symptoms": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "causes": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "symptoms": [
+                "sym:ts1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09"
+        },
+        "result": {
+          "case_id": "S09",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 185.0,
+            "max_age_s": 60,
+            "ok": false
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:cooler-fin-fouling"
+        },
+        "result": {
+          "cause_id": "cause:cooler-fin-fouling",
+          "evidence": [
+            {
+              "id": "evd:fin-fouling-ce-low",
+              "name": "최근 30초 냉각 효율 평균 70 % 미만",
+              "tag": "CE",
+              "aggregate": "avg",
+              "windowSeconds": 30,
+              "expect": "lt",
+              "threshold": 70,
+              "section": "HM-8.4"
+            },
+            {
+              "id": "evd:fin-fouling-vs1-normal",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 미만 (팬은 정상)",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:ambient-high-temp"
+        },
+        "result": {
+          "cause_id": "cause:ambient-high-temp",
+          "evidence": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-drive-fault"
+        },
+        "result": {
+          "cause_id": "cause:fan-drive-fault",
+          "evidence": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 48.9,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.004,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.57,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.009,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 28.3,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.002,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1"
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": null,
+          "windowSeconds": null,
+          "value": null,
+          "coverage": null
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 60.1,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": null,
+          "coverage": null
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "max",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "max",
+          "windowSeconds": 120,
+          "value": null,
+          "coverage": null
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 60
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 60,
+          "value": null,
+          "coverage": null
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 300
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 300,
+          "value": null,
+          "coverage": null
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 60.1,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S10",
+    "status": "UNKNOWN",
+    "causes": [
+      {
+        "id": "cause:fan-bearing-wear",
+        "name": "팬 베어링 마모",
+        "verdict": "HYPOTHESIS",
+        "evidence": [
+          {
+            "id": "evd:vs1-trend",
+            "result": "NO_MATCH",
+            "value": 0.12
+          },
+          {
+            "id": "evd:ts1-normal",
+            "result": "NO_MATCH",
+            "value": 56.3
+          }
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "order": 1,
+        "check": "VS1 진동 상승폭 0.2 mm/s 초과 여부를 최근 5분 기준으로 재확인한다.",
+        "evidence": [
+          "evd:vs1-trend"
+        ],
+        "actions": []
+      },
+      {
+        "order": 2,
+        "check": "TS1 유온 52 ℃ 미만 여부를 최근 120초 평균으로 재확인한다.",
+        "evidence": [
+          "evd:ts1-normal"
+        ],
+        "actions": []
+      }
+    ],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "FAN_VIBRATION"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:fan-vibration",
+            "name": "팬 진동 상승",
+            "code": "FAN_VIBRATION"
+          },
+          "symptoms": [
+            {
+              "id": "sym:vs1-rise",
+              "name": "진동 증가"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:bearing-degradation",
+              "name": "팬 베어링 열화",
+              "symptoms": [
+                "sym:vs1-rise"
+              ],
+              "causes": [
+                {
+                  "id": "cause:fan-bearing-wear",
+                  "name": "팬 베어링 마모",
+                  "prior": 0.8,
+                  "section": null
+                }
+              ]
+            },
+            {
+              "id": "fm:high-vibration-trip",
+              "name": "고진동 정지",
+              "symptoms": [
+                "sym:vs1-rise"
+              ],
+              "causes": []
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S10"
+        },
+        "result": {
+          "case_id": "S10",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.6,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:fan-bearing-wear"
+        },
+        "result": {
+          "cause_id": "cause:fan-bearing-wear",
+          "evidence": [
+            {
+              "id": "evd:vs1-trend",
+              "name": "진동 상승폭 0.2 mm/s 초과 (최근 5분)",
+              "tag": "VS1",
+              "aggregate": "max-min",
+              "windowSeconds": 300,
+              "expect": "gt",
+              "threshold": 0.2,
+              "section": null
+            },
+            {
+              "id": "evd:ts1-normal",
+              "name": "유온 52 ℃ 미만 (냉각 문제 아님)",
+              "tag": "TS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 52,
+              "section": null
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S10",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300
+        },
+        "result": {
+          "case_id": "S10",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300,
+          "value": 0.12,
+          "coverage": {
+            "samples": 300,
+            "max_gap_s": 1.01,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S10",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S10",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 56.3,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.004,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S10",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300
+        },
+        "result": {
+          "case_id": "S10",
+          "tag": "VS1",
+          "aggregate": "max-min",
+          "windowSeconds": 300,
+          "value": 0.12,
+          "coverage": {
+            "samples": 300,
+            "max_gap_s": 1.01,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      }
+    ],
+    "mismatches": [
+      "cause:fan-bearing-wear: verdict HYPOTHESIS, 증거의 result(NO_MATCH, NO_MATCH)에 대면 RULED_OUT"
+    ],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  },
+  {
+    "id": "S11",
+    "status": "UNKNOWN",
+    "causes": [
+      {
+        "id": "cause:oil-oxidation",
+        "name": "고온 운전에 의한 산화",
+        "verdict": "HYPOTHESIS",
+        "evidence": []
+      },
+      {
+        "id": "cause:water-ingress",
+        "name": "수분 혼입",
+        "verdict": "HYPOTHESIS",
+        "evidence": []
+      },
+      {
+        "id": "cause:particle-contamination",
+        "name": "오염 입자 유입",
+        "verdict": "HYPOTHESIS",
+        "evidence": []
+      },
+      {
+        "id": "cause:change-interval-exceeded",
+        "name": "교환 주기 초과",
+        "verdict": "HYPOTHESIS",
+        "evidence": []
+      }
+    ],
+    "checks": [],
+    "calls": [
+      {
+        "tool": "find_causes",
+        "args": {
+          "alarm": "OIL_ANALYSIS"
+        },
+        "result": {
+          "alarm": {
+            "id": "pattern:oil-analysis",
+            "name": "오일 분석 기준 이탈 (사람 입력)",
+            "code": "OIL_ANALYSIS"
+          },
+          "symptoms": [
+            {
+              "id": "sym:oil-analysis-out-of-spec",
+              "name": "오일 분석 기준 이탈"
+            }
+          ],
+          "failures": [
+            {
+              "id": "fm:oil-degradation",
+              "name": "작동유 열화",
+              "symptoms": [
+                "sym:oil-analysis-out-of-spec"
+              ],
+              "causes": [
+                {
+                  "id": "cause:oil-oxidation",
+                  "name": "고온 운전에 의한 산화",
+                  "prior": 0.4,
+                  "section": null
+                },
+                {
+                  "id": "cause:water-ingress",
+                  "name": "수분 혼입",
+                  "prior": 0.25,
+                  "section": null
+                },
+                {
+                  "id": "cause:particle-contamination",
+                  "name": "오염 입자 유입",
+                  "prior": 0.25,
+                  "section": null
+                },
+                {
+                  "id": "cause:change-interval-exceeded",
+                  "name": "교환 주기 초과",
+                  "prior": 0.1,
+                  "section": null
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S11"
+        },
+        "result": {
+          "case_id": "S11",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.8,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:oil-oxidation"
+        },
+        "result": {
+          "cause_id": "cause:oil-oxidation",
+          "evidence": []
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:water-ingress"
+        },
+        "result": {
+          "cause_id": "cause:water-ingress",
+          "evidence": []
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:particle-contamination"
+        },
+        "result": {
+          "cause_id": "cause:particle-contamination",
+          "evidence": []
+        }
+      },
+      {
+        "tool": "get_evidence",
+        "args": {
+          "cause_id": "cause:change-interval-exceeded"
+        },
+        "result": {
+          "cause_id": "cause:change-interval-exceeded",
+          "evidence": []
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S11"
+        },
+        "result": {
+          "case_id": "S11",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 0.8,
+            "max_age_s": 60,
+            "ok": true
+          }
+        }
+      }
+    ],
+    "mismatches": [],
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
+  }
+]

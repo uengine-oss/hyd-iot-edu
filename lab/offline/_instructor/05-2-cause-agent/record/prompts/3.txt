@@ -1,0 +1,1 @@
+계획대로 tools.py 와 agent.py 를 만들어 줘. 도구는 find_causes와 get_evidence 둘만 만들어. 실행은 내가 터미널에서 직접 할게.
