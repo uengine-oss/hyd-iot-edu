@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "에이전트 실행: 사례 열한 건",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agent.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "에이전트 실행: S01 한 건",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agent.py",
+      "args": ["S01"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
