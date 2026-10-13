@@ -1,14 +1,14 @@
-"""1차 윤문본(`…_윤문.md`)을 한 번 더 다듬는다(gpt-6-astra, Codex 계정으로 부른다). 결과는 `…_윤문2.md`.
+"""1차 윤문본(`…_윤문.md`)을 한 번 더 다듬는다(gpt-6-astra, OpenAI API 키로 부른다). 결과는 `…_윤문2.md`.
 
-    python3 video_lecture/윤문2.py <…_윤문.md> [--slides 첫장 끝장] [--out 폴더] [--rowfirst-only]
+    python3 video_lecture/윤문2.py --env <키 파일> <…_윤문.md> [--slides 첫장 끝장] [--out 폴더] [--rowfirst-only]
 
 - 1차와 목적이 다르다. 내용을 더하지 않고, 이미 있는 말과 말 사이가 더 자연스럽게 이어지게 한다. 그만큼 길이는 조금 늘어도 된다(4~5% 안팎). 억지로 늘리지 않는다.
-- OpenAI API 키를 쓰지 않는다. 이 PC에 로그인된 Codex(ChatGPT 계정)를 `npx @openai/codex exec`로 부른다.
+- `--env` 파일의 OPENAI_API_KEY로 OpenAI API를 부른다. Codex(ChatGPT 계정)로는 부르지 않는다. 이 키와 gpt-6-astra는 윤문에만 쓴다.
 - 장마다 그 일차의 틀(영상 목록, 이 장이 어느 영상의 몇 번째 장인지, 같은 영상 안의 앞뒤 장)을 함께 준다. 영상은 실라버스 행마다 따로 재생되므로, 영상의 첫 장은 앞 영상의 말을 받지 않게 한다.
 - 검사: 1차 윤문본의 숫자와 영문·숫자 이름이 모두 남아 있는가, 굵게 표시한 수와 문단 수가 같은가, 길이가 -1%~+9% 안인가(늘지 않은 장은 그대로 받는다).
   네 번 해도 통과하지 못한 장은 1차 윤문본을 그대로 둔다. 결과는 `…_윤문2_보고.json`에 남긴다.
 """
-import json, re, subprocess, sys, tempfile, concurrent.futures as cf
+import json, re, sys, urllib.request, concurrent.futures as cf
 from pathlib import Path
 
 args = sys.argv[1:]
@@ -16,9 +16,10 @@ files = [x for x in args if x.endswith(".md")]
 FIRST, LAST = (int(args[args.index("--slides") + 1]), int(args[args.index("--slides") + 2])) if "--slides" in args else (0, 10**6)
 OUTDIR = Path(args[args.index("--out") + 1]) if "--out" in args else None
 ROWFIRST = "--rowfirst-only" in args   # 이미 만든 2차 윤문본에서, 영상이 시작되는 장(실라버스 행의 첫 장)만 다시 받는다
-CODEX = ["npx", "-y", "@openai/codex@0.162.1", "exec", "-m", "gpt-6-astra", "--skip-git-repo-check", "-s", "read-only",
-         "-c", "model_reasoning_effort=medium"]
-RULES = """아래 낭독 대본의 한 장을 한 번 더 다듬어 주세요. 파일을 읽거나 명령을 실행할 필요는 없습니다. 이 글만 보고 답하면 됩니다.
+if "--env" not in args: sys.exit("--env <키 파일> 이 필요하다(OPENAI_API_KEY). 저장소의 .env는 쓰지 않는다.")
+KEY = re.search(r"OPENAI_API_KEY=(\S+)", Path(args[args.index("--env") + 1]).read_text()).group(1).strip("\"'")
+MODEL = "gpt-6-astra"
+RULES = """아래 낭독 대본의 한 장을 한 번 더 다듬어 주세요.
 
 상황은 이렇습니다. 경남대학교 피지컬AI 사관학교의 제조 AI 과정, 온라인 영상 강의의 낭독 대본입니다. 듣는 사람은 이 분야를 처음 접하는 대학생이고, 강사는 제조 현장과 AI 시스템을 실제로 만들어 온 업계 전문가입니다. 화면에는 슬라이드가 떠 있고, 강사가 그 슬라이드를 넘기며 말로 설명합니다. 이 대본이 그 말이고, 강사의 목소리로 음성이 만들어져 영상에 들어갑니다.
 
@@ -96,11 +97,11 @@ def ask(ctx, cur, retry=None):
     p = (f"{RULES}\n\n{ctx}\n\n"
          f"[다듬을 장 — 공백 포함 {n}자. 결과는 {int(n*1.03)}~{int(n*1.06)}자쯤이 알맞고, 자연스러움이 먼저입니다]\n{cur}")
     if retry: p += f"\n\n[앞서 주신 답]\n{retry[0]}\n\n좋습니다. 다만 {retry[1]} 이 점만 고쳐서 다시 주세요."
-    with tempfile.TemporaryDirectory() as d:
-        out = Path(d) / "out.txt"
-        r = subprocess.run(CODEX + ["-o", str(out), "-"], input=p, text=True, capture_output=True, cwd=d, timeout=900)
-        if not out.exists(): raise RuntimeError(" ".join(re.findall(r'"message":"([^"]+)"', r.stdout + r.stderr)[-1:]) or "답이 오지 않음")
-        return out.read_text(encoding="utf-8").strip()
+    body = {"model": MODEL, "messages": [{"role": "user", "content": p}]}
+    req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=json.dumps(body).encode(),
+                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        return json.loads(r.read())["choices"][0]["message"]["content"].strip()
 
 
 def check(o, n, first=False):
