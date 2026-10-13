@@ -46,6 +46,9 @@ for i, s in enumerate(d["구간"]):
                                 ("하는 동안", "mean", "하는 동안 한마디 (골라서)", "ul"), ("보여 줄 결과", "show", "보여 줄 결과", "ul")):
         if s.get(key):
             parts += f'<div class="part {cls}"><h3>{name}</h3>{items(s[key], tag)}</div>'
+        if key == "하는 것" and s.get("입력"):
+            parts += ('<div class="part type"><h3>입력할 글자</h3><table><tr><th>어디에</th><th>적을 글자</th></tr>'
+                      + "".join(f"<tr><td>{w}</td><td><kbd>{x}</kbd></td></tr>" for w, x in s["입력"]) + "</table></div>")
         if key == "하는 것" and s.get("대본"):
             parts += '<div class="part say script"><h3>대본</h3>' + "".join(f"<p>{POLISH.get(x, x)}</p>" for x in s["대본"]) + "</div>"
     segs.append(f'<section class="seg"><header><em>{i}</em><h2>{s["제목"]}</h2><span><b>{s["분"]}분</b>{start:02d}:00 → {clock:02d}:00</span></header>{parts}</section>')
