@@ -9,7 +9,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE.parent / "integrated" / "day01" / "통합반_01일차.md"
-OUT = HERE / "01일차" / "실전반_01일차.md"
+OUT = HERE / "day01" / "실전반_01일차.md"
 
 text = SRC.read_text(encoding="utf-8")
 assert text.count("- 과정: 통합반 1일차") == 1, "표지의 과정 줄을 찾지 못함"
