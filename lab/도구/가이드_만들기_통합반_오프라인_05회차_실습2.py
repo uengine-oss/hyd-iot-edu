@@ -25,8 +25,8 @@ e = html.escape
 
 
 def 할_일(번호, 곳, 곳_이름, 제목, *몸):
-    return (f'<section class="do {곳[0]}" data-n="{번호}"><span class="where {곳[0]}">{곳[1]}{곳_이름}</span>'
-            f'<h2>{제목}</h2>{"".join(몸)}</section>')
+    return (f'<section class="do {곳[0]}"><header><em>{번호}</em><div><span class="where {곳[0]}">{곳[1]}{곳_이름}</span>'
+            f'<h2>{제목}</h2></div></header><div class="body">{"".join(몸)}</div></section>')
 
 
 def 글(*문장):
@@ -101,7 +101,7 @@ def 파일(이름, 설명, 종류=""):
 
 순서 = [("읽게 한다", "만들기 전에 Copilot에게 자료를 읽고 한 건을 대어 보게 한다"),
       ("규칙을 정한다", "비어 있는 다섯 가지를 내가 정하고 만들 계획을 받는다"),
-      ("도구 둘로 한 건", "도구.py와 에이전트.py를 만들어 사례 하나를 돌린다"),
+      ("도구 둘로 한 건", "도구 둘을 가진 에이전트를 만들어 사례 하나를 돌린다"),
       ("센서 도구 붙이기", "센서 값을 읽는 도구를 더해 열한 건을 돌린다"),
       ("결과를 맞춰 본다", "에이전트의 답이 맞는지 내 눈으로 가린다"),
       ("규칙을 건드려 본다", "어긋나는 요청을 보내 Copilot이 거절하는지 본다"),
@@ -114,10 +114,13 @@ def 파일(이름, 설명, 종류=""):
     '<p>경보가 뜬 사례를 받으면 에이전트가 도구로 온톨로지와 센서 값을 읽고, 확인된 원인과 가설을 갈라 다음에 점검할 것을 낸다. '
     '도구를 하나씩 붙여 가며 같은 사례의 답이 어떻게 달라지는지 본다.</p></section>'
     '<section class="sect"><h2>오늘 만드는 것</h2>'
-    '<div class="pipe"><div><b>공용 온톨로지</b>원인, 증거의 기준, 조치 방법<small>온톨로지 폴더</small></div><span>+</span>'
-    '<div><b>센서 입력</b>경보가 뜬 사례 11건<small>입력 폴더</small></div><span>→</span>'
-    '<div class="made"><b>점검 계획</b>후보 원인, 점검 순서, 호출 기록<small>결과 폴더</small></div></div></section>'
-    '<section class="sect"><h2>받은 폴더 <code>시작</code>에 들어 있는 것</h2><div class="files">'
+    '<div class="pipe"><div><b>공용 온톨로지</b>원인, 증거의 기준, 조치 방법</div><span>+</span>'
+    '<div><b>센서 입력</b>경보가 뜬 사례 11건</div><span>→</span>'
+    '<div class="made"><b>점검 계획</b>후보 원인, 점검 순서, 호출 기록</div></div></section>'
+    '<section class="sect"><h2>오늘의 순서</h2><ol class="flow">'
+    + "".join(f'<li data-go="{i}"><em>{i}</em><b>{a}</b><span>{b}</span></li>' for i, (a, b) in enumerate(순서, 1))
+    + '</ol></section>'
+    + '<section class="sect"><h2>받은 폴더 <code>시작</code>에 들어 있는 것</h2><div class="files">'
     + 파일("온톨로지/", "설비 지식이 들어 있는 폴더", "dir")
     + 파일("<i>├─ </i>읽는_법.md", "그래프를 읽는 법. 가장 먼저 읽는다")
     + 파일("<i>├─ </i>그래프.json", "원인, 증거의 기준, 조치 방법이 이어져 있는 그래프")
@@ -133,10 +136,7 @@ def 파일(이름, 설명, 종류=""):
     + 파일("도구.py", "<em>오늘 만든다.</em> 온톨로지와 센서 값을 읽어 주는 도구", "new")
     + 파일("에이전트.py", "<em>오늘 만든다.</em> 도구를 부르고 점검 계획을 내는 프로그램", "new")
     + '</div></section>'
-    '<section class="sect"><h2>오늘의 순서</h2><ol class="flow">'
-    + "".join(f'<li data-go="{i}"><em>{i}</em><div><b>{a}</b><span>{b}</span></div></li>' for i, (a, b) in enumerate(순서, 1))
-    + '</ol></section>'
-    '<section class="sect"><h2>걸음마다 붙은 색</h2><ul class="key">'
+    '<section class="sect last"><h2>걸음마다 붙은 색</h2><ul class="key">'
     + "".join(f'<li><span class="where {곳[0]}">{곳[1]}{이름}</span>{뜻}</li>' for 곳, 이름, 뜻 in
               [(채팅, "Copilot 채팅", "요청을 보내고 답을 읽는다"), (편집, "편집기", "파일을 열어 읽거나 고친다"),
                (터미널, "터미널", "명령을 실행한다"), (안내, "이 화면", "읽고 정한다")])
