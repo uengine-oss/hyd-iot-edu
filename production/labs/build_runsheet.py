@@ -43,7 +43,7 @@ for i, s in enumerate(d["구간"]):
     plan.append(f'<tr><td>{i}. {s["제목"]}</td><td>{s["분"]}분 · {start:02d}:00~{clock:02d}:00</td></tr>')
     parts = ""
     for key, cls, name, tag in (("하는 것", "do", "화면에서 하는 것", "ol"), ("말할 요점", "say", "말할 요점", "ul"),
-                                ("하는 동안", "mean", "하는 동안 설명할 것", "ul"), ("보여 줄 결과", "show", "보여 줄 결과", "ul")):
+                                ("하는 동안", "mean", "하는 동안 한마디 (골라서)", "ul"), ("보여 줄 결과", "show", "보여 줄 결과", "ul")):
         if s.get(key):
             parts += f'<div class="part {cls}"><h3>{name}</h3>{items(s[key], tag)}</div>'
         if key == "하는 것" and s.get("대본"):
