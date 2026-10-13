@@ -6,7 +6,7 @@
 
 실습 간지는 `- 유형: 간지`이고 제목이 `실습:`으로 시작하는 장이다. 설명 장은 바로 다음 장이다.
 제목에 「시연」이 든 간지는 강사 시연이며(ProcessGPT) 학생 실습 가이드의 대상이 아니다. 다음 간지나 용어 정리 앞까지를 시연 소개로 센다.
-장 번호는 덱을 고치면 바뀐다. `docs/교재/인계/06_실습가이드_착수.md` 3절의 표는 간지 제목만 싣고, 번호는 이 도구로 뽑는다.
+장 번호는 덱을 고치면 바뀐다. `production/handoff/06_실습가이드_착수.md` 3절의 표는 간지 제목만 싣고, 번호는 이 도구로 뽑는다.
 """
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "docs" / "교재"
+DECKS = ROOT / "production" / "decks"
+DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
+PREFIX = {"일차": "day", "회차": "session"}
 COURSES = [("통합반", "일차"), ("실전반", "일차"), ("통합반_오프라인", "회차"), ("실전반_오프라인", "회차")]
 
 
@@ -68,14 +70,14 @@ def main() -> int:
     for course, unit in COURSES:
         if a.course and course not in a.course:
             continue
-        for d in sorted((DECKS / course).glob(f"[0-9][0-9]{unit}")):
-            md = d / f"{course}_{d.name}.md"
-            if not md.is_file() or (a.day and int(d.name[:2]) not in a.day):
+        for d in sorted((DECKS / DIRS[course]).glob(f"{PREFIX[unit]}[0-9][0-9]")):
+            md = d / f"{course}_{d.name[-2:]}{unit}.md"
+            if not md.is_file() or (a.day and int(d.name[-2:]) not in a.day):
                 continue
             decks += 1
             for n, no, name, nxt_no, nxt_title in labs(md):
                 total += 1
-                print(f"| {course} | {d.name} | {n} | {name} | {no} | {nxt_no} {nxt_title} |")
+                print(f"| {course} | {d.name[-2:]}{unit} | {n} | {name} | {no} | {nxt_no} {nxt_title} |")
     if not decks:
         print(f"[실패] 덱 MD를 찾지 못함: {DECKS.relative_to(ROOT)}", file=sys.stderr)
         return 1

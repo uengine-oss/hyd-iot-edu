@@ -6,7 +6,7 @@
     python3 .claude/skills/hyd-course-deck/scripts/재조립.py --build            조립한 뒤, 덱 MD가 커밋과 달라진 덱만 PPTX 빌드
     python3 .claude/skills/hyd-course-deck/scripts/재조립.py --build-only       조립은 건너뛰고 빌드만
 
-조립 스크립트는 `docs/교재/실전반/만들기_01일차.py`와 각 일차 · 회차 폴더의 `조립.py`다.
+조립 스크립트는 `production/decks/practical/만들기_01일차.py`와 각 일차 · 회차 폴더의 `조립.py`다.
 가져오던 장의 제목이나 손질 목록의 원문 문구가 통합반 원 덱에서 바뀌었으면 그 스크립트가 멈춘다.
 이 도구는 멈춘 스크립트와 그 까닭(마지막 줄)을 모아 보이고 나머지를 계속 돌린다. 멈춘 곳은 그 `조립.py`의 순서표 · 손질 목록을 고친다.
 
@@ -22,7 +22,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "docs" / "교재"
+DECKS = ROOT / "production" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
+SLIDES = ROOT / "course" / "slides"                 # 덱 PPTX
+DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
+PREFIX = {"일차": "day", "회차": "session"}
 BUILDER = ROOT / ".claude" / "skills" / "lecture-deck" / "scripts" / "deck2pptx.py"
 COURSES = [("통합반", "일차"), ("실전반", "일차"), ("통합반_오프라인", "회차"), ("실전반_오프라인", "회차")]
 
@@ -32,9 +35,9 @@ def rel(p: Path) -> str:
 
 
 def scripts() -> list[Path]:
-    out = [DECKS / "실전반" / "만들기_01일차.py"]
-    for course in ("실전반", "통합반_오프라인", "실전반_오프라인"):
-        out += sorted((DECKS / course).glob("[0-9][0-9]*/조립.py"))
+    out = [DECKS / "practical" / "만들기_01일차.py"]
+    for course in ("practical", "integrated-offline", "practical-offline"):
+        out += sorted((DECKS / course).glob("*[0-9][0-9]/조립.py"))
     return [p for p in out if p.is_file()]
 
 
@@ -42,7 +45,7 @@ def sources(script: Path) -> list[int]:
     """그 스크립트가 읽는 통합반 일차. 스크립트 머리(첫 함수 앞)의 SRC · DAY 선언에서 읽는다."""
     head = script.read_text(encoding="utf-8").split("\ndef ", 1)[0]
     days: set[int] = set()
-    for m in re.finditer(r'"통합반"\s*/\s*"(\d{2})일차"', head):
+    for m in re.finditer(r'"integrated"\s*/\s*"day(\d{2})"', head):
         days.add(int(m.group(1)))
     for m in re.finditer(r'for d in \(([^)]*)\)', head):
         days.update(int(x) for x in re.findall(r'"(\d{1,2})"', m.group(1)))
@@ -54,8 +57,8 @@ def sources(script: Path) -> list[int]:
 def deck_mds() -> list[Path]:
     out = []
     for course, unit in COURSES:
-        for d in sorted((DECKS / course).glob(f"[0-9][0-9]{unit}")):
-            md = d / f"{course}_{d.name}.md"
+        for d in sorted((DECKS / DIRS[course]).glob(f"{PREFIX[unit]}[0-9][0-9]")):
+            md = d / f"{course}_{d.name[-2:]}{unit}.md"
             if md.is_file():
                 out.append(md)
     return out
@@ -63,7 +66,7 @@ def deck_mds() -> list[Path]:
 
 def changed_mds() -> list[Path]:
     """덱 MD 가운데 커밋과 다른 것(고침 · 새 파일)."""
-    r = subprocess.run(["git", "-c", "core.quotepath=off", "status", "--porcelain", "--", "docs/교재"],
+    r = subprocess.run(["git", "-c", "core.quotepath=off", "status", "--porcelain", "--", "production/decks"],
                        cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"[실패] git status: {r.stderr.strip()}")
@@ -79,8 +82,9 @@ def changed_mds() -> list[Path]:
 
 
 def build(md: Path, pptx_dir: Path | None) -> tuple[bool, str]:
-    pptx = (pptx_dir / md.with_suffix(".pptx").name) if pptx_dir else md.with_suffix(".pptx")
-    lock = md.parent / ("~$" + md.with_suffix(".pptx").name)
+    home = SLIDES / md.parent.parent.name            # 원고는 production/decks/<과정>/…, PPTX는 course/slides/<과정>/
+    pptx = (pptx_dir or home) / md.with_suffix(".pptx").name
+    lock = home / ("~$" + md.with_suffix(".pptx").name)
     if not pptx_dir and lock.exists():
         return False, "PowerPoint가 이 PPTX를 열고 있다(잠금 파일). 닫고 다시 돌린다"
     cmd = ["uv", "run", "--no-project", "--with", "python-pptx", "--with", "pymupdf", "python",
@@ -143,7 +147,7 @@ def main() -> int:
             print(f"  {path}: {why}")
         return 1
     if not a.dry_run:
-        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 제작 기준 13절과 docs/교재/README.md의 숫자를 맞춘다.")
+        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 제작 기준 13절과 production/decks/README.md의 숫자를 맞춘다.")
     return 0
 
 

@@ -298,7 +298,7 @@ def _가이드찾기(root: Path) -> tuple[Path | None, list[Path]]:
 def _그림찾기(guide_dir: Path, files: list[Path]) -> Path | None:
     """**가이드가 실제로 참조하는 경로**에서 찾는다.
 
-    폴더 이름을 맞히려 들면 틀린다 — `그림/실습/` 처럼 한 단계 더 들어가 있을 수 있다.
+    폴더 이름을 맞히려 들면 틀린다 — `figures/실습/` 처럼 한 단계 더 들어가 있을 수 있다.
     `![](…)` 안의 경로를 읽으면 정확하다.
     """
     import re

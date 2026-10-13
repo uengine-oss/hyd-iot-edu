@@ -2,7 +2,7 @@
 
 이 저장소의 교재와 실습 자료를 만들 때 쓰는 스킬이다. 스킬 원본은 이 폴더 한 곳에 둔다. 경로는 저장소 루트 기준이다.
 
-HYD 과정의 일은 HYD 전용 스킬 둘이 먼저다. 일반 스킬(`lecture-*`)은 형식 · 도구 · 일반 절차를 맡고, HYD 스킬과 부딪치면 HYD 스킬과 `docs/교재/기준/제작기준.md`를 따른다.
+HYD 과정의 일은 HYD 전용 스킬 둘이 먼저다. 일반 스킬(`lecture-*`)은 형식 · 도구 · 일반 절차를 맡고, HYD 스킬과 부딪치면 HYD 스킬과 `production/standards/제작기준.md`를 따른다.
 
 | 스킬 | 언제 쓰는가 | 주요 파일 |
 |---|---|---|
@@ -23,12 +23,12 @@ lecture-common(공통 기준 · 공용 도구)
 lecture-plan ──► lecture-deck ──► lecture-lab ──► lecture-verify ──► lecture-deliver
  요구 · 계획        덱 · PPTX        실습 · 가이드      검토 · 완료 판정     묶음 · 업로드
 
-hyd-course-deck  = HYD 교재 덱의 절차. 형식과 도구는 lecture-deck, 규칙은 docs/교재/기준/제작기준.md, 경위는 docs/교재/인계/
-hyd-lab-guide    = HYD 실습 가이드의 원칙. 일반 절차는 lecture-lab, 형식은 docs/실습가이드/틀/, 착수는 docs/교재/인계/06_실습가이드_착수.md
+hyd-course-deck  = HYD 교재 덱의 절차. 형식과 도구는 lecture-deck, 규칙은 production/standards/제작기준.md, 경위는 production/handoff/
+hyd-lab-guide    = HYD 실습 가이드의 원칙. 일반 절차는 lecture-lab, 형식은 production/labs/_old/실습가이드/틀/, 착수는 production/handoff/06_실습가이드_착수.md
 ```
 
 - 보통 순서는 계획 → 덱 · 실습 → 검증 → 요청이 있을 때 배포다. 한 스킬의 일만 요청받았으면 그 스킬만 쓴다.
-- 규칙을 스킬 문서에 복사하지 않는다. HYD 교재의 규칙을 바꿀 때는 `docs/교재/기준/제작기준.md`를 고친다.
+- 규칙을 스킬 문서에 복사하지 않는다. HYD 교재의 규칙을 바꿀 때는 `production/standards/제작기준.md`를 고친다.
 - 스킬은 훅이나 슬래시 명령에 기대지 않는다. 공통 기준은 `lecture-common/공통기준.md`에 있다.
 
 ## 스킬을 고치거나 더할 때

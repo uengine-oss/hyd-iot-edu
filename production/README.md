@@ -1,0 +1,39 @@
+# production — 제작용
+
+교육 산출물([`course/`](../course/README.md))을 만드는 데 쓰는 것을 모았다. 수업에는 쓰지 않는다.
+
+| 폴더 | 내용 |
+|---|---|
+| `decks/` | 덱 원고(MD), 그림, 조립 스크립트. 통합반 대본의 원문과 1차 윤문본, 검사 기록도 일차 폴더에 함께 있다. 안내는 `decks/README.md` |
+| `labs/` | 랩의 틀(`STRUCTURE.md`), 랩마다의 완성본 · 실행 기록 · 가이드 생성 도구(`offline/`), 이전 모양의 랩 열아홉 묶음(`_old/`) |
+| `tools/deck/` | 대본 시간 계산, 시트 변환, 노션 덱 스타일 맞춤 |
+| `tools/video/` | 강의 영상(`강의영상.py`), 대본 윤문(`윤문.py`, `윤문2.py`), 장마다 쉴 자리(`쉼_저장/`) |
+| `standards/` | 제작 기준, 기술사실표, 실라버스 |
+| `handoff/` | 교재 제작 인계 문서와 작업 지시문. `README.md`부터 읽는다 |
+| `dist/` | 덱 38개를 과정별로 묶은 배포용 zip |
+
+## 폴더 이름
+
+| 과정 | 폴더 | 단위 |
+|---|---|---|
+| 통합반 온라인 | `integrated` | `day01` … `day11` |
+| 실전반 온라인 | `practical` | `day01` … `day08` |
+| 통합반 오프라인 | `integrated-offline` | `session01` … `session10` |
+| 실전반 오프라인 | `practical-offline` | `session01` … `session09` |
+
+폴더는 영어로, 덱 · 대본 · 원고의 파일 이름은 한글(`통합반_05일차.md`)로 둔다. 그림 폴더는 `figures/`다.
+
+## 산출물이 나오는 곳
+
+| 만드는 것 | 원고 | 도구 | 나오는 곳 |
+|---|---|---|---|
+| 덱 PPTX | `decks/<과정>/<단위>/…md` | `.claude/skills/hyd-course-deck/scripts/재조립.py --build` | `course/slides/<과정>/` |
+| 조립 덱의 원고 | 통합반 원고 + `새장_….md` | 각 폴더의 `조립.py` | 같은 폴더의 `…md` |
+| 최종 대본 | `decks/integrated/dayNN/…_대본_윤문.md` | `tools/video/윤문2.py` | 같은 폴더에 `…_윤문2.md`가 생긴다. 확인한 뒤 `course/scripts/integrated/`로 옮긴다 |
+| 강의 영상 | `course/scripts/` + `course/slides/` | `tools/video/강의영상.py` | 저장소 밖 |
+| 랩 가이드 | `labs/offline/<랩>/build_guide.py` | 같은 파일 | `course/labs/offline/<랩>/guide.html` |
+| 배포 zip | `course/slides/` | `.claude/skills/hyd-course-deck/scripts/배포묶음.py` | `dist/교재_전체.zip` |
+
+## 2026-10-13의 폴더 정리
+
+`docs/교재/`, `lab/`, `video_lecture/`에 섞여 있던 것을 산출물(`course/`)과 제작용(`production/`)으로 나눴다. 옮긴 뒤 조립 스크립트 36개를 모두 다시 돌려 결과가 같음을 확인했고, 장수 세기 · 배포 묶음 검사 · 영상 도구의 미리 보기(`--dry`)가 새 경로에서 돈다. 인계 문서와 지시문 안의 경로는 기계적으로 바꿨으므로, PPTX의 자리를 말하는 문장은 `course/slides/`로 읽는다.

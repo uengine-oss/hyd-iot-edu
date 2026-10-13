@@ -2,6 +2,14 @@
 
 **현재 상태는 [docs/handoff/NOW.md](docs/handoff/NOW.md) 한 문서에 있다**(구현·검증은 끝났고 포털 화면만 남음). 기동·확인·종료는 **[RUNBOOK](docs/RUNBOOK.md)**, 회차별 실행 절차는 [docs/sessions/](docs/sessions/README.md)다. 옛 목표(DoD 7개)와 인계 기록은 [docs/handoff/archive/](docs/handoff/archive/README.md). 아래의 L1~L9 설명은 2026-09-30 첫 판에서 시작한 개요이며, 바뀐 곳은 이 문서에서 고쳤다.
 
+## 저장소 구성
+
+| 영역 | 폴더 | 내용 |
+|---|---|---|
+| 설비 시스템 | `ot/` `dmz/` `it/` `common/` `scripts/` `tests/` `students/` `compose.yaml` | 이 문서가 설명하는 프로토타입. 문서는 `docs/` |
+| 교육 산출물 | [`course/`](course/README.md) | 수업에 쓰는 강의 덱, 낭독 대본, 실습 랩, 영상 목록 |
+| 제작용 | [`production/`](production/README.md) | 덱 원고와 조립 스크립트, 랩 완성본과 기록, 제작 도구, 제작 기준, 인계 문서 |
+
 `유압설비_IoT-SCADA_아키텍처_v3.pdf` 4쪽 구조도(L1~L9, OT·DMZ·IT)를 학생 노트북에서 `docker compose up` 한 번으로 돌리는 구성입니다.
 IoT·SCADA 층의 무거운 제품(Flink+ONNX, Kafka Connect, EdgeX, Alertmanager/Mailpit, MinIO)은 **같은 이름·같은 메시지 계약을 지키는 작은 파이썬 서비스(대역)**로 바꿨고,
 가벼운 실제 제품(EMQX, FUXA, Redpanda, TimescaleDB, Grafana, Neo4j, Supabase)은 그대로 씁니다. 이것은 첫 커밋부터 의도한 선택이며 설계서 v3와 다르다(2026-10-08 사용자 결정: 현 구조 유지, DECISIONS 106; 대조 보고 `docs/보고/설계서v3_대비_실제구현.html`). 제품 교체 방향은 정했으나 보류다(DECISIONS 107).

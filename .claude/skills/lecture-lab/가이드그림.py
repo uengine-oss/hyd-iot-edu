@@ -396,7 +396,7 @@ def 그림(p, 출력: str, 이름: str, 명령: str | None,
     덧 = _짚기(원고, 짚기, 라벨, 1076) if 짚기 else ""
 
     이름 = 이름 if 이름.endswith(".png") else f"{이름}.png"
-    dst = Path(p.그림폴더 or (Path(p.가이드폴더 or p.루트) / "그림")) / 이름
+    dst = Path(p.그림폴더 or (Path(p.가이드폴더 or p.루트) / "figures")) / 이름
     그림만들기(원고, dst, 덧=덧)
 
 
@@ -525,7 +525,7 @@ def 편집기(p, 파일: str, 이름: str, 표식: str | None, 위: int, 아래:
     #   실제로 코드 12줄 · 탐색기 72줄이 나와, `uploads/` 의 UUID 파일만 가득한
     #   못 쓰는 그림이 됐다. 학생이 봐야 할 것은 코드다.
     나무 = _나무줄이기(나무, 최대=max(len(조각) + 6, 20))
-    dst = Path(p.그림폴더 or (Path(p.가이드폴더 or p.루트) / "그림"))
+    dst = Path(p.그림폴더 or (Path(p.가이드폴더 or p.루트) / "figures"))
     dst.mkdir(parents=True, exist_ok=True)
     _편집기그리기(뿌리.name, 나무, f.name, 조각, 첫줄, 강조줄, 찾기,
                   dst / (이름 if 이름.endswith(".png") else f"{이름}.png"))

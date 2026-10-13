@@ -1,9 +1,9 @@
-"""교재 PPTX 38개를 과정별 폴더로 묶어 `docs/교재/배포/교재_전체.zip`을 만든다.
+"""교재 PPTX 38개를 과정별 폴더로 묶어 `production/dist/교재_전체.zip`을 만든다.
 
     python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py --check    zip을 새로 쓰지 않고, 지금 zip의 구성과 낡은 항목만 검사
     python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py            zip을 다시 만든다
 
-zip 안의 폴더는 `통합반_온라인/` · `실전반_온라인/` · `통합반_오프라인/` · `실전반_오프라인/`이고(`docs/교재/배포/README.md`),
+zip 안의 폴더는 `통합반_온라인/` · `실전반_온라인/` · `통합반_오프라인/` · `실전반_오프라인/`이고(`production/dist/README.md`),
 파일은 과정 폴더의 PPTX를 그대로 넣는다. 덱을 다시 빌드했으면 이 묶음도 다시 만든다.
 """
 from __future__ import annotations
@@ -15,8 +15,11 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "docs" / "교재"
-ZIP = DECKS / "배포" / "교재_전체.zip"
+DECKS = ROOT / "production" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
+SLIDES = ROOT / "course" / "slides"                 # 덱 PPTX
+DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
+PREFIX = {"일차": "day", "회차": "session"}
+ZIP = ROOT / "production" / "dist" / "교재_전체.zip"
 # (과정 폴더, 일차 · 회차, zip 안의 폴더, 있어야 할 덱 수)
 COURSES = [("통합반", "일차", "통합반_온라인", 11), ("실전반", "일차", "실전반_온라인", 8),
            ("통합반_오프라인", "회차", "통합반_오프라인", 10), ("실전반_오프라인", "회차", "실전반_오프라인", 9)]
@@ -29,14 +32,14 @@ def members() -> tuple[dict[str, Path], list[str], list[str]]:
     notes: list[str] = []
     for course, unit, folder, want in COURSES:
         found = 0
-        for d in sorted((DECKS / course).glob(f"[0-9][0-9]{unit}")):
-            pptx = d / f"{course}_{d.name}.pptx"
+        for d in sorted((DECKS / DIRS[course]).glob(f"{PREFIX[unit]}[0-9][0-9]")):
+            pptx = SLIDES / DIRS[course] / f"{course}_{d.name[-2:]}{unit}.pptx"
             if pptx.is_file():
                 out[f"{folder}/{pptx.name}"] = pptx
                 found += 1
             else:
                 problems.append(f"PPTX 없음: {pptx.relative_to(ROOT).as_posix()}")
-            if (d / ("~$" + pptx.name)).exists():
+            if (pptx.parent / ("~$" + pptx.name)).exists():
                 notes.append(f"알림: 잠금 파일(~$)이 있다 — PowerPoint에서 고치는 중이면 저장하고 닫은 뒤 묶는다: {pptx.relative_to(ROOT).as_posix()}")
         if found != want:
             problems.append(f"{course}: PPTX {found}개 (있어야 할 수 {want})")
