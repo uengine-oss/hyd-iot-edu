@@ -11,28 +11,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": null
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": null
           }
         ]
       },
@@ -44,15 +28,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": null
           }
         ]
       },
@@ -64,15 +40,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": null
           }
         ]
       }
@@ -80,78 +48,42 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": "확인하지 못한 값 다시 확인: CE avg 30초 구간",
+        "점검": "최근 30초 냉각 효율 CE 평균을 70 % 미만인지 확인한다",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low"
+        ],
+        "조치": [
+          "HM-8.4"
         ]
       },
       {
         "순번": 2,
-        "점검": "확인하지 못한 값 다시 확인: VS1 avg 120초 구간",
+        "점검": "최근 2분 팬 진동 VS1 평균을 0.9 mm/s 미만인지 확인한다",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "HM-8.4"
         ]
       },
       {
         "순번": 3,
-        "점검": "확인하지 못한 값 다시 확인: TS4 avg 120초 구간",
+        "점검": "최근 2분 캐비닛 온도 TS4 평균을 35 ℃ 이상인지 확인한다",
         "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:ambient-ts4-high"
+        ],
+        "조치": [
+          "HM-8.4"
         ]
       },
       {
         "순번": 4,
-        "점검": "가설인 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
+        "점검": "최근 2분 팬 진동 VS1 평균을 0.9 mm/s 이상인지 확인한다",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
-      },
-      {
-        "순번": 5,
-        "점검": "가설인 원인 점검: 주변 온도 상승 (cause:ambient-high-temp)",
-        "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
-      },
-      {
-        "순번": 6,
-        "점검": "가설인 원인 점검: 팬 구동 불량 (cause:fan-drive-fault)",
-        "근거": [
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fan-drive-vs1-high"
+        ],
+        "조치": [
+          "HM-8.4"
         ]
       }
     ],
@@ -289,7 +221,75 @@
             }
           ]
         }
+      },
+      {
+        "도구": "원인_후보",
+        "물음": {
+          "패턴_코드": "COOLER_DEGRADATION"
+        },
+        "받음": {
+          "패턴": {
+            "id": "pattern:cooler-degradation",
+            "name": "쿨러 성능 저하",
+            "code": "COOLER_DEGRADATION"
+          },
+          "증상": [
+            {
+              "id": "sym:ts1-rise",
+              "name": "유온 상승"
+            },
+            {
+              "id": "sym:ce-drop",
+              "name": "냉각 효율 저하"
+            }
+          ],
+          "고장_유형": [
+            {
+              "id": "fm:cooler-performance-loss",
+              "name": "쿨러 냉각 성능 상실",
+              "증상": [
+                "sym:ts1-rise",
+                "sym:ce-drop"
+              ],
+              "원인": [
+                {
+                  "id": "cause:cooler-fin-fouling",
+                  "name": "쿨러 핀 오염",
+                  "prior": 0.6,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:ambient-high-temp",
+                  "name": "주변 온도 상승",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                },
+                {
+                  "id": "cause:fan-drive-fault",
+                  "name": "팬 구동 불량",
+                  "prior": 0.2,
+                  "section": "HM-8.4"
+                }
+              ]
+            },
+            {
+              "id": "fm:overheat-trip",
+              "name": "과열 정지",
+              "증상": [
+                "sym:ts1-rise"
+              ],
+              "원인": []
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4",
+      "호출 기록에 없는 절차 번호: HM-8.4"
+    ],
+    "멈춤": "같은 물음을 되풀이해 도구를 거두고 답을 받음"
   }
 ]

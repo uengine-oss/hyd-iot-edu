@@ -11,28 +11,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "맞음",
-            "읽은_값": 46.2,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 46.2
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "맞음",
-            "읽은_값": 0.575,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.575
           }
         ]
       },
@@ -44,15 +28,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "아님",
-            "읽은_값": 28.0,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 28.0
           }
         ]
       },
@@ -64,15 +40,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "아님",
-            "읽은_값": 0.575,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.575
           }
         ]
       }
@@ -80,66 +48,14 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인된 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-11",
-              "이름": "팬 최대 운전",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-12",
-              "이름": "팬 최대 운전과 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-13",
-              "이름": "부하 70 %와 야간 핀 세척",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "쿨러 핀 오염에 따른 냉각 효율 저하를 확인하고 핀 세척을 진행한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": 46.2,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": 0.575,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-13",
+          "SOP-COOL-14"
         ]
       }
     ],
@@ -252,6 +168,48 @@
         }
       },
       {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:ambient-high-temp"
+        },
+        "받음": {
+          "원인": "cause:ambient-high-temp",
+          "증거": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:fan-drive-fault"
+        },
+        "받음": {
+          "원인": "cause:fan-drive-fault",
+          "증거": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S01",
@@ -296,27 +254,6 @@
         }
       },
       {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:ambient-high-temp"
-        },
-        "받음": {
-          "원인": "cause:ambient-high-temp",
-          "증거": [
-            {
-              "id": "evd:ambient-ts4-high",
-              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S01",
@@ -334,49 +271,6 @@
             "samples": 18,
             "max_gap_s": 11.002,
             "limit_s": 12,
-            "covered": true
-          }
-        }
-      },
-      {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:fan-drive-fault"
-        },
-        "받음": {
-          "원인": "cause:fan-drive-fault",
-          "증거": [
-            {
-              "id": "evd:fan-drive-vs1-high",
-              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
-        "도구": "센서_집계",
-        "물음": {
-          "사례": "S01",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
-        },
-        "받음": {
-          "사례": "S01",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 0.575,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.009,
-            "limit_s": 3,
             "covered": true
           }
         }
@@ -623,8 +517,51 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S02",
@@ -638,28 +575,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "맞음",
-            "읽은_값": 62.4,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 62.4
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "맞음",
-            "읽은_값": 0.61,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.61
           }
         ]
       },
@@ -671,15 +592,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "맞음",
-            "읽은_값": 36.8,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 36.8
           }
         ]
       },
@@ -691,15 +604,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "아님",
-            "읽은_값": 0.61,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.61
           }
         ]
       }
@@ -707,114 +612,24 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인된 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-11",
-              "이름": "팬 최대 운전",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-12",
-              "이름": "팬 최대 운전과 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-13",
-              "이름": "부하 70 %와 야간 핀 세척",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "쿨러 핀 오염에 대해 부하 70 %로 낮추고 야간 핀 세척을 지시한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": 62.4,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": 0.61,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-13",
+          "SOP-COOL-14"
         ]
       },
       {
         "순번": 2,
-        "점검": {
-          "내용": "확인된 원인 점검: 주변 온도 상승 (cause:ambient-high-temp)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-11",
-              "이름": "팬 최대 운전",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-12",
-              "이름": "팬 최대 운전과 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-15",
-              "이름": "캐비닛 환기 보강",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "주변 온도 상승에 대해 캐비닛 환기를 보강한다.",
         "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": 36.8,
-            "근거_절": "HM-8.4"
-          }
+          "evd:ambient-ts4-high"
+        ],
+        "조치": [
+          "SOP-COOL-15"
         ]
       }
     ],
@@ -927,6 +742,48 @@
         }
       },
       {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:ambient-high-temp"
+        },
+        "받음": {
+          "원인": "cause:ambient-high-temp",
+          "증거": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:fan-drive-fault"
+        },
+        "받음": {
+          "원인": "cause:fan-drive-fault",
+          "증거": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S02",
@@ -971,27 +828,6 @@
         }
       },
       {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:ambient-high-temp"
-        },
-        "받음": {
-          "원인": "cause:ambient-high-temp",
-          "증거": [
-            {
-              "id": "evd:ambient-ts4-high",
-              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S02",
@@ -1009,49 +845,6 @@
             "samples": 18,
             "max_gap_s": 10.998,
             "limit_s": 12,
-            "covered": true
-          }
-        }
-      },
-      {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:fan-drive-fault"
-        },
-        "받음": {
-          "원인": "cause:fan-drive-fault",
-          "증거": [
-            {
-              "id": "evd:fan-drive-vs1-high",
-              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
-        "도구": "센서_집계",
-        "물음": {
-          "사례": "S02",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
-        },
-        "받음": {
-          "사례": "S02",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 0.61,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.011,
-            "limit_s": 3,
             "covered": true
           }
         }
@@ -1298,33 +1091,299 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:cooler-performance-loss"
+        },
+        "받음": {
+          "고장_유형": "fm:cooler-performance-loss",
+          "조치": [
+            {
+              "id": "skill:sop-cool-11",
+              "sopId": "SOP-COOL-11",
+              "name": "팬 최대 운전",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-12",
+              "sopId": "SOP-COOL-12",
+              "name": "팬 최대 운전과 부하 80 %",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "펌프 부하를 80 %로 낮춘다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 4,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-13",
+              "sopId": "SOP-COOL-13",
+              "name": "부하 70 %와 야간 핀 세척",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "펌프 부하를 70 %로 낮춘다. 팬 속도는 그대로 둔다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                },
+                {
+                  "order": 4,
+                  "text": "야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다.",
+                  "section": "HM-8.5"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-14",
+              "sopId": "SOP-COOL-14",
+              "name": "쿨러 핀 세척",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-15",
+              "sopId": "SOP-COOL-15",
+              "name": "캐비닛 환기 보강",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "환기 필터를 청소하고 배기 팬 동작을 점검한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "캐비닛 온도가 35 ℃ 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:ambient-high-temp"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-11",
+              "sopId": "SOP-FAN-11",
+              "name": "쿨러 팬 점검 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 2,
+                  "text": "벨트 처짐을 측정한다 (기준 10~15 mm).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 3,
+                  "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 4,
+                  "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.1"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-12",
+              "sopId": "SOP-FAN-12",
+              "name": "벨트 교체 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 2,
+                  "text": "구 벨트를 분리하고 풀리 정렬을 점검한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 3,
+                  "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 4,
+                  "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다.",
+                  "section": "HM-8.2"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "같은 물음을 되풀이해 도구를 거두고 답을 받음"
   },
   {
     "번호": "S03",
-    "근거_상태": "SUPPORTED",
+    "근거_상태": "UNKNOWN",
     "후보_원인": [
-      {
-        "원인": "cause:fan-drive-fault",
-        "이름": "팬 구동 불량",
-        "구분": "확인됨",
-        "증거": [
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "판정": "맞음",
-            "읽은_값": 1.05,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          }
-        ]
-      },
       {
         "원인": "cause:cooler-fin-fouling",
         "이름": "쿨러 핀 오염",
@@ -1333,28 +1392,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "맞음",
-            "읽은_값": 58.0,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 58.0
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "아님",
-            "읽은_값": 1.05,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 1.05
           }
         ]
       },
@@ -1366,15 +1409,19 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "아님",
-            "읽은_값": 29.1,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 29.1
+          }
+        ]
+      },
+      {
+        "원인": "cause:fan-drive-fault",
+        "이름": "팬 구동 불량",
+        "구분": "확인됨",
+        "증거": [
+          {
+            "증거": "evd:fan-drive-vs1-high",
+            "판정": "맞음",
+            "읽은_값": 1.05
           }
         ]
       }
@@ -1382,92 +1429,24 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인된 원인 점검: 팬 구동 불량 (cause:fan-drive-fault)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-11",
-              "이름": "팬 최대 운전",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-12",
-              "이름": "팬 최대 운전과 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-11",
-              "이름": "쿨러 팬 점검 절차",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
-                "근거_절": "HM-8.1"
-              },
-              "승인_역할": "등록되지 않음"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-12",
-              "이름": "벨트 교체 절차",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
-                "근거_절": "HM-8.2"
-              },
-              "승인_역할": "등록되지 않음"
-            }
-          ]
-        },
+        "점검": "팬 구동 불량을 확인하기 위해 팬 벨트 처짐과 베어링 상태를 점검한다.",
         "근거": [
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "읽은_값": 1.05,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fan-drive-vs1-high"
+        ],
+        "조치": [
+          "SOP-FAN-11",
+          "SOP-FAN-12"
         ]
       },
       {
         "순번": 2,
-        "점검": {
-          "내용": "가설인 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "쿨러 핀 오염 가설을 확인하기 위해 핀 상태를 점검하고 세척을 준비한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": 58.0,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": 1.05,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-14"
         ]
       }
     ],
@@ -1580,6 +1559,48 @@
         }
       },
       {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:ambient-high-temp"
+        },
+        "받음": {
+          "원인": "cause:ambient-high-temp",
+          "증거": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:fan-drive-fault"
+        },
+        "받음": {
+          "원인": "cause:fan-drive-fault",
+          "증거": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S03",
@@ -1624,27 +1645,6 @@
         }
       },
       {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:ambient-high-temp"
-        },
-        "받음": {
-          "원인": "cause:ambient-high-temp",
-          "증거": [
-            {
-              "id": "evd:ambient-ts4-high",
-              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S03",
@@ -1662,49 +1662,6 @@
             "samples": 18,
             "max_gap_s": 11.004,
             "limit_s": 12,
-            "covered": true
-          }
-        }
-      },
-      {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:fan-drive-fault"
-        },
-        "받음": {
-          "원인": "cause:fan-drive-fault",
-          "증거": [
-            {
-              "id": "evd:fan-drive-vs1-high",
-              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
-        "도구": "센서_집계",
-        "물음": {
-          "사례": "S03",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
-        },
-        "받음": {
-          "사례": "S03",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 1.05,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.008,
-            "limit_s": 3,
             "covered": true
           }
         }
@@ -1951,8 +1908,296 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:cooler-performance-loss"
+        },
+        "받음": {
+          "고장_유형": "fm:cooler-performance-loss",
+          "조치": [
+            {
+              "id": "skill:sop-cool-11",
+              "sopId": "SOP-COOL-11",
+              "name": "팬 최대 운전",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-12",
+              "sopId": "SOP-COOL-12",
+              "name": "팬 최대 운전과 부하 80 %",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "펌프 부하를 80 %로 낮춘다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 4,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-13",
+              "sopId": "SOP-COOL-13",
+              "name": "부하 70 %와 야간 핀 세척",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "펌프 부하를 70 %로 낮춘다. 팬 속도는 그대로 둔다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                },
+                {
+                  "order": 4,
+                  "text": "야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다.",
+                  "section": "HM-8.5"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-14",
+              "sopId": "SOP-COOL-14",
+              "name": "쿨러 핀 세척",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-15",
+              "sopId": "SOP-COOL-15",
+              "name": "캐비닛 환기 보강",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "환기 필터를 청소하고 배기 팬 동작을 점검한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "캐비닛 온도가 35 ℃ 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:ambient-high-temp"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-11",
+              "sopId": "SOP-FAN-11",
+              "name": "쿨러 팬 점검 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 2,
+                  "text": "벨트 처짐을 측정한다 (기준 10~15 mm).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 3,
+                  "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 4,
+                  "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.1"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-12",
+              "sopId": "SOP-FAN-12",
+              "name": "벨트 교체 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 2,
+                  "text": "구 벨트를 분리하고 풀리 정렬을 점검한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 3,
+                  "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 4,
+                  "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다.",
+                  "section": "HM-8.2"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [
+      "근거_상태 UNKNOWN, 원인의 구분(가설, 해당_없음, 확인됨)에 대면 SUPPORTED"
+    ],
+    "멈춤": "같은 물음을 되풀이해 도구를 거두고 답을 받음"
   },
   {
     "번호": "S04",
@@ -1966,28 +2211,12 @@
           {
             "증거": "evd:ps1-low",
             "판정": "맞음",
-            "읽은_값": 158.3,
-            "기준": {
-              "tag": "PS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 165,
-              "section": null
-            }
+            "읽은_값": 158.3
           },
           {
             "증거": "evd:fs1-drop",
             "판정": "맞음",
-            "읽은_값": 7.4,
-            "기준": {
-              "tag": "FS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 8.0,
-              "section": null
-            }
+            "읽은_값": 7.4
           }
         ]
       }
@@ -1995,66 +2224,13 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인된 원인 점검: 펌프 축 씰 마모 (cause:pump-seal-wear)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-PMP-01",
-              "이름": "예비 펌프 전환",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-3.2"
-              },
-              "승인_역할": "생산관리자"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-PMP-02",
-              "이름": "부하 70 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-3.2"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-PMP-03",
-              "이름": "압력 설정 상향 (구 절차)",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "압력 설정을 10 bar 올린다. 누설 의심 시에는 금지 (개정 HM-5.4).",
-                "근거_절": "HM-5.4"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-PMP-04",
-              "이름": "펌프 축 씰 교체",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "주 펌프를 LOCAL로 전환하고 잠근다.",
-                "근거_절": "HM-3.1"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "펌프 축 씰 마모를 확인하고 씰 키트를 교체한다.",
         "근거": [
-          {
-            "증거": "evd:ps1-low",
-            "읽은_값": 158.3,
-            "근거_절": null
-          },
-          {
-            "증거": "evd:fs1-drop",
-            "읽은_값": 7.4,
-            "근거_절": null
-          }
+          "evd:ps1-low",
+          "evd:fs1-drop"
+        ],
+        "조치": [
+          "SOP-PMP-04"
         ]
       }
     ],
@@ -2326,7 +2502,9 @@
           ]
         }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S05",
@@ -2340,28 +2518,12 @@
           {
             "증거": "evd:ps1-low",
             "판정": "맞음",
-            "읽은_값": 163.2,
-            "기준": {
-              "tag": "PS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 165,
-              "section": null
-            }
+            "읽은_값": 163.2
           },
           {
             "증거": "evd:fs1-drop",
             "판정": "아님",
-            "읽은_값": 8.3,
-            "기준": {
-              "tag": "FS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 8.0,
-              "section": null
-            }
+            "읽은_값": 8.3
           }
         ]
       }
@@ -2369,33 +2531,12 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "가설인 원인 점검: 펌프 축 씰 마모 (cause:pump-seal-wear)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-PMP-04",
-              "이름": "펌프 축 씰 교체",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "주 펌프를 LOCAL로 전환하고 잠근다.",
-                "근거_절": "HM-3.1"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "유량 FS1 평균이 8.0 l/min 미만인지 재확인하여 축 씰 마모 가설을 판정한다.",
         "근거": [
-          {
-            "증거": "evd:ps1-low",
-            "읽은_값": 163.2,
-            "근거_절": null
-          },
-          {
-            "증거": "evd:fs1-drop",
-            "읽은_값": 8.3,
-            "근거_절": null
-          }
+          "evd:fs1-drop"
+        ],
+        "조치": [
+          "SOP-PMP-04"
         ]
       }
     ],
@@ -2667,7 +2808,9 @@
           ]
         }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S06",
@@ -2681,28 +2824,12 @@
           {
             "증거": "evd:vs1-trend",
             "판정": "맞음",
-            "읽은_값": 0.34,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "max-min",
-              "windowSeconds": 300,
-              "expect": "gt",
-              "threshold": 0.2,
-              "section": null
-            }
+            "읽은_값": 0.34
           },
           {
             "증거": "evd:ts1-normal",
             "판정": "맞음",
-            "읽은_값": 49.2,
-            "기준": {
-              "tag": "TS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 52,
-              "section": null
-            }
+            "읽은_값": 49.2
           }
         ]
       }
@@ -2710,66 +2837,14 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인된 원인 점검: 팬 베어링 마모 (cause:fan-bearing-wear)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-01",
-              "이름": "팬 40 % + 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "팬 속도를 40 %로 낮춘다.",
-                "근거_절": "HM-8.1"
-              },
-              "승인_역할": "생산관리자"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-02",
-              "이름": "팬 40 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "팬 속도를 40 %로 낮춘다.",
-                "근거_절": "HM-8.1"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-03",
-              "이름": "계획 정지 + 베어링 교체",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "생산오더를 마감하고 계획 정지한다.",
-                "근거_절": "HM-3.1"
-              },
-              "승인_역할": "공장장"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-FAN-04",
-              "이름": "팬 베어링 교체",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "LOCAL로 전환하고 잠근다.",
-                "근거_절": "HM-3.1"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "팬 베어링 마모에 대한 근본 조치로 계획 정지 후 베어링을 교체한다.",
         "근거": [
-          {
-            "증거": "evd:vs1-trend",
-            "읽은_값": 0.34,
-            "근거_절": null
-          },
-          {
-            "증거": "evd:ts1-normal",
-            "읽은_값": 49.2,
-            "근거_절": null
-          }
+          "evd:vs1-trend",
+          "evd:ts1-normal"
+        ],
+        "조치": [
+          "SOP-FAN-03",
+          "SOP-FAN-04"
         ]
       }
     ],
@@ -3043,7 +3118,9 @@
           ]
         }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S07",
@@ -3057,28 +3134,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "맞음",
-            "읽은_값": 51.0,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 51.0
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "맞음",
-            "읽은_값": 0.58,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.58
           }
         ]
       },
@@ -3090,15 +3151,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": null
           }
         ]
       },
@@ -3110,15 +3163,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "아님",
-            "읽은_값": 0.58,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.58
           }
         ]
       }
@@ -3126,106 +3171,23 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인하지 못한 값 다시 확인: TS4 avg 120초 구간",
-          "조치": []
-        },
+        "점검": "캐비닛 온도 TS4 평균값을 다시 확인한다.",
         "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:ambient-ts4-high"
+        ],
+        "조치": [
+          "SOP-COOL-15"
         ]
       },
       {
         "순번": 2,
-        "점검": {
-          "내용": "확인된 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-11",
-              "이름": "팬 최대 운전",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-12",
-              "이름": "팬 최대 운전과 부하 80 %",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-13",
-              "이름": "부하 70 %와 야간 핀 세척",
-              "종류": "즉시_완화",
-              "첫_단계": {
-                "글": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
-                "근거_절": "HM-8.5"
-              },
-              "승인_역할": "운전원"
-            },
-            {
-              "시점": "확인된 원인의 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "쿨러 핀 오염에 대한 근본 조치를 수행한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": 51.0,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": 0.58,
-            "근거_절": "HM-8.4"
-          }
-        ]
-      },
-      {
-        "순번": 3,
-        "점검": {
-          "내용": "가설인 원인 점검: 주변 온도 상승 (cause:ambient-high-temp)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-COOL-15",
-              "이름": "캐비닛 환기 보강",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
-        "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-14"
         ]
       }
     ],
@@ -3338,6 +3300,48 @@
         }
       },
       {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:ambient-high-temp"
+        },
+        "받음": {
+          "원인": "cause:ambient-high-temp",
+          "증거": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:fan-drive-fault"
+        },
+        "받음": {
+          "원인": "cause:fan-drive-fault",
+          "증거": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S07",
@@ -3382,27 +3386,6 @@
         }
       },
       {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:ambient-high-temp"
-        },
-        "받음": {
-          "원인": "cause:ambient-high-temp",
-          "증거": [
-            {
-              "id": "evd:ambient-ts4-high",
-              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S07",
@@ -3421,49 +3404,6 @@
             "max_gap_s": null,
             "limit_s": 12,
             "covered": false
-          }
-        }
-      },
-      {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:fan-drive-fault"
-        },
-        "받음": {
-          "원인": "cause:fan-drive-fault",
-          "증거": [
-            {
-              "id": "evd:fan-drive-vs1-high",
-              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
-        "도구": "센서_집계",
-        "물음": {
-          "사례": "S07",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
-        },
-        "받음": {
-          "사례": "S07",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 0.58,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.009,
-            "limit_s": 3,
-            "covered": true
           }
         }
       },
@@ -3709,8 +3649,294 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:cooler-performance-loss"
+        },
+        "받음": {
+          "고장_유형": "fm:cooler-performance-loss",
+          "조치": [
+            {
+              "id": "skill:sop-cool-11",
+              "sopId": "SOP-COOL-11",
+              "name": "팬 최대 운전",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-12",
+              "sopId": "SOP-COOL-12",
+              "name": "팬 최대 운전과 부하 80 %",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "펌프 부하를 80 %로 낮춘다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 4,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-13",
+              "sopId": "SOP-COOL-13",
+              "name": "부하 70 %와 야간 핀 세척",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "펌프 부하를 70 %로 낮춘다. 팬 속도는 그대로 둔다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                },
+                {
+                  "order": 4,
+                  "text": "야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다.",
+                  "section": "HM-8.5"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-14",
+              "sopId": "SOP-COOL-14",
+              "name": "쿨러 핀 세척",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-15",
+              "sopId": "SOP-COOL-15",
+              "name": "캐비닛 환기 보강",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "환기 필터를 청소하고 배기 팬 동작을 점검한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "캐비닛 온도가 35 ℃ 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:ambient-high-temp"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-11",
+              "sopId": "SOP-FAN-11",
+              "name": "쿨러 팬 점검 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 2,
+                  "text": "벨트 처짐을 측정한다 (기준 10~15 mm).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 3,
+                  "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 4,
+                  "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.1"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-12",
+              "sopId": "SOP-FAN-12",
+              "name": "벨트 교체 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 2,
+                  "text": "구 벨트를 분리하고 풀리 정렬을 점검한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 3,
+                  "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 4,
+                  "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다.",
+                  "section": "HM-8.2"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "같은 물음을 되풀이해 도구를 거두고 답을 받음"
   },
   {
     "번호": "S08",
@@ -3724,28 +3950,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 66.1
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "맞음",
-            "읽은_값": 0.6,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.6
           }
         ]
       },
@@ -3757,15 +3967,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "아님",
-            "읽은_값": 30.2,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 30.2
           }
         ]
       },
@@ -3777,15 +3979,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "아님",
-            "읽은_값": 0.6,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.6
           }
         ]
       }
@@ -3793,47 +3987,21 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인하지 못한 값 다시 확인: CE avg 30초 구간",
-          "조치": []
-        },
+        "점검": "최근 30초 냉각 효율 CE 평균 값을 재확인한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
+          "evd:fin-fouling-ce-low"
+        ],
+        "조치": []
       },
       {
         "순번": 2,
-        "점검": {
-          "내용": "가설인 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "쿨러 핀 오염 여부를 확인한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": 0.6,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-14"
         ]
       }
     ],
@@ -3946,6 +4114,48 @@
         }
       },
       {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:ambient-high-temp"
+        },
+        "받음": {
+          "원인": "cause:ambient-high-temp",
+          "증거": [
+            {
+              "id": "evd:ambient-ts4-high",
+              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
+              "tag": "TS4",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 35,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
+        "도구": "증거_기준",
+        "물음": {
+          "원인_식별자": "cause:fan-drive-fault"
+        },
+        "받음": {
+          "원인": "cause:fan-drive-fault",
+          "증거": [
+            {
+              "id": "evd:fan-drive-vs1-high",
+              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
+              "tag": "VS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "gte",
+              "threshold": 0.9,
+              "section": "HM-8.4"
+            }
+          ]
+        }
+      },
+      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S08",
@@ -3990,27 +4200,6 @@
         }
       },
       {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:ambient-high-temp"
-        },
-        "받음": {
-          "원인": "cause:ambient-high-temp",
-          "증거": [
-            {
-              "id": "evd:ambient-ts4-high",
-              "name": "최근 2분 캐비닛 온도 TS4 평균 35 ℃ 이상",
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
         "도구": "센서_집계",
         "물음": {
           "사례": "S08",
@@ -4028,49 +4217,6 @@
             "samples": 18,
             "max_gap_s": 11.002,
             "limit_s": 12,
-            "covered": true
-          }
-        }
-      },
-      {
-        "도구": "증거_기준",
-        "물음": {
-          "원인_식별자": "cause:fan-drive-fault"
-        },
-        "받음": {
-          "원인": "cause:fan-drive-fault",
-          "증거": [
-            {
-              "id": "evd:fan-drive-vs1-high",
-              "name": "최근 2분 팬 진동 VS1 평균 0.9 mm/s 이상",
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
-          ]
-        }
-      },
-      {
-        "도구": "센서_집계",
-        "물음": {
-          "사례": "S08",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
-        },
-        "받음": {
-          "사례": "S08",
-          "tag": "VS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 0.6,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.009,
-            "limit_s": 3,
             "covered": true
           }
         }
@@ -4317,8 +4463,294 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:cooler-performance-loss"
+        },
+        "받음": {
+          "고장_유형": "fm:cooler-performance-loss",
+          "조치": [
+            {
+              "id": "skill:sop-cool-11",
+              "sopId": "SOP-COOL-11",
+              "name": "팬 최대 운전",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-12",
+              "sopId": "SOP-COOL-12",
+              "name": "팬 최대 운전과 부하 80 %",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "팬 속도를 100 %로 올린다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "펌프 부하를 80 %로 낮춘다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 4,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": []
+            },
+            {
+              "id": "skill:sop-cool-13",
+              "sopId": "SOP-COOL-13",
+              "name": "부하 70 %와 야간 핀 세척",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "PLC 운전 모드가 REMOTE_AUTO인지 확인한다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 2,
+                  "text": "펌프 부하를 70 %로 낮춘다. 팬 속도는 그대로 둔다.",
+                  "section": "HM-8.5"
+                },
+                {
+                  "order": 3,
+                  "text": "15분 재관측으로 HM-8.6 회복 판정을 한다.",
+                  "section": "HM-8.6"
+                },
+                {
+                  "order": 4,
+                  "text": "야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다.",
+                  "section": "HM-8.5"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:operator",
+                "name": "운전원",
+                "level": 1
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-14",
+              "sopId": "SOP-COOL-14",
+              "name": "쿨러 핀 세척",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:cooler-fin-fouling"
+              ]
+            },
+            {
+              "id": "skill:sop-cool-15",
+              "sopId": "SOP-COOL-15",
+              "name": "캐비닛 환기 보강",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 2,
+                  "text": "환기 필터를 청소하고 배기 팬 동작을 점검한다.",
+                  "section": "HM-8.7"
+                },
+                {
+                  "order": 3,
+                  "text": "캐비닛 온도가 35 ℃ 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.7"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:maint-mgr",
+                "name": "설비보전팀장",
+                "level": 2
+              },
+              "맞는_원인": [
+                "cause:ambient-high-temp"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-11",
+              "sopId": "SOP-FAN-11",
+              "name": "쿨러 팬 점검 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 2,
+                  "text": "벨트 처짐을 측정한다 (기준 10~15 mm).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 3,
+                  "text": "베어링 소음과 표면 온도를 확인한다 (60 ℃ 이하).",
+                  "section": "HM-8.1"
+                },
+                {
+                  "order": 4,
+                  "text": "재가동 후 VS1이 0.9 mm/s 아래로 내려왔는지 확인한다.",
+                  "section": "HM-8.1"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            },
+            {
+              "id": "skill:sop-fan-12",
+              "sopId": "SOP-FAN-12",
+              "name": "벨트 교체 절차",
+              "kind": "work_order",
+              "관계": "REMEDIED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 2,
+                  "text": "구 벨트를 분리하고 풀리 정렬을 점검한다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 3,
+                  "text": "새 벨트를 걸고 처짐을 12 mm로 맞춘다.",
+                  "section": "HM-8.2"
+                },
+                {
+                  "order": 4,
+                  "text": "30분 시운전 뒤 냉각 효율 CE가 80 % 이상인지 확인한다.",
+                  "section": "HM-8.2"
+                }
+              ],
+              "승인_역할": null,
+              "맞는_원인": [
+                "cause:fan-drive-fault"
+              ]
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "같은 물음을 되풀이해 도구를 거두고 답을 받음"
   },
   {
     "번호": "S09",
@@ -4332,28 +4764,12 @@
           {
             "증거": "evd:fin-fouling-ce-low",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "CE",
-              "aggregate": "avg",
-              "windowSeconds": 30,
-              "expect": "lt",
-              "threshold": 70,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 48.9
           },
           {
             "증거": "evd:fin-fouling-vs1-normal",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.57
           }
         ]
       },
@@ -4365,15 +4781,7 @@
           {
             "증거": "evd:ambient-ts4-high",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "TS4",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 35,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 28.3
           }
         ]
       },
@@ -4385,15 +4793,7 @@
           {
             "증거": "evd:fan-drive-vs1-high",
             "판정": "확인하지_못함",
-            "읽은_값": null,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "gte",
-              "threshold": 0.9,
-              "section": "HM-8.4"
-            }
+            "읽은_값": 0.57
           }
         ]
       }
@@ -4401,143 +4801,44 @@
     "점검_순서": [
       {
         "순번": 1,
-        "점검": {
-          "내용": "확인하지 못한 값 다시 확인: CE avg 30초 구간",
-          "조치": []
-        },
+        "점검": "신선도가 만료된 TS1 관측을 갱신한 뒤 CE·VS1·TS4 값을 다시 확인한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal",
+          "evd:ambient-ts4-high",
+          "evd:fan-drive-vs1-high"
+        ],
+        "조치": []
       },
       {
         "순번": 2,
-        "점검": {
-          "내용": "확인하지 못한 값 다시 확인: VS1 avg 120초 구간",
-          "조치": []
-        },
+        "점검": "쿨러 핀 오염 여부를 확인하기 위해 냉각 효율 CE와 팬 진동 VS1을 재점검한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fin-fouling-ce-low",
+          "evd:fin-fouling-vs1-normal"
+        ],
+        "조치": [
+          "SOP-COOL-14"
         ]
       },
       {
         "순번": 3,
-        "점검": {
-          "내용": "확인하지 못한 값 다시 확인: TS4 avg 120초 구간",
-          "조치": []
-        },
+        "점검": "주변 온도 상승 여부를 확인하기 위해 캐비닛 온도 TS4를 재점검한다.",
         "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:ambient-ts4-high"
+        ],
+        "조치": [
+          "SOP-COOL-15"
         ]
       },
       {
         "순번": 4,
-        "점검": {
-          "내용": "가설인 원인 점검: 쿨러 핀 오염 (cause:cooler-fin-fouling)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-COOL-14",
-              "이름": "쿨러 핀 세척",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
+        "점검": "팬 구동 불량 여부를 확인하기 위해 팬 진동 VS1을 재점검한다.",
         "근거": [
-          {
-            "증거": "evd:fin-fouling-ce-low",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          },
-          {
-            "증거": "evd:fin-fouling-vs1-normal",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
-      },
-      {
-        "순번": 5,
-        "점검": {
-          "내용": "가설인 원인 점검: 주변 온도 상승 (cause:ambient-high-temp)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-COOL-15",
-              "이름": "캐비닛 환기 보강",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "캐비닛 온도 TS4와 외기 온도를 기록한다.",
-                "근거_절": "HM-8.7"
-              },
-              "승인_역할": "설비보전팀장"
-            }
-          ]
-        },
-        "근거": [
-          {
-            "증거": "evd:ambient-ts4-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
-        ]
-      },
-      {
-        "순번": 6,
-        "점검": {
-          "내용": "가설인 원인 점검: 팬 구동 불량 (cause:fan-drive-fault)",
-          "조치": [
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-FAN-11",
-              "이름": "쿨러 팬 점검 절차",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "설비를 정지하고 현장 패널에서 LOCAL로 전환한다.",
-                "근거_절": "HM-8.1"
-              },
-              "승인_역할": "등록되지 않음"
-            },
-            {
-              "시점": "확인된 뒤에 할 조치",
-              "절차_번호": "SOP-FAN-12",
-              "이름": "벨트 교체 절차",
-              "종류": "근본_조치",
-              "첫_단계": {
-                "글": "LOCAL 전환과 잠금(LOTO)을 확인한다.",
-                "근거_절": "HM-8.2"
-              },
-              "승인_역할": "등록되지 않음"
-            }
-          ]
-        },
-        "근거": [
-          {
-            "증거": "evd:fan-drive-vs1-high",
-            "읽은_값": null,
-            "근거_절": "HM-8.4"
-          }
+          "evd:fan-drive-vs1-high"
+        ],
+        "조치": [
+          "SOP-FAN-11"
         ]
       }
     ],
@@ -4692,6 +4993,72 @@
         }
       },
       {
+        "도구": "센서_집계",
+        "물음": {
+          "사례": "S09",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30
+        },
+        "받음": {
+          "사례": "S09",
+          "tag": "CE",
+          "aggregate": "avg",
+          "windowSeconds": 30,
+          "value": 48.9,
+          "coverage": {
+            "samples": 30,
+            "max_gap_s": 1.004,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "도구": "센서_집계",
+        "물음": {
+          "사례": "S09",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "받음": {
+          "사례": "S09",
+          "tag": "VS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 0.57,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.009,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "도구": "센서_집계",
+        "물음": {
+          "사례": "S09",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "받음": {
+          "사례": "S09",
+          "tag": "TS4",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 28.3,
+          "coverage": {
+            "samples": 18,
+            "max_gap_s": 11.002,
+            "limit_s": 12,
+            "covered": true
+          }
+        }
+      },
+      {
         "도구": "조치_방법",
         "물음": {
           "고장_유형_식별자": "fm:cooler-performance-loss"
@@ -4933,12 +5300,55 @@
             }
           ]
         }
+      },
+      {
+        "도구": "조치_방법",
+        "물음": {
+          "고장_유형_식별자": "fm:overheat-trip"
+        },
+        "받음": {
+          "고장_유형": "fm:overheat-trip",
+          "조치": [
+            {
+              "id": "skill:reset-after-cool",
+              "sopId": "SOP-TRIP-01",
+              "name": "냉각 후 리셋",
+              "kind": "control",
+              "관계": "MITIGATED_BY",
+              "steps": [
+                {
+                  "order": 1,
+                  "text": "유온이 55 ℃ 미만인지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 2,
+                  "text": "원인 조치(세척 · 교체) 계획이 있는지 확인한다.",
+                  "section": "HM-9.4"
+                },
+                {
+                  "order": 3,
+                  "text": "PLC를 리셋하고 재관측한다.",
+                  "section": "HM-9.4"
+                }
+              ],
+              "승인_역할": {
+                "id": "role:prod-mgr",
+                "name": "생산관리자",
+                "level": 2
+              },
+              "맞는_원인": []
+            }
+          ]
+        }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S10",
-    "근거_상태": "UNSUPPORTED",
+    "근거_상태": "UNKNOWN",
     "후보_원인": [
       {
         "원인": "cause:fan-bearing-wear",
@@ -4948,28 +5358,12 @@
           {
             "증거": "evd:vs1-trend",
             "판정": "아님",
-            "읽은_값": 0.12,
-            "기준": {
-              "tag": "VS1",
-              "aggregate": "max-min",
-              "windowSeconds": 300,
-              "expect": "gt",
-              "threshold": 0.2,
-              "section": null
-            }
+            "읽은_값": 0.12
           },
           {
             "증거": "evd:ts1-normal",
             "판정": "아님",
-            "읽은_값": 56.3,
-            "기준": {
-              "tag": "TS1",
-              "aggregate": "avg",
-              "windowSeconds": 120,
-              "expect": "lt",
-              "threshold": 52,
-              "section": null
-            }
+            "읽은_값": 56.3
           }
         ]
       }
@@ -5245,7 +5639,11 @@
           ]
         }
       }
-    ]
+    ],
+    "대조": [
+      "근거_상태 UNKNOWN, 원인의 구분(해당_없음)에 대면 UNSUPPORTED"
+    ],
+    "멈춤": "답을 냄"
   },
   {
     "번호": "S11",
@@ -5276,40 +5674,7 @@
         "증거": []
       }
     ],
-    "점검_순서": [
-      {
-        "순번": 1,
-        "점검": {
-          "내용": "가설인 원인 점검: 고온 운전에 의한 산화 (cause:oil-oxidation)",
-          "조치": []
-        },
-        "근거": []
-      },
-      {
-        "순번": 2,
-        "점검": {
-          "내용": "가설인 원인 점검: 수분 혼입 (cause:water-ingress)",
-          "조치": []
-        },
-        "근거": []
-      },
-      {
-        "순번": 3,
-        "점검": {
-          "내용": "가설인 원인 점검: 오염 입자 유입 (cause:particle-contamination)",
-          "조치": []
-        },
-        "근거": []
-      },
-      {
-        "순번": 4,
-        "점검": {
-          "내용": "가설인 원인 점검: 교환 주기 초과 (cause:change-interval-exceeded)",
-          "조치": []
-        },
-        "근거": []
-      }
-    ],
+    "점검_순서": [],
     "호출_기록": [
       {
         "도구": "원인_후보",
@@ -5430,6 +5795,8 @@
           "조치": []
         }
       }
-    ]
+    ],
+    "대조": [],
+    "멈춤": "답을 냄"
   }
 ]

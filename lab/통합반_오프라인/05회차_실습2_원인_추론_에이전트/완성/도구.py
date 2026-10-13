@@ -14,8 +14,8 @@ def _그래프():
     return 노드, 그래프["rels"]
 
 
-def 원인_후보(패턴_코드):
-    """경보 패턴의 코드 → 감지하는 증상, 증상이 가리키는 고장 유형, 그 고장 유형의 원인 후보."""
+def 원인_후보(패턴_코드: str):
+    """경보 패턴의 코드를 받아, 그 패턴이 감지하는 증상, 증상이 가리키는 고장 유형, 그 고장 유형의 원인 후보를 돌려준다."""
     노드, 관계 = _그래프()
     패턴 = next(
         (n["props"] for n in 노드.values()
@@ -55,8 +55,8 @@ def 원인_후보(패턴_코드):
     }
 
 
-def 증거_기준(원인_식별자):
-    """원인의 식별자 → 그 원인의 증거(태그, 집계 방법, 구간, 비교 방향, 기준값, 근거 절)."""
+def 증거_기준(원인_식별자: str):
+    """원인의 식별자를 받아, 그 원인의 증거(태그 tag, 집계 방법 aggregate, 구간 windowSeconds, 비교 방향 expect, 기준값 threshold, 근거 절 section)를 돌려준다."""
     노드, 관계 = _그래프()
     칸 = ("id", "name", "tag", "aggregate", "windowSeconds", "expect", "threshold", "section")
     return {
@@ -68,9 +68,8 @@ def 증거_기준(원인_식별자):
     }
 
 
-def 센서_집계(사례, tag=None, aggregate=None, windowSeconds=None):
-    """사례 번호와 태그, 집계 방법, 구간 → 입력의 그 값과 관측 충분성(coverage).
-    사례 번호만 받으면 그 사례의 신선도(freshness)."""
+def 센서_집계(사례: str, tag: str = None, aggregate: str = None, windowSeconds: int = None):
+    """사례 번호와 태그, 집계 방법, 구간을 받아, 그 값(value)과 관측 충분성(coverage)을 돌려준다. 사례 번호만 주면 그 사례의 신선도(freshness)를 돌려준다."""
     with open(_입력_경로, encoding="utf-8") as f:
         한_건 = next((s for s in json.load(f) if s["번호"] == 사례), None) or {}
     if tag is None and aggregate is None and windowSeconds is None:
@@ -87,8 +86,8 @@ def 센서_집계(사례, tag=None, aggregate=None, windowSeconds=None):
     }
 
 
-def 조치_방법(고장_유형_식별자):
-    """고장 유형의 식별자 → 그 고장 유형의 조치 방법(절차 번호, 단계와 근거 절, 승인 역할, 맞는 원인)."""
+def 조치_방법(고장_유형_식별자: str):
+    """고장 유형의 식별자를 받아, 그 고장 유형의 조치 방법(절차 번호 sopId, 단계와 근거 절, 승인 역할, 맞는 원인)을 돌려준다."""
     노드, 관계 = _그래프()
     조치 = []
     for r in 관계:
