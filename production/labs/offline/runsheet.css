@@ -1,0 +1,33 @@
+:root{--ink:#111827;--sub:#4b5563;--line:#cfd6e0;--bg:#eff2f7;--do:#1d4ed8;--do-soft:#e6eeff;--say:#6d28d9;--say-soft:#f1eaff;--show:#15803d;--show-soft:#e7f6ec;--warn:#b45309;--warn-soft:#fff3dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;word-break:keep-all}
+main{max-width:860px;margin:0 auto;padding:28px 20px 120px}
+h1{font-size:26px;line-height:1.35;margin:6px 0 4px}
+.meta{color:var(--sub);font-size:15px;margin:0 0 18px}
+.box{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 20px;margin:0 0 16px}
+.box h2{font-size:16px;margin:0 0 8px}
+.box ul,.box ol{margin:0;padding-left:22px}
+.rule{background:var(--warn-soft);border-color:#e6c583}
+.rule b{color:var(--warn)}
+table.plan{width:100%;border-collapse:collapse;font-size:15.5px}
+table.plan td{padding:6px 8px;border-top:1px solid var(--line)}
+table.plan tr:first-child td{border-top:0}
+table.plan td:last-child{text-align:right;white-space:nowrap;color:var(--sub)}
+.seg{background:#fff;border:1.5px solid #b9c2d0;border-radius:16px;margin:0 0 28px;overflow:hidden;box-shadow:0 3px 12px rgba(17,24,39,.06)}
+.seg header{display:flex;align-items:center;gap:14px;padding:14px 20px;background:#1e293b;color:#fff}
+.seg header em{font-style:normal;font-weight:800;font-size:20px;width:40px;height:40px;border-radius:11px;background:#fff;color:#1e293b;display:grid;place-items:center;flex-shrink:0}
+.seg header h2{font-size:21px;margin:0;flex:1}
+.seg header span{font-size:15px;white-space:nowrap;text-align:right;line-height:1.35}
+.seg header span b{display:block;font-size:19px}
+.part{padding:14px 20px 16px;border-top:1.5px solid var(--line)}
+.part:first-of-type{border-top:0}
+.part h3{font-size:13px;letter-spacing:.04em;margin:0 0 6px;display:inline-block;border-radius:6px;padding:1px 10px;color:#fff}
+.part.do h3{background:var(--do)}.part.say h3{background:var(--say)}.part.mean h3{background:#374151}.part.show h3{background:var(--show)}
+.part.say{background:var(--say-soft)}
+.part ul,.part ol{margin:0;padding-left:22px}
+.part li{margin:3px 0}
+.part table{border-collapse:collapse;font-size:16px;margin:8px 0 2px;width:100%}
+.part th,.part td{border:1px solid var(--line);padding:5px 10px;text-align:left;background:#fff}
+.part th{background:#eef1f5;font-size:14px}
+code{font-family:Consolas,"D2Coding",monospace;background:#e6eaf0;border-radius:5px;padding:1px 6px;font-size:.9em}
+.note{font-size:15px;color:var(--sub);margin:8px 0 0}
