@@ -1,6 +1,6 @@
-"""사내 AI 서버에 묻는다. 접속 정보는 이 폴더의 접속_정보.txt 에서 읽는다.
+"""사내 AI 서버에 묻는다. 접속 정보는 이 폴더의 connection.txt 에서 읽는다.
 
-    python 연결.py     접속이 되는지 본다
+    python connect.py     접속이 되는지 본다
 """
 import json
 import sys
@@ -8,12 +8,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-_환경_경로 = Path(__file__).resolve().parent / "접속_정보.txt"
+_환경_경로 = Path(__file__).resolve().parent / "connection.txt"
 
 
 def _환경():
     if not _환경_경로.exists():
-        raise SystemExit("접속_정보.txt 파일이 없다. 받은 폴더에서 다시 가져온다.")
+        raise SystemExit("connection.txt 파일이 없다. 받은 폴더에서 다시 가져온다.")
     값 = {}
     for 줄 in _환경_경로.read_text(encoding="utf-8").splitlines():
         줄 = 줄.strip()
@@ -22,7 +22,7 @@ def _환경():
             값[이름.strip()] = 내용.strip().strip("\"'")
     for 이름 in ("OPENAI_BASE_URL", "LLM_API_KEY", "LLM_MODEL"):
         if not 값.get(이름):
-            raise SystemExit(f"접속_정보.txt 의 {이름} 이 비어 있다. 받은 값을 등호 뒤에 적고 저장한다.")
+            raise SystemExit(f"connection.txt 의 {이름} 이 비어 있다. 받은 값을 등호 뒤에 적고 저장한다.")
     return 값
 
 
@@ -43,9 +43,9 @@ def 묻기(대화, 도구=None):
             return json.loads(응답.read())["choices"][0]["message"]
     except urllib.error.HTTPError as 오류:
         까닭 = {401: "키가 맞지 않는다", 403: "키에 권한이 없다", 404: "주소나 모델 이름이 맞지 않는다"}.get(오류.code, "서버가 요청을 받지 않았다")
-        raise SystemExit(f"묻지 못했다({오류.code}): {까닭}. 접속_정보.txt 의 값을 다시 본다.")
+        raise SystemExit(f"묻지 못했다({오류.code}): {까닭}. connection.txt 의 값을 다시 본다.")
     except urllib.error.URLError:
-        raise SystemExit("서버에 닿지 못했다. 네트워크와 접속_정보.txt 의 OPENAI_BASE_URL 을 다시 본다.")
+        raise SystemExit("서버에 닿지 못했다. 네트워크와 connection.txt 의 OPENAI_BASE_URL 을 다시 본다.")
 
 
 if __name__ == "__main__":

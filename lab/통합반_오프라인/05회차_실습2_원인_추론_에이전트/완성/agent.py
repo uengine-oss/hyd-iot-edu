@@ -1,7 +1,7 @@
 """실행 고리. 모델이 허용 목록의 도구를 골라 부르고, 읽은 것으로 후보 원인을 가려 점검 순서를 낸다.
 
-    python 에이전트.py        모든 사례
-    python 에이전트.py S01    그 사례만
+    python agent.py        모든 사례
+    python agent.py S01    그 사례만
 """
 import inspect
 import json
@@ -12,13 +12,13 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True  # __pycache__를 만들지 않는다
 
-import 도구  # noqa: E402
-import 연결  # noqa: E402
+import tools as 도구  # noqa: E402
+import connect as 연결  # noqa: E402
 
 _폴더 = Path(__file__).resolve().parent
-_정의_경로 = _폴더 / "에이전트_정의.json"
-_입력_경로 = _폴더 / "입력" / "센서_입력.json"
-_결과_폴더 = _폴더 / "결과"
+_정의_경로 = _폴더 / "agent_config.json"
+_입력_경로 = _폴더 / "input" / "sensor_input.json"
+_결과_폴더 = _폴더 / "inspection_plan"
 
 _비교 = {"lt": operator.lt, "gt": operator.gt, "gte": operator.ge}
 _자료형 = {str: "string", int: "integer", float: "number"}
@@ -37,12 +37,12 @@ def _읽기(경로):
 
 
 def _도구_설명(허용):
-    """허용 목록의 도구를 모델에게 알려 줄 모양으로 바꾼다. 설명은 도구.py의 함수에 적힌 글을 그대로 쓴다."""
+    """허용 목록의 도구를 모델에게 알려 줄 모양으로 바꾼다. 설명은 tools.py의 함수에 적힌 글을 그대로 쓴다."""
     설명 = []
     for 이름 in 허용:
         함수 = getattr(도구, 이름, None)
         if 함수 is None:
-            raise SystemExit(f"허용 목록에는 있으나 도구.py에 없는 도구: {이름}")
+            raise SystemExit(f"허용 목록에는 있으나 tools.py에 없는 도구: {이름}")
         인자 = inspect.signature(함수).parameters
         설명.append({"type": "function", "function": {
             "name": 이름,
@@ -215,7 +215,7 @@ def 마크다운(결과들):
 
 def main(인자):
     if len(인자) > 1:
-        raise SystemExit("쓰는 법: python 에이전트.py [사례 번호]")
+        raise SystemExit("쓰는 법: python agent.py [사례 번호]")
     정의 = _읽기(_정의_경로)
     사례들 = _읽기(_입력_경로)
     if 인자:
@@ -229,10 +229,10 @@ def main(인자):
         결과들.append(결과)
         print(f"{결과['번호']}  {결과['근거_상태']}  도구 호출 {len(결과['호출_기록'])}번  대조 어긋남 {len(결과['대조'])}건  ({결과['멈춤']})")
 
-    with open(_결과_폴더 / "점검_계획.json", "w", encoding="utf-8") as f:
+    with open(_결과_폴더 / "plan.json", "w", encoding="utf-8") as f:
         json.dump(결과들, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    with open(_결과_폴더 / "점검_계획.md", "w", encoding="utf-8") as f:
+    with open(_결과_폴더 / "plan.md", "w", encoding="utf-8") as f:
         f.write(마크다운(결과들))
 
 
