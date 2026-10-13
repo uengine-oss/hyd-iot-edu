@@ -7,7 +7,8 @@
 | 경로 | 내용 |
 |---|---|
 | `course/labs/offline/05-2-cause-agent/` | 학생이 받아 VS Code로 여는 폴더. `guide.html`이 실습 가이드다 |
-| `solution/` | 끝까지 마친 상태. `tools.py`, `agent.py`, 사례 열한 건의 `plan/` 포함 |
+| `solution/` | 끝까지 마친 상태. `tools.py`, `agent.py`, 사례 열한 건의 `plan/`, 재생용 실행 기록 `recorded/` 포함 |
+| `course/labs/online/05-2-cause-agent/` | 온라인 학생에게 주는 완성본. `solution/`에서 접속 양식을 뺀 것이다. 키 없이 실행하면 저장된 실행 기록을 재생한다 |
 | `screenshots.md` | 가이드의 「화면 1~10」 자리에 넣을 사진 목록 |
 | `record/README.md` | 실제로 돌린 것과 확인하지 못한 것 |
 | `record/prompts/` | 가이드에 실은 요청 글 원문 |
@@ -23,3 +24,5 @@
 ## 완성본을 돌려 보려면
 
 `solution/`에서 `.env.example`을 `.env`로 복사해 접속 정보를 적고 `python agent.py`를 실행한다. 열한 건에 1분쯤 걸린다. `.env`는 저장소에 올리지 않는다.
+
+`.env`가 없으면 서버를 부르지 않고 `recorded/replies.json`의 답을 재생한다. 실행 기록을 새로 저장하려면 `.env`를 둔 채 `LLM_RECORD=1 python agent.py`를 실행하고, `solution/`을 `course/labs/online/05-2-cause-agent/`로 다시 복사한다(`.env`와 `.env.example`은 빼고).

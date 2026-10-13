@@ -48,7 +48,7 @@
     "checks": [
       {
         "order": 1,
-        "check": "쿨러 핀 오염에 따른 냉각 효율 저하를 확인하기 위해 핀 세척 후 CE가 80 % 이상으로 회복되는지 점검한다.",
+        "check": "쿨러 핀 오염에 따른 냉각 효율 저하를 확인하기 위해 핀 세척 후 냉각 효율 CE가 80 % 이상으로 회복되는지 점검한다.",
         "evidence": [
           "evd:fin-fouling-ce-low"
         ],
@@ -1177,7 +1177,7 @@
       },
       {
         "order": 2,
-        "check": "냉각 효율 CE 58 %가 기준 70 % 미만으로 낮으므로 핀 오염 가능성을 점검한다.",
+        "check": "냉각 효율 CE 평균 58.0 %가 기준 70 % 미만으로 확인되었으므로 쿨러 핀 오염 가능성을 점검한다.",
         "evidence": [
           "evd:fin-fouling-ce-low"
         ],
@@ -2292,25 +2292,34 @@
         }
       },
       {
-        "tool": "read_sensor",
+        "tool": "get_evidence",
         "args": {
-          "case_id": "S05",
-          "tag": "PS1",
-          "aggregate": "avg",
-          "windowSeconds": 120
+          "cause_id": "cause:pump-seal-wear"
         },
         "result": {
-          "case_id": "S05",
-          "tag": "PS1",
-          "aggregate": "avg",
-          "windowSeconds": 120,
-          "value": 163.2,
-          "coverage": {
-            "samples": 120,
-            "max_gap_s": 1.011,
-            "limit_s": 3,
-            "covered": true
-          }
+          "cause_id": "cause:pump-seal-wear",
+          "evidence": [
+            {
+              "id": "evd:ps1-low",
+              "name": "토출 압력 평균 165 bar 미만",
+              "tag": "PS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 165,
+              "section": null
+            },
+            {
+              "id": "evd:fs1-drop",
+              "name": "유량 평균 8.0 l/min 미만",
+              "tag": "FS1",
+              "aggregate": "avg",
+              "windowSeconds": 120,
+              "expect": "lt",
+              "threshold": 8.0,
+              "section": null
+            }
+          ]
         }
       }
     ],
@@ -3832,25 +3841,13 @@
     "checks": [
       {
         "order": 1,
-        "check": "신선도가 만료된 TS1(유온) 관측을 최신 값으로 다시 확인한다.",
+        "check": "신선도가 만료된 TS1 센서 값을 최신 데이터로 다시 확인한다.",
         "evidence": [],
         "actions": []
       },
       {
         "order": 2,
-        "check": "쿨러 핀 오염에 대해 부하 70%와 야간 핀 세척을 적용한다.",
-        "evidence": [
-          "evd:fin-fouling-ce-low",
-          "evd:fin-fouling-vs1-normal"
-        ],
-        "actions": [
-          "SOP-COOL-13",
-          "SOP-COOL-14"
-        ]
-      },
-      {
-        "order": 3,
-        "check": "쿨러 핀 오염에 대해 핀 세척으로 근본 조치한다.",
+        "check": "쿨러 핀 오염에 대한 근본 조치로 핀 세척을 수행한다.",
         "evidence": [
           "evd:fin-fouling-ce-low",
           "evd:fin-fouling-vs1-normal"
@@ -4333,10 +4330,47 @@
           "value": null,
           "coverage": null
         }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120
+        },
+        "result": {
+          "case_id": "S09",
+          "tag": "TS1",
+          "aggregate": "avg",
+          "windowSeconds": 120,
+          "value": 60.1,
+          "coverage": {
+            "samples": 120,
+            "max_gap_s": 1.006,
+            "limit_s": 3,
+            "covered": true
+          }
+        }
+      },
+      {
+        "tool": "read_sensor",
+        "args": {
+          "case_id": "S09"
+        },
+        "result": {
+          "case_id": "S09",
+          "freshness": {
+            "tag": "TS1",
+            "age_s": 185.0,
+            "max_age_s": 60,
+            "ok": false
+          }
+        }
       }
     ],
     "mismatches": [],
-    "stopped": "답을 냄"
+    "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
   },
   {
     "id": "S10",
@@ -4345,7 +4379,7 @@
       {
         "id": "cause:fan-bearing-wear",
         "name": "팬 베어링 마모",
-        "verdict": "HYPOTHESIS",
+        "verdict": "RULED_OUT",
         "evidence": [
           {
             "id": "evd:vs1-trend",
@@ -4360,20 +4394,7 @@
         ]
       }
     ],
-    "checks": [
-      {
-        "order": 1,
-        "check": "VS1 진동 상승폭과 TS1 유온을 재확인한다.",
-        "evidence": [
-          "evd:vs1-trend",
-          "evd:ts1-normal"
-        ],
-        "actions": [
-          "SOP-FAN-03",
-          "SOP-FAN-04"
-        ]
-      }
-    ],
+    "checks": [],
     "calls": [
       {
         "tool": "find_causes",
@@ -4718,7 +4739,7 @@
       }
     ],
     "mismatches": [
-      "cause:fan-bearing-wear: verdict HYPOTHESIS, 증거의 result(NO_MATCH, NO_MATCH)에 대면 RULED_OUT"
+      "status UNKNOWN, 원인의 verdict(RULED_OUT)에 대면 UNSUPPORTED"
     ],
     "stopped": "같은 호출을 되풀이해 도구를 거두고 답을 받음"
   },
