@@ -37,7 +37,7 @@ python3 production/decks/practical-offline/sessionNN/조립.py
 python3 .claude/skills/hyd-course-deck/scripts/재조립.py --day N    # 통합반 N일차를 읽는 스크립트를 모두 돌린다(--dry-run이면 목록만)
 ```
 
-조립 스크립트는 모두 27개다(`조립.py` 26개와 `practical/만들기_01일차.py`). 순서와 그 뒤의 빌드 · 배포 묶음 · 장수 맞추기는 `문서/교재/4_만드는_법_덱_고치기.md` (나)에 있다.
+조립 스크립트는 모두 27개다(`조립.py` 26개와 `practical/만들기_01일차.py`). 순서와 그 뒤의 빌드 · 배포 묶음 · 장수 맞추기는 `문서/교재/4_만드는_법.md` 1부 (나)에 있다.
 
 | 고친 통합반 일차 | 다시 만들 실전반 일차 | 다시 만들 통합반 오프라인 회차 | 다시 만들 실전반 오프라인 회차 |
 |---|---|---|---|
@@ -81,4 +81,4 @@ cd production/decks/integrated/day03/그림 && uv run --no-project --with matplo
 스킬(도구와 형식 문서)은 저장소의 `.claude/skills/`가 유일한 원본이다. 다른 곳에 사본을 두지 않고, 고칠 때는 여기서 고친다. 목록과 서로의 관계는 `.claude/skills/README.md`에 있다.
 
 - 이 교재에 쓰는 것은 `hyd-course-deck`(절차의 요약과 `scripts/재조립.py` · `장수.py` · `배포묶음.py`)과 `lecture-deck`(덱 MD → PPTX 도구 `scripts/deck2pptx.py`, 형식 문서 `references/덱MD-PPTX형식.md`)이다. 실습 가이드는 `hyd-lab-guide`다.
-- 스킬 문서는 제작 기준을 복사하지 않고 가리킨다. 규칙을 바꿀 때는 `문서/교재/덱_제작기준.md`를 고친다.
+- 스킬 문서는 제작 기준을 복사하지 않고 가리킨다. 규칙을 바꿀 때는 `문서/교재/2_기준.md`를 고친다.

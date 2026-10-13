@@ -27,7 +27,7 @@
 |---|---|---|---|
 | 덱 PPTX | `decks/<과정>/<단위>/…md` | `.claude/skills/hyd-course-deck/scripts/재조립.py --build` | `course/slides/<과정>/` |
 | 조립 덱의 원고 | 통합반 원고 + `새장_….md` | 각 폴더의 `조립.py` | 같은 폴더의 `…md` |
-| 최종 대본 | `course/scripts/integrated/…_윤문2.md`를 직접 고친다 | 고친 문단만 모아 한 번 윤문한다(`문서/교재/4_만드는_법_대본_영상_실습.md` 2절) | `course/scripts/integrated/` |
+| 최종 대본 | `course/scripts/integrated/…_윤문2.md`를 직접 고친다 | 고친 문단만 모아 한 번 윤문한다(`문서/교재/4_만드는_법.md` 3부 2절) | `course/scripts/integrated/` |
 | 실습 촬영 대본 | `labs/online/<폴더>/runsheet.json` | `labs/build_runsheet.py` | 같은 폴더의 `runsheet.html` |
 | 강의 영상 | `course/scripts/` + `course/slides/` | `tools/video/강의영상.py` | 저장소 밖 |
 | 랩 가이드 | `labs/offline/<랩>/build_guide.py` | 같은 파일 | `course/labs/offline/<랩>/guide.html` |
