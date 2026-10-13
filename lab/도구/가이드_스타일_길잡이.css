@@ -1,5 +1,5 @@
 
-:root{--ink:#111827;--sub:#4b5563;--faint:#6b7280;--line:#d5dbe5;--bg:#fff;--card:#f5f7fa;--accent:#1d4ed8;--accent-soft:#e6eeff;--ok:#15803d;--ok-soft:#e7f6ec;--warn:#b45309;--warn-soft:#fff3dc;--chat:#6d28d9;--chat-soft:#f1eaff;--term:#0f766e;--term-soft:#e0f5f2;--page:#374151;--page-soft:#eceff3}
+:root{--ink:#111827;--sub:#4b5563;--faint:#6b7280;--line:#d5dbe5;--bg:#eff2f7;--card:#f5f7fa;--accent:#1d4ed8;--accent-soft:#e6eeff;--ok:#15803d;--ok-soft:#e7f6ec;--warn:#b45309;--warn-soft:#fff3dc;--chat:#6d28d9;--chat-soft:#f1eaff;--term:#0f766e;--term-soft:#e0f5f2;--page:#374151;--page-soft:#eceff3}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.75 "Pretendard","Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
@@ -7,7 +7,7 @@ button{font:inherit;cursor:pointer}
 code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf0;border-radius:5px;padding:1px 6px;font-size:.9em}
 
 /* 맨 위: 지금 어디인가 */
-.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:2px solid var(--ink)}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #c3cbd8}
 .bar-in{max-width:880px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px}
 .bar b{font-size:14px;white-space:nowrap}
 .track{flex:1;display:flex;align-items:center;gap:6px}
@@ -19,7 +19,7 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .page{max-width:880px;margin:0 auto;padding:0 24px 120px}
 
 /* 단계 머리 */
-.hero{padding:52px 0 32px}
+.hero{padding:56px 0 40px}
 .hero .no{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.04em}
 .hero h1{font-size:38px;line-height:1.3;margin:10px 0 18px;letter-spacing:-.02em}
 .hero p{font-size:19px;color:#1f2937;margin:0}
@@ -40,14 +40,14 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .where{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;border-radius:999px;padding:4px 14px 4px 6px;margin:0;color:#fff;font-size:13px}
 .where svg{width:34px;height:22px}
 .where.w-chat{background:var(--chat)}.where.w-code{background:var(--accent)}.where.w-term{background:var(--term)}.where.w-page{background:var(--page)}
-.do{border:1.5px solid #c3cbd8;border-radius:18px;margin:0 0 28px;overflow:hidden;background:#fff;box-shadow:0 3px 12px rgba(17,24,39,.06)}
-.do header{display:flex;gap:16px;align-items:center;padding:16px 24px;border-bottom:1.5px solid #c3cbd8;background:var(--page-soft)}
+.do{border:1.5px solid #c3cbd8;border-radius:18px;margin:0 0 48px;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(17,24,39,.07)}
+.do header{display:flex;gap:18px;align-items:center;padding:20px 28px;border-bottom:1.5px solid #c3cbd8;background:var(--page-soft)}
 .do header em{font-style:normal;flex-shrink:0;width:46px;height:46px;border-radius:13px;background:var(--page);color:#fff;font-size:21px;font-weight:800;display:grid;place-items:center}
 .do.w-chat header{background:var(--chat-soft)}.do.w-chat header em{background:var(--chat)}
 .do.w-code header{background:var(--accent-soft)}.do.w-code header em{background:var(--accent)}
 .do.w-term header{background:var(--term-soft)}.do.w-term header em{background:var(--term)}
 .do h2{font-size:22px;line-height:1.35;margin:6px 0 0;letter-spacing:-.01em}
-.do .body{padding:22px 24px 26px}
+.do .body{padding:28px 28px 32px}
 .do .body>:first-child{margin-top:0}
 .do .body>:last-child{margin-bottom:0}
 .do p{margin:0 0 16px}
@@ -90,7 +90,7 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .note b{display:block;font-size:13px;color:var(--accent)}
 
 /* 다음 */
-.next{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:20px;padding:26px 30px;margin-top:20px}
+.next{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#1e293b;color:#fff;border-radius:20px;padding:26px 30px;margin-top:20px}
 .next small{display:block;font-size:13px;color:#aab4c3}
 .next b{font-size:20px}
 .next a{background:#fff;color:var(--ink);text-decoration:none;font-weight:800;border-radius:12px;padding:14px 26px;white-space:nowrap}
@@ -108,14 +108,14 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .track i{cursor:pointer}
 .hero h1 small{display:block;font-size:15px;font-weight:700;color:var(--sub);letter-spacing:0;margin-bottom:6px}
 .flow{list-style:none;margin:0;padding:0}
-.flow li{display:grid;grid-template-columns:30px 150px 1fr;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer;font-size:15.5px;line-height:1.5}
+.flow li{display:grid;grid-template-columns:30px 150px 1fr;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer;font-size:15.5px;line-height:1.5}
 .flow li:first-child{border-top:0;padding-top:0}.flow li:last-child{padding-bottom:0}
-.flow em{font-style:normal;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--ink);color:#fff;font-weight:800;font-size:14px}
+.flow em{font-style:normal;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:15px}
 .flow b{font-size:16px}
 .flow span{color:var(--sub)}
-.sect{border:1.5px solid #c3cbd8;border-radius:18px;padding:22px 24px 24px;margin:0 0 20px;background:#fff;box-shadow:0 3px 12px rgba(17,24,39,.06)}
-.sect.last{margin-bottom:44px}
-.sect h2{font-size:19px;margin:0 0 14px}
+.sect{border:1.5px solid #c3cbd8;border-radius:18px;padding:28px 28px 30px;margin:0 0 36px;background:#fff;box-shadow:0 4px 16px rgba(17,24,39,.07)}
+.sect.last{margin-bottom:72px}
+.sect h2{font-size:19px;margin:0 0 18px}
 .sect p{margin:0 0 12px;font-size:16px;color:#1f2937}
 .tree{font-family:Consolas,"D2Coding",monospace;font-size:14.5px;line-height:1.9;background:#14181f;color:#e8edf5;border-radius:14px;padding:18px 22px;white-space:pre;overflow:auto}
 .tree span{color:#8fb4ff}.tree i{color:#8a94a3;font-style:normal}
@@ -194,3 +194,4 @@ table.res td small{color:var(--sub);font-size:13px}
 .cmd+p,.out+p{margin-top:16px}
 @media(max-width:760px){.key{grid-template-columns:1fr}}
 @media(max-width:760px){.flow li{grid-template-columns:30px 1fr}.flow span{grid-column:2}.do header,.do .body,.sect{padding-left:16px;padding-right:16px}}
+.todo li::before{background:var(--page-soft);color:var(--page)}

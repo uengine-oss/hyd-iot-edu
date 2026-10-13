@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>실습 가이드 · 설비 이상의 원인을 추론하는 에이전트</title><style>
-:root{--ink:#111827;--sub:#4b5563;--faint:#6b7280;--line:#d5dbe5;--bg:#fff;--card:#f5f7fa;--accent:#1d4ed8;--accent-soft:#e6eeff;--ok:#15803d;--ok-soft:#e7f6ec;--warn:#b45309;--warn-soft:#fff3dc;--chat:#6d28d9;--chat-soft:#f1eaff;--term:#0f766e;--term-soft:#e0f5f2;--page:#374151;--page-soft:#eceff3}
+:root{--ink:#111827;--sub:#4b5563;--faint:#6b7280;--line:#d5dbe5;--bg:#eff2f7;--card:#f5f7fa;--accent:#1d4ed8;--accent-soft:#e6eeff;--ok:#15803d;--ok-soft:#e7f6ec;--warn:#b45309;--warn-soft:#fff3dc;--chat:#6d28d9;--chat-soft:#f1eaff;--term:#0f766e;--term-soft:#e0f5f2;--page:#374151;--page-soft:#eceff3}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.75 "Pretendard","Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;word-break:keep-all;overflow-wrap:anywhere}
@@ -8,7 +8,7 @@ button{font:inherit;cursor:pointer}
 code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf0;border-radius:5px;padding:1px 6px;font-size:.9em}
 
 /* 맨 위: 지금 어디인가 */
-.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:2px solid var(--ink)}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #c3cbd8}
 .bar-in{max-width:880px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px}
 .bar b{font-size:14px;white-space:nowrap}
 .track{flex:1;display:flex;align-items:center;gap:6px}
@@ -20,7 +20,7 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .page{max-width:880px;margin:0 auto;padding:0 24px 120px}
 
 /* 단계 머리 */
-.hero{padding:52px 0 32px}
+.hero{padding:56px 0 40px}
 .hero .no{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.04em}
 .hero h1{font-size:38px;line-height:1.3;margin:10px 0 18px;letter-spacing:-.02em}
 .hero p{font-size:19px;color:#1f2937;margin:0}
@@ -41,14 +41,14 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .where{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;border-radius:999px;padding:4px 14px 4px 6px;margin:0;color:#fff;font-size:13px}
 .where svg{width:34px;height:22px}
 .where.w-chat{background:var(--chat)}.where.w-code{background:var(--accent)}.where.w-term{background:var(--term)}.where.w-page{background:var(--page)}
-.do{border:1.5px solid #c3cbd8;border-radius:18px;margin:0 0 28px;overflow:hidden;background:#fff;box-shadow:0 3px 12px rgba(17,24,39,.06)}
-.do header{display:flex;gap:16px;align-items:center;padding:16px 24px;border-bottom:1.5px solid #c3cbd8;background:var(--page-soft)}
+.do{border:1.5px solid #c3cbd8;border-radius:18px;margin:0 0 48px;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(17,24,39,.07)}
+.do header{display:flex;gap:18px;align-items:center;padding:20px 28px;border-bottom:1.5px solid #c3cbd8;background:var(--page-soft)}
 .do header em{font-style:normal;flex-shrink:0;width:46px;height:46px;border-radius:13px;background:var(--page);color:#fff;font-size:21px;font-weight:800;display:grid;place-items:center}
 .do.w-chat header{background:var(--chat-soft)}.do.w-chat header em{background:var(--chat)}
 .do.w-code header{background:var(--accent-soft)}.do.w-code header em{background:var(--accent)}
 .do.w-term header{background:var(--term-soft)}.do.w-term header em{background:var(--term)}
 .do h2{font-size:22px;line-height:1.35;margin:6px 0 0;letter-spacing:-.01em}
-.do .body{padding:22px 24px 26px}
+.do .body{padding:28px 28px 32px}
 .do .body>:first-child{margin-top:0}
 .do .body>:last-child{margin-bottom:0}
 .do p{margin:0 0 16px}
@@ -91,7 +91,7 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .note b{display:block;font-size:13px;color:var(--accent)}
 
 /* 다음 */
-.next{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:20px;padding:26px 30px;margin-top:20px}
+.next{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#1e293b;color:#fff;border-radius:20px;padding:26px 30px;margin-top:20px}
 .next small{display:block;font-size:13px;color:#aab4c3}
 .next b{font-size:20px}
 .next a{background:#fff;color:var(--ink);text-decoration:none;font-weight:800;border-radius:12px;padding:14px 26px;white-space:nowrap}
@@ -109,14 +109,14 @@ code{font-family:Consolas,"Cascadia Code","D2Coding",monospace;background:#e6eaf
 .track i{cursor:pointer}
 .hero h1 small{display:block;font-size:15px;font-weight:700;color:var(--sub);letter-spacing:0;margin-bottom:6px}
 .flow{list-style:none;margin:0;padding:0}
-.flow li{display:grid;grid-template-columns:30px 150px 1fr;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer;font-size:15.5px;line-height:1.5}
+.flow li{display:grid;grid-template-columns:30px 150px 1fr;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer;font-size:15.5px;line-height:1.5}
 .flow li:first-child{border-top:0;padding-top:0}.flow li:last-child{padding-bottom:0}
-.flow em{font-style:normal;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--ink);color:#fff;font-weight:800;font-size:14px}
+.flow em{font-style:normal;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:15px}
 .flow b{font-size:16px}
 .flow span{color:var(--sub)}
-.sect{border:1.5px solid #c3cbd8;border-radius:18px;padding:22px 24px 24px;margin:0 0 20px;background:#fff;box-shadow:0 3px 12px rgba(17,24,39,.06)}
-.sect.last{margin-bottom:44px}
-.sect h2{font-size:19px;margin:0 0 14px}
+.sect{border:1.5px solid #c3cbd8;border-radius:18px;padding:28px 28px 30px;margin:0 0 36px;background:#fff;box-shadow:0 4px 16px rgba(17,24,39,.07)}
+.sect.last{margin-bottom:72px}
+.sect h2{font-size:19px;margin:0 0 18px}
 .sect p{margin:0 0 12px;font-size:16px;color:#1f2937}
 .tree{font-family:Consolas,"D2Coding",monospace;font-size:14.5px;line-height:1.9;background:#14181f;color:#e8edf5;border-radius:14px;padding:18px 22px;white-space:pre;overflow:auto}
 .tree span{color:#8fb4ff}.tree i{color:#8a94a3;font-style:normal}
@@ -195,6 +195,7 @@ table.res td small{color:var(--sub);font-size:13px}
 .cmd+p,.out+p{margin-top:16px}
 @media(max-width:760px){.key{grid-template-columns:1fr}}
 @media(max-width:760px){.flow li{grid-template-columns:30px 1fr}.flow span{grid-column:2}.do header,.do .body,.sect{padding-left:16px;padding-right:16px}}
+.todo li::before{background:var(--page-soft);color:var(--page)}
 </style></head><body><div class="bar"><div class="bar-in"><b>온톨로지 + 센서 값 → 원인 추론 에이전트</b><div class="track"><i data-go="0" title="준비"></i><i data-go="1" title="1. 읽게 한다"></i><i data-go="2" title="2. 규칙을 정한다"></i><i data-go="3" title="3. 도구 둘로 한 건"></i><i data-go="4" title="4. 센서 도구 붙이기"></i><i data-go="5" title="5. 결과를 맞춰 본다"></i><i data-go="6" title="6. 규칙을 건드려 본다"></i><i data-go="7" title="7. 조치 도구 붙이기"></i><i data-go="8" title="8. 되돌려 준다"></i></div><span id="pos"></span></div></div><main class="page"><article class="step"><section class="hero"><div class="no">준비</div><h1><small>통합반 오프라인 5회차 · 실습 2</small>온톨로지와 센서 값으로<br>원인을 가리는 에이전트를 만든다</h1><p>경보가 뜬 사례를 받으면 에이전트가 도구로 온톨로지와 센서 값을 읽고, 확인된 원인과 가설을 갈라 다음에 점검할 것을 낸다. 도구를 하나씩 붙여 가며 같은 사례의 답이 어떻게 달라지는지 본다.</p></section><section class="sect"><h2>오늘 만드는 것</h2><div class="pipe"><div><b>공용 온톨로지</b>원인, 증거의 기준, 조치 방법</div><span>+</span><div><b>센서 입력</b>경보가 뜬 사례 11건</div><span>→</span><div class="made"><b>점검 계획</b>후보 원인, 점검 순서, 호출 기록</div></div></section><section class="sect"><h2>오늘의 순서</h2><ol class="flow"><li data-go="1"><em>1</em><b>읽게 한다</b><span>만들기 전에 Copilot에게 자료를 읽고 한 건을 대어 보게 한다</span></li><li data-go="2"><em>2</em><b>규칙을 정한다</b><span>비어 있는 다섯 가지를 내가 정하고 만들 계획을 받는다</span></li><li data-go="3"><em>3</em><b>도구 둘로 한 건</b><span>도구 둘을 가진 에이전트를 만들어 사례 하나를 돌린다</span></li><li data-go="4"><em>4</em><b>센서 도구 붙이기</b><span>센서 값을 읽는 도구를 더해 열한 건을 돌린다</span></li><li data-go="5"><em>5</em><b>결과를 맞춰 본다</b><span>에이전트의 답이 맞는지 내 눈으로 가린다</span></li><li data-go="6"><em>6</em><b>규칙을 건드려 본다</b><span>어긋나는 요청을 보내 Copilot이 거절하는지 본다</span></li><li data-go="7"><em>7</em><b>조치 도구 붙이기</b><span>점검마다 절차 번호가 달리게 한다</span></li><li data-go="8"><em>8</em><b>되돌려 준다</b><span>아쉬운 곳을 말로 짚어 고치게 한다</span></li></ol></section><section class="sect"><h2>받은 폴더 <code>시작</code>에 들어 있는 것</h2><div class="files"><div class="dir"><tt>온톨로지/</tt><span>설비 지식이 들어 있는 폴더</span></div><div class=""><tt><i>├─ </i>읽는_법.md</tt><span>그래프를 읽는 법. 가장 먼저 읽는다</span></div><div class=""><tt><i>├─ </i>그래프.json</tt><span>원인, 증거의 기준, 조치 방법이 이어져 있는 그래프</span></div><div class=""><tt><i>└─ </i>스키마.json</tt><span>그래프에 어떤 종류의 것이 있는지 적은 정의</span></div><div class="dir"><tt>입력/</tt><span>에이전트가 받는 사례가 들어 있는 폴더</span></div><div class=""><tt><i>├─ </i>센서_입력.json</tt><span>경보가 뜬 사례 11건의 센서 값</span></div><div class=""><tt><i>└─ </i>입력_설명.md</tt><span>입력의 칸마다 무슨 뜻인지</span></div><div class="dir"><tt>결과/</tt><span>에이전트가 낸 점검 계획이 생기는 폴더. 지금은 비어 있다</span></div><div class=""><tt>에이전트_정의.json</tt><span>에이전트의 목표, 쓸 수 있는 도구, 따를 규칙. 오늘 여러 번 고친다</span></div><div class=""><tt>연결.py</tt><span>사내 AI 서버에 연결하는 코드. 고치지 않는다</span></div><div class=""><tt>접속_정보.txt</tt><span>수업에서 받은 접속 정보를 적는 곳</span></div><div class=""><tt>.github/copilot-instructions.md</tt><span>Copilot이 이 폴더에서 지킬 규칙. Copilot이 정해 둔 이름이라 영어다</span></div><div class="new"><tt>도구.py</tt><span><em>오늘 만든다.</em> 온톨로지와 센서 값을 읽어 주는 도구</span></div><div class="new"><tt>에이전트.py</tt><span><em>오늘 만든다.</em> 도구를 부르고 점검 계획을 내는 프로그램</span></div></div></section><section class="sect last"><h2>걸음마다 붙은 색</h2><ul class="key"><li><span class="where w-chat"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="22" y="3" width="9" height="16" rx="2" fill="#6d28d9"/></svg>Copilot 채팅</span>요청을 보내고 답을 읽는다</li><li><span class="where w-code"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="3" width="8" height="16" rx="2" fill="#1d4ed8"/></svg>편집기</span>파일을 열어 읽거나 고친다</li><li><span class="where w-term"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="13" width="28" height="6" rx="2" fill="#0f766e"/></svg>터미널</span>명령을 실행한다</li><li><span class="where w-page"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="6" y="6" width="22" height="2.5" rx="1" fill="#374151"/><rect x="6" y="11" width="22" height="2.5" rx="1" fill="#374151"/><rect x="6" y="16" width="14" height="2.5" rx="1" fill="#374151"/></svg>이 화면</span>읽고 정한다</li></ul></section><section class="do w-code"><header><em>1</em><div><span class="where w-code"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="3" width="8" height="16" rx="2" fill="#1d4ed8"/></svg>VS Code · 탐색기</span><h2>받은 폴더 <code>시작</code>을 VS Code로 연다</h2></div></header><div class="body"><p>「파일 → 폴더 열기」에서 <code>시작</code> 폴더를 고른다. 신뢰하느냐고 물으면 신뢰한다고 답한다. 왼쪽 탐색기에 위 표의 폴더와 파일이 보이면 된다.</p><div class="shot"><div><b>화면 1</b><span>시작 폴더를 연 VS Code. 왼쪽 탐색기에 폴더 넷과 파일 셋이 보인다.</span></div></div></div></section><section class="do w-code"><header><em>2</em><div><span class="where w-code"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="3" width="8" height="16" rx="2" fill="#1d4ed8"/></svg>VS Code · 편집기</span><h2>받은 접속 정보를 넣는다</h2></div></header><div class="body"><ol class="todo"><li><span>탐색기에서 <code>접속_정보.txt</code>를 연다.</span></li><li><span>수업에서 받은 세 값을 위의 세 줄 등호 뒤에 하나씩 붙여 적는다. 등호 뒤에 빈칸을 두지 않는다. 맨 아래 줄은 그대로 둔다.</span></li><li><span>저장한다(Ctrl+S).</span></li></ol><div class="ok"><b>주의</b>키는 채팅에 붙여넣지 않는다. 이 파일에만 적는다.</div></div></section><section class="do w-term"><header><em>3</em><div><span class="where w-term"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="13" width="28" height="6" rx="2" fill="#0f766e"/></svg>VS Code · 터미널</span><h2>사내 AI 서버에 연결되는지 확인한다</h2></div></header><div class="body"><p>「터미널 → 새 터미널」을 열고 아래 명령을 실행한다.</p><div class="cmd"><span id="c1">python 연결.py</span><button data-copy="c1">복사</button></div><div class="ok"><b>이렇게 나오면 된다</b>첫 줄이 <code>연결됨</code>으로 시작하고, 둘째 줄에 인사 한 줄이 나온다.</div><div class="if"><div><b>비어 있다고 나온다</b><code>접속_정보.txt</code>에 값을 적고 저장했는지 본다. 탭에 흰 점이 있으면 아직 저장되지 않은 것이다.</div><div><b>키가 맞지 않는다 · 닿지 못했다고 나온다</b><code>접속_정보.txt</code>의 세 값을 받은 것과 다시 견준다. 앞뒤에 따옴표나 빈칸이 들어갔는지 본다. 그래도 안 되면 강사에게 알린다.</div></div></div></section><section class="do w-code"><header><em>4</em><div><span class="where w-code"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="3" y="3" width="8" height="16" rx="2" fill="#1d4ed8"/></svg>VS Code · 편집기와 종이</span><h2>사례 S01을 손으로 먼저 대어 본다</h2></div></header><div class="body"><p>뒤에서 에이전트의 답이 맞는지 가리려면 내 답이 하나 있어야 한다.</p><ol class="todo"><li><span><code>온톨로지/읽는_법.md</code>에서 「경보에서 원인과 조치까지 가는 길」을 읽는다.</span></li><li><span><code>입력/센서_입력.json</code> 맨 위의 <code>S01</code>에서 CE 평균, VS1 평균, TS4 평균을 찾는다.</span></li><li><span>아래 표의 빈칸을 종이에 채운다.</span></li></ol><table class="res"><tr><th>원인 후보</th><th>증거의 기준</th><th>S01의 값</th><th>맞음 / 아님</th></tr><tr><td rowspan="2">쿨러 핀 오염</td><td>CE 30초 평균이 70 미만</td><td></td><td></td></tr><tr><td>VS1 120초 평균이 0.9 미만</td><td></td><td></td></tr><tr><td>주변 온도 상승</td><td>TS4 120초 평균이 35 이상</td><td></td><td></td></tr><tr><td>팬 구동 불량</td><td>VS1 120초 평균이 0.9 이상</td><td></td><td></td></tr></table></div></section><div class="next"><div><small>다음 단계</small><b>1. 읽게 한다</b></div><a data-go="1">다음으로 →</a></div></article><article class="step"><section class="hero"><div class="no">1단계</div><h1>만들기 전에,<br>읽고 대어 보게 한다</h1><p>바로 만들어 달라고 하지 않는다. 먼저 자료를 읽고 한 건을 대어 보게 해서, Copilot이 온톨로지를 나와 같게 읽는지 본다.</p><div class="facts"><div><small>이 단계가 끝나면</small>Copilot이 읽은 길과 S01의 표, 나에게 묻는 것이 채팅에 있다. 새 파일은 없다</div></div></section><section class="do w-chat"><header><em>1</em><div><span class="where w-chat"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="22" y="3" width="9" height="16" rx="2" fill="#6d28d9"/></svg>Copilot 채팅</span><h2>채팅을 열고 입력 칸 아래를 본다</h2></div></header><div class="body"><p>VS Code 오른쪽의 Copilot 채팅을 연다. 입력 칸 아래에 <b>에이전트</b>와 <b>GPT-6 Luna</b>가 골라져 있는지 본다. 다르면 그 글자를 눌러 바꾼다.</p><div class="shot"><div><b>화면 2</b><span>Copilot 채팅이 열린 VS Code. 입력 칸 아래에 에이전트와 GPT-6 Luna가 보인다.</span></div></div></div></section><section class="do w-chat"><header><em>2</em><div><span class="where w-chat"><svg viewBox="0 0 34 22"><rect x="1" y="1" width="32" height="20" rx="4" fill="#fff"/><rect x="22" y="3" width="9" height="16" rx="2" fill="#6d28d9"/></svg>Copilot 채팅 · 입력 칸</span><h2>아래 요청을 복사해 보낸다</h2></div></header><div class="body"><div class="copy"><div class="copy-top"><span>Copilot에게 보낼 요청</span><button data-copy="c2">복사</button></div><div class="copy-text pre" id="c2">이 폴더의 규칙(.github/copilot-instructions.md)과 온톨로지 폴더의 세 파일, 입력 폴더의 두 파일, 에이전트_정의.json, 연결.py 를 읽어 줘. 접속_정보.txt 는 열지 마.
 
 경보 패턴 COOLER_DEGRADATION에서 원인 후보와 증거까지 온톨로지의 어떤 관계를 따라가는지 한 줄씩 적고, 사례 S01을 원인 후보마다 증거의 기준에 대어 본 결과를 표로 적어 줘.
