@@ -1,0 +1,161 @@
+{
+  "requested": "stop all HYD resources",
+  "volumes_deleted": false,
+  "images_deleted": false,
+  "files_deleted": false,
+  "started_at": "2026-10-13T00:34:20.948437+00:00",
+  "ok": false,
+  "before": [
+    {
+      "id": "4290f0320090",
+      "name": "hyd-iot-edu-process-1",
+      "status": "Up 6 hours (healthy)"
+    },
+    {
+      "id": "9d9a514bf74d",
+      "name": "hyd-iot-edu-enterprise-sim-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "17f569556bc1",
+      "name": "hyd-iot-edu-agent-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "d04b816e715f",
+      "name": "hyd-iot-edu-dmn-mcp-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "4ccab1a2693f",
+      "name": "hyd-iot-edu-portal-1",
+      "status": "Up 9 hours"
+    },
+    {
+      "id": "5c066eb4646b",
+      "name": "hyd-iot-edu-enterprise-mcp-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "30a9fac2f1f2",
+      "name": "hyd-iot-edu-enterprise-mcp-purchase-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "b0a85e25ee93",
+      "name": "hyd-iot-edu-enterprise-mcp-maint-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "51630e93b552",
+      "name": "supabase_studio_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "e73a50fc6a43",
+      "name": "supabase_pg_meta_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "7f64356caf7a",
+      "name": "supabase_edge_runtime_hyd-iot-edu",
+      "status": "Up 24 hours"
+    },
+    {
+      "id": "18509c697057",
+      "name": "supabase_rest_hyd-iot-edu",
+      "status": "Up 24 hours"
+    },
+    {
+      "id": "5d03ef992f7a",
+      "name": "supabase_realtime_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "f5cb3d706078",
+      "name": "supabase_inbucket_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "417931e254d0",
+      "name": "supabase_auth_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "2e3152d4343e",
+      "name": "supabase_kong_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "59fefa2ace8f",
+      "name": "supabase_db_hyd-iot-edu",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "6b7d58d34100",
+      "name": "hyd-iot-edu-connect-sink-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "73f24699299c",
+      "name": "hyd-iot-edu-connect-ingest-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "7a6c5cdfa8ff",
+      "name": "hyd-iot-edu-cmd-gateway-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "32f1413fee5e",
+      "name": "hyd-iot-edu-detector-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "b0e73a7acb8d",
+      "name": "hyd-iot-edu-fuxa-1",
+      "status": "Up 9 hours"
+    },
+    {
+      "id": "703e99c5fad9",
+      "name": "hyd-iot-edu-grafana-1",
+      "status": "Up 9 hours"
+    },
+    {
+      "id": "d7ed17b123fd",
+      "name": "hyd-iot-edu-plant-sim-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "b2221213aa97",
+      "name": "hyd-iot-edu-effects-mcp-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "3ce84f5f920a",
+      "name": "hyd-iot-edu-timescaledb-1",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "c650a9e158f8",
+      "name": "hyd-iot-edu-redpanda-1",
+      "status": "Up 24 hours (healthy)"
+    },
+    {
+      "id": "1f91e449b91d",
+      "name": "hyd-iot-edu-neo4j-1",
+      "status": "Up 9 hours (healthy)"
+    },
+    {
+      "id": "d65447c965a3",
+      "name": "hyd-iot-edu-emqx-1",
+      "status": "Up 24 hours (healthy)"
+    }
+  ],
+  "unrelated_before": [],
+  "remaining_hyd_running": 0,
+  "unrelated_after": [],
+  "docker_desktop_stopped": false,
+  "finished_at": "2026-10-13T00:35:19.533427+00:00",
+  "own_lock_released": true
+}
