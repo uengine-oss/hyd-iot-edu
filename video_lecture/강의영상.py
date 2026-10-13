@@ -6,7 +6,7 @@
 - 슬라이드: 같은 폴더의 PPTX를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다
 - 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다
 - 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. 문장 끝·물음 뒤·문단 사이·장 넘김에 쉼을 넣고, 그 쉼의 길이를 조절해 목표 시간에 맞춘다(말의 빠르기는 건드리지 않는다)
-- 호흡(--breath): 문장 사이마다 똑같이 쉬지 않고, 이어서 말할 곳은 잇고 말이 한 단락 끝나는 곳에서 쉰다. 어디서 얼마나 쉴지는 gpt-6-astra가 장마다 정한다(결과는 video_lecture/쉼_저장/ 에 남기고, 글이 같으면 다시 묻지 않는다). OPENAI_API_KEY 는 --env 파일에서 읽는다
+- 호흡(--breath): 문장 사이마다 똑같이 쉬지 않고, 이어서 말할 곳은 잇고 말이 한 단락 끝나는 곳에서 쉰다. 어디서 얼마나 쉴지는 video_lecture/쉼_저장/ 에 장마다 적어 둔 단계를 읽는다. 적히지 않은 장이 있으면 빈 자리를 만들어 두고 멈춘다. 이 도구는 OpenAI를 부르지 않는다
 - 키: ELEVENLABS_API_KEY 환경변수, 없으면 --env 파일에서 읽는다. 키는 출력하지 않는다
 """
 import argparse, base64, glob, hashlib, json, os, re, subprocess, sys, urllib.request, urllib.error
@@ -20,7 +20,7 @@ ap.add_argument("--voice", default="nncZBoy1F7bDlybjMjgZ"); ap.add_argument("--m
 ap.add_argument("--speed", type=float, default=0.80); ap.add_argument("--env", default="")
 ap.add_argument("--gap", type=float, default=1.6); ap.add_argument("--dry", action="store_true")
 ap.add_argument("--polished", action="store_true", help="윤문본(…_윤문.md)을 쓴다"); ap.add_argument("--polished2", action="store_true", help="2차 윤문본(…_윤문2.md)을 쓴다"); ap.add_argument("--tag", default="")
-ap.add_argument("--breath", action="store_true", help="쉴 자리를 gpt-6-astra가 정한다")
+ap.add_argument("--breath", action="store_true", help="쉴 자리를 쉼_저장/ 에서 읽는다")
 ap.add_argument("--natural", action="store_true", help="장 안에는 쉼을 넣지 않고 음성 모델이 읽은 그대로 둔다(장 넘김에만 쉼)")
 ap.add_argument("--pause-short", dest="pause_short", type=float, default=0.35); ap.add_argument("--pause-mid", dest="pause_mid", type=float, default=0.8); ap.add_argument("--pause-long", dest="pause_long", type=float, default=1.3)
 ap.add_argument("--pause-sentence", dest="pause_sentence", type=float, default=0.25); ap.add_argument("--pause-question", dest="pause_question", type=float, default=0.6); ap.add_argument("--pause-para", dest="pause_para", type=float, default=0.9)
@@ -126,46 +126,31 @@ def cuts(r):
     return out, "".join(ch[b:]).strip()
 
 
-BREATH = """온라인 영상 강의의 낭독 대본 한 장을 문장 단위로 나눠 드립니다. 이 대본은 강사의 목소리로 음성이 만들어져 슬라이드 영상에 들어갑니다. 듣는 사람은 이 분야를 처음 접하는 대학생입니다.
-
-부탁하는 일은, 사람이 실제로 말할 때처럼 어디에서 숨을 쉬고 어디는 이어서 말할지를 정하는 것입니다. 지금은 문장이 끝날 때마다 똑같이 쉬어서 한마디 한마디가 뚝뚝 끊겨 들립니다. 사람은 그렇게 말하지 않습니다. 한 가지 이야기를 하는 동안에는 문장이 여럿이어도 죽 이어서 말하고, 그 이야기가 한 단락 끝났을 때, 듣는 사람이 방금 들은 것을 받아들일 시간이 필요할 때, 물음을 던져 놓고 생각할 틈을 줄 때, 화제가 바뀔 때 쉽니다.
-
-문장과 문장 사이의 자리마다 아래 넷 가운데 하나를 골라 주세요.
-0 = 잇는다. 쉬지 않고 바로 다음 문장으로 넘어간다(앞 문장을 받아 바로 풀어 주는 말, 나열의 중간, 한 호흡에 말해야 뜻이 사는 곳).
-1 = 짧게 쉰다. 같은 이야기 안이지만 한 박자 끊어 주는 곳.
-2 = 한 호흡 쉰다. 한 가지 이야기가 끝난 곳, 중요한 말을 한 뒤, 물음을 던진 뒤.
-3 = 크게 쉰다. 화제가 바뀌는 곳. 한 장에 많아야 한두 곳입니다.
-
-골고루 나눠 주려고 하지 말고 뜻을 따라 정해 주세요. 이어서 말할 곳이 많은 것이 자연스럽습니다.
-
-답은 숫자만 담은 JSON 배열 하나로 주세요. 길이는 사이 자리의 수와 같아야 합니다(문장이 N개면 N-1개). 다른 말은 붙이지 않습니다."""
+# 쉼의 단계(문장 사이 자리마다 하나)
+# 0 = 잇는다. 쉬지 않고 바로 다음 문장으로 넘어간다(앞 문장을 받아 바로 풀어 주는 말, 나열의 중간).
+# 1 = 짧게 쉰다. 같은 이야기 안이지만 한 박자 끊어 주는 곳.
+# 2 = 한 호흡 쉰다. 한 가지 이야기가 끝난 곳, 중요한 말을 한 뒤, 물음을 던진 뒤.
+# 3 = 크게 쉰다. 화제가 바뀌는 곳. 한 장에 많아야 한두 곳.
+# 이 도구는 단계를 스스로 정하지도, 바깥 모델에 묻지도 않는다. 쉼_저장/ 에 적힌 것을 읽기만 한다.
 BDIR = ROOT / "video_lecture" / "쉼_저장"
 
 
 def breath(sents):
-    """문장 목록을 받아 사이 자리마다 0~3을 돌려준다. 실패하면 None."""
+    """문장 목록을 받아 쉼_저장/ 에 적힌 단계(사이 자리마다 0~3)를 돌려준다. 아직 적히지 않았으면 빈 자리를 만들어 두고 None."""
     if len(sents) < 2: return []
     h = hashlib.sha1(json.dumps(sents, ensure_ascii=False).encode()).hexdigest()[:16]
     f = BDIR / f"{h}.json"
-    if f.exists(): return json.loads(f.read_text())["쉼"]
-    okey = re.search(r"OPENAI_API_KEY=(\S+)", Path(a.env).read_text()).group(1).strip("\"'")
-    user = f"문장 {len(sents)}개, 사이 자리 {len(sents)-1}개입니다.\n\n" + "\n".join(f"{i+1}. {t}" for i, t in enumerate(sents))
-    for _ in range(3):
-        body = {"model": "gpt-6-astra", "messages": [{"role": "system", "content": BREATH}, {"role": "user", "content": user}]}
-        req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=json.dumps(body).encode(),
-                                     headers={"Authorization": f"Bearer {okey}", "Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=300) as rsp: ans = json.loads(rsp.read())["choices"][0]["message"]["content"]
-            v = json.loads(re.search(r"\[[\d,\s]*\]", ans).group(0))
-        except Exception: continue
-        if len(v) == len(sents) - 1 and all(x in (0, 1, 2, 3) for x in v):
-            BDIR.mkdir(exist_ok=True); f.write_text(json.dumps({"문장": sents, "쉼": v}, ensure_ascii=False, indent=1), encoding="utf-8"); return v
+    if f.exists():
+        v = json.loads(f.read_text()).get("쉼")
+        if isinstance(v, list) and len(v) == len(sents) - 1 and all(x in (0, 1, 2, 3) for x in v): return v
+        return None
+    BDIR.mkdir(exist_ok=True); f.write_text(json.dumps({"문장": sents, "쉼": None}, ensure_ascii=False, indent=1), encoding="utf-8")
     return None
 
 
 LEN = {"s": PS, "q": PQ, "para": PP, 0: 0.0, 1: a.pause_short, 2: a.pause_mid, 3: a.pause_long}
 def plen(k):
-    """쉼의 길이. 호흡 방식에서는 gpt-6-astra가 정한 단계와, 물음 뒤·문단 사이의 최소 쉼 가운데 긴 쪽을 쓴다."""
+    """쉼의 길이. 호흡 방식에서는 적어 둔 단계와, 물음 뒤·문단 사이의 최소 쉼 가운데 긴 쪽을 쓴다."""
     return max(LEN[k[0]], {"s": 0.0, "q": PQ, "para": PP}[k[1]]) if isinstance(k, tuple) else LEN[k]
 def lv(k): return k[0] if isinstance(k, tuple) else None
 for r in rows:
@@ -173,11 +158,11 @@ for r in rows:
 if a.natural:
     for r in rows: r["cuts"] = []
 if a.breath and not a.natural:
-    import concurrent.futures as cf
-    with cf.ThreadPoolExecutor(6) as ex: got = list(ex.map(lambda r: breath(r["sents"]), rows))
-    for r, v in zip(rows, got):
-        if v is None: print(f"  SLIDE {r['first']}: 쉼을 받지 못해 문장마다 쉬는 방식으로 둔다")
-        else: r["cuts"] = [(t, (lv, k0)) for (t, k0), lv in zip(r["cuts"], v)]
+    got = [breath(r["sents"]) for r in rows]
+    miss = [r["first"] for r, v in zip(rows, got) if v is None]
+    if miss:
+        sys.exit(f"쉼이 적히지 않은 장이 {len(miss)}곳 있다(SLIDE {', '.join(map(str, miss))}). {BDIR.name}/ 에서 \"쉼\"이 null인 파일을 채운 뒤 다시 돌린다. 음성은 저장돼 있어 다시 만들지 않는다.")
+    for r, v in zip(rows, got): r["cuts"] = [(t, (lv, k0)) for (t, k0), lv in zip(r["cuts"], v)]
 n = len(rows)
 base = sum(plen(k) for r in rows for _, k in r["cuts"]) + a.gap * n
 scale = 1.0 if a.target <= 0 else min(2.2, max(0.3, (a.target - speech) / base))
@@ -223,7 +208,7 @@ SIDE = OUT.parent / "_작업" / "영상_자막_기록"; SIDE.mkdir(parents=True,
 (SIDE / f"{name}.srt").write_text("\n".join(srt), encoding="utf-8")
 rep = [f"# {name}", "", f"- 음성 {a.voice} · 모델 {a.model} · " + ("빠르기 설정 없음" if V4 else f"속도 {a.speed}"), f"- 글자 {chars}자 · 이번에 쓴 크레딧 {spent}",
        (f"- 말한 시간 합 {speech:.1f}초 · 장 안에는 쉼을 넣지 않음(모델이 읽은 그대로) · 장 넘김 {gap:.2f}초" if a.natural else
-        f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(gpt-6-astra가 자리를 정함): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {PQ*scale:.2f}초 · 문단 사이 최소 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
+        f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(자리는 쉼_저장에서 읽음): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {PQ*scale:.2f}초 · 문단 사이 최소 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
         f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {PS*scale:.2f}초 · 물음 {PQ*scale:.2f}초 · 문단 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
        f"- 영상 길이 {dur(OUT / (name + '.mp4')):.1f}초 · 목표 {a.target:.0f}초", "", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
 rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d} | {r['d2']:.1f} |" for r in rows]
