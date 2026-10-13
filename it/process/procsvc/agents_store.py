@@ -9,7 +9,7 @@ One source each, read on every run (nothing is copied or cached):
 HYD difference: the product keeps SKILL.md files in a skills store (deepagents core/skills/tools.py:702-716 registers only the
 name in tenant_skills); HYD keeps the text in tenant_skills.content so the portal and the worker read the same row.
 The portal only reads. A student adds an agent or a skill in the wrap-up (Claude Code → SQL), see
-docs/handoff/verification/2026-10-08/u2-agents-skills.md.
+문서/시스템/검증_기록/2026-10-08/u2-agents-skills.md.
 
 `agent_settings()` is the one function that answers "what will this agent run with" — the worker calls it for every run and
 a trial run (A10) can call it with any agent id to get the same model · MCP servers · skills · instructions.

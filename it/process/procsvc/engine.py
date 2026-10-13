@@ -1,7 +1,7 @@
 """Process-instance engine (pure logic) — the ProcessGPT completion semantics on a definition JSON.
 
 Shapes and rules follow the product so the lecture can end with "this is what ProcessGPT productises"
-(docs/handoff/REPO_GAP.md §1, sources: process-gpt-completion/polling_service/{process_definition,workitem_processor,database}.py):
+(문서/시스템/참조/REPO_GAP.md §1, sources: process-gpt-completion/polling_service/{process_definition,workitem_processor,database}.py):
 
   definition   it/process/definitions/*.json — activities[id,name,type,role,agent,agentMode,orchestration,tool,instruction,
                inputData,outputData,checkpoints,attachedEvents,duration], events, gateways, sequences[source,target,condition,

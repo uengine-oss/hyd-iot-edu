@@ -12,7 +12,7 @@ This is HYD's limited DDL adapter, not ontology-studio's extraction pipeline.
 ontology-studio batch_ingest uses nodes/relationships with _source_id; the
 source_id and the graph_ingest ownership journal are HYD conventions. SQLGlot parses PostgreSQL
 DDL; physical identity follows datasource/catalog/schema/table/column.
-See docs/handoff/AUDIT.md A003/A004 for verified scope and remaining SOP/connection work.
+See 문서/시스템/참조/AUDIT.md A003/A004 for verified scope and remaining SOP/connection work.
 """
 from __future__ import annotations
 

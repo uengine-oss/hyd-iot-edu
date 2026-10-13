@@ -1,9 +1,0 @@
-{
-  "it/portal/www/ui.js": "62329f521db1d44dce0ca5da9960c8ed7c90c664df689893472ea72f9c6845fe",
-  "it/portal/www/plainWords.js": "21b024a02d51dd5f9a562dc4e83baf4d229082edf6cbb5c0e038263d613d65e1",
-  "it/portal/www/caseRecord.js": "0032769fa73527df0cc6829d843c14151417ee2124a9100a9f7932ec54549274",
-  "it/portal/www/trace.js": "f766c9d2b252ce0955e11b92e882d44c90bc9595bf19d94d6399fa0e663248c0",
-  "it/portal/www/taskDetail.js": "973640e8ba14ee3a004c4157a6e7245d7fa95369addd6f5ee43fce586796b73e",
-  "tests/test_portal_full_tool_payloads_ui.py": "2e3ee9e214c31897b35ca107b80eca91a14275b7bb98edaffff20d7b9967c05d",
-  "tests/fixtures/actual_tool_payloads_followup.json": "75f4c90b5567a0bcbaaa7d1d08c031fb78ca19681dd97c576d92c1b975b5e905"
-}

@@ -1,6 +1,6 @@
 # 랩 폴더와 파일 이름의 틀
 
-모든 랩이 같은 모양을 쓴다. 본보기는 `course/labs/offline/05-2-cause-agent/`다. 다른 묶음(`production/labs/_old/통합반_오프라인/`)은 아직 이전 모양이며, 승인받은 순서대로 이 틀로 옮긴다.
+모든 랩이 같은 모양을 쓴다. 본보기는 `course/labs/offline/05-2-cause-agent/`다. 다른 묶음(`production/labs/바꾸기_전/통합반_오프라인/`)은 아직 이전 모양이며, 승인받은 순서대로 이 틀로 옮긴다.
 
 ## 폴더
 

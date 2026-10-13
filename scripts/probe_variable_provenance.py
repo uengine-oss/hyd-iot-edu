@@ -21,7 +21,7 @@ def main():
     def check(name,ok):
         checks.append({'name':name,'passed':bool(ok)});save('checks',checks)
         print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
-    raw=json.loads(Path('docs/examples/inspection-review-v1.json').read_text(encoding='utf8'))
+    raw=json.loads(Path('문서/시스템/참조/examples/inspection-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId']='provenance_'+uuid.uuid4().hex[:10]
     raw['processDefinitionName']='[회귀 검사] 시작 입력·결과 출처 인수 시험'
     save('definition',raw)

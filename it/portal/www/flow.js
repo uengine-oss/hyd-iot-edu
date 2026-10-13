@@ -1,4 +1,4 @@
-/* A122 — business-process flow drawn straight from the process definition JSON (docs/handoff/UIUX_PLAN.md §4, option B).
+/* A122 — business-process flow drawn straight from the process definition JSON (문서/시스템/참조/UIUX_PLAN.md §4, option B).
    Lanes are the three doers only: 에이전트 (sys:agent) · 담당자 (role:*) · 시스템 (sys:scada · sys:process · sys:cmms · start/end).
    Columns are "longest distance from the start event" (same rule as instanceSteps.js flowGraph). A boundary timer is a small
    circle on its task's border. Node colour = state of the newest work item for that activity (done · current · skipped · fail).

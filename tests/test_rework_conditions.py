@@ -144,7 +144,7 @@ def test_unused_boundary_condition_does_not_block_normal_review_completion():
 def test_condition_gateway_fed_straight_from_the_start_holds_with_the_contract_code():
     """A143 (remaining-sweep 18): the held-back case "a conditional gateway right after the start" — s → fork → g with no
     activity in front of g, so a rework of the producer `a` has no arrival it could re-prove for g. The preview must hold
-    with condition_replay_requires_arrival (docs/rework-conditions.md §도달·세대·복구 근거), never fabricate a control
+    with condition_replay_requires_arrival (문서/시스템/참조/rework-conditions.md §도달·세대·복구 근거), never fabricate a control
     token; nothing is replayed. (A gatewayless s → g split is refused at registration by A115, hence the parallel fork.)"""
     raw=definition()
     raw['sequences']=[s for s in raw['sequences'] if s['id'] not in ('fork-b','b-g')]+[dict(id='fork-g',source='fork',target='g')]

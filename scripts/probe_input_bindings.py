@@ -29,7 +29,7 @@ def main():
             time.sleep(.5)
         raise TimeoutError('health')
     health()
-    raw=json.loads((ROOT/'docs/examples/bound-input-review-v1.json').read_text(encoding='utf8'))
+    raw=json.loads((ROOT/'문서/시스템/참조/examples/bound-input-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId']+='-'+uuid.uuid4().hex[:10]
     raw['activities'][1].update(type='userTask',agentMode='COMPLETE',orchestration='cliagents')
     raw['activities'][3].update(outputData=['x'],tool='formHandler:x')

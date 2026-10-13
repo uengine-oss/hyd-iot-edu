@@ -14,8 +14,6 @@ it/supabase/.branches/
 /docs/ui-stability-review.md
 /docs/ui-visual-review-173.*
 /docs/stability-plan.md
-docs/video/_rec/
-docs/video/audio/*.txt
 .superpowers/sdd/*/scenario_run*.log
 .superpowers/sdd/*/video_run*.log
 .claude/worktrees/

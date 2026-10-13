@@ -1,5 +1,5 @@
 """통합반 오프라인 05회차 실습 2의 시작 폴더 자료(ontology/graph.json · schema.json)를 만든다.
-저장소의 it/neo4j/v2/instances.cypher · knowledge_a098.cypher(전체판 시드)와 docs/samples/HM-8_cooler-fan-manual.md 에서
+저장소의 it/neo4j/v2/instances.cypher · knowledge_a098.cypher(전체판 시드)와 문서/시스템/참조/수업_문서_원문/HM-8_cooler-fan-manual.md 에서
 이 실습이 쓰는 부분만 손으로 옮겨 적었다. schema.json 은 it/neo4j/v2/schema.json 에서 쓰는 클래스와 관계만 추린다.
 사용: python3 자료_만들기.py <저장소 루트> <내보낼 폴더>"""
 import json, sys

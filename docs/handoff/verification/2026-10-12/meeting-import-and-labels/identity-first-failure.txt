@@ -1,1 +1,0 @@
-﻿First identity setup attempt aborted before any POST: Python rejected encoding alias utf8-sig at create-meeting-identities.py:26. Original script preserved. Corrected to utf-8-sig, original owned lock verified and released; repeat is setup recovery, not LLM/business rerun.

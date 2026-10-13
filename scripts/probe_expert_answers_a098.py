@@ -1,4 +1,4 @@
-"""A098 — the three expert questions (docs/expert-questions-a079.md) answered from industry sources and loaded through the
+"""A098 — the three expert questions (지운 문서 expert-questions-a079.md, git 이력) answered from industry sources and loaded through the
 product paths: knowledge_a098.cypher (seed, applied live) and the real manual ingestion of HM-9 (oil degradation manual:
 agent extraction → reviewed commit linking SOP-OIL-21 to fm:oil-degradation).
 

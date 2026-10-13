@@ -1,4 +1,4 @@
-"""DMZ and sink services (A144, sweep item 35): the behaviours docs/src/arch_internal.py recorded as drifting from their
+"""DMZ and sink services (A144, sweep item 35): the behaviours arch_internal.py(지운 문서 생성기, git 이력) recorded as drifting from their
 docstrings — connect-ingest /healthz that was always 200, a non-object plant/+/status payload that killed the paho
 thread, the sink's never-set batch-age gauge, and cmd-gateway's audit check names that matched no Decision.check."""
 import asyncio

@@ -24,7 +24,7 @@ def main():
         checks.append({'name': name, 'passed': bool(passed)}); save('checks', checks)
         print(('PASS ' if passed else 'FAIL ') + name, flush=True)
         assert passed, name
-    raw = json.loads(Path('docs/examples/inspection-review-v1.json').read_text(encoding='utf8'))
+    raw = json.loads(Path('문서/시스템/참조/examples/inspection-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId'] = 'rework_plan_' + uuid.uuid4().hex[:10]
     raw['processDefinitionName'] = '[회귀 검사] 재작업 의존 미리보기 인수 시험'
     second = deepcopy(raw['activities'][0]); second.update(id='task:confirm', name='[회귀 검사] 바뀐 점수 확인', inputData=['score'])

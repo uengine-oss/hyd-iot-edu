@@ -37,7 +37,7 @@ def test_scope_includes_source_business_procedures_and_keeps_installation_bounda
 
 def test_pr07_business_source_reaches_worker_and_requires_human_review(rt, tmp_path):
     runtime, _ = rt
-    path = Path(__file__).resolve().parents[1] / 'docs/samples/PR-07_spare-parts-standard.md'
+    path = Path(__file__).resolve().parents[1] / '문서/시스템/참조/수업_문서_원문/PR-07_spare-parts-standard.md'
     archive = ManualSources(tmp_path / 'manual.sqlite3')
     source = archive.save('hyd', path.name, path.read_bytes())
     # Explicit test double, not an LLM result or production extraction fallback.

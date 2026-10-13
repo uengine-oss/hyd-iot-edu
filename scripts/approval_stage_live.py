@@ -5,7 +5,7 @@
   --flow       그 시나리오 경보를 여는 흐름 id 가 수업 흐름(c3_*)이 아닐 때(예: 학생이 가져와 배포한 사본) — 열린 처리 건이 그 흐름인지 확인한다
   --no-settle  A 만: [쿨러 복구]를 누르고 설비가 가라앉기를 기다리지 않는다(곧바로 다음 [쿨러 열화 주입]을 누르는 확인용)
 
-앞서 할 일(docs/handoff/NOW.md 2절 '버튼 완주 순서'): 잠금 → 그래프 구조판 → `scripts/c3_flows.py deploy` → 워커 1개.
+앞서 할 일(문서/시스템/3_현황.md 2절 '버튼 완주 순서'): 잠금 → 그래프 구조판 → `scripts/c3_flows.py deploy` → 워커 1개.
 포털 버튼이 부르는 것과 같은 process API 만 쓴다: 시작 POST /api/scenario/A/degrade · /api/scenario/{B|C}/start, 승인 POST /api/todolist/{id}/select
 (에이전트 추천 카드), 거절 POST /api/todolist/{id}/reject-card, 정리 POST /api/scenario/A/restore · /api/scenario/{B|C}/reset.
 확인은 처리 건의 끝 이벤트 · 결과 보고 · 사건 상태 · 처리 기록 · 업무 표시를 읽어서 하고, OUTDIR 에 처리 건 원문과 확인 표를 남긴다.

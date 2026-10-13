@@ -1,8 +1,0 @@
-{
-  "method": "GET",
-  "url": "http://127.0.0.1:8080/api/kg/manuals/sources/manual%3A6c306bfa-7ac2-46a0-b48c-3402a995ab57%3A2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
-  "status": 200,
-  "bytes": 8894,
-  "sha256": "c5dd6833eb027fffccdf66742b63ecf2a49bc0994687e6eb174d2c302af95d06",
-  "observed_at": "2026-10-12T10:49:23.525020+00:00"
-}

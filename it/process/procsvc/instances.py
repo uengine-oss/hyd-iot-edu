@@ -1,6 +1,6 @@
 """Instance runtime (PROCESS_MODE=instance): the process instance owns the case; the agent and the people are tasks inside it.
 
-The runtime is the completion service of ProcessGPT in miniature (docs/handoff/REPO_GAP.md §1):
+The runtime is the completion service of ProcessGPT in miniature (문서/시스템/참조/REPO_GAP.md §1):
 
     alerts RAISE ─▶ instance RUNNING, every activity TODO, task:diagnose IN_PROGRESS (+ Incident for the PLC path)
     agent worker ─▶ fetch_pending_task (IN_PROGRESS · agent_mode COMPLETE) … save_task_result ─▶ SUBMITTED

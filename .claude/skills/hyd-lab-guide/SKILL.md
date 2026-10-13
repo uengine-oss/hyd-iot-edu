@@ -11,11 +11,11 @@ HYD 과정의 실습을 만든다. 교재 덱은 실습을 2장(간지와 설명
 
 ## 먼저 읽는다
 
-1. `production/handoff/README.md` 2절: 일하는 규칙.
-2. `production/handoff/07_대본_영상_랩.md` 1.4 · 1.5절(정해진 것), 5절(지금 상태), 6절(다음에 할 일).
+1. `문서/교재/2_기준.md`: 기준 전부. 실습은 10절, 일하는 방식은 12절.
+2. `문서/교재/4_만드는_법_대본_영상_실습.md` 3절(지금 상태)과 `문서/교재/6_남은_일.md`(다음에 할 일).
 3. `production/labs/STRUCTURE.md`: 랩의 폴더와 이름의 틀.
 4. 본보기: 학생 폴더 `course/labs/offline/05-2-cause-agent/`, 강사 폴더 `production/labs/offline/05-2-cause-agent/`, 촬영 대본 `production/labs/online/day01-1-notion/`.
-5. 그 실습이 속한 일차의 덱 원고(`production/decks/integrated/dayNN/통합반_NN일차.md`)에서 실습 간지와 설명 장. 번호는 `python3 .claude/skills/hyd-lab-guide/scripts/실습목록.py 통합반 --day N`으로 뽑는다. 실습의 범위는 실라버스의 실습 행이 정한다(`production/handoff/06_실습_목록.md`).
+5. 그 실습이 속한 일차의 덱 원고(`production/decks/integrated/dayNN/통합반_NN일차.md`)에서 실습 간지와 설명 장. 번호는 `python3 .claude/skills/hyd-lab-guide/scripts/실습목록.py 통합반 --day N`으로 뽑는다. 실습의 범위는 실라버스의 실습 행이 정한다(`문서/교재/실습_목록.md`).
 
 ## 무엇을 만드는가
 
@@ -40,4 +40,4 @@ HYD 과정의 실습을 만든다. 교재 덱은 실습을 2장(간지와 설명
 
 ## 덱과 다른 사실을 찾았을 때
 
-가이드만 맞추고 덱을 두지 않는다. `production/handoff/06_실습_목록.md` 2절의 순서로 덱도 함께 고친다.
+가이드만 맞추고 덱을 두지 않는다. `문서/교재/실습_목록.md` 2절의 순서로 덱도 함께 고친다.

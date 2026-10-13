@@ -371,7 +371,7 @@ services:
       NEO4J_AUTH: neo4j/hydpass123
       TIME_SCALE: ${TIME_SCALE:-20}
       ENTERPRISE_URL: http://enterprise-sim:8095
-      # instance 모드(docs/HANDOFF.md): 경보가 프로세스 인스턴스를 열고 에이전트·사람은 그 안의 태스크. Supabase(supabase start)가 필요하다.
+      # instance 모드(문서/시스템/1_목적과_방향.md): 경보가 프로세스 인스턴스를 열고 에이전트·사람은 그 안의 태스크. Supabase(supabase start)가 필요하다.
       PROCESS_MODE: ${PROCESS_MODE:-legacy}
       PROCESS_REPO: ${PROCESS_REPO:-pg}
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
@@ -391,7 +391,7 @@ services:
       # Optional operator settings; unset values are omitted, never printed.
       HYD_MCP_OAUTH_CLIENTS:
       HYD_MCP_OAUTH_PRIVATE_ORIGINS:
-      # C2 승인 뒤 실행 부품 (docs/handoff/verification/2026-10-09/c2-execution.md)
+      # C2 승인 뒤 실행 부품 (문서/시스템/검증_기록/2026-10-09/c2-execution.md)
       #   대기 압축: 시간 대기 · 입고 확인과 그 경계 타이머만 배속 × 이 배율 (60 → 20배속에서 납기 5일 = 6분). 설비 · 감지기 · 재관측은 배속만.
       PROCESS_WAIT_COMPRESSION: ${PROCESS_WAIT_COMPRESSION:-60}
       #   정비 수행 모사 = 실습 시뮬레이터 조작(현장 정비 대역). plant-sim 과 process 가 함께 붙은 sim-net 으로 compose 서비스 이름으로 간다
@@ -459,7 +459,7 @@ services:
       - ./it/portal/www:/usr/share/nginx/html:ro
       - ./it/portal/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
-  # ───────────────────────────── instance 모드 (docs/HANDOFF.md): 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
+  # ───────────────────────────── instance 모드 (문서/시스템/1_목적과_방향.md): 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
   # 프로필 `cliagents` 는 기본 COMPOSE_PROFILES 에 없다. Supabase(cd it/supabase && supabase start)와 ANTHROPIC_API_KEY 가 있을 때 켠다.
   enterprise-mcp:                         # 업무 DB(Supabase ent 스키마)를 에이전트에게 읽기 전용 도구로 (WMS 예제의 wms-mcp 역할)
     restart: unless-stopped

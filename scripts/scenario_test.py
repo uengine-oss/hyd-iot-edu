@@ -205,7 +205,7 @@ def knowledge_admin_checks():
     check("a new skill without a failure mode is refused", bad.get("error") == 400, bad.get("body", "")[:80])
     dup = post(f"{PROCESS}/api/kg/skills", {"name": "x", "sopId": "SOP-COOL-01", "steps": "a", "failureMode": "fm:cooling-loss"})
     check("an SOP number another skill owns is refused", dup.get("error") == 409, dup.get("body", "")[:80])
-    sample = Path(__file__).resolve().parents[1] / "docs" / "samples" / "HM-8_cooler-fan-manual.md"
+    sample = Path(__file__).resolve().parents[1] / "문서/시스템/참조/수업_문서_원문" / "HM-8_cooler-fan-manual.md"
     import uuid
     suffix = uuid.uuid4().hex[:8].upper()
     import re   # C1: HM-8은 문서 A(쿨러 과열)로 보강됐다(절 8 · SOP 7 · 단계 25). 모든 SOP 번호를 시험용으로 바꿔 시드 SOP와 겹치지 않게 한다

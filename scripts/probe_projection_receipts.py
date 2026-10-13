@@ -44,7 +44,7 @@ def main():
     check('new events after restore cannot silently overwrite equal graph revision',row['reason']=='newer-two')
     dsn='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
     with psycopg.connect(dsn) as c:c.execute('insert into tenants(id,name) values(%s,%s)',(tag,'[회귀 검사] A049 울타리 시험'))
-    repo=procdb.PgRepo(dsn);raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
+    repo=procdb.PgRepo(dsn);raw=json.loads((ROOT/'문서/시스템/참조/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     rt=instances.InstanceRuntime(repo,engine.Definition.from_dict(raw),instances.Hooks(record_cypher=q,query_cypher=q),tenant_id=tag)
     inst=rt.start_definition(raw['processDefinitionId'],'1',tag,{'score':2});pid=inst['proc_inst_id']
     # Scope the higher graph revision to this fixture. Never rewind the shared

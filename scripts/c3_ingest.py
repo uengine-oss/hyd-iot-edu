@@ -186,7 +186,7 @@ def loaded_document(fname: str) -> str | None:
 
 def extract(key: str, reuse: bool) -> dict:
     fname = DOCS[key]
-    raw = (ROOT / "docs" / "samples" / fname).read_bytes()
+    raw = (ROOT / "문서/시스템/참조/수업_문서_원문" / fname).read_bytes()
     st, pv = call("POST", "/api/kg/manuals/preview",
                   {"filename": fname, "data": base64.b64encode(raw).decode(), "document_id": loaded_document(fname)})
     if st != 200:

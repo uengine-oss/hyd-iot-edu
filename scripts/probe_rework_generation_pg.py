@@ -44,7 +44,7 @@ def main():
     def check(name, passed):
         checks.append({'name': name, 'passed': bool(passed)}); save('checks', checks)
         print(('PASS ' if passed else 'FAIL ') + name, flush=True); assert passed, name
-    raw = json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
+    raw = json.loads((ROOT/'문서/시스템/참조/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     # An actual claimed agent row is needed for the stale-result fence. Its
     # accepted value below is a labelled test payload, not an AI inference.
     raw['roles'].append({'name': 'Agent', 'endpoint': 'sys:agent'})

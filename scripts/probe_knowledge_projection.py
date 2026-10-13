@@ -32,7 +32,7 @@ def run():
         checks.append(dict(name=name,passed=bool(ok)));save('checks',checks);print(('PASS ' if ok else 'FAIL ')+name,flush=True)
         if not args.baseline:assert ok,name
     store=Store(out/'source.sqlite3');repo=procdb.PgRepo(DSN)
-    raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
+    raw=json.loads((ROOT/'문서/시스템/참조/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     raw['ontologyRef']='proc:'+tag;raw['roles'][0]['endpoint']='role:'+tag
     for item in raw['activities']+raw['events']:item['ontologyRef']='semantic:'+tag+':'+item['id']
     with psycopg.connect(DSN) as conn:conn.execute('insert into tenants(id,name) values(%s,%s)',(tenant,'[회귀 검사] A048 격리 투영 인수 시험'))

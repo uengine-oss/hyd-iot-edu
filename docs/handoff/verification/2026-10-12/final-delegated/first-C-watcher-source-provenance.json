@@ -1,6 +1,0 @@
-{
-  "method": "Exact reconstruction of watcher immediately before B boundary-option patch; existing root copy is never overwritten. Root confirmed C process loaded pre-option revision.",
-  "sha256": "23c55934694d618d4af19524b06652005046fc66460536dd4ac2e01aef33c030",
-  "reconstructed_pre_boundary_sha256": "c05d5e788e6dc0c549680ddb86981ec8335362e1d91028a87f5592b75418f240",
-  "copy_matches_pre_boundary": false
-}

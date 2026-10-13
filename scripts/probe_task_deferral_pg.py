@@ -45,7 +45,7 @@ def main():
     def check(name,ok):
         checks.append({'name':name,'passed':bool(ok)});save('checks',checks)
         print(('PASS ' if ok else 'FAIL ')+name,flush=True);assert ok,name
-    raw=json.loads((ROOT/'docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
+    raw=json.loads((ROOT/'문서/시스템/참조/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     raw['roles'].append({'name':'Agent','endpoint':'sys:agent'})
     raw['activities'][0].update(type='userTask',role='Agent',agentMode='COMPLETE',orchestration='cliagents')
     tenant='defer-'+uuid.uuid4().hex[:10]

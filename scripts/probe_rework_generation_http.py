@@ -31,7 +31,7 @@ def main():
         print(('PASS ' if passed else 'FAIL ') + name, flush=True); assert passed, name
     def latest(view, aid):
         return max((w for w in view['workitems'] if w['activity_id'] == aid), key=lambda w: (w.get('generation') or 0, w['start_date']))
-    raw = json.loads(Path('docs/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
+    raw = json.loads(Path('문서/시스템/참조/examples/rework-inspection-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId'] += '_' + uuid.uuid4().hex[:8]
     save('definition', raw); ok('/api/process/definitions', {'definition': raw})
     inst = ok('/api/instances/start', {'definition_id': raw['processDefinitionId'], 'version': '1',

@@ -1,4 +1,4 @@
-/* A122 common components — docs/handoff/UIUX_PLAN.md §3, uiux-refs.md R2·R3·R4·R5·R6·R10·R12.
+/* A122 common components — 문서/시스템/참조/UIUX_PLAN.md §3, uiux-refs.md R2·R3·R4·R5·R6·R10·R12.
    One card, one chip, one field. Change here and every screen follows. Loaded after styles.css. */
 .prose { max-width: var(--prose-max); }
 .page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s4); }

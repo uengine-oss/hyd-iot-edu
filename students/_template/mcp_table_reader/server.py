@@ -1,4 +1,4 @@
-"""T4 학생 업무 표 읽기 MCP 서버 출발본 (전체 과정 랩업 G5 — docs/handoff/verification/2026-10-09/capstone-lab.md 5.2 · 6.1).
+"""T4 학생 업무 표 읽기 MCP 서버 출발본 (전체 과정 랩업 G5 — 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 5.2 · 6.1).
 
 내 업무 표(Postgres 스키마 stu_<내ID>)를 에이전트가 읽게 하는 서버. 읽기만 한다 — 도구 셋 모두 readOnlyHint=true 표시라
 포털 도구(MCP) 화면의 연결 검사를 바로 통과하고, 에이전트 도구로 고를 수 있다(쓰기는 사람 승인 뒤 process 몫).

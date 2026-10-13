@@ -9,7 +9,7 @@ from test_purchase_scope_model import runtime_skill
 from test_purchase_part_route import part_pipeline
 from test_purchase_candidate_scope import pipeline
 
-SOURCE=Path(__file__).resolve().parents[1]/'docs/samples/PR-07_spare-parts-standard.md'
+SOURCE=Path(__file__).resolve().parents[1]/'문서/시스템/참조/수업_문서_원문/PR-07_spare-parts-standard.md'
 QUOTE=SOURCE.read_text(encoding='utf-8').split('## PR-7.4 공급사 비교 기준\n')[1].split('## PR-7.5')[0].strip()
 def contract():
     return dict(version=1,loss_per_failure=250,inspection_threshold=.1,inspection_cost=20,

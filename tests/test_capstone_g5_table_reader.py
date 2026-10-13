@@ -1,4 +1,4 @@
-"""G5 키트 (전체 과정 랩업 — docs/handoff/verification/2026-10-09/capstone-lab.md 5.2 · 6.1 T3 · T4): 학생 업무 표 읽기 MCP 서버 출발본.
+"""G5 키트 (전체 과정 랩업 — 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 5.2 · 6.1 T3 · T4): 학생 업무 표 읽기 MCP 서버 출발본.
 
 수업 스택에 붙이지 않는 출발본(students/_template/mcp_table_reader/server.py)이다. 여기서는 가짜 연결로 본다:
 도구 셋이 모두 readOnlyHint=true 라 포털 연결 검사 · 워커 게이트의 읽기 판정(mcp_check.read_only_verdict)을 통과하는가,

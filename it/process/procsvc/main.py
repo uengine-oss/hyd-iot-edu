@@ -42,7 +42,7 @@ TIME_SCALE = float(os.getenv("TIME_SCALE", "20"))
 PG_DSN = os.getenv("PG_DSN", "postgresql://hyd:hyd@timescaledb:5432/hyd")
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
 # legacy  : the agent submits a guide card → Incident (v2 behaviour, scenario_test.py 62/62)
-# instance: an alert opens a process instance; the agent and the people are tasks inside it (ProcessGPT-shaped, docs/HANDOFF.md)
+# instance: an alert opens a process instance; the agent and the people are tasks inside it (ProcessGPT-shaped, 문서/시스템/1_목적과_방향.md)
 PROCESS_MODE = os.getenv("PROCESS_MODE", "legacy")
 
 reg = Registry()

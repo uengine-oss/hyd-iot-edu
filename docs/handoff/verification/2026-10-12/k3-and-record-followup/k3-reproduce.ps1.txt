@@ -1,5 +1,0 @@
-﻿$env:PYTHONUTF8="1"
-$env:PATH="C:/Program Files/LibreOffice/program;" + $env:PATH
-& "D:/work/study/hyd-iot-edu/.evidence/overnight-20261012/clean-venv/Scripts/python.exe" -m pytest tests/test_google_meeting_mapping_preparation.py -q
-Preparation CLI (not executed; variables must be confirmed from actual portal registration):
-& $py scripts/prepare_google_meeting_mapping.py --agent-id $registeredAgentId --organizer-role $registeredOrganizerRole --calendar-server $registeredCalendarServer --drive-server $registeredDriveServer --output-dir students/flows/my-google-meeting

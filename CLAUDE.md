@@ -1,37 +1,32 @@
 # hyd-iot-edu — 프로젝트 계약 (로컬·클라우드 공통)
 
-공용 헌법(`claude-skills/CLAUDE.md`)을 따른다. 로컬은 `~/.claude/CLAUDE.md`가 불러오고,
-클라우드는 `.claude/hooks/cloud-bootstrap.sh`가 세션 시작 때 넣는다. 아래는 이 저장소에만 해당하는 것이다.
+이 저장소에서 일하는 세션이 지키는 것이다. 클라우드에서는 `.claude/hooks/cloud-bootstrap.sh`가 세션 시작 때 환경을 준비한다.
 
 ## 1. 시작할 때 읽는 순서
 
-`docs/handoff/`가 생명선이다. 대화 요약이 끊겨도 이 폴더만 읽으면 이어갈 수 있어야 한다.
+문서는 `문서/` 한 곳에만 있다. 대화 요약이 끊겨도 이 폴더만 읽으면 이어갈 수 있어야 한다.
 
-0. `docs/handoff/NOW.md` — 현재 상태 · 스택 올리기 · 끝난 것과 근거 · 남은 일 · 제약 · 문서 지도. **이 한 문서면 시작할 수 있다. 먼저 읽는다**
-1. `docs/handoff/DECISIONS.md` — 결정 경위와 폐기된 판단
-2. `docs/handoff/HANDOFF.md` — 현재 사실·규칙(§1 회의 원문 줄 번호, §2 확정 방향, §3 절대 규칙). 길어서(약 500 KB) 통독하지 않고 필요한 절만 읽는다. §9는 경위 기록
-3. `docs/handoff/QA.md` — 사용자가 물은 것과 확정 답
-4. 끝난 작업의 기록(목표 GOAL, 발화 원문, 옛 실라버스 등)은 `docs/handoff/archive/`(안내 `archive/README.md`). 필요할 때만 연다
+| 하려는 일 | 읽을 곳 |
+|---|---|
+| 교재(강의 덱 · 낭독 대본 · 강의 영상 · 실습 랩) | `문서/교재/1_목적과_방향.md`부터. 기준은 `문서/교재/2_기준.md` |
+| 시스템(포털 · 설비) | `문서/시스템/1_목적과_방향.md`부터. 기준은 `문서/시스템/2_기준.md`, 켜는 법은 `문서/시스템/4_켜고_돌리는_법.md` |
 
-교재(강의 덱 · 낭독 대본 · 강의 영상 · 실습 랩) 작업은 `production/handoff/README.md`부터 읽는다. 그 문서 2절의 규칙을 따르고, 위 0~4는 시스템을 건드릴 때만 읽는다.
-
-범위는 위 문서의 **최신** 사용자 지시가 정한다. 과거 GOAL·자동 재개 문구의 조건을 완료 조건으로 다시 가져오지 않는다.
-회의 근거는 `HANDOFF.md` §1의 원문 줄 번호로 댄다. HANDOFF §2(확정 방향)·§3(절대 규칙)은 근거 없이 바꾸지 않는다.
+두 폴더 모두 문서 여섯 개가 같은 순서다: 1 목적과 방향, 2 기준, 3 현황, 4 만드는 법(켜고 돌리는 법), 5 결정 기록, 6 남은 일.
+범위는 가장 뒤의 사용자 지시가 정한다. 기준 문서의 규칙은 근거 없이 바꾸지 않는다.
 
 ## 2. 기록
 
-- 파일 하나 만들거나 시험 하나 돌릴 때마다 기록을 먼저 갱신하고 다음 일로 간다. 여러 세션이 병렬로 일하는 동안에는 HANDOFF §9가 아니라 자기 갈래 파일에 쓴다(`NOW.md` 5절 마지막 항목) — 합치는 세션이 §9로 옮긴다.
-- 결정은 HANDOFF §2에 이유와 함께, 경위는 DECISIONS.md, 사용자 발화 원문은 archive/USER_UTTERANCES.md, 질문·답은 QA.md.
-- 모든 실행은 `.evidence/<A번호>/`에 명령·로그·JSON을 남기고 실패는 파일:줄로 인계에 적는다.
-- 전체 작업을 마치면 작업보고에 한 절 추가한다(로컬: `D:/work/작업보고/YYYY-MM-DD.md`. 클라우드에는 이 경로가 없으므로 HANDOFF §9에 남기고 사용자에게 알린다).
+- 일이 끝날 때마다 해당 폴더의 `3_현황.md`와 `6_남은_일.md`를 고친다. 정해진 것은 `2_기준.md`에, 그 경위는 `5_결정_기록.md`에 적는다. 한 규칙은 한 곳에만 적는다.
+- 문서를 새로 늘리지 않는다. 옛 지침, 작업 흔적, 쓰이지 않는 파일을 남기지 않는다.
+- 실행 증거는 `.evidence/`에 남긴다(저장소에 올리지 않는다). 실패는 파일과 줄로 적는다.
 
 ## 3. 시스템 규칙
 
-- **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두 해당한다. 공용 헌법 §7의 모델 배정보다 이 줄이 우선한다 — 서브에이전트는 `opus`로 지정한다.
+- **fable 모델을 쓰지 않는다**(사용자 지시 2026-10-10). 메인 세션 · 서브에이전트 · 워커 모두 해당한다. 서브에이전트는 `opus`로 지정한다.
 
 - **배속 기본 20배(`TIME_SCALE=20`).** 가상 설비라 수업·실습·검사 모두 20배속이다. "1~2배속 권장" 문구를 쓰지 않는다.
   20배속에서 흔들리는 코드는 배속 기준으로 고친다. 더 높은 배속은 가짜 실패를 만드니 쓰지 않는다.
-  배율은 plant-sim·detector·process·agent에 함께 적용한다(`/api/time_scale`은 plant 물리만 바꾼다). 바꿀 때는 `docs/RUNBOOK.md` 표를 따른다.
+  배율은 plant-sim·detector·process·agent에 함께 적용한다(`/api/time_scale`은 plant 물리만 바꾼다). 바꿀 때는 `문서/시스템/참조/RUNBOOK.md` 표를 따른다.
 - **회귀·라이브 검사기(run_regression·probe_*)가 도는 동안 `docker compose build/up/restart` 금지.**
   compose는 의존 서비스가 바뀌면 process를 재시작시켜 검사가 `RemoteDisconnected`로 끊긴다.
   배포는 검사 전에 끝내고 `docker inspect hyd-iot-edu-process-1 --format '{{.State.StartedAt}} {{.RestartCount}}'`로 안정을 확인한다.
@@ -45,8 +40,8 @@
 
 ## 4. 내용 규칙
 
-- 시나리오·BPMN·온톨로지는 저장소에 있는 이름만 쓴다. 작업 전에 시나리오 HANDOFF 0절과 코드(agentsvc·procsvc·entsim·seed)를 먼저 읽는다.
-  정본 위치는 HANDOFF 자산 지도를 따른다(현재 `docs/ontology/schema-v2.md`, `it/neo4j/v2/instances.cypher`, 템플릿 `it/neo4j/templates/`).
+- 시나리오·BPMN·온톨로지는 저장소에 있는 이름만 쓴다. 작업 전에 `문서/시스템/1_목적과_방향.md` 3절과 코드(agentsvc·procsvc·entsim·seed)를 먼저 읽는다.
+  정본 위치: `문서/시스템/참조/ontology/schema-v2.md`, `it/neo4j/v2/instances.cypher`, 템플릿 `it/neo4j/templates/`.
   온톨로지는 객체 모델(클래스·속성·관계)이다. 프로세스 설명은 온톨로지가 아니다.
 - 해피패스·구세주 데이터 금지: 사례마다 손익으로 지는 대안과 실제로 밟는 비해피 가지가 있어야 한다.
 - 승인 전 에이전트는 조회·계산·보고서만 한다. 사람 승인 1회 뒤 process가 실행한다.
@@ -55,13 +50,13 @@
 - 온톨로지·스키마 결과를 사용자에게 보고할 때는 전문 용어에 비유 한 줄과 "사용자가 스스로 판정할 체크 질문"을 같이 준다.
 - 참고 레포와 다른 곳은 ① 실제 결함인가 ② 회의·계약 요구를 못 채우는가만 묻는다. 둘 다 아니면 "차이 있음, 유지"로 기록한다.
 - 포털 UI 추가는 추가한 것만 다듬는다. 기존 컴포넌트·간격 재사용, 카드 하나에 행동 1개, 보조 정보는 접기. 판정 기준은 "학생이 10초 안에 할 일을 찾는가".
-- 실라버스는 사용자가 직접 쓴다(기준: 확정안, `docs/handoff/NOW.md` 1절). 교재(PPTX)의 제목·화법·틀은 `production/standards/제작기준.md`를 따른다(실라버스는 틀만 정한다). 교재 폴더 안내는 `production/decks/README.md`.
-- 실습 랩: 학생의 도구는 VS Code의 GitHub Copilot 채팅이고, 랩의 틀은 `production/labs/STRUCTURE.md`, 정해진 것과 상태는 `production/handoff/07_대본_영상_랩.md`다.
-- 인제스천 품질·규모 주장은 실제 매뉴얼 실측(`.evidence/realman/`, HANDOFF A092~A094)에 연결한다. 실물 PDF는 저작물이라 레포 픽스처로 넣지 않는다.
+- 실라버스는 사용자가 직접 쓴다(기준: `문서/교재/실라버스/피지컬AI_실라버스_최종본.xlsx`). 교재(PPTX)의 제목·화법·틀은 `문서/교재/덱_제작기준.md`를 따른다(실라버스는 틀만 정한다). 교재 폴더 안내는 `production/decks/README.md`.
+- 실습 랩: 학생의 도구는 VS Code의 GitHub Copilot 채팅이고, 랩의 틀은 `production/labs/STRUCTURE.md`, 기준은 `문서/교재/2_기준.md` 10절, 만드는 법과 상태는 `문서/교재/4_만드는_법_대본_영상_실습.md`다.
+- 인제스천 품질·규모 주장은 실제 매뉴얼 실측(`.evidence/realman/`)에 연결한다. 실물 PDF는 저작물이라 레포 픽스처로 넣지 않는다.
 
 ## 5. 환경 (OS별)
 
-이 표에 없는 로컬 macOS(colima)는 `docs/handoff/NOW.md` 2절이 기준이다(파이썬 `.venv` 3.12, `host_libpq.sh` 불필요, 워커 멈춤은 `pkill -f worker.main`).
+이 표에 없는 로컬 macOS(colima)는 `문서/시스템/4_켜고_돌리는_법.md`가 기준이다(파이썬 `.venv` 3.12, `host_libpq.sh` 불필요, 워커 멈춤은 `pkill -f worker.main`).
 
 | | 로컬 Windows | 클라우드 Linux |
 |---|---|---|
@@ -74,7 +69,7 @@
 클라우드 `.env`: 레포에 없다(.gitignore). 세션 시작 훅(`.claude/hooks/cloud-env.sh`)이 `.env.example`로 만들고,
 LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`·`LLM_EXTRA_BODY`)는 claude.ai/code 환경 설정의
 환경변수로 들어온다(compose는 `${VAR:-기본값}`만 쓰므로 셸 환경변수가 우선). LLM 서버 도메인은 환경의 네트워크 허용 목록에 있어야 한다.
-클라우드 `.env` 값: 예시 파일 기본값은 `PROCESS_MODE=legacy`·`AGENT_BRIDGE=legacy`·`ENTERPRISE_BACKEND=memory`라 강의 배포본과 다르다. 검증 전에 `docs/RUNBOOK.md` §0의 강의 배포본 값(`PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`)으로 맞춘다 — memory로 돈 core 회귀는 업무 DB를 쓰는 검사(작업지시 전용 카드·시간 기준값)가 거짓 실패했다(A157). AGENT_BRIDGE는 core 회귀 legacy, worker 회귀·실제 워커 시험 off.
+클라우드 `.env` 값: 예시 파일 기본값은 `PROCESS_MODE=legacy`·`AGENT_BRIDGE=legacy`·`ENTERPRISE_BACKEND=memory`라 강의 배포본과 다르다. 검증 전에 `문서/시스템/참조/RUNBOOK.md` §0의 강의 배포본 값(`PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`)으로 맞춘다 — memory로 돈 core 회귀는 업무 DB를 쓰는 검사(작업지시 전용 카드·시간 기준값)가 거짓 실패했다(A157). AGENT_BRIDGE는 core 회귀 legacy, worker 회귀·실제 워커 시험 off.
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).
 클라우드 이미지 빌드: 에이전트 프록시가 TLS를 다시 서명하므로 빌드 안 `pip`가 `CERTIFICATE_VERIFY_FAILED`로 실패한다. 세션마다 한 번, 베이스 이미지에 프록시 CA를 넣는다(레포 Dockerfile은 그대로):
 `docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + `COPY /root/.ccr/ca-bundle.crt` 사본 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=…`로 `docker build -t python:3.12-slim`.

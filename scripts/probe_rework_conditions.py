@@ -36,7 +36,7 @@ def main():
         try: return http('/healthz')[0]==200
         except OSError: return False
     def start(suffix,timer):
-        raw=json.loads((ROOT/'docs/examples/condition-recheck-v1.json').read_text(encoding='utf8'))
+        raw=json.loads((ROOT/'문서/시스템/참조/examples/condition-recheck-v1.json').read_text(encoding='utf8'))
         raw['processDefinitionId']+='-'+suffix+'-'+uuid.uuid4().hex[:8]
         raw['events'][-1]['timer']=timer
         req('/api/process/definitions',dict(definition=raw)); save(suffix+'-definition',raw)

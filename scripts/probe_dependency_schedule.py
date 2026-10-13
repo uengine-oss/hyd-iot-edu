@@ -28,7 +28,7 @@ def main():
             time.sleep(.5)
         raise TimeoutError('process health')
     health()
-    raw=json.loads((ROOT/'docs/examples/dependency-review-v1.json').read_text(encoding='utf8'))
+    raw=json.loads((ROOT/'문서/시스템/참조/examples/dependency-review-v1.json').read_text(encoding='utf8'))
     raw['processDefinitionId']+='-'+uuid.uuid4().hex[:10]
     req('/api/process/definitions',dict(definition=raw)); save('definition',raw)
     inst=req('/api/instances/start',dict(definition_id=raw['processDefinitionId'],version='1',event_id=str(uuid.uuid4())))

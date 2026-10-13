@@ -13,7 +13,7 @@ from hydcommon.maintenance_plan import plan
 from hydcommon.maintenance_policy import ScopeError
 
 ROOT = Path(__file__).resolve().parents[1]
-REVIEW = ROOT / 'docs/handoff/verification/2026-10-12/reviews/PM-02.review.json'
+REVIEW = ROOT / '문서/시스템/검증_기록/2026-10-12/reviews/PM-02.review.json'
 MIGRATION = ROOT / 'it/supabase/migrations/20261012000057_b_return_filter_fixture.sql'
 
 

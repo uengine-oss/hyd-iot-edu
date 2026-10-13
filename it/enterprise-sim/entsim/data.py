@@ -76,7 +76,7 @@ _SUPPLIERS = [
     {"id": "sup:c", "key": "c", "name": "C트레이딩 (최저가)", "part_no": "P-CLR-CORE", "price": 120, "fail": 0.20, "lead_d": 2, "avl": False, "quality_score": 0.61},
 ]
 # B-ERP-20261012-v1: 필터 12만원은 공식 교육용 설계 단가이며 원문·시장 가격이 아니다.
-# 출처·선택 근거: docs/handoff/verification/2026-10-12/education-fixture-correction/b-spec.md
+# 출처·선택 근거: 문서/시스템/검증_기록/2026-10-12/education-fixture-correction/b-spec.md
 _STD_PRICE = {"P-CLR-CORE": 250, "P-PMP-SEAL": 50, "P-FAN-BRG": 25, "P-RTN-FLT": 12}  # 기존 A/C 단가는 유지
 # A7 CMMS 표준 작업: SOP별 계획 정지 시간(h) · 작업비(만원) · 필요 부품. 쿨러 핀 세척은 설비별 정비 기준(_CMMS clean_h · clean_cost)을 따른다.
 _TASKS = [

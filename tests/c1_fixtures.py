@@ -10,7 +10,7 @@ from copy import deepcopy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLES = ROOT / 'docs' / 'samples'
+SAMPLES = ROOT / '문서/시스템/참조/수업_문서_원문'
 DOC_A = SAMPLES / 'HM-8_cooler-fan-manual.md'
 DOC_C = SAMPLES / 'PR-07_spare-parts-standard.md'
 DOC_B = SAMPLES / 'PM-02_powerpack-pm-checklist.md'

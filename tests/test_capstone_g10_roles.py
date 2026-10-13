@@ -1,4 +1,4 @@
-"""G10 (전체 과정 랩업 — docs/handoff/verification/2026-10-09/capstone-lab.md 5.2): 포털에서 역할 만들기.
+"""G10 (전체 과정 랩업 — 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 5.2): 포털에서 역할 만들기.
 
 학생 흐름의 레인(예: "회의 주관자")을 받을 역할이 기준 정의 · 시드에만 있었다. POST /api/roles 로 users 의 role:<키> 행(origin user)을
 만들면 흐름 가져오기 역할 목록(bpmn_import.catalog)에 바로 보이고, 레인 이름이 같으면 자동으로 잇는다(merge_mapping).

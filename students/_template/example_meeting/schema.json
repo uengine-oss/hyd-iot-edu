@@ -1,5 +1,5 @@
 {
-  "_comment": "T8 예시 묶음 — 학생 업무 사전(설계 docs/handoff/verification/2026-10-09/capstone-lab.md 3.3 클래스 · 관계). 정답이 아니라 강사 시연용 참고. ns 는 시연용 'demo' (T1 · T3 의 s00 과 섞이지 않게). 확정 스키마(it/neo4j/v2/schema.json)는 바꾸지 않는다 — 가치 · 프로세스 · 규칙 층은 v2 클래스(Objective · Measure · Process · Role · System · Step · Decision · DecisionTable · Rule · InputData · KnowledgeSource · ManualSection)를 그대로 쓴다. 검사: python scripts/ontology_v2.py check-extra --extra students/_template/example_meeting/schema.json",
+  "_comment": "T8 예시 묶음 — 학생 업무 사전(설계 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 3.3 클래스 · 관계). 정답이 아니라 강사 시연용 참고. ns 는 시연용 'demo' (T1 · T3 의 s00 과 섞이지 않게). 확정 스키마(it/neo4j/v2/schema.json)는 바꾸지 않는다 — 가치 · 프로세스 · 규칙 층은 v2 클래스(Objective · Measure · Process · Role · System · Step · Decision · DecisionTable · Rule · InputData · KnowledgeSource · ManualSection)를 그대로 쓴다. 검사: python scripts/ontology_v2.py check-extra --extra students/_template/example_meeting/schema.json",
   "ns": "demo",
   "name": "학생 업무 사전 — 고객사 분기 리뷰 회의 준비 (T8 예시)",
   "version": "0.1.0",

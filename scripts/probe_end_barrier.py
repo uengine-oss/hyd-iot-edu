@@ -34,7 +34,7 @@ def main():
             time.sleep(.5)
         raise TimeoutError('process health')
     wait_health()
-    raw = json.loads((ROOT / 'docs/examples/independent-reviews-v1.json').read_text())
+    raw = json.loads((ROOT / '문서/시스템/참조/examples/independent-reviews-v1.json').read_text())
     raw['processDefinitionId'] += '-' + uuid.uuid4().hex[:10]
     request('/api/process/definitions', {'definition': raw}); save('definition', raw)
     def start(definition_id=None):

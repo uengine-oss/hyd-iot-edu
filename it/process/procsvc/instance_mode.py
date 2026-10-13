@@ -47,7 +47,7 @@ WORKER_URL = os.getenv("WORKER_URL", "http://agent-worker:8097")       # the cli
 STALE_CLEANUP_EVERY = 150                                              # × POLL_INTERVAL_S ≈ 5 min (the product's cleanup_task)
 # A151 (A148 item 70-A): how long startup waits for an unreachable DB before giving up and letting the restart policy act
 STARTUP_DB_WAIT_S = float(os.getenv("PROCESS_STARTUP_DB_WAIT_S", "60"))
-# C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (docs/handoff/verification/2026-10-09/c2-execution.md)
+# C2 (확정 TODO C) 승인 뒤 실행 부품의 연결 · 수업 설정 (문서/시스템/검증_기록/2026-10-09/c2-execution.md)
 ENTERPRISE_URL = os.getenv("ENTERPRISE_URL", "http://enterprise-sim:8095")
 # 정비 수행 모사: 실습 시뮬레이터 조작(현장 정비 대역)이지 설비 명령 경로(PLC)가 아니다. 컨테이너에서는 compose 서비스 이름(ot-net)으로 간다.
 # 호스트에서 직접 띄우면 PLANT_SIM_URL=http://127.0.0.1:8000 (compose.yaml 이 컨테이너에는 항상 값을 넣는다).

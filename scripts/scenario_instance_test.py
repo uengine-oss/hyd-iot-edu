@@ -1,4 +1,4 @@
-"""End-to-end test of PROCESS_MODE=instance against the running stack (docs/handoff/HANDOFF.md §9 B11 · D).
+"""End-to-end test of PROCESS_MODE=instance against the running stack (문서/시스템/5_결정_기록.md §9 B11 · D).
 
     PROCESS_MODE=instance AGENT_BRIDGE=legacy  docker compose up -d --build process enterprise-sim
     python scripts/scenario_instance_test.py               # cooler scenario as a process instance (~4 min at TIME_SCALE=20)

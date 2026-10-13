@@ -292,7 +292,7 @@ def test_condition_variable_produced_only_behind_its_gateway_is_refused():
     assert validate_definition(ok)
     # every shipped and example definition still registers under the stronger rule
     root=Path(__file__).resolve().parents[1]
-    files=sorted((root/'it/process/definitions').glob('*.json'))+sorted((root/'docs/examples').glob('*.json'))
+    files=sorted((root/'it/process/definitions').glob('*.json'))+sorted((root/'문서/시스템/참조/examples').glob('*.json'))
     assert files
     for f in files:
         raw=json.loads(f.read_text(encoding='utf-8'))

@@ -7,7 +7,7 @@
   python scripts/ontology_v2.py check-extra --extra students/<ID>/schema.json   # 학생 스키마 파일만 검사 (Neo4j 없이)
   python scripts/ontology_v2.py validate --extra students/<ID>/schema.json      # 학생 이름 공간(ns) 노드만, v2 + 학생 스키마로 검사
 
-G4 (전체 과정 랩업, docs/handoff/verification/2026-10-09/capstone-lab.md 3.3 안 다): 학생은 확정 스키마(schema.json)를 고치지 않고
+G4 (전체 과정 랩업, 문서/시스템/검증_기록/2026-10-09/capstone-lab.md 3.3 안 다): 학생은 확정 스키마(schema.json)를 고치지 않고
 같은 형식의 학생 스키마 파일(students/<ID>/schema.json, "ns": "<ID>")에 업무 고유 클래스 · 관계만 더한다. 검사기는 그 파일을 "추가 층"으로
 합쳐 쓴다: v2 클래스 · 관계는 그대로 검사하고, 학생 클래스는 학생 파일로 검사한다. 학생 노드 규칙: ns = "<ID>" 필수, id 는 "<ID>:" 로 시작.
 학생 파일의 "ns" 는 필수이고 students/<ID>/ 폴더 이름과 같아야 한다. 그 이름 공간 노드가 0개면 PASS 가 아니라 FAIL(접속 그래프 확인).
@@ -359,7 +359,7 @@ def gen_prompt(s: dict) -> str:
 LAYER_COLORS = {"value": "#6d28d9", "process": "#1d4ed8", "resource": "#4b5563", "diagnosis": "#b42318",
                 "skill": "#0f766e", "external": "#9a6700", "record": "#7c2d12"}
 SVG_COLUMNS = [["value"], ["process"], ["resource"], ["diagnosis"], ["skill"], ["external", "record"]]
-DOCS = ROOT / "docs" / "ontology"
+DOCS = ROOT / "문서/시스템/참조/ontology"
 
 
 def _xml(v: str) -> str:
@@ -487,7 +487,7 @@ def cmd_gen(_args) -> int:
     DOCS.mkdir(parents=True, exist_ok=True)
     (DOCS / "ontology-classes.svg").write_text(gen_svg(s), encoding="utf-8", newline="\n")
     (DOCS / "class-table.md").write_text("# 온톨로지 클래스 (생성 파일 — schema.json)\n\n" + gen_class_table(s), encoding="utf-8", newline="\n")
-    print(f"generated constraints.cypher, ontology-schema.ttl, schema_prompt.md, docs/ontology/ontology-classes.svg, class-table.md "
+    print(f"generated constraints.cypher, ontology-schema.ttl, schema_prompt.md, 문서/시스템/참조/ontology/ontology-classes.svg, class-table.md "
           f"({len(s['classes'])} classes, {len(s['relationships'])} relationships)")
     return 0
 

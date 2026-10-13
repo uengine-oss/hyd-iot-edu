@@ -175,7 +175,7 @@ def _condition_variables(defn):
 
     A143 (remaining-sweep 19, D01 "outputData of the activity before the gateway"): the producer must also be able to run
     before the gateway judges. HYD allows a producer on another branch of the same instance (condition-recheck-v1: `a` on
-    a parallel path writes x, `g` after `b` reads it — the engine waits for it, docs/rework-conditions.md), so the rule is
+    a parallel path writes x, `g` after `b` reads it — the engine waits for it, 문서/시스템/참조/rework-conditions.md), so the rule is
     not "ancestor of the gateway" but "reachable from the start without passing through the gateway". A variable whose
     every producer sits behind the gateway (reachable only through it) can never exist when the gateway first judges,
     and the instance would wait forever."""

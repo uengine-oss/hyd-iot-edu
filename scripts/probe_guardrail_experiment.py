@@ -1,4 +1,4 @@
-"""A156 (A148 item 61, docs/sessions/14 step 2) — the guardrail experiment: break the card's citations, watch the guardrail
+"""A156 (A148 item 61, 옛 회차 문서 14, git 이력) — the guardrail experiment: break the card's citations, watch the guardrail
 refuse the card, restore and watch it pass again.
 
     .venv/bin/python scripts/probe_guardrail_experiment.py --out .evidence/<A>/guardrail
