@@ -4,7 +4,7 @@
 
 | 번호 | 단계 | 찍을 화면 |
 |---|---|---|
-| 1 | 준비 | 받은 폴더를 연 VS Code. 왼쪽 탐색기에 .github, cases, ontology, plan 폴더와 .env.example, agent_config.json, guide.html, llm_client.py가 보이게 |
+| 1 | 준비 | 받은 폴더를 연 VS Code. 왼쪽 탐색기에 .github, cases, ontology, plan 폴더와 .env, agent_config.json, guide.html, llm_client.py가 보이게 |
 | 2 | 1단계 | Copilot 채팅이 열린 VS Code 전체. 입력 칸 아래의 에이전트와 GPT-6 Luna에 테두리 |
 | 3 | 1단계 | 첫 요청에 대한 Copilot의 답. 관계를 한 줄씩 적은 부분, S01 비교표, 끝의 질문에 ①②③ 테두리 |
 | 4 | 2단계 | Copilot의 구현 계획. tools.py와 agent.py에 둘 것이 나뉘어 적힌 부분 |

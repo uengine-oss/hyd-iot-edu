@@ -11,7 +11,7 @@ course/labs/offline/
    ├─ .github/copilot-instructions.md Copilot이 지키는 규칙
    ├─ ontology/  cases/  …            읽기만 하는 자료. 폴더마다 README.md가 설명한다
    ├─ agent_config.json               학생이 고치는 설정
-   ├─ llm_client.py  .env.example     LLM 서버 연결 (LLM을 부르는 랩만)
+   ├─ llm_client.py  .env             LLM 서버 연결 (LLM을 부르는 랩만). .env는 값을 비운 채로 준다
    └─ plan/                           실행하면 산출물이 생기는 폴더. 이름은 산출물 그대로 짓는다
 
 course/labs/online/
@@ -33,6 +33,6 @@ production/labs/offline/              강사·제작용. 학생에게 나가지 
 - 폴더, 파일, 함수, 변수, JSON 키는 영어 소문자로 쓴다(`snake_case`, 묶음 폴더만 `kebab-case`). 주석, 설명 글(docstring), 화면에 출력하는 글, 가이드 본문은 한국어로 쓴다.
 - 이름은 직역하지 않고 하는 일로 짓는다. 다른 프로젝트에 가져가도 뜻이 통해야 한다. 예: `llm_client.py`, `find_causes`, `read_sensor`, `agent_config.json`.
 - 온라인 완성본은 서버를 부르지 않는다. 실제 실행에서 받은 답을 `recorded/replies.json`에 저장해 두고 재생하며, 접속 양식(`.env.example`)은 넣지 않는다.
-- 접속 정보는 `.env`에 둔다. 저장소에는 값이 빈 `.env.example`만 올린다.
+- 접속 정보는 `.env`에 둔다. 학생 폴더에는 값이 빈 `.env`를 처음부터 넣어 준다(저장소의 `.gitignore`가 `.env`를 막으므로 `git add -f`로 올린다). 값을 적은 `.env`는 커밋하지 않는다.
 - 가이드: 첫 화면의 전체 안내(만드는 것, 순서)에는 파일 이름을 쓰지 않고 말로 설명한다. 파일·도구 이름은 실제 걸음에서만 쓴다. 받은 폴더는 VS Code 탐색기 모양으로 보여 준다.
 - 가이드 문장은 완성한 뒤 한 번만 윤문한다(`build_guide.py --collect` → `record/guide_polish.json`).

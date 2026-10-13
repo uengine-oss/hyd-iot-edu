@@ -13,7 +13,7 @@ _ENV = Path(__file__).resolve().parent / ".env"
 
 def _settings():
     if not _ENV.exists():
-        raise SystemExit(".env 파일이 없다. .env.example 을 복사해 이름을 .env 로 바꾸고 받은 값을 적는다.")
+        raise SystemExit(".env 파일이 없다. 받은 폴더에서 다시 가져온다.")
     settings = {}
     for line in _ENV.read_text(encoding="utf-8").splitlines():
         line = line.strip()

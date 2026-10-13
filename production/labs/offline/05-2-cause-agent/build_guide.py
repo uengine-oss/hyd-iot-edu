@@ -163,22 +163,22 @@ pages.append(
     + '</ol></section>'
     '<section class="sect"><h2>받은 폴더의 구성</h2>'
     + explorer("05-2-CAUSE-AGENT",
-               (0, "dir", ".github", "Copilot 설정 폴더"),
-               (1, "md", "copilot-instructions.md", "Copilot이 이 폴더에서 지키는 규칙. 하면 안 되는 것과 만들 프로그램의 명세가 들어 있다"),
-               (0, "dir", "cases", "에이전트가 처리할 사례"),
-               (1, "json", "cases.json", "경보가 뜬 사례 11건. 사례마다 경보 패턴 코드와 센서 집계값 7건이 있다"),
-               (1, "md", "README.md", "사례 파일의 키 설명"),
-               (0, "dir", "ontology", "설비 지식 그래프"),
-               (1, "json", "graph.json", "경보 패턴, 증상, 고장 유형, 원인, 증거 기준, 조치 절차가 관계로 이어진 그래프"),
-               (1, "md", "README.md", "그래프를 읽는 법. 경보에서 원인과 조치까지 따라가는 경로가 있다"),
-               (1, "json", "schema.json", "그래프의 클래스와 관계 정의"),
-               (0, "dir", "plan", "에이전트를 실행하면 점검 계획 파일이 생기는 폴더. 지금은 비어 있다"),
-               (0, "env", ".env.example", "LLM 서버 접속 정보 양식. 복사해 .env로 만든다"),
-               (0, "json", "agent_config.json", "에이전트의 목표, 허용 도구 목록, 판정 규칙, 호출 한도. 실습 중 여러 번 고친다"),
-               (0, "py", "llm_client.py", "LLM 서버에 요청을 보내는 코드. 고치지 않는다"),
-               (0, "html", "guide.html", "이 가이드"),
-               (0, "py", "tools.py", "오늘 만든다. 온톨로지와 사례를 조회하는 도구 함수", True),
-               (0, "py", "agent.py", "오늘 만든다. 도구를 호출하고 점검 계획을 내는 에이전트", True))
+               (0, "dir", ".github", "Copilot에게 주는 지침을 두는 폴더"),
+               (1, "md", "copilot-instructions.md", "Copilot이 이 실습에서 지켜야 할 규칙"),
+               (0, "dir", "cases", "에이전트가 진단할 설비 사례"),
+               (1, "json", "cases.json", "경보가 발생한 설비 사례 11건과 그때의 센서 측정값"),
+               (1, "md", "README.md", "사례 파일을 읽는 법"),
+               (0, "dir", "ontology", "설비 고장에 대한 지식"),
+               (1, "json", "graph.json", "어떤 경보가 어떤 고장과 원인으로 이어지는지, 무엇으로 확인하고 어떻게 조치하는지를 정리한 지식"),
+               (1, "md", "README.md", "지식 파일을 읽는 법"),
+               (1, "json", "schema.json", "지식 파일에 쓰는 항목의 종류와 관계를 정한 정의"),
+               (0, "dir", "plan", "에이전트가 만든 점검 계획이 저장되는 폴더"),
+               (0, "env", ".env", "LLM 서버 접속 정보를 적는 파일"),
+               (0, "json", "agent_config.json", "에이전트의 목표, 쓸 수 있는 도구, 판정 규칙을 정하는 설정"),
+               (0, "py", "llm_client.py", "LLM 서버에 요청을 보내는 코드"),
+               (0, "html", "guide.html", "실습 가이드(이 문서)"),
+               (0, "py", "tools.py", "오늘 만든다. 지식과 사례에서 필요한 내용을 찾아 주는 도구", True),
+               (0, "py", "agent.py", "오늘 만든다. 도구를 사용해 원인을 판정하고 점검 계획을 만드는 에이전트", True))
     + '</section>'
     '<section class="sect last"><h2>걸음마다 붙은 색</h2><ul class="key">'
     + "".join(f'<li><span class="where {p[0]}">{p[1]}{name}</span>{t(mean)}</li>' for p, name, mean in
@@ -189,15 +189,15 @@ pages.append(
            para("「파일 → 폴더 열기」에서 받은 폴더 <code>05-2-cause-agent</code>를 고른다. 폴더를 신뢰하는지 물으면 신뢰한다고 답한다. 왼쪽 탐색기가 위 표와 같으면 된다."),
            shot("받은 폴더를 연 VS Code. 왼쪽 탐색기에 폴더 넷과 파일 넷이 보인다."))
     + task(2, EDITOR, "VS Code · 탐색기와 편집기", "LLM 서버 접속 정보를 넣는다",
-           steps("탐색기에서 <code>.env.example</code>을 복사해 붙여넣고(Ctrl+C, Ctrl+V), 생긴 파일의 이름을 <code>.env</code>로 바꾼다(F2).",
-                 "<code>.env</code>를 열어, 수업에서 받은 세 값을 <code>OPENAI_BASE_URL=</code>, <code>LLM_API_KEY=</code>, <code>LLM_MODEL=</code> 뒤에 하나씩 적는다. 등호 뒤에 빈칸을 두지 않는다. 맨 아래 줄은 그대로 둔다.",
+           steps("탐색기에서 <code>.env</code>를 연다.",
+                 "수업에서 받은 세 값을 <code>OPENAI_BASE_URL=</code>, <code>LLM_API_KEY=</code>, <code>LLM_MODEL=</code> 뒤에 하나씩 적는다. 등호 뒤에 빈칸을 두지 않는다. 맨 아래 줄은 그대로 둔다.",
                  "저장한다(Ctrl+S)."),
            good("주의", "API 키는 <code>.env</code>에만 적는다. 채팅이나 다른 파일에 붙여넣지 않는다."))
     + task(3, TERMINAL, "VS Code · 터미널", "LLM 서버에 연결되는지 확인한다",
            para("「터미널 → 새 터미널」을 열고 아래 명령을 실행한다."),
            command("python llm_client.py"),
            good("정상", "첫 줄이 <code>연결됨</code>으로 시작하고, 둘째 줄에 서버가 보낸 인사 한 문장이 나온다."),
-           otherwise((".env 파일이 없다고 나온다", "파일 이름이 정확히 <code>.env</code>인지 확인한다. <code>.env.example copy</code>나 <code>.env.txt</code>이면 읽지 못한다."),
+           otherwise(("값이 비어 있다고 나온다", "<code>.env</code>에 값을 적은 뒤 저장했는지 확인한다. 탭 이름 옆에 흰 점이 있으면 아직 저장되지 않은 것이다."),
                      ("키가 맞지 않는다 · 서버에 닿지 못했다고 나온다", "<code>.env</code>의 세 값을 받은 것과 다시 비교한다. 값 앞뒤에 따옴표나 빈칸이 들어갔는지 확인한다. 그래도 안 되면 강사에게 알린다.")))
     + task(4, EDITOR, "VS Code · 편집기와 종이", "사례 S01을 직접 판정해 둔다",
            para("이후 단계에서 에이전트의 판정이 맞는지 가리려면 기준이 되는 내 계산이 하나 필요하다."),

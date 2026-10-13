@@ -17,7 +17,7 @@
 
 ## 수업 전에 준비할 것
 
-- 학생마다 LLM 서버 접속 정보 세 값(`OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`)을 나눠 준다. 학생은 `.env.example`을 복사해 `.env`로 만들고 값을 적는다.
+- 학생마다 LLM 서버 접속 정보 세 값(`OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`)을 나눠 준다. 학생은 받은 폴더의 `.env`를 열어 등호 뒤에 값을 적는다. 저장소의 `.env`는 값이 비어 있어야 한다. 값을 적은 채로 커밋하지 않는다.
 - 학생 PC에서 서버에 닿는지 확인한다: 학생 폴더에서 `python llm_client.py`.
 - Python 3(표준 라이브러리만 쓴다), VS Code, GitHub Copilot 채팅.
 
