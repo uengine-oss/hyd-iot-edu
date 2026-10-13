@@ -9,16 +9,16 @@ description: "강의 이론 교재의 덱 화면 원고(MD)를 쓰고 deck2pptx.
 
 경로는 모두 저장소 루트 기준이다. 이 스킬의 상대 경로는 이 스킬 폴더 기준이다.
 
-이 저장소의 HYD 과정 덱은 `hyd-course-deck` 스킬과 `docs/교재/기준/제작기준.md`를 먼저 따른다. 이 스킬은 덱 MD의 형식과 생성 도구를 맡는다.
+이 저장소의 HYD 과정 덱은 `hyd-course-deck` 스킬과 `production/standards/제작기준.md`를 먼저 따른다. 이 스킬은 덱 MD의 형식과 생성 도구를 맡는다.
 
 ## 입력 확인
 
 HYD 교육과정 덱은 만들기 전에 아래를 읽는다. 다른 강의면 그 강의의 제작 기준을 먼저 찾는다.
 
-1. 제작 기준 `docs/교재/기준/제작기준.md` — 대상과 수준, 틀, 화법, 호흡, 일차 사이의 경계, 점검. 규칙은 거기에만 있다. 이 스킬 문서에 복사하지 않는다.
-2. 기술사실표 `docs/교재/기준/통합반_01일차_기술사실표.md`, `통합반_02-04일차_기술사실표.md` — 화면에 쓰는 사실의 근거. 확인하지 못한 것은 쓰지 않는다.
-3. 실라버스 `docs/교재/기준/1~4일차 실라버스 확정안.xlsx` — 주제, 순서, 이론/실습 구분만 가져온다.
-4. 같은 그림체의 실제 덱 — `docs/교재/통합반/샘플/샘플.md`, `docs/교재/통합반/01일차/통합반_01일차.md`. 짧은 발췌는 [1일차 앞부분 예시](references/examples/덱MD_예시_1일차_앞부분.md).
+1. 제작 기준 `production/standards/제작기준.md` — 대상과 수준, 틀, 화법, 호흡, 일차 사이의 경계, 점검. 규칙은 거기에만 있다. 이 스킬 문서에 복사하지 않는다.
+2. 기술사실표 `production/standards/통합반_01일차_기술사실표.md`, `통합반_02-04일차_기술사실표.md` — 화면에 쓰는 사실의 근거. 확인하지 못한 것은 쓰지 않는다.
+3. 실라버스 `production/standards/1~4일차 실라버스 확정안.xlsx` — 주제, 순서, 이론/실습 구분만 가져온다.
+4. 같은 그림체의 실제 덱 — `production/decks/integrated/sample/샘플.md`, `production/decks/integrated/day01/통합반_01일차.md`. 짧은 발췌는 [1일차 앞부분 예시](references/examples/덱MD_예시_1일차_앞부분.md).
 
 ## 작업
 
@@ -31,7 +31,7 @@ HYD 교육과정 덱은 만들기 전에 아래를 읽는다. 다른 강의면 �
    uv run --no-project --with python-pptx --with pymupdf python .claude/skills/lecture-deck/scripts/deck2pptx.py <덱.md> <출력.pptx> [--render <새 PNG 폴더>]
    ```
    스크립트가 멈추면 문구를 다듬거나 장을 나누거나 유형을 바꾼다. 도구의 한계는 우회하지 않고 도구를 고친다.
-6. **렌더해 본다.** `--render`는 LibreOffice(soffice)와 pdftoppm이 필요하고 한 번에 하나씩 돈다. 렌더 폴더는 새 이름으로 쓴다. 묶음 그림은 `docs/교재/도구/시트.py`로 만든다.
+6. **렌더해 본다.** `--render`는 LibreOffice(soffice)와 pdftoppm이 필요하고 한 번에 하나씩 돈다. 렌더 폴더는 새 이름으로 쓴다. 묶음 그림은 `production/tools/deck/시트.py`로 만든다.
 
 ## 검증
 

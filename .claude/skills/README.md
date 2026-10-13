@@ -24,7 +24,7 @@ lecture-plan ──► lecture-deck ──► lecture-lab ──► lecture-veri
  요구 · 계획        덱 · PPTX        실습 · 가이드      검토 · 완료 판정     묶음 · 업로드
 
 hyd-course-deck  = HYD 교재 덱의 절차. 형식과 도구는 lecture-deck, 규칙은 production/standards/제작기준.md, 경위는 production/handoff/
-hyd-lab-guide    = HYD 실습 가이드의 원칙. 일반 절차는 lecture-lab, 형식은 production/labs/_old/실습가이드/틀/, 착수는 production/handoff/06_실습가이드_착수.md
+hyd-lab-guide    = HYD 실습 랩과 가이드. 틀은 production/labs/STRUCTURE.md, 정해진 것과 상태는 production/handoff/07_대본_영상_랩.md
 ```
 
 - 보통 순서는 계획 → 덱 · 실습 → 검증 → 요청이 있을 때 배포다. 한 스킬의 일만 요청받았으면 그 스킬만 쓴다.

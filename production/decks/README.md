@@ -5,23 +5,20 @@
 HYD 제조 AI 교육과정의 이론 교재와 그것을 만드는 기준·도구다. 지금은 온라인 과정의 통합반 1~11일차(101 · 100 · 94 · 64 · 66 · 72 · 57 · 63 · 72 · 61 · 63장)와 실전반 1~8일차(101 · 93 · 75 · 75 · 88 · 66 · 53 · 63장), 오프라인 과정의 통합반 오프라인 1~10회차(40 · 42 · 42 · 54 · 43 · 42 · 62 · 40 · 32 · 53장)와 실전반 오프라인 1~9회차(42 · 43 · 52 · 41 · 41 · 62 · 36 · 31 · 54장)가 있다. 실전반 8일차는 통합반 11일차를 순서 그대로 가져온다. 실전반은 통합반 덱에서 장을 가져와 조립한다(제작 기준 13-1절). 실라버스는 사용자가 직접 쓰며 기준은 `기준/피지컬AI_실라버스_최종본.xlsx`다(통합반 1~4일차는 `기준/1~4일차 실라버스 확정안.xlsx`와 같다). 오프라인 과정(통합반 정규 10회, 실전반 정규 9회)의 덱도 통합반 덱에서 장을 골라 조립한다(제작 기준 13-2절). 실전반 오프라인의 원천도 실전반 온라인 덱이 아니라 통합반 덱이다.
 
 ```
-기준/제작기준.md            제작 기준(대상, 틀, 화법, 호흡, 점검). 덱을 만들기 전에 먼저 읽는다
-기준/통합반_01일차_기술사실표.md, 통합반_02-04일차_기술사실표.md, 통합반_05-08일차_기술사실표.md, 통합반_09-11일차_기술사실표.md   화면에 쓰는 기술 사실의 근거(일차 묶음별 넷)
-기준/1~4일차 실라버스 확정안.xlsx
-인계/                      새 세션용 인계 묶음(현황, 덱 고치는 법 · 만드는 법, 결정 기록, 남은 일, 실습 가이드 착수, 지시문). 안내 인계/README.md
-도구/시트.py               렌더한 장 PNG를 묶음 그림(한눈에 보기)으로 만든다
-도구/노션_스타일맞춤.py     기존 PPTX를 덱 디자인(표지, 색, 글꼴)에 맞춘다
-통합반/0N일차/             통합반_0N일차.md(원본), 통합반_0N일차.pptx, figures/(SVG, PNG, CSV, 그리는 스크립트)
-integrated/day11/보관/        시연으로 바꾸며 뺀 ProcessGPT 이론 단원의 원고(ProcessGPT단원_이론판.md). 덱에 쓰이지 않는다
-통합반/샘플/               컨펌받은 그림체 샘플(16장)
-통합반/통합반_01일차_노션으로 자산화하기.pptx
-실전반/만들기_01일차.py     실전반 1일차를 통합반 1일차 원고에서 낸다(실라버스가 같다)
-실전반/0N일차/             (2~8일차) 조립.py(가져올 장의 순서표와 손질 목록), 새장_0N일차.md(새로 쓴 장), 실전반_0N일차.md(조립 결과 — 직접 고치지 않는다), 실전반_0N일차.pptx
-통합반_오프라인/NN회차/    (01~10회차) 조립.py, 새장_NN회차.md, 통합반_오프라인_NN회차.md(조립 결과 — 직접 고치지 않는다), 통합반_오프라인_NN회차.pptx
-실전반_오프라인/NN회차/    (01~09회차) 조립.py, 새장_NN회차.md, 실전반_오프라인_NN회차.md(조립 결과 — 직접 고치지 않는다), 실전반_오프라인_NN회차.pptx
-기준/피지컬AI_실라버스_최종본.xlsx   통합반 · 실전반 온라인과 오프라인 네 시트
-배포/교재_전체.zip          과정별 폴더에 PPTX 38개. 덱을 다시 빌드하면 다시 만든다(안내 배포/README.md)
-../실습가이드/             실습 가이드의 틀과 형식 문서(production/labs/_old/실습가이드/). 가이드 본문은 아직 없다
+production/decks/
+  integrated/day01 … day11/           통합반_NN일차.md(원 덱 원고), figures/(SVG, PNG, CSV, 그리는 스크립트), 대본의 원문과 1차 윤문본
+  integrated/sample/                  컨펌받은 그림체 샘플(16장)
+  integrated/day11/보관/               시연으로 바꾸며 뺀 ProcessGPT 이론 단원의 원고. 덱에 쓰이지 않는다
+  practical/만들기_01일차.py            실전반 1일차를 통합반 1일차 원고에서 낸다(실라버스가 같다)
+  practical/day02 … day08/            조립.py(가져올 장의 순서표와 손질 목록), 새장_0N일차.md(새로 쓴 장), 실전반_0N일차.md(조립 결과. 직접 고치지 않는다)
+  integrated-offline/session01 … 10/  조립.py, 새장_NN회차.md, 통합반_오프라인_NN회차.md(조립 결과. 직접 고치지 않는다)
+  practical-offline/session01 … 09/   조립.py, 새장_NN회차.md, 실전반_오프라인_NN회차.md(조립 결과. 직접 고치지 않는다)
+
+course/slides/<과정>/                   만든 PPTX 38개와 노션 실습 덱
+production/standards/                  제작 기준, 기술사실표 넷, 실라버스 xlsx 둘
+production/tools/deck/                 시트.py(묶음 그림), 노션_스타일맞춤.py, 대본시간.py
+production/dist/교재_전체.zip           과정별 폴더에 PPTX 38개. 덱을 다시 빌드하면 다시 만든다
+production/handoff/                    인계 묶음. README.md부터 읽는다
 ```
 
 도구와 스킬은 저장소 루트의 `.claude/skills/`에 있다(아래 「스킬」 절).
@@ -35,13 +32,13 @@ integrated/day11/보관/        시연으로 바꾸며 뺀 ProcessGPT 이론 단
 실전반 2~8일차 덱 MD(`실전반_0N일차.md`)는 `조립.py`가 통합반 원고에서 만든 결과이므로 직접 고치지 않는다. 오프라인 과정의 덱 MD(`통합반_오프라인_NN회차.md`, `실전반_오프라인_NN회차.md`)도 같다. 통합반 원고를 고치면 해당 실전반 일차와 오프라인 회차의 조립과 빌드를 다시 한다.
 
 ```bash
-python3 production/decks/practical/0N일차/조립.py
-python3 production/decks/integrated-offline/NN회차/조립.py
-python3 production/decks/practical-offline/NN회차/조립.py
+python3 production/decks/practical/day0N/조립.py
+python3 production/decks/integrated-offline/sessionNN/조립.py
+python3 production/decks/practical-offline/sessionNN/조립.py
 python3 .claude/skills/hyd-course-deck/scripts/재조립.py --day N    # 통합반 N일차를 읽는 스크립트를 모두 돌린다(--dry-run이면 목록만)
 ```
 
-조립 스크립트는 모두 27개다(`조립.py` 26개와 `실전반/만들기_01일차.py`). 순서와 그 뒤의 빌드 · 배포 묶음 · 장수 맞추기는 `인계/02_덱_고치는_법.md` (나)에 있다.
+조립 스크립트는 모두 27개다(`조립.py` 26개와 `practical/만들기_01일차.py`). 순서와 그 뒤의 빌드 · 배포 묶음 · 장수 맞추기는 `production/handoff/02_덱_고치는_법.md` (나)에 있다.
 
 | 고친 통합반 일차 | 다시 만들 실전반 일차 | 다시 만들 통합반 오프라인 회차 | 다시 만들 실전반 오프라인 회차 |
 |---|---|---|---|
@@ -85,4 +82,4 @@ cd production/decks/integrated/day03/그림 && uv run --no-project --with matplo
 스킬(도구와 형식 문서)은 저장소의 `.claude/skills/`가 유일한 원본이다. 다른 곳에 사본을 두지 않고, 고칠 때는 여기서 고친다. 목록과 서로의 관계는 `.claude/skills/README.md`에 있다.
 
 - 이 교재에 쓰는 것은 `hyd-course-deck`(절차의 요약과 `scripts/재조립.py` · `장수.py` · `배포묶음.py`)과 `lecture-deck`(덱 MD → PPTX 도구 `scripts/deck2pptx.py`, 형식 문서 `references/덱MD-PPTX형식.md`)이다. 실습 가이드는 `hyd-lab-guide`다.
-- 스킬 문서는 제작 기준을 복사하지 않고 가리킨다. 규칙을 바꿀 때는 `기준/제작기준.md`를 고친다.
+- 스킬 문서는 제작 기준을 복사하지 않고 가리킨다. 규칙을 바꿀 때는 `production/standards/제작기준.md`를 고친다.

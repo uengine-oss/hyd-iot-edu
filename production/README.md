@@ -5,7 +5,7 @@
 | 폴더 | 내용 |
 |---|---|
 | `decks/` | 덱 원고(MD), 그림, 조립 스크립트. 통합반 대본의 원문과 1차 윤문본, 검사 기록도 일차 폴더에 함께 있다. 안내는 `decks/README.md` |
-| `labs/` | 랩의 틀(`STRUCTURE.md`), 랩마다의 완성본 · 실행 기록 · 가이드 생성 도구(`offline/`), 온라인 실습 영상의 촬영 대본(`online/`, `build_runsheet.py`), 이전 모양의 랩 열아홉 묶음(`_old/`) |
+| `labs/` | 랩의 틀(`STRUCTURE.md`), 랩마다의 완성본 · 실행 기록 · 가이드 생성 도구(`offline/`), 온라인 실습 영상의 촬영 대본(`online/`, `build_runsheet.py`), 이전 모양의 랩 열아홉 묶음(`_old/`). 안내는 `labs/README.md` |
 | `tools/deck/` | 대본 시간 계산, 시트 변환, 노션 덱 스타일 맞춤 |
 | `tools/video/` | 강의 영상(`강의영상.py`), 대본 윤문(`윤문.py`, `윤문2.py`), 장마다 쉴 자리(`쉼_저장/`) |
 | `standards/` | 제작 기준, 기술사실표, 실라버스 |
@@ -29,11 +29,8 @@
 |---|---|---|---|
 | 덱 PPTX | `decks/<과정>/<단위>/…md` | `.claude/skills/hyd-course-deck/scripts/재조립.py --build` | `course/slides/<과정>/` |
 | 조립 덱의 원고 | 통합반 원고 + `새장_….md` | 각 폴더의 `조립.py` | 같은 폴더의 `…md` |
-| 최종 대본 | `decks/integrated/dayNN/…_대본_윤문.md` | `tools/video/윤문2.py` | 같은 폴더에 `…_윤문2.md`가 생긴다. 확인한 뒤 `course/scripts/integrated/`로 옮긴다 |
+| 최종 대본 | `course/scripts/integrated/…_윤문2.md`를 직접 고친다 | 고친 문단만 모아 한 번 윤문한다(`handoff/07_대본_영상_랩.md` 4절) | `course/scripts/integrated/` |
+| 실습 촬영 대본 | `labs/online/<폴더>/runsheet.json` | `labs/build_runsheet.py` | 같은 폴더의 `runsheet.html` |
 | 강의 영상 | `course/scripts/` + `course/slides/` | `tools/video/강의영상.py` | 저장소 밖 |
 | 랩 가이드 | `labs/offline/<랩>/build_guide.py` | 같은 파일 | `course/labs/offline/<랩>/guide.html` |
 | 배포 zip | `course/slides/` | `.claude/skills/hyd-course-deck/scripts/배포묶음.py` | `dist/교재_전체.zip` |
-
-## 2026-10-13의 폴더 정리
-
-`docs/교재/`, `lab/`, `video_lecture/`에 섞여 있던 것을 산출물(`course/`)과 제작용(`production/`)으로 나눴다. 옮긴 뒤 조립 스크립트 36개를 모두 다시 돌려 결과가 같음을 확인했고, 장수 세기 · 배포 묶음 검사 · 영상 도구의 미리 보기(`--dry`)가 새 경로에서 돈다. 인계 문서와 지시문 안의 경로는 기계적으로 바꿨으므로, PPTX의 자리를 말하는 문장은 `course/slides/`로 읽는다.
