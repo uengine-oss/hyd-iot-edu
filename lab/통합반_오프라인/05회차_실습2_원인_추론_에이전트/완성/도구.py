@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 _폴더 = Path(__file__).resolve().parent
-_그래프_경로 = _폴더 / "온톨로지" / "graph.json"
+_그래프_경로 = _폴더 / "온톨로지" / "그래프.json"
 _입력_경로 = _폴더 / "입력" / "센서_입력.json"
 
 

@@ -13,7 +13,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # __pycache__를 만들지 않는다
 
 import 도구  # noqa: E402
-import 모델  # noqa: E402
+import 연결  # noqa: E402
 
 _폴더 = Path(__file__).resolve().parent
 _정의_경로 = _폴더 / "에이전트_정의.json"
@@ -66,7 +66,7 @@ def _고리(사례, 정의):
     기록, 본_물음, 도구_거둠 = [], set(), False
 
     for _ in range(정의["멈춤_조건"]["최대_횟수"]):
-        답 = 모델.묻기(대화, None if 도구_거둠 else _도구_설명(허용))
+        답 = 연결.묻기(대화, None if 도구_거둠 else _도구_설명(허용))
         부름 = 답.get("tool_calls") or []
         if not 부름:
             return 답.get("content") or "", 기록, "같은 물음을 되풀이해 도구를 거두고 답을 받음" if 도구_거둠 else "답을 냄"

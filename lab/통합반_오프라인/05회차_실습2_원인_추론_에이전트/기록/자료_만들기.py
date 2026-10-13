@@ -1,6 +1,6 @@
-"""통합반 오프라인 05회차 실습 2의 시작 폴더 자료(온톨로지/graph.json · schema.json)를 만든다.
+"""통합반 오프라인 05회차 실습 2의 시작 폴더 자료(온톨로지/그래프.json · 스키마.json)를 만든다.
 저장소의 it/neo4j/v2/instances.cypher · knowledge_a098.cypher(전체판 시드)와 docs/samples/HM-8_cooler-fan-manual.md 에서
-이 실습이 쓰는 부분만 손으로 옮겨 적었다. schema.json 은 it/neo4j/v2/schema.json 에서 쓰는 클래스와 관계만 추린다.
+이 실습이 쓰는 부분만 손으로 옮겨 적었다. 스키마.json 은 it/neo4j/v2/schema.json 에서 쓰는 클래스와 관계만 추린다.
 사용: python3 자료_만들기.py <저장소 루트> <내보낼 폴더>"""
 import json, sys
 from pathlib import Path
@@ -155,7 +155,7 @@ for s, c in [['skill:sop-cool-14', 'cause:cooler-fin-fouling'], ['skill:sop-cool
 ids = [n['props']['id'] for n in N]; assert len(ids) == len(set(ids))
 for r in R: assert r['a'] in ids and r['b'] in ids, r
 def dump(objs): return ',\n'.join('    ' + json.dumps(o, ensure_ascii=False) for o in objs)
-(OUT / 'graph.json').write_text('{\n  "nodes": [\n' + dump(N) + '\n  ],\n  "rels": [\n' + dump(R) + '\n  ]\n}\n', encoding='utf-8')
+(OUT / '그래프.json').write_text('{\n  "nodes": [\n' + dump(N) + '\n  ],\n  "rels": [\n' + dump(R) + '\n  ]\n}\n', encoding='utf-8')
 
 # schema.json: 저장소 스키마에서 이 그래프가 쓰는 클래스 · 관계 · 속성만 추린다
 S = json.loads((REPO / 'it/neo4j/v2/schema.json').read_text(encoding='utf-8'))
@@ -183,6 +183,6 @@ for r in R:
     d = next(x for x in rels if x['type'] == r['type']); assert lab[r['a']] in d['from'] and lab[r['b']] in d['to'], r
 sch = {'name': 'HYD 유압 파워팩 공용 온톨로지 (설비 진단 부분)', 'version': S['version'],
        'conventions': {k: S['conventions'][k] for k in ('id', 'name', 'sign', 'label_ko')}, 'classes': classes, 'relationships': rels}
-(OUT / 'schema.json').write_text(json.dumps(sch, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+(OUT / '스키마.json').write_text(json.dumps(sch, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 from collections import Counter
 print(len(N), len(R), Counter(n['labels'][0] for n in N), Counter(r['type'] for r in R))

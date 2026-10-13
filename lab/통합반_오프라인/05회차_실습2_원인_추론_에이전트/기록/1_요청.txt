@@ -1,4 +1,4 @@
-이 폴더의 규칙(.github/copilot-instructions.md)과 온톨로지 폴더의 세 파일, 입력 폴더의 두 파일, 에이전트_정의.json, 모델.py 를 읽어 줘. .env 는 열지 마.
+이 폴더의 규칙(.github/copilot-instructions.md)과 온톨로지 폴더의 세 파일, 입력 폴더의 두 파일, 에이전트_정의.json, 연결.py 를 읽어 줘. 접속_정보.txt 는 열지 마.
 
 경보 패턴 COOLER_DEGRADATION에서 원인 후보와 증거까지 온톨로지의 어떤 관계를 따라가는지 한 줄씩 적고, 사례 S01을 원인 후보마다 증거의 기준에 대어 본 결과를 표로 적어 줘.
 
