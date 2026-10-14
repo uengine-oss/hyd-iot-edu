@@ -324,7 +324,7 @@ def envelope(cx, cy, st: St):
 def lineage_mqtt() -> str:
     """리니지 1단계(MQTT)만 크게: 설비 → 게이트웨이(발행자) → 브로커 → 구독자 둘. 아직 다루지 않은 IT 구간은 그리지 않는다.
     라벨은 그림 하나에 하나씩 붙는다: 봉투(토픽) · 브로커는 위, 나머지는 아래. 그림 사이 간격은 고르게 둔다."""
-    w, h, r1, r2 = 1100, 500, 205, 385
+    w, h, r1, r2 = 1100, 500, 190, 345
     x = dict(equip=110, plc=350, env=530, emqx=710, ingest=980)
     o: list[str] = [rect(12, 8, 848, 484, 14, fill=LIGHT, stroke="none", sw=0),        # OT
                     rect(875, 8, 213, 484, 14, fill=LIGHT, stroke="none", sw=0)]       # DMZ

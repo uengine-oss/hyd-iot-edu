@@ -818,6 +818,7 @@ def render_illust(sl, s, page, base: Path):
     pic.name = "삽화:" + Path(s.fields["그림"]).name
     t_pt, d_pt = (16, 13) if s.fields.get("라벨") == "큰" else (13.5, 11)   # `라벨: 큰` = 라벨이 적고 그림이 큰 장
     ink = drawing_edges(picture_file(base, s.fields["그림"]), pw, ph)
+    placed: list[tuple[str, list]] = []
     for i, it in enumerate(s.items):
         nums = [float(v) for v in it.tag.split(",")]
         w = pw * (nums[2] if len(nums) > 2 else 16) / 100
@@ -829,14 +830,22 @@ def render_illust(sl, s, page, base: Path):
         add_text(sl, x, y, w, h, text, d_pt, MUTED,
                  align=PP_ALIGN.CENTER, first_size=t_pt, first_color=SKY_D if it.strong else NAVY,
                  name=f"라벨 「{it.plain_title}」", slide_no=s.no, space_after=1)
-        hit = label_on_drawing(ink, x - px, y - py, w, it, t_pt, d_pt)
+        rows = label_rows(x - px, y - py, w, it, t_pt, d_pt)
+        hit = label_on_drawing(ink, rows)
         if hit:
-            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹침 "
-                            f"(좌표를 옮기거나 폭을 바꾼다)")
+            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹치거나 "
+                            f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
+        g = LABEL_GAP
+        for name, other in placed:      # 라벨끼리도 LABEL_GAP만큼 떨어져야 한다
+            if any(a[0] < b[2] + g and b[0] < a[2] + g and a[1] < b[3] + g and b[1] < a[3] + g for a in rows for b in other):
+                FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」이 라벨 「{name}」과 겹치거나 "
+                                f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
+        placed.append((it.plain_title, rows))
 
 
 EDGE = 24          # 이웃 픽셀과 밝기가 이만큼 넘게 다르면 그림의 선 · 아이콘 · 글자의 가장자리다(흐린 선 약 30, 같은 색 칸 안은 0)
 EDGE_SHARE = 0.01  # 라벨 한 줄의 글자 자리에서 가장자리 픽셀이 이만큼을 넘으면 겹친 것으로 본다(가는 선 하나가 지나가면 약 2%)
+LABEL_GAP = 0.1    # 라벨 글자와 그림 사이에 둘 여백(인치). 글자 자리를 이만큼 넓혀 재므로 붙어 있어도 실패한다
 
 
 def drawing_edges(png: Path, pw: float, ph: float):
@@ -847,23 +856,49 @@ def drawing_edges(png: Path, pw: float, ph: float):
     return flat.convert("L").filter(ImageFilter.FIND_EDGES)
 
 
-def label_on_drawing(edges, x, y, w, it, t_pt, d_pt) -> int:
-    """라벨 글상자 안의 줄마다 글자가 차지하는 자리(가운데 맞춤)를 그림의 가장자리와 맞대어, 겹친 첫 줄 번호를 돌려준다(없으면 0).
-    x · y · w는 그림 왼쪽 위 기준 인치."""
+def label_rows(x, y, w, it, t_pt, d_pt) -> list[tuple[float, float, float, float]]:
+    """라벨 글상자 안의 줄마다 글자가 차지하는 자리(가운데 맞춤)의 (왼, 위, 오른, 아래). 그림 왼쪽 위 기준 인치."""
     rows = [(lw, t_pt) for lw in wrap_widths(it.plain_title, t_pt, w - 0.2)]
     if it.lines:
         rows += [(lw, d_pt) for lw in wrap_widths("\n".join(it.lines), d_pt, w - 0.2)]
-    cy = y + 0.05
-    for k, (lw, pt) in enumerate(rows, 1):
+    out, cy = [], y + 0.05
+    for lw, pt in rows:
         lh = pt * LINE_SPACING / 72
-        box = (max(1, round((x + w / 2 - lw / 2) * 100)), max(1, round((cy + lh * 0.15) * 100)),
-               min(edges.width - 1, round((x + w / 2 + lw / 2) * 100)), min(edges.height - 1, round((cy + lh * 0.85) * 100)))
+        out.append((x + w / 2 - lw / 2, cy + lh * 0.15, x + w / 2 + lw / 2, cy + lh * 0.85))
         cy += lh
+    return out
+
+
+def label_on_drawing(edges, rows) -> int:
+    """라벨의 줄마다 글자 자리를 그림의 가장자리와 맞대어, 겹치거나 붙은 첫 줄 번호를 돌려준다(없으면 0).
+    글자 자리에 그림이 들어오면 겹침, 둘레 LABEL_GAP 안에 들어오면 붙음이다. 다만 글자 위와 아래(각 3 × LABEL_GAP 안)를
+    칸의 테두리가 가로지르면 칸 안에 쓴 글자(표의 행처럼)로 보고 붙음은 따지지 않는다."""
+    def px(v):
+        return round(v * 100)
+
+    def clip(b):
+        return max(1, b[0]), max(1, b[1]), min(edges.width - 1, b[2]), min(edges.height - 1, b[3])
+
+    def share(box):
         if box[2] <= box[0] or box[3] <= box[1]:
-            continue
+            return 0.0
         hist = edges.crop(box).histogram()
-        if sum(hist[EDGE + 1:]) / sum(hist) > EDGE_SHARE:
+        return sum(hist[EDGE + 1:]) / sum(hist)
+
+    def border(box):        # 띠를 가로지르는 선이 글자 폭의 60 % 넘게 이어지는가
+        if box[2] <= box[0] or box[3] <= box[1]:
+            return False
+        cols = edges.crop(box).point(lambda v: 255 if v > EDGE else 0).resize((box[2] - box[0], 1), Image.BOX)
+        return sum(1 for v in cols.tobytes() if v) / cols.width > 0.6
+
+    g = LABEL_GAP
+    for k, (x0, y0, x1, y1) in enumerate(rows, 1):
+        if share(clip((px(x0), px(y0), px(x1), px(y1)))) > EDGE_SHARE:
             return k
+        if share(clip((px(x0 - g), px(y0 - g), px(x1 + g), px(y1 + g)))) > EDGE_SHARE:
+            boxed = border(clip((px(x0), px(y0 - 3 * g), px(x1), px(y0)))) and border(clip((px(x0), px(y1), px(x1), px(y1 + 3 * g))))
+            if not boxed:
+                return k
     return 0
 
 
