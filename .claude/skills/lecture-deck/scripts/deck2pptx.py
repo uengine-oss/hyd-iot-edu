@@ -871,7 +871,7 @@ def label_rows(x, y, w, it, t_pt, d_pt) -> list[tuple[float, float, float, float
 
 def label_on_drawing(edges, rows) -> int:
     """라벨의 줄마다 글자 자리를 그림의 가장자리와 맞대어, 겹치거나 붙은 첫 줄 번호를 돌려준다(없으면 0).
-    글자 자리에 그림이 들어오면 겹침, 둘레 LABEL_GAP 안에 들어오면 붙음이다. 다만 글자 위와 아래(각 3 × LABEL_GAP 안)를
+    글자 자리에 그림이 들어오면 겹침, 둘레 LABEL_GAP 안에 들어오면 붙음이다. 다만 라벨 전체의 위와 아래(각 3 × LABEL_GAP 안)를
     칸의 테두리가 가로지르면 칸 안에 쓴 글자(표의 행처럼)로 보고 붙음은 따지지 않는다."""
     def px(v):
         return round(v * 100)
@@ -892,13 +892,15 @@ def label_on_drawing(edges, rows) -> int:
         return sum(1 for v in cols.tobytes() if v) / cols.width > 0.6
 
     g = LABEL_GAP
+    lx0, lx1 = min(r[0] for r in rows), max(r[2] for r in rows)
+    top, bottom = rows[0][1], rows[-1][3]
+    boxed = (border(clip((px(lx0), px(top - 3 * g), px(lx1), px(top))))           # 라벨 전체의 위와 아래를 칸 테두리가 가로지른다
+             and border(clip((px(lx0), px(bottom), px(lx1), px(bottom + 3 * g)))))
     for k, (x0, y0, x1, y1) in enumerate(rows, 1):
         if share(clip((px(x0), px(y0), px(x1), px(y1)))) > EDGE_SHARE:
             return k
-        if share(clip((px(x0 - g), px(y0 - g), px(x1 + g), px(y1 + g)))) > EDGE_SHARE:
-            boxed = border(clip((px(x0), px(y0 - 3 * g), px(x1), px(y0)))) and border(clip((px(x0), px(y1), px(x1), px(y1 + 3 * g))))
-            if not boxed:
-                return k
+        if not boxed and share(clip((px(x0 - g), px(y0 - g), px(x1 + g), px(y1 + g)))) > EDGE_SHARE:
+            return k
     return 0
 
 
