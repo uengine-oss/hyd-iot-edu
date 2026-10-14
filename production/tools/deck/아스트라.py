@@ -22,6 +22,7 @@ import urllib.request
 from pathlib import Path
 
 MODEL = "gpt-6-astra"
+KEY_VARS = {"OPENAI_API_KEY", "OPENAI_BASE_URL", "REAL_OPEN_API_KEY", "LLM_API_KEY"}   # 계정 경로에는 API 키 · 다른 주소가 닿지 않게 뺀다
 
 
 def by_codex(req_file: Path, out_file: Path):
@@ -35,7 +36,8 @@ def by_codex(req_file: Path, out_file: Path):
         r = subprocess.run(["codex", "exec", "--skip-git-repo-check", "--ephemeral", "--ignore-user-config", "--ignore-rules",
                             "-s", "read-only", "-C", work, "-m", MODEL, "-c", 'model_reasoning_effort="medium"',
                             "-o", str(out_file.resolve()), "-"],
-                           input=req_file.read_text(encoding="utf-8"), capture_output=True, text=True, timeout=1800)
+                           input=req_file.read_text(encoding="utf-8"), capture_output=True, text=True, timeout=1800,
+                           env={k: v for k, v in os.environ.items() if k not in KEY_VARS})
     if r.returncode:
         sys.exit(f"[실패] codex exec 종료 {r.returncode}: {(r.stderr or r.stdout)[-600:]}")
     if not out_file.exists() or not out_file.read_text(encoding="utf-8").strip():
