@@ -9,7 +9,7 @@
   같은 이름에 `_원문.txt`도 함께 남긴다. 제목, 그림 좌표, 코드, 아이콘, 유형은 뽑지 않는다.
 - 검사: 키마다 숫자, 영문 이름, 굵게 표시(**), 화면 줄바꿈( / )의 수가 원문과 같은지 본다. 다르면 키와 함께 찍고 실패한다.
 - 넣기: 윤문 파일의 문구를 덱 MD의 같은 자리에 되돌려 넣는다. 키가 하나라도 빠지거나 늘면 아무것도 쓰지 않고 멈춘다.
-- 자르기: 첫 장부터 끝 장까지만 담은 덱 MD를 만든다(검토용 빌드). 그림 경로는 원래 덱 폴더를 가리키게 바꾼다.
+- 자르기: 첫 장부터 끝 장까지만 담은 덱 MD를 만든다(검토용 빌드). 첫 장이 1이 아니면 표지(1장)를 앞에 붙인다. 그림 경로는 원래 덱 폴더를 가리키게 바꾼다.
 """
 import re
 import sys
@@ -125,6 +125,8 @@ def main():
         print(f"{md} — 문구 {len(pairs)}개를 넣음")
     elif cmd == "자르기":
         keep = "".join(b for _, b in 장들(t, first, last))
+        if first > 1:          # 덱의 첫 장은 표지여야 하므로 1장(표지)을 앞에 붙인다
+            keep = "".join(b for _, b in 장들(t, 1, 1)) + keep
         head = t[: t.index("## SLIDE ")]
         fig = (md.parent / "figures").resolve().as_posix()
         out.write_text((head + keep).replace("- 그림: figures/", f"- 그림: {fig}/"), encoding="utf-8")
