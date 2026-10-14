@@ -140,7 +140,7 @@ def parse(md_path: Path) -> list[Slide]:
             continue
         im = ITEM_RE.match(raw)
         if in_items and im:
-            parts = [p.strip() for p in re.split(r"(?<=\s)\|(?=\s|$)", im.group(1))]   # 빈 칸(`a | | c`)도 칸으로 센다
+            parts = [p.strip() for p in re.split(r"(?<=\s)\|(?=\s|$)", " " + im.group(1))]   # 빈 칸(`a | | c`, `| b | c`)도 칸으로 센다
             if len(parts) > 3:
                 raise DeckError(f"{md_path.name}:{ln} SLIDE {cur.no:02d} 요소 칸이 3개를 넘음: {raw.strip()}")
             cur.items.append(Item(*parts))
@@ -822,25 +822,27 @@ def render_illust(sl, s, page, base: Path):
     for i, it in enumerate(s.items):
         nums = [float(v) for v in it.tag.split(",")]
         w = pw * (nums[2] if len(nums) > 2 else 16) / 100
-        text = it.plain_title + ("\n" + "\n".join(it.lines) if it.lines else "")
-        n1 = line_count(it.plain_title, t_pt, w - 0.2)
+        small = not it.plain_title          # 이름 칸이 비면 설명 줄만 작은 글씨로 쓴다(그래프의 관계 이름처럼)
+        text = "\n".join(it.lines) if small else it.plain_title + ("\n" + "\n".join(it.lines) if it.lines else "")
+        n1 = 0 if small else line_count(it.plain_title, t_pt, w - 0.2)
         n2 = line_count("\n".join(it.lines), d_pt, w - 0.2) if it.lines else 0
         h = (n1 * t_pt + n2 * d_pt) * LINE_SPACING / 72 + 0.14
         x, y = px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100
-        add_text(sl, x, y, w, h, text, d_pt, MUTED,
-                 align=PP_ALIGN.CENTER, first_size=t_pt, first_color=SKY_D if it.strong else NAVY,
-                 name=f"라벨 「{it.plain_title}」", slide_no=s.no, space_after=1)
+        label = text.replace("\n", " ")
+        add_text(sl, x, y, w, h, text, d_pt, NAVY if small else MUTED,
+                 align=PP_ALIGN.CENTER, first_size=None if small else t_pt, first_color=SKY_D if it.strong else NAVY,
+                 name=f"라벨 「{label}」", slide_no=s.no, space_after=1)
         rows = label_rows(x - px, y - py, w, it, t_pt, d_pt)
         hit = label_on_drawing(ink, rows)
         if hit:
-            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹치거나 "
+            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{label}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹치거나 "
                             f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
         g = LABEL_GAP
         for name, other in placed:      # 라벨끼리도 LABEL_GAP만큼 떨어져야 한다
             if any(a[0] < b[2] + g and b[0] < a[2] + g and a[1] < b[3] + g and b[1] < a[3] + g for a in rows for b in other):
-                FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」이 라벨 「{name}」과 겹치거나 "
+                FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{label}」이 라벨 「{name}」과 겹치거나 "
                                 f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
-        placed.append((it.plain_title, rows))
+        placed.append((label, rows))
 
 
 EDGE = 24          # 이웃 픽셀과 밝기가 이만큼 넘게 다르면 그림의 선 · 아이콘 · 글자의 가장자리다(흐린 선 약 30, 같은 색 칸 안은 0)
@@ -858,7 +860,7 @@ def drawing_edges(png: Path, pw: float, ph: float):
 
 def label_rows(x, y, w, it, t_pt, d_pt) -> list[tuple[float, float, float, float]]:
     """라벨 글상자 안의 줄마다 글자가 차지하는 자리(가운데 맞춤)의 (왼, 위, 오른, 아래). 그림 왼쪽 위 기준 인치."""
-    rows = [(lw, t_pt) for lw in wrap_widths(it.plain_title, t_pt, w - 0.2)]
+    rows = [(lw, t_pt) for lw in wrap_widths(it.plain_title, t_pt, w - 0.2)] if it.plain_title else []
     if it.lines:
         rows += [(lw, d_pt) for lw in wrap_widths("\n".join(it.lines), d_pt, w - 0.2)]
     out, cy = [], y + 0.05
