@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pymupdf
+from PIL import Image, ImageFilter
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
@@ -288,28 +289,33 @@ def text_w(text: str, pt: float) -> float:
     return sum(char_em(c) for c in plain(text)) * pt / 72
 
 
-def line_count(text: str, pt: float, width_in: float) -> int:
+def wrap_widths(text: str, pt: float, width_in: float) -> list[float]:
+    """상자 폭에서 줄바꿈된 줄마다의 글자 폭(인치)."""
     per_em = pt / 72
-    total = 0
+    out = []
     for para in plain(text).split("\n"):
-        lines, cur = 1, 0.0
+        cur = 0.0
         for word in para.split(" "):
             w = sum(char_em(c) for c in word) * per_em
             sp = 0.3 * per_em if cur else 0
             if cur + sp + w <= width_in:
                 cur += sp + w
             elif w <= width_in:
-                lines += 1
+                out.append(cur)
                 cur = w
             else:  # 긴 낱말은 글자 단위로 끊긴다
                 for c in word:
                     cw = char_em(c) * per_em
                     if cur + cw > width_in:
-                        lines += 1
+                        out.append(cur)
                         cur = 0
                     cur += cw
-        total += lines
-    return total
+        out.append(cur)
+    return out
+
+
+def line_count(text: str, pt: float, width_in: float) -> int:
+    return len(wrap_widths(text, pt, width_in))
 
 
 class Fit:
@@ -811,6 +817,7 @@ def render_illust(sl, s, page, base: Path):
     pic.left, pic.top = Inches(px), Inches(py)
     pic.name = "삽화:" + Path(s.fields["그림"]).name
     t_pt, d_pt = (16, 13) if s.fields.get("라벨") == "큰" else (13.5, 11)   # `라벨: 큰` = 라벨이 적고 그림이 큰 장
+    ink = drawing_edges(picture_file(base, s.fields["그림"]), pw, ph)
     for i, it in enumerate(s.items):
         nums = [float(v) for v in it.tag.split(",")]
         w = pw * (nums[2] if len(nums) > 2 else 16) / 100
@@ -818,9 +825,46 @@ def render_illust(sl, s, page, base: Path):
         n1 = line_count(it.plain_title, t_pt, w - 0.2)
         n2 = line_count("\n".join(it.lines), d_pt, w - 0.2) if it.lines else 0
         h = (n1 * t_pt + n2 * d_pt) * LINE_SPACING / 72 + 0.14
-        add_text(sl, px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100, w, h, text, d_pt, MUTED,
+        x, y = px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100
+        add_text(sl, x, y, w, h, text, d_pt, MUTED,
                  align=PP_ALIGN.CENTER, first_size=t_pt, first_color=SKY_D if it.strong else NAVY,
                  name=f"라벨 「{it.plain_title}」", slide_no=s.no, space_after=1)
+        hit = label_on_drawing(ink, x - px, y - py, w, it, t_pt, d_pt)
+        if hit:
+            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{it.plain_title}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹침 "
+                            f"(좌표를 옮기거나 폭을 바꾼다)")
+
+
+EDGE = 24          # 이웃 픽셀과 밝기가 이만큼 넘게 다르면 그림의 선 · 아이콘 · 글자의 가장자리다(흐린 선 약 30, 같은 색 칸 안은 0)
+EDGE_SHARE = 0.01  # 라벨 한 줄의 글자 자리에서 가장자리 픽셀이 이만큼을 넘으면 겹친 것으로 본다(가는 선 하나가 지나가면 약 2%)
+
+
+def drawing_edges(png: Path, pw: float, ph: float):
+    """그림을 1인치 = 100픽셀로 줄여 흰 바탕에 얹고, 가장자리 세기(0~255)만 남긴 흑백 그림. 같은 색으로 칠한 칸은 0이다."""
+    im = Image.open(png).convert("RGBA").resize((round(pw * 100), round(ph * 100)))
+    flat = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    flat.alpha_composite(im)
+    return flat.convert("L").filter(ImageFilter.FIND_EDGES)
+
+
+def label_on_drawing(edges, x, y, w, it, t_pt, d_pt) -> int:
+    """라벨 글상자 안의 줄마다 글자가 차지하는 자리(가운데 맞춤)를 그림의 가장자리와 맞대어, 겹친 첫 줄 번호를 돌려준다(없으면 0).
+    x · y · w는 그림 왼쪽 위 기준 인치."""
+    rows = [(lw, t_pt) for lw in wrap_widths(it.plain_title, t_pt, w - 0.2)]
+    if it.lines:
+        rows += [(lw, d_pt) for lw in wrap_widths("\n".join(it.lines), d_pt, w - 0.2)]
+    cy = y + 0.05
+    for k, (lw, pt) in enumerate(rows, 1):
+        lh = pt * LINE_SPACING / 72
+        box = (max(1, round((x + w / 2 - lw / 2) * 100)), max(1, round((cy + lh * 0.15) * 100)),
+               min(edges.width - 1, round((x + w / 2 + lw / 2) * 100)), min(edges.height - 1, round((cy + lh * 0.85) * 100)))
+        cy += lh
+        if box[2] <= box[0] or box[3] <= box[1]:
+            continue
+        hist = edges.crop(box).histogram()
+        if sum(hist[EDGE + 1:]) / sum(hist) > EDGE_SHARE:
+            return k
+    return 0
 
 
 def render_terms(sl, s, page):
