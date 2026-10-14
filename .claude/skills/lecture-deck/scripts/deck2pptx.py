@@ -360,9 +360,48 @@ def set_font(run, size, color, bold=False, face=FONT):
         el.set("typeface", FONT)      # 한글은 고정폭 글꼴 상자에서도 덱 글꼴로
 
 
+UNIT_GLUE = re.compile(r"(\d) (℃|%|bar\b|mm/s|ms\b|Hz\b|초|분|시간|장\b|개\b|번\b)")
+TAIL_SHRINK = 1.0   # 꼬리 줄을 없애려고 글자를 줄여 보는 한도(pt)
+
+
+def tail_lines(text: str, pt: float, width_in: float, skip_first: bool) -> int:
+    """마지막 줄이 짧은 낱말 하나뿐인 문단(꼬리 줄)의 수. 줄바꿈은 띄어쓰기 단위(eaLnBrk=0과 같다)."""
+    n = 0
+    for i, para in enumerate(text.split("\n")):
+        if skip_first and i == 0:
+            continue
+        widths = wrap_widths(para, pt, width_in)
+        words = plain(para).split()
+        if len(widths) < 2 or not words:
+            continue
+        last_w = sum(char_em(c) for c in words[-1]) * pt / 72
+        if widths[-1] <= last_w + 0.01 and widths[-1] < max(0.55, 0.18 * width_in):   # 마지막 줄 = 짧은 낱말 하나
+            n += 1
+    return n
+
+
+def fit_tail(text: str, size: float, w: float, first_size, face) -> float:
+    """꼬리 줄이 있으면 글자를 0.5pt씩 TAIL_SHRINK까지 줄여 꼬리가 사라지는 크기를 찾는다. 없으면 원래 크기."""
+    if face != FONT or "\n" not in text and line_count(text, size, w - 0.2) < 2:
+        return size
+    skip = bool(first_size)
+    base = tail_lines(text, size, w - 0.2, skip)
+    if not base:
+        return size
+    pt = size - 0.5
+    while pt >= size - TAIL_SHRINK - 1e-6:
+        if tail_lines(text, pt, w - 0.2, skip) < base:
+            return pt
+        pt -= 0.5
+    return size
+
+
 def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LEFT,
              anchor=MSO_ANCHOR.TOP, hi_color=SKY_D, name=None, slide_no=0, max_lines=None,
              space_after=0, first_size=None, first_color=None, face=FONT):
+    text = UNIT_GLUE.sub("\\1\u00a0\\2", text)   # 숫자와 단위(55 ℃, 46.2 %)가 두 줄로 갈리지 않게 붙인다
+    if not max_lines or max_lines > 1:
+        size = fit_tail(text, size, w, first_size, face)
     if name:
         FIT.check(slide_no, name, text, size, w, h, max_lines, first_size, mono=face == MONO)
     tb = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
@@ -376,6 +415,7 @@ def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LE
         p = tf.paragraphs[0] if pi == 0 else tf.add_paragraph()
         p.alignment = align
         p.line_spacing = 1.1
+        p._p.get_or_add_pPr().set("eaLnBrk", "0")   # 한글 낱말을 글자 사이에서 자르지 않는다(줄은 띄어쓰기에서만 바뀐다)
         if space_after:
             p.space_after = Pt(space_after)
         first = bool(first_size) and pi == 0
@@ -578,12 +618,13 @@ def render_divider(sl, s: Slide, _page):
 FILL = 0.8   # 카드 · 비교 · 흐름 · 단계: 본문 영역 높이의 이만큼까지 글자를 키워 채운다(내용이 적어 위아래가 비지 않게)
 
 
-def grow(base: float, cap: float, height_at, avail: float, step: float = 0.5) -> float:
-    """base pt에서 cap pt까지 step씩 키워 보며, height_at(pt)가 avail * FILL 안에 드는 가장 큰 크기를 돌려준다.
-    base에서도 넘치면 base 그대로(넘침은 Fit 검사가 잡는다)."""
+def grow(base: float, cap: float, height_at, avail: float, step: float = 0.5, tails=None) -> float:
+    """base pt에서 cap pt까지 step씩 키워 보며, height_at(pt)가 avail * FILL 안에 들고
+    tails(pt)(꼬리 줄의 수)가 base보다 늘지 않는 가장 큰 크기를 돌려준다. base에서도 넘치면 base 그대로(넘침은 Fit 검사가 잡는다)."""
     best, pt = base, base
+    t0 = tails(base) if tails else 0
     while pt <= cap + 1e-6:
-        if height_at(pt) <= avail * FILL:
+        if height_at(pt) <= avail * FILL and (not tails or tails(pt) <= t0):
             best = pt
         pt += step
     return best
@@ -612,7 +653,8 @@ def render_flow(sl, s, page):
         tl = max(line_count(it.plain_title, tpt, w - 0.36) for it in s.items)
         return 0.3 + d + 0.25 + tl * tpt * LINE_SPACING / 72 + 0.4 + need * pt * LINE_SPACING / 72 + 0.3
 
-    desc_pt = grow(base, base + 3, flow_h, end - top)
+    desc_pt = grow(base, base + 3, flow_h, end - top,
+                   tails=lambda pt: sum(tail_lines("\n".join(it.lines), pt, w - 0.36, False) for it in s.items))
     h = min(end - top, flow_h(desc_pt))
     y = top + (end - top - h) / 2
     for i, it in enumerate(s.items):
@@ -644,7 +686,9 @@ def render_cards(sl, s, page):
         return (0.22 + (d + 0.1 if s.icons else 0) + need + 0.45
                 + (0.55 if any(it.tag for it in s.items) else 0.12))   # 내용이 적으면 빈 칸을 늘이지 않는다
 
-    desc_pt = grow(base, base + 4, card_h, end - top)
+    desc_pt = grow(base, base + 4, card_h, end - top,
+                   tails=lambda pt: sum(tail_lines(bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines), pt, w - 0.56, False)
+                                        for it in s.items))
     h = min(end - top, card_h(desc_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
@@ -673,7 +717,8 @@ def render_compare(sl, s, page):
         return (1.15 + need * (pt * LINE_SPACING + 6) / 72 + 0.35
                 + (0.6 if any(it.tag for it in s.items) else 0.15))   # 내용이 적으면 빈 칸을 늘이지 않는다
 
-    body_pt = grow(14.5, 18, cmp_h, end - top)
+    body_pt = grow(14.5, 18, cmp_h, end - top,
+                   tails=lambda pt: sum(tail_lines(bullets(it.lines), pt, w - 0.8, False) for it in s.items))
     h = min(end - top, cmp_h(body_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
@@ -750,7 +795,8 @@ def render_steps(sl, s, page):
         need = max(line_count("\n".join(it.lines) or " ", pt, w - 0.36) for it in s.items)
         return d + 0.25 + 0.9 + need * pt * LINE_SPACING / 72 + 0.2
 
-    desc_pt = grow(base, base + 3, step_h, end - top)
+    desc_pt = grow(base, base + 3, step_h, end - top,
+                   tails=lambda pt: sum(tail_lines("\n".join(it.lines), pt, w - 0.36, False) for it in s.items))
     h = min(end - top, step_h(desc_pt))
     y = top + (end - top - h) / 2
     add_box(sl, MX + w / 2, y + d / 2 - 0.02, CW - w, 0.04, LINE, shape=MSO_SHAPE.RECTANGLE)
