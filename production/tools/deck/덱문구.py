@@ -31,6 +31,11 @@ from pathlib import Path
 뽑지않는유형 = ("코드", "목차", "간지", "표지")
 
 
+def 칸들(text):
+    """요소 한 줄을 칸으로 나눈다. 빌더(deck2pptx.py)와 같은 규칙: 빈 칸(`a | | c`, `| b | c`)도 칸으로 센다."""
+    return [p.strip() for p in re.split(r"(?<=\s)\|(?=\s|$)", " " + text)]
+
+
 def 장들(t, first, last):
     for b in re.split(r"(?=^## SLIDE )", t, flags=re.M):
         m = re.match(r"## SLIDE (\d+) ", b)
@@ -50,7 +55,7 @@ def 뽑기(t, first, last):
         if typ in 뽑지않는유형:
             continue
         for e in re.finditer(r"^  (\d+)\. (.*)$", body, re.M):
-            parts = e.group(2).split(" | ")
+            parts = 칸들(e.group(2))
             if typ == "삽화" and len(parts) == 3:
                 parts = parts[:2]          # 셋째 칸은 좌표
             for j, p in enumerate(parts):
@@ -62,7 +67,7 @@ def 뽑기(t, first, last):
 def 읽기(path):
     pairs = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^\[(S\d\d\.[^\]]+)\] (.*)$", line)
+        m = re.match(r"^\[(S\d{2,3}\.[^\]]+)\] (.*)$", line)
         if m:
             pairs.append((m.group(1), m.group(2)))
     return pairs
@@ -85,12 +90,13 @@ def 넣기(t, pairs, first, last):
                 head = re.sub(rf"^- {k}: .*$", lambda _: f"- {k}: {new[key]}", head, count=1, flags=re.M)
 
         def 요소(e):
-            parts = e.group(2).split(" | ")
+            parts = 칸들(e.group(2))
             for j in range(len(parts)):
                 key = f"S{n:02d}.요소{e.group(1)}.{j + 1}"
                 if key in new:
                     parts[j] = new[key]
-            return f"  {e.group(1)}. " + " | ".join(parts)
+            line = parts[0] + "".join(" |" + (f" {q}" if q else "") for q in parts[1:])
+            return f"  {e.group(1)}. " + line.lstrip()
 
         if not re.search(rf"^- 유형: ({'|'.join(뽑지않는유형)})$", head, re.M):
             head = re.sub(r"^  (\d+)\. (.*)$", 요소, head, flags=re.M)
