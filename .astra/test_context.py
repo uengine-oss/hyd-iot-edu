@@ -109,7 +109,7 @@ class LauncherTests(unittest.TestCase):
             capture = root / "capture.json"
             env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"], ASTRA_TEST_CAPTURE=str(capture), OPENAI_API_KEY="test-placeholder")
             for sid in ["new", "test-session"]:
-                subprocess.run(["bash", str(REPO / "production/tools/deck/아스트라세션.sh"), sid, str(req), str(root / "답.txt"), "image with spaces.png"], env=env, cwd=root, check=True, capture_output=True)
+                subprocess.run(["bash", str(REPO / "만들기/tools/deck/아스트라세션.sh"), sid, str(req), str(root / "답.txt"), "image with spaces.png"], env=env, cwd=root, check=True, capture_output=True)
                 data = json.loads(capture.read_text())
                 self.assertTrue(data["stdin"].endswith(content))
                 self.assertEqual(data["stdin"].count(".astra/README.md"), 1)

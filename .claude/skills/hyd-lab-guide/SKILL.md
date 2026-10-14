@@ -13,18 +13,18 @@ HYD 과정의 실습을 만든다. 교재 덱은 실습을 2장(간지와 설명
 
 1. `문서/교재/2_기준.md`: 기준 전부. 실습은 10절, 일하는 방식은 12절.
 2. `문서/교재/4_만드는_법.md` 3부 3절(지금 상태)과 `문서/교재/6_남은_일.md`(다음에 할 일).
-3. `production/labs/STRUCTURE.md`: 랩의 폴더와 이름의 틀.
-4. 본보기: 학생 폴더 `course/labs/offline/05-2-cause-agent/`, 강사 폴더 `production/labs/offline/05-2-cause-agent/`, 촬영 대본 `production/labs/online/day01-1-notion/`.
-5. 그 실습이 속한 일차의 덱 원고(`production/decks/integrated/dayNN/통합반_NN일차.md`)에서 실습 간지와 설명 장. 번호는 `python3 .claude/skills/hyd-lab-guide/scripts/실습목록.py 통합반 --day N`으로 뽑는다. 실습의 범위는 실라버스의 실습 행이 정한다(`문서/교재/실습_목록.md`).
+3. `만들기/labs/STRUCTURE.md`: 랩의 폴더와 이름의 틀.
+4. 본보기: 학생 폴더 `산출물/실습/통합반_오프라인/05회차_실습2_원인_추론_에이전트/코드/`, 강사 폴더 `만들기/labs/offline/05-2-cause-agent/`, 촬영 대본 `만들기/labs/online/day01-1-notion/`.
+5. 그 실습이 속한 일차의 덱 원고(`만들기/decks/integrated/dayNN/통합반_NN일차.md`)에서 실습 간지와 설명 장. 번호는 `python3 .claude/skills/hyd-lab-guide/scripts/실습목록.py 통합반 --day N`으로 뽑는다. 실습의 범위는 실라버스의 실습 행이 정한다(`문서/교재/실습_목록.md`).
 
 ## 무엇을 만드는가
 
 | 수업 | 만드는 것 | 어디 |
 |---|---|---|
-| 오프라인 | 학생이 받아 VS Code로 여는 폴더와 `guide.html` | `course/labs/offline/<회차-실습번호-주제>/` |
-| 오프라인 | 완성본, 실행 기록, 가이드를 만드는 스크립트 | `production/labs/offline/<같은 이름>/` |
-| 온라인 | 키 없이 실행되는 완성본(저장된 실행의 답을 재생한다) | `course/labs/online/<같은 이름>/` |
-| 온라인 | 강사가 보며 찍는 촬영 대본 | `production/labs/online/dayNN-M-주제/` |
+| 오프라인 | 학생이 받아 VS Code로 여는 `코드/`와 그 옆의 `가이드.html` | `산출물/실습/통합반_오프라인/<NN회차_실습N_주제>/` |
+| 오프라인 | 완성본, 실행 기록, 가이드를 만드는 스크립트 | `만들기/labs/offline/<회차-실습번호-주제>/` |
+| 온라인 | 키 없이 실행되는 완성본(저장된 실행의 답을 재생한다) | `산출물/실습/통합반_온라인/<NN일차_실습N_주제>/코드/` |
+| 온라인 | 강사가 보며 찍는 촬영 대본 | `만들기/labs/online/dayNN-M-주제/` |
 
 ## 지킬 것
 

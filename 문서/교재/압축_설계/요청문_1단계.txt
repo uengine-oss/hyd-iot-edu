@@ -12,13 +12,13 @@
 ## 반드시 처음부터 끝까지 읽을 것 (이 순서로)
 1. `CLAUDE.md`
 2. `문서/교재/1_목적과_방향.md`, `문서/교재/2_기준.md`(전부. 특히 6절 29 · 29-1 · 29-2 · 29-3번, 7절 39번, 8절 윤문, 14절 덱의 화면 78~90번과 89-1 · 89-2번), `문서/교재/3_현황.md`, `문서/교재/4_만드는_법.md`, `문서/교재/5_결정_기록.md`, `문서/교재/6_남은_일.md`
-3. 덱 형식과 도구: `.claude/skills/hyd-course-deck/SKILL.md`, `.claude/skills/lecture-deck/SKILL.md`와 그 `references/`, `production/decks/README.md`. 빌드 도구 `.claude/skills/lecture-deck/scripts/deck2pptx.py`의 유형 목록과 요소 수 한도(`BODY_KINDS`, `COUNTS`)
+3. 덱 형식과 도구: `.claude/skills/hyd-course-deck/SKILL.md`, `.claude/skills/lecture-deck/SKILL.md`와 그 `references/`, `만들기/decks/README.md`. 빌드 도구 `.claude/skills/lecture-deck/scripts/deck2pptx.py`의 유형 목록과 요소 수 한도(`BODY_KINDS`, `COUNTS`)
 4. 오늘(2026-10-14) 사용자와 나눈 대화 원문: `.evidence/압축_맥락/대화_원문.md`. 문서에 옮겨 적었지만, 문서와 대화가 어긋나면 사용자의 마지막 말이 우선이다. 어긋난 곳은 ⑤에 적는다.
 5. 실라버스(네 과정): `.evidence/압축_맥락/실라버스.md`(원본은 `문서/교재/실라버스/피지컬AI_실라버스_최종본.xlsx`)
-6. 지금의 덱: 통합반 원 덱 11개 `production/decks/integrated/dayNN/통합반_NN일차.md`(1회차 89장, 2회차 100장, 3회차 94장, 4회차 64장, 5회차 66장, 6회차 72장, 7회차 57장, 8회차 63장, 9회차 72장, 10회차 61장, 11회차 63장). 1회차는 장마다 전부 읽는다. 나머지는 적어도 장마다 제목 · 유형 · 메시지와 간지(단원)를 읽는다.
-7. 지금의 과정별 조립: `production/decks/practical/만들기_01일차.py`, `production/decks/*/*/조립.py`(실전반 온라인 · 오프라인 두 과정이 통합반의 어느 장을 가져오는지)
+6. 지금의 덱: 통합반 원 덱 11개 `만들기/decks/integrated/dayNN/통합반_NN일차.md`(1회차 89장, 2회차 100장, 3회차 94장, 4회차 64장, 5회차 66장, 6회차 72장, 7회차 57장, 8회차 63장, 9회차 72장, 10회차 61장, 11회차 63장). 1회차는 장마다 전부 읽는다. 나머지는 적어도 장마다 제목 · 유형 · 메시지와 간지(단원)를 읽는다.
+7. 지금의 과정별 조립: `만들기/decks/practical/만들기_01일차.py`, `만들기/decks/*/*/조립.py`(실전반 온라인 · 오프라인 두 과정이 통합반의 어느 장을 가져오는지)
 8. 사실의 근거: `문서/교재/사실표/` 네 파일. 온톨로지 이름의 정본은 `문서/시스템/참조/ontology/schema-v2.md`와 `it/neo4j/v2/instances.cypher`
-9. 1회차에서 이미 정한 디자인: 21장(봉투로 토픽을 그린 MQTT 그림, 덱에 반영됨)과 `production/decks/integrated/day01/figures/지식그래프_지도.svg`(71 · 77 · 78장을 대신할 지식 그래프 지도, 아직 덱에 넣지 않음. 라벨 좌표 시안은 `.evidence/deck_polish_d01_71지도/`와 `3_현황.md`)
+9. 1회차에서 이미 정한 디자인: 21장(봉투로 토픽을 그린 MQTT 그림, 덱에 반영됨)과 `만들기/decks/integrated/day01/figures/지식그래프_지도.svg`(71 · 77 · 78장을 대신할 지식 그래프 지도, 아직 덱에 넣지 않음. 라벨 좌표 시안은 `.evidence/deck_polish_d01_71지도/`와 `3_현황.md`)
 
 ## 낼 것 (한국어, 마크다운, 표를 쓴다)
 ① **이해한 규칙.** 이 일에 걸리는 규칙을 빠짐없이 목록으로. 규칙마다 근거(파일:줄 또는 번호)를 붙인다. 문서끼리 어긋나는 규칙은 ⑤로.

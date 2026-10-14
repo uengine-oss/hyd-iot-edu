@@ -18,7 +18,7 @@ HYD 교육과정 덱은 만들기 전에 아래를 읽는다. 다른 강의면 �
 1. 제작 기준 `문서/교재/2_기준.md` — 대상과 수준, 틀, 화법, 호흡, 일차 사이의 경계, 점검. 규칙은 거기에만 있다. 이 스킬 문서에 복사하지 않는다.
 2. 기술사실표 `문서/교재/사실표/통합반_01일차_기술사실표.md`, `통합반_02-04일차_기술사실표.md` — 화면에 쓰는 사실의 근거. 확인하지 못한 것은 쓰지 않는다.
 3. 실라버스 `문서/교재/실라버스/실라버스_1-4일차_확정안.xlsx` — 주제, 순서, 이론/실습 구분만 가져온다.
-4. 같은 그림체의 실제 덱 — `production/decks/integrated/sample/샘플.md`, `production/decks/integrated/day01/통합반_01일차.md`. 짧은 발췌는 [1일차 앞부분 예시](references/examples/덱MD_예시_1일차_앞부분.md).
+4. 같은 그림체의 실제 덱 — `만들기/decks/integrated/sample/샘플.md`, `만들기/decks/integrated/day01/통합반_01일차.md`. 짧은 발췌는 [1일차 앞부분 예시](references/examples/덱MD_예시_1일차_앞부분.md).
 
 ## 작업
 
@@ -31,7 +31,7 @@ HYD 교육과정 덱은 만들기 전에 아래를 읽는다. 다른 강의면 �
    uv run --no-project --with python-pptx --with pymupdf python .claude/skills/lecture-deck/scripts/deck2pptx.py <덱.md> <출력.pptx> [--render <새 PNG 폴더>]
    ```
    스크립트가 멈추면 문구를 다듬거나 장을 나누거나 유형을 바꾼다. 도구의 한계는 우회하지 않고 도구를 고친다.
-6. **렌더해 본다.** `--render`는 LibreOffice(soffice)와 pdftoppm이 필요하고 한 번에 하나씩 돈다. 렌더 폴더는 새 이름으로 쓴다. 묶음 그림은 `production/tools/deck/시트.py`로 만든다.
+6. **렌더해 본다.** `--render`는 LibreOffice(soffice)와 pdftoppm이 필요하고 한 번에 하나씩 돈다. 렌더 폴더는 새 이름으로 쓴다. 묶음 그림은 `만들기/tools/deck/시트.py`로 만든다.
 
 ## 검증
 

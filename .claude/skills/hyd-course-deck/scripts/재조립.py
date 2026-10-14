@@ -6,7 +6,7 @@
     python3 .claude/skills/hyd-course-deck/scripts/재조립.py --build            조립한 뒤, 덱 MD가 커밋과 달라진 덱만 PPTX 빌드
     python3 .claude/skills/hyd-course-deck/scripts/재조립.py --build-only       조립은 건너뛰고 빌드만
 
-조립 스크립트는 `production/decks/practical/만들기_01일차.py`와 각 일차 · 회차 폴더의 `조립.py`다.
+조립 스크립트는 `만들기/decks/practical/만들기_01일차.py`와 각 일차 · 회차 폴더의 `조립.py`다.
 가져오던 장의 제목이나 손질 목록의 원문 문구가 통합반 원 덱에서 바뀌었으면 그 스크립트가 멈춘다.
 이 도구는 멈춘 스크립트와 그 까닭(마지막 줄)을 모아 보이고 나머지를 계속 돌린다. 멈춘 곳은 그 `조립.py`의 순서표 · 손질 목록을 고친다.
 
@@ -22,10 +22,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "production" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
-SLIDES = ROOT / "course" / "slides"                 # 덱 PPTX
+DECKS = ROOT / "만들기" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
+SLIDES = ROOT / "산출물" / "교재" / "PPTX"           # 덱 PPTX (과정 폴더 이름은 PPTX_DIRS)
 DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
 PREFIX = {"일차": "day", "회차": "session"}
+PPTX_DIRS = {"integrated": "통합반_온라인", "practical": "실전반_온라인", "integrated-offline": "통합반_오프라인", "practical-offline": "실전반_오프라인"}  # 원고 폴더 → PPTX 폴더
 BUILDER = ROOT / ".claude" / "skills" / "lecture-deck" / "scripts" / "deck2pptx.py"
 COURSES = [("통합반", "일차"), ("실전반", "일차"), ("통합반_오프라인", "회차"), ("실전반_오프라인", "회차")]
 
@@ -66,7 +67,7 @@ def deck_mds() -> list[Path]:
 
 def changed_mds() -> list[Path]:
     """덱 MD 가운데 커밋과 다른 것(고침 · 새 파일)."""
-    r = subprocess.run(["git", "-c", "core.quotepath=off", "status", "--porcelain", "--", "production/decks"],
+    r = subprocess.run(["git", "-c", "core.quotepath=off", "status", "--porcelain", "--", "만들기/decks"],
                        cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"[실패] git status: {r.stderr.strip()}")
@@ -82,7 +83,7 @@ def changed_mds() -> list[Path]:
 
 
 def build(md: Path, pptx_dir: Path | None) -> tuple[bool, str]:
-    home = SLIDES / md.parent.parent.name            # 원고는 production/decks/<과정>/…, PPTX는 course/slides/<과정>/
+    home = SLIDES / PPTX_DIRS[md.parent.parent.name]  # 원고는 만들기/decks/<과정>/…, PPTX는 산출물/교재/PPTX/<과정 한글>/
     pptx = (pptx_dir or home) / md.with_suffix(".pptx").name
     lock = home / ("~$" + md.with_suffix(".pptx").name)
     if not pptx_dir and lock.exists():
@@ -147,7 +148,7 @@ def main() -> int:
             print(f"  {path}: {why}")
         return 1
     if not a.dry_run:
-        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 제작 기준 13절과 production/decks/README.md의 숫자를 맞춘다.")
+        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 제작 기준 13절과 만들기/decks/README.md의 숫자를 맞춘다.")
     return 0
 
 

@@ -6,7 +6,7 @@ description: "학생 배포본·검토용 묶음과 ZIP을 만들고 파일 구�
 # 배포 묶음과 업로드
 
 공통 기준(`../lecture-common/공통기준.md`)과 저장소 루트 `CLAUDE.md`, 대상 강의의 수신자·배포 계약을 먼저 따른다.
-HYD 교재 PPTX의 배포 묶음(`production/dist/교재_전체.zip`)은 `../hyd-course-deck/scripts/배포묶음.py`로 만든다(`hyd-course-deck` 스킬). 아래 경로는 이 스킬 폴더 기준이다.
+HYD 교재 PPTX의 배포 묶음(`만들기/dist/교재_전체.zip`)은 `../hyd-course-deck/scripts/배포묶음.py`로 만든다(`hyd-course-deck` 스킬). 아래 경로는 이 스킬 폴더 기준이다.
 묶음 제작과 외부 전송은 별개다. 사용자가 파일 제작을 요청했으면 로컬 완성·검증까지 진행한다.
 업로드·공유는 **명시 요청이 있을 때만** 아래 「업로드」 절로 승인된 대상과 범위에서 한다.
 

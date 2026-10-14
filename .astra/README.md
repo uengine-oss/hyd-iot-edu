@@ -4,7 +4,7 @@
 
 - 사용자 지시(2026-10-14): 「스킬이랑 도구를 최대한 활용하게 하고, 아스트라가 알아서 최적화하게. 공간을 하나 지어 주고 거기서 알아서 세팅해 그 세션을 최적화해라. 앞으로 그 세션에서 계속 쓸 거니까 컨텍스트가 요약되어도 상관없다.」
 - 공개 저장소다. 키, 사람 이름, 메일, 절대 경로는 두지 않는다.
-- 부르는 법은 `production/tools/deck/아스트라세션.sh`, 규칙은 `문서/교재/2_기준.md` 45-1번.
+- 부르는 법은 `만들기/tools/deck/아스트라세션.sh`, 규칙은 `문서/교재/2_기준.md` 45-1번.
 
 ## 다시 들어왔을 때
 
@@ -41,7 +41,7 @@ python3 .astra/context.py check --day 1
 직접 실행도 가능하다:
 
 ```bash
-.venv-deck/bin/python .claude/skills/lecture-deck/scripts/deck2pptx.py --check production/decks/integrated/day01/통합반_01일차.md
+.venv-deck/bin/python .claude/skills/lecture-deck/scripts/deck2pptx.py --check 만들기/decks/integrated/day01/통합반_01일차.md
 ```
 
 `check`는 검사 생략 캐시가 아니다. 항상 위 빌더를 실행한다. `checks.json`은 덱·참조 그림·빌더·아이콘/로고·파이썬 및 패키지 버전의 지문과 결과만 둔다. 이 중 하나가 바뀌거나 검사 도중 수정되면 이전 성공은 유효하지 않다. 자동 검사는 사실·누락·시각 검토를 증명하지 않는다. 렌더 도구와 글꼴의 검증은 별도로 한다. 다른 환경으로 옮기면 명령을 다시 실행한다.
@@ -51,9 +51,9 @@ python3 .astra/context.py check --day 1
 | 작업 | 먼저 적용할 스킬/원문 | 기존 도구 |
 |---|---|---|
 | 압축 설계 | `문서/교재/2_기준.md` 29-3~29-5, `압축_설계/`, 해당 실라버스 행·옛 원고·사실표. 요구/실라버스를 바꾸는 요청이면 `.claude/skills/lecture-plan/SKILL.md` | `context.py outline/slides --rev`, `git diff`, `rg` |
-| 덱 제작·수정 | `.claude/skills/hyd-course-deck/SKILL.md` → `.claude/skills/lecture-deck/SKILL.md`, 후자의 `references/덱MD-PPTX형식.md` | `deck2pptx.py --check`, 빌드/렌더, `production/tools/deck/시트.py`, `find_icon.py` |
-| 문구 윤문 | 같은 덱 스킬, `문서/교재/2_기준.md` 8절·45-1. 구조 수정 요청인지 고정 키 윤문인지 구분 | `production/tools/deck/덱문구.py` — 구조를 바꾸는 작업에는 고정 키 방식 강제 금지 |
-| 낭독 대본 | `문서/교재/2_기준.md` 15절, `4_만드는_법.md` 3부, 확정 덱·노트·기존 대본 | `production/tools/deck/대본시간.py` — 길이 측정이며 시간을 맞추기 위한 반복 금지 |
+| 덱 제작·수정 | `.claude/skills/hyd-course-deck/SKILL.md` → `.claude/skills/lecture-deck/SKILL.md`, 후자의 `references/덱MD-PPTX형식.md` | `deck2pptx.py --check`, 빌드/렌더, `만들기/tools/deck/시트.py`, `find_icon.py` |
+| 문구 윤문 | 같은 덱 스킬, `문서/교재/2_기준.md` 8절·45-1. 구조 수정 요청인지 고정 키 윤문인지 구분 | `만들기/tools/deck/덱문구.py` — 구조를 바꾸는 작업에는 고정 키 방식 강제 금지 |
+| 낭독 대본 | `문서/교재/2_기준.md` 15절, `4_만드는_법.md` 3부, 확정 덱·노트·기존 대본 | `만들기/tools/deck/대본시간.py` — 길이 측정이며 시간을 맞추기 위한 반복 금지 |
 | 검토 | 해당 작업의 검토 절차, 필요하면 `.claude/skills/lecture-verify/SKILL.md` | 사실 근거 대조·옛/새 장 대응·전 문장 읽기·전 장 렌더. 스킬이 요구하는 별도 검토자는 읽기 전용 |
 | 조립·배포 | `문서/교재/4_만드는_법.md` 1부, **먼저 `6_남은_일.md`의 보류 결정** | hyd-course-deck의 `재조립.py --dry-run`, `장수.py --units`, `배포묶음.py --check` |
 | 영상·실습 | `.claude/skills/README.md`에서 전용 스킬 선택 | 관련 요청을 받은 경우에만 환경/영상 도구 실행 |

@@ -143,7 +143,7 @@ it/                 detector, connect-sink, timescaledb, grafana, neo4j, agent, 
 scripts/            회귀 러너, 시나리오 증거 수집, 호스트 워커 기동
 tests/              단위 테스트 (pytest)
 students/           학생 실습용 템플릿 · 플로우
-course/             강의 덱, 낭독 대본, 실습 랩
-production/         교육 산출물 제작용 원고 · 도구
+산출물/             강의 덱, 낭독 대본, 실습 랩
+만들기/         교육 산출물 제작용 원고 · 도구
 docs/               RUNBOOK, 회차별 절차(sessions/), 인계 기록(handoff/), 온톨로지 설계(ontology/)
 ```

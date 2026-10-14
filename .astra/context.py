@@ -117,7 +117,7 @@ def emit(key: str, text: str, digest: str, ranges: list[list[int]], limit: int) 
 
 
 def deck(day: int) -> str:
-    return f"production/decks/integrated/day{day:02}/통합반_{day:02}일차.md"
+    return f"만들기/decks/integrated/day{day:02}/통합반_{day:02}일차.md"
 
 
 def facts(day: int) -> str:
@@ -175,7 +175,7 @@ def status(day: int, kind: str) -> None:
     if kind == "design":
         paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / "문서/교재/압축_설계").glob("*.md"))]
     if kind == "script":
-        paths += ["문서/교재/4_만드는_법.md"] + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "course/scripts/integrated").glob(f"통합반_{day:02}일차*md"))]
+        paths += ["문서/교재/4_만드는_법.md"] + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "산출물/교재/대본/통합반_온라인").glob(f"통합반_{day:02}일차*md"))]
     data = load(LEDGER)
     print("자료 경로와 출력/검토 기록 (같은 해시 ≠ 지금 이해하고 있음):")
     for name in paths:

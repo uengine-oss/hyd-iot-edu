@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "production" / "decks"
+DECKS = ROOT / "만들기" / "decks"
 DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
 PREFIX = {"일차": "day", "회차": "session"}
 COURSES = [("통합반", "일차"), ("실전반", "일차"), ("통합반_오프라인", "회차"), ("실전반_오프라인", "회차")]

@@ -8,7 +8,7 @@
 표지 · 학습목표 · 목차 · 간지 · 실습 설명 · 용어 정리 · 퀴즈 · 정답은 본문에 넣지 않는다.
 실습 간지 뒤의 한 장은 실습 설명으로 본다. 제목에 「시연」이 든 실습 간지는 다음 간지나 용어 정리까지를 그 실습의 장으로 보고,
 두 장 이상이면 「시연 소개」로 따로 적는다(통합반 11일차의 ProcessGPT 시연).
-제작 기준 13절 · 13-1절 · 13-2절과 `production/decks/README.md`의 숫자를 고칠 때 이 표와 맞춘다.
+제작 기준 13절 · 13-1절 · 13-2절과 `만들기/decks/README.md`의 숫자를 고칠 때 이 표와 맞춘다.
 """
 from __future__ import annotations
 
@@ -18,8 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]          # 저장소 루트
-DECKS = ROOT / "production" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
-SLIDES = ROOT / "course" / "slides"                 # 덱 PPTX
+DECKS = ROOT / "만들기" / "decks"              # 덱 원고(MD), 그림, 조립 스크립트
 DIRS = {"통합반": "integrated", "실전반": "practical", "통합반_오프라인": "integrated-offline", "실전반_오프라인": "practical-offline"}
 PREFIX = {"일차": "day", "회차": "session"}
 COURSES = [("통합반", "일차"), ("실전반", "일차"), ("통합반_오프라인", "회차"), ("실전반_오프라인", "회차")]
