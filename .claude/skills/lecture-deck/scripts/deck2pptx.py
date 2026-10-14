@@ -2,6 +2,7 @@
 
 형식: ../references/덱MD-PPTX형식.md
 사용: python deck2pptx.py <덱.md> <출력.pptx> [--render <PNG 폴더>]
+      python deck2pptx.py --check <덱.md | -> [--base <덱 폴더>]   # 파일을 하나도 쓰지 않고 검사만(읽기 전용 환경용, - 는 표준 입력)
 규칙 위반(모르는 유형·없는 칸·요소 수·그림 없음·아이콘 수·넘침 추정)은 장 번호와 칸 이름을 찍고 실패한다.
 
 본문 장은 제목(28pt) → 거버닝 메시지 한 줄 · 한 문장(16pt) → 본문(14~15pt)이다. 하단 넘기는 질문 상자와 반복 목차는 없고
@@ -11,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
+import os
 import re
 import shutil
 import subprocess
@@ -67,7 +70,8 @@ NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문�
 SKILL_DIR = Path(__file__).resolve().parent.parent
 ICON_DIR = SKILL_DIR / "assets" / "icons" / "tabler-outline"
 LOGO = SKILL_DIR / "assets" / "logo" / "uengine-logo.svg"
-ICON_CACHE = Path(tempfile.gettempdir()) / "deck2pptx_icons"
+ICON_CACHE = Path(os.environ.get("DECK2PPTX_CACHE") or Path(tempfile.gettempdir()) / "deck2pptx_icons")
+CHECK_ONLY = False      # --check: 캐시에 없는 그림은 메모리에서만 만들고, PPTX도 메모리에만 쓴다
 RENDER_FONT_KEYS = ("malgun", "mono", "consol", "menlo", "courier")   # 렌더 PDF에 박혀도 되는 글꼴 이름의 낱말
 GONE = {"핵심": "핵심 띠는 없앴다. 핵심 낱말은 `메시지`·요소 안에서 **굵게** 강조한다",
         "설명": "제목 아래 2~3줄 설명은 없앴다(2026-10-10). `메시지:`에 한 줄 · 한 문장으로 쓴다",
@@ -488,15 +492,22 @@ def svg_png(src: Path, color: RGBColor, key: str, scale: float, stroke: float | 
             svg = svg.replace('stroke-width="2"', f'stroke-width="{stroke}"')
         doc = pymupdf.open(stream=svg.encode("utf-8"), filetype="svg")
         pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=True)
+        if CHECK_ONLY:
+            return io.BytesIO(pix.tobytes("png"))
         ICON_CACHE.mkdir(parents=True, exist_ok=True)
         pix.save(out)
     return out
 
 
+def pic_src(x):
+    """add_picture에 넘길 것: 파일이면 경로 문자열, 메모리 그림이면 그대로."""
+    return str(x) if isinstance(x, Path) else x
+
+
 def add_icon(sl, name, cx, cy, size, color, stroke=1.6):
     """(cx, cy)를 가운데로 아이콘 하나. 이름표 「아이콘:」으로 저장본 검사에서 캡처와 구분한다."""
     png = svg_png(ICON_DIR / f"{name}.svg", color, name, 24, stroke)   # 24px → 576px
-    pic = sl.shapes.add_picture(str(png), Inches(cx - size / 2), Inches(cy - size / 2), Inches(size), Inches(size))
+    pic = sl.shapes.add_picture(pic_src(png), Inches(cx - size / 2), Inches(cy - size / 2), Inches(size), Inches(size))
     pic.name = f"아이콘:{name}"
     return pic
 
@@ -552,7 +563,7 @@ def render_cover(sl, s: Slide, _page):
     if s.fields.get("부제"):
         add_text(sl, MX - 0.1, 4.82, 9.2, 0.8, s.fields["부제"], 19, COVER_SUB,
                  name="표지 부제", slide_no=s.no, max_lines=2)
-    logo = sl.shapes.add_picture(str(svg_png(LOGO, WHITE, "logo-uengine", 1.2)), Inches(8.0), Inches(6.2),
+    logo = sl.shapes.add_picture(pic_src(svg_png(LOGO, WHITE, "logo-uengine", 1.2)), Inches(8.0), Inches(6.2),
                                  width=Inches(1.45))
     logo.name = "로고:uEngine"
     icons = s.icons
@@ -855,7 +866,7 @@ def render_picture(sl, s, page, base: Path):
     img = picture_file(base, s.fields["그림"])
     n = len(s.items)
     box_w, box_h = (7.9 if n else CW), end - top - 0.05
-    pic = sl.shapes.add_picture(str(img), Inches(MX), Inches(top))
+    pic = sl.shapes.add_picture(pic_src(img), Inches(MX), Inches(top))
     ratio = min(Inches(box_w) / pic.width, Inches(box_h) / pic.height)
     pic.width, pic.height = int(pic.width * ratio), int(pic.height * ratio)
     pic.top = Inches(top + (box_h - Emu(pic.height).inches) / 2)
@@ -886,8 +897,11 @@ def picture_file(base: Path, rel: str) -> Path:
     out = ICON_CACHE / f"illust_{abs(hash(str(src.resolve())))}_{int(src.stat().st_mtime)}.png"
     if not out.exists():
         doc = pymupdf.open(stream=src.read_bytes(), filetype="svg")
+        pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(3, 3), alpha=True)
+        if CHECK_ONLY:
+            return io.BytesIO(pix.tobytes("png"))
         ICON_CACHE.mkdir(parents=True, exist_ok=True)
-        doc[0].get_pixmap(matrix=pymupdf.Matrix(3, 3), alpha=True).save(out)
+        pix.save(out)
     return out
 
 
@@ -896,7 +910,7 @@ def render_illust(sl, s, page, base: Path):
     x · y는 그림 상자의 왼쪽 위를 0,0 · 오른쪽 아래를 100,100으로 본 글상자 **가운데 위** 지점, 폭은 그림 폭의 %(기본 16)."""
     top, end = frame(sl, s, page)
     box_w, box_h = CW, end - top
-    pic = sl.shapes.add_picture(str(picture_file(base, s.fields["그림"])), Inches(MX), Inches(top))
+    pic = sl.shapes.add_picture(pic_src(picture_file(base, s.fields["그림"])), Inches(MX), Inches(top))
     ratio = min(Inches(box_w) / pic.width, Inches(box_h) / pic.height)
     pic.width, pic.height = int(pic.width * ratio), int(pic.height * ratio)
     pw, ph = Emu(pic.width).inches, Emu(pic.height).inches
@@ -1209,7 +1223,17 @@ RENDER = {"표지": render_cover, "목차": render_agenda, "간지": render_divi
           "문답": render_quiz}
 
 
-def build(md_path: Path, out: Path) -> list[Slide]:
+class StdinDeck:
+    """--check - : 표준 입력으로 받은 덱 MD. parse · validate가 쓰는 name · parent · read_text만 갖는다."""
+
+    def __init__(self, text: str, parent: Path):
+        self.text, self.parent, self.name = text, parent, "<표준 입력>"
+
+    def read_text(self, encoding="utf-8"):
+        return self.text
+
+
+def build(md_path, out) -> list[Slide]:
     slides = parse(md_path)
     validate(slides, md_path)
     DECK["기관"] = slides[0].fields.get("기관", "")
@@ -1226,7 +1250,8 @@ def build(md_path: Path, out: Path) -> list[Slide]:
             RENDER[s.kind](sl, s, page)
     if FIT.errs:
         raise DeckError("글자 넘침 추정(문구를 줄이거나 장을 나눈다):\n  " + "\n  ".join(FIT.errs))
-    out.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(out, Path):
+        out.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out)
     return slides
 
@@ -1303,10 +1328,30 @@ def render_png(pptx_path: Path, out_dir: Path) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("deck")
-    ap.add_argument("out")
+    ap.add_argument("deck", help="덱 MD. --check와 함께 - 를 주면 표준 입력에서 읽는다")
+    ap.add_argument("out", nargs="?")
     ap.add_argument("--render", help="PNG를 낼 폴더(LibreOffice + pdftoppm)")
+    ap.add_argument("--check", action="store_true", help="파일을 하나도 쓰지 않고 규칙 · 넘침 · 라벨 간격 · 저장본 검사만 한다")
+    ap.add_argument("--base", help="--check - 일 때 그림 경로의 기준 폴더(덱 MD가 있는 폴더)")
     a = ap.parse_args()
+    if a.check:
+        global CHECK_ONLY
+        CHECK_ONLY = True
+        md = StdinDeck(sys.stdin.read(), Path(a.base or ".")) if a.deck == "-" else Path(a.deck)
+        try:
+            buf = io.BytesIO()
+            slides = build(md, buf)
+            buf.seek(0)
+            errs = audit(buf, slides)
+            if errs:
+                raise DeckError("저장본 검사 실패:\n  " + "\n  ".join(errs))
+        except DeckError as e:
+            print(f"[실패] {e}", file=sys.stderr)
+            return 1
+        print(f"[검사 통과] {md.name} — {len(slides)}장, 파일은 쓰지 않았다")
+        return 0
+    if not a.out:
+        ap.error("출력 PPTX 경로가 필요하다(검사만 하려면 --check)")
     md, out = Path(a.deck), Path(a.out)
     if out.exists() and out.resolve() == md.resolve():
         print("입력과 출력이 같음", file=sys.stderr)
