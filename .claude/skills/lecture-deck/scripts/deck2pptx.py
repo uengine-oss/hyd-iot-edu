@@ -1250,7 +1250,7 @@ def audit(pptx_path: Path, slides: list[Slide]) -> list[str]:
         for sh in icons:   # 아이콘이 장을 덮으면 통이미지와 같다
             if sh.width * sh.height > slide_area * 0.12:
                 errs.append(f"SLIDE {s.no:02d} 아이콘 {sh.name}이 장 면적의 12%를 넘음")
-        on_screen = "".join(sh.text_frame.text for sh in texts).replace("\n", "").replace(" ", "")
+        on_screen = "".join(sh.text_frame.text for sh in texts).replace("\n", "").replace(" ", "").replace("\u00a0", "")
         if plain(s.title).replace(" / ", "").replace(" ", "") not in on_screen:
             errs.append(f"SLIDE {s.no:02d} 제목이 텍스트 상자에 없음")
     return errs
