@@ -4,12 +4,17 @@
     python3 production/tools/deck/덱문구.py 검사 <원문 파일> <윤문 파일>
     python3 production/tools/deck/덱문구.py 넣기 <덱 MD> <첫 장> <끝 장> <윤문 파일>
     python3 production/tools/deck/덱문구.py 자르기 <덱 MD> <첫 장> <끝 장> <출력 MD>
+    python3 production/tools/deck/덱문구.py 다시 <윤문 파일> <키,키,...> <요청문 파일> [넘친 칸의 기준 한 문장]
+    python3 production/tools/deck/덱문구.py 합치기 <윤문 파일> <다시 받은 답> <출력 파일>
 
 - 요청문: 장의 부제 · 메시지 · 문장 · 노트와 요소의 글을 「[키] 문구」 한 줄씩으로 뽑아 장마다 묶고(「── N장: 한 화면 ──」), 윤문에 보낼 요청문을 만든다.
   같은 이름에 `_원문.txt`도 함께 남긴다. 제목, 그림 좌표, 코드, 아이콘, 유형은 뽑지 않는다.
 - 검사: 키마다 숫자, 영문 이름, 굵게 표시(**), 화면 줄바꿈( / )의 수가 원문과 같은지 본다. 다르면 키와 함께 찍고 실패한다.
 - 넣기: 윤문 파일의 문구를 덱 MD의 같은 자리에 되돌려 넣는다. 키가 하나라도 빠지거나 늘면 아무것도 쓰지 않고 멈춘다.
 - 자르기: 첫 장부터 끝 장까지만 담은 덱 MD를 만든다(검토용 빌드). 첫 장이 1이 아니면 표지(1장)를 앞에 붙인다. 그림 경로는 원래 덱 폴더를 가리키게 바꾼다.
+- 다시: 빌드에서 넘친 문구만 앞선 윤문 그대로 담아, 넘친 상황과 칸의 기준을 알리는 요청문을 만든다(원문은 넣지 않는다. 윤문이 고른 표현에서 다시 다듬게 한다). 키는 `S29.요소1`처럼 앞부분만 줘도 된다.
+  넘친 문구는 작업하는 세션이 줄이지 않고 이 요청문으로 아스트라에 다시 보낸다.
+- 합치기: 다시 받은 답의 문구를 윤문 파일의 같은 키에 바꿔 넣은 새 파일을 만든다. 윤문 파일에 없는 키가 있으면 멈춘다.
 """
 import re
 import sys
@@ -19,6 +24,10 @@ from pathlib import Path
         "내용은 손대지 말고 윤문 작업만 해 달라.")
 꼴 = ("[Sxx.노트]는 강사가 읽는 말이고, 나머지는 화면에 들어가는 글이다. 각 줄 맨 앞의 [키]와 줄의 수, 순서는 그대로 두고, "
      "문장 안의 \" / \"(화면 줄바꿈)와 **(강조 표시)도 그대로 둔 채 같은 꼴로 돌려 달라.")
+다시상황 = ("아래는 제조 AI 교육과정 강의 슬라이드의 문구를 윤문한 것이다. 내용과 설명의 수준은 자료를 보고 이미 다 맞춰 놓은 완성본이다. "
+          "이 문장들이 슬라이드 화면의 정해진 칸을 넘쳤다. 제목 아래의 [Sxx.메시지]는 한 줄(한글로 대략 46~60자)에 들어가야 한다. "
+          "이런 상황이니 내용은 손대지 말고, 칸에 들어가도록 윤문해 달라.")
+다시꼴 = ("각 줄 맨 앞의 [키]와 줄의 수, 순서는 그대로 두고, 문장 안의 \" / \"(화면 줄바꿈)와 **(강조 표시)도 그대로 둔 채 같은 꼴로 돌려 달라.")
 뽑지않는유형 = ("코드", "목차", "간지", "표지")
 
 
@@ -104,6 +113,23 @@ def main():
         if bad:
             sys.exit(f"[실패] {len(bad)}곳의 숫자 · 이름 · 굵게 · 줄바꿈이 원문과 다르다")
         print(f"[통과] {len(a)}개 문구의 숫자 · 이름 · 굵게 · 줄바꿈이 원문과 같다")
+        return
+    if cmd == "다시":
+        b = dict(읽기(sys.argv[2]))
+        keys = [k for p in sys.argv[3].split(",") for k in b if k == p or k.startswith(p + ".")]
+        if not keys:
+            sys.exit(f"[실패] 윤문 파일에 없는 키: {sys.argv[3]}")
+        칸 = f" {sys.argv[5]}" if len(sys.argv) > 5 else ""     # 메시지 말고 다른 칸이 넘쳤을 때 그 칸의 기준
+        Path(sys.argv[4]).write_text(다시상황 + 칸 + "\n\n" + 다시꼴 + "\n\n" + "".join(f"[{k}] {b[k]}\n" for k in keys), encoding="utf-8")
+        print(f"{sys.argv[4]} — 넘친 문구 {len(keys)}개: {', '.join(keys)}")
+        return
+    if cmd == "합치기":
+        b, c = 읽기(sys.argv[2]), dict(읽기(sys.argv[3]))
+        extra = set(c) - {k for k, _ in b}
+        if not c or extra:
+            sys.exit(f"[실패] 다시 받은 답의 키가 윤문 파일에 없다: {sorted(extra) or '답이 비어 있다'}")
+        Path(sys.argv[4]).write_text("".join(f"[{k}] {c.get(k, v)}\n" for k, v in b), encoding="utf-8")
+        print(f"{sys.argv[4]} — 문구 {len(c)}개를 바꿔 넣음: {', '.join(c)}")
         return
     md, first, last, out = Path(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), Path(sys.argv[5])
     t = md.read_text(encoding="utf-8")
