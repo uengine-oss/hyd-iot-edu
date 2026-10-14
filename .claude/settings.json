@@ -20,5 +20,10 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bash production/tools/deck/아스트라세션.sh:*)"
+    ]
   }
 }
