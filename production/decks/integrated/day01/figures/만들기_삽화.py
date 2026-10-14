@@ -600,7 +600,7 @@ def walk(stage: int) -> str:
 
 # 경로 그림(압축판, 2026-10-14): 지식그래프_지도.svg와 같은 그래프 꼴(동그라미 노드 · 대각선 · 글자는 덱 라벨).
 # 1단계 = 이상 패턴 → 증상 → 고장 유형, 2단계 = 원인 후보 · 증거 · 완화 조치. 좌표를 바꾸면 덱 MD의 라벨 좌표도 함께 고친다.
-WALK = {"P": (95, 110, 80), "S": (265, 420, 58), "F": (480, 250, 80), "K": (620, 460, 58),
+WALK = {"P": (110, 110, 98), "S": (265, 420, 58), "F": (480, 250, 80), "K": (620, 460, 58),
         "C0": (770, 95, 78), "C1": (830, 280, 78), "C2": (800, 455, 78),
         "E0": (1075, 95, 64), "E1": (1135, 280, 64), "E2": (1110, 455, 64)}
 WALK_WH = (1213, 540)            # 지도와 같은 축척(1인치 = 100)
@@ -890,11 +890,43 @@ def scattered_f(focus: str) -> str:
     return svg(o)
 
 
-NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg"}
+def data_command_routes() -> str:
+    """1500×600. 위: 계측 데이터, 아래: 승인된 자동 명령. 글자는 MD에 둔다."""
+    xs = (125, 375, 625, 875, 1125, 1375)
+    yt, yb = 210, 430
+    o = [rect(15, 60, 720, 525, 12, fill=LIGHT, stroke="none"),
+         rect(755, 60, 240, 525, 12, fill=PALE, stroke="none"),
+         rect(1015, 60, 470, 525, 12, fill=LIGHT, stroke="none")]
+    for xa, xb in zip(xs, xs[1:]):
+        o.append(arrow([(xa + 90, yt), (xb - 90, yt)], NAVY, sw=4, size=13))
+        o.append(path(f"M {xb - 90},{yb} L {xa + 99},{yb}",
+                      stroke=BLUE, sw=4, stroke_dasharray="10 8"))
+        o.append(head(xa + 90, yb, math.pi, BLUE, 13))
+    o += plc(xs[0], yt, ON) + plc(xs[1], yt, NORM)
+    o += server(xs[2], yt, ON) + window(xs[3], yt, ON, "gate")
+    o += logstrip(xs[4] - 72, yt, ON, n=6) + window(xs[5], yt, ON, "detect")
+    o += plc(xs[0], yb, ON) + plc(xs[1], yb, NORM)
+    o += server(xs[2], yb, ON)
+    o.append('<g transform="translate(1750 0) scale(-1 1)">')
+    o += window(xs[3], yb, ON, "gate")
+    o.append('</g>')
+    o += logstrip(xs[4] - 72, yb, ON, n=6)
+    cx, cy = xs[5], yb
+    pts = []
+    for i in range(32):
+        a = math.tau * i / 32
+        r = 46 if i % 4 in (0, 3) else 36
+        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    o += [poly(pts, fill=WHITE, stroke=NAVY, sw=SW),
+          circle(cx, cy, 18, fill=PALE, stroke=NAVY, sw=SW)]
+    return svg(o, 1500, 600)
+
+
+NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg", "데이터_명령_두경로.svg"}
 
 
 def main():
-    out = {"설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage_mqtt(),
+    out = {"데이터_명령_두경로.svg": data_command_routes(), "설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage_mqtt(),
            "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
            "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"),
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),

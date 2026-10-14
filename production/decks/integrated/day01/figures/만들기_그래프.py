@@ -3,7 +3,9 @@
 데이터: 그래프_데이터_tag_1s.csv — TimescaleDB 표 tag_1s를 SELECT로 읽은 것(시각은 한국 시간).
 사건 시각: alerts 표(raised_at · cleared_at), actions 표(issued_at), 처리 기록(A-7-record-text.txt)의 주입 · 승인 시각.
 사용: uv run --no-project --with matplotlib python 만들기_그래프.py
+맑은 고딕이 없는 검토 환경: --font NanumGothic (최종 글자 폭 확인에는 쓰지 않는다)
 """
+import argparse
 import csv
 from datetime import datetime
 from pathlib import Path
@@ -15,9 +17,16 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
 HERE = Path(__file__).resolve().parent
-font_manager.fontManager.addfont(str(Path.home() / "Library/Fonts/malgun.ttf"))
-font_manager.fontManager.addfont(str(Path.home() / "Library/Fonts/malgunbd.ttf"))
-plt.rcParams["font.family"] = "Malgun Gothic"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--font", default="Malgun Gothic", help="설치된 글꼴 이름. 기본은 맑은 고딕")
+args = parser.parse_args()
+for filename in ("malgun.ttf", "malgunbd.ttf"):
+    font_path = Path.home() / "Library/Fonts" / filename
+    if font_path.is_file():
+        font_manager.fontManager.addfont(str(font_path))
+# 묵시적 대체 글꼴로 한글이 깨지지 않도록 설치 여부를 먼저 확인한다.
+font_manager.findfont(args.font, fallback_to_default=False)
+plt.rcParams["font.family"] = args.font
 plt.rcParams["axes.unicode_minus"] = False
 NAVY, SKY, BLUE, PALE, GREY, MUTED = "#13294B", "#5CB8F2", "#1A6FC4", "#E7F3FD", "#D3D9E1", "#5B6B82"
 
