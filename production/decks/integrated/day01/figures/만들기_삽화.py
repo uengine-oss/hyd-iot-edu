@@ -482,73 +482,6 @@ def layers(focus: str) -> str:
     return svg(o)
 
 
-# ───────────────────────── 6. 노션: 데이터베이스 · 항목 · 속성 ─────────────────────────
-
-def notion_db() -> str:
-    o: list[str] = []
-    o += [rect(40, 120, 700, 360, 14, fill=WHITE), rect(40, 120, 700, 56, 14, fill=PALE), line(40, 176, 740, 176)]
-    for x in (360, 500, 620):
-        o.append(line(x, 132, x, 468, stroke=GREY, sw=2))
-    for r_ in range(4):
-        y = 176 + r_ * 73
-        if r_:
-            o.append(line(40, y, 740, y, stroke=GREY, sw=2))
-        yc = y + 36
-        hot = r_ == 1
-        if hot:
-            o.append(rect(44, y + 3, 692, 67, 6, fill=LIGHT, stroke=SKY, sw=3))
-        o += [rect(62, yc - 16, 24, 32, 4, fill=WHITE, sw=3), line(68, yc - 6, 80, yc - 6, sw=2), line(68, yc + 2, 80, yc + 2, sw=2)]
-        o.append(rect(100, yc - 8, (170, 210, 140, 190)[r_], 16, 8, fill=GREY, stroke="none", sw=0))
-        o.append(rect(380, yc - 14, (86, 100, 86, 70)[r_], 28, 14, fill=PALE, stroke=NAVY, sw=2.5))
-        o.append(rect(518, yc - 14, 84, 28, 14, fill=(WHITE, SKY, GREY, SKY)[r_], stroke=NAVY, sw=2.5))
-        o += [circle(650, yc, 12, fill=WHITE, sw=2.5), path(f"M 650,{yc - 7} L 650,{yc} L 656,{yc + 3}", sw=2.5),
-              rect(672, yc - 6, 48, 12, 6, fill=GREY, stroke="none", sw=0)]
-    # 항목 하나를 열면 나오는 페이지
-    o.append(arrow([(742, 285), (836, 285)], BLUE, sw=5, size=14))
-    o += [rect(850, 120, 310, 360, 12, fill=WHITE), rect(876, 150, 190, 22, 8, fill=NAVY, stroke="none", sw=0)]
-    o += [rect(876, 190, 80, 24, 12, fill=PALE, sw=2.5), rect(966, 190, 80, 24, 12, fill=SKY, sw=2.5), line(850, 232, 1160, 232, stroke=GREY, sw=2)]
-    for k, wd in enumerate((250, 230, 255, 180, 240, 120)):
-        o.append(rect(876, 254 + k * 34, wd, 13, 6, fill=GREY, stroke="none", sw=0))
-    return svg(o)
-
-
-# ───────────────────────── 7. 노션: 같은 데이터의 세 가지 보기 ─────────────────────────
-
-def notion_views() -> str:
-    o: list[str] = []
-    o += g(150, 270, 1.5, cylinder_db(0, 0, ON)[:4], boost=0.75)
-    xs = (500, 780, 1060)
-    for x in xs:
-        o.append(arrow([(250, 270), (330, 270), (330, 130), (x, 130), (x, 168)] if x != xs[0] else [(250, 270), (330, 270), (330, 130), (500, 130), (500, 168)], BLUE, sw=4.5, size=13))
-    for x in xs:
-        o.append(rect(x - 115, 176, 230, 230, 12, fill=WHITE))
-        o.append(rect(x - 115, 176, 230, 34, 12, fill=PALE))
-        o.append(line(x - 115, 210, x + 115, 210))
-    x = xs[0]     # 표
-    for k in range(1, 5):
-        o.append(line(x - 115, 210 + k * 39, x + 115, 210 + k * 39, stroke=GREY, sw=2))
-    for vx in (x - 25, x + 45):
-        o.append(line(vx, 210, vx, 406, stroke=GREY, sw=2))
-    for k in range(5):
-        o.append(rect(x - 100, 223 + k * 39, 60, 12, 6, fill=GREY, stroke="none", sw=0))
-        o.append(rect(x - 14, 220 + k * 39, 48, 18, 9, fill=PALE, sw=2))
-        o.append(rect(x + 56, 220 + k * 39, 48, 18, 9, fill=SKY if k in (1, 3) else WHITE, sw=2))
-    x = xs[1]     # 갤러리
-    for r_ in range(2):
-        for c_ in range(2):
-            bx, by = x - 100 + c_ * 104, 224 + r_ * 90
-            o += [rect(bx, by, 94, 78, 8, fill=WHITE, sw=3), rect(bx, by, 94, 40, 8, fill=PALE if (r_ + c_) % 2 else SKY, sw=3),
-                  rect(bx + 10, by + 52, 60, 10, 5, fill=GREY, stroke="none", sw=0)]
-    x = xs[2]     # 보드
-    for c_, cnt in enumerate((2, 3, 1)):
-        bx = x - 102 + c_ * 70
-        o.append(rect(bx, 222, 62, 174, 8, fill=LIGHT, stroke=GREY, sw=2))
-        o.append(rect(bx + 8, 230, 46, 12, 6, fill=NAVY, stroke="none", sw=0))
-        for k in range(cnt):
-            o.append(rect(bx + 6, 252 + k * 44, 50, 36, 6, fill=WHITE if c_ != 1 else PALE, sw=2.5))
-    return svg(o)
-
-
 # ───────────────────────── 8. 흩어진 정보 ─────────────────────────
 
 def scattered() -> str:
@@ -875,8 +808,8 @@ NEW_ONLY: set = set()
 def main():
     out = {"설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage(1),
            "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
-           "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"), "노션_데이터베이스.svg": notion_db(),
-           "노션_보기.svg": notion_views(), "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
+           "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"),
+           "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
            "경로_1.svg": walk(1), "경로_2.svg": walk(2), "경로_3.svg": walk(3),
            "계층_L1-6.svg": layer_rows([6, 5, 4, 3, 2, 1]), "계층_L7-9.svg": layer_rows([9, 8, 7], hot=(9, 8, 7)), "연결.svg": connect(),
            "설비_1_순환.svg": hyd_unit_f("tank suction press pump load ret out"), "설비_2_냉각.svg": hyd_unit_f("ret cooler fan out"),

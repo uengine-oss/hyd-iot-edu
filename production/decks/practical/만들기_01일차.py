@@ -12,8 +12,8 @@ SRC = HERE.parent / "integrated" / "day01" / "통합반_01일차.md"
 OUT = HERE / "day01" / "실전반_01일차.md"
 
 text = SRC.read_text(encoding="utf-8")
-assert text.count("- 과정: 통합반 1일차") == 1, "표지의 과정 줄을 찾지 못함"
-text = text.replace("- 과정: 통합반 1일차", "- 과정: 실전반 1일차")
+assert text.count("- 과정: 통합반 1회차") == 1, "표지의 과정 줄을 찾지 못함"
+text = text.replace("- 과정: 통합반 1회차", "- 과정: 실전반 1회차")
 assert text.startswith("# 통합반 1일차 — "), "문서 제목 줄을 찾지 못함"
 text = text.replace("# 통합반 1일차 — ", "# 실전반 1일차 — ", 1)                 # 문서 제목(화면 밖)
 text = text.replace("- 그림: figures/", "- 그림: ../../integrated/day01/figures/")   # 그림은 통합반 것을 그대로 쓴다
