@@ -71,8 +71,8 @@ def arrow(pts, color=NAVY, sw=4, size=13):
     return path(d, stroke=color, sw=sw) + head(x2, y2, ang, color, size)
 
 
-def svg(body: list[str]) -> str:
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">\n'
+def svg(body: list[str], w: int = W, h: int = H) -> str:
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">\n'
             + "\n".join(body) + "\n</svg>\n")
 
 
@@ -323,16 +323,16 @@ def envelope(cx, cy, st: St):
 
 def lineage_mqtt() -> str:
     """리니지 1단계(MQTT)만 크게: 설비 → 게이트웨이(발행자) → 브로커 → 구독자 둘. 아직 다루지 않은 IT 구간은 그리지 않는다.
-    라벨은 그림 하나에 하나씩 붙는다: 봉투(토픽) · 브로커는 위, 나머지는 아래."""
-    r1, r2 = 215, 395
-    x = dict(equip=110, plc=330, env=470, emqx=630, ingest=990)
-    o: list[str] = [rect(14, 8, 756, 504, 14, fill=LIGHT, stroke="none", sw=0),        # OT
-                    rect(784, 8, 402, 504, 14, fill=LIGHT, stroke="none", sw=0)]       # DMZ
-    o += [arrow([(161, r1), (271, r1)], BLUE, sw=5, size=14), arrow([(387, r1), (578, r1)], BLUE, sw=5, size=14),
-          arrow([(680, r1), (930, r1)], BLUE, sw=5, size=14), arrow([(x["emqx"], r1 + 54), (x["emqx"], r2 - 54)], BLUE, sw=5, size=14)]
+    라벨은 그림 하나에 하나씩 붙는다: 봉투(토픽) · 브로커는 위, 나머지는 아래. 그림 사이 간격은 고르게 둔다."""
+    w, h, r1, r2 = 1100, 500, 205, 385
+    x = dict(equip=110, plc=350, env=530, emqx=710, ingest=980)
+    o: list[str] = [rect(12, 8, 848, 484, 14, fill=LIGHT, stroke="none", sw=0),        # OT
+                    rect(875, 8, 213, 484, 14, fill=LIGHT, stroke="none", sw=0)]       # DMZ
+    o += [arrow([(161, r1), (291, r1)], BLUE, sw=5, size=14), arrow([(407, r1), (658, r1)], BLUE, sw=5, size=14),
+          arrow([(760, r1), (920, r1)], BLUE, sw=5, size=14), arrow([(x["emqx"], r1 + 54), (x["emqx"], r2 - 54)], BLUE, sw=5, size=14)]
     o += equip_mini(x["equip"], r1, ON) + plc(x["plc"], r1, ON) + envelope(x["env"], r1, ON) + server(x["emqx"], r1, ON)
     o += monitor(x["emqx"], r2, ON, "hmi") + window(x["ingest"], r1, ON, "gate")
-    return svg(o)
+    return svg(o, w, h)
 
 
 # ───────────────────────── 3. 원인 후보 ─────────────────────────
