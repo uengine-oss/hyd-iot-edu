@@ -335,6 +335,32 @@ def lineage_mqtt() -> str:
     return svg(o, w, h)
 
 
+KG_NODES = {"asset": (80, 100, 56), "comp": (385, 100, 64), "sen": (150, 440, 56), "sym": (470, 440, 60),
+            "fm": (700, 262, 76), "cause": (975, 88, 56), "skill": (925, 450, 60), "doc": (1128, 262, 80)}
+KG_EDGES = [("asset", "comp"), ("comp", "sen"), ("sym", "sen"), ("sym", "fm"), ("cause", "fm"), ("fm", "comp"), ("fm", "skill"),
+            ("skill", "doc")]
+
+
+def kg_map() -> str:
+    """HYD 지식 그래프 지도(Neo4j 그래프 꼴): 동그라미 노드를 흩어 놓고 대각선으로 잇는다. 1인치 = 100(본문 12.13 × 5.4).
+    고장 유형은 가운데 진한 원, 고장 유형에 직접 붙은 넷은 파란 테두리, 바깥 셋(설비 · 센서 · 매뉴얼 절)은 회색.
+    노드 이름과 관계 이름은 덱 라벨로 얹는다(좌표는 덱 MD). 읽는 순서는 설비(왼쪽 위)에서 오른쪽으로."""
+    ring = {"fm": (SKY, NAVY, 4), "comp": (PALE, BLUE, 3), "skill": (PALE, BLUE, 3), "cause": (PALE, BLUE, 3), "sym": (PALE, BLUE, 3),
+            "asset": (LIGHT, GREY, 3), "sen": (LIGHT, GREY, 3), "doc": (LIGHT, GREY, 3)}
+    o: list[str] = []
+    for a, b in KG_EDGES:
+        (ax, ay, ar), (bx, by, br) = KG_NODES[a], KG_NODES[b]
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        hot = "fm" in (a, b)
+        o.append(arrow([(ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))],
+                       BLUE if hot else NAVY, sw=4 if hot else 3, size=13))
+    for k, (x, y, r) in KG_NODES.items():
+        fill, stroke, sw = ring[k]
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    return svg(o, 1213, 540)
+
+
 # ───────────────────────── 3. 원인 후보 ─────────────────────────
 
 def causes() -> str:
@@ -821,7 +847,7 @@ def scattered_f(focus: str) -> str:
     return svg(o)
 
 
-NEW_ONLY: set = {"리니지_1_MQTT.svg"}
+NEW_ONLY: set = set()
 
 
 def main():
@@ -835,7 +861,7 @@ def main():
            "설비_3_TS1.svg": hyd_unit_f("ret cooler ts1"), "리니지_OT.svg": lineage_zone("OT"), "리니지_IT.svg": lineage_zone("IT"),
            "원인후보_1.svg": causes_f(0), "원인후보_2.svg": causes_f(1), "원인후보_3.svg": causes_f(2),
            "관계_만남.svg": relation_f("meet"), "관계_조치.svg": relation_f("act"), "연결_설비쪽.svg": connect_f("asset"),
-           "연결_진단쪽.svg": connect_f("diag"), "흩어진정보_값.svg": scattered_f("val"), "흩어진정보_MES.svg": scattered_f("mes")}
+           "연결_진단쪽.svg": connect_f("diag"), "지식그래프_지도.svg": kg_map(), "흩어진정보_값.svg": scattered_f("val"), "흩어진정보_MES.svg": scattered_f("mes")}
     for name, text in out.items():
         assert "<text" not in text
         if (HERE / name).exists() and name not in NEW_ONLY:
