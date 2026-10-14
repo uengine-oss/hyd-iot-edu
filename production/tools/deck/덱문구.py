@@ -5,7 +5,7 @@
     python3 production/tools/deck/덱문구.py 넣기 <덱 MD> <첫 장> <끝 장> <윤문 파일>
     python3 production/tools/deck/덱문구.py 자르기 <덱 MD> <첫 장> <끝 장> <출력 MD>
 
-- 요청문: 장의 부제 · 메시지 · 문장 · 노트와 요소의 글을 「[키] 문구」 한 줄씩으로 뽑아, 윤문에 보낼 요청문을 만든다.
+- 요청문: 장의 부제 · 메시지 · 문장 · 노트와 요소의 글을 「[키] 문구」 한 줄씩으로 뽑아 장마다 묶고(「── N장: 한 화면 ──」), 윤문에 보낼 요청문을 만든다.
   같은 이름에 `_원문.txt`도 함께 남긴다. 제목, 그림 좌표, 코드, 아이콘, 유형은 뽑지 않는다.
 - 검사: 키마다 숫자, 영문 이름, 굵게 표시(**), 화면 줄바꿈( / )의 수가 원문과 같은지 본다. 다르면 키와 함께 찍고 실패한다.
 - 넣기: 윤문 파일의 문구를 덱 MD의 같은 자리에 되돌려 넣는다. 키가 하나라도 빠지거나 늘면 아무것도 쓰지 않고 멈춘다.
@@ -109,7 +109,13 @@ def main():
     t = md.read_text(encoding="utf-8")
     if cmd == "요청문":
         pairs = 뽑기(t, first, last)
-        lines = [f"[{k}] {v}" for k, v in pairs]
+        lines, prev = [], None
+        for k, v in pairs:      # 한 장의 문구는 한 화면에 함께 나오므로 장마다 묶는다(줄마다 따로 다듬으면 같은 말이 겹친다)
+            n = int(k[1:3])
+            if n != prev:
+                lines += ([""] if prev is not None else []) + [f"── {n}장: 한 화면 ──"]
+                prev = n
+            lines.append(f"[{k}] {v}")
         out.with_name(out.stem + "_원문.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
         out.write_text(상황 + "\n\n" + 꼴 + "\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
         print(f"{out} — 문구 {len(pairs)}개 (원문: {out.stem}_원문.txt)")
