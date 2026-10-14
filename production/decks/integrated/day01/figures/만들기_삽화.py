@@ -277,7 +277,6 @@ X = dict(equip=85, plc=245, emqx=410, ingest=607, log=814, det=1085, tsdb=870, g
 def lineage(stage: int) -> str:
     states = {
         0: dict(on="equip plc emqx fuxa ingest log tsdb det graf", norm="", aon="all", anorm=""),
-        1: dict(on="equip plc emqx", norm="fuxa ingest", aon="eq_plc plc_emqx emqx_fuxa emqx_ing", anorm=""),
         2: dict(on="ingest log", norm="emqx", aon="emqx_ing ing_log", anorm=""),
         3: dict(on="tsdb det", norm="log graf fuxa emqx", aon="log_tsdb log_det", anorm="tsdb_graf emqx_fuxa"),
     }[stage]
@@ -313,6 +312,26 @@ def lineage(stage: int) -> str:
     o += window(X["det"], R1, st("det"), "detect")
     o += bell(1163, R1 - 4, st("det"), 0.9)
     o += monitor(X["graf"], R2, st("graf"), "chart")
+    return svg(o)
+
+
+def envelope(cx, cy, st: St):
+    """메시지 한 통(봉투). 화살표 위에 얹어 그 화살표로 가는 메시지를 나타낸다."""
+    return [rect(cx - 24, cy - 17, 48, 34, 5, fill=st.fill, stroke=st.line, sw=3),
+            path(f"M {cx - 24},{cy - 15} L {cx},{cy + 4} L {cx + 24},{cy - 15}", stroke=st.line, sw=3)]
+
+
+def lineage_mqtt() -> str:
+    """리니지 1단계(MQTT)만 크게: 설비 → 게이트웨이(발행자) → 브로커 → 구독자 둘. 아직 다루지 않은 IT 구간은 그리지 않는다.
+    라벨은 그림 하나에 하나씩 붙는다: 봉투(토픽) · 브로커는 위, 나머지는 아래."""
+    r1, r2 = 215, 395
+    x = dict(equip=110, plc=330, env=470, emqx=630, ingest=990)
+    o: list[str] = [rect(14, 8, 756, 504, 14, fill=LIGHT, stroke="none", sw=0),        # OT
+                    rect(784, 8, 402, 504, 14, fill=LIGHT, stroke="none", sw=0)]       # DMZ
+    o += [arrow([(161, r1), (271, r1)], BLUE, sw=5, size=14), arrow([(387, r1), (578, r1)], BLUE, sw=5, size=14),
+          arrow([(680, r1), (930, r1)], BLUE, sw=5, size=14), arrow([(x["emqx"], r1 + 54), (x["emqx"], r2 - 54)], BLUE, sw=5, size=14)]
+    o += equip_mini(x["equip"], r1, ON) + plc(x["plc"], r1, ON) + envelope(x["env"], r1, ON) + server(x["emqx"], r1, ON)
+    o += monitor(x["emqx"], r2, ON, "hmi") + window(x["ingest"], r1, ON, "gate")
     return svg(o)
 
 
@@ -802,11 +821,11 @@ def scattered_f(focus: str) -> str:
     return svg(o)
 
 
-NEW_ONLY: set = set()
+NEW_ONLY: set = {"리니지_1_MQTT.svg"}
 
 
 def main():
-    out = {"설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage(1),
+    out = {"설비_유압파워팩.svg": hyd_unit(), "리니지_0_전체.svg": lineage(0), "리니지_1_MQTT.svg": lineage_mqtt(),
            "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
            "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"),
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
