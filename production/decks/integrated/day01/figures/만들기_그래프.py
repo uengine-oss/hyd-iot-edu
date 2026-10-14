@@ -68,7 +68,7 @@ a2.text(t1, 71.5, "경보 조건의 기준 70 %", ha="right", va="bottom", fonts
 a2.xaxis.set_major_locator(mdates.MinuteLocator())
 a2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 a2.set_xlim(t0, t1)
-a2.set_xlabel("2026-10-10 실제 시각 (설비 시간은 20배속)", color=MUTED, fontsize=11)
+a2.set_xlabel("2026-10-10 시각", color=MUTED, fontsize=11)
 fig.subplots_adjust(left=0.09, right=0.985, top=0.93, bottom=0.11)
 fig.savefig(HERE / "그래프_쿨러열화_TS1_CE.png", facecolor="white")
 print("TS1", len(ts), "CE", len(ce), "peak", pk, "CE min/max", min(v for _, v in ce), max(v for _, v in ce), "CE end", ce[-1])

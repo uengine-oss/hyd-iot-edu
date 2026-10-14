@@ -380,6 +380,10 @@ def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LE
             p.space_after = Pt(space_after)
         first = bool(first_size) and pi == 0
         psize = first_size if first else size
+        if para_text.startswith("• ") and align == PP_ALIGN.LEFT:   # 둘째 줄이 글머리표 뒤 글자에 맞춰 시작하게(내어쓰기)
+            hang = Emu(int(Pt(psize) * 0.9))
+            p._p.get_or_add_pPr().set("marL", str(hang))
+            p._p.get_or_add_pPr().set("indent", str(-hang))
         base = (first_color or color) if first else color
         for k, chunk in enumerate(para_text.split("**")):
             if not chunk:
@@ -571,6 +575,20 @@ def render_divider(sl, s: Slide, _page):
 
 
 # ── 본문 유형 ──────────────────────────────────────────────────────────────
+FILL = 0.8   # 카드 · 비교 · 흐름 · 단계: 본문 영역 높이의 이만큼까지 글자를 키워 채운다(내용이 적어 위아래가 비지 않게)
+
+
+def grow(base: float, cap: float, height_at, avail: float, step: float = 0.5) -> float:
+    """base pt에서 cap pt까지 step씩 키워 보며, height_at(pt)가 avail * FILL 안에 드는 가장 큰 크기를 돌려준다.
+    base에서도 넘치면 base 그대로(넘침은 Fit 검사가 잡는다)."""
+    best, pt = base, base
+    while pt <= cap + 1e-6:
+        if height_at(pt) <= avail * FILL:
+            best = pt
+        pt += step
+    return best
+
+
 def item_block(sl, x, y, w, h, it: Item, slide_no, name, *, title_pt=17, desc_pt=BODY_PT, align=PP_ALIGN.LEFT,
                bullet=True, anchor=MSO_ANCHOR.TOP):
     """요소 제목(굵게) + 설명 여러 줄을 한 상자에."""
@@ -586,9 +604,16 @@ def render_flow(sl, s, page):
     w = (CW - gap * (n - 1)) / n
     d = 0.8 if s.icons else 0
     small = n >= 5
-    desc_pt = 12.5 if small else 13.5
-    need = max(line_count("\n".join(it.lines) or " ", desc_pt, w - 0.36) for it in s.items)
-    h = min(end - top, 0.3 + d + 0.95 + need * desc_pt * LINE_SPACING / 72 + 0.3)
+    base = 12.5 if small else 13.5
+
+    def flow_h(pt):
+        tpt = pt + (3 if small else 3.5)
+        need = max(line_count("\n".join(it.lines) or " ", pt, w - 0.36) for it in s.items)
+        tl = max(line_count(it.plain_title, tpt, w - 0.36) for it in s.items)
+        return 0.3 + d + 0.25 + tl * tpt * LINE_SPACING / 72 + 0.4 + need * pt * LINE_SPACING / 72 + 0.3
+
+    desc_pt = grow(base, base + 3, flow_h, end - top)
+    h = min(end - top, flow_h(desc_pt))
     y = top + (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -599,7 +624,7 @@ def render_flow(sl, s, page):
             add_icon(sl, s.icons[i], x + w / 2, ty + d / 2, d * 0.58, NAVY)
             ty += d + 0.08
         item_block(sl, x + 0.08, ty, w - 0.16, y + h - ty - 0.08, it, s.no, f"요소{i + 1}",
-                   title_pt=15.5 if small else 17, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
+                   title_pt=desc_pt + (3 if small else 3.5), desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
         if i < n - 1:
             add_box(sl, x + w + 0.07, y + h / 2 - 0.15, gap - 0.14, 0.3, NAVY, shape=MSO_SHAPE.RIGHT_ARROW)
 
@@ -609,12 +634,18 @@ def render_cards(sl, s, page):
     n, gap = len(s.items), 0.3
     w = (CW - gap * (n - 1)) / n
     d = 0.8
-    desc_pt = 13.5 if n == 4 else BODY_PT
-    need = max(line_count(it.plain_title, 18, w - 0.56) * 18 + line_count(
-        (bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines)) or " ", desc_pt, w - 0.56) * desc_pt
-        for it in s.items) * LINE_SPACING / 72
-    h = min(end - top, 0.22 + (d + 0.1 if s.icons else 0) + need + 0.55
-            + (0.55 if any(it.tag for it in s.items) else 0.12))   # 내용이 적으면 빈 칸을 늘이지 않는다
+    base = 13.5 if n == 4 else BODY_PT
+
+    def card_h(pt):
+        tpt = pt + 4
+        need = max(line_count(it.plain_title, tpt, w - 0.56) * tpt + line_count(
+            (bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines)) or " ", pt, w - 0.56) * pt
+            for it in s.items) * LINE_SPACING / 72
+        return (0.22 + (d + 0.1 if s.icons else 0) + need + 0.45
+                + (0.55 if any(it.tag for it in s.items) else 0.12))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    desc_pt = grow(base, base + 4, card_h, end - top)
+    h = min(end - top, card_h(desc_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -625,7 +656,7 @@ def render_cards(sl, s, page):
             add_icon(sl, s.icons[i], x + 0.25 + d / 2, ty + d / 2, d * 0.58, NAVY)
             ty += d + 0.1
         bottom = top + h - (0.55 if it.tag else 0.12)
-        item_block(sl, x + 0.18, ty, w - 0.36, bottom - ty, it, s.no, f"요소{i + 1}", title_pt=18,
+        item_block(sl, x + 0.18, ty, w - 0.36, bottom - ty, it, s.no, f"요소{i + 1}", title_pt=desc_pt + 4,
                    desc_pt=desc_pt)
         if it.tag:
             chip(sl, x + 0.25, top + h - 0.47, it.tag, it.strong, s.no, limit=w - 0.5)
@@ -636,9 +667,14 @@ def render_compare(sl, s, page):
     gap = 0.8
     w = (CW - gap) / 2
     d = 0.8
-    need = max(line_count(bullets(it.lines) or " ", 14.5, w - 0.8) for it in s.items)
-    h = min(end - top, 1.15 + need * (14.5 * LINE_SPACING + 6) / 72 + 0.35
-            + (0.6 if any(it.tag for it in s.items) else 0.15))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    def cmp_h(pt):
+        need = max(line_count(bullets(it.lines) or " ", pt, w - 0.8) for it in s.items)
+        return (1.15 + need * (pt * LINE_SPACING + 6) / 72 + 0.35
+                + (0.6 if any(it.tag for it in s.items) else 0.15))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    body_pt = grow(14.5, 18, cmp_h, end - top)
+    h = min(end - top, cmp_h(body_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -652,7 +688,7 @@ def render_compare(sl, s, page):
         add_text(sl, tx, top + 0.22, x + w - tx - 0.2, d, it.plain_title, 20, NAVY, bold=True,
                  anchor=MSO_ANCHOR.MIDDLE, name=f"요소{i + 1} 제목", slide_no=s.no, max_lines=2)
         bottom = top + h - (0.6 if it.tag else 0.15)
-        add_text(sl, x + 0.3, top + 1.15, w - 0.6, bottom - top - 1.15, bullets(it.lines), 14.5, INK,
+        add_text(sl, x + 0.3, top + 1.15, w - 0.6, bottom - top - 1.15, bullets(it.lines), body_pt, INK,
                  name=f"요소{i + 1} 줄", slide_no=s.no, space_after=6)
         if it.tag:
             chip(sl, x + 0.35, top + h - 0.5, it.tag, it.strong, s.no, limit=w - 0.7)
@@ -708,9 +744,14 @@ def render_steps(sl, s, page):
     n = len(s.items)
     w = CW / n
     d = 0.95
-    desc_pt = 13 if n == 5 else 13.5
-    need = max(line_count("\n".join(it.lines) or " ", desc_pt, w - 0.36) for it in s.items)
-    h = min(end - top, d + 0.25 + 0.9 + need * desc_pt * LINE_SPACING / 72 + 0.2)
+    base = 13 if n == 5 else 13.5
+
+    def step_h(pt):
+        need = max(line_count("\n".join(it.lines) or " ", pt, w - 0.36) for it in s.items)
+        return d + 0.25 + 0.9 + need * pt * LINE_SPACING / 72 + 0.2
+
+    desc_pt = grow(base, base + 3, step_h, end - top)
+    h = min(end - top, step_h(desc_pt))
     y = top + (end - top - h) / 2
     add_box(sl, MX + w / 2, y + d / 2 - 0.02, CW - w, 0.04, LINE, shape=MSO_SHAPE.RECTANGLE)
     for i, it in enumerate(s.items):
@@ -728,7 +769,7 @@ def render_steps(sl, s, page):
                      anchor=MSO_ANCHOR.MIDDLE)
         ly = y + d + 0.2
         item_block(sl, cx - w / 2 + 0.08, ly, w - 0.16, y + h - ly, it, s.no, f"단계{i + 1}",
-                   title_pt=16 if n == 5 else 17, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
+                   title_pt=desc_pt + 3.5, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
 
 
 def render_statement(sl, s, page):

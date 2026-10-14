@@ -598,6 +598,49 @@ def walk(stage: int) -> str:
     return svg(o)
 
 
+# 경로 그림(압축판, 2026-10-14): 지식그래프_지도.svg와 같은 그래프 꼴(동그라미 노드 · 대각선 · 글자는 덱 라벨).
+# 1단계 = 이상 패턴 → 증상 → 고장 유형, 2단계 = 원인 후보 · 증거 · 완화 조치. 좌표를 바꾸면 덱 MD의 라벨 좌표도 함께 고친다.
+WALK = {"P": (95, 110, 80), "S": (265, 420, 58), "F": (480, 250, 80), "K": (620, 460, 58),
+        "C0": (770, 95, 78), "C1": (830, 280, 78), "C2": (800, 455, 78),
+        "E0": (1075, 95, 64), "E1": (1135, 280, 64), "E2": (1110, 455, 64)}
+WALK_WH = (1213, 540)            # 지도와 같은 축척(1인치 = 100)
+WALK_EDGES = [("P", "S"), ("S", "F"), ("C0", "F"), ("C1", "F"), ("C2", "F"), ("C0", "E0"), ("C1", "E1"), ("C2", "E2"), ("F", "K")]
+
+
+def walk2(stage: int) -> str:
+    on = {1: "P S F", 2: "C0 C1 C2 E0 E1 E2 K"}[stage].split()
+    done = {1: [], 2: ["P", "S", "F"]}[stage]
+    hot = {1: set(), 2: {"C0", "E0"}}[stage]          # 2단계에서 확인된 원인과 그 증거
+
+    def state(k):
+        return "on" if k in on else "done" if k in done else "off"
+
+    o: list[str] = []
+    for a, b in WALK_EDGES:
+        (ax, ay, ar), (bx, by, br) = WALK[a], WALK[b]
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        if stage == 1:
+            color = BLUE if (a, b) in (("P", "S"), ("S", "F")) else GREY
+        else:
+            color = NAVY if a in ("P", "S") else BLUE if {a, b} & (hot | {"K"}) else NAVY
+        strong = color == BLUE
+        o.append(arrow([(ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))],
+                       color, sw=4 if strong else 3, size=13))
+    for k, (x, y, r) in WALK.items():
+        st = state(k)
+        if k == "F" and st != "off":
+            fill, stroke, sw = SKY, NAVY, 4
+        elif st == "on":
+            fill, stroke, sw = (SKY if k in hot else PALE), BLUE, 3
+        elif st == "done":
+            fill, stroke, sw = WHITE, NAVY, 3
+        else:
+            fill, stroke, sw = LIGHT, GREY, 3
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    return svg(o, *WALK_WH)
+
+
 
 # ───────────────────────── 11. 계층 그림(줄 수를 줄여 크게) ─────────────────────────
 
@@ -847,7 +890,7 @@ def scattered_f(focus: str) -> str:
     return svg(o)
 
 
-NEW_ONLY: set = set()
+NEW_ONLY: set = {"경로2_1.svg", "경로2_2.svg"}
 
 
 def main():
@@ -855,7 +898,7 @@ def main():
            "리니지_2_DMZ.svg": lineage(2), "리니지_3_저장감지.svg": lineage(3), "원인후보.svg": causes(), "관계.svg": relation(),
            "계층_0_전체.svg": layers("all"), "계층_1_L7-9.svg": layers("79"),
            "흩어진정보.svg": scattered(), "노드관계.svg": node_rel(),
-           "경로_1.svg": walk(1), "경로_2.svg": walk(2), "경로_3.svg": walk(3),
+           "경로_1.svg": walk(1), "경로_2.svg": walk(2), "경로_3.svg": walk(3), "경로2_1.svg": walk2(1), "경로2_2.svg": walk2(2),
            "계층_L1-6.svg": layer_rows([6, 5, 4, 3, 2, 1]), "계층_L7-9.svg": layer_rows([9, 8, 7], hot=(9, 8, 7)), "연결.svg": connect(),
            "설비_1_순환.svg": hyd_unit_f("tank suction press pump load ret out"), "설비_2_냉각.svg": hyd_unit_f("ret cooler fan out"),
            "설비_3_TS1.svg": hyd_unit_f("ret cooler ts1"), "리니지_OT.svg": lineage_zone("OT"), "리니지_IT.svg": lineage_zone("IT"),
