@@ -430,9 +430,11 @@ def tradeoff(stage: int) -> str:
     N = {"skill": (112, 230), "fan": (400, 80), "load": (400, 400), "ts1": (690, 236), "power": (985, 56),
          "margin": (985, 236), "out": (690, 400), "otd": (985, 400)}
     R = 46
+    full = "skill fan load ts1 margin power out otd"
     shown = {1: "skill fan load", 2: "skill fan load ts1 margin", 3: "skill fan load ts1 margin power",
-             4: "skill fan load ts1 margin power out otd", 5: "skill fan load ts1 margin power out otd"}[stage].split()
-    hot = {1: "skill fan load", 2: "ts1 margin", 3: "power", 4: "out otd", 5: ""}[stage].split()
+             4: full, 5: full, 6: full}[stage].split()
+    # 6 = 전체판에서 득의 갈래(팬 · 부하 → 유온 → 인터록 여유)는 파랑, 실의 갈래(전력 · 생산량 · 납기)는 남색으로 나눈다
+    hot = {1: "skill fan load", 2: "ts1 margin", 3: "power", 4: "out otd", 5: "", 6: "ts1 margin"}[stage].split()
     o: list[str] = []
 
     def st(name):
@@ -498,8 +500,128 @@ def whatif(stage: int) -> str:
     return svg(o)
 
 
+# ───────────────────────── 12. 지식 그래프 꼴(1회차 지도 · 2회차 kg_svg와 같은 꼴): 원형 노드 · 대각선 ─────────────────────────
+# 1인치 = 100(본문 12.13 × 5.4인치와 같은 축척). 노드에는 글자를 넣지 않고 클래스 이름은 덱 MD 라벨로 얹는다.
+# 역할별 색: hub = 여러 관계가 모이는 노드(진한 원), near = 직접 붙은 노드(파란 테두리), far = 바깥 노드(회색).
+KW, KH = 1213, 540
+RING = {"hub": (SKY, NAVY, 4), "near": (PALE, BLUE, 3), "far": (LIGHT, GREY, 3)}
+
+
+def _kg_arrow(a, b, color, dashed=False):
+    (ax, ay, ar, *_), (bx, by, br, *_) = a, b
+    d_ = math.hypot(bx - ax, by - ay)
+    ux, uy = (bx - ax) / d_, (by - ay) / d_
+    p0, p1 = (ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))
+    if not dashed:
+        return [arrow([p0, p1], color, sw=4 if color == BLUE else 3, size=13)]
+    tip = (p1[0] - ux * 2, p1[1] - uy * 2)
+    return [line(p0[0], p0[1], p1[0] - ux * 14, p1[1] - uy * 14, stroke=color, sw=4, stroke_dasharray="12 9"),
+            arrow([(p1[0] - ux * 16, p1[1] - uy * 16), tip], color, sw=4, size=13)]
+
+
+def kg_svg(nodes: dict, edges: list, extra=(), after=()) -> str:
+    """nodes: {키: (x, y, r, 역할)}, edges: [(시작, 끝, 색[, 점선])] — 화살표는 저장 방향(시작 → 끝)."""
+    o: list[str] = list(extra)
+    for e in edges:
+        o += _kg_arrow(nodes[e[0]], nodes[e[1]], e[2], dashed=len(e) > 3 and e[3])
+    for x, y, r, role in nodes.values():
+        fill, stroke, sw = RING[role]
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    o += list(after)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {KW} {KH}" width="{KW}" height="{KH}">\n'
+            + "\n".join(o) + "\n</svg>\n")
+
+
+def _band():
+    """그래프 아래의 띠: 점선 구분과 실제 대상을 얹을 칸(글은 덱 라벨)."""
+    return [line(20, 432, KW - 20, 432, stroke=GREY, sw=2.5, stroke_dasharray="6 8"),
+            rect(40, 452, KW - 80, 72, 14, fill=LIGHT, stroke="none", sw=0)]
+
+
+def kg_skill() -> str:
+    """원인 → 고장 유형 → 조치 방법(Skill, 가운데) → 단계 → 근거 절, 승인 역할, 원인 한정(ADDRESSES). 아래 띠는 쿨러 사건의 실제 연결."""
+    n = {"cause": (110, 120, 60, "near"), "fm": (360, 320, 84, "near"), "skill": (640, 150, 68, "hub"),
+         "role": (900, 70, 56, "near"), "step": (850, 330, 60, "near"), "ms": (1100, 250, 84, "far")}
+    edges = [("cause", "fm", NAVY), ("fm", "skill", BLUE), ("skill", "cause", NAVY), ("skill", "role", NAVY),
+             ("skill", "step", BLUE), ("step", "ms", NAVY)]
+    return kg_svg(n, edges, extra=_band())
+
+
+def kg_dmn() -> str:
+    """결정 → 결정표 → 규칙(가운데) → 입력 데이터 · 적용 조치 · 근거 절. 아래 띠는 실제 규칙 한 행."""
+    n = {"dec": (110, 110, 70, "near"), "dt": (380, 320, 86, "near"), "rule": (650, 150, 66, "hub"),
+         "skill": (930, 70, 52, "near"), "input": (880, 340, 74, "near"), "ms": (1110, 250, 84, "far")}
+    edges = [("dec", "dt", NAVY), ("dt", "rule", NAVY), ("rule", "input", BLUE), ("rule", "skill", BLUE), ("rule", "ms", NAVY)]
+    return kg_svg(n, edges, extra=_band())
+
+
+def numline_pair() -> str:
+    """위: forecast_ts1 >= 55(채운 점), 아래: fan100_hours > 24(빈 점). 축마다 기준값 · 바로 아래 · 바로 위의 세 시험점."""
+    o: list[str] = []
+    xs = (520, 700, 880)
+    for ay, closed, oks in ((150, True, (False, True, True)), (400, False, (False, False, True))):
+        o.append(arrow([(300, ay), (1180, ay)], NAVY, sw=4, size=14))
+        for x in xs:
+            o.append(line(x, ay - 12, x, ay + 12, sw=4))
+        o.append(rect(700, ay - 92, 460, 52, 10, fill=PALE, stroke=NAVY, sw=3.5))
+        o.append(circle(700, ay - 66, 10, fill=NAVY if closed else WHITE, stroke=NAVY, sw=3.5))
+        for x, ok in zip(xs, oks):
+            o.append(line(x, ay + 14, x, ay + 40, stroke=NAVY, sw=2.5, stroke_dasharray="5 5"))
+            o += check_mark(x, ay + 66, 22) if ok else cross_mark(x, ay + 66, 22)
+    o.append(line(20, 272, 1180, 272, stroke=GREY, sw=2, stroke_dasharray="6 8"))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {KW} {KH}" width="{KW}" height="{KH}">\n'
+            + "\n".join(o) + "\n</svg>\n")
+
+
+def lead_lag() -> str:
+    """펌프 부하 → 생산량(선행) → 납기 준수율 → 지체상금(후행). 왼쪽 띠 = 선행, 오른쪽 띠 = 후행."""
+    o = [rect(14, 8, 556, 524, 14, fill=PALE, stroke="none", sw=0), rect(590, 8, 606, 524, 14, fill=LIGHT, stroke="none", sw=0)]
+    n = {"load": (130, 330, 56, "far"), "tp": (400, 190, 62, "hub"), "otd": (760, 330, 62, "near"), "pen": (1050, 190, 62, "near")}
+    edges = [("load", "tp", NAVY), ("tp", "otd", BLUE), ("otd", "pen", BLUE)]
+    icons = (g(130, 330, 0.85, pump(0, 0, NORM, 30), boost=0.9) + g(400, 190, 0.95, crates(0, 0, NORM), boost=0.9)
+             + g(760, 330, 0.5, calendar_icon(0, 0, NORM)) + g(1050, 190, 0.8, bolt(0, 0, NORM)))
+    ud = updown(130 + 70, 330 - 52, False, NAVY, h=30) + updown(400 + 76, 190 - 56, False, BLUE, h=30) \
+        + updown(760 + 76, 330 - 56, False, BLUE, h=30) + updown(1050 + 76, 190 - 56, True, BLUE, h=30)
+    return kg_svg(n, edges, extra=o, after=icons + ud)
+
+
+def cond_path() -> str:
+    """부품 단가 ↓ → 부품 구매비 ↓ (조건 없음) / 부품 단가 ↓ → 부품 품질 ↓ (조건부, 점선) → 클레임 ↑ → 브랜드 ↓ → 매출 ↓.
+    오른쪽 아래 칩 셋은 조건의 판정(TRUE · UNKNOWN · FALSE) — 글은 덱 라벨."""
+    n = {"price": (110, 270, 62, "hub"), "cost": (380, 90, 62, "near"), "quality": (380, 420, 62, "near"),
+         "claim": (640, 300, 62, "near"), "brand": (880, 150, 62, "near"), "rev": (1110, 330, 62, "far")}
+    edges = [("price", "cost", NAVY), ("price", "quality", BLUE, True), ("quality", "claim", BLUE), ("claim", "brand", BLUE),
+             ("brand", "rev", BLUE)]
+    ud = (updown(110 + 80, 270 - 50, False, NAVY, h=30) + updown(380 + 80, 90 + 10, False, NAVY, h=30)
+          + updown(380 + 80, 420 - 50, False, BLUE, h=30) + updown(640 + 80, 300 + 10, True, BLUE, h=30)
+          + updown(880 + 80, 150 + 10, False, BLUE, h=30) + updown(1110 - 80, 330 + 70, False, BLUE, h=30))
+    chips = []
+    for i, fill in enumerate((SKY, PALE, WHITE)):
+        chips.append(rect(560 + i * 215, 462, 200, 62, 12, fill=fill, stroke=NAVY, sw=3))
+    return kg_svg(n, edges, after=ud + chips)
+
+
+SMAP = {"profit": (700, 64, 60, "hub"), "cost": (1050, 78, 60, "near"), "delivery": (560, 205, 60, "near"),
+        "quality": (860, 198, 60, "near"), "safety": (330, 330, 60, "near"), "avail": (650, 345, 64, "hub"),
+        "energy": (1010, 335, 60, "near"), "knowledge": (520, 472, 60, "near")}
+
+
+def strategy_kg() -> str:
+    """전략맵(원형 노드 · 대각선): 관점 네 띠 위에 목표 여덟. 쿨러 사건이 지나는 길(무재해 → 가용성 → 납기 → 이익)은 파랑.
+    목표 이름은 덱 라벨로 원 안에 얹는다."""
+    lanes = [rect(14, y, KW - 28, 126, 14, fill=LIGHT if i % 2 == 0 else WHITE, stroke="none", sw=0)
+             for i, y in enumerate((4, 138, 272, 406))]
+    lanes += [line(200, y + 14, 200, y + 112, stroke=GREY, sw=2) for y in (4, 138, 272, 406)]
+    edges = [("knowledge", "avail", NAVY), ("safety", "avail", BLUE), ("avail", "delivery", BLUE), ("delivery", "profit", BLUE),
+             ("quality", "profit", NAVY), ("energy", "cost", NAVY), ("cost", "profit", NAVY)]
+    return kg_svg(SMAP, edges, extra=lanes)
+
+
 def main():
     out = {"조치후보_전체.svg": candidates(None), "조치후보_0.svg": candidates(0)}
+    out["전략맵_그래프.svg"] = strategy_kg()
+    out.update({"조치연결_그래프.svg": kg_skill(), "결정표_그래프.svg": kg_dmn(), "수직선_경계.svg": numline_pair(),
+                "선행후행_경로.svg": lead_lag(), "조건부영향.svg": cond_path(), "성과경로_6.svg": tradeoff(6)})
     out.update({f"조치후보_{i}.svg": candidates(i) for i in (1, 2, 3, 4)})
     out.update({f"SOP문서_{k}.svg": sopdoc(k) for k in ("all", *SOP_BLOCKS)})
     out.update({f"운전모드_{i}.svg": modes(i) for i in range(4)})
