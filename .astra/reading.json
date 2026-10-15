@@ -1,23 +1,23 @@
 {
   "문서/교재/2_기준.md": {
-    "sha256": "8803a0ba46554395bdf66d1a64211f0a25efca2db9f32a2be8bcfb326b16e033",
+    "sha256": "84b1006508ee111b36487202dbfebb22f839112c5166c352d2767cbc04afb0c8",
     "ranges": [
       [
         1,
-        245
+        248
       ]
     ],
-    "basis": "029de0d에서 전문 검토. 이번 세팅에서 git diff 029de0d로 45-1번만 바뀐 것을 확인하고 그 변경을 읽음. 현재 이해의 보증은 아님"
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   },
   "문서/교재/5_결정_기록.md": {
-    "sha256": "99de6dd6dd28ca830209760c89cb93a7ab11d45a0eadf310dc1c1484cdd9ffcc",
+    "sha256": "15f11fe1440851b21a60149ae3256530672f1b2fd8ef161b8bebbdc15158db2f",
     "ranges": [
       [
         1,
-        116
+        146
       ]
     ],
-    "basis": "이전 1회차 작업에서 전문 검토·최종 수정 확인. 사용자 확인 커밋 029de0d 기준; 현재 이해의 보증은 아님"
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   },
   "문서/교재/압축_설계/1단계_견적_아스트라.md": {
     "sha256": "4ef7444e3fc9015331a95e01b7676ed028014c2e75d42d8777376bec6e389d15",
@@ -50,14 +50,14 @@
     "basis": "이전 1회차 작업에서 전문 검토·최종 수정 확인. 사용자 확인 커밋 029de0d 기준; 현재 이해의 보증은 아님"
   },
   ".claude/skills/lecture-deck/references/덱MD-PPTX형식.md": {
-    "sha256": "a0a31a04eeb77eca50a5cb0c70360061385dc84e160ab5c0ed0c88d3047ca663",
+    "sha256": "bc64cb30ed87b736298b6677aaa35eaf06582b1fdb04882d93ff5daeda1d1457",
     "ranges": [
       [
         1,
         117
       ]
     ],
-    "basis": "이전 1회차 작업에서 전문 검토·최종 수정 확인. 사용자 확인 커밋 029de0d 기준; 현재 이해의 보증은 아님"
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   },
   "만들기/decks/integrated/day01/통합반_01일차.md": {
     "sha256": "1b15dfd92f6be46f97e9d9b3e0e202427e264e50e5503f6bbf3c53ec17c0178d",
@@ -90,24 +90,24 @@
     "basis": "이번 작업에서 전문 출력·확인. 현재 이해의 보증은 아님"
   },
   ".claude/skills/hyd-course-deck/SKILL.md": {
-    "sha256": "50d73ed14642f7b9fe1bd5db0f15450104bc3cd613b4ed19bf04fd78cdf2ca3b",
+    "sha256": "f357e3e88db0f7fccddb25088404900313d0ee9ffae8c9014823fe4c8e4967bd",
     "ranges": [
       [
         1,
-        101
+        45
       ]
     ],
-    "basis": "이번 작업에서 전문 출력·확인. 현재 이해의 보증은 아님"
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   },
   ".claude/skills/lecture-deck/SKILL.md": {
-    "sha256": "04482f4c88b596b17cd457efb76e215d8457ee98b5ffaaaf69bb9db4a84c633e",
+    "sha256": "b116e73b9de39a6f848c829a582227f9747e818969b90b5bed0d32fb93f220ac",
     "ranges": [
       [
         1,
-        47
+        42
       ]
     ],
-    "basis": "이번 작업에서 전문 출력·확인. 현재 이해의 보증은 아님"
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   },
   "문서/교재/1_목적과_방향.md": {
     "sha256": "fa6b239e955a53e03146c1676bc2127db513d4b012b7d3d2a153e9e534c41bc7",
@@ -118,5 +118,125 @@
       ]
     ],
     "basis": "이번 작업에서 전문 출력·확인. 현재 이해의 보증은 아님"
+  },
+  ".astra/README.md": {
+    "sha256": "39f84e3da8956a577c75dd402f24c34df21a5add55f381be74f222caa7302d3c",
+    "ranges": [
+      [
+        1,
+        83
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/hyd-lab-guide/SKILL.md": {
+    "sha256": "51bc05a968c367e01868461cca4bc7f922045d8b013102bb93bb81e5d0742260",
+    "ranges": [
+      [
+        1,
+        37
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/hyd-lecture-video/SKILL.md": {
+    "sha256": "01636dd47b127ab6e7c11d229a4e3b94b48231c61e7fd3a73f71489927f675c6",
+    "ranges": [
+      [
+        1,
+        89
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-common/공통기준.md": {
+    "sha256": "51157402b4aaa6e8c86a7be7bb2619cfd863d90372e382f35e397ec98477b8c6",
+    "ranges": [
+      [
+        1,
+        44
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-deck/references/문체.md": {
+    "sha256": "13426b63194064532e09dd2b1675e5fbe57530ef6be0cd8af7ebfc1ae1f845cd",
+    "ranges": [
+      [
+        1,
+        18
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-deliver/SKILL.md": {
+    "sha256": "06e5d2e5c754211f63db76ad57fba088dbb9b1691bc78b9e0b37ac42375f9602",
+    "ranges": [
+      [
+        1,
+        92
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-lab/SKILL.md": {
+    "sha256": "ff88c1c56b32c69751396ed9f65c1a7b101a4c2083b67d0a6ccd03a94981a3ef",
+    "ranges": [
+      [
+        1,
+        77
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-plan/SKILL.md": {
+    "sha256": "09b55d4fd0c4ec50719592ff326815d888497bd66ac5b776e777184485113753",
+    "ranges": [
+      [
+        1,
+        109
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-plan/references/evidence-led-authoring.md": {
+    "sha256": "8e6558feaf069628607aacf6153b0be66ea3ea3805f34384d35dc30cf826efa6",
+    "ranges": [
+      [
+        1,
+        34
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  ".claude/skills/lecture-verify/SKILL.md": {
+    "sha256": "3ddb98e5cb951ab02c2b06c4b9bf00e198e8811d40d4f57d4d6583a498ab66f7",
+    "ranges": [
+      [
+        1,
+        75
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  "문서/교재/4_만드는_법.md": {
+    "sha256": "3d6ee1d637d0a300385a5344ecef5216797abd9c4504d0e183af78835b93cc6c",
+    "ranges": [
+      [
+        1,
+        373
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
+  },
+  "문서/교재/6_남은_일.md": {
+    "sha256": "73773a4076c621415750c61763fbf9c9eb143170d1fe2a92a0c4ba37711acb07",
+    "ranges": [
+      [
+        1,
+        169
+      ]
+    ],
+    "basis": "2026-10-15 전체 맥락 검토: 원문 및 수정 diff를 수동 검토. 음성·실행 검증을 뜻하지 않음."
   }
 }
