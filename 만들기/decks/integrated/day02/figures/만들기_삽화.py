@@ -550,8 +550,94 @@ def instances5() -> str:
     return svg(o)
 
 
+# ───────────────────────── 22. 지식 그래프 꼴(1회차 kg_map과 같은 꼴): 원형 노드 · 대각선 ─────────────────────────
+# 1인치 = 100(본문 12.13 × 5.4인치와 같은 축척). 노드에는 글자를 넣지 않고 클래스 이름은 덱 MD 라벨로 얹는다.
+# 역할별 색: hub = 여러 관계가 모이는 노드(진한 원), near = 직접 붙은 노드(파란 테두리), far = 바깥 노드(회색).
+KW, KH = 1213, 540
+RING = {"hub": (SKY, NAVY, 4), "near": (PALE, BLUE, 3), "far": (LIGHT, GREY, 3)}
+
+
+def kg_svg(nodes: dict, edges: list, extra=(), w=KW, h=KH) -> str:
+    """nodes: {키: (x, y, r, 역할)}, edges: [(시작, 끝, 색)] — 화살표는 저장 방향(시작 → 끝)."""
+    o: list[str] = list(extra)
+    for a, b, color in edges:
+        (ax, ay, ar, _), (bx, by, br, _) = nodes[a], nodes[b]
+        d_ = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / d_, (by - ay) / d_
+        o.append(arrow([(ax + ux * (ar + 5), ay + uy * (ar + 5)), (bx - ux * (br + 9), by - uy * (br + 9))],
+                       color, sw=4 if color == BLUE else 3, size=13))
+    for x, y, r, role in nodes.values():
+        fill, stroke, sw = RING[role]
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">\n'
+            + "\n".join(o) + "\n</svg>\n")
+
+
+def rel_chain() -> str:
+    """관계 유형: Asset → Component → Sensor → StateVariable (설비에서 출발해 오른쪽으로 읽는다)."""
+    n = {"asset": (110, 120, 62, "near"), "comp": (420, 380, 74, "hub"), "sen": (760, 130, 62, "near"),
+         "sv": (1080, 390, 86, "near")}
+    return kg_svg(n, [("asset", "comp", NAVY), ("comp", "sen", NAVY), ("sen", "sv", NAVY)])
+
+
+def in_out() -> str:
+    """Component 하나에 들어오는 관계(왼쪽, 남색)와 나가는 관계(오른쪽, 파랑). 고른 관계만 그린 부분도."""
+    n = {"comp": (606, 270, 84, "hub"), "asset": (150, 100, 62, "near"), "fm": (170, 430, 84, "near"),
+         "sen": (1060, 100, 62, "near"), "part": (1060, 430, 56, "near")}
+    return kg_svg(n, [("asset", "comp", NAVY), ("fm", "comp", NAVY), ("comp", "sen", BLUE), ("comp", "part", BLUE)])
+
+
+def model5() -> str:
+    """설비 모델의 관계 구조: 다섯 클래스와 네 관계. Component에 관계가 모인다."""
+    n = {"asset": (110, 110, 62, "near"), "comp": (450, 250, 80, "hub"), "sen": (790, 100, 62, "near"),
+         "sv": (1100, 300, 86, "far"), "part": (720, 440, 56, "near")}
+    return kg_svg(n, [("asset", "comp", NAVY), ("comp", "sen", NAVY), ("sen", "sv", NAVY), ("comp", "part", NAVY)])
+
+
+def reverse_walk() -> str:
+    """경보 패턴 → 증상 → 고장 유형 ← 원인 후보 셋. CAUSES는 원인에서 고장 유형으로 저장된다(파랑).
+    아래 띠의 왼쪽(확인 표시)은 저장 방향을 유지한 역방향 탐색, 오른쪽(가위표)은 화살표를 뒤집은 패턴 — 글은 덱 라벨."""
+    n = {"p": (110, 150, 92, "far"), "s": (380, 330, 64, "near"), "fm": (690, 190, 84, "hub"),
+         "c0": (1080, 70, 56, "near"), "c1": (1140, 230, 56, "near"), "c2": (1020, 360, 56, "near")}
+    extra = [line(20, 428, KW - 20, 428, stroke=GREY, sw=2.5, stroke_dasharray="6 8")]
+    extra += check(42, 488, 22) + cross(640, 488, 22)
+    return kg_svg(n, [("p", "s", NAVY), ("s", "fm", NAVY), ("c0", "fm", BLUE), ("c1", "fm", BLUE), ("c2", "fm", BLUE)], extra)
+
+
+def join_kg() -> str:
+    """같은 사실(부품과 공급사)을 표 둘의 조인과 그래프의 관계로 나란히. 표의 글자와 노드 이름은 덱 라벨."""
+    o: list[str] = []
+
+    def table(x, y, cols, rows, key_col):
+        cw, hh, rh = 170, 50, 50
+        out = [rect(x, y, cw * cols, hh + rows * rh, 8, fill=WHITE, stroke=NAVY, sw=3.5),
+               rect(x, y, cw * cols, hh, 8, fill=LIGHT, stroke=NAVY, sw=3.5),
+               rect(x + key_col * cw + 4, y + 4, cw - 8, hh - 8 + rows * rh, 6, fill="none", stroke=SKY, sw=3)]
+        for r_ in range(1, rows):
+            out.append(line(x, y + hh + r_ * rh, x + cw * cols, y + hh + r_ * rh, stroke=GREY, sw=2))
+        for c_ in range(1, cols):
+            out.append(line(x + c_ * cw, y, x + c_ * cw, y + hh + rows * rh, stroke=GREY, sw=2))
+        return out
+    o += table(40, 70, 1, 1, 0)
+    o += table(40, 300, 2, 2, 1)
+    o.append(arrow([(125, 176), (125, 238), (295, 238), (295, 294)], BLUE, sw=4.5, size=13))
+    o.append(line(560, 30, 560, 510, stroke=GREY, sw=2.5, stroke_dasharray="6 8"))
+    P, S1, S2 = (760, 270, 66), (1080, 120, 62), (1080, 420, 62)
+    for s in (S1, S2):
+        d_ = math.hypot(s[0] - P[0], s[1] - P[1])
+        ux, uy = (s[0] - P[0]) / d_, (s[1] - P[1]) / d_
+        o.append(arrow([(P[0] + ux * (P[2] + 5), P[1] + uy * (P[2] + 5)), (s[0] - ux * (s[2] + 9), s[1] - uy * (s[2] + 9))],
+                       BLUE, sw=4, size=13))
+    o.append(circle(P[0], P[1], P[2], fill=SKY, stroke=NAVY, sw=4))
+    for s in (S1, S2):
+        o.append(circle(s[0], s[1], s[2], fill=PALE, stroke=BLUE, sw=3))
+    return svg(o)
+
+
 def main():
     out = {
+        "관계유형.svg": rel_chain(), "들고나는관계.svg": in_out(), "설비모델.svg": model5(),
+        "역방향탐색.svg": reverse_walk(), "조인_그래프.svg": join_kg(),
         "유형과대상_0.svg": mixed(0), "유형과대상_1.svg": mixed(1), "유형과대상_2.svg": mixed(2),
         "클래스인스턴스_1.svg": class_inst(1), "클래스인스턴스_2.svg": class_inst(2), "클래스인스턴스_3.svg": class_inst(3),
         **{f"설비클래스_{i}.svg": gallery(i) for i in range(6)},
