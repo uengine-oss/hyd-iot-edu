@@ -634,10 +634,53 @@ def join_kg() -> str:
     return svg(o)
 
 
+def prop_graph_kg() -> str:
+    """노드 · 레이블 · 관계 · 속성(그래프 꼴): 노드 둘을 대각선으로 잇고, 노드마다 속성 상자를 옆에 둔다.
+    노드 안의 글(레이블)과 상자 안의 속성은 덱 라벨로 얹는다."""
+    A, B = (250, 165, 100), (700, 380, 100)
+    o: list[str] = []
+    d_ = math.hypot(B[0] - A[0], B[1] - A[1])
+    ux, uy = (B[0] - A[0]) / d_, (B[1] - A[1]) / d_
+    o.append(arrow([(A[0] + ux * (A[2] + 5), A[1] + uy * (A[2] + 5)), (B[0] - ux * (B[2] + 9), B[1] - uy * (B[2] + 9))],
+                   BLUE, sw=4.5, size=14))
+    o += dots(A[0] + A[2] + 8, A[1] - 30, 450, 110, gap=13, r=3)
+    o += dots(B[0] + B[2] + 8, B[1], 870, B[1], gap=13, r=3)
+    o.append(rect(460, 30, 380, 160, 10, fill=LIGHT, stroke=NAVY, sw=3.5))
+    o.append(rect(880, 300, 310, 160, 10, fill=LIGHT, stroke=NAVY, sw=3.5))
+    for (x, y, r), role in ((A, "near"), (B, "hub")):
+        fill, stroke, sw = RING[role]
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {KW} {KH}" width="{KW}" height="{KH}">\n'
+            + "\n".join(o) + "\n</svg>\n")
+
+
+def notation_kg() -> str:
+    """표기: 위는 노드 둘과 관계(원 안에는 클래스 이름만, 덱 라벨), 아래는 같은 모양을 글자로 적은 세 조각.
+    글자로 옮긴 한 줄과 위아래로 맞대려고 이 그림만 노드 둘을 한 줄에 둔다."""
+    o: list[str] = []
+    A, B, r = (260, 112), (970, 112), 90
+    o.append(arrow([(A[0] + r + 5, A[1]), (B[0] - r - 9, B[1])], NAVY, sw=4.5, size=15))
+    for (x, y), role in ((A, "near"), (B, "near")):
+        fill, stroke, sw = RING[role]
+        o.append(circle(x, y, r, fill=fill, stroke=stroke, sw=sw))
+    y = 400
+    mid = 630
+    for x0 in (A[0], mid, B[0]):
+        o += dots(x0, (A[1] + r + 14) if x0 != mid else A[1] + 22, x0, y - 58, gap=13, r=3)
+    o.append(rect(40, y - 48, 440, 96, 48, fill=PALE, stroke=NAVY, sw=4))
+    o.append(rect(mid - 115, y - 40, 230, 80, 6, fill=LIGHT, stroke=NAVY, sw=4))
+    o.append(rect(780, y - 48, 380, 96, 48, fill=PALE, stroke=NAVY, sw=4))
+    o.append(line(480, y, mid - 115, y, stroke=NAVY, sw=4.5))
+    o.append(arrow([(mid + 115, y), (774, y)], NAVY, sw=4.5, size=14))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {KW} {KH}" width="{KW}" height="{KH}">\n'
+            + "\n".join(o) + "\n</svg>\n")
+
+
 def main():
     out = {
         "관계유형.svg": rel_chain(), "들고나는관계.svg": in_out(), "설비모델.svg": model5(),
         "역방향탐색.svg": reverse_walk(), "조인_그래프.svg": join_kg(),
+        "속성그래프_대각.svg": prop_graph_kg(), "표기_그래프.svg": notation_kg(),
         "유형과대상_0.svg": mixed(0), "유형과대상_1.svg": mixed(1), "유형과대상_2.svg": mixed(2),
         "클래스인스턴스_1.svg": class_inst(1), "클래스인스턴스_2.svg": class_inst(2), "클래스인스턴스_3.svg": class_inst(3),
         **{f"설비클래스_{i}.svg": gallery(i) for i in range(6)},
