@@ -26,7 +26,7 @@ lecture-plan ──► lecture-deck ──► lecture-lab ──► lecture-veri
 
 hyd-course-deck  = HYD 교재 덱의 절차. 형식과 도구는 lecture-deck, 규칙은 문서/교재/2_기준.md, 경위는 문서/교재/
 hyd-lab-guide    = HYD 실습 랩과 가이드. 틀은 만들기/labs/STRUCTURE.md, 정해진 것과 상태는 문서/교재/4_만드는_법.md
-hyd-lecture-video = HYD 이론 강의 영상. 규칙은 문서/교재/2_기준.md 9절, 도구와 비용은 문서/교재/4_만드는_법.md 3부 2절
+hyd-lecture-video = HYD 이론 강의 영상. 규칙은 문서/교재/2_기준.md 7절, 도구와 비용은 문서/교재/4_만드는_법.md 3부 2절
 ```
 
 - 보통 순서는 계획 → 덱 · 실습 → 검증 → 요청이 있을 때 배포다. 한 스킬의 일만 요청받았으면 그 스킬만 쓴다.
