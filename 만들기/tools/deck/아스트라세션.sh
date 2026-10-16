@@ -17,7 +17,7 @@ opts=(-m gpt-6-astra -c model_reasoning_effort="high" -c sandbox_mode="workspace
       -c sandbox_workspace_write.network_access=true -o "$out")
 run=(env -u OPENAI_API_KEY -u OPENAI_BASE_URL -u REAL_OPEN_API_KEY -u LLM_API_KEY codex exec)
 prompt() {
-  printf '%s\n\n' '작업 재개 진입점은 .astra/README.md와 .astra/state.json이다. 최신 사용자 요청이 우선한다. 처음이거나 맥락이 흐리면 안내와 필요한 원문으로 복구하고, 이미 이해한 동일 자료는 반복 출력하지 않는다. 커밋·push는 하지 않는다. 작업 계약(사용자 확정, 2026-10-16): 아스트라는 레포의 덱 · 대본을 직접 쓰지 않는다. 지금 판을 읽고 고칠 것만 수정안 목록(고칠것.json, 고칠것넣기.py 꼴)으로 내고, 세션이 그대로 넣고 빌드 검사만 한다. 4~9회차는 아스트라에게 윤문 · 검증 · 기준 점검을 맡기지 않는다(세션이 쓴다). 견적만 물으면 파일을 고치지 않는다.'
+  printf '%s\n\n' '작업 재개 진입점은 .astra/README.md와 .astra/state.json이다. 최신 사용자 요청이 우선한다. 처음이거나 맥락이 흐리면 안내와 필요한 원문으로 복구하고, 이미 이해한 동일 자료는 반복 출력하지 않는다. 커밋·push는 하지 않는다. 작업 계약(사용자 확정, 2026-10-16): 아스트라는 레포의 덱 · 대본을 직접 쓰지 않는다. 지금 판을 읽고 고칠 것만 수정안 목록(고칠것.json, 고칠것넣기.py 꼴)으로 내고, 세션이 그대로 넣고 빌드 검사만 한다. 4~9회차의 아스트라 윤문 · 검증 · 기준 점검은 지금 하지 않는다. 1~3회차가 확정된 뒤 회차 차례대로 한다(한꺼번에 하면 앞 회차가 바뀔 때 다시 고쳐야 하므로). 견적만 물으면 파일을 고치지 않는다.'
   cat -- "$req"
 }
 if [ "$sid" = new ]; then
