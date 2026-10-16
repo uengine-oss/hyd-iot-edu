@@ -122,21 +122,6 @@ def ranking(cx, cy, st: St, order=(0.9, 0.7, 0.7, 0.35)):
     return o
 
 
-def key(cx, cy, st: St, s=1.0):
-    return [circle(cx - 20 * s, cy, 13 * s, fill=st.accent, stroke=st.line),
-            line(cx - 7 * s, cy, cx + 30 * s, cy, stroke=st.line, sw=5),
-            line(cx + 16 * s, cy, cx + 16 * s, cy + 12 * s, stroke=st.line, sw=5),
-            line(cx + 28 * s, cy, cx + 28 * s, cy + 12 * s, stroke=st.line, sw=5)]
-
-
-def lock(cx, cy, st: St, s=1.0):
-    return [path(f"M {cx - 15 * s},{cy - 6 * s} L {cx - 15 * s},{cy - 20 * s} A {15 * s} {15 * s} 0 0 1 {cx + 15 * s},{cy - 20 * s} "
-                 f"L {cx + 15 * s},{cy - 6 * s}", stroke=st.line, sw=5),
-            rect(cx - 24 * s, cy - 6 * s, 48 * s, 40 * s, 7, fill=st.accent, stroke=st.line),
-            circle(cx, cy + 10 * s, 5 * s, fill=st.line, stroke=st.line, sw=1),
-            line(cx, cy + 12 * s, cx, cy + 22 * s, stroke=st.line, sw=4)]
-
-
 def dashed(x1, y1, x2, y2, color=NAVY, sw=3.5):
     ang = math.atan2(y2 - y1, x2 - x1)
     return [line(x1, y1, x2 - 10 * math.cos(ang), y2 - 10 * math.sin(ang), stroke=color, sw=sw, stroke_dasharray="9 8"),
@@ -268,6 +253,8 @@ def nm() -> str:
 
 
 # ───────────────────────── 7. MCP의 네 구성요소 ─────────────────────────
+# MCP구성.svg는 조립 덱(실전반 4일차 · 실전반 오프라인 5회차 · 통합반 오프라인 6회차)이 옛 라벨 좌표로 쓴다.
+# 통합반 6회차는 위쪽에 이름과 뜻을 얹는 MCP네요소.svg를 쓴다. 조립 전환 뒤 MCP구성.svg는 지운다.
 
 def mcp_parts() -> str:
     ys = (160, 295, 430)
@@ -284,6 +271,25 @@ def mcp_parts() -> str:
         o += gear(812, y, 22, ON, hot=True) + gear(868, y, 22, ON, hot=True) + gear(924, y, 22, ON, hot=True)
         o.append(arrow([(966, y), (1030, y)], NAVY, sw=3.5, size=11))
         o += g(1090, y - 8, 0.66, icons[i](0, 0, ON))
+    return svg(o)
+
+
+def mcp_four() -> str:
+    """위쪽 띠는 라벨 자리로 비워 둔다(호스트 · 클라이언트 · 서버 · 도구의 이름과 한 줄 뜻)."""
+    ys = (204, 324, 444)
+    o = [rect(30, 96, 590, 418, 18, fill=PALE, stroke=SKY, sw=3)]
+    o += [line(234, 324, 350, 324, sw=3.5), line(350, ys[0], 350, ys[-1], sw=3.5)]
+    o += g(160, 324, 1.35, agent_icon(0, 0, ON))
+    icons = (graph_icon, cylinder_db, table_icon)
+    for i, y in enumerate(ys):
+        o.append(arrow([(350, y), (452, y)], NAVY, sw=3.5, size=11))
+        o += client_box(500, y, ON)
+        o.append(arrow([(556, y), (690, y)], BLUE, sw=5, size=14))
+        o.append(rect(698, y - 40, 280, 80, 14, fill=WHITE, stroke=NAVY, sw=3.5))
+        o += g(752, y, 0.6, server(0, 0, ON))
+        o += gear(836, y, 22, ON, hot=True) + gear(888, y, 22, ON, hot=True) + gear(940, y, 22, ON, hot=True)
+        o.append(arrow([(982, y), (1040, y)], NAVY, sw=3.5, size=11))
+        o += g(1100, y - 8, 0.66, icons[i](0, 0, ON))
     return svg(o)
 
 
@@ -340,29 +346,10 @@ def gates() -> str:
     return svg(o)
 
 
-# ───────────────────────── 11. 비밀값: 자리표시자와 보관소 ─────────────────────────
-
-def secret() -> str:
-    o = [rect(60, 74, 360, 400, 12, fill=WHITE)]
-    for y, x, w in ((106, 84, 150), (142, 104, 230), (178, 104, 180), (214, 124, 120), (308, 124, 200), (344, 104, 160), (380, 104, 240), (416, 84, 90)):
-        o.append(bar(x, y, w, 13))
-    o.append(rect(76, 238, 328, 44, 10, fill=PALE, stroke=BLUE, sw=3, stroke_dasharray="9 7"))
-    # 보관소와 열쇠
-    o += [rect(556, 36, 168, 132, 16, fill=LIGHT, stroke=NAVY, sw=3.5)] + lock(604, 98, ON, 1.25) + key(678, 102, ON, 0.9)
-    o += [arrow([(640, 172), (640, 240)], BLUE, sw=5, size=13), arrow([(424, 260), (620, 260)], NAVY, sw=5, size=13),
-          arrow([(660, 260), (926, 260)], BLUE, sw=5, size=14), circle(640, 260, 16, fill=SKY, stroke=NAVY, sw=3.5)]
-    o += g(980, 260, 1.0, server(0, 0, ON))
-    # 화면과 기록: 가린 값
-    o += [arrow([(980, 316), (980, 372)], NAVY, sw=4, size=12), rect(900, 380, 160, 86, 8, fill=WHITE)]
-    for k in range(6):
-        o.append(circle(925 + k * 22, 423, 7, fill=NAVY, stroke="none", sw=0))
-    return svg(o)
-
-
 def main():
-    out = {"고리_0.svg": loop(False), "고리_1.svg": loop(True), "스킬문서.svg": skilldoc(), "절차호출.svg": stepcalls(),
-           "두절차.svg": twoproc(), "재사용.svg": reuse(), "연결의수.svg": nm(), "MCP구성.svg": mcp_parts(),
-           "목록호출.svg": listcall(), "연결방식.svg": transports(), "세겹.svg": gates(), "비밀값.svg": secret()}
+    out = {"고리_1.svg": loop(True), "스킬문서.svg": skilldoc(), "절차호출.svg": stepcalls(),
+           "두절차.svg": twoproc(), "재사용.svg": reuse(), "연결의수.svg": nm(), "MCP구성.svg": mcp_parts(), "MCP네요소.svg": mcp_four(),
+           "목록호출.svg": listcall(), "연결방식.svg": transports(), "세겹.svg": gates()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")

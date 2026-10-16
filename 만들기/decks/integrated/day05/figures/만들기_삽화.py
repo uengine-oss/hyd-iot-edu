@@ -301,14 +301,16 @@ def freshness() -> str:
 # ───────────────────────── 8. 멈춤 조건 ─────────────────────────
 
 def stops() -> str:
+    """세 갈래(근거 부족 · 도구 호출 실패 · 권한 제한) → 멈춤 → 사람. 아이콘 아래에 두 줄 라벨이 들어갈 자리를 둔다."""
     o: list[str] = []
-    ys = (72, 250, 428)
-    o += g(125, 250, 1.2, agent_icon(0, 0, ON))
+    ys = (60, 220, 380)
+    cy = ys[1]
+    o += g(125, cy, 1.2, agent_icon(0, 0, ON))
     for y in ys:
-        o.append(arrow([(205, 250), (290, 250), (290, y), (385, y)] if y != 250 else [(205, 250), (385, 250)], NAVY))
+        o.append(arrow([(205, cy), (290, cy), (290, y), (385, y)] if y != cy else [(205, cy), (385, cy)], NAVY))
         o.append(arrow([(545, y), (700, y)], NAVY))
         o += stop_sign(742, y, ON, r=26)
-        o.append(arrow([(784, y), (900, y), (900, 250), (968, 250)] if y != 250 else [(784, 250), (968, 250)], BLUE))
+        o.append(arrow([(784, y), (900, y), (900, cy), (968, cy)] if y != cy else [(784, cy), (968, cy)], BLUE))
     # 근거 부족: 값이 비어 있는 계기와 표
     o += g(465, ys[0], 0.7, tsdb(0, 0, OFF))
     o += cross(500, ys[0] - 26, NAVY, s=9, sw=4)
@@ -319,7 +321,7 @@ def stops() -> str:
     # 권한 제한: 잠긴 도구
     o.append(circle(465, ys[2], 34, fill=WHITE, stroke=NAVY))
     o += lock(465, ys[2], ON, s=1.4)
-    o += g(1040, 250, 1.2, approve_icon(0, 0, ON))
+    o += g(1040, cy, 1.2, approve_icon(0, 0, ON))
     return svg(o)
 
 
