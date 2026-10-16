@@ -506,7 +506,7 @@ def asis_tobe() -> str:
 
 def main():
     out = {"남은일_추천뒤.svg": chain("after"), "남은일_종단.svg": chain("e2e"), "BPM주기.svg": bpm_cycle(), "요소묶음.svg": elements(),
-           "흐름_전체.svg": flow(), "흐름_승인.svg": flow("approve"), "흐름_거절.svg": flow("reject"), "흐름_무응답.svg": flow("wait"),
+           "흐름_전체.svg": flow(),
            "흐름_토큰_승인대기.svg": flow(tokens=("T_approve",)), "흐름_토큰_둘.svg": flow(tokens=("T_approve", "T_notice")),
            "이벤트.svg": events(), "작업종류.svg": tasks(), "게이트웨이.svg": gateway_xor(), "풀과레인.svg": pool_lane(),
            "메시지흐름.svg": message_flow(), "경계타이머.svg": boundary(), "승인자리.svg": approval_block(),
