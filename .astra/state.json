@@ -1,8 +1,8 @@
 {
-  "task": "맥락 압축 뒤 원문 복구 및 최신 작업 상태 동기화",
-  "status": "재수정 견적에 대한 사용자 결정 대기; 제작 작업 미착수",
-  "baseline_revision": "cb08b27",
-  "latest_request": "2026-10-16: 원문으로 맥락을 복구하고 .astra/만 갱신한다. 덱·대본·기준·스킬·도구 수정 및 커밋·push 금지.",
+  "task": "통합반 1·2·3회차 승인 보강 동시 완주",
+  "status": "완료: 통합반 1·2·3회차 덱·대본 원본 수정 및 검사 완료; 세션의 빌드·검토·커밋 대기",
+  "baseline_revision": "d2e1012",
+  "latest_request": "2026-10-16: 회차별 fork_turns=all 서브에이전트로 덱·대본 정본 직접 수정. 다른 회차·기준·스킬·도구·PPTX 및 커밋·push 금지.",
   "authoritative_sources": [
     "문서/교재/2_기준.md",
     "문서/교재/5_결정_기록.md",
@@ -12,36 +12,45 @@
   "production_status": {
     "day01": {
       "slides": 78,
-      "theory_minutes": 86.6
+      "theory_minutes": 86.6,
+      "lab_minutes": [
+        50,
+        30,
+        28,
+        38
+      ],
+      "unallocated_minutes": 4.6,
+      "report": ".evidence/수정_01/답.md"
     },
     "day02": {
-      "slides": 68,
-      "theory_minutes": 77.1
+      "slides": 72,
+      "theory_minutes": 86.2,
+      "lab_minutes": [
+        35,
+        20,
+        40,
+        40
+      ],
+      "unallocated_minutes": 14.7,
+      "report": ".evidence/수정_02/답.md"
     },
     "day03": {
-      "slides": 66,
-      "theory_minutes": 73.9
-    },
-    "state": "재구성 판 커밋 완료. 기존 구성표에는 남는 시간을 실습에 더한 값이 남아 있다."
+      "slides": 67,
+      "theory_minutes": 75.9,
+      "lab_minutes": [
+        43,
+        45,
+        62
+      ],
+      "unallocated_minutes": 10.5,
+      "report": ".evidence/수정_03/답.md"
+    }
   },
-  "pending_source": ".evidence/재수정_견적/답.md",
-  "pending_decisions": [
-    "사용자가 재수정 견적을 보고 구성표 조정 및 선택적 2회차 Cypher 보강 여부를 결정한다. 견적 제출은 실행 승인이 아니다."
-  ],
-  "estimates_are_not_decisions": {
-    "recommendation": "구성표 조정 + 선택적 2회차 Cypher 보강; 전체 재제작은 불필요하다는 견적",
-    "schedule_only_unallocated_minutes": {
-      "day01": 20.6,
-      "day02": 34.0,
-      "day03": 32.5
-    },
-    "optional_day02": "DISTINCT·COUNT, AND·OR, ORDER BY 중심 8~12분 보강 후보. 새 질의는 실행 확인 필요.",
-    "deferred": "1·3회차 확장 과제와 자동 실습 증분은 승인된 작업으로 취급하지 않는다."
-  },
+  "pending_decisions": [],
   "next_action": [
-    "사용자 결정 전에는 제작 파일을 수정하지 않는다.",
-    "결정 뒤 Astra가 정확한 변경안·근거를 내고 세션이 파일에 반영한다(2_기준 45-2).",
-    "1~3회차 수정 확인 뒤 같은 기준으로 4·5·6회차를 진행한다."
+    "세션이 1~3회차 원본을 받아 맑은 고딕 환경에서 PPTX·낭독본 빌드·검사 후 커밋",
+    "실습 입력 묶음·부분 완성본·정답·실행기를 회차별 보고에 맞춰 준비",
+    "1~3회차 확정 뒤 사용자 요청에 따라 4회차부터 순차 검토; 지금 4~9회차에 손대지 않음"
   ],
   "working_contract": "작업 계약(사용자 확정, 2026-10-16): 아스트라는 맡은 회차의 덱 원본(MD) · 대본 원본(· 그 회차 figures)을 직접 고친다. 세션은 그것을 받아 빌드(PPTX · 낭독본)하고 검사 · 커밋한다. 다른 회차 · 기준 · 스킬 · 도구 · PPTX는 고치지 않는다. 4~9회차의 아스트라 윤문 · 검증 · 기준 점검은 지금 하지 않는다. 1~3회차가 확정된 뒤 회차 차례대로 한다(한꺼번에 하면 앞 회차가 바뀔 때 다시 고쳐야 하므로). 견적만 물으면 파일을 고치지 않는다. 정본: 문서/교재/2_기준.md 45-2번. 커밋·push는 하지 않는다.",
   "context_review": {
@@ -68,11 +77,35 @@
     ]
   },
   "completed_changes": [
-    "현재 상태·대기 결정·다음 행동을 state.json에 기록",
-    "README에 제작 쓰기 권한 확인 지침을 추가"
+    "1회차 덱4장·대본2실습묶음 및 구성표",
+    "2회차 기존덱8장·새4장·대본과 번호 및 구성표",
+    "3회차 기존화면4장·새1장·대본과 번호 및 구성표",
+    "회차 사이 공통 경보값·승인시각·한계·조치 공동2순위 대조"
   ],
   "verification": {
-    "scope": "동기화 파일만 검사; 과거 제작 검사 결과와 구별",
-    "status": "JSON 구문 확인 및 git diff --check 통과. 변경 경로는 .astra/README.md와 .astra/state.json 두 곳뿐이다."
+    "deck_check": "78·72·67장 모두 [검사 통과]",
+    "slide_mapping": "덱과 대본01~마지막장 모두 누락0·중복0·순서일치",
+    "render": "변경4·12·5장 임시 대체 글꼴 렌더 확인. 맑은 고딕/PowerPoint 최종 표시는 미확인",
+    "execution": "1회차 기록참조 메모리fixture 시험; 2회차 Neo4j5.26 구조판 read-back16/0및신규질의; 3회차 평균/최솟값과 cards.evaluate 경계·감점/경고·조치불가·대상오류 시험",
+    "shared_resource": "임시 Neo4j 종료,17474·17687포트닫힘확인",
+    "timing": "분당275음절 도구:이론86.6·86.2·75.9분;대기65·145·93초. 하한미달은 승인된예외;실습시간이중합산없음",
+    "limits": [
+      "학생 실습 완주 시간과 복제음성 청취 미확인",
+      "1회차 실제처리원본로그부재;코드시험과 실제기록검증 구별",
+      "학생용랩·완성본패키지 제작은 별도",
+      "조립덱·PPTX·낭독본·배포묶음 미변경"
+    ]
+  },
+  "accepted_changes": {
+    "day01": "전체 과정28분·관계도38분; Notion50분·환경30분",
+    "day02": "DISTINCT·COUNT·AND/OR/괄호·ORDER BY; 조회35분·탐색20분·설계40분·구현40분",
+    "day03": "집계 비교43분·기준45분·적용 대상 오류 시험62분",
+    "unallocated": "남는 시간은 미배정; 실습 연결 낭독은 실습 시간에 포함"
+  },
+  "agents": {
+    "day01": "/root/day01",
+    "day02": "/root/day02",
+    "day03": "/root/day03",
+    "context": "모두 fork_turns=all; 자기 회차 파일만 수정; 공유 자원과 .astra는 본 세션 담당"
   }
 }
