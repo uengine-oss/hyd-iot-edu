@@ -174,27 +174,6 @@ def skilldoc() -> str:
     return svg(o)
 
 
-# ───────────────────────── 3. 절차의 순서와 호출 기록 ─────────────────────────
-
-def stepcalls() -> str:
-    o = [rect(40, 20, 380, 484, 12, fill=WHITE), rect(54, 32, 352, 64, 8, fill=PALE, stroke=SKY, sw=3)]
-    rows = (150, 225, 300, 375, 450)
-    o.append(line(560, rows[0], 560, rows[-1], stroke=GREY, sw=4))
-    for i, y in enumerate(rows):
-        opt = i == 2
-        o += [circle(84, y, 15, fill=WHITE if opt else SKY, stroke=NAVY, sw=3), bar(112, y - 8, (250, 270, 200, 270, 230)[i], 16)]
-        if opt:
-            o += dashed(428, y, 518, y)
-        else:
-            o.append(arrow([(428, y), (518, y)], BLUE, sw=4.5, size=12))
-        if i == 0:
-            o += g(560, y, 0.5, sop_doc(0, 0, ON)[:1] + [line(-30, -30, 20, -30, stroke=NAVY, sw=5), line(-30, -6, 30, -6, stroke=NAVY, sw=5),
-                                                         line(-30, 18, 10, 18, stroke=NAVY, sw=5)], boost=1.2)
-        else:
-            o += gear(560, y, 28, NORM if opt else ON, hot=not opt)
-    return svg(o)
-
-
 # ───────────────────────── 4. 한 사건의 두 절차 ─────────────────────────
 
 def twoproc() -> str:
@@ -253,8 +232,7 @@ def nm() -> str:
 
 
 # ───────────────────────── 7. MCP의 네 구성요소 ─────────────────────────
-# MCP구성.svg는 조립 덱(실전반 4일차 · 실전반 오프라인 5회차 · 통합반 오프라인 6회차)이 옛 라벨 좌표로 쓴다.
-# 통합반 6회차는 위쪽에 이름과 뜻을 얹는 MCP네요소.svg를 쓴다. 조립 전환 뒤 MCP구성.svg는 지운다.
+# 통합반 6회차 원 덱과 조립 덱(실전반 4일차 · 실전반 오프라인 5회차 · 통합반 오프라인 6회차)이 함께 쓴다.
 
 def mcp_parts() -> str:
     ys = (160, 295, 430)
@@ -271,25 +249,6 @@ def mcp_parts() -> str:
         o += gear(812, y, 22, ON, hot=True) + gear(868, y, 22, ON, hot=True) + gear(924, y, 22, ON, hot=True)
         o.append(arrow([(966, y), (1030, y)], NAVY, sw=3.5, size=11))
         o += g(1090, y - 8, 0.66, icons[i](0, 0, ON))
-    return svg(o)
-
-
-def mcp_four() -> str:
-    """위쪽 띠는 라벨 자리로 비워 둔다(호스트 · 클라이언트 · 서버 · 도구의 이름과 한 줄 뜻)."""
-    ys = (204, 324, 444)
-    o = [rect(30, 96, 590, 418, 18, fill=PALE, stroke=SKY, sw=3)]
-    o += [line(234, 324, 350, 324, sw=3.5), line(350, ys[0], 350, ys[-1], sw=3.5)]
-    o += g(160, 324, 1.35, agent_icon(0, 0, ON))
-    icons = (graph_icon, cylinder_db, table_icon)
-    for i, y in enumerate(ys):
-        o.append(arrow([(350, y), (452, y)], NAVY, sw=3.5, size=11))
-        o += client_box(500, y, ON)
-        o.append(arrow([(556, y), (690, y)], BLUE, sw=5, size=14))
-        o.append(rect(698, y - 40, 280, 80, 14, fill=WHITE, stroke=NAVY, sw=3.5))
-        o += g(752, y, 0.6, server(0, 0, ON))
-        o += gear(836, y, 22, ON, hot=True) + gear(888, y, 22, ON, hot=True) + gear(940, y, 22, ON, hot=True)
-        o.append(arrow([(982, y), (1040, y)], NAVY, sw=3.5, size=11))
-        o += g(1100, y - 8, 0.66, icons[i](0, 0, ON))
     return svg(o)
 
 
@@ -347,8 +306,8 @@ def gates() -> str:
 
 
 def main():
-    out = {"고리_1.svg": loop(True), "스킬문서.svg": skilldoc(), "절차호출.svg": stepcalls(),
-           "두절차.svg": twoproc(), "재사용.svg": reuse(), "연결의수.svg": nm(), "MCP구성.svg": mcp_parts(), "MCP네요소.svg": mcp_four(),
+    out = {"고리_1.svg": loop(True), "스킬문서.svg": skilldoc(),
+           "두절차.svg": twoproc(), "재사용.svg": reuse(), "연결의수.svg": nm(), "MCP구성.svg": mcp_parts(),
            "목록호출.svg": listcall(), "연결방식.svg": transports(), "세겹.svg": gates()}
     for name, text in out.items():
         assert "<text" not in text
