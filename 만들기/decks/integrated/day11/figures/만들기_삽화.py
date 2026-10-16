@@ -176,11 +176,6 @@ def brace(x1, x2, y, up, color, sw=5):
     return path(f"M {x1},{y + t} L {x1},{y} L {x2},{y} L {x2},{y + t}", stroke=color, sw=sw)
 
 
-def lock_icon(cx, cy, st: St, s=1.0):
-    return [path(f"M {cx - 11 * s},{cy - 4 * s} L {cx - 11 * s},{cy - 14 * s} A {11 * s} {11 * s} 0 0 1 {cx + 11 * s},{cy - 14 * s} L {cx + 11 * s},{cy - 4 * s}",
-                 stroke=st.line, sw=4),
-            rect(cx - 17 * s, cy - 4 * s, 34 * s, 26 * s, 5, fill=st.accent, stroke=st.line, sw=3),
-            circle(cx, cy + 8 * s, 3.5 * s, fill=st.line, stroke=st.line, sw=1)]
 
 
 def table_icon(cx, cy, st: St):
@@ -321,19 +316,6 @@ def three_areas() -> str:
     return svg(o)
 
 
-def five_layers() -> str:
-    o: list[str] = []
-    top, pitch, hgt = 14, 100, 86
-    icons = [lambda s: put(0, 0, 0.58, monitor(0, 0, s, "hmi")), lambda s: put(0, 0, 0.9, mini_bpmn(0, 0, s)),
-             lambda s: put(0, 0, 0.6, graph_icon(0, 0, s)), lambda s: put(0, 0, 0.58, agent_icon(0, 4, s)),
-             lambda s: put(0, 0, 0.56, server(0, 0, s))]
-    for i, fn in enumerate(icons):
-        st = ON if i in (1, 2, 3) else NORM
-        y = top + i * pitch
-        o.append(rect(60, y, 1080, hgt, 14, fill=PALE if st is ON else LIGHT, stroke=NAVY if st is ON else GREY, sw=3))
-        o += [f'<g transform="translate(140 {y + hgt / 2})">', *fn(st), "</g>"]
-        o.append(line(220, y + 14, 220, y + hgt - 14, stroke=NAVY if st is ON else GREY, sw=2.5))
-    return svg(o)
 
 
 def status_dot(cx, cy, kind):
@@ -373,46 +355,8 @@ def work_list(kinds=("agent", "person", "agent"), states=("done", "doing", "todo
     return svg(o)
 
 
-def controls() -> str:
-    """사건의 줄 위에 놓이는 통제: 실행 격리(에이전트 둘레), 결정론(에이전트 위), 승인과 권한(승인 위),
-    보상(감사 추적(아래 띠), 변경 통제(왼쪽 아래 문서)."""
-    o: list[str] = []
-    y = 230
-    o += chain_nodes(y, [NORM] * 8)
-    o.append(rect(CH_X[1] - 68, y - 68, 136, 136, 16, fill="none", stroke=BLUE, sw=4, stroke_dasharray="10 8"))
-    o += [circle(CH_X[1], y - 112, 28, fill=WHITE, stroke=BLUE, sw=4)] + put(CH_X[1], y - 112, 0.34, scale_icon(0, 0, ON), 1.6)
-    o += [circle(CH_X[2], y - 112, 28, fill=WHITE, stroke=BLUE, sw=4)] + lock_icon(CH_X[2], y - 114, ON, 0.85)
-    o.append(line(CH_X[2], y - 84, CH_X[2], y - 58, stroke=BLUE, sw=4))
-    o += logstrip(CH_X[2] - 54, 412, NORM, n=33, cw=24, h=38)
-    o += put(120, 408, 0.8, doc_icon(-10, -8, NORM) + doc_icon(10, 8, ON), 1.2)
-    return svg(o)
 
 
-def undo_mark(cx, cy, st: St, s=1.0):
-    return [path(f"M {cx + 14 * s},{cy + 12 * s} A {15 * s} {15 * s} 0 1 0 {cx - 13 * s},{cy + 2 * s}", stroke=st.line, sw=4),
-            poly([(cx - 22 * s, cy - 6 * s), (cx - 4 * s, cy - 2 * s), (cx - 16 * s, cy + 12 * s)], fill=st.line)]
-
-
-def compensation() -> str:
-    """앞으로 간 작업 셋과 실패한 넷째, 끝난 작업을 거꾸로 되돌리는 보상 작업."""
-    o: list[str] = []
-    xs = (170, 440, 710, 980)
-    y = 150
-    for a, b in zip(xs, xs[1:]):
-        o.append(arrow([(a + 92, y), (b - 96, y)], NAVY, sw=4.5, size=13))
-    for i, x in enumerate(xs):
-        last = i == 3
-        o += task(x, y, 180, 100, NORM if not last else OFF, fill=WHITE)
-        o += (cross_mark(x + 64, y - 30, 17, ON) if last else check_mark(x + 64, y - 30, 17, ON))
-    cy = 390
-    for x in xs[:3]:
-        o.append(line(x, y + 50, x, cy - 50, stroke=BLUE, sw=4, stroke_dasharray="9 8"))
-        o += task(x, cy, 180, 100, ON, fill=PALE)
-        o += undo_mark(x, cy, ON, 1.3)
-    o.append(arrow([(xs[3], y + 50), (xs[3], cy), (xs[2] + 96, cy)], BLUE, sw=5, size=14))
-    o.append(arrow([(xs[2] - 90, cy), (xs[1] + 96, cy)], BLUE, sw=5, size=14))
-    o.append(arrow([(xs[1] - 90, cy), (xs[0] + 96, cy)], BLUE, sw=5, size=14))
-    return svg(o)
 
 
 def devices() -> str:
@@ -475,10 +419,9 @@ def people_spots() -> str:
 
 def main():
     out = {"사건선_전체.svg": event_line("all"), "사건선_영역.svg": event_line("areas"), "사건선_지식에서판단.svg": event_line("u1"),
-           "사건선_승인에서끝.svg": event_line("u2"), "호출과지식.svg": calls_knowledge(), "시스템실행.svg": system_exec(),
-           "세영역.svg": three_areas(), "다섯계층.svg": five_layers(), "작업목록.svg": work_list(),
-           "통제자리.svg": controls(), "세처리건.svg": three_cases(), "사람자리.svg": people_spots(), "보상.svg": compensation(),
-           "장치자리.svg": devices()}
+           "호출과지식.svg": calls_knowledge(), "시스템실행.svg": system_exec(),
+           "세영역.svg": three_areas(), "작업목록.svg": work_list(),
+           "세처리건.svg": three_cases(), "사람자리.svg": people_spots(), "장치자리.svg": devices()}
     for name, text in out.items():
         assert "<text" not in text
         (HERE / name).write_text(text, encoding="utf-8")
