@@ -148,7 +148,7 @@ def main() -> int:
             print(f"  {path}: {why}")
         return 1
     if not a.dry_run:
-        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 문서/교재/3_현황.md 7절과 만들기/decks/README.md의 숫자를 맞춘다.")
+        print("\n모두 됨. 장수가 바뀌었으면 `장수.py`로 세어 문서/교재/3_현황.md의 표를 맞춘다.")
     return 0
 
 
