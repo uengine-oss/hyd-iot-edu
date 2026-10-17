@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "day": 3,
+  "slide_count": 67,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "72f1b1328fffe13ae7104fd1e44ab59a8b603c14963e615b76c3bd8b2c946e06",
+  "pptx_sha256": "274a6e327aa4787243ab6232a387d5dec1ed06b1b1eb5c2c5dcdc20eb73ccdaa",
+  "units": [
+    {
+      "file": "01_이론_조치절차와수행기준.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        15
+      ]
+    },
+    {
+      "file": "02_이론_판단규칙.md",
+      "kind": "pptx",
+      "slides": [
+        16,
+        33
+      ]
+    },
+    {
+      "file": "03_이론_성과평가와조치비교.md",
+      "kind": "pptx",
+      "slides": [
+        34,
+        67
+      ]
+    },
+    {
+      "file": "04_실습_조치결과비교.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_조치기준만들기.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_실습_판단기능만들기.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~15장 → 이론② 16~33장 → 이론③ 34~60장(실습 3개의 간지·설명 포함) → 실제 실습 04·05·06(현재 빈 파일) → 같은 이론③의 61~67장 재개(복습·퀴즈·마무리).",
+  "source_pptx_sha256": "e6b21e5d971b219106d834a50a24b58966a74149b25467f7a3865d4efb74f7c3"
+}

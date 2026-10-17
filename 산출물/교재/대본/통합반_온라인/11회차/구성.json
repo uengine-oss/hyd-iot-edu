@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "day": 11,
+  "slide_count": 64,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "c2c4313ca0890f16894649598be4bd1c8cab83ec5548eaf6c82a3366d068a4f9",
+  "source_pptx_sha256": "e0d616a61ede2a98ded7d512e1052aaff0b700b5e53d809b2cb0fe42985584ea",
+  "units": [
+    {
+      "file": "01_이론_지식과판단근거.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        21
+      ]
+    },
+    {
+      "file": "02_이론_제안과업무완료.md",
+      "kind": "pptx",
+      "slides": [
+        22,
+        64
+      ]
+    },
+    {
+      "file": "03_실습_업무명세.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "04_실습_지식구조.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_제안에이전트.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_실습_흐름실행.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "07_실습_ProcessGPT시연.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "08_실습_지식자산화.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~21장 → 이론② 22~57장(실습·시연 여섯 묶음 안내 포함) → 실제 실습03~08 → 이론② 58~64장 재개(복습·퀴즈·과정 마무리).",
+  "pptx_sha256": "e9bc60c30bbe1fbca44ef2ab642346fa987dde31b7e5a31191c550c5135e4b86"
+}

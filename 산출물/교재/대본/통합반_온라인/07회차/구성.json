@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "day": 7,
+  "slide_count": 60,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "e933c7a016fbe38a0e5db4d097faa2cf369affee986127fbee60e3f444a19584",
+  "source_pptx_sha256": "083bda9fdd693b85fb9005cd0b6c2fb5914135489f0f131f1cb0a9eea8446369",
+  "units": [
+    {
+      "file": "01_이론_사람의판단과승인.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        25
+      ]
+    },
+    {
+      "file": "02_실습_승인과거절.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "03_실습_확인질문과재처리.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "04_실습_제안과검토.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_이론_명세와변경검증.md",
+      "kind": "pptx",
+      "slides": [
+        26,
+        60
+      ]
+    },
+    {
+      "file": "06_실습_모호한변경비교.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "07_실습_명세에따른변경.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~25장(실습1~3 간지·설명 포함) → 실제 실습 02~04 → 이론② 26~53장(실습4~5 간지·설명 포함) → 실제 실습 06~07 → 같은 이론② 54~60장 복습·퀴즈 재개.",
+  "pptx_sha256": "694b7f08aa04030380224162fd751f44a88a8fd8e527e6d446ea526779a801b3"
+}

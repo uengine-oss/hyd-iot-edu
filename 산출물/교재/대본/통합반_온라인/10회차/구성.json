@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "day": 10,
+  "slide_count": 61,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "12f95ec79b3f39740e6201feb19188896b0c4f78a3ec8c4d7aa31ccbcac05e22",
+  "source_pptx_sha256": "2c3f1cced95c0591175f1980e542bcc11d749eaac63121615f5fa82da8fd8d25",
+  "units": [
+    {
+      "file": "01_이론_프로세스설계재사용.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        37
+      ]
+    },
+    {
+      "file": "02_실습_정기점검작도.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "03_실습_정기점검실행.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "04_실습_재고보충작도.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_재고보충실행.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_이론_전체업무흐름.md",
+      "kind": "pptx",
+      "slides": [
+        38,
+        61
+      ]
+    }
+  ],
+  "playback": "이론① 1~37장(연속 실습 네 묶음의 간지·설명 포함) → 실제 실습 02~05 → 이론② 38~61장(전체 과정 정리·복습·퀴즈).",
+  "pptx_sha256": "5fe286a7a27bde66263ca339b57ba99d6a83e0b10de932f7dac13371978e5d1e"
+}

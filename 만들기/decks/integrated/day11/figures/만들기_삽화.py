@@ -258,8 +258,10 @@ def event_line(mode: str) -> str:
     return svg(o)
 
 
-def calls_knowledge() -> str:
-    """위: 에이전트의 호출 순서. 아래: 호출마다 읽은 지식과 값."""
+def calls_knowledge(skill_order: bool = False) -> str:
+    """위: 에이전트의 호출 순서. 아래: 호출마다 읽은 지식과 값.
+    skill_order=False: 기록된 실행의 순서(진단 → 평가 → 업무 값 조회 → 제출, 실전반 08일차 덱).
+    skill_order=True: 스킬 원문의 순서(진단 → 필요하면 업무 값 조회 → 평가 → 제출, 통합반 11일차 덱). 「필요하면」 하는 단계는 회색(렌더러가 점선을 그리지 않는다)."""
     o = [rect(14, 20, 1172, 220, 14, fill=LIGHT, stroke="none", sw=0), rect(14, 310, 1172, 196, 14, fill=LIGHT, stroke="none", sw=0)]
     xs = [90, 330, 560, 790, 1010]
     y = 160
@@ -267,15 +269,19 @@ def calls_knowledge() -> str:
         o.append(arrow([(a + 58, y), (b - 60, y)], NAVY, sw=4, size=12))
     o += node(xs[0], y, NORM, put(0, 0, 1.9, bell(0, -2, NORM), 0.6))
     o += node(xs[1], y, ON, put(4, 4, 0.8, magnifier(0, 0, ON)))
-    o += node(xs[2], y, ON, put(0, 0, 0.62, scale_icon(0, 0, ON)))
-    o += node(xs[3], y, ON, put(0, 0, 0.6, table_icon(0, 0, ON)))
+    weigh, lookup = (xs[3], xs[2]) if skill_order else (xs[2], xs[3])
+    o += node(weigh, y, ON, put(0, 0, 0.62, scale_icon(0, 0, ON)))
+    if skill_order:
+        o += node(lookup, y, OFF, put(0, 0, 0.6, table_icon(0, 0, OFF)))
+    else:
+        o += node(lookup, y, ON, put(0, 0, 0.6, table_icon(0, 0, ON)))
     o += node(xs[4], y, ON, put(0, 0, 0.6, send_icon(0, 0, ON)))
     ky = 392
-    stores = [(200, graph_icon, xs[1] - 24), (380, cylinder_db, xs[1] + 24), (560, book_icon, xs[2]), (790, table_icon, xs[3])]
+    stores = [(200, graph_icon, xs[1] - 24), (380, cylinder_db, xs[1] + 24), (weigh, book_icon, weigh), (lookup, table_icon, lookup)]
     for x, fn, tx in stores:
         o += put(x, ky, 0.72, fn(0, 0, NORM))
         if x == tx:
-            o.append(arrow([(x, ky - 50), (x, y + 62)], BLUE, sw=5, size=14))
+            o.append(arrow([(x, ky - 50), (x, y + 62)], GREY if skill_order and x == lookup else BLUE, sw=5, size=14))
         else:
             o.append(arrow([(x, ky - 50), (x, 276), (tx, 276), (tx, y + 60)], BLUE, sw=5, size=14))
     return svg(o)
@@ -419,7 +425,7 @@ def people_spots() -> str:
 
 def main():
     out = {"사건선_전체.svg": event_line("all"), "사건선_영역.svg": event_line("areas"), "사건선_지식에서판단.svg": event_line("u1"),
-           "호출과지식.svg": calls_knowledge(), "시스템실행.svg": system_exec(),
+           "호출과지식.svg": calls_knowledge(), "스킬도구.svg": calls_knowledge(skill_order=True), "시스템실행.svg": system_exec(),
            "세영역.svg": three_areas(), "작업목록.svg": work_list(),
            "세처리건.svg": three_cases(), "사람자리.svg": people_spots(), "장치자리.svg": devices()}
     for name, text in out.items():

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "day": 6,
+  "slide_count": 72,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "b98836647cd67104d7fa7255f379fee23df5b9085aca1fd749d0d672190be113",
+  "source_pptx_sha256": "5bf0c5e0f59f48220b853a4bcbe2ba4e9b4972ad01afb0d91049221bdeeee5af",
+  "units": [
+    {
+      "file": "01_이론_재사용가능한업무지침.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        23
+      ]
+    },
+    {
+      "file": "02_이론_외부도구연결원리.md",
+      "kind": "pptx",
+      "slides": [
+        24,
+        43
+      ]
+    },
+    {
+      "file": "03_이론_연결안전과실습안내.md",
+      "kind": "pptx",
+      "slides": [
+        44,
+        72
+      ]
+    },
+    {
+      "file": "04_실습_업무도구연결호출.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_MCP서버조합.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_실습_회의록스킬작성.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "07_실습_학습코치.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~23장 → 이론② 24~43장 → 이론③ 44~65장(실습 네 개의 간지·설명 포함) → 실제 실습 04~07(현재 빈 파일) → 같은 이론③의 66~72장 재개(복습·퀴즈).",
+  "pptx_sha256": "975d94a9302c467372677263b67a3ac85fc18c5b38ad95e24445cf318349f40a"
+}

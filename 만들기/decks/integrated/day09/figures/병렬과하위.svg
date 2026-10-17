@@ -19,7 +19,7 @@
 <rect x="746" y="226" width="28" height="26" rx="3" ry="3" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="752" y1="239" x2="768" y2="239" stroke="#13294B" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="760" y1="231" x2="760" y2="247" stroke="#13294B" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 760,256 L 760,300" stroke="#1A6FC4" stroke-width="4" fill="none" stroke-dasharray="8 7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 760.000,256.000 L 760.000,257.000 L 760.000,258.000 L 760.000,259.000 L 760.000,260.000 L 760.000,261.000 L 760.000,262.000 L 760.000,263.000 L 760.000,264.000 M 760.000,271.000 L 760.000,272.000 L 760.000,273.000 L 760.000,274.000 L 760.000,275.000 L 760.000,276.000 L 760.000,277.000 L 760.000,278.000 L 760.000,279.000 M 760.000,286.000 L 760.000,287.000 L 760.000,288.000 L 760.000,289.000 L 760.000,290.000 L 760.000,291.000 L 760.000,292.000 L 760.000,293.000 L 760.000,294.000" fill="none" stroke="#1A6FC4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="660" y="300" width="500" height="170" rx="16" ry="16" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="710" cy="385" r="18" fill="#FFFFFF" stroke="#13294B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="765.0" y="352.0" width="110" height="66" rx="10" ry="10" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>

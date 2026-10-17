@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "day": 9,
+  "slide_count": 74,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "25cbbe45bc8f0b8d09f9bda1992e9ae0d5a706f08fde248eb41283c1c80c54fd",
+  "source_pptx_sha256": "2b271eaf2743f8c0e8cadb13c00e5a33b24a7f66f91572c733bb933138378687",
+  "units": [
+    {
+      "file": "01_이론_비즈니스프로세스.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        25
+      ]
+    },
+    {
+      "file": "02_이론_BPMN표현.md",
+      "kind": "pptx",
+      "slides": [
+        26,
+        42
+      ]
+    },
+    {
+      "file": "03_이론_프로세스오케스트레이션.md",
+      "kind": "pptx",
+      "slides": [
+        43,
+        74
+      ]
+    },
+    {
+      "file": "04_실습_승인절차작도.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_긴급대응작도.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_실습_시스템연결.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "07_실습_실행기록확인.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~25장 → 이론② 26~42장 → 이론③ 43~67장(네 실습 간지·설명 포함) → 실제 실습 04~07 → 같은 이론③ 68~74장 복습·퀴즈 재개.",
+  "pptx_sha256": "f4633ad5426dd34d22394d51b565a43314748bf4cf2e6072322e5863f9040563"
+}

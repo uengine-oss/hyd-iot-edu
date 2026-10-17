@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "day": 2,
+  "slide_count": 72,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "5c739e9c08f70eb75fea6c24d3a81953a00d1247c5549f4949a056cea2720c48",
+  "pptx_sha256": "93ebe5b8b025dd2390bb41b51a79b91bae96d32da535dcde4bd2539e7aee700f",
+  "units": [
+    {
+      "file": "01_이론_클래스와인스턴스.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        21
+      ]
+    },
+    {
+      "file": "02_이론_스키마설계.md",
+      "kind": "pptx",
+      "slides": [
+        22,
+        37
+      ]
+    },
+    {
+      "file": "03_이론_그래프저장과조회.md",
+      "kind": "pptx",
+      "slides": [
+        38,
+        72
+      ]
+    },
+    {
+      "file": "04_실습_관계조회.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "05_실습_지식지도탐색.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "06_실습_온톨로지설계.md",
+      "kind": "empty_practice"
+    },
+    {
+      "file": "07_실습_그래프구현과검증.md",
+      "kind": "empty_practice"
+    }
+  ],
+  "playback": "이론① 1~21장 → 이론② 22~37장 → 이론③ 38~65장(실습 4개의 간지·설명 포함) → 실제 실습 04·05·06·07(현재 빈 파일) → 같은 이론③의 66~72장 재개(복습·퀴즈·마무리).",
+  "source_pptx_sha256": "e650aef44a507bf75d4882896e17f85d4dba98bd5f946ff49b129a2b7dba3ef0"
+}
