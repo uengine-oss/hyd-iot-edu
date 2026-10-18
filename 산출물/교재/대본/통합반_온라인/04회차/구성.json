@@ -24,17 +24,20 @@
     },
     {
       "file": "03_실습_매뉴얼등록과검토.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "04_실습_문서지식추출.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "05_실습_그래프반영과검증.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     }
   ],
-  "playback": "이론① 1~44장(실습 3개의 간지·설명 포함) → 실제 실습 03·04·05(현재 빈 파일) → 이론② 45~69장(종합 정리·복습·퀴즈 포함).",
-  "pptx_sha256": "f462883f9df9b1325f16bc1bd4f3720cee48b2aaa66f4b5c269a4ba8475bf594"
+  "playback": "1~44장 → 실습 03·04·05 → 45~69장 종합 정리·복습·용어·퀴즈. 강사 단독 진행.",
+  "pptx_sha256": "e2179e72ca9bf674353f0cb0681abc15cbcf407ea4df07038b89cfd279bc73cb"
 }

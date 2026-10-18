@@ -32,21 +32,25 @@
     },
     {
       "file": "04_실습_업무도구연결호출.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "05_실습_MCP서버조합.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "06_실습_회의록스킬작성.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "07_실습_학습코치.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     }
   ],
-  "playback": "이론① 1~23장 → 이론② 24~43장 → 이론③ 44~65장(실습 네 개의 간지·설명 포함) → 실제 실습 04~07(현재 빈 파일) → 같은 이론③의 66~72장 재개(복습·퀴즈).",
-  "pptx_sha256": "975d94a9302c467372677263b67a3ac85fc18c5b38ad95e24445cf318349f40a"
+  "playback": "1~65장 → 실습04~07 → 66~72장 복습·용어·퀴즈. 강사 단독 진행.",
+  "pptx_sha256": "6028b891a875b1716ebdaf9a2b2b652b6b7e0759cadd8fbf1b3cc09e7e501475"
 }

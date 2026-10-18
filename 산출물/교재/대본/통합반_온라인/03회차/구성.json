@@ -4,7 +4,7 @@
   "slide_count": 67,
   "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
   "source_script_sha256": "72f1b1328fffe13ae7104fd1e44ab59a8b603c14963e615b76c3bd8b2c946e06",
-  "pptx_sha256": "274a6e327aa4787243ab6232a387d5dec1ed06b1b1eb5c2c5dcdc20eb73ccdaa",
+  "pptx_sha256": "9e3d7b38e929ab82f89eee14e7097695cfc51424abf8b5b62b77361c31837b83",
   "units": [
     {
       "file": "01_이론_조치절차와수행기준.md",
@@ -32,17 +32,20 @@
     },
     {
       "file": "04_실습_조치결과비교.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "05_실습_조치기준만들기.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "06_실습_판단기능만들기.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     }
   ],
-  "playback": "이론① 1~15장 → 이론② 16~33장 → 이론③ 34~60장(실습 3개의 간지·설명 포함) → 실제 실습 04·05·06(현재 빈 파일) → 같은 이론③의 61~67장 재개(복습·퀴즈·마무리).",
+  "playback": "1~60장 → 실습 04·05·06 → 61~67장 복습·용어·퀴즈. 강사 단독 진행.",
   "source_pptx_sha256": "e6b21e5d971b219106d834a50a24b58966a74149b25467f7a3865d4efb74f7c3"
 }

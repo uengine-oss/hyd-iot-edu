@@ -24,21 +24,25 @@
     },
     {
       "file": "03_실습_업무에이전트구성.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "04_실습_원인추론과점검계획.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "05_실습_품질대응카드.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     },
     {
       "file": "06_실습_센서이상시각화.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
     }
   ],
-  "playback": "이론① 1~28장 → 이론② 29~63장(실습 네 개의 간지·설명 포함) → 실제 실습 03~06(현재 빈 파일) → 이론②의 64~70장 재개(복습·퀴즈). 이론②는 하나의 파일이며 실제 실습 삽입 위치만 제작 표시로 남긴다.",
-  "pptx_sha256": "407a35b3e11c154463b7e8e9879e895dea4970c0424bb85701bb4899e3c06125"
+  "playback": "1~63장 → 실습 03~06 → 64~70장 복습·용어·퀴즈. 강사 단독 진행.",
+  "pptx_sha256": "2f3326ed2bf02228406638b0c4c4dace95fe3112bcbea9b96337815b5cf2115f"
 }
