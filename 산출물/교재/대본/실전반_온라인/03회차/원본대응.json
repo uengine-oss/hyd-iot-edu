@@ -1,0 +1,655 @@
+{
+  "slides": [
+    {
+      "destination": 1,
+      "source_day": 3,
+      "source_slide": 1
+    },
+    {
+      "destination": 2,
+      "source_day": 3,
+      "source_slide": 2
+    },
+    {
+      "destination": 3,
+      "source_day": 3,
+      "source_slide": 3
+    },
+    {
+      "destination": 4,
+      "source_day": 3,
+      "source_slide": 34
+    },
+    {
+      "destination": 5,
+      "source_day": 3,
+      "source_slide": 35
+    },
+    {
+      "destination": 6,
+      "source_day": 3,
+      "source_slide": 36
+    },
+    {
+      "destination": 7,
+      "source_day": 3,
+      "source_slide": 37
+    },
+    {
+      "destination": 8,
+      "source_day": 3,
+      "source_slide": 38
+    },
+    {
+      "destination": 9,
+      "source_day": 3,
+      "source_slide": 39
+    },
+    {
+      "destination": 10,
+      "source_day": 3,
+      "source_slide": 40
+    },
+    {
+      "destination": 11,
+      "source_day": 3,
+      "source_slide": 41
+    },
+    {
+      "destination": 12,
+      "source_day": 3,
+      "source_slide": 42
+    },
+    {
+      "destination": 13,
+      "source_day": 3,
+      "source_slide": 43
+    },
+    {
+      "destination": 14,
+      "source_day": 3,
+      "source_slide": 44
+    },
+    {
+      "destination": 15,
+      "source_day": 3,
+      "source_slide": 45
+    },
+    {
+      "destination": 16,
+      "source_day": 3,
+      "source_slide": 46
+    },
+    {
+      "destination": 17,
+      "source_day": 3,
+      "source_slide": 47
+    },
+    {
+      "destination": 18,
+      "source_day": 3,
+      "source_slide": 48
+    },
+    {
+      "destination": 19,
+      "source_day": 3,
+      "source_slide": 49
+    },
+    {
+      "destination": 20,
+      "source_day": 3,
+      "source_slide": 50
+    },
+    {
+      "destination": 21,
+      "source_day": 3,
+      "source_slide": 51
+    },
+    {
+      "destination": 22,
+      "source_day": 3,
+      "source_slide": 52
+    },
+    {
+      "destination": 23,
+      "source_day": 3,
+      "source_slide": 53
+    },
+    {
+      "destination": 24,
+      "source_day": 3,
+      "source_slide": 54
+    },
+    {
+      "destination": 25,
+      "source_day": 3,
+      "source_slide": 55
+    },
+    {
+      "destination": 26,
+      "source_day": 3,
+      "source_slide": 56
+    },
+    {
+      "destination": 27,
+      "source_day": 3,
+      "source_slide": 59
+    },
+    {
+      "destination": 28,
+      "source_day": 3,
+      "source_slide": 60
+    },
+    {
+      "destination": 29,
+      "source_day": 4,
+      "source_slide": 4
+    },
+    {
+      "destination": 30,
+      "source_day": 4,
+      "source_slide": 5
+    },
+    {
+      "destination": 31,
+      "source_day": 4,
+      "source_slide": 6
+    },
+    {
+      "destination": 32,
+      "source_day": 4,
+      "source_slide": 7
+    },
+    {
+      "destination": 33,
+      "source_day": 4,
+      "source_slide": 8
+    },
+    {
+      "destination": 34,
+      "source_day": 4,
+      "source_slide": 9
+    },
+    {
+      "destination": 35,
+      "source_day": 4,
+      "source_slide": 10
+    },
+    {
+      "destination": 36,
+      "source_day": 4,
+      "source_slide": 11
+    },
+    {
+      "destination": 37,
+      "source_day": 4,
+      "source_slide": 12
+    },
+    {
+      "destination": 38,
+      "source_day": 4,
+      "source_slide": 13
+    },
+    {
+      "destination": 39,
+      "source_day": 4,
+      "source_slide": 14
+    },
+    {
+      "destination": 40,
+      "source_day": 4,
+      "source_slide": 15
+    },
+    {
+      "destination": 41,
+      "source_day": 4,
+      "source_slide": 16
+    },
+    {
+      "destination": 42,
+      "source_day": 4,
+      "source_slide": 17
+    },
+    {
+      "destination": 43,
+      "source_day": 4,
+      "source_slide": 18
+    },
+    {
+      "destination": 44,
+      "source_day": 4,
+      "source_slide": 19
+    },
+    {
+      "destination": 45,
+      "source_day": 4,
+      "source_slide": 20
+    },
+    {
+      "destination": 46,
+      "source_day": 4,
+      "source_slide": 21
+    },
+    {
+      "destination": 47,
+      "source_day": 4,
+      "source_slide": 22
+    },
+    {
+      "destination": 48,
+      "source_day": 4,
+      "source_slide": 23
+    },
+    {
+      "destination": 49,
+      "source_day": 4,
+      "source_slide": 24
+    },
+    {
+      "destination": 50,
+      "source_day": 4,
+      "source_slide": 25
+    },
+    {
+      "destination": 51,
+      "source_day": 4,
+      "source_slide": 26
+    },
+    {
+      "destination": 52,
+      "source_day": 4,
+      "source_slide": 27
+    },
+    {
+      "destination": 53,
+      "source_day": 4,
+      "source_slide": 28
+    },
+    {
+      "destination": 54,
+      "source_day": 4,
+      "source_slide": 29
+    },
+    {
+      "destination": 55,
+      "source_day": 4,
+      "source_slide": 30
+    },
+    {
+      "destination": 56,
+      "source_day": 4,
+      "source_slide": 31
+    },
+    {
+      "destination": 57,
+      "source_day": 4,
+      "source_slide": 32
+    },
+    {
+      "destination": 58,
+      "source_day": 4,
+      "source_slide": 33
+    },
+    {
+      "destination": 59,
+      "source_day": 4,
+      "source_slide": 34
+    },
+    {
+      "destination": 60,
+      "source_day": 4,
+      "source_slide": 35
+    },
+    {
+      "destination": 61,
+      "source_day": 4,
+      "source_slide": 36
+    },
+    {
+      "destination": 62,
+      "source_day": 4,
+      "source_slide": 37
+    },
+    {
+      "destination": 63,
+      "source_day": 4,
+      "source_slide": 38
+    },
+    {
+      "destination": 64,
+      "source_day": 4,
+      "source_slide": 39
+    },
+    {
+      "destination": 65,
+      "source_day": 4,
+      "source_slide": 40
+    },
+    {
+      "destination": 66,
+      "source_day": 4,
+      "source_slide": 41
+    },
+    {
+      "destination": 67,
+      "source_day": 4,
+      "source_slide": 42
+    },
+    {
+      "destination": 68,
+      "source_day": 4,
+      "source_slide": 43
+    },
+    {
+      "destination": 69,
+      "source_day": 4,
+      "source_slide": 44
+    },
+    {
+      "destination": 70,
+      "source_day": 4,
+      "source_slide": 45
+    },
+    {
+      "destination": 71,
+      "source_day": 4,
+      "source_slide": 46
+    },
+    {
+      "destination": 72,
+      "source_day": 4,
+      "source_slide": 47
+    },
+    {
+      "destination": 73,
+      "source_day": 4,
+      "source_slide": 48
+    },
+    {
+      "destination": 74,
+      "source_day": 4,
+      "source_slide": 49
+    },
+    {
+      "destination": 75,
+      "source_day": 4,
+      "source_slide": 50
+    },
+    {
+      "destination": 76,
+      "source_day": 4,
+      "source_slide": 51
+    },
+    {
+      "destination": 77,
+      "source_day": 4,
+      "source_slide": 52
+    },
+    {
+      "destination": 78,
+      "source_day": 4,
+      "source_slide": 53
+    },
+    {
+      "destination": 79,
+      "source_day": 4,
+      "source_slide": 54
+    },
+    {
+      "destination": 80,
+      "source_day": 4,
+      "source_slide": 55
+    },
+    {
+      "destination": 81,
+      "source_day": 4,
+      "source_slide": 56
+    },
+    {
+      "destination": 82,
+      "source_day": 4,
+      "source_slide": 57
+    },
+    {
+      "destination": 83,
+      "source_day": 4,
+      "source_slide": 58
+    },
+    {
+      "destination": 84,
+      "source_day": 4,
+      "source_slide": 59
+    },
+    {
+      "destination": 85,
+      "source_day": 4,
+      "source_slide": 60
+    },
+    {
+      "destination": 86,
+      "source_day": 4,
+      "source_slide": 61
+    },
+    {
+      "destination": 87,
+      "source_day": 4,
+      "source_slide": 62
+    },
+    {
+      "destination": 88,
+      "source_day": 3,
+      "source_slide": 61
+    },
+    {
+      "destination": 89,
+      "source_day": 4,
+      "source_slide": 63
+    },
+    {
+      "destination": 90,
+      "source_day": 3,
+      "source_slide": 62
+    },
+    {
+      "destination": 91,
+      "source_day": 4,
+      "source_slide": 64
+    },
+    {
+      "destination": 92,
+      "source_day": 3,
+      "source_slide": 63
+    },
+    {
+      "destination": 93,
+      "source_day": 3,
+      "source_slide": 64
+    },
+    {
+      "destination": 94,
+      "source_day": 3,
+      "source_slide": 65
+    },
+    {
+      "destination": 95,
+      "source_day": 3,
+      "source_slide": 66
+    },
+    {
+      "destination": 96,
+      "source_day": 4,
+      "source_slide": 66
+    },
+    {
+      "destination": 97,
+      "source_day": 4,
+      "source_slide": 67
+    },
+    {
+      "destination": 98,
+      "source_day": 4,
+      "source_slide": 68
+    },
+    {
+      "destination": 99,
+      "source_day": 3,
+      "source_slide": 67
+    },
+    {
+      "destination": 100,
+      "source_day": 4,
+      "source_slide": 69
+    }
+  ],
+  "speech_edits": [
+    {
+      "source_day": 3,
+      "source_slide": 34,
+      "destination": 4
+    },
+    {
+      "source_day": 3,
+      "source_slide": 41,
+      "destination": 11
+    },
+    {
+      "source_day": 3,
+      "source_slide": 45,
+      "destination": 15
+    },
+    {
+      "source_day": 3,
+      "source_slide": 55,
+      "destination": 25
+    },
+    {
+      "source_day": 3,
+      "source_slide": 59,
+      "destination": 27
+    },
+    {
+      "source_day": 4,
+      "source_slide": 4,
+      "destination": 29
+    },
+    {
+      "source_day": 4,
+      "source_slide": 10,
+      "destination": 35
+    },
+    {
+      "source_day": 4,
+      "source_slide": 13,
+      "destination": 38
+    },
+    {
+      "source_day": 4,
+      "source_slide": 15,
+      "destination": 40
+    },
+    {
+      "source_day": 4,
+      "source_slide": 21,
+      "destination": 46
+    },
+    {
+      "source_day": 4,
+      "source_slide": 26,
+      "destination": 51
+    },
+    {
+      "source_day": 4,
+      "source_slide": 34,
+      "destination": 59
+    },
+    {
+      "source_day": 4,
+      "source_slide": 39,
+      "destination": 64
+    },
+    {
+      "source_day": 4,
+      "source_slide": 41,
+      "destination": 66
+    },
+    {
+      "source_day": 4,
+      "source_slide": 43,
+      "destination": 68
+    },
+    {
+      "source_day": 4,
+      "source_slide": 45,
+      "destination": 70
+    },
+    {
+      "source_day": 4,
+      "source_slide": 46,
+      "destination": 71
+    },
+    {
+      "source_day": 4,
+      "source_slide": 49,
+      "destination": 74
+    },
+    {
+      "source_day": 4,
+      "source_slide": 50,
+      "destination": 75
+    },
+    {
+      "source_day": 4,
+      "source_slide": 51,
+      "destination": 76
+    },
+    {
+      "source_day": 4,
+      "source_slide": 57,
+      "destination": 82
+    },
+    {
+      "source_day": 3,
+      "source_slide": 63,
+      "destination": 92
+    },
+    {
+      "source_day": 3,
+      "source_slide": 66,
+      "destination": 95
+    },
+    {
+      "source_day": 4,
+      "source_slide": 66,
+      "destination": 96
+    },
+    {
+      "source_day": 4,
+      "source_slide": 67,
+      "destination": 97
+    },
+    {
+      "source_day": 4,
+      "source_slide": 68,
+      "destination": 98
+    },
+    {
+      "source_day": 3,
+      "source_slide": 67,
+      "destination": 99
+    },
+    {
+      "source_day": 4,
+      "source_slide": 69,
+      "destination": 100
+    }
+  ],
+  "metadata_rewritten": [
+    1,
+    2,
+    3
+  ],
+  "source3_BSC_34_to_54_complete": true,
+  "source4_content_4_to_64_complete": true,
+  "quiz6_complete": true,
+  "omissions": "통합반3 SOP·DMN 4~33은 실전반2에서 전체 사용. 조치기준 만들기 소개57~58은 실전반2 조건표로 대체된 실습 배정. 통합반4 표지·목표·목차1~3과 중복 퀴즈 간지65는 공통 메타정보로 통합. 본문 삭제 없음."
+}

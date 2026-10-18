@@ -1,0 +1,715 @@
+{
+  "slides": [
+    {
+      "destination": 1,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 1
+    },
+    {
+      "destination": 2,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 2
+    },
+    {
+      "destination": 3,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 3
+    },
+    {
+      "destination": 4,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 4
+    },
+    {
+      "destination": 5,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 5
+    },
+    {
+      "destination": 6,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 6
+    },
+    {
+      "destination": 7,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 7
+    },
+    {
+      "destination": 8,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 8
+    },
+    {
+      "destination": 9,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 9
+    },
+    {
+      "destination": 10,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 10
+    },
+    {
+      "destination": 11,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 11
+    },
+    {
+      "destination": 12,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 12
+    },
+    {
+      "destination": 13,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 13
+    },
+    {
+      "destination": 14,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 14
+    },
+    {
+      "destination": 15,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 15
+    },
+    {
+      "destination": 16,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 16
+    },
+    {
+      "destination": 17,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 17
+    },
+    {
+      "destination": 18,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 18
+    },
+    {
+      "destination": 19,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 19
+    },
+    {
+      "destination": 20,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 20
+    },
+    {
+      "destination": 21,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 21
+    },
+    {
+      "destination": 22,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 22
+    },
+    {
+      "destination": 23,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 23
+    },
+    {
+      "destination": 24,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 24
+    },
+    {
+      "destination": 25,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 25
+    },
+    {
+      "destination": 26,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 26
+    },
+    {
+      "destination": 27,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 27
+    },
+    {
+      "destination": 28,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 28
+    },
+    {
+      "destination": 29,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 29
+    },
+    {
+      "destination": 30,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 30
+    },
+    {
+      "destination": 31,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 31
+    },
+    {
+      "destination": 32,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 32
+    },
+    {
+      "destination": 33,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 33
+    },
+    {
+      "destination": 34,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 34
+    },
+    {
+      "destination": 35,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 35
+    },
+    {
+      "destination": 36,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 36
+    },
+    {
+      "destination": 37,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 37
+    },
+    {
+      "destination": 38,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 38
+    },
+    {
+      "destination": 39,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 39
+    },
+    {
+      "destination": 40,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 40
+    },
+    {
+      "destination": 41,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 41
+    },
+    {
+      "destination": 42,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 42
+    },
+    {
+      "destination": 43,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 43
+    },
+    {
+      "destination": 44,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 44
+    },
+    {
+      "destination": 45,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 45
+    },
+    {
+      "destination": 46,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 46
+    },
+    {
+      "destination": 47,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 47
+    },
+    {
+      "destination": 48,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 48
+    },
+    {
+      "destination": 49,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 49
+    },
+    {
+      "destination": 50,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 50
+    },
+    {
+      "destination": 51,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 51
+    },
+    {
+      "destination": 52,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 52
+    },
+    {
+      "destination": 53,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 53
+    },
+    {
+      "destination": 54,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 54
+    },
+    {
+      "destination": 55,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 55
+    },
+    {
+      "destination": 56,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 56
+    },
+    {
+      "destination": 57,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 57
+    },
+    {
+      "destination": 58,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 58
+    },
+    {
+      "destination": 59,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 59
+    },
+    {
+      "destination": 60,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 60
+    },
+    {
+      "destination": 61,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 61
+    },
+    {
+      "destination": 62,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 62
+    },
+    {
+      "destination": 63,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 63
+    },
+    {
+      "destination": 64,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 64
+    },
+    {
+      "destination": 65,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 65
+    },
+    {
+      "destination": 66,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 4
+    },
+    {
+      "destination": 67,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 5
+    },
+    {
+      "destination": 68,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 6
+    },
+    {
+      "destination": 69,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 7
+    },
+    {
+      "destination": 70,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 8
+    },
+    {
+      "destination": 71,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 9
+    },
+    {
+      "destination": 72,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 10
+    },
+    {
+      "destination": 73,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 11
+    },
+    {
+      "destination": 74,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 12
+    },
+    {
+      "destination": 75,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 13
+    },
+    {
+      "destination": 76,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 14
+    },
+    {
+      "destination": 77,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 15
+    },
+    {
+      "destination": 78,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 16
+    },
+    {
+      "destination": 79,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 17
+    },
+    {
+      "destination": 80,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 18
+    },
+    {
+      "destination": 81,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 19
+    },
+    {
+      "destination": 82,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 20
+    },
+    {
+      "destination": 83,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 21
+    },
+    {
+      "destination": 84,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 22
+    },
+    {
+      "destination": 85,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 23
+    },
+    {
+      "destination": 86,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 24
+    },
+    {
+      "destination": 87,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 25
+    },
+    {
+      "destination": 88,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 26
+    },
+    {
+      "destination": 89,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 27
+    },
+    {
+      "destination": 90,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 28
+    },
+    {
+      "destination": 91,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 29
+    },
+    {
+      "destination": 92,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 30
+    },
+    {
+      "destination": 93,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 31
+    },
+    {
+      "destination": 94,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 32
+    },
+    {
+      "destination": 95,
+      "source_course": "통합반",
+      "source_day": 3,
+      "source_slide": 33
+    },
+    {
+      "destination": 96,
+      "source_course": "실전반 추가",
+      "source_day": 0,
+      "source_slide": 96
+    },
+    {
+      "destination": 97,
+      "source_course": "실전반 추가",
+      "source_day": 0,
+      "source_slide": 97
+    },
+    {
+      "destination": 98,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 66
+    },
+    {
+      "destination": 99,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 67
+    },
+    {
+      "destination": 100,
+      "source_course": "실전반 추가",
+      "source_day": 0,
+      "source_slide": 100
+    },
+    {
+      "destination": 101,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 68
+    },
+    {
+      "destination": 102,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 69
+    },
+    {
+      "destination": 103,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 70
+    },
+    {
+      "destination": 104,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 71
+    },
+    {
+      "destination": 105,
+      "source_course": "실전반 추가",
+      "source_day": 0,
+      "source_slide": 105
+    },
+    {
+      "destination": 106,
+      "source_course": "통합반",
+      "source_day": 2,
+      "source_slide": 72
+    },
+    {
+      "destination": 107,
+      "source_course": "실전반 추가",
+      "source_day": 0,
+      "source_slide": 107
+    }
+  ],
+  "speech_edits": [
+    {
+      "source": "03/4",
+      "destination": 66,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/10",
+      "destination": 72,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/11",
+      "destination": 73,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/15",
+      "destination": 77,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/16",
+      "destination": 78,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/24",
+      "destination": 86,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/30",
+      "destination": 92,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "03/33",
+      "destination": 95,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "02/66",
+      "destination": 98,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "02/68",
+      "destination": 101,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "02/71",
+      "destination": 104,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    },
+    {
+      "source": "02/72",
+      "destination": 106,
+      "reason": "합친 회차의 연결·단원 번호·마무리 조정"
+    }
+  ],
+  "metadata_rewritten": [
+    1,
+    2,
+    3
+  ],
+  "source_2_all_72": true,
+  "source_3_content_4_to_33_all": true
+}

@@ -1,0 +1,29 @@
+{
+  "state": "미확인",
+  "links": [
+    {
+      "link": "작업지시 → 판단",
+      "state": "미확인",
+      "reference": null,
+      "identity": "DEC-1014-006-03e5",
+      "reason": "참조 또는 도착 기록의 식별자가 없습니다."
+    },
+    {
+      "link": "판단 → 사건",
+      "state": "미확인",
+      "reference": null,
+      "identity": null,
+      "reason": "참조 또는 도착 기록의 식별자가 없습니다."
+    },
+    {
+      "link": "사건 → 경보",
+      "state": "미확인",
+      "reference": null,
+      "identity": "ALT-hyd01-0001-a803",
+      "reason": "참조 또는 도착 기록의 식별자가 없습니다."
+    }
+  ],
+  "work_status": "배정됨",
+  "completed_at": null,
+  "scope": "참조 연결의 검사 결과입니다. 명령 ACK나 실제 정비 완료를 판정하지 않습니다."
+}

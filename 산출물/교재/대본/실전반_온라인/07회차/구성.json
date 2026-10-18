@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "day": 7,
+  "slide_count": 61,
+  "source_commit": "f5c5e18a3c47d9c9855dd9416ed2aca4c7b7cddb",
+  "source_script_sha256": "12f95ec79b3f39740e6201feb19188896b0c4f78a3ec8c4d7aa31ccbcac05e22",
+  "source_pptx_sha256": "2c3f1cced95c0591175f1980e542bcc11d749eaac63121615f5fa82da8fd8d25",
+  "units": [
+    {
+      "file": "01_이론_프로세스설계재사용.md",
+      "kind": "pptx",
+      "slides": [
+        1,
+        37
+      ]
+    },
+    {
+      "file": "02_실습_정기점검작도.md",
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
+    },
+    {
+      "file": "03_실습_정기점검실행.md",
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
+    },
+    {
+      "file": "04_실습_재고보충작도.md",
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
+    },
+    {
+      "file": "05_실습_재고보충실행.md",
+      "kind": "practice",
+      "status": "문서 작성·실행 및 캡처 미검증"
+    },
+    {
+      "file": "06_이론_전체업무흐름.md",
+      "kind": "pptx",
+      "slides": [
+        38,
+        61
+      ]
+    }
+  ],
+  "playback": "1~37장 → 실습02~05 → 38~61장 전체 흐름·복습·용어·퀴즈.",
+  "pptx_sha256": "b957dbbd110cae385b58163d7c1ebd38f09b18eb7953699a42ee83e24c971465"
+}

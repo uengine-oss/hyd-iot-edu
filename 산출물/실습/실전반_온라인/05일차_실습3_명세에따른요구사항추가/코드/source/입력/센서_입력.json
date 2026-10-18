@@ -1,0 +1,1091 @@
+[
+ {
+  "번호": "S01",
+  "설비": "HYD-01",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-10 11:13:18",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.6,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 46.2,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.575,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.04,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.012,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 60.7,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 28.0,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.002,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.2,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.92,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "주간조. 유온 경보 뒤 현장 확인 전."
+ },
+ {
+  "번호": "S02",
+  "설비": "HYD-02",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-06 14:41:52",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.8,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 62.4,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.61,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.011,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.05,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.011,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 57.8,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.003,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 36.8,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 10.998,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 180.9,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.007,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.9,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.002,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "오후 외기 온도가 높았던 날. 캐비닛 문을 닫고 운전 중이었다."
+ },
+ {
+  "번호": "S03",
+  "설비": "HYD-03",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-07 09:27:05",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.7,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 58.0,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.002,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 1.05,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.11,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.01,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 58.6,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 29.1,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.004,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.0,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.91,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "순찰 때 팬 쪽에서 평소와 다른 소리가 났다는 구두 전달이 있었다."
+ },
+ {
+  "번호": "S04",
+  "설비": "HYD-01",
+  "경보_패턴": "PUMP_LEAKAGE",
+  "판단_시각": "2026-10-08 16:03:40",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.5,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 83.5,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.58,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.007,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.03,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.013,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 49.6,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 27.9,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.001,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 158.3,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.01,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 7.4,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "프레스 사이클이 길어졌다는 생산 쪽 연락이 먼저 왔다."
+ },
+ {
+  "번호": "S05",
+  "설비": "HYD-02",
+  "경보_패턴": "PUMP_LEAKAGE",
+  "판단_시각": "2026-10-08 21:15:09",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.9,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 83.9,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.003,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.59,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.04,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 48.7,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.007,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 27.6,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 10.996,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 163.2,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.011,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.3,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "야간조. 경보가 한 번 뜬 뒤 압력이 오르내렸다."
+ },
+ {
+  "번호": "S06",
+  "설비": "HYD-03",
+  "경보_패턴": "FAN_VIBRATION",
+  "판단_시각": "2026-10-09 10:52:31",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.6,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 82.9,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 1.31,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.01,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.34,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.012,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 49.2,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 28.2,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.003,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.4,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.93,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.003,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "지난 정기 점검 때 팬 베어링에 그리스를 보충한 기록이 있다."
+ },
+ {
+  "번호": "S07",
+  "설비": "HYD-01",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-12 08:36:14",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.7,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 51.0,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.58,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.04,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.012,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 59.4,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": null,
+    "coverage": {
+     "samples": 0,
+     "max_gap_s": null,
+     "limit_s": 12,
+     "covered": false
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.1,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.92,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "캐비닛 온도 센서 케이블을 교체하는 중이어서 TS4 수집이 멈춰 있다."
+ },
+ {
+  "번호": "S08",
+  "설비": "HYD-02",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-12 11:03:27",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.9,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 66.1,
+    "coverage": {
+     "samples": 9,
+     "max_gap_s": 14.2,
+     "limit_s": 3,
+     "covered": false
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.6,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.05,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.012,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 56.2,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 30.2,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.002,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 180.8,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.9,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "네트워크 스위치 교체로 11:03 무렵 수집이 잠깐 끊겼다."
+ },
+ {
+  "번호": "S09",
+  "설비": "HYD-03",
+  "경보_패턴": "COOLER_DEGRADATION",
+  "판단_시각": "2026-10-13 13:20:46",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 185.0,
+   "max_age_s": 60,
+   "ok": false
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 48.9,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.57,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.04,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.012,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 60.1,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 28.3,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.002,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.3,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.92,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "게이트웨이를 재기동한 뒤 화면의 값이 한동안 그대로였다."
+ },
+ {
+  "번호": "S10",
+  "설비": "HYD-01",
+  "경보_패턴": "FAN_VIBRATION",
+  "판단_시각": "2026-10-14 15:48:02",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.6,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 71.5,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 1.24,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.009,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.12,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.01,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 56.3,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 28.4,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 11.0,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.0,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.007,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.91,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "경보는 떴지만 진동이 더 오르지는 않았다. 같은 시간대에 부하를 올려 운전했다."
+ },
+ {
+  "번호": "S11",
+  "설비": "HYD-02",
+  "경보_패턴": "OIL_ANALYSIS",
+  "판단_시각": "2026-10-15 09:05:00",
+  "freshness": {
+   "tag": "TS1",
+   "age_s": 0.8,
+   "max_age_s": 60,
+   "ok": true
+  },
+  "readings": [
+   {
+    "tag": "CE",
+    "aggregate": "avg",
+    "windowSeconds": 30,
+    "value": 84.1,
+    "coverage": {
+     "samples": 30,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 0.58,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.008,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "VS1",
+    "aggregate": "max-min",
+    "windowSeconds": 300,
+    "value": 0.03,
+    "coverage": {
+     "samples": 300,
+     "max_gap_s": 1.011,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 48.2,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.005,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "TS4",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 27.8,
+    "coverage": {
+     "samples": 18,
+     "max_gap_s": 10.999,
+     "limit_s": 12,
+     "covered": true
+    }
+   },
+   {
+    "tag": "PS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 181.4,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.006,
+     "limit_s": 3,
+     "covered": true
+    }
+   },
+   {
+    "tag": "FS1",
+    "aggregate": "avg",
+    "windowSeconds": 120,
+    "value": 8.92,
+    "coverage": {
+     "samples": 120,
+     "max_gap_s": 1.004,
+     "limit_s": 3,
+     "covered": true
+    }
+   }
+  ],
+  "메모": "분기 오일 분석 결과가 기준을 벗어났다고 보전 담당자가 입력했다. 분석 성적서는 아직 첨부되지 않았다."
+ }
+]
