@@ -76,7 +76,7 @@ def chat(messages, tools=None):
     if not _ENV.exists():
         return _replay(messages)
     settings = _settings()
-    body = {"model": settings["LLM_MODEL"], "messages": messages, "temperature": 0, "max_tokens": 3000}
+    body = {"model": settings["LLM_MODEL"], "messages": messages, "temperature": 0, "max_completion_tokens": 3000}
     if tools:
         body["tools"] = tools
     request = urllib.request.Request(

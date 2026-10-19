@@ -48,7 +48,7 @@ def _reason(error):
 def chat(messages, tools=None):
     """대화(메시지 목록)를 보내고 답(메시지 한 건)을 돌려준다. 도구를 주면 그 가운데서 골라 부를 수 있다."""
     settings = _settings()
-    body = {"model": settings["LLM_MODEL"], "messages": messages, "temperature": 0, "max_tokens": 3000}
+    body = {"model": settings["LLM_MODEL"], "messages": messages, "temperature": 0, "max_completion_tokens": 3000}
     if tools:
         body["tools"] = tools
     request = urllib.request.Request(
