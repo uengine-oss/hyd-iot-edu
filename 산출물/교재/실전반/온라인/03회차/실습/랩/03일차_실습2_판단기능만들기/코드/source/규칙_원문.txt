@@ -1,0 +1,19 @@
+// instances.cypher:474
+  ['rule:auto-mode','dt:compliance',3,"skill_kind == 'control' and plc_mode != 'REMOTE_AUTO'",'EXCLUDE',null,'원격 제어는 REMOTE_AUTO에서만',['skill:fan-max','skill:fan-max-derate','skill:derate-night-clean','skill:switch-standby-pump','skill:derate-70','skill:fan-slow-derate','skill:fan-slow'],null,['HM-3.2'],
+    [['in:skill-kind','==','control',null],['in:plc-mode','!=','REMOTE_AUTO',null]]],
+
+// instances.cypher:478
+  ['rule:ts1-warn','dt:compliance',5,'forecast_ts1 >= 55','WARN',null,'예측 유온이 55 ℃ 이상이면 경보 해제 실패 가능',['skill:fan-max','skill:fan-slow'],null,['HM-7.5'],
+    [['in:forecast-ts1','>=',55,'℃']]],
+
+// instances.cypher:480
+  ['rule:ps1-warn','dt:compliance',9,'forecast_ps1 < 165','WARN',null,'예측 토출 압력이 165 bar 미만이면 저압 경보가 이어질 수 있음',[],null,['HM-5.2'],
+    [['in:forecast-ps1','<',165,'bar']]],
+
+// instances.cypher:482
+  ['rule:fan-24h','dt:compliance',6,'fan100_hours > 24','PENALTY',20,'팬 100 % 연속 24시간 초과 시 수명 감점',['skill:fan-max','skill:fan-max-derate'],'msr:mtbf',['HM-7.3'],
+    [['in:fan100-hours','>',24,'h']]],
+
+// instances.cypher:484
+  ['rule:trip-reset-only','dt:compliance',8,"plc_state == 'TRIP' and skill_code != 'RESET'",'EXCLUDE',null,'트립 중에는 PLC가 리셋 외 제어 명령을 거부한다 (냉각 후 리셋만)',[],null,['HM-9.4'],
+    [['in:plc-state','==','TRIP',null],['in:skill-code','!=','RESET',null]]]
