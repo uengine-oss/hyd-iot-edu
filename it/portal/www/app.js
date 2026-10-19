@@ -258,7 +258,13 @@ function renderUnits() {
     const ramps = (u.faults || []).map(k => FAULT_LABEL[k] || k);
     card.querySelector('.fault').textContent = (ramps.length ? `${UI.t('plant.faultOn')}: ${ramps.join(', ')}` : '') + (active.length ? `${ramps.length ? ' · ' : ''}${UI.t('plant.current')}: ${active.join(' · ')}` : '');
     sparkline(card.querySelector('.spark'), state.waves[asset], 150, 195);
-    card.querySelector('.biz-alert').innerHTML = bizAlertHtml(asset);
+    const bizAlert = card.querySelector('.biz-alert');
+    const bizMarkup = bizAlertHtml(asset);
+    // Preserve the link while polling so a mouse press can finish on the same node.
+    if (bizAlert._renderedMarkup !== bizMarkup) {
+      bizAlert.innerHTML = bizMarkup;
+      bizAlert._renderedMarkup = bizMarkup;
+    }
     card.querySelector('.biz-press').textContent = bizPressLine(asset);
   }
 }

@@ -20,7 +20,7 @@ for root,course,total in [(C,'통합반',11),(D,'실전반',8)]:
   if theory_changed:
    H.patch_notes(folder,cfg['slide_count'],root/f'만들기/decks/{"integrated" if course=="통합반" else "practical"}/day{day:02}/{course}_{day:02}일차.md',root/f'산출물/교재/PPTX/{course}_온라인/{course}_{day:02}일차.pptx')
   for u in cfg['units']:
-   if u['kind']=='practice':u['status']='랩·가이드 내용·순서 정합 확정 · 촬영 발화·전환·속도 튜닝 가능 · 실행 미수행'
+   if u['kind']=='practice':u.setdefault('status','파생물 생성 · 회차 전체 내용 검토 대기 · 실행 미수행')
   # 노트 갱신된 해시 보존
   cfg['pptx_sha256']=sha(root/f'산출물/교재/PPTX/{course}_온라인/{course}_{day:02}일차.pptx')
   H.write(folder/'구성.json',json.dumps(cfg,ensure_ascii=False,indent=2)+'\n')

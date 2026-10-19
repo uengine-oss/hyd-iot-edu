@@ -38,7 +38,7 @@
         const result=await deps.get('/api/mcp/connections');
         if(!live(g) || ticket!==listing || rev!==revision)return;
         if(!Array.isArray(result?.catalog) || !Array.isArray(result?.connections))throw new Error('서비스 목록 응답을 읽을 수 없습니다.');
-        s.catalog=result.catalog; s.connections=result.connections; s.configuration=result.configuration || null;
+        s.catalog=result.catalog; s.connections=result.connections; s.configuration=result.configuration || null; s.message='';
         if(!s.selection && s.catalog.length)s.selection=s.catalog[0].id;
         s.row=selectedRow(); if(!s.attempt)s.phase='ready'; notify();
         if(s.row?.status==='login_complete')await verify(s.row.id,g);

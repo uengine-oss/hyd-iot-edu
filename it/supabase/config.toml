@@ -3,7 +3,7 @@
 # events · process_source_inbox/state · 승인·투영 outbox · 효과 영수증 등, migrations/ 참고)을 둔다.
 # 포트는 Supabase 기본값(54321~). 기존 스택(TimescaleDB 5432 · process 8080 · portal 8088)과 겹치지 않는다.
 # 다른 프로젝트의 supabase 와 함께 띄우려면 아래 포트만 바꾼다.
-project_id = "hyd-iot-edu"
+project_id = "hyd-portal-latest"
 
 [api]
 enabled = true
