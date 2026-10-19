@@ -51,6 +51,19 @@ def render(m, sl, s, page, layout):
                     m.add_box(sl,x,y+1.17,.7,.12,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
             else:
                 text(6.05,y+.5,6.4,1.05,it.lines[1].removeprefix('→ '),15)
+    elif layout=='제안검토':
+        for i,it in enumerate(s.items[:3]):
+            x=.65+i*4.15
+            m.add_box(sl,x,2.05,3.75,2.95,m.WHITE,line=(m.LINE,1.25))
+            text(x+.2,2.3,3.35,.45,it.plain_title,21,bold=True)
+            text(x+.2,3.0,3.35,1.05,it.desc.replace(' / ', '\n'),17)
+            text(x+.2,4.35,3.35,.45,it.tag.replace(' / ', ' '),16,m.SKY_D,True)
+            if i<2:m.add_box(sl,x+3.85,3.4,.22,.18,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
+        it=s.items[3]
+        m.add_box(sl,.65,5.5,12.05,1.25,m.SKY_SOFT,line=(m.LINE,1))
+        text(.9,5.78,3.0,.45,it.plain_title,20,bold=True)
+        text(4.0,5.75,5.9,.75,it.desc.replace(' / ',' '),17)
+        text(10.1,5.78,2.35,.7,it.tag.replace(' / ',' '),16,m.SKY_D,True)
     elif layout=='검증연결':
         # 변경 검증의 네 단계와 추천안마다 작동하는 실행 중 장치를 분리한다.
         for i,it in enumerate(s.items[:4]):
@@ -63,7 +76,7 @@ def render(m, sl, s, page, layout):
         it=s.items[4]
         m.add_box(sl,.65,5.65,12.05,1.05,m.SKY_SOFT,line=(m.LINE,1))
         text(.9,5.85,2.2,.4,it.plain_title,20,bold=True)
-        text(3.15,5.82,7.0,.65,it.desc,17)
+        text(3.15,5.82,9.2 if not it.tag else 7.0,.65,it.desc.replace(' / ', ' · '),17)
         text(10.2,5.91,2.2,.4,it.tag,14,m.SKY_D,True)
     else:
         raise ValueError(layout)

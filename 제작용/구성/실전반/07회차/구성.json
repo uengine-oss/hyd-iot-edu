@@ -44,7 +44,8 @@
     }
   ],
   "playback": "1~37장 → 실습02~05 → 38~61장 전체 흐름·복습·용어·퀴즈.",
-  "pptx_sha256": "407a89a0470769434d5595b2f12223c4295e4dba0c8d231151578851da30d3a8",
+  "pptx_sha256": "ba8dfb6109d4cc83a6430bcd95bd0b9f6508cda708bbe7fdc204b7c26e8b8e3e",
   "pptx": "../../../../산출물/실전반/이론/07회차/실전반_07일차.pptx",
-  "deck": "../../../온라인/decks/practical/day07/실전반_07일차.md"
+  "deck": "../../../온라인/decks/practical/day07/실전반_07일차.md",
+  "theory_status": "덱·분할 대본·발표자 노트 내용·화면·정적 정합 확정"
 }
