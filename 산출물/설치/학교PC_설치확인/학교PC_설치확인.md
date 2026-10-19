@@ -15,26 +15,25 @@ Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했
 |---|---|---|
 | 1 | Git이 없으면 PowerShell을 열어 `winget install -e --id Git.Git` 한 줄을 실행한다 | 2분 |
 | 2 | 새 PowerShell 창에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git` | 1~2분 |
-| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 열린 페이지에서 직접 받는다 | 처음 20~40분 |
+| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 따로 설치한다 | 처음 20~40분 |
 | 4 | 결과 표 끝에 「PC를 다시 시작하세요」가 나오면 다시 시작하고, Docker Desktop을 한 번 열어 약관에 동의한다 | 5분 |
 | 5 | **`시작.bat`** 을 더블클릭한다. Docker Desktop이 꺼져 있으면 스스로 켜고 기다린다 | 처음 10분 이상, 두 번째부터 짧다 |
 | 6 | (5회차 실습 때만) 실습 폴더 `.env`에 세 줄을 적는다 | 1분 |
 
 끌 때는 **`끄기.bat`** 을 더블클릭한다. 데이터는 지워지지 않는다.
 
-**`설치.bat`이 하는 일.** 학교 설치 목록(실습 스택 정보 xlsx, 확인일 2026-10-12)의 8개가 있는지 확인하고, **없는 것만** Windows 기본 설치 도구(winget)로 그 목록의 판을 설치한다. winget은 각 프로그램의 공식 배포처에서 설치 파일을 받아 해시를 검사하고 무인 모드로 설치한다. 이미 있는 프로그램은 건드리지 않는다. 끝에 결과 표(있음 · 설치함 · 실패 · 직접 설치)를 보여 준다.
+**`설치.bat`이 하는 일.** 학교 설치 목록(실습 스택 정보 xlsx, 확인일 2026-10-12)의 1~6번을 **목록과 같은 판으로** 설치한다(없는 것만). 7번 Arduino IDE는 빼고, 8번 XG5000은 직접 설치한다. 설치는 Windows 기본 설치 도구(winget)가 각 프로그램의 공식 배포처에서 받아 해시를 검사하고 무인 모드로 한다. 이미 있는 프로그램은 바꾸지 않고, 판이 목록과 다르면 결과 표에 **「다른 판」** 으로 알린다(맞추려면 그 프로그램을 지우고 `설치.bat`을 다시 실행).
 
-| 프로그램 | 학교 목록 판 | 설치 방법 | 확인할 것 |
-|---|---|---|---|
-| (BIOS 가상화) | — | 확인만 한다 | 「꺼짐」이면 BIOS에서 Intel VT-x / AMD SVM을 켠다(작업 관리자 → 성능 → CPU 「가상화」) |
-| WSL 2 | 2.7.12 | `wsl --install --no-distribution` | 처음 설치하면 PC를 다시 시작해야 켜진다. 판을 정확히 맞추려면 목록의 msi |
-| Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 학생 계정을 `docker-users` 그룹에 넣는다. 다시 시작한 뒤 한 번 열어 약관 동의 |
-| Visual Studio Code | 1.140.0 System | winget `Microsoft.VisualStudioCode`(PC 전체) | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
-| Python | 3.14.7 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
-| Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | 다른 판이 이미 있으면 그대로 둔다 |
-| Git | 최신 | winget `Git.Git` | 있으면 건너뛴다 |
-| Arduino IDE | 2.3.10 | winget `ArduinoSA.IDE.stable` | — |
-| XG5000 | 4.73 | **직접 설치**: 스크립트가 LS ELECTRIC 다운로드 페이지를 연다 | 페이지에서 4.73을 골라 받고 설치한 뒤 `설치.bat`을 다시 실행 |
+| 목록 번호 | 프로그램 | 판 | 설치 방법 | 확인할 것 |
+|---|---|---|---|---|
+| — | BIOS 가상화 | — | 확인만 한다 | 「꺼짐」이면 BIOS에서 Intel VT-x / AMD SVM을 켠다(작업 관리자 → 성능 → CPU 「가상화」) |
+| 2 | WSL 2 | 2.7.12 | Windows 기능 둘(Linux용 Windows 하위 시스템 · 가상 머신 플랫폼)을 켜고 winget `Microsoft.WSL` | 처음이면 PC를 다시 시작해야 켜진다 |
+| 1 | Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 학생 계정을 `docker-users` 그룹에 넣는다. 다시 시작한 뒤 한 번 열어 약관 동의 |
+| 3 | Visual Studio Code | 1.140.0 System | winget `Microsoft.VisualStudioCode`(PC 전체) | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
+| 4 | Python | 3.14.7 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
+| 5 | Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | — |
+| 6 | Git | 버전 무관 | winget `Git.Git`(winget 최신판) | 있으면 건너뛴다 |
+| 8 | XG5000 | 4.73 | **직접 설치** — 목록의 링크에서 4.73을 골라 받는다 | `설치.bat`은 건드리지 않는다 |
 
 목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
 
@@ -222,7 +221,7 @@ LLM_MODEL=coding
 학교는 메인 PC 한 대에 설치하면 나머지 PC에 그대로 복제해 준다. 이미지를 받는 PC가 한 대뿐이니, 여러 대가 같은 학교 IP로 동시에 받다가 막히는 일(Docker Hub `429`)은 생기지 않는다.
 복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
 
-1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 8개를 설치한다.
+1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 6개를 설치한다(XG5000은 따로).
 2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
 3. A절 ①~③-1을 확인한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
 4. 그 상태로 학교에 복제를 맡긴다.

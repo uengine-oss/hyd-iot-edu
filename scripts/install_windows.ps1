@@ -1,9 +1,10 @@
-﻿# 학생 PC에 실습 프로그램 8개를 설치한다(없는 것만). 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
-#   목록과 버전은 학교 설치 목록(실습 스택 정보 xlsx, 확인일 2026-10-12)을 따른다:
-#   Docker Desktop 4.87.0 · WSL 2 · VS Code 1.140.0(System) · Python 3.14.7 · Node.js 22.16.0 · Git · Arduino IDE 2.3.10 · XG5000 4.73
-#   (+ supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다)
-# 설치는 winget(Windows 기본 설치 도구)으로 한다. 패키지 ID와 위 버전이 microsoft/winget-pkgs에 있음을 확인했다(2026-10-19).
-# XG5000(LS ELECTRIC)은 winget에 없어 내려받을 페이지를 열어 준다.
+﻿# 학생 PC에 실습 프로그램 6개를 학교 설치 목록과 같은 판으로 설치한다(없는 것만). 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
+#   학교 설치 목록(실습 스택 정보 xlsx, 확인일 2026-10-12)의 1~6번:
+#   Docker Desktop 4.87.0 · WSL 2.7.12 · VS Code 1.140.0(System) · Python 3.14.7 · Node.js 22.16.0 · Git(버전 무관)
+#   7번 Arduino IDE는 빼고, 8번 XG5000 4.73은 직접 설치한다(사용자 2026-10-19).
+#   + supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다
+# 설치는 winget(Windows 기본 설치 도구)으로 한다. 패키지 ID와 위 판이 microsoft/winget-pkgs에 있음을 확인했다(2026-10-19).
+# 이미 있는 프로그램은 바꾸지 않고, 판이 목록과 다르면 결과 표에 「다른 판」으로 알린다.
 # 이미 있는 것은 건드리지 않는다. 끝에 결과 표를 보이고, 다시 시작이 필요하면 그렇게 말한다.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -58,24 +59,33 @@ $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 if ($cs.HypervisorPresent -or $cpu.VirtualizationFirmwareEnabled) { Record '가상화(BIOS)' '켜짐' '' }
 else { Record '가상화(BIOS)' '꺼짐' 'BIOS에서 Intel VT-x / AMD SVM을 켜야 Docker가 돈다' }
 
-# 1. WSL2 — Docker Desktop이 Linux 컨테이너를 돌리는 바탕
-Say "`n[1/8] WSL2"
-$wsl = Version-Of 'wsl.exe' @('--version')   # wsl은 UTF-16으로 출력한다(Version-Of가 NUL을 지운다)
-if ($wsl) { Record 'WSL2' '있음' $wsl }
-else {
-    $ErrorActionPreference = 'Continue'
-    & wsl.exe --install --no-distribution
-    if ($LASTEXITCODE -eq 0) { $restart = $true; Record 'WSL2' '설치함' 'PC를 다시 시작해야 켜집니다' }
-    else { Record 'WSL2' '실패' "wsl --install --no-distribution 종료 코드 $LASTEXITCODE — Windows 업데이트 뒤 다시" }
-    $ErrorActionPreference = 'Stop'
+function Check-Installed($name, $found, $want) {
+    # 이미 있는 프로그램: 학교 목록의 판과 같으면 「있음」, 다르면 「다른 판」. 깔린 판은 바꾸지 않는다(낮은 판으로 되돌리면 깨지는 프로그램이 있다)
+    if (-not $want -or $found -match [regex]::Escape($want)) { Record $name '있음' $found }
+    else { Record $name '다른 판' "$found — 학교 목록은 $want. 맞추려면 그 프로그램을 지우고 설치.bat을 다시 실행" }
 }
 
-# 2. Docker Desktop
-Say "`n[2/8] Docker Desktop"
-$dockerExe = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
-if (Test-Path $dockerExe) { Record 'Docker Desktop' '있음' (Version-Of 'docker' @('--version')) }
+# 1. WSL 2 2.7.12 — Docker Desktop이 Linux 컨테이너를 돌리는 바탕. Windows 기능 두 개를 켜고 WSL 본체를 winget으로 설치한다
+Say "`n[1/6] WSL 2"
+$wsl = Version-Of 'wsl.exe' @('--version')   # wsl은 UTF-16으로 출력한다(Version-Of가 NUL을 지운다)
+if ($wsl) { Check-Installed 'WSL 2' $wsl '2.7.12' }
 else {
-    try { Install-Winget 'Docker.DockerDesktop' '4.87.0'; $restart = $true; Record 'Docker Desktop' '설치함' '다시 시작한 뒤 한 번 열어 약관에 동의' }
+    $ErrorActionPreference = 'Continue'
+    foreach ($feature in 'Microsoft-Windows-Subsystem-Linux', 'VirtualMachinePlatform') {
+        & dism.exe /online /enable-feature /featurename:$feature /all /norestart | Out-Null
+        if ($LASTEXITCODE -notin 0, 3010) { Record "Windows 기능 $feature" '실패' "dism 종료 코드 $LASTEXITCODE" }   # 3010 = 다시 시작하면 적용
+    }
+    $ErrorActionPreference = 'Stop'
+    try { Install-Winget 'Microsoft.WSL' '2.7.12'; $restart = $true; Record 'WSL 2' '설치함' '2.7.12 — PC를 다시 시작해야 켜집니다' }
+    catch { Record 'WSL 2' '실패' $_.Exception.Message }
+}
+
+# 2. Docker Desktop 4.87.0
+Say "`n[2/6] Docker Desktop"
+$dockerExe = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
+if (Test-Path $dockerExe) { Check-Installed 'Docker Desktop' (Installed-App 'Docker Desktop*') '4.87.0' }
+else {
+    try { Install-Winget 'Docker.DockerDesktop' '4.87.0'; $restart = $true; Record 'Docker Desktop' '설치함' '4.87.0 — 다시 시작한 뒤 한 번 열어 약관에 동의' }
     catch { Record 'Docker Desktop' '실패' $_.Exception.Message }
 }
 # 학생 계정을 docker-users 그룹에 넣는다(학교 목록). 관리자 승인 계정이 아니라 지금 로그인한 계정이다.
@@ -90,56 +100,41 @@ if ($who -and (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue
     }
 }
 
-# 3. Git (시작.bat이 Git의 bash로 스크립트를 돌린다)
-Say "`n[3/8] Git"
-$v = Version-Of 'git' @('--version')
-if ($v) { Record 'Git' '있음' $v }
-else { try { Install-Winget 'Git.Git' $null; Record 'Git' '설치함' (Version-Of 'git' @('--version')) } catch { Record 'Git' '실패' $_.Exception.Message } }
+# 3. Visual Studio Code 1.140.0 (System Installer = PC 전체 설치. GitHub Copilot 채팅은 VS Code 안에서 로그인)
+Say "`n[3/6] Visual Studio Code"
+$v = Installed-App 'Microsoft Visual Studio Code*'
+if ($v) { Check-Installed 'VS Code' $v '1.140.0' }
+else { try { Install-Winget 'Microsoft.VisualStudioCode' '1.140.0' @('--scope', 'machine'); Record 'VS Code' '설치함' '1.140.0' } catch { Record 'VS Code' '실패' $_.Exception.Message } }
 
-# 4. Python 3.14 (5회차 실습의 python llm_client.py)
-Say "`n[4/8] Python 3.14"
+# 4. Python 3.14.7 (PATH에 넣는다. 5회차 실습의 python llm_client.py)
+Say "`n[4/6] Python"
 $v = Version-Of 'py' @('-3.14', '--version')
 if (-not $v -or $v -notmatch '3\.14') { $v = Version-Of 'python' @('--version'); if ($v -notmatch '3\.14') { $v = $null } }
-if ($v) { Record 'Python 3.14' '있음' $v }
-else { try { Install-Winget 'Python.Python.3.14' '3.14.7' @('--scope', 'machine'); Record 'Python 3.14' '설치함' (Version-Of 'py' @('-3.14', '--version')) } catch { Record 'Python 3.14' '실패' $_.Exception.Message } }
+if ($v) { Check-Installed 'Python' $v '3.14.7' }
+else { try { Install-Winget 'Python.Python.3.14' '3.14.7' @('--scope', 'machine'); Record 'Python' '설치함' (Version-Of 'py' @('-3.14', '--version')) } catch { Record 'Python' '실패' $_.Exception.Message } }
 
-# 5. Node 22 + supabase CLI (업무 DB를 켠다. CLI가 없어도 시작.bat이 npx로 대신 받는다)
-Say "`n[5/8] Node 22 + supabase CLI"
+# 5. Node.js 22.16.0 (+ supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다)
+Say "`n[5/6] Node.js"
 $v = Version-Of 'node' @('--version')
-if ($v -and $v -notmatch '^v22\.') { Record 'Node' '다른 판' "$v — 그대로 둡니다(시작.bat은 npx만 씁니다)" }
-elseif ($v) { Record 'Node 22' '있음' $v }
-else { try { Install-Winget 'OpenJS.NodeJS.22' '22.16.0'; Record 'Node 22' '설치함' (Version-Of 'node' @('--version')) } catch { Record 'Node 22' '실패' $_.Exception.Message } }
+if ($v) { Check-Installed 'Node.js' $v '22.16.0' }
+else { try { Install-Winget 'OpenJS.NodeJS.22' '22.16.0'; Record 'Node.js' '설치함' (Version-Of 'node' @('--version')) } catch { Record 'Node.js' '실패' $_.Exception.Message } }
 $v = Version-Of 'supabase' @('--version')
 if ($v) { Record 'supabase CLI' '있음' $v }
 elseif (Get-Command npm -ErrorAction SilentlyContinue) {
     $ErrorActionPreference = 'Continue'
     & npm install -g supabase@2.119.0
+    $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
-    if ($LASTEXITCODE -eq 0) { Refresh-Path; Record 'supabase CLI' '설치함' (Version-Of 'supabase' @('--version')) }
+    if ($code -eq 0) { Refresh-Path; Record 'supabase CLI' '설치함' (Version-Of 'supabase' @('--version')) }
     else { Record 'supabase CLI' '건너뜀' 'npm 설치 실패. 시작.bat이 npx로 대신 받으니 그대로 써도 됩니다' }
 }
-else { Record 'supabase CLI' '건너뜀' 'npm이 없습니다(Node 설치 확인)' }
+else { Record 'supabase CLI' '건너뜀' 'npm이 없습니다(Node.js 설치 확인)' }
 
-# 6. VS Code (GitHub Copilot 채팅은 VS Code 안에서 로그인)
-Say "`n[6/8] VS Code"
-$codeExe = @((Join-Path $env:LOCALAPPDATA 'Programs\Microsoft VS Code\Code.exe'), (Join-Path $env:ProgramFiles 'Microsoft VS Code\Code.exe')) | Where-Object { Test-Path $_ } | Select-Object -First 1
-if ($codeExe -or (Get-Command code -ErrorAction SilentlyContinue)) { Record 'VS Code' '있음' '' }
-else { try { Install-Winget 'Microsoft.VisualStudioCode' '1.140.0' @('--scope', 'machine'); Record 'VS Code' '설치함' '' } catch { Record 'VS Code' '실패' $_.Exception.Message } }
-
-# 7. Arduino IDE
-Say "`n[7/8] Arduino IDE"
-$v = Installed-App 'Arduino IDE*'
-if ($v) { Record 'Arduino IDE' '있음' $v }
-else { try { Install-Winget 'ArduinoSA.IDE.stable' '2.3.10' @('--scope', 'machine'); Record 'Arduino IDE' '설치함' (Installed-App 'Arduino IDE*') } catch { Record 'Arduino IDE' '실패' $_.Exception.Message } }
-
-# 8. XG5000 (LS ELECTRIC PLC 편집기) — winget에 없다. 내려받을 페이지를 열어 준다
-Say "`n[8/8] XG5000"
-$v = Installed-App '*XG5000*'
-if ($v) { Record 'XG5000' '있음' $v }
-else {
-    Start-Process 'https://ssq.ls-electric.com/kr/ko/product/document/2201'
-    Record 'XG5000' '직접 설치' '열린 페이지에서 버전 4.73을 골라 내려받아 설치한 뒤 설치.bat을 다시 실행'
-}
+# 6. Git (버전 무관 — winget의 최신판. 시작.bat이 Git의 bash로 스크립트를 돌린다)
+Say "`n[6/6] Git"
+$v = Version-Of 'git' @('--version')
+if ($v) { Record 'Git' '있음' $v }
+else { try { Install-Winget 'Git.Git' $null; Record 'Git' '설치함' (Version-Of 'git' @('--version')) } catch { Record 'Git' '실패' $_.Exception.Message } }
 
 # 메모리: Docker Desktop은 실습 스택에 4 GB 이상이 필요하다(WSL2는 PC 메모리의 절반을 쓴다)
 $ramGb = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
@@ -147,8 +142,8 @@ if ($ramGb -lt 8) { Record 'PC 메모리' '부족할 수 있음' "$ramGb GB — 
 
 Say "`n== 결과" 'White'
 $results | Format-Table -AutoSize -Wrap | Out-String -Width 160 | Write-Host
-$failed = @($results | Where-Object { $_.결과 -in @('실패', '꺼짐', '직접 설치') })
-if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습니다(실패 · 꺼짐 · 직접 설치). 위 비고대로 한 뒤 설치.bat을 다시 실행하세요." 'Red' }
+$failed = @($results | Where-Object { $_.결과 -in @('실패', '꺼짐', '다른 판') })
+if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습니다(실패 · 꺼짐 · 다른 판). 위 비고대로 한 뒤 설치.bat을 다시 실행하세요." 'Red' }
 if ($restart) { Say "PC를 다시 시작하세요. 다시 시작한 뒤 Docker Desktop을 한 번 열어 약관에 동의하고, 그다음 시작.bat을 더블클릭합니다." 'Yellow' }
 elseif (-not $failed.Count) { Say "모두 준비됐습니다. 시작.bat을 더블클릭하세요." 'Green' }
 Read-Host '창을 닫으려면 Enter'
