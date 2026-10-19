@@ -14,7 +14,7 @@ Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했
 | 순서 | 할 일 | 걸리는 시간 |
 |---|---|---|
 | 1 | Git이 없으면 PowerShell을 열어 `winget install -e --id Git.Git` 한 줄을 실행한다 | 2분 |
-| 2 | 새 PowerShell 창에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git` | 1~2분 |
+| 2 | PowerShell에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu` — 모든 계정이 쓰는 공용 폴더 `C:\hyd-iot-edu`에 받는다 | 1~2분 |
 | 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 따로 설치한다 | 처음 20~40분 |
 | 4 | 결과 표 끝에 「PC를 다시 시작하세요」가 나오면 다시 시작하고, Docker Desktop을 한 번 열어 약관에 동의한다 | 5분 |
 | 5 | **`시작.bat`** 을 더블클릭한다. Docker Desktop이 꺼져 있으면 스스로 켜고 기다린다 | 처음 10분 이상, 두 번째부터 짧다 |
@@ -26,16 +26,16 @@ Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했
 
 | 목록 번호 | 프로그램 | 판 | 설치 방법 | 확인할 것 |
 |---|---|---|---|---|
-| — | BIOS 가상화 | — | 확인만 한다 | 「꺼짐」이면 BIOS에서 Intel VT-x / AMD SVM을 켠다(작업 관리자 → 성능 → CPU 「가상화」) |
+| — | BIOS 가상화 | — | 확인만 한다. 대부분 켜져 있어 꺼졌을 때만 표에 뜬다 | 「꺼짐」이 뜨고 Docker가 안 돌면 BIOS에서 Intel VT-x / AMD SVM을 켠다 |
 | 2 | WSL 2 | 2.7.12 | Windows 기능 둘(Linux용 Windows 하위 시스템 · 가상 머신 플랫폼)을 켜고 winget `Microsoft.WSL` | 처음이면 PC를 다시 시작해야 켜진다 |
-| 1 | Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 학생 계정을 `docker-users` 그룹에 넣는다. 다시 시작한 뒤 한 번 열어 약관 동의 |
+| 1 | Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 로그인한 계정과 「로그인한 모든 계정(Authenticated Users)」을 `docker-users` 그룹에 넣는다(복제된 PC의 다른 계정도 Docker를 쓴다). 다시 시작한 뒤 한 번 열어 약관 동의 |
 | 3 | Visual Studio Code | 1.140.0 System | winget `Microsoft.VisualStudioCode`(PC 전체) | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
 | 4 | Python | 3.14.7 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
 | 5 | Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | — |
 | 6 | Git | 버전 무관 | winget `Git.Git`(winget 최신판) | 있으면 건너뛴다 |
 | 8 | XG5000 | 4.73 | **직접 설치** — 목록의 링크에서 4.73을 골라 받는다 | `설치.bat`은 건드리지 않는다 |
 
-목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
+저장소 폴더가 공용 폴더(`C:\hyd-iot-edu` 등)이면 로그인한 모든 계정에 쓰기 권한을 주고 Git 신뢰 폴더(`safe.directory`)로 등록한다. 사용자 폴더(`C:\Users\…`) 안이면 「옮김 권장」을 띄운다. 목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
 
 **`git clone` 뒤 `docker compose up`만 하면 안 되는 까닭.** compose의 서비스 26개는 모두 프로필에 묶여 있고, 켤 프로필은 `.env`가 정하는데 `.env`는 저장소에 없다. 업무 DB(Supabase)는 compose 밖에서 따로 켜야 하고, 에이전트용 MCP 두 개는 별도 프로필이다. `시작.bat`이 이 넷(`.env` 강의 배포본 값 · 업무 DB · 시스템 · MCP)을 순서대로 한다.
 
@@ -221,7 +221,7 @@ LLM_MODEL=coding
 학교는 메인 PC 한 대에 설치하면 나머지 PC에 그대로 복제해 준다. 이미지를 받는 PC가 한 대뿐이니, 여러 대가 같은 학교 IP로 동시에 받다가 막히는 일(Docker Hub `429`)은 생기지 않는다.
 복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
 
-1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 6개를 설치한다(XG5000은 따로).
+1. 저장소를 공용 폴더 `C:\hyd-iot-edu`에 받고(0절 2번) `설치.bat`으로 6개를 설치한다(XG5000은 따로). 프로그램은 모두 PC 전체 설치라 복제된 PC의 모든 계정이 쓴다.
 2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
 3. A절 ①~③-1을 확인한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
 4. 그 상태로 학교에 복제를 맡긴다.
