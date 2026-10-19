@@ -4,6 +4,13 @@
 입력 내용은 덱 MD의 요소이며, 본문을 이 도구에 중복 저장하지 않는다.
 """
 def render(m, sl, s, page, layout):
+    if layout=='그래프경로':
+        m.render_graph(sl,s,page)
+        for shape in sl.shapes:
+            if shape.has_text_frame and shape.text=='AnomalyPattern':
+                shape.left-=m.Inches(.16)
+                shape.width+=m.Inches(.32)
+        return
     m.frame(sl, s, page)
     def text(x,y,w,h,value,size=17,color=None,bold=False):
         m.add_text(sl,x,y,w,h,value,size,color or m.NAVY,bold=bold,slide_no=s.no)
@@ -64,6 +71,26 @@ def render(m, sl, s, page, layout):
         text(.9,5.78,3.0,.45,it.plain_title,20,bold=True)
         text(4.0,5.75,5.9,.75,it.desc.replace(' / ',' '),17)
         text(10.1,5.78,2.35,.7,it.tag.replace(' / ',' '),16,m.SKY_D,True)
+    elif layout=='승인기록':
+        for i,it in enumerate(s.items):
+            x=.65+(i%2)*6.2;y=2.0+(i//2)*2.55
+            m.add_box(sl,x,y,5.7,2.15,m.SKY_SOFT if it.strong else m.WHITE,line=(m.LINE,1.25))
+            text(x+.2,y+.18,5.3,.4,it.plain_title,19,bold=True)
+            text(x+.2,y+.75,5.3,.75,it.desc.replace(' / ','\n'),17)
+            text(x+.2,y+1.62,5.3,.35,it.tag.replace(' / ',' · '),15,m.SKY_D,True)
+        m.add_box(sl,6.43,5.45,.35,.22,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
+    elif layout=='출처연결':
+        for i,it in enumerate(s.items[:3]):
+            x=.65+i*4.15
+            m.add_box(sl,x,2.05,3.75,3.25,m.SKY_SOFT if it.strong else m.WHITE,line=(m.LINE,1.25))
+            text(x+.18,2.25,3.39,.8,it.plain_title,18,bold=True)
+            text(x+.18,3.2,3.39,1.5,it.desc.replace(' / ','\n'),16)
+            text(x+.18,4.88,3.39,.3,it.tag,14,m.SKY_D,True)
+            if i<2:m.add_box(sl,x+3.85,3.55,.22,.18,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
+        it=s.items[3]
+        m.add_box(sl,.65,5.65,12.05,1.05,m.SKY_SOFT,line=(m.LINE,1))
+        text(.9,5.85,2.0,.4,it.plain_title,19,bold=True)
+        text(3.15,5.8,9.2,.8,it.desc.replace(' / ','\n'),17)
     elif layout=='검증연결':
         # 변경 검증의 네 단계와 추천안마다 작동하는 실행 중 장치를 분리한다.
         for i,it in enumerate(s.items[:4]):

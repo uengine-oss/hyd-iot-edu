@@ -54,7 +54,8 @@
     }
   ],
   "playback": "이론① 1~21장 → 이론② 22~57장(실습·시연 여섯 묶음 안내 포함) → 실제 실습03~08 → 이론② 58~64장 재개(복습·퀴즈·과정 마무리).",
-  "pptx_sha256": "ef1e1c6d10e84454d0db90a2b7bd30c5a21c1dd7f66313aa116eec98ab878956",
+  "pptx_sha256": "14027d1c0ad11d3dacb90d4f4d1f8f7c54744c6d5d44cde175d69b2dd870ddc1",
   "pptx": "../../../../산출물/실전반/이론/08회차/실전반_08일차.pptx",
-  "deck": "../../../온라인/decks/practical/day08/실전반_08일차.md"
+  "deck": "../../../온라인/decks/practical/day08/실전반_08일차.md",
+  "theory_status": "덱·분할 대본·발표자 노트 내용·화면·정적 정합 확정"
 }
