@@ -203,26 +203,32 @@ LLM_MODEL=coding
 | `Docker가 응답하지 않습니다` | Docker Desktop이 꺼져 있거나 아직 켜지는 중 | Docker Desktop을 켜고 「Engine running」을 기다린 뒤 다시 |
 | `docker compose가 없습니다` | Docker Desktop이 오래된 판 | Docker Desktop 최신판 설치 |
 | `Supabase가 켜지지 않았습니다` | 업무 DB 포트(54321~54329) 충돌이나 이미지 받기 실패 | `cd it/supabase && supabase stop` 뒤 다시(RUNBOOK §3 「Supabase 포트 충돌」) |
-| `docker compose up이 실패했습니다` | 이미지 받기 · 빌드 실패 | 창의 오류에서 서비스 이름을 찾아 `docker compose logs <서비스>`. 이미지 받기 한도면 D절 |
+| `docker compose up이 실패했습니다` | 이미지 받기 · 빌드 실패 | 창의 오류에서 서비스 이름을 찾아 `docker compose logs <서비스>`. `429` · `Too Many Requests`면 잠시 뒤 다시(D절) |
 | `enterprise-mcp · dmn-mcp가 올라오지 않았습니다` | MCP 서버 두 개가 안 떴다 | `docker compose up -d enterprise-mcp dmn-mcp`를 다시 |
 | `응답하지 않는 포트: …` | 3분 안에 상태 확인이 끝나지 않았다 | 8080이면 `docker restart hyd-iot-edu-process-1`(RUNBOOK §3 첫 줄). 메모리로 죽으면 Docker Desktop 메모리 4 GB 이상 |
 
 포털에서 경보가 안 나면 HYD-01 카드의 운전 모드가 **원격 자동**인지 본다(RUNBOOK §3 「승인했는데 PLC ACK가 없다」 · 「경보가 안 난다」).
 
-## D. 현장 위험: 같은 학교 IP에서 동시에 이미지를 받으면 막힌다
+## D. 메인 PC 한 대에 설치하고 학교가 나머지 PC로 복제한다
 
-처음 `시작.bat`은 Docker Hub와 Supabase 레지스트리에서 이미지를 많이 받는다. 같은 공인 IP 뒤의 PC 여러 대가 동시에 받으면 Docker Hub는 `429 Too Many Requests`를 낸다.
-이 클라우드에서도 Supabase 이미지(public.ecr.aws)를 받다가 한도에 걸려 재시도하는 줄이 실제로 나왔다(재시도로 통과).
+학교는 메인 PC 한 대에 설치하면 나머지 PC에 그대로 복제해 준다. 이미지를 받는 PC가 한 대뿐이니, 여러 대가 같은 학교 IP로 동시에 받다가 막히는 일(Docker Hub `429`)은 생기지 않는다.
+복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
+
+1. 설치 프로그램 7개를 설치하고, `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받는다.
+2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
+3. A절 ①~③-1을 확인한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
+4. 그 상태로 학교에 복제를 맡긴다.
+
+복제된 PC에서 `시작.bat`이 다시 이미지를 받기 시작하면(4/6 단계에서 `Pulling …` 줄이 길게 이어진다) 복제에 Docker 데이터가 빠진 것이다.
+Docker Desktop은 이미지를 **Windows 사용자 계정마다** 저장한다(`%LOCALAPPDATA%\Docker`). 학생이 메인 PC와 다른 계정으로 로그인하면 이미지가 없을 수 있다. 이때는 한 대씩 차례로 `시작.bat`을 돌린다.
+
+이 클라우드에서도 첫 기동 중 Supabase 이미지(public.ecr.aws)를 받다가 레지스트리 한도에 걸려 재시도한 줄이 실제로 나왔다(재시도로 통과). 여러 대가 동시에 받으면 이런 줄이 늘고 결국 멈출 수 있다.
 
 ![실제로 나온 레지스트리 한도 줄 — Data limit exceeded, Retrying after 4s](img/R1_registry_limit.png)
-
-대책은 둘이다.
-
-- ⓐ **한 대씩 받는다.** 첫 PC의 `시작.bat`이 4/6 단계를 넘긴 뒤 다음 PC를 시작한다.
-- ⓑ **강사가 미리 이미지 묶음을 만들어 나눠 준다.** 강사 PC에서 `docker save`로 묶음 파일을 만들어 USB · 공유 폴더로 나눠 주고, 학생 PC에서 `docker load`로 넣은 뒤 `시작.bat`을 실행한다. 받기가 없어져 한도와 학교 대역폭 모두 피한다.
 
 ## E. 이 문서가 확인하지 못한 것
 
 - Windows에서 `시작.bat` · `끄기.bat`을 더블클릭하는 것, Docker Desktop · WSL2 설치 화면(「자리」 표시).
-- 학교 네트워크에서 LiteLLM 서버 · Docker Hub에 닿는지, 여러 대가 동시에 받을 때의 시간.
+- 학교 네트워크에서 LiteLLM 서버 · Docker Hub에 닿는지.
+- 학교의 복제 방식으로 Docker 이미지가 함께 복제되는지(D절).
 - ③-2를 학생 PC의 수업 흐름(매뉴얼 적재 뒤)으로 돌린 것. 이 문서의 ③-2는 회귀 시험용 전체판 지식으로 돌렸다.
