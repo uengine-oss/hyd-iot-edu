@@ -44,7 +44,8 @@
     }
   ],
   "playback": "1~37장 → 실습02~05 → 38~61장 전체 흐름·복습·용어·퀴즈.",
-  "pptx_sha256": "b4255fce17cdb5ce2751a75e3c6bf9cf8e6b42d7e025a8c86da413ab76f3d55b",
+  "pptx_sha256": "e6f8f9a47dd4108c9bc796c3336f2d2c848413c6acb9fc963e7dc7f4e06c3543",
   "pptx": "../../../../산출물/통합반/이론/10회차/통합반_10일차.pptx",
-  "deck": "../../../온라인/decks/integrated/day10/통합반_10일차.md"
+  "deck": "../../../온라인/decks/integrated/day10/통합반_10일차.md",
+  "theory_status": "덱·분할 대본·발표자 노트 확정 · 실습 보류 · 실행/촬영 미수행"
 }
