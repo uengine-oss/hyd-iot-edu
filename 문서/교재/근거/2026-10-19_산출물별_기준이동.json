@@ -1,0 +1,1018 @@
+{
+  "source_sha256": {
+    "기준_덱과이론대본.md": "65e2fd32c5788f64fce0d67022bd18f613b124cfc9b685304c385f41c3c46a5b",
+    "기준_실습과랩.md": "0614ff5f9bf1a423fa41226c68a434bec5559865497b3e06fdf3b7edc5706442"
+  },
+  "items": [
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 04",
+      "destination": "기준_이론덱.md",
+      "sha256": "bd697b5dbfc98dc4c1eaa04e3f804c73770c2f569b9f6ec071cf91c33e8fe0d9"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 05",
+      "destination": "기준_이론대본.md",
+      "sha256": "5bab1e2c53b98592408f89e725828bb49757853d1c403f4732edab9a43594d36"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 06",
+      "destination": "기준_이론덱.md",
+      "sha256": "4339ef6fc1361c487c2a774747b8c8f5e1176b597e623b59491755cbe17ba6ec"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 07",
+      "destination": "기준_이론덱.md",
+      "sha256": "cb343b132888d11085b54f8787db2d9d45cbe92446df328e7c850a7bc4091678"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 08",
+      "destination": "기준_이론덱.md",
+      "sha256": "cb0241ecd9d6e651d94a6d56e3d8f072e630111285d96bb2b285568ab64036b8"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 09",
+      "destination": "기준_이론덱.md",
+      "sha256": "10b11143fde15565fb2b623ec4af4ffc4595d6233b0bbaeae97d5cc9574c3539"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "온라인 상세 24",
+      "destination": "기준_이론대본.md",
+      "sha256": "881c650be36c1d6b99505af2fc7b755dad137c96607164e49b19eb28f380873a"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "촬영 분할과 제작 원칙의 세부 보존",
+      "destination": "기준_이론대본.md",
+      "sha256": "c273e3da08163a09a0fcaf23176c68878e7ee02daf66452320794efe3e7a1559"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "촬영 분할과 제작 원칙의 세부 보존",
+      "destination": "기준_이론대본.md",
+      "sha256": "bd4564c176bb18f420975576d2e6b529d21d77b2d18463a652182d16df14067a"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "촬영 분할과 제작 원칙의 세부 보존",
+      "destination": "기준_이론대본.md",
+      "sha256": "edcd79245a0f8ff3948b690a52a32935b04d980e97fb2c2e4d5d63be378def03"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "촬영 분할과 제작 원칙의 세부 보존",
+      "destination": "기준_이론대본.md",
+      "sha256": "e0a3ca0e9582be679ac82610d72c269fd0fd895bf35b5e92fe3ff45b649b4bd3"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "1d8bd8e04079403e645d5e9a18a6ec258ee76ad195238611ed3ac08d8adc8435"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론대본.md",
+      "sha256": "759151f60c402cb5a2a65f0c2c917dd388888ef8cf2c5236f51942136817c9c0"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론대본.md",
+      "sha256": "de102a62a513dd564f246ac3dabcc6d96791ad6c31374e10869f6f438995a457"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "a1db5e3c4e5fb92434f8166f8b20361d6a639eda9c7506ecb8a7accace4f4d37"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "15f06f63ad9f7992cd303c177010af2ae73b2e13f166281a6ee063a64516965d"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "69d3e308c1dad7398fc49a8323543d47e1f0e2adbcdfb94bf9fdcff467b026e3"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "2fcdd4582356a4354de25d8106de3cb7cc8e114c5ea482c77b4cc57a61204448"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_이론덱.md",
+      "sha256": "5970cb7e6e7e94bb7abbd80c483ad208d9ed31c6903ad45f1f3431ed87e5f91e"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "3. 까닭",
+      "destination": "기준_이론덱.md",
+      "sha256": "82afca6fa9aab2137f41b8b5b666a78c105ceacba092d3dc8d0743e6e2eaa8e0"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "3. 까닭",
+      "destination": "기준_이론덱.md",
+      "sha256": "78c5880bcc5ce6faf05d6656e50075cd8f51f3862c89fe6afb9a33e24fab7404"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "3. 까닭",
+      "destination": "기준_이론덱.md",
+      "sha256": "73e4faad57296d527b94711c51638652477e8387b17790a2992e9af0a9b26c39"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "53bea375f70f2e44e466b1bce5d8dfd3a2c37caf27a7b34f0d029204009bf75d"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "6ef7c056aa6781b766b8a4070ec20051e74886da2912b5a739972997704b4d22"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "b8bc1ad21ec1b67d6d8188ce2257cda13fb5c14931fc03a28eb881cdcf0bc6f2"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "0ceb0f07e411b981c1968fd52b67e039dca6ced24649c0c24425ad6a79d6b0d4"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "9312b7802db03ab1dab9707ee3d3bc1d672b4bc3fa44fdb7522958379a0ad9f7"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "50c9b8da0fbc2af5d54c706b7f50f6c70d0f592bd7cbc50e0a1a39e767d40fdf"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "5bea8a7a29c10900b23496847bb7541e15aa5650561418816d147a562e4cfb3b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "c6180612e8ec703ee0a93c1b32c5e6410e1218a81514514ead8021bf89df2ce9"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "67fa93c904f55338e8c29dc58c7c27aa8ac37490177b9a3f1d9f46ce7f7ffbc8"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_이론덱.md",
+      "sha256": "57c3cf607a5aac17f037ce99ce362ce7430ff64b5678cd75b129427bdbd8a5b2"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "8ad6ed720b66b38bd48fef6baa34d70ee6cb5a40bd61a9fbcb8a55024a976c23"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "58989eff6198dc9c40be9d5d9ccd430359003a081ec0f33c3d9e0431e4e7b98b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "6a5d77c97d56c3368e757a6a34a2a52058e30e7b9e31c0c66b5240bd0174245b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론대본.md",
+      "sha256": "977b1ad2b736b8493c0c2c3c86f982baf7be9c6270b02629241b120c68b27a52"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "4bae835fb37e8a7b23efa16f54043be2a1b5d36a89b5a1435ef3f5e32320324b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "a0ed17f43e8b5dfee207a1d72217c7b66f64fa449c84776c4c5c4146b4ba4847"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "ffc6a3b0ad06986c259d7590341505de8129d84ea05da24c2fad43ffa940791d"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "5. 깊이",
+      "destination": "기준_이론덱.md",
+      "sha256": "cd8374fbfd67b7a3b7777a696eeb06a362d05b8d55dc0bef74145f96b6559cc7"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "0ad52ca60cdeda6c269f80d0297e7f2ae3dcff3ec4adf3e440da316d517770e3"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "3eced9c8540202fc21afcae0ecb0b91e88d3b66fbce8dde6150b86f76b64d7c5"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "7a1f07d73a067ade27062db51fd102b207a7f2db9bda2b4c4509d88c018e98a2"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "b5c6bfcd45cd87011fd491ce1da04d79928490b78339790c6c5d831a45f55f17"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "7c10144bbfedf5d01003781a6b9c084796b6e5caa52602fd1346f4bf41540bee"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "e5ff909070d6df9aa1086be09bcedc7d19792c73636c5ef0c53bb25bb2c8102e"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "7abaa73907f40b8d711c4a1cd634e75c2585c03a3c3d66bbab362fa72d895389"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "63928aa627847e3abe980a3cd85c0607f2f5515d4905e33067f20a8d22c0ac1f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "0b5110075025bfec5176e09154264095a783ff8af85af49bf3541c640639e48b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론대본.md",
+      "sha256": "8f5ceb89b39ced719a2205ee4d3b63f233ed76cf809bd54968ce11c49a9d3720"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론덱.md",
+      "sha256": "7fd5dd5c093aec4f6d4fc0e02c7aa9330ef51adedc9978d3032524f00851d7f9"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론대본.md",
+      "sha256": "95cb7d7604514901f50cbf5845d94d6fd8d5fb6bdeb37e66aabdf2f9ff15e633"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론대본.md",
+      "sha256": "2b77816615db7b0f6c9558a492990f648901b43b8c93cc7de891fc4a251c1106"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_실습대본.md",
+      "sha256": "a5adaee52b42cb5810fd28664efe0567ed5c5ae72b1f5ade7810872019a85415"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_이론대본.md",
+      "sha256": "4a7b0f13cdf84b512787cff55c1e5319a511a4be5ea26753243e9a7fe2cb24bf"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_이론대본.md",
+      "sha256": "bc614f3c47aee46e0d3342efa8d33398b3bc971be65b056a8a27f6174ce1ee65"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_이론대본.md",
+      "sha256": "6fb0485b2fd4681d8cec398ff81fe24fbd573dd588d2dfd72911c1fcd637aef1"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_이론대본.md",
+      "sha256": "9e697f483680b46c9bdc24b4d3a13d2e91ccf5f5863f2b13cb23498628fa28f5"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_이론대본.md",
+      "sha256": "91cf2e6f2ff7660b036ea6856a3457ec5d6c319d5af41a27f9a7da400a3e0e9c"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_이론대본.md",
+      "sha256": "9a9e94a251ea87ab08e196da355aea0bd1400f789c1d96d87a2e53cb6a3b9b34"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "9. 음성과 영상",
+      "destination": "기준_이론대본.md",
+      "sha256": "4f303a5e824722cad09a5314b433bb8be1c50354f1b08a402eb7df271015b603"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "9. 음성과 영상",
+      "destination": "기준_이론대본.md",
+      "sha256": "7096239a47b3ea424bbe6cd6cae9eb6e5ff6eae70f9a0ae34a165c7c0d2eedd8"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "9. 음성과 영상",
+      "destination": "기준_이론대본.md",
+      "sha256": "b995a646dbcd342610e8415f4c03a5af7ed882c4a89727b376e259171e8e9dbf"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "9. 음성과 영상",
+      "destination": "기준_이론대본.md",
+      "sha256": "c451fb3bd345e2d3b811b12ff8b014247b02af54acd84a0e0053a128839108b5"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "55f61fdd1efb5f9ee8d9ae7879a5bff2a016e6e978de32370acb1e6b5d5c5a12"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "c5780f663658581634d7b3b4b28c8c30d6a2be4d380944d3833123f78e6cfd0a"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "1d1edab03545e7865373181b7954cb1d4339288e8b0afc1e12832b061d9e862f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "21422b60dec4c6008a97c331e8c8ba2be9dac862d3b445250a45c1ceea066101"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "f3c869660f6c71477272723f220ae5836f68fe094850fd30762ae60b1cacc82b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "d2f0fa73e8d6b1ecb69507f172de1005b35bfffdf896b7685bb7d3b9f0ee300f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "e7e87b36976a14ad150220cfc8c7fe92d3ccb7f5bc3d897f54a87006635aebce"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "2b9baa391631960f044e3720bea1f56e844c9ce4cebc4f3aa44f5be85a33c404"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "067409ffcaf9e5d1ce9722138cfe36e0f7774d3147aacefc84a169142c69614d"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "cac2b965101dbf2910d8d55a99ce8cd0e7b0d0856a7e860c7105e527a14edc31"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "e91e97d3553a2bba063e2ec3ce990512065c68d363222bf778c7326f72093825"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "d465f83afafe81b8d56be0ac5670140eedb992e74b7fd4f62155e2030a99b2b4"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "ed820cd80bd32f162292567c233feae35b8726da6039a808380b21659b0840ac"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론대본.md",
+      "sha256": "2c60c8ee62c31cd04ab1fb80e0f6eb596d6561d68b7eb93ebcb1dc1893bb1716"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "456dbfb8c91c412e6332deb558610a4130d5ed433ab041e2e218b0b861080715"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "df03a6a9c439664b8fdb7431e9629273489b20ac9101a021b53e598545427e04"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "47c10ba412f109076feaab485b190d6f14b0102e53f7a698a9151c21cf2a2ee4"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "218c3c53213be2ae64ac9e70857f166c2de6a1c52d5e87b3e41b1fdcbf007354"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "7e990d6ed9513c1fd765998a1c33f57f02746f7b756bf50b8f6e821ca2886a7e"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "59f26a0f2d9362a5a28446399a84c6e5195109cd9e65fcbdc2c5187b52767f81"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "b837382f596c3d79fb206620903b2e768673a81af820e3a4505a45337a9a81a9"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "fe6b3ddaf505a0d463b81af9e417a8c66731f7a69a523c86808c45ec9e12a5d3"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "9ea0bc167ff8a4bfccf5320b3c45f40786a401031e9fcd0745ea2df82410bb20"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_이론덱.md",
+      "sha256": "e37793c83cf0988f88948f56bb4ed8b2c3fc31d56b712e04153395bcbfbed655"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "표 선택과 반복 점검 — 2026-10-19 사용자 확정",
+      "destination": "기준_이론덱.md",
+      "sha256": "14058a2725e479e786a255a8e4b9fb9856a4fb6a6b1cea7091d86a45144813e6"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "표 선택과 반복 점검 — 2026-10-19 사용자 확정",
+      "destination": "기준_이론덱.md",
+      "sha256": "ebf2f6393a34480fd6a1857f8ef2d28e4ca2a3e756fa86dba02ca8617fc78ac3"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "표 선택과 반복 점검 — 2026-10-19 사용자 확정",
+      "destination": "기준_이론덱.md",
+      "sha256": "8de2abb70d2d7ebc1ab352bb1c3757e87415a8ac36cd4bfe9e84aed4f849d0fe"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "e8e2f6699b0f51cf59fbe06d7ffdf597db7e7714714997b213dea9595d0966e1"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "f7250bfa75cac605bbbc837b6449d2e59fda41d21fb2c9aa6b9d717bafcee906"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "10323c3182cf4521e6ffaa2594ac52147387c367c47b982ea2ed32d9e33c10be"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "b3d7c90229b9a42c7344081a00acc0846cc676688b66b9ad53e342c3672489d6"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "8448b7288baf7e7a9c9428341e75ee3fe730f55bd625ce151eaa8f1792f26b9b"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "a317e1409992717a4dbecb71e87bb8899e8282762571d4ae5c5350b000f22a46"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "5cc9f6f7610f92cb018b6447f85b88e938c97d206f22e143a1a689adf551667f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "e88210655d952df24f236b26ca16132665f1c9fc2b68dea1daefc79ac7c81ec8"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "fcc373c59fec56fb33fda84a8222429c9020bb60aa3f6abf6dd2b10d36a88874"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "4d7215b0f82062d344b925049f7069bd34133476d4f85bb78850ace400dc4974"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "4bce9b35e9529027d38bda4155b20091b6afa5103ea92af2ed4c40d66b143c47"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "ec79cf78a9041a4ae4597c5e8fab597faa394e7cb92d4e13eff13821e79b3c86"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_이론대본.md",
+      "sha256": "563bf73d2eda18de4309fb3d1a6d0f7d1440c65e234281895767c5b14ff1582f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "수정과 빌드",
+      "destination": "기준_이론덱.md",
+      "sha256": "ae6ce1ce00e5d88db59baa4331461021c991d91c7faef6515eb039a6106d779f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "그림과 라벨",
+      "destination": "기준_이론덱.md",
+      "sha256": "697e065518d728b3639e487af0169cc5e2c6a96ad4f59fa0ecdd890c69881386"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "그림과 라벨",
+      "destination": "기준_이론덱.md",
+      "sha256": "813d8e40423d5344cd45c95cd285cb7d9e5a37283dde4e3f06b8734be39fba80"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "렌더와 배포 검사",
+      "destination": "기준_이론덱.md",
+      "sha256": "0c94ad9c3a15b186aaf97ceccb223947ed1f6d28a44735df8de6929e8575efb7"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "렌더와 배포 검사",
+      "destination": "기준_이론덱.md",
+      "sha256": "66a6a88a621847d77ae165cfee1a35cc99038727d56fe52bdb52d61d22341137"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "빌더의 세부 제약",
+      "destination": "기준_이론덱.md",
+      "sha256": "364ceca00fb4f81754f40b1b307db7adb13a0017430deab4203c1b0a2d749e70"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "빌더의 세부 제약",
+      "destination": "기준_이론덱.md",
+      "sha256": "5ba897f94d51fd185f8951b38e99386953a791692d49759b5b8021334d200265"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "빌더의 세부 제약",
+      "destination": "기준_이론덱.md",
+      "sha256": "8d3263d450eb466ab64c4c0bd34807561c7b45904236733becb9735a4753706f"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "빌더의 세부 제약",
+      "destination": "기준_이론덱.md",
+      "sha256": "98c837de9fbb603566fb6c6c900a539cb1e79837d222c0604f6faef1d5c6c637"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "37f53d5625fa0d38867598877cf8d67d73a4939581b3f967bff81a9e72c09845"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "89db6ed301d7aa569c09e525217bed9d0e8fd08a4527ab5ba9df1400212ac5fb"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "4e708d24c00f9f471a4739891ade0307dd687058f81e515dfb4b88c268f7bb6a"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "2cb285a4962cb4d99476b4bab14b20721509db569618fa21fef7a437720d2749"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "4513b0f06768220f40e3eb2dd9c23b82fcaa208759df0ba8fd0c5e1df8e50077"
+    },
+    {
+      "source": "기준_덱과이론대본.md",
+      "section": "4. 대본·낭독본·발표자 노트",
+      "destination": "기준_이론대본.md",
+      "sha256": "021a41e794651025713337e52d3b3dc701a770612719e372854901af5f0302f1"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 10",
+      "destination": "기준_실습가이드.md",
+      "sha256": "cd251fa8ba364336eb05bdf58746fec20dd3464f4f6ca4822017001c6ffc8588"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 11",
+      "destination": "기준_실습대본.md",
+      "sha256": "5d148dd2801492ad6994c12bd0c6d00882a0bd19413777bc8dc18155aa6d5da4"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 12",
+      "destination": "기준_실습대본.md",
+      "sha256": "a72f89c95c6207ba2a4209fe754a6ff625dcfd5448a32ec9d1fcab4b80e36704"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 13",
+      "destination": "기준_실습대본.md",
+      "sha256": "c534748477bf6b77d348d24ce67778b4d2d9927f863651281d0d726af817e225"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 14",
+      "destination": "기준_실습대본.md",
+      "sha256": "53c734878bc7c4993aafef6ce281ea5f696f6cbbb333c40c7e7d564edf1fc20f"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 15",
+      "destination": "기준_실습대본.md",
+      "sha256": "0e38e0becc38e5f1381d5b89bb13098c4750103b8350c7063900ec600ff0210f"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 16",
+      "destination": "기준_실습대본.md",
+      "sha256": "213325c4ab79a4d887aaac50bd75f5d73cbd63d420eca6a390063e557a7b50e2"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 17",
+      "destination": "기준_실습랩.md",
+      "sha256": "466f96095ae6dcf4871a0e2153fd5dc20c35544d76e171b1daaa48aab008281d"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 18",
+      "destination": "기준_실습랩.md",
+      "sha256": "3a7799b0505a39af5547ae72c6bba5e4710341b777da264fa954e7cc5e4fa246"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 19",
+      "destination": "기준_실습랩.md",
+      "sha256": "ca37c9dcab682db0172fd6f198a60537af6d203d11f7486bb09275e738c06772"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 20",
+      "destination": "기준_실습랩.md",
+      "sha256": "72d4b2945ac02a656d4637ba85d9ae9947bc02f6c04df828b579c6140c0e71b6"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 21",
+      "destination": "기준_실습랩.md",
+      "sha256": "f253eab5fc6429834e8482ac52ea72c4c51a32bcd0923861fa5dd2fb55dd6055"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 22",
+      "destination": "기준_실습대본.md",
+      "sha256": "fcd39e42ffb193011ae131d01d66f31fba379f3b5371e8ead991137c73c517b8"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인 상세 23",
+      "destination": "기준_실습대본.md",
+      "sha256": "60ec9ce9fefc44a8bc9c8bc65470f53948449b37f49476b6797633eb5f93e76a"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 제조 업무 맥락과 반복 구조의 해석",
+      "destination": "기준_실습랩.md",
+      "sha256": "efe2d9cdf5191cb0830af838f3e32c7b0dc93f476c1612a609adb98149f692f3"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 제조 업무 맥락과 반복 구조의 해석",
+      "destination": "기준_이론덱.md",
+      "sha256": "1bc2a051a1aff14ebe0fe0cfce71ce41a9de1afd0d6b0e680fd8c95eb8d4aaa4"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 제조 업무 맥락과 반복 구조의 해석",
+      "destination": "기준_실습대본.md",
+      "sha256": "597405cb7d6fbe3110d437e6097ff3b320cceb07e11f435414ed5590fda92d47"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 이론의 반복 점검과 실습 시작 장면",
+      "destination": "기준_이론대본.md",
+      "sha256": "e179a15a74d921b2c9fac700bc04d1156bde13c596cac9a8f2e88a1b0067eaa0"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 이론의 반복 점검과 실습 시작 장면",
+      "destination": "기준_실습대본.md",
+      "sha256": "6d47e6a79d6867b11bb0499908aeefb4d4ec3b4958a5e92113388730f4854554"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 이론의 반복 점검과 실습 시작 장면",
+      "destination": "기준_실습대본.md",
+      "sha256": "8a758e75686220465c1b633eadd2cea739f6986ec7342c7446997cad5c0bec4b"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "883de6f01fea1c835dfbe5a0386b622e5dac1404a6c8272de576231dc0d20d68"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "17567f798f95e4fd0c20ce3865fc4bb76a718e8dfb81bc12abd9fda5e43432f4"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "5f82a9682fc89929d5ecd89234a0655386f526cae8e6beca8338457329142a48"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "d5467bd809945fd159ce3865017ed8c84d1c88f31e4e09efbcb11d9c0df1cc32"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "6fbac31edc71c8149fb04b93c6bb3a0c2a20e87ef6f9499c28909ae60b98e957"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "9738b1215551e24094da60cee77c99d7d078e66e72249098aa0132951732b6bf"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "8edb504c99f1e011e7fa4afe2a45599314bef75f30961f38d29b1a2b582d277f"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습대본.md",
+      "sha256": "607eb7858e708e4130f282e784046203fd9b07754ca370f5f0578bb433858107"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습랩.md",
+      "sha256": "fd045bd1261bbde107318a8c1b82ec73f43b752885f3eb8a6efc4838c32da731"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습랩.md",
+      "sha256": "440146c56e1d8fd217e90b067c03c5bb3c66b6ace28835dcf207d30a0a5de8b1"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습랩.md",
+      "sha256": "ac9f1aa1d369f01602a6c64bd2d84b3ce5c800b4bd5469194c4ded6bd2435d15"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습랩.md",
+      "sha256": "bba0c84007553d76751825238fbc3965e12d705de6a2abc57f110e9559c34a69"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습대본.md",
+      "sha256": "4408cf61fe003f5f6a15ffe26aded5ef28a882216b47f8e1bd81cee54d627e75"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습가이드.md",
+      "sha256": "629e522740f25d266ebff148972231d7466136b8bb9d2147410ee282dced5586"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습랩.md",
+      "sha256": "0c8f2ef4ba3ff667385e93d3a5dfe410e67163f337fe96f6fb96c0c20b47eea5"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "10. 실습",
+      "destination": "기준_실습대본.md",
+      "sha256": "e2c91466dedeb2240a5fa08de9440f3949606275f6a6e5615401ce0a4fd3976e"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "제조 업무와 PBL 연결",
+      "destination": "기준_실습랩.md",
+      "sha256": "e9ddb24835261d127843a51be00dcdb0dde01f380523cef71d4be1d93809afbe"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "제조 업무와 PBL 연결",
+      "destination": "기준_실습랩.md",
+      "sha256": "640d23596991bf5d1d880f0842db310a63a0a439808249a2828b1b23c4e8185d"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "제조 업무와 PBL 연결",
+      "destination": "기준_실습대본.md",
+      "sha256": "a5009fe73e0fe06e41483b405c541207ab6e68c8190c1eca7f730f7cb56ea864"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "온라인",
+      "destination": "기준_실습대본.md",
+      "sha256": "35e55ac614bfebbe634fcfa9942b05c6cdf41823b121a7e083200c09ad102664"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "a5001f2faf418317b869289cfae9a89afbd520c7d2d831846fb0db41e5c14e55"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "ee6c0d2f97396b339230394d3ac5b2958b5e87b59cdaa61effc498db4e23774a"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "7f4c9d975442e77615b0b7a46e035ee0ccbd003b71148c29bd438957e5793f17"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "8b85d9a05d4944c1ccb4cf8a2738c447f787d1c8598797f3e148d53a2d4249ca"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "c5280cf50955946e6ed598dd487dd322ea542cfdaf83047d9aac278f9eb7267c"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "ab6699dc7973740e383965aaa2de7e1d773ccc069816cb6ca402a3a62012e1d2"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "오프라인 학생용 가이드",
+      "destination": "기준_실습가이드.md",
+      "sha256": "d1e97c5387fc09d6521754481f1344d67aef557e8aaa450931724eee55d3170b"
+    },
+    {
+      "source": "기준_실습과랩.md",
+      "section": "정적 검사와 배포 완료 조건",
+      "destination": "기준_실습가이드.md",
+      "sha256": "dd56890c7c651afcd5a089472d9548c43b3462e1c8b424a2886f9dc02c911a1d"
+    }
+  ],
+  "preserved_body_items": 167,
+  "destination_sha256": {
+    "기준_이론덱.md": "5b261d15d7a9565dd283f5f98389d9f0e903bc05904ccb5cde0a9b8c26091fe2",
+    "기준_이론대본.md": "94fd89e65aa018712c188f813d7323d0a372fb294426bf5d7d2369556627ff2b",
+    "기준_실습랩.md": "7641fa34d2a07bcc6fdd0e3b4342a82b41b780f8fe7337df65b0a4a79c5e2380",
+    "기준_실습가이드.md": "8ff7514e165e85429c78b3647e3c6806a12551698fbf8159f45ff0ef91cb97eb",
+    "기준_실습대본.md": "faf6878fe69576b01ce30dc20da995cd563f20339e141796bfb7e0d6f53fc67b"
+  }
+}
