@@ -15,29 +15,32 @@ Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했
 |---|---|---|
 | 1 | Git이 없으면 PowerShell을 열어 `winget install -e --id Git.Git` 한 줄을 실행한다 | 2분 |
 | 2 | 새 PowerShell 창에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git` | 1~2분 |
-| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」 | 처음 20~40분 |
+| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 열린 페이지에서 직접 받는다 | 처음 20~40분 |
 | 4 | 결과 표 끝에 「PC를 다시 시작하세요」가 나오면 다시 시작하고, Docker Desktop을 한 번 열어 약관에 동의한다 | 5분 |
 | 5 | **`시작.bat`** 을 더블클릭한다. Docker Desktop이 꺼져 있으면 스스로 켜고 기다린다 | 처음 10분 이상, 두 번째부터 짧다 |
 | 6 | (5회차 실습 때만) 실습 폴더 `.env`에 세 줄을 적는다 | 1분 |
 
 끌 때는 **`끄기.bat`** 을 더블클릭한다. 데이터는 지워지지 않는다.
 
-**`설치.bat`이 하는 일.** 아래 7개가 있는지 버전으로 확인하고, **없는 것만** Windows 기본 설치 도구(winget)로 설치한다. 이미 있는 프로그램은 건드리지 않는다. 끝에 결과 표(있음 · 설치함 · 실패 · 건너뜀)와 PC 메모리를 보여 준다. 실패한 줄이 있으면 그 프로그램만 직접 설치하고 `설치.bat`을 다시 실행한다.
+**`설치.bat`이 하는 일.** 학교 설치 목록(실습 스택 정보 xlsx, 확인일 2026-10-12)의 8개가 있는지 확인하고, **없는 것만** Windows 기본 설치 도구(winget)로 그 목록의 판을 설치한다. winget은 각 프로그램의 공식 배포처에서 설치 파일을 받아 해시를 검사하고 무인 모드로 설치한다. 이미 있는 프로그램은 건드리지 않는다. 끝에 결과 표(있음 · 설치함 · 실패 · 직접 설치)를 보여 준다.
 
-| 프로그램 | 설치 방법 | 확인할 것 |
-|---|---|---|
-| WSL2 | `wsl --install --no-distribution` | 처음 설치하면 PC를 다시 시작해야 켜진다 |
-| Docker Desktop | winget `Docker.DockerDesktop` | 다시 시작한 뒤 한 번 열어 약관 동의. 왼쪽 아래 「Engine running」 |
-| Git | winget `Git.Git` | `시작.bat`이 Git의 bash로 스크립트를 돌린다 |
-| Python 3.14 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
-| Node 22 + supabase CLI | winget `OpenJS.NodeJS.22`, `npm install -g supabase@2.119.0` | CLI 설치가 실패해도 `시작.bat`이 `npx`로 대신 받는다 |
-| VS Code | winget `Microsoft.VisualStudioCode` | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
-| Notion | winget `Notion.Notion` | 수업 자료 열람 |
+| 프로그램 | 학교 목록 판 | 설치 방법 | 확인할 것 |
+|---|---|---|---|
+| (BIOS 가상화) | — | 확인만 한다 | 「꺼짐」이면 BIOS에서 Intel VT-x / AMD SVM을 켠다(작업 관리자 → 성능 → CPU 「가상화」) |
+| WSL 2 | 2.7.12 | `wsl --install --no-distribution` | 처음 설치하면 PC를 다시 시작해야 켜진다. 판을 정확히 맞추려면 목록의 msi |
+| Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 학생 계정을 `docker-users` 그룹에 넣는다. 다시 시작한 뒤 한 번 열어 약관 동의 |
+| Visual Studio Code | 1.140.0 System | winget `Microsoft.VisualStudioCode`(PC 전체) | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
+| Python | 3.14.7 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
+| Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | 다른 판이 이미 있으면 그대로 둔다 |
+| Git | 최신 | winget `Git.Git` | 있으면 건너뛴다 |
+| Arduino IDE | 2.3.10 | winget `ArduinoSA.IDE.stable` | — |
+| XG5000 | 4.73 | **직접 설치**: 스크립트가 LS ELECTRIC 다운로드 페이지를 연다 | 페이지에서 4.73을 골라 받고 설치한 뒤 `설치.bat`을 다시 실행 |
 
-PC 메모리가 8 GB보다 적으면 결과 표에 「부족할 수 있음」이 뜬다. 실습 스택은 Docker에 4 GB 이상이 필요하다.
+목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
+
+**`git clone` 뒤 `docker compose up`만 하면 안 되는 까닭.** compose의 서비스 26개는 모두 프로필에 묶여 있고, 켤 프로필은 `.env`가 정하는데 `.env`는 저장소에 없다. 업무 DB(Supabase)는 compose 밖에서 따로 켜야 하고, 에이전트용 MCP 두 개는 별도 프로필이다. `시작.bat`이 이 넷(`.env` 강의 배포본 값 · 업무 DB · 시스템 · MCP)을 순서대로 한다.
 
 > **자리** — Windows에서 `설치.bat` 결과 표와 Docker Desktop 「Engine running」 화면.
-> 설치 목록의 정본은 강사가 가진 설치 xlsx다. 이 저장소에는 그 파일이 없어 그 목록의 이름을 따랐다. 패키지 ID는 microsoft/winget-pkgs에서 확인했다(2026-10-19).
 
 ## A. 필수 확인 (약 30분)
 
@@ -219,7 +222,7 @@ LLM_MODEL=coding
 학교는 메인 PC 한 대에 설치하면 나머지 PC에 그대로 복제해 준다. 이미지를 받는 PC가 한 대뿐이니, 여러 대가 같은 학교 IP로 동시에 받다가 막히는 일(Docker Hub `429`)은 생기지 않는다.
 복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
 
-1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 7개를 설치한다.
+1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 8개를 설치한다.
 2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
 3. A절 ①~③-1을 확인한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
 4. 그 상태로 학교에 복제를 맡긴다.
