@@ -9,4 +9,4 @@
 5. POST /api/flows/{id}/check에 {"mapping": 실제매핑객체}를 보낸다. 이 요청은 검사만 하며 매핑을 저장하지 않는다. 응답 check.ok와 check.problems의 where·field·reason을 확인한다.
 6. 정상 매핑으로 POST /api/flows/{id}/register를 요청한다. 반환된 definition_id·version과 deployed:false를 확인한다. 등록은 배포가 아니다. 배포는 포털 업무 프로세스에서 그 판본을 선택한다.
 
-중괄호의 실제매핑객체는 JSON 객체로 치환할 설명용 표기다. 그대로 실행할 요청 파일이 아니다. 오류 사례는 별도 미배포 초안에서만 검사한다. 근거: it/process/procsvc/flows_api.py의 ImportReq·MappingReq와 각 경로, it/portal/www/flows.js의 설정 폼.
+중괄호의 실제매핑객체는 JSON 객체로 치환할 설명용 표기다. 그대로 실행할 요청 파일이 아니다. 현재 작성한 미배포 초안에서 실제 문제만 검사·수정하며 정상 설정을 일부러 지우지 않는다. 근거: it/process/procsvc/flows_api.py의 ImportReq·MappingReq와 각 경로, it/portal/www/flows.js의 설정 폼.

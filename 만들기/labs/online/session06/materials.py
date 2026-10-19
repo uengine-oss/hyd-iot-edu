@@ -55,7 +55,7 @@ def materials(name,code):
 5. POST /api/flows/{id}/check에 {"mapping": 실제매핑객체}를 보낸다. 이 요청은 검사만 하며 매핑을 저장하지 않는다. 응답 check.ok와 check.problems의 where·field·reason을 확인한다.
 6. 정상 매핑으로 POST /api/flows/{id}/register를 요청한다. 반환된 definition_id·version과 deployed:false를 확인한다. 등록은 배포가 아니다. 배포는 포털 업무 프로세스에서 그 판본을 선택한다.
 
-중괄호의 실제매핑객체는 JSON 객체로 치환할 설명용 표기다. 그대로 실행할 요청 파일이 아니다. 오류 사례는 별도 미배포 초안에서만 검사한다. 근거: it/process/procsvc/flows_api.py의 ImportReq·MappingReq와 각 경로, it/portal/www/flows.js의 설정 폼.
+중괄호의 실제매핑객체는 JSON 객체로 치환할 설명용 표기다. 그대로 실행할 요청 파일이 아니다. 현재 작성한 미배포 초안에서 실제 문제만 검사·수정하며 정상 설정을 일부러 지우지 않는다. 근거: it/process/procsvc/flows_api.py의 ImportReq·MappingReq와 각 경로, it/portal/www/flows.js의 설정 폼.
 ''')
- if name=='사전검사와배포':write(code/'deployment-record.md','# 검사·배포 기록\n\n## 정상 초안 위치와 해시\n\n## 부품 누락: 실제 위치·사유·복원·재검사\n\n## 조건 누락: 실제 위치·사유·복원·재검사\n\n## 정의 ID·등록 판본\n\n## 배포 시각·환경·경보 경로\n\n## 남은 실행 확인\n')
+ if name=='사전검사와배포':write(code/'deployment-record.md','# 검사·배포 기록\n\n## 정상 초안 위치와 해시\n\n## 실제 검사 응답·확인 범위\n\n## 발견한 문제 위치·사유(없으면 없음)\n\n## 수정·저장·재검사(수정 없으면 해당 없음)\n\n## 정의 ID·등록 판본\n\n## 배포 시각·환경·경보 경로\n\n## 남은 실행 확인\n')
  if name=='이벤트와처리결과':write(code/'source/기준흐름_비교.md','# 구조 비교 자료\n\n통합반9 이론66~67의 기준 흐름 설명: 기준 흐름은 에이전트 단계 넷과 중단형 타이머, 수업 참조 흐름은 에이전트 단계 하나와 비중단형 지연 알림을 사용한다. 둘은 과거와 미래 버전이 아니다. 실제 배포 환경의 정의가 이 설명과 같은지는 수업에서 판본과 구조를 확인한다. 이번 제작의 실행 결과가 아니다.\n')

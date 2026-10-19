@@ -1,0 +1,1450 @@
+{
+ "_comment": "T8 예시 지식 그래프(이름 공간 demo). 값 노드 없음 — 바뀌는 값(행 · 빈 시간)은 InputData 의 자리(표 · 칸 · 출처 System)로만 잇는다. 인물 · 회사 · 메일 · 드라이브 파일 id 는 모두 가상이다. 형식: nodes[{labels, props}] · rels[{type, a, b, props}] (ontology_v2.validate_ns 가 읽는 행 모양, rels 의 끝점 레이블은 nodes 에서 찾는다). 검사는 tests/test_capstone_kit.py.",
+ "ns": "demo",
+ "nodes": [
+  {
+   "labels": [
+    "Perspective"
+   ],
+   "props": {
+    "id": "demo:persp:customer",
+    "name": "고객",
+    "order": 1,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Objective"
+   ],
+   "props": {
+    "id": "demo:obj:retention",
+    "name": "고객 유지",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Measure"
+   ],
+   "props": {
+    "id": "demo:kpi:required-attendance",
+    "name": "필수 참석률",
+    "unit": "%",
+    "direction": "UP",
+    "kpiRole": "lagging",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Measure"
+   ],
+   "props": {
+    "id": "demo:kpi:prep-share",
+    "name": "자료 사전 공유율",
+    "unit": "%",
+    "direction": "UP",
+    "kpiRole": "lagging",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Measure"
+   ],
+   "props": {
+    "id": "demo:kpi:prep-lead-time",
+    "name": "준비 리드타임",
+    "unit": "일",
+    "direction": "UP",
+    "kpiRole": "leading",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Process"
+   ],
+   "props": {
+    "id": "demo:proc:qbr-prep",
+    "name": "분기 리뷰 회의 준비",
+    "isExecutable": true,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Role"
+   ],
+   "props": {
+    "id": "demo:role:organizer",
+    "name": "회의 주관자(영업 담당)",
+    "level": 2,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Role"
+   ],
+   "props": {
+    "id": "demo:role:customer-exec",
+    "name": "고객 담당 임원",
+    "level": 2,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Role"
+   ],
+   "props": {
+    "id": "demo:role:attendee",
+    "name": "참석자",
+    "level": 1,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "System"
+   ],
+   "props": {
+    "id": "demo:sys:gdrive",
+    "name": "구글 드라이브",
+    "zone": "IT",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "System"
+   ],
+   "props": {
+    "id": "demo:sys:gcal",
+    "name": "구글 캘린더",
+    "zone": "IT",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "System"
+   ],
+   "props": {
+    "id": "demo:sys:biz",
+    "name": "내 업무 표(회의 요청 DB, stu_demo)",
+    "zone": "IT",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "KnowledgeSource"
+   ],
+   "props": {
+    "id": "demo:ks:d1",
+    "name": "D1 회의 운영 규칙",
+    "kind": "policy",
+    "ref": "students/_template/example_meeting/docs/d1.md",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Document"
+   ],
+   "props": {
+    "id": "demo:doc:d1",
+    "name": "D1 회의 운영 규칙",
+    "driveFileId": "example-drive-file-d1",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-1",
+    "ref": "D1 §1",
+    "title": "필수 참석",
+    "excerpt": "필수 참석자 전원이 가능한 시간에만 회의를 확정한다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-2",
+    "ref": "D1 §2",
+    "title": "자료 공유",
+    "excerpt": "회의 자료는 회의 시작 48시간 전까지 참석자에게 공유한다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-3",
+    "ref": "D1 §3",
+    "title": "근무시간",
+    "excerpt": "회의는 근무시간 09:00~18:00 안에서만 잡는다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-4",
+    "ref": "D1 §4",
+    "title": "회의실",
+    "excerpt": "고객 회의는 6인 이상 회의실에서 한다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-5",
+    "ref": "D1 §5",
+    "title": "점심",
+    "excerpt": "12:00~13:00 에 걸치는 회의는 잡지 않는다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d1-6",
+    "ref": "D1 §6",
+    "title": "요청 마감",
+    "excerpt": "고객이 요청한 마감일을 넘기는 시간은 후보로 둘 수 있지만 감점한다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "KnowledgeSource"
+   ],
+   "props": {
+    "id": "demo:ks:d2",
+    "name": "D2 분기 리뷰 준비 절차",
+    "kind": "manual",
+    "ref": "students/_template/example_meeting/docs/d2.md",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Document"
+   ],
+   "props": {
+    "id": "demo:doc:d2",
+    "name": "D2 분기 리뷰 준비 절차",
+    "driveFileId": "example-drive-file-d2",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d2-1",
+    "ref": "D2 §1",
+    "title": "회의록 찾기",
+    "excerpt": "지난 분기 회의록을 찾는다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d2-2",
+    "ref": "D2 §2",
+    "title": "요약",
+    "excerpt": "계약 현황과 미결 이슈를 한 쪽으로 요약한다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d2-3",
+    "ref": "D2 §3",
+    "title": "안건 초안",
+    "excerpt": "미결 이슈로 안건 초안을 만든다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d2-4",
+    "ref": "D2 §4",
+    "title": "시간 후보",
+    "excerpt": "운영 규칙을 지키는 시간 후보 3개를 순위와 함께 낸다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d2-5",
+    "ref": "D2 §5",
+    "title": "초대",
+    "excerpt": "주관자 승인 뒤 초대를 보내고 자료 링크를 붙인다.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "KnowledgeSource"
+   ],
+   "props": {
+    "id": "demo:ks:d3",
+    "name": "D3 지난 분기 회의록",
+    "kind": "manual",
+    "ref": "students/_template/example_meeting/docs/d3.md",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Document"
+   ],
+   "props": {
+    "id": "demo:doc:d3",
+    "name": "D3 지난 분기 회의록",
+    "driveFileId": "example-drive-file-d3",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d3-1",
+    "ref": "D3 §1",
+    "title": "미결 이슈",
+    "excerpt": "납품 지연 재발 방지책, 2분기 청구 오류 정정, 신규 담당자 인수인계.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "ManualSection"
+   ],
+   "props": {
+    "id": "demo:ms:d3-2",
+    "ref": "D3 §2",
+    "title": "다음 분기 확인 지표",
+    "excerpt": "납기 준수율, 문의 응답 시간.",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "PrepGuide"
+   ],
+   "props": {
+    "id": "demo:guide:qbr-prep",
+    "name": "분기 리뷰 준비 요령",
+    "skillName": "qbr-prep",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Step"
+   ],
+   "props": {
+    "id": "demo:step:qbr-1",
+    "order": 1,
+    "text": "지식 그래프에서 이 고객의 미결 안건 · 운영 규칙 읽기",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Step"
+   ],
+   "props": {
+    "id": "demo:step:qbr-2",
+    "order": 2,
+    "text": "드라이브에서 지난 회의록 · 계약 요약 찾아 읽기",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Step"
+   ],
+   "props": {
+    "id": "demo:step:qbr-3",
+    "order": 3,
+    "text": "업무 표에서 필수 참석자 · 요청 마감 · 회의실 읽기",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Step"
+   ],
+   "props": {
+    "id": "demo:step:qbr-4",
+    "order": 4,
+    "text": "캘린더 빈 시간 조회",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Step"
+   ],
+   "props": {
+    "id": "demo:step:qbr-5",
+    "order": 5,
+    "text": "규칙으로 빼고 남은 안에 순위 — 추천 1 + 지는 안 이유",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Decision"
+   ],
+   "props": {
+    "id": "demo:dec:slot",
+    "name": "시간 후보 고르기",
+    "question": "회의 요청 한 건에 어느 시간 · 회의실을 추천하는가?",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "DecisionTable"
+   ],
+   "props": {
+    "id": "demo:dt:slot",
+    "name": "시간 후보 규칙",
+    "hitPolicy": "COLLECT",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:due-by",
+    "name": "요청 마감",
+    "typeRef": "string",
+    "variable": "due_by",
+    "datasource": "supabase",
+    "schema": "stu_demo",
+    "table": "meeting_request",
+    "column": "due_by",
+    "sqlType": "date",
+    "assetColumn": "request_id",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:required-attendees",
+    "name": "필수 참석자",
+    "typeRef": "string",
+    "variable": "required_attendees",
+    "datasource": "supabase",
+    "schema": "stu_demo",
+    "table": "attendee",
+    "column": "email",
+    "sqlType": "text",
+    "assetColumn": "request_id",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:room-capacity",
+    "name": "회의실 좌석 수",
+    "typeRef": "number",
+    "variable": "room_capacity",
+    "datasource": "supabase",
+    "schema": "stu_demo",
+    "table": "room",
+    "column": "capacity",
+    "sqlType": "integer",
+    "assetColumn": "room_id",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:free-slots",
+    "name": "빈 시간",
+    "typeRef": "string",
+    "variable": "free_slots",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:required-ok-ratio",
+    "name": "필수 참석 가능 비율",
+    "typeRef": "number",
+    "variable": "required_ok_ratio",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:prep-hours",
+    "name": "자료 공유에 남은 시간",
+    "typeRef": "number",
+    "variable": "prep_hours",
+    "derive": "hours_from_now",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:within-work-hours",
+    "name": "근무시간 안",
+    "typeRef": "boolean",
+    "variable": "within_work_hours",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:overlaps-lunch",
+    "name": "점심시간에 걸침",
+    "typeRef": "boolean",
+    "variable": "overlaps_lunch",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "InputData"
+   ],
+   "props": {
+    "id": "demo:in:after-due-by",
+    "name": "요청 마감 넘김",
+    "typeRef": "boolean",
+    "variable": "after_due_by",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:required-all",
+    "order": 1,
+    "when": "required_ok_ratio < 1",
+    "effect": "EXCLUDE",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:prep-48h",
+    "order": 2,
+    "when": "prep_hours < 48",
+    "effect": "EXCLUDE",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:work-hours",
+    "order": 3,
+    "when": "within_work_hours == false",
+    "effect": "EXCLUDE",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:room-6",
+    "order": 4,
+    "when": "room_capacity < 6",
+    "effect": "EXCLUDE",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:lunch",
+    "order": 5,
+    "when": "overlaps_lunch == true",
+    "effect": "EXCLUDE",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Rule"
+   ],
+   "props": {
+    "id": "demo:rule:after-due",
+    "order": 6,
+    "when": "after_due_by == true",
+    "effect": "PENALTY",
+    "penalty": 10,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Customer"
+   ],
+   "props": {
+    "id": "demo:customer:gaon",
+    "name": "가온상사(가상)",
+    "tier": "A",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Meeting"
+   ],
+   "props": {
+    "id": "demo:meeting:qbr-2026-q4-01",
+    "name": "가온상사 4분기 리뷰",
+    "kind": "qbr",
+    "durationMin": 60,
+    "dueBy": "2026-10-16",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:kim",
+    "name": "김주관(가상)",
+    "email": "organizer@example.com",
+    "required": true,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:park",
+    "name": "박임원(가상)",
+    "email": "customer-exec@example.com",
+    "required": true,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:lee",
+    "name": "이담당(가상)",
+    "email": "customer-staff@example.com",
+    "required": false,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:choi",
+    "name": "최기술(가상)",
+    "email": "engineer@example.com",
+    "required": false,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:jung",
+    "name": "정품질(가상)",
+    "email": "quality@example.com",
+    "required": false,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "Attendee"
+   ],
+   "props": {
+    "id": "demo:att:han",
+    "name": "한재무(가상)",
+    "email": "finance@example.com",
+    "required": false,
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "AgendaItem"
+   ],
+   "props": {
+    "id": "demo:agenda:1",
+    "name": "납품 지연 재발 방지책",
+    "status": "open",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "AgendaItem"
+   ],
+   "props": {
+    "id": "demo:agenda:2",
+    "name": "2분기 청구 오류 정정",
+    "status": "open",
+    "ns": "demo"
+   }
+  },
+  {
+   "labels": [
+    "AgendaItem"
+   ],
+   "props": {
+    "id": "demo:agenda:3",
+    "name": "신규 담당자 인수인계",
+    "status": "open",
+    "ns": "demo"
+   }
+  }
+ ],
+ "rels": [
+  {
+   "type": "IN_PERSPECTIVE",
+   "a": "demo:obj:retention",
+   "b": "demo:persp:customer",
+   "props": {}
+  },
+  {
+   "type": "MEASURES",
+   "a": "demo:kpi:required-attendance",
+   "b": "demo:obj:retention",
+   "props": {}
+  },
+  {
+   "type": "MEASURES",
+   "a": "demo:kpi:prep-share",
+   "b": "demo:obj:retention",
+   "props": {}
+  },
+  {
+   "type": "MEASURES",
+   "a": "demo:kpi:prep-lead-time",
+   "b": "demo:obj:retention",
+   "props": {}
+  },
+  {
+   "type": "INFLUENCES",
+   "a": "demo:kpi:prep-lead-time",
+   "b": "demo:kpi:prep-share",
+   "props": {
+    "sign": 1,
+    "note": "리드타임이 줄면 48시간 전 자료 공유를 못 지킨다"
+   }
+  },
+  {
+   "type": "ACHIEVES",
+   "a": "demo:proc:qbr-prep",
+   "b": "demo:obj:retention",
+   "props": {}
+  },
+  {
+   "type": "STORED_IN",
+   "a": "demo:doc:d1",
+   "b": "demo:sys:gdrive",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-1",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-1",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-2",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-2",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-3",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-3",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-4",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-4",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-5",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-5",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d1-6",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d1",
+   "b": "demo:ms:d1-6",
+   "props": {}
+  },
+  {
+   "type": "STORED_IN",
+   "a": "demo:doc:d2",
+   "b": "demo:sys:gdrive",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d2-1",
+   "b": "demo:ks:d2",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d2",
+   "b": "demo:ms:d2-1",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d2-2",
+   "b": "demo:ks:d2",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d2",
+   "b": "demo:ms:d2-2",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d2-3",
+   "b": "demo:ks:d2",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d2",
+   "b": "demo:ms:d2-3",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d2-4",
+   "b": "demo:ks:d2",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d2",
+   "b": "demo:ms:d2-4",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d2-5",
+   "b": "demo:ks:d2",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d2",
+   "b": "demo:ms:d2-5",
+   "props": {}
+  },
+  {
+   "type": "STORED_IN",
+   "a": "demo:doc:d3",
+   "b": "demo:sys:gdrive",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d3-1",
+   "b": "demo:ks:d3",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d3",
+   "b": "demo:ms:d3-1",
+   "props": {}
+  },
+  {
+   "type": "PART_OF",
+   "a": "demo:ms:d3-2",
+   "b": "demo:ks:d3",
+   "props": {}
+  },
+  {
+   "type": "HAS_SECTION",
+   "a": "demo:doc:d3",
+   "b": "demo:ms:d3-2",
+   "props": {}
+  },
+  {
+   "type": "GUIDES",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:proc:qbr-prep",
+   "props": {}
+  },
+  {
+   "type": "GUIDE_STEP",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:step:qbr-1",
+   "props": {}
+  },
+  {
+   "type": "REFERS_TO",
+   "a": "demo:step:qbr-1",
+   "b": "demo:ms:d2-1",
+   "props": {}
+  },
+  {
+   "type": "GUIDE_STEP",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:step:qbr-2",
+   "props": {}
+  },
+  {
+   "type": "REFERS_TO",
+   "a": "demo:step:qbr-2",
+   "b": "demo:ms:d2-2",
+   "props": {}
+  },
+  {
+   "type": "GUIDE_STEP",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:step:qbr-3",
+   "props": {}
+  },
+  {
+   "type": "REFERS_TO",
+   "a": "demo:step:qbr-3",
+   "b": "demo:ms:d2-3",
+   "props": {}
+  },
+  {
+   "type": "GUIDE_STEP",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:step:qbr-4",
+   "props": {}
+  },
+  {
+   "type": "REFERS_TO",
+   "a": "demo:step:qbr-4",
+   "b": "demo:ms:d2-4",
+   "props": {}
+  },
+  {
+   "type": "GUIDE_STEP",
+   "a": "demo:guide:qbr-prep",
+   "b": "demo:step:qbr-5",
+   "props": {}
+  },
+  {
+   "type": "REFERS_TO",
+   "a": "demo:step:qbr-5",
+   "b": "demo:ms:d2-5",
+   "props": {}
+  },
+  {
+   "type": "IMPLEMENTED_BY",
+   "a": "demo:dec:slot",
+   "b": "demo:dt:slot",
+   "props": {}
+  },
+  {
+   "type": "GOVERNED_BY",
+   "a": "demo:dec:slot",
+   "b": "demo:ks:d1",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:due-by",
+   "b": "demo:sys:biz",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:due-by",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:required-attendees",
+   "b": "demo:sys:biz",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:required-attendees",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:room-capacity",
+   "b": "demo:sys:biz",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:room-capacity",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:free-slots",
+   "b": "demo:sys:gcal",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:free-slots",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:required-ok-ratio",
+   "b": "demo:sys:gcal",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:required-ok-ratio",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:prep-hours",
+   "b": "demo:sys:gcal",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:prep-hours",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:within-work-hours",
+   "b": "demo:sys:gcal",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:within-work-hours",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:overlaps-lunch",
+   "b": "demo:sys:gcal",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:overlaps-lunch",
+   "props": {}
+  },
+  {
+   "type": "SOURCED_FROM",
+   "a": "demo:in:after-due-by",
+   "b": "demo:sys:biz",
+   "props": {}
+  },
+  {
+   "type": "REQUIRES_INPUT",
+   "a": "demo:dec:slot",
+   "b": "demo:in:after-due-by",
+   "props": {}
+  },
+  {
+   "type": "REPRESENTS",
+   "a": "demo:in:prep-hours",
+   "b": "demo:kpi:prep-lead-time",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:required-all",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:required-all",
+   "b": "demo:in:required-ok-ratio",
+   "props": {
+    "operator": "<",
+    "value": 1
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:required-all",
+   "b": "demo:ms:d1-1",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:prep-48h",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:prep-48h",
+   "b": "demo:in:prep-hours",
+   "props": {
+    "operator": "<",
+    "value": 48
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:prep-48h",
+   "b": "demo:ms:d1-2",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:work-hours",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:work-hours",
+   "b": "demo:in:within-work-hours",
+   "props": {
+    "operator": "==",
+    "value": false
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:work-hours",
+   "b": "demo:ms:d1-3",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:room-6",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:room-6",
+   "b": "demo:in:room-capacity",
+   "props": {
+    "operator": "<",
+    "value": 6
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:room-6",
+   "b": "demo:ms:d1-4",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:lunch",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:lunch",
+   "b": "demo:in:overlaps-lunch",
+   "props": {
+    "operator": "==",
+    "value": true
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:lunch",
+   "b": "demo:ms:d1-5",
+   "props": {}
+  },
+  {
+   "type": "HAS_RULE",
+   "a": "demo:dt:slot",
+   "b": "demo:rule:after-due",
+   "props": {}
+  },
+  {
+   "type": "TESTS",
+   "a": "demo:rule:after-due",
+   "b": "demo:in:after-due-by",
+   "props": {
+    "operator": "==",
+    "value": true
+   }
+  },
+  {
+   "type": "DERIVED_FROM",
+   "a": "demo:rule:after-due",
+   "b": "demo:ms:d1-6",
+   "props": {}
+  },
+  {
+   "type": "FOR_CUSTOMER",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:customer:gaon",
+   "props": {}
+  },
+  {
+   "type": "PREPARED_BY_PROCESS",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:proc:qbr-prep",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:kim",
+   "b": "demo:role:organizer",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:kim",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:park",
+   "b": "demo:role:customer-exec",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:park",
+   "props": {}
+  },
+  {
+   "type": "HAS_CONTACT",
+   "a": "demo:customer:gaon",
+   "b": "demo:att:park",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:lee",
+   "b": "demo:role:attendee",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:lee",
+   "props": {}
+  },
+  {
+   "type": "HAS_CONTACT",
+   "a": "demo:customer:gaon",
+   "b": "demo:att:lee",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:choi",
+   "b": "demo:role:attendee",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:choi",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:jung",
+   "b": "demo:role:attendee",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:jung",
+   "props": {}
+  },
+  {
+   "type": "PLAYS",
+   "a": "demo:att:han",
+   "b": "demo:role:attendee",
+   "props": {}
+  },
+  {
+   "type": "INVITES",
+   "a": "demo:meeting:qbr-2026-q4-01",
+   "b": "demo:att:han",
+   "props": {}
+  },
+  {
+   "type": "RAISED_IN",
+   "a": "demo:agenda:1",
+   "b": "demo:doc:d3",
+   "props": {}
+  },
+  {
+   "type": "ABOUT",
+   "a": "demo:agenda:1",
+   "b": "demo:customer:gaon",
+   "props": {}
+  },
+  {
+   "type": "RAISED_IN",
+   "a": "demo:agenda:2",
+   "b": "demo:doc:d3",
+   "props": {}
+  },
+  {
+   "type": "ABOUT",
+   "a": "demo:agenda:2",
+   "b": "demo:customer:gaon",
+   "props": {}
+  },
+  {
+   "type": "RAISED_IN",
+   "a": "demo:agenda:3",
+   "b": "demo:doc:d3",
+   "props": {}
+  },
+  {
+   "type": "ABOUT",
+   "a": "demo:agenda:3",
+   "b": "demo:customer:gaon",
+   "props": {}
+  }
+ ]
+}
