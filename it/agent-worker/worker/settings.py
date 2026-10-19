@@ -74,12 +74,12 @@ class Settings:
     cli_agent: str = os.getenv("CLIAGENTS_DEFAULT_CLI", os.getenv("CLI_AGENT", "claude-code"))
     model: str | None = os.getenv("CLI_MODEL") or None
     reasoning_effort: str = os.getenv("CLI_REASONING_EFFORT", "low")
-    # HYD addition (A073): run Codex against an OpenAI-compatible model server (the lecturer's GPU SGLang) by inline
+    # HYD addition (A073): run Codex against an OpenAI-compatible model server (the course LiteLLM relay, model `coding`) by inline
     # `-c model_provider` overrides per run — the personal ~/.codex/config.toml is never edited (--ignore-user-config).
     # The API key stays in the worker process environment under `codex_model_provider_env_key`; it is never written to a file.
     codex_model_provider_base_url: str = os.getenv("CODEX_MODEL_PROVIDER_BASE_URL", "")
-    codex_model_provider_name: str = os.getenv("CODEX_MODEL_PROVIDER_NAME", "HYD GPU model server")
-    codex_model_provider_env_key: str = os.getenv("CODEX_MODEL_PROVIDER_ENV_KEY", "HYD_GPU_API_KEY")
+    codex_model_provider_name: str = os.getenv("CODEX_MODEL_PROVIDER_NAME", "HYD LiteLLM relay")
+    codex_model_provider_env_key: str = os.getenv("CODEX_MODEL_PROVIDER_ENV_KEY", "CODEX_MODEL_PROVIDER_API_KEY")
     codex_model: str | None = os.getenv("CODEX_MODEL") or None
     default_permission: Permission = field(default_factory=lambda: _PERMISSION_BY_NAME.get(os.getenv("CLIAGENTS_DEFAULT_PERMISSION", ""), Permission.WORKSPACE_WRITE))
     run_timeout_s: float = float(os.getenv("CLIAGENTS_RUN_TIMEOUT_SECONDS", "1800"))

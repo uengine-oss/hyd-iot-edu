@@ -12,7 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "compose.yaml"
 #: environment keys that are read indirectly (os.environ copy into a child process, a library, or a dynamic name)
-INDIRECT_ENV = {"agent-worker": {"ANTHROPIC_API_KEY", "HYD_GPU_API_KEY", "TENANT_ID"}, "agent": {"ANTHROPIC_API_KEY", "OPENAI_API_KEY"}}
+INDIRECT_ENV = {"agent-worker": {"ANTHROPIC_API_KEY", "CODEX_MODEL_PROVIDER_API_KEY", "TENANT_ID"}, "agent": {"ANTHROPIC_API_KEY", "OPENAI_API_KEY"}}
 
 
 def load():

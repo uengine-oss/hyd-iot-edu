@@ -405,22 +405,22 @@ def test_resolve_provider_prefers_the_native_exe_over_the_cmd_shim(monkeypatch, 
     assert runner_mod._unshim("/usr/local/bin/claude") == "/usr/local/bin/claude"    # POSIX: untouched
 
 
-def test_codex_runs_can_be_routed_to_a_gpu_model_server_per_run(tmp_path):
-    """A073: CODEX_MODEL_PROVIDER_BASE_URL routes Codex to an OpenAI-compatible server (the lecturer's SGLang) by inline
+def test_codex_runs_can_be_routed_to_the_litellm_relay_per_run(tmp_path):
+    """A073: CODEX_MODEL_PROVIDER_BASE_URL routes Codex to an OpenAI-compatible server (the course LiteLLM relay) by inline
     -c overrides; wire_api must be "responses" (Codex 0.151 rejects "chat"); the key is only an env var name."""
     repo, inst = _repo()
     requests = []
-    settings = _settings(tmp_path, cli_agent="codex", codex_model_provider_base_url="http://gpu.example:30000/v1",
-                         codex_model_provider_name="HYD GPU SGLang", codex_model="frentis-ai-model")
+    settings = _settings(tmp_path, cli_agent="codex", codex_model_provider_base_url="http://relay.example:4000/v1",
+                         codex_model_provider_name="HYD LiteLLM relay", codex_model="coding")
     runner = Runner(settings, repo, exec_fn=_fake_exec('{"cause":"c","failure_mode":"f","guide_card":{}}', requests=requests),
                     schema_prompt="s", resolve_provider=lambda pid: object())
     assert runner.poll_once() == 1
     request = requests[0][0]
     args = request.extra_args
-    assert args[args.index("model_provider=hydgpu") + 1] == "-c"
-    table = next(a for a in args if a.startswith("model_providers.hydgpu="))
-    assert 'base_url="http://gpu.example:30000/v1"' in table and 'wire_api="responses"' in table and 'env_key="HYD_GPU_API_KEY"' in table
-    assert "chat" not in table and request.model == "frentis-ai-model"
+    assert args[args.index("model_provider=hydllm") + 1] == "-c"
+    table = next(a for a in args if a.startswith("model_providers.hydllm="))
+    assert 'base_url="http://relay.example:4000/v1"' in table and 'wire_api="responses"' in table and 'env_key="CODEX_MODEL_PROVIDER_API_KEY"' in table
+    assert "chat" not in table and request.model == "coding"
     plain = []
     Runner(_settings(tmp_path, cli_agent="codex"), repo, exec_fn=_fake_exec('{"cause":"c","failure_mode":"f","guide_card":{}}', requests=plain),
            schema_prompt="s", resolve_provider=lambda pid: object())
@@ -459,11 +459,11 @@ def test_error_item_followed_by_a_result_is_a_notice_not_a_failure(tmp_path):
 def test_worker_secrets_never_reach_the_cli_child_process():
     """process-gpt-deepagents sandbox env whitelist: cliagents' exec_env copies os.environ, so the worker scrubs itself."""
     from worker import env_guard
-    env = {"SUPABASE_DSN": "postgresql://x", "NEO4J_PASSWORD": "p", "ENT_DB_DSN": "d", "HYD_GPU_API_KEY": "k", "PATH": "/bin",
+    env = {"SUPABASE_DSN": "postgresql://x", "NEO4J_PASSWORD": "p", "ENT_DB_DSN": "d", "CODEX_MODEL_PROVIDER_API_KEY": "k", "PATH": "/bin",
            "HOME": "/h", "CLAUDE_CONFIG_DIR": "/c", "MCP_HOST_REWRITE": "a=b"}
-    removed = env_guard.scrub(env, keep=("HYD_GPU_API_KEY",))
+    removed = env_guard.scrub(env, keep=("CODEX_MODEL_PROVIDER_API_KEY",))
     assert removed == ["ENT_DB_DSN", "NEO4J_PASSWORD", "SUPABASE_DSN"]
-    assert set(env) == {"HYD_GPU_API_KEY", "PATH", "HOME", "CLAUDE_CONFIG_DIR", "MCP_HOST_REWRITE"}
+    assert set(env) == {"CODEX_MODEL_PROVIDER_API_KEY", "PATH", "HOME", "CLAUDE_CONFIG_DIR", "MCP_HOST_REWRITE"}
     # the pinned provider really does start from os.environ: a key present there is visible to the child unless scrubbed
     import os
     from cliagents import registry as reg
@@ -634,10 +634,10 @@ def test_codex_server_env_copy_leaves_the_retained_workspace_and_tokens_do_not_r
     assert not toml.exists()                                                     # … and the on-disk copy with their env is gone
     from worker import env_guard
     env = {"GH_TOKEN": "g", "LLM_API_KEY": "l", "AWS_ACCESS_KEY": "a", "ANTHROPIC_API_KEY": "cli", "CLAUDE_CODE_OAUTH_TOKEN": "cli2",
-           "HYD_GPU_API_KEY": "kept", "PATH": "/bin"}
-    removed = env_guard.scrub(env, keep=("HYD_GPU_API_KEY",))
+           "CODEX_MODEL_PROVIDER_API_KEY": "kept", "PATH": "/bin"}
+    removed = env_guard.scrub(env, keep=("CODEX_MODEL_PROVIDER_API_KEY",))
     assert removed == ["AWS_ACCESS_KEY", "GH_TOKEN", "LLM_API_KEY"]
-    assert set(env) == {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HYD_GPU_API_KEY", "PATH"}
+    assert set(env) == {"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CODEX_MODEL_PROVIDER_API_KEY", "PATH"}
 
 
 @pytest.mark.parametrize("agent_id", ["claude-code", "codex"])
@@ -679,7 +679,7 @@ def test_outcome_prefers_the_workspace_result_file_and_reports_its_defects(tmp_p
     assert out.contract_met and out.source == "file" and out.outputs["cause"] == "cause:file" and out.payload["text"] == "결과 파일 작성 완료"
     # the file wins over a JSON message
     assert outcome.interpret('{"cause": "msg", "failure_mode": "f", "guide_card": {"k": 1}}', fields, result_file=f).outputs["cause"] == "cause:file"
-    f.write_text('{"cause": "c", "failure_mode": "f", "guide_card": {"k": 1}', encoding="utf-8")                # unclosed (A073 GPU failure mode)
+    f.write_text('{"cause": "c", "failure_mode": "f", "guide_card": {"k": 1}', encoding="utf-8")                # unclosed (A073 failure mode of Codex on a model server)
     broken = outcome.interpret('{"cause": "msg", "failure_mode": "f", "guide_card": {"k": 1}}', fields, result_file=f)
     assert not broken.contract_met and broken.source == "file" and "올바른 JSON이 아닙니다" in broken.mismatch_reason and "output/result.json" in broken.mismatch_reason
     f.write_text('[1, 2]', encoding="utf-8")

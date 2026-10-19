@@ -187,11 +187,11 @@ class Runner:
                 text += '\n\n' + skill_text
             extra_args += ["-c", "model_reasoning_effort=" + json.dumps(config.get("reasoning_effort") or self.s.reasoning_effort)]
             if self.s.codex_model_provider_base_url:
-                # Codex 0.151 accepts only wire_api="responses"; SGLang serves /v1/responses (live check 2026-10-06, PONG).
+                # Codex 0.151 accepts only wire_api="responses"; the LiteLLM relay serves /v1/responses (route check 2026-10-19).
                 table = ", ".join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in (
                     ("name", self.s.codex_model_provider_name), ("base_url", self.s.codex_model_provider_base_url),
                     ("env_key", self.s.codex_model_provider_env_key), ("wire_api", "responses")))
-                extra_args += ["-c", "model_provider=hydgpu", "-c", "model_providers.hydgpu={" + table + "}"]
+                extra_args += ["-c", "model_provider=hydllm", "-c", "model_providers.hydllm={" + table + "}"]
                 if not agent.model and self.s.codex_model:
                     model = self.s.codex_model
         if provider_id == "claude-code" and self.s.allowed_tools:

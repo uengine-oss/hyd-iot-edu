@@ -156,19 +156,17 @@ def test_store_save_from_another_thread(tmp_path):
     assert book["d1"]["state"] == "DONE" and audit == ["from-thread"]
 
 
-def test_llm_extra_body_and_dedicated_key_reach_the_request(monkeypatch):
-    """A073: the internal LLM endpoint may be a GPU SGLang/LiteLLM relay — LLM_API_KEY (not the real OpenAI key) signs the
-    request and LLM_EXTRA_BODY vendor fields are merged (Qwen thinking off, otherwise reasoning eats max_completion_tokens)."""
+def test_dedicated_relay_key_signs_a_plain_request(monkeypatch):
+    """A073: the internal LLM endpoint may be the course LiteLLM relay — LLM_API_KEY (not the real OpenAI key) signs the
+    request, and the body carries only the OpenAI chat fields (no vendor extras, 2026-10-19)."""
     monkeypatch.setattr(llm, "PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "real-openai-key-not-used")
-    monkeypatch.setenv("LLM_API_KEY", "gpu-key")
-    monkeypatch.setenv("LLM_EXTRA_BODY", '{"chat_template_kwargs": {"enable_thinking": false}}')
+    monkeypatch.setenv("LLM_API_KEY", "relay-key")
     seen = {}
     def fake(req, timeout):
         seen["auth"] = req.get_header("Authorization"); seen["body"] = json.loads(req.data)
         return io.BytesIO(json.dumps({"choices": [{"finish_reason": "stop", "message": {"content": "ok"}}]}).encode())
     monkeypatch.setattr(urllib.request, "urlopen", fake)
     assert llm.summarize(CARD, "fallback") == ("ok", llm.MODEL)
-    assert seen["auth"] == "Bearer gpu-key" and seen["body"]["chat_template_kwargs"] == {"enable_thinking": False} and seen["body"]["max_completion_tokens"] == 600
-    monkeypatch.setenv("LLM_EXTRA_BODY", "not json")
-    assert llm.extra_body() == {}
+    assert seen["auth"] == "Bearer relay-key" and seen["body"]["max_completion_tokens"] == 600
+    assert set(seen["body"]) == {"model", "messages", "max_completion_tokens"}
