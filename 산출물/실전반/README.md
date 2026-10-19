@@ -5,7 +5,7 @@
 | 1 | [PPTX·대본](이론/01회차/README.md) | [대본·랩·HTML](실습/01회차/README.md) | 확정 |
 | 2 | [PPTX·대본](이론/02회차/README.md) | [대본·랩·HTML](실습/02회차/README.md) | 확정 |
 | 3 | [PPTX·대본](이론/03회차/README.md) | [대본·랩·HTML](실습/03회차/README.md) | 확정 |
-| 4 | [PPTX·대본](이론/04회차/README.md) | [대본·랩·HTML](실습/04회차/README.md) | 검토 대기 |
+| 4 | [PPTX·대본](이론/04회차/README.md) | [대본·랩·HTML](실습/04회차/README.md) | 확정 |
 | 5 | [PPTX·대본](이론/05회차/README.md) | [대본·랩·HTML](실습/05회차/README.md) | 검토 대기 |
 | 6 | [PPTX·대본](이론/06회차/README.md) | [대본·랩·HTML](실습/06회차/README.md) | 검토 대기 |
 | 7 | [PPTX·대본](이론/07회차/README.md) | [대본·랩·HTML](실습/07회차/README.md) | 검토 대기 |

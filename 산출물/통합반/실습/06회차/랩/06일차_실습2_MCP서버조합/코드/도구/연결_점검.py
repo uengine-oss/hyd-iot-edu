@@ -59,6 +59,8 @@ class 연결:
         self._쓰기(보낸_것)
         try:
             return 보낸_것, json.loads(self.받은_것.get(timeout=기다림).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as e:
+            raise 연결_실패("서버 응답을 JSON으로 읽지 못했다: " + str(e))
         except queue.Empty:
             끝 = self.p.poll()
             까닭 = f"서버가 꺼졌다(종료 코드 {끝})" if 끝 is not None else f"{기다림}초 안에 답이 없다"
@@ -77,6 +79,10 @@ class 연결:
     def 열기(self) -> dict:
         _, 답 = self.요청("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                        "clientInfo": {"name": "연결_점검", "version": "1.0.0"}})
+        if "error" in 답 or not isinstance(답.get("result"), dict):
+            raise 연결_실패("초기화 오류: " + json.dumps(답, ensure_ascii=False))
+        if 답["result"].get("protocolVersion") != "2025-06-18":
+            raise 연결_실패("지원하지 않는 규약 판: " + str(답["result"].get("protocolVersion")))
         self.알림("notifications/initialized")
         return 답["result"]
 
@@ -110,17 +116,22 @@ def 목록(서버들: dict, 고른_것: list) -> int:
         if 고른_것 and 이름 not in 고른_것:
             continue
         print(f"\n■ {이름}")
+        c = None
         try:
             c = 연결(이름, 항목)
             print(f"  실행: {항목.get('command')} {보이기(c.명령줄)}")
             정보 = c.열기()
             _, 답 = c.요청("tools/list")
+            if "error" in 답 or not isinstance(답.get("result", {}).get("tools"), list):
+                raise 연결_실패("도구 목록 오류: " + json.dumps(답, ensure_ascii=False))
             도구들 = 답["result"]["tools"]
-            c.닫기()
         except 연결_실패 as e:
             실패 += 1
             print(f"  연결 실패: {e}")
             continue
+        finally:
+            if c is not None:
+                c.닫기()
         print(f"  연결됨: 서버 이름 {정보['serverInfo']['name']} · 판 {정보['serverInfo']['version']} · 규약의 판 {정보['protocolVersion']}")
         print(f"  도구 {len(도구들)}개")
         print(f"    {'도구':<26}{'읽기 전용':<10}필수 인수 (선택 인수)")
@@ -143,14 +154,17 @@ def 호출(서버들: dict, 이름: str, 도구: str, 인수_글: list) -> int:
             sys.exit(f"인수는 이름=값 으로 적는다: {글}")
         k, v = 글.split("=", 1)
         인수[k] = int(v) if v.lstrip("-").isdigit() else v
+    c = None
     try:
         c = 연결(이름, 서버들[이름])
         c.열기()
         보낸_것, 답 = c.요청("tools/call", {"name": 도구, "arguments": 인수})
-        c.닫기()
     except 연결_실패 as e:
         print(f"연결 실패: {e}")
         return 1
+    finally:
+        if c is not None:
+            c.닫기()
     print("보낸 요청 (tools/call)")
     print(json.dumps(보낸_것, ensure_ascii=False, indent=2))
     print("\n받은 응답")
@@ -159,7 +173,7 @@ def 호출(서버들: dict, 이름: str, 도구: str, 인수_글: list) -> int:
     if "content" in 결과:
         print(f"\n결과의 글 (isError: {str(결과.get('isError', False)).lower()})")
         print("\n".join(c.get("text", "") for c in 결과["content"]))
-    return 0
+    return 1 if "error" in 답 or 결과.get("isError", False) else 0
 
 
 def main() -> int:

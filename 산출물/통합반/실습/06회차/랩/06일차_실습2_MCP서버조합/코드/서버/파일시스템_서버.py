@@ -104,8 +104,8 @@ def search_files(path, query):
         if not f.is_file() or ".git" in f.parts:
             continue
         try:
-            줄들 = f.read_text(encoding="utf-8").splitlines()
-        except (UnicodeDecodeError, OSError):
+            줄들 = 풀기(str(f)).read_text(encoding="utf-8").splitlines()
+        except (UnicodeDecodeError, OSError, 도구_오류):
             continue
         찾은_것 += [f"{보이기(f)}:{n}: {줄.strip()}" for n, 줄 in enumerate(줄들, 1) if query.lower() in 줄.lower()]
     return "\n".join(찾은_것) if 찾은_것 else "없음"
