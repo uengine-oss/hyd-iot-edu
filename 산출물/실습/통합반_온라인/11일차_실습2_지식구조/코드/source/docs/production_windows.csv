@@ -1,0 +1,4 @@
+window_id,asset,start,end,production_state,source_ref,confirmed_by,updated_at
+day,HYD-02,2026-10-20T14:00:00+09:00,2026-10-20T17:00:00+09:00,occupied_by_MO-0930-0415,D4 row day,production,2026-10-19T14:00:00+09:00
+night,HYD-02,2026-10-20T22:00:00+09:00,2026-10-21T01:00:00+09:00,released,D4 row night,production,2026-10-19T14:00:00+09:00
+next_night,HYD-02,2026-10-21T22:00:00+09:00,2026-10-22T01:00:00+09:00,released,D4 row next_night,production,2026-10-19T14:00:00+09:00

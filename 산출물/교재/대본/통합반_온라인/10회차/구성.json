@@ -16,19 +16,23 @@
     },
     {
       "file": "02_실습_정기점검작도.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "03_실습_정기점검실행.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "04_실습_재고보충작도.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "05_실습_재고보충실행.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "06_이론_전체업무흐름.md",
@@ -39,6 +43,6 @@
       ]
     }
   ],
-  "playback": "이론① 1~37장(연속 실습 네 묶음의 간지·설명 포함) → 실제 실습 02~05 → 이론② 38~61장(전체 과정 정리·복습·퀴즈).",
-  "pptx_sha256": "5fe286a7a27bde66263ca339b57ba99d6a83e0b10de932f7dac13371978e5d1e"
+  "playback": "1~37장 → 실습02~05 → 38~61장 전체 흐름·복습·용어·퀴즈.",
+  "pptx_sha256": "bfd0c2f23ea34c85b35178d35953ac18da6de775f9f5e40788991af105b67395"
 }

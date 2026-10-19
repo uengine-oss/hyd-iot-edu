@@ -1,0 +1,8 @@
+{
+  "경보_패턴": "COOLER_DEGRADATION",
+  "tag": "TS1",
+  "aggregate": "avg",
+  "windowSeconds": 120,
+  "expect": "gte",
+  "threshold": 60
+}

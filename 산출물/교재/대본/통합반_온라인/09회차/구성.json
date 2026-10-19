@@ -32,21 +32,25 @@
     },
     {
       "file": "04_실습_승인절차작도.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "05_실습_긴급대응작도.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "06_실습_시스템연결.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     },
     {
       "file": "07_실습_실행기록확인.md",
-      "kind": "empty_practice"
+      "kind": "practice",
+      "status": "온라인 원고 개정·정적 검증 대상·실행 미수행"
     }
   ],
   "playback": "이론① 1~25장 → 이론② 26~42장 → 이론③ 43~67장(네 실습 간지·설명 포함) → 실제 실습 04~07 → 같은 이론③ 68~74장 복습·퀴즈 재개.",
-  "pptx_sha256": "f4633ad5426dd34d22394d51b565a43314748bf4cf2e6072322e5863f9040563"
+  "pptx_sha256": "73e15e24f61cae0b2673b5ffdb77cd45730570fbbf915051754bbff062d84f29"
 }
