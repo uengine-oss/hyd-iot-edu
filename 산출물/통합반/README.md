@@ -12,4 +12,4 @@
 | 8 | [PPTX·대본](이론/08회차/README.md) | [대본·랩·HTML](실습/08회차/README.md) | 이론 확정 · 실습 보류 |
 | 9 | [PPTX·대본](이론/09회차/README.md) | [대본·랩·HTML](실습/09회차/README.md) | 이론 확정 · 실습 보류 |
 | 10 | [PPTX·대본](이론/10회차/README.md) | [대본·랩·HTML](실습/10회차/README.md) | 이론 확정 · 실습 보류 |
-| 11 | [PPTX·대본](이론/11회차/README.md) | [대본·랩·HTML](실습/11회차/README.md) | 검토 대기 |
+| 11 | [PPTX·대본](이론/11회차/README.md) | [대본·랩·HTML](실습/11회차/README.md) | 이론 확정 · 실습 보류 |
