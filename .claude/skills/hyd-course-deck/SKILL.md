@@ -11,7 +11,7 @@ description: "HYD 제조 AI 교육과정(통합반 · 실전반, 온라인 · �
 
 1. `문서/교재/2_기준.md` — 전체. 기준은 이 문서 하나에만 있다(무엇을 주인공으로 삼는지, 이름을 부르는 법, 덱의 화면 규칙, 대본의 형식).
 2. `문서/교재/1_목적과_방향.md` — 할 일에 맞는 문서를 고르는 표. 이어서 `3_현황.md`.
-3. 상황별 문서(아래 표). 덱 MD의 형식은 `../lecture-deck/references/덱MD-PPTX형식.md`, 폴더와 대응표는 `production/decks/README.md`.
+3. 상황별 문서(아래 표). 덱 MD의 형식은 `../lecture-deck/references/덱MD-PPTX형식.md`, 폴더와 대응표는 `제작용/기존제작/decks/README.md`.
 
 | 하려는 일 | 읽을 문서 |
 |---|---|
@@ -21,8 +21,8 @@ description: "HYD 제조 AI 교육과정(통합반 · 실전반, 온라인 · �
 
 ## 덱의 구조
 
-- **원 덱**: 통합반 온라인 1~11일차. `production/decks/integrated/NN일차/통합반_NN일차.md`가 원본이고 PPTX는 거기서 만든다.
-- **조립 덱** 27개: 실전반 온라인 1~8일차, 통합반 오프라인 1~10회차, 실전반 오프라인 1~9회차. 폴더마다 `조립.py`(실전반 1일차는 `production/decks/practical/만들기_01일차.py`)가 원 덱에서 장을 **제목으로** 찾아 가져오고 손질 목록을 적용한다. 새로 쓴 장은 `새장_*.md`에 있다.
+- **원 덱**: 통합반 온라인 1~11일차. `제작용/온라인/decks/integrated/NN일차/통합반_NN일차.md`가 원본이고 PPTX는 거기서 만든다.
+- **조립 덱** 27개: 실전반 온라인 1~8일차, 통합반 오프라인 1~10회차, 실전반 오프라인 1~9회차. 폴더마다 `조립.py`(실전반 1일차는 `제작용/온라인/decks/practical/만들기_01일차.py`)가 원 덱에서 장을 **제목으로** 찾아 가져오고 손질 목록을 적용한다. 새로 쓴 장은 `새장_*.md`에 있다.
 - 사실의 근거는 `문서/교재/`의 기술사실표 넷, 실라버스는 `문서/교재/실라버스/피지컬AI_실라버스_최종본.xlsx`다.
 
 ## 한 장 고치기
@@ -32,8 +32,8 @@ description: "HYD 제조 AI 교육과정(통합반 · 실전반, 온라인 · �
 
 ```bash
 uv run --no-project --with python-pptx --with pymupdf python .claude/skills/lecture-deck/scripts/deck2pptx.py \
-  production/decks/integrated/day03/통합반_03일차.md production/decks/integrated/day03/통합반_03일차.pptx --render <새 렌더 폴더>
-uv run --no-project --with pillow python production/tools/deck/시트.py <렌더 폴더> <출력 접두어> --cols 3 --per 9
+  제작용/온라인/decks/integrated/day03/통합반_03일차.md 제작용/온라인/decks/integrated/day03/통합반_03일차.pptx --render <새 렌더 폴더>
+uv run --no-project --with pillow python 제작용/기존제작/tools/deck/시트.py <렌더 폴더> <출력 접두어> --cols 3 --per 9
 ```
 
 3. 통합반 덱을 고쳤으면 아래 「원 덱을 고친 뒤」를 이어서 한다.
@@ -46,12 +46,12 @@ python3 .claude/skills/hyd-course-deck/scripts/재조립.py --day 3 --build  # �
 python3 .claude/skills/hyd-course-deck/scripts/재조립.py --build          # 전부 조립하고, 바뀐 덱만 빌드
 python3 .claude/skills/hyd-course-deck/scripts/장수.py --units            # 38개 덱의 전체 · 단원별 본문 장수
 python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py --check        # zip의 구성과 낡은 항목 검사
-python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py                # production/dist/교재_전체.zip 다시 만들기
+python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py                # 제작용/기존제작/dist/교재_전체.zip 다시 만들기
 ```
 
 - `조립.py`가 멈추면 원 덱에서 장 제목이나 손질 대상 문구가 바뀐 것이다. 멈춘 스크립트의 순서표 · 손질 목록을 고치고 다시 돌린다. 멈춘 채로 빌드하지 않는다.
 - 「바뀐 덱」은 덱 MD가 커밋과 다른 덱이다. 빌드한 덱은 렌더해 고친 장이 조립 덱에서도 맞게 보이는지 확인한다(원 덱에서 뺀 장을 조립 덱이 전제하지 않는가, 손질한 문구가 어색하지 않은가).
-- 장수가 달라졌으면 `장수.py`의 값으로 제작 기준 13절 · 13-1절 · 13-2절, `production/decks/README.md` 머리 문단, `문서/교재/3_현황.md` 1절, `문서/시스템/3_현황.md` 1절 「교재(슬라이드)」 줄의 숫자를 맞춘다.
+- 장수가 달라졌으면 `장수.py`의 값으로 제작 기준 13절 · 13-1절 · 13-2절, `제작용/기존제작/decks/README.md` 머리 문단, `문서/교재/3_현황.md` 1절, `문서/시스템/3_현황.md` 1절 「교재(슬라이드)」 줄의 숫자를 맞춘다.
 - 마지막에 배포 묶음을 다시 만들고 `--check`가 통과하는지 본다.
 
 ## 새 일차 · 회차 덱 만들기
@@ -60,7 +60,7 @@ python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py                # 
 
 - **원 덱(통합반 새 일차)**: 사실 조사(`사실조사_지시.md` → 기술사실표) → 쓰기(`새일차쓰기_지시.md`: 장 목록 → 본문 · 노트 · 그림 → 빌드 · 렌더) → 검토(`새일차검토_지시.md`, 고치지 않는다) → 반영 → 다시 빌드 · 렌더.
 - **조립 덱(실전반, 오프라인 회차)**: 계획표(`실전반계획_지시.md`, `오프라인계획_지시.md` — 가져올 장을 일차 · 번호 · 제목으로) → 조립(`실전반쓰기_지시.md`, `오프라인쓰기_지시.md`, `오프라인일괄_지시.md` — `조립.py`와 `새장_*.md`) → 검토(`실전반검토_지시.md`) → 과정 전체 맞춤(`오프라인맞춤_지시.md`: 약어 풀네임의 첫 자리, 뒤 회차의 전제, 퀴즈 겹침, 목차의 틀).
-- 다 만들면 `장수.py`로 세어 제작 기준 13절의 표에 행을 더하고 `production/decks/README.md`의 대응표를 고친다.
+- 다 만들면 `장수.py`로 세어 제작 기준 13절의 표에 행을 더하고 `제작용/기존제작/decks/README.md`의 대응표를 고친다.
 
 ## 전체 점검과 반영
 
@@ -70,7 +70,7 @@ python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py                # 
 
 제작 기준에서 가장 자주 어긴 것이다. 근거와 세부는 괄호 안의 절에 있다.
 
-1. **그림체를 바꾸지 않는다.** 컨펌받은 샘플(`production/decks/integrated/sample/`)과 1일차 `figures/`의 선 · 색 · 그림 조각을 쓴다. 이미지 생성 AI를 쓰지 않는다(7절).
+1. **그림체를 바꾸지 않는다.** 컨펌받은 샘플(`제작용/온라인/decks/integrated/sample/`)과 1일차 `figures/`의 선 · 색 · 그림 조각을 쓴다. 이미지 생성 AI를 쓰지 않는다(7절).
 2. **실습은 2장**(간지 + 설명 한 장)이다. 개념 설명이 아닌 것은 실습이고, 강사의 시연도 실습이다. 절차 · 메뉴 · 화면 캡처 · 길 안내를 싣지 않는다(9절).
 3. **구현 설명과 단서를 쓰지 않는다.** 「우리 시스템은 이렇게 구현했다」, 면책, 내부 사정, 가상 · 시뮬레이터 강조는 화면에도 노트에도 없다(3절).
 4. **장수는 내용이 정한다.** 설명 하나에 장 하나. 시간에 맞춰 장을 늘리거나 줄이지 않는다(`문서/교재/2_기준.md` 7절, 덱 제작 기준 5절).
@@ -99,3 +99,5 @@ python3 .claude/skills/hyd-course-deck/scripts/배포묶음.py                # 
 - 그림은 덱 MD 위치 기준 상대 경로다. 조립 덱은 그림을 복사하지 않고 통합반 폴더의 것을 가리킨다.
 - `--render`는 LibreOffice(soffice), pdftoppm, 맑은 고딕이 있어야 하고 한 번에 하나씩 돈다. 렌더 폴더는 매번 새 이름으로 쓴다.
 - 도구의 한계는 우회하지 않고 도구(`../lecture-deck/scripts/deck2pptx.py`)를 고친다. 고쳤으면 덱 전부를 다시 빌드해 달라진 장이 없는지 본다.
+
+현재 온라인 배포는 산출물/과정/이론·실습/회차의 한 정본이다. 과거 전체 ZIP·재조립·PDF 렌더 명령은 현재 작업에 사용하지 않는다. 경로와 적용 범위는 문서/교재/2_기준.md 및 4_만드는_법.md를 우선한다.

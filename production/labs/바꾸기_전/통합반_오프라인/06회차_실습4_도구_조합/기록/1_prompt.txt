@@ -1,1 +1,0 @@
-이 폴더의 규칙(.github/copilot-instructions.md)과 스킬(.github/skills/meeting-actions/SKILL.md)을 읽어 줘. 그다음 지금 연결된 filesystem 서버와 git 서버에 어떤 도구가 있는지 보고, 도구마다 무엇을 넘겨야 하는지와 파일을 바꾸는 도구가 있는지를 말해 줘. filesystem 서버로 자료 폴더에 무슨 파일이 있는지 살펴보고, git 서버로 자료의 변경 기록이 모두 몇 건인지, 아직 변경 기록에 올라가지 않은 파일이 있는지도 알려 줘. 아직 파일은 만들지 마.

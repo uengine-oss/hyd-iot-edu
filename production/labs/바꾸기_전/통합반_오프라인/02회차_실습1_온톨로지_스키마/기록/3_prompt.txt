@@ -1,5 +1,0 @@
-계획 확인했어. 공급사의 name 은 괄호 말까지 자료에 적힌 그대로가 맞아.
-
-cardinality 는 지금 들어 있는 예제의 수가 아니라 앞으로 있을 수 있는 연결을 기준으로 정한다. MEASURES 는 N:1, USES_PART 는 1:N, CAUSES 는 N:M, MITIGATED_BY 는 N:M, OCCURS_IN 은 N:1, RELATED_TO 는 N:M 으로 넓히고, 나머지는 제안대로 한다. 그 밖에 물어본 것이 있으면 네가 권한 쪽으로 한다.
-
-지금은 결과/schema.json 한 파일만 고치고 멈춰. 결과/graph.json 은 아직 고치지 마.

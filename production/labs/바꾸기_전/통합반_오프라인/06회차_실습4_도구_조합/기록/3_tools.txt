@@ -1,2 +1,0 @@
-서버 상태: filesystem=connected, git=connected
-1. Write {"file_path": "<임시 폴더>/.github/skills/work-items/SKILL.md", "content": "---\nname: work-items\ndescription: 회의록 파일 하나를 받아, 작업을 뽑고 자료의  -> 성공

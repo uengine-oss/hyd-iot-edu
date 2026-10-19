@@ -17,5 +17,5 @@
 
 ```bash
 uv run --no-project --with pyyaml python .claude/skills/lecture-common/workflow_doctor.py .
-python3 .claude/skills/lecture-common/프로젝트탐지.py production/decks
+python3 .claude/skills/lecture-common/프로젝트탐지.py 제작용/기존제작/decks
 ```

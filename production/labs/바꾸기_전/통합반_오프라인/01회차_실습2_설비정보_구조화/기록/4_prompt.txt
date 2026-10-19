@@ -1,1 +1,0 @@
-이 폴더의 규칙(.github/copilot-instructions.md)과 결과/schema.json, 자료 폴더의 파일을 읽어 줘. schema.json 의 conventions 와 클래스 · 관계 정의대로 결과/graph.json 을 만들어 줘. 넣을 범위는 목록의 설비 세 대와 장치 · 계기 · 부품 전부, 그리고 관계도에 나온 증상 · 고장 유형 · 원인 · 조치야. 이 파일 하나만 만들어. 다 만든 뒤에는 graph.json 을 다시 읽어서 노드가 클래스별로 몇 개인지, 관계가 종류별로 몇 개인지 세어 주고, schema.json 만으로는 정할 수 없어서 네가 정한 것이 있으면 무엇인지 알려 줘.

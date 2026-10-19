@@ -1,5 +1,0 @@
-세 서버가 모두 연결됐어. 서버마다 도구를 두 개씩 불러 보고 결과/서버_비교.md 를 만들어 줘.
-
-filesystem 은 list_directory 로 회의록 폴더를 보고, read_text_file 로 회의록/2026-10-08_주간협의.txt 를 읽어. git 은 git_status 와 git_log 를 불러. time 은 get_current_time 과 convert_time 을 다시 불러. 표에는 부른 도구만 적어.
-
-표 아래에는 세 서버가 어떻게 다른지를 네 줄로 적어 줘: 도구 이름을 짓는 방식, 필수 인수, 돌아온 결과의 모양, 다시 불러도 결과가 같은지.

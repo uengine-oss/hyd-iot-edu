@@ -2,6 +2,7 @@
 
 형식: ../references/덱MD-PPTX형식.md
 사용: python deck2pptx.py <덱.md> <출력.pptx> [--render <PNG 폴더>]
+      python deck2pptx.py --check <덱.md | -> [--base <덱 폴더>]   # 파일을 하나도 쓰지 않고 검사만(읽기 전용 환경용, - 는 표준 입력)
 규칙 위반(모르는 유형·없는 칸·요소 수·그림 없음·아이콘 수·넘침 추정)은 장 번호와 칸 이름을 찍고 실패한다.
 
 본문 장은 제목(28pt) → 거버닝 메시지 한 줄 · 한 문장(16pt) → 본문(14~15pt)이다. 하단 넘기는 질문 상자와 반복 목차는 없고
@@ -11,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
+import os
 import re
 import shutil
 import subprocess
@@ -20,6 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pymupdf
+from PIL import Image, ImageFilter
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
@@ -66,7 +70,8 @@ NEED = {"표지": ("기관", "과정"), "강조": ("문장",), "문답": ("문�
 SKILL_DIR = Path(__file__).resolve().parent.parent
 ICON_DIR = SKILL_DIR / "assets" / "icons" / "tabler-outline"
 LOGO = SKILL_DIR / "assets" / "logo" / "uengine-logo.svg"
-ICON_CACHE = Path(tempfile.gettempdir()) / "deck2pptx_icons"
+ICON_CACHE = Path(os.environ.get("DECK2PPTX_CACHE") or Path(tempfile.gettempdir()) / "deck2pptx_icons")
+CHECK_ONLY = False      # --check: 캐시에 없는 그림은 메모리에서만 만들고, PPTX도 메모리에만 쓴다
 RENDER_FONT_KEYS = ("malgun", "mono", "consol", "menlo", "courier")   # 렌더 PDF에 박혀도 되는 글꼴 이름의 낱말
 GONE = {"핵심": "핵심 띠는 없앴다. 핵심 낱말은 `메시지`·요소 안에서 **굵게** 강조한다",
         "설명": "제목 아래 2~3줄 설명은 없앴다(2026-10-10). `메시지:`에 한 줄 · 한 문장으로 쓴다",
@@ -139,7 +144,7 @@ def parse(md_path: Path) -> list[Slide]:
             continue
         im = ITEM_RE.match(raw)
         if in_items and im:
-            parts = [p.strip() for p in re.split(r"(?<=\s)\|(?=\s|$)", im.group(1))]   # 빈 칸(`a | | c`)도 칸으로 센다
+            parts = [p.strip() for p in re.split(r"(?<=\s)\|(?=\s|$)", " " + im.group(1))]   # 빈 칸(`a | | c`, `| b | c`)도 칸으로 센다
             if len(parts) > 3:
                 raise DeckError(f"{md_path.name}:{ln} SLIDE {cur.no:02d} 요소 칸이 3개를 넘음: {raw.strip()}")
             cur.items.append(Item(*parts))
@@ -288,28 +293,33 @@ def text_w(text: str, pt: float) -> float:
     return sum(char_em(c) for c in plain(text)) * pt / 72
 
 
-def line_count(text: str, pt: float, width_in: float) -> int:
+def wrap_widths(text: str, pt: float, width_in: float) -> list[float]:
+    """상자 폭에서 줄바꿈된 줄마다의 글자 폭(인치)."""
     per_em = pt / 72
-    total = 0
+    out = []
     for para in plain(text).split("\n"):
-        lines, cur = 1, 0.0
+        cur = 0.0
         for word in para.split(" "):
             w = sum(char_em(c) for c in word) * per_em
             sp = 0.3 * per_em if cur else 0
             if cur + sp + w <= width_in:
                 cur += sp + w
             elif w <= width_in:
-                lines += 1
+                out.append(cur)
                 cur = w
             else:  # 긴 낱말은 글자 단위로 끊긴다
                 for c in word:
                     cw = char_em(c) * per_em
                     if cur + cw > width_in:
-                        lines += 1
+                        out.append(cur)
                         cur = 0
                     cur += cw
-        total += lines
-    return total
+        out.append(cur)
+    return out
+
+
+def line_count(text: str, pt: float, width_in: float) -> int:
+    return len(wrap_widths(text, pt, width_in))
 
 
 class Fit:
@@ -354,9 +364,48 @@ def set_font(run, size, color, bold=False, face=FONT):
         el.set("typeface", FONT)      # 한글은 고정폭 글꼴 상자에서도 덱 글꼴로
 
 
+UNIT_GLUE = re.compile(r"(\d) (℃|%|bar\b|mm/s|ms\b|Hz\b|초|분|시간|장\b|개\b|번\b)")
+TAIL_SHRINK = 1.0   # 꼬리 줄을 없애려고 글자를 줄여 보는 한도(pt)
+
+
+def tail_lines(text: str, pt: float, width_in: float, skip_first: bool) -> int:
+    """마지막 줄이 짧은 낱말 하나뿐인 문단(꼬리 줄)의 수. 줄바꿈은 띄어쓰기 단위(eaLnBrk=0과 같다)."""
+    n = 0
+    for i, para in enumerate(text.split("\n")):
+        if skip_first and i == 0:
+            continue
+        widths = wrap_widths(para, pt, width_in)
+        words = plain(para).split()
+        if len(widths) < 2 or not words:
+            continue
+        last_w = sum(char_em(c) for c in words[-1]) * pt / 72
+        if widths[-1] <= last_w + 0.01 and widths[-1] < max(0.55, 0.18 * width_in):   # 마지막 줄 = 짧은 낱말 하나
+            n += 1
+    return n
+
+
+def fit_tail(text: str, size: float, w: float, first_size, face) -> float:
+    """꼬리 줄이 있으면 글자를 0.5pt씩 TAIL_SHRINK까지 줄여 꼬리가 사라지는 크기를 찾는다. 없으면 원래 크기."""
+    if face != FONT or "\n" not in text and line_count(text, size, w - 0.2) < 2:
+        return size
+    skip = bool(first_size)
+    base = tail_lines(text, size, w - 0.2, skip)
+    if not base:
+        return size
+    pt = size - 0.5
+    while pt >= size - TAIL_SHRINK - 1e-6:
+        if tail_lines(text, pt, w - 0.2, skip) < base:
+            return pt
+        pt -= 0.5
+    return size
+
+
 def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LEFT,
              anchor=MSO_ANCHOR.TOP, hi_color=SKY_D, name=None, slide_no=0, max_lines=None,
              space_after=0, first_size=None, first_color=None, face=FONT):
+    text = UNIT_GLUE.sub("\\1\u00a0\\2", text)   # 숫자와 단위(55 ℃, 46.2 %)가 두 줄로 갈리지 않게 붙인다
+    if not max_lines or max_lines > 1:
+        size = fit_tail(text, size, w, first_size, face)
     if name:
         FIT.check(slide_no, name, text, size, w, h, max_lines, first_size, mono=face == MONO)
     tb = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
@@ -370,10 +419,15 @@ def add_text(sl, x, y, w, h, text, size, color, *, bold=False, align=PP_ALIGN.LE
         p = tf.paragraphs[0] if pi == 0 else tf.add_paragraph()
         p.alignment = align
         p.line_spacing = 1.1
+        p._p.get_or_add_pPr().set("eaLnBrk", "0")   # 한글 낱말을 글자 사이에서 자르지 않는다(줄은 띄어쓰기에서만 바뀐다)
         if space_after:
             p.space_after = Pt(space_after)
         first = bool(first_size) and pi == 0
         psize = first_size if first else size
+        if para_text.startswith("• ") and align == PP_ALIGN.LEFT:   # 둘째 줄이 글머리표 뒤 글자에 맞춰 시작하게(내어쓰기)
+            hang = Emu(int(Pt(psize) * 0.9))
+            p._p.get_or_add_pPr().set("marL", str(hang))
+            p._p.get_or_add_pPr().set("indent", str(-hang))
         base = (first_color or color) if first else color
         for k, chunk in enumerate(para_text.split("**")):
             if not chunk:
@@ -438,15 +492,22 @@ def svg_png(src: Path, color: RGBColor, key: str, scale: float, stroke: float | 
             svg = svg.replace('stroke-width="2"', f'stroke-width="{stroke}"')
         doc = pymupdf.open(stream=svg.encode("utf-8"), filetype="svg")
         pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=True)
+        if CHECK_ONLY:
+            return io.BytesIO(pix.tobytes("png"))
         ICON_CACHE.mkdir(parents=True, exist_ok=True)
         pix.save(out)
     return out
 
 
+def pic_src(x):
+    """add_picture에 넘길 것: 파일이면 경로 문자열, 메모리 그림이면 그대로."""
+    return str(x) if isinstance(x, Path) else x
+
+
 def add_icon(sl, name, cx, cy, size, color, stroke=1.6):
     """(cx, cy)를 가운데로 아이콘 하나. 이름표 「아이콘:」으로 저장본 검사에서 캡처와 구분한다."""
     png = svg_png(ICON_DIR / f"{name}.svg", color, name, 24, stroke)   # 24px → 576px
-    pic = sl.shapes.add_picture(str(png), Inches(cx - size / 2), Inches(cy - size / 2), Inches(size), Inches(size))
+    pic = sl.shapes.add_picture(pic_src(png), Inches(cx - size / 2), Inches(cy - size / 2), Inches(size), Inches(size))
     pic.name = f"아이콘:{name}"
     return pic
 
@@ -502,7 +563,7 @@ def render_cover(sl, s: Slide, _page):
     if s.fields.get("부제"):
         add_text(sl, MX - 0.1, 4.82, 9.2, 0.8, s.fields["부제"], 19, COVER_SUB,
                  name="표지 부제", slide_no=s.no, max_lines=2)
-    logo = sl.shapes.add_picture(str(svg_png(LOGO, WHITE, "logo-uengine", 1.2)), Inches(8.0), Inches(6.2),
+    logo = sl.shapes.add_picture(pic_src(svg_png(LOGO, WHITE, "logo-uengine", 1.2)), Inches(8.0), Inches(6.2),
                                  width=Inches(1.45))
     logo.name = "로고:uEngine"
     icons = s.icons
@@ -565,6 +626,21 @@ def render_divider(sl, s: Slide, _page):
 
 
 # ── 본문 유형 ──────────────────────────────────────────────────────────────
+FILL = 0.8   # 카드 · 비교 · 흐름 · 단계: 본문 영역 높이의 이만큼까지 글자를 키워 채운다(내용이 적어 위아래가 비지 않게)
+
+
+def grow(base: float, cap: float, height_at, avail: float, step: float = 0.5, tails=None) -> float:
+    """base pt에서 cap pt까지 step씩 키워 보며, height_at(pt)가 avail * FILL 안에 들고
+    tails(pt)(꼬리 줄의 수)가 base보다 늘지 않는 가장 큰 크기를 돌려준다. base에서도 넘치면 base 그대로(넘침은 Fit 검사가 잡는다)."""
+    best, pt = base, base
+    t0 = tails(base) if tails else 0
+    while pt <= cap + 1e-6:
+        if height_at(pt) <= avail * FILL and (not tails or tails(pt) <= t0):
+            best = pt
+        pt += step
+    return best
+
+
 def item_block(sl, x, y, w, h, it: Item, slide_no, name, *, title_pt=17, desc_pt=BODY_PT, align=PP_ALIGN.LEFT,
                bullet=True, anchor=MSO_ANCHOR.TOP):
     """요소 제목(굵게) + 설명 여러 줄을 한 상자에."""
@@ -580,9 +656,17 @@ def render_flow(sl, s, page):
     w = (CW - gap * (n - 1)) / n
     d = 0.8 if s.icons else 0
     small = n >= 5
-    desc_pt = 12.5 if small else 13.5
-    need = max(line_count("\n".join(it.lines) or " ", desc_pt, w - 0.36) for it in s.items)
-    h = min(end - top, 0.3 + d + 0.95 + need * desc_pt * LINE_SPACING / 72 + 0.3)
+    base = 12.5 if small else 13.5
+
+    def flow_h(pt):
+        tpt = pt + (3 if small else 3.5)
+        need = max(line_count("\n".join(it.lines) or " ", pt, w - 0.36) for it in s.items)
+        tl = max(line_count(it.plain_title, tpt, w - 0.36) for it in s.items)
+        return 0.3 + d + 0.25 + tl * tpt * LINE_SPACING / 72 + 0.4 + need * pt * LINE_SPACING / 72 + 0.3
+
+    desc_pt = grow(base, base + 3, flow_h, end - top,
+                   tails=lambda pt: sum(tail_lines("\n".join(it.lines), pt, w - 0.36, False) for it in s.items))
+    h = min(end - top, flow_h(desc_pt))
     y = top + (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -593,7 +677,7 @@ def render_flow(sl, s, page):
             add_icon(sl, s.icons[i], x + w / 2, ty + d / 2, d * 0.58, NAVY)
             ty += d + 0.08
         item_block(sl, x + 0.08, ty, w - 0.16, y + h - ty - 0.08, it, s.no, f"요소{i + 1}",
-                   title_pt=15.5 if small else 17, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
+                   title_pt=desc_pt + (3 if small else 3.5), desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
         if i < n - 1:
             add_box(sl, x + w + 0.07, y + h / 2 - 0.15, gap - 0.14, 0.3, NAVY, shape=MSO_SHAPE.RIGHT_ARROW)
 
@@ -603,12 +687,20 @@ def render_cards(sl, s, page):
     n, gap = len(s.items), 0.3
     w = (CW - gap * (n - 1)) / n
     d = 0.8
-    desc_pt = 13.5 if n == 4 else BODY_PT
-    need = max(line_count(it.plain_title, 18, w - 0.56) * 18 + line_count(
-        (bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines)) or " ", desc_pt, w - 0.56) * desc_pt
-        for it in s.items) * LINE_SPACING / 72
-    h = min(end - top, 0.22 + (d + 0.1 if s.icons else 0) + need + 0.55
-            + (0.55 if any(it.tag for it in s.items) else 0.12))   # 내용이 적으면 빈 칸을 늘이지 않는다
+    base = 13.5 if n == 4 else BODY_PT
+
+    def card_h(pt):
+        tpt = pt + 4
+        need = max(line_count(it.plain_title, tpt, w - 0.56) * tpt + line_count(
+            (bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines)) or " ", pt, w - 0.56) * pt
+            for it in s.items) * LINE_SPACING / 72
+        return (0.22 + (d + 0.1 if s.icons else 0) + need + 0.45
+                + (0.55 if any(it.tag for it in s.items) else 0.12))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    desc_pt = grow(base, base + 4, card_h, end - top,
+                   tails=lambda pt: sum(tail_lines(bullets(it.lines) if len(it.lines) > 1 else "\n".join(it.lines), pt, w - 0.56, False)
+                                        for it in s.items))
+    h = min(end - top, card_h(desc_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -619,7 +711,7 @@ def render_cards(sl, s, page):
             add_icon(sl, s.icons[i], x + 0.25 + d / 2, ty + d / 2, d * 0.58, NAVY)
             ty += d + 0.1
         bottom = top + h - (0.55 if it.tag else 0.12)
-        item_block(sl, x + 0.18, ty, w - 0.36, bottom - ty, it, s.no, f"요소{i + 1}", title_pt=18,
+        item_block(sl, x + 0.18, ty, w - 0.36, bottom - ty, it, s.no, f"요소{i + 1}", title_pt=desc_pt + 4,
                    desc_pt=desc_pt)
         if it.tag:
             chip(sl, x + 0.25, top + h - 0.47, it.tag, it.strong, s.no, limit=w - 0.5)
@@ -630,9 +722,15 @@ def render_compare(sl, s, page):
     gap = 0.8
     w = (CW - gap) / 2
     d = 0.8
-    need = max(line_count(bullets(it.lines) or " ", 14.5, w - 0.8) for it in s.items)
-    h = min(end - top, 1.15 + need * (14.5 * LINE_SPACING + 6) / 72 + 0.35
-            + (0.6 if any(it.tag for it in s.items) else 0.15))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    def cmp_h(pt):
+        need = max(line_count(bullets(it.lines) or " ", pt, w - 0.8) for it in s.items)
+        return (1.15 + need * (pt * LINE_SPACING + 6) / 72 + 0.35
+                + (0.6 if any(it.tag for it in s.items) else 0.15))   # 내용이 적으면 빈 칸을 늘이지 않는다
+
+    body_pt = grow(14.5, 18, cmp_h, end - top,
+                   tails=lambda pt: sum(tail_lines(bullets(it.lines), pt, w - 0.8, False) for it in s.items))
+    h = min(end - top, cmp_h(body_pt))
     top += (end - top - h) / 2
     for i, it in enumerate(s.items):
         x = MX + i * (w + gap)
@@ -646,7 +744,7 @@ def render_compare(sl, s, page):
         add_text(sl, tx, top + 0.22, x + w - tx - 0.2, d, it.plain_title, 20, NAVY, bold=True,
                  anchor=MSO_ANCHOR.MIDDLE, name=f"요소{i + 1} 제목", slide_no=s.no, max_lines=2)
         bottom = top + h - (0.6 if it.tag else 0.15)
-        add_text(sl, x + 0.3, top + 1.15, w - 0.6, bottom - top - 1.15, bullets(it.lines), 14.5, INK,
+        add_text(sl, x + 0.3, top + 1.15, w - 0.6, bottom - top - 1.15, bullets(it.lines), body_pt, INK,
                  name=f"요소{i + 1} 줄", slide_no=s.no, space_after=6)
         if it.tag:
             chip(sl, x + 0.35, top + h - 0.5, it.tag, it.strong, s.no, limit=w - 0.7)
@@ -702,9 +800,15 @@ def render_steps(sl, s, page):
     n = len(s.items)
     w = CW / n
     d = 0.95
-    desc_pt = 13 if n == 5 else 13.5
-    need = max(line_count("\n".join(it.lines) or " ", desc_pt, w - 0.36) for it in s.items)
-    h = min(end - top, d + 0.25 + 0.9 + need * desc_pt * LINE_SPACING / 72 + 0.2)
+    base = 13 if n == 5 else 13.5
+
+    def step_h(pt):
+        need = max(line_count("\n".join(it.lines) or " ", pt, w - 0.36) for it in s.items)
+        return d + 0.25 + 0.9 + need * pt * LINE_SPACING / 72 + 0.2
+
+    desc_pt = grow(base, base + 3, step_h, end - top,
+                   tails=lambda pt: sum(tail_lines("\n".join(it.lines), pt, w - 0.36, False) for it in s.items))
+    h = min(end - top, step_h(desc_pt))
     y = top + (end - top - h) / 2
     add_box(sl, MX + w / 2, y + d / 2 - 0.02, CW - w, 0.04, LINE, shape=MSO_SHAPE.RECTANGLE)
     for i, it in enumerate(s.items):
@@ -722,7 +826,7 @@ def render_steps(sl, s, page):
                      anchor=MSO_ANCHOR.MIDDLE)
         ly = y + d + 0.2
         item_block(sl, cx - w / 2 + 0.08, ly, w - 0.16, y + h - ly, it, s.no, f"단계{i + 1}",
-                   title_pt=16 if n == 5 else 17, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
+                   title_pt=desc_pt + 3.5, desc_pt=desc_pt, align=PP_ALIGN.CENTER, bullet=False)
 
 
 def render_statement(sl, s, page):
@@ -762,7 +866,7 @@ def render_picture(sl, s, page, base: Path):
     img = picture_file(base, s.fields["그림"])
     n = len(s.items)
     box_w, box_h = (7.9 if n else CW), end - top - 0.05
-    pic = sl.shapes.add_picture(str(img), Inches(MX), Inches(top))
+    pic = sl.shapes.add_picture(pic_src(img), Inches(MX), Inches(top))
     ratio = min(Inches(box_w) / pic.width, Inches(box_h) / pic.height)
     pic.width, pic.height = int(pic.width * ratio), int(pic.height * ratio)
     pic.top = Inches(top + (box_h - Emu(pic.height).inches) / 2)
@@ -793,8 +897,11 @@ def picture_file(base: Path, rel: str) -> Path:
     out = ICON_CACHE / f"illust_{abs(hash(str(src.resolve())))}_{int(src.stat().st_mtime)}.png"
     if not out.exists():
         doc = pymupdf.open(stream=src.read_bytes(), filetype="svg")
+        pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(3, 3), alpha=True)
+        if CHECK_ONLY:
+            return io.BytesIO(pix.tobytes("png"))
         ICON_CACHE.mkdir(parents=True, exist_ok=True)
-        doc[0].get_pixmap(matrix=pymupdf.Matrix(3, 3), alpha=True).save(out)
+        pix.save(out)
     return out
 
 
@@ -803,7 +910,7 @@ def render_illust(sl, s, page, base: Path):
     x · y는 그림 상자의 왼쪽 위를 0,0 · 오른쪽 아래를 100,100으로 본 글상자 **가운데 위** 지점, 폭은 그림 폭의 %(기본 16)."""
     top, end = frame(sl, s, page)
     box_w, box_h = CW, end - top
-    pic = sl.shapes.add_picture(str(picture_file(base, s.fields["그림"])), Inches(MX), Inches(top))
+    pic = sl.shapes.add_picture(pic_src(picture_file(base, s.fields["그림"])), Inches(MX), Inches(top))
     ratio = min(Inches(box_w) / pic.width, Inches(box_h) / pic.height)
     pic.width, pic.height = int(pic.width * ratio), int(pic.height * ratio)
     pw, ph = Emu(pic.width).inches, Emu(pic.height).inches
@@ -811,16 +918,93 @@ def render_illust(sl, s, page, base: Path):
     pic.left, pic.top = Inches(px), Inches(py)
     pic.name = "삽화:" + Path(s.fields["그림"]).name
     t_pt, d_pt = (16, 13) if s.fields.get("라벨") == "큰" else (13.5, 11)   # `라벨: 큰` = 라벨이 적고 그림이 큰 장
+    ink = drawing_edges(picture_file(base, s.fields["그림"]), pw, ph)
+    placed: list[tuple[str, list]] = []
     for i, it in enumerate(s.items):
         nums = [float(v) for v in it.tag.split(",")]
         w = pw * (nums[2] if len(nums) > 2 else 16) / 100
-        text = it.plain_title + ("\n" + "\n".join(it.lines) if it.lines else "")
-        n1 = line_count(it.plain_title, t_pt, w - 0.2)
+        small = not it.plain_title          # 이름 칸이 비면 설명 줄만 작은 글씨로 쓴다(그래프의 관계 이름처럼)
+        text = "\n".join(it.lines) if small else it.plain_title + ("\n" + "\n".join(it.lines) if it.lines else "")
+        n1 = 0 if small else line_count(it.plain_title, t_pt, w - 0.2)
         n2 = line_count("\n".join(it.lines), d_pt, w - 0.2) if it.lines else 0
         h = (n1 * t_pt + n2 * d_pt) * LINE_SPACING / 72 + 0.14
-        add_text(sl, px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100, w, h, text, d_pt, MUTED,
-                 align=PP_ALIGN.CENTER, first_size=t_pt, first_color=SKY_D if it.strong else NAVY,
-                 name=f"라벨 「{it.plain_title}」", slide_no=s.no, space_after=1)
+        x, y = px + pw * nums[0] / 100 - w / 2, py + ph * nums[1] / 100
+        label = text.replace("\n", " ")
+        add_text(sl, x, y, w, h, text, d_pt, NAVY if small else MUTED,
+                 align=PP_ALIGN.CENTER, first_size=None if small else t_pt, first_color=SKY_D if it.strong else NAVY,
+                 name=f"라벨 「{label}」", slide_no=s.no, space_after=1)
+        rows = label_rows(x - px, y - py, w, it, t_pt, d_pt)
+        hit = label_on_drawing(ink, rows)
+        if hit:
+            FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{label}」의 {hit}번째 줄이 그림의 선 · 아이콘과 겹치거나 "
+                            f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
+        g = LABEL_GAP
+        for name, other in placed:      # 라벨끼리도 LABEL_GAP만큼 떨어져야 한다
+            if any(a[0] < b[2] + g and b[0] < a[2] + g and a[1] < b[3] + g and b[1] < a[3] + g for a in rows for b in other):
+                FIT.errs.append(f"SLIDE {s.no:02d} 삽화 라벨 「{label}」이 라벨 「{name}」과 겹치거나 "
+                                f"{LABEL_GAP}인치 안으로 붙음(좌표를 옮기거나 폭을 바꾼다)")
+        placed.append((label, rows))
+
+
+EDGE = 24          # 이웃 픽셀과 밝기가 이만큼 넘게 다르면 그림의 선 · 아이콘 · 글자의 가장자리다(흐린 선 약 30, 같은 색 칸 안은 0)
+EDGE_SHARE = 0.01  # 라벨 한 줄의 글자 자리에서 가장자리 픽셀이 이만큼을 넘으면 겹친 것으로 본다(가는 선 하나가 지나가면 약 2%)
+LABEL_GAP = 0.1    # 라벨 글자와 그림 사이에 둘 여백(인치). 글자 자리를 이만큼 넓혀 재므로 붙어 있어도 실패한다
+
+
+def drawing_edges(png: Path, pw: float, ph: float):
+    """그림을 1인치 = 100픽셀로 줄여 흰 바탕에 얹고, 가장자리 세기(0~255)만 남긴 흑백 그림. 같은 색으로 칠한 칸은 0이다."""
+    im = Image.open(png).convert("RGBA").resize((round(pw * 100), round(ph * 100)))
+    flat = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    flat.alpha_composite(im)
+    return flat.convert("L").filter(ImageFilter.FIND_EDGES)
+
+
+def label_rows(x, y, w, it, t_pt, d_pt) -> list[tuple[float, float, float, float]]:
+    """라벨 글상자 안의 줄마다 글자가 차지하는 자리(가운데 맞춤)의 (왼, 위, 오른, 아래). 그림 왼쪽 위 기준 인치."""
+    rows = [(lw, t_pt) for lw in wrap_widths(it.plain_title, t_pt, w - 0.2)] if it.plain_title else []
+    if it.lines:
+        rows += [(lw, d_pt) for lw in wrap_widths("\n".join(it.lines), d_pt, w - 0.2)]
+    out, cy = [], y + 0.05
+    for lw, pt in rows:
+        lh = pt * LINE_SPACING / 72
+        out.append((x + w / 2 - lw / 2, cy + lh * 0.15, x + w / 2 + lw / 2, cy + lh * 0.85))
+        cy += lh
+    return out
+
+
+def label_on_drawing(edges, rows) -> int:
+    """라벨의 줄마다 글자 자리를 그림의 가장자리와 맞대어, 겹치거나 붙은 첫 줄 번호를 돌려준다(없으면 0).
+    글자 자리에 그림이 들어오면 겹침, 둘레 LABEL_GAP 안에 들어오면 붙음이다. 다만 라벨 전체의 위와 아래(각 3 × LABEL_GAP 안)를
+    칸의 테두리가 가로지르면 칸 안에 쓴 글자(표의 행처럼)로 보고 붙음은 따지지 않는다."""
+    def px(v):
+        return round(v * 100)
+
+    def clip(b):
+        return max(1, b[0]), max(1, b[1]), min(edges.width - 1, b[2]), min(edges.height - 1, b[3])
+
+    def share(box):
+        if box[2] <= box[0] or box[3] <= box[1]:
+            return 0.0
+        hist = edges.crop(box).histogram()
+        return sum(hist[EDGE + 1:]) / sum(hist)
+
+    def border(box):        # 띠를 가로지르는 선이 글자 폭의 60 % 넘게 이어지는가
+        if box[2] <= box[0] or box[3] <= box[1]:
+            return False
+        cols = edges.crop(box).point(lambda v: 255 if v > EDGE else 0).resize((box[2] - box[0], 1), Image.BOX)
+        return sum(1 for v in cols.tobytes() if v) / cols.width > 0.6
+
+    g = LABEL_GAP
+    lx0, lx1 = min(r[0] for r in rows), max(r[2] for r in rows)
+    top, bottom = rows[0][1], rows[-1][3]
+    boxed = (border(clip((px(lx0), px(top - 3 * g), px(lx1), px(top))))           # 라벨 전체의 위와 아래를 칸 테두리가 가로지른다
+             and border(clip((px(lx0), px(bottom), px(lx1), px(bottom + 3 * g)))))
+    for k, (x0, y0, x1, y1) in enumerate(rows, 1):
+        if share(clip((px(x0), px(y0), px(x1), px(y1)))) > EDGE_SHARE:
+            return k
+        if not boxed and share(clip((px(x0 - g), px(y0 - g), px(x1 + g), px(y1 + g)))) > EDGE_SHARE:
+            return k
+    return 0
 
 
 def render_terms(sl, s, page):
@@ -1039,16 +1223,43 @@ RENDER = {"표지": render_cover, "목차": render_agenda, "간지": render_divi
           "문답": render_quiz}
 
 
-def build(md_path: Path, out: Path) -> list[Slide]:
+class StdinDeck:
+    """--check - : 표준 입력으로 받은 덱 MD. parse · validate가 쓰는 name · parent · read_text만 갖는다."""
+
+    def __init__(self, text: str, parent: Path):
+        self.text, self.parent, self.name = text, parent, "<표준 입력>"
+
+    def read_text(self, encoding="utf-8"):
+        return self.text
+
+
+def build(md_path, out) -> list[Slide]:
     slides = parse(md_path)
     validate(slides, md_path)
     DECK["기관"] = slides[0].fields.get("기관", "")
     prs = Presentation()
     prs.slide_width, prs.slide_height = Inches(SLIDE_W), Inches(SLIDE_H)
     blank = prs.slide_layouts[6]
+    # 저장소의 추가 설명 레이아웃도 동일한 디자인 토큰·프레임을 사용한다.
+    import importlib.util
+    layout_path = Path(__file__).resolve().parents[4] / '제작용/온라인/tools/deck/설명레이아웃.py'
+    custom = None
+    layout_names = {}
+    for block in re.split(r'(?=^## SLIDE )', md_path.read_text(encoding='utf8'), flags=re.M):
+        number = re.match(r'## SLIDE (\d+)', block)
+        name = re.search(r'^레이아웃: (.+)$', block, re.M)
+        if number and name:
+            layout_names[int(number[1])] = name[1].strip()
+    if layout_names:
+        spec = importlib.util.spec_from_file_location('lecture_layouts', layout_path)
+        custom = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(custom)
     for page, s in enumerate(slides, 1):
         sl = prs.slides.add_slide(blank)
-        if s.kind == "그림":
+        if s.no in layout_names:
+            import sys
+            custom.render(sys.modules[__name__], sl, s, page, layout_names[s.no])
+        elif s.kind == "그림":
             render_picture(sl, s, page, md_path.parent)
         elif s.kind == "삽화":
             render_illust(sl, s, page, md_path.parent)
@@ -1056,7 +1267,8 @@ def build(md_path: Path, out: Path) -> list[Slide]:
             RENDER[s.kind](sl, s, page)
     if FIT.errs:
         raise DeckError("글자 넘침 추정(문구를 줄이거나 장을 나눈다):\n  " + "\n  ".join(FIT.errs))
-    out.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(out, Path):
+        out.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out)
     return slides
 
@@ -1080,7 +1292,7 @@ def audit(pptx_path: Path, slides: list[Slide]) -> list[str]:
         for sh in icons:   # 아이콘이 장을 덮으면 통이미지와 같다
             if sh.width * sh.height > slide_area * 0.12:
                 errs.append(f"SLIDE {s.no:02d} 아이콘 {sh.name}이 장 면적의 12%를 넘음")
-        on_screen = "".join(sh.text_frame.text for sh in texts).replace("\n", "").replace(" ", "")
+        on_screen = "".join(sh.text_frame.text for sh in texts).replace("\n", "").replace(" ", "").replace("\u00a0", "")
         if plain(s.title).replace(" / ", "").replace(" ", "") not in on_screen:
             errs.append(f"SLIDE {s.no:02d} 제목이 텍스트 상자에 없음")
     return errs
@@ -1133,10 +1345,30 @@ def render_png(pptx_path: Path, out_dir: Path) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("deck")
-    ap.add_argument("out")
+    ap.add_argument("deck", help="덱 MD. --check와 함께 - 를 주면 표준 입력에서 읽는다")
+    ap.add_argument("out", nargs="?")
     ap.add_argument("--render", help="PNG를 낼 폴더(LibreOffice + pdftoppm)")
+    ap.add_argument("--check", action="store_true", help="파일을 하나도 쓰지 않고 규칙 · 넘침 · 라벨 간격 · 저장본 검사만 한다")
+    ap.add_argument("--base", help="--check - 일 때 그림 경로의 기준 폴더(덱 MD가 있는 폴더)")
     a = ap.parse_args()
+    if a.check:
+        global CHECK_ONLY
+        CHECK_ONLY = True
+        md = StdinDeck(sys.stdin.read(), Path(a.base or ".")) if a.deck == "-" else Path(a.deck)
+        try:
+            buf = io.BytesIO()
+            slides = build(md, buf)
+            buf.seek(0)
+            errs = audit(buf, slides)
+            if errs:
+                raise DeckError("저장본 검사 실패:\n  " + "\n  ".join(errs))
+        except DeckError as e:
+            print(f"[실패] {e}", file=sys.stderr)
+            return 1
+        print(f"[검사 통과] {md.name} — {len(slides)}장, 파일은 쓰지 않았다")
+        return 0
+    if not a.out:
+        ap.error("출력 PPTX 경로가 필요하다(검사만 하려면 --check)")
     md, out = Path(a.deck), Path(a.out)
     if out.exists() and out.resolve() == md.resolve():
         print("입력과 출력이 같음", file=sys.stderr)

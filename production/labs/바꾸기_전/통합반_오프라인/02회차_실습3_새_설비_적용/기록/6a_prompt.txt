@@ -1,1 +1,0 @@
-검사에서 USES_PART 가 1:N 인데 part:p-fan-brg 에 구성 요소가 셋 이어져 있다고 나왔어. 결과/schema.json 에서 USES_PART 의 cardinality 를 N:M 으로 고쳐 줘. 한 글자만 바꾸면 되니까 이번만 예외로 해 줘.

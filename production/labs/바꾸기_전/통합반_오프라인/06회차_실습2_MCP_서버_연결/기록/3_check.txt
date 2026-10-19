@@ -1,8 +1,0 @@
-
-■ time
-  실행: python ${workspaceFolder}/서버/시간_서버.py --local-timezone Asia/Seoul
-  연결됨: 서버 이름 time · 판 1.0.0 · 규약의 판 2025-06-18
-  도구 2개
-    도구                        읽기 전용     필수 인수 (선택 인수)
-    get_current_time          true         timezone
-    convert_time              true         source_timezone, time, target_timezone

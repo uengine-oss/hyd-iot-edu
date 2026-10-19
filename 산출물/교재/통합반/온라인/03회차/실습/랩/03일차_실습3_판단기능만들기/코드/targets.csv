@@ -1,5 +1,0 @@
-sop_id,reference_skill_id,name,kind,codes,source_section
-SOP-COOL-11,skill:fan-max,팬 최대 운전,control,FAN_SET,HM-8.5
-SOP-COOL-12,,팬 최대 운전과 부하 80 %,control,FAN_SET;LOAD_SET,HM-8.5
-SOP-COOL-13,,부하 70 %와 야간 핀 세척,control,LOAD_SET;WO_CREATE,HM-8.5
-SOP-COOL-14,,쿨러 핀 세척,workorder,WO_CREATE,HM-8.7

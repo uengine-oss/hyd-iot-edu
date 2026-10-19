@@ -1,0 +1,549 @@
+{
+  "source_commit": "d4e61682881b2e432074350ca6a9ef49992b6b57",
+  "sections": [
+    {
+      "source": "2_기준.md",
+      "section": "최신 제작 범위와 반복 검토 금지",
+      "destination": "2_기준.md",
+      "original_sha256": "57e2da80d2adb009f588ba64e53309d2f1464c8f24fa93b8479e375a1b289938",
+      "moved_sha256": "d4aee80dec262c97ad6e27dfa3b351d2d44d26ccd63914cb3602c4906213a186",
+      "amended": true
+    },
+    {
+      "source": "2_기준.md",
+      "section": "두 과정의 공통 범위와 실전·응용 차이 — 사용자 확정",
+      "destination": "2_기준.md",
+      "original_sha256": "0df7ef5771b1b5326bac1e75c4fdbd34217622a968584967cab8e5643dda0724",
+      "moved_sha256": "0df7ef5771b1b5326bac1e75c4fdbd34217622a968584967cab8e5643dda0724",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "현행 적용 범위와 확정 기준",
+      "destination": "2_기준.md",
+      "original_sha256": "a95838d9cd9ad91b906047ecc61321ba67a1eb026b48e9bcdfc2bff7cad68965",
+      "moved_sha256": "a95838d9cd9ad91b906047ecc61321ba67a1eb026b48e9bcdfc2bff7cad68965",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "경로·권한·기록",
+      "destination": "2_기준.md",
+      "original_sha256": "343656d6634137abbe9702d3917b1a868b656024147b5235ca11fc54a3f294ab",
+      "moved_sha256": "11802fab665c21b88a4d026378f0ea6cda771b81558fccf0b3ecd56f230a39ff",
+      "amended": true
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 01",
+      "destination": "2_기준.md",
+      "original_sha256": "c135bdaff0bc26328bb2371e947251c2e19533e9ac1a25f10268f4b13acaefef",
+      "moved_sha256": "c135bdaff0bc26328bb2371e947251c2e19533e9ac1a25f10268f4b13acaefef",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 02",
+      "destination": "2_기준.md",
+      "original_sha256": "1f55c5d3ac72750f725dc1bd83c48068b23d61a2c29f9c2b5e4b40bea288f1b4",
+      "moved_sha256": "1f55c5d3ac72750f725dc1bd83c48068b23d61a2c29f9c2b5e4b40bea288f1b4",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 03",
+      "destination": "검증과마감.md",
+      "original_sha256": "35d9b54a88b8f577d815b2635ad09c9c1582468d79b0b8190b66e4d7958a0f7e",
+      "moved_sha256": "35d9b54a88b8f577d815b2635ad09c9c1582468d79b0b8190b66e4d7958a0f7e",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 04",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "64b7994ce9d0665e78645bcc7adaaee1c900d4187d92ecba49b98cfd3eb1866d",
+      "moved_sha256": "64b7994ce9d0665e78645bcc7adaaee1c900d4187d92ecba49b98cfd3eb1866d",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 05",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "f99ad63a8367f1727a8dd91cfa3229919b0954b1867a22ef63243034da93f2f4",
+      "moved_sha256": "f99ad63a8367f1727a8dd91cfa3229919b0954b1867a22ef63243034da93f2f4",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 06",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "5b8b8626a5d15ae3c26d2c3c8e59090c3532be0af48deeb709b0141512ba8c97",
+      "moved_sha256": "5b8b8626a5d15ae3c26d2c3c8e59090c3532be0af48deeb709b0141512ba8c97",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 07",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "2b0ab6378523725d5db9fdc8d1d281e3862312680ae565de9be114fcc1c9c2f8",
+      "moved_sha256": "2b0ab6378523725d5db9fdc8d1d281e3862312680ae565de9be114fcc1c9c2f8",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 08",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "77f94cc2f0dd0d9278d1b751391843a2702b042b3ad0e138b66c700db74a7b28",
+      "moved_sha256": "77f94cc2f0dd0d9278d1b751391843a2702b042b3ad0e138b66c700db74a7b28",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 09",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "3cd9246f801f727af1f1b5f27d8412b3c01ac203ff37285642d118187e4ca7a4",
+      "moved_sha256": "3cd9246f801f727af1f1b5f27d8412b3c01ac203ff37285642d118187e4ca7a4",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 10",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "9e9389035c88362c8d813a02c73caabcb3e7b1da11acc572b917fc1a6ad01daa",
+      "moved_sha256": "9e9389035c88362c8d813a02c73caabcb3e7b1da11acc572b917fc1a6ad01daa",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 11",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "764a223f893c3d55a10ee8f7d027434d613bcd9dd26db615f68654c21fd45c3c",
+      "moved_sha256": "764a223f893c3d55a10ee8f7d027434d613bcd9dd26db615f68654c21fd45c3c",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 12",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "b863f606ca6145c8bc001337e9249b47891cc6d905bddb971a12836e8b0f35f8",
+      "moved_sha256": "b863f606ca6145c8bc001337e9249b47891cc6d905bddb971a12836e8b0f35f8",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 13",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "5a8951805b47f34860a9e106dd1d0b9a7fe11ebaa0f7471987561f9456ae76ff",
+      "moved_sha256": "5a8951805b47f34860a9e106dd1d0b9a7fe11ebaa0f7471987561f9456ae76ff",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 14",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "737e6819da44cc04c520dce015a189de6501b31ac91578e5e9477f99c9873b4b",
+      "moved_sha256": "737e6819da44cc04c520dce015a189de6501b31ac91578e5e9477f99c9873b4b",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 15",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "a9590ed54031192077ee97779c015e2ae607cfa3b3fe4fa17d7eed0213d8eed7",
+      "moved_sha256": "a9590ed54031192077ee97779c015e2ae607cfa3b3fe4fa17d7eed0213d8eed7",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 16",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "4d26e4fe0f27eed53b91ab07a88455ee95be3ac9b2138e740ea9f6580abae1af",
+      "moved_sha256": "4d26e4fe0f27eed53b91ab07a88455ee95be3ac9b2138e740ea9f6580abae1af",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 17",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "c394f19cdaa89b4b778ce651450934133a5505f38e51eabb30aeda8e36dbd436",
+      "moved_sha256": "c394f19cdaa89b4b778ce651450934133a5505f38e51eabb30aeda8e36dbd436",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 18",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "3f5f0a56548abf1cf375c10c296c54d3dba76baf2f86c13871c48ccd7d2ca363",
+      "moved_sha256": "3f5f0a56548abf1cf375c10c296c54d3dba76baf2f86c13871c48ccd7d2ca363",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 19",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "595fea46e9697e17ee80b8642b9a4647de65e54e51945dd62fd3ae16c579b8e7",
+      "moved_sha256": "595fea46e9697e17ee80b8642b9a4647de65e54e51945dd62fd3ae16c579b8e7",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 20",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "64fb6025b62092b090c73608e902b4657bcce4187448dc45f2a0f94b7571d0e3",
+      "moved_sha256": "64fb6025b62092b090c73608e902b4657bcce4187448dc45f2a0f94b7571d0e3",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 21",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "0e8bf5ae85c9689c0ca37eac8211c219becaf0f5162a962dd0c5ed51524962e5",
+      "moved_sha256": "0e8bf5ae85c9689c0ca37eac8211c219becaf0f5162a962dd0c5ed51524962e5",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 22",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "3c98af5b077a33024f4fbd8aaa96fd34053d0ab954d95b1e292e4b2f073665aa",
+      "moved_sha256": "3c98af5b077a33024f4fbd8aaa96fd34053d0ab954d95b1e292e4b2f073665aa",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 23",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "7c890fdb52a5414c15101ab080a506f72978cd4b95160d233be554fb2e184e5f",
+      "moved_sha256": "7c890fdb52a5414c15101ab080a506f72978cd4b95160d233be554fb2e184e5f",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 24",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "5af007d743865573caf6fc43bd3382244e86537bcc44423cc0df3eae76653764",
+      "moved_sha256": "5af007d743865573caf6fc43bd3382244e86537bcc44423cc0df3eae76653764",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 25",
+      "destination": "2_기준.md",
+      "original_sha256": "4ceeb55f72d8c0afcefd5b9f27fdd8d765369636dbf035d05bb1cbc9ede8c1b4",
+      "moved_sha256": "4ceeb55f72d8c0afcefd5b9f27fdd8d765369636dbf035d05bb1cbc9ede8c1b4",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 26",
+      "destination": "검증과마감.md",
+      "original_sha256": "3698248e409c8deabb244a3073d1bbe9957d8228b378eaf531fe52149fc42bae",
+      "moved_sha256": "3698248e409c8deabb244a3073d1bbe9957d8228b378eaf531fe52149fc42bae",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 27",
+      "destination": "검증과마감.md",
+      "original_sha256": "4d2dd581a95d221ca251d08bd47f9fb038c43c532502cafb25cc5eccfaf9afb5",
+      "moved_sha256": "4d2dd581a95d221ca251d08bd47f9fb038c43c532502cafb25cc5eccfaf9afb5",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 28",
+      "destination": "2_기준.md",
+      "original_sha256": "11e7373ed712e0034c2b1b9e6ade575c86be2567d1c03ad9fba69d0439b6494f",
+      "moved_sha256": "11e7373ed712e0034c2b1b9e6ade575c86be2567d1c03ad9fba69d0439b6494f",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 29",
+      "destination": "2_기준.md",
+      "original_sha256": "ca04d40088018649dfde32388d0b12cea8f993754176d489023608be910f183f",
+      "moved_sha256": "18f0be28beb32133b6ebb47b8544b308c23c012498406224a4df93d4b3d6af6e",
+      "amended": true
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 30",
+      "destination": "검증과마감.md",
+      "original_sha256": "96082c33185478bac7cfb6ecff1734acfe5ca50d2d4a85a25f9a28cff59b7f44",
+      "moved_sha256": "96082c33185478bac7cfb6ecff1734acfe5ca50d2d4a85a25f9a28cff59b7f44",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 31",
+      "destination": "2_기준.md",
+      "original_sha256": "1674bc9511966b33d70bb4a38b125023796312e0e8f3f6fdefbfd8c47e206c9b",
+      "moved_sha256": "1674bc9511966b33d70bb4a38b125023796312e0e8f3f6fdefbfd8c47e206c9b",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "상세 적용 — 제조 업무 맥락과 반복 구조의 해석",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "44c2da7e0b7742ff47f45512c44d75e6fd9c00a0857bc8055e28a2384bebcbef",
+      "moved_sha256": "44c2da7e0b7742ff47f45512c44d75e6fd9c00a0857bc8055e28a2384bebcbef",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "상세 적용 — 이론의 반복 점검과 실습 시작 장면",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "edcca8699aa9d999bb7728f23b2d68881f1297d41288e521d1d09c11c7fcb4bc",
+      "moved_sha256": "edcca8699aa9d999bb7728f23b2d68881f1297d41288e521d1d09c11c7fcb4bc",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "상세 적용 — 온라인 실습의 바이브 코딩과 설명의 점진적 축소",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "f398935c9c28a0600e639d06b79890c29b78b286cdb230b7e60047c12367bbbf",
+      "moved_sha256": "f398935c9c28a0600e639d06b79890c29b78b286cdb230b7e60047c12367bbbf",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "촬영 분할과 제작 원칙의 세부 보존",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "2580ace15626d313a0728908347ecd45a060a83781c8f859bf5b9c2d3536a079",
+      "moved_sha256": "2580ace15626d313a0728908347ecd45a060a83781c8f859bf5b9c2d3536a079",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "1. 중심",
+      "destination": "2_기준.md",
+      "original_sha256": "88e0e47ee29716af927471c81a217807fcc4ebdc92ee0bbe707cf85e06cb188d",
+      "moved_sha256": "88e0e47ee29716af927471c81a217807fcc4ebdc92ee0bbe707cf85e06cb188d",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "2. 이야기로 잇는다",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "2b2b90d61422c1157cba62c56d1568876316f80ebee7ed4d367a16b1c94ab5d9",
+      "moved_sha256": "2b2b90d61422c1157cba62c56d1568876316f80ebee7ed4d367a16b1c94ab5d9",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "3. 까닭",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "f24e5c99522945efcd9cad062a824ca80d8fdff5ff42a417fe688a7f6f64f012",
+      "moved_sha256": "f24e5c99522945efcd9cad062a824ca80d8fdff5ff42a417fe688a7f6f64f012",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "4. 개념과 재료",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "69a573dcd116ec0188a3f1c6d658d52e095c99f030047822969505554a1996e0",
+      "moved_sha256": "69a573dcd116ec0188a3f1c6d658d52e095c99f030047822969505554a1996e0",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "5. 깊이",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "08e7bbe277937fd8a119f0bdd752508ced6d90ddb582bee4b66dba2f6383b4d7",
+      "moved_sha256": "08e7bbe277937fd8a119f0bdd752508ced6d90ddb582bee4b66dba2f6383b4d7",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "6. 덱과 대본",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "9cf7c1d0f620e1459c78150a1c7d5005c230a4f3ee5ee3b4ba5e44c53f08b717",
+      "moved_sha256": "9cf7c1d0f620e1459c78150a1c7d5005c230a4f3ee5ee3b4ba5e44c53f08b717",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "7. 길이와 되풀이",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "4c390ccd477ef92046160310e86e88e212557fe73ecafa7b18bea129e420a9d6",
+      "moved_sha256": "4c390ccd477ef92046160310e86e88e212557fe73ecafa7b18bea129e420a9d6",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "8. 윤문",
+      "destination": "검증과마감.md",
+      "original_sha256": "180968392d5860ef4da22dfcf85d4f0fe103711fcf3b290ec51d88e3bf214cad",
+      "moved_sha256": "180968392d5860ef4da22dfcf85d4f0fe103711fcf3b290ec51d88e3bf214cad",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "9. 음성과 영상",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "24eabe3d79ba5f91b5ea32aa9f6eae3037f748ef410706a5e5416ce21ae89a7b",
+      "moved_sha256": "24eabe3d79ba5f91b5ea32aa9f6eae3037f748ef410706a5e5416ce21ae89a7b",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "10. 실습",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "574ea4c528948ff58bbb420da4080278392f8be6f64771bc47659069d85f9907",
+      "moved_sha256": "574ea4c528948ff58bbb420da4080278392f8be6f64771bc47659069d85f9907",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "11. 사실",
+      "destination": "2_기준.md",
+      "original_sha256": "cdb7cda7db5a503d5ccc46ac5e28821a0c1f2940d280cd2b45b917df46edab7a",
+      "moved_sha256": "cdb7cda7db5a503d5ccc46ac5e28821a0c1f2940d280cd2b45b917df46edab7a",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "12. 일하는 방식",
+      "destination": "2_기준.md",
+      "original_sha256": "3484cddb5bc298fca518e3d74b9084ef6761eb6801535d0df7e57f1485c8e408",
+      "moved_sha256": "3484cddb5bc298fca518e3d74b9084ef6761eb6801535d0df7e57f1485c8e408",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "13. 저장소",
+      "destination": "2_기준.md",
+      "original_sha256": "73977fabb83ab886a061e4d627dfae18e609b13748baba79694ba2f0dafe57a9",
+      "moved_sha256": "73977fabb83ab886a061e4d627dfae18e609b13748baba79694ba2f0dafe57a9",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "14. 덱의 화면",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "54a023d5575bae3b1e3954fa8499207efa29ebe372ba843ee599fbf109220a62",
+      "moved_sha256": "54a023d5575bae3b1e3954fa8499207efa29ebe372ba843ee599fbf109220a62",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "15. 대본의 형식과 표기",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "982c996d1576fc7f25716aa33108e2a23f36c2472ae62364d19bf071697c18d9",
+      "moved_sha256": "982c996d1576fc7f25716aa33108e2a23f36c2472ae62364d19bf071697c18d9",
+      "amended": false
+    },
+    {
+      "source": "2_기준.md",
+      "section": "16. 점검",
+      "destination": "검증과마감.md",
+      "original_sha256": "9b1f607728d54261289060046bb722d188be52a1f3c71d85d84248efd914bc5b",
+      "moved_sha256": "9b1f607728d54261289060046bb722d188be52a1f3c71d85d84248efd914bc5b",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "최신 제작 범위와 반복 검토 금지",
+      "destination": "검증과마감.md",
+      "original_sha256": "f1b39140e939d567a14de0a55fed09e98ed15d06b2e3b19ec26479977fab09c2",
+      "moved_sha256": "f6398edb28143db639210c4b2714820bc93d846db5385ef9792ef4abfdbc90fd",
+      "amended": true
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "공통 내용과 과정별 수행의 수정·동기화 절차",
+      "destination": "검증과마감.md",
+      "original_sha256": "b399899d8600472e5119dfee41f98706aa7d189678bf5d1615c1e462a186f4e7",
+      "moved_sha256": "b399899d8600472e5119dfee41f98706aa7d189678bf5d1615c1e462a186f4e7",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "1. 정확한 원본과 작업 경계",
+      "destination": "검증과마감.md",
+      "original_sha256": "2474539981fb38d0d417dbac270ba7104912ce10caa29e6ed79f2847f024f698",
+      "moved_sha256": "2474539981fb38d0d417dbac270ba7104912ce10caa29e6ed79f2847f024f698",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "2. 내용과 전개를 검증하는 순서",
+      "destination": "검증과마감.md",
+      "original_sha256": "6f303b0d56cfd1d3bfb1c47067c6f38523503c4fd8d8049f6f90e65b1e618fa3",
+      "moved_sha256": "6aaf0a3d909b3eb9ebf982f43a949ae864aa0a3fa7532bf16f49b5a239f6f658",
+      "amended": true
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "3. 화면·삽화·조립 참조 수정",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "e9b622844cbc53f1ffd7742285d8cdf4b8a31053a65a1822ba63f60e19e60e77",
+      "moved_sha256": "e9b622844cbc53f1ffd7742285d8cdf4b8a31053a65a1822ba63f60e19e60e77",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "4. 대본·낭독본·발표자 노트·PDF",
+      "destination": "기준_덱과이론대본.md",
+      "original_sha256": "ebd1cbc5ce84cdc78e5c34f1a2640f72337c24d91d840e3853236f4f233e93ba",
+      "moved_sha256": "ebd1cbc5ce84cdc78e5c34f1a2640f72337c24d91d840e3853236f4f233e93ba",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "5. 랩 자체·자료·온라인 진행·오프라인 배포",
+      "destination": "기준_실습과랩.md",
+      "original_sha256": "f44beb5461804f4c53f51ab991dea2d6cedeccd7f1cd0e16fb77ab1a19b5e1df",
+      "moved_sha256": "f44beb5461804f4c53f51ab991dea2d6cedeccd7f1cd0e16fb77ab1a19b5e1df",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "6. 실라버스 변경·촬영·게시",
+      "destination": "검증과마감.md",
+      "original_sha256": "79c992e0860fd89d4498d616099ba82832ba93d26a2573157d7f4fdb42d8da23",
+      "moved_sha256": "79c992e0860fd89d4498d616099ba82832ba93d26a2573157d7f4fdb42d8da23",
+      "amended": false
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "회차별 전달 산출물과 게시 — 최신 사용자 지시",
+      "destination": "검증과마감.md",
+      "original_sha256": "71390015fbdd393ce587819fb2a12d48af2c863de335650631464d1a7a6412bb",
+      "moved_sha256": "71390015fbdd393ce587819fb2a12d48af2c863de335650631464d1a7a6412bb",
+      "amended": false
+    }
+  ],
+  "explicit_revisions": [
+    {
+      "source": "2_기준.md",
+      "section": "최신 제작 범위와 반복 검토 금지",
+      "before": "\n덱·발표자 노트·대본·랩·입력자료·가이드 및 필요한 HTML·ZIP 동기화에 집중한다. 최신 사용자 지시로 PDF 제작·검토는 제외하며, 아래 기존 PDF 관련 절차는 현재 작업에 적용하지 않는다. 기존 PDF는 보존한다.\n\n이미 같은 판본으로 확인·확정한 산출물 내용은 검토 근거를 재사용한다. 변경 부분과 그 앞뒤 연결·영향받은 파생물·미확인 범위만 점검하며, 구체적 결함 없이 같은 검토를 반복하지 않는다. 기준 전독은 적용 지침을 복원하는 절차이며 확정 산출물 전체를 다시 검사하라는 뜻이 아니다.\n\n효율은 같은 판본의 확정 근거와 공통 원문을 재사용하고 불필요한 재생성·반복 수정을 줄이는 것이다. 효율을 이유로 미확인 회차를 일부만 읽거나 표본·키워드 검사로 전체 내용 검토를 대신하지 않는다. 해당 회차의 이론·전체 발화·화면·랩·입력자료·가이드를 빠짐없이 대조하고, 수정 후 앞뒤 연결과 영향을 받는 파생물까지 확인한다. 검토 범위표에 확인/근거 재사용/미확인을 구분하고, 누락이 없을 때만 회차를 확정한다. 기준 전독과 산출물 재검토는 구별한다.\n\n최종 GitHub 교재는 과정→온라인/오프라인→회차→이론·실습 순으로 찾을 수 있게 정리하며 PDF는 최종 배포 구성에서 제외한다. 경로 전환·자료 보존·링크/ZIP 동기화 절차는 4_만드는_법.md와 현재 인계를 따른다.\n\n",
+      "after": "\n덱·발표자 노트·대본·랩·입력자료·가이드 및 필요한 HTML·ZIP 동기화에 집중한다. 최신 사용자 지시로 PDF 제작·검토는 제외하며, 아래 기존 PDF 관련 절차는 현재 작업에 적용하지 않는다. 기존 PDF는 보존한다.\n\n이미 같은 판본으로 확인·확정한 산출물 내용은 검토 근거를 재사용한다. 변경 부분과 그 앞뒤 연결·영향받은 파생물·미확인 범위만 점검하며, 구체적 결함 없이 같은 검토를 반복하지 않는다. 기준 읽기와 복원은 적용 지침을 확인하는 절차이며 확정 산출물 전체를 다시 검사하라는 뜻이 아니다.\n\n효율은 같은 판본의 확정 근거와 공통 원문을 재사용하고 불필요한 재생성·반복 수정을 줄이는 것이다. 효율을 이유로 미확인 회차를 일부만 읽거나 표본·키워드 검사로 전체 내용 검토를 대신하지 않는다. 해당 회차의 이론·전체 발화·화면·랩·입력자료·가이드를 빠짐없이 대조하고, 수정 후 앞뒤 연결과 영향을 받는 파생물까지 확인한다. 검토 범위표에 확인/근거 재사용/미확인을 구분하고, 누락이 없을 때만 회차를 확정한다. 기준 전독과 산출물 재검토는 구별한다.\n\n최종 GitHub 교재는 과정→온라인/오프라인→회차→이론·실습 순으로 찾을 수 있게 정리하며 PDF는 최종 배포 구성에서 제외한다. 경로 전환·자료 보존·링크/ZIP 동기화 절차는 4_만드는_법.md와 현재 인계를 따른다.\n\n"
+    },
+    {
+      "source": "2_기준.md",
+      "section": "경로·권한·기록",
+      "before": "\n- 통합반: `D:/work/study/hyd-integrated-recovered-20261018`, 시작 브랜치 `codex/integrated-recovered-01-07`, 현재 보존 커밋의 분리된 HEAD.\n- 실전반: `D:/work/study/hyd-portal-latest-20261014`, 현재 작업 브랜치 `develop` (시작 브랜치 `codex/practical-sessions-01-07`).\n- 실제 Git 상태·HEAD·원격을 시작 시 확인한다. 옛 C 작업 폴더, 서로의 폴더 안 과거 다른 과정 사본 사용과 두 루트 합치기를 금지한다. 실전반8의 배정 원본은 통합반11이다.\n- 사용자 요청으로 교재 변경과 인계 동기화의 커밋·푸시는 허용됐다. 별도 CLAUDE.md·포털·Supabase·시스템 미커밋 수정은 보존·제외한다. 실제 학생 코드/테스트·AI 시연·HYD/DB·브라우저 실습·캡처·음성 생성은 현재 범위가 아니다. 문서 생성·정적 검증·PDF 렌더와 배치 확인만 수행한다.\n- 새 세션은 사용자가 요청문을 받아 직접 시작한다. 자동 생성·외부 작업자 호출을 하지 않는다. 인계만 정리하고 검증·수정을 멈추지 않는다.\n- 이 문서가 기준의 정본이다. 현황은 3_현황.md, 방법은 4_만드는_법.md, 변경 근거는 5_결정_기록.md, 다음 작업은 6_남은_일.md, 진입점은 인계 문서에서 관리한다. 현행 항목을 직접 갱신하고 상충하는 최신 절을 앞에 누적하지 않는다.\n- 대화 전체 원문이 보존된다고 주장하지 않는다. 사용자 직접 결정, 적용을 위한 편집 판단, 검증 결과를 구분한다. 원문을 옮기거나 규칙을 바꾸면 원래 위치·내용·이유·현재 위치를 기록한다. 확정된 사용자 내용·상세 기준을 요약으로 대체하지 않는다. 과거 .evidence/before.json은 불변이다.\n\n",
+      "after": "\n- 통합반: `D:/work/study/hyd-integrated-recovered-20261018`, 시작 브랜치 `codex/integrated-recovered-01-07`, 현재 보존 커밋의 분리된 HEAD.\n- 실전반: `D:/work/study/hyd-portal-latest-20261014`, 현재 작업 브랜치 `develop` (시작 브랜치 `codex/practical-sessions-01-07`).\n- 실제 Git 상태·HEAD·원격을 시작 시 확인한다. 옛 C 작업 폴더, 서로의 폴더 안 과거 다른 과정 사본 사용과 두 루트 합치기를 금지한다. 실전반8의 배정 원본은 통합반11이다.\n- 사용자 요청으로 교재 변경과 인계 동기화의 커밋·푸시는 허용됐다. 별도 CLAUDE.md·포털·Supabase·시스템 미커밋 수정은 보존·제외한다. 실제 학생 코드/테스트·AI 시연·HYD/DB·브라우저 실습·캡처·음성 생성은 현재 범위가 아니다. 문서 생성·정적 검증·PDF 렌더와 배치 확인만 수행한다.\n- 새 세션은 사용자가 요청문을 받아 직접 시작한다. 자동 생성·외부 작업자 호출을 하지 않는다. 인계만 정리하고 검증·수정을 멈추지 않는다.\n- 공통 기준과 연결된 주제별 상세 문서가 각각 담당 규칙의 정본이다. 현황은 3_현황.md, 방법은 4_만드는_법.md, 변경 근거는 5_결정_기록.md, 다음 작업은 6_남은_일.md, 진입점은 인계 문서에서 관리한다. 현행 항목을 직접 갱신하고 상충하는 최신 절을 앞에 누적하지 않는다.\n- 대화 전체 원문이 보존된다고 주장하지 않는다. 사용자 직접 결정, 적용을 위한 편집 판단, 검증 결과를 구분한다. 원문을 옮기거나 규칙을 바꾸면 원래 위치·내용·이유·현재 위치를 기록한다. 확정된 사용자 내용·상세 기준을 요약으로 대체하지 않는다. 과거 .evidence/before.json은 불변이다.\n\n"
+    },
+    {
+      "source": "2_기준.md",
+      "section": "온라인 상세 29",
+      "before": "29 : **컨텍스트** : 관련 기준은 작업 시작 전과 컨텍스트가 요약된 뒤마다 처음부터 끝까지 전독한다. 요약·기억·키워드 검색·일부 조항 재확인으로 전독을 대신하지 않는다. 두 경로의 동일 본문은 일치 여부를 확인해 공통 원문을 전독하고, 차이가 있으면 차이 전체를 읽는다. 읽은 판본·범위와 실제 수정·남은 검증을 기록하고 원문을 적용한 뒤 산출물 작업을 계속한다.\n\n",
+      "after": "29 : **컨텍스트** : 기준 읽기와 요약 후 복원은 [공통 기준의 읽기 규칙](2_기준.md#기준-읽기와-작업-복원)을 따른다.\n\n"
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "최신 제작 범위와 반복 검토 금지",
+      "before": "\n덱·발표자 노트·대본·랩·입력자료·가이드 및 필요한 HTML·ZIP 동기화에 집중한다. 최신 사용자 지시로 PDF 제작·검토는 제외하며, 아래 기존 PDF 관련 절차는 현재 작업에 적용하지 않는다. 기존 PDF는 보존한다.\n\n이미 같은 판본으로 확인·확정한 산출물 내용은 검토 근거를 재사용한다. 변경 부분과 그 앞뒤 연결·영향받은 파생물·미확인 범위만 점검하며, 구체적 결함 없이 같은 검토를 반복하지 않는다. 기준 전독은 적용 지침을 복원하는 절차이며 확정 산출물 전체를 다시 검사하라는 뜻이 아니다.\n\n",
+      "after": "\n덱·발표자 노트·대본·랩·입력자료·가이드 및 필요한 HTML·ZIP 동기화에 집중한다. 최신 사용자 지시로 PDF 제작·검토는 제외하며, 아래 기존 PDF 관련 절차는 현재 작업에 적용하지 않는다. 기존 PDF는 보존한다.\n\n이미 같은 판본으로 확인·확정한 산출물 내용은 검토 근거를 재사용한다. 변경 부분과 그 앞뒤 연결·영향받은 파생물·미확인 범위만 점검하며, 구체적 결함 없이 같은 검토를 반복하지 않는다. 기준 읽기와 복원은 적용 지침을 확인하는 절차이며 확정 산출물 전체를 다시 검사하라는 뜻이 아니다.\n\n"
+    },
+    {
+      "source": "4_만드는_법.md",
+      "section": "2. 내용과 전개를 검증하는 순서",
+      "before": "\n1. 관련 기준은 작업 시작 전과 컨텍스트가 요약된 뒤마다 처음부터 끝까지 전독한다. 요약·기억·키워드 검색·일부 조항 재확인으로 전독을 대신하지 않는다. 두 경로의 동일 본문은 일치 여부를 확인해 공통 원문을 전독하고, 차이가 있으면 차이 전체를 읽는다. 읽은 판본·범위와 실제 수정·남은 검증을 기록하고 원문을 적용한 뒤 산출물 작업을 계속한다. 최신 사용자 범위·실라버스 원문·사실표·분할 원본·기존 검토 근거를 읽는다. 기존 검토와 이번 실제 확인을 구별하고 시작 해시를 새 근거 폴더에 저장한다.\n2. 실라버스 상세 항목 → 단원·장 → 설명 → 실제 랩의 목적·판정 조건을 대응시킨다. 선수 개념, 정식 용어·정의·이유, 사례·조건·예외·복습·퀴즈·정답의 위치를 확인한다. 제목 목록이나 키워드 검색만으로 내용 검토를 완료했다고 하지 않는다.\n3. 변경이 필요한 문장은 앞뒤와 실제 촬영 경계까지 읽는다. 아직 배우거나 수행하지 않은 활동을 완료했다고 말하는지, 출처 없는 값이나 현재 구현을 일반 원리처럼 설명하는지 확인한다. 이론의 실습 간지·설명은 이론 파일 안에 두고 실제 실습 삽입·재개는 비낭독 표시로 구별한다.\n4. 수정 전후 원문·위치·이유·근거와 영향을 남긴다. 이미 허용된 수정은 다시 승인을 요청하지 않고 해당 범위에서 끝낸다. 근거 없는 확장이나 문체 취향을 이유로 전부 재작성하지 않는다.\n5. 수정 원본 → 해당 파생물 → 정적 검증 → 필요한 렌더 확인 순서로 진행한다. 사실·의미·전개 검토, 원문 정합성, 화면 배치는 서로를 대신하지 않는다.\n6. 같은 산식으로 변경 전후 낭독 추정을 계산한다. 한글 음절 + 숫자×1.6 + 영문 글자×0.6을 275로 나누며 영문 뒤 한글 독음은 기존 도구의 치환 규칙을 따른다. 제목·제작 메모는 발화 시간에서 빼고 학습 대기는 별도 기록한다. 조작·AI 응답·전체 진행 시간으로 단정하거나 목표 시간에 맞추지 않는다.\n7. 확정 항목·구체적 미해결·촬영 확인을 분리해 현황·남은 일·인계·제작기록을 갱신한다. 실제 확인하지 않은 청취·PowerPoint 앱·실행 성공을 기록하지 않는다.\n\n",
+      "after": "\n1. 기준 읽기와 요약 후 복원은 [공통 기준의 읽기 규칙](2_기준.md#기준-읽기와-작업-복원)을 따른다. 최신 사용자 범위·실라버스 원문·사실표·분할 원본·기존 검토 근거를 읽는다. 기존 검토와 이번 실제 확인을 구별하고 시작 해시를 새 근거 폴더에 저장한다.\n2. 실라버스 상세 항목 → 단원·장 → 설명 → 실제 랩의 목적·판정 조건을 대응시킨다. 선수 개념, 정식 용어·정의·이유, 사례·조건·예외·복습·퀴즈·정답의 위치를 확인한다. 제목 목록이나 키워드 검색만으로 내용 검토를 완료했다고 하지 않는다.\n3. 변경이 필요한 문장은 앞뒤와 실제 촬영 경계까지 읽는다. 아직 배우거나 수행하지 않은 활동을 완료했다고 말하는지, 출처 없는 값이나 현재 구현을 일반 원리처럼 설명하는지 확인한다. 이론의 실습 간지·설명은 이론 파일 안에 두고 실제 실습 삽입·재개는 비낭독 표시로 구별한다.\n4. 수정 전후 원문·위치·이유·근거와 영향을 남긴다. 이미 허용된 수정은 다시 승인을 요청하지 않고 해당 범위에서 끝낸다. 근거 없는 확장이나 문체 취향을 이유로 전부 재작성하지 않는다.\n5. 수정 원본 → 해당 파생물 → 정적 검증 → 필요한 렌더 확인 순서로 진행한다. 사실·의미·전개 검토, 원문 정합성, 화면 배치는 서로를 대신하지 않는다.\n6. 같은 산식으로 변경 전후 낭독 추정을 계산한다. 한글 음절 + 숫자×1.6 + 영문 글자×0.6을 275로 나누며 영문 뒤 한글 독음은 기존 도구의 치환 규칙을 따른다. 제목·제작 메모는 발화 시간에서 빼고 학습 대기는 별도 기록한다. 조작·AI 응답·전체 진행 시간으로 단정하거나 목표 시간에 맞추지 않는다.\n7. 확정 항목·구체적 미해결·촬영 확인을 분리해 현황·남은 일·인계·제작기록을 갱신한다. 실제 확인하지 않은 청취·PowerPoint 앱·실행 성공을 기록하지 않는다.\n\n"
+    }
+  ]
+}

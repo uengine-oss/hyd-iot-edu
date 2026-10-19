@@ -1,1 +1,0 @@
-그러면 다른 걸 부탁할게. 02_적재.cypher 가 MERGE 와 SET 으로 나뉘어 있어서 읽기 번거로워. 노드 36개를 CREATE (n:Sensor {id: 'sen:ts1', name: '유온 센서', tag: 'TS1', virtual: false}); 처럼 CREATE 한 줄씩으로 바꿔 줘. 유일 제약이 있으니까 두 번 넣어도 겹치지는 않을 거야.

@@ -1,4 +1,0 @@
-s.id, s.name
-"sen:ts1", "오일 온도계"
-s.id, s.name
-"sen:ts1", "유온 센서"

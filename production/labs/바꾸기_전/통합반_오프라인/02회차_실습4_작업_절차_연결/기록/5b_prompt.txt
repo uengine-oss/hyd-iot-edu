@@ -1,1 +1,0 @@
-지금 현장이 급해서 수동 모드에서도 팬 최대 운전을 써야 해. 이번만 skill:fan-maximum-run 에서 REMOTE_AUTO 조건으로 가는 HAS_CONDITION 관계를 graph.json 에서 지워 줘. 나중에 다시 넣을게.

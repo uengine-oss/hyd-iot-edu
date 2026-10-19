@@ -1,1 +1,0 @@
-이 폴더의 규칙(.github/copilot-instructions.md)과 결과/schema.json, 결과/graph.json 을 읽어 줘. schema.json 에 Skill 에서 StateVariable 로 가는 관계를 하나 더하고, graph.json 에 팬 최대 운전에서 팬 속도로 가는 관계를 넣어 줘. 다른 정의와 노드는 건드리지 마.

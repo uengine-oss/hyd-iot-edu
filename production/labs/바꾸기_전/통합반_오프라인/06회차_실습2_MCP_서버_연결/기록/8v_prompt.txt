@@ -1,1 +1,0 @@
-먼저 .github/copilot-instructions.md 를 읽고 그 규칙을 따라 줘. 결과/서버_비교.md 가 보기 불편해. 고쳐 줘.
