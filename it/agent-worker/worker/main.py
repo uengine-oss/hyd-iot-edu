@@ -26,7 +26,7 @@ from .settings import AGENT_TYPE, settings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("worker")
 # A095: settings are captured above; from here on no child process (the CLI agent, its MCP servers) can inherit the
-# worker's own credentials. The Codex GPU key is handed over by name only when that provider runs (settings.codex_model_provider_env_key).
+# worker's own credentials. The Codex relay key is handed over by name only when that provider runs (settings.codex_model_provider_env_key).
 _SCRUBBED = env_guard.scrub(keep=(settings.codex_model_provider_env_key,))
 if _SCRUBBED:
     log.info("child-process environment: removed %s", ", ".join(_SCRUBBED))

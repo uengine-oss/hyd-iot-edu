@@ -81,7 +81,7 @@
 | Docker | Docker Desktop(메모리 4 GB 이상). 꺼져 있으면 직접 켜고 `docker info` 응답을 기다린다 | Docker·`docker compose` 기본 설치(VM 약 4 vCPU·16 GB). `docker info`가 안 되면 `dockerd`부터 켠다. 컨테이너는 세션마다 새로 띄운다(이미지는 환경 캐시에 남음, 느리면 환경 설정 스크립트에 `docker compose pull`). 메모리가 모자라 멈추면 그 사실을 보고한다 |
 
 클라우드 `.env`: 레포에 없다(.gitignore). 세션 시작 훅(`.claude/hooks/cloud-env.sh`)이 `.env.example`로 만들고,
-LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`·`LLM_EXTRA_BODY`)는 claude.ai/code 환경 설정의
+LLM은 LiteLLM 중계(모델 `coding`) 하나이고 GPU는 없다(`문서/시스템/2_기준.md` 6절). LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`)는 claude.ai/code 환경 설정의
 환경변수로 들어온다(compose는 `${VAR:-기본값}`만 쓰므로 셸 환경변수가 우선). LLM 서버 도메인은 환경의 네트워크 허용 목록에 있어야 한다.
 클라우드 `.env` 값: 예시 파일 기본값은 `PROCESS_MODE=legacy`·`AGENT_BRIDGE=legacy`·`ENTERPRISE_BACKEND=memory`라 강의 배포본과 다르다. 검증 전에 `문서/시스템/참조/RUNBOOK.md` §0의 강의 배포본 값(`PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`)으로 맞춘다 — memory로 돈 core 회귀는 업무 DB를 쓰는 검사(작업지시 전용 카드·시간 기준값)가 거짓 실패했다(A157). AGENT_BRIDGE는 core 회귀 legacy, worker 회귀·실제 워커 시험 off.
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).

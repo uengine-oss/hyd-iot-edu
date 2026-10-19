@@ -190,7 +190,7 @@ pages.append(
            shot("받은 폴더를 연 VS Code. 왼쪽 탐색기에 폴더 넷과 파일 넷이 보인다."))
     + task(2, EDITOR, "VS Code · 탐색기와 편집기", "LLM 서버 접속 정보를 넣는다",
            steps("탐색기에서 <code>.env</code>를 연다.",
-                 "수업에서 받은 세 값을 <code>OPENAI_BASE_URL=</code>, <code>LLM_API_KEY=</code>, <code>LLM_MODEL=</code> 뒤에 하나씩 적는다. 등호 뒤에 빈칸을 두지 않는다. 맨 아래 줄은 그대로 둔다.",
+                 "수업에서 받은 주소를 <code>OPENAI_BASE_URL=</code> 뒤에, 받은 키를 <code>LLM_API_KEY=</code> 뒤에 적는다. <code>LLM_MODEL=</code> 뒤에는 모델 이름 <code>coding</code>을 적는다. 등호 뒤에 빈칸을 두지 않는다.",
                  "저장한다(Ctrl+S)."),
            good("주의", "API 키는 <code>.env</code>에만 적는다. 채팅이나 다른 파일에 붙여넣지 않는다."))
     + task(3, TERMINAL, "VS Code · 터미널", "LLM 서버에 연결되는지 확인한다",
@@ -198,7 +198,8 @@ pages.append(
            command("python llm_client.py"),
            good("정상", "첫 줄이 <code>연결됨</code>으로 시작하고, 둘째 줄에 서버가 보낸 인사 한 문장이 나온다."),
            otherwise(("값이 비어 있다고 나온다", "<code>.env</code>에 값을 적은 뒤 저장했는지 확인한다. 탭 이름 옆에 흰 점이 있으면 아직 저장되지 않은 것이다."),
-                     ("키가 맞지 않는다 · 서버에 닿지 못했다고 나온다", "<code>.env</code>의 세 값을 받은 것과 다시 비교한다. 값 앞뒤에 따옴표나 빈칸이 들어갔는지 확인한다. 그래도 안 되면 강사에게 알린다.")))
+                     ("LLM_API_KEY · LLM_MODEL · OPENAI_BASE_URL이 다르다고 나온다", "문구가 가리키는 줄을 받은 값과 다시 비교한다. 값 앞뒤에 따옴표나 빈칸이 들어갔는지 확인한다. <code>LLM_MODEL</code>은 <code>coding</code>이다."),
+                     ("서버에 닿지 못했다 · 강사에게 알린다고 나온다", "내 <code>.env</code>가 아니라 네트워크나 서버 쪽 문제다. 강사에게 화면을 보여 준다.")))
     + task(4, EDITOR, "VS Code · 편집기와 종이", "사례 S01을 직접 판정해 둔다",
            para("이후 단계에서 에이전트의 판정이 맞는지 가리려면 기준이 되는 내 계산이 하나 필요하다."),
            steps("<code>ontology/README.md</code>에서 경보에서 원인과 조치까지 따라가는 경로를 읽는다.",
