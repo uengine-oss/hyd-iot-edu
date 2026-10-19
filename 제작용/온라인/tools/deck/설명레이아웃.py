@@ -51,5 +51,19 @@ def render(m, sl, s, page, layout):
                     m.add_box(sl,x,y+1.17,.7,.12,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
             else:
                 text(6.05,y+.5,6.4,1.05,it.lines[1].removeprefix('→ '),15)
+    elif layout=='검증연결':
+        # 변경 검증의 네 단계와 추천안마다 작동하는 실행 중 장치를 분리한다.
+        for i,it in enumerate(s.items[:4]):
+            x=.65+i*3.1
+            m.add_box(sl,x,2.05,2.75,3.05,m.WHITE,line=(m.LINE,1.25))
+            text(x+.18,2.27,2.39,.45,it.plain_title,21,bold=True)
+            text(x+.18,3.0,2.39,1.35,it.desc.replace(' / ', '\n'),15)
+            text(x+.18,4.52,2.39,.36,it.tag,14,m.SKY_D,True)
+            if i<3:m.add_box(sl,x+2.82,3.45,.22,.18,m.SKY_D,shape=m.MSO_SHAPE.RIGHT_ARROW)
+        it=s.items[4]
+        m.add_box(sl,.65,5.65,12.05,1.05,m.SKY_SOFT,line=(m.LINE,1))
+        text(.9,5.85,2.2,.4,it.plain_title,20,bold=True)
+        text(3.15,5.82,7.0,.65,it.desc,17)
+        text(10.2,5.91,2.2,.4,it.tag,14,m.SKY_D,True)
     else:
         raise ValueError(layout)
