@@ -7,7 +7,7 @@
       "props": {
         "id": "asset:hyd-01",
         "code": "HYD-01",
-        "name": "유압 파워팩"
+        "name": "HYD-01 유압 파워팩"
       }
     },
     {
@@ -73,7 +73,7 @@
         "name": "유온 센서",
         "tag": "TS1",
         "unit": "℃",
-        "isVirtual": false
+        "virtual": false
       }
     },
     {
@@ -85,7 +85,8 @@
         "name": "유온",
         "unit": "℃",
         "normal": 48,
-        "limit": 65
+        "limit": 65,
+        "kind": "controlled"
       }
     },
     {
@@ -94,10 +95,10 @@
       ],
       "props": {
         "id": "sen:ce",
-        "name": "냉각 효율 센서",
+        "name": "냉각 효율 (가상)",
         "tag": "CE",
         "unit": "%",
-        "isVirtual": true
+        "virtual": true
       }
     },
     {
@@ -109,7 +110,8 @@
         "name": "냉각 효율",
         "unit": "%",
         "normal": 84,
-        "limit": null
+        "limit": null,
+        "kind": "controlled"
       }
     },
     {
@@ -121,7 +123,7 @@
         "name": "토출 압력 센서",
         "tag": "PS1",
         "unit": "bar",
-        "isVirtual": false
+        "virtual": false
       }
     },
     {
@@ -133,7 +135,8 @@
         "name": "토출 압력",
         "unit": "bar",
         "normal": 182,
-        "limit": 130
+        "limit": 130,
+        "kind": "controlled"
       }
     },
     {
@@ -145,7 +148,7 @@
         "name": "유량 센서",
         "tag": "FS1",
         "unit": "l/min",
-        "isVirtual": false
+        "virtual": false
       }
     },
     {
@@ -157,7 +160,8 @@
         "name": "유량",
         "unit": "l/min",
         "normal": 9,
-        "limit": null
+        "limit": null,
+        "kind": "controlled"
       }
     },
     {
@@ -169,7 +173,7 @@
         "name": "팬 진동 센서",
         "tag": "VS1",
         "unit": "mm/s",
-        "isVirtual": false
+        "virtual": false
       }
     },
     {
@@ -181,7 +185,38 @@
         "name": "팬 진동",
         "unit": "mm/s",
         "normal": 0.6,
-        "limit": 2
+        "limit": 2,
+        "kind": "controlled"
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "part:cooler-core",
+        "name": "쿨러 코어",
+        "partNo": "P-CLR-CORE"
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "part:pump-seal",
+        "name": "펌프 축 씰 키트",
+        "partNo": "P-PMP-SEAL"
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "part:fan-bearing",
+        "name": "팬 베어링",
+        "partNo": "P-FAN-BRG"
       }
     }
   ],
@@ -280,6 +315,24 @@
       "type": "OBSERVES",
       "a": "sen:vs1",
       "b": "sv:vs1",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "comp:cooler",
+      "b": "part:cooler-core",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "comp:pump-a",
+      "b": "part:pump-seal",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "comp:fan",
+      "b": "part:fan-bearing",
       "props": {}
     }
   ]
