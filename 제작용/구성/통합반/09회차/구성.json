@@ -52,7 +52,8 @@
     }
   ],
   "playback": "이론① 1~25장 → 이론② 26~42장 → 이론③ 43~67장(네 실습 간지·설명 포함) → 실제 실습 04~07 → 같은 이론③ 68~74장 복습·퀴즈 재개.",
-  "pptx_sha256": "fb5efaf4a992144f033fccc7ce26888c20cb58217c60d6401e7044ce7d92faa4",
+  "pptx_sha256": "d1b9bd3eb09326e68d0addb3d86e98267fdf0cea042b27e08a55fa2986ab3980",
   "pptx": "../../../../산출물/통합반/이론/09회차/통합반_09일차.pptx",
-  "deck": "../../../온라인/decks/integrated/day09/통합반_09일차.md"
+  "deck": "../../../온라인/decks/integrated/day09/통합반_09일차.md",
+  "theory_status": "덱·분할 대본·발표자 노트 내용·화면·정적 정합 확정"
 }
