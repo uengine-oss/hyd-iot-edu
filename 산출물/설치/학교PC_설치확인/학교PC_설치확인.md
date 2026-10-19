@@ -9,16 +9,34 @@ subtitle: 유압설비 조치 포털 실습 스택 — 2026-10-20 학교 PC 점�
 그림은 모두 2026-10-19에 클라우드(Linux)에서 스택을 실제로 띄워 진행한 순서대로 찍었다.
 Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했다. 학교에서 처음 확인할 때 그 자리를 채운다.
 
+## 명령을 치는 창은 세 가지다
+
+명령 상자 위에 어느 창인지 적어 두었다. 명령은 상자 오른쪽 위 「복사」(GitHub · HTML)로 복사해 창에 붙여 넣고 Enter를 누른다. PowerShell 창에서는 **마우스 오른쪽 클릭이 붙여넣기**다.
+
+| 표시 | 여는 법 | 쓰는 곳 |
+|---|---|---|
+| **[PowerShell]** | 시작 버튼 → `PowerShell` 입력 → Enter | 저장소 받기, 버전 확인 |
+| **[관리자 PowerShell]** | 시작 버튼 → `PowerShell` 입력 → 오른쪽 「관리자 권한으로 실행」 → 권한 창 「예」. 창 제목이 「관리자: Windows PowerShell」이면 맞다 | Windows 기능 켜기, 권한 설정 |
+| **[VS Code 터미널]** | VS Code에서 실습 폴더를 연 채 위 메뉴 「터미널 → 새 터미널」 | 실습 코드 실행(`python llm_client.py`) |
+
+`.bat` 파일은 창을 열 필요 없이 파일 탐색기에서 **더블클릭**한다.
+
 ## 0. 설치와 실행은 더블클릭 셋이다
 
 | 순서 | 할 일 | 걸리는 시간 |
 |---|---|---|
-| 1 | Git이 없으면 PowerShell을 열어 `winget install -e --id Git.Git` 한 줄을 실행한다 | 2분 |
-| 2 | PowerShell에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu` — 모든 계정이 쓰는 공용 폴더 `C:\hyd-iot-edu`에 받는다 | 1~2분 |
-| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 따로 설치한다. `설치.bat`이 안 되면 E절대로 하나씩 설치한다 | 처음 20~40분 |
+| 1 | Git이 없을 때만: **[PowerShell]** 에 `winget install -e --id Git.Git` | 2분 |
+| 2 | **[PowerShell]** 에 아래 명령을 붙여 넣는다. 모든 계정이 쓰는 공용 폴더 `C:\hyd-iot-edu`에 받는다 | 1~2분 |
+| 3 | 파일 탐색기에서 `C:\hyd-iot-edu`를 열고 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」. XG5000은 따로 설치한다. `설치.bat`이 안 되면 E절대로 하나씩 설치한다 | 처음 20~40분 |
 | 4 | 결과 표 끝에 「PC를 다시 시작하세요」가 나오면 다시 시작하고, Docker Desktop을 한 번 열어 약관에 동의한다 | 5분 |
 | 5 | **`시작.bat`** 을 더블클릭한다. Docker Desktop이 꺼져 있으면 스스로 켜고 기다린다 | 처음 10분 이상, 두 번째부터 짧다 |
 | 6 | (5회차 실습 때만) 실습 폴더 `.env`에 세 줄을 적는다 | 1분 |
+
+2번 — **[PowerShell]**:
+
+```
+git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu
+```
 
 끌 때는 **`끄기.bat`** 을 더블클릭한다. 데이터는 지워지지 않는다.
 
@@ -136,7 +154,7 @@ Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했
 ### ④ 5회차 실습 2 폴더: `python llm_client.py` → 「연결됨 · coding」
 
 1. VS Code에서 `course/labs/offline/05-2-cause-agent` 폴더를 연다.
-2. `.env`를 열어 등호 뒤에 적는다. 주소와 키는 수업에서 받은 것이다.
+2. 왼쪽 탐색기에서 `.env`를 열어 등호 뒤에 적는다. 주소와 키는 수업에서 받은 것이다(창에서 치는 명령이 아니라 파일 내용이다).
 
 ```
 OPENAI_BASE_URL=<수업에서 받은 주소>
@@ -144,7 +162,11 @@ LLM_API_KEY=<수업에서 받은 키>
 LLM_MODEL=coding
 ```
 
-3. 저장한 뒤 터미널에서 `python llm_client.py`를 실행한다. 첫 줄이 `연결됨 · coding`이고 둘째 줄에 서버가 보낸 인사 한 문장이 나오면 된다.
+3. 저장(Ctrl+S)한 뒤 **[VS Code 터미널]** 에서 실행한다. 첫 줄이 `연결됨 · coding`이고 둘째 줄에 서버가 보낸 인사 한 문장이 나오면 된다.
+
+```
+python llm_client.py
+```
 
 ![연결됨 · coding — 실제 중계 서버에서 3초](img/A4_llm_client_ok.png)
 
@@ -235,50 +257,70 @@ Docker Desktop은 이미지를 **Windows 사용자 계정마다** 저장한다(`
 
 ## E. 하나씩 직접 설치하기 (`설치.bat`이 안 될 때)
 
-`설치.bat`이 하는 일을 손으로 하는 순서다. 판은 학교 설치 목록과 같다(7번 Arduino IDE 제외). 링크는 각 프로그램의 공식 내려받기 주소다. 이미 설치된 프로그램은 건너뛴다. 「관리자 PowerShell」은 시작 버튼에서 PowerShell을 오른쪽 클릭 → 「관리자 권한으로 실행」이다.
+`설치.bat`이 하는 일을 손으로 하는 순서다. 판은 학교 설치 목록과 같다(7번 Arduino IDE 제외). 링크는 각 프로그램의 공식 내려받기 주소다(눌러서 받은 파일을 더블클릭해 설치). 이미 설치된 프로그램은 건너뛴다. 창 여는 법은 맨 앞 「명령을 치는 창은 세 가지다」.
 
 ### E-1. WSL 2 (2.7.12)
 
-1. 관리자 PowerShell에서 두 줄을 실행한다(Windows 기능 둘을 켠다).
+1. **[관리자 PowerShell]** 에 두 줄을 붙여 넣는다(Windows 기능 둘을 켠다). 줄마다 「작업을 완료했습니다」가 나오면 된다.
+
    ```
    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
    ```
+
 2. PC를 다시 시작한다.
-3. 받아서 실행한다: <https://github.com/microsoft/WSL/releases/download/2.7.12/wsl.2.7.12.0.x64.msi>
-4. 확인: PowerShell에서 `wsl --version` → 첫 줄에 `2.7.12`.
+3. 받아서 설치한다: <https://github.com/microsoft/WSL/releases/download/2.7.12/wsl.2.7.12.0.x64.msi>
+4. 확인 — **[PowerShell]**: 첫 줄에 `2.7.12`가 보이면 된다.
+
+   ```
+   wsl --version
+   ```
 
 ### E-2. Docker Desktop (4.87.0)
 
-1. 받아서 실행한다: <https://desktop.docker.com/win/main/amd64/236836/Docker%20Desktop%20Installer.exe>
+1. 받아서 설치한다: <https://desktop.docker.com/win/main/amd64/236836/Docker%20Desktop%20Installer.exe>
 2. 설치 화면의 「Use WSL 2 instead of Hyper-V」는 체크된 채로 두고 OK → 끝나면 「Close and restart」.
-3. 관리자 PowerShell에서 한 줄을 실행한다(이 PC에 로그인하는 모든 계정이 Docker를 쓰게 한다).
+3. **[관리자 PowerShell]** 에 한 줄을 붙여 넣는다(이 PC에 로그인하는 모든 계정이 Docker를 쓰게 한다). 아무 글 없이 끝나면 된다.
+
    ```
    Add-LocalGroupMember -Group docker-users -Member S-1-5-11
    ```
+
 4. PC를 다시 시작하고 Docker Desktop을 연다. 약관 「Accept」, 로그인 창은 「Skip」. 왼쪽 아래가 「Engine running」이면 된다.
 
 ### E-3. Visual Studio Code (1.140.0, System Installer)
 
-1. 받아서 실행한다: <https://vscode.download.prss.microsoft.com/dbazure/download/stable/07f806f999227108933c2e30515b26eecc1fda74/VSCodeSetup-x64-1.140.0.exe>
+1. 받아서 설치한다: <https://vscode.download.prss.microsoft.com/dbazure/download/stable/07f806f999227108933c2e30515b26eecc1fda74/VSCodeSetup-x64-1.140.0.exe>
 2. 기본값 그대로 「다음」. 「PATH에 추가」는 체크된 채로 둔다.
 
 ### E-4. Python (3.14.7)
 
-1. 받아서 실행한다: <https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe>
+1. 받아서 설치한다: <https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe>
 2. 첫 화면 아래 **「Add python.exe to PATH」를 체크**한다.
 3. 「Customize installation」 → 「Next」 → **「Install Python 3.14 for all users」를 체크** → 「Install」(복제된 PC의 다른 계정도 쓰게).
-4. 확인: 새 PowerShell에서 `python --version` → `Python 3.14.7`.
+4. 확인 — **새로 연 [PowerShell]**(설치 전에 열어 둔 창은 옛 PATH라 안 된다): `Python 3.14.7`이 나오면 된다.
+
+   ```
+   python --version
+   ```
 
 ### E-5. Node.js (22.16.0)
 
-1. 받아서 실행한다: <https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi>
+1. 받아서 설치한다: <https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi>
 2. 기본값 그대로 「Next」. 「Tools for Native Modules」는 체크하지 않는다.
-3. 확인: 새 PowerShell에서 `node --version` → `v22.16.0`.
+3. 확인 — **새로 연 [PowerShell]**: `v22.16.0`이 나오면 된다.
+
+   ```
+   node --version
+   ```
 
 ### E-6. Git (최신)
 
-이미 있으면 건너뛴다. 없으면 <https://git-scm.com/downloads/win> 에서 받아 기본값 그대로 설치한다. 확인: `git --version`.
+이미 있으면 건너뛴다. 없으면 <https://git-scm.com/downloads/win> 에서 받아 기본값 그대로 설치한다. 확인 — **새로 연 [PowerShell]**:
+
+```
+git --version
+```
 
 ### E-7. XG5000 (4.73)
 
@@ -286,16 +328,20 @@ Docker Desktop은 이미지를 **Windows 사용자 계정마다** 저장한다(`
 
 ### E-8. 저장소 받기와 공용 폴더 설정
 
-1. PowerShell에서 받는다.
+1. **[PowerShell]** 에 붙여 넣는다(`C:\hyd-iot-edu`에 받는다).
+
    ```
    git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu
    ```
-2. 관리자 PowerShell에서 두 줄을 실행한다(복제된 PC의 다른 계정도 이 폴더를 쓰고 `git pull`을 할 수 있게).
+
+2. **[관리자 PowerShell]** 에 두 줄을 붙여 넣는다(복제된 PC의 다른 계정도 이 폴더를 쓰고 `git pull`을 할 수 있게).
+
    ```
    icacls C:\hyd-iot-edu /grant "*S-1-5-11:(OI)(CI)M" /T /C /Q
    git config --system --add safe.directory C:/hyd-iot-edu
    ```
-3. `C:\hyd-iot-edu\시작.bat`을 더블클릭한다. 그다음은 A절이다.
+
+3. 파일 탐색기에서 `C:\hyd-iot-edu\시작.bat`을 더블클릭한다. 그다음은 A절이다.
 
 ## F. 이 문서가 확인하지 못한 것
 
