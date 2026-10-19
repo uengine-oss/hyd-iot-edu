@@ -20,7 +20,7 @@ for root,course,total in [(C,'통합반',11),(D,'실전반',8)]:
   if theory_changed:
    H.patch_notes(folder,cfg['slide_count'],root/f'만들기/decks/{"integrated" if course=="통합반" else "practical"}/day{day:02}/{course}_{day:02}일차.md',root/f'산출물/교재/PPTX/{course}_온라인/{course}_{day:02}일차.pptx')
   for u in cfg['units']:
-   if u['kind']=='practice':u['status']='オンライン原稿改訂・静的検証対象・実行未実施'.replace('オンライン原稿改訂・静的検証対象・実行未実施','온라인 원고 개정·정적 검증 대상·실행 미수행')
+   if u['kind']=='practice':u['status']='랩·가이드 내용·순서 정합 확정 · 촬영 발화·전환·속도 튜닝 가능 · 실행 미수행'
   # 노트 갱신된 해시 보존
   cfg['pptx_sha256']=sha(root/f'산출물/교재/PPTX/{course}_온라인/{course}_{day:02}일차.pptx')
   H.write(folder/'구성.json',json.dumps(cfg,ensure_ascii=False,indent=2)+'\n')
@@ -34,7 +34,7 @@ for root,course,total in [(C,'통합반',11),(D,'실전반',8)]:
    if duplicate.exists():shutil.copy2(dest,duplicate)
   index=[f'# {course} {day}회차 실습 자료\n\n온라인은 강사가 직접 진행한다. HTML은 제작 참고이며 학생에게 가이드를 제공하는 전제가 아니다. 실제 실행·캡처 미수행. 분량은 낭독 추정과 별도이며 목표 시간을 채우지 않는다.\n']
   for src,lab in zip(labscripts,labdirs):
-   text=src.read_text('utf8');H.write(lab/'강사대본.md',text);H.pdf(H.speech(text),lab/'강사대본.pdf');pdfs.append(str(lab/'강사대본.pdf'))
+   text=src.read_text('utf8');H.write(lab/'강사대본.md',text);H.write(folder/'낭독본'/src.name,H.speech(text));H.pdf(H.speech(text),lab/'강사대본.pdf');pdfs.append(str(lab/'강사대본.pdf'))
    files=[f for f in lab.rglob('*') if f.is_file() and f.suffix not in ['.html','.pdf','.zip'] and f.name not in ['강사대본.md'] and '__pycache__' not in f.parts and f.suffix!='.pyc']
    links=''.join('<li><a href="'+html.escape(f.relative_to(lab).as_posix(),quote=True)+'">'+html.escape(f.relative_to(lab).as_posix())+'</a></li>' for f in sorted(files))
    blocks=[]

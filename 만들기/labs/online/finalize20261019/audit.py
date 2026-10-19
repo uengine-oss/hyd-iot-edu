@@ -19,7 +19,11 @@ for root,course,kind,total in [(C,'통합반','integrated',11),(D,'실전반','p
      if b.strip() not in merged:issue('merged',f,b.splitlines()[0])
      spoken=norm(' '.join(l.strip().replace('**','') for l in b.splitlines()[1:] if l.strip() and not l.startswith(('#','>','---'))))
      if spoken not in norm(reading):issue('reading',f,b.splitlines()[0])
-   elif u['kind']=='practice':labs.append(f)
+   elif u['kind']=='practice':
+    labs.append(f)
+    individual=folder/'낭독본'/f.name
+    if not individual.exists():issue('practice_reading_missing',individual)
+    elif individual.read_text('utf8')!=speech(s):issue('practice_reading',individual)
    else:issue('unfinished_kind',f,u['kind'])
   if coverage!=list(range(1,count+1)) or len(notes)!=count:issue('coverage',folder)
   ppt=root/f'산출물/교재/PPTX/{course}_온라인/{course}_{day:02}일차.pptx';pf=root/f'산출물/교재/PDF/{course}_온라인/{course}_{day:02}일차.pdf'
