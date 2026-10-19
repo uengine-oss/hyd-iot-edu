@@ -7,6 +7,6 @@
 | 3 | [PPTX·대본](이론/03회차/README.md) | [대본·랩·HTML](실습/03회차/README.md) | 확정 |
 | 4 | [PPTX·대본](이론/04회차/README.md) | [대본·랩·HTML](실습/04회차/README.md) | 확정 |
 | 5 | [PPTX·대본](이론/05회차/README.md) | [대본·랩·HTML](실습/05회차/README.md) | 내용·화면·정적 정합 확정 |
-| 6 | [PPTX·대본](이론/06회차/README.md) | [대본·랩·HTML](실습/06회차/README.md) | 검토 대기 |
+| 6 | [PPTX·대본](이론/06회차/README.md) | [대본·랩·HTML](실습/06회차/README.md) | 내용·화면·정적 정합 확정 |
 | 7 | [PPTX·대본](이론/07회차/README.md) | [대본·랩·HTML](실습/07회차/README.md) | 검토 대기 |
 | 8 | [PPTX·대본](이론/08회차/README.md) | [대본·랩·HTML](실습/08회차/README.md) | 검토 대기 |
