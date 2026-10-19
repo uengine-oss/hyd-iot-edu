@@ -12,7 +12,16 @@ say() { printf '\n== %s\n' "$*"; }
 die() { printf '\n[멈춤] %s\n' "$*" >&2; exit 1; }
 
 say "1/6 Docker 확인"
-docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 켜고 'Engine running'이 된 뒤 다시 실행하세요."
+DD_EXE="/c/Program Files/Docker/Docker/Docker Desktop.exe"
+DD_BIN="/c/Program Files/Docker/Docker/resources/bin"
+[ -d "$DD_BIN" ] && PATH="$PATH:$DD_BIN"   # 설치 직후 PATH에 아직 없을 때
+if ! docker info >/dev/null 2>&1 && [ -f "$DD_EXE" ]; then   # Windows(Git Bash): 꺼져 있으면 켜고 엔진이 뜰 때까지 기다린다
+  echo "Docker Desktop을 켭니다. 엔진이 준비될 때까지 최대 3분 기다립니다."
+  cmd.exe //c start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"
+  for i in $(seq 1 36); do docker info >/dev/null 2>&1 && break; sleep 5; done
+fi
+command -v docker >/dev/null 2>&1 || die "docker 명령이 없습니다. 설치.bat으로 Docker Desktop을 설치하고 PC를 다시 시작한 뒤 실행하세요."
+docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 열어 약관 동의 창이 있으면 동의하고, 'Engine running'이 된 뒤 다시 실행하세요."
 docker compose version >/dev/null 2>&1 || die "docker compose가 없습니다. Docker Desktop을 최신으로 설치하세요."
 echo "ok"
 

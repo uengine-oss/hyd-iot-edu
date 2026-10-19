@@ -9,31 +9,35 @@ subtitle: 유압설비 조치 포털 실습 스택 — 2026-10-20 학교 PC 점�
 그림은 모두 2026-10-19에 클라우드(Linux)에서 스택을 실제로 띄워 진행한 순서대로 찍었다.
 Windows 화면은 클라우드에서 찍을 수 없어 「자리」로 표시했다. 학교에서 처음 확인할 때 그 자리를 채운다.
 
-## 0. 학생이 하는 일은 넷뿐이다
+## 0. 설치와 실행은 더블클릭 셋이다
 
 | 순서 | 할 일 | 걸리는 시간 |
 |---|---|---|
-| 1 | 설치 프로그램 7개를 설치한다(아래 표) | PC마다 다름 |
-| 2 | 터미널에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git` | 1~2분 |
-| 3 | 받은 폴더의 `시작.bat`을 더블클릭한다 | 처음 10분 이상, 두 번째부터 짧다 |
-| 4 | (5회차 실습 때만) 실습 폴더 `.env`에 세 줄을 적는다 | 1분 |
+| 1 | Git이 없으면 PowerShell을 열어 `winget install -e --id Git.Git` 한 줄을 실행한다 | 2분 |
+| 2 | 새 PowerShell 창에서 `git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git` | 1~2분 |
+| 3 | 받은 폴더의 **`설치.bat`** 을 더블클릭한다. 권한을 묻는 창에서 「예」 | 처음 20~40분 |
+| 4 | 결과 표 끝에 「PC를 다시 시작하세요」가 나오면 다시 시작하고, Docker Desktop을 한 번 열어 약관에 동의한다 | 5분 |
+| 5 | **`시작.bat`** 을 더블클릭한다. Docker Desktop이 꺼져 있으면 스스로 켜고 기다린다 | 처음 10분 이상, 두 번째부터 짧다 |
+| 6 | (5회차 실습 때만) 실습 폴더 `.env`에 세 줄을 적는다 | 1분 |
 
-끌 때는 `끄기.bat`을 더블클릭한다. 데이터는 지워지지 않는다.
+끌 때는 **`끄기.bat`** 을 더블클릭한다. 데이터는 지워지지 않는다.
 
-**설치 프로그램 7개**
+**`설치.bat`이 하는 일.** 아래 7개가 있는지 버전으로 확인하고, **없는 것만** Windows 기본 설치 도구(winget)로 설치한다. 이미 있는 프로그램은 건드리지 않는다. 끝에 결과 표(있음 · 설치함 · 실패 · 건너뜀)와 PC 메모리를 보여 준다. 실패한 줄이 있으면 그 프로그램만 직접 설치하고 `설치.bat`을 다시 실행한다.
 
-| 프로그램 | 확인할 것 |
-|---|---|
-| WSL2 | Docker Desktop보다 먼저 설치한다 |
-| Docker Desktop | 메모리 4 GB 이상, 왼쪽 아래가 「Engine running」 |
-| Git (Git for Windows) | `시작.bat`이 Git의 bash로 스크립트를 돌린다. 없으면 「Git for Windows가 없습니다」가 뜬다 |
-| Python 3.14 | 5회차 실습의 `python llm_client.py`에 쓴다 |
-| Node 22 + supabase CLI | `npm install -g supabase@2.119.0`. CLI가 없으면 `시작.bat`이 `npx`로 대신 받는다 |
-| VS Code | 실습 폴더를 연다(GitHub Copilot 채팅 포함) |
-| Notion | 수업 자료 열람 |
+| 프로그램 | 설치 방법 | 확인할 것 |
+|---|---|---|
+| WSL2 | `wsl --install --no-distribution` | 처음 설치하면 PC를 다시 시작해야 켜진다 |
+| Docker Desktop | winget `Docker.DockerDesktop` | 다시 시작한 뒤 한 번 열어 약관 동의. 왼쪽 아래 「Engine running」 |
+| Git | winget `Git.Git` | `시작.bat`이 Git의 bash로 스크립트를 돌린다 |
+| Python 3.14 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
+| Node 22 + supabase CLI | winget `OpenJS.NodeJS.22`, `npm install -g supabase@2.119.0` | CLI 설치가 실패해도 `시작.bat`이 `npx`로 대신 받는다 |
+| VS Code | winget `Microsoft.VisualStudioCode` | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
+| Notion | winget `Notion.Notion` | 수업 자료 열람 |
 
-> **자리** — Windows에서 7개를 설치한 뒤의 Docker Desktop 「Engine running」 화면.
-> 설치 목록의 정본은 강사가 가진 설치 xlsx다. 이 저장소에는 그 파일이 없어, 위 표는 그 목록의 이름만 옮겼다.
+PC 메모리가 8 GB보다 적으면 결과 표에 「부족할 수 있음」이 뜬다. 실습 스택은 Docker에 4 GB 이상이 필요하다.
+
+> **자리** — Windows에서 `설치.bat` 결과 표와 Docker Desktop 「Engine running」 화면.
+> 설치 목록의 정본은 강사가 가진 설치 xlsx다. 이 저장소에는 그 파일이 없어 그 목록의 이름을 따랐다. 패키지 ID는 microsoft/winget-pkgs에서 확인했다(2026-10-19).
 
 ## A. 필수 확인 (약 30분)
 
@@ -200,7 +204,8 @@ LLM_MODEL=coding
 | `[멈춤]` 문구 | 뜻 | 첫 조치 |
 |---|---|---|
 | `Git for Windows가 없습니다` | `시작.bat`이 bash를 못 찾았다 | Git을 설치하고 다시 더블클릭 |
-| `Docker가 응답하지 않습니다` | Docker Desktop이 꺼져 있거나 아직 켜지는 중 | Docker Desktop을 켜고 「Engine running」을 기다린 뒤 다시 |
+| `docker 명령이 없습니다` | Docker Desktop이 없거나, 설치 뒤 PC를 다시 시작하지 않았다 | `설치.bat` → PC 다시 시작 → 다시 |
+| `Docker가 응답하지 않습니다` | `시작.bat`이 Docker Desktop을 켜고 3분 기다렸지만 엔진이 뜨지 않았다 | Docker Desktop 창을 열어 약관 동의 창이 있으면 동의하고, 「Engine running」을 기다린 뒤 다시 |
 | `docker compose가 없습니다` | Docker Desktop이 오래된 판 | Docker Desktop 최신판 설치 |
 | `Supabase가 켜지지 않았습니다` | 업무 DB 포트(54321~54329) 충돌이나 이미지 받기 실패 | `cd it/supabase && supabase stop` 뒤 다시(RUNBOOK §3 「Supabase 포트 충돌」) |
 | `docker compose up이 실패했습니다` | 이미지 받기 · 빌드 실패 | 창의 오류에서 서비스 이름을 찾아 `docker compose logs <서비스>`. `429` · `Too Many Requests`면 잠시 뒤 다시(D절) |
@@ -214,7 +219,7 @@ LLM_MODEL=coding
 학교는 메인 PC 한 대에 설치하면 나머지 PC에 그대로 복제해 준다. 이미지를 받는 PC가 한 대뿐이니, 여러 대가 같은 학교 IP로 동시에 받다가 막히는 일(Docker Hub `429`)은 생기지 않는다.
 복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
 
-1. 설치 프로그램 7개를 설치하고, `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받는다.
+1. `git clone -b develop …`을 학생 PC에서 쓸 자리와 같은 폴더에 받고 `설치.bat`으로 7개를 설치한다.
 2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
 3. A절 ①~③-1을 확인한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
 4. 그 상태로 학교에 복제를 맡긴다.
@@ -228,7 +233,7 @@ Docker Desktop은 이미지를 **Windows 사용자 계정마다** 저장한다(`
 
 ## E. 이 문서가 확인하지 못한 것
 
-- Windows에서 `시작.bat` · `끄기.bat`을 더블클릭하는 것, Docker Desktop · WSL2 설치 화면(「자리」 표시).
+- Windows에서 `설치.bat` · `시작.bat` · `끄기.bat`을 더블클릭하는 것(「자리」 표시). `설치.bat`의 PowerShell은 문법 검사와 버전 확인 함수만 Linux의 PowerShell 7에서 돌렸고, `시작.bat`의 Docker Desktop 자동 켜기는 가짜 docker로 네 경우(곧 켜짐 · 끝내 안 켜짐 · 이미 켜짐 · 미설치)만 시험했다. winget 설치 자체는 Windows에서만 확인할 수 있다.
 - 학교 네트워크에서 LiteLLM 서버 · Docker Hub에 닿는지.
 - 학교의 복제 방식으로 Docker 이미지가 함께 복제되는지(D절).
 - ③-2를 학생 PC의 수업 흐름(매뉴얼 적재 뒤)으로 돌린 것. 이 문서의 ③-2는 회귀 시험용 전체판 지식으로 돌렸다.
