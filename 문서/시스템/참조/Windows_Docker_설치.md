@@ -173,11 +173,25 @@ Start-Process -FilePath "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
 
 1. 오른쪽 위 **설정(톱니바퀴)**.
 2. **General**.
-3. **Use the WSL 2 based engine**의 체크를 **해제**.
-4. **Apply & Restart**. 관리자 승인 창이 나오면 사용자 본인이 승인.
+3. 아래로 내려 **Choose how to run Docker containers**에서 **Hyper-V**를 선택.
+4. **Apply** 또는 **Apply & Restart**. 관리자 승인 창이 나오면 사용자 본인이 승인.
 5. Docker 엔진이 시작될 때까지 기다린 뒤 **6번** 실행.
 
-체크 항목이 없거나 비활성화됐다면 1~4번 조건·설치 형태를 확인한다. 전환 불가 또는 오류가 해결되지 않으면 오류를 기록하고 **8번 WSL 복구로 이동**한다. **Switch to Windows containers는 선택하지 않는다. 이 프로젝트는 Linux 컨테이너를 사용한다.**
+구형 화면에 **Use the WSL 2 based engine** 체크 항목이 표시되는 경우에는 체크를 해제하고 **Apply & Restart**를 누른다.
+
+**실제 화면 1 — Docker 시작 화면:** 오른쪽 위 톱니바퀴가 설정이다. 아래쪽 **Engine running**은 엔진이 실행 중이라는 뜻이다.
+
+![실제로 실행한 Docker Desktop 시작 화면](images/windows-docker/15-docker-dashboard.png)
+
+**실제 화면 2 — General:** 왼쪽 General을 선택한 다음 오른쪽 내용을 아래로 내린다.
+
+![Docker 설정의 General 화면](images/windows-docker/16-docker-general.png)
+
+**실제 화면 3 — 엔진 선택:** Hyper-V와 WSL 2 중 사용할 엔진을 고르는 위치다. **사진을 촬영한 개인 PC는 Windows 11 Home이므로 Hyper-V가 회색이고 WSL 2가 선택되어 있다.** 학교 PC가 지원 조건을 충족하는지는 1~4번 결과로 판단한다. 촬영 중 선택이나 적용은 하지 않았다.
+
+![Docker 엔진 선택 라디오 버튼과 Apply 위치](images/windows-docker/17-docker-engine-selection.png)
+
+Hyper-V 항목이 없거나 비활성화됐다면 1~4번 조건·설치 형태를 확인한다. 전환 불가 또는 오류가 해결되지 않으면 오류를 기록하고 **8번 WSL 복구로 이동**한다. **Switch to Windows containers는 선택하지 않는다. 이 프로젝트는 Linux 컨테이너를 사용한다.**
 
 ### 5-1. 오류가 Server 서비스를 지목하는 경우만
 
@@ -392,7 +406,9 @@ Start-Process -FilePath "$env:LOCALAPPDATA\Programs\DockerDesktop\Docker Desktop
 
 전체 사용자용 기본 경로이면 5번의 실행 명령을 사용한다. 실제 설치 경로에 해당하는 명령 **하나만** 사용한다.
 
-Docker **설정 → General → Use the WSL 2 based engine 체크 → Apply & Restart**. WSL 전용 설치라 항목이 표시되지 않으면 엔진 시작 결과로 확인한다.
+Docker **설정 → General**에서 아래로 내려 **Choose how to run Docker containers → WSL 2 → Apply**를 선택한다. [5번 실제 화면](#5-docker를-hyper-v-방식으로-전환)의 마지막 사진에서 WSL 2가 선택된 상태를 볼 수 있다. 이미 선택되어 있고 Engine running이면 다시 적용할 필요 없이 아래 명령으로 검증한다.
+
+구형 화면에 **Use the WSL 2 based engine** 체크 항목이 표시되는 경우에는 체크하고 **Apply & Restart**를 누른다. WSL 전용 설치라 선택 항목이 표시되지 않으면 엔진 시작 결과로 확인한다.
 
 새 PowerShell 창에서 실행한다.
 
