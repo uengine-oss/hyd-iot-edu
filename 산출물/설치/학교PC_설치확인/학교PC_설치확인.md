@@ -46,9 +46,9 @@ git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-e
 | 4 | Python | 3.14.7 | winget `Python.Python.3.14`(PATH에 넣음) | 5회차 실습의 `python llm_client.py` |
 | 5 | Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | — |
 | 6 | Git | 버전 무관 | winget `Git.Git`(winget 최신판) | 있으면 건너뛴다 |
-| 8 | XG5000 | 4.73 | **직접 설치** — 목록의 링크에서 4.73을 골라 받는다 | `설치.bat`은 건드리지 않는다 |
+| 8 | XG5000 | 4.73 | **직접 설치** — E-7의 4.73 파일 링크 | `설치.bat`은 건드리지 않는다 |
 
-저장소 폴더가 공용 폴더(`C:\hyd-iot-edu` 등)이면 로그인한 모든 계정에 쓰기 권한을 주고 Git 신뢰 폴더(`safe.directory`)로 등록한다. 사용자 폴더(`C:\Users\…`) 안이면 「옮김 권장」을 띄운다. 목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
+저장소 폴더가 공용 폴더(`C:\hyd-iot-edu` 등)이면 로그인한 모든 계정에 쓰기 권한을 주고 Git 신뢰 폴더(`safe.directory`)로 등록한다. 사용자 폴더(`C:\Users\…`) 안이면 「옮김 권장」을 띄운다. 목록 밖으로 supabase CLI도 설치를 시도한다(업무 DB를 켜는 데 쓴다. 실패해도 `시작.bat`이 `npx`로 대신 받는다). **디스크**: C 드라이브 여유 40 GB 이상을 권한다. 실습 스택만 실측 약 17 GB(Docker 이미지 13.6 · 빌드 캐시 1.7 · 실습 데이터 1.1 · 컨테이너 0.3 · 저장소 0.5, 2026-10-20 Linux 실측)이고, 프로그램 설치분과 Docker Desktop 자체 여유는 Windows에서 재지 못해 여유를 더했다. PC 메모리가 8 GB보다 적으면 「부족할 수 있음」이 뜬다.
 
 **`git clone` 뒤 `docker compose up`만 하면 안 되는 까닭.** compose의 서비스 26개는 모두 프로필에 묶여 있고, 켤 프로필은 `.env`가 정하는데 `.env`는 저장소에 없다. 업무 DB(Supabase)는 compose 밖에서 따로 켜야 하고, 에이전트용 MCP 두 개는 별도 프로필이다. `시작.bat`이 이 넷(`.env` 강의 배포본 값 · 업무 DB · 시스템 · MCP)을 순서대로 한다.
 
@@ -321,7 +321,9 @@ git --version
 
 ### E-7. XG5000 (4.73)
 
-<https://ssq.ls-electric.com/kr/ko/product/document/2201> 에서 버전 4.73을 골라 받아 설치한다.
+받아서 설치한다(한국어판, 약 394 MB): <https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/16849776042931/XG5000_V4.73_20230522_Kr.exe>
+
+영어판: <https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/16849776042930/XG5000_V4.73_20230522_En.exe>. 두 링크는 LS ELECTRIC 자료 페이지 <https://ssq.ls-electric.com/kr/ko/product/document/2201> 에서 판 목록의 4.73을 고르면 나오는 파일이다(2026-10-20 확인).
 
 ### E-8. 저장소 받기와 공용 폴더 설정
 

@@ -47,7 +47,7 @@ Say "`n== 실습 스택 점검 (약 3~5분)" 'White'
 Say "`n[1/3] 서비스 응답"
 $down = @()
 foreach ($p in 8000, 8093, 8090, 8094, 8092, 8091, 8080, 8095, 8199, 8198) {
-    try { $h = Invoke-RestMethod -Uri "${H}:$p/healthz" -TimeoutSec 5; if (-not $h.ok) { $down += $p } } catch { $down += $p }
+    try { $hz = Invoke-RestMethod -Uri "${H}:$p/healthz" -TimeoutSec 5; if (-not $hz.ok) { $down += $p } } catch { $down += $p }   # $h는 $H와 같은 변수(대소문자 무시)라 쓰지 않는다
 }
 try { $portal = (Invoke-WebRequest -Uri "${H}:8088/" -UseBasicParsing -TimeoutSec 5).StatusCode } catch { $portal = 0 }
 if ($down.Count -eq 0 -and $portal -eq 200) { Record '서비스 10개 · 포털' $true '모두 응답' }
@@ -66,13 +66,14 @@ try {
     Post-J "$PLANT/api/reset" @{} | Out-Null
     $idle = Wait-Until 120 { $s = Hyd01; if ($s.phase -ne 'RAISED') { $s } }
     if (-not $idle) { throw 'HYD-01 경보가 2분이 지나도 풀리지 않습니다. 열린 처리 건을 포털에서 먼저 끝내세요' }
-    $before = @((Get-J "$PROCESS/api/instances?limit=20") | ForEach-Object { $_.proc_inst_id })
+    # 웹 응답의 목록은 PowerShell이 한 덩어리로 넘기므로 foreach 문으로 하나씩 돈다
+    $before = @(); foreach ($i in (Get-J "$PROCESS/api/instances?limit=20")) { $before += $i.proc_inst_id }
     Post-J "$PROCESS/api/scenario/A/degrade" $who | Out-Null
     $raised = Wait-Until 240 { $s = Hyd01; if ($s.phase -eq 'RAISED') { $s } }
     if (-not $raised) { throw '쿨러 열화를 주입했지만 4분 안에 경보가 나지 않았습니다(감지 서비스 8092 확인)' }
     Record '경보' $true ("유온 {0} ℃ · 냉각 효율 {1} %" -f $raised.ts1, $raised.ce)
 
-    $instance = Wait-Until 60 { Get-J "$PROCESS/api/instances?limit=20" | Where-Object { $before -notcontains $_.proc_inst_id } | Select-Object -First 1 }
+    $instance = Wait-Until 60 { foreach ($i in (Get-J "$PROCESS/api/instances?limit=20")) { if ($before -notcontains $i.proc_inst_id) { return $i } }; $null }
     if (-not $instance) { throw '경보가 났지만 1분 안에 처리 건이 열리지 않았습니다(처리 엔진 8080 확인)' }
     $pid_ = $instance.proc_inst_id
     Record '처리 건 열림' $true $pid_
