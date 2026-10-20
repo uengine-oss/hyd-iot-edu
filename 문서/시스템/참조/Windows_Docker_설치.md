@@ -261,10 +261,10 @@ node --version
 
 Python 명령만 없으면 `py --version`도 확인한다. 특정 버전으로 맞추려고 기존 프로그램을 지우거나 덮어쓰지 않는다. 프로그램이 실제로 빠졌다면 해당 도구를 먼저 준비한다. 기존 Python·Anaconda는 유지한다.
 
-학교 PC의 실제 저장소 폴더로 이동한다. 아래는 현재 대화에서 사용한 경로의 예다.
+학교 PC의 실제 저장소 폴더로 이동한다. 아래는 README의 기본 설치 경로다. 다른 위치에 받았다면 그 경로를 사용한다.
 
 ```powershell
-Set-Location -LiteralPath 'C:\uengine\hyd-iot-edu'
+Set-Location -LiteralPath 'C:\hyd-iot-edu'
 ```
 
 ### 7-1. 보관한 .env의 접속 설정 복사
