@@ -21,6 +21,14 @@
 
 ## 1. Windows 에디션 확인
 
+화면으로 확인하려면 **설정 → 시스템 → 맨 아래 ‘정보’**를 누른다. 아래는 사용자님 PC에서 직접 클릭해 촬영한 실제 화면이다.
+
+![시스템 맨 아래 정보 메뉴를 누르는 위치](images/windows-docker/01-system-info-menu.png)
+
+**‘에디션’ 줄만 확인한다.** 사용자님 PC는 Home이다. 학교 PC에서도 같은 위치를 확인하되, 결과가 같다고 가정하지 않는다.
+
+![사용자님 PC의 Windows 11 Home 에디션 표시](images/windows-docker/02-windows-edition.png)
+
 **실행할 명령 — 조회만 수행:**
 
 ```powershell
@@ -35,6 +43,16 @@ Get-CimInstance Win32_OperatingSystem | Format-List Caption,Version,BuildNumber
 사용자님 개인 PC는 Home이었지만 **학교 PC 에디션은 별도로 확인해야 한다.**
 
 ## 2. Hyper-V 기능과 하이퍼바이저 확인
+
+화면으로 조회하려면 다음 명령으로 Windows 기능 창을 열 수 있다. **확인하거나 체크하지 말고 목록만 본다. 닫을 때는 취소**를 누른다.
+
+```powershell
+optionalfeatures.exe
+```
+
+아래는 사용자님 Home PC에서 직접 연 실제 화면이다. **Hyper-V 항목이 없다.** 학교 PC가 지원 에디션이면 목록이 다를 수 있다. ‘Linux용 Windows 하위 시스템’ 체크는 Hyper-V 기능이 켜졌다는 뜻이 아니다.
+
+![Windows 11 Home의 실제 Windows 기능 목록](images/windows-docker/03-windows-features-home.png)
 
 **먼저 아래 명령 전체를 실행 — 조회만 수행:**
 
@@ -302,6 +320,8 @@ Write-Host "백업 위치: $backupDir"
 백업 오류가 나면 변경을 진행하지 않는다. `.reg`는 값의 백업이고 SDDL 파일이 권한 백업이다. `SYSTEM`과 `Administrators` 모두 `ReadKey`뿐인 상태가 학교 PC 사진에서 확인됐다. 이 경우 설정 변경이 거부될 근거가 있다. 이미 권한이 정상이면 아래 변경을 적용하지 않는다.
 
 #### 8-2-2. GUI에서 필요한 키만 수정
+
+**화면 확보 상태:** 사용자님 PC의 레지스트리 편집기까지 열었으나 관리자 창에 자동 클릭이 반영되지 않아, 아래 권한 편집 화면은 직접 촬영하지 못했다. 이 부분을 실제 화면 가이드 완료로 간주하지 않는다. 사용자님 PC의 권한은 변경하지 않았다.
 
 관리자 PowerShell에서 편집기를 연다.
 
