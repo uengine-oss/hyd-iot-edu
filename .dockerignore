@@ -3,6 +3,7 @@
 .env
 .env.*
 .evidence
+.hyd-runtime
 UIUX_*
 hyd-iot-edu_UIUX_*.html
 _삭제

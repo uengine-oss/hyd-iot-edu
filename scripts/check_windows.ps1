@@ -5,13 +5,31 @@
 #      새 PC(수업용 구조판 지식)에서는 「원인 진단 보류」가 정상이다. 원인 지식이 있으면 「조치 선택」까지 간다.
 #   3) 5회차 실습 2 폴더의 .env: 비어 있으면 중계 주소 · 키를 물어 적고, 실제 모델(coding)에 연결되는지 본다
 # 점검이 연 처리 건은 끝에 정리한다(복제 이미지에 열린 처리 건이 남지 않게). 데이터는 지우지 않는다.
-param([switch]$SkipLlm)
+param([switch]$SkipLlm, [string]$LlmEnvFile)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $H = 'http://127.0.0.1'
-$PROCESS = "${H}:8080"; $DETECTOR = "${H}:8092"; $PLANT = "${H}:8000"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+# 시작.bat이 저장한 숫자 포트 표만 읽는다(루트 .env의 비밀값은 필요 없음).
+$portMap = @{}
+$portFile = Join-Path $repo '.hyd-runtime/ports.json'
+if (Test-Path $portFile) {
+    $savedPorts = Get-Content -LiteralPath $portFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($entry in $savedPorts.PSObject.Properties) {
+        $port = 0
+        if ($entry.Name -notmatch '^\d+$' -or -not [int]::TryParse([string]$entry.Value, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
+            throw '포트 설정이 올바르지 않습니다. 시작.bat을 다시 실행하세요.'
+        }
+        $portMap[[int]$entry.Name] = $port
+    }
+}
+function Host-Port([int]$port) {
+    if ($portMap.ContainsKey($port)) { return $portMap[$port] }
+    return $port
+}
+function Service-Url([int]$port) { return "${H}:$(Host-Port $port)" }
+$PROCESS = Service-Url 8080; $DETECTOR = Service-Url 8092; $PLANT = Service-Url 8000
 $who = @{ by = '설치 점검'; user_id = $null; roles = @() }
 
 $results = [System.Collections.Generic.List[object]]::new()
@@ -47,12 +65,12 @@ Say "`n== 실습 스택 점검 (약 3~5분)" 'White'
 Say "`n[1/3] 서비스 응답"
 $down = @()
 foreach ($p in 8000, 8093, 8090, 8094, 8092, 8091, 8080, 8095, 8199, 8198) {
-    try { $hz = Invoke-RestMethod -Uri "${H}:$p/healthz" -TimeoutSec 5; if (-not $hz.ok) { $down += $p } } catch { $down += $p }   # $h는 $H와 같은 변수(대소문자 무시)라 쓰지 않는다
+    try { $hz = Invoke-RestMethod -Uri "$(Service-Url $p)/healthz" -TimeoutSec 5; if (-not $hz.ok) { $down += (Host-Port $p) } } catch { $down += (Host-Port $p) }   # $h는 $H와 같은 변수(대소문자 무시)라 쓰지 않는다
 }
-try { $portal = (Invoke-WebRequest -Uri "${H}:8088/" -UseBasicParsing -TimeoutSec 5).StatusCode } catch { $portal = 0 }
+try { $portal = (Invoke-WebRequest -Uri "$(Service-Url 8088)/" -UseBasicParsing -TimeoutSec 5).StatusCode } catch { $portal = 0 }
 if ($down.Count -eq 0 -and $portal -eq 200) { Record '서비스 10개 · 포털' $true '모두 응답' }
 else {
-    Record '서비스 10개 · 포털' $false "응답 없음: $($down -join ', ')$(if ($portal -ne 200) { ' 포털(8088)' }) — 시작.bat을 먼저 끝까지 실행하세요"
+    Record '서비스 10개 · 포털' $false "응답 없음: $($down -join ', ')$(if ($portal -ne 200) { " 포털($(Host-Port 8088))" }) — 시작.bat을 먼저 끝까지 실행하세요"
     Show-Results; exit 1
 }
 $ph = Get-J "$PROCESS/healthz"
@@ -70,11 +88,11 @@ try {
     $before = @(); foreach ($i in (Get-J "$PROCESS/api/instances?limit=20")) { $before += $i.proc_inst_id }
     Post-J "$PROCESS/api/scenario/A/degrade" $who | Out-Null
     $raised = Wait-Until 240 { $s = Hyd01; if ($s.phase -eq 'RAISED') { $s } }
-    if (-not $raised) { throw '쿨러 열화를 주입했지만 4분 안에 경보가 나지 않았습니다(감지 서비스 8092 확인)' }
+    if (-not $raised) { throw '쿨러 열화를 주입했지만 4분 안에 경보가 나지 않았습니다(감지 서비스 확인)' }
     Record '경보' $true ("유온 {0} ℃ · 냉각 효율 {1} %" -f $raised.ts1, $raised.ce)
 
     $instance = Wait-Until 60 { foreach ($i in (Get-J "$PROCESS/api/instances?limit=20")) { if ($before -notcontains $i.proc_inst_id) { return $i } }; $null }
-    if (-not $instance) { throw '경보가 났지만 1분 안에 처리 건이 열리지 않았습니다(처리 엔진 8080 확인)' }
+    if (-not $instance) { throw '경보가 났지만 1분 안에 처리 건이 열리지 않았습니다(처리 엔진 확인)' }
     $pid_ = $instance.proc_inst_id
     Record '처리 건 열림' $true $pid_
 
@@ -85,7 +103,7 @@ try {
         if ($select) { '조치 선택까지 진행(원인 지식 있음) — 에이전트 단계 넷 완료, 사람 승인 대기' }
         elseif ($diag.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { '원인 진단 보류(새 PC 정상: 원인 지식은 수업에서 적재) — 설비 · 수집 · 감지 · 처리 · 에이전트 · 지식 그래프 · 시계열 DB 연결 확인' }
     }
-    if (-not $outcome) { throw '처리 건이 3분 안에 진단 결과(보류 또는 조치 선택)에 닿지 않았습니다(에이전트 8091 확인)' }
+    if (-not $outcome) { throw '처리 건이 3분 안에 진단 결과(보류 또는 조치 선택)에 닿지 않았습니다(에이전트 확인)' }
     Record '원인 진단' $true $outcome
 }
 catch { Record '쿨러 사건' $false $_.Exception.Message }
@@ -122,7 +140,7 @@ finally {
 # 3. 5회차 실습 2: 중계 서버 연결
 Say "`n[3/3] 5회차 실습 2 — 중계 서버 연결"
 $labDir = [System.IO.Path]::Combine($repo, 'course', 'labs', 'offline', '05-2-cause-agent')
-$envFile = Join-Path $labDir '.env'
+$envFile = if ($LlmEnvFile) { [System.IO.Path]::GetFullPath($LlmEnvFile) } else { Join-Path $labDir '.env' }
 if ($SkipLlm) { Record '중계 서버' $true '건너뜀(-SkipLlm)' }
 elseif (-not (Test-Path $envFile)) { Record '중계 서버' $false "$envFile 이 없습니다" }
 else {
@@ -161,3 +179,4 @@ else {
 }
 
 Show-Results
+if (@($results | Where-Object { $_.결과 -eq '실패' }).Count) { exit 1 }

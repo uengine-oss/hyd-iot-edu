@@ -84,7 +84,14 @@ else {
 # 2. Docker Desktop 4.87.0
 Say "`n[2/6] Docker Desktop"
 $dockerExe = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
-if (Test-Path $dockerExe) { Check-Installed 'Docker Desktop' (Installed-App 'Docker Desktop*') '4.87.0' }
+foreach ($candidate in @($dockerExe, (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'), (Join-Path $env:LOCALAPPDATA 'Docker\Docker Desktop.exe'))) {
+    if (Test-Path -LiteralPath $candidate) { $dockerExe = $candidate; break }
+}
+if (Test-Path $dockerExe) {
+    $dockerVersion = Installed-App 'Docker Desktop*'
+    if (-not $dockerVersion) { $dockerVersion = 'Docker Desktop ' + (Get-Item -LiteralPath $dockerExe).VersionInfo.ProductVersion }
+    Check-Installed 'Docker Desktop' $dockerVersion '4.87.0'
+}
 else {
     try { Install-Winget 'Docker.DockerDesktop' '4.87.0'; $restart = $true; Record 'Docker Desktop' '설치함' '4.87.0 — 다시 시작한 뒤 한 번 열어 약관에 동의' }
     catch { Record 'Docker Desktop' '실패' $_.Exception.Message }
@@ -113,6 +120,8 @@ else { try { Install-Winget 'Microsoft.VisualStudioCode' '1.140.0' @('--scope', 
 
 # 4. Python 3.14.7 (PATH에 넣는다. 5회차 실습의 python llm_client.py)
 Say "`n[4/6] Python"
+$pythonLauncher = Join-Path $env:LOCALAPPDATA 'Programs\Python\Launcher'
+if (Test-Path -LiteralPath (Join-Path $pythonLauncher 'py.exe')) { $env:Path += ";$pythonLauncher" }
 $v = Version-Of 'py' @('-3.14', '--version')
 if (-not $v -or $v -notmatch '3\.14') { $v = Version-Of 'python' @('--version'); if ($v -notmatch '3\.14') { $v = $null } }
 if ($v) { Check-Installed 'Python' $v '3.14.7' }

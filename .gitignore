@@ -17,3 +17,7 @@ it/supabase/.branches/
 .superpowers/sdd/*/scenario_run*.log
 .superpowers/sdd/*/video_run*.log
 .claude/worktrees/
+
+# Per-PC host ports shared by startup and installation checks.
+/.hyd-runtime/
+.env.ports-tmp

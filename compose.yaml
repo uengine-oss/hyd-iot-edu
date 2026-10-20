@@ -141,7 +141,7 @@ services:
       - --memory 320M
       - --overprovisioned
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:${HYD_PORT_19092:-19092}
     ports: ["127.0.0.1:${HYD_PORT_19092:-19092}:19092", "127.0.0.1:${HYD_PORT_9644:-9644}:9644"]
     volumes: ["redpanda-data:/var/lib/redpanda/data"]
     healthcheck:
@@ -286,6 +286,7 @@ services:
     ports: ["127.0.0.1:${HYD_PORT_7474:-7474}:7474", "127.0.0.1:${HYD_PORT_7687:-7687}:7687"]
     environment:
       NEO4J_AUTH: neo4j/hydpass123
+      NEO4J_server_bolt_advertised__address: "localhost:${HYD_PORT_7687:-7687}"
       NEO4J_PLUGINS: '["apoc"]'
       NEO4J_dbms_security_procedures_unrestricted: apoc.meta.*
       NEO4J_server_memory_heap_initial__size: 128m
