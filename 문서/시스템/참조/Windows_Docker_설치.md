@@ -265,45 +265,39 @@ Python 명령만 없으면 `py --version`도 확인한다. 특정 버전으로 �
 Set-Location -LiteralPath 'C:\uengine\hyd-iot-edu'
 ```
 
+### 7-1. 보관한 .env의 접속 설정 복사
+
+학교 PC에서 Google Drive에 보관한 기존 `.env`를 열고, 아래 **세 항목의 실제 값**을 복사한다. 이미 발급한 중계키를 그대로 사용하므로 **gcloud 로그인·마스터 키 조회·키 재발급은 필요 없다.**
+
+```text
+OPENAI_BASE_URL=보관한 파일의 서버 주소
+LLM_API_KEY=보관한 파일의 중계키
+LLM_MODEL=보관한 파일의 모델 이름
+```
+
+위 예시 문구를 그대로 넣는 것이 아니라 보관한 파일의 값을 사용한다. 학교 PC의 저장소 폴더에서 아래 명령으로 **점검이 읽는 실습용 `.env`**를 연다. 저장소 최상위의 `.env`와 혼동하지 않는다.
+
+```powershell
+notepad.exe '.\course\labs\offline\05-2-cause-agent\.env'
+```
+
+해당 파일에서 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 줄의 값을 바꾸고 **Ctrl+S로 저장**한다. 다른 설정은 유지한다. 이미 세 값이 올바르게 들어 있다면 수정할 필요 없다. 실제 키를 넣은 파일은 Git에 커밋·푸시하지 않는다.
+
+### 7-2. 시작 후 점검
+
+같은 PowerShell 창에서 실행한다.
+
 ```powershell
 .\시작.bat
 ```
 
-### 7-1. 보관한 중계키 파일 조회·준비
-
-이미 발급한 키를 다시 발급할 필요는 없다. **키를 보관했던 강사 개인 PC**에서 아래를 실행한다. 파일 이름과 경로만 조회하며 키 내용은 출력하지 않는다. 학교 PC에는 이 파일이 자동으로 생기지 않는다.
-
-```powershell
-$keyFiles = @(Get-ChildItem -LiteralPath "$env:LOCALAPPDATA\HYD\credentials" -Filter 'main-*.txt' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
-if ($keyFiles.Count -eq 0) { throw '이 PC에 보관한 키 파일이 없습니다. 키를 발급했던 PC에서 확인하세요.' }
-$keyFiles | Select-Object Name,LastWriteTime,FullName
-```
-
-표시된 파일 중 사용할 파일을 선택한다. 내용을 확인해야 한다면 아래 명령의 입력창에 그 파일의 전체 경로를 붙여 넣는다. 메모장에는 실제 키가 표시되므로 화면 공유·사진 촬영을 피한다.
-
-```powershell
-$keyFilePath = (Read-Host '확인할 키 파일의 전체 경로').Trim().Trim('"')
-if (!(Test-Path -LiteralPath $keyFilePath -PathType Leaf)) { throw '키 파일 경로를 확인하세요.' }
-notepad.exe $keyFilePath
-```
-
-파일에는 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 항목이 `이름=값` 형식으로 있어야 한다. 이 파일을 USB 등으로 학교 PC의 **저장소 밖**에 가져간다. 공개 저장소에 복사하거나 커밋하지 않는다. Google Cloud의 마스터 키 조회와 이미 발급한 중계키 파일 조회는 다른 작업이며, 여기서는 보관한 중계키를 사용한다.
-
-### 7-2. 학교 PC에서 키 파일을 지정해 점검
-
-**시작 완료 메시지를 확인한 다음에만**, 학교 PC의 저장소 폴더에서 실행한다. 입력창에 학교 PC로 가져온 키 파일의 전체 경로를 붙여 넣는다.
-
-```powershell
-$llmEnvFile = (Read-Host '학교 PC에 가져온 키 설정 파일의 전체 경로').Trim().Trim('"')
-if (!(Test-Path -LiteralPath $llmEnvFile -PathType Leaf)) { throw '키 설정 파일 경로를 확인하세요.' }
-.\점검.bat -LlmEnvFile "$llmEnvFile"
-```
-
-기존 실습 폴더의 `.env`에 접속 설정을 이미 넣어 둔 경우에만 다음 명령을 대신 사용한다.
+**시작 완료 메시지를 확인한 다음에만** 실행한다.
 
 ```powershell
 .\점검.bat
 ```
+
+접속 주소와 키가 `.env`에 들어 있으면 다시 입력하지 않고 사용한다. 결과 표의 **「중계 서버」가 「연결됨」인지** 확인한다. 「건너뜀」은 중계 연결 검증 완료가 아니므로, 위 파일에 값을 저장했는지 확인한다.
 
 Docker Linux 엔진 실행과 전체 실습 스택 검증은 별개다. 점검 실패 항목이 없어야 현장 실행 검증 완료로 판단한다. 필요한 접속 키는 공개 문서나 저장소에 넣지 않는다.
 
