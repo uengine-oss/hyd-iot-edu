@@ -269,7 +269,37 @@ Set-Location -LiteralPath 'C:\uengine\hyd-iot-edu'
 .\시작.bat
 ```
 
-**시작 완료 메시지를 확인한 다음에만** 실행한다.
+### 7-1. 보관한 중계키 파일 조회·준비
+
+이미 발급한 키를 다시 발급할 필요는 없다. **키를 보관했던 강사 개인 PC**에서 아래를 실행한다. 파일 이름과 경로만 조회하며 키 내용은 출력하지 않는다. 학교 PC에는 이 파일이 자동으로 생기지 않는다.
+
+```powershell
+$keyFiles = @(Get-ChildItem -LiteralPath "$env:LOCALAPPDATA\HYD\credentials" -Filter 'main-*.txt' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+if ($keyFiles.Count -eq 0) { throw '이 PC에 보관한 키 파일이 없습니다. 키를 발급했던 PC에서 확인하세요.' }
+$keyFiles | Select-Object Name,LastWriteTime,FullName
+```
+
+표시된 파일 중 사용할 파일을 선택한다. 내용을 확인해야 한다면 아래 명령의 입력창에 그 파일의 전체 경로를 붙여 넣는다. 메모장에는 실제 키가 표시되므로 화면 공유·사진 촬영을 피한다.
+
+```powershell
+$keyFilePath = (Read-Host '확인할 키 파일의 전체 경로').Trim().Trim('"')
+if (!(Test-Path -LiteralPath $keyFilePath -PathType Leaf)) { throw '키 파일 경로를 확인하세요.' }
+notepad.exe $keyFilePath
+```
+
+파일에는 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 항목이 `이름=값` 형식으로 있어야 한다. 이 파일을 USB 등으로 학교 PC의 **저장소 밖**에 가져간다. 공개 저장소에 복사하거나 커밋하지 않는다. Google Cloud의 마스터 키 조회와 이미 발급한 중계키 파일 조회는 다른 작업이며, 여기서는 보관한 중계키를 사용한다.
+
+### 7-2. 학교 PC에서 키 파일을 지정해 점검
+
+**시작 완료 메시지를 확인한 다음에만**, 학교 PC의 저장소 폴더에서 실행한다. 입력창에 학교 PC로 가져온 키 파일의 전체 경로를 붙여 넣는다.
+
+```powershell
+$llmEnvFile = (Read-Host '학교 PC에 가져온 키 설정 파일의 전체 경로').Trim().Trim('"')
+if (!(Test-Path -LiteralPath $llmEnvFile -PathType Leaf)) { throw '키 설정 파일 경로를 확인하세요.' }
+.\점검.bat -LlmEnvFile "$llmEnvFile"
+```
+
+기존 실습 폴더의 `.env`에 접속 설정을 이미 넣어 둔 경우에만 다음 명령을 대신 사용한다.
 
 ```powershell
 .\점검.bat
