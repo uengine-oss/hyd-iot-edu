@@ -1,7 +1,9 @@
 // L9 → L1: layer responsibilities and the components used in this lab.
 // health: URL polled every 5 s (JSON /healthz for our services; opaque fetch for third-party UIs).
 const H = location.hostname || 'localhost';
-const P = (port) => `http://${H}:${port}`;
+// 이 PC에서 다른 프로그램과 겹쳐 옮긴 포트가 있으면 그 포트로 부른다("8080=18080 3000=13000", nginx가 화면에 끼워 넣음)
+const PORT_MAP = Object.fromEntries(String(window.HYD_PORTS_RAW || '').split(/\s+/).filter(Boolean).map(kv => kv.split('=').map(Number)));
+const P = (port) => `http://${H}:${PORT_MAP[port] || port}`;
 
 const LAYERS = [
   { no: 'L9', name: '프로세스 · 승인 · 앱', role: '권고를 승인하고 조치를 실행', zone: 'it', focus: true, comps: [
