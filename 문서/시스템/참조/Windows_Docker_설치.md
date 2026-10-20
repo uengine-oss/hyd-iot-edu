@@ -1,176 +1,286 @@
-# Windows 11: Hyper-V 확인부터 Docker 실행까지
+# 학교 Windows PC: Hyper-V 먼저 시도하고, 안 되면 WSL 권한 복구
 
-학교 PC에서 **관리자 Windows PowerShell**을 열고 순서대로 진행한다. Hyper-V로 Docker가 정상 실행되면 WSL 설치와 Windows Update 레지스트리 복구를 생략한다.
+**전제: 이 학교 PC는 WSL 설치에 실패했다. WSL 설치를 바로 반복하지 않고 Hyper-V 사용 가능 여부부터 확인한다. Hyper-V를 사용할 수 없거나 실제 실행에 실패하면 8번에서 기존 WSL 오류의 서비스·레지스트리 권한을 복구한다.**
 
-이 문서의 명령은 현장에서 사용자가 실행하는 안내다. 학교 PC에서의 복구 성공을 보증하는 검증 기록은 아니다.
+순서: **관리자 PowerShell → Windows 에디션 → Hyper-V·가상화 → Docker 설치 형태 → Hyper-V 방식 전환 → Docker 검증 → 성공하면 시작·점검 / 실패하면 WSL 권한 복구**.
 
-## 0. 재부팅하면 초기화되는 PC부터 확인
+| 지금 확인된 상태 | 실행할 순서 |
+|---|---|
+| 아직 학교 PC의 Hyper-V 상태를 모름 | **1번 에디션 → 2번 Hyper-V 확인** |
+| Hyper-V가 꺼져 있고 지원 에디션임 | **3번 활성화·재부팅 → 4번 Docker 설치 형태 → 5번 Docker 설정** |
+| Hyper-V가 이미 켜져 있음 | **4번 Docker 설치 형태 → 5번 Docker 설정 → 6번 검증** |
+| Hyper-V로 Docker 실행 성공 | **7번 시작·점검. 8번은 실행하지 않음** |
+| Home·Hyper-V 사용 불가·Docker 전환/실행 실패 | **8-1 서비스 확인 → 필요하면 8-2 레지스트리 백업·권한 복구 → 8-3 WSL 설치 → 8-4 Docker 검증 → 7번 점검** |
+아래를 전부 한꺼번에 실행하지 않는다. **1~4번은 확인용**이며, 그 결과에 따라 필요한 단계만 실행한다. 이 문서는 현장에서 실행할 절차이며 학교 PC의 복구 성공 기록은 아니다.
 
-강의실 관리자에게 재부팅 복원 기능 해제 또는 설치 완료 상태 저장을 요청한다. 복원 기능이 켜져 있으면 설치와 설정 변경이 재부팅 후 사라질 수 있다.
+## 0. 시작 전 준비
 
-시작 메뉴에서 **Windows PowerShell 검색 → 관리자 권한으로 실행**. 창 제목에 `관리자`가 있는지 확인한다.
+재부팅하면 초기화되는 PC라면 강의실 관리자에게 **복원 기능 해제 또는 변경 사항을 유지할 방법**을 먼저 확인한다. 이를 준비하지 않으면 재부팅 후 같은 작업을 다시 해야 할 수 있다.
 
-## 1. Hyper-V와 Docker 설치 형태 확인 — 조회만 수행
+시작 메뉴에서 **Windows PowerShell 검색 → 관리자 권한으로 실행 → 사용자 본인이 ‘예’ 선택**. 제목에 `관리자`가 있는 창을 사용한다. 이후 재부팅 전까지 명령어는 이 창에서 실행한다.
 
-아래 블록 전체를 붙여 넣는다. 설치·서비스·권한을 변경하지 않는다.
+## 1. Windows 에디션 확인
+
+**실행할 명령 — 조회만 수행:**
 
 ```powershell
-$ErrorActionPreference = 'Stop'
-$os = Get-CimInstance Win32_OperatingSystem
-$pc = Get-CimInstance Win32_ComputerSystem
-$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
-$features = @(Get-WindowsOptionalFeature -Online)
-
-Write-Host "Windows: $($os.Caption) / Build $($os.BuildNumber)"
-Write-Host "하이퍼바이저 실행 중: $($pc.HypervisorPresent)"
-Write-Host "BIOS 가상화: $($cpu.VirtualizationFirmwareEnabled)"
-
-$featureNames = @(
-    'Microsoft-Hyper-V-All'
-    'Microsoft-Hyper-V-Hypervisor'
-    'Containers'
-    'VirtualMachinePlatform'
-    'Microsoft-Windows-Subsystem-Linux'
-)
-foreach ($name in $featureNames) {
-    $feature = $features |
-        Where-Object { $_.FeatureName -eq $name } |
-        Select-Object -First 1
-    if ($feature) { Write-Host "$name : $($feature.State)" }
-    else { Write-Host "$name : 이 Windows에서 기능을 찾지 못함" }
-}
-
-$allUsersDocker = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
-$perUserDocker = Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'
-Write-Host "Docker 전체 사용자용 기본 경로: $(Test-Path -LiteralPath $allUsersDocker)"
-Write-Host "Docker 사용자 전용 기본 경로: $(Test-Path -LiteralPath $perUserDocker)"
-Get-Service -Name 'com.docker.service','LanmanServer' -ErrorAction SilentlyContinue |
-    Format-Table Name,Status,StartType
+Get-CimInstance Win32_OperatingSystem | Format-List Caption,Version,BuildNumber
 ```
 
-| 조회 결과 | 다음 행동 |
+**결과를 보고 선택:**
+
+- `Windows 11 Pro`, `Education`, `Enterprise` 계열: **2번으로**. 현재 Docker가 지원하는 Windows 빌드인지도 공식 요구 사항에서 확인한다.
+- `Windows 11 Home`: **Hyper-V 경로를 생략하고 8번 WSL 복구로 이동**. Home에 Hyper-V를 강제로 설치하는 우회는 진행하지 않는다.
+
+사용자님 개인 PC는 Home이었지만 **학교 PC 에디션은 별도로 확인해야 한다.**
+
+## 2. Hyper-V 기능과 하이퍼바이저 확인
+
+**먼저 아래 명령 전체를 실행 — 조회만 수행:**
+
+```powershell
+Get-WindowsOptionalFeature -Online |
+    Where-Object { $_.FeatureName -in @('Microsoft-Hyper-V-All', 'Microsoft-Hyper-V-Hypervisor', 'Containers') } |
+    Format-Table FeatureName,State
+```
+
+**다음 명령 실행 — 조회만 수행:**
+
+```powershell
+Get-CimInstance Win32_ComputerSystem | Format-List HypervisorPresent
+```
+
+| 결과 | 다음 행동 |
 |---|---|
-| 지원되는 Pro·Education·Enterprise, Hyper-V와 Containers가 `Enabled`, 하이퍼바이저 `True`, Docker 전체 사용자용 설치 | **3번으로 바로 이동** |
-| 지원 에디션이고 Hyper-V 또는 Containers가 `Disabled` | **2번**에서 활성화 |
-| `EnabledPending` | 작업 저장 후 재부팅하고 1번 재확인 |
-| Windows Home 또는 Hyper-V 기능 없음 | **5번 WSL 경로**로 이동 |
-| Docker 사용자 전용 경로만 `True`, `com.docker.service` 없음 | Hyper-V 지원 설치 형태가 아니다. WSL 경로를 사용하거나 전체 사용자용 재설치를 별도 준비 |
+| Hyper-V와 Containers 모두 `Enabled`, `HypervisorPresent : True` | 기능 활성화는 필요 없다. **4번으로** |
+| 하나라도 `Disabled` | **3번**에서 활성화 |
+| `EnablePending` 또는 `EnabledPending` 등 적용 대기 상태 | 열린 작업 저장 → `Restart-Computer` 실행 → 재부팅 후 관리자 PowerShell에서 **1·2번 다시 확인** |
+| Hyper-V 기능 항목이 전혀 안 나옴 | 에디션·Windows 구성을 확인. 지원 여부를 확인하고 사용할 수 없으면 **8번으로**. 다음 활성화 명령을 강행하지 않는다 |
+| Hyper-V가 `Enabled`지만 `HypervisorPresent : False` | **3-2번**의 BIOS·부팅 상태 확인 |
 
-`HypervisorPresent=True` 하나로 Hyper-V 백엔드를 쓸 수 있다고 판단하지 않는다. Home에서도 WSL·보안 기능 때문에 하이퍼바이저가 실행될 수 있다. 에디션·Hyper-V 기능·Docker 설치 형태를 함께 확인한다.
+**주의:** `HypervisorPresent=True` 하나만으로 Docker Hyper-V를 쓸 수 있다고 판단하지 않는다. Windows Home도 WSL·보안 기능 때문에 True일 수 있다. **1번 에디션과 2번 기능 상태를 함께 본다.**
 
-Docker 경로 검사는 **기본 설치 경로 기준**이다. 사용자 지정 경로에 설치한 PC는 경로의 True/False만으로 설치 유무를 확정하지 않는다.
+## 3. Hyper-V가 꺼졌을 때만 활성화
 
-하이퍼바이저가 실행되지 않고 BIOS 가상화도 False라면 **작업 관리자 → 성능 → CPU → 가상화**를 확인한다. 꺼져 있으면 BIOS/UEFI에서 가상화를 활성화해야 한다. 하이퍼바이저가 이미 실행 중일 때는 CPU 항목만으로 BIOS 가상화가 꺼졌다고 판단하지 않는다.
+### 3-1. 필요한 기능 활성화
 
-## 2. Hyper-V가 꺼져 있을 때만 활성화
+**실행 조건:** 1번에서 지원 에디션이고, 2번에서 필요한 기능이 Disabled인 경우. 이미 모두 Enabled이면 생략한다.
 
-**지원되는 Pro·Education·Enterprise이고 BIOS 가상화가 준비된 PC에서만** 실행한다. 이미 두 기능이 Enabled이면 생략한다. Home에서 Hyper-V를 강제 설치하는 우회 절차는 사용하지 않는다.
+먼저 BIOS 가상화를 조회한다.
+
+```powershell
+Get-CimInstance Win32_Processor | Format-List Name,VirtualizationFirmwareEnabled
+```
+
+하이퍼바이저가 False이고 BIOS 가상화도 False이면 **작업 관리자 → 성능 → CPU → 가상화**를 확인한다. 실제로 꺼져 있으면 PC 관리자와 BIOS/UEFI의 Intel VT-x 또는 AMD SVM을 먼저 켠다. BIOS 메뉴는 PC 제조사별로 달라 공통 PowerShell 명령으로 켤 수 없다.
+
+**가상화가 준비됐으면 실행 — Windows 기능 변경:**
 
 ```powershell
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V,Containers -All -NoRestart -ErrorAction Stop
 ```
 
-성공하면 열어 둔 작업을 저장하고 복원 기능이 해제됐는지 확인한 후 재부팅한다. 오류가 나면 다음 명령으로 넘어가지 않는다.
+오류 없이 끝나면 열린 작업을 저장한다. 재부팅 복원 기능이 해제됐는지 확인한 뒤 실행한다.
 
 ```powershell
 Restart-Computer
 ```
 
-재부팅 후 1번을 다시 확인한다. Hyper-V가 Enabled인데 하이퍼바이저가 False라면 부팅 설정을 조회한다.
+**재부팅 후 관리자 PowerShell을 다시 열고 1·2번을 확인한다.** 기능이 Enabled이고 하이퍼바이저가 True이면 4번으로 간다. 기능 활성화에서 액세스 거부 등 오류가 나오면 해당 오류를 기록하고 **8번 WSL 복구로 이동**한다. 학교 관리 정책이 두 경로 모두를 막는 경우에는 관리자의 조치가 필요하다.
+
+### 3-2. Hyper-V는 Enabled인데 하이퍼바이저가 False인 경우만
+
+BIOS 가상화가 켜져 있는지 위 방법으로 확인하고, 관리자 PowerShell에서 부팅 설정을 조회한다.
 
 ```powershell
 bcdedit.exe /enum '{current}'
 ```
 
-**`hypervisorlaunchtype Off`가 명시적으로 보일 때만** 다음을 실행하고 다시 재부팅한다. 항목이 없다는 이유만으로 Off로 판단하지 않는다.
+결과에 **`hypervisorlaunchtype Off`가 명시적으로 있을 때만** 다음을 실행한다. 항목이 없다고 Off로 판단하지 않는다.
 
 ```powershell
 bcdedit.exe /set hypervisorlaunchtype auto
 ```
 
-## 3. Docker 설정 전환
+성공하면 작업을 저장하고 재부팅한다.
 
-전체 사용자용 기본 경로에 설치되어 있을 때 Docker Desktop을 연다. 이미 열려 있으면 설정으로 이동한다.
+```powershell
+Restart-Computer
+```
+
+재부팅 후 2번을 다시 조회한다. 여전히 False이면 BIOS·부팅·학교 관리 설정을 확인해야 하며 Docker 설정만으로 해결할 수 있는 상태가 아니다.
+
+## 4. Docker가 Hyper-V 지원 방식으로 설치됐는지 확인
+
+**첫 번째 명령 — 전체 사용자용 기본 설치 경로 확인:**
+
+```powershell
+Test-Path -LiteralPath "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
+```
+
+**두 번째 명령 — 사용자 전용 기본 설치 경로 확인:**
+
+```powershell
+Test-Path -LiteralPath "$env:LOCALAPPDATA\Programs\DockerDesktop\Docker Desktop.exe"
+```
+
+**세 번째 명령 — Docker 지원 서비스 확인:**
+
+```powershell
+Get-Service -Name 'com.docker.service','LanmanServer' -ErrorAction SilentlyContinue |
+    Format-Table Name,Status,StartType
+```
+
+| 결과 | 다음 행동 |
+|---|---|
+| 첫 명령 `True`, `com.docker.service`가 있음 | 일반적인 전체 사용자용 설치. **5번으로** |
+| 사용자 전용 경로만 `True`, Docker 서비스 없음 | 현재 설치 형태에서는 Hyper-V 사용 불가. 전체 사용자용 재설치를 준비하거나 **8번 WSL 복구로 이동** |
+| 둘 다 `False` | Docker 없음 또는 사용자 지정 경로. Windows의 설치된 앱에서 실제 설치 위치·형태를 확인 |
+
+경로 검사는 기본 경로 기준이다. 사용자 지정 경로가 있으면 이 결과만으로 설치 유무를 단정하지 않는다. 서비스가 `Stopped`인 것만으로 잘못 설치됐다고 판단하지 않는다.
+
+**사용자 전용 설치인 경우:** 공식적으로 전체 사용자용 전환은 제거 후 재설치가 필요하다. 이 문서에서 데이터 삭제·초기화를 자동 실행하지 않는다. 설치 프로그램에서 **전체 사용자용(All users)**과 Hyper-V 백엔드를 선택하도록 학교 관리자와 준비한다. 준비 후 이 문서의 4번부터 다시 확인한다.
+
+## 5. Docker를 Hyper-V 방식으로 전환
+
+**실행 조건:** Hyper-V가 준비됐고 Docker가 전체 사용자용으로 설치된 경우.
+
+**Docker Desktop 열기:**
 
 ```powershell
 Start-Process -FilePath "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
 ```
 
-1. **설정(톱니바퀴) → General**.
-2. **Use the WSL 2 based engine** 체크 해제.
-3. **Apply & Restart**. 관리자 승인 창은 사용자가 승인한다.
-4. 엔진 시작 후 4번으로 이동.
+**이 부분은 Docker 화면에서 직접 클릭한다:**
 
-체크 항목이 없거나 잠겨 있거나 전환 오류가 나면 에디션·Windows 기능·Docker 설치 형태를 다시 확인한다. 사용자 전용에서 전체 사용자용으로 바꾸려면 공식적으로 제거 후 재설치가 필요하다. 기존 데이터 삭제나 초기화를 해결책으로 바로 실행하지 않는다.
+1. 오른쪽 위 **설정(톱니바퀴)**.
+2. **General**.
+3. **Use the WSL 2 based engine**의 체크를 **해제**.
+4. **Apply & Restart**. 관리자 승인 창이 나오면 사용자 본인이 승인.
+5. Docker 엔진이 시작될 때까지 기다린 뒤 **6번** 실행.
 
-**Switch to Windows containers는 선택하지 않는다.** 이 프로젝트는 Hyper-V 방식에서도 Linux 컨테이너를 사용한다.
+체크 항목이 없거나 비활성화됐다면 1~4번 조건·설치 형태를 확인한다. 전환 불가 또는 오류가 해결되지 않으면 오류를 기록하고 **8번 WSL 복구로 이동**한다. **Switch to Windows containers는 선택하지 않는다. 이 프로젝트는 Linux 컨테이너를 사용한다.**
 
-Docker 오류에서 Server 서비스를 지목하고 `LanmanServer`가 Disabled 또는 Stopped라면, 관리자가 허용한 PC에서만 아래를 한 줄씩 실행한다.
+### 5-1. 오류가 Server 서비스를 지목하는 경우만
+
+4번에서 `LanmanServer`가 Disabled 또는 Stopped였고 Docker도 해당 서비스 문제를 표시하면, 관리자와 확인한 뒤 아래를 **한 줄씩** 실행한다. 오류가 나면 다음 줄을 실행하지 않는다.
 
 ```powershell
 Set-Service -Name LanmanServer -StartupType Automatic -ErrorAction Stop
+```
+
+```powershell
 Start-Service -Name LanmanServer -ErrorAction Stop
 ```
 
-## 4. Docker 정상 실행 확인 → 성공하면 7번으로
+이후 Docker Desktop에서 엔진 시작을 다시 시도한다.
 
-새 PowerShell 창에서 실행한다.
+## 6. Docker 실행 검증
+
+**새 PowerShell 창**을 열고 아래 명령을 실행한다.
 
 ```powershell
 docker version
+```
+
+**정상 결과:** `Client`와 `Server`가 모두 출력된다. Server 연결 오류가 나면 아직 정상 실행이 아니다. 엔진 시작을 기다려 한 번 재확인하고, 계속 실패하면 오류를 기록한 뒤 **8번으로 이동**한다.
+
+그다음 실행한다.
+
+```powershell
 docker info --format '{{.OSType}}'
 ```
 
-`docker`를 찾지 못하고 전체 사용자용 기본 경로에 설치했다면 직접 호출한다.
+**정상 결과:** `linux`. `windows`이면 Docker 메뉴에서 Linux containers로 전환한 뒤 재확인한다.
+
+### 6-1. docker 명령을 찾지 못하는 경우만
+
+전체 사용자용 기본 경로라면 직접 호출한다.
 
 ```powershell
 & "$env:ProgramFiles\Docker\Docker\resources\bin\docker.exe" version
+```
+
+```powershell
 & "$env:ProgramFiles\Docker\Docker\resources\bin\docker.exe" info --format '{{.OSType}}'
 ```
 
-**Client와 Server가 모두 나오고 `linux`가 출력되면 실습에 필요한 Docker Linux 엔진이 응답하는 것이다.** 이 출력만으로 백엔드 종류까지 증명되는 것은 아니다.
+**Client·Server와 linux가 확인되면 Docker Linux 엔진 응답 확인 완료.** 백엔드는 5번 설정에서 확인한다. 다음은 프로젝트 실습 스택 검증이다.
 
-성공하면 **5·6번 WSL·레지스트리 절차를 생략하고 7번으로 이동**한다.
+## 7. 시작.bat과 점검.bat 실행
 
-현재 `설치.bat`은 WSL 설치를 시도하므로 Hyper-V 경로에서 전체 설치.bat을 반복 실행하지 않는다. 나머지 도구가 준비됐다면 바로 시작·점검하고, 빠진 도구가 있으면 해당 도구만 준비한다.
+**현재 설치.bat은 WSL 설치를 시도하므로 이 경로에서 전체 설치.bat을 반복 실행하지 않는다.** 이미 나머지 도구가 설치된 학교 PC에서는 아래 실행·점검으로 진행한다. 시작.bat은 Git for Windows의 Bash를 사용하며 WSL 설치 명령을 호출하지 않는다.
 
-## 5. Hyper-V를 사용할 수 없을 때만 WSL
-
-먼저 조회한다.
+새 PowerShell에서 먼저 나머지 도구가 응답하는지 확인한다.
 
 ```powershell
-wsl.exe --version
-wsl.exe --status
+git --version
 ```
-
-WSL이 준비됐고 Docker가 정상 실행된다면 재설치는 생략한다. 설치가 필요하면 **다른 설치가 끝난 상태**에서 관리자 PowerShell로 실행한다.
 
 ```powershell
-wsl.exe --install --web-download --no-distribution
+python --version
 ```
 
-설치가 성공하면 안내에 따라 재부팅한다. Docker용으로 Ubuntu를 별도 설치할 필요는 없다. 재부팅 후 위 조회와 4번 Docker 실행 확인을 진행한다.
+```powershell
+node --version
+```
 
-실패하면 같은 설치 명령을 반복하지 말고 서비스 상태를 확인한다.
+Python 명령만 없으면 `py --version`도 확인한다. 특정 버전으로 맞추려고 기존 프로그램을 지우거나 덮어쓰지 않는다. 프로그램이 실제로 빠졌다면 해당 도구를 먼저 준비한다. 기존 Python·Anaconda는 유지한다.
+
+학교 PC의 실제 저장소 폴더로 이동한다. 아래는 현재 대화에서 사용한 경로의 예다.
+
+```powershell
+Set-Location -LiteralPath 'C:\uengine\hyd-iot-edu'
+```
+
+```powershell
+.\시작.bat
+```
+
+**시작 완료 메시지를 확인한 다음에만** 실행한다.
+
+```powershell
+.\점검.bat
+```
+
+Docker Linux 엔진 실행과 전체 실습 스택 검증은 별개다. 점검 실패 항목이 없어야 현장 실행 검증 완료로 판단한다. 필요한 접속 키는 공개 문서나 저장소에 넣지 않는다.
+
+마지막으로 재부팅 후 설정이 유지되고 Docker·실습 스택이 정상인지 확인한다. 강의실 관리자와 정상 상태를 복구 기준 또는 배포 이미지로 저장한다.
+
+## 8. Hyper-V를 사용할 수 없거나 실행 실패 → WSL 권한 복구
+
+**이 단계는 Hyper-V 경로가 막힌 경우에만 실행한다.** 이미 Docker가 정상 실행되면 생략한다. 기존 WSL 설치는 실패했으므로 같은 설치 명령부터 반복하지 않는다.
+
+### 8-1. Windows Update 서비스부터 확인
+
+**학교 PC의 관리자 Windows PowerShell에서 실행 — 조회:**
 
 ```powershell
 Get-Service -Name wuauserv,BITS,msiserver -ErrorAction SilentlyContinue |
     Format-Table Name,Status,StartType
 ```
 
-`wuauserv`가 Disabled라면 아래를 **한 줄씩** 실행한다. 오류가 나면 다음 줄은 실행하지 않는다.
+wuauserv가 Disabled이면 아래 첫 줄을 실행한다. 이미 Manual 또는 Automatic이면 첫 줄을 생략한다.
 
 ```powershell
 Set-Service -Name wuauserv -StartupType Manual -ErrorAction Stop
-Start-Service -Name wuauserv -ErrorAction Stop
-Get-Service wuauserv | Format-Table Name,Status,StartType
 ```
 
-BITS와 msiserver가 Manual/Stopped인 것만으로 장애라고 판단하지 않는다. 첫 줄에서 액세스 거부가 나오는 경우에만 6번 권한을 확인한다. 서비스가 정상인데 WSL이 실패하면 별도의 설치 오류를 확인해야 한다.
+- **오류 없이 끝남:** 아래 Start-Service 실행.
+- **액세스 거부:** 여기서 멈추고 **8-2번**으로 이동. 권한 복구 후 돌아온다.
 
-## 6. 액세스 거부일 때만 해당 키 권한 확인·복구
+```powershell
+Start-Service -Name wuauserv -ErrorAction Stop
+```
 
-### 6-1. 조회와 백업
+```powershell
+Get-Service -Name wuauserv | Format-Table Name,Status,StartType
+```
+
+**Running이고 시작 유형이 Manual 또는 Automatic이면 8-3번으로**. 서비스 시작 자체가 실패하면 오류 전문을 기록한다. 권한 변경만으로 그 오류가 해결된다고 단정하지 않는다. BITS·msiserver의 Manual/Stopped 표시만으로 장애로 판단하지 않는다.
+### 8-2. Set-Service에서 액세스 거부일 때만 레지스트리 권한 복구
+
+#### 8-2-1. 조회와 백업
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -191,7 +301,7 @@ Write-Host "백업 위치: $backupDir"
 
 백업 오류가 나면 변경을 진행하지 않는다. `.reg`는 값의 백업이고 SDDL 파일이 권한 백업이다. `SYSTEM`과 `Administrators` 모두 `ReadKey`뿐인 상태가 학교 PC 사진에서 확인됐다. 이 경우 설정 변경이 거부될 근거가 있다. 이미 권한이 정상이면 아래 변경을 적용하지 않는다.
 
-### 6-2. GUI에서 필요한 키만 수정
+#### 8-2-2. GUI에서 필요한 키만 수정
 
 관리자 PowerShell에서 편집기를 연다.
 
@@ -216,31 +326,66 @@ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\wuauserv
 
 적용이 거부되거나 권한이 즉시 되돌아가면 오류를 기록하고 PC 관리자와 차단 프로그램·관리 정책 여부를 확인한다. 어떤 프로그램이 원인인지는 현재 확인되지 않았다.
 
-복구 후 5번 서비스 명령을 다시 한 줄씩 실행한다. `Running / Manual`이 되면 WSL 설치를 재시도한다. 이 복구만으로 모든 WSL 설치 문제가 해결된다고 보장할 수는 없다.
+복구 후 8-1번 서비스 명령을 다시 한 줄씩 실행한다. `Running`이고 시작 유형이 `Manual` 또는 `Automatic`이면 8-3번으로 이동한다. 이 복구만으로 모든 WSL 설치 문제가 해결된다고 보장할 수는 없다.
 
-## 7. 실습 시작·점검
+### 8-3. 권한·서비스를 처리한 후 Windows 기능과 WSL 설치
 
-Docker Linux 엔진과 Git·Python·Node 등 나머지 도구가 준비된 후 실행한다. 아래 경로는 학교 PC의 예이므로 실제 저장소 경로에 맞춘다.
-
-```powershell
-Set-Location -LiteralPath 'C:\uengine\hyd-iot-edu'
-.\시작.bat
-```
-
-시작 완료를 확인한 뒤 실행한다.
+**관리자 PowerShell**에서 필요한 Windows 기능을 활성화한다. 이 명령은 설정을 변경한다.
 
 ```powershell
-.\점검.bat
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux,VirtualMachinePlatform -All -NoRestart -ErrorAction Stop
 ```
 
-검증 완료 후 재부팅해 설치 상태가 유지되는지 확인하고, 정상 상태를 복구 기준 또는 배포 이미지로 저장한다.
+오류가 나면 중단하고 해당 오류를 확인한다. 성공하면 다른 설치가 진행 중이지 않은 상태에서 실행한다.
 
-기존 프로그램은 버전과 관계없이 유지하는 것이 설치 스크립트의 정책이다. Python·Anaconda도 있으면 설치를 건너뛴다. 이미 추가 설치된 Python을 자동 삭제하는 변경은 아니다. 키를 공개 문서나 저장소에 넣지 않는다.
+```powershell
+wsl.exe --install --web-download --no-distribution
+```
 
-## 공식 참고
+**설치 성공 후**, 열린 작업을 저장하고 재부팅 복원 기능이 해제됐는지 확인한 뒤 재부팅한다. 실패한 상태에서 성공으로 간주해 다음 단계로 넘어가지 않는다.
 
-- [Microsoft: Hyper-V 활성화와 지원 조건](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v?pivots=windows)
+```powershell
+Restart-Computer
+```
+
+재부팅 후 PowerShell에서 실행한다.
+
+```powershell
+wsl.exe --version
+```
+
+```powershell
+wsl.exe --status
+```
+
+버전 정보가 정상 표시되는지 확인한다. 배포판이 없다는 안내만으로 설치 실패라고 판단하지 않는다. Docker용 Ubuntu 배포판을 추가할 필요는 없다.
+
+### 8-4. Docker를 WSL 2 방식으로 설정하고 검증
+
+시작 메뉴에서 Docker Desktop을 연다. 사용자 전용 기본 경로이면 아래 명령으로도 열 수 있다.
+
+```powershell
+Start-Process -FilePath "$env:LOCALAPPDATA\Programs\DockerDesktop\Docker Desktop.exe"
+```
+
+전체 사용자용 기본 경로이면 5번의 실행 명령을 사용한다. 실제 설치 경로에 해당하는 명령 **하나만** 사용한다.
+
+Docker **설정 → General → Use the WSL 2 based engine 체크 → Apply & Restart**. WSL 전용 설치라 항목이 표시되지 않으면 엔진 시작 결과로 확인한다.
+
+새 PowerShell 창에서 실행한다.
+
+```powershell
+ docker version
+```
+
+```powershell
+ docker info --format '{{.OSType}}'
+```
+
+Client·Server와 linux가 나오면 **7번의 시작·점검**으로 돌아간다. WSL 설치나 Docker 실행이 계속 실패하면 정확한 오류를 기록해 PC 관리자와 확인한다. 같은 설치·권한 변경을 반복하지 않는다.
+
+## 공식 근거
+
+- [Microsoft: Hyper-V 활성화·지원 조건](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v?pivots=windows)
 - [Docker: Windows 설치 형태·Hyper-V 요구 사항](https://docs.docker.com/desktop/setup/install/windows-install/)
 - [Docker: 설정 항목](https://docs.docker.com/desktop/settings-and-maintenance/settings/)
-- [Microsoft: WSL 명령](https://learn.microsoft.com/en-us/windows/wsl/basic-commands)
-- [Microsoft: 레지스트리 키 접근 권한](https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-key-security-and-access-rights)
