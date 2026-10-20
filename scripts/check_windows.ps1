@@ -100,10 +100,21 @@ finally {
             foreach ($w in @($v.workitems | Where-Object { $_.status -eq 'PENDING' -and $_.agent_mode })) {
                 try { Post-J "$PROCESS/api/todolist/$($w.id)/close" @{ by = '설치 점검'; reason = '설치 점검이 연 처리 건 정리(쿨러 복구 뒤)' } | Out-Null } catch { }
             }
+            # 보류 뒤 흐름은 「상급자 호출」(생산관리자 확인 메모)로 간다. 점검이 연 건이므로 정리 메모를 제출해 닫는다(조치 카드 승인은 건드리지 않는다)
+            foreach ($w in @($v.workitems | Where-Object { $_.status -eq 'IN_PROGRESS' -and $_.tool -eq 'formHandler:escalate' })) {
+                try { Post-J "$PROCESS/api/todolist/$($w.id)/submit" @{ output = @{ note = '설치 점검이 연 처리 건 정리(쿨러 복구 뒤)' }; by = '설치 점검' } | Out-Null } catch { }
+            }
             $null
         }
         if ($closed) { Record '점검 처리 건 정리' $true "처리 건 종료($closed)" }
-        else { Record '점검 처리 건 정리' $false "처리 건 $pid_ 이 아직 열려 있습니다. 포털 「처리 건」에서 확인하세요" }
+        else {
+            $v = Get-J "$PROCESS/api/instances/$pid_"
+            if ($v.workitems | Where-Object { $_.status -eq 'IN_PROGRESS' -and -not $_.agent_mode }) {
+                # 원인 지식이 있는 PC: 사람 승인 단계가 열려 있다. 점검이 대신 승인하거나 닫지 않는다
+                Record '점검 처리 건 정리' $true "사람 승인 단계가 열린 채 남음 — 이미지를 뜨기 전이면 포털 「처리 건」에서 이 건을 끝내세요($pid_)"
+            }
+            else { Record '점검 처리 건 정리' $false "처리 건 $pid_ 이 아직 열려 있습니다. 포털 「처리 건」에서 확인하세요" }
+        }
     }
     try { Post-J "$PLANT/api/reset" @{} | Out-Null } catch { }
 }
