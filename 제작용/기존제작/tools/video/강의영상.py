@@ -6,7 +6,7 @@
   `>`로 시작하는 줄(제작 표시), `---`, 표 줄, `**`는 낭독하지 않는다
 - 슬라이드: 대본 폴더 위의 <과정>_NN일차.pptx를 LibreOffice로 PDF, pdftoppm으로 그림으로 바꾼다. 장 번호가 PPTX 장 수를 넘으면 멈춘다
 - 음성: ElevenLabs API(글자별 시간 포함). 장마다 따로 뽑아 저장해 두고, 글·음성·모델·속도가 같으면 다시 뽑지 않는다
-- 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`처럼 여러 장을 한 구획에서 읽으면 그 시간을 장 수로 나눠 차례로 보여 준다.
+- 시간: 장의 음성 길이만큼 그 장의 그림을 보여 준다. `SLIDE NN~MM`(실습 간지와 설명 장 두 장)은 첫 문장과 그 뒤 쉼까지 간지를, 둘째 문장부터 설명 장을 보여 준다.
   목표 초(--target)를 주지 않으면 쉼의 길이를 늘이거나 줄이지 않는다(기준 51번)
 - 호흡(--breath): 어디서 얼마나 쉴지는 쉼_저장/ 에 장마다 적어 둔 단계를 읽는다. 적히지 않은 장이 있으면 빈 자리를 만들어 두고 멈춘다. 이 도구는 OpenAI를 부르지 않는다
 - --dry: 파일마다 장 범위·글자 수와 첫 문장 점검(기준 49번)만 찍는다. 음성을 부르지 않으니 돈이 들지 않는다
@@ -201,8 +201,13 @@ def make(S, pptx, name):
     for r in rows:
         seg = OUT / f"seg_{r['first']:03d}.mp4"; wavp = OUT / f"seg_{r['first']:03d}.wav"
         d, marks = build(r, wavp); r["d2"] = d
-        shown = imgs[r["first"] - 1:r["last"]]   # SLIDE NN~MM이면 그 시간을 장 수로 나눠 차례로 보여 준다
-        ins = [x for img in shown for x in ("-loop", "1", "-t", f"{d / len(shown):.3f}", "-i", str(img))]
+        shown = imgs[r["first"] - 1:r["last"]]
+        if len(shown) == 1: spans = [d]
+        else:   # SLIDE NN~MM은 실습 간지 + 설명 장. 간지는 첫 문장과 그 뒤 쉼까지, 설명 장은 둘째 문장부터
+            if len(shown) != 2 or not marks:
+                sys.exit(f"{name} SLIDE {r['first']}~{r['last']}: 묶음 구획은 간지와 설명 두 장이고 문장이 둘 이상이어야 한다")
+            sw = marks[0][0] + marks[0][1]; spans = [sw, d - sw]; r["sw"] = clock + sw
+        ins = [x for img, t in zip(shown, spans) for x in ("-loop", "1", "-t", f"{t:.3f}", "-i", str(img))]
         fit = "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p,fps=10"
         vf = ";".join(f"[{n}:v]{fit}[v{n}]" for n in range(len(shown))) + ";" + "".join(f"[v{n}]" for n in range(len(shown))) + f"concat=n={len(shown)}:v=1:a=0[v]"
         run("ffmpeg", "-v", "error", "-y", *ins, "-i", str(wavp), "-filter_complex", vf, "-map", "[v]", "-map", f"{len(shown)}:a", "-t", f"{d:.3f}",
@@ -229,7 +234,7 @@ def make(S, pptx, name):
             f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼(자리는 쉼_저장에서 읽음): 잇는 곳 {sum(lv(k) == 0 for r in rows for _, k in r['cuts'])}곳 · 짧게 {sum(lv(k) == 1 for r in rows for _, k in r['cuts'])}곳 {a.pause_short*scale:.2f}초 · 한 호흡 {sum(lv(k) == 2 for r in rows for _, k in r['cuts'])}곳 {a.pause_mid*scale:.2f}초 · 크게 {sum(lv(k) == 3 for r in rows for _, k in r['cuts'])}곳 {a.pause_long*scale:.2f}초 · 물음 뒤 최소 {PQ*scale:.2f}초 · 문단 사이 최소 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)" if a.breath else
             f"- 말한 시간 합 {speech:.1f}초 · 넣은 쉼: 문장 {PS*scale:.2f}초 · 물음 {PQ*scale:.2f}초 · 문단 {PP*scale:.2f}초 · 장 넘김 {gap:.2f}초 (기본값의 {scale:.2f}배)"),
            f"- 영상 길이 {dur(OUT / (name + '.mp4')):.1f}초 · 목표 {a.target:.0f}초", "", "| 장 | 시작 | 음성(초) |", "|---|---|---|"]
-    rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d} | {r['d2']:.1f} |" for r in rows]
+    rep += [f"| {r['first']}{'~'+str(r['last']) if r['last']!=r['first'] else ''} | {int(r['start']//60)}:{int(r['start']%60):02d}" + (f" (SLIDE {r['last']}부터 {int(r['sw']//60)}:{r['sw']%60:04.1f})" if 'sw' in r else '') + f" | {r['d2']:.1f} |" for r in rows]
     (SIDE / f"{name}_시간표.md").write_text("\n".join(rep) + "\n", encoding="utf-8")
     print("\n".join(rep[2:6]))
 
