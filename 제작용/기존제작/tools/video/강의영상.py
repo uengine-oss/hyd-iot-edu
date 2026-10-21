@@ -126,8 +126,9 @@ def make(S, pptx, name):
     #    말의 빠르기는 건드리지 않고, 쉼의 길이만 늘이거나 줄여 목표 시간에 맞춘다.
     import wave, array
     PS, PQ, PP = a.pause_sentence, a.pause_question, a.pause_para
+    QUIET_MAX = 300   # 문장 사이로 고른 곳의 최대 세기(16비트). 01편 실측 108곳 4~59, 말소리는 수천
     def cuts(r):
-        """(넣을 자리의 초, 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 자리는 문장 끝 글자와 다음 글자 사이의 한가운데."""
+        """((앞 문장 끝 글자의 끝, 다음 글자의 시작), 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 넣을 자리는 build가 소리를 보고 정한다."""
         ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
         out, i, b = [], 0, 0
         while i < len(ch):
@@ -136,7 +137,7 @@ def make(S, pptx, name):
                 while j < len(ch) and ch[j] in " \n\"'」)":
                     para = para or ch[j] == "\n"; j += 1
                 if j < len(ch):
-                    out.append(((en[i] + st[j]) / 2, "para" if para else ("q" if ch[i] == "?" else "s"), "".join(ch[b:j]).strip())); b = j
+                    out.append(((en[i], st[j]), "para" if para else ("q" if ch[i] == "?" else "s"), "".join(ch[b:j]).strip())); b = j
                 i = j
             else: i += 1
         return out, "".join(ch[b:]).strip()
@@ -187,6 +188,20 @@ def make(S, pptx, name):
         wav = OUT / "tmp.wav"
         run("ffmpeg", "-v", "error", "-y", "-i", str(r["mp3"]), "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(wav))
         with wave.open(str(wav)) as w: fr = w.getframerate(); data = array.array("h", w.readframes(w.getnframes()))
+        def quiet(win):
+            """문장 사이에서 소리가 가장 작은 곳의 초. 받은 글자 시각은 실제 말머리보다 늦을 수 있어, 한가운데에 넣으면 다음 말의 첫소리가 잘린다.
+            앞 글자 끝 0.1초 전부터 다음 글자 시작까지 10ms마다 세기를 재고, 가장 조용한 구간들 가운데 가장 긴 구간의 가운데를 고른다."""
+            a0, b0 = max(0.0, win[0] - 0.1), max(win[0], win[1]); h = int(fr * 0.01)
+            fs = [(a0 + x * 0.01, max(abs(v) for v in data[int((a0 + x * 0.01) * fr):int((a0 + x * 0.01) * fr) + h] or [0])) for x in range(max(1, int((b0 - a0) / 0.01)))]
+            lim = max(min(e for _, e in fs) * 2, 60); best, run = [], []
+            for t0, e in fs:
+                run = run + [t0] if e <= lim else []
+                if len(run) > len(best): best = run
+            peak = max(e for t0, e in fs if best[0] <= t0 <= best[-1])
+            if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
+                sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
+            return (best[0] + best[-1]) / 2 + 0.005
+        r["cuts"] = [(quiet(t), k) for t, k in r["cuts"]]
         out, pos, shift, marks = array.array("h"), 0, 0.0, []
         for t, k in r["cuts"]:
             cut = min(len(data), int(t * fr)); out.extend(data[pos:cut]); pos = cut
