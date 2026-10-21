@@ -29,6 +29,6 @@
 | 조립 덱의 원고 | 통합반 원고 + `새장_….md` | 각 폴더의 `조립.py` | 같은 폴더의 `…md` |
 | 최종 대본 | `course/scripts/integrated/…_윤문2.md`를 직접 고친다 | 고친 문단만 모아 한 번 윤문한다(`문서/교재/4_만드는_법.md` 3부 2절) | `course/scripts/integrated/` |
 | 실습 촬영 대본 | `labs/online/<폴더>/runsheet.json` | `labs/build_runsheet.py` | 같은 폴더의 `runsheet.html` |
-| 강의 영상 | `course/scripts/` + `course/slides/` | `tools/video/강의영상.py` | 저장소 밖 |
+| 강의 영상 | `산출물/<과정>/이론/NN회차/대본/*.md` + 같은 회차 PPTX | `tools/video/강의영상.py` | 저장소 밖 |
 | 랩 가이드 | `labs/offline/<랩>/build_guide.py` | 같은 파일 | `course/labs/offline/<랩>/guide.html` |
 | 배포 zip | `course/slides/` | `.claude/skills/hyd-course-deck/scripts/배포묶음.py` | `dist/교재_전체.zip` |

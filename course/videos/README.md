@@ -1,6 +1,6 @@
 # 강의 영상
 
-영상 파일은 용량과 강사 음성 때문에 저장소에 올리지 않는다(이 폴더의 `.gitignore`가 막는다). 만드는 도구는 `production/tools/video/`에, 만드는 순서는 스킬 `.claude/skills/hyd-lecture-video/`에 있다.
+영상 파일은 용량과 강사 음성 때문에 저장소에 올리지 않는다(이 폴더의 `.gitignore`가 막는다). 만드는 도구는 `제작용/기존제작/tools/video/강의영상.py`에, 만드는 순서는 스킬 `.claude/skills/hyd-lecture-video/`에 있다.
 
 **지금의 덱과 대본으로 만든 영상은 아직 없다.**
 
