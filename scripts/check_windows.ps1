@@ -3,7 +3,7 @@
 #   1) 서비스 10개와 포털이 응답하는가
 #   2) 쿨러 사건 한 바퀴: 전체 초기화 → 쿨러 열화 주입 → 경보 → 처리 건 → 원인 진단 결과 → 쿨러 복구 → 점검이 연 처리 건 정리
 #      새 PC(수업용 구조판 지식)에서는 「원인 진단 보류」가 정상이다. 원인 지식이 있으면 「조치 선택」까지 간다.
-#   3) 5회차 실습 2 폴더의 .env: 비어 있으면 중계 주소 · 키를 물어 적고, 실제 모델(coding)에 연결되는지 본다
+#   3) 루트 .env를 우선 사용하고, 미설정이면 기존 실습 폴더 .env로 중계 연결을 확인한다.
 # 점검이 연 처리 건은 끝에 정리한다(복제 이미지에 열린 처리 건이 남지 않게). 데이터는 지우지 않는다.
 param([switch]$SkipLlm, [string]$LlmEnvFile)
 $ErrorActionPreference = 'Stop'
@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 
 $H = 'http://127.0.0.1'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-# 시작.bat이 저장한 숫자 포트 표만 읽는다(루트 .env의 비밀값은 필요 없음).
+# 서비스 점검 포트는 시작.bat이 저장한 숫자 포트 표에서 읽는다.
 $portMap = @{}
 $portFile = Join-Path $repo '.hyd-runtime/ports.json'
 if (Test-Path $portFile) {
@@ -139,31 +139,37 @@ finally {
 
 # 3. 5회차 실습 2: 중계 서버 연결
 Say "`n[3/3] 5회차 실습 2 — 중계 서버 연결"
-$labDir = [System.IO.Path]::Combine($repo, 'course', 'labs', 'offline', '05-2-cause-agent')
-$envFile = if ($LlmEnvFile) { [System.IO.Path]::GetFullPath($LlmEnvFile) } else { Join-Path $labDir '.env' }
-if ($SkipLlm) { Record '중계 서버' $true '건너뜀(-SkipLlm)' }
-elseif (-not (Test-Path $envFile)) { Record '중계 서버' $false "$envFile 이 없습니다" }
-else {
-    $lines = Get-Content $envFile -Encoding UTF8
-    $vals = @{}
-    foreach ($l in $lines) { if ($l -match '^\s*([A-Z_]+)\s*=\s*(.*)$') { $vals[$Matches[1]] = $Matches[2].Trim().Trim('"', "'") } }
-    if (-not $vals['OPENAI_BASE_URL'] -or -not $vals['LLM_API_KEY']) {
-        Say '실습 폴더 .env가 비어 있습니다. 수업용 중계 주소와 키를 붙여 넣으세요(건너뛰려면 그냥 Enter).' 'Yellow'
-        $u = (Read-Host '중계 주소(…/v1)').Trim()
-        $k = (Read-Host '중계 키(sk-…)').Trim()
-        if ($u -and $k) {
-            if ($u -notmatch '/v1/?$') { $u = $u.TrimEnd('/') + '/v1' }
-            $vals['OPENAI_BASE_URL'] = $u; $vals['LLM_API_KEY'] = $k; $vals['LLM_MODEL'] = 'coding'
-            $out = foreach ($l in $lines) {
-                if ($l -match '^\s*(OPENAI_BASE_URL|LLM_API_KEY|LLM_MODEL)\s*=') { "$($Matches[1])=$($vals[$Matches[1]])" } else { $l }
+function Read-RelaySettings($path) {
+    $values = @{}
+    if (Test-Path -LiteralPath $path -PathType Leaf) {
+        foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+            if ($line -match '^\s*(OPENAI_BASE_URL|LLM_API_KEY|LLM_MODEL)\s*=\s*(.*)$') {
+                $values[$Matches[1]] = $Matches[2].Trim().Trim('"', "'")
             }
-            [System.IO.File]::WriteAllLines($envFile, [string[]]$out, (New-Object System.Text.UTF8Encoding($false)))
-            Say '실습 폴더 .env에 적었습니다. 이 PC를 이미지로 복제하면 모든 PC에 같은 키가 들어갑니다.' 'Yellow'
         }
     }
-    if (-not $vals['OPENAI_BASE_URL'] -or -not $vals['LLM_API_KEY']) { Record '중계 서버' $true '건너뜀(.env 비어 있음 — 5회차 수업 때 적음)' }
+    return $values
+}
+function Select-RelaySettings($root, $explicitFile) {
+    if ($explicitFile) {
+        $path = [System.IO.Path]::GetFullPath($explicitFile)
+        return [pscustomobject]@{ Path = $path; Values = (Read-RelaySettings $path) }
+    }
+    $paths = @((Join-Path $root '.env'), (Join-Path $root 'course/labs/offline/05-2-cause-agent/.env'))
+    foreach ($path in $paths) {
+        $values = Read-RelaySettings $path
+        # 키가 있는 파일을 선택한 뒤 누락 항목을 보고한다. 서로 다른 파일의 값을 섞지 않는다.
+        if ($values['LLM_API_KEY']) { return [pscustomobject]@{ Path = $path; Values = $values } }
+    }
+    return [pscustomobject]@{ Path = $paths[0]; Values = @{} }
+}
+if ($SkipLlm) { Record '중계 서버' $true '건너뜀(-SkipLlm)' }
+else {
+    $selected = Select-RelaySettings $repo $LlmEnvFile
+    $vals = $selected.Values
+    $missing = @('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL' | Where-Object { -not $vals[$_] })
+    if ($missing.Count) { Record '중계 서버' $false ("{0}: {1} 설정이 필요합니다. 저장 후 점검.bat을 다시 실행하세요." -f $selected.Path, ($missing -join ', ')) }
     else {
-        if (-not $vals['LLM_MODEL']) { $vals['LLM_MODEL'] = 'coding' }
         $body = @{ model = $vals['LLM_MODEL']; messages = @(@{ role = 'user'; content = 'Reply with exactly: OK' }); max_completion_tokens = 50 }
         try {
             $r = Invoke-RestMethod -Method Post -Uri ($vals['OPENAI_BASE_URL'].TrimEnd('/') + '/chat/completions') -Headers @{ Authorization = 'Bearer ' + $vals['LLM_API_KEY'] } `
@@ -173,7 +179,7 @@ else {
         catch {
             $code = $null; try { $code = [int]$_.Exception.Response.StatusCode } catch { }
             $why = switch ($code) { 401 { '키가 맞지 않거나 서버 쪽 키 문제' } 403 { 'LLM_MODEL 이름이 이 키에 허용되지 않음' } 404 { '주소가 맞지 않음(끝이 /v1인지)' } 429 { '서버가 잠시 바쁨 — 1분 뒤 다시' } default { $_.Exception.Message } }
-            Record '중계 서버' $false "묻지 못했다($code): $why — 실습 폴더에서 python llm_client.py 로 자세한 문구를 볼 수 있다"
+            Record '중계 서버' $false "묻지 못했다($code): $why — 선택된 설정 파일: $($selected.Path)"
         }
     }
 }

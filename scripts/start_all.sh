@@ -3,7 +3,7 @@
 #   bash scripts/start_all.sh
 # 하는 일: Docker 확인 → .env 준비(강의 배포본 값) → 업무 DB(Supabase) → 시스템 빌드 · 기동 → 에이전트용 MCP 둘 → 상태 확인.
 # 이 스택은 LLM 키 없이 끝까지 돈다(강의 배포본 instance 모드는 경보 처리에 LLM을 부르지 않는다).
-# LiteLLM 중계 키는 모델을 직접 부르는 실습 폴더의 .env에만 넣는다(실습 가이드의 「LLM 서버 접속 정보」 단계).
+# 중계 접속 설정은 루트 .env에 넣는다. 점검.bat은 이 설정을 우선 사용한다. 개별 실습은 해당 실습의 설정 안내를 따른다.
 # 끌 때: bash scripts/stop_all.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
