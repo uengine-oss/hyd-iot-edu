@@ -127,12 +127,15 @@ def make(S, pptx, name):
     import wave, array
     PS, PQ, PP = a.pause_sentence, a.pause_question, a.pause_para
     QUIET_MAX = 300   # 문장 사이로 고른 곳의 최대 세기(16비트). 01편 실측 108곳 4~59, 말소리는 수천
+    def decimal(ch, i):
+        """1.1처럼 숫자 사이의 점은 문장 끝이 아니다. 여기서 끊으면 숫자 가운데에 쉼과 자막 줄바꿈이 들어간다."""
+        return ch[i] == "." and 0 < i < len(ch) - 1 and ch[i - 1].isdigit() and ch[i + 1].isdigit()
     def cuts(r):
         """((앞 문장 끝 글자의 끝, 다음 글자의 시작), 종류, 그 자리 앞의 문장) 목록과 마지막 문장. 넣을 자리는 build가 소리를 보고 정한다."""
         ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
         out, i, b = [], 0, 0
         while i < len(ch):
-            if ch[i] in ".?!":
+            if ch[i] in ".?!" and not decimal(ch, i):
                 j = i + 1; para = False
                 while j < len(ch) and ch[j] in " \n\"'」)":
                     para = para or ch[j] == "\n"; j += 1
@@ -231,12 +234,12 @@ def make(S, pptx, name):
         def sh(t): return t + max([m[1] for m in marks if m[0] <= t] or [0.0])
         ch, st, en = r["al"].get("characters") or [], r["al"].get("character_start_times_seconds") or [], r["al"].get("character_end_times_seconds") or []
         buf, b0 = "", None
-        for c, s0, e0 in zip(ch, st, en):
+        for j, (c, s0, e0) in enumerate(zip(ch, st, en)):
             if b0 is None and c.strip(): b0 = s0
             buf += c
-            if c in ".?!\n" and buf.strip():
+            if c in ".?!\n" and buf.strip() and not decimal(ch, j):
                 k += 1; srt.append(f"{k}\n{ts(clock + sh(b0))} --> {ts(clock + sh(b0) + (e0 - b0))}\n{buf.strip()}\n"); buf, b0 = "", None
-        r["start"] = clock; clock += d
+        r["start"] = clock; clock += dur(seg)   # 인코딩된 구획은 계산한 길이 d보다 조금 길다. 그 차이가 쌓여 자막과 시간표가 영상보다 앞서지 않게 실제 길이로 센다
     gap = a.gap * scale
     (OUT / "list.txt").write_text("".join(f"file '{s.name}'\n" for s in segs))
     run("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(OUT / f"{name}.mp4"))
