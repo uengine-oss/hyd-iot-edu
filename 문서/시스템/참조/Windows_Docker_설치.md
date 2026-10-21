@@ -243,7 +243,7 @@ docker info --format '{{.OSType}}'
 
 ## 7. 시작.bat과 점검.bat 실행
 
-**현재 설치.bat은 WSL 설치를 시도하므로 이 경로에서 전체 설치.bat을 반복 실행하지 않는다.** 이미 나머지 도구가 설치된 학교 PC에서는 아래 실행·점검으로 진행한다. 시작.bat은 Git for Windows의 Bash를 사용하며 WSL 설치 명령을 호출하지 않는다.
+**현재 설치.bat은 Python·WSL 설치와 WSL용 Windows 기능 활성화를 제외한다.** Docker Desktop·VS Code·Node.js·Git 중 빠진 도구가 있을 때만 설치.bat을 실행한다. 이미 나머지 도구가 설치된 학교 PC에서는 아래 실행·점검으로 진행한다. 시작.bat은 Git for Windows의 Bash를 사용하며 WSL 설치 명령을 호출하지 않는다.
 
 새 PowerShell에서 먼저 나머지 도구가 응답하는지 확인한다.
 

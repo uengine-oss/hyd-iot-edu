@@ -1,5 +1,5 @@
 @echo off
-rem 실습 프로그램 6개를 버전과 관계없이 기존 설치 유지, 없는 것만 설치(1~6번. Arduino IDE 제외, XG5000은 직접) - 더블클릭. 관리자 권한을 물은 뒤 scripts\install_windows.ps1을 실행한다(없는 것만 winget으로 설치).
+rem Docker Desktop, VS Code, Node.js, Git만 없는 경우 설치. Python과 WSL은 설치하지 않는다. 기존 프로그램은 버전과 관계없이 유지한다.
 chcp 65001 >nul
 cd /d "%~dp0"
 net session >nul 2>&1

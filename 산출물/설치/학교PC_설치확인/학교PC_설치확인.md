@@ -52,15 +52,15 @@ notepad.exe '.\course\labs\offline\05-2-cause-agent\.env'
 
 해당 세 줄의 값만 바꾸고 Ctrl+S로 저장한다. 저장소 최상위 `.env`가 아니며, 다른 설정은 유지한다. 값이 들어 있으면 `점검.bat`에서 주소·키를 다시 묻지 않는다. **기존에 발급한 중계키를 사용하므로 gcloud 조회·키 재발급은 필요 없다.** 키를 넣은 파일은 커밋·푸시하지 않는다. A절 ④의 `python llm_client.py`는 수업에서 직접 연결을 확인하는 추가 절차이며, 지금의 자동 점검을 위해 별도 실행할 필요는 없다.
 
-**`설치.bat`이 하는 일.** 기존 프로그램은 **버전과 관계없이 유지하고 건너뛴다.** 버전을 맞추려고 재설치·업데이트·삭제하지 않는다. Python·Anaconda도 유지하며, 없을 때만 Python 3.13.4를 설치한다. 아래 판은 프로그램이 없을 때 설치하는 대상이다. winget으로 공식 배포 파일을 받아 설치하며 Arduino IDE와 XG5000은 자동 설치하지 않는다.
+**`설치.bat`이 하는 일.** 기존 프로그램은 **버전과 관계없이 유지하고 건너뛴다.** 버전을 맞추려고 재설치·업데이트·삭제하지 않는다. 자동 설치 대상은 Docker Desktop·VS Code·Node.js·Git이다. Python·Anaconda는 기존 환경을 유지하며, Python과 WSL은 설치하지 않고 WSL용 Windows 기능도 활성화하지 않는다. 아래 판은 프로그램이 없을 때 설치하는 대상이다. winget으로 공식 배포 파일을 받아 설치하며 Arduino IDE와 XG5000은 자동 설치하지 않는다.
 
 | 목록 번호 | 프로그램 | 판 | 설치 방법 | 확인할 것 |
 |---|---|---|---|---|
 | — | BIOS 가상화 | — | 확인만 한다. 대부분 켜져 있어 꺼졌을 때만 표에 뜬다 | 「꺼짐」이 뜨고 Docker가 안 돌면 BIOS에서 Intel VT-x / AMD SVM을 켠다 |
-| 2 | WSL 2 | 2.7.12 | Windows 기능 둘(Linux용 Windows 하위 시스템 · 가상 머신 플랫폼)을 켜고 winget `Microsoft.WSL` | 처음이면 PC를 다시 시작해야 켜진다 |
+| 2 | WSL 2 | — | 자동 설치 제외 | Docker Hyper-V 경로가 정상 실행되면 필요 없음 |
 | 1 | Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 로그인한 계정과 「로그인한 모든 계정(Authenticated Users)」을 `docker-users` 그룹에 넣는다(복제된 PC의 다른 계정도 Docker를 쓴다). 다시 시작한 뒤 한 번 열어 약관 동의 |
 | 3 | Visual Studio Code | 1.140.0 System | winget `Microsoft.VisualStudioCode`(PC 전체) | GitHub Copilot 채팅은 VS Code 안에서 로그인 |
-| 4 | Python | 기존 설치 유지, 없으면 3.13.4 | winget `Python.Python.3.13` | 5회차 실습의 `python llm_client.py` |
+| 4 | Python | 기존 설치 유지 | 자동 설치 제외 | 5회차 실습의 `python llm_client.py` |
 | 5 | Node.js | 22.16.0 | winget `OpenJS.NodeJS.22` | — |
 | 6 | Git | 버전 무관 | winget `Git.Git`(winget 최신판) | 있으면 건너뛴다 |
 | 8 | XG5000 | 4.73 | **직접 설치** — E-7의 4.73 파일 링크 | `설치.bat`은 건드리지 않는다 |
@@ -255,7 +255,7 @@ python llm_client.py
 학교는 메인 PC 한 대에 설치하면 나머지 PC에 복제해 준다. 메인 PC에서 다운로드·빌드를 끝내 두면 여러 대의 동시 다운로드를 줄일 수 있다. 복제 범위에 Docker 데이터가 포함되는지는 현장에서 확인한다.
 복제한 PC가 이미지를 다시 받지 않고 바로 켜지려면, 복제 전에 메인 PC에서 아래를 끝내 둔다.
 
-1. 저장소를 공용 폴더 `C:\hyd-iot-edu`에 받고(0절 2번) `설치.bat`으로 6개를 설치한다(XG5000은 따로). 기존 프로그램의 사용자별 설치는 그대로 유지하므로, 실제 사용할 학생 계정에서도 실행 가능한지 확인한다.
+1. 저장소를 공용 폴더 `C:\hyd-iot-edu`에 받고(0절 2번) `설치.bat`으로 Docker Desktop·VS Code·Node.js·Git 중 없는 것만 설치한다(XG5000은 따로). 기존 프로그램의 사용자별 설치는 그대로 유지하므로, 실제 사용할 학생 계정에서도 실행 가능한지 확인한다.
 2. `시작.bat`을 한 번 끝까지 돌린다. 이미지 받기 · 빌드가 이때 끝나 메인 PC에 남는다.
 3. 실습용 `.env` 접속 설정을 저장하고 `점검.bat`을 실행해 실패 없음·중계 서버 「연결됨」을 확인한다. A절의 수동 확인이 추가로 필요하면 진행한 뒤 「결함 시뮬레이션」 → **전체 초기화**, 그리고 `끄기.bat`.
 4. 그 상태로 학교에 복제를 맡긴다.
