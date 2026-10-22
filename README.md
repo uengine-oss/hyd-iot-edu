@@ -35,16 +35,18 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 
 | 프로그램 | 프로젝트 준비 기준 | 공식 다운로드·문서 | 설치 확인 |
 |---|---|---|---|
-| VS Code | 1.143.0 이상. 프로젝트 편집용 | [다운로드](https://code.visualstudio.com/download) · [Windows 설치](https://code.visualstudio.com/docs/setup/windows) | 정보(About) 또는 `code --version` |
+| VS Code | 1.143.0 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
 | Git | 공식 최신 안정판 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
-| Node.js | 24.16.0 이상. 24.x LTS 권장 | [다운로드](https://nodejs.org/en/download) | `node --version`, `npm --version` |
-| Python | 3.14.7 이상 | [Windows 릴리스](https://www.python.org/downloads/windows/) · [macOS](https://www.python.org/downloads/macos/) | `python --version` / macOS `python3 --version` |
+| Node.js | 24.16.0 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.16.0/node-v24.16.0-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.16.0/node-v24.16.0.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
+| Python | 3.14.7 이상 | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
 | WSL | 공식 최신 안정판, WSL 2 실행 환경(Windows) | [설치](https://learn.microsoft.com/ko-kr/windows/wsl/install) · [명령](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands) | `wsl --version`, `wsl --status` |
 | Docker Desktop | 4.87.0 이상 | [Windows](https://docs.docker.com/desktop/setup/install/windows-install/) · [macOS](https://docs.docker.com/desktop/setup/install/mac-install/) | 앱 About, `docker info`, `docker compose version` |
 
 Git·WSL은 준비 시점의 공식 최신 안정판으로 설치·업데이트한다. 다른 네 프로그램은 기준 이상이면 유지하고, 없거나 낮으면 설치·업데이트 후 재확인한다. 표시한 버전은 프로젝트 준비 기준이며 제품 자체의 최소 시스템 요구 사항과는 다르다. 기준 이상 모든 판의 호환성을 보장하는 목록은 아니다.
 
 ### 공식 설치 파일로 준비
+
+표의 Node.js 설치 파일은 **24.16.0**, Python 설치 파일은 **3.14.7**이다. Windows 링크는 x64용이며 ARM64 PC는 공식 배포 페이지에서 CPU에 맞는 파일을 선택한다. macOS는 Node.js PKG와 Python Universal2 PKG를 사용하며, VS Code Universal ZIP은 압축을 풀어 앱을 응용 프로그램 폴더로 옮긴다. VS Code 링크는 최신 안정판으로 연결되므로 기준 버전을 확인한다. 각 제품의 macOS 지원 조건은 공식 문서를 따른다.
 
 위 공식 링크에서 운영체제와 CPU에 맞는 안정판 설치 파일을 받는다. Windows에서 확인할 항목은 다음과 같다.
 
