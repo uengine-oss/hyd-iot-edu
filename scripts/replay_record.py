@@ -129,6 +129,12 @@ def case_s01_lab3_cooler(run: Run):
     pg.evaluate(f"window.hydInstancesOpenTask('{inst}', '{approve['id']}')")
     go = pg.locator("#tdGo")
     go.wait_for(timeout=20000)
+    # 흔한 실수를 일부러 한 번: 추천안(생산관리자 승인 사항)을 운전원으로 그대로 승인 → 서버가 403 으로 거절(상태 그대로). 안내서 mistakes 로 재생된다
+    if not go.is_disabled():
+        with pg.expect_response(lambda r: r.request.method == "POST" and r.url.endswith("/select")) as resp:
+            go.click()
+        run.log(f"실수(추천안 그대로 승인) → {resp.value.status}")
+        go.wait_for(timeout=20000)
     pg.evaluate("document.querySelectorAll('#todoPanel details').forEach(d => d.open = true)")
     pick = pg.locator('#todoPanel input[name=hopt][value="skill:fan-max"], #todoPanel [data-ap-back="skill:fan-max"]').first
     pick.click()

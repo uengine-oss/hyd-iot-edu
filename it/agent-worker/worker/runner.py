@@ -27,7 +27,7 @@ from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface
 from procsvc import task_deferral, work_rules
 from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
 
-from . import bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
+from . import ai_replay, bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
 from . import events as ui_events
 from .settings import Settings, effective_permission, run_allowed_tools, run_disallowed_tools
 from .process_control import controlled_stream
@@ -66,8 +66,10 @@ class LeaseLost(Cancelled):
 
 
 class Runner:
-    def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None):
+    def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None,
+                 ai_mode: str = "live"):
         self.s, self.repo = s, repo
+        self.ai_mode = ai_mode                      # ai_replay: live · record · replay (main 이 정한다)
         self.exec_fn = exec_fn or _exec_stream
         self.schema_prompt = schema_prompt if schema_prompt is not None else _read(s.schema_prompt_path)
         self.resolve_provider = resolve_provider or _resolve_provider
@@ -203,6 +205,8 @@ class Runner:
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"
+        if self.ai_mode == "replay":                # 저장된 답을 새 추론처럼 보이지 않게 단계마다 먼저 알린다
+            self._event(row, job_id, "task_working", {"type": "notice", "content": ai_replay.NOTICE}, crew_type="agent")
         self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", provider_id)),
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
@@ -284,7 +288,8 @@ class Runner:
                     if self._cancelled(row):raise Cancelled()
             if time.monotonic()>deadline:
                 raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
-        gen = (_exec_stream(provider,request,env,check_stop=check_stop) if self.exec_fn is _exec_stream
+        gen = (self.exec_fn(provider,request,env,check_stop=check_stop)
+               if self.exec_fn is _exec_stream or getattr(self.exec_fn, "accepts_check_stop", False)
                else self.exec_fn(provider,request,env))
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
         console = ui_events.ConsoleLog()                      # U1: tool call start/end as one terminal line each

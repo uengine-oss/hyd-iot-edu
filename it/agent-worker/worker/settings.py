@@ -107,6 +107,9 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
+    # AI 답 저장 · 재생(worker/ai_replay.py): live · record · replay · auto(기본: CLI 로그인이 없으면 replay)
+    ai_mode: str = os.getenv("AI_MODE", "auto")
+    ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
 
     @property
     def retention_seconds(self) -> int:

@@ -78,6 +78,8 @@ def match_writes(guide: dict, writes: list[dict], where: str) -> list[dict]:
     allow = [(a["method"], re.compile("^" + a["key"] + "$")) for a in guide.get("allow", [])]
     out, n = [], 0
     for w in writes:
+        if w.get("status", 0) >= 400 and any(is_mistake(m, w) for m in guide.get("mistakes", [])):
+            continue   # 강사가 일부러 해 둔 흔한 실수(서버가 거절해 상태가 바뀌지 않은 쓰기). 재생도 이것을 먼저 본다
         if n < len(acts):
             m = acts[n]["match"]
             if w["method"] == m["method"] and re.fullmatch(m["key"], w["key"]):
@@ -93,6 +95,15 @@ def match_writes(guide: dict, writes: list[dict], where: str) -> list[dict]:
     if n != len(acts):
         raise CaseError(f"{where}: 안내서 행동 {len(acts)}건 가운데 {n}건만 녹화에 있습니다(다음: 「{acts[n]['title']}」)")
     return out
+
+
+def is_mistake(m: dict, w: dict) -> bool:
+    if w["method"] != m["method"] or not re.fullmatch(m["key"], w["key"]):
+        return False
+    try:
+        return subset(m.get("body"), json.loads(w["request"]) if w["request"] else {})
+    except ValueError:
+        return False
 
 
 def subset(want, got) -> bool:
@@ -134,6 +145,14 @@ def check_case(case_id: str) -> list[str]:
             problems.append(f"{where}: actions 가 writes 에서 안내서 순서로 고른 것과 다릅니다")
     except CaseError as e:
         problems.append(str(e))
+    for m in guide.get("mistakes", []):
+        if not any(w.get("status", 0) >= 400 and is_mistake(m, w) for w in rec["writes"]):
+            problems.append(f"{guide_path.relative_to(ROOT)}: 실수 「{m.get('explain', '')[:40]}」의 녹화(서버가 거절한 응답)가 없습니다 — 녹화 때 그 실수를 한 번 해 둔다")
+    for n, it in enumerate([i for i in guide["items"] if i["kind"] == "action"]):
+        for f in it["match"].get("same", []) + it["match"].get("free", []):
+            a = rec["actions"][n] if n < len(rec["actions"]) else None
+            if a is not None and f not in (json.loads(a["request"] or "{}")):
+                problems.append(f"{guide_path.relative_to(ROOT)}: {n + 1}번째 행동의 칸 {f} 가 녹화된 요청에 없습니다")
     missing = [h for fs in rec["frames"].values() for f in fs for h in [f[2]] if h is not None and h not in rec["bodies"]]
     missing += [w["response"] for w in rec["writes"] if w["response"] not in rec["bodies"]]
     if missing:

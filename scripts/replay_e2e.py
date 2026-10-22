@@ -71,6 +71,12 @@ def main():
     first["match"]["free"] = ["by"]
     (site / "replay" / "cases" / "e2e-free.guide.json").write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
     index["cases"].append(dict(entry, id=a.case + "-free", title=entry["title"] + " (자유 글 칸 시험)", guide="cases/e2e-free.guide.json"))
+    # 16번(같은 내용 칸): 첫 행동의 by 를 강사와 같아야 하는 칸으로 둔 시험용 안내서
+    g2 = json.loads((site / "replay" / entry["guide"]).read_text(encoding="utf-8"))
+    first2 = next(i for i in g2["items"] if i["kind"] == "action")
+    first2["match"]["same"] = ["by"]
+    (site / "replay" / "cases" / "e2e-same.guide.json").write_text(json.dumps(g2, ensure_ascii=False), encoding="utf-8")
+    index["cases"].append(dict(entry, id=a.case + "-same", title=entry["title"] + " (같은 내용 칸 시험)", guide="cases/e2e-same.guide.json"))
     (site / "replay" / "cases.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
     guide = json.loads((site / "replay" / entry["guide"]).read_text(encoding="utf-8"))
     rec_path = site / "replay" / entry["recording"]
@@ -138,6 +144,17 @@ def main():
             pg.locator('#units .unit[data-asset="HYD-01"] [data-act="degrade"]').click()
             pg.wait_for_timeout(1500)
             ok_inject = st()["done"] == 1
+            # 15 한 단계 되돌리기 → 주입 전으로, 다시 주입하면 같은 녹화로 이어진다
+            pg.locator(".replay-more summary").click()
+            pg.locator(".replay-more button", has_text="한 단계 되돌리기").click()
+            pg.wait_for_function("window.hydReplay && window.hydReplay.state().done === 0")
+            pg.wait_for_timeout(1500)
+            undone = st()["done"] == 0
+            tab("scenario")
+            pg.wait_for_timeout(1200)
+            pg.locator('#units .unit[data-asset="HYD-01"] [data-act="degrade"]').click()
+            pg.wait_for_timeout(1500)
+            check(15, "한 단계 되돌리기(주입 전으로 → 다시 주입)", undone and st()["done"] == 1, st())
             # 5 새로 고침 뒤 진행 유지
             pg.reload()
             pg.wait_for_function("window.hydReplay && window.hydReplay.state().done !== undefined")
@@ -168,7 +185,13 @@ def main():
             if not go.is_disabled():
                 go.click()
                 pg.wait_for_timeout(1500)
-                check(2, "정해진 입력이 아니면 거절(추천안 그대로 승인)", st()["done"] == 1 and "정해진 입력" in msg(), msg())
+                if guide.get("mistakes"):
+                    panel_msg = pg.locator("#todoPanel").inner_text()
+                    check(14, "녹화된 실수는 그때 서버의 실제 응답과 설명을 보여 줌(추천안 그대로 승인)",
+                          st()["done"] == 1 and "생산관리자" in msg() and "실제로 낸 응답" in msg() and "승인 권한 없음" in panel_msg,
+                          {"note": msg()[:120], "portal": next((l for l in panel_msg.splitlines() if "권한" in l), "")})
+                else:
+                    check(2, "정해진 입력이 아니면 거절(추천안 그대로 승인)", st()["done"] == 1 and "정해진 입력" in msg(), msg())
                 pg.locator("#tdGo").wait_for(timeout=20000)
             pg.evaluate("document.querySelectorAll('#todoPanel details').forEach(d => d.open = true)")
             pg.locator('#todoPanel input[name=hopt][value="skill:fan-max"], #todoPanel [data-ap-back="skill:fan-max"]').first.click()
@@ -250,6 +273,16 @@ def main():
         pg.locator('#units .unit[data-asset="HYD-01"] [data-act="degrade"]').click()
         pg.wait_for_timeout(1500)
         check(13, "자유 글 칸은 받고 강사 글로 녹화됐음을 알림", st()["done"] == 1 and "강사가 쓴 「김운전」" in msg(), msg())
+
+        # 16 같은 내용 칸: 강사와 다른 내용이면 막고, 같으면 받는다
+        pg.goto(base + f"/index.html?replay={a.case}-same")
+        pg.wait_for_function("window.hydReplay && window.hydReplay.state().done === 0")
+        post = """async by => { const r = await fetch('http://127.0.0.1:8080/api/scenario/A/degrade', { method: 'POST', headers: {'Content-Type': 'application/json'},
+                   body: JSON.stringify({ by, user_id: 'user:kim-op', roles: ['role:operator'] }) }); return [r.status, (await r.json()).detail || ''] }"""
+        bad = pg.evaluate(post, "다른 사람")
+        good = pg.evaluate(post, "김운전")
+        check(16, "같은 내용이어야 하는 칸은 강사와 다르면 막고 같으면 받음", bad[0] == 409 and "강사와 같은" in bad[1] and good[0] == 200 and st()["done"] == 1,
+              {"다른 내용": bad, "같은 내용": good[0]})
 
         # 10 · 11 · 12 키 없는 시작의 기본은 재생(바깥 요청 판정과 섞이지 않게 새 창에서)
         side = b.new_context(viewport={"width": 1280, "height": 900})

@@ -295,6 +295,25 @@
   function writeAllowed(c, method) {
     return (R.guide.allow || []).some(a => a.method === method && new RegExp('^' + a.key + '$').test(c.key));
   }
+  // 안내서 mistakes: 강사가 녹화 때 일부러 해 둔 흔한 실수. 같은 요청이면 녹화된 실제 응답(예: 403 「승인 권한 없음」)과 설명을 준다. 진행은 그대로다
+  function mistakeFor(c, method, got) {
+    for (const m of R.guide.mistakes || []) {
+      if (m.method !== method || !new RegExp('^' + m.key + '$').test(c.key) || (m.body && !deepSubset(m.body, got))) continue;
+      const w = R.rec.writes.find(x => x.method === method && x.key === c.key && x.status >= 400 && (() => { try { return !m.body || deepSubset(m.body, JSON.parse(x.request || '{}')); } catch (_) { return false; } })());
+      if (!w) continue;
+      note(`${m.explain} (강사 녹화 때 같은 실수에 서버가 실제로 낸 응답입니다. 바뀐 것은 없으니 다시 하세요.)`, 'warn');
+      return new Response(bodyOf(w.response), { status: w.status, headers: { 'Content-Type': 'application/json' } });
+    }
+    return null;
+  }
+  function undo() {
+    // 한 단계 되돌리기: 직전 행동 전으로 돌아간다. 포털 화면이 쥐고 있는 상태도 맞추려고 새로 고친다
+    const h = R.prog.history || [];
+    if (!h.length) return;
+    const back = h[h.length - 1];
+    R.prog = { ...R.prog, done: R.prog.done - 1, base: back.base, item: back.item, wall: RealDate.now(), history: h.slice(0, -1) };
+    save(); location.reload();
+  }
   function refuse(message) { note(message, 'warn'); return jsonResponse(409, { detail: '재생 모드: ' + message, replay: true }); }
 
   async function answer(c, method, text) {
@@ -308,10 +327,19 @@
     const expected = next && R.rec.actions[R.prog.done];
     if (expected && expected.method === method && expected.key === c.key) {
       let got = null; try { got = text ? JSON.parse(text) : {}; } catch (_) { got = null; }
-      if (next.it.match.body && !deepSubset(next.it.match.body, got)) return refuse(`정해진 입력과 다릅니다. 이 사례는 강사가 정한 입력만 받습니다 — ${next.it.input || next.it.title}`);
+      // 온라인은 강사 따라 하기다. 먼저 강사가 녹화 때 일부러 해 둔 실수와 같으면 그때 서버가 실제로 낸 반응을 그대로 보여 준다
+      const slip = mistakeFor(c, method, got);
+      if (slip) return slip;
+      if (next.it.match.body && !deepSubset(next.it.match.body, got)) return refuse(`정해진 입력과 다릅니다. 강사와 같은 입력으로 하세요 — ${next.it.input || next.it.title}`);
+      // 같은 파일 · 같은 글이어야 하는 칸(안내서 match.same, 예: 가져올 BPMN 원문 · 매뉴얼 파일). 줄바꿈 차이(CRLF)와 앞뒤 공백은 같게 본다
+      let recorded = {}; try { recorded = JSON.parse(expected.request || '{}'); } catch (_) { recorded = {}; }
+      const norm = v => typeof v === 'string' ? v.replace(/\r\n?/g, '\n').trim() : JSON.stringify(v);
+      const differs = (next.it.match.same || []).filter(f => norm((got || {})[f]) !== norm(recorded[f]));
+      if (differs.length) return refuse(`강사와 같은 ${next.it.same_label || '파일 · 내용'}이 아닙니다. 강사가 쓴 것과 같은 것으로 하세요${next.it.input ? ' — ' + next.it.input : ''}.`);
       // 자유 글 칸(질문에 대한 답 · 사유 등, 안내서 match.free)은 어떤 글이든 받는다. 다만 이어지는 결과는 강사가 쓴 글로 녹화된 것임을 알린다
       const free = next.it.match.free || [];
       if (free.some(f => !String((got || {})[f] ?? '').trim())) return refuse('빈칸이 있습니다. 글을 적은 뒤 다시 누르세요.');
+      R.prog.history = [...(R.prog.history || []), { base: R.prog.base, item: R.prog.item }];
       R.prog.done += 1; R.prog.base = expected.t_res; R.prog.wall = RealDate.now(); R.prog.item = Math.max(R.prog.item, next.i + 1); save(); render();
       if (free.length) {
         let said = {}; try { said = JSON.parse(expected.request || '{}'); } catch (_) { /* 녹화 본문이 JSON 이 아니면 원문 없이 알린다 */ }
@@ -319,6 +347,8 @@
       }
       return new Response(bodyOf(expected.response), { status: expected.status, headers: { 'Content-Type': 'application/json' } });
     }
+    { let got = null; try { got = text ? JSON.parse(text) : {}; } catch (_) { got = null; }
+      const slip = mistakeFor(c, method, got); if (slip) return slip; }
     if (writeAllowed(c, method)) {
       const prior = R.rec.writes.filter(w => w.method === method && w.key === c.key);
       const w = prior.filter(x => x.t_req <= vt()).pop() || prior[0];
@@ -455,6 +485,7 @@
   }
   function resetRow() {
     const row = document.createElement('div'); row.className = 'replay-actions';
+    row.append(button('한 단계 되돌리기', '', () => { if ((R.prog.history || []).length) undo(); else note('되돌릴 행동이 없습니다.', 'warn'); }));
     row.append(button('처음부터 다시 하기', '', () => { clearCase(CASE_ID); location.reload(); }));
     row.append(button('사례 고르기', 'outline', () => { location.href = new URL('index.html', BASE).href; }));
     return row;

@@ -1,6 +1,6 @@
 {
   "title": "쿨러 사건 관찰과 근거 연결표",
-  "recording": "s01-lab3-cooler@20261022T180828Z",
+  "recording": "s01-lab3-cooler@20261022T191115Z",
   "lecture": {
     "courses": [
       "통합반",
@@ -120,5 +120,15 @@
       "text": "작업지시 → 판단 → 사건 → 경보 순서로 참조 값을 따라가 근거_연결표.md를 채우고, 원기록을 다시 열어 참조 값과 도착 번호를 대조합니다. 화면에서 확인할 수 없는 연결은 미확인으로 둡니다."
     }
   ],
-  "allow": []
+  "allow": [],
+  "mistakes": [
+    {
+      "method": "POST",
+      "key": "process/api/todolist/[0-9a-f-]+/select",
+      "body": {
+        "option": "skill:derate-night-clean"
+      },
+      "explain": "추천안 「부하 70 % + 야간 세척」은 생산관리자 이상이 승인할 조치라 운전원은 승인할 수 없습니다. 「다른 안 3개는 왜 졌나」에서 「팬 최대」의 [이 안으로 바꾸기]를 고르세요."
+    }
+  ]
 }

@@ -56,3 +56,15 @@ def test_secret_scan_catches_env_value(monkeypatch):
     assert rc.scan_secrets('{"x":"abcd1234efgh5678"}', "시험") == ["시험: 환경 변수 LLM_API_KEY 의 값"]
     assert any("키 모양" in p for p in rc.scan_secrets("token sk-" + "a" * 24, "시험"))
     assert rc.scan_secrets('{"by":"user:kim-op"}', "시험") == []
+
+
+def test_recorded_mistake_is_allowed_only_when_server_refused():
+    guide = {"items": [{"kind": "action", "title": "승인", "match": {"method": "POST", "key": "process/api/todolist/[0-9a-f-]+/select", "body": {"option": "skill:fan-max"}}}],
+             "mistakes": [{"method": "POST", "key": "process/api/todolist/[0-9a-f-]+/select", "body": {"option": "skill:derate"}, "explain": "권한 밖 안"}]}
+    refused = {"method": "POST", "key": "process/api/todolist/ab-1/select", "request": json.dumps({"option": "skill:derate"}), "status": 403, "t_req": 1}
+    ok = {"method": "POST", "key": "process/api/todolist/ab-1/select", "request": json.dumps({"option": "skill:fan-max"}), "status": 200, "t_req": 2}
+    assert rc.match_writes(guide, [refused, ok], "시험") == [ok]
+    # 같은 모양이라도 서버가 받아들인(2xx) 쓰기는 실수로 넘기지 않는다 — 상태가 바뀐 것이기 때문
+    accepted = dict(refused, status=200)
+    with pytest.raises(rc.CaseError, match="정해진 입력과 다릅니다"):
+        rc.match_writes(guide, [accepted, ok], "시험")
