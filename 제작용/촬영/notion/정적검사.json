@@ -1,0 +1,25 @@
+{
+  "source": "제작용\\촬영\\notion\\수업원고.md",
+  "source_sha256": "da46193904681575a5d93c704362e93eb1269758ba9bfec98a2651fb26d47ab2",
+  "scenes": 29,
+  "courses": [
+    {
+      "course": "통합반",
+      "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
+      "zip_files": 13,
+      "script_sha256": "4bcf8b44fbfa67ffae8f6a093bf0626e422c88141db26213a6010c8fa0f8512e",
+      "zip_sha256": "54fc7b0f46a922c06ffd6fd54dc061126d7b3981cf0c29a8d8f6fbbe114c34e1",
+      "zip_bytes_match": true,
+      "local_links_exist": true
+    },
+    {
+      "course": "실전반",
+      "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
+      "zip_files": 13,
+      "script_sha256": "dcdb66de1f40ad3c7ee274d8ae0a39b0cf257993fc7471d9d4471c2f7c4dfd30",
+      "zip_sha256": "57cf4789bcb656c60a6fab87a65417c6bc2a6d7ee1bcf74229f84d9c8855b16a",
+      "zip_bytes_match": true,
+      "local_links_exist": true
+    }
+  ]
+}
