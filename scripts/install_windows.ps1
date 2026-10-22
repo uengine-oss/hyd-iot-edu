@@ -1,14 +1,15 @@
-﻿# 학생 PC에 실습 프로그램 4개를 버전에 관계없이 기존 설치를 유지하고 없는 것만 설치한다. 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
-#   없는 프로그램의 신규 설치 기본값:
-#   Docker Desktop 4.87.0 · VS Code 1.140.0(System) · Node.js 22.16.0 · Git(버전 무관)
+﻿# 학생 PC에 실습 필수 프로그램을 최소 기준보다 낮거나 없으면 설치·업데이트한다. 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
+#   2026-10-22 강사 PC 실측 최소 버전:
+#   Docker Desktop 4.87.0 · VS Code 1.143.0 · Node.js 24.16.0 · Git 2.54.0
 #   7번 Arduino IDE는 빼고, 8번 XG5000 4.73은 직접 설치한다(사용자 2026-10-19).
 #   + supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다
-# Python·WSL 설치와 WSL용 Windows 기능 활성화는 제외한다. 기존 Python·Anaconda는 유지한다.
+# Python 3.14.7 · WSL 2.7.12.0과 필요한 Windows 기능을 포함한다.
 # 설치는 winget(Windows 기본 설치 도구)으로 한다.
-# 이미 있는 프로그램은 버전과 관계없이 유지한다. 버전 출력은 설치 여부 확인과 표시에만 사용한다.
-# 이미 있는 것은 건드리지 않는다. 끝에 결과 표를 보이고, 다시 시작이 필요하면 그렇게 말한다.
+# 기준과 같거나 높으면 유지, 낮거나 없으면 설치/업데이트 후 버전을 재확인한다.
+# 버전을 확인할 수 없으면 실패로 표시한다. 끝에 결과와 재시작 필요 여부를 보인다.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+. (Join-Path $PSScriptRoot 'install_version_policy.ps1')
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
 function Stop-WithPause($text) { Say "`n[멈춤] $text" 'Red'; Read-Host '창을 닫으려면 Enter'; exit 1 }
@@ -32,13 +33,12 @@ function Version-Of($exe, $arguments) {
     if (-not $out) { return $null }
     return ($out.ToString() -replace '\x00', '').Trim()
 }
-function Install-Winget($id, $version, $extra = @()) {
-    Say "  winget install $id $version" 'Cyan'
-    if ($version) { $extra = @('--version', $version) + $extra }
+function Install-Winget($id, $action, $extra = @()) {
+    Say "  winget $action --id $id" 'Cyan'
     $ErrorActionPreference = 'Continue'
-    & winget install -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
-    # 0 = 설치함, -1978335189 = 이미 최신판이 있음
-    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) { throw "winget install $id 실패(종료 코드 $LASTEXITCODE)" }
+    & winget $action -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
+    if ($LASTEXITCODE -in @(1641, 3010)) { $script:restart = $true }
+    elseif ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) { throw "winget $action $id 실패(종료 코드 $LASTEXITCODE)" }
     Refresh-Path
 }
 
@@ -52,7 +52,7 @@ function Installed-App($pattern) {
     if ($app) { return "$($app.DisplayName) $($app.DisplayVersion)".Trim() } else { return $null }
 }
 
-Say "`n== 실습 프로그램 설치 (없는 것만 설치합니다. 처음이면 20~40분 걸릴 수 있습니다)" 'White'
+Say "`n== 실습 프로그램 설치 (없거나 기준보다 낮으면 설치/업데이트, 같거나 높으면 유지)" 'White'
 
 # 0. BIOS 가상화 — 꺼져 있으면 WSL2 · Docker가 돌지 않는다(작업 관리자 → 성능 → CPU 「가상화」와 같은 값)
 $cs = Get-CimInstance Win32_ComputerSystem
@@ -61,12 +61,39 @@ if (-not ($cs.HypervisorPresent -or $cpu.VirtualizationFirmwareEnabled)) {   # �
     Record '가상화(BIOS)' '꺼짐' 'WSL · Docker가 돌지 않으면 BIOS에서 Intel VT-x / AMD SVM을 켠다'
 }
 
-function Check-Installed($name, $found) {
-    Record $name '있음' "$found — 기존 설치 유지"
+function Ensure-Minimum($name, $id, $minimum, [scriptblock]$probe, $installExtra = @()) {
+    try {
+        $found = & $probe
+        $action = Get-InstallAction $found $minimum
+        if ($action -eq 'keep') {
+            Record $name '있음' "$found — 기준 $minimum 이상, 유지"
+            return
+        }
+        Say "  현재: $found / 최소 기준: $minimum / 작업: $action"
+        $extra = @()
+        if ($action -eq 'install') { $extra = $installExtra }
+        Install-Winget $id $action $extra
+        $after = & $probe
+        if ((Get-InstallAction $after $minimum) -ne 'keep') {
+            throw "설치 후 기준 $minimum 미충족(확인값: $after). 창을 새로 열고 버전과 winget 결과를 확인하세요."
+        }
+        $state = '설치함'
+        if ($action -eq 'upgrade') { $state = '업데이트함' }
+        Record $name $state "$after — 기준 $minimum 이상 확인"
+        if ($name -eq 'Docker Desktop') { $script:restart = $true }
+    }
+    catch { Record $name '실패' $_.Exception.Message }
 }
+
+. (Join-Path $PSScriptRoot 'install_windows_runtime.ps1')
+Say "`n[준비] WSL 및 Windows 기능"
+Ensure-WSL
+Say "`n[준비] Python"
+Ensure-Python
 
 # 1. Docker Desktop 4.87.0
 Say "`n[1/4] Docker Desktop"
+function Get-DockerVersion {
 $dockerExe = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
 foreach ($candidate in @($dockerExe, (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'), (Join-Path $env:LOCALAPPDATA 'Docker\Docker Desktop.exe'))) {
     if (Test-Path -LiteralPath $candidate) { $dockerExe = $candidate; break }
@@ -74,12 +101,11 @@ foreach ($candidate in @($dockerExe, (Join-Path $env:LOCALAPPDATA 'Programs\Dock
 $dockerVersion = Installed-App 'Docker Desktop*'
 if ($dockerVersion -or (Test-Path $dockerExe)) {
     if (-not $dockerVersion) { $dockerVersion = 'Docker Desktop ' + (Get-Item -LiteralPath $dockerExe).VersionInfo.ProductVersion }
-    Check-Installed 'Docker Desktop' $dockerVersion
+    return $dockerVersion
 }
-else {
-    try { Install-Winget 'Docker.DockerDesktop' '4.87.0'; $restart = $true; Record 'Docker Desktop' '설치함' '4.87.0 — 다시 시작한 뒤 한 번 열어 약관에 동의' }
-    catch { Record 'Docker Desktop' '실패' $_.Exception.Message }
+return $null
 }
+Ensure-Minimum 'Docker Desktop' 'Docker.DockerDesktop' '4.87.0' { Get-DockerVersion }
 # docker-users 그룹: 지금 로그인한 계정과 「Authenticated Users」(로그인한 모든 계정)를 넣는다.
 # 학교는 이 PC를 다른 PC로 복제하고 학생은 다른 계정으로 로그인할 수 있어서, 계정 하나만 넣으면 복제된 PC에서 Docker가 막힌다.
 if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
@@ -91,42 +117,40 @@ if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
     }
     foreach ($w in $wanted) {
         if ($members -contains $w.Sid) { Record 'docker-users 그룹' '있음' $w.Name; continue }
-        try { Add-LocalGroupMember -Group 'docker-users' -Member (New-Object System.Security.Principal.SecurityIdentifier($w.Sid)); $restart = $true; Record 'docker-users 그룹' '추가함' "$($w.Name) — 다시 로그인하면 적용" }
+        try { Add-LocalGroupMember -Group 'docker-users' -Member $w.Sid; $restart = $true; Record 'docker-users 그룹' '추가함' "$($w.Name) — 다시 로그인하면 적용" }
         catch { Record 'docker-users 그룹' '실패' "$($w.Name): $($_.Exception.Message)" }
     }
 }
 
-# 2. Visual Studio Code 1.140.0 (System Installer = PC 전체 설치. GitHub Copilot 채팅은 VS Code 안에서 로그인)
+# 2. VS Code: 신규는 PC 전체 설치, 업데이트는 기존 설치 범위 유지
 Say "`n[2/4] Visual Studio Code"
+Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' '1.143.0' {
 $v = Installed-App 'Microsoft Visual Studio Code*'
 if (-not $v) { $v = Version-Of 'code' @('--version') }
-if ($v) { Check-Installed 'VS Code' $v }
-else { try { Install-Winget 'Microsoft.VisualStudioCode' '1.140.0' @('--scope', 'machine'); Record 'VS Code' '설치함' '1.140.0' } catch { Record 'VS Code' '실패' $_.Exception.Message } }
+return $v
+} @('--scope', 'machine')
 
-# 3. Node.js 22.16.0 (+ supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다)
+# 3. Node.js (+ supabase CLI: 없어도 시작.bat이 npx로 대신 받는다)
 Say "`n[3/4] Node.js"
+Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.16.0' {
 $v = Version-Of 'node' @('--version')
 if (-not $v) { $v = Installed-App 'Node.js*' }
-if ($v) { Check-Installed 'Node.js' $v }
-else { try { Install-Winget 'OpenJS.NodeJS.22' '22.16.0'; Record 'Node.js' '설치함' (Version-Of 'node' @('--version')) } catch { Record 'Node.js' '실패' $_.Exception.Message } }
-$v = Version-Of 'supabase' @('--version')
-if ($v) { Record 'supabase CLI' '있음' $v }
-elseif (Get-Command npm -ErrorAction SilentlyContinue) {
-    $ErrorActionPreference = 'Continue'
-    & npm install -g supabase@2.119.0
-    $code = $LASTEXITCODE
-    $ErrorActionPreference = 'Stop'
-    if ($code -eq 0) { Refresh-Path; Record 'supabase CLI' '설치함' (Version-Of 'supabase' @('--version')) }
-    else { Record 'supabase CLI' '건너뜀' 'npm 설치 실패. 시작.bat이 npx로 대신 받으니 그대로 써도 됩니다' }
+return $v
 }
-else { Record 'supabase CLI' '건너뜀' 'npm이 없습니다(Node.js 설치 확인)' }
+# Supabase uses the supported npx distribution, not npm global install.
+try {
+    $v = Version-Of 'npx.cmd' @('-y', 'supabase@2.119.0', '--version')
+    if ((Get-InstallAction $v '2.119.0') -ne 'keep') { throw 'Supabase CLI 준비 실패: Node.js와 네트워크를 확인하세요.' }
+    Record 'supabase CLI' '준비함' "$v — npx 실행 준비 완료"
+} catch { Record 'supabase CLI' '실패' $_.Exception.Message }
 
-# 4. Git (버전 무관 — winget의 최신판. 시작.bat이 Git의 bash로 스크립트를 돌린다)
+# 4. Git (시작.bat이 Git Bash로 스크립트를 돌린다)
 Say "`n[4/4] Git"
+Ensure-Minimum 'Git' 'Git.Git' '2.54.0' {
 $v = Version-Of 'git' @('--version')
 if (-not $v) { $v = Installed-App 'Git version *' }
-if ($v) { Record 'Git' '있음' $v }
-else { try { Install-Winget 'Git.Git' $null; Record 'Git' '설치함' (Version-Of 'git' @('--version')) } catch { Record 'Git' '실패' $_.Exception.Message } }
+return $v
+}
 
 # 저장소 폴더: 복제된 PC의 다른 계정도 쓰게 한다. 사용자 폴더(C:\Users\…) 안이면 다른 계정이 못 쓰니 공용 폴더로 옮기라고 알린다.
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path

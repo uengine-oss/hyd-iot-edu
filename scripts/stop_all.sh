@@ -3,8 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 . scripts/windows_paths.sh
+. scripts/macos_paths.sh
 docker compose stop enterprise-mcp dmn-mcp
 docker compose stop
-if command -v supabase >/dev/null 2>&1; then SUPA=(supabase); else SUPA=(npx -y supabase); fi
+SUPA=(npx -y supabase@2.119.0)
 ( cd it/supabase && "${SUPA[@]}" stop )
 echo "실행 중 컨테이너: $(docker ps -q | wc -l | tr -d ' ')개 (0이면 모두 꺼짐)"
