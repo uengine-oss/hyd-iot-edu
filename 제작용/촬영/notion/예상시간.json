@@ -1,0 +1,710 @@
+{
+  "source_sha256": "ad574bf62dd060cce09ec8716d54f8214f87018fcbc503d6a0f03cc163eb4425",
+  "speech_rate_weighted_units_per_minute": 275,
+  "typing_characters_per_second_range": [
+    4,
+    6
+  ],
+  "is_measured": false,
+  "speech_seconds": 2362.36,
+  "input_characters": 2036,
+  "estimated_total_seconds_range": [
+    2731.68,
+    3082.36
+  ],
+  "scenes": [
+    {
+      "scene": "N01",
+      "title": "만들 모습 먼저 보기",
+      "paragraphs": 3,
+      "speech_seconds": 51.05,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        5
+      ],
+      "total_seconds_range": [
+        51.05,
+        56.05
+      ]
+    },
+    {
+      "scene": "N02",
+      "title": "다운로드 위치와 작업 화면",
+      "paragraphs": 3,
+      "speech_seconds": 56.29,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        5
+      ],
+      "total_seconds_range": [
+        56.29,
+        61.29
+      ]
+    },
+    {
+      "scene": "N03",
+      "title": "빈 페이지와 제목",
+      "paragraphs": 3,
+      "speech_seconds": 44.95,
+      "input_strings": [
+        "내 학습 노트"
+      ],
+      "input_characters": 7,
+      "typing_seconds_range": [
+        1.17,
+        1.75
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        46.11,
+        49.7
+      ]
+    },
+    {
+      "scene": "N04",
+      "title": "읽기 편한 화면 준비",
+      "paragraphs": 2,
+      "speech_seconds": 33.82,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        2
+      ],
+      "total_seconds_range": [
+        33.82,
+        35.82
+      ]
+    },
+    {
+      "scene": "N05",
+      "title": "소개 쓰기와 블록 이해",
+      "paragraphs": 3,
+      "speech_seconds": 51.49,
+      "input_strings": [
+        "관심 있는 주제를 모으고, 배운 내용을 나만의 방식으로 쌓아 갑니다."
+      ],
+      "input_characters": 38,
+      "typing_seconds_range": [
+        6.33,
+        9.5
+      ],
+      "residual_seconds_range": [
+        0,
+        2
+      ],
+      "total_seconds_range": [
+        57.82,
+        62.99
+      ]
+    },
+    {
+      "scene": "N06",
+      "title": "안내 상자와 글 강조",
+      "paragraphs": 5,
+      "speech_seconds": 92.73,
+      "input_strings": [
+        "하나의 주제에서, 나만의 지식으로",
+        "카드 하나에 주제 하나. 카드 안에는 글과 자료를 자유롭게 담고, 내용이 늘어나면 하위 페이지로 나누세요."
+      ],
+      "input_characters": 77,
+      "typing_seconds_range": [
+        12.83,
+        19.25
+      ],
+      "residual_seconds_range": [
+        0,
+        5
+      ],
+      "total_seconds_range": [
+        105.56,
+        116.98
+      ]
+    },
+    {
+      "scene": "N07",
+      "title": "주제 갤러리 만들기",
+      "paragraphs": 4,
+      "speech_seconds": 69.6,
+      "input_strings": [
+        "주제 모음",
+        "주제 카드"
+      ],
+      "input_characters": 10,
+      "typing_seconds_range": [
+        1.67,
+        2.5
+      ],
+      "residual_seconds_range": [
+        0,
+        8
+      ],
+      "total_seconds_range": [
+        71.27,
+        80.1
+      ]
+    },
+    {
+      "scene": "N08",
+      "title": "첫 주제 열기",
+      "paragraphs": 3,
+      "speech_seconds": 42.68,
+      "input_strings": [
+        "Notion 익히기"
+      ],
+      "input_characters": 10,
+      "typing_seconds_range": [
+        1.67,
+        2.5
+      ],
+      "residual_seconds_range": [
+        0,
+        4
+      ],
+      "total_seconds_range": [
+        44.34,
+        49.18
+      ]
+    },
+    {
+      "scene": "N09",
+      "title": "주제 소개와 구역 제목",
+      "paragraphs": 4,
+      "speech_seconds": 69.08,
+      "input_strings": [
+        "글을 쓰고, 페이지를 연결하며 나에게 맞는 노트를 만들어 봅니다.",
+        "짧게 적고, 필요한 만큼 연결하기",
+        "한 페이지에서 시작해 내용이 쌓이면 하위 페이지로 이어 갑니다.",
+        "나의 페이지"
+      ],
+      "input_characters": 95,
+      "typing_seconds_range": [
+        15.83,
+        23.75
+      ],
+      "residual_seconds_range": [
+        0,
+        4
+      ],
+      "total_seconds_range": [
+        84.91,
+        96.83
+      ]
+    },
+    {
+      "scene": "N10",
+      "title": "주제 안에 하위 페이지 만들기",
+      "paragraphs": 3,
+      "speech_seconds": 37.31,
+      "input_strings": [
+        "첫 페이지 꾸미기"
+      ],
+      "input_characters": 9,
+      "typing_seconds_range": [
+        1.5,
+        2.25
+      ],
+      "residual_seconds_range": [
+        0,
+        4
+      ],
+      "total_seconds_range": [
+        38.81,
+        43.56
+      ]
+    },
+    {
+      "scene": "N11",
+      "title": "제목과 글머리 목록",
+      "paragraphs": 4,
+      "speech_seconds": 71.48,
+      "input_strings": [
+        "한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.",
+        "오늘 써 본 방법",
+        "제목으로 내용의 구획 나누기",
+        "같은 성격의 내용은 목록으로 정리하기",
+        "긴 설명은 토글 안에 접어 두기"
+      ],
+      "input_characters": 100,
+      "typing_seconds_range": [
+        16.67,
+        25.0
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        88.14,
+        99.48
+      ]
+    },
+    {
+      "scene": "N12",
+      "title": "블록 옮기기와 되돌리기",
+      "paragraphs": 3,
+      "speech_seconds": 45.6,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        45.6,
+        48.6
+      ]
+    },
+    {
+      "scene": "N13",
+      "title": "긴 설명을 토글에 넣기",
+      "paragraphs": 4,
+      "speech_seconds": 63.27,
+      "input_strings": [
+        "제목과 굵은 글씨는 어떻게 다를까?",
+        "제목은 문서의 구획을 만들고 목차에도 표시됩니다.",
+        "굵은 글씨는 문장 안에서 중요한 말을 강조할 때 씁니다."
+      ],
+      "input_characters": 77,
+      "typing_seconds_range": [
+        12.83,
+        19.25
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        76.11,
+        85.52
+      ]
+    },
+    {
+      "scene": "N14",
+      "title": "다음에 할 일 적기",
+      "paragraphs": 3,
+      "speech_seconds": 53.15,
+      "input_strings": [
+        "다음에 해 볼 것",
+        "내 관심 주제로 카드 하나 더 만들기",
+        "내용에 어울리는 하위 페이지 이름 붙이기"
+      ],
+      "input_characters": 51,
+      "typing_seconds_range": [
+        8.5,
+        12.75
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        61.65,
+        68.9
+      ]
+    },
+    {
+      "scene": "N15",
+      "title": "목차로 필요한 곳 찾기",
+      "paragraphs": 4,
+      "speech_seconds": 62.18,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        4
+      ],
+      "total_seconds_range": [
+        62.18,
+        66.18
+      ]
+    },
+    {
+      "scene": "N16",
+      "title": "순서를 번호 목록으로 남기기",
+      "paragraphs": 4,
+      "speech_seconds": 83.26,
+      "input_strings": [
+        "페이지 연결하기",
+        "내용이 길어지면 같은 주제 안에서 페이지를 나눠 봅니다.",
+        "하위 페이지 만들기",
+        "주제 카드를 엽니다.",
+        "빈 줄에서 슬래시를 입력하고 페이지를 고릅니다.",
+        "페이지 이름을 붙이고 내용을 적습니다.",
+        "위쪽 경로를 눌러 부모 주제로 돌아옵니다.",
+        "페이지 이름은 내용에 맞게 자유롭게 붙이세요."
+      ],
+      "input_characters": 155,
+      "typing_seconds_range": [
+        25.83,
+        38.75
+      ],
+      "residual_seconds_range": [
+        0,
+        4
+      ],
+      "total_seconds_range": [
+        109.09,
+        126.01
+      ]
+    },
+    {
+      "scene": "N17",
+      "title": "도움말 링크 넣기",
+      "paragraphs": 4,
+      "speech_seconds": 71.61,
+      "input_strings": [
+        "필요할 때 찾아보기",
+        "Notion 글쓰기 도움말",
+        "글과 블록을 다루는 방법이 필요할 때 공식 도움말에서 다시 확인합니다."
+      ],
+      "input_characters": 63,
+      "typing_seconds_range": [
+        10.5,
+        15.75
+      ],
+      "residual_seconds_range": [
+        2,
+        10
+      ],
+      "total_seconds_range": [
+        84.11,
+        97.36
+      ]
+    },
+    {
+      "scene": "N18",
+      "title": "두 단에 페이지 배치하기",
+      "paragraphs": 7,
+      "speech_seconds": 143.65,
+      "input_strings": [
+        "01 · 글 정리하기",
+        "제목·목록·토글로",
+        "읽기 편하게 정리합니다.",
+        "02 · 내용 연결하기",
+        "하위 페이지와 링크로",
+        "내용을 이어 갑니다.",
+        "나에게 맞게 바꾸려면",
+        "페이지 이름과 배치는 자유롭게 바꾸세요. 내용이 짧으면 한 페이지에 적어도 됩니다."
+      ],
+      "input_characters": 124,
+      "typing_seconds_range": [
+        20.67,
+        31.0
+      ],
+      "residual_seconds_range": [
+        3,
+        12
+      ],
+      "total_seconds_range": [
+        167.32,
+        186.65
+      ]
+    },
+    {
+      "scene": "N19",
+      "title": "다른 페이지로 바로 연결하기",
+      "paragraphs": 4,
+      "speech_seconds": 73.35,
+      "input_strings": [
+        "이어서 보기",
+        "페이지 연결하기",
+        "Notion 글쓰기 도움말"
+      ],
+      "input_characters": 28,
+      "typing_seconds_range": [
+        4.67,
+        7.0
+      ],
+      "residual_seconds_range": [
+        0,
+        6
+      ],
+      "total_seconds_range": [
+        78.02,
+        86.35
+      ]
+    },
+    {
+      "scene": "N20",
+      "title": "다른 주제에 메모와 자료 담기",
+      "paragraphs": 10,
+      "speech_seconds": 260.29,
+      "input_strings": [
+        "지식 자산화",
+        "배운 것을 한 번 읽고 끝내지 않고, 필요할 때 다시 꺼내 쓰는 방법을 생각합니다.",
+        "모아 두는 데서, 다시 꺼내 쓰는 데까지",
+        "내 말로 정리하면 무엇을 알고 무엇이 아직 모호한지 드러난다. 출처도 함께 남겨 두면 나중에 다시 확인하기 좋다.",
+        "기록을 남기는 방법",
+        "01 · 내 말로 설명하기",
+        "원문을 그대로 붙여 두는 것에 더해 내가 이해한 내용을 짧게 적습니다. 아직 모르는 부분은 질문으로 남겨도 좋습니다.",
+        "02 · 다시 찾을 길 남기기",
+        "어디에서 배웠는지 출처를 붙이고 관련 페이지를 연결합니다. 내용이 길어지면 같은 주제 안에서 하위 페이지로 나눕니다.",
+        "짧은 메모 — 작성 예시",
+        "배운 내용: 학습노트는 자료를 저장하는 공간이면서, 내가 이해한 것을 설명해 보는 공간이다.",
+        "내가 써 볼 방법: 수업 뒤 기억할 내용을 짧게 적고, 자세한 자료는 아래 교재 페이지에 모아 둔다.",
+        "남은 질문: 다음에 같은 내용을 찾을 때 어떤 제목으로 검색할까?",
+        "위 세 문장은 작성 예시이며 필수 입력 항목은 아닙니다.",
+        "읽어 볼 자료",
+        "1회차 교재 · 지식 자산화",
+        "수업 교재의 해당 부분을 모아 둔 하위 페이지입니다. 이 구성은 예시이며, 정해진 작성 양식은 없습니다.",
+        "나에게 맞게 바꾸려면",
+        "한 문장만 남겨도 괜찮습니다. 필요한 글·이미지·자료를 주제 안에 쌓고, 정리 방식은 내용에 맞게 바꾸세요."
+      ],
+      "input_characters": 645,
+      "typing_seconds_range": [
+        107.5,
+        161.25
+      ],
+      "residual_seconds_range": [
+        5,
+        20
+      ],
+      "total_seconds_range": [
+        372.79,
+        441.54
+      ]
+    },
+    {
+      "scene": "N21",
+      "title": "카드 그림과 크기 맞추기",
+      "paragraphs": 6,
+      "speech_seconds": 114.24,
+      "input_strings": [
+        "카드 이미지"
+      ],
+      "input_characters": 6,
+      "typing_seconds_range": [
+        1.0,
+        1.5
+      ],
+      "residual_seconds_range": [
+        5,
+        20
+      ],
+      "total_seconds_range": [
+        120.24,
+        135.74
+      ]
+    },
+    {
+      "scene": "N22",
+      "title": "표에서 분야와 이해도 고르기",
+      "paragraphs": 7,
+      "speech_seconds": 120.04,
+      "input_strings": [
+        "전체 주제",
+        "분야",
+        "도구",
+        "학습 방법",
+        "AI 실습",
+        "이해도",
+        "설명 못함",
+        "대충 앎",
+        "설명 가능"
+      ],
+      "input_characters": 36,
+      "typing_seconds_range": [
+        6.0,
+        9.0
+      ],
+      "residual_seconds_range": [
+        0,
+        8
+      ],
+      "total_seconds_range": [
+        126.04,
+        137.04
+      ]
+    },
+    {
+      "scene": "N23",
+      "title": "검색과 정렬·속성 표시",
+      "paragraphs": 4,
+      "speech_seconds": 78.68,
+      "input_strings": [
+        "Notion"
+      ],
+      "input_characters": 6,
+      "typing_seconds_range": [
+        1.0,
+        1.5
+      ],
+      "residual_seconds_range": [
+        0,
+        5
+      ],
+      "total_seconds_range": [
+        79.68,
+        85.18
+      ]
+    },
+    {
+      "scene": "N24",
+      "title": "다음 주제를 위한 템플릿",
+      "paragraphs": 8,
+      "speech_seconds": 189.69,
+      "input_strings": [
+        "새 주제",
+        "이 주제에서 알고 싶은 것, 기억하고 싶은 것을 한 줄로 적어 보세요.",
+        "나의 주제를, 나의 방식으로",
+        "짧은 글부터 시작하세요. 아래 두 영역은 선택해서 바꾸는 시작점이며, 모두 채울 필요는 없습니다.",
+        "나의 기록",
+        "01 · 자유롭게 적기",
+        "내용에 맞게 제목을 바꾸고 글·이미지·파일을 넣어 보세요.",
+        "02 · 이어 갈 페이지",
+        "빈 줄에서 슬래시를 입력하고 페이지를 골라 하위 페이지를 만들 수 있습니다.",
+        "이 틀을 바꾸는 방법",
+        "두 영역은 시작을 돕는 예시입니다. 필요 없는 안내는 지우고, 한 단으로 쓰거나 원하는 이름의 하위 페이지를 더하세요.",
+        "홈의 표에서는 분야와 이해도를 필요한 때에 선택할 수 있습니다. 카드 그림을 바꾸려면 카드 이미지 속성에 원하는 이미지를 넣으세요. 본문 표지를 크게 넣지 않아도 갤러리 그림을 따로 꾸밀 수 있습니다."
+      ],
+      "input_characters": 405,
+      "typing_seconds_range": [
+        67.5,
+        101.25
+      ],
+      "residual_seconds_range": [
+        3,
+        12
+      ],
+      "total_seconds_range": [
+        260.19,
+        302.94
+      ]
+    },
+    {
+      "scene": "N25",
+      "title": "템플릿으로 새 주제 시작하기",
+      "paragraphs": 5,
+      "speech_seconds": 107.78,
+      "input_strings": [
+        "나만의 독서 기록",
+        "읽으면서 남기고 싶은 생각과 자료를 모읍니다.",
+        "기억할 문장",
+        "다시 읽고 싶은 문장과 그 이유를 적습니다.",
+        "다음에 읽을 책",
+        "관심이 생긴 책을 한 권씩 적어 둡니다."
+      ],
+      "input_characters": 94,
+      "typing_seconds_range": [
+        15.67,
+        23.5
+      ],
+      "residual_seconds_range": [
+        2,
+        10
+      ],
+      "total_seconds_range": [
+        125.45,
+        141.28
+      ]
+    },
+    {
+      "scene": "N26",
+      "title": "공유 위치와 권한 보기",
+      "paragraphs": 3,
+      "speech_seconds": 55.42,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        55.42,
+        58.42
+      ]
+    },
+    {
+      "scene": "N27",
+      "title": "게시와 댓글 위치 보기",
+      "paragraphs": 3,
+      "speech_seconds": 54.55,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        3
+      ],
+      "total_seconds_range": [
+        54.55,
+        57.55
+      ]
+    },
+    {
+      "scene": "N28",
+      "title": "완성한 노트를 파일로 내보내기",
+      "paragraphs": 5,
+      "speech_seconds": 102.5,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        10,
+        35
+      ],
+      "total_seconds_range": [
+        112.5,
+        137.5
+      ]
+    },
+    {
+      "scene": "N29",
+      "title": "완성한 구조 확인과 마무리",
+      "paragraphs": 3,
+      "speech_seconds": 62.62,
+      "input_strings": [],
+      "input_characters": 0,
+      "typing_seconds_range": [
+        0.0,
+        0.0
+      ],
+      "residual_seconds_range": [
+        0,
+        5
+      ],
+      "total_seconds_range": [
+        62.62,
+        67.62
+      ]
+    }
+  ]
+}
