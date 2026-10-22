@@ -1,710 +1,5956 @@
 {
-  "source_sha256": "ad574bf62dd060cce09ec8716d54f8214f87018fcbc503d6a0f03cc163eb4425",
-  "speech_rate_weighted_units_per_minute": 275,
-  "typing_characters_per_second_range": [
-    4,
-    6
-  ],
+  "source_sha256": "67722b685c8082e5bd49c03bb759af6394a43ead1d3db9b8e64a31b643feef0e",
   "is_measured": false,
-  "speech_seconds": 2362.36,
-  "input_characters": 2036,
+  "model": "speech_then_action_no_overlap",
+  "speech_seconds": 2757.46,
+  "action_cues": 562,
+  "input_characters": 2031,
   "estimated_total_seconds_range": [
-    2731.68,
-    3082.36
+    3398.38,
+    3944.71
   ],
   "scenes": [
     {
       "scene": "N01",
       "title": "만들 모습 먼저 보기",
-      "paragraphs": 3,
-      "speech_seconds": 51.05,
-      "input_strings": [],
+      "speech_seconds": 50.84,
+      "spoken_blocks": 11,
+      "action_cues": 4,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        2.4,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        5
+        0
       ],
       "total_seconds_range": [
-        51.05,
-        56.05
+        53.24,
+        55.64
       ]
     },
     {
       "scene": "N02",
       "title": "다운로드 위치와 작업 화면",
-      "paragraphs": 3,
-      "speech_seconds": 56.29,
-      "input_strings": [],
+      "speech_seconds": 58.25,
+      "spoken_blocks": 13,
+      "action_cues": 2,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        1.2,
+        2.4
+      ],
+      "response_seconds_range": [
         0,
-        5
+        3
       ],
       "total_seconds_range": [
-        56.29,
-        61.29
+        59.45,
+        63.65
       ]
     },
     {
       "scene": "N03",
       "title": "빈 페이지와 제목",
-      "paragraphs": 3,
-      "speech_seconds": 44.95,
-      "input_strings": [
-        "내 학습 노트"
-      ],
+      "speech_seconds": 43.85,
+      "spoken_blocks": 10,
+      "action_cues": 5,
       "input_characters": 7,
       "typing_seconds_range": [
         1.17,
         1.75
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        2.4,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        46.11,
-        49.7
+        47.42,
+        50.4
       ]
     },
     {
       "scene": "N04",
       "title": "읽기 편한 화면 준비",
-      "paragraphs": 2,
-      "speech_seconds": 33.82,
-      "input_strings": [],
+      "speech_seconds": 35.13,
+      "spoken_blocks": 8,
+      "action_cues": 4,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        1.8,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        2
+        0
       ],
       "total_seconds_range": [
-        33.82,
-        35.82
+        36.93,
+        39.93
       ]
     },
     {
       "scene": "N05",
       "title": "소개 쓰기와 블록 이해",
-      "paragraphs": 3,
-      "speech_seconds": 51.49,
-      "input_strings": [
-        "관심 있는 주제를 모으고, 배운 내용을 나만의 방식으로 쌓아 갑니다."
-      ],
+      "speech_seconds": 50.4,
+      "spoken_blocks": 10,
+      "action_cues": 5,
       "input_characters": 38,
       "typing_seconds_range": [
         6.33,
         9.5
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        2.4,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        2
+        0
       ],
       "total_seconds_range": [
-        57.82,
-        62.99
+        59.13,
+        64.7
       ]
     },
     {
       "scene": "N06",
       "title": "안내 상자와 글 강조",
-      "paragraphs": 5,
-      "speech_seconds": 92.73,
-      "input_strings": [
-        "하나의 주제에서, 나만의 지식으로",
-        "카드 하나에 주제 하나. 카드 안에는 글과 자료를 자유롭게 담고, 내용이 늘어나면 하위 페이지로 나누세요."
-      ],
-      "input_characters": 77,
+      "speech_seconds": 91.2,
+      "spoken_blocks": 24,
+      "action_cues": 18,
+      "input_characters": 80,
       "typing_seconds_range": [
-        12.83,
-        19.25
+        13.33,
+        20.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        10.2,
+        20.5
+      ],
+      "response_seconds_range": [
         0,
-        5
+        0
       ],
       "total_seconds_range": [
-        105.56,
-        116.98
+        114.73,
+        131.7
       ]
     },
     {
       "scene": "N07",
       "title": "주제 갤러리 만들기",
-      "paragraphs": 4,
-      "speech_seconds": 69.6,
-      "input_strings": [
-        "주제 모음",
-        "주제 카드"
-      ],
+      "speech_seconds": 74.62,
+      "spoken_blocks": 18,
+      "action_cues": 11,
       "input_characters": 10,
       "typing_seconds_range": [
         1.67,
         2.5
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        5.4,
+        10.8
+      ],
+      "response_seconds_range": [
         0,
-        8
+        4
       ],
       "total_seconds_range": [
-        71.27,
-        80.1
+        81.68,
+        91.92
       ]
     },
     {
       "scene": "N08",
       "title": "첫 주제 열기",
-      "paragraphs": 3,
       "speech_seconds": 42.68,
-      "input_strings": [
-        "Notion 익히기"
-      ],
+      "spoken_blocks": 9,
+      "action_cues": 5,
       "input_characters": 10,
       "typing_seconds_range": [
         1.67,
         2.5
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        1.8,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        4
+        2
       ],
       "total_seconds_range": [
-        44.34,
-        49.18
+        46.14,
+        51.98
       ]
     },
     {
       "scene": "N09",
       "title": "주제 소개와 구역 제목",
-      "paragraphs": 4,
-      "speech_seconds": 69.08,
-      "input_strings": [
-        "글을 쓰고, 페이지를 연결하며 나에게 맞는 노트를 만들어 봅니다.",
-        "짧게 적고, 필요한 만큼 연결하기",
-        "한 페이지에서 시작해 내용이 쌓이면 하위 페이지로 이어 갑니다.",
-        "나의 페이지"
-      ],
+      "speech_seconds": 80.42,
+      "spoken_blocks": 25,
+      "action_cues": 20,
       "input_characters": 95,
       "typing_seconds_range": [
         15.83,
         23.75
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        10.2,
+        20.5
+      ],
+      "response_seconds_range": [
         0,
-        4
+        0
       ],
       "total_seconds_range": [
-        84.91,
-        96.83
+        106.46,
+        124.67
       ]
     },
     {
       "scene": "N10",
       "title": "주제 안에 하위 페이지 만들기",
-      "paragraphs": 3,
-      "speech_seconds": 37.31,
-      "input_strings": [
-        "첫 페이지 꾸미기"
-      ],
+      "speech_seconds": 38.84,
+      "spoken_blocks": 10,
+      "action_cues": 6,
       "input_characters": 9,
       "typing_seconds_range": [
         1.5,
         2.25
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        3.0,
+        6.0
+      ],
+      "response_seconds_range": [
         0,
-        4
+        2
       ],
       "total_seconds_range": [
-        38.81,
-        43.56
+        43.34,
+        49.09
       ]
     },
     {
       "scene": "N11",
       "title": "제목과 글머리 목록",
-      "paragraphs": 4,
-      "speech_seconds": 71.48,
-      "input_strings": [
-        "한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.",
-        "오늘 써 본 방법",
-        "제목으로 내용의 구획 나누기",
-        "같은 성격의 내용은 목록으로 정리하기",
-        "긴 설명은 토글 안에 접어 두기"
-      ],
+      "speech_seconds": 76.93,
+      "spoken_blocks": 22,
+      "action_cues": 16,
       "input_characters": 100,
       "typing_seconds_range": [
         16.67,
         25.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        6.6,
+        13.2
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        88.14,
-        99.48
+        100.2,
+        115.13
       ]
     },
     {
       "scene": "N12",
       "title": "블록 옮기기와 되돌리기",
-      "paragraphs": 3,
-      "speech_seconds": 45.6,
-      "input_strings": [],
+      "speech_seconds": 43.42,
+      "spoken_blocks": 11,
+      "action_cues": 5,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        4.8,
+        9.9
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        45.6,
-        48.6
+        48.22,
+        53.32
       ]
     },
     {
       "scene": "N13",
       "title": "긴 설명을 토글에 넣기",
-      "paragraphs": 4,
-      "speech_seconds": 63.27,
-      "input_strings": [
-        "제목과 굵은 글씨는 어떻게 다를까?",
-        "제목은 문서의 구획을 만들고 목차에도 표시됩니다.",
-        "굵은 글씨는 문장 안에서 중요한 말을 강조할 때 씁니다."
-      ],
+      "speech_seconds": 64.36,
+      "spoken_blocks": 17,
+      "action_cues": 11,
       "input_characters": 77,
       "typing_seconds_range": [
         12.83,
         19.25
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        4.8,
+        9.6
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        76.11,
-        85.52
+        82.0,
+        93.21
       ]
     },
     {
       "scene": "N14",
       "title": "다음에 할 일 적기",
-      "paragraphs": 3,
-      "speech_seconds": 53.15,
-      "input_strings": [
-        "다음에 해 볼 것",
-        "내 관심 주제로 카드 하나 더 만들기",
-        "내용에 어울리는 하위 페이지 이름 붙이기"
-      ],
+      "speech_seconds": 61.22,
+      "spoken_blocks": 18,
+      "action_cues": 13,
       "input_characters": 51,
       "typing_seconds_range": [
         8.5,
         12.75
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        6.0,
+        12.0
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        61.65,
-        68.9
+        75.72,
+        85.97
       ]
     },
     {
       "scene": "N15",
       "title": "목차로 필요한 곳 찾기",
-      "paragraphs": 4,
-      "speech_seconds": 62.18,
-      "input_strings": [],
+      "speech_seconds": 64.36,
+      "spoken_blocks": 15,
+      "action_cues": 9,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        5.6,
+        11.4
+      ],
+      "response_seconds_range": [
         0,
-        4
+        0
       ],
       "total_seconds_range": [
-        62.18,
-        66.18
+        69.96,
+        75.76
       ]
     },
     {
       "scene": "N16",
       "title": "순서를 번호 목록으로 남기기",
-      "paragraphs": 4,
-      "speech_seconds": 83.26,
-      "input_strings": [
-        "페이지 연결하기",
-        "내용이 길어지면 같은 주제 안에서 페이지를 나눠 봅니다.",
-        "하위 페이지 만들기",
-        "주제 카드를 엽니다.",
-        "빈 줄에서 슬래시를 입력하고 페이지를 고릅니다.",
-        "페이지 이름을 붙이고 내용을 적습니다.",
-        "위쪽 경로를 눌러 부모 주제로 돌아옵니다.",
-        "페이지 이름은 내용에 맞게 자유롭게 붙이세요."
-      ],
+      "speech_seconds": 102.02,
+      "spoken_blocks": 28,
+      "action_cues": 26,
       "input_characters": 155,
       "typing_seconds_range": [
         25.83,
         38.75
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        10.8,
+        21.6
+      ],
+      "response_seconds_range": [
         0,
-        4
+        2
       ],
       "total_seconds_range": [
-        109.09,
-        126.01
+        138.66,
+        164.37
       ]
     },
     {
       "scene": "N17",
       "title": "도움말 링크 넣기",
-      "paragraphs": 4,
-      "speech_seconds": 71.61,
-      "input_strings": [
-        "필요할 때 찾아보기",
-        "Notion 글쓰기 도움말",
-        "글과 블록을 다루는 방법이 필요할 때 공식 도움말에서 다시 확인합니다."
-      ],
+      "speech_seconds": 79.46,
+      "spoken_blocks": 23,
+      "action_cues": 19,
       "input_characters": 63,
       "typing_seconds_range": [
         10.5,
         15.75
       ],
-      "residual_seconds_range": [
-        2,
-        10
+      "motor_seconds_range": [
+        9.6,
+        20.5
+      ],
+      "response_seconds_range": [
+        1,
+        6
       ],
       "total_seconds_range": [
-        84.11,
-        97.36
+        100.56,
+        121.71
       ]
     },
     {
       "scene": "N18",
       "title": "두 단에 페이지 배치하기",
-      "paragraphs": 7,
-      "speech_seconds": 143.65,
-      "input_strings": [
-        "01 · 글 정리하기",
-        "제목·목록·토글로",
-        "읽기 편하게 정리합니다.",
-        "02 · 내용 연결하기",
-        "하위 페이지와 링크로",
-        "내용을 이어 갑니다.",
-        "나에게 맞게 바꾸려면",
-        "페이지 이름과 배치는 자유롭게 바꾸세요. 내용이 짧으면 한 페이지에 적어도 됩니다."
-      ],
+      "speech_seconds": 178.56,
+      "spoken_blocks": 54,
+      "action_cues": 48,
       "input_characters": 124,
       "typing_seconds_range": [
         20.67,
         31.0
       ],
-      "residual_seconds_range": [
-        3,
-        12
+      "motor_seconds_range": [
+        25.8,
+        54.5
+      ],
+      "response_seconds_range": [
+        0,
+        0
       ],
       "total_seconds_range": [
-        167.32,
-        186.65
+        225.03,
+        264.06
       ]
     },
     {
       "scene": "N19",
       "title": "다른 페이지로 바로 연결하기",
-      "paragraphs": 4,
-      "speech_seconds": 73.35,
-      "input_strings": [
-        "이어서 보기",
-        "페이지 연결하기",
-        "Notion 글쓰기 도움말"
-      ],
-      "input_characters": 28,
+      "speech_seconds": 86.66,
+      "spoken_blocks": 25,
+      "action_cues": 19,
+      "input_characters": 20,
       "typing_seconds_range": [
-        4.67,
-        7.0
+        3.33,
+        5.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        10.4,
+        21.0
+      ],
+      "response_seconds_range": [
         0,
-        6
+        3
       ],
       "total_seconds_range": [
-        78.02,
-        86.35
+        100.4,
+        115.66
       ]
     },
     {
       "scene": "N20",
       "title": "다른 주제에 메모와 자료 담기",
-      "paragraphs": 10,
-      "speech_seconds": 260.29,
-      "input_strings": [
-        "지식 자산화",
-        "배운 것을 한 번 읽고 끝내지 않고, 필요할 때 다시 꺼내 쓰는 방법을 생각합니다.",
-        "모아 두는 데서, 다시 꺼내 쓰는 데까지",
-        "내 말로 정리하면 무엇을 알고 무엇이 아직 모호한지 드러난다. 출처도 함께 남겨 두면 나중에 다시 확인하기 좋다.",
-        "기록을 남기는 방법",
-        "01 · 내 말로 설명하기",
-        "원문을 그대로 붙여 두는 것에 더해 내가 이해한 내용을 짧게 적습니다. 아직 모르는 부분은 질문으로 남겨도 좋습니다.",
-        "02 · 다시 찾을 길 남기기",
-        "어디에서 배웠는지 출처를 붙이고 관련 페이지를 연결합니다. 내용이 길어지면 같은 주제 안에서 하위 페이지로 나눕니다.",
-        "짧은 메모 — 작성 예시",
-        "배운 내용: 학습노트는 자료를 저장하는 공간이면서, 내가 이해한 것을 설명해 보는 공간이다.",
-        "내가 써 볼 방법: 수업 뒤 기억할 내용을 짧게 적고, 자세한 자료는 아래 교재 페이지에 모아 둔다.",
-        "남은 질문: 다음에 같은 내용을 찾을 때 어떤 제목으로 검색할까?",
-        "위 세 문장은 작성 예시이며 필수 입력 항목은 아닙니다.",
-        "읽어 볼 자료",
-        "1회차 교재 · 지식 자산화",
-        "수업 교재의 해당 부분을 모아 둔 하위 페이지입니다. 이 구성은 예시이며, 정해진 작성 양식은 없습니다.",
-        "나에게 맞게 바꾸려면",
-        "한 문장만 남겨도 괜찮습니다. 필요한 글·이미지·자료를 주제 안에 쌓고, 정리 방식은 내용에 맞게 바꾸세요."
-      ],
+      "speech_seconds": 375.27,
+      "spoken_blocks": 105,
+      "action_cues": 99,
       "input_characters": 645,
       "typing_seconds_range": [
         107.5,
         161.25
       ],
-      "residual_seconds_range": [
-        5,
-        20
+      "motor_seconds_range": [
+        48.6,
+        97.3
+      ],
+      "response_seconds_range": [
+        3,
+        15
       ],
       "total_seconds_range": [
-        372.79,
-        441.54
+        534.37,
+        648.82
       ]
     },
     {
       "scene": "N21",
       "title": "카드 그림과 크기 맞추기",
-      "paragraphs": 6,
-      "speech_seconds": 114.24,
-      "input_strings": [
-        "카드 이미지"
-      ],
+      "speech_seconds": 135.19,
+      "spoken_blocks": 40,
+      "action_cues": 33,
       "input_characters": 6,
       "typing_seconds_range": [
         1.0,
         1.5
       ],
-      "residual_seconds_range": [
-        5,
-        20
+      "motor_seconds_range": [
+        19.2,
+        38.4
+      ],
+      "response_seconds_range": [
+        3,
+        15
       ],
       "total_seconds_range": [
-        120.24,
-        135.74
+        158.39,
+        190.09
       ]
     },
     {
       "scene": "N22",
       "title": "표에서 분야와 이해도 고르기",
-      "paragraphs": 7,
-      "speech_seconds": 120.04,
-      "input_strings": [
-        "전체 주제",
-        "분야",
-        "도구",
-        "학습 방법",
-        "AI 실습",
-        "이해도",
-        "설명 못함",
-        "대충 앎",
-        "설명 가능"
-      ],
+      "speech_seconds": 150.59,
+      "spoken_blocks": 46,
+      "action_cues": 37,
       "input_characters": 36,
       "typing_seconds_range": [
         6.0,
         9.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        16.8,
+        33.6
+      ],
+      "response_seconds_range": [
         0,
-        8
+        0
       ],
       "total_seconds_range": [
-        126.04,
-        137.04
+        173.39,
+        193.19
       ]
     },
     {
       "scene": "N23",
       "title": "검색과 정렬·속성 표시",
-      "paragraphs": 4,
-      "speech_seconds": 78.68,
-      "input_strings": [
-        "Notion"
-      ],
+      "speech_seconds": 89.37,
+      "spoken_blocks": 27,
+      "action_cues": 16,
       "input_characters": 6,
       "typing_seconds_range": [
         1.0,
         1.5
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        9.0,
+        19.2
+      ],
+      "response_seconds_range": [
         0,
-        5
+        0
       ],
       "total_seconds_range": [
-        79.68,
-        85.18
+        99.37,
+        110.07
       ]
     },
     {
       "scene": "N24",
       "title": "다음 주제를 위한 템플릿",
-      "paragraphs": 8,
-      "speech_seconds": 189.69,
-      "input_strings": [
-        "새 주제",
-        "이 주제에서 알고 싶은 것, 기억하고 싶은 것을 한 줄로 적어 보세요.",
-        "나의 주제를, 나의 방식으로",
-        "짧은 글부터 시작하세요. 아래 두 영역은 선택해서 바꾸는 시작점이며, 모두 채울 필요는 없습니다.",
-        "나의 기록",
-        "01 · 자유롭게 적기",
-        "내용에 맞게 제목을 바꾸고 글·이미지·파일을 넣어 보세요.",
-        "02 · 이어 갈 페이지",
-        "빈 줄에서 슬래시를 입력하고 페이지를 골라 하위 페이지를 만들 수 있습니다.",
-        "이 틀을 바꾸는 방법",
-        "두 영역은 시작을 돕는 예시입니다. 필요 없는 안내는 지우고, 한 단으로 쓰거나 원하는 이름의 하위 페이지를 더하세요.",
-        "홈의 표에서는 분야와 이해도를 필요한 때에 선택할 수 있습니다. 카드 그림을 바꾸려면 카드 이미지 속성에 원하는 이미지를 넣으세요. 본문 표지를 크게 넣지 않아도 갤러리 그림을 따로 꾸밀 수 있습니다."
-      ],
+      "speech_seconds": 276.52,
+      "spoken_blocks": 83,
+      "action_cues": 76,
       "input_characters": 405,
       "typing_seconds_range": [
         67.5,
         101.25
       ],
-      "residual_seconds_range": [
-        3,
-        12
+      "motor_seconds_range": [
+        38.6,
+        78.7
+      ],
+      "response_seconds_range": [
+        2,
+        10
       ],
       "total_seconds_range": [
-        260.19,
-        302.94
+        384.62,
+        466.47
       ]
     },
     {
       "scene": "N25",
       "title": "템플릿으로 새 주제 시작하기",
-      "paragraphs": 5,
-      "speech_seconds": 107.78,
-      "input_strings": [
-        "나만의 독서 기록",
-        "읽으면서 남기고 싶은 생각과 자료를 모읍니다.",
-        "기억할 문장",
-        "다시 읽고 싶은 문장과 그 이유를 적습니다.",
-        "다음에 읽을 책",
-        "관심이 생긴 책을 한 권씩 적어 둡니다."
-      ],
+      "speech_seconds": 118.25,
+      "spoken_blocks": 30,
+      "action_cues": 23,
       "input_characters": 94,
       "typing_seconds_range": [
         15.67,
         23.5
       ],
-      "residual_seconds_range": [
-        2,
-        10
+      "motor_seconds_range": [
+        10.8,
+        21.7
+      ],
+      "response_seconds_range": [
+        1,
+        6
       ],
       "total_seconds_range": [
-        125.45,
-        141.28
+        145.72,
+        169.45
       ]
     },
     {
       "scene": "N26",
       "title": "공유 위치와 권한 보기",
-      "paragraphs": 3,
       "speech_seconds": 55.42,
-      "input_strings": [],
+      "spoken_blocks": 11,
+      "action_cues": 4,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        2.4,
+        4.8
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        55.42,
-        58.42
+        57.82,
+        60.22
       ]
     },
     {
       "scene": "N27",
       "title": "게시와 댓글 위치 보기",
-      "paragraphs": 3,
-      "speech_seconds": 54.55,
-      "input_strings": [],
+      "speech_seconds": 55.64,
+      "spoken_blocks": 12,
+      "action_cues": 7,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        4.8,
+        9.7
+      ],
+      "response_seconds_range": [
         0,
-        3
+        0
       ],
       "total_seconds_range": [
-        54.55,
-        57.55
+        60.44,
+        65.34
       ]
     },
     {
       "scene": "N28",
       "title": "완성한 노트를 파일로 내보내기",
-      "paragraphs": 5,
-      "speech_seconds": 102.5,
-      "input_strings": [],
+      "speech_seconds": 112.1,
+      "spoken_blocks": 25,
+      "action_cues": 14,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
-        10,
-        35
+      "motor_seconds_range": [
+        7.8,
+        16.8
+      ],
+      "response_seconds_range": [
+        5,
+        25
       ],
       "total_seconds_range": [
-        112.5,
-        137.5
+        124.9,
+        153.9
       ]
     },
     {
       "scene": "N29",
       "title": "완성한 구조 확인과 마무리",
-      "paragraphs": 3,
-      "speech_seconds": 62.62,
-      "input_strings": [],
+      "speech_seconds": 65.89,
+      "spoken_blocks": 16,
+      "action_cues": 7,
       "input_characters": 0,
       "typing_seconds_range": [
         0.0,
         0.0
       ],
-      "residual_seconds_range": [
+      "motor_seconds_range": [
+        4.2,
+        8.4
+      ],
+      "response_seconds_range": [
         0,
-        5
+        0
       ],
       "total_seconds_range": [
-        62.62,
-        67.62
+        70.09,
+        74.29
       ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "N01-01",
+      "scene": "N01",
+      "speech": "노션 익히기 카드를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N01-02",
+      "scene": "N01",
+      "speech": "왼쪽 상자에 있는 첫 페이지 꾸미기를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N01-03",
+      "scene": "N01",
+      "speech": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N01-04",
+      "scene": "N01",
+      "speech": "오늘은 이 완성본을 편집하는 대신 빈 페이지에서 직접 만들겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N02-01",
+      "scene": "N02",
+      "speech": "다운로드 메뉴를 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N02-02",
+      "scene": "N02",
+      "speech": "이제 노션 작업 화면으로 돌아오겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N03-01",
+      "scene": "N03",
+      "speech": "왼쪽 사이드바에서 새 페이지 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N03-02",
+      "scene": "N03",
+      "speech": "시작할 양식이 나오면 빈 페이지를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N03-03",
+      "scene": "N03",
+      "speech": "큰 제목을 적는 곳이 보이면 여기를 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N03-04",
+      "scene": "N03",
+      "speech": "제목 입력란에 ‘내 학습 노트’라고 적을게요.",
+      "inputs": [
+        "내 학습 노트"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N03-05",
+      "scene": "N03",
+      "speech": "입력했으면 엔터를 눌러 제목 아래로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N04-01",
+      "scene": "N04",
+      "speech": "오른쪽 위 점 세 개를 눌러 페이지 설정을 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N04-02",
+      "scene": "N04",
+      "speech": "작은 텍스트가 켜져 있다면 눌러서 꺼 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N04-03",
+      "scene": "N04",
+      "speech": "메뉴 바깥의 여백을 눌러 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N04-04",
+      "scene": "N04",
+      "speech": "이제 제목 아래 빈 줄을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N05-01",
+      "scene": "N05",
+      "speech": "‘관심 있는 주제를 모으고, 배운 내용을 나만의 방식으로 쌓아 갑니다.’라고 입력할게요.",
+      "inputs": [
+        "관심 있는 주제를 모으고, 배운 내용을 나만의 방식으로 쌓아 갑니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N05-02",
+      "scene": "N05",
+      "speech": "다 적었으면 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N05-03",
+      "scene": "N05",
+      "speech": "방금 쓴 문장 왼쪽으로 마우스를 가져가 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N05-04",
+      "scene": "N05",
+      "speech": "이번에는 손잡이를 누르지 않고 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N05-05",
+      "scene": "N05",
+      "speech": "소개 다음에는 안내 상자를 하나 넣겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-01",
+      "scene": "N06",
+      "speech": "소개 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-02",
+      "scene": "N06",
+      "speech": "여기에 슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-03",
+      "scene": "N06",
+      "speech": "메뉴가 열리면 콜아웃을 찾아 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-04",
+      "scene": "N06",
+      "speech": "찾기 어렵다면 슬래시 뒤에 ‘콜아웃’이라고 입력해 주세요.",
+      "inputs": [
+        "콜아웃"
+      ],
+      "motor_events": 0,
+      "conditional": true,
+      "kind": "input"
+    },
+    {
+      "id": "N06-05",
+      "scene": "N06",
+      "speech": "첫 줄에는 ‘하나의 주제에서, 나만의 지식으로’라고 적을게요.",
+      "inputs": [
+        "하나의 주제에서, 나만의 지식으로"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N06-06",
+      "scene": "N06",
+      "speech": "입력한 다음 시프트를 누른 채 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-07",
+      "scene": "N06",
+      "speech": "여기에 ‘카드 하나에 주제 하나. 카드 안에는 글과 자료를 자유롭게 담고, 내용이 늘어나면 하위 페이지로 나누세요.’라고 적겠습니다.",
+      "inputs": [
+        "카드 하나에 주제 하나. 카드 안에는 글과 자료를 자유롭게 담고, 내용이 늘어나면 하위 페이지로 나누세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N06-08",
+      "scene": "N06",
+      "speech": "첫 줄만 굵게 해 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-09",
+      "scene": "N06",
+      "speech": "마우스로 첫 줄의 글자를 드래그해 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N06-10",
+      "scene": "N06",
+      "speech": "선택한 글 위에 뜨는 도구에서 굵게 버튼을 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 2,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-11",
+      "scene": "N06",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-12",
+      "scene": "N06",
+      "speech": "상자 왼쪽 손잡이를 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-13",
+      "scene": "N06",
+      "speech": "색 메뉴를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-14",
+      "scene": "N06",
+      "speech": "배경색 항목에서 파란색을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-15",
+      "scene": "N06",
+      "speech": "상자 앞의 작은 아이콘도 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-16",
+      "scene": "N06",
+      "speech": "책 모양을 찾아 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-17",
+      "scene": "N06",
+      "speech": "이제 상자 아래쪽의 빈 줄을 클릭해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N06-18",
+      "scene": "N06",
+      "speech": "다음 내용은 상자 밖에 넣겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-01",
+      "scene": "N07",
+      "speech": "안내 상자 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-02",
+      "scene": "N07",
+      "speech": "슬래시를 입력하고 메뉴에서 갤러리를 찾아볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-03",
+      "scene": "N07",
+      "speech": "갤러리 보기를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-04",
+      "scene": "N07",
+      "speech": "연결할 목록을 묻는 화면에서는 새 데이터 소스를 만드는 항목을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-05",
+      "scene": "N07",
+      "speech": "목록 이름을 입력하는 곳을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-06",
+      "scene": "N07",
+      "speech": "‘주제 모음’이라고 적을게요.",
+      "inputs": [
+        "주제 모음"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N07-07",
+      "scene": "N07",
+      "speech": "목록 위쪽의 보기 이름을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-08",
+      "scene": "N07",
+      "speech": "메뉴에서 이름 변경을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-09",
+      "scene": "N07",
+      "speech": "‘주제 카드’라고 적을게요.",
+      "inputs": [
+        "주제 카드"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N07-10",
+      "scene": "N07",
+      "speech": "엔터를 눌러 적용해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N07-11",
+      "scene": "N07",
+      "speech": "이 안에 첫 번째 주제를 만들겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N08-01",
+      "scene": "N08",
+      "speech": "주제 모음 오른쪽의 파란색 새로 만들기 버튼을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N08-02",
+      "scene": "N08",
+      "speech": "제목 입력란에 ‘Notion 익히기’라고 적어 주세요.",
+      "inputs": [
+        "Notion 익히기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N08-03",
+      "scene": "N08",
+      "speech": "카드가 작은 창으로 열렸다면 위쪽의 전체 페이지로 열기를 눌러 넓게 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N08-04",
+      "scene": "N08",
+      "speech": "제목 아래 본문을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N08-05",
+      "scene": "N08",
+      "speech": "주제의 이름은 그대로 두고 본문에 소개를 넣겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-01",
+      "scene": "N09",
+      "speech": "‘글을 쓰고, 페이지를 연결하며 나에게 맞는 노트를 만들어 봅니다.’라고 적겠습니다.",
+      "inputs": [
+        "글을 쓰고, 페이지를 연결하며 나에게 맞는 노트를 만들어 봅니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N09-02",
+      "scene": "N09",
+      "speech": "엔터를 눌러 아래에 빈 줄을 만들게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-03",
+      "scene": "N09",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-04",
+      "scene": "N09",
+      "speech": "메뉴에서 콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-05",
+      "scene": "N09",
+      "speech": "첫 줄에는 ‘짧게 적고, 필요한 만큼 연결하기’라고 입력합니다.",
+      "inputs": [
+        "짧게 적고, 필요한 만큼 연결하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N09-06",
+      "scene": "N09",
+      "speech": "시프트와 엔터로 줄을 바꿔 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-07",
+      "scene": "N09",
+      "speech": "‘한 페이지에서 시작해 내용이 쌓이면 하위 페이지로 이어 갑니다.’라고 적을게요.",
+      "inputs": [
+        "한 페이지에서 시작해 내용이 쌓이면 하위 페이지로 이어 갑니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N09-08",
+      "scene": "N09",
+      "speech": "첫 줄을 드래그해 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N09-09",
+      "scene": "N09",
+      "speech": "굵게 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-10",
+      "scene": "N09",
+      "speech": "여백을 눌러 선택을 풀어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-11",
+      "scene": "N09",
+      "speech": "상자 손잡이를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-12",
+      "scene": "N09",
+      "speech": "색 메뉴를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-13",
+      "scene": "N09",
+      "speech": "파란색 배경을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-14",
+      "scene": "N09",
+      "speech": "상자 밖 아래 빈 줄을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-15",
+      "scene": "N09",
+      "speech": "‘나의 페이지’라고 적을게요.",
+      "inputs": [
+        "나의 페이지"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N09-16",
+      "scene": "N09",
+      "speech": "왼쪽 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-17",
+      "scene": "N09",
+      "speech": "전환 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-18",
+      "scene": "N09",
+      "speech": "제목 2를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-19",
+      "scene": "N09",
+      "speech": "제목 끝을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N09-20",
+      "scene": "N09",
+      "speech": "엔터를 눌러 아래로 내려가 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N10-01",
+      "scene": "N10",
+      "speech": "나의 페이지 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N10-02",
+      "scene": "N10",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N10-03",
+      "scene": "N10",
+      "speech": "메뉴에서 페이지를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N10-04",
+      "scene": "N10",
+      "speech": "새 페이지 제목에는 ‘첫 페이지 꾸미기’라고 적어 주세요.",
+      "inputs": [
+        "첫 페이지 꾸미기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N10-05",
+      "scene": "N10",
+      "speech": "지금은 이 안에 내용을 먼저 넣을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N10-06",
+      "scene": "N10",
+      "speech": "제목 아래 빈 줄을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-01",
+      "scene": "N11",
+      "speech": "‘한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.’라고 적겠습니다.",
+      "inputs": [
+        "한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N11-02",
+      "scene": "N11",
+      "speech": "엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-03",
+      "scene": "N11",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-04",
+      "scene": "N11",
+      "speech": "이번에는 제목 2를 바로 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-05",
+      "scene": "N11",
+      "speech": "‘오늘 써 본 방법’이라고 적을게요.",
+      "inputs": [
+        "오늘 써 본 방법"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N11-06",
+      "scene": "N11",
+      "speech": "엔터를 눌러 본문으로 내려가 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-07",
+      "scene": "N11",
+      "speech": "슬래시를 입력해 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-08",
+      "scene": "N11",
+      "speech": "글머리 기호 목록을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-09",
+      "scene": "N11",
+      "speech": "첫 줄에는 ‘제목으로 내용의 구획 나누기’라고 입력하겠습니다.",
+      "inputs": [
+        "제목으로 내용의 구획 나누기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N11-10",
+      "scene": "N11",
+      "speech": "엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-11",
+      "scene": "N11",
+      "speech": "두 번째에는 ‘같은 성격의 내용은 목록으로 정리하기’라고 적을게요.",
+      "inputs": [
+        "같은 성격의 내용은 목록으로 정리하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N11-12",
+      "scene": "N11",
+      "speech": "다시 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-13",
+      "scene": "N11",
+      "speech": "‘긴 설명은 토글 안에 접어 두기’라고 적을게요.",
+      "inputs": [
+        "긴 설명은 토글 안에 접어 두기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N11-14",
+      "scene": "N11",
+      "speech": "마지막 문장 뒤에서 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-15",
+      "scene": "N11",
+      "speech": "여기서 엔터를 한 번 더 눌러 목록을 끝내겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N11-16",
+      "scene": "N11",
+      "speech": "이제 점이 없는 일반 줄로 돌아왔는지 확인해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N12-01",
+      "scene": "N12",
+      "speech": "두 번째 항목 왼쪽으로 마우스를 가져가 손잡이를 잡아 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N12-02",
+      "scene": "N12",
+      "speech": "누른 채 첫 번째 항목 위로 옮기겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N12-03",
+      "scene": "N12",
+      "speech": "넣을 위치에 가로선이 보이면 놓을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N12-04",
+      "scene": "N12",
+      "speech": "컨트롤과 제트를 함께 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N12-05",
+      "scene": "N12",
+      "speech": "이제 목록 아래의 빈 줄을 클릭하고 긴 설명을 넣어 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-01",
+      "scene": "N13",
+      "speech": "빈 줄에서 슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-02",
+      "scene": "N13",
+      "speech": "토글 목록을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-03",
+      "scene": "N13",
+      "speech": "삼각형 옆에 ‘제목과 굵은 글씨는 어떻게 다를까?’라고 적어 주세요.",
+      "inputs": [
+        "제목과 굵은 글씨는 어떻게 다를까?"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N13-04",
+      "scene": "N13",
+      "speech": "왼쪽 삼각형을 클릭해 펼치겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-05",
+      "scene": "N13",
+      "speech": "펼쳐진 안쪽의 빈 부분을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-06",
+      "scene": "N13",
+      "speech": "‘제목은 문서의 구획을 만들고 목차에도 표시됩니다.’라고 적을게요.",
+      "inputs": [
+        "제목은 문서의 구획을 만들고 목차에도 표시됩니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N13-07",
+      "scene": "N13",
+      "speech": "이어서 ‘굵은 글씨는 문장 안에서 중요한 말을 강조할 때 씁니다.’라고 적겠습니다.",
+      "inputs": [
+        "굵은 글씨는 문장 안에서 중요한 말을 강조할 때 씁니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N13-08",
+      "scene": "N13",
+      "speech": "이제 삼각형을 다시 눌러 접겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-09",
+      "scene": "N13",
+      "speech": "삼각형을 한 번 더 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-10",
+      "scene": "N13",
+      "speech": "삼각형을 눌러 다시 접어 둘게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N13-11",
+      "scene": "N13",
+      "speech": "토글 아래의 바깥 빈 줄을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-01",
+      "scene": "N14",
+      "speech": "먼저 슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-02",
+      "scene": "N14",
+      "speech": "메뉴에서 구분선을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-03",
+      "scene": "N14",
+      "speech": "아래 빈 줄에서 슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-04",
+      "scene": "N14",
+      "speech": "제목 2를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-05",
+      "scene": "N14",
+      "speech": "‘다음에 해 볼 것’이라고 적을게요.",
+      "inputs": [
+        "다음에 해 볼 것"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N14-06",
+      "scene": "N14",
+      "speech": "엔터를 눌러 제목 아래로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-07",
+      "scene": "N14",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-08",
+      "scene": "N14",
+      "speech": "메뉴에서 할 일 목록을 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-09",
+      "scene": "N14",
+      "speech": "‘내 관심 주제로 카드 하나 더 만들기’라고 적을게요.",
+      "inputs": [
+        "내 관심 주제로 카드 하나 더 만들기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N14-10",
+      "scene": "N14",
+      "speech": "엔터를 눌러 다음 항목으로 내려가 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-11",
+      "scene": "N14",
+      "speech": "다음 줄에는 ‘내용에 어울리는 하위 페이지 이름 붙이기’라고 적겠습니다.",
+      "inputs": [
+        "내용에 어울리는 하위 페이지 이름 붙이기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N14-12",
+      "scene": "N14",
+      "speech": "입력한 줄 끝에서 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N14-13",
+      "scene": "N14",
+      "speech": "빈 항목에서 엔터를 한 번 더 눌러 목록을 끝낼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-01",
+      "scene": "N15",
+      "speech": "페이지 위쪽으로 스크롤하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "scroll"
+    },
+    {
+      "id": "N15-02",
+      "scene": "N15",
+      "speech": "처음 쓴 소개 바로 아래에 목차를 넣을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-03",
+      "scene": "N15",
+      "speech": "소개 문장 끝을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-04",
+      "scene": "N15",
+      "speech": "엔터를 눌러 빈 줄을 만들어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-05",
+      "scene": "N15",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-06",
+      "scene": "N15",
+      "speech": "메뉴에서 목차를 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-07",
+      "scene": "N15",
+      "speech": "목차에서 다음에 해 볼 것을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-08",
+      "scene": "N15",
+      "speech": "이제 위쪽 경로의 노션 익히기를 클릭해 부모 주제로 돌아가겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N15-09",
+      "scene": "N15",
+      "speech": "첫 페이지 꾸미기 링크가 남아 있는지 확인하고 두 번째 페이지를 만들겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-01",
+      "scene": "N16",
+      "speech": "첫 페이지 꾸미기 아래의 빈 줄을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-02",
+      "scene": "N16",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-03",
+      "scene": "N16",
+      "speech": "페이지를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-04",
+      "scene": "N16",
+      "speech": "제목에는 ‘페이지 연결하기’라고 적겠습니다.",
+      "inputs": [
+        "페이지 연결하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-05",
+      "scene": "N16",
+      "speech": "제목 아래 본문을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-06",
+      "scene": "N16",
+      "speech": "‘내용이 길어지면 같은 주제 안에서 페이지를 나눠 봅니다.’라고 적겠습니다.",
+      "inputs": [
+        "내용이 길어지면 같은 주제 안에서 페이지를 나눠 봅니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-07",
+      "scene": "N16",
+      "speech": "엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-08",
+      "scene": "N16",
+      "speech": "슬래시 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-09",
+      "scene": "N16",
+      "speech": "제목 2를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-10",
+      "scene": "N16",
+      "speech": "‘하위 페이지 만들기’라고 적겠습니다.",
+      "inputs": [
+        "하위 페이지 만들기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-11",
+      "scene": "N16",
+      "speech": "제목 아래에서는 슬래시 메뉴의 번호 매기기 목록을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-12",
+      "scene": "N16",
+      "speech": "첫 번째에는 ‘주제 카드를 엽니다.’라고 적을게요.",
+      "inputs": [
+        "주제 카드를 엽니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-13",
+      "scene": "N16",
+      "speech": "적고 엔터를 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-14",
+      "scene": "N16",
+      "speech": "두 번째에는 ‘빈 줄에서 슬래시를 입력하고 페이지를 고릅니다.’라고 적어 주세요.",
+      "inputs": [
+        "빈 줄에서 슬래시를 입력하고 페이지를 고릅니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-15",
+      "scene": "N16",
+      "speech": "엔터를 눌러 다음 줄로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-16",
+      "scene": "N16",
+      "speech": "‘페이지 이름을 붙이고 내용을 적습니다.’라고 적겠습니다.",
+      "inputs": [
+        "페이지 이름을 붙이고 내용을 적습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-17",
+      "scene": "N16",
+      "speech": "엔터를 한 번 더 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-18",
+      "scene": "N16",
+      "speech": "마지막에는 ‘위쪽 경로를 눌러 부모 주제로 돌아옵니다.’라고 적을게요.",
+      "inputs": [
+        "위쪽 경로를 눌러 부모 주제로 돌아옵니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-19",
+      "scene": "N16",
+      "speech": "마지막 항목 끝에서 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-20",
+      "scene": "N16",
+      "speech": "빈 항목에서 엔터를 한 번 더 눌러 번호 목록을 끝낼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-21",
+      "scene": "N16",
+      "speech": "아래 빈 줄에서 슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-22",
+      "scene": "N16",
+      "speech": "콜아웃을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-23",
+      "scene": "N16",
+      "speech": "‘페이지 이름은 내용에 맞게 자유롭게 붙이세요.’라고 적겠습니다.",
+      "inputs": [
+        "페이지 이름은 내용에 맞게 자유롭게 붙이세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N16-24",
+      "scene": "N16",
+      "speech": "상자 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-25",
+      "scene": "N16",
+      "speech": "색 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N16-26",
+      "scene": "N16",
+      "speech": "이번에는 회색 배경을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-01",
+      "scene": "N17",
+      "speech": "안내 상자 밖 아래를 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-02",
+      "scene": "N17",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-03",
+      "scene": "N17",
+      "speech": "제목 2를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-04",
+      "scene": "N17",
+      "speech": "‘필요할 때 찾아보기’라고 적어 주세요.",
+      "inputs": [
+        "필요할 때 찾아보기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N17-05",
+      "scene": "N17",
+      "speech": "엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-06",
+      "scene": "N17",
+      "speech": "‘Notion 글쓰기 도움말’이라고 적을게요.",
+      "inputs": [
+        "Notion 글쓰기 도움말"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N17-07",
+      "scene": "N17",
+      "speech": "방금 쓴 글자를 드래그해 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N17-08",
+      "scene": "N17",
+      "speech": "나타나는 도구에서 링크 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-09",
+      "scene": "N17",
+      "speech": "주소 입력란을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-10",
+      "scene": "N17",
+      "speech": "준비한 공식 도움말 주소를 붙여넣어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-11",
+      "scene": "N17",
+      "speech": "엔터로 적용할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-12",
+      "scene": "N17",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-13",
+      "scene": "N17",
+      "speech": "방금 만든 링크를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-14",
+      "scene": "N17",
+      "speech": "미리보기에서 열기 동작을 요구하면 그 링크를 열겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-15",
+      "scene": "N17",
+      "speech": "이제 노트 탭으로 돌아오겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-16",
+      "scene": "N17",
+      "speech": "링크 뒤를 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-17",
+      "scene": "N17",
+      "speech": "엔터를 눌러 설명을 적을 자리를 만들겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N17-18",
+      "scene": "N17",
+      "speech": "‘글과 블록을 다루는 방법이 필요할 때 공식 도움말에서 다시 확인합니다.’라고 적을게요.",
+      "inputs": [
+        "글과 블록을 다루는 방법이 필요할 때 공식 도움말에서 다시 확인합니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N17-19",
+      "scene": "N17",
+      "speech": "위쪽 경로에서 노션 익히기로 돌아가겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-01",
+      "scene": "N18",
+      "speech": "나의 페이지 제목 끝을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-02",
+      "scene": "N18",
+      "speech": "엔터를 눌러 두 페이지 링크 위에 빈 줄을 만들어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-03",
+      "scene": "N18",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-04",
+      "scene": "N18",
+      "speech": "콜아웃을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-05",
+      "scene": "N18",
+      "speech": "‘01 · 글 정리하기’라고 적을게요.",
+      "inputs": [
+        "01 · 글 정리하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-06",
+      "scene": "N18",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-07",
+      "scene": "N18",
+      "speech": "‘제목·목록·토글로’라고 적어 주세요.",
+      "inputs": [
+        "제목·목록·토글로"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-08",
+      "scene": "N18",
+      "speech": "시프트와 엔터를 한 번 더 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-09",
+      "scene": "N18",
+      "speech": "‘읽기 편하게 정리합니다.’라고 적어 주세요.",
+      "inputs": [
+        "읽기 편하게 정리합니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-10",
+      "scene": "N18",
+      "speech": "첫 줄을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-11",
+      "scene": "N18",
+      "speech": "굵게 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-12",
+      "scene": "N18",
+      "speech": "여백을 눌러 선택을 풀어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-13",
+      "scene": "N18",
+      "speech": "상자 손잡이를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-14",
+      "scene": "N18",
+      "speech": "색 메뉴를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-15",
+      "scene": "N18",
+      "speech": "회색 배경을 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-16",
+      "scene": "N18",
+      "speech": "앞의 아이콘을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-17",
+      "scene": "N18",
+      "speech": "메모 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-18",
+      "scene": "N18",
+      "speech": "첫 상자 바깥 아래를 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-19",
+      "scene": "N18",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-20",
+      "scene": "N18",
+      "speech": "콜아웃을 하나 더 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-21",
+      "scene": "N18",
+      "speech": "첫 줄에는 ‘02 · 내용 연결하기’라고 적을게요.",
+      "inputs": [
+        "02 · 내용 연결하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-22",
+      "scene": "N18",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-23",
+      "scene": "N18",
+      "speech": "‘하위 페이지와 링크로’라고 적어 주세요.",
+      "inputs": [
+        "하위 페이지와 링크로"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-24",
+      "scene": "N18",
+      "speech": "시프트와 엔터를 다시 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-25",
+      "scene": "N18",
+      "speech": "‘내용을 이어 갑니다.’라고 적어 주세요.",
+      "inputs": [
+        "내용을 이어 갑니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-26",
+      "scene": "N18",
+      "speech": "첫 줄을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-27",
+      "scene": "N18",
+      "speech": "굵게 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-28",
+      "scene": "N18",
+      "speech": "선택을 풀고 상자 손잡이를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-29",
+      "scene": "N18",
+      "speech": "색 메뉴를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-30",
+      "scene": "N18",
+      "speech": "회색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-31",
+      "scene": "N18",
+      "speech": "아이콘을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-32",
+      "scene": "N18",
+      "speech": "연결 고리 모양을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-33",
+      "scene": "N18",
+      "speech": "두 번째 상자의 왼쪽 손잡이를 누른 채 첫 상자 오른쪽으로 가져가 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-34",
+      "scene": "N18",
+      "speech": "가로선이 아니라 세로선이 보이는 위치에서 놓겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N18-35",
+      "scene": "N18",
+      "speech": "아래에 있는 첫 페이지 꾸미기의 손잡이를 잡겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N18-36",
+      "scene": "N18",
+      "speech": "왼쪽 상자 안의 설명 아래로 옮겨 놓을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N18-37",
+      "scene": "N18",
+      "speech": "이번에는 페이지 연결하기를 오른쪽 상자 안으로 옮기겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N18-38",
+      "scene": "N18",
+      "speech": "글이 지나치게 잘린다면 가운데 경계를 잡아 두 영역의 너비를 맞춰 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "drag"
+    },
+    {
+      "id": "N18-39",
+      "scene": "N18",
+      "speech": "두 단 아래의 바깥 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-40",
+      "scene": "N18",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-41",
+      "scene": "N18",
+      "speech": "구분선을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-42",
+      "scene": "N18",
+      "speech": "다음 빈 줄에서 슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-43",
+      "scene": "N18",
+      "speech": "토글을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-44",
+      "scene": "N18",
+      "speech": "‘나에게 맞게 바꾸려면’이라고 적을게요.",
+      "inputs": [
+        "나에게 맞게 바꾸려면"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-45",
+      "scene": "N18",
+      "speech": "삼각형을 눌러 펼쳐 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-46",
+      "scene": "N18",
+      "speech": "안쪽 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N18-47",
+      "scene": "N18",
+      "speech": "‘페이지 이름과 배치는 자유롭게 바꾸세요. 내용이 짧으면 한 페이지에 적어도 됩니다.’라고 적어 주세요.",
+      "inputs": [
+        "페이지 이름과 배치는 자유롭게 바꾸세요. 내용이 짧으면 한 페이지에 적어도 됩니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N18-48",
+      "scene": "N18",
+      "speech": "입력을 마치면 접어 두겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-01",
+      "scene": "N19",
+      "speech": "왼쪽 상자 안의 첫 페이지 꾸미기를 열겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-02",
+      "scene": "N19",
+      "speech": "아래쪽으로 스크롤할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "scroll"
+    },
+    {
+      "id": "N19-03",
+      "scene": "N19",
+      "speech": "마지막 빈 줄을 클릭해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-04",
+      "scene": "N19",
+      "speech": "슬래시 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-05",
+      "scene": "N19",
+      "speech": "제목 2를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-06",
+      "scene": "N19",
+      "speech": "‘이어서 보기’라고 적을게요.",
+      "inputs": [
+        "이어서 보기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N19-07",
+      "scene": "N19",
+      "speech": "엔터를 눌러 그 아래에 연결을 넣겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-08",
+      "scene": "N19",
+      "speech": "골뱅이를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-09",
+      "scene": "N19",
+      "speech": "목록에서 방금 만든 하위 페이지를 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-10",
+      "scene": "N19",
+      "speech": "이 이름을 클릭해 연결된 페이지를 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-11",
+      "scene": "N19",
+      "speech": "위쪽 경로의 노션 익히기를 눌러 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-12",
+      "scene": "N19",
+      "speech": "첫 페이지 꾸미기를 다시 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-13",
+      "scene": "N19",
+      "speech": "연결 다음 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-14",
+      "scene": "N19",
+      "speech": "‘Notion 글쓰기 도움말’이라고 적어 주세요.",
+      "inputs": [
+        "Notion 글쓰기 도움말"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N19-15",
+      "scene": "N19",
+      "speech": "방금 쓴 글자를 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-16",
+      "scene": "N19",
+      "speech": "링크 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-17",
+      "scene": "N19",
+      "speech": "주소 입력란에 앞서 쓴 주소를 붙여넣을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-18",
+      "scene": "N19",
+      "speech": "엔터로 적용할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N19-19",
+      "scene": "N19",
+      "speech": "여백을 눌러 선택을 풀어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-01",
+      "scene": "N20",
+      "speech": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-02",
+      "scene": "N20",
+      "speech": "파란색 새로 만들기 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-03",
+      "scene": "N20",
+      "speech": "제목에는 ‘지식 자산화’라고 적을게요.",
+      "inputs": [
+        "지식 자산화"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-04",
+      "scene": "N20",
+      "speech": "제목 아래 본문을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-05",
+      "scene": "N20",
+      "speech": "‘배운 것을 한 번 읽고 끝내지 않고, 필요할 때 다시 꺼내 쓰는 방법을 생각합니다.’라고 적겠습니다.",
+      "inputs": [
+        "배운 것을 한 번 읽고 끝내지 않고, 필요할 때 다시 꺼내 쓰는 방법을 생각합니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-06",
+      "scene": "N20",
+      "speech": "아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-07",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-08",
+      "scene": "N20",
+      "speech": "콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-09",
+      "scene": "N20",
+      "speech": "‘모아 두는 데서, 다시 꺼내 쓰는 데까지’라고 적어 주세요.",
+      "inputs": [
+        "모아 두는 데서, 다시 꺼내 쓰는 데까지"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-10",
+      "scene": "N20",
+      "speech": "시프트와 엔터로 줄을 바꿔 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-11",
+      "scene": "N20",
+      "speech": "‘내 말로 정리하면 무엇을 알고 무엇이 아직 모호한지 드러난다. 출처도 함께 남겨 두면 나중에 다시 확인하기 좋다.’라고 적을게요.",
+      "inputs": [
+        "내 말로 정리하면 무엇을 알고 무엇이 아직 모호한지 드러난다. 출처도 함께 남겨 두면 나중에 다시 확인하기 좋다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-12",
+      "scene": "N20",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-13",
+      "scene": "N20",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-14",
+      "scene": "N20",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-15",
+      "scene": "N20",
+      "speech": "상자 손잡이를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-16",
+      "scene": "N20",
+      "speech": "색 메뉴를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-17",
+      "scene": "N20",
+      "speech": "파란색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-18",
+      "scene": "N20",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-19",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-20",
+      "scene": "N20",
+      "speech": "제목 2를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-21",
+      "scene": "N20",
+      "speech": "‘기록을 남기는 방법’라고 적어 주세요.",
+      "inputs": [
+        "기록을 남기는 방법"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-22",
+      "scene": "N20",
+      "speech": "엔터를 눌러 본문으로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-23",
+      "scene": "N20",
+      "speech": "아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-24",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-25",
+      "scene": "N20",
+      "speech": "콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-26",
+      "scene": "N20",
+      "speech": "‘01 · 내 말로 설명하기’라고 적어 주세요.",
+      "inputs": [
+        "01 · 내 말로 설명하기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-27",
+      "scene": "N20",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-28",
+      "scene": "N20",
+      "speech": "‘원문을 그대로 붙여 두는 것에 더해 내가 이해한 내용을 짧게 적습니다. 아직 모르는 부분은 질문으로 남겨도 좋습니다.’라고 입력하겠습니다.",
+      "inputs": [
+        "원문을 그대로 붙여 두는 것에 더해 내가 이해한 내용을 짧게 적습니다. 아직 모르는 부분은 질문으로 남겨도 좋습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-29",
+      "scene": "N20",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-30",
+      "scene": "N20",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-31",
+      "scene": "N20",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-32",
+      "scene": "N20",
+      "speech": "상자 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-33",
+      "scene": "N20",
+      "speech": "색 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-34",
+      "scene": "N20",
+      "speech": "회색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-35",
+      "scene": "N20",
+      "speech": "상자 앞의 아이콘을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-36",
+      "scene": "N20",
+      "speech": "메모 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-37",
+      "scene": "N20",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-38",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-39",
+      "scene": "N20",
+      "speech": "콜아웃을 하나 더 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-40",
+      "scene": "N20",
+      "speech": "제목에는 ‘02 · 다시 찾을 길 남기기’라고 적을게요.",
+      "inputs": [
+        "02 · 다시 찾을 길 남기기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-41",
+      "scene": "N20",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-42",
+      "scene": "N20",
+      "speech": "‘어디에서 배웠는지 출처를 붙이고 관련 페이지를 연결합니다. 내용이 길어지면 같은 주제 안에서 하위 페이지로 나눕니다.’라고 적겠습니다.",
+      "inputs": [
+        "어디에서 배웠는지 출처를 붙이고 관련 페이지를 연결합니다. 내용이 길어지면 같은 주제 안에서 하위 페이지로 나눕니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-43",
+      "scene": "N20",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-44",
+      "scene": "N20",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-45",
+      "scene": "N20",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-46",
+      "scene": "N20",
+      "speech": "상자 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-47",
+      "scene": "N20",
+      "speech": "색 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-48",
+      "scene": "N20",
+      "speech": "회색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-49",
+      "scene": "N20",
+      "speech": "상자 앞의 아이콘을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-50",
+      "scene": "N20",
+      "speech": "연결 고리 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-51",
+      "scene": "N20",
+      "speech": "두 번째 상자의 손잡이를 잡아 첫 상자 오른쪽의 세로선 위치에 놓겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N20-52",
+      "scene": "N20",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-53",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-54",
+      "scene": "N20",
+      "speech": "제목 2를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-55",
+      "scene": "N20",
+      "speech": "‘짧은 메모 — 작성 예시’라고 적어 주세요.",
+      "inputs": [
+        "짧은 메모 — 작성 예시"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-56",
+      "scene": "N20",
+      "speech": "엔터를 눌러 본문으로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-57",
+      "scene": "N20",
+      "speech": "아래 본문에는 ‘배운 내용: 학습노트는 자료를 저장하는 공간이면서, 내가 이해한 것을 설명해 보는 공간이다.’라고 적을게요.",
+      "inputs": [
+        "배운 내용: 학습노트는 자료를 저장하는 공간이면서, 내가 이해한 것을 설명해 보는 공간이다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-58",
+      "scene": "N20",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-59",
+      "scene": "N20",
+      "speech": "‘내가 써 볼 방법: 수업 뒤 기억할 내용을 짧게 적고, 자세한 자료는 아래 교재 페이지에 모아 둔다.’라고 적겠습니다.",
+      "inputs": [
+        "내가 써 볼 방법: 수업 뒤 기억할 내용을 짧게 적고, 자세한 자료는 아래 교재 페이지에 모아 둔다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-60",
+      "scene": "N20",
+      "speech": "시프트와 엔터를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-61",
+      "scene": "N20",
+      "speech": "다음 줄에는 ‘남은 질문: 다음에 같은 내용을 찾을 때 어떤 제목으로 검색할까?’라고 적을게요.",
+      "inputs": [
+        "남은 질문: 다음에 같은 내용을 찾을 때 어떤 제목으로 검색할까?"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-62",
+      "scene": "N20",
+      "speech": "첫 줄의 배운 내용만 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-63",
+      "scene": "N20",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-64",
+      "scene": "N20",
+      "speech": "두 번째 줄의 내가 써 볼 방법을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-65",
+      "scene": "N20",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-66",
+      "scene": "N20",
+      "speech": "세 번째 줄의 남은 질문을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-67",
+      "scene": "N20",
+      "speech": "굵게 버튼을 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-68",
+      "scene": "N20",
+      "speech": "선택을 풀고 마지막 문장 끝을 클릭해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-69",
+      "scene": "N20",
+      "speech": "엔터를 눌러 아래에 빈 줄을 만들게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-70",
+      "scene": "N20",
+      "speech": "아래에는 ‘위 세 문장은 작성 예시이며 필수 입력 항목은 아닙니다.’라고 덧붙일게요.",
+      "inputs": [
+        "위 세 문장은 작성 예시이며 필수 입력 항목은 아닙니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-71",
+      "scene": "N20",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-72",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-73",
+      "scene": "N20",
+      "speech": "제목 2를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-74",
+      "scene": "N20",
+      "speech": "‘읽어 볼 자료’라고 적어 주세요.",
+      "inputs": [
+        "읽어 볼 자료"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-75",
+      "scene": "N20",
+      "speech": "엔터를 눌러 본문으로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-76",
+      "scene": "N20",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-77",
+      "scene": "N20",
+      "speech": "페이지를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-78",
+      "scene": "N20",
+      "speech": "제목에는 ‘1회차 교재 · 지식 자산화’라고 적을게요.",
+      "inputs": [
+        "1회차 교재 · 지식 자산화"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-79",
+      "scene": "N20",
+      "speech": "제목 아래 본문을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-80",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-81",
+      "scene": "N20",
+      "speech": "파일을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-82",
+      "scene": "N20",
+      "speech": "업로드를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-83",
+      "scene": "N20",
+      "speech": "준비한 실습 폴더에서 ‘참고_교재_발췌.md’를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-84",
+      "scene": "N20",
+      "speech": "열기 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-85",
+      "scene": "N20",
+      "speech": "업로드가 끝나면 해당 파일을 눌러 맞는 교재인지 열어 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-86",
+      "scene": "N20",
+      "speech": "노트 탭으로 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-87",
+      "scene": "N20",
+      "speech": "위쪽 경로에서 지식 자산화를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-88",
+      "scene": "N20",
+      "speech": "교재 페이지 아래에 ‘수업 교재의 해당 부분을 모아 둔 하위 페이지입니다. 이 구성은 예시이며, 정해진 작성 양식은 없습니다.’라고 적겠습니다.",
+      "inputs": [
+        "수업 교재의 해당 부분을 모아 둔 하위 페이지입니다. 이 구성은 예시이며, 정해진 작성 양식은 없습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-89",
+      "scene": "N20",
+      "speech": "아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-90",
+      "scene": "N20",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-91",
+      "scene": "N20",
+      "speech": "구분선을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-92",
+      "scene": "N20",
+      "speech": "구분선 아래 빈 줄에서 슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-93",
+      "scene": "N20",
+      "speech": "토글을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-94",
+      "scene": "N20",
+      "speech": "토글 이름에는 ‘나에게 맞게 바꾸려면’이라고 적을게요.",
+      "inputs": [
+        "나에게 맞게 바꾸려면"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-95",
+      "scene": "N20",
+      "speech": "삼각형을 눌러 펼칠게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-96",
+      "scene": "N20",
+      "speech": "안쪽 빈 줄을 클릭해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-97",
+      "scene": "N20",
+      "speech": "‘한 문장만 남겨도 괜찮습니다. 필요한 글·이미지·자료를 주제 안에 쌓고, 정리 방식은 내용에 맞게 바꾸세요.’라고 적을게요.",
+      "inputs": [
+        "한 문장만 남겨도 괜찮습니다. 필요한 글·이미지·자료를 주제 안에 쌓고, 정리 방식은 내용에 맞게 바꾸세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N20-98",
+      "scene": "N20",
+      "speech": "삼각형을 눌러 접어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N20-99",
+      "scene": "N20",
+      "speech": "이제 홈으로 돌아가 카드의 그림을 정리하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-01",
+      "scene": "N21",
+      "speech": "주제 모음 오른쪽의 회색 조절 막대 모양 설정 아이콘을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-02",
+      "scene": "N21",
+      "speech": "속성 메뉴를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-03",
+      "scene": "N21",
+      "speech": "속성 추가를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-04",
+      "scene": "N21",
+      "speech": "파일과 미디어를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-05",
+      "scene": "N21",
+      "speech": "이름 입력란을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-06",
+      "scene": "N21",
+      "speech": "‘카드 이미지’라고 적어 주세요.",
+      "inputs": [
+        "카드 이미지"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N21-07",
+      "scene": "N21",
+      "speech": "설정 메뉴를 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-08",
+      "scene": "N21",
+      "speech": "노션 익히기 카드를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-09",
+      "scene": "N21",
+      "speech": "위쪽 속성에서 카드 이미지를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-10",
+      "scene": "N21",
+      "speech": "업로드를 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-11",
+      "scene": "N21",
+      "speech": "파일 선택 창에서 실습 폴더의 이미지 폴더를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-12",
+      "scene": "N21",
+      "speech": "‘notion.png’를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-13",
+      "scene": "N21",
+      "speech": "열기 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-14",
+      "scene": "N21",
+      "speech": "위쪽 경로의 내 학습 노트를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-15",
+      "scene": "N21",
+      "speech": "지식 자산화 카드도 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-16",
+      "scene": "N21",
+      "speech": "카드 이미지 속성을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-17",
+      "scene": "N21",
+      "speech": "업로드를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-18",
+      "scene": "N21",
+      "speech": "이미지 폴더에서 ‘knowledge.png’를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-19",
+      "scene": "N21",
+      "speech": "열기 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-20",
+      "scene": "N21",
+      "speech": "확인했으면 홈으로 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-21",
+      "scene": "N21",
+      "speech": "갤러리의 보기 설정을 다시 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-22",
+      "scene": "N21",
+      "speech": "레이아웃을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-23",
+      "scene": "N21",
+      "speech": "카드 미리보기를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-24",
+      "scene": "N21",
+      "speech": "카드 이미지를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-25",
+      "scene": "N21",
+      "speech": "카드 크기 메뉴를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-26",
+      "scene": "N21",
+      "speech": "작게를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-27",
+      "scene": "N21",
+      "speech": "속성 표시 메뉴를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-28",
+      "scene": "N21",
+      "speech": "이름은 표시하고, 그 밖의 표시된 항목은 눈 모양 버튼을 눌러 숨길게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-29",
+      "scene": "N21",
+      "speech": "설정 밖을 눌러 닫을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-30",
+      "scene": "N21",
+      "speech": "노션 익히기를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-31",
+      "scene": "N21",
+      "speech": "페이지의 속성 표시 설정을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-32",
+      "scene": "N21",
+      "speech": "카드 이미지가 본문 위에서 크게 자리를 차지하면 표시를 숨기겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N21-33",
+      "scene": "N21",
+      "speech": "적용한 뒤 홈으로 돌아와 그림이 그대로 있는지 확인하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-01",
+      "scene": "N22",
+      "speech": "목록의 보기 이름 옆에서 보기 추가를 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-02",
+      "scene": "N22",
+      "speech": "표를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-03",
+      "scene": "N22",
+      "speech": "이름 입력란을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-04",
+      "scene": "N22",
+      "speech": "‘전체 주제’라고 적어 주세요.",
+      "inputs": [
+        "전체 주제"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-05",
+      "scene": "N22",
+      "speech": "생성 버튼을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-06",
+      "scene": "N22",
+      "speech": "표에서 노션 익히기 제목을 눌러 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-07",
+      "scene": "N22",
+      "speech": "앞에서 적은 내용이 있는지 확인하고 홈으로 돌아올게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-08",
+      "scene": "N22",
+      "speech": "표의 열 오른쪽에서 속성 추가를 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-09",
+      "scene": "N22",
+      "speech": "이름 입력란에 ‘분야’라고 적을게요.",
+      "inputs": [
+        "분야"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-10",
+      "scene": "N22",
+      "speech": "속성 종류에서 선택을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-11",
+      "scene": "N22",
+      "speech": "노션 익히기 행의 빈 분야 칸을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-12",
+      "scene": "N22",
+      "speech": "‘도구’라고 적어 주세요.",
+      "inputs": [
+        "도구"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-13",
+      "scene": "N22",
+      "speech": "새 옵션으로 만들기를 눌러 적용할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-14",
+      "scene": "N22",
+      "speech": "지식 자산화 행의 분야 칸을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-15",
+      "scene": "N22",
+      "speech": "‘학습 방법’이라고 적어 주세요.",
+      "inputs": [
+        "학습 방법"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-16",
+      "scene": "N22",
+      "speech": "새 옵션으로 만들기를 눌러 적용할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-17",
+      "scene": "N22",
+      "speech": "분야 열 제목을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-18",
+      "scene": "N22",
+      "speech": "속성 편집을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-19",
+      "scene": "N22",
+      "speech": "옵션 추가를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-20",
+      "scene": "N22",
+      "speech": "‘AI 실습’이라고 적을게요.",
+      "inputs": [
+        "AI 실습"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-21",
+      "scene": "N22",
+      "speech": "엔터로 확정해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-22",
+      "scene": "N22",
+      "speech": "지금 행에는 선택하지 않고 옵션만 남긴 뒤 메뉴를 닫을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-23",
+      "scene": "N22",
+      "speech": "표의 속성 추가를 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-24",
+      "scene": "N22",
+      "speech": "이름 입력란에 ‘이해도’라고 적어 주세요.",
+      "inputs": [
+        "이해도"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-25",
+      "scene": "N22",
+      "speech": "속성 종류는 선택으로 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-26",
+      "scene": "N22",
+      "speech": "속성 편집에서 옵션 추가를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-27",
+      "scene": "N22",
+      "speech": "‘설명 못함’이라고 적을게요.",
+      "inputs": [
+        "설명 못함"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-28",
+      "scene": "N22",
+      "speech": "엔터로 확정하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-29",
+      "scene": "N22",
+      "speech": "다시 옵션 추가를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-30",
+      "scene": "N22",
+      "speech": "‘대충 앎’이라고 적을게요.",
+      "inputs": [
+        "대충 앎"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-31",
+      "scene": "N22",
+      "speech": "엔터로 확정하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-32",
+      "scene": "N22",
+      "speech": "옵션 추가를 한 번 더 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-33",
+      "scene": "N22",
+      "speech": "‘설명 가능’이라고 적어 주세요.",
+      "inputs": [
+        "설명 가능"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N22-34",
+      "scene": "N22",
+      "speech": "엔터로 확정하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-35",
+      "scene": "N22",
+      "speech": "세 항목이 보이면 메뉴를 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-36",
+      "scene": "N22",
+      "speech": "이해도 칸을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N22-37",
+      "scene": "N22",
+      "speech": "오늘은 선택 위치를 확인하고 바깥을 눌러 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-01",
+      "scene": "N23",
+      "speech": "목록 오른쪽에 있는 회색 돋보기 버튼을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-02",
+      "scene": "N23",
+      "speech": "‘Notion’이라고 입력해 주세요.",
+      "inputs": [
+        "Notion"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N23-03",
+      "scene": "N23",
+      "speech": "검색 입력란을 클릭해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-04",
+      "scene": "N23",
+      "speech": "입력한 글자를 선택해 지울게요.",
+      "inputs": [],
+      "motor_events": 2,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-05",
+      "scene": "N23",
+      "speech": "표의 정렬 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-06",
+      "scene": "N23",
+      "speech": "정렬 추가를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-07",
+      "scene": "N23",
+      "speech": "이름을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-08",
+      "scene": "N23",
+      "speech": "오름차순을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-09",
+      "scene": "N23",
+      "speech": "메뉴를 닫고 행 순서를 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-10",
+      "scene": "N23",
+      "speech": "보기 설정의 속성 표시를 열겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-11",
+      "scene": "N23",
+      "speech": "카드 이미지 옆의 눈 모양 버튼을 눌러 숨겨 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-12",
+      "scene": "N23",
+      "speech": "생성 일시도 표시돼 있다면 눈 모양 버튼을 눌러 숨길게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-13",
+      "scene": "N23",
+      "speech": "설정 바깥을 눌러 닫을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-14",
+      "scene": "N23",
+      "speech": "위쪽의 주제 카드 보기를 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-15",
+      "scene": "N23",
+      "speech": "다시 전체 주제를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N23-16",
+      "scene": "N23",
+      "speech": "주제 카드 보기를 눌러 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-01",
+      "scene": "N24",
+      "speech": "파란색 새로 만들기 버튼 오른쪽의 아래 화살표를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-02",
+      "scene": "N24",
+      "speech": "메뉴에서 새 템플릿을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-03",
+      "scene": "N24",
+      "speech": "이름은 ‘새 주제’라고 적겠습니다.",
+      "inputs": [
+        "새 주제"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-04",
+      "scene": "N24",
+      "speech": "제목 아래 본문을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-05",
+      "scene": "N24",
+      "speech": "‘이 주제에서 알고 싶은 것, 기억하고 싶은 것을 한 줄로 적어 보세요.’라고 입력하겠습니다.",
+      "inputs": [
+        "이 주제에서 알고 싶은 것, 기억하고 싶은 것을 한 줄로 적어 보세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-06",
+      "scene": "N24",
+      "speech": "아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-07",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-08",
+      "scene": "N24",
+      "speech": "콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-09",
+      "scene": "N24",
+      "speech": "첫 줄에는 ‘나의 주제를, 나의 방식으로’라고 적어 주세요.",
+      "inputs": [
+        "나의 주제를, 나의 방식으로"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-10",
+      "scene": "N24",
+      "speech": "시프트와 엔터로 줄을 바꿔 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-11",
+      "scene": "N24",
+      "speech": "‘짧은 글부터 시작하세요. 아래 두 영역은 선택해서 바꾸는 시작점이며, 모두 채울 필요는 없습니다.’라고 적을게요.",
+      "inputs": [
+        "짧은 글부터 시작하세요. 아래 두 영역은 선택해서 바꾸는 시작점이며, 모두 채울 필요는 없습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-12",
+      "scene": "N24",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-13",
+      "scene": "N24",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-14",
+      "scene": "N24",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-15",
+      "scene": "N24",
+      "speech": "상자 손잡이를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-16",
+      "scene": "N24",
+      "speech": "색 메뉴를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-17",
+      "scene": "N24",
+      "speech": "파란색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-18",
+      "scene": "N24",
+      "speech": "상자 앞의 아이콘을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-19",
+      "scene": "N24",
+      "speech": "책 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-20",
+      "scene": "N24",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-21",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-22",
+      "scene": "N24",
+      "speech": "제목 2를 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-23",
+      "scene": "N24",
+      "speech": "‘나의 기록’라고 적어 주세요.",
+      "inputs": [
+        "나의 기록"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-24",
+      "scene": "N24",
+      "speech": "엔터를 눌러 본문으로 내려갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-25",
+      "scene": "N24",
+      "speech": "아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-26",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-27",
+      "scene": "N24",
+      "speech": "콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-28",
+      "scene": "N24",
+      "speech": "‘01 · 자유롭게 적기’라고 적어 주세요.",
+      "inputs": [
+        "01 · 자유롭게 적기"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-29",
+      "scene": "N24",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-30",
+      "scene": "N24",
+      "speech": "‘내용에 맞게 제목을 바꾸고 글·이미지·파일을 넣어 보세요.’라고 입력하겠습니다.",
+      "inputs": [
+        "내용에 맞게 제목을 바꾸고 글·이미지·파일을 넣어 보세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-31",
+      "scene": "N24",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-32",
+      "scene": "N24",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-33",
+      "scene": "N24",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-34",
+      "scene": "N24",
+      "speech": "상자 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-35",
+      "scene": "N24",
+      "speech": "색 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-36",
+      "scene": "N24",
+      "speech": "회색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-37",
+      "scene": "N24",
+      "speech": "상자 앞의 아이콘을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-38",
+      "scene": "N24",
+      "speech": "메모 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-39",
+      "scene": "N24",
+      "speech": "상자 밖 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-40",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-41",
+      "scene": "N24",
+      "speech": "콜아웃을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-42",
+      "scene": "N24",
+      "speech": "첫 줄에는 ‘02 · 이어 갈 페이지’라고 적어 주세요.",
+      "inputs": [
+        "02 · 이어 갈 페이지"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-43",
+      "scene": "N24",
+      "speech": "시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-44",
+      "scene": "N24",
+      "speech": "‘빈 줄에서 슬래시를 입력하고 페이지를 골라 하위 페이지를 만들 수 있습니다.’라고 적을게요.",
+      "inputs": [
+        "빈 줄에서 슬래시를 입력하고 페이지를 골라 하위 페이지를 만들 수 있습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-45",
+      "scene": "N24",
+      "speech": "첫 줄을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-46",
+      "scene": "N24",
+      "speech": "굵게 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-47",
+      "scene": "N24",
+      "speech": "여백을 눌러 선택을 풀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-48",
+      "scene": "N24",
+      "speech": "상자 손잡이를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-49",
+      "scene": "N24",
+      "speech": "색 메뉴를 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-50",
+      "scene": "N24",
+      "speech": "회색 배경을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-51",
+      "scene": "N24",
+      "speech": "상자 앞의 아이콘을 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-52",
+      "scene": "N24",
+      "speech": "연결 고리 모양을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-53",
+      "scene": "N24",
+      "speech": "두 번째 상자 손잡이를 잡아 첫 상자 오른쪽의 세로선에 놓아 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N24-54",
+      "scene": "N24",
+      "speech": "두 단 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-55",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-56",
+      "scene": "N24",
+      "speech": "구분선을 고를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-57",
+      "scene": "N24",
+      "speech": "구분선 아래 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-58",
+      "scene": "N24",
+      "speech": "슬래시를 입력해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-59",
+      "scene": "N24",
+      "speech": "토글을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-60",
+      "scene": "N24",
+      "speech": "‘이 틀을 바꾸는 방법’이라고 적을게요.",
+      "inputs": [
+        "이 틀을 바꾸는 방법"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-61",
+      "scene": "N24",
+      "speech": "삼각형을 눌러 펼쳐 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-62",
+      "scene": "N24",
+      "speech": "안쪽 빈 줄을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-63",
+      "scene": "N24",
+      "speech": "펼친 안쪽에는 ‘두 영역은 시작을 돕는 예시입니다. 필요 없는 안내는 지우고, 한 단으로 쓰거나 원하는 이름의 하위 페이지를 더하세요.’라고 적겠습니다.",
+      "inputs": [
+        "두 영역은 시작을 돕는 예시입니다. 필요 없는 안내는 지우고, 한 단으로 쓰거나 원하는 이름의 하위 페이지를 더하세요."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-64",
+      "scene": "N24",
+      "speech": "같은 토글 안에서 시프트와 엔터로 줄을 바꿀게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-65",
+      "scene": "N24",
+      "speech": "‘홈의 표에서는 분야와 이해도를 필요한 때에 선택할 수 있습니다. 카드 그림을 바꾸려면 카드 이미지 속성에 원하는 이미지를 넣으세요. 본문 표지를 크게 넣지 않아도 갤러리 그림을 따로 꾸밀 수 있습니다.’라고 적겠습니다.",
+      "inputs": [
+        "홈의 표에서는 분야와 이해도를 필요한 때에 선택할 수 있습니다. 카드 그림을 바꾸려면 카드 이미지 속성에 원하는 이미지를 넣으세요. 본문 표지를 크게 넣지 않아도 갤러리 그림을 따로 꾸밀 수 있습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N24-66",
+      "scene": "N24",
+      "speech": "입력을 마쳤으면 삼각형을 눌러 접어 둘게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-67",
+      "scene": "N24",
+      "speech": "페이지 위쪽으로 스크롤할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "scroll"
+    },
+    {
+      "id": "N24-68",
+      "scene": "N24",
+      "speech": "카드 이미지가 숨겨져 있다면 속성 표시 설정을 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-69",
+      "scene": "N24",
+      "speech": "설정을 닫아 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-70",
+      "scene": "N24",
+      "speech": "카드 이미지 속성을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-71",
+      "scene": "N24",
+      "speech": "업로드를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-72",
+      "scene": "N24",
+      "speech": "이미지 폴더에서 notion.png를 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-73",
+      "scene": "N24",
+      "speech": "열기 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-74",
+      "scene": "N24",
+      "speech": "속성 표시 설정을 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-75",
+      "scene": "N24",
+      "speech": "설정을 닫아 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N24-76",
+      "scene": "N24",
+      "speech": "위쪽 경로를 눌러 목록으로 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-01",
+      "scene": "N25",
+      "speech": "새로 만들기 오른쪽의 아래 화살표를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-02",
+      "scene": "N25",
+      "speech": "방금 만든 새 주제 템플릿을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-03",
+      "scene": "N25",
+      "speech": "위쪽 제목을 클릭해 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-04",
+      "scene": "N25",
+      "speech": "‘나만의 독서 기록’이라고 적어 주세요.",
+      "inputs": [
+        "나만의 독서 기록"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-05",
+      "scene": "N25",
+      "speech": "소개 문장을 드래그해 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N25-06",
+      "scene": "N25",
+      "speech": "‘읽으면서 남기고 싶은 생각과 자료를 모읍니다.’라고 적어 주세요.",
+      "inputs": [
+        "읽으면서 남기고 싶은 생각과 자료를 모읍니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-07",
+      "scene": "N25",
+      "speech": "왼쪽 영역의 자유롭게 적기라는 글자를 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-08",
+      "scene": "N25",
+      "speech": "‘기억할 문장’이라고 적어 주세요.",
+      "inputs": [
+        "기억할 문장"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-09",
+      "scene": "N25",
+      "speech": "아래 안내 문장을 선택할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-10",
+      "scene": "N25",
+      "speech": "‘다시 읽고 싶은 문장과 그 이유를 적습니다.’라고 적어 주세요.",
+      "inputs": [
+        "다시 읽고 싶은 문장과 그 이유를 적습니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-11",
+      "scene": "N25",
+      "speech": "오른쪽 상자 안의 안내 아래를 클릭해 빈 줄을 만들겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-12",
+      "scene": "N25",
+      "speech": "슬래시를 입력할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-13",
+      "scene": "N25",
+      "speech": "페이지를 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-14",
+      "scene": "N25",
+      "speech": "제목에는 ‘다음에 읽을 책’이라고 적을게요.",
+      "inputs": [
+        "다음에 읽을 책"
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-15",
+      "scene": "N25",
+      "speech": "제목 아래 본문을 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-16",
+      "scene": "N25",
+      "speech": "‘관심이 생긴 책을 한 권씩 적어 둡니다.’라고 입력하겠습니다.",
+      "inputs": [
+        "관심이 생긴 책을 한 권씩 적어 둡니다."
+      ],
+      "motor_events": 0,
+      "conditional": false,
+      "kind": "input"
+    },
+    {
+      "id": "N25-17",
+      "scene": "N25",
+      "speech": "위쪽 경로의 나만의 독서 기록을 눌러 돌아오겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-18",
+      "scene": "N25",
+      "speech": "이제 내 학습 노트 경로를 눌러 홈으로 돌아갈게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-19",
+      "scene": "N25",
+      "speech": "이 틀로 바로 시작하는 설정도 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-20",
+      "scene": "N25",
+      "speech": "새로 만들기 옆 화살표를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-21",
+      "scene": "N25",
+      "speech": "새 주제 템플릿 옆 점 세 개를 누를게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-22",
+      "scene": "N25",
+      "speech": "기본값으로 설정을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N25-23",
+      "scene": "N25",
+      "speech": "적용 범위에서 이 목록에 해당하는 항목을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N26-01",
+      "scene": "N26",
+      "speech": "홈 오른쪽 위의 공유 버튼을 클릭하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N26-02",
+      "scene": "N26",
+      "speech": "초대할 사람을 입력하는 곳과 권한을 고르는 부분을 짚어 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N26-03",
+      "scene": "N26",
+      "speech": "아래의 링크 복사 버튼을 눌러 보겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N26-04",
+      "scene": "N26",
+      "speech": "기존 권한은 바꾸지 않고 메뉴 바깥을 눌러 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-01",
+      "scene": "N27",
+      "speech": "공유를 다시 열게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-02",
+      "scene": "N27",
+      "speech": "게시 탭을 선택해 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-03",
+      "scene": "N27",
+      "speech": "지금은 게시 버튼을 누르지 않고 메뉴를 닫겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-04",
+      "scene": "N27",
+      "speech": "본문의 소개 문장을 드래그해 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "drag"
+    },
+    {
+      "id": "N27-05",
+      "scene": "N27",
+      "speech": "나타나는 도구에서 댓글을 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-06",
+      "scene": "N27",
+      "speech": "이번에는 댓글을 작성하거나 보내지 않고 입력란 바깥을 눌러 닫을게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N27-07",
+      "scene": "N27",
+      "speech": "여백을 눌러 글자 선택도 풀겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-01",
+      "scene": "N28",
+      "speech": "홈 오른쪽 위 점 세 개를 누르고 내보내기를 찾겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-02",
+      "scene": "N28",
+      "speech": "더 보기 안에 있다면 그 메뉴를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": true,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-03",
+      "scene": "N28",
+      "speech": "내보내기 항목을 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-04",
+      "scene": "N28",
+      "speech": "파일 형식에서 HTML을 고르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-05",
+      "scene": "N28",
+      "speech": "하위 페이지 포함 옵션을 눌러 켤게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-06",
+      "scene": "N28",
+      "speech": "전체 작업 공간이 아니라 지금 만든 학습노트 페이지를 대상으로 하는지 확인하고 내보내기를 누르겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-07",
+      "scene": "N28",
+      "speech": "다운로드가 끝나면 받은 파일의 위치를 열겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-08",
+      "scene": "N28",
+      "speech": "압축 파일을 마우스 오른쪽 버튼으로 클릭할게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-09",
+      "scene": "N28",
+      "speech": "모두 추출을 골라 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-10",
+      "scene": "N28",
+      "speech": "추출 버튼을 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-11",
+      "scene": "N28",
+      "speech": "압축을 푼 폴더에서 내 학습 노트의 HTML 파일을 열겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-12",
+      "scene": "N28",
+      "speech": "내보낸 홈에서 노션 익히기 링크를 열어 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-13",
+      "scene": "N28",
+      "speech": "첫 페이지 꾸미기 링크도 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N28-14",
+      "scene": "N28",
+      "speech": "확인했으면 노션 작업 화면으로 돌아오겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-01",
+      "scene": "N29",
+      "speech": "노션 익히기를 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-02",
+      "scene": "N29",
+      "speech": "왼쪽의 첫 페이지 꾸미기를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-03",
+      "scene": "N29",
+      "speech": "위쪽 경로의 노션 익히기를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-04",
+      "scene": "N29",
+      "speech": "오른쪽의 페이지 연결하기도 열어 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-05",
+      "scene": "N29",
+      "speech": "위쪽 경로의 내 학습 노트를 눌러 주세요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-06",
+      "scene": "N29",
+      "speech": "전체 주제 보기를 눌러 볼게요.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
+    },
+    {
+      "id": "N29-07",
+      "scene": "N29",
+      "speech": "다시 주제 카드 보기를 선택하겠습니다.",
+      "inputs": [],
+      "motor_events": 1,
+      "conditional": false,
+      "kind": "ui"
     }
   ]
 }

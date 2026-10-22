@@ -1,23 +1,23 @@
 {
   "source": "제작용\\촬영\\notion\\수업원고.md",
-  "source_sha256": "ad574bf62dd060cce09ec8716d54f8214f87018fcbc503d6a0f03cc163eb4425",
+  "source_sha256": "67722b685c8082e5bd49c03bb759af6394a43ead1d3db9b8e64a31b643feef0e",
   "scenes": 29,
   "courses": [
     {
       "course": "통합반",
       "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
-      "zip_files": 14,
-      "script_sha256": "7c92e88d239457abe98893367d840ccffa4ac2b90b99822cfac42d166ca3b282",
-      "zip_sha256": "016cf38d4ac2e985b97dea6fcb5e32cfa1282a564fc6c71db9705f75e4876c32",
+      "zip_files": 15,
+      "script_sha256": "ba832fefc65b924ddd9b867171a67b4078801dec9eafefaf7c9460926cb5d667",
+      "zip_sha256": "eda96e97911bc48b3e3337c132f5ef00f3ce6a54b6691f08a1d11c664f71d3db",
       "zip_bytes_match": true,
       "local_links_exist": true
     },
     {
       "course": "실전반",
       "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
-      "zip_files": 14,
-      "script_sha256": "fdcc3029b81905af21309620ec557edd1e09b0ac2902cfc3f9b21992950404cb",
-      "zip_sha256": "693c9e7fd5542f7032d9b343bb5d95b49860fbbbc49023540adf79800c7cfffc",
+      "zip_files": 15,
+      "script_sha256": "4e33b78ab0ecdda3fab48890151cc054e573eb532c325f46a60d5e8826ebe2cc",
+      "zip_sha256": "8bdc61ccb89ceb0c22ba95bc9d1d37f954f6d7bf2a9ac2127b29755487e5c31b",
       "zip_bytes_match": true,
       "local_links_exist": true
     }
