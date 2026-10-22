@@ -16,12 +16,22 @@ DD_EXE="/c/Program Files/Docker/Docker/Docker Desktop.exe"
 DD_BIN="/c/Program Files/Docker/Docker/resources/bin"
 [ -d "$DD_BIN" ] && PATH="$PATH:$DD_BIN"   # 설치 직후 PATH에 아직 없을 때
 . scripts/windows_paths.sh
+. scripts/macos_paths.sh
+INSTALL_ENTRY='설치.bat'
+if [ "$(uname -s)" = Darwin ]; then
+  INSTALL_ENTRY='설치.command'
+  if ! docker info >/dev/null 2>&1; then
+    echo 'Docker Desktop을 엽니다. 초기 설정·약관 동의를 완료하세요(최대 3분 대기).'
+    open -a Docker || die 'Docker Desktop을 열지 못했습니다. 설치.command로 설치를 확인하세요.'
+    for i in $(seq 1 36); do docker info >/dev/null 2>&1 && break; sleep 5; done
+  fi
+fi
 if ! docker info >/dev/null 2>&1 && [ -f "$DD_EXE" ]; then   # Windows(Git Bash): 꺼져 있으면 켜고 엔진이 뜰 때까지 기다린다
   echo "Docker Desktop을 켭니다. 엔진이 준비될 때까지 최대 3분 기다립니다."
   HYD_DOCKER_DESKTOP_EXE="$(cygpath -w "$DD_EXE")" powershell.exe -NoProfile -Command 'Start-Process -WindowStyle Hidden -FilePath $env:HYD_DOCKER_DESKTOP_EXE' >/dev/null 2>&1
   for i in $(seq 1 36); do docker info >/dev/null 2>&1 && break; sleep 5; done
 fi
-command -v docker >/dev/null 2>&1 || die "docker 명령이 없습니다. 설치.bat으로 Docker Desktop을 설치하고 PC를 다시 시작한 뒤 실행하세요."
+command -v docker >/dev/null 2>&1 || die "docker 명령이 없습니다. $INSTALL_ENTRY 으로 Docker Desktop 설치를 확인하세요."
 docker info >/dev/null 2>&1 || die "Docker가 응답하지 않습니다. Docker Desktop을 열어 약관 동의 창이 있으면 동의하고, 'Engine running'이 된 뒤 다시 실행하세요."
 docker compose version >/dev/null 2>&1 || die "docker compose가 없습니다. Docker Desktop을 최신으로 설치하세요."
 echo "ok"
@@ -39,19 +49,20 @@ echo "ok (PROCESS_MODE=instance, ENTERPRISE_BACKEND=supabase)"
 
 # Compose · 업무 DB · 포털 · 점검이 같은 포트 표를 사용한다.
 # 실행 중인 이 프로젝트의 포트만 재사용하고, 다른 앱/컨테이너와 겹치면 빈 포트로 옮긴다.
-if command -v python >/dev/null 2>&1 && python -c 'import sys; assert sys.version_info >= (3, 10)' >/dev/null 2>&1; then
-  PYTHON=(python)
-elif command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; assert sys.version_info >= (3, 10)' >/dev/null 2>&1; then
-  PYTHON=(python3)
-elif command -v py >/dev/null 2>&1; then
-  PYTHON=(py -3)
-else
-  die "Python 3.10 이상이 필요합니다. 설치.bat을 먼저 실행하세요."
-fi
+PYTHON=()
+for candidate in python python3 /opt/homebrew/opt/python@3.14/bin/python3.14 /usr/local/opt/python@3.14/bin/python3.14 \
+  /Library/Frameworks/Python.framework/Versions/*/bin/python3 \
+  "${local_apps:-/nonexistent}"/Programs/Python/Python*/python.exe "${program_files:-/nonexistent}"/Python*/python.exe; do
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; assert sys.version_info >= (3, 14, 7)' >/dev/null 2>&1; then
+    PYTHON=("$candidate"); break
+  fi
+done
+if [ "${#PYTHON[@]}" -eq 0 ] && command -v py >/dev/null 2>&1 && py -3 -c 'import sys; assert sys.version_info >= (3, 14, 7)' >/dev/null 2>&1; then PYTHON=(py -3); fi
+[ "${#PYTHON[@]}" -gt 0 ] || die "Python 3.14.7 이상이 필요합니다. $INSTALL_ENTRY 을 실행하세요."
 "${PYTHON[@]}" scripts/prepare_ports.py || die "포트를 준비하지 못했습니다. Docker 상태와 폴더 쓰기 권한을 확인하세요."
 
 say "3/6 업무 DB(Supabase) 켜기"
-if command -v supabase >/dev/null 2>&1; then SUPA=(supabase); else SUPA=(npx -y supabase); echo "supabase CLI가 없어 npx로 실행합니다(설치: npm install -g supabase@2.119.0)."; fi
+SUPA=(npx -y supabase@2.119.0)
 ( cd it/supabase && "${SUPA[@]}" start >/dev/null ) || die "Supabase가 켜지지 않았습니다. 'cd it/supabase && supabase stop' 뒤 다시 실행하세요(위 포트 배정 결과와 오류 확인)."
 
 say "4/6 시스템 빌드 · 기동 (처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있습니다)"
