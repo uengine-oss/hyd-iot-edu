@@ -125,7 +125,7 @@ def _ai_login() -> bool | None:
 
 
 def build_runner(repo, *, login=_ai_login) -> Runner:
-    """AI_MODE 에 따라 CLI 실행 자리(exec_fn)만 바꾼다 — 나머지 실행 · 검사 · 저장은 같다."""
+    """AI_MODE 에 따라 CLI 실행 자리(exec_fn)만 바꾼다 — 나머지 실행 · 결과 검사 · 저장은 같다."""
     mode = ai_replay.resolve_mode(settings.ai_mode, login)
     library = ai_replay.Library(settings.ai_replay_dir)
     exec_fn = {"live": None,
@@ -133,10 +133,10 @@ def build_runner(repo, *, login=_ai_login) -> Runner:
                "replay": ai_replay.replaying(library)}[mode]
     status["ai_mode"] = mode
     if mode == "replay":
-        log.warning("AI 답 재생으로 실행합니다: %s 로그인 · 키가 없어(AI_MODE=%s) 저장된 AI 답(%s, %d개)을 씁니다. 실제 AI로 하려면 키를 넣고 다시 켜세요.",
-                    settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.entries()))
+        log.warning("AI 응답 재생으로 실행합니다: %s 로그인 · API 키가 없어(AI_MODE=%s) 저장된 AI 응답(%s, 업무 %d개)을 씁니다. 실제 AI로 하려면 API 키를 넣고 워커를 다시 켜세요.",
+                    settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.docs()))
     elif mode == "record":
-        log.info("AI 답 저장: 실제 AI 실행을 %s 에 단계마다 저장합니다", settings.ai_replay_dir)
+        log.info("AI 응답 저장: 실제 AI 실행을 %s 에 업무마다 저장합니다", settings.ai_replay_dir)
     return Runner(settings, repo, exec_fn=exec_fn, ai_mode=mode)
 
 

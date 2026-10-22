@@ -205,13 +205,15 @@ class Runner:
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"
-        if self.ai_mode == "replay":                # 저장된 답을 새 추론처럼 보이지 않게 단계마다 먼저 알린다
-            self._event(row, job_id, "task_working", {"type": "notice", "content": ai_replay.NOTICE}, crew_type="agent")
         self._event(row, job_id, "task_started", dict(ui_events.task_started(row, getattr(provider, "display_name", provider_id)),
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
                                                        redaction_values=bridged.redaction_values)
+        # AI 응답 재생: 저장된 응답을 새 추론처럼 보이지 않게 처리 과정에 한 줄 남긴다
+        found = ai_replay.used_notice(getattr(self.exec_fn, "last", None)) if self.ai_mode == "replay" else None
+        if found:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": found}, crew_type="agent")
         assessment = task_deferral.control(final_text)
         if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
             file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
@@ -567,6 +569,9 @@ def _exec_stream(provider, request, env, *, check_stop=None):
         from .codex_provider import stream_with_prompt_stdin
         stream = partial(stream_with_prompt_stdin, stream_exec)
     yield from controlled_stream(stream,provider,request,env,check_stop or (lambda:None),RunFailed)
+
+
+_exec_stream.accepts_check_stop = True          # ai_replay.recording 이 실제 CLI 실행을 감쌀 때 취소 · 기한 검사를 넘긴다
 
 
 def _asker_of(row: dict) -> str:
