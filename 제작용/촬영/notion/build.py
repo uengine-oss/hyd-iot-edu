@@ -6,6 +6,7 @@ import re
 import zipfile
 import hashlib
 import shutil
+from estimate import main as estimate_main
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -25,6 +26,7 @@ def render(text):
     return '\n'.join(out)
 
 def main():
+    estimate_main()
     source = SOURCE.read_text(encoding='utf-8')
     scenes = re.findall(r'^## (N\d+) · (.+)$', source, re.M)
     assert len(scenes) >= 25
@@ -42,6 +44,7 @@ def main():
         text = source.replace('{{과정}}', course)
         script.write_text(text, encoding='utf-8', newline='\n')
         (lab / '학습노트_입력틀.md').write_text((HERE / '입력자료.md').read_text(encoding='utf-8'), encoding='utf-8', newline='\n')
+        shutil.copyfile(HERE / '예상시간.md', lab / '예상시간.md')
         (lab / '이미지').mkdir(exist_ok=True)
         (lab / '예시').mkdir(exist_ok=True)
         for asset in (HERE / 'design').glob('*.png'):
@@ -56,6 +59,7 @@ def main():
             capture += f'## {sid} · {title}\n\n- 상태: 미촬영\n- 예정 파일: `화면/{sid}-01.png` (필요한 중간 장면은 02, 03 추가)\n- 대상·확인 기준: 가이드의 {sid} 조작·확인 문단. 포인터/하이라이트는 메뉴명·입력값을 가리지 않는다.\n\n'
         (lab / '채울_화면.md').write_text(capture.rstrip()+'\n', encoding='utf-8', newline='\n')
         links = '<nav><a href="학습노트_입력틀.md">입력 문구</a> · <a href="참고_교재_발췌.md">교재 발췌</a> · <a href="채울_화면.md">사진 자리</a></nav>'
+        links += '<nav><a href="예상시간.md">연속 대본 기준 예상 시간</a></nav>'
         links += '<nav>카드 그림: ' + ' · '.join('<a href="이미지/' + f.name + '">' + f.stem + '</a>' for f in sorted((lab / '이미지').glob('*.png'))) + '</nav>'
         links += '<nav>본문 예시: ' + ' · '.join('<a href="예시/' + f.name + '">' + f.stem.replace('_', ' ') + '</a>' for f in sorted((lab / '예시').glob('*.md'))) + '</nav>'
         guide = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학습노트 촬영 준비</title><style>body{font:18px/1.8 "Malgun Gothic",sans-serif;max-width:1000px;margin:40px auto;padding:0 24px;color:#23303e}h1{font-size:30px}h2{font-size:25px;margin-top:42px}aside{background:#eef2f6;border-left:4px solid #52748a;padding:15px;white-space:pre-wrap}p{white-space:pre-wrap}nav{padding:16px;background:#edf6f3}a{color:#245a86}</style></head><body><p>온라인 제작 참고 · 촬영 준비판 · 전체 실행·사진 미촬영</p>' + links + render(text) + '</body></html>\n'
@@ -81,7 +85,7 @@ def main():
         cfg = json.loads(cfg_path.read_text(encoding='utf-8-sig'))
         for unit in cfg['units']:
             if unit['file'].endswith('02_실습_학습노트.md'):
-                unit['status'] = '2026-10-22 완성 Notion 디자인·주제 예시·템플릿 대응 29단계 동기화 · 전체 리허설·촬영 미수행'
+                unit['status'] = '2026-10-22 연속 발화29장면·조작 선행 안내·예상시간 동기화 · 전체 실행·촬영 미수행'
         cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
         manifest['courses'].append({'course': course, 'zip_prefix': prefix, 'zip_files': len(expected), 'script_sha256': hashlib.sha256(script.read_bytes()).hexdigest(), 'zip_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(), 'zip_bytes_match': True, 'local_links_exist': True})
     (HERE / '정적검사.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
