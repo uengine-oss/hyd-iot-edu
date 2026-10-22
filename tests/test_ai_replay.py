@@ -11,6 +11,7 @@ from procsvc.procdb import MemoryRepo
 from worker import ai_replay
 from worker import runner as runner_mod
 from worker.runner import Runner
+from cliagents import ExecEvent, ExecEventKind
 from test_worker import _fake_exec, _repo, _settings, DEF_PATH, NOW
 
 ANSWER = '{"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": ["skill:fan-max"]}}'
@@ -142,9 +143,28 @@ def test_question_and_answer_continue_with_the_saved_follow_up(tmp_path):
 
 
 def test_secret_values_are_never_saved(tmp_path, monkeypatch):
-    monkeypatch.setattr(ai_replay, "_SECRET_VALUES", ["sk-test-secret-value-123"])
+    monkeypatch.setattr(ai_replay, "_SECRET_ENV", {"OPENAI_API_KEY": "sk-test-secret-value-123"})
     lib = ai_replay.Library(tmp_path / "lib")
     _record(tmp_path, lib, _fake_exec('{"cause": "sk-test-secret-value-123", "failure_mode": "f", "guide_card": {}}'))
+    assert lib.docs() == []
+
+
+def test_secret_env_names_follow_the_worker_rule_not_every_name_with_pwd():
+    env = {"PWD": "/home/teacher/hyd-iot-edu", "OLDPWD": "/home/teacher", "GIT_CONFIG_KEY_0": "http.extraheader",
+           "ANTHROPIC_API_KEY": "sk-ant-xxxxxxxx", "SUPABASE_DSN": "postgresql://u:p@h/db", "HYD_SECRET_GOOGLE": "tok-123456789", "GH_TOKEN": "ghp_123456789"}
+    assert sorted(ai_replay._secret_env(env)) == ["ANTHROPIC_API_KEY", "GH_TOKEN", "HYD_SECRET_GOOGLE", "SUPABASE_DSN"]
+
+
+def test_tool_server_tokens_of_the_run_are_never_saved(tmp_path):
+    # 학생이 등록한 서버의 토큰은 환경 변수가 아니라 이번 실행의 .mcp.json headers 로 CLI 에 간다
+    lib = ai_replay.Library(tmp_path / "lib")
+    def echoes_token(provider, request, env):
+        cfg = Path(request.workdir) / ".mcp.json"
+        doc = json.loads(cfg.read_text(encoding="utf-8"))
+        doc["mcpServers"]["hyd-dmn"]["headers"] = {"Authorization": "Bearer tok-run-only-777"}
+        cfg.write_text(json.dumps(doc), encoding="utf-8")
+        yield from _fake_exec(ANSWER.replace("cooler-fin-fouling", "tok-run-only-777"))(provider, request, env)
+    _record(tmp_path, lib, echoes_token)
     assert lib.docs() == []
 
 
@@ -185,3 +205,112 @@ def test_worker_without_cli_login_starts_in_replay(monkeypatch, tmp_path):
     assert main.status["ai_mode"] == "replay" and r.ai_mode == "replay" and hasattr(r.exec_fn, "last")
     monkeypatch.setattr(main, "settings", replace(s, ai_mode="live"))
     assert main.build_runner(MemoryRepo()).exec_fn is runner_mod._exec_stream
+
+
+def test_business_name_ignores_spacing_and_case(tmp_path):
+    lib = ai_replay.Library(tmp_path / "lib")
+    assert lib.path_of("원인 진단") == lib.path_of(" 원인진단 ") and lib.path_of("Root Cause") == lib.path_of("rootcause")
+
+
+def test_replay_runs_without_the_cli_installed(monkeypatch, tmp_path):
+    # 키 · CLI 가 없는 학생 PC: 실제 실행의 제공자 확인(runner._resolve_provider)을 그대로 거쳐도 재생은 CLI 실행 파일을 찾지 않는다
+    from cliagents import Surface, registry
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _fake_exec(ANSWER))
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    registry.availability(Surface.EXEC, refresh=True)                    # 설치 확인 결과를 이 PATH 로 다시 읽는다
+    try:
+        repo, inst = _repo()
+        r = Runner(_settings(tmp_path / "r"), repo, exec_fn=ai_replay.replaying(lib), schema_prompt="# s", ai_mode="replay")
+        assert r.poll_once() == 1 and _diagnose(repo, inst)["status"] == "SUBMITTED"
+    finally:
+        monkeypatch.undo()
+        registry.availability(Surface.EXEC, refresh=True)
+
+
+def _new_case(incident, alert):
+    repo, _ = _repo()
+    defn = engine.Definition.load(DEF_PATH)
+    inst = engine.new_instance(defn, {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "alert": {"alertId": alert}, "incident": incident}, now=NOW)
+    adv = engine.start(defn, inst, now=NOW)
+    repo.insert_instance(inst); repo.insert_workitems(adv.created); repo.update_instance(inst)
+    for w in repo.list_workitems():
+        if w["proc_inst_id"] != inst["proc_inst_id"]:
+            repo.update_workitem(w | {"status": "DONE"})
+    return repo, inst
+
+
+def _submits_decision(provider, request, env):
+    """저장할 때의 AI: 판단 등록(쓰기 도구)을 이 처리 건의 사건 · process_scope 로 부르고, 돌려받은 판단 id 를 결과에 쓴다."""
+    task = json.loads((Path(request.workdir) / "context" / "task.json").read_text(encoding="utf-8"))
+    inputs = json.loads(task["query"].split("[InputData]")[1])
+    args = {"asset": "HYD-01", "alert_id": inputs["alert"]["alertId"], "process_scope": task["process_scope"]}
+    s = "sess-W"
+    yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_START, tool="mcp__neo4j__read_neo4j_cypher", tool_input={"query": "MATCH (a)"}, tool_use_id="r1", session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__neo4j__read_neo4j_cypher", tool_output=[{"type": "text", "text": "[]"}], tool_use_id="r1", session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_START, tool="mcp__hyd-dmn__submit_decision", tool_input=args, tool_use_id="w1", session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__hyd-dmn__submit_decision", tool_use_id="w1", session_id=s,
+                    tool_output=[{"type": "text", "text": json.dumps({"id": "dec-rec-0001", "status": "PENDING_APPROVAL"})}])
+    said = f"{inputs['alert']['alertId']} 의 판단 dec-rec-0001 을 올렸습니다."
+    for k in range(0, len(said), 3):                                # 실제 CLI 처럼 설명이 토큰 조각으로 온다(id 가 조각 경계에 걸린다)
+        yield ExecEvent(kind=ExecEventKind.ASSISTANT_TEXT, text=said[k:k + 3], session_id=s)
+    yield ExecEvent(kind=ExecEventKind.RESULT, session_id=s, text=json.dumps(
+        {"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"decision": "dec-rec-0001", "alert": inputs["alert"]["alertId"]}}))
+
+
+def _fake_servers(monkeypatch, calls, reply='{"id": "dec-live-0042", "status": "PENDING_APPROVAL"}', is_error=False):
+    from procsvc import mcp_check
+    def check(spec, timeout=None):
+        calls.append(("list", spec["url"]))
+        return {"status": "ok", "tools": [{"name": "submit_decision", "callable": False}, {"name": "evaluate_cards", "callable": True}]}
+    def call_effect(spec, tool, arguments, **kw):
+        calls.append((tool, arguments))
+        return {"status": "ok", "result": {"is_error": is_error, "text": reply}}
+    monkeypatch.setattr(mcp_check, "check", check)
+    monkeypatch.setattr(mcp_check, "call_effect", call_effect)
+
+
+def test_write_tool_is_called_again_with_this_case_values_and_its_new_id_is_used(tmp_path, monkeypatch):
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _submits_decision, _new_case("INC-rec-1", "AL-rec-1"))
+    calls = []
+    _fake_servers(monkeypatch, calls)
+    repo, inst = _new_case("INC-stu-7", "AL-stu-7")
+    assert _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once() == 1
+    row = _diagnose(repo, inst)
+    [(tool, args)] = [c for c in calls if c[0] == "submit_decision"]          # 읽기 도구(neo4j)는 다시 부르지 않는다
+    assert args["alert_id"] == "AL-stu-7" and args["asset"] == "HYD-01"
+    assert args["process_scope"]["instance"] == inst["proc_inst_id"] and args["process_scope"]["workitem"] == row["id"]
+    assert row["status"] == "SUBMITTED" and row["output"]["guide_card"] == {"decision": "dec-live-0042", "alert": "AL-stu-7"}
+    texts = _texts(repo, row)
+    assert "AL-stu-7 의 판단 dec-live-0042" in texts and "dec-rec-0001" not in texts and "AL-rec-1" not in texts
+    assert "쓰기 도구(hyd-dmn/submit_decision)는 이 PC에서 다시 실행했습니다" in texts
+
+
+def test_write_tool_failure_on_this_pc_fails_the_step_with_its_reason(tmp_path, monkeypatch):
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _submits_decision, _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [], reply='{"error": "판단의 작업/세대/정의 판본이 일치하지 않습니다"}', is_error=True)
+    repo, inst = _new_case("INC-stu-8", "AL-stu-8")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    err = repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert row["draft_status"] == "FAILED" and "쓰기 도구를 이 PC에서 다시 부르지 못했습니다" in err and "세대" in err
+
+
+def test_result_file_gets_this_case_values_too(tmp_path, monkeypatch):
+    def to_file(provider, request, env):
+        for ev in _submits_decision(provider, request, env):
+            if ev.kind is ExecEventKind.RESULT:
+                p = Path(request.workdir) / "output" / "result.json"
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(ev.text, encoding="utf-8")
+                ev = ExecEvent(kind=ExecEventKind.RESULT, text="결과를 output/result.json 에 썼습니다", session_id=ev.session_id)
+            yield ev
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, to_file, _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [])
+    repo, inst = _new_case("INC-stu-9", "AL-stu-9")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    assert _diagnose(repo, inst)["output"]["guide_card"] == {"decision": "dec-live-0042", "alert": "AL-stu-9"}
