@@ -14,7 +14,39 @@
   const params = new URLSearchParams(location.search);
   const replayId = params.get('replay');
   const recordId = params.get('replay-record');
-  if (!replayId && !recordId) return;
+  if (!replayId && !recordId) { if (params.get('live') !== '1') defaultToReplay(); return; }
+
+  /* 키 없는 학생의 기본은 재생이다(문서/시스템/2_기준.md 12절). 주소에 쿼리 없이 연 포털이 실제 실행을 할 수 없으면
+     경고와 함께 사례 고르기(재생)로 옮긴다. 실제 실행이 되는 배포는 그대로 연다:
+       - 서비스가 답하지 않는다(네트워크 오류)            → 재생으로(「실습 서비스에 연결할 수 없음」)
+       - 처리 건 방식이 아니거나 내장 판단(AGENT_BRIDGE=legacy) → 그대로(키 없이 도는 기존 실행)
+       - 워커 경로(AGENT_BRIDGE=off)인데 워커가 안 닿는다     → 재생으로(「AI 키(워커) 연결 없음」)
+       - 서비스가 오류로 답하는 등 판단할 수 없으면           → 그대로(실제 실행을 막지 않는다)
+     ?live=1 이면 확인하지 않고 실제 실행으로 연다(재생 화면의 「그래도 실제 실행으로 열기」). */
+  async function defaultToReplay() {
+    const moved = {};
+    String(window.HYD_PORTS_RAW || '').split(/\s+/).filter(Boolean).forEach(kv => { const [a, b] = kv.split('=').map(Number); if (a && b) moved[a] = b; });
+    const proc = `http://${location.hostname || 'localhost'}:${moved[8080] || 8080}`;
+    const get = async path => {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
+      try { return await window.fetch(proc + path, { cache: 'no-store', signal: ctl.signal }); } finally { clearTimeout(timer); }
+    };
+    let reason = null;
+    try {
+      const r = await get('/api/process/mode');
+      if (!r.ok) return;
+      const mode = await r.json();
+      if (mode.mode !== 'instance' || mode.agent_bridge !== 'off') return;
+      const w = await get('/api/agents/status');
+      if (!w.ok) return;
+      if ((await w.json()).reachable) return;
+      reason = 'worker';
+    } catch (e) {
+      if (e && e.name === 'SyntaxError') return;   // JSON 이 아닌 답: 판단하지 않는다
+      reason = 'service';
+    }
+    location.replace(new URL(`replay/index.html?from=${reason}`, location.href).href);
+  }
   const MODE = replayId ? 'replay' : 'record';
   const CASE_ID = replayId || recordId;
   if (!/^[a-z0-9][a-z0-9-]{1,80}$/.test(CASE_ID)) { document.addEventListener('DOMContentLoaded', () => fatal(`사례 이름이 올바르지 않습니다: ${CASE_ID}`)); return; }
@@ -67,7 +99,18 @@
   const jsonResponse = (status, obj) => new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 
   /* ------------------------------------------------------------------ 안내 카드 공용(녹화 · 재생) */
+  const PANEL_CSS = `.replay-panel{position:fixed;right:var(--s4,16px);bottom:var(--s4,16px);z-index:1000;width:min(380px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 28px rgba(24,36,59,.18);border-color:var(--warn,#a86b06)}
+.replay-head{display:flex;gap:var(--s2,8px);align-items:center}.replay-head strong{font-size:14px}
+.replay-sub,.replay-meta,.replay-count,.replay-clock{margin:0;color:var(--ink-3,#65748b);font-size:12px}
+.replay-step h3{margin:4px 0;font-size:15px}.replay-step p{margin:0 0 4px}.replay-input{font-weight:600}
+.replay-actions{display:flex;flex-wrap:wrap;gap:var(--s2,8px)}.replay-msg{margin:0;font-size:13px}.replay-msg:empty{display:none}
+.replay-msg.tone-info{color:var(--chip-accent-fg,#184f95);background:var(--chip-accent-bg,#cde2fb);padding:6px 8px;border-radius:var(--radius-sm,8px)}
+.replay-msg.tone-warn{color:var(--chip-warning-fg,#734500);background:var(--chip-warning-bg,#f9dca4);padding:6px 8px;border-radius:var(--radius-sm,8px)}
+.replay-dl{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px;margin:8px 0}.replay-dl dt{color:var(--ink-3,#65748b)}.replay-dl dd{margin:0}
+.replay-panel.collapsed .replay-sub,.replay-panel.collapsed .replay-body{display:none}
+@media (max-width:720px){.replay-panel{left:8px;right:8px;bottom:8px;width:auto;max-height:45vh}}`;
   function panelShell(title, sub) {
+    if (!document.getElementById('replayStyle')) { const st = document.createElement('style'); st.id = 'replayStyle'; st.textContent = PANEL_CSS; document.head.append(st); }
     const box = document.createElement('aside'); box.className = 'replay-panel card'; box.setAttribute('aria-label', '재생 안내');
     box.innerHTML = `<div class="replay-head"><span class="chip tone-warning sm">${MODE === 'replay' ? '재생 모드' : '녹화 모드'}</span><strong>${esc(title)}</strong></div><p class="replay-sub">${esc(sub)}</p>`;
     const body = document.createElement('div'); body.className = 'replay-body';
@@ -134,14 +177,18 @@
       mode: 'record',
       exportRecording: () => ({ ...REC, ended_wall: RealDate.now(), portal_fingerprint: portalFingerprint() }),
     };
+    const download = () => {
+      const blob = new Blob([JSON.stringify(window.hydReplay.exportRecording())], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${CASE_ID}.recording.json`; a.click();
+    };
+    window.hydReplay.save = download;
+    // 실습 영상 촬영과 같은 실행을 녹화할 때(&quiet=1)는 화면에 아무것도 띄우지 않는다. 끝나면 Ctrl+Shift+S 로 녹화 파일을 내려받는다
+    document.addEventListener('keydown', e => { if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); download(); } });
+    if (params.get('quiet') === '1') return;
     document.addEventListener('DOMContentLoaded', () => {
-      const box = panelShell('녹화 중', `사례 ${CASE_ID} · 실제 스택에 붙어 요청과 응답을 기록합니다. 안내서에 적은 행동만 순서대로 하세요.`);
+      const box = panelShell('녹화 중', `사례 ${CASE_ID} · 실제 스택에 붙어 요청과 응답을 기록합니다. 안내서에 적은 행동만 순서대로 하세요. 끝나면 [녹화 저장](또는 Ctrl+Shift+S).`);
       const stat = document.createElement('p'); stat.className = 'replay-meta'; box.body.append(stat);
-      const save = button('녹화 저장', 'primary', () => {
-        const blob = new Blob([JSON.stringify(window.hydReplay.exportRecording())], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${CASE_ID}.recording.json`; a.click();
-      });
-      box.actions.append(save);
+      box.actions.append(button('녹화 저장', 'primary', download));
       setInterval(() => { stat.textContent = `경과 ${Math.round(t() / 1000)}초 · 읽기 ${Object.keys(REC.frames).length}종 · 쓰기 ${REC.writes.length}건`; }, 1000);
     });
     return;
@@ -262,7 +309,14 @@
     if (expected && expected.method === method && expected.key === c.key) {
       let got = null; try { got = text ? JSON.parse(text) : {}; } catch (_) { got = null; }
       if (next.it.match.body && !deepSubset(next.it.match.body, got)) return refuse(`정해진 입력과 다릅니다. 이 사례는 강사가 정한 입력만 받습니다 — ${next.it.input || next.it.title}`);
+      // 자유 글 칸(질문에 대한 답 · 사유 등, 안내서 match.free)은 어떤 글이든 받는다. 다만 이어지는 결과는 강사가 쓴 글로 녹화된 것임을 알린다
+      const free = next.it.match.free || [];
+      if (free.some(f => !String((got || {})[f] ?? '').trim())) return refuse('빈칸이 있습니다. 글을 적은 뒤 다시 누르세요.');
       R.prog.done += 1; R.prog.base = expected.t_res; R.prog.wall = RealDate.now(); R.prog.item = Math.max(R.prog.item, next.i + 1); save(); render();
+      if (free.length) {
+        let said = {}; try { said = JSON.parse(expected.request || '{}'); } catch (_) { /* 녹화 본문이 JSON 이 아니면 원문 없이 알린다 */ }
+        note(`적은 글은 받았습니다. 다만 이어지는 결과는 강사가 쓴 「${free.map(f => said[f] ?? '').join(' / ')}」로 녹화된 것이고, 지금 AI가 내 글을 읽고 답한 것이 아닙니다. 내 글로 직접 해 보려면 실제 실행(본인 키)으로 하세요.`, 'info');
+      }
       return new Response(bodyOf(expected.response), { status: expected.status, headers: { 'Content-Type': 'application/json' } });
     }
     if (writeAllowed(c, method)) {
@@ -271,7 +325,7 @@
       if (w) return new Response(bodyOf(w.response), { status: w.status, headers: { 'Content-Type': 'application/json' } });
     }
     if (!next) return refuse('이 사례의 안내된 행동을 모두 마쳤습니다. 처음부터 다시 하려면 재생 안내의 「처음부터 다시 하기」를 누르세요.');
-    return refuse(`지금 할 행동은 「${next.it.title}」입니다. 안내 순서 밖의 조작은 재생하지 않습니다.`);
+    return refuse(`지금 할 행동은 「${next.it.title}」입니다. 안내 순서 밖의 조작은 녹화에 없어 재생하지 않습니다(바뀐 것 없음). 다른 조작을 직접 해 보려면 실제 실행(본인 키)으로 하세요.`);
   }
 
   window.fetch = async function (input, init = {}) {
@@ -383,7 +437,7 @@
       if (v < c) P.actions.append(button('기다리지 않고 넘기기', '', () => { R.prog.base = c; R.prog.wall = RealDate.now(); R.prog.skipped += 1; save(); render(); }));
       P.actions.append(button(P.box.classList.contains('collapsed') ? '안내 펼치기' : '안내 접기', 'outline', () => { const on = !P.box.classList.contains('collapsed'); P.box.classList.toggle('collapsed', on); store.set('collapsed', on); render(); }));
     }
-    const recent = lastNote && RealDate.now() - lastNote.at < 15000 ? lastNote : null;
+    const recent = lastNote && RealDate.now() - lastNote.at < (lastNote.tone === 'info' ? 60000 : 15000) ? lastNote : null;
     P.msg.textContent = recent ? recent.text : ''; P.msg.className = 'replay-msg' + (recent ? ' tone-' + recent.tone : '');
     const missN = Object.values(R.misses).reduce((a, b) => a + b, 0);
     const lec = R.guide.lecture || {}, cond = R.rec.conditions || {};
@@ -405,17 +459,6 @@
     row.append(button('사례 고르기', 'outline', () => { location.href = new URL('index.html', BASE).href; }));
     return row;
   }
-  const style = document.createElement('style');
-  style.textContent = `.replay-panel{position:fixed;right:var(--s4,16px);bottom:var(--s4,16px);z-index:1000;width:min(380px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 28px rgba(24,36,59,.18);border-color:var(--warn,#a86b06)}
-.replay-head{display:flex;gap:var(--s2,8px);align-items:center}.replay-head strong{font-size:14px}
-.replay-sub,.replay-meta,.replay-count,.replay-clock{margin:0;color:var(--ink-3,#65748b);font-size:12px}
-.replay-step h3{margin:4px 0;font-size:15px}.replay-step p{margin:0 0 4px}.replay-input{font-weight:600}
-.replay-actions{display:flex;flex-wrap:wrap;gap:var(--s2,8px)}.replay-msg{margin:0;font-size:13px}.replay-msg:empty{display:none}
-.replay-msg.tone-warn{color:var(--chip-warning-fg,#734500);background:var(--chip-warning-bg,#f9dca4);padding:6px 8px;border-radius:var(--radius-sm,8px)}
-.replay-dl{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px;margin:8px 0}.replay-dl dt{color:var(--ink-3,#65748b)}.replay-dl dd{margin:0}
-.replay-panel.collapsed .replay-sub,.replay-panel.collapsed .replay-body{display:none}
-@media (max-width:720px){.replay-panel{left:8px;right:8px;bottom:8px;width:auto;max-height:45vh}}`;
-  document.head.append(style);
   window.hydReplay = {
     mode: 'replay', caseId: CASE_ID, ready: () => R.ready, state: () => ({ done: R.prog && R.prog.done, item: R.prog && R.prog.item, vt: R.rec ? vt() : null, blocked: R.blocked.slice(), misses: { ...R.misses }, error: R.error }),
   };

@@ -65,6 +65,12 @@ def main():
     entry = next(c for c in index["cases"] if c["id"] == a.case)
     twin = dict(entry, id=a.case + "-twin", title=entry["title"] + " (시험용 사본)")
     index["cases"].append(twin)
+    # 13번(자유 글 칸): 같은 녹화에 첫 행동의 by(누른 사람 이름)를 자유 글 칸으로 둔 시험용 안내서
+    g = json.loads((site / "replay" / entry["guide"]).read_text(encoding="utf-8"))
+    first = next(i for i in g["items"] if i["kind"] == "action")
+    first["match"]["free"] = ["by"]
+    (site / "replay" / "cases" / "e2e-free.guide.json").write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
+    index["cases"].append(dict(entry, id=a.case + "-free", title=entry["title"] + " (자유 글 칸 시험)", guide="cases/e2e-free.guide.json"))
     (site / "replay" / "cases.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
     guide = json.loads((site / "replay" / entry["guide"]).read_text(encoding="utf-8"))
     rec_path = site / "replay" / entry["recording"]
@@ -233,6 +239,38 @@ def main():
         check(8, "정적 서버 밖 요청 0건(막은 시도는 따로)", not outside and (frame_text is None or "재생 모드" in frame_text),
               {"outside": outside[:10], "blocked_attempts": len(blocked), "blocked_kinds": sorted({x["how"] for x in blocked}),
                "grafana_frame": (frame_text or "확인 못 함")[:80]})
+
+        # 13 자유 글 칸: 어떤 글이든 받고, 이어지는 결과가 강사 글로 녹화된 것임을 알린다
+        pg.goto(base + f"/index.html?replay={a.case}-free")
+        pg.wait_for_function("window.hydReplay && window.hydReplay.state().done === 0")
+        tab("inbox")
+        pg.select_option("[data-inbox-me]", "user:kim-op")
+        pg.wait_for_timeout(1000)
+        tab("scenario")
+        pg.locator('#units .unit[data-asset="HYD-01"] [data-act="degrade"]').click()
+        pg.wait_for_timeout(1500)
+        check(13, "자유 글 칸은 받고 강사 글로 녹화됐음을 알림", st()["done"] == 1 and "강사가 쓴 「김운전」" in msg(), msg())
+
+        # 10 · 11 · 12 키 없는 시작의 기본은 재생(바깥 요청 판정과 섞이지 않게 새 창에서)
+        side = b.new_context(viewport={"width": 1280, "height": 900})
+        sp = side.new_page()
+        if not a.live:
+            sp.goto(base + "/index.html")
+            sp.wait_for_url("**/replay/index.html?from=service", timeout=15000)
+            check(10, "서비스가 없으면 경고와 함께 재생으로", "연결할 수 없습니다" in sp.locator("#fromLive").inner_text(), sp.url)
+        def worker_off(route):
+            path = urlparse(route.request.url).path
+            body = {"mode": "instance", "agent_bridge": "off", "definition": "anomaly_response"} if path == "/api/process/mode" else \
+                   {"reachable": False, "agent_orch": "cliagents", "error": "ConnectionRefusedError"} if path == "/api/agents/status" else None
+            return route.fulfill(status=200, json=body) if body is not None else route.abort()
+        sp.route("http://127.0.0.1:8080/**", worker_off)
+        sp.goto(base + "/index.html")
+        sp.wait_for_url("**/replay/index.html?from=worker", timeout=15000)
+        check(11, "워커 경로인데 키(워커)가 없으면 경고와 함께 재생으로", "AI 키(워커)" in sp.locator("#fromLive").inner_text(), sp.url)
+        sp.locator("#fromLive a").click()
+        sp.wait_for_timeout(5000)
+        check(12, "「그래도 실제 실행으로 열기」는 재생으로 되돌리지 않는다", "/index.html?live=1" in sp.url and "/replay/" not in sp.url and not sp.locator(".replay-panel").count(), sp.url)
+        side.close()
 
         # 9 실제 실행 경로 회귀
         if a.live:

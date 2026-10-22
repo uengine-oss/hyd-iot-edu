@@ -20,11 +20,15 @@ def test_replay_script_loads_before_portal_scripts():
     assert srcs[0] == "replay.js", srcs[:3]
 
 
-def test_replay_is_inert_without_query():
+def test_without_query_only_checks_live_capability():
     js = (rc.WWW / "replay.js").read_text(encoding="utf-8")
-    # 쿼리가 없으면 첫 분기에서 빠져나가 fetch · EventSource · 저장소를 건드리지 않는다
+    # 쿼리가 없으면 실제 실행이 되는지만 확인하고 빠져나간다(키 없으면 재생이 기본). fetch · EventSource · 저장소 · Date 는 바꾸지 않는다
     head = js[: js.index("const MODE")]
-    assert "if (!replayId && !recordId) return;" in head
+    assert "if (!replayId && !recordId) { if (params.get('live') !== '1') defaultToReplay(); return; }" in head
+    for patched in ("window.fetch =", "window.EventSource =", "window.Date =", "defineProperty(window"):
+        assert patched not in head, patched
+    # 실제 실행을 막지 않는 조건: 내장 판단 · 판단 불가는 그대로 둔다
+    assert "mode.agent_bridge !== 'off') return;" in head and "if (!r.ok) return;" in head
 
 
 @pytest.mark.parametrize("case_id", CASES)
