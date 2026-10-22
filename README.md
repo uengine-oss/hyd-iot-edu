@@ -54,10 +54,34 @@ Git·WSL은 준비 시점의 공식 최신 안정판으로 설치·업데이트�
 - **Git:** 명령 프롬프트와 다른 프로그램에서 사용할 수 있는 권장 PATH 옵션을 유지한다. Git Bash도 함께 설치한다.
 - **Node.js:** npm과 PATH가 포함된 기본 구성으로 설치한다.
 - **Python:** 3.14.x 전통 설치기를 사용한다면 `Add python.exe to PATH`를 확인한다. [공식 설치 설명](https://docs.python.org/3.14/using/windows.html#the-full-installer-deprecated). Python Install Manager는 설치 방식과 화면이 다르다.
-- **WSL:** 기존 설치는 `wsl --update`, 미설치 PC는 관리자 터미널에서 `wsl --install --no-distribution`으로 준비한다. 요청된 재부팅을 마친다. 별도의 Ubuntu 배포판은 필수 조건이 아니다.
+- **WSL:** 아래 WSL 준비 절차에 따라 `wsl --version`으로 먼저 확인한다. 별도 Ubuntu는 설치하지 않는다.
 - **Docker Desktop:** WSL 2 옵션이 이미 선택돼 있으면 유지한다. 옵션 화면이 없으면 설치 후 설정에서 확인한다. Linux 컨테이너 엔진이 준비돼야 한다.
 
 설치 후 새 터미널에서 위 확인 명령을 실행한다. 명령을 찾지 못하면 설치 위치와 PATH를 확인한다. `docker --version`의 CLI 버전과 Docker Desktop 앱의 버전은 다르며, 앱 설치 완료와 엔진 실행 상태도 별도로 확인한다.
+
+### WSL 준비 — Ubuntu 없이 Docker 실행 기반 설치
+
+이 프로젝트는 Windows의 Git Bash에서 실행 명령을 사용한다. WSL 2는 Docker Desktop의 Linux 컨테이너 실행 기반으로 필요하지만, 사용자가 작업할 별도의 Ubuntu 배포판은 필요하지 않다. Docker Desktop은 자체 `docker-desktop` 환경을 관리한다. [Docker 공식 설명](https://docs.docker.com/desktop/features/wsl/#enable-docker-in-a-wsl-2-distribution)
+
+PowerShell에서 먼저 확인한다.
+
+```powershell
+wsl --version
+```
+
+버전이 출력되면 WSL이 설치된 상태다. 일부 Windows 환경에서는 WSL 미설치 시 이 명령을 호출했을 때 설치 안내가 나타나고, 안내에 따라 Ubuntu 없이 WSL을 설치할 수 있다. `--version` 자체의 명령 기능은 버전 조회이므로 모든 Windows에서 자동 설치된다고 가정하지 않는다. 설치 안내 없이 미설치 오류가 나오면 관리자 PowerShell에서 다음 명령으로 WSL만 설치한다.
+
+```powershell
+wsl --install --no-distribution
+```
+
+기존 WSL의 업데이트가 필요한 경우에는 다음을 실행한다.
+
+```powershell
+wsl --update
+```
+
+요청된 재부팅을 마친 뒤 버전을 다시 확인한다. **`wsl --install`만 실행하면 기본 Ubuntu까지 설치되므로 이 프로젝트의 준비 명령으로 사용하지 않는다.** Ubuntu 계정·암호 설정도 필요하지 않다. [Microsoft 명령 안내](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands)
 
 ## 프로젝트 받기
 
