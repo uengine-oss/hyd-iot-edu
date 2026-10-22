@@ -47,7 +47,7 @@ function Ensure-WSL {
         }
         $found = Version-Of 'wsl.exe' @('--version')
         $action = Get-InstallAction $found '2.7.12.0'
-        if ($action -eq 'keep') { Record 'WSL' '있음' "$found — 기준 2.7.12.0 이상, 유지"; return }
+        if ($action -eq 'keep') { Record 'WSL' '있음' "WSL $(ConvertTo-InstallVersion $found) — 기준 2.7.12.0 이상, 유지"; return }
         $ErrorActionPreference = 'Continue'
         if ($action -eq 'install') { & wsl.exe --install --no-distribution }
         else { & wsl.exe --update }
@@ -60,6 +60,6 @@ function Ensure-WSL {
             if ($script:restart) { Record 'WSL' '재부팅 후 재확인' '재부팅 후 설치.bat을 다시 실행하세요. 완료 판정 전입니다.'; return }
             throw "WSL 설치 후 기준 미충족: $after"
         }
-        Record 'WSL' '설치/업데이트함' "$after — 기준 이상 확인"
+        Record 'WSL' '설치/업데이트함' "WSL $(ConvertTo-InstallVersion $after) — 기준 이상 확인"
     } catch { Record 'WSL' '실패' $_.Exception.Message }
 }
