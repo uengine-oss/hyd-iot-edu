@@ -10,19 +10,18 @@
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 . (Join-Path $PSScriptRoot 'install_version_policy.ps1')
+. (Join-Path $PSScriptRoot 'install_windows_winget.ps1')
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
 function Stop-WithPause($text) { Say "`n[멈춤] $text" 'Red'; Read-Host '창을 닫으려면 Enter'; exit 1 }
 
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) { Stop-WithPause '관리자 권한이 아닙니다. 설치.bat을 더블클릭해 실행하고, 권한을 묻는 창에서 「예」를 누르세요.' }
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Stop-WithPause 'winget이 없습니다. Microsoft Store에서 「앱 설치 관리자(App Installer)」를 설치하거나 업데이트한 뒤 다시 실행하세요.'
-}
 
 function Refresh-Path {
     $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
 }
+Refresh-Path
 function Version-Of($exe, $arguments) {
     # 명령이 있으면 첫 줄을, 없으면 $null을 돌려준다
     if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { return $null }
@@ -34,9 +33,12 @@ function Version-Of($exe, $arguments) {
     return ($out.ToString() -replace '\x00', '').Trim()
 }
 function Install-Winget($id, $action, $extra = @()) {
+    # Only require winget when a tool actually needs installation or upgrade.
+    # Invoke the resolved executable directly so elevation/PATH refresh cannot lose it.
+    $wingetExecutable = Resolve-WingetExecutable
     Say "  winget $action --id $id" 'Cyan'
     $ErrorActionPreference = 'Continue'
-    & winget $action -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
+    & $wingetExecutable $action -e --id $id --accept-package-agreements --accept-source-agreements --silent @extra
     if ($LASTEXITCODE -in @(1641, 3010)) { $script:restart = $true }
     elseif ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) { throw "winget $action $id 실패(종료 코드 $LASTEXITCODE)" }
     Refresh-Path
@@ -183,3 +185,5 @@ if ($failed.Count) { Say "손이 필요한 항목이 $($failed.Count)개 있습�
 if ($restart) { Say "PC를 다시 시작하세요. 다시 시작한 뒤 Docker Desktop을 한 번 열어 약관에 동의하고, 그다음 시작.bat을 더블클릭합니다." 'Yellow' }
 elseif (-not $failed.Count) { Say "설치 대상 확인이 끝났습니다. Docker Linux 엔진 실행과 실습용 접속 설정을 확인한 뒤 시작.bat을 실행하세요." 'Green' }
 Read-Host '창을 닫으려면 Enter'
+if ($failed.Count) { exit 1 }
+if ($restart) { exit 3010 }
