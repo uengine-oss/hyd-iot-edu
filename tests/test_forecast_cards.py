@@ -99,7 +99,7 @@ def test_consent_budget_grows_with_simulated_time_between_review_and_command(mon
     drifted = _later(old, 15, ts1=1.5, ts1_peak=3.0)
     assert forecasting.consent_changes(old, drifted, time_scale=20) == []
     assert forecasting.consent_changes(old, drifted, time_scale=1) == [
-        '예측 ts1 악화 또는 미확인: 새 카드 검토가 필요합니다', '예측 ts1_peak 악화 또는 미확인: 새 카드 검토가 필요합니다']
+        '예측 유온 악화 또는 미확인: 새 카드 검토가 필요합니다', '예측 최고 유온 악화 또는 미확인: 새 카드 검토가 필요합니다']
     # a change larger than the plant can produce in that simulated time is still a different prediction
     assert forecasting.consent_changes(old, _later(old, 15, ts1=8.0), time_scale=20)
 

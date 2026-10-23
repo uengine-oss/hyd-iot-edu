@@ -189,7 +189,7 @@ def test_lost_enterprise_reply_retries_same_intent_without_duplicate_operation(w
 def test_wrong_incident_decision_cannot_be_approved(world):
     rt, inst, inc, d, wi = ready(world)
     d['origin']['incident'] = 'another-incident'
-    with pytest.raises(ValueError, match='incident|인시던트'):
+    with pytest.raises(ValueError, match='incident|인시던트|사건|경보'):
         choose(rt, d, wi)
     assert d['state'] == 'PENDING_APPROVAL' and inc.cmd_id is None
 
@@ -259,7 +259,7 @@ def test_invalid_command_does_not_consume_approval(world):
 def test_closed_incident_cannot_consume_approval(world):
     rt, inst, inc, d, wi = ready(world)
     inc.state = 'RESOLVED_WITHOUT_ACTION'
-    with pytest.raises(ValueError, match='incident|인시던트'):
+    with pytest.raises(ValueError, match='incident|인시던트|사건|경보'):
         choose(rt, d, wi)
     assert d['state'] == 'PENDING_APPROVAL' and inc.cmd_id is None
 

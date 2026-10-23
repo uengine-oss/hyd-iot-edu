@@ -410,8 +410,14 @@ class ServicePartsRuntime:
                 "passed", "received", "decision_id", "approval", "approval_reason", "approved_option")   # 끝 셋: 캡스톤 G1 사람 승인(안 고르기)
         # C3: 재관측으로 판정한 흐름(A)은 사건의 회복 기준 태그 최신값을 결과 보고 시점에 읽어 측정값으로 싣는다. 재관측 task 의 출력 계약
         # (recovered 하나)은 배포된 정의가 정하므로 바꾸지 않는다 — 결과 보고는 재관측 바로 뒤라 같은 값을 본다.
+        # P5 (audit2): 명령 거절 · ACK 시간 초과 · 재시작으로 ESCALATED 된 사건은 재관측 미달이 아니다 — 흐름의 보고 틀(예: '재관측 기준 미달')
+        # 대신 실제 사유를 요약으로 싣고, 틀 문구는 template_summary 로 남긴다. 명령이 실행되지 않았으면 재관측 측정값도 붙이지 않는다.
+        cause = incident_def.escalation_cause(v.get("incident_reason")) if v.get("incident_outcome") == "ESCALATED" else None
+        if cause:
+            template_summary, summary = summary, cause[0]
         measured = dict(v)
-        if v.get("recovered") is not None and v.get("incident") and self.hooks.recovery_reading is not None and "reobservation" not in v:
+        if (v.get("recovered") is not None and v.get("incident") and self.hooks.recovery_reading is not None and "reobservation" not in v
+                and (cause is None or cause[1])):
             try:
                 reading = self.hooks.recovery_reading(v["incident"])
             except Exception:  # noqa: BLE001 — 측정값은 보조 정보, 읽기 실패로 결과 보고를 막지 않는다
@@ -424,6 +430,10 @@ class ServicePartsRuntime:
                   "facts": {k: v.get(k) for k in keep if v.get(k) is not None},
                   "refs": {k: (v.get(k) or {}).get("ref") for k in ("work_order", "purchase_order", "goods_receipt", "mcp_receipt")
                            if isinstance(v.get(k), dict) and (v.get(k) or {}).get("ref")}}
+        if cause:
+            report["cause"] = {"incident_state": "ESCALATED", "reason": v.get("incident_reason"), "text": cause[0], "reobserved": cause[1]}
+            report["template_summary"] = template_summary
+            report["facts"]["incident_reason"] = v.get("incident_reason")
         closed = False
         if level != "info" and v.get("incident") and self.hooks.close_incident_result is not None:
             # 반려는 사건의 사유(on_reject 의 reason 과 같은 자리)가 곧 사람이 적은 반려 사유다 — 요약(사유 틀)을 함께 싣는다

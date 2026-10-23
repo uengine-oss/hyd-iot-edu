@@ -54,7 +54,7 @@
       const body = `<p class="kv-line">${esc(UI.t('case'))} ${UI.chip(d.incident.state)} · ${esc(UI.t('command'))} ${esc(d.incident.cmdId || '없음')}</p>
         ${rows ? `<table class="inst-table"><thead><tr><th></th><th>종류</th><th>내용</th><th>처리 방법</th><th>상태</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">기록된 외부 효과가 없습니다.</p>'}
         <div class="form"><section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">
-          ${UI.field({ label: UI.t('form.by'), required: true, input: `<input id="efBy" value="${esc(s.by)}" ${s.busy ? 'disabled' : ''}>` })}
+          ${UI.field({ label: UI.t('form.by'), required: true, input: UI.actorInput('id="efBy"', s.by, s.busy ? 'disabled' : '') })}
           ${UI.field({ label: UI.t('form.role'), required: true, input: `<select id="efRole" ${s.busy ? 'disabled' : ''}><option value="">${esc(UI.t('form.pickRole'))}</option>${(d.review_roles || []).map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` })}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="efReason" rows="2" ${s.busy ? 'disabled' : ''}>${esc(s.reason)}</textarea>` })}
         </div></section>
@@ -76,7 +76,7 @@
       if (s.busy) return;
       if (!s.pending) {
         if (!s.by.trim() || !s.role || !s.reason.trim()) { s.error = UI.t('form.err.byRoleReason'); draw(); return; }
-        s.pending = { kind, body: { request_id: crypto.randomUUID(), by: s.by, role: s.role, reason: s.reason, effects } };
+        s.pending = { kind, body: { request_id: UI.uuid(), by: s.by, role: s.role, reason: s.reason, effects } };
         try { sessionStorage.setItem(key(id), JSON.stringify(s.pending)); } catch (_) { /* Retain exact request in memory. */ }
       }
       ({ kind } = s.pending);

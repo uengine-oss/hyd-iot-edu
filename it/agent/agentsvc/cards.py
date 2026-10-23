@@ -275,18 +275,24 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     options = []
     for sid in cand_ids:
         k = skills[sid]
+        unresolved = None
         if k.get('supplier_policy'):
-            from hydcommon.skill_scope import resolve_supplier
-            k = resolve_supplier(k, base_facts)
+            from hydcommon.skill_scope import SupplierUnresolved, resolve_supplier
+            try:
+                k = resolve_supplier(k, base_facts)
+            except SupplierUnresolved as exc:
+                # this policy names no real supplier for the Part: only this card is impossible (no cost, no supplier substituted)
+                unresolved = {'rule': 'execution:supplier-policy', 'effect': 'EXCLUDE', 'annotation': str(exc),
+                              'sources': [k['source_id']] if k.get('source_id') else []}
         economic = None
-        if k.get('scope') == 'purchase' and (k.get('purchase_comparison_policy') is not None or
+        if unresolved is None and k.get('scope') == 'purchase' and (k.get('purchase_comparison_policy') is not None or
                 (base_facts.get('purchase_part') and evaluation_mode == 'execution')):
             from hydcommon.purchase_comparison import compare
             economic = compare(k, base_facts)
         cf = candidate_facts(base_facts, k, forecasts, suppliers)
-        violations, penalties, warnings = [], [], []
+        violations, penalties, warnings = ([unresolved] if unresolved else []), [], []
         forecast_context = (forecast_contexts or {}).get(sid)
-        if forecast_contexts is not None and economic is None:
+        if forecast_contexts is not None and economic is None and unresolved is None:
             if not forecast_context or forecast_context.get('error'):
                 violations.append({'rule':'forecast:model-unavailable', 'effect':'EXCLUDE',
                     'annotation':'현재 조치 예측을 확인할 수 없습니다: ' + str((forecast_context or {}).get('error', 'missing forecast')),
@@ -295,7 +301,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
                 violations.append({'rule':'forecast:predicted-interlock', 'effect':'EXCLUDE',
                     'annotation':'예측 구간의 PLC 인터록: ' + ', '.join(forecast_context['predicted_interlocks']),
                     'sources':[forecast_context['model_id']]})
-        for r in tables.get("dec:compliance", []):
+        for r in ([] if unresolved else tables.get("dec:compliance", [])):     # no supplier: every supplier rule would be unknown
             if not compliance_applies(r, k):
                 continue
             fired, unknown = rule_fires(r, cf)
@@ -346,9 +352,16 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
                     o['maintenanceDiagnostics']=exc.diagnostics
                 o['violations'].append(dict(rule='execution:pm-plan',effect='EXCLUDE',annotation=str(exc),sources=[k['source_id']] if k.get('source_id') else []))
                 o['feasible'] = False
-        if forecast_contexts is not None and economic is None:
+        if forecast_contexts is not None and economic is None and unresolved is None:
             o['forecastContext'] = forecast_context
         o['policy_sha256'] = policy_digest(dmn, k)
+        if unresolved is not None:
+            # no supplier, so no quote and no cost to rank by; the card stays visible as an excluded alternative
+            o['rankingEvidence'] = {'rule': None, 'policy': None, 'policy_sha256': None, 'gains': o['gains'], 'losses': o['losses'],
+                                    'paths': bsc.consent_paths(paths), 'conditionMode': '공급사 미확정 — 순위 계산 대상 아님'}
+            o.update(score=None, scoreParts={}, supplierUnresolved=True)
+            options.append(o)
+            continue
         if economic is None:
             rank_rule, policy = rank_policy(tables.get('dec:rank-actions', []), cf)
         else:
@@ -367,10 +380,11 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             o.update(score_option(o, base_facts, policy))
         options.append(o)
     compared = [o['economicComparison']['policy'] for o in options if o.get('economicComparison')]
-    if compared and (len(compared) != len(options) or any(x != compared[0] for x in compared[1:])):
+    priced = [o for o in options if not o.get('supplierUnresolved')]
+    if compared and (len(compared) != len(priced) or any(x != compared[0] for x in compared[1:])):
         raise ValueError('구매 후보 전체에 동일한 검토 원문 총비용 비교 정책이 필요합니다')
     lvl = lambda o: (o.get("approver") or {}).get("level") or 9
-    options.sort(key=lambda o: (not o["feasible"], -o["score"], lvl(o)))
+    options.sort(key=lambda o: (not o["feasible"], o["score"] is None, -(o["score"] or 0), lvl(o)))
     for i, o in enumerate(options):
         o["rank"] = i + 1
     rec = next((o for o in options if o["feasible"]), None)

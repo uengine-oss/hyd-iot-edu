@@ -166,10 +166,23 @@ def purchase_order(ref: str):
     return _read("ERP", "purchase_order", ref=ref)
 
 
+def _scenario_reset(fn, arg):
+    """B · C [초기화]가 다른 시나리오가 잡은 수량 때문에 되돌릴 수 없으면(예: B 오더가 시작값보다 많이 출고) 이유를 그대로 409 로 낸다 —
+    두 백엔드 모두 'INVALID:' 로 시작하는 거절이다(2026-10-23 점검 E1 · E2 · E3)."""
+    try:
+        return fn(arg)
+    except Exception as e:  # noqa: BLE001 — 메모리 ValueError · 업무 DB 22023
+        msg = str(e).splitlines()[0] if str(e) else type(e).__name__
+        if msg.startswith("INVALID:"):
+            raise HTTPException(409, msg[:300])
+        raise
+
+
 @app.post("/erp/spare/reset")
 def reset_spare(body: dict | None = None):
-    """수업 초기화(포털 [초기화] → process /api/scenario/C/reset): 예비품 재고를 기준값으로. body = {part_no} (없으면 전부)."""
-    return ent.reset_spare_stock((body or {}).get("part_no"))
+    """수업 초기화(포털 [초기화] → process /api/scenario/C/reset): 그 부품의 열린 발주를 닫고 재고를 기준값으로 — 진행 중 정기 정비
+    오더가 잡은 수량은 남긴다. body = {part_no} (없으면 전부)."""
+    return _scenario_reset(ent.reset_spare_stock, (body or {}).get("part_no"))
 
 
 @app.get("/cmms/pm_status")
@@ -181,7 +194,7 @@ def pm_status(asset: str | None = Query(default=None)):
 @app.post("/cmms/pm/reset")
 def pm_reset(body: dict | None = None):
     """수업 초기화(포털 [초기화] → process /api/scenario/B/reset): 운전시간 계수기 · 이번 회차 오더 표시를 수업 시작값으로. body = {asset} (없으면 전부)."""
-    return ent.reset_pm_counters((body or {}).get("asset"))
+    return _scenario_reset(ent.reset_pm_counters, (body or {}).get("asset"))
 
 
 @app.post("/api/exec")

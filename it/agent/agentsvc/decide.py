@@ -96,7 +96,9 @@ def submit(payload: dict) -> dict:
             detail = json.loads(body).get("detail", body)
         except ValueError:
             detail = body
-        raise SubmitRefused(f"process 가 판단 등록을 거절했습니다 (HTTP {e.code}): {detail}"[:600]) from e
+        refused = SubmitRefused(f"process 가 판단 등록을 거절했습니다 (HTTP {e.code}): {detail}"[:600])
+        refused.status = e.code
+        raise refused from e
 
 
 def source_time(response: dict, asset: str) -> dict:
@@ -345,8 +347,11 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
         if purchase_part is not None:
             for skill in skills.values():
                 if skill.get('supplier_policy'):
-                    from hydcommon.skill_scope import resolve_supplier
-                    resolve_supplier(skill, facts)
+                    from hydcommon.skill_scope import SupplierUnresolved, resolve_supplier
+                    try:
+                        resolve_supplier(skill, facts)
+                    except SupplierUnresolved:
+                        pass        # that card alone is impossible; cards.evaluate records why
                     continue
                 supplier = skill['actions'][0].get('value')
                 quote = (facts.get('spare_quotes') or {}).get(supplier)
@@ -400,7 +405,15 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
                        "rankRule": result.get("rankRule"), "roles": roles, "facts": facts,
                        "evaluation_mode": result['evaluation_mode'], "execution_checked": result['execution_checked'],
                        "provenance": prov, "applicable": True}
-            res = submit(payload)
+            try:
+                res = submit(payload)
+            except SubmitRefused as exc:
+                # the process looked at the cards and said no (scope · state · duplicate id): its reason is the failure
+                rec['error_code'], rec['submit_status'] = 'SUBMIT_REFUSED', getattr(exc, 'status', None)
+                raise
+            except Exception:
+                rec['error_code'] = 'SUBMIT_FAILED'      # unreachable process, timeout, unreadable reply
+                raise
             registry.submitted(rec, decision_id)
             step("submit", res, "process API에 조치 카드 제출 (에이전트의 유일한 쓰기) — 실행은 사람이 고른 뒤 L9가 한다")
             rec["status"] = "SUBMITTED"

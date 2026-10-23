@@ -80,7 +80,7 @@
           <div class="field"><label>&nbsp;</label><button class="btn outline" id="rwPreview" ${locked}>${esc(UI.t('btn.effects'))}</button></div></div></section>
         ${detail}
         <section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">
-          ${UI.field({ label: UI.t('form.by'), required: true, input: `<input id="rwBy" value="${esc(s.by)}" ${locked}>` })}
+          ${UI.field({ label: UI.t('form.by'), required: true, input: UI.actorInput('id="rwBy"', s.by, locked) })}
           ${UI.field({ label: UI.t('form.role'), required: true, input: `<select id="rwRole" ${locked}><option value="">${p ? esc(UI.t('form.pickRole')) : '영향 확인 후 선택'}</option>${(p?.request_roles || (s.role ? [s.role] : [])).map(r => `<option value="${esc(r)}" ${r === s.role ? 'selected' : ''}>${esc(roleName(r))}</option>`).join('')}</select>` })}
           ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', input: `<textarea id="rwReason" rows="2" ${locked}>${esc(s.reason)}</textarea>` })}
         </div></section>
@@ -118,7 +118,7 @@
     }
     async function send() {
       if (!s.pending) {
-        s.pending = { workitem_id: s.workitem, request_id: crypto.randomUUID(), snapshot_token: s.preview.snapshot_token,
+        s.pending = { workitem_id: s.workitem, request_id: UI.uuid(), snapshot_token: s.preview.snapshot_token,
                       by: s.by.trim(), role: s.role, reason: s.reason.trim() };
         try { sessionStorage.setItem(key(id), JSON.stringify(s.pending)); } catch (_) { /* Retain exact request in memory. */ }
       }

@@ -381,7 +381,7 @@
       UI.readonly(UI.t('td.recommended'), rec ? `<span class="kv">${esc(optionName(rec))}</span>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
       UI.readonly(UI.t('td.chosen'), chosen ? `<span class="kv">${esc(optionName(chosen))}</span>${kindChip((w.output || {}).chosen_skill_kind || (w.status === 'DONE' ? current.chosen_skill_kind : ''))}${recId && chosen.id !== recId ? ' ' + UI.chipText(UI.t('td.differs'), 'warning') : ''}` : timeout ? `<span class="neg">${esc(UI.t('td.timeout'))}</span>` : `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
       UI.readonly(UI.t('td.reason'), esc(p.reason || (d && d.reason) || (w.status === 'DONE' ? current.note : '') || '') || `<span class="muted">${esc(UI.t('inst.noValue'))}</span>`),
-      UI.readonly(UI.t('td.approver'), esc(p.by || (d && d.approvedBy) || (w.status === 'DONE' ? current.approved_by : '') || '–') + ((p.role || (d && d.approvedRole)) ? ` (${esc(UI.who(p.role || d.approvedRole))})` : '')),
+      UI.readonly(UI.t('td.approver'), esc(UI.who(p.by || (d && d.approvedBy) || (w.status === 'DONE' ? current.approved_by : '') || '–')) + ((p.role || (d && d.approvedRole)) ? ` (${esc(UI.who(p.role || d.approvedRole))})` : '')),
       waitRow(w),
       d ? UI.readonly(UI.t('td.decState'), UI.chip(d.state)) : '',
       approval ? UI.readonly(UI.t('td.delivery'), `${UI.chip(approval.status)} <span class="muted">· ${esc(approval.attempts)}회 시도</span>${approval.error ? `<p class="neg">${esc(approval.error)}</p>` : ''}`) : '',

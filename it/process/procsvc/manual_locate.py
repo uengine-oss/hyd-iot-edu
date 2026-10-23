@@ -80,12 +80,35 @@ def _loose(text: str, quote: str) -> list[tuple[int, int]]:
     return out
 
 
-def locate(pages: dict[int, str], anchor: dict, within: tuple[int, int, int] | None = None) -> dict:
+Span = tuple[tuple[int, int], tuple[int, int]]
+
+
+def _span(within) -> Span | None:
+    """within as ((page, start), (page, end)) in document order; the pre-I1 one-page form (page, start, end) still reads."""
+    if within is None:
+        return None
+    if len(within) == 3:
+        page, start, end = within
+        return (page, start), (page, end)
+    return tuple(within[0]), tuple(within[1])
+
+
+def _inside(hit: tuple[int, int, int], span: Span) -> bool:
+    page, start, end = hit
+    return span[0] <= (page, start) and (page, end) <= span[1]
+
+
+def locate(pages: dict[int, str], anchor: dict, within=None) -> dict:
     """pages: {page: text}. anchor: {page?, start?, end?, quote}. Returns {page, start, end, quote} with the quote taken
     from the source text; raises ValueError (Ambiguous when several places match) with a message for the agent.
-    within: (page, start, end) of the block the quote belongs to (a procedure's steps lie in that procedure's block). When the
-    quote matches several places and exactly one lies inside that block, it is that one — 2026-10-23 리허설: 세 절차에 같은 단계
-    문장(「1. PLC 운전 모드가 REMOTE_AUTO인지 확인한다.」)이 있어 HM-8 추출이 세 번 다 거부됐다. 단계 한 줄은 더 길게 인용할 수 없다."""
+    within: the block the quote belongs to (a procedure's steps lie in that procedure's block), ((page, start), (page, end))
+    in document order — it may run over several pages (I1, 2026-10-23 검수: a PDF procedure whose title ends one page and whose
+    steps start the next) — or the one-page form (page, start, end). When the quote matches several places and exactly one
+    lies inside that block, it is that one — 2026-10-23 리허설: 세 절차에 같은 단계 문장(「1. PLC 운전 모드가 REMOTE_AUTO인지
+    확인한다.」)이 있어 HM-8 추출이 세 번 다 거부됐다. 단계 한 줄은 더 길게 인용할 수 없다.
+    I2 (같은 검수): a pass whose only hits lie outside the block does not settle the place — the same letters ignoring
+    whitespace (a PDF line break inside this procedure's copy of the sentence) are tried inside the block first. The loose
+    pass is not: other words in between may be another sentence, so then the outside hit stands as before."""
     quote = anchor.get('quote')
     if not isinstance(quote, str) or not quote.strip():
         raise ValueError('원문 인용 문자열(quote)이 필요합니다')
@@ -95,8 +118,20 @@ def locate(pages: dict[int, str], anchor: dict, within: tuple[int, int, int] | N
     if page is not None and type(start) is int and type(end) is int and 0 <= start < end <= len(pages[page]) \
             and pages[page][start:end] == quote:
         return {'page': page, 'start': start, 'end': end, 'quote': quote}
+    span = _span(within)
     candidates = [page] if page is not None else sorted(pages)
+
+    def settle(hits, how):
+        if len(hits) > 1:
+            where = ', '.join(f'페이지 {p} {s}~{e}' for p, s, e in hits[:5])
+            raise Ambiguous(f'원문 인용이 {len(hits)}곳에 있어 한 곳을 정할 수 없습니다 ({where}). 앞뒤를 더 붙인 긴 인용으로 한 곳을 특정하세요: {quote[:60]!r}')
+        p, s, e = hits[0]
+        return {'page': p, 'start': s, 'end': e, 'quote': pages[p][s:e], 'located': how}
+
+    outside = None
     for finder, how in ((_exact, 'exact'), (_squashed, 'normalized'), (_loose, 'loose')):
+        if outside is not None and how == 'loose':
+            break
         hits = [(p, s, e) for p in candidates for s, e in finder(pages[p], quote)]
         if not hits:
             continue
@@ -104,14 +139,14 @@ def locate(pages: dict[int, str], anchor: dict, within: tuple[int, int, int] | N
             exact_given = [h for h in hits if h[1] == start]
             if len(exact_given) == 1:
                 hits = exact_given
-        if len(hits) > 1 and within is not None:
-            inside = [h for h in hits if h[0] == within[0] and within[1] <= h[1] and h[2] <= within[2]]
-            if len(inside) == 1:
-                hits = inside
-        if len(hits) > 1:
-            where = ', '.join(f'페이지 {p} {s}~{e}' for p, s, e in hits[:5])
-            raise Ambiguous(f'원문 인용이 {len(hits)}곳에 있어 한 곳을 정할 수 없습니다 ({where}). 앞뒤를 더 붙인 긴 인용으로 한 곳을 특정하세요: {quote[:60]!r}')
-        p, s, e = hits[0]
-        return {'page': p, 'start': s, 'end': e, 'quote': pages[p][s:e], 'located': how}
+        if span is not None:
+            inside = [h for h in hits if _inside(h, span)]
+            if inside:
+                return settle(inside, how)
+            outside = outside or (hits, how)
+            continue
+        return settle(hits, how)
+    if outside is not None:
+        return settle(*outside)
     scope = f'페이지 {page}' if page is not None else '전체 페이지'
     raise ValueError(f'원문 인용 문자열을 {scope}에서 찾지 못했습니다 (글자·숫자만 비교해도 없음): quote={quote[:60]!r}')

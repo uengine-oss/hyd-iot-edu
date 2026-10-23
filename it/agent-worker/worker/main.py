@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import signal
 import subprocess
 import threading
 import time
@@ -109,8 +110,33 @@ def sweep_forever() -> None:
         time.sleep(_SWEEP_INTERVAL_S)
 
 
+def install_stop_signals() -> list[str]:
+    """W1 (2026-10-23 검수): `pkill -f worker.main` (SIGTERM) or a closed terminal (SIGHUP) used to end the worker without
+    running any `finally`, so on macOS · Linux the CLI's process group (start_new_session) lived on, kept calling tools
+    and wrote output/result.json into the workspace. Both now unwind like Ctrl+C (SIGINT → KeyboardInterrupt): the run's
+    `finally` kills its process group (process_control.controlled_stream). A second signal while unwinding is ignored so
+    the teardown is not cut short. Windows keeps its job object (KILL_ON_JOB_CLOSE). Main thread only."""
+    installed = []
+
+    def stop(signum, _frame):
+        for name in ("SIGTERM", "SIGHUP"):
+            sig = getattr(signal, name, None)
+            if sig is not None:
+                signal.signal(sig, signal.SIG_IGN)
+        log.info("stop signal %s: ending the current run and its CLI process group", signal.Signals(signum).name)
+        raise SystemExit(128 + signum)
+
+    for name in ("SIGTERM", "SIGHUP"):
+        sig = getattr(signal, name, None)
+        if sig is not None:
+            signal.signal(sig, stop)
+            installed.append(name)
+    return installed
+
+
 def main() -> None:
     global _runner
+    install_stop_signals()
     threading.Thread(target=serve_http, daemon=True).start()
     threading.Thread(target=sweep_forever, daemon=True).start()
     _runner = Runner(settings, _repo())

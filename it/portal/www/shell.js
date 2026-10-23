@@ -131,9 +131,10 @@
     const badge = document.getElementById('shellBadge'), bell = document.getElementById('shellBell');
     if (!badge || !bell) return;
     const H = window.hydInbox;
-    if (!H || typeof H.badge !== 'function') { badge.hidden = true; bell.setAttribute('aria-label', UI.t('shell.bell')); bell.title = UI.t('shell.bell'); return; }
+    // hydInbox.unread() = 안 읽은 알림 수(숫자). badge() 는 단추 요소를 새로 만드는 함수라 여기서 부르지 않는다(5초마다 요소가 쌓였다)
+    if (!H || typeof H.unread !== 'function') { badge.hidden = true; bell.setAttribute('aria-label', UI.t('shell.bell')); bell.title = UI.t('shell.bell'); return; }
     try {
-      const n = Math.max(0, Number(await H.badge()) || 0);
+      const n = Math.max(0, Number(await H.unread()) || 0);
       badge.hidden = n === 0;
       badge.textContent = n > 99 ? '99+' : String(n);
       const label = n ? UI.t('shell.bellCount', { n }) : UI.t('shell.bell');

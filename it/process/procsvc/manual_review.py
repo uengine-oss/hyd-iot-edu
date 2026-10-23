@@ -79,7 +79,8 @@ def proposal(source, failure_modes=()):
             'filename': source['filename'], 'batch': str(uuid4()), 'previous_batch': None,
             'method': 'structured-lines-v2', 'status': source['status'],
             'chars': sum(len(p['text']) for p in source['pages']),
-            'sections': sections, 'procedures': procedures, 'warnings': warnings}
+            'sections': sections, 'procedures': procedures, 'warnings': warnings,
+            **({'text_missing_pages': list(source['text_missing_pages'])} if source.get('text_missing_pages') else {})}
 
 
 AFFECTS_MAX = 10
@@ -119,8 +120,8 @@ def validate(archive, tenant, body):
     if body.get('review_method') is not None and body['review_method'] not in ('human-reviewed', 'user-delegated-ai-review'):
         raise ValueError('검토 수행 방식(review_method)이 지원 계약과 다릅니다')
     source = archive.get(tenant, body.get('source_id'))
-    if source['status'] != 'READY':
-        raise ValueError('텍스트가 없는 페이지를 먼저 검토/OCR해야 합니다. 부분 문서를 적재하지 않습니다')
+    if source['status'] != 'READY':      # P13: only a document with no text at all (manual_sources.status_of)
+        raise ValueError('이 PDF는 모든 페이지에 텍스트가 없어 적재할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요')
     try:
         batch = str(UUID(body['batch']))
     except (KeyError, ValueError, TypeError, AttributeError) as exc:

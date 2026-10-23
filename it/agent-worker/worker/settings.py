@@ -107,6 +107,9 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
+    # W3 (2026-10-23 검수): how long the business DB may stay unreachable during a run (cancel check · lease renewal · progress
+    # rows) before the run stops with that reason. Below the 120 s lease, so the run ends before another worker may reclaim it.
+    db_outage_limit_s: float = float(os.getenv("DB_OUTAGE_LIMIT_S", "90"))
 
     @property
     def retention_seconds(self) -> int:

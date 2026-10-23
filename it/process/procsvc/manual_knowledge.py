@@ -84,9 +84,11 @@ def _sign(value, name):
 
 
 def _skill_ref(value, sops, name):
-    """A rule/WO value pointing at a skill: an SOP id of this document, or an existing skill id from the catalog."""
+    """A rule/WO value pointing at a skill: an SOP id of this document, or an existing skill id from the catalog.
+    sops=None: one segment of a long document is being checked (I3, 2026-10-23 검수) — the SOP may be extracted by another
+    segment, so its existence is checked on the merged whole-document proposal (manual_segments.merge · validate_proposal)."""
     if isinstance(value, str) and SOP_RE.fullmatch(value):
-        if value not in sops:
+        if sops is not None and value not in sops:
             raise ValueError(f'{name}: {value}는 이 문서의 SOP가 아닙니다. 다른 문서의 스킬은 skill:… id로 가리키세요')
         return value
     return _ref(value, 'skill', name)

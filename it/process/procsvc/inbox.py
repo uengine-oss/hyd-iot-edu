@@ -190,7 +190,7 @@ def inbox_view(rt, user_id: str, now=None) -> dict:
     my_roles = roles_of(repo, tenant, user_id)
     mine = set(my_roles) | {user_id}
     instances = {i["proc_inst_id"]: i for i in repo.list_instances(status="RUNNING", limit=500, tenant_id=tenant)}
-    rows = repo.list_workitems(status="IN_PROGRESS", limit=500, tenant_id=tenant)
+    rows = repo.list_workitems(status="IN_PROGRESS", limit=500, tenant_id=tenant, newest=True)   # P4: 넘치면 오래된 행을 뺀다(처리 건 목록도 최신 500)
     tasks, asked, unassigned = [], [], {}
     timers: dict[str, list[dict]] = {}
     for w in rows:

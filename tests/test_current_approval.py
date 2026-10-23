@@ -63,7 +63,7 @@ def test_plant_command_still_rejects_changed_simulator_inputs(context, monkeypat
     _, _, decision = context
     next(o for o in decision['options'] if o['id'] == 'skill:mix')['forecastContext']['inputs']['cooler_health'] = -123
     report = assess(context)
-    assert not report['allowed'] and any('cooler_health' in r for r in report['reasons'])
+    assert not report['allowed'] and '예측 입력 쿨러 상태 변경: 새 카드 검토가 필요합니다' in report['reasons']
 
 
 def test_bsc_change_requires_new_review_even_with_same_actions(context):

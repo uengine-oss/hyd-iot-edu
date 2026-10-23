@@ -8,7 +8,7 @@
          window.hydInbox.me() · whoFields(prefix, form, roles) · byField(prefix, form) — 승인·제출 폼의 승인자 칸. */
 (function () {
   const KEY = 'hyd.me';
-  const X = { people: null, board: null, box: null, notes: [], tab: 'tasks', meId: null, es: null, live: 'off', err: '', mounts: [], badges: [], loading: false, timer: null };
+  const X = { people: null, board: null, box: null, notes: [], tab: 'tasks', meId: null, es: null, live: 'off', err: '', mounts: [], badges: [], meBoxes: [], loading: false, timer: null };
   try { X.meId = localStorage.getItem(KEY); } catch (e) { X.meId = null; }
 
   const roleName = id => UI.who(id);
@@ -181,8 +181,27 @@
     renderBadges();
     return b;
   }
+  // 상단바 「나」 자리(shell.js #shellMe): 고른 사람 이름 또는 「선택 안 함」 — 누르면 내 작업함
+  function mountMe(box) {
+    if (!box) return;
+    if (!X.meBoxes.includes(box)) X.meBoxes.push(box);
+    if (!box.dataset.meWired) {
+      box.dataset.meWired = '1'; box.setAttribute('role', 'button'); box.tabIndex = 0;
+      const open = () => { if (location.hash === '#/inbox') selectTab('inbox'); else location.hash = '#/inbox'; };
+      box.addEventListener('click', open);
+      box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    }
+    renderBadges();
+  }
+  const unread = () => (me() && X.box && X.box.unread) || 0;   // 상단 종(shell.js)이 읽는 안 읽은 알림 수(숫자)
   function renderBadges() {
     const m = me(), unread = (X.box && X.box.unread) || 0;
+    X.meBoxes = X.meBoxes.filter(b => b.isConnected);
+    X.meBoxes.forEach(b => {
+      b.innerHTML = `${UI.icon ? UI.icon('user') : ''}<span class="shell-me-label">${esc(UI.t('shell.me'))} <b>${esc(m ? m.name : UI.t('shell.meNone'))}</b></span>`;
+      b.title = m ? `나: ${m.name} — 내 작업함 열기` : '내 작업함에서 나를 고릅니다';
+    });
+    if (X.lastUnread !== (m ? unread : 0)) { X.lastUnread = m ? unread : 0; window.dispatchEvent(new Event('hyd:badge')); }   // 종 숫자를 바로 갱신
     X.badges.forEach(b => {
       b.innerHTML = m ? `${esc(m.name)}${unread ? ` <span class="chip tone-accent sm">알림 ${unread}</span>` : ''}` : '나 고르기';
       b.title = m ? `나: ${m.name} · 안 읽은 알림 ${unread}건 — 내 작업함 열기` : '나를 골라 내 작업함과 알림을 받습니다';
@@ -216,7 +235,7 @@
     return UI.readonly(UI.t('form.by'), `${esc(m.name)} <span class="muted">(나)</span>`);
   }
 
-  window.hydInbox = { mount, badge, me, whoFields, byField, refresh, X };
+  window.hydInbox = { mount, badge, mountMe, unread, me, whoFields, byField, refresh, X };
 
   // 목록 행은 <a>(주소 복사·새 탭 가능) — 링크 색 대신 기존 목록 행 모양을 쓴다
   const style = el('style', null, '.inbox-body a.item{display:block;color:inherit;text-decoration:none}.inbox-body a.item.unread strong{font-weight:700}.inbox-body a.item:not(.unread){opacity:.78}.inbox-badge{white-space:nowrap}');
