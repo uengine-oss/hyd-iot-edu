@@ -113,7 +113,7 @@ def sweep_forever() -> None:
 
 def _ai_login() -> bool | None:
     """AI_MODE=auto: 이 워커가 AI를 부를 수 있나. 키 환경 변수가 있으면 예, 선택한 CLI가 없거나 로그인이 없다고 답하면 아니요,
-    확인할 수 없으면 None(그때는 실제 실행을 막지 않는다)."""
+    확인할 수 없으면 None(그때는 재생으로 켜진다 — 키가 확인될 때만 실제 AI)."""
     if settings.cli_agent == "claude-code" and settings.isolate_config_dir:          # ANTHROPIC_API_KEY 로 인증
         return True
     if settings.cli_agent == "codex" and settings.codex_model_provider_base_url and os.getenv(settings.codex_model_provider_env_key):

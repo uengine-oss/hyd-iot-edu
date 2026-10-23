@@ -181,9 +181,9 @@ def test_result_file_is_saved_and_restored(tmp_path):
     assert row["output"]["cause"] == "cause:cooler-fin-fouling"
 
 
-@pytest.mark.parametrize("mode,login,expected", [("auto", False, "replay"), ("auto", None, "live"), ("auto", True, "live"),
+@pytest.mark.parametrize("mode,login,expected", [("auto", False, "replay"), ("auto", None, "replay"), ("auto", True, "live"),
                                                  ("replay", True, "replay"), ("live", False, "live"), ("record", False, "record")])
-def test_mode_resolution_switches_to_replay_only_when_login_is_known_missing(mode, login, expected):
+def test_auto_mode_is_live_only_when_a_key_or_login_is_confirmed(mode, login, expected):
     assert ai_replay.resolve_mode(mode, lambda: login) == expected
 
 

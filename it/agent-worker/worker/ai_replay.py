@@ -1,7 +1,7 @@
 """AI 응답 저장 · 재생 — API 키(CLI 로그인)가 없는 PC에서도 실습이 끝까지 가도록, AI가 응답할 단계에만 미리 실제 AI로
 실행할 때 저장한 응답을 넣는다. 포털 · 설비 · 처리 흐름 · 결과 검사 · 저장은 그대로 실제로 돈다. 문서: 문서/시스템/참조/재생모드.md
 
-    AI_MODE=auto    (기본) 워커가 켜질 때 API 키 · CLI 로그인을 확인해 「없음」이면 replay, 그 밖(있음 · 확인 불가)은 live
+    AI_MODE=auto    (기본) 워커가 켜질 때 API 키 · CLI 로그인을 확인해 있으면 live, 없으면(확인 불가 포함) replay
     AI_MODE=live    실제 AI(기존 그대로)
     AI_MODE=record  실제 AI로 실행하면서 CLI가 낸 실행 이벤트와 결과 파일을 업무마다 저장한다
     AI_MODE=replay  CLI를 부르지 않고 같은 업무의 저장된 실행 이벤트를 내보낸다
@@ -59,13 +59,13 @@ _SECRET_ENV = _secret_env(os.environ)
 
 
 def resolve_mode(mode: str, login: Callable[[], bool | None]) -> str:
-    """auto 를 live/replay 로 정한다. 로그인이 「없음」으로 확인될 때만 replay — 확인할 수 없으면 실제 실행을 막지 않는다."""
+    """auto 를 live/replay 로 정한다. 키 · 로그인이 있다고 확인되면 live, 아니면(없음 · 확인 불가) replay."""
     mode = (mode or "auto").strip().lower()
     if mode not in MODES:
         raise ValueError(f"AI_MODE 는 {', '.join(MODES)} 중 하나여야 합니다: {mode}")
     if mode != "auto":
         return mode
-    return "replay" if login() is False else "live"
+    return "live" if login() is True else "replay"
 
 
 def _prompt_text(request) -> str:
