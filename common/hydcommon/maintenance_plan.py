@@ -3,6 +3,33 @@ from copy import deepcopy
 import math
 
 
+#: Plan values that change with elapsed time alone. Each is the PM counter plus the hours left until the planned window
+#: (ent.pm_status / entsim pm_row hours_at_next_window · hours_at_following_window, computed from now() and rounded to
+#: 0.01 h), so it falls by 0.01 every 36 s while the window, counter, package, parts and limit stay the same.
+#: Neither is consent content: the window id · start, counter, parts and limit_hours stay compared, and execution re-reads
+#: the current value and only checks it against the limit — ent.pm_scope_check (056) reads v_hours from ent.pm_scope_row
+#: and raises only when it exceeds interval*(1+tolerance); ent.pm_reschedule (054) checks hours_at_following_window
+#: against the same limit. Neither compares the planned value. (2026-10-23 audit: B approvals more than ~36 s after the
+#: decision were refused as 'maintenancePlan changed' (approval) and, on the memory backend, at execution (E5).)
+ELAPSED_APPLICABILITY_FIELDS = ('target_hours',)   # assets[].applicability
+ELAPSED_PLAN_FIELDS = ('hours_at_window',)          # top level of a WO_RESCHEDULE plan
+
+
+def without_elapsed(value):
+    """A copy of a maintenance plan without the values that change with elapsed time alone (the consent comparison form)."""
+    if not isinstance(value, dict):
+        return value
+    result = deepcopy(value)
+    for key in ELAPSED_PLAN_FIELDS:
+        result.pop(key, None)
+    for member in result.get('assets') or []:
+        applicability = member.get('applicability') if isinstance(member, dict) else None
+        if isinstance(applicability, dict):
+            for key in ELAPSED_APPLICABILITY_FIELDS:
+                applicability.pop(key, None)
+    return result
+
+
 def plan(skill, facts, window):
     from .maintenance_policy import policy, scope
     if not isinstance(skill.get('source_id'),str) or not skill['source_id'].strip():
@@ -54,7 +81,9 @@ def recheck(approved,context):
     if not isinstance(approved,dict) or approved.get('code') not in ('WO_CREATE','WO_RESCHEDULE'):
         raise ValueError('승인한 원문 정비 계획이 없습니다')
     current=scope(policy(approved.get('policy')),context,context.get('asset'),approved.get('window'))
+    # scope() fails when the current target hours exceed the source limit; the elapsed value itself is not compared.
+    now,then=without_elapsed(current),without_elapsed(approved)
     for key in ('scope','stock_effect','assets','staffing','parts_totals','model_applicability'):
-        if current.get(key)!=approved.get(key):
+        if now.get(key)!=then.get(key):
             raise ValueError('승인 뒤 실제 정비 범위·패키지·운전시간·부품·인원 조건이 변경되었습니다')
     return current

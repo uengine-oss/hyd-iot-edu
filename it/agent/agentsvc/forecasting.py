@@ -20,6 +20,16 @@ REVIEW_POLICY = {'version': 'simulator-consent-v2',
                  'max_review_age_sim_s': 1800}
 
 
+# Names the approval refusal shows a person (2026-10-23 audit P14: '예측 model_revision 변경', '예측 입력 fan_pct 변경').
+# Same words as the portal (plainWords.js · enterprise.js inputLabels).
+CONTEXT_LABELS = {'model_id': '예측 모델', 'model_revision': '예측 모델 판본', 'scope': '예측 모델 적용 범위',
+                  'binding': '설비와 예측 모델의 연결', 'horizon_s': '예측 구간', 'parameters': '예측 모델 계수',
+                  'actions': '예측한 조치', 'assumptions': '예측 가정', 'review_policy': '예측 검토 허용 기준'}
+INPUT_LABELS = {'ts1': '유온', 't_amb': '주변 온도', 'fan_pct': '팬 속도', 'load_pct': '펌프 부하', 'cooler_health': '쿨러 상태',
+                'leak': '누설 비율', 'bearing_wear': '베어링 마모', 'state': '설비 상태', 'pump': '운전 펌프'}
+VALUE_LABELS = {'ts1': '예측 유온', 'ts1_peak': '예측 최고 유온', 'vs1': '예측 진동', 'vs1_peak': '예측 최고 진동'}
+
+
 def requires_plant_consent(actions):
     """Business requests do not authorize immediate plant changes (forecast.predict contract)."""
     return any(a.get('kind') == 'command' for a in actions or [])
@@ -136,17 +146,17 @@ def consent_changes(old, current, time_scale=None):
     for key in ('model_id', 'model_revision', 'scope', 'binding', 'horizon_s', 'parameters',
                 'actions', 'assumptions', 'review_policy'):
         if old.get(key) != current.get(key):
-            reasons.append(f'예측 {key} 변경: 새 카드 검토가 필요합니다')
+            reasons.append(f'{CONTEXT_LABELS.get(key, "예측 조건")} 변경: 새 카드 검토가 필요합니다')
     # TS1 evolves with time. Disturbances, ambient conditions and operating
     # settings may not change behind the reviewed counterfactual.
     for key in set(old.get('inputs', {})) | set(current.get('inputs', {})):
         if key != 'ts1' and old['inputs'].get(key) != current['inputs'].get(key):
-            reasons.append(f'예측 입력 {key} 변경: 새 카드 검토가 필요합니다')
+            reasons.append(f'예측 입력 {INPUT_LABELS.get(key, "조건")} 변경: 새 카드 검토가 필요합니다')
     if current.get('predicted_interlocks'):
         reasons.append('예측 구간에서 PLC 인터록이 예상됩니다')
     rates = REVIEW_POLICY['max_adverse_rate_per_sim_min']
     for key, tolerance in REVIEW_POLICY['max_adverse_change'].items():
         a, b = old.get('values', {}).get(key), current.get('values', {}).get(key)
         if a is None or b is None or b > a + tolerance + rates.get(key, 0.0) * minutes:
-            reasons.append(f'예측 {key} 악화 또는 미확인: 새 카드 검토가 필요합니다')
+            reasons.append(f'{VALUE_LABELS.get(key, "예측값")} 악화 또는 미확인: 새 카드 검토가 필요합니다')
     return reasons
