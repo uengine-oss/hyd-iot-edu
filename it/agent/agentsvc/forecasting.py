@@ -35,20 +35,35 @@ def requires_plant_consent(actions):
     return any(a.get('kind') == 'command' for a in actions or [])
 
 
-def stack_time_scale():
-    """Simulated seconds per wall-clock second: the process service publishes the stack's TIME_SCALE; env, then 1."""
+def _scale(candidate):
     try:
-        published = decide._get_json(f'{decide.PROCESS_URL}/api/process/mode').get('time_scale')
-    except Exception:  # noqa: BLE001 — unreachable process: fall back to the environment, never block the check
-        published = None
-    for candidate in (published, os.getenv('TIME_SCALE')):
-        try:
-            scale = float(candidate)
-        except (TypeError, ValueError):
-            continue
-        if math.isfinite(scale) and scale > 0:
-            return scale
-    return 1.0
+        scale = float(candidate)
+    except (TypeError, ValueError):
+        return None
+    return scale if math.isfinite(scale) and scale > 0 else None
+
+
+def stack_time_scale():
+    """Simulated seconds per wall-clock second of the running stack.
+
+    The process service publishes its TIME_SCALE on GET /api/definition in every mode. 2026-10-23 audit: this used to read
+    /api/process/mode, whose time_scale exists only with the instance runtime — in legacy mode it was null, the agent and
+    dmn-mcp containers have no TIME_SCALE (compose.yaml), and the forecast consent budget was computed at 1× on a 20×
+    stack. The agent's own TIME_SCALE is used only when the process cannot be reached; with neither the time scale is
+    unknown and the check fails with that reason (never a silent 1×)."""
+    try:
+        published = decide._get_json(f'{decide.PROCESS_URL}/api/definition').get('time_scale')
+    except Exception as exc:  # noqa: BLE001 — unreachable process: the explicit environment value may stand in
+        reached, published = exc, None
+    else:
+        scale = _scale(published)
+        if scale is None:
+            raise ValueError(f'process 가 알려 준 설비 시간 배율(time_scale={published!r})이 올바르지 않습니다')
+        return scale
+    scale = _scale(os.getenv('TIME_SCALE'))
+    if scale is None:
+        raise ValueError(f'설비 시간 배율(TIME_SCALE)을 확인할 수 없습니다: process 에 연결하지 못했고({reached}) 환경 변수도 없습니다')
+    return scale
 
 
 def _elapsed_sim_s(old, current, time_scale):

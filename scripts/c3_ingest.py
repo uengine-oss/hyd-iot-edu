@@ -186,16 +186,27 @@ def loaded_document(fname: str) -> str | None:
     return ids[0] if ids else None
 
 
-def finished_extraction(key: str, fname: str, sha: str) -> tuple[str, dict]:
+def _source_document(source: dict) -> str | None:
+    """원문 판본이 속한 문서 id. 목록 행의 document_id, 없으면 source_id(manual:<문서>:<sha256>)에서 읽는다."""
+    if source.get("document_id"):
+        return source["document_id"]
+    parts = str(source.get("source_id") or "").split(":")
+    return parts[1] if len(parts) == 3 and parts[0] == "manual" else None
+
+
+def finished_extraction(key: str, fname: str, sha: str, document_id: str | None = None) -> tuple[str, dict]:
     """--reuse: 같은 파일 · 같은 내용(sha256)의 원문 판본 가운데 최근 판본부터, 미리보기가 나오는(원문 검증을 통과한) 추출을 찾는다.
     원문을 올릴 때마다 판본 id(source_id)가 새로 생기므로 이번에 올린 판본만 보면 끝난 추출을 못 찾는다. 단계를 닫아 끝낸 추출도
-    처리 건 상태는 COMPLETED 라 상태만 보지 않는다. 못 찾으면 새 추출을 시작하지 않고 멈춘다(2026-10-23 리허설: 검토 없는 새 추출이 돌았다)."""
+    처리 건 상태는 COMPLETED 라 상태만 보지 않는다. 못 찾으면 새 추출을 시작하지 않고 멈춘다(2026-10-23 리허설: 검토 없는 새 추출이 돌았다).
+    document_id(지금 적재된 문서, loaded_document)가 있으면 그 문서의 판본만 본다 — 같은 파일을 「새 문서」로 다시 올린 다른 문서의
+    추출을 고르면 적재가 지금 문서가 소유한 절차를 덮어쓰지 못해 409 로 거절된다(audit2 I4)."""
     sources, offset = [], 0
     while offset is not None:
         st, page = call("GET", f"/api/kg/manuals/sources?limit=100&offset={offset}")
         if st != 200:
             raise SystemExit(f"{key} 원문 목록 읽기 실패 {st}: {page}")
-        sources += [s for s in page["items"] if s.get("filename") == fname and s.get("sha256") == sha]
+        sources += [s for s in page["items"] if s.get("filename") == fname and s.get("sha256") == sha
+                    and (document_id is None or _source_document(s) == document_id)]
         offset = page.get("next_offset")
     for s in sources:                                        # 최근 판본부터(목록이 created_at 내림차순)
         st, runs = call("GET", f"/api/kg/manuals/sources/{s['source_id']}/extractions")
@@ -205,21 +216,23 @@ def finished_extraction(key: str, fname: str, sha: str) -> tuple[str, dict]:
             st, res = call("GET", f"/api/kg/manuals/sources/{s['source_id']}/extractions/{run['proc_inst_id']}")
             if st == 200 and res.get("preview"):
                 return s["source_id"], {"instance": run["proc_inst_id"], "reused": True}
-    raise SystemExit(f"{key}: --reuse 로 다시 쓸 끝난 추출이 없습니다(같은 내용 {sha[:12]}… 원문 판본 {len(sources)}개 확인). "
+    scope = f"지금 적재된 문서 {document_id}의 " if document_id else ""
+    raise SystemExit(f"{key}: --reuse 로 다시 쓸 끝난 추출이 없습니다({scope}같은 내용 {sha[:12]}… 원문 판본 {len(sources)}개 확인). "
                      "새로 추출하려면 --reuse 없이 실행하세요")
 
 
 def extract(key: str, reuse: bool) -> dict:
     fname = DOCS[key]
     raw = (ROOT / "문서/시스템/참조/수업_문서_원문" / fname).read_bytes()
+    loaded = loaded_document(fname)
     st, pv = call("POST", "/api/kg/manuals/preview",
-                  {"filename": fname, "data": base64.b64encode(raw).decode(), "document_id": loaded_document(fname)})
+                  {"filename": fname, "data": base64.b64encode(raw).decode(), "document_id": loaded})
     if st != 200:
         raise SystemExit(f"{key} preview failed {st}: {pv}")
     sid = pv["source_id"]
     inst = None
     if reuse:
-        sid, inst = finished_extraction(key, fname, sid.rsplit(":", 1)[1])
+        sid, inst = finished_extraction(key, fname, sid.rsplit(":", 1)[1], loaded)
     else:
         st, inst = call("POST", f"/api/kg/manuals/sources/{sid}/extractions", {"request_id": str(uuid.uuid4())})
         if st != 200:

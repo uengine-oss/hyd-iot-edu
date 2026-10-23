@@ -52,6 +52,11 @@ INSTANCE_COLS = ("proc_def_id", "proc_inst_id", "proc_inst_name", "root_proc_ins
 JSON_COLS = {"assignees", "output", "draft", "feedback", "role_bindings", "variables_data", "gateway_decisions", "definition", "mcp",
              "fields_json", "data", "initial_variables", "variable_sources", "flow_state"}
 STALE_MINUTES = 30
+# P9 (audit2 2026-10-23, 사용자 결정): 수업 흐름 표시. 강사 조립 스크립트(scripts/c3_flows.py)가 배포할 때(class_flow=True) 운영 포인터 머리
+# proc_def.owner 에 이 값을 남긴다 — 지금 배포의 주인이 '수업'이라는 뜻이다. 다른 배포 · 되돌리기 · 내리기는 owner 를 비운다(마지막 배포 행위가 정한다).
+# 포털의 [기준 흐름으로 되돌리기]는 이 표시가 있는 흐름을 남긴다. 흐름 id 접두어(c3_*)로 짐작하지 않는다. proc_def_deployment 는 action 에
+# 검사 제약이 있고 칸이 고정이라(마이그레이션 000044) 지금 표 구조 그대로 쓰는 머리의 owner 칸(000001, 이 서비스가 쓰지 않던 칸)에 둔다.
+CLASS_OWNER = "class"
 LEASE_SECONDS = 120      # A097: a worker claim lives this long unless renewed (agent-sdk lease.py: 120 s, renew every 30 s)
 MAX_CLAIMS = 3           # A097: after the third expired lease the row is FAILED for a person to close (agent-sdk max_claims)
 
@@ -68,7 +73,8 @@ class Repo(Protocol):
     def list_definitions(self, tenant_id: str = "hyd") -> list[dict]: ...
     # U4: the deployed ("운영") version of a definition — what an alert RAISE opens. proc_def.prod_version + proc_def_deployment history.
     def deployed_version(self, def_id: str, tenant_id: str = "hyd") -> str | None: ...
-    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict: ...
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str,
+                          class_flow: bool = False) -> dict: ...
     def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]: ...
     # B4: every definition id that has a deployed version, with the time of its newest deployment record (alert routing by
     # pattern — the newest deployed flow whose alertPolicy names the pattern opens it), and taking a flow off the alert path.
@@ -259,7 +265,8 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             head = self.defs.get(key[:2]) or {}
             row = {'id': definition['processDefinitionId'], 'tenant_id': tenant_id,
                    'name': definition.get('processDefinitionName'), 'definition': _copy(definition),
-                   'prod_version': head.get('prod_version'), 'type': 'bpmn', 'ontology_ref': definition.get('ontologyRef')}
+                   'prod_version': head.get('prod_version'), 'type': 'bpmn', 'ontology_ref': definition.get('ontologyRef'),
+                   'owner': head.get('owner')}
             if old is None:
                 self.def_versions[key] = dict(_copy(row), prod_version=version, message='HYD immutable registration',
                                               registered_at=datetime.now(timezone.utc).isoformat())
@@ -277,7 +284,8 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         head = self.defs.get((def_id, tenant_id))
         return head.get('prod_version') if head else None
 
-    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict:
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str,
+                          class_flow: bool = False) -> dict:
         with self._lock:
             head = self.defs.get((def_id, tenant_id))
             if (def_id, tenant_id, version) not in self.def_versions:
@@ -290,8 +298,9 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
                    'previous_version': head.get('prod_version'), 'action': action, 'actor': actor, 'reason': reason,
                    'created_at': datetime.now(timezone.utc).isoformat()}
             head['prod_version'] = version
+            head['owner'] = CLASS_OWNER if class_flow else None
             self.deployments.append(row)
-            return _copy(row)
+            return dict(_copy(row), class_flow=bool(class_flow))
 
     def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]:
         rows = [d for d in self.deployments if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id]
@@ -305,7 +314,8 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
             seq = max((n for n, d in enumerate(self.deployments) if d['tenant_id'] == tenant_id and d['proc_def_id'] == def_id), default=-1)
             last = self.deployments[seq] if seq >= 0 else {}
             out.append({'id': def_id, 'prod_version': head['prod_version'], 'deployed_seq': seq,
-                        'deployed_at': last.get('created_at'), 'last_action': last.get('action')})
+                        'deployed_at': last.get('created_at'), 'last_action': last.get('action'), 'deployed_by': last.get('actor'),
+                        'class_flow': head.get('owner') == CLASS_OWNER})
         return sorted(out, key=lambda r: (r['deployed_seq'], r['id']), reverse=True)
 
     def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict:
@@ -317,6 +327,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
                    'previous_version': head['prod_version'], 'action': 'withdraw', 'actor': actor, 'reason': reason,
                    'created_at': datetime.now(timezone.utc).isoformat()}
             head['prod_version'] = None
+            head['owner'] = None
             self.deployments.append(row)
             return _copy(row)
 
@@ -766,7 +777,8 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
             row = c.execute("select prod_version from proc_def where id=%s and tenant_id=%s and isdeleted=false", (def_id, tenant_id)).fetchone()
             return row['prod_version'] if row else None
 
-    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str) -> dict:
+    def record_deployment(self, def_id: str, version: str, tenant_id: str, *, action: str, actor: str, reason: str,
+                          class_flow: bool = False) -> dict:
         with self._conn() as c, c.transaction():
             head = c.execute("select prod_version from proc_def where id=%s and tenant_id=%s and isdeleted=false for update",
                              (def_id, tenant_id)).fetchone()
@@ -774,12 +786,12 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                                  and version_tag='hyd-immutable'""", (tenant_id, def_id, version)).fetchone()
             if head is None or known is None:
                 raise LookupError(f'등록되지 않은 정의 판본입니다: {def_id}@{version}')
-            c.execute("update proc_def set prod_version=%s, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
-                      (version, def_id, tenant_id))
+            c.execute("update proc_def set prod_version=%s, owner=%s, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
+                      (version, CLASS_OWNER if class_flow else None, def_id, tenant_id))
             row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)
                                values (%s,%s,%s,%s,%s,%s,%s) returning *""",
                             (tenant_id, def_id, version, head['prod_version'], action, actor, reason)).fetchone()
-            return self._row(row)
+            return dict(self._row(row), class_flow=bool(class_flow))
 
     def list_deployments(self, def_id: str, tenant_id: str = "hyd", limit: int = 50) -> list[dict]:
         with self._conn() as c:
@@ -788,11 +800,12 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
 
     def deployed_heads(self, tenant_id: str = "hyd") -> list[dict]:
         with self._conn() as c:
-            return [self._row(r) for r in c.execute("""select d.id, d.prod_version, x.created_at as deployed_at, x.action as last_action
-                from proc_def d left join lateral (select created_at, action from proc_def_deployment y
+            return [self._row(r) for r in c.execute("""select d.id, d.prod_version, x.created_at as deployed_at, x.action as last_action,
+                    x.actor as deployed_by, coalesce(d.owner = %s, false) as class_flow
+                from proc_def d left join lateral (select created_at, action, actor from proc_def_deployment y
                     where y.tenant_id=d.tenant_id and y.proc_def_id=d.id order by y.created_at desc, y.id desc limit 1) x on true
                 where d.tenant_id=%s and not d.isdeleted and d.prod_version is not null
-                order by x.created_at desc nulls last, d.id desc""", (tenant_id,)).fetchall()]
+                order by x.created_at desc nulls last, d.id desc""", (CLASS_OWNER, tenant_id)).fetchall()]
 
     def clear_deployment(self, def_id: str, tenant_id: str, *, actor: str, reason: str) -> dict:
         with self._conn() as c, c.transaction():
@@ -800,7 +813,7 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                              (def_id, tenant_id)).fetchone()
             if head is None or not head['prod_version']:
                 raise LookupError(f'배포된 판본이 없는 정의입니다: {def_id}')
-            c.execute("update proc_def set prod_version=null, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
+            c.execute("update proc_def set prod_version=null, owner=null, updated_at=now() where id=%s and tenant_id=%s and isdeleted=false",
                       (def_id, tenant_id))
             row = c.execute("""insert into proc_def_deployment (tenant_id, proc_def_id, version, previous_version, action, actor, reason)
                                values (%s,%s,null,%s,'withdraw',%s,%s) returning *""",

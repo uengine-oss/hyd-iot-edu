@@ -37,22 +37,31 @@ def _now() -> str:
 
 
 ID_KINDS = ("DEC", "EVAL")
+#: Which service minted a decision id. The agent service (main.py) and dmn-mcp (DmnTools) each keep their own registry and
+#: post to the same process decision book, so the id says which one it came from.
+ID_SERVICES = ("agent", "mcp")
 
 
 class DecisionRegistry:
-    def __init__(self):
+    def __init__(self, service: str = "agent"):
+        if service not in ID_SERVICES:
+            raise ValueError(f"판단 id 를 만드는 서비스는 {', '.join(ID_SERVICES)} 중 하나입니다 (받은 값: {service!r})")
+        self.service = service
         self._lock = threading.Lock()
         self._items: dict[str, dict] = {}
         self._seq = 0
 
     def new_id(self, kind: str) -> str:
         """kind: DEC = process 에 제출해 저장되는 판단(GET /api/decisions/{id}), EVAL = 제출하지 않는 읽기 평가(evaluate_cards · 가정 실험).
-        라이브 3차: 읽기 평가도 DEC- id 를 받아 처리 기록에 '저장되지 않은 판단 id'(GET 404)가 판단처럼 보였다."""
+        라이브 3차: 읽기 평가도 DEC- id 를 받아 처리 기록에 '저장되지 않은 판단 id'(GET 404)가 판단처럼 보였다.
+        2026-10-23 검수: `{kind}-MMDD-{seq}-{2바이트}` 는 서비스 · 재시작마다 seq 가 1부터 다시 시작하고, process 판단 장부(book)는
+        재시작 뒤에도 남는다. 같은 날 같은 seq 면 4자리 16진수(65,536가지)로만 갈려, 새 판단이 409(다른 작업 · 세대) 또는
+        legacy 경로의 duplicate 응답(옛 판단을 돌려주고 새 카드는 저장 안 됨)이 됐다. 서비스 이름과 12자리 16진수(48비트)를 붙인다."""
         if kind not in ID_KINDS:
             raise ValueError(f"판단 기록 id 종류는 {', '.join(ID_KINDS)} 중 하나입니다 (받은 값: {kind!r})")
         with self._lock:
             self._seq += 1
-            return f"{kind}-{datetime.now():%m%d}-{self._seq:03d}-{secrets.token_hex(2)}"
+            return f"{kind}-{datetime.now():%m%d}-{self.service}-{self._seq:03d}-{secrets.token_hex(6)}"
 
     def put(self, d: dict) -> None:
         with self._lock:
@@ -88,7 +97,7 @@ def submit(payload: dict) -> dict:
                                  headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
+            res = json.loads(r.read())
     except urllib.error.HTTPError as e:
         # 2026-10-23 live: only "HTTP Error 409: Conflict" reached the agent and the case record — the reason the process gave was dropped.
         body = e.read().decode("utf-8", "replace")
@@ -99,6 +108,14 @@ def submit(payload: dict) -> dict:
         refused = SubmitRefused(f"process 가 판단 등록을 거절했습니다 (HTTP {e.code}): {detail}"[:600])
         refused.status = e.code
         raise refused from e
+    # 2026-10-23 검수: process 는 이미 장부에 있는 id 를 받으면(작업 · 세대가 같을 때) 새 카드를 저장하지 않고 옛 판단을
+    # `duplicate: true` 로 돌려준다. 이 판단의 id 는 방금 새로 만든 것이라 같은 id 가 있으면 다른 판단과 충돌한 것이다.
+    if not isinstance(res, dict) or res.get('id') != payload['id'] or res.get('duplicate'):
+        refused = SubmitRefused('process 가 이 판단을 새로 저장하지 않았습니다: 같은 판단 id 의 다른 판단이 장부에 이미 있습니다 '
+                                f"({payload['id']}, 응답 {json.dumps(res, ensure_ascii=False)[:200]})"[:600])
+        refused.status = 409
+        raise refused
+    return res
 
 
 def source_time(response: dict, asset: str) -> dict:
@@ -166,8 +183,12 @@ def gather_facts(inputs: list[dict], asset: str, known: dict, tsdb, *, strict: b
                     row['age_seconds'] = age
                     if age is None or not -2 <= age <= MAX_APPROVAL_FACT_AGE_S:
                         raise ValueError('팬 운전 이력의 최신 수집을 확인할 수 없습니다')
-                facts[var] = tsdb.fan100_hours(asset)
-                row.update(value=facts[var], how="TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간 (HM-7.3; 관측 없으면 미확인)")
+                from .forecasting import stack_time_scale
+                scale = stack_time_scale()
+                facts[var] = tsdb.fan100_hours(asset, time_scale=scale)
+                row.update(value=facts[var], time_scale=scale,
+                           how=f"TimescaleDB FanSpeedSP ≥ 99 % 현재 연속 운전 시간, 설비 시간(실제 시간 × 배율 {scale:g}) "
+                               "(HM-8.5 · 8.8; 관측 없으면 미확인)")
             elif src == "sys:mes" and var == "order_due_h":
                 mes = mcp_ent.fetch("/mes/orders?asset={asset}", asset)
                 facts[var] = (mes.get("facts") or {}).get("due_in_h")

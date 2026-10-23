@@ -7,7 +7,7 @@ class FakeTSDB:
     def latest(self, asset, name="TS1"):
         return 58.2, 2.0
 
-    def fan100_hours(self, asset):
+    def fan100_hours(self, asset, *, time_scale):
         return 3.0
 
 

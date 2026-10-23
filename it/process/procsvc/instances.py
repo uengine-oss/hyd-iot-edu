@@ -26,7 +26,7 @@ from typing import Callable
 
 from hydcommon.timeutil import now_iso, parse_iso
 from hydcommon.process_contracts import pinned_form, validate_output
-from . import dependency_schedule, engine, inbox
+from . import dependency_schedule, engine, inbox, procdb
 from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
 from .execution_graph import (INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection,
@@ -126,6 +126,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         # B4: 기준 흐름 = 경보 진입 정의 id와 기준 판본(기동 파일 판본). instance_mode.build()가 파일 기준으로 다시 정한다(배포된 학생 판본으로
         # 기동해도 기준은 파일). reference_ids의 흐름은 "기준 흐름으로 되돌리기"가 내리지 않는다.
         self.base_version, self.reference_ids = defn.raw['version'], {defn.id}
+        self.base_problem = None    # P10: 기준 판본을 등록하지 못한 사유(instance_mode._register_reference) — 있으면 되돌리기 · 비교 거절
         self.repo.upsert_proc_def(defn.raw, tenant_id)
         # U4: `defn` is the runtime's bootstrap definition. It becomes the deployed ("운영") version of its id unless that version
         # already is — a restarted engine or a peer runtime built from the deployed version writes nothing. instance_mode.build()
@@ -325,13 +326,19 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         previous = history[0].get('previous_version') if history else None
         from .flow_deploy import alert_patterns
         latest = rows[-1]['definition']
+        head = self.repo.get_proc_def(def_id, self.tenant_id) or {}
         return {'id': def_id, 'name': rows[-1].get('name'), 'deployed_version': deployed,
+                'class_flow': bool(deployed) and head.get('owner') == procdb.CLASS_OWNER,
                 'alert_entry': def_id == self.defn.id or bool(alert_patterns(latest)), 'alert_patterns': alert_patterns(latest),
                 'reference': def_id in self.reference_ids, 'reference_version': self.base_version if def_id == self.defn.id else None,
                 'rollback_version': previous if previous and previous != deployed else None, 'versions': versions, 'history': history}
 
-    def deploy_definition(self, def_id: str, version: str, by: str, reason: str, action: str = 'deploy') -> dict:
-        """Make `version` the one new alerts open. Only a version that passes validate_definition; open instances keep theirs."""
+    def deploy_definition(self, def_id: str, version: str, by: str, reason: str, action: str = 'deploy', class_flow: bool = False) -> dict:
+        """Make `version` the one new alerts open. Only a version that passes validate_definition; open instances keep theirs.
+        class_flow=True: 강사 조립 스크립트의 '수업 흐름' 배포(P9) — 포털의 [기준 흐름으로 되돌리기]가 남긴다(flow_deploy.deploy_reset)."""
+        if class_flow and (action != 'deploy' or def_id in self.reference_ids):
+            raise ValueError('수업 흐름 표시는 기준 흐름이 아닌 흐름의 배포에만 붙입니다'
+                             + (f' — {def_id}은(는) 기준 흐름입니다' if def_id in self.reference_ids else ''))
         if not isinstance(by, str) or not by.strip():
             raise ValueError('배포한 사람을 적으세요')
         if not isinstance(reason, str) or not reason.strip():
@@ -348,10 +355,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         current = self.repo.deployed_version(def_id, self.tenant_id)
         if current == version:
             raise ValueError(f'{def_id}@{version}은 이미 운영 판본입니다')
-        record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip())
+        record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip(),
+                                             class_flow=bool(class_flow))
         self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',
                                            'reset': 'DEFINITION_RESET'}.get(action, 'DEFINITION_DEPLOYED'),
-                         {'definition': def_id, 'version': version, 'previous_version': current, 'reason': reason.strip()})
+                         {'definition': def_id, 'version': version, 'previous_version': current, 'reason': reason.strip(),
+                          'class_flow': bool(class_flow)})
         from .flow_deploy import alert_patterns
         patterns = alert_patterns(row['definition'])
         if def_id == self.defn.id:
@@ -361,7 +370,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         else:
             applies = '다음 직접 시작부터(경보 시작 조건 없음)'
         return {'definition': def_id, 'version': version, 'previous_version': current, 'action': action, 'deployment': record,
-                'patterns': patterns, 'applies_to': applies}
+                'patterns': patterns, 'applies_to': applies, 'class_flow': bool(class_flow)}
 
     def rollback_definition(self, def_id: str, by: str, reason: str) -> dict:
         """Back to the version that was deployed before the current one (the newest deployment record's previous_version)."""
@@ -903,6 +912,15 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                            'consumer': wi.get('consumer')}}])
         return dict(workitem=wi['id'], status=wi['status'], draft_status='CANCELLED', consumer=wi.get('consumer'))
 
+    def _close_refusal(self, defn: engine.Definition, state: str) -> str:
+        """사건이 진행 중이라 [닫기]를 거절하는 사유 + 할 일. 그 흐름에 있는 길만 말한다 — 흐름 가져오기로 만든 수업 흐름(c3_*)에는 에스컬레이션
+        단계가 없다(audit2 process 보고: 「에스컬레이션으로 처리하세요」는 없는 단계를 가리켰다)."""
+        label = incident_def.FAILURE_STATES.get(state) or dict((s, l) for s, l, _ in incident_def.STEPS).get(state) or state
+        escalation = "task:escalate" in defn.activities or any(a.get("tool") == self.ESCALATE_TOOL for a in defn.activities.values())
+        how = ('[다시 수행]으로 판단을 다시 돌리거나 에스컬레이션 검토로 넘기세요' if escalation else
+               '[다시 수행]으로 판단을 다시 돌리세요 — 사건이 끝나면(경보 해소 · 승인 · 거절) 이 작업을 닫을 수 있습니다')
+        return f'사건이 아직 진행 중이라 닫지 않았습니다(사건: {label}, {state}) — {how}'
+
     @workitem_transition
     def close_agent_task(self, workitem_id: str, by: str, reason: str, now: datetime | None = None) -> dict:
         """A082: PENDING after bounded retries/corrections, or a worker run that died (draft FAILED) — the product's task
@@ -928,7 +946,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if inc_id:
             state = self.hooks.incident_state(inc_id)
             if state is not None and state not in incident_def.TERMINAL:
-                raise ValueError(f'사건이 아직 진행 중입니다({state}). 재판단·에스컬레이션으로 처리하세요')
+                raise ValueError(self._close_refusal(defn, state))
         now = now or datetime.now(timezone.utc)
         previous = dict(status=wi['status'], draft_status=wi.get('draft_status'), retry=wi.get('retry'))
         wi.update(status='CANCELLED', draft_status='CANCELLED', consumer=None, end_date=engine.now_iso(now),

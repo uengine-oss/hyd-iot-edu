@@ -12,6 +12,12 @@
 
 시나리오 시각 기준점(생산 오더 납기 · 예정된 정비 시간)은 설비 처리 건이 하나도 진행 중이 아닐 때만 지금으로 옮긴다(may_reanchor). 예정된 정비
 시간 id 가 기준점 시각을 품고 있어서, 진행 중인 처리 건이 승인 뒤 낼 작업지시의 창이 사라지기 때문이다.
+예외(P12, audit2 2026-10-23): 흐름이 스스로 '승인 지연'을 선언한 처리 건 — 열린 일이 사람 단계뿐이고 그 단계의 멈추지 않는 지연 타이머가 이미
+울린 처리 건(무응답 실습은 설계상 스스로 끝나지 않는다) — 은 기준점을 붙잡지 않는다. 붙잡으면 업무 시각이 벽시계로 줄어(enterprise-sim
+data._at · hours_from_now) 이후 모든 판단이 틀어진다: 납기까지 남은 시간(order_due_h)이 순위 정책의 납기 항목(clamp((24 - due) / 24))과 카드
+글(「납기까지 N h」)로 들어가고, 6시간 뒤에는 음수가 된다. 옮긴 뒤 그 처리 건을 승인하면 승인 때 다시 읽는 업무 값이 바뀌어 새 판단을 요구받거나
+(agent approval-check 의 근거 기준점 비교) 옛 정비 시간 id 가 거절된다 — 그래서 옮길 때 그 처리 건 기록에 남긴다(main._reanchor_if_idle).
+막은 처리 건과 붙잡지 않은 처리 건은 reanchor_blockers 가 이름과 함께 돌려준다(응답 · 감사 기록 · 화면).
 
   [쿨러 열화 주입] · [쿨러 복구] (A, HYD-01) — plant-sim 주입에 누름 id(origin)를 싣는다. 설비 상태(plant.status injection)에 남은 그 id 로,
   주입이 일으킨 경보가 연 처리 건에 기록을 붙인다(main._link_injection). 시간 창으로 짐작하지 않는다.
@@ -83,9 +89,65 @@ def _runs(rt, spec: dict) -> list[dict]:
             if str(i.get("start_event_id") or "").startswith(prefix) and i.get("proc_def_id") != "alert_triage"]
 
 
+OPEN_STATUSES = ("NEW", "IN_PROGRESS", "SUBMITTED", "PENDING")
+
+
+def _approval_overdue(defn: engine.Definition, inst: dict, rows: list[dict]) -> list[dict] | None:
+    """흐름이 '승인 지연'을 선언하고 사람만 기다리는 처리 건이면 그 사람 단계들, 아니면 None. 열린 일(이벤트 행 제외)이 모두 사람 단계(userTask)이고
+    단계마다 붙은 멈추지 않는 타이머(cancelActivity=false) 중 하나가 이미 울렸어야(DONE) 한다. 예정 시각을 기다리는 단계가 있으면 아니다."""
+    from . import dependency_schedule
+    open_rows = [r for r in rows if r.get("status") in OPEN_STATUSES and r["activity_id"] not in defn.events]
+    if not open_rows or dependency_schedule.waiting(inst, rows):
+        return None
+    done_timers = {r["activity_id"] for r in rows if r.get("status") == "DONE"}
+    out = []
+    for r in open_rows:
+        act = defn.activities.get(r["activity_id"]) or {}
+        fired = [e["id"] for e in defn.attached_events(r["activity_id"])
+                 if engine.non_interrupting(defn, e["id"]) and e.get("timer") and e["id"] in done_timers]
+        if act.get("type") != "userTask" or not fired:
+            return None
+        out.append({"activity": r["activity_id"], "name": act.get("name") or r["activity_id"], "timer": fired[0]})
+    return out
+
+
+def reanchor_blockers(rt) -> dict:
+    """진행 중인 설비 처리 건(A · B · C — 설비 값이 있는 처리 건)을 기준점 판단으로 나눈다.
+    blocked_by = 기준점을 붙잡는 처리 건(하나라도 있으면 옮기지 않는다), overdue = 승인 지연을 선언하고 사람만 기다려 붙잡지 않는 처리 건."""
+    blocked, overdue = [], []
+    for inst in rt.repo.list_instances("RUNNING", None, rt.tenant_id):
+        v = engine.variables(inst)
+        if v.get("asset") not in topics.ASSETS:
+            continue
+        item = {"instance": inst["proc_inst_id"], "definition": inst.get("proc_def_id"), "asset": v.get("asset"),
+                "started_at": inst.get("start_date")}
+        try:
+            defn = rt.definition_for(inst)
+            rows = rt.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
+        except (KeyError, LookupError, ValueError) as e:     # 정의를 읽지 못한 처리 건은 붙잡는 쪽으로 — 사유를 싣는다
+            blocked.append(dict(item, name=inst.get("proc_inst_name") or inst.get("proc_def_id"), waiting_on=[], why=f"정의를 읽지 못함: {e}"))
+            continue
+        item["name"] = defn.name
+        waiting = _approval_overdue(defn, inst, rows)
+        if waiting is not None:
+            overdue.append(dict(item, waiting_on=[w["name"] for w in waiting], why="승인 지연 — 사람 응답만 기다림"))
+        else:
+            live = [r for r in rows if r.get("status") in OPEN_STATUSES and r["activity_id"] not in defn.events]
+            blocked.append(dict(item, waiting_on=[r.get("activity_name") or r["activity_id"] for r in live], why="진행 중"))
+    return {"blocked_by": blocked, "overdue": overdue}
+
+
 def may_reanchor(rt) -> bool:
-    """설비 처리 건(A · B · C — 설비 값이 있는 처리 건)이 하나도 진행 중이 아니면 True."""
-    return not any(engine.variables(i).get("asset") in topics.ASSETS for i in rt.repo.list_instances("RUNNING", None, rt.tenant_id))
+    """기준점을 붙잡는 설비 처리 건이 하나도 없으면 True (reanchor_blockers)."""
+    return not reanchor_blockers(rt)["blocked_by"]
+
+
+def reanchor_event(proc_inst_id: str, at: str, button: str | None) -> dict:
+    """승인 지연 중인 처리 건 기록: 기준점이 옮겨졌다 — 지금 승인하면 바뀐 업무 값으로 다시 확인한다."""
+    return {"job_id": "SCENARIO_REANCHOR", "todo_id": None, "proc_inst_id": proc_inst_id, "crew_type": "result", "event_type": "task_working",
+            "data": {"name": "시나리오 시각 기준점 옮김(승인 지연 중)", "at": at, "button": button,
+                     "goal": "승인 지연 중에 수업 버튼이 시나리오 시각 기준점(납기 · 예정된 정비 시간)을 지금으로 옮겼습니다 — 지금 승인하면 "
+                             "바뀐 업무 값으로 다시 확인해 새 판단이 필요할 수 있습니다"}}
 
 
 def _brief(inst: dict | None) -> dict | None:
@@ -191,13 +253,28 @@ def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
 
 
 class NotStarted(Exception):
-    """경보는 접수됐는데 배포된 흐름의 처리 건이 없다(HTTP 500, 좌표 포함) — '처리 건 시작'이라고 답하지 않는다."""
+    """경보는 접수됐는데 배포된 흐름의 처리 건이 없다(HTTP 409, 경보가 실제로 간 곳 포함) — '처리 건 시작'이라고 답하지 않는다.
+    접수와 확인 사이에 배포가 바뀐 상태 충돌이다(서버 고장이 아니다)."""
 
 
-def started(rt, key: str, alert: dict, definition: str, person: dict | None = None) -> dict:
+def _went_to(rt, alert_id: str) -> str:
+    """경보가 실제로 연 처리 건(기준 흐름 · 사람 검토) — 거절 사유에 싣는다."""
+    for did, label in ((rt.defn.id, "기준 흐름"), ("alert_triage", "사람 검토(경보 분류)")):
+        inst = rt.repo.find_event_instance(rt.tenant_id, did, alert_id)
+        if inst is not None:
+            return f" — 경보는 {label}의 처리 건 {inst['proc_inst_id']}(으)로 열렸습니다"
+    return " — 경보가 연 처리 건을 찾지 못했습니다"
+
+
+def started(rt, key: str, alert: dict, definition: str | None, person: dict | None = None) -> dict:
+    spec = SCENARIOS[key]
+    if not definition:
+        raise NotStarted(f"{spec['title']}: 경보 {alert['alertId']} 를 접수하는 사이 '{spec['label']}' 경보를 여는 흐름의 배포가 내려갔습니다"
+                         f"{_went_to(rt, alert['alertId'])}. [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 다시 배포한 뒤 누르세요")
     inst = rt.repo.find_event_instance(rt.tenant_id, definition, alert["alertId"])
     if inst is None:
-        raise NotStarted(f"{SCENARIOS[key]['title']}: 경보 {alert['alertId']} 를 접수했지만 흐름 {definition} 의 처리 건이 열리지 않았습니다")
+        raise NotStarted(f"{spec['title']}: 경보 {alert['alertId']} 를 접수했지만 흐름 {definition} 의 처리 건이 열리지 않았습니다"
+                         f"{_went_to(rt, alert['alertId'])}. 접수하는 사이 배포가 바뀌었을 수 있습니다 — 흐름 배포 화면을 확인한 뒤 다시 누르세요")
     if person:
         ev = alert["evidence"]
         rt.repo.record_events([press_event(inst["proc_inst_id"], SCENARIOS[key]["button"], alert["asset"], person, ev.get("requested_at"),

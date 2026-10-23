@@ -61,7 +61,7 @@ def test_clock_and_small_temperature_drift_do_not_revoke_unchanged_consent(monke
     result, _ = evaluate(monkeypatch, thermal.UnitState(cooler_health=.43,ts1=56))
     old = result['options'][0]['forecastContext']
     newer, _ = evaluate(monkeypatch, thermal.UnitState(cooler_health=.43,ts1=56.1))
-    assert forecasting.consent_changes(old, newer['options'][0]['forecastContext']) == []
+    assert forecasting.consent_changes(old, newer['options'][0]['forecastContext'], time_scale=20) == []
 
 
 @pytest.mark.parametrize('change', [
@@ -75,7 +75,7 @@ def test_clock_and_small_temperature_drift_do_not_revoke_unchanged_consent(monke
 def test_material_prediction_changes_require_new_review(monkeypatch, change):
     result, _ = evaluate(monkeypatch, thermal.UnitState())
     old = result['options'][0]['forecastContext']; new = deepcopy(old); change(new)
-    assert forecasting.consent_changes(old, new)
+    assert forecasting.consent_changes(old, new, time_scale=20)
 
 
 def test_missing_previous_model_context_requires_new_review():
@@ -113,13 +113,16 @@ def test_stale_review_requires_a_new_card_even_when_values_hold(monkeypatch):
 
 
 def test_time_scale_comes_from_the_running_stack_then_the_environment(monkeypatch):
-    monkeypatch.setattr(decide, '_get_json', lambda url: {'time_scale': 20.0})
-    assert forecasting.stack_time_scale() == 20.0
-    monkeypatch.setattr(decide, '_get_json', lambda url: (_ for _ in ()).throw(OSError('offline')))
+    seen = []
+    monkeypatch.setattr(decide, '_get_json', lambda url: (seen.append(url), {'time_scale': 20.0})[1])
     monkeypatch.setenv('TIME_SCALE', '5')
+    assert forecasting.stack_time_scale() == 20.0 and seen[-1].endswith('/api/definition')     # the process' value wins
+    monkeypatch.setattr(decide, '_get_json', lambda url: (_ for _ in ()).throw(OSError('offline')))
     assert forecasting.stack_time_scale() == 5.0
     monkeypatch.delenv('TIME_SCALE')
-    assert forecasting.stack_time_scale() == 1.0
+    # 2026-10-23 audit 7: neither source — the scale is unknown, never a silent 1×
+    with pytest.raises(ValueError, match='배율'):
+        forecasting.stack_time_scale()
 
 
 def test_live_submit_cannot_overwrite_source_facts_before_any_io():

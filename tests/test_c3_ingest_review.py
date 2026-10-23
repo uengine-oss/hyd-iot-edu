@@ -251,3 +251,57 @@ def test_reuse_stops_instead_of_starting_an_unreviewed_extraction(monkeypatch):
     with pytest.raises(SystemExit, match="다시 쓸 끝난 추출이 없습니다"):
         c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", "s" * 64)
     assert posted == []
+
+
+def test_reuse_with_a_loaded_document_picks_only_that_documents_extraction(monkeypatch):
+    # audit2 I4: 같은 파일을 「새 문서」로 다시 올린 적이 있으면 최근순 첫 판본이 다른 문서의 것이라, 적재가 지금 문서가 소유한
+    # 절차를 덮어쓰지 못해 409 로 거절됐다. 지금 적재된 문서가 있으면 그 문서의 판본만 본다.
+    sha = "s" * 64
+    sources = [dict(source_id=f"manual:doc-again:{sha}", document_id="doc-again", sha256=sha, filename="PR-07_spare-parts-standard.md"),
+               dict(source_id=f"manual:doc-now:{sha}", document_id="doc-now", sha256=sha, filename="PR-07_spare-parts-standard.md")]
+    posted = _fake_api(monkeypatch, sources, runs={f"manual:doc-again:{sha}": ["other-doc"], f"manual:doc-now:{sha}": ["this-doc"]},
+                       previews={"other-doc": {"procedures": []}, "this-doc": {"procedures": []}})
+    assert c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", sha, "doc-now") == (
+        f"manual:doc-now:{sha}", {"instance": "this-doc", "reused": True})
+    # 처음 적재(지금 적재된 문서 없음)는 문서를 가리지 않고 최근 판본부터 본다
+    assert c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", sha)[0] == f"manual:doc-again:{sha}"
+    assert posted == []
+
+
+def test_reuse_does_not_fall_back_to_another_documents_extraction(monkeypatch):
+    # 지금 문서에 끝난 추출이 없으면 다른 문서의 끝난 추출로 넘어가지 않고 멈춘다(목록 행에 document_id 가 없으면 source_id 로 가린다)
+    sha = "s" * 64
+    sources = [dict(source_id=f"manual:doc-again:{sha}", sha256=sha, filename="PR-07_spare-parts-standard.md"),
+               dict(source_id=f"manual:doc-now:{sha}", sha256=sha, filename="PR-07_spare-parts-standard.md")]
+    posted = _fake_api(monkeypatch, sources, runs={f"manual:doc-again:{sha}": ["other-doc"], f"manual:doc-now:{sha}": ["closed"]},
+                       previews={"other-doc": {"procedures": []}})
+    with pytest.raises(SystemExit, match="지금 적재된 문서 doc-now의 .*원문 판본 1개"):
+        c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", sha, "doc-now")
+    assert posted == []
+
+
+def test_extract_reuse_looks_only_at_the_loaded_document(monkeypatch, tmp_path):
+    # extract --reuse 는 원문을 올릴 때 쓴 지금 적재된 문서 id 를 끝난 추출 찾기에도 그대로 넘긴다
+    sha = "s" * 64
+    docs = tmp_path / "문서/시스템/참조/수업_문서_원문"
+    docs.mkdir(parents=True)
+    (docs / "PR-07_spare-parts-standard.md").write_bytes((c3_ingest.ROOT / "문서/시스템/참조/수업_문서_원문/PR-07_spare-parts-standard.md").read_bytes())
+    monkeypatch.setattr(c3_ingest, "ROOT", tmp_path)
+    monkeypatch.setattr(c3_ingest, "OUT", tmp_path / "out")
+    (tmp_path / "out").mkdir()
+    monkeypatch.setattr(c3_ingest, "loaded_document", lambda fname: "doc-now")
+    seen = {}
+    def call(method, path, body=None, timeout=120):
+        if path == "/api/kg/manuals/preview":
+            seen["upload_document"] = body["document_id"]
+            return 200, {"source_id": f"manual:doc-now:{sha}"}
+        assert method == "GET", path
+        return 200, {"preview": {"procedures": [], "extraction": {"instance": "this-doc"}}}
+    def finished(key, fname, got_sha, document_id=None):
+        seen["reuse_document"], seen["sha"] = document_id, got_sha
+        return f"manual:doc-now:{sha}", {"instance": "this-doc", "reused": True}
+    monkeypatch.setattr(c3_ingest, "call", call)
+    monkeypatch.setattr(c3_ingest, "finished_extraction", finished)
+    rec = c3_ingest.extract("PR-07", reuse=True)
+    assert seen == {"upload_document": "doc-now", "reuse_document": "doc-now", "sha": sha}
+    assert rec["source_id"] == f"manual:doc-now:{sha}" and rec["reused_extraction"] is True

@@ -204,7 +204,8 @@ def make(S, pptx, name):
             if peak > QUIET_MAX:   # 문장 사이에 조용한 곳이 없다. 쉼을 넣으면 말이 잘린다
                 sys.exit(f"{name} SLIDE {r['first']}: {win[0]:.2f}~{win[1]:.2f}초 문장 사이에 조용한 곳이 없다(가장 작은 세기 {peak}). 쉼을 넣으면 말이 잘린다. 이 장의 음성이나 쉼 자리를 확인한다")
             return (best[0] + best[-1]) / 2 + 0.005
-        r["cuts"] = [(quiet(t), k) for t, k in r["cuts"]]
+        # 0초 쉼은 소리를 끊지 않으므로 조용한 곳을 찾지 않는다(쉼 자리 0이 말이 붙은 문장 사이를 잇는 방법이다)
+        r["cuts"] = [((t[0] if plen(k) * scale <= 0 else quiet(t)), k) for t, k in r["cuts"]]
         out, pos, shift, marks = array.array("h"), 0, 0.0, []
         for t, k in r["cuts"]:
             cut = min(len(data), int(t * fr)); out.extend(data[pos:cut]); pos = cut

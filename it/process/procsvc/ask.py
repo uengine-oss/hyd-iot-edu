@@ -29,6 +29,7 @@ from hydcommon.timeutil import parse_iso
 from pydantic import BaseModel
 
 from . import engine
+from .instances import InstanceRuntime
 
 DEFINITION_FILE = 'ask_agent_v1.json'
 DEFINITION_ID = 'ask_agent'
@@ -340,10 +341,13 @@ def _error_reason(events) -> str | None:
 def _state(inst, wi, events, now=None) -> tuple[str, str]:
     if wi is None:
         return 'broken', '질문 작업이 없습니다 (정의 확인 필요)'
+    # P2 (audit2 2026-10-23): 사람이 [닫기]로 닫은 질문은 처리 건이 COMPLETED(기술 끝 closed-by-human)이고 작업이 CANCELLED 다 — 처리 건
+    # 상태만 보고 '답이 나왔습니다'로 읽으면 답 없는 질문에 서버 판정까지 붙었다. 닫힘을 먼저 본다.
+    if (wi['status'] == 'CANCELLED' or inst.get('status') in ('CANCELLED', 'TERMINATED')
+            or inst.get('end_event') == InstanceRuntime.HUMAN_CLOSE_END_EVENT):
+        return 'closed', '사람이 닫은 질문입니다' + (f" — {wi.get('log')}" if wi.get('log') else '')
     if wi['status'] == 'DONE' or inst.get('status') == 'COMPLETED':
         return 'done', '답이 나왔습니다'
-    if wi['status'] in ('CANCELLED',) or inst.get('status') in ('CANCELLED', 'TERMINATED'):
-        return 'closed', '사람이 닫은 질문입니다' + (f" — {wi.get('log')}" if wi.get('log') else '')
     if wi['status'] == 'PENDING':
         return 'failed', '답을 받지 못했습니다: ' + (wi.get('log') or _error_reason(events) or '엔진이 결과를 받을 수 없어 보류했습니다')
     ds = wi.get('draft_status')
