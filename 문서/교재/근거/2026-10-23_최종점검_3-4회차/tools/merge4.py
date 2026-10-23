@@ -78,7 +78,8 @@ def find(lines, blk):
 
 
 def propagate(label, pats, targets, target_orig, skip):
-    log = []
+    """옮길 자리를 모두 바탕(옮기기 전) 파일에서 먼저 찾은 뒤, 파일마다 뒤에서부터 한꺼번에 적용한다(문단 순서 바꿈도 그대로 옮겨진다)."""
+    log, plan = [], {}
     for tname, old_blk, new_blk, anchor in pats:
         head = next((x for x in old_blk + new_blk if x.strip()), "")[:50]
         if any(s in "\n".join(old_blk + new_blk) for s in skip):
@@ -89,19 +90,26 @@ def propagate(label, pats, targets, target_orig, skip):
                 hits = find(lines, old_blk)
                 if len(hits) > 1: sys.exit(f"! {tname} → {label} {pname}: 같은 줄 묶음이 {len(hits)}번: {head}")
                 if hits:
-                    i = hits[0]; targets[pname] = lines[:i] + new_blk + lines[i + len(old_blk):]
+                    plan.setdefault(pname, []).append((hits[0], hits[0] + len(old_blk), new_blk, head))
                     log.append(f"옮김 {tname} → {label} {pname}: {head}"); done = True
             else:
                 hits = find(lines, anchor)
                 if len(hits) == 1:
                     i = hits[0] + len(anchor)
                     if lines[i:i + len(old_blk)] == old_blk:
-                        targets[pname] = lines[:i] + new_blk + lines[i + len(old_blk):]
+                        plan.setdefault(pname, []).append((i, i + len(old_blk), new_blk, head))
                         log.append(f"옮김(넣기) {tname} → {label} {pname}: {head}"); done = True
         if not done:
             clash = [p for p, ol in target_orig.items() if any(x.strip() for x in old_blk) and find(ol, old_blk)]
             log.append(f"! 충돌 {tname} → {label} {clash}: 대상 점검자가 같은 줄을 따로 고쳤다: {head}" if clash
                        else f"건너뜀(대상에 없는 문장) {tname}: {head}")
+    for pname, eds in plan.items():
+        eds.sort(key=lambda x: (x[0], x[1]))
+        for x, y in zip(eds, eds[1:]):
+            if y[0] < x[1]: sys.exit(f"! {label} {pname}: 옮길 변경이 겹친다: {x[3]} / {y[3]}")
+        lines = list(targets[pname])
+        for i1, i2, new, _ in reversed(eds): lines[i1:i2] = new
+        targets[pname] = lines
     return log
 
 
