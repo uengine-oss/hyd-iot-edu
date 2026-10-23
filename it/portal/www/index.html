@@ -173,7 +173,7 @@
 
   <!-- ───────── 결함 시뮬레이션 ───────── -->
   <section class="view" id="view-scenario">
-    <div class="page-head"><h1>결함 시뮬레이션</h1><div class="page-tools"><label class="row-wrap">시간 배율 <select id="selScale"><option>5</option><option>10</option><option selected>20</option><option>40</option></select>×</label><button class="btn small" id="btnReset">전체 초기화</button></div></div>
+    <div class="page-head"><h1>결함 시뮬레이션</h1><div class="page-tools"><span class="row-wrap" id="scaleFixed" title="수업은 20배 고정입니다. 설비 · 감지 · 처리 · 에이전트가 같은 배율로 돌아야 해서 화면에서 바꾸지 않습니다">시간 배율 <b id="scaleNow">20</b>× (수업 고정)</span><button class="btn small" id="btnReset">전체 초기화</button></div></div>
     <div id="scenarioMsg" class="muted" role="status" aria-live="polite"></div>
     <div class="units" id="units"></div>
     <details class="fold" style="margin-top:var(--s6)"><summary>최근 제어 요청 결과</summary><div class="fold-body"><div class="log" id="gwLog"></div></div></details>
