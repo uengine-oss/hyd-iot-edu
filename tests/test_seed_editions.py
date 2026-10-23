@@ -131,3 +131,12 @@ def test_scenario_structure_uses_only_schema_classes_and_relationships():
     code = "\n".join(l for l in text("scenario_structure.cypher").splitlines() if not l.strip().startswith("//"))
     assert set(re.findall(r"\(\s*\w*\s*:(\w+)", code)) <= classes
     assert set(re.findall(r"\[\s*\w*\s*:(\w+)", code)) <= rels
+
+
+def test_skill_failure_mode_check_exempts_reference_and_purchase_procedures():
+    """2026-10-23: 수업 문서 적재 뒤(PM-02 점검 패키지 = 참고 보관, PR-07 = 구매 절차) kg-seed 되읽기가 실패해, 그 성공에 기대는
+    agent · dmn-mcp 가 새 기동에서 뜨지 않을 수 있었다. 고장 유형이 없어도 되는 두 종류는 적재 규칙(manual_preflight)과 같게 뺀다."""
+    from pathlib import Path
+    lines = (Path(__file__).resolve().parents[1] / 'it/neo4j/v2/seed_checks.cypher').read_text(encoding='utf-8').splitlines()
+    check = next(line for line in lines if "skill not matched to a failure mode" in line)
+    assert "k.kind, '') <> 'reference'" in check and "k.scope, '') <> 'purchase'" in check
