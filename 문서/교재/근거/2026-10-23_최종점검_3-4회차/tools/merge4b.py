@@ -40,6 +40,7 @@ if G == "4":
         if n.startswith("01"): s4[n] = combine(n, a, [("D2", copy("D", "실전반", "04", n), (1, 28)), ("E2", copy("E", "실전반", "04", n), (29, 59))])
         elif n.startswith("02"): s4[n] = combine(n, a, [("F2", copy("F", "실전반", "04", n), (60, 81))])
         else: s4[n] = combine(n, a, [("F2", copy("F", "실전반", "04", n), (82, 101)), ("G2", copy("G", "실전반", "04", n), (102, 132))])
+    # 통합반 5 · 6회차는 실전반 4회차와 같은 문단만 맞춘다(사용자: 「반 단위로 해야 하는 거면 5회차도 … 어쩔 수 없고」)
     t56o = {f"05/{n}": ls for n, ls in read(PROP / "통합반" / "05회차").items()} | {f"06/{n}": ls for n, ls in read(PROP / "통합반" / "06회차").items()}
     t56 = {k: list(v) for k, v in t56o.items()}
     log += propagate("통합반 5·6회차", patches(p4, s4), t56, t56o, SKIP.get("to_통합반56", []))
