@@ -109,13 +109,13 @@ def validate_proposal(source, proposal):
         raise ValueError(f"proposal에 정해지지 않은 칸이 있습니다: {', '.join(unknown)} — 맨 위 칸은 {', '.join(PROPOSAL_KEYS)}입니다. "
                          "규칙 · 원인 · 증거 · 고장 유형은 proposal.knowledge 안(예: knowledge.rules)에 적으세요")
     pages = {p['page']:p['text'] for p in source['pages']}
-    def anchor(value):
+    def anchor(value, within=None):
         # A117 (r14 B2, memento document_locate): the agent quotes, the server locates. Offsets the agent sends are kept
         # when they are right; otherwise the located span (page, start, end, source's own quote) is written back in place
         # so the stored proposal is coordinate-complete for the reviewer, coverage and the graph.
         if not isinstance(value, dict) or value.get('source_id') != source['source_id']:
             raise ValueError('원문 판본의 인용이 필요합니다')
-        located = manual_locate.locate(pages, value)
+        located = manual_locate.locate(pages, value, within=within)
         value.update({k: located[k] for k in ('page','start','end','quote')})
         value.pop('located', None)
     for key, limit in [('sections',1000),('procedures',500),('page_reviews',500),('warnings',1000)]:
@@ -133,6 +133,18 @@ def validate_proposal(source, proposal):
         nonempty(s.get('ref'),'절 ID');nonempty(s.get('title'),'절 제목')
         if s['ref'] in sections or not isinstance(s.get('excerpt',''),str):raise ValueError('절 중복 또는 본문 형식 오류')
         sections.add(s['ref']);anchor(s.get('anchor'))
+    # 절차 블록: 그 절차의 인용 위치부터 같은 쪽 다음 절차의 인용 위치 전까지. 여러 절차에 같은 단계 문장이 있으면 단계 인용을
+    # 그 절차 블록 안의 것으로 정한다(manual_locate.locate within). 절차 인용이 틀린 SOP는 아래 본 검사에서 그 사유로 거부된다.
+    starts = []
+    for p in proposal['procedures']:
+        if isinstance(p, dict) and isinstance(p.get('anchor'), dict):
+            try:
+                anchor(p['anchor'])
+            except ValueError:
+                continue
+            starts.append((p['anchor']['page'], p['anchor']['start'], p['anchor']['end'], id(p)))
+    blocks = {key: (page, start, max(end, min((s for q, s, _, _ in starts if q == page and s > start), default=len(pages[page]))))
+              for page, start, end, key in starts}
     seen=set()
     for p in proposal['procedures']:
         if not isinstance(p,dict):raise ValueError('SOP는 객체여야 합니다')
@@ -149,7 +161,7 @@ def validate_proposal(source, proposal):
                 raise ValueError(f"SOP {p['id']} 단계 order가 1부터 연속이어야 합니다 (위치 {order}에서 {step.get('order') if isinstance(step,dict) else step!r})")
             if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
-            nonempty(step.get('text'),'단계');anchor(step.get('anchor'))
+            nonempty(step.get('text'),'단계');anchor(step.get('anchor'),within=blocks.get(id(p)))
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:

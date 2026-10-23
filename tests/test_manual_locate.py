@@ -59,3 +59,15 @@ def test_a_quote_the_source_does_not_contain_is_still_refused():
 
 def test_page_may_be_omitted_when_the_quote_is_unique_in_the_document():
     assert L.locate(PAGES, {'quote': '3. 교체'})['page'] == 2
+
+
+def test_the_block_a_quote_belongs_to_picks_one_of_several_places():
+    # 2026-10-23 리허설: 세 절차에 같은 단계 문장이 있어 추출이 세 번 다 거부됐다 — 단계는 자기 절차 블록 안의 것이다
+    text = '### SOP-A\n1. 모드를 확인한다.\n2. 팬을 올린다.\n### SOP-B\n1. 모드를 확인한다.\n2. 부하를 내린다.\n'
+    b = text.index('### SOP-B')
+    got = L.locate({1: text}, {'page': 1, 'quote': '1. 모드를 확인한다.'}, within=(1, b, len(text)))
+    assert got['start'] == text.index('1. 모드', b)
+    with pytest.raises(L.Ambiguous, match='2곳'):        # 블록이 둘 다 품으면 여전히 정하지 않는다
+        L.locate({1: text}, {'page': 1, 'quote': '1. 모드를 확인한다.'}, within=(1, 0, len(text)))
+    with pytest.raises(L.Ambiguous, match='2곳'):        # 블록 밖(다른 쪽)이면 여전히 정하지 않는다
+        L.locate({1: text}, {'page': 1, 'quote': '1. 모드를 확인한다.'}, within=(2, 0, 10))
