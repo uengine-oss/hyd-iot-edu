@@ -157,3 +157,7 @@ node C:/ego-recording/encode.cjs C:/recordings/ego-run-001 C:/tools/ffmpeg.exe
 - [ego 공식 소개](https://lite.ego.app/ko), [Windows 시작 안내](https://lite.ego.app/document/ko/docs/windows/quick-start), [설치 스킬 원본](https://github.com/CitroLabs/ego-lite/tree/main/skills/ego-browser). 실제 명령은 설치된 `ego-browser skill` 출력 우선.
 - 로컬 원본: `.evidence/ego-lite-20261022/smooth-sample.mjs`, `smooth-timing.json`, `smooth-clicks.json`, `smooth-result.json`, `arrows-ego-smooth-test.mp4`.
 - 이 영상은 마지막 포인터 개선 시험이다. `.evidence` 미디어는 Git에 포함하지 않으므로 clone만으로 복원되지 않는다. 재현용 코드와 문서만 저장소에 둔다.
+
+## 2026-10-23 장시간 촬영 운영 정정
+
+50분 전체 단일 테이크를 강제하지 않는다. [기능 구간별 촬영과 부분 복구](기준_실습대본.md#기능-구간별-촬영과-부분-복구--2026-10-23-사용자-확정)를 우선 적용한다. 기존의 연속성은 각 촬영 구간 안에서 설명·조작·결과를 생략하지 않는다는 뜻이다. 구간별 원본·타임라인·종료 상태를 저장하고, 다음 구간의 시작 상태를 연결한다. 출력30fps와 디코드 통과만으로 움직임·청취 품질을 확정하지 않는다.
