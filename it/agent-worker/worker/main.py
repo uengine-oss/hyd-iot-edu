@@ -127,7 +127,7 @@ def _ai_login() -> bool | None:
 def build_runner(repo, *, login=_ai_login) -> Runner:
     """AI_MODE 에 따라 CLI 실행 자리(exec_fn)만 바꾼다 — 나머지 실행 · 결과 검사 · 저장은 같다."""
     mode = ai_replay.resolve_mode(settings.ai_mode, login)
-    library = ai_replay.Library(settings.ai_replay_dir)
+    library = ai_replay.Library(settings.ai_replay_dir, case_of=ai_replay.case_of_instance(repo))
     exec_fn = {"live": None,
                "record": ai_replay.recording(runner_mod._exec_stream, library, lambda p: getattr(p, "id", settings.cli_agent)),
                "replay": ai_replay.replaying(library)}[mode]

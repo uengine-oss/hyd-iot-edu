@@ -6,8 +6,10 @@
     AI_MODE=record  실제 AI로 실행하면서 CLI가 낸 실행 이벤트와 결과 파일을 업무마다 저장한다
     AI_MODE=replay  CLI를 부르지 않고 같은 업무의 저장된 실행 이벤트를 내보낸다
 
-규칙은 하나다: 업무 이름(작업 단계 이름)이 같으면 저장된 응답을 쓴다. 입력 · 지시문이 저장할 때와 달라도 쓴다.
-업무 이름은 띄어쓰기 · 대소문자를 무시하고 비교한다. 업무 하나에 파일 하나(AI_REPLAY_DIR/<업무 해시>.json)이고, 그 안에 실행이
+규칙은 하나다: 같은 업무면 저장된 응답을 쓴다. 입력 · 지시문이 저장할 때와 달라도 쓴다. 업무는 무엇에 대한 처리 건인가(경보 종류 —
+처리 건의 pattern: 쿨러 열화 · 펌프 누설 · 정기 정비 도래 …, 문서 추출이면 문서 내용 해시 · 구간, 둘 다 없으면 비움)와 업무 이름(작업 단계 이름)으로 가린다. 같은 흐름이 경보마다 같은 업무
+이름을 쓰기 때문이다. 흐름 정의 id 는 쓰지 않는다(학생이 bpmn.io 로 그린 흐름은 id 가 다르다). 업무 이름은 띄어쓰기 · 대소문자를
+무시한다. 업무 하나에 파일 하나(AI_REPLAY_DIR/<업무 해시>.json.gz — 도구 결과가 커서 gzip, 실측 5 %)이고, 그 안에 실행이
 순서대로 들어 있다 — 첫 실행, 그리고 같은 세션을 이어 간 실행(사람이 질문에 답한 뒤, 결과 형식 교정). 다시 저장하면 덮어쓴다.
 그 업무의 저장 파일이 없으면 지어내지 않고 그 단계를 실패시킨다. 저장된 응답이 결과 형식에 맞지 않으면 실제 실행과 같은
 형식 검사가 실패시킨다.
@@ -25,6 +27,7 @@
 from __future__ import annotations
 
 import copy
+import gzip
 import hashlib
 import json
 import logging
@@ -83,8 +86,27 @@ def step_of(request) -> str:
     return m.group(1).strip() if m else ""
 
 
-def _key(step: str) -> str:
-    return hashlib.sha256(re.sub(r"\s+", "", step).casefold().encode("utf-8")).hexdigest()[:16]
+def _key(step: str, case: str = "") -> str:
+    name = re.sub(r"\s+", "", step).casefold()
+    return hashlib.sha256((f"{case}|{name}" if case else name).encode("utf-8")).hexdigest()[:16]
+
+
+def case_of_instance(repo) -> Callable[[str], str]:
+    """처리 건 id → 무엇에 대한 처리 건인가: 경보 종류(처리 건 값 pattern), 문서 추출이면 문서 내용 해시(manual_source.sha256 —
+    올릴 때마다 바뀌는 문서 id 가 아니라 내용)와 긴 문서의 구간 번호(segment.index). 둘 다 없으면(질문 답변 등) 빈 값."""
+    from procsvc import engine
+
+    def case(proc_inst_id: str) -> str:
+        inst = repo.get_instance(proc_inst_id) if proc_inst_id else None
+        values = engine.variables(inst) if inst else {}
+        if values.get("pattern"):
+            return str(values["pattern"])
+        source = values.get("manual_source") if isinstance(values.get("manual_source"), dict) else {}
+        if source.get("sha256"):
+            segment = values.get("segment") if isinstance(values.get("segment"), dict) else {}
+            return f"문서 {str(source['sha256'])[:16]}" + (f" 구간 {segment['index']}" if segment.get("index") else "")
+        return ""
+    return case
 
 
 def _event_dict(ev: ExecEvent) -> dict:
@@ -146,33 +168,54 @@ def _secrets_in(workdir) -> dict[str, str]:
     return found
 
 
+def _masked(text: str, secrets: dict[str, str]) -> tuple[str, list[str]]:
+    """저장할 JSON 글에서 비밀값(그대로 · JSON 이스케이프된 꼴)을 가림 표시로 바꾼다. (글, 가린 이름 목록)."""
+    names = []
+    for name, value in sorted(secrets.items(), key=lambda kv: len(kv[1]), reverse=True):
+        hit = False
+        for form in dict.fromkeys((value, json.dumps(value, ensure_ascii=False)[1:-1])):
+            if form in text:
+                text, hit = text.replace(form, mcp_check.MASK), True
+        if hit:
+            names.append(name)
+    return text, sorted(names)
+
+
 class Library:
     """업무 하나에 파일 하나: {"format", "step", "recorded_at", "provider", "runs": [{"session_id", "events", "result_file", "context"}, …]}."""
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, case_of: Callable[[str], str] | None = None):
         self.root = Path(root)
+        self.case_of = case_of or (lambda proc_inst_id: "")
 
-    def path_of(self, step: str) -> Path:
-        return self.root / f"{_key(step)}.json"
+    def case(self, request) -> str:
+        return self.case_of(str((_read_json(Path(request.workdir) / TASK_FILE) or {}).get("proc_inst_id") or ""))
+
+    def file_of(self, key: str) -> Path:
+        return self.root / f"{key}.json.gz"
+
+    def path_of(self, step: str, case: str = "") -> Path:
+        return self.file_of(_key(step, case))
 
     def _read(self, path: Path) -> dict:
-        doc = json.loads(path.read_text(encoding="utf-8"))
+        doc = json.loads(gzip.decompress(path.read_bytes()).decode("utf-8"))
         if doc.get("format") != FORMAT:
             raise RuntimeError(f"저장된 AI 응답 파일의 형식이 다릅니다: {path.name}")
         return doc
 
-    def load(self, step: str) -> dict | None:
-        p = self.path_of(step)
+    def load(self, step: str, case: str = "") -> dict | None:
+        p = self.path_of(step, case)
         return self._read(p) if p.is_file() else None
 
     def docs(self) -> list[dict]:
-        return [self._read(p) for p in sorted(self.root.glob("*.json"))] if self.root.is_dir() else []
+        return [self._read(p) for p in sorted(self.root.glob("*.json.gz"))] if self.root.is_dir() else []
 
     def _owner_of(self, session: str) -> tuple[dict, int] | None:
-        """실제 세션 id 가 어느 업무 파일의 몇 번째 실행인지(이어 하기 저장용)."""
+        """실제 세션 id 가 어느 업무 파일의 몇 번째 실행인지(이어 하기 저장용). Claude Code 는 이어 해도 세션 id 가 같으므로
+        그 세션의 마지막 실행을 고른다 — 첫 실행을 고르면 세 번째 이어 하기부터 가운데 실행이 지워진다(2026-10-23 실측)."""
         for doc in self.docs():
-            for i, run in enumerate(doc["runs"]):
-                if run.get("session_id") == session:
+            for i in range(len(doc["runs"]) - 1, -1, -1):
+                if doc["runs"][i].get("session_id") == session:
                     return doc, i
         return None
 
@@ -188,20 +231,19 @@ class Library:
             doc, i = owner
             doc["runs"] = doc["runs"][: i + 1] + [run]
         elif step:                                   # 업무의 첫 실행: 그 업무 파일을 새로 쓴다(다시 저장하면 덮어쓴다)
-            doc = {"format": FORMAT, "step": step, "provider": provider_id, "runs": [run]}
+            doc = {"format": FORMAT, "step": step, "case": self.case(request), "provider": provider_id, "runs": [run]}
         else:
             log.warning("업무 이름도 이어 갈 저장분도 없는 실행이라 AI 응답을 저장하지 않았습니다")
             return None
         doc["recorded_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         text = json.dumps(doc, ensure_ascii=False, indent=1, default=str)
-        leaked = sorted(name for name, v in _secrets_in(request.workdir).items() if v in text)
-        if leaked:
-            log.error("AI 응답을 저장하지 않았습니다(%s): 비밀값이 실행 기록에 있습니다 — %s", doc["step"], ", ".join(leaked))
-            return None
+        text, masked = _masked(text, _secrets_in(request.workdir))
+        if masked:      # 예: AI 가 작업 폴더의 .mcp.json 을 읽었다 — 값은 가리고 저장한다(가린 값은 저장 파일 어디에도 남지 않는다)
+            log.warning("AI 응답 저장(%s): 실행 기록의 비밀값을 가렸습니다 — %s", doc["step"], ", ".join(masked))
         self.root.mkdir(parents=True, exist_ok=True)
-        path = self.path_of(doc["step"])
-        path.write_text(text + "\n", encoding="utf-8")
-        log.info("AI 응답 저장: %s · %s (실행 %d개)", path.name, doc["step"], len(doc["runs"]))
+        path = self.path_of(doc["step"], doc.get("case") or "")
+        path.write_bytes(gzip.compress((text + "\n").encode("utf-8"), mtime=0))      # gzip 머리에 시각을 넣지 않는다
+        log.info("AI 응답 저장: %s · %s%s (실행 %d개)", path.name, doc["step"], f" · {doc['case']}" if doc.get("case") else "", len(doc["runs"]))
         return path
 
     def find(self, request) -> tuple[dict | None, int]:
@@ -209,10 +251,10 @@ class Library:
         resume = request.resume_session or ""
         if resume.startswith(SESSION_PREFIX):
             key, _, n = resume[len(SESSION_PREFIX):].rpartition(":")
-            p = self.root / f"{key}.json"
+            p = self.file_of(key)
             return (self._read(p) if p.is_file() else None), (int(n) + 1 if n.isdigit() else 0)
         step = step_of(request)
-        return (self.load(step) if step else None), 0
+        return (self.load(step, self.case(request)) if step else None), 0
 
 
 def recording(inner, library: Library, provider_of: Callable[[object], str]):
@@ -361,14 +403,16 @@ def replaying(library: Library):
         run.last = None
         doc, i = library.find(request)
         if doc is None or i >= len(doc["runs"]):
-            what = f"「{doc['step']}」의 이어지는 응답" if doc else f"「{step_of(request) or '이 단계'}」 업무"
+            case = library.case(request)
+            what = (f"「{doc['step']}」의 이어지는 응답" if doc else
+                    f"「{step_of(request) or '이 단계'}」 업무" + (f"({'' if case.startswith('문서') else '경보 '}{case})" if case else ""))
             yield _error(f"{what}의 저장된 AI 응답이 없습니다. API 키를 넣으면 실제 AI로 실행합니다.")
             return
         saved = doc["runs"][i]
         swaps = _Swaps()
         swaps.pair(saved.get("context") or {}, _task_context(request.workdir))
         tools = _Tools(request.workdir)
-        session = f"{SESSION_PREFIX}{library.path_of(doc['step']).stem}:{i}"
+        session = f"{SESSION_PREFIX}{_key(doc['step'], doc.get('case') or '')}:{i}"
         run.last = {"step": doc["step"], "recorded_at": doc["recorded_at"], "rerun": []}
         yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
         events = saved["events"]

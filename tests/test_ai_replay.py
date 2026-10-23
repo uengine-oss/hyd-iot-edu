@@ -1,6 +1,7 @@
 """AI 응답 저장 · 재생(worker/ai_replay.py): API 키 없는 워커가 AI가 응답할 단계에만 미리 저장한 응답을 넣고,
 나머지(결과 검사 · 저장 · 처리 과정 이벤트)는 실제 실행과 같은 Runner 코드로 처리하는지. 가짜 CLI · MemoryRepo 로 돈다.
 규칙: 업무 이름이 같으면 저장된 응답을 쓴다(입력 · 지시문이 달라도). 업무 하나에 파일 하나."""
+import gzip
 import json
 from pathlib import Path
 
@@ -67,7 +68,7 @@ def test_no_saved_response_for_the_business_step_fails_instead_of_inventing_one(
     _record(tmp_path, lib, _fake_exec(ANSWER))
     [doc] = lib.docs()                                     # 다른 업무의 저장분만 있다
     lib.path_of("원인 진단").rename(lib.path_of("조치 후보"))
-    lib.path_of("조치 후보").write_text(json.dumps(doc | {"step": "조치 후보"}, ensure_ascii=False), encoding="utf-8")
+    lib.path_of("조치 후보").write_bytes(gzip.compress(json.dumps(doc | {"step": "조치 후보"}, ensure_ascii=False).encode("utf-8")))
     repo, inst = _repo()
     _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
     row = _diagnose(repo, inst)
@@ -100,7 +101,7 @@ def test_saving_again_overwrites_the_one_file_of_that_business_step(tmp_path):
     _record(tmp_path, lib, _fake_exec(ANSWER))
     _record(tmp_path, lib, _fake_exec(ANSWER.replace("cooler-fin-fouling", "fan-drive-fault")))
     [doc] = lib.docs()
-    assert len(list((tmp_path / "lib").glob("*.json"))) == 1 and "fan-drive-fault" in json.dumps(doc["runs"])
+    assert len(list((tmp_path / "lib").glob("*.json.gz"))) == 1 and "fan-drive-fault" in json.dumps(doc["runs"])
 
 
 def test_saved_response_that_breaks_the_result_contract_fails_like_a_live_run(tmp_path):
@@ -109,9 +110,9 @@ def test_saved_response_that_breaks_the_result_contract_fails_like_a_live_run(tm
     repo, inst = _repo()
     _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
     row = _diagnose(repo, inst)
-    # 실제 실행처럼 형식 교정을 요청하지만, 교정 응답은 저장된 적이 없으니 지어내지 않고 실패한다
+    # 저장할 때처럼 형식 교정이 이어지고(저장된 교정 응답도 형식에 안 맞음), 실제 실행과 같은 형식 검사 오류로 끝난다
     assert row["draft_status"] == "FAILED" and row["output"] is None
-    assert "이어지는 응답의 저장된 AI 응답이 없습니다" in repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert "출력 형식과 맞지 않습니다" in repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
 
 
 def test_format_correction_is_saved_and_replayed_in_order(tmp_path):
@@ -146,7 +147,9 @@ def test_secret_values_are_never_saved(tmp_path, monkeypatch):
     monkeypatch.setattr(ai_replay, "_SECRET_ENV", {"OPENAI_API_KEY": "sk-test-secret-value-123"})
     lib = ai_replay.Library(tmp_path / "lib")
     _record(tmp_path, lib, _fake_exec('{"cause": "sk-test-secret-value-123", "failure_mode": "f", "guide_card": {}}'))
-    assert lib.docs() == []
+    [path] = list((tmp_path / "lib").glob("*.json.gz"))                 # 가리고 저장한다 — 그 단계는 재생할 수 있다
+    saved = gzip.decompress(path.read_bytes()).decode("utf-8")
+    assert "sk-test-secret-value-123" not in saved and "********" in saved
 
 
 def test_secret_env_names_follow_the_worker_rule_not_every_name_with_pwd():
@@ -165,7 +168,9 @@ def test_tool_server_tokens_of_the_run_are_never_saved(tmp_path):
         cfg.write_text(json.dumps(doc), encoding="utf-8")
         yield from _fake_exec(ANSWER.replace("cooler-fin-fouling", "tok-run-only-777"))(provider, request, env)
     _record(tmp_path, lib, echoes_token)
-    assert lib.docs() == []
+    [path] = list((tmp_path / "lib").glob("*.json.gz"))
+    saved = gzip.decompress(path.read_bytes()).decode("utf-8")
+    assert "tok-run-only-777" not in saved and "Bearer" not in saved and "********" in saved
 
 
 def test_result_file_is_saved_and_restored(tmp_path):
@@ -228,10 +233,10 @@ def test_replay_runs_without_the_cli_installed(monkeypatch, tmp_path):
         registry.availability(Surface.EXEC, refresh=True)
 
 
-def _new_case(incident, alert):
+def _new_case(incident, alert, pattern="COOLER_DEGRADATION"):
     repo, _ = _repo()
     defn = engine.Definition.load(DEF_PATH)
-    inst = engine.new_instance(defn, {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "alert": {"alertId": alert}, "incident": incident}, now=NOW)
+    inst = engine.new_instance(defn, {"asset": "HYD-01", "pattern": pattern, "alert": {"alertId": alert}, "incident": incident}, now=NOW)
     adv = engine.start(defn, inst, now=NOW)
     repo.insert_instance(inst); repo.insert_workitems(adv.created); repo.update_instance(inst)
     for w in repo.list_workitems():
@@ -314,3 +319,54 @@ def test_result_file_gets_this_case_values_too(tmp_path, monkeypatch):
     repo, inst = _new_case("INC-stu-9", "AL-stu-9")
     _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
     assert _diagnose(repo, inst)["output"]["guide_card"] == {"decision": "dec-live-0042", "alert": "AL-stu-9"}
+
+
+def test_same_business_name_under_another_alert_type_is_another_business(tmp_path):
+    # 쿨러 열화 · 펌프 누설 · 팬 진동은 같은 흐름 · 같은 업무 이름(원인 진단 …)을 쓴다 — 쿨러 응답을 펌프 사건에 주면 안 된다
+    root = tmp_path / "lib"
+    cooler = _new_case("INC-c", "AL-c")
+    _record(tmp_path, ai_replay.Library(root, case_of=ai_replay.case_of_instance(cooler[0])), _fake_exec(ANSWER), cooler)
+    [doc] = ai_replay.Library(root).docs()
+    assert doc["case"] == "COOLER_DEGRADATION"
+    repo, inst = _new_case("INC-p", "AL-p", pattern="PUMP_LEAKAGE")
+    _runner(tmp_path, repo, ai_replay.replaying(ai_replay.Library(root, case_of=ai_replay.case_of_instance(repo))), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    err = repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert row["draft_status"] == "FAILED" and "「원인 진단」 업무(경보 PUMP_LEAKAGE)의 저장된 AI 응답이 없습니다" in err
+    repo, inst = _new_case("INC-c2", "AL-c2")                       # 같은 경보 종류면 재생한다
+    _runner(tmp_path, repo, ai_replay.replaying(ai_replay.Library(root, case_of=ai_replay.case_of_instance(repo))), "replay").poll_once()
+    assert _diagnose(repo, inst)["status"] == "SUBMITTED"
+    pump = _new_case("INC-p2", "AL-p2", pattern="PUMP_LEAKAGE")      # 펌프를 저장하면 쿨러와 따로 남는다
+    _record(tmp_path, ai_replay.Library(root, case_of=ai_replay.case_of_instance(pump[0])), _fake_exec(ANSWER), pump)
+    assert sorted(d["case"] for d in ai_replay.Library(root).docs()) == ["COOLER_DEGRADATION", "PUMP_LEAKAGE"]
+
+
+def test_document_extraction_is_told_apart_by_document_content_and_segment():
+    rows = {}
+    def put(pid, values):
+        rows[pid] = {"proc_inst_id": pid, "variables_data": [{"key": k, "value": v} for k, v in values.items()]}
+    repo = type("Repo", (), {"get_instance": lambda self, pid: rows.get(pid)})()
+    put("p.cooler", {"pattern": "COOLER_DEGRADATION"})
+    put("p.hm8-a", {"manual_source": {"source_id": "manual:u1:abc", "sha256": "abcdef0123456789ffff"}})
+    put("p.hm8-b", {"manual_source": {"source_id": "manual:u2:abc", "sha256": "abcdef0123456789ffff"}})   # 같은 문서를 다시 올림
+    put("p.hm8-seg", {"manual_source": {"sha256": "abcdef0123456789ffff"}, "segment": {"index": 2, "total": 3}})
+    put("p.ask", {"question": "?"})
+    case = ai_replay.case_of_instance(repo)
+    assert case("p.cooler") == "COOLER_DEGRADATION" and case("p.ask") == "" and case("missing") == ""
+    assert case("p.hm8-a") == case("p.hm8-b") == "문서 abcdef0123456789" and case("p.hm8-seg") == "문서 abcdef0123456789 구간 2"
+
+
+def test_three_runs_in_the_same_cli_session_are_all_kept_in_order(tmp_path):
+    # Claude Code 는 이어 하기(--resume)에도 세션 id 가 같다: 형식 교정 두 번 = 같은 세션의 실행 셋
+    lib = ai_replay.Library(tmp_path / "lib")
+    answers = iter(["첫 답 (JSON 없음)", "둘째 답 (JSON 없음)", ANSWER])
+    def fn(provider, request, env):
+        yield from _fake_exec(next(answers), session="sess-same")(provider, request, env)
+    repo, inst = _repo()
+    Runner(_settings(tmp_path / "rec", max_format_corrections=2), repo, exec_fn=ai_replay.recording(fn, lib, lambda p: "claude-code"),
+           schema_prompt="# s", resolve_provider=lambda pid: object(), ai_mode="record").poll_once()
+    assert [r["events"][-1]["text"] for r in lib.docs()[0]["runs"]] == ["첫 답 (JSON 없음)", "둘째 답 (JSON 없음)", ANSWER]
+    repo, inst = _repo()
+    Runner(_settings(tmp_path / "rep", max_format_corrections=2), repo, exec_fn=ai_replay.replaying(lib), schema_prompt="# s",
+           resolve_provider=lambda pid: object(), ai_mode="replay").poll_once()
+    assert _diagnose(repo, inst)["status"] == "SUBMITTED"
