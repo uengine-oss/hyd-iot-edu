@@ -11,7 +11,7 @@
         role_members  B1 학생이 넣은 업무분장(역할 ← 사람)
         flows         B3 가져온 흐름: 판본마다 .bpmn 원본 + 매핑 + 정의 해시, 마지막 초안
         assignments   B1 단계 → 에이전트 배정
-        deployments   B4 경보 경로에 올린 학생 흐름(배포 순서대로) · 기준 흐름의 운영 판본이 기준 판본이 아니면 그 판본
+        deployments   B4 경보 경로에 올린 흐름(배포 순서대로, 강사가 배포한 수업 흐름은 class_flow: true) · 기준 흐름의 운영 판본이 기준 판본이 아니면 그 판본
   POST /api/config/import   {bundle, secrets?, skip_missing_secrets?, by?} (또는 파일 그대로)
         1) 검증(아무것도 바꾸지 않음): 형식 · 판수 · 칸 · 이름 겹침 · 참조(스킬 · 도구 서버 · 에이전트 · 흐름 · 판본) ·
            흐름은 B3 사전 검사를 그대로 돌리고 다시 만든 정의가 파일의 해시와 같은지 · 비밀값 필요 → 422 사유
@@ -22,6 +22,7 @@
         실패하면 어디서 왜 실패했는지 + 적용된 것 · 안 된 것, 그리고 3)의 보관본으로 적용 전 상태를 다시 세운다(rolled_back).
         같은 파일을 두 번 가져와도 되돌리기 → 적용이라 같은 결과다.
   POST /api/config/reset    하나의 "기준으로 되돌리기": B4 deploy-reset → B3 flows reset → B1 agents reset → B2 mcp reset → B5 ask reset.
+        강사가 배포한 수업 흐름은 남긴다(흐름 배포 화면의 [기준 흐름으로 되돌리기]와 같다). 불러오기 3)의 되돌리기는 수업 흐름까지 지운다.
         먼저 409 조건을 모두 점검한다(학생 판본을 쓰는 진행 중 처리 건 · 학생 에이전트가 실행 중인 작업). 하나라도 있으면
         아무것도 지우지 않고 사유.
 
@@ -229,7 +230,8 @@ def export_bundle(rt, base_loader, *, include_secrets: bool = False) -> dict:
     for f in reversed(routes["flows"]):                      # 배포한 순서(오래된 것 먼저) — 같은 패턴은 나중 배포가 이긴다
         versions = {v["version"] for v in (flows.get(f["definition"]) or {}).get("versions", [])}
         if f["version"] in versions:
-            deployed.append({"definition_id": f["definition"], "version": f["version"], "patterns": f["patterns"]})
+            deployed.append({"definition_id": f["definition"], "version": f["version"], "patterns": f["patterns"],
+                             **({"class_flow": True} if f.get("class_flow") else {})})   # 불러오기가 수업 흐름으로 다시 배포한다
         else:
             not_included.append({"what": f"배포된 흐름 '{f['definition']}' 판본 {f['version']}",
                                  "reason": "포털 흐름 가져오기(B3)로 등록한 판본이 아니라(관리 화면 JSON 등록 등) 출발본에 담지 않았습니다"})
@@ -274,14 +276,22 @@ def _refuse_if_busy(rt, verb: str) -> None:
                           blocking=found)
 
 
-def _reset_steps(rt, by: str, *, ask: bool) -> list[dict]:
+def _reset_steps(rt, by: str, *, ask: bool, keep_class: bool) -> list[dict]:
     from . import ask as ask_mod
     from . import flow_deploy
     done = []
-    # include_class=True: 이 되돌리기는 다음 단계(flows_reset)에서 가져온 흐름(origin=user)을 수업 흐름까지 모두 지운다 — 지우기 전에 경보 경로에서
-    # 내려 배포 기록(withdraw)을 남긴다. 수업 흐름을 남기는 것은 흐름 배포 화면의 [기준 흐름으로 되돌리기](P9)다.
-    work = [("deploy_reset", lambda: flow_deploy.deploy_reset(rt, by, "기준으로 되돌리기(구성 전체)", include_class=True)),
-            ("flows_reset", lambda: FlowStore(rt.repo, rt.tenant_id).reset()),
+    # keep_class=True(관리 탭 [기준으로 되돌리기]): 흐름 배포 화면의 [기준 흐름으로 되돌리기](P9)와 같이 강사가 배포한 수업 흐름은 경보 경로와
+    # 흐름 목록에 남긴다(2026-10-23 사용자 결정 — 학생이 자기 구성을 지우다 B · C 버튼이 멈추지 않게). keep_class=False(출발본 불러오기 · 그
+    # 실패 복원): 파일 내용으로 통째로 다시 세우는 일이라 수업 흐름까지 내리고 지운다 — 파일이 수업 흐름 표시를 실어 다시 배포한다.
+    kept: set[str] = set()
+
+    def deploy_reset():
+        out = flow_deploy.deploy_reset(rt, by, "기준으로 되돌리기(구성 전체)", include_class=not keep_class)
+        kept.update(k["definition"] for k in out.get("kept") or [])
+        return out
+
+    work = [("deploy_reset", deploy_reset),
+            ("flows_reset", lambda: FlowStore(rt.repo, rt.tenant_id).reset(keep=kept)),
             ("agents_reset", lambda: A.reset(rt, by=by)),
             ("mcp_reset", lambda: mcp_registry.reset(mcp_registry.store_for(rt.repo), rt.tenant_id))]
     if ask:
@@ -325,12 +335,13 @@ def reset_all(rt, *, by: str = "포털", audit=None) -> dict:
         raise BundleError(409, "다른 되돌리기 · 불러오기가 진행 중입니다 — 끝난 뒤 다시 누르세요")
     try:
         _refuse_if_busy(rt, "되돌리지")
-        steps = _reset_steps(rt, by, ask=True)
+        steps = _reset_steps(rt, by, ask=True, keep_class=True)
     finally:
         _LOCK.release()
     if audit:
         audit("-", by, "CONFIG_RESET", {"steps": [s["step"] for s in steps]})
-    return {"steps": steps, "message": "기준으로 되돌렸습니다 — 내가 만든 에이전트 · 스킬 · 배정 · 업무분장 · MCP 서버 · 흐름 · 배포를 지웠고 기준은 그대로입니다"}
+    return {"steps": steps, "message": "기준으로 되돌렸습니다 — 내가 만든 에이전트 · 스킬 · 배정 · 업무분장 · MCP 서버 · 흐름 · 배포를 지웠고 "
+                                       "기준과 강사가 배포한 수업 흐름은 그대로입니다"}
 
 
 # ---------------------------------------------------------------- 검증(아무것도 바꾸지 않음)
@@ -594,7 +605,7 @@ def validate(rt, base_loader, bundle, secrets: dict | None = None, skip_missing_
         did, ver = (_text(d.get("definition_id")), _text(d.get("version"))) if isinstance(d, dict) else ("", "")
         if ver not in flow_versions.get(did, set()):
             problems.append(_problem(f"배포 {did} 판본 {ver}", "그 흐름 판본이 파일에 없습니다")); continue
-        plan_deploys.append({"definition_id": did, "version": ver})
+        plan_deploys.append({"definition_id": did, "version": ver, "class_flow": d.get("class_flow") is True})
     ref = dep.get("reference")
     plan_ref = None
     if isinstance(ref, dict) and ref.get("version"):
@@ -694,7 +705,7 @@ def _apply(rt, base_loader, plan: dict, by: str) -> list[dict]:
         done()
         begin("deployments")
         for d in plan["deployments"]:
-            rt.deploy_definition(d["definition_id"], d["version"], by, "출발본 불러오기")
+            rt.deploy_definition(d["definition_id"], d["version"], by, "출발본 불러오기", class_flow=d["class_flow"])
             row = repo.get_proc_def(d["definition_id"], tenant, version=d["version"]) or {}
             current["items"].append(f"{row.get('name') or d['definition_id']} 판본 {d['version']} — 다음 경보부터")
         if plan.get("reference"):
@@ -818,7 +829,7 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
         before = export_bundle(rt, base_loader, include_secrets=True)          # 실패하면 이 상태로 다시 세운다(응답에 싣지 않음)
         try:
             try:
-                reset_done = _reset_steps(rt, by, ask=False)
+                reset_done = _reset_steps(rt, by, ask=False, keep_class=False)
             except BundleError as e:
                 raise _StepFailed("reset", e.reason, [], [d["label"] for d in e.extra.get("done") or []]) from e
             applied = _apply(rt, base_loader, plan, by)
@@ -850,7 +861,7 @@ def import_bundle(rt, base_loader, body: dict, *, audit=None) -> dict:
 def _restore(rt, base_loader, before: dict, by: str) -> tuple[bool, str | None]:
     """불러오기 실패 → 지금 것을 되돌리고 보관본을 다시 적용한다."""
     try:
-        _reset_steps(rt, by, ask=False)
+        _reset_steps(rt, by, ask=False, keep_class=False)
         content = before["content"]
         if not any((content.get(k) if k != "deployments" else (content[k].get("flows") or content[k].get("reference"))) for k in CONTENT_KEYS):
             return True, None

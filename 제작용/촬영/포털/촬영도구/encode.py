@@ -70,6 +70,14 @@ for spec in specs:
     plan.append((seg, keep, end_ms, t['motions'], (ps['x'], ps['y']) if ps else None))
     for a in t['actions']:
         if a['time'] < end_ms:
+            # 녹화 뒤 대사만 고쳐 음성을 다시 만든 큐(화면과 맞추는 정정)는 실제로 들어가는 음성 파일의 글 · 길이로 자막을 쓴다.
+            # 고친 음성이 구간 끝을 넘으면 실패한다(다음 말과 겹침은 아래 narration에서 잡는다).
+            if not silent:
+                meta = json.loads((audio / (a['id'] + '.json')).read_text(encoding='utf-8'))
+                if meta['text'] != a['text']:
+                    if a['time'] + meta['duration_ms'] > end_ms:
+                        raise RuntimeError(f"{seg}: 고친 음성 {a['id']}이 구간 끝을 넘는다({a['time'] + meta['duration_ms']} > {end_ms})")
+                    a = {**a, 'text': meta['text'], 'duration': meta['duration_ms'], 'revoiced': True}
             cues.append({**a, 'segment': seg, 'g': offset + a['time']})
     for m in t['motions']:
         if m['end'] <= end_ms:

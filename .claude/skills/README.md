@@ -9,6 +9,7 @@ HYD 과정의 일은 HYD 전용 스킬 둘이 먼저다. 일반 스킬(`lecture-
 | `hyd-course-deck` | HYD 이론 교재 PPTX 덱을 만들거나 고치거나 점검하거나 다시 조립하거나 배포 묶음을 만들 때 | `SKILL.md`, `scripts/재조립.py`, `scripts/장수.py`, `scripts/배포묶음.py` |
 | `hyd-lab-guide` | HYD 실습 가이드(핸즈온 가이드)를 쓰거나 고칠 때 | `SKILL.md`, `scripts/실습목록.py` |
 | `hyd-lecture-video` | HYD 이론 강의 영상(덱의 장 그림 + ElevenLabs 강사 복제 음성 + 자막)을 만들거나 고칠 때. 실습 영상은 더빙하지 않으므로 이 스킬이 아니다 | `SKILL.md`, 도구는 `제작용/기존제작/tools/video/강의영상.py` |
+| `hyd-portal-video` | HYD 포털 화면 실습 영상(클라우드 Playwright 녹화 + 안치윤 음성 + 자막)을 찍고 검증해 other-pc · 노션에 올리거나, 실습 영상을 검수 · 합칠 때 | `SKILL.md`, 정본 문서 `제작용/촬영/포털/촬영준비.md`, 도구 `제작용/촬영/포털/촬영도구/` |
 | `lecture-plan` | 학교 지시 · 리서치를 요구와 수용 기준으로 정리하고, 강의계획 · 커리큘럼을 짜고, 검토 의견과 바뀐 사실을 자료 전체에 반영할 때 | `SKILL.md`, `scripts/check_contract.py`, `templates/requirements.json` |
 | `lecture-deck` | 덱 MD(화면 원고)를 쓰고 `deck2pptx.py`로 PPTX를 만들 때. 덱 MD의 형식, 유형, 아이콘, 렌더 | `SKILL.md`, `references/덱MD-PPTX형식.md`, `references/문체.md`, `scripts/deck2pptx.py`, `scripts/find_icon.py` |
 | `lecture-lab` | 실습 코드, 학생 실습 가이드(HTML · MD · PDF), 환경 세팅 문서를 만들고 실제로 돌려 검증할 때 | `SKILL.md`, `references/`, `가이드그림.py`, `assets/가이드기준/md2pdf.py` |
@@ -27,6 +28,7 @@ lecture-plan ──► lecture-deck ──► lecture-lab ──► lecture-veri
 hyd-course-deck  = HYD 교재 덱의 절차. 형식과 도구는 lecture-deck, 규칙은 문서/교재/2_기준.md, 경위는 문서/교재/
 hyd-lab-guide    = HYD 실습 랩과 가이드. 틀은 제작용/기존제작/labs/STRUCTURE.md, 정해진 것과 상태는 문서/교재/4_만드는_법.md
 hyd-lecture-video = HYD 이론 강의 영상. 규칙은 문서/교재/2_기준.md 9절, 도구와 비용은 문서/교재/4_만드는_법.md 3부 2절
+hyd-portal-video  = HYD 포털 실습 영상. 순서 · 명령 · 함정은 제작용/촬영/포털/촬영준비.md, 공통 원칙은 문서/교재/방법_ego_실습영상_촬영.md
 ```
 
 - 보통 순서는 계획 → 덱 · 실습 → 검증 → 요청이 있을 때 배포다. 한 스킬의 일만 요청받았으면 그 스킬만 쓴다.

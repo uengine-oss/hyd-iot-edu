@@ -41,6 +41,10 @@ SCENARIOS = {
     "C": {"flow": "c3_spare", "asset": "HYD-03", "start": "/api/scenario/C/start", "me": ("user:jung-buy", "role:purchasing"),
           "outcome": "입고 완료", "incident": "CLOSED", "effects": ["T_po", "T_gr"], "after": "/api/scenario/C/reset"},
 }
+# 추천 카드의 승인 역할이 시나리오 승인자보다 높을 때(예: A의 「부하 70 % + 야간 세척」은 생산관리자 이상) 그 역할의 구성원이 승인한다 — seed.sql 업무분장.
+# 운전원이 누르면 process가 403으로 거절하는 것은 설계다(권한 규칙). 이 대응이 없으면 시험이 그 거절에서 멈춘다(2026-10-23 학생 흐름 라이브).
+ROLE_MEMBER = {"role:operator": "user:kim-op", "role:prod-mgr": "user:lee-prod", "role:maint-mgr": "user:park-maint",
+               "role:purchasing": "user:jung-buy", "role:purchasing-mgr": "user:han-buymgr"}
 LOG: list[str] = []
 CHECKS: list[dict] = []
 
@@ -229,9 +233,12 @@ def main(argv: list[str]) -> int:
         if not decision.get("recommended"):   # 모든 안이 규정 · 재고로 빠진 판단 — 승인할 추천이 없다(2026-10-23: 앞 B 오더가 부품을 잡은 채 남은 상태)
             log(f"추천 없음 — 승인할 안이 없습니다: {str(decision.get('explanation'))[:300]} (처리 건 {pid}는 승인 단계에 열려 있음)")
             sys.exit(1)
-        res = post(f"/api/todolist/{wid}/select", {"decision": decision_id, "option": decision["recommended"], "by": me, "role": role,
+        opt = next(o for o in decision["options"] if o["id"] == decision["recommended"])
+        need = (opt.get("approver") or {}).get("id")
+        by, as_role = (ROLE_MEMBER[need], need) if need and need != role else (me, role)
+        res = post(f"/api/todolist/{wid}/select", {"decision": decision_id, "option": decision["recommended"], "by": by, "role": as_role,
                                                    "reason": "수업: 추천안 승인"})
-        log(f"승인 접수: {decision['recommended']} ({res.get('approval_status')})")
+        log(f"승인 접수: {decision['recommended']} — {by} ({as_role}) ({res.get('approval_status')})")
     else:
         reason = "이번에는 진행하지 않습니다 (수업: 승인 거절)"
         res = post(f"/api/todolist/{wid}/reject-card", {"decision": decision_id, "by": me, "role": role, "reason": reason})
