@@ -285,3 +285,18 @@ def test_the_rejectable_part_is_offered_next_to_the_approve_only_part(world):
     fields = {f["key"]: f for f in rejectable["form"]["fields_json"]}
     assert fields["chosen_skill"]["required"] is False and fields["approval"]["items"] == ["승인", "반려"]
     assert "required" not in {k for f in plain["form"]["fields_json"] for k in f}       # 기준 부품의 폼은 그대로
+
+
+def test_a_decision_whose_every_option_was_excluded_can_still_be_rejected_by_the_approver_role(world):
+    """2026-10-23 라이브: B의 안 넷이 모두 재고 · 규정으로 빠지자(추천 없음) 승인 역할도 거절하지 못해 처리 건이 승인 단계에 갇혔다.
+    거절 권한은 역할만 본다 — 실행 준비가 안 된 안이어도 그 승인 역할이면 거절로 닫고, 낮은 역할은 여전히 막는다."""
+    rt, inst, inc, d, out = opened(world, "c3_cooling")
+    book = world["book"][d["id"]]
+    for option in book["options"]:                      # 실행 준비 검사에서 빠지는 안(참고 보관 꼴) · 규정 제외
+        option.update(executable=False, feasible=False)
+    book["recommended"] = None
+    wid = _row(rt, inst, "T_approve")["id"]
+    with pytest.raises(PermissionError, match="거절 권한 없음"):
+        rt.reject_card(wid, d["id"], "김운전", "role:operator", "사유", now=NOW)
+    rt.reject_card(wid, d["id"], *MGR, "추천 없음 — 닫는다", now=NOW)
+    assert world["book"][d["id"]]["state"] == "REJECTED" and "APPROVAL_REJECTED" in jobs(rt, inst)

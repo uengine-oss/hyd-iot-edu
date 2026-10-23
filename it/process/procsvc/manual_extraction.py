@@ -3,6 +3,7 @@
 Completing this process produces a cited proposal, never a graph commit or human
 approval. The immutable archived source is pinned into its starting variables.
 """
+import re
 from copy import deepcopy
 from uuid import UUID, uuid4
 
@@ -10,7 +11,9 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.4'          # 2.4: source-defined operational AND business SOP scope; never rewrite registered 2.2/2.3.
+VERSION = '2.6'          # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
+# 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
+# 2.4: source-defined operational AND business SOP scope; never rewrite registered 2.2/2.3.
 # 2.3: deployment-selected CLI (no workflow-level provider pin).
 # 2.2 (2026-10-10, 라이브 3차 출처 칩 'PR-7.6 PR-7.6 발주 절차'): 절 title 은 절 번호(ref)를 뺀 제목 — 같은 문서 형식인데 HM-8 · PR-07 은 번호를 넣고 PM-02 는 뺐다(계약이 정하지 않음), 시드(instances.cypher)는 번호 없는 제목; 2.1 (2026-10-10, C 라이브 4차): link 값은 단계의 선택 기준을 그대로 적용하고, 같은 절차의 적용 조건('…이 아니면 이 절차를 쓰지 않는다')은 값을 바꾸는 데 쓰지 않고 규정 규칙으로 옮긴다; 2.0 (확정 TODO C1): optional knowledge part (고장 유형 · 원인 · 증거 · 규칙) and per-SOP suggested link (고장 유형 · 관계 · 종류 · 승인 · 원자 조치 값 · 대상 원인 · 영향) against the pinned ontology_catalog; 1.9 (A143, remaining-sweep 23 / B4 scope): the SOP scope is fixed in the instruction — operation·inspection·maintenance·troubleshooting chapters are SOPs, installation·wiring·commissioning chapters are not (A119 1.6↔1.8 wobble was 6~9장 설치·배선 in/out); 1.8 (A119, r14 B1): the proposal is written to the run workspace file output/result.json (studio batch_ingest(path) shape), not the last message; 1.7 (A116): agent activity in the product's shape (userTask + agentMode); 1.6 (A094, real Daikin manual): keep the source lap the source language, one procedure per numbered sub-section; 1.5 (A094): excerpt prefers the section's criteria sentence; 1.4 (2026-10-07, A093): large documents run one task per heading-bounded segment, merged server-side; 1.3 (A077) ID format · order fidelity · criteria tables; 1.2 review_feedback + correction loop; 1.1 Claude Code; 1.0 Codex
 ACTIVITY = 'task:extract-manual'
@@ -27,6 +30,8 @@ proposal 객체의 형태:
 ANCHOR는 {"source_id":"원본 source_id","page":1,"quote":"원문 그대로의 문장"}입니다. start/end 문자 좌표는 적지 않아도 됩니다 —
 서버가 그 페이지에서 인용문의 위치를 찾습니다(정확 일치 → 글자·숫자만 비교 → 낱말 사이 짧은 끼어듦 허용). 인용은 그 페이지에서 한 곳만
 가리키도록 충분히 길게(표 제목·번호를 포함해) 잡으세요. 여러 곳에 있는 짧은 인용은 거부됩니다. 모든 절/SOP/단계에 인용이 필요합니다.
+절차(procedures)의 anchor는 그 절차의 제목 줄(예: '### SOP-COOL-11 팬 최대 운전')처럼 문서에서 한 곳뿐인 문장으로 잡으세요. 단계의 anchor는 그 단계 문장만
+인용하고 다른 단계까지 묶어 인용하지 마세요. 같은 단계 문장이 여러 절차에 있으면 서버가 그 절차 블록(절차 anchor부터 같은 쪽 다음 절차 전까지) 안에서 찾습니다.
 페이지를 빠짐없이 page_reviews에 기록하세요. 페이지 검토 기록은 내용 정확성 보증이 아니며 사람이 다시 원문을 검토합니다.
 SOP ID 형식은 SOP-대문자/숫자 토큰을 '-'로 연결한 것입니다(예: SOP-OIL-21, SOP-HM9-2). 점(.)·소문자·공백은 쓸 수 없습니다.
 SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 HM-9.2 → SOP-HM9-2)를 쓰고 warnings에 명시하세요.
@@ -38,7 +43,7 @@ SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 
 원문이 소절(예: 13.5.1 분리, 13.5.2 분해, 13.5.3 청소)마다 번호 목록을 두면 소절마다 절차 하나를 만들고 상위 절(13.5)로 묶지 마세요. 상위 절의 공통 경고·선행 조건은 warnings에 적습니다.
 SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검·정비·고장 조치(트러블슈팅)뿐 아니라 구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로 만드세요. 구매 기준서·재고 규정처럼 문서 제목이나 장 이름이 정비가 아니라는 이유로 명시된 업무 절차를 제외하지 마세요. 원문에 명시된 ERP 발주서 작성·공급사 통지·입고 검사·ERP 입고 처리도 해당 절차의 단계로 보존하세요.
 설치·배선·시운전·반입/양중 장의 독립 설치 절차(예: 설치, 배관·배선, 시운전 조정)는 procedures에 넣지 말고 page_reviews에 "설치·배선 장 — SOP 범위 밖"으로 기록하세요. 다만 포함 대상인 정비·업무 절차 안의 시운전 확인·회복 판정·입고 확인 단계는 삭제하지 마세요. 혼합된 장에서는 포함 대상 절차와 독립 설치 절차를 구분하세요. 원문만으로 절차의 업무 성격을 판정할 수 없는 경우에만 warnings에 절 번호와 이유를 적고 해당 절차를 보류하세요. 기준표·정책 문장만 있고 실행 행위가 없으면 단계나 절차를 지어내지 마세요.
-원문에 명시된 SOP가 있으면 고장 유형·원자 조치·공급사 등의 연결을 아직 제안할 수 없어도 절차와 단계를 추출하세요. ontology_catalog에 맞는 연결이 없다는 이유로 원문 절차를 누락하지 말고, 확인할 수 없는 link 값은 비워 두고 warnings에 근거와 이유를 적으세요.
+원문에 명시된 SOP가 있으면 고장 유형·원자 조치·공급사 등의 연결을 아직 제안할 수 없어도 절차와 단계를 추출하세요. ontology_catalog에 맞는 연결이 없다는 이유로 원문 절차를 누락하지 말고, 확인할 수 없는 link 값은 그 키를 빼거나 null로 두고(빈 글 ""을 쓰지 마세요) warnings에 근거와 이유를 적으세요.
 고장 유형 연결과 최종 적재는 사람 검토 단계입니다. 아래 knowledge와 link는 사람이 검토 화면에서 확인할 "제안"입니다.
 입력 ontology_catalog는 온톨로지에 이미 있는 id 목록입니다(구성 요소 · 증상 · 부품/공급사 · 상태 변수 · 지표 · 원자 조치 · 역할 · 결정표와 입력 ·
 이미 있는 고장 유형/원인/스킬). 문서가 이 지식을 정의하면 proposal에 다음을 더하세요. 문서에 근거가 없는 항목은 만들지 말고, 목록에 없는 구성 요소 ·
@@ -50,14 +55,23 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
             "tests":[{"input":"그 결정표가 선언한 in:… 입력","operator":"<|<=|>|>=|==|!=","value":값,"unit":"단위 또는 null"}],
             "outputs":["SELECT일 때: 진단은 cause:…, 후보는 이 문서의 SOP ID 또는 기존 skill:…"],"applies_to":["EXCLUDE/WARN/PENALTY일 때 대상 SOP ID(비우면 모든 후보)"],
             "penalty":"PENALTY일 때 감점액(만원)","penalizes":"PENALTY일 때 msr:…","annotation":"사람이 읽는 설명","section":"근거 절 ref","anchor":ANCHOR}]}
+ 조치 후보 규칙: 문서가 어떤 경보 · 고장 유형 · 처리 건에서 쓸 절차를 정하면(예: '…경보로 열린 처리 건에서만 아래 절차를 쓴다', '…이면 아래 시행 방식 네 가지를 비교한다',
+  고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
+  이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
+  기존 후보 규칙에 자동으로 붙습니다. 예방 정비(PREVENTED_BY) · 구매 절차는 자동으로 붙지 않습니다.
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
  actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
+ 구매 · 발주 절차(구매 기준서 · 재고 규정의 발주 절차)는 고장 조치가 아니므로 link를 이 꼴로 제안하세요:
+  {"scope":"purchase","kind":"work_order","executable":true|false,"parts":["원문이 범위로 정한 part:… (ontology_catalog.parts)"],"approver":"role:…",
+   "actions":[{"action":"action:purchase-request","value":공급사 id 또는 null}],"supplier_policy":"oem|lowest_approved|fastest_quote 또는 null"}.
+  failureMode · relation · addresses 키는 넣지 마세요. 공급사를 원문의 선택 기준으로 고르는 절차(순정 · 대체 승인 공급사 최저가 · 최단 납기)는 supplier_policy를 쓰고 value는 null,
+  원문이 특정 공급사를 정하면 value에 그 sup:… 을 쓰고 supplier_policy는 null입니다. 둘을 함께 쓰지 마세요. 실행 행위 없이 참고만 하는 절차는 executable=false, actions=[]입니다.
  값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
  같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
  그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.
-승인 역할 · 값이 문서에 없으면 비워 두고 warnings에 적으세요. 번호 목록 밖의 승인 · 선행 조건 문장은 새 단계로 만들지 않고 link와 warnings로 옮깁니다. 원문 번호 단계에 들어 있는 조건·확인 행위는 단계에도 그대로 보존합니다.
+승인 역할 · 값이 문서에 없으면 그 키를 빼거나 null로 두고 warnings에 적으세요. 번호 목록 밖의 승인 · 선행 조건 문장은 새 단계로 만들지 않고 link와 warnings로 옮깁니다. 원문 번호 단계에 들어 있는 조건·확인 행위는 단계에도 그대로 보존합니다.
 입력에 review_feedback이 있으면 사람이 이전 제안을 검토한 판정입니다. WRONG 항목은 원문을 다시 읽어 고치고, MISSING 항목은 원문에서 찾아 추가하되
 원문에 없으면 warnings에 그 이유를 적으세요. OK 항목은 그대로 유지하세요. 판정을 근거 없이 따르지 말고 원문이 우선입니다.
 입력에 segment가 있으면 이 작업은 긴 문서의 한 구간(index/total)만 담당합니다. manual_source.pages에는 담당 구간의 원문만 들어 있고
@@ -84,6 +98,13 @@ def definition():
                     dict(key='proposal', type='object', text='전체 페이지 원문에 근거한 추출 제안', required=True)])})
 
 
+PROPOSAL_KEYS = ('source_id', 'sections', 'procedures', 'page_reviews', 'warnings', 'knowledge')
+
+
+def _letters(text):
+    return re.sub(r'[^0-9A-Za-z가-힣]', '', text or '')
+
+
 def validate_proposal(source, proposal):
     """Structural/citation validation, not a claim of semantic extraction truth."""
     def nonempty(value, name):
@@ -91,14 +112,18 @@ def validate_proposal(source, proposal):
     if not isinstance(source, dict) or source.get('status') != 'READY':raise ValueError('검토 가능한 원문이 필요합니다')
     if not isinstance(proposal, dict) or proposal.get('source_id') != source['source_id']:
         raise ValueError('추출 제안의 원문 판본이 다릅니다')
+    unknown = sorted(set(proposal) - set(PROPOSAL_KEYS))
+    if unknown:        # 2026-10-23 리허설: 맨 위 rules 가 거부도 없이 미리보기에서 사라졌다(규칙 4개)
+        raise ValueError(f"proposal에 정해지지 않은 칸이 있습니다: {', '.join(unknown)} — 맨 위 칸은 {', '.join(PROPOSAL_KEYS)}입니다. "
+                         "규칙 · 원인 · 증거 · 고장 유형은 proposal.knowledge 안(예: knowledge.rules)에 적으세요")
     pages = {p['page']:p['text'] for p in source['pages']}
-    def anchor(value):
+    def anchor(value, within=None):
         # A117 (r14 B2, memento document_locate): the agent quotes, the server locates. Offsets the agent sends are kept
         # when they are right; otherwise the located span (page, start, end, source's own quote) is written back in place
         # so the stored proposal is coordinate-complete for the reviewer, coverage and the graph.
         if not isinstance(value, dict) or value.get('source_id') != source['source_id']:
             raise ValueError('원문 판본의 인용이 필요합니다')
-        located = manual_locate.locate(pages, value)
+        located = manual_locate.locate(pages, value, within=within)
         value.update({k: located[k] for k in ('page','start','end','quote')})
         value.pop('located', None)
     for key, limit in [('sections',1000),('procedures',500),('page_reviews',500),('warnings',1000)]:
@@ -116,6 +141,18 @@ def validate_proposal(source, proposal):
         nonempty(s.get('ref'),'절 ID');nonempty(s.get('title'),'절 제목')
         if s['ref'] in sections or not isinstance(s.get('excerpt',''),str):raise ValueError('절 중복 또는 본문 형식 오류')
         sections.add(s['ref']);anchor(s.get('anchor'))
+    # 절차 블록: 그 절차의 인용 위치부터 같은 쪽 다음 절차의 인용 위치 전까지. 여러 절차에 같은 단계 문장이 있으면 단계 인용을
+    # 그 절차 블록 안의 것으로 정한다(manual_locate.locate within). 절차 인용이 틀린 SOP는 아래 본 검사에서 그 사유로 거부된다.
+    starts = []
+    for p in proposal['procedures']:
+        if isinstance(p, dict) and isinstance(p.get('anchor'), dict):
+            try:
+                anchor(p['anchor'])
+            except ValueError:
+                continue
+            starts.append((p['anchor']['page'], p['anchor']['start'], p['anchor']['end'], id(p)))
+    blocks = {key: (page, start, max(end, min((s for q, s, _, _ in starts if q == page and s > start), default=len(pages[page]))))
+              for page, start, end, key in starts}
     seen=set()
     for p in proposal['procedures']:
         if not isinstance(p,dict):raise ValueError('SOP는 객체여야 합니다')
@@ -132,7 +169,15 @@ def validate_proposal(source, proposal):
                 raise ValueError(f"SOP {p['id']} 단계 order가 1부터 연속이어야 합니다 (위치 {order}에서 {step.get('order') if isinstance(step,dict) else step!r})")
             if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
-            nonempty(step.get('text'),'단계');anchor(step.get('anchor'))
+            nonempty(step.get('text'),'단계');anchor(step.get('anchor'),within=blocks.get(id(p)))
+        # 2026-10-23 확인: 같은 단계 문장이 반복되자 AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다(단계별 출처가 없어짐)
+        texts=[_letters(st['text']) for st in p['steps']]
+        for order,step in enumerate(p['steps'],1):
+            quote=_letters(step['anchor']['quote'])
+            others=[o for o,t in enumerate(texts,1) if o!=order and len(t)>=6 and t not in texts[order-1] and t in quote]
+            if others:
+                raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
+                                 "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:

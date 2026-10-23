@@ -182,6 +182,7 @@ def validate(archive, tenant, body):
         link = links.get(sop) or {}
         if not isinstance(link, dict):
             raise ValueError('SOP 연결은 객체여야 합니다')
+        link = manual_knowledge.blanks_as_absent(link)
         if link.get('kind') == 'reference':
             fields = manual_references.reference_shape(sop, link)
             binding = manual_references.binding_shape(p, link)

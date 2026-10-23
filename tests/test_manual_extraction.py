@@ -105,6 +105,14 @@ def test_output_cannot_claim_human_approval_or_change_graph_head(rt,document):
     proposal.update(reviewed=True,by='forged',previous_batch='forged',extraction={'session_id':'forged'})
     wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
     runtime.repo.save_task_result(wi['id'],{'proposal':proposal},final=True);runtime.poll_once()
+    # 2026-10-23: 정해지지 않은 맨 위 칸은 조용히 버리지 않고 거부해 AI 교정에 사유를 준다 — 사칭한 칸은 미리보기에 닿지 못한다
+    row=runtime.repo.get_workitem(wi['id'])
+    assert row['draft_status']=='FB_REQUESTED' and row['output'] is None
+    assert all(k in row['feedback']['text'] for k in ('정해지지 않은 칸','by','extraction','previous_batch','reviewed'))
+    assert extraction.result(runtime,source,inst['proc_inst_id'],'actual-head')['preview'] is None
+    for k in ('reviewed','by','previous_batch','extraction'):proposal.pop(k)
+    wi=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    runtime.repo.save_task_result(wi['id'],{'proposal':proposal},final=True);runtime.poll_once()
     preview=extraction.result(runtime,source,inst['proc_inst_id'],'actual-head')['preview']
     assert preview['previous_batch']=='actual-head' and 'reviewed' not in preview and 'by' not in preview
     assert preview['extraction']['session_id'] is None
@@ -451,3 +459,42 @@ def test_a_section_title_carrying_its_own_number_goes_back_to_the_agent(rt,docum
     runtime.poll_once()
     row=runtime.repo.get_workitem(wi['id'])
     assert row['draft_status']=='FB_REQUESTED' and '절 번호' in row['feedback']['text']
+
+
+def test_a_step_sentence_repeated_in_several_procedures_is_placed_in_its_own_procedure(tmp_path):
+    # 2026-10-23 리허설: SOP-COOL-11 · 12 · 13에 같은 단계 문장이 있어 짧은 단계 인용이 「3곳」으로 세 번 다 거부됐다
+    text = ('## 8.5 즉시 완화\n### SOP-A 팬 최대\n1. 모드가 자동인지 확인한다.\n2. 팬을 100 %로 올린다.\n'
+            '### SOP-B 부하 저감\n1. 모드가 자동인지 확인한다.\n2. 부하를 80 %로 내린다.\n')
+    source = ManualSources(tmp_path / 'm.sqlite3').save('hyd', 'repeat.md', text.encode())
+    page = source['pages'][0]['text']
+    q = lambda quote: dict(source_id=source['source_id'], page=1, quote=quote)       # 좌표 없이 인용만(지시대로)
+    step = '1. 모드가 자동인지 확인한다.'
+    proc = lambda sid, head, second: dict(id=sid, name=head, section='8.5', anchor=q('### ' + sid + ' ' + head),
+        steps=[dict(order=1, text=step, manual='8.5', anchor=q(step)), dict(order=2, text=second, manual='8.5', anchor=q(second))])
+    proposal = dict(source_id=source['source_id'], sections=[dict(ref='8.5', title='즉시 완화', anchor=q('## 8.5 즉시 완화'))],
+                    procedures=[proc('SOP-A', '팬 최대', '2. 팬을 100 %로 올린다.'), proc('SOP-B', '부하 저감', '2. 부하를 80 %로 내린다.')],
+                    page_reviews=[dict(page=1, note='두 절차')], warnings=[])
+    fresh = lambda: copy.deepcopy(proposal)               # 검사는 인용에 좌표를 제자리에서 채운다 — 매번 좌표 없는 제안으로
+    checked = extraction.validate_proposal(source, fresh())
+    a, b = (p['steps'][0]['anchor']['start'] for p in checked['procedures'])
+    assert (a, b) == (page.index(step), page.index(step, page.index('### SOP-B')))
+    elsewhere = fresh()                                   # 절차 인용이 그 절차 블록을 가리키지 않으면 여전히 정하지 않는다
+    elsewhere['procedures'][1]['anchor'] = q('## 8.5 즉시 완화')
+    with pytest.raises(ValueError, match='2곳'):
+        extraction.validate_proposal(source, elsewhere)
+
+
+def test_a_step_quote_that_also_holds_other_steps_is_rejected(tmp_path):
+    # 2026-10-23 확인: AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다 — 단계별 출처가 없어진다
+    text = '### SOP-A 팬 최대\n1. 모드가 자동인지 확인한다.\n2. 팬을 100 %로 올린다.\n'
+    source = ManualSources(tmp_path / 'm.sqlite3').save('hyd', 'block.md', text.encode())
+    q = lambda quote: dict(source_id=source['source_id'], page=1, quote=quote)
+    whole = text.strip()
+    proposal = lambda step_quote: dict(source_id=source['source_id'], sections=[dict(ref='A', title='팬', anchor=q('### SOP-A 팬 최대'))],
+        procedures=[dict(id='SOP-A', name='팬 최대', section='A', anchor=q(whole),
+            steps=[dict(order=1, text='1. 모드가 자동인지 확인한다.', manual='A', anchor=q(step_quote)),
+                   dict(order=2, text='2. 팬을 100 %로 올린다.', manual='A', anchor=q('2. 팬을 100 %로 올린다.'))])],
+        page_reviews=[dict(page=1, note='한 절차')], warnings=[])
+    with pytest.raises(ValueError, match=r'단계 1의 인용이 다른 단계\(2\)까지 품습니다'):
+        extraction.validate_proposal(source, proposal(whole))
+    extraction.validate_proposal(source, proposal('1. 모드가 자동인지 확인한다.'))

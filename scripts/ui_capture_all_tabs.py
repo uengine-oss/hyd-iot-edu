@@ -40,7 +40,9 @@ def main():
             msgs = []
             pg.on('console', lambda m: msgs.append({'type': m.type, 'text': m.text[:300], 'url': (m.location or {}).get('url', '')}))
             pg.on('pageerror', lambda e: msgs.append({'type': 'pageerror', 'text': str(e)[:300]}))
-            pg.goto(PORTAL, wait_until='networkidle'); pg.wait_for_timeout(1500)
+            # 포털은 1초마다 상태를 묻고, 켜지지 않은 선택 도구(:7474 · :3000 · :9644)의 확인 요청은 끊길 때까지 열려 있어
+            # 'networkidle'이 오지 않는다(2026-10-23 클라우드 실측: 30초 시간 초과). 화면 틀(사이드바 탭)이 그려지면 시작한다.
+            pg.goto(PORTAL, wait_until='load'); pg.wait_for_selector('[data-tab]', timeout=30000); pg.wait_for_timeout(1500)
             if tabs is None:
                 tabs = pg.evaluate("[...document.querySelectorAll('#navigation [data-tab]')].map(b => b.dataset.tab)")
             for tab in tabs:

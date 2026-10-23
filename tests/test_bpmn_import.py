@@ -437,7 +437,7 @@ def test_reset_removes_only_user_flows_and_waits_for_running_instances(api):
     w = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["status"] == "IN_PROGRESS")
     rt.submit(w["id"], {"iso_code": 10})
     r = c.post("/api/flows/reset")
-    assert r.status_code == 200 and r.json() == {"versions": 1, "definitions": 1, "drafts": 1, "hidden_instances": 1}
+    assert r.status_code == 200 and r.json() == {"versions": 1, "definitions": 1, "drafts": 1, "hidden_instances": 1, "kept": []}
     assert sorted(k for k in repo.def_versions) == base_versions                         # 기준 정의는 그대로
     assert repo.get_proc_def("oil_loop", version="1") is None and c.get("/api/flows").json() == {"drafts": [], "versions": []}
     assert repo.get_instance(inst["proc_inst_id"])["is_deleted"] is True
@@ -535,8 +535,15 @@ def test_pg_register_keeps_prod_pointer_stores_bpmn_and_reset_spares_base():
         assert r.status_code == 409 and r.json()["detail"]["running"][0]["proc_inst_id"] == inst["proc_inst_id"]
         w = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["status"] == "IN_PROGRESS")
         rt.submit(w["id"], {"iso_code": 10})
+        # 2026-10-23: 경보 경로에 배포된 흐름(수업 흐름처럼)은 [기준으로 되돌리기]가 남긴다 — 배포를 내린 뒤 되돌리면 지운다
+        rt.deploy_definition("pg_cooler", "2", by="강사", reason="수업 흐름")
         r = c.post("/api/flows/reset")
-        assert r.status_code == 200 and r.json() == {"versions": 3, "definitions": 2, "drafts": 2, "hidden_instances": 1}
+        assert r.status_code == 200 and r.json() == {"versions": 1, "definitions": 1, "drafts": 1, "hidden_instances": 1, "kept": ["pg_cooler"]}
+        assert repo.get_proc_def("pg_cooler", "hyd", version="2") is not None and repo.get_proc_def("pg_loop", "hyd", version="1") is None
+        from procsvc import flow_deploy
+        flow_deploy.deploy_reset(rt, by="강사", reason="수업 끝")
+        r = c.post("/api/flows/reset")
+        assert r.status_code == 200 and r.json() == {"versions": 2, "definitions": 1, "drafts": 1, "hidden_instances": 0, "kept": []}
         assert repo.get_proc_def("anomaly_response", "hyd", version="2.2") is not None
         assert repo.get_proc_def("pg_cooler", "hyd", version="1") is None
     finally:
@@ -641,3 +648,21 @@ def test_removed_instance_endpoints_answer_404_with_the_reason():
         body = body[:body.index("@app.", 10)]
         assert "except instances.InstanceRemoved as e" in body and "HTTPException(404" in body.split("except instances.InstanceRemoved")[1][:80], route
     assert isinstance(I.InstanceRemoved("x"), LookupError)
+
+
+def test_reset_keeps_a_flow_deployed_on_the_alert_path(api):
+    # 2026-10-23 점검: 수업 흐름(c3_*)도 흐름 가져오기로 들어와 origin=user 라, 학생이 [기준으로 되돌리기]를 누르면 강사가 배포한
+    # 수업 흐름까지 지워져 [정기 점검] · [재고 보충]이 「배포되어 있지 않습니다」로 멈췄다 — 배포된 흐름은 남긴다
+    import test_c3_assembly as c3
+    c, rt, repo, audit = api
+    repo.upsert_user({"id": "agent:cooling", "username": "냉각 긴급 대응 에이전트", "is_agent": True, "agent_type": "agent",
+                      "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd"})
+    _, src, mapping = c3._flows().FLOWS["c3_cooling"]
+    assert c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling"}).status_code in (200, 201)
+    r = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}); assert r.status_code == 201, r.text
+    rt.deploy_definition("c3_cooling", r.json()["version"], by="강사", reason="수업 흐름")
+    c.post("/api/flows/import", json={"xml": LOOP, "definition_id": "oil_loop"})
+    assert c.post("/api/flows/oil_loop/register", json={"mapping": loop_mapping(B.parse_bpmn(LOOP))}).status_code == 201
+    out = c.post("/api/flows/reset").json()
+    assert out["kept"] == ["c3_cooling"] and out["definitions"] == 1                     # 배포 안 된 oil_loop 만 지움
+    assert repo.get_proc_def("c3_cooling", version=r.json()["version"]) is not None and repo.get_proc_def("oil_loop", version="1") is None

@@ -32,6 +32,8 @@ def validate(proposal, catalog):
         link = overrides[sop] if sop in overrides else p.get('link')
         if link is None:
             link = {}
+        if isinstance(link, dict):
+            link = manual_knowledge.blanks_as_absent(link)
         try:
             normalized = manual_knowledge.validate_link(sop, link, sops=sops, require_failure_mode=False)
             normalized['affects'] = manual_review.validate_affects(sop, link.get('affects'))
@@ -135,6 +137,23 @@ def validate(proposal, catalog):
                 continue
         issue('KNOWLEDGE_OWNERSHIP_CONFLICT', conflict.get('id'), 'knowledge_conflicts',
               f"{conflict.get('id')}: 기존 지식의 소유권 충돌입니다. 원문과 기존 지식을 대조하세요")
+    # 2026-10-23 수업 조건 리허설: 구조판에는 후보 규칙이 없고 중계 모델 추출이 세 문서 모두 후보 규칙을 내지 않아, 적재는 됐는데
+    # A · B · C 판단이 「후보 지식이 없습니다」로 보류됐다. 판단이 이 절차를 후보로 낼 길(이 문서의 후보 규칙 출력, 또는 고장 조치가
+    # 자동 합류할 그 고장 유형의 후보 규칙)이 없으면 검토자에게 알린다. 적재를 막지는 않는다(적재는 사람 검토 뒤 별도 검사).
+    own_outputs = {ref for r in k.get('rules') or [] if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates'
+                   for ref in r.get('outputs') or []}
+    joinable = {r['id'] for r in catalog['candidate_failure_modes']}
+    for p in plan['procedures']:
+        if p.get('kind') == 'reference' or p.get('executable') is False:
+            continue
+        if p['id'] in own_outputs or kgadmin.skill_id(p['id']) in own_outputs:
+            continue
+        relation = p.get('relation') or ('REMEDIED_BY' if p.get('failureMode') else None)    # 적재와 같은 기본(kgadmin.validate_skill)
+        if relation in kgadmin.CORRECTIVE_RELATIONS and p.get('failureMode') in joinable:
+            continue
+        issue('CANDIDATE_RULE_MISSING', p['id'], 'knowledge.rules',
+              f"{p['id']}: 이 절차를 조치 후보로 내는 규칙이 없어 판단이 이 절차를 후보로 내지 못합니다. 원문이 후보 조건을 말하면 "
+              f"dt:action-candidates SELECT 규칙(outputs에 {p['id']})을 더하세요")
     execution = []
     pm_outputs = {ref for r in k.get('rules') or []
                   if r.get('effect') == 'SELECT' and r.get('table') == 'dt:action-candidates'

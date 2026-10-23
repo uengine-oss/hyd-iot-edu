@@ -625,6 +625,16 @@
     if (item?.input_state === 'captured') return item.inputs?.decision_id || item.inputs?.decision?.id || null;
     const sources = v.instance.variable_sources || {};
     if (['decision_id','decision'].some(k=>sources[k]?.kind==='workitem' && sources[k].id===w.id)) return vars(v.instance).decision_id || null;
+    // 2026-10-23 점검: 승인(카드 선택) 단계는 판단을 앞 에이전트 단계에서 받는다. 위 셋에 걸리지 않아 판단 기록을 불러오지 않았고,
+    // 승인 단계 상세가 「받은 조치 카드 없음」으로 추천 · 지는 대안 표를 보이지 않았다. 자기 승인 기록의 판단, 없으면 같은 세대에서
+    // 만든 지금 판단을 쓴다(에이전트 단계가 뒤 세대 판단을 끌어오지 않는 규칙은 그대로).
+    const tool = (item && item.tool) || w.tool || ((activityOf(v, w.activity_id) || {}).tool) || '';
+    if (tool === 'formHandler:select_card') {
+      const approval = (v.approvals || []).find(a => a.todo_id === w.id);
+      if (approval?.decision_id) return approval.decision_id;
+      const src = sources.decision_id;
+      if (src?.kind === 'workitem' && Number(src.generation || 0) === Number(w.generation || 0)) return vars(v.instance).decision_id || null;
+    }
     return null;
   }
   function boundDecision(v) {

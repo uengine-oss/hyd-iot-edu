@@ -80,9 +80,12 @@ def _loose(text: str, quote: str) -> list[tuple[int, int]]:
     return out
 
 
-def locate(pages: dict[int, str], anchor: dict) -> dict:
+def locate(pages: dict[int, str], anchor: dict, within: tuple[int, int, int] | None = None) -> dict:
     """pages: {page: text}. anchor: {page?, start?, end?, quote}. Returns {page, start, end, quote} with the quote taken
-    from the source text; raises ValueError (Ambiguous when several places match) with a message for the agent."""
+    from the source text; raises ValueError (Ambiguous when several places match) with a message for the agent.
+    within: (page, start, end) of the block the quote belongs to (a procedure's steps lie in that procedure's block). When the
+    quote matches several places and exactly one lies inside that block, it is that one — 2026-10-23 리허설: 세 절차에 같은 단계
+    문장(「1. PLC 운전 모드가 REMOTE_AUTO인지 확인한다.」)이 있어 HM-8 추출이 세 번 다 거부됐다. 단계 한 줄은 더 길게 인용할 수 없다."""
     quote = anchor.get('quote')
     if not isinstance(quote, str) or not quote.strip():
         raise ValueError('원문 인용 문자열(quote)이 필요합니다')
@@ -101,6 +104,10 @@ def locate(pages: dict[int, str], anchor: dict) -> dict:
             exact_given = [h for h in hits if h[1] == start]
             if len(exact_given) == 1:
                 hits = exact_given
+        if len(hits) > 1 and within is not None:
+            inside = [h for h in hits if h[0] == within[0] and within[1] <= h[1] and h[2] <= within[2]]
+            if len(inside) == 1:
+                hits = inside
         if len(hits) > 1:
             where = ', '.join(f'페이지 {p} {s}~{e}' for p, s, e in hits[:5])
             raise Ambiguous(f'원문 인용이 {len(hits)}곳에 있어 한 곳을 정할 수 없습니다 ({where}). 앞뒤를 더 붙인 긴 인용으로 한 곳을 특정하세요: {quote[:60]!r}')

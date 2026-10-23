@@ -87,6 +87,9 @@ class BpmnError(ValueError):
         self.problems = problems or [problem(None, "xml", reason)]
 
 
+DECISION_SERVER = "hyd-dmn"      # 판단 · 제안(task:decide)이 부르는 판단 엔진 서버(mcp_registry.BASE_SERVERS)
+
+
 def problem(where: dict | None, field: str, reason: str) -> dict:
     """사전 검사 한 줄: where = {kind, id, name}(칸 위치), field = 매핑 칸 이름, reason = 사람이 읽는 사유."""
     out = {"field": field, "reason": reason}
@@ -347,7 +350,8 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
                               "resolutionRule": f"users 표 역할 {uid} (흐름 가져오기에서 고름)"})
             known.add(uid)
         if u.get("is_agent") and (u.get("agent_type") or "agent") == "agent":
-            agents.append({"id": uid, "name": u.get("username") or uid, "goal": u.get("goal")})
+            agents.append({"id": uid, "name": u.get("username") or uid, "goal": u.get("goal"),
+                           "tools": [t.strip() for t in str(u.get("tools") or "").split(",") if t.strip()]})   # 비면 등록된 서버 전부
     base_agents = {p["agent"] for p in parts if p["kind"] == "agent" and p.get("agent")}
     for aid in sorted(base_agents - {a["id"] for a in agents}):
         agents.insert(0, {"id": aid, "name": aid, "goal": None})
@@ -564,6 +568,7 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     parts = {p["key"]: p for p in cat["parts"]}
     roles = {r["name"]: r for r in cat["roles"]}
     agents = {a["id"] for a in cat["agents"]}
+    agent_tools = {a["id"]: a.get("tools") or [] for a in cat["agents"]}
     lanes = {l["id"]: l for l in parsed["lanes"]}
     lane_role = {k: v for k, v in (mapping.get("lanes") or {}).items() if k in lanes}
     for lid, rname in lane_role.items():
@@ -635,6 +640,13 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
             if p["kind"] == "agent" and m.get("agent"):
                 if m["agent"] not in agents:
                     problems.append(problem(t, "agent", f"에이전트 {m['agent']} 가 에이전트 목록에 없습니다")); continue
+                # 2026-10-23 점검: 판단 · 제안은 판단 엔진의 evaluate_cards · submit_decision 을 부른다. 도구를 골라 둔 에이전트에
+                # 판단 엔진이 없으면 사전 검사는 통과하고 실행 때 그 단계가 실패했다(실습 6-5 · 6-7: 4회차 에이전트를 붙인다)
+                tools = agent_tools.get(m["agent"]) or []
+                if p["key"] == "task:decide" and tools and DECISION_SERVER not in tools:
+                    problems.append(problem(t, "agent", f"에이전트 {m['agent']} 는 판단 엔진({DECISION_SERVER})에 연결되어 있지 않습니다 — "
+                                                        f"판단 · 제안은 evaluate_cards · submit_decision 을 부릅니다. 에이전트 구성의 도구에 "
+                                                        f"{DECISION_SERVER}를 더하거나 다른 에이전트를 고르세요(지금 도구: {', '.join(tools)})")); continue
                 a["agent"] = m["agent"]
             if p["form_id"]:
                 forms[p["form_id"]] = deepcopy(p["form"])

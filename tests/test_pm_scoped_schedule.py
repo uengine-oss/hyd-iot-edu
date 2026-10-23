@@ -158,3 +158,26 @@ def test_incoming_stock_does_not_satisfy_immediate_issue():
     state._s['erp']['spare_stock']['P-RTN-FLT'].update(on_hand=0,on_order=20)
     with pytest.raises(ScopeError):
         plan(selected,dict(pm_context=context(state)),dict(immediate=True,label='즉시'))
+
+
+@pytest.mark.parametrize('effect',['reserve','issue'])
+def test_b_reset_cancels_part_holding_orders_and_restores_their_parts_to_class_start(effect):
+    """2026-10-23 라이브: B [초기화]가 계수기만 되돌려, 다시 연 B는 '도래'인데 앞 오더가 잡은 씰 · 필터 때문에 단독 · 즉시 시행이 재고 부족으로 빠졌다."""
+    from entsim import data
+    state=configured_state();req=request(state)
+    if effect=='issue':
+        selected=skill();selected['maintenance_policy']['stock_effect']='issue'
+        req['params']['plan']=plan(selected,dict(pm_context=context(state)),dict(immediate=True,label='즉시'))
+    receipt=state.execute(req);ref=receipt['ref']
+    other=dict(id='WO-OTHER',asset='HYD-01',task='작업지시만',status='배정됨')   # 부품을 잡지 않은 오더는 그대로 둔다
+    state._s['cmms']['work_orders'].append(other)
+    state.reset_pm_counters()
+    order=next(o for o in state._s['cmms']['work_orders'] if o['id']==ref)
+    assert order['status']=='취소' and order['cancelled_at'] and order['reservations_released']
+    assert other['status']=='배정됨'
+    for number in ('P-PMP-SEAL','P-RTN-FLT'):
+        stock=state._s['erp']['spare_stock'][number];base=data.SPARE_BASE[number]
+        assert (stock['on_hand'],stock['reserved'])==(base['on_hand'],base['reserved'])
+    assert all(c['plan_wo'] is None for c in state._s['cmms']['pm_counters'].values())
+    again=deepcopy(state._s['erp']['spare_stock']);state.reset_pm_counters()
+    assert {k:(v['on_hand'],v['reserved']) for k,v in state._s['erp']['spare_stock'].items()}=={k:(v['on_hand'],v['reserved']) for k,v in again.items()}

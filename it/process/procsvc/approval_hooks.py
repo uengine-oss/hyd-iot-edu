@@ -77,13 +77,14 @@ class DecisionDelivery:
         return plan | {'_snapshot':snapshot}
 
     def check_rejection(self, decision_id, role):
-        """조치 카드를 거절할 수 있는 역할인가: 이 판단의 안을 하나라도 승인할 수 있는 역할이면 거절도 할 수 있다(고치지 않는다)."""
+        """조치 카드를 거절할 수 있는 역할인가: 이 판단의 안 하나라도 그 승인 역할(또는 더 높은 역할)이면 거절도 할 수 있다(고치지 않는다).
+        실행 준비는 보지 않는다 — 모든 안이 재고 · 규정으로 빠진 판단도 그 역할이 거절로 닫을 수 있어야 한다(2026-10-23 라이브: B가 승인 단계에 갇힘)."""
         d = self.ctx.book.get(decision_id)
         if d is None:
             raise ValueError('no such decision')
         if d['state'] != 'PENDING_APPROVAL':
             raise ValueError(f"decision is {d['state']}")
-        if not any(decisions.may_approve(d, option, role) for option in d.get('options') or []):
+        if not any(decisions.holds_approver_role(d, option, role) for option in d.get('options') or []):
             raise PermissionError('거절 권한 없음: 이 판단의 조치를 승인할 수 있는 역할만 거절할 수 있습니다')
 
     def reject(self, decision_id, by, reason):

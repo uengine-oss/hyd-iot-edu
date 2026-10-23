@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.4'
+    assert extraction.VERSION == '2.6'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -41,7 +41,7 @@ def test_pr07_business_source_reaches_worker_and_requires_human_review(rt, tmp_p
     archive = ManualSources(tmp_path / 'manual.sqlite3')
     source = archive.save('hyd', path.name, path.read_bytes())
     # Explicit test double, not an LLM result or production extraction fallback.
-    proposal = manual_review.proposal(source)
+    proposal = {k: v for k, v in manual_review.proposal(source).items() if k in extraction.PROPOSAL_KEYS}   # AI 출력 꼴(맨 위 칸)
     proposal['page_reviews'] = [dict(page=p['page'], note='구매/재고 업무 절차 검토') for p in source['pages']]
     expected = {'SOP-PUR-11', 'SOP-PUR-12', 'SOP-PUR-13'}
     assert {p['id'] for p in proposal['procedures']} == expected

@@ -203,7 +203,8 @@ def test_later_failed_read_request_preserves_each_delivery_snapshot(page, tmp_pa
     requested = next(r for r in rows if r['key'] == 'w:request')
     assert requested['status'] == 'idle' and '읽기 성공 여부' in requested['text']
     assert 'Read' not in requested['text'] and requested['raw']['via'] == 'Read'
-    assert next(r for r in rows if r['key'] == 'tool:read2')['status'] == 'fail'
+    # 2026-10-23 갱신: 도구 행 키가 tool_use_id 하나에서 [proc_inst_id,todo_id,job_id,tool_use_id] 4값 키로 바뀜(ui.js toolCallKey, 실행마다 id 재사용 결함 수정)
+    assert next(r for r in rows if r['key'] == 'tool:' + json.dumps([None, 'w1', 'run-2', 'read2'], separators=(',', ':')))['status'] == 'fail'
     retain(page, 'skill-rounds-and-failed-read', '#instRecord',
            'Actual missing-file metadata in first workspace; changed/verified Codex prompt body in second workspace; real SkillReads TOOL_START followed by synthetic denied tool response.',
            ['실행 1', '실행 2', '파일 읽기 요청 1건', '읽기 성공을 뜻하지 않습니다', '권한 거부'])
