@@ -68,12 +68,12 @@ export async function run(opts){
    clicks:window.__tutorialClicks||[],pointer:window.__ptrStat||null}));
  try{
   const ctx={p,cdp,serial,sleep,fs,out,
-   recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start}),
+   recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start,...(m.glide?{glide:m.glide-start}:{})}),
    waitFor:async(fn,arg,timeout=15000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn,arg)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(120);}},
    begin:async()=>{await serial(()=>p.evaluate(()=>{window.__ptrStat={held:0,heldAfterFinish:0,applied:0};window.__tutorialClicks=[];}));recording=true;
-    await cdp.send('Page.startScreencast',{format:'jpeg',quality:85,maxWidth:W,maxHeight:H,everyNthFrame:1});
-    // 정지 화면에서는 프레임이 오지 않으므로 화살표를 1px 그려 첫 프레임을 받는다(화면에 남지 않는 변화).
-    await serial(()=>p.evaluate(()=>{const e=document.getElementById('recording-pointer');if(e){e.style.opacity='0.999';requestAnimationFrame(()=>{e.style.opacity='1';});}}));
+    await cdp.send('Page.startScreencast',{format:'jpeg',quality:Number(process.env.JPEG_Q||85),maxWidth:W,maxHeight:H,everyNthFrame:1});
+    // 정지 화면에서는 프레임이 오지 않으므로 화살표 투명도를 아주 조금 바꿔 첫 프레임을 받는다(화면에 남지 않는 변화).
+    await serial(()=>p.evaluate(()=>{const e=document.getElementById('recording-pointer');if(e){const o=e.style.opacity||'1';e.style.opacity=o==='0'?'0.001':'0.999';requestAnimationFrame(()=>{e.style.opacity=o;});}}));
     const t=Date.now();while(!frames.length){if(error)throw Error(error);if(Date.now()-t>12000)throw Error('Initial recording frame missing');await sleep(30);}
     await fs.writeFile(out+'/recording-start.json',JSON.stringify({start,url:p.url()}));},
   };
@@ -86,6 +86,10 @@ export async function run(opts){
   const {installPointerInPage}=await import(pathToFileURL(HERE+'ui.mjs').href+'?'+Date.now());
   const q=opts.pointer||{x:CFG.viewport.width*0.6,y:CFG.viewport.height*0.6};
   await serial(()=>p.evaluate(installPointerInPage,q));await serial(()=>p.mouse.move(q.x,q.y,{steps:1}));
+  // pointer=overlay: 페이지 화살표는 투명하게 두고(위치 · 클릭 기록은 그대로) 합성 때 기록된 경로로 화살표를 그린다(encode.py).
+  // 클라우드 4코어에서 1920x1080 화면 녹화가 이동의 약 1/5에서 100~190ms 끊겨(2026-10-23 진단) 화살표가 건너뛰어 보였기 때문이다.
+  if(CFG.pointer==='overlay')await serial(()=>p.evaluate(()=>{document.getElementById('recording-pointer').style.opacity='0';}));
+  await fs.writeFile(out+'/pointer-start.json',JSON.stringify({x:q.x,y:q.y,mode:CFG.pointer||'page'}));
   const mod=await import(pathToFileURL(HERE+'segs/'+opts.module).href+'?'+Date.now());
   result=await mod.default(ctx);
   if(pending)await pending;

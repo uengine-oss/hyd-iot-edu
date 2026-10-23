@@ -1,9 +1,14 @@
 {
- "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본 · 끝 상태(Git 밖), audio = 안치윤 음성 캐시(<큐id>.mp3 · .json), cues = 큐 원고. viewport는 CSS 크기 · deviceScaleFactor(1280x720 x1.5 → 프레임 1920x1080, UI 150%). cdp = browser.mjs가 여는 원격 디버깅 포트(구간 사이에 같은 브라우저 · 페이지 상태를 유지). portal = 포털 주소. 음성 키는 환경변수 ELEVENLABS_API_KEY에서만 읽는다. ffmpeg는 환경변수 FFMPEG 또는 PATH.",
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본 · 끝 상태(Git 밖), audio = 안치윤 음성 캐시(<큐id>.mp3 · .json), cues = 큐 원고. viewport는 CSS 크기 · deviceScaleFactor(1280x720 x1.5 → 프레임 1920x1080, UI 150%). cdp = browser.mjs가 여는 원격 디버깅 포트(구간 사이에 같은 브라우저 · 페이지 상태를 유지). portal = 포털 주소. 음성 키는 환경변수 ELEVENLABS_API_KEY에서만 읽는다. ffmpeg는 환경변수 FFMPEG 또는 PATH. pointer = overlay(페이지 화살표 투명, 합성 때 기록 경로로 그림 — 클라우드 녹화 끊김 대응) | page(페이지 화살표를 그대로 녹화).",
  "work": "../../../../.evidence/portal-video-20261023/rec",
  "audio": "../../../../.evidence/portal-video-20261023/audio",
  "cues": "cues.json",
  "portal": "http://127.0.0.1:8088/",
  "cdp": 9333,
- "viewport": {"width": 1280, "height": 720, "deviceScaleFactor": 1.5}
+ "viewport": {
+  "width": 1280,
+  "height": 720,
+  "deviceScaleFactor": 1.5
+ },
+ "pointer": "overlay"
 }
