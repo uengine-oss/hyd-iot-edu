@@ -117,5 +117,7 @@ export async function portal(ctx){
  c.waitFor=(fn,arg,timeout)=>ctx.waitFor(fn,arg,timeout);
  c.waitText=(text,timeout=20000)=>ctx.waitFor(s=>document.body.innerText.includes(s),text,timeout);
  c.pos=()=>lastPos;
+ // 대상이 화면에 하나로 나타날 때까지 기다린다(서버 응답 뒤에 그려지는 결과). 시간 안에 안 나오면 오류.
+ c.appear=async(t,timeout=30000)=>{const a=Date.now();for(;;){try{return await find(t);}catch(e){if(Date.now()-a>timeout)throw Error('Did not appear: '+JSON.stringify(t));await sleep(200);}}};
  return c;
 }
