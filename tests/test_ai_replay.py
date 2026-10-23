@@ -59,7 +59,7 @@ def test_saved_response_is_replayed_without_calling_the_cli(tmp_path):
     assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "cause:cooler-fin-fouling"
     assert row["output"]["cliagents_session_id"].startswith("replay:")
     texts = _texts(repo, row)
-    assert "AI 응답 재생: 「원인 진단」 — 미리 저장한 응답입니다" in texts and "새로 추론한 것이 아닙니다" in texts
+    assert "AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「원인 진단」," in texts
     assert "강사" not in texts
 
 
@@ -370,3 +370,21 @@ def test_three_runs_in_the_same_cli_session_are_all_kept_in_order(tmp_path):
     Runner(_settings(tmp_path / "rep", max_format_corrections=2), repo, exec_fn=ai_replay.replaying(lib), schema_prompt="# s",
            resolve_provider=lambda pid: object(), ai_mode="replay").poll_once()
     assert _diagnose(repo, inst)["status"] == "SUBMITTED"
+
+
+def test_codex_run_servers_are_read_for_write_tool_reruns_and_secrets(tmp_path, monkeypatch):
+    # Codex 는 .mcp.json 이 아니라 codex-mcp.toml(mcp_servers={…}) 로 서버를 받는다 — 같은 서버 · 머리글 · 비밀을 읽어야 한다
+    from worker import bridge
+    from test_worker import TENANT_MCP
+    mcp = json.loads(json.dumps(TENANT_MCP))
+    mcp["mcpServers"]["hyd-dmn"]["headers"] = {"Authorization": "Bearer tok-codex-55555"}
+    bridge.install(tmp_path, mcp, provider_id="codex")
+    assert not (tmp_path / ".mcp.json").exists() and (tmp_path / "codex-mcp.toml").exists()
+    servers = ai_replay._run_servers(tmp_path)
+    assert servers["hyd-dmn"]["url"].endswith("/mcp") and servers["neo4j"]["command"] == "uvx"
+    assert "tok-codex-55555" in ai_replay._secrets_in(tmp_path).values()
+    calls = []
+    _fake_servers(monkeypatch, calls)
+    tools = ai_replay._Tools(tmp_path)
+    assert ai_replay._mcp_target("hyd-dmn/submit_decision") == ("hyd-dmn", "submit_decision")
+    assert tools.writes("hyd-dmn", "submit_decision") and not tools.writes("hyd-dmn", "evaluate_cards") and not tools.writes("neo4j", "read_neo4j_cypher")

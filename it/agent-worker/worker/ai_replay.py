@@ -50,6 +50,7 @@ FORMAT = "hyd-ai-replay/2"
 MODES = ("auto", "live", "record", "replay")
 SESSION_PREFIX = "replay:"
 TASK_FILE = "context/task.json"
+CODEX_MCP_FILE = "codex-mcp.toml"       # bridge.install(provider_id="codex")
 # 저장하면 안 되는 값: 워커가 켜질 때(자식 프로세스용 환경 정리 전) 보이는 비밀 환경 변수 값 — 워커가 자식 프로세스에서 지우는 이름
 # (env_guard: DSN · 비밀번호 · 토큰 · API 키 · HYD_SECRET_*)과, 지우지 않고 CLI 에 넘기는 로그인 키(env_guard.CLI_AUTH_KEEP)
 def _secret_env(environ) -> dict[str, str]:
@@ -153,11 +154,24 @@ def _task_context(workdir) -> dict:
     return {"id": task.get("id"), "proc_inst_id": task.get("proc_inst_id"), "process_scope": task.get("process_scope"), "inputs": inputs}
 
 
-def _secrets_in(workdir) -> dict[str, str]:
-    """이 실행에서 CLI 가 받은 비밀값: 워커 환경 변수 + 작업 폴더 .mcp.json 의 env · headers 가운데 비밀 이름(토큰 · 비밀번호 · 인증)."""
-    found = dict(_SECRET_ENV)
+def _run_servers(workdir) -> dict[str, dict]:
+    """이번 실행에서 CLI 에 준 도구 서버(bridge.install 이 쓴 그 설정): Claude Code 는 .mcp.json, Codex 는 codex-mcp.toml 한 줄
+    (mcp_servers={…}). Codex 의 HTTP 서버 머리글(http_headers)은 .mcp.json 과 같은 headers 로 읽는다."""
     servers = (_read_json(Path(workdir) / MCP_CONFIG_FILENAME) or {}).get("mcpServers") or {}
-    for name, entry in servers.items():
+    codex = Path(workdir) / CODEX_MCP_FILE
+    if not servers and codex.is_file():
+        import tomllib
+        raw = tomllib.loads(codex.read_text(encoding="utf-8")).get("mcp_servers") or {}
+        servers = {name: ({"type": "http", "url": e["url"], "headers": dict(e.get("http_headers") or {})} if e.get("url") else
+                          {"command": e.get("command"), "args": list(e.get("args") or []), "env": dict(e.get("env") or {})})
+                   for name, e in raw.items()}
+    return servers
+
+
+def _secrets_in(workdir) -> dict[str, str]:
+    """이 실행에서 CLI 가 받은 비밀값: 워커 환경 변수 + 이번 실행 도구 서버 설정의 env · headers 가운데 비밀 이름(토큰 · 비밀번호 · 인증)."""
+    found = dict(_SECRET_ENV)
+    for name, entry in _run_servers(workdir).items():
         for part in ("env", "headers"):
             for k, v in ((entry or {}).get(part) or {}).items():
                 if mcp_check.is_secret_key(k) and isinstance(v, str) and len(v) >= 6:
@@ -355,10 +369,10 @@ def _as_json(content):
 
 
 class _Tools:
-    """재생 중 쓰기 도구를 이 PC의 서버로 부른다. 서버 설정은 이번 실행의 작업 폴더 .mcp.json(실제 실행이면 CLI 가 읽을 그 파일)."""
+    """재생 중 쓰기 도구를 이 PC의 서버로 부른다. 서버 설정은 이번 실행의 작업 폴더 .mcp.json · codex-mcp.toml(실제 실행이면 CLI 가 읽을 그 파일)."""
 
     def __init__(self, workdir):
-        self.servers = (_read_json(Path(workdir) / MCP_CONFIG_FILENAME) or {}).get("mcpServers") or {}
+        self.servers = _run_servers(workdir)
         self.listed: dict[str, dict] = {}
 
     def spec(self, server: str) -> dict:
@@ -457,8 +471,8 @@ def _error(message: str) -> ExecEvent:
 
 
 def used_notice(last: dict | None) -> str | None:
-    """처리 과정에 남길 한 줄."""
+    """처리 과정에 남길 한 줄. 포털 처리 과정은 긴 줄 끝을 「…」로 자르므로 핵심(저장한 응답 · 새 추론 아님)을 앞에 둔다."""
     if not last:
         return None
     rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
-    return f"AI 응답 재생: 「{last['step']}」 — 미리 저장한 응답입니다({last['recorded_at']}). 지금 AI가 새로 추론한 것이 아닙니다.{rerun}"
+    return f"AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」, {last['recorded_at']} 저장).{rerun}"
