@@ -12,13 +12,18 @@ export default async ctx=>{
   if(q.value==='false'||q.value==='unchecked'){await c.move(q.x,q.y);await c.serial(()=>c.p.mouse.click(q.x,q.y));}
   else if(q.value!=='true'&&q.value!=='checked')throw Error('Subpage option state unknown: '+q.value);
  });
+ await c.say('new-export-folder',()=>c.hoverLabel('하위 페이지용 폴더 생성'));
+ await c.say('new-export-comments',()=>c.hoverLabel('댓글 내보내기'));
  await c.say('live-export-download',async()=>{
   const url=await c.serial(()=>c.p.url());if(url.includes(ctx.protect))throw Error('Original workspace export forbidden');
   const downloadPromise=c.p.waitForEvent('download',{timeout:60000});await c.click('text','내보내기');const download=await downloadPromise;await download.saveAs(c.out+'/학습노트_내보내기.zip');
  });
- await c.say('live-export-saved');await c.say('live-export-copy-explain');await c.say('live-wrap-home');await c.say('live-layout-down',()=>c.scroll(400));
- await c.source('N29-01',()=>c.click('text','Notion 익히기'));await c.say('live-peek-full',()=>c.click('css','[role=region] a[aria-label="전체 페이지로 열기"]'));await c.say('live-layout-down',()=>c.scroll(550));
- await c.source('N29-02',()=>c.link('첫 페이지 꾸미기'));await c.line('제목과 목록, 토글, 목차가 한 페이지에 들어 있습니다.');await c.source('N29-03',()=>c.link('Notion 익히기',true));await c.say('live-layout-down',()=>c.scroll(550));await c.source('N29-04',()=>c.link('페이지 연결하기'));await c.line('순서와 도움말 링크가 남아 있죠.');await c.source('N29-05',()=>c.home());
- await c.say('live-wrap-end');
+ await c.say('live-export-saved');await c.say('live-export-copy-explain');await c.say('live-wrap-home');await c.say('live-layout-down-r2',()=>c.scroll(400));
+ await c.source('N29-01',()=>c.click('text','Notion 익히기'));await c.say('live-peek-full-r6',()=>c.click('css','[role=region] a[aria-label="전체 페이지로 열기"]'));await c.say('live-layout-down-r3',()=>c.scroll(550));
+ await c.source('N29-02',()=>c.link('첫 페이지 꾸미기'));await c.line('제목과 목록, 토글, 목차가 한 페이지에 들어 있습니다.');await c.source('N29-03',()=>c.link('Notion 익히기',true));await c.say('live-layout-down-r4',()=>c.scroll(550));await c.source('N29-04',()=>c.link('페이지 연결하기'));await c.line('순서와 도움말 링크가 남아 있죠.');await c.source('N29-05',()=>c.home());
+ // 마무리: 완성한 홈을 짚으며 오늘 만든 것을 정리하고 끝인사.
+ await c.say('new-wrap-structure',()=>c.hoverSel('[role=note]'));
+ await c.say('new-wrap-features',()=>c.hoverLabel('전체 주제'));
+ await c.say('new-wrap-close');
  return 'DONE';
 };

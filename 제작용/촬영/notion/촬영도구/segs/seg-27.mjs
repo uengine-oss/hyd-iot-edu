@@ -4,11 +4,11 @@ export default async ctx=>{
  const c=await v10(ctx);await c.begin();
  await c.source('N09-11',()=>c.noteHandle());
  await c.source('N09-12',async()=>{const q=await c.locate('menu','색');await c.move(q.x,q.y);});
- await c.say('live-color-find',()=>c.hoverColor('파란색 배경'));
+ await c.say('live-color-find-r2',()=>c.hoverColor('파란색 배경'));
  await c.source('N09-13',()=>c.click('menu','파란색 배경'));
  await c.line('앞에서 만든 홈 안내와 같은 분위기로 맞추는 겁니다.');
- await c.say('live-callout-exit-first-v2',async()=>{await c.endOf('[role=note] [contenteditable=true][role=textbox]');await c.key('Enter');});
- await c.say('live-callout-exit-second',()=>c.exitCallout());
+ await c.say('live-callout-exit-first-v2-r2',async()=>{await c.endOf('[role=note] [contenteditable=true][role=textbox]');await c.key('Enter');});
+ await c.say('live-callout-exit-second-r2',()=>c.exitCallout());
  await c.say('live-heading-search',()=>c.type('/제목'));
  await c.source('N11-04',()=>c.click('menu','제목2'));
  await c.source('N09-15',()=>c.type('나의 페이지'));
@@ -24,7 +24,7 @@ export default async ctx=>{
  await c.source('N10-05');await c.say('live-page-enter',()=>c.key('Enter'));
  await c.source('N11-01',()=>c.type('한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.'));
  await c.source('N11-02',()=>c.key('Enter'));
- await c.say('live-heading-search',()=>c.type('/제목'));
+ await c.say('live-heading-search-r2',()=>c.type('/제목'));
  await c.source('N11-04',()=>c.click('menu','제목2'));
  await c.source('N11-05',()=>c.type('오늘 써 본 방법'));
  await c.source('N11-06',()=>c.key('Enter'));

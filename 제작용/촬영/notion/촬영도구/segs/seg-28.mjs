@@ -20,7 +20,7 @@ export default async ctx=>{
  await c.line('안쪽에 계속 적지 않도록 글이 시작되는 위치를 확인하겠습니다.');
  await c.line('다음에 해 볼 일도 남겨 두면 좋겠네요.');
  await c.say('live-divider-search',()=>c.type('/구분선'));await c.source('N14-02',()=>c.click('menu','구분선'));
- await c.say('live-heading-search',()=>c.type('/제목'));await c.source('N14-04',()=>c.click('menu','제목2'));
+ await c.say('live-heading-search-r3',()=>c.type('/제목'));await c.source('N14-04',()=>c.click('menu','제목2'));
  await c.source('N14-05',()=>c.type('다음에 해 볼 것'));await c.source('N14-06',()=>c.key('Enter'));
  await c.say('live-todo-filter',()=>c.type('/할'));await c.source('N14-08',()=>c.click('menu','할 일 목록'));await c.line('앞에 네모가 생겼습니다.');
  await c.source('N14-09',()=>c.type('내 관심 주제로 카드 하나 더 만들기'));await c.source('N14-10',()=>c.key('Enter'));

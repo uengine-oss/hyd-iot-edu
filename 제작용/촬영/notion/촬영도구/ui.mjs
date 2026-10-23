@@ -82,6 +82,24 @@ export async function v10(ctx){
  c.installPointer=async(at)=>c.serial(()=>raw.evaluate(installPointerInPage,at||lastPos));
  c.setPos=pos=>{lastPos=pos;};
  c.move=async(x,y)=>{await moveCore(x,y);if((ctx.commitAt||0)>Date.now())await gate();};
+ // 설명하며 가리키기(누르지 않음). 열린 대화상자 안에서는 그 이름 줄의 버튼 · 스위치를, 아니면 그 글자를 가리킨다.
+ // button=true면 대화상자 안에서 그 이름의 버튼 중 마지막 것(탭과 같은 이름의 아래쪽 실행 버튼).
+ c.hoverLabel=async(label,button=false)=>{
+  const q=await c.serial(()=>raw.evaluate(({label,button})=>{
+   const vis=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&e.checkVisibility({checkVisibilityCSS:true});};
+   const dlg=[...document.querySelectorAll('[role=dialog]')].filter(vis).at(-1);const scope=dlg||document;
+   let t=null;
+   if(button)t=[...scope.querySelectorAll('[role=button],button')].filter(e=>vis(e)&&e.textContent.trim()===label).at(-1);
+   else{
+    const leaf=[...scope.querySelectorAll('div,span,a,button,[role=tab]')].filter(e=>vis(e)&&e.textContent.trim()===label).filter((e,_,all)=>!all.some(o=>o!==e&&e.contains(o)))[0];
+    t=leaf;
+    if(leaf&&dlg){for(let p=leaf.parentElement,i=0;p&&p!==dlg&&i<4;p=p.parentElement,i++){const ctl=[...p.querySelectorAll('[role=button],[role=switch],button')].filter(vis).find(e=>!e.contains(leaf));if(ctl){t=ctl;break;}}}
+   }
+   if(!t)throw Error('Label target missing: '+label);
+   const r=t.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};
+  },{label,button}));
+  await c.move(q.x,q.y);
+ };
  c.hoverSel=async sel=>{const q=await targetPoint(sel);await c.move(q.x,q.y);};
  c.clickSel=async sel=>{const q=await targetPoint(sel);await c.move(q.x,q.y);await gate();await c.serial(()=>raw.mouse.click(q.x,q.y));await sleep(150);};
  c.gate=gate;
@@ -98,8 +116,16 @@ export async function v10(ctx){
    if(before)await c.serial(()=>raw.waitForFunction(url=>location.href!==url,before,{timeout:10000}));
    if(kind==='text'&&value==='새로 만들기')await c.serial(()=>raw.waitForSelector('[role=region] a[aria-label="전체 페이지로 열기"]'));
    if(kind==='css'&&value==='[role=region] a[aria-label="전체 페이지로 열기"]')await c.serial(()=>raw.waitForFunction(()=>!document.querySelector('[role=region] a[aria-label="전체 페이지로 열기"]')));
-   if(kind==='title')await c.serial(()=>raw.waitForFunction(()=>{const h=document.querySelector('h1[contenteditable=true]'),s=getSelection();return !!h&&!!s?.anchorNode&&h.contains(s.anchorNode);},undefined,{timeout:2000})).catch(()=>{throw Error('Title click did not place the caret in the title within 2s');});
-   if(kind==='css'&&value.includes('contenteditable'))await c.serial(()=>raw.waitForFunction(s=>{const e=document.querySelector(s),a=getSelection()?.anchorNode;return !!e&&!!a&&(e===a||e.contains(a));},value,{timeout:2000})).catch(()=>{throw Error('Click did not place the caret in '+value);});
+   // 입력칸 클릭: 2초 안에 캐럿이 안 들어가면 사람처럼 같은 자리를 한 번 더 누른다(take-n26 '새 데이터베이스' 칸). 그래도 안 되면 멈춘다.
+   if(kind==='title'||(kind==='css'&&value.includes('contenteditable'))){
+    const sel=kind==='title'?'h1[contenteditable=true]':value;
+    const caretIn=()=>c.serial(()=>raw.waitForFunction(s=>{const e=[...document.querySelectorAll(s)].find(e=>e.checkVisibility({checkVisibilityCSS:true})),a=getSelection()?.anchorNode;return !!e&&!!a&&(e===a||e.contains(a));},sel,{timeout:2000})).then(()=>true,()=>false);
+    if(!(await caretIn())){
+     await ctx.fs.appendFile(ctx.out+'/reclicks.jsonl',JSON.stringify({target:sel,reason:'caret not placed within 2s'})+String.fromCharCode(10));
+     await c.serial(()=>raw.mouse.click(now.x,now.y));await sleep(150);
+     if(!(await caretIn()))throw Error('Click did not place the caret in '+sel+' after a second click');
+    }
+   }
    return;
   }
   throw Error('Target layout did not settle: '+kind+' '+value);

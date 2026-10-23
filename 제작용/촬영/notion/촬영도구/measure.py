@@ -26,8 +26,13 @@ banner = 0
 for f in t['frames'][::3]:
     im = Image.open(d / f['file']).crop((950, 15, 1600, 65)).convert('RGB').resize((130, 10))
     banner += sum(1 for r, g, b in im.get_flattened_data() if r > 180 and g < 120 and b < 120) >= 3
+# 새 버전 배포 뒤 상단(y 83~165)에 화면 폭 전체로 깔리는 연파랑 「최신 버전으로 업데이트」 막대. 본문 칸 밖(x 60 · 1850)까지 같은 색이면 막대다.
+update = 0
+for f in t['frames'][::3]:
+    im = Image.open(d / f['file']).convert('RGB')
+    update += all(abs(r - 229) < 8 and abs(g - 242) < 8 and abs(b - 251) < 6 for r, g, b in (im.getpixel((x, y)) for x in (60, 1850) for y in (100, 150)))
 print(json.dumps({'segment': sys.argv[1], 'error': (t['error'] or '')[:300], 'duration_s': round(t['duration'] / 1000, 1), 'cues': len(t['actions']),
                   'moves': len(gaps), 'start_delay_max_ms': max([x for x in starts if x is not None], default=None), 'max_gap_ms': max(gaps) if gaps else None, 'gaps_over_100': [g for g in gaps if g >= 100],
-                  'click_offset_max_px': max(off) if off else None, 'pointer': es.get('pointer'), 'late_commits': late, 'banner_frames': banner,
+                  'click_offset_max_px': max(off) if off else None, 'pointer': es.get('pointer'), 'late_commits': late, 'banner_frames': banner + update, 'update_banner_frames': update,
                   'last_motion': {'x': round(t['motions'][-1]['x'], 1), 'y': round(t['motions'][-1]['y'], 1)} if t['motions'] else None,
                   'last_frame': t['frames'][-1]['file'] if t['frames'] else None}, ensure_ascii=False))

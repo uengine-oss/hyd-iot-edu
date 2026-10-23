@@ -69,6 +69,9 @@ export async function run(opts){
   // 이어 찍기: 앞 구간 끝 포인터 위치에 표시·실제 포인터를 둔다(녹화 전, 화면에 남지 않음).
   // 이어 찍기: 앞 구간이 끝난 페이지가 아니면 녹화 전에 그 페이지를 연다(화면에 남지 않음).
   if(opts.resumeUrl){const want=new URL(opts.resumeUrl).pathname.split('-').pop();if(!(await serial(()=>p.url())).includes(want)){await serial(()=>p.goto(opts.resumeUrl));await serial(()=>p.waitForFunction(()=>!!document.querySelector('h1[contenteditable=true]'),undefined,{timeout:20000}));await sleep(1500);}}
+  // Notion이 새 버전을 배포하면 새로고침 전까지 상단에 「최신 버전으로 업데이트」 막대가 남는다(2026-10-23 n25~n39 전부 찍힘). 열린 대화상자를 잃지 않게
+  // 자동 새로고침하지 않고 녹화 전에 멈춘다 — 상태 경계에서 run.sh restore reload 뒤 다시.
+  if(await serial(()=>p.evaluate(()=>document.body.innerText.includes('최신 버전으로 업데이트'))))throw Error('Notion update banner on screen before recording: ./run.sh restore reload');
   // 페이지를 새로 열었으면 화살표가 없으므로 ui.mjs의 설치 함수로 그 자리에 다시 그린다.
   if(opts.pointer){const q=opts.pointer;const {installPointerInPage}=await import('file:///'+HERE+'ui.mjs?'+Date.now());
    await serial(()=>p.evaluate(installPointerInPage,q));await serial(()=>p.evaluate(q=>{const e=document.getElementById('recording-pointer');if(window.__glide?.cancel)window.__glide.cancel();window.__glide=null;e.style.transform=`translate(${q.x}px,${q.y}px)`;},q));await serial(()=>p.mouse.move(q.x,q.y,{steps:1}));}

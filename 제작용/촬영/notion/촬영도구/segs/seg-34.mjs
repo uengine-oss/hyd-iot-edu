@@ -7,13 +7,13 @@ export default async ctx=>{
   if(!(await c.serial(()=>c.p.evaluate(()=>!!document.querySelector('input[placeholder="새 옵션을 입력하세요"]')))))await c.say('live-property-add-option',()=>c.click('text','옵션 추가'));await c.say(voice,async()=>{await c.click('css','input[placeholder="새 옵션을 입력하세요"]');await c.type(text);await c.key('Enter');});
  }
  await c.say('live-property-close',()=>c.click('aria','닫기'));
- await c.say('live-property-settings',()=>c.click('css','.notion-collection-edit-view'));
+ await c.say('live-property-settings-r2',()=>c.click('css','.notion-collection-edit-view'));
  await c.say('live-property-edit',async()=>{await c.hoverSel('loc=role:menuitem[name="속성 편집"]');await c.click('menu','속성 편집');});await c.say('live-property-new',()=>c.click('menu','새 속성'));
- await c.say('live-understanding-field',async()=>{await c.click('css','input[placeholder="속성 이름"]');await c.type('이해도');});await c.say('live-property-kind',()=>c.click('menu','선택'));
+ await c.say('live-understanding-field',async()=>{await c.click('css','input[placeholder="속성 이름"]');await c.type('이해도');});await c.say('live-property-kind-r2',()=>c.click('menu','선택'));
  for(const [voice,text] of [['live-understanding-first','설명 못함'],['live-understanding-second','대충 앎'],['live-understanding-third','설명 가능']]){
   if(!(await c.serial(()=>c.p.evaluate(()=>!!document.querySelector('input[placeholder="새 옵션을 입력하세요"]')))))await c.say('live-property-add-option',()=>c.click('text','옵션 추가'));await c.say(voice,async()=>{await c.click('css','input[placeholder="새 옵션을 입력하세요"]');await c.type(text);await c.key('Enter');});
  }
- await c.say('live-property-close',()=>c.click('aria','닫기'));await c.say('live-understanding-purpose');
+ await c.say('live-property-close-r2',()=>c.click('aria','닫기'));await c.say('live-understanding-purpose');
  await c.fs.writeFile(c.out+'/table-state.txt',await c.snapshot());
  return 'Topic categories and self-assessment options created';
 };
