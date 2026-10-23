@@ -1,7 +1,7 @@
 """구간 합성·측정. 구간별 원본 시간 유지(배속·중간 컷 없음), 구간 경계만 이어 붙인다.
 사용: python encode.py <출력이름> <구간[:여기까지 쓸 ms]> ...   (구간 = config.json work 아래 폴더)
 예: python encode.py Notion_합본 take-25d:185585 take-25u take-26 …  — 실패 조각은 이어 찍은 큐 시작 시각에서 자른다."""
-import json, subprocess, sys, wave
+import json, os, re, subprocess, sys, wave
 from pathlib import Path
 sys.stdout.reconfigure(encoding='utf-8')
 from common import WORK as base, AUDIO as audio, ffmpeg
@@ -40,24 +40,50 @@ for spec in specs:
     offset += end_ms
 for c in st['clicks']:
     clicks.append({'x': c['x'], 'y': c['y'], 'dx': round(c['px'] - c['x'], 2), 'dy': round(c['py'] - c['y'], 2), 'gliding': c.get('gliding')})
-lines.append(lines[-3])
+# 마지막 프레임의 duration은 다음 항목이 있어야 지켜진다. 끝에 같은 그림을 한 번 더 넣되 option framerate가 빠지면 ffmpeg가 무시해
+# 마지막 정지 화면만큼 영상이 잘린다(v10 14.7초 · v11 6.6초, 끝인사 동안 화면이 멈춰 프레임이 없음).
+lines += [lines[-3], 'option framerate 1000']
 (dest / 'frames.concat').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 total = offset / 1000
 cursor = 0
 with wave.open(str(dest / 'narration.wav'), 'wb') as w:
     w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+    # 음성 교체(환경변수 VOICE_OVERRIDES = JSON [{segment, time, file}]): 녹화한 문장 자리에 고친 문장을 넣는다.
+    # 고친 문장이 원래 문장이 끝나던 시점에 끝나도록 오른쪽에 맞춘다(조작이 말 직후에 그대로 온다). 원래보다 길면 멈춘다.
+    ovp = os.environ.get('VOICE_OVERRIDES')
+    ov = json.loads(Path(ovp).read_text(encoding='utf-8')) if ovp else []
+    used = set()
     for a in cues:
-        s = round(a['g'] / 1000 * SR)
+        src, s, pcm = audio / (a['id'] + '.mp3'), round(a['g'] / 1000 * SR), None
+        hit = [i for i, o in enumerate(ov) if o['segment'] == a['segment'] and abs(o['time'] - a['time']) < 5]
+        if hit:
+            o = ov[hit[0]]; used.add(hit[0])
+            src = (Path(ovp).parent / o['file']).resolve()
+            pcm = subprocess.check_output([ff, '-v', 'error', '-i', str(src), '-f', 's16le', '-ac', '1', '-ar', str(SR), '-'])
+            n, orig = len(pcm) // 2, round(a['duration'] / 1000 * SR)
+            if n > orig + SR // 10:
+                raise RuntimeError(f"Override longer than recorded speech: {a['segment']} {a['id']} {n / SR:.2f}s > {orig / SR:.2f}s")
+            s += max(0, orig - n); a['override'] = o['file']
         if s < cursor:
             raise RuntimeError('Overlapping speech ' + a['id'])
         w.writeframesraw(b'\0\0' * (s - cursor))
-        pcm = subprocess.check_output([ff, '-v', 'error', '-i', str(audio / (a['id'] + '.mp3')), '-f', 's16le', '-ac', '1', '-ar', str(SR), '-'])
+        if pcm is None:
+            pcm = subprocess.check_output([ff, '-v', 'error', '-i', str(src), '-f', 's16le', '-ac', '1', '-ar', str(SR), '-'])
         w.writeframesraw(pcm); cursor = s + len(pcm) // 2
+    if len(used) != len(ov):
+        raise RuntimeError('Unmatched voice overrides: ' + json.dumps([o for i, o in enumerate(ov) if i not in used], ensure_ascii=False))
     w.writeframesraw(b'\0\0' * max(0, round(total * SR) - cursor))
 mp4 = dest / f'{name}_안치윤_1080p.mp4'
 subprocess.run([ff, '-y', '-v', 'warning', '-f', 'concat', '-safe', '0', '-i', str(dest / 'frames.concat'), '-i', str(dest / 'narration.wav'),
                 '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-shortest', str(mp4)], check=True)
 subprocess.run([ff, '-v', 'error', '-i', str(mp4), '-f', 'null', '-'], check=True)
+# 끝까지 디코드된다고 길이가 맞는 것은 아니다(v10 · v11 첫 합성이 끝인사를 잘라 먹고도 통과). 영상 · 음성 각각 끝 시각을 재서 구간 합계와 비교한다.
+for stream in ('v', 'a'):
+    log = subprocess.run([ff, '-hide_banner', '-i', str(mp4), '-map', f'0:{stream}', '-c', 'copy', '-f', 'null', '-'], capture_output=True, text=True, encoding='utf-8', errors='replace').stderr
+    h, m, s = re.findall(r'time=(\d+):(\d+):([\d.]+)', log)[-1]
+    got = int(h) * 3600 + int(m) * 60 + float(s)
+    if abs(got - offset / 1000) > 0.1:
+        raise RuntimeError(f'{mp4.name}: {stream} stream {got:.2f}s != segments {offset / 1000:.2f}s')
 def stamp(ms):
     ms = round(ms); m, s = divmod(ms, 60000); return f'{m:02}:{s // 1000:02}.{s % 1000:03}'
 (dest / '자막.srt').write_text('\n\n'.join(f"{i+1}\n00:{stamp(a['g']).replace('.', ',')} --> 00:{stamp(a['g']+a['duration']).replace('.', ',')}\n{a['text']}" for i, a in enumerate(cues)) + '\n', encoding='utf-8')

@@ -4,6 +4,7 @@
 //   cut27      : 구간27 57.0s(live-page-search 직전) — 「노션 익히기」 주제에서 하위 페이지 블록 「첫 페이지 꾸미기」 삭제(휴지통),
 //                「나의 페이지」 제목 아래 빈 줄에 캐럿. 주제 페이지 주소는 take-26 end-state.json
 //   trashPage  : 촬영 전용 페이지(config.page)를 하위 페이지째 Notion 휴지통으로 이동(영구 삭제 아님). 처음부터 다시 찍을 때만
+//   reload     : 페이지 새로고침(Notion 「최신 버전으로 업데이트」 막대 제거, 대화상자가 닫히므로 상태 경계에서만)
 //   state      : 읽기 전용 — 블록 목록 · 캐럿 · 사이드바 · 오류 문구
 const fs=await import('node:fs/promises');
 const HERE=decodeURIComponent(new URL('.',import.meta.url).pathname).replace(/^\/([A-Za-z]:)/,'$1');
@@ -109,6 +110,8 @@ export async function restore(kind){
  const p=await page();
  if(kind==='trashPage')return trashPage(p);
  if(kind==='state')return state(p);
+ if(kind==='reload'){await p.evaluate(()=>location.reload());await p.waitForFunction(()=>!!document.querySelector('h1[contenteditable=true]'),undefined,{timeout:20000});await p.waitForTimeout(1500);
+  if(await p.evaluate(()=>document.body.innerText.includes('최신 버전으로 업데이트')))throw Error('Update banner still on screen after reload');return {reloaded:await p.url()};}
  if(kind==='cut25')return cut25(p);
  if(kind==='noteTail')return noteTail(p);
  if(kind==='cut27')return cut27(p);

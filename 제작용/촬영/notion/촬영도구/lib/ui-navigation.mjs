@@ -19,9 +19,13 @@ export async function navigation(ctx){
    const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();return{start:{x:ar.left,y:ar.top+ar.height/2},end:{x:br.right+1,y:br.top+br.height/2}};
   },text));await c.move(q.start.x,q.start.y);await c.serial(()=>c.p.mouse.down());await c.move(q.end.x,q.end.y);await c.serial(()=>c.p.mouse.up());
  };
- c.link=async(text,top=false)=>{const q=await c.serial(()=>c.p.evaluate(({text,top})=>{
-  const es=[...document.querySelectorAll('a,[role=link]')].filter(e=>{const r=e.getBoundingClientRect();return e.checkVisibility({checkVisibilityCSS:true})&&e.textContent.trim()===text&&r.width>0&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&(!top||r.top<65);}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
-  if(!es.length)throw Error('Link missing: '+text);const r=es[0].getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2,href:es[0].getAttribute('href')};
- },{text,top}));await c.move(q.x,q.y);await c.serial(()=>c.p.mouse.click(q.x,q.y));if(q.href)await c.serial(()=>c.p.waitForFunction(href=>location.pathname===new URL(href,location.href).pathname,q.href,{timeout:10000}));await c.sleep(400);};
+ // 링크가 화면 아래 끝에 걸쳐 있으면(상단 막대 등으로 본문이 밀린 경우, 2026-10-23 n39) 휠로 보이게 내린 뒤 한 번 더 찾는다.
+ const findLink=(text,top)=>c.serial(()=>c.p.evaluate(({text,top})=>{
+  const all=[...document.querySelectorAll('a,[role=link]')].filter(e=>e.checkVisibility({checkVisibilityCSS:true})&&e.textContent.trim()===text&&e.getBoundingClientRect().width>0);
+  const es=all.filter(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&(!top||r.top<65);}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
+  if(!es.length){const below=!top&&all.map(e=>e.getBoundingClientRect()).find(r=>r.bottom>innerHeight&&r.top<innerHeight*2);if(below)return{scroll:Math.ceil(below.bottom-innerHeight*0.6)};throw Error('Link missing: '+text);}
+  const r=es[0].getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2,href:es[0].getAttribute('href')};
+ },{text,top}));
+ c.link=async(text,top=false)=>{let q=await findLink(text,top);if(q.scroll){await c.scroll(q.scroll);q=await findLink(text,top);if(q.scroll)throw Error('Link still off screen: '+text);}await c.move(q.x,q.y);await c.serial(()=>c.p.mouse.click(q.x,q.y));if(q.href)await c.serial(()=>c.p.waitForFunction(href=>location.pathname===new URL(href,location.href).pathname,q.href,{timeout:10000}));await c.sleep(400);};
  return c;
 }

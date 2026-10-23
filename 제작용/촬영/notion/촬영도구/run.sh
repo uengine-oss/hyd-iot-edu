@@ -1,7 +1,7 @@
 #!/bin/bash
 # Notion ego 실행기(Git Bash). 저장소의 촬영도구를 ego 안에서 불러 돌린다.
 #   ./run.sh rec <이름> <구간 파일(segs/ 기준)> [앞 구간 이름 | '{x:..,y:..}']   구간 하나 녹화 → 실측. 앞 구간 끝(또는 자른 시점) 포인터에서 시작
-#   ./run.sh restore <cut25|noteTail|state>                    녹화 밖 상태 맞춤(실행 취소 없이) · 읽기 전용 상태 보기
+#   ./run.sh restore <cut25|noteTail|reload|state>                    녹화 밖 상태 맞춤(실행 취소 없이) · 읽기 전용 상태 보기
 #   ./run.sh measure <이름>                                     녹화 하나 다시 실측
 # 다른 ego 명령(ego-browser.exe)이 떠 있으면 시작하지 않는다(상태 파일 EPERM). 실행 전 node --check(ego는 문법 오류에 조용히 멈춘다),
 # stdin을 닫는다(-e가 입력을 기다린다). 시간 초과(TMO초, 기본 900) 시 ego의 NodeService(스크립트 실행기)만 정리한다.
@@ -13,6 +13,12 @@ if [ "$cmd" = measure ]; then cd "$here" && PYTHONUTF8=1 python measure.py "$1";
 for f in ctrl.mjs ui.mjs restore.mjs lib/*.mjs segs/*.mjs; do node --check "$here/$f" || { echo "SYNTAX ERROR in $f: ego로 보내지 않음"; exit 2; }; done
 busy=$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -Filter \"Name='ego-browser.exe'\").Count")
 [ "${busy//[^0-9]/}" = "0" ] || { echo "BUSY: 다른 ego 명령이 실행 중($busy) — 끝난 뒤 다시"; exit 3; }
+# PC 부하: 화상회의가 돌거나 여유 메모리가 3GB 미만이면 녹화하지 않는다(Zoom · 메모리 부족으로 1~2초 정지가 반복된 사례)
+if [ "$cmd" = rec ]; then
+  load=$(powershell -NoProfile -Command "\$z=@(Get-Process -Name Zoom,Teams,ms-teams -ErrorAction SilentlyContinue).Count; \$f=[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024); \"\$z \$f\"")
+  set -- "$@"; z=${load%% *}; free=${load##* }; free=${free//[^0-9]/}
+  if [ "${z//[^0-9]/}" != "0" ] || [ "${free:-0}" -lt 3000 ]; then echo "LOAD: 화상회의 ${z}개, 여유 메모리 ${free}MB — 녹화하지 않음"; exit 4; fi
+fi
 stamp=$(date +%s)
 mkdir -p "$work"
 case "$cmd" in
@@ -20,8 +26,9 @@ case "$cmd" in
     n=$1; seg=$2; prev=${3:-}
     ptr=null
     if [ "${prev:0:1}" = "{" ]; then ptr=$prev
-    elif [ -n "$prev" ]; then ptr=$(PYTHONUTF8=1 python -c "import json;m=json.load(open(r'$work/$prev/timing.json',encoding='utf8'))['motions'][-1];print('{x:%.1f,y:%.1f}'%(m['x'],m['y']))") || exit 2; fi
-    rurl=null; [ -n "$prev" ] && [ "${prev:0:1}" != "{" ] && rurl=$(PYTHONUTF8=1 python -c "import json;print(json.dumps(json.load(open(r'$work/$prev/end-state.json',encoding='utf8'))['url']))")
+    # 앞 구간을 <이름>:<자른ms>로 주면 그 시각의 화살표 위치에서 잇는다(실패 조각의 마지막 위치를 쓰면 이음매에서 화살표가 튐, 2026-10-23 v11 5:24.7).
+    elif [ -n "$prev" ]; then ptr=$(PYTHONUTF8=1 python -c "import json;n,_,c=r'$prev'.partition(':');ms=json.load(open(r'$work/'+n+'/timing.json',encoding='utf8'))['motions'];ms=[m for m in ms if not c or m['start']<float(c)];m=ms[-1];print('{x:%.1f,y:%.1f}'%(m['x'],m['y']))") || exit 2; fi
+    rurl=null; [ -n "$prev" ] && [ "${prev:0:1}" != "{" ] && rurl=$(PYTHONUTF8=1 python -c "import json;print(json.dumps(json.load(open(r'$work/${prev%%:*}/end-state.json',encoding='utf8'))['url']))")
     js="const {run}=await import('file:///$here/ctrl.mjs?$stamp');console.log(JSON.stringify(await run({name:'$n',module:'$seg',pointer:$ptr,resumeUrl:$rurl})));"
     log="$work/$n.log";;
   restore)
