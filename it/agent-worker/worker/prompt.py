@@ -72,10 +72,17 @@ FILE_READ_RULE = ("## 작업 파일 읽기\n작업 파일과 등록 스킬은 BO
                   "깨진 문자열을 추측해 복원하거나 원본 파일에 BOM을 붙여 고치지 마세요.")
 
 
-def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = False) -> str:
-    """How to continue after a person answered (the product's hitl.plan_resume prompts)."""
+def resume_prompt(answer: str, *, previous_summary: str = "", restarted: bool = False, process_scope: dict | None = None) -> str:
+    """How to continue after a person answered (the product's hitl.plan_resume prompts).
+    The answer puts the task back in the queue; the worker that picks it up claims it under a new consumer id, so the process_scope the
+    session read in its first prompt is no longer the claim — a write tool (submit_decision) sent with it is refused with 409 '현재 판단
+    작업의 유효한 worker claim이 필요합니다' (2026-10-23 검수 · 라이브 B). The resumed text carries this run's scope."""
+    scope = ("\n\n## 이번 실행의 process_scope (앞서 읽은 값은 무효)\n작업을 다시 잡아 담당 표시(consumer)가 바뀌었습니다. 판단 등록 같은 쓰기 "
+             "도구에는 앞 대화에서 읽은 process_scope 대신 아래 값을 그대로 넘기세요(context/task.json 에도 같은 값이 있습니다).\n"
+             + json.dumps(process_scope, ensure_ascii=False)) if process_scope else ""
     if not restarted:
-        return f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요.\n\n{FILE_READ_RULE}\n\n{LANGUAGE_RULE}"
+        return (f"담당자 응답: {answer}\n\n이 응답을 반영해 중단된 지점부터 작업을 계속하세요. 이미 완료한 작업은 다시 하지 마세요.{scope}"
+                f"\n\n{FILE_READ_RULE}\n\n{LANGUAGE_RULE}")
     text = f"담당자 응답: {answer}\n"
     if previous_summary:
         text += f"\n## 이전 진행 요약\n{previous_summary}\n"

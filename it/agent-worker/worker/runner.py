@@ -174,7 +174,8 @@ class Runner:
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=ws.exists)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate
-            text = prompt.resume_prompt(ctx.human_answer, previous_summary=str(row.get("draft") or "")[:2000], restarted=plan.restarted)
+            text = prompt.resume_prompt(ctx.human_answer, previous_summary=str(row.get("draft") or "")[:2000], restarted=plan.restarted,
+                                       process_scope=context.process_scope(row))
             resume_session = plan.session_id or None
             if plan.restarted:
                 text = prompt.build(row, extras, workdir=str(ws.path)) + "\n\n" + text
