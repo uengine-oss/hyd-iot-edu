@@ -180,7 +180,8 @@ SPARE_BASE = {
     # '재고 보충 필요'다(C3 B · C 단순화, 마이그레이션 47). 필요량 = 목표 7 − 가용 1 = 6 (B-OEM 55만원 × 6 = 330만원). 구매 처리 건이 입고까지 하면 가용 7.
     "P-PMP-SEAL": {"name": "펌프 축 씰 키트", "on_hand": 3, "reserved": 2, "reorder_point": 2, "target_stock": 7, "reserved_for": "HYD-03",
                    "need_by_days": 6},   # 필요일: 결품 전 남은 날(예약 정비 일정) — 리드타임과 비교(PR-07 7.4, in:lead-slack-days)
-    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 1, "target_stock": 3, "reserved_for": "HYD-03", "need_by_days": 7},
+    # 팬 베어링 재주문점 · 목표는 PR-07 PR-7.2 표(2 · 4)를 따른다(마이그레이션 062). 실물 3이라 수업 시작 상태에 경보는 없다.
+    "P-FAN-BRG": {"name": "팬 베어링", "on_hand": 3, "reserved": 0, "reorder_point": 2, "target_stock": 4, "reserved_for": "HYD-03", "need_by_days": 7},
     "P-CLR-CORE": {"name": "쿨러 코어", "on_hand": 2, "reserved": 0, "reorder_point": 1, "target_stock": 2, "reserved_for": "HYD-01", "need_by_days": 10},
     # B-ERP-20261012-v1 / migration 057: PM-02 기본·4천h 패키지의 필터1개를 실제 초기 ERP 행으로 공급.
     # 실물2·예약0·목표2는 교육용 초기값이다. 단독 시행 후1개가 남으며 초기 C 경보를 추가하지 않는다.

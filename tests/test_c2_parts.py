@@ -335,3 +335,16 @@ def test_c2_transactions_are_listed_as_irreversible_with_the_same_reason():
     from procsvc import effect_compensation as ec
     assert ec.C2_IRREVERSIBLE == state.C2_IRREVERSIBLE and set(state.C2_IRREVERSIBLE) == set(state.C2_SKILLS)
     assert not set(state.C2_SKILLS) & set(state.INVERSE_OF)
+
+
+def test_erp_reorder_thresholds_follow_the_pr07_table():
+    """ERP 재주문점 · 목표 재고는 수업 문서 PR-07 PR-7.2 표를 따른다 — 팬 베어링이 1 · 3(문서 2 · 4)이던 것(2026-10-23 검수).
+    메모리 백엔드(data.SPARE_BASE)와 업무 DB(마이그레이션 062가 마지막으로 바꾼 값)가 같아야 한다."""
+    import re
+    text = (ROOT / "it/portal/www/samples/PR-07_spare-parts-standard.md").read_text(encoding="utf-8")
+    table = {m[0]: (int(m[1]), int(m[2])) for m in re.findall(r"^\| (.+?) \| (\d+)개 \| (\d+)개 \|$", text.split("## PR-7.2")[1], re.M)}
+    by_name = {b["name"]: (b["reorder_point"], b["target_stock"]) for b in data.SPARE_BASE.values()}
+    assert table and all(by_name[name] == want for name, want in table.items()), (table, by_name)
+    sql = (ROOT / "it/supabase/migrations/20261023000062_fan_bearing_reorder.sql").read_text(encoding="utf-8")
+    assert "set reorder_point = 2, target_stock = 4" in sql and "part_no = 'P-FAN-BRG'" in sql
+    assert table["팬 베어링"] == (2, 4)
