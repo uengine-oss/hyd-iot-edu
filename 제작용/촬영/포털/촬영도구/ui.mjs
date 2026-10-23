@@ -46,7 +46,14 @@ function findInPage(t){
   else if(t.anchor==='margin'){x=Math.max(4,b.x-24);y=b.y+Math.min(b.height/2,14);}
   else if(t.anchor==='pad'){x=b.x+6;y=b.y+Math.min(b.height/2,22);}
   else if(t.anchor==='below'){x=b.x+Math.min(b.width/2,30);y=b.bottom+4;}
-  return{x,y,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName};
+  else if(t.anchor==='after'){const g=document.createRange();g.selectNodeContents(es[0]);const tb=g.getBoundingClientRect();x=(tb.width?tb.right:b.right)+12;y=b.y+b.height/2;}
+  // 대상을 담은 스크롤 영역(포털은 왼쪽 메뉴 .rail과 본문 main#content가 따로 굴러간다). 고정 위치(위 막대)면 굴리지 않는다.
+  let fixed=false,a=es[0].parentElement,sc=null;
+  for(let n=es[0];n&&n!==document.documentElement;n=n.parentElement)if(getComputedStyle(n).position==='fixed'||getComputedStyle(n).position==='sticky')fixed=true;
+  for(;a&&a!==document.body&&a!==document.documentElement;a=a.parentElement){const cs=getComputedStyle(a);if(/(auto|scroll)/.test(cs.overflowY)&&a.scrollHeight>a.clientHeight+2){const r=a.getBoundingClientRect();sc={top:r.top,bottom:r.bottom,left:r.left,right:r.right};break;}}
+  // 문서 전체가 굴러가지 않는 화면(포털)에서 스크롤 영역 밖 요소(위 막대)는 늘 보인다.
+  if(!sc&&document.scrollingElement.scrollHeight<=innerHeight+2)fixed=true;
+  return{x,y,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName,fixed,sc};
 }
 
 export async function portal(ctx){
@@ -67,12 +74,16 @@ export async function portal(ctx){
  const find=t=>q1(()=>raw.evaluate(findInPage,t)).then(r=>{if(r.error)throw Error(r.error);return r;});
  // 화면 밖 대상은 휠로 들인다(스크롤도 사람이 하는 조작이므로 화살표가 그 영역 위에 있을 때 몇 번에 나눠 굴린다).
  async function inView(t){
-  // 화면 안(위 · 아래 8px 여백)에 다 보이면 그대로 쓴다 — 위 막대처럼 고정된 요소는 굴려도 자리가 같다.
-  // 가리킬 지점(표처럼 큰 요소는 그 지점만)이 화면 안이면 그대로 쓴다.
-  for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);if(y>=60&&y<=r.h-40&&r.top>=-r.h)return r;
-   const dy=y<60?y-200:y-r.h+160;await wheel(Math.max(-420,Math.min(420,dy)));}
+  // 가리킬 지점이 그 스크롤 영역 안(위 20 · 아래 20px 여백, 창 전체가 영역이면 위 60 · 아래 40px)에 있으면 그대로 쓴다. 고정된 위 막대는 굴려도 자리가 같다.
+  // 밖이면 화살표를 먼저 그 영역 위로 옮긴 뒤 굴린다(휠은 화살표 아래 영역을 굴린다 — 메뉴 칸 위에서 굴려야 메뉴가 움직인다).
+  for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);if(r.fixed)return r;
+   const lo=r.sc?r.sc.top+20:60,hi=r.sc?r.sc.bottom-20:r.h-40;if(y>=lo&&y<=hi&&r.top>=-r.h)return r;
+   await over(r);const dy=y<lo?y-lo-140:y-hi+140;await wheel(Math.max(-420,Math.min(420,dy)));}
   throw Error('Cannot bring into view: '+JSON.stringify(t));
  }
+ async function over(r){if(!r.sc)return;const p=lastPos||await q1(pointerPos);const s=r.sc;
+  if(p.x>=s.left+10&&p.x<=s.right-10&&p.y>=s.top+10&&p.y<=s.bottom-10)return;
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));await moveCore(cl(r.x,s.left+40,s.right-40),cl(p.y,s.top+80,s.bottom-80));}
  async function settled(t){let q=await inView(t);for(let k=0;k<10;k++){await sleep(150);const q2=await find(t);if(Math.hypot(q2.x-q.x,q2.y-q.y)<=1)return q2;q=q2;}throw Error('Target layout did not settle: '+JSON.stringify(t));}
  // 휠: 헤드리스에서는 휠 한 번이 부드럽게 굴러가지 않고 그 거리만큼 바로 뛴다(120px씩 나누니 520px가 프레임 6장 · 공백 191ms, 2026-10-23 test-click-1).
  // 그래서 약 30px씩 프레임 간격(30ms)에 맞춰 굴린다. 처음과 끝은 작게(가속 · 감속). 화살표는 움직이지 않는다.
@@ -94,14 +105,14 @@ export async function portal(ctx){
  c.scroll=async(dy,over)=>{if(over)await c.point(over);await gate();await wheel(dy);};
  c.scrollTo=async t=>{await gate();await inView(t);};
  // 그 대상(제목 등)이 화면 위 top px 자리에 오도록 굴린다. 시점은 부르는 쪽이 정한다(gate 없음).
- c.scrollTop=async(t,top=96)=>{const r=await find(t);const dy=Math.round(r.top-top);if(Math.abs(dy)>4)await wheel(dy);};
+ c.scrollTop=async(t,top=96)=>{const r=await find(t);const dy=Math.round(r.top-top);if(Math.abs(dy)>4){await over(r);await wheel(dy);}};
  // 입력: 입력칸이 포커스인지 확인하고, 화살표를 칸 아래 여백으로 비킨 뒤 한 글자씩 넣는다(한글은 완성형 글자 단위, IME 조합 시연 아님).
  c.aside=async()=>{const q=await q1(()=>raw.evaluate(()=>{const a=document.activeElement;if(!a?.matches('input,textarea,select,[contenteditable=true]'))return null;const r=a.getBoundingClientRect();return{x:Math.min(innerWidth-30,r.x+24),y:Math.min(innerHeight-30,r.bottom+22)};}));if(!q)throw Error('No focused input for aside');await moveCore(q.x,q.y);};
  c.type=async text=>{await c.aside();await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}};
  c.key=async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);};
  // 고르기 칸: 헤드리스 화면 녹화에는 운영체제 목록 창이 찍히지 않으므로, 칸을 누른 뒤 값을 고르고 change를 보낸다(고른 결과는 칸에 보인다).
  c.select=async(t,label)=>{await c.click(t);await gate();
-  const ok=await q1(()=>raw.evaluate(({t,label})=>{const es=[...document.querySelectorAll(t.css||'select')].filter(e=>e.checkVisibility());const s=es[t.nth||0];if(!s)return false;const o=[...s.options].find(o=>o.textContent.trim()===label);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change',{bubbles:true}));s.blur();return true;},{t,label}));
+  const ok=await q1(()=>raw.evaluate(({t,label})=>{const es=[...document.querySelectorAll(t.css||'select')].filter(e=>e.checkVisibility());const s=es[t.nth||0];if(!s)return false;const o=[...s.options].find(o=>o.textContent.trim()===label||o.value===label);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change',{bubbles:true}));s.blur();return true;},{t,label}));
   if(!ok)throw Error('Select option missing: '+label);await sleep(200);};
  c.waitFor=(fn,arg,timeout)=>ctx.waitFor(fn,arg,timeout);
  c.waitText=(text,timeout=20000)=>ctx.waitFor(s=>document.body.innerText.includes(s),text,timeout);
