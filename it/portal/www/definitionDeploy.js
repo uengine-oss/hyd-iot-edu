@@ -24,9 +24,10 @@
   async function action(fn) {
     if (busy) return;
     busy = true;
-    const buttons = [...$d('definitionDeployPanel').querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
+    // 잠그기 전 상태를 기억해 그대로 되돌린다 — 원래 꺼진 「운영 중」 · 배포 불가 판본 · 기준 되돌리기 버튼이 살아나지 않게
+    const buttons = [...$d('definitionDeployPanel').querySelectorAll('button')].map(b => [b, b.disabled]); buttons.forEach(([b]) => b.disabled = true);
     try { await fn(); } catch (e) { message(e.message, true); }
-    finally { busy = false; buttons.forEach(b => b.disabled = false); syncButtons(); }
+    finally { busy = false; buttons.forEach(([b, was]) => b.disabled = was); syncButtons(); }
   }
   function who() {
     const by = $d('deployBy').value.trim(), reason = $d('deployReason').value.trim();

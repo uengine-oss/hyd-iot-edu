@@ -86,8 +86,20 @@
       ['rules', '규칙 바꿔 보기', ruleCount() || null]], W.tab, 'data-wi-tab');
     html += `<div class="tab-pane ${W.tab === 'money' ? 'on' : ''}">${moneyPane(v)}</div><div class="tab-pane ${W.tab === 'values' ? 'on' : ''}">${valuesPane(v)}</div>`
       + `<div class="tab-pane ${W.tab === 'weeks' ? 'on' : ''}">${weeksPane(v)}</div><div class="tab-pane ${W.tab === 'rules' ? 'on' : ''}">${rulesPane(v)}</div>`;
+    // 다시 그리기(경계값 도착 · 다시 계산 결과)가 치던 칸의 포커스 · 커서와 펼친 접기를 지우지 않게(값은 input 이벤트로 이미 상태에 있다)
+    const a = document.activeElement, key = a && W.el.contains(a) ? focusKey(a) : null, typed = key && /^(INPUT|TEXTAREA)$/.test(a.tagName) ? a.value : null;
+    let caret = null; try { caret = a && typeof a.selectionStart === 'number' ? [a.selectionStart, a.selectionEnd] : null; } catch (_) { caret = null; }
+    const open = new Set([...W.el.querySelectorAll('details[open] > summary')].map(x => x.textContent.trim()));
     W.el.innerHTML = html;
+    W.el.querySelectorAll('details > summary').forEach(x => { if (open.has(x.textContent.trim())) x.parentElement.open = true; });
     wire();
+    const next = key && W.el.querySelector(key);
+    if (next && !next.disabled) { if (typed != null && next.value !== typed) next.value = typed; next.focus({ preventScroll: true }); if (caret && next.setSelectionRange) { try { next.setSelectionRange(...caret); } catch (_) { /* 커서 없는 칸 */ } } }
+  }
+  function focusKey(x) {
+    if (x.id) return '#' + CSS.escape(x.id);
+    const attrs = [...x.attributes].filter(a => a.name.startsWith('data-')).map(a => `[${a.name}="${CSS.escape(a.value)}"]`).join('');
+    return attrs ? x.tagName.toLowerCase() + attrs : null;
   }
 
   function summaryHtml(v) {
@@ -231,26 +243,28 @@
     q('#wiReset')?.addEventListener('click', reset);
     el.querySelectorAll('[data-wi-tab]').forEach(b => b.addEventListener('click', () => { W.tab = b.dataset.wiTab; render(); }));
     el.querySelectorAll('[data-wi-bound]').forEach(b => b.addEventListener('click', () => applyBoundary(Number(b.dataset.wiBound))));
-    el.querySelectorAll('[data-wi-var]').forEach(i => i.addEventListener('change', () => {
+    // 값은 칠 때마다(input) 상태에 담는다 — change(포커스를 뺄 때)만 쓰면 그 사이 다시 그리기가 친 값을 지웠다
+    const both = (node, fn) => { node?.addEventListener('input', fn); node?.addEventListener('change', fn); };
+    el.querySelectorAll('[data-wi-var]').forEach(i => both(i, () => {
       if (i.value === '') delete W.values[i.dataset.wiVar]; else W.values[i.dataset.wiVar] = Number(i.value);
     }));
     q('#wiTry')?.addEventListener('click', retry);
     q('#wiRuleTarget')?.addEventListener('change', e => { W.ruleForm.target = e.target.value; });
-    q('#wiRuleValue')?.addEventListener('change', e => { W.ruleForm.value = e.target.value; });
+    both(q('#wiRuleValue'), e => { W.ruleForm.value = e.target.value; });
     q('#wiRule')?.addEventListener('click', () => {
       const t = W.ruleForm.target, val = W.ruleForm.value;
       W.policy = { weights: {}, penalties: {}, perspectives: {} }; W.perspForm = {};
       if (val !== '' && t) (t.startsWith('w:') ? W.policy.weights : W.policy.penalties)[t.slice(2)] = Number(val);
       retry();
     });
-    el.querySelectorAll('[data-wi-persp]').forEach(i => i.addEventListener('change', () => {
+    el.querySelectorAll('[data-wi-persp]').forEach(i => both(i, () => {
       if (i.value === '') delete W.perspForm[i.dataset.wiPersp]; else W.perspForm[i.dataset.wiPersp] = Number(i.value);
     }));
     q('#wiPersp')?.addEventListener('click', () => { W.policy = { weights: {}, penalties: {}, perspectives: { ...W.perspForm } }; retry(); });
     q('#wiWCard')?.addEventListener('change', e => { W.weeksForm.card = e.target.value; });
     q('#wiWVar')?.addEventListener('change', e => { W.weeksForm.variable = e.target.value; });
-    q('#wiWValue')?.addEventListener('change', e => { W.weeksForm.value = e.target.value; });
-    q('#wiWWeeks')?.addEventListener('change', e => { W.weeksForm.weeks = e.target.value; });
+    both(q('#wiWValue'), e => { W.weeksForm.value = e.target.value; });
+    both(q('#wiWWeeks'), e => { W.weeksForm.weeks = e.target.value; });
     q('#wiWeeks')?.addEventListener('click', runWeeks);
   }
 

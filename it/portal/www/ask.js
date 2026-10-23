@@ -9,7 +9,7 @@
     asking: ['사람에게 질문', 'warning'], done: ['끝', 'success'], failed: ['실패', 'danger'], closed: ['닫힘', 'neutral'], broken: ['오류', 'danger'] };
   const A = { el: null, status: null, statusErr: '', agents: [], agent: '', draft: '', sending: false, err: '', cur: null, history: [], timer: null, histErr: '' };
   const api = path => API.process + '/api/ask' + path;
-  const uuid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16));
+  const uuid = () => UI.uuid();   // 비보안 문맥(IP 주소로 연 포털)에서도 같은 공용 생성기
   const toolName = c => UI.toolName(c.raw_tool || c.tool);
 
   async function loadStatus() {

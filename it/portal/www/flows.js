@@ -68,7 +68,9 @@
   const api = p => API.process + p;
   const h = s => esc(s);
   async function call(method, path, body) {
-    const r = await fetch(api(path), { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    let r;
+    try { r = await fetch(api(path), { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); }
+    catch (e) { throw new Error(typeof NETWORK_DOWN === 'string' ? NETWORK_DOWN : '서비스에 연결하지 못했습니다.'); }   // 연결 거부 · 끊김(영문 Failed to fetch)
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
       const d = j.detail;
@@ -77,6 +79,13 @@
       throw e;
     }
     return j;
+  }
+  // 두 번 누름 방지: 요청이 끝날 때까지 그 버튼을 잠그고 같은 동작을 다시 보내지 않는다
+  const locks = new Set();
+  async function once(name, button, fn) {
+    if (locks.has(name)) return;
+    locks.add(name); const was = button ? button.disabled : false; if (button) button.disabled = true;
+    try { return await fn(); } finally { locks.delete(name); if (button && button.isConnected) button.disabled = was; }
   }
   const partName = p => p ? ({ human: '담당자 입력', agent: '에이전트 작업' }[p.key] || UI.flowName(p.name)) : '';
   const roleOpts = (sel, human) => S.cat.roles.filter(r => !human || r.human).map(r => `<option value="${h(r.name)}" ${r.name === sel ? 'selected' : ''}>${h(r.name)}</option>`).join('');
@@ -97,7 +106,7 @@
       </section>
       <div id="flowEditor"></div>
       ${UI.fold('내가 가져온 흐름 · 판본', '<div id="flowList"></div><div class="form-actions"><button class="btn small danger" id="flowReset">기준으로 되돌리기</button></div>', { open: true })}`;
-    el.querySelector('#flowImport').addEventListener('click', doImport);
+    el.querySelector('#flowImport').addEventListener('click', e => once('import', e.currentTarget, doImport));
     el.querySelector('#flowReset').addEventListener('click', doReset);
     return Promise.all([loadCatalog(), loadList()]);
   }
@@ -362,8 +371,8 @@
       if (e.target.matches('[data-part],[data-default],[data-var],input[name=flowStart]')) renderEditor();
       clearTimeout(S.timer); S.timer = setTimeout(() => recheck(false), 300);
     });
-    box.querySelector('#flowCheck').addEventListener('click', () => recheck(true));
-    box.querySelector('#flowRegister').addEventListener('click', doRegister);
+    box.querySelector('#flowCheck').addEventListener('click', e => once('check', e.currentTarget, () => recheck(true)));
+    box.querySelector('#flowRegister').addEventListener('click', e => once('register', e.currentTarget, doRegister));
     on('click', e => {
       const li = e.target.closest('[data-goto]'); if (!li) return;
       const row = box.querySelector(`[data-row="${CSS.escape(li.dataset.goto)}"]`);
@@ -450,7 +459,10 @@
         : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1"><option value="true">예</option><option value="false">아니요</option></select>`
         : `<input data-sv="${h(f.key)}" data-kind="${h(f.type)}">` })).join('')}</div>
         <div class="form-actions"><button class="btn primary small" data-go="1">시작</button></div>`;
-      slot.querySelector('[data-go]').addEventListener('click', async () => {
+      // 시작 이벤트 id 는 폼을 열 때 한 번 만든다 — 두 번 누르거나 응답을 잃고 다시 눌러도 서버의 중복 실행 방지가 같은 처리 건으로 묶는다
+      let eventId = `flow-${id}-${UI.uuid()}`;
+      const go = slot.querySelector('[data-go]');
+      go.addEventListener('click', () => once('start:' + id + '@' + version, go, async () => {
         const variables = {};
         try {
           slot.querySelectorAll('[data-sv]').forEach(x => {
@@ -460,11 +472,12 @@
             else if (kind === 'object' || kind === 'array') variables[k] = JSON.parse(x.value || (kind === 'array' ? '[]' : '{}'));
             else variables[k] = x.value;
           });
-          const inst = await call('POST', '/api/instances/start', { definition_id: id, version, event_id: `flow-${id}-${Date.now()}`, variables, name: d.processDefinitionName });
+          const inst = await call('POST', '/api/instances/start', { definition_id: id, version, event_id: eventId, variables, name: d.processDefinitionName });
+          eventId = `flow-${id}-${UI.uuid()}`;   // 시작됐으면 다음 누름은 새 처리 건
           UI.toast('처리 건을 시작했습니다', { tone: 'ok' });
           if (window.hydShell) window.hydShell.navigate({ tab: 'instances', inst: inst.proc_inst_id });
         } catch (e) { UI.toast(e.message, { tone: 'neg' }); }
-      });
+      }));
     } catch (e) { slot.innerHTML = UI.errorBlock('시작 폼을 읽지 못했습니다', e.message); }
   }
 
