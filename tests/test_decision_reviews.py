@@ -20,7 +20,8 @@ def evaluation(monkeypatch):
     graph.dmn=lambda:DMN;graph.inputs=lambda:[];graph.skills=lambda ids:list(skills.values())
     graph.tradeoffs=lambda ids:TRADE;graph.precedents=lambda fm:[];graph.suppliers=lambda:{}
     graph.roles=lambda:[{'id':'role:x','name':'reviewer','level':2}]
-    monkeypatch.setattr(decide,'_get_json',lambda url:snapshot(model['unit']))
+    # the process publishes its TIME_SCALE on /api/definition (forecasting.stack_time_scale); the rest is the plant status
+    monkeypatch.setattr(decide,'_get_json',lambda url:{'time_scale':20.0} if url.endswith('/api/definition') else snapshot(model['unit']))
     monkeypatch.setattr(decide,'gather_facts',lambda *a,**kw:(dict(BASE,pattern='COOLER_DEGRADATION'),[]))
     d={'id':'D','asset':'TEST-ASSET','origin':{'incident':'I','pattern':'COOLER_DEGRADATION',
        'cause':BASE['cause'],'failureMode':BASE['failure_mode']},'options':[{'id':'skill:mix'}],'state':'PENDING_APPROVAL',

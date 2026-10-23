@@ -124,10 +124,15 @@ class TimeSeriesDB:
                 result.update(value=value, passed=passed, status='PASS' if passed else 'FAIL')
         return out
 
-    def fan100_hours(self, asset: str) -> float | None:
-        """Length of the fan's current continuous run at ≥ 99 % in hours (HM-7.3 "100 % 연속 운전은 24시간 이내", rule:fan-24h).
-        0 when the newest sample is below 99 %; None when there is no sample in the last 48 h (no data is not 0 h).
-        A086: this used to be the 48 h *cumulative* time, a different quantity from the rule and the manual."""
+    def fan100_hours(self, asset: str, *, time_scale: float) -> float | None:
+        """Length of the fan's current continuous run at ≥ 99 % in *plant* hours (HM-8.5 "100 % 연속 운전은 24시간 이내",
+        HM-8.8 rule:cmp-fan100-over-24h). 0 when the newest sample is below 99 %; None when there is no sample in the last 48 h
+        (no data is not 0 h). A086: this used to be the 48 h *cumulative* time, a different quantity from the rule and the manual.
+        2026-10-23 audit: the 24 h is the fan's running life, a plant quantity — the simulated plant runs `time_scale`
+        simulated seconds per wall second (tag_1s times are wall clock), so the wall length is multiplied by it. At 20× the
+        manual's 24 h is 72 wall minutes, as the process' timers (HM-8.6 15-minute re-observation ÷ 20) already are."""
+        if type(time_scale) not in (int, float) or not math.isfinite(time_scale) or time_scale <= 0:
+            raise ValueError(f'팬 연속 운전 시간을 설비 시간으로 바꿀 배율이 올바르지 않습니다: {time_scale!r}')
         with self._conn() as conn, conn.cursor() as cur:
             cur.execute("""WITH s AS (SELECT time, value FROM tag_1s WHERE asset = %s AND name = 'FanSpeedSP' AND time > now() - interval '48 hours'),
                                 newest AS (SELECT time, value FROM s ORDER BY time DESC LIMIT 1),
@@ -139,7 +144,7 @@ class TimeSeriesDB:
             return None
         if float(value) < 99 or run_start is None:
             return 0.0
-        return round((newest - run_start).total_seconds() / 3600, 2)
+        return round((newest - run_start).total_seconds() * time_scale / 3600, 2)
 
     def latest(self, asset: str, name: str = "TS1") -> tuple[float | None, float | None]:
         """(value, age_seconds) of the newest tag row."""
