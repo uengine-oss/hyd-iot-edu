@@ -437,3 +437,27 @@ def test_listing_shows_each_saved_business_step(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "업무 1개" in out and "COOLER_DEGRADATION  「원인 진단」  실행 1개" in out
     assert ai_replay.main([str(tmp_path / "없음")]) == 0 and "업무 0개" in capsys.readouterr().out
+
+
+def test_new_write_tool_id_carries_into_the_follow_up_run_of_the_same_step(tmp_path, monkeypatch):
+    """2026-10-23 라이브(A): 저장분이 '판단 등록 → 결과 형식 교정(이어 하기)' 두 실행이었다. 이어 하기 실행이 저장 때의 판단 id 를
+    결과에 다시 써 승인이 'decision is EXECUTED'로 거부됐다 — 앞 실행이 다시 부른 쓰기 도구의 새 id 를 다음 실행이 이어 받는다."""
+    lib = ai_replay.Library(tmp_path / "lib")
+    calls = iter(["first", "fix"])
+    def fn(provider, request, env):
+        if next(calls) == "first":
+            for ev in _submits_decision(provider, request, env):
+                yield ev if ev.kind is not ExecEventKind.RESULT else ExecEvent(kind=ExecEventKind.RESULT, session_id=ev.session_id,
+                                                                               text="판단 dec-rec-0001 을 올렸습니다 (JSON 없음)")
+            return
+        yield ExecEvent(kind=ExecEventKind.RUN_START, session_id="sess-W")
+        yield ExecEvent(kind=ExecEventKind.RESULT, session_id="sess-W", text=json.dumps(
+            {"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"decision": "dec-rec-0001"}}))
+    repo, inst = _new_case("INC-rec-1", "AL-rec-1")
+    _record(tmp_path, lib, fn, (repo, inst))
+    assert len(lib.docs()[0]["runs"]) == 2
+    _fake_servers(monkeypatch, [])
+    srepo, sinst = _new_case("INC-stu-9", "AL-stu-9")
+    assert _runner(tmp_path, srepo, ai_replay.replaying(lib), "replay").poll_once() == 1
+    row = _diagnose(srepo, sinst)
+    assert row["status"] == "SUBMITTED" and row["output"]["guide_card"] == {"decision": "dec-live-0042"}

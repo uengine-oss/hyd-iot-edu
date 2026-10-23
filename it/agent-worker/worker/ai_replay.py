@@ -50,6 +50,7 @@ FORMAT = "hyd-ai-replay/2"
 MODES = ("auto", "live", "record", "replay")
 SESSION_PREFIX = "replay:"
 TASK_FILE = "context/task.json"
+SWAPS_FILE = "context/ai-replay-swaps.json"     # 이어 하기 실행이 이어 받을 바꿔 끼울 값(저장 id → 이 PC의 새 id)
 CODEX_MCP_FILE = "codex-mcp.toml"       # bridge.install(provider_id="codex")
 # 저장하면 안 되는 값: 워커가 켜질 때(자식 프로세스용 환경 정리 전) 보이는 비밀 환경 변수 값 — 워커가 자식 프로세스에서 지우는 이름
 # (env_guard: DSN · 비밀번호 · 토큰 · API 키 · HYD_SECRET_*)과, 지우지 않고 CLI 에 넘기는 로그인 키(env_guard.CLI_AUTH_KEEP)
@@ -446,6 +447,11 @@ def replaying(library: Library):
             return
         saved = doc["runs"][i]
         swaps = _Swaps()
+        carried = Path(request.workdir) / SWAPS_FILE
+        # 2026-10-23 라이브: 저장분이 '판단 등록 → 결과 형식 교정(이어 하기)' 두 실행이면, 이어 하기 실행이 저장 때의 판단 id 를 결과에 다시 써
+        # 승인 단계가 'decision is EXECUTED'로 거부됐다. 다시 부른 쓰기 도구의 새 id 는 같은 작업 폴더의 다음 실행으로 넘긴다.
+        if i > 0 and carried.is_file():          # 이어 하기: 앞 실행이 다시 부른 쓰기 도구의 새 id(판단 id 등)를 이어 받는다
+            swaps.exact.update(json.loads(carried.read_text(encoding="utf-8")))
         swaps.pair(saved.get("context") or {}, _task_context(request.workdir))
         tools = _Tools(request.workdir)
         session = f"{SESSION_PREFIX}{_key(doc['step'], doc.get('case') or '')}:{i}"
@@ -474,6 +480,9 @@ def replaying(library: Library):
                         raise RunError(f"{target[0]}/{target[1]} 의 저장된 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼울 수 없습니다 "
                                        "(결과가 파일로 빠진 옛 저장분이면 그 실습을 다시 저장하세요)")
                     swaps.pair_ids(old, new)
+                    # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있다(2026-10-23 라이브: 끝에서 쓰면 안 남았다)
+                    carried.parent.mkdir(parents=True, exist_ok=True)
+                    carried.write_text(json.dumps(swaps.exact, ensure_ascii=False), encoding="utf-8")
             except RunError as e:
                 yield _error(f"「{doc['step']}」에서 저장된 AI가 부른 쓰기 도구를 이 PC에서 다시 부르지 못했습니다 — {e}")
                 return
