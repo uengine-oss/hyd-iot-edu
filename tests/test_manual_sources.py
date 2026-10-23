@@ -151,8 +151,9 @@ def test_partial_pdf_with_unreadable_page_never_claims_complete_extraction(store
     stream = io.BytesIO()
     writer.write(stream)
     a = store.save('hyd', 'partial.pdf', stream.getvalue())
-    assert a['status'] == 'OCR_REQUIRED' and a['pages'][1]['text'] == ''
-    assert '2' in a['warnings'][0] and len(a['pages']) == 2
+    # P13 (2026-10-23): the document is extractable, but the text-less page is marked — never claimed as extracted
+    assert a['status'] == 'READY' and a['pages'][1]['text'] == '' and a['text_missing_pages'] == [2]
+    assert '페이지 2' in a['warnings'][0] and '들어가지 않습니다' in a['warnings'][0] and len(a['pages']) == 2
 
 
 def test_encrypted_pdf_is_rejected_without_partial_document(store):

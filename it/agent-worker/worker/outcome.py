@@ -17,6 +17,7 @@ from hydcommon.process_contracts import validate_output
 
 _FENCE = re.compile(r"```(?:json)?\s*(?P<body>\{.*?\})\s*```", re.DOTALL)
 DEFAULT_MAX_FILE_BYTES = 16 * 1024 * 1024
+NO_RESULT = "에이전트가 결과를 반환하지 않았습니다."
 
 
 @dataclass
@@ -46,6 +47,10 @@ def interpret(final_text: str, form_fields: Any, *, versioned: bool = False, res
     text = (final_text or "").strip()
     keys = field_keys(form_fields)
     if not keys or keys == ["freeform"]:
+        # W4 (2026-10-23 검수): a step without a form (a student's bpmn.io agent task) used to be SUBMITTED with an empty
+        # text when the CLI ended without a result — an empty answer is a missing answer, sent back like any other.
+        if not text:
+            return Outcome(raw_text=text, contract_met=False, mismatch_reason=NO_RESULT)
         return Outcome(raw_text=text)
     if result_file is not None and result_file.is_file():
         parsed, defect = _read_result_file(result_file, max_file_bytes)
@@ -53,7 +58,7 @@ def interpret(final_text: str, form_fields: Any, *, versioned: bool = False, res
             return Outcome(raw_text=text, contract_met=False, mismatch_reason=defect, missing_fields=keys, source="file")
         return _against_form(text, parsed, keys, form_fields, versioned, source="file")
     if not text:
-        return Outcome(raw_text=text, contract_met=False, mismatch_reason="에이전트가 결과를 반환하지 않았습니다.", missing_fields=keys)
+        return Outcome(raw_text=text, contract_met=False, mismatch_reason=NO_RESULT, missing_fields=keys)
     parsed = _extract_object(text)
     if parsed is None:
         return Outcome(raw_text=text, contract_met=False, mismatch_reason="결과가 JSON 객체가 아닙니다. 폼 필드에 채울 값을 판별할 수 없습니다.", missing_fields=keys)
