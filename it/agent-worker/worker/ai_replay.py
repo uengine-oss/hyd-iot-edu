@@ -476,3 +476,33 @@ def used_notice(last: dict | None) -> str | None:
         return None
     rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
     return f"AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」, {last['recorded_at']} 저장).{rerun}"
+
+
+# ---------------------------------------------------------------- 촬영 뒤 확인: 저장된 AI 응답 목록
+def listing(library: Library) -> list[dict]:
+    """업무마다 한 줄: 파일 · 업무 이름 · 무엇에 대한 처리 건(경보 종류 · 문서) · 실행 수 · 저장 시각 · 크기 · 가린 비밀값 수."""
+    rows = []
+    for path in sorted(library.root.glob("*.json.gz")) if library.root.is_dir() else []:
+        doc = library._read(path)
+        rows.append({"file": path.name, "step": doc["step"], "case": doc.get("case") or "", "runs": len(doc["runs"]),
+                     "recorded_at": doc.get("recorded_at"), "kb": max(1, round(path.stat().st_size / 1024)),
+                     "masked": gzip.decompress(path.read_bytes()).decode("utf-8").count(mcp_check.MASK)})
+    return sorted(rows, key=lambda r: (r["case"], r["step"]))
+
+
+def main(argv: list[str] | None = None) -> int:
+    """python -m worker.ai_replay [폴더] — 저장된 AI 응답 목록(기본 폴더는 AI_REPLAY_DIR). 문서/시스템/참조/재생모드.md 5절."""
+    import sys
+    from .settings import settings
+    args = sys.argv[1:] if argv is None else argv
+    root = Path(args[0]) if args else settings.ai_replay_dir
+    rows = listing(Library(root))
+    print(f"저장된 AI 응답: {root} — 업무 {len(rows)}개")
+    for r in rows:
+        masked = f", 비밀값 가림 {r['masked']}곳" if r["masked"] else ""
+        print(f"  {r['recorded_at']}  {r['case'] or '-'}  「{r['step']}」  실행 {r['runs']}개 · {r['kb']} KB{masked}  ({r['file']})")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

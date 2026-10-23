@@ -388,3 +388,14 @@ def test_codex_run_servers_are_read_for_write_tool_reruns_and_secrets(tmp_path, 
     tools = ai_replay._Tools(tmp_path)
     assert ai_replay._mcp_target("hyd-dmn/submit_decision") == ("hyd-dmn", "submit_decision")
     assert tools.writes("hyd-dmn", "submit_decision") and not tools.writes("hyd-dmn", "evaluate_cards") and not tools.writes("neo4j", "read_neo4j_cypher")
+
+
+def test_listing_shows_each_saved_business_step(tmp_path, capsys):
+    # 촬영 뒤 확인: 업무마다 한 줄(경보 종류 · 업무 이름 · 실행 수)
+    root = tmp_path / "lib"
+    cooler = _new_case("INC-c", "AL-c")
+    _record(tmp_path, ai_replay.Library(root, case_of=ai_replay.case_of_instance(cooler[0])), _fake_exec(ANSWER), cooler)
+    assert ai_replay.main([str(root)]) == 0
+    out = capsys.readouterr().out
+    assert "업무 1개" in out and "COOLER_DEGRADATION  「원인 진단」  실행 1개" in out
+    assert ai_replay.main([str(tmp_path / "없음")]) == 0 and "업무 0개" in capsys.readouterr().out
