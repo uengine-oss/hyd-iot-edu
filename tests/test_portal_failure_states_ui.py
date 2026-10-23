@@ -291,7 +291,8 @@ def test_authorized_approval_screen_after_real_role_denial(browser, world):
     p = Portal(browser, world, 'c3_pm')
     try:
         p.page.locator('#tdReason').fill('생산 일정을 확인하고 승인합니다.')
-        p.page.locator('#tdRole').select_option('role:operator')
+        # 화면은 「나」(이생산 · 생산관리자)로 승인을 켜 두었지만, 그 사이 업무분장에서 이생산이 생산관리자에서 빠졌다 → 서버가 403
+        p.rt.repo.set_role_member('hyd', 'role:prod-mgr', 'user:lee-prod', False)
         with p.page.expect_response(lambda response: response.request.method == 'POST' and response.url.endswith('/select')) as denied:
             p.page.locator('#tdGo').click()
         p.settle()
@@ -299,9 +300,9 @@ def test_authorized_approval_screen_after_real_role_denial(browser, world):
         assert _row(p.rt, p.inst, 'T_approve')['status'] == 'IN_PROGRESS'
         assert not p.out.calls and not p.out.mails and not world['executed']
         retain(p.page, 'approval-role-denied', '#todoPanel',
-               'Real FastAPI/MemoryRepo authorization returns 403 for role:operator; role selector is not login authentication.', ['권한'])
+               'Real FastAPI/MemoryRepo check_actor returns 403 after user:lee-prod left role:prod-mgr; role selector is not login authentication.', ['역할이 아니어서'])
         assert p.page.locator('#tdReason').input_value() == '생산 일정을 확인하고 승인합니다.'
-        p.page.locator('#tdRole').select_option('role:prod-mgr')
+        p.rt.repo.set_role_member('hyd', 'role:prod-mgr', 'user:lee-prod', True)
         with p.page.expect_response(lambda response: response.request.method == 'POST' and response.url.endswith('/select')) as approved:
             p.page.locator('#tdGo').click()
         p.settle()

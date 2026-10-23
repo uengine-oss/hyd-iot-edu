@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from procsvc import engine, instance_mode
+from procsvc import engine, inbox_api, instance_mode
 from test_instance_mode import world, _row, NOW
 from test_approval_stage import opened, THREE, OVERDUE_S
 import test_approval_stage
@@ -24,6 +24,15 @@ import test_instance_mode
 ROOT = Path(__file__).resolve().parents[1]
 WWW = ROOT / "it/portal/www"
 NOW = datetime.now(timezone.utc)
+# seed.sql 과 같은 업무분장의 사람 사용자(포털의 "나"). 조치 카드 승인 · 거절은 화면에서 「나」가 있어야 한다(audit2 P5).
+PEOPLE = (("user:kim-op", "김운전", "role:operator"), ("user:lee-prod", "이생산", "role:prod-mgr"))
+ME = "user:lee-prod"
+
+
+def seed_people(repo):
+    for uid, name, role in PEOPLE:
+        repo.upsert_user({"id": uid, "username": name, "is_agent": False, "tenant_id": "hyd"})
+        repo.set_role_member("hyd", role, uid, True)
 
 
 @pytest.fixture(autouse=True)
@@ -44,12 +53,14 @@ def browser():
 
 
 class Portal:
-    def __init__(self, browser, world, did, width=1440):
+    def __init__(self, browser, world, did, width=1440, me=ME):
         self.rt, self.inst, self.inc, self.d, self.out = opened(world, did)
+        seed_people(self.rt.repo)
         self.world, self.did = world, did
         self.posts, self.fail, self.errors = [], None, []
         app = FastAPI()
         instance_mode.mount(app, "instance")
+        inbox_api.mount(app)
 
         @app.get('/api/decisions/{did}')
         def decision(did):
@@ -67,6 +78,8 @@ class Portal:
         self.page = browser.new_page(viewport={"width": width, "height": 1000}, locale='ko-KR')
         self.page.on('pageerror', lambda error: self.errors.append(str(error)))
         self.page.route('**/*', self.route)
+        if me:
+            self.page.add_init_script("localStorage.setItem('hyd.me', %s)" % json.dumps(me))
         self.page.goto('http://approval.test/')
         self.page.evaluate("""() => {
           document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -77,7 +90,7 @@ class Portal:
         app_source = (WWW / 'app.js').read_text(encoding='utf-8')
         helper = app_source.split('/* ---------------- tabs')[0]
         self.page.add_script_tag(content=helper + "\nstate.tab='instances'; const API={process:'',agent:''}; const P=()=>''; function selectTab(){}; window.hydApp={};")
-        for name in ['ui.js', 'enterprise.js', 'approvalCard.js', 'plainWords.js', 'trace.js', 'caseRecord.js', 'resultReport.js', 'instanceSteps.js', 'flow.js', 'instances.js']:
+        for name in ['ui.js', 'enterprise.js', 'approvalCard.js', 'plainWords.js', 'trace.js', 'caseRecord.js', 'resultReport.js', 'instanceSteps.js', 'flow.js', 'instances.js', 'inbox.js']:
             source = (WWW / name).read_text(encoding='utf-8')
             if name == 'enterprise.js':
                 source = source.split('/* ================================================= 조치 판단 규칙 */')[0]
@@ -85,11 +98,13 @@ class Portal:
             if name == 'ui.js':
                 navigation = app_source.split('/* ---------------- tabs ---------------- */')[1].split("selectTab('main');")[0]
                 self.page.add_script_tag(content=navigation + "selectTab('instances');")
+        if me:
+            self.page.wait_for_function('!!hydInbox.me()')
         self.page.evaluate('hydInstances.load(true)')
         assert not self.errors, self.errors
         self.page.locator('#tdGo').wait_for()
-        self.page.locator('#tdBy').fill('이생산')
-        assert self.page.locator('#tdRole option:checked').inner_text()
+        if me:
+            assert self.page.locator('#tdRole option:checked').inner_text()
         assert self.page.locator('.rr-card').count() == 0, 'Waiting for approval is not system execution'
 
     def route(self, route):
@@ -104,6 +119,9 @@ class Portal:
             file = WWW / path.lstrip('/')
             route.fulfill(path=str(file))
         else:
+            if path.endswith('/stream'):
+                route.fulfill(status=200, content_type='text/event-stream', body='')
+                return
             if req.method == 'POST':
                 self.posts.append((path, req.post_data_json))
                 if self.fail:
@@ -168,6 +186,14 @@ def test_browser_rejects_without_effects_and_shows_reason(browser, world, did, w
         p.close()
 
 
+def pick_me(p, user_id):
+    """내 작업함의 「나」 고르기(실제 inbox.js 의 선택 상자 change)."""
+    p.page.evaluate("""id => { const s = document.querySelector('[data-inbox-me]'); s.value = id; s.dispatchEvent(new Event('change')); }""", user_id)
+    p.page.wait_for_function("id => hydInbox.me() && hydInbox.me().id === id", arg=user_id)
+    p.page.evaluate('hydInstances.load(true)')
+    p.settle()
+
+
 def test_browser_rejection_validation_permissions_and_retry_preserve_input(browser, world):
     p = Portal(browser, world, 'c3_pm')
     try:
@@ -179,25 +205,28 @@ def test_browser_rejection_validation_permissions_and_retry_preserve_input(brows
         p.page.locator('#tdRejectCard').click()
         assert len(p.posts) == 0
         p.page.locator('#tdReason').fill('예산 검토가 필요합니다.')
-        p.page.locator('#tdRole').select_option('role:operator')
-        p.page.locator('#tdRejectCard').click()
-        p.settle()
-        assert '권한' in p.page.locator('#todoPanel .form-msg').inner_text()
+        # 「나」가 카드의 승인 역할(생산관리자)이 아니면 화면이 승인 · 거절을 끄고 고를 사람을 알려 준다 — 서버로 보내지 않는다
+        pick_me(p, 'user:kim-op')
+        assert p.page.locator('#tdGo').is_disabled() and p.page.locator('#tdRejectCard').is_disabled()
+        actions = p.page.locator('#todoPanel .form-actions').last.inner_text()
+        assert '생산관리자 역할(또는 더 높은 역할)' in actions and '[나 고르기]' in actions, actions
+        assert len(p.posts) == 0
         assert p.page.locator('#tdReason').input_value() == '예산 검토가 필요합니다.'
-        assert p.page.locator('#tdRole').input_value() == 'role:operator'
         p.capture('permission-error')
-        p.page.locator('#tdRole').select_option('role:prod-mgr')
+        pick_me(p, 'user:lee-prod')
+        assert p.page.locator('#tdGo').is_enabled() and p.page.locator('#tdRejectCard').is_enabled()
         p.fail = 500
         p.page.locator('#tdRejectCard').click()
         p.settle()
         assert '서버 내부 오류' in p.page.locator('#todoPanel .form-msg').inner_text()
         assert p.page.locator('#tdReason').input_value() == '예산 검토가 필요합니다.'
-        assert p.page.locator('#tdBy').input_value() == '이생산'
+        assert '이생산' in p.page.locator('#todoPanel').inner_text()
         assert p.page.locator('#tdRole').input_value() == 'role:prod-mgr'
         p.capture('server-error')
         p.fail = None
         p.page.locator('#tdRejectCard').click()
         p.settle()
+        assert p.posts[-1][1]['by'] == 'user:lee-prod' and p.posts[-1][1]['role'] == 'role:prod-mgr'
         assert p.rt.repo.get_instance(p.inst['proc_inst_id'])['end_event'] == 'E_rejected'
     finally:
         p.close()
