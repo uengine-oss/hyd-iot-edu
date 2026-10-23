@@ -17,6 +17,21 @@ def canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
+def consented(key, value):
+    """What the human consented to in a card field. A maintenance plan's applicability.target_hours is the counter plus the hours left until the
+    planned window (ent.pm_status hours_at_next_window, rounded to 0.01 h) — it falls by 0.01 every 36 s while the window, counter, package and parts
+    stay the same. Like A086 (hours until the MES due date) it is elapsed time, not consent content: the current plan is rebuilt from the same rows and
+    fails if the target passes the source limit, and ent.pm_scope_check re-reads it at execution. 2026-10-23 live: every B approval made more than
+    ~36 s after the decision was refused as 'maintenancePlan changed'. Everything else in the plan stays compared."""
+    if key != 'maintenancePlan' or not isinstance(value, dict):
+        return value
+    plan = deepcopy(value)
+    for member in plan.get('assets') or []:
+        if isinstance(member, dict) and isinstance(member.get('applicability'), dict):
+            member['applicability'].pop('target_hours', None)
+    return plan
+
+
 def unresolved(rule, facts):
     values = [(test.get('variable'), cards.test_ok(test, facts)) for test in rule.get('tests') or []]
     if any(result is False for _, result in values):
@@ -161,7 +176,7 @@ def assess(kg, tsdb, decision, option_id, role):
         # The chosen action, work content and consent context must remain what the
         # human saw. Continuous sensor changes matter through reevaluated rules.
         for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence', 'supplier_policy', 'resolvedSupplier', 'maintenancePlan', 'economicComparison'):
-            if canonical(old.get(key)) != canonical(current.get(key)):
+            if canonical(consented(key, old.get(key))) != canonical(consented(key, current.get(key))):
                 reasons.append(f'카드의 {key} 내용이 변경됐습니다. 새 판단을 검토하세요')
         need = current.get('approver') or {}
         actual_role = roles.get(role)
