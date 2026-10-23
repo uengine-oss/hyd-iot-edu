@@ -194,6 +194,8 @@ def execute(req: dict):
         raise HTTPException(409 if "idempotency" in msg else 400, msg)
     except Exception as e:  # noqa: BLE001 — database errors from ent.exec_skill (unknown skill, idempotency conflict)
         msg = str(e).splitlines()[0]
+        if type(e).__name__ in ("OperationalError", "InterfaceError"):    # 연결 장애는 거절이 아니다(2026-10-23 점검: 400으로 나가 「거절」로 읽혔다)
+            raise HTTPException(503, f"업무 DB에 연결하지 못했습니다 — 잠시 뒤 다시 시도하세요: {msg[:250]}")
         raise HTTPException(409 if "idempotency" in msg else 400, msg[:300])
     c_exec.inc(system=tx["system"])
     log.info("exec %s %s -> %s (%s)", tx["skill"], tx["asset"], tx["ref"], tx.get("decision"))
