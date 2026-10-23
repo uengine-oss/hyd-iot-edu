@@ -118,8 +118,23 @@
   }
 
   /* d: 판단 결과 { options, recommended, explanation }, chosenId: 지금 승인할 안, opt: { pending, adjust(html), extra(html) } */
+  // 추천이 없고 모든 안이 제외됐을 때: 제외된 안을 「1순위」로 띄우지 않고, 추천할 안이 없다는 것과 안마다 제외 사유를 보인다
+  const excludedWhy = o => (o.violations || []).map(v => UI.idText(v.annotation || v.message || v.rule || '')).filter(Boolean);
+  function noneHtml(d, opt) {
+    const opts = d.options || [];
+    return `<div class="ap-card none" data-ap-none>
+      <div class="ap-head"><span class="ap-kicker">추천할 수 있는 안이 없습니다</span></div>
+      <h4 class="ap-title">실행할 수 있는 안 없음</h4>
+      <p class="ap-desc">에이전트가 낸 안 ${opts.length}개가 모두 실행 검사에서 제외됐습니다. 안마다 제외 사유:</p>
+      <ul class="ap-lost-list">${opts.map(o => { const why = excludedWhy(o); return `<li class="ap-lost out"><div class="ap-lost-head"><b>${e(UI.idText(o.name || o.id))}</b>${UI.chipText(UI.t('chip.excluded'), 'danger')}</div><p>제외 — ${e(why.length ? why.join(' · ') : '실행 검사를 통과하지 못했습니다')}</p></li>`; }).join('')}</ul>
+      ${opt.adjust || ''}
+      ${d.explanation ? UI.fold('에이전트 설명 전문', `<p class="prose" style="margin:0">${e(UI.idText(d.explanation))}</p>`, { cls: 'small' }) : ''}
+      ${opt.extra || ''}
+    </div>`;
+  }
   function html(d, chosenId, opt = {}) {
     const opts = d.options || [];
+    if (opts.length && !d.recommended && !opts.some(o => o.feasible)) return noneHtml(d, opt);
     const rec = opts.find(o => o.id === d.recommended) || opts.find(o => o.feasible) || opts[0] || {};
     const cur = opts.find(o => o.id === chosenId) || rec;
     const changed = cur.id !== rec.id;

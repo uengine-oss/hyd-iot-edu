@@ -453,6 +453,7 @@ $('#decRun').addEventListener('click', runDecision);
 /* ================================================= 승인과 실행 */
 async function refreshProcess() {
   if (state.tab !== 'process') return;
+  if (!ent.mode) { try { ent.mode = await getJ(API.process + '/api/process/mode'); } catch (e) { ent.mode = null; } }   // 처리 건 방식이면 승인 폼 대신 처리 건으로 보낸다
   try { ent.decisions = await getJ(API.process + '/api/decisions'); ent.decisionsError = false; } catch (e) { ent.decisionsError = true; }
   try { [ent.entState, ent.tx] = await Promise.all([getJ(API.ent + '/api/state'), getJ(API.ent + '/api/transactions')]); } catch (e) { ent.entState = null; }
   if (!ent.decSel && ent.decisions.length) ent.decSel = ent.decisions[0].id;
@@ -499,7 +500,7 @@ function renderDecisionApproval() {
   const box = $('#decDetail'); const d = ent.decDetail;
   if (!d) { ent.lastDetailSig = null; box.innerHTML = UI.empty(UI.t('proc.select')); return; }
   // the 2.5 s refresh must not wipe what the approver is typing or selecting: redraw only when the decision changed
-  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion;
+  const sig = d.id + '|' + d.state + '|' + (d.executions || []).length + '|' + (d.history || []).length + '|' + UI.namesVersion + '|' + ((ent.mode || {}).mode || '');
   if (sig === ent.lastDetailSig && box.querySelector('.hitl-opts')) return;
   ent.lastDetailSig = sig;
   const roles = Object.entries(d.roles || {}).sort((a, b) => a[1].level - b[1].level);
@@ -513,7 +514,12 @@ function renderDecisionApproval() {
   let html = `<div class="detail-head"><div class="row"><h2>${esc(UI.idText(sc.name || ''))}</h2>${UI.chip(d.state)}</div><div class="sub">${esc(d.asset || '')}${d.approvedBy ? ` · ${esc(UI.t('inc.approvedBy'))} ${esc(d.approvedBy)}` : ''}</div></div>`;
   html += UI.evaluationHtml(d) + summaryBlock(d.explanation);
   html += UI.metaFold([[UI.t('dec.asset'), esc(d.asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('proc.submitted'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]], 'fold.case');
-  if (pending) {
+  // 처리 건 방식에서는 이 판단의 승인이 처리 건의 사람 단계에서 이뤄진다(이 탭의 승인 API 는 409 로 거절) — 폼 대신 처리 건으로 가는 버튼 하나
+  const viaInstance = pending && (ent.mode || {}).mode === 'instance' && !!(d.origin || {}).incident;
+  if (viaInstance) {
+    html += `<div class="hitl-opts">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, maxAbs, decision: d })).join('')}</div>` +
+      `<p class="field-hint">이 판단은 처리 건의 승인 단계에서 승인하거나 거절합니다.</p>` + UI.actions(`<button class="btn primary" id="decGoInstance">처리 건에서 승인하기 →</button>`, ent.form.msg || '');
+  } else if (pending) {
     html += `<div class="form">` +
       UI.section(UI.t('form.section.choice'), `<div class="hitl-opts wide">${opts.map(o => cardHtml(o, { rec: d.recommended, chosen: d.chosen, selectable: true, selected: ent.form.option === o.id, pending: true, maxAbs, name: 'decOpt', decision: d })).join('')}</div>`) +
       whoFields('dec', ent.form, roles) +
@@ -525,6 +531,12 @@ function renderDecisionApproval() {
     d.executions.map(x => UI.card({ title: esc(UI.who(x.system) + (x.code ? ' · ' + actionLabel({ code: x.code }) : '')), chips: UI.chip(x.status), value: x.ref ? `<span class="kv mono">${esc(x.ref)}</span>` : '', sub: esc(x.detail || ''), cls: 'soft' })).join('') + '</div>';
   html += `<div style="margin-top:var(--s4)">` + UI.fold(`${esc(UI.t('proc.history'))} <span class="chip tone-neutral sm">${(d.history || []).length}</span>`, '<div class="audit">' + (d.history || []).map(h => UI.eventRecord({ time: h.t, name: h.state, actor: h.by, detail: h.reason || '', raw: h })).join('') + '</div>') + '</div>';
   box.innerHTML = html;
+  $('#decGoInstance')?.addEventListener('click', async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try { if (!(await window.hydHitl?.openIncident(d.origin.incident))) { ent.form.msg = '이 판단의 처리 건을 찾지 못했습니다 — 「처리 건」 화면에서 직접 고르세요.'; ent.lastDetailSig = null; renderDecisionApproval(); } }
+    catch (err) { ent.form.msg = err.message; ent.lastDetailSig = null; renderDecisionApproval(); }
+    finally { b.disabled = false; }
+  });
   const by = $('#decBy'), role = $('#decRole'), reason = $('#decReason');
   if (by) by.addEventListener('input', () => ent.form.by = by.value);
   if (role) { ent.form.role = role.value; role.addEventListener('change', () => { ent.form.role = role.value; ent.form.msg = ''; }); }
@@ -534,7 +546,7 @@ function renderDecisionApproval() {
   const ap = $('#decApprove'); if (ap) ap.addEventListener('click', async () => {
     const controls = [...box.querySelectorAll('#decApprove,#decReject')];
     controls.forEach(c => c.disabled = true); ap.textContent = UI.t('proc.approving');
-    try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: ent.form.option, by: ($('#decBy')?.value ?? ent.form.by) || '승인자', role: $('#decRole').value }); await refreshProcess(); }
+    try { ent.form.msg = ''; await postJ(API.process + `/api/decisions/${d.id}/approve`, { option: ent.form.option, by: ($('#decBy')?.value ?? ent.form.by) || '승인자', role: $('#decRole').value, reason: $('#decReason')?.value || '' }); await refreshProcess(); }
     catch (e) { ent.form.msg = e.message; if (ent.decSel === d.id) msg(e.message); }
     finally { controls.forEach(c => c.disabled = false); ap.textContent = UI.t('btn.approve'); }
   });

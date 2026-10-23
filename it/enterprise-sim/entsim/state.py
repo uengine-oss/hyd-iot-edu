@@ -76,7 +76,9 @@ def _now() -> str:
 
 
 def _id(prefix: str) -> str:
-    return f"{prefix}-{datetime.now():%m%d}-{secrets.token_hex(2).upper()}"
+    """실행 기록 · 오더 · 요청 번호: 접두-월일-16진 12자리(48비트). 4자리(16비트)는 같은 날 수백 건에서 겹쳐
+    PG 는 기본키 위반으로 승인 실행이 거절되고 메모리는 다른 오더를 집었다(점검 E7, ent.new_ref 와 같은 꼴)."""
+    return f"{prefix}-{datetime.now():%m%d}-{secrets.token_hex(6).upper()}"
 
 
 class EnterpriseState:
@@ -196,14 +198,70 @@ class EnterpriseState:
             self._save()
         return self.spare_stock(part)
 
+    def _pm_holds(self, asset: str | None = None) -> list[tuple[dict, dict, str]]:
+        """정기 정비 오더(시나리오 B)가 아직 잡고 있는 부품: (오더, 부품 줄, 'reserve' | 'issue'). B [초기화]가 되돌리는 것과 같은 범위
+        (ent.pm_part_reservations released_at is null · 오더 배정됨)."""
+        held = []
+        for o in self._s["cmms"]["work_orders"]:
+            if o.get("status") != "배정됨" or o.get("reservations_released") or asset not in (None, o.get("asset")):
+                continue
+            held += [(o, x, "reserve") for x in o.get("reserved_parts") or []]
+            held += [(o, x, "issue") for x in o.get("issued_parts") or []]
+        return held
+
     def _reset_stock(self, part: str | None) -> None:
-        for p, b in data.SPARE_BASE.items():
+        """C [초기화]: 이 부품의 열린 발주를 취소로 닫고, 재고를 시작값으로 — 단 아직 진행 중인 B 정비 오더가 잡은 수량은 남긴다
+        (ent.reset_spare_stock 과 같은 규칙). 예전에는 행 전체를 시작값으로 덮어 B 예약이 장부에서 사라지고 발주는 열린 채였다(점검 E1 · E3)."""
+        s = self._s
+        holds = self._pm_holds()
+        todo = []
+        for p, b in data.SPARE_BASE.items():               # 먼저 모두 검사 — 하나라도 어긋나면 아무것도 바꾸지 않는다
             if part not in (None, p):
                 continue
-            row = self._s["erp"]["spare_stock"][p]
-            delta = b["on_hand"] - row["on_hand"]
-            row.update(on_hand=b["on_hand"], reserved=b["reserved"], on_order=0, below_since=None)
+            held_reserved = sum(x["qty"] for _o, x, e in holds if x["part_no"] == p and e == "reserve")
+            held_issued = sum(x["qty"] for _o, x, e in holds if x["part_no"] == p and e == "issue")
+            if b["on_hand"] - held_issued < 0:
+                raise ValueError(f"INVALID: {p} 실물 {held_issued}개가 진행 중인 정비 오더에 출고돼 있어 재고를 시작값으로 되돌릴 수 없습니다(B [초기화] 먼저)")
+            todo.append((p, b, held_reserved, held_issued))
+        for p, b, held_reserved, held_issued in todo:
+            row = s["erp"]["spare_stock"][p]
+            closed = [pr for pr in s["erp"]["purchase_requests"] if pr.get("part_no") == p and pr.get("qty") and pr["status"] == PO_OPEN]
+            for pr in closed:
+                pr.update(status=CANCELLED, cancelled_at=_now())
+            delta = b["on_hand"] - held_issued - row["on_hand"]
+            open_qty = sum(pr["qty"] for pr in s["erp"]["purchase_requests"] if pr.get("part_no") == p and pr.get("qty") and pr["status"] == PO_OPEN)
+            row.update(on_hand=b["on_hand"] - held_issued, reserved=b["reserved"] + held_reserved, on_order=open_qty, below_since=None)
+            for pr in closed:
+                self._move(p, "CANCEL", pr["qty"], pr.get("asset"), pr["id"], "instructor", f"수업 초기화 — 발주 {pr['id']} 취소")
             self._move(p, "RESET", delta, None, "RESET", "instructor", "수업 초기화")   # 시작값이 재주문점 아래면 이탈 시각을 바로 남긴다
+
+    def _release_pm_holds(self, asset: str | None) -> None:
+        """B [초기화]: 아직 부품을 잡은 정기 정비 오더를 취소로 닫고, 그 오더가 잡은 수량만 되돌린다(예약 −, 즉시 출고면 실물 +).
+        부품 행 전체를 시작값으로 덮으면 같은 부품을 쓰는 C 발주의 입고 예정이 지워졌다(점검 E2, ent.reset_pm_counters 와 같은 규칙)."""
+        stocks = self._s["erp"]["spare_stock"]
+        holds = self._pm_holds(asset)
+        totals: dict[tuple[str, str], list] = {}
+        for o, x, effect in holds:
+            entry = totals.setdefault((x["part_no"], effect), [0, []])
+            entry[0] += x["qty"]
+            if o["id"] not in entry[1]:
+                entry[1].append(o["id"])
+        for (p, effect), (qty, _orders) in totals.items():     # 먼저 모두 검사 — 하나라도 어긋나면 아무것도 바꾸지 않는다
+            if p not in stocks:
+                raise ValueError(f"INVALID: {p} is not a managed spare part")
+            if effect == "reserve" and stocks[p]["reserved"] < qty:
+                raise ValueError(f"INVALID: {p} 예약 {stocks[p]['reserved']}개가 정비 오더가 잡은 {qty}개보다 적습니다(재고 장부 확인 필요)")
+        for o in {id(o): o for o, _x, _e in holds}.values():
+            o.update(status=CANCELLED, cancelled_at=_now(), reservations_released=True)
+        for (p, effect), (qty, orders) in sorted(totals.items()):
+            row = stocks[p]
+            if effect == "reserve":
+                row["reserved"] -= qty
+            else:
+                row["on_hand"] += qty
+            row["updated_at"] = _now()
+            self._move(p, "RESET", qty if effect == "issue" else 0, None, "RESET", "instructor",
+                       f"수업 초기화 — 정비 오더 {', '.join(orders)} " + ("예약 해제" if effect == "reserve" else "출고 반납"))
 
     # ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기
     def _pm_rows(self) -> list[dict]:
@@ -247,16 +305,9 @@ class EnterpriseState:
     def reset_pm_counters(self, asset: str | None = None) -> dict:
         with self._lock:
             self._c2_defaults()
-            # 아직 부품을 잡은 정기 정비 오더를 취소로 닫고 예약을 푼다 — 잡았던 부품 재고는 수업 시작값으로(ent.reset_pm_counters 와 같은 규칙).
+            # 아직 부품을 잡은 정기 정비 오더를 취소로 닫고 그 오더가 잡은 수량만 되돌린다(ent.reset_pm_counters 와 같은 규칙).
             # 계수기만 되돌리면 다시 연 B가 "도래"인데 부품 가용이 0이라 단독 · 즉시 시행이 재고 부족으로 빠졌다(2026-10-23 라이브).
-            held = set()
-            for o in self._s["cmms"]["work_orders"]:
-                parts = (o.get("reserved_parts") or []) + (o.get("issued_parts") or [])
-                if o["status"] == "배정됨" and asset in (None, o["asset"]) and parts and not o.get("reservations_released"):
-                    o.update(status=CANCELLED, cancelled_at=_now(), reservations_released=True)
-                    held |= {x["part_no"] for x in parts}
-            for p in sorted(held):
-                self._reset_stock(p)
+            self._release_pm_holds(asset)
             for a, b in data.PM_BASE.items():
                 if asset not in (None, a):
                     continue
@@ -598,10 +649,10 @@ class EnterpriseState:
             s["ems"]["actions"].insert(0, act)
             return "EMS", act["action"]
         if skill in ALL_COMPENSATION_SKILLS:
-            return self._compensate(skill, params)
+            return self._compensate(skill, params, req)
         raise ValueError(skill)
 
-    def _compensate(self, skill: str, params: dict) -> tuple[str, str]:
+    def _compensate(self, skill: str, params: dict, req: dict | None = None) -> tuple[str, str]:
         """Reverse exactly one forward record by its reference, only from the state the forward transaction left."""
         s = self._s
         ref = params.get("ref")
@@ -616,6 +667,10 @@ class EnterpriseState:
             if wo["status"] != "배정됨":
                 raise ValueError(f"work order {ref} cannot be cancelled in status {wo['status']}")
             wo.update(status=CANCELLED, cancelled_at=_now())
+            # 이 오더가 '이번 회차 정기 정비 오더'로 표시돼 있었으면 표시도 지운다 — 남기면 '정기 점검 도래'가 꺼진 채 B가 거절됐다(점검 E6)
+            for c in s["cmms"].get("pm_counters", {}).values():
+                if c.get("plan_wo") == ref:
+                    c.update(plan_wo=None, plan_window=None, planned_at=None, updated_at=_now())
             return ref, f"{wo['asset']} 작업지시 {ref} 취소 ({wo['task']})"
         if skill == "skill:cancel-purchase-request":
             pr = next((p for p in s["erp"]["purchase_requests"] if p["id"] == ref), None)
@@ -623,7 +678,14 @@ class EnterpriseState:
                 raise ValueError(f"no such purchase request {ref}")
             if pr["status"] != "승인됨 → 발주":
                 raise ValueError(f"purchase request {ref} cannot be cancelled in status {pr['status']}")
+            # 수량 발주(C2)면 재고의 입고 예정도 되돌린다 — 남기면 취소한 발주가 가용을 부풀려 '재고 보충 필요'가 꺼진 채였다(점검 E4)
+            row = s["erp"]["spare_stock"].get(pr.get("part_no")) if pr.get("qty") else None
+            if row is not None and row["on_order"] < pr["qty"]:
+                raise ValueError(f"INVALID: on-order quantity of {pr['part_no']} ({row['on_order']}) is less than purchase request {ref} ({pr['qty']})")
             pr.update(status=CANCELLED, cancelled_at=_now())
+            if row is not None:
+                row["on_order"] -= pr["qty"]
+                self._move(pr["part_no"], "CANCEL", pr["qty"], pr.get("asset"), ref, (req or {}).get("by"), f"발주 {ref} 취소")
             return ref, f"구매요청 {ref} 취소 ({pr['part']} — {pr['supplierName']})"
         if skill == "skill:restore-production":
             order = next((o for o in s["mes"]["orders"] if o["order_id"] == ref), None)

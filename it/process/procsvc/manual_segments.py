@@ -93,6 +93,37 @@ def _continuation(procedures: list[dict], first_index: int, index: int, later: d
     return orders[0], orders[-1]
 
 
+SOP_ID = re.compile(r'^SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*$')
+
+
+def _drop_dangling_sop_refs(merged: dict) -> None:
+    """I3 (2026-10-23 검수): a segment's rule may name an SOP of another segment (checked only here, on the whole document).
+    An SOP id that no segment extracted is taken out of the rule with a warning, never left for the whole-document check
+    to refuse the merged result (the segment tasks are already done; there is no correction round left). A SELECT rule
+    with no output left, or an EXCLUDE/WARN/PENALTY rule whose every target was such an id, is dropped — an emptied
+    applies_to would mean "every candidate"."""
+    sops = {p['id'] for p in merged['procedures']}
+    rules = (merged.get('knowledge') or {}).get('rules')
+    if not rules:
+        return
+    kept = []
+    for rule in rules:
+        key = 'outputs' if rule.get('effect') == 'SELECT' else 'applies_to'
+        refs = rule.get(key) or []
+        dangling = [o for o in refs if isinstance(o, str) and SOP_ID.fullmatch(o) and o not in sops]
+        if dangling:
+            rest = [o for o in refs if o not in dangling]
+            if not rest:
+                merged['warnings'].append(f"규칙 {rule.get('id')}: {key}의 {', '.join(dangling)}이(가) 어느 구간에서도 SOP로 추출되지 않아 "
+                                          "규칙을 뺐습니다 — 원문을 확인하고 검토 화면에서 다시 넣으세요")
+                continue
+            merged['warnings'].append(f"규칙 {rule.get('id')}: {key}에서 {', '.join(dangling)}을(를) 뺐습니다(어느 구간에서도 SOP로 "
+                                      "추출되지 않음) — 검토 필요")
+            rule = dict(rule, **{key: rest})
+        kept.append(rule)
+    merged['knowledge']['rules'] = kept
+
+
 def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | None = None) -> dict:
     """parts: [(segment, proposal)] with whole-document anchors. Sections and procedures are concatenated; a ref or SOP id
     that two segments both propose keeps the first and records the duplicate as a warning (a reviewer decides); page
@@ -133,8 +164,9 @@ def merge(source: dict, parts: list[tuple[dict, dict]], review_feedback: dict | 
         for r in prop.get('page_reviews') or []:
             reviews.setdefault(r['page'], []).append(f"{tag} {r['note']}")
         merged['warnings'] += [f"{tag} {w}" for w in prop.get('warnings') or []]
+    _drop_dangling_sop_refs(merged)
     for page in source['pages']:
-        if not page['text'] and page['page'] not in reviews:
+        if not page['text'].strip() and page['page'] not in reviews:
             reviews[page['page']] = ['원문 글자가 없는 페이지 — 구간 추출 대상이 아니었음(빈 페이지 검토는 원문 보관 단계에서 끝남)']
     merged['page_reviews'] = [{'page': page, 'note': ' / '.join(notes)} for page, notes in sorted(reviews.items())]
     for item in (review_feedback or {}).get('items') or []:

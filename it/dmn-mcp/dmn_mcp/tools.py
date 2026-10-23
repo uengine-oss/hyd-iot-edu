@@ -48,11 +48,72 @@ def error(kind: str, message: str) -> dict:
     return {"result": "error", "error_kind": kind, "message": message}
 
 
+class NotRegistered(RuntimeError):
+    """A decision the tool did not store (refused · failed · nothing to submit). `kind` is the envelope's error_kind; the
+    message keeps the process reason whole (decide.SubmitRefused is up to 600 characters)."""
+    def __init__(self, kind: str, message: str):
+        super().__init__(message)
+        self.kind = kind
+
+
+BUSINESS_ERRORS = ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING', 'PURCHASE_MODEL_INVALID')
+
+
+def failure(rec: dict, what: str) -> NotRegistered:
+    """The error for a FAILED decision record. 2026-10-23 audit: submit_decision returned result=ok with an unsaved EVAL- id
+    and ranked cards when the process refused the decision (HTTP 409) or could not be reached; the worker then reported
+    that id and the process said '판단 원문을 찾을 수 없습니다' — the real reason was lost."""
+    code, reason = rec.get('error_code'), rec.get('error') or '원인 미상'
+    if code == 'SUBMIT_REFUSED':
+        status = rec.get('submit_status')
+        return NotRegistered('INVALID' if isinstance(status, int) and 400 <= status < 500 else 'UNKNOWN',
+                             f'판단을 등록하지 못했습니다 — {reason}')
+    if code == 'SUBMIT_FAILED':
+        return NotRegistered('UNKNOWN', f'판단을 등록하지 못했습니다 — process 에 연결하거나 응답을 읽지 못했습니다: {reason}')
+    return NotRegistered('INVALID' if code in BUSINESS_ERRORS else 'UNKNOWN', f'{what}을(를) 완료하지 못했습니다 — {reason}')
+
+
+def registered(rec: dict, what: str) -> dict:
+    """A write tool succeeds only when the process stored the cards (status SUBMITTED — decide sets it after the process
+    accepted the POST and the record took its DEC- id)."""
+    if rec.get('status') == 'SUBMITTED':
+        return rec
+    if rec.get('status') == 'FAILED':
+        raise failure(rec, what)
+    if rec.get('status') == 'REJECTED_BY_GUARDRAIL':
+        steps = [x for x in rec.get('steps') or [] if x.get('name') == 'guardrail']
+        found = '; '.join((steps[-1].get('output') or {}).get('violations') or []) if steps else ''
+        raise NotRegistered('UNKNOWN', f'가드레일이 카드 묶음을 거절해 판단을 등록하지 않았습니다 — {found or "위반 내용 미상"}')
+    if not (rec.get('result') or {}).get('options'):
+        raise NotRegistered('INVALID', '현재 사실·규칙으로 선택된 조치 후보가 0개라 판단을 등록하지 않았습니다 — '
+                            + str(rec.get('explanation') or '후보 선택 규칙과 지식을 확인하세요'))
+    raise NotRegistered('UNKNOWN', f'판단을 등록하지 못했습니다 — 판단 상태 {rec.get("status")}')
+
+
+def read_outcome(rec: dict, what: str) -> dict:
+    """A read-only evaluation: a failure is an error envelope; zero candidates or a guardrail refusal is stated in the
+    result (`outcome`, `notice`) so it is not read as a ranked set. Its EVAL- id is never stored by the process."""
+    if rec.get('status') == 'FAILED':
+        raise failure(rec, what)
+    options = (rec.get('result') or {}).get('options') or []
+    if rec.get('status') == 'REJECTED_BY_GUARDRAIL':
+        outcome, notice = 'guardrail_rejected', '가드레일이 이 카드 묶음을 거절했습니다. 제출해도 등록되지 않습니다'
+    elif not options:
+        outcome, notice = 'no_candidates', '조치 후보 0개 — ' + str(rec.get('explanation') or '후보 선택 규칙이 맞지 않음')
+    elif not rec.get('recommended'):
+        outcome, notice = 'no_feasible_option', '후보 ' + str(len(options)) + '장 모두 규정상 제외됐습니다'
+    else:
+        outcome, notice = 'ranked', '후보 ' + str(len(options)) + '장 순위 계산'
+    return dict(rec, outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
+
+
 def enveloped(fn):
     """Wrap a tool so the agent always gets the same envelope and never a stack trace."""
     def run(*a, **kw):
         try:
             return ok(fn(*a, **kw))
+        except NotRegistered as e:
+            return error(e.kind, str(e)[:800])
         except (KeyError, ValueError, TypeError) as e:
             return error("INVALID", f"{type(e).__name__}: {str(e)[:300]}")
         except psycopg.Error as e:
@@ -169,7 +230,7 @@ class DmnTools:
                                 overrides=overrides or None, do_submit=False)
         if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
             raise ValueError(rec['error'])
-        return rec
+        return read_outcome(rec, '조치 카드 평가')
 
     def submit_decision(self, asset: str, pattern: str, cause: str, failure_mode: str, incident: str, alert_id: str | None = None,
                         overrides: dict | None = None, process_scope: dict | None = None) -> dict:
@@ -185,6 +246,7 @@ class DmnTools:
         rec = decidelib.decide(self.kg, self.registry, self.tsdb, asset, pattern, c, origin=origin, overrides=overrides or None, do_submit=True)
         if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
             raise ValueError(rec['error'])
+        registered(rec, '조치 카드 판단')
         res = rec.get("result") or {}
         return {"id": rec["id"], "status": rec["status"], "recommended": rec.get("recommended"), "explanation": rec.get("explanation"),
                 "cards": [{"rank": o["rank"], "id": o["id"], "sopId": o["sopId"], "name": o["name"], "feasible": o["feasible"], "score": o["score"],
@@ -224,10 +286,10 @@ class DmnTools:
                               dict(id=None, name=None, failureModeId=None, failureMode=None), origin=origin,
                               overrides=overrides, do_submit=submit, purchase_part=part)
         if rec.get('status') == 'FAILED':
-            if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING', 'PURCHASE_MODEL_INVALID'):
+            if rec.get('error_code') in BUSINESS_ERRORS:
                 raise ValueError(rec['error'])
-            raise RuntimeError('원문 구매 후보 계산을 완료하지 못했습니다. 실제 지식·업무 원천 오류를 확인하세요')
-        return rec
+            raise failure(rec, '원문 구매 후보 계산')
+        return registered(rec, '원문 구매 판단') if submit else read_outcome(rec, '원문 구매 후보 계산')
 
     def evaluate_purchase(self, asset: str, part_no: str, overrides: dict | None = None) -> dict:
         return self._purchase_decision(asset, part_no, overrides=overrides)

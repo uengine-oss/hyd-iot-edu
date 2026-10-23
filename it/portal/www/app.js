@@ -7,6 +7,7 @@ const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d)
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const HTTP_DEFAULT_DETAIL = { 'Not Found': '서버에 이 기능의 주소가 없습니다 — 서비스가 이 화면보다 이전 판일 수 있습니다', 'Method Not Allowed': '서버가 이 요청 방식을 받지 않습니다',
   'Internal Server Error': '서버 내부 오류', 'Bad Gateway': '중계 서버 오류', 'Service Unavailable': '서비스를 쓸 수 없는 상태입니다' };
+const NETWORK_DOWN = '서비스에 연결하지 못했습니다(서비스가 꺼져 있거나 주소가 다릅니다). 서비스 상태를 확인한 뒤 다시 시도하세요.';
 async function requestJ(url, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.method ? 30000 : 8000);
@@ -17,14 +18,16 @@ async function requestJ(url, options = {}) {
     catch (_) { throw new Error(`서버 응답을 읽을 수 없습니다 (${r.status}). 다시 조회하세요.`); }
     if (!r.ok) {
       // 서버 프레임워크 기본 문구(영문)는 한국어 + 상태 번호로. 404 "Not Found" 는 그 주소가 없는 것 — 실행 중인 서비스가 이 화면보다 이전 판일 때 흔하다
-      const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : j.detail;
+      // 알려진 영문 거절 사유(T_approve is DONE 등)는 한국어 한 줄로(UI.serverText) — 원문은 error.detail 에 남긴다
+      const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : typeof j.detail === 'string' && typeof UI !== 'undefined' && UI.serverText ? UI.serverText(j.detail) : j.detail;
       const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
-      error.status = r.status;
+      error.status = r.status; error.detail = j.detail;
       throw error;
     }
     return j;
   } catch (e) {
     if (e.name === 'AbortError') throw new Error(options.method ? '응답 시간 초과. 처리 결과를 새로 확인한 뒤 다시 시도하세요.' : '응답 시간 초과. 연결 상태를 확인하세요.');
+    if (e instanceof TypeError && e.status == null) throw new Error(NETWORK_DOWN);   // 연결 거부 · 네트워크 끊김(영문 Failed to fetch)
     throw e;
   } finally { clearTimeout(timer); }
 }

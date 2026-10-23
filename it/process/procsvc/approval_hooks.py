@@ -3,6 +3,19 @@ from copy import deepcopy
 
 from hydcommon.timeutil import now_iso
 from . import decisions, machine, current_approval
+from . import definition as incident_def
+
+
+def approval_refusal(state: str, reason: str | None = None) -> str:
+    """승인 대기가 아닌 사건의 승인 거절 사유(사람이 읽는 문장 + 할 일). 전에는 영어 내부 사유('incident is …; approval requires review')였다."""
+    if state == 'RESOLVED_WITHOUT_ACTION':
+        return ('경보가 조치 전에 이미 풀려(사건: 조치 전 자연 회복) 승인할 수 없습니다 — 설비 명령이 필요 없습니다. '
+                '처리 건은 「조치 전 해소」로 닫힙니다(닫히지 않았으면 화면을 새로 고치세요)')
+    label = incident_def.FAILURE_STATES.get(state) or dict((s, l) for s, l, _ in incident_def.STEPS).get(state) or state
+    tail = f', 사유 {reason}' if reason and state in incident_def.TERMINAL else ''
+    if state in incident_def.TERMINAL:
+        return f'사건이 이미 끝나 승인할 수 없습니다(사건: {label}{tail}) — 같은 경보로 다시 조치하려면 새 판단이 필요합니다'
+    return f'사건이 승인 대기 상태가 아니라 승인할 수 없습니다(지금: {label}) — 진행 중인 조치가 끝난 뒤 화면을 새로 고치세요'
 
 
 def require_reviewed_commands(option, commands):
@@ -119,7 +132,8 @@ class DecisionDelivery:
         if inc is None or inc.asset != payload['asset']:
             raise ValueError('approval incident is unavailable')
         if inc.state != 'AWAITING_APPROVAL':
-            raise ValueError(f'incident is {inc.state}; approval requires review')
+            # 끝의 상태 코드 꼬리표는 운영 기록 · 기존 시험(test_approval_delivery: match 'incident')용 — 사람이 읽는 사유는 앞 문장
+            raise ValueError(approval_refusal(inc.state, inc.reason))
         if payload.get('commands'):
             machine._validate_actions(inc, payload['commands'])
         option = next(o for o in snapshot['options'] if o['id'] == payload['option'])

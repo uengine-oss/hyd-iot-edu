@@ -148,6 +148,16 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 raise HTTPException(403, {"reason": "수업 기준 흐름은 삭제할 수 없습니다"})
             if not store.get_draft(def_id) and not store.versions(def_id):
                 raise HTTPException(404, {"reason": "삭제할 학생 흐름이 없습니다"})
+            # [기준으로 되돌리기](flows_reset)의 keep 과 같은 기준: 경보 경로에 배포된 흐름(수업 흐름 포함)은 지우지 않는다.
+            # 지우면 경보가 조용히 기준 흐름으로 돌아가고 그 흐름의 시나리오 버튼이 '배포되어 있지 않습니다'로 멈춘다.
+            from .flow_deploy import routes
+            deployed = next((f for f in routes(rt)["flows"] if f["definition"] == def_id), None)
+            if deployed is not None:
+                patterns = ", ".join(deployed.get("patterns") or []) or "경보 패턴 없음"
+                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 지금 경보 경로에 배포된 흐름입니다(판본 {deployed.get('version')}, "
+                                                    f"경보 {patterns}) — 지우지 않았습니다. 먼저 배포를 내리세요"
+                                                    "(흐름 배포 화면의 [기준 흐름으로 되돌리기]) 뒤에 지우세요",
+                                          "deployed": deployed})
             try:
                 out = store.reset(def_id)
             except FlowBusy as e:

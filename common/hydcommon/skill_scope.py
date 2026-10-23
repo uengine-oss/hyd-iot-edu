@@ -11,6 +11,13 @@ PURCHASE_SYSTEM = 'sys:erp'
 SUPPLIER_POLICIES = ('oem', 'lowest_approved', 'fastest_quote')
 
 
+class SupplierUnresolved(ValueError):
+    """The policy and the quotes are valid, but this policy names no single real supplier for the requested Part (no
+    matching quote, a tie, or a supplier without SUPPLIED_BY to the Part). Only that card is impossible; the other policy
+    cards are still evaluated (2026-10-23 audit: the cooler core quotes include sup:c, which the graph does not supply,
+    and SOP-PUR-13's fastest quote erased SOP-PUR-11 · 12 too). Never replaced by another supplier."""
+
+
 def resolve_supplier(skill, facts):
     """Bind a source policy to real quotes; never change the stored SOP or quotes."""
     policy = skill.get('supplier_policy')
@@ -38,22 +45,22 @@ def resolve_supplier(skill, facts):
             continue
         eligible.append((supplier, quote))
     if not eligible:
-        raise ValueError('원문 공급사 선택 정책을 충족하는 실제 견적이 없습니다')
+        raise SupplierUnresolved('원문 공급사 선택 정책을 충족하는 실제 견적이 없습니다')
     if policy == 'oem':
         if len(eligible) != 1:
-            raise ValueError('정본 순정 라벨 B-OEM (순정)의 실제 견적이 유일하지 않습니다')
+            raise SupplierUnresolved('정본 순정 라벨 B-OEM (순정)의 실제 견적이 유일하지 않습니다')
         chosen = eligible[0]
     else:
         metric = 'price' if policy == 'lowest_approved' else 'lead_d'
         minimum = min(q[metric] for _, q in eligible)
         winners = [(s, q) for s, q in eligible if q[metric] == minimum]
         if len(winners) != 1:
-            raise ValueError('원문에 없는 동률 공급사 선택을 추정하지 않습니다')
+            raise SupplierUnresolved('원문에 없는 동률 공급사 선택을 추정하지 않습니다')
         chosen = winners[0]
     supplier, quote = chosen
     part = facts.get('purchase_part')
     if not any(r.get('part') == part and r.get('supplier') == supplier for r in skill.get('partSuppliers') or []):
-        raise ValueError('선택한 실제 견적 공급사와 요청 Part의 SUPPLIED_BY 관계가 없습니다')
+        raise SupplierUnresolved(f'선택한 실제 견적 공급사({supplier})와 요청 Part의 SUPPLIED_BY 관계가 없습니다')
     result = deepcopy(skill)
     result['actions'][0]['value'] = supplier
     result['resolvedSupplier'] = dict(id=supplier, policy=policy, part=part,

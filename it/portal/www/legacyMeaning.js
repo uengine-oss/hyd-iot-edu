@@ -42,7 +42,7 @@
     if (S.busy) return; S.busy = true; S.error = null; render();
     try {
       const p = ctx.preview;
-      const out = await postJ(API_BASE(), { filename: p.filename, text: ctx.text, datasource: p.datasource, catalog: p.catalog, by: ctx.by(), request_id: window.crypto && crypto.randomUUID ? crypto.randomUUID() : undefined });
+      const out = await postJ(API_BASE(), { filename: p.filename, text: ctx.text, datasource: p.datasource, catalog: p.catalog, by: ctx.by(), request_id: UI.uuid() });
       S.run = out.instance; S.data = null; S.drafts = {}; S.saved = null; poll();
     } catch (e) { S.error = e.message; }
     finally { S.busy = false; render(); }

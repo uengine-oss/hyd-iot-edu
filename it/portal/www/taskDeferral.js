@@ -24,7 +24,11 @@
             await postJ(API.process + `/api/todolist/${encodeURIComponent(w.id)}/reassess`, request);
             try { sessionStorage.removeItem(key); } catch (_) {}
             states.delete(key); await changed(); panel.remove();
-          } catch (error) { panel.querySelector('[role=status]').textContent = error.message; e.target.disabled = false; }
+          } catch (error) {
+            // 서버가 거절한 요청(4xx)은 다시 보내도 같은 거절이다 — 붙잡아 둔 요청을 버리고 이유만 남긴다(다시 수행 · 승인 폐기와 같은 규칙)
+            if (error.status >= 400 && error.status < 500) { try { sessionStorage.removeItem(key); } catch (_) {} states.delete(key); panel.querySelector('[role=status]').textContent = error.message + ' 지난 요청을 정리했습니다.'; return; }
+            panel.querySelector('[role=status]').textContent = error.message; e.target.disabled = false;
+          }
         });
         host.appendChild(panel);
       }
@@ -44,7 +48,7 @@
           <p class="muted">${esc(UI.dateTime(d.at))} · ${d.assessment.status === 'UNKNOWN' ? '근거 확인 불가' : '현재 근거가 조건에 맞지 않음'}</p>
           ${UI.fold('관측 근거와 보류 기록', `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(JSON.stringify(d.assessment.evidence, null, 2))}</pre>`, { cls: 'small' })}
           <div class="form"><section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">
-            ${UI.field({ label: UI.t('form.by'), required: true, input: `<input data-reassess-by value="${esc(s.by)}" ${locked}>` })}
+            ${UI.field({ label: UI.t('form.by'), required: true, input: UI.actorInput('data-reassess-by', s.by, locked) })}
             ${UI.field({ label: UI.t('form.reason'), required: true, cls: 'wide', hint: '원천을 다시 조회해 평가합니다. 조치가 제안되면 별도 선택 단계에서 확인합니다.', input: `<textarea data-reassess-reason rows="2" ${locked}>${esc(s.reason)}</textarea>` })}
           </div></section>${UI.actions(`<button class="btn primary" data-reassess ${s.busy ? 'disabled' : ''}>${s.pending ? '같은 요청의 접수 결과 확인' : esc(UI.t('btn.reassess'))}</button>`, s.error)}</div>`, { open: true });
         panel.querySelector('[data-reassess-by]').addEventListener('input', e => s.by = e.target.value);
@@ -52,7 +56,7 @@
         panel.querySelector('[data-reassess]').addEventListener('click', async () => {
           if (s.busy) return;
           if (!s.by.trim() || !s.reason.trim()) { s.error = UI.t('form.err.required'); draw(); return; }
-          s.pending ||= { deferral_id: d.id, request_id: crypto.randomUUID(), by: s.by.trim(), reason: s.reason.trim() };
+          s.pending ||= { deferral_id: d.id, request_id: UI.uuid(), by: s.by.trim(), reason: s.reason.trim() };
           try { sessionStorage.setItem(key, JSON.stringify(s.pending)); } catch (_) {}
           s.busy = true; s.error = ''; draw();
           try {
@@ -60,7 +64,15 @@
             s.pending = null;
             try { sessionStorage.removeItem(key); } catch (_) {}
             await changed();
-          } catch (e) { s.error = e.message; }
+          } catch (e) {
+            s.error = e.message;
+            // 4xx = 서버가 이 요청을 거절했다(보류가 바뀜 · 사유 길이 등): 같은 요청을 다시 보내도 같은 거절이므로 요청을 놓고 폼을 풀어 고쳐 다시 보낼 수 있게 한다
+            if (e.status >= 400 && e.status < 500) {
+              s.pending = null;
+              try { sessionStorage.removeItem(key); } catch (_) {}
+              s.error += ' 내용을 고쳐 다시 평가를 요청하세요.';
+            }
+          }
           finally { s.busy = false; if (panel.isConnected) draw(); }
         });
       };

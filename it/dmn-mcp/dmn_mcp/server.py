@@ -95,7 +95,8 @@ def prometheus_query(expression: str, at: float | None = None, start: float | No
 
 @mcp.tool(annotations=READ)
 def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: FailureMode, overrides: Overrides = None) -> dict:
-    """후보 선택 → 규정 판정(제외 · 감점 · 경고) → 예측 · BSC 상충 · 선례 → 순위. 제출하지 않는다 (task:candidates · task:compliance 용)."""
+    """후보 선택 → 규정 판정(제외 · 감점 · 경고) → 예측 · BSC 상충 · 선례 → 순위. 제출하지 않는다 (task:candidates · task:compliance 용).
+    outcome · notice 가 후보 0개 · 전부 제외 · 가드레일 거절을 밝힌다. id(EVAL-)는 저장되지 않으며 decision_id 가 아니다. 계산 오류는 오류 봉투다."""
     return enveloped(lambda: tools.evaluate_cards(asset, pattern, cause, failure_mode, overrides))()
 
 
@@ -111,7 +112,8 @@ def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: 
                     incident: Annotated[str, Field(description="이 인스턴스의 Incident id (task.json inputs.incident)")],
                     alert_id: Annotated[str | None, Field(description="경보 id")] = None, overrides: Overrides = None,
                     process_scope: Annotated[dict | None, Field(description="context/task.json의 process_scope 객체를 그대로 전달: tenant/instance/workitem/generation/version/consumer")] = None) -> dict:
-    """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 에이전트의 유일한 쓰기. 돌려준 id 가 decision_id 다."""
+    """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 에이전트의 유일한 쓰기. 돌려준 id 가 decision_id 다.
+    process 가 등록을 거절했거나(사유 포함) 연결 실패 · 후보 0개 · 가드레일 거절이면 성공이 아니라 오류 봉투다."""
     return enveloped(lambda: tools.submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, overrides, process_scope))()
 
 

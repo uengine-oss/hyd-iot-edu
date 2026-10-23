@@ -134,12 +134,15 @@
     on('hPreview', 'click', () => previewChoice(parameters));
     on('hGoInstance', 'click', async () => {
       const b = $('#hGoInstance'); b.disabled = true;
-      try {
-        let id = H.instByIncident.get(inc.id);
-        if (!id) { const list = await getJ(API.process + '/api/instances?limit=50'); const found = list.find(x => (x.variables_data || []).some(v => v.key === 'incident' && v.value === inc.id)); if (found) { id = found.proc_inst_id; H.instByIncident.set(inc.id, id); } }
-        selectTab('instances'); if (id && window.hydInstancesSelect) window.hydInstancesSelect(id);
-      } finally { b.disabled = false; }
+      try { await openIncident(inc.id); } finally { b.disabled = false; }
     });
+  }
+  // 사건 → 그 사건을 처리하는 처리 건으로 이동(조치 패널 · 「승인과 실행」 탭이 같이 쓴다). 찾으면 true
+  async function openIncident(incId) {
+    let id = H.instByIncident.get(incId);
+    if (!id) { const list = await getJ(API.process + '/api/instances?limit=50'); const found = list.find(x => (x.variables_data || []).some(v => v.key === 'incident' && v.value === incId)); if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } }
+    selectTab('instances'); if (id && window.hydInstancesSelect) window.hydInstancesSelect(id);
+    return !!id;
   }
   async function previewChoice(parameters) {
     if (H.busy) return; H.busy = true; H.msg = ''; renderHitl();
@@ -165,7 +168,7 @@
     const parameters = { ...(cmdOf(option, 'fan_pct') ? { fan_pct: form.fan } : {}), ...(cmdOf(option, 'load_pct') ? { load_pct: form.load } : {}) };
     return window.hydCards?.reviewMatches(form.review, decision?.id, form.option, parameters, { kind: "legacy", incident: H.inc.id }) ? form.review.id : null;
   }
-  window.hydHitl = { H, refreshHitl, decideNow };
+  window.hydHitl = { H, refreshHitl, decideNow, openIncident };
   setInterval(() => refreshHitl(false), 1500);
 
   /* ================================================= 승인과 실행: 업무 흐름 — the instance behind the selected decision, drawn from its definition */
@@ -306,7 +309,7 @@
     });
     $('#skSave').addEventListener('click', async (ev) => {
       const b = ev.currentTarget;
-      const body = draft.pending || { name: $('#skName').value.trim(), description: $('#skDesc').value, approver: $('#skRole').value, by: $('#skBy').value.trim(), revision: draft.revision, request_id: crypto.randomUUID() };
+      const body = draft.pending || { name: $('#skName').value.trim(), description: $('#skDesc').value, approver: $('#skRole').value, by: $('#skBy').value.trim(), revision: draft.revision, request_id: UI.uuid() };
       if (!draft.pending && key === '__new__') Object.assign(body, { sopId: $('#skSop').value.trim(), failureMode: $('#skFm').value, relation: $('#skRel').value, kind: $('#skKind').value, steps: $('#skSteps').value });
       if (!body.name) { $('#skMsg').textContent = UI.t('skill.nameRequired'); $('#skName').focus(); return; }
       remember(); draft.pending = body; saveSkillDraft(key, draft); lockFields();
@@ -432,7 +435,7 @@
       if (!questions.length) { g.msg = UI.t('golden.err.empty'); renderGolden(batch); return; }
       if (questions.length > 20) { g.msg = UI.t('golden.err.many'); renderGolden(batch); return; }
       g.busy = true; g.msg = ''; renderGolden(batch);
-      try { await postJ(goldenUrl(batch, 'questions'), { questions, by: g.by, request_id: crypto.randomUUID() }); g.draft = ''; await fetchGolden(batch); }
+      try { await postJ(goldenUrl(batch, 'questions'), { questions, by: g.by, request_id: UI.uuid() }); g.draft = ''; await fetchGolden(batch); }
       catch (e) { g.msg = e.message; }
       finally { g.busy = false; renderGolden(batch); }
     }));
@@ -625,7 +628,7 @@
       const button = $('#manualAgentExtract'); button.disabled = true;
       try {
         const previous = extractionState();
-        const state = previous && !previous.instance ? previous : { request_id: crypto.randomUUID() };
+        const state = previous && !previous.instance ? previous : { request_id: UI.uuid() };
         sessionStorage.setItem(extractionKey, JSON.stringify(state));
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));

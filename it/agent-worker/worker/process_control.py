@@ -3,9 +3,16 @@
 The pump retains cliagents' parser and teardown. The caller checks its deadline
 and database state independently of stdout. Each run owns its process tree.
 Windows job lifetime: https://learn.microsoft.com/windows/win32/procthread/job-objects
+
+POSIX has no job object. The worker's stop signals (SIGTERM · SIGHUP, main.install_stop_signals) unwind into the
+`finally` below, which kills the run's process group. A worker that dies without unwinding (SIGKILL, OOM) leaves the
+group's id in the workspace (GROUP_FILE); the next run in that workspace kills that group before it starts
+(reap_stale_group), so an orphaned CLI cannot keep calling tools or write output/result.json under the new run.
 """
+import json
 import logging
 import os
+from pathlib import Path
 import queue
 import signal
 import subprocess
@@ -48,9 +55,68 @@ class _WindowsJob:
             self.api.CloseHandle(self.handle);self.handle=None
 
 
+#: W1 (2026-10-23 검수): the CLI process group a run started, kept in its workspace until the group is killed.
+GROUP_FILE='.cli-process-group.json'
+
+
+def _start_mark(pid):
+    """Something that tells this process apart from a later one with the same pid: /proc start time on Linux, `ps` start
+    time elsewhere (macOS). None when neither is available (then nothing is recorded and nothing is reaped)."""
+    try:
+        stat=Path(f'/proc/{pid}/stat').read_text()
+        return 'proc:'+stat.rsplit(')',1)[1].split()[19]
+    except (OSError,IndexError):
+        pass
+    try:
+        out=subprocess.run(['ps','-o','lstart=','-p',str(pid)],capture_output=True,text=True,timeout=5).stdout.strip()
+    except (OSError,subprocess.SubprocessError):
+        return None
+    return 'ps:'+out if out else None
+
+
+def _remember_group(path,pid):
+    mark=_start_mark(pid)
+    if path is None or mark is None:return
+    try:Path(path).write_text(json.dumps({'pgid':pid,'start':mark}),encoding='utf-8')
+    except OSError as e:logging.getLogger('worker.process').warning('process group file not written (%s): %s',path,e)
+
+
+def _forget_group(path):
+    if path is not None:
+        try:Path(path).unlink(missing_ok=True)
+        except OSError:pass
+
+
+def reap_stale_group(workdir):
+    """Kill the CLI process group an earlier worker process left running in `workdir` (it died without unwinding).
+    Returns the killed group id, or None. A recorded leader that is still alive but started at another time is a reused
+    pid, not ours — it is left alone. Windows needs none of this: the job object dies with the worker."""
+    if os.name=='nt':return None
+    path=Path(workdir)/GROUP_FILE
+    try:
+        record=json.loads(path.read_text(encoding='utf-8'))
+        pgid=int(record['pgid']);start=record['start']
+    except FileNotFoundError:
+        return None
+    except (OSError,ValueError,KeyError,TypeError):
+        _forget_group(path);return None
+    if pgid<=1 or pgid==os.getpgid(0):
+        _forget_group(path);return None
+    mark=_start_mark(pgid)
+    if mark is not None and mark!=start:      # the pid now belongs to another process
+        _forget_group(path);return None
+    try:
+        os.killpg(pgid,signal.SIGKILL)
+        killed=pgid
+    except (ProcessLookupError,PermissionError):
+        killed=None
+    _forget_group(path)
+    return killed
+
+
 class _ProcessTree:
-    def __init__(self):
-        self.process=None;self.job=None;self.closed=False;self.lock=threading.Lock()
+    def __init__(self,group_file=None):
+        self.process=None;self.job=None;self.closed=False;self.lock=threading.Lock();self.group_file=group_file
 
     def spawn(self,*args,**kwargs):
         with self.lock:
@@ -63,6 +129,7 @@ class _ProcessTree:
             try:
                 self.process=subprocess.Popen(*args,**kwargs)
                 if self.job:self.job.assign(self.process)
+                else:_remember_group(self.group_file,self.process.pid)
                 return self.process
             except BaseException:
                 if self.process is not None:
@@ -81,6 +148,7 @@ class _ProcessTree:
             elif self.process is not None:
                 try:os.killpg(self.process.pid,signal.SIGKILL)
                 except ProcessLookupError:pass
+                _forget_group(self.group_file)
 
 
 def controlled_stream(stream,provider,request,env,check_stop,failed):
@@ -90,7 +158,9 @@ def controlled_stream(stream,provider,request,env,check_stop,failed):
     must be read in the pump, not in the polling caller.
     """
     messages=queue.Queue(maxsize=128)
-    stop=threading.Event();tree=_ProcessTree();done=object();failure=[]
+    workdir=getattr(request,'workdir',None)
+    stop=threading.Event();tree=_ProcessTree(Path(workdir)/GROUP_FILE if workdir and Path(workdir).is_dir() else None)
+    done=object();failure=[]
     def send(item):
         while not stop.is_set():
             try:messages.put(item,timeout=.05);return

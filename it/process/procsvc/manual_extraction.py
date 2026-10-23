@@ -105,8 +105,11 @@ def _letters(text):
     return re.sub(r'[^0-9A-Za-z가-힣]', '', text or '')
 
 
-def validate_proposal(source, proposal):
-    """Structural/citation validation, not a claim of semantic extraction truth."""
+def validate_proposal(source, proposal, *, segment=False):
+    """Structural/citation validation, not a claim of semantic extraction truth.
+    segment=True: `source` is one segment's view of a long document (I3, 2026-10-23 검수). A rule may name an SOP another
+    segment extracts (the failure table before, the procedures after), so rule SOP references are checked on the merged
+    whole-document proposal instead (_group_result → manual_segments.merge → validate_proposal)."""
     def nonempty(value, name):
         if not isinstance(value, str) or not value.strip():raise ValueError(name+' 문자열이 필요합니다')
     if not isinstance(source, dict) or source.get('status') != 'READY':raise ValueError('검토 가능한 원문이 필요합니다')
@@ -141,8 +144,9 @@ def validate_proposal(source, proposal):
         nonempty(s.get('ref'),'절 ID');nonempty(s.get('title'),'절 제목')
         if s['ref'] in sections or not isinstance(s.get('excerpt',''),str):raise ValueError('절 중복 또는 본문 형식 오류')
         sections.add(s['ref']);anchor(s.get('anchor'))
-    # 절차 블록: 그 절차의 인용 위치부터 같은 쪽 다음 절차의 인용 위치 전까지. 여러 절차에 같은 단계 문장이 있으면 단계 인용을
-    # 그 절차 블록 안의 것으로 정한다(manual_locate.locate within). 절차 인용이 틀린 SOP는 아래 본 검사에서 그 사유로 거부된다.
+    # 절차 블록: 그 절차의 인용 위치부터 문서 순서상 다음 절차의 인용 위치 전까지(쪽을 넘는다 — I1, 2026-10-23 검수: PDF에서 절차
+    # 제목이 쪽 끝, 단계가 다음 쪽). 다음 절차가 없으면 마지막 쪽 끝까지. 여러 절차에 같은 단계 문장이 있으면 단계 인용을 그 절차
+    # 블록 안의 것으로 정한다(manual_locate.locate within). 절차 인용이 틀린 SOP는 아래 본 검사에서 그 사유로 거부된다.
     starts = []
     for p in proposal['procedures']:
         if isinstance(p, dict) and isinstance(p.get('anchor'), dict):
@@ -151,7 +155,9 @@ def validate_proposal(source, proposal):
             except ValueError:
                 continue
             starts.append((p['anchor']['page'], p['anchor']['start'], p['anchor']['end'], id(p)))
-    blocks = {key: (page, start, max(end, min((s for q, s, _, _ in starts if q == page and s > start), default=len(pages[page]))))
+    last = max(pages)
+    blocks = {key: ((page, start), max((page, end), min(((q, s) for q, s, _, _ in starts if (q, s) > (page, start)),
+                                                         default=(last, len(pages[last])))))
               for page, start, end, key in starts}
     seen=set()
     for p in proposal['procedures']:
@@ -184,7 +190,7 @@ def validate_proposal(source, proposal):
                 from .manual_review import validate_affects
                 validate_affects(p['id'],link['affects'])
     if proposal.get('knowledge') is not None:
-        manual_knowledge.validate(proposal['knowledge'],sections=sections,sops=seen,anchor=anchor)
+        manual_knowledge.validate(proposal['knowledge'],sections=sections,sops=None if segment else seen,anchor=anchor)
     return deepcopy(proposal)
 
 
@@ -199,7 +205,8 @@ def check_section_titles(proposal):
 
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
-        proposal = validate_proposal(engine.variables(inst).get('manual_source'), (output or {}).get('proposal'))
+        variables = engine.variables(inst)
+        proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         check_section_titles(proposal)
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
@@ -260,10 +267,13 @@ def display_name(source):
     return source['filename']
 
 
+NOT_READY='이 PDF는 모든 페이지에 텍스트가 없어 추출할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요'
+
+
 def start(rt, source, request_id, review_feedback=None, catalog=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
-    if source['status'] != 'READY':raise ValueError('OCR/빈 페이지 검토를 먼저 완료해야 합니다')
+    if source['status'] != 'READY':raise ValueError(NOT_READY)
     request_id=str(UUID(request_id))
     rt.register_definition(definition())
     event_id='manual-extraction:'+source['source_id']+':'+request_id
@@ -330,11 +340,19 @@ def _task_state(rt, inst):
     return wi,state
 
 
+TEXT_MISSING_NOTE='[검토 필요 · 글자 없음(OCR 필요할 수 있음) — 원문 PDF에서 확인] '
+
+
 def _preview(source, proposal, previous_batch, extraction):
     # Preserve only reviewed contract fields: output cannot set reviewed/by,
     # graph head, batch identity or import another task's claimed provenance.
     preview={k:proposal[k] for k in ('sections','procedures','page_reviews','warnings')}
     if proposal.get('knowledge') is not None:preview['knowledge']=proposal['knowledge']     # C1: reviewed on the same screen
+    missing=source.get('text_missing_pages') or []
+    if missing:      # P13: the reviewer sees which pages had no text — first among the warnings and on those pages' notes
+        preview['text_missing_pages']=list(missing)
+        preview['warnings']=[w for w in source.get('warnings') or [] if w.startswith('텍스트가 없는 페이지')]+list(preview['warnings'])
+        preview['page_reviews']=[dict(r,note=TEXT_MISSING_NOTE+r['note']) if r['page'] in missing else r for r in preview['page_reviews']]
     preview.update(source_id=source['source_id'],document_id=source['document_id'],filename=source['filename'],
                    batch=str(uuid4()),previous_batch=previous_batch,method=CONTRACT,status='READY',
                    chars=sum(len(p['text']) for p in source['pages']),extraction=extraction)
@@ -401,7 +419,7 @@ def _group_result(rt, source, inst, previous_batch):
     if worst['status'] != 'DONE':return value
     parts=[]
     for s,wi in zip(segments,workitems):
-        local=validate_proposal(segment_view(source,s),(wi.get('output') or {}).get('proposal'))
+        local=validate_proposal(segment_view(source,s),(wi.get('output') or {}).get('proposal'),segment=True)
         parts.append((s,_translate(local,s)))
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)

@@ -111,6 +111,11 @@ class Settings:
     ai_mode: str = os.getenv("AI_MODE", "auto")
     ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
 
+
+    # W3 (2026-10-23 검수): how long the business DB may stay unreachable during a run (cancel check · lease renewal · progress
+    # rows) before the run stops with that reason. Below the 120 s lease, so the run ends before another worker may reclaim it.
+    db_outage_limit_s: float = float(os.getenv("DB_OUTAGE_LIMIT_S", "90"))
+
     @property
     def retention_seconds(self) -> int:
         return self.workspace_retention_hours * 3600

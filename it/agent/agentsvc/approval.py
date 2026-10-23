@@ -18,18 +18,16 @@ def canonical(value):
 
 
 def consented(key, value):
-    """What the human consented to in a card field. A maintenance plan's applicability.target_hours is the counter plus the hours left until the
-    planned window (ent.pm_status hours_at_next_window, rounded to 0.01 h) — it falls by 0.01 every 36 s while the window, counter, package and parts
-    stay the same. Like A086 (hours until the MES due date) it is elapsed time, not consent content: the current plan is rebuilt from the same rows and
-    fails if the target passes the source limit, and ent.pm_scope_check re-reads it at execution. 2026-10-23 live: every B approval made more than
-    ~36 s after the decision was refused as 'maintenancePlan changed'. Everything else in the plan stays compared."""
+    """What the human consented to in a card field. A maintenance plan's elapsed-time values (assets[].applicability.target_hours
+    and a reschedule plan's hours_at_window — hydcommon.maintenance_plan.ELAPSED_*) fall by 0.01 h every 36 s while the window,
+    counter, package and parts stay the same. Like A086 (hours until the MES due date) they are elapsed time, not consent
+    content: the current plan is rebuilt from the same rows and fails if the target passes the source limit, and execution
+    re-reads it (ent.pm_scope_check · ent.pm_reschedule · memory recheck use the same without_elapsed). 2026-10-23 live: every
+    B approval made more than ~36 s after the decision was refused as 'maintenancePlan changed'. Everything else stays compared."""
     if key != 'maintenancePlan' or not isinstance(value, dict):
         return value
-    plan = deepcopy(value)
-    for member in plan.get('assets') or []:
-        if isinstance(member, dict) and isinstance(member.get('applicability'), dict):
-            member['applicability'].pop('target_hours', None)
-    return plan
+    from hydcommon.maintenance_plan import without_elapsed
+    return without_elapsed(value)
 
 
 def unresolved(rule, facts):

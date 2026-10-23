@@ -65,6 +65,10 @@ REMOVED_REASON = ("기준으로 되돌리기로 정리된 처리 건입니다 �
                   "(처리 건 목록에서도 빠집니다)")
 
 
+class SourceUnavailable(ValueError):
+    """승인 · 판정에 필요한 원천(업무 시스템 등)이 응답하지 않는다. ValueError 라 다른 경로도 사유를 보이고, 승인 라우트는 503 으로 바꾼다."""
+
+
 class ServiceExecutionError(RuntimeError):
     """Keep the actual tool response with the failure instead of submitting it as successful output."""
     def __init__(self, result: dict):
@@ -668,7 +672,11 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if not wi or self._tool_of(wi) != "formHandler:select_card":
             raise KeyError(workitem_id)
         if wi["status"] != "IN_PROGRESS":
-            raise ValueError(f"{wi['activity_id']} is {wi['status']}")
+            ended = self.repo.get_instance(wi["proc_inst_id"]) or {}
+            if ended.get("end_event") == self.BEFORE_ACTION_END_EVENT:
+                outcome = (engine.variables(ended).get("result_report") or {}).get("outcome") or "조치 전 종료"
+                raise ValueError(f"이 처리 건은 사건이 조치 전에 끝나 「{outcome}」로 닫혔습니다 — 승인할 일이 없습니다")
+            raise ValueError(f"'{wi.get('activity_name') or wi['activity_id']}'은(는) 이미 처리된 승인입니다({wi['status']}) — 다시 승인하지 않습니다")
         inst = self.repo.get_instance(wi["proc_inst_id"])
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         values = engine.variables(inst)
@@ -862,7 +870,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             return []
         if self.hooks.enterprise_read is None:
             raise ValueError('ERP 견적 조회가 연결되지 않아 발주 금액을 확정할 수 없습니다')
-        return list((self.hooks.enterprise_read('part_quotes', {'part': part}) or {}).get('records') or [])
+        try:
+            read = self.hooks.enterprise_read('part_quotes', {'part': part})
+        except OSError as e:          # P11 (audit2): URLError · 시간 초과 — 사유 없는 500 대신 원천 연결 사유(라우트가 503 으로)
+            raise SourceUnavailable(f'ERP 견적을 읽지 못해 발주 금액을 확정할 수 없습니다 — 업무 시스템(enterprise-sim) 연결을 확인한 뒤 '
+                                    f'다시 승인하세요 ({str(e)[:160]})') from e
+        return list((read or {}).get('records') or [])
 
     # ---------------------------------------------------------------- a person closes an agent task that cannot continue (A082)
     HUMAN_CLOSE_END_EVENT = 'closed-by-human'
@@ -1213,6 +1226,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 reobs = self._open_tool(inst, "incident:reobserve")
             if reobs:
                 recovered = {"ESCALATED": False, "RESOLVED_WITHOUT_ACTION": bool(cleared)}.get(inc_state, True)
+                if inc_state == "ESCALATED":
+                    # P5 (audit2): 재관측 task 의 출력 계약은 recovered 하나다. 명령 거절 · ACK 시간 초과 · 재시작은 재관측 미달이 아니므로
+                    # 사건의 실제 사유를 처리 건 값으로 먼저 싣는다 — 결과 보고(svc:report)가 그것을 보이고 '재관측 기준 미달'로 쓰지 않는다
+                    reason = (self.hooks.incident_snapshot(inc_id) or {}).get("reason")
+                    fresh = self.repo.get_instance(inst["proc_inst_id"])      # 앞의 명령 task 제출이 처리 건을 바꿨을 수 있다
+                    engine.set_variables(self.definition_for(fresh), fresh, {"incident_outcome": inc_state, "incident_reason": reason},
+                                         source={"kind": "runtime", "by": "process", "reason": f"incident {inc_state}: {reason}"})
+                    self.repo.update_instance(fresh)
                 self.submit(reobs["id"], {"recovered": recovered}, by="process", now=now)
         if inc_state in incident_def.TERMINAL:
             rows = self.repo.list_workitems(proc_inst_id=inst["proc_inst_id"], limit=None)
@@ -1260,6 +1281,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         target = "task:escalate" if "task:escalate" in defn.activities else next(
             (a["id"] for a in defn.activities.values() if a.get("tool") == self.ESCALATE_TOOL), None)
         if target is None:
+            self._end_before_action(defn, inst, rows, inc_state, cleared, now)
             return
         reason = f"incident {inc_state} before any action (cleared={bool(cleared)})"
         adv = engine.abort_to(defn, inst, rows, target, reason, now, self.time_scale)
@@ -1278,6 +1300,64 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "INCIDENT_ENDED_BEFORE_ACTION",
                            {"instance": inst["proc_inst_id"], "state": inc_state, "cleared": bool(cleared), "cancelled": [w["activity_id"] for w in adv.updated]},
                            incident=v.get("incident"))
+        self._after_commit(self._project, inst)
+
+    # 에스컬레이션 단계가 없는 흐름(흐름 가져오기로 만든 수업 흐름 c3_* 등)이 조치 전에 끝난 사건을 닫는 기술 끝.
+    # 'closed-by-human'(사람이 닫음) · 'administrative:approval-discard'(승인 폐기)와 같은 종류 — 흐름의 업무 끝 이벤트가 아니다.
+    BEFORE_ACTION_END_EVENT = 'incident-ended-before-action'
+    BEFORE_ACTION_OUTCOME = {"RESOLVED_WITHOUT_ACTION": "조치 전 해소", "REJECTED_BY_OPERATOR": "조치 전 반려",
+                             "ESCALATED": "조치 전 에스컬레이션", "CLOSED": "조치 전 종결"}
+
+    def _end_before_action(self, defn, inst, rows, inc_state, cleared, now):
+        """P3 (audit2 2026-10-23): 승인 단계가 있는데 에스컬레이션 단계가 없는 흐름에서 사건이 조치 전에 끝나면(예: 승인 전에 경보 CLEAR →
+        RESOLVED_WITHOUT_ACTION) 전에는 아무것도 하지 않아 처리 건이 RUNNING · 승인 task IN_PROGRESS 로 갇혔다(승인은 거절되고 거절하면 '반려'로
+        잘못 남았다). 흐름 안에는 이 결과로 가는 길이 없으므로(끝 이벤트는 정상 · 미달 · 반려 · 알림뿐) 흐름의 끝을 지어내지 않고, 열린 작업을
+        사유와 함께 취소한 뒤 기술 끝(BEFORE_ACTION_END_EVENT)으로 닫는다. 결과 보고 값에는 실제 사유('조치 전 해소' 등)를 싣는다 — 사건은 이미
+        끝났으므로 다시 닫지 않는다. 사람 검토 대기열(alert_triage — 승인 단계 없음)은 건드리지 않는다. 흐름의 결과 보고가 이미 돌고 있으면
+        (예: 반려 보고가 사건을 닫는 중) 흐름이 스스로 끝내게 둔다."""
+        if not any(a.get("tool") == self.APPROVAL_TOOL for a in defn.activities.values()):
+            return
+        reports = {aid for aid, a in defn.activities.items() if a.get("tool") == effect_parts.REPORT_TOOL}
+        if any(w["activity_id"] in reports and w["status"] in engine.LIVE_STATUSES for w in rows):
+            return
+        snap = self.hooks.incident_snapshot(engine.variables(inst).get("incident")) or {}
+        inc_reason = snap.get("reason")
+        outcome = self.BEFORE_ACTION_OUTCOME.get(inc_state, "조치 전 종료")
+        if inc_state == "RESOLVED_WITHOUT_ACTION":
+            cause = "승인 전에 경보가 풀렸습니다(사건: 조치 전 자연 회복)"
+        else:
+            label = incident_def.FAILURE_STATES.get(inc_state, inc_state)
+            cause = f"승인 · 조치 전에 사건이 끝났습니다(사건: {label}{', 사유 ' + inc_reason if inc_reason else ''})"
+        stamp = engine.now_iso(now)
+        cancelled = []
+        for row in rows:
+            if row["status"] in engine.TERMINAL_STATUSES:
+                continue
+            if row["status"] != "TODO":
+                cancelled.append(row.get("activity_name") or row["activity_id"])
+            row.update(status="CANCELLED", end_date=stamp, consumer=None,
+                       log=(row.get("log") or "") + f"cancelled: {outcome} — 사건 {inc_state}, 조치 전 종료; ")
+            self.repo.update_workitem(row)
+        summary = f"{cause}. 설비 명령 · 업무 처리 없이 처리 건을 닫았습니다" + (f" — 취소한 단계: {', '.join(cancelled)}" if cancelled else "")
+        v = engine.variables(inst)
+        title = f"{v.get('asset') or inst.get('proc_inst_name') or '처리 건'} 처리 결과: {outcome}"
+        report = {"outcome": outcome, "level": "info", "verdict": "info", "title": title, "summary": summary, "by": "sys:process", "at": stamp,
+                  "values": [], "facts": {k: v.get(k) for k in ("asset", "pattern", "decision_id") if v.get(k) is not None},
+                  "refs": {}, "incident_closed": False, "incident_state": inc_state, "incident_reason": inc_reason,
+                  "end_event": self.BEFORE_ACTION_END_EVENT}
+        engine.set_variables(defn, inst, {"recovered": bool(cleared), "incident_outcome": inc_state, "incident_reason": inc_reason,
+                                          "result_report": report},
+                             source={"kind": "runtime", "by": "process", "reason": f"incident {inc_state} before any action"})
+        inst.update(status="COMPLETED", end_event=self.BEFORE_ACTION_END_EVENT, end_date=stamp, current_activity_ids=[])
+        self.repo.update_instance(inst)
+        self.repo.record_events([{"job_id": "INCIDENT_ENDED_BEFORE_ACTION", "todo_id": None, "proc_inst_id": inst["proc_inst_id"],
+                                  "crew_type": "result", "event_type": "task_completed",
+                                  "data": {"name": f"조치 전 사건 종료 → 처리 건 닫음({outcome})", "incident_state": inc_state,
+                                           "cleared": bool(cleared), "reason": inc_reason, "cancelled": cancelled, "report": report}}])
+        self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), f"[{outcome}] {title}", summary)
+        self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "INCIDENT_ENDED_BEFORE_ACTION",
+                           {"instance": inst["proc_inst_id"], "state": inc_state, "cleared": bool(cleared), "cancelled": cancelled,
+                            "end_event": self.BEFORE_ACTION_END_EVENT}, incident=v.get("incident"))
         self._after_commit(self._project, inst)
 
     def reconcile_terminal_incidents(self, now=None) -> int:

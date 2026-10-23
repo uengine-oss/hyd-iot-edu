@@ -46,6 +46,43 @@ def normalize_glyphs(text: str) -> str:
     return PRIVATE_USE.sub('•', text)
 
 
+def text_missing_pages(pages) -> list[int]:
+    """1-based numbers of the pages whose extracted text is empty (a picture-only page, a blank page or a scanned page)."""
+    return [i for i, page in enumerate(pages, 1) if not (page['text'] if isinstance(page, dict) else page).strip()]
+
+
+def status_of(empty: list[int], total: int) -> str:
+    """P13 (2026-10-23 검수): a PDF with some text-less pages used to be OCR_REQUIRED as a whole, which switched off agent
+    extraction and loading with no way to finish (manuals often carry picture-only pages). Now only a document with no text
+    at all needs OCR first; the text-less pages of any other document are marked (text_missing_pages, the warning, the
+    review notes) and the rest is extracted and reviewed — those pages have nothing a citation could point at, so their
+    content is never loaded, and the reviewer sees which pages to check against the original PDF."""
+    return 'OCR_REQUIRED' if total and len(empty) == total else 'READY'
+
+
+def empty_page_warning(empty: list[int], total: int) -> str:
+    if total and len(empty) == total:
+        return '모든 페이지에 텍스트가 없습니다(스캔한 PDF로 보입니다) — 글자 인식(OCR)한 PDF로 다시 올리세요'
+    return (f"텍스트가 없는 페이지 {', '.join(map(str, empty))}: 그림 · 스캔 · 빈 페이지입니다 — 이 페이지 내용은 추출 · 적재에 들어가지 "
+            "않습니다. 원문 PDF에서 그 페이지를 직접 확인하세요(글자가 있는 스캔이면 글자 인식(OCR)한 PDF로 다시 올리세요)")
+
+
+def _current(extraction: dict) -> dict:
+    """The archived extraction under today's page rule (P13): an archive written as OCR_REQUIRED because one page had no text
+    reads as READY with that page marked; the stored text and its hashes are untouched (status and warning are policy).
+    A document whose pages all have text is returned unchanged, so a source pinned in an earlier run still compares equal."""
+    pages = extraction.get('pages') or []
+    empty = text_missing_pages(pages)
+    if not empty:
+        return extraction
+    out = dict(extraction, status=status_of(empty, len(pages)) if extraction.get('status') in ('READY', 'OCR_REQUIRED') else extraction.get('status'),
+               text_missing_pages=empty)
+    if extraction.get('media_type') == 'application/pdf':
+        out['warnings'] = [empty_page_warning(empty, len(pages)) if w.startswith('텍스트가 없는 페이지') else w
+                           for w in extraction.get('warnings') or []]
+    return out
+
+
 def extract(raw: bytes, filename: str) -> Extraction:
     if not raw or len(raw) > MAX_BYTES:
         raise ValueError('빈 파일 또는 30 MiB를 초과한 파일입니다')
@@ -61,10 +98,9 @@ def extract(raw: bytes, filename: str) -> Extraction:
         if not 0 < len(reader.pages) <= MAX_PAGES:
             raise ValueError('PDF는 1~500페이지여야 합니다')
         pages = tuple(normalize_glyphs(page.extract_text() or '') for page in reader.pages)
-        empty = [str(i) for i, text in enumerate(pages, 1) if not text.strip()]
-        warnings = (f"텍스트가 없는 페이지 {', '.join(empty)}: OCR 또는 빈 페이지 여부 검토 필요",) if empty else ()
+        empty = text_missing_pages(pages)
         return Extraction(pages, f'pypdf:{pypdf.__version__}:text-v2', 'application/pdf',
-                          warnings, 'OCR_REQUIRED' if empty else 'READY')
+                          (empty_page_warning(empty, len(pages)),) if empty else (), status_of(empty, len(pages)))
     if suffix not in ('.md', '.txt', '.markdown'):
         raise ValueError('지원 파일은 Markdown, TXT, PDF입니다')
     text = None
@@ -167,6 +203,7 @@ class ManualSources:
         for page in extraction['pages']:
             if _hash(page['text'].encode('utf-8')) != page['sha256']:
                 raise ValueError('보관된 추출 텍스트 해시가 일치하지 않습니다')
+        extraction = _current(extraction)
         return {'source_id': _source_id(row['document_id'], row['sha256']),
                 'document_id': row['document_id'], 'sha256': row['sha256'],
                 'filename': row['filename'], 'size': len(row['original']), 'created_at': row['created_at'],
@@ -201,9 +238,10 @@ class ManualSources:
                               (tenant, limit, offset)).fetchall()
         items = []
         for row in rows:
-            extraction = json.loads(row['extraction'])
+            extraction = _current(json.loads(row['extraction']))
             items.append({key: row[key] for key in ('document_id', 'sha256', 'filename', 'created_at', 'size')} |
-                         {'source_id': _source_id(row['document_id'], row['sha256']), 'status': extraction['status']})
+                         {'source_id': _source_id(row['document_id'], row['sha256']), 'status': extraction['status'],
+                          **({'text_missing_pages': extraction['text_missing_pages']} if extraction.get('text_missing_pages') else {})})
         return dict(items=items, total=total, offset=offset, limit=limit,
                     next_offset=offset + limit if offset + limit < total else None)
 

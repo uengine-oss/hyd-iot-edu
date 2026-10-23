@@ -13,6 +13,15 @@ class ApprovalReviewRequired(ValueError):
         super().__init__('현재 조건에서 승인을 보류합니다: ' + '; '.join(report.get('reasons') or ['새 판단과 승인이 필요합니다']))
 
 
+def _detail(exc):
+    """HTTPError 본문의 FastAPI detail(글) — 읽을 수 없으면 None."""
+    try:
+        detail = json.loads(exc.read()).get('detail')
+    except (ValueError, AttributeError, OSError):
+        return None
+    return str(detail) if detail else None
+
+
 def check(decision, option, role):
     request = urllib.request.Request(
         os.getenv('AGENT_URL', 'http://agent:8091') + '/api/agent/approval-check',
@@ -21,6 +30,15 @@ def check(decision, option, role):
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             report = json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        # HTTPError 는 OSError 하위라 아래 줄에 먼저 걸려 agent 의 거절 사유가 '원천 연결' 문구로 바뀌었다(audit2 agent 4) — preview() 처럼 detail 을 올린다.
+        # 409 = agent assess 가 현재 조건으로 이 승인을 받지 않는다(새 판단 필요). 그 밖의 코드는 검사 자체를 못 한 것(사유를 붙여 보류)
+        detail = _detail(exc)
+        if exc.code == 409 and detail:
+            raise ApprovalReviewRequired({'allowed': False, 'decision': (decision or {}).get('id'), 'option': option,
+                                          'reasons': [detail], 'source': 'agent approval-check 409'}) from exc
+        raise ValueError(f'현재 승인 조건을 확인할 수 없습니다(agent 응답 {exc.code}{": " + detail if detail else ""}). '
+                         '원천 연결을 확인하고 다시 판단하세요') from exc
     except (OSError, ValueError) as e:
         raise ValueError('현재 승인 조건을 확인할 수 없습니다. 원천 연결을 확인하고 다시 판단하세요') from e
     if not isinstance(report, dict) or report.get('decision') != decision['id'] or report.get('option') != option:

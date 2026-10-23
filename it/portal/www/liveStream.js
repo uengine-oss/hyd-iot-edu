@@ -88,14 +88,18 @@
     // every subscriber gets every event (history too: a trace mounted after the event still wants it)
     if (window.hydTrace) hydTrace.onEvent(e);
     S.subs.forEach(fn => { try { fn(e, fresh); } catch (_) { /* one screen's bug must not stop the stream */ } });
-    if (fresh && RELOAD_ON.has(e.event_type)) scheduleReload();
+    if (fresh && RELOAD_ON.has(e.event_type)) scheduleReload(e);
     if (fresh && !noise(e)) ticker(e);
     if (fresh && window.hydTaskDetail) window.hydTaskDetail.onEvent(e);   // U1: the open task panel takes its own task's events at once
     return true;
   }
-  function scheduleReload() {
+  // 고른 처리 건의 이벤트만 상세를 강제로 다시 그린다. 다른 처리 건의 이벤트는 바뀐 것만(목록) 다시 그리는 보통 읽기 — 지금 쓰는 폼을 지우지 않는다
+  function scheduleReload(e) {
+    const I = window.hydInstances && window.hydInstances.I;
+    const mine = !e || !e.proc_inst_id || !I || e.proc_inst_id === I.sel;
+    S.reloadForce = S.reloadForce || mine;
     clearTimeout(S.reloadTimer);
-    S.reloadTimer = setTimeout(() => { if (window.hydInstances && state.tab === 'instances') window.hydInstances.load(true); }, 200);
+    S.reloadTimer = setTimeout(() => { const force = S.reloadForce; S.reloadForce = false; if (window.hydInstances && state.tab === 'instances') window.hydInstances.load(force); }, 200);
   }
 
   function ticker(e) {

@@ -109,8 +109,9 @@ class Repo(Protocol):
     def insert_workitems(self, items: list[dict]) -> None: ...
     def update_workitem(self, item: dict) -> None: ...
     def get_workitem(self, wid: str) -> dict | None: ...
+    # newest=True: 자를 때 최신 start_date 쪽을 남긴다(돌려주는 순서는 그대로 오래된 것부터). 기본은 전처럼 오래된 것부터 자른다
     def list_workitems(self, proc_inst_id: str | None = None, status: str | None = None, user_id: str | None = None,
-                       agent_orch: str | None = None, limit: int = 200, tenant_id: str | None = None) -> list[dict]: ...
+                       agent_orch: str | None = None, limit: int = 200, tenant_id: str | None = None, newest: bool = False) -> list[dict]: ...
     # the worker's RPCs (agent-sdk function.sql)
     def fetch_pending_task(self, agent_orch: str | None, consumer: str, limit: int = 1, tenant_id: str | None = None, proc_inst_id: str | None = None) -> list[dict]: ...
     def save_task_result(self, todo_id: str, payload: dict, final: bool, expected_consumer: str | None = None) -> bool: ...
@@ -397,11 +398,13 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
     def get_workitem(self, wid: str) -> dict | None:
         return _copy(self.workitems.get(wid))
 
-    def list_workitems(self, proc_inst_id=None, status=None, user_id=None, agent_orch=None, limit=200, tenant_id=None) -> list[dict]:
+    def list_workitems(self, proc_inst_id=None, status=None, user_id=None, agent_orch=None, limit=200, tenant_id=None, newest=False) -> list[dict]:
         rows = [w for w in self.workitems.values()
                 if (proc_inst_id is None or w["proc_inst_id"] == proc_inst_id) and (status is None or w["status"] == status)
                 and (user_id is None or w.get("user_id") == user_id) and (agent_orch is None or w.get("agent_orch") == agent_orch) and (tenant_id is None or w.get("tenant_id") == tenant_id)]
-        return [_copy(w) for w in sorted(rows, key=lambda w: w["start_date"])[:limit]]
+        ordered = sorted(rows, key=lambda w: w["start_date"])
+        kept = (ordered[-limit:] if limit else []) if newest and limit is not None else ordered[:limit]
+        return [_copy(w) for w in kept]
 
     # ---- worker RPCs
     def fetch_pending_task(self, agent_orch: str | None, consumer: str, limit: int = 1, tenant_id: str | None = None, proc_inst_id: str | None = None) -> list[dict]:
@@ -886,13 +889,15 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
         with self._conn() as c:
             return self._row(c.execute("select * from todolist where id = %s", (wid,)).fetchone())
 
-    def list_workitems(self, proc_inst_id=None, status=None, user_id=None, agent_orch=None, limit=200, tenant_id=None) -> list[dict]:
+    def list_workitems(self, proc_inst_id=None, status=None, user_id=None, agent_orch=None, limit=200, tenant_id=None, newest=False) -> list[dict]:
         where, args = [], []
         for col, v in (("proc_inst_id", proc_inst_id), ("status", status), ("user_id", user_id), ("agent_orch", agent_orch), ("tenant_id", tenant_id)):
             if v is not None:
                 where.append(f"{col} = %s")
                 args.append(v)
-        sql = "select * from todolist" + (" where " + " and ".join(where) if where else "") + " order by start_date limit %s"
+        sql = "select * from todolist" + (" where " + " and ".join(where) if where else "")
+        sql = (f"select * from ({sql} order by start_date desc limit %s) newest order by start_date" if newest
+               else sql + " order by start_date limit %s")
         with self._conn() as c:
             return [self._row(r) for r in c.execute(sql, args + [limit]).fetchall()]
 

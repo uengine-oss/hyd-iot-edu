@@ -253,6 +253,33 @@ def parse_host_rewrite(value: str | None) -> dict[str, str]:
     return out
 
 
+_AUTH_SCHEMES = ("Bearer ", "Basic ", "Token ", "HydRuntime ")
+#: a value kept under a secret-looking name (NEO4J_PASSWORD, Authorization …) written as is — shorter values ("none", "true")
+#: are settings, not secrets, and hiding them would blank ordinary words in every event
+_LITERAL_SECRET_MIN = 8
+
+
+def _written_secrets(original: dict | None, resolved: dict | None, stdio: list[McpServer], http: dict[str, str]) -> list[str]:
+    """W2 (2026-10-23 검수): every secret this run writes in clear into the workspace config (.mcp.json / codex config) —
+    the values filled from ${SECRET:KEY} (and the header/env values they were filled into) and the literal values under a
+    secret-looking header or env name (a stdio server's NEO4J_PASSWORD). The agent can Read its workspace, so these join
+    the redaction list: trace, events rows, stored tool outputs and CLI errors must not carry them."""
+    from procsvc.mcp_check import is_secret_key
+    values, out = _secret_values(original), []
+    kept = ((resolved or {}).get("mcpServers") or {})
+    for name, spec in (((original or {}).get("mcpServers") or {}) if isinstance(original, dict) else {}).items():
+        if name not in kept or not isinstance(spec, dict):
+            continue
+        out += [str(values[k]) for k in mcp_secrets.references(spec) if values.get(k)]
+        for fld in mcp_secrets.FIELDS:
+            block, filled = spec.get(fld), (kept[name] or {}).get(fld) if isinstance(kept[name], dict) else None
+            if isinstance(block, dict) and isinstance(filled, dict):
+                out += [str(filled[k]) for k, v in block.items() if isinstance(v, str) and "${SECRET:" in v and filled.get(k)]
+    literal = [(k, v) for s in stdio for k, v in s.env.items()] + [(k, v) for name in http for k, v in _headers(resolved, name).items()]
+    out += [str(v) for k, v in literal if is_secret_key(k) and len(str(v)) >= _LITERAL_SECRET_MIN and "${SECRET:" not in str(v)]
+    return out
+
+
 def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claude-code", isolate_config_dir: bool = False,
             extra_env: dict[str, str] | None = None, host_rewrite: dict[str, str] | None = None,
             read_tools: dict[str, list[str]] | None = None) -> BridgeResult:
@@ -261,10 +288,12 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     through --allowedTools / --disallowedTools in the runner)."""
     private = ((tenant_mcp or {}).get(RUNTIME_KEY) or {}).values()
     redaction_values = [value for held in private for value in (held.get("headers") or {}).values()]
-    redaction_values += [value.removeprefix("Bearer ") for value in redaction_values]
-    redaction_values += [value.removeprefix("HydRuntime ") for value in redaction_values]
+    original = tenant_mcp
     tenant_mcp, dropped = _resolved(tenant_mcp)
     stdio, http = servers_of(tenant_mcp, extra_env=extra_env, host_rewrite=host_rewrite)
+    redaction_values += _written_secrets(original, tenant_mcp, stdio, http)
+    redaction_values += [value.removeprefix(scheme) for value in redaction_values for scheme in _AUTH_SCHEMES if value.startswith(scheme)]
+    redaction_values = list(dict.fromkeys(redaction_values))
     if provider_id == "codex":
         # cliagents' installed McpServer/install_bridge only supports stdio.
         # Native per-invocation overrides support both transports and keep the

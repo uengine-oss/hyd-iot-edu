@@ -191,7 +191,7 @@ const UI = {
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
     // A6: 끝 이벤트 id가 이름 없이 오는 자리(처리 건 목록 end_event · 로그 "instance ended (ev:…)") — 정의 events[].name과 같은 말
     'flow.name.start': '시작', 'flow.name.alert': '설비 경보', 'flow.name.select-timeout': '선택 시간 초과', 'flow.name.unhandled-alert': '미지원 경보 접수', 'flow.name.review-recorded': '현장 검토 기록 완료',
-    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
+    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.incident-ended-before-action': '조치 전 해소', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
     // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
@@ -361,6 +361,42 @@ const UI = {
   actorName(id, name) { return id === 'sys:agent' && name === 'AI 에이전트 (Claude Code)' ? '인공지능 에이전트' : name; },
   who(id) { return this.performers[id] || id || '–'; },
   roleName(id, definition) { return (definition?.roles || []).find(r => r.endpoint === id)?.name || this.who(id); },
+  // 담당자 칸: 값이 고른 "나"(user:*)면 이름을 읽기 전용으로 보이고 id 는 숨은 칸에 실어 보낸다(원문 id 를 학생에게 보이지 않는다).
+  // attrs 는 입력 요소의 속성 원문(id="rwBy" · data-retry-by 등) — 읽는 코드는 그대로 .value 를 읽는다.
+  actorInput(attrs, value, extra = '') {
+    const m = window.hydInbox?.me?.();
+    if (m && value === m.id) return `<input type="hidden" ${attrs} value="${esc(value)}"><span class="ro-value">${esc(m.name)} <span class="muted">(나)</span></span>`;
+    return `<input ${attrs} value="${esc(value || '')}" ${extra}>`;
+  },
+  // 요청 id: crypto.randomUUID 는 보안 문맥(https · localhost)에만 있다 — 강사 PC IP 로 연 포털에서도 버튼이 멈추지 않게 getRandomValues 로 같은 v4 를 만든다
+  uuid() {
+    const c = window.crypto;
+    if (c && typeof c.randomUUID === 'function') { try { return c.randomUUID(); } catch (_) { /* 비보안 문맥: 아래로 */ } }
+    const b = new Uint8Array(16);
+    if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b); else for (let i = 0; i < 16; i++) b[i] = Math.random() * 256 | 0;
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  },
+  // 서버가 영문으로 돌려주는 거절 사유 → 학생이 읽을 한국어 한 줄(모르는 문구는 그대로 둔다)
+  serverTexts: [
+    [/^\S+ is (DONE|COMPLETED|SUBMITTED|CANCELLED)$/, '이미 처리된 단계입니다 — 다른 담당자가 먼저 처리했거나 단계가 닫혔습니다.'],
+    [/^task deadline expired$/, '선택 기한이 지나 이 단계가 닫혔습니다.'],
+    [/^instance is not running$/, '처리 건이 이미 끝났습니다.'],
+    [/^decision does not belong to this instance$/, '이 처리 건의 판단이 아닙니다 — 화면을 새로 읽은 뒤 다시 확인하세요.'],
+    [/^unknown option$/, '고른 안을 서버가 찾지 못했습니다 — 화면을 새로 읽은 뒤 다시 고르세요.'],
+    [/^no such selection task$/, '선택 단계를 찾지 못했습니다 — 이미 처리됐을 수 있습니다.'],
+    [/^task is not waiting for this deferral$/, '이 보류는 이미 다시 평가됐거나 바뀌었습니다 — 화면을 새로 읽은 뒤 확인하세요.'],
+    [/^task is no longer in the active instance generation$/, '이 단계는 다시 수행으로 대체됐습니다 — 새 차수의 단계를 확인하세요.'],
+    [/^no such work item$/, '작업을 찾지 못했습니다 — 이미 처리됐거나 지워졌을 수 있습니다.'],
+    [/^(\w+) must be nonblank text, at most (\d+) characters$/, m => `${({ by: '담당자', reason: '사유' })[m[1]] || m[1]} 칸을 1~${m[2]}자로 적으세요.`],
+    [/^same request id contains different input$/, '같은 요청 번호로 다른 내용이 왔습니다 — 화면을 새로 읽은 뒤 다시 요청하세요.'],
+  ],
+  serverText(message) {
+    const text = String(message ?? '');
+    for (const [re, out] of this.serverTexts) { const m = re.exec(text.trim()); if (m) return typeof out === 'function' ? out(m) : out; }
+    return text;
+  },
 
   dateTime(value) {
     const date = new Date(value);

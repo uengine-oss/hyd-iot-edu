@@ -30,7 +30,7 @@ from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
 from . import ai_replay, bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
 from . import events as ui_events
 from .settings import Settings, effective_permission, run_allowed_tools, run_disallowed_tools
-from .process_control import controlled_stream
+from .process_control import controlled_stream, reap_stale_group
 
 log = logging.getLogger("worker.runner")
 ExecFn = Callable[[object, ExecRequest, dict | None], Iterable[ExecEvent]]
@@ -121,6 +121,12 @@ class Runner:
         permission = effective_permission(provider_id, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
+        # W1 (2026-10-23 검수): a worker that died without unwinding (SIGKILL, OOM) left its CLI running in this workspace —
+        # kill that process group first, so it cannot write output/result.json after the clear below and pass as this run.
+        orphan = reap_stale_group(ws.path) if ws.exists else None
+        if orphan is not None:
+            log.warning("%s killed CLI process group %s left by an earlier worker process", row.get("id"), orphan)
+            self._event(row, job_id, "task_working", {"type": "notice", "content": "이전 실행기가 남긴 에이전트 프로세스를 끝내고 새로 시작합니다."}, crew_type="agent")
         ws.clear_result_file()                      # A119: never read an earlier attempt's output/result.json as this run's result
         # G9: the constitution = common part + the agent's business part (users.work_rules). An unknown key fails the run
         # (UnknownWorkRules, its reason on the case); no key = common part only, said on the case — never a silent default business.
@@ -269,11 +275,31 @@ class Runner:
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
         last_check, deadline = time.monotonic(), time.monotonic() + self.s.run_timeout_s
         last_renew = time.monotonic()
+        outage = {"since": None}
+        def db_ok():
+            outage["since"] = None
+        def db_failed(what, error):
+            # W3 (2026-10-23 검수): one dropped connection or lock timeout used to end a live run (the cancel check and the
+            # progress rows were not guarded like the lease renewal). A transient error is retried next period; an outage
+            # that lasts db_outage_limit_s stops the run with its reason (the lease would run out soon after).
+            now = time.monotonic()
+            outage["since"] = outage["since"] if outage["since"] is not None else now
+            log.warning("%s %s failed, retrying next period: %s: %s", row.get("id"), what, type(error).__name__, error)
+            if now - outage["since"] >= self.s.db_outage_limit_s:
+                raise RunFailed(f"업무 DB에 {now - outage['since']:.0f}초 동안 닿지 못해 실행을 멈춥니다(마지막 오류 — {what}: "
+                                f"{type(error).__name__}: {str(error)[:300]})")
         def check_stop():
             nonlocal last_check, last_renew
             if time.monotonic()-last_check >= self.s.cancel_check_every_s:
                 last_check=time.monotonic()
-                if self._cancelled(row):raise LeaseLost() if self._reclaimed(row) else Cancelled()
+                try:
+                    cancelled = self._cancelled(row)
+                except Exception as e:  # noqa: BLE001 — transient DB/network failure
+                    db_failed("취소 확인", e)
+                    cancelled = False
+                else:
+                    db_ok()
+                if cancelled:raise LeaseLost() if self._reclaimed(row) else Cancelled()
             if time.monotonic()-last_renew >= self.s.lease_renew_every_s:
                 # A097 (agent-sdk lease): keep the claim alive while the CLI runs. A114 (agent-sdk lease.py:163-170,
                 # renew_task_lease not_owner/not_started): a DB error is retried next period instead of failing a live
@@ -283,7 +309,7 @@ class Runner:
                 try:
                     renewed = self.repo.renew_task_lease(row['id'],row['consumer'])
                 except Exception as e:  # noqa: BLE001 — transient DB/network failure
-                    log.warning("%s lease renewal failed, retrying next period: %s", row.get("id"), e)
+                    db_failed("리스 갱신", e)
                     renewed = True
                 if not renewed:
                     if self._reclaimed(row):raise LeaseLost()
@@ -370,8 +396,13 @@ class Runner:
                     for ui in skill_reads.on_tool_start(ev):
                         emit(ui)
                 if pending_rows:
-                    self.repo.record_events(pending_rows)
-                    pending_rows = []
+                    try:
+                        self.repo.record_events(pending_rows)
+                    except Exception as e:  # noqa: BLE001 — W3: kept and written with the next event
+                        db_failed("처리 과정 기록", e)
+                    else:
+                        pending_rows = []
+                        db_ok()
                 check_stop()
         except Exception as exc:
             if redaction_values and not isinstance(exc, Cancelled):
@@ -389,8 +420,16 @@ class Runner:
                     public_run=public_run,message_id=f'{public_run}:{public_message}',
                     sequence=public_sequence+1,complete=True,truncated=False)))
             if pending_rows:
-                self.repo.record_events(pending_rows)
-        if self._cancelled(row):raise Cancelled()
+                try:
+                    self.repo.record_events(pending_rows)
+                except Exception as e:  # noqa: BLE001 — the run's own outcome decides; the rows are lost, said in the log
+                    log.warning("%s %d progress rows not recorded: %s: %s", row.get("id"), len(pending_rows), type(e).__name__, e)
+        try:
+            cancelled = self._cancelled(row)
+        except Exception as e:  # noqa: BLE001 — every later write is fenced on this claim (expected_consumer), so it decides
+            log.warning("%s final cancel check failed; the fenced result write decides: %s: %s", row.get("id"), type(e).__name__, e)
+            cancelled = False
+        if cancelled:raise Cancelled()
         if last_error and not final_text:
             raise RunFailed(last_error)
         return (final_text or "".join(streamed)).strip(), session_id, pause_reason

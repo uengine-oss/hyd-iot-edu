@@ -60,6 +60,7 @@ ALERT_START_VALUES = ("asset", "alert", "pattern", "alert_id", "incident")
 SELECT_SERVER_VALUES = tuple(sorted(PROTECTED_OUTPUTS - {"incident", "approved_option"}))
 # 부품 성질은 tool 계약으로 판정한다(이름 · id 로 판정하지 않음).
 APPROVAL_TOOL = "formHandler:select_card"                 # 역할 검사가 있는 /select 경로로만 제출되는 사람 승인
+ESCALATE_TOOL = "formHandler:escalate"                    # 기준 흐름의 책임자 확인(instances.InstanceRuntime.ESCALATE_TOOL 과 같음)
 # 조치 카드 승인 · 거절(실라버스 92 · 101 · 102 · 104행): 조치 카드 승인(task:select) 계약에 일반 사람 승인과 같은 값(approval '승인'|'반려' ·
 # approval_reason)을 더한 부품. 승인은 /select, 거절은 /reject-card 로만 제출된다(둘 다 역할 검사). task:select(승인만) 계약과 그것으로
 # 등록한 흐름은 그대로다 — 거절 값을 내지 않으므로 거절 요청을 받지 않는다.
@@ -886,6 +887,24 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
                 problems.append(problem(g.nodes[eid], "flow",
                                         f"{_label(g.nodes[a['id']])}의 반려 경로가 결과 보고(반려) 없이 끝납니다 — 경로: {route}. "
                                         "사건이 승인 대기로 열린 채 남지 않게 끝 이벤트 앞에 결과 보고(결과: 반려)를 두세요"))
+        # P7 (audit2): 사람 승인에 붙은 끊는 타이머(bpmn.io 기본값)는 기한에 승인 task 를 취소한다. 그 가지가 사건을 닫는 결과 보고
+        # (정상 · 미달 · 지연 · 반려 — 알림 · 승인 지연은 닫지 않는다) 없이 끝나면 처리 건만 끝나고 사건은 승인 대기로 열린 채 남는다(반려 경로와 같은 검사)
+        if kind == "alert":
+            # 사건을 맡는 단계: 사건을 닫는 결과 보고, 그리고 사람 단계(기준 흐름의 책임자 확인 formHandler:escalate · 학생 흐름의
+            # '생산관리자 확인' 같은 넘김 — 사람이 이어받는 가지는 이 검사가 아니라 그 사람이 판단한다). 시스템 일만 있는 가지(알림 등)를 잡는다
+            closes_incident = {a["id"] for a in activities if (a.get("tool") == effect_parts.REPORT_TOOL
+                               and effect_parts.REPORT_OUTCOMES.get((a.get("service") or {}).get("outcome")) in ("ok", "fail", "rejected"))
+                               or a.get("tool") == ESCALATE_TOOL or engine.is_human(a)}
+            for b in parsed["boundaries"]:
+                if b.get("interrupting") is False or b["attached_to"] not in approvals or b["id"] not in g.nodes:
+                    continue
+                for eid, path in _reached_past_rejection(g, b["id"], approvals | closes_incident | set(effects), cond_of, ends):
+                    route = " → ".join(_label(g.nodes[n]) for n in [b["attached_to"], *path])
+                    problems.append(problem(g.nodes[b["id"]], "flow",
+                                            f"{_label(g.nodes[b['attached_to']])}에 붙은 끊는 타이머 {_label(g.nodes[b['id']])}의 가지가 사건을 닫는 "
+                                            f"결과 보고 없이 끝납니다 — 경로: {route}. 기한이 지나면 승인 단계가 취소되고 처리 건만 끝나 사건이 승인 대기로 "
+                                            "열린 채 남습니다. 타이머를 '끊지 않음'(점선 테두리, cancelActivity=false)으로 바꾸거나 끝 이벤트 앞에 "
+                                            "사건을 닫는 결과 보고(결과: 지연 · 미달 · 반려)를 두세요"))
 
     # -- 되돌아가는 선(루프): 빠져나갈 배타 분기가 있어야, 병렬 분기는 안에 둘 수 없음
     loops = g.sccs()
