@@ -320,7 +320,7 @@ def write_all():
 |---|---|
 ''' + ''.join(f'| {n} | {t:.1f} |\n' for n, t in used) + f'''
 측정: 이동 {ver['motion_summary']['count']}회 중 최대 프레임 공백 {ver['motion_summary']['max_gap_ms_max']}ms, 100ms 이상 {len(ver['motion_summary']['over_100ms'])}회(각각 한 번의 짧은 끊김). 문장 끝보다 늦게 실행된 조작 0건.
-영상 안에는 원 끌어내기를 헛잡고 다시 잡는 장면이 그대로 있다. 직접 청취 · 사용자 재생 확인은 미확인이다.
+영상 안에는 원 끌어내기를 헛잡고 다시 잡는 장면이 그대로 있다. 사용자가 영상을 재생해 확인하고 이 판으로 확정했다(2026-10-23).
 '''
     (ROOT / '예상시간.md').write_text(timing, encoding='utf-8')
     nodes_md = '# 쿨러 지식 그래프 — 그릴 대상과 관계\n\n교재 SLIDE 64의 클래스로 오일 쿨러 사례를 그린다. 아래는 촬영에서 실제로 만들어 내려받은 완성본(`완성_쿨러_지식그래프.json`)의 내용이다. 직접 만든 결과와 구별하는 참조본이다.\n\n| 이름(Caption) | 종류(Label) | 조건(Property) |\n|---|---|---|\n'
