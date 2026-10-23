@@ -140,5 +140,23 @@
     "primary": null,
     "required_helpers": [],
     "check": "강의 파일을 만들지 않는다. .claude/skills/lecture-common/rules/스킬-공식규격.md와 skill-admission.md 절차, workflow_doctor.py 구조 검사를 따른다."
+  },
+  {
+    "prompt": "포털 소개 영상 다시 찍어서 노션에 올려줘.",
+    "primary": "hyd-portal-video",
+    "required_helpers": [],
+    "check": "stack.sh로 스택 · 데이터 상태를 보고, 데이터가 깨끗하지 않으면 초기화 허락을 묻는다. 녹화 · 합성 · verify · scenes · listen 뒤 other-pc와 두 과정 노션 페이지에 올린다."
+  },
+  {
+    "prompt": "실습 영상 이상한 데 없는지 끝까지 검수해줘.",
+    "primary": "hyd-portal-video",
+    "required_helpers": [],
+    "check": "받아쓰기 대조 · 일정 간격 장면 전수 · 자동 검사로 보고 고치지 않는다. 관찰과 오류를 구분해 위치(시각)와 함께 보고한다."
+  },
+  {
+    "prompt": "2회차 이론 강의 영상 음성 다시 뽑아줘.",
+    "primary": "hyd-lecture-video",
+    "required_helpers": [],
+    "check": "덱 장 그림 기반 이론 영상이므로 hyd-portal-video를 쓰지 않는다."
   }
 ]

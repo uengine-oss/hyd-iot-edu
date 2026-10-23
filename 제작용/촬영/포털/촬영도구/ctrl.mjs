@@ -70,7 +70,7 @@ export async function run(opts){
    scroll:[...document.querySelectorAll('*')].filter(e=>e.scrollTop>0).slice(0,5).map(e=>({sel:e.id?'#'+e.id:e.className?.toString().split(' ')[0]||e.tagName,top:e.scrollTop})).concat(scrollY?[{sel:'window',top:scrollY}]:[]),
    clicks:window.__tutorialClicks||[],pointer:window.__ptrStat||null}));
  try{
-  const ctx={p,cdp,serial,sleep,fs,out,
+  const ctx={p,cdp,serial,sleep,fs,out,audio:AUDIO,
    recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start,...(m.glide?{glide:m.glide-start}:{})}),
    waitFor:async(fn,arg,timeout=15000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn,arg)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(120);}},
    begin:async()=>{await serial(()=>p.evaluate(()=>{window.__ptrStat={held:0,heldAfterFinish:0,applied:0};window.__tutorialClicks=[];}));recording=true;
@@ -88,11 +88,13 @@ export async function run(opts){
    if(now!==opts.resume.tab){await serial(()=>p.click(`.rail nav button[data-tab="${opts.resume.tab}"]`));await sleep(1200);}}
   const {installPointerInPage}=await import(pathToFileURL(HERE+'ui.mjs').href+'?'+Date.now());
   const q=opts.pointer||{x:CFG.viewport.width*0.6,y:CFG.viewport.height*0.6};
-  await serial(()=>p.evaluate(installPointerInPage,q));await serial(()=>p.mouse.move(q.x,q.y,{steps:1}));
   // pointer=overlay: 페이지 화살표는 투명하게 두고(위치 · 클릭 기록은 그대로) 합성 때 기록된 경로로 화살표를 그린다(encode.py).
   // 클라우드 4코어에서 1920x1080 화면 녹화가 이동의 약 1/5에서 100~190ms 끊겨(2026-10-23 진단) 화살표가 건너뛰어 보였기 때문이다.
-  if(CFG.pointer==='overlay')await serial(()=>p.evaluate(()=>{document.getElementById('recording-pointer').style.opacity='0';}));
-  await fs.writeFile(out+'/pointer-start.json',JSON.stringify({x:q.x,y:q.y,mode:CFG.pointer||'page'}));
+  // 화살표 설치(녹화 전). 구간 모듈이 새 페이지를 열면 화살표가 사라지므로 ctx.installPointer()로 다시 건다(같은 자리 · 같은 방식).
+  ctx.installPointer=async(pos=q)=>{await serial(()=>p.evaluate(installPointerInPage,pos));await serial(()=>p.mouse.move(pos.x,pos.y,{steps:1}));
+   if(CFG.pointer==='overlay')await serial(()=>p.evaluate(()=>{document.getElementById('recording-pointer').style.opacity='0';}));
+   await fs.writeFile(out+'/pointer-start.json',JSON.stringify({x:pos.x,y:pos.y,mode:CFG.pointer||'page'}));};
+  await ctx.installPointer(q);
   const mod=await import(pathToFileURL(HERE+'segs/'+opts.module).href+'?'+Date.now());
   result=await mod.default(ctx);
   if(pending)await pending;
