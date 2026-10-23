@@ -19,7 +19,9 @@ es = json.loads((d / 'end-state.json').read_text(encoding='utf-8')); clicks = es
 off = [round(max(abs(c['px'] - c['x']), abs(c['py'] - c['y'])), 1) for c in clicks]
 late = [a['id'] for a in t['actions'] if a.get('commit') and a['commit'] > a['time'] + a['duration'] + 50]
 fps = round(len(src) / (t['duration'] / 1000), 1) if t['duration'] else None
-print(json.dumps({'segment': sys.argv[1], 'error': (t['error'] or '')[:300], 'duration_s': round(t['duration'] / 1000, 1), 'frames': len(src), 'avg_fps': fps,
+# pointer=overlay 녹화는 페이지 화살표가 투명이라 이동 중 화면 변화가 없어 원본 프레임이 오지 않는다 — 이때 이동 공백은 화살표 끊김이 아니다(합성 때 그림).
+ps = json.loads((d / 'pointer-start.json').read_text(encoding='utf-8')) if (d / 'pointer-start.json').exists() else {}
+print(json.dumps({'segment': sys.argv[1], 'pointer_mode': ps.get('mode', 'page'), 'error': (t['error'] or '')[:300], 'duration_s': round(t['duration'] / 1000, 1), 'frames': len(src), 'avg_fps': fps,
                   'cues': len(t['actions']), 'moves': len(gaps), 'start_delay_max_ms': max([x for x in starts if x is not None], default=None),
                   'max_gap_ms': max(gaps) if gaps else None, 'gaps_over_100': [g for g in gaps if g >= 100],
                   'click_offset_max_px': max(off) if off else None, 'pointer': es.get('pointer'), 'late_commits': late, 'banner_frames': 0,
