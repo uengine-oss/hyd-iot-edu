@@ -32,6 +32,9 @@ export async function run(opts){
  const browser=await chromium.connectOverCDP(`http://127.0.0.1:${CFG.cdp}`);
  const p=browser.contexts()[0]?.pages()[0];if(!p)throw Error('browser.mjs page missing (run.sh up 먼저)');
  const cdp=await p.context().newCDPSession(p);
+ // 다른 사이트(GitHub 등)로 옮기면 상주 브라우저의 화면 크기 설정이 풀려 800x600이 된다(2026-10-23). 녹화마다 이 세션에서 다시 정한다.
+ const metrics=()=>cdp.send('Emulation.setDeviceMetricsOverride',{width:CFG.viewport.width,height:CFG.viewport.height,deviceScaleFactor:CFG.viewport.deviceScaleFactor,mobile:false});
+ await metrics();await p.waitForFunction(w=>innerWidth===w,CFG.viewport.width,{timeout:5000});
  let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  let recording=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null;const frames=[],actions=[],motions=[];
