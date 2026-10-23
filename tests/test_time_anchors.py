@@ -118,4 +118,4 @@ def test_fan100_hours_is_the_current_continuous_run(monkeypatch, row, expected):
         def __exit__(s, *a): return False
         def cursor(s): return _Cur(row)
     monkeypatch.setattr(db, '_conn', lambda: C())
-    assert db.fan100_hours('HYD-01') == expected
+    assert db.fan100_hours('HYD-01', time_scale=1) == expected       # at 1× wall hours are plant hours (20× in tests/test_judgment_audit_fixes2.py)

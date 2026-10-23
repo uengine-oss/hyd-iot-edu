@@ -95,9 +95,9 @@ def test_historical_pm_storage_structure_is_distinct_from_actual_execution(catal
 
 @pytest.mark.parametrize('doc', ['PM-02', 'PR-07'])
 def test_actual_stored_extraction_preview_inline_links_are_checked_without_rewriting(doc, catalog):
-    path = Path(__file__).resolve().parents[1] / '.evidence' / 'a161-c3' / ('proposal-'+doc+'.json')
-    if not path.exists():
-        pytest.skip('actual local extraction evidence is absent; synthetic unit tests do not replace it')
+    # 실제 워커 추출이 저장한 미리보기의 고정본(손질 내역: fixtures/manual-extraction-proposals/README.md).
+    # 커밋하지 않는 .evidence/a161-c3 는 실행마다 바뀌어 이 시험이 그날 추출에 따라 늘 실패했다.
+    path = Path(__file__).resolve().parent / 'fixtures' / 'manual-extraction-proposals' / ('proposal-'+doc+'.json')
     p = json.loads(path.read_text(encoding='utf-8'))['preview']
     before = deepcopy(p)
     assert not p.get('links') and all(isinstance(s.get('link'), dict) for s in p['procedures'])
@@ -117,8 +117,14 @@ def test_actual_stored_extraction_preview_inline_links_are_checked_without_rewri
         assert 'FAILURE_MODE_REQUIRED' not in codes(result)
     else:
         expected = {s['id'] for s in p['procedures'] if not s['link'].get('failureMode')}
-        assert len(expected) == 6
-        assert {i['sop'] for i in result['issues'] if i['code'] == 'FAILURE_MODE_REQUIRED'} == expected
+        # 구매 문서의 절차는 모두 고장 유형이 없다(고정본: SOP-PUR-11·12·13 · SOP-PR7-7)
+        assert expected == {s['id'] for s in p['procedures']} and len(expected) == 4
+        # 지금 추출 계약은 구매 절차의 인라인 link 에 scope='purchase' 를 두고, 검사는 그 범위를 고장 유형 필수에서 뺀다
+        # (manual_preflight: scope != 'purchase' 일 때만 FAILURE_MODE_REQUIRED). 인라인 link 를 읽지 않으면 네 절차 모두
+        # FAILURE_MODE_REQUIRED 가 되고, 읽으면 같은 네 절차가 구매 범위 검사(실행 시스템 · 부품)를 받는다.
+        assert 'FAILURE_MODE_REQUIRED' not in codes(result)
+        assert {i['sop'] for i in result['issues'] if i['code'] == 'PURCHASE_SYSTEM_NOT_FOUND'} == expected
+        assert {e['sop']: e['executable'] for e in result['execution']} == {s['id']: s['link']['executable'] for s in p['procedures']}
     assert p == before and result['can_commit'] is False and result['needs_human_review'] is True
 
 

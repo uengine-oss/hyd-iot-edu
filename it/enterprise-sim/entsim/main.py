@@ -9,12 +9,13 @@ only the process service may POST /api/exec after a human approved a decision.
 import logging
 import os
 
-from fastapi import HTTPException, Query
+from fastapi import HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 
 from hydcommon.metrics import Registry
 from hydcommon.service import make_app
 from . import data
-from .state import EnterpriseState
+from .state import EnterpriseState, memory_tables, snapshot_view
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("enterprise-sim")
@@ -30,7 +31,7 @@ class MemoryEnterprise:
     def __init__(self):
         self.st = EnterpriseState(os.getenv("ENTERPRISE_STATE_PATH"))
         self._reads = {"mes_orders": self._mes_orders, "erp_contract": data.erp_contract, "erp_inventory": data.erp_inventory,
-                       "cmms_history": data.cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand,
+                       "cmms_history": self._cmms_history, "cmms_tasks": data.cmms_tasks, "qms_lots": data.qms_lots, "scm_suppliers": data.scm_suppliers, "ems_demand": data.ems_demand,
                        # C2: 예비품 재고(바뀌는 값 → state) · 부품별 견적 · 다가오는 예정된 정비 시간 · 발주 한 건
                        "spare_stock": self.st.spare_stock, "part_quotes": data.part_quotes, "maintenance_windows": data.maintenance_windows,
                        "purchase_order": self.st.purchase_order,
@@ -42,6 +43,11 @@ class MemoryEnterprise:
         live = [data.current_order(o) for o in self.st.snapshot()["mes"]["orders"] if o["asset"] == asset or o.get("moved_from") == asset]
         out["records"] = live or out["records"]
         return out
+
+    def _cmms_history(self, asset: str) -> dict:
+        data._check(asset)                                           # 모르는 설비는 KeyError(404) — 상태를 읽기 전에
+        done, orders = self.st.maintenance_records(asset)
+        return data.cmms_history(asset, done, orders)
 
     def read(self, name: str, **params) -> dict:
         fn = self._reads[name]
@@ -55,8 +61,8 @@ class MemoryEnterprise:
 
     def snapshot(self) -> dict:
         snap = self.st.snapshot()
-        snap["mes"]["orders"] = [data.current_order(o) for o in snap["mes"]["orders"]]   # A086: hours as of now
-        return snap
+        # A086: hours as of now. 칸 이름 · 표 이름은 업무 DB 백엔드와 같은 한 모양(state.snapshot_view, 점검 E9)
+        return snapshot_view([data.current_order(o) for o in snap["mes"]["orders"]], memory_tables(snap))
 
     def reset_spare_stock(self, part: str | None = None) -> dict:
         return self.st.reset_spare_stock(part)
@@ -66,10 +72,13 @@ class MemoryEnterprise:
 
     def reset(self) -> None:
         self.st.reset()
-        data.reanchor()          # A086: the teaching scenario's times start again from now (Supabase: ent.reanchor_scenario_times)
+        self.st.reanchor()       # A086: the teaching scenario's times start again from now (Supabase: ent.reanchor_scenario_times)
 
     def reanchor(self) -> None:
-        data.reanchor()
+        self.st.reanchor()       # 저장 상태에도 남겨 재시작이 기준점을 옮기지 않는다(점검 E8)
+
+    def scenario_times_stale(self) -> bool:
+        return data.scenario_times_stale()
 
     def archive(self, ref: str | None = None) -> dict:
         return self.st.archive(ref)
@@ -90,6 +99,34 @@ def _backend():
 ent = _backend()
 app = make_app(f"enterprise-sim (mock ERP/MES/CMMS/QMS/SCM/EMS for L7-L9 scenarios, backend={BACKEND})", reg,
                lambda: {"ok": ent.ping(), "backend": BACKEND, "transactions": len(ent.transactions()) if ent.ping() else None})
+
+
+try:                                                    # 업무 DB 백엔드의 연결 · 잠금 · 시간 초과(일시 장애) 예외
+    import psycopg
+    _DB_UNAVAILABLE: tuple = (psycopg.OperationalError, psycopg.InterfaceError)
+except ImportError:                                     # psycopg 없는 메모리 전용 설치 — 이 예외가 날 곳이 없다
+    _DB_UNAVAILABLE = ()
+
+
+def _db_unavailable_detail(e: Exception) -> str:
+    msg = (str(e).splitlines() or [type(e).__name__])[0][:250]
+    state = getattr(e, "sqlstate", None)
+    if state is None or str(state).startswith("08"):
+        return f"업무 DB에 연결하지 못했습니다 — 잠시 뒤 다시 시도하세요: {msg}"
+    return f"업무 DB가 지금 처리하지 못했습니다({state}) — 잠시 뒤 다시 시도하세요: {msg}"
+
+
+def _is_db_unavailable(e: Exception) -> bool:
+    return isinstance(e, _DB_UNAVAILABLE) or type(e).__name__ in ("OperationalError", "InterfaceError")
+
+
+async def _db_unavailable(_request: Request, e: Exception):
+    """업무 DB 일시 장애는 거절 · 서버 오류가 아니라 503(다시 시도) — 조회 · 초기화 · 기준점 끝점 모두(점검 E11, /api/exec 는 아래에서 같은 규칙)."""
+    return JSONResponse(status_code=503, content={"detail": _db_unavailable_detail(e)})
+
+
+for _cls in _DB_UNAVAILABLE:
+    app.add_exception_handler(_cls, _db_unavailable)
 
 
 def _read(system: str, name: str, **params):
@@ -171,6 +208,8 @@ def _scenario_reset(fn, arg):
     두 백엔드 모두 'INVALID:' 로 시작하는 거절이다(2026-10-23 점검 E1 · E2 · E3)."""
     try:
         return fn(arg)
+    except KeyError as e:                       # 모르는 부품 · 설비: 두 백엔드 모두 404(메모리는 KeyError → 500, 업무 DB 는 빈 200 이었다, 점검 E11)
+        raise HTTPException(404, f"unknown {e.args[0] if e.args else arg}")
     except Exception as e:  # noqa: BLE001 — 메모리 ValueError · 업무 DB 22023
         msg = str(e).splitlines()[0] if str(e) else type(e).__name__
         if msg.startswith("INVALID:"):
@@ -207,8 +246,8 @@ def execute(req: dict):
         raise HTTPException(409 if "idempotency" in msg else 400, msg)
     except Exception as e:  # noqa: BLE001 — database errors from ent.exec_skill (unknown skill, idempotency conflict)
         msg = str(e).splitlines()[0]
-        if type(e).__name__ in ("OperationalError", "InterfaceError"):    # 연결 장애는 거절이 아니다(2026-10-23 점검: 400으로 나가 「거절」로 읽혔다)
-            raise HTTPException(503, f"업무 DB에 연결하지 못했습니다 — 잠시 뒤 다시 시도하세요: {msg[:250]}")
+        if _is_db_unavailable(e):    # 연결 장애 · 교착 · 시간 초과는 거절이 아니다(2026-10-23 점검: 400으로 나가 「거절」로 읽혔다)
+            raise HTTPException(503, _db_unavailable_detail(e))
         raise HTTPException(409 if "idempotency" in msg else 400, msg[:300])
     c_exec.inc(system=tx["system"])
     log.info("exec %s %s -> %s (%s)", tx["skill"], tx["asset"], tx["ref"], tx.get("decision"))
@@ -247,5 +286,9 @@ def archive(ref: str | None = Query(default=None)):
 
 @app.on_event("startup")
 def _anchor_on_start():
-    # 스택이 뜰 때 시나리오 시각 기준점을 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로 판단하지 않게
-    ent.reanchor()
+    # 스택이 뜰 때, 기준점이 이미 지났으면(가장 이른 시나리오 기한이 지금 이전) 지금으로 — 오래 떠 있던 DB 의 '납기까지 −1 h' 같은 지난 시각으로
+    # 판단하지 않게. 지나지 않았으면 옮기지 않는다: 예정된 정비 시간 id 가 기준점 시각을 품어, 재시작(compose 재생성 · OOM)이 옮기면 승인 대기 중인
+    # B 카드의 창이 사라졌다(점검 E8). 수업 중 기준점은 process 가 설비 처리 건이 없을 때만 옮긴다(scenario_buttons.may_reanchor).
+    if ent.scenario_times_stale():
+        log.info("scenario time anchor has passed — re-anchoring to now")
+        ent.reanchor()

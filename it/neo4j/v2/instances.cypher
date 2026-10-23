@@ -175,7 +175,7 @@ UNWIND [['sup:a','A정밀 (저가)',true],['sup:b','B-OEM (순정)',true],['sup:
 MERGE (n:Supplier {id: r[0]}) SET n.name = r[1], n.avl = r[2];
 UNWIND [['part:pump-seal','sup:a',35,0.12,2],['part:pump-seal','sup:b',55,0.02,5],['part:pump-seal','sup:c',20,0.30,1],
         ['part:fan-bearing','sup:a',18,0.10,1],['part:fan-bearing','sup:b',28,0.03,3],
-        ['part:cooler-core','sup:a',180,0.12,3],['part:cooler-core','sup:b',260,0.02,5]] AS r
+        ['part:cooler-core','sup:a',180,0.12,3],['part:cooler-core','sup:b',260,0.02,5],['part:cooler-core','sup:c',120,0.20,2]] AS r
 MATCH (p:Part {id: r[0]}), (s:Supplier {id: r[1]}) MERGE (p)-[x:SUPPLIED_BY]->(s) SET x.price = r[2], x.failRate = r[3], x.leadDays = r[4];
 
 // ============================================================== 3. 설비 진단 지식 (ISO 13374)

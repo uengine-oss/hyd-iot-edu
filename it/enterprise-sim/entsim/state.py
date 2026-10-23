@@ -75,6 +75,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def _now_us() -> str:
+    """created_at 처럼 순서를 가르는 시각(마이크로초) — 같은 초에 생긴 로트 격리 · 출하 승인도 최근 것부터 놓인다."""
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
 def _id(prefix: str) -> str:
     """실행 기록 · 오더 · 요청 번호: 접두-월일-16진 12자리(48비트). 4자리(16비트)는 같은 날 수백 건에서 겹쳐
     PG 는 기본키 위반으로 승인 실행이 거절되고 메모리는 다른 오더를 집었다(점검 E7, ent.new_ref 와 같은 꼴)."""
@@ -96,18 +101,23 @@ class EnterpriseState:
                 saved = json.loads(row[0])
                 self._s, self._tx, self._done = saved["state"], saved["transactions"], saved["done"]
                 self._archive = saved.get("archive", [])
+                if saved.get("anchor"):             # 시나리오 시각 기준점도 저장 상태와 같이 — 재시작이 기준점을 옮기지 않게(점검 E8)
+                    data.reanchor(datetime.fromisoformat(saved["anchor"]))
                 self._c2_defaults()
 
     def _save(self):
         if self._db:
             with self._db:
                 self._db.execute("INSERT OR REPLACE INTO state VALUES (1,?)",
-                    (json.dumps({"state": self._s, "transactions": self._tx, "done": self._done, "archive": self._archive}),))
+                    (json.dumps({"state": self._s, "transactions": self._tx, "done": self._done, "archive": self._archive,
+                                "anchor": data.scenario_start().isoformat()}),))
 
     # 수업 초기화가 옮겨 두는 실행 기록(ent.execution_archive 와 같은 뜻) — 표 이름 → 이 상태 안의 경로, 따라가기 키
     _ARCHIVED = (("work_orders", ("cmms", "work_orders"), "id"), ("purchase_requests", ("erp", "purchase_requests"), "id"),
                  ("shipments", ("erp", "shipments"), "id"), ("goods_receipts", ("erp", "goods_receipts"), "id"),
-                 ("lot_holds", ("qms", "holds"), "lot"), ("lot_releases", ("qms", "releases"), "lot"), ("ems_actions", ("ems", "actions"), None))
+                 ("lot_holds", ("qms", "holds"), "lot"), ("lot_releases", ("qms", "releases"), "lot"), ("ems_actions", ("ems", "actions"), None),
+                 # 재고 이동 · 운전시간 원장도 보관 뒤 비운다(ent.reset_executions, migration 061 — 점검 E11)
+                 ("stock_movements", ("erp", "stock_movements"), "ref"), ("pm_counter_log", ("cmms", "pm_log"), "ref"))
 
     def _archive_executions(self) -> list[dict]:
         """초기화 전 실행 기록을 보관 목록으로 옮긴다(Supabase ent.reset_executions 와 같은 규칙 — 지우지 않고 보관)."""
@@ -126,7 +136,10 @@ class EnterpriseState:
             return {"records": copy.deepcopy([a for a in reversed(self._archive) if ref in (None, a["ref"], a["decision_id"])])}
 
     def reset(self) -> None:
+        """업무 전체 초기화(ent.reset_executions 와 같은 규칙): 실행 기록 · 원장을 보관하고 비운 뒤, 재고 · 계수기를 C · B [초기화]와 같은
+        함수로 시작값에 — 그 함수가 남기는 RESET · BASE 한 줄씩으로 원장이 다시 시작한다. 처음 만들 때(이전 상태 없음)는 시작값 그대로다."""
         with getattr(self, "_lock", threading.Lock()):
+            old = getattr(self, "_s", None)
             self._archive = self._archive_executions()
             self._tx: list[dict] = []
             self._done = {}
@@ -137,7 +150,19 @@ class EnterpriseState:
                 "qms": {"holds": [], "releases": []},
                 "ems": {"actions": []},
             }
+            if old is not None:
+                self._s["erp"]["spare_stock"] = old.get("erp", {}).get("spare_stock", {})
+                self._s["cmms"]["pm_counters"] = old.get("cmms", {}).get("pm_counters", {})
             self._c2_defaults()
+            if old is not None:
+                self._reset_stock(None)
+                self._reset_counters(None)
+            self._save()
+
+    def reanchor(self, now: datetime | None = None) -> None:
+        """시나리오 시각 기준점을 지금으로(ent.reanchor_scenario_times) — 저장 상태에도 남긴다."""
+        with self._lock:
+            data.reanchor(now)
             self._save()
 
     # ---------------------------------------------------------------- C2: 예비품 재고 · 입고 · 일정 · 기록
@@ -308,15 +333,20 @@ class EnterpriseState:
             # 아직 부품을 잡은 정기 정비 오더를 취소로 닫고 그 오더가 잡은 수량만 되돌린다(ent.reset_pm_counters 와 같은 규칙).
             # 계수기만 되돌리면 다시 연 B가 "도래"인데 부품 가용이 0이라 단독 · 즉시 시행이 재고 부족으로 빠졌다(2026-10-23 라이브).
             self._release_pm_holds(asset)
-            for a, b in data.PM_BASE.items():
-                if asset not in (None, a):
-                    continue
-                c = self._s["cmms"]["pm_counters"][a]
-                c.update(since_pm_h=b["since_pm_h"], total_h=b["total_h"], cycle=1, last_done_at=None, due_since=None,
-                         plan_wo=None, plan_window=None, planned_at=None)
-                self._pm_log(a, "BASE", 0, "RESET", "instructor", "수업 초기화")
+            self._reset_counters(asset)
             self._save()
         return self.pm_status(asset)
+
+    def _reset_counters(self, asset: str | None) -> None:
+        """운전시간 계수기 · 이번 회차 오더 표시를 시작값으로, 원장에 BASE(되돌린 시간)를 남긴다(ent.reset_pm_counters 의 계수기 부분)."""
+        for a, b in data.PM_BASE.items():
+            if asset not in (None, a):
+                continue
+            c = self._s["cmms"]["pm_counters"][a]
+            delta = b["since_pm_h"] - c["since_pm_h"]
+            c.update(since_pm_h=b["since_pm_h"], total_h=b["total_h"], cycle=1, last_done_at=None, due_since=None,
+                     plan_wo=None, plan_window=None, planned_at=None)
+            self._pm_log(a, "BASE", delta, "RESET", "instructor", "수업 초기화")
 
     def purchase_order(self, ref: str) -> dict:
         with self._lock:
@@ -550,12 +580,17 @@ class EnterpriseState:
                 used = f" — {std['part_no']} {std['part_qty']}개 소모"
             return wo["id"], f"{wo['asset']} 작업지시 {wo['id']} 완료 ({wo['task']}){used}"
         if skill == "skill:issue-spare":
-            part, qty = params.get("part_no") or "P-PMP-SEAL", int(params.get("qty") or 1)
+            # ent.exec_skill 과 같이: 없으면 기본값, 있으면 그 값 그대로(0 · 음수는 거절 — 예전 `or 1` 은 0 을 1개 출고로 바꿨다, 점검 E11)
+            part = "P-PMP-SEAL" if params.get("part_no") is None else params["part_no"]
+            try:
+                qty = 1 if params.get("qty") is None else int(str(params["qty"]).strip())
+            except ValueError:
+                raise ValueError(f"INVALID: issue quantity must be an integer, got {params['qty']!r}") from None
+            if qty <= 0:
+                raise ValueError("INVALID: issue quantity must be positive")
             row = s["erp"]["spare_stock"].get(part)
             if row is None:
                 raise ValueError(f"INVALID: {part} is not a managed spare part")
-            if qty <= 0:
-                raise ValueError("INVALID: issue quantity must be positive")
             if row["on_hand"] < qty:
                 raise ValueError(f"INVALID: only {row['on_hand']} of {part} on hand")
             row["on_hand"] -= qty
@@ -633,11 +668,11 @@ class EnterpriseState:
         if skill == "skill:hold-lot":
             lots = data._QMS[asset]
             lot = params.get("lot") or lots["auto_lot"]
-            s["qms"]["holds"].insert(0, {"lot": lot, "asset": asset, "status": "격리 · 전수검사 대기"})
+            s["qms"]["holds"].insert(0, {"lot": lot, "asset": asset, "status": "격리 · 전수검사 대기", "decision_id": req.get("decision"), "created_at": _now_us()})
             return lot, f"로트 {lot} 격리 · 전수검사"
         if skill == "skill:release-lot":
             lot = params.get("lot") or data._QMS[asset]["gen_lot"]
-            s["qms"]["releases"].insert(0, {"lot": lot, "asset": asset, "status": "샘플검사 후 출하 승인"})
+            s["qms"]["releases"].insert(0, {"lot": lot, "asset": asset, "status": "샘플검사 후 출하 승인", "decision_id": req.get("decision"), "created_at": _now_us()})
             return lot, f"로트 {lot} 출하 승인"
         if skill == "skill:substitute-shipment":
             inv = data._INVENTORY[asset]
@@ -645,7 +680,7 @@ class EnterpriseState:
             s["erp"]["shipments"].insert(0, sh)
             return sh["id"], f"{inv['fg_item']} {sh['qty']}개 재고 대체 출하"
         if skill == "skill:demand-control":
-            act = {"action": params.get("action", "HYD-03 비긴급 오더 야간 이동에 맞춰 피크 수요 목표 설정"), "t": _now()}
+            act = {"action": params.get("action", "HYD-03 비긴급 오더 야간 이동에 맞춰 피크 수요 목표 설정"), "t": _now(), "decision_id": req.get("decision")}
             s["ems"]["actions"].insert(0, act)
             return "EMS", act["action"]
         if skill in ALL_COMPENSATION_SKILLS:
@@ -716,3 +751,47 @@ class EnterpriseState:
     def snapshot(self) -> dict:
         with self._lock:
             return copy.deepcopy(self._s)
+
+    def maintenance_records(self, asset: str) -> tuple[list[dict], list[dict]]:
+        """CMMS 정비 이력에 더할 것(ent.cmms_history 와 같은 출처): 완료한 작업지시(ent.maintenance_history 행 = 완료 때 넣는 이력)와
+        이 설비의 작업지시(최근 것부터, work_orders 칸)."""
+        with self._lock:
+            orders = [w for w in self._s["cmms"]["work_orders"] if w.get("asset") == asset]
+            done = [{"wo": w["id"], "task": w.get("task"), "performed_at": w["completed_at"]} for w in orders
+                    if w.get("status") == "완료" and w.get("completed_at")]
+            return copy.deepcopy(done), [_view_row("work_orders", w) for w in orders]
+
+
+# ---------------------------------------------------------------- GET /api/state 의 한 모양 (두 백엔드 공통, 점검 E9)
+# 메모리 상태는 화면용 칸 이름(window · supplierName · from · qms.holds/releases · ems.actions)을, 업무 DB 는 표 칸 그대로(window_label ·
+# supplier_name · source · qms.lot_dispositions · ems.ems_actions)를 내어 포털 '업무 시스템' 표가 백엔드마다 '–' 나 빈 표를 보였다.
+# 이제 두 백엔드 모두 아래 모양을 낸다: 표 이름은 업무 DB 표 이름, 행에는 두 이름을 모두 싣는다(같은 값).
+SNAPSHOT_TABLES = {"cmms": ("work_orders",), "erp": ("purchase_requests", "shipments", "goods_receipts"),
+                   "qms": ("lot_dispositions",), "ems": ("ems_actions",)}
+_ALIASES = {"work_orders": (("window", "window_label"),), "purchase_requests": (("supplierName", "supplier_name"),),
+            "shipments": (("from", "source"),), "ems_actions": (("t", "created_at"),)}
+
+
+def _view_row(table: str, row: dict) -> dict:
+    out = dict(row)
+    for a, b in _ALIASES.get(table, ()):
+        value = out.get(a) if out.get(a) is not None else out.get(b)
+        out[a] = out[b] = value
+    return out
+
+
+def snapshot_view(mes_orders: list[dict], tables: dict[str, list[dict]]) -> dict:
+    """tables = 업무 DB 표 이름 → 행(최근 것부터). 메모리 · 업무 DB 백엔드가 같은 함수로 /api/state 를 만든다."""
+    out = {"mes": {"orders": mes_orders}}
+    for system, names in SNAPSHOT_TABLES.items():
+        out[system] = {name: [_view_row(name, r) for r in tables.get(name, [])] for name in names}
+    return out
+
+
+def memory_tables(s: dict) -> dict[str, list[dict]]:
+    """메모리 상태 → 업무 DB 표 이름의 행. 로트 격리 · 출하 승인은 ent.lot_dispositions 처럼 kind(HOLD · RELEASE)를 단 한 표로 합친다."""
+    lots = [dict(h, kind="HOLD") for h in s["qms"]["holds"]] + [dict(r, kind="RELEASE") for r in s["qms"]["releases"]]
+    lots.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+    return {"work_orders": s["cmms"]["work_orders"], "purchase_requests": s["erp"]["purchase_requests"],
+            "shipments": s["erp"]["shipments"], "goods_receipts": s["erp"].get("goods_receipts", []),
+            "lot_dispositions": lots, "ems_actions": s["ems"]["actions"]}

@@ -1,9 +1,11 @@
 """C3 조립: 확정 흐름 A · B · C 를 포털의 '흐름 가져오기'와 같은 API 로 가져와 등록 · 배포한다(수업 스택용).
 
-  .venv/bin/python scripts/c3_flows.py deploy            # 세 흐름 가져오기 → 사전 검사 → 등록 → 배포
+  .venv/bin/python scripts/c3_flows.py deploy            # 세 흐름 가져오기 → 사전 검사 → 등록 → 배포(수업 흐름 표시 class_flow)
   .venv/bin/python scripts/c3_flows.py check             # 사전 검사만 (등록 안 함)
   .venv/bin/python scripts/c3_flows.py export DIR        # bpmn.io 로 열 수 있는 .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다
-  .venv/bin/python scripts/c3_flows.py deploy-reset BY   # 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset — c3 흐름을 경보 경로에서 내림)
+  .venv/bin/python scripts/c3_flows.py deploy-reset BY   # 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset include_class — c3 흐름도 경보 경로에서 내림)
+수업 흐름(사용자 결정 2026-10-23): deploy 는 배포 본문에 class_flow: true 를 실어 '수업 흐름'으로 배포한다. 포털의 [기준 흐름으로 되돌리기]는
+그 흐름을 남기고 학생이 배포한 흐름만 내린다(응답 kept). 이 스크립트의 deploy-reset 만 include_class: true 로 수업 흐름까지 내린다.
 모르는 명령은 사용법과 함께 거절한다(종료 코드 2) — 배포로 넘어가지 않는다.
 
 A 흐름 모양 · 부품 · 설정은 C2 시험(tests/test_c2_execution.py)의 A 그림 · 매핑과 같다. B · C 는 C3 단순화(2026-10-09 확정 지시 '설비까지 안
@@ -184,7 +186,7 @@ USAGE = ("사용: c3_flows.py check | deploy | export DIR | deploy-reset BY\n"
          "  check         세 흐름 가져오기 → 사전 검사만 (등록 · 배포 안 함)\n"
          "  deploy        사전 검사 → 등록 → 배포\n"
          "  export DIR    .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다\n"
-         "  deploy-reset BY  기준 흐름으로 되돌리기 (BY = 되돌린 사람, POST /api/flows/deploy-reset)")
+         "  deploy-reset BY  기준 흐름으로 되돌리기 — 수업 흐름도 내림 (BY = 되돌린 사람, POST /api/flows/deploy-reset include_class)")
 
 
 def export(out: Path) -> int:
@@ -209,15 +211,18 @@ def check_and_deploy(deploy: bool) -> int:
         if not deploy:
             continue
         reg = call("POST", f"/api/flows/{did}/register", {"mapping": mapping})
-        dep = call("POST", f"/api/process/definitions/{did}/deploy", {"version": reg["version"], "by": "c3-assembly", "reason": "C3 확정 흐름 배포"})
+        dep = call("POST", f"/api/process/definitions/{did}/deploy", {"version": reg["version"], "by": "c3-assembly", "reason": "C3 확정 흐름 배포",
+                                                                      "class_flow": True})
         print(did, "registered", reg["version"], "deployed", json.dumps(dep, ensure_ascii=False)[:200])
     return 1 if failed else 0
 
 
 def deploy_reset(by: str) -> int:
-    out = call("POST", "/api/flows/deploy-reset", {"by": by, "reason": "C3 흐름 내리기 — 기준 흐름으로"})
+    out = call("POST", "/api/flows/deploy-reset", {"by": by, "reason": "C3 흐름 내리기 — 기준 흐름으로", "include_class": True})
     for change in out.get("changes") or []:
         print(change.get("text"))
+    for kept in out.get("kept") or []:                       # include_class 를 받는 서버라면 비어 있다 — 남았으면 그대로 알린다
+        print("남김:", kept.get("text"))
     print(out.get("message"))
     return 0
 

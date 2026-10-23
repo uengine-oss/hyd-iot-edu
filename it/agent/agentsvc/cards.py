@@ -387,6 +387,7 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
     options.sort(key=lambda o: (not o["feasible"], o["score"] is None, -(o["score"] or 0), lvl(o)))
     for i, o in enumerate(options):
         o["rank"] = i + 1
+    same_orders(options)
     rec = next((o for o in options if o["feasible"]), None)
     rank_rule = next((r for r in tables.get('dec:rank-actions', []) if rec and r['rule']==rec['rankingEvidence']['rule']), None)
     if rank_rule is None and options:
@@ -398,6 +399,22 @@ def evaluate(dmn: list[dict], skills: dict[str, dict], base_facts: dict, forecas
             "rankRule": dict(_cite(rank_rule), rankingPolicy=ranking.validate(rank_rule['rankingPolicy'])) if rank_rule else None,
             "explanation": explain(options, rec, base_facts,
                                    [t["rule"] for t in trace if t["decision"] == "dec:action-candidates" and t["fired"]])}
+
+
+def same_orders(options: list[dict]) -> None:
+    """2026-10-23 audit 8: two source procedures can bind to the very same real order — for the fan bearing (P-FAN-BRG,
+    quotes sup:a 18만원 · 1일 and sup:b OEM) SOP-PUR-12 (lowest approved) and SOP-PUR-13 (fastest quote) both pick sup:a,
+    so two cards carried the same supplier, quantity and total cost, told apart only by the rule's listing order. The cards
+    stay (PR-07 gives them different steps: 전수 검사 요청 vs 긴급 통지), and each names the cards that are the same order."""
+    orders: dict[tuple, list[dict]] = {}
+    for o in options:
+        e = o.get('economicComparison')
+        if e:
+            orders.setdefault((e['supplier'], e['quantity'], e['total_cost']), []).append(o)
+    for same in orders.values():
+        if len(same) > 1:
+            for o in same:
+                o['sameOrderAs'] = [{'id': x['id'], 'sopId': x.get('sopId')} for x in same if x is not o]
 
 
 def _names(xs: list[dict], n: int = 3) -> str:
@@ -420,6 +437,14 @@ def explain(options: list[dict], rec: dict | None, facts: dict, fired: list[str]
     if rec.get('economicComparison'):
         e=rec['economicComparison']
         parts.append(f"구매금액 {e['purchase_amount']:g} + 기대 불량비용 {e['expected_failure_cost']:g} + 전수 검사비용 {e['inspection_cost']:g} = 비교 총비용 {e['total_cost']:g}만 원. 실제 부품별 총비용이 낮은 순서로 비교했다.")
+        told = set()
+        for o in options:
+            if o.get('sameOrderAs') and o['id'] not in told:
+                group = [o['id']] + [x['id'] for x in o['sameOrderAs']]
+                told.update(group)
+                names = ' · '.join(str(x.get('sopId') or x['id']) for x in options if x['id'] in group)
+                parts.append(f"{names}은 같은 공급사({o['economicComparison']['supplier']}) · 같은 수량 · 같은 총비용의 같은 발주다"
+                             "(절차 단계만 다르다). 이 카드들의 앞뒤는 총비용 차이가 아니라 승인 수준과 후보 규칙에 적힌 순서다.")
     if fc:
         parts.append(f"예측 유온 {fc['value']} {fc['unit']}.")
     if rec["gains"]:

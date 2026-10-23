@@ -12,12 +12,14 @@
     const r = await getJ(API.process + '/api/flows/deployments');
     const rows = r.routes.map(x => `<tr><th>${esc(patName(x.pattern))}</th><td>${esc(x.name || UI.defName(x.definition))} · 판본 ${esc(x.version)}</td><td>${UI.chipText(x.source, x.reference ? 'success' : 'warning')}</td></tr>`).join('');
     const shadow = r.flows.filter(f => f.shadowed.length).map(f => `<p class="muted">${esc(f.name || f.definition)}: ${f.shadowed.map(patName).map(esc).join(', ')}는 더 최근에 배포한 흐름이 엽니다</p>`).join('');
+    // P9: [기준 흐름으로 되돌리기]는 강사가 배포한 수업 흐름을 남긴다 — 수업 흐름만 있으면 되돌릴 것이 없다(reset_needed, 옛 서버는 at_reference 로)
+    const resetNeeded = r.reset_needed ?? !r.at_reference;
     box('deployRoutes', 'deployStatus').innerHTML = UI.card({
-      title: '경보 → 흐름 (지금 배포된 것)', chips: r.at_reference ? UI.chipText('기준 흐름', 'success') : UI.chipText('내가 바꾼 흐름 있음', 'warning'),
+      title: '경보 → 흐름 (지금 배포된 것)', chips: r.at_reference ? UI.chipText('기준 흐름', 'success') : resetNeeded ? UI.chipText('내가 바꾼 흐름 있음', 'warning') : UI.chipText('수업 흐름', 'accent'),
       value: `기준 판본 <b>${esc(r.reference.version)}</b>${r.reference.changed ? ` · 지금 운영 ${esc(r.reference.deployed_version)}` : ''}`,
       sub: '다음 경보부터 이 표대로 열립니다. 이미 열린 처리 건은 자기 판본으로 끝납니다.',
       body: `<table class="compact-table"><tbody>${rows}</tbody></table>${shadow}` +
-        `<div class="form-actions"><button type="button" class="btn" id="deployResetRef" ${r.at_reference ? 'disabled' : ''}>기준 흐름으로 되돌리기</button></div>`
+        `<div class="form-actions"><button type="button" class="btn" id="deployResetRef" ${resetNeeded ? '' : 'disabled'}>기준 흐름으로 되돌리기</button></div>`
     });
   }
   const message = (text, error = false) => { $d('deployMessage').textContent = text; $d('deployMessage').className = 'form-msg ' + (error ? 'neg' : 'pos'); };
@@ -123,10 +125,12 @@
     if (ev.target.id === 'deployResetRef') return action(async () => {
       const by = $d('deployBy').value.trim();
       if (!by) throw Error('담당자를 적으세요');
-      if (!await UI.confirm({ title: '기준 흐름으로 되돌릴까요?', body: '내가 배포한 흐름은 경보 경로에서 내리고, 기준 흐름의 운영 판본을 기준 판본으로 돌립니다. 등록한 판본과 열린 처리 건은 그대로입니다.', ok: '되돌리기', danger: true })) return;
+      if (!await UI.confirm({ title: '기준 흐름으로 되돌릴까요?', body: '학생이 배포한 흐름만 내립니다. 강사가 배포한 수업 흐름은 남습니다. 기준 흐름의 운영 판본은 기준 판본으로 돌리고, 등록한 판본과 열린 처리 건은 그대로입니다.', ok: '되돌리기', danger: true })) return;
       const out = await postJ(API.process + '/api/flows/deploy-reset', { by, reason: $d('deployReason').value.trim() || null });
       await loadDefinitions(status && status.id);
-      message(out.message);
+      // 남긴 수업 흐름(응답 kept)을 토스트에 — 서버 문구가 이미 이름을 말하면 되풀이하지 않는다
+      const kept = (out.kept || []).map(k => k.name || k.definition).filter(Boolean);
+      message(out.message + (kept.length && !kept.every(n => String(out.message).includes(n)) ? ` · 남긴 수업 흐름: ${kept.join(', ')}` : ''));
     });
     if (refCompare) return action(() => runRefCompare(refCompare.dataset.refcompare));
     if (deploy) action(async () => {

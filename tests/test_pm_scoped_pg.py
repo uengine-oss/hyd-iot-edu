@@ -155,8 +155,10 @@ def test_pg_reschedule_preserves_owned_allocations_with_no_free_inventory(scoped
 def test_pg_b_reset_releases_held_parts_and_full_reset_archives_reservations(scoped):
     """2026-10-23: B [초기화]가 예약을 남겨 다시 연 B의 부품 가용이 0이었고, 업무 전체 초기화는 예약 행의 FK 때문에 실패했다."""
     cx,req=scoped
-    for name in ('20261023000059_reset_releases_pm_parts.sql', '20261023000060_reset_scope_refs.sql'):    # 060 이 B 초기화를 '잡은 수량만 되돌림'으로 다시 정의
-        cx.execute((Path(__file__).resolve().parents[1]/'it/supabase/migrations'/name).read_text(encoding='utf8'))
+    # 059 와 그 뒤 마이그레이션 전부(060 이 B 초기화를 '잡은 수량만 되돌림'으로, 061 이 전체 초기화를 원장 보관 · 계수기 먼저 잠금으로 다시 정의)
+    for path in sorted((Path(__file__).resolve().parents[1]/'it/supabase/migrations').glob('*.sql')):
+        if path.name >= '20261023000059':
+            cx.execute(path.read_text(encoding='utf8'))
     stock=lambda: cx.execute("select part_no,on_hand,reserved from ent.spare_stock where part_no in('P-PMP-SEAL','P-RTN-FLT') order by 1").fetchall()
     before=stock()
     forward=execute(cx,req)

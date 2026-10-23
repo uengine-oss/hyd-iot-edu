@@ -131,7 +131,7 @@ class DmnTools:
     def __init__(self, kg: mcp_kg.KnowledgeGraph | None = None, tsdb: mcp_tsdb.TimeSeriesDB | None = None, fabric: Fabric | None = None):
         self.kg = kg or mcp_kg.KnowledgeGraph()
         self.tsdb = tsdb or mcp_tsdb.TimeSeriesDB()
-        self.registry = decidelib.DecisionRegistry()
+        self.registry = decidelib.DecisionRegistry("mcp")
         self.prometheus = Prometheus()
         self._fabric = fabric
 

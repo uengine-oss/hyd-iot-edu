@@ -36,7 +36,7 @@ runs = RunRegistry()
 state = {"kafka": False, "neo4j": False, "runs": 0, "llm": llm.available(), "llm_model": llm.MODEL}
 kg: mcp_kg.KnowledgeGraph | None = None
 tsdb = mcp_tsdb.TimeSeriesDB()
-decisions = decidelib.DecisionRegistry()
+decisions = decidelib.DecisionRegistry("agent")
 whatifs = whatif.Sessions()
 
 

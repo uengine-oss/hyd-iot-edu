@@ -251,7 +251,8 @@ def test_submit_purchase_refusal_keeps_the_process_reason(purchase_tool, monkeyp
 def _core_skill(sid, policy):
     s = runtime_skill()
     s.update(skillId=sid, sopId=sid, name=sid, supplier_policy=policy, parts=['part:cooler-core'], supplierParts=[],
-             # it/neo4j/v2/instances.cypher: 쿨러 코어 SUPPLIED_BY 는 sup:a · sup:b 뿐
+             # 그래프에 견적 공급사 하나(sup:c)의 SUPPLIED_BY 가 없는 경우(2026-10-23 시드는 sup:c 도 넣었다 — 시드 시험은
+             # tests/test_judgment_audit_fixes2.py). 그런 그래프에서도 그 카드만 불가가 된다.
              partSuppliers=[dict(part='part:cooler-core', supplier='sup:a'), dict(part='part:cooler-core', supplier='sup:b')])
     s['actions'][0]['value'] = None
     return s

@@ -278,7 +278,9 @@ def _reset_steps(rt, by: str, *, ask: bool) -> list[dict]:
     from . import ask as ask_mod
     from . import flow_deploy
     done = []
-    work = [("deploy_reset", lambda: flow_deploy.deploy_reset(rt, by, "기준으로 되돌리기(구성 전체)")),
+    # include_class=True: 이 되돌리기는 다음 단계(flows_reset)에서 가져온 흐름(origin=user)을 수업 흐름까지 모두 지운다 — 지우기 전에 경보 경로에서
+    # 내려 배포 기록(withdraw)을 남긴다. 수업 흐름을 남기는 것은 흐름 배포 화면의 [기준 흐름으로 되돌리기](P9)다.
+    work = [("deploy_reset", lambda: flow_deploy.deploy_reset(rt, by, "기준으로 되돌리기(구성 전체)", include_class=True)),
             ("flows_reset", lambda: FlowStore(rt.repo, rt.tenant_id).reset()),
             ("agents_reset", lambda: A.reset(rt, by=by)),
             ("mcp_reset", lambda: mcp_registry.reset(mcp_registry.store_for(rt.repo), rt.tenant_id))]

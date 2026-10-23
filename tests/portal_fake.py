@@ -48,6 +48,14 @@ class FakePortal:
             self.page.add_init_script('(() => { const s = %s; for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); })()' % json.dumps(init))
         self.page.route('**/*', self.route)
 
+    def wait_until(self, cond, timeout_ms=10000):
+        """요청이 도착할 때까지 기다린다(고정 대기는 전체 시험의 부하에서 늦게 온 요청을 놓친다). 시간을 넘기면 실패."""
+        for _ in range(timeout_ms // 50):
+            if cond():
+                return
+            self.page.wait_for_timeout(50)
+        raise AssertionError(f'{timeout_ms} ms 안에 조건이 채워지지 않음 — posts={self.posts}')
+
     def open(self, hash_=''):
         self.page.goto(f'http://{self.host}/' + hash_)
         self.page.wait_for_function('window.hydInstances && window.hydInbox')

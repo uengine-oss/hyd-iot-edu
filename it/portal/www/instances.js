@@ -242,6 +242,20 @@
     const ids = (def.events || []).filter(e => e.attachedTo === task.activity_id || (activity.attachedEvents || []).includes(e.id)).map(e => e.id);
     return I.view.workitems.find(w => ids.includes(w.activity_id) && w.status === 'IN_PROGRESS');
   }
+  // 승인 단계의 기한 칩(1초마다 updateApprovalClock 이 문구를 고친다). 멈추는 타이머(cancelActivity 가 false 가 아님)면 기한이 지나면
+  // 이 단계가 닫히고 다음 단계로 넘어가므로 그 단계 이름을 싣는다 — 멈추지 않는 타이머는 지연 알림만 보낸다
+  function clockChip(task) {
+    const timer = timerFor(task);
+    if (!timer || !timer.due_date) return '';
+    const def = I.view?.definition || {};
+    const ev = (def.events || []).find(e => e.id === timer.activity_id) || {};
+    if (ev.cancelActivity === false) return `<span class="chip tone-warning" data-approval-until="${esc(timer.due_date)}"></span>`;
+    const nextId = ((def.sequences || []).find(s => s.source === ev.id) || {}).target;
+    const next = nextId ? ([...(def.activities || []), ...(def.events || [])].find(a => a.id === nextId) || {}).name : '';
+    return `<span class="chip tone-warning" data-approval-until="${esc(timer.due_date)}" data-approval-cut="${esc(next ? UI.flowName(next) : '')}"></span>`;
+  }
+  // 「나」가 없으면 승인 · 거절을 막을 때의 안내(일반 승인 · 조치 카드 승인 공통)
+  const pickMeHint = roleLabel => `승인 · 거절하려면 먼저 나를 고르세요 — 위의 [나 고르기]에서 ${roleLabel ? `이 역할(${roleLabel})의` : '이 역할의'} 사람을 고르세요. 누가 했는지 모르는 승인 · 거절은 받지 않습니다.`;
 
   function renderAskPanel(task) {
     const box = $('#todoPanel');
@@ -292,6 +306,17 @@
     const canApprove = (reviewed ? reviewed.feasible : chosen.feasible && !changed) && !UI.executionBlocked(reviewed || chosen,review?.snapshot || d);
     const roles = Object.entries(review?.snapshot?.roles || d.roles || {}).map(([id, role]) => [id, { ...role, name: role.name || UI.who(id) }]).sort((a, b) => a[1].level - b[1].level);
     if (!I.form.role) I.form.role = (chosen.approver || {}).id || (roles[0] || [''])[0];
+    // P5 (audit2): 조치 카드도 일반 승인처럼 「나」(그 승인 역할의 구성원)가 있어야 승인 · 거절한다. 역할 등급 규칙은 서버(approval.py)와 같다:
+    // 카드의 승인 역할 그 자체이거나 등급이 더 높은 역할. 서버 규칙은 그대로(회귀 검사기는 API 로 자유 글 승인자를 쓴다) — 화면만 막는다
+    const roleTable = review?.snapshot?.roles || d.roles || {};
+    const need = (reviewed || chosen).approver || null;
+    const signs = (role, approver) => !approver || !approver.id || role === approver.id || Number(roleTable[role]?.level || 0) > Number(approver.level ?? roleTable[approver.id]?.level ?? 0);
+    const meNow = window.hydInbox?.me?.() || null;
+    if (meNow && !meNow.roles.includes(I.form.role)) I.form.role = meNow.roles.find(r => signs(r, need)) || meNow.roles[0] || '';
+    const needName = need?.id ? (roleTable[need.id]?.name || need.name || UI.who(need.id)) : '';
+    const meSigns = !!meNow && signs(I.form.role, need);
+    const meRejects = !!meNow && (!opts.length || opts.some(o => signs(I.form.role, o.approver)));
+    const roleHint = meNow && !meSigns ? `${meNow.name} 님의 역할(${roleTable[I.form.role]?.name || UI.who(I.form.role) || '없음'})로는 이 안을 승인할 수 없습니다 — 이 안은 ${needName} 역할(또는 더 높은 역할)이 승인합니다. 위의 [나 고르기]에서 이 역할의 사람을 고르세요.` : '';
     const maxAbs = Math.max(1, ...opts.map(x => Math.abs(x.score || 0)));
     const timer = timerFor(task);
     const activity = (I.view?.definition?.activities || []).find(a => a.id === task.activity_id);
@@ -312,13 +337,12 @@
       : !canApprove && changed ? '값을 바꿨으면 미리 보기로 다시 확인한 뒤 승인합니다' : '';
     const previewNow = I.form.needPreview && I.form.option ? `<button class="btn outline" id="tdPreviewNow" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.preview'))}</button>` : '';
     const caseInfo = UI.metaFold([[UI.t('dec.asset'), esc(d.asset || vars(inst).asset || '')], ['고장 유형', esc(UI.idText(sc.failureMode || ''))], [UI.t('dec.cause'), esc(UI.idText(sc.cause || ''))], [UI.t('form.deadline'), timer && timer.due_date ? esc(UI.dateTime(timer.due_date)) : ''], [UI.t('inst.followWo'), hasWorkOrder ? esc(maintenanceText) : '']], 'fold.case');
-    const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
-    box.innerHTML = `<section class="todo-panel approve" aria-busy="${I.busy}"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${dueS != null ? `<span class="chip tone-warning" data-approval-until="${esc(timer.due_date)}"></span>` : ''}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
+    box.innerHTML = `<section class="todo-panel approve" aria-busy="${I.busy}"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(d.state)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span>${clockChip(task)}</div><div class="sub">${esc(inst.proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name || '').replace(/\s*\((?:HITL|hitl)\)\s*/g, ''))}</div></div>
       ${window.hydApprove.html(d, I.form.option, { pending: true, adjust, extra: caseInfo })}
       ${delayed ? '<p class="approval-delay" role="status">승인 지연 알림을 보냈습니다. 담당자가 승인하거나 거절할 때까지 기다립니다.</p>' : ''}
       <div class="form">
-      ${hydCards.whoFields('td', I.form, roles, canReject ? { reasonHint: '거절할 때는 사유를 1~2000자로 적으세요. 반려 결과와 처리 기록에 남습니다.' } : {})}
-      ${UI.actions(`${canReject ? `<button class="btn danger" id="tdRejectCard" ${I.busy ? 'disabled' : ''}>거절</button>` : ''}${previewNow}<button class="btn primary" id="tdGo" ${canApprove && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, I.msg || hint)}
+      ${meNow ? hydCards.whoFields('td', I.form, roles, canReject ? { reasonHint: '거절할 때는 사유를 1~2000자로 적으세요. 반려 결과와 처리 기록에 남습니다.' } : {}) : `<p class="field-hint" data-pick-me>${esc(pickMeHint(needName))}</p>`}
+      ${UI.actions(`${canReject ? `<button class="btn danger" id="tdRejectCard" ${meRejects && !I.busy ? '' : 'disabled'}>거절</button>` : ''}${previewNow}<button class="btn primary" id="tdGo" ${canApprove && meSigns && !I.busy ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`, roleHint || I.msg || hint)}
       </div></section>`;
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === I.form.option); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); });
     box.querySelectorAll('input[name=hopt]').forEach(r => r.addEventListener('change', () => { I.form.option = r.value; I.form.review = null; I.form.needPreview = false; I.msg = ''; const o = opts.find(x => x.id === r.value); if (o && o.approver) I.form.role = o.approver.id; renderTodoPanel(); }));
@@ -328,7 +352,7 @@
     on('tdLoad', 'input', e => { I.form.load = +e.target.value; e.target.nextElementSibling.textContent = e.target.value + ' %'; invalidate(); });
     on('tdFan', 'change', renderTodoPanel); on('tdLoad', 'change', renderTodoPanel);
     on('tdBy', 'input', e => I.form.by = e.target.value);
-    on('tdRole', 'change', e => { I.form.role = e.target.value; I.msg = ''; });
+    on('tdRole', 'change', e => { I.form.role = e.target.value; I.msg = ''; renderTodoPanel(); });
     on('tdReason', 'input', e => I.form.reason = e.target.value);
     on('tdGo', 'click', () => selectCard(task));
     on('tdRejectCard', 'click', () => rejectCard(task));
@@ -344,7 +368,10 @@
   function updateApprovalClock() {
     document.querySelectorAll('[data-approval-until]').forEach(el => {
       const left = Math.max(0, Math.ceil((Date.parse(el.dataset.approvalUntil) - Date.now()) / 1000));
-      el.textContent = left ? `지연 알림까지 ${left < 60 ? left + '초' : Math.ceil(left / 60) + '분'}` : '기한 지남 · 승인 대기';
+      const t = left < 60 ? left + '초' : Math.ceil(left / 60) + '분', next = el.dataset.approvalCut;
+      // P18: 멈추는 타이머는 기한이 지나면 이 단계가 닫힌다 — 「지연 알림」이 아니다
+      if (next !== undefined) el.textContent = left ? `기한까지 ${t} — 지나면 ${next ? `「${next}」 단계로 넘어갑니다` : '이 단계가 닫힙니다'}` : `기한 지남 — ${next ? `「${next}」 단계로 넘어가는 중` : '이 단계를 닫는 중'}`;
+      else el.textContent = left ? `지연 알림까지 ${t}` : '기한 지남 · 승인 대기';
     });
   }
 
@@ -358,12 +385,10 @@
     if (!I.form.option && m.usable) I.form.option = String(((m.rec || m.options[0]) || {})[m.key]);
     const endpoint = (((I.view.definition || {}).roles || []).find(r => r.name === act.role) || {}).endpoint || '';
     const who = window.hydInbox && window.hydInbox.whoFields('td', I.form, [[endpoint, { name: UI.roleName(endpoint, I.view.definition) }]], { reasonHint: '반려할 때는 사유가 꼭 필요합니다. 결과 보고에 남습니다.' });
-    const timer = timerFor(task);
-    const dueS = timer && timer.due_date ? Math.max(0, Math.round((Date.parse(timer.due_date) - Date.now()) / 1000)) : null;
     const ready = !!who && !I.busy;
-    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.roleName(endpoint, I.view.definition) : UI.roleName(task.user_id, I.view.definition))}</span>${dueS != null ? UI.chipText(`기한까지 ${dueS < 60 ? dueS + '초' : Math.round(dueS / 60) + '분'}`, dueS < 180 ? 'danger' : 'warning') : ''}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
+    box.innerHTML = `<section class="todo-panel approve"><div class="detail-head"><div class="row"><h3 style="margin:0">승인 요청</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who ? UI.roleName(endpoint, I.view.definition) : UI.roleName(task.user_id, I.view.definition))}</span>${clockChip(task)}</div><div class="sub">${esc((I.view.instance || {}).proc_inst_name || '')} · ${esc(UI.flowName(task.activity_name))}</div></div>
       ${window.hydApprove.proposalHtml(m, I.form.option, { pending: true })}
-      <div class="form">${who || `<p class="field-hint">승인하려면 먼저 내 작업함에서 나를 고르세요 — 누가 승인했는지 모르는 승인은 서버가 받지 않습니다.</p>`}
+      <div class="form">${who || `<p class="field-hint" data-pick-me>${esc(pickMeHint(UI.roleName(endpoint, I.view.definition)))}</p>`}
       ${UI.actions(`<button class="btn ghost" id="tdReject" ${ready ? '' : 'disabled'}>${esc(UI.t('btn.reject'))}</button><button class="btn primary" id="tdGo" ${ready && m.usable ? '' : 'disabled'}>${esc(UI.t('btn.approve'))}</button>`,
         I.msg || (!m.usable ? '고를 안이 약속과 달라 승인할 수 없습니다 — 반려하거나 에이전트 단계를 다시 하세요' : ''))}</div></section>`;
     box.querySelector('[data-ap-back]')?.addEventListener('click', ev => { I.form.option = ev.currentTarget.dataset.apBack; I.msg = ''; renderTodoPanel(); });
@@ -372,6 +397,7 @@
     $('#tdReason')?.addEventListener('input', e => I.form.reason = e.target.value);
     $('#tdGo').addEventListener('click', () => approveTask(task, '승인'));
     $('#tdReject').addEventListener('click', () => approveTask(task, '반려'));
+    updateApprovalClock();
   }
 
   async function approveTask(task, decision) {
@@ -395,7 +421,7 @@
   }
 
   async function rejectCard(task) {
-    if (I.busy) return;
+    if (I.busy || !window.hydInbox?.me?.()) return;   // P5: 「나」 없이는 거절하지 않는다(버튼도 꺼져 있다)
     const reason = I.form.reason.trim();
     if (!reason || Array.from(reason).length > 2000) { I.msg = '거절 사유를 1~2000자로 적으세요.'; renderTodoPanel(); $('#tdReason')?.focus(); return; }
     if (!I.form.by.trim() || !I.form.role) { I.msg = '담당자와 역할을 고르세요.'; renderTodoPanel(); return; }
@@ -410,7 +436,7 @@
   }
 
   async function selectCard(task) {
-    if (I.busy) return; I.busy = true;
+    if (I.busy || !window.hydInbox?.me?.()) return; I.busy = true;   // P5: 「나」 없이는 승인하지 않는다(버튼도 꺼져 있다)
     I.msg = ''; renderTodoPanel();
     try {
       await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/select`, { decision: I.decId, option: I.form.option, by: I.form.by || '승인자', role: I.form.role,

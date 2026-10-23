@@ -279,9 +279,8 @@ def test_preflight_uses_registered_names_and_keeps_all_warnings_and_issues_acces
 
 
 def test_saved_pm_extraction_preflight_uses_proposal_knowledge_names(page, manual_catalog):
-    path=WWW.parents[2]/'.evidence/a161-c3/proposal-PM-02.json'
-    if not path.exists():
-        pytest.skip('Saved actual extraction evidence is absent; independent fixture test does not replace it.')
+    # 실제 워커 추출 저장본의 고정본(손질 내역: tests/fixtures/manual-extraction-proposals/README.md)
+    path=Path(__file__).resolve().parent/'fixtures/manual-extraction-proposals/proposal-PM-02.json'
     preview=json.loads(path.read_text(encoding='utf8'))['preview']
     original=json.dumps(preview,ensure_ascii=False,sort_keys=True)
     preview['validation']=manual_preflight.validate(preview,manual_catalog)
@@ -295,8 +294,8 @@ def test_saved_pm_extraction_preflight_uses_proposal_knowledge_names(page, manua
         assert row['id'] not in text
     assert preview['warnings'][0] not in text
     assert not page.locator('#manualReviewed').is_checked()
-    retain(page,'saved-pm-preflight-names','#manualResult','Read-only browser replay of a161-c3/proposal-PM-02.json with independent catalog preflight; original extraction retained. Not a current live database check or human approval.',
-           ['펌프 체적 효율 저하','오염 입자 유입','추출 경고'])
+    retain(page,'saved-pm-preflight-names','#manualResult','Read-only browser replay of fixtures/manual-extraction-proposals/proposal-PM-02.json (saved actual extraction) with independent catalog preflight; original extraction retained. Not a current live database check or human approval.',
+           ['펌프 체적 효율 저하','작동유 오염','추출 경고'])
     preview.pop('validation')
     assert json.dumps(preview,ensure_ascii=False,sort_keys=True)==original
 

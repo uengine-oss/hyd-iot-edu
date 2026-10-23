@@ -339,13 +339,14 @@ def test_p10_direct_start_double_click_sends_once_with_stable_event_id(browser):
         go.wait_for()
         p.page.locator('[data-sv="note"]').fill('x')
         p.page.evaluate("() => { const b = document.querySelector('[data-startbox] [data-go]'); b.click(); b.click(); }")
-        p.page.wait_for_timeout(400)
+        p.wait_until(lambda: len(starts) >= 1)
+        p.page.wait_for_timeout(400)              # 두 번째 누름이 요청을 보낼 틈
         assert len(starts) == 1
         assert go.is_disabled()
         p.release({'detail': '응답 잃음'}, status=503)
         p.page.wait_for_function("!document.querySelector('[data-startbox] [data-go]').disabled")
         go.click()                                  # 실패 뒤 다시 누름 = 같은 요청의 재시도
-        p.page.wait_for_timeout(400)
+        p.wait_until(lambda: len(starts) >= 2)
         assert len(starts) == 2 and starts[0]['event_id'] == starts[1]['event_id']
     finally:
         p.close()
@@ -363,7 +364,8 @@ def test_p10_import_double_click_sends_once(browser, tmp_path):
         p.page.evaluate("hydApp.selectTab('flows')")
         p.page.locator('#flowFile').set_input_files(str(f))
         p.page.evaluate("() => { const b = document.querySelector('#flowImport'); b.click(); b.click(); }")
-        p.page.wait_for_timeout(500)
+        p.wait_until(lambda: any(x[1] == '/api/flows/import' for x in p.posts))
+        p.page.wait_for_timeout(400)              # 두 번째 누름이 요청을 보낼 틈
         assert len([x for x in p.posts if x[1] == '/api/flows/import']) == 1
         p.release({'detail': '그림 오류'}, status=422)
         p.page.wait_for_function("!document.querySelector('#flowImport').disabled")
@@ -473,7 +475,7 @@ def test_p16_refused_reassess_releases_form(browser):
         assert 'not waiting' not in msg and '이 보류는 이미 다시 평가됐거나' in msg
         p.page.locator('[data-reassess-reason]').fill('근거를 새로 확인')
         p.page.locator('[data-reassess]').click()
-        p.page.wait_for_timeout(500)
+        p.wait_until(lambda: len([x for x in p.posts if x[1].endswith('/reassess')]) >= 2)
         sent = [x[2] for x in p.posts if x[1].endswith('/reassess')]
         assert len(sent) == 2 and sent[1]['reason'] == '근거를 새로 확인' and sent[0]['request_id'] != sent[1]['request_id']
     finally:
@@ -487,7 +489,7 @@ def test_p17_insecure_context_buttons_still_send(browser):
         assert p.page.evaluate('window.isSecureContext') is False
         assert p.page.evaluate('typeof crypto.randomUUID') == 'undefined'
         p.page.locator('[data-reassess]').click()
-        p.page.wait_for_timeout(600)
+        p.wait_until(lambda: any(x[1].endswith('/reassess') for x in p.posts))
         sent = [x[2] for x in p.posts if x[1].endswith('/reassess')]
         assert len(sent) == 1 and UUID.match(sent[0]['request_id']), sent
         ids = p.page.evaluate('Array.from({length: 50}, () => UI.uuid())')
