@@ -24,6 +24,11 @@
 <circle cx="1102.939911054116" cy="36.36013278347881" r="5" fill="#E7F3FD" stroke="#13294B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="1070" y1="64" x2="1086.8529777486176" y2="49.858672586896134" stroke="#13294B" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="1070" cy="64" r="6" fill="#13294B" stroke="#13294B" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="64" cy="196" r="20" fill="#5CB8F2" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 55.6,196.4 L 62.0,203.2 L 73.2,189.6" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="64" cy="262" r="20" fill="#FFFFFF" stroke="#13294B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="56.8" y1="254.8" x2="71.2" y2="269.2" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="71.2" y1="254.8" x2="56.8" y2="269.2" stroke="#13294B" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <g transform="translate(540 212) scale(0.68)">
 <rect x="-44" y="-48" width="88" height="96" rx="8" ry="8" fill="#FFFFFF" stroke="#13294B" stroke-width="4.37" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="-44" y1="-16" x2="44" y2="-16" stroke="#13294B" stroke-width="4.37" fill="none" stroke-linecap="round" stroke-linejoin="round"/>

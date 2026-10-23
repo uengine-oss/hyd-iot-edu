@@ -48,6 +48,8 @@ def modes_matrix() -> str:
         o.append(rect(x - MODE_W / 2, 8, MODE_W, 524, 14, fill=PALE if case else LIGHT,
                       stroke=SKY if case else "none", sw=2.5 if case else 0))
         o += selector(x, 64, i, ON if case else NORM, r=30)
+    # 왼쪽 가운데: 체크 · 가위표의 뜻(범례) — 라벨 「후보에 남는다」 「후보에서 빠진다」를 얹는 자리
+    o += check_mark(64, 196, 20) + cross_mark(64, 262, 20)
     o += g(MODE_X[0], 212, 0.68, server(0, 0, ON))
     o += g(MODE_X[1], 210, 0.68, monitor(0, 0, ON, "hmi"))
     o += g(MODE_X[2], 212, 0.68, plc(0, 0, ON))
