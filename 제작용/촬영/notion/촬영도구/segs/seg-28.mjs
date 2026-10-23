@@ -1,0 +1,36 @@
+// v10 이식: film-commands/28.mjs 
+import {v10} from '../ui.mjs';
+export default async ctx=>{
+ const c=await v10(ctx);await c.begin();
+ await c.fs.writeFile(c.out+'/header-observation.json',JSON.stringify(await c.serial(()=>c.p.evaluate(()=>{const a=[...document.querySelectorAll('a')].find(e=>e.textContent.trim()==='Notion 익히기');const chain=[];for(let e=a;e&&chain.length<8;e=e.parentElement){const s=getComputedStyle(e);chain.push({tag:e.tagName,role:e.getAttribute('role'),opacity:s.opacity,visibility:s.visibility,display:s.display,rect:e.getBoundingClientRect().toJSON()});}return chain;})),null,2));
+ await c.say('live-toggle-search',()=>c.type('/토글'));
+ await c.source('N13-02',()=>c.click('menu','토글 목록'));
+ await c.source('N13-03',()=>c.type('제목과 굵은 글씨는 어떻게 다를까?'));
+ await c.line('접었을 때도 이 제목은 남아요.');
+ await c.source('N13-04',()=>c.click('aria','열기'));
+ await c.source('N13-05',()=>c.click('text','빈 토글입니다. 클릭하거나 블록을 내부로 드래그하세요.'));
+ await c.source('N13-06',()=>c.type('제목은 문서의 구획을 만들고 목차에도 표시됩니다.'));
+ await c.source('N13-07',()=>c.type(' 굵은 글씨는 문장 안에서 중요한 말을 강조할 때 씁니다.'));
+ await c.line('제목과 강조를 둘 다 써 봤으니 차이를 이곳에 남겨 두는 겁니다.');
+ await c.source('N13-08',()=>c.click('aria','닫기'));await c.line('긴 설명이 숨겨지고 질문만 남습니다.');
+ await c.source('N13-09',()=>c.click('aria','열기'));await c.line('안에 적은 설명이 다시 보이네요.');await c.line('내용을 지운 것이 아닙니다.');
+ await c.source('N13-10',()=>c.click('aria','닫기'));
+ await c.say('live-toggle-exit-one',async()=>{await c.endText('제목과 굵은 글씨는 어떻게 다를까?');await c.key('Enter');});
+ await c.say('live-toggle-backspace',()=>c.key('Backspace'));
+ await c.line('안쪽에 계속 적지 않도록 글이 시작되는 위치를 확인하겠습니다.');
+ await c.line('다음에 해 볼 일도 남겨 두면 좋겠네요.');
+ await c.say('live-divider-search',()=>c.type('/구분선'));await c.source('N14-02',()=>c.click('menu','구분선'));
+ await c.say('live-heading-search',()=>c.type('/제목'));await c.source('N14-04',()=>c.click('menu','제목2'));
+ await c.source('N14-05',()=>c.type('다음에 해 볼 것'));await c.source('N14-06',()=>c.key('Enter'));
+ await c.say('live-todo-filter',()=>c.type('/할'));await c.source('N14-08',()=>c.click('menu','할 일 목록'));await c.line('앞에 네모가 생겼습니다.');
+ await c.source('N14-09',()=>c.type('내 관심 주제로 카드 하나 더 만들기'));await c.source('N14-10',()=>c.key('Enter'));
+ await c.source('N14-11',()=>c.type('내용에 어울리는 하위 페이지 이름 붙이기'));await c.source('N14-12',()=>c.key('Enter'));await c.source('N14-13',()=>c.key('Enter'));
+ await c.line('앞의 네모는 완료했을 때 누르는 곳입니다.');await c.line('지금은 할 일로 남겨 두겠습니다.');await c.line('주제에 따라 이런 목록이 필요할 때만 넣으시면 됩니다.');
+ await c.source('N15-01',()=>c.scroll(-1100));await c.source('N15-02');
+ await c.source('N15-03',()=>c.endText('한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.'));
+ await c.source('N15-04',()=>c.key('Enter'));await c.say('live-toc-search',()=>c.type('/목차'));await c.source('N15-06',()=>c.click('menu','목차'));
+ await c.line('제목으로 만든 오늘 써 본 방법과 다음에 해 볼 것이 목록에 들어왔는지 보겠습니다.');await c.line('목차의 항목을 직접 다시 적을 필요는 없습니다.');await c.line('제목 블록을 기준으로 만들어집니다.');
+ await c.source('N15-07',()=>c.link('다음에 해 볼 것'));await c.line('해당 제목이 있는 위치로 이동합니다.');await c.line('짧은 문서에서는 이동 거리가 작지만, 내용이 길어지면 필요한 부분을 찾기 편해요.');await c.line('앞에서 본 굵은 글씨는 이런 목차 항목을 만들지 않습니다.');
+ await c.source('N15-08',()=>c.link('Notion 익히기',true));await c.source('N15-09');
+ return 'Toggle, checklist and table of contents complete';
+};
