@@ -1,0 +1,90 @@
+[
+  {
+    "path": "AGENTS.md",
+    "sha256": "dbfcbe6e100875d8da5f7e612f70202734837a7260fac38b26003c7df4074135"
+  },
+  {
+    "path": "문서/교재/2_기준.md",
+    "sha256": "7463a2d5338d0ffedb4715a200f2cb17668c42c1b60a2bb4ae943c695fca00b8"
+  },
+  {
+    "path": "문서/교재/4_만드는_법.md",
+    "sha256": "d1200b2899878d32536bf63a0ffc0d987bb01441e57a8a192022c8f4dcf83859"
+  },
+  {
+    "path": "문서/교재/기준_실습랩.md",
+    "sha256": "33d9de74cf630d647b286c33507aba505c28970e7e9e119eb772fea83afbb234"
+  },
+  {
+    "path": "문서/교재/기준_실습가이드.md",
+    "sha256": "557099c3bc50dffc788c92fb5be2a422419d594323f49688893043add0d78484"
+  },
+  {
+    "path": "문서/교재/기준_실습대본.md",
+    "sha256": "fb3b9fca10546ada10099345140318b5c0a8fdb5ef7885786d91e83722aad106"
+  },
+  {
+    "path": "문서/교재/기준_이론대본.md",
+    "sha256": "94fd89e65aa018712c188f813d7323d0a372fb294426bf5d7d2369556627ff2b"
+  },
+  {
+    "path": "문서/교재/검증과마감.md",
+    "sha256": "aa1869d4efa0cf5e9c0128a4663866f389f7cf6ef57a200547b00c55f3a5020a"
+  },
+  {
+    "path": "문서/교재/인계_5분샘플_제작검증.md",
+    "sha256": "40a1c967360f64453f45399b680fdada9d7cc4065f8bebaee15dbcae86ee3778"
+  },
+  {
+    "path": "문서/교재/3_현황.md",
+    "sha256": "2c0704a4380c50b077c454fd592be823b771a138bf8b20b56f2bf8e2b0701a2e"
+  },
+  {
+    "path": "문서/교재/근거/2026-10-19_01회차_두과정_내용검토.md",
+    "sha256": "48b033d1ac68ae2c58b9af7cc77154e1e2c1f257ff3edf8c94a21d84f09f1ac7"
+  },
+  {
+    "path": ".evidence/online-revision-20261019/syllabus-rows.json",
+    "sha256": "6b041ffd7309b829b272a741169989922040d01bbfec890a93edd8b65f7f0164"
+  },
+  {
+    "path": "제작용/기존제작/labs/online/day01-4-draw-relations/runsheet.json",
+    "sha256": "5c405c366b70b910c75b961efb7daa8b2891fff615ab504736bf682ceb1de3a6"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/가이드.html",
+    "sha256": "9ef116df0f2887038f4507c588c8e9657828bf6e49d4feb581d56d4b3c0e3562"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/관계_검토표.md",
+    "sha256": "cc4a07e2cfb6c57ccbb3abad95f6b87a8587206985ed7fa14342de0b9979fda9"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/대상_목록.md",
+    "sha256": "88f1dd550684c3eebd9649f9fb46a21569052a8958a5cd80a482198848adb085"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/매뉴얼_발췌.md",
+    "sha256": "c05080737e5eb015fc0bb8bd2eed5d6e46e221af892fd0d1822aa5f0d542f5c9"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/참고_교재_발췌.md",
+    "sha256": "a92b73a1ab7b3e89c8d8a938bf57dad0962ba45248916462fcba829cf684433f"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/랩/01일차_실습4_관계그림/채울_화면.md",
+    "sha256": "eec8c483a0001fe510d21dfa2b7feafcef32ee5a80669083fc994f192afd8759"
+  },
+  {
+    "path": "산출물/통합반/실습/01회차/대본/08_실습_관계그림.md",
+    "sha256": "fe4d55fd6dcc7a1c22a3366a38b1e3959b37fc1e2b0a93ee5afabe1fc82b4bbe"
+  },
+  {
+    "path": "산출물/실전반/실습/01회차/대본/08_실습_관계그림.md",
+    "sha256": "c67c20dc9f8eb11adbb6b5ee6193cbf632851f2dc1ee9deae662c07939a85530"
+  },
+  {
+    "path": "산출물/실전반/실습/01회차/랩/01일차_실습4_관계그림/관계_검토표.md",
+    "sha256": "b865b5eaa0b9b23e35945b309c78ab90baffdd77fae32346ca83b4b347df4198"
+  }
+]
