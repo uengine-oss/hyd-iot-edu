@@ -1,0 +1,14 @@
+{
+  "decode_exit": 0,
+  "duration_seconds": 688.63,
+  "planned_seconds": 688.6333333333334,
+  "duration_error_seconds": -0.003,
+  "black_intervals": [],
+  "narration_cues": 51,
+  "voice_overlaps": [],
+  "last_voice_end": 683.673,
+  "peak_dbfs": -1.357642,
+  "source_motion": "Source motion kept at original speed; no frame interpolation. Variable-rate stills converted to a 30 fps delivery timeline. This alone is not a motion-quality certification.",
+  "subjective_listening": "Not certified; final user playback pending.",
+  "user_approved": false
+}
