@@ -3,6 +3,7 @@
 Completing this process produces a cited proposal, never a graph commit or human
 approval. The immutable archived source is pinned into its starting variables.
 """
+import re
 from copy import deepcopy
 from uuid import UUID, uuid4
 
@@ -28,6 +29,8 @@ proposal 객체의 형태:
 ANCHOR는 {"source_id":"원본 source_id","page":1,"quote":"원문 그대로의 문장"}입니다. start/end 문자 좌표는 적지 않아도 됩니다 —
 서버가 그 페이지에서 인용문의 위치를 찾습니다(정확 일치 → 글자·숫자만 비교 → 낱말 사이 짧은 끼어듦 허용). 인용은 그 페이지에서 한 곳만
 가리키도록 충분히 길게(표 제목·번호를 포함해) 잡으세요. 여러 곳에 있는 짧은 인용은 거부됩니다. 모든 절/SOP/단계에 인용이 필요합니다.
+절차(procedures)의 anchor는 그 절차의 제목 줄(예: '### SOP-COOL-11 팬 최대 운전')처럼 문서에서 한 곳뿐인 문장으로 잡으세요. 단계의 anchor는 그 단계 문장만
+인용하고 다른 단계까지 묶어 인용하지 마세요. 같은 단계 문장이 여러 절차에 있으면 서버가 그 절차 블록(절차 anchor부터 같은 쪽 다음 절차 전까지) 안에서 찾습니다.
 페이지를 빠짐없이 page_reviews에 기록하세요. 페이지 검토 기록은 내용 정확성 보증이 아니며 사람이 다시 원문을 검토합니다.
 SOP ID 형식은 SOP-대문자/숫자 토큰을 '-'로 연결한 것입니다(예: SOP-OIL-21, SOP-HM9-2). 점(.)·소문자·공백은 쓸 수 없습니다.
 SOP ID가 원문에 없으면 절 번호에서 만든 등록 제안 ID(예: 절 HM-9.2 → SOP-HM9-2)를 쓰고 warnings에 명시하세요.
@@ -97,6 +100,10 @@ def definition():
 PROPOSAL_KEYS = ('source_id', 'sections', 'procedures', 'page_reviews', 'warnings', 'knowledge')
 
 
+def _letters(text):
+    return re.sub(r'[^0-9A-Za-z가-힣]', '', text or '')
+
+
 def validate_proposal(source, proposal):
     """Structural/citation validation, not a claim of semantic extraction truth."""
     def nonempty(value, name):
@@ -162,6 +169,14 @@ def validate_proposal(source, proposal):
             if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
             nonempty(step.get('text'),'단계');anchor(step.get('anchor'),within=blocks.get(id(p)))
+        # 2026-10-23 확인: 같은 단계 문장이 반복되자 AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다(단계별 출처가 없어짐)
+        texts=[_letters(st['text']) for st in p['steps']]
+        for order,step in enumerate(p['steps'],1):
+            quote=_letters(step['anchor']['quote'])
+            others=[o for o,t in enumerate(texts,1) if o!=order and len(t)>=6 and t not in texts[order-1] and t in quote]
+            if others:
+                raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
+                                 "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:

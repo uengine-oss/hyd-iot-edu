@@ -482,3 +482,19 @@ def test_a_step_sentence_repeated_in_several_procedures_is_placed_in_its_own_pro
     elsewhere['procedures'][1]['anchor'] = q('## 8.5 즉시 완화')
     with pytest.raises(ValueError, match='2곳'):
         extraction.validate_proposal(source, elsewhere)
+
+
+def test_a_step_quote_that_also_holds_other_steps_is_rejected(tmp_path):
+    # 2026-10-23 확인: AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다 — 단계별 출처가 없어진다
+    text = '### SOP-A 팬 최대\n1. 모드가 자동인지 확인한다.\n2. 팬을 100 %로 올린다.\n'
+    source = ManualSources(tmp_path / 'm.sqlite3').save('hyd', 'block.md', text.encode())
+    q = lambda quote: dict(source_id=source['source_id'], page=1, quote=quote)
+    whole = text.strip()
+    proposal = lambda step_quote: dict(source_id=source['source_id'], sections=[dict(ref='A', title='팬', anchor=q('### SOP-A 팬 최대'))],
+        procedures=[dict(id='SOP-A', name='팬 최대', section='A', anchor=q(whole),
+            steps=[dict(order=1, text='1. 모드가 자동인지 확인한다.', manual='A', anchor=q(step_quote)),
+                   dict(order=2, text='2. 팬을 100 %로 올린다.', manual='A', anchor=q('2. 팬을 100 %로 올린다.'))])],
+        page_reviews=[dict(page=1, note='한 절차')], warnings=[])
+    with pytest.raises(ValueError, match=r'단계 1의 인용이 다른 단계\(2\)까지 품습니다'):
+        extraction.validate_proposal(source, proposal(whole))
+    extraction.validate_proposal(source, proposal('1. 모드가 자동인지 확인한다.'))
