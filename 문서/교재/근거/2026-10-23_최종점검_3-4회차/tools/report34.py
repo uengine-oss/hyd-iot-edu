@@ -178,7 +178,7 @@ def md_html(p):
 title = f"{LABEL} 최종 점검 전후"
 OUT_H.write_text(f"""<!doctype html><html lang=ko><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>{title}</title><style>{CSS}</style>
 <h1>{LABEL} 이론 대본 · 덱 최종 점검 — 전과 후</h1>
-<p class=muted>전 = 점검 전 대본{f'(develop {BASE[:8]})' if BASE else ''}. 후 = 점검 · 마지막 손질 · 통합을 거친 대본. 지운 곳은 <del>빨강</del>, 넣은 곳은 <ins>초록</ins>. 낭독 추정은 분당 275음절(대본시간.py와 같은 셈).</p>
+<p class=muted>전 = 점검 전 대본{f'(other-pc {BASE[:8]})' if BASE else ''}. 후 = 점검 · 마지막 손질 · 통합을 거친 대본. 지운 곳은 <del>빨강</del>, 넣은 곳은 <ins>초록</ins>. 낭독 추정은 분당 275음절(대본시간.py와 같은 셈).</p>
 {md_html(intro)}
 <table><tr><th>과정</th><th>파일</th><th>바뀐 장</th><th>낭독 추정</th></tr>{srow}</table>
 <h3>구분별 변경 수(변경목록 행, 1차 + 마지막 손질 + 통합)</h3><table>{crow}</table>
