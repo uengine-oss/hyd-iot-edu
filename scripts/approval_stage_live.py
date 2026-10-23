@@ -1,9 +1,11 @@
 """승인 단계(승인 · 거절 · 무응답)를 라이브 스택에서 한 번에 하나씩 끝까지 돌리고 확인한다(실제 워커 필요).
 
-  .venv/bin/python scripts/approval_stage_live.py CASE OUTDIR [--flow 흐름id] [--no-settle]
+  .venv/bin/python scripts/approval_stage_live.py CASE OUTDIR [--flow 흐름id] [--no-settle] [--think 초]
   CASE: {A|B|C}-approve | {A|B|C}-reject | {A|B|C}-wait   (wait = 승인하지 않고 두어 지연 알림이 나가고도 기다리는지 본 뒤 거절로 닫는다)
   --flow       그 시나리오 경보를 여는 흐름 id 가 수업 흐름(c3_*)이 아닐 때(예: 학생이 가져와 배포한 사본) — 열린 처리 건이 그 흐름인지 확인한다
   --no-settle  A 만: [쿨러 복구]를 누르고 설비가 가라앉기를 기다리지 않는다(곧바로 다음 [쿨러 열화 주입]을 누르는 확인용)
+  --think N    승인 · 거절 전에 N초 기다린다 — 사람이 카드를 읽는 시간. 판단 뒤 시간이 지나도 승인이 되는지 본다(2026-10-23: B 계획의
+               target_hours가 36초마다 바뀌어 승인이 거부되던 결함)
 
 앞서 할 일(문서/시스템/3_현황.md 2절 '버튼 완주 순서'): 잠금 → 그래프 구조판 → `scripts/c3_flows.py deploy` → 워커 1개.
 포털 버튼이 부르는 것과 같은 process API 만 쓴다: 시작 POST /api/scenario/A/degrade · /api/scenario/{B|C}/start, 승인 POST /api/todolist/{id}/select
@@ -177,7 +179,10 @@ def clean_up(key: str, spec: dict, settle: bool = True) -> None:
 
 
 def main(argv: list[str]) -> int:
-    args, flow, settle = list(argv[1:]), None, True
+    args, flow, settle, think = list(argv[1:]), None, True, 0
+    if "--think" in args[:-1]:
+        think = int(args.pop(args.index("--think") + 1))
+        args.remove("--think")
     if "--no-settle" in args:
         args.remove("--no-settle")
         settle = False
@@ -217,7 +222,13 @@ def main(argv: list[str]) -> int:
               f"처리 건 {view['instance']['status']}, 승인 task {r['T_approve']['status']}")
         check("기다리는 동안 처리 0건", all(w["status"] == "TODO" for w in view["workitems"] if w["activity_id"] in spec["effects"]))
         (out / f"{name}-while-waiting.json").write_text(json.dumps(view, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    if think and mode != "wait":
+        log(f"카드를 읽는 시간 {think}초 기다림")
+        time.sleep(think)
     if mode == "approve":
+        if not decision.get("recommended"):   # 모든 안이 규정 · 재고로 빠진 판단 — 승인할 추천이 없다(2026-10-23: 앞 B 오더가 부품을 잡은 채 남은 상태)
+            log(f"추천 없음 — 승인할 안이 없습니다: {str(decision.get('explanation'))[:300]} (처리 건 {pid}는 승인 단계에 열려 있음)")
+            sys.exit(1)
         res = post(f"/api/todolist/{wid}/select", {"decision": decision_id, "option": decision["recommended"], "by": me, "role": role,
                                                    "reason": "수업: 추천안 승인"})
         log(f"승인 접수: {decision['recommended']} ({res.get('approval_status')})")
