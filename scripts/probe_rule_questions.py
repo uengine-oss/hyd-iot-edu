@@ -65,12 +65,15 @@ def truth_standby():
 
 
 def truth_fan24():
-    """HM-7.3 / rule:fan-24h: the current continuous run at ≥ 99 % (same as agentsvc.tools.mcp_tsdb.fan100_hours since A086)."""
+    """HM-7.3 / rule:fan-24h: the current continuous run at ≥ 99 % (same as agentsvc.tools.mcp_tsdb.fan100_hours since A086), in
+    plant hours — the wall length × the process' time scale, as the engine computes it since the 2026-10-23 audit."""
+    status, mode = http('/api/process/mode')
+    assert status == 200 and isinstance(mode.get('time_scale'), (int, float)) and mode['time_scale'] > 0, ('process time scale', status, mode)
     row = tsdb("""WITH s AS (SELECT time, value FROM tag_1s WHERE asset = 'HYD-01' AND name = 'FanSpeedSP' AND time > now() - interval '48 hours'),
                        newest AS (SELECT time, value FROM s ORDER BY time DESC LIMIT 1), broke AS (SELECT max(time) AS t FROM s WHERE value < 99)
                   SELECT (SELECT value FROM newest), extract(epoch FROM (SELECT time FROM newest) - (SELECT min(time) FROM s WHERE time > coalesce((SELECT t FROM broke), '-infinity'::timestamptz))) / 3600.0""")
     value, run = (row.split('|') + [''])[:2]
-    v = 0.0 if float(value) < 99 or not run else round(float(run), 2)
+    v = 0.0 if float(value) < 99 or not run else round(float(run) * mode['time_scale'], 2)
     return {'holds': 'true' if v > 24 else 'false', 'value': v}
 
 
