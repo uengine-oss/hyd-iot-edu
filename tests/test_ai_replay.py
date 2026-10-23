@@ -461,3 +461,270 @@ def test_new_write_tool_id_carries_into_the_follow_up_run_of_the_same_step(tmp_p
     assert _runner(tmp_path, srepo, ai_replay.replaying(lib), "replay").poll_once() == 1
     row = _diagnose(srepo, sinst)
     assert row["status"] == "SUBMITTED" and row["output"]["guide_card"] == {"decision": "dec-live-0042"}
+
+
+# ---------------------------------------------------------------- 검수 2026-10-23(.evidence/audit2/worker_ingest_replay.md) R1~R5
+def _retrying_write(provider, request, env):
+    """저장할 때의 AI: 판단 등록을 틀린 세대로 불러 409 를 받고, 고쳐 다시 불러 성공했다(실제로 흔한 모양)."""
+    task = json.loads((Path(request.workdir) / "context" / "task.json").read_text(encoding="utf-8"))
+    inputs = json.loads(task["query"].split("[InputData]")[1])
+    good = {"asset": "HYD-01", "alert_id": inputs["alert"]["alertId"], "process_scope": task["process_scope"]}
+    bad = dict(good, process_scope=dict(task["process_scope"], generation=99))
+    s = "sess-R"
+    yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_START, tool="mcp__hyd-dmn__submit_decision", tool_input=bad, tool_use_id="w1", session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__hyd-dmn__submit_decision", tool_use_id="w1", session_id=s, is_error=True,
+                    tool_output=[{"type": "text", "text": "HTTP 409: 판단의 작업/세대/정의 판본이 일치하지 않습니다"}])
+    yield ExecEvent(kind=ExecEventKind.TOOL_START, tool="mcp__hyd-dmn__submit_decision", tool_input=good, tool_use_id="w2", session_id=s)
+    yield ExecEvent(kind=ExecEventKind.TOOL_END, tool="mcp__hyd-dmn__submit_decision", tool_use_id="w2", session_id=s,
+                    tool_output=[{"type": "text", "text": json.dumps({"id": "dec-rec-0001", "status": "PENDING_APPROVAL"})}])
+    yield ExecEvent(kind=ExecEventKind.RESULT, session_id=s, text=json.dumps(
+        {"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"decision": "dec-rec-0001"}}))
+
+
+def _numbered_servers(monkeypatch, calls, rejects_wrong_generation=False):
+    from procsvc import mcp_check
+    monkeypatch.setattr(mcp_check, "check", lambda spec, timeout=None: {"status": "ok", "tools": [{"name": "submit_decision", "callable": False}]})
+    def call_effect(spec, tool, arguments, **kw):
+        calls.append(arguments)
+        if rejects_wrong_generation and (arguments.get("process_scope") or {}).get("generation") == 99:
+            return {"status": "ok", "result": {"is_error": True, "text": "HTTP 409: 판단의 작업/세대/정의 판본이 일치하지 않습니다"}}
+        return {"status": "ok", "result": {"is_error": False, "text": json.dumps({"id": f"dec-live-{len(calls):04d}", "status": "PENDING_APPROVAL"})}}
+    monkeypatch.setattr(mcp_check, "call_effect", call_effect)
+
+
+@pytest.mark.parametrize("server_rejects_the_bad_call_too", [True, False])
+def test_write_call_that_failed_when_recorded_is_not_called_again_only_the_fixed_call_is(tmp_path, monkeypatch, server_rejects_the_bad_call_too):
+    """R3: 녹화 때 오류였던 쓰기 호출은 다시 부르지 않고 저장된 오류를 보인다 — 이번에도 오류여서 회복 전에 단계가 끝나거나(전),
+    이번엔 받아들여져 판단만 등록된 채 실패하지(전) 않는다. 고친 두 번째 호출만 이 PC에서 부르고 그 새 id 를 쓴다."""
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _retrying_write, _new_case("INC-rec-1", "AL-rec-1"))
+    calls = []
+    _numbered_servers(monkeypatch, calls, rejects_wrong_generation=server_rejects_the_bad_call_too)
+    repo, inst = _new_case("INC-stu-2", "AL-stu-2")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    [args] = calls                                                     # 판단은 하나만 등록된다
+    assert args["process_scope"]["generation"] == 0 and args["process_scope"]["workitem"] == row["id"]
+    assert row["status"] == "SUBMITTED" and row["output"]["guide_card"] == {"decision": "dec-live-0001"}
+    texts = _texts(repo, row)
+    assert "HTTP 409" in texts                                         # AI 가 본 오류는 저장 때 그대로 보인다
+    assert "저장 때 오류였던 쓰기 호출 1건은 다시 부르지 않고" in texts
+
+
+def test_recorded_error_envelope_without_the_error_flag_is_not_called_again(tmp_path, monkeypatch):
+    """R3: 업무 도구 서버는 오류를 봉투({"result": "error"})로 돌려줘 CLI 가 오류로 표시하지 않을 수 있다 — 그것도 녹화 때 오류다."""
+    def fn(provider, request, env):
+        for ev in _retrying_write(provider, request, env):
+            if ev.kind is ExecEventKind.TOOL_END and ev.tool_use_id == "w1":
+                ev = ExecEvent(kind=ExecEventKind.TOOL_END, tool=ev.tool, tool_use_id="w1", session_id=ev.session_id,
+                               tool_output=[{"type": "text", "text": json.dumps({"result": "error", "error_kind": "INVALID", "message": "세대 불일치"})}])
+            yield ev
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, fn, _new_case("INC-rec-1", "AL-rec-1"))
+    calls = []
+    _numbered_servers(monkeypatch, calls)
+    repo, inst = _new_case("INC-stu-3", "AL-stu-3")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    assert len(calls) == 1 and _diagnose(repo, inst)["output"]["guide_card"] == {"decision": "dec-live-0001"}
+
+
+def test_rerun_write_that_returns_an_error_envelope_now_fails_the_step(tmp_path, monkeypatch):
+    """R3: 다시 부른 호출이 이번에 오류 봉투를 돌려주면(CLI 오류 표시 없이) 사유와 함께 실패한다 — 저장 때 판단 id 로 넘어가지 않는다."""
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _submits_decision, _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [], reply=json.dumps({"result": "error", "error_kind": "INVALID", "message": "사건이 승인 대기 상태가 아닙니다"},
+                                                    ensure_ascii=False))
+    repo, inst = _new_case("INC-stu-4", "AL-stu-4")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    err = repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert row["draft_status"] == "FAILED" and "오류를 돌려줬습니다" in err and "승인 대기 상태가 아닙니다" in err
+
+
+def test_unpairable_write_result_names_the_id_already_registered_on_this_pc(tmp_path, monkeypatch):
+    """R3: 짝을 못 지어 멈출 때 이 PC에서 이미 등록된 판단 id 를 처리 과정에 남긴다(주인 없는 승인 대기 판단을 찾을 수 있게)."""
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _persists_big_result(keep_file=False), _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [])
+    repo, inst = _new_case("INC-stu-6", "AL-stu-6")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    assert "이 PC에서는 이미 등록됐습니다(id dec-live-0042)" in repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+
+
+SAVED_CARDS = {"id": "DEC-1023-001-ab12", "cards": [{"rank": 1, "id": "skill:fan-max", "sopId": "SOP-COOL-11"},
+                                                     {"rank": 2, "id": "skill:load-cut", "sopId": "SOP-COOL-12"}]}
+LIVE_CARDS = {"id": "DEC-1023-007-cd34", "cards": [{"rank": 1, "id": "skill:load-cut", "sopId": "SOP-COOL-12"},
+                                                    {"rank": 2, "id": "skill:fan-max", "sopId": "SOP-COOL-11"}]}
+
+
+@pytest.mark.parametrize("wrap", [lambda d: d, lambda d: {"result": "ok", "document": d}])
+def test_only_the_new_document_id_of_a_write_result_is_paired_not_knowledge_ids(wrap):
+    """R1: 이 PC의 사실이 달라 카드 순위가 뒤집혀도 기존 지식 id(스킬 · 절차)는 맞바꾸지 않는다. 새로 만든 판단 id 만 짝짓는다."""
+    s = ai_replay._Swaps()
+    s.pair_ids(wrap(SAVED_CARDS), wrap(LIVE_CARDS))
+    assert s.exact == {"DEC-1023-001-ab12": "DEC-1023-007-cd34"}
+    assert s.apply({"recommended": "SOP-COOL-11", "skill": "skill:fan-max", "decision": "DEC-1023-001-ab12"}) == \
+        {"recommended": "SOP-COOL-11", "skill": "skill:fan-max", "decision": "DEC-1023-007-cd34"}
+
+
+def test_swapped_pairs_in_text_are_replaced_at_once_not_chained():
+    """R1: A→B 와 B→A 가 함께 있어도 두 값이 같아지지 않는다. 긴 값이 먼저 맞는다(AL-10 이 AL-1 로 잘리지 않는다)."""
+    s = ai_replay._Swaps()
+    s.exact.update({"SOP-COOL-11": "SOP-COOL-12", "SOP-COOL-12": "SOP-COOL-11", "AL-01": "AL-77", "AL-010": "AL-88"})
+    assert s.text("SOP-COOL-11 을 권하고 SOP-COOL-12 는 후순위") == "SOP-COOL-12 을 권하고 SOP-COOL-11 는 후순위"
+    assert s.text("AL-010 과 AL-01") == "AL-88 과 AL-77"
+
+
+def test_replayed_result_keeps_its_procedure_when_the_rerun_ranks_cards_differently(tmp_path, monkeypatch):
+    """R1(처리 흐름으로): 저장된 AI 결과가 고른 절차는 그대로, 판단 id 만 이 PC의 것이 된다."""
+    def fn(provider, request, env):
+        for ev in _submits_decision(provider, request, env):
+            if ev.kind is ExecEventKind.TOOL_END and ev.tool_use_id == "w1":
+                ev = ExecEvent(kind=ExecEventKind.TOOL_END, tool=ev.tool, tool_use_id="w1", session_id=ev.session_id,
+                               tool_output=[{"type": "text", "text": json.dumps({"result": "ok", "document": dict(SAVED_CARDS, id="dec-rec-0001")})}])
+            if ev.kind is ExecEventKind.RESULT:
+                ev = ExecEvent(kind=ExecEventKind.RESULT, session_id=ev.session_id, text=json.dumps(
+                    {"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss",
+                     "guide_card": {"decision": "dec-rec-0001", "recommended": "SOP-COOL-11", "note": "SOP-COOL-11 을 권하고 SOP-COOL-12 는 후순위"}}))
+            yield ev
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, fn, _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [], reply=json.dumps({"result": "ok", "document": dict(LIVE_CARDS, id="dec-live-0042")}))
+    repo, inst = _new_case("INC-stu-1", "AL-stu-1")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    assert _diagnose(repo, inst)["output"]["guide_card"] == {"decision": "dec-live-0042", "recommended": "SOP-COOL-11",
+                                                             "note": "SOP-COOL-11 을 권하고 SOP-COOL-12 는 후순위"}
+
+
+def test_catalog_lists_are_not_paired_by_position():
+    """R4: 고정 입력 ontology_catalog 가 학생 그래프와 한 항목만 달라도(개수는 같음) 제안의 지식 id 가 밀리지 않는다.
+    처리 건마다 달라지는 값(문서 판본 id 등)은 그대로 바꿔 끼운다. 같은 id 항목끼리는 짝짓는다."""
+    saved_ctx = {"id": "t-rec", "inputs": {"manual_source": {"source_id": "manual:rec:v1"}, "ontology_catalog": {"failure_modes": [
+        {"id": "fm:bearing-degradation"}, {"id": "fm:cooling-loss", "name": "냉각 손실"}, {"id": "fm:oil-degradation"}, {"id": "fm:overheat-trip"}]}}}
+    now_ctx = {"id": "t-stu", "inputs": {"manual_source": {"source_id": "manual:stu:v2"}, "ontology_catalog": {"failure_modes": [
+        {"id": "fm:bearing-degradation"}, {"id": "fm:belt-slip"}, {"id": "fm:cooling-loss", "name": "냉각 저하"}, {"id": "fm:oil-degradation"}]}}}
+    s = ai_replay._Swaps()
+    s.pair(saved_ctx, now_ctx)
+    proposal = {"source": "manual:rec:v1", "procedures": [{"id": "SOP-COOL-11", "link": {"failureMode": "fm:cooling-loss", "relation": "MITIGATED_BY"}}],
+                "knowledge": {"causes": [{"id": "cause:x", "failure_mode": "fm:oil-degradation"}]}}
+    out = s.apply(proposal)
+    assert out["procedures"][0]["link"]["failureMode"] == "fm:cooling-loss"
+    assert out["knowledge"]["causes"][0]["failure_mode"] == "fm:oil-degradation"
+    assert out["source"] == "manual:stu:v2"
+    assert s.apply({"name": "냉각 손실"}) == {"name": "냉각 저하"}        # 같은 id 의 항목끼리는 짝짓는다
+
+
+DEFER = json.dumps({"__deferred__": {"status": "UNKNOWN", "reason": "센서 값이 없어 판단 보류", "evidence": {"tag": "ts1"}}})
+
+
+def _lib(tmp_path, repo):
+    return ai_replay.Library(tmp_path / "lib", case_of=ai_replay.case_of_instance(repo))     # 워커(main.build_runner)와 같게
+
+
+def _reassess(repo, row):
+    import uuid
+    from procsvc import task_deferral
+    d = repo.get_workitem(row["id"])["draft"]["_deferral"]
+    task_deferral.reassess(repo, "hyd", row["id"], deferral_id=d["id"], request_id=uuid.uuid4().hex, by="학생", reason="센서를 다시 붙였다")
+
+
+def test_recorded_deferral_then_reassessment_replays_in_the_same_order(tmp_path):
+    """R2: 녹화 때 보류 → 재평가였으면 학생도 보류 → 재평가 순서를 밟는다. 재평가 녹화가 첫 실행(보류)을 덮어쓰지 않는다."""
+    rrepo, rinst = _repo()
+    _runner(tmp_path, rrepo, ai_replay.recording(_fake_exec(DEFER), _lib(tmp_path, rrepo), lambda p: "claude-code"), "record").poll_once()
+    _reassess(rrepo, _diagnose(rrepo, rinst))
+    _runner(tmp_path, rrepo, ai_replay.recording(_fake_exec(ANSWER, session="sess-B"), _lib(tmp_path, rrepo), lambda p: "claude-code"), "record").poll_once()
+    assert _diagnose(rrepo, rinst)["status"] == "SUBMITTED"
+    [doc] = _lib(tmp_path, rrepo).docs()                                 # 업무 하나에 파일 하나 — 그 안에 두 차례
+    assert [r["session_id"] for r in doc["runs"]] == ["sess-A", "sess-B"]
+    assert [ai_replay._run_attempt(r) for r in doc["runs"]] == [(0, 0), (0, 1)]
+    srepo, sinst = _repo()
+    _runner(tmp_path, srepo, ai_replay.replaying(_lib(tmp_path, srepo)), "replay").poll_once()
+    row = _diagnose(srepo, sinst)
+    assert row["status"] == "PENDING" and "_deferral" in row["draft"]   # 학생의 첫 실행도 보류
+    _reassess(srepo, row)
+    _runner(tmp_path, srepo, ai_replay.replaying(_lib(tmp_path, srepo)), "replay").poll_once()
+    final = srepo.get_workitem(row["id"])
+    assert final["status"] == "SUBMITTED" and final["output"]["cause"] == "cause:cooler-fin-fouling"
+    assert "(「원인 진단」 · 재평가 1회째," in _texts(srepo, final)
+
+
+def test_reassessment_with_no_saved_reassessment_fails_instead_of_repeating_the_deferral(tmp_path):
+    """R2: 저장분이 보류뿐이면 학생의 재평가는 같은 보류를 끝없이 되풀이하지 않고, 저장분 없음으로 분명히 실패한다."""
+    rrepo, _ = _repo()
+    _runner(tmp_path, rrepo, ai_replay.recording(_fake_exec(DEFER), _lib(tmp_path, rrepo), lambda p: "claude-code"), "record").poll_once()
+    srepo, sinst = _repo()
+    _runner(tmp_path, srepo, ai_replay.replaying(_lib(tmp_path, srepo)), "replay").poll_once()
+    _reassess(srepo, _diagnose(srepo, sinst))
+    _runner(tmp_path, srepo, ai_replay.replaying(_lib(tmp_path, srepo)), "replay").poll_once()
+    row = _diagnose(srepo, sinst)
+    err = srepo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert row["draft_status"] == "FAILED" and "_deferral" not in (row.get("draft") or {})
+    assert "「원인 진단」 업무(경보 COOLER_DEGRADATION · 재평가 1회째)의 저장된 AI 응답이 없습니다" in err
+
+
+def _generation_case(generation):
+    """재작업 세대의 처리 건: 처리 건의 rework_generation 이 그 세대이고 작업도 그 세대로 만들어진다(engine.start)."""
+    repo, _ = _repo()
+    defn = engine.Definition.load(DEF_PATH)
+    inst = engine.new_instance(defn, {"asset": "HYD-01", "pattern": "COOLER_DEGRADATION", "alert": {"alertId": "G"}, "incident": "INC-G"}, now=NOW)
+    inst["rework_generation"] = generation
+    adv = engine.start(defn, inst, now=NOW)
+    repo.insert_instance(inst); repo.insert_workitems(adv.created); repo.update_instance(inst)
+    for w in repo.list_workitems():
+        if w["proc_inst_id"] != inst["proc_inst_id"]:
+            repo.update_workitem(w | {"status": "DONE"})
+    assert _diagnose(repo, inst)["generation"] == generation
+    return repo, inst
+
+
+def test_rework_generation_is_its_own_turn_and_does_not_overwrite_the_first(tmp_path):
+    """R2: 재작업 세대(같은 업무 이름의 새 작업)는 첫 세대 저장분을 덮어쓰지 않고, 녹화가 없으면 첫 세대 응답을 되풀이하지 않는다."""
+    rrepo, _ = _repo()
+    _runner(tmp_path, rrepo, ai_replay.recording(_fake_exec(ANSWER), _lib(tmp_path, rrepo), lambda p: "claude-code"), "record").poll_once()
+    srepo, sinst = _generation_case(1)
+    _runner(tmp_path, srepo, ai_replay.replaying(_lib(tmp_path, srepo)), "replay").poll_once()
+    row = _diagnose(srepo, sinst)
+    assert row["draft_status"] == "FAILED" and "(경보 COOLER_DEGRADATION · 재작업 세대 1)의 저장된 AI 응답이 없습니다" in \
+        srepo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    grepo, ginst = _generation_case(1)                                  # 강사가 재작업 세대도 녹화했다
+    _runner(tmp_path, grepo, ai_replay.recording(_fake_exec(ANSWER.replace("cooler-fin-fouling", "fan-drive-fault"), session="sess-G"),
+                                                 _lib(tmp_path, grepo), lambda p: "claude-code"), "record").poll_once()
+    [doc] = _lib(tmp_path, grepo).docs()
+    assert [ai_replay._run_attempt(r) for r in doc["runs"]] == [(0, 0), (1, 0)]
+    frepo, finst = _repo()
+    _runner(tmp_path, frepo, ai_replay.replaying(_lib(tmp_path, frepo)), "replay").poll_once()
+    assert _diagnose(frepo, finst)["output"]["cause"] == "cause:cooler-fin-fouling"      # 첫 세대는 첫 세대 응답
+    nrepo, ninst = _generation_case(1)                                  # 재작업 세대는 그 세대 응답
+    _runner(tmp_path, nrepo, ai_replay.replaying(_lib(tmp_path, nrepo)), "replay").poll_once()
+    assert _diagnose(nrepo, ninst)["output"]["cause"] == "cause:fan-drive-fault"
+
+
+def test_replay_notice_says_alert_strength_cause_and_human_answer_are_not_used(tmp_path):
+    """R5: 같은 업무면 같은 응답을 쓰는 설계 — 경보 세기 · 원인 가지 · 사람의 답이 무시된다는 것을 재생 알림 한 줄에 밝힌다."""
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _fake_exec(ANSWER))
+    repo, inst, row = _replay(tmp_path, lib)
+    [notice] = [e["data"]["content"] for e in repo.list_events(todo_id=row["id"])
+                if isinstance(e["data"], dict) and str(e["data"].get("content") or "").startswith("AI 응답 재생 —")]
+    assert notice.startswith("AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「원인 진단」,")
+    assert "지금의 경보 세기 · 원인 · 사람의 답이 저장 때와 달라도 응답은 그대로입니다" in notice and "\n" not in notice
+
+
+def test_continuation_does_not_run_into_the_next_turn(tmp_path):
+    """R2: 이어 하기(형식 교정 · 사람 답 뒤)는 같은 차례의 다음 실행만 쓴다 — 다음 실행이 재평가 차례의 첫 실행이면 이어지는 응답이 없다."""
+    from types import SimpleNamespace
+    lib = ai_replay.Library(tmp_path / "lib")
+    key = ai_replay._key("원인 진단")
+    lib.root.mkdir(parents=True)
+    doc = {"format": ai_replay.FORMAT, "step": "원인 진단", "case": "", "recorded_at": "-", "runs": [
+        {"session_id": "s1", "events": []}, {"session_id": "s1", "events": []},
+        {"session_id": "s2", "events": [], "attempt": {"generation": 0, "reassessment": 1}}]}
+    lib.file_of(key).write_bytes(gzip.compress(json.dumps(doc).encode("utf-8")))
+    ask = lambda n: SimpleNamespace(prompt="", workdir=str(tmp_path), resume_session=f"replay:{key}:{n}")   # noqa: E731
+    assert lib.find(ask(0))[1] == 1                                    # 첫 차례 안의 이어 하기
+    assert lib.find(ask(1))[1] == 3                                    # 다음 실행은 재평가 차례 → 없음(실행 수)
+    fresh = SimpleNamespace(prompt="## 업무\n원인 진단\n", workdir=str(tmp_path), resume_session=None)
+    assert lib.find(fresh, (0, 1))[1] == 2 and lib.find(fresh, (0, 2))[1] == 3 and lib.find(fresh, (0, 0))[1] == 0

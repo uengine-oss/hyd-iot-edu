@@ -11,6 +11,8 @@
 이름을 쓰기 때문이다. 흐름 정의 id 는 쓰지 않는다(학생이 bpmn.io 로 그린 흐름은 id 가 다르다). 업무 이름은 띄어쓰기 · 대소문자를
 무시한다. 업무 하나에 파일 하나(AI_REPLAY_DIR/<업무 해시>.json.gz — 도구 결과가 커서 gzip, 실측 5 %)이고, 그 안에 실행이
 순서대로 들어 있다 — 첫 실행, 그리고 같은 세션을 이어 간 실행(사람이 질문에 답한 뒤, 결과 형식 교정). 다시 저장하면 덮어쓴다.
+같은 작업을 새로 다시 하는 실행 — 보류 뒤 재평가(task_deferral.reassess), 재작업 세대(process_scope.generation) — 은 실행 차례
+(runs[].attempt)로 가린다: 녹화 때 보류 → 재평가였으면 재생도 보류 → 재평가 순서로 나온다. 재평가 실행이 첫 실행을 덮어쓰지 않는다.
 그 업무의 저장 파일이 없으면 지어내지 않고 그 단계를 실패시킨다. 저장된 응답이 결과 형식에 맞지 않으면 실제 실행과 같은
 형식 검사가 실패시킨다.
 
@@ -19,7 +21,8 @@
 쓰기 도구는 다시 부른다: 저장된 AI가 부른 MCP 도구 가운데 서버가 읽기 전용으로 표시하지 않은 것(mcp_check.read_only_verdict —
 예: 판단 등록 submit_decision)은 저장된 결과를 쓰지 않고 이 PC의 서버를 바꿔 끼운 입력으로 실제로 부른다. 승인 전 쓰기는
 승인 대기 카드 등록뿐이라(문서/시스템/2_기준.md) 처리 건이 믿는 새 id(decision_id)는 이렇게만 생긴다. 그 도구가 돌려준 새 id
-(id · *_id 칸)도 저장된 응답에서 바꿔 끼운다. 읽기 도구는 다시 부르지 않고 저장된 결과를 쓴다. 명령형(stdio) 서버는 읽기로 본다
+(결과 문서 맨 위 id — submit_decision · submit_purchase 의 document.id)도 저장된 응답에서 바꿔 끼운다. 녹화 때 오류였던 쓰기 호출은
+다시 부르지 않고 저장된 오류 결과를 그대로 보인다(AI 가 그 오류를 보고 고쳐 다시 부른 호출만 다시 부른다). 읽기 도구는 다시 부르지 않고 저장된 결과를 쓴다. 명령형(stdio) 서버는 읽기로 본다
 (이 시스템의 명령형 서버는 읽기 전용 neo4j 뿐이고, 학생이 등록한 서버는 읽기 도구만 허용된다).
 
 갈아 끼우는 곳은 Runner 의 exec_fn(CLI 를 실행해 ExecEvent 를 내보내는 자리) 하나다. 그 뒤는 실제 실행과 같은 코드다.
@@ -93,13 +96,20 @@ def _key(step: str, case: str = "") -> str:
     return hashlib.sha256((f"{case}|{name}" if case else name).encode("utf-8")).hexdigest()[:16]
 
 
-def case_of_instance(repo) -> Callable[[str], str]:
-    """처리 건 id → 무엇에 대한 처리 건인가: 경보 종류(처리 건 값 pattern), 문서 추출이면 문서 내용 해시(manual_source.sha256 —
-    올릴 때마다 바뀌는 문서 id 가 아니라 내용)와 긴 문서의 구간 번호(segment.index). 둘 다 없으면(질문 답변 등) 빈 값."""
-    from procsvc import engine
+DEFERRED_MARK = "[DEFERRED]"       # task_deferral.defer 가 작업 log 에 남기는 표시 — 보류 한 번에 하나(재평가는 log 를 지우지 않는다)
 
-    def case(proc_inst_id: str) -> str:
-        inst = repo.get_instance(proc_inst_id) if proc_inst_id else None
+
+class case_of_instance:
+    """처리 건 id → 무엇에 대한 처리 건인가: 경보 종류(처리 건 값 pattern), 문서 추출이면 문서 내용 해시(manual_source.sha256 —
+    올릴 때마다 바뀌는 문서 id 가 아니라 내용)와 긴 문서의 구간 번호(segment.index). 둘 다 없으면(질문 답변 등) 빈 값.
+    reassessments(작업 id): 그 작업이 지금까지 보류한 횟수 = 지금 실행이 몇 번째 재평가인가(보류 n번 뒤의 새 실행은 n번째 재평가)."""
+
+    def __init__(self, repo):
+        self.repo = repo
+
+    def __call__(self, proc_inst_id: str) -> str:
+        from procsvc import engine
+        inst = self.repo.get_instance(proc_inst_id) if proc_inst_id else None
         values = engine.variables(inst) if inst else {}
         if values.get("pattern"):
             return str(values["pattern"])
@@ -108,7 +118,28 @@ def case_of_instance(repo) -> Callable[[str], str]:
             segment = values.get("segment") if isinstance(values.get("segment"), dict) else {}
             return f"문서 {str(source['sha256'])[:16]}" + (f" 구간 {segment['index']}" if segment.get("index") else "")
         return ""
-    return case
+
+    def reassessments(self, workitem_id: str) -> int:
+        row = self.repo.get_workitem(workitem_id) if workitem_id else None
+        return str((row or {}).get("log") or "").count(DEFERRED_MARK)
+
+
+def _attempt_label(attempt) -> str:
+    """실행 차례(재작업 세대 · 재평가 횟수)를 사람이 읽는 말로. 첫 세대의 첫 실행은 빈 값."""
+    g, n = attempt or (0, 0)
+    return " · ".join(([f"재작업 세대 {g}"] if g else []) + ([f"재평가 {n}회째"] if n else []))
+
+
+def _run_attempt(run: dict) -> tuple[int, int]:
+    a = run.get("attempt") or {}            # 옛 저장분(차례 없음) = 첫 실행
+    return int(a.get("generation") or 0), int(a.get("reassessment") or 0)
+
+
+def _what(step: str, case: str, attempt) -> str:
+    """저장분이 없을 때 알림에 쓰는 업무 이름: 「원인 진단」 업무(경보 COOLER_DEGRADATION · 재평가 1회째)."""
+    where = [(case if case.startswith("문서") else f"경보 {case}")] if case else []
+    where += [_attempt_label(attempt)] if _attempt_label(attempt) else []
+    return f"「{step or '이 단계'}」 업무" + (f"({' · '.join(where)})" if where else "")
 
 
 def _event_dict(ev: ExecEvent) -> dict:
@@ -227,6 +258,14 @@ class Library:
     def case(self, request) -> str:
         return self.case_of(str((_read_json(Path(request.workdir) / TASK_FILE) or {}).get("proc_inst_id") or ""))
 
+    def attempt(self, request) -> tuple[int, int]:
+        """이 새 실행의 차례: (재작업 세대, 재평가 횟수). 세대는 작업 기록의 process_scope, 재평가 횟수는 그 작업의 보류 횟수
+        (case_of 가 처리 흐름 DB 를 읽을 수 있을 때 — 워커는 늘 case_of_instance(repo) 를 준다)."""
+        task = _read_json(Path(request.workdir) / TASK_FILE) or {}
+        generation = int((task.get("process_scope") or {}).get("generation") or 0)
+        count = getattr(self.case_of, "reassessments", None)
+        return generation, (int(count(str(task.get("id") or ""))) if count else 0)
+
     def file_of(self, key: str) -> Path:
         return self.root / f"{key}.json.gz"
 
@@ -266,9 +305,21 @@ class Library:
         owner = self._owner_of(request.resume_session) if request.resume_session else None
         if owner is not None:                        # 같은 세션을 이어 간 실행: 그 업무 파일 뒤에 붙인다(그 뒤의 옛 이어 하기는 버린다)
             doc, i = owner
+            if doc["runs"][i].get("attempt"):
+                run["attempt"] = doc["runs"][i]["attempt"]
             doc["runs"] = doc["runs"][: i + 1] + [run]
-        elif step:                                   # 업무의 첫 실행: 그 업무 파일을 새로 쓴다(다시 저장하면 덮어쓴다)
-            doc = {"format": FORMAT, "step": step, "case": self.case(request), "provider": provider_id, "runs": [run]}
+        elif step:                                   # 새 실행: 첫 실행이면 그 업무 파일을 새로 쓴다(다시 저장하면 덮어쓴다)
+            attempt = self.attempt(request)
+            case = self.case(request)
+            doc = {"format": FORMAT, "step": step, "case": case, "provider": provider_id, "runs": [run]}
+            if attempt != (0, 0):
+                # 재평가 · 재작업 실행: 같은 업무 파일에서 앞 차례 실행 뒤에 붙인다(첫 실행을 덮어쓰지 않는다 — 검수 R2).
+                # 이 차례와 그 뒤 차례의 옛 실행은 버린다(뒤 차례는 앞 실행을 이어 받은 것이라 함께 낡는다)
+                run["attempt"] = {"generation": attempt[0], "reassessment": attempt[1]}
+                old = self.load(step, case)
+                if old is not None:
+                    doc = old
+                    doc["runs"] = [r for r in old["runs"] if _run_attempt(r) < attempt] + [run]
         else:
             log.warning("업무 이름도 이어 갈 저장분도 없는 실행이라 AI 응답을 저장하지 않았습니다")
             return None
@@ -280,18 +331,29 @@ class Library:
         self.root.mkdir(parents=True, exist_ok=True)
         path = self.path_of(doc["step"], doc.get("case") or "")
         path.write_bytes(gzip.compress((text + "\n").encode("utf-8"), mtime=0))      # gzip 머리에 시각을 넣지 않는다
-        log.info("AI 응답 저장: %s · %s%s (실행 %d개)", path.name, doc["step"], f" · {doc['case']}" if doc.get("case") else "", len(doc["runs"]))
+        label = _attempt_label(_run_attempt(run))
+        log.info("AI 응답 저장: %s · %s%s%s (실행 %d개)", path.name, doc["step"], f" · {doc['case']}" if doc.get("case") else "",
+                 f" · {label}" if label else "", len(doc["runs"]))
         return path
 
-    def find(self, request) -> tuple[dict | None, int]:
-        """(업무 파일, 쓸 실행 순번). 이어 하기면 replay:<업무 해시>:<순번> 세션의 다음 실행, 아니면 그 업무의 첫 실행."""
+    def find(self, request, attempt: tuple[int, int] | None = None) -> tuple[dict | None, int]:
+        """(업무 파일, 쓸 실행 순번 — 없으면 실행 수). 이어 하기면 replay:<업무 해시>:<순번> 세션의 다음 실행(같은 차례일 때만),
+        아니면 그 업무에서 이 실행 차례(첫 실행 · n번째 재평가 · 재작업 세대)의 첫 실행."""
         resume = request.resume_session or ""
         if resume.startswith(SESSION_PREFIX):
             key, _, n = resume[len(SESSION_PREFIX):].rpartition(":")
             p = self.file_of(key)
-            return (self._read(p) if p.is_file() else None), (int(n) + 1 if n.isdigit() else 0)
+            doc = self._read(p) if p.is_file() else None
+            i = int(n) + 1 if n.isdigit() else 0
+            if doc is not None and 0 < i < len(doc["runs"]) and _run_attempt(doc["runs"][i]) != _run_attempt(doc["runs"][i - 1]):
+                i = len(doc["runs"])                # 다음 실행은 다른 차례(재평가)의 첫 실행이다 — 이어지는 응답이 아니다
+            return doc, i
         step = step_of(request)
-        return (self.load(step, self.case(request)) if step else None), 0
+        doc = self.load(step, self.case(request)) if step else None
+        if doc is None:
+            return None, 0
+        attempt = tuple(attempt) if attempt is not None else self.attempt(request)
+        return doc, next((i for i, r in enumerate(doc["runs"]) if _run_attempt(r) == attempt), len(doc["runs"]))
 
 
 def recording(inner, library: Library, provider_of: Callable[[object], str]):
@@ -303,7 +365,7 @@ def recording(inner, library: Library, provider_of: Callable[[object], str]):
         for ev in gen:
             seen.append(ev)
             yield ev
-        library.save(request, seen, provider_id=provider_of(provider))
+        library.save(request, seen, provider_id=provider_of(provider))      # Runner 가 보류를 기록하기 전이다(실행 차례가 아직 그대로)
     run.accepts_check_stop = True
     return run
 
@@ -327,32 +389,32 @@ class _Swaps:
             self.objects.append((copy.deepcopy(old), copy.deepcopy(new)))
             for k in old.keys() & new.keys():
                 self.pair(old[k], new[k])
-        elif isinstance(old, list) and isinstance(new, list) and len(old) == len(new):
-            for a, b in zip(old, new):
-                self.pair(a, b)
+        elif isinstance(old, list) and isinstance(new, list):
+            # 목록은 자리끼리 짝짓지 않는다 — 고정 입력 ontology_catalog(그래프의 id 목록)는 학생 그래프와 한 항목만 달라도 뒤 항목이
+            # 한 칸씩 밀려 제안의 지식 id 가 다른 id 로 바뀌었다(검수 R4). 같은 id 를 가진 항목끼리만 짝짓는다.
+            now = {b["id"]: b for b in new if isinstance(b, dict) and isinstance(b.get("id"), str)}
+            for a in old:
+                if isinstance(a, dict) and isinstance(a.get("id"), str) and a["id"] in now:
+                    self.pair(a, now[a["id"]])
         elif isinstance(old, str) and isinstance(new, str) and old:
             self.exact.setdefault(old, new)
 
     def pair_ids(self, old, new) -> None:
-        """도구가 새로 만든 것의 id: 같은 자리의 id · *_id · *Id 칸 글이 다르면 짝짓는다."""
-        if isinstance(old, dict) and isinstance(new, dict):
-            for k in old.keys() & new.keys():
-                if (k == "id" or k.endswith("_id") or k.endswith("Id")) and isinstance(old[k], str) and isinstance(new[k], str):
-                    if old[k] != new[k]:
-                        self.exact[old[k]] = new[k]
-                else:
-                    self.pair_ids(old[k], new[k])
-        elif isinstance(old, list) and isinstance(new, list):
-            for a, b in zip(old, new):
-                self.pair_ids(a, b)
+        """쓰기 도구가 새로 만든 것의 id 만 짝짓는다: 결과 문서 맨 위의 id(_created — submit_decision · submit_purchase 의
+        document.id = 판단 id). 안쪽 칸(cards[].id 스킬 · sopId 절차 · origin 의 입력 값)은 기존 지식 id 이거나 입력을 되돌려 준
+        것이다 — 자리끼리 짝지으면 이 PC에서 카드 순위가 바뀔 때 저장된 결과의 절차가 다른 절차로 바뀌었다(검수 R1)."""
+        a, b = _created(old), _created(new)
+        if a is not None and b is not None and isinstance(a.get("id"), str) and isinstance(b.get("id"), str) and a["id"] != b["id"]:
+            self.exact[a["id"]] = b["id"]
 
     def text(self, s: str) -> str:
         if s in self.exact:
             return self.exact[s]
-        for old in sorted((o for o in self.exact if _id_like(o)), key=len, reverse=True):
-            if old in s:
-                s = s.replace(old, self.exact[old])
-        return s
+        olds = sorted((o for o in self.exact if _id_like(o)), key=len, reverse=True)
+        if not olds:
+            return s
+        # 한 번에 바꾼다: 차례로 replace 하면 A→B, B→A 가 함께 있을 때 둘 다 같은 값이 된다(검수 R1). 긴 값을 먼저 맞춘다.
+        return re.sub("|".join(map(re.escape, olds)), lambda m: self.exact[m.group(0)], s)
 
     def apply(self, value):
         if isinstance(value, dict):
@@ -378,6 +440,34 @@ def _mcp_target(tool: str | None) -> tuple[str, str] | None:
         server, _, name = tool.partition("/")
         return server, name
     return None
+
+
+def _created(result) -> dict | None:
+    """쓰기 도구 결과에서 새로 만든 문서: 업무 도구 서버의 봉투({"result": "ok", "document": {…}} — dmn_mcp.tools.ok)면 document,
+    봉투가 없으면 결과 객체 그 자체."""
+    if isinstance(result, dict) and result.get("result") == "ok" and isinstance(result.get("document"), dict):
+        return result["document"]
+    return result if isinstance(result, dict) else None
+
+
+_ERROR_TEXT = re.compile(r"\A\s*(error\b|mcp error|http [45]\d\d\b)", re.I)
+
+
+def _failed(output, is_error=False) -> bool:
+    """도구 결과가 오류인가: CLI 가 오류로 표시했거나(is_error), 봉투가 오류({"result": "error"} — dmn_mcp.tools.error)거나,
+    id 없이 error 칸만 있거나, JSON 이 아닌 오류 글(Error · MCP error · HTTP 4xx/5xx 로 시작)."""
+    if is_error:
+        return True
+    body = _as_json(output)
+    if isinstance(body, dict):
+        return body.get("result") == "error" or (bool(body.get("error")) and "id" not in body and "document" not in body)
+    return body is None and bool(_ERROR_TEXT.match(_text_of(output)))
+
+
+def _text_of(content) -> str:
+    if isinstance(content, list):
+        return "\n".join(str(b.get("text") or "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+    return content if isinstance(content, str) else ""
 
 
 def _as_json(content):
@@ -438,11 +528,12 @@ def replaying(library: Library):
     끼우면 최종 응답 · 사람 질문 판정이 저장 당시와 달라진다)."""
     def run(provider, request, env, *, check_stop=None) -> Iterable[ExecEvent]:
         run.last = None
-        doc, i = library.find(request)
+        resumed = (request.resume_session or "").startswith(SESSION_PREFIX)
+        attempt = None if resumed else library.attempt(request)
+        doc, i = library.find(request, attempt)
         if doc is None or i >= len(doc["runs"]):
-            case = library.case(request)
-            what = (f"「{doc['step']}」의 이어지는 응답" if doc else
-                    f"「{step_of(request) or '이 단계'}」 업무" + (f"({'' if case.startswith('문서') else '경보 '}{case})" if case else ""))
+            what = (f"「{doc['step']}」의 이어지는 응답" if doc and resumed else
+                    _what(step_of(request), library.case(request), attempt))
             yield _error(f"{what}의 저장된 AI 응답이 없습니다. API 키를 넣으면 실제 AI로 실행합니다.")
             return
         saved = doc["runs"][i]
@@ -450,12 +541,15 @@ def replaying(library: Library):
         carried = Path(request.workdir) / SWAPS_FILE
         # 2026-10-23 라이브: 저장분이 '판단 등록 → 결과 형식 교정(이어 하기)' 두 실행이면, 이어 하기 실행이 저장 때의 판단 id 를 결과에 다시 써
         # 승인 단계가 'decision is EXECUTED'로 거부됐다. 다시 부른 쓰기 도구의 새 id 는 같은 작업 폴더의 다음 실행으로 넘긴다.
-        if i > 0 and carried.is_file():          # 이어 하기: 앞 실행이 다시 부른 쓰기 도구의 새 id(판단 id 등)를 이어 받는다
+        if resumed and carried.is_file():        # 이어 하기: 앞 실행이 다시 부른 쓰기 도구의 새 id(판단 id 등)를 이어 받는다
             swaps.exact.update(json.loads(carried.read_text(encoding="utf-8")))
+        elif not resumed:                        # 새 실행(재평가 포함): 앞 실행이 남긴 대응은 이 실행 것이 아니다
+            carried.unlink(missing_ok=True)
         swaps.pair(saved.get("context") or {}, _task_context(request.workdir))
         tools = _Tools(request.workdir)
         session = f"{SESSION_PREFIX}{_key(doc['step'], doc.get('case') or '')}:{i}"
-        run.last = {"step": doc["step"], "recorded_at": doc["recorded_at"], "rerun": []}
+        run.last = {"step": doc["step"], "recorded_at": doc["recorded_at"], "rerun": [], "kept_errors": 0,
+                    "attempt": _attempt_label(_run_attempt(saved))}
         yield ExecEvent(kind=ExecEventKind.RUN_START, session_id=session)
         events = saved["events"]
         live: dict[str, dict] = {}                   # 다시 부른 쓰기 도구: tool_use_id → 이 PC의 결과
@@ -467,18 +561,26 @@ def replaying(library: Library):
             target = _mcp_target(d.get("tool"))
             try:
                 if d["kind"] == ExecEventKind.TOOL_START.value and target and tools.writes(*target):
-                    result = tools.call(*target, d["tool_input"] if isinstance(d["tool_input"], dict) else {})
-                    live[d.get("tool_use_id")] = result
-                    run.last["rerun"].append(f"{target[0]}/{target[1]}")
-                    if result["is_error"]:
-                        raise RunError(f"{target[0]}/{target[1]} 가 오류를 돌려줬습니다: {result['text'][:500]}")
                     recorded = next((e for e in events[n + 1:] if e["kind"] == ExecEventKind.TOOL_END.value
                                      and e.get("tool_use_id") == d.get("tool_use_id")), None)
                     old = (saved.get("tool_outputs_full") or {}).get(d.get("tool_use_id")) or (recorded.get("tool_output") if recorded else None)
+                    if recorded is not None and _failed(old, recorded.get("is_error")):
+                        # 녹화 때 오류였던 호출(틀린 세대 · 사건 상태 409 …): 저장된 AI 는 그 오류를 보고 고쳐 다시 불렀다. 여기서 다시 부르면
+                        # 이번에도 오류면 회복 전에 단계가 끝나고, 이번엔 받아들여지면 판단만 등록된 채 실패한다(검수 R3) — 저장된 오류를 그대로 보인다
+                        run.last["kept_errors"] += 1
+                        yield _event_from(d)
+                        continue
+                    result = tools.call(*target, d["tool_input"] if isinstance(d["tool_input"], dict) else {})
+                    live[d.get("tool_use_id")] = result
+                    run.last["rerun"].append(f"{target[0]}/{target[1]}")
+                    if _failed(result["text"], result["is_error"]):
+                        raise RunError(f"{target[0]}/{target[1]} 가 오류를 돌려줬습니다: {result['text'][:500]}")
                     old, new = _as_json(old), _as_json(result["text"])
                     if old is None and new is not None:     # 짝을 못 지으면 저장 때의 id(이미 쓴 판단 등)가 이 처리 건에 들어간다
+                        made = (_created(new) or {}).get("id")
                         raise RunError(f"{target[0]}/{target[1]} 의 저장된 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼울 수 없습니다 "
-                                       "(결과가 파일로 빠진 옛 저장분이면 그 실습을 다시 저장하세요)")
+                                       "(결과가 파일로 빠진 옛 저장분이면 그 실습을 다시 저장하세요)"
+                                       + (f". 이 PC에서는 이미 등록됐습니다(id {made}) — 승인 대기 목록에서 확인하세요" if made else ""))
                     swaps.pair_ids(old, new)
                     # 바로 남긴다 — Runner 는 결과를 받으면 이 생성기를 끝까지 돌리지 않고 닫을 수 있다(2026-10-23 라이브: 끝에서 쓰면 안 남았다)
                     carried.parent.mkdir(parents=True, exist_ok=True)
@@ -511,7 +613,12 @@ def used_notice(last: dict | None) -> str | None:
     if not last:
         return None
     rerun = f" 쓰기 도구({', '.join(dict.fromkeys(last['rerun']))})는 이 PC에서 다시 실행했습니다." if last.get("rerun") else ""
-    return f"AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」, {last['recorded_at']} 저장).{rerun}"
+    kept = (f" 저장 때 오류였던 쓰기 호출 {last['kept_errors']}건은 다시 부르지 않고 그 오류를 그대로 보였습니다."
+            if last.get("kept_errors") else "")
+    attempt = f" · {last['attempt']}" if last.get("attempt") else ""
+    # 같은 업무면 같은 응답을 쓰는 설계(검수 R5): 경보 세기 · 원인 가지 · 사람의 답은 업무를 가리는 데 쓰지 않는다 — 무시된다는 것을 밝힌다
+    return (f"AI 응답 재생 — 미리 저장한 응답이며 지금 AI가 새로 추론한 것이 아닙니다(「{last['step']}」{attempt}, {last['recorded_at']} 저장)."
+            f"{rerun}{kept} 같은 업무면 같은 응답을 쓰므로 지금의 경보 세기 · 원인 · 사람의 답이 저장 때와 달라도 응답은 그대로입니다.")
 
 
 # ---------------------------------------------------------------- 촬영 뒤 확인: 저장된 AI 응답 목록
@@ -520,7 +627,8 @@ def listing(library: Library) -> list[dict]:
     rows = []
     for path in sorted(library.root.glob("*.json.gz")) if library.root.is_dir() else []:
         doc = library._read(path)
-        rows.append({"file": path.name, "step": doc["step"], "case": doc.get("case") or "", "runs": len(doc["runs"]),
+        later = [l for l in dict.fromkeys(_attempt_label(_run_attempt(r)) for r in doc["runs"]) if l]
+        rows.append({"file": path.name, "step": doc["step"], "case": doc.get("case") or "", "runs": len(doc["runs"]), "attempts": later,
                      "recorded_at": doc.get("recorded_at"), "kb": max(1, round(path.stat().st_size / 1024)),
                      "masked": gzip.decompress(path.read_bytes()).decode("utf-8").count(mcp_check.MASK)})
     return sorted(rows, key=lambda r: (r["case"], r["step"]))
@@ -536,7 +644,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"저장된 AI 응답: {root} — 업무 {len(rows)}개")
     for r in rows:
         masked = f", 비밀값 가림 {r['masked']}곳" if r["masked"] else ""
-        print(f"  {r['recorded_at']}  {r['case'] or '-'}  「{r['step']}」  실행 {r['runs']}개 · {r['kb']} KB{masked}  ({r['file']})")
+        later = f"(그 가운데 {', '.join(r['attempts'])})" if r.get("attempts") else ""
+        print(f"  {r['recorded_at']}  {r['case'] or '-'}  「{r['step']}」  실행 {r['runs']}개{later} · {r['kb']} KB{masked}  ({r['file']})")
     return 0
 
 
