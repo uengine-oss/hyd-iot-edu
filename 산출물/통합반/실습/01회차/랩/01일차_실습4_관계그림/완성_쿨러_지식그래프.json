@@ -1,0 +1,427 @@
+{
+  "style": {
+    "font-family": "sans-serif",
+    "background-color": "#ffffff",
+    "background-image": "",
+    "background-size": "100%",
+    "node-color": "#ffffff",
+    "border-width": 4,
+    "border-color": "#000000",
+    "radius": 50,
+    "node-padding": 5,
+    "node-margin": 2,
+    "outside-position": "auto",
+    "node-icon-image": "",
+    "node-background-image": "",
+    "icon-position": "inside",
+    "icon-size": 64,
+    "caption-position": "inside",
+    "caption-max-width": 200,
+    "caption-color": "#000000",
+    "caption-font-size": 50,
+    "caption-font-weight": "normal",
+    "label-position": "inside",
+    "label-display": "pill",
+    "label-color": "#000000",
+    "label-background-color": "#ffffff",
+    "label-border-color": "#000000",
+    "label-border-width": 4,
+    "label-font-size": 40,
+    "label-padding": 5,
+    "label-margin": 4,
+    "directionality": "directed",
+    "detail-position": "inline",
+    "detail-orientation": "parallel",
+    "arrow-width": 5,
+    "arrow-color": "#000000",
+    "margin-start": 5,
+    "margin-end": 5,
+    "margin-peer": 20,
+    "attachment-start": "normal",
+    "attachment-end": "normal",
+    "relationship-icon-image": "",
+    "type-color": "#000000",
+    "type-background-color": "#ffffff",
+    "type-border-color": "#000000",
+    "type-border-width": 0,
+    "type-font-size": 16,
+    "type-padding": 5,
+    "property-position": "outside",
+    "property-alignment": "colon",
+    "property-color": "#000000",
+    "property-font-size": 16,
+    "property-font-weight": "normal"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "position": {
+        "x": 129,
+        "y": 350.9358545592096
+      },
+      "caption": "HYD-01 유압 파워팩",
+      "labels": [
+        "Asset"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n2",
+      "position": {
+        "x": 348.3092378949128,
+        "y": 350.9358545592096
+      },
+      "caption": "오일 쿨러",
+      "labels": [
+        "Component"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n3",
+      "position": {
+        "x": 348.3092378949128,
+        "y": 616.1428144685815
+      },
+      "caption": "유온 센서 TS1",
+      "labels": [
+        "Sensor"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n4",
+      "position": {
+        "x": 613.5161978042847,
+        "y": 616.1428144685815
+      },
+      "caption": "유온 상승",
+      "labels": [
+        "Symptom"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n5",
+      "position": {
+        "x": 613.5161978042847,
+        "y": 350.9358545592096
+      },
+      "caption": "쿨러 냉각 성능 상실",
+      "labels": [
+        "FailureMode"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n6",
+      "position": {
+        "x": 948.9456366441771,
+        "y": 503.02924348969634
+      },
+      "caption": "쿨러 핀 오염",
+      "labels": [
+        "Cause"
+      ],
+      "properties": {
+        "냉각 효율": "30초 평균 < 70 %",
+        "팬 진동": "2분 평균 < 0.9 mm/s"
+      },
+      "style": {
+        "node-color": "#fde2e2"
+      }
+    },
+    {
+      "id": "n7",
+      "position": {
+        "x": 815.453223359767,
+        "y": 658.9403108688706
+      },
+      "caption": "팬 최대 운전",
+      "labels": [
+        "Skill"
+      ],
+      "properties": {},
+      "style": {
+        "node-color": "#dcfce7"
+      }
+    },
+    {
+      "id": "n8",
+      "position": {
+        "x": 978.9919600281071,
+        "y": 305.4081198942671
+      },
+      "caption": "쿨러 핀 세척",
+      "labels": [
+        "Skill"
+      ],
+      "properties": {},
+      "style": {
+        "node-color": "#dcfce7"
+      }
+    },
+    {
+      "id": "n9",
+      "position": {
+        "x": 1089.557927113661,
+        "y": 708.9897888028808
+      },
+      "caption": "HM-8.5 즉시 완화 조치",
+      "labels": [
+        "ManualSection"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n10",
+      "position": {
+        "x": 1235.226520056302,
+        "y": 305.4081198942671
+      },
+      "caption": "HM-8.7 근본 조치",
+      "labels": [
+        "ManualSection"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n11",
+      "position": {
+        "x": 711.8312350322135,
+        "y": -4
+      },
+      "caption": "팬 구동 불량",
+      "labels": [
+        "Cause"
+      ],
+      "properties": {
+        "팬 진동": "2분 평균 ≥ 0.9 mm/s"
+      },
+      "style": {
+        "node-color": "#fde2e2"
+      }
+    },
+    {
+      "id": "n12",
+      "position": {
+        "x": 932.4738447538505,
+        "y": 166.7855712327881
+      },
+      "caption": "팬 점검",
+      "labels": [
+        "Skill"
+      ],
+      "properties": {},
+      "style": {
+        "node-color": "#dcfce7"
+      }
+    },
+    {
+      "id": "n13",
+      "position": {
+        "x": 1208.680288772674,
+        "y": 127.2776878604667
+      },
+      "caption": "HM-8.1 팬 벨트 점검",
+      "labels": [
+        "ManualSection"
+      ],
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n14",
+      "position": {
+        "x": 425.0464620361047,
+        "y": 63.47238253656832
+      },
+      "caption": "주변 온도 상승",
+      "style": {
+        "node-color": "#fde2e2"
+      },
+      "labels": [
+        "Cause"
+      ],
+      "properties": {
+        "캐비닛 온도": "2분 평균 ≥ 35 ℃"
+      }
+    },
+    {
+      "id": "n15",
+      "position": {
+        "x": 81.30805998035612,
+        "y": 63.47238253656832
+      },
+      "caption": "캐비닛 환기 보강",
+      "style": {
+        "node-color": "#dcfce7"
+      },
+      "labels": [
+        "Skill"
+      ],
+      "properties": {}
+    }
+  ],
+  "relationships": [
+    {
+      "id": "n0",
+      "fromId": "n1",
+      "toId": "n2",
+      "type": "HAS_COMPONENT",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n1",
+      "fromId": "n2",
+      "toId": "n3",
+      "type": "MONITORED_BY",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n2",
+      "fromId": "n4",
+      "toId": "n3",
+      "type": "OBSERVED_BY",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n3",
+      "fromId": "n4",
+      "toId": "n5",
+      "type": "INDICATES",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n4",
+      "fromId": "n5",
+      "toId": "n2",
+      "type": "OCCURS_IN",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n5",
+      "fromId": "n6",
+      "toId": "n5",
+      "type": "CAUSES",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n6",
+      "fromId": "n5",
+      "toId": "n7",
+      "type": "MITIGATED_BY",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n7",
+      "fromId": "n5",
+      "toId": "n8",
+      "type": "REMEDIED_BY",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n8",
+      "fromId": "n8",
+      "toId": "n6",
+      "type": "ADDRESSES",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n9",
+      "fromId": "n7",
+      "toId": "n9",
+      "type": "REFERS_TO",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n10",
+      "fromId": "n8",
+      "toId": "n10",
+      "type": "REFERS_TO",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n11",
+      "fromId": "n11",
+      "toId": "n5",
+      "type": "CAUSES",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n12",
+      "fromId": "n5",
+      "toId": "n12",
+      "type": "REMEDIED_BY",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n13",
+      "fromId": "n12",
+      "toId": "n11",
+      "type": "ADDRESSES",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n14",
+      "fromId": "n12",
+      "toId": "n13",
+      "type": "REFERS_TO",
+      "properties": {},
+      "style": {}
+    },
+    {
+      "id": "n15",
+      "type": "CAUSES",
+      "style": {},
+      "properties": {},
+      "fromId": "n14",
+      "toId": "n5"
+    },
+    {
+      "id": "n16",
+      "type": "ADDRESSES",
+      "style": {},
+      "properties": {},
+      "fromId": "n15",
+      "toId": "n14"
+    },
+    {
+      "id": "n17",
+      "type": "REMEDIED_BY",
+      "style": {},
+      "properties": {},
+      "fromId": "n5",
+      "toId": "n15"
+    },
+    {
+      "id": "n18",
+      "type": "REFERS_TO",
+      "style": {},
+      "properties": {},
+      "fromId": "n15",
+      "toId": "n10"
+    }
+  ]
+}
