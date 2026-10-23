@@ -9,7 +9,7 @@ export const CUES=HERE+'../../포털소개_큐.json';
 const FIXED={
  'top:진행 중':{css:'#openCount',anchor:'below'},
  'top:서비스':{css:'#healthDots span',anchor:'below'},
- 'top:나 고르기':{css:'#inboxBadge button',anchor:'below'},
+ 'top:나':{css:'#shellMe',anchor:'below'},
  'top:알림':{css:'#shellBell',anchor:'below'},
  'inbox-me':{css:'select[data-inbox-me]',anchor:'right'},
  'scen:HYD-01':{text:'HYD-01',tag:'strong',anchor:'below'},
@@ -34,6 +34,7 @@ export function target(name){
  if(k==='card')return{text:v,within:'.card',tag:'span',anchor:'after'};
  if(k==='map'||k==='flow')return{text:v,tag:'text',anchor:'below'};
  if(k==='onto')return{text:v,tag:'text',anchor:'below'};
+ if(k==='inst')return{text:v,within:'#content',nth:0,anchor:'after'};
  if(k==='agent')return{text:v,tag:'strong',anchor:'after'};
  if(k==='text')return{text:v,anchor:'below'};
  throw Error('unknown portal target '+name);
