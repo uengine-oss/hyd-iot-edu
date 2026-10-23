@@ -36,7 +36,7 @@ export async function seg(ctx,n){
  const c=await portal(ctx);
  // 녹화 전(화면에 남지 않음): 구간 1은 저장소 첫 화면에서 시작한다. 다른 구간은 앞 구간 끝 화면 그대로.
  if(n===1||n===6){if(!ctx.p.url().startsWith('https://github.com/uengine-oss/hyd-iot-edu'))await ctx.p.goto('https://github.com/uengine-oss/hyd-iot-edu',{waitUntil:'domcontentloaded'});
-  await ctx.p.evaluate(()=>scrollTo(0,0));await ctx.sleep(1500);}
+  await ctx.p.evaluate(()=>scrollTo(0,0));await ctx.sleep(1500);await ctx.installPointer();}
  await ctx.begin();
  for(const q of cues){
   const dur=JSON.parse(await fs.readFile(ctx.audio+'/'+q.id+'.json','utf8')).duration_ms;

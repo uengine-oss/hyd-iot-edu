@@ -10,7 +10,8 @@ const CFG=JSON.parse(fs.readFileSync(HERE+'config.json','utf8'));
 const browser=await chromium.launch({headless:true,args:[`--remote-debugging-port=${CFG.cdp}`,`--force-device-scale-factor=${CFG.viewport.deviceScaleFactor}`,'--hide-scrollbars','--font-render-hinting=none']});
 const ctx=await browser.newContext({viewport:{width:CFG.viewport.width,height:CFG.viewport.height},deviceScaleFactor:CFG.viewport.deviceScaleFactor,locale:'ko-KR',timezoneId:'Asia/Seoul'});
 const page=await ctx.newPage();
-await page.goto(CFG.portal,{waitUntil:'domcontentloaded'});
+// 빈 페이지로 시작한다. 각 구간이 자기 화면(GitHub · 포털)을 연다 — 포털이 꺼진 채 README만 찍을 때 여기서 죽었다(2026-10-23).
+await page.goto('about:blank');
 console.log(JSON.stringify({ready:true,cdp:CFG.cdp,url:page.url()}));
 process.on('SIGTERM',async()=>{await browser.close();process.exit(0);});
 await new Promise(()=>{});
