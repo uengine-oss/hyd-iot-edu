@@ -16,9 +16,12 @@ from pathlib import Path
 ROOT, F4, FIN, NO = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
 OUT_H, OUT_M = Path(sys.argv[5]), Path(sys.argv[6])
 BASE = sys.argv[7] if len(sys.argv) > 7 else None
-JOBS = {"3": [("통합반", "03", "통합반 3회차"), ("실전반", "03", "실전반 3회차")],
-        "4": [("통합반", "04", "통합반 4회차"), ("실전반", "04", "실전반 4회차"),
-              ("통합반", "05", "통합반 5회차(실전반 4회차와 같은 문장 맞춤)"), ("통합반", "06", "통합반 6회차(실전반 4회차와 같은 문장 맞춤)")]}[NO]
+JOBS = {"3": [("통합반", "03", "통합반 3회차")],
+        "4": [("통합반", "04", "통합반 4회차"),
+              ("통합반", "05", "통합반 5회차(실전반 4회차 점검에서 찾은 같은 문단의 오류)"), ("통합반", "06", "통합반 6회차(실전반 4회차 점검에서 찾은 같은 문단의 오류)")],
+        "s3": [("실전반", "03", "실전반 3회차(재편 참고 — 산출물에 반영하지 않음)")],
+        "s4": [("실전반", "04", "실전반 4회차(재편 참고 — 산출물에 반영하지 않음)")]}[NO]
+LABEL = {"3": "3회차", "4": "4회차", "s3": "실전반 3회차 재편 참고", "s4": "실전반 4회차 재편 참고"}[NO]
 HEAD = re.compile(r"^## \[SLIDE ([0-9~]+)\](.*)$", re.M)
 TOK = re.compile(r"\s+|[가-힣A-Za-z0-9_]+|.", re.S)
 esc = html.escape
@@ -172,17 +175,17 @@ def md_html(p):
     return "\n".join(out)
 
 
-title = f"{NO}회차 최종 점검 전후"
+title = f"{LABEL} 최종 점검 전후"
 OUT_H.write_text(f"""<!doctype html><html lang=ko><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>{title}</title><style>{CSS}</style>
-<h1>{NO}회차 이론 대본 · 덱 최종 점검 — 전과 후</h1>
+<h1>{LABEL} 이론 대본 · 덱 최종 점검 — 전과 후</h1>
 <p class=muted>전 = 점검 전 대본{f'(develop {BASE[:8]})' if BASE else ''}. 후 = 점검 · 마지막 손질 · 통합을 거친 대본. 지운 곳은 <del>빨강</del>, 넣은 곳은 <ins>초록</ins>. 낭독 추정은 분당 275음절(대본시간.py와 같은 셈).</p>
 {md_html(intro)}
 <table><tr><th>과정</th><th>파일</th><th>바뀐 장</th><th>낭독 추정</th></tr>{srow}</table>
 <h3>구분별 변경 수(변경목록 행, 1차 + 마지막 손질 + 통합)</h3><table>{crow}</table>
-<h2 id=deck>덱 화면 수정</h2>{md_html(deck) or '<p class=muted>(없음)</p>'}
+<h2 id=deck>덱 화면 수정</h2>{md_html(deck) or '<p class=muted>(없음)</p>'}{(F4 / "통합" / f"{NO}회차_덱그림.html").read_text("utf-8") if (F4 / "통합" / f"{NO}회차_덱그림.html").exists() else ""}
 <h2>대본 전 · 후</h2>{''.join(H)}</html>""", "utf-8")
-OUT_M.write_text("\n".join([f"# {NO}회차 이론 대본 · 덱 최종 점검 — 전과 후", "",
+OUT_M.write_text("\n".join([f"# {LABEL} 이론 대본 · 덱 최종 점검 — 전과 후", "",
                             "지운 말은 ~~취소선~~, 넣은 말은 **굵게**. `>` 줄은 낭독하지 않는 제작 표시.", "",
                             md_block(intro), "", "| 과정 | 파일 | 바뀐 장 | 낭독 추정 |", "|---|---|---|---|", *mrow, "",
-                            "## 덱 화면 수정", "", md_block(deck) or "(없음)", "", "# 대본 전 · 후", *MD]) + "\n", "utf-8")
+                            "## 덱 화면 수정", "", md_block(deck) or "(없음)", "", md_block(F4 / "통합" / f"{NO}회차_덱그림.md"), "", "# 대본 전 · 후", *MD]) + "\n", "utf-8")
 print(OUT_H, OUT_M, sum(s[2] for s in summary), "장")
