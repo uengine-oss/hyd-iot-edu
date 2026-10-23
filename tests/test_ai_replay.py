@@ -304,6 +304,44 @@ def test_write_tool_failure_on_this_pc_fails_the_step_with_its_reason(tmp_path, 
     assert row["draft_status"] == "FAILED" and "쓰기 도구를 이 PC에서 다시 부르지 못했습니다" in err and "세대" in err
 
 
+def _persists_big_result(keep_file=True):
+    """Claude Code 처럼 큰 도구 결과를 작업 폴더 안 파일로 빼고 AI 에게는 안내문과 앞부분만 준다(2026-10-23 실측: 발주안 등록 51 KB)."""
+    def run(provider, request, env):
+        for ev in _submits_decision(provider, request, env):
+            if ev.kind is ExecEventKind.TOOL_END and ev.tool_use_id == "w1":
+                full = ev.tool_output[0]["text"]
+                p = Path(request.workdir) / ".agent-home" / "claude-code" / "projects" / "p" / "s" / "tool-results" / "w1.txt"
+                if keep_file:
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    p.write_text(full, encoding="utf-8")
+                ev = ExecEvent(kind=ExecEventKind.TOOL_END, tool=ev.tool, tool_use_id="w1", session_id=ev.session_id,
+                               tool_output=f"<persisted-output>\nOutput too large (51.6KB). Full output saved to: {p}\n\nPreview (first 2KB):\n{full[:12]}\n...\n</persisted-output>")
+            yield ev
+    return run
+
+
+def test_write_tool_result_moved_to_a_file_still_gets_its_new_id(tmp_path, monkeypatch):
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _persists_big_result(), _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [])
+    repo, inst = _new_case("INC-stu-5", "AL-stu-5")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    assert row["status"] == "SUBMITTED" and row["output"]["guide_card"] == {"decision": "dec-live-0042", "alert": "AL-stu-5"}
+    assert "dec-rec-0001" not in _texts(repo, row)
+
+
+def test_write_tool_result_that_cannot_be_read_fails_instead_of_keeping_the_saved_id(tmp_path, monkeypatch):
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _persists_big_result(keep_file=False), _new_case("INC-rec-1", "AL-rec-1"))
+    _fake_servers(monkeypatch, [])
+    repo, inst = _new_case("INC-stu-6", "AL-stu-6")
+    _runner(tmp_path, repo, ai_replay.replaying(lib), "replay").poll_once()
+    row = _diagnose(repo, inst)
+    err = repo.list_events(todo_id=row["id"])[-1]["data"]["raw_error"]
+    assert row["draft_status"] == "FAILED" and "저장된 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼울 수 없습니다" in err
+
+
 def test_result_file_gets_this_case_values_too(tmp_path, monkeypatch):
     def to_file(provider, request, env):
         for ev in _submits_decision(provider, request, env):

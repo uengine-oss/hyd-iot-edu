@@ -122,6 +122,26 @@ def _event_from(d: dict) -> ExecEvent:
     return ExecEvent(**dict(d, kind=ExecEventKind(d["kind"])))
 
 
+_PERSISTED = re.compile(r"\A<persisted-output>\n.*?Full output saved to: (\S+)", re.S)
+
+
+def _persisted_full(events: list[dict], workdir) -> dict[str, str]:
+    """Claude Code 는 큰 도구 결과를 작업 폴더 안 파일로 빼고 AI 에게 안내문(<persisted-output>)과 앞부분만 준다(2026-10-23 실측:
+    발주안 등록 결과 51 KB). 재생 때 새 id 를 짝지으려면 원래 결과가 있어야 하므로 그 파일을 읽어 둔다: {tool_use_id: 원래 결과}.
+    작업 폴더 밖 경로는 읽지 않는다."""
+    root, found = Path(workdir).resolve(), {}
+    for d in events:
+        m = _PERSISTED.match(d.get("tool_output") or "") if isinstance(d.get("tool_output"), str) else None
+        if d["kind"] != ExecEventKind.TOOL_END.value or not m:
+            continue
+        path = Path(m.group(1)).resolve()
+        if root in path.parents and path.is_file():
+            found[d.get("tool_use_id")] = path.read_text(encoding="utf-8", errors="replace")
+        else:
+            log.warning("AI 응답 저장: %s 의 결과가 파일로 빠졌는데 작업 폴더에서 그 파일을 찾지 못했습니다 — %s", d.get("tool"), path)
+    return found
+
+
 def _joined(events: list[dict]) -> list[dict]:
     """이어진 AI 설명 조각(토큰 단위 ASSISTANT_TEXT)을 한 덩이로 — 재생할 때 조각 경계에 걸린 id 도 바꿔 끼울 수 있게."""
     out: list[dict] = []
@@ -196,7 +216,8 @@ def _masked(text: str, secrets: dict[str, str]) -> tuple[str, list[str]]:
 
 
 class Library:
-    """업무 하나에 파일 하나: {"format", "step", "recorded_at", "provider", "runs": [{"session_id", "events", "result_file", "context"}, …]}."""
+    """업무 하나에 파일 하나: {"format", "step", "recorded_at", "provider", "runs": [{"session_id", "events", "result_file", "context", "tool_outputs_full"}, …]}.
+    tool_outputs_full: 파일로 빠진 큰 도구 결과의 원래 글({tool_use_id: 글}) — 재생 때 새 id 짝짓기에 쓴다."""
 
     def __init__(self, root: Path, case_of: Callable[[str], str] | None = None):
         self.root = Path(root)
@@ -239,6 +260,7 @@ class Library:
                "events": _joined([_event_dict(ev) for ev in events if ev.kind is not ExecEventKind.THINKING]),
                "result_file": result_path.read_text(encoding="utf-8") if result_path.is_file() else None,
                "context": _task_context(request.workdir)}
+        run["tool_outputs_full"] = _persisted_full(run["events"], request.workdir)
         step = step_of(request)
         owner = self._owner_of(request.resume_session) if request.resume_session else None
         if owner is not None:                        # 같은 세션을 이어 간 실행: 그 업무 파일 뒤에 붙인다(그 뒤의 옛 이어 하기는 버린다)
@@ -446,7 +468,12 @@ def replaying(library: Library):
                         raise RunError(f"{target[0]}/{target[1]} 가 오류를 돌려줬습니다: {result['text'][:500]}")
                     recorded = next((e for e in events[n + 1:] if e["kind"] == ExecEventKind.TOOL_END.value
                                      and e.get("tool_use_id") == d.get("tool_use_id")), None)
-                    swaps.pair_ids(_as_json(recorded.get("tool_output") if recorded else None), _as_json(result["text"]))
+                    old = (saved.get("tool_outputs_full") or {}).get(d.get("tool_use_id")) or (recorded.get("tool_output") if recorded else None)
+                    old, new = _as_json(old), _as_json(result["text"])
+                    if old is None and new is not None:     # 짝을 못 지으면 저장 때의 id(이미 쓴 판단 등)가 이 처리 건에 들어간다
+                        raise RunError(f"{target[0]}/{target[1]} 의 저장된 결과를 읽을 수 없어 새로 만든 id 를 바꿔 끼울 수 없습니다 "
+                                       "(결과가 파일로 빠진 옛 저장분이면 그 실습을 다시 저장하세요)")
+                    swaps.pair_ids(old, new)
             except RunError as e:
                 yield _error(f"「{doc['step']}」에서 저장된 AI가 부른 쓰기 도구를 이 PC에서 다시 부르지 못했습니다 — {e}")
                 return
