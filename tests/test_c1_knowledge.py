@@ -99,7 +99,7 @@ def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
     d = manual_extraction.definition()
     # 2.4 includes business SOPs; 2.3 removed the provider pin. Preservation
     # tests retain exact registered 2.2/2.3 snapshots while running the new one.
-    assert d['version'] == manual_extraction.VERSION == '2.4'
+    assert d['version'] == manual_extraction.VERSION == '2.5'
     assert 'agentConfig' not in d['activities'][0]
     # 2.1: 단계의 선택 기준과 절차의 적용 조건을 나눈다(라이브 4차 SOP-PUR-13 — 조건을 값 고르기에 미리 적용해 다른 공급사를 골랐다)
     assert '선택 기준을 그대로 적용' in manual_extraction.INSTRUCTION and 'dt:compliance EXCLUDE 규칙으로 옮겨' in manual_extraction.INSTRUCTION
@@ -281,6 +281,15 @@ def test_suggested_links_are_shape_checked_in_the_proposal(archive):
     bad = copy.deepcopy(prop)
     bad['procedures'][2]['link']['affects'] = [dict(target='sv:ts1', sign='up')]
     with pytest.raises(ValueError):
+        manual_extraction.validate_proposal(source, bad)
+
+
+def test_rules_outside_knowledge_are_rejected_instead_of_vanishing(archive):
+    # 2026-10-23 리허설: AI가 규칙을 proposal 맨 위 rules 에 적어 거부 없이 미리보기에서 사라졌다(PR-07 규칙 4개)
+    source, prop = load(archive, 'C')
+    bad = copy.deepcopy(prop)
+    bad['rules'] = bad.pop('knowledge')['rules']
+    with pytest.raises(ValueError, match=r'정해지지 않은 칸이 있습니다: rules .*knowledge\.rules'):
         manual_extraction.validate_proposal(source, bad)
 
 

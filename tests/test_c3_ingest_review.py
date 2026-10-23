@@ -215,3 +215,39 @@ def test_unreadable_or_ambiguous_load_history_stops_instead_of_guessing(monkeypa
     _history(monkeypatch, status, rows)
     with pytest.raises(SystemExit, match=message):
         c3_ingest.loaded_document('PR-07_spare-parts-standard.md')
+
+
+def _fake_api(monkeypatch, sources, runs, previews):
+    """원문 목록 · 추출 이력 · 추출 결과만 답하는 가짜 process API. 새 추출 시작(POST)은 시험 실패로 둔다."""
+    posted = []
+    def call(method, path, body=None):
+        if method != "GET":
+            posted.append(path)
+            raise AssertionError(f"--reuse 가 새 추출을 시작했다: {path}")
+        if path.startswith("/api/kg/manuals/sources?"):
+            return 200, dict(items=sources, next_offset=None)
+        sid, _, rest = path[len("/api/kg/manuals/sources/"):].partition("/extractions")
+        if rest == "":
+            return 200, dict(items=[dict(proc_inst_id=i) for i in runs.get(sid, [])])
+        inst = rest.lstrip("/")
+        return 200, ({"preview": previews[inst]} if inst in previews else {"status": "COMPLETED", "preview": None})
+    monkeypatch.setattr(c3_ingest, "call", call)
+    return posted
+
+
+def test_reuse_finds_the_finished_extraction_on_an_older_source_of_the_same_content(monkeypatch):
+    # 2026-10-23 리허설: 원문을 다시 올리면 판본 id 가 새로 생겨, 이번 판본만 보던 --reuse 가 검토 없는 새 추출을 시작했다
+    src = lambda doc, sha="s" * 64, fname="PR-07_spare-parts-standard.md": dict(source_id=f"manual:{doc}:{sha}", sha256=sha, filename=fname)
+    sources = [src("new"), src("old"), src("other", sha="t" * 64)]
+    posted = _fake_api(monkeypatch, sources, runs={"manual:new:" + "s" * 64: ["closed"], "manual:old:" + "s" * 64: ["passed"]},
+                       previews={"passed": {"procedures": []}})
+    sid, inst = c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", "s" * 64)
+    assert (sid, inst) == ("manual:old:" + "s" * 64, {"instance": "passed", "reused": True}) and posted == []
+
+
+def test_reuse_stops_instead_of_starting_an_unreviewed_extraction(monkeypatch):
+    sources = [dict(source_id="manual:new:" + "s" * 64, sha256="s" * 64, filename="PR-07_spare-parts-standard.md")]
+    posted = _fake_api(monkeypatch, sources, runs={"manual:new:" + "s" * 64: ["closed"]}, previews={})
+    with pytest.raises(SystemExit, match="다시 쓸 끝난 추출이 없습니다"):
+        c3_ingest.finished_extraction("PR-07", "PR-07_spare-parts-standard.md", "s" * 64)
+    assert posted == []
