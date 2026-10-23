@@ -35,6 +35,7 @@ foreach ($name in @('Ensure-Minimum', 'Install-Winget')) {
 }
 function Say { param($text, $color) }
 function Refresh-Path { }
+function Resolve-WingetExecutable { 'winget' }
 function Record($name, $state, $note) { $script:recorded = $state }
 function winget {
     $script:calls += 1

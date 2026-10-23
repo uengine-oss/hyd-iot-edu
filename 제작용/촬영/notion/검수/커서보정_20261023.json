@@ -1,0 +1,58 @@
+{
+  "duration_ms": 3334260,
+  "segments": [
+    {
+      "output": "D:\\work\\study\\hyd-portal-latest-20261014\\.evidence\\notion-record-20261023\\lesson\\full-take9\\cursor-repair\\Notion_커서보정.mp4",
+      "duration_ms": 2904902,
+      "rendered_pointer_frames": 10251,
+      "corrected_motions": 262,
+      "intervals": 3048,
+      "skipped_path_checks": [
+        {
+          "motion": 213,
+          "reason": "path consistency not verified",
+          "max_residual_px": 151.92580812137155
+        },
+        {
+          "motion": 241,
+          "reason": "path consistency not verified",
+          "max_residual_px": 158.13377411797387
+        }
+      ],
+      "source_audio": "unchanged narration.wav",
+      "editing": "Only verified cursor patches; original UI/time/order retained. Display-only interpolation, not recovered recording frames. VFR with up to 30fps cursor interpolation.",
+      "decode": "passed",
+      "plan_summary": {
+        "corrected": 145,
+        "partially corrected": 122,
+        "stationary: excluded": 49,
+        "unchanged: insufficient positions": 14,
+        "unchanged: pointer detection uncertain": 2
+      },
+      "audio_packet_sha256": "SHA256=59a770f78926b4a491731a3085c32b5bc88cd2154c1d56e55c603d93b5ce5ed1",
+      "audio_packet_match_original": true
+    },
+    {
+      "output": "D:\\work\\study\\hyd-portal-latest-20261014\\.evidence\\notion-record-20261023\\lesson\\continuation\\cursor-repair\\Notion_커서보정.mp4",
+      "duration_ms": 429358,
+      "rendered_pointer_frames": 1853,
+      "corrected_motions": 36,
+      "intervals": 393,
+      "skipped_path_checks": [],
+      "source_audio": "unchanged narration.wav",
+      "editing": "Only verified cursor patches; original UI/time/order retained. Display-only interpolation, not recovered recording frames. VFR with up to 30fps cursor interpolation.",
+      "decode": "passed",
+      "plan_summary": {
+        "corrected": 17,
+        "partially corrected": 19,
+        "stationary: excluded": 1,
+        "unchanged: insufficient positions": 1
+      },
+      "audio_packet_sha256": "SHA256=fafd34305ad63d9fa8170a9f7a1556783eef83d5e0b1c768097b0746aad68357",
+      "audio_packet_match_original": true
+    }
+  ],
+  "join_decode": "passed: 2899–2914 seconds",
+  "scope": "cursor display only; original recordings, narration, UI actions and Notion page preserved",
+  "limitations": "Unsafe or unverified intervals retain original cursor. Waveform sync is not full listening review. No claim that lost source frames were recovered."
+}
