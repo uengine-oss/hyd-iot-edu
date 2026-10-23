@@ -469,11 +469,11 @@
   }
 
   async function doReset() {
-    const ok = await UI.confirm({ title: '기준으로 되돌리기', body: '내가 가져온 흐름 · 판본 · 매핑 초안을 지웁니다. 기준 흐름은 그대로입니다.', ok: '되돌리기', danger: true });
+    const ok = await UI.confirm({ title: '기준으로 되돌리기', body: '가져온 흐름 · 판본 · 매핑 초안을 지웁니다. 기준 흐름과, 지금 경보에 배포된 흐름(수업 흐름 포함)은 남깁니다 — 배포를 내리려면 [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」를 쓰세요.', ok: '되돌리기', danger: true });
     if (!ok) return;
     try {
       const r = await call('POST', '/api/flows/reset');
-      UI.toast(`되돌림 — 판본 ${r.versions} · 초안 ${r.drafts} 지움`, { tone: 'ok' });
+      UI.toast(`되돌림 — 판본 ${r.versions} · 초안 ${r.drafts} 지움` + ((r.kept || []).length ? ` · 배포 중이라 남김: ${r.kept.join(', ')}` : ''), { tone: 'ok', timeout: 8000 });
       S.view = null; S.mapping = null; S.el.querySelector('#flowEditor').innerHTML = ''; loadList();
     } catch (e) { UI.toast(e.message, { tone: 'neg', timeout: 8000 }); }
   }

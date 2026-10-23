@@ -81,7 +81,8 @@ def test_reference_flow_can_be_authored_and_registered_in_browser(browser_page,n
             change(page,f'[data-value="{fid}"]','예' if c['value'] is True else c['value'])
     for tid in mapping['timers']: change(page,f'[data-timer="{tid}"]','10')
     check(page)
-    expect(page.locator('#flowProblems')).to_contain_text('사전 검사 통과')
+    # 2026-10-23 갱신: 통과 문구가 '사전 검사 통과'→'구조 검사 통과 — …'로 바뀜(flows.js resultBlock, 구조만 보고 연결 성공은 보장 안 함을 밝힘)
+    expect(page.locator('#flowProblems')).to_contain_text('구조 검사 통과')
     expect(page.locator('[data-agent="T_agent"] option:checked')).to_contain_text({'cooling-emergency':'냉각 긴급 대응','pm-planning':'정기 정비 계획','spare-purchase':'예비품 구매'}[name])
     page.locator('#flowRegister').click()
     expect(page.locator('#flowMsg')).to_contain_text('등록했습니다')
@@ -97,7 +98,8 @@ def test_reference_flow_can_be_authored_and_registered_in_browser(browser_page,n
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.locator('#flowEditor').screenshot(path=str(folder/f'flow-{name}-{width}.png'))
     page.locator('[data-open]').click()
-    expect(page.locator('#flowProblems')).to_contain_text('사전 검사 통과')
+    # 2026-10-23 갱신: 통과 문구가 '사전 검사 통과'→'구조 검사 통과 — …'로 바뀜(flows.js resultBlock, 구조만 보고 연결 성공은 보장 안 함을 밝힘)
+    expect(page.locator('#flowProblems')).to_contain_text('구조 검사 통과')
     # 같은 파일을 다시 가져와도 포털의 start_patterns=[]는 저장된 선택을 지우지 않는다.
     with page.expect_response(lambda r: r.url.endswith('/api/flows/import')):
         page.locator('#flowImport').click()
@@ -105,7 +107,8 @@ def test_reference_flow_can_be_authored_and_registered_in_browser(browser_page,n
     assert page.locator('[data-pattern]:checked').count()==len(mapping['start']['patterns'])
     for pattern in mapping['start']['patterns']:
         expect(page.locator(f'[data-pattern="{pattern}"]')).to_be_checked()
-    expect(page.locator('#flowProblems')).to_contain_text('사전 검사 통과')
+    # 2026-10-23 갱신: 통과 문구가 '사전 검사 통과'→'구조 검사 통과 — …'로 바뀜(flows.js resultBlock, 구조만 보고 연결 성공은 보장 안 함을 밝힘)
+    expect(page.locator('#flowProblems')).to_contain_text('구조 검사 통과')
 
 
 def test_service_types_failure_and_part_switch(browser_page):
@@ -133,7 +136,8 @@ def test_service_types_failure_and_part_switch(browser_page):
     check(page)
     saved=client.get('/api/flows/Process_small').json()['mapping']['tasks']['T']
     assert saved=={'part':'svc:wait','config':{'duration':'PT10M'}}
-    expect(page.locator('#flowProblems')).to_contain_text('사전 검사 통과')
+    # 2026-10-23 갱신: 통과 문구가 '사전 검사 통과'→'구조 검사 통과 — …'로 바뀜(flows.js resultBlock, 구조만 보고 연결 성공은 보장 안 함을 밝힘)
+    expect(page.locator('#flowProblems')).to_contain_text('구조 검사 통과')
 
 
 def test_missing_human_role_is_reported_without_losing_form(browser_page):
@@ -151,4 +155,5 @@ def test_missing_human_role_is_reported_without_losing_form(browser_page):
     expect(page.locator('#flowName')).to_have_value('담당자 역할 확인')
     change(page,'[data-role="T"]','운전원')
     check(page)
-    expect(page.locator('#flowProblems')).to_contain_text('사전 검사 통과')
+    # 2026-10-23 갱신: 통과 문구가 '사전 검사 통과'→'구조 검사 통과 — …'로 바뀜(flows.js resultBlock, 구조만 보고 연결 성공은 보장 안 함을 밝힘)
+    expect(page.locator('#flowProblems')).to_contain_text('구조 검사 통과')

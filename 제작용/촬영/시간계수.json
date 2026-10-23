@@ -6,17 +6,17 @@
   0.2396
  ],
  "overflow": [
-  0.1563,
-  0.8203,
-  2.4851,
-  0.461,
-  -0.1453
+  0.1312,
+  0.8247,
+  2.0349,
+  0.2838,
+  0.3269
  ],
  "speech_samples": 123,
- "overflow_samples": 114,
+ "overflow_samples": 140,
  "sources": [
   "../../.evidence/arrows-ontology-20261023"
  ],
  "note": "speech=[음절,숫자,영문,부호] 초/개, overflow=[입력글자,클릭,끌기,키,상수] 초",
- "check_error_pct": 0.4
+ "check_error_pct": -1.0
 }

@@ -114,6 +114,17 @@ def when_text(tests):
     return ' and '.join(f"{t['variable']} {t['operator']} {fmt(t['value'])}" for t in tests)
 
 
+def blanks_as_absent(link):
+    """추출 지시는 확인할 수 없는 link 값을 「비워 두라」고 한다. 빈 글('')로 비운 칸은 값 없음(null)과 같다 — 2026-10-23 리허설에서
+    중계 모델이 고장 유형 · 승인 역할을 ''로 비워 PM-02 · PR-07 추출이 세 번 다 「fm:… 형식의 id가 필요합니다 ('')」로 거부됐다.
+    원자 조치의 빈 값도 같다. 값이 꼭 필요한 곳(적재의 고장 유형 등)은 여전히 「필요합니다」로 거부된다."""
+    out = {k: (None if isinstance(v, str) and not v.strip() else v) for k, v in link.items()}
+    if isinstance(out.get('actions'), list):
+        out['actions'] = [dict(a, value=None) if isinstance(a, dict) and isinstance(a.get('value'), str) and not a['value'].strip() else a
+                          for a in out['actions']]
+    return out
+
+
 def validate_link(sop, link, *, sops, require_failure_mode):
     """One SOP's reviewed (or suggested) connection: failure mode · relation · kind · approver · atomic actions · addressed causes.
     affects is validated by manual_review.validate_affects (kept there for the A079 shape)."""
@@ -121,6 +132,7 @@ def validate_link(sop, link, *, sops, require_failure_mode):
         link = {}
     if not isinstance(link, dict):
         raise ValueError(f'{sop}: 연결은 객체여야 합니다')
+    link = blanks_as_absent(link)
     if link.get('kind') == 'reference':
         from .manual_references import reference_shape
         return reference_shape(sop, link)
@@ -337,6 +349,12 @@ CATALOG_Q = {
     'causes': 'MATCH (n:Cause) OPTIONAL MATCH (n)-[:CAUSES]->(f:FailureMode) RETURN n.id AS id, n.name AS name, collect(f.id) AS failureModes ORDER BY id',
     'skills': 'MATCH (n:Skill) RETURN n.id AS id, n.sopId AS sopId, n.name AS name, n.kind AS kind, '
               'n.scope AS scope, n.executable AS executable, n.supplier_policy AS supplier_policy ORDER BY id',
+    # 고장 유형만으로 고르는 조치 후보 규칙이 있는 고장 유형: 고장 조치(MITIGATED_BY · REMEDIED_BY) SOP는 적재 때 이 규칙에 자동으로
+    # 합류한다(skill_graph.CANDIDATE_RULES_Q 와 같은 조건). 예방 정비 · 구매 SOP는 합류하지 않는다 — 문서가 후보 규칙을 진술해야 한다.
+    'candidate_failure_modes': "MATCH (:DecisionTable {id:'dt:action-candidates'})-[:HAS_RULE]->(r:Rule)-[t:TESTS]->(i:InputData) "
+                               "WITH r, collect({input:i.id, operator:t.operator, value:t.value}) AS tests "
+                               "WHERE size(tests)=1 AND tests[0].input='in:failure-mode' AND tests[0].operator='==' "
+                               "RETURN DISTINCT tests[0].value AS id ORDER BY id",
 }
 
 

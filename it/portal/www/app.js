@@ -348,13 +348,7 @@ $('#btnReset').addEventListener('click', async (e) => {
   catch (err) { scenarioMessage('초기화 실패: ' + err.message, true); }
   finally { b.disabled = false; await refreshFast(); }
 });
-let scaleBusy = false;
-$('#selScale').addEventListener('change', async (e) => {
-  const select = e.target, value = Number(select.value); scaleBusy = true; select.disabled = true;
-  try { await postJ(API.plant + '/api/time_scale', { scale: value }); logLine('시간 배율 ' + value + '×'); scenarioMessage('설비 시뮬레이션 배율을 변경했습니다.'); }
-  catch (err) { select.value = String(state.plant?.time_scale || 20); scenarioMessage('배율 변경 실패: ' + err.message, true); }
-  finally { scaleBusy = false; select.disabled = false; await refreshFast(); }
-});
+// 2026-10-23: 화면의 배율 선택(5 · 10 · 20 · 40)은 설비 물리만 바꿔(/api/time_scale) 감지 · 처리 · 에이전트(20배)와 어긋났다 — 고정 표시로 바꿨다
 
 function renderGwLog(entries) {
   const box = $('#gwLog'); box.innerHTML = '';
@@ -625,7 +619,10 @@ async function refreshFast() {
     if (state.plant) {
       $('#simT').textContent = `${Math.floor(state.plant.sim_t / 60)}분 ${Math.floor(state.plant.sim_t % 60)}초`;
       $('#scale').textContent = state.plant.time_scale;
-      if (!scaleBusy && document.activeElement !== $('#selScale')) $('#selScale').value = String(state.plant.time_scale);
+      $('#scaleNow').textContent = state.plant.time_scale;
+      $('#scaleFixed').classList.toggle('neg', Number(state.plant.time_scale) !== 20);
+      $('#scaleFixed').title = Number(state.plant.time_scale) === 20 ? '수업은 20배 고정입니다. 설비 · 감지 · 처리 · 에이전트가 같은 배율로 돌아야 해서 화면에서 바꾸지 않습니다'
+        : `설비 배율이 ${state.plant.time_scale}배로 수업 설정(20배)과 다릅니다 — 감지 · 처리와 시간이 어긋납니다. 강사에게 알리세요`;
       for (const [a, u] of Object.entries(state.plant.units)) {
         const arr = state.waves[a] || []; arr.push(u.tags.PS1); state.waves[a] = arr.slice(-100);
       }

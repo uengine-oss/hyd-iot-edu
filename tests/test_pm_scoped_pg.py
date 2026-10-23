@@ -150,3 +150,20 @@ def test_pg_reschedule_preserves_owned_allocations_with_no_free_inventory(scoped
         after=snapshot(cx)
         assert after['stocks']==before['stocks'] and after['reservations']==before['reservations']
         assert len(after['orders'])==len(before['orders'])
+
+
+def test_pg_b_reset_releases_held_parts_and_full_reset_archives_reservations(scoped):
+    """2026-10-23: B [초기화]가 예약을 남겨 다시 연 B의 부품 가용이 0이었고, 업무 전체 초기화는 예약 행의 FK 때문에 실패했다."""
+    cx,req=scoped
+    cx.execute((Path(__file__).resolve().parents[1]/'it/supabase/migrations/20261023000059_reset_releases_pm_parts.sql').read_text(encoding='utf8'))
+    forward=execute(cx,req)
+    assert cx.execute('select count(*) from ent.pm_part_reservations where released_at is null').fetchone()[0]>0
+    cx.execute('select ent.reset_pm_counters(null)')
+    orders=cx.execute("select status from ent.work_orders where scope_group=(select scope_group from ent.work_orders where id=%s)",(forward['ref'],)).fetchall()
+    assert orders and {s for (s,) in orders}=={'취소'}
+    assert cx.execute('select count(*) from ent.pm_part_reservations where released_at is null').fetchone()[0]==0
+    assert cx.execute("select bool_and(on_hand=base_on_hand and reserved=base_reserved) from ent.spare_stock where part_no in('P-PMP-SEAL','P-RTN-FLT')").fetchone()[0]
+    held=cx.execute('select count(*) from ent.pm_part_reservations').fetchone()[0]
+    cx.execute('select ent.reset_executions()')
+    assert cx.execute('select count(*) from ent.work_orders').fetchone()[0]==0
+    assert cx.execute("select count(*) from ent.execution_archive where table_name='pm_part_reservations' and reset_no=(select max(reset_no) from ent.execution_archive)").fetchone()[0]==held

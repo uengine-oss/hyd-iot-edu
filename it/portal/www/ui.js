@@ -94,7 +94,7 @@ const UI = {
     'card.penalty': '감점', 'card.warn': '경고', 'card.noAction': '세부 동작 없음',
     'score.bsc': '성과 지표', 'score.forecast': '예측', 'score.warn': '경고', 'score.penalty': '감점', 'score.precedent': '과거 선택', 'score.delivery': '납기', 'score.quality': '품질',
     // 조치 판단 규칙
-    'dec.conditions': '판단 조건', 'dec.asset': '설비', 'dec.pattern': '이상 패턴', 'dec.mode': '운전 모드', 'dec.state': '설비 상태', 'dec.fan': '팬 100 % 누적 (시간)', 'dec.standby': '예비 펌프',
+    'dec.conditions': '판단 조건', 'dec.asset': '설비', 'dec.pattern': '이상 패턴', 'dec.mode': '운전 모드', 'dec.state': '설비 상태', 'dec.fan': '팬 100 % 연속 운전 (시간)', 'dec.standby': '예비 펌프',
     'dec.standbyReady': '가용', 'dec.standbyBusy': '정비 중', 'dec.empty': '설비와 이상 패턴을 고르고 판단을 실행하세요', 'dec.loading': '규칙을 사실에 대어 보는 중…',
     'dec.cause': '원인', 'dec.causeTop': '판정', 'dec.causeMore': '다른 원인 후보', 'dec.candidates': '조치 후보', 'dec.rules': '적용한 규칙', 'dec.inputs': '판단에 쓴 값', 'dec.trace': '처리 과정',
     'dec.summaryMore': '자세히', 'dec.fired': '발동', 'dec.notApplicable': '해당 없음', 'dec.noFact': '사실 없음', 'dec.ruleSelect': '후보 선택', 'dec.ruleCompliance': '규정 적합성',

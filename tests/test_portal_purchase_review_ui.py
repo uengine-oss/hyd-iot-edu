@@ -67,7 +67,8 @@ def test_purchase_reference_keeps_source_and_explicit_fields_without_fault_or_ex
     original=deepcopy(record)
     requests=open_review(page,record)
     text=page.locator('#manualResult').inner_text()
-    assert 'ERP 업무 범위' in text and '실행 후보 제외' in text and '구매 담당' in text
+    # 2026-10-23 갱신: 공개 용어 정리로 범위 선택지가 'ERP 업무 범위'→'구매 업무 범위'(hitl.js '구매 원문 절차 · 구매 업무 범위')
+    assert '구매 업무 범위' in text and '실행 후보 제외' in text and '구매 담당' in text
     assert '검토용 씰 키트' in text and 'part:review-seal' not in text
     assert not page.locator('#manualReviewed').is_checked()
     assert page.get_by_label('원문 절차의 사용 방식').input_value()=='false'
@@ -77,7 +78,7 @@ def test_purchase_reference_keeps_source_and_explicit_fields_without_fault_or_ex
     assert requests==[] and '원문을 대조하고 검토 완료를 표시하세요' in page.locator('#manualMsg').inner_text()
     page.locator('#manualResult').evaluate("e=>{const m=document.querySelector('main');m.scrollTop+=e.getBoundingClientRect().top-m.getBoundingClientRect().top-16;}")
     retain(page,'purchase-reference-review','#manualResult','Independent source-backed purchase/reference record; real GET catalogs and native review controls. No live commit, supplier fabrication, or ERP action.',
-           ['ERP 업무 범위','실행 후보 제외','검토용 씰 키트'])
+           ['구매 업무 범위','실행 후보 제외','검토용 씰 키트'])  # 2026-10-23 갱신: 공개 용어 정리로 범위 선택지가 'ERP 업무 범위'→'구매 업무 범위'(hitl.js '구매 원문 절차 · 구매 업무 범위')
     retain(page,'purchase-reference-fields','[data-purchase-fields]','Actual native scope/parts/use/role controls from an independent source review; source canonical values unchanged and human checkbox remains unchecked.',
            ['원문 절차의 사용 방식','구매 대상 부품','구매 승인 담당 역할'])
     check_review(page)
@@ -174,12 +175,17 @@ def test_purchase_execution_displays_real_preflight_relationship_result_without_
     choices['actions']=[{'id':'action:purchase-request','name':'구매 요청','code':'PR_CREATE','kind':'transaction','min':None,'max':None}]
     record=preview({'scope':'purchase','executable':True,'parts':['part:review-seal'],'approver':'role:purchasing',
                     'failureMode':None,'relation':None,'kind':'work_order','actions':[{'action':'action:purchase-request','value':'sup:registered'}]})
+    # 2026-10-23 갱신: 적재 전 검사에 CANDIDATE_RULE_MISSING(manual_preflight.py)이 들어와, 실행 구매 절차는 그 문서의 후보 규칙이 있어야 준비됨 — 원문 근거 후보 규칙을 둔다
+    choices['decision_tables']=[{'id':'dt:action-candidates','decision':'dec:action-candidates','inputs':[{'id':'in:pattern','variable':'pattern'}]}]
+    record['knowledge']={'rules':[{'id':'rule:review-candidates','section':'구매절','anchor':{'quote':'원문 공급 조건을 확인한다.'},
+        'table':'dt:action-candidates','effect':'SELECT','tests':[{'input':'in:pattern','operator':'==','value':'SPARE_BELOW_MIN'}],'outputs':['SOP-REVIEW-01']}]}
     record['validation']=manual_preflight.validate(record,choices)
     expected='실행 후보 기계 검사 통과' if related else '실행 후보 연결 확인 필요'
-    assert record['validation']['execution'][0]['ready'] is related
+    assert record['validation']['execution'][0]['ready'] is related, record['validation']['issues']
     open_review(page,record,choices)
     text=page.locator('#manualResult').inner_text()
-    assert expected in text and '실제 구매 승인이나 ERP 실행 완료를 뜻하지 않습니다' in text
+    # 2026-10-23 갱신: 공개 용어 정리로 'ERP 실행 완료'→'구매 실행 완료'(hitl.js 실행 후보 구조 검사 안내)
+    assert expected in text and '실제 구매 승인이나 구매 실행 완료를 뜻하지 않습니다' in text
     assert not page.locator('#manualReviewed').is_checked()
     if not related:
         assert '등록 공급사' in text and '검토용 씰 키트' in text

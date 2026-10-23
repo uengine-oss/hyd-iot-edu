@@ -122,3 +122,15 @@ def test_idempotency_conflict_is_409_on_the_memory_backend_too(tmp_path, monkeyp
     r = client.post("/api/exec", json=dict(body, asset="HYD-02"))
     assert r.status_code == 409 and "idempotency" in r.json()["detail"]
     assert client.post("/api/exec", json=dict(body, skill="skill:nope", decision="D-other")).status_code == 400   # other ValueErrors stay 400
+
+
+def test_a_database_outage_is_503_not_a_refusal(monkeypatch):
+    # 2026-10-23 점검: 업무 DB 연결 실패도 400(거절)으로 나가, process 가 장애를 「enterprise refused」로 읽었다
+    from fastapi.testclient import TestClient
+    class OperationalError(Exception):
+        pass
+    def down(req):
+        raise OperationalError('failed to resolve host "host.docker.internal"')
+    monkeypatch.setattr(entmain.ent, "execute", down)
+    r = TestClient(entmain.app).post("/api/exec", json={"decision": "D-1", "skill": "skill:schedule-maintenance", "asset": "HYD-01"})
+    assert r.status_code == 503 and "업무 DB에 연결하지 못했습니다" in r.json()["detail"]

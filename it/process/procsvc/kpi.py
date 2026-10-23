@@ -282,8 +282,8 @@ def calc_maint_cost(f: Fetch, w: Window, ctx: dict) -> Calc:
     value = round(sum(per.values()), 2)
     if unknown:
         return Calc(value, per, rows, status='partial', detail=detail,
-                    reason=f'작업지시 {len(rows_)}건 중 {len(unknown)}건은 업무 DB에 작업 비용 열이 없습니다 (세척 비용 '
-                           f'maintenance_profiles.clean_cost 만 있음): ' + ', '.join(sorted({u["task"] for u in unknown}))[:200])
+                    reason=f'작업지시 {len(rows_)}건 중 {len(unknown)}건은 업무 DB에 작업 비용이 없어 셀 수 없습니다 (비용은 '
+                           f'정비 기준표의 세척 비용만 있음): ' + ', '.join(sorted({u["task"] for u in unknown}))[:200])
     return Calc(value, per, rows, detail=detail, note=f'기간 합계 · 작업지시 {len(rows_)}건')
 
 

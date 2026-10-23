@@ -131,7 +131,7 @@
         <div class="field"><label for="decMode">운전 모드</label><select id="decMode"><option value="">현재 값 사용</option><option value="REMOTE_AUTO">원격 자동</option><option value="REMOTE_MANUAL">원격 수동</option><option value="LOCAL">현장 제어</option></select></div>
         <div class="field"><label for="decState">설비 상태</label><select id="decState"><option value="">현재 값 사용</option><option value="RUN">운전 중</option><option value="TRIP">보호 정지</option></select></div>
         <div class="field"><label for="decStandby">예비 펌프</label><select id="decStandby"><option value="">현재 값 사용</option><option value="true">가용</option><option value="false">정비 중</option></select></div>
-        <div class="field"><label for="decFan">팬 100 % 누적 (시간)</label><input id="decFan" type="number" min="0" step="1" placeholder="현재 값 사용"></div>
+        <div class="field"><label for="decFan">팬 100 % 연속 운전 (시간)</label><input id="decFan" type="number" min="0" step="1" placeholder="현재 값 사용"></div>
       </div>
       <div class="form-actions"><button class="btn primary" id="decRun">판단 실행</button></div>
     </section>
@@ -173,7 +173,7 @@
 
   <!-- ───────── 결함 시뮬레이션 ───────── -->
   <section class="view" id="view-scenario">
-    <div class="page-head"><h1>결함 시뮬레이션</h1><div class="page-tools"><label class="row-wrap">시간 배율 <select id="selScale"><option>5</option><option>10</option><option selected>20</option><option>40</option></select>×</label><button class="btn small" id="btnReset">전체 초기화</button></div></div>
+    <div class="page-head"><h1>결함 시뮬레이션</h1><div class="page-tools"><span class="row-wrap" id="scaleFixed" title="수업은 20배 고정입니다. 설비 · 감지 · 처리 · 에이전트가 같은 배율로 돌아야 해서 화면에서 바꾸지 않습니다">시간 배율 <b id="scaleNow">20</b>× (수업 고정)</span><button class="btn small" id="btnReset">전체 초기화</button></div></div>
     <div id="scenarioMsg" class="muted" role="status" aria-live="polite"></div>
     <div class="units" id="units"></div>
     <details class="fold" style="margin-top:var(--s6)"><summary>최근 제어 요청 결과</summary><div class="fold-body"><div class="log" id="gwLog"></div></div></details>

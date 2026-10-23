@@ -112,3 +112,21 @@ def test_the_guide_names_every_step_with_the_part_and_person_the_mapping_picks(w
         for cond in mapping["flows"].values():
             if "var" in cond:
                 assert f"`{B.condition_text(cond)}`" in guide, B.condition_text(cond)
+
+
+def test_a_decide_agent_without_the_decision_engine_is_caught_before_deploy(world):
+    # 2026-10-23 점검: 실습 6-5 · 6-7은 4회차에 만든 에이전트(필요한 서버만 연결)를 「판단 · 제안」에 붙인다. 판단 엔진(hyd-dmn)이
+    # 없으면 사전 검사는 통과하고 실행 때 evaluate_cards · submit_decision 을 못 불러 그 단계가 실패했다
+    did = "c3_cooling"
+    _, src, mapping = c3._flows().FLOWS[did]
+    base = world["rt"].defn.raw
+    node = next(k for k, v in mapping["tasks"].items() if v.get("part") == "task:decide")
+    def run(tools):
+        agents = c3.AGENTS + [{"id": "agent:student", "username": "학생 에이전트", "is_agent": True, "agent_type": "agent", "tools": tools}]
+        m = deepcopy(mapping); m["tasks"][node]["agent"] = "agent:student"
+        return B.check(B.parse_bpmn(src), m, {"catalog": B.catalog(base, agents), "definition_id": did, "version": "1",
+                                              "file_name": "f.bpmn", "xml_sha256": "x"})
+    bad = run("neo4j,enterprise")
+    assert not bad["ok"] and any("판단 엔진(hyd-dmn)에 연결되어 있지 않습니다" in p["reason"] and p["field"] == "agent" for p in bad["problems"])
+    assert run("neo4j,enterprise,hyd-dmn")["ok"]
+    assert run(None)["ok"]                    # 도구를 고르지 않은 에이전트는 등록된 서버를 모두 쓴다

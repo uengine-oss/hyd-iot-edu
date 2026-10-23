@@ -192,15 +192,18 @@ class EnterpriseState:
     def reset_spare_stock(self, part: str | None = None) -> dict:
         with self._lock:
             self._c2_defaults()
-            for p, b in data.SPARE_BASE.items():
-                if part not in (None, p):
-                    continue
-                row = self._s["erp"]["spare_stock"][p]
-                delta = b["on_hand"] - row["on_hand"]
-                row.update(on_hand=b["on_hand"], reserved=b["reserved"], on_order=0, below_since=None)
-                self._move(p, "RESET", delta, None, "RESET", "instructor", "수업 초기화")   # 시작값이 재주문점 아래면 이탈 시각을 바로 남긴다
+            self._reset_stock(part)
             self._save()
         return self.spare_stock(part)
+
+    def _reset_stock(self, part: str | None) -> None:
+        for p, b in data.SPARE_BASE.items():
+            if part not in (None, p):
+                continue
+            row = self._s["erp"]["spare_stock"][p]
+            delta = b["on_hand"] - row["on_hand"]
+            row.update(on_hand=b["on_hand"], reserved=b["reserved"], on_order=0, below_since=None)
+            self._move(p, "RESET", delta, None, "RESET", "instructor", "수업 초기화")   # 시작값이 재주문점 아래면 이탈 시각을 바로 남긴다
 
     # ---------------------------------------------------------------- C2 시나리오 B: 정기 정비 계획 · 운전시간 계수기
     def _pm_rows(self) -> list[dict]:
@@ -244,6 +247,16 @@ class EnterpriseState:
     def reset_pm_counters(self, asset: str | None = None) -> dict:
         with self._lock:
             self._c2_defaults()
+            # 아직 부품을 잡은 정기 정비 오더를 취소로 닫고 예약을 푼다 — 잡았던 부품 재고는 수업 시작값으로(ent.reset_pm_counters 와 같은 규칙).
+            # 계수기만 되돌리면 다시 연 B가 "도래"인데 부품 가용이 0이라 단독 · 즉시 시행이 재고 부족으로 빠졌다(2026-10-23 라이브).
+            held = set()
+            for o in self._s["cmms"]["work_orders"]:
+                parts = (o.get("reserved_parts") or []) + (o.get("issued_parts") or [])
+                if o["status"] == "배정됨" and asset in (None, o["asset"]) and parts and not o.get("reservations_released"):
+                    o.update(status=CANCELLED, cancelled_at=_now(), reservations_released=True)
+                    held |= {x["part_no"] for x in parts}
+            for p in sorted(held):
+                self._reset_stock(p)
             for a, b in data.PM_BASE.items():
                 if asset not in (None, a):
                     continue

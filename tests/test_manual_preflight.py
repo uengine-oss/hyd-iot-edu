@@ -19,7 +19,8 @@ def catalog():
                failure_modes=[dict(id='fm:pump')], roles=[dict(id='role:maint-mgr')],
                suppliers=[dict(id='sup:a')], skills=[dict(id='skill:existing', sopId='SOP-EXISTING')],
                decision_tables=[dict(id='dt:allow-actions', decision='dec:allow',
-                                     inputs=[dict(id='in:load', variable='load')])])
+                                     inputs=[dict(id='in:load', variable='load')])],
+               candidate_failure_modes=[dict(id='fm:pump')])    # fm:pump 고장 조치는 기존 후보 규칙에 자동 합류한다
     return out
 
 
@@ -119,6 +120,32 @@ def test_actual_stored_extraction_preview_inline_links_are_checked_without_rewri
         assert len(expected) == 6
         assert {i['sop'] for i in result['issues'] if i['code'] == 'FAILURE_MODE_REQUIRED'} == expected
     assert p == before and result['can_commit'] is False and result['needs_human_review'] is True
+
+
+def test_executable_sop_no_candidate_rule_can_reach_is_reported(catalog):
+    # 2026-10-23 리허설: 구조판에 후보 규칙이 없고 문서도 후보 규칙을 내지 않으면 적재돼도 판단이 그 절차를 후보로 내지 못한다
+    catalog['candidate_failure_modes'] = []
+    p = proposal()
+    p['links']['SOP-PM-12'].update(kind='control', actions=[dict(action='action:stop', value=80)])
+    result = manual_preflight.validate(p, catalog)
+    assert [(i['code'], i['sop'], i['field']) for i in result['issues']] == [('CANDIDATE_RULE_MISSING', 'SOP-PM-12', 'knowledge.rules')]
+    # 예방 정비(PREVENTED_BY)는 기존 후보 규칙이 있어도 자동 합류하지 않는다
+    catalog['candidate_failure_modes'] = [dict(id='fm:pump')]
+    p['links']['SOP-PM-12']['relation'] = 'PREVENTED_BY'
+    assert 'CANDIDATE_RULE_MISSING' in codes(manual_preflight.validate(p, catalog))
+    # 참고 절차 · 실행하지 않는 절차는 후보가 아니므로 묻지 않는다
+    p['links']['SOP-PM-12'] = dict(kind='reference', executable=False, actions=[], addresses=[], affects=[],
+                                   scope=None, parts=None, supplier_policy=None, failureMode=None, relation=None, approver=None)
+    assert 'CANDIDATE_RULE_MISSING' not in codes(manual_preflight.validate(p, catalog))
+
+
+def test_blank_link_values_mean_absent_as_the_extraction_instruction_says(catalog):
+    # 지시는 「확인할 수 없는 link 값은 비워 두라」 — 2026-10-23 리허설에서 ''로 비운 고장 유형이 잘못된 id로 거부됐다
+    p = proposal()
+    p['links']['SOP-PM-12'].update(kind='control', relation='', approver='', actions=[dict(action='action:stop', value=80)])
+    assert manual_preflight.validate(p, catalog)['technical_ready'] is True
+    p['links']['SOP-PM-12']['failureMode'] = ''
+    assert 'FAILURE_MODE_REQUIRED' in codes(manual_preflight.validate(p, catalog))    # 값이 꼭 필요한 곳은 여전히 「필요합니다」
 
 
 def test_technical_pass_does_not_authorize_commit_or_review(catalog):

@@ -175,8 +175,12 @@ def test_purchase_preflight_structure_pass_is_not_actual_execution_readiness(pag
     choices.update(actions=[{'id':'action:purchase-request','code':'PR_CREATE','kind':'transaction'}],
                    systems=[{'id':'sys:erp'}],suppliers=[{'id':'sup:review','name':'독립 시험 공급사'}])
     choices['parts'][0]['suppliers']=[{'supplier':'sup:review','name':'독립 시험 공급사','avl':True}]
+    # 2026-10-23: 실행 구매 절차는 그 문서의 후보 규칙이 있어야 판단이 후보로 낸다(없으면 CANDIDATE_RULE_MISSING) — 원문 근거 후보 규칙을 둔다
+    choices['decision_tables']=[{'id':'dt:action-candidates','decision':'dec:action-candidates','inputs':[{'id':'in:pattern','variable':'pattern'}]}]
+    record['knowledge']={'rules':[{'id':'rule:review-candidates','section':'구매절','anchor':{'quote':'원문 공급 조건을 확인한다.'},
+        'table':'dt:action-candidates','effect':'SELECT','tests':[{'input':'in:pattern','operator':'==','value':'SPARE_BELOW_MIN'}],'outputs':['SOP-REVIEW-01']}]}
     record['validation']=manual_preflight.validate(record,choices)
-    assert record['validation']['execution'][0]['ready'] is True
+    assert record['validation']['execution'][0]['ready'] is True, record['validation']['issues']
     assert record['validation']['execution'][0]['evaluation_mode']=='structural'
     assert record['validation']['execution'][0]['execution_checked'] is False
     original=deepcopy(record);open_review(page,record,choices)

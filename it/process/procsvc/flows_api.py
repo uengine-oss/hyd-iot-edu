@@ -126,8 +126,10 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
     async def flows_reset():
         rt = runtime()
         def work():
+            from .flow_deploy import routes
+            deployed = {f["definition"] for f in routes(rt)["flows"]}     # 경보 경로에 배포된 흐름(수업 흐름 포함)은 남긴다
             try:
-                out = FlowStore(rt.repo, rt.tenant_id).reset()
+                out = FlowStore(rt.repo, rt.tenant_id).reset(keep=deployed)
             except FlowBusy as e:
                 raise HTTPException(409, {"reason": str(e), "running": e.running})
             for pid in out.pop("projection_instances", []):

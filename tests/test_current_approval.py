@@ -256,3 +256,29 @@ def test_missing_qms_quantity_is_not_zero_claim(monkeypatch):
     inputs=[dict(variable='hot_lot_claim',source='sys:qms',sourceKind='System',name='claim',sourceName='QMS')]
     facts,_=decide.gather_facts(inputs,'HYD-01',{},None,strict=True)
     assert facts['hot_lot_claim'] is None
+
+
+@pytest.mark.parametrize('change, allowed', [
+    (lambda plan: plan['assets'][0]['applicability'].update(target_hours=1958.96), True),     # 36 s later: same window · counter · parts
+    (lambda plan: plan['assets'][0]['window'].update(id='MW-HYD-02-N-OTHER'), False),
+    (lambda plan: plan['assets'][0]['parts'][0].update(qty=2), False),
+    (lambda plan: plan['assets'][0]['applicability'].update(limit_hours=2100), False),
+])
+def test_maintenance_plan_consent_ignores_only_the_elapsed_target_hours(context, monkeypatch, change, allowed):
+    """2026-10-23 라이브: B 판단 뒤 약 36초가 지나면 target_hours(계수기 + 예정 창까지 남은 시간, 0.01 h 반올림)가 줄어
+    모든 B 승인이 'maintenancePlan 내용이 변경됐습니다'로 거부됐다. 그 값만 경과 시간으로 보고, 창 · 부품 · 상한 변경은 여전히 거부한다."""
+    _, kg, d = context
+    plan = {'code': 'WO_CREATE', 'assets': [{'asset': 'HYD-02', 'window': {'id': 'MW-HYD-02-N-1', 'starts_at': '2026-10-23T19:38:04+00:00'},
+            'parts': [{'part_no': 'P-RTN-FLT', 'qty': 1}], 'applicability': {'target_hours': 1958.98, 'limit_hours': 2200}}]}
+    next(o for o in d['options'] if o['id'] == 'skill:mix')['maintenancePlan'] = deepcopy(plan)
+    real = approval.current_options
+    def rebuilt(*args, **kwargs):
+        data = real(*args, **kwargs)
+        current = deepcopy(plan); change(current)
+        data['current']['maintenancePlan'] = current
+        return data
+    monkeypatch.setattr(approval, 'current_options', rebuilt)
+    result = assess(context)
+    assert result['allowed'] is allowed, result['reasons']
+    if not allowed:
+        assert any('maintenancePlan' in r for r in result['reasons'])
