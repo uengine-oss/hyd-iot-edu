@@ -5,6 +5,7 @@
 그 안의 업무 값(카드별 사실 · 작업지시의 정비 시점)이다. 시나리오 이름이 아니라 카드 칸(kind · forecast · facts · actions · window)으로 가른다.
 A(쿨러) 화면은 바뀌지 않는다 — 고치기 전 코드(664d06c)로 그린 글을 tests/fixtures/a_cards_before.json 에 고정해 대조한다.
 """
+import html
 import json
 import re
 import shutil
@@ -137,7 +138,13 @@ def screens(r):
 def test_a_cooling_cards_read_exactly_as_before(tmp_path):
     """A 는 설비를 바꾸는 안이고 안마다 예측이 갈린다 — 머리말 · 진 이유 · 카드 줄이 고치기 전과 글자 하나 다르지 않다(작업지시 안 '쿨러 핀 세척'의
     예측 62.5 ℃ 포함). 고정본: 고치기 전 코드(664d06c)의 같은 파일로 그린 글."""
-    now = screens(render(tmp_path, {"A": A})["A"])
+    raw = render(tmp_path, {"A": A})["A"]
+    # 2026-10-23 갱신: caseRecord.js가 '원인을 정한 근거' 번역 줄 뒤에 닫힌 접기 '판단 근거 설명 원문'을 붙인다(공개 용어 정리의 원문 접기 보존).
+    # 학생이 열지 않으면 보이는 글은 고정본 그대로여야 하므로, 그 닫힌 접기 하나를 뺀 본문을 고정본과 비교하고 접기 안 원문은 따로 확인한다.
+    folds = re.findall(r'<details class="fold small" ><summary>판단 근거 설명 원문</summary><div class="fold-body">(.*?)</div></details>', raw["path"], re.S)
+    assert len(folds) == 1 and A["origin"]["cause_basis"] in html.unescape(folds[0])
+    raw = dict(raw, path=re.sub(r'<details class="fold small" ><summary>판단 근거 설명 원문</summary>.*?</details>', "", raw["path"], count=1, flags=re.S))
+    now = screens(raw)
     assert now == json.loads(A_BEFORE.read_text(encoding="utf-8"))
     assert "예측 평형 유온 49.8℃ · 토출 압력 182bar" in now["approval"] and "예측 평형 유온 62.5℃ · 토출 압력 182bar" in now["alts"]
     assert "이 안의 값" not in now["alts"] and "정비 시점" not in now["alts"]
