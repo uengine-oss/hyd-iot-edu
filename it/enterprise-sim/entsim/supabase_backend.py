@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from typing import Callable
 
+from .state import snapshot_view
+
 READS = {
     "mes_orders": ("ent.mes_orders", ("asset",)), "erp_contract": ("ent.erp_contract", ("asset",)), "erp_inventory": ("ent.erp_inventory", ("asset",)),
     "cmms_history": ("ent.cmms_history", ("asset",)), "cmms_tasks": ("ent.cmms_tasks", ("asset",)), "qms_lots": ("ent.qms_lots", ("asset",)), "scm_suppliers": ("ent.scm_suppliers", ("part",)),
@@ -64,28 +66,31 @@ class SupabaseEnterprise:
         return [dict(zip(keys, (str(v) if k == "t" else v for k, v in zip(keys, r)))) for r in rows]
 
     def snapshot(self) -> dict:
-        out: dict = {}
+        tables: dict = {}
         with self._connect() as conn, conn.cursor() as cur:
             # A086: hours are computed from the stored due/free times; the frozen legacy columns are not shown
             cur.execute("select to_jsonb(o) - 'due_in_h' - 'alt_free_h' || jsonb_build_object('due_in_h', ent.hours_from_now(o.due_at), "
                         "'alt_free_h', ent.hours_from_now(o.alt_free_at)) from ent.production_orders o order by o.order_id")
-            out["mes"] = {"orders": [_json(r[0]) for r in cur.fetchall()]}
+            orders = [_json(r[0]) for r in cur.fetchall()]
             for table in WRITE_TABLES:
                 cur.execute(f"select to_jsonb(x) from ent.{table} x order by x.created_at desc")
-                out.setdefault(_system_of(table), {})[table] = [_json(r[0]) for r in cur.fetchall()]
-        return out
+                tables[table] = [_json(r[0]) for r in cur.fetchall()]
+        return snapshot_view(orders, tables)        # 메모리 백엔드와 같은 한 모양(점검 E9)
 
     def reset_spare_stock(self, part: str | None = None) -> dict:
-        with self._connect() as conn, conn.cursor() as cur:
-            cur.execute("select ent.reset_spare_stock(%s)", (part,))
-            out = _json(cur.fetchone()[0])
-            conn.commit()
-        return out
+        return self._scenario_reset("ent.reset_spare_stock", part)
 
     def reset_pm_counters(self, asset: str | None = None) -> dict:
+        return self._scenario_reset("ent.reset_pm_counters", asset)
+
+    def _scenario_reset(self, fn: str, key: str | None) -> dict:
+        """모르는 부품 · 설비면 아무것도 바꾸지 않고 KeyError(메모리 백엔드와 같이 404) — 예전에는 facts 가 빈 200 이었다(점검 E11)."""
         with self._connect() as conn, conn.cursor() as cur:
-            cur.execute("select ent.reset_pm_counters(%s)", (asset,))
+            cur.execute(f"select {fn}(%s)", (key,))
             out = _json(cur.fetchone()[0])
+            if key is not None and (not out or out.get("facts") is None):
+                conn.rollback()
+                raise KeyError(key)
             conn.commit()
         return out
 
@@ -98,6 +103,18 @@ class SupabaseEnterprise:
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute("select ent.reanchor_scenario_times()")
             conn.commit()
+
+    def scenario_times_stale(self) -> bool:
+        with self._connect() as conn, conn.cursor() as cur:
+            try:
+                cur.execute("select ent.scenario_times_stale()")
+            except Exception as e:                       # 연결 드라이버를 이 모듈이 고르지 않는다(connect 주입) — SQLSTATE 로 가린다
+                if getattr(e, 'sqlstate', None) != '42883':   # undefined_function
+                    raise
+                # supabase start 는 이미 있는 업무 DB 에 새 마이그레이션을 적용하지 않는다(2026-10-23 실측) — 코드만 새로 받은 PC 는 여기서 멈춘다
+                raise RuntimeError("업무 DB 마이그레이션이 이 코드보다 오래됐습니다(ent.scenario_times_stale 없음, 20261023000061 미적용). "
+                                   "저장소 폴더에서 `cd it/supabase && npx -y supabase@2.119.0 migration up` 을 한 번 실행한 뒤 다시 켜세요") from e
+            return bool(cur.fetchone()[0])
 
     def archive(self, ref: str | None = None) -> dict:
         with self._connect() as conn, conn.cursor() as cur:
@@ -112,7 +129,3 @@ class SupabaseEnterprise:
         except Exception:  # noqa: BLE001
             return False
 
-
-def _system_of(table: str) -> str:
-    return {"work_orders": "cmms", "purchase_requests": "erp", "shipments": "erp", "lot_dispositions": "qms", "ems_actions": "ems",
-            "goods_receipts": "erp"}[table]

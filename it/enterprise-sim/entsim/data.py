@@ -22,6 +22,17 @@ def reanchor(now: datetime | None = None) -> None:
     _SCENARIO_START = now or datetime.now(timezone.utc)
 
 
+def scenario_start() -> datetime:
+    return _SCENARIO_START
+
+
+def scenario_times_stale() -> bool:
+    """시나리오 시각 기준점이 지났는가 — 가장 이른 시나리오 기한(생산 오더 납기 · 출하)이 지금 이전이면 참. enterprise-sim 은 시작할 때 이때만
+    기준점을 옮긴다(ent.scenario_times_stale 과 같은 규칙, 2026-10-23 점검 E8 — 옮기면 승인 대기 중인 B 카드의 예정된 정비 시간 id 가 사라진다)."""
+    first_h = min(min(o["due_in_h"] for o in _ORDERS.values()), min(i["ship_in_h"] for i in _INVENTORY.values()))
+    return _at(first_h) <= _now()
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -113,17 +124,23 @@ def erp_inventory(asset: str) -> dict:
     return {"system": "ERP", "facts": cur, "records": [dict(cur, warehouse="WH-1 완제품 창고")], "as_of": _now().isoformat()}
 
 
-def cmms_history(asset: str) -> dict:
+def cmms_history(asset: str, completed: list[dict] | None = None, work_orders: list[dict] | None = None) -> dict:
+    """CMMS 정비 이력(ent.cmms_history 와 같은 계산). completed = 이 시뮬레이터에서 완료한 작업지시 {wo, task, performed_at}
+    (업무 DB 는 skill:complete-maintenance 가 ent.maintenance_history 에 넣는다 — 세척 횟수 · 마지막 세척 사실에 같이 들어간다),
+    work_orders = 이 설비의 작업지시(최근 것부터, ent.cmms_history 의 work_orders 칸)."""
     c = _CMMS[_check(asset)]
-    done = [_SCENARIO_START - timedelta(days=d) for d in _CLEAN_HISTORY_DAYS[asset]]
     now = _now()
-    recs = [{"wo": f"WO-HIST-{asset[-2:]}-{n}", "task": "쿨러 핀 세척", "performed_at": t.isoformat(), "days_ago": int((now - t).total_seconds() // 86400)}
-            for n, t in enumerate(done, 1)]
+    hist = [{"wo": f"WO-HIST-{asset[-2:]}-{n}", "task": "쿨러 핀 세척", "performed_at": _SCENARIO_START - timedelta(days=d)}
+            for n, d in enumerate(_CLEAN_HISTORY_DAYS[asset], 1)]
+    hist += [dict(h, performed_at=datetime.fromisoformat(str(h["performed_at"]).replace("Z", "+00:00"))) for h in completed or []]
+    hist.sort(key=lambda h: h["performed_at"], reverse=True)
+    recs = [dict(h, performed_at=h["performed_at"].isoformat(), days_ago=int((now - h["performed_at"]).total_seconds() // 86400)) for h in hist]
+    cleans = [h["performed_at"] for h in hist if str(h["task"]).startswith("쿨러 핀 세척")]
     facts = {k: v for k, v in c.items() if k != "night_in_h"} | {
         "night_in_h": hours_from_now(_at(c["night_in_h"])),
-        "cleans_60d": sum(1 for t in done if now - t < timedelta(days=60)),
-        "last_clean_days": int((now - max(done)).total_seconds() // 86400) if done else None}
-    return {"system": "CMMS", "facts": facts, "records": recs, "as_of": now.isoformat()}
+        "cleans_60d": sum(1 for t in cleans if t > now - timedelta(days=60)),
+        "last_clean_days": int((now - max(cleans)).total_seconds() // 86400) if cleans else None}
+    return {"system": "CMMS", "facts": facts, "records": recs, "work_orders": list(work_orders or []), "as_of": now.isoformat()}
 
 
 def qms_lots(asset: str) -> dict:
