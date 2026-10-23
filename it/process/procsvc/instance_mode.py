@@ -427,7 +427,7 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
     def incident_snapshot(inc_id: str) -> dict | None:
         inc=ctx.incidents.get(inc_id)
         return {'state':inc.state,'cleared':inc.cleared,'cmdId':inc.cmd_id,'superseded':bool(inc.superseded),
-                'workOrder':bool(inc.work_order)} if inc is not None else None
+                'workOrder':bool(inc.work_order),'reason':inc.reason} if inc is not None else None
 
     def decision_option(decision_id: str, option_id: str) -> dict | None:
         d = ctx.book.get(decision_id) or {}
@@ -1102,10 +1102,20 @@ def mount(app: FastAPI, process_mode: str) -> None:
         return inst
 
     @app.get("/api/todolist")
-    async def list_todolist(status: str | None = None, user_id: str | None = None, agent_orch: str | None = None,
+    async def list_todolist(response: Response, status: str | None = None, user_id: str | None = None, agent_orch: str | None = None,
                             proc_inst_id: str | None = None, limit: int = 200):
+        """작업 행 목록(오래된 것부터). P4 (audit2): proc_inst_id 를 주면 그 처리 건의 행을 자르지 않고 모두 돌려준다(처리 건 화면 계약:
+        ?proc_inst_id=<id>&status=IN_PROGRESS). 처리 건 없이 읽으면 limit(최대 500)을 넘는 만큼 **가장 오래된** 행을 뺀다(전에는 가장 새 행이
+        빠졌다) — 잘렸으면 머리 X-Todolist-Truncated: 1."""
         rt = _rt()
-        return await _in_executor(rt.repo.list_workitems, proc_inst_id, status, user_id, agent_orch, min(max(limit,1),500), rt.tenant_id)
+        if proc_inst_id:
+            return await _in_executor(lambda: rt.repo.list_workitems(proc_inst_id, status, user_id, agent_orch, None, rt.tenant_id))
+        cap = min(max(limit, 1), 500)
+        rows = await _in_executor(lambda: rt.repo.list_workitems(None, status, user_id, agent_orch, cap + 1, rt.tenant_id, newest=True))
+        if len(rows) > cap:
+            response.headers["X-Todolist-Truncated"] = "1"
+            rows = rows[1:]
+        return rows
 
     @app.get("/api/todolist/{wid}")
     async def get_todolist_item(wid: str):
@@ -1186,6 +1196,8 @@ def mount(app: FastAPI, process_mode: str) -> None:
         except PermissionError as e:
             _ctx.audit("-", req.by, "DECISION_DENIED", {"decision": req.decision, "option": req.option, "role": req.role, "reason": str(e)})
             raise HTTPException(403, str(e))
+        except instances.SourceUnavailable as e:      # P11: ERP 무응답 — 상태는 되돌려졌고 다시 누를 수 있다
+            raise HTTPException(503, str(e))
         except ValueError as e:
             raise HTTPException(400, str(e))
 

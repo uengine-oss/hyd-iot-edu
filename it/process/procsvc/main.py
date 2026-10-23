@@ -1254,7 +1254,17 @@ async def scenario_start(key: str, body: dict | None = None):
     except scenario_buttons.Refused as e:
         raise HTTPException(409, str(e))
     alert = prep["alert"]
-    await _admit_human_alert(alert)
+    button = scenario_buttons.SCENARIOS[key]["button"]
+    try:
+        await _admit_human_alert(alert)
+    except (ValueError, LookupError) as e:       # P8 (audit2): /api/human-alerts 와 같은 사유 · 같은 코드, 누름 기록은 error 칸에
+        _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
+                     error=f"경보를 접수하지 못했습니다: {e}")
+        raise HTTPException(409, f"경보를 접수하지 못했습니다: {e}") from e
+    except TimeoutError as e:
+        _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
+                     error=f"경보 접수 확인 시간이 지났습니다: {e}")
+        raise HTTPException(503, f"경보 접수 확인 시간이 지났습니다: {e}") from e
     try:
         out = await asyncio.to_thread(scenario_buttons.started, rt, key, alert, _scenario_route(alert["pattern"]), person)
     except scenario_buttons.NotStarted as e:

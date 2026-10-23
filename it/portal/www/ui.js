@@ -191,7 +191,7 @@ const UI = {
     'flow.name.즉시 제어 포함?': '설비 제어가 있나?', 'flow.name.회복?': '회복됐나?',
     // A6: 끝 이벤트 id가 이름 없이 오는 자리(처리 건 목록 end_event · 로그 "instance ended (ev:…)") — 정의 events[].name과 같은 말
     'flow.name.start': '시작', 'flow.name.alert': '설비 경보', 'flow.name.select-timeout': '선택 시간 초과', 'flow.name.unhandled-alert': '미지원 경보 접수', 'flow.name.review-recorded': '현장 검토 기록 완료',
-    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
+    'flow.name.escalate': '책임자 확인', 'flow.name.triage': '현장 검토', 'flow.name.end': '종료', 'flow.name.closed': '종결', 'flow.name.escalated': '책임자 확인으로 종료', 'flow.name.closed-by-human': '사람이 닫음', 'flow.name.incident-ended-before-action': '조치 전 해소', 'flow.name.rejected': '반려', 'flow.name.accepted': '승인',
     'flow.seq.선택 스킬 kind == control': '설비 제어', 'flow.seq.선택 스킬 kind == work_order': '정비 요청만', 'flow.seq.TS1 < 55 and 경보 해제': '회복', 'flow.seq.미회복': '미회복',
     // 일반
     // A161-U1: 결과 값(영문 코드) → 화면 말 (판단 · 출력 칸)
