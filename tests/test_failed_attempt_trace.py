@@ -97,7 +97,8 @@ def test_the_task_panel_shows_each_failed_call_and_why(world, tmp_path):
 
 
 def test_inside_an_open_transition_nothing_is_rolled_back_so_nothing_is_written_twice(world):
-    """_run_service 가 이미 열린 전이 안에서 불리면 되돌림이 없다 — 실패 기록을 다시 남기면 두 번이 된다(소유한 전이에서만 모은다)."""
+    """_run_service 가 이미 열린 전이 안에서 불리면 부모 전이가 끝난 뒤 자기 전이로 돈다(2026-10-12, instances._run_service) —
+    실패한 시도의 기록은 되돌린 뒤 한 번만 남는다(실패 표시와 함께). 두 번 쓰지 않는다."""
     audits = []
     rt, inst, _ = failing_case(world, audits)
     wi = rows(rt, inst, "T_check")[0]
@@ -109,5 +110,5 @@ def test_inside_an_open_transition_nothing_is_rolled_back_so_nothing_is_written_
         rt._run_service(rt.repo.get_instance(inst["proc_inst_id"]), rt.repo.get_workitem(wi["id"]), NOW)
     new = rt.repo.list_events(todo_id=wi["id"])[before_events:]
     assert [e["event_type"] for e in new if e["event_type"].startswith("tool_usage")] == ["tool_usage_started", "tool_usage_finished"]   # 한 번씩
-    assert not any(e["data"].get("attempt_failed") for e in new)                       # 되돌림이 없었으니 다시 남긴 것도 없다
+    assert [e["event_type"] for e in new if e["data"].get("attempt_failed")] == ["tool_usage_finished", "task_working"]   # 실패 표시는 한 번씩
     assert [ev for ev, _ in audits[before_audits:]] == ["MCP_READ_FAILED"]

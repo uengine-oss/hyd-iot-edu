@@ -65,8 +65,9 @@ def test_portal_snapshot_replay_order_duplicates_runs_and_final_clear(tmp_path):
     node=shutil.which('node');assert node, 'Node is required for the actual portal consumer contract'
     script=tmp_path/'snapshot.cjs'
     source=Path(__file__).resolve().parents[1]/'it/portal/www/trace.js'
+    # 2026-10-23 갱신: trace.js가 적재 때 window.addEventListener('hyd-tool-payload',…)를 걸게 돼(도구 원문 분할 수신 뒤 다시 그림) Node 대역 window에 빈 addEventListener를 준다
     script.write_text('''const fs=require('fs'),assert=require('assert');
-global.window={};global.UI={terms:{}};global.setInterval=()=>{};
+global.window={addEventListener(){}};global.UI={terms:{}};global.setInterval=()=>{};
 eval(fs.readFileSync(process.argv[2],'utf8'));
 const row=(seq,text,run='r')=>({id:String(seq)+run,timestamp:'now',todo_id:'task',job_id:'job',event_type:'task_working',data:{type:'text',public_run:run,message_id:run+':0',sequence:seq,content:text}});
 const merge=window.hydTrace.publicNotes;

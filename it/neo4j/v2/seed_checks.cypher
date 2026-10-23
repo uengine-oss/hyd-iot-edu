@@ -15,7 +15,9 @@ MATCH (o:Objective) WHERE NOT (o)-[:IN_PERSPECTIVE]->(:Perspective) RETURN 'obje
 MATCH (m:Measure) WHERE NOT (m)-[:MEASURES]->(:Objective) OR NOT (m)-[:OWNED_BY]->(:OrgUnit) RETURN 'measure without objective/owner ' + m.id AS problem
 MATCH (f:FailureMode) WHERE NOT (f)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(:Skill) AND NOT (:Cause)-[:CAUSES]->(f) RETURN 'failure mode with neither skill nor cause ' + f.id AS problem
 MATCH (k:Skill) WHERE NOT (k)-[:HAS_STEP]->(:Step) RETURN 'skill without steps ' + k.id AS problem
-MATCH (k:Skill) WHERE NOT (:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k) RETURN 'skill not matched to a failure mode ' + k.id AS problem
+// 참고 보관 절차(kind reference, 예: PM-02 점검 패키지)와 구매 절차(scope purchase, PR-07)는 고장 유형을 갖지 않는다(manual_preflight · kgadmin.validate_skill 과 같은 규칙).
+// 2026-10-23: 이를 빼지 않아 수업 문서 적재 뒤 kg-seed 가 실패했고, 그 성공에 기대는 agent · dmn-mcp 가 새 기동에서 뜨지 않을 수 있었다.
+MATCH (k:Skill) WHERE NOT (:FailureMode)-[:MITIGATED_BY|REMEDIED_BY|PREVENTED_BY]->(k) AND coalesce(k.kind, '') <> 'reference' AND coalesce(k.scope, '') <> 'purchase' RETURN 'skill not matched to a failure mode ' + k.id AS problem
 MATCH (r:Rule) WHERE NOT (:DecisionTable)-[:HAS_RULE]->(r) RETURN 'rule outside a decision table ' + r.id AS problem
 MATCH (d:Decision) WHERE NOT (d)-[:IMPLEMENTED_BY]->(:DecisionTable) RETURN 'decision without table ' + d.id AS problem
 // 결정 1(가): 재고 · 공급 이상 패턴(SPARE_BELOW_MIN, ERP 감시)은 설비 증상이 아니므로 Symptom을 잇지 않는다. 설비 패턴(held · plc-trip)이나 증상을 잇는 패턴만 고장 유형까지 이어져야 한다.

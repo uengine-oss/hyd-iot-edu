@@ -77,7 +77,13 @@ def test_purchase_document_plan_graph_and_preflight_share_one_model(source_propo
     assert not any(r['a'] == 'sys:cmms' and r['type'] == 'HAS_SKILL' for r in relationships)
     assert body == before
     validation = manual_preflight.validate(body, catalog)
-    assert validation['technical_ready'] is True
+    if executable:      # 실행 구매 절차는 그 문서의 후보 규칙이 있어야 판단이 후보로 낸다(자동 합류 없음, 2026-10-23 리허설)
+        assert [(i['code'], i['sop']) for i in validation['issues']] == [('CANDIDATE_RULE_MISSING', 'SOP-PUR-11')]
+        body = dict(body, knowledge=dict(rules=[dict(id='rule:pur-candidates', section=body['sections'][0]['ref'],
+            anchor=dict(quote='PR-7.6 발주 절차'), table='dt:action-candidates', effect='SELECT',
+            tests=[dict(input='in:pattern', operator='==', value='SPARE_BELOW_MIN')], outputs=['SOP-PUR-11'])]))
+        validation = manual_preflight.validate(body, catalog)
+    assert validation['technical_ready'] is True, validation['issues']
     assert validation['execution'][0]['ready'] is executable
     assert validation['executable_ready'] is executable
     assert validation['execution'][0]['evaluation_mode'] == 'structural'

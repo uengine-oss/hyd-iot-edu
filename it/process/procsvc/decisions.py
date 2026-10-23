@@ -37,6 +37,12 @@ def may_approve(d: dict, opt: dict, role: str) -> bool:
         require_decision_option(d, opt)
     except ValueError:
         return False
+    return holds_approver_role(d, opt, role)
+
+
+def holds_approver_role(d: dict, opt: dict, role: str) -> bool:
+    """Role only: the option's approver role or a higher one. Execution readiness is not checked — rejection uses this, so a decision whose
+    options were all excluded (stock · rules) can still be closed by the role that would have approved it (2026-10-23 live: B stuck at approval)."""
     need = (opt.get("approver") or {}).get("id")
     need_level = int((opt.get("approver") or {}).get("level") or _level(d, need or ""))
     return not need or role == need or _level(d, role) > need_level

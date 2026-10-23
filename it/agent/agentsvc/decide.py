@@ -13,6 +13,7 @@ import math
 import os
 import secrets
 import threading
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
@@ -78,11 +79,24 @@ def _get_json(url: str, timeout: float = 5.0) -> dict:
         return json.loads(r.read())
 
 
+class SubmitRefused(RuntimeError):
+    """The process service refused the decision — carries its status and reason (FastAPI `detail`)."""
+
+
 def submit(payload: dict) -> dict:
     req = urllib.request.Request(f"{PROCESS_URL}/api/decisions", data=json.dumps(payload, ensure_ascii=False).encode(),
                                  headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=10) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        # 2026-10-23 live: only "HTTP Error 409: Conflict" reached the agent and the case record — the reason the process gave was dropped.
+        body = e.read().decode("utf-8", "replace")
+        try:
+            detail = json.loads(body).get("detail", body)
+        except ValueError:
+            detail = body
+        raise SubmitRefused(f"process 가 판단 등록을 거절했습니다 (HTTP {e.code}): {detail}"[:600]) from e
 
 
 def source_time(response: dict, asset: str) -> dict:

@@ -7,7 +7,7 @@
   const PATH = { decide: '규칙 판단', evaluate: '에이전트 읽기 평가', worker: '지난 처리 건 (실제 AI 일꾼)' };
   const CHECK = { cause: '원인 적중', top: '1위 허용', forbidden: '빠질 조치 미추천', evidence: '근거 포함' };
   const EXPECT = { excluded: '제외돼야 함', not_recommended: '1위면 안 됨' };
-  const FACT = { plc_mode: '운전 모드', plc_state: '설비 상태', standby_ready: '예비 펌프', fan100_hours: '팬 100 % 누적 (시간)' };
+  const FACT = { plc_mode: '운전 모드', plc_state: '설비 상태', standby_ready: '예비 펌프', fan100_hours: '팬 100 % 연속 운전 (시간)' };
   const ASSETS = ['HYD-01', 'HYD-02', 'HYD-03'];
   const q = (sel) => E.el.querySelector(sel);
   const nm = (id) => `<span title="${esc(id || '')}">${esc(UI.name(id) || '–')}</span>`;

@@ -8,7 +8,7 @@ from test_portal_failure_states_ui import retain
 @pytest.mark.parametrize('tool,input,output,purpose,count',[
  ('mcp__neo4j__read_neo4j_cypher',{'query':"CALL db.index.fulltext.queryNodes('ont_names', $text) YIELD node, score RETURN node"+' /* long input */'*800},[{'type':'text','text':'[]'}],'이름·본문 검색','0건'),
  ('mcp__neo4j__read_neo4j_cypher',{'query':"MATCH (s:Skill)-[:CONSISTS_OF]->(a:Action) WHERE a.code CONTAINS 'PR_CREATE' RETURN s"},[{'type':'text','text':'[{"name":"구매 요청"}]'}],'조치 방법','1건'),
- ('mcp__enterprise__query',{'sql':'SELECT * FROM public.part_quotes WHERE part_no = $1'+' /* tail */'*800},{'rows':[]},'업무 DB 조회','0건'),
+ ('mcp__enterprise__query',{'sql':'SELECT * FROM public.part_quotes WHERE part_no = $1'+' /* tail */'*800},{'rows':[]},'업무 자료 조회','0건'),  # 2026-10-23 갱신: 공개 용어 정리로 SQL 도구 목적 '업무 DB 조회'→'업무 자료 조회'(plainWords.js sqlAsk)
  ('Bash',{'command':'rg --files /workspace && python -c "print(1)"'+' # tail'*800},'one\ntwo','명령 실행','반환 본문'),
  ('future_tool',{'secret_argument':'internal_unknown_id','nested':{'full':'x'*5000}},{'future_schema':17},'목적 기록 없음','결과 형식'),
 ])

@@ -44,11 +44,12 @@ def test_purchase_trace_uses_real_backend_part_candidate_and_submission_records(
     text=page.locator('#purchaseTrace').inner_text()
     assert '씰 키트' in text and '부품 번호 P-KIT' in text and '구매 후보 1개' in text
     assert '후보 비교 완료' in text and '구매 판단 등록됨' in text
-    assert '판단 등록 · 승인 · 실행 아님' in text and '사람 승인 · ERP 실행 완료 아님' in text
+    # 2026-10-23 갱신: 공개 용어 정리로 'ERP 실행 완료 아님'→'구매 실행 완료 아님'(plainWords.js submit_purchase 요약, 2026-10-12 public-language-and-stream)
+    assert '판단 등록 · 승인 · 실행 아님' in text and '사람 승인 · 구매 실행 완료 아님' in text
     for token in ('purchase_context','evaluate_purchase','submit_purchase','part:kit','skill:purchase','part_no','SUBMITTED'):
         assert token not in text
     retain(page,'purchase-tools-trace','#purchaseTrace','Real Part-scoped backend calculation/registration in a memory fixture with isolated graph/ERP/submit doubles; production trace and unchanged canonical inputs. Not operating approval or ERP execution.',
-           ['씰 키트','구매 후보 1개','구매 판단 등록됨','사람 승인 · ERP 실행 완료 아님'])
+           ['씰 키트','구매 후보 1개','구매 판단 등록됨','사람 승인 · 구매 실행 완료 아님'])  # 2026-10-23 갱신: 공개 용어 정리로 'ERP 실행 완료 아님'→'구매 실행 완료 아님'(plainWords.js submit_purchase 요약, 2026-10-12 public-language-and-stream)
     for fold in page.locator('#purchaseTrace details.tr-tool').all():
         fold.locator(':scope > summary').focus()
         page.keyboard.press('Enter')

@@ -1,0 +1,3245 @@
+{
+  "method": "이동 시작·종료의 경계 대기를 제외한 원본 프레임 사이 간격. 100ms 초과는 수정 검토 대상이며 전체 육안 판정을 대체하지 않는다.",
+  "segments": [
+    {
+      "name": "full-take9",
+      "summary": {
+        "count": 332,
+        "interior_gap_over100ms": 286,
+        "max_interior_gap_ms": 539.929
+      },
+      "targets": [
+        {
+          "index": 1,
+          "start_ms": 27949,
+          "end_ms": 29182,
+          "frames": 15,
+          "interior_max_gap_ms": 114.727,
+          "cue": "live-download",
+          "section": 25,
+          "text": "먼저 노션의 공식 다운로드 페이지입니다. 가운데 윈도우라고 표시된 곳 아래에 다운로드하기 버튼이 있어요. 여기서 앱을 설치하고, 구글 계정처럼 편한 방법으로 로그인하시면 됩니다."
+        },
+        {
+          "index": 2,
+          "start_ms": 51830,
+          "end_ms": 53261,
+          "frames": 15,
+          "interior_max_gap_ms": 226.904,
+          "cue": "live-sidebar-open",
+          "section": 25,
+          "text": "왼쪽 위에 가로줄이 있는 버튼을 눌러 페이지 목록을 펼칠게요."
+        },
+        {
+          "index": 3,
+          "start_ms": 84236,
+          "end_ms": 85386,
+          "frames": 17,
+          "interior_max_gap_ms": 153.43,
+          "cue": "N03-v001",
+          "section": 25,
+          "text": "왼쪽 사이드바에서 새 페이지 버튼을 눌러 주세요."
+        },
+        {
+          "index": 5,
+          "start_ms": 98350,
+          "end_ms": 99416,
+          "frames": 16,
+          "interior_max_gap_ms": 132.798,
+          "cue": "N03-v003",
+          "section": 25,
+          "text": "큰 제목을 적는 곳이 보이면 여기를 클릭하겠습니다."
+        },
+        {
+          "index": 6,
+          "start_ms": 104830,
+          "end_ms": 105856,
+          "frames": 16,
+          "interior_max_gap_ms": 141.916,
+          "cue": "N03-v004",
+          "section": 25,
+          "text": "제목 입력란에 ‘내 학습 노트’라고 적을게요."
+        },
+        {
+          "index": 7,
+          "start_ms": 139630,
+          "end_ms": 140914,
+          "frames": 17,
+          "interior_max_gap_ms": 101.432,
+          "cue": "live-sidebar-close",
+          "section": 25,
+          "text": "이제 본문을 넓게 보겠습니다. 왼쪽 목록을 닫는 버튼을 누를게요. 필요할 때 같은 자리에서 다시 열 수 있습니다."
+        },
+        {
+          "index": 8,
+          "start_ms": 159688,
+          "end_ms": 160778,
+          "frames": 16,
+          "interior_max_gap_ms": 128.314,
+          "cue": "N04-v008",
+          "section": 25,
+          "text": "이제 제목 아래 빈 줄을 클릭하겠습니다."
+        },
+        {
+          "index": 9,
+          "start_ms": 171645,
+          "end_ms": 172778,
+          "frames": 17,
+          "interior_max_gap_ms": 123.658,
+          "cue": "N05-v002",
+          "section": 25,
+          "text": "‘관심 있는 주제를 모으고, 배운 내용을 나만의 방식으로 쌓아 갑니다.’라고 입력할게요."
+        },
+        {
+          "index": 10,
+          "start_ms": 190093,
+          "end_ms": 191294,
+          "frames": 17,
+          "interior_max_gap_ms": 107.11,
+          "cue": "N05-v005",
+          "section": 25,
+          "text": "방금 쓴 문장 왼쪽으로 마우스를 가져가 볼게요."
+        },
+        {
+          "index": 11,
+          "start_ms": 211579,
+          "end_ms": 212642,
+          "frames": 14,
+          "interior_max_gap_ms": 133.142,
+          "cue": "N05-v009",
+          "section": 25,
+          "text": "이번에는 손잡이를 누르지 않고 아래 빈 줄을 클릭할게요."
+        },
+        {
+          "index": 12,
+          "start_ms": 219290,
+          "end_ms": 220342,
+          "frames": 16,
+          "interior_max_gap_ms": 137.363,
+          "cue": "N06-v002",
+          "section": 25,
+          "text": "여기에 슬래시를 입력해 주세요."
+        },
+        {
+          "index": 13,
+          "start_ms": 230483,
+          "end_ms": 231712,
+          "frames": 16,
+          "interior_max_gap_ms": 170.356,
+          "cue": "live-callout-search",
+          "section": 25,
+          "text": "슬래시 뒤에 콜아웃이라고 적어 주세요. 메뉴 전체를 내려서 찾을 수도 있지만, 이름을 적으면 원하는 항목만 남아서 찾기 편해요."
+        },
+        {
+          "index": 14,
+          "start_ms": 235975,
+          "end_ms": 237477,
+          "frames": 18,
+          "interior_max_gap_ms": 205.192,
+          "cue": "N06-v003",
+          "section": 25,
+          "text": "메뉴가 열리면 콜아웃을 찾아 선택해 주세요."
+        },
+        {
+          "index": 15,
+          "start_ms": 256602,
+          "end_ms": 257806,
+          "frames": 17,
+          "interior_max_gap_ms": 170.292,
+          "cue": "N06-v006",
+          "section": 25,
+          "text": "첫 줄에는 ‘하나의 주제에서, 나만의 지식으로’라고 적을게요."
+        },
+        {
+          "index": 17,
+          "start_ms": 308453,
+          "end_ms": 309627,
+          "frames": 16,
+          "interior_max_gap_ms": 129.286,
+          "cue": "live-callout-color-menu",
+          "section": 26,
+          "text": "상자 왼쪽으로 마우스를 가져가면 작은 점들이 있는 손잡이가 나타나요. 그 손잡이를 눌러 상자 전체의 메뉴를 열겠습니다."
+        },
+        {
+          "index": 18,
+          "start_ms": 309880,
+          "end_ms": 310853,
+          "frames": 15,
+          "interior_max_gap_ms": 146.262,
+          "cue": "live-callout-color-menu",
+          "section": 26,
+          "text": "상자 왼쪽으로 마우스를 가져가면 작은 점들이 있는 손잡이가 나타나요. 그 손잡이를 눌러 상자 전체의 메뉴를 열겠습니다."
+        },
+        {
+          "index": 19,
+          "start_ms": 313396,
+          "end_ms": 315229,
+          "frames": 18,
+          "interior_max_gap_ms": 387.671,
+          "cue": "N06-v016",
+          "section": 26,
+          "text": "색 메뉴를 열어 주세요."
+        },
+        {
+          "index": 20,
+          "start_ms": 322994,
+          "end_ms": 324639,
+          "frames": 18,
+          "interior_max_gap_ms": 172.044,
+          "cue": "live-color-find",
+          "section": 26,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 21,
+          "start_ms": 325501,
+          "end_ms": 326903,
+          "frames": 17,
+          "interior_max_gap_ms": 112.659,
+          "cue": "live-color-find",
+          "section": 26,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 22,
+          "start_ms": 327486,
+          "end_ms": 328987,
+          "frames": 17,
+          "interior_max_gap_ms": 215.105,
+          "cue": "live-color-find",
+          "section": 26,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 23,
+          "start_ms": 329495,
+          "end_ms": 331311,
+          "frames": 18,
+          "interior_max_gap_ms": 223.462,
+          "cue": "live-color-find",
+          "section": 26,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 24,
+          "start_ms": 331490,
+          "end_ms": 333261,
+          "frames": 18,
+          "interior_max_gap_ms": 190.797,
+          "cue": "live-color-find",
+          "section": 26,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 25,
+          "start_ms": 336588,
+          "end_ms": 337822,
+          "frames": 18,
+          "interior_max_gap_ms": 103.585,
+          "cue": "N06-v017",
+          "section": 26,
+          "text": "배경색 항목에서 파란색을 고를게요."
+        },
+        {
+          "index": 27,
+          "start_ms": 371163,
+          "end_ms": 372378,
+          "frames": 15,
+          "interior_max_gap_ms": 121.833,
+          "cue": "live-gallery-search",
+          "section": 26,
+          "text": "상자 아래 빈 줄에 슬래시를 입력하고, 이어서 갤러리라고 적겠습니다."
+        },
+        {
+          "index": 28,
+          "start_ms": 375680,
+          "end_ms": 377200,
+          "frames": 18,
+          "interior_max_gap_ms": 201.903,
+          "cue": "N07-v003",
+          "section": 26,
+          "text": "갤러리 보기를 선택해 주세요."
+        },
+        {
+          "index": 29,
+          "start_ms": 398633,
+          "end_ms": 400073,
+          "frames": 17,
+          "interior_max_gap_ms": 207.677,
+          "cue": "live-db-placeholder",
+          "section": 26,
+          "text": "새 데이터베이스라고 보이는 제목 자리를 클릭하고, 주제 모음이라고 적겠습니다. 아직 이름이 없는 목록이라 회색 안내 글자가 보이는 거예요."
+        },
+        {
+          "index": 30,
+          "start_ms": 401407,
+          "end_ms": 402738,
+          "frames": 16,
+          "interior_max_gap_ms": 167.688,
+          "cue": "live-db-placeholder",
+          "section": 26,
+          "text": "새 데이터베이스라고 보이는 제목 자리를 클릭하고, 주제 모음이라고 적겠습니다. 아직 이름이 없는 목록이라 회색 안내 글자가 보이는 거예요."
+        },
+        {
+          "index": 31,
+          "start_ms": 425763,
+          "end_ms": 426966,
+          "frames": 15,
+          "interior_max_gap_ms": 105.048,
+          "cue": "live-view-settings",
+          "section": 26,
+          "text": "목록 오른쪽의 설정 아이콘을 눌러 볼게요. 가로줄에 작은 조절점이 붙어 있는 모양입니다."
+        },
+        {
+          "index": 32,
+          "start_ms": 435595,
+          "end_ms": 437081,
+          "frames": 18,
+          "interior_max_gap_ms": 187.347,
+          "cue": "live-view-name",
+          "section": 26,
+          "text": "설정 맨 위에 보기 이름을 적는 칸이 있어요. 기존 이름을 선택하고 주제 카드라고 바꿔 적겠습니다."
+        },
+        {
+          "index": 33,
+          "start_ms": 438457,
+          "end_ms": 440216,
+          "frames": 15,
+          "interior_max_gap_ms": 410.906,
+          "cue": "live-view-name",
+          "section": 26,
+          "text": "설정 맨 위에 보기 이름을 적는 칸이 있어요. 기존 이름을 선택하고 주제 카드라고 바꿔 적겠습니다."
+        },
+        {
+          "index": 34,
+          "start_ms": 448549,
+          "end_ms": 450164,
+          "frames": 17,
+          "interior_max_gap_ms": 163.486,
+          "cue": "live-close-settings",
+          "section": 26,
+          "text": "이름을 적었으면 설정 창 위쪽의 닫기 버튼을 누를게요."
+        },
+        {
+          "index": 35,
+          "start_ms": 466106,
+          "end_ms": 467309,
+          "frames": 16,
+          "interior_max_gap_ms": 124.113,
+          "cue": "N08-v001",
+          "section": 26,
+          "text": "주제 모음 오른쪽의 파란색 새로 만들기 버튼을 눌러 볼게요."
+        },
+        {
+          "index": 36,
+          "start_ms": 475789,
+          "end_ms": 477031,
+          "frames": 17,
+          "interior_max_gap_ms": 155.187,
+          "cue": "live-peek-full",
+          "section": 26,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 37,
+          "start_ms": 482446,
+          "end_ms": 483606,
+          "frames": 17,
+          "interior_max_gap_ms": 132.99,
+          "cue": "N08-v002",
+          "section": 26,
+          "text": "제목 입력란에 ‘Notion 익히기’라고 적어 주세요."
+        },
+        {
+          "index": 38,
+          "start_ms": 484774,
+          "end_ms": 485845,
+          "frames": 16,
+          "interior_max_gap_ms": 133.17,
+          "cue": "N08-v002",
+          "section": 26,
+          "text": "제목 입력란에 ‘Notion 익히기’라고 적어 주세요."
+        },
+        {
+          "index": 41,
+          "start_ms": 526123,
+          "end_ms": 527710,
+          "frames": 17,
+          "interior_max_gap_ms": 130.961,
+          "cue": "N09-v004",
+          "section": 26,
+          "text": "메뉴에서 콜아웃을 고를게요."
+        },
+        {
+          "index": 42,
+          "start_ms": 538872,
+          "end_ms": 540041,
+          "frames": 14,
+          "interior_max_gap_ms": 155.73,
+          "cue": "N09-v005",
+          "section": 26,
+          "text": "첫 줄에는 ‘짧게 적고, 필요한 만큼 연결하기’라고 입력합니다."
+        },
+        {
+          "index": 44,
+          "start_ms": 564256,
+          "end_ms": 565737,
+          "frames": 16,
+          "interior_max_gap_ms": 199.19,
+          "cue": "N09-v011",
+          "section": 27,
+          "text": "상자 손잡이를 눌러 볼게요."
+        },
+        {
+          "index": 45,
+          "start_ms": 566196,
+          "end_ms": 567535,
+          "frames": 16,
+          "interior_max_gap_ms": 151.716,
+          "cue": "N09-v011",
+          "section": 27,
+          "text": "상자 손잡이를 눌러 볼게요."
+        },
+        {
+          "index": 46,
+          "start_ms": 567824,
+          "end_ms": 569254,
+          "frames": 16,
+          "interior_max_gap_ms": 167.124,
+          "cue": "N09-v011",
+          "section": 27,
+          "text": "상자 손잡이를 눌러 볼게요."
+        },
+        {
+          "index": 47,
+          "start_ms": 571677,
+          "end_ms": 573323,
+          "frames": 16,
+          "interior_max_gap_ms": 214.53,
+          "cue": "N09-v012",
+          "section": 27,
+          "text": "색 메뉴를 열어 주세요."
+        },
+        {
+          "index": 48,
+          "start_ms": 581062,
+          "end_ms": 582460,
+          "frames": 17,
+          "interior_max_gap_ms": 201.506,
+          "cue": "live-color-find",
+          "section": 27,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 49,
+          "start_ms": 583304,
+          "end_ms": 584624,
+          "frames": 15,
+          "interior_max_gap_ms": 174.62,
+          "cue": "live-color-find",
+          "section": 27,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 50,
+          "start_ms": 585180,
+          "end_ms": 586639,
+          "frames": 15,
+          "interior_max_gap_ms": 155.309,
+          "cue": "live-color-find",
+          "section": 27,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 51,
+          "start_ms": 587124,
+          "end_ms": 588606,
+          "frames": 18,
+          "interior_max_gap_ms": 122.466,
+          "cue": "live-color-find",
+          "section": 27,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 52,
+          "start_ms": 588787,
+          "end_ms": 590322,
+          "frames": 16,
+          "interior_max_gap_ms": 184.231,
+          "cue": "live-color-find",
+          "section": 27,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 53,
+          "start_ms": 592671,
+          "end_ms": 594157,
+          "frames": 15,
+          "interior_max_gap_ms": 187.286,
+          "cue": "N09-v013",
+          "section": 27,
+          "text": "파란색 배경을 고를게요."
+        },
+        {
+          "index": 54,
+          "start_ms": 607881,
+          "end_ms": 608988,
+          "frames": 16,
+          "interior_max_gap_ms": 104.043,
+          "cue": "live-callout-exit-first-v2",
+          "section": 27,
+          "text": "이제 상자 밖에 다음 내용을 넣겠습니다. 상자 아래쪽의 마지막 문장을 찾아 끝부분을 클릭하고, 엔터를 한 번 눌러 주세요."
+        },
+        {
+          "index": 55,
+          "start_ms": 624462,
+          "end_ms": 625793,
+          "frames": 15,
+          "interior_max_gap_ms": 147.044,
+          "cue": "live-heading-search",
+          "section": 27,
+          "text": "슬래시 뒤에 제목이라고 적어 주세요. 크기가 다른 제목을 고를 수 있습니다."
+        },
+        {
+          "index": 56,
+          "start_ms": 629634,
+          "end_ms": 631037,
+          "frames": 16,
+          "interior_max_gap_ms": 185.135,
+          "cue": "N11-v004",
+          "section": 27,
+          "text": "이번에는 제목 2를 바로 고르겠습니다."
+        },
+        {
+          "index": 57,
+          "start_ms": 634570,
+          "end_ms": 635888,
+          "frames": 16,
+          "interior_max_gap_ms": 104.504,
+          "cue": "N09-v016",
+          "section": 27,
+          "text": "‘나의 페이지’라고 적을게요."
+        },
+        {
+          "index": 59,
+          "start_ms": 653841,
+          "end_ms": 655440,
+          "frames": 18,
+          "interior_max_gap_ms": 219.086,
+          "cue": "N10-v003",
+          "section": 27,
+          "text": "메뉴에서 페이지를 고를게요."
+        },
+        {
+          "index": 61,
+          "start_ms": 663255,
+          "end_ms": 664400,
+          "frames": 16,
+          "interior_max_gap_ms": 138.723,
+          "cue": "N10-v004",
+          "section": 27,
+          "text": "새 페이지 제목에는 ‘첫 페이지 꾸미기’라고 적어 주세요."
+        },
+        {
+          "index": 64,
+          "start_ms": 715466,
+          "end_ms": 716905,
+          "frames": 17,
+          "interior_max_gap_ms": 154.663,
+          "cue": "N11-v004",
+          "section": 27,
+          "text": "이번에는 제목 2를 바로 고르겠습니다."
+        },
+        {
+          "index": 65,
+          "start_ms": 720893,
+          "end_ms": 721999,
+          "frames": 16,
+          "interior_max_gap_ms": 161.161,
+          "cue": "N11-v005",
+          "section": 27,
+          "text": "‘오늘 써 본 방법’이라고 적을게요."
+        },
+        {
+          "index": 67,
+          "start_ms": 742422,
+          "end_ms": 743982,
+          "frames": 17,
+          "interior_max_gap_ms": 132.031,
+          "cue": "N11-v009",
+          "section": 27,
+          "text": "글머리 기호 목록을 골라 주세요."
+        },
+        {
+          "index": 68,
+          "start_ms": 752810,
+          "end_ms": 754042,
+          "frames": 16,
+          "interior_max_gap_ms": 170.072,
+          "cue": "N11-v011",
+          "section": 27,
+          "text": "첫 줄에는 ‘제목으로 내용의 구획 나누기’라고 입력하겠습니다."
+        },
+        {
+          "index": 72,
+          "start_ms": 807552,
+          "end_ms": 809166,
+          "frames": 18,
+          "interior_max_gap_ms": 202.732,
+          "cue": "N13-v002",
+          "section": 28,
+          "text": "토글 목록을 골라 주세요."
+        },
+        {
+          "index": 73,
+          "start_ms": 816026,
+          "end_ms": 817131,
+          "frames": 16,
+          "interior_max_gap_ms": 187.197,
+          "cue": "N13-v003",
+          "section": 28,
+          "text": "삼각형 옆에 ‘제목과 굵은 글씨는 어떻게 다를까?’라고 적어 주세요."
+        },
+        {
+          "index": 74,
+          "start_ms": 825905,
+          "end_ms": 827448,
+          "frames": 17,
+          "interior_max_gap_ms": 149.156,
+          "cue": "N13-v005",
+          "section": 28,
+          "text": "왼쪽 삼각형을 클릭해 펼치겠습니다."
+        },
+        {
+          "index": 75,
+          "start_ms": 831547,
+          "end_ms": 833020,
+          "frames": 16,
+          "interior_max_gap_ms": 168.64,
+          "cue": "N13-v006",
+          "section": 28,
+          "text": "펼쳐진 안쪽의 빈 부분을 눌러 주세요."
+        },
+        {
+          "index": 76,
+          "start_ms": 839373,
+          "end_ms": 840926,
+          "frames": 16,
+          "interior_max_gap_ms": 200.169,
+          "cue": "N13-v007",
+          "section": 28,
+          "text": "‘제목은 문서의 구획을 만들고 목차에도 표시됩니다.’라고 적을게요."
+        },
+        {
+          "index": 78,
+          "start_ms": 865067,
+          "end_ms": 866227,
+          "frames": 17,
+          "interior_max_gap_ms": 153.085,
+          "cue": "N13-v010",
+          "section": 28,
+          "text": "이제 삼각형을 다시 눌러 접겠습니다."
+        },
+        {
+          "index": 81,
+          "start_ms": 889483,
+          "end_ms": 890689,
+          "frames": 17,
+          "interior_max_gap_ms": 135.574,
+          "cue": "live-toggle-exit-one",
+          "section": 28,
+          "text": "토글 밖으로 나가 볼게요. 접힌 질문의 문장 끝을 클릭하고 엔터를 눌러 주세요."
+        },
+        {
+          "index": 82,
+          "start_ms": 911856,
+          "end_ms": 913391,
+          "frames": 16,
+          "interior_max_gap_ms": 183.8,
+          "cue": "live-divider-search",
+          "section": 28,
+          "text": "내용이 바뀌는 곳에 선을 하나 넣겠습니다. 슬래시 뒤에 구분선이라고 적어 주세요."
+        },
+        {
+          "index": 83,
+          "start_ms": 917112,
+          "end_ms": 918754,
+          "frames": 16,
+          "interior_max_gap_ms": 214.753,
+          "cue": "N14-v003",
+          "section": 28,
+          "text": "메뉴에서 구분선을 선택해 주세요."
+        },
+        {
+          "index": 84,
+          "start_ms": 925447,
+          "end_ms": 926669,
+          "frames": 14,
+          "interior_max_gap_ms": 154.296,
+          "cue": "live-heading-search",
+          "section": 28,
+          "text": "슬래시 뒤에 제목이라고 적어 주세요. 크기가 다른 제목을 고를 수 있습니다."
+        },
+        {
+          "index": 85,
+          "start_ms": 929842,
+          "end_ms": 931286,
+          "frames": 18,
+          "interior_max_gap_ms": 189.281,
+          "cue": "N14-v005",
+          "section": 28,
+          "text": "제목 2를 골라 주세요."
+        },
+        {
+          "index": 86,
+          "start_ms": 935068,
+          "end_ms": 936306,
+          "frames": 15,
+          "interior_max_gap_ms": 152.074,
+          "cue": "N14-v006",
+          "section": 28,
+          "text": "‘다음에 해 볼 것’이라고 적을게요."
+        },
+        {
+          "index": 88,
+          "start_ms": 951007,
+          "end_ms": 952463,
+          "frames": 18,
+          "interior_max_gap_ms": 133.536,
+          "cue": "N14-v009",
+          "section": 28,
+          "text": "메뉴에서 할 일 목록을 선택하겠습니다."
+        },
+        {
+          "index": 89,
+          "start_ms": 960154,
+          "end_ms": 961391,
+          "frames": 16,
+          "interior_max_gap_ms": 142.14,
+          "cue": "N14-v011",
+          "section": 28,
+          "text": "‘내 관심 주제로 카드 하나 더 만들기’라고 적을게요."
+        },
+        {
+          "index": 91,
+          "start_ms": 997816,
+          "end_ms": 999325,
+          "frames": 16,
+          "interior_max_gap_ms": 133.016,
+          "cue": "N15-v001",
+          "section": 28,
+          "text": "페이지 위쪽으로 스크롤하겠습니다."
+        },
+        {
+          "index": 92,
+          "start_ms": 1006208,
+          "end_ms": 1007486,
+          "frames": 15,
+          "interior_max_gap_ms": 171.748,
+          "cue": "N15-v003",
+          "section": 28,
+          "text": "소개 문장 끝을 클릭할게요."
+        },
+        {
+          "index": 93,
+          "start_ms": 1016174,
+          "end_ms": 1017325,
+          "frames": 14,
+          "interior_max_gap_ms": 150.788,
+          "cue": "live-toc-search",
+          "section": 28,
+          "text": "슬래시 뒤에 목차라고 적어서 목차 블록을 찾아보겠습니다."
+        },
+        {
+          "index": 94,
+          "start_ms": 1020911,
+          "end_ms": 1022251,
+          "frames": 17,
+          "interior_max_gap_ms": 157.584,
+          "cue": "N15-v006",
+          "section": 28,
+          "text": "메뉴에서 목차를 고르겠습니다."
+        },
+        {
+          "index": 95,
+          "start_ms": 1038988,
+          "end_ms": 1040700,
+          "frames": 16,
+          "interior_max_gap_ms": 179.65,
+          "cue": "N15-v010",
+          "section": 28,
+          "text": "목차에서 다음에 해 볼 것을 클릭하겠습니다."
+        },
+        {
+          "index": 96,
+          "start_ms": 1060227,
+          "end_ms": 1061282,
+          "frames": 16,
+          "interior_max_gap_ms": 114.099,
+          "cue": "N15-v014",
+          "section": 28,
+          "text": "이제 위쪽 경로의 노션 익히기를 클릭해 부모 주제로 돌아가겠습니다."
+        },
+        {
+          "index": 97,
+          "start_ms": 1075119,
+          "end_ms": 1076500,
+          "frames": 16,
+          "interior_max_gap_ms": 195.955,
+          "cue": "live-second-page-position",
+          "section": 29,
+          "text": "나의 페이지 제목 끝을 클릭하고 엔터를 누를게요. 이 자리에 두 번째 하위 페이지를 만들겠습니다."
+        },
+        {
+          "index": 99,
+          "start_ms": 1077759,
+          "end_ms": 1078877,
+          "frames": 17,
+          "interior_max_gap_ms": 145.196,
+          "cue": "live-second-page-position",
+          "section": 29,
+          "text": "나의 페이지 제목 끝을 클릭하고 엔터를 누를게요. 이 자리에 두 번째 하위 페이지를 만들겠습니다."
+        },
+        {
+          "index": 100,
+          "start_ms": 1086213,
+          "end_ms": 1087383,
+          "frames": 15,
+          "interior_max_gap_ms": 133.449,
+          "cue": "live-page-search",
+          "section": 29,
+          "text": "슬래시 뒤에 페이지라고 적어 보겠습니다. 지금 주제 안에 하위 페이지를 넣을 거예요."
+        },
+        {
+          "index": 101,
+          "start_ms": 1090205,
+          "end_ms": 1091476,
+          "frames": 14,
+          "interior_max_gap_ms": 152.827,
+          "cue": "N16-v003",
+          "section": 29,
+          "text": "페이지를 선택해 주세요."
+        },
+        {
+          "index": 102,
+          "start_ms": 1096254,
+          "end_ms": 1097500,
+          "frames": 15,
+          "interior_max_gap_ms": 155.02,
+          "cue": "N16-v004",
+          "section": 29,
+          "text": "제목에는 ‘페이지 연결하기’라고 적겠습니다."
+        },
+        {
+          "index": 103,
+          "start_ms": 1098878,
+          "end_ms": 1100161,
+          "frames": 17,
+          "interior_max_gap_ms": 135.475,
+          "cue": "N16-v004",
+          "section": 29,
+          "text": "제목에는 ‘페이지 연결하기’라고 적겠습니다."
+        },
+        {
+          "index": 106,
+          "start_ms": 1128958,
+          "end_ms": 1130313,
+          "frames": 17,
+          "interior_max_gap_ms": 128.863,
+          "cue": "N16-v009",
+          "section": 29,
+          "text": "제목 2를 골라 주세요."
+        },
+        {
+          "index": 107,
+          "start_ms": 1134516,
+          "end_ms": 1135675,
+          "frames": 17,
+          "interior_max_gap_ms": 147.048,
+          "cue": "N16-v010",
+          "section": 29,
+          "text": "‘하위 페이지 만들기’라고 적겠습니다."
+        },
+        {
+          "index": 108,
+          "start_ms": 1142718,
+          "end_ms": 1143451,
+          "frames": 4,
+          "interior_max_gap_ms": 408.889,
+          "cue": "live-number-search",
+          "section": 29,
+          "text": "엔터로 제목 아래에 내려온 다음, 슬래시와 번호를 입력해 볼게요."
+        },
+        {
+          "index": 109,
+          "start_ms": 1147425,
+          "end_ms": 1148842,
+          "frames": 17,
+          "interior_max_gap_ms": 155.274,
+          "cue": "live-number-pick",
+          "section": 29,
+          "text": "메뉴에서 번호 매기기 목록을 눌러 주세요."
+        },
+        {
+          "index": 110,
+          "start_ms": 1157143,
+          "end_ms": 1158552,
+          "frames": 15,
+          "interior_max_gap_ms": 200.072,
+          "cue": "N16-v013",
+          "section": 29,
+          "text": "첫 번째에는 ‘주제 카드를 엽니다.’라고 적을게요."
+        },
+        {
+          "index": 115,
+          "start_ms": 1213075,
+          "end_ms": 1214314,
+          "frames": 17,
+          "interior_max_gap_ms": 140.115,
+          "cue": "N16-v023",
+          "section": 29,
+          "text": "콜아웃을 골라 주세요."
+        },
+        {
+          "index": 116,
+          "start_ms": 1220020,
+          "end_ms": 1221281,
+          "frames": 17,
+          "interior_max_gap_ms": 202.775,
+          "cue": "N16-v024",
+          "section": 29,
+          "text": "‘페이지 이름은 내용에 맞게 자유롭게 붙이세요.’라고 적겠습니다."
+        },
+        {
+          "index": 117,
+          "start_ms": 1239112,
+          "end_ms": 1240226,
+          "frames": 15,
+          "interior_max_gap_ms": 121.71,
+          "cue": "live-callout-exit-first-v2",
+          "section": 29,
+          "text": "이제 상자 밖에 다음 내용을 넣겠습니다. 상자 아래쪽의 마지막 문장을 찾아 끝부분을 클릭하고, 엔터를 한 번 눌러 주세요."
+        },
+        {
+          "index": 118,
+          "start_ms": 1255683,
+          "end_ms": 1257025,
+          "frames": 15,
+          "interior_max_gap_ms": 175.989,
+          "cue": "live-heading-search",
+          "section": 29,
+          "text": "슬래시 뒤에 제목이라고 적어 주세요. 크기가 다른 제목을 고를 수 있습니다."
+        },
+        {
+          "index": 119,
+          "start_ms": 1259768,
+          "end_ms": 1261187,
+          "frames": 18,
+          "interior_max_gap_ms": 170.678,
+          "cue": "N17-v003",
+          "section": 29,
+          "text": "제목 2를 고를게요."
+        },
+        {
+          "index": 120,
+          "start_ms": 1265296,
+          "end_ms": 1266443,
+          "frames": 16,
+          "interior_max_gap_ms": 150.001,
+          "cue": "N17-v004",
+          "section": 29,
+          "text": "‘필요할 때 찾아보기’라고 적어 주세요."
+        },
+        {
+          "index": 123,
+          "start_ms": 1333682,
+          "end_ms": 1335356,
+          "frames": 16,
+          "interior_max_gap_ms": 170.357,
+          "cue": "N17-v023",
+          "section": 29,
+          "text": "위쪽 경로에서 노션 익히기로 돌아가겠습니다."
+        },
+        {
+          "index": 124,
+          "start_ms": 1347038,
+          "end_ms": 1348273,
+          "frames": 15,
+          "interior_max_gap_ms": 165.82,
+          "cue": "N18-v002",
+          "section": 30,
+          "text": "나의 페이지 제목 끝을 클릭할게요."
+        },
+        {
+          "index": 126,
+          "start_ms": 1349690,
+          "end_ms": 1350961,
+          "frames": 16,
+          "interior_max_gap_ms": 186.436,
+          "cue": "N18-v002",
+          "section": 30,
+          "text": "나의 페이지 제목 끝을 클릭할게요."
+        },
+        {
+          "index": 127,
+          "start_ms": 1360912,
+          "end_ms": 1362363,
+          "frames": 16,
+          "interior_max_gap_ms": 180.118,
+          "cue": "live-filter-callout",
+          "section": 30,
+          "text": "이번에도 슬래시 뒤에 콜아웃이라고 적어서 찾아볼게요."
+        },
+        {
+          "index": 128,
+          "start_ms": 1365209,
+          "end_ms": 1366595,
+          "frames": 14,
+          "interior_max_gap_ms": 189.696,
+          "cue": "N18-v005",
+          "section": 30,
+          "text": "콜아웃을 골라 주세요."
+        },
+        {
+          "index": 129,
+          "start_ms": 1375663,
+          "end_ms": 1376864,
+          "frames": 16,
+          "interior_max_gap_ms": 143.614,
+          "cue": "N18-v006",
+          "section": 30,
+          "text": "‘01 · 글 정리하기’라고 적을게요."
+        },
+        {
+          "index": 132,
+          "start_ms": 1403789,
+          "end_ms": 1405283,
+          "frames": 17,
+          "interior_max_gap_ms": 176.177,
+          "cue": "N18-v014",
+          "section": 30,
+          "text": "상자 손잡이를 열게요."
+        },
+        {
+          "index": 133,
+          "start_ms": 1405746,
+          "end_ms": 1406900,
+          "frames": 14,
+          "interior_max_gap_ms": 137.121,
+          "cue": "N18-v014",
+          "section": 30,
+          "text": "상자 손잡이를 열게요."
+        },
+        {
+          "index": 134,
+          "start_ms": 1407178,
+          "end_ms": 1408452,
+          "frames": 16,
+          "interior_max_gap_ms": 165.791,
+          "cue": "N18-v014",
+          "section": 30,
+          "text": "상자 손잡이를 열게요."
+        },
+        {
+          "index": 135,
+          "start_ms": 1410836,
+          "end_ms": 1412391,
+          "frames": 15,
+          "interior_max_gap_ms": 205.231,
+          "cue": "N18-v015",
+          "section": 30,
+          "text": "색 메뉴를 골라 주세요."
+        },
+        {
+          "index": 136,
+          "start_ms": 1414934,
+          "end_ms": 1416626,
+          "frames": 17,
+          "interior_max_gap_ms": 132.125,
+          "cue": "N18-v016",
+          "section": 30,
+          "text": "회색 배경을 선택하겠습니다."
+        },
+        {
+          "index": 137,
+          "start_ms": 1417605,
+          "end_ms": 1419179,
+          "frames": 18,
+          "interior_max_gap_ms": 113.636,
+          "cue": "N18-v016",
+          "section": 30,
+          "text": "회색 배경을 선택하겠습니다."
+        },
+        {
+          "index": 138,
+          "start_ms": 1419775,
+          "end_ms": 1421577,
+          "frames": 17,
+          "interior_max_gap_ms": 222.691,
+          "cue": "N18-v016",
+          "section": 30,
+          "text": "회색 배경을 선택하겠습니다."
+        },
+        {
+          "index": 139,
+          "start_ms": 1421757,
+          "end_ms": 1423685,
+          "frames": 18,
+          "interior_max_gap_ms": 220.437,
+          "cue": "N18-v016",
+          "section": 30,
+          "text": "회색 배경을 선택하겠습니다."
+        },
+        {
+          "index": 140,
+          "start_ms": 1423876,
+          "end_ms": 1425520,
+          "frames": 18,
+          "interior_max_gap_ms": 198.613,
+          "cue": "N18-v016",
+          "section": 30,
+          "text": "회색 배경을 선택하겠습니다."
+        },
+        {
+          "index": 141,
+          "start_ms": 1435571,
+          "end_ms": 1436870,
+          "frames": 15,
+          "interior_max_gap_ms": 152.056,
+          "cue": "live-callout-exit-first-v2",
+          "section": 30,
+          "text": "이제 상자 밖에 다음 내용을 넣겠습니다. 상자 아래쪽의 마지막 문장을 찾아 끝부분을 클릭하고, 엔터를 한 번 눌러 주세요."
+        },
+        {
+          "index": 142,
+          "start_ms": 1451326,
+          "end_ms": 1452986,
+          "frames": 16,
+          "interior_max_gap_ms": 210.21,
+          "cue": "live-filter-callout",
+          "section": 30,
+          "text": "이번에도 슬래시 뒤에 콜아웃이라고 적어서 찾아볼게요."
+        },
+        {
+          "index": 143,
+          "start_ms": 1456279,
+          "end_ms": 1457766,
+          "frames": 16,
+          "interior_max_gap_ms": 177.974,
+          "cue": "N18-v021",
+          "section": 30,
+          "text": "콜아웃을 하나 더 고를게요."
+        },
+        {
+          "index": 144,
+          "start_ms": 1468210,
+          "end_ms": 1469410,
+          "frames": 17,
+          "interior_max_gap_ms": 155.732,
+          "cue": "N18-v022",
+          "section": 30,
+          "text": "첫 줄에는 ‘02 · 내용 연결하기’라고 적을게요."
+        },
+        {
+          "index": 147,
+          "start_ms": 1496708,
+          "end_ms": 1498019,
+          "frames": 15,
+          "interior_max_gap_ms": 183.987,
+          "cue": "N18-v029",
+          "section": 30,
+          "text": "선택을 풀고 상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 148,
+          "start_ms": 1498478,
+          "end_ms": 1499822,
+          "frames": 17,
+          "interior_max_gap_ms": 159.42,
+          "cue": "N18-v029",
+          "section": 30,
+          "text": "선택을 풀고 상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 149,
+          "start_ms": 1500077,
+          "end_ms": 1501597,
+          "frames": 17,
+          "interior_max_gap_ms": 171.829,
+          "cue": "N18-v029",
+          "section": 30,
+          "text": "선택을 풀고 상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 150,
+          "start_ms": 1504015,
+          "end_ms": 1505470,
+          "frames": 16,
+          "interior_max_gap_ms": 170.495,
+          "cue": "N18-v030",
+          "section": 30,
+          "text": "색 메뉴를 고를게요."
+        },
+        {
+          "index": 151,
+          "start_ms": 1508040,
+          "end_ms": 1509455,
+          "frames": 15,
+          "interior_max_gap_ms": 151.094,
+          "cue": "N18-v031",
+          "section": 30,
+          "text": "회색 배경을 선택해 주세요."
+        },
+        {
+          "index": 152,
+          "start_ms": 1510379,
+          "end_ms": 1511714,
+          "frames": 15,
+          "interior_max_gap_ms": 124.156,
+          "cue": "N18-v031",
+          "section": 30,
+          "text": "회색 배경을 선택해 주세요."
+        },
+        {
+          "index": 153,
+          "start_ms": 1512289,
+          "end_ms": 1513667,
+          "frames": 16,
+          "interior_max_gap_ms": 146.585,
+          "cue": "N18-v031",
+          "section": 30,
+          "text": "회색 배경을 선택해 주세요."
+        },
+        {
+          "index": 154,
+          "start_ms": 1513847,
+          "end_ms": 1515303,
+          "frames": 17,
+          "interior_max_gap_ms": 132.687,
+          "cue": "N18-v031",
+          "section": 30,
+          "text": "회색 배경을 선택해 주세요."
+        },
+        {
+          "index": 155,
+          "start_ms": 1515499,
+          "end_ms": 1517123,
+          "frames": 18,
+          "interior_max_gap_ms": 145.892,
+          "cue": "N18-v031",
+          "section": 30,
+          "text": "회색 배경을 선택해 주세요."
+        },
+        {
+          "index": 156,
+          "start_ms": 1522344,
+          "end_ms": 1523780,
+          "frames": 16,
+          "interior_max_gap_ms": 150.394,
+          "cue": "live-layout-down",
+          "section": 31,
+          "text": "상자 아래쪽이 보이도록 화면을 조금 내리겠습니다."
+        },
+        {
+          "index": 157,
+          "start_ms": 1533932,
+          "end_ms": 1535168,
+          "frames": 16,
+          "interior_max_gap_ms": 163.272,
+          "cue": "N18-v035",
+          "section": 31,
+          "text": "두 번째 상자의 왼쪽 손잡이를 누른 채 첫 상자 오른쪽으로 가져가 주세요."
+        },
+        {
+          "index": 158,
+          "start_ms": 1535461,
+          "end_ms": 1536897,
+          "frames": 16,
+          "interior_max_gap_ms": 166.36,
+          "cue": "N18-v035",
+          "section": 31,
+          "text": "두 번째 상자의 왼쪽 손잡이를 누른 채 첫 상자 오른쪽으로 가져가 주세요."
+        },
+        {
+          "index": 159,
+          "start_ms": 1537182,
+          "end_ms": 1538762,
+          "frames": 17,
+          "interior_max_gap_ms": 197.333,
+          "cue": "N18-v035",
+          "section": 31,
+          "text": "두 번째 상자의 왼쪽 손잡이를 누른 채 첫 상자 오른쪽으로 가져가 주세요."
+        },
+        {
+          "index": 160,
+          "start_ms": 1550839,
+          "end_ms": 1552385,
+          "frames": 18,
+          "interior_max_gap_ms": 180.0,
+          "cue": "N18-v038",
+          "section": 31,
+          "text": "아래에 있는 첫 페이지 꾸미기의 손잡이를 잡겠습니다."
+        },
+        {
+          "index": 161,
+          "start_ms": 1552686,
+          "end_ms": 1554018,
+          "frames": 16,
+          "interior_max_gap_ms": 164.173,
+          "cue": "N18-v038",
+          "section": 31,
+          "text": "아래에 있는 첫 페이지 꾸미기의 손잡이를 잡겠습니다."
+        },
+        {
+          "index": 162,
+          "start_ms": 1557541,
+          "end_ms": 1558933,
+          "frames": 16,
+          "interior_max_gap_ms": 186.065,
+          "cue": "N18-v039",
+          "section": 31,
+          "text": "왼쪽 상자 안의 설명 아래로 옮겨 놓을게요."
+        },
+        {
+          "index": 163,
+          "start_ms": 1564714,
+          "end_ms": 1566038,
+          "frames": 17,
+          "interior_max_gap_ms": 189.393,
+          "cue": "N18-v040",
+          "section": 31,
+          "text": "이번에는 페이지 연결하기를 오른쪽 상자 안으로 옮기겠습니다."
+        },
+        {
+          "index": 164,
+          "start_ms": 1566363,
+          "end_ms": 1567779,
+          "frames": 15,
+          "interior_max_gap_ms": 206.66,
+          "cue": "N18-v040",
+          "section": 31,
+          "text": "이번에는 페이지 연결하기를 오른쪽 상자 안으로 옮기겠습니다."
+        },
+        {
+          "index": 165,
+          "start_ms": 1568002,
+          "end_ms": 1569501,
+          "frames": 17,
+          "interior_max_gap_ms": 180.688,
+          "cue": "N18-v040",
+          "section": 31,
+          "text": "이번에는 페이지 연결하기를 오른쪽 상자 안으로 옮기겠습니다."
+        },
+        {
+          "index": 166,
+          "start_ms": 1589785,
+          "end_ms": 1591491,
+          "frames": 16,
+          "interior_max_gap_ms": 209.387,
+          "cue": "live-home-list",
+          "section": 31,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 167,
+          "start_ms": 1593058,
+          "end_ms": 1594180,
+          "frames": 14,
+          "interior_max_gap_ms": 165.405,
+          "cue": "live-home-list",
+          "section": 31,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 168,
+          "start_ms": 1608031,
+          "end_ms": 1609803,
+          "frames": 16,
+          "interior_max_gap_ms": 218.015,
+          "cue": "N20-v002",
+          "section": 32,
+          "text": "파란색 새로 만들기 버튼을 눌러 주세요."
+        },
+        {
+          "index": 169,
+          "start_ms": 1618437,
+          "end_ms": 1619873,
+          "frames": 16,
+          "interior_max_gap_ms": 197.009,
+          "cue": "live-peek-full",
+          "section": 32,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 170,
+          "start_ms": 1624543,
+          "end_ms": 1625970,
+          "frames": 16,
+          "interior_max_gap_ms": 195.188,
+          "cue": "N20-v003",
+          "section": 32,
+          "text": "제목에는 ‘지식 자산화’라고 적을게요."
+        },
+        {
+          "index": 171,
+          "start_ms": 1627137,
+          "end_ms": 1628481,
+          "frames": 16,
+          "interior_max_gap_ms": 169.77,
+          "cue": "N20-v003",
+          "section": 32,
+          "text": "제목에는 ‘지식 자산화’라고 적을게요."
+        },
+        {
+          "index": 174,
+          "start_ms": 1670778,
+          "end_ms": 1672598,
+          "frames": 18,
+          "interior_max_gap_ms": 166.523,
+          "cue": "N20-v008",
+          "section": 32,
+          "text": "콜아웃을 고를게요."
+        },
+        {
+          "index": 175,
+          "start_ms": 1683001,
+          "end_ms": 1684520,
+          "frames": 17,
+          "interior_max_gap_ms": 133.518,
+          "cue": "N20-v009",
+          "section": 32,
+          "text": "‘모아 두는 데서, 다시 꺼내 쓰는 데까지’라고 적어 주세요."
+        },
+        {
+          "index": 177,
+          "start_ms": 1718242,
+          "end_ms": 1719597,
+          "frames": 17,
+          "interior_max_gap_ms": 116.292,
+          "cue": "N20-v015",
+          "section": 32,
+          "text": "상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 178,
+          "start_ms": 1720066,
+          "end_ms": 1721187,
+          "frames": 15,
+          "interior_max_gap_ms": 162.958,
+          "cue": "N20-v015",
+          "section": 32,
+          "text": "상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 179,
+          "start_ms": 1721477,
+          "end_ms": 1722943,
+          "frames": 16,
+          "interior_max_gap_ms": 240.79,
+          "cue": "N20-v015",
+          "section": 32,
+          "text": "상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 180,
+          "start_ms": 1725382,
+          "end_ms": 1727419,
+          "frames": 18,
+          "interior_max_gap_ms": 387.182,
+          "cue": "N20-v016",
+          "section": 32,
+          "text": "색 메뉴를 고를게요."
+        },
+        {
+          "index": 181,
+          "start_ms": 1735228,
+          "end_ms": 1736798,
+          "frames": 16,
+          "interior_max_gap_ms": 215.414,
+          "cue": "live-color-find",
+          "section": 32,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 182,
+          "start_ms": 1737711,
+          "end_ms": 1739475,
+          "frames": 17,
+          "interior_max_gap_ms": 131.466,
+          "cue": "live-color-find",
+          "section": 32,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 183,
+          "start_ms": 1740106,
+          "end_ms": 1741899,
+          "frames": 16,
+          "interior_max_gap_ms": 201.848,
+          "cue": "live-color-find",
+          "section": 32,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 184,
+          "start_ms": 1742320,
+          "end_ms": 1744178,
+          "frames": 18,
+          "interior_max_gap_ms": 150.85,
+          "cue": "live-color-find",
+          "section": 32,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 185,
+          "start_ms": 1744364,
+          "end_ms": 1746032,
+          "frames": 17,
+          "interior_max_gap_ms": 191.507,
+          "cue": "live-color-find",
+          "section": 32,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 186,
+          "start_ms": 1748671,
+          "end_ms": 1750200,
+          "frames": 16,
+          "interior_max_gap_ms": 120.057,
+          "cue": "N20-v017",
+          "section": 32,
+          "text": "파란색 배경을 선택해 주세요."
+        },
+        {
+          "index": 187,
+          "start_ms": 1760179,
+          "end_ms": 1761760,
+          "frames": 18,
+          "interior_max_gap_ms": 199.657,
+          "cue": "live-callout-exit-first-v2",
+          "section": 32,
+          "text": "이제 상자 밖에 다음 내용을 넣겠습니다. 상자 아래쪽의 마지막 문장을 찾아 끝부분을 클릭하고, 엔터를 한 번 눌러 주세요."
+        },
+        {
+          "index": 188,
+          "start_ms": 1777392,
+          "end_ms": 1778790,
+          "frames": 16,
+          "interior_max_gap_ms": 173.635,
+          "cue": "live-heading-search",
+          "section": 32,
+          "text": "슬래시 뒤에 제목이라고 적어 주세요. 크기가 다른 제목을 고를 수 있습니다."
+        },
+        {
+          "index": 189,
+          "start_ms": 1781736,
+          "end_ms": 1783271,
+          "frames": 15,
+          "interior_max_gap_ms": 176.129,
+          "cue": "N20-v020",
+          "section": 32,
+          "text": "제목 2를 고를게요."
+        },
+        {
+          "index": 190,
+          "start_ms": 1788759,
+          "end_ms": 1790209,
+          "frames": 17,
+          "interior_max_gap_ms": 187.978,
+          "cue": "live-example-heading",
+          "section": 32,
+          "text": "제목에는 내 말로 남기는 짧은 메모라고 적겠습니다."
+        },
+        {
+          "index": 192,
+          "start_ms": 1807836,
+          "end_ms": 1809290,
+          "frames": 18,
+          "interior_max_gap_ms": 150.446,
+          "cue": "N11-v009",
+          "section": 32,
+          "text": "글머리 기호 목록을 골라 주세요."
+        },
+        {
+          "index": 193,
+          "start_ms": 1815746,
+          "end_ms": 1816884,
+          "frames": 16,
+          "interior_max_gap_ms": 135.075,
+          "cue": "live-example-one",
+          "section": 32,
+          "text": "첫 줄에는, 기록의 목적은 다시 찾고 활용하는 것이라고 적을게요."
+        },
+        {
+          "index": 194,
+          "start_ms": 1826886,
+          "end_ms": 1827617,
+          "frames": 2,
+          "interior_max_gap_ms": 450.358,
+          "cue": "live-example-two",
+          "section": 32,
+          "text": "엔터를 누르고, 원문과 내가 이해한 내용을 구분해 남긴다고 적겠습니다."
+        },
+        {
+          "index": 197,
+          "start_ms": 1860601,
+          "end_ms": 1861895,
+          "frames": 16,
+          "interior_max_gap_ms": 148.044,
+          "cue": "N13-v002",
+          "section": 32,
+          "text": "토글 목록을 골라 주세요."
+        },
+        {
+          "index": 198,
+          "start_ms": 1868850,
+          "end_ms": 1869997,
+          "frames": 16,
+          "interior_max_gap_ms": 137.399,
+          "cue": "live-example-question",
+          "section": 32,
+          "text": "질문은 토글로 묶겠습니다. 제목에는 어떻게 다시 찾아볼까라고 적을게요."
+        },
+        {
+          "index": 199,
+          "start_ms": 1874778,
+          "end_ms": 1876314,
+          "frames": 17,
+          "interior_max_gap_ms": 216.264,
+          "cue": "N13-v005",
+          "section": 32,
+          "text": "왼쪽 삼각형을 클릭해 펼치겠습니다."
+        },
+        {
+          "index": 200,
+          "start_ms": 1880489,
+          "end_ms": 1881809,
+          "frames": 18,
+          "interior_max_gap_ms": 114.039,
+          "cue": "N13-v006",
+          "section": 32,
+          "text": "펼쳐진 안쪽의 빈 부분을 눌러 주세요."
+        },
+        {
+          "index": 201,
+          "start_ms": 1888826,
+          "end_ms": 1890347,
+          "frames": 16,
+          "interior_max_gap_ms": 206.334,
+          "cue": "live-example-answer",
+          "section": 32,
+          "text": "안쪽에는, 주제 이름을 분명하게 정하고 필요한 출처를 함께 남긴다고 적겠습니다."
+        },
+        {
+          "index": 202,
+          "start_ms": 1898133,
+          "end_ms": 1899425,
+          "frames": 17,
+          "interior_max_gap_ms": 162.387,
+          "cue": "N13-v015",
+          "section": 32,
+          "text": "삼각형을 눌러 다시 접어 둘게요."
+        },
+        {
+          "index": 203,
+          "start_ms": 1916910,
+          "end_ms": 1918274,
+          "frames": 15,
+          "interior_max_gap_ms": 188.2,
+          "cue": "live-home-list",
+          "section": 32,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 204,
+          "start_ms": 1919711,
+          "end_ms": 1921002,
+          "frames": 12,
+          "interior_max_gap_ms": 215.383,
+          "cue": "live-home-list",
+          "section": 32,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 205,
+          "start_ms": 1925947,
+          "end_ms": 1927345,
+          "frames": 17,
+          "interior_max_gap_ms": 191.106,
+          "cue": "N22-v001",
+          "section": 33,
+          "text": "목록의 보기 이름 옆에서 보기 추가를 누르겠습니다."
+        },
+        {
+          "index": 206,
+          "start_ms": 1927594,
+          "end_ms": 1928776,
+          "frames": 14,
+          "interior_max_gap_ms": 134.74,
+          "cue": "N22-v001",
+          "section": 33,
+          "text": "목록의 보기 이름 옆에서 보기 추가를 누르겠습니다."
+        },
+        {
+          "index": 207,
+          "start_ms": 1931139,
+          "end_ms": 1932774,
+          "frames": 15,
+          "interior_max_gap_ms": 216.556,
+          "cue": "N22-v002",
+          "section": 33,
+          "text": "표를 골라 주세요."
+        },
+        {
+          "index": 208,
+          "start_ms": 1935998,
+          "end_ms": 1937670,
+          "frames": 15,
+          "interior_max_gap_ms": 232.504,
+          "cue": "N22-v003",
+          "section": 33,
+          "text": "이름 입력란을 클릭할게요."
+        },
+        {
+          "index": 209,
+          "start_ms": 1941978,
+          "end_ms": 1944174,
+          "frames": 16,
+          "interior_max_gap_ms": 500.777,
+          "cue": "N22-v004",
+          "section": 33,
+          "text": "‘전체 주제’라고 적어 주세요."
+        },
+        {
+          "index": 210,
+          "start_ms": 1949735,
+          "end_ms": 1951304,
+          "frames": 15,
+          "interior_max_gap_ms": 125.002,
+          "cue": "live-view-create-done",
+          "section": 33,
+          "text": "이름을 확인하고 아래의 완료 버튼을 누르겠습니다."
+        },
+        {
+          "index": 211,
+          "start_ms": 1956683,
+          "end_ms": 1958672,
+          "frames": 18,
+          "interior_max_gap_ms": 232.693,
+          "cue": "live-close-settings",
+          "section": 33,
+          "text": "이름을 적었으면 설정 창 위쪽의 닫기 버튼을 누를게요."
+        },
+        {
+          "index": 212,
+          "start_ms": 1977949,
+          "end_ms": 1979286,
+          "frames": 16,
+          "interior_max_gap_ms": 198.549,
+          "cue": "live-property-settings",
+          "section": 33,
+          "text": "목록 오른쪽의 설정 아이콘을 눌러 속성을 추가하겠습니다. 속성은 각 주제에 붙이는 작은 정보 칸이라고 생각하시면 돼요."
+        },
+        {
+          "index": 213,
+          "start_ms": 1982917,
+          "end_ms": 1984370,
+          "frames": 16,
+          "interior_max_gap_ms": 173.621,
+          "cue": "live-property-edit",
+          "section": 33,
+          "text": "속성 편집 메뉴를 열겠습니다."
+        },
+        {
+          "index": 214,
+          "start_ms": 1987372,
+          "end_ms": 1988709,
+          "frames": 16,
+          "interior_max_gap_ms": 189.36,
+          "cue": "live-property-new",
+          "section": 33,
+          "text": "새 속성을 눌러 주세요."
+        },
+        {
+          "index": 215,
+          "start_ms": 1993746,
+          "end_ms": 1995145,
+          "frames": 16,
+          "interior_max_gap_ms": 167.162,
+          "cue": "live-property-field",
+          "section": 34,
+          "text": "이름 입력란을 클릭하고 분야라고 적겠습니다."
+        },
+        {
+          "index": 216,
+          "start_ms": 1996063,
+          "end_ms": 1997694,
+          "frames": 18,
+          "interior_max_gap_ms": 203.45,
+          "cue": "live-property-field",
+          "section": 34,
+          "text": "이름 입력란을 클릭하고 분야라고 적겠습니다."
+        },
+        {
+          "index": 217,
+          "start_ms": 2004168,
+          "end_ms": 2006044,
+          "frames": 18,
+          "interior_max_gap_ms": 369.55,
+          "cue": "live-property-kind",
+          "section": 34,
+          "text": "종류는 선택으로 고를게요. 미리 정한 항목 가운데 하나를 고르는 방식입니다."
+        },
+        {
+          "index": 218,
+          "start_ms": 2009202,
+          "end_ms": 2010456,
+          "frames": 15,
+          "interior_max_gap_ms": 100.856,
+          "cue": "live-property-add-option",
+          "section": 34,
+          "text": "옵션 추가를 누르겠습니다."
+        },
+        {
+          "index": 219,
+          "start_ms": 2014421,
+          "end_ms": 2015573,
+          "frames": 15,
+          "interior_max_gap_ms": 119.613,
+          "cue": "live-property-option-tool",
+          "section": 34,
+          "text": "도구라고 입력하고 엔터로 확정할게요."
+        },
+        {
+          "index": 220,
+          "start_ms": 2016359,
+          "end_ms": 2017581,
+          "frames": 16,
+          "interior_max_gap_ms": 142.532,
+          "cue": "live-property-option-tool",
+          "section": 34,
+          "text": "도구라고 입력하고 엔터로 확정할게요."
+        },
+        {
+          "index": 221,
+          "start_ms": 2023050,
+          "end_ms": 2024517,
+          "frames": 17,
+          "interior_max_gap_ms": 133.258,
+          "cue": "live-property-option-study",
+          "section": 34,
+          "text": "이번에는 학습 방법이라고 입력하고 엔터를 누르겠습니다."
+        },
+        {
+          "index": 222,
+          "start_ms": 2025329,
+          "end_ms": 2026549,
+          "frames": 17,
+          "interior_max_gap_ms": 140.977,
+          "cue": "live-property-option-study",
+          "section": 34,
+          "text": "이번에는 학습 방법이라고 입력하고 엔터를 누르겠습니다."
+        },
+        {
+          "index": 223,
+          "start_ms": 2032681,
+          "end_ms": 2034241,
+          "frames": 16,
+          "interior_max_gap_ms": 196.979,
+          "cue": "live-property-option-ai",
+          "section": 34,
+          "text": "앞으로 사용할 분류로 AI 실습도 적고 엔터를 누를게요."
+        },
+        {
+          "index": 224,
+          "start_ms": 2035081,
+          "end_ms": 2036474,
+          "frames": 17,
+          "interior_max_gap_ms": 154.384,
+          "cue": "live-property-option-ai",
+          "section": 34,
+          "text": "앞으로 사용할 분류로 AI 실습도 적고 엔터를 누를게요."
+        },
+        {
+          "index": 225,
+          "start_ms": 2041612,
+          "end_ms": 2042975,
+          "frames": 16,
+          "interior_max_gap_ms": 144.31,
+          "cue": "live-property-close",
+          "section": 34,
+          "text": "입력한 항목을 확인하고 설정 창을 닫겠습니다."
+        },
+        {
+          "index": 226,
+          "start_ms": 2052802,
+          "end_ms": 2054238,
+          "frames": 17,
+          "interior_max_gap_ms": 161.486,
+          "cue": "live-property-settings",
+          "section": 34,
+          "text": "목록 오른쪽의 설정 아이콘을 눌러 속성을 추가하겠습니다. 속성은 각 주제에 붙이는 작은 정보 칸이라고 생각하시면 돼요."
+        },
+        {
+          "index": 227,
+          "start_ms": 2058039,
+          "end_ms": 2059288,
+          "frames": 13,
+          "interior_max_gap_ms": 194.685,
+          "cue": "live-property-edit",
+          "section": 34,
+          "text": "속성 편집 메뉴를 열겠습니다."
+        },
+        {
+          "index": 228,
+          "start_ms": 2062242,
+          "end_ms": 2063543,
+          "frames": 16,
+          "interior_max_gap_ms": 154.403,
+          "cue": "live-property-new",
+          "section": 34,
+          "text": "새 속성을 눌러 주세요."
+        },
+        {
+          "index": 229,
+          "start_ms": 2067656,
+          "end_ms": 2069457,
+          "frames": 16,
+          "interior_max_gap_ms": 204.658,
+          "cue": "live-understanding-field",
+          "section": 34,
+          "text": "이번 속성 이름은 이해도로 적겠습니다."
+        },
+        {
+          "index": 230,
+          "start_ms": 2070416,
+          "end_ms": 2072109,
+          "frames": 17,
+          "interior_max_gap_ms": 215.893,
+          "cue": "live-understanding-field",
+          "section": 34,
+          "text": "이번 속성 이름은 이해도로 적겠습니다."
+        },
+        {
+          "index": 231,
+          "start_ms": 2078817,
+          "end_ms": 2080704,
+          "frames": 18,
+          "interior_max_gap_ms": 388.183,
+          "cue": "live-property-kind",
+          "section": 34,
+          "text": "종류는 선택으로 고를게요. 미리 정한 항목 가운데 하나를 고르는 방식입니다."
+        },
+        {
+          "index": 232,
+          "start_ms": 2083845,
+          "end_ms": 2085145,
+          "frames": 15,
+          "interior_max_gap_ms": 109.468,
+          "cue": "live-property-add-option",
+          "section": 34,
+          "text": "옵션 추가를 누르겠습니다."
+        },
+        {
+          "index": 233,
+          "start_ms": 2089668,
+          "end_ms": 2091241,
+          "frames": 17,
+          "interior_max_gap_ms": 194.99,
+          "cue": "live-understanding-first",
+          "section": 34,
+          "text": "설명 못함이라고 적고 엔터를 누를게요."
+        },
+        {
+          "index": 234,
+          "start_ms": 2092210,
+          "end_ms": 2093759,
+          "frames": 16,
+          "interior_max_gap_ms": 185.642,
+          "cue": "live-understanding-first",
+          "section": 34,
+          "text": "설명 못함이라고 적고 엔터를 누를게요."
+        },
+        {
+          "index": 235,
+          "start_ms": 2099237,
+          "end_ms": 2100735,
+          "frames": 16,
+          "interior_max_gap_ms": 178.66,
+          "cue": "live-understanding-second",
+          "section": 34,
+          "text": "대충 앎이라고 적고 엔터를 누르겠습니다."
+        },
+        {
+          "index": 236,
+          "start_ms": 2101538,
+          "end_ms": 2102861,
+          "frames": 16,
+          "interior_max_gap_ms": 120.131,
+          "cue": "live-understanding-second",
+          "section": 34,
+          "text": "대충 앎이라고 적고 엔터를 누르겠습니다."
+        },
+        {
+          "index": 237,
+          "start_ms": 2107577,
+          "end_ms": 2108839,
+          "frames": 15,
+          "interior_max_gap_ms": 149.722,
+          "cue": "live-understanding-third",
+          "section": 34,
+          "text": "설명 가능이라고 적고 엔터로 확정할게요."
+        },
+        {
+          "index": 238,
+          "start_ms": 2109671,
+          "end_ms": 2110963,
+          "frames": 16,
+          "interior_max_gap_ms": 171.157,
+          "cue": "live-understanding-third",
+          "section": 34,
+          "text": "설명 가능이라고 적고 엔터로 확정할게요."
+        },
+        {
+          "index": 239,
+          "start_ms": 2116211,
+          "end_ms": 2117484,
+          "frames": 16,
+          "interior_max_gap_ms": 115.467,
+          "cue": "live-property-close",
+          "section": 34,
+          "text": "입력한 항목을 확인하고 설정 창을 닫겠습니다."
+        },
+        {
+          "index": 240,
+          "start_ms": 2148113,
+          "end_ms": 2149519,
+          "frames": 17,
+          "interior_max_gap_ms": 158.531,
+          "cue": "live-property-settings",
+          "section": 35,
+          "text": "목록 오른쪽의 설정 아이콘을 눌러 속성을 추가하겠습니다. 속성은 각 주제에 붙이는 작은 정보 칸이라고 생각하시면 돼요."
+        },
+        {
+          "index": 241,
+          "start_ms": 2153204,
+          "end_ms": 2154651,
+          "frames": 17,
+          "interior_max_gap_ms": 169.87,
+          "cue": "live-property-edit",
+          "section": 35,
+          "text": "속성 편집 메뉴를 열겠습니다."
+        },
+        {
+          "index": 242,
+          "start_ms": 2157553,
+          "end_ms": 2158627,
+          "frames": 9,
+          "interior_max_gap_ms": 247.716,
+          "cue": "live-property-new",
+          "section": 35,
+          "text": "새 속성을 눌러 주세요."
+        },
+        {
+          "index": 243,
+          "start_ms": 2163412,
+          "end_ms": 2165203,
+          "frames": 18,
+          "interior_max_gap_ms": 161.073,
+          "cue": "live-image-name",
+          "section": 35,
+          "text": "새 속성의 이름은 카드 이미지라고 적겠습니다."
+        },
+        {
+          "index": 244,
+          "start_ms": 2166116,
+          "end_ms": 2167809,
+          "frames": 16,
+          "interior_max_gap_ms": 194.521,
+          "cue": "live-image-name",
+          "section": 35,
+          "text": "새 속성의 이름은 카드 이미지라고 적겠습니다."
+        },
+        {
+          "index": 245,
+          "start_ms": 2174684,
+          "end_ms": 2176402,
+          "frames": 18,
+          "interior_max_gap_ms": 196.543,
+          "cue": "live-image-kind",
+          "section": 35,
+          "text": "종류는 파일과 미디어를 선택할게요. 그림이나 파일을 담는 칸입니다."
+        },
+        {
+          "index": 246,
+          "start_ms": 2181074,
+          "end_ms": 2182788,
+          "frames": 17,
+          "interior_max_gap_ms": 191.047,
+          "cue": "live-property-close",
+          "section": 35,
+          "text": "입력한 항목을 확인하고 설정 창을 닫겠습니다."
+        },
+        {
+          "index": 247,
+          "start_ms": 2186956,
+          "end_ms": 2188292,
+          "frames": 16,
+          "interior_max_gap_ms": 202.395,
+          "cue": "live-gallery-return",
+          "section": 35,
+          "text": "홈으로 돌아와 주제 카드 보기를 누르겠습니다."
+        },
+        {
+          "index": 248,
+          "start_ms": 2191540,
+          "end_ms": 2193004,
+          "frames": 16,
+          "interior_max_gap_ms": 187.223,
+          "cue": "live-image-topic",
+          "section": 35,
+          "text": "노션 익히기 카드를 열겠습니다."
+        },
+        {
+          "index": 249,
+          "start_ms": 2201288,
+          "end_ms": 2202791,
+          "frames": 15,
+          "interior_max_gap_ms": 146.262,
+          "cue": "live-peek-full",
+          "section": 35,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 250,
+          "start_ms": 2207122,
+          "end_ms": 2208755,
+          "frames": 15,
+          "interior_max_gap_ms": 206.268,
+          "cue": "live-value-field",
+          "section": 35,
+          "text": "분야 옆의 비어 있음 칸을 눌러 볼게요."
+        },
+        {
+          "index": 251,
+          "start_ms": 2213570,
+          "end_ms": 2215363,
+          "frames": 18,
+          "interior_max_gap_ms": 236.971,
+          "cue": "live-value-tool",
+          "section": 35,
+          "text": "노션 사용법을 정리한 주제니까 도구를 고르겠습니다."
+        },
+        {
+          "index": 252,
+          "start_ms": 2220032,
+          "end_ms": 2221414,
+          "frames": 15,
+          "interior_max_gap_ms": 170.096,
+          "cue": "live-value-understanding",
+          "section": 35,
+          "text": "이번에는 이해도 옆의 비어 있음 칸을 누르겠습니다."
+        },
+        {
+          "index": 253,
+          "start_ms": 2229147,
+          "end_ms": 2230631,
+          "frames": 17,
+          "interior_max_gap_ms": 162.86,
+          "cue": "live-value-example",
+          "section": 35,
+          "text": "예시로 대충 앎을 골라 볼게요. 여러분은 지금 설명할 수 있는 정도에 맞춰 바꾸시면 됩니다."
+        },
+        {
+          "index": 254,
+          "start_ms": 2236132,
+          "end_ms": 2237487,
+          "frames": 17,
+          "interior_max_gap_ms": 166.219,
+          "cue": "live-image-property",
+          "section": 35,
+          "text": "위쪽 속성 목록에서 카드 이미지 옆의 빈 칸을 눌러 주세요."
+        },
+        {
+          "index": 255,
+          "start_ms": 2245071,
+          "end_ms": 2246353,
+          "frames": 14,
+          "interior_max_gap_ms": 114.06,
+          "cue": "live-file-hover",
+          "section": 35,
+          "text": "파일 또는 이미지를 추가하세요에 포인터를 올려 볼게요. 파일을 넣는 메뉴가 열립니다."
+        },
+        {
+          "index": 257,
+          "start_ms": 2261455,
+          "end_ms": 2263012,
+          "frames": 16,
+          "interior_max_gap_ms": 231.008,
+          "cue": "live-image-link-notion",
+          "section": 35,
+          "text": "주소 입력란에 실습 자료의 노션 카드 그림 주소를 붙여넣겠습니다. 긴 주소는 그대로 붙여넣으시면 됩니다."
+        },
+        {
+          "index": 258,
+          "start_ms": 2268070,
+          "end_ms": 2269936,
+          "frames": 17,
+          "interior_max_gap_ms": 232.647,
+          "cue": "live-image-link-apply-v2",
+          "section": 35,
+          "text": "주소 아래의 파란색 링크 버튼을 눌러 적용하겠습니다."
+        },
+        {
+          "index": 259,
+          "start_ms": 2294650,
+          "end_ms": 2296114,
+          "frames": 16,
+          "interior_max_gap_ms": 218.945,
+          "cue": "live-home-list",
+          "section": 35,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 260,
+          "start_ms": 2297690,
+          "end_ms": 2299317,
+          "frames": 14,
+          "interior_max_gap_ms": 184.186,
+          "cue": "live-home-list",
+          "section": 35,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 261,
+          "start_ms": 2304337,
+          "end_ms": 2305849,
+          "frames": 15,
+          "interior_max_gap_ms": 237.859,
+          "cue": "live-image-second",
+          "section": 35,
+          "text": "지식 자산화 카드도 열고 카드 이미지 칸을 누르겠습니다."
+        },
+        {
+          "index": 262,
+          "start_ms": 2314120,
+          "end_ms": 2315677,
+          "frames": 15,
+          "interior_max_gap_ms": 181.598,
+          "cue": "live-peek-full",
+          "section": 35,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 263,
+          "start_ms": 2319873,
+          "end_ms": 2321292,
+          "frames": 17,
+          "interior_max_gap_ms": 202.346,
+          "cue": "live-value-field",
+          "section": 35,
+          "text": "분야 옆의 비어 있음 칸을 눌러 볼게요."
+        },
+        {
+          "index": 264,
+          "start_ms": 2325350,
+          "end_ms": 2327251,
+          "frames": 17,
+          "interior_max_gap_ms": 268.88,
+          "cue": "live-value-study",
+          "section": 35,
+          "text": "이 주제에는 학습 방법을 골라 주세요."
+        },
+        {
+          "index": 265,
+          "start_ms": 2331970,
+          "end_ms": 2333715,
+          "frames": 16,
+          "interior_max_gap_ms": 206.005,
+          "cue": "live-value-understanding",
+          "section": 35,
+          "text": "이번에는 이해도 옆의 비어 있음 칸을 누르겠습니다."
+        },
+        {
+          "index": 266,
+          "start_ms": 2341382,
+          "end_ms": 2343014,
+          "frames": 16,
+          "interior_max_gap_ms": 153.819,
+          "cue": "live-value-example",
+          "section": 35,
+          "text": "예시로 대충 앎을 골라 볼게요. 여러분은 지금 설명할 수 있는 정도에 맞춰 바꾸시면 됩니다."
+        },
+        {
+          "index": 267,
+          "start_ms": 2348503,
+          "end_ms": 2349899,
+          "frames": 16,
+          "interior_max_gap_ms": 217.694,
+          "cue": "live-image-property",
+          "section": 35,
+          "text": "위쪽 속성 목록에서 카드 이미지 옆의 빈 칸을 눌러 주세요."
+        },
+        {
+          "index": 268,
+          "start_ms": 2357336,
+          "end_ms": 2358886,
+          "frames": 18,
+          "interior_max_gap_ms": 159.314,
+          "cue": "live-file-hover",
+          "section": 35,
+          "text": "파일 또는 이미지를 추가하세요에 포인터를 올려 볼게요. 파일을 넣는 메뉴가 열립니다."
+        },
+        {
+          "index": 269,
+          "start_ms": 2364718,
+          "end_ms": 2366153,
+          "frames": 15,
+          "interior_max_gap_ms": 215.005,
+          "cue": "live-image-link-tab-v2",
+          "section": 35,
+          "text": "준비한 그림 주소를 사용할게요. 업로드 옆의 링크 탭을 눌러 주세요."
+        },
+        {
+          "index": 270,
+          "start_ms": 2370441,
+          "end_ms": 2371791,
+          "frames": 16,
+          "interior_max_gap_ms": 155.792,
+          "cue": "live-image-link-knowledge",
+          "section": 35,
+          "text": "이번에는 지식 자산화 그림 주소를 붙여넣을게요."
+        },
+        {
+          "index": 271,
+          "start_ms": 2376729,
+          "end_ms": 2377889,
+          "frames": 16,
+          "interior_max_gap_ms": 142.947,
+          "cue": "live-image-link-apply-v2",
+          "section": 35,
+          "text": "주소 아래의 파란색 링크 버튼을 눌러 적용하겠습니다."
+        },
+        {
+          "index": 272,
+          "start_ms": 2395442,
+          "end_ms": 2397047,
+          "frames": 16,
+          "interior_max_gap_ms": 172.985,
+          "cue": "live-home-list",
+          "section": 35,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 273,
+          "start_ms": 2398626,
+          "end_ms": 2399900,
+          "frames": 17,
+          "interior_max_gap_ms": 166.036,
+          "cue": "live-home-list",
+          "section": 35,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 274,
+          "start_ms": 2403457,
+          "end_ms": 2404871,
+          "frames": 17,
+          "interior_max_gap_ms": 126.851,
+          "cue": "N21-v024",
+          "section": 35,
+          "text": "갤러리의 보기 설정을 다시 열게요."
+        },
+        {
+          "index": 275,
+          "start_ms": 2412652,
+          "end_ms": 2414155,
+          "frames": 18,
+          "interior_max_gap_ms": 185.567,
+          "cue": "live-gallery-preview",
+          "section": 35,
+          "text": "보기 설정에서 레이아웃을 열겠습니다. 카드에 어떤 내용을 미리 보여 줄지 정하는 곳이에요."
+        },
+        {
+          "index": 276,
+          "start_ms": 2417325,
+          "end_ms": 2418950,
+          "frames": 15,
+          "interior_max_gap_ms": 152.441,
+          "cue": "N21-v026",
+          "section": 35,
+          "text": "카드 미리보기를 눌러 주세요."
+        },
+        {
+          "index": 277,
+          "start_ms": 2424845,
+          "end_ms": 2426107,
+          "frames": 16,
+          "interior_max_gap_ms": 146.931,
+          "cue": "live-preview-property",
+          "section": 35,
+          "text": "페이지 속성으로 들어가서、방금 만든 카드 이미지를 선택하겠습니다."
+        },
+        {
+          "index": 279,
+          "start_ms": 2435467,
+          "end_ms": 2436912,
+          "frames": 17,
+          "interior_max_gap_ms": 135.797,
+          "cue": "N21-v029",
+          "section": 35,
+          "text": "카드 크기 메뉴를 눌러 주세요."
+        },
+        {
+          "index": 280,
+          "start_ms": 2439377,
+          "end_ms": 2440706,
+          "frames": 15,
+          "interior_max_gap_ms": 199.079,
+          "cue": "N21-v030",
+          "section": 35,
+          "text": "작게를 고를게요."
+        },
+        {
+          "index": 281,
+          "start_ms": 2445982,
+          "end_ms": 2447534,
+          "frames": 17,
+          "interior_max_gap_ms": 439.309,
+          "cue": "live-close-settings",
+          "section": 35,
+          "text": "이름을 적었으면 설정 창 위쪽의 닫기 버튼을 누를게요."
+        },
+        {
+          "index": 282,
+          "start_ms": 2460377,
+          "end_ms": 2461725,
+          "frames": 16,
+          "interior_max_gap_ms": 133.326,
+          "cue": "live-table-return",
+          "section": 35,
+          "text": "이번에는 전체 주제 탭을 눌러서 표를 정리해 볼게요."
+        },
+        {
+          "index": 283,
+          "start_ms": 2471528,
+          "end_ms": 2473268,
+          "frames": 17,
+          "interior_max_gap_ms": 185.708,
+          "cue": "live-property-settings",
+          "section": 35,
+          "text": "목록 오른쪽의 설정 아이콘을 눌러 속성을 추가하겠습니다. 속성은 각 주제에 붙이는 작은 정보 칸이라고 생각하시면 돼요."
+        },
+        {
+          "index": 284,
+          "start_ms": 2481540,
+          "end_ms": 2483109,
+          "frames": 17,
+          "interior_max_gap_ms": 199.57,
+          "cue": "live-table-visible",
+          "section": 35,
+          "text": "설정에서 속성 표시 여부를 누르겠습니다. 이 보기에서 어떤 항목을 보여 줄지 정하는 곳이에요."
+        },
+        {
+          "index": 285,
+          "start_ms": 2487665,
+          "end_ms": 2488907,
+          "frames": 17,
+          "interior_max_gap_ms": 100.254,
+          "cue": "live-hide-created",
+          "section": 35,
+          "text": "생성일 오른쪽의 눈 모양을 눌러 숨기겠습니다."
+        },
+        {
+          "index": 286,
+          "start_ms": 2493013,
+          "end_ms": 2493593,
+          "frames": 2,
+          "interior_max_gap_ms": 519.2,
+          "cue": "live-hide-tags",
+          "section": 35,
+          "text": "태그도 오른쪽 눈 모양을 눌러 숨겨 주세요."
+        },
+        {
+          "index": 287,
+          "start_ms": 2499748,
+          "end_ms": 2501208,
+          "frames": 14,
+          "interior_max_gap_ms": 219.73,
+          "cue": "live-hide-image",
+          "section": 35,
+          "text": "카드 이미지는 갤러리에서 볼 거니까, 이 표에서는 눈 모양을 눌러 숨길게요."
+        },
+        {
+          "index": 288,
+          "start_ms": 2506292,
+          "end_ms": 2507812,
+          "frames": 16,
+          "interior_max_gap_ms": 178.219,
+          "cue": "live-close-settings",
+          "section": 35,
+          "text": "이름을 적었으면 설정 창 위쪽의 닫기 버튼을 누를게요."
+        },
+        {
+          "index": 289,
+          "start_ms": 2522920,
+          "end_ms": 2524540,
+          "frames": 16,
+          "interior_max_gap_ms": 159.236,
+          "cue": "live-search-start",
+          "section": 35,
+          "text": "주제가 많아졌을 때 찾는 방법도 볼게요. 목록 오른쪽의 돋보기 모양, 검색을 누르겠습니다."
+        },
+        {
+          "index": 290,
+          "start_ms": 2528816,
+          "end_ms": 2530271,
+          "frames": 17,
+          "interior_max_gap_ms": 131.696,
+          "cue": "live-search-query",
+          "section": 35,
+          "text": "검색 칸에 지식이라고 입력해 볼게요."
+        },
+        {
+          "index": 291,
+          "start_ms": 2531124,
+          "end_ms": 2532675,
+          "frames": 15,
+          "interior_max_gap_ms": 209.289,
+          "cue": "live-search-query",
+          "section": 35,
+          "text": "검색 칸에 지식이라고 입력해 볼게요."
+        },
+        {
+          "index": 292,
+          "start_ms": 2545472,
+          "end_ms": 2547055,
+          "frames": 14,
+          "interior_max_gap_ms": 228.187,
+          "cue": "live-search-clear",
+          "section": 35,
+          "text": "검색어를 전체 선택하고 백스페이스로 지우겠습니다. 그러면 모든 주제가 다시 보여요."
+        },
+        {
+          "index": 293,
+          "start_ms": 2558339,
+          "end_ms": 2559950,
+          "frames": 17,
+          "interior_max_gap_ms": 198.422,
+          "cue": "live-gallery-return",
+          "section": 35,
+          "text": "홈으로 돌아와 주제 카드 보기를 누르겠습니다."
+        },
+        {
+          "index": 294,
+          "start_ms": 2573887,
+          "end_ms": 2575620,
+          "frames": 16,
+          "interior_max_gap_ms": 231.14,
+          "cue": "live-template-arrow",
+          "section": 36,
+          "text": "파란색 새로 만들기 버튼 옆의 아래쪽 화살표를 누르겠습니다."
+        },
+        {
+          "index": 295,
+          "start_ms": 2579348,
+          "end_ms": 2581076,
+          "frames": 17,
+          "interior_max_gap_ms": 215.542,
+          "cue": "live-template-new",
+          "section": 36,
+          "text": "메뉴에서 새 템플릿을 선택할게요."
+        },
+        {
+          "index": 296,
+          "start_ms": 2588292,
+          "end_ms": 2589660,
+          "frames": 15,
+          "interior_max_gap_ms": 176.761,
+          "cue": "live-template-name",
+          "section": 36,
+          "text": "제목에는 새 주제라고 적겠습니다. 이 이름은 앞으로 고를 템플릿의 이름이에요."
+        },
+        {
+          "index": 297,
+          "start_ms": 2590869,
+          "end_ms": 2592372,
+          "frames": 17,
+          "interior_max_gap_ms": 177.484,
+          "cue": "live-template-name",
+          "section": 36,
+          "text": "제목에는 새 주제라고 적겠습니다. 이 이름은 앞으로 고를 템플릿의 이름이에요."
+        },
+        {
+          "index": 298,
+          "start_ms": 2614917,
+          "end_ms": 2615591,
+          "frames": 2,
+          "interior_max_gap_ms": 539.929,
+          "cue": "live-template-description",
+          "section": 36,
+          "text": "본문 첫 줄에는, 이 주제에서 알고 싶은 것, 기억하고 싶은 것을 한 줄로 적어 보세요라고 입력하겠습니다."
+        },
+        {
+          "index": 300,
+          "start_ms": 2631887,
+          "end_ms": 2633980,
+          "frames": 18,
+          "interior_max_gap_ms": 214.211,
+          "cue": "N24-v011",
+          "section": 36,
+          "text": "콜아웃을 고를게요."
+        },
+        {
+          "index": 301,
+          "start_ms": 2644400,
+          "end_ms": 2645867,
+          "frames": 15,
+          "interior_max_gap_ms": 264.052,
+          "cue": "live-template-callout-title",
+          "section": 36,
+          "text": "안내 제목은 나의 주제를, 나의 방식으로라고 적을게요."
+        },
+        {
+          "index": 303,
+          "start_ms": 2675477,
+          "end_ms": 2677283,
+          "frames": 16,
+          "interior_max_gap_ms": 210.08,
+          "cue": "N24-v018",
+          "section": 36,
+          "text": "상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 304,
+          "start_ms": 2677663,
+          "end_ms": 2679350,
+          "frames": 16,
+          "interior_max_gap_ms": 196.464,
+          "cue": "N24-v018",
+          "section": 36,
+          "text": "상자 손잡이를 열어 주세요."
+        },
+        {
+          "index": 305,
+          "start_ms": 2681883,
+          "end_ms": 2683999,
+          "frames": 17,
+          "interior_max_gap_ms": 239.857,
+          "cue": "N24-v019",
+          "section": 36,
+          "text": "색 메뉴를 고를게요."
+        },
+        {
+          "index": 306,
+          "start_ms": 2691766,
+          "end_ms": 2693574,
+          "frames": 16,
+          "interior_max_gap_ms": 146.049,
+          "cue": "live-color-find",
+          "section": 36,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 307,
+          "start_ms": 2694529,
+          "end_ms": 2696215,
+          "frames": 17,
+          "interior_max_gap_ms": 218.798,
+          "cue": "live-color-find",
+          "section": 36,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 308,
+          "start_ms": 2696843,
+          "end_ms": 2698506,
+          "frames": 15,
+          "interior_max_gap_ms": 155.752,
+          "cue": "live-color-find",
+          "section": 36,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 309,
+          "start_ms": 2698992,
+          "end_ms": 2700720,
+          "frames": 17,
+          "interior_max_gap_ms": 144.554,
+          "cue": "live-color-find",
+          "section": 36,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 310,
+          "start_ms": 2700912,
+          "end_ms": 2702712,
+          "frames": 16,
+          "interior_max_gap_ms": 209.523,
+          "cue": "live-color-find",
+          "section": 36,
+          "text": "옆에 나온 색 목록에서 파란색 배경을 찾아볼게요. 목록이 길면 이 안에서 스크롤해 찾으시면 됩니다."
+        },
+        {
+          "index": 311,
+          "start_ms": 2705360,
+          "end_ms": 2707021,
+          "frames": 17,
+          "interior_max_gap_ms": 184.181,
+          "cue": "N24-v020",
+          "section": 36,
+          "text": "파란색 배경을 선택해 주세요."
+        },
+        {
+          "index": 312,
+          "start_ms": 2717042,
+          "end_ms": 2718788,
+          "frames": 16,
+          "interior_max_gap_ms": 168.395,
+          "cue": "live-callout-exit-first-v2",
+          "section": 36,
+          "text": "이제 상자 밖에 다음 내용을 넣겠습니다. 상자 아래쪽의 마지막 문장을 찾아 끝부분을 클릭하고, 엔터를 한 번 눌러 주세요."
+        },
+        {
+          "index": 313,
+          "start_ms": 2734557,
+          "end_ms": 2736334,
+          "frames": 15,
+          "interior_max_gap_ms": 259.041,
+          "cue": "live-heading-search",
+          "section": 36,
+          "text": "슬래시 뒤에 제목이라고 적어 주세요. 크기가 다른 제목을 고를 수 있습니다."
+        },
+        {
+          "index": 314,
+          "start_ms": 2739509,
+          "end_ms": 2741244,
+          "frames": 17,
+          "interior_max_gap_ms": 199.099,
+          "cue": "N24-v025",
+          "section": 36,
+          "text": "제목 2를 고를게요."
+        },
+        {
+          "index": 315,
+          "start_ms": 2745528,
+          "end_ms": 2746984,
+          "frames": 17,
+          "interior_max_gap_ms": 148.549,
+          "cue": "live-template-section",
+          "section": 36,
+          "text": "제목에는 나의 기록이라고 적을게요."
+        },
+        {
+          "index": 317,
+          "start_ms": 2763745,
+          "end_ms": 2765641,
+          "frames": 17,
+          "interior_max_gap_ms": 169.36,
+          "cue": "N11-v009",
+          "section": 36,
+          "text": "글머리 기호 목록을 골라 주세요."
+        },
+        {
+          "index": 318,
+          "start_ms": 2770751,
+          "end_ms": 2772111,
+          "frames": 16,
+          "interior_max_gap_ms": 140.062,
+          "cue": "live-template-prompt-one",
+          "section": 36,
+          "text": "첫 항목에는 기억하고 싶은 내용이라고 적겠습니다."
+        },
+        {
+          "index": 319,
+          "start_ms": 2778211,
+          "end_ms": 2779197,
+          "frames": 3,
+          "interior_max_gap_ms": 508.203,
+          "cue": "live-template-prompt-two",
+          "section": 36,
+          "text": "엔터를 누르고, 다시 보고 싶은 자료라고 적을게요."
+        },
+        {
+          "index": 321,
+          "start_ms": 2800644,
+          "end_ms": 2802270,
+          "frames": 16,
+          "interior_max_gap_ms": 181.904,
+          "cue": "N13-v002",
+          "section": 36,
+          "text": "토글 목록을 골라 주세요."
+        },
+        {
+          "index": 322,
+          "start_ms": 2807941,
+          "end_ms": 2809476,
+          "frames": 16,
+          "interior_max_gap_ms": 166.64,
+          "cue": "live-template-question",
+          "section": 36,
+          "text": "토글 제목에는 나에게 맞게 바꾸려면이라고 적겠습니다."
+        },
+        {
+          "index": 323,
+          "start_ms": 2814561,
+          "end_ms": 2816052,
+          "frames": 16,
+          "interior_max_gap_ms": 184.714,
+          "cue": "N13-v005",
+          "section": 36,
+          "text": "왼쪽 삼각형을 클릭해 펼치겠습니다."
+        },
+        {
+          "index": 324,
+          "start_ms": 2820139,
+          "end_ms": 2821911,
+          "frames": 14,
+          "interior_max_gap_ms": 219.159,
+          "cue": "N13-v006",
+          "section": 36,
+          "text": "펼쳐진 안쪽의 빈 부분을 눌러 주세요."
+        },
+        {
+          "index": 325,
+          "start_ms": 2831346,
+          "end_ms": 2832770,
+          "frames": 15,
+          "interior_max_gap_ms": 200.587,
+          "cue": "live-template-help",
+          "section": 36,
+          "text": "안쪽에는, 항목 이름과 배치는 자유롭게 바꾸세요. 내용이 길어지면 하위 페이지로 나누세요라고 적겠습니다."
+        },
+        {
+          "index": 326,
+          "start_ms": 2843074,
+          "end_ms": 2845610,
+          "frames": 15,
+          "interior_max_gap_ms": 339.425,
+          "cue": "N13-v015",
+          "section": 36,
+          "text": "삼각형을 눌러 다시 접어 둘게요."
+        },
+        {
+          "index": 327,
+          "start_ms": 2861739,
+          "end_ms": 2863323,
+          "frames": 15,
+          "interior_max_gap_ms": 212.645,
+          "cue": "live-template-apply",
+          "section": 37,
+          "text": "다시 새로 만들기 옆 화살표를 누르고, 방금 만든 새 주제를 골라 볼게요."
+        },
+        {
+          "index": 328,
+          "start_ms": 2864118,
+          "end_ms": 2865711,
+          "frames": 16,
+          "interior_max_gap_ms": 192.854,
+          "cue": "live-template-apply",
+          "section": 37,
+          "text": "다시 새로 만들기 옆 화살표를 누르고, 방금 만든 새 주제를 골라 볼게요."
+        },
+        {
+          "index": 329,
+          "start_ms": 2882656,
+          "end_ms": 2884335,
+          "frames": 17,
+          "interior_max_gap_ms": 215.879,
+          "cue": "live-peek-full",
+          "section": 37,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 330,
+          "start_ms": 2891330,
+          "end_ms": 2893360,
+          "frames": 16,
+          "interior_max_gap_ms": 318.514,
+          "cue": "live-reading-title",
+          "section": 37,
+          "text": "제목을 클릭하고 기존 글자를 선택한 다음, 나만의 독서 기록으로 바꾸겠습니다."
+        },
+        {
+          "index": 331,
+          "start_ms": 2895698,
+          "end_ms": 2897663,
+          "frames": 16,
+          "interior_max_gap_ms": 207.279,
+          "cue": "live-reading-title",
+          "section": 37,
+          "text": "제목을 클릭하고 기존 글자를 선택한 다음, 나만의 독서 기록으로 바꾸겠습니다."
+        }
+      ]
+    },
+    {
+      "name": "continuation",
+      "summary": {
+        "count": 38,
+        "interior_gap_over100ms": 36,
+        "max_interior_gap_ms": 480.679
+      },
+      "targets": [
+        {
+          "index": 0,
+          "start_ms": 5967,
+          "end_ms": 7336,
+          "frames": 15,
+          "interior_max_gap_ms": 173.065,
+          "cue": "live-title-repair-select",
+          "section": 40,
+          "text": "제목 앞에 새라는 글자가 남았네요. 제목 전체를 드래그해서 선택할게요."
+        },
+        {
+          "index": 1,
+          "start_ms": 7554,
+          "end_ms": 9249,
+          "frames": 16,
+          "interior_max_gap_ms": 150.347,
+          "cue": "live-title-repair-select",
+          "section": 40,
+          "text": "제목 앞에 새라는 글자가 남았네요. 제목 전체를 드래그해서 선택할게요."
+        },
+        {
+          "index": 2,
+          "start_ms": 13942,
+          "end_ms": 15788,
+          "frames": 16,
+          "interior_max_gap_ms": 205.893,
+          "cue": "live-title-repair-type",
+          "section": 40,
+          "text": "선택한 자리에 나만의 독서 기록이라고 다시 적겠습니다."
+        },
+        {
+          "index": 3,
+          "start_ms": 27853,
+          "end_ms": 29843,
+          "frames": 16,
+          "interior_max_gap_ms": 222.408,
+          "cue": "live-reading-scroll",
+          "section": 40,
+          "text": "아래로 조금 내려서 템플릿에 들어 있던 소개 문장을 바꿔 볼게요."
+        },
+        {
+          "index": 4,
+          "start_ms": 35582,
+          "end_ms": 37161,
+          "frames": 16,
+          "interior_max_gap_ms": 189.766,
+          "cue": "live-reading-select-description",
+          "section": 40,
+          "text": "첫 소개 문장을 처음부터 끝까지 드래그해서 선택하겠습니다."
+        },
+        {
+          "index": 5,
+          "start_ms": 37454,
+          "end_ms": 39120,
+          "frames": 16,
+          "interior_max_gap_ms": 128.771,
+          "cue": "live-reading-select-description",
+          "section": 40,
+          "text": "첫 소개 문장을 처음부터 끝까지 드래그해서 선택하겠습니다."
+        },
+        {
+          "index": 6,
+          "start_ms": 44985,
+          "end_ms": 46895,
+          "frames": 17,
+          "interior_max_gap_ms": 216.965,
+          "cue": "live-reading-replace-description",
+          "section": 40,
+          "text": "읽으면서 남기고 싶은 생각과 자료를 모읍니다라고 바꿔 적겠습니다."
+        },
+        {
+          "index": 7,
+          "start_ms": 66302,
+          "end_ms": 68068,
+          "frames": 16,
+          "interior_max_gap_ms": 215.893,
+          "cue": "live-reading-position",
+          "section": 40,
+          "text": "나의 기록 제목 끝을 클릭하고 엔터를 눌러, 하위 페이지를 만들 줄을 마련하겠습니다."
+        },
+        {
+          "index": 8,
+          "start_ms": 75811,
+          "end_ms": 77684,
+          "frames": 16,
+          "interior_max_gap_ms": 171.764,
+          "cue": "live-page-search",
+          "section": 40,
+          "text": "슬래시 뒤에 페이지라고 적어 보겠습니다. 지금 주제 안에 하위 페이지를 넣을 거예요."
+        },
+        {
+          "index": 9,
+          "start_ms": 80837,
+          "end_ms": 82624,
+          "frames": 16,
+          "interior_max_gap_ms": 240.825,
+          "cue": "N16-v003",
+          "section": 40,
+          "text": "페이지를 선택해 주세요."
+        },
+        {
+          "index": 10,
+          "start_ms": 88274,
+          "end_ms": 90201,
+          "frames": 13,
+          "interior_max_gap_ms": 373.643,
+          "cue": "live-reading-page-title",
+          "section": 40,
+          "text": "새 페이지의 제목에는 다음에 읽을 책이라고 적겠습니다."
+        },
+        {
+          "index": 11,
+          "start_ms": 91877,
+          "end_ms": 93558,
+          "frames": 17,
+          "interior_max_gap_ms": 184.12,
+          "cue": "live-reading-page-title",
+          "section": 40,
+          "text": "새 페이지의 제목에는 다음에 읽을 책이라고 적겠습니다."
+        },
+        {
+          "index": 13,
+          "start_ms": 122041,
+          "end_ms": 123673,
+          "frames": 17,
+          "interior_max_gap_ms": 201.894,
+          "cue": "live-home-list",
+          "section": 40,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 14,
+          "start_ms": 125203,
+          "end_ms": 126743,
+          "frames": 15,
+          "interior_max_gap_ms": 187.829,
+          "cue": "live-home-list",
+          "section": 40,
+          "text": "위쪽 경로에서 내 학습 노트를 눌러 홈으로 돌아가겠습니다. 주제 목록이 보이도록 화면을 조금 내려볼게요."
+        },
+        {
+          "index": 15,
+          "start_ms": 135824,
+          "end_ms": 137624,
+          "frames": 14,
+          "interior_max_gap_ms": 219.506,
+          "cue": "N26-v002",
+          "section": 41,
+          "text": "홈 오른쪽 위의 공유 버튼을 클릭하겠습니다."
+        },
+        {
+          "index": 17,
+          "start_ms": 182591,
+          "end_ms": 184734,
+          "frames": 12,
+          "interior_max_gap_ms": 385.288,
+          "cue": "N27-v002",
+          "section": 41,
+          "text": "게시 탭을 선택해 주세요."
+        },
+        {
+          "index": 18,
+          "start_ms": 207241,
+          "end_ms": 209473,
+          "frames": 14,
+          "interior_max_gap_ms": 407.453,
+          "cue": "live-comment-top",
+          "section": 41,
+          "text": "위로 돌아가서 소개 문장에 댓글을 다는 위치도 살펴볼게요."
+        },
+        {
+          "index": 19,
+          "start_ms": 218128,
+          "end_ms": 220599,
+          "frames": 11,
+          "interior_max_gap_ms": 450.417,
+          "cue": "live-comment-select",
+          "section": 41,
+          "text": "본문의 소개 문장을 드래그해서 선택해 볼게요. 문장에 대한 의견을 남기는 방법도 살펴보겠습니다."
+        },
+        {
+          "index": 20,
+          "start_ms": 220833,
+          "end_ms": 223004,
+          "frames": 14,
+          "interior_max_gap_ms": 288.284,
+          "cue": "live-comment-select",
+          "section": 41,
+          "text": "본문의 소개 문장을 드래그해서 선택해 볼게요. 문장에 대한 의견을 남기는 방법도 살펴보겠습니다."
+        },
+        {
+          "index": 21,
+          "start_ms": 248999,
+          "end_ms": 251847,
+          "frames": 13,
+          "interior_max_gap_ms": 440.01,
+          "cue": "N28-v002",
+          "section": 41,
+          "text": "홈 오른쪽 위 점 세 개를 누르고 내보내기를 찾겠습니다."
+        },
+        {
+          "index": 22,
+          "start_ms": 256496,
+          "end_ms": 259822,
+          "frames": 12,
+          "interior_max_gap_ms": 393.867,
+          "cue": "N28-v003",
+          "section": 41,
+          "text": "더 보기 안에 있다면 그 메뉴를 열어 주세요."
+        },
+        {
+          "index": 23,
+          "start_ms": 264003,
+          "end_ms": 266582,
+          "frames": 11,
+          "interior_max_gap_ms": 469.499,
+          "cue": "N28-v004",
+          "section": 41,
+          "text": "내보내기 항목을 선택하겠습니다."
+        },
+        {
+          "index": 24,
+          "start_ms": 275944,
+          "end_ms": 278873,
+          "frames": 12,
+          "interior_max_gap_ms": 480.679,
+          "cue": "live-export-format",
+          "section": 41,
+          "text": "내보내기 형식을 누른 다음 HTML을 선택하겠습니다. 브라우저로 내용을 열어 볼 수 있는 형식이에요."
+        },
+        {
+          "index": 25,
+          "start_ms": 280061,
+          "end_ms": 282313,
+          "frames": 11,
+          "interior_max_gap_ms": 403.578,
+          "cue": "live-export-format",
+          "section": 41,
+          "text": "내보내기 형식을 누른 다음 HTML을 선택하겠습니다. 브라우저로 내용을 열어 볼 수 있는 형식이에요."
+        },
+        {
+          "index": 26,
+          "start_ms": 291853,
+          "end_ms": 294086,
+          "frames": 12,
+          "interior_max_gap_ms": 264.919,
+          "cue": "live-export-subpages",
+          "section": 42,
+          "text": "하위 페이지 포함이 켜져 있는지 확인하겠습니다. 홈뿐 아니라 안에 만든 페이지도 함께 받기 위해서예요."
+        },
+        {
+          "index": 27,
+          "start_ms": 301656,
+          "end_ms": 304031,
+          "frames": 12,
+          "interior_max_gap_ms": 413.569,
+          "cue": "live-export-download",
+          "section": 42,
+          "text": "지금 만든 학습노트의 내보내기 버튼을 누르겠습니다. 파일이 준비될 때까지 잠깐 기다릴게요."
+        },
+        {
+          "index": 28,
+          "start_ms": 348616,
+          "end_ms": 350430,
+          "frames": 15,
+          "interior_max_gap_ms": 337.142,
+          "cue": "live-layout-down",
+          "section": 42,
+          "text": "상자 아래쪽이 보이도록 화면을 조금 내리겠습니다."
+        },
+        {
+          "index": 29,
+          "start_ms": 353663,
+          "end_ms": 355230,
+          "frames": 14,
+          "interior_max_gap_ms": 223.747,
+          "cue": "N29-v002",
+          "section": 42,
+          "text": "노션 익히기를 열어 볼게요."
+        },
+        {
+          "index": 30,
+          "start_ms": 363651,
+          "end_ms": 365462,
+          "frames": 16,
+          "interior_max_gap_ms": 243.617,
+          "cue": "live-peek-full",
+          "section": 42,
+          "text": "오른쪽에 열린 작은 창을 넓혀 볼게요. 창 왼쪽 위의 전체 페이지로 열기 버튼을 누르겠습니다."
+        },
+        {
+          "index": 31,
+          "start_ms": 370717,
+          "end_ms": 372254,
+          "frames": 13,
+          "interior_max_gap_ms": 174.775,
+          "cue": "live-layout-down",
+          "section": 42,
+          "text": "상자 아래쪽이 보이도록 화면을 조금 내리겠습니다."
+        },
+        {
+          "index": 32,
+          "start_ms": 376289,
+          "end_ms": 378109,
+          "frames": 15,
+          "interior_max_gap_ms": 190.225,
+          "cue": "N29-v003",
+          "section": 42,
+          "text": "왼쪽의 첫 페이지 꾸미기를 눌러 주세요."
+        },
+        {
+          "index": 33,
+          "start_ms": 387317,
+          "end_ms": 389033,
+          "frames": 15,
+          "interior_max_gap_ms": 213.078,
+          "cue": "N29-v005",
+          "section": 42,
+          "text": "위쪽 경로의 노션 익히기를 눌러 주세요."
+        },
+        {
+          "index": 34,
+          "start_ms": 394306,
+          "end_ms": 396089,
+          "frames": 15,
+          "interior_max_gap_ms": 280.503,
+          "cue": "live-layout-down",
+          "section": 42,
+          "text": "상자 아래쪽이 보이도록 화면을 조금 내리겠습니다."
+        },
+        {
+          "index": 35,
+          "start_ms": 400189,
+          "end_ms": 401805,
+          "frames": 14,
+          "interior_max_gap_ms": 268.872,
+          "cue": "N29-v006",
+          "section": 42,
+          "text": "오른쪽의 페이지 연결하기도 열어 볼게요."
+        },
+        {
+          "index": 36,
+          "start_ms": 408961,
+          "end_ms": 410881,
+          "frames": 15,
+          "interior_max_gap_ms": 195.48,
+          "cue": "N29-v008",
+          "section": 42,
+          "text": "위쪽 경로의 내 학습 노트를 눌러 주세요."
+        },
+        {
+          "index": 37,
+          "start_ms": 412414,
+          "end_ms": 414021,
+          "frames": 15,
+          "interior_max_gap_ms": 217.877,
+          "cue": "N29-v008",
+          "section": 42,
+          "text": "위쪽 경로의 내 학습 노트를 눌러 주세요."
+        }
+      ]
+    }
+  ]
+}

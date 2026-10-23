@@ -1,0 +1,33 @@
+// 구간27 후반 재촬영(take-27 57.0s 이후 이동 끊김 교체): restore cut27 상태(「나의 페이지」 아래 빈 줄 캐럿)에서 시작.
+import {v10} from '../ui.mjs';
+export default async ctx=>{
+ const c=await v10(ctx);await c.begin();
+ await c.say('live-page-search',()=>c.type('/페이지'));
+ await c.source('N10-03',()=>c.click('menu','페이지'));
+ await c.source('N10-04',async()=>{await c.click('title','');await c.type('첫 페이지 꾸미기');});
+ await c.line('위쪽 경로를 잠깐 보겠습니다.');
+ await c.line('노션 익히기 안에 첫 페이지 꾸미기가 들어 있습니다.');
+ await c.line('홈에 주제를 하나 더 만든 것이 아니라, 같은 주제 안에 페이지를 만든 겁니다.');
+ await c.line('부모 페이지로 돌아갈 때는 이 경로의 노션 익히기를 누르면 됩니다.');
+ await c.source('N10-05');await c.say('live-page-enter',()=>c.key('Enter'));
+ await c.source('N11-01',()=>c.type('한 페이지 안에서도 글의 모양을 바꾸어 읽기 쉽게 정리할 수 있습니다.'));
+ await c.source('N11-02',()=>c.key('Enter'));
+ await c.say('live-heading-search',()=>c.type('/제목'));
+ await c.source('N11-04',()=>c.click('menu','제목2'));
+ await c.source('N11-05',()=>c.type('오늘 써 본 방법'));
+ await c.source('N11-06',()=>c.key('Enter'));
+ await c.line('제목 아래에는 몇 가지 방법을 나열하겠습니다.');
+ await c.say('live-bullet-search',()=>c.type('/글머리'));
+ await c.source('N11-08',()=>c.click('menu','글머리 기호 목록'));
+ await c.line('앞에 점이 있는 줄이 생깁니다.');
+ await c.source('N11-09',()=>c.type('제목으로 내용의 구획 나누기'));
+ await c.source('N11-10',()=>c.key('Enter'));await c.line('다음 점이 생겼네요.');
+ await c.source('N11-11',()=>c.type('같은 성격의 내용은 목록으로 정리하기'));
+ await c.source('N11-12',()=>c.key('Enter'));
+ await c.source('N11-13',()=>c.type('긴 설명은 토글 안에 접어 두기'));
+ await c.line('토글은 바로 다음에 만들어 볼게요.');
+ await c.source('N11-14',()=>c.key('Enter'));
+ await c.line('빈 목록 항목이 하나 더 생겼네요.');
+ await c.source('N11-15',()=>c.key('Enter'));await c.source('N11-16');
+ return 'Subpage, heading and lists complete';
+};

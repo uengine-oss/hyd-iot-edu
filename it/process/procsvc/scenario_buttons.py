@@ -186,7 +186,7 @@ def prepare(key: str, read: Callable[[str, dict], dict], rt, route: Callable[[st
     if running:
         raise Refused(f"{spec['asset']} {spec['title']} 처리 건이 이미 진행 중입니다 — 카드의 '처리 중' 표시를 눌러 그 처리 건을 보세요")
     if not route(spec["pattern"]):
-        raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — 흐름 가져오기에서 배포하세요")
+        raise Refused(f"'{spec['label']}' 경보로 시작하는 {spec['title']} 흐름이 배포되어 있지 않습니다 — [관리] 탭의 「흐름 판본 배포 · 비교 · 되돌리기」에서 배포하세요(흐름 가져오기는 등록까지만 합니다)")
     return {"alert": build_alert(key, row, person=person), "row": row}
 
 

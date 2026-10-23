@@ -62,7 +62,8 @@ def test_actual_full_original_is_verified_once_and_same_business_summary_in_all_
         assert '구매 후보 3개' in result['summary'] and '대체 승인 공급사 발주' in result['summary']
         assert '판단 등록 · 승인 · 실행 아님' in result['summary']
     if payload['tool'].endswith('submit_purchase'):
-        assert '구매 판단 등록됨' in result['summary'] and '사람 승인 · ERP 실행 완료 아님' in result['summary']
+        # 2026-10-23 갱신: 공개 용어 정리로 'ERP 실행 완료 아님'→'구매 실행 완료 아님'(plainWords.js submit_purchase 요약, 2026-10-12 public-language-and-stream)
+        assert '구매 판단 등록됨' in result['summary'] and '사람 승인 · 구매 실행 완료 아님' in result['summary']
     if isinstance(results[0]['value'].get('document'),dict) and results[0]['value']['document'].get('status')=='NO_FEASIBLE_OPTION':
         assert '추천 가능한 대안 없음' in result['summary']
     assert event==before

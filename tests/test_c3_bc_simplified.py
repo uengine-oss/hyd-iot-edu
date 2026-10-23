@@ -162,7 +162,7 @@ def test_buttons_show_the_alerts_refuse_when_handled_running_or_undeployed_and_r
     assert (s["B"]["asset"], s["B"]["alert"], s["B"]["label"]) == ("HYD-02", True, "정기 점검 도래")
     assert (s["C"]["asset"], s["C"]["alert"], s["C"]["label"], s["C"]["facts"]["available"]) == ("HYD-03", True, "재고 보충 필요", 1)
     route = lambda pattern: "c3_pm" if pattern == "PM_DUE" else None
-    with pytest.raises(SB.Refused, match="배포"):
+    with pytest.raises(SB.Refused, match=r"\[관리\] 탭의 「흐름 판본 배포"):
         SB.prepare("C", read, FakeRt(), route)                                     # C 흐름이 배포되지 않음
     running = {"proc_inst_id": "c3_pm.1", "status": "RUNNING", "start_event_id": "CMMS-PM_DUE-HYD-02-20261009010101", "asset": "HYD-02"}
     with pytest.raises(SB.Refused, match="진행 중"):
