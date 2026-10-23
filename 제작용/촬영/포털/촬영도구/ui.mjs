@@ -31,12 +31,22 @@ function findInPage(t){
    es=root.flatMap(r=>[...r.querySelectorAll(t.tag||'*')]).filter(e=>e.textContent.trim().replace(/\s+/g,' ')===t.text);
    es=es.filter(e=>!es.some(o=>o!==e&&e.contains(o)));}
   else return{error:'bad target '+JSON.stringify(t)};
+  // contains: 글자를 포함하는 요소만, cell0: 표 행의 첫 칸 글자가 정확히 같은 행만, cell: 그 행의 몇 번째 칸
+  if(t.contains)es=es.filter(e=>e.textContent.includes(t.contains));
+  if(t.cell0)es=es.filter(e=>e.cells&&e.cells[0]?.textContent.trim()===t.cell0);
   es=es.filter(vis);
+  if(t.cell!==undefined)es=es.map(e=>e.cells[t.cell]).filter(Boolean);
   if(t.nth!==undefined)es=es.slice(t.nth,t.nth+1);
   if(es.length!==1)return{error:'Target '+JSON.stringify(t)+' matched '+es.length};
   const b=es[0].getBoundingClientRect();
-  const ax=t.anchor==='left'?Math.min(b.width/2,28):t.anchor==='right'?b.width-Math.min(b.width/2,20):b.width/2;
-  return{x:b.x+ax,y:b.y+b.height/2,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName};
+  // 가리키는 자리: 글자를 가리지 않게 margin(문단 왼쪽 여백) · pad(표 칸 · 코드 상자 안쪽 여백) · below(글자 바로 아래), 기본은 가운데
+  let x=b.x+b.width/2,y=b.y+b.height/2;
+  if(t.anchor==='left')x=b.x+Math.min(b.width/2,28);
+  else if(t.anchor==='right')x=b.x+b.width-Math.min(b.width/2,20);
+  else if(t.anchor==='margin'){x=Math.max(4,b.x-24);y=b.y+Math.min(b.height/2,14);}
+  else if(t.anchor==='pad'){x=b.x+6;y=b.y+Math.min(b.height/2,22);}
+  else if(t.anchor==='below'){x=b.x+Math.min(b.width/2,30);y=b.bottom+4;}
+  return{x,y,top:b.top,bottom:b.bottom,left:b.left,right:b.right,h:innerHeight,w:innerWidth,tag:es[0].tagName};
 }
 
 export async function portal(ctx){
@@ -58,8 +68,9 @@ export async function portal(ctx){
  // 화면 밖 대상은 휠로 들인다(스크롤도 사람이 하는 조작이므로 화살표가 그 영역 위에 있을 때 몇 번에 나눠 굴린다).
  async function inView(t){
   // 화면 안(위 · 아래 8px 여백)에 다 보이면 그대로 쓴다 — 위 막대처럼 고정된 요소는 굴려도 자리가 같다.
-  for(let i=0;i<12;i++){const r=await find(t);if(r.top>=8&&r.bottom<=r.h-8)return r;
-   const dy=r.top<70?r.top-160:r.bottom-r.h+120;await wheel(Math.max(-420,Math.min(420,dy)));}
+  // 가리킬 지점(표처럼 큰 요소는 그 지점만)이 화면 안이면 그대로 쓴다.
+  for(let i=0;i<12;i++){const r=await find(t);const y=r.y+(t.dy||0);if(y>=60&&y<=r.h-40&&r.top>=-r.h)return r;
+   const dy=y<60?y-200:y-r.h+160;await wheel(Math.max(-420,Math.min(420,dy)));}
   throw Error('Cannot bring into view: '+JSON.stringify(t));
  }
  async function settled(t){let q=await inView(t);for(let k=0;k<10;k++){await sleep(150);const q2=await find(t);if(Math.hypot(q2.x-q.x,q2.y-q.y)<=1)return q2;q=q2;}throw Error('Target layout did not settle: '+JSON.stringify(t));}
@@ -82,6 +93,8 @@ export async function portal(ctx){
  // 스크롤: 화살표를 그 영역(대상 또는 지정 지점) 위에 둔 뒤 gate에서 굴린다.
  c.scroll=async(dy,over)=>{if(over)await c.point(over);await gate();await wheel(dy);};
  c.scrollTo=async t=>{await gate();await inView(t);};
+ // 그 대상(제목 등)이 화면 위 top px 자리에 오도록 굴린다. 시점은 부르는 쪽이 정한다(gate 없음).
+ c.scrollTop=async(t,top=96)=>{const r=await find(t);const dy=Math.round(r.top-top);if(Math.abs(dy)>4)await wheel(dy);};
  // 입력: 입력칸이 포커스인지 확인하고, 화살표를 칸 아래 여백으로 비킨 뒤 한 글자씩 넣는다(한글은 완성형 글자 단위, IME 조합 시연 아님).
  c.aside=async()=>{const q=await q1(()=>raw.evaluate(()=>{const a=document.activeElement;if(!a?.matches('input,textarea,select,[contenteditable=true]'))return null;const r=a.getBoundingClientRect();return{x:Math.min(innerWidth-30,r.x+24),y:Math.min(innerHeight-30,r.bottom+22)};}));if(!q)throw Error('No focused input for aside');await moveCore(q.x,q.y);};
  c.type=async text=>{await c.aside();await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([105,125,95,135,110][i++%5]);}};

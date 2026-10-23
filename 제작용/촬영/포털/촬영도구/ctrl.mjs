@@ -70,7 +70,7 @@ export async function run(opts){
    scroll:[...document.querySelectorAll('*')].filter(e=>e.scrollTop>0).slice(0,5).map(e=>({sel:e.id?'#'+e.id:e.className?.toString().split(' ')[0]||e.tagName,top:e.scrollTop})).concat(scrollY?[{sel:'window',top:scrollY}]:[]),
    clicks:window.__tutorialClicks||[],pointer:window.__ptrStat||null}));
  try{
-  const ctx={p,cdp,serial,sleep,fs,out,
+  const ctx={p,cdp,serial,sleep,fs,out,audio:AUDIO,
    recordMotion:m=>motions.push({...m,start:m.start-start,end:m.end-start,...(m.glide?{glide:m.glide-start}:{})}),
    waitFor:async(fn,arg,timeout=15000)=>{const a=Date.now();while(!(await serial(()=>p.evaluate(fn,arg)))){if(Date.now()-a>timeout)throw Error('Expected page state did not appear');await sleep(120);}},
    begin:async()=>{await serial(()=>p.evaluate(()=>{window.__ptrStat={held:0,heldAfterFinish:0,applied:0};window.__tutorialClicks=[];}));recording=true;
