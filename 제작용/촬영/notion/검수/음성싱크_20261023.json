@@ -1,0 +1,3408 @@
+{
+  "method": "완성 MP4의 AAC를 PCM으로 디코딩한 뒤 합성 전 PCM과 각 발화 중간 파형의 정규화 상관 분석. 발음·윤문 청취 검사는 아님.",
+  "segments": [
+    {
+      "name": "full-take9",
+      "summary": {
+        "cues": 431,
+        "max_abs_lag_ms": 0.0,
+        "min_correlation": 0.9971,
+        "early_action_count": 0
+      },
+      "cues": [
+        {
+          "id": "live-opening",
+          "time_ms": 682,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-download",
+          "time_ms": 14659,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-web-choice",
+          "time_ms": 29441,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-workspace",
+          "time_ms": 40335,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-sidebar-open",
+          "time_ms": 47185,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N02-v008",
+          "time_ms": 54144,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N02-v009",
+          "time_ms": 58063,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N02-v010",
+          "time_ms": 62555,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N02-v011",
+          "time_ms": 66469,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N02-v012",
+          "time_ms": 72626,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N02-v013",
+          "time_ms": 77068,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N03-v001",
+          "time_ms": 80635,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-create-option",
+          "time_ms": 86223,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N03-v003",
+          "time_ms": 94597,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N03-v004",
+          "time_ms": 100636,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N03-v005",
+          "time_ms": 107231,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N03-v006",
+          "time_ms": 111607,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N03-v007",
+          "time_ms": 114385,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N03-v008",
+          "time_ms": 119205,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N03-v009",
+          "time_ms": 123553,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N03-v010",
+          "time_ms": 126407,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-sidebar-close",
+          "time_ms": 130983,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "N04-v004",
+          "time_ms": 141817,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N04-v006",
+          "time_ms": 146908,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N04-v007",
+          "time_ms": 151133,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N04-v008",
+          "time_ms": 156552,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N05-v001",
+          "time_ms": 161617,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N05-v002",
+          "time_ms": 165200,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N05-v003",
+          "time_ms": 178521,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N05-v004",
+          "time_ms": 183380,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N05-v005",
+          "time_ms": 186352,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N05-v006",
+          "time_ms": 191559,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N05-v007",
+          "time_ms": 194525,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N05-v008",
+          "time_ms": 200219,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "N05-v009",
+          "time_ms": 207029,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N05-v010",
+          "time_ms": 213501,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N06-v002",
+          "time_ms": 216773,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-callout-search",
+          "time_ms": 220861,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N06-v003",
+          "time_ms": 232616,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N06-v005",
+          "time_ms": 238518,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-bold-on",
+          "time_ms": 241289,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N06-v006",
+          "time_ms": 251605,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-bold-off",
+          "time_ms": 260886,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N06-v007",
+          "time_ms": 270322,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N06-v008",
+          "time_ms": 274571,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N06-v009",
+          "time_ms": 277687,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N06-v014",
+          "time_ms": 296756,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-callout-color-menu",
+          "time_ms": 299361,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N06-v016",
+          "time_ms": 311387,
+          "lag_ms": 0.0,
+          "correlation": 0.99992,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "live-color-find",
+          "time_ms": 315547,
+          "lag_ms": 0.0,
+          "correlation": 0.99726,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N06-v017",
+          "time_ms": 333590,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N06-v018",
+          "time_ms": 338726,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "N06-v019",
+          "time_ms": 341430,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 345166,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 356113,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-gallery-search",
+          "time_ms": 365157,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N07-v003",
+          "time_ms": 373360,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-gallery-created",
+          "time_ms": 378307,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-db-placeholder",
+          "time_ms": 388573,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N07-v014",
+          "time_ms": 403814,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N07-v008",
+          "time_ms": 406567,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N07-v009",
+          "time_ms": 411046,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N07-v010",
+          "time_ms": 415295,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-view-settings",
+          "time_ms": 419125,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-view-name",
+          "time_ms": 427834,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N07-v014",
+          "time_ms": 441435,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-close-settings",
+          "time_ms": 444129,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N07-v015",
+          "time_ms": 451094,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N07-v016",
+          "time_ms": 456425,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N08-v001",
+          "time_ms": 461543,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 468433,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N08-v002",
+          "time_ms": 478111,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N08-v003",
+          "time_ms": 487718,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-topic-body",
+          "time_ms": 490993,
+          "lag_ms": 0.0,
+          "correlation": 0.99904,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N08-v008",
+          "time_ms": 498774,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N09-v001",
+          "time_ms": 502365,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N09-v002",
+          "time_ms": 514094,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 517790,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N09-v004",
+          "time_ms": 523734,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-bold-short",
+          "time_ms": 528773,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 197.0
+        },
+        {
+          "id": "N09-v005",
+          "time_ms": 533392,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-normal-short",
+          "time_ms": 542851,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N09-v006",
+          "time_ms": 547165,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N09-v007",
+          "time_ms": 550686,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N09-v011",
+          "time_ms": 561985,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N09-v012",
+          "time_ms": 569822,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-color-find",
+          "time_ms": 573614,
+          "lag_ms": 0.0,
+          "correlation": 0.9971,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N09-v013",
+          "time_ms": 590716,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N09-v014",
+          "time_ms": 595106,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 598835,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 609838,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 618890,
+          "lag_ms": 0.0,
+          "correlation": 0.99992,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N11-v004",
+          "time_ms": 626748,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N09-v016",
+          "time_ms": 632068,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N09-v021",
+          "time_ms": 636976,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N09-v024",
+          "time_ms": 640342,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-page-search",
+          "time_ms": 643467,
+          "lag_ms": 0.0,
+          "correlation": 0.9993,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N10-v003",
+          "time_ms": 651500,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N10-v004",
+          "time_ms": 656488,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N10-v005",
+          "time_ms": 666112,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N10-v006",
+          "time_ms": 668662,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N10-v007",
+          "time_ms": 672334,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N10-v008",
+          "time_ms": 678022,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N10-v009",
+          "time_ms": 682827,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-page-enter",
+          "time_ms": 685863,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N11-v001",
+          "time_ms": 690886,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N11-v002",
+          "time_ms": 703491,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 705755,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N11-v004",
+          "time_ms": 712573,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N11-v005",
+          "time_ms": 717967,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "N11-v006",
+          "time_ms": 723588,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N11-v007",
+          "time_ms": 726828,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-bullet-search",
+          "time_ms": 730339,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N11-v009",
+          "time_ms": 739637,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N11-v010",
+          "time_ms": 744974,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N11-v011",
+          "time_ms": 747676,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N11-v012",
+          "time_ms": 756453,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "N11-v013",
+          "time_ms": 758735,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N11-v014",
+          "time_ms": 760566,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N11-v015",
+          "time_ms": 769257,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N11-v016",
+          "time_ms": 771853,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N11-v017",
+          "time_ms": 778814,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N11-v018",
+          "time_ms": 781422,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N11-v019",
+          "time_ms": 784877,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N11-v020",
+          "time_ms": 787858,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N11-v021",
+          "time_ms": 792164,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-toggle-search",
+          "time_ms": 796324,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "N13-v002",
+          "time_ms": 805370,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N13-v003",
+          "time_ms": 810154,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N13-v004",
+          "time_ms": 820214,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N13-v005",
+          "time_ms": 822981,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N13-v006",
+          "time_ms": 828384,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N13-v007",
+          "time_ms": 833897,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N13-v008",
+          "time_ms": 845049,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N13-v009",
+          "time_ms": 857010,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N13-v010",
+          "time_ms": 861849,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N13-v011",
+          "time_ms": 867102,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N13-v012",
+          "time_ms": 870538,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N13-v013",
+          "time_ms": 874492,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "N13-v014",
+          "time_ms": 877042,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N13-v015",
+          "time_ms": 879423,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-toggle-exit-one",
+          "time_ms": 883374,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-toggle-backspace",
+          "time_ms": 891563,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N13-v017",
+          "time_ms": 897849,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N14-v001",
+          "time_ms": 902567,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-divider-search",
+          "time_ms": 905442,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N14-v003",
+          "time_ms": 914393,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 919887,
+          "lag_ms": 0.0,
+          "correlation": 0.99991,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N14-v005",
+          "time_ms": 927514,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "N14-v006",
+          "time_ms": 932247,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N14-v007",
+          "time_ms": 937843,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-todo-filter",
+          "time_ms": 941322,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N14-v009",
+          "time_ms": 947883,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N14-v010",
+          "time_ms": 953562,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N14-v011",
+          "time_ms": 955967,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N14-v012",
+          "time_ms": 964410,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N14-v013",
+          "time_ms": 968068,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N14-v014",
+          "time_ms": 977378,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N14-v015",
+          "time_ms": 980780,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N14-v016",
+          "time_ms": 985340,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N14-v017",
+          "time_ms": 988602,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N14-v018",
+          "time_ms": 991346,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N15-v001",
+          "time_ms": 995192,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N15-v002",
+          "time_ms": 1000273,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N15-v003",
+          "time_ms": 1003854,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "N15-v004",
+          "time_ms": 1008049,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-toc-search",
+          "time_ms": 1011564,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N15-v006",
+          "time_ms": 1018225,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N15-v007",
+          "time_ms": 1023220,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N15-v008",
+          "time_ms": 1029441,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N15-v009",
+          "time_ms": 1032970,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N15-v010",
+          "time_ms": 1035744,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N15-v011",
+          "time_ms": 1041815,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N15-v012",
+          "time_ms": 1044717,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N15-v013",
+          "time_ms": 1050700,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N15-v014",
+          "time_ms": 1055189,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N15-v015",
+          "time_ms": 1062510,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-second-page-position",
+          "time_ms": 1067836,
+          "lag_ms": 0.0,
+          "correlation": 0.99872,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-page-search",
+          "time_ms": 1079706,
+          "lag_ms": 0.0,
+          "correlation": 0.99934,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N16-v003",
+          "time_ms": 1088330,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N16-v004",
+          "time_ms": 1092469,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-page-enter",
+          "time_ms": 1101943,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N16-v006",
+          "time_ms": 1106895,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N16-v007",
+          "time_ms": 1117546,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 1119778,
+          "lag_ms": 0.0,
+          "correlation": 0.99985,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N16-v009",
+          "time_ms": 1126645,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N16-v010",
+          "time_ms": 1131357,
+          "lag_ms": 0.0,
+          "correlation": 0.99986,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-number-search",
+          "time_ms": 1137345,
+          "lag_ms": 0.0,
+          "correlation": 0.99987,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-number-pick",
+          "time_ms": 1144224,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N16-v012",
+          "time_ms": 1149794,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N16-v013",
+          "time_ms": 1153052,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N16-v014",
+          "time_ms": 1160580,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N16-v015",
+          "time_ms": 1163274,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N16-v016",
+          "time_ms": 1173818,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N16-v017",
+          "time_ms": 1176942,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N16-v018",
+          "time_ms": 1184953,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N16-v019",
+          "time_ms": 1187732,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N16-v020",
+          "time_ms": 1197150,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N16-v021",
+          "time_ms": 1200538,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 1205448,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N16-v023",
+          "time_ms": 1211296,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N16-v024",
+          "time_ms": 1215226,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N16-v028",
+          "time_ms": 1225649,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 1230062,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 1241069,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 1250119,
+          "lag_ms": 0.0,
+          "correlation": 0.99989,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N17-v003",
+          "time_ms": 1257856,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N17-v004",
+          "time_ms": 1262131,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N17-v005",
+          "time_ms": 1268168,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N17-v006",
+          "time_ms": 1270489,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N17-v007",
+          "time_ms": 1276569,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-link-select",
+          "time_ms": 1280168,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-link-shortcut",
+          "time_ms": 1287472,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-link-paste",
+          "time_ms": 1292264,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-link-finish",
+          "time_ms": 1299618,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-link-note",
+          "time_ms": 1307339,
+          "lag_ms": 0.0,
+          "correlation": 0.99993,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N17-v021",
+          "time_ms": 1313442,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N17-v022",
+          "time_ms": 1326428,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N17-v023",
+          "time_ms": 1330320,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-layout-intro",
+          "time_ms": 1336833,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N18-v002",
+          "time_ms": 1344245,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N18-v003",
+          "time_ms": 1351508,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 1356389,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N18-v005",
+          "time_ms": 1363427,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-bold-short",
+          "time_ms": 1367627,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N18-v006",
+          "time_ms": 1372180,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-normal-short",
+          "time_ms": 1378671,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N18-v007",
+          "time_ms": 1383006,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N18-v008",
+          "time_ms": 1386375,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N18-v009",
+          "time_ms": 1391984,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N18-v010",
+          "time_ms": 1395523,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N18-v014",
+          "time_ms": 1401659,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N18-v015",
+          "time_ms": 1408984,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N18-v016",
+          "time_ms": 1412684,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 1426535,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 1437785,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 1446822,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N18-v021",
+          "time_ms": 1454042,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-bold-short",
+          "time_ms": 1458975,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N18-v022",
+          "time_ms": 1463463,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-normal-short",
+          "time_ms": 1471433,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N18-v023",
+          "time_ms": 1475774,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "N18-v024",
+          "time_ms": 1479129,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N18-v025",
+          "time_ms": 1484722,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N18-v026",
+          "time_ms": 1487935,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N18-v029",
+          "time_ms": 1493380,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N18-v030",
+          "time_ms": 1502231,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N18-v031",
+          "time_ms": 1505839,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-layout-down",
+          "time_ms": 1518358,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N18-v034",
+          "time_ms": 1524565,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N18-v035",
+          "time_ms": 1528302,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N18-v036",
+          "time_ms": 1539026,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N18-v037",
+          "time_ms": 1543819,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N18-v038",
+          "time_ms": 1546881,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N18-v039",
+          "time_ms": 1554341,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N18-v040",
+          "time_ms": 1560104,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N18-v041",
+          "time_ms": 1570634,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N18-v042",
+          "time_ms": 1575205,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-home-list",
+          "time_ms": 1582201,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-second-topic-intro",
+          "time_ms": 1595075,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N20-v002",
+          "time_ms": 1604918,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 1611072,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N20-v003",
+          "time_ms": 1620933,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-page-enter",
+          "time_ms": 1629851,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-example-label",
+          "time_ms": 1634897,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N20-v005",
+          "time_ms": 1646324,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N11-v002",
+          "time_ms": 1660940,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 1663201,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N20-v008",
+          "time_ms": 1669158,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-bold-short",
+          "time_ms": 1673683,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N20-v009",
+          "time_ms": 1678170,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-normal-short",
+          "time_ms": 1687990,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N20-v010",
+          "time_ms": 1692299,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N20-v011",
+          "time_ms": 1695860,
+          "lag_ms": 0.0,
+          "correlation": 0.99947,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N20-v015",
+          "time_ms": 1715922,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N20-v016",
+          "time_ms": 1723538,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-color-find",
+          "time_ms": 1727777,
+          "lag_ms": 0.0,
+          "correlation": 0.99732,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N20-v017",
+          "time_ms": 1746346,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 1751122,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 1762765,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 1771841,
+          "lag_ms": 0.0,
+          "correlation": 0.99989,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N20-v020",
+          "time_ms": 1779744,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-example-heading",
+          "time_ms": 1784208,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N20-v022",
+          "time_ms": 1792656,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "live-bullet-search",
+          "time_ms": 1795752,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N11-v009",
+          "time_ms": 1805036,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-example-one",
+          "time_ms": 1810264,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-example-two",
+          "time_ms": 1820783,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-example-three",
+          "time_ms": 1831103,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N11-v018",
+          "time_ms": 1841631,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N11-v020",
+          "time_ms": 1845171,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-toggle-search",
+          "time_ms": 1849501,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N13-v002",
+          "time_ms": 1858446,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-example-question",
+          "time_ms": 1862900,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N13-v005",
+          "time_ms": 1871886,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N13-v006",
+          "time_ms": 1877314,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-example-answer",
+          "time_ms": 1882787,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N13-v015",
+          "time_ms": 1895422,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-example-finish",
+          "time_ms": 1900308,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-home-list",
+          "time_ms": 1909324,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N22-v001",
+          "time_ms": 1921964,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N22-v002",
+          "time_ms": 1929636,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N22-v003",
+          "time_ms": 1933739,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N22-v004",
+          "time_ms": 1938727,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-view-create-done",
+          "time_ms": 1945400,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-close-settings",
+          "time_ms": 1952236,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "N22-v006",
+          "time_ms": 1959566,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N22-v009",
+          "time_ms": 1964982,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-property-settings",
+          "time_ms": 1969078,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-property-edit",
+          "time_ms": 1980213,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-property-new",
+          "time_ms": 1985368,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-property-field",
+          "time_ms": 1989913,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-property-kind",
+          "time_ms": 1998326,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-property-add-option",
+          "time_ms": 2006955,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-property-option-tool",
+          "time_ms": 2011301,
+          "lag_ms": 0.0,
+          "correlation": 0.99988,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-property-option-study",
+          "time_ms": 2018727,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-property-option-ai",
+          "time_ms": 2028050,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-property-close",
+          "time_ms": 2037868,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-property-settings",
+          "time_ms": 2043916,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-property-edit",
+          "time_ms": 2055225,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-property-new",
+          "time_ms": 2060189,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 198.0
+        },
+        {
+          "id": "live-understanding-field",
+          "time_ms": 2064483,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-property-kind",
+          "time_ms": 2072984,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-property-add-option",
+          "time_ms": 2081612,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-understanding-first",
+          "time_ms": 2086014,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-understanding-second",
+          "time_ms": 2095473,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-understanding-third",
+          "time_ms": 2104209,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-property-close",
+          "time_ms": 2112459,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-understanding-purpose",
+          "time_ms": 2118402,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-image-purpose",
+          "time_ms": 2130475,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-property-settings",
+          "time_ms": 2139232,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-property-edit",
+          "time_ms": 2150498,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-property-new",
+          "time_ms": 2155548,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-image-name",
+          "time_ms": 2159576,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-image-kind",
+          "time_ms": 2169126,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-property-close",
+          "time_ms": 2177298,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-gallery-return",
+          "time_ms": 2183672,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-image-topic",
+          "time_ms": 2189145,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 2193917,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-value-field",
+          "time_ms": 2203761,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-value-tool",
+          "time_ms": 2209800,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-value-understanding",
+          "time_ms": 2216186,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-value-example",
+          "time_ms": 2222407,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-image-property",
+          "time_ms": 2231472,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-file-hover",
+          "time_ms": 2238525,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-image-link-tab-v2",
+          "time_ms": 2246678,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-image-link-notion",
+          "time_ms": 2253668,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "live-image-link-apply-v2",
+          "time_ms": 2264028,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-file-popup-dismiss-v2",
+          "time_ms": 2270842,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-image-check",
+          "time_ms": 2279987,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-home-list",
+          "time_ms": 2287043,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-image-second",
+          "time_ms": 2300171,
+          "lag_ms": 0.0,
+          "correlation": 0.99993,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 2306763,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-value-field",
+          "time_ms": 2316641,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-value-study",
+          "time_ms": 2322312,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "live-value-understanding",
+          "time_ms": 2328038,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-value-example",
+          "time_ms": 2334611,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-image-property",
+          "time_ms": 2343854,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-file-hover",
+          "time_ms": 2350763,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-image-link-tab-v2",
+          "time_ms": 2359533,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-image-link-knowledge",
+          "time_ms": 2366895,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-image-link-apply-v2",
+          "time_ms": 2372736,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-file-popup-dismiss-v2",
+          "time_ms": 2378683,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-home-list",
+          "time_ms": 2387852,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N21-v024",
+          "time_ms": 2400745,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-gallery-preview",
+          "time_ms": 2405825,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "N21-v026",
+          "time_ms": 2415066,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-preview-property",
+          "time_ms": 2419896,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N21-v028",
+          "time_ms": 2428916,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N21-v029",
+          "time_ms": 2433069,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N21-v030",
+          "time_ms": 2437768,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-close-settings",
+          "time_ms": 2441579,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N21-v034",
+          "time_ms": 2448481,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N21-v035",
+          "time_ms": 2451288,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-table-return",
+          "time_ms": 2456379,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-property-settings",
+          "time_ms": 2462653,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-table-visible",
+          "time_ms": 2474157,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-hide-created",
+          "time_ms": 2484055,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-hide-tags",
+          "time_ms": 2489645,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-hide-image",
+          "time_ms": 2494296,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-close-settings",
+          "time_ms": 2501881,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-table-result",
+          "time_ms": 2508753,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-search-start",
+          "time_ms": 2515640,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-search-query",
+          "time_ms": 2525530,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-search-result",
+          "time_ms": 2533651,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-search-clear",
+          "time_ms": 2538835,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-search-close",
+          "time_ms": 2548839,
+          "lag_ms": 0.0,
+          "correlation": 0.99836,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-gallery-return",
+          "time_ms": 2555064,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-template-intro",
+          "time_ms": 2561007,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-template-arrow",
+          "time_ms": 2569321,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-template-new",
+          "time_ms": 2576462,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "live-template-name",
+          "time_ms": 2582049,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-template-context",
+          "time_ms": 2593270,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-page-enter",
+          "time_ms": 2601916,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-template-description",
+          "time_ms": 2606996,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N11-v002",
+          "time_ms": 2621559,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-filter-callout",
+          "time_ms": 2623841,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N24-v011",
+          "time_ms": 2630181,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "live-bold-short",
+          "time_ms": 2635189,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-template-callout-title",
+          "time_ms": 2639709,
+          "lag_ms": 0.0,
+          "correlation": 0.99992,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-normal-short",
+          "time_ms": 2648315,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N24-v013",
+          "time_ms": 2652671,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "live-template-callout-body",
+          "time_ms": 2656186,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N24-v018",
+          "time_ms": 2673077,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N24-v019",
+          "time_ms": 2680013,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-color-find",
+          "time_ms": 2684317,
+          "lag_ms": 0.0,
+          "correlation": 0.99723,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N24-v020",
+          "time_ms": 2703094,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-callout-exit-first-v2",
+          "time_ms": 2707992,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-callout-exit-second",
+          "time_ms": 2719854,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-heading-search",
+          "time_ms": 2728986,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N24-v025",
+          "time_ms": 2737335,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-template-section",
+          "time_ms": 2742304,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N11-v006",
+          "time_ms": 2748119,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-bullet-search",
+          "time_ms": 2751412,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N11-v009",
+          "time_ms": 2760947,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-template-prompt-one",
+          "time_ms": 2766721,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-template-prompt-two",
+          "time_ms": 2773896,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N11-v018",
+          "time_ms": 2781184,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N11-v020",
+          "time_ms": 2784791,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-toggle-search",
+          "time_ms": 2789155,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "N13-v002",
+          "time_ms": 2798457,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-template-question",
+          "time_ms": 2803281,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N13-v005",
+          "time_ms": 2811663,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N13-v006",
+          "time_ms": 2816986,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-template-help",
+          "time_ms": 2822971,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N13-v015",
+          "time_ms": 2840276,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 208.0
+        },
+        {
+          "id": "live-template-close",
+          "time_ms": 2847007,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 187.0
+        },
+        {
+          "id": "live-template-apply",
+          "time_ms": 2856201,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-template-result",
+          "time_ms": 2866708,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 2875291,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-reading-title",
+          "time_ms": 2885400,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 184.0
+        }
+      ]
+    },
+    {
+      "name": "continuation",
+      "summary": {
+        "cues": 52,
+        "max_abs_lag_ms": 0.0,
+        "min_correlation": 0.98573,
+        "early_action_count": 0
+      },
+      "cues": [
+        {
+          "id": "live-title-repair-select",
+          "time_ms": 72,
+          "lag_ms": 0.0,
+          "correlation": 0.98573,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "live-title-repair-type",
+          "time_ms": 9740,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-title-repair-result",
+          "time_ms": 17714,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "live-reading-scroll",
+          "time_ms": 23048,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-reading-select-description",
+          "time_ms": 30839,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-reading-replace-description",
+          "time_ms": 39496,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-template-independent",
+          "time_ms": 52019,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-reading-position",
+          "time_ms": 59974,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-page-search",
+          "time_ms": 69197,
+          "lag_ms": 0.0,
+          "correlation": 0.99928,
+          "actual_voice_end_margin_ms": 198.0
+        },
+        {
+          "id": "N16-v003",
+          "time_ms": 78915,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-reading-page-title",
+          "time_ms": 83787,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-page-enter",
+          "time_ms": 95240,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-reading-body",
+          "time_ms": 100209,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-home-list",
+          "time_ms": 114441,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N26-v001",
+          "time_ms": 127818,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 179.0
+        },
+        {
+          "id": "N26-v002",
+          "time_ms": 132308,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "N26-v003",
+          "time_ms": 138585,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "live-sharing-point",
+          "time_ms": 144038,
+          "lag_ms": 0.0,
+          "correlation": 0.99995,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N26-v006",
+          "time_ms": 155556,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-sharing-copy",
+          "time_ms": 160429,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 208.0
+        },
+        {
+          "id": "live-sharing-close",
+          "time_ms": 170371,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N27-v001",
+          "time_ms": 176427,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 196.0
+        },
+        {
+          "id": "N27-v002",
+          "time_ms": 180407,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "N27-v003",
+          "time_ms": 185675,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "N27-v004",
+          "time_ms": 189205,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "live-publish-close",
+          "time_ms": 194905,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 197.0
+        },
+        {
+          "id": "live-comment-top",
+          "time_ms": 202831,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 182.0
+        },
+        {
+          "id": "live-comment-select",
+          "time_ms": 210845,
+          "lag_ms": 0.0,
+          "correlation": 1.0,
+          "actual_voice_end_margin_ms": 192.0
+        },
+        {
+          "id": "live-comment-key",
+          "time_ms": 223588,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-comment-close",
+          "time_ms": 231559,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 191.0
+        },
+        {
+          "id": "N28-v001",
+          "time_ms": 240494,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "N28-v002",
+          "time_ms": 244618,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 180.0
+        },
+        {
+          "id": "N28-v003",
+          "time_ms": 253357,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N28-v004",
+          "time_ms": 261341,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 184.0
+        },
+        {
+          "id": "live-export-format",
+          "time_ms": 268108,
+          "lag_ms": 0.0,
+          "correlation": 0.99994,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-export-subpages",
+          "time_ms": 284535,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 197.0
+        },
+        {
+          "id": "live-export-download",
+          "time_ms": 294805,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-export-saved",
+          "time_ms": 307795,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 195.0
+        },
+        {
+          "id": "live-export-copy-explain",
+          "time_ms": 320831,
+          "lag_ms": 0.0,
+          "correlation": 0.99996,
+          "actual_voice_end_margin_ms": 188.0
+        },
+        {
+          "id": "live-wrap-home",
+          "time_ms": 334808,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 194.0
+        },
+        {
+          "id": "live-layout-down",
+          "time_ms": 344562,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 189.0
+        },
+        {
+          "id": "N29-v002",
+          "time_ms": 351404,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 193.0
+        },
+        {
+          "id": "live-peek-full",
+          "time_ms": 356280,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 190.0
+        },
+        {
+          "id": "live-layout-down",
+          "time_ms": 366722,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 186.0
+        },
+        {
+          "id": "N29-v003",
+          "time_ms": 373226,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N29-v004",
+          "time_ms": 379396,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 185.0
+        },
+        {
+          "id": "N29-v005",
+          "time_ms": 384427,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-layout-down",
+          "time_ms": 390299,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N29-v006",
+          "time_ms": 397031,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 183.0
+        },
+        {
+          "id": "N29-v007",
+          "time_ms": 402986,
+          "lag_ms": 0.0,
+          "correlation": 0.99999,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "N29-v008",
+          "time_ms": 405748,
+          "lag_ms": 0.0,
+          "correlation": 0.99997,
+          "actual_voice_end_margin_ms": 181.0
+        },
+        {
+          "id": "live-wrap-end",
+          "time_ms": 414980,
+          "lag_ms": 0.0,
+          "correlation": 0.99998,
+          "actual_voice_end_margin_ms": 187.0
+        }
+      ]
+    }
+  ]
+}
