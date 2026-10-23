@@ -69,7 +69,7 @@
 - 표시 포인터는 페이지에 그린 SVG 화살표를 `element.animate`(컴포지터)로 움직이고, 실제 입력은 같은 경로를 16단계 `mouse.move(steps:1)`로 보낸다. 메인 스레드에 묶인 포인터 갱신이 끊김의 원인이었다.
 - 조작은 행동 문장이 끝나기 약 250ms 전에 실행(gate)하고, 다음 음성은 행동 종료 + 250ms에 시작한다. 결과 발화는 행동 종료 뒤.
 - 입력 중 커서를 입력칸 아래로 비킨다. 한글은 완성형 글자 단위 입력이며 IME 조합 시연이 아니다.
-- 구현 위치(로컬 근거, Git 미포함): Notion `.evidence/notion-rhythm-20261023/`(`ctrl-v10.mjs` · `ui-v10.mjs` · `seg-NN.mjs` · `encode-v10.py`), ARROWS `.evidence/arrows-ontology-20261023/`(`ctrl.mjs` 구간 녹화 · `ui.mjs` 조작 · `rec.sh` · `voice.py` · `encode.py` · `measure.py` · `plan-order.py` · `setup-*.mjs` 상태 맞춤). 새 도구는 이 둘 중 가까운 것을 복사해 대상 찾기(ui)만 바꾼다. `제작용/촬영/ego/`의 예제는 1280×800 시절 최소 재현이며 현재 리듬이 아니다.
+- 구현 위치(저장소): ARROWS에서 완성한 녹화 도구는 [`제작용/촬영/arrows/촬영도구/`](../../제작용/촬영/arrows/촬영도구/)에 있다 — `ctrl.mjs`(구간 녹화) · `ui.mjs`(arrows 대상 찾기 · 조작) · `restore.mjs`(녹화 밖 상태 복원 · 저장 좌표 읽기) · `run.sh`(ego 실행기: `rec` · `restore` · `coords`) · `voice.py` · `encode.py` · `measure.py` · `plan_order.py` · `common.py` · `config.json`. PC마다 다른 값은 `config.json`(근거 폴더 상대 경로 · ego 공간 이름 · 키 파일 위치)과 환경변수 `FFMPEG`로만 받는다. 녹화 원본 · 음성 · 끝 상태는 근거 폴더(`.evidence/`, Git 밖)에 쌓인다. 새 도구는 이 폴더를 복사해 `ui.mjs`의 대상 찾기와 큐 조작만 바꾼다. Notion은 같은 리듬의 `ctrl-v10.mjs` · `ui-v10.mjs`를 아직 로컬 근거 폴더(`.evidence/notion-rhythm-20261023/`)에서 쓰고 있어 저장소로 옮기는 중이다. `제작용/촬영/ego/`의 예제는 1280×800 시절 최소 재현이며 현재 리듬이 아니다.
 
 ## 4. 도구 유형별 길
 
