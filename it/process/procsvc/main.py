@@ -1224,13 +1224,38 @@ def _scenario_rt():
     return instance_mode.current()
 
 
-async def _reanchor_if_idle(rt) -> bool:
+async def _reanchor_if_idle(rt, button: str | None = None) -> dict:
     """시나리오 시각 기준점을 지금으로. 설비 처리 건이 진행 중이면 옮기지 않는다 — 예정된 정비 시간 id 가 기준점 시각을 품어, 옮기면 진행 중인
-    처리 건이 승인 뒤 낼 작업지시의 창이 사라진다(scenario_buttons.may_reanchor). 옮겼는지를 돌려준다(응답 · 감사 기록에 남긴다)."""
-    if not await asyncio.to_thread(scenario_buttons.may_reanchor, rt):
-        return False
+    처리 건이 승인 뒤 낼 작업지시의 창이 사라진다(scenario_buttons.reanchor_blockers). 승인 지연을 선언하고 사람만 기다리는 처리 건은 붙잡지
+    않는다(P12) — 옮겼으면 그 처리 건 기록에 남긴다. 돌려줌 {moved, blocked_by[], overdue[]}(응답 'reanchor' · 감사 기록에 남긴다 — 막았으면
+    어느 처리 건이 막았는지 이름으로)."""
+    found = await asyncio.to_thread(scenario_buttons.reanchor_blockers, rt)
+    if found["blocked_by"]:
+        return dict(found, moved=False)
     await asyncio.to_thread(_entsim_post, "/api/reanchor", {})
-    return True
+    if found["overdue"]:
+        at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.reanchor_event(o["instance"], at, button) for o in found["overdue"]])
+    return dict(found, moved=True)
+
+
+def _reanchor_audit(r: dict) -> dict:
+    """감사 기록 칸: 옮겼는지 + 막은 · 붙잡지 않은 처리 건 id."""
+    return {"reanchored": r["moved"], "reanchor_blocked_by": [b["instance"] for b in r["blocked_by"]],
+            "reanchor_overdue": [o["instance"] for o in r["overdue"]]}
+
+
+_SCENARIO_LOCKS: dict[str, tuple] = {}
+
+
+def _scenario_lock(key: str) -> asyncio.Lock:
+    """P6 (audit2): 시나리오마다 하나 — '진행 중' 검사(prepare)부터 경보 접수 · 처리 건 확인까지를 묶는다. 경보 id 가 누른 시각(초)이라 1초 넘게
+    떨어진 두 요청(두 탭 · 두 학생)은 원천 중복 제거에 걸리지 않아 처리 건이 둘 열렸다. 이벤트 루프마다 새로 만든다(시험 클라이언트는 루프가 바뀐다)."""
+    loop = asyncio.get_running_loop()
+    held = _SCENARIO_LOCKS.get(key)
+    if held is None or held[0] is not loop:
+        held = _SCENARIO_LOCKS[key] = (loop, asyncio.Lock())
+    return held[1]
 
 
 @app.get("/api/scenario/status")
@@ -1242,38 +1267,40 @@ async def scenario_status():
 @app.post("/api/scenario/{key}/start")
 async def scenario_start(key: str, body: dict | None = None):
     """[정기 점검](B) · [재고 보충](C): (설비 처리 건이 진행 중이 아니면) 시나리오 시각 기준점을 지금으로 맞추고, 지금 업무 값으로 경보를 만들어
-    배포된 흐름의 처리 건을 연다. 기준점은 업무 값을 읽기 전에 옮긴다 — 경보 근거의 예정된 정비 시간이 새 기준점의 것이어야 한다."""
+    배포된 흐름의 처리 건을 연다. 기준점은 업무 값을 읽기 전에 옮긴다 — 경보 근거의 예정된 정비 시간이 새 기준점의 것이어야 한다.
+    시나리오마다 한 번에 하나(_scenario_lock) — 겹친 두 번째 요청은 첫 처리 건을 보고 '이미 진행 중'(409)으로 거절된다."""
     rt = _scenario_rt()
     key = key.upper()
     if key not in scenario_buttons.SCENARIOS:
         raise HTTPException(404, f"모르는 시나리오 {key}")
     person = scenario_buttons.who(body)
-    reanchored = await _reanchor_if_idle(rt)
-    try:
-        prep = await asyncio.to_thread(scenario_buttons.prepare, key, instance_mode.enterprise_read, rt, _scenario_route, person)
-    except scenario_buttons.Refused as e:
-        raise HTTPException(409, str(e))
-    alert = prep["alert"]
     button = scenario_buttons.SCENARIOS[key]["button"]
-    try:
-        await _admit_human_alert(alert)
-    except (ValueError, LookupError) as e:       # P8 (audit2): /api/human-alerts 와 같은 사유 · 같은 코드, 누름 기록은 error 칸에
-        _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
-                     error=f"경보를 접수하지 못했습니다: {e}")
-        raise HTTPException(409, f"경보를 접수하지 못했습니다: {e}") from e
-    except TimeoutError as e:
-        _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
-                     error=f"경보 접수 확인 시간이 지났습니다: {e}")
-        raise HTTPException(503, f"경보 접수 확인 시간이 지났습니다: {e}") from e
-    try:
-        out = await asyncio.to_thread(scenario_buttons.started, rt, key, alert, _scenario_route(alert["pattern"]), person)
-    except scenario_buttons.NotStarted as e:
-        _press_audit(alert["asset"], person, scenario_buttons.SCENARIOS[key]["button"], key, alert["evidence"]["requested_at"],
-                     instance=None, alertId=alert["alertId"], error=str(e))
-        raise HTTPException(500, str(e))
-    _press_audit(alert["asset"], person, scenario_buttons.SCENARIOS[key]["button"], key, alert["evidence"]["requested_at"],
-                 instance=out["instance"], alertId=alert["alertId"], reanchored=reanchored)
-    return dict(out, reanchored=reanchored)
+    async with _scenario_lock(key):
+        reanchor = await _reanchor_if_idle(rt, button)
+        try:
+            prep = await asyncio.to_thread(scenario_buttons.prepare, key, instance_mode.enterprise_read, rt, _scenario_route, person)
+        except scenario_buttons.Refused as e:
+            raise HTTPException(409, str(e))
+        alert = prep["alert"]
+        try:
+            await _admit_human_alert(alert)
+        except (ValueError, LookupError) as e:       # P8 (audit2): /api/human-alerts 와 같은 사유 · 같은 코드, 누름 기록은 error 칸에
+            _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
+                         error=f"경보를 접수하지 못했습니다: {e}")
+            raise HTTPException(409, f"경보를 접수하지 못했습니다: {e}") from e
+        except TimeoutError as e:
+            _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"], instance=None, alertId=alert["alertId"],
+                         error=f"경보 접수 확인 시간이 지났습니다: {e}")
+            raise HTTPException(503, f"경보 접수 확인 시간이 지났습니다: {e}") from e
+        try:
+            out = await asyncio.to_thread(scenario_buttons.started, rt, key, alert, _scenario_route(alert["pattern"]), person)
+        except scenario_buttons.NotStarted as e:       # 접수와 확인 사이에 배포가 바뀐 상태 충돌 — 서버 고장(500)이 아니다
+            _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"],
+                         instance=None, alertId=alert["alertId"], error=str(e))
+            raise HTTPException(409, str(e)) from e
+    _press_audit(alert["asset"], person, button, key, alert["evidence"]["requested_at"],
+                 instance=out["instance"], alertId=alert["alertId"], **_reanchor_audit(reanchor))
+    return dict(out, reanchored=reanchor["moved"], reanchor=reanchor)
 
 
 @app.post("/api/scenario/{key}/reset")
@@ -1286,15 +1313,17 @@ async def scenario_reset(key: str, body: dict | None = None):
         raise HTTPException(404, f"모르는 시나리오 {key}")
     spec = scenario_buttons.SCENARIOS[key]
     person = scenario_buttons.who(body)
-    await asyncio.to_thread(_entsim_post, *spec["reset"])
-    reanchored = await _reanchor_if_idle(rt)
-    at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
-    if last:
-        await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
-            last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
-    _press_audit(spec["asset"], person, "초기화", key, at, instance=last["proc_inst_id"] if last else None, reanchored=reanchored)
-    return dict(await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt, _last_press), reanchored=reanchored)
+    async with _scenario_lock(key):          # [정기 점검] · [재고 보충]의 검사~접수 도중에 업무 값을 바꾸지 않게
+        await asyncio.to_thread(_entsim_post, *spec["reset"])
+        reanchor = await _reanchor_if_idle(rt, "초기화")
+        at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        last = await asyncio.to_thread(scenario_buttons.last_instance, rt, key)
+        if last:
+            await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
+                last["proc_inst_id"], "초기화", spec["asset"], person, at, {"effect": f"{spec['label']} 표시를 수업 시작 상태로 되돌림"})])
+    _press_audit(spec["asset"], person, "초기화", key, at, instance=last["proc_inst_id"] if last else None, **_reanchor_audit(reanchor))
+    return dict(await asyncio.to_thread(scenario_buttons.status, instance_mode.enterprise_read, rt, _last_press),
+                reanchored=reanchor["moved"], reanchor=reanchor)
 
 
 @app.post("/api/scenario/A/{act}")
@@ -1308,7 +1337,7 @@ async def scenario_a_button(act: str, body: dict | None = None):
     spec = scenario_buttons.A_BUTTONS[act]
     asset = scenario_buttons.A_ASSET
     person = scenario_buttons.who(body)
-    reanchored = await _reanchor_if_idle(rt) if act == "degrade" else False
+    reanchor = await _reanchor_if_idle(rt, spec["button"]) if act == "degrade" else {"moved": False, "blocked_by": [], "overdue": []}
     caused_by = (plant_status.get(asset) or {}).get("injection")
     origin = scenario_buttons.injection_origin(spec["button"], person)
     res = await asyncio.to_thread(_plant_post, "/api/fault", dict(spec["fault"], asset=asset, origin=origin))
@@ -1319,10 +1348,10 @@ async def scenario_a_button(act: str, body: dict | None = None):
             await asyncio.to_thread(rt.repo.record_events, [scenario_buttons.press_event(
                 linked, spec["button"], asset, person, origin["at"],
                 {"injection_id": origin["id"], "restores": caused_by["id"], "setpoints": res.get("setpoints")})])
-    _press_audit(asset, person, spec["button"], "A", origin["at"], injection_id=origin["id"], instance=linked, reanchored=reanchored,
+    _press_audit(asset, person, spec["button"], "A", origin["at"], injection_id=origin["id"], instance=linked, **_reanchor_audit(reanchor),
                  setpoints=res.get("setpoints"))
     return {"ok": True, "button": spec["button"], "asset": asset, "at": origin["at"], "injection_id": origin["id"], "instance": linked,
-            "plant": res, "reanchored": reanchored}
+            "plant": res, "reanchored": reanchor["moved"], "reanchor": reanchor}
 
 
 def _plant_post(path: str, body: dict) -> dict:

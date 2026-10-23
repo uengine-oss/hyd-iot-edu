@@ -141,10 +141,11 @@ class FlowStore:
                 head = self.mem["heads"].setdefault((def_id, self.tenant_id), {"prod_version": None})
                 head.update(bpmn=bpmn, name=raw.get("processDefinitionName"))
                 # B7: PG 등록처럼 proc_def 머리 행도 둔다(prod_version 은 그대로) — B4 배포(record_deployment)가 머리를 찾는다
-                prod = (self.repo.defs.get((def_id, self.tenant_id)) or {}).get("prod_version")
+                old_head = self.repo.defs.get((def_id, self.tenant_id)) or {}
+                # 등록은 운영 포인터(prod_version)와 그 배포의 주인 표시(owner — 수업 흐름, procdb.CLASS_OWNER)를 건드리지 않는다
                 self.repo.defs[(def_id, self.tenant_id)] = {"id": def_id, "tenant_id": self.tenant_id, "name": raw.get("processDefinitionName"),
-                                                            "definition": None, "prod_version": prod, "type": "bpmn",
-                                                            "ontology_ref": raw.get("ontologyRef")}
+                                                            "definition": None, "prod_version": old_head.get("prod_version"), "type": "bpmn",
+                                                            "ontology_ref": raw.get("ontologyRef"), "owner": old_head.get("owner")}
             return raw
         with self.repo._conn() as c, c.transaction():
             c.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"b3-flow:{self.tenant_id}:{def_id}",))

@@ -298,3 +298,314 @@ def test_agent4_other_agent_errors_keep_the_connection_wording_with_the_code(mon
     with pytest.raises(ValueError) as e:
         current_approval.check({"id": "DEC-1"}, "skill:x", "role:purchasing")
     assert "원천 연결" in str(e.value)
+
+
+# ======================================================================================================================
+# 2차(2026-10-23): P9(사용자 결정) · P2 · P6 · P10 · P12 · NotStarted 409 · 수업 흐름 [닫기] 거절 문구
+#   P9  포털 [기준 흐름으로 되돌리기]는 강사가 배포한 수업 흐름(class_flow)을 남기고 학생이 배포한 흐름만 내린다(응답 kept). 강사 스크립트는
+#       include_class=true 로 수업 흐름도 내린다. 수업 흐름 표시는 배포가 남긴다(흐름 id 로 짐작하지 않음).
+#   P2  사람이 닫은 질문은 'closed'(답이 나왔습니다 · 서버 판정 없음).
+#   P6  [정기 점검] 두 요청이 겹쳐도 처리 건은 하나, 두 번째는 409.
+#   P10 기준 파일 판본이 바뀐 뒤 사람이 배포한 판본으로 기동해도 되돌리기 · 비교가 새 기준 판본으로 간다. 같은 번호의 다른 원문이 있으면 사유로 거절.
+#   P12 승인 지연을 선언하고 사람만 기다리는 처리 건은 기준점을 붙잡지 않는다. 막은 처리 건은 이름으로 응답에 실린다.
+from entsim import state as entstate  # noqa: E402
+from test_flow_deploy import _student_flow  # noqa: E402
+from test_instance_mode import DEFS  # noqa: E402
+import test_b5_ask as b5  # noqa: E402
+from procsvc import ask, procdb, scenario_buttons as SB  # noqa: E402
+
+
+def _class_deploy(world, did, by="강사"):
+    r = checked(world, did)
+    assert r["ok"], r["problems"]
+    rt = world["rt"]
+    rt.register_definition(r["definition"])
+    return rt.deploy_definition(did, "1", by, "수업 흐름 배포", class_flow=True)
+
+
+def _class_world(world):
+    for did in ("c3_cooling", "c3_pm", "c3_spare"):
+        assert _class_deploy(world, did)["class_flow"] is True
+    rt = world["rt"]
+    rt.register_definition(_student_flow(rt))                                              # 학생이 만든 흐름 하나
+    rt.deploy_definition("student_pump", "1.0", by="학생1", reason="내 흐름 시험")
+    return rt
+
+
+# ================================================================ P9
+def test_p9_portal_reset_keeps_the_class_flows_and_withdraws_only_the_student_flow(world):
+    rt = _class_world(world)
+    table = flow_deploy.routes(rt)
+    assert {f["definition"]: f["class_flow"] for f in table["flows"]} == \
+        {"c3_cooling": True, "c3_pm": True, "c3_spare": True, "student_pump": False}
+    assert {r["pattern"]: r["source"] for r in table["routes"]}["PM_DUE"] == "수업 흐름" and table["reset_needed"]
+    out = flow_deploy.deploy_reset(rt, "학생1")
+    assert [(c["definition"], c["action"]) for c in out["changes"]] == [("student_pump", "withdraw")]
+    assert sorted(k["definition"] for k in out["kept"]) == ["c3_cooling", "c3_pm", "c3_spare"]
+    kept = {k["definition"]: k for k in out["kept"]}
+    assert kept["c3_pm"]["name"] == "정기 정비" and kept["c3_pm"]["patterns"] == ["PM_DUE"] and kept["c3_pm"]["deployed_by"] == "강사"
+    assert "수업 흐름이라 남김" in kept["c3_pm"]["text"] and out["include_class"] is False and out["already_reference"] is False
+    assert "수업 흐름 3개" in out["message"] and "정기 정비" in out["message"]
+    for pattern, did in (("COOLER_DEGRADATION", "c3_cooling"), ("PM_DUE", "c3_pm"), ("SPARE_BELOW_MIN", "c3_spare")):
+        assert flow_deploy.route_definition(rt, pattern).id == did                        # B · C 버튼이 멈추지 않는다
+    assert flow_deploy.route_definition(rt, "PUMP_LEAKAGE").id == "anomaly_response"
+    assert out["routes"]["reset_needed"] is False and out["routes"]["at_reference"] is False
+    again = flow_deploy.deploy_reset(rt, "학생1")                                         # 다시 눌러도 수업 흐름은 그대로
+    assert again["changes"] == [] and len(again["kept"]) == 3 and again["message"].startswith("되돌릴 내 흐름이 없습니다")
+
+
+def test_p9_the_instructor_reset_with_include_class_also_withdraws_the_class_flows(world):
+    rt = _class_world(world)
+    out = flow_deploy.deploy_reset(rt, "강사", "수업 끝", include_class=True)
+    assert sorted(c["definition"] for c in out["changes"]) == ["c3_cooling", "c3_pm", "c3_spare", "student_pump"]
+    assert out["kept"] == [] and out["routes"]["at_reference"] and out["include_class"] is True
+    assert all(c["class_flow"] for c in out["changes"] if c["definition"].startswith("c3_"))
+    assert flow_deploy.route_definition(rt, "PM_DUE").id == "anomaly_response"
+
+
+def test_p9_the_mark_belongs_to_the_deployment_not_to_the_flow_id(world):
+    """수업 흐름 id 라도 표시 없이 배포하면(학생이 포털에서 다시 배포) 학생 흐름이다 — id 접두어로 짐작하지 않는다. 기준 흐름에는 표시를 붙이지 않는다."""
+    rt = world["rt"]
+    _class_deploy(world, "c3_pm")
+    r = checked(world, "c3_pm")
+    raw = dict(deepcopy(r["definition"]), version="2")
+    rt.register_definition(raw)
+    rt.deploy_definition("c3_pm", "2", "학생1", "수업 흐름을 고쳐 배포")                    # 표시 없는 배포가 표시를 지운다
+    assert rt.definition_status("c3_pm")["class_flow"] is False
+    out = flow_deploy.deploy_reset(rt, "학생1")
+    assert [c["definition"] for c in out["changes"]] == ["c3_pm"] and out["kept"] == []
+    raw3 = dict(deepcopy(r["definition"]), version="3")
+    rt.register_definition(raw3)
+    rt.deploy_definition("c3_pm", "3", "강사", "다시 수업 흐름", class_flow=True)
+    assert rt.definition_status("c3_pm")["class_flow"] is True
+    rt.register_definition(dict(deepcopy(r["definition"]), version="4"))                  # 새 판본 등록은 배포 표시를 건드리지 않는다
+    assert flow_deploy.routes(rt)["flows"][0]["class_flow"] is True
+    with pytest.raises(ValueError, match="기준 흐름"):
+        rt.deploy_definition("anomaly_response", "2.2", "강사", "x", class_flow=True)
+
+
+def test_p9_http_contract_and_the_instructor_script(world, monkeypatch):
+    rt = world["rt"]
+    monkeypatch.setattr(instance_mode, "_runtime", rt)
+    app = FastAPI()
+    instance_mode.mount(app, "instance")
+    client = TestClient(app)
+    r = checked(world, "c3_pm")
+    rt.register_definition(r["definition"])
+    dep = client.post("/api/process/definitions/c3_pm/deploy", json={"version": "1", "by": "c3-assembly", "reason": "C3", "class_flow": True})
+    assert dep.status_code == 200 and dep.json()["class_flow"] is True
+    portal = client.post("/api/flows/deploy-reset", json={"by": "학생1"}).json()           # 포털 본문(include_class 없음)
+    assert portal["changes"] == [] and [k["definition"] for k in portal["kept"]] == ["c3_pm"]
+    assert client.get("/api/flows/deployments").json()["flows"][0]["class_flow"] is True
+    teacher = client.post("/api/flows/deploy-reset", json={"by": "강사", "include_class": True}).json()
+    assert [c["definition"] for c in teacher["changes"]] == ["c3_pm"] and teacher["kept"] == []
+    # 강사 스크립트: deploy 는 class_flow, deploy-reset 은 include_class 를 싣는다
+    mod = c3._flows()
+    calls = []
+    monkeypatch.setattr(mod, "call", lambda m, p, body=None: calls.append((m, p, body)) or {"version": "1", "changes": [], "kept": []})
+    assert mod.main(["c3_flows.py", "deploy-reset", "강사"]) == 0 and calls[-1][2]["include_class"] is True
+    calls.clear()
+    assert mod.main(["c3_flows.py", "deploy"]) == 0
+    deploys = [b for m, p, b in calls if p.endswith("/deploy")]
+    assert len(deploys) == 3 and all(b["class_flow"] is True for b in deploys)
+
+
+def test_p9_flows_reset_after_the_portal_reset_keeps_the_class_flow_definitions(api):
+    """학생 랩 순서: 흐름 배포 화면 [기준 흐름으로 되돌리기] → 흐름 가져오기 [기준으로 되돌리기]. 수업 흐름 정의 · 판본은 남고 경보 경로도 그대로."""
+    c, rt, repo, audit = api
+    version = _deploy_class_flow(api)                                                       # 가져오기 · 등록(포털과 같은 API)
+    rt.repo.clear_deployment("c3_cooling", rt.tenant_id, actor="강사", reason="다시 배포")
+    rt.deploy_definition("c3_cooling", version, by="c3-assembly", reason="수업", class_flow=True)
+    _, _, mapping = c3._flows().FLOWS["c3_cooling"]
+    assert c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}).status_code == 201  # 판본을 하나 더 등록해도 표시는 그대로
+    assert flow_deploy.deploy_reset(rt, "학생")["kept"][0]["definition"] == "c3_cooling"
+    assert c.post("/api/flows/reset").status_code == 200
+    assert flow_deploy.route_definition(rt, "COOLER_DEGRADATION").id == "c3_cooling"
+    assert repo.get_proc_def("c3_cooling", version=version) is not None
+
+
+# ================================================================ P2
+def test_p2_a_question_a_person_closed_reads_closed_not_answered(world, tmp_path):
+    rt = world["rt"]
+    b5._people(rt)
+    v = b5._ask(rt)
+    b5._work(rt, tmp_path, b5._cli("JSON 없이 말로만 답함"))
+    b5._work(rt, tmp_path, b5._cli("또 JSON 없음"))
+    before = ask.view(rt, v["id"])
+    assert before["state"] == "failed"
+    out = rt.close_agent_task(before["workitem"], "강사", "워커가 계속 실패해 닫음")
+    assert out["instance_ended"] is True and out["end_event"] == "closed-by-human"
+    d = ask.view(rt, v["id"])
+    assert d["state"] == "closed" and d["message"].startswith("사람이 닫은 질문입니다") and "워커가 계속 실패해 닫음" in d["message"]
+    assert d["result"] is None                                                             # 답이 없으니 서버 판정도 없다
+    assert [h["state"] for h in ask.history(rt) if h["id"] == v["id"]] == ["closed"]
+
+
+# ================================================================ P6
+def test_p6_two_overlapping_scenario_presses_open_one_case(buttons, monkeypatch):
+    main, rt = buttons["main"], buttons["rt"]
+    seq = iter(range(100))
+    real_build = SB.build_alert
+
+    def later_alert(*a, **k):                                                              # 1초 넘게 떨어진 두 누름 = 서로 다른 경보 id
+        alert = real_build(*a, **k)
+        return dict(alert, alertId=f"{alert['alertId']}-{next(seq)}")
+    monkeypatch.setattr(SB, "build_alert", later_alert)
+
+    async def slow_admit(alert):
+        await asyncio.sleep(0.05)                                                          # 원천 접수 대기(검사와 처리 건 사이의 틈)
+        rt.on_alert_raise(alert, now=NOW)
+    monkeypatch.setattr(main, "_admit_human_alert", slow_admit)
+
+    async def both():
+        return await asyncio.gather(main.scenario_start("B", {"by": "탭1"}), main.scenario_start("B", {"by": "탭2"}),
+                                    return_exceptions=True)
+    results = asyncio.run(both())
+    ok = [r for r in results if isinstance(r, dict)]
+    refused = [r for r in results if isinstance(r, HTTPException)]
+    assert len(ok) == 1 and len(refused) == 1 and refused[0].status_code == 409 and "이미 진행 중" in refused[0].detail
+    running = [i for i in rt.repo.list_instances("RUNNING", None, rt.tenant_id) if i["proc_def_id"] == "c3_pm"]
+    assert [i["proc_inst_id"] for i in running] == [ok[0]["instance"]]
+
+
+# ================================================================ NotStarted → 409 + 경보가 간 곳
+def test_not_started_names_where_the_alert_went(world):
+    rt = world["rt"]
+    st = entstate.EnterpriseState()
+    alert = SB.build_alert("C", st.spare_stock("P-PMP-SEAL")["facts"], now=NOW)
+    triage = rt.on_alert_raise(alert, now=NOW)                                             # 흐름이 내려가 경보가 기준 흐름 쪽으로 갔다
+    with pytest.raises(SB.NotStarted) as e:
+        SB.started(rt, "C", alert, None)
+    assert "배포가 내려갔습니다" in str(e.value) and triage["proc_inst_id"] in str(e.value)
+
+
+# ================================================================ P10
+def _reboot_with_newer_reference(world, monkeypatch, tmp_path, newer_version="2.4", collide=False):
+    import shutil
+    rt, ctx = world["rt"], world["ctx"]
+    repo = rt.repo
+    raw = json.loads((DEFS / "anomaly_response_v22.json").read_text(encoding="utf-8"))
+    raw["version"] = "2.3"
+    rt.register_definition(raw)
+    rt.deploy_definition("anomaly_response", "2.3", "학생", "U4 실습")                     # 사람이 배포한 판본
+    if collide:                                                                            # 같은 번호로 다른 원문을 먼저 등록해 둠
+        other = json.loads((DEFS / "anomaly_response_v22.json").read_text(encoding="utf-8"))
+        other["version"], other["description"] = newer_version, "학생이 먼저 쓴 같은 번호"
+        rt.register_definition(other)
+    newer = json.loads((DEFS / "anomaly_response_v22.json").read_text(encoding="utf-8"))
+    newer["version"] = newer_version
+    for f in DEFS.iterdir():
+        if f.is_file():
+            shutil.copy(f, tmp_path / f.name)
+    (tmp_path / "anomaly_response_next.json").write_text(json.dumps(newer, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(instance_mode, "DEFINITIONS_DIR", tmp_path)
+    monkeypatch.setattr(instance_mode, "DEFINITION_FILE", "anomaly_response_next.json")
+    monkeypatch.setattr(procdb, "make_repo", lambda: repo)                                 # 같은 DB 로 재기동
+    return instance_mode.build(ctx), newer
+
+
+def test_p10_reset_and_compare_reach_the_new_reference_version_after_a_file_upgrade(world, monkeypatch, tmp_path):
+    rt2, newer = _reboot_with_newer_reference(world, monkeypatch, tmp_path)
+    assert (rt2.defn.raw["version"], rt2.base_version, rt2.base_problem) == ("2.3", "2.4", None)
+    assert rt2.repo.deployed_version("anomaly_response", "hyd") == "2.3"                   # 등록은 배포가 아니다
+    assert rt2.repo.get_proc_def("anomaly_response", "hyd", version="2.4")["definition"] == newer
+    diff = flow_deploy.compare_with_reference(rt2, "anomaly_response")
+    assert diff["reference"] == {"definition": "anomaly_response", "version": "2.4"} and diff["target"]["version"] == "2.3"
+    out = flow_deploy.deploy_reset(rt2, "학생")
+    assert [(c["definition"], c["action"], c["from"], c["to"]) for c in out["changes"]] == [("anomaly_response", "reset", "2.3", "2.4")]
+    assert rt2.repo.deployed_version("anomaly_response", "hyd") == "2.4"
+
+
+def test_p10_a_reference_version_number_already_taken_by_other_text_is_refused_with_its_reason(world, monkeypatch, tmp_path):
+    rt2, _ = _reboot_with_newer_reference(world, monkeypatch, tmp_path, collide=True)
+    assert rt2.base_problem and "같은 판본 번호로 다른 원문" in rt2.base_problem                # 기동은 된다(사유만 남김)
+    with pytest.raises(ValueError, match="같은 판본 번호로 다른 원문"):
+        flow_deploy.deploy_reset(rt2, "학생")
+    assert rt2.repo.deployed_version("anomaly_response", "hyd") == "2.3"                   # 남의 원문으로 '되돌리지' 않았다
+    monkeypatch.setattr(instance_mode, "_runtime", rt2)
+    app = FastAPI()
+    instance_mode.mount(app, "instance")
+    client = TestClient(app)
+    for r in (client.post("/api/flows/deploy-reset", json={"by": "학생"}),
+              client.get("/api/flows/deploy-compare", params={"definition": "anomaly_response"})):
+        assert r.status_code == 409 and "같은 판본 번호로 다른 원문" in r.json()["detail"]
+
+
+# ================================================================ P12
+@pytest.fixture
+def anchor(world, monkeypatch):
+    """승인 대기 c3_pm 처리 건 하나 + process main 버튼(enterprise-sim 호출은 기록만)."""
+    from procsvc import main
+    rt, inst, inc, d, out = opened(world, "c3_pm")
+    st, posts, audits = entstate.EnterpriseState(), [], []
+    monkeypatch.setattr(main, "PROCESS_MODE", "instance")
+    monkeypatch.setattr(main.instance_mode, "current", lambda: rt)
+    monkeypatch.setattr(main.instance_mode, "enterprise_read", _reader(st))
+    monkeypatch.setattr(main, "_entsim_post", lambda path, body: posts.append(path) or {"ok": True})
+    monkeypatch.setattr(main, "_audit", lambda *a, **k: audits.append(a))
+    return {"main": main, "rt": rt, "inst": inst, "posts": posts, "audits": audits}
+
+
+def test_p12_a_case_waiting_past_its_approval_deadline_no_longer_holds_the_scenario_clock(anchor):
+    main, rt, inst, posts = anchor["main"], anchor["rt"], anchor["inst"], anchor["posts"]
+    pid = inst["proc_inst_id"]
+    first = asyncio.run(main.scenario_reset("B", {"by": "강사"}))                           # 기한 전 승인 대기 = 붙잡는다(원래 동작)
+    assert first["reanchored"] is False and "/api/reanchor" not in posts
+    held = first["reanchor"]["blocked_by"]
+    assert [b["instance"] for b in held] == [pid] and held[0]["name"] == "정기 정비" and held[0]["asset"] == "HYD-02"
+    assert held[0]["waiting_on"] and held[0]["why"] == "진행 중"
+    late = NOW + timedelta(seconds=OVERDUE_S + 1)                                         # 흐름이 '승인 지연'을 선언
+    rt.fire_timeouts(now=late)
+    rt.reconcile_services(now=late)
+    assert _row(rt, inst, "T_notice")["status"] == "DONE" and _row(rt, inst, "T_approve")["status"] == "IN_PROGRESS"
+    now_inst = rt.repo.get_instance(pid)
+    rows = rt.repo.list_workitems(proc_inst_id=pid, limit=None)
+    raw = deepcopy(rt.definition_for(now_inst).raw)                                       # 같은 모양인데 기다리는 단계가 사람 단계가 아니면 붙잡는다
+    next(a for a in raw["activities"] if a["id"] == "T_approve")["type"] = "serviceTask"
+    assert SB._approval_overdue(engine.Definition.from_dict(raw), now_inst, rows) is None
+    assert SB._approval_overdue(rt.definition_for(now_inst), now_inst, rows)[0]["activity"] == "T_approve"
+    posts.clear()
+    second = asyncio.run(main.scenario_reset("B", {"by": "강사"}))
+    assert second["reanchored"] is True and "/api/reanchor" in posts
+    assert second["reanchor"]["blocked_by"] == [] and [o["instance"] for o in second["reanchor"]["overdue"]] == [pid]
+    assert second["reanchor"]["overdue"][0]["why"].startswith("승인 지연")
+    ev = [e for e in rt.repo.list_events(proc_inst_id=pid) if e["job_id"] == "SCENARIO_REANCHOR"]
+    assert ev and "새 판단이 필요할 수 있습니다" in ev[0]["data"]["goal"]                   # 그 처리 건 기록에 남는다
+    press = [a for a in anchor["audits"] if a[2] == "SCENARIO_BUTTON"][-1][3]
+    assert press["reanchored"] is True and press["reanchor_overdue"] == [pid] and press["reanchor_blocked_by"] == []
+    assert rt.repo.get_instance(pid)["status"] == "RUNNING"                               # 처리 건은 그대로 사람을 기다린다
+
+
+def test_p12_an_agent_still_working_keeps_holding_the_clock(world):
+    """사람 단계가 아닌 일이 열려 있으면(판단 중) 기한과 상관없이 붙잡는다."""
+    _class_deploy(world, "c3_pm")
+    rt = world["rt"]
+    st = entstate.EnterpriseState()
+    inst = rt.on_alert_raise(SB.build_alert("B", st.pm_status("HYD-02")["facts"], now=NOW), now=NOW)
+    found = SB.reanchor_blockers(rt)
+    assert [b["instance"] for b in found["blocked_by"]] == [inst["proc_inst_id"]] and found["overdue"] == []
+    assert SB.may_reanchor(rt) is False
+
+
+# ================================================================ 수업 흐름 판단 실패 [닫기] 거절 문구
+def test_close_refusal_names_only_paths_the_flow_has(world):
+    _class_deploy(world, "c3_cooling")
+    rt = world["rt"]
+    inst = rt.on_alert_raise(dict(c2.ALERT, alertId="HYD-01-A-close"), now=NOW)
+    assert inst["proc_def_id"] == "c3_cooling"
+    agent = _row(rt, inst, "T_agent")
+    agent.update(status="PENDING")
+    rt.repo.update_workitem(agent)
+    with pytest.raises(ValueError) as e:
+        rt.close_agent_task(agent["id"], "강사", "판단 실패")
+    msg = str(e.value)
+    assert "사건이 아직 진행 중" in msg and "에스컬레이션" not in msg and "[다시 수행]" in msg
+    ref = rt.on_alert_raise({"alertId": "ALT-close-ref", "asset": "HYD-02", "pattern": "PUMP_LEAKAGE", "state": "RAISE"}, now=NOW)
+    # ↑ 기준 흐름(에스컬레이션 단계 있음)은 그 길도 말한다
+    assert ref["proc_def_id"] == "anomaly_response"
+    first = next(w for w in rt.repo.list_workitems(proc_inst_id=ref["proc_inst_id"], limit=None) if w["status"] == "IN_PROGRESS")
+    first.update(status="PENDING")
+    rt.repo.update_workitem(first)
+    with pytest.raises(ValueError) as e2:
+        rt.close_agent_task(first["id"], "강사", "판단 실패")
+    assert "에스컬레이션 검토" in str(e2.value) and "[다시 수행]" in str(e2.value)

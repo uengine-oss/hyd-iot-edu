@@ -123,7 +123,8 @@ def test_the_scenario_clock_moves_only_while_no_plant_case_is_running(buttons):
     assert reset["reanchored"] is False and posts == ["/erp/spare/reset"]
 
 
-def test_a_press_whose_case_did_not_open_is_a_loud_500(buttons, monkeypatch):
+def test_a_press_whose_case_did_not_open_is_a_loud_409(buttons, monkeypatch):
+    """접수됐는데 배포 흐름의 처리 건이 없음 = 접수와 확인 사이 배포가 바뀐 상태 충돌(audit2 process 보고: 사유 있는 500 → 409)."""
     main = buttons["main"]
 
     async def lost(alert):
@@ -131,7 +132,7 @@ def test_a_press_whose_case_did_not_open_is_a_loud_500(buttons, monkeypatch):
     monkeypatch.setattr(main, "_admit_human_alert", lost)
     with pytest.raises(HTTPException) as e:
         asyncio.run(main.scenario_start("C", {"by": "정구매"}))
-    assert e.value.status_code == 500 and "열리지 않았습니다" in e.value.detail
+    assert e.value.status_code == 409 and "열리지 않았습니다" in e.value.detail and "배포가 바뀌었을 수 있습니다" in e.value.detail
 
 
 # ---------------------------------------------------------------- F8 연결 훅 실패

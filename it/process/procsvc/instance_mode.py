@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import urllib.request
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -168,19 +169,40 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     _ctx = ctx
     repo = procdb.make_repo()
     defn = _bootstrap_definition(repo, os.getenv('TENANT_ID','hyd'))
+    # B4: 기준 흐름 = 기동 파일(PROCESS_DEFINITION_FILE)의 판본 — 배포된 학생 판본으로 기동해도 "기준 흐름으로 되돌리기"는 이 판본으로 간다.
+    # P10: 그 판본 원문을 먼저 등록해 둔다(운영 포인터 · 머리의 마지막 등록 원문은 아래 런타임이 기동 정의로 둔다)
+    seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
+    base_problem = _register_reference(repo, seed, defn, os.getenv('TENANT_ID','hyd'))
     engine.configure_wait_compression(WAIT_COMPRESSION)
     _runtime = instances.InstanceRuntime(repo, defn, _hooks(ctx), time_scale=ctx.time_scale,
                                         tenant_id=os.getenv('TENANT_ID','hyd'), consumer=f"process-engine:{procdb.consumer_name()}")
     triage = _runtime.register_definition(json.loads((DEFINITIONS_DIR/'alert_triage_v1.json').read_text(encoding='utf-8')))
-    # B4: 기준 흐름 = 기동 파일(PROCESS_DEFINITION_FILE)의 판본 — 배포된 학생 판본으로 기동해도 "기준 흐름으로 되돌리기"는 이 판본으로 간다.
-    seed = engine.Definition.load(DEFINITIONS_DIR / DEFINITION_FILE)
-    _runtime.base_version, _runtime.reference_ids = seed.raw['version'], {seed.id, triage['id']}
+    _runtime.base_version, _runtime.reference_ids, _runtime.base_problem = seed.raw['version'], {seed.id, triage['id']}, base_problem
     from . import ask
     ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
     log.info("instance mode: definition %s@%s (%d activities), repo %s, agent bridge %s", defn.id, defn.raw.get('version'),
              len(defn.activities), type(repo).__name__, AGENT_BRIDGE)
     return _runtime
+
+
+def _register_reference(repo, seed: engine.Definition, booted: engine.Definition, tenant_id: str) -> str | None:
+    """P10 (audit2 2026-10-23): 사람이 배포한 판본으로 기동하면(booted ≠ seed) 기준 파일 판본은 런타임이 등록하지 않는다 — 저장소 갱신으로 파일이
+    새 판본이 되면 [기준 흐름으로 되돌리기]가 '등록되지 않은 정의 판본', [기준과 비교]가 '기준 판본 원문이 없습니다'로 막혔다. 기준 판본을
+    불변 등록한다(운영 포인터는 그대로 — 등록은 배포가 아니다). 같은 번호에 다른 원문이 이미 있으면 등록하지 않고 사유를 돌려준다
+    (flow_deploy 가 되돌리기 · 비교를 그 사유로 거절 — 같은 번호의 다른 원문으로 조용히 되돌리지 않게). 기동은 막지 않는다."""
+    if booted.raw.get('version') == seed.raw.get('version'):
+        return None                                     # InstanceRuntime 이 기동 정의(= 기준 파일)를 이미 등록했다
+    try:
+        repo.upsert_proc_def(deepcopy(seed.raw), tenant_id)
+    except ValueError as e:
+        problem = (f'기준 파일 {DEFINITION_FILE}의 판본 {seed.id}@{seed.raw.get("version")}을(를) 등록하지 못해 기준으로 되돌리거나 비교할 수 '
+                   f'없습니다 — 같은 판본 번호로 다른 원문이 이미 등록돼 있습니다({e}). 기준 파일의 판본 번호를 올리세요')
+        log.error("instance mode: %s", problem)
+        return problem
+    log.info("instance mode: reference version %s@%s registered (deployed version %s kept)", seed.id, seed.raw.get('version'),
+             booted.raw.get('version'))
+    return None
 
 
 def _bootstrap_definition(repo, tenant_id: str) -> engine.Definition:
@@ -780,6 +802,8 @@ class RollbackReq(BaseModel):
 
 class DeployReq(RollbackReq):
     version: str = Field(min_length=1, max_length=200)
+    # P9: 강사 조립 스크립트(scripts/c3_flows.py deploy)만 True — 포털의 [기준 흐름으로 되돌리기]가 남기는 '수업 흐름' 배포
+    class_flow: bool = False
 
 
 class SubmitReq(BaseModel):
@@ -930,7 +954,7 @@ def mount(app: FastAPI, process_mode: str) -> None:
     async def deploy_definition(definition_id: str, req: DeployReq):
         """U4: make a version the one new alerts open. Refused unless it passes validate_definition; open instances keep theirs."""
         try:
-            return await _in_executor(_rt().deploy_definition, definition_id, req.version, req.by, req.reason)
+            return await _in_executor(lambda: _rt().deploy_definition(definition_id, req.version, req.by, req.reason, class_flow=req.class_flow))
         except LookupError as e:
             raise HTTPException(404, str(e))
         except ValueError as e:
