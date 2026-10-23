@@ -110,11 +110,11 @@
     });
     $('cfgImport').addEventListener('click', async () => {
       if (!pending) { msg('cfgImportMsg', '출발본 파일을 고르세요', true); return; }
-      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성을 지우고 파일 내용으로 다시 세웁니다. 기준 구성과 질문 기록은 그대로입니다.', ok: '불러오기' });
+      const yes = await UI.confirm({ title: '출발본을 불러올까요?', body: '지금 내가 만든 구성을 지우고 파일 내용으로 다시 세웁니다. 강사가 배포한 수업 흐름도 파일 내용대로 바뀝니다. 기준 구성과 질문 기록은 그대로입니다.', ok: '불러오기' });
       if (yes) run(false);
     });
     $('cfgReset').addEventListener('click', async () => {
-      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성을 모두 지웁니다. 먼저 출발본으로 받아 두면 다시 불러올 수 있습니다.', ok: '되돌리기', danger: true });
+      const yes = await UI.confirm({ title: '기준으로 되돌릴까요?', body: '내가 만든 구성을 모두 지웁니다. 강사가 배포한 수업 흐름은 남습니다. 먼저 출발본으로 받아 두면 다시 불러올 수 있습니다.', ok: '되돌리기', danger: true });
       if (!yes) return;
       $('cfgReset').disabled = true;
       try {

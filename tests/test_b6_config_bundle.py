@@ -466,3 +466,29 @@ def test_pg_export_reset_import_roundtrip(monkeypatch, http):
         ok(c.post("/api/config/reset", json={}))
         with repo._conn() as cx:
             cx.execute("delete from tenant_skills where skill_name='fan-vibration-check'")
+
+
+def test_reset_keeps_the_class_flow_and_import_redeploys_it_as_one(env, http):
+    """2026-10-23: 관리 탭 [기준으로 되돌리기]는 흐름 배포 화면의 [기준 흐름으로 되돌리기]처럼 강사가 배포한 수업 흐름을 경보 경로 · 흐름 목록에
+    남긴다(학생이 자기 구성을 지우다 B · C 버튼이 멈추지 않게). 출발본은 수업 흐름 표시를 싣고, 불러오기(파일로 통째로 다시 세움)는 그 표시
+    그대로 다시 배포한다 — 표시 없이 다시 배포되면 다음 [기준 흐름으로 되돌리기]가 수업 흐름을 내린다."""
+    c = env
+    build_student(c, http)
+    flow_deploy.deploy_reset(c.rt, "강사")                                          # 학생 배포를 내리고 강사가 수업 흐름으로 다시 배포
+    ok(c.post("/api/process/definitions/my_cooler/deploy", json={"version": "2", "by": "강사", "reason": "수업 흐름", "class_flow": True}))
+    bundle = ok(c.get("/api/config/export"))
+    assert bundle["content"]["deployments"]["flows"] == [{"definition_id": "my_cooler", "version": "2", "patterns": ["PUMP_LEAKAGE"],
+                                                         "class_flow": True}]
+    r = ok(c.post("/api/config/reset", json={"by": "학생"}))
+    assert "수업 흐름" in r["message"] and "수업 흐름 1개" in r["steps"][0]["text"]
+    routes = flow_deploy.routes(c.rt)
+    assert [(f["definition"], f["version"], f["class_flow"]) for f in routes["flows"]] == [("my_cooler", "2", True)]
+    assert sorted(v["version"] for v in FlowStore(c.repo, "hyd").versions("my_cooler")) == ["1", "2"]   # 판본도 남았다
+    assert FlowStore(c.repo, "hyd").versions("oil_check") == [] and base_state(c)["agents"] == ["sys:agent", "sys:scada"]
+
+    secrets = {"my-fake": {"env.FAKE_TOKEN": TOKEN}, "my-http": {"headers.Authorization": f"Bearer {BEARER}"}}
+    out = ok(c.post("/api/config/import", json={"bundle": bundle, "secrets": secrets, "by": "학생"}))
+    assert out["ok"] and out["verified"]
+    assert [(f["definition"], f["version"], f["class_flow"]) for f in flow_deploy.routes(c.rt)["flows"]] == [("my_cooler", "2", True)]
+    kept = flow_deploy.deploy_reset(c.rt, "학생")
+    assert [k["definition"] for k in kept["kept"]] == ["my_cooler"] and kept["changes"] == []
