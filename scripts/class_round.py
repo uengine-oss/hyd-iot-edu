@@ -2867,9 +2867,20 @@ def _c_fault_case(r, asset: str, fault: str, pattern: str):
     else:
         r.check("원인 진단이 보류 없이 끝남([다시 평가] 경로는 이번에 생기지 않음 — 그대로 기록)", state == "ready", state, kind="quality")
     ai_s = time.monotonic() - t0
+    # 수업 지식(HM-8 · PM-02 · PR-07)에 이 고장의 완화 · 근본 조치가 없으면(PM-02 펌프는 예방 정비뿐) 판단 엔진이 NO_FEASIBLE_OPTION 이다 —
+    # 그때 맞는 결과는 다시 평가해도 지어내지 않고 다시 보류하는 것(final2: 카드를 기대해 1119초 기다림)
+    engine = r.api("POST", f"{r.agent}/api/agent/decide", {"asset": asset, "pattern": pattern, "facts": {}})[1] or {}
+    if engine.get("status") == "NO_FEASIBLE_OPTION":
+        again = next((w for w in view.get("workitems", []) if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None)
+        reason = ((again or {}).get("draft") or {}).get("_deferral", {}).get("reason", "")
+        ok_h, why = r.human_message(reason)
+        r.check(f"{pattern}: 지식에 조치 후보 없음(판단 엔진) → 다시 평가해도 지어내지 않고 보류 · 사람 글", state == "stuck" and bool(again) and ok_h,
+                f"{state} {ai_s:.0f}초 · {why}", kind="exception", seconds=ai_s)
+        if again:
+            r.api("POST", f"{r.process}/api/todolist/{again['id']}/close", {"by": "user:lee-prod", "reason": "수업 지식에 펌프 조치가 없어 닫음"})
+        return
     r.check(f"{pattern}: AI 4단계 → 조치 선택 차례", state == "ready", f"{state} {ai_s:.0f}초", seconds=ai_s)
     if state != "ready":
-        r.page.click("#btnReset") if r.page.locator("#btnReset").count() else None
         return
     dec = _c_decision(r, view)
     card = _c_card(dec)
