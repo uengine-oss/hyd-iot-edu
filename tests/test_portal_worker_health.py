@@ -18,3 +18,11 @@ def test_alert_route_table_names_business_and_trip_patterns_in_korean():
     label = re.search(r"const PATTERN_LABEL = \{(.*?)\};", app, re.S).group(1)
     for code in ("PM_DUE", "SPARE_BELOW_MIN", "LOW_PRESSURE_TRIP", "HIGH_VIBRATION_TRIP", "OIL_ANALYSIS"):
         assert re.search(code + r": '[가-힣]", label), code
+
+
+def test_ask_screen_names_the_agents_servers_not_as_tool_ids():
+    """2026-10-25 수업 한 바퀴: 질문 화면의 에이전트 도구 칩이 「도구 표시 이름 미등록」(서버 이름을 도구 id 용 UI.toolName 에 넣음)."""
+    ask = (LAYERS.parent / "ask.js").read_text(encoding="utf-8")
+    line = next(l for l in ask.splitlines() if "const tools = a.tools.length" in l)
+    assert "serverLabel(t)" in line and "UI.toolName" not in line
+    assert "serverName" in (LAYERS.parent / "agents.js").read_text(encoding="utf-8").split("window.hydAgents = {")[1].split("}")[0]

@@ -100,3 +100,10 @@ def test_b_and_c_seeds_carry_the_reviewed_policies_their_agents_need():
     assert scopes == {"SOP-PM-11": "single", "SOP-PM-12": "single", "SOP-PM-13": "single", "SOP-PM-14": "bundle"}
     for sop in ("SOP-PUR-11", "SOP-PUR-12", "SOP-PUR-13"):
         assert purchase_comparison.policy(pr[sop]["purchase_comparison_policy"])["loss_per_failure"] == 250
+
+
+def test_pm02_seed_has_the_pump_cause_evidence_the_manual_defines():
+    """2026-10-25 수업 한 바퀴: 증거 0개 검토본으로 펌프 내부 누설 진단이 [다시 평가] 뒤에도 보류했다(원문 PM-2.10 의 PS1 · FS1 기준)."""
+    ev = {e["cause"]: e for e in json.loads((ROOT / "it/neo4j/class-knowledge/PM-02.json").read_text(encoding="utf-8"))["knowledge"]["evidence"]}
+    assert (ev["cause:pump-shaft-seal-wear"]["tag"], ev["cause:pump-shaft-seal-wear"]["threshold"]) == ("PS1", 165)
+    assert (ev["cause:hydraulic-oil-contamination"]["tag"], ev["cause:hydraulic-oil-contamination"]["threshold"]) == ("FS1", 8.0)

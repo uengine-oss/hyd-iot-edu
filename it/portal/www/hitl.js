@@ -634,7 +634,9 @@
           option.textContent = UI.dateTime(run.start_date) + ' · ' + UI.status(run.status);
           select.append(option);
         }
-        const chosen = r.extraction?.instance || extractionState()?.instance;
+        // 방금 접수한 작업(이 브라우저의 요청 기록)을 먼저 고른다 — 2026-10-25: 결과를 연 뒤 다시 [에이전트 추출 요청]을 누르면 목록이 옛 작업을
+        // 고른 채로 남아 [결과 확인]이 옛 결과를 새 결과처럼 보였다
+        const chosen = extractionState()?.instance || r.extraction?.instance;
         if (chosen && Array.from(select.options).some(o => o.value === chosen)) select.value = chosen;
         else if (!select.value && select.options.length > 1) select.selectedIndex = 1;
         extractionOffset = page.next_offset;

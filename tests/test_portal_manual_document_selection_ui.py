@@ -133,3 +133,18 @@ def test_extracted_knowledge_is_reviewable_and_excluded_items_are_not_committed(
     page.wait_for_function("() => document.querySelector('#manualMsg').textContent.length > 0")
     rules = [x['id'] for x in sent['body']['knowledge']['rules']]
     assert rules == ['rule:remote-auto-only'] and [c['id'] for c in sent['body']['knowledge']['causes']] == ['cause:cooler-fin-fouling']
+
+
+def test_a_new_extraction_request_is_the_selected_run_not_the_one_already_opened(page):
+    """결과를 연 문서(preview.extraction = 옛 작업)에서 다시 추출을 요청하면, 목록은 방금 접수한 작업을 골라야 한다."""
+    setup_selection(page)
+    page.route('**/extractions?offset=0', lambda r: r.fulfill(json={'items': [
+        {'proc_inst_id': 'run-new', 'start_date': '2026-10-25T10:00:00Z', 'status': 'RUNNING'},
+        {'proc_inst_id': 'run-old', 'start_date': '2026-10-25T09:00:00Z', 'status': 'COMPLETED'}], 'next_offset': None}))
+    page.evaluate("""() => { sessionStorage.setItem('hyd.manual.extraction.s1', JSON.stringify({request_id: 'x', instance: 'run-new'}));
+      const a = {source_id:'s1', page:1, start:0, end:1, quote:'q'};
+      manualSelectionTest.H.preview = {filename:'HM-8.md', chars:1, status:'READY', source_id:'s1', document_id:'d1', batch:'b1', warnings:[],
+        extraction:{instance:'run-old'}, sections:[{ref:'A', title:'t', excerpt:'', anchor:a}], procedures:[], knowledge:{}};
+      manualSelectionTest.render(); }""")
+    page.wait_for_function("() => document.querySelector('#manualExtractionRuns').options.length > 2")
+    assert page.locator('#manualExtractionRuns').input_value() == 'run-new'

@@ -458,7 +458,7 @@
     render();
     load();
   }
-  window.hydAgents = { mount };
+  window.hydAgents = { mount, serverName };
 
   // 지금 셸: 사이드바 "AI 에이전트"로 화면이 열릴 때마다 다시 읽는다 (U7 셸은 mount 를 직접 부른다)
   const host = document.getElementById('agentsView');
