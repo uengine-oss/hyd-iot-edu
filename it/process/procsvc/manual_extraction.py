@@ -203,6 +203,13 @@ def validate_proposal(source, proposal, *, segment=False):
             if others:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
                                  "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
+        if isinstance(p.get('link'), dict):
+            # 2026-10-25 수업 한 바퀴(final3): 정책(2.8) 안의 인용은 좌표를 채우지 않아 적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다
+            for key, subs in (('maintenance_policy', ('anchor', 'model_anchor')), ('purchase_comparison_policy', ('anchor',))):
+                policy = p['link'].get(key)
+                for sub in subs if isinstance(policy, dict) else ():
+                    if policy.get(sub) is not None:
+                        anchor(policy[sub])
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:

@@ -332,3 +332,20 @@ def test_owned_keys_come_from_the_journal_snapshot():
     snap = {'nodes': [{'labels': ['FailureMode'], 'props': {'id': 'fm:x'}}, {'labels': ['Skill'], 'props': {'id': 'skill:a', '_manual_document': 'd'}}]}
     assert manual_graph.owned_keys(snap) == [('FailureMode', 'fm:x'), ('Skill', 'skill:a')]
     assert manual_graph.owned_keys(None) == []
+
+
+def test_policy_anchors_inside_extraction_links_get_located(archive):
+    """2026-10-25 수업 한 바퀴(final3): 지시 2.8의 정책 인용(maintenance_policy.anchor · model_anchor)은 좌표를 채우지 않아
+    적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다 — 다른 인용처럼 서버가 원문에서 찾아 채운다."""
+    import json
+    source, prop = load(archive, 'B')
+    seed = json.loads((fx.ROOT / 'it/neo4j/class-knowledge/PM-02.json').read_text(encoding='utf-8'))
+    policy = copy.deepcopy(seed['links']['SOP-PM-11']['maintenance_policy'])
+    for key in ('anchor', 'model_anchor'):
+        policy[key] = {'source_id': source['source_id'], 'quote': policy[key]['quote']}       # AI 가 낸 꼴: 인용 글만
+    proc = next(p for p in prop['procedures'] if p['id'] == 'SOP-PM-11')
+    proc['link'] = dict(proc.get('link') or {}, maintenance_policy=policy)
+    checked = manual_extraction.validate_proposal(source, prop)
+    got = next(p for p in checked['procedures'] if p['id'] == 'SOP-PM-11')['link']['maintenance_policy']
+    for key in ('anchor', 'model_anchor'):
+        assert type(got[key]['page']) is int and type(got[key]['start']) is int and got[key]['end'] > got[key]['start'], got[key]
