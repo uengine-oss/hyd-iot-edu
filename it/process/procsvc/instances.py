@@ -355,6 +355,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         current = self.repo.deployed_version(def_id, self.tenant_id)
         if current == version:
             raise ValueError(f'{def_id}@{version}은 이미 운영 판본입니다')
+        if not class_flow and any(h['id'] == def_id and h.get('class_flow') for h in self.repo.deployed_heads(self.tenant_id)):
+            # 표시 없이 바꾸면 수업 흐름이 학생 흐름이 되어 [기준 흐름으로 되돌리기]가 내린다(2026-10-25 학생 행위 점검)
+            raise ValueError(f'{def_id}은(는) 강사가 배포한 수업 흐름입니다 — 판본은 강사 스크립트(c3_flows.py deploy)로만 바꿉니다. 내 흐름은 다른 흐름 id 로 가져오세요')
         record = self.repo.record_deployment(def_id, version, self.tenant_id, action=action, actor=by.strip(), reason=reason.strip(),
                                              class_flow=bool(class_flow))
         self.hooks.audit('-', by.strip(), {'deploy': 'DEFINITION_DEPLOYED', 'rollback': 'DEFINITION_ROLLED_BACK',

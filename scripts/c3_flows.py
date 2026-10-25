@@ -201,7 +201,7 @@ def export(out: Path) -> int:
 def check_and_deploy(deploy: bool) -> int:
     failed = 0
     for did, (fname, src, mapping) in FLOWS.items():
-        call("POST", "/api/flows/import", {"xml": src, "file_name": fname, "definition_id": did})
+        call("POST", "/api/flows/import", {"xml": src, "file_name": fname, "definition_id": did, "class_flow": True})
         view = call("POST", f"/api/flows/{did}/check", {"mapping": mapping})
         problems = (view.get("check") or view).get("problems") or []
         print(did, "check:", "ok" if not problems else json.dumps(problems, ensure_ascii=False)[:600])

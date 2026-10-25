@@ -33,6 +33,8 @@ class ImportReq(BaseModel):
     definition_id: str | None = None
     # 새 경보 초안에만 적용. None은 기존 센서 기본값, []는 명시적으로 미선택.
     start_patterns: list[str] | None = None
+    # 강사 조립 스크립트(c3_flows.py)만 true — 지금 수업 흐름으로 배포된 흐름 id 를 다시 가져온다.
+    class_flow: bool = False
 
 
 class MappingReq(BaseModel):
@@ -103,6 +105,10 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             store = FlowStore(rt.repo, rt.tenant_id)
             if store.is_protected(def_id):
                 raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다. 다른 흐름 id 를 쓰세요"})
+            # 2026-10-25 학생 행위 점검: 수업 흐름 id 로 가져오면 강사 초안을 덮고, 등록 · 배포하면 수업 흐름 표시가 없는 판본이
+            # 경보를 가져가 [기준 흐름으로 되돌리기]가 그 흐름을 내렸다(B · C 버튼 멈춤). 판정은 지금 배포의 수업 흐름 표시로 한다.
+            if not req.class_flow and any(h['id'] == def_id and h.get('class_flow') for h in rt.repo.deployed_heads(rt.tenant_id)):
+                raise HTTPException(409, {"reason": f"'{def_id}'은(는) 강사가 배포한 수업 흐름 id 입니다 — 내 흐름 id 를 따로 쓰세요(예: my_{def_id.split('_')[-1]})"})
             cat = catalog_of(rt)
             old = store.get_draft(def_id)
             mapping, report = bpmn_import.merge_mapping(parsed, (old or {}).get("mapping"), cat)
