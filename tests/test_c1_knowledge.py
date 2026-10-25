@@ -349,3 +349,22 @@ def test_policy_anchors_inside_extraction_links_get_located(archive):
     got = next(p for p in checked['procedures'] if p['id'] == 'SOP-PM-11')['link']['maintenance_policy']
     for key in ('anchor', 'model_anchor'):
         assert type(got[key]['page']) is int and type(got[key]['start']) is int and got[key]['end'] > got[key]['start'], got[key]
+
+
+def test_incomplete_policy_is_dropped_with_a_warning_instead_of_failing_the_extraction(archive):
+    """2026-10-25 final4: 정기 정비 정책의 키(model_assets · stock_effect)를 하나씩 빠뜨려 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다.
+    불완전한 정책은 빼고 경고로 남긴다(적재 전 검사가 「준비 안 됨」으로 알린다). 맞는 정책은 그대로 둔다."""
+    import json
+    source, prop = load(archive, 'B')
+    seed = json.loads((fx.ROOT / 'it/neo4j/class-knowledge/PM-02.json').read_text(encoding='utf-8'))
+    good = copy.deepcopy(seed['links']['SOP-PM-11']['maintenance_policy'])
+    for key in ('anchor', 'model_anchor'):
+        good[key] = {'source_id': source['source_id'], 'quote': good[key]['quote']}
+    bad = copy.deepcopy(good); bad.pop('model_assets')
+    procs = {p['id']: p for p in prop['procedures']}
+    procs['SOP-PM-11']['link'] = dict(procs['SOP-PM-11'].get('link') or {}, maintenance_policy=good)
+    procs['SOP-PM-12']['link'] = dict(procs['SOP-PM-12'].get('link') or {}, maintenance_policy=bad)
+    checked = manual_extraction.validate_proposal(source, prop)
+    out = {p['id']: p for p in checked['procedures']}
+    assert out['SOP-PM-11']['link'].get('maintenance_policy') and 'maintenance_policy' not in out['SOP-PM-12']['link']
+    assert any('SOP-PM-12: maintenance_policy 정책 제외' in w for w in checked['warnings'])

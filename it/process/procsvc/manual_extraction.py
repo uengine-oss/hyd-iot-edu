@@ -74,7 +74,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
- actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
+ actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE) · 기존 오더 일정 변경(WO_RESCHEDULE)은 그 절차의 SOP ID입니다(null 금지).
  구매 · 발주 절차(구매 기준서 · 재고 규정의 발주 절차)는 고장 조치가 아니므로 link를 이 꼴로 제안하세요:
   {"scope":"purchase","kind":"work_order","executable":true|false,"parts":["원문이 범위로 정한 part:… (ontology_catalog.parts)"],"approver":"role:…",
    "actions":[{"action":"action:purchase-request","value":공급사 id 또는 null}],"supplier_policy":"oem|lowest_approved|fastest_quote 또는 null"}.
@@ -207,11 +207,22 @@ def validate_proposal(source, proposal, *, segment=False):
                                  "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
         if isinstance(p.get('link'), dict):
             # 2026-10-25 수업 한 바퀴(final3): 정책(2.8) 안의 인용은 좌표를 채우지 않아 적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다
-            for key, subs in (('maintenance_policy', ('anchor', 'model_anchor')), ('purchase_comparison_policy', ('anchor',))):
+            # final4: 정책은 키가 많아 AI가 하나씩 빠뜨리고 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다. 정책이 불완전하면 거부하지 않고
+            # 그 정책만 빼고 경고로 남긴다 — 검토 화면 · 적재 전 검사(PM_SCOPE_POLICY_REQUIRED · PURCHASE_COMPARISON_POLICY_REQUIRED)가 「준비 안 됨」으로 보인다
+            from hydcommon import maintenance_policy, purchase_comparison
+            for key, subs, check in (('maintenance_policy', ('anchor', 'model_anchor'), maintenance_policy.policy),
+                                     ('purchase_comparison_policy', ('anchor',), purchase_comparison.policy)):
                 policy = p['link'].get(key)
-                for sub in subs if isinstance(policy, dict) else ():
-                    if policy.get(sub) is not None:
-                        anchor(policy[sub])
+                if policy is None:
+                    continue
+                try:
+                    for sub in subs if isinstance(policy, dict) else ():
+                        if policy.get(sub) is not None:
+                            anchor(policy[sub])
+                    check(policy)
+                except ValueError as exc:
+                    p['link'].pop(key)
+                    proposal['warnings'].append(f"{p['id']}: {key} 정책 제외 — {exc}. 원문의 시행 · 비교 기준을 확인하고 다시 추출하거나 검토본을 쓰세요")
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:
