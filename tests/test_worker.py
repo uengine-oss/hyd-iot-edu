@@ -213,6 +213,24 @@ def test_runner_claims_runs_traces_and_submits_through_the_worker_rpcs(tmp_path)
     assert r.poll_once() == 0                                               # SUBMITTED belongs to the engine now
 
 
+def test_runner_puts_this_runs_process_scope_on_the_judgment_server_connection(tmp_path):
+    """2026-10-25 수업 한 바퀴(final3): 모델이 process_scope 를 옮겨 적다 처리 건 UUID 한 글자를 틀려 판단 등록이 409 — 워커가 이번 실행의
+    값을 hyd-dmn 연결 헤더로 싣는다(dmn-mcp run_scope 가 그 값을 쓴다). 실행 중의 .mcp.json 을 본다(끝나면 헤더는 지워진다)."""
+    repo, inst = _repo()
+    seen = {}
+    answer = '```json\n{"cause": "cause:cooler-fin-fouling", "failure_mode": "fm:cooling-loss", "guide_card": {"recommended": []}}\n```'
+    base = _fake_exec(answer)
+    def fn(provider, request, env):
+        seen.update(json.loads((Path(request.workdir) / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"])
+        yield from base(provider, request, env)
+    r = Runner(_settings(tmp_path), repo, exec_fn=fn, schema_prompt="# s", resolve_provider=lambda pid: object())
+    assert r.poll_once() == 1
+    row = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
+    scope = json.loads(seen["hyd-dmn"]["headers"]["X-HYD-Process-Scope"])
+    assert scope["instance"] == inst["proc_inst_id"] and scope["workitem"] == row["id"] and scope["consumer"]
+    assert "headers" not in seen["neo4j"] and "headers" not in seen.get("enterprise", {})
+
+
 def test_runner_resumes_the_instance_session_for_the_next_task(tmp_path):
     repo, inst = _repo()
     reqs = []
