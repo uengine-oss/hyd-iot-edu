@@ -568,20 +568,23 @@
   // 2026-10-25 수업 한 바퀴: 검토 화면이 절차 · 단계 · 고장 유형 연결만 보이고 AI가 뽑은 원인 · 증거 · 규칙은 보이지 않아 학생이 원문과 대조해
   // 틀린 항목을 뺄 수 없었다(실라버스 4회차 「원인 · 수행 조건 · 규칙을 원문과 비교해 수정 · 제외」). 항목마다 원문 인용과 [제외]를 둔다.
   const KNOW_GROUPS = [['failure_modes', '고장 유형'], ['causes', '원인'], ['evidence', '확인 증거'], ['rules', '규칙']];
-  function manualKnowledgeSummary(group, x) {
-    if (group === 'causes') return `사전 확률 ${x.prior ?? '미정'}${x.failure_mode ? ' · ' + UI.name(x.failure_mode) : ''}`;
-    if (group === 'evidence') return `${x.tag} ${x.aggregate || ''} ${x.window_seconds ?? ''}초 ${({ lt: '<', gt: '>', gte: '≥' })[x.expect] || x.expect} ${x.threshold} → ${UI.name(x.cause)}`;
-    if (group === 'rules') return `${({ SELECT: '후보', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => UI.name(o)).join(', ') : ''}`;
-    return (x.symptoms || []).map(y => UI.name(y)).join(', ');
+  function manualKnowledgeSummary(group, x, own) {
+    // 이 문서에서 새로 나온 고장 유형 · 원인은 아직 카탈로그에 없다 — 제안 안의 이름을 먼저 쓴다(내부 id 를 화면에 내지 않는다)
+    const name = id => own[id] || UI.name(id);
+    if (group === 'causes') return `사전 확률 ${x.prior ?? '미정'}${x.failure_mode ? ' · ' + name(x.failure_mode) : ''}`;
+    if (group === 'evidence') return `${x.tag} ${x.aggregate || ''} ${x.window_seconds ?? ''}초 ${({ lt: '<', gt: '>', gte: '≥' })[x.expect] || x.expect} ${x.threshold} → ${name(x.cause)}`;
+    if (group === 'rules') return `${({ SELECT: '후보', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => name(o)).join(', ') : ''}`;
+    return (x.symptoms || []).map(y => name(y)).join(', ');
   }
   function manualKnowledgeHtml(r, citation) {
     const k = r.knowledge || {};
     const groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
     if (!groups.length) return '';
+    const own = Object.fromEntries(KNOW_GROUPS.flatMap(([g]) => (k[g] || []).filter(x => x && x.id && x.name).map(x => [x.id, x.name])));
     return `<h3>추출한 지식 후보</h3><p class="muted">고장 유형 · 원인 · 확인 증거 · 규칙을 원문 인용과 대조하세요. 원문과 다르거나 근거가 없는 항목은 [제외]를 고르면 적재하지 않습니다.</p>` +
       groups.map(([g, title]) => `<div class="mknow"><h4>${esc(title)} ${(k[g] || []).length}</h4>${k[g].map(x => `<div class="msec">
         <label class="check"><input type="checkbox" data-know-drop="${esc(g)}" value="${esc(x.id)}"> 제외</label> <b>${esc(x.name || x.annotation || x.id)}</b>
-        <div class="muted">${esc(manualKnowledgeSummary(g, x))}</div>${citation(x.anchor)}</div>`).join('')}</div>`).join('');
+        <div class="muted">${esc(manualKnowledgeSummary(g, x, own))}</div>${citation(x.anchor)}</div>`).join('')}</div>`).join('');
   }
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
@@ -634,7 +637,9 @@
           option.textContent = UI.dateTime(run.start_date) + ' · ' + UI.status(run.status);
           select.append(option);
         }
-        const chosen = r.extraction?.instance || extractionState()?.instance;
+        // 방금 접수한 작업(이 브라우저의 요청 기록)을 먼저 고른다 — 2026-10-25: 결과를 연 뒤 다시 [에이전트 추출 요청]을 누르면 목록이 옛 작업을
+        // 고른 채로 남아 [결과 확인]이 옛 결과를 새 결과처럼 보였다
+        const chosen = extractionState()?.instance || r.extraction?.instance;
         if (chosen && Array.from(select.options).some(o => o.value === chosen)) select.value = chosen;
         else if (!select.value && select.options.length > 1) select.selectedIndex = 1;
         extractionOffset = page.next_offset;

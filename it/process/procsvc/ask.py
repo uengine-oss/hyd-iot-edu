@@ -384,6 +384,9 @@ def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
            'link': f"#/instances/{inst['proc_inst_id']}" + (f"/task/{wi['id']}" if wi else ''), 'result': None}
     if state == 'done':
         out['result'] = verdict((wi or {}).get('output'), calls)
+        if out['result'].get('kind') == 'unanswerable':
+            # 2026-10-25 수업 한 바퀴: 답하지 못한 질문의 머리말이 「답이 나왔습니다」였다(아래 카드는 「답할 수 없음」)
+            out['message'] = '답할 수 없음 — 아래 이유를 확인하세요'
     if state == 'waiting' and worker_probe is not None:
         age = _age_s((wi or {}).get('start_date') or inst.get('start_date'), now)
         if age is not None and age >= WAIT_PROBE_AFTER_S:

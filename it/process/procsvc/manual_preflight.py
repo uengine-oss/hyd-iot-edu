@@ -173,11 +173,15 @@ def validate(proposal, catalog):
         if isinstance(raw_link, dict) and raw_link.get('scope') == 'purchase':
             explicit = raw_link.get('executable') if type(raw_link.get('executable')) is bool else None
             own_issues = [i for i in issues if i.get('sop') == p['id']]
+            if explicit is True and not raw_link.get('purchase_comparison_policy'):
+                # 2026-10-25 수업 한 바퀴: 정책 없는 PR-07 개정을 적재하자 C 판단이 「검토된 원문 정책이 없습니다」로 보류됐다(agentsvc cards → compare)
+                own_issues.append(dict(code='PURCHASE_COMPARISON_POLICY_REQUIRED', sop=p['id'], field='link.purchase_comparison_policy',
+                                       message='실제 구매 판단에는 원문의 총비용 비교 기준(불량 1건 손실 · 전수 검사 기준 · 비용) 정책이 필요합니다'))
             if issues and not own_issues:
                 own_issues = [dict(code='BATCH_NOT_READY',sop=p['id'],field='validation',
                                    message='같은 제안의 지식·규칙 또는 다른 절차 검사 오류가 남아 있습니다')]
             execution.append(dict(sop=p['id'], executable=explicit,
-                                  ready=explicit is True and not issues, issues=own_issues,
+                                  ready=explicit is True and not issues and not own_issues, issues=own_issues,
                                   evaluation_mode='structural', execution_checked=False,
                                   source_notice='구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다.'))
     result = dict(checked=True, technical_ready=not issues, needs_human_review=True, can_commit=False, issues=issues)

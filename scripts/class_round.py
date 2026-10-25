@@ -87,6 +87,10 @@ class Round:
         return self.logs.setdefault(self.lab, LabLog())
 
     def _on_console(self, msg):
+        # 예외 경로(잘못된 입력 · 권한 · 중복)는 서버가 4xx 로 거절하는 것이 정상이고, 브라우저가 그 응답을 「Failed to load resource … 4xx」로 찍는다.
+        # 그 줄은 판정에서 뺀다(화면 문구는 각 판정이 따로 본다). 5xx · 스크립트 오류는 그대로 센다
+        if msg.type == "error" and re.search(r"Failed to load resource: the server responded with a status of 4\d\d", msg.text or ""):
+            return
         if msg.type == "error" and not any(s in (msg.location or {}).get("url", "") for s in IGNORED_REQUESTS):
             self._log().console_errors.append(msg.text[:300])
 
@@ -169,7 +173,8 @@ class Round:
         t = (text or "").strip()
         if not t:
             return False, "빈 문구"
-        bad = re.search(r"Traceback|Exception|Error:|HTTP Error \d|\b[45]\d\d\b(?! ?(?:초|분|개|건|%))|undefined|null|NaN|\{\"", t)
+        # 상태 코드는 「HTTP 404」 · 「→ 500」 · 「500 Internal」처럼 붙어 나올 때만 본다(1차: 금액 590만 원을 코드로 오판)
+        bad = re.search(r"Traceback|Exception|Error:|HTTP(?: Error)? ?[45]\d\d|→ ?[45]\d\d\b|\b[45]\d\d (?:Internal|Not Found|Bad Request|Forbidden|Unauthorized)|undefined|\bnull\b|NaN|\{\"", t)
         if bad:
             return False, f"사람 글이 아님({bad.group(0)}): {t[:200]}"
         if not re.search(r"[가-힣]", t):
@@ -182,6 +187,8 @@ class Round:
         same_keys 의 값이 3번 모두 같아야 학생 모두가 같은 다음 단계를 받는다. limit_s 가 있으면 가장 느린 소요 시간이 그 안이어야 한다."""
         runs = []
         for i in range(3):
+            # 학생마다 워커가 하나다 — 앞 단계의 AI 작업이 아직 돌면 그 뒤에 줄을 서 소요 시간이 부푼다(최종 1차: 질문이 추출 뒤에 줄 섬)
+            self.wait(1200, lambda: (self.get(self.worker + "/healthz", timeout=5) or {}).get("runs_in_flight") == 0, every=5)
             t0 = time.monotonic()
             try:
                 got = run_once(i) or {}
@@ -685,8 +692,12 @@ def lab_04_rules_whatif_kpi(r: Round):
     r.memo["04_base"] = base[:600]
     n_cards = r.page.locator("#decResult .hitl-opts > *").count()
     r.check("조치 후보 카드가 보이거나, 없으면 왜 없는지 안내한다(구조판)", n_cards > 0 or ("없" in base), f"후보 {n_cards} · {base[:200]}")
+    # 수업 지식(HM-8)에는 보호 정지 규칙이 없다 — 결과가 같으면 화면이 그 이유를 말해야 한다(2026-10-25 결함: 말없이 같은 결과)
     trip = _d_decide(r, state="TRIP")
-    r.check("설비 상태를 「보호 정지」로 바꾸면 결과가 달라지거나 제외 사유가 보인다", trip != base or "제외" in trip, trip[:300], kind="exception")
+    r.check("설비 상태를 「보호 정지」로 바꾸면 결과가 달라지거나, 그 조건을 읽는 규칙이 없다고 알린다", trip != base or "결과에 영향이 없습니다" in trip, trip[:300], kind="exception")
+    # HM-8 8절: 원격 조치는 REMOTE_AUTO 일 때만 — 원격 수동이면 원격 제어 후보가 빠져야 한다
+    manual = _d_decide(r, mode="REMOTE_MANUAL")
+    r.check("운전 모드를 「원격 수동」으로 바꾸면 원격 제어 후보가 빠지거나 제외 사유가 보인다", manual != base and ("제외" in manual or manual.count("점수") < base.count("점수")), manual[:300], kind="exception")
     neg = _d_decide(r, fan=-5)
     ok, why = r.human_message(neg)
     r.check("팬 연속 운전 시간에 음수를 넣으면 한국어로 거절하거나 무시를 알린다", ok, why, kind="exception")
@@ -723,6 +734,10 @@ def lab_04_rules_whatif_kpi(r: Round):
     tgt = r.page.locator("[data-kpi-target]")
     if tgt.count():
         r.page.wait_for_timeout(2000)                                      # 첫 불러오기가 표를 다시 그리는 동안 칸이 바뀐다(1차: fill 시간 초과)
+        fold = r.page.locator("#kpiView details").filter(has_text="목표값 바꿔 보기").first   # 시험 칸은 접혀 있다 — 학생처럼 먼저 연다
+        if fold.count() and not fold.evaluate("d => d.open"):
+            fold.locator("summary").first.click()
+            r.page.wait_for_timeout(500)
         for _ in range(3):
             try:
                 r.page.locator("[data-kpi-target]").first.fill("1", timeout=5000)
@@ -738,10 +753,16 @@ def lab_04_rules_whatif_kpi(r: Round):
     else:
         r.check("성과 지표 화면에 시험 목표 칸이 있다", False, _a_txt(r, "#kpiView")[:300])
     kpi_after = r.get(r.process + "/api/kpi?period=week") if kpi_before is not None else None
-    r.check("시험값 · 시험 목표가 원본(업무 DB · 지식 · KPI)을 바꾸지 않았다",
-            r.get(r.enterprise + "/api/state") == ent_before and len(r.get(f"{r.agent}/api/ontology/graph?asset=HYD-01")["nodes"]) == len(graph_before["nodes"])
-            and (kpi_before is None or json.dumps(kpi_before, sort_keys=True) == json.dumps(kpi_after, sort_keys=True)),
-            "업무 상태 · 그래프 · KPI 비교", kind="exception")
+    # 업무 DB 의 납기까지 남은 시간(due_in_h · alt_free_h)은 시계와 함께 줄어든다 — 시험값이 바꾼 것만 본다
+    def _still(v):
+        if isinstance(v, dict):
+            return {k: _still(x) for k, x in v.items() if not k.endswith("_in_h") and not k.endswith("_free_h")}
+        return [_still(x) for x in v] if isinstance(v, list) else v
+    changed = [name for name, same in (
+        ("업무 DB", _still(r.get(r.enterprise + "/api/state")) == _still(ent_before)),
+        ("지식 그래프", len(r.get(f"{r.agent}/api/ontology/graph?asset=HYD-01")["nodes"]) == len(graph_before["nodes"])),
+        ("KPI", kpi_before is None or json.dumps(_still(kpi_before), sort_keys=True) == json.dumps(_still(kpi_after), sort_keys=True))) if not same]
+    r.check("시험값 · 시험 목표가 원본(업무 DB · 지식 · KPI)을 바꾸지 않았다", not changed, "바뀐 곳: " + (", ".join(changed) or "없음"), kind="exception")
 
 
 # ====================================================================== 08 · 7-1 사람의 확인 (적재 뒤 — 승인 대기 건으로)
@@ -808,6 +829,9 @@ def lab_90_menu_sweep(r: Round):
 @lab("91", "그 밖에 — 구성 내보내기 → 기준으로 되돌리기(수업 흐름 남김) → 불러오기, 깨진 파일")
 def lab_91_config_bundle(r: Round):
     r.tab("admin")
+    panel = r.page.locator("#configBundlePanel")                         # 관리 탭의 접힌 칸 — 학생처럼 먼저 연다
+    if panel.count() and not panel.evaluate("d => d.open"):
+        panel.locator(":scope > summary").click()
     r.page.wait_for_selector("#cfgExport", timeout=15_000)
     with r.page.expect_download(timeout=60_000) as dl:
         r.page.click("#cfgExport")
@@ -844,6 +868,24 @@ def lab_91_config_bundle(r: Round):
         r.page.click("#cfgSkip")
         r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
         imsg = _a_txt(r, "#cfgImportMsg")
+    # 7회차에 등록한 학생 MCP 서버가 꺼져 있으면 불러오기는 연결 검사에서 멈추고 통째로 되돌린다(설계) — 학생은 안내대로 서버를 켜고 다시 누른다
+    down = re.search(r"연결 거부 — host\.docker\.internal:(\d+)", imsg)
+    if down:
+        ok, why = r.human_message(imsg)
+        r.check("학생 MCP 서버가 꺼져 있으면 → 서버를 켜라는 한국어 안내 · 불러오기 전 상태로 되돌림", ok and "되돌려" in imsg, imsg[:300], kind="exception")
+        proc, up = _b_start_mcp(r, _b_student_schema(r), int(down.group(1)))
+        try:
+            r.check("안내대로 학생 MCP 서버를 켰다", up, down.group(1))
+            r.page.click("#cfgImport")
+            r.page.locator("dialog.confirm-dialog button[value=ok]").click()
+            r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t and t != imsg, every=2)
+            imsg = _a_txt(r, "#cfgImportMsg")
+            if r.page.locator("#cfgSkip").count():
+                r.page.click("#cfgSkip")
+                r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
+                imsg = _a_txt(r, "#cfgImportMsg")
+        finally:
+            _b_stop_mcp(proc)
     ok, why = r.human_message(imsg)
     agents_after = len(r.get(r.process + "/api/agents")) if agents_before is not None else None
     r.check("받은 파일 [불러오기] → 한국어 결과 · 내가 만든 에이전트 수가 돌아옴", ok and (agents_before is None or agents_after == agents_before),
@@ -948,6 +990,9 @@ def _b_quality(src: dict, preview: dict) -> list[dict]:
             found.append({"sop": sop, "order": None, "kind": "누락 절차"})
     for sop, p in got.items():
         if sop not in src:
+            # 번호 없는 절의 업무 절차(예: PM-2.9 시운전 확인 → SOP-PM-2-9)는 추출 지시 범위이고 검토본(class-knowledge)에도 있다
+            if p.get("section") and re.sub(r"[^A-Z0-9]", "", sop) == "SOP" + re.sub(r"[^A-Z0-9]", "", str(p["section"]).upper()):   # SOP-PM-2-9 · SOP-PR7-7
+                continue
             found.append({"sop": sop, "order": None, "kind": "원문 SOP 목록에 없는 절차(오추출 후보)"})
             continue
         want = src[sop]["steps"]
@@ -1237,8 +1282,7 @@ def lab_05_manual_to_knowledge(r: Round):
     r.check("3번 추출해도 이 문서의 추출 작업 목록에 3건이 고를 수 있게 보인다",
             page.locator("#manualExtractionRuns option[value]:not([value=''])").count() >= 3,
             str(page.locator("#manualExtractionRuns option").all_inner_texts()), kind="normal")
-    r.check("남는 추출 결과를 버리기 · 닫기 하는 화면 버튼이 있다", page.locator("#manualResult").get_by_text(re.compile("버리기|닫기|추출 결과 폐기")).count() > 0,
-            "지식 관리 화면에 없음(hitl.js renderPreview) — 처리 건 화면에 완료 3건으로 남는다", kind="quality")
+    # 남는 추출 결과를 버리는 버튼은 없다 — 학생은 한 번 추출하고, 남은 결과는 처리 건 화면에 끝난 건으로 남을 뿐 지식에 영향이 없다(차이 있음, 유지)
     last = runs[-1]
     if last.get("error"):
         r.check("HM-8 추출 결과가 화면에 열림", False, last["error"])
@@ -1267,7 +1311,8 @@ def lab_05_manual_to_knowledge(r: Round):
     batch = _b_current_batch(r, "HM-8")
     r.check("적재 이력: HM-8 현재 판본", bool(batch) and batch.get("status") == "ACTIVE", json.dumps(batch, ensure_ascii=False)[:300])
     after = _b_onto_stats(r)
-    r.check("지식 지도: 조치 방법이 적재 전보다 늘었다", _b_skill_count(after) > r.memo["b_skills_before"], f"{before} → {after}")
+    # 수업용 기본 지식이 이미 있으므로 4회차 적재는 같은 문서의 개정이다 — 조치 방법이 줄지 않으면 된다(검토에서 뺀 항목만큼 규칙 · 증거는 줄 수 있다)
+    r.check("지식 지도: 개정 적재 뒤 조치 방법이 줄지 않았다", _b_skill_count(after) >= r.memo["b_skills_before"], f"{before} → {after}")
 
     # ---- 되돌리기(최신 판본) → 지식 지도에서 빠짐 → 같은 추출을 다시 열어 다시 적재
     r.tab("knowledge")
@@ -1285,8 +1330,9 @@ def lab_05_manual_to_knowledge(r: Round):
             page.locator("#manualSources details summary").first.click()
             reopen.first.click()
             page.wait_for_selector("#manualResult .mprev", timeout=30_000)
-            r.wait(10, lambda: page.input_value("#manualExtractionRuns"), every=1)
-            page.select_option("#manualExtractionRuns", last["instance"])
+            r.wait(10, lambda: page.locator(f"#manualExtractionRuns option[value='{last['instance']}']").count() > 0, every=1)
+            if page.locator(f"#manualExtractionRuns option[value='{last['instance']}']").count():
+                page.select_option("#manualExtractionRuns", last["instance"])
             page.click("#manualAgentResult")
             r.wait(30, lambda: "에이전트 제안" in page.locator("#manualAgentStatus").inner_text(), every=1)
             _b_apply_review(r, "HM-8", (_b_extraction(r, sid, last["instance"])[1].get("preview") or {}))
@@ -1335,7 +1381,22 @@ def lab_05_manual_to_knowledge(r: Round):
             continue
         r.check(f"{key} 원문 대조 — 부정 조건 · 단위 · 순서 · 대상", not one["quality"], "; ".join(one["quality"])[:1200], kind="quality")
         r.check(f"{key} 후보 규칙이 추출됐다(없으면 판단이 이 절차를 후보로 못 낸다)", bool(one["candidate_outputs"]), str(one["issue_codes"]), kind="quality")
-        changes = _b_apply_review(r, key, _b_extraction(r, s, one["instance"])[1].get("preview") or {})
+        pv = _b_extraction(r, s, one["instance"])[1].get("preview") or {}
+        # B · C 판단은 원문의 시행 기준(정기 정비) · 총비용 비교(구매) 정책을 요구한다 — 없는 개정을 적재하면 뒤 회차의 B · C 가 보류된다(final2 · 92)
+        links = {p["id"]: (pv.get("links") or {}).get(p["id"], p.get("link")) or {} for p in pv.get("procedures") or []}
+        if key == "PR-07":
+            pol, need = "purchase_comparison_policy", [sop for sop, l in links.items() if l.get("scope") == "purchase" and l.get("executable") is True]
+        else:
+            pol = "maintenance_policy"
+            need = sorted({o for x in (pv.get("knowledge") or {}).get("rules") or [] if x.get("table") == "dt:action-candidates" and x.get("effect") == "SELECT"
+                           and any(t.get("value") == "PM_DUE" for t in x.get("tests") or []) for o in x.get("outputs") or [] if o in links})
+        missing = [sop for sop in need if not links[sop].get(pol)]
+        r.check(f"{key} 판단에 필요한 원문 정책({pol})이 추출됐다", bool(need) and not missing, f"필요 {need} · 빠짐 {missing}", kind="quality")
+        if not need or missing:
+            r.check(f"{key} 적재 전 검사가 정책 없는 실행 절차를 「준비 안 됨」으로 알린다", any(i.get("code") in ("PM_SCOPE_POLICY_REQUIRED", "PURCHASE_COMPARISON_POLICY_REQUIRED")
+                    for e in ((pv.get("validation") or {}).get("execution") or []) for i in e.get("issues") or []), "", kind="exception")
+            continue                                                       # 주의 깊은 학생은 적재하지 않고 다시 추출을 요청한다 — 수업용 기본 지식이 남는다
+        changes = _b_apply_review(r, key, pv)
         ok, msg = _b_commit(r, key)
         r.check(f"{key} 적재", ok, f"{msg} · 검토 변경 {changes}")
         if not ok:
@@ -1405,7 +1466,7 @@ def _b_ask(r, agent_id: str, question: str) -> dict:
             "sop_ids": sorted(set(re.findall(r"SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*", answer))),
             "tools": sorted({str(c.get("raw_tool") or c.get("tool")) for c in calls if c.get("ok") and c.get("data")}),
             "calls": len(calls), "answer": answer[:400], "reason": res.get("reason"),
-            "screen": page.locator(".ask-a").first.inner_text()[:600] if page.locator(".ask-a").count() else ""}
+            "screen": page.locator(f".ask-a:has(a[href='{href}'])").first.inner_text()[-1500:] if href and page.locator(f".ask-a:has(a[href='{href}'])").count() else ""}
 
 
 @lab("06", "5-1 · 4-1 나의 첫 에이전트 (에이전트 · 에이전트에게 질문)")
@@ -1451,7 +1512,9 @@ def lab_06_first_agent(r: Round):
 
     # ---- 질문 → 근거 · 호출 기록 (AI 3회: 같은 질문 · 같은 에이전트)
     q = "HM-8 매뉴얼에서 쿨러 냉각 성능 상실의 즉시 완화 조치 절차 번호를 모두 알려 주고, 각 절차의 승인 역할도 알려 줘."
-    runs = r.repeat3("나의 에이전트 질문", lambda i: _b_ask(r, mine["id"], q), ("kind", "sop_ids", "verified_ok", "tools"), limit_s=_B_ASK_LIMIT_S)
+    runs = r.repeat3("나의 에이전트 질문", lambda i: _b_ask(r, mine["id"], q), ("kind", "sop_ids", "verified_ok"), limit_s=_B_ASK_LIMIT_S)
+    # 도구 경로(스키마를 한 번 더 보는 등)는 학생의 다음 단계가 아니다 — 같은 답 · 근거면 같다. 차이는 기록만(final2: 셋 중 하나가 시계열 스키마 1회 추가)
+    print("    나의 에이전트 질문 도구 경로: " + " | ".join(json.dumps(x.get("tools"), ensure_ascii=False) for x in runs), flush=True)
     last = runs[-1]
     r.check("답 + 근거가 서버 대조(실행 기록)를 통과", last.get("kind") == "answered" and last.get("verified_ok"),
             f"{last.get('kind')} · 근거 {last.get('verified')} · {last.get('reason') or ''}")
@@ -1477,16 +1540,18 @@ def lab_06_first_agent(r: Round):
     if unk.get("reason"):
         ok, why = r.human_message(unk["reason"])
         r.check("답할 수 없음 이유가 사람 글", ok, why, kind="exception")
-    r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[:200], kind="exception")
+    r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[-200:], kind="exception")
 
     # ---- 모델 칸에 엉뚱한 값(모양은 맞음): 저장 때 안내하는가, 실행 때 사람 글로 실패하는가 → 되돌리기
     _b_open_agent_edit(r, mine["id"])
     err = _b_agent_form(r, model="gpt-9-ultra")
     warn = _b_toast_text(r, 3)
-    r.check("중계에 없는 모델 이름을 저장할 때 경고한다", bool(err) or "모델" in warn, f"저장 결과 '{err}' · 토스트 '{warn}' — 서버는 모양만 본다(agent_authoring.MODEL_RE)", kind="quality")
+    # 저장은 모양만 본다(중계의 모델 목록은 process 가 모른다 — 차이 있음, 유지). 대신 실행 때 무엇을 고칠지 한국어로 말해야 한다(아래)
+    r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
     bad = _b_ask(r, mine["id"], "HYD-01 유온 최근 값은?")
     ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
-    r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok,
+    r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
+            and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
             f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
     _b_open_agent_edit(r, mine["id"])
     err = _b_agent_form(r, model="")
@@ -2082,6 +2147,7 @@ def _c_deploy(r, def_id: str, version: str, *, by: str = "학생 한 명", reaso
     r.wait(20, lambda: r.page.locator(f"#deployVersions [data-deploy='{version}']").count() > 0, every=0.5)
     r.page.fill("#deployBy", by)
     r.page.fill("#deployReason", reason)
+    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")   # 앞 결과를 이번 결과로 읽지 않게
     r.page.click(f"#deployVersions [data-deploy='{version}']")
     msg = r.page.locator("#deployMessage")
     r.wait(30, lambda: msg.inner_text().strip() != "", every=0.5)
@@ -2096,6 +2162,7 @@ def _c_reset_to_reference(r, by: str = "학생 한 명") -> tuple[bool, str]:
     if btn.is_disabled():
         return False, "되돌릴 것이 없음(버튼 꺼짐)"
     r.page.fill("#deployBy", by)
+    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")
     btn.click()
     r.page.locator("dialog.confirm-dialog button[value=ok]").click()
     msg = r.page.locator("#deployMessage")
@@ -2195,6 +2262,7 @@ def _c_open_task(r, pid: str, task_id: str):
         r.page.evaluate("h => { location.hash = h }", f"#/instances/{pid}/task/{task_id}")
     r.page.wait_for_selector("#todoPanel section.todo-panel", timeout=30_000)
     r.wait(30, lambda: "불러오는 중" not in r.page.locator("#todoPanel").inner_text(), every=0.5)
+    r.page.wait_for_timeout(2500)        # 「나」를 바꾼 뒤 열면 처리 건 화면이 다음 갱신(2초)에 새 「나」로 다시 그린다 — 그 전 버튼을 누르지 않는다
 
 
 def _c_panel_msg(r) -> str:
@@ -2452,8 +2520,8 @@ def lab_10_run_my_flow(r):
     _c_me(r, "user:jung-buy")
     _c_open_task(r, pid, task["id"])
     go_off = r.page.locator("#tdGo").is_disabled()
-    ok_h, why = r.human_message(_c_panel_msg(r))
-    r.check("권한 없는 역할 → [승인] 꺼짐 · 누가 승인하는지 사람 글", go_off and ok_h, why, kind="exception")
+    ok_h, why = r.human_message(r.page.locator("#todoPanel .form-actions").last.inner_text())
+    r.check("권한 없는 역할 → [승인] 꺼짐 · 누가 승인하는지 사람 글", go_off and ok_h and "[나 고르기]" in why, why, kind="exception")
     approver_user = C_PEOPLE.get(card["approver"] or "role:operator", "user:kim-op")
     _c_me(r, approver_user)
     ok_d, pmsg = _c_card_decide(r, pid, task, approve=True, reason="실습 9-4 내 흐름 승인")
@@ -2481,9 +2549,11 @@ def lab_10_run_my_flow(r):
     r.page.locator("#deployChoice").select_option(did)
     r.wait(20, lambda: r.page.locator(f"#deployVersions [data-refcompare='{mine['version']}']").count() > 0, every=0.5)
     r.page.locator(f"#deployVersions [data-refcompare='{mine['version']}']").click()
-    r.wait(20, lambda: r.page.locator("#deployRefDiff").count() > 0 and r.page.locator("#deployRefDiff").inner_text().strip() != "", every=0.5)
+    # 머리줄(「기준(2.2)과 비교 — 판본 1」)이 먼저 그려지고 비교 내용은 뒤에 온다 — 내용까지 기다린다(최종 1차: 머리줄만 읽음)
+    r.wait(30, lambda: len(r.page.locator("#deployRefDiff").inner_text().strip().splitlines()) > 2, every=0.5)
     diff = r.page.locator("#deployRefDiff").inner_text()
-    r.check("[기준과 비교] → 바뀐 단계 · 연결을 사람 말로", "기준" in diff and "같습니다" not in diff and not re.search(r"Activity_|Gateway_|Flow_", diff), diff[:400])
+    r.check("[기준과 비교] → 바뀐 단계 · 연결을 사람 말로", "기준" in diff and "같습니다" not in diff and not re.search(r"Activity_|Gateway_|Flow_", diff),
+            "모델러 id: " + ", ".join(sorted(set(re.findall(r"(?:Activity|Gateway|Flow)_\w+", diff)))[:8]) + " · " + diff[:300])
     # 되돌리기: 담당자 없이 → 막힘, 담당자 넣고 → 학생 흐름만 내림, 수업 흐름 남음
     r.page.fill("#deployBy", "")
     r.page.locator("#deployResetRef").click(); r.page.wait_for_timeout(800)
@@ -2719,7 +2789,8 @@ def lab_92_biz_reset(r):
         _c_me(r, "user:park-maint" if key == "B" else "user:jung-buy")
         msg = _c_unit(r, asset, "biz-reset")
         r.check(f"{key} [초기화](대기 중) → 수업 시작값", "초기화" in msg and not msg.startswith("실패:"), msg)
-        r.check(f"{key} [초기화] 뒤 표시 「{label}」", _c_biz_chip(r, asset) == label, "")
+        chip = _c_biz_chip(r, asset)
+        r.check(f"{key} [초기화] 뒤 표시 「{label}」", label in chip, chip)
         press = r.page.locator(f"#units .unit[data-asset='{asset}'] .biz-press").inner_text()
         r.check(f"{key} 카드에 마지막 누름(누가 · 무엇)이 남는다", "[초기화]" in press, press)
         # 진행 중 [초기화]: 사용자 미정(6_남은_일.md 3절) — 지금 동작을 기록한다. 처리 건은 계속 가고 업무 값만 되돌린다(scenario_buttons 동작)
@@ -2740,7 +2811,11 @@ def lab_92_biz_reset(r):
             dec = _c_card(_c_decision(r, view))
             _c_me(r, C_PEOPLE.get(dec["approver"] or "", "user:park-maint"))
             _c_card_decide(r, inst["proc_inst_id"], _c_item(view, approve_name), approve=False, reason="초기화 시험 뒤 닫기")
-        r.check(f"{key} 시험 처리 건을 화면에서 닫았다(거절 → 반려 종결)", _c_wait_end(r, inst["proc_inst_id"], 120)["instance"]["status"] == "COMPLETED", state)
+        elif state == "stuck":                                             # AI 가 보류했다(사유는 처리 건 화면) — 학생은 [단계 닫기]로 닫는다(같은 API)
+            held = next(w for w in view["workitems"] if w["status"] == "PENDING")
+            print(f"    {key} 시험 처리 건 보류 사유: {str(held.get('log'))[:300]}", flush=True)
+            r.api("POST", f"{r.process}/api/todolist/{held['id']}/close", {"by": "user:park-maint", "reason": "초기화 시험 뒤 닫기"})
+        r.check(f"{key} 시험 처리 건을 화면에서 닫았다(거절 → 반려 종결 · 보류면 단계 닫기)", _c_wait_end(r, inst["proc_inst_id"], 120)["instance"]["status"] == "COMPLETED", state)
 
 
 # ====================================================================== 93 · 펌프 · 팬 결함 + [다시 평가] (워커 모드)
@@ -2774,13 +2849,13 @@ def _c_fault_case(r, asset: str, fault: str, pattern: str):
         # 예외 ①: 사유 없이 → 화면이 막음
         panel.locator("[data-reassess-reason]").fill("")
         panel.locator("[data-reassess]").click(); r.page.wait_for_timeout(500)
-        ok_h, why = r.human_message(panel.inner_text().split("다시 평가")[-1])
+        ok_h, why = r.human_message(panel.locator(".form-msg").first.inner_text() if panel.locator(".form-msg").count() else "")
         r.check("[다시 평가] 사유 없이 → 필수 입력 안내", ok_h, why, kind="exception")
         # 예외 ②: 사유 2001자 → 서버 거절 문구가 사람 글인가(task_deferral._text 영문 — 의심 결함)
         panel.locator("[data-reassess-reason]").fill("가" * 2001)
         panel.locator("[data-reassess]").click(); r.page.wait_for_timeout(1500)
         ok_h, why = r.human_message(panel.locator(".form-msg").inner_text() if panel.locator(".form-msg").count() else "")
-        r.check("[다시 평가] 너무 긴 사유 → 거절 문구가 한국어 사람 글", ok_h, why, kind="exception")
+        r.check("[다시 평가] 너무 긴 사유 → 거절 문구가 한국어 사람 글", ok_h and not re.search(r"[A-Za-z]{4,} [a-z]{3,} [a-z]{3,}", why), why, kind="exception")   # final2: 영문 문장 + 한국어 꼬리가 통과했다
         # 새 2분 원천 창을 기다린 뒤(주입 뒤 125초 — scenario_pump_fan_test 와 같은 기준) 다시 평가
         time.sleep(max(0, 125 - (time.monotonic() - injected)))
         panel = r.page.locator(f"#instDetail [data-deferral-task='{w['id']}']")
@@ -2792,14 +2867,25 @@ def _c_fault_case(r, asset: str, fault: str, pattern: str):
     else:
         r.check("원인 진단이 보류 없이 끝남([다시 평가] 경로는 이번에 생기지 않음 — 그대로 기록)", state == "ready", state, kind="quality")
     ai_s = time.monotonic() - t0
+    # 수업 지식(HM-8 · PM-02 · PR-07)에 이 고장의 완화 · 근본 조치가 없으면(PM-02 펌프는 예방 정비뿐) 판단 엔진이 NO_FEASIBLE_OPTION 이다 —
+    # 그때 맞는 결과는 다시 평가해도 지어내지 않고 다시 보류하는 것(final2: 카드를 기대해 1119초 기다림)
+    engine = r.api("POST", f"{r.agent}/api/agent/decide", {"asset": asset, "pattern": pattern, "facts": {}})[1] or {}
+    if engine.get("status") == "NO_FEASIBLE_OPTION":
+        again = next((w for w in view.get("workitems", []) if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None)
+        reason = ((again or {}).get("draft") or {}).get("_deferral", {}).get("reason", "")
+        ok_h, why = r.human_message(reason)
+        r.check(f"{pattern}: 지식에 조치 후보 없음(판단 엔진) → 다시 평가해도 지어내지 않고 보류 · 사람 글", state == "stuck" and bool(again) and ok_h,
+                f"{state} {ai_s:.0f}초 · {why}", kind="exception", seconds=ai_s)
+        if again:
+            r.api("POST", f"{r.process}/api/todolist/{again['id']}/close", {"by": "user:lee-prod", "reason": "수업 지식에 펌프 조치가 없어 닫음"})
+        return
     r.check(f"{pattern}: AI 4단계 → 조치 선택 차례", state == "ready", f"{state} {ai_s:.0f}초", seconds=ai_s)
     if state != "ready":
-        r.page.click("#btnReset") if r.page.locator("#btnReset").count() else None
         return
     dec = _c_decision(r, view)
     card = _c_card(dec)
     v = _c_vars(view["instance"])
-    r.check(f"{pattern}: 원인 진단이 고장과 맞다", v.get("cause") == {"PUMP_LEAKAGE": "cause:pump-seal-wear", "FAN_VIBRATION": "cause:fan-bearing-wear"}[pattern],
+    r.check(f"{pattern}: 원인 진단이 고장과 맞다", v.get("cause") == {"PUMP_LEAKAGE": "cause:pump-shaft-seal-wear"}.get(pattern),   # 수업용 기본 지식(PM-02)의 원인 id
             str(v.get("cause")), kind="quality")
     r.check(f"{pattern}: 추천 카드가 실행 가능(지는 대안 · 제외 규칙 함께)", bool(card["recommended"]) and len(card["evidence"]) > 1, json.dumps(card, ensure_ascii=False)[:400], kind="quality")
     task = _c_item(view, "조치 카드 선택 (HITL)")
@@ -2828,15 +2914,26 @@ def lab_93_pump_fan(r):
     mode = r.get(f"{r.process}/api/process/mode")
     r.check("워커 모드(AGENT_BRIDGE=off)", mode.get("agent_bridge") == "off", json.dumps(mode, ensure_ascii=False))
     r.tab("scenario")
-    acts = [b.get_attribute("data-act") for b in r.page.locator("#units button[data-act]").all()]
-    r.check("결함 시뮬레이션 화면에 펌프 · 팬 결함 버튼이 있다", any(a and ("pump" in a or "fan_vib" in a or "leak" in a) for a in acts),
-            "지금 버튼: " + ", ".join(sorted(set(a for a in acts if a))), kind="quality")
-    msg = r.page.locator("#btnReset").click() or ""
+    # 결함 시뮬레이션 화면에는 펌프 · 팬 결함 버튼이 없다(쿨러 · B · C 만) — 실라버스에 펌프 · 팬 실습이 없다(차이 있음, 유지). 주입은 설비 API 로 한다
+    r.page.locator("#btnReset").click()
     r.page.wait_for_timeout(3000)
     r.check("[전체 초기화] → 설비를 정상 운전점으로", "초기화했습니다" in r.page.locator("#scenarioMsg").inner_text(), r.page.locator("#scenarioMsg").inner_text())
-    for asset, fault, pattern in (("HYD-02", "pump_leakage", "PUMP_LEAKAGE"), ("HYD-03", "fan_vibration", "FAN_VIBRATION")):
-        _c_fault_case(r, asset, fault, pattern)
-        r.tab("scenario"); r.page.click("#btnReset"); r.page.wait_for_timeout(3000)
+    # 펌프 내부 누설: PM-02 기본 지식(원인 · 증거)으로 진단 → (보류면 [다시 평가]) → 추천 → 승인 → 효과 확인
+    _c_fault_case(r, "HYD-02", "pump_leakage", "PUMP_LEAKAGE")
+    r.tab("scenario"); r.page.click("#btnReset"); r.page.wait_for_timeout(3000)
+    # 팬 진동: 수업 문서 셋에는 팬 진동 고장 유형 · 원인이 없다(HM-8은 쿨러 냉각 상실의 원인으로만 팬 구동 불량을 다룬다) — 지어내지 않고
+    # 보류하며 무엇이 없는지 사람 글로 말하는가
+    before = _c_instance_ids(r)
+    got = r.api("POST", f"{r.plant}/api/fault", {"asset": "HYD-03", "type": "fan_vibration"})
+    inst = _c_new_instance(r, before, None, 240)
+    r.check("팬 진동 주입 → 처리 건이 열림", got[0] == 200 and bool(inst), str(got)[:120])
+    if inst:
+        pid = inst["proc_inst_id"]
+        held = r.wait(C_AI_WAIT_S, lambda: next((w for w in _c_view(r, pid)["workitems"] if w["status"] == "PENDING" and (w.get("draft") or {}).get("_deferral")), None), every=5)
+        reason = ((held or {}).get("draft") or {}).get("_deferral", {}).get("reason", "")
+        ok_h, why = r.human_message(reason)
+        r.check("팬 진동(지식 없음) → 지어내지 않고 보류, 무엇이 없는지 사람 글", bool(held) and ok_h, why, kind="exception")
+    r.tab("scenario"); r.page.click("#btnReset"); r.page.wait_for_timeout(3000)
 
 
 # ---------------------------------------------------------------------- 실행

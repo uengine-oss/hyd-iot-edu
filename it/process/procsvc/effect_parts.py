@@ -36,7 +36,7 @@ TEST_RUN_TOOL = "plant:test-run"
 REPORT_TOOL = "process:report"
 TOOLS = (MCP_TOOL, PR_TOOL, WAIT_TOOL, RESTORE_TOOL, GR_TOOL, TEST_RUN_TOOL, REPORT_TOOL)
 #: 바깥(업무 시스템 · 메일 · 설비 시뮬레이터)에 효과를 내는 부품 — 앞 경로에 사람 승인이 있어야 등록된다(bpmn_import.check)
-EFFECTS = {MCP_TOOL: "MCP 쓰기(메일)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인",
+EFFECTS = {MCP_TOOL: "MCP 쓰기(메일 등)", PR_TOOL: "ERP 발주", RESTORE_TOOL: "정비 수행 모사", GR_TOOL: "입고 확인",
            TEST_RUN_TOOL: "시운전 확인 · 계수기 리셋"}
 #: 시운전 기준 기본값(파워팩 정상 운전점 PS1 182 bar · FS1 9.0 l/min · VS1 0.6 mm/s, 경보선 = 사건 회복 기준과 같은 값 — definition.RECOVERY)
 TEST_RUN_CRITERIA = {"PS1": [">=", 165.0], "FS1": [">=", 8.0], "VS1": ["<", 1.2]}

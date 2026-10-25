@@ -88,7 +88,10 @@
   function agentLine() {
     const a = A.agents.find(x => x.id === A.agent);
     if (!a) return '';
-    const tools = a.tools.length ? a.tools.map(t => UI.chipText(UI.toolName(t), 'neutral')).join(' ') : UI.chipText('도구 전부', 'neutral');
+    // 에이전트의 도구는 서버 이름이다(neo4j · hyd-dmn · 학생 서버) — 도구 id 용 UI.toolName 은 「도구 표시 이름 미등록」을 보였다(2026-10-25 수업 한 바퀴).
+    // 기본 서버는 사람 이름으로, 학생이 지은 서버 이름은 그대로 보인다
+    const serverLabel = t => { const n = window.hydAgents?.serverName?.(t); return n && n !== '서버 표시 이름 미등록' ? n : t; };
+    const tools = a.tools.length ? a.tools.map(t => UI.chipText(serverLabel(t), 'neutral')).join(' ') : UI.chipText('도구 전부', 'neutral');
     return `<p class="field-hint">${esc(a.goal || a.role || '')}</p><div class="row-wrap ask-tools">${tools}${a.skills.length ? ' ' + a.skills.map(x => UI.chipText(x, 'accent')).join(' ') : ''}</div>`;
   }
   function resultHtml(v) {

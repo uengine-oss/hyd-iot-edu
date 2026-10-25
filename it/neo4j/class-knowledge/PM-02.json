@@ -10,7 +10,9 @@
   "SOP-PM-21~23(2,000 · 4,000 · 8,000 h 패키지): 원문은 누적 운전시간으로 패키지를 고르지만 판단 입력에 누적 차례가 없어 후보 규칙을 지어내지 않음 — 적재 전 검사 경고로 남김(2026-10-12 검토와 같음)",
   "나머지 규정 규칙(2,200 h 기한 둘 · 오더 손실 80만 원 · 정비 인원 4명 60만 원 · 씰 키트 0개 · 2개 미만 · 3개 미만 경고)과 원인(축 씰 마모 0.7 · 작동유 오염 0.3), 승인 역할(설비보전팀장)은 원문 수치와 대조해 그대로 둠",
   "SOP-PM-12: AI가 넣은 설비 정지 명령(action:controlled-stop)은 작업지시 절차에 둘 수 없다(서버 규칙: 설비 명령은 control 스킬만). 수업 흐름 B는 설비까지 가지 않고 정비 오더 · 공지로 끝나므로(C3 단순화) 정지는 현장 오더 안의 일로 두고 작업지시 SOP-PM-12만 연결",
-  "SOP-PM-13: 미루기 조치(action:reschedule-work-order)의 값이 비어 있었다 → 이 절차 번호 SOP-PM-13(작업지시 값은 SOP 번호)"
+  "SOP-PM-13: 미루기 조치(action:reschedule-work-order)의 값이 비어 있었다 → 이 절차 번호 SOP-PM-13(작업지시 값은 SOP 번호)",
+  "시행 방식 SOP-PM-11~14에 정비 적용 정책을 원문으로 붙임: 주기 2,000 h · ±10 %(PM-2.3), 같은 모델 1~3호기(PM-2.1), 패키지 2/4/8천 h와 부품(PM-2.2 표 — 씰 키트 P-PMP-SEAL · 리턴 필터 P-RTN-FLT, 작동유는 품번 미상), 범위 단독/두 대 묶음(SOP-PM-14), 부품 효과 예약(SOP-PM-11 「출고를 예약」) · 출고(SOP-PM-12 「출고한다」) · 기존 할당 보존(SOP-PM-13 미루기) · 예약(SOP-PM-14 「확보한다」) — 없으면 정비 계획 에이전트가 사람에게 적용 범위를 묻고 멈췄다(2026-10-25)",
+  "확인 증거 둘 추가(원문 PM-2.10): 축 씰 마모 ← 최근 1분 PS1 평균 < 165 bar, 작동유 오염 ← 최근 1분 FS1 평균 < 8.0 l/min. 바탕 추출에 증거가 0개라 펌프 내부 누설 진단이 원인을 구분하지 못하고 [다시 평가] 뒤에도 보류했다(2026-10-25)"
  ],
  "extraction": "manual_source_extraction.00eb43af-7a9b-4ffa-9ea8-cafaee83f268",
  "sections": [
@@ -658,7 +660,92 @@
    "approver": "role:maint-mgr",
    "relation": "PREVENTED_BY",
    "addresses": [],
-   "failureMode": "fm:pump-volumetric-efficiency-loss"
+   "failureMode": "fm:pump-volumetric-efficiency-loss",
+   "maintenance_policy": {
+    "version": 1,
+    "scope": "single",
+    "stock_effect": "reserve",
+    "interval_h": 2000,
+    "tolerance_pct": 10,
+    "model_assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 752,
+     "end": 822,
+     "quote": "정기 정비는 주기 2,000 h의 ±10 % 안, 곧 마지막 정기 정비 뒤 운전시간 1,800~2,200 h 사이에 시행한다."
+    },
+    "model_anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 189,
+     "end": 220,
+     "quote": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다."
+    },
+    "packages": [
+     {
+      "interval_h": 2000,
+      "sop": "SOP-PM-21",
+      "name": "2,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 4000,
+      "sop": "SOP-PM-22",
+      "name": "4,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 8000,
+      "sop": "SOP-PM-23",
+      "name": "8,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       },
+       {
+        "part_no": null,
+        "qty": null,
+        "name": "작동유",
+        "mapping_reason": "원문은 작동유 교환만 적고 수량 · ERP 품번이 없다"
+       }
+      ]
+     }
+    ]
+   }
   },
   "SOP-PM-12": {
    "kind": "work_order",
@@ -672,7 +759,92 @@
    "approver": "role:maint-mgr",
    "relation": "PREVENTED_BY",
    "addresses": [],
-   "failureMode": "fm:pump-volumetric-efficiency-loss"
+   "failureMode": "fm:pump-volumetric-efficiency-loss",
+   "maintenance_policy": {
+    "version": 1,
+    "scope": "single",
+    "stock_effect": "issue",
+    "interval_h": 2000,
+    "tolerance_pct": 10,
+    "model_assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 752,
+     "end": 822,
+     "quote": "정기 정비는 주기 2,000 h의 ±10 % 안, 곧 마지막 정기 정비 뒤 운전시간 1,800~2,200 h 사이에 시행한다."
+    },
+    "model_anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 189,
+     "end": 220,
+     "quote": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다."
+    },
+    "packages": [
+     {
+      "interval_h": 2000,
+      "sop": "SOP-PM-21",
+      "name": "2,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 4000,
+      "sop": "SOP-PM-22",
+      "name": "4,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 8000,
+      "sop": "SOP-PM-23",
+      "name": "8,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       },
+       {
+        "part_no": null,
+        "qty": null,
+        "name": "작동유",
+        "mapping_reason": "원문은 작동유 교환만 적고 수량 · ERP 품번이 없다"
+       }
+      ]
+     }
+    ]
+   }
   },
   "SOP-PM-13": {
    "kind": "work_order",
@@ -686,7 +858,92 @@
    "approver": "role:maint-mgr",
    "relation": "PREVENTED_BY",
    "addresses": [],
-   "failureMode": "fm:pump-volumetric-efficiency-loss"
+   "failureMode": "fm:pump-volumetric-efficiency-loss",
+   "maintenance_policy": {
+    "version": 1,
+    "scope": "single",
+    "stock_effect": "preserve",
+    "interval_h": 2000,
+    "tolerance_pct": 10,
+    "model_assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 752,
+     "end": 822,
+     "quote": "정기 정비는 주기 2,000 h의 ±10 % 안, 곧 마지막 정기 정비 뒤 운전시간 1,800~2,200 h 사이에 시행한다."
+    },
+    "model_anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 189,
+     "end": 220,
+     "quote": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다."
+    },
+    "packages": [
+     {
+      "interval_h": 2000,
+      "sop": "SOP-PM-21",
+      "name": "2,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 4000,
+      "sop": "SOP-PM-22",
+      "name": "4,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 8000,
+      "sop": "SOP-PM-23",
+      "name": "8,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       },
+       {
+        "part_no": null,
+        "qty": null,
+        "name": "작동유",
+        "mapping_reason": "원문은 작동유 교환만 적고 수량 · ERP 품번이 없다"
+       }
+      ]
+     }
+    ]
+   }
   },
   "SOP-PM-14": {
    "kind": "work_order",
@@ -700,7 +957,92 @@
    "approver": "role:maint-mgr",
    "relation": "PREVENTED_BY",
    "addresses": [],
-   "failureMode": "fm:pump-volumetric-efficiency-loss"
+   "failureMode": "fm:pump-volumetric-efficiency-loss",
+   "maintenance_policy": {
+    "version": 1,
+    "scope": "bundle",
+    "stock_effect": "reserve",
+    "interval_h": 2000,
+    "tolerance_pct": 10,
+    "model_assets": [
+     "HYD-01",
+     "HYD-02",
+     "HYD-03"
+    ],
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 752,
+     "end": 822,
+     "quote": "정기 정비는 주기 2,000 h의 ±10 % 안, 곧 마지막 정기 정비 뒤 운전시간 1,800~2,200 h 사이에 시행한다."
+    },
+    "model_anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 189,
+     "end": 220,
+     "quote": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다."
+    },
+    "packages": [
+     {
+      "interval_h": 2000,
+      "sop": "SOP-PM-21",
+      "name": "2,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 4000,
+      "sop": "SOP-PM-22",
+      "name": "4,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       }
+      ]
+     },
+     {
+      "interval_h": 8000,
+      "sop": "SOP-PM-23",
+      "name": "8,000 h 정기 점검",
+      "parts": [
+       {
+        "part_no": "P-PMP-SEAL",
+        "qty": 1,
+        "name": "펌프 축 씰 키트"
+       },
+       {
+        "part_no": "P-RTN-FLT",
+        "qty": 1,
+        "name": "리턴 필터 엘리먼트"
+       },
+       {
+        "part_no": null,
+        "qty": null,
+        "name": "작동유",
+        "mapping_reason": "원문은 작동유 교환만 적고 수량 · ERP 품번이 없다"
+       }
+      ]
+     }
+    ]
+   }
   },
   "SOP-PM-21": {
    "kind": "work_order",
@@ -1080,7 +1422,46 @@
     "failure_mode": "fm:pump-volumetric-efficiency-loss"
    }
   ],
-  "evidence": [],
+  "evidence": [
+   {
+    "id": "evd:pm-seal-wear-ps1-low",
+    "cause": "cause:pump-shaft-seal-wear",
+    "name": "최근 1분 토출 압력 평균 165 bar 미만",
+    "tag": "PS1",
+    "aggregate": "avg",
+    "window_seconds": 60,
+    "expect": "lt",
+    "threshold": 165,
+    "weight": 1.0,
+    "section": "PM-2.10",
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 3740,
+     "end": 3784,
+     "quote": "최근 1분 토출 압력 PS1 평균이 165 bar 미만이면 씰 마모를 의심한다."
+    }
+   },
+   {
+    "id": "evd:pm-oil-contamination-fs1-low",
+    "cause": "cause:hydraulic-oil-contamination",
+    "name": "최근 1분 유량 평균 8.0 l/min 미만",
+    "tag": "FS1",
+    "aggregate": "avg",
+    "window_seconds": 60,
+    "expect": "lt",
+    "threshold": 8.0,
+    "weight": 1.0,
+    "section": "PM-2.10",
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 3863,
+     "end": 3911,
+     "quote": "최근 1분 유량 FS1 평균이 8.0 l/min 미만이면 작동유 오염도 함께 확인한다."
+    }
+   }
+  ],
   "failure_modes": [
    {
     "id": "fm:pump-volumetric-efficiency-loss",

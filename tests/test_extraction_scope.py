@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.7'
+    assert extraction.VERSION == '2.8'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -78,3 +78,18 @@ def test_instruction_2_7_pins_numbers_penalty_measure_and_document_defined_failu
     assert "penalizes에 ontology_catalog의 지표(msr:…) 하나를 반드시" in text
     assert "빈 목록으로 두지 마세요" in text and "ontology_catalog에 아직 없어도 됩니다" in text
     assert "REMEDIED_BY · addresses=[그 원인]" in text
+
+
+def test_instruction_2_8_asks_one_candidate_rule_per_cause():
+    """2026-10-25 수업 한 바퀴 재실행: 같은 HM-8 세 번 중 한 번이 즉시 완화 후보 규칙만 만들고 원인별 근본 조치(핀 세척 · 환기 · 팬 점검)의
+    후보 규칙(in:cause == 원인)을 빠뜨렸다 — 원인이 판정돼도 근본 조치 카드가 나오지 않는다."""
+    text = extraction.INSTRUCTION
+    assert '"input":"in:cause","operator":"==","value":"cause:…"' in text
+    assert "그 원인마다" in text and "빠뜨리지 마세요" in text
+
+
+def test_instruction_2_8_asks_purchase_comparison_and_maintenance_policies():
+    """2026-10-25 수업 한 바퀴: 지시에 두 정책이 없어 4회차에 다시 적재한 PR-07 · PM-02 제안이 정책 없이 C · B 판단을 막았다."""
+    text = extraction.INSTRUCTION
+    assert '"purchase_comparison_policy":{"version":1,"loss_per_failure"' in text and '"inspection_threshold":불량률 비율(10 %면 0.1)' in text
+    assert '"maintenance_policy":{"version":1,"scope":"single' in text and '"model_anchor":ANCHOR' in text and '"packages":[' in text

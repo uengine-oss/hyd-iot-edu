@@ -3,7 +3,7 @@
 #   1) 서비스 12개 · AI 워커 · 포털이 응답하는가
 #   2) 쿨러 사건 한 바퀴(수업 흐름 c3_cooling): 설비 초기화 → 쿨러 열화 주입 → 경보 → 처리 건 → AI 워커의 「판단 · 제안」(강의 중계 모델)
 #      → 쿨러 복구 → 점검이 연 처리 건 정리(「조치 전 해소」로 스스로 닫힌다)
-#      새 PC(수업용 구조판, 문서 적재 전)에서는 「판단 보류」가 정상이다. 문서를 적재한 PC는 「운전원 승인 대기」까지 간다.
+#      시작.bat이 수업용 기본 지식(HM-8 · PM-02 · PR-07 검토본)을 넣으므로 「운전원 승인 대기」까지 간다. 기본 지식이 빠진 PC면 「판단 보류」로 멈춘다(그때는 시작.bat을 다시).
 #   3) 루트 .env를 우선 사용하고, 미설정이면 기존 실습 폴더 .env로 중계 연결을 확인한다.
 # 점검이 연 처리 건은 끝에 정리한다(복제 이미지에 열린 처리 건이 남지 않게). 데이터는 지우지 않는다.
 param([switch]$SkipLlm, [string]$LlmEnvFile)
@@ -106,8 +106,8 @@ try {
         $v = Get-J "$PROCESS/api/instances/$pid_"
         $agent = $v.workitems | Where-Object { $_.activity_id -eq 'T_agent' }
         $approve = $v.workitems | Where-Object { $_.activity_id -eq 'T_approve' -and $_.status -eq 'IN_PROGRESS' }
-        if ($approve) { '판단 완료 — 추천 카드가 나와 운전원 승인 대기(문서 적재된 PC)' }
-        elseif ($agent.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { '판단 보류(새 PC 정상: 원인 지식은 수업에서 문서로 적재) — 설비 · 수집 · 감지 · 처리 · AI 워커 · 강의 중계 · 지식 그래프 연결 확인' }
+        if ($approve) { '판단 완료 — 추천 카드가 나와 운전원 승인 대기(수업용 기본 지식으로 판단)' }
+        elseif ($agent.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { throw '판단이 보류됐습니다 — 수업용 기본 지식이 없는 것 같습니다. 시작.bat을 다시 실행하세요(7단계가 기본 지식을 넣습니다)' }
         elseif ($agent.status -in @('FAILED', 'ERROR', 'CANCELLED')) { throw "AI 워커가 판단하지 못했습니다($($agent.status)): $("$($agent.log)".Trim()) — .env의 LLM_API_KEY와 인터넷 연결을 확인하세요" }
     }
     if (-not $outcome) { throw '처리 건이 7분 안에 판단 결과(보류 또는 승인 대기)에 닿지 않았습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요' }

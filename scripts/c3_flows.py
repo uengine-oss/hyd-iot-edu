@@ -214,7 +214,7 @@ def check_and_deploy(deploy: bool, only: list[str] | None = None) -> int:
             continue
         if not deploy:
             continue
-        reg = call("POST", f"/api/flows/{did}/register", {"mapping": mapping})
+        reg = call("POST", f"/api/flows/{did}/register", {"mapping": mapping, "class_flow": True})   # 수업 흐름 판본 등록은 강사 스크립트만(포털은 거절)
         dep = call("POST", f"/api/process/definitions/{did}/deploy", {"version": reg["version"], "by": "c3-assembly", "reason": "C3 확정 흐름 배포",
                                                                       "class_flow": True})
         print(did, "registered", reg["version"], "deployed", json.dumps(dep, ensure_ascii=False)[:200])

@@ -161,7 +161,7 @@ def test_the_worker_entry_point_installs_the_stop_signals_before_its_first_poll(
         def __init__(self, *a, **k):
             pass
 
-        def poll_once(self):
+        def poll_once(self, on_polled=None):
             seen["term"] = signal.getsignal(signal.SIGTERM)
             seen["hup"] = signal.getsignal(signal.SIGHUP)
             raise SystemExit(0)

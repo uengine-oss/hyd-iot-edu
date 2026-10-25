@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.7'          # 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
+VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
+# 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
 # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
 # 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
 # 2.4: source-defined operational AND business SOP scope; never rewrite registered 2.2/2.3.
@@ -65,6 +66,9 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
   이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
   기존 후보 규칙에 자동으로 붙습니다. 예방 정비(PREVENTED_BY) · 구매 절차는 자동으로 붙지 않습니다.
+  원문이 원인별 조치를 정하면(예: '원인이 …이면 …절차', 원인을 다른 절의 점검으로 넘김) 그 원인마다 tests=[{"input":"in:cause","operator":"==","value":"cause:…"}],
+  outputs=[그 원인의 근본 조치 SOP ID]인 dt:action-candidates SELECT 규칙을 하나씩 만드세요. 경보 · 고장 유형 조건의 후보 규칙(즉시 완화 목록)이 있어도 빠뜨리지 마세요 —
+  없으면 그 원인이 판정돼도 근본 조치 카드가 나오지 않습니다.
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
@@ -74,6 +78,15 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
    "actions":[{"action":"action:purchase-request","value":공급사 id 또는 null}],"supplier_policy":"oem|lowest_approved|fastest_quote 또는 null"}.
   failureMode · relation · addresses 키는 넣지 마세요. 공급사를 원문의 선택 기준으로 고르는 절차(순정 · 대체 승인 공급사 최저가 · 최단 납기)는 supplier_policy를 쓰고 value는 null,
   원문이 특정 공급사를 정하면 value에 그 sup:… 을 쓰고 supplier_policy는 null입니다. 둘을 함께 쓰지 마세요. 실행 행위 없이 참고만 하는 절차는 executable=false, actions=[]입니다.
+  원문이 구매 총비용 비교 기준(불량 1건 손실 · 전수 검사로 강화하는 불량률 기준 · 전수 검사 비용)을 정하면 공급사를 고르는 실행 구매 절차(executable=true)마다
+  link에 "purchase_comparison_policy":{"version":1,"loss_per_failure":만 원 숫자,"inspection_threshold":불량률 비율(10 %면 0.1),"inspection_cost":만 원 숫자,
+  "anchor":ANCHOR}를 넣으세요. anchor는 세 수치가 모두 든 원문 문단 하나를 인용합니다(서버가 인용 속 수치와 대조합니다). 이 정책이 없으면 구매 판단이 그 절차를 비교하지 못합니다.
+ 정기 정비(PREVENTED_BY) 시행 절차는 원문이 시행 기준(정비 주기 · 허용 오차 · 같은 모델 적용 설비 · 주기별 패키지와 부품)을 정하면 link에
+  "maintenance_policy":{"version":1,"scope":"single(한 대)|bundle(두 대 묶음)","stock_effect":"reserve(부품 출고 예약)|issue(바로 출고)|preserve(기존 할당 유지 — 미루기)",
+  "interval_h":기본 주기 숫자,"tolerance_pct":허용 오차 % 숫자,"model_assets":["HYD-…"],"anchor":ANCHOR(주기 · 허용 오차 문장),"model_anchor":ANCHOR(같은 모델 적용 문장),
+  "packages":[{"interval_h":숫자,"sop":"그 패키지 SOP ID","name":"패키지 이름","parts":[{"part_no":"ontology_catalog.parts의 품번 또는 null","qty":숫자 또는 null,"name":"원문 부품 이름","mapping_reason":"품번이 null일 때 이유"}]}]}를 넣으세요.
+  scope · stock_effect는 그 절차의 단계가 정합니다(예: '두 대를 묶어' → bundle, '출고를 예약한다' → reserve, '출고한다' → issue, '시행 시간을 옮긴다' → preserve).
+  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
  값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
  같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
  그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.
@@ -209,11 +222,31 @@ def check_section_titles(proposal):
             raise ValueError(f"절 {ref}의 title {title!r}에 절 번호가 들어 있습니다 — title 은 번호를 뺀 제목입니다(예: {title[len(ref):].strip()!r})")
 
 
+#: 적재 전 검사(manual_preflight)가 적재를 막는 원자 조치 값 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것.
+#: 2026-10-25 수업 한 바퀴: PM-02 추출이 SOP-PM-13(미루기)의 작업지시 값을 null 로 냈고, 추출은 통과한 채 적재에서 「작업지시 값은
+#: SOP 번호여야 합니다(None)」로 막혔다 — 학생 화면에는 그 값을 고칠 칸이 없다. 같은 검사를 제출 때 돌려 교정 사유로 준다.
+AGENT_FIXABLE_ACTION_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND')
+
+
+def check_action_values(proposal, catalog):
+    """실행과 함께 고정한 ontology_catalog 로 제안 link 의 원자 조치 값을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
+    구간 추출(segment)은 다른 구간의 SOP 를 값으로 쓸 수 있어 합친 뒤 적재 전 검사에 맡긴다."""
+    if not catalog:
+        return
+    from . import manual_preflight
+    found = [i for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ACTION_ISSUES]
+    if found:
+        raise ValueError('원자 조치 값이 적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(i['message'] for i in found) +
+                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id 입니다)')
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         check_section_titles(proposal)
+        if not variables.get('segment'):
+            check_action_values(proposal, variables.get('ontology_catalog'))
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)

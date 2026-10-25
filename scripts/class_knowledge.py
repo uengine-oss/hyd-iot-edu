@@ -64,7 +64,7 @@ def rebased(value, source_id: str):
     """검토본 안의 모든 인용(anchor)의 판본 id 를 이 PC의 원문 판본 id 로."""
     if isinstance(value, dict):
         out = {k: rebased(v, source_id) for k, v in value.items()}
-        if "source_id" in out and {"page", "start", "end"} <= out.keys():
+        if "source_id" in out and {"page", "start", "end", "quote"} <= out.keys():
             out["source_id"] = source_id
         return out
     if isinstance(value, list):
@@ -79,7 +79,7 @@ def commit(seed: dict) -> dict:
     sid = preview["source_id"]
     body = {"source_id": sid, "document_id": preview["document_id"], "filename": preview["filename"],
             "batch": preview["batch"], "previous_batch": preview.get("previous_batch"),
-            "sections": rebased(seed["sections"], sid), "procedures": rebased(seed["procedures"], sid), "links": seed["links"],
+            "sections": rebased(seed["sections"], sid), "procedures": rebased(seed["procedures"], sid), "links": rebased(seed["links"], sid),
             "knowledge": rebased(seed["knowledge"], sid), "by": seed["by"], "review_method": seed["review_method"], "reviewed": True}
     return call("POST", "/api/kg/manuals/commit", body, timeout=300)
 
