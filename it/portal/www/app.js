@@ -20,7 +20,7 @@ async function requestJ(url, options = {}) {
       // 서버 프레임워크 기본 문구(영문)는 한국어 + 상태 번호로. 404 "Not Found" 는 그 주소가 없는 것 — 실행 중인 서비스가 이 화면보다 이전 판일 때 흔하다
       // 알려진 영문 거절 사유(T_approve is DONE 등)는 한국어 한 줄로(UI.serverText) — 원문은 error.detail 에 남긴다
       const detail = HTTP_DEFAULT_DETAIL[j.detail] ? `${HTTP_DEFAULT_DETAIL[j.detail]} (요청 실패 ${r.status})` : typeof j.detail === 'string' && typeof UI !== 'undefined' && UI.serverText ? UI.serverText(j.detail) : j.detail;
-      const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
+      const error = new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => typeof UI !== 'undefined' && UI.validationText ? UI.validationText(x) : x.msg || JSON.stringify(x)).join(' · ') : typeof detail?.reason === 'string' ? detail.reason : `요청 실패 (${r.status})`);
       error.status = r.status; error.detail = j.detail;
       throw error;
     }

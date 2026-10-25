@@ -391,7 +391,18 @@ const UI = {
     [/^no such work item$/, '작업을 찾지 못했습니다 — 이미 처리됐거나 지워졌을 수 있습니다.'],
     [/^(\w+) must be nonblank text, at most (\d+) characters$/, m => `${({ by: '담당자', reason: '사유' })[m[1]] || m[1]} 칸을 1~${m[2]}자로 적으세요.`],
     [/^same request id contains different input$/, '같은 요청 번호로 다른 내용이 왔습니다 — 화면을 새로 읽은 뒤 다시 요청하세요.'],
+    // 입력 검사(422)의 프레임워크 기본 문구 — 2026-10-25 수업 한 바퀴: [다시 평가] 긴 사유에 「String should have at most 2000 characters」가 그대로 보였다
+    [/^String should have at most (\d+) characters?$/, m => `${m[1]}자 이하로 줄여 적으세요.`],
+    [/^String should have at least (\d+) characters?$/, m => `${m[1]}자 이상 적으세요.`],
+    [/^Field required$/, '필수 항목을 입력하세요.'],
+    [/^Input should be a valid (integer|number)/, '숫자를 입력하세요.'],
   ],
+  // 422 detail 배열의 한 줄: 칸 이름(아는 것만 한국어) + 번역한 문구
+  validationText(x) {
+    const field = ({ reason: '사유', by: '담당자', note: '메모', name: '이름' })[(x && x.loc || []).slice(-1)[0]];
+    const text = this.serverText(x && x.msg || JSON.stringify(x));
+    return field ? `${field}: ${text}` : text;
+  },
   serverText(message) {
     const text = String(message ?? '');
     for (const [re, out] of this.serverTexts) { const m = re.exec(text.trim()); if (m) return typeof out === 'function' ? out(m) : out; }

@@ -2855,7 +2855,7 @@ def _c_fault_case(r, asset: str, fault: str, pattern: str):
         panel.locator("[data-reassess-reason]").fill("가" * 2001)
         panel.locator("[data-reassess]").click(); r.page.wait_for_timeout(1500)
         ok_h, why = r.human_message(panel.locator(".form-msg").inner_text() if panel.locator(".form-msg").count() else "")
-        r.check("[다시 평가] 너무 긴 사유 → 거절 문구가 한국어 사람 글", ok_h, why, kind="exception")
+        r.check("[다시 평가] 너무 긴 사유 → 거절 문구가 한국어 사람 글", ok_h and not re.search(r"[A-Za-z]{4,} [a-z]{3,} [a-z]{3,}", why), why, kind="exception")   # final2: 영문 문장 + 한국어 꼬리가 통과했다
         # 새 2분 원천 창을 기다린 뒤(주입 뒤 125초 — scenario_pump_fan_test 와 같은 기준) 다시 평가
         time.sleep(max(0, 125 - (time.monotonic() - injected)))
         panel = r.page.locator(f"#instDetail [data-deferral-task='{w['id']}']")

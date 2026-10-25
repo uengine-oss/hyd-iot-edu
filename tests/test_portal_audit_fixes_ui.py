@@ -183,6 +183,10 @@ def test_p4_server_text_translates_known_english_reasons(browser):
         assert out[2].startswith('이 보류는 이미 다시 평가됐거나')
         assert out[3] == '사유 칸을 1~2000자로 적으세요.'
         assert out[4] == '그대로 둘 한국어 문구'
+        # 2026-10-25 수업 한 바퀴: [다시 평가] 긴 사유의 422 가 「String should have at most 2000 characters」 영문 그대로였다
+        v = p.page.evaluate("""() => [UI.validationText({loc: ['body', 'reason'], msg: 'String should have at most 2000 characters'}),
+                                        UI.validationText({loc: ['body', 'x'], msg: 'Field required'})]""")
+        assert v == ['사유: 2000자 이하로 줄여 적으세요.', '필수 항목을 입력하세요.']
     finally:
         p.close()
 
