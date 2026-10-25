@@ -213,11 +213,31 @@ def check_section_titles(proposal):
             raise ValueError(f"절 {ref}의 title {title!r}에 절 번호가 들어 있습니다 — title 은 번호를 뺀 제목입니다(예: {title[len(ref):].strip()!r})")
 
 
+#: 적재 전 검사(manual_preflight)가 적재를 막는 원자 조치 값 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것.
+#: 2026-10-25 수업 한 바퀴: PM-02 추출이 SOP-PM-13(미루기)의 작업지시 값을 null 로 냈고, 추출은 통과한 채 적재에서 「작업지시 값은
+#: SOP 번호여야 합니다(None)」로 막혔다 — 학생 화면에는 그 값을 고칠 칸이 없다. 같은 검사를 제출 때 돌려 교정 사유로 준다.
+AGENT_FIXABLE_ACTION_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND')
+
+
+def check_action_values(proposal, catalog):
+    """실행과 함께 고정한 ontology_catalog 로 제안 link 의 원자 조치 값을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
+    구간 추출(segment)은 다른 구간의 SOP 를 값으로 쓸 수 있어 합친 뒤 적재 전 검사에 맡긴다."""
+    if not catalog:
+        return
+    from . import manual_preflight
+    found = [i for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ACTION_ISSUES]
+    if found:
+        raise ValueError('원자 조치 값이 적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(i['message'] for i in found) +
+                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id 입니다)')
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         check_section_titles(proposal)
+        if not variables.get('segment'):
+            check_action_values(proposal, variables.get('ontology_catalog'))
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)

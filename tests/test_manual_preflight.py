@@ -299,3 +299,19 @@ def test_manual_catalog_is_single_read_only_route_and_uses_current_catalog_error
     monkeypatch.setattr(manual_knowledge,'catalog',fail)
     response = client.get('/api/kg/manuals/catalog')
     assert response.status_code == 503 and 'private source failure' not in response.text
+
+
+def test_extraction_submit_rejects_work_order_without_sop_value_like_commit_would(catalog):
+    """2026-10-25 수업 한 바퀴: PM-02 추출이 SOP-PM-13(미루기)의 작업지시 값을 null 로 냈고 추출은 통과 — 적재에서야 「작업지시 값은 SOP
+    번호여야 합니다(None)」로 막혔다(학생 화면에 고칠 칸 없음). 제출 때 같은 규칙으로 교정 사유를 준다. 다른 결함(명령 범위 등)은 여전히 사람 검토 몫."""
+    from procsvc import manual_extraction
+    catalog['actions'].append(dict(id='action:order', code='WO_CREATE', kind='transaction', min=None, max=None))
+    p = proposal()
+    p['links']['SOP-PM-12']['actions'] = [dict(action='action:order', value=None)]
+    with pytest.raises(ValueError, match='작업지시 값은 SOP 번호여야 합니다'):
+        manual_extraction.check_action_values(p, catalog)
+    p['links']['SOP-PM-12']['actions'] = [dict(action='action:order', value='SOP-PM-12')]
+    manual_extraction.check_action_values(p, catalog)                 # 자기 SOP ID 면 통과
+    p['links']['SOP-PM-12']['actions'] = [dict(action='action:stop', value=None)]
+    manual_extraction.check_action_values(p, catalog)                 # 범위 · 명령 위치 결함은 교정 대상이 아니다(사람 검토)
+    manual_extraction.check_action_values(p, None)                    # 카탈로그 없이 시작한 옛 실행
