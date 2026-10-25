@@ -868,6 +868,24 @@ def lab_91_config_bundle(r: Round):
         r.page.click("#cfgSkip")
         r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
         imsg = _a_txt(r, "#cfgImportMsg")
+    # 7회차에 등록한 학생 MCP 서버가 꺼져 있으면 불러오기는 연결 검사에서 멈추고 통째로 되돌린다(설계) — 학생은 안내대로 서버를 켜고 다시 누른다
+    down = re.search(r"연결 거부 — host\.docker\.internal:(\d+)", imsg)
+    if down:
+        ok, why = r.human_message(imsg)
+        r.check("학생 MCP 서버가 꺼져 있으면 → 서버를 켜라는 한국어 안내 · 불러오기 전 상태로 되돌림", ok and "되돌려" in imsg, imsg[:300], kind="exception")
+        proc, up = _b_start_mcp(r, _b_student_schema(r), int(down.group(1)))
+        try:
+            r.check("안내대로 학생 MCP 서버를 켰다", up, down.group(1))
+            r.page.click("#cfgImport")
+            r.page.locator("dialog.confirm-dialog button[value=ok]").click()
+            r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t and t != imsg, every=2)
+            imsg = _a_txt(r, "#cfgImportMsg")
+            if r.page.locator("#cfgSkip").count():
+                r.page.click("#cfgSkip")
+                r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
+                imsg = _a_txt(r, "#cfgImportMsg")
+        finally:
+            _b_stop_mcp(proc)
     ok, why = r.human_message(imsg)
     agents_after = len(r.get(r.process + "/api/agents")) if agents_before is not None else None
     r.check("받은 파일 [불러오기] → 한국어 결과 · 내가 만든 에이전트 수가 돌아옴", ok and (agents_before is None or agents_after == agents_before),
