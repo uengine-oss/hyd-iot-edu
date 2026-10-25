@@ -222,22 +222,28 @@ def check_section_titles(proposal):
             raise ValueError(f"절 {ref}의 title {title!r}에 절 번호가 들어 있습니다 — title 은 번호를 뺀 제목입니다(예: {title[len(ref):].strip()!r})")
 
 
-#: 적재 전 검사(manual_preflight)가 적재를 막는 원자 조치 값 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것.
+#: 적재 전 검사(manual_preflight)가 내는 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것 — 제출 때 교정 사유로 돌려준다.
 #: 2026-10-25 수업 한 바퀴: PM-02 추출이 SOP-PM-13(미루기)의 작업지시 값을 null 로 냈고, 추출은 통과한 채 적재에서 「작업지시 값은
-#: SOP 번호여야 합니다(None)」로 막혔다 — 학생 화면에는 그 값을 고칠 칸이 없다. 같은 검사를 제출 때 돌려 교정 사유로 준다.
-AGENT_FIXABLE_ACTION_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND')
+#: SOP 번호여야 합니다(None)」로 막혔다(학생 화면에 고칠 칸 없음). 같은 HM-8 세 번 추출의 검사 결과도 갈렸다 — 한 번은 결정표가 선언하지 않은
+#: 입력을 쓴 규칙(RULE_INPUT_NOT_DECLARED), 한 번은 관계 · 대상 원인은 적고 고장 유형을 비운 절차(SOP-FAN-12) → 학생마다 다른 검토 경고.
+AGENT_FIXABLE_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND', 'RULE_INPUT_NOT_DECLARED')
 
 
 def check_action_values(proposal, catalog):
-    """실행과 함께 고정한 ontology_catalog 로 제안 link 의 원자 조치 값을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
+    """실행과 함께 고정한 ontology_catalog 로 제안을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
     구간 추출(segment)은 다른 구간의 SOP 를 값으로 쓸 수 있어 합친 뒤 적재 전 검사에 맡긴다."""
     if not catalog:
         return
     from . import manual_preflight
-    found = [i for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ACTION_ISSUES]
+    found = [i['message'] for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ISSUES]
+    for p in proposal.get('procedures') or []:
+        link = (proposal.get('links') or {}).get(p.get('id'), p.get('link')) or {}
+        # 관계(완화 · 근본 · 예방)나 대상 원인을 적었으면 그 고장 유형도 안다 — 고장 유형만 비운 꼴은 원문이 아니라 빠뜨린 것이다
+        if isinstance(link, dict) and link.get('scope') != 'purchase' and not link.get('failureMode') and (link.get('relation') or link.get('addresses')):
+            found.append(f"{p.get('id')}: relation · addresses 를 적었는데 failureMode 가 비었습니다 — 그 원인 · 조치가 속한 고장 유형 id 를 적으세요")
     if found:
-        raise ValueError('원자 조치 값이 적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(i['message'] for i in found) +
-                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id 입니다)')
+        raise ValueError('적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(found) +
+                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id, 규칙 tests 의 input 은 그 결정표가 선언한 입력입니다)')
 
 
 def validate_result(form, inst, output):

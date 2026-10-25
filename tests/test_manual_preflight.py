@@ -327,3 +327,23 @@ def test_executable_purchase_sop_without_comparison_policy_is_not_ready(catalog)
                                        actions=[dict(action='action:purchase-request', value=None)], supplier_policy='oem')})
     row = manual_preflight.validate(p, catalog)['execution'][0]
     assert row['ready'] is False and 'PURCHASE_COMPARISON_POLICY_REQUIRED' in {i['code'] for i in row['issues']}
+
+
+def test_extraction_submit_returns_undeclared_rule_input_and_blank_failure_mode_for_correction(catalog):
+    """2026-10-25 수업 한 바퀴(final3): 같은 HM-8 세 번 추출의 검사 결과가 갈렸다 — 결정표가 선언하지 않은 입력을 쓴 규칙 1회,
+    relation · addresses 는 적고 failureMode 를 비운 SOP-FAN-12 1회. 둘 다 원문 · 카탈로그로 고칠 수 있어 제출 때 교정 사유로 준다."""
+    from procsvc import manual_extraction
+    catalog['actions'].append(dict(id='action:order', code='WO_CREATE', kind='transaction', min=None, max=None))
+    p = proposal()
+    p['links']['SOP-PM-12']['actions'] = [dict(action='action:order', value='SOP-PM-12')]
+    manual_extraction.check_action_values(p, catalog)
+    p['links']['SOP-PM-12'].update(failureMode=None, relation='REMEDIED_BY')
+    with pytest.raises(ValueError, match='failureMode 가 비었습니다'):
+        manual_extraction.check_action_values(p, catalog)
+    p['links']['SOP-PM-12'].update(failureMode='fm:pump')
+    p['sections'] = [dict(ref='S', title='절')]
+    catalog['decision_tables'].append(dict(id='dt:action-candidates', decision='dec:action-candidates', inputs=[dict(id='in:pattern', variable='pattern')]))
+    p['knowledge'] = dict(rules=[dict(id='rule:x', section='S', anchor=dict(quote='q'), table='dt:action-candidates', effect='SELECT',
+                                      tests=[dict(input='in:undeclared', operator='==', value=1)], outputs=['SOP-PM-12'])])
+    with pytest.raises(ValueError, match='선언하지 않았습니다'):
+        manual_extraction.check_action_values(p, catalog)
