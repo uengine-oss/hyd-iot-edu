@@ -13,6 +13,8 @@ const LAYERS = [
   ]},
   { no: 'L8', name: 'AI 에이전트', role: '근거를 조회하고 조치를 권고', zone: 'it', focus: true, comps: [
     { name: 'agent', role: '원인·조치·부서별 영향을 비교 · 직접 제어 권한 없음', zone: 'it', url: P(8091) + '/docs', health: P(8091) + '/healthz' },
+    // 2026-10-25: 포털의 AI 단계(판단 · 제안, 질문, 매뉴얼 추출)를 하는 AI 일꾼. 꺼지면 그 단계만 멈추므로 상태 점에 보인다
+    { name: 'agent-worker', role: 'AI 일꾼 — 판단 · 제안, 에이전트에게 질문, 매뉴얼 추출을 강의 중계 모델로 수행', zone: 'it', url: P(8097) + '/healthz', health: P(8097) + '/healthz' },
   ]},
   { no: 'L7', name: '온톨로지 · 원인분석', role: '서로 다른 분야의 지식을 연결', zone: 'it', focus: true, comps: [
     { name: 'Neo4j', role: '설비·고장·매뉴얼·스킬·조직의 관계 저장', zone: 'it', url: P(7474) + '/browser/', health: P(7474) },

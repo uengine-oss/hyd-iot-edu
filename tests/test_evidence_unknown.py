@@ -82,3 +82,23 @@ def test_guardrail_rejects_explicit_unknown_even_without_withheld_flag():
     guide = deepcopy(GOOD)
     guide['causes'][0]['evidence'][0].update(passed=None, status='UNKNOWN')
     assert any('unknown' in error for error in guardrail.check(guide))
+
+
+@pytest.mark.parametrize("pattern,patterns,want", [
+    ("COOLER_DEGRADATION", [{"code": "COOLER_DEGRADATION", "name": "쿨러 성능 저하", "failureModes": ["쿨러 냉각 성능 상실"]}], "'쿨러 성능 저하'의 원인 지식이 아직 없습니다"),
+    ("FAN_VIBRATION", [{"code": "FAN_VIBRATION", "name": "팬 진동 상승", "failureModes": []}], "'팬 진동 상승'의 원인 지식이 아직 없습니다"),
+    ("PM_DUE", [{"code": "PM_DUE", "name": "정기 정비 도래", "failureModes": []}], "고장 원인을 진단하는 이상 패턴이 아닙니다"),
+])
+def test_no_cause_candidates_is_a_korean_sentence_that_says_what_to_do(pattern, patterns, want):
+    """2026-10-25 수업 한 바퀴: 구조판에서 [판단 실행] · 손익 [불러오기]가 「no cause candidates for pattern …」 영문을 그대로 보였다."""
+    from agentsvc import main
+    from fastapi import HTTPException
+
+    class NoCause(FakeKG):
+        def t1_causes(self, pattern, asset):
+            return []
+        def patterns(self):
+            return patterns
+    with pytest.raises(HTTPException) as e:
+        main._manual_decide(NoCause(), main.DecideReq(asset='HYD-01', pattern=pattern))
+    assert e.value.status_code == 404 and want in e.value.detail and "no cause" not in e.value.detail

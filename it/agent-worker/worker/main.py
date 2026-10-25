@@ -87,6 +87,8 @@ class Http(BaseHTTPRequestHandler):
         data = json.dumps(body, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        # 포털 상단 상태 점이 브라우저에서 /healthz 를 읽는다(다른 포트 = 다른 출처). 상태만 담은 응답이라 출처를 묻지 않는다
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(data)
 
@@ -144,7 +146,8 @@ def main() -> None:
              settings.cli_agent, settings.default_permission.value, settings.health_port)
     while True:
         try:
-            handled = _runner.poll_once()
+            # 2026-10-25: 켜자마자 일을 집으면 그 일이 끝날 때까지 /healthz 가 503(starting)이라 포털 상태 점이 「응답 없음」이었다
+            handled = _runner.poll_once(on_polled=lambda: status.update(status="ok", error=None))
             status.update(status="ok", error=None, handled=status["handled"] + handled)
             if handled:
                 continue                                       # there was work → poll again at once (the product's loop)

@@ -74,9 +74,12 @@ class Runner:
         self.in_flight = 0
 
     # ---- polling
-    def poll_once(self) -> int:
+    def poll_once(self, on_polled=None) -> int:
+        """on_polled: 일거리 조회가 성공한 바로 뒤(작업을 돌리기 전)에 부른다 — 상태 점이 긴 첫 작업 내내 「켜지는 중」으로 남지 않게."""
         claim_owner=f"{self.s.consumer}:{uuid.uuid4().hex}"
         rows = self.repo.fetch_pending_task(self.s.agent_orch, claim_owner, limit=1, tenant_id=self.s.tenant_id)
+        if on_polled:
+            on_polled()
         for row in rows:
             self.handle(row)
         return len(rows)

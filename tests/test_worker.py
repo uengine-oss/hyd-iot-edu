@@ -728,3 +728,35 @@ def test_runner_sends_a_broken_result_file_back_for_correction(tmp_path):
     row = next(w for w in repo.list_workitems(proc_inst_id=inst["proc_inst_id"]) if w["activity_id"] == "task:diagnose")
     assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "fixed"
     assert len(reqs) == 2 and reqs[1].resume_session == "sess-C" and "output/result.json" in reqs[1].prompt and "올바른 JSON이 아닙니다" in reqs[1].prompt
+
+
+def test_health_answers_the_portal_across_origins():
+    """2026-10-25 수업 한 바퀴: AI 워커가 포털 상단 상태 점에 없었다(꺼져도 「모두 초록」). 포털이 다른 포트에서 /healthz 를 읽으려면 CORS 헤더가 필요하다."""
+    import threading
+    import urllib.request
+    from http.server import HTTPServer
+    from worker import main as wmain
+    srv = HTTPServer(("127.0.0.1", 0), wmain.Http)
+    threading.Thread(target=srv.handle_request, daemon=True).start()
+    req = urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}/healthz", headers={"Origin": "http://127.0.0.1:8088"})
+    try:
+        resp = urllib.request.urlopen(req, timeout=5)
+    except urllib.error.HTTPError as e:                                  # 켜지는 중(starting)은 503 — 헤더는 같아야 한다
+        resp = e
+    assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+    srv.server_close()
+
+
+def test_poll_reports_healthy_once_the_queue_answered_before_running_the_job(tmp_path):
+    """켜자마자 긴 작업을 집어도 조회가 성공한 순간 상태가 정상이 된다(작업이 끝날 때까지 기다리지 않는다)."""
+    order = []
+    class Repo:
+        def fetch_pending_task(self, *a, **k):
+            order.append("fetch")
+            return [{"id": "w1"}]
+    r = Runner.__new__(Runner)
+    r.s = Settings(consumer="t", workspace_root=tmp_path)
+    r.repo = Repo()
+    r.handle = lambda row: order.append("handle")
+    assert r.poll_once(on_polled=lambda: order.append("healthy")) == 1
+    assert order == ["fetch", "healthy", "handle"]

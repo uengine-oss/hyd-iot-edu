@@ -303,11 +303,28 @@ def ontology_patterns():
     return _kg().patterns()
 
 
+#: 설비 센서가 아니라 업무 표 감시가 내는 경보(it/neo4j/v2/scenario_structure.cypher — detectionMode · Symptom 없음). 원인 진단 대상이 아니다
+BUSINESS_PATTERNS = frozenset({"PM_DUE", "SPARE_BELOW_MIN"})
+
+
+def _no_cause_message(k, pattern: str) -> str:
+    """원인 후보가 없을 때 학생이 읽는 문장(2026-10-25 수업 한 바퀴: 「no cause candidates for pattern …」가 판단 규칙 · 손익 화면에 그대로 보였다).
+    고장 유형이 없는 패턴(정기 정비 도래 · 재고 기준 이탈)은 원인 진단 대상이 아니라 업무 흐름의 에이전트가 판단한다."""
+    try:
+        meta = next((p for p in k.patterns() if p.get("code") == pattern), {})
+    except Exception:  # noqa: BLE001 — 이름을 못 읽어도 안내는 낸다
+        meta = {}
+    name = meta.get("name") or pattern
+    if pattern in BUSINESS_PATTERNS:
+        return f"'{name}'은(는) 고장 원인을 진단하는 이상 패턴이 아닙니다 — 업무 흐름(정기 정비 · 예비품 구매)의 에이전트가 판단합니다. 쿨러 성능 저하 같은 설비 이상 패턴을 고르세요"
+    return f"'{name}'의 원인 지식이 아직 없습니다 — [지식 관리]에서 이 고장을 다루는 매뉴얼을 적재한 뒤 다시 실행하세요"
+
+
 def _manual_decide(k, req: DecideReq, capture: dict | None = None) -> dict:
     """Same pipeline as an alert, without submitting: T1 causes → evidence → top cause → action cards."""
     t1 = k.t1_causes(req.pattern, req.asset)
     if not t1:
-        raise HTTPException(404, f"no cause candidates for pattern {req.pattern}")
+        raise HTTPException(404, _no_cause_message(k, req.pattern))
     try:
         results = tsdb.evaluate([e for r in t1 for e in (r.get("evidence") or [])], req.asset)
     except Exception as e:  # noqa: BLE001

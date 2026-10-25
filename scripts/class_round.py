@@ -1363,6 +1363,8 @@ def _b_agent_form(r, *, name=None, role=None, goal=None, persona=None, model=Non
             if box.is_checked() != want:
                 box.click()
     _b_clear_toasts(r)
+    # 앞 저장의 오류 문구가 남아 있으면 그것을 이번 결과로 읽는다 — 지우고 새 결과를 기다린다
+    page.evaluate("() => document.querySelectorAll('[data-ag-detail] .form-msg.neg').forEach(n => { n.textContent = ''; n.classList.remove('neg'); })")
     form.locator("button[type=submit]").click()
     r.wait(15, lambda: page.locator("[data-ag-form]").count() == 0 or page.locator("[data-ag-detail] .form-msg.neg").count(), every=0.5)
     err = page.locator("[data-ag-detail] .form-msg.neg")
