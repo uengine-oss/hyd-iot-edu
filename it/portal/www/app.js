@@ -178,7 +178,9 @@ async function pollHealth() {
 
 /* ---------------- 결함 시뮬레이션 ---------------- */
 const FAULT_LABEL = { cooler_degradation: '쿨러 성능 저하', pump_leakage: '펌프 내부 누설', fan_vibration: '팬 베어링 마모', restore: '복구' };
-const PATTERN_LABEL = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열', TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지' };
+// 2026-10-25: 업무 경보(정기 정비 도래 · 재고 기준 이탈)와 인터록 트립도 사람 말로 — 흐름 배포 화면 「경보 → 흐름」 표가 PM_DUE 같은 코드를 보였다
+const PATTERN_LABEL = { COOLER_DEGRADATION: '쿨러 성능 저하', PUMP_LEAKAGE: '펌프 내부 누설', FAN_VIBRATION: '팬 진동 상승', OVER_TEMPERATURE: '유온 과열', TEMP_TRIP: '유온 보호 정지', OVERHEAT_TRIP: '유온 보호 정지',
+  LOW_PRESSURE_TRIP: '저압 인터록 트립', HIGH_VIBRATION_TRIP: '고진동 인터록 트립', OIL_ANALYSIS: '오일 분석 기준 이탈', PM_DUE: '정기 정비 도래', SPARE_BELOW_MIN: '예비품 재고 기준 이탈' };
 function phaseHtml(d) {
   // one line per detector pattern that is not idle; the cooler pattern alone when everything is quiet
   const pats = Object.entries(d.patterns || { COOLER_DEGRADATION: { phase: d.phase, alert_id: d.alert_id } });

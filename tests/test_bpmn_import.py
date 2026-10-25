@@ -666,3 +666,11 @@ def test_reset_keeps_a_flow_deployed_on_the_alert_path(api):
     out = c.post("/api/flows/reset").json()
     assert out["kept"] == ["c3_cooling"] and out["definitions"] == 1                     # 배포 안 된 oil_loop 만 지움
     assert repo.get_proc_def("c3_cooling", version=r.json()["version"]) is not None and repo.get_proc_def("oil_loop", version="1") is None
+
+
+def test_broken_xml_message_is_korean_without_the_parser_text():
+    """2026-10-25 수업 한 바퀴: 깨진 파일 문구에 'unclosed token: line 34, column 170' 이 섞여 보였다."""
+    with pytest.raises(B.BpmnError) as e:
+        B.parse_bpmn(f'<bpmn:definitions {NS} id="D"><bpmn:process id="P">')
+    text = str(e.value)
+    assert "XML 을 읽을 수 없습니다" in text and "다시 받아" in text and "token" not in text and "line" not in text

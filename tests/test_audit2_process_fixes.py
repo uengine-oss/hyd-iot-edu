@@ -423,7 +423,7 @@ def test_p9_flows_reset_after_the_portal_reset_keeps_the_class_flow_definitions(
     rt.repo.clear_deployment("c3_cooling", rt.tenant_id, actor="강사", reason="다시 배포")
     rt.deploy_definition("c3_cooling", version, by="c3-assembly", reason="수업", class_flow=True)
     _, _, mapping = c3._flows().FLOWS["c3_cooling"]
-    assert c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}).status_code == 201  # 판본을 하나 더 등록해도 표시는 그대로
+    assert c.post("/api/flows/c3_cooling/register", json={"mapping": mapping, "class_flow": True}).status_code == 201  # 강사가 판본을 하나 더 등록해도 표시는 그대로
     assert flow_deploy.deploy_reset(rt, "학생")["kept"][0]["definition"] == "c3_cooling"
     assert c.post("/api/flows/reset").status_code == 200
     assert flow_deploy.route_definition(rt, "COOLER_DEGRADATION").id == "c3_cooling"
@@ -630,9 +630,22 @@ def test_class_flow_id_is_not_taken_over_by_a_student(api):
     r = c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling"})
     assert r.status_code == 409 and "강사가 배포한 수업 흐름 id" in r.json()["detail"]["reason"] and "my_cooling" in r.json()["detail"]["reason"]
     assert c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling", "class_flow": True}).status_code == 200   # 강사 스크립트
-    v2 = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}).json()["version"]
+    v2 = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping, "class_flow": True}).json()["version"]
     with pytest.raises(ValueError, match="강사가 배포한 수업 흐름"):
         rt.deploy_definition("c3_cooling", v2, by="학생1", reason="내가 다시 배포")
     assert flow_deploy.route_definition(rt, "COOLER_DEGRADATION").id == "c3_cooling"
     assert rt.deploy_definition("c3_cooling", v2, by="강사", reason="수업 흐름 갱신", class_flow=True)["class_flow"] is True
     assert c.post("/api/flows/import", json={"xml": src, "definition_id": "my_cooling"}).status_code == 200            # 내 id 는 된다
+
+
+def test_class_flow_cannot_get_a_student_version_registered(api):
+    """2026-10-25 수업 한 바퀴: 수업 흐름(강사 배포)의 [매핑 열기] → [판본 등록]이 통과해 강사 흐름에 학생 판본이 쌓였다."""
+    c, rt, repo, audit = api
+    _, src, mapping = c3._flows().FLOWS["c3_cooling"]
+    version = _deploy_class_flow(api)
+    rt.repo.clear_deployment("c3_cooling", rt.tenant_id, actor="강사", reason="다시 배포")
+    rt.deploy_definition("c3_cooling", version, by="강사", reason="수업 흐름", class_flow=True)
+    r = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping})                    # 포털(학생)은 class_flow 표시 없이 보낸다
+    assert r.status_code == 409, r.text
+    assert "수업 흐름" in r.json()["detail"]["reason"] and "다른 흐름 id" in r.json()["detail"]["reason"]
+    assert flow_deploy.route_definition(rt, "COOLER_DEGRADATION").raw["version"] == version   # 경보 경로 판본 그대로

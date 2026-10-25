@@ -88,3 +88,15 @@ def test_unknown_command_is_refused_without_calls(monkeypatch):
     mod = _mod()
     monkeypatch.setattr(mod, "call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called")))
     assert mod.main(["x"]) == 2 and mod.main(["x", "load"]) == 2
+
+
+def test_b_and_c_seeds_carry_the_reviewed_policies_their_agents_need():
+    """2026-10-25 수업 한 바퀴: 정책이 빠진 검토본으로 B 에이전트는 사람에게 적용 범위를 묻고 멈췄고, C 에이전트는 「검토된 원문 정책이 없습니다」로 보류했다."""
+    sys.path.insert(0, str(ROOT / "common"))
+    from hydcommon import maintenance_policy, purchase_comparison
+    pm = json.loads((ROOT / "it/neo4j/class-knowledge/PM-02.json").read_text(encoding="utf-8"))["links"]
+    pr = json.loads((ROOT / "it/neo4j/class-knowledge/PR-07.json").read_text(encoding="utf-8"))["links"]
+    scopes = {sop: maintenance_policy.policy(pm[sop]["maintenance_policy"])["scope"] for sop in ("SOP-PM-11", "SOP-PM-12", "SOP-PM-13", "SOP-PM-14")}
+    assert scopes == {"SOP-PM-11": "single", "SOP-PM-12": "single", "SOP-PM-13": "single", "SOP-PM-14": "bundle"}
+    for sop in ("SOP-PUR-11", "SOP-PUR-12", "SOP-PUR-13"):
+        assert purchase_comparison.policy(pr[sop]["purchase_comparison_policy"])["loss_per_failure"] == 250

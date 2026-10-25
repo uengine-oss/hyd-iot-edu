@@ -2082,6 +2082,7 @@ def _c_deploy(r, def_id: str, version: str, *, by: str = "학생 한 명", reaso
     r.wait(20, lambda: r.page.locator(f"#deployVersions [data-deploy='{version}']").count() > 0, every=0.5)
     r.page.fill("#deployBy", by)
     r.page.fill("#deployReason", reason)
+    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")   # 앞 결과를 이번 결과로 읽지 않게
     r.page.click(f"#deployVersions [data-deploy='{version}']")
     msg = r.page.locator("#deployMessage")
     r.wait(30, lambda: msg.inner_text().strip() != "", every=0.5)
@@ -2096,6 +2097,7 @@ def _c_reset_to_reference(r, by: str = "학생 한 명") -> tuple[bool, str]:
     if btn.is_disabled():
         return False, "되돌릴 것이 없음(버튼 꺼짐)"
     r.page.fill("#deployBy", by)
+    r.page.evaluate("() => { const m = document.getElementById('deployMessage'); if (m) m.textContent = ''; }")
     btn.click()
     r.page.locator("dialog.confirm-dialog button[value=ok]").click()
     msg = r.page.locator("#deployMessage")

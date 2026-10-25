@@ -5,7 +5,8 @@
  "by": "수업용 기본 지식 검토 — 사용자가 위임한 AI(2026-10-25, 원문 대조)",
  "review_method": "user-delegated-ai-review",
  "review": [
-  "구매 절차 SOP-PUR-11~13(순정 · 대체 승인 최저가 · 최단 납기)의 구매 범위 · 대상 부품 셋 · 승인 역할(구매 담당) · 공급사 선택 방식, SOP-PR7-7(입고 확인, 원문 SOP 머리글 없음)의 실행 후보 제외, 후보 규칙 SPARE_BELOW_MIN → SOP-PUR-11~13과 규정 규칙(AVL · 납기 · 불량률 · 전결 300만 원)을 원문 PR-7.1~7.7과 대조해 그대로 둠"
+  "구매 절차 SOP-PUR-11~13(순정 · 대체 승인 최저가 · 최단 납기)의 구매 범위 · 대상 부품 셋 · 승인 역할(구매 담당) · 공급사 선택 방식, SOP-PR7-7(입고 확인, 원문 SOP 머리글 없음)의 실행 후보 제외, 후보 규칙 SPARE_BELOW_MIN → SOP-PUR-11~13과 규정 규칙(AVL · 납기 · 불량률 · 전결 300만 원)을 원문 PR-7.1~7.7과 대조해 그대로 둠",
+  "구매 절차 SOP-PUR-11~13에 구매 총비용 비교 정책(불량 1건 손실 250만 원 · 불량률 10 % 넘으면 전수 검사 20만 원)을 원문 PR-7.4 절 전체 인용으로 붙임 — 없으면 구매 에이전트가 「검토된 원문 정책이 없습니다」로 보류했다(2026-10-25 수업 한 바퀴)"
  ],
  "extraction": "manual_source_extraction.ce804f0a-79de-4ec8-ab3a-d9dc12e0f739",
  "sections": [
@@ -361,7 +362,20 @@
    ],
    "approver": "role:purchasing",
    "executable": true,
-   "supplier_policy": "oem"
+   "supplier_policy": "oem",
+   "purchase_comparison_policy": {
+    "version": 1,
+    "loss_per_failure": 250,
+    "inspection_threshold": 0.1,
+    "inspection_cost": 20,
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 896,
+     "end": 1232,
+     "quote": "- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다."
+    }
+   }
   },
   "SOP-PUR-12": {
    "kind": "work_order",
@@ -379,7 +393,20 @@
    ],
    "approver": "role:purchasing",
    "executable": true,
-   "supplier_policy": "lowest_approved"
+   "supplier_policy": "lowest_approved",
+   "purchase_comparison_policy": {
+    "version": 1,
+    "loss_per_failure": 250,
+    "inspection_threshold": 0.1,
+    "inspection_cost": 20,
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 896,
+     "end": 1232,
+     "quote": "- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다."
+    }
+   }
   },
   "SOP-PUR-13": {
    "kind": "work_order",
@@ -397,7 +424,20 @@
    ],
    "approver": "role:purchasing",
    "executable": true,
-   "supplier_policy": "fastest_quote"
+   "supplier_policy": "fastest_quote",
+   "purchase_comparison_policy": {
+    "version": 1,
+    "loss_per_failure": 250,
+    "inspection_threshold": 0.1,
+    "inspection_cost": 20,
+    "anchor": {
+     "source_id": "seed",
+     "page": 1,
+     "start": 896,
+     "end": 1232,
+     "quote": "- 단가만 보지 않는다. 총비용 = 단가 × 수량 + 불량 기대비용으로 비교한다. 불량 기대비용 = 수량 × 불량률 × 불량 1건 손실이고, 불량 1건 손실(재교체 · 재작업 · 설비 정지)은 250만 원으로 본다(교육용 설정).\n- 공급사를 바꿔 단가를 낮추면 부품 품질이 떨어져 클레임이 늘 수 있다. 같은 부품의 시세 변동은 품질과 관계없다.\n- 리드타임이 필요일(결품 전 남은 날)보다 길면 그 공급사로는 결품을 막지 못한다. 이 경우 비교표에 경고를 단다.\n- 불량률이 10 %를 넘는 승인 공급사에 발주할 때는 입고 검사를 전수 검사로 강화하고, 전수 검사 비용 20만 원을 더해 비교한다."
+    }
+   }
   },
   "SOP-PR7-7": {
    "kind": "work_order",

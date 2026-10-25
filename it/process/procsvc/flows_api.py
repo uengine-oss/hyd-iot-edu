@@ -39,6 +39,7 @@ class ImportReq(BaseModel):
 
 class MappingReq(BaseModel):
     mapping: dict | None = None
+    class_flow: bool = False          # 수업 흐름의 판본 등록은 강사 조립 스크립트(c3_flows.py)만 이 표시를 보낸다 — 포털은 보내지 않으므로 거절된다
 
 
 def default_base_loader(rt) -> dict:
@@ -214,6 +215,10 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
             draft = draft_of(store, def_id)
             if store.is_protected(def_id):
                 raise HTTPException(409, {"reason": f"'{def_id}'은(는) 기준 흐름 id 입니다 — 기준은 바꾸지 않습니다"})
+            # 2026-10-25 수업 한 바퀴: 수업 흐름(강사 배포)의 [매핑 열기] → [판본 등록]이 통과해 강사 흐름에 학생 판본이 쌓였다(배포만 막혔다)
+            if not req.class_flow and any(h['id'] == def_id and h.get('class_flow') for h in rt.repo.deployed_heads(rt.tenant_id)):
+                raise HTTPException(409, {"reason": f"'{draft.get('name') or def_id}'은(는) 강사가 배포한 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
+                                                    "다른 흐름 id(예: my_cooling)로 가져와 등록하세요"})
             mapping = req.mapping if isinstance(req.mapping, dict) else (draft.get("mapping") or {})
             if isinstance(req.mapping, dict):
                 store.save_mapping(def_id, mapping)

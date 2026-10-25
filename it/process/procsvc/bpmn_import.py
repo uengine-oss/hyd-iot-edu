@@ -128,7 +128,8 @@ def parse_bpmn(xml_text: str) -> dict:
         root = ET.fromstring(xml_text)
     except ET.ParseError as e:
         line, col = getattr(e, "position", (None, None))
-        raise BpmnError(f"XML 을 읽을 수 없습니다 ({line}행 {col}열): {e}") from e
+        # 파서 원문(영문 'unclosed token …')은 학생이 읽을 글이 아니다 — 위치와 할 일만 말한다(2026-10-25 수업 한 바퀴)
+        raise BpmnError(f"XML 을 읽을 수 없습니다 ({line}행 {col}열) — 태그가 닫히지 않았거나 파일이 잘렸습니다. bpmn.io 에서 [Download BPMN diagram]으로 다시 받아 가져오세요") from e
     ns, tag = _local(root.tag)
     if ns != BPMN_NS or tag != "definitions":
         raise BpmnError("BPMN 2.0 파일이 아닙니다 (맨 바깥 요소가 bpmn:definitions 가 아님)")
