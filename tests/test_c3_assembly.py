@@ -164,7 +164,7 @@ def test_worker_prompt_ends_with_the_korean_narration_rule():
 
 
 # ---------------------------------------------------------------- 조립 스크립트 명령 (라이브 3차: 없는 명령 deploy-reset 이 배포로 처리됨)
-@pytest.mark.parametrize("argv", [["deploy-reset"], ["deploy_reset", "x"], ["depoly"], ["export"], ["check", "extra"], []])
+@pytest.mark.parametrize("argv", [["deploy-reset"], ["deploy_reset", "x"], ["depoly"], ["export"], ["check", "extra"], ["ensure", "x"], []])
 def test_c3_flows_refuses_unknown_commands_without_calling_any_api(argv, monkeypatch, capsys):
     mod = _flows()
     calls = []
@@ -191,3 +191,37 @@ def test_c3_flows_check_never_registers_and_a_failed_check_is_a_failing_exit(mon
     monkeypatch.setattr(mod, "call", fake)
     assert mod.main(["c3_flows.py", "check"]) == 1
     assert not [p for _, p in calls if p.endswith("/register") or p.endswith("/deploy")]
+
+
+def _ensure_server(deployed_flows):
+    """GET /api/flows/deployments 는 deployed_flows 를 내고, 나머지 호출은 (method, path) 로 기록한다."""
+    calls = []
+    def fake(method, path, body=None):
+        calls.append((method, path))
+        if path == "/api/flows/deployments":
+            return {"flows": deployed_flows}
+        if path.endswith("/check"):
+            return {"check": {"problems": []}}
+        if path.endswith("/register"):
+            return {"version": "v1"}
+        return {}
+    return calls, fake
+
+
+def test_c3_flows_ensure_deploys_only_the_flows_not_yet_deployed_as_class_flows(monkeypatch):
+    """시작 스크립트 두 번째 실행: 수업 흐름으로 올라 있는 것은 그대로, 학생이 같은 id 로 올린 것(표시 없음)과 없는 것만 배포."""
+    mod = _flows()
+    calls, fake = _ensure_server([{"definition": "c3_cooling", "class_flow": True}, {"definition": "c3_pm", "class_flow": False}])
+    monkeypatch.setattr(mod, "call", fake)
+    assert mod.main(["c3_flows.py", "ensure"]) == 0
+    deployed = [p for _, p in calls if p.endswith("/deploy")]
+    assert deployed == ["/api/process/definitions/c3_pm/deploy", "/api/process/definitions/c3_spare/deploy"]
+    assert not [p for _, p in calls if "c3_cooling" in p]
+
+
+def test_c3_flows_ensure_is_a_no_op_when_all_three_are_class_flows(monkeypatch):
+    mod = _flows()
+    calls, fake = _ensure_server([{"definition": d, "class_flow": True} for d in ("c3_cooling", "c3_pm", "c3_spare")])
+    monkeypatch.setattr(mod, "call", fake)
+    assert mod.main(["c3_flows.py", "ensure"]) == 0
+    assert calls == [("GET", "/api/flows/deployments")]

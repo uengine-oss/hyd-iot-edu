@@ -1,2 +1,3 @@
 psycopg[binary]==3.2.3
 git+https://github.com/uengine-oss/cliagents@7c7a3923984f8247a27233cedb786e1a9097d451
+jsonschema==4.26.0                    # procsvc.mcp_check (secret-name check in bridge._written_secrets), same pin as it/process

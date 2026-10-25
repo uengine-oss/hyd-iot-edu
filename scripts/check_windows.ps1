@@ -1,8 +1,9 @@
 ﻿# 실습 스택이 끝까지 도는지 자동으로 점검한다. 저장소 루트의 점검.bat을 더블클릭하면 이 파일을 실행한다(시작.bat이 「완료」된 뒤).
 # 포털을 사람이 클릭하는 대신 포털 버튼이 부르는 것과 같은 API를 부른다:
-#   1) 서비스 10개와 포털이 응답하는가
-#   2) 쿨러 사건 한 바퀴: 전체 초기화 → 쿨러 열화 주입 → 경보 → 처리 건 → 원인 진단 결과 → 쿨러 복구 → 점검이 연 처리 건 정리
-#      새 PC(수업용 구조판 지식)에서는 「원인 진단 보류」가 정상이다. 원인 지식이 있으면 「조치 선택」까지 간다.
+#   1) 서비스 12개 · AI 워커 · 포털이 응답하는가
+#   2) 쿨러 사건 한 바퀴(수업 흐름 c3_cooling): 설비 초기화 → 쿨러 열화 주입 → 경보 → 처리 건 → AI 워커의 「판단 · 제안」(강의 중계 모델)
+#      → 쿨러 복구 → 점검이 연 처리 건 정리(「조치 전 해소」로 스스로 닫힌다)
+#      새 PC(수업용 구조판, 문서 적재 전)에서는 「판단 보류」가 정상이다. 문서를 적재한 PC는 「운전원 승인 대기」까지 간다.
 #   3) 루트 .env를 우선 사용하고, 미설정이면 기존 실습 폴더 .env로 중계 연결을 확인한다.
 # 점검이 연 처리 건은 끝에 정리한다(복제 이미지에 열린 처리 건이 남지 않게). 데이터는 지우지 않는다.
 param([switch]$SkipLlm, [string]$LlmEnvFile)
@@ -59,26 +60,29 @@ function Show-Results {
     Read-Host '창을 닫으려면 Enter' | Out-Null
 }
 
-Say "`n== 실습 스택 점검 (약 3~5분)" 'White'
+Say "`n== 실습 스택 점검 (약 5~8분)" 'White'
 
 # 1. 서비스
 Say "`n[1/3] 서비스 응답"
 $down = @()
-foreach ($p in 8000, 8093, 8090, 8094, 8092, 8091, 8080, 8095, 8199, 8198) {
+foreach ($p in 8000, 8093, 8090, 8094, 8092, 8091, 8080, 8095, 8199, 8198, 8196, 8195) {
     try { $hz = Invoke-RestMethod -Uri "$(Service-Url $p)/healthz" -TimeoutSec 5; if (-not $hz.ok) { $down += (Host-Port $p) } } catch { $down += (Host-Port $p) }   # $h는 $H와 같은 변수(대소문자 무시)라 쓰지 않는다
 }
+# AI 워커는 일을 하는 중에도 응답한다(status ok). 켜지는 중(starting)이면 1분까지 기다린다
+$worker = Wait-Until 60 { $w = Invoke-RestMethod -Uri "$(Service-Url 8097)/healthz" -TimeoutSec 5; if ($w.status -eq 'ok') { $w } }
+if (-not $worker) { $down += "$(Host-Port 8097)(AI 워커)" }
 try { $portal = (Invoke-WebRequest -Uri "$(Service-Url 8088)/" -UseBasicParsing -TimeoutSec 5).StatusCode } catch { $portal = 0 }
-if ($down.Count -eq 0 -and $portal -eq 200) { Record '서비스 10개 · 포털' $true '모두 응답' }
+if ($down.Count -eq 0 -and $portal -eq 200) { Record '서비스 12개 · AI 워커 · 포털' $true '모두 응답' }
 else {
-    Record '서비스 10개 · 포털' $false "응답 없음: $($down -join ', ')$(if ($portal -ne 200) { " 포털($(Host-Port 8088))" }) — 시작.bat을 먼저 끝까지 실행하세요"
+    Record '서비스 12개 · AI 워커 · 포털' $false "응답 없음: $($down -join ', ')$(if ($portal -ne 200) { " 포털($(Host-Port 8088))" }) — 시작.bat을 먼저 끝까지 실행하세요"
     Show-Results; exit 1
 }
 $ph = Get-J "$PROCESS/healthz"
 if ($ph.mode -ne 'instance' -or -not $ph.supabase) { Record '처리 엔진 설정' $false "mode=$($ph.mode) supabase=$($ph.supabase) — 시작.bat이 강의 배포본 값으로 맞춥니다. 시작.bat을 다시 실행하세요" }
 else { Record '처리 엔진 설정' $true '강의 배포본(instance · 업무 DB 연결)' }
 
-# 2. 쿨러 사건 한 바퀴
-Say "`n[2/3] 쿨러 사건 한 바퀴 (경보까지 1분쯤 걸립니다)"
+# 2. 쿨러 사건 한 바퀴 (수업 흐름 c3_cooling: T_agent 판단 · 제안 → T_approve 운전원 승인)
+Say "`n[2/3] 쿨러 사건 한 바퀴 (경보까지 1분, AI 판단까지 2~4분 걸립니다)"
 $instance = $null
 try {
     Post-J "$PLANT/api/reset" @{} | Out-Null
@@ -94,17 +98,20 @@ try {
     $instance = Wait-Until 60 { foreach ($i in (Get-J "$PROCESS/api/instances?limit=20")) { if ($before -notcontains $i.proc_inst_id) { return $i } }; $null }
     if (-not $instance) { throw '경보가 났지만 1분 안에 처리 건이 열리지 않았습니다(처리 엔진 확인)' }
     $pid_ = $instance.proc_inst_id
-    Record '처리 건 열림' $true $pid_
+    if ($instance.proc_def_id -ne 'c3_cooling') { throw "처리 건이 수업 흐름이 아닌 $($instance.proc_def_id) 로 열렸습니다 — 시작.bat을 다시 실행하면 수업 흐름을 배포합니다" }
+    Record '처리 건 열림' $true "$pid_ (수업 흐름 냉각 긴급 대응)"
 
-    $outcome = Wait-Until 180 {
+    # AI 워커가 강의 중계 모델로 판단한다. 느린 PC · 중계 지연까지 7분 기다린다(2026-10-25 실측 약 2분)
+    $outcome = Wait-Until 420 {
         $v = Get-J "$PROCESS/api/instances/$pid_"
-        $diag = $v.workitems | Where-Object { $_.activity_id -eq 'task:diagnose' }
-        $select = $v.workitems | Where-Object { $_.activity_id -eq 'task:select' -and $_.status -eq 'IN_PROGRESS' }
-        if ($select) { '조치 선택까지 진행(원인 지식 있음) — 에이전트 단계 넷 완료, 사람 승인 대기' }
-        elseif ($diag.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { '원인 진단 보류(새 PC 정상: 원인 지식은 수업에서 적재) — 설비 · 수집 · 감지 · 처리 · 에이전트 · 지식 그래프 · 시계열 DB 연결 확인' }
+        $agent = $v.workitems | Where-Object { $_.activity_id -eq 'T_agent' }
+        $approve = $v.workitems | Where-Object { $_.activity_id -eq 'T_approve' -and $_.status -eq 'IN_PROGRESS' }
+        if ($approve) { '판단 완료 — 추천 카드가 나와 운전원 승인 대기(문서 적재된 PC)' }
+        elseif ($agent.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { '판단 보류(새 PC 정상: 원인 지식은 수업에서 문서로 적재) — 설비 · 수집 · 감지 · 처리 · AI 워커 · 강의 중계 · 지식 그래프 연결 확인' }
+        elseif ($agent.status -in @('FAILED', 'ERROR', 'CANCELLED')) { throw "AI 워커가 판단하지 못했습니다($($agent.status)): $("$($agent.log)".Trim()) — .env의 LLM_API_KEY와 인터넷 연결을 확인하세요" }
     }
-    if (-not $outcome) { throw '처리 건이 3분 안에 진단 결과(보류 또는 조치 선택)에 닿지 않았습니다(에이전트 확인)' }
-    Record '원인 진단' $true $outcome
+    if (-not $outcome) { throw '처리 건이 7분 안에 판단 결과(보류 또는 승인 대기)에 닿지 않았습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요' }
+    Record 'AI 판단 · 제안' $true $outcome
 }
 catch { Record '쿨러 사건' $false $_.Exception.Message }
 finally {
@@ -112,24 +119,24 @@ finally {
     try { Post-J "$PROCESS/api/scenario/A/restore" $who | Out-Null } catch { }
     if ($instance) {
         $pid_ = $instance.proc_inst_id
-        $closed = Wait-Until 240 {
+        # 보류된 건은 쿨러 복구로 경보가 풀리면 「조치 전 해소」로 스스로 닫힌다(실측 약 1분). 3분이 지나도 열려 있으면 보류 단계를 닫는다
+        $deadline = (Get-Date).AddSeconds(180)
+        $closed = Wait-Until 300 {
             $v = Get-J "$PROCESS/api/instances/$pid_"
             if ($v.instance.status -ne 'RUNNING') { return $v.instance.status }
-            foreach ($w in @($v.workitems | Where-Object { $_.status -eq 'PENDING' -and $_.agent_mode })) {
-                try { Post-J "$PROCESS/api/todolist/$($w.id)/close" @{ by = '설치 점검'; reason = '설치 점검이 연 처리 건 정리(쿨러 복구 뒤)' } | Out-Null } catch { }
-            }
-            # 보류 뒤 흐름은 「상급자 호출」(생산관리자 확인 메모)로 간다. 점검이 연 건이므로 정리 메모를 제출해 닫는다(조치 카드 승인은 건드리지 않는다)
-            foreach ($w in @($v.workitems | Where-Object { $_.status -eq 'IN_PROGRESS' -and $_.tool -eq 'formHandler:escalate' })) {
-                try { Post-J "$PROCESS/api/todolist/$($w.id)/submit" @{ output = @{ note = '설치 점검이 연 처리 건 정리(쿨러 복구 뒤)' }; by = '설치 점검' } | Out-Null } catch { }
+            if ((Get-Date) -gt $deadline) {
+                foreach ($w in @($v.workitems | Where-Object { $_.status -eq 'PENDING' -and $_.agent_mode })) {
+                    try { Post-J "$PROCESS/api/todolist/$($w.id)/close" @{ by = '설치 점검'; reason = '설치 점검이 연 처리 건 정리(쿨러 복구 뒤)' } | Out-Null } catch { }
+                }
             }
             $null
         }
         if ($closed) { Record '점검 처리 건 정리' $true "처리 건 종료($closed)" }
         else {
             $v = Get-J "$PROCESS/api/instances/$pid_"
-            if ($v.workitems | Where-Object { $_.status -eq 'IN_PROGRESS' -and -not $_.agent_mode }) {
-                # 원인 지식이 있는 PC: 사람 승인 단계가 열려 있다. 점검이 대신 승인하거나 닫지 않는다
-                Record '점검 처리 건 정리' $true "사람 승인 단계가 열린 채 남음 — 이미지를 뜨기 전이면 포털 「처리 건」에서 이 건을 끝내세요($pid_)"
+            if ($v.workitems | Where-Object { $_.activity_id -eq 'T_approve' -and $_.status -eq 'IN_PROGRESS' }) {
+                # 문서를 적재한 PC: 운전원 승인 단계가 열려 있다. 점검이 대신 승인하거나 거절하지 않는다
+                Record '점검 처리 건 정리' $true "운전원 승인 단계가 열린 채 남음 — 포털 「작업함」에서 이 건을 거절해 닫으세요($pid_)"
             }
             else { Record '점검 처리 건 정리' $false "처리 건 $pid_ 이 아직 열려 있습니다. 포털 「처리 건」에서 확인하세요" }
         }

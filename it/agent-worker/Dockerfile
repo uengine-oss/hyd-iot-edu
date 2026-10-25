@@ -9,13 +9,10 @@ WORKDIR /srv
 COPY it/agent-worker/requirements.txt /srv/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY common/hydcommon /srv/hydcommon
-COPY it/process/procsvc/procdb.py /srv/procsvc/procdb.py
-COPY it/process/procsvc/task_deferral.py /srv/procsvc/task_deferral.py
-COPY it/process/procsvc/agents_store.py /srv/procsvc/agents_store.py
-COPY it/process/procsvc/agent_authoring.py /srv/procsvc/agent_authoring.py
-COPY it/process/procsvc/mcp_secrets.py /srv/procsvc/mcp_secrets.py
-COPY it/process/procsvc/work_rules.py /srv/procsvc/work_rules.py
-RUN touch /srv/procsvc/__init__.py
+# the whole package (the worker imports procdb · task_deferral · agents_store · mcp_secrets · mcp_check · result_correction …, and
+# procdb pulls the stores it is built from). A hand-picked file list drifted and the container worker died on start
+# (2026-10-25: procdb → approval_store missing); tests/test_worker_image_contract.py guards the import closure.
+COPY it/process/procsvc /srv/procsvc
 COPY it/neo4j/v2/schema_prompt.md /srv/ontology/schema_prompt.md
 COPY it/agent-worker/worker /srv/worker
 ENV PYTHONUNBUFFERED=1 WORKSPACE_ROOT=/workspace SCHEMA_PROMPT=/srv/ontology/schema_prompt.md

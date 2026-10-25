@@ -53,7 +53,7 @@
   에러 없이 조용히 재시작했으면 커널 OOM을 의심한다(로컬: `wsl -d docker-desktop -e sh -c "dmesg | grep -i oom"`).
 - 20배속 레거시 회귀 전에는 호스트 워커를 모두 멈춘다(워커가 에이전트 작업을 가져간다).
 - 완주·E2E 검증은 학생 대역 1명·인스턴스 1건·1회. 학생 수만큼 동시에 돌리지 않는다.
-- enterprise-mcp·dmn-mcp는 프로필 `cliagents`에만 있다: `docker compose --profile cliagents up -d enterprise-mcp dmn-mcp`. agent-worker 컨테이너는 올리지 않는다.
+- AI 워커(`agent-worker` 컨테이너)와 에이전트용 MCP(enterprise-mcp · -maint · -purchase · dmn-mcp)는 프로필 `cliagents`이고, 강의 배포본 `.env.example`의 `COMPOSE_PROFILES`에 들어 있다(2026-10-25). 워커의 모델 호출은 `.env`의 `LLM_API_KEY` · `LLM_RELAY_URL` · `LLM_MODEL`로 강의 중계에 간다(`문서/시스템/2_기준.md` 6절). 호스트 워커(`run_worker_host.sh`)는 개발용이며 컨테이너 워커와 함께 돌리지 않는다(워커는 하나).
 - Supabase 로컬: `cd it/supabase && supabase start`(PostgreSQL 15, 포트 54322). `supabase stop --no-backup`은 볼륨을 지운다.
 - 컨테이너·Supabase·워커는 스스로 켜고 끄고, 시험 잔재(임시 DB·시험 인스턴스)는 스스로 정리한다. 끈 뒤 실제로 꺼졌는지 확인한다.
   프로젝트 데이터 볼륨, 원자료, 강사 손질본 삭제와 원격 push·결제는 묻는다.
@@ -90,10 +90,12 @@
 클라우드 `.env`: 레포에 없다(.gitignore). 세션 시작 훅(`.claude/hooks/cloud-env.sh`)이 `.env.example`로 만들고,
 LLM은 LiteLLM 중계(모델 `coding`) 하나이고 GPU는 없다(`문서/시스템/2_기준.md` 6절). LLM 키·주소(`OPENAI_API_KEY`·`LLM_API_KEY`·`OPENAI_BASE_URL`·`LLM_MODEL`·`LLM_PROVIDER`)는 claude.ai/code 환경 설정의
 환경변수로 들어온다(compose는 `${VAR:-기본값}`만 쓰므로 셸 환경변수가 우선). LLM 서버 도메인은 환경의 네트워크 허용 목록에 있어야 한다.
-클라우드 `.env` 값: 예시 파일 기본값은 `PROCESS_MODE=legacy`·`AGENT_BRIDGE=legacy`·`ENTERPRISE_BACKEND=memory`라 강의 배포본과 다르다. 검증 전에 `문서/시스템/참조/RUNBOOK.md` §0의 강의 배포본 값(`PROCESS_MODE=instance`, `ENTERPRISE_BACKEND=supabase`, `PROCESS_MEM_LIMIT=768m`)으로 맞춘다 — memory로 돈 core 회귀는 업무 DB를 쓰는 검사(작업지시 전용 카드·시간 기준값)가 거짓 실패했다(A157). AGENT_BRIDGE는 core 회귀 legacy, worker 회귀·실제 워커 시험 off.
+클라우드 `.env` 값: 예시 파일이 곧 강의 배포본이다(`PROCESS_MODE=instance` · `ENTERPRISE_BACKEND=supabase` · `AGENT_BRIDGE=off` · `cliagents` 포함, 빈칸은 `LLM_API_KEY` 하나). core 회귀만 `AGENT_BRIDGE=legacy`로 바꿔 돌린다.
+클라우드 셸 변수 주의(2026-10-25 실측): 이 환경 설정은 셸에 `AGENT_BRIDGE=legacy` · `COMPOSE_PROFILES`(cliagents 없음) · `SUPABASE_DSN`(54322 고정) · `LLM_API_KEY` 등을 내보내고 compose는 셸 값을 `.env`보다 우선한다. 강의실 조건을 재현할 때는 그 변수들을 `unset`하고 시작 스크립트를 돌린다(안 지우면 포트가 옮겨진 PC 시험에서 업무 시스템이 옛 DB 포트로 붙어 멈춘다). 시작 스크립트의 Python 3.14.7 요구는 강의실 기준이라 클라우드(uv 최신 3.14.6)는 그 한 줄만 낮춘 임시 사본으로 돌리고 지운다.
+클라우드 이미지 받기: Docker Hub가 429(익명 한도)를 내면 `mirror.gcr.io/<이름>`(공식 이미지는 `library/<이름>`)으로 받아 원래 이름으로 `docker tag`한다.
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).
 클라우드 이미지 빌드: 에이전트 프록시가 TLS를 다시 서명하므로 빌드 안 `pip`가 `CERTIFICATE_VERIFY_FAILED`로 실패한다. 세션마다 한 번, 베이스 이미지에 프록시 CA를 넣는다(레포 Dockerfile은 그대로):
-`docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + `COPY /root/.ccr/ca-bundle.crt` 사본 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=…`로 `docker build -t python:3.12-slim`.
+`docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + CA 사본을 `/usr/local/share/ca-certificates/`에 두고 `/etc/ssl/certs/ca-certificates.crt`에 덧붙임 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=… CURL_CA_BUNDLE=… NODE_EXTRA_CA_CERTS=<CA 사본>`으로 `docker build -t python:3.12-slim`(워커 이미지의 curl · npm까지 된다).
 
 통합 시험: `scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scripts/scenario_pump_fan_test.py`(펌프·팬·가림),
 `scripts/scenario_test.py --quick`(레거시, `PROCESS_MODE=legacy`로 process 재기동 필요).
