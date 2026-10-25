@@ -1398,6 +1398,14 @@ def lab_05_manual_to_knowledge(r: Round):
             continue                                                       # 주의 깊은 학생은 적재하지 않고 다시 추출을 요청한다 — 수업용 기본 지식이 남는다
         changes = _b_apply_review(r, key, pv)
         ok, msg = _b_commit(r, key)
+        if not ok and msg.startswith("고장 유형을 고르세요:"):
+            # 원문에 고장 유형이 없는 확인 절차(입고 확인 등) — 학생은 안내대로 종류를 「일반 원문 참고 절차」로 바꾸고 다시 적재한다
+            for sop in re.findall(r"SOP-[A-Z0-9-]+", msg.split("—")[0]):
+                r.page.select_option(f"select[data-kind='{sop}']", "reference")
+                if r.page.locator(f"select[data-reference-executable='{sop}']").count():
+                    r.page.select_option(f"select[data-reference-executable='{sop}']", "false")
+                changes.append(f"참고 절차로 {sop}(안내대로)")
+            ok, msg = _b_commit(r, key)
         r.check(f"{key} 적재", ok, f"{msg} · 검토 변경 {changes}")
         if not ok:
             hm, why = r.human_message(msg)
