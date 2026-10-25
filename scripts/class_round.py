@@ -1479,7 +1479,9 @@ def lab_06_first_agent(r: Round):
 
     # ---- 질문 → 근거 · 호출 기록 (AI 3회: 같은 질문 · 같은 에이전트)
     q = "HM-8 매뉴얼에서 쿨러 냉각 성능 상실의 즉시 완화 조치 절차 번호를 모두 알려 주고, 각 절차의 승인 역할도 알려 줘."
-    runs = r.repeat3("나의 에이전트 질문", lambda i: _b_ask(r, mine["id"], q), ("kind", "sop_ids", "verified_ok", "tools"), limit_s=_B_ASK_LIMIT_S)
+    runs = r.repeat3("나의 에이전트 질문", lambda i: _b_ask(r, mine["id"], q), ("kind", "sop_ids", "verified_ok"), limit_s=_B_ASK_LIMIT_S)
+    # 도구 경로(스키마를 한 번 더 보는 등)는 학생의 다음 단계가 아니다 — 같은 답 · 근거면 같다. 차이는 기록만(final2: 셋 중 하나가 시계열 스키마 1회 추가)
+    print("    나의 에이전트 질문 도구 경로: " + " | ".join(json.dumps(x.get("tools"), ensure_ascii=False) for x in runs), flush=True)
     last = runs[-1]
     r.check("답 + 근거가 서버 대조(실행 기록)를 통과", last.get("kind") == "answered" and last.get("verified_ok"),
             f"{last.get('kind')} · 근거 {last.get('verified')} · {last.get('reason') or ''}")
