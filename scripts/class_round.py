@@ -1325,7 +1325,8 @@ def lab_05_manual_to_knowledge(r: Round):
         rolled = _b_skill_count(_b_onto_stats(r))
         r.check("되돌리기 → 지식 지도 조치 방법이 적재 전 수로", rolled == r.memo["b_skills_before"], f"{rolled} vs {r.memo['b_skills_before']} · {hist[:200]}", kind="exception")
         r.tab("knowledge")
-        reopen = page.locator("#manualSources [data-manual-reopen]")                           # 「보관 원문 · 다시 검토」 — 코드 확인
+        # 「보관 원문 · 다시 검토」 — 그 문서(HM-8) 원문의 버튼을 고른다. final3: 첫 버튼(PR-07)을 눌러 PR-07 에 HM-8 검토를 적재했고 C 가 보류됐다
+        reopen = page.locator(f"#manualSources [data-manual-reopen='{sid}']")
         if reopen.count():
             page.locator("#manualSources details summary").first.click()
             reopen.first.click()
