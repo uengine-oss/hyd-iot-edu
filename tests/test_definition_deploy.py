@@ -4,6 +4,7 @@ the deployment instead of re-seeding from the file."""
 from copy import deepcopy
 from datetime import datetime, timedelta
 
+import re
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -192,3 +193,16 @@ def test_memory_repo_deployment_rejects_unknown_versions():
         repo.record_deployment('p', '2', 'hyd', action='deploy', actor='x', reason='y')
     row = repo.record_deployment('p', '1', 'hyd', action='deploy', actor='x', reason='y')
     assert row['previous_version'] is None and repo.deployed_version('p') == '1' and repo.deployed_version('p', 'other') is None
+
+
+def test_compare_text_hides_modeler_generated_ids():
+    """2026-10-25 수업 한 바퀴: bpmn.io로 만든 학생 흐름의 [기준과 비교]에 Flow_0abc · Activity_1x 가 그대로 섞였다."""
+    from procsvc import definition_diff
+    a = {'activities': [{'id': 'diagnose', 'name': '원인 진단'}], 'sequences': []}
+    b = {'activities': [{'id': 'diagnose', 'name': '원인 진단'}, {'id': 'Activity_1x9q', 'name': '현장 확인'}, {'id': 'Activity_0zz'}],
+         'sequences': [{'id': 'Flow_0abc12', 'source': 'diagnose', 'target': 'Activity_1x9q'},
+                       {'id': 'Flow_1def', 'source': 'Activity_1x9q', 'target': 'Activity_0zz'}]}
+    texts = [c['text'] for c in definition_diff.compare(a, b)['changes']]
+    assert '단계 "현장 확인" 추가' in texts and '단계 (이름 없음) 추가' in texts
+    assert '연결 원인 진단 → 현장 확인 추가' in texts and '연결 현장 확인 → 이름 없는 요소 추가' in texts
+    assert not any(re.search(r'Activity_|Flow_', t) for t in texts)

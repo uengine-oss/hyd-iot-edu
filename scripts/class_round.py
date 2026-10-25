@@ -2519,7 +2519,8 @@ def lab_10_run_my_flow(r):
     # 머리줄(「기준(2.2)과 비교 — 판본 1」)이 먼저 그려지고 비교 내용은 뒤에 온다 — 내용까지 기다린다(최종 1차: 머리줄만 읽음)
     r.wait(30, lambda: len(r.page.locator("#deployRefDiff").inner_text().strip().splitlines()) > 2, every=0.5)
     diff = r.page.locator("#deployRefDiff").inner_text()
-    r.check("[기준과 비교] → 바뀐 단계 · 연결을 사람 말로", "기준" in diff and "같습니다" not in diff and not re.search(r"Activity_|Gateway_|Flow_", diff), diff[:400])
+    r.check("[기준과 비교] → 바뀐 단계 · 연결을 사람 말로", "기준" in diff and "같습니다" not in diff and not re.search(r"Activity_|Gateway_|Flow_", diff),
+            "모델러 id: " + ", ".join(sorted(set(re.findall(r"(?:Activity|Gateway|Flow)_\w+", diff)))[:8]) + " · " + diff[:300])
     # 되돌리기: 담당자 없이 → 막힘, 담당자 넣고 → 학생 흐름만 내림, 수업 흐름 남음
     r.page.fill("#deployBy", "")
     r.page.locator("#deployResetRef").click(); r.page.wait_for_timeout(800)

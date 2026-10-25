@@ -11,6 +11,8 @@ compare(a, b) → {'from': {...}, 'to': {...}, 'counts': {'추가','삭제','변
 """
 from __future__ import annotations
 
+import re
+
 import json
 from copy import deepcopy
 
@@ -72,11 +74,20 @@ def _flow(seq: dict, names: dict[str, str]) -> dict:
     return {'from': names.get(seq.get('source'), seq.get('source') or '?'), 'to': names.get(seq.get('target'), seq.get('target') or '?')}
 
 
+#: bpmn.io 등 모델러가 이름 대신 붙이는 무작위 id(Flow_0abc12 · Activity_1x9 · Gateway_…). 2026-10-25 수업 한 바퀴: 학생이 bpmn.io로 만든 흐름의
+#: [기준과 비교]에 이 id가 그대로 섞였다 — 학생이 읽을 수 없는 글자라 보이지 않는다(id 칸에는 남는다).
+_GENERATED_ID = re.compile(r'(Flow|Activity|Gateway|Event|StartEvent|EndEvent|Task|SequenceFlow)_[0-9A-Za-z]+')
+
+
 def _describe(kind: str, change: str, ident: str, item: dict, flow: dict | None) -> str:
+    generated = bool(_GENERATED_ID.fullmatch(str(ident)))
     if flow:
-        return f'{kind} {flow["from"]} → {flow["to"]} ({ident}) {change}'
+        unnamed = lambda end: '이름 없는 요소' if _GENERATED_ID.fullmatch(str(end)) else end
+        return f'{kind} {unnamed(flow["from"])} → {unnamed(flow["to"])}{"" if generated else f" ({ident})"} {change}'
     name = item.get('name')
-    return f'{kind} "{name}"({ident}) {change}' if name and name != ident else f'{kind} {ident} {change}'
+    if name and name != ident:
+        return f'{kind} "{name}"{"" if generated else f"({ident})"} {change}'
+    return f'{kind} {"(이름 없음)" if generated else ident} {change}'
 
 
 def compare(a: dict, b: dict) -> dict:
