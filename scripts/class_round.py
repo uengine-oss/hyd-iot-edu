@@ -1433,7 +1433,7 @@ def _b_ask(r, agent_id: str, question: str) -> dict:
             "sop_ids": sorted(set(re.findall(r"SOP-[A-Z0-9]+(?:-[A-Z0-9]+)*", answer))),
             "tools": sorted({str(c.get("raw_tool") or c.get("tool")) for c in calls if c.get("ok") and c.get("data")}),
             "calls": len(calls), "answer": answer[:400], "reason": res.get("reason"),
-            "screen": page.locator(f".ask-a:has(a[href='{href}'])").first.inner_text()[:600] if href and page.locator(f".ask-a:has(a[href='{href}'])").count() else ""}
+            "screen": page.locator(f".ask-a:has(a[href='{href}'])").first.inner_text()[-1500:] if href and page.locator(f".ask-a:has(a[href='{href}'])").count() else ""}
 
 
 @lab("06", "5-1 · 4-1 나의 첫 에이전트 (에이전트 · 에이전트에게 질문)")
@@ -1507,7 +1507,7 @@ def lab_06_first_agent(r: Round):
     if unk.get("reason"):
         ok, why = r.human_message(unk["reason"])
         r.check("답할 수 없음 이유가 사람 글", ok, why, kind="exception")
-    r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[:200], kind="exception")
+    r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[-200:], kind="exception")
 
     # ---- 모델 칸에 엉뚱한 값(모양은 맞음): 저장 때 안내하는가, 실행 때 사람 글로 실패하는가 → 되돌리기
     _b_open_agent_edit(r, mine["id"])

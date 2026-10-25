@@ -138,8 +138,9 @@ def test_cannot_answer_comes_back_with_the_agents_reason(world, tmp_path):
     v = _ask(rt, q='다음 달 원자재 환율은?')
     _work(rt, tmp_path, _cli({'status': 'cannot_answer', 'reason': '업무 DB 카탈로그에 환율 예측 표가 없습니다 (describe_catalog 확인)'},
                              calls=(('mcp__enterprise__describe_catalog', {}, '{"tables": []}'),)))
-    res = ask.view(rt, v['id'])['result']
+    d = ask.view(rt, v['id']); res = d['result']
     assert res['kind'] == 'unanswerable' and res['by'] == 'agent' and '환율 예측 표가 없습니다' in res['reason']
+    assert d['state'] == 'done' and d['message'].startswith('답할 수 없음')       # 2026-10-25: 머리말이 「답이 나왔습니다」였다
 
 
 def test_an_answer_without_any_tool_call_is_not_shown_as_an_answer(world, tmp_path):
