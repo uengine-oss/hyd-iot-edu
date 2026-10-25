@@ -349,3 +349,16 @@ def test_saved_actual_b_record_uses_historical_metadata_without_changing_source(
     retain(page,'saved-actual-b-record','#instRecord',
            'Read-only browser replay of skill-delivery-approved/before.json from actual B. Saved input unchanged; no live HTTP calls, CLI run, or task completion.',
            ['당시 설명','프롬프트로 본문 전달'])
+
+
+def test_business_chip_returns_to_due_after_reset_following_a_rejection(page):
+    """2026-10-25 수업 한 바퀴(final3 · 92): B 를 거절(반려)한 뒤 [초기화]를 눌러도 카드 머리 표시가 「반려」로 남았다."""
+    source=(WWW/'app.js').read_text(encoding='utf8')
+    business='const EXPERIMENT = {'+source.split('const EXPERIMENT = {')[1].split("$('#btnReset').addEventListener")[0]
+    page.add_script_tag(content='function refreshFast(){};\n'+business)
+    last={'instance':'c3_pm.x','status':'COMPLETED','ended_at':'2026-10-25T22:00:00Z','outcome':'반려'}
+    b={'label':'정기 점검 도래','title':'정기 정비','alert':True,'facts':{},'running':None,'last':last}
+    html=lambda presses: page.evaluate("([b,p])=>{state.biz={scenarios:{B:b},presses:p};return bizAlertHtml('HYD-02');}",[b,presses])
+    assert '반려' in html({'HYD-02':{'button':'정기 점검','at':'2026-10-25T21:59:00Z'}})          # 거절 직후: 결과를 보인다
+    after=html({'HYD-02':{'button':'초기화','at':'2026-10-25T22:01:00Z'}})
+    assert '정기 점검 도래' in after and '반려' not in after                                     # 거절 뒤 [초기화]: 다시 도래

@@ -291,7 +291,10 @@ function bizAlertHtml(asset) {
   if (state.biz && state.biz.failed) return `<span class="chip tone-danger" title="${esc(state.biz.failed)}">표시를 읽지 못함</span>`;
   const b = bizOf(asset); if (!b) return '';
   if (b.running) return `<a href="#" class="chip tone-accent" data-open-inst="${esc(b.running.instance)}" title="처리 건 화면에서 보기">${esc(b.title)} 처리 중 →</a>`;
-  if (b.alert && b.last?.outcome !== '반려') return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
+  // 2026-10-25 수업 한 바퀴: 거절(반려) 뒤 [초기화]를 눌러도 표시가 「반려」로 남아 초기화가 안 된 것처럼 보였다 — 마지막 처리 건이 끝난 뒤의 [초기화]면 다시 도래/필요
+  const press = state.biz && state.biz.presses && state.biz.presses[asset];
+  const resetAfter = press && press.button === '초기화' && b.last && b.last.ended_at && Date.parse(press.at) >= Date.parse(b.last.ended_at);
+  if (b.alert && (b.last?.outcome !== '반려' || resetAfter)) return `<span class="chip tone-warning" title="${esc(bizFactLine(b))}">${esc(b.label)}</span>`;
   if (b.last && !b.running) return `<a href="#" class="chip tone-${b.last.outcome === '반려' ? 'danger' : 'success'}" data-open-inst="${esc(b.last.instance)}" title="처리 건 화면에서 보기">${b.last.outcome === '반려' ? '반려' : `처리됨${b.last.outcome ? ` · ${esc(b.last.outcome)}` : ''}`}</a>`;
   return b.error ? `<span class="chip tone-neutral" title="${esc(b.error)}">업무 시스템 응답 없음</span>` : '';
 }
