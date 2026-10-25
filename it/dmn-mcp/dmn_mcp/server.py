@@ -8,15 +8,35 @@
 """
 from __future__ import annotations
 
+import json
 import os
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_headers
 from pydantic import Field
 
 from hydcommon.fabric import CROSS_QUERIES, ENT, TS
 
 from .tools import DmnTools, enveloped
+
+#: 워커가 이번 실행의 연결 설정(.mcp.json headers)에 싣는 process_scope. 2026-10-25 수업 한 바퀴: 모델이 process_scope 를 옮겨 적다
+#: 처리 건 UUID 한 글자를 틀려(b43b → b43c) 판단 등록이 409로 거절되고 학생 흐름이 보류됐다 — 헤더가 있으면 모델이 적은 값 대신 쓴다.
+SCOPE_HEADER = "x-hyd-process-scope"
+
+
+def run_scope(given: dict | None) -> dict | None:
+    raw = get_http_headers().get(SCOPE_HEADER)
+    if not raw:
+        return given
+    try:
+        scope = json.loads(raw)
+    except ValueError as exc:
+        raise ValueError("실행 헤더의 process_scope 가 JSON 이 아닙니다") from exc
+    if not isinstance(scope, dict):
+        raise ValueError("실행 헤더의 process_scope 가 객체가 아닙니다")
+    return scope
+
 
 mcp = FastMCP("hyd-dmn", instructions=(
     "유압설비 교육 공장의 결정론 판단 엔진이다. 원인 진단(diagnose)은 후보 원인의 사전 확률 × 실제 증거 가중치로 순위를 매긴다. "
@@ -114,7 +134,7 @@ def submit_decision(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: 
                     process_scope: Annotated[dict | None, Field(description="context/task.json의 process_scope 객체를 그대로 전달: tenant/instance/workitem/generation/version/consumer")] = None) -> dict:
     """순위를 매긴 조치 카드 묶음을 process 에 제출한다 (사람이 고를 카드). 에이전트의 유일한 쓰기. 돌려준 id 가 decision_id 다.
     process 가 등록을 거절했거나(사유 포함) 연결 실패 · 후보 0개 · 가드레일 거절이면 성공이 아니라 오류 봉투다."""
-    return enveloped(lambda: tools.submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, overrides, process_scope))()
+    return enveloped(lambda: tools.submit_decision(asset, pattern, cause, failure_mode, incident, alert_id, overrides, run_scope(process_scope)))()
 
 
 @mcp.tool(annotations=READ)
@@ -141,7 +161,7 @@ def submit_purchase(asset: Asset, part_no: Annotated[str, Field(description='실
                     incident: Annotated[str, Field(description='현재 처리 건 incident id')], alert_id: str | None = None,
                     process_scope: Annotated[dict | None, Field(description='현재 task.json의 process_scope 원문')] = None) -> dict:
     """원문 구매 카드의 판단 결과만 process에 제출한다. 실제 ERP/입고 효과는 사람 승인 뒤 시스템이 수행한다."""
-    return enveloped(lambda: tools.submit_purchase(asset, part_no, incident, alert_id, process_scope))()
+    return enveloped(lambda: tools.submit_purchase(asset, part_no, incident, alert_id, run_scope(process_scope)))()
 
 
 @mcp.tool(annotations=READ)

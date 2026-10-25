@@ -96,6 +96,7 @@ def test_purchase_use_is_never_inferred_and_legacy_fault_still_requires_fm(page)
     check_review(page)
     page.locator('#manualCommit').click()
     assert '고장 유형을 고르세요' in page.locator('#manualMsg').inner_text() and requests==[]
+    assert '일반 원문 참고 절차' in page.locator('#manualMsg').inner_text()   # 2026-10-25: 고장 조치가 아니면 무엇을 할지
     page.locator('[data-manual-scope]').select_option('purchase')
     assert not page.locator('#manualReviewed').is_checked()
     assert page.locator('[data-manual-executable]').input_value()==''

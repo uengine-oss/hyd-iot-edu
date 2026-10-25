@@ -175,7 +175,8 @@ class Runner:
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
                                                                       skills_inline=provider_id == 'codex'))
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
-                                 host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools)
+                                 host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools,
+                                 run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
         if ctx.human_answer:
             plan = hitl.durable_resume(row) or hitl.plan_resume(ws.path, workspace_exists=ws.exists)
             hitl.clear(ws.path)     # A144: the pending question is answered; a stale cache must not count a later re-ask as a duplicate

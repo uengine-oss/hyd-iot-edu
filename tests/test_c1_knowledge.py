@@ -99,7 +99,7 @@ def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
     d = manual_extraction.definition()
     # 2.4 includes business SOPs; 2.3 removed the provider pin. Preservation
     # tests retain exact registered 2.2/2.3 snapshots while running the new one.
-    assert d['version'] == manual_extraction.VERSION == '2.8'
+    assert d['version'] == manual_extraction.VERSION == '2.9'
     assert 'agentConfig' not in d['activities'][0]
     # 2.1: 단계의 선택 기준과 절차의 적용 조건을 나눈다(라이브 4차 SOP-PUR-13 — 조건을 값 고르기에 미리 적용해 다른 공급사를 골랐다)
     assert '선택 기준을 그대로 적용' in manual_extraction.INSTRUCTION and 'dt:compliance EXCLUDE 규칙으로 옮겨' in manual_extraction.INSTRUCTION
@@ -332,3 +332,39 @@ def test_owned_keys_come_from_the_journal_snapshot():
     snap = {'nodes': [{'labels': ['FailureMode'], 'props': {'id': 'fm:x'}}, {'labels': ['Skill'], 'props': {'id': 'skill:a', '_manual_document': 'd'}}]}
     assert manual_graph.owned_keys(snap) == [('FailureMode', 'fm:x'), ('Skill', 'skill:a')]
     assert manual_graph.owned_keys(None) == []
+
+
+def test_policy_anchors_inside_extraction_links_get_located(archive):
+    """2026-10-25 수업 한 바퀴(final3): 지시 2.8의 정책 인용(maintenance_policy.anchor · model_anchor)은 좌표를 채우지 않아
+    적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다 — 다른 인용처럼 서버가 원문에서 찾아 채운다."""
+    import json
+    source, prop = load(archive, 'B')
+    seed = json.loads((fx.ROOT / 'it/neo4j/class-knowledge/PM-02.json').read_text(encoding='utf-8'))
+    policy = copy.deepcopy(seed['links']['SOP-PM-11']['maintenance_policy'])
+    for key in ('anchor', 'model_anchor'):
+        policy[key] = {'source_id': source['source_id'], 'quote': policy[key]['quote']}       # AI 가 낸 꼴: 인용 글만
+    proc = next(p for p in prop['procedures'] if p['id'] == 'SOP-PM-11')
+    proc['link'] = dict(proc.get('link') or {}, maintenance_policy=policy)
+    checked = manual_extraction.validate_proposal(source, prop)
+    got = next(p for p in checked['procedures'] if p['id'] == 'SOP-PM-11')['link']['maintenance_policy']
+    for key in ('anchor', 'model_anchor'):
+        assert type(got[key]['page']) is int and type(got[key]['start']) is int and got[key]['end'] > got[key]['start'], got[key]
+
+
+def test_incomplete_policy_is_dropped_with_a_warning_instead_of_failing_the_extraction(archive):
+    """2026-10-25 final4: 정기 정비 정책의 키(model_assets · stock_effect)를 하나씩 빠뜨려 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다.
+    불완전한 정책은 빼고 경고로 남긴다(적재 전 검사가 「준비 안 됨」으로 알린다). 맞는 정책은 그대로 둔다."""
+    import json
+    source, prop = load(archive, 'B')
+    seed = json.loads((fx.ROOT / 'it/neo4j/class-knowledge/PM-02.json').read_text(encoding='utf-8'))
+    good = copy.deepcopy(seed['links']['SOP-PM-11']['maintenance_policy'])
+    for key in ('anchor', 'model_anchor'):
+        good[key] = {'source_id': source['source_id'], 'quote': good[key]['quote']}
+    bad = copy.deepcopy(good); bad.pop('model_assets')
+    procs = {p['id']: p for p in prop['procedures']}
+    procs['SOP-PM-11']['link'] = dict(procs['SOP-PM-11'].get('link') or {}, maintenance_policy=good)
+    procs['SOP-PM-12']['link'] = dict(procs['SOP-PM-12'].get('link') or {}, maintenance_policy=bad)
+    checked = manual_extraction.validate_proposal(source, prop)
+    out = {p['id']: p for p in checked['procedures']}
+    assert out['SOP-PM-11']['link'].get('maintenance_policy') and 'maintenance_policy' not in out['SOP-PM-12']['link']
+    assert any('SOP-PM-12: maintenance_policy 정책 제외' in w for w in checked['warnings'])

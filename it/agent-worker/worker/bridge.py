@@ -280,9 +280,13 @@ def _written_secrets(original: dict | None, resolved: dict | None, stdio: list[M
     return out
 
 
+#: 이번 실행의 process_scope 를 헤더로 받는 HYD 판단 서버(dmn-mcp run_scope). 학생 · 외부 서버에는 싣지 않는다.
+RUN_SCOPE_SERVERS = ("hyd-dmn",)
+
+
 def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claude-code", isolate_config_dir: bool = False,
             extra_env: dict[str, str] | None = None, host_rewrite: dict[str, str] | None = None,
-            read_tools: dict[str, list[str]] | None = None) -> BridgeResult:
+            read_tools: dict[str, list[str]] | None = None, run_headers: dict[str, str] | None = None) -> BridgeResult:
     """Register the tenant's servers for one run in `workdir` (idempotent: rewrites the same entries).
     read_tools (B2, from gate_servers): a gated server's read-only tools — Codex enables only those (Claude Code gets them
     through --allowedTools / --disallowedTools in the runner)."""
@@ -292,6 +296,8 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
     tenant_mcp, dropped = _resolved(tenant_mcp)
     stdio, http = servers_of(tenant_mcp, extra_env=extra_env, host_rewrite=host_rewrite)
     redaction_values += _written_secrets(original, tenant_mcp, stdio, http)
+    # 2026-10-25: 이번 실행의 process_scope 를 모델이 옮겨 적지 않게 판단 서버 연결에 헤더로 싣는다(UUID 오기 409)
+    headers_of = lambda name: dict(_headers(tenant_mcp, name), **((run_headers or {}) if name in RUN_SCOPE_SERVERS else {}))   # noqa: E731
     redaction_values += [value.removeprefix(scheme) for value in redaction_values for scheme in _AUTH_SCHEMES if value.startswith(scheme)]
     redaction_values = list(dict.fromkeys(redaction_values))
     if provider_id == "codex":
@@ -300,7 +306,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         # user's config, login and session store intact. Never register tenant
         # servers globally: another tenant could overwrite them during a run.
         entries = {s.name: {"command": s.command, "args": s.args, "env": s.env} for s in stdio}
-        entries.update({name: dict({"url": url}, **({"http_headers": _headers(tenant_mcp, name)} if _headers(tenant_mcp, name) else {}))
+        entries.update({name: dict({"url": url}, **({"http_headers": headers_of(name)} if headers_of(name) else {}))
                         for name, url in http.items()})
         for name, entry in entries.items():
             entry.update(required=True, startup_timeout_sec=60, default_tools_approval_mode="approve")
@@ -326,7 +332,7 @@ def install(workdir: Path, tenant_mcp: dict | None, *, provider_id: str = "claud
         entries[s.name] = entry
     for name, url in http.items():
         entries[name] = {"type": _http_type(tenant_mcp, name), "url": url}
-        headers = _headers(tenant_mcp, name)
+        headers = headers_of(name)
         if headers:                     # G2 ⓪: was dropped — a token-protected server failed only for the agent
             entries[name]["headers"] = headers
     for name in dropped:

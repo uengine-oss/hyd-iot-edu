@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
+VERSION = '2.9'          # 2.9 (2026-10-25 final4, HM-8 세 번): 한 번이 HM-8.1 점검이 다시 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다(「직접 연결하지 않음」) — 넘겨받은 절차가 다시 넘기는 절차도 같은 원인의 근본 조치로 지시.
+# 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
 # 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
 # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
 # 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
@@ -62,6 +63,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
  문서가 고장 유형과 원인을 정의하면(예: '…은 …에서 생기는 고장이며 …로 나타난다', '원인은 아래 세 가지') knowledge.failure_modes · causes · evidence를 반드시 만드세요 — 빈 목록으로 두지 마세요.
   이 문서가 만든 고장 유형 id도 link.failureMode에 쓸 수 있습니다(ontology_catalog에 아직 없어도 됩니다). 원문이 원인을 다른 절의 점검 · 교체 절차로 넘기면
   (예: '…이면 HM-8.1 점검으로 넘어간다') 그 절차의 link는 그 고장 유형 · REMEDIED_BY · addresses=[그 원인]입니다.
+  넘겨받은 점검 절차가 다시 다른 절차로 넘기면(예: 점검 절에 '…이 기준을 벗어나면 교체한다'가 있고 교체 절차가 따로 있음) 그 절차도 같은 고장 유형 · REMEDIED_BY · addresses=[그 원인]입니다.
  조치 후보 규칙: 문서가 어떤 경보 · 고장 유형 · 처리 건에서 쓸 절차를 정하면(예: '…경보로 열린 처리 건에서만 아래 절차를 쓴다', '…이면 아래 시행 방식 네 가지를 비교한다',
   고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
   이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
@@ -72,7 +74,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
- actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE)는 SOP ID입니다.
+ actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE) · 기존 오더 일정 변경(WO_RESCHEDULE)은 그 절차의 SOP ID입니다(null 금지).
  구매 · 발주 절차(구매 기준서 · 재고 규정의 발주 절차)는 고장 조치가 아니므로 link를 이 꼴로 제안하세요:
   {"scope":"purchase","kind":"work_order","executable":true|false,"parts":["원문이 범위로 정한 part:… (ontology_catalog.parts)"],"approver":"role:…",
    "actions":[{"action":"action:purchase-request","value":공급사 id 또는 null}],"supplier_policy":"oem|lowest_approved|fastest_quote 또는 null"}.
@@ -203,6 +205,24 @@ def validate_proposal(source, proposal, *, segment=False):
             if others:
                 raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
                                  "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
+        if isinstance(p.get('link'), dict):
+            # 2026-10-25 수업 한 바퀴(final3): 정책(2.8) 안의 인용은 좌표를 채우지 않아 적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다
+            # final4: 정책은 키가 많아 AI가 하나씩 빠뜨리고 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다. 정책이 불완전하면 거부하지 않고
+            # 그 정책만 빼고 경고로 남긴다 — 검토 화면 · 적재 전 검사(PM_SCOPE_POLICY_REQUIRED · PURCHASE_COMPARISON_POLICY_REQUIRED)가 「준비 안 됨」으로 보인다
+            from hydcommon import maintenance_policy, purchase_comparison
+            for key, subs, check in (('maintenance_policy', ('anchor', 'model_anchor'), maintenance_policy.policy),
+                                     ('purchase_comparison_policy', ('anchor',), purchase_comparison.policy)):
+                policy = p['link'].get(key)
+                if policy is None:
+                    continue
+                try:
+                    for sub in subs if isinstance(policy, dict) else ():
+                        if policy.get(sub) is not None:
+                            anchor(policy[sub])
+                    check(policy)
+                except ValueError as exc:
+                    p['link'].pop(key)
+                    proposal['warnings'].append(f"{p['id']}: {key} 정책 제외 — {exc}. 원문의 시행 · 비교 기준을 확인하고 다시 추출하거나 검토본을 쓰세요")
         if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
             link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
             if link.get('affects') is not None:
@@ -222,22 +242,28 @@ def check_section_titles(proposal):
             raise ValueError(f"절 {ref}의 title {title!r}에 절 번호가 들어 있습니다 — title 은 번호를 뺀 제목입니다(예: {title[len(ref):].strip()!r})")
 
 
-#: 적재 전 검사(manual_preflight)가 적재를 막는 원자 조치 값 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것.
+#: 적재 전 검사(manual_preflight)가 내는 결함 가운데 AI가 원문 · 고정 카탈로그만으로 고칠 수 있는 것 — 제출 때 교정 사유로 돌려준다.
 #: 2026-10-25 수업 한 바퀴: PM-02 추출이 SOP-PM-13(미루기)의 작업지시 값을 null 로 냈고, 추출은 통과한 채 적재에서 「작업지시 값은
-#: SOP 번호여야 합니다(None)」로 막혔다 — 학생 화면에는 그 값을 고칠 칸이 없다. 같은 검사를 제출 때 돌려 교정 사유로 준다.
-AGENT_FIXABLE_ACTION_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND')
+#: SOP 번호여야 합니다(None)」로 막혔다(학생 화면에 고칠 칸 없음). 같은 HM-8 세 번 추출의 검사 결과도 갈렸다 — 한 번은 결정표가 선언하지 않은
+#: 입력을 쓴 규칙(RULE_INPUT_NOT_DECLARED), 한 번은 관계 · 대상 원인은 적고 고장 유형을 비운 절차(SOP-FAN-12) → 학생마다 다른 검토 경고.
+AGENT_FIXABLE_ISSUES = ('SOP_NOT_FOUND', 'ACTION_NOT_FOUND', 'RULE_INPUT_NOT_DECLARED')
 
 
 def check_action_values(proposal, catalog):
-    """실행과 함께 고정한 ontology_catalog 로 제안 link 의 원자 조치 값을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
+    """실행과 함께 고정한 ontology_catalog 로 제안을 적재 전 검사와 같은 규칙으로 본다(카탈로그 없이 시작한 옛 실행은 건너뜀).
     구간 추출(segment)은 다른 구간의 SOP 를 값으로 쓸 수 있어 합친 뒤 적재 전 검사에 맡긴다."""
     if not catalog:
         return
     from . import manual_preflight
-    found = [i for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ACTION_ISSUES]
+    found = [i['message'] for i in manual_preflight.validate(proposal, catalog).get('issues') or [] if i.get('code') in AGENT_FIXABLE_ISSUES]
+    for p in proposal.get('procedures') or []:
+        link = (proposal.get('links') or {}).get(p.get('id'), p.get('link')) or {}
+        # 관계(완화 · 근본 · 예방)나 대상 원인을 적었으면 그 고장 유형도 안다 — 고장 유형만 비운 꼴은 원문이 아니라 빠뜨린 것이다
+        if isinstance(link, dict) and link.get('scope') != 'purchase' and not link.get('failureMode') and (link.get('relation') or link.get('addresses')):
+            found.append(f"{p.get('id')}: relation · addresses 를 적었는데 failureMode 가 비었습니다 — 그 원인 · 조치가 속한 고장 유형 id 를 적으세요")
     if found:
-        raise ValueError('원자 조치 값이 적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(i['message'] for i in found) +
-                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id 입니다)')
+        raise ValueError('적재 전 검사를 통과하지 못합니다 — ' + ' / '.join(found) +
+                         ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id, 규칙 tests 의 input 은 그 결정표가 선언한 입력입니다)')
 
 
 def validate_result(form, inst, output):
