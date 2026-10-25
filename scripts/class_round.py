@@ -1381,7 +1381,22 @@ def lab_05_manual_to_knowledge(r: Round):
             continue
         r.check(f"{key} 원문 대조 — 부정 조건 · 단위 · 순서 · 대상", not one["quality"], "; ".join(one["quality"])[:1200], kind="quality")
         r.check(f"{key} 후보 규칙이 추출됐다(없으면 판단이 이 절차를 후보로 못 낸다)", bool(one["candidate_outputs"]), str(one["issue_codes"]), kind="quality")
-        changes = _b_apply_review(r, key, _b_extraction(r, s, one["instance"])[1].get("preview") or {})
+        pv = _b_extraction(r, s, one["instance"])[1].get("preview") or {}
+        # B · C 판단은 원문의 시행 기준(정기 정비) · 총비용 비교(구매) 정책을 요구한다 — 없는 개정을 적재하면 뒤 회차의 B · C 가 보류된다(final2 · 92)
+        links = {p["id"]: (pv.get("links") or {}).get(p["id"], p.get("link")) or {} for p in pv.get("procedures") or []}
+        if key == "PR-07":
+            pol, need = "purchase_comparison_policy", [sop for sop, l in links.items() if l.get("scope") == "purchase" and l.get("executable") is True]
+        else:
+            pol = "maintenance_policy"
+            need = sorted({o for x in (pv.get("knowledge") or {}).get("rules") or [] if x.get("table") == "dt:action-candidates" and x.get("effect") == "SELECT"
+                           and any(t.get("value") == "PM_DUE" for t in x.get("tests") or []) for o in x.get("outputs") or [] if o in links})
+        missing = [sop for sop in need if not links[sop].get(pol)]
+        r.check(f"{key} 판단에 필요한 원문 정책({pol})이 추출됐다", bool(need) and not missing, f"필요 {need} · 빠짐 {missing}", kind="quality")
+        if not need or missing:
+            r.check(f"{key} 적재 전 검사가 정책 없는 실행 절차를 「준비 안 됨」으로 알린다", any(i.get("code") in ("PM_SCOPE_POLICY_REQUIRED", "PURCHASE_COMPARISON_POLICY_REQUIRED")
+                    for e in ((pv.get("validation") or {}).get("execution") or []) for i in e.get("issues") or []), "", kind="exception")
+            continue                                                       # 주의 깊은 학생은 적재하지 않고 다시 추출을 요청한다 — 수업용 기본 지식이 남는다
+        changes = _b_apply_review(r, key, pv)
         ok, msg = _b_commit(r, key)
         r.check(f"{key} 적재", ok, f"{msg} · 검토 변경 {changes}")
         if not ok:
@@ -2796,7 +2811,11 @@ def lab_92_biz_reset(r):
             dec = _c_card(_c_decision(r, view))
             _c_me(r, C_PEOPLE.get(dec["approver"] or "", "user:park-maint"))
             _c_card_decide(r, inst["proc_inst_id"], _c_item(view, approve_name), approve=False, reason="초기화 시험 뒤 닫기")
-        r.check(f"{key} 시험 처리 건을 화면에서 닫았다(거절 → 반려 종결)", _c_wait_end(r, inst["proc_inst_id"], 120)["instance"]["status"] == "COMPLETED", state)
+        elif state == "stuck":                                             # AI 가 보류했다(사유는 처리 건 화면) — 학생은 [단계 닫기]로 닫는다(같은 API)
+            held = next(w for w in view["workitems"] if w["status"] == "PENDING")
+            print(f"    {key} 시험 처리 건 보류 사유: {str(held.get('log'))[:300]}", flush=True)
+            r.api("POST", f"{r.process}/api/todolist/{held['id']}/close", {"by": "user:park-maint", "reason": "초기화 시험 뒤 닫기"})
+        r.check(f"{key} 시험 처리 건을 화면에서 닫았다(거절 → 반려 종결 · 보류면 단계 닫기)", _c_wait_end(r, inst["proc_inst_id"], 120)["instance"]["status"] == "COMPLETED", state)
 
 
 # ====================================================================== 93 · 펌프 · 팬 결함 + [다시 평가] (워커 모드)
