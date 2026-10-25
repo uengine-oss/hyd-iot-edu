@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.8'
+    assert extraction.VERSION == '2.9'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -93,3 +93,9 @@ def test_instruction_2_8_asks_purchase_comparison_and_maintenance_policies():
     text = extraction.INSTRUCTION
     assert '"purchase_comparison_policy":{"version":1,"loss_per_failure"' in text and '"inspection_threshold":불량률 비율(10 %면 0.1)' in text
     assert '"maintenance_policy":{"version":1,"scope":"single' in text and '"model_anchor":ANCHOR' in text and '"packages":[' in text
+
+
+def test_instruction_2_9_links_a_procedure_the_handed_over_inspection_hands_on():
+    """2026-10-25 final4: 같은 HM-8 세 번 중 한 번이 HM-8.1 점검이 '벗어나면 교체한다'로 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다."""
+    text = extraction.INSTRUCTION
+    assert "넘겨받은 점검 절차가 다시 다른 절차로 넘기면" in text and "그 절차도 같은 고장 유형 · REMEDIED_BY · addresses=[그 원인]" in text

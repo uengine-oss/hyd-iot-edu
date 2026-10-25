@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
+VERSION = '2.9'          # 2.9 (2026-10-25 final4, HM-8 세 번): 한 번이 HM-8.1 점검이 다시 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다(「직접 연결하지 않음」) — 넘겨받은 절차가 다시 넘기는 절차도 같은 원인의 근본 조치로 지시.
+# 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
 # 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
 # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
 # 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
@@ -62,6 +63,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
  문서가 고장 유형과 원인을 정의하면(예: '…은 …에서 생기는 고장이며 …로 나타난다', '원인은 아래 세 가지') knowledge.failure_modes · causes · evidence를 반드시 만드세요 — 빈 목록으로 두지 마세요.
   이 문서가 만든 고장 유형 id도 link.failureMode에 쓸 수 있습니다(ontology_catalog에 아직 없어도 됩니다). 원문이 원인을 다른 절의 점검 · 교체 절차로 넘기면
   (예: '…이면 HM-8.1 점검으로 넘어간다') 그 절차의 link는 그 고장 유형 · REMEDIED_BY · addresses=[그 원인]입니다.
+  넘겨받은 점검 절차가 다시 다른 절차로 넘기면(예: 점검 절에 '…이 기준을 벗어나면 교체한다'가 있고 교체 절차가 따로 있음) 그 절차도 같은 고장 유형 · REMEDIED_BY · addresses=[그 원인]입니다.
  조치 후보 규칙: 문서가 어떤 경보 · 고장 유형 · 처리 건에서 쓸 절차를 정하면(예: '…경보로 열린 처리 건에서만 아래 절차를 쓴다', '…이면 아래 시행 방식 네 가지를 비교한다',
   고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
   이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
