@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.7'          # 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
+VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행, HM-8 세 번): 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨려 그 원인이 판정돼도 근본 조치 카드가 안 나옴 → 원인마다 후보 규칙을 지시.
+# 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
 # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
 # 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
 # 2.4: source-defined operational AND business SOP scope; never rewrite registered 2.2/2.3.
@@ -65,6 +66,9 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
   이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
   기존 후보 규칙에 자동으로 붙습니다. 예방 정비(PREVENTED_BY) · 구매 절차는 자동으로 붙지 않습니다.
+  원문이 원인별 조치를 정하면(예: '원인이 …이면 …절차', 원인을 다른 절의 점검으로 넘김) 그 원인마다 tests=[{"input":"in:cause","operator":"==","value":"cause:…"}],
+  outputs=[그 원인의 근본 조치 SOP ID]인 dt:action-candidates SELECT 규칙을 하나씩 만드세요. 경보 · 고장 유형 조건의 후보 규칙(즉시 완화 목록)이 있어도 빠뜨리지 마세요 —
+  없으면 그 원인이 판정돼도 근본 조치 카드가 나오지 않습니다.
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
  각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
