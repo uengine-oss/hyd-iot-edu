@@ -173,7 +173,8 @@ def test_purchase_execution_displays_real_preflight_relationship_result_without_
     choices['suppliers']=[{'id':'sup:registered','name':'등록 공급사','avl':True}]
     choices['systems']=[{'id':'sys:erp','name':'구매 업무 시스템'}]
     choices['actions']=[{'id':'action:purchase-request','name':'구매 요청','code':'PR_CREATE','kind':'transaction','min':None,'max':None}]
-    record=preview({'scope':'purchase','executable':True,'parts':['part:review-seal'],'approver':'role:purchasing',
+    record=preview({'purchase_comparison_policy':{'version':1,'loss_per_failure':250,'inspection_threshold':0.1,'inspection_cost':20,'anchor':{'source_id':'manual:review','quote':'불량 1건 손실은 250만 원. 불량률이 10 %를 넘으면 전수 검사 비용 20만 원을 더한다.'}},  # 2026-10-25: 실행 구매 판단은 총비용 비교 정책을 요구한다
+                    'scope':'purchase','executable':True,'parts':['part:review-seal'],'approver':'role:purchasing',
                     'failureMode':None,'relation':None,'kind':'work_order','actions':[{'action':'action:purchase-request','value':'sup:registered'}]})
     # 2026-10-23 갱신: 적재 전 검사에 CANDIDATE_RULE_MISSING(manual_preflight.py)이 들어와, 실행 구매 절차는 그 문서의 후보 규칙이 있어야 준비됨 — 원문 근거 후보 규칙을 둔다
     choices['decision_tables']=[{'id':'dt:action-candidates','decision':'dec:action-candidates','inputs':[{'id':'in:pattern','variable':'pattern'}]}]

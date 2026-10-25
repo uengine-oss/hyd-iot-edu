@@ -86,3 +86,10 @@ def test_instruction_2_8_asks_one_candidate_rule_per_cause():
     text = extraction.INSTRUCTION
     assert '"input":"in:cause","operator":"==","value":"cause:…"' in text
     assert "그 원인마다" in text and "빠뜨리지 마세요" in text
+
+
+def test_instruction_2_8_asks_purchase_comparison_and_maintenance_policies():
+    """2026-10-25 수업 한 바퀴: 지시에 두 정책이 없어 4회차에 다시 적재한 PR-07 · PM-02 제안이 정책 없이 C · B 판단을 막았다."""
+    text = extraction.INSTRUCTION
+    assert '"purchase_comparison_policy":{"version":1,"loss_per_failure"' in text and '"inspection_threshold":불량률 비율(10 %면 0.1)' in text
+    assert '"maintenance_policy":{"version":1,"scope":"single' in text and '"model_anchor":ANCHOR' in text and '"packages":[' in text

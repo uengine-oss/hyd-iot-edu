@@ -315,3 +315,15 @@ def test_extraction_submit_rejects_work_order_without_sop_value_like_commit_woul
     p['links']['SOP-PM-12']['actions'] = [dict(action='action:stop', value=None)]
     manual_extraction.check_action_values(p, catalog)                 # 범위 · 명령 위치 결함은 교정 대상이 아니다(사람 검토)
     manual_extraction.check_action_values(p, None)                    # 카탈로그 없이 시작한 옛 실행
+
+
+def test_executable_purchase_sop_without_comparison_policy_is_not_ready(catalog):
+    """2026-10-25 수업 한 바퀴: 4회차에 다시 적재한 PR-07 제안에 총비용 비교 정책이 없었고 적재 전 검사는 말이 없었다 → 뒤의 C 판단이 보류."""
+    catalog['actions'].append(dict(id='action:purchase-request', code='PR_CREATE', kind='transaction', min=None, max=None))
+    catalog['systems'] = [dict(id='sys:erp')]
+    catalog['parts'] = [dict(id='part:seal', suppliers=[dict(supplier='sup:a', name='B-OEM (순정)')])]
+    p = dict(sections=[], procedures=[dict(id='SOP-PUR-11', name='순정 발주', steps=[dict(text='순정 공급사에 발주한다')])],
+             links={'SOP-PUR-11': dict(scope='purchase', kind='work_order', executable=True, parts=['part:seal'], approver='role:maint-mgr',
+                                       actions=[dict(action='action:purchase-request', value=None)], supplier_policy='oem')})
+    row = manual_preflight.validate(p, catalog)['execution'][0]
+    assert row['ready'] is False and 'PURCHASE_COMPARISON_POLICY_REQUIRED' in {i['code'] for i in row['issues']}

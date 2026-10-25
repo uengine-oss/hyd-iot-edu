@@ -11,7 +11,7 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행, HM-8 세 번): 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨려 그 원인이 판정돼도 근본 조치 카드가 안 나옴 → 원인마다 후보 규칙을 지시.
+VERSION = '2.8'          # 2.8 (2026-10-25 수업 한 바퀴 재실행): HM-8 세 번 중 한 번이 원인별 근본 조치의 후보 규칙(in:cause == 원인)을 빠뜨림 → 원인마다 후보 규칙. 4회차에 다시 적재한 PR-07 · PM-02 제안에 구매 총비용 비교 · 정기 정비 시행 정책이 없어(지시에 없었다) 그 뒤 C · B 판단이 보류됨 → 두 정책 꼴을 지시.
 # 2.7 (2026-10-25 수업 한 바퀴, 같은 HM-8 세 번 추출): 숫자 칸 예시를 숫자로 · 감점 지표 필수 · 문서가 정의한 고장 유형 · 원인은 빈 목록 금지 · 원인별 근본 조치 연결 — 등록된 2.6은 다시 쓰지 않는다.
 # 2.6 (2026-10-23 실제 중계 모델 확인): 절차 anchor 는 제목 줄, 단계 anchor 는 그 단계 문장만 — 등록된 2.5는 다시 쓰지 않는다.
 # 2.5 (2026-10-23 수업 조건 리허설): 빈 link 값은 키를 빼거나 null, 구매 절차 link 꼴, 조치 후보 규칙(dt:action-candidates)을 지시.
@@ -78,6 +78,15 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
    "actions":[{"action":"action:purchase-request","value":공급사 id 또는 null}],"supplier_policy":"oem|lowest_approved|fastest_quote 또는 null"}.
   failureMode · relation · addresses 키는 넣지 마세요. 공급사를 원문의 선택 기준으로 고르는 절차(순정 · 대체 승인 공급사 최저가 · 최단 납기)는 supplier_policy를 쓰고 value는 null,
   원문이 특정 공급사를 정하면 value에 그 sup:… 을 쓰고 supplier_policy는 null입니다. 둘을 함께 쓰지 마세요. 실행 행위 없이 참고만 하는 절차는 executable=false, actions=[]입니다.
+  원문이 구매 총비용 비교 기준(불량 1건 손실 · 전수 검사로 강화하는 불량률 기준 · 전수 검사 비용)을 정하면 공급사를 고르는 실행 구매 절차(executable=true)마다
+  link에 "purchase_comparison_policy":{"version":1,"loss_per_failure":만 원 숫자,"inspection_threshold":불량률 비율(10 %면 0.1),"inspection_cost":만 원 숫자,
+  "anchor":ANCHOR}를 넣으세요. anchor는 세 수치가 모두 든 원문 문단 하나를 인용합니다(서버가 인용 속 수치와 대조합니다). 이 정책이 없으면 구매 판단이 그 절차를 비교하지 못합니다.
+ 정기 정비(PREVENTED_BY) 시행 절차는 원문이 시행 기준(정비 주기 · 허용 오차 · 같은 모델 적용 설비 · 주기별 패키지와 부품)을 정하면 link에
+  "maintenance_policy":{"version":1,"scope":"single(한 대)|bundle(두 대 묶음)","stock_effect":"reserve(부품 출고 예약)|issue(바로 출고)|preserve(기존 할당 유지 — 미루기)",
+  "interval_h":기본 주기 숫자,"tolerance_pct":허용 오차 % 숫자,"model_assets":["HYD-…"],"anchor":ANCHOR(주기 · 허용 오차 문장),"model_anchor":ANCHOR(같은 모델 적용 문장),
+  "packages":[{"interval_h":숫자,"sop":"그 패키지 SOP ID","name":"패키지 이름","parts":[{"part_no":"ontology_catalog.parts의 품번 또는 null","qty":숫자 또는 null,"name":"원문 부품 이름","mapping_reason":"품번이 null일 때 이유"}]}]}를 넣으세요.
+  scope · stock_effect는 그 절차의 단계가 정합니다(예: '두 대를 묶어' → bundle, '출고를 예약한다' → reserve, '출고한다' → issue, '시행 시간을 옮긴다' → preserve).
+  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
  값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
  같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
  그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.

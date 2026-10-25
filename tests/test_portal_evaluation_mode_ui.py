@@ -167,7 +167,8 @@ def test_dynamic_purchase_policies_show_exact_supplier_quote_and_excluded_other_
 
 
 def test_purchase_preflight_structure_pass_is_not_actual_execution_readiness(page):
-    record=preview({'scope':'purchase','executable':True,'parts':['part:review-seal'],'kind':'work_order',
+    record=preview({'purchase_comparison_policy':{'version':1,'loss_per_failure':250,'inspection_threshold':0.1,'inspection_cost':20,'anchor':{'source_id':'manual:review','quote':'불량 1건 손실은 250만 원. 불량률이 10 %를 넘으면 전수 검사 비용 20만 원을 더한다.'}},  # 2026-10-25: 실행 구매 판단은 총비용 비교 정책을 요구한다
+                    'scope':'purchase','executable':True,'parts':['part:review-seal'],'kind':'work_order',
                     'failureMode':None,'relation':None,'approver':'role:purchasing',
                     'actions':[{'action':'action:purchase-request','value':'sup:review'}]})
     choices={key:[] for key in manual_knowledge.CATALOG_Q}

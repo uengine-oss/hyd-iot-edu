@@ -12,6 +12,13 @@ from agentsvc import cards
 
 
 TEXT = '# 구매 지침\nPR-7.6 발주 절차\nSOP-PUR-11 순정 공급사 발주\n1. ERP 발주서를 작성한다.\n2. 입고 수량과 로트를 확인한다.\n'
+# 실제 구매 판단(agentsvc cards → purchase_comparison.compare)은 실행 구매 절차의 총비용 비교 정책을 요구한다(2026-10-25 수업 한 바퀴)
+COST = '총비용 비교: 불량 1건 손실은 250만 원으로 본다. 불량률이 10 %를 넘으면 전수 검사 비용 20만 원을 더한다.'
+TEXT = TEXT.replace('PR-7.6 발주 절차\n', 'PR-7.6 발주 절차\n' + COST + '\n')
+
+
+def cost_policy(source_id):
+    return dict(version=1, loss_per_failure=250, inspection_threshold=0.1, inspection_cost=20, anchor=dict(source_id=source_id, page=1, start=TEXT.index(COST), end=TEXT.index(COST) + len(COST), quote=COST))
 
 
 def link(executable=True):
@@ -65,6 +72,8 @@ def external_nodes_and_edges(snapshot):
 def test_purchase_document_plan_graph_and_preflight_share_one_model(source_proposal, catalog, executable):
     archive, _, body = source_proposal
     body['links']['SOP-PUR-11'] = link(executable)
+    if executable:
+        body['links']['SOP-PUR-11']['purchase_comparison_policy'] = cost_policy(body['source_id'])
     before = deepcopy(body)
     plan = checked_plan(archive, body, catalog)
     p = plan['procedures'][0]
