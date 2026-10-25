@@ -17,8 +17,8 @@
 가상환경 준비(한 번): `"/c/Users/$USERNAME/AppData/Local/Programs/Python/Python314/python.exe" -m venv .venv314 && .venv314/Scripts/python.exe -m pip install -r requirements-dev.txt` (루트 `requirements-dev.txt`가 `it/agent`·`it/process`의 requirements를 포함한다; 워커용 `cliagents`·`psycopg`·`neo4j`는 `it/agent-worker` 요구 파일 확인. 3.14에는 고정 버전 휠이 없어 상위 호환 설치됐다 — HANDOFF §4).
 LLM은 LiteLLM 중계 하나다(`2_기준.md` 6절). **강의실 순서: `git pull` → `.env`의 `LLM_API_KEY=` 뒤에 받은 키 한 줄 → `시작.bat` → `점검.bat`.**
 `.env.example`이 강의 배포본이다(`PROCESS_MODE=instance` · `ENTERPRISE_BACKEND=supabase` · `AGENT_BRIDGE=off` · `COMPOSE_PROFILES`에 `cliagents` · 중계 주소 · `LLM_MODEL=coding` · `PROCESS_MEM_LIMIT=768m`). `.env`가 없으면 시작 스크립트가 복사하고, 앞 판의 `.env`가 있으면 키 말고 이 값들을 맞춘다. 키가 비면 2단계에서 「.env의 LLM_API_KEY에 받은 키를 넣고 다시」로 멈추고, 중계가 키를 거절(401 · 403)하거나 닿지 않으면 7단계에서 멈춘다.
-시작 스크립트(`scripts/start_all.sh`) 7단계: Docker → `.env` → 업무 DB(`supabase start` + 새 마이그레이션 `migration up --local`) → 시스템 · AI 워커 빌드 · 기동 → 상태 확인(워커 8097 포함) → 수업 흐름 보장(`scripts/c3_flows.py ensure` — 이미 수업 흐름이면 건너뜀) → 중계 키 확인. 아래 §1의 손 절차(④ MCP 따로 올리기 · ⑤ 호스트 워커)는 개발용이다.
-온톨로지 시드 판(확정 TODO C1): 강의 배포본은 `SEED_EDITION=structure`(수업용 구조판, compose 기본값 — 고장 · 원인 · 조치 지식은 학생이 문서 A · C를 적재해 만든다).
+시작 스크립트(`scripts/start_all.sh`) 8단계: Docker → `.env` → 업무 DB(`supabase start` + 새 마이그레이션 `migration up --local`) → 시스템 · AI 워커 빌드 · 기동 → 상태 확인(워커 8097 포함) → 수업 흐름 보장(`scripts/c3_flows.py ensure` — 이미 수업 흐름이면 건너뜀) → 수업용 기본 지식(`scripts/class_knowledge.py ensure` — 검토한 HM-8 · PM-02 · PR-07을 처음 한 번, AI 없이) → 중계 키 확인. 8단계, 새 PC(이미지 있음) 실측 3분 9초. 아래 §1의 손 절차(④ MCP 따로 올리기 · ⑤ 호스트 워커)는 개발용이다.
+온톨로지 시드 판(확정 TODO C1): 강의 배포본은 `SEED_EDITION=structure`(수업용 구조판, compose 기본값)에 시작 스크립트가 수업용 기본 지식(검토한 HM-8 · PM-02 · PR-07, `it/neo4j/class-knowledge/`)을 한 번 넣는다(2026-10-25 결정 — 4회차 인제스천은 같은 문서를 다시 올리는 과정 실습).
 회귀 · 통합 시험(`run_regression` · `scenario_*_test.py`)은 시드 스킬 · 규칙 · 선례를 전제하므로 **`SEED_EDITION=full`로 새 neo4j 볼륨에 적재한 스택**에서 돌린다.
 kg-seed는 MERGE만 하므로 판을 바꿀 때는 neo4j 볼륨을 새로 만든다(이미 있는 지식은 structure로 다시 돌려도 지워지지 않는다). 확인: `docker compose logs kg-seed | grep "seed edition"`.
 
