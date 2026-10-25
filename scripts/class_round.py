@@ -973,7 +973,7 @@ def _b_quality(src: dict, preview: dict) -> list[dict]:
     for sop, p in got.items():
         if sop not in src:
             # 번호 없는 절의 업무 절차(예: PM-2.9 시운전 확인 → SOP-PM-2-9)는 추출 지시 범위이고 검토본(class-knowledge)에도 있다
-            if p.get("section") and sop == "SOP-" + str(p["section"]).replace(".", "-"):
+            if p.get("section") and re.sub(r"[^A-Z0-9]", "", sop) == "SOP" + re.sub(r"[^A-Z0-9]", "", str(p["section"]).upper()):   # SOP-PM-2-9 · SOP-PR7-7
                 continue
             found.append({"sop": sop, "order": None, "kind": "원문 SOP 목록에 없는 절차(오추출 후보)"})
             continue
