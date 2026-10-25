@@ -224,3 +224,13 @@ def test_result_file_deferral_reader_ignores_missing_broken_and_business_files(t
     assert deferred.control(outcome.deferral_in_result_file(f))==ASSESSMENT
     f.write_text(json.dumps({'__deferred__':ASSESSMENT,'cause':'invented'}),encoding='utf-8')
     with pytest.raises(ValueError):deferred.control(outcome.deferral_in_result_file(f))   # mixed is refused, same as the message route
+
+
+def test_deferral_contract_tells_the_agent_to_follow_the_engine_verdict_and_write_for_people():
+    """2026-10-25 수업 한 바퀴: 같은 진단 결과(evidence_status=UNSUPPORTED)에 보류 status 가 UNSUPPORTED · UNKNOWN 으로 갈렸고(예시가 UNKNOWN 하나),
+    학생 화면의 보류 사유에 diagnose · withheld=true 같은 도구 · 필드 이름이 나왔다. 계약 문구가 둘을 막는가."""
+    from worker import prompt
+    text = prompt.output_contract([{"key": "card", "label": "카드"}])
+    assert '"status":"UNKNOWN"' not in text                              # 한 값을 베끼게 하는 예시가 없다
+    assert "evidence_status.status" in text and "그대로" in text          # 판단 엔진 판정을 따른다
+    assert "현장 담당자" in text and "withheld" in text and "쓰지 않습니다" in text

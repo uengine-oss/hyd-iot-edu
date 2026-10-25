@@ -507,3 +507,13 @@ console.log(JSON.stringify({ types: fields.map(f => [f.key, f.type, f.required])
                           ["on", "boolean", False], ["items", "json", False]]
     assert r["good"] == {"args": {"asset": "HYD-01", "n": 3, "kind": "b", "on": False, "items": [{"k": 1}]}, "errors": []}
     assert len(r["bad"]) == 4 and r["bad"][0] == "설비 코드: 필수 입력입니다" and "정수" in r["bad"][1] and "숫자" in r["bad"][2] and "JSON" in r["bad"][3]
+
+
+def test_error_envelope_is_shown_as_a_tool_error():
+    """2026-10-25 수업 한 바퀴: 학생 서버의 없는 표 조회가 {"result":"error",…} 를 돌려줘도 「써 보기」 칩이 초록 「결과」였다."""
+    import json
+    from procsvc import mcp_check
+    err = mcp_check.shape_result({"content": [{"type": "text", "text": json.dumps({"result": "error", "reason": "없는 표입니다"})}]})
+    ok = mcp_check.shape_result({"content": [{"type": "text", "text": json.dumps({"result": "ok", "rows": []})}]})
+    flagged = mcp_check.shape_result({"isError": True, "content": [{"type": "text", "text": "boom"}]})
+    assert err["is_error"] and not ok["is_error"] and flagged["is_error"]

@@ -105,3 +105,31 @@ def test_upload_selects_generated_identity_locks_review_and_next_file_unlocks(pa
     page.wait_for_function("manualSelectionTest.H.preview !== null")
     assert calls[1]['document_id'] == 'generated-exact-id'
     assert page.locator('#manualDocumentId').is_disabled()
+
+
+def test_extracted_knowledge_is_reviewable_and_excluded_items_are_not_committed(page):
+    """2026-10-25 수업 한 바퀴: 검토 화면에 AI가 뽑은 원인 · 증거 · 규칙이 없어 학생이 원문과 대조해 뺄 수 없었다."""
+    setup_selection(page)
+    sent = {}
+    page.route('**/api/kg/manuals/commit', lambda r: (sent.update(body=r.request.post_data_json), r.fulfill(json={'batch': 'b1', 'procedures': 1, 'steps': 1, 'skills': {}, 'candidate_activation': {}}))[1])
+    page.route('**/extractions**', lambda r: r.fulfill(json={'items': [], 'next_offset': None}))
+    anchor = {'source_id': 's1', 'page': 1, 'start': 0, 'end': 4, 'quote': '원문 문장'}
+    page.evaluate("""a => { manualSelectionTest.H.preview = {filename:'HM-8.md', chars:10, status:'READY', source_id:'s1', document_id:'d1', batch:'b1', warnings:[],
+      sections:[{ref:'HM-8.5', title:'즉시 완화', excerpt:'x', anchor:a}],
+      procedures:[{id:'SOP-COOL-11', name:'팬 최대 운전', section:'HM-8.5', anchor:a, steps:[{order:1, text:'팬 속도를 100 %로 올린다.', manual:'HM-8.5', anchor:a}],
+                   link:{failureMode:'fm:cooler-cooling-loss', relation:'MITIGATED_BY', kind:'control', approver:'role:operator', actions:[]}}],
+      knowledge:{failure_modes:[{id:'fm:cooler-cooling-loss', name:'쿨러 냉각 성능 상실', symptoms:[], anchor:a}],
+                 causes:[{id:'cause:cooler-fin-fouling', name:'쿨러 핀 오염', prior:0.6, failure_mode:'fm:cooler-cooling-loss', anchor:a}],
+                 rules:[{id:'rule:remote-auto-only', table:'dt:compliance', effect:'EXCLUDE', tests:[], annotation:'REMOTE_AUTO가 아니면 원격 조치를 쓰지 않는다', anchor:a},
+                        {id:'rule:wrong', table:'dt:compliance', effect:'PENALTY', penalty:99, tests:[], annotation:'원문에 없는 감점', anchor:a}]}};
+      manualSelectionTest.render(); }""", anchor)
+    box = page.locator('#manualResult')
+    assert '추출한 지식 후보' in box.inner_text() and 'REMOTE_AUTO가 아니면 원격 조치를 쓰지 않는다' in box.inner_text() and '쿨러 핀 오염' in box.inner_text()
+    page.locator("[data-know-drop='rules'][value='rule:wrong']").check()
+    assert not page.locator('#manualReviewed').is_checked()
+    page.locator('#manualBy').fill('학생')
+    page.locator('#manualReviewed').check()
+    page.locator('#manualCommit').click()
+    page.wait_for_function("() => document.querySelector('#manualMsg').textContent.length > 0")
+    rules = [x['id'] for x in sent['body']['knowledge']['rules']]
+    assert rules == ['rule:remote-auto-only'] and [c['id'] for c in sent['body']['knowledge']['causes']] == ['cause:cooler-fin-fouling']

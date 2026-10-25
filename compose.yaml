@@ -462,7 +462,7 @@ services:
       - ./it/portal/nginx.conf:/etc/nginx/templates/default.conf.template:ro   # nginx 이미지가 환경변수를 채워 conf.d에 쓴다
 
   # ───────────────────────────── instance 모드 (문서/시스템/1_목적과_방향.md): 프로세스 인스턴스 · Claude Code 에이전트 · MCP ─────────────────────────────
-  # 프로필 `cliagents` 는 기본 COMPOSE_PROFILES 에 없다. Supabase(cd it/supabase && supabase start)와 ANTHROPIC_API_KEY 가 있을 때 켠다.
+  # 프로필 `cliagents`(AI 워커 + 에이전트용 MCP)는 강의 배포본 COMPOSE_PROFILES(.env.example)에 들어 있다. Supabase 와 .env 의 LLM_API_KEY(강의 중계 키)가 필요하다.
   enterprise-mcp:                         # 업무 DB(Supabase ent 스키마)를 에이전트에게 읽기 전용 도구로 (WMS 예제의 wms-mcp 역할)
     restart: unless-stopped
     logging: *log
@@ -553,9 +553,19 @@ services:
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}                 # API key → the CLI authenticates itself and gets a private CLAUDE_CONFIG_DIR per run
+      # 실행기(Claude Code CLI)의 모델 호출은 전부 강의 LiteLLM 중계로 간다(사용자 결정 2026-10-25 — Anthropic 계정 · 모델을 쓰지 않는다).
+      # 키는 .env 의 LLM_API_KEY 하나, 주소는 Anthropic 방식 LLM_RELAY_URL(끝의 /v1 없이). 키가 있으면 실행마다 따로 CLAUDE_CONFIG_DIR(settings.isolate_config_dir)
+      ANTHROPIC_API_KEY: ${LLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${LLM_RELAY_URL:-}
+      ANTHROPIC_MODEL: ${LLM_MODEL:-coding}
+      ANTHROPIC_SMALL_FAST_MODEL: ${LLM_MODEL:-coding}
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ${LLM_MODEL:-coding}
+      ANTHROPIC_DEFAULT_SONNET_MODEL: ${LLM_MODEL:-coding}
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: ${LLM_MODEL:-coding}
+      CLI_MODEL: ${LLM_MODEL:-coding}
+      DISABLE_TELEMETRY: "1"
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
       CLIAGENTS_DEFAULT_CLI: ${CLIAGENTS_DEFAULT_CLI:-claude-code}
-      CLI_MODEL: ${CLI_MODEL:-}
       CLIAGENTS_DEFAULT_PERMISSION: ${CLIAGENTS_DEFAULT_PERMISSION:-workspace_write}
       CLIAGENTS_RUN_TIMEOUT_SECONDS: ${CLIAGENTS_RUN_TIMEOUT_SECONDS:-1800}
       CLIAGENTS_WORKSPACE_ROOT: /workspace
@@ -564,6 +574,8 @@ services:
     depends_on:
       process: { condition: service_healthy }
       enterprise-mcp: { condition: service_healthy }
+      enterprise-mcp-maint: { condition: service_healthy }
+      enterprise-mcp-purchase: { condition: service_healthy }
       dmn-mcp: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8097/healthz')"]

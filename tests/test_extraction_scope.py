@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.6'
+    assert extraction.VERSION == '2.7'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -68,3 +68,13 @@ def test_pr07_business_source_reaches_worker_and_requires_human_review(rt, tmp_p
     assert 'reviewed' not in preview and 'by' not in preview
     with pytest.raises(ValueError, match='검토'):
         manual_review.validate(archive, 'hyd', preview)
+
+
+def test_instruction_2_7_pins_numbers_penalty_measure_and_document_defined_failure_modes():
+    """2026-10-25 수업 한 바퀴: 같은 HM-8 세 번 추출 — 두 번은 weight · penalizes 형식 거부로 교정 2회(11분 넘김), 한 번은 고장 유형 · 원인 0개,
+    팬 절차는 「catalog에 없음」으로 고장 유형 연결을 비웠다. 지시가 그 넷을 막는가."""
+    text = extraction.INSTRUCTION
+    assert '"weight":1.0' in text and '"prior":0.6' in text and '"weight":0.0~1.0' not in text   # 범위 예시를 베껴 문자열을 쓰게 하지 않는다
+    assert "penalizes에 ontology_catalog의 지표(msr:…) 하나를 반드시" in text
+    assert "빈 목록으로 두지 마세요" in text and "ontology_catalog에 아직 없어도 됩니다" in text
+    assert "REMEDIED_BY · addresses=[그 원인]" in text

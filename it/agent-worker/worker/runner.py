@@ -76,9 +76,12 @@ class Runner:
         self.in_flight = 0
 
     # ---- polling
-    def poll_once(self) -> int:
+    def poll_once(self, on_polled=None) -> int:
+        """on_polled: 일거리 조회가 성공한 바로 뒤(작업을 돌리기 전)에 부른다 — 상태 점이 긴 첫 작업 내내 「켜지는 중」으로 남지 않게."""
         claim_owner=f"{self.s.consumer}:{uuid.uuid4().hex}"
         rows = self.repo.fetch_pending_task(self.s.agent_orch, claim_owner, limit=1, tenant_id=self.s.tenant_id)
+        if on_polled:
+            on_polled()
         for row in rows:
             self.handle(row)
         return len(rows)
@@ -530,13 +533,29 @@ class Runner:
         msg = excerpt(f"{type(err).__name__}: {err}")
         log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), msg)
         connection_error = isinstance(err, runtime_credentials.RuntimeConnectionError)
+        hint = relay_hint(msg)
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
                                   "event_type": "error", "data": {"name": "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
-                                                                 "friendly": str(err) if connection_error else "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다.", "raw_error": msg}}])
+                                                                 "friendly": str(err) if connection_error else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
+                                                                 "hint": hint, "raw_error": msg}}])
 
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:
         self.repo.record_events([{"job_id": job_id, "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": crew_type,
                                   "event_type": event_type, "data": data}])
+
+
+def relay_hint(raw: str) -> str | None:
+    """강의 중계(LiteLLM)가 거절한 실행을 학생이 할 일로 옮긴다(2026-10-25 수업 한 바퀴: 「403 key not allowed to access model …」 영문이 질문 화면에 그대로 보였다).
+    모르는 오류는 None — 원문은 raw_error 에 그대로 남는다."""
+    text = str(raw or "")
+    low = text.lower()
+    if "not allowed to access model" in low or "invalid model" in low or ("model" in low and "not found" in low):
+        return "에이전트의 모델 이름을 강의 중계가 받지 않습니다 — [에이전트]에서 이 에이전트의 모델 칸을 비우면(실행기 기본 모델) 다시 됩니다"
+    if "401" in text or "invalid api key" in low or "authentication_error" in low or "failed to authenticate" in low:
+        return "강의 중계 키가 맞지 않거나 만료됐습니다 — .env 의 LLM_API_KEY 를 확인하고 시작.bat 을 다시 실행하세요"
+    if "429" in text or "rate limit" in low or "budget" in low:
+        return "강의 중계가 지금 요청을 더 받지 않습니다(사용 한도 · 혼잡) — 1분 뒤 다시 보내고, 계속되면 강사에게 알려 주세요"
+    return None
 
 
 PROMPT_FILE = "context/prompt.md"

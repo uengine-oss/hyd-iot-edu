@@ -364,13 +364,19 @@ def test_p9_the_instructor_reset_with_include_class_also_withdraws_the_class_flo
 
 
 def test_p9_the_mark_belongs_to_the_deployment_not_to_the_flow_id(world):
-    """수업 흐름 id 라도 표시 없이 배포하면(학생이 포털에서 다시 배포) 학생 흐름이다 — id 접두어로 짐작하지 않는다. 기준 흐름에는 표시를 붙이지 않는다."""
+    """표시는 배포가 가진다 — id 접두어로 짐작하지 않는다. 수업 흐름으로 배포돼 있는 동안 표시 없는 배포는 거절하고(2026-10-25: 그 배포가
+    표시를 지워 [기준 흐름으로 되돌리기]가 수업 흐름을 내렸다), 강사가 내린 뒤에는 같은 id 라도 표시 없이 배포하면 학생 흐름이다.
+    기준 흐름에는 표시를 붙이지 않는다."""
     rt = world["rt"]
     _class_deploy(world, "c3_pm")
     r = checked(world, "c3_pm")
     raw = dict(deepcopy(r["definition"]), version="2")
     rt.register_definition(raw)
-    rt.deploy_definition("c3_pm", "2", "학생1", "수업 흐름을 고쳐 배포")                    # 표시 없는 배포가 표시를 지운다
+    with pytest.raises(ValueError, match="강사가 배포한 수업 흐름"):
+        rt.deploy_definition("c3_pm", "2", "학생1", "수업 흐름을 고쳐 배포")
+    assert rt.definition_status("c3_pm")["class_flow"] is True
+    flow_deploy.deploy_reset(rt, "강사", "수업 끝", include_class=True)                  # 강사가 내린 뒤
+    rt.deploy_definition("c3_pm", "2", "학생1", "같은 id 를 내 흐름으로")
     assert rt.definition_status("c3_pm")["class_flow"] is False
     out = flow_deploy.deploy_reset(rt, "학생1")
     assert [c["definition"] for c in out["changes"]] == ["c3_pm"] and out["kept"] == []
@@ -609,3 +615,24 @@ def test_close_refusal_names_only_paths_the_flow_has(world):
     with pytest.raises(ValueError) as e2:
         rt.close_agent_task(first["id"], "강사", "판단 실패")
     assert "에스컬레이션 검토" in str(e2.value) and "[다시 수행]" in str(e2.value)
+
+
+def test_class_flow_id_is_not_taken_over_by_a_student(api):
+    """2026-10-25 학생 행위 점검: 학생이 수업 흐름 id 로 가져오면 강사 초안을 덮었고, 그 id 로 등록한 판본을 표시 없이 배포하면 수업 흐름이
+    학생 흐름이 되어 [기준 흐름으로 되돌리기]가 내렸다(B · C 멈춤). 지금 수업 흐름으로 배포된 id 는 표시 없이 가져오기 · 배포를 거절한다."""
+    c, rt, repo, audit = api
+    repo.upsert_user({"id": "agent:cooling", "username": "냉각 긴급 대응 에이전트", "is_agent": True, "agent_type": "agent",
+                      "tools": "neo4j,enterprise,hyd-dmn", "tenant_id": "hyd"})
+    _, src, mapping = c3._flows().FLOWS["c3_cooling"]
+    assert c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling", "class_flow": True}).status_code == 200
+    v1 = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}).json()["version"]
+    rt.deploy_definition("c3_cooling", v1, by="강사", reason="수업 흐름", class_flow=True)
+    r = c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling"})
+    assert r.status_code == 409 and "강사가 배포한 수업 흐름 id" in r.json()["detail"]["reason"] and "my_cooling" in r.json()["detail"]["reason"]
+    assert c.post("/api/flows/import", json={"xml": src, "definition_id": "c3_cooling", "class_flow": True}).status_code == 200   # 강사 스크립트
+    v2 = c.post("/api/flows/c3_cooling/register", json={"mapping": mapping}).json()["version"]
+    with pytest.raises(ValueError, match="강사가 배포한 수업 흐름"):
+        rt.deploy_definition("c3_cooling", v2, by="학생1", reason="내가 다시 배포")
+    assert flow_deploy.route_definition(rt, "COOLER_DEGRADATION").id == "c3_cooling"
+    assert rt.deploy_definition("c3_cooling", v2, by="강사", reason="수업 흐름 갱신", class_flow=True)["class_flow"] is True
+    assert c.post("/api/flows/import", json={"xml": src, "definition_id": "my_cooling"}).status_code == 200            # 내 id 는 된다

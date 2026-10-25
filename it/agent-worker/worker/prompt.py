@@ -99,6 +99,15 @@ def format_correction(reason: str, form_fields: Any, *, form_contract=None) -> s
             + output_contract(form_fields) + "\n\n" + instructions(form_contract) + "\n\n" + FILE_READ_RULE + "\n\n" + LANGUAGE_RULE)
 
 
+#: 보류 판정 규칙(2026-10-25 수업 한 바퀴: 같은 진단 결과에 status 가 UNSUPPORTED · UNKNOWN 으로 갈리고, 학생 화면의 보류 사유에
+#: diagnose · withheld=true · submit_decision 같은 도구 · 필드 이름이 그대로 나왔다). status 는 판단 엔진이 낸 값을 따르고, reason 은 사람 글로 쓴다.
+DEFERRAL_RULE = ("status: 판단 엔진(진단 도구)이 근거 판정(evidence_status.status)을 냈으면 그 값을 그대로 씁니다. 그런 판정이 없을 때만 "
+                 "조회 실패 · 결측은 UNKNOWN, 조회한 근거가 모두 조건에 맞지 않으면 UNSUPPORTED로 씁니다. "
+                 "reason: 처리 건 화면에서 현장 담당자가 읽는 한국어 한두 문장입니다. 무엇이 없어서(예: 원인을 뒷받침하는 지식 · 센서 근거) 멈췄는지와 "
+                 "담당자가 할 수 있는 일(예: 매뉴얼 지식을 적재한 뒤 다시 평가)을 씁니다. 도구 · 함수 · 필드 이름(diagnose, withheld, top_cause, "
+                 "submit_decision 등)과 영문 상수 · JSON 값은 쓰지 않습니다. 실제 조회 결과는 evidence에 보존합니다.")
+
+
 def output_contract(form_fields: Any) -> str:
     fields = field_list(form_fields)
     if not fields:
@@ -106,8 +115,7 @@ def output_contract(form_fields: Any) -> str:
     described = "\n".join(_describe(f) for f in fields)
     skeleton = json.dumps({f["key"]: "" for f in fields}, ensure_ascii=False, indent=2)
     lines = ["## 결과 제출 형식", "근거 부족으로 완료할 수 없으면 완료 폼 대신 보류 객체 하나를 제출하세요: "
-             '{"__deferred__":{"status":"UNKNOWN","reason":"실제 보류 이유","evidence":{}}}. '
-             "조회 실패/결측은 UNKNOWN, 조회한 모든 근거가 불일치하면 UNSUPPORTED입니다. 실제 근거를 evidence에 보존합니다.",
+             '{"__deferred__":{"status":"UNKNOWN 또는 UNSUPPORTED","reason":"현장 담당자가 읽을 보류 이유","evidence":{}}}. ' + DEFERRAL_RULE,
              "작업을 마치면 아래 JSON 객체 하나를 다음 두 방법 중 하나로 제출하세요. "
              "(a) 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰고(스크립트로 써도 됨), 마지막 메시지에는 "
              "파일을 썼다는 짧은 확인 한 줄만 적습니다(결과 JSON을 메시지에 되풀이하지 않음). 결과가 길면 반드시 이 방법을 씁니다. "

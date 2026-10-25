@@ -12,7 +12,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "compose.yaml"
 #: environment keys that are read indirectly (os.environ copy into a child process, a library, or a dynamic name)
-INDIRECT_ENV = {"agent-worker": {"ANTHROPIC_API_KEY", "CODEX_MODEL_PROVIDER_API_KEY", "TENANT_ID"}, "agent": {"ANTHROPIC_API_KEY", "OPENAI_API_KEY"}}
+#: agent-worker: the Claude Code CLI child process reads its relay settings from the environment it inherits (2026-10-25: the
+#: container worker talks to the course LiteLLM relay — compose maps LLM_API_KEY · LLM_RELAY_URL · LLM_MODEL onto these)
+CLI_ENV = {"ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL", "ANTHROPIC_SMALL_FAST_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL",
+           "ANTHROPIC_DEFAULT_HAIKU_MODEL", "DISABLE_TELEMETRY", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"}
+INDIRECT_ENV = {"agent-worker": {"ANTHROPIC_API_KEY", "CODEX_MODEL_PROVIDER_API_KEY", "TENANT_ID", *CLI_ENV}, "agent": {"ANTHROPIC_API_KEY", "OPENAI_API_KEY"}}
 
 
 def load():

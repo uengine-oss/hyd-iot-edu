@@ -565,6 +565,24 @@
       UI.field({label:'기존 실행 절차 재참조',hint:'원문 번호와 전체 단계가 정확히 같은 등록 절차만 재참조할 수 있습니다. 선택하면 조회한 실행 계약의 판본을 고정합니다.',input:`<select data-reference-target="${esc(p.id)}"><option value="">기존 절차 재참조 없음 · 독립 원문 보관</option>${rows.filter(x=>x.reference_contract).map(x=>`<option value="${esc(x.id)}" ${x.id===sid ? 'selected' : ''}>${esc(x.name || '등록 이름 없음')} · ${esc(x.reference_contract.sopId || '원문 번호 미상')}</option>`).join('')}${sid && !rows.some(x=>x.id===sid && x.reference_contract) ? `<option value="${esc(sid)}" selected>참조 대상 등록 정보 읽기 실패</option>` : ''}</select>`})+
       `<input type="hidden" data-reference-pin="${esc(p.id)}" value="${esc(pin)}"><div data-reference-comparison="${esc(p.id)}" role="status"></div></div>`;
   }
+  // 2026-10-25 수업 한 바퀴: 검토 화면이 절차 · 단계 · 고장 유형 연결만 보이고 AI가 뽑은 원인 · 증거 · 규칙은 보이지 않아 학생이 원문과 대조해
+  // 틀린 항목을 뺄 수 없었다(실라버스 4회차 「원인 · 수행 조건 · 규칙을 원문과 비교해 수정 · 제외」). 항목마다 원문 인용과 [제외]를 둔다.
+  const KNOW_GROUPS = [['failure_modes', '고장 유형'], ['causes', '원인'], ['evidence', '확인 증거'], ['rules', '규칙']];
+  function manualKnowledgeSummary(group, x) {
+    if (group === 'causes') return `사전 확률 ${x.prior ?? '미정'}${x.failure_mode ? ' · ' + UI.name(x.failure_mode) : ''}`;
+    if (group === 'evidence') return `${x.tag} ${x.aggregate || ''} ${x.window_seconds ?? ''}초 ${({ lt: '<', gt: '>', gte: '≥' })[x.expect] || x.expect} ${x.threshold} → ${UI.name(x.cause)}`;
+    if (group === 'rules') return `${({ SELECT: '후보', EXCLUDE: '제외', PENALTY: '감점', WARN: '경고' })[x.effect] || x.effect} · ${UI.ruleLabel(x)}${x.penalty != null ? ' · ' + x.penalty + '만 원' : ''}${(x.outputs || []).length ? ' → ' + x.outputs.map(o => UI.name(o)).join(', ') : ''}`;
+    return (x.symptoms || []).map(y => UI.name(y)).join(', ');
+  }
+  function manualKnowledgeHtml(r, citation) {
+    const k = r.knowledge || {};
+    const groups = KNOW_GROUPS.filter(([g]) => (k[g] || []).length);
+    if (!groups.length) return '';
+    return `<h3>추출한 지식 후보</h3><p class="muted">고장 유형 · 원인 · 확인 증거 · 규칙을 원문 인용과 대조하세요. 원문과 다르거나 근거가 없는 항목은 [제외]를 고르면 적재하지 않습니다.</p>` +
+      groups.map(([g, title]) => `<div class="mknow"><h4>${esc(title)} ${(k[g] || []).length}</h4>${k[g].map(x => `<div class="msec">
+        <label class="check"><input type="checkbox" data-know-drop="${esc(g)}" value="${esc(x.id)}"> 제외</label> <b>${esc(x.name || x.annotation || x.id)}</b>
+        <div class="muted">${esc(manualKnowledgeSummary(g, x))}</div>${citation(x.anchor)}</div>`).join('')}</div>`).join('');
+  }
   function renderPreview() {
     const r = H.preview; const box = $('#manualResult');
     $('#manualDocumentId').disabled = !!r;
@@ -590,6 +608,7 @@
         ${UI.field({ label: UI.t('skill.affects'), hint: '상태 변수 또는 성과 지표 id와 방향(+/-)을 쉼표로. 비우면 득실 0', input: `<input aria-label="영향" data-affects="${esc(p.id)}" value="${esc((manualLink(r,p).affects || []).map(a=>a.target+':'+a.sign).join(', '))}" placeholder="예: sv:bearing-wear:- , msr:maint-cost:+">` })}</div>${citation(p.anchor)}
         ${UI.fold('절차 연결 원문',`<pre>${esc(JSON.stringify({inline:p.link,override:r.links && Object.prototype.hasOwnProperty.call(r.links,p.id) ? r.links[p.id] : undefined,suggestedFailureMode:p.suggestedFailureMode,existing_skill_id:p.existing_skill_id,reference_contract_sha256:p.reference_contract_sha256},null,2))}</pre>`,{cls:'small'})}
         <ol>${p.steps.map(s => `<li><textarea aria-label="단계 ${s.order}" data-manual-step="${esc(p.id)}" data-order="${s.order}" rows="2">${esc(s.text)}</textarea> <span class="muted">${esc(s.manual || '')}</span>${citation(s.anchor)}</li>`).join('')}</ol></div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div></div>
+      ${manualKnowledgeHtml(r, citation)}
       <label class="check"><input type="checkbox" id="manualReviewed"> 원문 · 단계 · 고장 유형 · 관계를 검토했습니다.</label>
       <p id="manualReviewChanged" class="muted" hidden>검토 내용을 바꿨습니다. 위 검사는 원래 제안 기준입니다. 원문과 바뀐 연결을 대조한 뒤 검토 완료를 표시하세요.</p>
       ${UI.actions(`<button class="btn primary" id="manualCommit" ${r.status === 'READY' && r.sections.length && r.procedures.length ? '' : 'disabled'}>검토한 내용 적재</button>`)}<span id="manualMsg" class="muted"></span></div>`;
@@ -685,6 +704,10 @@
       $('#manualMsg').textContent = '적재 중…';
       try {
         const reviewed = structuredClone(r);
+        box.querySelectorAll('[data-know-drop]:checked').forEach(input => {
+          const group = input.dataset.knowDrop;
+          if (reviewed.knowledge && Array.isArray(reviewed.knowledge[group])) reviewed.knowledge[group] = reviewed.knowledge[group].filter(x => x.id !== input.value);
+        });
         box.querySelectorAll('[data-manual-name]').forEach(input => { reviewed.procedures.find(p => p.id === input.dataset.manualName).name = input.value; });
         box.querySelectorAll('[data-manual-step]').forEach(input => { reviewed.procedures.find(p => p.id === input.dataset.manualStep).steps.find(s => s.order === Number(input.dataset.order)).text = input.value; });
         for (const select of box.querySelectorAll('[data-reference-target]')) {

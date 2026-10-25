@@ -341,7 +341,9 @@ def shape_result(result: dict, max_chars: int = MAX_RESULT_CHARS) -> dict:
     pretty = json.dumps(mask_value(parsed), ensure_ascii=False, indent=2) if parsed is not None else mask_text(text)
     size = len(pretty)
     truncated = size > max_chars
-    return {"is_error": bool(result.get("isError")), "text": pretty[:max_chars] + ("\n… (잘림)" if truncated else ""),
+    # HYD 도구는 실패를 isError 대신 {"result": "error", …} 봉투로도 돌려준다(2026-10-25 수업 한 바퀴: 없는 표 조회가 초록 「결과」로 보였다)
+    envelope_error = isinstance(parsed, dict) and parsed.get("result") == "error"
+    return {"is_error": bool(result.get("isError")) or envelope_error, "text": pretty[:max_chars] + ("\n… (잘림)" if truncated else ""),
             "json": parsed is not None, "size_chars": size, "truncated": truncated, "limit_chars": max_chars}
 
 

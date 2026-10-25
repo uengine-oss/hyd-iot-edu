@@ -1,6 +1,7 @@
 """C3 조립: 확정 흐름 A · B · C 를 포털의 '흐름 가져오기'와 같은 API 로 가져와 등록 · 배포한다(수업 스택용).
 
   .venv/bin/python scripts/c3_flows.py deploy            # 세 흐름 가져오기 → 사전 검사 → 등록 → 배포(수업 흐름 표시 class_flow)
+  .venv/bin/python scripts/c3_flows.py ensure            # 수업 흐름으로 배포돼 있지 않은 것만 deploy (시작 스크립트가 부른다 — 두 번째 실행은 아무것도 바꾸지 않음)
   .venv/bin/python scripts/c3_flows.py check             # 사전 검사만 (등록 안 함)
   .venv/bin/python scripts/c3_flows.py export DIR        # bpmn.io 로 열 수 있는 .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다
   .venv/bin/python scripts/c3_flows.py deploy-reset BY   # 기준 흐름으로 되돌리기(POST /api/flows/deploy-reset include_class — c3 흐름도 경보 경로에서 내림)
@@ -182,9 +183,10 @@ def call(method: str, path: str, body=None) -> dict:
         raise SystemExit(f"{method} {path} → {e.code}: {e.read().decode(errors='replace')[:800]}")
 
 
-USAGE = ("사용: c3_flows.py check | deploy | export DIR | deploy-reset BY\n"
+USAGE = ("사용: c3_flows.py check | deploy | ensure | export DIR | deploy-reset BY\n"
          "  check         세 흐름 가져오기 → 사전 검사만 (등록 · 배포 안 함)\n"
          "  deploy        사전 검사 → 등록 → 배포\n"
+         "  ensure        수업 흐름으로 배포돼 있지 않은 흐름만 deploy (이미 있으면 건너뜀)\n"
          "  export DIR    .bpmn 세 파일과 매핑 JSON 을 DIR 에 쓴다\n"
          "  deploy-reset BY  기준 흐름으로 되돌리기 — 수업 흐름도 내림 (BY = 되돌린 사람, POST /api/flows/deploy-reset include_class)")
 
@@ -198,10 +200,12 @@ def export(out: Path) -> int:
     return 0
 
 
-def check_and_deploy(deploy: bool) -> int:
+def check_and_deploy(deploy: bool, only: list[str] | None = None) -> int:
     failed = 0
     for did, (fname, src, mapping) in FLOWS.items():
-        call("POST", "/api/flows/import", {"xml": src, "file_name": fname, "definition_id": did})
+        if only is not None and did not in only:
+            continue
+        call("POST", "/api/flows/import", {"xml": src, "file_name": fname, "definition_id": did, "class_flow": True})
         view = call("POST", f"/api/flows/{did}/check", {"mapping": mapping})
         problems = (view.get("check") or view).get("problems") or []
         print(did, "check:", "ok" if not problems else json.dumps(problems, ensure_ascii=False)[:600])
@@ -217,6 +221,17 @@ def check_and_deploy(deploy: bool) -> int:
     return 1 if failed else 0
 
 
+def ensure() -> int:
+    """시작 스크립트용: 경보 경로에 수업 흐름(class_flow)으로 올라 있는 c3 흐름은 건너뛰고 나머지만 deploy 한다.
+    학생이 배포한 같은 id(수업 흐름 표시 없음)는 수업 흐름이 아니므로 다시 배포한다."""
+    deployed = {f.get("definition") for f in call("GET", "/api/flows/deployments").get("flows") or [] if f.get("class_flow")}
+    missing = [did for did in FLOWS if did not in deployed]
+    for did in FLOWS:
+        if did not in missing:
+            print(did, "이미 수업 흐름으로 배포됨 — 건너뜀")
+    return check_and_deploy(True, missing) if missing else 0
+
+
 def deploy_reset(by: str) -> int:
     out = call("POST", "/api/flows/deploy-reset", {"by": by, "reason": "C3 흐름 내리기 — 기준 흐름으로", "include_class": True})
     for change in out.get("changes") or []:
@@ -230,7 +245,7 @@ def deploy_reset(by: str) -> int:
 def main(argv: list[str]) -> int:
     """명령은 정확히 하나를 고른다. 인자 수가 맞지 않거나 모르는 명령이면 사용법을 stderr 에 쓰고 2 — 어떤 API 도 부르지 않는다."""
     args = argv[1:]
-    commands = {("check", 0): lambda: check_and_deploy(False), ("deploy", 0): lambda: check_and_deploy(True),
+    commands = {("check", 0): lambda: check_and_deploy(False), ("deploy", 0): lambda: check_and_deploy(True), ("ensure", 0): ensure,
                 ("export", 1): lambda: export(Path(args[1])), ("deploy-reset", 1): lambda: deploy_reset(args[1])}
     run = commands.get((args[0], len(args) - 1)) if args else None
     if run is None:
