@@ -592,17 +592,13 @@ def _d_one_a(r, i: int, mode: str) -> dict:
 
 
 # ====================================================================== 02 · 1-3 전체 과정 (수업 시작 상태 = 구조판, 문서 적재 전)
-@lab("02", "1-3 전체 과정 — 쿨러 열화 → 경보 → AI 판단(구조판: 보류) → [다시 평가] → [쿨러 복구] · 「조치 전 해소」 (AI 3회)")
-def lab_02_full_flow_structure(r: Round):
-    r.repeat3("A 판단(구조판)", lambda i: _d_one_a(r, i, "defer"), ("outcome", "deferral_status", "flow"), limit_s=D_AGENT_LIMIT_S)
-
-
-# ====================================================================== 05b · 문서 적재 뒤 A 완주 (1-3 시연을 적재된 지식으로)
-@lab("05b", "적재 뒤 A 완주 — 추천 카드 · 승인 역할 · 승인(잘못된 역할 거절) · 거절 · 지연 알림 (AI 3회)")
-def lab_05b_full_flow_loaded(r: Round):
+# 수업 시작 상태 = 구조판 + 수업용 기본 지식(시작 스크립트 7/8, 사용자 결정 2026-10-25). 그래서 1-3 전체 과정이 처음부터 승인까지 간다.
+# 구조판만의 「보류 → [다시 평가]」 길은 _d_one_a(mode="defer")로 남겨 둔다(지식이 빠진 PC — 93 펌프 · 팬의 보류 뒤 재평가와 같은 화면).
+@lab("02", "1-3 전체 과정 — 쿨러 열화 → 경보 → AI 판단 → 승인(잘못된 역할 거절) · 거절 · 지연 알림 → 명령 · 재관측 · 결과 (AI 3회)")
+def lab_02_full_flow(r: Round):
     modes = ["approve", "reject", "late"]
-    runs = r.repeat3("A 판단(적재 뒤)", lambda i: _d_one_a(r, i, modes[i]), ("outcome", "recommended", "approver", "evidence"), limit_s=D_AGENT_LIMIT_S)
-    r.memo["05b_cards"] = runs
+    runs = r.repeat3("A 판단", lambda i: _d_one_a(r, i, modes[i]), ("outcome", "recommended", "approver", "evidence"), limit_s=D_AGENT_LIMIT_S)
+    r.memo["02_cards"] = runs
     if runs and runs[0].get("approver") and runs[0]["approver"] != "role:operator":
         r.check("추천 카드의 승인 역할이 흐름의 승인 담당(운전원)과 같다 — 다르면 가이드에 「카드의 승인 역할을 보고 「나」를 고른다」가 필요",
                 False, f"카드 승인 역할 {runs[0]['approver']} · 흐름 담당 운전원", kind="quality")
@@ -621,7 +617,7 @@ def _d_onto(r, asset: str = "HYD-01") -> dict:
     return {"stats": stats, "nodes": len(g["nodes"]), "edges": len(g["edges"]), "labels": labels, "graph": g}
 
 
-@lab("03", "2-2 지식 지도 — 설비 선택 → 연결 · 속성 · 방향 (적재 전 구조판)")
+@lab("03", "2-2 지식 지도 — 설비 선택 → 연결 · 속성 · 방향 (수업 시작 상태: 구조판 + 기본 지식)")
 def lab_03_ontology(r: Round):
     o = _d_onto(r)
     m = re.search(r"항목\s*([\d,]+)\s*·\s*연결\s*([\d,]+)", o["stats"])
@@ -629,7 +625,7 @@ def lab_03_ontology(r: Round):
             f"화면 {o['stats']} / API {o['nodes']}·{o['edges']}")
     r.memo["03_before"] = {k: o[k] for k in ("nodes", "edges", "labels")}
     # 설비 노드를 누르면 오른쪽에 종류 · 속성 · 나가는/들어오는 연결(방향)
-    node = r.page.locator("#ontoMap [data-id='HYD-01']").first
+    node = r.page.locator("#ontoMap [data-id='asset:hyd-01']").first        # 설비 노드 id(그래프 API) — 화면 이름은 HYD-01
     if node.count():
         node.click()
         r.page.wait_for_timeout(800)
@@ -649,19 +645,17 @@ def lab_03_ontology(r: Round):
     st = _a_txt(r, "#ontoStats")
     r.check("없는 이름을 검색하면 「검색 결과 0개」로 알린다", "검색 결과 0개" in st, st, kind="exception")
     r.page.fill("#ontoSearch", "")
-    # 구조판: 고장 · 원인 · 조치 지식은 문서 적재 전이라 적거나 없다
-    r.check("구조판(적재 전): 조치 방법(Skill)이 아직 없거나 적다", o["labels"].get("Skill", 0) <= 3, json.dumps(o["labels"], ensure_ascii=False)[:300])
+    # 수업용 기본 지식: 쿨러 매뉴얼의 고장 유형 · 원인 · 조치 방법이 이미 보인다(3회차 판단 · What-if 의 전제)
+    r.check("기본 지식: 조치 방법(Skill) · 고장 유형 · 원인이 보인다", o["labels"].get("Skill", 0) >= 5 and o["labels"].get("FailureMode", 0) >= 1 and o["labels"].get("Cause", 0) >= 3,
+            json.dumps(o["labels"], ensure_ascii=False)[:300])
 
 
-@lab("05c", "2-2 지식 지도 다시 — 문서 적재 뒤 차이(조치 · 원인 · 근거 문서)")
+@lab("05c", "2-2 지식 지도 다시 — 4회차 개정 적재 뒤에도 조치 · 원인 지식이 그대로(줄지 않음)")
 def lab_05c_ontology_after(r: Round):
-    before = r.memo.get("03_before") or {}
+    before = r.memo.get("03_before") or _d_onto(r)
     o = _d_onto(r)
-    r.check("적재 뒤 지식 지도 항목 · 연결이 늘었다", o["nodes"] > before.get("nodes", 10**9) and o["edges"] > before.get("edges", 10**9),
-            f"전 {before.get('nodes')}·{before.get('edges')} → 후 {o['nodes']}·{o['edges']}")
-    grew = {k: (before.get("labels", {}).get(k, 0), v) for k, v in o["labels"].items() if v > before.get("labels", {}).get(k, 0)}
-    r.check("늘어난 종류에 조치 방법 · 근거 문서가 있다", any(k in grew for k in ("Skill", "Step")) and any(k in grew for k in ("Document", "Manual", "Source", "DocumentChunk", "Evidence")),
-            json.dumps(grew, ensure_ascii=False)[:400])
+    shrank = {k: (v, o["labels"].get(k, 0)) for k, v in before.get("labels", {}).items() if k in ("Skill", "FailureMode", "Cause", "Rule") and o["labels"].get(k, 0) < v}
+    r.check("개정 적재 뒤 조치 방법 · 고장 유형 · 원인 · 규칙이 줄지 않았다", not shrank, json.dumps(shrank or o["labels"], ensure_ascii=False)[:400])
 
 
 # ====================================================================== 04 · 3-1 조치 판단 규칙 · 손익/What-if · 성과 지표 (구조판 — 적재 전 차시)
@@ -728,7 +722,13 @@ def lab_04_rules_whatif_kpi(r: Round):
     kpi_before = r.get(r.process + "/api/kpi?period=week") if r.api("GET", r.process + "/api/kpi?period=week")[0] == 200 else None
     tgt = r.page.locator("[data-kpi-target]")
     if tgt.count():
-        tgt.first.fill("1")
+        r.page.wait_for_timeout(2000)                                      # 첫 불러오기가 표를 다시 그리는 동안 칸이 바뀐다(1차: fill 시간 초과)
+        for _ in range(3):
+            try:
+                r.page.locator("[data-kpi-target]").first.fill("1", timeout=5000)
+                break
+            except Exception:
+                r.page.wait_for_timeout(1500)
         r.page.locator("[data-kpi-trial-run]").first.click()
         r.page.wait_for_timeout(2500)
         txt = _a_txt(r, "#kpiView", 5000)
@@ -1044,7 +1044,9 @@ def _b_run_extraction(r, key: str, sid: str, i: int) -> dict:
             pass
         return None
 
-    body = r.wait(_B_EXTRACT_LIMIT_S + 60, done, every=15) or {}
+    # 끝날 때까지 기다린다(워커 실행 한도 1800초). 소요 시간 판정은 repeat3 의 limit_s(_B_EXTRACT_LIMIT_S)가 한다 —
+    # 여기서 먼저 끊으면 다음 추출이 아직 도는 앞 추출 뒤에 줄을 서서 시간이 부풀었다(1차 실행)
+    body = r.wait(1800, done, every=15) or {}
     seconds = round(time.monotonic() - t0, 1)
     if not body.get("preview"):
         return {"seconds": seconds, "instance": inst, "error": f"추출이 끝나지 않음: 상태 {body.get('status')} · {str(body.get('log') or '')[:200]}",
@@ -1384,11 +1386,13 @@ def _b_ask(r, agent_id: str, question: str) -> dict:
     r.wait(15, lambda: page.locator(f"#askAgent option[value='{agent_id}']").count(), every=1)
     page.select_option("#askAgent", agent_id)                                                   # 라이브 확인
     page.fill("#askText", question)
+    seen = set(page.locator(".ask-a a[href^='#/instances/']").evaluate_all("as => as.map(a => a.getAttribute('href'))"))
     t0 = time.monotonic()
     page.click("#askSend")
-    link = page.locator(".ask-a a[href^='#/instances/']").first                                # ask.js threadHtml 「처리 과정 보기」 — 코드 확인
-    link.wait_for(timeout=30_000)
-    pid = (link.get_attribute("href") or "").split("/")[2]
+    # 앞 질문의 답 링크가 화면에 남아 있다 — 이번에 새로 생긴 링크를 기다린다(1차: 첫 링크를 읽어 앞 질문의 답을 이번 답으로 판정)
+    href = r.wait(60, lambda: next((h for h in page.locator(".ask-a a[href^='#/instances/']").evaluate_all("as => as.map(a => a.getAttribute('href'))")
+                                    if h not in seen), None), every=0.5) or ""
+    pid = href.split("/")[2] if href.count("/") >= 2 else ""
     view = r.wait(_B_ASK_LIMIT_S + 60, lambda: (lambda v: v if v.get("state") not in _B_ASK_LIVE else None)(r.get(f"{r.process}/api/ask/{pid}")), every=3) or {}
     seconds = round(time.monotonic() - t0, 1)
     page.wait_for_timeout(2500)                                                                 # 화면 폴링(1.5초)이 끝난 상태를 그릴 시간
@@ -1441,6 +1445,7 @@ def lab_06_first_agent(r: Round):
         return
     r.memo["my_agent"] = mine["id"]
     page.locator(f"[data-pick-agent='{mine['id']}']").first.click()
+    r.wait(15, lambda: "불러오는 중" not in page.locator("[data-ag-detail]").inner_text(), every=0.5)
     detail = page.locator("[data-ag-detail]").inner_text()
     r.check("상세: 「내가 만든」 · 목표 · 쓰는 도구가 보인다", "내가 만든" in detail and "목표" in detail and "쓰는 도구" in detail, detail[:300])
 

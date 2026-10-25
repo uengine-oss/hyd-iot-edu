@@ -33,7 +33,7 @@ from .instances import InstanceRuntime
 
 DEFINITION_FILE = 'ask_agent_v1.json'
 DEFINITION_ID = 'ask_agent'
-VERSION = '1.0'
+VERSION = '1.1'          # 1.1 (2026-10-25 수업 한 바퀴): 에이전트에 붙은 수강생 MCP 서버를 먼저 살핀다 — 3번 중 2번 그 표를 두고 지식 그래프만 뒤졌다. 등록된 1.0은 다시 쓰지 않는다
 ACTIVITY = 'task:answer'
 ROLE = '답변 에이전트'
 DEFAULT_AGENT = 'sys:agent'
@@ -125,10 +125,10 @@ def readiness(worker_probe, bridge: str | None) -> dict:
     if bridge == 'legacy':
         out['reason'] = ('지금은 결정론 대체 모드(AGENT_BRIDGE=legacy)입니다. 이 모드의 내장 판단은 경보 처리 건의 판단 4단계(원인 진단 · 조치 후보 · '
                          '규정 검토 · 우선순위)만 채우고, 자유 질문에 답할 AI 일꾼(워커)은 없습니다. 질문은 처리 건으로 만들지 않았습니다. '
-                         f'워커 연결 확인: {where}. 워커를 켜고(scripts/run_worker_host.sh) process의 WORKER_URL이 그 워커를 가리키면 질문할 수 있습니다.')
+                         f'워커 연결 확인: {where}. 시작.bat을 다시 실행하면 AI 일꾼이 함께 켜집니다(.env AGENT_BRIDGE=off).')
     else:
         out['reason'] = (f'AI 일꾼(워커)에 연결할 수 없어 질문을 처리 건으로 만들지 않았습니다: {where}. '
-                         '워커를 켠 뒤(scripts/run_worker_host.sh) 다시 보내세요.')
+                         '시작.bat을 다시 실행해 AI 일꾼을 켠 뒤 다시 보내세요.')
     return out
 
 
@@ -334,7 +334,8 @@ def _error_reason(events) -> str | None:
     for e in reversed(events):
         if e.get('event_type') == 'error':
             d = e.get('data') or {}
-            return str(d.get('raw_error') or d.get('content') or d.get('error') or d.get('message') or '')[:600] or None
+            # 워커가 할 일로 옮긴 안내(hint — 중계 모델 · 키 거절)가 있으면 그것을 먼저 보인다. 원문은 처리 과정 기록에 남는다
+            return str(d.get('hint') or d.get('raw_error') or d.get('content') or d.get('error') or d.get('message') or '')[:600] or None
     return None
 
 

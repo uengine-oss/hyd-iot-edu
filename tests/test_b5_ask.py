@@ -267,3 +267,16 @@ def test_process_service_mounts_the_ask_routes():
     paths = {r.path for r in main.app.routes}
     assert {'/api/ask', '/api/ask/status', '/api/ask/{proc_inst_id}', '/api/ask/reset'} <= paths
     assert instance_mode.DEFINITIONS_DIR is not None
+
+
+def test_instruction_1_1_looks_at_the_agents_own_student_servers_first():
+    """2026-10-25 수업 한 바퀴: 수강생 MCP 서버를 붙인 에이전트에 그 표를 물었더니 3번 중 2번 지식 그래프만 뒤져 「답할 수 없음」."""
+    raw = ask.definition(DEFS)
+    text = raw["activities"][0]["instruction"]
+    assert raw["version"] == ask.VERSION == "1.1"
+    assert "수강생이 등록한 서버" in text and "list_tables" in text and "기본 서버를 뒤지기 전에" in text
+
+
+def test_failed_question_shows_the_workers_korean_hint_before_the_raw_error():
+    events = [{"event_type": "error", "data": {"raw_error": "RunFailed: 403 key not allowed to access model", "hint": "에이전트의 모델 이름을 강의 중계가 받지 않습니다"}}]
+    assert ask._error_reason(events).startswith("에이전트의 모델 이름")

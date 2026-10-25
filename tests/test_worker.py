@@ -760,3 +760,16 @@ def test_poll_reports_healthy_once_the_queue_answered_before_running_the_job(tmp
     r.handle = lambda row: order.append("handle")
     assert r.poll_once(on_polled=lambda: order.append("healthy")) == 1
     assert order == ["fetch", "healthy", "handle"]
+
+
+@pytest.mark.parametrize("raw,want", [
+    ("RunFailed: Failed to authenticate. API Error: 403 key not allowed to access model. This key can only access models=['coding']", "모델 칸을 비우면"),
+    ("RunFailed: API Error: 401 Invalid API key", "LLM_API_KEY"),
+    ("RunFailed: 429 rate limit exceeded", "1분 뒤"),
+    ("RunFailed: something else", None),
+])
+def test_relay_refusals_become_what_the_student_does(raw, want):
+    """2026-10-25 수업 한 바퀴: 모델 칸에 중계에 없는 이름 → 질문 화면에 「403 key not allowed to access model」 영문 그대로."""
+    from worker.runner import relay_hint
+    got = relay_hint(raw)
+    assert (got is None) if want is None else (want in got)
