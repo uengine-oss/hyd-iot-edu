@@ -692,8 +692,12 @@ def lab_04_rules_whatif_kpi(r: Round):
     r.memo["04_base"] = base[:600]
     n_cards = r.page.locator("#decResult .hitl-opts > *").count()
     r.check("조치 후보 카드가 보이거나, 없으면 왜 없는지 안내한다(구조판)", n_cards > 0 or ("없" in base), f"후보 {n_cards} · {base[:200]}")
+    # 수업 지식(HM-8)에는 보호 정지 규칙이 없다 — 결과가 같으면 화면이 그 이유를 말해야 한다(2026-10-25 결함: 말없이 같은 결과)
     trip = _d_decide(r, state="TRIP")
-    r.check("설비 상태를 「보호 정지」로 바꾸면 결과가 달라지거나 제외 사유가 보인다", trip != base or "제외" in trip, trip[:300], kind="exception")
+    r.check("설비 상태를 「보호 정지」로 바꾸면 결과가 달라지거나, 그 조건을 읽는 규칙이 없다고 알린다", trip != base or "결과에 영향이 없습니다" in trip, trip[:300], kind="exception")
+    # HM-8 8절: 원격 조치는 REMOTE_AUTO 일 때만 — 원격 수동이면 원격 제어 후보가 빠져야 한다
+    manual = _d_decide(r, mode="REMOTE_MANUAL")
+    r.check("운전 모드를 「원격 수동」으로 바꾸면 원격 제어 후보가 빠지거나 제외 사유가 보인다", manual != base and ("제외" in manual or manual.count("점수") < base.count("점수")), manual[:300], kind="exception")
     neg = _d_decide(r, fan=-5)
     ok, why = r.human_message(neg)
     r.check("팬 연속 운전 시간에 음수를 넣으면 한국어로 거절하거나 무시를 알린다", ok, why, kind="exception")
@@ -749,10 +753,16 @@ def lab_04_rules_whatif_kpi(r: Round):
     else:
         r.check("성과 지표 화면에 시험 목표 칸이 있다", False, _a_txt(r, "#kpiView")[:300])
     kpi_after = r.get(r.process + "/api/kpi?period=week") if kpi_before is not None else None
-    r.check("시험값 · 시험 목표가 원본(업무 DB · 지식 · KPI)을 바꾸지 않았다",
-            r.get(r.enterprise + "/api/state") == ent_before and len(r.get(f"{r.agent}/api/ontology/graph?asset=HYD-01")["nodes"]) == len(graph_before["nodes"])
-            and (kpi_before is None or json.dumps(kpi_before, sort_keys=True) == json.dumps(kpi_after, sort_keys=True)),
-            "업무 상태 · 그래프 · KPI 비교", kind="exception")
+    # 업무 DB 의 납기까지 남은 시간(due_in_h · alt_free_h)은 시계와 함께 줄어든다 — 시험값이 바꾼 것만 본다
+    def _still(v):
+        if isinstance(v, dict):
+            return {k: _still(x) for k, x in v.items() if not k.endswith("_in_h") and not k.endswith("_free_h")}
+        return [_still(x) for x in v] if isinstance(v, list) else v
+    changed = [name for name, same in (
+        ("업무 DB", _still(r.get(r.enterprise + "/api/state")) == _still(ent_before)),
+        ("지식 그래프", len(r.get(f"{r.agent}/api/ontology/graph?asset=HYD-01")["nodes"]) == len(graph_before["nodes"])),
+        ("KPI", kpi_before is None or json.dumps(_still(kpi_before), sort_keys=True) == json.dumps(_still(kpi_after), sort_keys=True))) if not same]
+    r.check("시험값 · 시험 목표가 원본(업무 DB · 지식 · KPI)을 바꾸지 않았다", not changed, "바뀐 곳: " + (", ".join(changed) or "없음"), kind="exception")
 
 
 # ====================================================================== 08 · 7-1 사람의 확인 (적재 뒤 — 승인 대기 건으로)

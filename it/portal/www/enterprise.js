@@ -402,7 +402,7 @@ async function runDecision() {
   if ($('#decFan').value !== '') facts.fan100_hours = Number($('#decFan').value);
   if ($('#decStandby').value) facts.standby_ready = $('#decStandby').value === 'true';
   $('#decResult').innerHTML = UI.empty(UI.t('dec.loading'));
-  try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); renderDecision(); }
+  try { ent.result = await postJ(API.agent + '/api/agent/decide', { asset: $('#decAsset').value, pattern: $('#decPattern').value, facts }); ent.facts = facts; renderDecision(); }
   catch (e) { $('#decResult').innerHTML = UI.empty(UI.t('dec.failed'), e.message); }
   finally { ent.busy = false; b.disabled = false; b.textContent = UI.t('btn.run'); }
 }
@@ -413,6 +413,11 @@ function summaryBlock(raw) {
   const first = firstSentence(text), rest = String(text || '').slice(first.length).trim();
   return `<div class="summary prose"><p style="margin:0">${esc(first)}</p>${rest ? UI.fold(esc(UI.t('dec.summaryMore')), `<p style="margin:0">${esc(rest)}</p>`, { cls: 'small' }) : ''}</div>`;
 }
+const FACT_LABEL = { plc_mode: 'dec.mode', plc_state: 'dec.state', standby_ready: 'dec.standby', fan100_hours: 'dec.fan' };
+/** 학생이 바꾼 판단 조건 가운데 이번 판단의 어떤 규칙 조건(when)에도 나오지 않는 것 */
+function unusedFacts(facts, trace) {
+  return Object.keys(facts || {}).filter(k => FACT_LABEL[k] && !(trace || []).some(t => String(t.when || '').includes(k)));
+}
 function renderDecision() {
   const d = ent.result; const box = $('#decResult');
   if (!d || !d.result) { box.innerHTML = UI.empty(UI.status(d && d.status) || UI.t('dec.failed'), (d && d.error) || ''); return; }
@@ -421,6 +426,9 @@ function renderDecision() {
   // A141: 판단 시각 · id 는 상세 정보 접기로
   let html = `<div class="detail-head" style="margin-top:var(--s6)"><div class="row"><h2>${esc(UI.idText((d.scenario || {}).name || ''))}</h2>${UI.chip(d.status)}</div><div class="sub">${esc(d.asset || '')}</div></div>`;
   html += UI.evaluationHtml(r,d) + summaryBlock(r.explanation);
+  // 2026-10-25 수업 점검: 바꾼 판단 조건을 읽는 규칙이 지금 지식에 없으면 결과가 그대로라 학생이 고장으로 오해했다(HM-8에는 보호 정지 규칙이 없다)
+  const unused = unusedFacts(ent.facts, r.trace);
+  if (unused.length) html += `<p class="muted" role="status">${esc(unused.map(k => UI.t(FACT_LABEL[k])).join(', '))}: 지금 지식의 규칙 가운데 이 조건을 읽는 규칙이 없어 결과에 영향이 없습니다.</p>`;
   if (d.moneyError) html += `<p class="neg" role="status">손익(원)을 계산하지 못했습니다: ${esc(d.moneyError)}</p>`;
   html += UI.metaFold([[UI.t('inst.stepTable.when'), esc(UI.dateTime(d.created))], ['ID', `<span class="mono">${esc(d.id)}</span>`]]);
   // 원인: 1위 큰 글씨 + 고장 유형 칩 + 증거, 2위 이하 접기 (C2)
