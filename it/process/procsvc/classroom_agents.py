@@ -110,3 +110,9 @@ def verify_tool(runtime,instance,qualified):
     if (not isinstance(qualified,str) or qualified.count('/')!=1
             or servers is not None and qualified.split('/')[0] not in servers):
         raise Denied('승인 에이전트 단계가 사용하는 도구 서버가 아닙니다')
+
+
+def filter_tools(runtime,instance,tools):
+    approval=verify_instance(runtime,instance)
+    servers=snapshot(runtime,approval)[3]['agent']['tools']
+    return [tool for tool in tools if servers is None or tool['server'] in servers]

@@ -10,7 +10,7 @@ PRIVATE = 'http://127.0.0.1:55760'
 
 
 @pytest.mark.parametrize('path', ['/internal/worker/model-runtime', '/internal/model/v1/messages',
-    '/internal/worker/tool-request', '/internal/worker/tool-result',
+    '/internal/worker/tool-request', '/internal/worker/tool-result', '/internal/worker/tool-catalog',
     '/api/kg/manuals/commit', '/api/process-definitions', '/v1/messages', '/v1/chat/completions',
     '/key/generate', '/classroom/internal/model/v1/messages', '/v1/classroom/../../internal/model/v1/messages'])
 def test_public_listener_never_exposes_worker_model_or_admin(path):
@@ -33,7 +33,7 @@ def test_only_tool_results_have_the_larger_bounded_observation_body():
 
 
 @pytest.mark.parametrize('path', ['/internal/worker/model-runtime', '/internal/model/v1/messages',
-    '/internal/worker/tool-request', '/internal/worker/tool-result',
+    '/internal/worker/tool-request', '/internal/worker/tool-result', '/internal/worker/tool-catalog',
     '/internal/model/v1/messages/count_tokens'])
 def test_private_listener_forwards_only_explicit_worker_paths(path):
     response = httpx.post(PRIVATE+path, json={}, timeout=5)

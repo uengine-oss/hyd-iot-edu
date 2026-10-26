@@ -88,3 +88,60 @@ def test_real_agent_snapshot_is_rechecked_before_model_permission(setup,tmp_path
     user=runtime.repo.list_users(['agent:class-test'],runtime.tenant_id)[0]
     runtime.repo.upsert_user(dict(user,persona='수업과 무관한 변경'))
     with pytest.raises(HTTPException):classroom_model.authorize(runtime,auth,permit['token'])
+
+
+def test_managed_mcp_to_student_exchange_keeps_name_schema_and_scoped_result(setup,tmp_path,monkeypatch):
+    import asyncio,json,httpx
+    from pathlib import Path
+    from fastmcp import Client as McpClient
+    from worker import managed_tools
+    from procsvc.classroom_client import Client as Student
+    from test_worker_managed_tools import META
+    _,runtime,auth,connect,_=setup
+    secret='private-end-to-end-tool-test-'*3
+    keyfile=tmp_path/'runtime.key';keyfile.write_text(secret,encoding='utf8')
+    monkeypatch.setenv('HYD_WORKER_RUNTIME_KEY_FILE',str(keyfile))
+    with connect() as db:
+        db.execute((Path(__file__).parents[1]/'it/supabase/migrations/20261027000067_classroom_tool_io.sql').read_text(encoding='utf8'))
+        policy=db.execute('SELECT policy FROM hyd_classroom_grants').fetchone()['policy']
+        policy['tool_io']=dict(tools=['enterprise/spare_stock'],max_calls=3,max_input_bytes=200,
+            max_result_bytes=40000,total_result_bytes=50000,catalog={'enterprise/spare_stock':{
+                'description':META['description'],'inputSchema':META['inputSchema'],'annotations':{'readOnlyHint':True}}})
+        db.execute('UPDATE hyd_classroom_grants SET policy=%s',(Jsonb(policy),))
+    client=TestClient(create_app(auth,source_loader=None,catalog_factory=None,runtime_factory=lambda subject:runtime,
+                                upstream_factory=lambda:{},agent_enabled=True))
+    run=client.post('/v1/classroom/agents',headers={'Authorization':'Bearer '+KEY},
+                    json={'reference':'handover.draft','inputs':{'memo':'확인 필요'}}).json()['run_id']
+    wi=runtime.repo.fetch_pending_task('cliagents','managed-worker')[0]
+    permit=client.post('/internal/worker/model-runtime',headers={'Authorization':'Bearer '+secret},
+        json={'tenant_id':runtime.tenant_id,'todo_id':wi['id'],'consumer':wi['consumer']}).json()
+    local_reads=[];exchanges=[]
+    def read(tool,args):
+        local_reads.append((tool,args))
+        return {'is_error':False,'result':{'available':7,'source':'student-local'}}
+    def bridge(request):
+        try:response=client.request(request.method,request.url.path,headers=dict(request.headers),content=request.content)
+        except Exception as exc:
+            exchanges.append(('request-error',request.url.path,type(exc).__name__,str(exc)))
+            raise
+        exchanges.append((request.url.path,response.status_code))
+        if request.url.path=='/internal/worker/tool-request' and response.status_code==200:
+            try:assert student.exchange_tool(run,read)['status']=='DONE'
+            except Exception as exc:
+                exchanges.append(('student-error',type(exc).__name__,str(exc)))
+                raise
+        return httpx.Response(response.status_code,content=response.content)
+    network=httpx.MockTransport(bridge)
+    student=Student('https://teacher.example',lambda:KEY,tmp_path/'student.sqlite3',transport=network)
+    transport=managed_tools.Transport('https://teacher.example',permit['token'],transport=network)
+    catalog=transport.request('catalog',{})['tools']
+    assert catalog==[META]
+    async def exercise():
+        async with McpClient(managed_tools.server('enterprise',catalog,transport)) as mcp:
+            result=await mcp.call_tool('spare_stock',{'part':'P-PMP-SEAL'})
+            assert json.loads(result.content[0].text)=={'available':7,'source':'student-local'}
+    try:asyncio.run(exercise())
+    except Exception:pytest.fail(str(exchanges))
+    assert local_reads==[('enterprise/spare_stock',{'part':'P-PMP-SEAL'})]
+    assert auth.read_run(KEY,run)['calls']==0
+    with pytest.raises(Exception):transport.request('request',{'call_id':'bad','tool':'enterprise/spare_stock','arguments':{'part':9}})
