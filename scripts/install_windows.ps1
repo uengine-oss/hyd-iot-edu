@@ -1,6 +1,6 @@
 ﻿# 학생 PC에 실습 필수 프로그램을 최소 기준보다 낮거나 없으면 설치·업데이트한다. 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
 #   2026-10-22 강사 PC 실측 최소 버전:
-#   Docker Desktop 4.87.0 · VS Code 1.143.0 · Node.js 24.16.0 · Git 2.54.0
+#   Docker Desktop 4.87.0 · VS Code 1.143.0 · Node.js 24.22.1 · Git 2.54.0
 #   7번 Arduino IDE는 빼고, 8번 XG5000 4.73은 직접 설치한다(사용자 2026-10-19).
 #   + supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다
 # Python 3.14.7 · WSL 2.7.12.0과 필요한 Windows 기능을 포함한다.
@@ -134,7 +134,7 @@ return $v
 
 # 3. Node.js (+ supabase CLI: 없어도 시작.bat이 npx로 대신 받는다)
 Say "`n[3/4] Node.js"
-Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.16.0' {
+Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.22.1' {
 $v = Version-Of 'node' @('--version')
 if (-not $v) { $v = Installed-App 'Node.js*' }
 return $v

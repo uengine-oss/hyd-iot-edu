@@ -345,6 +345,7 @@ def gen_prompt(s: dict) -> str:
                     condition += ' 제외 조건 ' + str(req['unlessProperty'])
                 out.append(f"  - 필수: {req['description']} (`{'|'.join(req['type'])}` {req['direction']}, 최소 {req.get('min', 1)}){condition}")
         out.append("")
+    out += ["조회할 때 `plan`, `before`, `after`, `snapshot`은 큰 보관 원문이므로 노드 전체를 반환하지 말고 필요한 속성만 고른다. 적재 목록은 id·filename·status·createdAt과 같이 작은 필드로 조회한다. MCP 응답의 `truncated:true`는 전체 결과가 아님을 뜻한다. `collect()`의 긴 목록도 생략 위치가 표시되므로, 필요한 조건과 `ORDER BY / SKIP / LIMIT`으로 행을 나눠 조회한다. 긴 문자열의 실제 내용이 필요하면 `substring(속성, 시작, 길이)`로 해당 구간을 읽는다. 잘린 결과를 근거로 「없다」고 판단하지 않는다.", ""]
     out += ["## 관계", "", "`!`는 필수 속성이다.", ""]
     for r in s["relationships"]:
         rp = ""

@@ -19,6 +19,11 @@ import ontology_v2 as ov  # noqa: E402
 SEED = ROOT / "it" / "neo4j"
 FILES = ("instances.cypher", "knowledge_a098.cypher", "scenario_structure.cypher", "detector-patterns.cypher")
 KNOWLEDGE = ("FailureMode", "Cause", "Evidence", "Skill", "Step", "ManualSection", "Forecast", "DecisionCase", "Incident")
+BASH = shutil.which('bash')
+if sys.platform == 'win32' and (git := shutil.which('git')):
+    git_bash = Path(git).resolve().parent.parent / 'bin/bash.exe'
+    if git_bash.is_file():
+        BASH = str(git_bash)  # Windows' system32 WSL launcher can precede PATH in CreateProcess.
 
 
 def text(name):
@@ -34,14 +39,14 @@ def edition_code(edition):
     return "\n".join(ov.edition_filter(text(f), edition) for f in FILES)
 
 
-@pytest.mark.skipif(not shutil.which("bash"), reason="bash 필요")
+@pytest.mark.skipif(not BASH, reason="bash 필요")
 @pytest.mark.parametrize("edition", ov.EDITIONS)
 def test_container_bash_filter_and_host_python_filter_agree(edition):
     for f in FILES:
-        out = subprocess.run(["bash", "-c", f'. ./edition.sh; seed_edition_filter {edition} v2/{f}'], cwd=SEED,
+        out = subprocess.run([BASH, "-c", f'. ./edition.sh; seed_edition_filter {edition} v2/{f}'], cwd=SEED,
                              capture_output=True, text=True, check=True).stdout
         assert out.rstrip("\n") == ov.edition_filter(text(f), edition).rstrip("\n"), f
-    out = subprocess.run(["bash", "-c", f'. ./edition.sh; seed_edition_checks {edition} v2/seed_checks.cypher'], cwd=SEED,
+    out = subprocess.run([BASH, "-c", f'. ./edition.sh; seed_edition_checks {edition} v2/seed_checks.cypher'], cwd=SEED,
                          capture_output=True, text=True, check=True).stdout.splitlines()
     assert out == ov.edition_checks(text("seed_checks.cypher"), edition)
 

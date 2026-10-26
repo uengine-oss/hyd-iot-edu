@@ -13,6 +13,7 @@ from hydcommon.forecast import predict
 
 @pytest.fixture
 def context(monkeypatch):
+    monkeypatch.setattr(forecasting, 'stack_time_scale', lambda: 20.0)
     state = dict(rules=deepcopy(DMN), skills=deepcopy(SKILLS), forecasts=deepcopy(FC), facts=dict(BASE, pattern='COOLER_DEGRADATION'))
     kg = SimpleNamespace(dmn=lambda:state['rules'], inputs=lambda:[], skills=lambda ids:list(state['skills'].values()),
          forecasts=lambda cause:state['forecasts'], suppliers=lambda:{}, tradeoffs=lambda ids:TRADE, precedents=lambda failure:[],

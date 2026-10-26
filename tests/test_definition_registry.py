@@ -7,6 +7,7 @@ import pytest
 
 from procsvc import engine, instances, instance_mode, procdb
 from worker.context import prepare
+from test_inbox import _people, KIM
 
 
 def definition(did='review', version='1', threshold=5):
@@ -65,6 +66,7 @@ def test_hyd_v2_pins_forms_and_requires_escalation_note_without_rewriting_v1():
 @pytest.fixture
 def app_world(monkeypatch):
     repo = procdb.MemoryRepo()
+    _people(repo)
     rt = instances.InstanceRuntime(repo,engine.Definition.from_dict(definition()),instances.Hooks())
     monkeypatch.setattr(instance_mode,'_runtime',rt)
     app=FastAPI(); instance_mode.mount(app,'instance')
@@ -91,9 +93,9 @@ def test_api_keeps_old_definition_and_form_while_new_version_changes_result(app_
     repo.upsert_form({'id':'review','fields_json':[{'key':'wrong','type':'text'}]})
     assert [f['key'] for f in c.get('/api/todolist/'+w1['id']).json()['form']['fields_json']]==['score']
     assert [f['key'] for f in prepare(repo,w1,'hyd').form_fields]==['score']
-    assert c.post('/api/todolist/'+w2['id']+'/submit',json={'output':{'score':7}}).status_code==400
+    assert c.post('/api/todolist/'+w2['id']+'/submit',json={'by':KIM,'output':{'score':7}}).status_code==400
     for w,output in [(w1,{'score':7}),(w2,{'score':7,'note':'검토함'})]:
-        r=c.post('/api/todolist/'+w['id']+'/submit',json={'output':output})
+        r=c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':output})
         assert r.status_code==200,r.text
     assert c.get('/api/instances/'+old).json()['instance']['end_event']=='accepted'
     v=c.get('/api/instances/'+new).json()
@@ -143,7 +145,7 @@ def test_other_tenant_cannot_be_read_submitted_or_claimed(app_world):
     assert c.get('/api/instances/'+inst['proc_inst_id']).status_code==404
     assert c.get('/api/instances/'+inst['proc_inst_id']+'/graph').status_code==404
     assert c.get('/api/todolist/'+w['id']).status_code==404
-    assert c.post('/api/todolist/'+w['id']+'/submit',json={'output':{'score':7}}).status_code==404
+    assert c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':{'score':7}}).status_code==404
     assert c.get('/api/todolist').json()==[] and c.get('/api/instances').json()==[]
     assert c.get('/api/events?proc_inst_id='+inst['proc_inst_id']).status_code==404
     w.update(agent_mode='COMPLETE',agent_orch='cliagents');repo.update_workitem(w)
@@ -157,10 +159,10 @@ def test_other_tenant_cannot_be_read_submitted_or_claimed(app_world):
 def test_form_type_and_task_version_checked_before_mutation(app_world):
     c,rt,repo=app_world
     pid,w=start(c)
-    assert c.post('/api/todolist/'+w['id']+'/submit',json={'output':{'score':'seven'}}).status_code==400
+    assert c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':{'score':'seven'}}).status_code==400
     assert repo.get_workitem(w['id'])['status']=='IN_PROGRESS'
     w['version']='other';repo.update_workitem(w)
-    assert c.post('/api/todolist/'+w['id']+'/submit',json={'output':{'score':7}}).status_code==400
+    assert c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':{'score':7}}).status_code==400
     assert repo.get_instance(pid)['status']=='RUNNING'
 
 
@@ -170,7 +172,7 @@ def test_generic_submit_cannot_bypass_card_approval(app_world):
     d['activities'][0]['tool']='formHandler:select_card'
     assert c.post('/api/process/definitions',json={'definition':d}).status_code==201
     pid,w=start(c,did='approval')
-    assert c.post('/api/todolist/'+w['id']+'/submit',json={'output':{'score':7}}).status_code==403
+    assert c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':{'score':7}}).status_code==403
     assert repo.get_workitem(w['id'])['status']=='IN_PROGRESS'
 
 
@@ -187,8 +189,8 @@ def test_start_and_published_output_cannot_inject_approval_state(app_world):
 def test_human_response_cannot_requeue_a_completed_task(app_world):
     c,rt,repo=app_world
     pid,w=start(c)
-    assert c.post('/api/todolist/'+w['id']+'/submit',json={'output':{'score':7}}).status_code==200
-    assert c.post('/api/todolist/'+w['id']+'/human-response',json={'job_id':'invented','answer':'resume'}).status_code==409
+    assert c.post('/api/todolist/'+w['id']+'/submit',json={'by':KIM,'output':{'score':7}}).status_code==200
+    assert c.post('/api/todolist/'+w['id']+'/human-response',json={'by':KIM,'job_id':'invented','answer':'resume'}).status_code==409
     saved=repo.get_workitem(w['id'])
     assert saved['status']=='DONE' and saved.get('draft_status') is None
 

@@ -9,9 +9,9 @@ $cases = @(
     @('VS Code 1.99.0', '1.143.0', 'upgrade'),
     @('VS Code 1.143.0', '1.143.0', 'keep'),
     @('VS Code 1.144.0', '1.143.0', 'keep'),
-    @('v22.16.0', '24.16.0', 'upgrade'),
-    @('v24.16.0', '24.16.0', 'keep'),
-    @('v25.0.0', '24.16.0', 'keep'),
+    @('v22.16.0', '24.22.1', 'upgrade'),
+    @('v24.22.1', '24.22.1', 'keep'),
+    @('v25.0.0', '24.22.1', 'keep'),
     @('git version 2.53.0.windows.1', '2.54.0', 'upgrade'),
     @('git version 2.54.0.windows.1', '2.54.0', 'keep'),
     @('git version 2.55.0.windows.1', '2.54.0', 'keep')
@@ -40,20 +40,20 @@ function Record($name, $state, $note) { $script:recorded = $state }
 function winget {
     $script:calls += 1
     $script:action = $args[0]
-    if ($script:simulateSuccess) { $script:installed = 'v24.16.0' }
+    if ($script:simulateSuccess) { $script:installed = 'v24.22.1' }
     $global:LASTEXITCODE = 0
 }
 foreach ($scenario in @(
     @($null, $true, 'install', 'install'),
     @('v22.0.0', $true, 'upgrade', 'upgrade'),
-    @('v24.16.0', $true, 'none', 'keep'),
+    @('v24.22.1', $true, 'none', 'keep'),
     @('v25.0.0', $true, 'none', 'keep'),
     @('v22.0.0', $false, 'upgrade', 'fail'),
     @('unknown', $true, 'none', 'fail')
 )) {
     $script:installed = $scenario[0]; $script:simulateSuccess = $scenario[1]
     $script:calls = 0; $script:action = 'none'; $script:recorded = ''
-    Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.16.0' { $script:installed }
+    Ensure-Minimum 'Node.js' 'OpenJS.NodeJS' '24.22.1' { $script:installed }
     if ($script:action -ne $scenario[2]) { throw 'Wrong winget action' }
     if ($scenario[2] -eq 'none' -and $script:calls -ne 0) { throw 'Unexpected installation' }
     # Compare against a captured failure rather than depending on console encoding.

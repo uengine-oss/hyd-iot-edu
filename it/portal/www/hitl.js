@@ -140,7 +140,7 @@
   // 사건 → 그 사건을 처리하는 처리 건으로 이동(조치 패널 · 「승인과 실행」 탭이 같이 쓴다). 찾으면 true
   async function openIncident(incId) {
     let id = H.instByIncident.get(incId);
-    if (!id) { const list = await getJ(API.process + '/api/instances?limit=50'); const found = list.find(x => (x.variables_data || []).some(v => v.key === 'incident' && v.value === incId)); if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } }
+    if (!id) { const list = await getJ(API.process + '/api/instances?limit=1&incident=' + encodeURIComponent(incId)); const found = list[0]; if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } }
     selectTab('instances'); if (id && window.hydInstancesSelect) window.hydInstancesSelect(id);
     return !!id;
   }
@@ -176,7 +176,7 @@
     if (!incId) return null;
     let id = H.instByIncident.get(incId);
     if (!id) {
-      try { const list = await getJ(API.process + '/api/instances?limit=50'); const found = list.find(x => (x.variables_data || []).some(v => v.key === 'incident' && v.value === incId)); if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } } catch (e) { }
+      try { const list = await getJ(API.process + '/api/instances?limit=1&incident=' + encodeURIComponent(incId)); const found = list[0]; if (found) { id = found.proc_inst_id; H.instByIncident.set(incId, id); } } catch (e) { }
     }
     if (!id) return null;
     try { return await getJ(API.process + '/api/instances/' + encodeURIComponent(id)); } catch (e) { return null; }

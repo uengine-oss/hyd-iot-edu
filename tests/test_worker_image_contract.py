@@ -20,6 +20,19 @@ BUNDLED = {"jsonschema": {"jsonschema", "referencing"}, "psycopg": {"psycopg"}}
 COPIED = {"hydcommon", "procsvc", "worker"}
 
 
+def test_worker_build_rejects_node_before_security_release():
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    assert node, 'Node is required to execute the Dockerfile version guard'
+    source = DOCKERFILE.read_text(encoding='utf-8')
+    guard = re.search(r'node -e "([^"]+)"', source).group(1)
+    for version, expected in [('22.23.3', False), ('22.23.4', True), ('22.24.0', True), ('18.20.8', False)]:
+        code = guard.replace('process.versions.node', repr(version))
+        result = subprocess.run([node, '-e', code], capture_output=True)
+        assert (result.returncode == 0) is expected, version
+
+
 def _imports(path: Path, top_level_only: bool) -> list[tuple[str, int, list[str]]]:
     """(모듈, 상대 단계, 가져온 이름) — top_level_only 면 모듈 몸통의 import 만(함수 안의 늦은 import 는 뺀다)."""
     tree = ast.parse(path.read_text(encoding="utf-8"))

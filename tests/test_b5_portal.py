@@ -65,7 +65,7 @@ def test_ask_screen_shows_tool_calls_answer_evidence_and_link(world, tmp_path):
     script = "const A = window.hydAsk._state; Object.assign(A, { el: EL, status: D.status, agents: D.status.agents, agent: 'agent:student-db', cur: D.cur, history: D.hist }); window.hydAsk._render();"
     html, text = render(tmp_path, 'ask.js', {'cur': good, 'hist': hist, 'status': status}, script)
     for word in ('에이전트에게 질문하기', '업무 DB 조회 도우미', '(내가 만든 것)', '도구 호출', '업무 데이터 조회', '성공', 'HYD-02, 100개',
-                 '실행 기록에서 확인됨', '근거 1개 확인', '처리 과정 보기', '지난 질문', '답할 수 없음', 'AGENT_BRIDGE=legacy'):
+                 '실행 기록에서 확인됨', '조회 기록 1개 확인', '수치·ID의 표기만 대조했습니다', '처리 과정 보기', '지난 질문', '답할 수 없음', 'AGENT_BRIDGE=legacy'):
         assert word in text, word
     assert f'href="{good["link"]}"' in html and '/task/' in good['link']
     assert '<code>select asset, fg_stock from ent.fg_inventory' in html

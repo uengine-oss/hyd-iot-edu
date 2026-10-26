@@ -81,8 +81,20 @@ def test_a161_every_frame_carries_its_timestamp_as_the_sse_id():
     def more():
         repo.record_events([{'id': 'n1', 'job_id': 'j', 'event_type': 'tool_usage_started', 'data': {}, 'timestamp': '2026-10-09T01:00:02+00:00'}])
     raw = _raw(repo, None, [None, more, None])
-    assert raw[0].startswith('event: history\nid: 2026-10-09T01:00:00+00:00\ndata: ')
-    assert raw[1].startswith('id: 2026-10-09T01:00:02+00:00\ndata: ')
+    assert raw[0].startswith('event: history\nid: s:00000000000000000001\ndata: ')
+    assert raw[1].startswith('id: s:00000000000000000002\ndata: ')
+
+
+def test_late_commit_with_old_timestamp_is_delivered_and_reconnects():
+    repo = procdb.MemoryRepo()
+    repo.record_events([{'id': 'early', 'timestamp': '2026-10-26T10:00:10Z', 'data': {}}])
+    def late():
+        repo.record_events([{'id': 'late', 'timestamp': '2026-10-26T10:00:00Z', 'data': {}}])
+    frames = asyncio.run(_collect(repo, None, [late, None]))
+    assert [e['id'] for _, e in frames] == ['early', 'late']
+    cursor = frames[0][1]['stream_cursor']
+    resumed = asyncio.run(_collect(repo, cursor, [None]))
+    assert [e['id'] for _, e in resumed] == ['early', 'late']
 
 
 def test_a161_reconnect_from_last_id_delivers_what_was_written_while_disconnected():

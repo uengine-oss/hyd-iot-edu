@@ -2,6 +2,7 @@
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs \
+ && node -e "const [a,b,c]=process.versions.node.split('.').map(Number); if(a!==22 || b<23 || (b===23 && c<4)) throw Error('Node.js 22.23.4 or newer 22.x security release required')" \
  && npm install -g @anthropic-ai/claude-code@2.1.310 \
  && pip install --no-cache-dir uv \
  && apt-get purge -y --auto-remove && rm -rf /var/lib/apt/lists/*

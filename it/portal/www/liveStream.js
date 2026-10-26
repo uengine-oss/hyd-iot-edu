@@ -8,7 +8,7 @@
    참고: process-gpt-vue3 components/ui/EventTimeline.vue(도구 시작이 열고 끝이 닫는 한 줄), Dify workflow/run/tracing-panel.tsx(단계별 묶음). */
 (function () {
   const S = { es: null, rows: [], ids: new Set(), idOrder: [], starts: {}, finished: new Set(), connected: false, filter: 'all', paused: false,
-              reloadTimer: null, lastKey: null, showAll: false, lastTs: null, lastAt: 0, backoff: 0, subs: new Set(), off: false };
+              reloadTimer: null, lastKey: null, showAll: false, lastTs: null, lastCursor: null, lastAt: 0, backoff: 0, subs: new Set(), off: false };
   const MAX = 200, SHOWN = 40, IDS = 5000;
   const KIND = {
     tool_usage_started: ['tool', 'stream.tool'], tool_usage_finished: ['tool', 'stream.tool'],
@@ -80,6 +80,7 @@
     if (!e || !e.id || S.ids.has(e.id)) return false;
     remember(e.id);
     if (e.timestamp && (!S.lastTs || e.timestamp > S.lastTs)) S.lastTs = e.timestamp;
+    if (e.stream_cursor && (!S.lastCursor || e.stream_cursor > S.lastCursor)) S.lastCursor = e.stream_cursor;
     S.lastAt = Date.now();
     if (e.event_type === 'tool_usage_started' && e.data && e.data.tool_use_id) S.starts[e.data.tool_use_id] = new Date(e.timestamp);
     if (e.event_type === 'tool_usage_finished' && e.data && e.data.tool_use_id) S.finished.add(e.data.tool_use_id);
@@ -178,7 +179,8 @@
     if (S.es) { S.es.close(); S.es = null; }
     connState(UI.t('header.connecting'), false);
     // a reconnect we start ourselves resumes after the newest event we hold (the browser's own retry sends Last-Event-ID)
-    const es = new EventSource(API.process + '/api/events/stream' + (S.lastTs ? '?since=' + encodeURIComponent(S.lastTs) : ''));
+    const resume = S.lastCursor || S.lastTs;
+    const es = new EventSource(API.process + '/api/events/stream' + (resume ? '?since=' + encodeURIComponent(resume) : ''));
     S.es = es;
     es.onopen = () => {
       S.connected = true; S.backoff = 0; S.openedAt = Date.now(); connState(UI.t('header.connected'), true);

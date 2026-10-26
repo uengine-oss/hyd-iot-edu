@@ -122,10 +122,16 @@ def test_memdebug_is_off_unless_flag_set(monkeypatch):
 
 
 def test_memdebug_route_mounts_only_with_flag():
+    import tracemalloc
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI()
-    memdebug.register(app, {'n': lambda: 1})
-    with TestClient(app) as client:
-        body = client.get('/debug/memory?trace=0').json()
+    was_tracing = tracemalloc.is_tracing()
+    try:
+        memdebug.register(app, {'n': lambda: 1})
+        with TestClient(app) as client:
+            body = client.get('/debug/memory?trace=0').json()
+    finally:
+        if not was_tracing:
+            tracemalloc.stop()
     assert body['containers'] == {'n': 1} and body['tracemalloc'].get('skipped') is True
