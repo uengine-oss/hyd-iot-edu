@@ -1133,10 +1133,16 @@ async def kg_create_skill(body: dict):
 from pathlib import Path
 from .manual_sources import ManualSources
 from . import manual_api
+_classroom_client = None
+if os.getenv('HYD_CLASSROOM_URL'):
+    from .classroom_client import Client as ClassroomClient
+    _classroom_client = ClassroomClient(os.environ['HYD_CLASSROOM_URL'],
+        lambda: os.getenv('LLM_API_KEY', ''),
+        Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('classroom.sqlite3'))
 manual_api.register(app,
     archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
-    runtime_factory=instance_mode.current)
+    runtime_factory=instance_mode.current, managed_client=_classroom_client)
 # Instructor server only. The public proxy exposes this subtree; the parent
 # process API remains on the private network with the managed worker and DB.
 if os.getenv('HYD_CLASSROOM_AUTHORITY_ENABLED') == '1':

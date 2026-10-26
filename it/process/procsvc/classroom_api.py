@@ -121,6 +121,7 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
             allowed(lambda: authority.finish(key(authorization), row['id'], validated=True, result_ref=reference))
         # This is a proposal. Local graph conflicts/preflight and human review
         # must run against the student's current graph before loading it.
-        return {k: value[k] for k in ('status', 'preview', 'cache', 'progress', 'corrections') if k in value}
+        return {k: value[k] for k in ('status', 'preview', 'cache', 'progress', 'corrections') if k in value} | {
+            'source_fingerprint': manual_cache.source_fingerprint(source)}
 
     return app

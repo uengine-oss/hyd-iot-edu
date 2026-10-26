@@ -145,7 +145,7 @@ def test_worker_cache_binding_and_private_charge_use_live_policy(authority):
     with pytest.raises(Denied): auth.charge_execution(run['id'], input_bytes=100, max_output_tokens=100)
 
 
-def test_managed_http_uses_approved_server_document_and_rejects_raw_llm_calls(authority, document, rt):
+def test_managed_http_uses_approved_server_document_and_rejects_raw_llm_calls(authority, document, rt, tmp_path):
     from fastapi.testclient import TestClient
     from procsvc.classroom_api import create_app
     auth, connect = authority
@@ -187,6 +187,19 @@ def test_managed_http_uses_approved_server_document_and_rejects_raw_llm_calls(au
     assert first_value == repeated_value
     state = client.get('/v1/classroom/runs/'+first.json()['run_id'], headers=headers).json()
     assert state['state'] == 'DONE' and state['result_ref'] and state['calls'] == 0
+    import httpx
+    from procsvc.classroom_client import Client
+    def bridge(request):
+        response = client.request(request.method, request.url.path, headers=dict(request.headers), content=request.content)
+        return httpx.Response(response.status_code, content=response.content, headers={'content-type':'application/json'})
+    student = Client('https://class.example', lambda: KEY, tmp_path/'student.sqlite3', transport=httpx.MockTransport(bridge))
+    renamed = archive.save('hyd', 'student-alias.txt', archive.original('hyd', source['source_id']))
+    renamed = archive.get('hyd', renamed['source_id'])
+    joined = student.start('hyd', renamed)
+    received = student.result('hyd', renamed, joined['instance'], 'student-current-head')
+    assert joined['cache']['reused'] and received['preview']['filename'] == 'student-alias.txt'
+    assert received['preview']['previous_batch'] == 'student-current-head'
+    assert received['preview']['procedures'][0]['anchor']['source_id'] == renamed['source_id']
     with connect() as db:
         db.execute('UPDATE hyd_classroom_grants SET enabled=false')
     assert client.post('/v1/classroom/extractions', headers=headers, json={'sha256': source['sha256']}).status_code == 403

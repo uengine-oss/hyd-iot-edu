@@ -21,6 +21,10 @@ def _digest(value):
                                     separators=(',', ':'), allow_nan=False).encode()).hexdigest()
 
 
+def source_fingerprint(source):
+    return _digest({key: source.get(key) for key in ('sha256', 'extractor', 'media_type', 'pages')})
+
+
 def identity(tenant, source, catalog, *, scope, profile, feedback=None):
     if not isinstance(scope, str) or not scope.strip():
         raise ValueError('강사 서버의 승인 범위 판본이 필요합니다')

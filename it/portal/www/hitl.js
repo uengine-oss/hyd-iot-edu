@@ -673,7 +673,7 @@
         if (result.preview) { await loadManualCatalog(); H.preview = result.preview; renderPreview(); }
         else {
           const seg = result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` + (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [${s.index}: ${UI.status(s.status)}]`).join('') : '';
-          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + ` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`;
+          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + (result.managed ? ' — 강사 관리 서버에서 처리 중입니다. 오류가 지속되면 강사에게 확인하세요.' : ` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`);
         }
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '결과 확인 실패: ' + e.message; }
     });

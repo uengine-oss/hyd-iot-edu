@@ -387,6 +387,8 @@ services:
       # process volume. Provision once with scripts/setup_mcp_oauth_keys.py.
       HYD_MCP_OAUTH_KEY_FILE: /data/mcp/oauth.key
       HYD_WORKER_RUNTIME_KEY_FILE: /data/mcp/worker-runtime.key
+      HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
       HYD_MCP_OAUTH_CALLBACK_URL: ${HYD_MCP_OAUTH_CALLBACK_URL:-http://localhost:8088/api/mcp/connections/callback}
       # Optional operator settings; unset values are omitted, never printed.
       HYD_MCP_OAUTH_CLIENTS:

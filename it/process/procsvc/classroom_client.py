@@ -1,0 +1,126 @@
+"""Student-side transport. Approval and paid-work limits live on the server.
+
+The local SQLite index is only a durable UI history, never an authorization or
+successful-result cache. Every result fetch is authorized again by the server.
+"""
+import hashlib
+import json
+import sqlite3
+from contextlib import contextmanager
+from copy import deepcopy
+from pathlib import Path
+from urllib.parse import urlsplit
+from uuid import UUID
+
+import httpx
+from fastapi import HTTPException
+
+from . import manual_cache, manual_extraction
+
+
+class Client:
+    def __init__(self, url, key_loader, path, *, transport=None):
+        self.url = url.rstrip('/')
+        parsed = urlsplit(self.url)
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError('수업 관리 서버 주소는 인증 정보가 없는 HTTPS 주소여야 합니다')
+        self.key_loader, self.path, self.transport = key_loader, Path(path), transport
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.db() as db:
+            db.execute('''CREATE TABLE IF NOT EXISTS runs (
+                scope TEXT, tenant TEXT, source_id TEXT, run_id TEXT, status TEXT,
+                created TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(scope,tenant,source_id,run_id))''')
+
+    @contextmanager
+    def db(self):
+        db = sqlite3.connect(self.path, timeout=10)
+        db.row_factory = sqlite3.Row
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
+
+    def credential(self):
+        key = self.key_loader()
+        if not isinstance(key, str) or not 32 <= len(key.strip()) <= 512:
+            raise HTTPException(503, '수업 접속 키를 설정하세요')
+        return key.strip()
+
+    def scope(self):
+        return hashlib.sha256((self.url+'\n'+self.credential()).encode()).hexdigest()
+
+    def request(self, method, path, body=None):
+        key = self.credential()
+        try:
+            with httpx.Client(timeout=30, follow_redirects=False, transport=self.transport) as client:
+                with client.stream(method, self.url+path, headers={'Authorization': 'Bearer '+key}, json=body) as response:
+                    if response.status_code != 200:
+                        code = response.status_code if response.status_code in (401, 403, 409, 422, 429, 503) else 502
+                        raise HTTPException(code, '관리 서버가 요청을 완료하지 못했습니다. 승인·예산·실행 상태를 확인하세요')
+                    data = bytearray()
+                    for chunk in response.iter_bytes():
+                        if len(data)+len(chunk)>16_000_000:
+                            raise HTTPException(502, '관리 서버의 결과 크기 한도를 초과했습니다')
+                        data.extend(chunk)
+                    value = json.loads(data)
+                    if not isinstance(value, dict): raise ValueError()
+                    return value
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(502, '관리 서버 연결 또는 응답 형식에 오류가 있습니다') from None
+
+    def authorize_hash(self, sha256):
+        if len(sha256) != 64 or any(c not in '0123456789abcdef' for c in sha256):
+            raise ValueError('원문 해시 형식이 올바르지 않습니다')
+        return self.request('GET', '/v1/classroom/documents/'+sha256)
+
+    def start(self, tenant, source, feedback=None):
+        if feedback:
+            raise HTTPException(403, '재추출 지시 변경은 강사 관리 서버에서 승인해야 합니다')
+        result = self.request('POST', '/v1/classroom/extractions', {'sha256': source['sha256']})
+        run_id = str(UUID(result['run_id']))
+        with self.db() as db:
+            db.execute('INSERT OR IGNORE INTO runs(scope,tenant,source_id,run_id,status) VALUES (?,?,?,?,?)',
+                       (self.scope(), tenant, source['source_id'], run_id, result['state']))
+        return dict(instance=run_id, source_id=source['source_id'], status=result['state'], managed=True,
+                    cache=dict(reused=result['reused'], validated=False))
+
+    def history(self, tenant, source, limit, offset):
+        self.authorize_hash(source['sha256'])
+        if not 1 <= limit <= 100 or offset < 0: raise ValueError('목록 범위가 올바르지 않습니다')
+        with self.db() as db:
+            rows = db.execute('''SELECT run_id AS proc_inst_id,status,created AS start_date FROM runs
+                WHERE scope=? AND tenant=? AND source_id=? ORDER BY created DESC,run_id LIMIT ? OFFSET ?''',
+                (self.scope(), tenant, source['source_id'], limit+1, offset)).fetchall()
+        return dict(items=[dict(row) for row in rows[:limit]], limit=limit, offset=offset,
+                    next_offset=offset+limit if len(rows)>limit else None)
+
+    def result(self, tenant, source, run_id, previous_batch):
+        run_id = str(UUID(run_id))
+        with self.db() as db:
+            row = db.execute('SELECT 1 FROM runs WHERE scope=? AND tenant=? AND source_id=? AND run_id=?',
+                             (self.scope(), tenant, source['source_id'], run_id)).fetchone()
+        if row is None: raise KeyError('이 문서에서 요청한 추출 실행이 아닙니다')
+        value = self.request('GET', '/v1/classroom/runs/'+run_id+'/result')
+        value['managed'] = True
+        if value.get('preview'):
+            if value.get('source_fingerprint') != manual_cache.source_fingerprint(source) or \
+                    value.get('status') != 'DONE' or not value.get('cache', {}).get('validated'):
+                raise ValueError('관리 서버 결과와 로컬 원문·파서 판본 또는 검증 상태가 다릅니다')
+            remote_id = value['preview']['source_id']
+            def remap(item):
+                if isinstance(item, dict):
+                    return {k: source['source_id'] if k == 'source_id' and v == remote_id else remap(v) for k,v in item.items()}
+                if isinstance(item, list): return [remap(v) for v in item]
+                return deepcopy(item)
+            proposal = remap({k: v for k,v in value['preview'].items() if k in manual_extraction.PROPOSAL_KEYS})
+            proposal = manual_extraction.validate_proposal(source, proposal)
+            value['preview'] = manual_extraction._preview(source, proposal, previous_batch,
+                dict(instance=run_id, managed=True, cache=value['cache']))
+        with self.db() as db:
+            db.execute('UPDATE runs SET status=? WHERE scope=? AND tenant=? AND source_id=? AND run_id=?',
+                       (value['status'], self.scope(), tenant, source['source_id'], run_id))
+        return value
