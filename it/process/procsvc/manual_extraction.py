@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.13'         # 판정에 딸린 기록과 독립 업무 절차를 구분한다. 기존 등록 판본은 유지.
+VERSION = '2.14'         # 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
+# 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
 # 2.11 (2026-10-26 final5, HM-8 세 번): 한 번이 점검이 넘기는 교체(SOP-FAN-12)를 원인 후보 규칙 outputs 에도 넣었다 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차만.
 # 2.10 (2026-10-26 확인): PM-02 정책의 model_assets 가 매번 빠졌다(원문 '1~3호기'를 옮길 설비 목록 없음) → 카탈로그 assets · 'n호기 = 설비 code' 지시.
 # 2.9 (2026-10-25 final4, HM-8 세 번): 한 번이 HM-8.1 점검이 다시 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다(「직접 연결하지 않음」) — 넘겨받은 절차가 다시 넘기는 절차도 같은 원인의 근본 조치로 지시.

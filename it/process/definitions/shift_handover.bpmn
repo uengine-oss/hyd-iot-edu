@@ -49,161 +49,268 @@
   <bpmndi:BPMNDiagram id="HandoverDiagram">
     <bpmndi:BPMNPlane id="HandoverPlane" bpmnElement="ShiftHandover">
       <bpmndi:BPMNShape id="ev_start_di" bpmnElement="ev_start">
-        <dc:Bounds x="60" y="100" width="40" height="40" />
+        <dc:Bounds x="100" y="180" width="40" height="40" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="50" y="228" width="140" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ev_confirmed_di" bpmnElement="ev_confirmed">
-        <dc:Bounds x="1150" y="100" width="40" height="40" />
+        <dc:Bounds x="1460" y="180" width="40" height="40" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1410" y="228" width="140" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ev_rejected_di" bpmnElement="ev_rejected">
-        <dc:Bounds x="1150" y="400" width="40" height="40" />
+        <dc:Bounds x="1460" y="530" width="40" height="40" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1410" y="578" width="140" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ev_followup_di" bpmnElement="ev_followup">
-        <dc:Bounds x="1150" y="700" width="40" height="40" />
+        <dc:Bounds x="1460" y="880" width="40" height="40" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1410" y="928" width="140" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_draft_di" bpmnElement="task_draft">
-        <dc:Bounds x="200" y="100" width="140" height="80" />
+        <dc:Bounds x="220" y="160" width="160" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_sender_di" bpmnElement="task_sender">
-        <dc:Bounds x="420" y="100" width="140" height="80" />
+        <dc:Bounds x="500" y="160" width="160" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_receiver_di" bpmnElement="task_receiver">
-        <dc:Bounds x="760" y="100" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_draft_r2_di" bpmnElement="task_draft_r2">
-        <dc:Bounds x="200" y="400" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_sender_r2_di" bpmnElement="task_sender_r2">
-        <dc:Bounds x="420" y="400" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_receiver_r2_di" bpmnElement="task_receiver_r2">
-        <dc:Bounds x="760" y="400" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_draft_r3_di" bpmnElement="task_draft_r3">
-        <dc:Bounds x="200" y="700" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_sender_r3_di" bpmnElement="task_sender_r3">
-        <dc:Bounds x="420" y="700" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_receiver_r3_di" bpmnElement="task_receiver_r3">
-        <dc:Bounds x="760" y="700" width="140" height="80" />
+        <dc:Bounds x="920" y="160" width="160" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_sender_di" bpmnElement="gw_sender">
-        <dc:Bounds x="610" y="100" width="40" height="40" />
+        <dc:Bounds x="750" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="700" y="233" width="150" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_receiver_di" bpmnElement="gw_receiver">
-        <dc:Bounds x="960" y="100" width="40" height="40" />
+        <dc:Bounds x="1175" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1125" y="233" width="150" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_draft_r2_di" bpmnElement="task_draft_r2">
+        <dc:Bounds x="220" y="510" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_sender_r2_di" bpmnElement="task_sender_r2">
+        <dc:Bounds x="500" y="510" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_receiver_r2_di" bpmnElement="task_receiver_r2">
+        <dc:Bounds x="920" y="510" width="160" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_sender_r2_di" bpmnElement="gw_sender_r2">
-        <dc:Bounds x="610" y="400" width="40" height="40" />
+        <dc:Bounds x="750" y="525" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="700" y="583" width="150" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_receiver_r2_di" bpmnElement="gw_receiver_r2">
-        <dc:Bounds x="960" y="400" width="40" height="40" />
+        <dc:Bounds x="1175" y="525" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1125" y="583" width="150" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_draft_r3_di" bpmnElement="task_draft_r3">
+        <dc:Bounds x="220" y="860" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_sender_r3_di" bpmnElement="task_sender_r3">
+        <dc:Bounds x="500" y="860" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_receiver_r3_di" bpmnElement="task_receiver_r3">
+        <dc:Bounds x="920" y="860" width="160" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_sender_r3_di" bpmnElement="gw_sender_r3">
-        <dc:Bounds x="610" y="700" width="40" height="40" />
+        <dc:Bounds x="750" y="875" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="700" y="933" width="150" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gw_receiver_r3_di" bpmnElement="gw_receiver_r3">
-        <dc:Bounds x="960" y="700" width="40" height="40" />
+        <dc:Bounds x="1175" y="875" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1125" y="933" width="150" height="30" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="seq_0_di" bpmnElement="seq_0">
-        <di:waypoint x="100" y="120.0" />
-        <di:waypoint x="200" y="140.0" />
+        <di:waypoint x="140" y="200.0" />
+        <di:waypoint x="220" y="200.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_1_di" bpmnElement="seq_1">
-        <di:waypoint x="340" y="140.0" />
-        <di:waypoint x="420" y="140.0" />
+        <di:waypoint x="380" y="200.0" />
+        <di:waypoint x="500" y="200.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_2_di" bpmnElement="seq_2">
-        <di:waypoint x="560" y="140.0" />
-        <di:waypoint x="610" y="120.0" />
+        <di:waypoint x="660" y="200.0" />
+        <di:waypoint x="750" y="200.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_3_di" bpmnElement="seq_3">
-        <di:waypoint x="650" y="120.0" />
-        <di:waypoint x="760" y="140.0" />
+        <di:waypoint x="800" y="200.0" />
+        <di:waypoint x="920" y="200.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="810" y="160.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_4_di" bpmnElement="seq_4">
-        <di:waypoint x="650" y="120.0" />
-        <di:waypoint x="200" y="440.0" />
+        <di:waypoint x="775.0" y="225" />
+        <di:waypoint x="775.0" y="310.0" />
+        <di:waypoint x="170" y="310.0" />
+        <di:waypoint x="170" y="550.0" />
+        <di:waypoint x="220" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="785.0" y="237" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_5_di" bpmnElement="seq_5">
-        <di:waypoint x="650" y="120.0" />
-        <di:waypoint x="1150" y="420.0" />
+        <di:waypoint x="775.0" y="175" />
+        <di:waypoint x="775.0" y="90.0" />
+        <di:waypoint x="1320" y="90.0" />
+        <di:waypoint x="1320" y="550.0" />
+        <di:waypoint x="1460" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="787.0" y="102.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_6_di" bpmnElement="seq_6">
-        <di:waypoint x="900" y="140.0" />
-        <di:waypoint x="960" y="120.0" />
+        <di:waypoint x="1080" y="200.0" />
+        <di:waypoint x="1175" y="200.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_7_di" bpmnElement="seq_7">
-        <di:waypoint x="1000" y="120.0" />
-        <di:waypoint x="1150" y="120.0" />
+        <di:waypoint x="1225" y="200.0" />
+        <di:waypoint x="1260" y="200.0" />
+        <di:waypoint x="1460" y="200.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1268" y="160.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_8_di" bpmnElement="seq_8">
-        <di:waypoint x="1000" y="120.0" />
-        <di:waypoint x="200" y="440.0" />
+        <di:waypoint x="1200.0" y="225" />
+        <di:waypoint x="1200.0" y="380.0" />
+        <di:waypoint x="145" y="380.0" />
+        <di:waypoint x="145" y="550.0" />
+        <di:waypoint x="220" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1210.0" y="237" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_9_di" bpmnElement="seq_9">
-        <di:waypoint x="340" y="440.0" />
-        <di:waypoint x="420" y="440.0" />
+        <di:waypoint x="380" y="550.0" />
+        <di:waypoint x="500" y="550.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_10_di" bpmnElement="seq_10">
-        <di:waypoint x="560" y="440.0" />
-        <di:waypoint x="610" y="420.0" />
+        <di:waypoint x="660" y="550.0" />
+        <di:waypoint x="750" y="550.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_11_di" bpmnElement="seq_11">
-        <di:waypoint x="650" y="420.0" />
-        <di:waypoint x="760" y="440.0" />
+        <di:waypoint x="800" y="550.0" />
+        <di:waypoint x="920" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="810" y="510.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_12_di" bpmnElement="seq_12">
-        <di:waypoint x="650" y="420.0" />
-        <di:waypoint x="200" y="740.0" />
+        <di:waypoint x="775.0" y="575" />
+        <di:waypoint x="775.0" y="660.0" />
+        <di:waypoint x="170" y="660.0" />
+        <di:waypoint x="170" y="900.0" />
+        <di:waypoint x="220" y="900.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="785.0" y="587" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_13_di" bpmnElement="seq_13">
-        <di:waypoint x="650" y="420.0" />
-        <di:waypoint x="1150" y="420.0" />
+        <di:waypoint x="775.0" y="525" />
+        <di:waypoint x="775.0" y="440.0" />
+        <di:waypoint x="1320" y="440.0" />
+        <di:waypoint x="1320" y="550.0" />
+        <di:waypoint x="1460" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="787.0" y="452.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_14_di" bpmnElement="seq_14">
-        <di:waypoint x="900" y="440.0" />
-        <di:waypoint x="960" y="420.0" />
+        <di:waypoint x="1080" y="550.0" />
+        <di:waypoint x="1175" y="550.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_15_di" bpmnElement="seq_15">
-        <di:waypoint x="1000" y="420.0" />
-        <di:waypoint x="1150" y="120.0" />
+        <di:waypoint x="1225" y="550.0" />
+        <di:waypoint x="1260" y="550.0" />
+        <di:waypoint x="1260" y="200.0" />
+        <di:waypoint x="1460" y="200.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1268" y="510.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_16_di" bpmnElement="seq_16">
-        <di:waypoint x="1000" y="420.0" />
-        <di:waypoint x="200" y="740.0" />
+        <di:waypoint x="1200.0" y="575" />
+        <di:waypoint x="1200.0" y="730.0" />
+        <di:waypoint x="145" y="730.0" />
+        <di:waypoint x="145" y="900.0" />
+        <di:waypoint x="220" y="900.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1210.0" y="587" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_17_di" bpmnElement="seq_17">
-        <di:waypoint x="340" y="740.0" />
-        <di:waypoint x="420" y="740.0" />
+        <di:waypoint x="380" y="900.0" />
+        <di:waypoint x="500" y="900.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_18_di" bpmnElement="seq_18">
-        <di:waypoint x="560" y="740.0" />
-        <di:waypoint x="610" y="720.0" />
+        <di:waypoint x="660" y="900.0" />
+        <di:waypoint x="750" y="900.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_19_di" bpmnElement="seq_19">
-        <di:waypoint x="650" y="720.0" />
-        <di:waypoint x="760" y="740.0" />
+        <di:waypoint x="800" y="900.0" />
+        <di:waypoint x="920" y="900.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="810" y="860.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_20_di" bpmnElement="seq_20">
-        <di:waypoint x="650" y="720.0" />
-        <di:waypoint x="1150" y="720.0" />
+        <di:waypoint x="775.0" y="925" />
+        <di:waypoint x="775.0" y="1010.0" />
+        <di:waypoint x="1380" y="1010.0" />
+        <di:waypoint x="1380" y="900.0" />
+        <di:waypoint x="1460" y="900.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="785.0" y="937" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_21_di" bpmnElement="seq_21">
-        <di:waypoint x="650" y="720.0" />
-        <di:waypoint x="1150" y="420.0" />
+        <di:waypoint x="775.0" y="875" />
+        <di:waypoint x="775.0" y="790.0" />
+        <di:waypoint x="1320" y="790.0" />
+        <di:waypoint x="1320" y="550.0" />
+        <di:waypoint x="1460" y="550.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="787.0" y="802.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_22_di" bpmnElement="seq_22">
-        <di:waypoint x="900" y="740.0" />
-        <di:waypoint x="960" y="720.0" />
+        <di:waypoint x="1080" y="900.0" />
+        <di:waypoint x="1175" y="900.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_23_di" bpmnElement="seq_23">
-        <di:waypoint x="1000" y="720.0" />
-        <di:waypoint x="1150" y="120.0" />
+        <di:waypoint x="1225" y="900.0" />
+        <di:waypoint x="1260" y="900.0" />
+        <di:waypoint x="1260" y="200.0" />
+        <di:waypoint x="1460" y="200.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1268" y="860.0" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="seq_24_di" bpmnElement="seq_24">
-        <di:waypoint x="1000" y="720.0" />
-        <di:waypoint x="1150" y="720.0" />
+        <di:waypoint x="1200.0" y="925" />
+        <di:waypoint x="1200.0" y="1080.0" />
+        <di:waypoint x="1410" y="1080.0" />
+        <di:waypoint x="1410" y="900.0" />
+        <di:waypoint x="1460" y="900.0" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1210.0" y="937" width="130" height="32" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
