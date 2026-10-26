@@ -51,6 +51,23 @@ def test_only_current_managed_worker_can_mint_a_model_permit(setup, change):
     assert authority.calls == 0
 
 
+def test_managed_agent_binding_is_explicit_and_cannot_mix_extraction_cache(setup):
+    rt,row,authority,body=setup
+    run_id='3fb9df59-4789-491d-8b20-a42448e58f26'
+    inst=rt.repo.get_instance(row['proc_inst_id'])
+    inst['variables_data']=[{'key':'classroom_execution','value':{'run_id':run_id}}]
+    held=[]
+    def context(subject,work,cache_key=None,*,execution_run_id=None):
+        held.append((subject,work,cache_key,execution_run_id))
+        return {'run_id':run_id,'model':'class-model','deadline':time.time()+100}
+    authority.execution_context=context
+    permit=model.issue(rt,authority,body,'Bearer '+PRIVATE)
+    assert model.verify_token(permit['token'])['run_id']==run_id
+    assert held==[('class-1','instance-1',None,run_id)]
+    inst['variables_data'].append({'key':'extraction_cache','value':{'key':'other-cache'}})
+    with pytest.raises(HTTPException):model.issue(rt,authority,body,'Bearer '+PRIVATE)
+
+
 def test_permit_tampering_model_override_and_lost_lease_never_charge(setup):
     rt, row, authority, body = setup
     permit = model.issue(rt, authority, body, 'Bearer '+PRIVATE)
