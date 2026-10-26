@@ -453,7 +453,7 @@ def test_api_needs_instance_mode():
 
 def test_catalog_parts_come_from_the_base_definition_file():
     cat = B.catalog(BASE, [])
-    scen = [p for p in cat["parts"] if p["group"] == "scenario"]
+    scen = [p for p in cat["parts"] if p["group"] == "scenario" and not p['key'].startswith('handover:')]
     assert [p["key"] for p in scen] == [a["id"] for a in BASE["activities"]]
     assert {p["key"] for p in scen if p["approval"]} == {"task:select"}
     assert {p["key"]: p["effect"] for p in scen if p["effect"]} == {"task:command": "설비 명령", "task:work-order": "작업지시"}

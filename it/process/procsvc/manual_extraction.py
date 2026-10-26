@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.13'         # 판정에 딸린 기록과 독립 업무 절차를 구분한다. 기존 등록 판본은 유지.
+VERSION = '2.14'         # 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
+# 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
 # 2.11 (2026-10-26 final5, HM-8 세 번): 한 번이 점검이 넘기는 교체(SOP-FAN-12)를 원인 후보 규칙 outputs 에도 넣었다 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차만.
 # 2.10 (2026-10-26 확인): PM-02 정책의 model_assets 가 매번 빠졌다(원문 '1~3호기'를 옮길 설비 목록 없음) → 카탈로그 assets · 'n호기 = 설비 code' 지시.
 # 2.9 (2026-10-25 final4, HM-8 세 번): 한 번이 HM-8.1 점검이 다시 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다(「직접 연결하지 않음」) — 넘겨받은 절차가 다시 넘기는 절차도 같은 원인의 근본 조치로 지시.
@@ -401,9 +402,11 @@ def validate_result(form, inst, output):
         legacy_meaning.validate_result(form, inst, output)
         from . import ask                             # B5: 질문 답 계약(근거 · 답할 수 없는 이유)도 같은 교정 루프
         ask.validate_result(form, inst, output)
+        from . import handover
+        handover.validate_result(form, inst, output)
 
 
-CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1', 'ask-answer-v1')
+CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1', 'ask-answer-v1', 'shift-handover-draft-v1')
 
 
 REVIEW_FEEDBACK_MAX = 20
@@ -457,30 +460,50 @@ def display_name(source):
 NOT_READY='이 PDF는 모든 페이지에 텍스트가 없어 추출할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요'
 
 
-def start(rt, source, request_id, review_feedback=None, catalog=None):
+def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None, execution_run_id=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
     if source['status'] != 'READY':raise ValueError(NOT_READY)
     request_id=str(UUID(request_id))
+    if execution_run_id is not None:
+        execution_run_id = str(UUID(str(execution_run_id)))
+        if cache_identity is None:
+            raise ValueError('관리 추출 실행에는 캐시 식별자가 필요합니다')
     rt.register_definition(definition())
-    event_id='manual-extraction:'+source['source_id']+':'+request_id
+    if cache_identity is not None and not re.fullmatch(r'[0-9a-f]{64}', cache_identity):
+        raise ValueError('서버 추출 캐시 식별자가 올바르지 않습니다')
+    event_id=('manual-extraction:cache:'+cache_identity if cache_identity else
+              'manual-extraction:'+source['source_id']+':'+request_id)
     feedback=validate_review_feedback(review_feedback)
     def launch(event, values, name):
+        if cache_identity:
+            values['extraction_cache'] = {'key': cache_identity, 'source_id': source['source_id']}
+            if execution_run_id:
+                values['extraction_cache']['execution_run_id'] = execution_run_id
         if feedback and feedback['items']:
             values['review_feedback']=feedback          # pinned: the agent sees the previous verdicts as [InputData]
         if catalog:
             values['ontology_catalog']=catalog          # C1: the ids a document may point at (pinned with the run)
         inst=rt.start_definition(DEFINITION_ID,VERSION,event,values=values,name=name)
-        return inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
+        result = inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
+        return dict(result, cache_reused=inst is None) if cache_identity else result
     segs=manual_segments.segments(source)
     if not segs:
         return launch(event_id,{'manual_source':source},display_name(source)+' 추출 제안')
     lead=None
     for seg in segs:
         pinned=dict(seg,request_id=request_id)
+        if cache_identity:
+            pinned['cache_identity'] = cache_identity
         inst=launch(f"{event_id}:{seg['index']}",{'manual_source':segment_view(source,seg),'segment':pinned},
                     f"{display_name(source)} 추출 제안 (구간 {seg['index']}/{seg['total']})")
         lead=lead or inst
+        if cache_identity and seg['index'] == 1:
+            # Concurrent aliases must use the winning lead's document identity
+            # for every sibling, including recovery after a partial group start.
+            canonical = engine.variables(inst)['manual_source']
+            source = dict(source, **{k: v for k, v in canonical.items() if k != 'pages'})
+            execution_run_id = engine.variables(inst)['extraction_cache'].get('execution_run_id')
     return lead
 
 
@@ -585,7 +608,8 @@ def _group_result(rt, source, inst, previous_batch):
     """A093: a segmented extraction is reported as one unit under its lead instance. Every sibling's pinned input must be
     the archive's own text at its segment coordinates; the merged proposal passes the whole-document contract unchanged."""
     seg=engine.variables(inst)['segment']
-    base=f"manual-extraction:{source['source_id']}:{seg['request_id']}:"
+    base=(f"manual-extraction:cache:{seg['cache_identity']}:" if seg.get('cache_identity') else
+          f"manual-extraction:{source['source_id']}:{seg['request_id']}:")
     siblings=[rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,base+str(i)) for i in range(1,seg['total']+1)]
     if any(s is None for s in siblings):raise ValueError('구간 추출 작업 일부가 없습니다 — 추출 요청을 같은 request_id로 다시 보내세요')
     segments,states,workitems=[],[],[]

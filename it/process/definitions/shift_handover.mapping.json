@@ -1,0 +1,139 @@
+{
+  "name": "교대 인수인계",
+  "start": {
+    "kind": "human",
+    "fields": [
+      {
+        "key": "asset",
+        "type": "text",
+        "text": "설비 ID"
+      },
+      {
+        "key": "shift_label",
+        "type": "text",
+        "text": "인계할 교대"
+      },
+      {
+        "key": "as_of",
+        "type": "text",
+        "text": "기준시각 (예: 2026-10-27T18:00:00+09:00)"
+      },
+      {
+        "key": "work_notes",
+        "type": "textarea",
+        "text": "작업 메모 (확인되지 않은 내용도 그대로 기록)"
+      }
+    ]
+  },
+  "lanes": {},
+  "tasks": {
+    "task_draft": {
+      "part": "handover:task:draft",
+      "agent": "agent:handover"
+    },
+    "task_sender": {
+      "part": "handover:task:sender"
+    },
+    "task_receiver": {
+      "part": "handover:task:receiver"
+    },
+    "task_draft_r2": {
+      "part": "handover:task:draft",
+      "agent": "agent:handover"
+    },
+    "task_sender_r2": {
+      "part": "handover:task:sender"
+    },
+    "task_receiver_r2": {
+      "part": "handover:task:receiver"
+    },
+    "task_draft_r3": {
+      "part": "handover:task:draft",
+      "agent": "agent:handover"
+    },
+    "task_sender_r3": {
+      "part": "handover:task:sender"
+    },
+    "task_receiver_r3": {
+      "part": "handover:task:receiver"
+    }
+  },
+  "timers": {},
+  "flows": {
+    "seq_3": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "approve"
+    },
+    "seq_4": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "revise"
+    },
+    "seq_5": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "reject"
+    },
+    "seq_7": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "confirm"
+    },
+    "seq_8": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "revise"
+    },
+    "seq_11": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "approve"
+    },
+    "seq_12": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "revise"
+    },
+    "seq_13": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "reject"
+    },
+    "seq_15": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "confirm"
+    },
+    "seq_16": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "revise"
+    },
+    "seq_19": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "approve"
+    },
+    "seq_20": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "revise"
+    },
+    "seq_21": {
+      "var": "sender_decision",
+      "op": "==",
+      "value": "reject"
+    },
+    "seq_23": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "confirm"
+    },
+    "seq_24": {
+      "var": "receiver_decision",
+      "op": "==",
+      "value": "revise"
+    }
+  }
+}

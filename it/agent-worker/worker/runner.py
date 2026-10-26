@@ -117,6 +117,10 @@ class Runner:
         # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
         # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
         provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
+        handover_task = ctx.form_contract == 'shift-handover-draft-v1'
+        result_check_task = ctx.form_contract == 'manual-source-proposal-v1'
+        if handover_task and provider_id != 'claude-code':
+            raise ValueError('교대 인수인계의 도구 제한은 현재 강의 Claude Code 실행기에서 검증됐습니다')
         # U2 (TODO A2): the assigned agent's settings — model · MCP servers · skills · profile text — from the one source
         # (users · agent_skills · tenant_skills) through the same function the portal and a trial run read.
         # Model: the activity's agentConfig > the agent's model > the worker default.
@@ -176,6 +180,10 @@ class Runner:
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
                                                                       skills_inline=provider_id == 'codex'))
         (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
+        if result_check_task:
+            from . import result_check
+            tenant_mcp = result_check.attach(tenant_mcp, ws.path, self.s.max_result_file_bytes)
+            gate.read_tools[result_check.SERVER] = [result_check.TOOL]
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools,
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
@@ -211,11 +219,24 @@ class Runner:
                     model = self.s.codex_model
         if provider_id == "claude-code":
             servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-            if self.s.allowed_tools:
+            if handover_task:
+                from .settings import handover_allowed_tools
+                extra_args += ['--allowedTools', ','.join(handover_allowed_tools(self.s.allowed_tools, servers))]
+            elif self.s.allowed_tools or result_check_task:
                 extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
+            if handover_task:
+                denied.append('mcp__hyd-dmn__submit_decision')
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
+        from . import managed_model
+        managed = managed_model.attach(row, self.s.tenant_id, provider_id)
+        if managed:
+            model = managed['model']
+            bridged.env = dict(bridged.env or {}, **managed['env'])
+            bridged.redaction_values.extend(managed['secrets'])
+        if result_check_task:
+            text += '\n\n' + result_check.INSTRUCTION
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"
@@ -257,6 +278,8 @@ class Runner:
             corrections += 1
             self._event(row, job_id, "task_working", {"type": "notice", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
             correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
+            if result_check_task:
+                correction += '\n\n' + result_check.INSTRUCTION
             if skill_text:
                 correction += '\n\n' + skill_text
             request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),

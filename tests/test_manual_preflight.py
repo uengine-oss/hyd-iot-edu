@@ -301,7 +301,7 @@ def api(tmp_path, monkeypatch, catalog):
     monkeypatch.setattr(manual_api.manual_graph, 'sop_conflicts', lambda *args: [])
     monkeypatch.setattr(manual_knowledge, 'conflicts', lambda *args: [])
     monkeypatch.setattr(manual_knowledge, 'catalog', lambda session: deepcopy(catalog))
-    monkeypatch.setattr(manual_api.manual_extraction, 'result', lambda *args: dict(status='DONE', preview=deepcopy(p)))
+    monkeypatch.setattr(manual_api.manual_cache, 'result', lambda *args: dict(status='DONE', preview=deepcopy(p)))
 
     class Driver:
         def __enter__(self): return self

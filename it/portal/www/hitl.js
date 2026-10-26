@@ -660,7 +660,7 @@
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = (created.segments > 1 ? `긴 문서라 ${created.segments}개 구간으로 접수됨(결과는 하나로 병합). ` : '추출 작업 접수됨. ') + '진행 · 결과 확인을 누르세요. 접수는 추출 완료가 아닙니다.';
+        if (H.preview === r) $('#manualAgentStatus').textContent = (created.cache?.reused ? '같은 문서·추출 조건의 기존 작업을 재사용합니다. 새 AI 작업을 만들지 않았습니다. ' : '') + (created.segments > 1 ? `긴 문서라 ${created.segments}개 구간으로 접수됨(결과는 하나로 병합). ` : '추출 작업 접수됨. ') + '진행 · 결과 확인을 누르세요. 접수는 추출 완료가 아닙니다.';
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
       finally { if (H.preview === r) button.disabled = false; }
     });
@@ -673,7 +673,7 @@
         if (result.preview) { await loadManualCatalog(); H.preview = result.preview; renderPreview(); }
         else {
           const seg = result.progress ? ` · 구간 ${result.progress.done}/${result.progress.total} 완료` + (result.segments || []).filter(s => s.status !== 'DONE').map(s => ` [${s.index}: ${UI.status(s.status)}]`).join('') : '';
-          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + ` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`;
+          $('#manualAgentStatus').textContent = '추출 상태: ' + UI.status(result.status) + seg + (result.log ? ' · ' + result.log : '') + (result.managed ? ' — 강사 관리 서버에서 처리 중입니다. 오류가 지속되면 강사에게 확인하세요.' : ` — ${UI.t('nav.instances')} 화면에서 단계 · 오류를 확인할 수 있습니다.`);
         }
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '결과 확인 실패: ' + e.message; }
     });
