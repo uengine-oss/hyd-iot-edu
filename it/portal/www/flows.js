@@ -42,7 +42,7 @@
     server: ['연결 서버', 'text'], tool: ['실행할 도구', 'text'], arguments: ['도구에 보낼 값', 'object'],
     output: ['결과를 담을 값 이름', 'text'], extract: ['결과에서 꺼낼 값', 'object'], effect: ['호출 목적', 'boolean'],
     duration: ['기다릴 시간', 'text'], until: ['기다릴 시각이 담긴 값', 'text'], label: ['대기 중 표시할 이름', 'text'],
-    outcome: ['처리 결과', 'outcome'], title: ['보고 제목', 'text'], summary: ['보고 내용', 'textarea'],
+    outcome: ['처리 결과', 'outcome'], title: ['보고 제목', 'text'], summary: ['보고 내용', 'textarea'], notify: ['추가 보고 대상', 'array'],
     mail: ['공지 메일', 'object'], component: ['정비할 부품', 'component'], sop: ['조치 방법', 'text'],
     work_order_var: ['정비 요청이 담긴 값', 'text'], purchase_order_var: ['발주가 담긴 값', 'text'],
     immediate: ['바로 입고 처리', 'boolean'], criteria: ['확인 기준', 'object'], settle: ['안정될 때까지 기다릴 시간', 'text'],
@@ -52,8 +52,9 @@
     if (raw.trim() === '') return undefined;
     const [label, type] = CONFIG[key] || [key, 'text'];
     if (type === 'boolean') { if (!['true', 'false'].includes(raw)) throw Error(`${label}: 예 또는 아니요를 고르세요`); return raw === 'true'; }
-    if (type === 'object') {
+    if (type === 'object' || type === 'array') {
       let value; try { value = JSON.parse(raw); } catch (_) { throw Error(`${label}: 입력한 묶음의 문법을 확인하세요`); }
+      if (type === 'array') { if (!Array.isArray(value)) throw Error(`${label}: 대괄호로 묶은 목록을 넣으세요`); return value; }
       if (!value || Array.isArray(value) || typeof value !== 'object') throw Error(`${label}: 이름과 값으로 된 묶음을 넣으세요`);
       return value;
     }
@@ -254,7 +255,7 @@
           : type === 'component' ? [['cooler', '쿨러'], ['pump', '펌프'], ['fan', '팬']]
           : ['정상', '입고 완료', '미달', '지연', '알림', '승인 지연', '반려'].map(x => [x, x]);
         input = `<select ${attrs}><option value="">기본값 사용</option>${choices.map(([v, name]) => `<option value="${h(v)}" ${String(value) === v ? 'selected' : ''}>${h(name)}</option>`).join('')}</select>`;
-      } else if (type === 'object' || type === 'textarea') input = `<textarea ${attrs} rows="3" spellcheck="false">${h(value === undefined ? '' : type === 'object' ? JSON.stringify(value, null, 2) : value)}</textarea>`;
+      } else if (['object', 'array', 'textarea'].includes(type)) input = `<textarea ${attrs} rows="3" spellcheck="false">${h(value === undefined ? '' : type !== 'textarea' ? JSON.stringify(value, null, 2) : value)}</textarea>`;
       else input = `<input ${attrs} value="${h(value ?? '')}">`;
       return UI.field({ label, input, hint: type === 'object' ? '이름과 값을 중괄호로 묶어 입력합니다. 처리 건 값은 {값 이름}으로 연결합니다.' : ['duration', 'settle'].includes(key) ? '예: PT10M은 10분, PT2H는 2시간입니다.' : '' });
     }).join('')}</div>`;

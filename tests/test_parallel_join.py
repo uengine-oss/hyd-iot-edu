@@ -123,4 +123,6 @@ def test_real_definitions_have_no_gatewayless_split():
     import json, pathlib
     root = pathlib.Path(__file__).resolve().parents[1] / 'it' / 'process' / 'definitions'
     for p in sorted(root.glob('*.json')):
+        if p.name.endswith('.mapping.json'):
+            continue  # BPMN authoring companion; validated by its mapping tests.
         definition_registry._gatewayless_splits(engine.Definition.from_dict(json.loads(p.read_text(encoding='utf-8'))))

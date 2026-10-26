@@ -150,7 +150,7 @@ function Read-RelaySettings($path) {
     $values = @{}
     if (Test-Path -LiteralPath $path -PathType Leaf) {
         foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
-            if ($line -match '^\s*(OPENAI_BASE_URL|LLM_API_KEY|LLM_MODEL)\s*=\s*(.*)$') {
+            if ($line -match '^\s*(OPENAI_BASE_URL|LLM_API_KEY|LLM_MODEL|HYD_CLASSROOM_URL)\s*=\s*(.*)$') {
                 $values[$Matches[1]] = $Matches[2].Trim().Trim('"', "'")
             }
         }
@@ -158,6 +158,13 @@ function Read-RelaySettings($path) {
     return $values
 }
 function Select-RelaySettings($root, $explicitFile) {
+    $rootPath = Join-Path $root '.env'
+    $rootValues = Read-RelaySettings $rootPath
+    # A lab file override must not turn a managed classroom check into a
+    # direct model request. The server still enforces the real cost boundary.
+    if ($rootValues['HYD_CLASSROOM_URL']) {
+        return [pscustomobject]@{ Path = $rootPath; Values = $rootValues }
+    }
     if ($explicitFile) {
         $path = [System.IO.Path]::GetFullPath($explicitFile)
         return [pscustomobject]@{ Path = $path; Values = (Read-RelaySettings $path) }
@@ -170,23 +177,39 @@ function Select-RelaySettings($root, $explicitFile) {
     }
     return [pscustomobject]@{ Path = $paths[0]; Values = @{} }
 }
+function Test-ClassroomKey($root, $values) {
+    # Reuse the startup contract inside the already-running process container.
+    # Only public code and URL are argv; the key travels through stdin.
+    $source = Get-Content -LiteralPath (Join-Path $root 'scripts/check_classroom.py') -Raw -Encoding UTF8
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($source))
+    $program = "exec(__import__('base64').b64decode('$encoded'))"
+    $message = $values['LLM_API_KEY'] | & docker compose exec -T process python -c $program $values['HYD_CLASSROOM_URL'] 2>$null
+    if ($LASTEXITCODE -ne 0) { throw '관리 서버 인증 실패. HTTPS 주소·수업 키·권한·실행 중 process를 확인하세요.' }
+    return ($message -join ' ')
+}
 if ($SkipLlm) { Record '중계 서버' $true '건너뜀(-SkipLlm)' }
 else {
     $selected = Select-RelaySettings $repo $LlmEnvFile
     $vals = $selected.Values
-    $missing = @('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL' | Where-Object { -not $vals[$_] })
-    if ($missing.Count) { Record '중계 서버' $false ("{0}: {1} 설정이 필요합니다. 저장 후 점검.bat을 다시 실행하세요." -f $selected.Path, ($missing -join ', ')) }
+    if ($vals['HYD_CLASSROOM_URL']) {
+        try { Record '관리 서버' $true (Test-ClassroomKey $repo $vals) }
+        catch { Record '관리 서버' $false '관리 서버 인증 실패. HTTPS 주소·수업 키·권한·실행 중 process를 확인하세요. 직접 모델 호출로 우회하지 않습니다.' }
+    }
     else {
-        $body = @{ model = $vals['LLM_MODEL']; messages = @(@{ role = 'user'; content = 'Reply with exactly: OK' }); max_completion_tokens = 50 }
-        try {
-            $r = Invoke-RestMethod -Method Post -Uri ($vals['OPENAI_BASE_URL'].TrimEnd('/') + '/chat/completions') -Headers @{ Authorization = 'Bearer ' + $vals['LLM_API_KEY'] } `
-                -ContentType 'application/json' -Body ($body | ConvertTo-Json -Depth 5) -TimeoutSec 120
-            Record '중계 서버' $true ("연결됨 · {0} · 답: {1}" -f $vals['LLM_MODEL'], ("$($r.choices[0].message.content)".Trim()))
-        }
-        catch {
-            $code = $null; try { $code = [int]$_.Exception.Response.StatusCode } catch { }
-            $why = switch ($code) { 401 { '키가 맞지 않거나 서버 쪽 키 문제' } 403 { 'LLM_MODEL 이름이 이 키에 허용되지 않음' } 404 { '주소가 맞지 않음(끝이 /v1인지)' } 429 { '서버가 잠시 바쁨 — 1분 뒤 다시' } default { $_.Exception.Message } }
-            Record '중계 서버' $false "묻지 못했다($code): $why — 선택된 설정 파일: $($selected.Path)"
+        $missing = @('OPENAI_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL' | Where-Object { -not $vals[$_] })
+        if ($missing.Count) { Record '중계 서버' $false ("{0}: {1} 설정이 필요합니다. 저장 후 점검.bat을 다시 실행하세요." -f $selected.Path, ($missing -join ', ')) }
+        else {
+            $body = @{ model = $vals['LLM_MODEL']; messages = @(@{ role = 'user'; content = 'Reply with exactly: OK' }); max_completion_tokens = 50 }
+            try {
+                $r = Invoke-RestMethod -Method Post -Uri ($vals['OPENAI_BASE_URL'].TrimEnd('/') + '/chat/completions') -Headers @{ Authorization = 'Bearer ' + $vals['LLM_API_KEY'] } `
+                    -ContentType 'application/json' -Body ($body | ConvertTo-Json -Depth 5) -TimeoutSec 120
+                Record '중계 서버' $true ("연결됨 · {0} · 답: {1}" -f $vals['LLM_MODEL'], ("$($r.choices[0].message.content)".Trim()))
+            }
+            catch {
+                $code = $null; try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+                $why = switch ($code) { 401 { '키가 맞지 않거나 서버 쪽 키 문제' } 403 { 'LLM_MODEL 이름이 이 키에 허용되지 않음' } 404 { '주소가 맞지 않음(끝이 /v1인지)' } 429 { '서버가 잠시 바쁨 — 1분 뒤 다시' } default { $_.Exception.Message } }
+                Record '중계 서버' $false "묻지 못했다($code): $why — 선택된 설정 파일: $($selected.Path)"
+            }
         }
     }
 }
