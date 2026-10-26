@@ -33,7 +33,9 @@ def validate_start(values):
 def validate_result(form, inst, output):
     contract = (form or {}).get('contract')
     if contract == DRAFT:
-        if set(output) != {'handover_summary', 'checks', 'evidence'}:
+        # The worker adds transport text/session metadata after reading the
+        # structured result. These are not process-variable declarations.
+        if set(output) - {'text', 'cliagents_session_id'} != {'handover_summary', 'checks', 'evidence'}:
             raise ValueError('인계안은 handover_summary·checks·evidence만 제출하세요')
         checks, evidence = output['checks'], output['evidence']
         if not isinstance(checks, list) or len(checks) != 4 or \

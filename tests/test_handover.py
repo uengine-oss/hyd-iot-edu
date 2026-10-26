@@ -32,6 +32,14 @@ def unknown_draft():
                 for area in sorted(handover.AREAS)])
 
 
+def test_transport_metadata_does_not_allow_undeclared_business_outputs():
+    result = dict(unknown_draft(), text='결과 파일 작성 완료', cliagents_session_id='session-test')
+    handover.validate_result({'contract':handover.DRAFT}, {}, result)
+    result['maintenance_completed'] = True
+    with pytest.raises(ValueError,match='인계안은'):
+        handover.validate_result({'contract':handover.DRAFT}, {}, result)
+
+
 def deliver(runtime, inst, output=None):
     wi = runtime.repo.fetch_pending_task('cliagents', 'handover-test')[0]
     runtime.repo.save_task_result(wi['id'], output or unknown_draft(), final=True)
