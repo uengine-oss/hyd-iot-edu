@@ -34,6 +34,8 @@ def main():
         text=text.replace('제공된 랩 DB 주소와 대상 DB를 확인한다. 예제 조회 DB 또는 HYD 기준 DB에 덮어쓰지 않고, 준비된 별도 실습 DB를 사용한다.', '`python lab_db.py`를 실행하고 터미널의 Connect URL로 연결한다. Username은 neo4j, Password는 비운다. 이 폴더 전용 DB를 사용한다.')
         text=text.replace('이번 제작에서는 코드·DB·실습·캡처를 실행하지 않았다.','강사 참조 모델의 DB 검증과 학생 AI 수행·화면 촬영은 구분한다.')
         graph.write_text(text,encoding='utf-8')
+    from sync_entry_scripts import main as sync_entries
+    sync_entries()
     print('관계 조회·그래프 구현 대본의 시작 절차와 파일명 동기화')
 
 if __name__=='__main__':main()
