@@ -72,14 +72,20 @@ def attach(managed,workdir,*,transport=None):
     tools=client.request('catalog',{}).get('tools')
     if not isinstance(tools,list) or len(tools)>64:
         raise RuntimeConnectionError('관리 도구 목록이 올바르지 않습니다')
-    path=Path(workdir)/'managed-tool-catalog.json'
-    path.write_text(json.dumps(tools,ensure_ascii=False),encoding='utf8')
     names={}
+    from procsvc.classroom_proposals import TOOLS
+    required={'server','name','description','inputSchema'}
     for tool in tools:
-        if (not isinstance(tool,dict) or set(tool)!={'server','name','description','inputSchema'}
+        if (not isinstance(tool,dict) or not required <= set(tool) or set(tool)-required-{'kind'}
                 or not isinstance(tool['inputSchema'],dict)):
             raise RuntimeConnectionError('관리 도구 입력 계약이 올바르지 않습니다')
+        qualified=str(tool['server'])+'/'+str(tool['name'])
+        if ('kind' in tool and (tool['kind']!='proposal' or qualified not in TOOLS)
+                or qualified in TOOLS and tool.get('kind')!='proposal'):
+            raise RuntimeConnectionError('관리 제안 도구 분류가 올바르지 않습니다')
         names.setdefault(tool['server'],[]).append(tool['name'])
+    path=Path(workdir)/'managed-tool-catalog.json'
+    path.write_text(json.dumps(tools,ensure_ascii=False),encoding='utf8')
     servers={name:{'command':sys.executable,'args':['-m','worker.managed_tools','--server',name,'--catalog',str(path)],
         'env':{'HYD_TOOL_RUNTIME_URL':managed['url'],'HYD_TOOL_RUNTIME_TOKEN':managed['token'],
                'PYTHONPATH':os.pathsep.join(filter(None,[str(Path(__file__).resolve().parents[1]),os.environ.get('PYTHONPATH','')]))}}
