@@ -164,14 +164,24 @@ class Runner:
         if agent.missing_skills:    # the product names a skill that did not arrive (cli-agent executor.py:181-189); silence would read as "ignored my skill"
             log.warning("%s %s assigned skills with no stored text: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(agent.missing_skills))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
-        tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, agent.tools)      # A095 + U2: the agent's / activity's servers only
-        tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id)
+        from . import managed_model
+        remote_agent=bool((ctx.definition or {}).get('classroom_agent'))
+        managed=None
+        if remote_agent:
+            from . import managed_tools
+            managed=managed_model.attach(row,self.s.tenant_id,provider_id)
+            tenant_mcp,read_tools=managed_tools.attach(managed,ws.path)
+            missing_tools=[]
+            gate=bridge.Gate(config=tenant_mcp,read_tools=read_tools)
+        else:
+            tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, agent.tools)      # A095 + U2
+            tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id)
+            gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
         if missing_tools:
             log.warning("%s %s declares MCP tools the tenant does not have: %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(missing_tools))
             self._event(row, job_id, "task_working", {"type": "notice", "content": "등록되지 않은 도구 서버는 연결하지 못했습니다: " + ", ".join(missing_tools)}, crew_type="agent")
         if agent.tools == []:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
-        gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))   # B2: unchecked student servers stay out
         tenant_mcp = gate.config
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
@@ -179,6 +189,8 @@ class Runner:
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
                                                                       skills_inline=provider_id == 'codex'))
+        if remote_agent:
+            extras['tenant_mcp']={'mcpServers':{name:{'transport':'managed-student','tools':tools} for name,tools in gate.read_tools.items()}}
         (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
         if result_check_task:
             from . import result_check
@@ -222,15 +234,15 @@ class Runner:
             if handover_task:
                 from .settings import handover_allowed_tools
                 extra_args += ['--allowedTools', ','.join(handover_allowed_tools(self.s.allowed_tools, servers))]
-            elif self.s.allowed_tools or result_check_task:
+            elif self.s.allowed_tools or result_check_task or remote_agent:
                 extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
             if handover_task:
                 denied.append('mcp__hyd-dmn__submit_decision')
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
-        from . import managed_model
-        managed = managed_model.attach(row, self.s.tenant_id, provider_id)
+        if not remote_agent:
+            managed = managed_model.attach(row, self.s.tenant_id, provider_id)
         if managed:
             model = managed['model']
             bridged.env = dict(bridged.env or {}, **managed['env'])

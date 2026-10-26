@@ -189,6 +189,22 @@ def mount(app, authority, runtime_factory, upstream_factory):
     async def tool_result(request: Request):
         return await tool_operation(request,read_result=True)
 
+    @app.post('/internal/worker/tool-catalog')
+    async def tool_catalog(request: Request):
+        from .classroom_tool_io import ToolIO
+        from .classroom_agents import filter_tools
+        token=request.headers.get('authorization','').removeprefix('Bearer ')
+        binding=verify_token(token)
+        runtime=runtime_factory(binding['tenant_id'])
+        binding=await asyncio.to_thread(authorize,runtime,authority,token)
+        row=await asyncio.to_thread(worker_credentials._claim,runtime,binding)
+        inst=await asyncio.to_thread(runtime.repo.get_instance,row['proc_inst_id'])
+        try:
+            tools=await asyncio.to_thread(ToolIO(authority).catalog,binding['run_id'])
+            return {'tools':await asyncio.to_thread(filter_tools,runtime,inst,tools)}
+        except Denied as exc:
+            raise HTTPException(403,str(exc)) from None
+
     async def forward(request, count_only):
         token = request.headers.get('x-api-key') or request.headers.get('authorization', '').removeprefix('Bearer ')
         binding = verify_token(token)

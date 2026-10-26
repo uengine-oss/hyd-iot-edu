@@ -44,4 +44,4 @@ def attach(row, tenant_id, provider_id):
     for name in ('ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL',
                  'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL'):
         env[name] = model
-    return dict(model=model, env=env, secrets=[token])
+    return dict(model=model, env=env, secrets=[token], url=url, token=token)

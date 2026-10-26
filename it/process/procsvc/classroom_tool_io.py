@@ -26,6 +26,35 @@ def encoded(value):
         raise Denied('도구 조회 내용은 유효한 JSON이어야 합니다') from None
 
 
+def catalog(contract):
+    from . import mcp_check
+    from jsonschema.validators import validator_for
+    if not isinstance(contract,dict) or not isinstance(contract.get('catalog'),dict):
+        raise Denied('강사가 고정한 도구 입력 스키마가 없습니다')
+    rows=contract['catalog']
+    if not rows or len(rows)>64 or set(rows)!=set(contract.get('tools') or []) or len(encoded(rows))>512000:
+        raise Denied('승인 도구 목록과 스키마 목록이 다르거나 너무 큽니다')
+    result=[]
+    for qualified,meta in rows.items():
+        if not isinstance(qualified,str) or qualified.count('/')!=1 or not isinstance(meta,dict):
+            raise Denied('승인 도구 스키마 형식이 올바르지 않습니다')
+        server,name=qualified.split('/')
+        if not re.fullmatch(r'[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+',qualified):
+            raise Denied('승인 도구 이름이 올바르지 않습니다')
+        schema=meta.get('inputSchema')
+        try:
+            if not isinstance(schema,dict) or schema.get('type')!='object':raise ValueError()
+            validator_for(schema).check_schema(schema)
+        except Exception:
+            raise Denied('승인 도구 입력 스키마를 검증할 수 없습니다') from None
+        if not mcp_check.read_only_verdict({'name':name,'annotations':meta.get('annotations')})[0]:
+            raise Denied('관리 조회 도구는 읽기 전용이어야 합니다')
+        if not isinstance(meta.get('description',''),str):
+            raise Denied('도구 설명은 글이어야 합니다')
+        result.append(dict(server=server,name=name,description=meta.get('description',''),inputSchema=schema))
+    return result
+
+
 class ToolIO:
     def __init__(self, authority):
         self.authority = authority
@@ -62,6 +91,11 @@ class ToolIO:
             run, contract = self._run(db, run_id)
             if tool not in contract['tools'] or size > contract['max_input_bytes']:
                 raise Denied('승인되지 않은 도구 또는 조회 입력 한도 초과')
+            if contract.get('catalog'):
+                from . import mcp_check
+                meta=contract['catalog'].get(tool) or {}
+                if mcp_check._argument_problem({'input_schema':meta.get('inputSchema')},arguments):
+                    raise Denied('조회 인자가 강사 승인 도구 스키마와 다릅니다')
             old = db.execute('SELECT * FROM hyd_classroom_tool_io WHERE run_id=%s AND call_id=%s', (run['id'],call_id)).fetchone()
             if old:
                 if old['tool'] != tool or old['arguments'] != arguments:
@@ -74,6 +108,11 @@ class ToolIO:
             db.execute('INSERT INTO hyd_classroom_tool_io(id,run_id,call_id,tool,arguments,input_bytes) VALUES (%s,%s,%s,%s,%s,%s)',
                        (request_id,run['id'],call_id,tool,Jsonb(arguments),size))
             return request_id
+
+    def catalog(self,run_id):
+        with self.authority.connect() as db:
+            _,contract=self._run(db,run_id)
+            return catalog(contract)
 
     def pending(self, key, run_id):
         with self.authority.connect() as db:
