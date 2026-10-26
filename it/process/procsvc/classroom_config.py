@@ -26,6 +26,9 @@ def build(*, settings, runtime_factory, archive_factory, driver_factory):
     tenant = settings['TENANT_ID']
     dsn = settings['HYD_CLASSROOM_AUTHORITY_DSN']
     key_file = Path(settings['HYD_CLASSROOM_UPSTREAM_KEY_FILE'])
+    agent_flag = settings.get('HYD_CLASSROOM_AGENT_ENABLED', '0')
+    if agent_flag not in ('0', '1'):
+        raise ValueError('강사 에이전트 활성화 설정은 0 또는 1이어야 합니다')
 
     def connect():
         import psycopg
@@ -55,4 +58,4 @@ def build(*, settings, runtime_factory, archive_factory, driver_factory):
         source_loader=lambda doc: archive_factory().get(tenant, doc['source_id']),
         runtime_factory=runtime, catalog_factory=catalog,
         archive_factory=lambda subject: archive_factory() if subject == tenant else None,
-        upstream_factory=upstream)
+        upstream_factory=upstream, agent_enabled=agent_flag == '1')

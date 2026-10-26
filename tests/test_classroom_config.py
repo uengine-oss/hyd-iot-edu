@@ -23,6 +23,14 @@ def test_missing_instructor_configuration_cannot_enable_gateway(tmp_path, monkey
         setup_config(tmp_path, monkeypatch, HYD_CLASSROOM_AUTHORITY_DSN='')
 
 
+def test_only_explicit_instructor_setting_enables_agent_routes(tmp_path, monkeypatch):
+    assert setup_config(tmp_path, monkeypatch)['agent_enabled'] is False
+    assert setup_config(tmp_path, monkeypatch, HYD_CLASSROOM_AGENT_ENABLED='1')['agent_enabled'] is True
+    assert setup_config(tmp_path, monkeypatch, HYD_CLASSROOM_AGENT_ENABLED='0')['agent_enabled'] is False
+    with pytest.raises(ValueError, match='0 또는 1'):
+        setup_config(tmp_path, monkeypatch, HYD_CLASSROOM_AGENT_ENABLED='true')
+
+
 @pytest.mark.parametrize('url', ['http://relay.example', 'https://secret@relay.example', 'https://relay.example?key=secret'])
 def test_credentials_and_unencrypted_upstream_urls_are_rejected(tmp_path, monkeypatch, url):
     with pytest.raises(ValueError, match='HTTPS'):

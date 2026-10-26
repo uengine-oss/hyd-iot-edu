@@ -7,6 +7,7 @@ services:
     environment:
       TENANT_ID: hyd
       HYD_CLASSROOM_AUTHORITY_ENABLED: "1"
+      HYD_CLASSROOM_AGENT_ENABLED: ${HYD_CLASSROOM_AGENT_ENABLED:-0}
       HYD_CLASSROOM_AUTHORITY_DSN: ${HYD_CLASSROOM_AUTHORITY_DSN:?Instructor authority DSN required}
       HYD_CLASSROOM_UPSTREAM_URL: ${LLM_RELAY_URL:?Instructor upstream URL required}
       HYD_CLASSROOM_UPSTREAM_KEY_FILE: /run/secrets/classroom_upstream
