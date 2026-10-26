@@ -14,6 +14,30 @@ from test_instances import rt  # noqa: F401
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable classroom authority PostgreSQL')
 
 
+def test_contract_lookup_is_current_unique_and_does_not_reserve(setup):
+    client,runtime,auth,connect,approval=setup
+    with connect() as db:
+        policy=db.execute('SELECT policy FROM hyd_classroom_grants').fetchone()['policy']
+        policy['tool_io']={'tools':['enterprise/spare_stock'],'catalog':{'enterprise/spare_stock':{
+            'inputSchema':{'type':'object'},'annotations':{'readOnlyHint':True}}}}
+        db.execute('UPDATE hyd_classroom_grants SET policy=%s',(Jsonb(policy),))
+    params={key:approval[key] for key in ('definition','version','activity')}
+    headers={'Authorization':'Bearer '+KEY}
+    endpoint='/v1/classroom/agents/contract'
+    value=client.get(endpoint,params=params,headers=headers)
+    assert value.status_code==200 and value.json()['approval']==approval
+    assert set(value.json())=={'reference','approval','max_seconds','tools'}
+    assert client.get(endpoint,params=params).status_code==401
+    assert client.get(endpoint,params=dict(params,activity='later'),headers=headers).status_code==403
+    body={'reference':'handover.draft','inputs':{'memo':'x'},'expected_revision':'a'*64}
+    assert client.post('/v1/classroom/agents',headers=headers,json=body).status_code==409
+    with connect() as db:
+        assert db.execute('SELECT count(*) AS n FROM hyd_classroom_runs').fetchone()['n']==0
+        policy['agents']['duplicate']=approval
+        db.execute('UPDATE hyd_classroom_grants SET policy=%s',(Jsonb(policy),))
+    assert client.get(endpoint,params=params,headers=headers).status_code==403
+
+
 @pytest.fixture
 def setup(authority,rt):
     auth,connect=authority;runtime,_=rt

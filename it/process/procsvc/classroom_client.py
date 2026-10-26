@@ -9,7 +9,7 @@ import sqlite3
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlencode
 from uuid import UUID
 
 import httpx
@@ -34,6 +34,9 @@ class Client:
             db.execute('''CREATE TABLE IF NOT EXISTS tool_replies (
                 scope TEXT, run_id TEXT, request_id TEXT, request_hash TEXT, body TEXT,
                 PRIMARY KEY(scope,run_id,request_id))''')
+            db.execute('''CREATE TABLE IF NOT EXISTS agent_runs (
+                scope TEXT, task TEXT, request_hash TEXT, run_id TEXT,
+                PRIMARY KEY(scope,task), UNIQUE(scope,run_id))''')
 
     @contextmanager
     def db(self):
@@ -74,6 +77,43 @@ class Client:
             raise
         except Exception:
             raise HTTPException(502, '관리 서버 연결 또는 응답 형식에 오류가 있습니다') from None
+
+    def agent_contract(self,definition,version,activity):
+        return self.request('GET','/v1/classroom/agents/contract?'+urlencode(
+            dict(definition=definition,version=version,activity=activity)))
+
+    def start_agent(self,task,reference,inputs,revision):
+        """Persist local ownership before starting. Reclaims keep the same run.
+        A lost start response may rejoin only the server's still-active run;
+        terminal uncertainty stays an explicit review case, never new paid work.
+        """
+        from .classroom_authority import digest
+        request_hash=digest([reference,revision,inputs])
+        scope=self.scope()
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            old=db.execute('SELECT * FROM agent_runs WHERE scope=? AND task=?',(scope,task)).fetchone()
+            if old and old['request_hash']!=request_hash:
+                raise HTTPException(409,'이 학생 작업에 연결된 승인 판본·입력을 바꿀 수 없습니다')
+            if old and old['run_id']:return old['run_id']
+            db.execute('INSERT OR IGNORE INTO agent_runs VALUES (?,?,?,NULL)',(scope,task,request_hash))
+        value=self.request('POST','/v1/classroom/agents',{'reference':reference,'inputs':inputs,'expected_revision':revision})
+        run_id=str(UUID(value['run_id']))
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            owner=db.execute('SELECT task FROM agent_runs WHERE scope=? AND run_id=?',(scope,run_id)).fetchone()
+            if owner and owner['task']!=task:
+                raise HTTPException(409,'다른 학생 작업에 연결된 실행을 재사용할 수 없습니다')
+            db.execute('UPDATE agent_runs SET run_id=? WHERE scope=? AND task=?',(run_id,scope,task))
+        return run_id
+
+    def agent_result(self,task,run_id):
+        run_id=str(UUID(run_id))
+        with self.db() as db:
+            row=db.execute('SELECT run_id FROM agent_runs WHERE scope=? AND task=?',(self.scope(),task)).fetchone()
+            if not row or row['run_id']!=run_id:
+                raise HTTPException(403,'이 학생 작업에 연결된 관리 실행이 아닙니다')
+        return self.request('GET','/v1/classroom/agents/runs/'+run_id+'/result')
 
     def authorize_hash(self, sha256):
         if len(sha256) != 64 or any(c not in '0123456789abcdef' for c in sha256):

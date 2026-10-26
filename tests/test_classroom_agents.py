@@ -29,6 +29,46 @@ def approved(runtime):
     return approval
 
 
+def test_managed_diagnosis_cannot_write_instructor_incident_card(rt):
+    runtime,hooks=rt;approval=approved(runtime)
+    source=deepcopy(runtime.repo.get_proc_def(approval['definition'],runtime.tenant_id,version='1')['definition'])
+    source['version']='2'
+    source['data'] += [{'name':'incident','type':'String'},{'name':'guide_card','type':'Object'}]
+    source['forms']['answer']['fields_json'].append({'key':'guide_card','type':'object'})
+    source['activities'][0]['inputData'].append('incident')
+    source['activities'][0]['outputData'].append('guide_card')
+    source['activities'][1]['outputData'].append('guide_card')
+    runtime.register_definition(source)
+    approval['version']='2'
+    approval['input_schema']['properties']['incident']={'type':'string'}
+    approval['revision']=agents.revision(runtime,approval)
+    inst=agents.start(runtime,approval,{'memo':'확인','incident':'student-incident'},str(uuid4()),'diagnosis')
+    row=runtime.repo.fetch_pending_task('cliagents','managed-test')[0]
+    runtime.repo.save_task_result(row['id'],{'answer':'제안','guide_card':{'recommended':[]}},final=True)
+    runtime.poll_once()
+    assert runtime.repo.get_instance(inst['proc_inst_id'])['status']=='COMPLETED'
+    assert not hooks.cards and not hooks.calls
+
+
+def test_internal_input_exception_cannot_authorize_a_normal_definition(rt):
+    runtime,_=rt;approval=approved(runtime)
+    with pytest.raises(ValueError):
+        runtime.start_definition(approval['definition'],'1','ordinary',values={'memo':'x','incident':'student'},
+                                 _classroom_approval=approval)
+    with pytest.raises(ValueError):
+        runtime.start_definition(approval['definition'],'1','ordinary',values={'memo':'x','incident':'student'})
+
+
+def test_managed_marker_cannot_hide_changed_execution_definition(rt):
+    from types import SimpleNamespace
+    runtime,_=rt;approval=approved(runtime)
+    definition=agents.isolated_definition(runtime,approval)
+    definition['activities'][0]['instruction']='different instructions'
+    wrapped=SimpleNamespace(repo=runtime.repo,tenant_id=runtime.tenant_id,
+                            definition_for=lambda _:SimpleNamespace(raw=definition))
+    with pytest.raises(Denied):agents.verify_instance(wrapped,{})
+
+
 def test_only_approved_activity_runs_and_duplicate_server_run_joins(rt):
     runtime,_=rt;approval=approved(runtime);run=str(uuid4())
     inst=agents.start(runtime,approval,{'memo':'실제 상태 확인 필요'},run,'handover.draft')

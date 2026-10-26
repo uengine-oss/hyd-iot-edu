@@ -71,6 +71,22 @@ class Authority:
             self._grant(db, key_hash(key))
         return {'status': 'ok', 'service': 'classroom-execution'}
 
+    def agent_binding(self,key,definition,version,activity):
+        """Resolve exactly one approved activity without reserving paid work."""
+        with self.connect() as db:
+            grant=self._grant(db,key_hash(key))
+            policy=grant['policy']
+            if 'agent_run' not in policy['actions']:
+                raise Denied('이 수업에서 관리 에이전트 실행을 허용하지 않습니다')
+            matches=[(ref,value) for ref,value in (policy.get('agents') or {}).items()
+                     if isinstance(value,dict) and (value.get('definition'),value.get('version'),value.get('activity'))
+                     ==(definition,version,activity)]
+            if len(matches)!=1:
+                raise Denied('현재 작업 판본에 대응하는 강사 승인이 없거나 중복됐습니다')
+            reference,approval=matches[0]
+            return dict(subject=grant['subject'],reference=reference,approval=approval,
+                        tool_io=policy.get('tool_io'),max_seconds=policy['actions']['agent_run']['max_seconds'])
+
     def authorize_document(self, key, content_hash):
         with self.connect() as db:
             grant = self._grant(db, key_hash(key))
