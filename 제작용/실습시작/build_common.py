@@ -1,0 +1,45 @@
+"""온라인2 공통 조회·포털 탐색을 시작 도구와 학생용 안내에 연결."""
+from build_labs import ROOT,OUT,COURSES,page,write,dump,pack,RULES
+from pathlib import Path
+import json,hashlib,shutil
+HERE=Path(__file__).resolve().parent
+catalog=json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))
+ids={f'{slug}-02-{kind}' for _,slug in COURSES for kind in ['relations','map']}
+catalog['labs']=[x for x in catalog['labs'] if x['id'] not in ids]
+for course,slug in COURSES:
+    for number,name,title,kind in [(1,'02일차_실습1_관계조회','관계를 따라 센서와 부품 조회하기','relations'),(2,'02일차_실습2_지식지도탐색','포털에서 기준 지식의 연결 탐색하기','map')]:
+        folder=OUT/course/'실습/02회차/랩'/name
+        write(folder/'결과/README.md','작성한 질의와 실제 확인 기록을 여기에 보관합니다.\n')
+        rules=RULES.replace('입력/와 자료/는 보존한다.','제공 예제와 원자료는 보존한다.')
+        if number==1:
+            for file in ['lab_db.py','prepare_example.py']:shutil.copy2(HERE/file,folder/file)
+            write(folder/'준비_안내.md', '''# 관계 조회 준비
+
+Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 실행합니다. 이 폴더 전용 랩 DB를 만들고 제공 예제를 적재합니다. HYD 포털 DB와 다른 실습의 DB는 사용하지 않습니다. 접속 주소는 터미널과 랩_연결.json에서 확인합니다.
+
+예제_그래프.json과 예제_적재.cypher는 HYD-01의 구성·계측 채널을 발췌한 교육용 부분집합입니다. 시계열 실측값이 아닙니다. 제공 예제를 준비한 뒤 조회_작성.cypher에 직접 질의를 작성합니다.
+
+준비 완료 표시는 노드 20개·관계 19개입니다. 설비 1개, 구성요소 6개, 센서 5개, 상태 변수 5개, 부품 3개로 구성됩니다. 쿨러 센서는 TS1·CE, 주 펌프 센서는 PS1·FS1, 팬 센서는 VS1입니다. 나머지 구성요소는 이 예제에서 센서가 없습니다.
+
+교체 부품은 쿨러 코어(P-CLR-CORE), 펌프 축 씰 키트(P-PMP-SEAL), 팬 베어링(P-FAN-BRG)입니다. USES_PART의 방향과 품번을 원자료에서 확인합니다. 예제의 virtual·kind는 원본 스키마의 속성입니다.
+''')
+            steps='''1. Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 실행합니다.
+2. 「예제 준비 완료: 노드 20개 · 관계 19개」를 확인합니다.
+3. `python lab_db.py`를 실행해 Browser를 열고 출력된 Connect URL로 연결합니다. Username은 neo4j, Password는 비워 둡니다.
+4. 조회_작성.cypher의 여섯 질문에 맞춰 질의를 작성하고 한 문장씩 실행합니다.
+5. 조회_기록.md에 실제 행·집계·원자료 근거를 적고 결과/에 질의와 기록을 저장합니다.'''
+            sections=[('예제 준비하기','<p>VS Code 터미널에서 실행하세요.</p><pre>python prepare_example.py</pre><p class="check">예제 준비 완료: 노드 20개 · 관계 19개가 표시됩니다. 이 예제는 HYD-01 한 대의 설비 구성입니다.</p><pre>python lab_db.py</pre><p>열린 Browser의 Connect URL에 터미널의 bolt 주소를 넣으세요. Username은 neo4j, Password는 비워 둡니다.</p>'),('쿨러에서 센서 찾기',"<p>Browser 입력칸에 아래 질의를 넣고 Run을 누르세요. 조회_작성.cypher에도 저장합니다.</p><pre>MATCH (c:Component {id:'comp:cooler'})-[:MONITORED_BY]-&gt;(s:Sensor)\nRETURN c.id, c.name, s.id, s.tag;</pre><p class=\"check\">센서 TS1과 CE 두 행이 나옵니다. 반복된 쿨러 ID는 같은 출발점입니다.</p><p>관계에 변수 r을 붙이고 c, r, s를 반환하도록 바꿔 표와 그래프의 대상을 비교하세요.</p>"),('설비에서 물리량·부품 따라가기','<p>HYD-01에서 구성요소 → 센서 → StateVariable까지 연결해 태그·물리량·단위·한계를 조회하세요. 한계가 있는 행만 남겼을 때 빠지는 항목을 기록합니다.</p><p class="check">센서는 5개이며 한계가 없는 CE·FS1도 원래 조회에는 포함됩니다. 값 없음과 0을 구별하세요.</p><p>이번에는 구성요소의 USES_PART 관계로 부품과 partNo를 조회하세요.</p><p class="check">쿨러 코어 P-CLR-CORE, 펌프 축 씰 키트 P-PMP-SEAL, 팬 베어링 P-FAN-BRG의 세 연결을 원자료와 대조합니다.</p>'),('집계와 원래 행 비교하기','<p>구성요소별로 서로 다른 센서를 세고 원래 센서 ID 목록과 비교하세요.</p><p class="check">쿨러 2개, 주 펌프 2개, 팬 1개입니다. 센서까지 연결되는 MATCH에는 센서가 없는 구성요소가 나오지 않습니다.</p><p>조회_기록.md의 표에 원래 목록·직접 센 수·질의 결과를 기록합니다.</p>'),('저장하기','<p>질의와 기록을 결과/에 저장하고 다시 열어 확인하세요. 보관할 결과는 재부팅 전에 USB 또는 개인 클라우드로 복사합니다.</p><p>다음 포털 탐색은 별도 시작본으로 엽니다.</p>')]
+        else:
+            steps='''1. 학교 PC에 준비된 HYD 포털에서 지식 지도를 엽니다. 기본 로컬 주소는 http://127.0.0.1:8088 입니다.
+2. 설비 HYD-01과 오일 쿨러를 찾아 ID·클래스·속성을 탐색_기록.md에 기록합니다.
+3. 센서에서 상태 변수로, 고장 유형에서 구성요소와 원인 후보로 이어진 관계의 시작·끝을 확인합니다.
+4. 현재 화면에서 확인한 것만 기록하고 결과/에 저장합니다. 편집·설비 조작·명령 승인은 하지 않습니다.'''
+            sections=[('지식 지도 열기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a></p><p>포털의 지식 지도를 열고 HYD-01을 선택하세요. 학교에서 별도 주소를 안내받았다면 그 주소를 사용합니다.</p><p>탐색_기록.md에 포털 주소와 확인 시각을 적습니다. 앞 실습의 예제 DB와는 별개입니다.</p>'),('대상의 종류와 속성 보기','<p>오일 쿨러를 찾아 ID와 클래스를 확인하세요. 연결된 센서의 태그를 보고, 상태 변수까지 따라가 단위·한계를 기록합니다.</p><p class="check">이름만 적지 않고 대상 ID와 값을 함께 남깁니다. 화면에 표시되지 않은 항목은 미확인으로 둡니다.</p>'),('들어오는 관계 따라가기','<p>쿨러에 연결된 고장 유형과 원인 후보를 찾아 관계 이름·시작 ID·끝 ID를 기록하세요. 탐색한 방향과 저장된 화살표 방향을 구별합니다.</p><p class="check">원인 후보의 연결을 찾은 것과 현재 고장의 원인을 확정한 것은 다릅니다. 이번에는 표시된 지식의 연결을 확인합니다.</p>'),('기록 확인하고 저장하기','<p>설비 → 구성요소 → 센서 → 상태 변수의 경로와 고장·원인 경로를 기록에서 다시 읽어 보세요. 빠진 시작·끝 ID는 화면으로 돌아가 확인합니다.</p><p>결과/에 탐색 기록을 저장하고 다시 엽니다. 다음 모델 설계는 별도 시작본을 사용합니다.</p>')]
+        for file in ['AGENTS.md','CLAUDE.md','.github/copilot-instructions.md']:write(folder/file,rules)
+        write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
+        for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
+        archive=pack(folder)
+        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':'2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
+dump(HERE/'package-index.json',catalog)
+print('두 과정 공통 실습1·2 시작본과 가이드 연결')
