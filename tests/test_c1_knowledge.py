@@ -368,3 +368,20 @@ def test_incomplete_policy_is_dropped_with_a_warning_instead_of_failing_the_extr
     out = {p['id']: p for p in checked['procedures']}
     assert out['SOP-PM-11']['link'].get('maintenance_policy') and 'maintenance_policy' not in out['SOP-PM-12']['link']
     assert any('SOP-PM-12: maintenance_policy 정책 제외' in w for w in checked['warnings'])
+
+
+def test_purchase_policy_missing_while_source_states_cost_criteria_goes_back_for_correction(archive):
+    """2026-10-26: 같은 PR-07 세 번 중 두 번이 총비용 비교 정책을 빠뜨렸다 — 원문에 세 수치가 있으면 실행 구매 절차마다 정책을 요구한다."""
+    source, prop = load(archive, 'C')
+    purchase = [p for p in prop['procedures'] if p['id'].startswith('SOP-PUR')]
+    assert purchase, '시험 대역 C 에 구매 절차가 있어야 한다'
+    for p in purchase:                                                          # AI 가 낸 꼴: 실행 구매 link, 정책 없음
+        p['link'] = {'scope': 'purchase', 'kind': 'work_order', 'executable': True, 'parts': ['part:pump-seal-kit'],
+                     'actions': [{'action': 'action:purchase-request', 'value': None}], 'supplier_policy': 'oem'}
+    with pytest.raises(ValueError, match='구매 총비용 비교 기준'):
+        manual_extraction.check_purchase_policy(prop, source)
+    for p in purchase:
+        p['link']['purchase_comparison_policy'] = {'version': 1}                 # 넣기만 하면 통과(불완전하면 validate_proposal 이 빼고 경고)
+    manual_extraction.check_purchase_policy(prop, source)
+    a_source, a_prop = load(archive, 'A')                                       # 기준이 없는 문서는 요구하지 않는다
+    manual_extraction.check_purchase_policy(a_prop, a_source)

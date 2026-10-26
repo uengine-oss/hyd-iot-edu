@@ -267,6 +267,22 @@ def check_action_values(proposal, catalog):
                          ' (작업지시 · 일정 변경 값은 그 절차의 SOP ID, 원자 조치는 ontology_catalog.actions 의 id, 규칙 tests 의 input 은 그 결정표가 선언한 입력입니다)')
 
 
+def check_purchase_policy(proposal, source):
+    """원문에 구매 총비용 비교 기준(불량 1건 손실 · 전수 검사 불량률 기준 · 전수 검사 비용 — purchase_comparison.policy 가 인용에서 읽는 세 수치)이
+    모두 있는데 실행 구매 절차 link 에 정책이 없으면 교정 사유로 돌려준다. 2026-10-26: 같은 PR-07 세 번 중 두 번이 지시(2.8)에도 정책을 빠뜨려
+    C 판단이 쓸 수 없는 개정이 됐다. 넣었는데 불완전한 정책은 validate_proposal 이 빼고 경고로 남긴다(교정을 소진하지 않는다)."""
+    import re
+    pages = [p for p in (source or {}).get('pages') or [] if all(re.search(x, p.get('text') or '', re.S) for x in (
+        r'불량\s*1건\s*손실.*?[\d.]+\s*만\s*원', r'불량률이\s*[\d.]+\s*%', r'전수\s*검사\s*비용\s*[\d.]+\s*만\s*원'))]
+    if not pages:
+        return
+    missing = [p['id'] for p in proposal.get('procedures') or [] if isinstance(p.get('link'), dict) and p['link'].get('scope') == 'purchase'
+               and p['link'].get('executable') is True and not p['link'].get('purchase_comparison_policy')]
+    if missing:
+        raise ValueError(f"원문 {pages[0]['page']}쪽에 구매 총비용 비교 기준(불량 1건 손실 · 전수 검사 불량률 · 전수 검사 비용)이 있습니다 — "
+                         f"{', '.join(missing)} link 에 purchase_comparison_policy(세 수치와 그 문단 anchor)를 넣으세요")
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
@@ -274,6 +290,7 @@ def validate_result(form, inst, output):
         check_section_titles(proposal)
         if not variables.get('segment'):
             check_action_values(proposal, variables.get('ontology_catalog'))
+            check_purchase_policy(proposal, variables.get('manual_source'))
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)
