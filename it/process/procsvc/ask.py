@@ -224,6 +224,9 @@ def _event_value(event, direction, payload_loader):
                     value = json.loads(value)
                 except ValueError:
                     complete = False
+    envelope = _envelope(value)
+    if direction == 'output' and isinstance(envelope, dict) and envelope.get('truncated') is True:
+        complete = False
     return value, complete
 
 

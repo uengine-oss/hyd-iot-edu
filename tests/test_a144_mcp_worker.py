@@ -162,7 +162,10 @@ def test_pending_request_reads_only_a_well_formed_unanswered_db_record():
 # ---------------------------------------------------------------- worker: one ALLOWED_TOOLS default
 def test_allowed_tools_default_lives_in_settings_and_includes_the_python_script_tools(monkeypatch):
     monkeypatch.setenv("ALLOWED_TOOLS", "")
-    assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",") and "Bash(python *)" in Settings().allowed_tools
+    assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",") and "Write" in Settings().allowed_tools
+    from worker.settings import run_allowed_tools, run_disallowed_tools
+    assert not any(x.startswith(('Bash', 'PowerShell')) for x in run_allowed_tools(['Bash(python *)', 'PowerShell(python *)', 'Read'], []))
+    assert {'Bash', 'PowerShell'} <= set(run_disallowed_tools({}))
     monkeypatch.delenv("ALLOWED_TOOLS")
     assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",")
     monkeypatch.setenv("ALLOWED_TOOLS", "Read, Glob")

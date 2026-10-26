@@ -7,7 +7,8 @@ lz4==4.3.3
 zstandard==0.23.0
 psycopg[binary]==3.2.3
 neo4j==5.27.0
-pydantic==2.10.4
+pydantic==2.13.5                     # FastMCP adapter used by the portal's stdio connection check
+fastmcp==2.13.0.2
 pypdf==5.1.0
 sqlglot==27.24.2
 jsonschema==4.26.0

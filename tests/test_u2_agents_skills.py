@@ -136,7 +136,7 @@ def test_worker_runs_with_the_agents_profile_skill_model_and_servers(tmp_path):
     assert sorted(mcp["mcpServers"]) == ["enterprise", "fan-vib"]                 # only the agent's servers
     allowed = request.extra_args[request.extra_args.index("--allowedTools") + 1].split(",")
     assert "mcp__fan-vib__vibration_rms" in allowed and "mcp__fan-vib__*" not in allowed and "mcp__neo4j__write_neo4j_cypher" not in allowed
-    assert request.extra_args[request.extra_args.index("--disallowedTools") + 1] == "mcp__fan-vib__reset_sensor"    # B2: write tool denied
+    assert set(request.extra_args[request.extra_args.index("--disallowedTools") + 1].split(',')) == {"Bash", "PowerShell", "mcp__fan-vib__reset_sensor"}
     task = json.loads((ws.context_dir / "task.json").read_text(encoding="utf-8"))
     assert task["agent"]["skills"] == ["fan-vibration-check"] and task["agent"]["tools"] == ["enterprise", "fan-vib"]
     assert repo.get_workitem(row["id"])["status"] in ("SUBMITTED", "DONE")

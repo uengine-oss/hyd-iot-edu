@@ -523,8 +523,10 @@
     if (!v) return UI.card({title:'현재 지식 기준 검사', body:'기계 검사 결과가 없습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
     if (v.checked !== true || typeof v.technical_ready !== 'boolean' || v.needs_human_review !== true || v.can_commit !== false || !Array.isArray(v.issues)) return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText('검사 정보 읽기 실패','danger'), body:'기계 검사 응답 형식이 올바르지 않습니다. 검토 완료나 적재 승인으로 판단할 수 없습니다.'});
     const issues=v.issues;
+    const values=(v.source_value_warnings || []).filter(w => !(preview.warnings || []).includes(w));
     return UI.card({title:'현재 지식 기준 검사', chips:UI.chipText(v.technical_ready === true ? '기계 검사 통과' : '수정할 항목 있음',v.technical_ready === true ? 'neutral' : 'warning'),
       body:`<p>원문 보관을 위한 연결 구조 검사입니다. 사람 검토는 별도로 필요합니다. 이 검사는 검토 완료나 적재 승인이 아닙니다. 실제 견적 · 재고 · 카운터 · 인력은 실행 판단 시 확인합니다. 받은 제안 기준이며, 편집한 연결은 적재할 때 다시 검사합니다.</p>` +
+        (values.length ? UI.fold(`원문 수치 확인 필요 ${values.length}개`, `<ul>${values.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`, {cls:'small', open:true}) : '') +
         (issues.length ? `<ul>${issues.map(x=>`<li>${esc(manualIssueMessage(x,preview,catalog))}${UI.fold('검사 항목 원문',`<pre>${esc(JSON.stringify(x,null,2))}</pre>`,{cls:'small'})}</li>`).join('')}</ul>` : '<p class="muted">현재 지식에서 기계가 찾은 수정 항목은 없습니다.</p>')});
   }
   function manualExecutionHtml(v, preview, catalog) {

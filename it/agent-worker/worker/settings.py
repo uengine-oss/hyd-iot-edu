@@ -16,11 +16,13 @@ log = logging.getLogger("worker.settings")
 #: The orchestration value this worker polls (todolist.agent_orch). One value for every CLI (the product's AGENT_TYPE).
 AGENT_TYPE = "cliagents"
 _PERMISSION_BY_NAME = {p.value: p for p in Permission}
-#: Claude Code --allowedTools for a headless run: the read-only MCP tools the task needs plus `python <file>` for the A077
-#: citation-offset script (file writes stay under the workspace permission mode). Single source of truth (see allowed_tools).
+#: Business agents read/calculate through checked MCP tools and write their result with native workspace editing tools.
+#: A Python shell can bypass every MCP read-only check by issuing HTTP/SQL itself; it is never pre-approved.
 DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cypher,mcp__enterprise__*,mcp__hyd-dmn__*,"
                          "mcp__enterprise-maint__*,mcp__enterprise-purchase__*,Read,Glob,Grep,"
-                         "Bash(python *),Bash(python3 *),PowerShell(python *),Skill")   # U2: Skill = the assigned .claude/skills/<name>/SKILL.md
+                         "Write,Edit,Skill")   # U2: Skill = the assigned .claude/skills/<name>/SKILL.md
+
+BLOCKED_SHELL_TOOLS = ('Bash', 'PowerShell')
 
 
 def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[str, list[str]] | None = None) -> list[str]:
@@ -28,7 +30,7 @@ def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[s
     read-only tools its connection check stamped (bridge.gate_servers) — never `mcp__<server>__*`, which would also pre-approve
     its write tools. Without a stamp it adds nothing (gate_servers already left such a server out of the run). Servers the
     default list already names keep their narrower entries (neo4j: read tools only)."""
-    out = list(allowed)
+    out = [a for a in allowed if a.split('(', 1)[0] not in BLOCKED_SHELL_TOOLS]
     for name in servers:
         if not any(a.startswith(f"mcp__{name}__") for a in out):
             out += [f"mcp__{name}__{tool}" for tool in (read_tools or {}).get(name, [])]
@@ -38,7 +40,7 @@ def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[s
 def run_disallowed_tools(blocked_tools: dict[str, list[str]] | None) -> list[str]:
     """B2: the tools a gated server's check found not read-only (write · unmarked) are denied outright (Claude Code
     --disallowedTools), so the agent cannot even ask for them."""
-    return [f"mcp__{name}__{tool}" for name, tools in sorted((blocked_tools or {}).items()) for tool in tools]
+    return [*BLOCKED_SHELL_TOOLS, *[f"mcp__{name}__{tool}" for name, tools in sorted((blocked_tools or {}).items()) for tool in tools]]
 
 
 def effective_permission(provider_id: str, permission: Permission) -> Permission:

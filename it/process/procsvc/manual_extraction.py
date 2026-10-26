@@ -102,7 +102,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
 입력에 segment가 있으면 이 작업은 긴 문서의 한 구간(index/total)만 담당합니다. manual_source.pages에는 담당 구간의 원문만 들어 있고
 좌표는 그 text 기준입니다(서버가 전체 문서 좌표로 되돌립니다). 구간 밖 내용을 추측하거나 다른 구간의 절·SOP를 만들지 마세요.
 구간 경계에서 잘린 절차는 보이는 범위까지만 적고 warnings에 잘렸다고 쓰세요. review_feedback의 항목이 이 구간에 없으면 무시하세요(다른 구간이 처리합니다).
-최종 결과 {"proposal": 위 객체}는 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰세요(파이썬 스크립트에서 json.dump로 쓰는 방식을 권장, 폴더가 없으면 만드세요).
+최종 결과 {"proposal": 위 객체}는 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰세요. 기본 Write 도구를 사용하세요. Bash·PowerShell·Python 실행은 승인 전 업무 시스템 쓰기를 막기 위해 허용하지 않습니다. 인용 좌표는 서버가 원문에서 찾으므로 정확한 quote와 page를 주면 됩니다.
 마지막 메시지에는 결과 JSON을 넣지 말고 "결과 파일 작성 완료: 절 n, 절차 m" 한 줄만 적으세요. 파일이 있으면 서버는 파일을 결과로 읽습니다.'''
 
 
@@ -482,6 +482,7 @@ def _preview(source, proposal, previous_batch, extraction):
     # Preserve only reviewed contract fields: output cannot set reviewed/by,
     # graph head, batch identity or import another task's claimed provenance.
     preview={k:proposal[k] for k in ('sections','procedures','page_reviews','warnings')}
+    preview['warnings'] = list(dict.fromkeys([*preview['warnings'], *manual_knowledge.source_value_warnings(proposal)]))
     if proposal.get('knowledge') is not None:preview['knowledge']=proposal['knowledge']     # C1: reviewed on the same screen
     missing=source.get('text_missing_pages') or []
     if missing:      # P13: the reviewer sees which pages had no text — first among the warnings and on those pages' notes

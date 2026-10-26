@@ -207,9 +207,10 @@ class Runner:
                 extra_args += ["-c", "model_provider=hydllm", "-c", "model_providers.hydllm={" + table + "}"]
                 if not agent.model and self.s.codex_model:
                     model = self.s.codex_model
-        if provider_id == "claude-code" and self.s.allowed_tools:
+        if provider_id == "claude-code":
             servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-            extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
+            if self.s.allowed_tools:
+                extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
@@ -221,30 +222,32 @@ class Runner:
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
                                                        redaction_values=bridged.redaction_values, deadline=deadline)
-        assessment = task_deferral.control(final_text)
-        if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
-            file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
-            assessment = task_deferral.control(file_text) if file_text is not None else None
-        if assessment is not None:
-            task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
-                                request_id=job_id,assessment=assessment,session_id=session_id or None)
-            hitl.clear(ws.path)
-            return
-        question = hitl.business_question(final_text)
-        if question is not None:
-            self._pause(row, ws, provider_id, session_id or "", question['question'], job_id,
-                        options=question['options'])
-            return
-        if paused is not None and not final_text:
-            self._pause(row, ws, provider_id, session_id or "", paused, job_id)
-            return
-        if paused is not None:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
-        interpret = lambda text: outcome.interpret(text, ctx.form_fields, versioned='forms' in (ctx.definition or {}),   # noqa: E731
-                                                   result_file=ws.result_file, max_file_bytes=self.s.max_result_file_bytes)
-        result = interpret(final_text)
         corrections = 0
-        while not result.contract_met and session_id and corrections < self.s.max_format_corrections:
+        while True:
+            try:
+                assessment = task_deferral.control(final_text)
+                if assessment is None:
+                    file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
+                    assessment = task_deferral.control(file_text) if file_text is not None else None
+                question = hitl.business_question(final_text) if assessment is None else None
+                result = outcome.interpret(final_text, ctx.form_fields, versioned='forms' in (ctx.definition or {}),
+                                           result_file=ws.result_file, max_file_bytes=self.s.max_result_file_bytes)
+            except ValueError as exc:
+                assessment = question = None
+                result = outcome.Outcome(raw_text=final_text, contract_met=False, mismatch_reason=str(exc))
+            if assessment is not None:
+                task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
+                                    request_id=job_id,assessment=assessment,session_id=session_id or None)
+                hitl.clear(ws.path)
+                return
+            if question is not None:
+                self._pause(row, ws, provider_id, session_id or "", question['question'], job_id, options=question['options'])
+                return
+            if paused is not None and not result.contract_met:
+                self._pause(row, ws, provider_id, session_id or "", paused, job_id)
+                return
+            if result.contract_met or not session_id or corrections >= self.s.max_format_corrections:
+                break
             corrections += 1
             self._event(row, job_id, "task_working", {"type": "notice", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
             correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
@@ -252,12 +255,13 @@ class Runner:
                 correction += '\n\n' + skill_text
             request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
                               resume_session=session_id)
-            final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
+            final_text, resumed, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
                                                   skills=provided, redaction_values=bridged.redaction_values, deadline=deadline)
             session_id = resumed or session_id
-            result = interpret(final_text)
         if not result.contract_met:
             raise RunFailed(f"결과가 요구된 출력 형식과 맞지 않습니다: {result.mismatch_reason}\n\n에이전트 응답:\n{result.raw_text[:1000]}")
+        if paused is not None:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
         payload = dict(result.payload)
         if session_id:
             payload["cliagents_session_id"] = session_id          # the next task of the instance, or a human's answer, resumes it
@@ -275,6 +279,7 @@ class Runner:
                 deadline: float | None = None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
+        persisted_session = request.resume_session
         last_check = time.monotonic()
         if deadline is None:
             deadline = last_check + self.s.run_timeout_s
@@ -350,6 +355,19 @@ class Runner:
                     trace.flush()
                 if ev.session_id:
                     session_id = ev.session_id
+                    if session_id != persisted_session:
+                        draft = dict(row.get('draft') or {}) if isinstance(row.get('draft'), dict) else {}
+                        draft['cliagents_session_id'] = session_id
+                        try:
+                            saved = self.repo.save_task_result(row['id'], draft, final=False, expected_consumer=row['consumer'])
+                        except Exception as exc:
+                            db_failed('실행 세션 보관', exc)
+                        else:
+                            if not saved:
+                                raise Cancelled()
+                            row['draft'] = draft
+                            persisted_session = session_id
+                pause_reason = pause_reason or hitl.permission_refusal(ev)
                 if ev.kind is ExecEventKind.RESULT:
                     if ev.is_error:
                         raise RunFailed(ev.text or "agent reported failure")

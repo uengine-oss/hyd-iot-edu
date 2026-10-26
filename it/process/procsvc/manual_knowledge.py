@@ -229,6 +229,36 @@ def validate(knowledge, *, sections, sops, anchor):
     return out
 
 
+def source_value_warnings(proposal):
+    """Literal numeric discrepancies need review; units/derived values cannot be proven by substring matching."""
+    from decimal import Decimal
+    warnings = []
+    def check(owner, field, value, quotes):
+        if type(value) not in (int, float):
+            return
+        found = {Decimal(n.replace(',', '')) for n in re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', '\n'.join(quotes))}
+        if Decimal(str(value)) not in found:
+            warnings.append(f'{owner} · {field}={value}: 해당 인용에서 같은 수치를 찾지 못했습니다. 원문의 값·단위 환산·계산 근거를 확인하세요')
+    def quote(anchor):
+        return (anchor or {}).get('quote') or ''
+    overrides = proposal.get('links') or {}
+    for p in proposal.get('procedures') or []:
+        link = overrides.get(p['id'], p.get('link', p)) or {}
+        quotes = [quote(p.get('anchor')), *[quote(s.get('anchor')) for s in p.get('steps') or []]]
+        for a in link.get('actions') or []:
+            check(p['id'], a.get('action', 'action') + '.value', a.get('value'), quotes)
+        policy = link.get('maintenance_policy') or {}
+        for key in ('interval_h', 'tolerance_pct'):
+            check(p['id'], 'maintenance_policy.' + key, policy.get(key), [quote(policy.get('anchor'))])
+    knowledge = proposal.get('knowledge') or {}
+    for evidence in knowledge.get('evidence') or []:
+        check(evidence['id'], 'threshold', evidence.get('threshold'), [quote(evidence.get('anchor'))])
+    for rule in knowledge.get('rules') or []:
+        for test in rule.get('tests') or []:
+            check(rule['id'], (test.get('input') or test.get('variable') or 'test') + '.value', test.get('value'), [quote(rule.get('anchor'))])
+    return list(dict.fromkeys(warnings))
+
+
 def _fm(item, base, sops):
     return dict(base, name=_text(item.get('name'), f"{base['id']} 이름", 120),
                 component=_ref(item.get('component'), 'comp', f"{base['id']} 구성 요소"),

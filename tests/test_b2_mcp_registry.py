@@ -309,7 +309,7 @@ def test_registering_a_server_does_not_change_the_default_agents_run(tmp_path, a
     after_req, after_ws, _ = _worker_run(tmp_path / "b", repo2)
     after = (sorted(json.loads((after_ws.path / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]), _flags(after_req, "--allowedTools"),
              _flags(after_req, "--disallowedTools"), agent_settings(repo2, "hyd", "sys:agent").tools)
-    assert before == after and before[0] == ["enterprise", "hyd-dmn", "neo4j"] and before[2] is None
+    assert before == after and before[0] == ["enterprise", "hyd-dmn", "neo4j"] and before[2] == ['Bash', 'PowerShell']
 
 
 def test_worker_runs_a_checked_student_server_with_read_tools_only(tmp_path):
@@ -327,7 +327,7 @@ def test_worker_runs_a_checked_student_server_with_read_tools_only(tmp_path):
     assert sorted(mcp) == ["enterprise", "my-fake"] and "hyd" not in mcp["my-fake"]                    # 표시는 실행 설정에 섞이지 않는다
     allowed, denied = _flags(request, "--allowedTools"), _flags(request, "--disallowedTools")
     assert [a for a in allowed if a.startswith("mcp__my-fake__")] == [f"mcp__my-fake__{t}" for t in READ]
-    assert "mcp__my-fake__*" not in allowed and denied == [f"mcp__my-fake__{t}" for t in BLOCKED]
+    assert "mcp__my-fake__*" not in allowed and denied == ['Bash', 'PowerShell', *[f"mcp__my-fake__{t}" for t in BLOCKED]]
     notices = [str(e["data"].get("content")) for e in repo.list_events(proc_inst_id=row["proc_inst_id"]) if (e.get("data") or {}).get("type") == "notice"]
     gate_note = next(n for n in notices if "연결 검사 게이트" in n)
     assert "not-checked(연결 검사를 통과하지 않은 서버)" in gate_note and "changed(검사한 뒤 설정이 바뀐 서버" in gate_note

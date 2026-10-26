@@ -350,7 +350,8 @@ def shape_result(result: dict, max_chars: int = MAX_RESULT_CHARS) -> dict:
 # ---------------------------------------------------------------- stdio
 class _Stdio:
     def __init__(self, spec: dict):
-        self.command = spec["command"]
+        from hydcommon.neo4j_mcp import local_launch
+        self.command, args = local_launch(spec['command'], list(spec.get('args') or []))
         exe = shutil.which(self.command)
         if exe is None:
             raise CheckError("exec", f"'{self.command}' 명령을 이 서비스(process 컨테이너)에서 찾을 수 없습니다. 명령형(stdio) 서버는 "
@@ -358,7 +359,7 @@ class _Stdio:
         env = dict(os.environ)
         env.update(spec.get("env") or {})
         try:
-            self.proc = subprocess.Popen([exe, *spec.get("args", [])], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            self.proc = subprocess.Popen([exe, *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, env=env, cwd=spec.get("cwd") or None)
         except OSError as e:
             raise CheckError("exec", f"'{self.command}' 를 실행하지 못했습니다: {e.strerror or e}")

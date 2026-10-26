@@ -222,9 +222,11 @@ def servers_of(tenant_mcp: dict | None, *, extra_env: dict[str, str] | None = No
         if not isinstance(spec, dict):
             continue
         if spec.get("command"):
+            from hydcommon.neo4j_mcp import local_launch
+            command, args = local_launch(str(spec['command']), list(spec.get('args') or []))
             env = {k: _rewrite(str(v), rw) for k, v in (spec.get("env") or {}).items()}
             env.update(extra_env or {})
-            stdio.append(McpServer(name=str(name), command=str(spec["command"]), args=[_rewrite(str(a), rw) for a in (spec.get("args") or [])], env=env))
+            stdio.append(McpServer(name=str(name), command=command, args=[_rewrite(str(a), rw) for a in args], env=env))
         elif spec.get("url"):
             http[str(name)] = _rewrite(str(spec["url"]), rw)
     return stdio, http

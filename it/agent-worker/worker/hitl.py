@@ -15,6 +15,18 @@ from pathlib import Path
 _STATE_FILENAME = ".processgpt-pending.json"
 
 
+def permission_refusal(event) -> str | None:
+    """ProcessGPT CLI agent core/hitl.py: recognise tool-level approval refusals too."""
+    from cliagents import ExecEventKind
+    if event.kind is ExecEventKind.PERMISSION_REQUEST:
+        return event.text or '권한이 필요합니다'
+    if event.kind is ExecEventKind.TOOL_END and event.is_error:
+        text = event.text or ''
+        if 'requires approval' in text.lower():
+            return text
+    return None
+
+
 def business_question(text: str) -> dict | None:
     """Explicit business input request, separate from CLI permission escalation."""
     from procsvc.task_deferral import unfence

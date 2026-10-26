@@ -185,6 +185,7 @@ def validate(proposal, catalog):
                                   evaluation_mode='structural', execution_checked=False,
                                   source_notice='구매 지식의 구조 검사 결과입니다. 실제 견적·재고·공급사 조건과 실행 시점의 업무 사실은 확인하지 않았습니다. 승인 전에 실제 조건을 다시 검사해야 합니다.'))
     result = dict(checked=True, technical_ready=not issues, needs_human_review=True, can_commit=False, issues=issues)
+    result['source_value_warnings'] = manual_knowledge.source_value_warnings(original)
     if execution:
         result.update(execution=execution, executable_ready=any(e['ready'] for e in execution))
     return result
