@@ -22,10 +22,12 @@ def _detail(exc):
     return str(detail) if detail else None
 
 
-def check(decision, option, role):
+def check(decision, option, role, consented_at=None):
+    """consented_at: 사람이 승인한 시각(ISO). 있으면 검토한 예측의 나이를 그 시각으로 잰다(승인 뒤 전달까지 걸린 몇 초로 거부하지 않는다)."""
+    body = dict(decision=decision, option=option, role=role, **({'consented_at': consented_at} if consented_at else {}))
     request = urllib.request.Request(
         os.getenv('AGENT_URL', 'http://agent:8091') + '/api/agent/approval-check',
-        data=json.dumps(dict(decision=decision, option=option, role=role), ensure_ascii=False).encode(),
+        data=json.dumps(body, ensure_ascii=False).encode(),
         headers={'Content-Type': 'application/json'}, method='POST')
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
@@ -46,8 +48,8 @@ def check(decision, option, role):
     return report
 
 
-def require(checker, decision, option, role):
-    report = checker(decision, option, role)
+def require(checker, decision, option, role, consented_at=None):
+    report = checker(decision, option, role, consented_at) if consented_at else checker(decision, option, role)
     if isinstance(report, dict) and report.get('allowed') is False:
         raise ApprovalReviewRequired(report)
     if not isinstance(report, dict) or report.get('allowed') is not True:

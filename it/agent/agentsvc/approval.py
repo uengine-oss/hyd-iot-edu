@@ -128,7 +128,7 @@ def preview(kg, tsdb, decision, option_id, parameters):
     return result
 
 
-def assess(kg, tsdb, decision, option_id, role):
+def assess(kg, tsdb, decision, option_id, role, consented_at=None):
     """Reread policy and sources. No supplied fact overrides are trusted."""
     old = next((o for o in decision.get('options', []) if o.get('id') == option_id), None)
     if old is None:
@@ -170,7 +170,7 @@ def assess(kg, tsdb, decision, option_id, role):
     if current:
         reasons.extend(guardrail.check_cards({'options':[current],'recommended':option_id}))
         if forecasting.requires_plant_consent(old.get('actions')) or forecasting.requires_plant_consent(current.get('actions')):
-            reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext')))
+            reasons.extend(forecasting.consent_changes(old.get('forecastContext'), current.get('forecastContext'), consented_at=consented_at))
         # The chosen action, work content and consent context must remain what the
         # human saw. Continuous sensor changes matter through reevaluated rules.
         for key in ('sopId', 'kind', 'actions', 'approver', 'steps', 'warnings', 'penalties', 'forecast', 'policy_sha256', 'reviewed_choice', 'rankingEvidence', 'supplier_policy', 'resolvedSupplier', 'maintenancePlan', 'economicComparison'):

@@ -138,7 +138,7 @@ class DecisionDelivery:
             machine._validate_actions(inc, payload['commands'])
         option = next(o for o in snapshot['options'] if o['id'] == payload['option'])
         require_reviewed_commands(option, payload.get('commands') or [])
-        report = current_approval.require(self.ctx.check_approval, snapshot, payload['option'], payload['role'])
+        report = current_approval.require(self.ctx.check_approval, snapshot, payload['option'], payload['role'], consented_at=payload.get('consented_at'))
         payload['current_check'] = report
 
     def deliver(self, row):

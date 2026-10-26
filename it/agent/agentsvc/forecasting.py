@@ -143,7 +143,7 @@ def candidates(kg, asset, skills):
     return forecasts, contexts
 
 
-def consent_changes(old, current, time_scale=None):
+def consent_changes(old, current, time_scale=None, consented_at=None):
     """Ignore clock drift, not model/input/action changes or worsening safety.
 
     Budgets are conservative teaching review policy, not model accuracy claims.
@@ -153,10 +153,18 @@ def consent_changes(old, current, time_scale=None):
     if not old or not current or old.get('error') or current.get('error'):
         return ['검토한 현재 모델 예측이 없거나 예측을 확인할 수 없습니다']
     reasons = []
-    elapsed = _elapsed_sim_s(old, current, stack_time_scale() if time_scale is None else float(time_scale))
+    scale = stack_time_scale() if time_scale is None else float(time_scale)
+    elapsed = _elapsed_sim_s(old, current, scale)
+    age = elapsed
+    if consented_at and elapsed is not None:
+        # 예측 나이는 사람이 동의한 시각까지만 잰다 — 승인 뒤 전달까지의 몇 초가 승인을 뒤집지 않는다(지금보다 늦은 동의 시각은 지금으로).
+        # 아래 악화 허용폭은 전달 시각까지의 경과(elapsed)로 그대로 잰다
+        at_consent = _elapsed_sim_s(old, {'source_t': consented_at}, scale)
+        if at_consent is not None:
+            age = min(elapsed, at_consent)
     max_age = REVIEW_POLICY['max_review_age_sim_s']
-    if elapsed is not None and elapsed > max_age:
-        reasons.append(f'검토한 예측이 시뮬레이션 {elapsed / 60:.0f}분 전 상태입니다: 새 카드 검토가 필요합니다')
+    if age is not None and age > max_age:
+        reasons.append(f'검토한 예측이 시뮬레이션 {age / 60:.0f}분 전 상태입니다: 새 카드 검토가 필요합니다')
     minutes = min(elapsed or 0.0, max_age) / 60
     for key in ('model_id', 'model_revision', 'scope', 'binding', 'horizon_s', 'parameters',
                 'actions', 'assumptions', 'review_policy'):

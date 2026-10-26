@@ -312,3 +312,16 @@ def test_approval_http_reports_failure_then_authorized_recovery(world, monkeypat
     response = client.post(url, json={'by':'manager','role':'role:prod-mgr'})
     assert response.status_code==200 and response.json()['status']=='DELIVERED' and inc.cmd_id
     assert client.post(url, json={'by':'manager','role':'role:prod-mgr'}).status_code==409
+
+
+def test_delivery_rechecks_conditions_with_the_consent_time_recorded_at_approval(world):
+    """2026-10-26 수업 한 바퀴(final5): 승인 검사(시뮬레이션 30분 안)는 통과했는데 전달이 같은 예측 나이 검사를 지금 시각으로 다시 해 31분 —
+    냉각 명령이 멈췄다. 승인 때 동의 시각을 기록하고, 전달 검사도 그 시각을 넘긴다(입력 · 인터록 · 규칙은 전달 때 다시 본다)."""
+    rt, inst, inc, d, wi = ready(world)
+    seen = []
+    world['ctx'].check_approval = lambda *args: (seen.append(args), {'allowed': True, 'decision': args[0]['id'], 'option': args[1]})[1]
+    choose(rt, d, wi)
+    approval = rt.repo.get_approval(wi['id'], rt.tenant_id)
+    consented = approval['payload']['consented_at']
+    assert consented == engine.now_iso(NOW)
+    assert seen and all(len(a) == 4 and a[3] == consented for a in seen)          # 승인 검사 · 전달 검사 모두 같은 동의 시각

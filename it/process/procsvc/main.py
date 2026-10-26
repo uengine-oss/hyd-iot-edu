@@ -468,8 +468,8 @@ def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> d
     return cmd
 
 
-def _check_current_approval(d, option, role):
-    report = current_approval.check(d, option, role)
+def _check_current_approval(d, option, role, consented_at=None):
+    report = current_approval.check(d, option, role, *([consented_at] if consented_at else []))
     _audit(d.get('asset') or '-', 'process', 'APPROVAL_CURRENT_CHECK', report,
            incident=(d.get('origin') or {}).get('incident'))
     return current_approval.require(lambda *_: report, d, option, role)

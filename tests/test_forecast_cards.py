@@ -112,6 +112,20 @@ def test_stale_review_requires_a_new_card_even_when_values_hold(monkeypatch):
     assert forecasting.consent_changes(old, _later(old, 120, ts1=0.0), time_scale=1) == []
 
 
+def test_review_age_is_measured_at_the_human_consent_not_at_delivery(monkeypatch):
+    """2026-10-26 수업 한 바퀴(final5): 승인 검사는 시뮬레이션 30분 안이라 통과했는데, 바로 뒤 전달이 같은 검사를 지금 시각으로 다시 해
+    31분이 되어 냉각 명령이 멈췄다. 동의 시각(consented_at)이 있으면 나이는 그 시각까지 — 동의가 이미 늦었으면 여전히 거부한다."""
+    result, _ = evaluate(monkeypatch, thermal.UnitState(cooler_health=.43, ts1=56))
+    old = result['options'][0]['forecastContext']
+    delivered = _later(old, 93, ts1=0.0)                                        # 전달 시각: 93초 = 시뮬레이션 31분
+    assert forecasting.consent_changes(old, delivered, time_scale=20)          # 동의 시각 없음 → 전달 시각으로 재 거부(지난 동작)
+    on_time = _later(old, 88, ts1=0.0)['source_t']                             # 동의: 88초 = 29분
+    assert forecasting.consent_changes(old, delivered, time_scale=20, consented_at=on_time) == []
+    too_late = _later(old, 92, ts1=0.0)['source_t']                            # 동의도 30분을 넘김 → 거부
+    assert '30분 전' in forecasting.consent_changes(old, delivered, time_scale=20, consented_at=too_late)[0] or \
+           '31분 전' in forecasting.consent_changes(old, delivered, time_scale=20, consented_at=too_late)[0]
+
+
 def test_time_scale_comes_from_the_running_stack_then_the_environment(monkeypatch):
     seen = []
     monkeypatch.setattr(decide, '_get_json', lambda url: (seen.append(url), {'time_scale': 20.0})[1])

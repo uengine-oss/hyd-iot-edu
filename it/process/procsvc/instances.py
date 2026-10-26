@@ -719,7 +719,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             purchase = effect_parts.purchase_quote(opt, values, self._purchase_quotes(values))
         payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'by_name':by_name, 'role':role,
                    'reason':reason, 'commands':commands, 'asset':values.get('asset'), 'incident':values.get('incident'),
-                   'deferred':deferred, 'purchase':purchase}
+                   'deferred':deferred, 'purchase':purchase,
+                   # 2026-10-26 수업 한 바퀴(final5): 승인 검사는 통과했는데 바로 뒤 전달이 같은 예측 나이 검사를 지금 시각으로 다시 해 30분을 넘겨
+                   # 냉각 명령이 멈췄다 — 예측 나이는 사람이 동의한 시각으로 잰다(입력 · 인터록 · 규칙은 전달 때 다시 본다)
+                   'consented_at':engine.now_iso(now)}
         self.hooks.validate_approval(payload)
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         kind = "control" if any(a.get("kind") == "command" for a in opt.get("actions") or []) else "work_order"
