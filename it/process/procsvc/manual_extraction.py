@@ -148,7 +148,7 @@ def validate_proposal(source, proposal, *, segment=False):
         if not isinstance(value, str) or not value.strip():raise ValueError(name+' 문자열이 필요합니다')
     if not isinstance(source, dict) or source.get('status') != 'READY':raise ValueError('검토 가능한 원문이 필요합니다')
     if not isinstance(proposal, dict) or proposal.get('source_id') != source['source_id']:
-        raise ValueError('추출 제안의 원문 판본이 다릅니다')
+        raise ValueError(f"추출 제안의 원문 판본이 다릅니다 — proposal.source_id는 입력 manual_source.source_id인 {source['source_id']}를 그대로 써야 합니다")
     unknown = sorted(set(proposal) - set(PROPOSAL_KEYS))
     if unknown:        # 2026-10-23 리허설: 맨 위 rules 가 거부도 없이 미리보기에서 사라졌다(규칙 4개)
         raise ValueError(f"proposal에 정해지지 않은 칸이 있습니다: {', '.join(unknown)} — 맨 위 칸은 {', '.join(PROPOSAL_KEYS)}입니다. "
@@ -159,7 +159,7 @@ def validate_proposal(source, proposal, *, segment=False):
         # when they are right; otherwise the located span (page, start, end, source's own quote) is written back in place
         # so the stored proposal is coordinate-complete for the reviewer, coverage and the graph.
         if not isinstance(value, dict) or value.get('source_id') != source['source_id']:
-            raise ValueError('원문 판본의 인용이 필요합니다')
+            raise ValueError(f"원문 판본의 인용이 필요합니다 — 각 anchor.source_id는 입력 manual_source.source_id인 {source['source_id']}를 그대로 써야 합니다. 절·절차·단계·지식·정책의 인용을 확인하세요")
         located = manual_locate.locate(pages, value, within=within)
         value.update({k: located[k] for k in ('page','start','end','quote')})
         if located.get('located'):
