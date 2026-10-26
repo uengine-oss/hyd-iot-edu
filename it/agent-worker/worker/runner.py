@@ -253,6 +253,8 @@ class Runner:
         if not remote_agent:
             managed = managed_model.attach(row, self.s.tenant_id, provider_id)
         if managed:
+            from .managed_isolation import cli_args
+            extra_args += cli_args()
             model = managed['model']
             bridged.env = dict(bridged.env or {}, **managed['env'])
             bridged.redaction_values.extend(managed['secrets'])

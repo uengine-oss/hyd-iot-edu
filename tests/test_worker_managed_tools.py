@@ -84,6 +84,10 @@ def test_worker_replaces_teacher_mcp_before_cli_and_never_uses_teacher_credentia
     context=(root/'context/input.json').read_text(encoding='utf8')
     assert 'instructor-only' not in context and 'HydModel' not in context
     assert request.model=='class-model'
+    args=request.extra_args
+    assert json.loads(args[args.index('--settings')+1]) == {'disableAllHooks':True}
+    assert set(args[args.index('--tools')+1].split(',')) == {'Read','Glob','Grep','Write','Edit','Skill'}
+    assert '--strict-mcp-config' in args
 
 
 def test_missing_managed_permission_cannot_fall_back_to_local_model(rt,tmp_path,monkeypatch):

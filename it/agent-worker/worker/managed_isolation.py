@@ -5,6 +5,7 @@ to other users. Tool permissions and prompts are not the filesystem boundary.
 Unsupported kernels/tools fail closed; the ordinary local worker is unchanged.
 """
 import hashlib
+import json
 import os
 from pathlib import Path
 import stat
@@ -14,6 +15,13 @@ import sys
 UID = 65534
 READ = 'read-file,read-dir,execute'
 WRITE = READ + ',write-file,remove-dir,remove-file,make-dir,make-reg,make-sock,make-fifo,truncate'
+
+
+def cli_args():
+    # CLI flags override writable project/local settings. Skill discovery stays
+    # enabled; only hooks and unrelated native execution/network tools go away.
+    return ['--settings', json.dumps({'disableAllHooks': True}), '--tools',
+            'Read,Glob,Grep,Write,Edit,Skill']
 
 
 def enabled():
