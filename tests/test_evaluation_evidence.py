@@ -101,3 +101,30 @@ def test_large_summary_is_rejected_instead_of_unbounded_agent_output():
     rec['facts'] = {'large': '큰 값' * 10000}
     with pytest.raises(ValueError, match='응답 한도'):
         tools._evaluation_view(rec)
+
+
+def test_pm_source_rows_do_not_overflow_list_and_are_losslessly_available():
+    tools = DmnTools(kg=FakeKG(), tsdb=FakeTSDB())
+    rec = record()
+    rec['facts'] = {'hours_at_next_window': 1951, 'pm_context': {
+        'records': [{'asset': 'HYD-'+str(i), 'note': '원천 점검 기록'*200} for i in range(20)],
+        'parts': [{'part_no':'P-SEAL', 'on_hand':3, 'reserved':2}]}}
+    plan = {'scope':'single', 'parts_totals':[{'part_no':'P-SEAL','qty':1,'available':1}],
+            'staffing':{'confirmed':False}}
+    rec['result']['options'][0]['maintenancePlan'] = plan
+    rec['result']['options'][0]['facts'] = {'target_hours':1951}
+    expected = json.dumps(rec['facts'], ensure_ascii=False)
+    view = tools._evaluation_view(rec)
+    assert len(json.dumps(view, ensure_ascii=False)) < 20000
+    assert view['facts']['hours_at_next_window'] == 1951
+    assert 'pm_context' not in view['facts']
+    assert view['facts_omitted'] == ['pm_context'] and 'option=null' in view['facts_detail']
+    assert view['options'][0]['maintenancePlan'] == plan
+    rec['facts']['pm_context']['parts'].clear()
+    chunks, offset = [], 0
+    while offset is not None:
+        page=tools.read_evaluation_evidence(view['evidence_ref'],None,'facts',offset)
+        chunks.append(page['content']); offset=page['next_offset']
+    assert ''.join(chunks) == expected
+    assert json.loads(tools.read_evaluation_evidence(view['evidence_ref'],'SOP-A','facts')['content']) == {'target_hours':1951}
+    assert tools.kg.calls == []

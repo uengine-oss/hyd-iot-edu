@@ -123,7 +123,7 @@ def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: F
 
 @mcp.tool(annotations=READ)
 def read_evaluation_evidence(evidence_ref: Annotated[str, Field(description='평가 응답의 evidence_ref. 평가 ID로 대체할 수 없음')],
-                             field: Annotated[str, Field(description='rankingEvidence, tradeoffEvaluation, steps, forecastContext, facts, precedent, selectedBy 또는 provenance')],
+                             field: Annotated[str, Field(description='rankingEvidence, tradeoffEvaluation, steps, forecastContext, facts, precedent, selectedBy 또는 provenance. facts는 option=null이면 전체 평가 원천 사실, 카드 지정이면 해당 카드 사실')],
                              option: Annotated[str | None, Field(description='같은 평가의 카드 id 또는 SOP ID. provenance는 생략 가능')] = None,
                              offset: Annotated[int, Field(ge=0, description='처음은 0, 이어 읽기는 직전 next_offset')] = 0) -> dict:
     """같은 평가 시점의 전체 근거를 JSON 문자열 조각으로 읽는다. next_offset이 null일 때 끝이며 조각을 순서대로 합치면 원래 JSON이다.

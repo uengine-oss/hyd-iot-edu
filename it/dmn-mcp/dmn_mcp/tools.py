@@ -136,6 +136,11 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
     provenance = rec.get('provenance') or []
     source_errors = [{k: row.get(k) for k in ('variable', 'source', 'error', 'how') if row.get(k) is not None}
                      for row in provenance if isinstance(row, dict) and row.get('error')]
+    facts = dict(rec.get('facts') or {})
+    facts_omitted = ['pm_context'] if 'pm_context' in facts else []
+    # Full all-asset CMMS/all-part ERP rows repeat the selected plans below.
+    # Keep comparison facts and plans; raw rows remain in the frozen evidence.
+    facts.pop('pm_context', None)
     options = []
     for o in r.get('options') or []:
         options.append({k: v for k, v in {
@@ -155,7 +160,9 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
         'id': rec.get('id'), 'status': rec.get('status'), 'asset': rec.get('asset'), 'scenario': rec.get('scenario'),
         'part': (rec.get('origin') or {}).get('part'),
         'recommended': rec.get('recommended'), 'explanation': rec.get('explanation') or r.get('explanation'),
-        'facts': rec.get('facts'), 'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
+        'facts': facts, 'facts_omitted': facts_omitted,
+        'facts_detail': '전체 평가 사실(전체 설비/부품 원천 행 포함)은 read_evaluation_evidence에서 field=facts, option=null로 이어 읽습니다.' if facts_omitted else None,
+        'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
         'options': options, 'error': rec.get('error'), 'source_errors': source_errors,
         'provenance': _capped(provenance) if detail_option else None,
         'omitted': f"카드마다 {', '.join(DETAIL_FIELDS)} 와 provenance 는 뺐습니다. 한 카드의 전체 근거가 필요하면 같은 인자에 "
@@ -204,7 +211,7 @@ class DmnTools:
         import time
         from hydcommon.tool_result import checked
         result = agent_view(rec) if submitted else read_outcome(rec, what, detail_option)
-        snapshot = {k: rec.get(k) for k in ('id', 'created', 'provenance')}
+        snapshot = {k: rec.get(k) for k in ('id', 'created', 'provenance', 'facts')}
         snapshot['result'] = {'options': [{k: o[k] for k in ('id', 'sopId', *DETAIL_FIELDS) if k in o}
                                            for o in (rec.get('result') or {}).get('options') or []]}
         size = len(json.dumps(snapshot, ensure_ascii=False, default=str).encode())
@@ -244,7 +251,7 @@ class DmnTools:
                 self._evidence.pop(evidence_ref, None)
                 raise ValueError('평가 근거 참조가 없거나 만료됐습니다. 새 평가가 필요합니다')
             rec = entry[1]
-        if field == 'provenance':
+        if field == 'provenance' or (field == 'facts' and option is None):
             value = rec.get(field, [])
         else:
             matches = [o for o in (rec.get('result') or {}).get('options') or [] if option and option in (o.get('id'), o.get('sopId'))]
