@@ -13,6 +13,60 @@ from procsvc import classroom_client, manual_cache, manual_api, manual_extractio
 from test_manual_extraction import document
 
 
+def test_late_start_response_cannot_restore_cancelled_local_binding(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    entered,release=Event(),Event();run=str(uuid4());paths=[]
+    def respond(request):
+        paths.append(request.url.path)
+        if request.url.path.endswith('/agents'):
+            entered.set()
+            assert release.wait(2)
+            return httpx.Response(200,json={'run_id':run,'state':'RUNNING'})
+        return httpx.Response(200,json={'run_id':run,'state':'FAILED'})
+    client=classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+        tmp_path/'cancel.sqlite3',transport=httpx.MockTransport(respond))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future=pool.submit(client.start_agent,'task','lesson.step',{},'a'*64)
+        try:
+            assert entered.wait(1)
+            assert client.cancel_start('task','lesson.step',{},'a'*64)=={'state':'CONFIRMED'}
+        finally:release.set()
+        with pytest.raises(HTTPException):future.result(timeout=2)
+    with pytest.raises(HTTPException):client.start_agent('task','lesson.step',{},'a'*64)
+    assert paths==['/v1/classroom/agents','/v1/classroom/agents/cancel-start']
+
+
+def test_pending_cancel_survives_restart_and_stops_after_five_attempts(tmp_path):
+    calls=[]
+    def respond(request):calls.append(request.url.path);raise httpx.ReadError('offline')
+    def client():return classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+        tmp_path/'pending.sqlite3',transport=httpx.MockTransport(respond))
+    assert client().cancel_start('task','lesson.step',{},'a'*64)['state']=='PENDING'
+    for attempt in range(2,6):
+        fresh=client()
+        with fresh.db() as db:db.execute('UPDATE agent_cancellations SET next_attempt=0')
+        assert fresh.flush_cancellations()['state']==('REVIEW_REQUIRED' if attempt==5 else 'PENDING')
+    assert client().flush_cancellations()['state']=='IDLE' and len(calls)==5
+    with pytest.raises(HTTPException):client().start_agent('task','lesson.step',{},'a'*64)
+
+
+def test_worker_restart_recovers_cancelled_task_after_lost_start_response(tmp_path):
+    from types import SimpleNamespace
+    calls=[]
+    def respond(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith('/agents'):raise httpx.ReadError('start response lost')
+        return httpx.Response(200,json={'run_id':str(uuid4()),'state':'FAILED'})
+    def client():return classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+        tmp_path/'restart.sqlite3',transport=httpx.MockTransport(respond))
+    with pytest.raises(HTTPException):client().start_agent('hyd:task','lesson.step',{},'a'*64)
+    repo=SimpleNamespace(get_workitem=lambda _: {'tenant_id':'hyd','status':'IN_PROGRESS','draft_status':'CANCELLED'})
+    assert client().reconcile_cancellations(repo,'hyd')['state']=='CONFIRMED'
+    assert client().reconcile_cancellations(repo,'hyd')['state']=='IDLE'
+    assert calls==['/v1/classroom/agents','/v1/classroom/agents/cancel-start']
+
+
 def test_absolute_http_deadline_closes_stalled_response(tmp_path):
     import asyncio,time
     closed=[]

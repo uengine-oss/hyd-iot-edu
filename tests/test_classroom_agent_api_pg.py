@@ -14,6 +14,41 @@ from test_instances import rt  # noqa: F401
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable classroom authority PostgreSQL')
 
 
+def test_cancel_start_creates_only_terminal_marker_and_cannot_restart(setup):
+    client,runtime,auth,connect,approval=setup
+    headers={'Authorization':'Bearer '+KEY}
+    body={'reference':'handover.draft','inputs':{'memo':'취소'},'expected_revision':approval['revision']}
+    endpoint='/v1/classroom/agents/cancel-start'
+    assert client.post(endpoint,json=body).status_code==401
+    assert client.post(endpoint,headers=headers,json=dict(body,expected_revision='a'*64)).status_code==403
+    cancelled=client.post(endpoint,headers=headers,json=body)
+    assert cancelled.status_code==200 and cancelled.json()['state']=='FAILED'
+    assert client.post(endpoint,headers=headers,json=body).json()==cancelled.json()
+    assert client.post('/v1/classroom/agents',headers=headers,json=body).status_code==409
+    assert not runtime.repo.instances
+    with pytest.raises(Denied):auth.charge_execution(cancelled.json()['run_id'],input_bytes=1,max_output_tokens=1)
+    with connect() as db:
+        assert db.execute('SELECT count(*) AS n FROM hyd_classroom_runs').fetchone()['n']==1
+        assert db.execute('SELECT calls FROM hyd_classroom_grants').fetchone()['calls']==0
+
+
+def test_start_and_cancel_race_never_leaves_billable_run(setup):
+    from concurrent.futures import ThreadPoolExecutor
+    client,_,auth,connect,approval=setup
+    headers={'Authorization':'Bearer '+KEY}
+    body={'reference':'handover.draft','inputs':{'memo':'동시 취소'},'expected_revision':approval['revision']}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results=list(pool.map(lambda path:client.post(path,headers=headers,json=body),
+            ['/v1/classroom/agents','/v1/classroom/agents/cancel-start']))
+    assert results[0].status_code in (200,403,409) and results[1].status_code==200
+    run=results[1].json()['run_id']
+    assert auth.read_run(KEY,run)['state']=='FAILED'
+    with pytest.raises(Denied):auth.charge_execution(run,input_bytes=1,max_output_tokens=1)
+    with connect() as db:
+        assert db.execute('SELECT count(*) AS n FROM hyd_classroom_runs').fetchone()['n']==1
+        assert db.execute('SELECT calls FROM hyd_classroom_grants').fetchone()['calls']==0
+
+
 def test_student_cancel_revokes_run_and_stops_claimed_task(setup):
     client,runtime,auth,_,_=setup
     headers={'Authorization':'Bearer '+KEY}

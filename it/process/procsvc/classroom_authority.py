@@ -96,7 +96,7 @@ class Authority:
             return dict(subject=grant['subject'], scope=grant['scope'], profile=grant['policy']['profile'],
                         document=document)
 
-    def reserve(self, key, action, input_contract):
+    def reserve(self, key, action, input_contract, *, cancel=False):
         """input_contract is reconstructed by the managed endpoint, not a raw
         student prompt. Exact duplicates join a durable run even after failure;
         caller-controlled request IDs cannot increase paid work.
@@ -106,6 +106,7 @@ class Authority:
             grant = self._grant(db, hashed, lock=True)
             policy = grant['policy']
             limits = policy['actions'].get(action)
+            if cancel and action!='agent_run':raise Denied('관리 에이전트 시작만 사전 취소할 수 있습니다')
             if not limits:
                 raise Denied('이 수업에서 허용되지 않은 행동입니다')
             if action == 'manual_extract':
@@ -127,14 +128,17 @@ class Authority:
             if old:
                 if old['policy_hash'] != digest([grant['scope'], policy]):
                     raise Denied('강사 승인 정책 판본이 바뀌었습니다')
+                if cancel and old['state'] in ('RESERVED','RUNNING'):
+                    old=db.execute("UPDATE hyd_classroom_runs SET state='FAILED' WHERE id=%s RETURNING *",(old['id'],)).fetchone()
                 return dict(old, reused=True)
             count = db.execute("SELECT count(*) AS n FROM hyd_classroom_runs WHERE key_hash=%s AND state IN ('RESERVED','RUNNING')", (hashed,)).fetchone()['n']
-            if count >= policy['max_concurrency']:
+            if not cancel and count >= policy['max_concurrency']:
                 raise Denied('수업의 동시 실행 한도에 도달했습니다')
             row = db.execute('''INSERT INTO hyd_classroom_runs(id,key_hash,request_key,action,input_hash,policy_hash,cache_key,state,deadline)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,'RESERVED',now()+%s*interval '1 second') RETURNING *''',
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,now()+%s*interval '1 second') RETURNING *''',
                 (uuid4(), hashed, request_key, action, input_hash, digest([grant['scope'], policy]),
-                 input_contract.get('cache_key') if action == 'manual_extract' else None, limits['max_seconds'])).fetchone()
+                 input_contract.get('cache_key') if action == 'manual_extract' else None,
+                 'FAILED' if cancel else 'RESERVED',limits['max_seconds'])).fetchone()
             return dict(row, reused=False)
 
     def authorize_agent(self,key,reference):

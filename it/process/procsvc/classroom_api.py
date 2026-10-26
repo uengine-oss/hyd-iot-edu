@@ -125,16 +125,26 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
             allowed(lambda:authority.bind_work(credential,run['id'],inst['proc_inst_id']))
         return {'run_id':str(run['id']),'state':run['state'],'reused':run['reused']}
 
+    @app.post('/v1/classroom/agents/cancel-start')
+    def agent_cancel_start(body: AgentRequest, authorization: str | None = Header(default=None)):
+        if body.expected_revision is None:
+            raise HTTPException(422,'취소할 시작 요청의 승인 판본이 필요합니다')
+        run=allowed(lambda:authority.reserve(key(authorization),'agent_run',{
+            'reference':body.reference,'revision':body.expected_revision,'inputs':body.inputs},cancel=True))
+        result=agent_cancel(str(run['id']),authorization)
+        return dict(result,run_id=str(run['id']))
+
     @app.post('/v1/classroom/agents/runs/{run_id}/cancel')
     def agent_cancel(run_id: str, authorization: str | None = Header(default=None)):
         credential=key(authorization)
         row=read(run_id,authorization)
         if row['action']!='agent_run':
             raise HTTPException(403,'관리 에이전트 실행만 중단할 수 있습니다')
-        if row['state'] in ('DONE','FAILED','EXPIRED'):
+        if row['state'] in ('DONE','EXPIRED'):
             return {'state':row['state']}
         # Revoke model/tool authorization first, even if the process DB is down.
-        allowed(lambda:authority.finish(credential,row['id'],validated=False))
+        if row['state']!='FAILED':
+            allowed(lambda:authority.finish(credential,row['id'],validated=False))
         if row['work_ref']:
             runtime=runtime_factory(row['subject'])
             if runtime.tenant_id!=row['subject']:

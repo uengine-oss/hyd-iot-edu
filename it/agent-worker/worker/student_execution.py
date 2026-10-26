@@ -75,7 +75,21 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
     router=TaskRouter(runtime,row['id'],row['consumer'],tools)
     router.claim()
     task=runner.s.tenant_id+':'+row['id']
-    run=wait(client.start_agent,task,binding['reference'],inputs,approval['revision'])
+    try:
+        run=wait(client.start_agent,task,binding['reference'],inputs,approval['revision'])
+    except LeaseLost:
+        raise
+    except Exception as exc:
+        from fastapi import HTTPException
+        if runner._reclaimed(row):raise LeaseLost() from None
+        if isinstance(exc,HTTPException) and exc.status_code!=502:raise
+        try:
+            cancelled=client.cancel_start(task,binding['reference'],inputs,approval['revision'])
+            if cancelled.get('state')!='CONFIRMED':
+                runner._event(row,job_id,'task_working',{'type':'notice','content':'시작 요청의 취소를 보관했습니다. 관리 서버 확인은 제한된 재전송으로 이어갑니다.'},crew_type='agent')
+        except Exception:
+            runner._event(row,job_id,'task_working',{'type':'notice','content':'시작 요청의 취소 보관에 실패했습니다. 강사 실행 상태 확인이 필요합니다.'},crew_type='agent')
+        raise
     runner._event(row,job_id,'task_started',{'name':'승인된 관리 에이전트 실행','managed_run':run},crew_type='agent')
     deadline=min(deadline,time.monotonic()+binding['max_seconds'])
     try:
@@ -135,7 +149,10 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
         # merely because this worker lost ownership.
         raise
     except Exception:
-        try:client.cancel_agent(task,run)
+        try:
+            cancelled=client.cancel_agent(task,run)
+            if cancelled and cancelled.get('state') in ('PENDING','REVIEW_REQUIRED'):
+                runner._event(row,job_id,'task_working',{'type':'notice','content':'관리 실행 취소를 보관했습니다. 확인 전에는 완료로 처리하지 않습니다.'},crew_type='agent')
         except Exception:
             runner._event(row,job_id,'task_working',{'type':'notice','content':'관리 실행 중단 응답을 확인하지 못했습니다. 서버 시간·예산 한도는 유지됩니다.'},crew_type='agent')
         raise

@@ -7,6 +7,7 @@ import hashlib
 import asyncio
 import json
 import sqlite3
+import time
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
@@ -40,6 +41,11 @@ class Client:
             db.execute('''CREATE TABLE IF NOT EXISTS agent_runs (
                 scope TEXT, task TEXT, request_hash TEXT, run_id TEXT,
                 PRIMARY KEY(scope,task), UNIQUE(scope,run_id))''')
+            db.execute('''CREATE TABLE IF NOT EXISTS agent_cancellations (
+                scope TEXT,task TEXT,request_hash TEXT,body TEXT,state TEXT DEFAULT 'PENDING',
+                attempts INTEGER DEFAULT 0,next_attempt REAL DEFAULT 0,PRIMARY KEY(scope,task))''')
+            db.execute('''CREATE TABLE IF NOT EXISTS agent_intents (
+                scope TEXT,task TEXT,body TEXT,PRIMARY KEY(scope,task))''')
 
     @contextmanager
     def db(self):
@@ -102,17 +108,87 @@ class Client:
             old=db.execute('SELECT * FROM agent_runs WHERE scope=? AND task=?',(scope,task)).fetchone()
             if old and old['request_hash']!=request_hash:
                 raise HTTPException(409,'이 학생 작업에 연결된 승인 판본·입력을 바꿀 수 없습니다')
+            if db.execute('SELECT 1 FROM agent_cancellations WHERE scope=? AND task=?',(scope,task)).fetchone():
+                raise HTTPException(409,'취소한 학생 작업은 새 관리 실행으로 시작할 수 없습니다')
             if old and old['run_id']:return old['run_id']
             db.execute('INSERT OR IGNORE INTO agent_runs VALUES (?,?,?,NULL)',(scope,task,request_hash))
+            db.execute('INSERT OR IGNORE INTO agent_intents VALUES (?,?,?)',(scope,task,json.dumps({
+                'reference':reference,'inputs':inputs,'expected_revision':revision},ensure_ascii=False)))
         value=self.request('POST','/v1/classroom/agents',{'reference':reference,'inputs':inputs,'expected_revision':revision})
         run_id=str(UUID(value['run_id']))
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
+            if db.execute('SELECT 1 FROM agent_cancellations WHERE scope=? AND task=?',(scope,task)).fetchone():
+                raise HTTPException(409,'시작 응답이 도착하기 전에 학생 작업이 취소됐습니다')
             owner=db.execute('SELECT task FROM agent_runs WHERE scope=? AND run_id=?',(scope,run_id)).fetchone()
             if owner and owner['task']!=task:
-                raise HTTPException(409,'다른 학생 작업에 연결된 실행을 재사용할 수 없습니다')
-            db.execute('UPDATE agent_runs SET run_id=? WHERE scope=? AND task=?',(run_id,scope,task))
+                db.execute('DELETE FROM agent_intents WHERE scope=? AND task=?',(scope,task))
+            else:
+                db.execute('UPDATE agent_runs SET run_id=? WHERE scope=? AND task=?',(run_id,scope,task))
+        if owner and owner['task']!=task:
+            raise HTTPException(409,'다른 학생 작업에 연결된 실행을 재사용할 수 없습니다')
         return run_id
+
+    def cancel_start(self,task,reference,inputs,revision,*,send=True):
+        from .classroom_authority import digest
+        scope=self.scope();fingerprint=digest([reference,revision,inputs])
+        body={'reference':reference,'inputs':inputs,'expected_revision':revision}
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            old=db.execute('SELECT request_hash FROM agent_runs WHERE scope=? AND task=?',(scope,task)).fetchone()
+            if old and old['request_hash']!=fingerprint:
+                raise HTTPException(409,'취소할 학생 작업 입력이 기존 시작 요청과 다릅니다')
+            previous=db.execute('SELECT request_hash FROM agent_cancellations WHERE scope=? AND task=?',(scope,task)).fetchone()
+            if previous and previous['request_hash']!=fingerprint:
+                raise HTTPException(409,'보관된 취소 요청의 내용을 바꿀 수 없습니다')
+            db.execute('INSERT OR IGNORE INTO agent_cancellations(scope,task,request_hash,body) VALUES (?,?,?,?)',
+                       (scope,task,fingerprint,json.dumps(body,ensure_ascii=False)))
+        return self.flush_cancellations(task) if send else {'state':'PENDING'}
+
+    def reconcile_cancellations(self,repo,tenant):
+        scope=self.scope()
+        with self.db() as db:
+            rows=db.execute('SELECT task,body FROM agent_intents WHERE scope=?',(scope,)).fetchall()
+        for row in rows:
+            if not row['task'].startswith(tenant+':'):continue
+            wi=repo.get_workitem(row['task'][len(tenant)+1:])
+            if wi and wi.get('tenant_id')==tenant and wi.get('status') in ('DONE','SUBMITTED'):
+                with self.db() as db:db.execute('DELETE FROM agent_intents WHERE scope=? AND task=?',(scope,row['task']))
+            elif not wi or wi.get('tenant_id')==tenant and (wi.get('status')=='CANCELLED' or wi.get('draft_status') in ('CANCELLED','FAILED')):
+                body=json.loads(row['body'])
+                self.cancel_start(row['task'],body['reference'],body['inputs'],body['expected_revision'],send=False)
+        result=self.flush_cancellations()
+        if result.get('state')=='REVIEW_REQUIRED' and result['task'].startswith(tenant+':'):
+            wid=result['task'][len(tenant)+1:];wi=repo.get_workitem(wid)
+            if wi and wi.get('tenant_id')==tenant:
+                repo.record_events([{'job_id':'CLASSROOM_CANCEL_REVIEW','todo_id':wid,'proc_inst_id':wi['proc_inst_id'],
+                    'crew_type':'agent','event_type':'error','data':{'friendly':'관리 실행 취소를 5회 전송했지만 확인하지 못했습니다. 강사가 서버 실행 상태를 확인해야 합니다.'}}])
+        return result
+
+    def flush_cancellations(self,task=None):
+        # One due cancellation per worker poll, at most five network attempts.
+        # The durable marker still prevents local replay after retries exhaust.
+        scope=self.scope()
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row=db.execute("SELECT * FROM agent_cancellations WHERE scope=? AND state='PENDING' AND attempts<5 AND next_attempt<=? AND (? IS NULL OR task=?) ORDER BY next_attempt,task LIMIT 1",
+                           (scope,time.time(),task,task)).fetchone()
+            if not row:
+                existing=db.execute('SELECT state,attempts FROM agent_cancellations WHERE scope=? AND task=?',(scope,task)).fetchone() if task else None
+                if existing:return {'state':'CONFIRMED' if existing['state']=='CONFIRMED' else 'REVIEW_REQUIRED' if existing['attempts']>=5 else 'PENDING'}
+                return {'state':'IDLE'}
+            attempt=row['attempts']+1
+            db.execute('UPDATE agent_cancellations SET attempts=?,next_attempt=? WHERE scope=? AND task=?',
+                       (attempt,time.time()+30+min(60,2**attempt),scope,row['task']))
+        try:
+            result=self.request('POST','/v1/classroom/agents/cancel-start',json.loads(row['body']))
+            if result.get('state') not in ('DONE','FAILED','EXPIRED'):raise ValueError()
+        except Exception:
+            return {'state':'REVIEW_REQUIRED','task':row['task']} if attempt==5 else {'state':'PENDING'}
+        with self.db() as db:
+            db.execute("UPDATE agent_cancellations SET state='CONFIRMED' WHERE scope=? AND task=?",(scope,row['task']))
+            db.execute('DELETE FROM agent_intents WHERE scope=? AND task=?',(scope,row['task']))
+        return {'state':'CONFIRMED'}
 
     def agent_result(self,task,run_id):
         run_id=self.agent_run_for(task,run_id)
@@ -120,6 +196,11 @@ class Client:
 
     def cancel_agent(self,task,run_id):
         run_id=self.agent_run_for(task,run_id)
+        with self.db() as db:
+            intent=db.execute('SELECT body FROM agent_intents WHERE scope=? AND task=?',(self.scope(),task)).fetchone()
+        if intent:
+            body=json.loads(intent['body'])
+            return self.cancel_start(task,body['reference'],body['inputs'],body['expected_revision'])
         return self.request('POST','/v1/classroom/agents/runs/'+run_id+'/cancel')
 
     def respond_agent(self,task,run_id,kind,request_id,text):
