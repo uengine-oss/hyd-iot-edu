@@ -170,6 +170,16 @@ def test_unknown_host_is_reported_as_unreachable():
     assert "no-such-mcp-host.invalid" in out["error"] and "주소를 찾을 수 없습니다" in out["error"]
 
 
+def test_network_unreachable_explains_recovery_in_korean():
+    import urllib.error
+    error = mcp_check._http_error(urllib.error.URLError(OSError(101, "Network is unreachable")),
+                                 "http://host.docker.internal:8311/mcp", 5)
+    assert error.kind == "unreachable"
+    assert "host.docker.internal:8311" in str(error)
+    assert all(word in str(error) for word in ("서버가 켜져", "방화벽", "네트워크", "다시"))
+    assert "Network is unreachable" not in str(error)
+
+
 def test_http_401_is_an_auth_failure(http_server):
     out = mcp_check.check(mcp_check.normalize({"url": http_server("auth")}), timeout=3)
     assert out["error_kind"] == "auth" and "인증 실패 (HTTP 401)" in out["error"]

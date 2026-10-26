@@ -446,7 +446,7 @@ def _http_error(exc: Exception, url: str, timeout: float) -> CheckError:
         return CheckError("unreachable", f"주소를 찾을 수 없습니다 — '{p.hostname}'. 컨테이너 서비스 이름(예: dmn-mcp)이나 호스트 이름을 확인하세요")
     if isinstance(reason, (ConnectionResetError, http.client.RemoteDisconnected, http.client.BadStatusLine)):
         return CheckError("closed", f"{host} 가 연결을 끊었습니다 — MCP 서버가 아니거나 TLS(https) 설정이 다를 수 있습니다")
-    return CheckError("unreachable", f"{host} 에 연결하지 못했습니다: {str(reason)[:160]}")
+    return CheckError("unreachable", f"{host} 에 연결하지 못했습니다 — 서버가 켜져 있는지, 주소·포트와 방화벽·네트워크 연결을 확인한 뒤 연결 검사를 다시 누르세요")
 
 
 class _OAuthResponse:

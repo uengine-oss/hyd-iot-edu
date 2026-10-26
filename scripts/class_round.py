@@ -871,7 +871,7 @@ def lab_91_config_bundle(r: Round):
         r.wait(180, lambda: (t := _a_txt(r, "#cfgImportMsg")) and "불러오는 중" not in t, every=2)
         imsg = _a_txt(r, "#cfgImportMsg")
     # 7회차에 등록한 학생 MCP 서버가 꺼져 있으면 불러오기는 연결 검사에서 멈추고 통째로 되돌린다(설계) — 학생은 안내대로 서버를 켜고 다시 누른다
-    down = re.search(r"연결 거부 — host\.docker\.internal:(\d+)", imsg)
+    down = re.search(r"host\.docker\.internal:(\d+)", imsg) if "연결 검사 실패" in imsg else None
     if down:
         ok, why = r.human_message(imsg)
         r.check("학생 MCP 서버가 꺼져 있으면 → 서버를 켜라는 한국어 안내 · 불러오기 전 상태로 되돌림", ok and "되돌려" in imsg, imsg[:300], kind="exception")
