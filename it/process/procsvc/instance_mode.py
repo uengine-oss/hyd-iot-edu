@@ -179,6 +179,7 @@ def build(ctx: ProcessContext) -> instances.InstanceRuntime:
     _runtime.base_version, _runtime.reference_ids, _runtime.base_problem = seed.raw['version'], {seed.id, triage['id']}, base_problem
     from . import ask
     ask.register_definition(_runtime, DEFINITIONS_DIR)     # B5: 에이전트에게 질문하기 (정식 정의 ask_agent 1.0)
+    _runtime.register_definition(json.loads((DEFINITIONS_DIR/'shift_handover_v1.json').read_text(encoding='utf-8')))
     ctx.state["mode"], ctx.state["supabase"] = "instance", repo.ping()
     log.info("instance mode: definition %s@%s (%d activities), repo %s, agent bridge %s", defn.id, defn.raw.get('version'),
              len(defn.activities), type(repo).__name__, AGENT_BRIDGE)

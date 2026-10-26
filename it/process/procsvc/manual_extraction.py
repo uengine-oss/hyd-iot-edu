@@ -401,9 +401,11 @@ def validate_result(form, inst, output):
         legacy_meaning.validate_result(form, inst, output)
         from . import ask                             # B5: 질문 답 계약(근거 · 답할 수 없는 이유)도 같은 교정 루프
         ask.validate_result(form, inst, output)
+        from . import handover
+        handover.validate_result(form, inst, output)
 
 
-CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1', 'ask-answer-v1')
+CORRECTABLE_CONTRACTS = (CONTRACT, 'manual-golden-report-v1', 'legacy-meaning-candidates-v1', 'ask-answer-v1', 'shift-handover-draft-v1')
 
 
 REVIEW_FEEDBACK_MAX = 20

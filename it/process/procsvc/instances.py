@@ -262,6 +262,9 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if not isinstance(version,str) or not version.strip():
             raise ValueError('실행할 정의 버전을 지정하세요')
         defn = self.definition_for({'proc_def_id':def_id,'proc_def_version':version,'tenant_id':self.tenant_id})
+        from . import handover
+        if def_id == handover.DEFINITION_ID:
+            handover.validate_start(values)
         if defn.start_events()[0].get('eventDefinition') == 'message' and alert is None:
             raise ValueError('메시지 시작 정의에는 경보 입력이 필요합니다')
         from . import alert_policy
@@ -481,6 +484,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             validate_output(form, output)
             from .manual_extraction import validate_result
             validate_result(form, inst, output)
+            from .handover import validate_trace
+            validate_trace(self.repo, wi, form, output)
         engine.submit(defn, inst, wi, output, now=now)
         wi["consumer"] = self.consumer
         if by:
@@ -510,6 +515,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             try:
                 validate_output(form, wi.get('output'))
                 validate_result(form, inst, wi.get('output'))
+                from .handover import validate_trace
+                validate_trace(self.repo, wi, form, wi.get('output'))
             except ValueError as rejected:
                 if form.get('contract') not in CORRECTABLE_CONTRACTS:
                     raise
