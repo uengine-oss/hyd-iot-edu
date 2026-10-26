@@ -126,6 +126,27 @@ def test_invalid_portal_assignment_cannot_fall_back_to_definition(rt,endpoint):
     with pytest.raises(Denied):agents.revision(runtime,approval)
 
 
+@pytest.mark.parametrize('mapped',[False,True])
+def test_activity_agent_and_portal_map_use_engine_precedence(rt,mapped):
+    runtime,_=rt;approval=approved(runtime)
+    for agent in ('agent:authored','agent:mapped'):
+        runtime.repo.upsert_user(dict(id=agent,tenant_id=runtime.tenant_id,username=agent,is_agent=True,
+                                     goal='instructions for '+agent,tools='enterprise'))
+    source=deepcopy(runtime.repo.get_proc_def(approval['definition'],runtime.tenant_id,version='1')['definition'])
+    source['version']='2';source['activities'][0]['agent']='agent:authored'
+    runtime.register_definition(source);approval['version']='2'
+    if mapped:
+        runtime.repo.put_agent_map(dict(tenant_id=runtime.tenant_id,proc_def_id=approval['definition'],
+                                       activity_id='draft',agent_id='agent:mapped'))
+    selected='agent:mapped' if mapped else 'agent:authored'
+    approval['revision']=agents.revision(runtime,approval)
+    assert agents.snapshot(runtime,approval)[3]['agent']['agent_id']==selected
+    inst=agents.start(runtime,approval,{'memo':'확인'},str(uuid4()),'lesson')
+    assert runtime.repo.fetch_pending_task('cliagents','worker')[0]['user_id']==selected
+    agents.verify_instance(runtime,inst)
+    assert runtime.repo.get_proc_def(approval['definition'],runtime.tenant_id,version='2')['definition']==source
+
+
 def test_database_metadata_does_not_change_execution_approval(rt):
     runtime,_=rt;approval=approved(runtime)
     runtime.repo.put_skill({'tenant_id':runtime.tenant_id,'skill_name':'handover-check','content':'원문 확인'})
