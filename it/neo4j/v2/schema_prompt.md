@@ -105,6 +105,8 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:ManualIngestionDocument {id!, tenant, head, snapshot})` 매뉴얼 한 문서의 적재 이력 머리: 현재 판본(head)과 그래프 스냅샷 (manual_graph).
 - `(:ManualIngestionBatch {id!, tenant, document, previous, status, fingerprint, createdAt, rolledBackAt, rolledBackBy, plan, before, after, receipt})` 검토·적재 한 번의 영수증과 되돌리기 정보: 계획·전후 상태·상태(ACTIVE/ROLLED_BACK) (manual_graph).
 
+조회할 때 `plan`, `before`, `after`, `snapshot`은 큰 보관 원문이므로 노드 전체를 반환하지 말고 필요한 속성만 고른다. 적재 목록은 id·filename·status·createdAt과 같이 작은 필드로 조회한다. MCP 응답의 `truncated:true`는 전체 결과가 아님을 뜻한다. `collect()`의 긴 목록도 생략 위치가 표시되므로, 필요한 조건과 `ORDER BY / SKIP / LIMIT`으로 행을 나눠 조회한다. 긴 문자열의 실제 내용이 필요하면 `substring(속성, 시작, 길이)`로 해당 구간을 읽는다. 잘린 결과를 근거로 「없다」고 판단하지 않는다.
+
 ## 관계
 
 `!`는 필수 속성이다.

@@ -114,10 +114,11 @@ def prometheus_query(expression: str, at: float | None = None, start: float | No
 
 
 @mcp.tool(annotations=READ)
-def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: FailureMode, overrides: Overrides = None) -> dict:
+def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: FailureMode, overrides: Overrides = None,
+                   detail_option: Annotated[str | None, Field(description="카드 하나의 전체 근거(순위 근거 · 득실 평가 · 단계 · 예측 맥락)가 필요할 때 그 카드 id 또는 SOP ID. 보통 비움")] = None) -> dict:
     """후보 선택 → 규정 판정(제외 · 감점 · 경고) → 예측 · BSC 상충 · 선례 → 순위. 제출하지 않는다 (task:candidates · task:compliance 용).
     outcome · notice 가 후보 0개 · 전부 제외 · 가드레일 거절을 밝힌다. id(EVAL-)는 저장되지 않으며 decision_id 가 아니다. 계산 오류는 오류 봉투다."""
-    return enveloped(lambda: tools.evaluate_cards(asset, pattern, cause, failure_mode, overrides))()
+    return enveloped(lambda: tools.evaluate_cards(asset, pattern, cause, failure_mode, overrides, detail_option))()
 
 
 @mcp.tool(annotations=READ)
@@ -151,9 +152,10 @@ def purchase_context(asset: Asset, part_no: Annotated[str, Field(description='�
 
 
 @mcp.tool(annotations=READ)
-def evaluate_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')], overrides: Overrides = None) -> dict:
+def evaluate_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')], overrides: Overrides = None,
+                      detail_option: Annotated[str | None, Field(description='상세 근거를 볼 카드 id 또는 SOP ID')] = None) -> dict:
     """명시 Part 범위의 실행 구매 SOP만 계산한다. 조회/계산이며 ERP 발주·메일 발송을 하지 않는다."""
-    return enveloped(lambda: tools.evaluate_purchase(asset, part_no, overrides))()
+    return enveloped(lambda: tools.evaluate_purchase(asset, part_no, overrides, detail_option))()
 
 
 @mcp.tool(annotations=WRITE)

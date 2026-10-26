@@ -1,5 +1,6 @@
 """Explicit purchasing route keeps real Part evidence and never invents a Cause/FM."""
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -36,7 +37,11 @@ def test_source_backed_part_route_evaluates_and_submits_without_cause_or_failure
     result = enveloped(tools.submit_purchase if submit else tools.evaluate_purchase)(
         'HYD-03','P-KIT',*(('INC-C',) if submit else ()))
     assert result['result'] == 'ok',result
-    record = result['document']
+    view = result['document']
+    record = tools.registry.get(view['id'])
+    assert view['id'] == record['id']
+    assert 'origin' not in view and 'result' not in view
+    assert {o['id'] for o in view['options']} == {'skill:purchase'}
     assert record['origin']['cause_route'] == 'purchase-part'
     assert record['origin']['part']['id'] == 'part:kit'
     assert 'cause' not in record['origin'] and 'failureMode' not in record['origin']
@@ -44,6 +49,30 @@ def test_source_backed_part_route_evaluates_and_submits_without_cause_or_failure
     assert {o['id'] for o in record['result']['options']} == {'skill:purchase'}
     assert '씰 키트' in record['explanation'] and 'None —' not in record['explanation']
     assert len(submitted) == int(submit)
+
+
+def test_purchase_summary_and_requested_detail_keep_large_evidence_on_server(part_pipeline, monkeypatch):
+    tools, _, _, _, _, submitted = part_pipeline
+    original = decide.decide
+    large = '검증 근거 본문 ' * 20000
+
+    def with_large_evidence(*args, **kwargs):
+        rec = original(*args, **kwargs)
+        rec['steps'] = [{'output': large}]
+        rec['result']['options'][0]['rankingEvidence'] = large
+        return rec
+
+    monkeypatch.setattr(decide, 'decide', with_large_evidence)
+    summary = tools.evaluate_purchase('HYD-03', 'P-KIT')
+    detail = tools.evaluate_purchase('HYD-03', 'P-KIT', detail_option='skill:purchase')
+    receipt = tools.submit_purchase('HYD-03', 'P-KIT', 'INC-C')
+    assert 'detail' not in summary['options'][0]
+    assert detail['options'][0]['detail']['rankingEvidence'].endswith('…[truncated]')
+    assert len(detail['options'][0]['detail']['rankingEvidence']) < 6100
+    assert len(json.dumps(receipt, ensure_ascii=False)) < 20000
+    assert receipt['status'] == 'SUBMITTED' and receipt['part']['id'] == 'part:kit'
+    assert tools.registry.get(receipt['id'])['steps'][0]['output'] == large
+    assert len(submitted) == 1
 
 
 def test_unknown_or_non_shortage_part_is_refused_before_calculation(part_pipeline):

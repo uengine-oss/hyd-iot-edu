@@ -1,0 +1,51 @@
+{
+  "capture_method": "ARROWS実画面 canvas.toDataURL; ego task space 1; original fixed video preserved",
+  "frames": [
+    {
+      "stage": "01",
+      "nodes": 3,
+      "relationships": 2
+    },
+    {
+      "stage": "02",
+      "nodes": 5,
+      "relationships": 5
+    },
+    {
+      "stage": "03",
+      "nodes": 6,
+      "relationships": 6
+    },
+    {
+      "stage": "04",
+      "nodes": 10,
+      "relationships": 11
+    },
+    {
+      "stage": "05",
+      "nodes": 13,
+      "relationships": 15
+    },
+    {
+      "stage": "06",
+      "nodes": 15,
+      "relationships": 19
+    },
+    {
+      "stage": "07",
+      "nodes": 17,
+      "relationships": 21
+    }
+  ],
+  "source_layout_sha256": "3b5492a146146ee6caa03b6dc9447af676591f13109074a998fe1fe9362bf83a",
+  "video_frames": [
+    {
+      "file": "09-export.jpg",
+      "seconds": 1137
+    },
+    {
+      "file": "10-import.jpg",
+      "seconds": 1183
+    }
+  ]
+}

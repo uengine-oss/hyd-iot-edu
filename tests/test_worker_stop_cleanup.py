@@ -80,8 +80,9 @@ def _start_driver(tmp_path, mode):
     return proc, ws, int((ws / "child.pid").read_text())
 
 
-@pytest.mark.parametrize("sig", [signal.SIGTERM, signal.SIGHUP])
-def test_stop_signal_ends_the_cli_process_group_with_the_worker(tmp_path, sig):
+@pytest.mark.parametrize("signal_name", ['SIGTERM', 'SIGHUP'])
+def test_stop_signal_ends_the_cli_process_group_with_the_worker(tmp_path, signal_name):
+    sig = getattr(signal, signal_name)
     proc, ws, child = _start_driver(tmp_path, "signals")
     assert (ws / process_control.GROUP_FILE).exists()                      # the run recorded its group in the workspace
     proc.send_signal(sig)

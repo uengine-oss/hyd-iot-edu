@@ -111,6 +111,7 @@ class Runner:
 
     # ---- one run
     def run(self, row: dict, ctx: context.Context, job_id: str) -> None:
+        deadline = time.monotonic() + self.s.run_timeout_s
         caps = context.activity_capabilities(ctx.definition, row.get("activity_id") or "")
         config = caps.get("agent_config") or {}
         # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
@@ -174,6 +175,7 @@ class Runner:
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
                                                                       skills_inline=provider_id == 'codex'))
+        (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools,
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
@@ -207,9 +209,10 @@ class Runner:
                 extra_args += ["-c", "model_provider=hydllm", "-c", "model_providers.hydllm={" + table + "}"]
                 if not agent.model and self.s.codex_model:
                     model = self.s.codex_model
-        if provider_id == "claude-code" and self.s.allowed_tools:
+        if provider_id == "claude-code":
             servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-            extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
+            if self.s.allowed_tools:
+                extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
@@ -220,35 +223,37 @@ class Runner:
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
-                                                       redaction_values=bridged.redaction_values)
-        # AI 응답 재생: 저장된 응답을 새 추론처럼 보이지 않게 처리 과정에 한 줄 남긴다
+                                                       redaction_values=bridged.redaction_values, deadline=deadline)
+        # 저장된 응답임을 알리되 결과 검사·교정은 live와 같은 경로를 쓴다.
         found = ai_replay.used_notice(getattr(self.exec_fn, "last", None)) if self.ai_mode == "replay" else None
         if found:
             self._event(row, job_id, "task_working", {"type": "notice", "content": found}, crew_type="agent")
-        assessment = task_deferral.control(final_text)
-        if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
-            file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
-            assessment = task_deferral.control(file_text) if file_text is not None else None
-        if assessment is not None:
-            task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
-                                request_id=job_id,assessment=assessment,session_id=session_id or None)
-            hitl.clear(ws.path)
-            return
-        question = hitl.business_question(final_text)
-        if question is not None:
-            self._pause(row, ws, provider_id, session_id or "", question['question'], job_id,
-                        options=question['options'])
-            return
-        if paused is not None and not final_text:
-            self._pause(row, ws, provider_id, session_id or "", paused, job_id)
-            return
-        if paused is not None:
-            self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
-        interpret = lambda text: outcome.interpret(text, ctx.form_fields, versioned='forms' in (ctx.definition or {}),   # noqa: E731
-                                                   result_file=ws.result_file, max_file_bytes=self.s.max_result_file_bytes)
-        result = interpret(final_text)
         corrections = 0
-        while not result.contract_met and session_id and corrections < self.s.max_format_corrections:
+        while True:
+            try:
+                assessment = task_deferral.control(final_text)
+                if assessment is None:
+                    file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
+                    assessment = task_deferral.control(file_text) if file_text is not None else None
+                question = hitl.business_question(final_text) if assessment is None else None
+                result = outcome.interpret(final_text, ctx.form_fields, versioned='forms' in (ctx.definition or {}),
+                                           result_file=ws.result_file, max_file_bytes=self.s.max_result_file_bytes)
+            except ValueError as exc:
+                assessment = question = None
+                result = outcome.Outcome(raw_text=final_text, contract_met=False, mismatch_reason=str(exc))
+            if assessment is not None:
+                task_deferral.defer(self.repo,self.s.tenant_id,row['id'],expected_consumer=row['consumer'],
+                                    request_id=job_id,assessment=assessment,session_id=session_id or None)
+                hitl.clear(ws.path)
+                return
+            if question is not None:
+                self._pause(row, ws, provider_id, session_id or "", question['question'], job_id, options=question['options'])
+                return
+            if paused is not None and not result.contract_met:
+                self._pause(row, ws, provider_id, session_id or "", paused, job_id)
+                return
+            if result.contract_met or not session_id or corrections >= self.s.max_format_corrections:
+                break
             corrections += 1
             self._event(row, job_id, "task_working", {"type": "notice", "content": f"출력 형식 교정 요청 {corrections}/{self.s.max_format_corrections}: {result.mismatch_reason}"}, crew_type="agent")
             correction = prompt.format_correction(result.mismatch_reason, ctx.form_fields, form_contract=ctx.form_contract)
@@ -256,12 +261,13 @@ class Runner:
                 correction += '\n\n' + skill_text
             request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
                               resume_session=session_id)
-            final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
-                                                  skills=provided, redaction_values=bridged.redaction_values)
+            final_text, resumed, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
+                                                  skills=provided, redaction_values=bridged.redaction_values, deadline=deadline)
             session_id = resumed or session_id
-            result = interpret(final_text)
         if not result.contract_met:
             raise RunFailed(f"결과가 요구된 출력 형식과 맞지 않습니다: {result.mismatch_reason}\n\n에이전트 응답:\n{result.raw_text[:1000]}")
+        if paused is not None:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": f"실행 중 허용되지 않은 동작이 있었습니다(결과는 그대로 저장합니다): {paused}"}, crew_type="agent")
         payload = dict(result.payload)
         if session_id:
             payload["cliagents_session_id"] = session_id          # the next task of the instance, or a human's answer, resumes it
@@ -275,10 +281,14 @@ class Runner:
         log.info("%s %s submitted (%s) from %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text", result.source)
 
     def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, crew: str, trace_path=None,
-                skills: list[dict] | None = None, redaction_values: list[str] | None = None) -> tuple[str, str | None, str | None]:
+                skills: list[dict] | None = None, redaction_values: list[str] | None = None,
+                deadline: float | None = None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
-        last_check, deadline = time.monotonic(), time.monotonic() + self.s.run_timeout_s
+        persisted_session = request.resume_session
+        last_check = time.monotonic()
+        if deadline is None:
+            deadline = last_check + self.s.run_timeout_s
         last_renew = time.monotonic()
         outage = {"since": None}
         def db_ok():
@@ -321,6 +331,7 @@ class Runner:
                     if self._cancelled(row):raise Cancelled()
             if time.monotonic()>deadline:
                 raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
+        check_stop()
         gen = (self.exec_fn(provider,request,env,check_stop=check_stop)
                if self.exec_fn is _exec_stream or getattr(self.exec_fn, "accepts_check_stop", False)
                else self.exec_fn(provider,request,env))
@@ -330,6 +341,8 @@ class Runner:
         from uuid import uuid4
         public_run = uuid4().hex
         public_message, public_sequence, public_parts = 0, 0, []
+        public_sent = 0
+        public_chars = 0
         public_last_sent = None
         skill_reads = ui_events.SkillReads(skills)            # A161-G1: a skill file the agent opens becomes a skill_used row
         def emit(ui):
@@ -349,6 +362,19 @@ class Runner:
                     trace.flush()
                 if ev.session_id:
                     session_id = ev.session_id
+                    if session_id != persisted_session:
+                        draft = dict(row.get('draft') or {}) if isinstance(row.get('draft'), dict) else {}
+                        draft['cliagents_session_id'] = session_id
+                        try:
+                            saved = self.repo.save_task_result(row['id'], draft, final=False, expected_consumer=row['consumer'])
+                        except Exception as exc:
+                            db_failed('실행 세션 보관', exc)
+                        else:
+                            if not saved:
+                                raise Cancelled()
+                            row['draft'] = draft
+                            persisted_session = session_id
+                pause_reason = pause_reason or hitl.permission_refusal(ev)
                 if ev.kind is ExecEventKind.RESULT:
                     if ev.is_error:
                         raise RunFailed(ev.text or "agent reported failure")
@@ -366,13 +392,16 @@ class Runner:
                 if ev.kind is ExecEventKind.ASSISTANT_TEXT:
                     notes.add(ev.text)
                     public_parts.append(ev.text or '')
+                    public_chars += len(ev.text or '')
                     public_now = time.monotonic()
                     if public_last_sent is None or public_now-public_last_sent >= .25:
                         public_last_sent = public_now
                         public_sequence += 1
-                        emit(ui_events.UiEvent('assistant_note',dict(type='public_text',content=''.join(public_parts),
+                        emit(ui_events.UiEvent('assistant_note',dict(type='public_text',content=''.join(public_parts[public_sent:]),
+                            content_mode='delta',
                             public_run=public_run,message_id=f'{public_run}:{public_message}',
-                            sequence=public_sequence,complete=False,chars=sum(map(len,public_parts)),truncated=False)))
+                            sequence=public_sequence,complete=False,chars=public_chars,truncated=False)))
+                        public_sent = len(public_parts)
                 elif ev.kind in ui_events.NOTE_BOUNDARY:
                     note = notes.flush(final_text=ev.text if ev.kind is ExecEventKind.RESULT else None)
                     if public_parts:
@@ -382,6 +411,8 @@ class Runner:
                             sequence=public_sequence,complete=True,truncated=False)))
                         public_message += 1
                         public_parts = []
+                        public_sent = 0
+                        public_chars = 0
                         public_last_sent = None
                 for ui in ui_events.translate(ev):
                     if ui.type == 'tool_start':
@@ -390,7 +421,9 @@ class Runner:
                         input_event = replace(ev,text=json.dumps(raw_input,ensure_ascii=False,default=str),tool_output=None)
                         preserved = self._keep_full_output(ui,input_event,row,job_id)
                         metadata = preserved.data.get('full_output')
-                        ui = ui_events.UiEvent(ui.type,dict(ui.data,input=raw_input,
+                        fallback = bool(metadata and not metadata.get('stored'))
+                        ui = ui_events.UiEvent(ui.type,dict(ui.data,input=raw_input if fallback else ui.data.get('input'),
+                            input_truncated=ui_events.preview_cut(raw_input) and not fallback,
                             **({'full_input':dict(metadata,direction='input')} if metadata else {})))
                     if ui.type == "tool_end":
                         ui = self._keep_full_output(ui, ev, row, job_id,

@@ -25,6 +25,18 @@ def new(payload: dict) -> dict:
     return d
 
 
+def submission_scope(payload):
+    """A producer task/generation owns one decision, independent of retries and leases."""
+    origin = payload.get('origin') or {}
+    scope = origin.get('process_scope')
+    if isinstance(scope, dict) and scope.get('workitem'):
+        return tuple(scope.get(k) for k in ('tenant', 'instance', 'workitem', 'generation', 'version'))
+    legacy = origin.get('legacy_attempt')
+    if isinstance(legacy, dict) and legacy.get('workitem'):
+        return ('legacy', origin.get('incident'), legacy['workitem'])
+    return None
+
+
 def _level(d: dict, role: str) -> int:
     r = (d.get("roles") or {}).get(role)
     return int(r["level"]) if r else 0

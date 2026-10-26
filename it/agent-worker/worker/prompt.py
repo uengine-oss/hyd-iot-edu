@@ -66,9 +66,8 @@ LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이�
                  "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다.")
 
 FILE_READ_RULE = ("## 작업 파일 읽기\n작업 파일과 등록 스킬은 BOM 없는 UTF-8 원문입니다. "
-                  "Windows PowerShell에서 읽을 때는 기본 인코딩을 쓰지 말고 "
-                  "`Get-Content -Raw -Encoding UTF8 -LiteralPath 'context/task.json'`처럼 UTF8을 명시하세요. "
-                  "Python에서는 `Path(...).read_text(encoding='utf-8')`를 사용하세요. "
+                  "기본 Read 도구로 context/task.json과 context/input.json의 필요한 부분을 읽으세요. "
+                  "결과 파일은 기본 Write 도구로 UTF-8 JSON을 쓰세요. Bash·PowerShell·Python 실행을 요구하지 마세요. "
                   "깨진 문자열을 추측해 복원하거나 원본 파일에 BOM을 붙여 고치지 마세요.")
 
 
@@ -204,12 +203,23 @@ def _participants(extras: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+INLINE_INPUT_LIMIT = 8000
+
+
+def input_payload(row: dict[str, Any], extras: dict[str, Any]):
+    return row.get("output") or row.get("draft") or extras.get("sensitive_data")
+
+
 def _inputs(row: dict[str, Any], extras: dict[str, Any]) -> str:
-    payload = row.get("output") or row.get("draft") or extras.get("sensitive_data")
+    payload = input_payload(row, extras)
     if not payload:
         return ""
     if not isinstance(payload, str):
         payload = json.dumps(payload, ensure_ascii=False, indent=2)
+    if len(payload) > INLINE_INPUT_LIMIT:
+        return (payload[:INLINE_INPUT_LIMIT] + f'\n…[truncated: {len(payload)-INLINE_INPUT_LIMIT}자 생략]\n'
+                '전체 입력은 context/input.json에 보존되어 있습니다. 피드백과 관련된 항목만 찾아 읽고 수정하세요. '
+                '위 발췌는 잘린 데이터이며 완전한 JSON이 아닐 수 있습니다.')
     return payload
 
 

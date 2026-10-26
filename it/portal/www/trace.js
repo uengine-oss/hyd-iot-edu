@@ -155,13 +155,28 @@
 
   // events of one work item → rows (chronological). tool start/end pair by tool_use_id (EventTimeline.vue 와 같은 짝짓기)
   function publicNotes(evs) {
-    const latest = new Map();
+    const latest = new Map(), groups = new Map();
     for (const e of evs) {
       const d=e.data || {};
       if (e.event_type !== 'task_working' || !['text','public_text'].includes(d.type) || !d.message_id) continue;
       const key=JSON.stringify([e.proc_inst_id,e.todo_id,e.job_id,d.public_run,d.message_id]);
       const prior=latest.get(key);
       if (!prior || Number(d.sequence)>Number(prior.data.sequence)) latest.set(key,e);
+      if (!groups.has(key)) groups.set(key,new Map());
+      groups.get(key).set(Number(d.sequence),e);
+    }
+    for (const [key,last] of latest) {
+      if (last.data.content_mode !== 'delta') continue; // old snapshots and final authoritative text
+      let content='', expected=1, missing=false;
+      for (const [seq,e] of [...groups.get(key)].sort((a,b)=>a[0]-b[0])) {
+        if (e.data.content_mode === 'delta') {
+          if (seq !== expected) missing=true;
+          content += e.data.content || '';
+        } else { content=e.data.content || ''; missing=false; }
+        expected=seq+1;
+      }
+      if (missing) content='[일부 진행 기록을 받지 못했습니다] '+content;
+      latest.set(key,{...last,data:{...last.data,content,truncated:missing}});
     }
     const shown=new Set();
     return evs.flatMap(e=>{

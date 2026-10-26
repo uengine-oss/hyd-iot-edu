@@ -34,6 +34,37 @@ def codes(value):
     return {i['code'] for i in value['issues']}
 
 
+def test_source_numeric_discrepancies_are_reported_without_guessing_conversions(catalog):
+    p = proposal()
+    p['procedures'][0]['steps'][0]['anchor'] = {'quote': '팬을 100 %로 올린다'}
+    p['links']['SOP-PM-12']['actions'][0]['value'] = 80
+    p['knowledge'] = {
+        'evidence': [{'id': 'evd:hot', 'threshold': 75, 'anchor': {'quote': '온도 70 ℃ 초과'}}],
+        'rules': [{'id': 'rule:interval', 'tests': [{'input': 'in:hours', 'value': 2500}],
+                   'anchor': {'quote': '정비 간격은 2,000 시간'}}]}
+    notices = manual_knowledge.source_value_warnings(p)
+    assert len(notices) == 3 and all('수치를 찾지 못했습니다' in n for n in notices)
+    assert any('80' in n for n in notices) and any('75' in n for n in notices) and any('2500' in n for n in notices)
+    p['links']['SOP-PM-12']['actions'][0]['value'] = 100
+    p['knowledge']['evidence'][0]['threshold'] = 70
+    p['knowledge']['rules'][0]['tests'][0]['value'] = 2000
+    assert manual_knowledge.source_value_warnings(p) == []
+    # 60 minutes may be 1 hour, but matching numbers alone cannot establish this.
+    p['knowledge']['rules'][0]['anchor']['quote'] = '60 분 간격'
+    p['knowledge']['rules'][0]['tests'][0]['value'] = 1
+    assert '단위 환산' in manual_knowledge.source_value_warnings(p)[0]
+
+
+def test_preflight_applies_reviewers_override_to_numeric_notice(catalog):
+    p = proposal()
+    p['procedures'][0]['steps'][0]['anchor'] = {'quote': '설정 100 %'}
+    p['procedures'][0]['link'] = {'actions': [{'action': 'action:stop', 'value': 100}]}
+    p['links']['SOP-PM-12']['actions'][0]['value'] = 80
+    before = deepcopy(p)
+    result = manual_preflight.validate(p, catalog)
+    assert p == before and any('80' in n for n in result['source_value_warnings'])
+
+
 def test_pm_work_order_command_is_reported_without_changing_original(catalog):
     p = proposal()
     before = deepcopy(p)
@@ -158,7 +189,8 @@ def test_technical_pass_does_not_authorize_commit_or_review(catalog):
     p = proposal()
     p['links']['SOP-PM-12'].update(kind='control', actions=[dict(action='action:stop', value=80)])
     result = manual_preflight.validate(p, catalog)
-    assert result == dict(checked=True, technical_ready=True, needs_human_review=True, can_commit=False, issues=[])
+    assert {k: result[k] for k in ('checked','technical_ready','needs_human_review','can_commit','issues')} == dict(checked=True, technical_ready=True, needs_human_review=True, can_commit=False, issues=[])
+    assert any('80' in n for n in result['source_value_warnings'])
 
 
 @pytest.mark.parametrize('action,expected', [

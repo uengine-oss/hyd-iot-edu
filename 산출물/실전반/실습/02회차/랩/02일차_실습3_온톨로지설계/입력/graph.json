@@ -1,0 +1,812 @@
+{
+  "nodes": [
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-PMP-SEAL",
+        "name": "펌프 축 씰 키트"
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-FAN-BRG",
+        "name": "팬 베어링"
+      }
+    },
+    {
+      "labels": [
+        "Part"
+      ],
+      "props": {
+        "id": "P-CLR-CORE",
+        "name": "쿨러 코어"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:TS1",
+        "name": "유온",
+        "unit": "℃"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:CE",
+        "name": "냉각 효율",
+        "unit": "%"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:PS1",
+        "name": "토출 압력",
+        "unit": "bar"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:FS1",
+        "name": "유량",
+        "unit": "L/min"
+      }
+    },
+    {
+      "labels": [
+        "Quantity"
+      ],
+      "props": {
+        "id": "quantity:VS1",
+        "name": "팬 진동",
+        "unit": "mm/s"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-01",
+        "name": "HYD-01 유압 파워팩"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:cooler",
+        "name": "오일 쿨러"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:fan",
+        "name": "쿨러 팬"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:pump-a",
+        "name": "주 펌프 (A)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:pump-b",
+        "name": "예비 펌프 (B)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:motor",
+        "name": "구동 모터"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-01:tank",
+        "name": "작동유 탱크"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:TS1",
+        "tag": "TS1",
+        "normal": 48,
+        "unit": "℃",
+        "derived": false,
+        "limit": 65,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:CE",
+        "tag": "CE",
+        "normal": 84,
+        "unit": "%",
+        "derived": true
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:PS1",
+        "tag": "PS1",
+        "normal": 182,
+        "unit": "bar",
+        "derived": false,
+        "limit": 130,
+        "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:FS1",
+        "tag": "FS1",
+        "normal": 9,
+        "unit": "L/min",
+        "derived": false
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-01:VS1",
+        "tag": "VS1",
+        "normal": 0.6,
+        "unit": "mm/s",
+        "derived": false,
+        "limit": 2.0,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-02",
+        "name": "HYD-02 유압 파워팩"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:cooler",
+        "name": "오일 쿨러"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:fan",
+        "name": "쿨러 팬"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:pump-a",
+        "name": "주 펌프 (A)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:pump-b",
+        "name": "예비 펌프 (B)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:motor",
+        "name": "구동 모터"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-02:tank",
+        "name": "작동유 탱크"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:TS1",
+        "tag": "TS1",
+        "normal": 48,
+        "unit": "℃",
+        "derived": false,
+        "limit": 65,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:CE",
+        "tag": "CE",
+        "normal": 84,
+        "unit": "%",
+        "derived": true
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:PS1",
+        "tag": "PS1",
+        "normal": 182,
+        "unit": "bar",
+        "derived": false,
+        "limit": 130,
+        "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:FS1",
+        "tag": "FS1",
+        "normal": 9,
+        "unit": "L/min",
+        "derived": false
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-02:VS1",
+        "tag": "VS1",
+        "normal": 0.6,
+        "unit": "mm/s",
+        "derived": false,
+        "limit": 2.0,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Asset"
+      ],
+      "props": {
+        "id": "HYD-03",
+        "name": "HYD-03 유압 파워팩"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:cooler",
+        "name": "오일 쿨러"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:fan",
+        "name": "쿨러 팬"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:pump-a",
+        "name": "주 펌프 (A)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:pump-b",
+        "name": "예비 펌프 (B)"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:motor",
+        "name": "구동 모터"
+      }
+    },
+    {
+      "labels": [
+        "Component"
+      ],
+      "props": {
+        "id": "HYD-03:tank",
+        "name": "작동유 탱크"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:TS1",
+        "tag": "TS1",
+        "normal": 48,
+        "unit": "℃",
+        "derived": false,
+        "limit": 65,
+        "limit_direction": "upper"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:CE",
+        "tag": "CE",
+        "normal": 84,
+        "unit": "%",
+        "derived": true
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:PS1",
+        "tag": "PS1",
+        "normal": 182,
+        "unit": "bar",
+        "derived": false,
+        "limit": 130,
+        "limit_direction": "lower"
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:FS1",
+        "tag": "FS1",
+        "normal": 9,
+        "unit": "L/min",
+        "derived": false
+      }
+    },
+    {
+      "labels": [
+        "Sensor"
+      ],
+      "props": {
+        "id": "HYD-03:VS1",
+        "tag": "VS1",
+        "normal": 0.6,
+        "unit": "mm/s",
+        "derived": false,
+        "limit": 2.0,
+        "limit_direction": "upper"
+      }
+    }
+  ],
+  "rels": [
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:cooler",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:fan",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:pump-a",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:pump-b",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-01",
+      "b": "HYD-01:tank",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:cooler",
+      "b": "HYD-01:TS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:TS1",
+      "b": "quantity:TS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:cooler",
+      "b": "HYD-01:CE",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:CE",
+      "b": "quantity:CE",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:pump-a",
+      "b": "HYD-01:PS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:PS1",
+      "b": "quantity:PS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:pump-a",
+      "b": "HYD-01:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-01:fan",
+      "b": "HYD-01:VS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-01:VS1",
+      "b": "quantity:VS1",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:pump-a",
+      "b": "P-PMP-SEAL",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:fan",
+      "b": "P-FAN-BRG",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-01:cooler",
+      "b": "P-CLR-CORE",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:cooler",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:fan",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:pump-a",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:pump-b",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-02",
+      "b": "HYD-02:tank",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:cooler",
+      "b": "HYD-02:TS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:TS1",
+      "b": "quantity:TS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:cooler",
+      "b": "HYD-02:CE",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:CE",
+      "b": "quantity:CE",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:pump-a",
+      "b": "HYD-02:PS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:PS1",
+      "b": "quantity:PS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:pump-a",
+      "b": "HYD-02:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-02:fan",
+      "b": "HYD-02:VS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-02:VS1",
+      "b": "quantity:VS1",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:pump-a",
+      "b": "P-PMP-SEAL",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:fan",
+      "b": "P-FAN-BRG",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-02:cooler",
+      "b": "P-CLR-CORE",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:cooler",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:fan",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:pump-a",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:pump-b",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:motor",
+      "props": {}
+    },
+    {
+      "type": "HAS_COMPONENT",
+      "a": "HYD-03",
+      "b": "HYD-03:tank",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:cooler",
+      "b": "HYD-03:TS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:TS1",
+      "b": "quantity:TS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:cooler",
+      "b": "HYD-03:CE",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:CE",
+      "b": "quantity:CE",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:pump-a",
+      "b": "HYD-03:PS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:PS1",
+      "b": "quantity:PS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:pump-a",
+      "b": "HYD-03:FS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:FS1",
+      "b": "quantity:FS1",
+      "props": {}
+    },
+    {
+      "type": "MONITORED_BY",
+      "a": "HYD-03:fan",
+      "b": "HYD-03:VS1",
+      "props": {}
+    },
+    {
+      "type": "OBSERVES",
+      "a": "HYD-03:VS1",
+      "b": "quantity:VS1",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:pump-a",
+      "b": "P-PMP-SEAL",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:fan",
+      "b": "P-FAN-BRG",
+      "props": {}
+    },
+    {
+      "type": "USES_PART",
+      "a": "HYD-03:cooler",
+      "b": "P-CLR-CORE",
+      "props": {}
+    }
+  ]
+}

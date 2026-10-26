@@ -54,6 +54,28 @@ def snapshot(graph):
     return {'nodes': nodes, 'edges': edges}
 
 
+def test_revision_removals_are_previewed_without_writes_and_kept_in_receipt(api, graph):
+    client, _ = api
+    first, receipt = ingest(client, TEXT)
+    revision = review(client, WITHOUT_92, first['document_id'])
+    before = snapshot(graph)
+    response = client.post('/api/kg/manuals/changes', json=revision)
+    assert response.status_code == 200, response.text
+    changes = response.json()
+    assert snapshot(graph) == before
+    assert changes['previous_batch'] == receipt['batch']
+    removed = {n['id']: n for n in changes['removed']}
+    assert removed[SKILL_92]['name'] == '베어링 점검'
+    assert SKILL_91 not in removed
+    applied = client.post('/api/kg/manuals/commit', json=revision)
+    assert applied.status_code == 200, applied.text
+    assert applied.json()['removed'] == changes['removed']
+    history = client.get('/api/kg/manuals').json()
+    assert next(b for b in history if b['batch'] == applied.json()['batch'])['removed'] == changes['removed']
+    stale = client.post('/api/kg/manuals/changes', json=revision)
+    assert stale.status_code == 409
+
+
 def test_http_revision_and_initial_batch_rollback_refuse_used_node_without_any_graph_change(api, graph, archive):
     client, audits = api
     first, v1 = ingest(client, TEXT)

@@ -57,6 +57,31 @@ def test_general_source_uses_versioned_worker_and_requires_separate_review(rt,do
     assert manual_review.validate(archive,'hyd',preview)['procedures'][0]['steps'][0]['text'].startswith('전원을 차단')
 
 
+def test_independent_invalid_items_are_reported_in_one_correction(document):
+    _, source, proposal = document
+    proposal['sections'].append({'ref': 'bad-section', 'title': ''})
+    proposal['procedures'].extend([{'id': 'bad-sop', 'name': '잘못된 ID'},
+                                  {'id': 'SOP-OTHER-2', 'name': '연결 없음', 'section': 'missing-section'}])
+    proposal['knowledge'] = {'failure_modes': [{'id': 'bad-fm'}], 'causes': [{'id': 'bad-cause'}]}
+    with pytest.raises(ValueError) as exc:
+        extraction.validate_proposal(source, proposal)
+    message = str(exc.value)
+    for expected in ('절 제목', 'bad-sop', 'missing-section', 'bad-fm', 'bad-cause'):
+        assert expected in message
+
+
+def test_content_checks_report_independent_failures_together(document, monkeypatch):
+    _, source, proposal = document
+    def failure(message):
+        def check(*args):
+            raise ValueError(message)
+        return check
+    for name, message in [('check_section_titles', '절 제목 불일치'), ('check_action_values', '실행 값 누락'),
+                          ('check_purchase_policy', '구매 기준 누락'), ('check_penalty_rules', '감점 누락')]:
+        monkeypatch.setattr(extraction, name, failure(message))
+    assert extraction.content_issues(proposal, source, None) == ['절 제목 불일치', '실행 값 누락', '구매 기준 누락', '감점 누락']
+
+
 @pytest.mark.parametrize('change',[
     lambda p:p.update(source_id='another'),
     lambda p:p.update(page_reviews=[]),
@@ -93,10 +118,12 @@ def test_explicit_no_procedures_is_a_reviewable_result_not_a_fabricated_sop(docu
     assert extraction.validate_proposal(source,proposal)['procedures']==[]
 
 
-def test_full_draft_survives_retry_prompt():
+def test_full_draft_is_preserved_while_retry_prompt_points_to_its_file():
     draft={'proposal':{'excerpt':'근거 '*5000+'마지막 안전 조건'}}
     built=prompt.build({'draft':draft},{},workdir='/workspace')
-    assert json.dumps(draft,ensure_ascii=False,indent=2) in built
+    assert len(built) < 12000 and '[truncated:' in built and 'context/input.json' in built
+    assert prompt.input_payload({'draft':draft},{}) == draft
+    assert draft['proposal']['excerpt'].endswith('마지막 안전 조건')
 
 
 def test_output_cannot_claim_human_approval_or_change_graph_head(rt,document):
@@ -284,8 +311,11 @@ def test_quote_only_anchors_are_located_by_the_server_and_stored_with_offsets(rt
     stored=result['preview']['procedures'][0]['steps'][0]['anchor']
     assert stored['start']==proposal['procedures'][0]['steps'][0]['anchor']['start'] and stored['end']==proposal['procedures'][0]['steps'][0]['anchor']['end']
     assert result['preview']['sections'][0]['anchor']['quote']=='정비 절차'      # the source's own characters
+    assert result['preview']['sections'][0]['anchor']['located']=='normalized'
     preview=result['preview'];preview.update(reviewed=True,by='검토자',links={'SOP-EXTRACT-1':{'failureMode':'fm:bearing-degradation'}})
-    assert manual_review.validate(archive,'hyd',preview)['procedures'][0]['id']=='SOP-EXTRACT-1'
+    plan=manual_review.validate(archive,'hyd',preview)
+    assert plan['procedures'][0]['id']=='SOP-EXTRACT-1'
+    assert plan['sections'][0]['anchor']['located']=='normalized'
 
 
 def test_an_ambiguous_short_quote_goes_back_to_the_agent_as_a_correction(rt,document):

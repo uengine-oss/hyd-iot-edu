@@ -145,6 +145,25 @@ def test_committed_intent_recovers_after_dispatch_is_lost(world, monkeypatch):
     assert world['book'][d['id']]['chosen'] == d['options'][0]['id']
 
 
+def test_broken_approval_does_not_starve_committed_delivery_or_poll(world, monkeypatch, caplog):
+    rt, inst, inc, d, wi = ready(world)
+    with monkeypatch.context() as patch:
+        patch.setattr(rt, '_after_commit', lambda *a, **k: None)
+        choose(rt, d, wi)
+    pending = rt.repo.pending_approvals
+
+    def with_orphan(tenant, after_id=None):
+        rows = pending(tenant, after_id=after_id)
+        return [{'todo_id': 'missing-workitem'}] + rows if after_id is None else rows
+
+    monkeypatch.setattr(rt.repo, 'pending_approvals', with_orphan)
+    rt.poll_once(now=NOW)
+    assert rt.repo.get_approval(wi['id'], rt.tenant_id)['status'] == 'DELIVERED'
+    assert rt.repo.get_workitem(wi['id'])['status'] == 'DONE'
+    assert inc.cmd_id
+    assert 'approval reconciliation failed for missing-workitem' in caplog.text
+
+
 def test_snapshot_failure_leaves_recoverable_approval_and_blocks_plc(world, monkeypatch):
     rt, inst, inc, d, wi = ready(world)
     def fail():
@@ -290,6 +309,20 @@ def test_legacy_http_routes_cannot_bypass_instance_approval(world, monkeypatch, 
     assert d['state']=='PENDING_APPROVAL' and inc.cmd_id is None
 
 
+def test_changed_conditions_require_new_consent_instead_of_retry(world):
+    from procsvc.current_approval import ApprovalReviewRequired
+    rt, inst, inc, d, wi = ready(world)
+    def refuse(row):
+        raise ApprovalReviewRequired({'reasons': ['재고 변경']})
+    rt.hooks.deliver_approval = refuse
+    rt.select(wi['id'], d['id'], d['options'][0]['id'], 'manager', 'role:prod-mgr', now=NOW)
+    row = rt.repo.get_approval(wi['id'], rt.tenant_id)
+    assert row['history'][-1]['kind'] == 'review_required'
+    with pytest.raises(ValueError, match='새 판단'):
+        rt.retry_approval(wi['id'], 'manager', 'role:prod-mgr', now=NOW)
+    assert inc.cmd_id is None and row['attempts'] == 1
+
+
 def test_approval_http_reports_failure_then_authorized_recovery(world, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
@@ -312,3 +345,16 @@ def test_approval_http_reports_failure_then_authorized_recovery(world, monkeypat
     response = client.post(url, json={'by':'manager','role':'role:prod-mgr'})
     assert response.status_code==200 and response.json()['status']=='DELIVERED' and inc.cmd_id
     assert client.post(url, json={'by':'manager','role':'role:prod-mgr'}).status_code==409
+
+
+def test_delivery_rechecks_conditions_with_the_consent_time_recorded_at_approval(world):
+    """2026-10-26 수업 한 바퀴(final5): 승인 검사(시뮬레이션 30분 안)는 통과했는데 전달이 같은 예측 나이 검사를 지금 시각으로 다시 해 31분 —
+    냉각 명령이 멈췄다. 승인 때 동의 시각을 기록하고, 전달 검사도 그 시각을 넘긴다(입력 · 인터록 · 규칙은 전달 때 다시 본다)."""
+    rt, inst, inc, d, wi = ready(world)
+    seen = []
+    world['ctx'].check_approval = lambda *args: (seen.append(args), {'allowed': True, 'decision': args[0]['id'], 'option': args[1]})[1]
+    choose(rt, d, wi)
+    approval = rt.repo.get_approval(wi['id'], rt.tenant_id)
+    consented = approval['payload']['consented_at']
+    assert consented == engine.now_iso(NOW)
+    assert seen and all(len(a) == 4 and a[3] == consented for a in seen)          # 승인 검사 · 전달 검사 모두 같은 동의 시각

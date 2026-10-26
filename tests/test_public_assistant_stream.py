@@ -19,7 +19,8 @@ def test_text_arrives_before_boundary_complete_and_untruncated(tmp_path,monkeypa
         assert observed[-1]['data']['complete'] is False
         clock[0]+=.3
         yield ExecEvent(kind=ExecEventKind.ASSISTANT_TEXT,text='끝')
-        assert records()[-1]['data']['content']==text+'끝'
+        assert records()[-1]['data']['content']=='끝'
+        assert records()[-1]['data']['content_mode']=='delta'
         yield ExecEvent(kind=ExecEventKind.TOOL_START,tool='Read',tool_use_id='r',tool_input={})
         yield ExecEvent(kind=ExecEventKind.RESULT,text='{"cause":"c","failure_mode":"f","guide_card":{}}')
     runner=Runner(_settings(tmp_path),repo,exec_fn=stream,schema_prompt='s',resolve_provider=lambda _:object())
@@ -59,6 +60,22 @@ def test_high_frequency_deltas_keep_first_and_full_end_without_quadratic_writes(
     assert sum(len(e['data']['content']) for e in rows)==2002
 
 
+def test_slow_stream_storage_is_linear_and_complete(tmp_path,monkeypatch):
+    clock=[0.0];monkeypatch.setattr('worker.runner.time.monotonic',lambda:clock[0])
+    repo,inst=_repo()
+    def stream(provider,request,env):
+        for i in range(100):
+            clock[0]=i*.3
+            yield ExecEvent(kind=ExecEventKind.ASSISTANT_TEXT,text='진행 '*10)
+        raise RuntimeError('boundary absent')
+    Runner(_settings(tmp_path),repo,exec_fn=stream,schema_prompt='s',resolve_provider=lambda _:object()).poll_once()
+    rows=[e['data'] for e in repo.list_events(proc_inst_id=inst['proc_inst_id']) if (e.get('data') or {}).get('message_id')]
+    text='진행 '*1000
+    assert rows[-1]['complete'] and rows[-1]['content']==text.strip()
+    assert ''.join(r['content'] for r in rows[:-1])==text
+    assert sum(len(r['content']) for r in rows)<=2*len(text)
+
+
 def test_portal_snapshot_replay_order_duplicates_runs_and_final_clear(tmp_path):
     import shutil,subprocess
     from pathlib import Path
@@ -77,6 +94,11 @@ assert.equal(merge([row(2,'whole')])[0].data.content,'whole');
 assert.equal(merge([row(1,'one'),row(1,'two','other')]).length,2);
 assert.equal(merge([row(1,'answer'),row(2,'')]).length,0);
 const long='공개'.repeat(10000);assert.equal(merge([row(3,long)])[0].data.content,long);
+const delta=(seq,text)=>{const r=row(seq,text);r.data.content_mode='delta';return r;};
+assert.equal(merge([delta(2,'둘'),delta(1,'하나'),delta(2,'둘')])[0].data.content,'하나둘');
+assert.match(merge([delta(2,'둘')])[0].data.content,/일부 진행 기록/);
+assert.equal(merge([delta(2,'둘'),row(3,'완료')])[0].data.content,'완료');
+assert.equal(merge([delta(1,'답'),row(2,'')]).length,0);
 ''',encoding='utf8')
     result=subprocess.run([node,str(script),str(source)],capture_output=True,text=True,timeout=15)
     assert result.returncode==0,result.stderr

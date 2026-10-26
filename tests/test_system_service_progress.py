@@ -173,9 +173,28 @@ def test_recovered_claim_closes_orphan_as_response_unconfirmed_without_replaying
     assert len(orphan) == 1 and orphan[0]['data']['response_unconfirmed'] is True
     assert orphan[0]['data']['attempt_id'] == attempt
     assert 'result' not in orphan[0]['data']
-    assert len(calls) == 1 and calls[0][3] == f"{inst['proc_inst_id']}:{wi['id']}"
+    assert calls == []
+    assert repo.get_workitem(wi['id'])['status'] == 'PENDING'
     new_start = [r for r in rows if r['event_type'] == 'tool_usage_started' and r['id'] != start['id']]
-    assert len(new_start) == 1 and new_start[0]['data']['attempt_id'] != attempt
+    assert new_start == []
+
+
+@pytest.mark.parametrize('idempotent', [False, True])
+def test_external_success_then_local_failure_retries_only_with_confirmed_deduplication(idempotent):
+    repo, calls = procdb.MemoryRepo(), []
+    def hook(*args):
+        calls.append(args)
+        return {'status': 'ok', 'idempotent': idempotent, 'result': {'text': 'external write done'}}
+    rt, inst, wi = create_case(repo, 'retry-test', hook)
+    rt.fail_after_call = True
+    rt._run_service(inst, wi, datetime.now(timezone.utc))
+    fresh = repo.get_workitem(wi['id'])
+    assert fresh['status'] == ('SUBMITTED' if idempotent else 'PENDING')
+    rt._run_service(inst, fresh, datetime.now(timezone.utc))
+    assert len(calls) == (2 if idempotent else 1)
+    if not idempotent:
+        errors = [r for r in repo.list_events(todo_id=wi['id']) if r['event_type'] == 'error']
+        assert errors[-1]['data']['recovery'] == 'verify_external_effect'
 
 
 def test_progress_storage_fault_prevents_upstream_and_does_not_commit_business(repository, monkeypatch):

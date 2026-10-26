@@ -34,6 +34,24 @@ def test_all_lines_have_exact_source_coordinates_and_graph_keeps_full_text(archi
     assert not any(e['type'] == 'OUTPUTS' for e in graph['edges'])
 
 
+def test_review_loads_integrity_checked_source_once_for_all_anchors(archive, monkeypatch):
+    source, body = reviewed(archive)
+    read = archive._read
+    reads = []
+    def counted(tenant, sid):
+        reads.append((tenant, sid))
+        return read(tenant, sid)
+    monkeypatch.setattr(archive, '_read', counted)
+    plan = manual_review.validate(archive, 'hyd', body)
+    assert len(plan['procedures'][0]['steps']) == 2
+    assert reads == [('hyd', source['source_id'])]
+    changed = copy.deepcopy(body)
+    changed['procedures'][0]['steps'][0]['anchor']['quote'] = '위조한 인용'
+    with pytest.raises(ValueError, match='원문'):
+        manual_review.validate(archive, 'hyd', changed)
+    assert len(reads) == 2  # fresh integrity check for the next request
+
+
 def test_same_ref_in_two_documents_has_distinct_graph_identity(archive):
     _, a = reviewed(archive)
     _, b = reviewed(archive)

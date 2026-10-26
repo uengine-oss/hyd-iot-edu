@@ -624,15 +624,17 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             return
         retry = int(fresh.get("retry") or 0) + 1
         review_required = isinstance(err, ApprovalReviewRequired)
+        effect_review = self._unconfirmed_effect(fresh)
         msg = f"{type(err).__name__}: {str(err)[:300]}"
         log.warning("%s %s failed (%d/%d): %s", fresh["proc_inst_id"], fresh["activity_id"], retry, MAX_RETRIES, msg)
         fresh.update(retry=retry, consumer=None, log=(fresh.get("log") or "") + f"[Error] {msg}; ")
-        if review_required or retry >= MAX_RETRIES:
+        if review_required or effect_review or retry >= MAX_RETRIES:
             fresh.update(status="PENDING", end_date=None)
         self.repo.update_workitem(fresh)
         self.repo.record_events([{"job_id": "TASK_REVIEW_REQUIRED" if review_required else "TASK_ERROR", "todo_id": fresh["id"], "proc_inst_id": fresh["proc_inst_id"], "crew_type": "agent",
                                   "event_type": "error", "data": {"name": "현재 조건 변경 · 새 판단과 승인 필요" if review_required else "엔진 오류", "raw_error": msg, "retry": retry,
-                                                                  "recovery": "new_judgment_and_consent" if review_required else "bounded_retry",
+                                                                  "recovery": "verify_external_effect" if effect_review else "new_judgment_and_consent" if review_required else "bounded_retry",
+                                                                  "external_effect_review": effect_review,
                                                                   "assessment": deepcopy(err.report) if review_required else None,
                                                                   "service_result": err.result if isinstance(err, ServiceExecutionError) else None}}])
         inst = self.repo.get_instance(fresh["proc_inst_id"])
@@ -719,7 +721,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             purchase = effect_parts.purchase_quote(opt, values, self._purchase_quotes(values))
         payload = {'plan':plan, 'decision':decision_id, 'option':option_id, 'by':by, 'by_name':by_name, 'role':role,
                    'reason':reason, 'commands':commands, 'asset':values.get('asset'), 'incident':values.get('incident'),
-                   'deferred':deferred, 'purchase':purchase}
+                   'deferred':deferred, 'purchase':purchase,
+                   # 2026-10-26 수업 한 바퀴(final5): 승인 검사는 통과했는데 바로 뒤 전달이 같은 예측 나이 검사를 지금 시각으로 다시 해 30분을 넘겨
+                   # 냉각 명령이 멈췄다 — 예측 나이는 사람이 동의한 시각으로 잰다(입력 · 인터록 · 규칙은 전달 때 다시 본다)
+                   'consented_at':engine.now_iso(now)}
         self.hooks.validate_approval(payload)
         self._check_deadline(wi,inst,self.definition_for(inst),now)
         kind = "control" if any(a.get("kind") == "command" for a in opt.get("actions") or []) else "work_order"
@@ -1015,7 +1020,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         now = now or datetime.now(timezone.utc)
         fired = []
         for wi in self.repo.due_timers(self.tenant_id,now):
-            if self._fire_timeout(wi,now):fired.append(self.repo.get_workitem(wi['id']))
+            try:
+                if self._fire_timeout(wi,now):
+                    fired.append(self.repo.get_workitem(wi['id']))
+            except Exception:
+                # A failed transition remains due; it must not starve other
+                # instances' timers or be reported as having fired.
+                log.exception('timer reconciliation failed for %s', wi['id'])
         return fired
 
     @workitem_transition
@@ -1106,6 +1117,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                 inst=self.repo.get_instance(wi['proc_inst_id'])
                 if (not fresh or fresh['status']!='SUBMITTED' or inst['status']!='RUNNING'
                         or fresh.get('consumer')!=wi.get('consumer')):return
+                if self._unconfirmed_effect(fresh):
+                    raise ServiceExecutionError({'error': '이전 외부 쓰기의 처리 여부와 중복 방지가 확인되지 않았습니다. 외부 결과를 확인할 때까지 자동 재실행을 멈춥니다.'})
                 tool = self._tool_of(fresh)
                 handler = {"incident:command": self._run_command, "incident:reobserve": self._run_reobserve,
                            "enterprise:WO_CREATE": self._run_work_order, **self._service_handlers()}.get(tool)

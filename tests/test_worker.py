@@ -266,6 +266,41 @@ def test_runner_asks_the_same_session_to_fix_the_result_shape_before_failing(tmp
     assert any("출력 형식 교정 요청 1/2" in json.dumps(e["data"], ensure_ascii=False) for e in repo.list_events(todo_id=row["id"]))
 
 
+def test_large_correction_input_is_bounded_with_complete_file_preserved(tmp_path):
+    repo, inst = _repo()
+    row = repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    draft = {'proposal': '원문 근거 ' * 30000, 'tail': '끝의 수정 대상'}
+    repo.update_workitem(row | {'draft': draft, 'draft_status': 'FB_REQUESTED'})
+    excerpt = prompt._inputs({'draft': draft}, {})
+    assert len(excerpt) < 8300 and '[truncated:' in excerpt and 'context/input.json' in excerpt
+    def fn(provider, request, env):
+        saved = json.loads((Path(request.workdir)/'context/input.json').read_text(encoding='utf-8'))
+        assert saved == draft
+        yield from _fake_exec('{"cause":"c","failure_mode":"f","guide_card":{"x":1}}')(provider, request, env)
+    runner = Runner(_settings(tmp_path), repo, exec_fn=fn, schema_prompt='s', resolve_provider=lambda _:object())
+    runner.poll_once()
+    assert repo.get_workitem(row['id'])['status'] == 'SUBMITTED'
+
+
+def test_correction_rounds_share_one_deadline(tmp_path, monkeypatch):
+    clock=[0.0]
+    monkeypatch.setattr('worker.runner.time.monotonic', lambda:clock[0])
+    repo, inst = _repo()
+    calls=[]
+    def advance():
+        clock[0] += 6
+    def fn(provider, request, env):
+        calls.append(request)
+        answer='형식이 틀린 응답' if len(calls)==1 else '{"cause":"c","failure_mode":"f","guide_card":{"x":1}}'
+        yield from _fake_exec(answer, on_event=advance)(provider, request, env)
+    runner=Runner(_settings(tmp_path,run_timeout_s=10),repo,exec_fn=fn,schema_prompt='s',resolve_provider=lambda _:object())
+    runner.poll_once()
+    row=repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert row['draft_status']=='FAILED' and row['output'] is None
+    assert len(calls)==2 and calls[1].resume_session=='sess-A'
+    assert any('실행 제한 시간' in str(e.get('data')) for e in repo.list_events(todo_id=row['id']))
+
+
 def test_runner_pauses_as_a_human_question_and_resumes_after_the_answer(tmp_path):
     repo, inst = _repo()
     reqs = []

@@ -16,6 +16,37 @@ def answer(tool, query):
     return dict(status='answered', answer='조회 결과입니다.', evidence=[dict(tool=tool, query=query, result='실제 결과 요약')])
 
 
+def test_actual_output_is_compared_with_claimed_numbers_and_ids(world, tmp_path):
+    rt = world['rt']; _people(rt)
+    value = _ask(rt)
+    wrong = copy.deepcopy(ANSWER)
+    wrong['answer'] = 'HYD-03의 재고는 900개입니다.'
+    wrong['evidence'][0]['result'] = 'HYD-03 | 900'
+    _work(rt, tmp_path, _cli(wrong))
+    result = ask.view(rt, value['id'])['result']
+    evidence = result['evidence'][0]
+    assert evidence['verified'] and 'HYD-02' in evidence['actual_result']
+    assert evidence['result_check']['status'] == 'review'
+    assert 'HYD-03' in evidence['result_check']['missing']
+    assert result['answer_check']['status'] == 'review'
+    assert '9E+2' in result['answer_check']['missing']
+
+
+def test_large_original_is_used_but_another_cases_payload_is_never_evidence():
+    raw = '본문 ' * 3000 + ' skill:tail-node 78123'
+    events = [dict(proc_inst_id='mine', event_type='tool_usage_started', data=dict(tool='neo4j/read_neo4j_cypher', tool_use_id='c', input={'query': 'Q'})),
+              dict(proc_inst_id='mine', event_type='tool_usage_finished', data=dict(tool_use_id='c', output='잘린 미리보기', output_truncated=True,
+                   full_output={'stored': True, 'ref': 'p', 'cut': False}))]
+    load = lambda _: dict(proc_inst_id='mine', content=raw, meta={'cut': False})
+    calls = ask.tool_calls(events, load)
+    assert ask.result_comparison('skill:tail-node 78123', calls)['status'] == 'literal_match'
+    assert len(calls[0]['output_text']) <= 601
+    foreign = ask.tool_calls(events, lambda _: dict(proc_inst_id='other', content=raw))
+    assert ask.result_comparison('78123', foreign)['status'] == 'unavailable'
+    cut = ask.tool_calls(events, lambda _: dict(proc_inst_id='mine', content=raw, meta={'cut': True}))
+    assert ask.result_comparison('78123', cut)['status'] == 'unavailable'
+
+
 @pytest.mark.parametrize('args', [{}, {'table': 'parts', 'limit': 2},
     {'filter': {'active': False, 'ids': [1, '2'], 'deleted': None}, 'columns': ['name', 'count']}])
 def test_structured_arguments_match_exact_successful_tool(args):

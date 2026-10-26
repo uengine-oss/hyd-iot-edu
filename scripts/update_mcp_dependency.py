@@ -1,6 +1,7 @@
 """Narrow, idempotent tenant MCP dependency migration; preserves other settings."""
 import json
 import psycopg
+from pathlib import Path
 
 with psycopg.connect("postgresql://postgres:postgres@127.0.0.1:54322/postgres") as conn:
     row = conn.execute("select mcp from tenants where id = %s for update", ("hyd",)).fetchone()
@@ -9,12 +10,12 @@ with psycopg.connect("postgresql://postgres:postgres@127.0.0.1:54322/postgres") 
         config = json.loads(config)
     server = config["mcpServers"]["neo4j"]
     args = server["args"]
-    if args == ["mcp-neo4j-cypher@0.4.1", "--transport", "stdio"]:
-        args[:0] = ["--with", "fastmcp==2.13.0.2"]
-        from psycopg.types.json import Jsonb
-        conn.execute("update tenants set mcp = %s where id = %s", (Jsonb(config), "hyd"))
-        print("Updated only neo4j args; other tenant MCP fields preserved")
-    elif args[:2] == ["--with", "fastmcp==2.13.0.2"]:
-        print("Already pinned")
+    if server['command'] == 'uvx' and args in (["mcp-neo4j-cypher@0.4.1", "--transport", "stdio"],
+            ["--with", "fastmcp==2.13.0.2", "mcp-neo4j-cypher@0.4.1", "--transport", "stdio"]):
+        migration = Path(__file__).resolve().parents[1] / 'it/supabase/migrations/20261026000063_bounded_neo4j_mcp.sql'
+        conn.execute(migration.read_text(encoding='utf-8'))
+        print("Updated known Neo4j adapter; other tenant MCP fields preserved")
+    elif server['command'] == 'python' and args == ['-m', 'hydcommon.neo4j_mcp']:
+        print("Already using the bounded adapter")
     else:
         raise RuntimeError("Unrecognized neo4j args; no changes applied")

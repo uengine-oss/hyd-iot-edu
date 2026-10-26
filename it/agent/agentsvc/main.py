@@ -466,6 +466,7 @@ class ApprovalCheckReq(BaseModel):
     decision: dict
     option: str
     role: str
+    consented_at: str | None = None      # 사람이 승인한 시각 — 예측 나이를 이 시각으로 잰다(process 가 승인 때 기록)
 
 
 class ForecastReq(BaseModel):
@@ -506,7 +507,7 @@ def approval_check(req: ApprovalCheckReq):
     """Read-only policy/source assessment; this endpoint cannot authorize effects."""
     from .approval import assess
     try:
-        return assess(_kg(), tsdb, req.decision, req.option, req.role)
+        return assess(_kg(), tsdb, req.decision, req.option, req.role, consented_at=req.consented_at)
     except ValueError as e:
         raise HTTPException(409, str(e))
 

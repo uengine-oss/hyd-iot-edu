@@ -99,9 +99,12 @@
     if (!r) return '';
     if (r.kind === 'answered') {
       const ev = (r.evidence || []).map(e => `<li>${UI.chipText(e.verified ? '실행 기록에서 확인됨' : '실행 기록에 없음', e.verified ? 'success' : 'warning')} <b>${esc(UI.toolName(e.tool))}</b>
-          <div class="ask-query"><code>${esc(UI.clean(e.query))}</code></div>${e.result != null ? `<div class="muted">결과: ${esc(window.hydTrace ? hydTrace.outBrief(e.result, 200) : String(e.result))}</div>` : ''}</li>`).join('');
+          <div class="ask-query"><code>${esc(UI.clean(e.query))}</code></div>${e.result != null ? `<div class="muted">에이전트 요약: ${esc(window.hydTrace ? hydTrace.outBrief(e.result, 200) : String(e.result))}</div>` : ''}
+          <div class="muted">실제 조회 결과: ${esc(e.actual_result || '원문 없음')}</div>
+          ${e.result_check ? `<p class="field-hint">${esc(e.result_check.note)}${e.result_check.missing?.length ? `: ${esc(e.result_check.missing.join(', '))}` : ''}</p>` : ''}</li>`).join('');
       return `<div class="ask-answer"><p>${esc(UI.clean(r.answer))}</p>
-        <div class="card-chips">${UI.chipText(`근거 ${r.verified}개 확인`, 'success')} ${UI.chipText(`성공한 조회 ${r.queried}건`, 'neutral')}</div></div>`
+        <div class="card-chips">${UI.chipText(`조회 기록 ${r.verified}개 확인`, 'neutral')} ${UI.chipText(`성공한 조회 ${r.queried}건`, 'neutral')}</div>
+        ${r.answer_check ? `<p class="field-hint">${esc(r.answer_check.note)}${r.answer_check.missing?.length ? `: ${esc(r.answer_check.missing.join(', '))}` : ''}</p>` : ''}</div>`
         + UI.fold(`근거 — 실행한 질의 · 조회 결과 <span class="chip tone-neutral sm">${(r.evidence || []).length}</span>`, `<ol class="stack-list">${ev}</ol>`
           + (r.note ? `<p class="field-hint">고른 근거: ${esc(UI.clean(r.note))}</p>` : ''), { cls: 'small' });
     }

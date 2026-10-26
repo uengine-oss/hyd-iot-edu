@@ -208,14 +208,38 @@ def _preview(value, n=600) -> str:
     return text if len(text) <= n else text[:n] + '…'
 
 
-def tool_calls(events) -> list[dict]:
+def _event_value(event, direction, payload_loader):
+    """Resolve only the original bound to this case; previews never count as complete evidence."""
+    data = event.get('data') or {}
+    value = data.get(direction)
+    ref = data.get('full_' + direction) or {}
+    complete = value is not None and not data.get(direction + '_truncated') and not ref
+    if payload_loader and ref.get('stored') and ref.get('ref'):
+        row = payload_loader(ref['ref'])
+        if row and row.get('proc_inst_id') == event.get('proc_inst_id') and row.get('proc_inst_id'):
+            value = row.get('content')
+            complete = not (row.get('meta') or {}).get('cut', False) and not ref.get('cut', False)
+            if direction == 'input' and isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    complete = False
+    envelope = _envelope(value)
+    if direction == 'output' and isinstance(envelope, dict) and envelope.get('truncated') is True:
+        complete = False
+    return value, complete
+
+
+def tool_calls(events, payload_loader=None) -> list[dict]:
     """이 작업의 도구 호출(시작 · 끝을 tool_use_id로 짝지음), 일어난 순서대로."""
     calls, by_id = [], {}
     for e in events:
         d = e.get('data') or {}
         if e.get('event_type') == 'tool_usage_started':
+            actual_input, input_complete = _event_value(e, 'input', payload_loader)
             c = {'id': d.get('tool_use_id') or e.get('id'), 'tool': short_tool(d.get('tool')), 'raw_tool': d.get('tool'),
                  'data': is_data_tool(d.get('tool')), 'input': d.get('input'), 'input_text': _preview(d.get('input')),
+                 '_input': actual_input if input_complete else None,
                  'started': e.get('timestamp'), 'finished': None, 'running': True, 'ok': None, 'output_text': None, 'problem': None}
             calls.append(c)
             by_id[c['id']] = c
@@ -226,7 +250,9 @@ def tool_calls(events) -> list[dict]:
                      'data': is_data_tool(d.get('tool')), 'input': None, 'input_text': '', 'started': None}
                 calls.append(c)
             problem = _failed(d.get('output'), d.get('is_error'))
-            c.update(finished=e.get('timestamp'), running=False, ok=problem is None, problem=problem, output_text=_preview(d.get('output')))
+            actual_output, output_complete = _event_value(e, 'output', payload_loader)
+            c.update(finished=e.get('timestamp'), running=False, ok=problem is None, problem=problem,
+                     output_text=_preview(actual_output), output_complete=output_complete, _output=actual_output)
     return calls
 
 
@@ -258,7 +284,7 @@ def _matches(item, call) -> bool:
         return False
     query = item.get('query')
     if isinstance(query, dict):
-        actual = call.get('input')
+        actual = call.get('_input', call.get('input'))
         if not isinstance(actual, dict):
             return False
         try:
@@ -270,11 +296,31 @@ def _matches(item, call) -> bool:
     q = _norm(query)
     if not isinstance(query, str) or not q:
         return False
-    for s in _queries(call.get('input')):
+    for s in _queries(call.get('_input', call.get('input'))):
         n = _norm(s)
         if n and n == q:
             return True
     return False
+
+
+def result_comparison(claimed, calls):
+    """A warning about literal numbers/ids, never a semantic truth certificate (units/calculations may differ)."""
+    from decimal import Decimal
+    import re
+    def facts(value):
+        text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
+        numbers = {str(Decimal(n.replace(',', '')).normalize()) for n in
+                   re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', text)}
+        ids = set(re.findall(r'\b[a-z][a-z_]*:[a-zA-Z0-9_:-]+|\b[A-Z]{2,}-\d+(?:-\d+)*\b', text))
+        return numbers | ids
+    originals = [c.get('_output') for c in calls if c.get('output_complete')]
+    if not originals or len(originals) != len(calls):
+        return {'status': 'unavailable', 'note': '조회 결과 원문 전체가 없어 답의 수치·ID를 대조하지 못했습니다'}
+    present = set().union(*(facts(x) for x in originals))
+    missing = sorted(facts(claimed) - present)
+    return {'status': 'review' if missing else 'literal_match', 'missing': missing,
+            'note': ('조회 결과에서 찾지 못한 수치·ID가 있습니다. 계산·단위 환산 또는 잘못 옮긴 값인지 확인하세요' if missing else
+                     '수치·ID의 표기만 대조했습니다. 답의 의미와 계산이 맞다는 보증은 아닙니다')}
 
 
 def verdict(output, calls) -> dict:
@@ -296,12 +342,15 @@ def verdict(output, calls) -> dict:
         identities = {c['tool'] for c in matches}
         hit = matches[0] if len(identities) == 1 else None
         evidence.append({'tool': item.get('tool'), 'query': item.get('query'), 'result': item.get('result'),
-                         'verified': hit is not None, 'call': hit and hit['id']})
+                         'verified': hit is not None, 'call': hit and hit['id'],
+                         'actual_result': hit and hit.get('output_text'),
+                         'result_check': result_comparison(item.get('result'), matches) if hit else None})
     if not any(e['verified'] for e in evidence):
         return {'kind': 'unanswerable', 'by': 'server', 'claimed': claimed, 'evidence': evidence,
                 'reason': (f'에이전트가 근거로 적은 질의 {len(evidence)}개를 이 작업의 실제 도구 호출 기록(성공 {len(data_ok)}건)에서 찾지 못했습니다 — '
                            '근거를 확인할 수 없어 답으로 보이지 않습니다')}
     return {'kind': 'answered', 'answer': claimed, 'evidence': evidence, 'note': output.get('note'),
+            'answer_check': result_comparison(claimed, [c for c in data_ok if any(e['call'] == c['id'] for e in evidence)]),
             'verified': sum(1 for e in evidence if e['verified']), 'queried': len(data_ok)}
 
 
@@ -374,11 +423,11 @@ def view(rt, proc_inst_id, *, worker_probe=None, now=None) -> dict:
     state, message = _state(inst, wi, events, now)
     performer = (wi or {}).get('user_id') or next((b.get('endpoint') for b in inst.get('role_bindings') or [] if b.get('name') == ROLE), None)
     user = next(iter(rt.repo.list_users([performer], rt.tenant_id)), None) if performer else None
-    calls = tool_calls(events)
+    calls = tool_calls(events, rt.repo.get_event_payload)
     out = {'id': inst['proc_inst_id'], 'question': values.get('question'), 'asked_by': values.get('asked_by'),
            'agent': {'id': performer, 'name': (user or {}).get('username') or performer},
            'started': inst.get('start_date'), 'ended': inst.get('end_date'), 'state': state, 'message': message,
-           'workitem': (wi or {}).get('id'), 'tool_calls': calls,
+           'workitem': (wi or {}).get('id'), 'tool_calls': [{k:v for k,v in c.items() if not k.startswith('_')} for c in calls],
            'counts': {'calls': len(calls), 'data': sum(1 for c in calls if c['data']), 'ok': sum(1 for c in calls if c['data'] and c['ok']),
                       'running': sum(1 for c in calls if c['running'])},
            'link': f"#/instances/{inst['proc_inst_id']}" + (f"/task/{wi['id']}" if wi else ''), 'result': None}

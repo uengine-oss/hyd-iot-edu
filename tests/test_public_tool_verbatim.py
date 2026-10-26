@@ -7,17 +7,21 @@ from test_instances import rt,ALERT,NOW,_by  # noqa: F401
 from test_u1_task_detail import _scenario,_render
 
 
-def test_full_input_is_journaled_and_event_original_kept(tmp_path):
+def test_full_input_is_journaled_once_with_bounded_event_preview(tmp_path):
     repo,inst=_repo();original=dict(query='입력'*9000+'입력끝')
     def stream(provider,request,env):
         yield ExecEvent(kind=ExecEventKind.TOOL_START,tool='read_rows',tool_use_id='read',tool_input=original)
-        rows=repo.list_events(proc_inst_id=inst['proc_inst_id'])
-        start=next(e for e in rows if e['event_type']=='tool_usage_started')
-        assert start['data']['input']==original
-        ref=start['data']['full_input'];assert ref['stored'] and ref['direction']=='input'
-        assert json.loads(repo.get_event_payload(ref['ref'])['content'])==original
         yield ExecEvent(kind=ExecEventKind.RESULT,text='{"cause":"c","failure_mode":"f","guide_card":{}}')
     Runner(_settings(tmp_path),repo,exec_fn=stream,schema_prompt='s',resolve_provider=lambda _:object()).poll_once()
+    rows=repo.list_events(proc_inst_id=inst['proc_inst_id'])
+    start=next(e for e in rows if e['event_type']=='tool_usage_started')
+    assert len(json.dumps(start['data'], ensure_ascii=False)) < 6000
+    assert start['data']['input_truncated'] is True
+    ref=start['data']['full_input'];assert ref['stored'] and ref['direction']=='input'
+    assert json.loads(repo.get_event_payload(ref['ref'])['content'])==original
+    from procsvc import ask
+    call = ask.tool_calls(rows, repo.get_event_payload)[0]
+    assert call['_input'] == original
 
 
 def test_storage_failure_is_visible_but_input_original_not_lost(tmp_path,monkeypatch):

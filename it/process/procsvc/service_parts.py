@@ -4,9 +4,9 @@
   * 끝나면 self.submit(…, by="process") 로 결과를 내고 흐름이 다음으로 간다.
   * 기다리는 부품(시간 대기 · 입고 확인 · 작업지시 뒤 재관측)은 첫 실행에 끝 시각을 행의 draft · due_date 에 저장하고 SUBMITTED 로 둔다.
     폴링(reconcile_services → procdb.waiting_services)이 2초마다 다시 부르고, 끝 시각이 지나면 제출한다. 재시작해도 저장한 시각을 쓴다.
-  * 실패는 ServiceExecutionError(응답 그대로) → _fail(3회까지 재시도 뒤 PENDING, 사유 보존). 성공한 척하지 않는다.
+  * 실패는 ServiceExecutionError(응답 그대로) → _fail. 중복 방지 미확인 외부 쓰기는 즉시 PENDING, 나머지는 3회까지 재시도한다.
   * 바깥 효과(MCP 쓰기 · ERP 발주 · 입고 · 정비 모사)는 처리 건에 사람 승인(approved_by)이 있어야 실행한다(등록 검사에 더한 이중 확인).
-    같은 승인으로 두 번 실행되지 않게 업무 쪽 멱등 키(decision + skill)와 MCP idempotency_key(처리 건:작업)를 쓴다.
+    업무 쪽 멱등 키(decision + skill)와 지원하는 MCP의 idempotency_key(처리 건:작업)를 쓴다. 미지원·응답 불명은 재실행을 멈춘다.
 """
 from __future__ import annotations
 
@@ -104,6 +104,22 @@ class ServicePartsRuntime:
                         "tool_use_ids": context.get('tool_use_ids', []),
                         "attempt_failed": not committed}}
         self.repo.record_service_progress(self.tenant_id, wi["proc_inst_id"], wi["id"], context["consumer"], [row])
+
+    def _unconfirmed_effect(self, wi):
+        """A local rollback does not roll back an external write."""
+        rows = self.repo.list_events(todo_id=wi['id'], limit=None)
+        committed = {r.get('data', {}).get('attempt_id') for r in rows
+                     if r.get('job_id') == 'SYSTEM_ATTEMPT_COMMITTED'}
+        finishes = {r.get('data', {}).get('tool_use_id'): r.get('data', {})
+                    for r in rows if r.get('event_type') == 'tool_usage_finished'}
+        for row in rows:
+            data = row.get('data') or {}
+            if (row.get('job_id') == 'MCP_EFFECT_CALL'
+                    and row.get('event_type') == 'tool_usage_started'
+                    and data.get('attempt_id') not in committed
+                    and finishes.get(data.get('tool_use_id'), {}).get('idempotent') is not True):
+                return True
+        return False
 
     def _keep_failed_attempt_record(self) -> None:
         """실패한 시도의 기록을 전이를 되돌린 뒤 따로 남긴다 — 사건 기록과 감사 기록은 상태가 아니라 일지다
@@ -205,7 +221,7 @@ class ServicePartsRuntime:
         result = res.get("result") or {}
         failed = res.get("status") != "ok" or result.get("is_error")
         self._event(wi, job, label + " 결과", {"tool": raw_tool, "tool_name": tool, "tool_use_id": use_id, "output": result.get("text") or res.get("error"),
-                                                                  "result": result.get("text") or res.get("error"), "is_error": bool(failed), "attempt_failed": bool(failed and context and context.get('owns_transition'))}, event_type="tool_usage_finished", crew="tool")
+                                                                  "result": result.get("text") or res.get("error"), "idempotent": res.get("idempotent") is True, "is_error": bool(failed), "attempt_failed": bool(failed and context and context.get('owns_transition'))}, event_type="tool_usage_finished", crew="tool")
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", ("MCP_READ_FAILED" if failed else "MCP_READ_CALLED") if read_only else ("MCP_EFFECT_FAILED" if failed else "MCP_EFFECT_CALLED"),
                            {"instance": inst["proc_inst_id"], "server": server, "tool": tool, "idempotency_key": key,
                             "error": res.get("error")}, incident=v.get("incident"))

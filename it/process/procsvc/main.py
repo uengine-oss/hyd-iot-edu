@@ -468,8 +468,8 @@ def _approve_incident(inc: machine.Incident, by: str, commands: list[dict]) -> d
     return cmd
 
 
-def _check_current_approval(d, option, role):
-    report = current_approval.check(d, option, role)
+def _check_current_approval(d, option, role, consented_at=None):
+    report = current_approval.check(d, option, role, *([consented_at] if consented_at else []))
     _audit(d.get('asset') or '-', 'process', 'APPROVAL_CURRENT_CHECK', report,
            incident=(d.get('origin') or {}).get('incident'))
     return current_approval.require(lambda *_: report, d, option, role)
@@ -941,6 +941,7 @@ def _create_decision(payload: dict):
         return _store_decision(payload)
 
 
+@machine._transition
 def _store_decision(payload):
     if payload["id"] in book:
         d = book[payload["id"]]
@@ -949,6 +950,14 @@ def _store_decision(payload):
             raise HTTPException(409, '같은 판단 ID를 다른 작업/세대에서 재사용할 수 없습니다')
         return {"id": d["id"], "state": d["state"], "duplicate": True}
     origin=payload.get('origin') or {}
+    scope = declib.submission_scope(payload)
+    if scope is not None:
+        existing = next((d for d in book.values() if declib.submission_scope(d) == scope), None)
+        if existing:
+            keys = ('asset', 'scenario', 'recommended', 'options', 'facts', 'evaluation_mode', 'execution_checked')
+            if any(payload.get(k) != existing.get(k) for k in keys):
+                raise HTTPException(409, f"이 작업은 이미 판단 {existing['id']}을 제출했습니다. 기존 판단을 확인하세요. 변경은 새 판단 단계에서 제출해야 합니다")
+            return {'id': existing['id'], 'state': existing['state'], 'duplicate': True}
     if origin.get('incident'):
         inc=incidents.get(origin['incident'])
         if not inc or inc.asset!=payload.get('asset') or (origin.get('pattern') is not None and origin['pattern']!=inc.pattern):

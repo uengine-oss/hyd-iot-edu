@@ -12,6 +12,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from hydcommon.tool_result import checked
 
 MAX_BYTES = 2_000_000
 MAX_SERIES = 200
@@ -72,8 +73,8 @@ class Prometheus:
 
     @staticmethod
     def _document(body, **fields):
-        return dict(source='hyd-prometheus', dialect='promql', **fields,
-                    data=body['data'], warnings=body.get('warnings', []), infos=body.get('infos', []))
+        return checked(dict(source='hyd-prometheus', dialect='promql', **fields,
+                    data=body['data'], warnings=body.get('warnings', []), infos=body.get('infos', [])))
 
     def metadata(self, metric=None):
         if metric is not None and (not isinstance(metric, str) or not metric.strip() or len(metric) > 512):

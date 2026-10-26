@@ -81,7 +81,8 @@ def test_actual_pipeline_policy_binding_is_in_submitted_action_and_evidence(part
     facts['spare_quotes']=quotes()
     result=enveloped(tools.submit_purchase if submit else tools.evaluate_purchase)('HYD-03','P-KIT',*(('INC-C',) if submit else ()))
     assert result['result']=='ok',result
-    option=result['document']['result']['options'][0]
+    document=result['document']
+    option=document['options'][0]
     assert option['actions'][0]['value']=='sup:b'
     assert option['resolvedSupplier']['id']=='sup:b'
     assert skills['skill:purchase']['actions'][0]['value'] is None

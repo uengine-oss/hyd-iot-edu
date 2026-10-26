@@ -162,7 +162,10 @@ def test_pending_request_reads_only_a_well_formed_unanswered_db_record():
 # ---------------------------------------------------------------- worker: one ALLOWED_TOOLS default
 def test_allowed_tools_default_lives_in_settings_and_includes_the_python_script_tools(monkeypatch):
     monkeypatch.setenv("ALLOWED_TOOLS", "")
-    assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",") and "Bash(python *)" in Settings().allowed_tools
+    assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",") and "Write" in Settings().allowed_tools
+    from worker.settings import run_allowed_tools, run_disallowed_tools
+    assert not any(x.startswith(('Bash', 'PowerShell')) for x in run_allowed_tools(['Bash(python *)', 'PowerShell(python *)', 'Read'], []))
+    assert {'Bash', 'PowerShell'} <= set(run_disallowed_tools({}))
     monkeypatch.delenv("ALLOWED_TOOLS")
     assert Settings().allowed_tools == DEFAULT_ALLOWED_TOOLS.split(",")
     monkeypatch.setenv("ALLOWED_TOOLS", "Read, Glob")
@@ -185,3 +188,46 @@ def test_business_mcp_is_split_into_maintenance_and_purchasing_servers_without_o
     assert names["maintenance"] == {"pm_status", "maintenance_windows", "cmms_history", "mes_orders"}
     assert names["purchasing"] == {"spare_stock", "part_quotes", "scm_suppliers"}
     assert not names["maintenance"] & names["purchasing"] and not {"query", "describe_schema"} & (names["maintenance"] | names["purchasing"])
+
+
+def test_evaluation_reaches_the_agent_as_a_compact_card_view():
+    """2026-10-26 수업 한 바퀴(final6): evaluate_cards 가 판단 기록 전체(약 15만 5천 자)를 돌려 실행기 한도를 넘었고, 에이전트가 저장된 파일을
+    Bash 로 조각조각 읽어 A 판단이 152~411초 · 도구 11~34회로 갈렸다. 카드 비교에 쓰는 칸만 준다(전체 근거는 판단 기록에 남는다)."""
+    import json
+    heavy = {'rankingEvidence': ['x' * 8000], 'tradeoffEvaluation': {'paths': ['y' * 8000]}, 'steps': ['z' * 2600], 'forecastContext': {'k': 'w' * 2000}}
+    opt = lambda i, score, feasible, **kw: dict(heavy, rank=i, id=f'skill:s{i}', sopId=f'SOP-S{i}', name=f'안 {i}', kind='control', feasible=feasible, score=score,
+                                                scoreParts={'bsc': 1.0}, approver={'id': 'role:operator', 'name': '운전원'},
+                                                actions=[{'code': 'FAN_SET', 'name': '팬', 'value': 100, 'targetName': '팬 인버터', 'min': 0, 'max': 100}],
+                                                forecast=[{'name': '평형 유온', 'value': 49.7, 'unit': '℃', 'method': 'm' * 300}],
+                                                gains=[{'name': '인터록 여유', 'owner': '생산팀', 'supportingPaths': ['p' * 500]}], **kw)
+    rec = {'id': 'EVAL-1', 'status': 'EVALUATED', 'recommended': 'skill:s1', 'explanation': '설명', 'provenance': ['q' * 9000],
+           'result': {'options': [opt(1, 3.4, True), opt(2, 1.0, False, violations=[{'rule': 'rule:x', 'effect': 'EXCLUDE', 'annotation': 'PLC 수동', 'sources': ['s' * 400]}])],
+                      'rankRule': {'annotation': '점수 = …'}, 'trace': [{'t': 'u' * 100}] * 200}}
+    out = dmn.read_outcome(rec, '조치 카드 평가')
+    text = json.dumps(out, ensure_ascii=False)
+    assert len(text) < 3000 < len(json.dumps(rec, ensure_ascii=False))
+    assert out['outcome'] == 'ranked' and out['recommended'] == 'skill:s1' and out['rankRule'] == '점수 = …'
+    first, second = out['options']
+    assert first['approver'] == '운전원' and first['forecast'] == {'평형 유온': '49.7 ℃'} and first['actions'] == [{'code': 'FAN_SET', 'name': '팬', 'value': 100, 'targetName': '팬 인버터'}]
+    assert second['violations'] == [{'rule': 'rule:x', 'effect': 'EXCLUDE', 'annotation': 'PLC 수동'}] and not second['feasible']
+    cards = json.dumps(out['options'], ensure_ascii=False)
+    for gone in ('rankingEvidence', 'tradeoffEvaluation', 'steps', 'forecastContext', 'supportingPaths'):
+        assert gone not in cards                                                 # 카드 목록에는 없다(뺀 칸은 omitted 안내에만 이름이 나온다)
+    assert 'provenance' not in out and 'trace' not in out and 'detail_option' in out['omitted']
+
+
+def test_one_card_detail_is_fetched_separately_and_capped():
+    """ProcessGPT process-gpt-mcp 의 get_process_list(select=id,name) / get_process_detail(id) 처럼: 목록은 비교 칸만, 카드 하나의 전체 근거는
+    detail_option 으로 따로. 상세도 칸마다 상한을 두고 잘렸으면 표시한다(ontology-studio document_indexing 의 …[truncated]). 뺀 칸과 받는 법은 omitted 로."""
+    import json
+    big = {'rankingEvidence': ['r' * 9000], 'steps': ['짧은 단계'], 'tradeoffEvaluation': {'x': 1}}
+    rec = {'id': 'EVAL-2', 'status': 'EVALUATED', 'recommended': 'skill:a',
+           'result': {'options': [dict(big, rank=1, id='skill:a', sopId='SOP-A', feasible=True, score=2.0),
+                                  dict(big, rank=2, id='skill:b', sopId='SOP-B', feasible=True, score=1.0)]}}
+    plain = dmn.read_outcome(rec, '조치 카드 평가')
+    assert 'detail' not in json.dumps(plain['options'], ensure_ascii=False) and 'detail_option' in plain['omitted']
+    one = dmn.read_outcome(rec, '조치 카드 평가', detail_option='SOP-B')
+    a, b = one['options']
+    assert 'detail' not in a and b['detail']['steps'] == ['짧은 단계'] and b['detail']['tradeoffEvaluation'] == {'x': 1}
+    assert isinstance(b['detail']['rankingEvidence'], str) and b['detail']['rankingEvidence'].endswith('…[truncated]')
+    assert len(b['detail']['rankingEvidence']) <= dmn.DETAIL_FIELD_MAX_CHARS + 20

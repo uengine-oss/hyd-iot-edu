@@ -195,32 +195,68 @@ def validate(knowledge, *, sections, sops, anchor):
         return None
     if not isinstance(knowledge, dict) or set(knowledge) - set(KINDS):
         raise ValueError(f'knowledge는 {list(KINDS)} 목록을 가진 객체입니다')
-    out, seen = {}, set()
+    out, seen, errors = {}, set(), []
     for kind in KINDS:
         items = knowledge.get(kind) or []
         if not isinstance(items, list) or len(items) > LIMITS[kind]:
-            raise ValueError(f'knowledge.{kind}: 최대 {LIMITS[kind]}개의 목록이어야 합니다')
+            errors.append(f'knowledge.{kind}: 최대 {LIMITS[kind]}개의 목록이어야 합니다')
+            items = []
         out[kind] = []
         for item in items:
-            if not isinstance(item, dict):
-                raise ValueError(f'knowledge.{kind}: 항목은 객체여야 합니다')
-            nid = item.get('id')
-            if not isinstance(nid, str) or not ID_RE[kind].fullmatch(nid) or nid in seen:
-                raise ValueError(f'knowledge.{kind}: id 형식 또는 중복을 확인하세요 ({nid!r}, 예: {ID_RE[kind].pattern})')
-            seen.add(nid)
-            section = item.get('section')
-            if section not in sections:
-                raise ValueError(f'{nid}: section {section!r}이 sections의 ref에 없습니다')
-            base = dict(id=nid, section=section, anchor=anchor(item.get('anchor')))
-            out[kind].append(_ITEM[kind](item, base, sops))
+            try:
+                if not isinstance(item, dict):
+                    raise ValueError(f'knowledge.{kind}: 항목은 객체여야 합니다')
+                nid = item.get('id')
+                if not isinstance(nid, str) or not ID_RE[kind].fullmatch(nid) or nid in seen:
+                    raise ValueError(f'knowledge.{kind}: id 형식 또는 중복을 확인하세요 ({nid!r}, 예: {ID_RE[kind].pattern})')
+                seen.add(nid)
+                section = item.get('section')
+                if section not in sections:
+                    raise ValueError(f'{nid}: section {section!r}이 sections의 ref에 없습니다')
+                base = dict(id=nid, section=section, anchor=anchor(item.get('anchor')))
+                out[kind].append(_ITEM[kind](item, base, sops))
+            except ValueError as exc:
+                errors.append(str(exc))
     own = {k: {i['id'] for i in out[k]} for k in KINDS}
     for c in out['causes']:
         if c['failure_mode'] not in own['failure_modes'] and not c['failure_mode'].startswith('fm:'):
-            raise ValueError(f"{c['id']}: 고장 유형이 필요합니다")
+            errors.append(f"{c['id']}: 고장 유형이 필요합니다")
     for e in out['evidence']:
         if e['cause'] not in own['causes'] and not REF_RE['cause'].fullmatch(e['cause']):
-            raise ValueError(f"{e['id']}: 원인 id가 필요합니다")
+            errors.append(f"{e['id']}: 원인 id가 필요합니다")
+    if errors:
+        raise ValueError(' / '.join(dict.fromkeys(errors)))
     return out
+
+
+def source_value_warnings(proposal):
+    """Literal numeric discrepancies need review; units/derived values cannot be proven by substring matching."""
+    from decimal import Decimal
+    warnings = []
+    def check(owner, field, value, quotes):
+        if type(value) not in (int, float):
+            return
+        found = {Decimal(n.replace(',', '')) for n in re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', '\n'.join(quotes))}
+        if Decimal(str(value)) not in found:
+            warnings.append(f'{owner} · {field}={value}: 해당 인용에서 같은 수치를 찾지 못했습니다. 원문의 값·단위 환산·계산 근거를 확인하세요')
+    def quote(anchor):
+        return (anchor or {}).get('quote') or ''
+    overrides = proposal.get('links') or {}
+    for p in proposal.get('procedures') or []:
+        link = overrides.get(p['id'], p.get('link', p)) or {}
+        quotes = [quote(p.get('anchor')), *[quote(s.get('anchor')) for s in p.get('steps') or []]]
+        for a in link.get('actions') or []:
+            check(p['id'], a.get('action', 'action') + '.value', a.get('value'), quotes)
+        policy = link.get('maintenance_policy') or {}
+        for key in ('interval_h', 'tolerance_pct'):
+            check(p['id'], 'maintenance_policy.' + key, policy.get(key), [quote(policy.get('anchor'))])
+    knowledge = proposal.get('knowledge') or {}
+    for evidence in knowledge.get('evidence') or []:
+        check(evidence['id'], 'threshold', evidence.get('threshold'), [quote(evidence.get('anchor'))])
+    for rule in knowledge.get('rules') or []:
+        for test in rule.get('tests') or []:
+            check(rule['id'], (test.get('input') or test.get('variable') or 'test') + '.value', test.get('value'), [quote(rule.get('anchor'))])
+    return list(dict.fromkeys(warnings))
 
 
 def _fm(item, base, sops):

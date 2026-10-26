@@ -441,6 +441,8 @@ def lab_01_runtime(r: Round):
     got = r.wait(15, lambda: (lambda h: h if h[1] > 0 and h[0] == h[1] else None)(_a_header_health(r)), every=1)
     up, total, dot, text = got or _a_header_health(r)
     r.check("홈 상단 상태 점이 모두 초록(서비스 n/n)", bool(got) and "up" in dot, text)
+    # 지식 항목 수는 지식 지도 조회가 끝나야 그려진다 — 숫자가 뜰 때까지(final5: 첫 화면에서 빈칸을 읽음)
+    r.wait(15, lambda: re.search(r"지식 항목\s*[\d,]+", _a_txt(r, "#mainStats").replace("\n", " ")), every=1)
     stats = _a_txt(r, "#mainStats")
     r.check("홈 요약 카드: 설비 3기 · 시간 배율 20×", "3기" in stats and "20×" in stats, stats.replace("\n", " ")[:200])
     m = re.search(r"지식 항목\s*([\d,]+)\s*연결\s*([\d,]+)", stats.replace("\n", " "))
@@ -1213,6 +1215,19 @@ def _b_commit(r, key: str) -> tuple[bool, str]:
     page = r.page
     page.check("#manualReviewed")
     page.click("#manualCommit")
+    r.wait(90, lambda: page.locator('.confirm-dialog[open]').count() or
+           page.locator("#manualMsg").inner_text().startswith(("적재 완료", "실패")), every=1)
+    dialog=page.locator('.confirm-dialog[open]')
+    if dialog.count():
+        text=dialog.inner_text()
+        # The round re-extracts the same teaching source. Losing existing
+        # operational knowledge is a quality failure, not something to approve
+        # just to keep later exercises running.
+        lost=any(label in text for label in ('조치 방법:', '고장 유형:', '원인:', '진단 근거:', '판단 규칙:', '절차 단계:'))
+        r.check(f'{key} 개정 삭제 목록을 확인했다 — 기존 업무 지식 누락 없음', not lost, text, kind='quality')
+        dialog.locator('button[value="cancel"]' if lost else 'button[value="ok"]').click()
+        if lost:
+            return False, '개정 누락을 확인해 적재하지 않음: ' + text
     r.wait(90, lambda: page.locator("#manualMsg").inner_text().startswith(("적재 완료", "실패")), every=1)
     msg = page.locator("#manualMsg").inner_text().strip()
     return msg.startswith("적재 완료"), msg
@@ -1787,6 +1802,8 @@ def lab_07_mcp_tools(r: Round):
         toast = _b_mcp_probe(r, _B_MCP_NAME)
         ok, why = r.human_message(toast)
         r.check("서버를 끄고 연결 검사 → 실패(연결 거부) · 사람 글", "실패" in toast and ok, why, kind="exception")
+        # 검사 결과로 상세 머리(gateLine)가 다시 그려질 때까지(final5: 토스트 직후 옛 상세를 읽음 — 카드에는 이미 「연결 검사 실패」)
+        r.wait(15, lambda: "고를 수 없음" in page.locator("#mcpDetail").inner_text(), every=1)
         r.check("검사 실패 뒤 「에이전트 도구로 고를 수 없음」", "고를 수 없음" in page.locator("#mcpDetail").inner_text(), kind="exception")
         off = _b_ask(r, agent_id, q)
         r.check("서버가 꺼졌을 때 질문 → 표 값을 지어내지 않는다", not ("customer@example.com" in off["answer"] and off.get("kind") == "answered"),

@@ -15,8 +15,8 @@ def test_file_read_contract_survives_initial_resume_restart_and_correction():
                 prompt.resume_prompt('확인했습니다', restarted=True),
                 prompt.format_correction('필수 값 누락', [])]
     for message in messages:
-        assert "Get-Content -Raw -Encoding UTF8 -LiteralPath 'context/task.json'" in message
-        assert "read_text(encoding='utf-8')" in message
+        assert '기본 Read 도구' in message and 'context/task.json' in message
+        assert '기본 Write 도구로 UTF-8 JSON' in message
         assert '원본 파일에 BOM을 붙여 고치지 마세요' in message
 
 
