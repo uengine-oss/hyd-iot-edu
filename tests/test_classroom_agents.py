@@ -96,6 +96,18 @@ def test_profile_change_revokes_pinned_execution(rt):
     with pytest.raises(Denied):agents.start(runtime,approval,{'memo':'확인 필요'},str(uuid4()),'handover.draft')
 
 
+def test_database_metadata_does_not_change_execution_approval(rt):
+    runtime,_=rt;approval=approved(runtime)
+    runtime.repo.put_skill({'tenant_id':runtime.tenant_id,'skill_name':'handover-check','content':'원문 확인'})
+    runtime.repo.attach_skill('agent:class-test','handover-check',runtime.tenant_id)
+    approval['revision']=agents.revision(runtime,approval)
+    profile=runtime.repo.list_users(['agent:class-test'],runtime.tenant_id)[0]
+    runtime.repo.upsert_user(dict(profile,updated_at='different-machine',email='unrelated@example.invalid',avatar='new'))
+    runtime.repo.put_skill({'tenant_id':runtime.tenant_id,'skill_name':'handover-check','content':'원문 확인',
+                            'id':'different-row-id','created_at':'new','owner_id':'different-owner'})
+    agents.checked(runtime,approval)
+
+
 def test_skill_body_change_also_revokes_approval(rt):
     runtime,_=rt;approval=approved(runtime)
     runtime.repo.put_skill({'tenant_id':runtime.tenant_id,'skill_name':'handover-check','content':'원문과 실제 상태를 비교한다'})

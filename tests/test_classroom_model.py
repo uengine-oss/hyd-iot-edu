@@ -16,6 +16,21 @@ PRIVATE = 'private-runtime-test-'*3
 UPSTREAM = 'upstream-test-secret'
 
 
+def test_pg_iso_lease_can_mint_permit(setup):
+    from datetime import datetime,timezone,timedelta
+    rt,row,authority,body=setup
+    row['lease_until']=(datetime.now(timezone.utc)+timedelta(seconds=120)).isoformat().replace('+00:00','Z')
+    assert model.issue(rt,authority,body,'Bearer '+PRIVATE)['token']
+    assert authority.calls==0
+
+
+@pytest.mark.parametrize('lease',[float('nan'),float('inf'),'NaN','2099-01-01T00:00:00','broken'])
+def test_invalid_or_timezone_free_lease_cannot_authorize_model(setup,lease):
+    rt,row,authority,body=setup;row['lease_until']=lease
+    with pytest.raises(HTTPException):model.issue(rt,authority,body,'Bearer '+PRIVATE)
+    assert authority.calls==0
+
+
 @pytest.fixture
 def setup(monkeypatch, tmp_path):
     path = tmp_path/'runtime.key'; path.write_text(PRIVATE, encoding='utf8')

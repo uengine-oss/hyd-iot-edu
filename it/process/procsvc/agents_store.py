@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import re
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from hydcommon.timeutil import now_iso
 
@@ -152,6 +152,17 @@ class AgentSettings:
                 "skill_labels": [{"name": s["skill_name"], "title": skill_title(s)} for s in self.skills],
                 "missing_skills": list(self.missing_skills),
                 "work_rules": self.work_rules}
+
+
+def execution_settings(settings):
+    """Only data consumed by execution, stable across DB exports/imports."""
+    value=asdict(settings)
+    profile=settings.profile
+    value['profile']=None if profile is None else {
+        key:str(profile.get(key) or '').strip() for key in ('id','username','name','role','goal','persona')}
+    value['skills']=[{key:str(skill.get(key) or '') for key in ('skill_name','description','content')}
+                     for skill in settings.skills]
+    return value
 
 
 def agent_settings(repo, tenant_id: str, agent, *, activity: dict | None = None) -> AgentSettings:

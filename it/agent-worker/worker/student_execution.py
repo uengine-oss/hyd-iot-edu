@@ -1,5 +1,4 @@
 """Delegate a student task without executing a local model or teacher-side tools."""
-from dataclasses import asdict
 from concurrent.futures import ThreadPoolExecutor,TimeoutError as FutureTimeout
 import json
 import os
@@ -9,7 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from procsvc import classroom_agents,handover,manual_extraction
 from procsvc import task_deferral
 from procsvc.classroom_authority import digest
-from procsvc.agents_store import agent_settings,activity_capabilities
+from procsvc.agents_store import agent_settings,activity_capabilities,execution_settings
 from procsvc.classroom_read_tools import TaskRouter
 from procsvc.instances import InstanceRuntime
 from . import outcome,workspace
@@ -66,7 +65,7 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
     bundle=classroom_agents.snapshot(runtime,approval)[3]
     actual=agent_settings(runner.repo,runner.s.tenant_id,ctx.profile,
                           activity=activity_capabilities(ctx.definition,row['activity_id']))
-    if jsonable_encoder(asdict(actual))!=bundle['agent']:
+    if jsonable_encoder(execution_settings(actual))!=bundle['agent']:
         raise RunFailed('현재 배정된 학생 에이전트가 강사 승인 판본과 다릅니다')
     inputs=runtime.workitem_view(row['id'])['inputs']
     inputs={key:inputs[key] for key in approval['input_schema']['properties'] if key in inputs}
@@ -112,16 +111,16 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
                     router.claim()
                     if value['status']=='NEEDS_INPUT':
                         runner._pause(row,workspace.for_run(runner.s.workspace_root,row['id'],tenant_id=runtime.tenant_id),
-                                      'managed-classroom','',value['question'],job_id,options=value.get('options') or [])
+                                      'managed-classroom','',value['question'],job_id,options=value.get('options') or [],_locked=True)
                         local_id=runner.repo.get_workitem(row['id'])['draft']['_human_request']['job_id']
                         kind='human_answer'
                     else:
                         local_id='managed:'+digest([run,value['request_id']])
                         task_deferral.defer(runner.repo,runtime.tenant_id,row['id'],expected_consumer=row['consumer'],
-                            request_id=local_id,assessment=value['assessment'])
+                            request_id=local_id,assessment=value['assessment'],_locked=True)
                         kind='reassessment'
                     runner.repo.record_events([{'job_id':'CLASSROOM_CONTROL','todo_id':row['id'],
-                        'proc_inst_id':row['proc_inst_id'],'crew_type':'agent','event_type':'classroom_control',
+                        'proc_inst_id':row['proc_inst_id'],'crew_type':'agent','event_type':'task_working',
                         'data':{'run_id':run,'request_id':value['request_id'],'local_request_id':local_id,'kind':kind}}])
                 return
             if value['status']=='DONE':

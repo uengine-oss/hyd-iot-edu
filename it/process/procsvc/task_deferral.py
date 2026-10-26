@@ -5,6 +5,7 @@ work item state commit together under the existing instance transaction. This
 module does not evaluate evidence, submit a decision or issue a command.
 """
 from copy import deepcopy
+from contextlib import nullcontext
 import hashlib
 import json
 
@@ -86,14 +87,14 @@ def _event(repo,row,job,kind,body,receipt):
                                                       receipt=receipt,message=receipt.get('reason')))])
 
 
-def defer(repo,tenant_id,workitem_id,*,expected_consumer,request_id,assessment,session_id=None):
+def defer(repo,tenant_id,workitem_id,*,expected_consumer,request_id,assessment,session_id=None,_locked=False):
     request_id=_text(request_id,'request_id');_text(expected_consumer,'expected_consumer',500)
     assessment=validate(assessment)
     if session_id is not None:_text(session_id,'session_id',500)
     body=dict(assessment=assessment,consumer=expected_consumer,session_id=session_id)
     job='deferral:'+request_id
     row=_row(repo,tenant_id,workitem_id)
-    with repo.instance_transaction(tenant_id,row['proc_inst_id']):
+    with nullcontext() if _locked else repo.instance_transaction(tenant_id,row['proc_inst_id']):
         row=_row(repo,tenant_id,workitem_id)
         prior=_receipt(repo,row,job,'task_deferred',body)
         if prior:return prior
@@ -110,12 +111,12 @@ def defer(repo,tenant_id,workitem_id,*,expected_consumer,request_id,assessment,s
         return receipt
 
 
-def reassess(repo,tenant_id,workitem_id,*,deferral_id,request_id,by,reason):
+def reassess(repo,tenant_id,workitem_id,*,deferral_id,request_id,by,reason,_locked=False):
     body=dict(deferral_id=_text(deferral_id,'deferral_id'),request_id=_text(request_id,'request_id'),
               by=_text(by,'by'),reason=_text(reason,'reason',2000))
     job='reassessment:'+body['request_id']
     row=_row(repo,tenant_id,workitem_id)
-    with repo.instance_transaction(tenant_id,row['proc_inst_id']):
+    with nullcontext() if _locked else repo.instance_transaction(tenant_id,row['proc_inst_id']):
         row=_row(repo,tenant_id,workitem_id)
         prior=_receipt(repo,row,job,'task_reassessment_requested',body)
         if prior:return prior

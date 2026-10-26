@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import time
+import math
 import secrets
 from datetime import datetime
 from pathlib import Path
@@ -36,7 +37,12 @@ def _claim(runtime, body):
         raise HTTPException(409, "현재 담당 실행기가 시작한 단계에서만 연결할 수 있습니다")
     lease = row.get("lease_until")
     try:
+        if isinstance(lease,str) and ('T' in lease or 'Z' in lease):
+            lease=datetime.fromisoformat(lease.replace('Z','+00:00'))
+        if isinstance(lease,datetime) and lease.tzinfo is None:
+            raise ValueError('lease timezone missing')
         until = lease.timestamp() if isinstance(lease, datetime) else float(lease)
+        if not math.isfinite(until):raise ValueError('invalid lease')
     except (TypeError, ValueError):
         raise HTTPException(409, "현재 실행 단계의 유효한 임대 시간이 없습니다") from None
     if until <= time.time():

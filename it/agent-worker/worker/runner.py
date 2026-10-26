@@ -20,6 +20,7 @@ from pathlib import Path
 import logging
 import time
 import uuid
+from contextlib import nullcontext
 from dataclasses import asdict, replace
 from typing import Callable, Iterable
 
@@ -555,7 +556,7 @@ class Runner:
 
     # ---- outcomes
     def _pause(self, row: dict, ws: workspace.Workspace, agent_id: str, session_id: str, question: str, job_id: str,
-               options: list[str] | None = None) -> None:
+               options: list[str] | None = None, *, _locked=False) -> None:
         """Stop and wait for a person, without calling it done or failed (draft_status HUMAN_ASKED + human_asked event).
 
         A144 (A05 open end, `_pause` discarded remember()'s duplicate verdict): the DB is the authority. If the row already
@@ -563,9 +564,10 @@ class Runner:
         the existing job id, and do not insert a second human_asked event or notification. A re-ask after the person
         answered is a new question (new event + notification), because the answer consumed the previous one."""
         fingerprint = hitl.fingerprint(agent_id, question)
+        transaction=lambda:nullcontext() if _locked else self.repo.instance_transaction(self.s.tenant_id,row['proc_inst_id'])
         pending = hitl.pending_request(row)
         if pending is not None and pending.fingerprint == fingerprint:
-            with self.repo.instance_transaction(self.s.tenant_id, row['proc_inst_id']):
+            with transaction():
                 if not self.repo.set_draft_status(row['id'], 'HUMAN_ASKED', expected_consumer=row['consumer']):
                     raise Cancelled()
             log.info("%s %s asked the same pending question again (job %s); not notifying twice", row.get("proc_inst_id"),
@@ -574,7 +576,7 @@ class Runner:
         ask_job = f"human_asked_{row['id'][:8]}_{uuid.uuid4().hex}"
         request = hitl.PendingRequest(run_id=row["id"], agent_id=agent_id, session_id=session_id, question=question, job_id=ask_job,
                                       fingerprint=fingerprint)
-        with self.repo.instance_transaction(self.s.tenant_id, row['proc_inst_id']):
+        with transaction():
             if not self.repo.set_draft_status(row['id'],'HUMAN_ASKED',expected_consumer=row['consumer']):
                 raise Cancelled()
             fresh = self.repo.get_workitem(row['id'])
