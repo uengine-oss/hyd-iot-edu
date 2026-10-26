@@ -15,6 +15,101 @@ from test_worker import _settings
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable fully migrated process PostgreSQL')
 
 
+@pytest.mark.parametrize('student_storage',['memory','pg'])
+def test_process_pg_authority_tool_exchange_and_student_result_return(pg,rt,tmp_path,monkeypatch,student_storage):
+    """Real authority/process PG and client outbox; only MCP observation/model are doubles."""
+    from copy import deepcopy
+    from datetime import datetime,timedelta,timezone
+    from uuid import uuid4
+    from concurrent.futures import ThreadPoolExecutor
+    import json
+    import httpx
+    import psycopg
+    from psycopg.rows import dict_row
+    from fastapi.testclient import TestClient
+    from procsvc import classroom_admin,mcp_registry,mcp_secrets,mcp_check,ask
+    from procsvc.classroom_api import create_app
+    from procsvc.classroom_authority import Authority,key_hash
+    from procsvc.classroom_client import Client
+    from procsvc.classroom_tool_io import ToolIO
+    from test_classroom_authority_pg import POLICY
+    from worker import managed_tools
+    _,teacher,_=pg;local,_=rt
+    approval=approved(local)
+    profile=local.repo.list_users(['agent:class-test'],local.tenant_id)[0]
+    teacher.repo.write_agent(dict(profile,tenant_id=teacher.tenant_id),[],create=True)
+    teacher.register_definition(local.repo.get_proc_def(approval['definition'],local.tenant_id,version='1')['definition'])
+    assert classroom_agents.revision(teacher,approval)==approval['revision']
+    if student_storage=='pg':
+        # Separate source/managed instances in the same disposable PG database.
+        # This verifies storage semantics, not separate-host deployment isolation.
+        local=teacher
+    auth=Authority(lambda:psycopg.connect(DSN,row_factory=dict_row));io=ToolIO(auth)
+    key='pg-roundtrip-'+uuid4().hex
+    policy=deepcopy(POLICY);policy['documents']={}
+    policy['actions']={'agent_run':policy['actions']['manual_extract']}
+    policy['agents']={'lesson':approval}
+    policy['tool_io']={'tools':['enterprise/spare_stock'],'max_calls':2,'max_input_bytes':1000,
+        'max_result_bytes':1000,'total_result_bytes':2000,'catalog':{'enterprise/spare_stock':{
+        'inputSchema':{'type':'object','properties':{'part':{'type':'string'}},'required':['part'],'additionalProperties':False},
+        'annotations':{'readOnlyHint':True}}}}
+    observed=[];state={}
+    monkeypatch.setattr(mcp_registry,'store_for',lambda _:SimpleNamespace(servers=lambda tenant:{
+        'enterprise':{'url':'http://student.example/mcp','type':'streamable_http'}}))
+    monkeypatch.setattr(mcp_secrets,'runtime_spec',lambda *a:(a[-1],[]))
+    def observation(*args,**kwargs):
+        observed.append(1)
+        return {'status':'ok','result':{'text':'{"available":7}','json':True,'is_error':False}}
+    monkeypatch.setattr(mcp_check,'call',observation)
+    try:
+        classroom_admin.approve(auth,None,runtime=teacher,key=key,subject=teacher.tenant_id,scope='pg-roundtrip',
+            policy=policy,expires_at=datetime.now(timezone.utc)+timedelta(minutes=5))
+        api=TestClient(create_app(auth,source_loader=None,catalog_factory=None,
+                                 runtime_factory=lambda subject:teacher,agent_enabled=True))
+        def bridge(request):
+            path=request.url.path+('?' + request.url.query.decode() if request.url.query else '')
+            if request.url.path.endswith('/result'):
+                state['polls']=state.get('polls',0)+1
+                assert state['polls']<=4,'unexpected unbounded result polling'
+            response=api.request(request.method,path,headers=dict(request.headers),content=request.content)
+            if request.url.path=='/v1/classroom/agents' and response.status_code==200:
+                state['run']=response.json()['run_id']
+                # Teacher attachment runs outside the student's async HTTP loop,
+                # as it does in the separate worker process.
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(managed_tools.attach,{'url':'https://teacher.example','token':'HydModel test-only'},tmp_path/'catalog',
+                        transport=httpx.MockTransport(lambda req:httpx.Response(200,json={'tools':io.catalog(state['run'])}))).result()
+                state['request']=io.enqueue(state['run'],'read-1','enterprise/spare_stock',{'part':'seal'})
+            if request.url.path=='/v1/classroom/tool-results' and response.status_code==200:
+                row=teacher.repo.fetch_pending_task('cliagents','teacher-test',tenant_id=teacher.tenant_id)[0]
+                result=json.loads(request.content)['result']
+                teacher.repo.save_task_result(row['id'],{'answer':f"가용 재고 {result['available']}개, 사람 확인 필요"},
+                                             final=True,expected_consumer=row['consumer'])
+                teacher.poll_once()
+            return httpx.Response(response.status_code,content=response.content)
+        (tmp_path/'catalog').mkdir()
+        client=Client('https://teacher.example',lambda:key,tmp_path/'client.sqlite3',transport=httpx.MockTransport(bridge))
+        inst=local.start_definition(approval['definition'],'1','student',values={'memo':'재고 확인'})
+        row=local.repo.fetch_pending_task('cliagents','student',tenant_id=local.tenant_id)[0]
+        runner=Runner(_settings(tmp_path),local.repo,exec_fn=lambda *a:pytest.fail('local model must not run'),schema_prompt='s')
+        runner.s=__import__('dataclasses').replace(runner.s,tenant_id=local.tenant_id)
+        student_execution.execute(runner,row,context.prepare(local.repo,row,local.tenant_id),'roundtrip',client,sleep=lambda _:None)
+        done=local.repo.get_workitem(row['id'])
+        assert done['status']=='SUBMITTED' and done['output']['answer']=='가용 재고 7개, 사람 확인 필요'
+        assert observed==[1] and len(ask.tool_calls(local.repo.list_events(todo_id=row['id'])))==1
+        with auth.connect() as db:
+            run=db.execute('select state,work_ref from hyd_classroom_runs where id=%s',(state['run'],)).fetchone()
+            assert run['state']=='DONE'
+            assert teacher.repo.get_instance(run['work_ref'])['status']=='COMPLETED'
+            assert db.execute('select state from hyd_classroom_tool_io where id=%s',(state['request'],)).fetchone()['state']=='DONE'
+            assert db.execute('select calls from hyd_classroom_grants where key_hash=%s',(key_hash(key),)).fetchone()['calls']==0
+    finally:
+        with auth.connect() as db:
+            db.execute('delete from hyd_classroom_tool_io where run_id in (select id from hyd_classroom_runs where key_hash=%s)',(key_hash(key),))
+            db.execute('delete from hyd_classroom_runs where key_hash=%s',(key_hash(key),))
+            db.execute('delete from hyd_classroom_grants where key_hash=%s',(key_hash(key),))
+
+
 def test_instructor_import_reviews_changes_and_preserves_unrelated_data(pg,rt):
     from procsvc import classroom_manifest as m
     from test_classroom_manifest import candidate
