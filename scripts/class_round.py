@@ -441,6 +441,8 @@ def lab_01_runtime(r: Round):
     got = r.wait(15, lambda: (lambda h: h if h[1] > 0 and h[0] == h[1] else None)(_a_header_health(r)), every=1)
     up, total, dot, text = got or _a_header_health(r)
     r.check("홈 상단 상태 점이 모두 초록(서비스 n/n)", bool(got) and "up" in dot, text)
+    # 지식 항목 수는 지식 지도 조회가 끝나야 그려진다 — 숫자가 뜰 때까지(final5: 첫 화면에서 빈칸을 읽음)
+    r.wait(15, lambda: re.search(r"지식 항목\s*[\d,]+", _a_txt(r, "#mainStats").replace("\n", " ")), every=1)
     stats = _a_txt(r, "#mainStats")
     r.check("홈 요약 카드: 설비 3기 · 시간 배율 20×", "3기" in stats and "20×" in stats, stats.replace("\n", " ")[:200])
     m = re.search(r"지식 항목\s*([\d,]+)\s*연결\s*([\d,]+)", stats.replace("\n", " "))
