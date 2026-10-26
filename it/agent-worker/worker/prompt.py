@@ -94,7 +94,8 @@ def format_correction(reason: str, form_fields: Any, *, form_contract=None) -> s
     from procsvc.result_correction import instructions
     return (f"방금 제출한 결과가 출력 형식 검사에서 거절됐습니다: {reason}\n"
             "조회나 분석을 다시 하지 말고, 같은 내용을 아래 형식에 맞춰 다시 제출하세요. 배열 필드는 JSON 배열 그대로(문자열로 감싸지 않음), "
-            "숫자는 숫자로 쓰세요. 결과를 `output/result.json` 파일로 냈다면 그 파일을 고쳐 다시 쓰고 마지막 메시지에는 확인만 적으세요.\n\n"
+            "숫자는 숫자로 쓰세요. 문법 오류에 여러 구분 기호 위치가 제시되면 첫 위치만이 아니라 모두 확인하세요. 인용 원문·수치·절차를 바꾸어 문법 오류를 피하지 마세요. "
+            "결과를 `output/result.json` 파일로 냈다면 그 파일을 고쳐 다시 쓰고 마지막 메시지에는 확인만 적으세요.\n\n"
             + output_contract(form_fields) + "\n\n" + instructions(form_contract) + "\n\n" + FILE_READ_RULE + "\n\n" + LANGUAGE_RULE)
 
 
@@ -116,7 +117,7 @@ def output_contract(form_fields: Any) -> str:
     lines = ["## 결과 제출 형식", "근거 부족으로 완료할 수 없으면 완료 폼 대신 보류 객체 하나를 제출하세요: "
              '{"__deferred__":{"status":"UNKNOWN 또는 UNSUPPORTED","reason":"현장 담당자가 읽을 보류 이유","evidence":{}}}. ' + DEFERRAL_RULE,
              "작업을 마치면 아래 JSON 객체 하나를 다음 두 방법 중 하나로 제출하세요. "
-             "(a) 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰고(스크립트로 써도 됨), 마지막 메시지에는 "
+             "(a) 작업 디렉터리의 `output/result.json` 파일에 UTF-8 JSON으로 쓰고(현재 허용된 파일 쓰기 도구 사용), 마지막 메시지에는 "
              "파일을 썼다는 짧은 확인 한 줄만 적습니다(결과 JSON을 메시지에 되풀이하지 않음). 결과가 길면 반드시 이 방법을 씁니다. "
              "(b) 파일을 쓰지 않았다면 **마지막 메시지에 그 JSON 객체 하나만** 출력합니다. 설명 문장이나 코드펜스 밖 텍스트를 함께 쓰지 마세요. "
              "파일이 있으면 파일이 결과이고 메시지는 읽지 않습니다.",

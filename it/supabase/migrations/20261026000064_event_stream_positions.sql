@@ -1,6 +1,6 @@
 -- Assign stream order AFTER source transactions commit. A bigserial on events
 -- alone still loses a low sequence whose transaction commits after the cursor.
-create table public.event_stream_positions (
+create table if not exists public.event_stream_positions (
   event_id text primary key references public.events(id) on delete cascade,
   position bigint generated always as identity unique not null
 );

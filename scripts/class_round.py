@@ -1710,8 +1710,12 @@ def lab_07_mcp_tools(r: Round):
     try:
         # 컨테이너 워커가 학생 PC 서버에 닿는 길: compose agent-worker · process 의 extra_hosts host-gateway (compose.yaml:345 · 405 · 573)
         import subprocess
-        hosts = subprocess.run(["docker", "inspect", "--format", "{{json .HostConfig.ExtraHosts}}", "hyd-iot-edu-agent-worker-1"],
-                               capture_output=True, text=True, timeout=15).stdout
+        worker_id = subprocess.run(["docker", "compose", "ps", "-q", "agent-worker"], cwd=ROOT,
+                                   capture_output=True, text=True, timeout=15, check=True).stdout.strip()
+        if not worker_id:
+            raise RuntimeError("현재 Compose 프로젝트의 agent-worker 컨테이너가 없습니다")
+        hosts = subprocess.run(["docker", "inspect", "--format", "{{json .HostConfig.ExtraHosts}}", worker_id],
+                               capture_output=True, text=True, timeout=15, check=True).stdout
         r.check("컨테이너 워커에 host.docker.internal → host-gateway 가 있다", "host.docker.internal:host-gateway" in hosts, hosts.strip(), kind="quality")
     except Exception as e:                                                                      # docker 명령이 없는 PC(강의실 Windows 아님)는 판정만 남긴다
         r.check("컨테이너 워커 extra_hosts 확인", False, f"{type(e).__name__}: {e}", kind="quality")
