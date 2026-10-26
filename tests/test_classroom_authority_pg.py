@@ -63,6 +63,35 @@ def test_startup_session_rechecks_grant_without_consuming_budget(authority):
     with pytest.raises(Denied): auth.session(KEY)
 
 
+def test_instructor_approval_checks_original_and_preserves_spend_on_update(authority, document):
+    from datetime import datetime, timedelta, timezone
+    from procsvc.classroom_admin import approve, revoke
+    auth, connect = authority
+    archive, source, _ = document
+    newkey = 'instructor-issued-test-'+'z'*32
+    policy = deepcopy(POLICY)
+    policy['documents'] = {source['sha256']: {'source_id': source['source_id']}}
+    args = dict(key=newkey, subject='hyd', scope='class-v1',
+                expires_at=datetime.now(timezone.utc)+timedelta(hours=1), policy=policy)
+    first = approve(auth, archive, **args)
+    assert first['documents'] == 1 and first['calls'] == 0
+    run = auth.reserve(newkey, 'manual_extract', {'sha256': source['sha256']})
+    auth.charge(newkey, run['id'], input_bytes=100, max_output_tokens=50)
+    args['scope'] = 'class-v2'
+    updated = approve(auth, archive, **args)
+    assert updated['calls'] == 1 and updated['input_bytes'] == 100 and updated['output_tokens'] == 50
+    with pytest.raises(Denied): auth.read_run(newkey, run['id'])
+    assert revoke(auth,newkey)['enabled'] is False
+    with pytest.raises(Denied): auth.session(newkey)
+    assert approve(auth, archive, **args)['calls'] == 1
+    wrong = deepcopy(policy); wrong['documents'] = {'b'*64: {'source_id': source['source_id']}}
+    with pytest.raises(Denied): approve(auth, archive, **dict(args, policy=wrong))
+    with pytest.raises(Denied): approve(auth, archive, **dict(args, expires_at=datetime.now()))
+    with connect() as db:
+        saved = db.execute('SELECT scope,policy,calls FROM hyd_classroom_grants WHERE key_hash=%s',(key_hash(newkey),)).fetchone()
+    assert saved['policy'] == policy and saved['scope'] == 'class-v2' and saved['calls'] == 1
+
+
 def test_shared_extraction_pins_one_budget_owner_across_student_keys(authority, document, rt):
     from fastapi.testclient import TestClient
     from procsvc.classroom_api import create_app

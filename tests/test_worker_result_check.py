@@ -77,3 +77,15 @@ def test_student_entry_cannot_replace_worker_owned_checker(tmp_path):
     assert attached['mcpServers']['hyd-result']['command'] != 'untrusted'
     assert original['mcpServers']['hyd-result']['command'] == 'untrusted'
     assert attached['mcpServers']['other'] == original['mcpServers']['other']
+
+
+def test_stdio_starts_from_task_directory_without_inherited_pythonpath(tmp_path, monkeypatch):
+    monkeypatch.delenv('PYTHONPATH', raising=False)
+    monkeypatch.chdir(tmp_path)
+    path=tmp_path/'output/result.json';path.parent.mkdir();path.write_text('{}')
+    config=result_check.attach(None,tmp_path,4096)
+    async def run():
+        async with Client(config) as client:
+            result=await client.call_tool('check_result_json',{})
+            assert json.loads(result.content[0].text)['ok']
+    asyncio.run(run())

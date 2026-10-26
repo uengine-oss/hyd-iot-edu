@@ -7,6 +7,7 @@ no configurable path, graph access, writes, repair, or model call.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -55,7 +56,9 @@ def attach(config, workdir, max_bytes):
     servers = dict(config.get('mcpServers') or {})
     # Reserved worker-owned tool. A student's server entry cannot replace it.
     servers[SERVER] = {'command': sys.executable, 'args': ['-m', 'worker.result_check',
-                        '--workspace', str(Path(workdir).resolve()), '--max-bytes', str(max_bytes)]}
+                        '--workspace', str(Path(workdir).resolve()), '--max-bytes', str(max_bytes)],
+                       'env': {'PYTHONPATH': os.pathsep.join(filter(None, [
+                           str(Path(__file__).resolve().parents[1]), os.environ.get('PYTHONPATH','')]))}}
     config['mcpServers'] = servers
     return config
 
