@@ -2,8 +2,32 @@
 timestamp are neither lost nor repeated; the stream ends when the client disconnects."""
 import asyncio
 import json
+import pytest
 
 from procsvc import instance_mode, procdb
+
+
+@pytest.mark.parametrize('path', ['/api/events/stream', '/api/inbox/notifications/stream?user_id=user:kim-op'])
+@pytest.mark.parametrize('header,expected', [('s:00000000000000000090', 's:00000000000000000090'), (None, 's:00000000000000000065')])
+def test_browser_retry_uses_newer_header_instead_of_original_url(monkeypatch, path, header, expected):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from types import SimpleNamespace
+    from procsvc import inbox_api
+    rt = SimpleNamespace(repo=procdb.MemoryRepo(), tenant_id='hyd')
+    monkeypatch.setattr(instance_mode, '_rt', lambda: rt)
+    monkeypatch.setattr(inbox_api, '_rt', lambda: rt)
+    monkeypatch.setattr(inbox_api, '_person', lambda *args: {})
+    monkeypatch.setattr(inbox_api.inbox, 'user_ids_for', lambda *args: ['user:kim-op'])
+    async def finite_stream(repo, since, *args, **kwargs):
+        yield 'data: ' + json.dumps({'cursor': since}) + '\n\n'
+    monkeypatch.setattr(instance_mode, 'event_stream', finite_stream)
+    app = FastAPI(); instance_mode.mount(app, 'instance'); inbox_api.mount(app)
+    url = path + ('&' if '?' in path else '?') + 'since=s:00000000000000000065'
+    with TestClient(app) as client:
+        response = client.get(url, headers={'Last-Event-ID': header} if header else {})
+    assert response.status_code == 200
+    assert json.loads(response.text.removeprefix('data: ').strip()) == {'cursor': expected}
 
 
 def _frames(chunks):

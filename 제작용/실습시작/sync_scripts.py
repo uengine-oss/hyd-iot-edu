@@ -92,3 +92,5 @@ for course in ['통합반','실전반']:
 > [조작] 결과/검증_기록.md에 원자료·실행 결과·재적재 비교·미확인을 남기고 저장 파일을 다시 연다. 다음 조치조건표 실습은 별도 시작본과 업무 요구로 전환한다.
 ''',encoding='utf-8')
 print('설계·구현 대본 4편 동기화')
+from sync_runtime_scripts import main as sync_runtime
+sync_runtime()

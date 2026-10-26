@@ -94,6 +94,7 @@ def mount(app: FastAPI) -> None:
     @app.get("/api/inbox/notifications/stream")
     async def notifications_stream(request: Request, user_id: str, since: str | None = None):
         """새 알림을 생기는 즉시 보낸다(나 + 내 역할 앞으로 온 것만) — /api/events/stream 과 같은 생성기, 커서는 created_at."""
+        since = request.headers.get("last-event-id") or since or None
         rt = _rt()
         await _in_executor(_person, rt, user_id)
         mine = set(await _in_executor(inbox.user_ids_for, rt.repo, rt.tenant_id, user_id))

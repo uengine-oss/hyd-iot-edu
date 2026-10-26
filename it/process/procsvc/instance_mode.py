@@ -1005,7 +1005,8 @@ def mount(app: FastAPI, process_mode: str) -> None:
     async def events_stream(request: Request, since: str | None = None):
         """A091: server-sent stream of the product's events table (agent tool calls, task transitions, human answers …).
         The portal shows them as they happen instead of re-reading an instance every two seconds."""
-        since = since or request.headers.get("last-event-id") or None     # A161-U1: browser reconnect resumes at its last id
+        # A browser retry keeps the original URL but sends its newer last id.
+        since = request.headers.get("last-event-id") or since or None
         return StreamingResponse(event_stream(_rt().repo, since, request.is_disconnected), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
