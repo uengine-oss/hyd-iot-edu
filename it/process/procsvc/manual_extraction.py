@@ -11,7 +11,7 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.16'         # PM 패키지 수량은 한 대당이며 묶음에서도 같은 BOM을 사용.
+VERSION = '2.17'         # 원문이 명시한 비실행 참고 절차의 link 계약을 전달.
 # 2.15: 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
 # 2.14: 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
 # 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
@@ -80,7 +80,10 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   outputs=[그 원인의 근본 조치 SOP ID]인 dt:action-candidates SELECT 규칙을 하나씩 만드세요. 경보 · 고장 유형 조건의 후보 규칙(즉시 완화 목록)이 있어도 빠뜨리지 마세요 —
   없으면 그 원인이 판정돼도 근본 조치 카드가 나오지 않습니다.
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
- 각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
+ 원문이 조회·상태 확인용 참고 절차이며 실행 후보가 아니라고 명시하면, 번호 단계는 보존하고 link={"kind":"reference","executable":false}를 제안하세요.
+ 이 비실행 참고 절차에는 failureMode·relation·approver·actions·addresses·affects·parts·공급사/정비 정책을 붙이지 마세요. 인계 확인을 고장 조치나 구매 실행으로 바꾸지 마세요.
+ 연결을 모르겠다는 이유만으로 실제 실행 절차를 reference로 바꾸지는 마세요. 원문의 업무 성격과 실행 제외 근거가 우선이며 사람의 원문 검토는 별도로 필요합니다.
+ 그 외 고장 조치 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
  actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE) · 기존 오더 일정 변경(WO_RESCHEDULE)은 그 절차의 SOP ID입니다(null 금지).
  구매 · 발주 절차(구매 기준서 · 재고 규정의 발주 절차)는 고장 조치가 아니므로 link를 이 꼴로 제안하세요:

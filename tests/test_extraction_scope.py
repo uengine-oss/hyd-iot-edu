@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.16'
+    assert extraction.VERSION == '2.17'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -68,6 +68,39 @@ def test_pr07_business_source_reaches_worker_and_requires_human_review(rt, tmp_p
     assert 'reviewed' not in preview and 'by' not in preview
     with pytest.raises(ValueError, match='검토'):
         manual_review.validate(archive, 'hyd', preview)
+
+
+def test_reference_supplement_contract_reaches_worker_and_preserves_nonexecution(rt, tmp_path):
+    """Test double verifies delivery/lifecycle, not actual model quality."""
+    from procsvc import manual_graph
+    runtime, _ = rt
+    path = Path(__file__).resolve().parents[1] / '문서/시스템/참조/수업_문서_원문/HI-01_shift-inspection-supplement.md'
+    archive = ManualSources(tmp_path/'manual.sqlite3')
+    source = archive.save('hyd', path.name, path.read_bytes())
+    proposal = {k:v for k,v in manual_review.proposal(source).items() if k in extraction.PROPOSAL_KEYS}
+    proposal['page_reviews'] = [dict(page=p['page'],note='조회 참고 절차 검토') for p in source['pages']]
+    for p in proposal['procedures']:
+        p['link'] = dict(kind='reference',executable=False)
+    requests = []
+    inst = extraction.start(runtime,source,str(uuid4()))
+    runner = Runner(_settings(tmp_path/'worker'),runtime.repo,
+        exec_fn=_fake_exec(json.dumps({'proposal':proposal}),requests=requests),
+        schema_prompt='ManualSection Skill Step',resolve_provider=lambda _:object())
+    assert runner.poll_once() == 1
+    wi = runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    delivered = _delivered_prompt(requests[0][0],tmp_path/'worker'/'hyd'/wi['id'])
+    assert 'link={"kind":"reference","executable":false}' in delivered
+    assert '실제 실행 절차를 reference로 바꾸지는 마세요' in delivered
+    assert runtime.poll_once() == 1
+    preview = extraction.result(runtime,source,inst['proc_inst_id'],None)['preview']
+    assert [len(p['steps']) for p in preview['procedures']] == [4,4,4]
+    with pytest.raises(ValueError,match='검토'):
+        manual_review.validate(archive,'hyd',preview)
+    preview.update(reviewed=True,by='시험 검토자',
+                   links={p['id']:p['link'] for p in preview['procedures']})
+    plan = manual_review.validate(archive,'hyd',preview)
+    assert all(p['kind']=='reference' and p['executable'] is False for p in plan['procedures'])
+    assert {e['type'] for e in manual_graph.desired(plan)['edges']} <= {'PART_OF','HAS_STEP','REFERS_TO'}
 
 
 def test_instruction_2_7_pins_numbers_penalty_measure_and_document_defined_failure_modes():
