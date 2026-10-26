@@ -4,6 +4,7 @@ The local SQLite index is only a durable UI history, never an authorization or
 successful-result cache. Every result fetch is authorized again by the server.
 """
 import hashlib
+import asyncio
 import json
 import sqlite3
 from contextlib import contextmanager
@@ -19,12 +20,14 @@ from . import manual_cache, manual_extraction
 
 
 class Client:
-    def __init__(self, url, key_loader, path, *, transport=None):
+    def __init__(self, url, key_loader, path, *, transport=None, timeout=30):
         self.url = url.rstrip('/')
         parsed = urlsplit(self.url)
         if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
             raise ValueError('수업 관리 서버 주소는 인증 정보가 없는 HTTPS 주소여야 합니다')
         self.key_loader, self.path, self.transport = key_loader, Path(path), transport
+        if not 0<timeout<=30:raise ValueError('수업 관리 서버 요청 대기는 30초 이내여야 합니다')
+        self.timeout=timeout
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.db() as db:
             db.execute('''CREATE TABLE IF NOT EXISTS runs (
@@ -59,20 +62,24 @@ class Client:
 
     def request(self, method, path, body=None):
         key = self.credential()
-        try:
-            with httpx.Client(timeout=30, follow_redirects=False, transport=self.transport) as client:
-                with client.stream(method, self.url+path, headers={'Authorization': 'Bearer '+key}, json=body) as response:
+        async def load():
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=False, transport=self.transport) as client:
+                async with client.stream(method, self.url+path, headers={'Authorization': 'Bearer '+key}, json=body) as response:
                     if response.status_code != 200:
                         code = response.status_code if response.status_code in (401, 403, 409, 422, 429, 503) else 502
                         raise HTTPException(code, '관리 서버가 요청을 완료하지 못했습니다. 승인·예산·실행 상태를 확인하세요')
                     data = bytearray()
-                    for chunk in response.iter_bytes():
+                    async for chunk in response.aiter_bytes():
                         if len(data)+len(chunk)>16_000_000:
                             raise HTTPException(502, '관리 서버의 결과 크기 한도를 초과했습니다')
                         data.extend(chunk)
                     value = json.loads(data)
                     if not isinstance(value, dict): raise ValueError()
                     return value
+        async def bounded():
+            return await asyncio.wait_for(load(),self.timeout)
+        try:
+            return asyncio.run(bounded())
         except HTTPException:
             raise
         except Exception:
@@ -108,12 +115,20 @@ class Client:
         return run_id
 
     def agent_result(self,task,run_id):
+        run_id=self.agent_run_for(task,run_id)
+        return self.request('GET','/v1/classroom/agents/runs/'+run_id+'/result')
+
+    def cancel_agent(self,task,run_id):
+        run_id=self.agent_run_for(task,run_id)
+        return self.request('POST','/v1/classroom/agents/runs/'+run_id+'/cancel')
+
+    def agent_run_for(self,task,run_id):
         run_id=str(UUID(run_id))
         with self.db() as db:
             row=db.execute('SELECT run_id FROM agent_runs WHERE scope=? AND task=?',(self.scope(),task)).fetchone()
             if not row or row['run_id']!=run_id:
                 raise HTTPException(403,'이 학생 작업에 연결된 관리 실행이 아닙니다')
-        return self.request('GET','/v1/classroom/agents/runs/'+run_id+'/result')
+        return run_id
 
     def authorize_hash(self, sha256):
         if len(sha256) != 64 or any(c not in '0123456789abcdef' for c in sha256):

@@ -555,6 +555,8 @@ services:
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
+      HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
       # 실행기(Claude Code CLI)의 모델 호출은 전부 강의 LiteLLM 중계로 간다(사용자 결정 2026-10-25 — Anthropic 계정 · 모델을 쓰지 않는다).
       # 키는 .env 의 LLM_API_KEY 하나, 주소는 Anthropic 방식 LLM_RELAY_URL(끝의 /v1 없이). 키가 있으면 실행마다 따로 CLAUDE_CONFIG_DIR(settings.isolate_config_dir)
       ANTHROPIC_API_KEY: ${LLM_API_KEY:-}

@@ -14,6 +14,58 @@ from test_instances import rt  # noqa: F401
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable classroom authority PostgreSQL')
 
 
+def test_student_cancel_revokes_run_and_stops_claimed_task(setup):
+    client,runtime,auth,_,_=setup
+    headers={'Authorization':'Bearer '+KEY}
+    run=client.post('/v1/classroom/agents',headers=headers,json={
+        'reference':'handover.draft','inputs':{'memo':'취소 시험'}}).json()['run_id']
+    wi=runtime.repo.fetch_pending_task('cliagents','managed-worker')[0]
+    endpoint=f'/v1/classroom/agents/runs/{run}/cancel'
+    assert client.post(endpoint).status_code==401
+    assert auth.read_run(KEY,run)['state'] in ('RUNNING','RESERVED')
+    assert client.post(endpoint,headers=headers).json()=={'state':'FAILED'}
+    assert runtime.repo.get_workitem(wi['id'])['draft_status']=='CANCELLED'
+    assert client.post(endpoint,headers=headers).json()=={'state':'FAILED'}
+    assert client.get(f'/v1/classroom/agents/runs/{run}/result',headers=headers).status_code==409
+    with pytest.raises(Denied):auth.charge_execution(run,input_bytes=1,max_output_tokens=1)
+
+
+def test_student_runner_rejoins_real_authority_and_returns_to_local_task(setup,tmp_path,monkeypatch):
+    import httpx
+    from procsvc import engine,instances,procdb
+    from procsvc.classroom_client import Client as Student
+    from worker import student_execution
+    from worker.runner import Runner
+    from test_instances import FakeHooks,DEF_PATH
+    from test_worker import _settings
+    client,teacher,_,connect,approval=setup
+    with connect() as db:
+        policy=db.execute('SELECT policy FROM hyd_classroom_grants').fetchone()['policy']
+        policy['tool_io']={'tools':['enterprise/spare_stock'],'catalog':{'enterprise/spare_stock':{
+            'inputSchema':{'type':'object'},'annotations':{'readOnlyHint':True}}}}
+        db.execute('UPDATE hyd_classroom_grants SET policy=%s',(Jsonb(policy),))
+    local=instances.InstanceRuntime(procdb.MemoryRepo(),engine.Definition.load(DEF_PATH),FakeHooks())
+    assert approved(local)==approval
+    inst=local.start_definition(approval['definition'],'1','student',values={'memo':'실제 입력'})
+    def bridge(request):
+        if request.url.path.endswith('/result'):
+            for wi in teacher.repo.fetch_pending_task('cliagents','test-managed-result'):
+                teacher.repo.save_task_result(wi['id'],{'answer':'사람 확인 필요'},final=True,expected_consumer=wi['consumer'])
+            teacher.poll_once()
+        path=request.url.path+('?' + request.url.query.decode() if request.url.query else '')
+        response=client.request(request.method,path,headers=dict(request.headers),content=request.content)
+        return httpx.Response(response.status_code,content=response.content)
+    student=Student('https://class.example',lambda:KEY,tmp_path/'student.sqlite3',transport=httpx.MockTransport(bridge))
+    monkeypatch.setattr(student_execution,'configured',lambda _:student)
+    runner=Runner(_settings(tmp_path),local.repo,exec_fn=lambda *a:pytest.fail('local model must not run'),schema_prompt='s')
+    assert runner.poll_once()==1
+    wi=local.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert wi['status']=='SUBMITTED' and wi['output']['answer']=='사람 확인 필요'
+    with connect() as db:
+        assert db.execute('SELECT count(*) AS n FROM hyd_classroom_runs').fetchone()['n']==1
+        assert db.execute('SELECT calls FROM hyd_classroom_grants').fetchone()['calls']==0
+
+
 def test_contract_lookup_is_current_unique_and_does_not_reserve(setup):
     client,runtime,auth,connect,approval=setup
     with connect() as db:
@@ -155,7 +207,9 @@ def test_managed_mcp_to_student_exchange_keeps_name_schema_and_scoped_result(set
                 exchanges.append(('student-error',type(exc).__name__,str(exc)))
                 raise
         return httpx.Response(response.status_code,content=response.content)
-    network=httpx.MockTransport(bridge)
+    async def async_bridge(request):
+        return await asyncio.to_thread(bridge,request)
+    network=httpx.MockTransport(async_bridge)
     student=Student('https://teacher.example',lambda:KEY,tmp_path/'student.sqlite3',transport=network)
     transport=managed_tools.Transport('https://teacher.example',permit['token'],transport=network)
     catalog=transport.request('catalog',{})['tools']

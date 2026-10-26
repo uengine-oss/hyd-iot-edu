@@ -80,7 +80,16 @@ class TaskRouter(ReadRouter):
                 return self.propose(row,inst,qualified,arguments)
         except Exception:
             return self.error('학생 작업의 현재 담당·제안 저장 권한을 확인할 수 없습니다')
-        return super().__call__(qualified,arguments)
+        from uuid import uuid4
+        use_id=str(uuid4())
+        common={'job_id':'CLASSROOM_LOCAL_READ','todo_id':row['id'],'proc_inst_id':inst['proc_inst_id'],'crew_type':'tool'}
+        tool='mcp__'+qualified.replace('/','__')
+        self.repo.record_events([dict(common,event_type='tool_usage_started',data={
+            'tool':tool,'tool_use_id':use_id,'input':arguments})])
+        reply=super().__call__(qualified,arguments)
+        self.repo.record_events([dict(common,event_type='tool_usage_finished',data={
+            'tool':tool,'tool_use_id':use_id,'output':reply['result'],'is_error':reply['is_error']})])
+        return reply
 
     def propose(self,row,inst,qualified,arguments):
         from . import classroom_proposals,decision_scope,engine
