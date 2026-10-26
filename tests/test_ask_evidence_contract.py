@@ -1,5 +1,6 @@
 """Generic MCP evidence stays grounded in exact successful invocation records."""
 import copy
+import json
 
 import pytest
 
@@ -14,6 +15,32 @@ def call(tool='student/read_rows', args=None, **over):
 
 def answer(tool, query):
     return dict(status='answered', answer='조회 결과입니다.', evidence=[dict(tool=tool, query=query, result='실제 결과 요약')])
+
+
+@pytest.mark.parametrize('rows', [[], [{'tag':'TS1','unit':'℃','normal':48}]])
+def test_neo4j_json_rows_in_cli_result_wrapper_are_successful_evidence(rows):
+    tool='mcp__neo4j__read_neo4j_cypher'
+    events=[dict(event_type='tool_usage_started',data=dict(tool=tool,tool_use_id='q',input={'query':'MATCH (s:Sensor) RETURN s'})),
+            dict(event_type='tool_usage_finished',data=dict(tool=tool,tool_use_id='q',output={'result':json.dumps(rows)},is_error=False))]
+    calls=ask.tool_calls(events)
+    result=ask.verdict(answer(tool,'MATCH (s:Sensor) RETURN s'),calls)
+    assert calls[0]['ok'] and result['evidence'][0]['verified']
+
+
+@pytest.mark.parametrize('output,is_error', [({'result':'rejected','message':'쓰기 금지'},False),
+    ({'result':'[{"tag":'},False),({'result':'[]'},True),({'result':'[]','error':'query failed'},False),
+    ({'result':'[]','isError':True},False),({'result':'ok','isError':True},False),
+    ({'result':'ok','error':'query failed'},False)])
+def test_neo4j_row_contract_never_turns_errors_into_success(output,is_error):
+    assert ask._failed(output,is_error,'neo4j/read_neo4j_cypher')
+
+
+def test_full_error_payload_is_checked_even_when_preview_is_not_json():
+    events=[dict(proc_inst_id='mine',event_type='tool_usage_started',data=dict(tool='enterprise/query',tool_use_id='q',input={'sql':'Q'})),
+            dict(proc_inst_id='mine',event_type='tool_usage_finished',data=dict(tool_use_id='q',output='preview...',output_truncated=True,
+                 full_output={'stored':True,'ref':'payload','cut':False}))]
+    calls=ask.tool_calls(events,lambda _:dict(proc_inst_id='mine',content={'result':'rejected','message':'query denied'}))
+    assert calls[0]['ok'] is False and 'query denied' in calls[0]['problem']
 
 
 def test_actual_output_is_compared_with_claimed_numbers_and_ids(world, tmp_path):
