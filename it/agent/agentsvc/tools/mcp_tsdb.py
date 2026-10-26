@@ -11,6 +11,7 @@ from datetime import timedelta
 import psycopg
 from hydcommon.daq_contract import reporting_interval
 from hydcommon.sql_read import guard, READ_FUNCTIONS
+from hydcommon.tool_result import checked
 
 from .. import card as cardlib
 
@@ -67,9 +68,9 @@ class TimeSeriesDB:
             cur.execute(statement)
             columns=[d.name for d in cur.description]
             rows=[list(r) for r in cur.fetchall()]
-        return dict(source='hyd-timeseries',dialect='postgresql',statement=statement,
+        return checked(dict(source='hyd-timeseries',dialect='postgresql',statement=statement,
                     columns=columns,rows=rows,row_count=len(rows),row_limit=200,
-                    at_row_limit=len(rows)==200)
+                    at_row_limit=len(rows)==200))
 
     def evaluate(self, evidence: list[dict], asset: str) -> dict[str, dict]:
         """Scalar evidence: PASS/FAIL are observed predicates; UNKNOWN never means false."""

@@ -666,6 +666,7 @@
     const names = { PENDING: '승인 접수 · 전달 대기', FAILED: '승인 전달 실패', DELIVERED: '승인 전달 완료', DISCARDED: '승인 폐기' };
     return approvals.map(a => {
       const p = a.payload || {}, snapshot = (p.plan || {})._snapshot || {};
+      const reviewRequired = (a.history || []).at(-1)?.kind === 'review_required';
       const option = (p.plan || {}).option || {};
       const roles = Object.keys(snapshot.roles || {});
       const commandPending = view.workitems.some(w => w.tool === 'incident:command' && w.status === 'PENDING');
@@ -674,10 +675,10 @@
       if (lost && a.status === 'DISCARDED') { setDiscardPending(a.todo_id, null); lost = null; }   // the server holds the outcome: nothing to replay
       const f = retryForm(a.todo_id), dp = I.discardPreview[a.todo_id];
       const retry = lost ? `<p>응답을 확인하지 못한 폐기 요청이 있습니다. 같은 요청의 결과를 확인하며 중복 처리하지 않습니다.</p>${UI.actions(`<button class="btn" data-discard-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>같은 요청 결과 다시 확인</button>`, I.msg)}`
-        : reviewable ? `<p class="field-hint">${a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
+        : reviewable ? `<p class="field-hint">${reviewRequired ? '현재 조건이 달라 기존 동의를 전달할 수 없습니다. 판단 단계의 다시 수행으로 새 판단과 승인을 받으세요.' : a.status === 'FAILED' ? '승인한 내용은 보존됐습니다. 오류를 확인한 뒤 같은 내용을 다시 전달할 수 있습니다.' : '조건 변경으로 명령이 보류됐다면 판단 단계에서 새 검토를 시작하세요. 사건이 종료됐다면 아래에서 실행 효과를 확인하고 취소할 수 있습니다.'}</p>
         <div class="form"><section class="form-section"><div class="form-grid">${UI.field({ label: UI.t('form.by'), required: true, input: UI.actorInput(`data-retry-by="${esc(a.todo_id)}"`, f.by) })}${UI.field({ label: UI.t('form.role'), required: true, input: `<select data-retry-role="${esc(a.todo_id)}"><option value="">${esc(UI.t('form.pickRole'))}</option>${roles.map(r => `<option value="${esc(r)}" ${r === f.role ? 'selected' : ''}>${esc(who(r))}</option>`).join('')}</select>` })}
         ${UI.field({ label: '폐기 ' + UI.t('form.reason'), cls: 'wide', hint: '사건이 종료되고 실제 조치가 없음을 확인한 경우에만 승인을 폐기하고 처리 건을 취소할 수 있습니다.', input: `<input data-discard-reason="${esc(a.todo_id)}" value="${esc(f.reason)}" placeholder="후속 조치를 진행하지 않고 종료하는 이유">` })}</div></section>
-        ${UI.actions(`${a.status === 'FAILED' ? `<button class="btn primary" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button class="btn outline" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.msg)}
+        ${UI.actions(`${a.status === 'FAILED' && !reviewRequired ? `<button class="btn primary" data-approval-retry="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.retry'))}</button>` : ''}<button class="btn outline" data-approval-discard-preview="${esc(a.todo_id)}" ${I.busy ? 'disabled' : ''}>${esc(UI.t('btn.effects'))}</button>`, I.msg)}
         <div data-discard-preview role="status">${dp ? discardPreviewHtml(dp) : ''}</div></div>` : '';
       const discarded = a.status === 'DISCARDED' ? `<p class="field-hint">${(a.history || []).at(-1)?.via === 'rework' ? '다시 수행 요청으로 이전 승인을 폐기했습니다. 새 판단과 새 승인이 필요합니다.' : '처리 건을 취소했습니다.'} 이전 승인·오류는 보존됩니다.</p>${UI.fold(esc(UI.t('raw')), `<pre>${esc(JSON.stringify((a.history || []).at(-1), null, 2))}</pre>`, { cls: 'small' })}` : '';
       return UI.fold(`${esc(UI.t('inst.approval'))} ${chip(a.status, names[a.status] || UI.status(a.status))}`, `<div data-approval-panel="${esc(a.todo_id)}"><p class="kv-line">${esc(option.name || p.option)} · ${esc(UI.t('card.approver'))} <b>${esc(who(p.by))}</b> · 전달 시도 ${esc(a.attempts)}회</p>
@@ -732,6 +733,7 @@
   }
   function eventDetail(e) {
     const d = e.data || {};
+    if (d.recovery === 'verify_external_effect') return '외부 작업이 이미 실행됐을 수 있어 자동 재시도를 멈췄습니다. 외부 시스템의 실제 처리 결과를 확인하세요. ' + (d.raw_error || '');
     if (d.recovery === 'new_judgment_and_consent') return '현재 조건 검사로 명령을 보류했습니다. 판단 단계에서 새 검토와 승인을 진행하세요. ' + ((d.assessment || {}).reasons || []).join('; ');
     if (d.tool) return `${UI.toolName(d.tool)}${d.input ? ' ' + JSON.stringify(d.input).slice(0, 120) : ''}${d.output ? ' → ' + String(d.output).slice(0, 120) : ''}`;
     if (d.goal) return `${UI.logText(d.goal)}${d.name ? ' · ' + UI.who(d.name) : ''}`;

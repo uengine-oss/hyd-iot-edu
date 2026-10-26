@@ -133,6 +133,9 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
     """카드 목록은 비교에 쓰는 칸만(ProcessGPT get_process_list 의 select=id,name 처럼), 카드 하나의 전체 근거는 detail_option 으로
     따로(get_process_detail 처럼). 뺀 칸과 받는 법을 omitted 로 알린다 — 잘린 줄 모르고 판단하지 않게."""
     r = rec.get('result') or {}
+    provenance = rec.get('provenance') or []
+    source_errors = [{k: row.get(k) for k in ('variable', 'source', 'error', 'how') if row.get(k) is not None}
+                     for row in provenance if isinstance(row, dict) and row.get('error')]
     options = []
     for o in r.get('options') or []:
         options.append({k: v for k, v in {
@@ -153,7 +156,8 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
         'part': (rec.get('origin') or {}).get('part'),
         'recommended': rec.get('recommended'), 'explanation': rec.get('explanation') or r.get('explanation'),
         'facts': rec.get('facts'), 'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
-        'options': options, 'error': rec.get('error'),
+        'options': options, 'error': rec.get('error'), 'source_errors': source_errors,
+        'provenance': _capped(provenance) if detail_option else None,
         'omitted': f"카드마다 {', '.join(DETAIL_FIELDS)} 와 provenance 는 뺐습니다. 한 카드의 전체 근거가 필요하면 같은 인자에 "
                    "detail_option=<카드 id 또는 SOP ID> 를 더해 다시 부르세요(칸마다 6000자 상한, 넘으면 …[truncated]). 제출한 판단 기록에는 전부 남습니다",
     }.items() if v not in (None, [], {})}
@@ -204,7 +208,8 @@ class DmnTools:
         return self._fabric
 
     def fabric_query(self, asset: str, query: str = 'asset', limit: int = 50, sql: dict | None = None) -> dict:
-        return self.fabric.query(asset, query, limit, sql)
+        from hydcommon.tool_result import checked
+        return checked(self.fabric.query(asset, query, limit, sql))
 
     # ---- task:diagnose
     def human_alert(self, asset: str, pattern: str, alert_id: str | None = None) -> dict | None:
@@ -374,7 +379,8 @@ class DmnTools:
         return self.kg.precedents(failure_mode)
 
     def tradeoffs(self, skill_ids: list[str]) -> list[dict]:
-        return self.kg.tradeoffs(skill_ids)
+        from hydcommon.tool_result import checked
+        return checked(self.kg.tradeoffs(skill_ids))
 
     @staticmethod
     def _cause(cause: str, failure_mode: str) -> dict:

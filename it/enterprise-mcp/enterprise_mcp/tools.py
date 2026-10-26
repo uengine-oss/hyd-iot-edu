@@ -15,6 +15,7 @@ import json
 from typing import Callable
 
 import psycopg
+from hydcommon.tool_result import checked
 
 from .sql_guard import SqlRejected, guard
 from .catalog import CATALOG_SQL, render
@@ -101,4 +102,9 @@ class EnterpriseTools:
             cur.execute(statement)
             columns = [d.name for d in cur.description] if cur.description else []
             rows = [list(r) for r in cur.fetchall()]
-        return ok({"statement": statement, "columns": columns, "rows": rows, "row_count": len(rows)})
+        document = {"statement": statement, "columns": columns, "rows": rows,
+                    "row_count": len(rows), "row_limit": 200, "at_row_limit": len(rows) == 200}
+        try:
+            return ok(checked(document))
+        except ValueError as exc:
+            raise SqlRejected(str(exc)) from exc

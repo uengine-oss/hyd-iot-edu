@@ -435,7 +435,7 @@ def decide(kg, registry: DecisionRegistry, tsdb, asset: str, pattern: str, cause
             except Exception:
                 rec['error_code'] = 'SUBMIT_FAILED'      # unreachable process, timeout, unreadable reply
                 raise
-            registry.submitted(rec, decision_id)
+            registry.submitted(rec, res.get('id') or decision_id)
             step("submit", res, "process API에 조치 카드 제출 (에이전트의 유일한 쓰기) — 실행은 사람이 고른 뒤 L9가 한다")
             rec["status"] = "SUBMITTED"
         elif rec["status"] == "RUNNING":

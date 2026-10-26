@@ -309,6 +309,20 @@ def test_legacy_http_routes_cannot_bypass_instance_approval(world, monkeypatch, 
     assert d['state']=='PENDING_APPROVAL' and inc.cmd_id is None
 
 
+def test_changed_conditions_require_new_consent_instead_of_retry(world):
+    from procsvc.current_approval import ApprovalReviewRequired
+    rt, inst, inc, d, wi = ready(world)
+    def refuse(row):
+        raise ApprovalReviewRequired({'reasons': ['재고 변경']})
+    rt.hooks.deliver_approval = refuse
+    rt.select(wi['id'], d['id'], d['options'][0]['id'], 'manager', 'role:prod-mgr', now=NOW)
+    row = rt.repo.get_approval(wi['id'], rt.tenant_id)
+    assert row['history'][-1]['kind'] == 'review_required'
+    with pytest.raises(ValueError, match='새 판단'):
+        rt.retry_approval(wi['id'], 'manager', 'role:prod-mgr', now=NOW)
+    assert inc.cmd_id is None and row['attempts'] == 1
+
+
 def test_approval_http_reports_failure_then_authorized_recovery(world, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient

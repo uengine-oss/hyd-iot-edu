@@ -151,8 +151,10 @@ class ApprovalDelivery:
                 if any(r.get('ok') is not True for r in results):
                     raise RuntimeError(str([r for r in results if r.get('ok') is not True]))
             except Exception as error:
+                from .current_approval import ApprovalReviewRequired
+                kind = 'review_required' if isinstance(error, ApprovalReviewRequired) else 'transient'
                 row.update(status='FAILED', error=f'{type(error).__name__}: {str(error)[:500]}')
-                row['history'].append({'status':'FAILED', 't':engine.now_iso(now), 'error':row['error']})
+                row['history'].append({'status':'FAILED', 't':engine.now_iso(now), 'error':row['error'], 'kind':kind})
                 self.repo.update_approval(row)
                 self.repo.record_events([{'job_id':'APPROVAL_DELIVERY', 'todo_id':wid,
                     'proc_inst_id':wi['proc_inst_id'], 'crew_type':'human', 'event_type':'error',
@@ -184,6 +186,8 @@ class ApprovalDelivery:
             wi = self.repo.get_workitem(wid)
             if not row or row['status'] != 'FAILED':
                 raise ValueError('전달 실패한 승인만 재시도할 수 있습니다')
+            if (row.get('history') or [{}])[-1].get('kind') == 'review_required':
+                raise ValueError('현재 조건이 달라 기존 동의를 다시 전달할 수 없습니다. 판단 단계에서 다시 수행하여 새 판단과 승인을 받으세요')
             if inst['status'] != 'RUNNING' or inst.get('is_deleted') or wi['status'] != 'SUBMITTED':
                 raise ValueError('이 인스턴스는 승인을 재전달할 수 없습니다')
             if not by or not str(by).strip():
