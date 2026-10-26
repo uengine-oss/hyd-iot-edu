@@ -108,7 +108,8 @@ PARTS = {
         "help": "처리 결과(정상 · 미달 · 지연 · 알림)를 담당자 화면에 알리고 기록합니다. 정상 · 미달은 사건을 닫고, 알림은 사건을 그대로 둡니다. "
                 "사람 task 가 아닙니다 — 담당자는 보기만 합니다.",
         "config": {"outcome": "결과: 정상 · 입고 완료 · 미달 · 지연 · 알림 · 승인 지연 · 반려", "title": "제목 틀 (예: {asset} 정기 정비 결과)",
-                   "summary": "요약 틀 — 처리 건 값 {이름} 을 넣는다. 없는 값은 '(없음)'"},
+                   "summary": "요약 틀 — 처리 건 값 {이름} 을 넣는다. 없는 값은 '(없음)'",
+                   "notify": "추가 보고 대상 목록: role(역할 ID), when(처리 건 값 조건). 승인을 추가하지 않습니다."},
     },
 }
 BY_TOOL = {p["tool"]: k for k, p in PARTS.items()}
@@ -223,6 +224,18 @@ def validate(activity: dict) -> None:
         if "reset_counter" in cfg and not isinstance(cfg["reset_counter"], bool):
             raise ValueError(f"활동 {aid}: reset_counter 는 true/false 입니다")
     if tool == REPORT_TOOL:
+        notices = cfg.get("notify", [])
+        if not isinstance(notices, list) or len(notices) > 10:
+            raise ValueError(f"활동 {aid}: notify 는 최대 10개 보고 대상 목록입니다")
+        for notice in notices:
+            if (not isinstance(notice, dict) or set(notice) != {"role", "when"}
+                    or not isinstance(notice["role"], str) or not re.fullmatch(r"role:[A-Za-z0-9_-]+", notice["role"])
+                    or not isinstance(notice["when"], str) or not notice["when"].strip()):
+                raise ValueError(f"활동 {aid}: notify 에 역할(role)과 조건(when)이 필요합니다")
+            try:
+                engine.compile_condition(notice["when"])
+            except (ValueError, SyntaxError) as exc:
+                raise ValueError(f"활동 {aid}: notify 조건 오류: {exc}") from exc
         if cfg.get("outcome") not in REPORT_OUTCOMES:
             raise ValueError(f"활동 {aid}: 결과 보고의 결과(outcome)는 {', '.join(REPORT_OUTCOMES)} 중 하나입니다")
         for key in ("title", "summary"):

@@ -121,7 +121,7 @@ def test_c_button_case_orders_mails_and_receives_at_once_then_stock_is_above_the
     world["book"][d["id"]] = d
     rt.submit(_row(rt, inst, "T_agent")["id"], {"decision": {"recommended": d["recommended"]}, "decision_id": d["id"]}, now=NOW)
     res = rt.select(_row(rt, inst, "T_approve")["id"], d["id"], d["options"][0]["id"], "정구매", "role:prod-mgr", now=NOW)
-    assert res["purchase"]["approved_amount"] == 330                               # 300만 원 초과도 승인 1회 (경고는 카드 표시만)
+    assert res["purchase"]["approved_amount"] == 330                               # 300만 원 초과도 승인 1회 (구매팀장 결과 보고는 별도 알림)
     done = rt.repo.get_instance(inst["proc_inst_id"])
     v = engine.variables(done)
     assert done["status"] == "COMPLETED" and done["end_event"] == "E_end" and inc.state == "CLOSED"

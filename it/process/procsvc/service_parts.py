@@ -456,8 +456,16 @@ class ServicePartsRuntime:
             note = f"{outcome} — {title}" + (f": {summary}" if level == "rejected" and summary else "")
             closed = self.hooks.close_incident_result(v["incident"], level, note)
         report["incident_closed"] = bool(closed)
+        recipients = list(inst.get("participants") or [])
+        for notice in cfg.get("notify", []):
+            if engine.eval_condition(notice["when"], v):
+                recipients.append(notice["role"])
+        # Portal notices are database writes: commit them with the report result,
+        # so a failed delivery rolls back and the existing service retry can recover.
+        report["notification_count"] = inbox.notify_participants(
+            self.repo, self.tenant_id, dict(inst, participants=recipients),
+            f"[{outcome}] {title}", summary or title)
         self._event(wi, "RESULT_REPORT", "결과 보고", {"report": report}, event_type="task_completed")
-        self._after_commit(inbox.notify_participants, self.repo, self.tenant_id, dict(inst), f"[{outcome}] {title}", summary or title)
         self._after_commit(self.hooks.audit, v.get("asset", "-"), "process", "RESULT_REPORT",
                            {"instance": inst["proc_inst_id"], "outcome": outcome, "level": level, "title": title}, incident=v.get("incident"))
         self.submit(wi["id"], {"result_report": report}, by="process", now=now)
