@@ -64,19 +64,35 @@ def cover(course,n,kind,subtitle):
 def home(course):
  im=Image.new('RGB',(1800,600),'#F3F2EE');d=ImageDraw.Draw(im)
  d.text((170,222),'HYD',font=font(90,True),fill='#27343B')
- d.text((180,344),'PHYSICAL AI  /  '+course.upper(),font=font(23),fill='#69736F')
- for i,kind in enumerate(PALETTES):
-  x=790+i*325;bg,ink,soft,*_=PALETTES[kind]
-  d.rounded_rectangle((x-131,162,x+131,438),30,fill=bg)
-  motif(d,kind,x,300,.59)
-  if i<2:d.line((x+142,300,x+173,300),fill='#C8CECA',width=3)
+ d.text((180,344),'LEARNING STUDIO  /  '+course.upper(),font=font(23),fill='#69736F')
+ # Home uses a distinct educational motif; never repeat subject-card symbols.
+ ink='#68766E';soft='#DCE3D9'
+ d.ellipse((1080,120,1470,510),fill='#E6EAE2')
+ d.polygon([(1030,210),(1190,235),(1190,413),(1030,388)],fill='white')
+ d.polygon([(1190,235),(1370,205),(1370,383),(1190,413)],fill='#FAFBF8')
+ d.line([(1030,210),(1190,235),(1370,205),(1370,383),(1190,413),(1030,388),(1030,210)],fill=ink,width=4)
+ d.line((1190,235,1190,413),fill=ink,width=4)
+ for y in [265,300,335]:
+  d.line((1060,y,1158,y+15),fill=soft,width=5)
+  d.line((1220,y+10,1338,y-10),fill=soft,width=5)
+ d.polygon([(1400,175),(1415,185),(1340,313),(1320,330),(1325,303)],fill='#B79D76')
+ d.line((1325,303,1340,313),fill=ink,width=3)
  im.save(OUT/f'home-{course}.png',optimize=True)
+
+def home_icon():
+ im=Image.new('RGB',(480,480),'#F3F2EE');d=ImageDraw.Draw(im)
+ d.rounded_rectangle((112,85,368,395),radius=30,fill='#FFFFFF',outline='#68766E',width=10)
+ d.line((165,87,165,393),fill='#68766E',width=8)
+ d.rectangle((275,90,315,190),fill='#C7D2C0')
+ for y in [242,282,322]:d.line((205,y,320,y),fill='#CAD2CA',width=9)
+ im.save(OUT/'icon-home.png',optimize=True)
 
 integrated=[('knowledge','데이터에서 판단과 조치까지'),('knowledge','클래스 · 관계 · 스키마'),('knowledge','안전 조건 · 성과 비교'),('knowledge','문서에서 신뢰할 근거로'),('agent','근거를 읽고 작업하기'),('agent','스킬 · MCP · 도구 연결'),('agent','사람의 승인 · 요구사항'),('agent','변경 · 검증 · 완성'),('process','역할 · 분기 · 업무 흐름'),('process','정비에서 구매까지'),('process','내 주제로 완성하기')]
 applied=[('knowledge','데이터에서 판단과 조치까지'),('knowledge','지식 구조 · 조치 조건'),('knowledge','성과 비교 · 근거 추출'),('agent','업무 수행 · 도구 활용'),('agent','협업 · 명세 · 검증'),('process','설비 대응 흐름 완성'),('process','정비 · 구매 · 실행 검증'),('process','내 주제에 응용하기')]
 for course,rows in [('integrated',integrated),('applied',applied)]:
  home(course)
  for n,(kind,title) in enumerate(rows,1):cover(course,n,kind,title)
+home_icon()
 for kind,(bg,*_) in PALETTES.items():
  im=Image.new('RGB',(480,480),bg);d=ImageDraw.Draw(im);motif(d,kind,240,240,1.05);im.save(OUT/f'icon-{kind}.png',optimize=True)
 # Contact sheet for visual review, not a deployable asset.
