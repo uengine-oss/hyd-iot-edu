@@ -30,7 +30,7 @@ def respond(runtime,inst,policies,kind,request_id,text):
     wrapped={'type':'object','properties':{'text':schema},'required':['text'],'additionalProperties':False}
     if mcp_check._argument_problem({'input_schema':wrapped},{'text':text}):
         raise Denied('보완 답변이 강사 승인 입력 스키마와 다릅니다')
-    with runtime.repo.instance_transaction(runtime.tenant_id,inst['proc_inst_id']):
+    with runtime._transition(inst['proc_inst_id']):
         rows=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
         if len(rows)!=1:raise Denied('관리 실행의 단일 작업을 확인할 수 없습니다')
         row=rows[0]
@@ -50,8 +50,8 @@ def respond(runtime,inst,policies,kind,request_id,text):
             runtime.human_response(row['id'],request_id,text,'classroom-student')
         else:
             task_deferral.reassess(runtime.repo,runtime.tenant_id,row['id'],deferral_id=request_id,
-                request_id=digest([kind,request_id]),by='classroom-student',reason=text)
+                request_id=digest([kind,request_id]),by='classroom-student',reason=text,_locked=True)
         runtime.repo.record_events([{'job_id':'CLASSROOM_RESPONSE','todo_id':row['id'],'proc_inst_id':inst['proc_inst_id'],
-            'crew_type':'human','event_type':'classroom_response','data':{
+            'crew_type':'human','event_type':'task_working','data':{
                 'kind':kind,'request_id':request_id,'text_hash':digest(text)}}])
     return {'status':'QUEUED','reused':False}

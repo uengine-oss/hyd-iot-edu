@@ -5,7 +5,6 @@ student supplies only the approved reference and schema-checked input values.
 The ordinary engine/worker retains form validation and bounded correction.
 """
 from copy import deepcopy
-from dataclasses import asdict
 from fastapi.encoders import jsonable_encoder
 
 from hydcommon.process_contracts import pinned_form
@@ -49,7 +48,7 @@ def snapshot(runtime, approval):
     properties=set(schema.get('properties') or {})
     if not properties.issubset(set(activity.get('inputData') or [])) or 'classroom_execution' in properties:
         raise Denied('입력 스키마는 해당 작업의 입력만 허용해야 합니다')
-    bundle=jsonable_encoder({'source_definition':source,'activity':activity,'agent':asdict(settings),'input_schema':schema})
+    bundle=jsonable_encoder({'source_definition':source,'activity':activity,'agent':agents_store.execution_settings(settings),'input_schema':schema})
     return source,activity,role,bundle
 
 
