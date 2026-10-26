@@ -14,6 +14,8 @@ python 제작용/실습시작/test_launcher.py
 
 기본 주소는 로컬 검증 서버 `http://127.0.0.1:8765`다. 공개 배포 시 패키지를 먼저 게시하고, 해당 커밋의 raw URL을 `build_launcher.py --base-url`에 넣어 시작 도구를 묶는다. `catalog.json`은 SHA-256으로 ZIP 판본을 확인한다. 주소만 바꾸고 검증 없이 게시 완료로 표시하지 않는다.
 
+오프라인1 전체 가이드는 각 과정 `01회차/오프라인1_가이드.zip`이다. 압축을 풀고 `가이드열기.html`을 열면 된다. 정본 HTML과 실제 참조 이미지·자료·시작 도구를 함께 묶고 내부 링크를 확인한다. 시작 도구를 새로 묶은 뒤에는 `build_guide_bundle.py`도 실행한다. ZIP을 다시 생성하면 컨텐츠가 같아도 ZIP 메타데이터 해시가 바뀔 수 있으므로 게시 커밋과 해시는 항상 함께 고정한다.
+
 `build_labs.py` → `build_offline.py` → `build_conditions.py` → `build_launcher.py` 순서다. 앞 생성기만 실행하면 뒤 단계 목록을 다시 생성해야 한다. `build.py`가 순서를 묶는다. 실제 캡처는 정본 `images/`에 보존하며 캡처를 재생성하지 않는다. `extract_verified_screens.py`는 보존된 원본 화면의 지정 영역을 잘라내는 제작 도구다.
 
 ## 제공 범위

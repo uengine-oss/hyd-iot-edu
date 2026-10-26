@@ -41,6 +41,16 @@
       "sha256": "7356084478f68a2f7a0e92b9cc03c03d42b55189cbe922558beb356c02a76ad8"
     },
     {
+      "id": "practical-02-conditions",
+      "course": "실전반",
+      "session": "온라인 02회차",
+      "title": "조치 조건과 판단 근거 정리하기",
+      "version": "2026-10-26-conditions-v1",
+      "folder": "02회차/랩/02일차_실습5_조치조건표",
+      "path": "산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
+      "sha256": "21c21710b6f72b713fbb3297a24e36b94167e380a92809fa10985d2b93c932a8"
+    },
+    {
       "id": "integrated-01-offline",
       "course": "통합반",
       "session": "오프라인 01회차",
@@ -59,16 +69,6 @@
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "산출물/실전반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
       "sha256": "f6be25bc068bb395baff1b7f3bc2f48aca0905561a7b9bf3004703cda9ef30e7"
-    },
-    {
-      "id": "practical-02-conditions",
-      "course": "실전반",
-      "session": "온라인 02회차",
-      "title": "조치 조건과 판단 근거 정리하기",
-      "version": "2026-10-26-conditions-v1",
-      "folder": "02회차/랩/02일차_실습5_조치조건표",
-      "path": "산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
-      "sha256": "21c21710b6f72b713fbb3297a24e36b94167e380a92809fa10985d2b93c932a8"
     }
   ]
 }
