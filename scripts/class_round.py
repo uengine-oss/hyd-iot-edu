@@ -24,6 +24,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -1428,7 +1429,7 @@ def lab_05_manual_to_knowledge(r: Round):
         if not ok:
             hm, why = r.human_message(msg)
             r.check(f"{key} 적재 실패 문구가 사람 글", hm, why, kind="exception")
-    loaded = {k: bool(_b_current_batch(r, k)) for k in _B_DOC_FILES}
+    loaded = {k: bool(_b_current_batch(r, k)) for k in ("HM-8", "PM-02", "PR-07")}
     r.memo["b_loaded"] = loaded
     r.check("세 문서 모두 현재 판본으로 적재(A · B · C 흐름 전제)", all(loaded.values()), str(loaded))
 
@@ -2725,93 +2726,149 @@ def lab_12_spare(r):
     _c_biz_round(r, "spare", "HYD-03", "user:jung-buy", check_effects=effects)
 
 
-# ====================================================================== 13 · 11-4 · 8-4 직접 그린 작은 흐름
-@lab("13", "11-4 · 8-4 직접 그린 작은 흐름 — 시작 → 에이전트 → 사람 확인 → 보고, 지원 안 되는 외부 쓰기는 성공처럼 보이지 않음")
-def lab_13_small_flow(r):
-    agent_id = r.memo.get("my_agent_id") or r.memo.get("agent_id") or "sys:agent"   # 6번 실습(내 에이전트)이 남긴 id, 없으면 기본 AI 에이전트
-    sid = _c_free_id(r, "my_small")
-    nodes = [("S", "start", "", 0, 0), ("A", "task", "점검 요약 작성", 1, 0), ("H", "userTask", "담당자 확인", 2, 0),
-             ("R", "serviceTask", "결과 보고", 3, 0), ("E", "end", "", 4, 0)]
-    flows = [("f1", "S", "A", ""), ("f2", "A", "H", ""), ("f3", "H", "R", ""), ("f4", "R", "E", "")]
-    xml, _ = _c_draw(sid, "작은 흐름", nodes, flows)
-    msg, ok = _c_import(r, xml, "diagram.bpmn", sid)
-    r.check("작은 흐름 가져오기", ok and "단계 3개" in msg, msg)
-    # 시작 조건: 빈 시작 → 사람 입력 · 직접 시작(경보 아님). 실행은 [내가 가져온 흐름 · 판본]의 [직접 시작] 버튼
-    r.check("시작 조건 = 「사람 입력 · 직접 시작」(빈 시작 그림의 기본값)", r.page.locator("#flowEditor input[name=flowStart][value=human]").is_checked(), "", kind="quality")
-    _c_apply_start(r, {"kind": "human", "fields": [{"key": "topic", "text": "점검 주제"}]})
-    # 예외 먼저: 에이전트 단계의 지시문 · 결과 값을 비우면 사전 검사가 무엇을 쓰라고 하는가
-    tid = _c_row(r, "점검 요약 작성")
-    r.page.locator(f"#flowEditor select[data-part='{tid}']").select_option("agent"); _c_settle(r)
-    passed, problems, _ = _c_check(r)
-    need = [p for p in problems if "지시문" in p]
-    ok_h, why = r.human_message(need[0] if need else "")
-    r.check("빈 에이전트 단계 → 「에이전트 지시문을 쓰세요」", bool(need) and ok_h, "; ".join(problems), kind="exception")
-    _c_apply_task(r, "점검 요약 작성", {"part": "agent", "agent": agent_id, "inputs": ["topic"],
-                                     "instruction": "점검 주제 topic 에 대해 지식 지도와 업무 DB 를 조회해 세 줄로 요약한다. 승인 전에는 조회 · 요약만 한다.",
-                                     "outputs": [{"key": "summary", "text": "점검 요약", "type": "textarea"}]}, skip_part=True)
-    _c_apply_task(r, "담당자 확인", {"part": "human", "role": "운전원", "inputs": ["summary"],
-                                   "fields": [{"key": "confirmed", "text": "확인 결과", "type": "select", "items": ["확인", "보완 필요"]}]})
-    _c_apply_task(r, "결과 보고", {"part": "svc:report", "config": {"outcome": "정상", "title": "{topic} 점검 결과", "summary": "{summary} — 담당자 {confirmed}"}})
-    passed, problems, deps = _c_check(r)
-    r.check("작은 흐름 사전 검사 통과", passed, "; ".join(problems) or deps)
-    reg, text, ver = _c_register(r)
-    r.check("작은 흐름 판본 등록", reg, text)
-    _c_me(r, "user:kim-op")
+# ====================================================================== 13 · 두 과정 마지막 적용 — 교대 인수인계
+def _h_submit(r, pid, task, user, values, *, expect_done=True):
+    """교대 검토는 실제 작업함 폼으로 제출한다. 인수 확인과 정비 완료를 구분한다."""
+    _c_me(r, user)
+    _c_open_task(r, pid, task['id'])
+    form = task.get('form') or {}
+    if not form:
+        form = r.get(f"{r.process}/api/todolist/{task['id']}").get('form') or {}
+    for index, field in enumerate(form.get('fields_json') or []):
+        if field['key'] not in values:
+            continue
+        value = values[field['key']]
+        control = r.page.locator(f'#tdField{index}')
+        if field['type'] in ('select', 'boolean'):
+            control.select_option(str(value).lower() if isinstance(value, bool) else str(value))
+        else:
+            control.fill(str(value))
+    r.page.click('#tdDone')
+    if not expect_done:
+        r.wait(15, lambda: '설비 조치' in _c_panel_msg(r), every=.5)
+        return _c_panel_msg(r)
+    return bool(r.wait(45, lambda: _c_item(_c_view(r, pid), task['activity_name']).get('status') == 'DONE', every=2))
 
-    def run_once(i):
-        r.tab("flows"); r.page.wait_for_timeout(1500)
-        card = r.page.locator("#flowList .card").filter(has_text=sid).first   # 흐름 식별자는 「상세 정보」 접기 안 — 카드 글에 들어 있다 # 미확인
-        start_btn = r.page.locator(f"#flowList [data-start='{sid}'][data-version='{ver}']")
-        start_btn.click()
-        slot = r.page.locator(f"[data-startbox='{sid}@{ver}']")
-        slot.locator("[data-sv='topic']").wait_for()
-        slot.locator("[data-sv='topic']").fill("HYD-01 냉각기 주간 점검")
-        before = _c_instance_ids(r)
-        slot.locator("[data-go]").click()
-        inst = _c_new_instance(r, before, sid, 30)
-        if not inst:
-            return {"error": "직접 시작으로 처리 건이 열리지 않음"}
-        t0 = time.monotonic()
-        state, view = _c_wait_step(r, inst["proc_inst_id"], "담당자 확인", C_AI_WAIT_S)
-        sec = round(time.monotonic() - t0, 1)
-        if state != "ready":
-            return {"error": f"사람 확인 차례가 오지 않음({state})", "seconds": sec}
-        v = _c_vars(view["instance"])
-        task = _c_item(view, "담당자 확인")
-        _c_open_task(r, inst["proc_inst_id"], task["id"])
-        r.page.locator("#todoPanel #tdField0").select_option("확인")
-        r.page.click("#todoPanel #tdDone")
-        fin = _c_wait_end(r, inst["proc_inst_id"], 120)
-        return {"seconds": sec, "summary_filled": bool(str(v.get("summary") or "").strip()), "next_step": task.get("activity_name"),
-                "next_role": task.get("user_id"), "outcome": (_c_vars(fin["instance"]).get("result_report") or {}).get("outcome")}
-    r.repeat3("작은 흐름 에이전트 단계", run_once, ("summary_filled", "next_step", "next_role", "outcome"), limit_s=C_AI_LIMIT_S)
 
-    # ---- 예외: 지원 안 되는 외부 쓰기(등록되지 않은 사내 시스템 my-erp 에 기록) — 성공처럼 보이면 안 된다
-    wid = _c_free_id(r, "my_small_write")
-    nodes_w = nodes[:3] + [("W", "serviceTask", "사내 ERP 에 기록", 3, 0), ("R", "serviceTask", "결과 보고", 4, 0), ("E", "end", "", 5, 0)]
-    flows_w = [("f1", "S", "A", ""), ("f2", "A", "H", ""), ("f3", "H", "W", ""), ("f5", "W", "R", ""), ("f4", "R", "E", "")]
-    xml_w, _ = _c_draw(wid, "작은 흐름 + 외부 쓰기", nodes_w, flows_w)
-    msg, ok = _c_import(r, xml_w, "diagram.bpmn", wid)
-    r.check("외부 쓰기 흐름 가져오기", ok, msg)
-    _c_apply_start(r, {"kind": "human", "fields": [{"key": "topic", "text": "점검 주제"}]})
-    _c_apply_task(r, "점검 요약 작성", {"part": "agent", "agent": agent_id, "inputs": ["topic"], "instruction": "점검 주제를 세 줄로 요약한다.",
-                                     "outputs": [{"key": "summary", "text": "점검 요약", "type": "textarea"}]})
-    _c_apply_task(r, "담당자 확인", {"part": "human", "role": "운전원", "inputs": ["summary"],
-                                   "fields": [{"key": "confirmed", "text": "확인 결과", "type": "select", "items": ["확인", "보완 필요"]}]})
-    _c_apply_task(r, "사내 ERP 에 기록", {"part": "svc:mcp-call", "config": {"server": "my-erp", "tool": "write_record", "arguments": {"memo": "{summary}"}}})
-    _c_apply_task(r, "결과 보고", {"part": "svc:report", "config": {"outcome": "정상", "title": "{topic} 기록 완료", "summary": "{summary}"}})
-    passed, problems, deps = _c_check(r)
-    gate = [p for p in problems if "사람 승인" in p]
-    r.check("승인 없는 외부 쓰기 → 사전 검사가 막는다(설비 · 업무에 효과를 내는 흐름은 등록하지 않음)", (not passed) and bool(gate), "; ".join(problems), kind="exception")
-    if gate:
-        ok_h, why = r.human_message(gate[0])
-        r.check("막는 문구가 사람 글", ok_h, why, kind="exception")
-        r.check("막는 문구가 메일이 아닌 쓰기를 「MCP 쓰기(메일)」로 부르지 않는다", "(메일)" not in gate[0], gate[0], kind="quality")   # effect_parts.EFFECTS 이름
-    r.check("등록되지 않은 서버를 「연결 도구 준비가 필요」로 알린다(구조 검사 통과 ≠ 연결 성공)", "등록되어 있지 않습니다" in deps, deps[:300], kind="exception")
-    reg, text, _ = _c_register(r)
-    r.check("외부 쓰기 흐름은 판본으로 등록되지 않는다", not reg and "등록하지 않았습니다" in text, text, kind="exception")
-    r.check("목록에 외부 쓰기 흐름 판본이 없다", not any(v["id"] == wid for v in r.get(f"{r.process}/api/flows").get("versions") or []), "", kind="exception")
-    r.memo["c_small"] = {"def_id": sid, "version": ver}
+@lab("13", "마지막 적용 · 교대 인수인계 — 보충 자료 → 새 에이전트·스킬 → 두 사람 검토·보완·확인")
+def lab_13_shift_handover(r):
+    import hashlib
+    import xml.etree.ElementTree as ET
+    page = r.page
+    # 이미 검토·적재한 동일 승인 자료는 재사용한다. 수업 전체를 초기화하지 않는다.
+    before = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
+    _B_DOC_FILES['HI-01'] = 'HI-01_shift-inspection-supplement.md'
+    current = _b_current_batch(r, 'HI-01')
+    expected_hash = hashlib.sha256((_B_DOC_DIR / _B_DOC_FILES['HI-01']).read_bytes()).hexdigest()
+    if not current or current.get('source_id', '').rsplit(':', 1)[-1] != expected_hash:
+        source = _b_preview_file(r, 'HI-01')
+        if not source:
+            r.check('교대 보충 매뉴얼 미리보기', False); return
+        extracted = _b_run_extraction(r, 'HI-01', source, 0)
+        r.check('교대 보충 매뉴얼 1회 추출', not extracted.get('error'), extracted.get('error') or '')
+        if extracted.get('error'): return
+        proposal = _b_extraction(r, source, extracted['instance'])[1].get('preview') or {}
+        r.check('교대 보충 절차 원문 대조', not extracted['quality'], str(extracted['quality']), kind='quality')
+        if extracted['quality']: return
+        _b_apply_review(r, 'HI-01', proposal)
+        committed, message = _b_commit(r, 'HI-01')
+        r.check('보충 자료를 새 문서로 적재', committed, message)
+        if not committed: return
+    after = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
+    r.check('보충 자료 추가가 기존 제조 지식을 초기화하지 않음',
+            all(after.get(name) == batch for name, batch in before.items() if name != _B_DOC_FILES['HI-01']), kind='quality')
+
+    sid = _c_free_id(r, 'my_shift_handover')
+    skill = sid.replace('_', '-') + '-review'
+    r.tab('agents'); page.locator('[data-ag-tab="skills"]').click()
+    page.locator('[data-new-skill]').click()
+    page.locator('[data-f="skill_name"]').fill(skill)
+    page.locator('[data-f="description"]').fill('설비·정비·부품·작업 메모를 대조하는 교대 인수인계')
+    page.locator('[data-f="content"]').fill(
+        '# 교대 인수인계 검토\n\n작업 메모는 주장이다. 실제 설비 상태, 열린 작업지시, 실제 재고와 입고 예정을 각각 조회한다. '
+        'HI-01 보충 매뉴얼의 확인 절차를 참고한다. 정비 완료 메모와 열린 작업지시가 다르면 모순으로 기록한다. '
+        '자료가 없으면 확인 필요로 남긴다. 실제 조회 도구·질의·결과를 근거로 남기며 없는 완료를 만들지 않는다. '
+        '인수자의 보완 요청을 반영한다. 확인은 인계 기록이며 설비 조치·발주·정비 완료가 아니다. 읽기만 수행한다.')
+    page.locator('[data-ag-form] button[type="submit"]').click()
+    saved = r.wait(15, lambda: any(x['skill_name'] == skill for x in r.get(f'{r.process}/api/skills')), every=1)
+    r.check('학생 교대 스킬 저장', bool(saved))
+    if not saved: return
+    page.locator('[data-ag-tab="agents"]').click(); page.locator('[data-new-agent]').click()
+    page.locator(f'[data-f-skill][value="{skill}"]').check()
+    page.locator('[data-f="work_rules"]').select_option('hyd-handover')
+    agent_name = '교대 인수인계 ' + sid
+    error = _b_agent_form(r, name=agent_name, role='인계안 작성 담당',
+        goal='승인된 보충 매뉴얼과 현재 설비·정비·ERP를 대조하여 다음 교대가 확인하고 이어갈 일을 작성한다.',
+        persona='불일치와 정보 부족을 숨기지 않고 조회 근거를 남긴다.', model='', tools=['neo4j', 'enterprise', 'hyd-dmn'])
+    r.check('학생 교대 에이전트 저장', not error, error)
+    mine = next((a for a in _b_agents(r) if a.get('name') == agent_name), None)
+    if error or not mine: return
+
+    folder = ROOT/'it/process/definitions'
+    xml = (folder/'shift_handover.bpmn').read_text(encoding='utf8')
+    mapping = json.loads((folder/'shift_handover.mapping.json').read_text(encoding='utf8'))
+    elements = {e.get('id'): e for e in ET.fromstring(xml).iter() if e.get('id')}
+    message, ok = _c_import(r, xml, 'shift_handover.bpmn', sid)
+    r.check('교대 BPMN 가져오기', ok, message)
+    if not ok: return
+    _c_apply_start(r, mapping['start'])
+    for key, item in mapping['tasks'].items():
+        value = dict(item)
+        if 'agent' in value: value['agent'] = mine['id']
+        _c_apply_task(r, elements[key].get('name'), value)
+    for key, value in mapping['flows'].items():
+        flow = elements[key]
+        _c_apply_branch(r, elements[flow.get('sourceRef')].get('name'), elements[flow.get('targetRef')].get('name'), value)
+    passed, problems, dependencies = _c_check(r)
+    r.check('교대 시작 폼·역할·작업·분기 검사', passed, '; '.join(problems) or dependencies)
+    if not passed: return
+    registered, message, version = _c_register(r)
+    r.check('교대 별도 정의·판본 등록', registered, message)
+    if not registered: return
+    _c_me(r, 'user:kim-op'); r.tab('flows')
+    page.locator(f"[data-start='{sid}'][data-version='{version}']").click()
+    box = page.locator(f"[data-startbox='{sid}@{version}']")
+    values = dict(asset='HYD-01', shift_label='다음 교대', as_of=datetime.now(timezone.utc).isoformat(),
+                  work_notes='작업 메모: 정비 완료라고 전달받음. 부품 도착 예정이라고 전달받음. 실제 열린 작업지시와 현재 재고를 대조해야 함.')
+    for key, value in values.items(): box.locator(f"[data-sv='{key}']").fill(value)
+    known = _c_instance_ids(r); box.locator('[data-go]').click()
+    inst = _c_new_instance(r, known, sid, 30)
+    r.check('교대 시작 폼으로 한 처리 건 시작', bool(inst))
+    if not inst: return
+    pid = inst['proc_inst_id']
+    for suffix in ('', ' · 보완 1'):
+        name = '인계자 검토' + suffix
+        state, view = _c_wait_step(r, pid, name, C_AI_LIMIT_S)
+        r.check('교대 AI 조회·인계안 작성'+suffix, state == 'ready', state)
+        if state != 'ready': return
+        data = _c_vars(view['instance'])
+        r.check('4영역과 실제 조회 근거 유지'+suffix,
+                {c.get('area') for c in data.get('checks', [])} == {'equipment','work_orders','parts','work_notes'}
+                and bool(data.get('evidence')), kind='quality')
+        if not _h_submit(r, pid, _c_item(view, name), 'user:kim-op',
+                         dict(sender_decision='approve', sender_notes='미확인 사항과 원문 조회 근거를 인수자에게 전달합니다.')):
+            r.check('인계자 검토 제출'+suffix, False); return
+        state, view = _c_wait_step(r, pid, '인수자 확인'+suffix, 30)
+        r.check('별도 인수자 차례'+suffix, state == 'ready')
+        if state != 'ready': return
+        task = _c_item(view, '인수자 확인'+suffix)
+        if not suffix:
+            ok = _h_submit(r, pid, task, 'user:choi-op', dict(receiver_decision='revise',
+                receiver_notes='정비 완료 메모와 열린 작업지시, 입고 예정과 실제 재고를 구분해 다시 확인해 주세요.', communication_only=False))
+            r.check('인수자 보완 요청 → 같은 처리 건의 재작성', ok)
+            if not ok: return
+        else:
+            message = _h_submit(r, pid, task, 'user:choi-op', dict(receiver_decision='confirm', receiver_notes='인수 내용 확인', communication_only=False), expect_done=False)
+            r.check('설비 조치 완료와 혼동한 확인은 거절', '설비 조치' in message, message, kind='exception')
+            ok = _h_submit(r, pid, task, 'user:choi-op', dict(receiver_decision='confirm',
+                receiver_notes='인계를 확인하고 미확인 항목은 다음 교대에서 이어 확인합니다.', communication_only=True))
+            r.check('인수자가 인계 확인을 기록', ok)
+            if not ok: return
+    view = _c_wait_end(r, pid, 30)
+    end_ids = {e['id'] for e in view['definition']['events'] if e.get('name') == '인수 확인 기록 완료'}
+    r.check('인수 확인 종료 기록', view['instance']['status'] == 'COMPLETED' and view['instance'].get('end_event') in end_ids)
+    r.check('인계 확인이 설비·발주·정비 실행을 만들지 않음', not view.get('effects'), kind='quality')
+    r.memo['c_handover'] = dict(def_id=sid, version=version, instance=pid, agent=mine['id'], skill=skill)
 
 
 # ====================================================================== 92 · B · C [초기화]
