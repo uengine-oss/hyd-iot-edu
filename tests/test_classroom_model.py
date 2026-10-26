@@ -51,8 +51,9 @@ def test_only_current_managed_worker_can_mint_a_model_permit(setup, change):
     assert authority.calls == 0
 
 
-def test_managed_agent_binding_is_explicit_and_cannot_mix_extraction_cache(setup):
+def test_managed_agent_binding_is_explicit_and_cannot_mix_extraction_cache(setup,monkeypatch):
     rt,row,authority,body=setup
+    monkeypatch.setattr('procsvc.classroom_agents.verify_instance',lambda runtime,inst:None)
     run_id='3fb9df59-4789-491d-8b20-a42448e58f26'
     inst=rt.repo.get_instance(row['proc_inst_id'])
     inst['variables_data']=[{'key':'classroom_execution','value':{'run_id':run_id}}]

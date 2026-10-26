@@ -95,6 +95,14 @@ class Authority:
             if action == 'manual_extract':
                 if input_contract.get('sha256') not in policy['documents']:
                     raise Denied('승인되지 않은 문서는 추출할 수 없습니다')
+            elif action == 'agent_run':
+                if set(input_contract)!={'reference','revision','inputs'}:
+                    raise Denied('승인된 에이전트 입력 계약이 필요합니다')
+                approval=(policy.get('agents') or {}).get(input_contract['reference'])
+                if not isinstance(approval,dict) or approval.get('revision')!=input_contract['revision']:
+                    raise Denied('예약 직전 에이전트 승인 판본이 바뀌었습니다')
+                from .classroom_agents import validate_input
+                validate_input(approval,input_contract['inputs'])
             input_hash = digest(input_contract)
             request_key = digest([grant['scope'], policy['profile'], action, input_hash])
             db.execute("UPDATE hyd_classroom_runs SET state='EXPIRED' WHERE key_hash=%s AND state IN ('RESERVED','RUNNING') AND deadline<=now()", (hashed,))
@@ -112,6 +120,14 @@ class Authority:
                 (uuid4(), hashed, request_key, action, input_hash, digest([grant['scope'], policy]),
                  input_contract.get('cache_key') if action == 'manual_extract' else None, limits['max_seconds'])).fetchone()
             return dict(row, reused=False)
+
+    def authorize_agent(self,key,reference):
+        with self.connect() as db:
+            grant=self._grant(db,key_hash(key))
+            approval=(grant['policy'].get('agents') or {}).get(reference)
+            if not isinstance(approval,dict) or 'agent_run' not in grant['policy']['actions']:
+                raise Denied('강사가 승인한 에이전트 작업 판본이 아닙니다')
+            return dict(subject=grant['subject'],approval=approval)
 
     def charge(self, key, run_id, *, input_bytes, max_output_tokens):
         """Reserve the full output cap before a call, including retries. Unknown
