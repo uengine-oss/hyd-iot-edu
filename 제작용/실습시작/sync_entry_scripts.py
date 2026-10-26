@@ -22,6 +22,26 @@ def main():
         text=text.replace('질의 파일을 열고, 오일 쿨러에서 센서로 가는 패턴을 적겠습니다.', '입력칸에 오일 쿨러에서 센서로 가는 패턴을 적겠습니다.')
         text=text.replace('입력칸에 오일 쿨러에서 센서로 가는 패턴을 적겠습니다. 구성 요소와 센서의 종류를 쓰고, 사이에는 계측 관계를 둡니다. 이름만 같은 다른 대상을 섞지 않도록 쿨러 식별자를 조건으로 쓰겠습니다.', '매치로 오일 쿨러에서 센서로 가는 패턴을 적겠습니다. 이론에서 본 괄호는 노드이고, 사이의 화살표는 관계입니다. 구성 요소와 센서 사이에 계측 관계를 두겠습니다. 이름만 같은 다른 대상을 섞지 않도록 쿨러 식별자로 출발점을 정하고, 리턴에는 쿨러 이름과 센서 식별자, 태그를 넣겠습니다.')
         text=text.replace('조회_작성.cypher에 MATCH', 'Browser 입력칸에 MATCH').replace('RETURN c.id, c.name, s.id, s.tag;를 작성하고 한 문장씩 실행한다. 결과 행을 조회_기록.md에 옮긴다.', 'RETURN c.name AS component, s.id AS sensor_id, s.tag AS tag;를 작성한다. Run을 말하며 클릭하고 결과를 확인한다. 입력 중 커서는 글자 아래 여백에 둔다.')
+        # 실제 촬영에서 확인한 입력 동작과 결과 발화를 정본에 반영한다.
+        import json
+        recorded=json.loads((ROOT/'제작용/촬영/neo4j/화면과첫질의_큐.json').read_text(encoding='utf-8'))
+        spoken={c['id']:c['text'] for c in recorded['cues']}
+        begin=text.index('## 한 단계 연결을 조회하기')
+        para=text.index('\n\n',begin)+2
+        end=text.index('\n\n',para)
+        text=text[:para]+spoken['query202']+text[end:]
+        old='결과에서는 쿨러가 몇 번 나왔는지와 서로 다른 센서가 몇 개인지를 나누어 봅니다. 쿨러 이름이 반복됐다고 쿨러 노드가 여러 개라는 뜻은 아닙니다. 센서 식별자와 태그를 함께 확인하겠습니다.'
+        text=text.replace(old,spoken['query204'])
+        graph=json.loads((ROOT/'제작용/촬영/neo4j/표에서그래프_큐.json').read_text(encoding='utf-8'))
+        graph_spoken={c['id']:c['text'] for c in graph['cues']}
+        begin=text.index('## 표와 그래프, 여러 단계 경로 비교하기')
+        end=text.index('한계가 없는 물리량은',begin)
+        text=text[:begin]+('## 표와 그래프, 여러 단계 경로 비교하기\n\n'+graph_spoken['graph301']+'\n\n'
+            '> [조작] 위쪽 입력칸 클릭 → MATCH (c:Component {id:\'comp:cooler\'})-[r:MONITORED_BY]->(s:Sensor) RETURN c,r,s; 작성.\n\n'
+            +graph_spoken['graph302']+'\n\n> [조작] Run 클릭. Graph 렌더와 Nodes (3), Relationships (2)를 실제 확인한 뒤 아래 결과를 설명한다.\n\n'
+            +graph_spoken['graph303']+'\n\n'
+            '다음에는 설비 한 대에서 출발해 보겠습니다. HYD-01의 구성 요소를 찾고, 센서를 거쳐 그 센서가 관측하는 물리량까지 따라가겠습니다.\n\n'
+            '> [조작] Asset→HAS_COMPONENT→Component→MONITORED_BY→Sensor→OBSERVES→StateVariable 경로. 설비 조건 code:\'HYD-01\', RETURN은 센서 태그·물리량 이름·단위·한계. 실행하고 원자료와 대조한다. 이 뒤 구간은 아직 촬영 전이다.\n\n')+text[end:]
         save='''
 ## 질의와 결과 저장하기
 
