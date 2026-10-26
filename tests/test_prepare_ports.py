@@ -39,8 +39,29 @@ class PortPreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "it/supabase").mkdir(parents=True)
-            for path in ("compose.yaml", "it/supabase/config.toml"):
-                (root / path).write_text((ROOT / path).read_text(encoding="utf-8"), encoding="utf-8")
+            (root / 'compose.yaml').write_text((ROOT / 'compose.yaml').read_text(encoding='utf-8'), encoding='utf-8')
+            # start_all rewrites the real checkout's ports. A unit fixture must
+            # not inherit whichever local Supabase project the user last ran.
+            (root / 'it/supabase/config.toml').write_text('''project_id = "ports-test"
+[api]
+port = 54321
+[db]
+port = 54322
+shadow_port = 54320
+[db.pooler]
+port = 54329
+[studio]
+port = 54323
+[inbucket]
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+[analytics]
+port = 54327
+vector_port = 54328
+[auth]
+site_url = "http://localhost:8088"
+''', encoding='utf-8')
             (root / ".env").write_text(
                 "LLM_API_KEY=fixture-only-secret\n"
                 "SUPABASE_DSN=postgresql://postgres:postgres@host.docker.internal:54322/postgres\n"
