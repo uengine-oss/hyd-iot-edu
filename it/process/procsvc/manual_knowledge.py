@@ -330,6 +330,8 @@ def skill_of(ref, skill_id):
 
 CATALOG_Q = {
     'components': 'MATCH (n:Component) RETURN n.id AS id, n.name AS name ORDER BY id',
+    # 2026-10-25 final4: 정기 정비 정책의 model_assets(원문 '1~3호기')를 옮길 설비 목록이 없어 PM-02 추출의 정책이 모두 빠졌다
+    'assets': 'MATCH (n:Asset) RETURN n.id AS id, n.code AS code, n.name AS name ORDER BY id',
     'symptoms': 'MATCH (n:Symptom) OPTIONAL MATCH (p:AnomalyPattern)-[:DETECTS]->(n) '
                 'RETURN n.id AS id, n.name AS name, [c IN collect(DISTINCT p.code) WHERE c IS NOT NULL] AS patterns ORDER BY id',
     'patterns': 'MATCH (n:AnomalyPattern) RETURN n.id AS id, n.code AS code, n.name AS name ORDER BY id',
