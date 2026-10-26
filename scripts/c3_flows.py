@@ -49,8 +49,9 @@ def decide(agent: str, instruction: str) -> dict:
     return {"part": "task:decide", "agent": agent, "instruction": instruction}
 
 
-def report(outcome: str, title: str, summary: str = "") -> dict:
-    return {"part": "svc:report", "config": {"outcome": outcome, "title": title, "summary": summary}}
+def report(outcome: str, title: str, summary: str = "", *, notify: list | None = None) -> dict:
+    return {"part": "svc:report", "config": {"outcome": outcome, "title": title, "summary": summary,
+                                           **({"notify": notify} if notify else {})}}
 
 
 # ---------------------------------------------------------------- 승인 단계 (세 흐름 공통): 승인 · 거절 분기 + 멈추지 않는 승인 지연 알림
@@ -165,7 +166,8 @@ C_MAPPING = {
               **approval_tasks("구매 담당", "예비품 구매", "발주하지 않았습니다(재고 보충 필요 표시는 그대로)"),
               "T_po": {"part": "svc:erp-po", "config": {"mail": SUPPLIER_MAIL}},
               "T_gr": {"part": "svc:goods-receipt", "config": {"immediate": True}},
-              "R_ok": report("입고 완료", "{approved_part_no} 재고 보충 결과", "{goods_receipt.detail}")},
+              "R_ok": report("입고 완료", "{approved_part_no} 재고 보충 결과", "{goods_receipt.detail}",
+                             notify=[{"role": "role:purchasing-mgr", "when": "approved_amount > 300"}])},
     "timers": {"B_overdue": APPROVAL_OVERDUE}, "flows": dict(APPROVAL_FLOWS)}
 
 FLOWS = {"c3_cooling": ("cooling-emergency.bpmn", A_XML, A_MAPPING),

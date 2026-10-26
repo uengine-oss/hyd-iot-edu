@@ -54,7 +54,8 @@
       "config": {
         "outcome": "입고 완료",
         "title": "{approved_part_no} 재고 보충 결과",
-        "summary": "{goods_receipt.detail}"
+        "summary": "{goods_receipt.detail}",
+        "notify": [{"role": "role:purchasing-mgr", "when": "approved_amount > 300"}]
       }
     }
   },
