@@ -214,6 +214,8 @@ def validate(archive, tenant, body):
                  relation=fields['relation'], kind=fields['kind'], approver=fields.get('approver'), affects=affects,
                  **{k: fields[k] for k in ('scope', 'executable', 'parts', 'supplier_policy', 'maintenance_policy', 'purchase_comparison_policy') if k in fields},
                  **{k: extra[k] for k in ('actions', 'addresses') if extra.get(k)}))
+    from hydcommon.maintenance_policy import consistent_packages
+    consistent_packages(checked_procedures)
     # C1: the reviewed knowledge part (고장 유형 · 원인 · 증거 · 규칙). Existence in the graph is checked at commit.
     knowledge = manual_knowledge.validate(body.get('knowledge'), sections=set(checked_sections), sops=sop_ids, anchor=anchor)
     return dict(batch=batch, tenant=tenant, document=document_key(tenant, source['document_id']),

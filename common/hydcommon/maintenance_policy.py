@@ -4,6 +4,27 @@ import json
 import math
 
 
+def consistent_packages(procedures):
+    """A package BOM is per asset, including when its scheduling scope is a bundle.
+
+    The execution planner sums it once for each selected asset. Compare the
+    same package across proposed policies; do not guess missing source amounts.
+    """
+    seen = {}
+    for procedure in procedures:
+        fields = procedure.get('link') or procedure
+        contract = fields.get('maintenance_policy') or {}
+        for package in contract.get('packages') or []:
+            key = (package['sop'], package['interval_h'])
+            signature = sorted(((part.get('part_no') or part['name'], part.get('qty'))
+                                for part in package['parts']), key=lambda part: part[0])
+            if key in seen and seen[key][1] != signature:
+                raise ValueError(f"{procedure['id']} / {seen[key][0]}: 같은 정비 패키지 {key[0]}의 부품 수량이 다릅니다. "
+                                 'packages.parts.qty는 설비 한 대당 수량입니다. 묶음 총수량을 넣으면 실행 시 다시 합산됩니다. '
+                                 '원문 패키지 표를 대조하고 미상 수량은 추정하지 마세요')
+            seen[key] = (procedure['id'], signature)
+
+
 class ScopeError(ValueError):
     def __init__(self,message,diagnostics):
         super().__init__(message)

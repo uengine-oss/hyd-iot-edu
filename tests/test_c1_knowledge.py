@@ -99,7 +99,7 @@ def test_extraction_contract_carries_knowledge_and_the_ontology_catalog():
     d = manual_extraction.definition()
     # 2.4 includes business SOPs; 2.3 removed the provider pin. Preservation
     # tests retain exact registered 2.2/2.3 snapshots while running the new one.
-    assert d['version'] == manual_extraction.VERSION == '2.15'
+    assert d['version'] == manual_extraction.VERSION == '2.16'
     assert 'agentConfig' not in d['activities'][0]
     # 2.1: 단계의 선택 기준과 절차의 적용 조건을 나눈다(라이브 4차 SOP-PUR-13 — 조건을 값 고르기에 미리 적용해 다른 공급사를 골랐다)
     assert '선택 기준을 그대로 적용' in manual_extraction.INSTRUCTION and 'dt:compliance EXCLUDE 규칙으로 옮겨' in manual_extraction.INSTRUCTION
@@ -401,3 +401,28 @@ def test_every_source_penalty_needs_a_penalty_rule_of_that_amount(archive):
             manual_extraction.check_penalty_rules(dropped, source)
     source, prop = load(archive, 'C')                                           # 감점 문장이 없는 문서는 요구하지 않는다
     manual_extraction.check_penalty_rules(prop, source)
+
+
+@pytest.mark.parametrize('quantity', [2, None])
+def test_bundle_package_quantities_cannot_diverge_from_single_asset_bom(archive, quantity):
+    """PM-02 live: bundle totals were copied into per-asset BOM, doubling reservations."""
+    import json
+    from hydcommon.maintenance_policy import consistent_packages
+    source, prop = load(archive, 'B')
+    seed = json.loads((fx.ROOT / 'it/neo4j/class-knowledge/PM-02.json').read_text(encoding='utf8'))
+    procs = {p['id']: p for p in prop['procedures']}
+    for sop in ('SOP-PM-11', 'SOP-PM-14'):
+        policy = copy.deepcopy(seed['links'][sop]['maintenance_policy'])
+        for key in ('anchor', 'model_anchor'):
+            policy[key] = {'source_id': source['source_id'], 'quote': policy[key]['quote']}
+        procs[sop]['link']['maintenance_policy'] = policy
+    consistent_packages(prop['procedures'])  # bundle scope alone does not multiply the BOM
+    for package in procs['SOP-PM-14']['link']['maintenance_policy']['packages']:
+        package['parts'][0]['qty'] = quantity
+    checked = manual_extraction.validate_proposal(source, prop)
+    issues = manual_extraction.content_issues(checked, source, None)
+    assert any('설비 한 대당' in issue for issue in issues)
+    legacy = manual_extraction.content_issues(checked, source, None, package_scope=False)
+    assert not any('설비 한 대당' in issue for issue in legacy)
+    with pytest.raises(ValueError, match='설비 한 대당'):
+        manual_review.validate(archive, 'hyd', fx.reviewed_body(source, checked))

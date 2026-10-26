@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.15'         # 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
+VERSION = '2.16'         # PM 패키지 수량은 한 대당이며 묶음에서도 같은 BOM을 사용.
+# 2.15: 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
 # 2.14: 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
 # 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
 # 2.11 (2026-10-26 final5, HM-8 세 번): 한 번이 점검이 넘기는 교체(SOP-FAN-12)를 원인 후보 규칙 outputs 에도 넣었다 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차만.
@@ -95,7 +96,9 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   "interval_h":기본 주기 숫자,"tolerance_pct":허용 오차 % 숫자,"model_assets":[원문이 적용한 설비의 ontology_catalog.assets code — 예: 1~3호기 → "HYD-01","HYD-02","HYD-03"],"anchor":ANCHOR(주기 · 허용 오차 문장),"model_anchor":ANCHOR(같은 모델 적용 문장),
   "packages":[{"interval_h":숫자,"sop":"그 패키지 SOP ID","name":"패키지 이름","parts":[{"part_no":"ontology_catalog.parts의 품번 또는 null","qty":숫자 또는 null,"name":"원문 부품 이름","mapping_reason":"품번이 null일 때 이유"}]}]}를 넣으세요.
   scope · stock_effect는 그 절차의 단계가 정합니다(예: '두 대를 묶어' → bundle, '출고를 예약한다' → reserve, '출고한다' → issue, '시행 시간을 옮긴다' → preserve).
-  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
+  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. packages.parts.qty는 설비 한 대에 그 패키지를 시행할 때의 부품 수량입니다.
+  scope=bundle도 같은 패키지의 한 대당 수량을 씁니다. 실행기가 선택한 설비별로 합산하므로 두 대의 합계 수량을 넣거나 표의 한 대당 수량을 미상으로 바꾸지 마세요.
+  같은 sop·interval_h 패키지는 모든 정책에서 같은 품번·한 대당 수량을 유지합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
  값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
  같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
  그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.
@@ -366,13 +369,16 @@ def check_criteria_procedures(proposal, source):
         raise ValueError(' / '.join(failures))
 
 
-def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True):
+def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True, package_scope=True):
     """Independent semantic checks share one correction round."""
     issues=[]
     checks=[lambda: check_section_titles(proposal)]
     if criteria_scope:
         checks.append(lambda: check_criteria_procedures(proposal, source))
     if not segment:
+        if package_scope:
+            from hydcommon.maintenance_policy import consistent_packages
+            checks.append(lambda: consistent_packages(proposal.get('procedures') or []))
         checks.extend((lambda: check_action_values(proposal, catalog),
                        lambda: check_purchase_policy(proposal, source),
                        lambda: check_penalty_rules(proposal, source)))
@@ -389,12 +395,18 @@ def _criteria_contract(inst):
     return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 13)
 
 
+def _package_contract(inst):
+    version = str(inst.get('proc_def_version') or '')
+    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 16)
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         issues=content_issues(proposal, variables.get('manual_source'), variables.get('ontology_catalog'),
-                              segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst))
+                              segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst),
+                              package_scope=_package_contract(inst))
         if issues:
             raise ValueError(' / '.join(issues))
     else:
@@ -636,7 +648,8 @@ def _group_result(rt, source, inst, previous_batch):
         parts.append((s,_translate(local,s)))
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)
-    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst))
+    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst),
+                          package_scope=_package_contract(inst))
     proposal['warnings'].extend('전체 문서 검사: '+issue for issue in issues)
     extraction=dict(instance=lead['instance'],workitem=lead['workitem'],session_id=(workitems[0].get('output') or {}).get('cliagents_session_id'),
                     generation=sum(wi.get('generation',0) for wi in workitems),
