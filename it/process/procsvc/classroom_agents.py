@@ -26,6 +26,14 @@ def snapshot(runtime, approval):
             or activity.get('orchestration')!='cliagents'):
         raise Denied('관리 실행 대상은 에이전트 작업 한 단계여야 합니다')
     role=next((r for r in source.get('roles',[]) if r.get('name')==activity.get('role')),None)
+    if role is None:
+        raise Denied('승인 에이전트 역할이 없습니다')
+    # Portal assignment overrides the definition role in ordinary execution.
+    # Pin that effective assignment too, without rewriting the source version.
+    role=deepcopy(role)
+    mapping=runtime.repo.get_agent_map(runtime.tenant_id,approval['definition'],activity['id'])
+    if mapping is not None:
+        role['endpoint']=mapping.get('agent_id')
     endpoint=(role or {}).get('endpoint')
     if not endpoint:
         raise Denied('승인 에이전트 담당 연결이 없습니다')

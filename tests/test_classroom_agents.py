@@ -96,6 +96,36 @@ def test_profile_change_revokes_pinned_execution(rt):
     with pytest.raises(Denied):agents.start(runtime,approval,{'memo':'확인 필요'},str(uuid4()),'handover.draft')
 
 
+def test_portal_assignment_is_pinned_and_runs_the_selected_agent(rt):
+    runtime,_=rt;approval=approved(runtime)
+    original=deepcopy(runtime.repo.get_proc_def(approval['definition'],runtime.tenant_id,version='1'))
+    runtime.repo.upsert_user({'id':'agent:selected','tenant_id':runtime.tenant_id,'username':'학생 작성',
+                              'is_agent':True,'agent_type':'agent','goal':'학생이 작성한 지시','tools':'enterprise'})
+    mapping=dict(tenant_id=runtime.tenant_id,proc_def_id=approval['definition'],activity_id='draft',
+                 agent_id='agent:selected')
+    runtime.repo.put_agent_map(mapping)
+    with pytest.raises(Denied,match='판본'):agents.checked(runtime,approval)
+    approval['revision']=agents.revision(runtime,approval)
+    inst=agents.start(runtime,approval,{'memo':'확인 필요'},str(uuid4()),'handover.draft')
+    row=runtime.repo.fetch_pending_task('cliagents','test-worker')[0]
+    assert row['user_id']=='agent:selected'
+    assert runtime.definition_for(inst).raw['roles'][0]['endpoint']=='agent:selected'
+    assert runtime.repo.get_proc_def(approval['definition'],runtime.tenant_id,version='1')==original
+    runtime.repo.put_agent_map(dict(mapping,by_user='another-editor',updated_at='metadata-only'))
+    agents.verify_instance(runtime,inst)
+    runtime.repo.drop_agent_map(runtime.tenant_id,approval['definition'],'draft')
+    with pytest.raises(Denied,match='판본'):agents.verify_instance(runtime,inst)
+
+
+@pytest.mark.parametrize('endpoint',[None,'missing-agent','human'])
+def test_invalid_portal_assignment_cannot_fall_back_to_definition(rt,endpoint):
+    runtime,_=rt;approval=approved(runtime)
+    runtime.repo.upsert_user({'id':'human','tenant_id':runtime.tenant_id,'username':'사람','is_agent':False})
+    runtime.repo.put_agent_map(dict(tenant_id=runtime.tenant_id,proc_def_id=approval['definition'],
+                                    activity_id='draft',agent_id=endpoint))
+    with pytest.raises(Denied):agents.revision(runtime,approval)
+
+
 def test_database_metadata_does_not_change_execution_approval(rt):
     runtime,_=rt;approval=approved(runtime)
     runtime.repo.put_skill({'tenant_id':runtime.tenant_id,'skill_name':'handover-check','content':'원문 확인'})
