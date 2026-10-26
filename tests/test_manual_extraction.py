@@ -351,6 +351,7 @@ def test_extraction_proposal_written_to_the_workspace_file_is_the_result_and_sou
     assert runtime.poll_once()==1                                   # engine: wrong source_id in the file → correction, not DONE
     row=runtime.repo.get_workitem(wi['id'])
     assert row['status']=='IN_PROGRESS' and row['draft_status']=='FB_REQUESTED' and '원문 판본' in row['feedback']['text']
+    assert 'proposal.source_id' in row['feedback']['text'] and source['source_id'] in row['feedback']['text']
     assert runner.poll_once()==1 and runtime.poll_once()==1
     done=extraction.result(runtime,source,inst['proc_inst_id'],None)
     assert done['status']=='DONE' and done['preview']['procedures'][0]['id']=='SOP-EXTRACT-1' and done['corrections']['attempts']==1

@@ -457,6 +457,7 @@
       slot.innerHTML = `<div class="form-grid">${fields.map(f => UI.field({ label: f.text || f.key, input: f.type === 'select'
         ? `<select data-sv="${h(f.key)}">${(f.items || []).map(i => `<option>${h(typeof i === 'string' ? i : Object.keys(i)[0])}</option>`).join('')}</select>`
         : f.type === 'boolean' ? `<select data-sv="${h(f.key)}" data-bool="1"><option value="true">예</option><option value="false">아니요</option></select>`
+        : f.type === 'textarea' ? `<textarea data-sv="${h(f.key)}" data-kind="textarea" rows="4"></textarea>`
         : `<input data-sv="${h(f.key)}" data-kind="${h(f.type)}">` })).join('')}</div>
         <div class="form-actions"><button class="btn primary small" data-go="1">시작</button></div>`;
       // 시작 이벤트 id 는 폼을 열 때 한 번 만든다 — 두 번 누르거나 응답을 잃고 다시 눌러도 서버의 중복 실행 방지가 같은 처리 건으로 묶는다
