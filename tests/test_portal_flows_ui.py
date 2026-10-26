@@ -44,6 +44,7 @@ def import_file(page, name):
     expect(page.locator('#flowName')).to_be_visible()
 
 def change(page, selector, value):
+    if isinstance(value,(list,dict)): value=json.dumps(value,ensure_ascii=False)
     el=page.locator(selector)
     if el.evaluate('(e)=>e.tagName')=='SELECT': el.select_option(str(value))
     else:
