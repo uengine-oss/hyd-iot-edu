@@ -1,5 +1,7 @@
 .git
 .venv
+.venv314
+work
 .env
 .env.*
 .evidence

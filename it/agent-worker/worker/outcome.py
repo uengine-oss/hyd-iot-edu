@@ -106,11 +106,51 @@ def _read_result_file(path: Path, max_file_bytes: int) -> tuple[dict | None, str
         return None, f"결과 파일 `{RESULT_FILE}`을 UTF-8 텍스트로 읽을 수 없습니다: {e}"
     try:
         value = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return None, (f"결과 파일 `{RESULT_FILE}`이 올바른 JSON이 아닙니다: {e}. "
+                      + _json_syntax_hint(raw, e)
+                      + " 파일의 내용을 유지하며 표시된 문법을 고치세요(메시지에 JSON을 되풀이하지 말고).")
     except ValueError as e:
         return None, f"결과 파일 `{RESULT_FILE}`이 올바른 JSON이 아닙니다: {e}. 파일을 다시 쓰세요(메시지에 JSON을 넣지 말고)."
     if not isinstance(value, dict):
         return None, f"결과 파일 `{RESULT_FILE}`의 최상위가 JSON 객체가 아닙니다({type(value).__name__})."
     return value, ""
+
+
+def _json_syntax_hint(raw: str, error: json.JSONDecodeError) -> str:
+    """Bounded diagnostics only: never repair or silently accept a model's result."""
+    before = raw[max(0, error.pos - 100):error.pos]
+    after = raw[error.pos:error.pos + 100]
+    hint = '오류 주변(일부 발췌): ' + json.dumps(before + ' ⟦오류 위치⟧ ' + after, ensure_ascii=False)
+    stack, mismatches = [], []
+    quoted = escaped = False
+    line, column = 1, 0
+    for char in raw:
+        column += 1
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == '\\':
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+        elif char in '{[':
+            stack.append('}' if char == '{' else ']')
+        elif char in '}]':
+            if stack and stack[-1] == char:
+                stack.pop()
+            else:
+                expected = stack[-1] if stack else '문서 끝'
+                mismatches.append(f'{line}행 {column}열: {char} (열린 괄호에 맞는 기호는 {expected})')
+                if len(mismatches) == 6:
+                    break
+        if char == '\n':
+            line, column = line + 1, 0
+    if mismatches:
+        hint += ' 구분 기호 불일치 후보: ' + '; '.join(mismatches) + '. 문자열 안의 괄호는 제외했습니다.'
+    return hint
 
 
 def _extract_object(text: str) -> dict[str, Any] | None:

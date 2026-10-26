@@ -279,7 +279,7 @@
     $('#tdBy')?.addEventListener('input', e => I.form.by = e.target.value);
     $('#tdAnswerGo').addEventListener('click', async () => {
       if (I.busy) return; I.busy = true;
-      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/human-response`, { job_id: open.job_id, answer: I.form.reason, by: I.form.by || '담당자' }); I.msg = ''; I.form.reason = ''; }
+      try { await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/human-response`, { job_id: open.job_id, answer: I.form.reason, by: actor() }); I.msg = ''; I.form.reason = ''; }
       catch (e) { refused(task, e, '질문'); }
       finally { I.busy = false; await load(true); }
     });
@@ -457,7 +457,7 @@
   }
   async function submitTask(task, output) {
     if (I.busy) return; I.busy = true;
-    try { await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/submit`, { output, by: I.form.by || '확인자' }); I.msg = ''; }
+    try { await postJ(API.process + `/api/todolist/${encodeURIComponent(task.id)}/submit`, { output, by: actor() }); I.msg = ''; }
     catch (e) { refused(task, e, '단계'); }
     finally { I.busy = false; await load(true); }
   }

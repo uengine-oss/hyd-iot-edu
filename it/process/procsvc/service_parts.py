@@ -182,7 +182,7 @@ class ServicePartsRuntime:
         self.submit(wi["id"], out, by="process", now=now)
 
     def _send_notice(self, inst: dict, wi: dict, values: dict, mail, now) -> dict | None:
-        """시스템 task 끝의 메일 공지(발주 → 공급사 · 입고 부서, 정비 오더 → 생산팀). 같은 작업의 재시도는 같은 키라 한 통만 간다."""
+        """작업 끝의 메일 공지. 같은 키의 중복 방지 응답이 확인된 경우만 실패 후 자동 재시도한다."""
         spec = effect_parts.notice_spec(mail)
         if spec is None:
             return None

@@ -169,6 +169,18 @@ def check_actor(repo, tenant_id: str, by: str | None, role: str | None) -> str |
     return by
 
 
+def require_task_actor(repo, tenant_id, inst, wi, by, *, question=False):
+    """Use the same assignment rules for submission as for the person's inbox."""
+    user = next(iter(repo.list_users([by], tenant_id)), None) if str(by or '').startswith(PERSON) else None
+    if not user or user.get('is_agent'):
+        raise PermissionError("포털에서 '나'(등록된 사람 사용자)를 고른 뒤 제출하세요")
+    mine = set(roles_of(repo, tenant_id, by)) | {by}
+    allowed = ({b.get('endpoint') for b in inst.get('role_bindings') or []}
+               | set(inst.get('participants') or [])) if question else {wi.get('user_id')}
+    if not mine & allowed:
+        raise PermissionError('이 작업 또는 질문에 배정된 담당자만 제출할 수 있습니다')
+
+
 def person_name(repo, tenant_id: str, by: str | None) -> str:
     """승인자 이름(메일 · 결과 보고 틀의 {approved_by_name}). 사람 사용자 id(user:*)면 사용자 표의 이름, 아니면 by 자체가 이미 이름이다
     (회귀 검사기 · 옛 화면의 자유 입력 — check_actor 와 같은 갈래). 사람 id 인데 사용자 표에 이름이 없으면 LookupError(좌표: id)."""

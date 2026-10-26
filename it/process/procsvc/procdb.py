@@ -185,6 +185,7 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         self.instances: dict[str, dict] = {}
         self.workitems: dict[str, dict] = {}
         self.events: list[dict] = []
+        self._stream_positions = {}
         self._durable_service_progress_ids = set()
         self._progress_local = threading.local()
         self.event_payloads: dict[str, dict] = {}
@@ -566,6 +567,17 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         """Events at or after `since` (ISO), oldest first; the caller drops ids it has seen (A091 SSE cursor)."""
         rows = [e for e in self.events if since is None or str(e.get("timestamp") or "") >= since]
         return [_copy(e) for e in sorted(rows, key=lambda e: (str(e.get("timestamp") or ""), e["id"]))[:limit]]
+
+    def list_stream_events(self, since=None, limit=300):
+        with self._lock:
+            for event in self.events:
+                self._stream_positions.setdefault(event['id'], len(self._stream_positions) + 1)
+            rows = [dict(_copy(e), stream_cursor=f"s:{self._stream_positions[e['id']]:020d}") for e in self.events]
+            rows.sort(key=lambda e: e['stream_cursor'])
+            if since is None:
+                return rows[-limit:]
+            key = 'stream_cursor' if str(since).startswith('s:') else 'timestamp'
+            return [e for e in rows if str(e.get(key) or '') >= since][:limit]
 
     def find_task_event(self, todo_id, job_id, event_type):
         return next((_copy(e) for e in reversed(self.events) if e.get('todo_id')==todo_id
@@ -1038,6 +1050,24 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                       (payload["id"], payload["content"], payload.get("chars"), payload.get("content_type"), payload.get("source"),
                        payload.get("tool"), payload.get("tool_use_id"), payload.get("job_id"), payload.get("todo_id"),
                        payload.get("proc_inst_id"), self._Jsonb(payload.get("meta") or {})))
+
+    def list_stream_events(self, since=None, limit=300):
+        # Separate short publication transaction: no uncommitted source event can
+        # acquire a cursor. Serialize publishers so positions also commit in order.
+        with self._psycopg.connect(self.dsn, row_factory=self._dict_row, connect_timeout=5) as c:
+            c.execute("select pg_advisory_xact_lock(hashtextextended('hyd:event-stream-publication',0))")
+            c.execute('''insert into event_stream_positions(event_id)
+                select e.id from events e where not exists
+                (select 1 from event_stream_positions s where s.event_id=e.id)
+                order by e.timestamp,e.id on conflict (event_id) do nothing''')
+            base = "select e.*, 's:' || lpad(s.position::text,20,'0') as stream_cursor from event_stream_positions s join events e on e.id=s.event_id"
+            if since is None:
+                rows = c.execute('select * from (' + base + ' order by s.position desc limit %s) q order by stream_cursor', (limit,)).fetchall()
+            elif str(since).startswith('s:'):
+                rows = c.execute(base + ' where s.position >= %s order by s.position limit %s', (int(since[2:]), limit)).fetchall()
+            else:  # Existing browsers can reconnect once with their old timestamp.
+                rows = c.execute(base + ' where e.timestamp >= %s::timestamptz order by s.position limit %s', (since, limit)).fetchall()
+            return [self._row(r) for r in rows]
 
     def get_event_payload(self, payload_id: str) -> dict | None:
         with self._conn() as c:

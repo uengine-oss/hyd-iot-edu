@@ -76,6 +76,10 @@ class ServiceExecutionError(RuntimeError):
         super().__init__(str(result.get("error") or result.get("detail") or "service did not report success"))
 
 
+class ServiceLoopLimit(RuntimeError):
+    """A continuous system-only chain needs a person to inspect its exit condition."""
+
+
 @dataclass
 class Hooks:
     """IO the runtime needs from the process service. Every field has a harmless default so tests can pass only what they use."""
@@ -151,9 +155,28 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self._local.transition=None
         # Reached service rows are durable SUBMITTED work before external IO.
         # A crash here is recovered by polling, not by replaying an in-memory queue.
-        for fn,args,kwargs in state['effects']:
-            try:fn(*args,**kwargs)
-            except Exception:log.exception('post-commit effect failed for %s',pid)
+        from collections import deque
+        queue = getattr(self._local, 'effect_queue', None)
+        if queue is not None:
+            queue.extend(state['effects'])
+            return
+        queue = deque(state['effects'])
+        self._local.effect_queue = queue
+        service_steps = 0
+        try:
+            while queue:
+                fn, args, kwargs = queue.popleft()
+                try:
+                    if fn == self._run_service:
+                        service_steps += 1
+                        if service_steps > 100:
+                            self._fail(args[1], ServiceLoopLimit('시스템 단계가 사람 대기 없이 100회 이어졌습니다. 반복 종료 조건을 확인하세요'), args[2])
+                            continue
+                    fn(*args, **kwargs)
+                except Exception:
+                    log.exception('post-commit effect failed for %s', pid)
+        finally:
+            self._local.effect_queue = None
 
     def _after_commit(self,fn,*args,**kwargs):
         active=getattr(self._local,'transition',None)
@@ -430,6 +453,20 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
 
     # ---------------------------------------------------------------- turning work in
     @workitem_transition
+    def submit_human(self, workitem_id, output, by):
+        wi = self.repo.get_workitem(workitem_id)
+        inst = self.repo.get_instance(wi['proc_inst_id'])
+        inbox.require_task_actor(self.repo, self.tenant_id, inst, wi, by)
+        return self.submit(workitem_id, output, by)
+
+    @workitem_transition
+    def answer_human(self, workitem_id, job_id, answer, by):
+        wi = self.repo.get_workitem(workitem_id)
+        inst = self.repo.get_instance(wi['proc_inst_id'])
+        inbox.require_task_actor(self.repo, self.tenant_id, inst, wi, by, question=True)
+        return self.human_response(workitem_id, job_id, answer, by)
+
+    @workitem_transition
     def submit(self, workitem_id: str, output: dict | None, by: str | None = None, now: datetime | None = None) -> dict:
         """A person / a service turns a work item in: SUBMITTED, then the engine processes it right away (the polling loop
         would otherwise pick it up within its interval). Returns {instance, workitem, reached, ended, pending}."""
@@ -628,7 +665,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         msg = f"{type(err).__name__}: {str(err)[:300]}"
         log.warning("%s %s failed (%d/%d): %s", fresh["proc_inst_id"], fresh["activity_id"], retry, MAX_RETRIES, msg)
         fresh.update(retry=retry, consumer=None, log=(fresh.get("log") or "") + f"[Error] {msg}; ")
-        if review_required or effect_review or retry >= MAX_RETRIES:
+        if review_required or effect_review or isinstance(err, ServiceLoopLimit) or retry >= MAX_RETRIES:
             fresh.update(status="PENDING", end_date=None)
         self.repo.update_workitem(fresh)
         self.repo.record_events([{"job_id": "TASK_REVIEW_REQUIRED" if review_required else "TASK_ERROR", "todo_id": fresh["id"], "proc_inst_id": fresh["proc_inst_id"], "crew_type": "agent",

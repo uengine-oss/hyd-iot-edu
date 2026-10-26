@@ -127,7 +127,7 @@ main() {
   local failed=0
   ensure_package docker-desktop 4.87.0 cask || failed=1
   ensure_package visual-studio-code 1.143.0 cask || failed=1
-  ensure_package node 24.16.0 formula || failed=1
+  ensure_package node 24.22.1 formula || failed=1
   ensure_package git 2.54.0 formula || failed=1
   ensure_package python@3.14 3.14.7 formula || failed=1
   echo 'Supabase CLI 실행 파일을 준비합니다(시스템 데이터는 시작 파일에서 받습니다).'

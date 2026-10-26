@@ -74,6 +74,11 @@ class EnterpriseTools:
         args = [params.get(a) for a in arg_names]
         with self._connect() as conn, conn.cursor() as cur:
             self._begin_read(cur)
+            if 'asset' in arg_names:
+                cur.execute('select exists(select 1 from ent.assets where code=%s)', (params.get('asset'),))
+                found = cur.fetchone()
+                if not found or not found[0]:
+                    raise SqlRejected('등록되지 않은 설비 코드입니다. 실제 설비 목록을 확인하세요')
             cur.execute(f"select {fn}({', '.join(['%s'] * len(args))})", args)
             row = cur.fetchone()
         value = row[0] if row else None

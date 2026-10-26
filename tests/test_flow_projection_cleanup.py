@@ -19,10 +19,13 @@ def graph(api):
     # This fixture uses its own tenant for every created graph node. MemoryRepo
     # definitions are the same source as the API; no live application is involved.
     tenant = 'cleanup-test-' + uuid4().hex
+    rt.repo.upsert_tenant({**rt.repo.get_tenant('hyd'), 'id': tenant, 'name': tenant})
     rt.tenant_id = tenant
     for user in rt.repo.list_users(None, 'hyd'):
         rt.repo.upsert_user({**user, 'tenant_id': tenant})
     rt.repo.upsert_proc_def(rt.defn.raw, tenant)
+    rt.repo.record_deployment(rt.defn.id, rt.defn.raw['version'], tenant,
+                              action='seed', actor='test', reason='isolated tenant startup', class_flow=True)
     driver = GraphDatabase.driver(URI, auth=('neo4j', os.environ['HYD_CLEANUP_NEO4J_PASSWORD']))
     writes = []
     def query(q, **params):

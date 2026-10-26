@@ -115,10 +115,11 @@ def runtime_readiness() -> dict:
 # ---------------------------------------------------------------- lifecycle
 async def event_stream(repo, since: str | None, is_disconnected, interval: float = 0.5, keepalive_s: float = 15.0,
                        fetch: Callable | None = None, ts_key: str = "timestamp", history: int = 60):
-    """Yield SSE frames for every event newer than the cursor; the cursor is the newest timestamp seen (ids seen at that
-    timestamp are kept, so a batch sharing one timestamp is never lost or repeated). Ends when the client disconnects.
-    U5: `fetch(since, limit)` and `ts_key` let the same generator stream another table (notifications, inbox_api)."""
+    """Events use post-commit publication cursors, so late commits cannot hide behind an earlier timestamp.
+    Explicit fetch/ts_key keep the existing timestamp contract for notifications."""
     global stream_clients
+    if fetch is None and hasattr(repo, 'list_stream_events'):
+        fetch, ts_key = repo.list_stream_events, 'stream_cursor'
     stream_clients += 1
     try:
         async for frame in _event_frames(repo, since, is_disconnected, interval, keepalive_s, fetch or repo.list_events_since, ts_key, history):
@@ -128,9 +129,7 @@ async def event_stream(repo, since: str | None, is_disconnected, interval: float
 
 
 def _sse_id(e: dict, ts_key: str) -> str:
-    """A161-U1: every frame carries its timestamp as the SSE id. A browser that loses the connection reconnects by itself
-    with `Last-Event-ID: <ts>`; the stream resumes from there (>=, the client drops ids it has) instead of replaying the
-    60-row history — events written while the line was down are delivered, not skipped."""
+    """Carry the selected cursor as SSE id; automatic reconnect resumes inclusively and deduplicates event IDs."""
     ts = str(e.get(ts_key) or "").replace("\n", "")
     return f"id: {ts}\n" if ts else ""
 
@@ -1011,9 +1010,25 @@ def mount(app: FastAPI, process_mode: str) -> None:
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     @app.get("/api/instances")
-    async def list_instances(status: str | None = None, limit: int = 100):
+    async def list_instances(status: str | None = None, limit: int = 100, incident: str | None = None):
         rt = _rt()
-        return await _in_executor(rt.repo.list_instances, status, min(max(limit,1),500), rt.tenant_id)
+        rows = await _in_executor(rt.repo.list_instances, status, min(max(limit,1),500), rt.tenant_id, incident)
+        # List cards need the outcome badge, never complete proposals/source documents.
+        fields = {'result_report': ('level', 'verdict', 'ok', 'status', 'outcome'),
+                  'test_run': ('ok', 'verdict'), 'goods_receipt': ('ok',)}
+        for row in rows:
+            values = engine.variables(row)
+            summary = []
+            for key in ('asset', 'incident', 'recovered', 'received', *fields):
+                value = values.get(key)
+                if key in fields and isinstance(value, dict):
+                    value = {k: v for k in fields[key] if isinstance(v := value.get(k), (str, bool, int, float))}
+                if isinstance(value, (str, bool, int, float, dict)):
+                    summary.append({'key': key, 'value': value})
+            row['variables_data'] = summary
+            for detail_field in ('variables', 'initial_variables', 'variable_sources', 'flow_state'):
+                row.pop(detail_field, None)
+        return rows
 
     @app.get("/api/instances/{proc_inst_id}")
     async def get_instance(proc_inst_id: str):
@@ -1165,9 +1180,11 @@ def mount(app: FastAPI, process_mode: str) -> None:
                 raise HTTPException(403,'사람 승인(안 고르기)은 /approve의 역할 검사를 거쳐야 합니다')
             if item.get('agent_mode') or item.get('agent_orch'):
                 raise HTTPException(403,'사람 작업만 이 경로로 제출할 수 있습니다')
-            return await _in_executor(rt.submit, wid, req.output, req.by)
+            return await _in_executor(rt.submit_human, wid, req.output, req.by)
         except KeyError:
             raise HTTPException(404, "no such work item")
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
         except ValueError as e:
             raise HTTPException(400, str(e))
 
@@ -1316,9 +1333,11 @@ def mount(app: FastAPI, process_mode: str) -> None:
     async def human_response(wid: str, req: HumanResponseReq):
         """A person answers the agent's question (human_asked → human_response); the worker resumes the task."""
         try:
-            return await _in_executor(_rt().human_response, wid, req.job_id, req.answer, req.by)
+            return await _in_executor(_rt().answer_human, wid, req.job_id, req.answer, req.by)
         except KeyError:
             raise HTTPException(404, "no such work item")
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
         except ValueError as e:
             raise HTTPException(409,str(e))
 

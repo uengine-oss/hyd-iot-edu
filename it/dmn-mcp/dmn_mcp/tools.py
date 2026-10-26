@@ -255,7 +255,18 @@ class DmnTools:
     # ---- rules and facts (task:candidates · task:compliance)
     def dmn_rules(self, decision: str | None = None) -> list[dict]:
         rows = self.kg.dmn()
-        return [r for r in rows if decision is None or r["decision"] == decision]
+        result = [r for r in rows if decision is None or r["decision"] == decision]
+        if decision and not result:
+            self._require_knowledge('Decision', [decision])
+        return result
+
+    def _require_knowledge(self, label, ids):
+        if label not in {'Decision', 'FailureMode', 'Skill'}:
+            raise ValueError('지원하지 않는 지식 종류')
+        rows = self._graph(f'MATCH (n:{label}) WHERE n.id IN $ids RETURN n.id AS id', ids=ids)
+        missing = sorted(set(ids) - {r['id'] for r in rows})
+        if missing:
+            raise ValueError(f'등록되지 않은 {label} id: ' + ', '.join(missing)[:500])
 
     def inputs(self) -> list[dict]:
         return self.kg.inputs()
@@ -376,11 +387,18 @@ class DmnTools:
                 "top_cause": causes[0]["causeId"] if causes else None, "failure_mode": causes[0]["failureModeId"] if causes else None}
 
     def precedents(self, failure_mode: str) -> list[dict]:
-        return self.kg.precedents(failure_mode)
+        rows = self.kg.precedents(failure_mode)
+        if not rows:
+            self._require_knowledge('FailureMode', [failure_mode])
+        return rows
 
     def tradeoffs(self, skill_ids: list[str]) -> list[dict]:
         from hydcommon.tool_result import checked
-        return checked(self.kg.tradeoffs(skill_ids))
+        rows = checked(self.kg.tradeoffs(skill_ids))
+        missing = set(skill_ids) - {r.get('skill') for r in rows}
+        if missing:
+            self._require_knowledge('Skill', sorted(missing))
+        return rows
 
     @staticmethod
     def _cause(cause: str, failure_mode: str) -> dict:
