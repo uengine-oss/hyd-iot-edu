@@ -19,6 +19,7 @@ class AgentRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     reference: str = Field(min_length=1,max_length=120,pattern=r'^[A-Za-z0-9_.:-]+$')
     inputs: dict
+    expected_revision: str | None = Field(default=None,pattern=r'^[0-9a-f]{64}$')
 
 
 def create_app(authority, *, source_loader, runtime_factory, catalog_factory, upstream_factory=None,
@@ -77,6 +78,19 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
         return await asyncio.to_thread(allowed, lambda: tool_io.complete(
             credential, body['run_id'], body['request_id'], result=body['result'], is_error=body['is_error']))
 
+    @app.get('/v1/classroom/agents/contract')
+    def agent_contract(definition: str, version: str, activity: str, authorization: str | None = Header(default=None)):
+        from . import classroom_agents
+        from .classroom_tool_io import catalog
+        binding=allowed(lambda:authority.agent_binding(key(authorization),definition,version,activity))
+        runtime=runtime_factory(binding['subject'])
+        if runtime.tenant_id!=binding['subject']:
+            raise HTTPException(503,'승인된 교육 공간의 실행 서비스가 준비되지 않았습니다')
+        allowed(lambda:classroom_agents.checked(runtime,binding['approval']))
+        tools=allowed(lambda:catalog(binding['tool_io']))
+        # Only schemas/names leave the server, never runtime URLs or secrets.
+        return {name:binding[name] for name in ('reference','approval','max_seconds')} | {'tools':tools}
+
     @app.post('/v1/classroom/agents')
     def agent_start(body: AgentRequest, authorization: str | None = Header(default=None)):
         from . import classroom_agents
@@ -88,6 +102,8 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
         if runtime.tenant_id!=grant['subject']:
             raise HTTPException(503,'관리 실행기의 수업 공간이 일치하지 않습니다')
         approval=grant['approval']
+        if body.expected_revision is not None and body.expected_revision!=approval['revision']:
+            raise HTTPException(409,'실행 준비 중 강사 승인 판본이 바뀌었습니다')
         allowed(lambda:classroom_agents.checked(runtime,approval))
         allowed(lambda:classroom_agents.validate_input(approval,body.inputs))
         contract=dict(reference=body.reference,revision=approval['revision'],inputs=body.inputs)

@@ -256,7 +256,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                      'events':self.repo.list_events(todo_id=wid)}
 
     def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None,
-                         role_endpoints=None):
+                         role_endpoints=None, _classroom_approval=None):
         if not isinstance(event_id,str) or not event_id.strip():
             raise ValueError('중복 실행을 구분할 event_id가 필요합니다')
         if not isinstance(version,str) or not version.strip():
@@ -279,7 +279,17 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if unknown_roles:
             raise ValueError('정의에 없는 역할입니다: ' + ', '.join(unknown_roles))
         values = dict(values or {})
-        if (PROTECTED_OUTPUTS | {'decision_id'}).intersection(values):
+        protected=(PROTECTED_OUTPUTS | {'decision_id'}).intersection(values)
+        if _classroom_approval is not None:
+            from . import classroom_agents
+            if defn.raw!=classroom_agents.isolated_definition(self,_classroom_approval):
+                raise ValueError('관리 실행은 강사가 승인한 격리 단계와 같아야 합니다')
+            classroom_agents.validate_input(_classroom_approval,{k:v for k,v in values.items()
+                if k not in ('classroom_execution','classroom_agent_reference')})
+            # Incident/decision identifiers are observations from the student,
+            # never authorization to run teacher-side business effects.
+            protected-= {'incident','decision_id'}
+        if protected:
             raise ValueError('시작 변수로 Incident/승인 결과를 주입할 수 없습니다')
         key = json.dumps([self.tenant_id,def_id,event_id])
         with self.repo.event_transaction(key):
@@ -509,6 +519,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             return {'instance':inst, 'workitem':wi, 'reached':[], 'ended':None,
                     'pending':True, 'approval_status':approval['status']}
         defn = self.definition_for_workitem(wi)
+        managed_agent=bool(defn.raw.get('classroom_agent'))
+        if managed_agent:
+            from .classroom_agents import verify_instance
+            verify_instance(self,inst)
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
         if form is not None:
             from .manual_extraction import validate_result, CORRECTABLE_CONTRACTS
@@ -533,7 +547,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         adv = engine.process_submitted(defn, inst, wi, rows, now=now, time_scale=self.time_scale)
         recheck = self._recheck_round(inst, rows + list(adv.created), defn) if adv.created else None
         output = wi.get("output") or {}
-        if not adv.pending and isinstance(output.get("guide_card"),dict) and engine.variables(inst).get("incident"):
+        if not managed_agent and not adv.pending and isinstance(output.get("guide_card"),dict) and engine.variables(inst).get("incident"):
             # This is required durable input for later approval, not a best-effort
             # projection. Persist it before committing DONE/next task. If the PG
             # commit then fails, replay writes the same guide; no command is sent.

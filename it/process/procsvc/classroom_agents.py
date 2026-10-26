@@ -72,10 +72,8 @@ def validate_input(approval,values):
         raise Denied('수업 입력이 강사 승인 스키마와 다릅니다')
 
 
-def start(runtime,approval,values,run_id,reference):
-    run_id=identifier(run_id)
+def isolated_definition(runtime,approval):
     source,activity,role=checked(runtime,approval)
-    validate_input(approval,values)
     did='classroom_agent_'+approval['revision'][:24]
     definition=dict(processDefinitionId=did,processDefinitionName=activity.get('name') or '승인 에이전트 실행',version='1',
         roles=[deepcopy(role)],data=deepcopy(source.get('data') or []),forms=deepcopy(source['forms']),
@@ -85,10 +83,19 @@ def start(runtime,approval,values,run_id,reference):
         sequences=[{'id':'managed_in','source':'managed_start','target':activity['id']},
                    {'id':'managed_out','source':activity['id'],'target':'managed_end'}],
         classroom_agent=deepcopy(approval))
+    return definition
+
+
+def start(runtime,approval,values,run_id,reference):
+    run_id=identifier(run_id)
+    validate_input(approval,values)
+    definition=isolated_definition(runtime,approval)
+    did=definition['processDefinitionId']
     runtime.register_definition(definition)
     event='classroom-agent:'+run_id
     inputs=dict(deepcopy(values),classroom_execution={'run_id':run_id},classroom_agent_reference=reference)
-    inst=runtime.start_definition(did,'1',event,values=inputs,name=definition['processDefinitionName'])
+    inst=runtime.start_definition(did,'1',event,values=inputs,name=definition['processDefinitionName'],
+                                  _classroom_approval=approval)
     inst=inst or runtime.repo.find_event_instance(runtime.tenant_id,did,event)
     saved=engine.variables(inst)
     if any(saved.get(k)!=v for k,v in inputs.items()):
@@ -99,7 +106,8 @@ def start(runtime,approval,values,run_id,reference):
 def verify_instance(runtime,instance):
     definition=runtime.definition_for(instance).raw
     approval=definition.get('classroom_agent')
-    checked(runtime,approval)
+    if definition!=isolated_definition(runtime,approval):
+        raise Denied('관리 실행 정의가 승인된 격리 단계와 다릅니다')
     return approval
 
 

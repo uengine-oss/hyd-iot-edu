@@ -13,6 +13,42 @@ from procsvc import classroom_client, manual_cache, manual_api, manual_extractio
 from test_manual_extraction import document
 
 
+def test_agent_binding_survives_client_restart_and_refuses_other_task(tmp_path):
+    run=str(uuid4());calls=[]
+    def respond(request):
+        calls.append(request)
+        if request.method=='POST':
+            assert json.loads(request.content)=={'reference':'lesson.step','inputs':{'memo':'x'},'expected_revision':'a'*64}
+            return httpx.Response(200,json={'run_id':run,'state':'RUNNING','reused':True})
+        return httpx.Response(200,json={'status':'DONE','output':{'answer':'확인 필요'}})
+    def client():
+        return classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+            tmp_path/'agents.sqlite3',transport=httpx.MockTransport(respond))
+    assert client().start_agent('local-task','lesson.step',{'memo':'x'},'a'*64)==run
+    assert client().start_agent('local-task','lesson.step',{'memo':'x'},'a'*64)==run
+    assert len(calls)==1
+    assert client().agent_result('local-task',run)['status']=='DONE'
+    for inputs,revision in [({'memo':'changed'},'a'*64),({'memo':'x'},'b'*64)]:
+        with pytest.raises(HTTPException):client().start_agent('local-task','lesson.step',inputs,revision)
+    with pytest.raises(HTTPException):client().agent_result('different-task',run)
+    with pytest.raises(HTTPException):client().start_agent('different-task','lesson.step',{'memo':'x'},'a'*64)
+    with pytest.raises(HTTPException):client().agent_result('different-task',run)
+
+
+def test_unknown_start_joins_once_without_changing_persisted_intent(tmp_path):
+    run=str(uuid4());calls=[]
+    def respond(request):
+        calls.append(json.loads(request.content))
+        if len(calls)==1:raise httpx.ReadError('response lost')
+        return httpx.Response(200,json={'run_id':run,'state':'RUNNING','reused':True})
+    client=classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+        tmp_path/'agents.sqlite3',transport=httpx.MockTransport(respond))
+    with pytest.raises(HTTPException):client.start_agent('task','lesson.step',{},'a'*64)
+    with pytest.raises(HTTPException):client.start_agent('task','lesson.step',{'memo':'different'},'a'*64)
+    assert client.start_agent('task','lesson.step',{},'a'*64)==run
+    assert len(calls)==2 and calls[0]==calls[1]
+
+
 @pytest.fixture
 def remote(tmp_path, document):
     archive, source, proposal = document
