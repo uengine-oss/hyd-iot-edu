@@ -1,0 +1,11 @@
+{
+  "note": "공통 Cypher 실습의 첫 조회 입력·실행 구간. 실습 제목은 승인 Excel을 유지한다. nq006 기존 음성을 재사용한다. 준비된 전용 DB에 연결되고 편집기가 빈 화면에서 시작한다.",
+  "voice_id": "1PdAOcPlPTz12RwMyFVp",
+  "model_id": "eleven_v4",
+  "cues": [
+    {"id":"nq005a","segment":2,"text":"이론에서 본 사이퍼 문장을 직접 실행해 볼게요. 위쪽 입력칸을 누르고, 쿨러에서 센서로 이어지는 패턴을 적겠습니다.","ops":[["click","editor"]]},
+    {"id":"nq005b","segment":2,"text":"매치에는 오일 쿨러의 식별자와 계측 관계를 넣고, 리턴에는 쿨러 이름과 센서 식별자, 태그를 적습니다. 같은 이름의 다른 장치를 섞지 않도록 식별자로 출발점을 정한 거예요.","ops":[["type","MATCH (c:Component {id:'comp:cooler'})-[:MONITORED_BY]->(s:Sensor) RETURN c.name AS component, s.id AS sensor_id, s.tag AS tag;"]]},
+    {"id":"nq005c","segment":2,"text":"문장을 다 적었으니 오른쪽 런을 눌러 실행하겠습니다.","ops":[["click","run"]]},
+    {"id":"nq006","segment":2,"text":"결과에서는 쿨러가 몇 번 나왔는지와 서로 다른 센서가 몇 개인지를 나누어 봅니다. 쿨러 이름이 반복됐다고 쿨러 노드가 여러 개라는 뜻은 아닙니다. 센서 식별자와 태그를 함께 확인하겠습니다.","ops":[["verify","two sensor rows"],["point","component"],["point","sensor_id"],["point","tag"]]}
+  ]
+}
