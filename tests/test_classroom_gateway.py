@@ -23,6 +23,14 @@ def test_public_classroom_paths_are_forwarded_with_the_mount_prefix():
     assert httpx.post(PUBLIC+'/v1/classroom/extractions', content=b'x'*17000, timeout=5).status_code == 413
 
 
+def test_only_tool_results_have_the_larger_bounded_observation_body():
+    path='/v1/classroom/tool-results'
+    response=httpx.post(PUBLIC+path,content=b'x'*40000,timeout=5)
+    assert response.status_code==200 and response.text=='/classroom'+path
+    assert httpx.post(PUBLIC+path,content=b'x'*192001,timeout=5).status_code==413
+    assert httpx.post(PUBLIC+path+'/extra',content=b'x'*40000,timeout=5).status_code==413
+
+
 @pytest.mark.parametrize('path', ['/internal/worker/model-runtime', '/internal/model/v1/messages',
     '/internal/model/v1/messages/count_tokens'])
 def test_private_listener_forwards_only_explicit_worker_paths(path):
