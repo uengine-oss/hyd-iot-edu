@@ -28,6 +28,7 @@ def encoded(value):
 
 def catalog(contract):
     from . import mcp_check
+    from .classroom_proposals import TOOLS
     from jsonschema.validators import validator_for
     if not isinstance(contract,dict) or not isinstance(contract.get('catalog'),dict):
         raise Denied('강사가 고정한 도구 입력 스키마가 없습니다')
@@ -47,11 +48,17 @@ def catalog(contract):
             validator_for(schema).check_schema(schema)
         except Exception:
             raise Denied('승인 도구 입력 스키마를 검증할 수 없습니다') from None
-        if not mcp_check.read_only_verdict({'name':name,'annotations':meta.get('annotations')})[0]:
+        proposal=meta.get('kind')=='proposal'
+        annotations=meta.get('annotations') or {}
+        if proposal and (qualified not in TOOLS or annotations.get('readOnlyHint') is not False
+                         or annotations.get('destructiveHint') is not False):
+            raise Denied('제안 저장은 승인된 DMN 제안 도구만 허용합니다')
+        if not proposal and not mcp_check.read_only_verdict({'name':name,'annotations':annotations})[0]:
             raise Denied('관리 조회 도구는 읽기 전용이어야 합니다')
         if not isinstance(meta.get('description',''),str):
             raise Denied('도구 설명은 글이어야 합니다')
         result.append(dict(server=server,name=name,description=meta.get('description',''),inputSchema=schema))
+        if proposal:result[-1]['kind']='proposal'
     return result
 
 
@@ -91,11 +98,11 @@ class ToolIO:
             run, contract = self._run(db, run_id)
             if tool not in contract['tools'] or size > contract['max_input_bytes']:
                 raise Denied('승인되지 않은 도구 또는 조회 입력 한도 초과')
-            if contract.get('catalog'):
-                from . import mcp_check
-                meta=contract['catalog'].get(tool) or {}
-                if mcp_check._argument_problem({'input_schema':meta.get('inputSchema')},arguments):
-                    raise Denied('조회 인자가 강사 승인 도구 스키마와 다릅니다')
+            catalog(contract)
+            from . import mcp_check
+            meta=contract['catalog'][tool]
+            if mcp_check._argument_problem({'input_schema':meta.get('inputSchema')},arguments):
+                raise Denied('조회 인자가 강사 승인 도구 스키마와 다릅니다')
             old = db.execute('SELECT * FROM hyd_classroom_tool_io WHERE run_id=%s AND call_id=%s', (run['id'],call_id)).fetchone()
             if old:
                 if old['tool'] != tool or old['arguments'] != arguments:
