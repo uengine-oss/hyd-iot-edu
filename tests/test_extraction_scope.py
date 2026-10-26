@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.11'
+    assert extraction.VERSION == '2.12'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -111,3 +111,9 @@ def test_instruction_2_10_maps_unit_numbers_to_catalog_asset_codes():
 def test_instruction_2_11_keeps_handed_on_procedures_out_of_candidate_outputs():
     """2026-10-26 final5: HM-8 세 번 중 한 번이 점검이 넘기는 벨트 교체(SOP-FAN-12)를 팬 구동 불량 후보 규칙에도 넣었다(검토본은 점검만)."""
     assert "원인 후보 규칙의 outputs 에 넣지 마세요 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차(점검)만" in extraction.INSTRUCTION
+
+
+def test_instruction_2_12_unnumbered_criteria_sections_are_not_sops():
+    """2026-10-26 final6: HM-8 세 번 중 한 번이 판정 기준만 적은 HM-8.6(회복 판정)을 SOP 로 뽑았다(검토본은 절 · 규칙만)."""
+    text = extraction.INSTRUCTION
+    assert "번호 없는 절은 실행 행위" in text and "판정 · 합격 기준만 정한 절" in text and "SOP로 만들지 말고" in text

@@ -90,7 +90,7 @@ def registered(rec: dict, what: str) -> dict:
     raise NotRegistered('UNKNOWN', f'판단을 등록하지 못했습니다 — 판단 상태 {rec.get("status")}')
 
 
-def read_outcome(rec: dict, what: str) -> dict:
+def read_outcome(rec: dict, what: str, detail_option: str | None = None) -> dict:
     """A read-only evaluation: a failure is an error envelope; zero candidates or a guardrail refusal is stated in the
     result (`outcome`, `notice`) so it is not read as a ranked set. Its EVAL- id is never stored by the process."""
     if rec.get('status') == 'FAILED':
@@ -104,7 +104,7 @@ def read_outcome(rec: dict, what: str) -> dict:
         outcome, notice = 'no_feasible_option', '후보 ' + str(len(options)) + '장 모두 규정상 제외됐습니다'
     else:
         outcome, notice = 'ranked', '후보 ' + str(len(options)) + '장 순위 계산'
-    return dict(agent_view(rec), outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
+    return dict(agent_view(rec, detail_option), outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
 
 
 #: 에이전트가 카드 비교에 쓰는 칸만. 2026-10-26 수업 한 바퀴(final6): evaluate_cards 가 판단 기록 전체(약 15만 5천 자 — 카드마다 순위 근거 ·
@@ -118,7 +118,20 @@ def _bsc(rows):
     return [{k: g.get(k) for k in ('name', 'owner', 'conditional') if g.get(k) is not None} for g in rows or [] if isinstance(g, dict)]
 
 
-def agent_view(rec: dict) -> dict:
+#: 카드 상세(detail_option)로 줄 때도 한 칸이 이 글자 수를 넘으면 자르고 표시한다 — ontology-studio document_indexing 의 [truncated] 표시와 같은 뜻
+DETAIL_FIELD_MAX_CHARS = 6000
+DETAIL_FIELDS = ('rankingEvidence', 'tradeoffEvaluation', 'steps', 'forecastContext', 'facts', 'precedent', 'selectedBy')
+
+
+def _capped(value):
+    import json
+    text = json.dumps(value, ensure_ascii=False, default=str)
+    return value if len(text) <= DETAIL_FIELD_MAX_CHARS else text[:DETAIL_FIELD_MAX_CHARS] + '…[truncated]'
+
+
+def agent_view(rec: dict, detail_option: str | None = None) -> dict:
+    """카드 목록은 비교에 쓰는 칸만(ProcessGPT get_process_list 의 select=id,name 처럼), 카드 하나의 전체 근거는 detail_option 으로
+    따로(get_process_detail 처럼). 뺀 칸과 받는 법을 omitted 로 알린다 — 잘린 줄 모르고 판단하지 않게."""
     r = rec.get('result') or {}
     options = []
     for o in r.get('options') or []:
@@ -133,12 +146,15 @@ def agent_view(rec: dict) -> dict:
             'production': o.get('production'), 'window': o.get('window'), 'resolvedSupplier': o.get('resolvedSupplier'),
             'maintenancePlan': o.get('maintenancePlan'), 'economicComparison': o.get('economicComparison'),
         }.items() if v not in (None, [], {})})
+        if detail_option and detail_option in (o.get('id'), o.get('sopId')):
+            options[-1]['detail'] = {k: _capped(o[k]) for k in DETAIL_FIELDS if o.get(k) not in (None, [], {})}
     return {k: v for k, v in {
         'id': rec.get('id'), 'status': rec.get('status'), 'asset': rec.get('asset'), 'scenario': rec.get('scenario'),
         'recommended': rec.get('recommended'), 'explanation': rec.get('explanation') or r.get('explanation'),
         'facts': rec.get('facts'), 'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
         'options': options, 'error': rec.get('error'),
-        'detail': '전체 근거(순위 근거 · 득실 평가 · 단계 · 예측 맥락 · 원천 기록)는 제출한 판단 기록 · 처리 건 화면에 있습니다',
+        'omitted': f"카드마다 {', '.join(DETAIL_FIELDS)} 와 provenance 는 뺐습니다. 한 카드의 전체 근거가 필요하면 같은 인자에 "
+                   "detail_option=<카드 id 또는 SOP ID> 를 더해 다시 부르세요(칸마다 6000자 상한, 넘으면 …[truncated]). 제출한 판단 기록에는 전부 남습니다",
     }.items() if v not in (None, [], {})}
 
 
@@ -255,7 +271,8 @@ class DmnTools:
         return {"facts": facts, "provenance": provenance}
 
     # ---- task:rank
-    def evaluate_cards(self, asset: str, pattern: str, cause: str, failure_mode: str, overrides: dict | None = None) -> dict:
+    def evaluate_cards(self, asset: str, pattern: str, cause: str, failure_mode: str, overrides: dict | None = None,
+                       detail_option: str | None = None) -> dict:
         """Run dec:action-candidates → dec:compliance → dec:rank-actions with forecasts, BSC trade-offs and precedents. No submission.
         The (cause, failure_mode) pair must be one the diagnosis knowledge (T1) lists for this pattern and asset; an
         argument with no diagnosis basis is refused (INVALID) instead of silently filtering candidates by a made-up cause."""
@@ -265,7 +282,7 @@ class DmnTools:
                                 overrides=overrides or None, do_submit=False)
         if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
             raise ValueError(rec['error'])
-        return read_outcome(rec, '조치 카드 평가')
+        return read_outcome(rec, '조치 카드 평가', detail_option)
 
     def submit_decision(self, asset: str, pattern: str, cause: str, failure_mode: str, incident: str, alert_id: str | None = None,
                         overrides: dict | None = None, process_scope: dict | None = None) -> dict:

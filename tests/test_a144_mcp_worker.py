@@ -207,5 +207,24 @@ def test_evaluation_reaches_the_agent_as_a_compact_card_view():
     first, second = out['options']
     assert first['approver'] == '운전원' and first['forecast'] == {'평형 유온': '49.7 ℃'} and first['actions'] == [{'code': 'FAN_SET', 'name': '팬', 'value': 100, 'targetName': '팬 인버터'}]
     assert second['violations'] == [{'rule': 'rule:x', 'effect': 'EXCLUDE', 'annotation': 'PLC 수동'}] and not second['feasible']
-    for gone in ('rankingEvidence', 'tradeoffEvaluation', 'steps', 'forecastContext', 'provenance', 'supportingPaths', 'trace'):
-        assert gone not in text
+    cards = json.dumps(out['options'], ensure_ascii=False)
+    for gone in ('rankingEvidence', 'tradeoffEvaluation', 'steps', 'forecastContext', 'supportingPaths'):
+        assert gone not in cards                                                 # 카드 목록에는 없다(뺀 칸은 omitted 안내에만 이름이 나온다)
+    assert 'provenance' not in out and 'trace' not in out and 'detail_option' in out['omitted']
+
+
+def test_one_card_detail_is_fetched_separately_and_capped():
+    """ProcessGPT process-gpt-mcp 의 get_process_list(select=id,name) / get_process_detail(id) 처럼: 목록은 비교 칸만, 카드 하나의 전체 근거는
+    detail_option 으로 따로. 상세도 칸마다 상한을 두고 잘렸으면 표시한다(ontology-studio document_indexing 의 …[truncated]). 뺀 칸과 받는 법은 omitted 로."""
+    import json
+    big = {'rankingEvidence': ['r' * 9000], 'steps': ['짧은 단계'], 'tradeoffEvaluation': {'x': 1}}
+    rec = {'id': 'EVAL-2', 'status': 'EVALUATED', 'recommended': 'skill:a',
+           'result': {'options': [dict(big, rank=1, id='skill:a', sopId='SOP-A', feasible=True, score=2.0),
+                                  dict(big, rank=2, id='skill:b', sopId='SOP-B', feasible=True, score=1.0)]}}
+    plain = dmn.read_outcome(rec, '조치 카드 평가')
+    assert 'detail' not in json.dumps(plain['options'], ensure_ascii=False) and 'detail_option' in plain['omitted']
+    one = dmn.read_outcome(rec, '조치 카드 평가', detail_option='SOP-B')
+    a, b = one['options']
+    assert 'detail' not in a and b['detail']['steps'] == ['짧은 단계'] and b['detail']['tradeoffEvaluation'] == {'x': 1}
+    assert isinstance(b['detail']['rankingEvidence'], str) and b['detail']['rankingEvidence'].endswith('…[truncated]')
+    assert len(b['detail']['rankingEvidence']) <= dmn.DETAIL_FIELD_MAX_CHARS + 20
