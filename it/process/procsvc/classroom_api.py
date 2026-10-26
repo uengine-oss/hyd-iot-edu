@@ -117,6 +117,27 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
             allowed(lambda:authority.bind_work(credential,run['id'],inst['proc_inst_id']))
         return {'run_id':str(run['id']),'state':run['state'],'reused':run['reused']}
 
+    @app.post('/v1/classroom/agents/runs/{run_id}/cancel')
+    def agent_cancel(run_id: str, authorization: str | None = Header(default=None)):
+        credential=key(authorization)
+        row=read(run_id,authorization)
+        if row['action']!='agent_run':
+            raise HTTPException(403,'관리 에이전트 실행만 중단할 수 있습니다')
+        if row['state'] in ('DONE','FAILED','EXPIRED'):
+            return {'state':row['state']}
+        # Revoke model/tool authorization first, even if the process DB is down.
+        allowed(lambda:authority.finish(credential,row['id'],validated=False))
+        if row['work_ref']:
+            runtime=runtime_factory(row['subject'])
+            if runtime.tenant_id!=row['subject']:
+                raise HTTPException(503,'관리 실행 공간이 일치하지 않습니다')
+            with runtime.repo.instance_transaction(runtime.tenant_id,row['work_ref']):
+                for wi in runtime.repo.list_workitems(proc_inst_id=row['work_ref'],limit=None):
+                    if wi['status']=='IN_PROGRESS' and wi.get('agent_orch')=='cliagents':
+                        wi.update(draft_status='CANCELLED')
+                        runtime.repo.update_workitem(wi)
+        return {'state':'FAILED'}
+
     @app.get('/v1/classroom/agents/runs/{run_id}/result')
     def agent_result(run_id: str, authorization: str | None = Header(default=None)):
         from . import classroom_agents,engine

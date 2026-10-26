@@ -1,0 +1,110 @@
+from copy import deepcopy
+from dataclasses import replace
+import time
+from uuid import uuid4
+
+import pytest
+from worker import student_execution,context
+from worker.runner import Runner,RunFailed,Cancelled,LeaseLost
+from procsvc import mcp_check,mcp_registry,mcp_secrets,ask
+from test_classroom_agents import approved
+from test_instances import rt
+from test_worker import _settings
+
+
+@pytest.fixture
+def local(rt,tmp_path,monkeypatch):
+    runtime,hooks=rt;approval=approved(runtime)
+    inst=runtime.start_definition(approval['definition'],'1','student-task',values={'memo':'실제 상태 확인'})
+    monkeypatch.setattr(mcp_registry,'store_for',lambda _:type('Store',(),{'servers':lambda _,tenant:{
+        'enterprise':{'url':'http://student-enterprise/mcp','type':'streamable_http'}}})())
+    monkeypatch.setattr(mcp_secrets,'runtime_spec',lambda *a:(a[-1],[]))
+    monkeypatch.setattr(mcp_check,'call',lambda *a,**kw:{'status':'ok','result':{
+        'text':'{"available":7}','json':True,'is_error':False}})
+    class Client:
+        def __init__(self):self.starts=[];self.cancelled=[];self.results=0;self.reads=[]
+        def agent_contract(self,*args):
+            return {'approval':deepcopy(approval),'reference':'lesson.draft','max_seconds':60,
+                    'tools':[{'server':'enterprise','name':'spare_stock'}]}
+        def start_agent(self,*args):self.starts.append(args);return str(uuid4())
+        def agent_result(self,*args):
+            self.results+=1
+            return {'status':'PENDING'} if self.results==1 else {'status':'DONE','output':{'answer':'확인 필요'}}
+        def exchange_tool(self,run,router):
+            self.reads.append(router('enterprise/spare_stock',{'part':'SEAL'}))
+            return {'status':'DONE'}
+        def cancel_agent(self,*args):self.cancelled.append(args)
+    client=Client()
+    runner=Runner(_settings(tmp_path),runtime.repo,exec_fn=lambda *a:pytest.fail('local model must not run'),schema_prompt='s')
+    return runtime,hooks,inst,approval,client,runner
+
+
+def claim(local):
+    runtime,*_=local
+    row=runtime.repo.fetch_pending_task('cliagents','student-worker')[0]
+    return row,context.prepare(runtime.repo,row,runtime.tenant_id)
+
+
+def test_managed_student_worker_submits_locally_and_preserves_actual_trace(local,monkeypatch):
+    runtime,hooks,inst,approval,client,runner=local
+    monkeypatch.setattr(student_execution,'configured',lambda _:client)
+    assert runner.poll_once()==1
+    row=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert row['status']=='SUBMITTED' and row['output']['answer']=='확인 필요'
+    assert client.starts[0][2]=={'memo':'실제 상태 확인'} and client.starts[0][3]==approval['revision']
+    assert client.reads==[{'result':{'available':7},'is_error':False}]
+    calls=ask.tool_calls(runtime.repo.list_events(todo_id=row['id']))
+    assert len(calls)==1 and '7' in str(calls[0])
+    assert not hooks.calls and not client.cancelled
+
+
+def test_changed_student_profile_is_rejected_before_paid_start(local):
+    runtime,_,_,_,client,runner=local
+    user=runtime.repo.list_users(['agent:class-test'],runtime.tenant_id)[0]
+    runtime.repo.upsert_user(dict(user,goal='different'))
+    row,ctx=claim(local)
+    with pytest.raises(Exception):student_execution.execute(runner,row,ctx,'test',client,sleep=lambda _:None)
+    assert not client.starts
+
+
+@pytest.mark.parametrize('status',['FAILED','broken-output','cancel','reclaimed','changed-input'])
+def test_failure_cancel_and_reclaim_never_submit_success(local,status):
+    runtime,_,_,_,client,runner=local;row,ctx=claim(local)
+    def result(*args):
+        if status=='changed-input':
+            inst=runtime.repo.get_instance(row['proc_inst_id'])
+            next(v for v in inst['variables_data'] if v['key']=='memo')['value']='다른 입력'
+            runtime.repo.update_instance(inst)
+            return {'status':'DONE','output':{'answer':'과거 입력의 답'}}
+        if status in ('cancel','reclaimed'):
+            fresh=runtime.repo.get_workitem(row['id'])
+            if status=='cancel':fresh['draft_status']='CANCELLED'
+            else:fresh['consumer']='another-worker'
+            runtime.repo.update_workitem(fresh)
+            return {'status':'PENDING'}
+        return {'status':'DONE','output':{'answer':None}} if status=='broken-output' else {'status':'FAILED'}
+    client.agent_result=result
+    with pytest.raises(Exception):student_execution.execute(runner,row,ctx,'test',client,sleep=lambda _:None)
+    assert runtime.repo.get_workitem(row['id'])['status']=='IN_PROGRESS'
+    assert bool(client.cancelled)==(status!='reclaimed')
+
+
+def test_lease_is_renewed_during_slow_network(local):
+    runtime,_,_,_,client,runner=local;row,ctx=claim(local)
+    runner.s=replace(runner.s,lease_renew_every_s=0.01)
+    original=runtime.repo.renew_task_lease;renewals=[]
+    def renew(*a):renewals.append(time.monotonic());return original(*a)
+    runtime.repo.renew_task_lease=renew
+    def result(*args):time.sleep(0.6);return {'status':'DONE','output':{'answer':'확인 필요'}}
+    client.agent_result=result
+    student_execution.execute(runner,row,ctx,'test',client,sleep=lambda _:None)
+    assert len(renewals)>=3
+
+
+def test_deadline_stops_waiting_and_requests_remote_cancel(local):
+    _,_,_,_,client,runner=local;row,ctx=claim(local)
+    runner.s=replace(runner.s,run_timeout_s=0.1)
+    def result(*args):time.sleep(0.4);return {'status':'PENDING'}
+    client.agent_result=result
+    with pytest.raises(RunFailed):student_execution.execute(runner,row,ctx,'test',client,sleep=lambda _:None)
+    assert len(client.starts)==1 and len(client.cancelled)==1

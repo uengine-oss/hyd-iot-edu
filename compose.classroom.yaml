@@ -16,6 +16,7 @@ services:
   agent-worker:
     environment:
       HYD_MANAGED_MODEL_REQUIRED: "1"
+      HYD_CLASSROOM_URL: ""
       HYD_MANAGED_MODEL_URL: http://classroom:8081
       HYD_WORKER_RUNTIME_KEY_FILE: /run/process/mcp/worker-runtime.key
       ANTHROPIC_API_KEY: ""

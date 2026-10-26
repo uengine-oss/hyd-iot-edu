@@ -13,6 +13,22 @@ from procsvc import classroom_client, manual_cache, manual_api, manual_extractio
 from test_manual_extraction import document
 
 
+def test_absolute_http_deadline_closes_stalled_response(tmp_path):
+    import asyncio,time
+    closed=[]
+    class Stream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'{'
+            await asyncio.sleep(10)
+        async def aclose(self):closed.append(True)
+    client=classroom_client.Client('https://class.example',lambda:'test-key-'+'x'*40,
+        tmp_path/'deadline.sqlite3',timeout=0.02,transport=httpx.MockTransport(
+            lambda request:httpx.Response(200,stream=Stream())))
+    before=time.monotonic()
+    with pytest.raises(HTTPException):client.request('GET','/v1/classroom/session')
+    assert closed and time.monotonic()-before<1
+
+
 def test_agent_binding_survives_client_restart_and_refuses_other_task(tmp_path):
     run=str(uuid4());calls=[]
     def respond(request):

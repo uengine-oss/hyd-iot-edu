@@ -91,7 +91,14 @@ class Runner:
         self.in_flight += 1
         try:
             ctx = context.prepare(self.repo, row, self.s.tenant_id)
-            self.run(row, ctx, job_id)
+            from . import student_execution
+            client=student_execution.configured(self.s)
+            if client is not None:
+                if (ctx.definition or {}).get('classroom_agent'):
+                    raise RunFailed('강사 관리 워커에 학생 위임 주소를 함께 설정할 수 없습니다')
+                student_execution.execute(self,row,ctx,job_id,client)
+            else:
+                self.run(row, ctx, job_id)
         except Cancelled as stop:
             self.repo.release_worker_claim(row['id'],row['consumer'])
             if isinstance(stop, LeaseLost) or self._reclaimed(row):
