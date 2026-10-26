@@ -67,3 +67,7 @@ def validate_output(form, output):
                  'array': lambda: isinstance(value, list)}[kind]()
         if not valid:
             raise ValueError(f'폼 필드 타입/선택값이 맞지 않습니다: {key} ({kind})')
+    keys = {f['key'] for f in form.get('fields_json') or []}
+    if {'decision', 'decision_id'} <= keys:
+        from .decision_time import validate_explanation
+        validate_explanation(output)
