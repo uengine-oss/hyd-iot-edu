@@ -35,6 +35,9 @@ def local(rt,tmp_path,monkeypatch):
             self.reads.append(router('enterprise/spare_stock',{'part':'SEAL'}))
             return {'status':'DONE'}
         def cancel_agent(self,*args):self.cancelled.append(args)
+        def flush_cancellations(self):return {'state':'IDLE'}
+        def reconcile_cancellations(self,*a):return {'state':'IDLE'}
+        def cancel_start(self,*args):self.cancelled.append(args);return {'state':'CONFIRMED'}
     client=Client()
     runner=Runner(_settings(tmp_path),runtime.repo,exec_fn=lambda *a:pytest.fail('local model must not run'),schema_prompt='s')
     return runtime,hooks,inst,approval,client,runner
@@ -137,3 +140,17 @@ def test_question_or_deferral_returns_to_student_and_resumes_same_run(local,monk
     assert client.responses==[(runtime.tenant_id+':'+row['id'],client.run,kind,
                               'teacher-question' if kind=='human_answer' else 'teacher-deferral','실재고 확인')]
     assert not client.cancelled
+
+
+@pytest.mark.parametrize('failure',['network','other-task','reclaimed'])
+def test_start_uncertainty_cancels_only_the_owned_attempt(local,failure):
+    from fastapi import HTTPException
+    runtime,_,_,_,client,runner=local;row,ctx=claim(local)
+    def start(*args):
+        if failure=='reclaimed':
+            fresh=runtime.repo.get_workitem(row['id']);fresh['consumer']='new-worker'
+            runtime.repo.update_workitem(fresh)
+        raise HTTPException(409 if failure=='other-task' else 502,'start not confirmed')
+    client.start_agent=start
+    with pytest.raises(Exception):student_execution.execute(runner,row,ctx,'test',client)
+    assert bool(client.cancelled)==(failure=='network')

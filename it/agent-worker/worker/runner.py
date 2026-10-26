@@ -78,6 +78,9 @@ class Runner:
     # ---- polling
     def poll_once(self, on_polled=None) -> int:
         """on_polled: 일거리 조회가 성공한 바로 뒤(작업을 돌리기 전)에 부른다 — 상태 점이 긴 첫 작업 내내 「켜지는 중」으로 남지 않게."""
+        from . import student_execution
+        client=student_execution.configured(self.s)
+        if client is not None:client.reconcile_cancellations(self.repo,self.s.tenant_id)
         claim_owner=f"{self.s.consumer}:{uuid.uuid4().hex}"
         rows = self.repo.fetch_pending_task(self.s.agent_orch, claim_owner, limit=1, tenant_id=self.s.tenant_id)
         if on_polled:
