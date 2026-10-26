@@ -5,6 +5,7 @@ leave that server. Student-supplied prompts/catalog/model parameters are rejecte
 """
 from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 from . import manual_cache
 from .classroom_authority import Denied
@@ -20,6 +21,13 @@ class AgentRequest(BaseModel):
     reference: str = Field(min_length=1,max_length=120,pattern=r'^[A-Za-z0-9_.:-]+$')
     inputs: dict
     expected_revision: str | None = Field(default=None,pattern=r'^[0-9a-f]{64}$')
+
+
+class AgentResponse(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    kind: Literal['human_answer','reassessment']
+    request_id: str=Field(min_length=1,max_length=200)
+    text: str=Field(min_length=1,max_length=2000)
 
 
 def create_app(authority, *, source_loader, runtime_factory, catalog_factory, upstream_factory=None,
@@ -138,6 +146,23 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
                         runtime.repo.update_workitem(wi)
         return {'state':'FAILED'}
 
+    @app.post('/v1/classroom/agents/runs/{run_id}/respond')
+    def agent_respond(run_id: str, body: AgentResponse, authorization: str | None = Header(default=None)):
+        from . import classroom_agents,classroom_responses,engine
+        row=read(run_id,authorization)
+        if row['action']!='agent_run' or row['state'] not in ('RESERVED','RUNNING') or not row['work_ref']:
+            raise HTTPException(409,'진행 중인 관리 실행에만 보완 답변을 보낼 수 있습니다')
+        runtime=runtime_factory(row['subject'])
+        inst=runtime.repo.get_instance(row['work_ref'])
+        if runtime.tenant_id!=row['subject'] or not inst or inst.get('tenant_id')!=row['subject']:
+            raise HTTPException(503,'관리 실행 공간이 일치하지 않습니다')
+        values=engine.variables(inst)
+        grant=allowed(lambda:authority.authorize_agent(key(authorization),values.get('classroom_agent_reference')))
+        approval=allowed(lambda:classroom_agents.verify_instance(runtime,inst))
+        if approval!=grant['approval'] or values.get('classroom_execution')!={'run_id':str(row['id'])}:
+            raise HTTPException(403,'현재 승인과 실행의 연결이 다릅니다')
+        return allowed(lambda:classroom_responses.respond(runtime,inst,grant['responses'],body.kind,body.request_id,body.text))
+
     @app.get('/v1/classroom/agents/runs/{run_id}/result')
     def agent_result(run_id: str, authorization: str | None = Header(default=None)):
         from . import classroom_agents,engine
@@ -157,6 +182,17 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
         if approval!=grant['approval'] or values.get('classroom_execution')!={'run_id':str(row['id'])}:
             raise HTTPException(403,'현재 승인과 실행의 연결이 다릅니다')
         items=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
+        if len(items)==1:
+            from . import classroom_responses
+            pending=allowed(lambda:classroom_responses.control(items[0]))
+            if pending is not None:
+                if pending['status']=='NEEDS_INPUT':
+                    event=runtime.repo.find_task_event(items[0]['id'],pending['request_id'],'human_asked')
+                    options=((event or {}).get('data') or {}).get('options') or []
+                    if not isinstance(options,list) or len(options)>8 or any(not isinstance(v,str) or len(v)>500 for v in options):
+                        raise HTTPException(409,'관리 질문의 선택지 형식을 확인할 수 없습니다')
+                    pending['options']=options
+                return pending
         if any(w['status'] in ('PENDING','CANCELLED') or w.get('draft_status') in ('FAILED','CANCELLED') for w in items):
             allowed(lambda:authority.finish(key(authorization),row['id'],validated=False))
             return {'status':'FAILED','output':None}
