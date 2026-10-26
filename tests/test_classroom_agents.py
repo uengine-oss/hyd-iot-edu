@@ -183,3 +183,23 @@ def test_missing_or_wrong_source_revision_is_denied(rt):
     with pytest.raises(Denied):agents.checked(runtime,dict(approval,version='missing'))
     invalid=deepcopy(approval);invalid['input_schema']['additionalProperties']=True
     with pytest.raises(Denied):agents.revision(runtime,invalid)
+
+
+def test_handover_approval_accepts_first_draft_null_notes_without_dropping_reviews(rt):
+    from test_handover import begin
+    runtime,_=rt;inst=begin(runtime)
+    source=runtime.definition_for(inst).raw
+    props={name:{'type':'string'} for name in source['activities'][0]['inputData']}
+    for name in ('sender_notes','receiver_notes'):props[name]={'type':['string','null'],'maxLength':2000}
+    approval=dict(definition=source['processDefinitionId'],version=source['version'],activity='task:draft',revision='pending',
+        input_schema={'type':'object','properties':props,'required':['asset','shift_label','as_of','work_notes'],'additionalProperties':False})
+    approval['revision']=agents.revision(runtime,approval)
+    row=next(w for w in runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id']) if w['activity_id']=='task:draft')
+    inputs=runtime.workitem_view(row['id'])['inputs']
+    assert inputs['sender_notes'] is None and inputs['receiver_notes'] is None
+    agents.validate_input(approval,inputs)
+    agents.validate_input(approval,dict(inputs,sender_notes='작업지시를 다시 확인하세요'))
+    bad=deepcopy(approval);bad['input_schema']['properties']['sender_notes']['type']='string'
+    with pytest.raises(Denied,match='검토 전 null'):agents.revision(runtime,bad)
+    del bad['input_schema']['properties']['sender_notes']
+    with pytest.raises(Denied,match='검토 전 null'):agents.revision(runtime,bad)

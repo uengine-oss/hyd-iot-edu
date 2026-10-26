@@ -8,7 +8,7 @@ from copy import deepcopy
 from fastapi.encoders import jsonable_encoder
 
 from hydcommon.process_contracts import pinned_form
-from . import agents_store, engine, mcp_check
+from . import agents_store, engine, mcp_check, handover
 from .classroom_authority import Denied, digest
 from .classroom_tool_io import encoded, identifier
 
@@ -58,6 +58,12 @@ def snapshot(runtime, approval):
     properties=set(schema.get('properties') or {})
     if not properties.issubset(set(activity.get('inputData') or [])) or 'classroom_execution' in properties:
         raise Denied('입력 스키마는 해당 작업의 입력만 허용해야 합니다')
+    for name in handover.optional_inputs(form):
+        # A first draft has no review notes yet. Later drafts need the actual
+        # notes, so dropping these fields is not an acceptable workaround.
+        if name not in properties or mcp_check._argument_problem(
+                {'input_schema': {'type':'object','properties':{name:schema['properties'][name]}}}, {name:None}):
+            raise Denied('교대 검토 의견은 입력에 포함하고 검토 전 null을 허용해야 합니다')
     bundle=jsonable_encoder({'source_definition':source,'activity':activity,'agent':agents_store.execution_settings(settings),'input_schema':schema})
     return source,activity,role,bundle
 
