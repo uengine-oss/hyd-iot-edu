@@ -5,10 +5,10 @@
       "course": "실전반",
       "session": "오프라인 01회차",
       "title": "랩 그래프 적재와 질문",
-      "version": "2026-10-26-offline-v1",
+      "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "sha256": "f6be25bc068bb395baff1b7f3bc2f48aca0905561a7b9bf3004703cda9ef30e7",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
+      "sha256": "fa76803b11d3fad9e0235f2607a05c8be3231f7b2acafd30714da2fd3e2f2b7c",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
     },
     {
       "id": "practical-02-relations",
@@ -17,8 +17,8 @@
       "title": "관계를 따라 센서와 부품 조회하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습1_관계조회",
-      "sha256": "6bd5a18b2d6bcabeba73011e7c24293ea789cc8a6f9ade022917f4dfe96c4c17",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
+      "sha256": "d4e7f71f5a589ef880708b2966a632d4e913d2c9975d0e634012836cae46add1",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
     },
     {
       "id": "practical-02-map",
@@ -27,8 +27,8 @@
       "title": "포털에서 기준 지식의 연결 탐색하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "4302df3c12ed56834dbfd962fb1b4cdecd8d2ab29fa0809ff9831a039c1fe9ae",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
+      "sha256": "0936552647125f17afb6d3cbd4b9c395522c6a4511327859f9884f09ee348086",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
       "id": "practical-02-ontology",
@@ -38,17 +38,17 @@
       "version": "2026-10-26-lab-v2",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "sha256": "0a3fa135f3e2480bdf88a56169906b0211afe310580b10b4ae0bb09f3e2c77f1",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
     },
     {
       "id": "practical-02-graph",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품별 사용 설비와 공급 조건 조회하기",
-      "version": "2026-10-26-lab-v2",
+      "version": "2026-10-26-lab-v2-connection2",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "sha256": "7356084478f68a2f7a0e92b9cc03c03d42b55189cbe922558beb356c02a76ad8",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
+      "sha256": "9cf36811f75f61c7c47bc0ca67f5492d640aa1d698ead84d3ea3e5fd204f66fc",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
     },
     {
       "id": "practical-02-conditions",
@@ -58,17 +58,17 @@
       "version": "2026-10-26-conditions-v1",
       "folder": "02회차/랩/02일차_실습5_조치조건표",
       "sha256": "21c21710b6f72b713fbb3297a24e36b94167e380a92809fa10985d2b93c932a8",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B55_%EC%A1%B0%EC%B9%98%EC%A1%B0%EA%B1%B4%ED%91%9C.zip"
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B55_%EC%A1%B0%EC%B9%98%EC%A1%B0%EA%B1%B4%ED%91%9C.zip"
     },
     {
       "id": "integrated-01-offline",
       "course": "통합반",
       "session": "오프라인 01회차",
       "title": "랩 그래프 적재와 질문",
-      "version": "2026-10-26-offline-v1",
+      "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "sha256": "f6be25bc068bb395baff1b7f3bc2f48aca0905561a7b9bf3004703cda9ef30e7",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
+      "sha256": "8981950fcb6b86e1e7e41e1b680caaf7f6fef1c92baa6414cebc1959c7171232",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
     },
     {
       "id": "integrated-02-relations",
@@ -77,8 +77,8 @@
       "title": "관계를 따라 센서와 부품 조회하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습1_관계조회",
-      "sha256": "6bd5a18b2d6bcabeba73011e7c24293ea789cc8a6f9ade022917f4dfe96c4c17",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
+      "sha256": "386df5f56f09c86f844fe6da5157f02683623babb72a00d78c83cf4154cc964c",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
     },
     {
       "id": "integrated-02-map",
@@ -87,8 +87,8 @@
       "title": "포털에서 기준 지식의 연결 탐색하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "4302df3c12ed56834dbfd962fb1b4cdecd8d2ab29fa0809ff9831a039c1fe9ae",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
+      "sha256": "0936552647125f17afb6d3cbd4b9c395522c6a4511327859f9884f09ee348086",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
       "id": "integrated-02-ontology",
@@ -98,17 +98,17 @@
       "version": "2026-10-26-lab-v2",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "sha256": "b9a7bef65bf07f4c148b0561fec56845a11e74d88ee05e3ab6b70d64173475cb",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
     },
     {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "모델을 그래프에 적재하고 질문으로 검증하기",
-      "version": "2026-10-26-lab-v2",
+      "version": "2026-10-26-lab-v2-connection2",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "sha256": "51ff6f4ee9fc321aeb7e6fdab85ebb87bee37b426703f541a38258fa0950fc4d",
-      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/5fa8650fec341c08333cb9e0dfeca70e28df2cd7/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
+      "sha256": "f6b78aa55dfdf11f915063332d0ba18a1997142c644510066f7a990b7ede0dae",
+      "url": "https://raw.githubusercontent.com/uengine-oss/hyd-iot-edu/6e969a4bf77b2b327a20a8b6e1bc0abb94c10abb/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
     }
   ]
 }

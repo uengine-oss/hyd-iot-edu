@@ -35,6 +35,17 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
 3. 센서에서 상태 변수로, 고장 유형에서 구성요소와 원인 후보로 이어진 관계의 시작·끝을 확인합니다.
 4. 현재 화면에서 확인한 것만 기록하고 결과/에 저장합니다. 편집·설비 조작·명령 승인은 하지 않습니다.'''
             sections=[('지식 지도 열기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a></p><p>포털의 지식 지도를 열고 HYD-01을 선택하세요. 학교에서 별도 주소를 안내받았다면 그 주소를 사용합니다.</p><p>탐색_기록.md에 포털 주소와 확인 시각을 적습니다. 앞 실습의 예제 DB와는 별개입니다.</p>'),('대상의 종류와 속성 보기','<p>오일 쿨러를 찾아 ID와 클래스를 확인하세요. 연결된 센서의 태그를 보고, 상태 변수까지 따라가 단위·한계를 기록합니다.</p><p class="check">이름만 적지 않고 대상 ID와 값을 함께 남깁니다. 화면에 표시되지 않은 항목은 미확인으로 둡니다.</p>'),('들어오는 관계 따라가기','<p>쿨러에 연결된 고장 유형과 원인 후보를 찾아 관계 이름·시작 ID·끝 ID를 기록하세요. 탐색한 방향과 저장된 화살표 방향을 구별합니다.</p><p class="check">원인 후보의 연결을 찾은 것과 현재 고장의 원인을 확정한 것은 다릅니다. 이번에는 표시된 지식의 연결을 확인합니다.</p>'),('기록 확인하고 저장하기','<p>설비 → 구성요소 → 센서 → 상태 변수의 경로와 고장·원인 경로를 기록에서 다시 읽어 보세요. 빠진 시작·끝 ID는 화면으로 돌아가 확인합니다.</p><p>결과/에 탐색 기록을 저장하고 다시 엽니다. 다음 모델 설계는 별도 시작본을 사용합니다.</p>')]
+        if number==1:
+            connection='Protocol에서 bolt://를 선택하고, Connection URL에는 터미널 주소의 127.0.0.1:포트 부분만 넣으세요. Database user는 neo4j, Password는 비워 두고 Connect를 누릅니다.'
+            sections[0]=(sections[0][0],sections[0][1].replace('열린 Browser의 Connect URL에 터미널의 bolt 주소를 넣으세요. Username은 neo4j, Password는 비워 둡니다.',connection))
+            steps=steps.replace('열고 출력된 Connect URL로 연결합니다. Username은 neo4j, Password는 비워 둡니다.','엽니다. Protocol은 bolt://, Connection URL은 출력 주소의 127.0.0.1:포트 부분, Database user는 neo4j, Password는 빈칸으로 연결합니다.')
+            def figure(name,caption):
+                return f'<figure style="margin:24px 0"><a href="images/{name}.png" target="_blank"><img src="images/{name}.png" alt="{caption}" style="border:1px solid #dce5df;border-radius:8px"></a><figcaption><small>{caption} · 누르면 크게 보기</small></figcaption></figure>'
+            sections[1]=(sections[1][0],sections[1][1]+figure('01-cooler','같은 쿨러에서 센서 CE·TS1 두 행 확인'))
+            text=sections[2][1]
+            text=text.replace('<p>이번에는 구성요소의 USES_PART 관계로',figure('02-quantity-compact','태그 5개와 물리량·단위·한계 확인. unit_limit은 단위 / 한계를 함께 표시한 열')+'<p>이번에는 구성요소의 USES_PART 관계로')
+            sections[2]=(sections[2][0],text+figure('03-parts','구성요소별 교체 부품과 품번 세 연결 확인'))
+            sections[3]=(sections[3][0],sections[3][1]+figure('04-counts','태그 목록과 집계 비교: 쿨러 2개·팬 1개·주 펌프 2개'))
         for file in ['AGENTS.md','CLAUDE.md','.github/copilot-instructions.md']:write(folder/file,rules)
         write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))

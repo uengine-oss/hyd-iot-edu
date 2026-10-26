@@ -5,7 +5,7 @@
 1. Docker가 실행 중인지 확인합니다.
 2. VS Code 터미널에서 `python offline_load.py`를 실행합니다.
 3. 「적재 완료」와 노드 44개·관계 57개를 확인합니다.
-4. `python lab_db.py`로 Browser를 열고 출력된 Connect URL을 사용합니다.
+4. `python lab_db.py`로 Browser를 엽니다. Protocol은 bolt://, Connection URL은 출력 주소의 127.0.0.1:포트 부분, Database user는 neo4j, Password는 빈칸으로 연결합니다.
 5. 질문.cypher의 문장을 하나씩 실행하고 원자료와 대조합니다.
 6. 같은 적재 명령을 다시 실행해 개수가 유지되는지 확인합니다.
 
