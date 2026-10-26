@@ -40,6 +40,7 @@ def test_local_scope_and_duplicate_receipt(task):
     scope=calls[0][2]['process_scope']
     assert scope['instance']==inst['proc_inst_id'] and scope['workitem']==row['id']
     assert json.loads(calls[0][0]['headers']['X-HYD-Process-Scope'])==scope
+    assert calls[0][0]['transport']=='streamable_http'
     events=repo.list_events(todo_id=row['id'])
     assert len(events)==2 and events[0]['data']['tool']=='mcp__hyd-dmn__submit_decision'
     assert events[0]['data']['tool_use_id']==events[1]['data']['tool_use_id']

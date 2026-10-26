@@ -24,11 +24,21 @@ def test_reads_current_registered_student_endpoint(local):
     entries,calls,router=local
     assert router('enterprise/spare_stock',{'part':'P-PMP-SEAL'})=={'is_error':False,'result':{'available':7}}
     assert calls[0][0]['url']=='http://student-enterprise/mcp'
+    assert calls[0][0]['transport']=='streamable_http'
     assert calls[0][1:3]==('spare_stock',{'part':'P-PMP-SEAL'})
     assert calls[0][3]['max_chars']==32000
     entries['enterprise']['url']='http://different-host/mcp'
     assert router('enterprise/spare_stock',{})['is_error']
     assert len(calls)==1
+
+
+def test_base_stdio_configuration_is_normalized_before_call(local):
+    entries,calls,_=local
+    entries['neo4j']={'command':'uvx','args':['mcp-neo4j-cypher'],'env':{'NEO4J_URI':'bolt://student:7687'}}
+    router=ReadRouter(object(),'student-1',['neo4j/read_neo4j_cypher'])
+    assert not router('neo4j/read_neo4j_cypher',{'query':'RETURN 1'})['is_error']
+    assert calls[0][0]['transport']=='stdio'
+    assert calls[0][0]['command']=='uvx'
 
 
 def test_unknown_or_write_tool_cannot_be_selected_by_queue(local):
