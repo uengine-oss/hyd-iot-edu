@@ -182,6 +182,16 @@
     if (e.status >= 400 && e.status < 500) I.gone = { inst: task.proc_inst_id, task: task.id, title: `이미 처리된 ${what}입니다`, text: e.message };
   }
 
+  function handoverInputs(values) {
+    const names = {asset:'설비',as_of:'인계 기준시각',shift_label:'교대',work_notes:'작업 메모',handover_summary:'인계안 요약',sender_notes:'인계자 확인 사항',receiver_notes:'인수자 보완 요청'};
+    const areas = {equipment:'설비 관측',work_orders:'정비 작업지시',parts:'부품·재고',work_notes:'작업 메모 대조'};
+    const states = {observed:'조회 확인',needs_check:'확인 필요',conflict:'기록 불일치'};
+    const rows = Object.entries(values || {}).filter(([k]) => !['checks','evidence'].includes(k)).map(([k,v]) => UI.readonly(names[k] || k,esc(typeof v==='string' ? v : JSON.stringify(v)))).join('');
+    const checks = (Array.isArray(values?.checks) ? values.checks : []).map(c => `<section class="form-section"><h4>${esc(areas[c.area] || c.area)} · ${esc(states[c.state] || c.state)}</h4><p>${esc(c.finding || '')}</p><p><b>다음 근무자가 확인할 일</b> ${esc(c.next_action || '')}</p><p class="field-hint">조회 근거 ${(c.evidence_indices || []).map(i=>esc(String(i+1))).join(', ') || '없음 · 확인 필요'}</p></section>`).join('');
+    const evidence = (Array.isArray(values?.evidence) ? values.evidence : []).map((e,i) => UI.fold(`조회 근거 ${i+1} · ${esc(UI.toolName(e.tool) || e.tool || '도구 기록 없음')}`,`<pre>${esc(JSON.stringify(e,null,2))}</pre>`,{cls:'plain'})).join('');
+    return `<div class="ro-grid">${rows}</div>${checks}${evidence}`;
+  }
+
   function renderTodoPanel() {
     const box = $('#todoPanel');
     const asked = I.asked.find(t => t.proc_inst_id === I.sel);
@@ -216,7 +226,7 @@
     const why = isEscalate ? (task.inputs?.recovered === false ? '효과 확인에서 회복되지 않아 넘어온 사건입니다' : '선택 시간이 지나 넘어온 사건입니다') : (task.description || '');
     const inline = fields.length + 1 <= 2;      // C3: 입력 2개 이하는 카드 안 인라인
     box.innerHTML = `<section class="todo-panel"><div class="detail-head"><div class="row"><h3 style="margin:0">${esc(title)}</h3>${chip(task.status)}<span class="chip tone-neutral sm">${esc(who(task.user_id))}</span></div><div class="sub">${esc(why)}</div></div>
-      ${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')), `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(k, v !== null && typeof v === 'object' ? `<pre>${esc(JSON.stringify(v, null, 2).slice(0, 1500))}</pre>` : esc(String(v)))).join('')}</div>`, { cls: 'plain' }) : ''}
+      ${inputs.length ? UI.fold(esc(UI.t('inst.prevTask')), String(task.form?.contract || '').startsWith('shift-handover-') ? handoverInputs(task.inputs) : `<div class="ro-grid">${inputs.map(([k, v]) => UI.readonly(k, v !== null && typeof v === 'object' ? `<pre>${esc(JSON.stringify(v, null, 2).slice(0, 1500))}</pre>` : esc(String(v)))).join('')}</div>`, { cls: 'plain' }) : ''}
       <div class="form ${inline ? 'inline-form' : ''}">${inline ? `<div class="form-grid">` : `<section class="form-section"><h4>${esc(UI.t('form.section.who'))}</h4><div class="form-grid">`}
         ${window.hydInbox?.byField('td', I.form) || UI.field({ label: UI.t('form.by'), required: true, input: `<input id="tdBy" value="${esc(I.form.by)}">` })}${fields.map(control).join('')}
       ${inline ? '</div>' : '</div></section>'}
