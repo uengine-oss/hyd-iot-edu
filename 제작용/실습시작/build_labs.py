@@ -124,7 +124,7 @@ def pack(folder):
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for file in sorted(folder.rglob('*')):
             if file.is_file() and '__pycache__' not in file.parts and file.name!='.env':
-                z.write(file,Path('02회차/랩')/folder.name/file.relative_to(folder))
+                z.write(file,file.relative_to(folder.parents[2]))
     return archive
 
 def main():
@@ -186,7 +186,7 @@ def main():
             next_link='../'+(LAB4 if number==3 else LAB3)+'/guide.html'
             sections=[('시작하기',f'<p>{start}</p><p>VS Code에서 <a href="START.md">START.md</a>를 열고 이번 요구를 확인하세요.</p><pre>입력/   이전 단계 자료\n자료/   현장 원자료(설계 실습)\n결과/   이번에 만들 결과\nAGENTS.md   작업 규칙</pre>'),('요구 정하기',f'<ol>{qs}</ol><p>자료에서 답의 근거를 찾고 AI에 전달할 목표와 제약을 정리하세요.</p>'),('AI와 만들기',f'<p>{work}</p><p>한 기능의 결과를 확인한 뒤 다음 작업을 요청하세요. 수정 요청에는 입력·기대 결과·실제 결과를 함께 전달하세요.</p><details><summary>요청을 정리할 때 볼 항목</summary><p>만들 결과 / 참고할 자료 / 바꾸지 않을 범위 / 성공을 확인할 사례</p></details>'),('결과 확인하기',f'<pre>{html.escape(command)}</pre><ul>{expected}</ul><p class="check">원자료와 실제 결과를 대조하세요. AI의 완료 메시지는 실행 결과를 대신하지 않습니다.</p>'),('저장하기',f'<p>{outputs}</p><p>저장한 파일을 다시 열어 내용을 확인하고, 보관할 결과를 USB 또는 개인 클라우드에 복사하세요.</p><p>다음 실습은 시작 도구에서 새로 선택합니다. 개인 결과를 가져오지 않아도 시작할 수 있습니다.</p>')]
             if number==4:
-                sections[0]=(sections[0][0],sections[0][1]+'<p>터미널에서 아래 명령을 실행하세요. Docker가 실행 중이어야 합니다.</p><pre>python lab_db.py</pre><p>「랩 DB 준비 완료」가 나오면 열린 Browser의 Connect URL에 출력된 bolt 주소를 넣으세요. Username은 neo4j, Password는 비워 둡니다. 연결 정보는 랩_연결.json에도 저장됩니다.</p>')
+                sections[0]=(sections[0][0],sections[0][1]+'<p>터미널에서 아래 명령을 실행하세요. Docker가 실행 중이어야 합니다.</p><pre>python lab_db.py</pre><p>「랩 DB 준비 완료」가 나오면 열린 Browser의 Protocol에서 bolt://를 선택하고 Connection URL에는 출력 주소의 127.0.0.1:포트 부분만 넣으세요. Database user는 neo4j, Password는 비워 두고 Connect를 누릅니다. 연결 정보는 랩_연결.json에도 저장됩니다.</p>')
                 figures='<p>공유 부품 조회 예시입니다. 각 품번의 사용 설비를 원자료와 대조하세요.</p><img src="images/part-usage.png" alt="세 부품 각각에 HYD-01, HYD-02, HYD-03이 조회된 실제 Neo4j 결과">'
                 if practical:
                     figures+='<p>P-PMP-SEAL의 공급 조건입니다. 승인 여부와 함께 단가(만원), 불량률, 납기(일)를 확인하세요. 0.12는 12%입니다.</p><img src="images/supplier-conditions.png" alt="P-PMP-SEAL의 공급사 3곳과 승인 여부, 단가, 불량률, 납기 조회 결과">'
