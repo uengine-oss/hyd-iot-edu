@@ -143,7 +143,8 @@ class Authority:
             approval=(grant['policy'].get('agents') or {}).get(reference)
             if not isinstance(approval,dict) or 'agent_run' not in grant['policy']['actions']:
                 raise Denied('강사가 승인한 에이전트 작업 판본이 아닙니다')
-            return dict(subject=grant['subject'],approval=approval)
+            return dict(subject=grant['subject'],approval=approval,
+                        responses=(grant['policy'].get('responses') or {}).get(reference) or {})
 
     def charge(self, key, run_id, *, input_bytes, max_output_tokens):
         """Reserve the full output cap before a call, including retries. Unknown

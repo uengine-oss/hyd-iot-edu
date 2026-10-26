@@ -122,6 +122,11 @@ class Client:
         run_id=self.agent_run_for(task,run_id)
         return self.request('POST','/v1/classroom/agents/runs/'+run_id+'/cancel')
 
+    def respond_agent(self,task,run_id,kind,request_id,text):
+        run_id=self.agent_run_for(task,run_id)
+        return self.request('POST','/v1/classroom/agents/runs/'+run_id+'/respond',
+                            {'kind':kind,'request_id':request_id,'text':text})
+
     def agent_run_for(self,task,run_id):
         run_id=str(UUID(run_id))
         with self.db() as db:

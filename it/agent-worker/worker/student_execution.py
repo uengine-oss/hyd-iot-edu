@@ -7,10 +7,12 @@ import time
 
 from fastapi.encoders import jsonable_encoder
 from procsvc import classroom_agents,handover,manual_extraction
+from procsvc import task_deferral
+from procsvc.classroom_authority import digest
 from procsvc.agents_store import agent_settings,activity_capabilities
 from procsvc.classroom_read_tools import TaskRouter
 from procsvc.instances import InstanceRuntime
-from . import outcome
+from . import outcome,workspace
 
 
 class LocalRuntime:
@@ -77,10 +79,37 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
     runner._event(row,job_id,'task_started',{'name':'승인된 관리 에이전트 실행','managed_run':run},crew_type='agent')
     deadline=min(deadline,time.monotonic()+binding['max_seconds'])
     try:
+        feedback=row.get('feedback') or {}
+        request_id=feedback.get('job_id') if ctx.human_answer else (feedback.get('reassessment') or {}).get('deferral_id')
+        if request_id:
+            mappings=[e['data'] for e in runner.repo.list_events(todo_id=row['id'],limit=None)
+                      if e['job_id']=='CLASSROOM_CONTROL' and e['data'].get('local_request_id')==request_id]
+            if len(mappings)!=1 or mappings[0]['run_id']!=run:
+                raise RunFailed('학생 보완 답변과 원격 질문의 연결을 확인할 수 없습니다')
+            link=mappings[0]
+            text=ctx.human_answer or feedback['reassessment']['reason']
+            wait(client.respond_agent,task,run,link['kind'],link['request_id'],text)
         while True:
             check()
             router.claim()
             value=wait(client.agent_result,task,run)
+            if value['status'] in ('NEEDS_INPUT','DEFERRED'):
+                with runner.repo.instance_transaction(runtime.tenant_id,row['proc_inst_id']):
+                    router.claim()
+                    if value['status']=='NEEDS_INPUT':
+                        runner._pause(row,workspace.for_run(runner.s.workspace_root,row['id'],tenant_id=runtime.tenant_id),
+                                      'managed-classroom','',value['question'],job_id,options=value.get('options') or [])
+                        local_id=runner.repo.get_workitem(row['id'])['draft']['_human_request']['job_id']
+                        kind='human_answer'
+                    else:
+                        local_id='managed:'+digest([run,value['request_id']])
+                        task_deferral.defer(runner.repo,runtime.tenant_id,row['id'],expected_consumer=row['consumer'],
+                            request_id=local_id,assessment=value['assessment'])
+                        kind='reassessment'
+                    runner.repo.record_events([{'job_id':'CLASSROOM_CONTROL','todo_id':row['id'],
+                        'proc_inst_id':row['proc_inst_id'],'crew_type':'agent','event_type':'classroom_control',
+                        'data':{'run_id':run,'request_id':value['request_id'],'local_request_id':local_id,'kind':kind}}])
+                return
             if value['status']=='DONE':
                 result=outcome.interpret(json.dumps(value['output'],ensure_ascii=False),ctx.form_fields,versioned=True)
                 if not result.contract_met:raise RunFailed(result.mismatch_reason)

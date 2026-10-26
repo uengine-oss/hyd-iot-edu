@@ -22,11 +22,12 @@ def local(rt,tmp_path,monkeypatch):
     monkeypatch.setattr(mcp_check,'call',lambda *a,**kw:{'status':'ok','result':{
         'text':'{"available":7}','json':True,'is_error':False}})
     class Client:
-        def __init__(self):self.starts=[];self.cancelled=[];self.results=0;self.reads=[]
+        def __init__(self):self.starts=[];self.cancelled=[];self.results=0;self.reads=[];self.run=str(uuid4());self.responses=[]
         def agent_contract(self,*args):
             return {'approval':deepcopy(approval),'reference':'lesson.draft','max_seconds':60,
                     'tools':[{'server':'enterprise','name':'spare_stock'}]}
-        def start_agent(self,*args):self.starts.append(args);return str(uuid4())
+        def start_agent(self,*args):self.starts.append(args);return self.run
+        def respond_agent(self,*args):self.responses.append(args);return {'status':'QUEUED'}
         def agent_result(self,*args):
             self.results+=1
             return {'status':'PENDING'} if self.results==1 else {'status':'DONE','output':{'answer':'확인 필요'}}
@@ -108,3 +109,31 @@ def test_deadline_stops_waiting_and_requests_remote_cancel(local):
     client.agent_result=result
     with pytest.raises(RunFailed):student_execution.execute(runner,row,ctx,'test',client,sleep=lambda _:None)
     assert len(client.starts)==1 and len(client.cancelled)==1
+
+
+@pytest.mark.parametrize('kind',['human_answer','reassessment'])
+def test_question_or_deferral_returns_to_student_and_resumes_same_run(local,monkeypatch,kind):
+    from procsvc import task_deferral
+    runtime,_,inst,_,client,runner=local
+    monkeypatch.setattr(student_execution,'configured',lambda _:client)
+    def result(*args):
+        if client.responses:return {'status':'DONE','output':{'answer':'보완 확인'}}
+        if kind=='human_answer':return {'status':'NEEDS_INPUT','request_id':'teacher-question','question':'실재고를 확인했나요?'}
+        return {'status':'DEFERRED','request_id':'teacher-deferral','assessment':{
+            'status':'UNKNOWN','reason':'실재고 확인 필요','evidence':{}}}
+    client.agent_result=result
+    assert runner.poll_once()==1
+    row=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
+    assert not row.get('output') and not client.cancelled
+    if kind=='human_answer':
+        assert row['draft_status']=='HUMAN_ASKED'
+        runtime.human_response(row['id'],row['draft']['_human_request']['job_id'],'실재고 확인','student')
+    else:
+        assert row['status']=='PENDING'
+        task_deferral.reassess(runtime.repo,runtime.tenant_id,row['id'],deferral_id=row['draft']['_deferral']['id'],
+            request_id='local-recheck',by='student',reason='실재고 확인')
+    assert runner.poll_once()==1
+    assert runtime.repo.get_workitem(row['id'])['status']=='SUBMITTED'
+    assert client.responses==[(runtime.tenant_id+':'+row['id'],client.run,kind,
+                              'teacher-question' if kind=='human_answer' else 'teacher-deferral','실재고 확인')]
+    assert not client.cancelled
