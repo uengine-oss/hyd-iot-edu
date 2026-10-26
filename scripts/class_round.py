@@ -1789,6 +1789,8 @@ def lab_07_mcp_tools(r: Round):
         toast = _b_mcp_probe(r, _B_MCP_NAME)
         ok, why = r.human_message(toast)
         r.check("서버를 끄고 연결 검사 → 실패(연결 거부) · 사람 글", "실패" in toast and ok, why, kind="exception")
+        # 검사 결과로 상세 머리(gateLine)가 다시 그려질 때까지(final5: 토스트 직후 옛 상세를 읽음 — 카드에는 이미 「연결 검사 실패」)
+        r.wait(15, lambda: "고를 수 없음" in page.locator("#mcpDetail").inner_text(), every=1)
         r.check("검사 실패 뒤 「에이전트 도구로 고를 수 없음」", "고를 수 없음" in page.locator("#mcpDetail").inner_text(), kind="exception")
         off = _b_ask(r, agent_id, q)
         r.check("서버가 꺼졌을 때 질문 → 표 값을 지어내지 않는다", not ("customer@example.com" in off["answer"] and off.get("kind") == "answered"),
