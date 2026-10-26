@@ -204,12 +204,23 @@ def _participants(extras: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+INLINE_INPUT_LIMIT = 8000
+
+
+def input_payload(row: dict[str, Any], extras: dict[str, Any]):
+    return row.get("output") or row.get("draft") or extras.get("sensitive_data")
+
+
 def _inputs(row: dict[str, Any], extras: dict[str, Any]) -> str:
-    payload = row.get("output") or row.get("draft") or extras.get("sensitive_data")
+    payload = input_payload(row, extras)
     if not payload:
         return ""
     if not isinstance(payload, str):
         payload = json.dumps(payload, ensure_ascii=False, indent=2)
+    if len(payload) > INLINE_INPUT_LIMIT:
+        return (payload[:INLINE_INPUT_LIMIT] + f'\n…[truncated: {len(payload)-INLINE_INPUT_LIMIT}자 생략]\n'
+                '전체 입력은 context/input.json에 보존되어 있습니다. 피드백과 관련된 항목만 찾아 읽고 수정하세요. '
+                '위 발췌는 잘린 데이터이며 완전한 JSON이 아닐 수 있습니다.')
     return payload
 
 

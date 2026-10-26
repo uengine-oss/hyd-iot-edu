@@ -150,6 +150,7 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
             options[-1]['detail'] = {k: _capped(o[k]) for k in DETAIL_FIELDS if o.get(k) not in (None, [], {})}
     return {k: v for k, v in {
         'id': rec.get('id'), 'status': rec.get('status'), 'asset': rec.get('asset'), 'scenario': rec.get('scenario'),
+        'part': (rec.get('origin') or {}).get('part'),
         'recommended': rec.get('recommended'), 'explanation': rec.get('explanation') or r.get('explanation'),
         'facts': rec.get('facts'), 'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
         'options': options, 'error': rec.get('error'),
@@ -325,7 +326,8 @@ class DmnTools:
         return dict(pattern='SPARE_BELOW_MIN', route='purchase-part', part=part, procedures=procedures,
                     basis='실제 ERP 재주문점 이탈 부품 → Part ← INVOLVES_PART ← 원문 구매 Skill ← ERP')
 
-    def _purchase_decision(self, asset, part_no, *, incident=None, alert_id=None, overrides=None, process_scope=None, submit=False):
+    def _purchase_decision(self, asset, part_no, *, incident=None, alert_id=None, overrides=None, process_scope=None, submit=False,
+                           detail_option=None):
         if submit and overrides:
             raise ValueError('가정 구매 facts는 읽기 전용 evaluate_purchase에서만 사용합니다')
         part = self._purchase_part(asset, part_no)
@@ -341,10 +343,11 @@ class DmnTools:
             if rec.get('error_code') in BUSINESS_ERRORS:
                 raise ValueError(rec['error'])
             raise failure(rec, '원문 구매 후보 계산')
-        return registered(rec, '원문 구매 판단') if submit else read_outcome(rec, '원문 구매 후보 계산')
+        return agent_view(registered(rec, '원문 구매 판단')) if submit else read_outcome(rec, '원문 구매 후보 계산', detail_option)
 
-    def evaluate_purchase(self, asset: str, part_no: str, overrides: dict | None = None) -> dict:
-        return self._purchase_decision(asset, part_no, overrides=overrides)
+    def evaluate_purchase(self, asset: str, part_no: str, overrides: dict | None = None,
+                          detail_option: str | None = None) -> dict:
+        return self._purchase_decision(asset, part_no, overrides=overrides, detail_option=detail_option)
 
     def submit_purchase(self, asset: str, part_no: str, incident: str, alert_id: str | None = None,
                         process_scope: dict | None = None) -> dict:

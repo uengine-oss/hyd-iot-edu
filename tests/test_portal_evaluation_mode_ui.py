@@ -123,7 +123,7 @@ def test_real_trial_and_whatif_producers_show_analysis_scope_in_actual_renderers
 def test_real_purchase_request_candidate_shows_business_values_in_approval_head(page,part_pipeline):
     tools,*_=part_pipeline
     output=tools.evaluate_purchase('HYD-03','P-KIT')
-    record=output.get('document',output)
+    record=tools.registry.get(output['id'])  # approval renders the stored full record, not the MCP summary
     result=record['result']
     result={**result,'facts':record['facts'],'origin':record['origin']}
     assert any(a['code']=='PR_CREATE' for o in result['options'] for a in o['actions'])
@@ -143,7 +143,8 @@ def test_dynamic_purchase_policies_show_exact_supplier_quote_and_excluded_other_
     produced=[]
     for policy in ['oem','lowest_approved','fastest_quote']:
         skills['skill:purchase'].update(policy_skill(policy));facts['spare_quotes']=quotes()
-        record=tools.evaluate_purchase('HYD-03','P-KIT')
+        output=tools.evaluate_purchase('HYD-03','P-KIT')
+        record=tools.registry.get(output['id'])
         option=deepcopy(record['result']['options'][0])
         option['id']=option['id']+'-'+policy
         produced.append(option)

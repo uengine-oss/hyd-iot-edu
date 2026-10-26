@@ -313,11 +313,11 @@
       const titles=list(d.procedures.map(p=>p?.name && p.name!==p.id ? p.name : '절차 표시 이름 기록 없음'),3);
       return [purchasePart(d.part),`원문 구매 절차 ${d.procedures.length}개`,titles,`실행 후보 검토 대상 ${execution}개`,`참고 보관 ${reference}개`,unknown ? `사용 방식 기록 미확인 ${unknown}개` : '', '부족 부품과 등록 부품의 근거 조회 · 판단 등록 없음'].filter(Boolean).join(' · ');
     }
-    if (!d.result || !Array.isArray(d.result.options) || d.result.options.some(o=>!o || typeof o!=='object' || Array.isArray(o))) return '구매 후보 · 판단 결과 형식을 확인하세요. 원문은 상세에 보존되어 있습니다.';
-    const options=d.result.options, recommended=d.result.recommended ?? d.recommended;
+    const options=d.options ?? d.result?.options, recommended=d.recommended ?? d.result?.recommended;
+    if (!Array.isArray(options) || options.some(o=>!o || typeof o!=='object' || Array.isArray(o))) return '구매 후보 · 판단 결과 형식을 확인하세요. 원문은 상세에 보존되어 있습니다.';
     const chosen=options.find(o=>o.id===recommended), label=chosen?.name && chosen.name!==chosen.id ? chosen.name : recommended ? (W.idName(recommended)!==recommended ? W.idName(recommended) : '추천 조치 표시 이름 기록 없음') : '';
     const quotes=chosen ? [purchaseQuote(chosen),W.purchaseCostSummary(chosen)].filter(Boolean).join(' · ') : list(options.map(o=>[purchaseQuote(o),W.purchaseCostSummary(o)].filter(Boolean).join(' · ')),3);
-    const evidence=[purchasePart(d.origin?.part) || '부품 근거 기록 없음',typeof d.facts?.need_qty==='number' ? `필요 수량 ${W.num(d.facts.need_qty)}개` : '',`구매 후보 ${options.length}개`,options.some(o=>o.feasible===false) ? `규정 등으로 제외 ${options.filter(o=>o.feasible===false).length}개` : '',label ? `추천 ‘${label}’` : '추천 기록 없음',quotes].filter(Boolean);
+    const evidence=[purchasePart(d.part ?? d.origin?.part) || '부품 근거 기록 없음',typeof d.facts?.need_qty==='number' ? `필요 수량 ${W.num(d.facts.need_qty)}개` : '',`구매 후보 ${options.length}개`,options.some(o=>o.feasible===false) ? `규정 등으로 제외 ${options.filter(o=>o.feasible===false).length}개` : '',label ? `추천 ‘${label}’` : '추천 기록 없음',quotes].filter(Boolean);
     if (name==='evaluate_purchase') {
       const state=d.status==='NO_FEASIBLE_OPTION' ? '추천 가능한 구매 후보 없음' : d.status==='REJECTED_BY_GUARDRAIL' ? '검사 규칙으로 구매 판단 중단' : d.status==='EVALUATED' ? '후보 비교 완료' : '후보 비교 상태 기록 확인 필요';
       return [state,'조회 · 계산 결과이며 판단 등록 · 승인 · 실행 아님',...evidence].join(' · ');

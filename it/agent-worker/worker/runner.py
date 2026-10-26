@@ -109,6 +109,7 @@ class Runner:
 
     # ---- one run
     def run(self, row: dict, ctx: context.Context, job_id: str) -> None:
+        deadline = time.monotonic() + self.s.run_timeout_s
         caps = context.activity_capabilities(ctx.definition, row.get("activity_id") or "")
         config = caps.get("agent_config") or {}
         # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
@@ -172,6 +173,7 @@ class Runner:
                                                       + ", ".join(f"{n}({why})" for n, why in gate.dropped.items())}, crew_type="agent")
         extras = dict(ctx.extras, agent_instructions=agent.instructions(SKILL_ROOTS.get(provider_id, SKILL_ROOTS["claude-code"]),
                                                                       skills_inline=provider_id == 'codex'))
+        (ws.context_dir / 'input.json').write_text(json.dumps(prompt.input_payload(row, extras), ensure_ascii=False, indent=2), encoding='utf-8')
         bridged = bridge.install(ws.path, tenant_mcp, provider_id=provider_id, isolate_config_dir=self.s.isolate_config_dir,
                                  host_rewrite=bridge.parse_host_rewrite(self.s.mcp_host_rewrite), read_tools=gate.read_tools,
                                  run_headers={"X-HYD-Process-Scope": json.dumps(context.process_scope(row), separators=(",", ":"))})
@@ -218,7 +220,7 @@ class Runner:
                                                       skills=provided, skills_missing=list(agent.missing_skills)), crew_type="result")
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
-                                                       redaction_values=bridged.redaction_values)
+                                                       redaction_values=bridged.redaction_values, deadline=deadline)
         assessment = task_deferral.control(final_text)
         if assessment is None:      # A151 (55): the deferral may come through the result file, like any other result (A119)
             file_text = outcome.deferral_in_result_file(ws.result_file, self.s.max_result_file_bytes)
@@ -251,7 +253,7 @@ class Runner:
             request = replace(request, prompt=_deliver_prompt(correction, ws, self.s.max_inline_prompt_chars, provider_id=provider_id),
                               resume_session=session_id)
             final_text, resumed, _ = self._stream(row, job_id, provider, request, bridged.env or None, crew, trace_path=ws.path / f"{job_id}.events.jsonl",
-                                                  skills=provided, redaction_values=bridged.redaction_values)
+                                                  skills=provided, redaction_values=bridged.redaction_values, deadline=deadline)
             session_id = resumed or session_id
             result = interpret(final_text)
         if not result.contract_met:
@@ -269,10 +271,13 @@ class Runner:
         log.info("%s %s submitted (%s) from %s", row.get("proc_inst_id"), row.get("activity_id"), ", ".join(sorted(result.outputs)) or "text", result.source)
 
     def _stream(self, row: dict, job_id: str, provider, request: ExecRequest, env: dict | None, crew: str, trace_path=None,
-                skills: list[dict] | None = None, redaction_values: list[str] | None = None) -> tuple[str, str | None, str | None]:
+                skills: list[dict] | None = None, redaction_values: list[str] | None = None,
+                deadline: float | None = None) -> tuple[str, str | None, str | None]:
         """Forward progress to the events table; stop when a person cancels. Returns (final text, session, pause reason)."""
         final_text, session_id, pause_reason, streamed, pending_rows, last_error = "", None, None, [], [], None
-        last_check, deadline = time.monotonic(), time.monotonic() + self.s.run_timeout_s
+        last_check = time.monotonic()
+        if deadline is None:
+            deadline = last_check + self.s.run_timeout_s
         last_renew = time.monotonic()
         outage = {"since": None}
         def db_ok():
@@ -315,6 +320,7 @@ class Runner:
                     if self._cancelled(row):raise Cancelled()
             if time.monotonic()>deadline:
                 raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
+        check_stop()
         gen = (_exec_stream(provider,request,env,check_stop=check_stop) if self.exec_fn is _exec_stream
                else self.exec_fn(provider,request,env))
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
@@ -323,6 +329,8 @@ class Runner:
         from uuid import uuid4
         public_run = uuid4().hex
         public_message, public_sequence, public_parts = 0, 0, []
+        public_sent = 0
+        public_chars = 0
         public_last_sent = None
         skill_reads = ui_events.SkillReads(skills)            # A161-G1: a skill file the agent opens becomes a skill_used row
         def emit(ui):
@@ -359,13 +367,16 @@ class Runner:
                 if ev.kind is ExecEventKind.ASSISTANT_TEXT:
                     notes.add(ev.text)
                     public_parts.append(ev.text or '')
+                    public_chars += len(ev.text or '')
                     public_now = time.monotonic()
                     if public_last_sent is None or public_now-public_last_sent >= .25:
                         public_last_sent = public_now
                         public_sequence += 1
-                        emit(ui_events.UiEvent('assistant_note',dict(type='public_text',content=''.join(public_parts),
+                        emit(ui_events.UiEvent('assistant_note',dict(type='public_text',content=''.join(public_parts[public_sent:]),
+                            content_mode='delta',
                             public_run=public_run,message_id=f'{public_run}:{public_message}',
-                            sequence=public_sequence,complete=False,chars=sum(map(len,public_parts)),truncated=False)))
+                            sequence=public_sequence,complete=False,chars=public_chars,truncated=False)))
+                        public_sent = len(public_parts)
                 elif ev.kind in ui_events.NOTE_BOUNDARY:
                     note = notes.flush(final_text=ev.text if ev.kind is ExecEventKind.RESULT else None)
                     if public_parts:
@@ -375,6 +386,8 @@ class Runner:
                             sequence=public_sequence,complete=True,truncated=False)))
                         public_message += 1
                         public_parts = []
+                        public_sent = 0
+                        public_chars = 0
                         public_last_sent = None
                 for ui in ui_events.translate(ev):
                     if ui.type == 'tool_start':

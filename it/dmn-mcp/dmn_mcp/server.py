@@ -152,9 +152,10 @@ def purchase_context(asset: Asset, part_no: Annotated[str, Field(description='�
 
 
 @mcp.tool(annotations=READ)
-def evaluate_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')], overrides: Overrides = None) -> dict:
+def evaluate_purchase(asset: Asset, part_no: Annotated[str, Field(description='실제 ERP 부족부품 번호')], overrides: Overrides = None,
+                      detail_option: Annotated[str | None, Field(description='상세 근거를 볼 카드 id 또는 SOP ID')] = None) -> dict:
     """명시 Part 범위의 실행 구매 SOP만 계산한다. 조회/계산이며 ERP 발주·메일 발송을 하지 않는다."""
-    return enveloped(lambda: tools.evaluate_purchase(asset, part_no, overrides))()
+    return enveloped(lambda: tools.evaluate_purchase(asset, part_no, overrides, detail_option))()
 
 
 @mcp.tool(annotations=WRITE)

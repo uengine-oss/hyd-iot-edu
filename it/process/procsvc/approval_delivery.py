@@ -5,9 +5,12 @@ crash rolls back the delivery marker, so external operations must be idempotent
 under the saved decision/skill key. PLC commands are reached only afterwards.
 """
 from copy import deepcopy
+import logging
 
 from hydcommon.timeutil import now_iso
 from . import decisions, engine, rework_effects
+
+log = logging.getLogger(__name__)
 
 
 class ApprovalDelivery:
@@ -115,8 +118,13 @@ class ApprovalDelivery:
             if not rows:
                 return count
             for row in rows:
-                self.deliver_approval(row['todo_id'], now=now)
-                count += 1
+                try:
+                    self.deliver_approval(row['todo_id'], now=now)
+                    count += 1
+                except Exception:
+                    # The instance transaction rolls back; preserve its pending
+                    # intent while allowing unrelated approvals and tasks to run.
+                    log.exception('approval reconciliation failed for %s', row['todo_id'])
             after = rows[-1]['todo_id']
 
     def deliver_approval(self, wid, now=None):

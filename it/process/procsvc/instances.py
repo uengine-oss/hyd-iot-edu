@@ -1018,7 +1018,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         now = now or datetime.now(timezone.utc)
         fired = []
         for wi in self.repo.due_timers(self.tenant_id,now):
-            if self._fire_timeout(wi,now):fired.append(self.repo.get_workitem(wi['id']))
+            try:
+                if self._fire_timeout(wi,now):
+                    fired.append(self.repo.get_workitem(wi['id']))
+            except Exception:
+                # A failed transition remains due; it must not starve other
+                # instances' timers or be reported as having fired.
+                log.exception('timer reconciliation failed for %s', wi['id'])
         return fired
 
     @workitem_transition

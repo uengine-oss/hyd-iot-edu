@@ -145,6 +145,25 @@ def test_committed_intent_recovers_after_dispatch_is_lost(world, monkeypatch):
     assert world['book'][d['id']]['chosen'] == d['options'][0]['id']
 
 
+def test_broken_approval_does_not_starve_committed_delivery_or_poll(world, monkeypatch, caplog):
+    rt, inst, inc, d, wi = ready(world)
+    with monkeypatch.context() as patch:
+        patch.setattr(rt, '_after_commit', lambda *a, **k: None)
+        choose(rt, d, wi)
+    pending = rt.repo.pending_approvals
+
+    def with_orphan(tenant, after_id=None):
+        rows = pending(tenant, after_id=after_id)
+        return [{'todo_id': 'missing-workitem'}] + rows if after_id is None else rows
+
+    monkeypatch.setattr(rt.repo, 'pending_approvals', with_orphan)
+    rt.poll_once(now=NOW)
+    assert rt.repo.get_approval(wi['id'], rt.tenant_id)['status'] == 'DELIVERED'
+    assert rt.repo.get_workitem(wi['id'])['status'] == 'DONE'
+    assert inc.cmd_id
+    assert 'approval reconciliation failed for missing-workitem' in caplog.text
+
+
 def test_snapshot_failure_leaves_recoverable_approval_and_blocks_plc(world, monkeypatch):
     rt, inst, inc, d, wi = ready(world)
     def fail():

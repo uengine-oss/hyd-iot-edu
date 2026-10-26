@@ -192,6 +192,32 @@ def test_selection_timeout_fires_only_when_due(rt):
     assert "SELECT_TIMEOUT" in hooks.audits
 
 
+def test_bad_timer_rolls_back_without_starving_next_instance(rt, monkeypatch, caplog):
+    rt, hooks = rt
+    first = rt.on_alert_raise(ALERT, now=NOW)
+    _agent_tasks(rt)
+    second = rt.on_alert_raise(dict(ALERT, alertId='other-alert', asset='HYD-02'), now=NOW)
+    _agent_tasks(rt)
+    bad = _by(rt, first, 'ev:select-timeout')
+    good = _by(rt, second, 'ev:select-timeout')
+    update = rt.repo.update_instance
+
+    def fail_first(inst):
+        if inst['proc_inst_id'] == first['proc_inst_id']:
+            raise RuntimeError('injected timer persistence failure')
+        return update(inst)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(rt.repo, 'update_instance', fail_first)
+        fired = rt.fire_timeouts(now=NOW + timedelta(seconds=31))
+    assert [row['id'] for row in fired] == [good['id']]
+    assert rt.repo.get_workitem(bad['id'])['status'] == 'IN_PROGRESS'
+    assert _by(rt, first, 'task:select')['status'] == 'IN_PROGRESS'
+    assert _by(rt, second, 'task:select')['status'] == 'CANCELLED'
+    assert 'timer reconciliation failed for ' + bad['id'] in caplog.text
+    assert [row['id'] for row in rt.fire_timeouts(now=NOW + timedelta(seconds=32))] == [bad['id']]
+
+
 def test_pending_item_stays_pending_and_the_engine_moves_on(rt):
     rt, hooks = rt
     inst = rt.on_alert_raise(ALERT, now=NOW)
