@@ -15,6 +15,113 @@ from test_worker import _settings
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable fully migrated process PostgreSQL')
 
 
+def test_instructor_import_reviews_changes_and_preserves_unrelated_data(pg,rt):
+    from procsvc import classroom_manifest as m
+    from test_classroom_manifest import candidate
+    _,runtime,_=pg;memory,_=rt;memory.tenant_id=runtime.tenant_id
+    value=candidate(memory)
+    runtime.repo.write_skill(dict(tenant_id=runtime.tenant_id,skill_name='unrelated',description='',content='keep',origin='user'),create=True)
+    review=m.review_target(runtime,value)
+    assert set(review['changes'])=={'definition','agent','skill:student-check','assignment'}
+    result=m.apply_candidate(runtime,value,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    assert result['permission_granted'] is False
+    assert m.export_candidate(runtime,value['approval'])==value
+    assert runtime.repo.get_skill(runtime.tenant_id,'unrelated')['content']=='keep'
+    repeat=m.review_target(runtime,value)
+    assert repeat['changes']==[]
+    assert m.apply_candidate(runtime,value,fingerprint=repeat['fingerprint'],target_fingerprint=repeat['target_fingerprint'])['changes']==[]
+    profile=memory.repo.list_users(['agent:student'],memory.tenant_id)[0]
+    memory.repo.write_agent(dict(profile,goal='새 인계 지시'),['student-check'],create=False)
+    updated=m.export_candidate(memory,value['approval'])
+    review=m.review_target(runtime,updated)
+    assert review['changes']==['agent']
+    m.apply_candidate(runtime,updated,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    assert runtime.repo.list_users(['agent:student'],runtime.tenant_id)[0]['goal']=='새 인계 지시'
+
+
+def test_instructor_grant_checks_imported_revision_and_keeps_usage(pg,rt):
+    from copy import deepcopy
+    from datetime import datetime,timedelta,timezone
+    from uuid import uuid4
+    import psycopg
+    from psycopg.rows import dict_row
+    from procsvc import classroom_admin,classroom_manifest as m
+    from procsvc.classroom_authority import Authority,Denied,key_hash
+    from test_classroom_authority_pg import POLICY
+    from test_classroom_manifest import candidate
+    _,runtime,_=pg;memory,_=rt;memory.tenant_id=runtime.tenant_id
+    value=candidate(memory);review=m.review_target(runtime,value)
+    m.apply_candidate(runtime,value,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    auth=Authority(lambda:psycopg.connect(DSN,row_factory=dict_row))
+    key='instructor-import-'+uuid4().hex
+    policy=deepcopy(POLICY);policy['documents']={}
+    policy['actions']['agent_run']=policy['actions'].pop('manual_extract')
+    policy['agents']={'student-draft':value['approval']}
+    args=dict(key=key,subject=runtime.tenant_id,scope='lesson-v1',policy=policy,
+              expires_at=datetime.now(timezone.utc)+timedelta(hours=1))
+    try:
+        with pytest.raises(Denied,match='저장소'):
+            classroom_admin.approve(auth,None,**args)
+        first=classroom_admin.approve(auth,None,runtime=runtime,**args)
+        assert first['calls']==0
+        with auth.connect() as db:
+            db.execute('update hyd_classroom_grants set calls=1,input_bytes=17,output_tokens=9 where key_hash=%s',(key_hash(key),))
+        updated=classroom_admin.approve(auth,None,runtime=runtime,**dict(args,scope='lesson-v2'))
+        assert (updated['calls'],updated['input_bytes'],updated['output_tokens'])==(1,17,9)
+        runtime.repo.write_agent(dict(value['profile'],goal='unapproved',tenant_id=runtime.tenant_id),value['agent_skills'],create=False)
+        with pytest.raises(Denied,match='판본'):
+            classroom_admin.approve(auth,None,runtime=runtime,**dict(args,scope='lesson-v3'))
+        with auth.connect() as db:
+            assert db.execute('select scope from hyd_classroom_grants where key_hash=%s',(key_hash(key),)).fetchone()['scope']=='lesson-v2'
+    finally:
+        with auth.connect() as db:
+            db.execute('delete from hyd_classroom_grants where key_hash=%s',(key_hash(key),))
+
+
+def test_instructor_import_rejects_stale_review_live_work_and_rolls_back(pg,rt,monkeypatch):
+    from procsvc import classroom_manifest as m
+    from procsvc.classroom_authority import Denied
+    from test_classroom_manifest import candidate
+    _,runtime,_=pg;memory,_=rt;memory.tenant_id=runtime.tenant_id
+    value=candidate(memory);review=m.review_target(runtime,value)
+    with pytest.raises(Denied,match='후보'):
+        m.apply_candidate(runtime,value,fingerprint='wrong',target_fingerprint=review['target_fingerprint'])
+    original=runtime.repo.upsert_proc_def
+    def fail(*args,**kwargs):raise RuntimeError('injected import failure after profile and skills')
+    monkeypatch.setattr(runtime.repo,'upsert_proc_def',fail)
+    with pytest.raises(RuntimeError,match='injected'):
+        m.apply_candidate(runtime,value,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    assert not runtime.repo.list_users(['agent:student'],runtime.tenant_id)
+    assert runtime.repo.get_skill(runtime.tenant_id,'student-check') is None
+    monkeypatch.setattr(runtime.repo,'upsert_proc_def',original)
+    runtime.repo.write_skill(dict(value['skills'][0],tenant_id=runtime.tenant_id,origin='user'),create=True)
+    with pytest.raises(Denied,match='대상 내용'):
+        m.apply_candidate(runtime,value,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    review=m.review_target(runtime,value)
+    m.apply_candidate(runtime,value,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    runtime.start_definition(value['approval']['definition'],'1','live-import-guard',values={'memo':'진행'})
+    profile=memory.repo.list_users(['agent:student'],memory.tenant_id)[0]
+    memory.repo.write_agent(dict(profile,goal='실행 중 변경'),['student-check'],create=False)
+    changed=m.export_candidate(memory,value['approval']);review=m.review_target(runtime,changed)
+    assert review['live_work'] and not review['applicable']
+    with pytest.raises(Denied,match='진행 중'):
+        m.apply_candidate(runtime,changed,fingerprint=review['fingerprint'],target_fingerprint=review['target_fingerprint'])
+    assert runtime.repo.list_users(['agent:student'],runtime.tenant_id)[0]['goal']==value['profile']['goal']
+
+
+def test_import_boundary_excludes_ordinary_authoring_writers(pg):
+    import psycopg
+    _,runtime,_=pg
+    # A separate portal/worker connection does not take the import advisory lock.
+    # Its normal SQL must still be excluded from the review/apply transaction.
+    with runtime.repo.classroom_authoring_transaction(runtime.tenant_id):
+        with psycopg.connect(DSN) as other:
+            other.execute("set local lock_timeout='100ms'")
+            with pytest.raises(psycopg.errors.LockNotAvailable):
+                other.execute('update users set goal=goal where tenant_id=%s',(runtime.tenant_id,))
+            other.rollback()
+
+
 def test_authored_candidate_exports_identically_from_real_pg(pg,rt):
     from procsvc import classroom_manifest
     from test_classroom_manifest import candidate

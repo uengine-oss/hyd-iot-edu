@@ -14,7 +14,29 @@ import re
 from .classroom_authority import Denied, key_hash, validate_policy
 
 
-def approve(authority, archive, *, key, subject, scope, expires_at, policy):
+def approve(authority, archive, *, key, subject, scope, expires_at, policy, runtime=None):
+    validate_policy(policy)
+    agents = policy.get('agents') or {}
+    if not isinstance(agents, dict):
+        raise Denied('에이전트 승인 목록이 올바르지 않습니다')
+    if 'agent_run' in policy['actions'] and not agents:
+        raise Denied('에이전트 실행을 허용하려면 승인 판본이 필요합니다')
+    if not agents:
+        return _approve(authority, archive, key=key, subject=subject, scope=scope, expires_at=expires_at, policy=policy)
+    if runtime is None or runtime.tenant_id != subject:
+        raise Denied('승인할 교육 공간의 실제 작업 저장소가 필요합니다')
+    from .classroom_agents import checked
+    # Import and grant may use different DBs. Commit source import first;
+    # grant only after rechecking it under the same authoring boundary.
+    with runtime.repo.classroom_authoring_transaction(subject):
+        for reference, approval in agents.items():
+            if not isinstance(reference, str) or not reference.strip():
+                raise Denied('에이전트 승인 참조 이름이 필요합니다')
+            checked(runtime, approval)
+        return _approve(authority, archive, key=key, subject=subject, scope=scope, expires_at=expires_at, policy=policy)
+
+
+def _approve(authority, archive, *, key, subject, scope, expires_at, policy):
     from psycopg.types.json import Jsonb
     hashed = key_hash(key)
     if not subject.strip() or not scope.strip():
@@ -75,7 +97,12 @@ def main():
                 raise Denied('승인 명세의 필드가 올바르지 않습니다')
             manifest['expires_at'] = datetime.fromisoformat(manifest['expires_at'])
             archive = ManualSources(Path(os.getenv('PROCESS_STATE_PATH','/data/process.sqlite3')).with_name('manuals.sqlite3'))
-            result = approve(authority, archive, key=key, **manifest)
+            runtime = None
+            if manifest['policy'].get('agents'):
+                from types import SimpleNamespace
+                from .procdb import PgRepo
+                runtime = SimpleNamespace(repo=PgRepo(os.environ['SUPABASE_DSN']), tenant_id=manifest['subject'])
+            result = approve(authority, archive, key=key, runtime=runtime, **manifest)
         print(json.dumps(result, ensure_ascii=False))
     except Exception:
         # Database/OS exceptions can carry credentials or private paths.

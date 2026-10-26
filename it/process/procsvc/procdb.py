@@ -683,6 +683,25 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                 (tenant_id, def_id, event_id)).fetchone())
 
     @contextmanager
+    def classroom_authoring_transaction(self, tenant_id: str):
+        """Short instructor import; serialize authoring and work creation too.
+
+        An advisory lock alone would not exclude the ordinary portal writers.
+        Bound lock acquisition so a live class cannot leave the CLI waiting.
+        """
+        with self.event_transaction('classroom-authoring:'+tenant_id):
+            with self._conn() as c:
+                c.execute("set local lock_timeout = '5s'")
+                c.execute("lock table users, tenant_skills, agent_skills, activity_agent_map, "
+                          "proc_def, proc_def_version, todolist in share row exclusive mode")
+                yield
+
+    def classroom_has_live_work(self, tenant_id: str) -> bool:
+        with self._conn() as c:
+            return c.execute("select 1 from todolist where tenant_id=%s and agent_orch='cliagents' "
+                             "and status not in ('DONE','CANCELLED') limit 1", (tenant_id,)).fetchone() is not None
+
+    @contextmanager
     def instance_transaction(self, tenant_id: str, proc_inst_id: str):
         if getattr(self._local,'connection',None) is not None:
             raise RuntimeError('nested storage transaction; runtime must reuse its transition')
