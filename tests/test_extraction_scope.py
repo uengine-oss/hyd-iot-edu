@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.9'
+    assert extraction.VERSION == '2.10'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -99,3 +99,10 @@ def test_instruction_2_9_links_a_procedure_the_handed_over_inspection_hands_on()
     """2026-10-25 final4: 같은 HM-8 세 번 중 한 번이 HM-8.1 점검이 '벗어나면 교체한다'로 넘기는 벨트 교체(SOP-FAN-12)의 link 를 비웠다."""
     text = extraction.INSTRUCTION
     assert "넘겨받은 점검 절차가 다시 다른 절차로 넘기면" in text and "그 절차도 같은 고장 유형 · REMEDIED_BY · addresses=[그 원인]" in text
+
+
+def test_instruction_2_10_maps_unit_numbers_to_catalog_asset_codes():
+    """2026-10-26: PM-02 추출 정책의 model_assets 가 매번 빠졌다 — 원문 '1~3호기'를 옮길 설비 목록이 카탈로그에 없었다."""
+    from procsvc import manual_knowledge
+    assert "ontology_catalog.assets code" in extraction.INSTRUCTION and '1~3호기 → "HYD-01","HYD-02","HYD-03"' in extraction.INSTRUCTION
+    assert "MATCH (n:Asset)" in manual_knowledge.CATALOG_Q["assets"] and "n.code AS code" in manual_knowledge.CATALOG_Q["assets"]
