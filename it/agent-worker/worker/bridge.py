@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -359,7 +360,7 @@ def runtime_env(workdir: Path, provider_id: str, isolate_config_dir: bool) -> di
     if provider_id != "claude-code":
         return {}
     env = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
-    if not isolate_config_dir:
+    if not isolate_config_dir and os.getenv('HYD_MANAGED_MODEL_REQUIRED') != '1':
         return env
     home = workdir / CONFIG_HOME_DIRNAME / provider_id
     home.mkdir(parents=True, exist_ok=True)

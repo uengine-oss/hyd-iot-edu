@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
  && pip install --no-cache-dir uv \
  && apt-get purge -y --auto-remove && rm -rf /var/lib/apt/lists/*
 WORKDIR /srv
+# Managed classroom runs require kernel-enforced filesystem rules; never silently
+# fall back to a CLI running with the supervisor's filesystem privileges.
+RUN /usr/bin/setpriv --help | grep -q -- '--landlock-access'
 COPY it/agent-worker/requirements.txt /srv/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY common/hydcommon /srv/hydcommon
