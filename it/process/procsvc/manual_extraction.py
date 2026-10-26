@@ -285,6 +285,24 @@ def check_purchase_policy(proposal, source):
                          f"{', '.join(missing)} link 에 purchase_comparison_policy(세 수치와 그 문단 anchor)를 넣으세요")
 
 
+def check_penalty_rules(proposal, source):
+    """원문이 「…만 원을 감점」으로 정한 감점마다 그 금액의 dt:compliance PENALTY 규칙이 있어야 한다 — 없으면 그 문장을 짚어 교정 사유로.
+    2026-10-26 final5: 4회차 HM-8 개정이 「팬 100 % 연속 운전 24시간 초과 → 20만 원 감점」 규칙을 빠뜨려(세 번 중 한 번) 손익 · What-if 결과가 갈렸다."""
+    import re
+    rules = ((proposal.get('knowledge') or {}).get('rules') or [])
+    have = {float(r.get('penalty')) for r in rules if r.get('effect') == 'PENALTY' and isinstance(r.get('penalty'), (int, float))}
+    missing = []
+    for page in (source or {}).get('pages') or []:
+        for m in re.finditer(r'([\d,]+(?:\.\d+)?)\s*만\s*원을?\s*감점', page.get('text') or ''):
+            amount = float(m.group(1).replace(',', ''))
+            if amount not in have:
+                line = (page.get('text') or '')[:m.end()].rsplit('\n', 1)[-1].strip()
+                missing.append(f"{page['page']}쪽 「{line[-80:]}」({amount:g}만 원)")
+    if missing:
+        raise ValueError('원문이 정한 감점 규칙이 없습니다 — ' + ' / '.join(dict.fromkeys(missing)) +
+                         ' — 각각 dt:compliance PENALTY 규칙(penalty 금액 · penalizes 지표 · 대상 applies_to · anchor)을 knowledge.rules 에 넣으세요')
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
@@ -293,6 +311,7 @@ def validate_result(form, inst, output):
         if not variables.get('segment'):
             check_action_values(proposal, variables.get('ontology_catalog'))
             check_purchase_policy(proposal, variables.get('manual_source'))
+            check_penalty_rules(proposal, variables.get('manual_source'))
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)

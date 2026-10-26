@@ -385,3 +385,19 @@ def test_purchase_policy_missing_while_source_states_cost_criteria_goes_back_for
     manual_extraction.check_purchase_policy(prop, source)
     a_source, a_prop = load(archive, 'A')                                       # 기준이 없는 문서는 요구하지 않는다
     manual_extraction.check_purchase_policy(a_prop, a_source)
+
+
+def test_every_source_penalty_needs_a_penalty_rule_of_that_amount(archive):
+    """2026-10-26 final5: 4회차 HM-8 개정이 「24시간 초과 → 20만 원 감점」 규칙을 빠뜨려 손익 · What-if 가 갈렸다 — 원문의 감점 금액마다 PENALTY 규칙."""
+    for key, amounts in (('A', {20.0}), ('B', {80.0, 60.0})):
+        source, prop = load(archive, key)
+        rules = (prop.get('knowledge') or {}).get('rules') or []
+        have = {float(r['penalty']) for r in rules if r.get('effect') == 'PENALTY'}
+        assert amounts <= have, (key, have)                                      # 시험 대역은 원문 감점을 모두 담고 있다
+        manual_extraction.check_penalty_rules(prop, source)
+        dropped = copy.deepcopy(prop)
+        dropped['knowledge']['rules'] = [r for r in rules if not (r.get('effect') == 'PENALTY' and float(r.get('penalty')) == max(amounts))]
+        with pytest.raises(ValueError, match=f'{max(amounts):g}만 원'):
+            manual_extraction.check_penalty_rules(dropped, source)
+    source, prop = load(archive, 'C')                                           # 감점 문장이 없는 문서는 요구하지 않는다
+    manual_extraction.check_penalty_rules(prop, source)
