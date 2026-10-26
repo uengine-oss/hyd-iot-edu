@@ -159,7 +159,8 @@ def agent_view(rec: dict, detail_option: str | None = None) -> dict:
         'options': options, 'error': rec.get('error'), 'source_errors': source_errors,
         'provenance': _capped(provenance) if detail_option else None,
         'omitted': f"카드마다 {', '.join(DETAIL_FIELDS)} 와 provenance 는 뺐습니다. 한 카드의 전체 근거가 필요하면 같은 인자에 "
-                   "detail_option=<카드 id 또는 SOP ID> 를 더해 다시 부르세요(칸마다 6000자 상한, 넘으면 …[truncated]). 제출한 판단 기록에는 전부 남습니다",
+                   "detail_option=<카드 id 또는 SOP ID> 를 더하면 현재 상태로 재계산한 상세 미리보기를 받습니다(칸마다 6000자 상한). "
+                   "같은 평가의 잘리지 않은 근거는 evidence_ref로 read_evaluation_evidence를 호출하고 next_offset을 따라 읽으세요. 제출한 판단 기록에는 전부 남습니다",
     }.items() if v not in (None, [], {})}
 
 
@@ -190,6 +191,76 @@ class DmnTools:
         self.registry = decidelib.DecisionRegistry("mcp")
         self.prometheus = Prometheus()
         self._fabric = fabric
+        from collections import OrderedDict
+        from threading import Lock
+        self._evidence = OrderedDict()
+        self._evidence_lock = Lock()
+
+    def _evaluation_view(self, rec, detail_option=None, *, submitted=False, what='조치 카드 평가'):
+        """Short-lived read capabilities preserve the evaluated facts, never execution permission."""
+        from copy import deepcopy
+        import json
+        import secrets
+        import time
+        from hydcommon.tool_result import checked
+        result = agent_view(rec) if submitted else read_outcome(rec, what, detail_option)
+        snapshot = {k: rec.get(k) for k in ('id', 'created', 'provenance')}
+        snapshot['result'] = {'options': [{k: o[k] for k in ('id', 'sopId', *DETAIL_FIELDS) if k in o}
+                                           for o in (rec.get('result') or {}).get('options') or []]}
+        size = len(json.dumps(snapshot, ensure_ascii=False, default=str).encode())
+        if size > 16_000_000:
+            raise ValueError('평가 근거가 보관 한도 16MB를 넘었습니다. 조회 범위를 줄이세요')
+        token = secrets.token_urlsafe(32)
+        now = time.monotonic()
+        with self._evidence_lock:
+            for key, (created, _, _) in list(self._evidence.items()):
+                if now - created >= 600:
+                    del self._evidence[key]
+            while self._evidence and (len(self._evidence) >= 64 or sum(v[2] for v in self._evidence.values()) + size > 16_000_000):
+                self._evidence.popitem(last=False)
+            self._evidence[token] = (now, deepcopy(snapshot), size)
+        result['evidence_ref'] = token
+        result['evidence_note'] = '평가 시점의 근거, 최대10분/64건/16MB 보관. 현재 상태의 판단·승인·실행에는 재사용하지 않습니다.'
+        return checked(result)
+
+    def read_evaluation_evidence(self, evidence_ref: str, option: str | None, field: str, offset: int = 0):
+        """Read one JSON field from the exact snapshot, with explicit continuation.
+
+        The unguessable capability is issued only with its evaluation response;
+        knowing a decision ID or another student's option ID is insufficient.
+        No registry fallback or re-evaluation occurs on expiry/restart.
+        """
+        import hashlib
+        import json
+        import time
+        from hydcommon.tool_result import checked
+        if type(offset) is not int or offset < 0:
+            raise ValueError('offset은 0 이상의 정수여야 합니다')
+        if field not in (*DETAIL_FIELDS, 'provenance'):
+            raise ValueError('조회 가능한 근거 칸: ' + ', '.join((*DETAIL_FIELDS, 'provenance')))
+        with self._evidence_lock:
+            entry = self._evidence.get(evidence_ref)
+            if entry is None or time.monotonic() - entry[0] >= 600:
+                self._evidence.pop(evidence_ref, None)
+                raise ValueError('평가 근거 참조가 없거나 만료됐습니다. 새 평가가 필요합니다')
+            rec = entry[1]
+        if field == 'provenance':
+            value = rec.get(field, [])
+        else:
+            matches = [o for o in (rec.get('result') or {}).get('options') or [] if option and option in (o.get('id'), o.get('sopId'))]
+            if len(matches) != 1:
+                raise ValueError('이 평가에 있는 카드 id를 하나 지정하세요')
+            if field not in matches[0]:
+                raise ValueError('이 카드에는 요청한 근거 칸이 없습니다')
+            value = matches[0][field]
+        serialized = json.dumps(value, ensure_ascii=False, default=str)
+        if offset > len(serialized):
+            raise ValueError('offset이 근거 길이를 넘었습니다')
+        end = min(offset + 4000, len(serialized))
+        return checked(dict(evaluation_id=rec['id'], evaluated_at=rec.get('created'), field=field,
+                            encoding='json', offset=offset, next_offset=end if end < len(serialized) else None,
+                            total_chars=len(serialized), sha256=hashlib.sha256(serialized.encode()).hexdigest(),
+                            content=serialized[offset:end], snapshot=True))
 
     # ---- A11 데이터 패브릭: 업무 DB + 시계열 DB 를 한 질문으로 (portal /api/fabric/query 와 같은 함수, 읽기 전용)
     def _graph(self, cypher: str, **params) -> list[dict]:
@@ -299,7 +370,7 @@ class DmnTools:
                                 overrides=overrides or None, do_submit=False)
         if rec.get('error_code') in ('BUSINESS_CANDIDATES_MISSING', 'BUSINESS_FACTS_MISSING'):
             raise ValueError(rec['error'])
-        return read_outcome(rec, '조치 카드 평가', detail_option)
+        return self._evaluation_view(rec, detail_option)
 
     def submit_decision(self, asset: str, pattern: str, cause: str, failure_mode: str, incident: str, alert_id: str | None = None,
                         overrides: dict | None = None, process_scope: dict | None = None) -> dict:
@@ -359,7 +430,8 @@ class DmnTools:
             if rec.get('error_code') in BUSINESS_ERRORS:
                 raise ValueError(rec['error'])
             raise failure(rec, '원문 구매 후보 계산')
-        return agent_view(registered(rec, '원문 구매 판단')) if submit else read_outcome(rec, '원문 구매 후보 계산', detail_option)
+        return self._evaluation_view(registered(rec, '원문 구매 판단') if submit else rec, detail_option,
+                                     submitted=submit, what='원문 구매 후보 계산')
 
     def evaluate_purchase(self, asset: str, part_no: str, overrides: dict | None = None,
                           detail_option: str | None = None) -> dict:

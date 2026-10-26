@@ -122,6 +122,16 @@ def evaluate_cards(asset: Asset, pattern: Pattern, cause: Cause, failure_mode: F
 
 
 @mcp.tool(annotations=READ)
+def read_evaluation_evidence(evidence_ref: Annotated[str, Field(description='평가 응답의 evidence_ref. 평가 ID로 대체할 수 없음')],
+                             field: Annotated[str, Field(description='rankingEvidence, tradeoffEvaluation, steps, forecastContext, facts, precedent, selectedBy 또는 provenance')],
+                             option: Annotated[str | None, Field(description='같은 평가의 카드 id 또는 SOP ID. provenance는 생략 가능')] = None,
+                             offset: Annotated[int, Field(ge=0, description='처음은 0, 이어 읽기는 직전 next_offset')] = 0) -> dict:
+    """같은 평가 시점의 전체 근거를 JSON 문자열 조각으로 읽는다. next_offset이 null일 때 끝이며 조각을 순서대로 합치면 원래 JSON이다.
+    재계산·제출·실행하지 않는다. 만료/없는 참조는 오류다. 최신 판단에는 새 평가가 필요하다."""
+    return enveloped(lambda: tools.read_evaluation_evidence(evidence_ref, option, field, offset))()
+
+
+@mcp.tool(annotations=READ)
 def forecast_actions(asset: Asset, actions: Annotated[list[dict], Field(description="검토할 원자 조치 목록: kind=command, code, value. 예: FAN_SET=100, LOAD_SET=80")],
                      horizon_s: Annotated[float, Field(description="예측할 시뮬레이션 시간(초)", gt=0, le=86400)] = 900) -> dict:
     """현재 설비의 명시된 교육용 모델 입력으로 조치 후 온도·압력·진동을 예측한다. 입력/가정/범위/인터록 가능성을 반환한다. 실행·승인·카드 제출은 하지 않으며 미지원 모델/조치/오래된 입력이면 오류다."""
