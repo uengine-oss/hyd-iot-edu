@@ -31,6 +31,8 @@ def snapshot(runtime, approval):
     # Portal assignment overrides the definition role in ordinary execution.
     # Pin that effective assignment too, without rewriting the source version.
     role=deepcopy(role)
+    if activity.get('agent'):
+        role['endpoint']=activity['agent']
     mapping=runtime.repo.get_agent_map(runtime.tenant_id,approval['definition'],activity['id'])
     if mapping is not None:
         role['endpoint']=mapping.get('agent_id')
@@ -81,6 +83,10 @@ def validate_input(approval,values):
 
 def isolated_definition(runtime,approval):
     source,activity,role=checked(runtime,approval)
+    activity=deepcopy(activity)
+    # The engine prefers activity.agent to a default role. A portal map may
+    # override that choice in the source; the isolated ID has no such map.
+    activity['agent']=role['endpoint']
     did='classroom_agent_'+approval['revision'][:24]
     definition=dict(processDefinitionId=did,processDefinitionName=activity.get('name') or '승인 에이전트 실행',version='1',
         roles=[deepcopy(role)],data=deepcopy(source.get('data') or []),forms=deepcopy(source['forms']),
