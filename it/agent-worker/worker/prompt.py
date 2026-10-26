@@ -63,7 +63,9 @@ def build(row: dict[str, Any], extras: dict[str, Any], *, workdir: str) -> str:
 # C3 (U1 남은 것 1): the agent's narration between tool calls streamed in English ("Next I'll look up …"). The rule now closes
 # the prompt too, where the model reads it last, and names the narration explicitly.
 LANGUAGE_RULE = ("## 언어\n도구 호출 사이의 진행 설명, 판단 이유, 마지막 메시지까지 모든 자연어 문장을 한국어로 쓰세요. "
-                 "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다.")
+                 "\"Next I'll …\", \"Let me …\" 같은 영어 문장을 쓰지 마세요. 코드 · 식별자 · SQL · 원문 인용만 원문 그대로 둡니다. "
+                 "일정의 숫자 시각은 도구가 반환한 날짜·시간대까지 그대로 쓰세요(예: window.starts_at). "
+                 "UTC/Z/오프셋을 지우거나 날짜·시간대를 추측하지 마세요. 정확한 시각을 확인하지 못하면 카드의 일정 이름으로 설명하세요.")
 
 FILE_READ_RULE = ("## 작업 파일 읽기\n작업 파일과 등록 스킬은 BOM 없는 UTF-8 원문입니다. "
                   "기본 Read 도구로 context/task.json과 context/input.json의 필요한 부분을 읽으세요. "
