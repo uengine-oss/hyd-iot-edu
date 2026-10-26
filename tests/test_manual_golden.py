@@ -70,13 +70,23 @@ def test_ungrounded_or_malformed_reports_are_refused(change, word):
         golden.validate_report(_req(), bad)
 
 
-def test_agent_task_runs_and_the_report_is_read_back_with_counts(rt, tmp_path):
+@pytest.mark.parametrize('evidence', ['real', 'missing', 'wrong-query', 'wrong-node', 'failed'])
+def test_agent_task_runs_and_the_report_is_read_back_with_counts(rt, tmp_path, evidence):
     runtime, _ = rt
     inst = golden.start(runtime, _req(), str(uuid4()))
     rid = str(uuid4())
     assert golden.start(runtime, dict(_req(), batch='batch-2'), rid)['proc_inst_id'] == golden.start(runtime, dict(_req(), batch='batch-2'), rid)['proc_inst_id']   # same request id → same check
     reqs = []
-    runner = Runner(_settings(tmp_path / 'worker'), runtime.repo, exec_fn=_fake_exec(json.dumps({'golden_report': report()}), requests=reqs),
+    from cliagents import ExecEvent, ExecEventKind
+    def execute(provider, request, env):
+        if evidence != 'missing':
+            query = report()['items'][0]['cypher'] if evidence != 'wrong-query' else 'RETURN 1'
+            nodes = report()['items'][0]['cited'] if evidence != 'wrong-node' else ['skill:sop-oil-21:11']
+            yield ExecEvent(kind=ExecEventKind.TOOL_START, tool='mcp__neo4j__read_neo4j_cypher', tool_use_id='read', tool_input={'query': query})
+            yield ExecEvent(kind=ExecEventKind.TOOL_END, tool='mcp__neo4j__read_neo4j_cypher', tool_use_id='read',
+                            text=json.dumps(nodes), is_error=evidence == 'failed')
+        yield from _fake_exec(json.dumps({'golden_report': report()}), requests=reqs)(provider, request, env)
+    runner = Runner(_settings(tmp_path / 'worker'), runtime.repo, exec_fn=execute,
                     schema_prompt='ManualSection Skill Step', resolve_provider=lambda _: object())
     assert runner.poll_once() == 1
     wi = runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])[0]
@@ -84,8 +94,12 @@ def test_agent_task_runs_and_the_report_is_read_back_with_counts(rt, tmp_path):
     assert QUESTIONS[0] in task['query'] and 'skill:sop-oil-21' in task['query']        # the agent sees the questions and the ids
     assert runtime.poll_once() == 1
     out = golden.result(runtime, 'batch-1')
-    assert out['status'] == 'DONE' and out['questions'] == 2 and out['answerable'] == 1 and out['not_yet_answerable'] == 1 and out['grounded'] == 1
+    verified = int(evidence == 'real')
+    assert out['status'] == 'DONE' and out['questions'] == 2 and out['answerable'] == verified and out['not_yet_answerable'] == 2 - verified and out['grounded'] == verified
     assert out['report']['items'][0]['cited'] == ['skill:sop-oil-21', 'skill:sop-oil-21:1']
+    if not verified:
+        assert out['report']['items'][0]['claimed_status'] == 'answerable'
+        assert '확인하지 못했습니다' in out['report']['items'][0]['answer']
 
 
 def test_an_ungrounded_answer_goes_back_to_the_agent_as_a_correction(rt):

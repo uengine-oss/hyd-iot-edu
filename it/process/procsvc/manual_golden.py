@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 from . import engine
 
 DEFINITION_ID = 'manual_golden_check'
-VERSION = '1.0'
+VERSION = '1.1'
 ACTIVITY = 'task:golden'
 CONTRACT = 'manual-golden-report-v1'
 STATUSES = ('answerable', 'partially_answerable', 'not_yet_answerable')
@@ -26,7 +26,7 @@ EVENT_PREFIX = 'manual-golden:'
 INSTRUCTION = '''golden_request에 문서(매뉴얼) 하나가 온톨로지에 적재된 뒤의 골든 퀘스천 목록이 있습니다.
 질문마다 **지금 온톨로지(Neo4j MCP 조회)만으로** 답할 수 있는지 판정하고 답을 적으세요. 원문 PDF·외부 지식·추측으로 답하지 않습니다.
 golden_request.knowledge에 이 문서가 넣은 노드(절 ManualSection · SOP Skill · 단계 Step)의 id가 있습니다. 답의 근거는 그 id들로 인용합니다.
-Cypher로 실제 조회한 결과만 근거로 삼고, 쓴 Cypher를 cypher에 남기세요.
+Cypher로 실제 조회한 결과만 근거로 삼고, 쓴 Cypher를 cypher에 남기세요. 인용할 노드의 id도 조회 결과로 반환하세요.
 status: answerable = 이 문서의 노드로 완전히 답함 · partially_answerable = 일부만(빠진 것을 answer에 적음) · not_yet_answerable = 이 문서로는 못 답함(이유를 적음).
 confidence: high | medium | low. 답할 수 없는 질문을 답할 수 있다고 쓰지 마세요. 질문 문장은 받은 그대로 유지합니다.
 최종 응답은 {"golden_report": {"items": [{"question": "받은 질문 그대로", "answer": "답 또는 못 답하는 이유", "status": "...",
@@ -131,6 +131,8 @@ def validate_report(req, report):
             raise ValueError(f'{i}번 항목: 답할 수 있다고 하려면 이 문서의 노드 id를 하나 이상 인용해야 합니다 (근거 없는 판정)')
         if item.get('cypher') is not None and not isinstance(item['cypher'], str):
             raise ValueError(f'{i}번 항목의 cypher는 문자열이어야 합니다')
+        if item['status'] != 'not_yet_answerable' and not str(item.get('cypher') or '').strip():
+            raise ValueError(f'{i}번 항목: 실제 조회한 cypher가 필요합니다')
     if report.get('summary') is not None and not isinstance(report['summary'], str):
         raise ValueError('summary는 문자열이어야 합니다')
     return deepcopy(report)
@@ -139,6 +141,30 @@ def validate_report(req, report):
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         validate_report(engine.variables(inst).get('golden_request'), (output or {}).get('golden_report'))
+
+
+def ground_report(report, calls):
+    """Supplied node ids are a scope, not evidence of having read those nodes."""
+    import json
+    import re
+    from . import ask
+    checked = deepcopy(report)
+    for item in checked['items']:
+        matches = [c for c in calls if c.get('ok') and c.get('data') and
+                   c.get('tool') == 'neo4j/read_neo4j_cypher' and c.get('output_complete') and
+                   any(ask._norm(q) == ask._norm(item.get('cypher')) for q in ask._queries(c.get('_input', c.get('input'))))]
+        originals = '\n'.join(x if isinstance(x, str) else json.dumps(x, ensure_ascii=False) for x in
+                              (c.get('_output') for c in matches))
+        cited = item.get('cited') or []
+        missing = [nid for nid in cited if not re.search(r'(?<![\w:-])' + re.escape(nid) + r'(?![\w:-])', originals)]
+        verified = bool(matches and cited and not missing)
+        item['grounding'] = dict(verified=verified, calls=[c['id'] for c in matches], missing=missing)
+        if item['status'] != 'not_yet_answerable' and not verified:
+            item['claimed_status'] = item['status']
+            item['claimed_answer'] = item['answer']
+            item.update(status='not_yet_answerable', confidence='low',
+                        answer='실제 조회 기록과 반환 원문에서 인용한 노드를 확인하지 못했습니다. 다시 조회해 근거를 확인해야 합니다.')
+    return checked
 
 
 def result(rt, batch):
@@ -158,6 +184,8 @@ def result(rt, batch):
     if wi['status'] != 'DONE':
         return out
     report = validate_report(req, (wi.get('output') or {}).get('golden_report'))
+    from . import ask
+    report = ground_report(report, ask.tool_calls(rt.repo.list_events(todo_id=wi['id']), rt.repo.get_event_payload))
     counts = {s: sum(1 for it in report['items'] if it['status'] == s) for s in STATUSES}
-    out.update(report=report, **counts, grounded=sum(1 for it in report['items'] if it['cited']))
+    out.update(report=report, **counts, grounded=sum(1 for it in report['items'] if it['grounding']['verified']))
     return out

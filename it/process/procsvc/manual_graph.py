@@ -363,6 +363,26 @@ def _receipt(plan, at, replayed=False):
                         for p in plan['procedures']})
 
 
+def removed_nodes(before, after):
+    """Exact node removals, including replaced source-version nodes.
+
+    Display names are taken from the prior journal, never guessed from new text.
+    """
+    remaining = set(owned_keys(after))
+    return [dict(id=n['props']['id'], labels=n['labels'],
+                 name=n['props'].get('name') or n['props'].get('title') or n['props'].get('text') or n['props']['id'])
+            for n in before.get('nodes') or [] if (n['labels'][0], n['props']['id']) not in remaining]
+
+
+def revision_preview(session, plan):
+    row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) '
+                      'RETURN d.head AS head, d.snapshot AS snapshot', id=plan['document'], tenant=plan['tenant']).single()
+    if (row['head'] if row else None) != plan['previous_batch']:
+        raise Conflict('현재 문서 판본이 미리보기 이후 변경됐습니다. 다시 검토하세요')
+    before = json.loads(row['snapshot']) if row else {'nodes': [], 'edges': []}
+    return dict(previous_batch=plan['previous_batch'], removed=removed_nodes(before, desired(plan)))
+
+
 def commit(session, plan):
     ensure_schema(session)
     fingerprint = hashlib.sha256(canonical(plan).encode()).hexdigest()
@@ -407,7 +427,8 @@ def commit(session, plan):
         _check_unchanged(expected, before, '적재 뒤 문서 그래프(속성/규칙/관계)가 바뀌었습니다. 변경 내용을 먼저 조정하세요')
         _validate_targets(tx, after, owned_keys(before))
         provenance_kept = _replace(tx, before, after, history)
-        receipt = dict(_receipt(plan, at), history_kept=_history_summary(history), provenance_kept=provenance_kept)
+        receipt = dict(_receipt(plan, at), removed=removed_nodes(before, after),
+                       history_kept=_history_summary(history), provenance_kept=provenance_kept)
         tx.run('CREATE (b:ManualIngestionBatch) SET b=$props', props=dict(id=plan['batch'], tenant=plan['tenant'],
                document=plan['document'], previous=plan['previous_batch'], fingerprint=fingerprint, status='ACTIVE',
                before=canonical(before), after=canonical(after), plan=canonical(plan), receipt=canonical(receipt), createdAt=at)).consume()

@@ -133,6 +133,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def reopen(source_id: str):
         return await run(lambda: preview(archive_factory().get(tenant, source_id)))
 
+    @app.post('/api/kg/manuals/changes')
+    async def changes(body: dict):
+        def work():
+            plan = manual_review.validate(archive_factory(), tenant, body)
+            return graph(lambda session: manual_graph.revision_preview(session, plan))
+        return await run(work)
+
     @app.post('/api/kg/manuals/commit')
     async def commit(body: dict):
         def work():

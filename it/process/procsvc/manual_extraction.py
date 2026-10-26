@@ -153,7 +153,10 @@ def validate_proposal(source, proposal, *, segment=False):
             raise ValueError('원문 판본의 인용이 필요합니다')
         located = manual_locate.locate(pages, value, within=within)
         value.update({k: located[k] for k in ('page','start','end','quote')})
-        value.pop('located', None)
+        if located.get('located'):
+            value['located'] = located['located']
+        elif value.get('located') not in ('exact', 'normalized', 'loose'):
+            value.pop('located', None)
     for key, limit in [('sections',1000),('procedures',500),('page_reviews',500),('warnings',1000)]:
         if not isinstance(proposal.get(key),list) or len(proposal[key]) > limit:raise ValueError(key+' 목록을 확인하세요')
     seen_pages=set()
@@ -164,11 +167,15 @@ def validate_proposal(source, proposal, *, segment=False):
     if seen_pages != set(pages):raise ValueError('검토 기록이 없는 원문 페이지가 있습니다')
     for warning in proposal['warnings']:nonempty(warning,'주의사항')
     sections=set()
+    errors=[]
     for s in proposal['sections']:
-        if not isinstance(s,dict):raise ValueError('절은 객체여야 합니다')
-        nonempty(s.get('ref'),'절 ID');nonempty(s.get('title'),'절 제목')
-        if s['ref'] in sections or not isinstance(s.get('excerpt',''),str):raise ValueError('절 중복 또는 본문 형식 오류')
-        sections.add(s['ref']);anchor(s.get('anchor'))
+        try:
+            if not isinstance(s,dict):raise ValueError('절은 객체여야 합니다')
+            nonempty(s.get('ref'),'절 ID');nonempty(s.get('title'),'절 제목')
+            if s['ref'] in sections or not isinstance(s.get('excerpt',''),str):raise ValueError('절 중복 또는 본문 형식 오류')
+            sections.add(s['ref']);anchor(s.get('anchor'))
+        except ValueError as exc:
+            errors.append(str(exc))
     # 절차 블록: 그 절차의 인용 위치부터 문서 순서상 다음 절차의 인용 위치 전까지(쪽을 넘는다 — I1, 2026-10-23 검수: PDF에서 절차
     # 제목이 쪽 끝, 단계가 다음 쪽). 다음 절차가 없으면 마지막 쪽 끝까지. 여러 절차에 같은 단계 문장이 있으면 단계 인용을 그 절차
     # 블록 안의 것으로 정한다(manual_locate.locate within). 절차 인용이 틀린 SOP는 아래 본 검사에서 그 사유로 거부된다.
@@ -186,54 +193,62 @@ def validate_proposal(source, proposal, *, segment=False):
               for page, start, end, key in starts}
     seen=set()
     for p in proposal['procedures']:
-        if not isinstance(p,dict):raise ValueError('SOP는 객체여야 합니다')
-        nonempty(p.get('id'),'SOP ID');nonempty(p.get('name'),'SOP 이름')
-        if not kgadmin.SOP_ID_RE.fullmatch(p['id']):
-            raise ValueError(f"SOP ID 형식 오류: {p['id']!r} — 허용 형식은 SOP-대문자/숫자 토큰을 '-'로 연결(예: SOP-OIL-21, SOP-HM9-2). 점(.)·소문자·공백 불가")
-        if p['id'] in seen:raise ValueError(f"SOP ID 중복: {p['id']}")
-        if not isinstance(p.get('section'),str) or p['section'] not in sections:
-            raise ValueError(f"SOP {p['id']}의 section {p.get('section')!r}이 sections의 ref에 없습니다")
-        seen.add(p['id']);anchor(p.get('anchor'))
-        if not isinstance(p.get('steps'),list) or not 1 <= len(p['steps']) <= 1000:raise ValueError('SOP 단계가 필요합니다')
-        for order,step in enumerate(p['steps'],1):
-            if not isinstance(step,dict) or type(step.get('order')) is not int or step['order'] != order:
-                raise ValueError(f"SOP {p['id']} 단계 order가 1부터 연속이어야 합니다 (위치 {order}에서 {step.get('order') if isinstance(step,dict) else step!r})")
-            if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
-                raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
-            nonempty(step.get('text'),'단계');anchor(step.get('anchor'),within=blocks.get(id(p)))
-        # 2026-10-23 확인: 같은 단계 문장이 반복되자 AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다(단계별 출처가 없어짐)
-        texts=[_letters(st['text']) for st in p['steps']]
-        for order,step in enumerate(p['steps'],1):
-            quote=_letters(step['anchor']['quote'])
-            others=[o for o,t in enumerate(texts,1) if o!=order and len(t)>=6 and t not in texts[order-1] and t in quote]
-            if others:
-                raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
-                                 "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
-        if isinstance(p.get('link'), dict):
-            # 2026-10-25 수업 한 바퀴(final3): 정책(2.8) 안의 인용은 좌표를 채우지 않아 적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다
-            # final4: 정책은 키가 많아 AI가 하나씩 빠뜨리고 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다. 정책이 불완전하면 거부하지 않고
-            # 그 정책만 빼고 경고로 남긴다 — 검토 화면 · 적재 전 검사(PM_SCOPE_POLICY_REQUIRED · PURCHASE_COMPARISON_POLICY_REQUIRED)가 「준비 안 됨」으로 보인다
-            from hydcommon import maintenance_policy, purchase_comparison
-            for key, subs, check in (('maintenance_policy', ('anchor', 'model_anchor'), maintenance_policy.policy),
-                                     ('purchase_comparison_policy', ('anchor',), purchase_comparison.policy)):
-                policy = p['link'].get(key)
-                if policy is None:
-                    continue
-                try:
-                    for sub in subs if isinstance(policy, dict) else ():
-                        if policy.get(sub) is not None:
-                            anchor(policy[sub])
-                    check(policy)
-                except ValueError as exc:
-                    p['link'].pop(key)
-                    proposal['warnings'].append(f"{p['id']}: {key} 정책 제외 — {exc}. 원문의 시행 · 비교 기준을 확인하고 다시 추출하거나 검토본을 쓰세요")
-        if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
-            link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
-            if link.get('affects') is not None:
-                from .manual_review import validate_affects
-                validate_affects(p['id'],link['affects'])
+        try:
+            if not isinstance(p,dict):raise ValueError('SOP는 객체여야 합니다')
+            nonempty(p.get('id'),'SOP ID');nonempty(p.get('name'),'SOP 이름')
+            if not kgadmin.SOP_ID_RE.fullmatch(p['id']):
+                raise ValueError(f"SOP ID 형식 오류: {p['id']!r} — 허용 형식은 SOP-대문자/숫자 토큰을 '-'로 연결(예: SOP-OIL-21, SOP-HM9-2). 점(.)·소문자·공백 불가")
+            if p['id'] in seen:raise ValueError(f"SOP ID 중복: {p['id']}")
+            if not isinstance(p.get('section'),str) or p['section'] not in sections:
+                raise ValueError(f"SOP {p['id']}의 section {p.get('section')!r}이 sections의 ref에 없습니다")
+            seen.add(p['id']);anchor(p.get('anchor'))
+            if not isinstance(p.get('steps'),list) or not 1 <= len(p['steps']) <= 1000:raise ValueError('SOP 단계가 필요합니다')
+            for order,step in enumerate(p['steps'],1):
+                if not isinstance(step,dict) or type(step.get('order')) is not int or step['order'] != order:
+                    raise ValueError(f"SOP {p['id']} 단계 order가 1부터 연속이어야 합니다 (위치 {order}에서 {step.get('order') if isinstance(step,dict) else step!r})")
+                if not isinstance(step.get('manual'),str) or step['manual'] not in sections:
+                    raise ValueError(f"SOP {p['id']} 단계 {order}의 manual {step.get('manual')!r}이 sections의 ref에 없습니다")
+                nonempty(step.get('text'),'단계');anchor(step.get('anchor'),within=blocks.get(id(p)))
+            # 2026-10-23 확인: 같은 단계 문장이 반복되자 AI가 모든 단계에 절차 전체를 인용했고 그대로 통과했다(단계별 출처가 없어짐)
+            texts=[_letters(st['text']) for st in p['steps']]
+            for order,step in enumerate(p['steps'],1):
+                quote=_letters(step['anchor']['quote'])
+                others=[o for o,t in enumerate(texts,1) if o!=order and len(t)>=6 and t not in texts[order-1] and t in quote]
+                if others:
+                    raise ValueError(f"SOP {p['id']} 단계 {order}의 인용이 다른 단계({', '.join(map(str,others))})까지 품습니다 — 그 단계 문장만 인용하세요"
+                                     "(같은 문장이 여러 절차에 있으면 서버가 그 절차 블록 안에서 찾습니다)")
+            if isinstance(p.get('link'), dict):
+                # 2026-10-25 수업 한 바퀴(final3): 정책(2.8) 안의 인용은 좌표를 채우지 않아 적재 검사가 「페이지/문자 좌표는 정수여야 합니다」로 막았다
+                # final4: 정책은 키가 많아 AI가 하나씩 빠뜨리고 거부 → 교정 3회를 다 써 PM-02 추출이 통째로 실패했다. 정책이 불완전하면 거부하지 않고
+                # 그 정책만 빼고 경고로 남긴다 — 검토 화면 · 적재 전 검사(PM_SCOPE_POLICY_REQUIRED · PURCHASE_COMPARISON_POLICY_REQUIRED)가 「준비 안 됨」으로 보인다
+                from hydcommon import maintenance_policy, purchase_comparison
+                for key, subs, check in (('maintenance_policy', ('anchor', 'model_anchor'), maintenance_policy.policy),
+                                         ('purchase_comparison_policy', ('anchor',), purchase_comparison.policy)):
+                    policy = p['link'].get(key)
+                    if policy is None:
+                        continue
+                    try:
+                        for sub in subs if isinstance(policy, dict) else ():
+                            if policy.get(sub) is not None:
+                                anchor(policy[sub])
+                        check(policy)
+                    except ValueError as exc:
+                        p['link'].pop(key)
+                        proposal['warnings'].append(f"{p['id']}: {key} 정책 제외 — {exc}. 원문의 시행 · 비교 기준을 확인하고 다시 추출하거나 검토본을 쓰세요")
+            if p.get('link') is not None:                      # C1: suggested link — shape only, the reviewer decides
+                link=manual_knowledge.validate_link(p['id'],p['link'],sops=seen,require_failure_mode=False)
+                if link.get('affects') is not None:
+                    from .manual_review import validate_affects
+                    validate_affects(p['id'],link['affects'])
+        except ValueError as exc:
+            errors.append(str(exc))
     if proposal.get('knowledge') is not None:
-        manual_knowledge.validate(proposal['knowledge'],sections=sections,sops=None if segment else seen,anchor=anchor)
+        try:
+            manual_knowledge.validate(proposal['knowledge'],sections=sections,sops=None if segment else seen,anchor=anchor)
+        except ValueError as exc:
+            errors.append(str(exc))
+    if errors:
+        raise ValueError(' / '.join(dict.fromkeys(errors)))
     return deepcopy(proposal)
 
 
@@ -304,15 +319,30 @@ def check_penalty_rules(proposal, source):
                          ' — 각각 dt:compliance PENALTY 규칙(penalty 금액 · penalizes 지표 · 대상 applies_to · anchor)을 knowledge.rules 에 넣으세요')
 
 
+def content_issues(proposal, source, catalog, *, segment=False):
+    """Independent semantic checks share one correction round."""
+    issues=[]
+    checks=[lambda: check_section_titles(proposal)]
+    if not segment:
+        checks.extend((lambda: check_action_values(proposal, catalog),
+                       lambda: check_purchase_policy(proposal, source),
+                       lambda: check_penalty_rules(proposal, source)))
+    for check in checks:
+        try:
+            check()
+        except ValueError as exc:
+            issues.append(str(exc))
+    return list(dict.fromkeys(issues))
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
-        check_section_titles(proposal)
-        if not variables.get('segment'):
-            check_action_values(proposal, variables.get('ontology_catalog'))
-            check_purchase_policy(proposal, variables.get('manual_source'))
-            check_penalty_rules(proposal, variables.get('manual_source'))
+        issues=content_issues(proposal, variables.get('manual_source'), variables.get('ontology_catalog'),
+                              segment=bool(variables.get('segment')))
+        if issues:
+            raise ValueError(' / '.join(issues))
     else:
         from . import manual_golden, legacy_meaning   # A118 golden report · A9 legacy column meanings share the correction loop
         manual_golden.validate_result(form, inst, output)
@@ -528,6 +558,8 @@ def _group_result(rt, source, inst, previous_batch):
         parts.append((s,_translate(local,s)))
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)
+    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'))
+    proposal['warnings'].extend('전체 문서 검사: '+issue for issue in issues)
     extraction=dict(instance=lead['instance'],workitem=lead['workitem'],session_id=(workitems[0].get('output') or {}).get('cliagents_session_id'),
                     generation=sum(wi.get('generation',0) for wi in workitems),
                     segments=[dict(instance=st['instance'],workitem=st['workitem'],generation=wi.get('generation',0),

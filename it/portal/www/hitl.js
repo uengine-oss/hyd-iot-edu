@@ -404,6 +404,7 @@
       const conf = it.confidence ? `<p class="kv-line">${esc(UI.t('golden.confidence'))} <b>${esc(UI.t('golden.conf.' + it.confidence))}</b></p>` : '';
       return UI.card({ title: esc(it.question), cls: 'golden-item', chips: UI.chipText(UI.t(key), tone),
         body: `<p class="golden-answer">${esc(it.answer || '')}</p>`
+          + (it.claimed_answer ? UI.fold('근거를 확인하지 못한 에이전트의 답', `<p>${esc(it.claimed_answer)}</p>`, { cls: 'small' }) : '')
           + UI.fold(`${esc(UI.t('golden.evidence'))} <span class="chip tone-neutral sm">${cited.length}</span>`, conf + (cited.length ? `<p class="muted">${esc(UI.t('golden.cited'))}</p><ul class="golden-cited">${cited.map(c => `<li><code>${esc(c)}</code> ${esc(UI.name(c) !== c ? UI.name(c) : '')}</li>`).join('')}</ul>` : `<p class="muted">${esc(UI.t('golden.noCited'))}</p>`)
           + (it.cypher ? UI.fold(esc(UI.t('golden.query')), `<pre>${esc(it.cypher)}</pre>`, { cls: 'small' }) : ''), { cls: 'small' }) });
     }).join('');
@@ -592,7 +593,7 @@
     if (!r) { box.innerHTML = ''; return; }
     const known = (H.catalog || {}).failureModes || [];
     const fms = known.concat(((r.knowledge || {}).failure_modes || []).filter(f => f && f.id && !known.some(k => k.id === f.id)).map(f => ({ id: f.id, name: `${f.name || f.id} (이 문서에서 새로)` })));
-    const citation = a => a ? UI.fold(`원문 인용 · ${a.page}쪽`, `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.quote)}</pre>`, { cls: 'small' }) : '';
+    const citation = a => a ? UI.fold(`원문 인용 · ${a.page}쪽${a.located === 'loose' ? ' · 대략 일치 — 문맥 확인 필요' : a.located === 'normalized' ? ' · 공백·기호를 맞춰 찾음' : ''}`, `<pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(a.quote)}</pre>`, { cls: 'small' }) : '';
     box.innerHTML = `<div class="mprev"><div class="muted">${esc(r.filename)} · ${r.chars}자 · 절 ${r.sections.length}개 · 절차 ${r.procedures.length}개${r.warnings.length ? ' · 추출 경고 ' + r.warnings.length + '개' : ''}</div>
       ${r.warnings.length ? `<p class="muted">추출 경고를 원문과 대조하고 제안의 단계 · 연결을 검토하세요.</p>${UI.fold(`추출 경고 원문 ${r.warnings.length}개`, `<ol>${r.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`, {cls:'small'})}` : ''}
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
@@ -731,7 +732,21 @@
           const p = reviewed.procedures.find(p => p.id === input.dataset.manualId);
           p.id = input.value.trim(); reviewedLinks[p.id] = links[input.dataset.manualId];
         });
-        const out = await postJ(API.process + '/api/kg/manuals/commit', { ...reviewed, links: reviewedLinks, by: $('#manualBy').value, reviewed: true });
+        const request={ ...reviewed, links: reviewedLinks, by: $('#manualBy').value, reviewed: true };
+        if (request.previous_batch) {
+          const changes=await postJ(API.process + '/api/kg/manuals/changes',request);
+          if (H.preview !== r) return;
+          if (changes.removed?.length) {
+            const labels={Skill:'조치 방법',FailureMode:'고장 유형',Cause:'원인',Evidence:'진단 근거',Rule:'판단 규칙',
+              Step:'절차 단계',KnowledgeSource:'이전 원문 판본 연결',ManualSection:'이전 원문 절 연결'};
+            const names=changes.removed.map(n=>`${n.labels.map(l=>labels[l] || l).join(' · ')}: ${n.name}`).join('\n');
+            const proceed=await UI.confirm({title:'개정으로 지워지는 항목을 확인하세요',
+              body:'이전 판본의 다음 항목이 새 지식 지도에서 빠집니다. 원문 보관과 적재 이력은 유지됩니다.\n\n'+names,
+              ok:'변경 확인 후 적재',danger:true});
+            if (!proceed) { c.disabled=false; $('#manualMsg').textContent='적재하지 않았습니다. 빠진 내용을 검토하세요.'; return; }
+          }
+        }
+        const out = await postJ(API.process + '/api/kg/manuals/commit', request);
         if (H.preview !== r) return;
         const activated = out.candidate_activation && typeof out.candidate_activation === 'object' ? Object.entries(out.candidate_activation) : [];
         $('#manualMsg').textContent = `적재 완료: 절 ${out.sections} · 조치 방법 ${out.procedures} · 단계 ${out.steps}. ` + (activated.length

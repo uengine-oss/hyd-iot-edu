@@ -195,31 +195,37 @@ def validate(knowledge, *, sections, sops, anchor):
         return None
     if not isinstance(knowledge, dict) or set(knowledge) - set(KINDS):
         raise ValueError(f'knowledge는 {list(KINDS)} 목록을 가진 객체입니다')
-    out, seen = {}, set()
+    out, seen, errors = {}, set(), []
     for kind in KINDS:
         items = knowledge.get(kind) or []
         if not isinstance(items, list) or len(items) > LIMITS[kind]:
-            raise ValueError(f'knowledge.{kind}: 최대 {LIMITS[kind]}개의 목록이어야 합니다')
+            errors.append(f'knowledge.{kind}: 최대 {LIMITS[kind]}개의 목록이어야 합니다')
+            items = []
         out[kind] = []
         for item in items:
-            if not isinstance(item, dict):
-                raise ValueError(f'knowledge.{kind}: 항목은 객체여야 합니다')
-            nid = item.get('id')
-            if not isinstance(nid, str) or not ID_RE[kind].fullmatch(nid) or nid in seen:
-                raise ValueError(f'knowledge.{kind}: id 형식 또는 중복을 확인하세요 ({nid!r}, 예: {ID_RE[kind].pattern})')
-            seen.add(nid)
-            section = item.get('section')
-            if section not in sections:
-                raise ValueError(f'{nid}: section {section!r}이 sections의 ref에 없습니다')
-            base = dict(id=nid, section=section, anchor=anchor(item.get('anchor')))
-            out[kind].append(_ITEM[kind](item, base, sops))
+            try:
+                if not isinstance(item, dict):
+                    raise ValueError(f'knowledge.{kind}: 항목은 객체여야 합니다')
+                nid = item.get('id')
+                if not isinstance(nid, str) or not ID_RE[kind].fullmatch(nid) or nid in seen:
+                    raise ValueError(f'knowledge.{kind}: id 형식 또는 중복을 확인하세요 ({nid!r}, 예: {ID_RE[kind].pattern})')
+                seen.add(nid)
+                section = item.get('section')
+                if section not in sections:
+                    raise ValueError(f'{nid}: section {section!r}이 sections의 ref에 없습니다')
+                base = dict(id=nid, section=section, anchor=anchor(item.get('anchor')))
+                out[kind].append(_ITEM[kind](item, base, sops))
+            except ValueError as exc:
+                errors.append(str(exc))
     own = {k: {i['id'] for i in out[k]} for k in KINDS}
     for c in out['causes']:
         if c['failure_mode'] not in own['failure_modes'] and not c['failure_mode'].startswith('fm:'):
-            raise ValueError(f"{c['id']}: 고장 유형이 필요합니다")
+            errors.append(f"{c['id']}: 고장 유형이 필요합니다")
     for e in out['evidence']:
         if e['cause'] not in own['causes'] and not REF_RE['cause'].fullmatch(e['cause']):
-            raise ValueError(f"{e['id']}: 원인 id가 필요합니다")
+            errors.append(f"{e['id']}: 원인 id가 필요합니다")
+    if errors:
+        raise ValueError(' / '.join(dict.fromkeys(errors)))
     return out
 
 

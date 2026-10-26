@@ -248,13 +248,27 @@ class ManualSources:
     def validate_anchor(self, tenant: str, anchor: dict) -> dict:
         if not isinstance(anchor, dict):
             raise ValueError('인용 좌표가 필요합니다')
+        return self.anchor_in_source(self.get(tenant, anchor.get('source_id')), anchor)
+
+    @staticmethod
+    def anchor_in_source(source: dict, anchor: dict) -> dict:
+        """Validate against a source already loaded and hash-checked for this request.
+
+        No global cache: the next review rechecks the archive and tenant again.
+        """
+        if not isinstance(anchor, dict):
+            raise ValueError('인용 좌표가 필요합니다')
+        if anchor.get('source_id') != source['source_id']:
+            raise ValueError('다른 문서 판본의 인용을 섞을 수 없습니다')
         page, start, end = (anchor.get(key) for key in ('page', 'start', 'end'))
         if any(type(value) is not int for value in (page, start, end)):
             raise ValueError('페이지/문자 좌표는 정수여야 합니다')
-        source = self.get(tenant, anchor.get('source_id'))
         if not 1 <= page <= len(source['pages']):
             raise ValueError('인용 페이지가 범위를 벗어났습니다')
         text = source['pages'][page - 1]['text']
         if not 0 <= start < end <= len(text) or anchor.get('quote') != text[start:end]:
             raise ValueError('인용 문자열 또는 문자 좌표가 원문과 일치하지 않습니다')
-        return {key: anchor[key] for key in ('source_id', 'page', 'start', 'end', 'quote')}
+        result = {key: anchor[key] for key in ('source_id', 'page', 'start', 'end', 'quote')}
+        if anchor.get('located') in ('exact', 'normalized', 'loose'):
+            result['located'] = anchor['located']
+        return result

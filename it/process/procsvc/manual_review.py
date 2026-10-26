@@ -133,10 +133,7 @@ def validate(archive, tenant, body):
         raise ValueError('한 번에 절1000개/SOP500개까지 검토할 수 있습니다. 내용을 절단하지 않았습니다')
 
     def anchor(value):
-        checked = archive.validate_anchor(tenant, value)
-        if checked['source_id'] != source['source_id']:
-            raise ValueError('다른 문서 판본의 인용을 섞을 수 없습니다')
-        return checked
+        return archive.anchor_in_source(source, value)
 
     checked_sections = {}
     for section in sections:

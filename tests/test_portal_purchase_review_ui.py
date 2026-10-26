@@ -59,6 +59,27 @@ def check_review(page):
     assert page.locator('#manualReviewed').is_checked()
 
 
+def test_revision_lists_removals_and_cancel_never_commits(page):
+    record=preview({'scope':'purchase','executable':False,'parts':['part:review-seal'],
+                    'kind':'work_order','actions':[]})
+    record['previous_batch']='old-batch'
+    record['sections'][0]['anchor']={'page':1,'quote':'원문 공급 조건을 확인한다.','located':'loose'}
+    calls=open_review(page,record)
+    page.route('**/api/kg/manuals/changes',lambda r:r.fulfill(json={'previous_batch':'old-batch',
+        'removed':[{'id':'rule:lost','labels':['Rule'],'name':'안전 온도 제한'}]}))
+    assert '대략 일치 — 문맥 확인 필요' in page.locator('#manualResult').inner_text()
+    check_review(page); page.locator('#manualCommit').click()
+    dialog=page.locator('.confirm-dialog[open]')
+    dialog.wait_for()
+    assert '판단 규칙: 안전 온도 제한' in dialog.inner_text() and calls==[]
+    dialog.locator('button[value="cancel"]').click()
+    assert calls==[]
+    page.locator('#manualCommit').click()
+    dialog.wait_for(); dialog.locator('button[value="ok"]').click()
+    page.wait_for_function("document.querySelector('#manualMsg').textContent.includes('적재 완료')")
+    assert len(calls)==1
+
+
 def test_purchase_reference_keeps_source_and_explicit_fields_without_fault_or_execution(page):
     link={'scope':'purchase','executable':False,'parts':['part:review-seal'],'failureMode':None,'relation':None,
           'kind':'work_order','approver':None,'actions':[],'affects':[{'target':'msr:maint-cost','sign':'+'}]}

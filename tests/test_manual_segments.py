@@ -145,11 +145,12 @@ def _segment_exec(src, requests):
     return fn
 
 
-def test_large_document_runs_one_task_per_segment_and_reports_one_merged_result(rt, tmp_path, monkeypatch):
+@pytest.mark.parametrize('missing_penalty', [False, True])
+def test_large_document_runs_one_task_per_segment_and_reports_one_merged_result(rt, tmp_path, monkeypatch, missing_penalty):
     runtime, _ = rt
     monkeypatch.setattr(ms, 'DEFAULT_MAX_CHARS', 6000)
     archive = ManualSources(tmp_path / 'manual.sqlite3')
-    source = archive.save('hyd', 'powerpack.md', _doc(12).encode())
+    source = archive.save('hyd', 'powerpack.md', (_doc(12) + ('\n24시간을 초과하면 20만 원 감점\n' if missing_penalty else '')).encode())
     n = len(ms.segments(source, 6000)); assert n >= 3
     rid = str(uuid4())
     lead = extraction.start(runtime, source, rid)
@@ -172,6 +173,7 @@ def test_large_document_runs_one_task_per_segment_and_reports_one_merged_result(
         res = extraction.result(runtime, source, run['proc_inst_id'], None)
         assert res['status'] == 'DONE' and res['instance'] == lead['proc_inst_id'] and res['progress'] == {'done': n, 'total': n}
     pv = res['preview']
+    assert any('전체 문서 검사:' in w and '20만 원' in w for w in pv['warnings']) is missing_penalty
     assert [s['ref'] for s in pv['sections']] == [f'HM-{c}.1' for c in range(1, 13)]
     assert {p['id']: len(p['steps']) for p in pv['procedures']} == {f'SOP-HM{c}-1': 2 for c in range(1, 13)}
     text = source['pages'][0]['text']

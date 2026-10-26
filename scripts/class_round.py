@@ -1215,6 +1215,19 @@ def _b_commit(r, key: str) -> tuple[bool, str]:
     page = r.page
     page.check("#manualReviewed")
     page.click("#manualCommit")
+    r.wait(90, lambda: page.locator('.confirm-dialog[open]').count() or
+           page.locator("#manualMsg").inner_text().startswith(("적재 완료", "실패")), every=1)
+    dialog=page.locator('.confirm-dialog[open]')
+    if dialog.count():
+        text=dialog.inner_text()
+        # The round re-extracts the same teaching source. Losing existing
+        # operational knowledge is a quality failure, not something to approve
+        # just to keep later exercises running.
+        lost=any(label in text for label in ('조치 방법:', '고장 유형:', '원인:', '진단 근거:', '판단 규칙:', '절차 단계:'))
+        r.check(f'{key} 개정 삭제 목록을 확인했다 — 기존 업무 지식 누락 없음', not lost, text, kind='quality')
+        dialog.locator('button[value="cancel"]' if lost else 'button[value="ok"]').click()
+        if lost:
+            return False, '개정 누락을 확인해 적재하지 않음: ' + text
     r.wait(90, lambda: page.locator("#manualMsg").inner_text().startswith(("적재 완료", "실패")), every=1)
     msg = page.locator("#manualMsg").inner_text().strip()
     return msg.startswith("적재 완료"), msg

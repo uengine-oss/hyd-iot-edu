@@ -396,7 +396,9 @@ class Runner:
                         input_event = replace(ev,text=json.dumps(raw_input,ensure_ascii=False,default=str),tool_output=None)
                         preserved = self._keep_full_output(ui,input_event,row,job_id)
                         metadata = preserved.data.get('full_output')
-                        ui = ui_events.UiEvent(ui.type,dict(ui.data,input=raw_input,
+                        fallback = bool(metadata and not metadata.get('stored'))
+                        ui = ui_events.UiEvent(ui.type,dict(ui.data,input=raw_input if fallback else ui.data.get('input'),
+                            input_truncated=ui_events.preview_cut(raw_input) and not fallback,
                             **({'full_input':dict(metadata,direction='input')} if metadata else {})))
                     if ui.type == "tool_end":
                         ui = self._keep_full_output(ui, ev, row, job_id,
