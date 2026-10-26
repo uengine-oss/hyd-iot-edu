@@ -115,6 +115,9 @@ class Runner:
         # A114 (process-gpt-cli-agent core/selection.py _AGENT_KEYS · vue3 AgentSelectField.vue:327): the product UI stores
         # the choice as agent_cli; reading only cli/agent ran a definition set to Codex as Claude Code without a word.
         provider_id = str(_first(config, _AGENT_KEYS) or self.s.cli_agent)
+        handover_task = ctx.form_contract == 'shift-handover-draft-v1'
+        if handover_task and provider_id != 'claude-code':
+            raise ValueError('교대 인수인계의 도구 제한은 현재 강의 Claude Code 실행기에서 검증됐습니다')
         # U2 (TODO A2): the assigned agent's settings — model · MCP servers · skills · profile text — from the one source
         # (users · agent_skills · tenant_skills) through the same function the portal and a trial run read.
         # Model: the activity's agentConfig > the agent's model > the worker default.
@@ -209,9 +212,14 @@ class Runner:
                     model = self.s.codex_model
         if provider_id == "claude-code":
             servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
-            if self.s.allowed_tools:
+            if handover_task:
+                from .settings import handover_allowed_tools
+                extra_args += ['--allowedTools', ','.join(handover_allowed_tools(self.s.allowed_tools, servers))]
+            elif self.s.allowed_tools:
                 extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
+            if handover_task:
+                denied.append('mcp__hyd-dmn__submit_decision')
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
         from . import managed_model

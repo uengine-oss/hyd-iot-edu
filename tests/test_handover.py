@@ -17,7 +17,8 @@ def begin(runtime, values=None):
     definition = json.loads(PATH.read_text(encoding='utf8'))
     validate_definition(definition)
     runtime.register_definition(definition)
-    return runtime.start_definition('shift_handover', '1.0', str(uuid4()), values=START if values is None else values)
+    runtime.repo.upsert_user(dict(id='agent:handover', username='교대 인수인계 에이전트', is_agent=True, agent_type='agent', tenant_id='hyd'))
+    return runtime.start_definition('shift_handover', definition['version'], str(uuid4()), values=START if values is None else values)
 
 
 def pending(runtime, inst, activity):

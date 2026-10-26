@@ -14,7 +14,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 COMMON_TITLE = "ProcessGPT 업무 에이전트 작업 규칙"
 
@@ -93,7 +93,20 @@ HYD_PLANT = BusinessRules(
     footer="온톨로지 스키마 설명은 `context/schema_prompt.md` 에 있습니다.",
 )
 
-RULES = {r.key: r for r in (HYD_PLANT,)}
+HYD_HANDOVER = replace(HYD_PLANT,
+    key='hyd-handover', title='HYD 교대 인수인계',
+    citation='- 조회 도구 이름·실제 인자·조회 결과를 인용하고 작업 메모의 주장과 구분합니다.',
+    naming_example='"열린 정비 작업지시 확인"',
+    forbidden_effects='- 인수인계는 조회와 전달입니다. 승인 여부와 관계없이 설비 명령·발주·정비 완료·사람 대신 확인을 실행하지 않습니다.',
+    forbidden_extra='- 온톨로지 수정과 hyd-dmn.submit_decision을 포함한 판단 카드 제출을 하지 않습니다. 확인 없는 완료를 기록하지 않습니다.',
+    reassessment='  보완 요청에는 필요한 현재 상태를 다시 조회합니다. 이전 조회 결과를 현재 상태로 재사용하지 않습니다.',
+    sections=HYD_PLANT.sections+'\n\n## 인계 판단\n'
+      '- 메모는 주장입니다. 정비 완료 메모와 열린 작업지시가 다르면 모순으로 남깁니다.\n'
+      '- on_order는 입고 예정이고 on_hand는 현재고입니다. 예정 수량을 현재고라고 부르지 않습니다.\n'
+      '- 없는 정보와 조회 실패는 확인 필요로 남기며, 과거 기준시각과 현재 조회시각을 구분합니다.\n'
+      '- 사람 검토와 인수 확인은 별도 단계이며, 인계안 작성자가 이를 대신하지 않습니다.')
+
+RULES = {r.key: r for r in (HYD_PLANT, HYD_HANDOVER)}
 
 
 def rule_card(key) -> dict | None:

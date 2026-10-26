@@ -1,12 +1,12 @@
 {
   "processDefinitionId": "shift_handover",
   "processDefinitionName": "교대 인수인계",
-  "version": "1.0",
+  "version": "1.1",
   "description": "보충 매뉴얼 추가 적재 후 작업 메모·설비·정비·부품을 대조하고 인계자 검토와 인수자 확인을 기록한다. 실제 설비 조치·발주·정비 완료는 수행하지 않는다. 기존 등록 엔진은 순환 실행을 허용하지 않으므로 보완 두 회를 명시한다. 이후 추가 보완 요청은 인수 미확정으로 남긴다.",
   "roles": [
     {
       "name": "인계안 에이전트",
-      "endpoint": "sys:agent"
+      "endpoint": "agent:handover"
     },
     {
       "name": "인계자",
