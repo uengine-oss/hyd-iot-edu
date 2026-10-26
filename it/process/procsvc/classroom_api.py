@@ -68,7 +68,7 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
             # Reservation UUID is server generated. Partial HTTP failures return
             # to the same DB event/cache key, never a new paid operation.
             work = manual_cache.start(runtime, source, str(run['id']), catalog,
-                                      scope=grant['scope'], profile=grant['profile'])
+                                      scope=grant['scope'], profile=grant['profile'], execution_run_id=run['id'])
             allowed(lambda: authority.bind_work(credential, run['id'], work['instance']))
         return dict(run_id=str(run['id']), state=run['state'], reused=run['reused'])
 

@@ -63,6 +63,52 @@ def test_startup_session_rechecks_grant_without_consuming_budget(authority):
     with pytest.raises(Denied): auth.session(KEY)
 
 
+def test_shared_extraction_pins_one_budget_owner_across_student_keys(authority, document, rt):
+    from fastapi.testclient import TestClient
+    from procsvc.classroom_api import create_app
+    from procsvc import engine, classroom_model
+    from test_manual_cache import complete
+    auth, connect = authority
+    archive, source, proposal = document
+    runtime, _ = rt
+    second_key = 'another-student-key-'+'y'*32
+    policy = deepcopy(POLICY)
+    policy['documents'] = {source['sha256']: {'source_id': source['source_id']}}
+    with connect() as db:
+        db.execute("UPDATE hyd_classroom_grants SET policy=%s,subject='hyd'", (Jsonb(policy),))
+        db.execute("INSERT INTO hyd_classroom_grants(key_hash,subject,scope,policy,expires_at) VALUES (%s,'hyd','class-1',%s,now()+interval '1 day')",
+                   (key_hash(second_key), Jsonb(policy)))
+    client = TestClient(create_app(auth, source_loader=lambda doc: archive.get('hyd', doc['source_id']),
+                       runtime_factory=lambda subject: runtime, catalog_factory=lambda rt: {},
+                       archive_factory=lambda subject: archive))
+    def extract(key):
+        response = client.post('/v1/classroom/extractions', headers={'Authorization': 'Bearer '+key},
+                               json={'sha256': source['sha256']})
+        assert response.status_code == 200, response.text
+        return auth.read_run(key, response.json()['run_id'])
+    first, follower = extract(KEY), extract(second_key)
+    assert first['id'] != follower['id'] and first['work_ref'] == follower['work_ref']
+    wi = runtime.repo.list_workitems(proc_inst_id=first['work_ref'])[0]
+    pinned = engine.variables(runtime.repo.get_instance(first['work_ref']))['extraction_cache']
+    assert pinned['execution_run_id'] == str(first['id'])
+    # Exercise the real model gateway lookup, not a test-only owner parameter.
+    execution = classroom_model._execution(runtime, auth, wi)
+    assert execution['run_id'] == str(first['id'])
+    auth.charge_execution(execution['run_id'], input_bytes=100, max_output_tokens=100)
+    assert auth.read_run(KEY, first['id'])['calls'] == 1
+    assert auth.read_run(second_key, follower['id'])['calls'] == 0
+    with connect() as db:
+        db.execute('UPDATE hyd_classroom_grants SET enabled=false WHERE key_hash=%s', (key_hash(KEY),))
+    with pytest.raises(Denied): classroom_model._execution(runtime, auth, wi)
+    assert auth.read_run(second_key, follower['id'])['calls'] == 0
+    # A validated finished result can still be reused by an independently
+    # authorized follower; owner revocation never moves ongoing paid work.
+    complete(runtime, proposal)
+    result = client.get('/v1/classroom/runs/'+str(follower['id'])+'/result',
+                        headers={'Authorization': 'Bearer '+second_key})
+    assert result.status_code == 200 and result.json()['cache']['validated']
+
+
 def test_concurrent_duplicate_requests_have_one_durable_reservation(authority):
     auth, connect = authority
     with ThreadPoolExecutor(max_workers=8) as pool:

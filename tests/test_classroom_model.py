@@ -26,7 +26,7 @@ def setup(monkeypatch, tmp_path):
         get_workitem=lambda wid: row if wid==row['id'] else None, get_instance=lambda pid: inst))
     class Authority:
         calls = 0
-        def execution_context(self, subject, work, cache_key=None):
+        def execution_context(self, subject, work, cache_key=None, *, execution_run_id=None):
             assert (subject, work, cache_key) == ('class-1', 'instance-1', 'cache-1')
             return dict(run_id='run-1', model='class-model', deadline=time.time()+1200)
         def charge_execution(self, run_id, **kw):

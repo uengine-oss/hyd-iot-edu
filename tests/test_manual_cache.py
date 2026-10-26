@@ -146,19 +146,21 @@ def test_partial_segment_creation_recovers_once_with_original_source_identity(rt
     alias = archive.get('hyd', alias['source_id'])
     monkeypatch.setattr(manual_segments, 'DEFAULT_MAX_CHARS', 2000)
     create = runtime.start_definition
+    owner, follower = str(uuid4()), str(uuid4())
     def interrupted(*args, **kwargs):
         if args[2].endswith(':2'): raise RuntimeError('simulated process interruption')
         return create(*args, **kwargs)
     monkeypatch.setattr(runtime, 'start_definition', interrupted)
     with pytest.raises(RuntimeError, match='simulated'):
-        start(runtime, source)
+        start(runtime, source, execution_run_id=owner)
     monkeypatch.setattr(runtime, 'start_definition', create)
-    recovered = start(runtime, alias)
+    recovered = start(runtime, alias, execution_run_id=follower)
     assert recovered['cache']['reused'] and recovered['segments'] > 1
     for i in range(1, recovered['segments']+1):
         inst = runtime.repo.find_event_instance('hyd', extraction.DEFINITION_ID,
                 'manual-extraction:cache:'+recovered['cache']['key']+':'+str(i))
         assert engine.variables(inst)['manual_source']['source_id'] == source['source_id']
+        assert engine.variables(inst)['extraction_cache']['execution_run_id'] == owner
         assert len(runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'])) == 1
     result = manual_cache.result(runtime, archive, alias, recovered['instance'], None)
     assert result['progress']['total'] == recovered['segments'] and not result['cache']['validated']

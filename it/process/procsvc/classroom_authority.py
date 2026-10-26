@@ -141,13 +141,15 @@ class Authority:
             db.execute('UPDATE hyd_classroom_grants SET calls=calls+1,input_bytes=input_bytes+%s,output_tokens=output_tokens+%s WHERE key_hash=%s',
                        (input_bytes, max_output_tokens, hashed))
 
-    def execution_context(self, subject, work_ref, cache_key=None):
+    def execution_context(self, subject, work_ref, cache_key=None, *, execution_run_id=None):
         """Private managed-worker lookup; never exposed as a student API."""
         with self.connect() as db:
             rows = db.execute('''SELECT r.*,g.policy,g.scope FROM hyd_classroom_runs r
                 JOIN hyd_classroom_grants g ON g.key_hash=r.key_hash
                 WHERE g.subject=%s AND (r.work_ref=%s OR r.cache_key=%s) AND g.enabled AND g.expires_at>now()
-                AND r.deadline>now() AND r.state IN ('RESERVED','RUNNING')''', (subject, work_ref, cache_key)).fetchall()
+                AND r.deadline>now() AND r.state IN ('RESERVED','RUNNING')
+                AND (%s::uuid IS NULL OR r.id=%s::uuid)''',
+                (subject, work_ref, cache_key, execution_run_id, execution_run_id)).fetchall()
             if len(rows) != 1:
                 raise Denied('승인된 실행과 연결된 현재 작업이 하나여야 합니다')
             run = rows[0]

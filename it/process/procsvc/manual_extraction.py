@@ -459,11 +459,15 @@ def display_name(source):
 NOT_READY='이 PDF는 모든 페이지에 텍스트가 없어 추출할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요'
 
 
-def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None):
+def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None, execution_run_id=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
     if source['status'] != 'READY':raise ValueError(NOT_READY)
     request_id=str(UUID(request_id))
+    if execution_run_id is not None:
+        execution_run_id = str(UUID(str(execution_run_id)))
+        if cache_identity is None:
+            raise ValueError('관리 추출 실행에는 캐시 식별자가 필요합니다')
     rt.register_definition(definition())
     if cache_identity is not None and not re.fullmatch(r'[0-9a-f]{64}', cache_identity):
         raise ValueError('서버 추출 캐시 식별자가 올바르지 않습니다')
@@ -473,6 +477,8 @@ def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_i
     def launch(event, values, name):
         if cache_identity:
             values['extraction_cache'] = {'key': cache_identity, 'source_id': source['source_id']}
+            if execution_run_id:
+                values['extraction_cache']['execution_run_id'] = execution_run_id
         if feedback and feedback['items']:
             values['review_feedback']=feedback          # pinned: the agent sees the previous verdicts as [InputData]
         if catalog:
@@ -496,6 +502,7 @@ def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_i
             # for every sibling, including recovery after a partial group start.
             canonical = engine.variables(inst)['manual_source']
             source = dict(source, **{k: v for k, v in canonical.items() if k != 'pages'})
+            execution_run_id = engine.variables(inst)['extraction_cache'].get('execution_run_id')
     return lead
 
 

@@ -38,10 +38,10 @@ def identity(tenant, source, catalog, *, scope, profile, feedback=None):
                         profile=profile, feedback=manual_extraction.validate_review_feedback(feedback)))
 
 
-def start(rt, source, request_id, catalog, *, scope, profile, feedback=None):
+def start(rt, source, request_id, catalog, *, scope, profile, feedback=None, execution_run_id=None):
     key = identity(rt.tenant_id, source, catalog, scope=scope, profile=profile, feedback=feedback)
     inst = manual_extraction.start(rt, source, request_id, review_feedback=feedback,
-                                   catalog=catalog, cache_identity=key)
+                                   catalog=catalog, cache_identity=key, execution_run_id=execution_run_id)
     # A failed or in-flight work item is not a successful cache result. We do
     # not mint another request ID and spend again when it failed. Instructor
     # authorization of a new profile revision is required for a fresh attempt.

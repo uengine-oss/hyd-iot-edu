@@ -21,7 +21,8 @@ PREFIX = 'HydModel '
 def _execution(runtime, authority, row):
     inst = runtime.repo.get_instance(row['proc_inst_id'])
     cache = (engine.variables(inst).get('extraction_cache') or {}) if inst else {}
-    return authority.execution_context(runtime.tenant_id, row['proc_inst_id'], cache.get('key'))
+    return authority.execution_context(runtime.tenant_id, row['proc_inst_id'], cache.get('key'),
+                                       execution_run_id=cache.get('execution_run_id'))
 
 
 def issue(runtime, authority, body, authorization):
