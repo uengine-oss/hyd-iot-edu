@@ -1,0 +1,135 @@
+[
+  {
+    "id": "401f0e285bb481bf8a56f6b2ba33d937",
+    "course": "integrated",
+    "n": 1,
+    "kind": "knowledge",
+    "title": "01회차 · 데이터에서 판단과 조치까지"
+  },
+  {
+    "id": "401f0e285bb4813a8f5cfcc7a427411b",
+    "course": "integrated",
+    "n": 2,
+    "kind": "knowledge",
+    "title": "02회차 · 설비와 데이터의 관계를 체계화해 필요한 정보 찾기"
+  },
+  {
+    "id": "401f0e285bb4816c8bace85ec073b5e1",
+    "course": "integrated",
+    "n": 3,
+    "kind": "knowledge",
+    "title": "03회차 · 설비 상황에 맞는 안전하고 효과적인 조치 선택하기"
+  },
+  {
+    "id": "401f0e285bb4813f8bb9f006ecd5b1a1",
+    "course": "integrated",
+    "n": 4,
+    "kind": "knowledge",
+    "title": "04회차 · 현장 자료를 검증해 신뢰할 수 있는 판단 근거 만들기"
+  },
+  {
+    "id": "401f0e285bb4818dba06f3e86c2ec87e",
+    "course": "integrated",
+    "n": 5,
+    "kind": "agent",
+    "title": "05회차 · 현장 지식을 활용해 실제 문제를 해결하는 AI 에이전트 만들기"
+  },
+  {
+    "id": "401f0e285bb4811dbd69c87afaf90291",
+    "course": "integrated",
+    "n": 6,
+    "kind": "agent",
+    "title": "06회차 · 업무 능력을 재사용하고 여러 외부 시스템을 연결하기"
+  },
+  {
+    "id": "401f0e285bb481a48a32cd6b2821404c",
+    "course": "integrated",
+    "n": 7,
+    "kind": "agent",
+    "title": "07회차 · 사람의 판단과 명확한 요구사항으로 AI 업무의 신뢰성 높이기"
+  },
+  {
+    "id": "401f0e285bb481d690bbe44c5dcf6904",
+    "course": "integrated",
+    "n": 8,
+    "kind": "agent",
+    "title": "08회차 · 요구가 바뀌어도 믿고 사용할 수 있는 에이전트 완성하기"
+  },
+  {
+    "id": "401f0e285bb481b5bfd3fa6b6b64dca7",
+    "course": "integrated",
+    "n": 9,
+    "kind": "process",
+    "title": "09회차 · AI와 사람이 함께 일하는 업무 프로세스를 직접 설계하고 실행하기"
+  },
+  {
+    "id": "401f0e285bb4815ba469efe65332f7ed",
+    "course": "integrated",
+    "n": 10,
+    "kind": "process",
+    "title": "10회차 · 설비 대응을 넘어 정비와 구매 업무까지 자동으로 연결하기"
+  },
+  {
+    "id": "401f0e285bb4812cbd8dda58f98b4c2e",
+    "course": "integrated",
+    "n": 11,
+    "kind": "process",
+    "title": "11회차 · 온톨로지·에이전트·프로세스를 내 주제에 적용하고 마무리하기"
+  },
+  {
+    "id": "401f0e285bb481b098cfc3f77e5a3904",
+    "course": "applied",
+    "n": 1,
+    "kind": "knowledge",
+    "title": "01회차 · 데이터에서 판단과 조치까지"
+  },
+  {
+    "id": "401f0e285bb481e393a7e3b78816678b",
+    "course": "applied",
+    "n": 2,
+    "kind": "knowledge",
+    "title": "02회차 · 설비의 지식 구조를 만들고 안전한 조치 기준 마련하기"
+  },
+  {
+    "id": "401f0e285bb48142be1ae8e8ca4c677e",
+    "course": "applied",
+    "n": 3,
+    "kind": "knowledge",
+    "title": "03회차 · 조치의 성과를 비교하고 현장 자료를 판단 근거로 전환하기"
+  },
+  {
+    "id": "401f0e285bb48133bba4cee03ce23e02",
+    "course": "applied",
+    "n": 4,
+    "kind": "agent",
+    "title": "04회차 · 업무를 수행하는 AI를 만들고 다양한 도구 연결하기"
+  },
+  {
+    "id": "401f0e285bb481339d1ff68bafedcbd6",
+    "course": "applied",
+    "n": 5,
+    "kind": "agent",
+    "title": "05회차 · 사람과 협업하고 변경된 기능까지 검증하기"
+  },
+  {
+    "id": "401f0e285bb48154b792e5ebd08baeed",
+    "course": "applied",
+    "n": 6,
+    "kind": "process",
+    "title": "06회차 · 설비 이상 대응을 안전하게 실행하는 프로세스 완성하기"
+  },
+  {
+    "id": "401f0e285bb4816ca5a8c055f3c49a9a",
+    "course": "applied",
+    "n": 7,
+    "kind": "process",
+    "title": "07회차 · 정비와 구매 업무를 연결하고 프로세스의 실행 결과 검증하기"
+  },
+  {
+    "id": "401f0e285bb48108961fc088506679a2",
+    "course": "applied",
+    "n": 8,
+    "kind": "process",
+    "title": "08회차 · 배운 전 과정을 내 주제에 활용하고 지식 자산으로 마무리하기"
+  }
+]
