@@ -13,6 +13,20 @@ setup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(setup)
 
 
+def test_managed_worker_receives_only_runtime_secret_not_process_archive():
+    import yaml
+    config = yaml.safe_load((ROOT / 'compose.classroom.yaml').read_text(encoding='utf8'))
+    worker = config['services']['agent-worker']
+    process = config['services']['process']
+    assert not worker.get('volumes')  # Never add process-data to base worker-data.
+    assert worker['secrets'] == ['classroom_worker_runtime']
+    assert set(process['secrets']) == {'classroom_upstream', 'classroom_worker_runtime'}
+    key_path = '/run/secrets/classroom_worker_runtime'
+    assert worker['environment']['HYD_WORKER_RUNTIME_KEY_FILE'] == key_path
+    assert process['environment']['HYD_WORKER_RUNTIME_KEY_FILE'] == key_path
+    assert 'HYD_CLASSROOM_WORKER_KEY_FILE:?' in config['secrets']['classroom_worker_runtime']['file']
+
+
 def test_callback_access_log_never_contains_authorization_code():
     record = logging.LogRecord('uvicorn.access', logging.INFO, '', 0,
         '%s - "%s %s HTTP/%s" %d', ('client', 'GET', '/api/mcp/connections/callback?code=private-code&state=private-state', '1.1', 200), None)

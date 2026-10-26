@@ -11,21 +11,21 @@ services:
       HYD_CLASSROOM_AUTHORITY_DSN: ${HYD_CLASSROOM_AUTHORITY_DSN:?Instructor authority DSN required}
       HYD_CLASSROOM_UPSTREAM_URL: ${LLM_RELAY_URL:?Instructor upstream URL required}
       HYD_CLASSROOM_UPSTREAM_KEY_FILE: /run/secrets/classroom_upstream
+      HYD_WORKER_RUNTIME_KEY_FILE: /run/secrets/classroom_worker_runtime
       HYD_CLASSROOM_URL: ""
       LLM_API_KEY: ""
-    secrets: [classroom_upstream]
+    secrets: [classroom_upstream, classroom_worker_runtime]
   agent-worker:
     environment:
       HYD_MANAGED_MODEL_REQUIRED: "1"
       HYD_CLASSROOM_URL: ""
       HYD_MANAGED_MODEL_URL: http://classroom:8081
-      HYD_WORKER_RUNTIME_KEY_FILE: /run/process/mcp/worker-runtime.key
+      HYD_WORKER_RUNTIME_KEY_FILE: /run/secrets/classroom_worker_runtime
       ANTHROPIC_API_KEY: ""
       ANTHROPIC_AUTH_TOKEN: ""
       OPENAI_API_KEY: ""
       LLM_API_KEY: ""
-    volumes:
-      - process-data:/run/process:ro
+    secrets: [classroom_worker_runtime]
   classroom:
     image: nginx:1.27-alpine
     profiles: [classroom]
@@ -48,3 +48,5 @@ services:
 secrets:
   classroom_upstream:
     file: ${HYD_CLASSROOM_UPSTREAM_KEY_FILE:?Instructor upstream key file required}
+  classroom_worker_runtime:
+    file: ${HYD_CLASSROOM_WORKER_KEY_FILE:?Instructor worker runtime key file required}
