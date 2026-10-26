@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.15'         # 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
+VERSION = '2.17'         # 원문이 명시한 비실행 참고 절차의 link 계약을 전달.
+# 2.15: 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
 # 2.14: 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
 # 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
 # 2.11 (2026-10-26 final5, HM-8 세 번): 한 번이 점검이 넘기는 교체(SOP-FAN-12)를 원인 후보 규칙 outputs 에도 넣었다 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차만.
@@ -79,7 +80,10 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   outputs=[그 원인의 근본 조치 SOP ID]인 dt:action-candidates SELECT 규칙을 하나씩 만드세요. 경보 · 고장 유형 조건의 후보 규칙(즉시 완화 목록)이 있어도 빠뜨리지 마세요 —
   없으면 그 원인이 판정돼도 근본 조치 카드가 나오지 않습니다.
  한 규칙의 tests는 모두 AND입니다. OR는 규칙을 둘로 나누세요. 증거의 SQL은 서버가 tag · aggregate · window_seconds로 만듭니다(SQL을 쓰지 마세요).
- 각 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
+ 원문이 조회·상태 확인용 참고 절차이며 실행 후보가 아니라고 명시하면, 번호 단계는 보존하고 link={"kind":"reference","executable":false}를 제안하세요.
+ 이 비실행 참고 절차에는 failureMode·relation·approver·actions·addresses·affects·parts·공급사/정비 정책을 붙이지 마세요. 인계 확인을 고장 조치나 구매 실행으로 바꾸지 마세요.
+ 연결을 모르겠다는 이유만으로 실제 실행 절차를 reference로 바꾸지는 마세요. 원문의 업무 성격과 실행 제외 근거가 우선이며 사람의 원문 검토는 별도로 필요합니다.
+ 그 외 고장 조치 SOP에는 "link":{"failureMode":"fm:…","relation":"MITIGATED_BY(즉시 완화)|REMEDIED_BY(근본 조치)|PREVENTED_BY(예방 조치 = 운전시간 · 달력 주기의 정기 정비)","kind":"control(설비 명령)|work_order(작업지시 · 발주)",
   "approver":"role:…","actions":[{"action":"action:…","value":원자 조치 값}],"addresses":["cause:…"],"affects":[{"target":"sv:…|msr:…","sign":"+|-","note":"이유"}]}를 제안하세요.
  actions의 값: 설비 명령은 그 Action의 min~max 안의 숫자(예: 팬 속도 %), 구매요청(PR_CREATE)은 공급사 id, 작업지시(WO_CREATE) · 기존 오더 일정 변경(WO_RESCHEDULE)은 그 절차의 SOP ID입니다(null 금지).
  구매 · 발주 절차(구매 기준서 · 재고 규정의 발주 절차)는 고장 조치가 아니므로 link를 이 꼴로 제안하세요:
@@ -95,7 +99,9 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   "interval_h":기본 주기 숫자,"tolerance_pct":허용 오차 % 숫자,"model_assets":[원문이 적용한 설비의 ontology_catalog.assets code — 예: 1~3호기 → "HYD-01","HYD-02","HYD-03"],"anchor":ANCHOR(주기 · 허용 오차 문장),"model_anchor":ANCHOR(같은 모델 적용 문장),
   "packages":[{"interval_h":숫자,"sop":"그 패키지 SOP ID","name":"패키지 이름","parts":[{"part_no":"ontology_catalog.parts의 품번 또는 null","qty":숫자 또는 null,"name":"원문 부품 이름","mapping_reason":"품번이 null일 때 이유"}]}]}를 넣으세요.
   scope · stock_effect는 그 절차의 단계가 정합니다(예: '두 대를 묶어' → bundle, '출고를 예약한다' → reserve, '출고한다' → issue, '시행 시간을 옮긴다' → preserve).
-  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
+  packages는 원문의 주기별 패키지 전부이고 큰 패키지는 작은 패키지의 부품을 모두 포함합니다. packages.parts.qty는 설비 한 대에 그 패키지를 시행할 때의 부품 수량입니다.
+  scope=bundle도 같은 패키지의 한 대당 수량을 씁니다. 실행기가 선택한 설비별로 합산하므로 두 대의 합계 수량을 넣거나 표의 한 대당 수량을 미상으로 바꾸지 마세요.
+  같은 sop·interval_h 패키지는 모든 정책에서 같은 품번·한 대당 수량을 유지합니다. 이 정책이 없으면 정기 정비 판단이 그 절차를 실행 후보로 쓰지 못합니다.
  값은 그 절차의 단계가 정한 선택 기준을 그대로 적용해 고르세요(단계가 '가장 X한 것을 고른다'면 후보 전체에서 그 기준으로 고른 값).
  같은 절차의 적용 조건(예: '…가 아니면 이 절차를 쓰지 않는다')을 값 고르기에 미리 적용해 기준에 맞지 않는 다른 값으로 바꾸지 마세요 —
  그 조건은 dt:compliance EXCLUDE 규칙으로 옮겨, 조건에 걸리면 판단이 그 절차를 제외하게 합니다.
@@ -366,13 +372,16 @@ def check_criteria_procedures(proposal, source):
         raise ValueError(' / '.join(failures))
 
 
-def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True):
+def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True, package_scope=True):
     """Independent semantic checks share one correction round."""
     issues=[]
     checks=[lambda: check_section_titles(proposal)]
     if criteria_scope:
         checks.append(lambda: check_criteria_procedures(proposal, source))
     if not segment:
+        if package_scope:
+            from hydcommon.maintenance_policy import consistent_packages
+            checks.append(lambda: consistent_packages(proposal.get('procedures') or []))
         checks.extend((lambda: check_action_values(proposal, catalog),
                        lambda: check_purchase_policy(proposal, source),
                        lambda: check_penalty_rules(proposal, source)))
@@ -389,12 +398,18 @@ def _criteria_contract(inst):
     return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 13)
 
 
+def _package_contract(inst):
+    version = str(inst.get('proc_def_version') or '')
+    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 16)
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         issues=content_issues(proposal, variables.get('manual_source'), variables.get('ontology_catalog'),
-                              segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst))
+                              segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst),
+                              package_scope=_package_contract(inst))
         if issues:
             raise ValueError(' / '.join(issues))
     else:
@@ -636,7 +651,8 @@ def _group_result(rt, source, inst, previous_batch):
         parts.append((s,_translate(local,s)))
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)
-    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst))
+    issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst),
+                          package_scope=_package_contract(inst))
     proposal['warnings'].extend('전체 문서 검사: '+issue for issue in issues)
     extraction=dict(instance=lead['instance'],workitem=lead['workitem'],session_id=(workitems[0].get('output') or {}).get('cliagents_session_id'),
                     generation=sum(wi.get('generation',0) for wi in workitems),

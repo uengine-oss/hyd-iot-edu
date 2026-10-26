@@ -53,7 +53,7 @@ def test_new_extraction_follows_deployment_without_rewriting_prior_version(rt, d
     assert seen == [provider]
     assert runtime.poll_once() == 1
     assert extraction.result(runtime, source, inst['proc_inst_id'], None)['status'] == 'DONE'
-    assert inst['version'] == extraction.VERSION == '2.15'
+    assert inst['version'] == extraction.VERSION == '2.17'
     for version, snapshot in before.items():
         assert runtime.repo.get_proc_def(extraction.DEFINITION_ID, 'hyd', version=version) == snapshot
     assert 'agentConfig' not in extraction.definition()['activities'][0]
@@ -71,7 +71,7 @@ def test_registered_23_work_remains_pinned_and_readable_after_24_starts(rt, docu
     old_query = old_row['query']
     assert old['activities'][0]['instruction'] in old_query
     current = extraction.start(runtime, source, str(uuid4()))
-    assert current['version'] == extraction.VERSION == '2.15'
+    assert current['version'] == extraction.VERSION == '2.17'
     assert prepare(runtime.repo, old_row, 'hyd').definition == old
     assert runtime.repo.get_workitem(old_row['id'])['query'] == old_query
 
