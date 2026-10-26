@@ -15,8 +15,14 @@ class ExtractionRequest(BaseModel):
     sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
 
 
+class AgentRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    reference: str = Field(min_length=1,max_length=120,pattern=r'^[A-Za-z0-9_.:-]+$')
+    inputs: dict
+
+
 def create_app(authority, *, source_loader, runtime_factory, catalog_factory, upstream_factory=None,
-               archive_factory=None):
+               archive_factory=None, agent_enabled=False):
     app = FastAPI(title='HYD managed classroom execution')
     from .classroom_tool_io import ToolIO
     tool_io = ToolIO(authority)
@@ -70,6 +76,59 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
             raise HTTPException(422, '도구 결과 필드가 올바르지 않습니다') from None
         return await asyncio.to_thread(allowed, lambda: tool_io.complete(
             credential, body['run_id'], body['request_id'], result=body['result'], is_error=body['is_error']))
+
+    @app.post('/v1/classroom/agents')
+    def agent_start(body: AgentRequest, authorization: str | None = Header(default=None)):
+        from . import classroom_agents
+        if not agent_enabled:
+            raise HTTPException(503,'관리 에이전트 실행 연결이 아직 활성화되지 않았습니다')
+        credential=key(authorization)
+        grant=allowed(lambda:authority.authorize_agent(credential,body.reference))
+        runtime=runtime_factory(grant['subject'])
+        if runtime.tenant_id!=grant['subject']:
+            raise HTTPException(503,'관리 실행기의 수업 공간이 일치하지 않습니다')
+        approval=grant['approval']
+        allowed(lambda:classroom_agents.checked(runtime,approval))
+        allowed(lambda:classroom_agents.validate_input(approval,body.inputs))
+        contract=dict(reference=body.reference,revision=approval['revision'],inputs=body.inputs)
+        run=allowed(lambda:authority.reserve(credential,'agent_run',contract))
+        if run['state'] in ('DONE','FAILED','EXPIRED'):
+            # A historical judgment is reviewable, never a new current-state
+            # execution. An instructor must authorize another exercise scope.
+            raise HTTPException(409,'기존 실행이 끝났습니다. 현재 상태의 새 실행은 강사 승인 범위를 확인하세요')
+        if not run['work_ref']:
+            inst=allowed(lambda:classroom_agents.start(runtime,approval,body.inputs,run['id'],body.reference))
+            allowed(lambda:authority.bind_work(credential,run['id'],inst['proc_inst_id']))
+        return {'run_id':str(run['id']),'state':run['state'],'reused':run['reused']}
+
+    @app.get('/v1/classroom/agents/runs/{run_id}/result')
+    def agent_result(run_id: str, authorization: str | None = Header(default=None)):
+        from . import classroom_agents,engine
+        from .classroom_authority import digest
+        row=read(run_id,authorization)
+        if row['action']!='agent_run' or row['state'] in ('FAILED','EXPIRED'):
+            raise HTTPException(409,'결과를 확인할 수 있는 에이전트 실행이 아닙니다')
+        if not row['work_ref']:
+            return {'status':'PENDING','output':None}
+        runtime=runtime_factory(row['subject'])
+        inst=runtime.repo.get_instance(row['work_ref'])
+        if runtime.tenant_id!=row['subject'] or not inst or inst.get('tenant_id')!=row['subject']:
+            raise HTTPException(503,'승인된 에이전트 실행을 찾을 수 없습니다')
+        values=engine.variables(inst)
+        grant=allowed(lambda:authority.authorize_agent(key(authorization),values.get('classroom_agent_reference')))
+        approval=allowed(lambda:classroom_agents.verify_instance(runtime,inst))
+        if approval!=grant['approval'] or values.get('classroom_execution')!={'run_id':str(row['id'])}:
+            raise HTTPException(403,'현재 승인과 실행의 연결이 다릅니다')
+        items=runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id'],limit=None)
+        if any(w['status'] in ('PENDING','CANCELLED') or w.get('draft_status') in ('FAILED','CANCELLED') for w in items):
+            allowed(lambda:authority.finish(key(authorization),row['id'],validated=False))
+            return {'status':'FAILED','output':None}
+        if inst['status']!='COMPLETED' or len(items)!=1 or items[0]['status']!='DONE':
+            return {'status':'PENDING','output':None}
+        activity=runtime.definition_for(inst).activities[approval['activity']]
+        output={name:values[name] for name in activity.get('outputData',[]) if name in values}
+        allowed(lambda:authority.finish(key(authorization),row['id'],validated=True,result_ref=digest(output)))
+        return {'status':'DONE','output':output,'historical_proposal':True,'requires_local_review':True}
 
     @app.post('/v1/classroom/extractions')
     def extract(body: ExtractionRequest, authorization: str | None = Header(default=None)):

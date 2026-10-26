@@ -45,6 +45,8 @@ def _execution(runtime, authority, row):
         from .classroom_tool_io import identifier
         if not isinstance(managed,dict) or set(managed) != {'run_id'} or values.get('extraction_cache'):
             raise Denied('관리 에이전트 실행 연결이 올바르지 않습니다')
+        from .classroom_agents import verify_instance
+        verify_instance(runtime,inst)
         return authority.execution_context(runtime.tenant_id,row['proc_inst_id'],
                                            execution_run_id=identifier(managed['run_id']))
     cache = values.get('extraction_cache') or {}
@@ -170,6 +172,10 @@ def mount(app, authority, runtime_factory, upstream_factory):
         try:
             if read_result:
                 return await asyncio.to_thread(broker.result,binding['run_id'],body['request_id'])
+            from .classroom_agents import verify_tool
+            row=await asyncio.to_thread(worker_credentials._claim,runtime,binding)
+            inst=await asyncio.to_thread(runtime.repo.get_instance,row['proc_inst_id'])
+            await asyncio.to_thread(verify_tool,runtime,inst,body['tool'])
             request_id = await asyncio.to_thread(broker.enqueue,binding['run_id'],**body)
             return {'request_id':request_id}
         except Denied as exc:
