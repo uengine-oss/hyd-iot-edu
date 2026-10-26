@@ -70,6 +70,29 @@ def test_cache_key_separates_all_extraction_inputs(document, monkeypatch, change
     assert manual_cache.identity(**args) != before
 
 
+@pytest.mark.parametrize('damage', ['semantic', 'citation'])
+def test_completed_cache_is_revalidated_before_reuse(rt, document, damage):
+    runtime, _ = rt
+    archive, source, proposal = document
+    source = archive.get('hyd', source['source_id'])
+    first = start(runtime, source)
+    complete(runtime, proposal)
+    assert manual_cache.result(runtime, archive, source, first['instance'], None)['cache']['validated']
+    # Simulate damaged persisted output, after the normal completion gate.
+    wi = runtime.repo.list_workitems(proc_inst_id=first['instance'])[0]
+    stored = runtime.repo.workitems[wi['id']]['output']['proposal']
+    if damage == 'semantic':
+        stored['sections'][0]['title'] = 'section-1 정비 절차'
+    else:
+        stored['procedures'][0]['anchor']['quote'] = '원문에 없는 근거'
+    again = start(runtime, source)
+    assert again['instance'] == first['instance'] and again['cache']['reused']
+    with pytest.raises(ValueError):
+        manual_cache.result(runtime, archive, source, again['instance'], None)
+    assert len(runtime.repo.list_workitems(proc_inst_id=first['instance'])) == 1
+    assert not runtime.repo.fetch_pending_task('cliagents', 'cache-retry')
+
+
 def test_failed_or_unverified_run_is_not_success_and_does_not_spawn_paid_retry(rt, document):
     runtime, _ = rt
     archive, source, _ = document
