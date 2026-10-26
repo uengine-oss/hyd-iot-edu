@@ -121,6 +121,7 @@ print(json.dumps(r))''')
         meta = {'server':'enterprise', 'name':'spare_stock', 'description':'test student stock',
                 'inputSchema':{'type':'object','properties':{'part':{'type':'string'}},
                                'required':['part'],'additionalProperties':False}}
+        proposal = dict(meta,server='hyd-dmn',name='submit_decision',kind='proposal')
         class Handler(BaseHTTPRequestHandler):
             def log_message(self, *args):
                 pass
@@ -129,15 +130,17 @@ print(json.dumps(r))''')
                 if self.headers.get('Authorization') != 'Bearer HydModel test-permit':
                     self.send_error(403); return
                 if self.path.endswith('/tool-catalog'):
-                    reply = {'tools':[meta]}
+                    reply = {'tools':[meta,proposal]}
                 elif self.path.endswith('/tool-request'):
                     calls.append(body)
-                    ident = str(uuid4()); pending[ident] = body['arguments']['part']
+                    ident = str(uuid4()); pending[ident] = body
                     reply = {'request_id':ident}
                 elif self.path.endswith('/tool-result'):
-                    missing = pending[body['request_id']] == 'missing'
+                    request = pending[body['request_id']]
+                    missing = request['arguments']['part'] == 'missing'
+                    result = {'proposal_id':'DEC-TEST'} if request['tool']=='hyd-dmn/submit_decision' else {'available':7}
                     reply = {'state':'FAILED' if missing else 'DONE',
-                             'result':{'error':'student source unavailable'} if missing else {'available':7}}
+                             'result':{'error':'student source unavailable'} if missing else result}
                 else:
                     self.send_error(404); return
                 data = json.dumps(reply).encode()
@@ -155,22 +158,26 @@ print(json.dumps(r))''')
 from fastmcp import Client
 async def main():
  async with Client('''+repr(config)+''') as client:
-  names=[t.name for t in await client.list_tools()]
+  tools=await client.list_tools()
+  names=[t.name for t in tools]
+  assert next(t for t in tools if t.name=='hyd-dmn_submit_decision').annotations.readOnlyHint is False
   stock=await client.call_tool('enterprise_spare_stock',{'part':'seal'})
+  proposal=await client.call_tool('hyd-dmn_submit_decision',{'part':'seal'})
   checked=await client.call_tool('hyd-result_check_result_json',{})
   rejected=[]
   for args in ({'part':9},{'part':'missing'}):
    try:await client.call_tool('enterprise_spare_stock',args);rejected.append(False)
    except Exception:rejected.append(True)
-  print(json.dumps({'names':names,'stock':json.loads(stock.content[0].text),
+  print(json.dumps({'names':names,'stock':json.loads(stock.content[0].text),'proposal':json.loads(proposal.content[0].text),
                     'check':json.loads(checked.content[0].text),'rejected':rejected}))
 asyncio.run(main())
 '''
             result = self.run_child(script)
             self.assertEqual(result['stock'], {'available':7})
+            self.assertEqual(result['proposal'], {'proposal_id':'DEC-TEST'})
             self.assertTrue(result['check']['ok'])
             self.assertEqual(result['rejected'], [True, True])
-            self.assertEqual([c['arguments'] for c in calls], [{'part':'seal'},{'part':'missing'}])
+            self.assertEqual([c['arguments'] for c in calls], [{'part':'seal'},{'part':'seal'},{'part':'missing'}])
         finally:
             server.shutdown(); server.server_close(); thread.join(timeout=3)
 

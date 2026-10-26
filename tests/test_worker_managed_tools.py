@@ -116,13 +116,18 @@ def test_instructor_catalog_must_match_read_only_schema_contract(change):
 
 
 @pytest.mark.parametrize('qualified',['hyd-dmn/submit_decision','hyd-dmn/submit_purchase'])
-def test_only_explicit_proposal_catalog_preserves_write_annotation(qualified):
+def test_only_explicit_proposal_catalog_preserves_write_annotation(qualified,tmp_path):
     from procsvc.classroom_tool_io import catalog
     from procsvc.classroom_authority import Denied
     meta={'kind':'proposal','inputSchema':{'type':'object'},
           'annotations':{'readOnlyHint':False,'destructiveHint':False}}
     contract={'tools':[qualified],'catalog':{qualified:meta}}
     rows=catalog(contract)
+    config,names=managed_tools.attach(MANAGED,tmp_path,transport=httpx.MockTransport(
+        lambda req:httpx.Response(200,json={'tools':rows})))
+    assert names=={'hyd-dmn':[qualified.split('/')[1]]}
+    assert set(config['mcpServers'])=={'hyd-dmn'}
+    rows=json.loads((tmp_path/'managed-tool-catalog.json').read_text(encoding='utf8'))
     async def inspect():
         async with Client(managed_tools.server('hyd-dmn',rows,object())) as client:
             tool=(await client.list_tools())[0]
@@ -131,6 +136,19 @@ def test_only_explicit_proposal_catalog_preserves_write_annotation(qualified):
     asyncio.run(inspect())
     meta.pop('kind')
     with pytest.raises(Denied):catalog(contract)
+
+
+@pytest.mark.parametrize('qualified,kind',[
+    ('enterprise/spare_stock','proposal'),('hyd-dmn/execute','proposal'),
+    ('hyd-dmn/submit_decision','read'),('hyd-dmn/submit_purchase',None)])
+def test_worker_attach_rejects_mislabeled_proposal_catalog(tmp_path,qualified,kind):
+    server,name=qualified.split('/')
+    meta=dict(META,server=server,name=name)
+    if kind is not None:meta['kind']=kind
+    with pytest.raises(RuntimeConnectionError,match='분류'):
+        managed_tools.attach(MANAGED,tmp_path,transport=httpx.MockTransport(
+            lambda req:httpx.Response(200,json={'tools':[meta]})))
+    assert not (tmp_path/'managed-tool-catalog.json').exists()
 
 
 @pytest.mark.parametrize('qualified',['enterprise/PR_CREATE','hyd-dmn/execute','enterprise/submit_decision'])
