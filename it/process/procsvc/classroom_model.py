@@ -39,7 +39,15 @@ async def deadline_chunks(response, deadline):
 
 def _execution(runtime, authority, row):
     inst = runtime.repo.get_instance(row['proc_inst_id'])
-    cache = (engine.variables(inst).get('extraction_cache') or {}) if inst else {}
+    values = engine.variables(inst) if inst else {}
+    managed = values.get('classroom_execution')
+    if managed is not None:
+        from .classroom_tool_io import identifier
+        if not isinstance(managed,dict) or set(managed) != {'run_id'} or values.get('extraction_cache'):
+            raise Denied('관리 에이전트 실행 연결이 올바르지 않습니다')
+        return authority.execution_context(runtime.tenant_id,row['proc_inst_id'],
+                                           execution_run_id=identifier(managed['run_id']))
+    cache = values.get('extraction_cache') or {}
     return authority.execution_context(runtime.tenant_id, row['proc_inst_id'], cache.get('key'),
                                        execution_run_id=cache.get('execution_run_id'))
 
@@ -144,6 +152,36 @@ def mount(app, authority, runtime_factory, upstream_factory):
             raise HTTPException(422, '실행 요청 형식이 올바르지 않습니다') from None
         runtime = runtime_factory(body['tenant_id'])
         return await asyncio.to_thread(issue, runtime, authority, body, request.headers.get('authorization'))
+
+    async def tool_operation(request, *, read_result):
+        from .classroom_tool_io import ToolIO
+        token = request.headers.get('authorization', '').removeprefix('Bearer ')
+        binding = verify_token(token)
+        runtime = runtime_factory(binding['tenant_id'])
+        binding = await asyncio.to_thread(authorize,runtime,authority,token)
+        try:
+            body = json.loads(await body_bytes(request,16384))
+            fields = {'request_id'} if read_result else {'call_id','tool','arguments'}
+            if not isinstance(body,dict) or set(body) != fields:
+                raise ValueError()
+        except (ValueError,UnicodeError):
+            raise HTTPException(422,'관리 도구 요청 필드가 올바르지 않습니다') from None
+        broker = ToolIO(authority)
+        try:
+            if read_result:
+                return await asyncio.to_thread(broker.result,binding['run_id'],body['request_id'])
+            request_id = await asyncio.to_thread(broker.enqueue,binding['run_id'],**body)
+            return {'request_id':request_id}
+        except Denied as exc:
+            raise HTTPException(403,str(exc)) from None
+
+    @app.post('/internal/worker/tool-request')
+    async def tool_request(request: Request):
+        return await tool_operation(request,read_result=False)
+
+    @app.post('/internal/worker/tool-result')
+    async def tool_result(request: Request):
+        return await tool_operation(request,read_result=True)
 
     async def forward(request, count_only):
         token = request.headers.get('x-api-key') or request.headers.get('authorization', '').removeprefix('Bearer ')
