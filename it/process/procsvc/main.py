@@ -1137,6 +1137,14 @@ manual_api.register(app,
     archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
     runtime_factory=instance_mode.current)
+# Instructor server only. The public proxy exposes this subtree; the parent
+# process API remains on the private network with the managed worker and DB.
+if os.getenv('HYD_CLASSROOM_AUTHORITY_ENABLED') == '1':
+    from . import classroom_config
+    app.mount('/classroom', classroom_config.build(settings=os.environ,
+        runtime_factory=instance_mode.current,
+        archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
+        driver_factory=_kg))
 # A9 옛 DB 뜻 복원: AI candidates (agent task) → a person's review → only approved meanings reach the DDL plan
 from . import legacy_meaning, legacy_meaning_api
 from .legacy_meaning_store import LegacyMeaningStore

@@ -8,11 +8,12 @@ from fastapi.responses import Response
 
 from uuid import uuid4
 
-from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge, manual_preflight
+from . import manual_graph, manual_review, manual_extraction, manual_golden, manual_knowledge, manual_preflight, manual_cache
 from .manual_sources import MAX_BYTES
 
 
-def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_factory=lambda: None):
+def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_factory=lambda: None,
+             cache_context=None):
     async def run(fn):
         try:
             return await asyncio.get_running_loop().run_in_executor(None, fn)
@@ -49,7 +50,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
+            # The authority hook is server-owned. No scope/profile/reextract
+            # override from the student's request body is accepted here.
+            context = cache_context(source, body.get('review_feedback')) if cache_context else None
             catalog = graph(manual_knowledge.catalog)          # C1: the ids the document may point at, pinned with the run
+            if context is not None:
+                return manual_cache.start(runtime(), source, request_id, catalog, scope=context['scope'],
+                                          profile=context['profile'], feedback=body.get('review_feedback'))
             inst = manual_extraction.start(runtime(),source,request_id,review_feedback=body.get('review_feedback'),catalog=catalog)
             seg = manual_extraction.engine.variables(inst).get('segment') or {}
             return dict(instance=inst['proc_inst_id'],status=inst['status'],source_id=source_id,segments=seg.get('total',1))
@@ -59,8 +66,10 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def extraction_result(source_id: str, instance_id: str):
         def work():
             source = archive_factory().get(tenant,source_id)
+            if cache_context:
+                cache_context(source, None)  # Revoked document access cannot be restored by a cache hit.
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
-            value = manual_extraction.result(runtime(),source,instance_id,previous)
+            value = manual_cache.result(runtime(),archive_factory(),source,instance_id,previous)
             if value.get('preview'):
                 # The graph tags a document's nodes with its tenant-scoped key, not the raw document id (F-1: the raw id
                 # made this document's own SOPs show up as another document's).
@@ -81,8 +90,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
         def work():
             source = archive_factory().get(tenant,source_id)
             if not 1 <= limit <= 100 or offset < 0:raise ValueError('목록 범위가 올바르지 않습니다')
+            context = cache_context(source, None) if cache_context else None
+            cache_prefix = None
+            if context is not None:
+                key = manual_cache.identity(tenant, source, graph(manual_knowledge.catalog), **context)
+                cache_prefix = 'manual-extraction:cache:' + key
             rows = runtime().repo.list_source_runs(tenant,manual_extraction.DEFINITION_ID,
-                        'manual-extraction:'+source['source_id']+':',limit+1,offset)
+                        'manual-extraction:'+source['source_id']+':',limit+1,offset,cache_prefix=cache_prefix)
             return dict(items=rows[:limit],offset=offset,limit=limit,next_offset=offset+limit if len(rows)>limit else None)
         return await run(work)
 

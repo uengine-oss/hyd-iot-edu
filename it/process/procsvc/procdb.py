@@ -380,9 +380,10 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
         return [_copy(i) for i in sorted(rows, key=lambda i: i["start_date"], reverse=True)[:limit]]
 
     # ---- work items
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0):
+    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None):
         rows=[i for i in self.instances.values() if i.get('tenant_id')==tenant_id and i.get('proc_def_id')==def_id
-              and not i.get('is_deleted',False) and str(i.get('start_event_id') or '').startswith(event_prefix)]
+              and not i.get('is_deleted',False) and (str(i.get('start_event_id') or '').startswith(event_prefix)
+                  or cache_prefix and str(i.get('start_event_id') or '').startswith(cache_prefix))]
         rows.sort(key=lambda i:(i['start_date'],i['proc_inst_id']),reverse=True)
         return [{k:_copy(i.get(k)) for k in ('proc_inst_id','status','start_date','end_date')} for i in rows[offset:offset+limit]]
 
@@ -882,12 +883,14 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
                         self._Jsonb([{'key':'incident','value':incident_id}]),asset,self._Jsonb([{'key':'asset','value':asset}]),limit)).fetchall()
             return [self._row(r) for r in rows]
 
-    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0):
+    def list_source_runs(self, tenant_id, def_id, event_prefix, limit=51, offset=0, cache_prefix=None):
         with self._conn() as c:
             return [self._row(r) for r in c.execute('''select proc_inst_id,status,start_date,end_date from bpm_proc_inst
-                where tenant_id=%s and proc_def_id=%s and is_deleted=false and left(start_event_id,%s)=%s
+                where tenant_id=%s and proc_def_id=%s and is_deleted=false and
+                (left(start_event_id,%s)=%s or (%s <> '' and left(start_event_id,%s)=%s))
                 order by start_date desc,proc_inst_id desc limit %s offset %s''',
-                (tenant_id,def_id,len(event_prefix),event_prefix,limit,offset)).fetchall()]
+                (tenant_id,def_id,len(event_prefix),event_prefix,cache_prefix or '',len(cache_prefix or ''),
+                 cache_prefix or '',limit,offset)).fetchall()]
 
     def hide_instances(self, tenant_id, def_id, ids):
         if not ids:return 0

@@ -214,6 +214,12 @@ class Runner:
             denied = run_disallowed_tools(gate.blocked_tools)
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
+        from . import managed_model
+        managed = managed_model.attach(row, self.s.tenant_id, provider_id)
+        if managed:
+            model = managed['model']
+            bridged.env = dict(bridged.env or {}, **managed['env'])
+            bridged.redaction_values.extend(managed['secrets'])
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)
         request = ExecRequest(prompt=text, workdir=str(ws.path), model=model, permission=permission, resume_session=resume_session, extra_args=extra_args)
         crew = f"{self.s.agent_orch}:{provider_id}"

@@ -457,30 +457,43 @@ def display_name(source):
 NOT_READY='이 PDF는 모든 페이지에 텍스트가 없어 추출할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요'
 
 
-def start(rt, source, request_id, review_feedback=None, catalog=None):
+def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
     if source['status'] != 'READY':raise ValueError(NOT_READY)
     request_id=str(UUID(request_id))
     rt.register_definition(definition())
-    event_id='manual-extraction:'+source['source_id']+':'+request_id
+    if cache_identity is not None and not re.fullmatch(r'[0-9a-f]{64}', cache_identity):
+        raise ValueError('서버 추출 캐시 식별자가 올바르지 않습니다')
+    event_id=('manual-extraction:cache:'+cache_identity if cache_identity else
+              'manual-extraction:'+source['source_id']+':'+request_id)
     feedback=validate_review_feedback(review_feedback)
     def launch(event, values, name):
+        if cache_identity:
+            values['extraction_cache'] = {'key': cache_identity, 'source_id': source['source_id']}
         if feedback and feedback['items']:
             values['review_feedback']=feedback          # pinned: the agent sees the previous verdicts as [InputData]
         if catalog:
             values['ontology_catalog']=catalog          # C1: the ids a document may point at (pinned with the run)
         inst=rt.start_definition(DEFINITION_ID,VERSION,event,values=values,name=name)
-        return inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
+        result = inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
+        return dict(result, cache_reused=inst is None) if cache_identity else result
     segs=manual_segments.segments(source)
     if not segs:
         return launch(event_id,{'manual_source':source},display_name(source)+' 추출 제안')
     lead=None
     for seg in segs:
         pinned=dict(seg,request_id=request_id)
+        if cache_identity:
+            pinned['cache_identity'] = cache_identity
         inst=launch(f"{event_id}:{seg['index']}",{'manual_source':segment_view(source,seg),'segment':pinned},
                     f"{display_name(source)} 추출 제안 (구간 {seg['index']}/{seg['total']})")
         lead=lead or inst
+        if cache_identity and seg['index'] == 1:
+            # Concurrent aliases must use the winning lead's document identity
+            # for every sibling, including recovery after a partial group start.
+            canonical = engine.variables(inst)['manual_source']
+            source = dict(source, **{k: v for k, v in canonical.items() if k != 'pages'})
     return lead
 
 
@@ -585,7 +598,8 @@ def _group_result(rt, source, inst, previous_batch):
     """A093: a segmented extraction is reported as one unit under its lead instance. Every sibling's pinned input must be
     the archive's own text at its segment coordinates; the merged proposal passes the whole-document contract unchanged."""
     seg=engine.variables(inst)['segment']
-    base=f"manual-extraction:{source['source_id']}:{seg['request_id']}:"
+    base=(f"manual-extraction:cache:{seg['cache_identity']}:" if seg.get('cache_identity') else
+          f"manual-extraction:{source['source_id']}:{seg['request_id']}:")
     siblings=[rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,base+str(i)) for i in range(1,seg['total']+1)]
     if any(s is None for s in siblings):raise ValueError('구간 추출 작업 일부가 없습니다 — 추출 요청을 같은 request_id로 다시 보내세요')
     segments,states,workitems=[],[],[]
