@@ -214,13 +214,15 @@ class Round:
     # ------------------------------------------------------------------ 결과
     def write(self) -> int:
         bad = [v for v in self.verdicts if not v.ok]
+        log_failures = 0
         for lab, log in self.logs.items():
             if log.console_errors or log.failed_requests:
+                log_failures += 1
                 bad.append(Verdict(lab, "콘솔 오류 · 실패한 요청", False, "quality"))
         (self.out / "results.json").write_text(json.dumps({
             "verdicts": [asdict(v) for v in self.verdicts],
             "logs": {k: asdict(v) for k, v in self.logs.items()}}, ensure_ascii=False, indent=2), encoding="utf-8")
-        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개", ""]
+        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개 · 별도 콘솔/통신 오류 실습 {log_failures}개", ""]
         for lab in dict.fromkeys(v.lab for v in self.verdicts):
             vs = [v for v in self.verdicts if v.lab == lab]
             lines.append(f"## {lab} — 통과 {sum(v.ok for v in vs)}/{len(vs)}")
@@ -3000,7 +3002,8 @@ def main(argv: list[str]) -> int:
             print(f"   ({time.monotonic() - t0:.0f}초)", flush=True)
         browser.close()
     rc = r.write()
-    print(f"\n결과: {out}/summary.md (실패 {len([v for v in r.verdicts if not v.ok])}개)")
+    log_failures = sum(bool(v.console_errors or v.failed_requests) for v in r.logs.values())
+    print(f"\n결과: {out}/summary.md (판정 실패 {sum(not v.ok for v in r.verdicts)}개 · 별도 콘솔/통신 오류 실습 {log_failures}개)")
     return rc
 
 

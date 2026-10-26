@@ -411,6 +411,9 @@ def removed_nodes(before, after):
 
 
 def revision_preview(session, plan):
+    # desired() renders Rule.when from resolved input variables, just as commit
+    # does. A valid extracted rule has InputData IDs, not trusted variable names.
+    manual_knowledge.check_graph(session, plan, skill_id)
     row = session.run('MATCH (d:ManualIngestionDocument {id:$id, tenant:$tenant}) '
                       'RETURN d.head AS head, d.snapshot AS snapshot', id=plan['document'], tenant=plan['tenant']).single()
     if (row['head'] if row else None) != plan['previous_batch']:

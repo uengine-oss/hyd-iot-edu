@@ -242,6 +242,36 @@ def test_commit_helper_requeries_current_graph_and_keeps_rule_resolution(catalog
         manual_knowledge.check_graph(Session(), plan, lambda sop: sop)
 
 
+def test_revision_preview_resolves_rule_input_ids_before_rendering(catalog, tmp_path):
+    from procsvc import manual_graph, manual_review
+    from test_manual_review import reviewed
+    archive = ManualSources(tmp_path / 'review.sqlite')
+    _, body = reviewed(archive)
+    plan = manual_review.validate(archive, 'hyd', body)
+    plan['knowledge'] = {'rules': [dict(id='rule:review', table='dt:allow-actions',
+        tests=[dict(input='in:load', operator='>=', value=60, unit='')], effect='ALLOW',
+        order=1, annotation='', penalty=None, outputs=[], applies_to=[], penalizes=None,
+        section=plan['sections'][0]['ref'])]}
+    class Rows:
+        def __init__(self, rows): self.rows = rows
+        def data(self): return deepcopy(self.rows)
+        def single(self): return None
+    class Session:
+        def execute_read(self, fn): return fn(self)
+        def run(self, query, **params):
+            assert query.startswith('MATCH '), '미리보기에서 쓰기를 실행하면 안 됨'
+            if 'ManualIngestionDocument' in query: return Rows([])
+            return Rows({manual_knowledge.CATALOG_Q['actions']: catalog['actions'],
+                manual_knowledge.CATALOG_Q['decision_tables']: catalog['decision_tables'],
+                'MATCH (s:Supplier) RETURN s.id AS id': catalog['suppliers'],
+                manual_knowledge.CATALOG_Q['skills']: catalog['skills']}[query])
+    assert manual_graph.revision_preview(Session(), plan)['removed'] == []
+    assert plan['knowledge']['rules'][0]['tests'][0]['variable'] == 'load'
+    catalog['decision_tables'][0]['inputs'] = []
+    with pytest.raises(ValueError, match='REQUIRES_INPUT'):
+        manual_graph.revision_preview(Session(), plan)
+
+
 def test_ownership_and_missing_catalog_references_are_not_hidden(catalog):
     p = proposal()
     p['links']['SOP-PM-12'].update(failureMode='fm:missing', actions=[])
