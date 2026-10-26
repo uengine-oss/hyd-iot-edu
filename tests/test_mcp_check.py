@@ -309,7 +309,8 @@ def test_repo_mcp_servers_mark_every_tool_and_only_submit_decision_writes():
     purchase = {n: marks[n] for n in ('purchase_context', 'evaluate_purchase', 'submit_purchase') if n in marks}
     assert purchase == {'purchase_context': 'READ', 'evaluate_purchase': 'READ', 'submit_purchase': 'WRITE'}
     original = {n: m for n, m in marks.items() if n not in purchase}
-    assert len(original) == 30 and [n for n, m in original.items() if m == "WRITE"] == ["submit_decision"]
+    assert len(original) == 31 and [n for n, m in original.items() if m == "WRITE"] == ["submit_decision"]
+    assert original['read_evaluation_evidence'] == 'READ'
     for name, mark in marks.items():
         ok, _ = mcp_check.read_only_verdict({"name": name, "annotations": {"readOnlyHint": mark == "READ"}})
         assert ok is (mark == "READ"), name

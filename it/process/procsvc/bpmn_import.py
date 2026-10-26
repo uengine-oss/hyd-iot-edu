@@ -20,11 +20,13 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import keyword
 import math
 import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
+from pathlib import Path
 
 from . import engine, effect_parts, approval_part
 from .definition_registry import PROTECTED_OUTPUTS, validate_definition
@@ -281,10 +283,14 @@ def _part_kind(a: dict) -> str:
     return "service" if a.get("type") == "serviceTask" else "human"
 
 
-def catalog(base: dict, users: list[dict] | None = None) -> dict:
+def catalog(base: dict, users: list[dict] | None = None, *, include_handover=True) -> dict:
     """기준 정의(it/process/definitions/<운영판>.json)의 activity → 시나리오 부품. 부품은 그 activity 의 계약(type · role · agent ·
     agentMode · orchestration · decision · tool · instruction · inputData · outputData · checkpoints · duration)과 폼을 그대로 쓴다.
     경계 타이머는 그림에 그린 것만 쓰되, 기준에서 그 부품에 붙어 있던 기간을 기본값으로 알려 준다."""
+    handover_catalog = None
+    if include_handover and base.get('processDefinitionId') != 'shift_handover':
+        source = Path(__file__).resolve().parents[1]/'definitions/shift_handover_v1.json'
+        handover_catalog = catalog(json.loads(source.read_text(encoding='utf8')), users, include_handover=False)
     forms = base.get("forms") or {}
     roles = {r["name"]: r for r in base.get("roles") or []}
     events = base.get("events") or []
@@ -305,6 +311,13 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     for part in parts:
         if part["tool"] == "enterprise:WO_CREATE":
             part["config"] = {"window_var": "정비 예정 시간이 담긴 값", "mail": "정비 요청 뒤 공지 메일"}
+    if handover_catalog:
+        for part in handover_catalog['parts']:
+            if part['key'] not in ('task:draft', 'task:sender', 'task:receiver'):
+                continue
+            item = deepcopy(part)
+            item.update(key='handover:'+part['key'], name='교대 · '+part['name'])
+            parts.append(item)
     select = next((p for p in parts if p["key"] == SELECT_PART and p["tool"] == APPROVAL_TOOL and p.get("form")), None)
     if select is not None:
         parts.append(_rejectable(select))
@@ -343,6 +356,10 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
     for r in base.get("roles") or []:
         role_list.append({"name": r["name"], "endpoint": r.get("endpoint"), "resolutionRule": r.get("resolutionRule"),
                           "human": str(r.get("endpoint") or "").startswith("role:")})
+    if handover_catalog:
+        for role in handover_catalog['roles']:
+            if role['name'] not in {r['name'] for r in role_list}:
+                role_list.append(dict(role, human=str(role.get('endpoint') or '').startswith(('role:', 'user:'))))
     known = {r["endpoint"] for r in role_list}
     agents = []
     for u in sorted(users or [], key=lambda u: str(u.get("id"))):
@@ -375,7 +392,8 @@ def catalog(base: dict, users: list[dict] | None = None) -> dict:
             "patterns": list((policy.get("patterns") or {}).keys()), "alert_policy": policy, "human_patterns": list(human),
             "business_patterns": list(business),
             "alert_start": {k: deepcopy(v) for k, v in start_event.items() if k not in ("id", "name")} if start_event.get("eventDefinition") == "message" else None,
-            "data": {d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")},
+            "data": {**(handover_catalog['data'] if handover_catalog else {}),
+                     **{d["name"]: deepcopy(d) for d in base.get("data") or [] if isinstance(d, dict) and d.get("name")}},
             "field_types": list(FIELD_TYPES), "ops": list(OPS), "alert_start_values": list(ALERT_START_VALUES)}
 
 
@@ -836,7 +854,9 @@ def check(parsed: dict, mapping: dict, ctx: dict) -> dict:
     for a in activities:
         have = {x["value"] for x in available.get(a["id"], [])}
         t = g.nodes[a["id"]]
-        missing = [v for v in a.get("inputData") or [] if v not in have]
+        from .handover import optional_inputs
+        optional = optional_inputs(forms.get(str(a.get('tool') or '').removeprefix('formHandler:')))
+        missing = [v for v in a.get("inputData") or [] if v not in have and v not in optional]
         if missing and start_node:
             problems.append(problem(t, "inputs", f"받을 값 {', '.join(missing)} 을(를) 앞 단계(또는 시작)가 내지 않습니다"))
     for f in parsed["flows"]:

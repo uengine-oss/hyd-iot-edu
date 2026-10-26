@@ -14,14 +14,15 @@ from test_failed_attempt_trace import failing_case, world
 def test_work_rules_roundtrip_preserves_omitted_and_rejects_unknown(env):
     client, rt = env
     catalog = client.get('/api/agent-authoring/options').json()['work_rules']
-    assert catalog == [{'key': 'hyd-plant', 'label': work_rules.HYD_PLANT.title,
-                        'content': work_rules.constitution(work_rules.HYD_PLANT)}]
+    catalog = {r['key']: r for r in catalog}
+    assert catalog == {r.key: {'key': r.key, 'label': r.title, 'content': work_rules.constitution(r)}
+                       for r in (work_rules.HYD_PLANT, work_rules.HYD_HANDOVER)}
     body = {'name': '업무 규칙 선택 시험', 'goal': '규칙을 따른다', 'work_rules': 'hyd-plant'}
     created = client.post('/api/agents', json=body)
     assert created.status_code == 201, created.text
     aid = created.json()['id']
     card = client.get(f'/api/agents/{aid}').json()
-    assert card['work_rules_detail'] == catalog[0] and card['run']['settings']['work_rules'] == 'hyd-plant'
+    assert card['work_rules_detail'] == catalog['hyd-plant'] and card['run']['settings']['work_rules'] == 'hyd-plant'
     body.pop('work_rules')
     assert client.put(f'/api/agents/{aid}', json=body).status_code == 200
     assert client.get(f'/api/agents/{aid}').json()['work_rules'] == 'hyd-plant'

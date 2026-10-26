@@ -10,6 +10,11 @@ RECEIVER = 'shift-handover-receiver-v1'
 AREAS = {'equipment', 'work_orders', 'parts', 'work_notes'}
 
 
+def optional_inputs(form):
+    contract = (form or {}).get('contract')
+    return {'sender_notes', 'receiver_notes'} if contract == DRAFT else {'receiver_notes'} if contract == SENDER else set()
+
+
 def validate_start(values):
     allowed = {'asset', 'shift_label', 'as_of', 'work_notes'}
     if not isinstance(values, dict) or set(values) != allowed:

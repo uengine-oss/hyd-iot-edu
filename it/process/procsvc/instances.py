@@ -263,7 +263,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError('실행할 정의 버전을 지정하세요')
         defn = self.definition_for({'proc_def_id':def_id,'proc_def_version':version,'tenant_id':self.tenant_id})
         from . import handover
-        if def_id == handover.DEFINITION_ID:
+        if def_id == handover.DEFINITION_ID or any(f.get('contract') == handover.DRAFT for f in defn.raw.get('forms', {}).values()):
             handover.validate_start(values)
         if defn.start_events()[0].get('eventDefinition') == 'message' and alert is None:
             raise ValueError('메시지 시작 정의에는 경보 입력이 필요합니다')

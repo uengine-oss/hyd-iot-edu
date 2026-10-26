@@ -1,0 +1,210 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="HandoverDefinitions" targetNamespace="https://hyd.local/classroom">
+  <bpmn:process id="ShiftHandover" name="교대 인수인계" isExecutable="true">
+    <bpmn:startEvent id="ev_start" name="인계 요청" />
+    <bpmn:endEvent id="ev_confirmed" name="인수 확인 기록 완료" />
+    <bpmn:endEvent id="ev_rejected" name="인계 거절 기록" />
+    <bpmn:endEvent id="ev_followup" name="후속 확인 필요 · 인수 미확정" />
+    <bpmn:userTask id="task_draft" name="인계안 작성" />
+    <bpmn:userTask id="task_sender" name="인계자 검토" />
+    <bpmn:userTask id="task_receiver" name="인수자 확인" />
+    <bpmn:userTask id="task_draft_r2" name="인계안 작성 · 보완 1" />
+    <bpmn:userTask id="task_sender_r2" name="인계자 검토 · 보완 1" />
+    <bpmn:userTask id="task_receiver_r2" name="인수자 확인 · 보완 1" />
+    <bpmn:userTask id="task_draft_r3" name="인계안 작성 · 보완 2" />
+    <bpmn:userTask id="task_sender_r3" name="인계자 검토 · 보완 2" />
+    <bpmn:userTask id="task_receiver_r3" name="인수자 확인 · 보완 2" />
+    <bpmn:exclusiveGateway id="gw_sender" name="검토 결정" />
+    <bpmn:exclusiveGateway id="gw_receiver" name="검토 결정" />
+    <bpmn:exclusiveGateway id="gw_sender_r2" name="검토 결정" />
+    <bpmn:exclusiveGateway id="gw_receiver_r2" name="검토 결정" />
+    <bpmn:exclusiveGateway id="gw_sender_r3" name="검토 결정" />
+    <bpmn:exclusiveGateway id="gw_receiver_r3" name="검토 결정" />
+    <bpmn:sequenceFlow id="seq_0" sourceRef="ev_start" targetRef="task_draft" />
+    <bpmn:sequenceFlow id="seq_1" sourceRef="task_draft" targetRef="task_sender" />
+    <bpmn:sequenceFlow id="seq_2" sourceRef="task_sender" targetRef="gw_sender" />
+    <bpmn:sequenceFlow id="seq_3" sourceRef="gw_sender" targetRef="task_receiver" name="sender_decision == 'approve'" />
+    <bpmn:sequenceFlow id="seq_4" sourceRef="gw_sender" targetRef="task_draft_r2" name="sender_decision == 'revise'" />
+    <bpmn:sequenceFlow id="seq_5" sourceRef="gw_sender" targetRef="ev_rejected" name="sender_decision == 'reject'" />
+    <bpmn:sequenceFlow id="seq_6" sourceRef="task_receiver" targetRef="gw_receiver" />
+    <bpmn:sequenceFlow id="seq_7" sourceRef="gw_receiver" targetRef="ev_confirmed" name="receiver_decision == 'confirm'" />
+    <bpmn:sequenceFlow id="seq_8" sourceRef="gw_receiver" targetRef="task_draft_r2" name="receiver_decision == 'revise'" />
+    <bpmn:sequenceFlow id="seq_9" sourceRef="task_draft_r2" targetRef="task_sender_r2" />
+    <bpmn:sequenceFlow id="seq_10" sourceRef="task_sender_r2" targetRef="gw_sender_r2" />
+    <bpmn:sequenceFlow id="seq_11" sourceRef="gw_sender_r2" targetRef="task_receiver_r2" name="sender_decision == 'approve'" />
+    <bpmn:sequenceFlow id="seq_12" sourceRef="gw_sender_r2" targetRef="task_draft_r3" name="sender_decision == 'revise'" />
+    <bpmn:sequenceFlow id="seq_13" sourceRef="gw_sender_r2" targetRef="ev_rejected" name="sender_decision == 'reject'" />
+    <bpmn:sequenceFlow id="seq_14" sourceRef="task_receiver_r2" targetRef="gw_receiver_r2" />
+    <bpmn:sequenceFlow id="seq_15" sourceRef="gw_receiver_r2" targetRef="ev_confirmed" name="receiver_decision == 'confirm'" />
+    <bpmn:sequenceFlow id="seq_16" sourceRef="gw_receiver_r2" targetRef="task_draft_r3" name="receiver_decision == 'revise'" />
+    <bpmn:sequenceFlow id="seq_17" sourceRef="task_draft_r3" targetRef="task_sender_r3" />
+    <bpmn:sequenceFlow id="seq_18" sourceRef="task_sender_r3" targetRef="gw_sender_r3" />
+    <bpmn:sequenceFlow id="seq_19" sourceRef="gw_sender_r3" targetRef="task_receiver_r3" name="sender_decision == 'approve'" />
+    <bpmn:sequenceFlow id="seq_20" sourceRef="gw_sender_r3" targetRef="ev_followup" name="sender_decision == 'revise'" />
+    <bpmn:sequenceFlow id="seq_21" sourceRef="gw_sender_r3" targetRef="ev_rejected" name="sender_decision == 'reject'" />
+    <bpmn:sequenceFlow id="seq_22" sourceRef="task_receiver_r3" targetRef="gw_receiver_r3" />
+    <bpmn:sequenceFlow id="seq_23" sourceRef="gw_receiver_r3" targetRef="ev_confirmed" name="receiver_decision == 'confirm'" />
+    <bpmn:sequenceFlow id="seq_24" sourceRef="gw_receiver_r3" targetRef="ev_followup" name="receiver_decision == 'revise'" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="HandoverDiagram">
+    <bpmndi:BPMNPlane id="HandoverPlane" bpmnElement="ShiftHandover">
+      <bpmndi:BPMNShape id="ev_start_di" bpmnElement="ev_start">
+        <dc:Bounds x="60" y="100" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_confirmed_di" bpmnElement="ev_confirmed">
+        <dc:Bounds x="1150" y="100" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_rejected_di" bpmnElement="ev_rejected">
+        <dc:Bounds x="1150" y="400" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ev_followup_di" bpmnElement="ev_followup">
+        <dc:Bounds x="1150" y="700" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_draft_di" bpmnElement="task_draft">
+        <dc:Bounds x="200" y="100" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_sender_di" bpmnElement="task_sender">
+        <dc:Bounds x="420" y="100" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_receiver_di" bpmnElement="task_receiver">
+        <dc:Bounds x="760" y="100" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_draft_r2_di" bpmnElement="task_draft_r2">
+        <dc:Bounds x="200" y="400" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_sender_r2_di" bpmnElement="task_sender_r2">
+        <dc:Bounds x="420" y="400" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_receiver_r2_di" bpmnElement="task_receiver_r2">
+        <dc:Bounds x="760" y="400" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_draft_r3_di" bpmnElement="task_draft_r3">
+        <dc:Bounds x="200" y="700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_sender_r3_di" bpmnElement="task_sender_r3">
+        <dc:Bounds x="420" y="700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_receiver_r3_di" bpmnElement="task_receiver_r3">
+        <dc:Bounds x="760" y="700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_sender_di" bpmnElement="gw_sender">
+        <dc:Bounds x="610" y="100" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_receiver_di" bpmnElement="gw_receiver">
+        <dc:Bounds x="960" y="100" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_sender_r2_di" bpmnElement="gw_sender_r2">
+        <dc:Bounds x="610" y="400" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_receiver_r2_di" bpmnElement="gw_receiver_r2">
+        <dc:Bounds x="960" y="400" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_sender_r3_di" bpmnElement="gw_sender_r3">
+        <dc:Bounds x="610" y="700" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gw_receiver_r3_di" bpmnElement="gw_receiver_r3">
+        <dc:Bounds x="960" y="700" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="seq_0_di" bpmnElement="seq_0">
+        <di:waypoint x="100" y="120.0" />
+        <di:waypoint x="200" y="140.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_1_di" bpmnElement="seq_1">
+        <di:waypoint x="340" y="140.0" />
+        <di:waypoint x="420" y="140.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_2_di" bpmnElement="seq_2">
+        <di:waypoint x="560" y="140.0" />
+        <di:waypoint x="610" y="120.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_3_di" bpmnElement="seq_3">
+        <di:waypoint x="650" y="120.0" />
+        <di:waypoint x="760" y="140.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_4_di" bpmnElement="seq_4">
+        <di:waypoint x="650" y="120.0" />
+        <di:waypoint x="200" y="440.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_5_di" bpmnElement="seq_5">
+        <di:waypoint x="650" y="120.0" />
+        <di:waypoint x="1150" y="420.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_6_di" bpmnElement="seq_6">
+        <di:waypoint x="900" y="140.0" />
+        <di:waypoint x="960" y="120.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_7_di" bpmnElement="seq_7">
+        <di:waypoint x="1000" y="120.0" />
+        <di:waypoint x="1150" y="120.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_8_di" bpmnElement="seq_8">
+        <di:waypoint x="1000" y="120.0" />
+        <di:waypoint x="200" y="440.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_9_di" bpmnElement="seq_9">
+        <di:waypoint x="340" y="440.0" />
+        <di:waypoint x="420" y="440.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_10_di" bpmnElement="seq_10">
+        <di:waypoint x="560" y="440.0" />
+        <di:waypoint x="610" y="420.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_11_di" bpmnElement="seq_11">
+        <di:waypoint x="650" y="420.0" />
+        <di:waypoint x="760" y="440.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_12_di" bpmnElement="seq_12">
+        <di:waypoint x="650" y="420.0" />
+        <di:waypoint x="200" y="740.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_13_di" bpmnElement="seq_13">
+        <di:waypoint x="650" y="420.0" />
+        <di:waypoint x="1150" y="420.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_14_di" bpmnElement="seq_14">
+        <di:waypoint x="900" y="440.0" />
+        <di:waypoint x="960" y="420.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_15_di" bpmnElement="seq_15">
+        <di:waypoint x="1000" y="420.0" />
+        <di:waypoint x="1150" y="120.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_16_di" bpmnElement="seq_16">
+        <di:waypoint x="1000" y="420.0" />
+        <di:waypoint x="200" y="740.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_17_di" bpmnElement="seq_17">
+        <di:waypoint x="340" y="740.0" />
+        <di:waypoint x="420" y="740.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_18_di" bpmnElement="seq_18">
+        <di:waypoint x="560" y="740.0" />
+        <di:waypoint x="610" y="720.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_19_di" bpmnElement="seq_19">
+        <di:waypoint x="650" y="720.0" />
+        <di:waypoint x="760" y="740.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_20_di" bpmnElement="seq_20">
+        <di:waypoint x="650" y="720.0" />
+        <di:waypoint x="1150" y="720.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_21_di" bpmnElement="seq_21">
+        <di:waypoint x="650" y="720.0" />
+        <di:waypoint x="1150" y="420.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_22_di" bpmnElement="seq_22">
+        <di:waypoint x="900" y="740.0" />
+        <di:waypoint x="960" y="720.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_23_di" bpmnElement="seq_23">
+        <di:waypoint x="1000" y="720.0" />
+        <di:waypoint x="1150" y="120.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="seq_24_di" bpmnElement="seq_24">
+        <di:waypoint x="1000" y="720.0" />
+        <di:waypoint x="1150" y="720.0" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

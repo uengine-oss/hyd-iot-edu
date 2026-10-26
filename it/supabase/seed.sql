@@ -202,7 +202,6 @@ insert into public.agent_skills (user_id, tenant_id, skill_name) values
   ('agent:spare-buy', 'hyd', 'spare-purchase-planning')
 on conflict do nothing;
 
-select ent.reanchor_scenario_times();
 
 -- Shift handover reference (migration 66; preserve student edits).
 -- Instructor reference agent. Existing classroom-authored rows are preserved.
@@ -236,3 +235,5 @@ select 'agent:handover','hyd','shift-handover-review'
 where exists (select 1 from public.users where id='agent:handover' and tenant_id='hyd')
   and exists (select 1 from public.tenant_skills where tenant_id='hyd' and skill_name='shift-handover-review')
 on conflict do nothing;
+
+select ent.reanchor_scenario_times();
