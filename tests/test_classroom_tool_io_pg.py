@@ -23,6 +23,8 @@ def channel(authority):
     policy['actions']['agent_run'] = dict(max_seconds=60,max_calls=3,max_input_bytes=1000,max_output_tokens=300)
     policy['tool_io'] = dict(tools=['hyd-dmn/evaluate_cards','enterprise/spare_stock'],max_calls=2,
                              max_input_bytes=200,max_result_bytes=40000,total_result_bytes=50000)
+    policy['tool_io']['catalog']={tool:{'inputSchema':{'type':'object'},'annotations':{'readOnlyHint':True}}
+                                 for tool in policy['tool_io']['tools']}
     policy['agents']={'test-tools':{'revision':'a'*64,'input_schema':{'type':'object','properties':{},'additionalProperties':False}}}
     with connect() as db:
         db.execute((Path(__file__).parents[1]/'it/supabase/migrations/20261027000067_classroom_tool_io.sql').read_text(encoding='utf8'))

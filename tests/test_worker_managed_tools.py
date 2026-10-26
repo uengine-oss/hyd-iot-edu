@@ -109,3 +109,30 @@ def test_instructor_catalog_must_match_read_only_schema_contract(change):
     if change=='schema':contract['catalog']['enterprise/spare_stock']['inputSchema']['type']='not-a-type'
     if change=='unlisted':contract['tools'].append('enterprise/PR_CREATE')
     with pytest.raises(Denied):catalog(contract)
+
+
+@pytest.mark.parametrize('qualified',['hyd-dmn/submit_decision','hyd-dmn/submit_purchase'])
+def test_only_explicit_proposal_catalog_preserves_write_annotation(qualified):
+    from procsvc.classroom_tool_io import catalog
+    from procsvc.classroom_authority import Denied
+    meta={'kind':'proposal','inputSchema':{'type':'object'},
+          'annotations':{'readOnlyHint':False,'destructiveHint':False}}
+    contract={'tools':[qualified],'catalog':{qualified:meta}}
+    rows=catalog(contract)
+    async def inspect():
+        async with Client(managed_tools.server('hyd-dmn',rows,object())) as client:
+            tool=(await client.list_tools())[0]
+            assert tool.annotations.readOnlyHint is False
+            assert tool.annotations.destructiveHint is False
+    asyncio.run(inspect())
+    meta.pop('kind')
+    with pytest.raises(Denied):catalog(contract)
+
+
+@pytest.mark.parametrize('qualified',['enterprise/PR_CREATE','hyd-dmn/execute','enterprise/submit_decision'])
+def test_proposal_label_cannot_authorize_physical_effects(qualified):
+    from procsvc.classroom_tool_io import catalog
+    from procsvc.classroom_authority import Denied
+    with pytest.raises(Denied):
+        catalog({'tools':[qualified],'catalog':{qualified:{'kind':'proposal','inputSchema':{'type':'object'},
+                'annotations':{'readOnlyHint':False,'destructiveHint':False}}}})

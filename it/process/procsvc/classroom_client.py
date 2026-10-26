@@ -82,7 +82,7 @@ class Client:
 
     def exchange_tool(self, run_id, execute_read):
         """One bounded reverse-RPC step. execute_read must use the local gated
-        read-only MCP router; it is not a model call or a destination URL.
+        router (reads or claim-bound DMN proposals), never a caller-chosen URL.
         Persist the observation before sending: an uncertain HTTP outcome may
         replay that exact reply, never a fresh reading labelled as the old one.
         Different runs/requests always obtain their own current observation.

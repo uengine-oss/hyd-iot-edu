@@ -113,7 +113,7 @@ def server(name,tools,transport):
     for meta in tools:
         if meta['server']!=name:continue
         tool=StudentTool(name=meta['name'],description=meta['description'],parameters=meta['inputSchema'],
-                         annotations=ToolAnnotations(readOnlyHint=True,destructiveHint=False))
+                         annotations=ToolAnnotations(readOnlyHint=meta.get('kind')!='proposal',destructiveHint=False))
         tool._qualified=name+'/'+meta['name']
         app.add_tool(tool)
     return app
