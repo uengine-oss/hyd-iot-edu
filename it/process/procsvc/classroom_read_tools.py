@@ -37,6 +37,7 @@ class ReadRouter:
                     return self.error('읽기 도구 연결 검사를 통과하지 않았습니다')
                 confirmed = set(mcp_registry.confirmed_of(entry))
             spec, secrets = mcp_secrets.runtime_spec(self.repo,self.tenant,name,entry)
+            spec = mcp_check.normalize(spec)
             # call() obtains fresh tools/list and validates inputSchema in that
             # same session. A changed tool becoming writable cannot slip through.
             response = mcp_secrets.redact(mcp_check.call(spec,tool,arguments,timeout=25,
@@ -132,6 +133,7 @@ class TaskRouter(ReadRouter):
             if not entry or mcp_registry.fingerprint(entry)!=self.fingerprints.get('hyd-dmn'):
                 raise ValueError('DMN 설정 변경')
             spec,secrets=mcp_secrets.runtime_spec(self.repo,self.tenant,'hyd-dmn',entry)
+            spec=mcp_check.normalize(spec)
             spec=dict(spec,headers=dict(spec.get('headers') or {},**{'X-HYD-Process-Scope':json.dumps(scope,separators=(',',':'))}))
             response=mcp_secrets.redact(classroom_proposals.call(spec,qualified,args),secrets)
             result=response.get('result') or {}
