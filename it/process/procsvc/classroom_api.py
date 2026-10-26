@@ -3,7 +3,7 @@
 Mount only on the instructor-managed executor, whose upstream credentials never
 leave that server. Student-supplied prompts/catalog/model parameters are rejected.
 """
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import manual_cache
@@ -18,6 +18,8 @@ class ExtractionRequest(BaseModel):
 def create_app(authority, *, source_loader, runtime_factory, catalog_factory, upstream_factory=None,
                archive_factory=None):
     app = FastAPI(title='HYD managed classroom execution')
+    from .classroom_tool_io import ToolIO
+    tool_io = ToolIO(authority)
     if upstream_factory is not None:
         from . import classroom_model
         classroom_model.mount(app, authority, runtime_factory, upstream_factory)
@@ -45,6 +47,29 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
     @app.get('/v1/classroom/session')
     def session(authorization: str | None = Header(default=None)):
         return allowed(lambda: authority.session(key(authorization)))
+
+    @app.get('/v1/classroom/runs/{run_id}/tool-requests')
+    def tool_requests(run_id: str, authorization: str | None = Header(default=None)):
+        return {'requests': allowed(lambda: tool_io.pending(key(authorization), run_id))}
+
+    @app.post('/v1/classroom/tool-results')
+    async def tool_result(request: Request, authorization: str | None = Header(default=None)):
+        import asyncio
+        import json
+        credential = key(authorization)
+        raw = bytearray()
+        async for chunk in request.stream():
+            if len(raw)+len(chunk) > 192000:
+                raise HTTPException(413, '도구 결과 전송 크기 한도 초과')
+            raw.extend(chunk)
+        try:
+            body = json.loads(raw)
+            if not isinstance(body, dict) or set(body) != {'run_id','request_id','result','is_error'}:
+                raise ValueError()
+        except (ValueError, UnicodeError):
+            raise HTTPException(422, '도구 결과 필드가 올바르지 않습니다') from None
+        return await asyncio.to_thread(allowed, lambda: tool_io.complete(
+            credential, body['run_id'], body['request_id'], result=body['result'], is_error=body['is_error']))
 
     @app.post('/v1/classroom/extractions')
     def extract(body: ExtractionRequest, authorization: str | None = Header(default=None)):

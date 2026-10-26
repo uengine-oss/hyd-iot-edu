@@ -31,6 +31,9 @@ class Client:
                 scope TEXT, tenant TEXT, source_id TEXT, run_id TEXT, status TEXT,
                 created TEXT DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY(scope,tenant,source_id,run_id))''')
+            db.execute('''CREATE TABLE IF NOT EXISTS tool_replies (
+                scope TEXT, run_id TEXT, request_id TEXT, request_hash TEXT, body TEXT,
+                PRIMARY KEY(scope,run_id,request_id))''')
 
     @contextmanager
     def db(self):
@@ -76,6 +79,49 @@ class Client:
         if len(sha256) != 64 or any(c not in '0123456789abcdef' for c in sha256):
             raise ValueError('원문 해시 형식이 올바르지 않습니다')
         return self.request('GET', '/v1/classroom/documents/'+sha256)
+
+    def exchange_tool(self, run_id, execute_read):
+        """One bounded reverse-RPC step. execute_read must use the local gated
+        read-only MCP router; it is not a model call or a destination URL.
+        Persist the observation before sending: an uncertain HTTP outcome may
+        replay that exact reply, never a fresh reading labelled as the old one.
+        Different runs/requests always obtain their own current observation.
+        """
+        from .classroom_authority import digest
+        run_id = str(UUID(str(run_id)))
+        pending = self.request('GET', f'/v1/classroom/runs/{run_id}/tool-requests').get('requests')
+        if not isinstance(pending,list) or len(pending)>1:
+            raise HTTPException(502, '관리 도구 조회 요청 형식이 올바르지 않습니다')
+        if not pending:
+            return {'status':'IDLE'}
+        query = pending[0]
+        if (not isinstance(query,dict) or set(query)!={'id','tool','arguments'}
+                or not isinstance(query['tool'],str) or not isinstance(query['arguments'],dict)):
+            raise HTTPException(502, '관리 도구 조회 계약이 올바르지 않습니다')
+        request_id = str(UUID(str(query['id'])))
+        scope, fingerprint = self.scope(), digest(query)
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            previous = db.execute('SELECT request_hash,body FROM tool_replies WHERE scope=? AND run_id=? AND request_id=?',
+                                  (scope,run_id,request_id)).fetchone()
+            if previous:
+                if previous['request_hash'] != fingerprint:
+                    raise HTTPException(409, '같은 조회 요청의 내용이 바뀌었습니다')
+                body = json.loads(previous['body'])
+            else:
+                try:
+                    reply = execute_read(query['tool'],deepcopy(query['arguments']))
+                    if not isinstance(reply,dict) or set(reply)!={'result','is_error'} or type(reply['is_error']) is not bool:
+                        raise ValueError()
+                    size = len(json.dumps(reply['result'],ensure_ascii=False,allow_nan=False,separators=(',',':')).encode('utf8'))
+                    if size>128000:
+                        reply = {'is_error':True,'result':{'error':'도구 응답 한도 초과: 조회 범위를 줄이거나 상세 페이지로 나누세요'}}
+                except Exception:
+                    reply = {'is_error':True,'result':{'error':'학생 현재 상태를 조회하지 못했습니다. 완료·정상으로 추정하지 마세요'}}
+                body = dict(run_id=run_id,request_id=request_id,**reply)
+                db.execute('INSERT INTO tool_replies VALUES (?,?,?,?,?)',
+                           (scope,run_id,request_id,fingerprint,json.dumps(body,ensure_ascii=False,allow_nan=False)))
+        return self.request('POST','/v1/classroom/tool-results',body)
 
     def start(self, tenant, source, feedback=None):
         if feedback:
