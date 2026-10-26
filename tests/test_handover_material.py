@@ -58,3 +58,8 @@ def test_worker_applies_handover_contract_tool_limits_to_the_actual_request(rt, 
     denied = args[args.index('--disallowedTools')+1]
     assert '*' not in allowed and 'submit_decision' not in allowed
     assert 'mcp__hyd-dmn__submit_decision' in denied
+    # Exercise the runtime handoff too: Runner appends text/session metadata.
+    assert runtime.poll_once() == 1
+    workitems = runtime.repo.list_workitems(limit=None)
+    assert any(w['activity_name']=='인계자 검토' and w['status']=='IN_PROGRESS' for w in workitems)
+    assert not any((w.get('feedback') or {}).get('kind')=='validation' for w in workitems)
