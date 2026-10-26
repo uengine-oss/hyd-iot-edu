@@ -15,6 +15,23 @@ from test_worker import _settings
 pytestmark=pytest.mark.skipif(not DSN,reason='requires disposable fully migrated process PostgreSQL')
 
 
+def test_authored_candidate_exports_identically_from_real_pg(pg,rt):
+    from procsvc import classroom_manifest
+    from test_classroom_manifest import candidate
+    _,runtime,_=pg;memory,_=rt
+    memory.tenant_id=runtime.tenant_id
+    value=candidate(memory)
+    runtime.register_definition(value['definition'])
+    for skill in value['skills']:
+        runtime.repo.write_skill(dict(skill,tenant_id=runtime.tenant_id,origin='user'),create=True)
+    runtime.repo.write_agent(dict(value['profile'],tenant_id=runtime.tenant_id,origin='user'),value['agent_skills'],create=True)
+    runtime.repo.put_agent_map(dict(tenant_id=runtime.tenant_id,proc_def_id=value['approval']['definition'],
+        activity_id=value['approval']['activity'],agent_id=value['assignment']))
+    exported=classroom_manifest.export_candidate(runtime,value['approval'])
+    assert exported==value
+    assert classroom_manifest.review_candidate(exported)['permission_granted'] is False
+
+
 @pytest.mark.parametrize('kind',['human_answer','reassessment'])
 def test_process_pg_control_roundtrip_has_one_storage_transaction(pg,rt,tmp_path,kind):
     parsed=urlsplit(DSN)
