@@ -71,6 +71,21 @@ print(json.dumps({'reads':results,'uid':os.getuid(),'groups':os.getgroups(),
         self.run_child("from pathlib import Path;Path('state').write_text('resume');print('{}')")
         self.assertEqual(self.run_child("import json;from pathlib import Path;print(json.dumps(Path('state').read_text()))"), 'resume')
 
+    def test_managed_child_cannot_inherit_other_provider_selection_or_credentials(self):
+        forbidden = {
+            'CLAUDE_CODE_USE_BEDROCK':'1', 'CLAUDE_CODE_USE_VERTEX':'1', 'CLAUDE_CODE_USE_FOUNDRY':'1',
+            'CLAUDE_CODE_OAUTH_TOKEN':'fake-oauth', 'AWS_BEARER_TOKEN_BEDROCK':'fake-aws',
+            'AWS_PROFILE':'other-account', 'GOOGLE_APPLICATION_CREDENTIALS':'/tmp/other.json',
+            'ANTHROPIC_FOUNDRY_API_KEY':'fake-foundry', 'ANTHROPIC_AUTH_TOKEN':'fake-bearer',
+            'ANTHROPIC_CUSTOM_HEADERS':'Authorization: fake', 'ANTHROPIC_PROFILE':'other-profile',
+            'OPENAI_API_KEY':'fake-openai', 'CODEX_API_KEY':'fake-codex'}
+        allowed={'ANTHROPIC_API_KEY':'HydModel test-only', 'ANTHROPIC_BASE_URL':'http://classroom:8081/internal/model',
+                 'ANTHROPIC_MODEL':'coding'}
+        with patch.dict(os.environ, {**forbidden, **allowed}):
+            result=self.run_child('import os,json; print(json.dumps({k:os.environ.get(k) for k in '+repr(list(forbidden)+list(allowed))+'}))')
+        self.assertEqual({k:result[k] for k in forbidden}, dict.fromkeys(forbidden))
+        self.assertEqual({k:result[k] for k in allowed}, allowed)
+
     def test_existing_link_rejected_before_process_creation(self):
         (self.work / 'escape').symlink_to(self.secret)
         with self.assertRaisesRegex(RuntimeError, '링크'):
@@ -184,10 +199,12 @@ asyncio.run(main())
     def test_real_cli_disables_project_hooks_without_removing_assigned_skill(self):
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
         import threading
+        requests=[]
         class StopModel(BaseHTTPRequestHandler):
             def log_message(self, *args):
                 pass
             def do_POST(self):
+                requests.append((self.path, self.headers.get('X-Api-Key'), self.headers.get('Authorization')))
                 self.rfile.read(int(self.headers.get('Content-Length', 0)))
                 data = b'{"type":"error","error":{"type":"invalid_request_error","message":"test endpoint; no model executed"}}'
                 self.send_response(400); self.send_header('Content-Type','application/json')
@@ -206,7 +223,11 @@ asyncio.run(main())
                 (self.work/'hook-ran').unlink(missing_ok=True)
                 args=['/usr/bin/claude','--print','No model execution; test startup only','--output-format','stream-json',
                       '--verbose','--model','coding','--max-turns','1']
-                if guarded:args+=isolation.cli_args()
+                if guarded:
+                    args+=isolation.cli_args()
+                    env.update(CLAUDE_CODE_USE_BEDROCK='1', CLAUDE_CODE_USE_VERTEX='1', CLAUDE_CODE_USE_FOUNDRY='1',
+                               CLAUDE_CODE_OAUTH_TOKEN='fake-other-login', ANTHROPIC_AUTH_TOKEN='fake-other-bearer')
+                requests.clear()
                 tree=_ProcessTree(isolation.group_file(self.work))
                 try:
                     proc=tree.spawn(args,cwd=str(self.work),env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -214,6 +235,8 @@ asyncio.run(main())
                     self.assertNotEqual(proc.returncode,0) # Deliberate local HTTP 400, no model.
                     self.assertEqual((self.work/'hook-ran').exists(),not guarded)
                     if guarded:
+                        self.assertTrue(requests, 'managed CLI did not reach the bound gateway')
+                        self.assertTrue(all(key=='test-only-fake-key' and auth is None for _,key,auth in requests), requests)
                         events=[json.loads(line) for line in output.splitlines() if line.startswith('{')]
                         init=next(e for e in events if e.get('type')=='system' and e.get('subtype')=='init')
                         self.assertIn('approved-test',init['skills'])

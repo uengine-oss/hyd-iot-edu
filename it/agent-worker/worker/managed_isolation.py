@@ -16,6 +16,16 @@ UID = 65534
 READ = 'read-file,read-dir,execute'
 WRITE = READ + ',write-file,remove-dir,remove-file,make-dir,make-reg,make-sock,make-fifo,truncate'
 
+# Claude Code provider selectors precede API-key authentication. A managed run
+# must use its claim-bound gateway even if the host has other CLI/cloud logins.
+# https://code.claude.com/docs/en/authentication#authentication-precedence
+MODEL_ENV = frozenset(('ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_MODEL',
+    'ANTHROPIC_SMALL_FAST_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL'))
+OTHER_PROVIDER_PREFIXES = ('ANTHROPIC_', 'OPENAI_', 'CODEX_', 'AWS_', 'GOOGLE_', 'AZURE_', 'VERTEX_')
+OTHER_PROVIDER_SELECTORS = frozenset(('CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX',
+    'CLAUDE_CODE_USE_FOUNDRY', 'CLAUDE_CODE_OAUTH_TOKEN'))
+
 
 def cli_args():
     # CLI flags override writable project/local settings. Skill discovery stays
@@ -68,7 +78,9 @@ def prepare(argv, kwargs):
     env.update(HOME=str(home), TMPDIR=str(tmp), USER='nobody', LOGNAME='nobody', CLAUDE_CONFIG_DIR=str(config))
     # Parent credentials must not be inherited, including references to files.
     for name in list(env):
-        if name.startswith('HYD_WORKER_') or name.startswith('HYD_CLASSROOM_'):
+        if (name.startswith('HYD_WORKER_') or name.startswith('HYD_CLASSROOM_')
+                or name in OTHER_PROVIDER_SELECTORS
+                or name.startswith(OTHER_PROVIDER_PREFIXES) and name not in MODEL_ENV):
             env.pop(name)
     command = ['/usr/bin/setpriv', '--reuid='+str(UID), '--regid='+str(UID), '--clear-groups',
                '--no-new-privs', '--inh-caps=-all', '--ambient-caps=-all', '--bounding-set=-all',
