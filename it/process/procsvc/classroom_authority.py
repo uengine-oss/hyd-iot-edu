@@ -65,6 +65,12 @@ class Authority:
         validate_policy(row['policy'])
         return row
 
+    def session(self, key):
+        """Authenticate startup without reserving work or exposing policy data."""
+        with self.connect() as db:
+            self._grant(db, key_hash(key))
+        return {'status': 'ok', 'service': 'classroom-execution'}
+
     def authorize_document(self, key, content_hash):
         with self.connect() as db:
             grant = self._grant(db, key_hash(key))

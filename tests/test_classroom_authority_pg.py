@@ -53,6 +53,16 @@ def test_content_approval_and_unknown_actions_fail_closed(authority):
     with pytest.raises(Denied): auth.reserve(KEY, 'arbitrary_prompt', {'sha256': DOC})
 
 
+def test_startup_session_rechecks_grant_without_consuming_budget(authority):
+    auth, connect = authority
+    assert auth.session(KEY) == {'status': 'ok', 'service': 'classroom-execution'}
+    with connect() as db:
+        assert db.execute('SELECT count(*) AS n FROM hyd_classroom_runs').fetchone()['n'] == 0
+        assert db.execute('SELECT calls FROM hyd_classroom_grants').fetchone()['calls'] == 0
+        db.execute('UPDATE hyd_classroom_grants SET enabled=false')
+    with pytest.raises(Denied): auth.session(KEY)
+
+
 def test_concurrent_duplicate_requests_have_one_durable_reservation(authority):
     auth, connect = authority
     with ThreadPoolExecutor(max_workers=8) as pool:

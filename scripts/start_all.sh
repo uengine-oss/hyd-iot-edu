@@ -104,6 +104,9 @@ say "7/8 수업용 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼) �
 PROCESS_URL="http://127.0.0.1:$(hp 8080)" "${PYTHON[@]}" scripts/class_knowledge.py ensure || die "수업용 기본 지식을 넣지 못했습니다. 위 메시지를 강사에게 알려 주세요."
 
 say "8/8 강의 중계 키 확인"
+if [ -n "$(env_get HYD_CLASSROOM_URL)" ]; then
+  printf '%s' "$(llm_key)" | "${PYTHON[@]}" scripts/check_classroom.py "$(env_get HYD_CLASSROOM_URL)" || die "관리 서버 수업 접속을 확인하지 못했습니다. 직접 모델 중계로 우회하지 않습니다."
+else
 # 키는 명령줄에 싣지 않고 표준 입력으로 헤더를 넘긴다(작업 관리자 · 로그에 남지 않게).
 # 중계가 한동안 쉬었다 깨어날 때는 첫 연결이 수십 초 멈출 수 있어(2026-10-25 실측) 세 번까지 다시 묻는다
 for attempt in 1 2 3; do
@@ -117,5 +120,6 @@ case "$code" in
   401|403) die "강의 중계가 키를 받지 않습니다($code). .env의 LLM_API_KEY가 수업에서 받은 키와 같은지(앞뒤 공백 · 따옴표 없이) 확인하고 시작.bat을 다시 실행하세요. 다른 실습은 포털에서 그대로 할 수 있습니다.";;
   *) die "강의 중계에 닿지 않습니다(응답 ${code:-없음}). 인터넷 연결을 확인하고 시작.bat을 다시 실행하세요. 포털의 AI 단계(판단 · 제안, 질문, 매뉴얼 추출)만 막히고 나머지는 동작합니다.";;
 esac
+fi
 printf '\n완료. 포털: http://127.0.0.1:%s  (홈의 상태 점이 모두 초록이면 됩니다)\n' "$(hp 8088)"
 echo "포트 설정 저장: .hyd-runtime/ports.json (점검.bat이 자동으로 읽습니다)"

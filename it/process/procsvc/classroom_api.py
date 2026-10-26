@@ -42,6 +42,10 @@ def create_app(authority, *, source_loader, runtime_factory, catalog_factory, up
         grant = allowed(lambda: authority.authorize_document(key(authorization), sha256))
         return {k: grant[k] for k in ('scope', 'profile')}
 
+    @app.get('/v1/classroom/session')
+    def session(authorization: str | None = Header(default=None)):
+        return allowed(lambda: authority.session(key(authorization)))
+
     @app.post('/v1/classroom/extractions')
     def extract(body: ExtractionRequest, authorization: str | None = Header(default=None)):
         credential = key(authorization)
