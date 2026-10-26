@@ -19,7 +19,7 @@ from worker.runner import Runner
 
 def test_scope_includes_source_business_procedures_and_keeps_installation_boundary():
     instruction = extraction.definition()['activities'][0]['instruction']
-    assert extraction.VERSION == '2.10'
+    assert extraction.VERSION == '2.11'
     assert '번호가 없는 일반 문장에서도 명시된 업무 실행 절차' in instruction
     assert '구매·발주·입고·재고 관리의 실행 절차도 SOP(procedures)로' in instruction
     assert '문서 제목이나 장 이름이 정비가 아니라는 이유로' in instruction
@@ -106,3 +106,8 @@ def test_instruction_2_10_maps_unit_numbers_to_catalog_asset_codes():
     from procsvc import manual_knowledge
     assert "ontology_catalog.assets code" in extraction.INSTRUCTION and '1~3호기 → "HYD-01","HYD-02","HYD-03"' in extraction.INSTRUCTION
     assert "MATCH (n:Asset)" in manual_knowledge.CATALOG_Q["assets"] and "n.code AS code" in manual_knowledge.CATALOG_Q["assets"]
+
+
+def test_instruction_2_11_keeps_handed_on_procedures_out_of_candidate_outputs():
+    """2026-10-26 final5: HM-8 세 번 중 한 번이 점검이 넘기는 벨트 교체(SOP-FAN-12)를 팬 구동 불량 후보 규칙에도 넣었다(검토본은 점검만)."""
+    assert "원인 후보 규칙의 outputs 에 넣지 마세요 — 후보는 원문이 그 원인에서 바로 쓰라고 한 절차(점검)만" in extraction.INSTRUCTION
