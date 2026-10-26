@@ -190,15 +190,28 @@ def _envelope(out):
     return None
 
 
-def _failed(output, is_error) -> str | None:
+def _failed(output, is_error, tool=None) -> str | None:
     if is_error:
         return '도구가 오류를 돌려줬습니다'
     env = _envelope(output)
     if isinstance(env, dict):
+        if env.get('isError') is True or env.get('is_error') is True:
+            return '도구가 오류를 돌려줬습니다'
+        if env.get('error'):
+            return f"도구 오류: {str(env['error'])[:200]}"
+        # mcp-neo4j-cypher returns JSON rows as TextContent, which the CLI
+        # adapter may wrap in {result: "[...]"}. This is data, not our
+        # enterprise/DMN result-status envelope. Preserve explicit errors.
+        if (not env.get('error') and not env.get('isError') and
+                short_tool(str(tool or '')).endswith('/read_neo4j_cypher') and isinstance(env.get('result'), str)):
+            try:
+                rows = json.loads(env['result'])
+                if isinstance(rows, list) and all(isinstance(row, dict) for row in rows):
+                    return None
+            except ValueError:
+                pass
         if isinstance(env.get('result'), str) and env['result'] != 'ok':
             return f"도구가 거절했습니다: {str(env.get('message') or env['result'])[:200]}"
-        if env.get('error') and 'result' not in env:
-            return f"도구 오류: {str(env['error'])[:200]}"
     return None
 
 
@@ -249,8 +262,8 @@ def tool_calls(events, payload_loader=None) -> list[dict]:
                 c = {'id': d.get('tool_use_id') or e.get('id'), 'tool': short_tool(d.get('tool')), 'raw_tool': d.get('tool'),
                      'data': is_data_tool(d.get('tool')), 'input': None, 'input_text': '', 'started': None}
                 calls.append(c)
-            problem = _failed(d.get('output'), d.get('is_error'))
             actual_output, output_complete = _event_value(e, 'output', payload_loader)
+            problem = _failed(actual_output, d.get('is_error'), c.get('tool'))
             c.update(finished=e.get('timestamp'), running=False, ok=problem is None, problem=problem,
                      output_text=_preview(actual_output), output_complete=output_complete, _output=actual_output)
     return calls
