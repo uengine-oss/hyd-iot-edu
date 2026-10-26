@@ -111,3 +111,108 @@ print(json.dumps(r))''')
             proc.communicate(timeout=5)
         self.assertNotEqual(proc.returncode, 0)
         self.assertFalse(record.exists())
+
+    def test_real_stdio_managed_mcp_and_result_checker_inside_boundary(self):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        import threading
+        from uuid import uuid4
+        from worker import managed_tools, result_check
+        calls, pending = [], {}
+        meta = {'server':'enterprise', 'name':'spare_stock', 'description':'test student stock',
+                'inputSchema':{'type':'object','properties':{'part':{'type':'string'}},
+                               'required':['part'],'additionalProperties':False}}
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                if self.headers.get('Authorization') != 'Bearer HydModel test-permit':
+                    self.send_error(403); return
+                if self.path.endswith('/tool-catalog'):
+                    reply = {'tools':[meta]}
+                elif self.path.endswith('/tool-request'):
+                    calls.append(body)
+                    ident = str(uuid4()); pending[ident] = body['arguments']['part']
+                    reply = {'request_id':ident}
+                elif self.path.endswith('/tool-result'):
+                    missing = pending[body['request_id']] == 'missing'
+                    reply = {'state':'FAILED' if missing else 'DONE',
+                             'result':{'error':'student source unavailable'} if missing else {'available':7}}
+                else:
+                    self.send_error(404); return
+                data = json.dumps(reply).encode()
+                self.send_response(200); self.send_header('Content-Length', str(len(data)))
+                self.end_headers(); self.wfile.write(data)
+        server = ThreadingHTTPServer(('127.0.0.1',0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        try:
+            config, _ = managed_tools.attach({'url':f'http://127.0.0.1:{server.server_port}',
+                                             'token':'HydModel test-permit'}, self.work)
+            config = result_check.attach(config, self.work, 10000)
+            (self.work/'output').mkdir()
+            (self.work/'output'/'result.json').write_text('{"proposal":{}}')
+            script = '''import asyncio,json
+from fastmcp import Client
+async def main():
+ async with Client('''+repr(config)+''') as client:
+  names=[t.name for t in await client.list_tools()]
+  stock=await client.call_tool('enterprise_spare_stock',{'part':'seal'})
+  checked=await client.call_tool('hyd-result_check_result_json',{})
+  rejected=[]
+  for args in ({'part':9},{'part':'missing'}):
+   try:await client.call_tool('enterprise_spare_stock',args);rejected.append(False)
+   except Exception:rejected.append(True)
+  print(json.dumps({'names':names,'stock':json.loads(stock.content[0].text),
+                    'check':json.loads(checked.content[0].text),'rejected':rejected}))
+asyncio.run(main())
+'''
+            result = self.run_child(script)
+            self.assertEqual(result['stock'], {'available':7})
+            self.assertTrue(result['check']['ok'])
+            self.assertEqual(result['rejected'], [True, True])
+            self.assertEqual([c['arguments'] for c in calls], [{'part':'seal'},{'part':'missing'}])
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=3)
+
+    def test_real_cli_disables_project_hooks_without_removing_assigned_skill(self):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        import threading
+        class StopModel(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get('Content-Length', 0)))
+                data = b'{"type":"error","error":{"type":"invalid_request_error","message":"test endpoint; no model executed"}}'
+                self.send_response(400); self.send_header('Content-Type','application/json')
+                self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data)
+        server = ThreadingHTTPServer(('127.0.0.1',0),StopModel)
+        thread = threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            folder=self.work/'.claude'; folder.mkdir()
+            skill=folder/'skills'/'approved-test';skill.mkdir(parents=True)
+            (skill/'SKILL.md').write_text('---\nname: approved-test\ndescription: Instructor approved test skill\n---\nRead the supplied context.\n')
+            command="/usr/local/bin/python -c \"from pathlib import Path;Path('hook-ran').write_text('hook')\""
+            (folder/'settings.local.json').write_text(json.dumps({'hooks':{'SessionStart':[{'hooks':[{'type':'command','command':command}]}]}}))
+            env=dict(os.environ,ANTHROPIC_API_KEY='test-only-fake-key',ANTHROPIC_BASE_URL=f'http://127.0.0.1:{server.server_port}',
+                     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC='1',DISABLE_TELEMETRY='1',DISABLE_AUTOUPDATER='1')
+            for guarded in (False,True):
+                (self.work/'hook-ran').unlink(missing_ok=True)
+                args=['/usr/bin/claude','--print','No model execution; test startup only','--output-format','stream-json',
+                      '--verbose','--model','coding','--max-turns','1']
+                if guarded:args+=isolation.cli_args()
+                tree=_ProcessTree(isolation.group_file(self.work))
+                try:
+                    proc=tree.spawn(args,cwd=str(self.work),env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                    output,error=proc.communicate(timeout=25)
+                    self.assertNotEqual(proc.returncode,0) # Deliberate local HTTP 400, no model.
+                    self.assertEqual((self.work/'hook-ran').exists(),not guarded)
+                    if guarded:
+                        events=[json.loads(line) for line in output.splitlines() if line.startswith('{')]
+                        init=next(e for e in events if e.get('type')=='system' and e.get('subtype')=='init')
+                        self.assertIn('approved-test',init['skills'])
+                        self.assertEqual(set(init['tools']),{'Read','Glob','Grep','Write','Edit','Skill'})
+                        self.assertNotIn('Bash',init['tools'])
+                        self.assertNotIn('WebFetch',init['tools'])
+                finally:tree.close()
+        finally:
+            server.shutdown();server.server_close();thread.join(timeout=3)
