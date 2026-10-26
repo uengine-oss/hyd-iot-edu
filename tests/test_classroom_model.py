@@ -1,4 +1,5 @@
 import json
+import asyncio
 import time
 from types import SimpleNamespace
 
@@ -122,3 +123,61 @@ def test_required_managed_mode_cannot_silently_fall_back(monkeypatch):
     monkeypatch.delenv('HYD_MANAGED_MODEL_URL',raising=False)
     monkeypatch.setenv('HYD_MANAGED_MODEL_REQUIRED','1')
     with pytest.raises(managed_model.RuntimeConnectionError): managed_model.attach({},'class-1','claude-code')
+
+
+def test_response_deadline_cancels_a_stalled_read_without_another_chunk():
+    cancelled = []
+    class Response:
+        async def aiter_bytes(self):
+            yield b'first'
+            try:
+                await asyncio.sleep(10)
+            finally:
+                cancelled.append(True)
+            yield b'late'
+    async def run():
+        iterator = model.deadline_chunks(Response(), asyncio.get_running_loop().time()+.1)
+        assert await anext(iterator) == b'first'
+        with pytest.raises(TimeoutError):
+            await anext(iterator)
+        assert cancelled == [True]
+    async def bounded():
+        await asyncio.wait_for(run(), 2)
+    asyncio.run(bounded())
+
+
+@pytest.mark.parametrize('stall', ['headers', 'body'])
+def test_deadline_closes_connection_without_retry_or_refund(setup, monkeypatch, stall):
+    rt, _, authority, body = setup
+    permit = model.issue(rt, authority, body, 'Bearer '+PRIVATE)
+    original_prepare = model.prepare
+    def prepare(*args, **kwargs):
+        payload, binding = original_prepare(*args, **kwargs)
+        return payload, dict(binding, expires=time.time()+.1)
+    monkeypatch.setattr(model, 'prepare', prepare)
+    calls, closed, response_closed = [], [], []
+    class Response:
+        status_code = 200
+        headers = {'content-type': 'text/event-stream'}
+        async def aiter_bytes(self):
+            yield b'data: first\n\n'
+            await asyncio.sleep(10)
+            yield b'data: late\n\n'
+        async def aclose(self): response_closed.append(True)
+    class Client:
+        def __init__(self, **kwargs): pass
+        def build_request(self, *args, **kwargs): return None
+        async def send(self, *args, **kwargs):
+            calls.append(True)
+            if stall == 'headers':
+                await asyncio.sleep(10)
+            return Response()
+        async def aclose(self): closed.append(True)
+    monkeypatch.setattr(httpx, 'AsyncClient', Client)
+    app=FastAPI(); model.mount(app, authority, lambda _:rt,
+                              lambda:dict(url='https://upstream.example', key=UPSTREAM))
+    response=TestClient(app, raise_server_exceptions=False).post('/internal/model/v1/messages', headers={'x-api-key':permit['token']},
+        json=dict(model='class-model',max_tokens=50,messages=[{'role':'user','content':'approved'}]))
+    assert response.status_code == (502 if stall == 'headers' else 200)
+    assert response_closed == ([] if stall == 'headers' else [True])
+    assert calls==closed==[True] and authority.calls==1

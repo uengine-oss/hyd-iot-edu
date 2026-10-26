@@ -4,6 +4,7 @@ Reuse the existing worker runtime secret and live work-item lease checks. The
 student classroom key cannot mint a permit or call the upstream model directly.
 """
 import base64
+import asyncio
 import hashlib
 import hmac
 import json
@@ -16,6 +17,24 @@ from .classroom_authority import Denied
 
 
 PREFIX = 'HydModel '
+
+
+async def deadline_chunks(response, deadline):
+    """Bound waits as well as received chunks; HTTPX timeouts are per I/O."""
+    chunks = response.aiter_bytes().__aiter__()
+    size = 0
+    while True:
+        remaining = deadline - asyncio.get_running_loop().time()
+        if remaining <= 0:
+            raise TimeoutError('모델 실행 시간 한도 초과')
+        try:
+            chunk = await asyncio.wait_for(anext(chunks), remaining)
+        except StopAsyncIteration:
+            return
+        size += len(chunk)
+        if size > 32_000_000:
+            raise RuntimeError('모델 응답 크기 한도 초과')
+        yield chunk
 
 
 def _execution(runtime, authority, row):
@@ -99,7 +118,6 @@ def mount(app, authority, runtime_factory, upstream_factory):
     The actual model is pinned by instructor policy; this is not a Claude model
     selection. There is no student-key fallback, redirect or automatic retry.
     """
-    import asyncio
     from urllib.parse import urlsplit
     import httpx
     from fastapi import Request
@@ -142,13 +160,19 @@ def mount(app, authority, runtime_factory, upstream_factory):
         if remaining <= 0:
             raise HTTPException(403, '모델 실행 시간이 만료됐습니다')
         client = httpx.AsyncClient(timeout=remaining, follow_redirects=False)
+        deadline = asyncio.get_running_loop().time()+remaining
         headers = {'x-api-key': upstream['key'], 'Content-Type': 'application/json',
                    'anthropic-version': request.headers.get('anthropic-version', '2023-06-01')}
         if request.headers.get('anthropic-beta'):
             headers['anthropic-beta'] = request.headers['anthropic-beta']
         path = '/v1/messages/count_tokens' if count_only else '/v1/messages'
         try:
-            response = await client.send(client.build_request('POST', url+path, content=raw, headers=headers), stream=True)
+            response = await asyncio.wait_for(
+                client.send(client.build_request('POST', url+path, content=raw, headers=headers), stream=True),
+                max(0, deadline-asyncio.get_running_loop().time()))
+        except asyncio.CancelledError:
+            await client.aclose()
+            raise
         except Exception:
             await client.aclose()
             raise HTTPException(502, '모델 중계 연결에 실패했습니다. 사용량 예약은 자동 환급하지 않습니다') from None
@@ -157,12 +181,8 @@ def mount(app, authority, runtime_factory, upstream_factory):
             await response.aclose(); await client.aclose()
             raise HTTPException(status, '모델 중계가 요청을 완료하지 못했습니다')
         async def stream():
-            size = 0
             try:
-                async for chunk in response.aiter_bytes():
-                    size += len(chunk)
-                    if size>32_000_000 or time.time()>=binding['expires']:
-                        raise RuntimeError('모델 응답 크기 또는 실행 시간 한도 초과')
+                async for chunk in deadline_chunks(response, deadline):
                     yield chunk
             finally:
                 await response.aclose(); await client.aclose()
