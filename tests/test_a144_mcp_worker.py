@@ -185,3 +185,27 @@ def test_business_mcp_is_split_into_maintenance_and_purchasing_servers_without_o
     assert names["maintenance"] == {"pm_status", "maintenance_windows", "cmms_history", "mes_orders"}
     assert names["purchasing"] == {"spare_stock", "part_quotes", "scm_suppliers"}
     assert not names["maintenance"] & names["purchasing"] and not {"query", "describe_schema"} & (names["maintenance"] | names["purchasing"])
+
+
+def test_evaluation_reaches_the_agent_as_a_compact_card_view():
+    """2026-10-26 수업 한 바퀴(final6): evaluate_cards 가 판단 기록 전체(약 15만 5천 자)를 돌려 실행기 한도를 넘었고, 에이전트가 저장된 파일을
+    Bash 로 조각조각 읽어 A 판단이 152~411초 · 도구 11~34회로 갈렸다. 카드 비교에 쓰는 칸만 준다(전체 근거는 판단 기록에 남는다)."""
+    import json
+    heavy = {'rankingEvidence': ['x' * 8000], 'tradeoffEvaluation': {'paths': ['y' * 8000]}, 'steps': ['z' * 2600], 'forecastContext': {'k': 'w' * 2000}}
+    opt = lambda i, score, feasible, **kw: dict(heavy, rank=i, id=f'skill:s{i}', sopId=f'SOP-S{i}', name=f'안 {i}', kind='control', feasible=feasible, score=score,
+                                                scoreParts={'bsc': 1.0}, approver={'id': 'role:operator', 'name': '운전원'},
+                                                actions=[{'code': 'FAN_SET', 'name': '팬', 'value': 100, 'targetName': '팬 인버터', 'min': 0, 'max': 100}],
+                                                forecast=[{'name': '평형 유온', 'value': 49.7, 'unit': '℃', 'method': 'm' * 300}],
+                                                gains=[{'name': '인터록 여유', 'owner': '생산팀', 'supportingPaths': ['p' * 500]}], **kw)
+    rec = {'id': 'EVAL-1', 'status': 'EVALUATED', 'recommended': 'skill:s1', 'explanation': '설명', 'provenance': ['q' * 9000],
+           'result': {'options': [opt(1, 3.4, True), opt(2, 1.0, False, violations=[{'rule': 'rule:x', 'effect': 'EXCLUDE', 'annotation': 'PLC 수동', 'sources': ['s' * 400]}])],
+                      'rankRule': {'annotation': '점수 = …'}, 'trace': [{'t': 'u' * 100}] * 200}}
+    out = dmn.read_outcome(rec, '조치 카드 평가')
+    text = json.dumps(out, ensure_ascii=False)
+    assert len(text) < 3000 < len(json.dumps(rec, ensure_ascii=False))
+    assert out['outcome'] == 'ranked' and out['recommended'] == 'skill:s1' and out['rankRule'] == '점수 = …'
+    first, second = out['options']
+    assert first['approver'] == '운전원' and first['forecast'] == {'평형 유온': '49.7 ℃'} and first['actions'] == [{'code': 'FAN_SET', 'name': '팬', 'value': 100, 'targetName': '팬 인버터'}]
+    assert second['violations'] == [{'rule': 'rule:x', 'effect': 'EXCLUDE', 'annotation': 'PLC 수동'}] and not second['feasible']
+    for gone in ('rankingEvidence', 'tradeoffEvaluation', 'steps', 'forecastContext', 'provenance', 'supportingPaths', 'trace'):
+        assert gone not in text

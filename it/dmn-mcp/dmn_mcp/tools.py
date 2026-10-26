@@ -104,7 +104,42 @@ def read_outcome(rec: dict, what: str) -> dict:
         outcome, notice = 'no_feasible_option', '후보 ' + str(len(options)) + '장 모두 규정상 제외됐습니다'
     else:
         outcome, notice = 'ranked', '후보 ' + str(len(options)) + '장 순위 계산'
-    return dict(rec, outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
+    return dict(agent_view(rec), outcome=outcome, notice=notice + ' (읽기 평가 — 저장되지 않은 ' + str(rec.get('id')) + ', decision_id 로 쓰지 않습니다)')
+
+
+#: 에이전트가 카드 비교에 쓰는 칸만. 2026-10-26 수업 한 바퀴(final6): evaluate_cards 가 판단 기록 전체(약 15만 5천 자 — 카드마다 순위 근거 ·
+#: 득실 평가 · 단계 본문 · 예측 맥락, 원천 기록)를 돌려 실행기 한도를 넘었고(「exceeds maximum allowed tokens」 → 파일 저장), 에이전트가 그 파일을
+#: Bash 로 조각조각 읽느라 A 판단이 152~411초 · 도구 11~34회로 갈렸다. 전체 근거는 제출된 판단 기록(처리 건 화면)에 그대로 남는다.
+def _rule_lines(rows):
+    return [{k: r.get(k) for k in ('rule', 'effect', 'annotation', 'penalty') if r.get(k) is not None} for r in rows or [] if isinstance(r, dict)]
+
+
+def _bsc(rows):
+    return [{k: g.get(k) for k in ('name', 'owner', 'conditional') if g.get(k) is not None} for g in rows or [] if isinstance(g, dict)]
+
+
+def agent_view(rec: dict) -> dict:
+    r = rec.get('result') or {}
+    options = []
+    for o in r.get('options') or []:
+        options.append({k: v for k, v in {
+            'rank': o.get('rank'), 'id': o.get('id'), 'sopId': o.get('sopId'), 'name': o.get('name'), 'kind': o.get('kind'),
+            'feasible': o.get('feasible'), 'score': o.get('score'), 'scoreParts': o.get('scoreParts'),
+            'approver': (o.get('approver') or {}).get('name'),
+            'actions': [{k: a.get(k) for k in ('code', 'name', 'value', 'targetName')} for a in o.get('actions') or []],
+            'forecast': {f.get('name'): f"{f.get('value')} {f.get('unit') or ''}".strip() for f in o.get('forecast') or [] if isinstance(f, dict)},
+            'gains': _bsc(o.get('gains')), 'losses': _bsc(o.get('losses')),
+            'violations': _rule_lines(o.get('violations')), 'penalties': _rule_lines(o.get('penalties')), 'warnings': _rule_lines(o.get('warnings')),
+            'production': o.get('production'), 'window': o.get('window'), 'resolvedSupplier': o.get('resolvedSupplier'),
+            'maintenancePlan': o.get('maintenancePlan'), 'economicComparison': o.get('economicComparison'),
+        }.items() if v not in (None, [], {})})
+    return {k: v for k, v in {
+        'id': rec.get('id'), 'status': rec.get('status'), 'asset': rec.get('asset'), 'scenario': rec.get('scenario'),
+        'recommended': rec.get('recommended'), 'explanation': rec.get('explanation') or r.get('explanation'),
+        'facts': rec.get('facts'), 'rankRule': (r.get('rankRule') or rec.get('rankRule') or {}).get('annotation'),
+        'options': options, 'error': rec.get('error'),
+        'detail': '전체 근거(순위 근거 · 득실 평가 · 단계 · 예측 맥락 · 원천 기록)는 제출한 판단 기록 · 처리 건 화면에 있습니다',
+    }.items() if v not in (None, [], {})}
 
 
 def enveloped(fn):
