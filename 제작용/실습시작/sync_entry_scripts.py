@@ -18,7 +18,7 @@ def main():
         end=text.index('## 한 단계 연결을 조회하기')
         intro=(SOURCE/f'관계조회_{course}.md').read_text(encoding='utf-8')
         common=(SOURCE/'Neo4j_첫화면.md').read_text(encoding='utf-8')
-        text=text[:start]+intro+'\n'+common+'\n'+text[end:]
+        text=text[:start]+intro.rstrip()+'\n\n'+common.rstrip()+'\n\n'+text[end:]
         text=text.replace('질의 파일을 열고, 오일 쿨러에서 센서로 가는 패턴을 적겠습니다.', '입력칸에 오일 쿨러에서 센서로 가는 패턴을 적겠습니다.')
         text=text.replace('입력칸에 오일 쿨러에서 센서로 가는 패턴을 적겠습니다. 구성 요소와 센서의 종류를 쓰고, 사이에는 계측 관계를 둡니다. 이름만 같은 다른 대상을 섞지 않도록 쿨러 식별자를 조건으로 쓰겠습니다.', '매치로 오일 쿨러에서 센서로 가는 패턴을 적겠습니다. 이론에서 본 괄호는 노드이고, 사이의 화살표는 관계입니다. 구성 요소와 센서 사이에 계측 관계를 두겠습니다. 이름만 같은 다른 대상을 섞지 않도록 쿨러 식별자로 출발점을 정하고, 리턴에는 쿨러 이름과 센서 식별자, 태그를 넣겠습니다.')
         text=text.replace('조회_작성.cypher에 MATCH', 'Browser 입력칸에 MATCH').replace('RETURN c.id, c.name, s.id, s.tag;를 작성하고 한 문장씩 실행한다. 결과 행을 조회_기록.md에 옮긴다.', 'RETURN c.name AS component, s.id AS sensor_id, s.tag AS tag;를 작성한다. Run을 말하며 클릭하고 결과를 확인한다. 입력 중 커서는 글자 아래 여백에 둔다.')
