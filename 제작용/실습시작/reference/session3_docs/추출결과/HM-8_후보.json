@@ -2,8 +2,8 @@
   "doc_id": "HM-8",
   "source_file": "HM-8_cooler-fan-manual.md",
   "source_sha256": "6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256",
-  "extractor": "강사 참조 추출 함수(규칙 기반, LLM 없음)",
-  "generated_at": "2026-10-28T01:40:28+09:00",
+  "extractor": "강사 참조 추출 함수 2판(규칙 기반, LLM 없음, lang=해당 없음)",
+  "generated_at": "2026-10-28T02:44:43+09:00",
   "candidates": [
     {
       "id": "HM-8-001",
@@ -1363,7 +1363,9 @@
       "kind": "unit_value",
       "text": "이미 24시간을 넘겼다면 팬 최대 운전 조치는 팬 수명 손실로 20만 원을 감점해서 비교한다.",
       "quote": "이미 24시간을 넘겼다면 팬 최대 운전 조치는 팬 수명 손실로 20만 원을 감점해서 비교한다.",
-      "refs": [],
+      "refs": [
+        "SOP-COOL-11"
+      ],
       "status": "pending",
       "value": 24,
       "unit": "시간",
@@ -1378,7 +1380,9 @@
       "kind": "unit_value",
       "text": "이미 24시간을 넘겼다면 팬 최대 운전 조치는 팬 수명 손실로 20만 원을 감점해서 비교한다.",
       "quote": "이미 24시간을 넘겼다면 팬 최대 운전 조치는 팬 수명 손실로 20만 원을 감점해서 비교한다.",
-      "refs": [],
+      "refs": [
+        "SOP-COOL-11"
+      ],
       "status": "pending",
       "value": 20,
       "unit": "만 원",

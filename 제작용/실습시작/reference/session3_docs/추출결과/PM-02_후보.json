@@ -2,41 +2,11 @@
   "doc_id": "PM-02",
   "source_file": "PM-02_powerpack-pm-checklist.md",
   "source_sha256": "2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
-  "extractor": "강사 참조 추출 함수(규칙 기반, LLM 없음)",
-  "generated_at": "2026-10-28T01:40:28+09:00",
+  "extractor": "강사 참조 추출 함수 2판(규칙 기반, LLM 없음, lang=해당 없음)",
+  "generated_at": "2026-10-28T02:44:43+09:00",
   "candidates": [
     {
       "id": "PM-02-001",
-      "doc_id": "PM-02",
-      "section": "머리말",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "quote": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "refs": [],
-      "status": "pending",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h"
-    },
-    {
-      "id": "PM-02-002",
-      "doc_id": "PM-02",
-      "section": "머리말",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "quote": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "refs": [],
-      "status": "pending",
-      "value": 10,
-      "unit": "%",
-      "comparator": "±",
-      "value_text": "±10 %"
-    },
-    {
-      "id": "PM-02-003",
       "doc_id": "PM-02",
       "section": "PM-2.1",
       "procedure": null,
@@ -52,7 +22,7 @@
       "value_max": 3
     },
     {
-      "id": "PM-02-004",
+      "id": "PM-02-002",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -67,7 +37,7 @@
       "value_text": "10,000 h"
     },
     {
-      "id": "PM-02-005",
+      "id": "PM-02-003",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -82,37 +52,7 @@
       "value_text": "12,000 h"
     },
     {
-      "id": "PM-02-006",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "4,000 h · 내용: 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석",
-      "quote": "| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |",
-      "refs": [],
-      "status": "pending",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h"
-    },
-    {
-      "id": "PM-02-007",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "4,000 h · 부품: 2,000 h 패키지와 같음",
-      "quote": "| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |",
-      "refs": [],
-      "status": "pending",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h"
-    },
-    {
-      "id": "PM-02-008",
+      "id": "PM-02-004",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -127,37 +67,7 @@
       "value_text": "16,000 h"
     },
     {
-      "id": "PM-02-009",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "8,000 h · 내용: 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환",
-      "quote": "| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
-      "refs": [],
-      "status": "pending",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h"
-    },
-    {
-      "id": "PM-02-010",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "8,000 h · 부품: 4,000 h 부품 + 작동유",
-      "quote": "| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
-      "refs": [],
-      "status": "pending",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h"
-    },
-    {
-      "id": "PM-02-011",
+      "id": "PM-02-005",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -172,7 +82,7 @@
       "value_text": "2,000 h"
     },
     {
-      "id": "PM-02-012",
+      "id": "PM-02-006",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -187,7 +97,7 @@
       "value_text": "±10 %"
     },
     {
-      "id": "PM-02-013",
+      "id": "PM-02-007",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -203,7 +113,7 @@
       "value_max": 2200
     },
     {
-      "id": "PM-02-014",
+      "id": "PM-02-008",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -214,7 +124,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-015",
+      "id": "PM-02-009",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -229,7 +139,7 @@
       "value_text": "2,200 h를 넘"
     },
     {
-      "id": "PM-02-016",
+      "id": "PM-02-010",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -240,7 +150,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-017",
+      "id": "PM-02-011",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -251,7 +161,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-018",
+      "id": "PM-02-012",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -262,11 +172,11 @@
       "status": "pending",
       "value": 1950,
       "unit": "h",
-      "comparator": null,
-      "value_text": "1,950 h"
+      "comparator": ">=",
+      "value_text": "1,950 h에 닿으면"
     },
     {
-      "id": "PM-02-019",
+      "id": "PM-02-013",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -281,7 +191,7 @@
       "value_text": "50 h"
     },
     {
-      "id": "PM-02-020",
+      "id": "PM-02-014",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -292,7 +202,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-021",
+      "id": "PM-02-015",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -303,7 +213,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-022",
+      "id": "PM-02-016",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -318,7 +228,7 @@
       "value_text": "1,800 h 이상"
     },
     {
-      "id": "PM-02-023",
+      "id": "PM-02-017",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -329,81 +239,81 @@
       "status": "pending"
     },
     {
+      "id": "PM-02-018",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-019",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "prohibition",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-020",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "unit_value",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "pending",
+      "value": 2200,
+      "unit": "h",
+      "comparator": ">",
+      "value_text": "2,200 h를 넘"
+    },
+    {
+      "id": "PM-02-021",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-022",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "prohibition",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-023",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "unit_value",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "pending",
+      "value": 2200,
+      "unit": "h",
+      "comparator": ">",
+      "value_text": "2,200 h를 넘"
+    },
+    {
       "id": "PM-02-024",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-025",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "prohibition",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-026",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "pending",
-      "value": 2200,
-      "unit": "h",
-      "comparator": ">",
-      "value_text": "2,200 h를 넘"
-    },
-    {
-      "id": "PM-02-027",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-028",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "prohibition",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-029",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "pending",
-      "value": 2200,
-      "unit": "h",
-      "comparator": ">",
-      "value_text": "2,200 h를 넘"
-    },
-    {
-      "id": "PM-02-030",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -414,11 +324,11 @@
       "status": "pending",
       "value": 24,
       "unit": "시간",
-      "comparator": null,
-      "value_text": "24시간"
+      "comparator": "<=",
+      "value_text": "24시간 안에"
     },
     {
-      "id": "PM-02-031",
+      "id": "PM-02-025",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -433,7 +343,7 @@
       "value_text": "80만 원"
     },
     {
-      "id": "PM-02-032",
+      "id": "PM-02-026",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -444,7 +354,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-033",
+      "id": "PM-02-027",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -459,7 +369,7 @@
       "value_text": "4명"
     },
     {
-      "id": "PM-02-034",
+      "id": "PM-02-028",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -470,7 +380,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-035",
+      "id": "PM-02-029",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -481,11 +391,11 @@
       "status": "pending",
       "value": 4,
       "unit": "명",
-      "comparator": null,
-      "value_text": "4명"
+      "comparator": "<",
+      "value_text": "4명보다 적으면"
     },
     {
-      "id": "PM-02-036",
+      "id": "PM-02-030",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -500,7 +410,7 @@
       "value_text": "60만 원"
     },
     {
-      "id": "PM-02-037",
+      "id": "PM-02-031",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -511,7 +421,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-038",
+      "id": "PM-02-032",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -526,7 +436,7 @@
       "value_text": "3개 미만"
     },
     {
-      "id": "PM-02-039",
+      "id": "PM-02-033",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -541,7 +451,7 @@
       "value_text": "2개"
     },
     {
-      "id": "PM-02-040",
+      "id": "PM-02-034",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -552,7 +462,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-041",
+      "id": "PM-02-035",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -563,7 +473,18 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-042",
+      "id": "PM-02-036",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "부품: 두 대를 묶으려면 씰 키트가 2개 이상 있어야 한다.",
+      "quote": "부품: 두 대를 묶으려면 씰 키트가 2개 이상 있어야 한다.",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-037",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -578,7 +499,7 @@
       "value_text": "2개 이상"
     },
     {
-      "id": "PM-02-043",
+      "id": "PM-02-038",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -590,7 +511,7 @@
       "order": 1
     },
     {
-      "id": "PM-02-044",
+      "id": "PM-02-039",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -602,7 +523,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-045",
+      "id": "PM-02-040",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -614,7 +535,7 @@
       "order": 3
     },
     {
-      "id": "PM-02-046",
+      "id": "PM-02-041",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -626,7 +547,7 @@
       "order": 4
     },
     {
-      "id": "PM-02-047",
+      "id": "PM-02-042",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -637,7 +558,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-048",
+      "id": "PM-02-043",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -649,7 +570,7 @@
       "order": 1
     },
     {
-      "id": "PM-02-049",
+      "id": "PM-02-044",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -661,7 +582,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-050",
+      "id": "PM-02-045",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -673,7 +594,7 @@
       "order": 3
     },
     {
-      "id": "PM-02-051",
+      "id": "PM-02-046",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -685,7 +606,7 @@
       "order": 4
     },
     {
-      "id": "PM-02-052",
+      "id": "PM-02-047",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -696,7 +617,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-053",
+      "id": "PM-02-048",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -708,7 +629,7 @@
       "order": 1
     },
     {
-      "id": "PM-02-054",
+      "id": "PM-02-049",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -719,7 +640,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-055",
+      "id": "PM-02-050",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -731,7 +652,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-056",
+      "id": "PM-02-051",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -742,7 +663,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-057",
+      "id": "PM-02-052",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -754,7 +675,7 @@
       "order": 3
     },
     {
-      "id": "PM-02-058",
+      "id": "PM-02-053",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -765,7 +686,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-059",
+      "id": "PM-02-054",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -777,7 +698,7 @@
       "order": 1
     },
     {
-      "id": "PM-02-060",
+      "id": "PM-02-055",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -788,7 +709,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-061",
+      "id": "PM-02-056",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -800,7 +721,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-062",
+      "id": "PM-02-057",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -812,7 +733,7 @@
       "order": 3
     },
     {
-      "id": "PM-02-063",
+      "id": "PM-02-058",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -827,7 +748,7 @@
       "value_text": "4명"
     },
     {
-      "id": "PM-02-064",
+      "id": "PM-02-059",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -842,7 +763,7 @@
       "value_text": "2개"
     },
     {
-      "id": "PM-02-065",
+      "id": "PM-02-060",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -854,7 +775,7 @@
       "order": 4
     },
     {
-      "id": "PM-02-066",
+      "id": "PM-02-061",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -865,7 +786,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-067",
+      "id": "PM-02-062",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": null,
@@ -876,7 +797,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-068",
+      "id": "PM-02-063",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": null,
@@ -887,7 +808,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-069",
+      "id": "PM-02-064",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -899,7 +820,7 @@
       "order": 1
     },
     {
-      "id": "PM-02-070",
+      "id": "PM-02-065",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -911,7 +832,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-071",
+      "id": "PM-02-066",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -923,7 +844,7 @@
       "order": 3
     },
     {
-      "id": "PM-02-072",
+      "id": "PM-02-067",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -934,7 +855,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-073",
+      "id": "PM-02-068",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -949,7 +870,7 @@
       "value_text": "0 bar"
     },
     {
-      "id": "PM-02-074",
+      "id": "PM-02-069",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -961,7 +882,7 @@
       "order": 4
     },
     {
-      "id": "PM-02-075",
+      "id": "PM-02-070",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -973,7 +894,7 @@
       "order": 5
     },
     {
-      "id": "PM-02-076",
+      "id": "PM-02-071",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -985,7 +906,7 @@
       "order": 6
     },
     {
-      "id": "PM-02-077",
+      "id": "PM-02-072",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -999,7 +920,7 @@
       "order": 7
     },
     {
-      "id": "PM-02-078",
+      "id": "PM-02-073",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1012,7 +933,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-079",
+      "id": "PM-02-074",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1023,34 +944,21 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-080",
+      "id": "PM-02-075",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
       "kind": "step",
       "text": "2,000 h 정기 점검의 1~6단계를 한다.",
       "quote": "2,000 h 정기 점검의 1~6단계를 한다.",
-      "refs": [],
+      "refs": [
+        "SOP-PM-21"
+      ],
       "status": "pending",
       "order": 1
     },
     {
-      "id": "PM-02-081",
-      "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
-      "kind": "unit_value",
-      "text": "2,000 h 정기 점검의 1~6단계를 한다.",
-      "quote": "2,000 h 정기 점검의 1~6단계를 한다.",
-      "refs": [],
-      "status": "pending",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h"
-    },
-    {
-      "id": "PM-02-082",
+      "id": "PM-02-076",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
@@ -1062,7 +970,7 @@
       "order": 2
     },
     {
-      "id": "PM-02-083",
+      "id": "PM-02-077",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
@@ -1074,10 +982,86 @@
       "order": 3
     },
     {
-      "id": "PM-02-084",
+      "id": "PM-02-078",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
+      "kind": "step",
+      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "refs": [
+        "PM-2.9"
+      ],
+      "status": "pending",
+      "order": 4
+    },
+    {
+      "id": "PM-02-079",
+      "doc_id": "PM-02",
+      "section": "PM-2.7",
+      "procedure": "SOP-PM-22",
+      "kind": "completion",
+      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "refs": [
+        "PM-2.9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-080",
+      "doc_id": "PM-02",
+      "section": "PM-2.7",
+      "procedure": "SOP-PM-22",
+      "kind": "precondition",
+      "text": "승인: 설비보전팀장.",
+      "quote": "승인: 설비보전팀장.",
+      "refs": [],
+      "status": "pending"
+    },
+    {
+      "id": "PM-02-081",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
+      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
+      "refs": [
+        "SOP-PM-22"
+      ],
+      "status": "pending",
+      "order": 1
+    },
+    {
+      "id": "PM-02-082",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
+      "quote": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
+      "refs": [],
+      "status": "pending",
+      "order": 2
+    },
+    {
+      "id": "PM-02-083",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "작동유를 교환한다.",
+      "quote": "작동유를 교환한다.",
+      "refs": [],
+      "status": "pending",
+      "order": 3
+    },
+    {
+      "id": "PM-02-084",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "step",
       "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
       "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
@@ -1090,8 +1074,8 @@
     {
       "id": "PM-02-085",
       "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "completion",
       "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
       "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
@@ -1103,8 +1087,8 @@
     {
       "id": "PM-02-086",
       "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "precondition",
       "text": "승인: 설비보전팀장.",
       "quote": "승인: 설비보전팀장.",
@@ -1113,95 +1097,6 @@
     },
     {
       "id": "PM-02-087",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "refs": [],
-      "status": "pending",
-      "order": 1
-    },
-    {
-      "id": "PM-02-088",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "unit_value",
-      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "refs": [],
-      "status": "pending",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h"
-    },
-    {
-      "id": "PM-02-089",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
-      "quote": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
-      "refs": [],
-      "status": "pending",
-      "order": 2
-    },
-    {
-      "id": "PM-02-090",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "작동유를 교환한다.",
-      "quote": "작동유를 교환한다.",
-      "refs": [],
-      "status": "pending",
-      "order": 3
-    },
-    {
-      "id": "PM-02-091",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "refs": [
-        "PM-2.9"
-      ],
-      "status": "pending",
-      "order": 4
-    },
-    {
-      "id": "PM-02-092",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "completion",
-      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "refs": [
-        "PM-2.9"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-093",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "precondition",
-      "text": "승인: 설비보전팀장.",
-      "quote": "승인: 설비보전팀장.",
-      "refs": [],
-      "status": "pending"
-    },
-    {
-      "id": "PM-02-094",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1212,7 +1107,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-095",
+      "id": "PM-02-088",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1227,7 +1122,7 @@
       "value_text": "90 %"
     },
     {
-      "id": "PM-02-096",
+      "id": "PM-02-089",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1242,7 +1137,7 @@
       "value_text": "15분"
     },
     {
-      "id": "PM-02-097",
+      "id": "PM-02-090",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1257,7 +1152,7 @@
       "value_text": "178 bar 이상"
     },
     {
-      "id": "PM-02-098",
+      "id": "PM-02-091",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1272,7 +1167,7 @@
       "value_text": "8.8 l/min 이상"
     },
     {
-      "id": "PM-02-099",
+      "id": "PM-02-092",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1287,7 +1182,7 @@
       "value_text": "1.2 mm/s 미만"
     },
     {
-      "id": "PM-02-100",
+      "id": "PM-02-093",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1298,7 +1193,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-101",
+      "id": "PM-02-094",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1309,7 +1204,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-102",
+      "id": "PM-02-095",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1320,7 +1215,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-103",
+      "id": "PM-02-096",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1335,7 +1230,7 @@
       "value_text": "2,000 h"
     },
     {
-      "id": "PM-02-104",
+      "id": "PM-02-097",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1346,7 +1241,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-105",
+      "id": "PM-02-098",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1361,7 +1256,7 @@
       "value_text": "1분"
     },
     {
-      "id": "PM-02-106",
+      "id": "PM-02-099",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1376,7 +1271,7 @@
       "value_text": "165 bar 미만"
     },
     {
-      "id": "PM-02-107",
+      "id": "PM-02-100",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1387,7 +1282,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-108",
+      "id": "PM-02-101",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1402,7 +1297,7 @@
       "value_text": "1분"
     },
     {
-      "id": "PM-02-109",
+      "id": "PM-02-102",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1417,7 +1312,7 @@
       "value_text": "8.0 l/min 미만"
     },
     {
-      "id": "PM-02-110",
+      "id": "PM-02-103",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1428,7 +1323,7 @@
       "status": "pending"
     },
     {
-      "id": "PM-02-111",
+      "id": "PM-02-104",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,

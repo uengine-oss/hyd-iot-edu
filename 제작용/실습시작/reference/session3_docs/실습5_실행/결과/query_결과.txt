@@ -1,69 +1,71 @@
--- 1/9
-k.kind | ks.id | k.id | k.text | via
-completion | HM-8.5 | HM-8-059 | 15분 재관측으로 HM-8.6 회복 판정을 한다. | 절차 안
-completion | HM-8.6 | HM-8-081 | 조치 뒤 15분 동안 TS1이 55 ℃ 미만이고 경보가 해제된 상태가 유지되면 완화에 성공한 것이다. | 가리킨 절
-completion | HM-8.6 | HM-8-086 | 회복하지 않으면 결과 보고에 미달로 적는다. | 가리킨 절
-precondition | HM-8.5 | HM-8-046 | 원격 조치는 PLC 운전 모드가 REMOTE_AUTO일 때만 한다. | 같은 절
-precondition | HM-8.5 | HM-8-052 | PLC 운전 모드가 REMOTE_AUTO인지 확인한다. | 절차 안
-precondition | HM-8.5 | HM-8-061 | 승인: 운전원. | 절차 안
-precondition | HM-8.6 | HM-8-084 | 조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있으므로 다른 조치와 비교한다. | 가리킨 절
-prohibition | HM-8.5 | HM-8-048 | 현장에서 수동 조작이 들어와 REMOTE_MANUAL이면 원격 조치를 내리지 않는다. | 같은 절
-prohibition | HM-8.5 | HM-8-049 | 펌프 부하는 60 % 아래로 내리지 않는다(최소 부하 인터록). | 같은 절
-prohibition | HM-8.5 | HM-8-055 | 100 % 연속 운전은 24시간 이내로 한다. | 절차 안
-prohibition | HM-8.8 | HM-8-099 | 원격 조치(SOP-COOL-11~13)는 REMOTE_AUTO가 아닐 때 쓰지 않는다. | ID로 가리킴
-step | HM-8.5 | HM-8-051 | PLC 운전 모드가 REMOTE_AUTO인지 확인한다. | 절차 안
-step | HM-8.5 | HM-8-053 | 팬 속도를 100 %로 올린다. 100 % 연속 운전은 24시간 이내로 한다. | 절차 안
-step | HM-8.5 | HM-8-058 | 15분 재관측으로 HM-8.6 회복 판정을 한다. | 절차 안
-unit_value | HM-8.5 | HM-8-050 | 펌프 부하는 60 % 아래로 내리지 않는다(최소 부하 인터록). | 같은 절
-unit_value | HM-8.5 | HM-8-054 | 팬 속도를 100 %로 올린다. | 절차 안
-unit_value | HM-8.5 | HM-8-056 | 100 % 연속 운전은 24시간 이내로 한다. | 절차 안
-unit_value | HM-8.5 | HM-8-057 | 100 % 연속 운전은 24시간 이내로 한다. | 절차 안
-unit_value | HM-8.5 | HM-8-060 | 15분 재관측으로 HM-8.6 회복 판정을 한다. | 절차 안
-unit_value | HM-8.6 | HM-8-082 | 조치 뒤 15분 동안 TS1이 55 ℃ 미만이고 경보가 해제된 상태가 유지되면 완화에 성공한 것이다. | 가리킨 절
-unit_value | HM-8.6 | HM-8-083 | 조치 뒤 15분 동안 TS1이 55 ℃ 미만이고 경보가 해제된 상태가 유지되면 완화에 성공한 것이다. | 가리킨 절
-unit_value | HM-8.6 | HM-8-085 | 조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있으므로 다른 조치와 비교한다. | 가리킨 절
-(22행)
--- 2/9
-k.kind | ks.id | k.id | k.text | via
-completion | HM-8.7 | HM-8-092 | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 절차 안
-precondition | HM-8.7 | HM-8-087 | 승인은 설비보전팀장이 한다. | 같은 절
-precondition | HM-8.7 | HM-8-R107 | 원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. | 같은 절
-precondition | HM-8.7 | HM-8-R108 | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | 절차 안
-prohibition | HM-8.7 | HM-8-090 | 고압수는 쓰지 않는다. | 절차 안
-step | HM-8.5 | HM-8-079 | 야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다. | ID로 가리킴
-step | HM-8.7 | HM-8-088 | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | 절차 안
-step | HM-8.7 | HM-8-089 | 압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다. | 절차 안
-step | HM-8.7 | HM-8-091 | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 절차 안
-unit_value | HM-8.7 | HM-8-093 | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 절차 안
+-- 1/7
+p.id | p.name | d.id | d.status | d.sha256 | s.section | k.id | k.kind | k.text | k.quote | k.order | k.value | k.value_max | k.unit | k.comparator | ks.section | owner.id | via | collect(DISTINCT q.id) | collect(DISTINCT part.id) | k.refs | k.unresolved_parts
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-079 | step | 야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다. | 야간 예정된 정비 시간에 SOP-COOL-14 핀 세척 작업지시를 건다. | 4 | null | null | null | null | HM-8.5 | SOP-COOL-13 | 이 절차를 ID로 가리킴 | [] | [] | ["SOP-COOL-14"] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-087 | precondition | 승인은 설비보전팀장이 한다. | 승인은 설비보전팀장이 한다. | null | null | null | null | null | HM-8.7 | null | 같은 절의 절차 밖 문장 | [] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-088 | step | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | 1 | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | [] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-089 | step | 압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다. | 압축공기로 핀 바깥쪽에서 안쪽으로 세척한다. 고압수는 쓰지 않는다. | 2 | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | [] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-090 | prohibition | 고압수는 쓰지 않는다. | 고압수는 쓰지 않는다. | null | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | [] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-091 | step | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 3 | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | ["quantity:CE"] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-092 | completion | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | null | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | ["quantity:CE"] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-093 | unit_value | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | 재가동 후 냉각 효율 CE가 80 % 이상으로 돌아왔는지 확인한다. | null | 80 | null | % | >= | HM-8.7 | SOP-COOL-14 | 절차 안 | ["quantity:CE"] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-R107 | precondition | 원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. | 원인에 맞는 근본 조치를 CMMS 작업지시로 발행한다. | null | null | null | null | null | HM-8.7 | null | 같은 절의 절차 밖 문장 | [] | [] | [] | null
+SOP-COOL-14 | 쿨러 핀 세척 | HM-8@1.1 | 현행 | 6a1a66a6000e9c292f58bd6160ce46ba07e90862f40d4cc0a2e8b1cc2778e256 | HM-8.7 | HM-8-R108 | precondition | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | 설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다. | null | null | null | null | null | HM-8.7 | SOP-COOL-14 | 절차 안 | [] | [] | [] | null
 (10행)
--- 3/9
-p.id | p.name
+-- 2/7
+p.id | p.name | d.id | d.status | d.sha256 | s.section | k.id | k.kind | k.text | k.quote | k.order | k.value | k.value_max | k.unit | k.comparator | ks.section | owner.id | via | collect(DISTINCT q.id) | collect(DISTINCT part.id) | k.refs | k.unresolved_parts
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-002 | precondition | Before opening any hydraulic line or filter housing, stop the pump, lock out the motor supply, and discharge the accumulator to tank. | Before opening any hydraulic line or filter housing, stop the pump, lock out the motor supply, and discharge the accumulator to tank. | null | null | null | null | null | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-003 | precondition | Do not open the circuit until the system pressure gauge reads 0 psi. | Do not open the circuit until the system pressure gauge reads 0 psi. | null | null | null | null | null | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-004 | prohibition | Do not open the circuit until the system pressure gauge reads 0 psi. | Do not open the circuit until the system pressure gauge reads 0 psi. | null | null | null | null | null | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-005 | unit_value | Do not open the circuit until the system pressure gauge reads 0 psi. | Do not open the circuit until the system pressure gauge reads 0 psi. | null | 0 | null | psi | = | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-006 | prohibition | Never loosen a fitting to release trapped pressure. | Never loosen a fitting to release trapped pressure. | null | null | null | null | null | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-007 | unit_value | Allow the fluid to cool below 40 °C before draining. | Allow the fluid to cool below 40 °C before draining. | null | 40 | null | °C | < | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-017 | prohibition | Indicator readings taken with fluid below 30 °C are not valid. | Indicator readings taken with fluid below 30 °C are not valid. | null | null | null | null | null | 3 | null | 같은 절의 절차 밖 문장 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-019 | step | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | 1 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | ["1"] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-020 | precondition | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | null | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | ["1"] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-021 | unit_value | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | Carry out the safety steps in Section 1 and confirm that the gauge reads 0 psi. | null | 0 | null | psi | = | 3 | T-3.1 | 절차 안 | [] | [] | ["1"] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-022 | step | Remove the bowl and the element. Do not clean and reuse paper elements. | Remove the bowl and the element. Do not clean and reuse paper elements. | 2 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-023 | prohibition | Do not clean and reuse paper elements. | Do not clean and reuse paper elements. | null | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-024 | step | Inspect the old element. If metal particles are visible, take a fluid sample for analysis before restart. | Inspect the old element. If metal particles are visible, take a fluid sample for analysis before restart. | 3 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-025 | precondition | If metal particles are visible, take a fluid sample for analysis before restart. | If metal particles are visible, take a fluid sample for analysis before restart. | null | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-026 | step | Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m. | Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m. | 4 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | ["P-RTN-FLT"] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-027 | unit_value | Fit a new 10 µm element (part no. | Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m. | null | 10 | null | µm | null | 3 | T-3.1 | 절차 안 | [] | ["P-RTN-FLT"] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-028 | unit_value | HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m. | Fit a new 10 µm element (part no. HI-RF-10) with a new O-ring and tighten the bowl to 35 N·m. | null | 35 | null | N·m | null | 3 | T-3.1 | 절차 안 | [] | ["P-RTN-FLT"] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-029 | step | Reset the indicator, restart, and run for 10 minutes. Check the housing for leaks. | Reset the indicator, restart, and run for 10 minutes. Check the housing for leaks. | 5 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-030 | unit_value | Reset the indicator, restart, and run for 10 minutes. | Reset the indicator, restart, and run for 10 minutes. | null | 10 | null | minutes | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-031 | step | At operating temperature the differential pressure must be below 10 psi. Record the reading and the element lot number. | At operating temperature the differential pressure must be below 10 psi. Record the reading and the element lot number. | 6 | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-032 | completion | At operating temperature the differential pressure must be below 10 psi. | At operating temperature the differential pressure must be below 10 psi. | null | null | null | null | null | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-033 | unit_value | At operating temperature the differential pressure must be below 10 psi. | At operating temperature the differential pressure must be below 10 psi. | null | 10 | null | psi | < | 3 | T-3.1 | 절차 안 | [] | [] | [] | null
+T-3.1 | Return filter element replacement / 리턴 필터 엘리먼트 교체 | OEM-HPP45A-MM@C | 참고(제조사) | 7b4cdbecf66e6c787e2e8622210a1878155b86babbd28d99c4ea2e61710247d1 | 3 | OEM-HPP45A-MM-R061 | precondition | Allow the fluid to cool below 40 °C before draining. | Allow the fluid to cool below 40 °C before draining. | null | null | null | null | null | 1 | null | 단계가 가리킨 절 1 | [] | [] | [] | null
+(23행)
+-- 3/7
+p.id
 (0행)
--- 4/9
-s.id
-(0행)
--- 5/9
-들어가면_안되는_후보
+-- 4/7
+loaded_not_approved
 0
 (1행)
--- 6/9
-q.id | q.name | count(k)
-quantity:CE | 냉각 효율 | 18
-quantity:TS1 | 유온 | 10
-quantity:VS1 | 팬 진동 | 11
+-- 5/7
+d.id | d.status
+HI-01@1.0 | 보충
+HM-8@1.1 | 현행
+OEM-HPP45A-MM@C | 참고(제조사)
+PM-02@2.0 | 현행
+(4행)
+-- 6/7
+p.id | part.id | s.name | r.approved | r.price_manwon | r.lead_days
+SOP-PM-21 | P-PMP-SEAL | A정밀 (저가) | true | 35.0 | 2
+SOP-PM-21 | P-PMP-SEAL | B-OEM (순정) | true | 55.0 | 5
+SOP-PM-21 | P-PMP-SEAL | C트레이딩 (최저가) | false | 20.0 | 1
+SOP-PM-21 | P-RTN-FLT | A정밀 (저가) | true | 11.0 | 2
+SOP-PM-21 | P-RTN-FLT | B-OEM (순정) | true | 12.0 | 3
+SOP-PM-21 | P-RTN-FLT | C트레이딩 (최저가) | true | 8.0 | 1
+T-3.1 | P-RTN-FLT | A정밀 (저가) | true | 11.0 | 2
+T-3.1 | P-RTN-FLT | B-OEM (순정) | true | 12.0 | 3
+T-3.1 | P-RTN-FLT | C트레이딩 (최저가) | true | 8.0 | 1
+(9행)
+-- 7/7
+p.doc_id | procedures | assets
+HI-01 | 3 | ["HYD-01", "HYD-02", "HYD-03"]
+OEM-HPP45A-MM | 2 | ["HYD-01", "HYD-02", "HYD-03"]
+PM-02 | 7 | ["HYD-01", "HYD-02", "HYD-03"]
 (3행)
--- 7/9
-k.id | k.unresolved_tags
-HM-8-039 | ["TS4"]
-HM-8-040 | ["TS4"]
-HM-8-094 | ["TS4"]
-(3행)
--- 8/9
-작업과_부품_연결
-0
-(1행)
--- 9/9
-s.name | r.approved | r.price_manwon | r.defect_rate | r.lead_days
-A정밀 (저가) | true | 180.0 | 0.12 | 3
-B-OEM (순정) | true | 260.0 | 0.02 | 5
-(2행)

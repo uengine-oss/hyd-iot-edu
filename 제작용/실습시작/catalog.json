@@ -7,7 +7,7 @@
       "title": "랩 그래프 적재와 질문",
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "sha256": "1e9a82c2d59f0fc1961820390be53d6fae2a6bfd0d9c21d3a3dfbf3edc2e4d9c",
+      "sha256": "2b06a2f03653932c06dd5d78bc04b2e041b7f46c3591a246778b8fd984e77f46",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
     },
     {
@@ -17,7 +17,7 @@
       "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
-      "sha256": "96a4b2204127fa509e6349ead0994a23be1f433b84fbc8de7c67c89bac208e67",
+      "sha256": "22e4c2a7d63a096f4170ac336d17381814b2776b46df50e4a5a85eca55c407d4",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
     },
     {
@@ -27,7 +27,7 @@
       "title": "포털에서 기준 지식의 연결 탐색하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "7b15d34232879f5a6cd7395de897743bcdd17280a74a65fd36d69227862a55fa",
+      "sha256": "d228645adbe75222ea8cb88f200db1a2ce293efb30edc3b466f77fd59ca084d5",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
@@ -35,9 +35,9 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 연결하기",
-      "version": "2026-10-28-lab-v3-c67",
+      "version": "2026-10-28-lab-v4-field",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
-      "sha256": "3709ff80cf53b6aa2d4b954166825fc82edfd24df31abfd49001f4a873d8d353",
+      "sha256": "714cdca331e73bf7bf378e83d84bd4e79c3fb28bc977d8886a5e83f2ec27d6de",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
     },
     {
@@ -45,9 +45,9 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품별 사용 설비와 공급 조건 조회하기",
-      "version": "2026-10-28-lab-v3-c67",
+      "version": "2026-10-28-lab-v4-field",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "sha256": "007776202d3fd30f852cf964c9e6f92089f90c6782222e51879181a5d00783a6",
+      "sha256": "aa995af554d2bdeb1e41a17c4338f20eb62fe29c4f413c8fa3dd41eb0cd22196",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
     },
     {
@@ -55,9 +55,9 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "조치 조건과 판단 근거 정리하기",
-      "version": "2026-10-28-conditions-v2-c66",
+      "version": "2026-10-28-conditions-v3-field",
       "folder": "02회차/랩/02일차_실습5_조치조건표",
-      "sha256": "8fd6a21cfa84077aaac5b11d8e97d51f7d562ba500f5d50e7a610cb5b53b3db9",
+      "sha256": "ecdbef1ec0c9d16da6de185611a97323b72375bfef34461bf1e9461a8dfafd0a",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B55_%EC%A1%B0%EC%B9%98%EC%A1%B0%EA%B1%B4%ED%91%9C.zip"
     },
     {
@@ -67,7 +67,7 @@
       "title": "조건을 바꿔 조치 결과 비교하기",
       "version": "2026-10-28-s3-whatif-v1",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
-      "sha256": "faab4016954370fade2ad952ebe7ee0c2e0130176b52a71d1076fa1b59225131",
+      "sha256": "8acc9258e0865aaf938b4e0c81bf3d61b4bcf2b8a22d3b6fcb993ee0456a3d28",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EC%A1%B0%EC%B9%98%EA%B2%B0%EA%B3%BC%EB%B9%84%EA%B5%90.zip"
     },
     {
@@ -77,7 +77,7 @@
       "title": "랩 그래프 적재와 질문",
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
-      "sha256": "1e9a82c2d59f0fc1961820390be53d6fae2a6bfd0d9c21d3a3dfbf3edc2e4d9c",
+      "sha256": "2b06a2f03653932c06dd5d78bc04b2e041b7f46c3591a246778b8fd984e77f46",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/01%ED%9A%8C%EC%B0%A8/%EB%9E%A9/01%EC%9D%BC%EC%B0%A8_%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8_%EB%AA%A8%EB%8D%B8%EA%B3%BC%EC%A7%88%EB%AC%B8.zip"
     },
     {
@@ -87,7 +87,7 @@
       "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
-      "sha256": "76068956599653cf44f0341af73222541b14b111a691ebda89185b33cde9ffc5",
+      "sha256": "22d10ee71f10a5e8a984616ebbd4935fa93d2226765897a0607b2a516edc3b67",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EA%B4%80%EA%B3%84%EC%A1%B0%ED%9A%8C.zip"
     },
     {
@@ -97,7 +97,7 @@
       "title": "포털에서 기준 지식의 연결 탐색하기",
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "31c5a9fc1e335b682ae31d913f5a81994dd66e0426b02b30ae174763e60ec37d",
+      "sha256": "eff5659b3dbaddb1c567348073aeb97ddde37641bc467afc3b83a2228f22d135",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
@@ -105,9 +105,9 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 자료를 질문에 답하는 모델로 만들기",
-      "version": "2026-10-28-lab-v3-c67",
+      "version": "2026-10-28-lab-v4-field",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
-      "sha256": "df5fe103b97c7227a1c87a56cb5aecfa0efd43039d518b1570723e7e60625ee9",
+      "sha256": "2592ab44ba6dc7f53ff11847b459b06d7dec8f8bae3e3ca436d16ff903ff581b",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EC%98%A8%ED%86%A8%EB%A1%9C%EC%A7%80%EC%84%A4%EA%B3%84.zip"
     },
     {
@@ -115,9 +115,9 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "모델을 그래프에 적재하고 질문으로 검증하기",
-      "version": "2026-10-28-lab-v3-c67",
+      "version": "2026-10-28-lab-v4-field",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
-      "sha256": "a51114231c68fc8a8bfe207fe5ca8597e5d8a6fd9db29e69aec2443e817f396d",
+      "sha256": "02e41feed1295db49aa6fd0bc69755705a10415957f8f827026fa9a8a77a9c9c",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EA%B7%B8%EB%9E%98%ED%94%84%EA%B5%AC%ED%98%84%EA%B3%BC%EA%B2%80%EC%A6%9D.zip"
     },
     {
@@ -127,7 +127,7 @@
       "title": "조건을 바꿔 조치 결과 비교하기",
       "version": "2026-10-28-s3-whatif-v1",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
-      "sha256": "8dc48bd20489db90c895e19aebb0eb713779118e77470e071e879a5c62718b7f",
+      "sha256": "d1374eb9237d75be6f42fda5ff6314dd9d2695fa614d1dbecf0a62df696084e8",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EC%A1%B0%EC%B9%98%EA%B2%B0%EA%B3%BC%EB%B9%84%EA%B5%90.zip"
     },
     {
@@ -135,9 +135,9 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "SOP 구조와 조치 결정표 만들기",
-      "version": "2026-10-28-s3-v1",
+      "version": "2026-10-28-s3-v2-field",
       "folder": "03회차/랩/03일차_실습2_조치기준만들기",
-      "sha256": "9a7c1bfff98546c2ab3dd278f05d62c3fc5168942096579be6e3b21ed2465c43",
+      "sha256": "9c34d16ae1b4bddb075a7852fe3f17fae202c5f8e55a2605b11eddb780f91fdc",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A1%B0%EC%B9%98%EA%B8%B0%EC%A4%80%EB%A7%8C%EB%93%A4%EA%B8%B0.zip"
     },
     {
@@ -145,9 +145,9 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "조건표를 읽는 조치 판정·비교 기능 만들기",
-      "version": "2026-10-28-s3-v1",
+      "version": "2026-10-28-s3-v2-field",
       "folder": "03회차/랩/03일차_실습3_판단기능만들기",
-      "sha256": "9145e1811bd95f5ff930b3a47e94fe7410bf0f22f1ff4dc421943b9fcc286cf8",
+      "sha256": "6ae007c678bf5f6545dee6e082581c728e67817b3800d5bbbb1c1d128402882d",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%ED%8C%90%EB%8B%A8%EA%B8%B0%EB%8A%A5%EB%A7%8C%EB%93%A4%EA%B8%B0.zip"
     },
     {
@@ -155,9 +155,9 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "후보별 조치 검토 결과 만들기",
-      "version": "2026-10-28-s3-v1",
+      "version": "2026-10-28-s3-v2-field",
       "folder": "03회차/랩/03일차_실습2_판단기능만들기",
-      "sha256": "a3381531e8361bbf02a9f1dcbcc2da677577509d689db349f71aec743685d4e5",
+      "sha256": "b0b49ced61089d3cc12f52c8fdc8a856ad4df31f0a3eed969c7533d5843da2bc",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%ED%8C%90%EB%8B%A8%EA%B8%B0%EB%8A%A5%EB%A7%8C%EB%93%A4%EA%B8%B0.zip"
     },
     {
@@ -165,19 +165,19 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "포털 지식과 매뉴얼 원문 대조하기",
-      "version": "2026-10-28-s3-v1",
+      "version": "2026-10-28-s3-v2",
       "folder": "03회차/랩/03일차_실습3_매뉴얼검토",
-      "sha256": "7ab0dcb7775ac5f1ff70a439937b0333b433d5b69c9592ff19345f90101c8219",
+      "sha256": "265288d0b087f95b2078fd08035a3a97f72ebb2cb4e764ba42265e852fc26fde",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EB%A7%A4%EB%89%B4%EC%96%BC%EA%B2%80%ED%86%A0.zip"
     },
     {
       "id": "practical-03-extract",
       "course": "실전반",
       "session": "온라인 03회차",
-      "title": "매뉴얼에서 작업 지식 후보를 추출하고 검토하기",
-      "version": "2026-10-28-s3-v1",
+      "title": "현장 문서 묶음에서 작업 지식 후보를 추출하고 검토하기",
+      "version": "2026-10-28-s3-v2",
       "folder": "03회차/랩/03일차_실습4_지식추출",
-      "sha256": "a54c777eff51a8b2c2ed7cf78694e4d2a8fca3a7ccf2ed57427831ea76d049a2",
+      "sha256": "7d8b58fe2d4c6c4d6f867dd528d5d14dac88408f87a067b2572d37c09492ccd4",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EC%A7%80%EC%8B%9D%EC%B6%94%EC%B6%9C.zip"
     },
     {
@@ -185,9 +185,9 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "검토한 지식을 랩 그래프에 연결하고 작업 확인 카드 만들기",
-      "version": "2026-10-28-s3-v1",
+      "version": "2026-10-28-s3-v2",
       "folder": "03회차/랩/03일차_실습5_그래프반영",
-      "sha256": "cd7cc926969350e0142e5ac30ac66731c93e6cf7b6f128cb98f794e4546e41dd",
+      "sha256": "31308812cd2170c23e4bf865b81ae8f986e99ee3abd9dc48f79433be3e241afc",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B55_%EA%B7%B8%EB%9E%98%ED%94%84%EB%B0%98%EC%98%81.zip"
     }
   ]
