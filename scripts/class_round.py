@@ -1506,7 +1506,10 @@ def lab_06_first_agent(r: Round):
     err = _b_agent_form(r)
     r.check("빈 폼 저장 → 「이름 칸을 채워야 합니다」", "이름" in err and "채워야" in err, err, kind="exception")
     err = _b_agent_form(r, name="모델 실험", goal="모델 칸 시험", model="모델 이름!")
-    r.check("모델 칸 모양이 틀림 → 저장 거절 · 사람 글", "모델 이름 모양" in err and r.human_message(err)[0], err, kind="exception")
+    code, access = r.api("GET", f"{r.process}/api/course-access")
+    course = code == 200 and isinstance(access, dict) and access.get("capabilities", {}).get("model_settings") is False
+    expected = "기본 모델" if course else "모델 이름 모양"
+    r.check("허용하지 않은 모델 → 저장 거절 · 사람 글", expected in err and r.human_message(err)[0], err, kind="exception")
     err = _b_agent_form(r, name="냉각 긴급 대응 에이전트", goal="기본 에이전트와 같은 이름", model="")
     r.check("기본 에이전트와 같은 이름 → 거절", "같은 이름" in err, err, kind="exception")
 
@@ -1569,19 +1572,25 @@ def lab_06_first_agent(r: Round):
         r.check("답할 수 없음 이유가 사람 글", ok, why, kind="exception")
     r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[-200:], kind="exception")
 
-    # ---- 모델 칸에 엉뚱한 값(모양은 맞음): 저장 때 안내하는가, 실행 때 사람 글로 실패하는가 → 되돌리기
+    # 수업에서는 모델 변경을 저장 전에 막고, 다른 일반 운영 모드는 기존 실행 시 검사를 유지한다.
     _b_open_agent_edit(r, mine["id"])
     err = _b_agent_form(r, model="gpt-9-ultra")
-    warn = _b_toast_text(r, 3)
-    # 저장은 모양만 본다(중계의 모델 목록은 process 가 모른다 — 차이 있음, 유지). 대신 실행 때 무엇을 고칠지 한국어로 말해야 한다(아래)
-    r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
-    bad = _b_ask(r, mine["id"], "HYD-01 유온 최근 값은?")
-    ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
-    r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
-            and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
-            f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
-    _b_open_agent_edit(r, mine["id"])
-    err = _b_agent_form(r, model="")
+    if course:
+        ok, why = r.human_message(err)
+        current = next(a for a in _b_agents(r) if a["id"] == mine["id"])
+        r.check("허용하지 않은 모델은 저장 전에 차단되고 원래 설정을 유지한다",
+                "기본 모델" in err and ok and current.get("model") in (None, "", "coding"), why, kind="exception")
+        err = _b_agent_form(r, model="")
+    else:
+        warn = _b_toast_text(r, 3)
+        r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
+        bad = _b_ask(r, mine["id"], "HYD-01 유온 최근 값은?")
+        ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
+        r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
+                and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
+                f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
+        _b_open_agent_edit(r, mine["id"])
+        err = _b_agent_form(r, model="")
     r.check("모델 칸을 비워 되돌림(실행기 기본 모델)", not err and not next(a for a in _b_agents(r) if a["id"] == mine["id"]).get("model"), err, kind="exception")
     r.check("질문 화면 에이전트 도구 칩이 사람 이름으로 보인다",
             "도구 표시 이름" not in (r.tab("ask") or page.locator("[data-ask-form]").inner_text()),
@@ -1686,6 +1695,30 @@ def _b_mcp_try(r, tool: str, inputs: dict) -> str:
 @lab("07", "6-1 · 4-4 도구(MCP) 연결 · 써 보기 · 에이전트에 연결")
 def lab_07_mcp_tools(r: Round):
     page = r.page
+    code, access = r.api("GET", f"{r.process}/api/course-access")
+    if code == 200 and isinstance(access, dict) and access.get("capabilities", {}).get("tool_inspection") is True:
+        # 학생 화면에서 준비된 조회 경로와 차단 경계를 검사한다. 아래 교재의
+        # 개인 서버 등록은 현재 정책과 충돌하므로 성공으로 바꾸지 않는다.
+        r.tab("mcp")
+        r.wait(20, lambda: page.locator("#mcpServers [data-open='hyd-dmn']").count(), every=0.5)
+        servers = r.get(f"{r.process}/api/mcp/servers").get("servers", [])
+        names = {server["name"] for server in servers}
+        r.check("준비된 조회 서버만 표시", names == {"neo4j", "enterprise", "hyd-dmn"}, str(sorted(names)))
+        r.check("서버 관리 화면은 감춰짐", page.locator("#mcpOperator").is_hidden(), kind="exception")
+        _b_mcp_select(r, "hyd-dmn")
+        page.locator("#mcpPane [data-try='inputs']").wait_for(timeout=15_000)
+        shown = page.locator("#mcpPane .mcp-tool").all()
+        visible = {item.get_attribute("data-tool") for item in shown}
+        r.check("승인된 읽기 목록만 표시", "inputs" in visible and "submit_decision" not in visible and "submit_purchase" not in visible, str(sorted(visible)))
+        out = _b_mcp_try(r, "inputs", {})
+        r.check("준비된 입력 자료의 실제 조회 결과가 보임", "in:cause" in out, out[:400])
+        denied, body = r.api("POST", f"{r.process}/api/mcp/servers/hyd-dmn/tools/submit_decision/call", {"arguments": {}})
+        r.check("판단 제출은 직접 API에서도 거절", denied == 403, str(body)[:300], kind="exception")
+        registration, body = r.api("POST", f"{r.process}/api/mcp/servers", {"name": _B_MCP_NAME})
+        r.check("임의 서버 등록은 현재 수업 정책에서 차단", registration == 403, str(body)[:300], kind="exception")
+        r.check("현행 6회차 자료의 학생 서버 직접 등록 단계", registration in (200, 201),
+                "현재 수업 정책은 직접 등록을 막는다. 교재 동선 정합이 필요하다.", kind="quality")
+        return
     # ---- 사전 준비 서버 상태(기준 서버는 보기만)
     r.tab("mcp")
     r.wait(20, lambda: page.locator("#mcpServers [data-name]").count() >= 5, every=1)
