@@ -9,7 +9,7 @@ C67 최신 적용: [최상위 학습 목표](1_목적과_방향.md)와 [전체 �
 - **로컬 B 시작(2026-10-28 00:40 KST, 사용자 Windows PC 데스크톱 앱 로컬 세션, main `a43b617e`)**. fetch 후 origin/main과 같음. 다른 작업 미커밋(`it/supabase/config.toml`, `문서/시스템/3_현황.md`·`6_남은_일.md`, `outputs/`, Excel `.inspect.ndjson`) 보존.
 - **computer use 실측(2026-10-28 00:40)**: `request_access(Visual Studio Code)` → **tier `click`**(보이기·왼클릭만, 입력·키·우클릭·붙여넣기 금지). 따라서 computer use로는 Codex 채팅 입력·통합 터미널(Git Bash) 입력 **불가**. 왼클릭도 desktop shell이 전경으로 잡혀 3회 거부. Codex 모델 선택·응답은 이 경로로 **미확인**(설정 파일 `~/.codex/config.toml`의 `model = "gpt-6-luna"`만 확인, 화면 확인 아님). 사용자 전경 창·두 번째 모니터 창은 건드리지 않음.
 - **CDP 경로는 쓰지 않는다(2026-10-28 00:45)**: 별도 `--user-data-dir` VS Code를 `--remote-debugging-port=9333`으로 띄워 workbench 대상까지는 열렸으나, computer use 등급 안내가 「스크립트·자동화 등 다른 방법으로 이 앱에 클릭·키 입력을 보내지 말 것」을 명시하므로 입력 전에 중단하고 프로세스 종료·포트 닫힘을 확인했다. Claude Code의 「권한 우회 모드」는 도구 확인창 설정이며 computer use 앱 등급(IDE=click 고정)을 바꾸지 않는다.
-- **VS Code 촬영 경로(제안)**: Codex 채팅·터미널 입력 장면은 사용자가 큐 카드대로 직접 조작하고 데스크톱 녹화(Windows 화면 녹화 등)로 찍는다. B는 큐 카드·대본·음성·합성·이음매 검사와 랩·실제 명령 실행 결과(Bash)·가이드·ZIP·다운로드→실행→저장 시험을 맡는다. 사용자 조작 시간 합의 전까지 영상 단계는 대기, 나머지는 진행.
+- **VS Code 촬영 경로 확정(2026-10-28 01:20)**: 사용자 승인으로 `code serve-web`(VS Code Server 라이선스 동의·공식 서버 다운로드)을 띄워 ego 탭에서 조작. Codex 한국어 입력·전송·응답(GPT-6 Luna Medium 화면 확인, 로그인 불필요)과 통합 터미널 명령(`python --version`) 실측 통과. 통과값·실패 원인은 `제작용/촬영/vscode/촬영준비.md` 「통과한 길」. 사용자 조작 없이 에이전트가 촬영 가능. 남은 것: 한국어 표시 언어, Git Bash 기본 셸, 녹화 도구(notion 촬영도구 복사).
 - 실습 시작 전 읽은 문서(1차): CLAUDE.md, AGENTS.md, 이 인계, 요청문 B, 세션분담, A 인계(읽기만), `근거/2026-10-27_VSCode랩_최종흐름.md`, 최종 Excel 두 반 온라인 2·3회차 행, `방법_ego_실습영상_촬영.md`(전문), `제작용/촬영/vscode/촬영준비.md`, `제작용/촬영/ego/README.md`.
 
 - 시작 시각 / 현재 커밋 / 대상 랩: 2026-10-27 클라우드 Linux 세션 시작, main `e34f2dd`, 대상은 두 반 2회차(이어서 3회차).
