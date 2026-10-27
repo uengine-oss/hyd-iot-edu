@@ -1,0 +1,107 @@
+{
+  "repo": ".",
+  "evidence": ".evidence/practice-20261026",
+  "name": "integrated-cypher-readable-v2",
+  "cues": "제작용/촬영/neo4j/통합반_그래프탐색_큐.json",
+  "audio": "relations-audio",
+  "ffmpeg": "REPLACE_WITH_ABSOLUTE_FFMPEG_EXE",
+  "source_description": "1920x1080 JPEG95 readable graph; reused opening JPEG80",
+  "takes": [
+    {
+      "take": "neo4j-forest-before-ui"
+    },
+    {
+      "take": "neo4j-readable-take01",
+      "before_cue": "forest012"
+    },
+    {
+      "take": "neo4j-readable-take03",
+      "before_cue": "forest014"
+    },
+    {
+      "take": "neo4j-readable-take05"
+    }
+  ],
+  "captures": [
+    {
+      "cue": "forest011",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest015",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest026",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest030",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-relationship.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest036",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest039",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest052",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest059",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        650
+      ]
+    }
+  ]
+}
