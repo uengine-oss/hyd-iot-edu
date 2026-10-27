@@ -8,7 +8,7 @@
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "산출물/실전반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "fa76803b11d3fad9e0235f2607a05c8be3231f7b2acafd30714da2fd3e2f2b7c"
+      "sha256": "5454353a650983e0fbc69d6f8aea4d50a3a8b110e38803cd649c54082b317afe"
     },
     {
       "id": "practical-02-relations",
@@ -18,7 +18,7 @@
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "1749aa2e486354df4f939cbfa2c161b34976013b0428de0747816aa216d55b9b"
+      "sha256": "58427a884ce3643f3531ab08cd8a9fe55b3613e1ea8c78e92a2aa39c9bba6b30"
     },
     {
       "id": "practical-02-map",
@@ -28,37 +28,37 @@
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "0936552647125f17afb6d3cbd4b9c395522c6a4511327859f9884f09ee348086"
+      "sha256": "533297c810b382e26db6ef566496a8ed9013dbbb9febb22864f38ca7176f4792"
     },
     {
       "id": "practical-02-ontology",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품의 사용 설비와 공급 정보를 연결하기",
-      "version": "2026-10-26-lab-v2",
+      "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "0a3fa135f3e2480bdf88a56169906b0211afe310580b10b4ae0bb09f3e2c77f1"
+      "sha256": "b82b76e638611453b6f86bf2d2eb77db4cf1b865318d9dd631cdbbaf68ec9c45"
     },
     {
       "id": "practical-02-graph",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품별 사용 설비와 공급 조건 조회하기",
-      "version": "2026-10-27-lab-v2-connection3",
+      "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "e263c9ad484d5404e5aa36dc0eda6de3db909645cd9b66e3f8c4c6611dc90e03"
+      "sha256": "447ab3e9f186126e0feeaa79d7c7435c8a77ec23ff22af1bdc51abe297c96888"
     },
     {
       "id": "practical-02-conditions",
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "조치 조건과 판단 근거 정리하기",
-      "version": "2026-10-26-conditions-v1",
+      "version": "2026-10-28-conditions-v2-c66",
       "folder": "02회차/랩/02일차_실습5_조치조건표",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
-      "sha256": "21c21710b6f72b713fbb3297a24e36b94167e380a92809fa10985d2b93c932a8"
+      "sha256": "c019525ee665df69dee8bbf01c4261400cc17a6d7811cf900d40402774bc3820"
     },
     {
       "id": "integrated-01-offline",
@@ -68,7 +68,7 @@
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "산출물/통합반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "8981950fcb6b86e1e7e41e1b680caaf7f6fef1c92baa6414cebc1959c7171232"
+      "sha256": "5454353a650983e0fbc69d6f8aea4d50a3a8b110e38803cd649c54082b317afe"
     },
     {
       "id": "integrated-02-relations",
@@ -78,7 +78,7 @@
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "dbe53876b32a668cd435144a555c606666eb48a52efbdaf3cdc250fa4b7170a7"
+      "sha256": "dc3cdf1314bdedee465d9be9f449730b6335ae08545abd838ec92ee0e775b702"
     },
     {
       "id": "integrated-02-map",
@@ -88,27 +88,27 @@
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "0936552647125f17afb6d3cbd4b9c395522c6a4511327859f9884f09ee348086"
+      "sha256": "533297c810b382e26db6ef566496a8ed9013dbbb9febb22864f38ca7176f4792"
     },
     {
       "id": "integrated-02-ontology",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "현장 자료를 질문에 답하는 모델로 만들기",
-      "version": "2026-10-26-lab-v2",
+      "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "b9a7bef65bf07f4c148b0561fec56845a11e74d88ee05e3ab6b70d64173475cb"
+      "sha256": "5127f72a319b6f2349d80c4b94d9a755cc0a489192eadaf001a54b28559fdd74"
     },
     {
       "id": "integrated-02-graph",
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "모델을 그래프에 적재하고 질문으로 검증하기",
-      "version": "2026-10-27-lab-v2-connection3",
+      "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "99955aaf65ad97a775623ca80a828b028d039248dd6169797a689853d82a35f8"
+      "sha256": "3503d0e6b7af89ac080195cd0faa62182c8bd6395573706ed3fc57aa73b904ce"
     }
   ]
 }

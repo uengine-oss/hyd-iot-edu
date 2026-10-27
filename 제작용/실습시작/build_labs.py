@@ -154,7 +154,7 @@ def main():
                 start='입력/의 이전 모델을 출발점으로 사용합니다. 공급 정보는 아직 연결되어 있지 않습니다.' if practical else '자료/의 CSV·현장 메모와 입력/관계그림.json에서 출발합니다. 이번 스키마·인스턴스는 아직 작성되지 않았습니다.'
                 command='python check.py'
                 outputs='결과/schema.json, 결과/graph.json, 결과/요구사항.md, 결과/자료_검토.md'
-                work='공급 조건을 어디에 표현할지 정하고, 기존 설비·부품 연결을 유지하면서 모델을 확장하세요. 같은 공급사라도 부품에 따라 조건이 다름을 반영하세요.' if practical else '종류와 개별 대상을 나누고, 식별자·속성의 자료형·필수 여부·관계 방향·연결 수를 정의하세요. 그 정의로 원자료의 인스턴스를 만드세요.'
+                work='공급 조건을 어디에 표현할지 정하고, 기존 설비·부품 연결을 유지하면서 모델을 확장하세요. 같은 공급사라도 부품에 따라 조건이 다름을 반영하세요. 여러 설비가 함께 쓰는 부품은 설비마다 새로 만들지 말고 품번 하나로 두세요. 단가·불량률·납기는 단위를 함께 남기고, 어느 자료에서 온 값인지 결과/자료_검토.md에 적으세요.' if practical else '종류와 개별 대상을 나누고, 식별자·속성의 자료형·필수 여부·관계 방향·연결 수를 정의하세요. 그 정의로 원자료의 인스턴스를 만드세요. 같은 센서 이름이 다른 설비에 쓰인 경우, 별칭, 중복 행, 빠진 값을 원자료에서 구분하고 어떻게 처리했는지 결과/자료_검토.md에 적으세요.'
                 write(folder/'check.py',CHECKER)
             else:
                 shutil.copy2(ROOT/'제작용/실습시작/lab_db.py',folder/'lab_db.py')
@@ -169,7 +169,8 @@ def main():
                 start='입력/에 앞 단계 완성 모델과 원자료가 있습니다. 이전 개인 결과 없이 시작할 수 있습니다. 개인 모델을 쓰려면 제공 입력을 보존하고 별도 폴더에 복사하세요.'
                 command='python lab_db.py\nNeo4j Browser에서 작성한 적재문 실행 → 조회문 실행 → 같은 적재문 재실행'
                 outputs='결과/load.cypher, 결과/query.cypher, 결과/검증_기록.md'
-                work='AI와 적재·조회문을 작성하세요. 같은 입력을 두 번 적재해도 대상과 관계가 늘지 않아야 합니다. 이름이 바뀌어도 같은 ID의 대상은 유지되어야 합니다. 전체 삭제문은 사용하지 마세요.'
+                work='AI와 적재·조회문을 작성하세요. 같은 입력을 두 번 적재해도 대상과 관계가 늘지 않아야 합니다. 이름이 바뀌어도 같은 ID의 대상은 유지되어야 합니다. 전체 삭제문은 사용하지 마세요. 고칠 것이 생기면 필요한 대상만 수정하세요.'
+                work+=' P-PMP-SEAL을 확인 사례로 사용 설비와 공급 조건을 원자료와 대조하고, 다른 품번과 원자료에 없는 품번도 조회하세요. 비승인 공급사는 승인 여부와 함께 구별해 보여 주세요.' if practical else ' 공용 부품의 사용 설비를 원자료와 대조하고, 다른 품번과 원자료에 없는 품번도 조회해 결과를 구별하세요.'
             qlist='\n'.join(f'{i}. {q}' for i,q in enumerate(questions,1))
             body=f'# {title}\n\n{intro}\n\n## 출발점\n\n{start}\n\n## 이번에 해결할 질문\n\n{qlist}\n\n## 작업\n\n{work}\n\nAI에게 전달할 목표·입력·제약·확인 방법을 먼저 자기 말로 정리하세요. 관련 자료를 함께 읽고, 필요한 만큼 계획을 확인한 뒤 구현하세요. 결과는 직접 실행해 원자료와 대조하세요.\n\n## 저장할 결과\n\n{outputs}\n\n## 확인\n\n{command}\n\n형식 검사나 실행 성공만으로 완료하지 않습니다. 질문별 원자료의 행과 실제 답을 대조하고, 수정한 점·확인하지 못한 점을 짧게 남기세요.\n\n## 저장과 다음 실습\n\n결과 폴더를 저장하고 다시 열어 확인하세요. 재부팅 전에 보관할 결과는 USB 또는 개인 클라우드에 복사하세요. 다음 실습도 독립 시작본을 제공하므로 개인 결과는 선택 입력입니다.\n'
             write(folder/'START.md',body);write(folder/'준비_안내.md',body)
@@ -195,7 +196,7 @@ def main():
             write(folder/'안내.html',page(title,intro,sections))
             archive=pack(folder)
             relative=archive.relative_to(ROOT).as_posix()
-            catalog.append({'id':f'{slug}-02-'+('ontology' if number==3 else 'graph'),'course':course,'session':'온라인 02회차','title':title,'version':'2026-10-26-lab-v2','folder':f'02회차/랩/{name}','path':relative,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+            catalog.append({'id':f'{slug}-02-'+('ontology' if number==3 else 'graph'),'course':course,'session':'온라인 02회차','title':title,'version':'2026-10-28-lab-v3-c67','folder':f'02회차/랩/{name}','path':relative,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
     dump(ROOT/'제작용/실습시작/package-index.json',{'labs':catalog})
     # 오프라인1은 두 과정 공통이며 실전 온라인2 공급 확장을 요구하지 않는다.
     for course,_ in COURSES:
