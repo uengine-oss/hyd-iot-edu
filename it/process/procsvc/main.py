@@ -1133,12 +1133,14 @@ async def kg_create_skill(body: dict):
 from pathlib import Path
 from .manual_sources import ManualSources
 from . import manual_api
-from . import course_access, course_bootstrap
+from .manual_approved_cache import ApprovedExtractions
+from . import course_access, course_access_proof, course_bootstrap
 course_bootstrap.mount(app)
-course_access.mount(app,
+_course_store = course_access.mount(app,
     path=Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('course-access.json'),
     archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
     tenant=os.getenv('TENANT_ID', 'hyd'))
+course_access_proof.mount(app,_course_store)
 _classroom_client = None
 if os.getenv('HYD_CLASSROOM_URL'):
     from .classroom_client import Client as ClassroomClient
@@ -1148,7 +1150,8 @@ if os.getenv('HYD_CLASSROOM_URL'):
 manual_api.register(app,
     archive_factory=lambda: ManualSources(Path(os.getenv("PROCESS_STATE_PATH", "/data/process.sqlite3")).with_name("manuals.sqlite3")),
     driver_factory=_kg, tenant=os.getenv("TENANT_ID", "hyd"), audit=_audit,
-    runtime_factory=instance_mode.current, managed_client=_classroom_client)
+    runtime_factory=instance_mode.current, managed_client=_classroom_client,
+    approved_cache=ApprovedExtractions())
 # Instructor server only. The public proxy exposes this subtree; the parent
 # process API remains on the private network with the managed worker and DB.
 if os.getenv('HYD_CLASSROOM_AUTHORITY_ENABLED') == '1':

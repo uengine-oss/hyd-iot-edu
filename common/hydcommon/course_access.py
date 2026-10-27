@@ -11,6 +11,9 @@ from pathlib import Path
 
 PUBLIC_KEY = 'uiQXhElZ7HnRyuc_48KCdGsKa4k_oWppx0FKiK-dun0='
 AUDIENCE = 'hyd-iot-edu-course-v1'
+PROOF_PORT = 8081             # Container-only contract; never a classroom PC host port.
+PROOF_PATH = '/internal/course-access'
+PROOF_URL = f'http://process:{PROOF_PORT}{PROOF_PATH}'
 FIXED_RUNS = {'c3_cooling': {'T_agent'}, 'c3_pm': {'T_agent'}, 'c3_spare': {'T_agent'}}
 HANDOVER_RUNS = {'ShiftHandover': {'task_draft', 'task_draft_r2', 'task_draft_r3'}, 'shift_handover': {'task:draft'}}
 CONTENT = json.loads(Path(__file__).with_name('course_content.json').read_text(encoding='utf8'))
@@ -82,7 +85,8 @@ def authorize_task(grant, definition, activity_id, inputs):
         did, activity_id = approval.get('definition'), approval.get('activity')
     if activity_id in FIXED_RUNS.get(did, set()):return
     if current == 'handover' and activity_id in HANDOVER_RUNS.get(did, set()):return
-    if current == 'handover' and did == 'manual_source_extraction':
-        source = (inputs or {}).get('manual_source') or {}
-        if approved_document(source.get('sha256')):return
+    # Student ingestion is served from the signed source cache before enqueue.
+    # A task reaching the live worker is a missing/bypassed cache, never a
+    # reason to spend on another extraction. Teacher preparation has no local
+    # course gate and uses its explicitly bounded managed execution instead.
     raise AccessDenied(LOCKED_MESSAGE if current == 'guided' else '수업에서 허용한 에이전트·제공 문서만 실행할 수 있습니다.')

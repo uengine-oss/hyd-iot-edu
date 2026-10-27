@@ -87,5 +87,8 @@ def result(rt, archive, source, pid, previous_batch):
     preview.update(document_id=source['document_id'], filename=source['filename'], previous_batch=previous_batch)
     value['preview'] = preview
     value['cache']['validated'] = True
+    origin = cache.get('approved_origin')
+    if origin:
+        value['cache']['origin'] = deepcopy(origin)
     preview['extraction']['cache'] = deepcopy(value['cache'])
     return value

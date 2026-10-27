@@ -171,6 +171,7 @@ def test_unlocked_runner_uses_same_handover_and_forces_course_model(rt,tmp_path,
                   resolve_provider=lambda _:object(),course_access=opened)
     assert runner.poll_once()==1 and len(requests)==1
     assert requests[0][0].model=='coding'
+    assert requests[0][1]['ENABLE_TOOL_SEARCH']=='false'
 
 
 from test_inbox import rt

@@ -1,3 +1,4 @@
+import {focusReadableGraph} from './readable_graph.mjs';
 import {installGraphObserver,graphTarget} from './graph_targets.mjs';
 import fs from 'node:fs/promises';
 const cfg=globalThis.HYD_RECORDING;
@@ -6,8 +7,8 @@ const base=cfg.evidence;
 const out=base+'/'+cfg.take;await fs.mkdir(out+'/frames',{recursive:true});
 if((await fs.readdir(out+'/frames')).length)throw Error('Existing take preserved');
 const task=await taskSpace(cfg.space),p=task.page('p1');
-await p.cdp('Emulation.setDeviceMetricsOverride',{width:2560,height:1440,deviceScaleFactor:1,mobile:false});
-await p.waitForFunction(()=>innerWidth>=1700,undefined,{timeout:10000});
+await p.cdp('Emulation.setDeviceMetricsOverride',{width:cfg.readable?1920:2560,height:cfg.readable?1080:1440,deviceScaleFactor:1,mobile:false});
+await p.waitForFunction(()=>innerWidth>=1280,undefined,{timeout:10000});
 await p.evaluate(installGraphObserver);
 await p.evaluate(()=>{for(const e of document.querySelectorAll('*'))if(e.scrollTop)e.scrollTop=0;window.scrollTo(0,0);});
 const bounds=await p.evaluate(()=>{const r=document.querySelector('[role="dialog"]')?.getBoundingClientRect();return r&&{top:r.top,bottom:r.bottom,height:innerHeight};});
@@ -36,7 +37,7 @@ let done=false,start=null,error=null;const frames=[],motions=[];let writes=Promi
 const initial=await p.evaluate(()=>({host:document.querySelector('input[name="hostname"]')?.value,protocol:document.querySelector('[role="dialog"] .ndl-select-control')?.textContent,user:document.querySelector('input[name="username"]')?.value,oldResult:document.querySelector('[role="table"]')!==null}));
 if(!cfg.continue&&(initial.host!==cfg.host||initial.protocol!=='bolt://'||initial.user!=='neo4j'||initial.oldResult))throw Error('Unexpected initial state: '+JSON.stringify(initial));
 await fs.writeFile(out+'/initial-state.json',JSON.stringify(initial,null,2));
-await p.cdp('Page.startScreencast',{format:'jpeg',quality:80,maxWidth:1920,maxHeight:1080,everyNthFrame:1});
+await p.cdp('Page.startScreencast',{format:'jpeg',quality:cfg.readable?95:80,maxWidth:1920,maxHeight:1080,everyNthFrame:1});
 const capture=(async()=>{while(!done){for(const e of await serial(()=>p.events()))if(e.method==='Page.screencastFrame'){
  await serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId}));
  const bytes=Buffer.from(e.params.data,'base64');let size=null;
@@ -74,10 +75,11 @@ try{
  const resultPoint=async()=>act({css:'[role="table"] [role="cell"]'});
  const hasDetails=()=>p.evaluate(()=>Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).some(e=>/^(Node details|Relationship details|Results overview)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0));
  const graphButton=name=>({css:`button[aria-label="${name}"]`});
- async function graphPoint(label,edge=false){let now;for(let i=0;i<25;i++){try{const before=await serial(()=>p.evaluate(graphTarget,{label,edge}));await sleep(150);now=await serial(()=>p.evaluate(graphTarget,{label,edge}));if(Math.hypot(before.x-now.x,before.y-now.y)<1)return now;}catch(e){if(i===24)throw e;}await sleep(80);}throw Error('Unstable graph target '+label);}
- async function chooseGraph(c,a){if(!await serial(hasDetails)){await act(graphButton('Toggle graph details panel'),true);await act(graphButton('Zoom to fit'),true);}let target=await graphPoint(c.label,c.op==='edge');await move(target);target=await graphPoint(c.label,c.op==='edge');if(Math.hypot(pos.x-target.x,pos.y-target.y)>2)await move(target);await serial(()=>p.mouse.click(target.x,target.y));a.clickAt=Date.now()-start;await serial(()=>p.waitForFunction(({verify})=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h?.parentElement?.parentElement?.innerText.includes(verify);},{verify:c.verify},{timeout:10000}));a.details=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h.parentElement.parentElement.innerText;}));a.selectionVerified=true;a.selectionReady=Date.now()-start;}
+ async function graphPoint(label,edge=false,allowOutside=false){let now;for(let i=0;i<25;i++){try{const before=await serial(()=>p.evaluate(graphTarget,{label,edge,allowOutside}));await sleep(150);now=await serial(()=>p.evaluate(graphTarget,{label,edge,allowOutside}));if(Math.hypot(before.x-now.x,before.y-now.y)<1)return now;}catch(e){if(i===24)throw e;}await sleep(80);}throw Error('Unstable graph target '+label);}
+ async function chooseGraph(c,a){if(!await serial(hasDetails)){await act(graphButton('Toggle graph details panel'),true);await act(graphButton('Zoom to fit'),true);}let target=cfg.readable?await focusReadableGraph({p,serial,move,graphPoint,act,label:c.label,edge:c.op==='edge'}):await graphPoint(c.label,c.op==='edge');await move(target);target=await graphPoint(c.label,c.op==='edge');if(Math.hypot(pos.x-target.x,pos.y-target.y)>2)await move(target);await serial(()=>p.mouse.click(target.x,target.y));a.clickAt=Date.now()-start;await serial(()=>p.waitForFunction(({verify})=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h?.parentElement?.parentElement?.innerText.includes(verify);},{verify:c.verify},{timeout:10000}));a.details=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h.parentElement.parentElement.innerText;}));a.selectionVerified=true;a.selectionReady=Date.now()-start;}
  let graph=false;
- for(const c of spec.cues.filter(c=>!cfg.only||cfg.only.includes(c.id))){
+ const activeCues=spec.cues.filter(c=>!cfg.only||cfg.only.includes(c.id));
+ for(const c of activeCues){
   await cue(c.id,async(g,a)=>{
    a.op=c.op;
    switch(c.op){
