@@ -2,12 +2,12 @@
 
 2026-10-27 C66 최신 적용: [C66 VS Code 최종 흐름](근거/2026-10-27_VSCode랩_최종흐름.md)와 최종 Excel을 먼저 읽는다. 포털 제한은 독립 VS Code 랩의 외부 MCP·자기 Notion·문서 추출 구현을 금지하지 않는다. 자기 노트 퀴즈와 단계별 에이전트 확장, 다양한 활용·검증을 복원했다. 이번에는 실라버스·기준·인계만 수정했으며 기존 랩·대본·가이드·영상은 후속 반영 대상이다. C64 Notion 첨부는 이전 판본이며 C66 게시 여부를 별도 확인한다.
 
-상태: 요청문 준비 완료, Claude 세션 시작 여부 미확인. 담당자는 시작 시 이 상태를 갱신한다. 이 파일은 B만 수정한다. [분담](세션분담_교재와실습_20261027.md)·[요청문](요청문_Claude_B_VSCode실습촬영가이드.md)·[A 인계](세션인계_A_교재재편.md)를 읽는다.
+상태: 2026-10-27 B 세션(클라우드) 시작. 담당자는 시작 시 이 상태를 갱신한다. 이 파일은 B만 수정한다. [분담](세션분담_교재와실습_20261027.md)·[요청문](요청문_Claude_B_VSCode실습촬영가이드.md)·[A 인계](세션인계_A_교재재편.md)를 읽는다.
 
 ## 현재 작업
 
-- 시작 시각 / 현재 커밋 / 대상 랩: 아직 기록 없음.
-- 실제 사용 가능한 VS Code·computer use·녹화 도구・Codex GPT-6 Luna: 다음 세션 확인 대상.
+- 시작 시각 / 현재 커밋 / 대상 랩: 2026-10-27 클라우드 Linux 세션 시작, main `e34f2dd`, 대상은 두 반 2회차(이어서 3회차).
+- 도구 확인(2026-10-27, 이 클라우드 세션): computer use 도구(`mcp__remote-devices__computer_*`)와 그것을 켜는 `enable__mcp__remote-devices__computer` 모두 없음 → 사용자 PC의 VS Code 화면 접근 불가. 재개 방법: Claude 데스크톱 앱 Settings → This computer → Computer use 켜기 후 claude.ai 입력창 + → Devices에서 해당 PC를 골라 새 메시지, 또는 그 PC에서 `claude remote-control`. 연결돼도 computer use는 VS Code를 「click」 등급(클릭만, 입력·키 금지)으로 주므로 Codex 채팅·터미널 입력이 막힐 수 있다 — 연결 뒤 실제 응답의 tier로 확인한다. Codex GPT-6 Luna·녹화 도구: 연결 전이라 미확인.
 - 순서: 두 반2회차 완료 후3회차. 기존 Cypher 공통 영상은 보존한다.
 
 ## A에 전달할 랩 계약
