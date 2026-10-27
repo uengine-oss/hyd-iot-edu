@@ -20,6 +20,13 @@ BUNDLED = {"jsonschema": {"jsonschema", "referencing"}, "psycopg": {"psycopg"}}
 COPIED = {"hydcommon", "procsvc", "worker"}
 
 
+def test_worker_sql_evidence_guard_uses_same_pinned_parser_as_process():
+    process = (ROOT/'it/process/requirements.txt').read_text(encoding='utf8')
+    worker = REQUIREMENTS.read_text(encoding='utf8')
+    pattern = r'^sqlglot==([^\s#]+)'
+    assert re.search(pattern, process, re.M).group(1) == re.search(pattern, worker, re.M).group(1)
+
+
 def test_worker_build_rejects_node_before_security_release():
     import shutil
     import subprocess
