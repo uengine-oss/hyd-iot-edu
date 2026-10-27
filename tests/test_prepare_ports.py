@@ -170,3 +170,51 @@ def test_same_checkout_supabase_ownership_requires_workdir(tmp_path, monkeypatch
     monkeypatch.setattr(ports.subprocess,'check_output',lambda args,**kw:'x' if args[1]=='ps' else json.dumps(rows))
     owned, occupied = ports.docker_ports(tmp_path, 'same')
     assert owned == set() and occupied == {54322}
+
+
+def test_orphaned_volumes_are_not_adopted_by_a_fresh_checkout(tmp_path, monkeypatch):
+    monkeypatch.setattr(ports.subprocess, 'check_output', lambda args, **kw: {
+        ('docker','ps','-aq'): '',
+        ('docker','volume','ls','-q'): 'compose-volume\nsupa-volume\n',
+    }.get(tuple(args), '\n'.join([
+        json.dumps({'com.docker.compose.project':'hyd-iot-edu'}),
+        json.dumps({'com.supabase.cli.project':'hyd-portal-latest'}),
+    ])))
+    rows = ports.docker_projects()
+    compose, supabase = ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', rows,
+                                            saved=False, environment_name=False)
+    assert compose != 'hyd-iot-edu' and supabase != 'hyd-portal-latest'
+    with pytest.raises(RuntimeError, match='기존 데이터를 보존'):
+        ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', rows,
+                            saved=True, environment_name=False)
+
+
+def test_existing_checkout_containers_can_reuse_their_named_volumes(tmp_path, monkeypatch):
+    container_labels = {'com.docker.compose.project':'hyd-iot-edu',
+                        'com.docker.compose.project.working_dir':str(tmp_path)}
+    volume_labels = {'com.docker.compose.project':'hyd-iot-edu'}
+    def command(args, **kwargs):
+        if args[1:3] == ['ps','-aq']:
+            return 'container-id\n'
+        if args[1] == 'inspect':
+            return json.dumps(container_labels)+'\n'
+        if args[1:3] == ['volume','ls']:
+            return 'volume-id\n'
+        return json.dumps(volume_labels)+'\n'
+    monkeypatch.setattr(ports.subprocess, 'check_output', command)
+    rows = ports.docker_projects()
+    assert ports.project_names(tmp_path, 'hyd-iot-edu', 'unused', rows,
+                               saved=True, environment_name=False) == ('hyd-iot-edu','unused')
+
+
+def test_normal_stop_reuses_supabase_volume_with_same_checkout_evidence(tmp_path):
+    rows = [
+        {'Config': {'Labels': {'com.docker.compose.project':'hyd-iot-edu',
+                               'com.docker.compose.project.working_dir':str(tmp_path)}}},
+        {'Config': {'Labels': {'com.supabase.cli.project':'hyd-portal-latest'}}},
+    ]
+    assert ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', rows,
+                               saved=True, environment_name=False) == ('hyd-iot-edu','hyd-portal-latest')
+    with pytest.raises(RuntimeError, match='기존 데이터를 보존'):
+        ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', rows,
+                            saved=False, environment_name=False)

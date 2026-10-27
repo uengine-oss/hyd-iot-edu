@@ -69,12 +69,26 @@ def available(port):
 
 
 def docker_projects():
-    """Inspect stopped as well as running projects; stopped data still belongs to its checkout."""
+    """Inspect stopped containers and orphaned named volumes without reading container environment."""
     ids = subprocess.check_output(['docker', 'ps', '-aq'], text=True).split()
-    if not ids:
-        return []
-    labels = subprocess.check_output(['docker', 'inspect', '--format', '{{json .Config.Labels}}', *ids], text=True)
-    return [{'Config': {'Labels': json.loads(line)}} for line in labels.splitlines()]
+    labels = (subprocess.check_output(['docker', 'inspect', '--format', '{{json .Config.Labels}}', *ids], text=True)
+              if ids else '')
+    rows = [{'Config': {'Labels': json.loads(line)}} for line in labels.splitlines()]
+    known_supa = {(row['Config']['Labels'] or {}).get('com.supabase.cli.project') for row in rows}
+    known_compose = {(row['Config']['Labels'] or {}).get('com.docker.compose.project') for row in rows
+                     if not (row['Config']['Labels'] or {}).get('com.supabase.cli.project')}
+    volumes = subprocess.check_output(['docker', 'volume', 'ls', '-q'], text=True).splitlines()
+    data = (subprocess.check_output(['docker', 'volume', 'inspect', '--format', '{{json .Labels}}', *volumes], text=True)
+            if volumes else '')
+    for line in data.splitlines():
+        labels = json.loads(line) or {}
+        supa = labels.get('com.supabase.cli.project')
+        compose = labels.get('com.docker.compose.project')
+        if (supa and supa not in known_supa) or (not supa and compose and compose not in known_compose):
+            # A volume alone has no checkout path. Treat its owner as unknown,
+            # so a fresh checkout chooses a different name rather than adopting it.
+            rows.append({'Config': {'Labels': labels}})
+    return rows
 
 
 def project_names(root, compose_name, supabase_name, containers, *, saved, environment_name):
@@ -95,9 +109,15 @@ def project_names(root, compose_name, supabase_name, containers, *, saved, envir
     supabase_roots = supabase_owners.get(supabase_name, set())
     conflict_compose = bool(compose_roots - {expected})
     conflict_supabase = bool(supabase_roots - {expected + '/it'})
+    # Normal stop_all keeps this checkout's Compose containers but Supabase
+    # removes its containers while keeping volumes. The saved port map plus
+    # an unambiguous same-checkout Compose owner ties that volume to this PC.
+    if saved and compose_roots == {expected} and supabase_roots == {''}:
+        conflict_supabase = False
     if not (conflict_compose or conflict_supabase):
         return compose_name, supabase_name
-    if saved or (conflict_compose and (expected in compose_roots or environment_name)) or (conflict_supabase and expected + '/it' in supabase_roots):
+    if (saved or (conflict_compose and (expected in compose_roots or environment_name or expected + '/it' in supabase_roots))
+            or (conflict_supabase and (expected in compose_roots or expected + '/it' in supabase_roots))):
         raise RuntimeError('다른 폴더의 기존 수업 프로젝트와 이름이 겹칩니다. 기존 데이터를 보존하려고 시작을 멈췄습니다.')
     suffix = hashlib.sha256(expected.encode('utf8')).hexdigest()[:10]
     def unique(base, owners):
