@@ -373,9 +373,13 @@ def result_comparison(claimed, calls):
     import re
     def facts(value):
         text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
+        id_pattern = r'\b[a-z][a-z_]*:[a-zA-Z0-9_:-]+|\b[A-Z]{2,}-\d+(?:-\d+)*\b'
+        ids = set(re.findall(id_pattern, text))
+        # Digits inside an identifier are part of that identifier, not an
+        # independent measurement (HYD-01 must not also become -1).
+        numeric_text = re.sub(id_pattern, lambda match: ' ' * len(match.group()), text)
         numbers = {str(Decimal(n.replace(',', '')).normalize()) for n in
-                   re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', text)}
-        ids = set(re.findall(r'\b[a-z][a-z_]*:[a-zA-Z0-9_:-]+|\b[A-Z]{2,}-\d+(?:-\d+)*\b', text))
+                   re.findall(r'(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])', numeric_text)}
         return numbers | ids
     originals = [c.get('_output') for c in calls if c.get('output_complete')]
     if not originals or len(originals) != len(calls):
