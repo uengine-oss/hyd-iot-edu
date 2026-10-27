@@ -3,6 +3,7 @@
 Only host-side addresses change; container-to-container addresses stay the same.
 The saved map is also consumed by check_windows.ps1. No services are started here.
 """
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -67,6 +68,49 @@ def available(port):
             return False
 
 
+def docker_projects():
+    """Inspect stopped as well as running projects; stopped data still belongs to its checkout."""
+    ids = subprocess.check_output(['docker', 'ps', '-aq'], text=True).split()
+    if not ids:
+        return []
+    labels = subprocess.check_output(['docker', 'inspect', '--format', '{{json .Config.Labels}}', *ids], text=True)
+    return [{'Config': {'Labels': json.loads(line)}} for line in labels.splitlines()]
+
+
+def project_names(root, compose_name, supabase_name, containers, *, saved, environment_name):
+    """Choose unique names only for a new checkout; never redirect an existing installation."""
+    normalize = lambda value: str(value or '').replace('\\', '/').rstrip('/').casefold()
+    expected = normalize(root.as_posix())
+    compose_owners, supabase_owners = {}, {}
+    for container in containers:
+        labels = container.get('Config', {}).get('Labels') or {}
+        supa = labels.get('com.supabase.cli.project')
+        if supa:
+            supabase_owners.setdefault(supa, set()).add(normalize(labels.get('com.supabase.cli.workdir')))
+        else:
+            project = labels.get('com.docker.compose.project')
+            if project:
+                compose_owners.setdefault(project, set()).add(normalize(labels.get('com.docker.compose.project.working_dir')))
+    compose_roots = compose_owners.get(compose_name, set())
+    supabase_roots = supabase_owners.get(supabase_name, set())
+    conflict_compose = bool(compose_roots - {expected})
+    conflict_supabase = bool(supabase_roots - {expected + '/it'})
+    if not (conflict_compose or conflict_supabase):
+        return compose_name, supabase_name
+    if saved or (conflict_compose and (expected in compose_roots or environment_name)) or (conflict_supabase and expected + '/it' in supabase_roots):
+        raise RuntimeError('다른 폴더의 기존 수업 프로젝트와 이름이 겹칩니다. 기존 데이터를 보존하려고 시작을 멈췄습니다.')
+    suffix = hashlib.sha256(expected.encode('utf8')).hexdigest()[:10]
+    def unique(base, owners):
+        candidate = f'{base[:50]}-{suffix}'
+        index = 1
+        while candidate in owners:
+            index += 1
+            candidate = f'{base[:47]}-{suffix}-{index}'
+        return candidate
+    return (unique(compose_name, compose_owners) if conflict_compose else compose_name,
+            unique(supabase_name, supabase_owners) if conflict_supabase else supabase_name)
+
+
 def docker_ports(root, project_id):
     env_path = root / '.env'
     configured = env_values(env_path.read_text(encoding='utf-8-sig')) if env_path.exists() else {}
@@ -81,7 +125,8 @@ def docker_ports(root, project_id):
         workdir = labels.get("com.docker.compose.project.working_dir", "")
         same_root = workdir.replace("\\", "/").rstrip("/").casefold() == root.as_posix().casefold()
         own = (labels.get("com.docker.compose.project") == compose_project and same_root)
-        own |= container.get("Name", "").startswith("/supabase_") and container["Name"].endswith("_" + project_id)
+        supa_root = str(labels.get('com.supabase.cli.workdir') or '').replace('\\', '/').rstrip('/').casefold()
+        own |= (labels.get('com.supabase.cli.project') == project_id and supa_root == root.as_posix().rstrip('/').casefold() + '/it')
         for bindings in (container["NetworkSettings"].get("Ports") or {}).values():
             for binding in bindings or []:
                 port = int(binding["HostPort"])
@@ -157,6 +202,18 @@ def prepare(root):
     env_path = root / ".env"
     env_text = env_path.read_text(encoding="utf-8-sig")
     values = env_values(env_text)
+    environment_name = os.environ.get('COMPOSE_PROJECT_NAME')
+    compose_name = environment_name or values.get('COMPOSE_PROJECT_NAME') or 'hyd-iot-edu'
+    actual_compose, actual_supabase = project_names(root, compose_name, project_id, docker_projects(),
+        saved=(root / '.hyd-runtime/ports.json').exists(), environment_name=bool(environment_name))
+    if actual_compose != compose_name:
+        env_text = set_values(env_text, {'COMPOSE_PROJECT_NAME': actual_compose})
+        values = env_values(env_text)
+        print('다른 폴더의 기존 시스템과 분리해 이 폴더의 프로젝트 이름을 준비했습니다.')
+    if actual_supabase != project_id:
+        config = re.sub(r'^(project_id\s*=\s*)"[^"]+"', lambda m: m[1] + '"' + actual_supabase + '"', config, count=1, flags=re.M)
+        project_id = actual_supabase
+        print('다른 폴더의 기존 업무 DB와 분리해 이 폴더의 프로젝트 이름을 준비했습니다.')
     previous = {p: int(values.get(f"HYD_PORT_{p}", p)) for p in service_ports}
     previous.update(config_ports(config))
     owned, occupied = docker_ports(root, project_id)
@@ -193,7 +250,10 @@ def prepare(root):
 if __name__ == "__main__":
     try:
         prepare(Path(__file__).resolve().parents[1])
-    except Exception:
+    except Exception as exc:
         # Environment values and command output may contain credentials.
-        print("Port preparation failed; check Docker, Python and writable project files.", file=sys.stderr)
+        if isinstance(exc, RuntimeError) and str(exc).startswith('다른 폴더의 기존 수업 프로젝트'):
+            print(str(exc), file=sys.stderr)
+        else:
+            print("Port preparation failed; check Docker, Python and writable project files.", file=sys.stderr)
         sys.exit(1)
