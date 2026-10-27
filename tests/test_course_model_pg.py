@@ -144,3 +144,45 @@ def test_transient_failure_can_resume_same_authorization_without_resetting_usage
     complete(resumed)
     status=authority.usage(runtime)
     assert status['used']['model_requests']==2 and status['executions']=={'DONE':1} and status['paused_executions']==0
+
+
+def test_changed_agent_during_recovery_preserves_same_run_and_budget(bounded, monkeypatch, tmp_path):
+    from test_b5_ask import _cli
+    from worker.runner import Runner
+    from worker.settings import Settings
+    runtime, authority, _, complete, key = bounded
+    policy = deepcopy(course_model.POLICY)
+    policy['actions']['class_check']['max_calls'] = 2
+    monkeypatch.setattr(course_model, 'POLICY', policy)
+    agent_id = 'agent:' + runtime.tenant_id
+    started = ask.start(runtime, '수업 상태를 알려 주세요', agent_id, '수강생', str(uuid4()),
+                        definitions_dir=DEFINITIONS, worker_probe=lambda:{'reachable':True}, bridge='off')
+    row = runtime.repo.fetch_pending_task('cliagents', 'first-claim', tenant_id=runtime.tenant_id)[0]
+    body = dict(tenant_id=runtime.tenant_id, todo_id=row['id'], consumer=row['consumer'])
+    permit = classroom_model.issue(runtime, authority, body, 'Bearer '+key)
+    original_run = classroom_model.verify_token(permit['token'])['run_id']
+    classroom_model.prepare(runtime, authority, permit['token'], payload())
+    runtime.repo.update_task_error(row['id'], expected_consumer=row['consumer'])
+    with runtime.repo._conn() as db:
+        db.execute('update users set goal=%s where id=%s', ('바뀐 목표',agent_id))
+    ask.retry(runtime, started['id'], str(uuid4()), '수강생', '다시 확인')
+    requests = []
+    runner = Runner(Settings(workspace_root=tmp_path, tenant_id=runtime.tenant_id,
+                             consumer='changed-agent', cancel_check_every_s=0),
+                    runtime.repo, exec_fn=_cli({'status':'cannot_answer','reason':'fixture'}, requests=requests),
+                    schema_prompt='# fixture', resolve_provider=lambda _:object())
+    assert runner.poll_once() == 1 and not requests
+    assert runtime.repo.get_workitem(row['id'])['draft_status'] == 'FAILED'
+    status = authority.usage(runtime)
+    assert status['paused_executions'] == 1 and status['used']['model_requests'] == 1
+    with runtime.repo._conn() as db:
+        db.execute('update users set goal=null where id=%s', (agent_id,))
+    ask.retry(runtime, started['id'], str(uuid4()), '수강생', '기존 설정 복구')
+    resumed = runtime.repo.fetch_pending_task('cliagents', 'restored-claim', tenant_id=runtime.tenant_id)[0]
+    body = dict(tenant_id=runtime.tenant_id, todo_id=resumed['id'], consumer=resumed['consumer'])
+    resumed_permit = classroom_model.issue(runtime, authority, body, 'Bearer '+key)
+    assert classroom_model.verify_token(resumed_permit['token'])['run_id'] == original_run
+    classroom_model.prepare(runtime, authority, resumed_permit['token'], payload())
+    complete(resumed)
+    status = authority.usage(runtime)
+    assert status['used']['model_requests'] == 2 and status['executions'] == {'DONE':1}

@@ -144,6 +144,17 @@ class Runner:
         # (users · agent_skills · tenant_skills) through the same function the portal and a trial run read.
         # Model: the activity's agentConfig > the agent's model > the worker default.
         agent = agent_settings(self.repo, self.s.tenant_id, ctx.profile, activity=caps)
+        if row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1':
+            from procsvc import ask, engine
+            instance = self.repo.get_instance(row['proc_inst_id'])
+            if not instance:
+                raise RunFailed('질문 처리 건을 확인할 수 없습니다.')
+            values = engine.variables(instance)
+            binding = (values.get('_runtime_coalescing') or {}).get('key')
+            # Legacy in-flight questions predate this binding; retain their
+            # recovery path. New questions must use their original settings.
+            if binding and binding != ask.execution_binding(values.get('question'), agent, version=instance.get('proc_def_version')):
+                raise RunFailed('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 기존 설정으로 되돌려 재개하거나 기존 질문을 종료한 뒤 새 질문을 보내세요.')
         model = agent.model or self.s.model
         if self.course_access is not None:
             if provider_id != 'claude-code':raise RunFailed('수업 실행기는 강사가 지정한 기본 실행기를 사용합니다.')

@@ -150,6 +150,16 @@ def check_agent(repo, tenant_id, agent_id) -> dict:
     return found
 
 
+def execution_binding(question, settings, *, version=None):
+    """Bind a question to the execution-relevant agent settings, not its label."""
+    from dataclasses import asdict
+    from .classroom_authority import digest
+    value = asdict(settings)
+    value['profile'] = {k:v for k,v in (value.get('profile') or {}).items()
+                        if k not in {'username','name','created_at','updated_at'}}
+    return digest({'question':question,'agent':value,'version':version or VERSION})
+
+
 def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_dir, worker_probe, bridge) -> dict:
     """질문 하나 = 처리 건 하나. 같은 request_id로 다시 보내면 같은 처리 건을 돌려준다(중복 클릭 · 재시도)."""
     q = check_question(question)
@@ -160,19 +170,17 @@ def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_
     request_id = str(uuid.UUID(request_id)) if request_id else str(uuid.uuid4())
     register_definition(rt, definitions_dir)
     event_id = EVENT_PREFIX + request_id
+    from .agents_store import agent_settings
+    binding = execution_binding(q, agent_settings(rt.repo,rt.tenant_id,agent['id']))
     previous = rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event_id)
     if previous:
         endpoint = next((b.get('endpoint') for b in previous.get('role_bindings',[]) if b.get('name')==ROLE),None)
         if engine.variables(previous).get('question') != q or endpoint != agent['id']:
             raise ValueError('이 요청 ID는 다른 질문·에이전트에 이미 사용됐습니다')
+        previous_binding = (engine.variables(previous).get('_runtime_coalescing') or {}).get('key')
+        if previous_binding != binding:
+            raise ValueError('이 요청 ID는 다른 에이전트 조건에 사용됐거나 기존 조건을 확인할 수 없습니다. 기존 질문을 확인하거나 새 질문을 보내세요')
         return view(rt,previous['proc_inst_id'])
-    from dataclasses import asdict
-    from .agents_store import agent_settings
-    from .classroom_authority import digest
-    settings = asdict(agent_settings(rt.repo,rt.tenant_id,agent['id']))
-    settings['profile'] = {k:v for k,v in (settings.get('profile') or {}).items()
-                           if k not in {'username','name','created_at','updated_at'}}
-    binding = digest({'question':q,'agent':settings,'version':VERSION})
     inst = rt.start_definition(DEFINITION_ID, VERSION, event_id, values={'question': q, 'asked_by': str(by or '수강생').strip()[:120]},
                                name='질문 · ' + (q if len(q) <= 40 else q[:40] + '…'), role_endpoints={ROLE: agent['id']},
                                _coalesce_key=binding)
