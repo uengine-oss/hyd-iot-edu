@@ -74,11 +74,11 @@
       "id": "integrated-02-relations",
       "course": "통합반",
       "session": "온라인 02회차",
-      "title": "관계를 따라 센서와 부품 조회하기",
-      "version": "2026-10-27-cypher-v3",
+      "title": "Cypher로 설비 전체 연결 탐색하기",
+      "version": "2026-10-27-graph-v4",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "5930cfd2585628fcafa7765161ae81ad963c2b8f1e97d712efc1193af3c62e05"
+      "sha256": "b8b3e948ba8e52d69c98bf4737ea0688a4622dccfcb84d3446a2296d84a82fd0"
     },
     {
       "id": "integrated-02-map",

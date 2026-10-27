@@ -105,20 +105,35 @@ site_url = "http://localhost:8088"
         self.assertEqual(ports.rewrite_url(remote, {54322: 64322}), remote)
 
     def test_ownership_checks_project_and_directory_not_docker_process_name(self):
+        checkout = Path('/unit-test-checkout')
         def container(name, label, workdir, port):
             return {"Name": name, "Config": {"Labels": {
                 "com.docker.compose.project": label,
                 "com.docker.compose.project.working_dir": workdir,
             }}, "NetworkSettings": {"Ports": {"80/tcp": [{"HostPort": str(port)}]}}}
-        containers = [container("/hyd-portal", "hyd-iot-edu", ROOT.as_posix(), 8088),
-                      container("/foreign", "other", ROOT.as_posix(), 3000),
+        containers = [container("/hyd-portal", "hyd-iot-edu", checkout.as_posix(), 8088),
+                      container("/foreign", "other", checkout.as_posix(), 3000),
                       container("/other-checkout", "hyd-iot-edu", "/another-checkout", 8080),
                       container("/supabase_db_hyd-portal-latest", "", "", 54322)]
-        with patch.object(ports.subprocess, "check_output", side_effect=["id1 id2 id3 id4", json.dumps(containers)]):
-            owned, occupied = ports.docker_ports(ROOT, "hyd-portal-latest")
+        with patch.object(ports.subprocess, "check_output", side_effect=["id1 id2 id3 id4", json.dumps(containers)]), \
+             patch.dict(ports.os.environ, {'COMPOSE_PROJECT_NAME':'hyd-iot-edu'}):
+            owned, occupied = ports.docker_ports(checkout, "hyd-portal-latest")
         self.assertEqual(owned, {8088, 54322})
         self.assertEqual(occupied, {8088, 3000, 8080, 54322})
 
 
 if __name__ == "__main__":
     unittest.main()
+def test_custom_compose_project_owns_its_existing_ports(tmp_path,monkeypatch):
+    monkeypatch.delenv('COMPOSE_PROJECT_NAME',raising=False)
+    (tmp_path/'.env').write_text('COMPOSE_PROJECT_NAME=classroom-existing\n',encoding='utf8')
+    def row(name,project,root,port):
+        return {'Name':name,'Config':{'Labels':{'com.docker.compose.project':project,
+            'com.docker.compose.project.working_dir':str(root)}},
+            'NetworkSettings':{'Ports':{'8080/tcp':[{'HostPort':str(port)}]}}}
+    data=[row('/own','classroom-existing',tmp_path,8080),
+          row('/other','other-project',tmp_path,18080),
+          row('/other-root','classroom-existing',tmp_path/'elsewhere',28080)]
+    monkeypatch.setattr(ports.subprocess,'check_output',lambda args,**kw:'a\nb\nc' if args[1]=='ps' else json.dumps(data))
+    owned,occupied=ports.docker_ports(tmp_path,'supabase-existing')
+    assert owned=={8080} and occupied=={8080,18080,28080}

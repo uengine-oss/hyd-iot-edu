@@ -68,6 +68,9 @@ def available(port):
 
 
 def docker_ports(root, project_id):
+    env_path = root / '.env'
+    configured = env_values(env_path.read_text(encoding='utf-8-sig')) if env_path.exists() else {}
+    compose_project = os.environ.get('COMPOSE_PROJECT_NAME') or configured.get('COMPOSE_PROJECT_NAME') or 'hyd-iot-edu'
     ids = subprocess.check_output(["docker", "ps", "-q"], text=True).split()
     owned, occupied = set(), set()
     if not ids:
@@ -77,7 +80,7 @@ def docker_ports(root, project_id):
         labels = container["Config"].get("Labels") or {}
         workdir = labels.get("com.docker.compose.project.working_dir", "")
         same_root = workdir.replace("\\", "/").rstrip("/").casefold() == root.as_posix().casefold()
-        own = (labels.get("com.docker.compose.project") == "hyd-iot-edu" and same_root)
+        own = (labels.get("com.docker.compose.project") == compose_project and same_root)
         own |= container.get("Name", "").startswith("/supabase_") and container["Name"].endswith("_" + project_id)
         for bindings in (container["NetworkSettings"].get("Ports") or {}).values():
             for binding in bindings or []:

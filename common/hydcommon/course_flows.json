@@ -1,0 +1,246 @@
+{
+  "c3_cooling": [
+    "cooling-emergency.bpmn",
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" id=\"D_Process_A\"><bpmn:process id=\"Process_A\" name=\"냉각 긴급 대응\"><bpmn:laneSet id=\"LS\"><bpmn:lane id=\"L_person\" name=\"담당자\"><bpmn:flowNodeRef>T_approve</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_agent\" name=\"에이전트\"><bpmn:flowNodeRef>T_agent</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_system\" name=\"시스템\"><bpmn:flowNodeRef>T_notice</bpmn:flowNodeRef><bpmn:flowNodeRef>R_rejected</bpmn:flowNodeRef><bpmn:flowNodeRef>T_cmd</bpmn:flowNodeRef><bpmn:flowNodeRef>T_reobs</bpmn:flowNodeRef><bpmn:flowNodeRef>T_wo</bpmn:flowNodeRef><bpmn:flowNodeRef>R_ok</bpmn:flowNodeRef><bpmn:flowNodeRef>R_fail</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet>\n  <bpmn:startEvent id=\"Start\" name=\"쿨러 과열 경보\"><bpmn:messageEventDefinition id=\"M1\"/></bpmn:startEvent>\n  <bpmn:task id=\"T_agent\" name=\"원인 진단 · 냉각 조치 제안\"/>\n  <bpmn:serviceTask id=\"T_cmd\" name=\"냉각 명령\"/>\n  <bpmn:serviceTask id=\"T_reobs\" name=\"재관측\"/>\n  <bpmn:exclusiveGateway id=\"G_ok\" name=\"유온 정상?\"/>\n  <bpmn:serviceTask id=\"T_wo\" name=\"작업지시 등록\"/>\n  <bpmn:serviceTask id=\"R_ok\" name=\"결과 보고: 정상\"/>\n  <bpmn:serviceTask id=\"R_fail\" name=\"결과 보고: 미달\"/>\n  <bpmn:endEvent id=\"E_end\" name=\"끝\"/>\n  <bpmn:sequenceFlow id=\"F1\" sourceRef=\"Start\" targetRef=\"T_agent\"/>\n  <bpmn:sequenceFlow id=\"F4\" sourceRef=\"T_cmd\" targetRef=\"T_reobs\"/>\n  <bpmn:sequenceFlow id=\"F5\" sourceRef=\"T_reobs\" targetRef=\"G_ok\"/>\n  <bpmn:sequenceFlow id=\"F_yes\" name=\"예\" sourceRef=\"G_ok\" targetRef=\"T_wo\"/>\n  <bpmn:sequenceFlow id=\"F_no\" name=\"아니오\" sourceRef=\"G_ok\" targetRef=\"R_fail\"/>\n  <bpmn:sequenceFlow id=\"F6\" sourceRef=\"T_wo\" targetRef=\"R_ok\"/>\n  <bpmn:sequenceFlow id=\"F7\" sourceRef=\"R_ok\" targetRef=\"E_end\"/>\n  <bpmn:sequenceFlow id=\"F8\" sourceRef=\"R_fail\" targetRef=\"E_end\"/>\n  <bpmn:userTask id=\"T_approve\" name=\"운전원 승인\"/>\n  <bpmn:boundaryEvent id=\"B_overdue\" name=\"승인 지연\" attachedToRef=\"T_approve\" cancelActivity=\"false\"><bpmn:timerEventDefinition id=\"TD1\"/></bpmn:boundaryEvent>\n  <bpmn:serviceTask id=\"T_notice\" name=\"승인 지연 알림\"/>\n  <bpmn:exclusiveGateway id=\"G_approved\" name=\"승인?\"/>\n  <bpmn:serviceTask id=\"R_rejected\" name=\"결과 보고: 거절\"/>\n  <bpmn:endEvent id=\"E_notice\" name=\"알림\"/>\n  <bpmn:endEvent id=\"E_rejected\" name=\"거절 종결\"/>\n  <bpmn:sequenceFlow id=\"F2\" sourceRef=\"T_agent\" targetRef=\"T_approve\"/>\n  <bpmn:sequenceFlow id=\"F3\" sourceRef=\"T_approve\" targetRef=\"G_approved\"/>\n  <bpmn:sequenceFlow id=\"F_approved\" name=\"승인\" sourceRef=\"G_approved\" targetRef=\"T_cmd\"/>\n  <bpmn:sequenceFlow id=\"F_rejected\" name=\"거절\" sourceRef=\"G_approved\" targetRef=\"R_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_rej_end\" sourceRef=\"R_rejected\" targetRef=\"E_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_overdue\" sourceRef=\"B_overdue\" targetRef=\"T_notice\"/>\n  <bpmn:sequenceFlow id=\"F_notice_end\" sourceRef=\"T_notice\" targetRef=\"E_notice\"/></bpmn:process></bpmn:definitions>",
+    {
+      "flows": {
+        "F_approved": {
+          "op": "==",
+          "value": "승인",
+          "var": "approval"
+        },
+        "F_no": {
+          "default": true
+        },
+        "F_rejected": {
+          "default": true
+        },
+        "F_yes": {
+          "op": "==",
+          "value": true,
+          "var": "recovered"
+        }
+      },
+      "lanes": {},
+      "name": "냉각 긴급 대응",
+      "start": {
+        "kind": "alert",
+        "patterns": [
+          "COOLER_DEGRADATION"
+        ]
+      },
+      "tasks": {
+        "R_fail": {
+          "config": {
+            "outcome": "미달",
+            "summary": "재관측 기준 미달 — 승인자 {approved_by_name}",
+            "title": "{asset} 긴급 대응 결과"
+          },
+          "part": "svc:report"
+        },
+        "R_ok": {
+          "config": {
+            "outcome": "정상",
+            "summary": "유온 정상 · 경보 해제, 작업지시 {work_order.ref}",
+            "title": "{asset} 긴급 대응 결과"
+          },
+          "part": "svc:report"
+        },
+        "R_rejected": {
+          "config": {
+            "outcome": "반려",
+            "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 설비 명령은 내지 않았습니다",
+            "title": "{asset} 냉각 조치 결과"
+          },
+          "part": "svc:report"
+        },
+        "T_agent": {
+          "agent": "agent:cooling",
+          "instruction": "쿨러 과열의 원인을 진단하고 냉각 조치 후보를 비교해 추천 카드 한 장과 지는 대안을 낸다",
+          "part": "task:decide"
+        },
+        "T_approve": {
+          "part": "task:select-or-reject",
+          "role": "운전원"
+        },
+        "T_cmd": {
+          "part": "task:command"
+        },
+        "T_notice": {
+          "config": {
+            "outcome": "승인 지연",
+            "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다",
+            "title": "{asset} 냉각 조치 승인 지연"
+          },
+          "part": "svc:report"
+        },
+        "T_reobs": {
+          "part": "task:reobserve"
+        },
+        "T_wo": {
+          "part": "task:work-order"
+        }
+      },
+      "timers": {
+        "B_overdue": "PT10M"
+      }
+    }
+  ],
+  "c3_pm": [
+    "pm-planning.bpmn",
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" id=\"D_Process_B\"><bpmn:process id=\"Process_B\" name=\"정기 정비\"><bpmn:laneSet id=\"LS\"><bpmn:lane id=\"L_person\" name=\"담당자\"><bpmn:flowNodeRef>T_approve</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_agent\" name=\"에이전트\"><bpmn:flowNodeRef>T_agent</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_system\" name=\"시스템\"><bpmn:flowNodeRef>T_notice</bpmn:flowNodeRef><bpmn:flowNodeRef>R_rejected</bpmn:flowNodeRef><bpmn:flowNodeRef>T_wo</bpmn:flowNodeRef><bpmn:flowNodeRef>R_ok</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet>\n  <bpmn:startEvent id=\"Start\" name=\"정기 점검 요청\"><bpmn:messageEventDefinition id=\"M1\"/></bpmn:startEvent>\n  <bpmn:task id=\"T_agent\" name=\"정비 계획 제안\"/>\n  <bpmn:serviceTask id=\"T_wo\" name=\"정비 오더 등록 · 공지 메일\"/>\n  <bpmn:serviceTask id=\"R_ok\" name=\"결과 보고\"/>\n  <bpmn:endEvent id=\"E_end\" name=\"끝\"/>\n  <bpmn:sequenceFlow id=\"F1\" sourceRef=\"Start\" targetRef=\"T_agent\"/>\n  <bpmn:sequenceFlow id=\"F4\" sourceRef=\"T_wo\" targetRef=\"R_ok\"/>\n  <bpmn:sequenceFlow id=\"F5\" sourceRef=\"R_ok\" targetRef=\"E_end\"/>\n  <bpmn:userTask id=\"T_approve\" name=\"설비보전팀장 승인\"/>\n  <bpmn:boundaryEvent id=\"B_overdue\" name=\"승인 지연\" attachedToRef=\"T_approve\" cancelActivity=\"false\"><bpmn:timerEventDefinition id=\"TD1\"/></bpmn:boundaryEvent>\n  <bpmn:serviceTask id=\"T_notice\" name=\"승인 지연 알림\"/>\n  <bpmn:exclusiveGateway id=\"G_approved\" name=\"승인?\"/>\n  <bpmn:serviceTask id=\"R_rejected\" name=\"결과 보고: 거절\"/>\n  <bpmn:endEvent id=\"E_notice\" name=\"알림\"/>\n  <bpmn:endEvent id=\"E_rejected\" name=\"거절 종결\"/>\n  <bpmn:sequenceFlow id=\"F2\" sourceRef=\"T_agent\" targetRef=\"T_approve\"/>\n  <bpmn:sequenceFlow id=\"F3\" sourceRef=\"T_approve\" targetRef=\"G_approved\"/>\n  <bpmn:sequenceFlow id=\"F_approved\" name=\"승인\" sourceRef=\"G_approved\" targetRef=\"T_wo\"/>\n  <bpmn:sequenceFlow id=\"F_rejected\" name=\"거절\" sourceRef=\"G_approved\" targetRef=\"R_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_rej_end\" sourceRef=\"R_rejected\" targetRef=\"E_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_overdue\" sourceRef=\"B_overdue\" targetRef=\"T_notice\"/>\n  <bpmn:sequenceFlow id=\"F_notice_end\" sourceRef=\"T_notice\" targetRef=\"E_notice\"/></bpmn:process></bpmn:definitions>",
+    {
+      "flows": {
+        "F_approved": {
+          "op": "==",
+          "value": "승인",
+          "var": "approval"
+        },
+        "F_rejected": {
+          "default": true
+        }
+      },
+      "lanes": {},
+      "name": "정기 정비",
+      "start": {
+        "kind": "alert",
+        "patterns": [
+          "PM_DUE"
+        ]
+      },
+      "tasks": {
+        "R_ok": {
+          "config": {
+            "outcome": "정상",
+            "summary": "정비 오더 {work_order.ref} 등록 · 생산팀 공지 — {work_order.detail}",
+            "title": "{asset} 정기 정비 결과"
+          },
+          "part": "svc:report"
+        },
+        "R_rejected": {
+          "config": {
+            "outcome": "반려",
+            "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 정비 오더를 내지 않았습니다(정기 점검 도래 표시는 그대로)",
+            "title": "{asset} 정기 정비 결과"
+          },
+          "part": "svc:report"
+        },
+        "T_agent": {
+          "agent": "agent:pm-plan",
+          "instruction": "운전시간 · 허용 오차 · 생산 오더 · 정비 인원 · 부품을 저울질해 언제 정비할지 카드를 낸다",
+          "part": "task:decide"
+        },
+        "T_approve": {
+          "part": "task:select-or-reject",
+          "role": "설비보전팀장"
+        },
+        "T_notice": {
+          "config": {
+            "outcome": "승인 지연",
+            "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다",
+            "title": "{asset} 정기 정비 승인 지연"
+          },
+          "part": "svc:report"
+        },
+        "T_wo": {
+          "config": {
+            "mail": {
+              "body": "{work_order.detail} — 이 시간에 {asset} 를 정지합니다 (승인 {approved_by_name})",
+              "subject": "[정비 공지] {asset} 정비 오더 {work_order.ref}",
+              "to": "production@hyd.local"
+            },
+            "window_var": "alert.evidence.night_window_id"
+          },
+          "part": "task:work-order"
+        }
+      },
+      "timers": {
+        "B_overdue": "PT10M"
+      }
+    }
+  ],
+  "c3_spare": [
+    "spare-purchase.bpmn",
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" id=\"D_Process_C\"><bpmn:process id=\"Process_C\" name=\"예비품 구매\"><bpmn:laneSet id=\"LS\"><bpmn:lane id=\"L_person\" name=\"담당자\"><bpmn:flowNodeRef>T_approve</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_agent\" name=\"에이전트\"><bpmn:flowNodeRef>T_agent</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id=\"L_system\" name=\"시스템\"><bpmn:flowNodeRef>T_notice</bpmn:flowNodeRef><bpmn:flowNodeRef>R_rejected</bpmn:flowNodeRef><bpmn:flowNodeRef>T_po</bpmn:flowNodeRef><bpmn:flowNodeRef>T_gr</bpmn:flowNodeRef><bpmn:flowNodeRef>R_ok</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet>\n  <bpmn:startEvent id=\"Start\" name=\"재고 보충 요청\"><bpmn:messageEventDefinition id=\"M1\"/></bpmn:startEvent>\n  <bpmn:task id=\"T_agent\" name=\"발주안 제안\"/>\n  <bpmn:serviceTask id=\"T_po\" name=\"ERP 발주 · 공급사 메일\"/>\n  <bpmn:serviceTask id=\"T_gr\" name=\"입고 · 재고 반영\"/>\n  <bpmn:serviceTask id=\"R_ok\" name=\"결과 보고\"/>\n  <bpmn:endEvent id=\"E_end\" name=\"끝\"/>\n  <bpmn:sequenceFlow id=\"F1\" sourceRef=\"Start\" targetRef=\"T_agent\"/>\n  <bpmn:sequenceFlow id=\"F4\" sourceRef=\"T_po\" targetRef=\"T_gr\"/>\n  <bpmn:sequenceFlow id=\"F5\" sourceRef=\"T_gr\" targetRef=\"R_ok\"/>\n  <bpmn:sequenceFlow id=\"F6\" sourceRef=\"R_ok\" targetRef=\"E_end\"/>\n  <bpmn:userTask id=\"T_approve\" name=\"구매 담당 승인\"/>\n  <bpmn:boundaryEvent id=\"B_overdue\" name=\"승인 지연\" attachedToRef=\"T_approve\" cancelActivity=\"false\"><bpmn:timerEventDefinition id=\"TD1\"/></bpmn:boundaryEvent>\n  <bpmn:serviceTask id=\"T_notice\" name=\"승인 지연 알림\"/>\n  <bpmn:exclusiveGateway id=\"G_approved\" name=\"승인?\"/>\n  <bpmn:serviceTask id=\"R_rejected\" name=\"결과 보고: 거절\"/>\n  <bpmn:endEvent id=\"E_notice\" name=\"알림\"/>\n  <bpmn:endEvent id=\"E_rejected\" name=\"거절 종결\"/>\n  <bpmn:sequenceFlow id=\"F2\" sourceRef=\"T_agent\" targetRef=\"T_approve\"/>\n  <bpmn:sequenceFlow id=\"F3\" sourceRef=\"T_approve\" targetRef=\"G_approved\"/>\n  <bpmn:sequenceFlow id=\"F_approved\" name=\"승인\" sourceRef=\"G_approved\" targetRef=\"T_po\"/>\n  <bpmn:sequenceFlow id=\"F_rejected\" name=\"거절\" sourceRef=\"G_approved\" targetRef=\"R_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_rej_end\" sourceRef=\"R_rejected\" targetRef=\"E_rejected\"/>\n  <bpmn:sequenceFlow id=\"F_overdue\" sourceRef=\"B_overdue\" targetRef=\"T_notice\"/>\n  <bpmn:sequenceFlow id=\"F_notice_end\" sourceRef=\"T_notice\" targetRef=\"E_notice\"/></bpmn:process></bpmn:definitions>",
+    {
+      "flows": {
+        "F_approved": {
+          "op": "==",
+          "value": "승인",
+          "var": "approval"
+        },
+        "F_rejected": {
+          "default": true
+        }
+      },
+      "lanes": {},
+      "name": "예비품 구매",
+      "start": {
+        "kind": "alert",
+        "patterns": [
+          "SPARE_BELOW_MIN"
+        ]
+      },
+      "tasks": {
+        "R_ok": {
+          "config": {
+            "notify": [
+              {
+                "role": "role:purchasing-mgr",
+                "when": "approved_amount > 300"
+              }
+            ],
+            "outcome": "입고 완료",
+            "summary": "{goods_receipt.detail}",
+            "title": "{approved_part_no} 재고 보충 결과"
+          },
+          "part": "svc:report"
+        },
+        "R_rejected": {
+          "config": {
+            "outcome": "반려",
+            "summary": "담당자가 거절했습니다 — 사유: {approval_reason}. 발주하지 않았습니다(재고 보충 필요 표시는 그대로)",
+            "title": "예비품 구매 결과"
+          },
+          "part": "svc:report"
+        },
+        "T_agent": {
+          "agent": "agent:spare-buy",
+          "instruction": "필요량을 정하고 공급사를 금액 · 납기 · 품질 · 회사 규정으로 비교해 발주 카드를 낸다",
+          "part": "task:decide"
+        },
+        "T_approve": {
+          "part": "task:select-or-reject",
+          "role": "구매 담당"
+        },
+        "T_gr": {
+          "config": {
+            "immediate": true
+          },
+          "part": "svc:goods-receipt"
+        },
+        "T_notice": {
+          "config": {
+            "outcome": "승인 지연",
+            "summary": "승인 대기 중 — 경보 {alert.alertId}. 승인하거나 거절할 때까지 기다립니다",
+            "title": "예비품 구매 승인 지연"
+          },
+          "part": "svc:report"
+        },
+        "T_po": {
+          "config": {
+            "mail": {
+              "body": "공급사 {approved_supplier}, 금액 {approved_amount}만원, 발주 번호 {purchase_order.ref}",
+              "subject": "[발주] {approved_part_no} {approved_qty}개",
+              "to": "supplier@hyd.local, receiving@hyd.local"
+            }
+          },
+          "part": "svc:erp-po"
+        }
+      },
+      "timers": {
+        "B_overdue": "PT10M"
+      }
+    }
+  ]
+}

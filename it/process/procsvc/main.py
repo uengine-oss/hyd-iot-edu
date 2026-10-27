@@ -1133,7 +1133,8 @@ async def kg_create_skill(body: dict):
 from pathlib import Path
 from .manual_sources import ManualSources
 from . import manual_api
-from . import course_access
+from . import course_access, course_bootstrap
+course_bootstrap.mount(app)
 course_access.mount(app,
     path=Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('course-access.json'),
     archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),

@@ -12,7 +12,7 @@ from pathlib import Path
 PUBLIC_KEY = 'uiQXhElZ7HnRyuc_48KCdGsKa4k_oWppx0FKiK-dun0='
 AUDIENCE = 'hyd-iot-edu-course-v1'
 FIXED_RUNS = {'c3_cooling': {'T_agent'}, 'c3_pm': {'T_agent'}, 'c3_spare': {'T_agent'}}
-HANDOVER_RUNS = {'ShiftHandover': {'task_draft'}, 'shift_handover': {'task:draft'}}
+HANDOVER_RUNS = {'ShiftHandover': {'task_draft', 'task_draft_r2', 'task_draft_r3'}, 'shift_handover': {'task:draft'}}
 CONTENT = json.loads(Path(__file__).with_name('course_content.json').read_text(encoding='utf8'))
 LOCKED_MESSAGE = '이 기능은 수업 잠금 상태입니다. 마지막 날 강사 해제 코드를 입력하세요.'
 

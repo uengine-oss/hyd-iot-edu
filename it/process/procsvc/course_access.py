@@ -45,7 +45,7 @@ class AccessStore:
         return {'phase': 'handover' if opened else 'guided', 'unlocked': opened,
                 'label': '교대 인수인계 실습' if opened else '기본 수업',
                 'capabilities': {'fixed_agents': True, 'handover': opened,
-                    'agent_authoring': opened, 'provided_manuals': opened,
+                    'agent_authoring': opened, 'provided_manuals': opened, 'handover_flow': opened,
                     'free_questions': False, 'model_settings': False, 'tool_settings': False}}
 
     def unlock(self, code):
@@ -108,15 +108,21 @@ def mount(app, *, path, archive_factory, tenant, store=None):
     async def gate(request, call_next):
         if request.method in {'GET','HEAD','OPTIONS'}:return await call_next(request)
         path = request.url.path.rstrip('/')
+        from .course_bootstrap import PATHS
+        if path in PATHS and request.scope.get('state',{}).get('_course_bootstrap') == (request.method,path):
+            return await call_next(request)
         if path == '/api/course-access/unlock' and request.method == 'POST':return await call_next(request)
         if path.startswith('/api/course-access'):
             return JSONResponse({'detail': '수업 권한은 강사 코드로만 열 수 있습니다.'}, 403)
         opened = bool(store.grant())
-        try:body = await request.json() if AUTHORING.match(path) or path == '/api/instances/start' or path.startswith('/api/kg/manuals') else {}
+        try:body = await request.json() if AUTHORING.match(path) or path == '/api/instances/start' or path.startswith(('/api/kg/manuals','/api/flows/')) else {}
         except (ValueError, TypeError):body = {}
         if not isinstance(body,dict):body = {}
         reason = None
-        if PERMANENT.match(path):reason = '수업에서 허용하지 않은 관리 기능입니다.'
+        if path.startswith('/api/flows/') and opened:
+            from hydcommon.course_handover import allowed_request
+            if not allowed_request(request.method,path,body):reason = '제공된 교대 BPMN과 시작 입력·검토·보완 연결만 등록할 수 있습니다.'
+        elif PERMANENT.match(path):reason = '수업에서 허용하지 않은 관리 기능입니다.'
         elif AUTHORING.match(path):
             if not opened:reason = rules.LOCKED_MESSAGE
             elif path.startswith('/api/agent-assignments'):

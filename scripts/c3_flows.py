@@ -226,12 +226,10 @@ def check_and_deploy(deploy: bool, only: list[str] | None = None) -> int:
 def ensure() -> int:
     """시작 스크립트용: 경보 경로에 수업 흐름(class_flow)으로 올라 있는 c3 흐름은 건너뛰고 나머지만 deploy 한다.
     학생이 배포한 같은 id(수업 흐름 표시 없음)는 수업 흐름이 아니므로 다시 배포한다."""
-    deployed = {f.get("definition") for f in call("GET", "/api/flows/deployments").get("flows") or [] if f.get("class_flow")}
-    missing = [did for did in FLOWS if did not in deployed]
-    for did in FLOWS:
-        if did not in missing:
-            print(did, "이미 수업 흐름으로 배포됨 — 건너뜀")
-    return check_and_deploy(True, missing) if missing else 0
+    result = call('POST', '/api/course-bootstrap', {})
+    for row in result['flows']:
+        print(row['definition'], '이미 수업 흐름으로 배포됨 — 건너뜀' if row['reused'] else '수업 기본 흐름 배포 완료')
+    return 0
 
 
 def deploy_reset(by: str) -> int:

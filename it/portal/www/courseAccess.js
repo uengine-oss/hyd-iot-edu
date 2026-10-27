@@ -26,7 +26,7 @@
     });
     document.querySelectorAll('.rail nav button[data-tab]').forEach(button => {
       if (closedTabs.has(button.dataset.tab)) {
-        button.disabled = true;
+        button.disabled = !(opened && button.dataset.tab === 'flows');
         button.title = '이 수업에서는 준비된 에이전트와 교대 실습만 사용합니다.';
       }
     });
@@ -34,7 +34,7 @@
     if (extract && !opened) { extract.disabled = true; extract.title = '강사 해제 코드가 필요합니다.'; }
     document.querySelector('#courseAccessLabel').textContent = access ? `수업 기능 · ${access.label}` : '수업 기능 · 연결 확인 필요';
     document.querySelector('#courseAccessHelp').textContent = opened
-      ? '교대 실습의 에이전트·스킬 편집과 제공 문서 처리가 열렸습니다.'
+      ? '교대 실습의 에이전트·스킬, 제공 문서와 교대 BPMN 연결이 열렸습니다.'
       : '기본 에이전트는 실행됩니다. 추가 기능은 마지막 날 강사 코드로 엽니다.';
     document.querySelector('#courseUnlockForm').hidden = opened;
   }

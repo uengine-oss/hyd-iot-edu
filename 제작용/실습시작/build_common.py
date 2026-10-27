@@ -71,6 +71,13 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
                     sections[3]=(sections[3][0],blocks[4]+'<p class="check">태그·물리량·단위·한계가 5행으로 나옵니다. CE·FS1의 null은 0이 아니라 값 없음입니다.</p>'+captured('full-quantity','물리량 5행과 단위·한계')+blocks[5]+'<p class="check">한계가 없는 CE·FS1이 빠지고 3행이 남습니다.</p>'+blocks[6]+'<p class="check">TS1 한 행만 남습니다. 여기의 한계는 등록된 기준이며 현재 측정값이 아닙니다.</p>'+captured('full-filter','온도 센서 TS1 한 행')+blocks[7]+'<p class="check">쿨러 코어·펌프 축 씰 키트·팬 베어링의 세 연결과 품번을 원자료와 대조하세요.</p>'+captured('full-parts','구성요소와 교체 부품 세 연결'))
                     sections[4]=(sections[4][0],blocks[8]+'<p class="check">쿨러 CE·TS1은 2개, 주 펌프 FS1·PS1은 2개, 팬 VS1은 1개입니다. 목록을 직접 세어 channels와 비교하세요. 센서까지 연결되는 MATCH에서는 센서가 없는 구성요소가 결과에 나오지 않습니다.</p>'+captured('full-counts','센서 목록과 집계 대조'))
                     sections[-1]=('저장하고 다시 열기','<p>Browser 왼쪽 Queries를 누르고 위쪽 +로 새 쿼리 탭을 여세요. 실행한 문장과 실제 확인 결과를 넣습니다. 첫 줄에 <code>// 첫 사이퍼 실습</code>을 적으면 목록에서 제목으로 찾을 수 있습니다.</p><p>탭을 닫고 왼쪽 목록의 제목을 눌러 다시 여세요.</p><p class="check">작성한 문장과 확인 기록이 그대로 보입니다.</p><p>Queries 제목 오른쪽 Download all을 눌러 CSV 파일을 받으세요. 브라우저 목록만으로는 학교 PC 초기화 후 보존되지 않습니다. 받은 파일을 USB 또는 개인 클라우드에 보관합니다.</p><p>조회_작성.cypher와 조회_기록.md에 기록하는 방식도 사용할 수 있습니다. 다음 포털 탐색은 별도 시작본으로 엽니다.</p>')
+                graph_cues=ROOT/'제작용/촬영/neo4j/통합반_그래프탐색_큐.json'
+                if graph_cues.exists():
+                    from graph_guide import sections as graph_sections
+                    sections=graph_sections(json.loads(graph_cues.read_text(encoding='utf-8')),sections[0])
+                    title='Cypher로 설비 전체 연결 탐색하기'
+                    steps=steps.replace('가이드에서 쿨러 노드 하나를 먼저 조회한 뒤 조회_작성.cypher의 질문에 맞춰 관계·조건·집계를 확장합니다.','가이드에서 전체 설비 지도를 펼치고 노드·관계의 정보를 확인한 뒤, 질문에 맞춰 경로·조건·집계를 조회합니다.')
+                    steps=steps.replace('5. 조회_기록.md에 실제 행·집계·원자료 근거를 적고 결과/에 질의와 기록을 저장합니다.','5. Queries에 문장과 실제 확인 기록을 저장하고 다시 엽니다. CSV와 전체 그래프 PNG를 내려받습니다. 조회_기록.md에도 실제 행·집계·원자료 근거를 남깁니다.')
             else:
                 sections[1]=('점검할 센서 확인하기',sections[1][1])
                 sections[2]=('기준값과 교체 부품 확인하기',sections[2][1])
@@ -79,7 +86,7 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
         write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
         archive=pack(folder)
-        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':('2026-10-27-cypher-v3' if course=='통합반' else '2026-10-27-cypher-v2') if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':('2026-10-27-graph-v4' if course=='통합반' else '2026-10-27-cypher-v2') if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('두 과정 조회 가이드·독립 시작본과 포털 탐색 연결')
