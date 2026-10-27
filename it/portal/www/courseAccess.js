@@ -21,8 +21,9 @@
     const opened = access?.unlocked === true;
     document.querySelectorAll('#agentsView button').forEach(button => {
       if (!button.matches(editSelector))return;
-      button.disabled = !opened;
-      button.title = opened ? '' : '마지막 날 강사 코드로 교대 실습을 열 수 있습니다.';
+      const permitted = access?.capabilities?.agent_authoring === true && !button.matches('[data-ag-reset]');
+      button.disabled = !permitted;
+      button.title = permitted ? '' : '수업에서는 전체 초기화를 사용할 수 없습니다.';
     });
     document.querySelectorAll('.rail nav button[data-tab]').forEach(button => {
       if (closedTabs.has(button.dataset.tab)) {
@@ -36,7 +37,7 @@
     document.querySelector('#courseAccessLabel').textContent = access ? `수업 기능 · ${access.label}` : '수업 기능 · 연결 확인 필요';
     document.querySelector('#courseAccessHelp').textContent = opened
       ? '교대 실습의 에이전트·스킬, 제공 문서와 교대 BPMN 연결이 열렸습니다.'
-      : '기본 에이전트는 실행됩니다. 추가 기능은 마지막 날 강사 코드로 엽니다.';
+      : '에이전트와 스킬을 구성하고 질문할 수 있습니다. 교대 실습은 마지막 날 강사 코드로 엽니다.';
     document.querySelector('#courseUnlockForm').hidden = opened;
   }
 

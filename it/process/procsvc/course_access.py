@@ -46,7 +46,7 @@ class AccessStore:
         return {'phase': 'handover' if opened else 'guided', 'unlocked': opened,
                 'label': '교대 인수인계 실습' if opened else '기본 수업',
                 'capabilities': {'fixed_agents': True, 'handover': opened,
-                    'agent_authoring': opened, 'provided_manuals': opened, 'handover_flow': opened,
+                    'agent_authoring': True, 'provided_manuals': opened, 'handover_flow': opened,
                     'free_questions': self.questions_enabled, 'model_settings': False, 'tool_settings': False}}
 
     def unlock(self, code):
@@ -122,17 +122,17 @@ def mount(app, *, path, archive_factory, tenant, store=None):
             if not allowed_request(request.method,path,body):reason = '제공된 교대 BPMN과 시작 입력·검토·보완 연결만 등록할 수 있습니다.'
         elif PERMANENT.match(path):reason = '수업에서 허용하지 않은 관리 기능입니다.'
         elif AUTHORING.match(path):
-            if not opened:reason = rules.LOCKED_MESSAGE
-            elif path.startswith('/api/agent-assignments'):
-                if request.method == 'PUT':
-                    if not isinstance(body.get('definition_id'),str) or body['definition_id'] not in rules.HANDOVER_RUNS:reason = '교대 인수인계 단계에만 에이전트를 배정할 수 있습니다.'
-                elif not any(path.startswith('/api/agent-assignments/'+d+'/') for d in rules.HANDOVER_RUNS):
-                    reason = '교대 인수인계 단계에만 에이전트를 배정할 수 있습니다.'
+            if path == '/api/agents/reset':
+                reason = '수업 중 전체 에이전트 초기화는 사용할 수 없습니다.'
+            elif path.startswith(('/api/agent-assignments', '/api/agent-bindings')):
+                if not opened:reason = rules.LOCKED_MESSAGE
+                elif path.startswith('/api/agent-assignments'):
+                    if request.method == 'PUT':
+                        if not isinstance(body.get('definition_id'),str) or body['definition_id'] not in rules.HANDOVER_RUNS:reason = '교대 인수인계 단계에만 에이전트를 배정할 수 있습니다.'
+                    elif not any(path.startswith('/api/agent-assignments/'+d+'/') for d in rules.HANDOVER_RUNS):
+                        reason = '교대 인수인계 단계에만 에이전트를 배정할 수 있습니다.'
             elif path.startswith('/api/agents') and request.method in {'POST','PUT'}:
-                if body.get('model') not in (None,'','coding'):reason = '수업 모델은 강사가 지정한 기본 모델을 사용합니다.'
-                tools = body.get('tools')
-                if tools and (not isinstance(tools,list) or any(not isinstance(t,str) or t not in {'neo4j','enterprise','hyd-dmn'} for t in tools)):
-                    reason = '교대 실습의 조회 도구만 사용할 수 있습니다.'
+                reason = rules.agent_configuration_error(body.get('model'), body.get('tools'))
         elif path == '/api/instances/start':
             did = body.get('definition_id')
             if not isinstance(did,str) or (did not in rules.FIXED_RUNS and not (opened and did in rules.HANDOVER_RUNS)):

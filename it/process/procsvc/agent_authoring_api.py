@@ -19,7 +19,7 @@
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from . import agent_authoring as A
@@ -94,7 +94,12 @@ def mount(app: FastAPI) -> None:
         def work():
             agents = [u for u in rt.repo.list_users(None, rt.tenant_id) if u.get("is_agent")]
             models = sorted({str(u.get("model")).strip() for u in agents if str(u.get("model") or "").strip()})
-            return {"servers": A.server_options(rt.repo, rt.tenant_id),
+            servers = A.server_options(rt.repo, rt.tenant_id)
+            if getattr(app.state, "course_access", None) is not None:
+                from hydcommon.course_access import AGENT_SERVERS
+                servers = [server for server in servers if server["name"] in AGENT_SERVERS]
+                models = [model for model in models if model == "coding"]
+            return {"servers": servers,
                     "skills": [{"skill_name": s["skill_name"], "title": skill_title(s),
                                 "description": s.get("description") or "", "origin": A.origin_of(s)}
                                for s in rt.repo.list_skills(rt.tenant_id)],
@@ -123,10 +128,11 @@ def mount(app: FastAPI) -> None:
         return await _call(A.delete_agent, rt, agent_id, by=by)
 
     @app.post("/api/agents/{agent_id}/clone", status_code=201)
-    async def clone_agent(agent_id: str, req: CloneReq | None = None):
+    async def clone_agent(agent_id: str, request: Request, req: CloneReq | None = None):
         rt = _rt()
         body = req.model_dump() if req else {}
-        return await _call(A.clone_agent, rt.repo, rt.tenant_id, agent_id, body, by=body.get("by"))
+        return await _call(A.clone_agent, rt.repo, rt.tenant_id, agent_id, body, by=body.get("by"),
+                           course_restricted=getattr(request.app.state, "course_access", None) is not None)
 
     @app.post("/api/agents/{agent_id}/skills")
     async def attach_skill(agent_id: str, req: AttachReq):

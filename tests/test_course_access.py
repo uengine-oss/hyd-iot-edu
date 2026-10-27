@@ -76,7 +76,8 @@ def test_even_a_valid_signature_cannot_open_another_audience_or_phase(instructor
 
 def test_lock_rejects_direct_api_and_preserves_basic_actions_and_cors(tmp_path,instructor):
     _,client,store,sign,calls = setup(tmp_path,instructor)
-    for path,method,body in [('/api/agents','post',{'name':'new'}),('/api/skills/x','put',{}),
+    for path,method,body in [('/api/agents','post',{'model':'other'}),('/api/agents','post',{'tools':['other']}),
+          ('/api/agent-assignments','put',{'definition_id':'shift_handover'}),('/api/agents/reset','post',{}),
           ('/api/ask','post',{'question':'arbitrary'}),('/api/config/import','post',{}),
           ('/api/flows/import','post',{}),('/api/mcp/servers','post',{}),
           ('/api/instances/start','post',{'definition_id':'ask_agent'}),
@@ -89,6 +90,26 @@ def test_lock_rejects_direct_api_and_preserves_basic_actions_and_cors(tmp_path,i
         assert client.post(path,json=body).status_code==200
     assert len(calls)==3
     assert calls[-1][2]=={'definition_id':'c3_cooling'}  # middleware didn't consume the downstream body
+
+
+def test_guided_course_can_author_agents_and_skills_without_opening_handover(tmp_path, instructor):
+    _, client, store, _, calls = setup(tmp_path, instructor)
+    status = client.get('/api/course-access').json()
+    assert status['unlocked'] is False and status['capabilities']['agent_authoring'] is True
+    for path, method, body in [
+        ('/api/agents', 'post', {'name':'냉각 점검', 'goal':'근거를 조사', 'tools':['neo4j','hyd-dmn']}),
+        ('/api/agents/a', 'put', {'name':'새 이름', 'goal':'다른 설명', 'model':'coding'}),
+        ('/api/skills', 'post', {'skill_name':'cooler', 'content':'점검'}),
+        ('/api/agents/a/skills', 'post', {'skill_name':'cooler'}),
+    ]:
+        assert getattr(client, method)(path, json=body).status_code == 200
+    for path, method, body in [
+        ('/api/agents', 'post', {'model':'other'}),
+        ('/api/agents/a', 'put', {'tools':['enterprise-purchase']}),
+        ('/api/agent-assignments', 'put', {'definition_id':'ShiftHandover'}),
+        ('/api/instances/start', 'post', {'definition_id':'ShiftHandover'}),
+        ('/api/mcp/servers', 'post', {}), ('/api/agents/reset', 'post', {})]:
+        assert getattr(client, method)(path, json=body).status_code == 403
 
 
 def test_unlock_opens_only_handover_and_provided_documents(tmp_path,instructor):
