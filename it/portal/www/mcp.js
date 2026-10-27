@@ -486,17 +486,24 @@
   function mount(el) {
     if (!el) return;
     S.el = el;
+    const course = Boolean(window.hydCourseAccess);
     el.innerHTML = `<div class="page-head"><h1>도구 연결</h1><div class="page-tools"><button class="btn small" id="mcpReload">다시 읽기</button></div></div>` +
       `<div id="mcpConnections"></div>` +
-      `<p class="muted">에이전트가 쓰는 도구 서버와 그 도구를 봅니다. 내 서버를 등록하면 연결 검사를 통과해야 저장되고, 그 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있습니다. ` +
+      `<p class="muted">${course ? '준비된 도구의 입력과 조회 결과를 확인합니다.' : '에이전트가 쓰는 도구 서버와 그 도구를 봅니다. 내 서버를 등록하면 연결 검사를 통과해야 저장되고, 그 서버의 읽기 전용 도구만 에이전트 도구로 고를 수 있습니다.'} ` +
       `읽기 전용 도구는 직접 불러 결과를 보고, 처리 건에서 언제 불렸는지 확인합니다.</p>` +
       `<details class="fold" id="mcpOperator"><summary>운영자 직접 등록 · 연결 설정</summary><p class="field-hint">서비스 연결은 위에서 시작하세요. 아래는 직접 관리하는 서버와 수업 운영 설정입니다.</p><div class="row"><button class="btn small" id="mcpAdd">서버 직접 등록</button><button class="btn small" id="mcpReset">기준으로 되돌리기</button></div><div id="mcpSecrets"></div><div id="mcpForm"></div></details><div class="mcp-grid" id="mcpServers"></div><div id="mcpDetail"></div>`;
     el.querySelector('#mcpReload').addEventListener('click', load);
     el.querySelector('#mcpAdd').addEventListener('click', () => openForm(null));
     el.querySelector('#mcpReset').addEventListener('click', resetAll);
-    if (window.hydMcpConnections) hydMcpConnections.mount(el.querySelector('#mcpConnections'), {onConnected:load});
-    else el.querySelector('#mcpConnections').innerHTML=UI.empty('서비스 연결 화면을 준비하지 못했습니다','화면을 다시 읽거나 운영자에게 확인해 주세요. 기존 도구 목록은 계속 사용할 수 있습니다.','compact');
-    load(); loadSecrets();
+    if (course) {
+      el.querySelector('#mcpOperator').hidden = true;
+      el.querySelector('#mcpConnections').hidden = true;
+    } else {
+      if (window.hydMcpConnections) hydMcpConnections.mount(el.querySelector('#mcpConnections'), {onConnected:load});
+      else el.querySelector('#mcpConnections').innerHTML=UI.empty('서비스 연결 화면을 준비하지 못했습니다','화면을 다시 읽거나 운영자에게 확인해 주세요. 기존 도구 목록은 계속 사용할 수 있습니다.','compact');
+      loadSecrets();
+    }
+    load();
   }
 
   window.hydMcp = { mount, form, register };
