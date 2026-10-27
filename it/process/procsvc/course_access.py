@@ -47,7 +47,7 @@ class AccessStore:
                 'label': '교대 인수인계 실습' if opened else '기본 수업',
                 'capabilities': {'fixed_agents': True, 'handover': opened,
                     'agent_authoring': True, 'provided_manuals': opened, 'handover_flow': opened,
-                    'free_questions': self.questions_enabled, 'model_settings': False, 'tool_settings': False}}
+                    'free_questions': self.questions_enabled, 'tool_inspection': True, 'model_settings': False, 'tool_settings': False}}
 
     def unlock(self, code):
         with self.lock:
@@ -108,6 +108,12 @@ def mount(app, *, path, archive_factory, tenant, store=None):
         if path in PATHS and request.scope.get('state',{}).get('_course_bootstrap') == (request.method,path):
             return await call_next(request)
         if path == '/api/course-access/unlock' and request.method == 'POST':return await call_next(request)
+        # The classroom tool map offers only fixed read calls, never MCP
+        # registration, confirmation, proposal, or write operations.
+        tool_call = re.fullmatch(r'/api/mcp/servers/([^/]+)/tools/([^/]+)/call', path)
+        if request.method == 'POST' and tool_call:
+            from hydcommon.handover_tools import handover_read
+            if handover_read(*tool_call.groups()):return await call_next(request)
         if (path == '/api/ask' or re.fullmatch(r'/api/ask/[^/]+/retry',path)) and request.method == 'POST' and store.questions_enabled:
             return await call_next(request)
         if path.startswith('/api/course-access'):

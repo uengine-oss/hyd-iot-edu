@@ -528,3 +528,33 @@ def test_error_envelope_is_shown_as_a_tool_error():
     ok = mcp_check.shape_result({"content": [{"type": "text", "text": json.dumps({"result": "ok", "rows": []})}]})
     flagged = mcp_check.shape_result({"isError": True, "content": [{"type": "text", "text": "boom"}]})
     assert err["is_error"] and not ok["is_error"] and flagged["is_error"]
+
+
+def test_classroom_tool_map_and_actual_call_exclude_unapproved_tools(client, tmp_path, monkeypatch):
+    from procsvc.course_access import mount
+    original_call = mcp_fake_server.call
+    def fake_call(name, args):
+        if name == 'inputs':
+            mcp_fake_server.CALLS.append(name)
+            return mcp_fake_server._text({'source':'test', 'value':42})
+        return original_call(name,args)
+    monkeypatch.setattr(mcp_fake_server, 'call', fake_call)
+    monkeypatch.setattr(mcp_fake_server, 'TOOLS', [
+        {'name':'inputs','description':'조회','annotations':{'readOnlyHint':True},
+         'inputSchema':{'type':'object','properties':{}}},
+        {'name':'submit_decision','description':'쓰기','annotations':{'readOnlyHint':False},
+         'inputSchema':{'type':'object','properties':{}}},
+        *mcp_fake_server.TOOLS])
+    client.repo.upsert_tenant({'id':'hyd','name':'hyd','mcp':{'mcpServers':{
+        'hyd-dmn':{'type':'url','url':client.url,'transport':'streamable_http'},
+        'unapproved':{'type':'url','url':client.url,'transport':'streamable_http'}}}})
+    mount(client.app, path=tmp_path/'grant.json',archive_factory=lambda:None,tenant='hyd')
+    assert [s['name'] for s in client.get('/api/mcp/servers').json()['servers']] == ['hyd-dmn']
+    listed=client.get('/api/mcp/servers/hyd-dmn/tools').json()
+    assert listed['status']=='ok' and [t['name'] for t in listed['tools']] == ['inputs']
+    assert client.get('/api/mcp/servers/unapproved/tools').status_code == 404
+    mcp_fake_server.CALLS.clear()
+    response=client.post('/api/mcp/servers/hyd-dmn/tools/inputs/call',json={'arguments':{}})
+    assert response.status_code==200 and mcp_fake_server.CALLS==['inputs']
+    assert client.post('/api/mcp/servers/hyd-dmn/tools/submit_decision/call',json={'arguments':{}}).status_code==403
+    assert mcp_fake_server.CALLS==['inputs']
