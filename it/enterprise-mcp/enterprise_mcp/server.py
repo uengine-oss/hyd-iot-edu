@@ -131,7 +131,11 @@ def describe_schema() -> dict:
 
 
 @mcp.tool(annotations=READ)
-def describe_catalog(table: str | None = None, offset: int = 0, limit: int = 12) -> dict:
+def describe_catalog(
+    table: Annotated[str | None, Field(description='목록의 name 또는 ent.name. 생략하면 표 목록')] = None,
+    offset: Annotated[int, Field(ge=0)] = 0,
+    limit: Annotated[int, Field(ge=1,le=20)] = 12,
+) -> dict:
     """업무 표 목록. table을 지정하면 실제 컬럼 주석·타입·기본값·키 관계 상세. next_offset이 있으면 같은 table과 offset으로 이어 읽는다. limit 1~20."""
     from .catalog import page
     from .tools import ok

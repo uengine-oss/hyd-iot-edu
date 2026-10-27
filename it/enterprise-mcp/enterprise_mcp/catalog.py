@@ -41,6 +41,9 @@ def page(catalog, table=None, offset=0, limit=12):
                     next_offset=offset+len(selected) if offset+len(selected)<len(rows) else None,
                     detail='describe_catalog(table=<name>) for full columns and constraints; use next_offset to continue')
     relation=next((r for r in relations if r['name']==table),None)
+    if relation is None and isinstance(table,str) and table.startswith(catalog['schema']+'.'):
+        table=table[len(catalog['schema'])+1:]
+        relation=next((r for r in relations if r['name']==table),None)
     if relation is None:raise ValueError('unknown reader-visible table')
     # Columns and constraints share one ordered page, so neither grows unbounded.
     entries=[dict(kind='column',value=c) for c in relation['columns']]
