@@ -10,6 +10,11 @@ C67 최신 적용: [최상위 학습 목표](1_목적과_방향.md)와 [전체 �
 - **computer use 실측(2026-10-28 00:40)**: `request_access(Visual Studio Code)` → **tier `click`**(보이기·왼클릭만, 입력·키·우클릭·붙여넣기 금지). 따라서 computer use로는 Codex 채팅 입력·통합 터미널(Git Bash) 입력 **불가**. 왼클릭도 desktop shell이 전경으로 잡혀 3회 거부. Codex 모델 선택·응답은 이 경로로 **미확인**(설정 파일 `~/.codex/config.toml`의 `model = "gpt-6-luna"`만 확인, 화면 확인 아님). 사용자 전경 창·두 번째 모니터 창은 건드리지 않음.
 - **CDP 경로는 쓰지 않는다(2026-10-28 00:45)**: 별도 `--user-data-dir` VS Code를 `--remote-debugging-port=9333`으로 띄워 workbench 대상까지는 열렸으나, computer use 등급 안내가 「스크립트·자동화 등 다른 방법으로 이 앱에 클릭·키 입력을 보내지 말 것」을 명시하므로 입력 전에 중단하고 프로세스 종료·포트 닫힘을 확인했다. Claude Code의 「권한 우회 모드」는 도구 확인창 설정이며 computer use 앱 등급(IDE=click 고정)을 바꾸지 않는다.
 - **VS Code 촬영 경로 확정(2026-10-28 01:20)**: 사용자 승인으로 `code serve-web`(VS Code Server 라이선스 동의·공식 서버 다운로드)을 띄워 ego 탭에서 조작. Codex 한국어 입력·전송·응답(GPT-6 Luna Medium 화면 확인, 로그인 불필요)과 통합 터미널 명령(`python --version`) 실측 통과. 통과값·실패 원인은 `제작용/촬영/vscode/촬영준비.md` 「통과한 길」. 사용자 조작 없이 에이전트가 촬영 가능. 남은 것: 한국어 표시 언어, Git Bash 기본 셸, 녹화 도구(notion 촬영도구 복사).
+- **랩 코드 우선(2026-10-28 사용자 지시)**: 촬영 전에 두 반 2·3회차 랩을 C66·C67 기준으로 모두 고친다. 읽은 기준: `1_목적과_방향.md`, `2_기준.md` 1~136행, `근거/2026-10-27_실라버스_실제랩과지원범위.md` 전문, `기준_실습랩·가이드·대본.md` 전문.
+  - 2회차 실습2 지식 지도: 두 반 분리(`build_common.py` map 분기 — 통합 21행, 실전 21행). 근거: 지식 지도 노드 = 고른 설비 하나 + 설비에 묶이지 않은 지식 노드(`it/neo4j/templates/t0_graph_nodes.cypher`), 포털 기준 모델은 구성요소·센서 공유·Part·Supplier(SUPPLIED_BY)·KnowledgeSource 포함(`it/neo4j/v2/instances.cypher`). 화면 조작 명칭은 포털 촬영 때 확인.
+  - 3회차 실습1 조건별 손익: `build_session3_whatif.py` 새 형식(화면 구조 근거 `it/portal/www/whatif.js`, 변수 이름은 서버 제공이라 학생이 화면 그대로 기록). 실전은 순위≠선택 가능 단계 추가.
+  - 3회차 VS Code 랩(통합 실습2·3, 실전 실습2 / 실전 실습3·4·5): opus 서브에이전트 두 개가 `build_session3_judgement.py`·`build_session3_documents.py`와 강사 참조(`제작용/실습시작/reference/session3*/`, 작업기록.md)를 만드는 중. 끝나면 메인이 `build.py` 전체 생성 → `verify_packages.py` → 검토 → 커밋.
+  - Docker: 포털 묶음(`hyd-system-audit-20261026`)이 Docker 시작 때 자동으로 떴다가 정지 중 Docker Desktop이 내려감. 포털 확인은 코드로 대체. 사용자 지시: 포털 작업 뒤에는 Docker Desktop까지 완전 종료.
 - 실습 시작 전 읽은 문서(1차): CLAUDE.md, AGENTS.md, 이 인계, 요청문 B, 세션분담, A 인계(읽기만), `근거/2026-10-27_VSCode랩_최종흐름.md`, 최종 Excel 두 반 온라인 2·3회차 행, `방법_ego_실습영상_촬영.md`(전문), `제작용/촬영/vscode/촬영준비.md`, `제작용/촬영/ego/README.md`.
 
 - 시작 시각 / 현재 커밋 / 대상 랩: 2026-10-27 클라우드 Linux 세션 시작, main `e34f2dd`, 대상은 두 반 2회차(이어서 3회차).
