@@ -2572,28 +2572,38 @@ def _h_submit(r, pid, task, user, values, *, expect_done=True):
     return bool(r.wait(45, lambda: _c_item(_c_view(r, pid), task['activity_name']).get('status') == 'DONE', every=2))
 
 
+def _h_unlock(r) -> bool:
+    """마지막 날: 학생이 포털의 「수업 기능」에서 강사 해제 코드를 입력한다(잘못된 코드는 거절). 이미 열려 있으면 그대로 둔다."""
+    page = r.page
+    if r.get(f"{r.process}/api/course-access").get("unlocked"):
+        return True
+    if not r.unlock_code:
+        r.check("강사 해제 코드로 교대 실습 열기", False, "--unlock-code-file 이 없어 교대 실습을 열 수 없다"); return False
+    message = page.locator("#courseUnlockMessage")
+    page.locator("#courseAccessPanel summary").click()
+    page.fill("#courseUnlockCode", "HYD1.wrong.code-not-signed-by-the-instructor")
+    page.click("#courseUnlockGo")
+    r.wait(10, lambda: "올바르지" in message.inner_text(), every=0.3)
+    ok, why = r.human_message(message.inner_text())
+    r.check("잘못된 해제 코드 → 거절 · 한국어", ok and "올바르지" in why and not r.get(f"{r.process}/api/course-access").get("unlocked"), why, kind="exception")
+    page.fill("#courseUnlockCode", r.unlock_code)
+    page.click("#courseUnlockGo")
+    # 서버 저장과 화면 안내는 순서대로 오지 않는다(fresh 실행: 서버는 열렸는데 직전 거절 문구를 읽음) — 둘 다 기다린다
+    opened = r.wait(15, lambda: r.get(f"{r.process}/api/course-access").get("unlocked") is True and "열렸습니다" in message.inner_text(), every=0.5)
+    r.check("강사 해제 코드 → 교대 실습 열림(화면 안내)", bool(opened), message.inner_text())
+    if not opened:
+        return False
+    page.reload(); page.wait_for_timeout(2000)
+    return True
+
+
 @lab("13", "마지막 적용 · 교대 인수인계 — 보충 자료 → 새 에이전트·스킬 → 두 사람 검토·보완·확인")
 def lab_13_shift_handover(r):
     import hashlib
     import xml.etree.ElementTree as ET
     page = r.page
-    # 마지막 날: 학생이 포털의 「수업 기능」에서 강사 해제 코드를 입력한다(잘못된 코드는 거절).
-    access = r.get(f"{r.process}/api/course-access")
-    if not access.get("unlocked"):
-        if not r.unlock_code:
-            r.check("강사 해제 코드로 교대 실습 열기", False, "--unlock-code-file 이 없어 교대 실습을 열 수 없다"); return
-        page.locator("#courseAccessPanel summary").click()
-        page.fill("#courseUnlockCode", "HYD1.wrong.code-not-signed-by-the-instructor")
-        page.click("#courseUnlockGo"); page.wait_for_timeout(1200)
-        ok, why = r.human_message(page.locator("#courseUnlockMessage").inner_text())
-        r.check("잘못된 해제 코드 → 거절 · 한국어", ok and "올바르지" in why and not r.get(f"{r.process}/api/course-access").get("unlocked"), why, kind="exception")
-        page.fill("#courseUnlockCode", r.unlock_code)
-        page.click("#courseUnlockGo")
-        opened = r.wait(15, lambda: r.get(f"{r.process}/api/course-access").get("unlocked") is True, every=1)
-        r.check("강사 해제 코드 → 교대 실습 열림(화면 안내)", bool(opened) and "열렸습니다" in page.locator("#courseUnlockMessage").inner_text(),
-                page.locator("#courseUnlockMessage").inner_text())
-        if not opened: return
-        page.reload(); page.wait_for_timeout(2000)
+    if not _h_unlock(r):
+        return
     # 이미 검토·적재한 동일 승인 자료는 재사용한다. 수업 전체를 초기화하지 않는다.
     before = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
     _B_DOC_FILES['HI-01'] = 'HI-01_shift-inspection-supplement.md'
