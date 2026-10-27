@@ -141,7 +141,8 @@ def main() -> None:
     install_stop_signals()
     threading.Thread(target=serve_http, daemon=True).start()
     threading.Thread(target=sweep_forever, daemon=True).start()
-    _runner = Runner(settings, _repo())
+    from .course_access import CourseAccess
+    _runner = Runner(settings, _repo(), course_access=CourseAccess())
     log.info("cliagents agent type up: consumer=%s agent_orch=%s cli=%s permission=%s http=:%d", settings.consumer, settings.agent_orch,
              settings.cli_agent, settings.default_permission.value, settings.health_port)
     while True:

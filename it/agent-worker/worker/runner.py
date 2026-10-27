@@ -67,12 +67,14 @@ class LeaseLost(Cancelled):
 
 
 class Runner:
-    def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None):
+    def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None,
+                 course_access=None):
         self.s, self.repo = s, repo
         self.exec_fn = exec_fn or _exec_stream
         self.schema_prompt = schema_prompt if schema_prompt is not None else _read(s.schema_prompt_path)
         self.resolve_provider = resolve_provider or _resolve_provider
         self.in_flight = 0
+        self.course_access = course_access
 
     # ---- polling
     def poll_once(self, on_polled=None) -> int:
@@ -93,6 +95,10 @@ class Runner:
         self.in_flight += 1
         try:
             ctx = context.prepare(self.repo, row, self.s.tenant_id)
+            if self.course_access is not None:
+                from procsvc.engine import variables
+                self.course_access(ctx.definition, row.get('activity_id'),
+                                   variables(self.repo.get_instance(row.get('proc_inst_id')) or {}))
             from . import student_execution
             client=student_execution.configured(self.s)
             if client is not None:
@@ -138,6 +144,9 @@ class Runner:
         # Model: the activity's agentConfig > the agent's model > the worker default.
         agent = agent_settings(self.repo, self.s.tenant_id, ctx.profile, activity=caps)
         model = agent.model or self.s.model
+        if self.course_access is not None:
+            if provider_id != 'claude-code':raise RunFailed('수업 실행기는 강사가 지정한 기본 실행기를 사용합니다.')
+            model = 'coding'
         permission = effective_permission(provider_id, _PERMISSION_BY_NAME.get(str(_first(config, _PERMISSION_KEYS) or ""), self.s.default_permission))
         provider = self.resolve_provider(provider_id)
         ws = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id)
@@ -613,10 +622,12 @@ class Runner:
         msg = excerpt(f"{type(err).__name__}: {err}")
         log.warning("%s %s failed: %s", row.get("proc_inst_id"), row.get("activity_id"), msg)
         connection_error = isinstance(err, runtime_credentials.RuntimeConnectionError)
+        from hydcommon.course_access import AccessDenied
+        course_locked = isinstance(err, AccessDenied)
         hint = relay_hint(msg)
         self.repo.record_events([{"job_id": "TASK_ERROR", "todo_id": row["id"], "proc_inst_id": row.get("proc_inst_id"), "crew_type": "agent",
-                                  "event_type": "error", "data": {"name": "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
-                                                                 "friendly": str(err) if connection_error else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
+                                  "event_type": "error", "data": {"name": "수업 권한 확인 필요" if course_locked else "도구 연결 확인 필요" if connection_error else "시스템 오류 알림", "goal": "오류 원인과 대처 안내를 전달합니다.",
+                                                                 "friendly": str(err) if connection_error or course_locked else (hint or "에이전트 실행이 실패했습니다. 담당자가 확인한 뒤 다시 보낼 수 있습니다."),
                                                                  "hint": hint, "raw_error": msg}}])
 
     def _event(self, row: dict, job_id: str, event_type: str, data: dict, *, crew_type: str) -> None:
