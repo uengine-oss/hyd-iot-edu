@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor,TimeoutError as FutureTimeout
 import json
 import os
 import time
+from uuid import uuid4
 
 from fastapi.encoders import jsonable_encoder
 from procsvc import classroom_agents,handover,manual_extraction
@@ -133,10 +134,16 @@ def execute(runner,row,ctx,job_id,client,*,sleep=time.sleep):
                 if current_inputs!=inputs or current.get('user_id')!=row.get('user_id'):
                     raise RunFailed('관리 실행 중 학생 작업 입력·배정이 바뀌었습니다. 현재 조건으로 다시 검토하세요')
                 manual_extraction.validate_result(form,inst,result.payload)
-                handover.validate_trace(runner.repo,row,form,result.payload)
+                payload, citation_changes = handover.reconcile_trace(runner.repo,row,form,result.payload)
+                handover.validate_trace(runner.repo,row,form,payload)
                 classroom_agents.checked(runtime,approval)
-                if not runner.repo.save_task_result(row['id'],result.payload,final=True,expected_consumer=row['consumer']):
-                    raise LeaseLost()
+                with runner.repo.instance_transaction(runtime.tenant_id,row['proc_inst_id']):
+                    if not runner.repo.save_task_result(row['id'],payload,final=True,expected_consumer=row['consumer']):
+                        raise LeaseLost()
+                    if citation_changes:
+                        runner.repo.record_events([{'job_id':'citation-reconcile:'+uuid4().hex,'todo_id':row['id'],
+                            'proc_inst_id':row['proc_inst_id'],'crew_type':'result','event_type':'task_working',
+                            'data':{'type':'notice','name':'인계 근거 조회문 원천 대조·교정','changes':citation_changes}}])
                 runner._event(row,job_id,'task_completed',{'managed_run':run,'output_keys':sorted(result.outputs),
                               'requires_local_review':True},crew_type='result')
                 return

@@ -62,6 +62,47 @@ def test_managed_student_worker_submits_locally_and_preserves_actual_trace(local
     assert not hooks.calls and not client.cancelled
 
 
+def test_managed_handover_reconciles_only_identical_source_and_records_audit(local):
+    import json
+    from test_handover import PATH, _query_evidence, _record_query, unknown_draft
+    runtime,hooks,inst,_,client,runner=local;row,ctx=claim(local)
+    actual,document,claim_evidence=_query_evidence()
+    _record_query(runtime.repo,inst,row,actual,document)
+    result=unknown_draft();result['evidence']=[claim_evidence]
+    result['checks'][0].update(state='observed',evidence_indices=[0])
+    form=json.loads(PATH.read_text(encoding='utf8'))['forms']['handover_draft']
+    ctx=replace(ctx,form_contract=form['contract'],form_fields=form['fields_json'])
+    client.agent_result=lambda *args:{'status':'DONE','output':result}
+    student_execution.execute(runner,row,ctx,'managed-reconcile',client,sleep=lambda _:None)
+    saved=runtime.repo.get_workitem(row['id'])
+    audit=[e for e in runtime.repo.list_events(todo_id=row['id']) if str(e.get('job_id','')).startswith('citation-reconcile:')]
+    assert saved['status']=='SUBMITTED' and saved['output']['evidence'][0]['query']==actual
+    assert len(audit)==1 and audit[0]['data']['changes'][0]['actual_query']==actual
+    assert result['evidence'][0]['query']!=actual and not hooks.calls
+
+
+def test_managed_handover_audit_failure_does_not_submit_reconciled_result(local,monkeypatch):
+    import json
+    from test_handover import PATH, _query_evidence, _record_query, unknown_draft
+    runtime,_,inst,_,client,runner=local;row,ctx=claim(local)
+    actual,document,claim_evidence=_query_evidence();_record_query(runtime.repo,inst,row,actual,document)
+    result=unknown_draft();result['evidence']=[claim_evidence]
+    result['checks'][0].update(state='observed',evidence_indices=[0])
+    form=json.loads(PATH.read_text(encoding='utf8'))['forms']['handover_draft']
+    ctx=replace(ctx,form_contract=form['contract'],form_fields=form['fields_json'])
+    client.agent_result=lambda *args:{'status':'DONE','output':result}
+    save=runtime.repo.record_events
+    def fail(events):
+        if any(str(e.get('job_id','')).startswith('citation-reconcile:') for e in events):
+            raise RuntimeError('simulated audit failure')
+        return save(events)
+    monkeypatch.setattr(runtime.repo,'record_events',fail)
+    with pytest.raises(RuntimeError,match='simulated audit failure'):
+        student_execution.execute(runner,row,ctx,'managed-reconcile',client,sleep=lambda _:None)
+    saved=runtime.repo.get_workitem(row['id'])
+    assert saved['status']=='IN_PROGRESS' and not saved.get('output')
+
+
 def test_changed_student_profile_is_rejected_before_paid_start(local):
     runtime,_,_,_,client,runner=local
     user=runtime.repo.list_users(['agent:class-test'],runtime.tenant_id)[0]
