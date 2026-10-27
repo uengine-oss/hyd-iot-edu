@@ -135,3 +135,12 @@ def test_ended_process_duplicate_preserves_existing_decision(world, monkeypatch)
     world['book'][payload['id']] = deepcopy(payload)
     result = asyncio.run(main.create_decision(payload))
     assert result['duplicate'] and world['book'][payload['id']] == payload
+
+
+def test_real_ask_definition_cannot_submit_a_decision_using_its_own_claim():
+    definition = engine.Definition.load(Path(__file__).resolve().parents[1]/'it/process/definitions/ask_agent_v1.json')
+    inst = engine.new_instance(definition, {'question':'현재 설비 상태를 알려 주세요'})
+    row = engine.new_workitem(definition, inst, definition.activities['task:answer'], status='IN_PROGRESS')
+    row.update(draft_status='STARTED', consumer='question-worker')
+    with pytest.raises(ValueError, match='판단 ID'):
+        decision_scope.validate_submission(inst, definition, row, context.process_scope(row))
