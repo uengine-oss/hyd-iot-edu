@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import stat
 import sys
+import tempfile
+import shutil
 
 
 UID = 65534
@@ -27,11 +29,52 @@ OTHER_PROVIDER_SELECTORS = frozenset(('CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_US
     'CLAUDE_CODE_USE_FOUNDRY', 'CLAUDE_CODE_OAUTH_TOKEN'))
 
 
-def cli_args():
-    # CLI flags override writable project/local settings. Skill discovery stays
-    # enabled; only hooks and unrelated native execution/network tools go away.
-    return ['--settings', json.dumps({'disableAllHooks': True}), '--tools',
-            'Read,Glob,Grep,Write,Edit,Skill']
+def _skill_root(workdir):
+    return Path('/run/hyd-approved-skills') / hashlib.sha256(str(Path(workdir).absolute()).encode()).hexdigest()
+
+
+def cleanup_skills(workdir):
+    if sys.platform == 'linux':
+        root = _skill_root(workdir)
+        if root.exists():
+            shutil.rmtree(root)
+
+
+def cli_args(workdir, skills):
+    # Excluding user/project/local settings also excludes their skills. Deliver
+    # only the approved DB skill bodies as an explicit, fresh session plugin;
+    # never load the writable .claude directory as an unrestricted plugin.
+    args = ['--setting-sources', '', '--settings', json.dumps({'disableAllHooks': True}),
+            '--tools', 'Read,Glob,Grep,Write,Edit,Skill']
+    if skills:
+        from procsvc.agents_store import skill_markdown
+        for skill in skills:
+            name = skill['skill_name']
+            if not isinstance(name, str) or not name or name in ('.', '..') or '/' in name or '\\' in name:
+                raise RuntimeError('승인 스킬 이름이 작업 폴더 범위를 벗어납니다')
+        # On the managed Linux host, the CLI cannot replace this bundle during
+        # correction/resume. Its Landlock write grant covers only workdir.
+        if sys.platform == 'linux':
+            _host()
+            root = _skill_root(workdir)
+            root.mkdir(mode=0o755, parents=True, exist_ok=True)
+        else:
+            # Unit tests can construct argv on Windows; prepare() still rejects
+            # non-Linux real managed execution before creating a child.
+            root = Path(workdir)
+        plugin = Path(tempfile.mkdtemp(prefix='.approved-skills-', dir=root))
+        manifest = plugin / '.claude-plugin'
+        manifest.mkdir()
+        (manifest / 'plugin.json').write_text(json.dumps({'name':'hyd-classroom','version':'1.0.0'}), encoding='utf8')
+        for skill in skills:
+            target = plugin / 'skills' / skill['skill_name']
+            target.mkdir(parents=True)
+            (target / 'SKILL.md').write_text(skill_markdown(skill), encoding='utf8')
+        if sys.platform == 'linux':
+            for path in [plugin, *plugin.rglob('*')]:
+                os.chmod(path, 0o555 if path.is_dir() else 0o444)
+        args += ['--plugin-dir', str(plugin)]
+    return args
 
 
 def enabled():
@@ -88,6 +131,12 @@ def prepare(argv, kwargs):
     for path in ('/usr', '/lib', '/lib64', '/bin', '/sbin', '/etc', '/srv', '/proc'):
         if Path(path).exists():
             command += ['--landlock-rule', 'path-beneath:'+READ+':'+path]
+    for index, arg in enumerate(argv[:-1]):
+        if arg == '--plugin-dir':
+            plugin = Path(argv[index + 1]).resolve()
+            if plugin.parent != _skill_root(work) or not plugin.is_dir():
+                raise RuntimeError('관리 스킬 묶음은 강사 실행기가 만든 읽기 전용 경로여야 합니다')
+            command += ['--landlock-rule', 'path-beneath:'+READ+':'+str(plugin)]
     command += ['--landlock-rule', 'path-beneath:'+WRITE+':'+str(work)]
     for path in ('/dev/null', '/dev/urandom', '/dev/random'):
         command += ['--landlock-rule', 'path-beneath:read-file,write-file:'+path]

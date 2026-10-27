@@ -116,7 +116,10 @@ class Runner:
         finally:
             self.in_flight -= 1
             try:    # A096: no tenant credential stays in the retained workspace after the run (install() rewrites them next run)
-                bridge.cleanup(workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id).path)
+                workdir = workspace.for_run(self.s.workspace_root, row["id"], tenant_id=self.s.tenant_id).path
+                bridge.cleanup(workdir)
+                from .managed_isolation import cleanup_skills
+                cleanup_skills(workdir)
             except Exception as e:  # noqa: BLE001
                 log.warning("%s workspace credential cleanup failed: %s", row.get("id"), e)
 
@@ -256,7 +259,7 @@ class Runner:
             managed = managed_model.attach(row, self.s.tenant_id, provider_id)
         if managed:
             from .managed_isolation import cli_args
-            extra_args += cli_args()
+            extra_args += cli_args(ws.path, agent.skills)
             model = managed['model']
             bridged.env = dict(bridged.env or {}, **managed['env'])
             bridged.redaction_values.extend(managed['secrets'])
