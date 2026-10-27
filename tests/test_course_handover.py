@@ -20,6 +20,10 @@ def test_only_shipped_topology_and_mapping_are_editable(tmp_path,instructor):
     assert client.post('/api/flows/import',json=imported).status_code==403
     client.post('/api/course-access/unlock',json={'code':sign()})
     assert client.post('/api/flows/import',json=imported).status_code==200
+    # The portal sends null when the student leaves "흐름 id" empty (live 2026-10-28 refusal).
+    for empty in (dict(imported,definition_id=None),{k:v for k,v in imported.items() if k!='definition_id'}):
+        reply=client.post('/api/flows/import',json=empty)
+        assert reply.status_code==200, reply.text
     mapping=deepcopy(flow.CONTENT['mapping']);mapping['name']='내 교대 인수인계'
     for task in flow.DRAFTS:mapping['tasks'][task]['agent']='agent:u-student'
     for method,action in [('put','mapping'),('post','check'),('post','register')]:
@@ -30,6 +34,14 @@ def test_only_shipped_topology_and_mapping_are_editable(tmp_path,instructor):
         assert client.post('/api/flows/import',json=body).status_code==403
     for changed in [dict(mapping,start={'kind':'alert'}),dict(mapping,tasks=[]),dict(mapping,timers={'evil':{}})]:
         assert client.post('/api/flows/ShiftHandover/register',json={'mapping':changed}).status_code==403
+        assert client.put('/api/flows/ShiftHandover/mapping',json={'mapping':changed}).status_code==403
+    # A half-filled mapping can be previewed while the student connects rows (live 2026-10-28:
+    # every preview was 403, so branch conditions had no values to pick), never registered.
+    partial=deepcopy(mapping);partial['flows']={};partial['tasks']={'task_sender':mapping['tasks']['task_sender']}
+    assert client.post('/api/flows/ShiftHandover/check',json={'mapping':partial}).status_code==200
+    assert client.post('/api/flows/ShiftHandover/register',json={'mapping':partial}).status_code==403
+    assert client.post('/api/flows/ShiftHandover/check',json={'mapping':partial,'class_flow':True}).status_code==403
+    assert client.post('/api/flows/c3_cooling/check',json={'mapping':partial}).status_code==403
     mapping['tasks']['task_sender']={'part':'generic:task:system'}
     assert client.post('/api/flows/ShiftHandover/register',json={'mapping':mapping}).status_code==403
     for path in ['/api/flows/reset','/api/flows/c3_cooling/register','/api/process/definitions/ShiftHandover/deploy']:

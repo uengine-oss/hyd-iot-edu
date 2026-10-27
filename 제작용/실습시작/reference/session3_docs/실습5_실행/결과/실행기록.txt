@@ -1,0 +1,40 @@
+### count(빈 DB)
+전체 노드 0개, 관계 0개
+종류별: 
+### model
+앞 단계 모델 적재: 노드 47개·관계 64개 입력(MERGE, 다시 실행해도 늘지 않음)
+전체 노드 47개, 관계 64개
+종류별: Asset 3, Component 18, Part 3, Quantity 5, Sensor 15, Supplier 3
+### model 재실행
+앞 단계 모델 적재: 노드 47개·관계 64개 입력(MERGE, 다시 실행해도 늘지 않음)
+전체 노드 47개, 관계 64개
+종류별: Asset 3, Component 18, Part 3, Quantity 5, Sensor 15, Supplier 3
+### make_load
+load.cypher 문장 171개, 적재 제외(approved 아님) 8건 ['HM-8-007', 'HM-8-022', 'HM-8-029', 'HM-8-033', 'HM-8-038', 'HM-8-041', 'HM-8-044', 'HM-8-047'], 기존 ID 없는 태그 {'HM-8-039': ['TS4'], 'HM-8-040': ['TS4'], 'HM-8-094': ['TS4']}
+### load 1차
+rc=0
+변경: {'contains_updates': True, 'nodes_created': 1, 'properties_set': 12, 'relationships_created': 2, 'labels_added': 2}
+-- 171/171
+변경: {'contains_updates': True, 'nodes_created': 1, 'properties_set': 12, 'relationships_created': 2, 'labels_added': 2}
+전체 노드 164개, 관계 294개
+종류별: Asset 3, Completion 9, Component 18, Document 1, Knowledge 101, Part 3, Precondition 15, Procedure 7, Prohibition 7, Quantity 5, Section 8, Sensor 15, Step 25, Supplier 3, UnitValue 45
+### load 2차(재적재)
+rc=0
+117
+     31 변경: {'contains_updates': True, 'properties_set': 11}
+     24 변경: {'contains_updates': True, 'properties_set': 12}
+      1 변경: {'contains_updates': True, 'properties_set': 13}
+     17 변경: {'contains_updates': True, 'properties_set': 14}
+     26 변경: {'contains_updates': True, 'properties_set': 15}
+      2 변경: {'contains_updates': True, 'properties_set': 16}
+     15 변경: {'contains_updates': True, 'properties_set': 2}
+      1 변경: {'contains_updates': True, 'properties_set': 3}
+전체 노드 164개, 관계 294개
+종류별: Asset 3, Completion 9, Component 18, Document 1, Knowledge 101, Part 3, Precondition 15, Procedure 7, Prohibition 7, Quantity 5, Section 8, Sensor 15, Step 25, Supplier 3, UnitValue 45
+2차 created/deleted 줄 수: 0
+작업확인카드_SOP-COOL-11.md: 인용 26개, 원문에 없는 인용 1개 ['~다면']
+작업확인카드_SOP-COOL-12.md: 인용 24개, 원문에 없는 인용 1개 ['~다면']
+작업확인카드_SOP-COOL-14.md: 인용 7개, 원문에 없는 인용 0개 []
+### 카드 생성 후 count
+전체 노드 164개, 관계 294개
+종류별: Asset 3, Completion 9, Component 18, Document 1, Knowledge 101, Part 3, Precondition 15, Procedure 7, Prohibition 7, Quantity 5, Section 8, Sensor 15, Step 25, Supplier 3, UnitValue 45

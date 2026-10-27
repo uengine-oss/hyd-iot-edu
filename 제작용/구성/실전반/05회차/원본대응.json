@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "rebuilt": "2026-10-28 실전반 재편(w05)",
+  "version": 3,
+  "rebuilt": "2026-10-28 실전반 재편 완성판(P): w05 1차본 56장 → 74장. w05_first는 1차본의 장 번호",
   "slides": [
     {
       "destination": 1,
@@ -18,7 +18,8 @@
           "day": 8,
           "slide": 1
         }
-      ]
+      ],
+      "w05_first": 1
     },
     {
       "destination": 2,
@@ -36,7 +37,8 @@
           "day": 8,
           "slide": 2
         }
-      ]
+      ],
+      "w05_first": 2
     },
     {
       "destination": 3,
@@ -54,7 +56,8 @@
           "day": 8,
           "slide": 3
         }
-      ]
+      ],
+      "w05_first": 3
     },
     {
       "destination": 4,
@@ -73,17 +76,31 @@
           "day": 7,
           "slide": 14
         }
-      ]
+      ],
+      "w05_first": 4
     },
     {
       "destination": 5,
-      "title": "바로 확정할 수 없는 점검 요청",
-      "origin": "새 장(실전 응용: 바로 확정할 수 없는 점검 요청)",
+      "title": "추천안 뒤의 13초: 설비 명령이 출발한 자리",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
       "old_practical": [],
-      "source": []
+      "source": [
+        {
+          "day": 7,
+          "slide": 5
+        }
+      ]
     },
     {
       "destination": 6,
+      "title": "바로 확정할 수 없는 점검 요청",
+      "origin": "새 장(실전 응용: 바로 확정할 수 없는 점검 요청)",
+      "old_practical": [],
+      "source": [],
+      "w05_first": 5
+    },
+    {
+      "destination": 7,
       "title": "HITL(Human-in-the-Loop): 일마다 정한 결정자",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -104,10 +121,23 @@
           "day": 7,
           "slide": 12
         }
+      ],
+      "w05_first": 6
+    },
+    {
+      "destination": 8,
+      "title": "멈춘 작업 닫기: 정상 결과 없이 끝내는 사람의 일",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 12
+        }
       ]
     },
     {
-      "destination": 7,
+      "destination": 9,
       "title": "승인 · 거절 · 보류가 처리 건에 남기는 것",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -133,10 +163,11 @@
           "day": 7,
           "slide": 13
         }
-      ]
+      ],
+      "w05_first": 7
     },
     {
-      "destination": 8,
+      "destination": 10,
       "title": "질문과 재개: 같은 요청 번호에 잇는 답",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -152,17 +183,31 @@
           "day": 7,
           "slide": 11
         }
+      ],
+      "w05_first": 8
+    },
+    {
+      "destination": 11,
+      "title": "질문으로 채우는 것과 바꾸지 못하는 것",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 11
+        }
       ]
     },
     {
-      "destination": 9,
+      "destination": 12,
       "title": "판단 문제: 설비와 사례가 어긋난 요청",
       "origin": "새 장(판단 문제)",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 9
     },
     {
-      "destination": 10,
+      "destination": 13,
       "title": "승인 권한 검사와 감사 기록",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -178,10 +223,23 @@
           "day": 7,
           "slide": 16
         }
+      ],
+      "w05_first": 10
+    },
+    {
+      "destination": 14,
+      "title": "가드레일: 추천안이 올라가기 전의 코드 검사",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 18
+        }
       ]
     },
     {
-      "destination": 11,
+      "destination": 15,
       "title": "자체 검토 · 가드레일 · 사람의 승인",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -202,10 +260,11 @@
           "day": 7,
           "slide": 19
         }
-      ]
+      ],
+      "w05_first": 11
     },
     {
-      "destination": 12,
+      "destination": 16,
       "title": "실습: 승인과 거절",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -216,10 +275,11 @@
           "day": 7,
           "slide": 20
         }
-      ]
+      ],
+      "w05_first": 12
     },
     {
-      "destination": 13,
+      "destination": 17,
       "title": "승인 대기 작업의 결정과 실행 이력",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -230,10 +290,11 @@
           "day": 7,
           "slide": 21
         }
-      ]
+      ],
+      "w05_first": 13
     },
     {
-      "destination": 14,
+      "destination": 18,
       "title": "실습: 확인 질문과 재처리",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -244,10 +305,11 @@
           "day": 7,
           "slide": 22
         }
-      ]
+      ],
+      "w05_first": 14
     },
     {
-      "destination": 15,
+      "destination": 19,
       "title": "점검 요청의 질문 · 재개 기록",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -258,10 +320,11 @@
           "day": 7,
           "slide": 23
         }
-      ]
+      ],
+      "w05_first": 15
     },
     {
-      "destination": 16,
+      "destination": 20,
       "title": "SDD: 기존 기능을 지키며 요구 넓히기",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -287,10 +350,11 @@
           "day": 7,
           "slide": 45
         }
-      ]
+      ],
+      "w05_first": 16
     },
     {
-      "destination": 17,
+      "destination": 21,
       "title": "「긴급한 경보는 빨리」가 열어 두는 갈래",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -311,10 +375,23 @@
           "day": 7,
           "slide": 31
         }
+      ],
+      "w05_first": 17
+    },
+    {
+      "destination": 22,
+      "title": "새 기능만 실행해 본 확인이 놓치는 것",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 31
+        }
       ]
     },
     {
-      "destination": 18,
+      "destination": 23,
       "title": "바이브 코딩과 SDD(Spec-Driven Development)",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -335,10 +412,23 @@
           "day": 7,
           "slide": 34
         }
+      ],
+      "w05_first": 18
+    },
+    {
+      "destination": 24,
+      "title": "spec.md의 여섯 칸과 빠질 때 생기는 일",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 35
+        }
       ]
     },
     {
-      "destination": 19,
+      "destination": 25,
       "title": "계약: 쿨러 에이전트가 주고받는 항목",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -364,10 +454,27 @@
           "day": 7,
           "slide": 39
         }
+      ],
+      "w05_first": 19
+    },
+    {
+      "destination": 26,
+      "title": "한 단계 더: 이름 · 형식 · 뜻이 바뀌는 세 갈래",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 37
+        },
+        {
+          "day": 7,
+          "slide": 39
+        }
       ]
     },
     {
-      "destination": 20,
+      "destination": 27,
       "title": "늘어나는 요구사항과 남는 금지 조건",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -383,10 +490,23 @@
           "day": 7,
           "slide": 41
         }
+      ],
+      "w05_first": 20
+    },
+    {
+      "destination": 28,
+      "title": "금지 조건의 실제: 글과 장치로 함께 지킨다",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 40
+        }
       ]
     },
     {
-      "destination": 21,
+      "destination": 29,
       "title": "수용 기준: 참 · 거짓으로 가르는 문장",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -407,10 +527,11 @@
           "day": 7,
           "slide": 44
         }
-      ]
+      ],
+      "w05_first": 21
     },
     {
-      "destination": 22,
+      "destination": 30,
       "title": "spec.md에 일반 기능과 긴급 요청을 나눠 적는 까닭",
       "origin": "새로 짠 장",
       "old_practical": [
@@ -421,10 +542,11 @@
           "day": 7,
           "slide": 35
         }
-      ]
+      ],
+      "w05_first": 22
     },
     {
-      "destination": 23,
+      "destination": 31,
       "title": "긴급 확인 표시의 교육용 조건",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -435,17 +557,19 @@
           "day": 7,
           "slide": 46
         }
-      ]
+      ],
+      "w05_first": 23
     },
     {
-      "destination": 24,
+      "destination": 32,
       "title": "응용: 가정 사례 다섯에 대어 본 긴급 판정",
       "origin": "새 장(실전 응용: 가정 사례 판정)",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 24
     },
     {
-      "destination": 25,
+      "destination": 33,
       "title": "명세를 기준으로 맡기는 구현과 확인",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -461,17 +585,31 @@
           "day": 7,
           "slide": 49
         }
+      ],
+      "w05_first": 25
+    },
+    {
+      "destination": 34,
+      "title": "HYD가 지킬 약속을 검사로 옮긴 세 예",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 7,
+          "slide": 48
+        }
       ]
     },
     {
-      "destination": 26,
+      "destination": 35,
       "title": "판단 문제: 긴급하면 승인을 건너뛰자는 요구",
       "origin": "새 장(판단 문제)",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 26
     },
     {
-      "destination": 27,
+      "destination": 36,
       "title": "실습: 명세에 따른 요구사항 추가",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -482,10 +620,11 @@
           "day": 7,
           "slide": 52
         }
-      ]
+      ],
+      "w05_first": 27
     },
     {
-      "destination": 28,
+      "destination": 37,
       "title": "긴급 확인 표시의 명세와 구현",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -496,10 +635,11 @@
           "day": 7,
           "slide": 53
         }
-      ]
+      ],
+      "w05_first": 28
     },
     {
-      "destination": 29,
+      "destination": 38,
       "title": "BDD: 기대 행동을 시나리오로 검증하기",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -530,10 +670,23 @@
           "day": 8,
           "slide": 24
         }
+      ],
+      "w05_first": 29
+    },
+    {
+      "destination": 39,
+      "title": "손으로 한 번 돌려 본 확인의 한계",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 6
+        }
       ]
     },
     {
-      "destination": 30,
+      "destination": 40,
       "title": "SDD와 BDD(Behavior-Driven Development)",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -554,10 +707,11 @@
           "day": 8,
           "slide": 12
         }
-      ]
+      ],
+      "w05_first": 30
     },
     {
-      "destination": 31,
+      "destination": 41,
       "title": "Given · When · Then 시나리오 한 편",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -578,10 +732,35 @@
           "day": 8,
           "slide": 10
         }
+      ],
+      "w05_first": 31
+    },
+    {
+      "destination": 42,
+      "title": "시나리오 한 편: 거절에서 일어나지 않아야 할 일",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 9
+        }
       ]
     },
     {
-      "destination": 32,
+      "destination": 43,
+      "title": "명세의 칸이 시나리오에 놓이는 자리",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 12
+        }
+      ]
+    },
+    {
+      "destination": 44,
       "title": "기대 결과를 정하는 두 방법",
       "origin": "새 장(C66 기대 결과 정정)",
       "old_practical": [],
@@ -590,10 +769,11 @@
           "day": 8,
           "slide": 30
         }
-      ]
+      ],
+      "w05_first": 32
     },
     {
-      "destination": 33,
+      "destination": 45,
       "title": "시나리오를 판정 코드로: 단언",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -614,10 +794,27 @@
           "day": 8,
           "slide": 16
         }
+      ],
+      "w05_first": 33
+    },
+    {
+      "destination": 46,
+      "title": "HYD 승인 단계의 시험 이름으로 읽는 시나리오",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 16
+        },
+        {
+          "day": 7,
+          "slide": 44
+        }
       ]
     },
     {
-      "destination": 34,
+      "destination": 47,
       "title": "사례의 종류: 정상 · 경계 · 누락 · 거절 · 오류 · 회귀",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -638,10 +835,11 @@
           "day": 8,
           "slide": 21
         }
-      ]
+      ],
+      "w05_first": 34
     },
     {
-      "destination": 35,
+      "destination": 48,
       "title": "한 단계 더: 60.0 ℃에서 갈리는 경계값",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -657,10 +855,11 @@
           "day": 8,
           "slide": 20
         }
-      ]
+      ],
+      "w05_first": 35
     },
     {
-      "destination": 36,
+      "destination": 49,
       "title": "모델 출력의 표현 차이와 계약 위반",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -686,10 +885,23 @@
           "day": 8,
           "slide": 29
         }
+      ],
+      "w05_first": 36
+    },
+    {
+      "destination": 50,
+      "title": "같은 쿨러 경보를 처리한 두 실행 기록",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 25
+        }
       ]
     },
     {
-      "destination": 37,
+      "destination": 51,
       "title": "회귀 시험: 바꾼 뒤 기존 사례까지 다시 실행",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -710,10 +922,23 @@
           "day": 8,
           "slide": 47
         }
+      ],
+      "w05_first": 37
+    },
+    {
+      "destination": 52,
+      "title": "HYD의 회귀 기록을 읽는 법",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 23
+        }
       ]
     },
     {
-      "destination": 38,
+      "destination": 53,
       "title": "실패한 시나리오에서 고칠 곳 가리기",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -724,17 +949,19 @@
           "day": 8,
           "slide": 30
         }
-      ]
+      ],
+      "w05_first": 38
     },
     {
-      "destination": 39,
+      "destination": 54,
       "title": "판단 문제: 60.0 ℃ 사례만 실패한 검사",
       "origin": "새 장(판단 문제)",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 39
     },
     {
-      "destination": 40,
+      "destination": 55,
       "title": "실습: 기존 기능과 추가 기능 검증",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -745,10 +972,11 @@
           "day": 8,
           "slide": 35
         }
-      ]
+      ],
+      "w05_first": 40
     },
     {
-      "destination": 41,
+      "destination": 56,
       "title": "직접 정한 기대 결과로 하는 검증",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -759,10 +987,11 @@
           "day": 8,
           "slide": 36
         }
-      ]
+      ],
+      "w05_first": 41
     },
     {
-      "destination": 42,
+      "destination": 57,
       "title": "에이전트 제작과 검증의 정리",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -773,10 +1002,11 @@
           "day": 8,
           "slide": 39
         }
-      ]
+      ],
+      "w05_first": 42
     },
     {
-      "destination": 43,
+      "destination": 58,
       "title": "여섯 개념이 푼 문제와 남긴 산출물",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -797,10 +1027,27 @@
           "day": 8,
           "slide": 44
         }
+      ],
+      "w05_first": 43
+    },
+    {
+      "destination": 59,
+      "title": "기준을 정하는 쪽과 그 안에서 고르는 쪽",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 43
+        },
+        {
+          "day": 8,
+          "slide": 56
+        }
       ]
     },
     {
-      "destination": 44,
+      "destination": 60,
       "title": "같은 점검 요청 프로젝트에 쌓인 기능",
       "origin": "새로 짠 장",
       "old_practical": [
@@ -811,10 +1058,11 @@
           "day": 8,
           "slide": 52
         }
-      ]
+      ],
+      "w05_first": 44
     },
     {
-      "destination": 45,
+      "destination": 61,
       "title": "처리할 때마다의 확인과 바꿀 때마다의 검증",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -830,10 +1078,23 @@
           "day": 8,
           "slide": 55
         }
+      ],
+      "w05_first": 45
+    },
+    {
+      "destination": 62,
+      "title": "금지 조건 한 줄이 지켜지는 다섯 자리",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 57
+        }
       ]
     },
     {
-      "destination": 46,
+      "destination": 63,
       "title": "목적 · 입력 · 판정이 다른 활용 결과",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -849,17 +1110,31 @@
           "day": 8,
           "slide": 50
         }
-      ]
+      ],
+      "w05_first": 46
     },
     {
-      "destination": 47,
+      "destination": 64,
       "title": "응용: 새 업무를 맡기기 전에 정할 다섯 가지",
       "origin": "새 장(실전 응용: C67 맡기기 전 다섯 가지)",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 47
     },
     {
-      "destination": 48,
+      "destination": 65,
+      "title": "운영 중 결과가 기대와 다를 때 먼저 볼 곳",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 55
+        }
+      ]
+    },
+    {
+      "destination": 66,
       "title": "판단 문제: 화면 유온은 61 ℃인데 긴급 아님",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -870,10 +1145,11 @@
           "day": 8,
           "slide": 53
         }
-      ]
+      ],
+      "w05_first": 48
     },
     {
-      "destination": 49,
+      "destination": 67,
       "title": "검증한 작업이 업무 흐름의 한 칸이 되는 자리",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -884,10 +1160,11 @@
           "day": 8,
           "slide": 41
         }
-      ]
+      ],
+      "w05_first": 49
     },
     {
-      "destination": 50,
+      "destination": 68,
       "title": "점검 요청 한 건으로 되짚는 결정과 검증",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -898,10 +1175,11 @@
           "day": 7,
           "slide": 54
         }
-      ]
+      ],
+      "w05_first": 50
     },
     {
-      "destination": 51,
+      "destination": 69,
       "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -917,10 +1195,11 @@
           "day": 8,
           "slide": 56
         }
-      ]
+      ],
+      "w05_first": 51
     },
     {
-      "destination": 52,
+      "destination": 70,
       "title": "Review Quiz: 핵심 흐름 되짚어보기",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -931,31 +1210,35 @@
           "day": 7,
           "slide": 56
         }
-      ]
+      ],
+      "w05_first": 52
     },
     {
-      "destination": 53,
+      "destination": 71,
       "title": "Quiz 1. null로 나온 긴급 확인 표시",
       "origin": "새 문항",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 53
     },
     {
-      "destination": 54,
+      "destination": 72,
       "title": "Quiz 2. 긴급 표시와 검토 의견이 붙은 점검 결과",
       "origin": "새 문항",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 54
     },
     {
-      "destination": 55,
+      "destination": 73,
       "title": "Quiz 3. 거절 뒤에 생긴 작업지시",
       "origin": "새 문항",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w05_first": 55
     },
     {
-      "destination": 56,
+      "destination": 74,
       "title": "정답과 판단 기준",
       "origin": "통합반 장을 실전반 화면으로 다시 짬",
       "old_practical": [
@@ -971,18 +1254,19 @@
           "day": 8,
           "slide": 61
         }
-      ]
+      ],
+      "w05_first": 56
     }
   ],
   "dropped": {
     "old_practical": {
-      "46": "통합반 7:48 승인 카드 고정본 · 작업 규칙 바이트 고정 — 실전반 56행 밖의 저장소 장치. 회귀 실제 기록은 37장 대본 한 줄",
+      "46": "통합반 7:48 승인 카드 고정본 · 작업 규칙 바이트 고정 — 실전반 56행 밖의 저장소 장치. 회귀 실제 기록은 37장 대본 한 줄 → 2026-10-28 완성판에서 되살림(34장 · 28장)",
       "74": "통합반 8:28 판단 채점(가중치 30·30·20·20) — 실전반 58·59행에 없음",
-      "83": "통합반 8:43 근거가 놓인 자리(지식과 현재값) — 실전반 4회차 내용, Wrap-up 60행 밖",
+      "83": "통합반 8:43 근거가 놓인 자리(지식과 현재값) — 실전반 4회차 내용, Wrap-up 60행 밖 → 2026-10-28 완성판에서 되살림(59장)",
       "85": "통합반 8:45 검사와 승인 — 11장과 같은 구분이라 합침",
       "86": "통합반 8:46 명세·시나리오·가드레일·승인 관계도 — 43 · 45장과 겹침",
       "91": "통합반 8:51 산출물 형식 — 46장(활용 결과) 대본으로 줄임",
-      "94": "통합반 8:54 사람이 정하는 기준과 에이전트가 정하는 과정 — 47장 응용(맡기기 전 다섯 가지)이 받음",
+      "94": "통합반 8:54 사람이 정하는 기준과 에이전트가 정하는 과정 — 47장 응용(맡기기 전 다섯 가지)이 받음 → 2026-10-28 완성판에서 되살림(59장)",
       "100": "옛 퀴즈 1(통합반 7:57) — 새 문항 셋으로 교체(정답 3·2·4)",
       "101": "옛 퀴즈 2(7:58) — 교체",
       "102": "옛 퀴즈 3(7:59) — 교체",
