@@ -18,6 +18,15 @@ FIXED_RUNS = {'c3_cooling': {'T_agent'}, 'c3_pm': {'T_agent'}, 'c3_spare': {'T_a
 HANDOVER_RUNS = {'ShiftHandover': {'task_draft', 'task_draft_r2', 'task_draft_r3'}, 'shift_handover': {'task:draft'}}
 CONTENT = json.loads(Path(__file__).with_name('course_content.json').read_text(encoding='utf8'))
 LOCKED_MESSAGE = '이 기능은 수업 잠금 상태입니다. 마지막 날 강사 해제 코드를 입력하세요.'
+AGENT_SERVERS = frozenset(('neo4j', 'enterprise', 'hyd-dmn'))
+
+
+def agent_configuration_error(model, tools):
+    if model not in (None, '', 'coding'):
+        return '수업 모델은 강사가 지정한 기본 모델을 사용합니다.'
+    if tools and (not isinstance(tools, list) or any(not isinstance(t, str) or t not in AGENT_SERVERS for t in tools)):
+        return '수업에서 준비한 조회 서버만 사용할 수 있습니다.'
+    return None
 
 
 class AccessDenied(ValueError):

@@ -183,7 +183,7 @@ def update_agent(repo, tenant_id: str, agent_id: str, body: dict, *, by: str | N
     return _agent(repo, tenant_id, agent_id)
 
 
-def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *, by: str | None = None) -> dict:
+def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *, by: str | None = None, course_restricted: bool = False) -> dict:
     """기본이든 내가 만든 것이든 사본(origin=user)을 만든다. 시스템 수행자(SCADA · CMMS …)는 에이전트 설정이 없어 복제하지 않는다."""
     src = _agent(repo, tenant_id, agent_id)
     if (src.get("agent_type") or "agent") != "agent":
@@ -199,6 +199,10 @@ def clone_agent(repo, tenant_id: str, agent_id: str, body: dict | None = None, *
     payload = {"name": name, "goal": src.get("goal") or "", "role": src.get("role") or "", "persona": src.get("persona") or "",
                "model": src.get("model") or "", "tools": csv_list(src.get("tools")), "skills": skills,
                "work_rules": src.get("work_rules") or ""}             # G9: 사본도 원본과 같은 업무 규칙 아래에서 돈다
+    if course_restricted:
+        from hydcommon.course_access import agent_configuration_error
+        reason = agent_configuration_error(payload['model'], payload['tools'])
+        if reason:raise AuthoringError(reason, 403)
     if not payload["goal"].strip():
         payload["goal"] = f"{_name(src)}의 사본"
     return create_agent(repo, tenant_id, payload, by=by)

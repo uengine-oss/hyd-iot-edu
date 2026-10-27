@@ -413,3 +413,39 @@ def test_agent_tools_must_be_checked_student_servers_or_base_servers(env):
     r = client.post("/api/agents", json=dict(body, tools=["neo4j", "enterprise"]))
     assert r.status_code == 201, r.text
 
+
+
+def test_course_clone_checks_inherited_model_and_server_before_writing(env):
+    client, rt = env
+    from procsvc.agent_authoring import AuthoringError, clone_agent
+    src = rt.repo.list_users(['sys:agent'], 'hyd')[0]
+    good = clone_agent(rt.repo, 'hyd', 'sys:agent', {'name':'수업 사본'}, course_restricted=True)
+    assert good['id'] != src['id']
+    for change in ({'model':'other'}, {'tools':'neo4j,enterprise-purchase'}):
+        rt.repo.upsert_user({**src, **change})
+        before = len(rt.repo.list_users(None, 'hyd'))
+        with pytest.raises(AuthoringError) as error:
+            clone_agent(rt.repo, 'hyd', 'sys:agent', {'name':'불허 사본'}, course_restricted=True)
+        assert error.value.status == 403
+        assert len(rt.repo.list_users(None, 'hyd')) == before
+    rt.repo.upsert_user(src)
+
+
+def test_guided_authoring_real_api_and_clone_inherited_settings(env, tmp_path):
+    client, rt = env
+    from procsvc.course_access import mount
+    mount(client.app, path=tmp_path/'grant.json', archive_factory=lambda:None, tenant='hyd')
+    options=client.get('/api/agent-authoring/options').json()
+    assert {item['name'] for item in options['servers']} <= {'neo4j','enterprise','hyd-dmn'}
+    created=client.post('/api/agents', json={'name':'냉각 점검', 'goal':'근거 조사', 'tools':['neo4j']})
+    assert created.status_code==201, created.text
+    agent_id=created.json()['id']
+    edited=client.put('/api/agents/'+agent_id, json={'name':'이름 변경', 'goal':'설명 변경', 'tools':['enterprise']})
+    assert edited.status_code==200, edited.text
+    assert client.post('/api/agents', json={'name':'bad', 'goal':'bad', 'tools':['fan-vib']}).status_code==403
+    assert client.post('/api/agents/sys:agent/clone', json={'name':'수업 사본'}).status_code==201
+    source=rt.repo.list_users(['sys:agent'],'hyd')[0]
+    rt.repo.upsert_user({**source, 'tools':'neo4j,fan-vib'})
+    denied=client.post('/api/agents/sys:agent/clone', json={'name':'금지 사본'})
+    assert denied.status_code==403, denied.text
+    assert not any(u.get('username')=='금지 사본' for u in rt.repo.list_users(None,'hyd'))
