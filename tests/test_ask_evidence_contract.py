@@ -216,3 +216,14 @@ def test_three_bad_answers_block_with_question_specific_event(world, tmp_path):
     events = [e for e in rt.repo.list_events(todo_id=row['id']) if e['job_id'] == 'TASK_REJECTED']
     assert events[-1]['data']['name'] == '질문 답변 거부 · 사람 확인 필요'
     assert events[-1]['data']['recovery'] == 'human_review'
+
+
+def test_identifier_digits_are_not_separate_measurements():
+    calls=[{'_output':'센서 sen:ce', 'output_complete':True}]
+    result=ask.result_comparison('HYD-01 설비의 센서 sen:ce',calls)
+    assert result['status']=='review' and result['missing']==['HYD-01']
+    calls=[{'_output':'HYD-01', 'output_complete':True}]
+    assert ask.result_comparison('HYD-01',calls)['status']=='literal_match'
+    assert ask.result_comparison('1',calls)['status']=='review'
+    assert ask.result_comparison('-1',calls)['status']=='review'
+    assert ask.result_comparison('-12', [{'_output':'-12','output_complete':True}])['status']=='literal_match'
