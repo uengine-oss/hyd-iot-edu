@@ -101,6 +101,24 @@ def test_json_text_arguments_match_only_the_same_actual_object(claimed, args, ex
     assert ask._matches({'tool':'mcp__student__read_rows','query':claimed}, call(args=args)) is expected
 
 
+def test_enterprise_guarded_statement_accepts_only_the_same_executed_query():
+    from hydcommon.sql_read import guard
+    raw = "SELECT now() AS checked_at, asset FROM ent.assets WHERE asset = 'HYD-01'"
+    normalized = "SELECT CURRENT_TIMESTAMP AS checked_at, asset FROM ent.assets WHERE asset = 'HYD-01'"
+    actual = call('enterprise/query', {'sql':raw}, output_complete=True,
+                  _output={'result':'ok','document':{'statement':guard(raw)}})
+    assert ask._matches({'tool':'enterprise/query','query':{'sql':normalized}}, actual)
+    for changed in [normalized.replace('HYD-01','HYD-02'), normalized+' LIMIT 1',
+                    normalized.replace('ent.assets','ent.work_orders')]:
+        assert not ask._matches({'tool':'enterprise/query','query':{'sql':changed}}, actual)
+    assert not ask._matches({'tool':'enterprise/query','query':{'sql':normalized,'extra':1}}, actual)
+    for mutation in [{'output_complete':False}, {'ok':False},
+                     {'_output':{'result':'ok','document':{'statement':guard(raw)+' -- changed'}}},
+                     {'_output':{'result':'error','document':{'statement':guard(raw)}}}]:
+        assert not ask._matches({'tool':'enterprise/query','query':{'sql':normalized}}, dict(actual, **mutation))
+    assert not ask._matches({'tool':'student/query','query':{'sql':normalized}}, dict(actual, tool='student/query'))
+
+
 @pytest.mark.parametrize('claimed', [
     {'table': 'parts'}, {'table': 'parts', 'limit': 1, 'extra': None},
     {'table': 'parts', 'limit': True}, {'table': 'parts', 'limit': '1'},

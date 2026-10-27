@@ -330,9 +330,25 @@ def _matches(item, call) -> bool:
         try:
             # JSON equality keeps bool distinct from number and checks every
             # argument recursively, including empty objects and list ordering.
-            return json.dumps(query, sort_keys=True, allow_nan=False) == json.dumps(actual, sort_keys=True, allow_nan=False)
+            if json.dumps(query, sort_keys=True, allow_nan=False) == json.dumps(actual, sort_keys=True, allow_nan=False):
+                return True
         except (TypeError, ValueError):
             return False
+        # enterprise/query executes the shared guarded, normalized SQL, and
+        # reports that exact statement in its complete successful response.
+        # Match equivalent spellings (e.g. now() / CURRENT_TIMESTAMP) only if
+        # both guarded inputs equal that authoritative executed statement.
+        if (advertised(call.get('tool')) == ('enterprise','query') and set(query) == {'sql'} and set(actual) == {'sql'}
+                and call.get('ok') is True and call.get('output_complete') is True):
+            response = _envelope(call.get('_output'))
+            doc = response.get('document') if isinstance(response, dict) and response.get('result') == 'ok' else None
+            if isinstance(doc, dict) and isinstance(doc.get('statement'), str):
+                try:
+                    from hydcommon.sql_read import guard
+                    return guard(query['sql']) == guard(actual['sql']) == doc['statement']
+                except (ValueError, TypeError):
+                    return False
+        return False
     q = _norm(query)
     if not isinstance(query, str) or not q:
         return False
