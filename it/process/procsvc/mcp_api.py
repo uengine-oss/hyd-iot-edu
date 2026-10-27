@@ -186,8 +186,8 @@ def register(app, *, runtime_factory, audit):
             result = mcp_secrets.redact(await run(lambda: mcp_check.check(spec, limit)), used)
         await run(lambda: auth_result(rt, name, result))
         if course:
-            from hydcommon.handover_tools import handover_read
-            result['tools'] = [tool for tool in result.get('tools', []) if handover_read(name, tool.get('name'))]
+            from hydcommon.handover_tools import question_read
+            result['tools'] = [tool for tool in result.get('tools', []) if question_read(name, tool.get('name'))]
         return {"name": name, "timeout_s": limit, **{k: result[k] for k in ("status", "tools", "error", "error_kind", "checked_at",
                                                                            "elapsed_ms", "server_info", "protocol_version", "transport")}}
 
@@ -202,7 +202,9 @@ def register(app, *, runtime_factory, audit):
         spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
             confirmed = await run(lambda: confirmed_of(rt, name))
-            result = mcp_secrets.redact(await run(lambda: mcp_check.call(spec, tool, arguments, limit, confirmed=confirmed)), used)
+            result = mcp_secrets.redact(await run(lambda: mcp_check.call(spec, tool, arguments, limit,
+                max_chars=200_000 if getattr(app.state, 'course_access', None) is not None else mcp_check.MAX_RESULT_CHARS,
+                confirmed=confirmed)), used)
         await run(lambda: auth_result(rt, name, result))
         audit("-", str(body.get("by") or "포털"), "MCP_TOOL_TRIED",
               {"server": name, "tool": tool, "status": result["status"], "error": result.get("error"),

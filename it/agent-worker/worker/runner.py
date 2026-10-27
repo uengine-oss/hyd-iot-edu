@@ -16,6 +16,7 @@ a cancelled run says it was cancelled.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import logging
 import time
@@ -198,6 +199,7 @@ class Runner:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         from . import managed_model
         remote_agent=bool((ctx.definition or {}).get('classroom_agent'))
+        question_task = self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
         managed=None
         if remote_agent:
             from . import managed_tools
@@ -206,7 +208,7 @@ class Runner:
             missing_tools=[]
             gate=bridge.Gate(config=tenant_mcp,read_tools=read_tools)
         else:
-            tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, agent.tools)      # A095 + U2
+            tenant_mcp, missing_tools = bridge.select_servers(ctx.tenant_mcp, [] if question_task and agent.tools is None else agent.tools)      # A095 + U2
             tenant_mcp = runtime_credentials.attach(tenant_mcp, row, self.s.tenant_id)
             gate = bridge.gate_servers(tenant_mcp, trusted=_trusted_servers(self.s.allowed_tools))
         if missing_tools:
@@ -215,6 +217,10 @@ class Runner:
         if agent.tools == []:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "에이전트의 도구와 이 단계가 허용한 도구가 겹치지 않아 도구 서버 없이 실행합니다."}, crew_type="agent")
         tenant_mcp = gate.config
+        if question_task:
+            from . import question_tools
+            tenant_mcp, question_reads = question_tools.attach(tenant_mcp, ws.path, os.getenv('HYD_MANAGED_MODEL_URL', ''))
+            gate.read_tools = question_reads
         if gate.dropped:
             log.warning("%s %s MCP servers left out by the connection-check gate: %s", row.get("proc_inst_id"), row.get("activity_id"), gate.dropped)
             self._event(row, job_id, "task_working", {"type": "notice", "content": "연결 검사 게이트로 연결하지 않은 도구 서버: "
@@ -267,6 +273,10 @@ class Runner:
                 from .settings import handover_allowed_tools
                 extra_args += ['--allowedTools', ','.join(handover_allowed_tools(
                     self.s.allowed_tools, servers, gate.read_tools if remote_agent else None))]
+            elif question_task:
+                native = [tool for tool in self.s.allowed_tools if not tool.startswith('mcp__')]
+                reads = [f'mcp__{server}__{tool}' for server in servers for tool in gate.read_tools.get(server, ())]
+                extra_args += ['--allowedTools', ','.join(run_allowed_tools(native, [], {}) + reads)]
             elif self.s.allowed_tools or result_check_task or remote_agent:
                 extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)
