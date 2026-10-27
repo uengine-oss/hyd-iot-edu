@@ -75,10 +75,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "Cypher로 설비 전체 연결 탐색하기",
-      "version": "2026-10-27-readable-v5",
+      "version": "2026-10-27-continuous-v6",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "e04929a908719eec2be1d974f128b4e17bf56ff34d44252ed81b77d90785fb33"
+      "sha256": "ea92bcceeb176344e6f15fef7a1e70468a56c3a64f0324217bca03ae4b8147b3"
     },
     {
       "id": "integrated-02-map",

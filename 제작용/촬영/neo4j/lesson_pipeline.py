@@ -14,7 +14,7 @@ def select(m, base):
     selected=[]
     for i, part in enumerate(m['takes']):
         source=base/part['take']; t=read(source/'timing.json')
-        start=part.get('start_ms', 0); end=part.get('end_ms', t['duration'])
+        start=t['frames'][part['start_frame']]['time'] if 'start_frame' in part else part.get('start_ms', 0); end=part.get('end_ms', t['duration'])
         if part.get('before_cue'):
             end=next(a['time']-250 for a in t['actions'] if a['id']==part['before_cue'])
         if t['error'] and 'end_ms' not in part and 'before_cue' not in part:
@@ -27,7 +27,7 @@ def select(m, base):
         dest.mkdir(exist_ok=True)
         actual=[f for f in t['frames'] if start<=f['time']<end]
         previous=[f for f in t['frames'] if f['time']<start]
-        if previous: actual.insert(0,previous[-1])
+        if previous and (not actual or actual[0]['time']>start): actual.insert(0,previous[-1])
         assert actual, source
         out={**t,'start':t['start']+start,'duration':end-start,'error':None,
              'source_range':{'take':source.name,'start_ms':start,'end_ms':end,'error':t['error']}}

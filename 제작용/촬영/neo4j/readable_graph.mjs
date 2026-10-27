@@ -1,7 +1,9 @@
 // 실제 줌·빈 배경 드래그로 설명 대상을 읽을 크기로 옮긴다.
-export async function focusReadableGraph({p,serial,move,graphPoint,act,label,edge}){
+export async function focusReadableGraph({p,serial,move,graphPoint,act,label,edge,clickHere,gate,guided=false,first=false}){
+ if(guided)await gate(first?.25:.1);
  const blank=await serial(()=>p.evaluate(()=>{const r=document.querySelector('[data-testid="nvl-c2d-canvas"]').getBoundingClientRect();return {x:r.x+15,y:r.y+15};}));
- await move(blank);await serial(()=>p.mouse.click(blank.x,blank.y));
+ await move(blank);if(clickHere)await clickHere();else await serial(()=>p.mouse.click(blank.x,blank.y));
+ if(guided)await gate(first?.36:.27);
  await act({css:'button[aria-label="Zoom to fit"]'},true);
  await new Promise(r=>setTimeout(r,800));
  let pt=await graphPoint(label,edge,true);
@@ -16,6 +18,7 @@ export async function focusReadableGraph({p,serial,move,graphPoint,act,label,edg
   }return best;
  },pt));
  if(pan){await move(pan);await serial(()=>p.mouse.down());await move({x:pan.x+pan.dx,y:pan.y+pan.dy});await serial(()=>p.mouse.up());}}
+ if(guided)await gate(first?.48:.43);
  await center(pt);
  pt=await graphPoint(label,edge);
  if(!edge&&pt.r<48){await move(pt);await serial(()=>p.mouse.wheel(0,-Math.min(650,Math.log(52/pt.r)/.002)));await new Promise(r=>setTimeout(r,800));await center(await graphPoint(label,edge,true));}

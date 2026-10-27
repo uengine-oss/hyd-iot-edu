@@ -6,8 +6,8 @@ if(!cfg?.evidence||!cfg?.repo||!cfg?.take||!cfg?.space||!cfg?.host)throw Error('
 const base=cfg.evidence;
 const out=base+'/'+cfg.take;await fs.mkdir(out+'/frames',{recursive:true});
 if((await fs.readdir(out+'/frames')).length)throw Error('Existing take preserved');
-const task=await taskSpace(cfg.space),p=task.page('p1');
-await p.cdp('Emulation.setDeviceMetricsOverride',{width:cfg.readable?1920:2560,height:cfg.readable?1080:1440,deviceScaleFactor:1,mobile:false});
+const task=await taskSpace(cfg.space),p=task.page(cfg.page||'p1');
+await p.cdp('Emulation.setDeviceMetricsOverride',{width:cfg.width||(cfg.readable?1920:2560),height:cfg.height||(cfg.readable?1080:1440),deviceScaleFactor:1,mobile:false});
 await p.waitForFunction(()=>innerWidth>=1280,undefined,{timeout:10000});
 await p.evaluate(installGraphObserver);
 await p.evaluate(()=>{for(const e of document.querySelectorAll('*'))if(e.scrollTop)e.scrollTop=0;window.scrollTo(0,0);});
@@ -37,13 +37,14 @@ let done=false,start=null,error=null;const frames=[],motions=[];let writes=Promi
 const initial=await p.evaluate(()=>({host:document.querySelector('input[name="hostname"]')?.value,protocol:document.querySelector('[role="dialog"] .ndl-select-control')?.textContent,user:document.querySelector('input[name="username"]')?.value,oldResult:document.querySelector('[role="table"]')!==null}));
 if(!cfg.continue&&(initial.host!==cfg.host||initial.protocol!=='bolt://'||initial.user!=='neo4j'||initial.oldResult))throw Error('Unexpected initial state: '+JSON.stringify(initial));
 await fs.writeFile(out+'/initial-state.json',JSON.stringify(initial,null,2));
+await p.events();const recordingRequestedAt=Date.now();
 await p.cdp('Page.startScreencast',{format:'jpeg',quality:cfg.readable?95:80,maxWidth:1920,maxHeight:1080,everyNthFrame:1});
 const capture=(async()=>{while(!done){for(const e of await serial(()=>p.events()))if(e.method==='Page.screencastFrame'){
  await serial(()=>p.cdp('Page.screencastFrameAck',{sessionId:e.params.sessionId}));
  const bytes=Buffer.from(e.params.data,'base64');let size=null;
  for(let k=2;k<bytes.length-9;){if(bytes[k]!==255){k++;continue;}const marker=bytes[k+1],len=bytes.readUInt16BE(k+2);if([192,193,194].includes(marker)){size=[bytes.readUInt16BE(k+7),bytes.readUInt16BE(k+5)];break;}if(len<2)break;k+=2+len;}
  if(start===null&&(!size||size[0]!==1920||size[1]!==1080))continue;
- const stamp=e.params.metadata.timestamp*1000;if(start===null)start=stamp;
+ const stamp=e.params.metadata.timestamp*1000;if(start===null&&stamp<recordingRequestedAt)continue;if(start===null)start=stamp;
  const f={file:'frames/'+String(frames.length).padStart(6,'0')+'.jpg',time:stamp-start,sourceTimestamp:e.params.metadata.timestamp};frames.push(f);
  const b=Buffer.from(e.params.data,'base64');writes=writes.then(()=>fs.writeFile(out+'/'+f.file,b));
 }await sleep(8);}})().catch(e=>{error=String(e);done=true;});
@@ -51,32 +52,33 @@ async function move(target){
  if(Math.hypot(target.x-pos.x,target.y-pos.y)<1)return;
  const a={...pos},ms=Math.round(Math.max(260,Math.min(620,200+Math.hypot(target.x-a.x,target.y-a.y)*.4))),t0=Date.now();
  await serial(()=>p.evaluate(({a,b,ms})=>{const e=document.getElementById('recording-pointer');window.__recordGlide=e.animate([{transform:`translate(${a.x}px,${a.y}px)`},{transform:`translate(${b.x}px,${b.y}px)`}],{duration:ms,easing:'ease-in-out',fill:'forwards'});},{a,b:target,ms}));
- for(let i=1;i<=4;i++){const t=i/4,u=t*t*(3-2*t);await sleep(Math.max(0,t0+ms*t-Date.now()));await serial(()=>p.mouse.move(a.x+(target.x-a.x)*u,a.y+(target.y-a.y)*u,{steps:1}));}
+ const steps=Math.max(8,Math.ceil(ms/33));for(let i=1;i<=steps;i++){const t=i/steps,u=t*t*(3-2*t);await sleep(Math.max(0,t0+ms*t-Date.now()));await serial(()=>p.mouse.move(a.x+(target.x-a.x)*u,a.y+(target.y-a.y)*u,{steps:1}));}
  await serial(()=>p.evaluate(b=>{const e=document.getElementById('recording-pointer');e.style.transform=`translate(${b.x}px,${b.y}px)`;window.__recordGlide?.cancel();},target));
  pos={x:target.x,y:target.y};motions.push({start:t0-start,end:Date.now()-start,from:a,...pos,planned_ms:ms});
 }
 const actions=[];
-const spec=JSON.parse(await fs.readFile(cfg.repo+'/제작용/촬영/neo4j/통합반_그래프탐색_큐.json','utf8'));
+const spec=JSON.parse(await fs.readFile(cfg.cues||cfg.repo+'/제작용/촬영/neo4j/통합반_그래프탐색_큐.json','utf8'));
 let savedDownload=null;
 try{
  const waitStart=Date.now();while(start===null){if(error)throw Error(error);if(Date.now()-waitStart>10000)throw Error('No recording frames');await sleep(20);}
- await serial(()=>p.evaluate(()=>{window.__recordClicks=[];document.addEventListener('mousedown',e=>{if(!e.isTrusted)return;const r=document.getElementById('recording-pointer').getBoundingClientRect();window.__recordClicks.push({x:e.clientX,y:e.clientY,px:r.x,py:r.y,gliding:window.__recordGlide?.playState==='running'});},{capture:true});}));
- const act=async(spec,click=false)=>{let target;for(let i=0;i<15;i++){const a=await serial(()=>point(spec));await sleep(150);target=await serial(()=>point(spec));if(Math.hypot(a.x-target.x,a.y-target.y)<1)break;if(i===14)throw Error('Unstable target');}await move(target);if(click){const r=await serial(()=>point(spec));if(Math.hypot(r.x-target.x,r.y-target.y)>2)throw Error('Target moved');await serial(()=>p.click(spec.css==='.ndl-select-control'?'input[role=combobox]':spec.text?'text='+JSON.stringify(spec.text):spec.css+' >> nth=0'));}};
- const cue=async(id,operation)=>{const meta=JSON.parse(await fs.readFile(base+'/relations-audio/'+id+'.json','utf8'));const at=Date.now()+250;const a={id,text:meta.text,time:at-start,duration:meta.duration_ms};actions.push(a);await sleep(Math.max(0,at-Date.now()));
+ await serial(()=>p.evaluate(()=>{window.__recordClicks=[];document.addEventListener('mouseup',()=>{document.querySelector('#recording-pointer path')?.setAttribute('fill','white');},{capture:true});document.addEventListener('mousedown',e=>{if(!e.isTrusted)return;document.querySelector('#recording-pointer path')?.setAttribute('fill','#d6d6d6');const r=document.getElementById('recording-pointer').getBoundingClientRect();window.__recordClicks.push({x:e.clientX,y:e.clientY,px:r.x,py:r.y,gliding:window.__recordGlide?.playState==='running'});},{capture:true});}));
+ const clickHere=async()=>{await serial(()=>p.mouse.down());await sleep(95);await serial(()=>p.mouse.up());};
+ const act=async(spec,click=false)=>{let target;for(let i=0;i<15;i++){const a=await serial(()=>point(spec));await sleep(150);target=await serial(()=>point(spec));if(Math.hypot(a.x-target.x,a.y-target.y)<1)break;if(i===14)throw Error('Unstable target');}await move(target);if(click){const r=await serial(()=>point(spec));if(Math.hypot(r.x-target.x,r.y-target.y)>2)throw Error('Target moved');await clickHere();}};
+ const cue=async(id,operation)=>{const meta=JSON.parse(await fs.readFile(base+'/'+(cfg.audio||'relations-audio')+'/'+id+'.json','utf8'));const at=Date.now()+250;const a={id,text:meta.text,time:at-start,duration:meta.duration_ms};actions.push(a);await sleep(Math.max(0,at-Date.now()));
   const gate=async(fraction)=>{await sleep(Math.max(0,at+meta.duration_ms*fraction-Date.now()));if(error)throw Error(error);};
   await operation(gate,a);await sleep(Math.max(0,at+meta.duration_ms+250-Date.now()));};
 
  const editor={css:'[aria-label="Cypher Editor"]'};
  const runButton={css:'[data-testid="run-button"]'};
  async function input(text){
-  await act(editor);await serial(()=>p.mouse.click(pos.x,pos.y));await serial(()=>p.keyboard.press('ControlOrMeta+A'));await serial(()=>p.keyboard.press('Backspace'));
+  await act(editor);await clickHere();await serial(()=>p.keyboard.press('ControlOrMeta+A'));await serial(()=>p.keyboard.press('Backspace'));
   await move({x:650,y:135});await serial(()=>p.keyboard.insertText(text));await serial(()=>p.keyboard.press('Escape'));
  }
  const resultPoint=async()=>act({css:'[role="table"] [role="cell"]'});
  const hasDetails=()=>p.evaluate(()=>Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).some(e=>/^(Node details|Relationship details|Results overview)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0));
  const graphButton=name=>({css:`button[aria-label="${name}"]`});
  async function graphPoint(label,edge=false,allowOutside=false){let now;for(let i=0;i<25;i++){try{const before=await serial(()=>p.evaluate(graphTarget,{label,edge,allowOutside}));await sleep(150);now=await serial(()=>p.evaluate(graphTarget,{label,edge,allowOutside}));if(Math.hypot(before.x-now.x,before.y-now.y)<1)return now;}catch(e){if(i===24)throw e;}await sleep(80);}throw Error('Unstable graph target '+label);}
- async function chooseGraph(c,a){if(!await serial(hasDetails)){await act(graphButton('Toggle graph details panel'),true);await act(graphButton('Zoom to fit'),true);}let target=cfg.readable?await focusReadableGraph({p,serial,move,graphPoint,act,label:c.label,edge:c.op==='edge'}):await graphPoint(c.label,c.op==='edge');await move(target);target=await graphPoint(c.label,c.op==='edge');if(Math.hypot(pos.x-target.x,pos.y-target.y)>2)await move(target);await serial(()=>p.mouse.click(target.x,target.y));a.clickAt=Date.now()-start;await serial(()=>p.waitForFunction(({verify})=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h?.parentElement?.parentElement?.innerText.includes(verify);},{verify:c.verify},{timeout:10000}));a.details=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h.parentElement.parentElement.innerText;}));a.selectionVerified=true;a.selectionReady=Date.now()-start;}
+ async function chooseGraph(c,a,g){if(!await serial(hasDetails)){await act(graphButton('Toggle graph details panel'),true);}let target=cfg.readable?await focusReadableGraph({p,serial,move,graphPoint,act,label:c.label,edge:c.op==='edge',clickHere,gate:g,guided:c.guided_focus,first:c.id==='forest012'}):await graphPoint(c.label,c.op==='edge');if(c.guided_focus)await g(c.id==='forest012'?.86:.81);await move(target);target=await graphPoint(c.label,c.op==='edge');if(Math.hypot(pos.x-target.x,pos.y-target.y)>2)await move(target);await clickHere();a.clickAt=Date.now()-start;await serial(()=>p.waitForFunction(({verify})=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h?.parentElement?.parentElement?.innerText.includes(verify);},{verify:c.verify},{timeout:10000}));a.details=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);return h.parentElement.parentElement.innerText;}));a.selectionVerified=true;a.selectionReady=Date.now()-start;}
  let graph=false;
  const activeCues=spec.cues.filter(c=>!cfg.only||cfg.only.includes(c.id));
  for(const c of activeCues){
@@ -115,14 +117,14 @@ try{
      if(await serial(hasDetails))await act(graphButton('Toggle graph details panel'),true);
      await g(.4);await act(graphButton('Select layout'),true);await act({css:'[role="menuitemradio"]',text:'Hierarchical layout'},true);
      await g(.7);await act(graphButton('Zoom to fit'),true);break;
-    case 'node':case 'edge':await g(.35);await chooseGraph(c,a);break;
+    case 'node':case 'edge':await g(.08);await chooseGraph(c,a,g);break;
     case 'details':
      await g(.2);const prop=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);const r=h?.parentElement?.parentElement?.getBoundingClientRect();return r&&{x:r.x+Math.min(r.width-30,140),y:r.y+150};}));if(prop)await move(prop);break;
     case 'mapTour':case 'graphTalk':
      for(let i=0;i<(c.points||[]).length;i++){await g(.15+i*.2);await move(await graphPoint(c.points[i]));}break;
     case 'png':
      await g(.15);if(await serial(hasDetails))await act(graphButton('Toggle graph details panel'),true);
-     const blank=await serial(()=>p.evaluate(()=>{const r=document.querySelector('[data-testid="nvl-c2d-canvas"]').getBoundingClientRect();return {x:r.x+35,y:r.y+30};}));await move(blank);await serial(()=>p.mouse.click(blank.x,blank.y));
+     const blank=await serial(()=>p.evaluate(()=>{const r=document.querySelector('[data-testid="nvl-c2d-canvas"]').getBoundingClientRect();return {x:r.x+35,y:r.y+30};}));await move(blank);await clickHere();
      await g(.45);await act(graphButton('Zoom to fit'),true);await g(.68);const pngWait=p.waitForEvent('download',{timeout:15000});await act(graphButton('Download as PNG'),true);const png=await pngWait;a.png=out+'/'+png.suggestedFilename();await png.saveAs(a.png);break;
     case 'graphResult':await g(.15);await move({x:850,y:330});break;
     case 'newSaved':

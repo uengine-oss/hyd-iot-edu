@@ -1,28 +1,32 @@
 {
   "repo": ".",
   "evidence": ".evidence/practice-20261026",
-  "name": "integrated-cypher-readable-v2",
-  "cues": "제작용/촬영/neo4j/통합반_그래프탐색_큐.json",
-  "audio": "relations-audio",
+  "name": "integrated-cypher-continuous-v3",
+  "cues": ".evidence/practice-20261026/continuous-v3-cues.json",
+  "audio": "continuous-audio-v3",
   "ffmpeg": "REPLACE_WITH_ABSOLUTE_FFMPEG_EXE",
-  "source_description": "1920x1080 JPEG95 readable graph; reused opening JPEG80",
+  "source_description": "1920x1080 JPEG95; fixed CSS1536x864; continuous actual mouse input and guided selection",
   "takes": [
     {
-      "take": "neo4j-forest-before-ui"
+      "take": "neo4j-continuous-v3-take01",
+      "before_cue": "forest034"
     },
     {
-      "take": "neo4j-readable-take01",
-      "before_cue": "forest012"
-    },
-    {
-      "take": "neo4j-readable-take03",
-      "before_cue": "forest014"
-    },
-    {
-      "take": "neo4j-readable-take05"
+      "take": "neo4j-continuous-v3-take02",
+      "start_frame": 1
     }
   ],
   "captures": [
+    {
+      "cue": "full002",
+      "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
     {
       "cue": "forest011",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",

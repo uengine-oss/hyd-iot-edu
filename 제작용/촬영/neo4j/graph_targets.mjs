@@ -21,7 +21,7 @@ export function graphTarget({label,edge=false,allowOutside=false}){
    if(c&&Math.hypot(c.x-t.x,c.y-t.y)<c.r*1.4)remembered.set(t.text,{wx:c.wx,wy:c.wy,t:t.t});
   }
   const groups=new Map();for(const [text,c]of remembered){const k=c.wx.toFixed(2)+','+c.wy.toFixed(2);const a=groups.get(k)||{...c,texts:[]};a.texts.push(text);a.t=Math.max(a.t,c.t);groups.set(k,a);}
-  const matches=[...groups.values()].filter(g=>g.texts.join('').replace(/\s/g,'').includes(label.replace(/\s/g,''))).sort((a,b)=>b.t-a.t);
+  const matches=[...groups.values()].filter(g=>g.texts.join('').replace(/\s/g,'').includes(label.replace(/\s/g,''))).sort((a,b)=>Number(b.texts.some(t=>t.replace(/\s/g,'')===label.replace(/\s/g,'')))-Number(a.texts.some(t=>t.replace(/\s/g,'')===label.replace(/\s/g,'')))||b.t-a.t);
   for(const match of matches){const c=q.circles.filter(c=>c.canvas===canvas&&Math.abs(c.wx-match.wx)<.01&&Math.abs(c.wy-match.wy)<.01).at(-1);if(c){const r=canvas.getBoundingClientRect();if(allowOutside||(c.x>=r.left&&c.x<=r.right&&c.y>=r.top&&c.y<=r.bottom))return {x:c.x,y:c.y,r:c.r};}}
  }
  const latest=q.texts.filter(x=>x.canvas===canvas).at(-1)?.t||0;

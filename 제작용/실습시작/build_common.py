@@ -86,7 +86,7 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
         write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
         archive=pack(folder)
-        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':('2026-10-27-readable-v5' if course=='통합반' else '2026-10-27-cypher-v2') if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':('2026-10-27-continuous-v6' if course=='통합반' else '2026-10-27-cypher-v2') if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('두 과정 조회 가이드·독립 시작본과 포털 탐색 연결')
