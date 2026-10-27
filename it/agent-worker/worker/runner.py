@@ -153,7 +153,7 @@ class Runner:
             # Legacy in-flight questions predate this binding; retain their
             # recovery path. New questions must use their original settings.
             if binding and binding != ask.execution_binding(values.get('question'), agent, version=instance.get('proc_def_version')):
-                raise RunFailed('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 현재 설정으로 새 질문을 보내세요.')
+                raise RunFailed('질문을 보낸 뒤 에이전트 설정이 바뀌었습니다. 기존 설정으로 되돌려 재개하거나 기존 질문을 종료한 뒤 새 질문을 보내세요.')
         model = agent.model or self.s.model
         if self.course_access is not None:
             if provider_id != 'claude-code':raise RunFailed('수업 실행기는 강사가 지정한 기본 실행기를 사용합니다.')
