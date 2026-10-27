@@ -1,739 +1,1044 @@
 {
+  "version": 2,
+  "rebuilt": "2026-10-28 실전반 재편(w05)",
   "slides": [
     {
       "destination": 1,
-      "source_day": 7,
-      "source_slide": 1
+      "title": "사람의 결정과 명세로 검증하는 점검 요청 에이전트",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        1
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 1
+        },
+        {
+          "day": 8,
+          "slide": 1
+        }
+      ]
     },
     {
       "destination": 2,
-      "source_day": 7,
-      "source_slide": 2
+      "title": "학습목표",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        2
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 2
+        },
+        {
+          "day": 8,
+          "slide": 2
+        }
+      ]
     },
     {
       "destination": 3,
-      "source_day": 7,
-      "source_slide": 3
+      "title": "목차",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        3
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 3
+        },
+        {
+          "day": 8,
+          "slide": 3
+        }
+      ]
     },
     {
       "destination": 4,
-      "source_day": 7,
-      "source_slide": 4
+      "title": "HITL: 점검 요청을 사람이 확정하는 자리",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        4,
+        14
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 4
+        },
+        {
+          "day": 7,
+          "slide": 14
+        }
+      ]
     },
     {
       "destination": 5,
-      "source_day": 7,
-      "source_slide": 5
+      "title": "바로 확정할 수 없는 점검 요청",
+      "origin": "새 장(실전 응용: 바로 확정할 수 없는 점검 요청)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 6,
-      "source_day": 7,
-      "source_slide": 6
+      "title": "HITL(Human-in-the-Loop): 일마다 정한 결정자",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        6,
+        7,
+        12
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 6
+        },
+        {
+          "day": 7,
+          "slide": 7
+        },
+        {
+          "day": 7,
+          "slide": 12
+        }
+      ]
     },
     {
       "destination": 7,
-      "source_day": 7,
-      "source_slide": 7
+      "title": "승인 · 거절 · 보류가 처리 건에 남기는 것",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        5,
+        8,
+        9,
+        13
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 5
+        },
+        {
+          "day": 7,
+          "slide": 8
+        },
+        {
+          "day": 7,
+          "slide": 9
+        },
+        {
+          "day": 7,
+          "slide": 13
+        }
+      ]
     },
     {
       "destination": 8,
-      "source_day": 7,
-      "source_slide": 8
+      "title": "질문과 재개: 같은 요청 번호에 잇는 답",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        10,
+        11
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 10
+        },
+        {
+          "day": 7,
+          "slide": 11
+        }
+      ]
     },
     {
       "destination": 9,
-      "source_day": 7,
-      "source_slide": 9
+      "title": "판단 문제: 설비와 사례가 어긋난 요청",
+      "origin": "새 장(판단 문제)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 10,
-      "source_day": 7,
-      "source_slide": 10
+      "title": "승인 권한 검사와 감사 기록",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        15,
+        16
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 15
+        },
+        {
+          "day": 7,
+          "slide": 16
+        }
+      ]
     },
     {
       "destination": 11,
-      "source_day": 7,
-      "source_slide": 11
+      "title": "자체 검토 · 가드레일 · 사람의 승인",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        17,
+        18,
+        19
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 17
+        },
+        {
+          "day": 7,
+          "slide": 18
+        },
+        {
+          "day": 7,
+          "slide": 19
+        }
+      ]
     },
     {
       "destination": 12,
-      "source_day": 7,
-      "source_slide": 12
+      "title": "실습: 승인과 거절",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        20
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 20
+        }
+      ]
     },
     {
       "destination": 13,
-      "source_day": 7,
-      "source_slide": 13
+      "title": "승인 대기 작업의 결정과 실행 이력",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        21
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 21
+        }
+      ]
     },
     {
       "destination": 14,
-      "source_day": 7,
-      "source_slide": 14
+      "title": "실습: 확인 질문과 재처리",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        22
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 22
+        }
+      ]
     },
     {
       "destination": 15,
-      "source_day": 7,
-      "source_slide": 15
+      "title": "점검 요청의 질문 · 재개 기록",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        23
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 23
+        }
+      ]
     },
     {
       "destination": 16,
-      "source_day": 7,
-      "source_slide": 16
+      "title": "SDD: 기존 기능을 지키며 요구 넓히기",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        24,
+        30,
+        34,
+        43
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 26
+        },
+        {
+          "day": 7,
+          "slide": 32
+        },
+        {
+          "day": 7,
+          "slide": 36
+        },
+        {
+          "day": 7,
+          "slide": 45
+        }
+      ]
     },
     {
       "destination": 17,
-      "source_day": 7,
-      "source_slide": 17
+      "title": "「긴급한 경보는 빨리」가 열어 두는 갈래",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        25,
+        27,
+        29
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 27
+        },
+        {
+          "day": 7,
+          "slide": 29
+        },
+        {
+          "day": 7,
+          "slide": 31
+        }
+      ]
     },
     {
       "destination": 18,
-      "source_day": 7,
-      "source_slide": 18
+      "title": "바이브 코딩과 SDD(Spec-Driven Development)",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        26,
+        31,
+        32
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 28
+        },
+        {
+          "day": 7,
+          "slide": 33
+        },
+        {
+          "day": 7,
+          "slide": 34
+        }
+      ]
     },
     {
       "destination": 19,
-      "source_day": 7,
-      "source_slide": 19
+      "title": "계약: 쿨러 에이전트가 주고받는 항목",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        28,
+        35,
+        36,
+        37
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 30
+        },
+        {
+          "day": 7,
+          "slide": 37
+        },
+        {
+          "day": 7,
+          "slide": 38
+        },
+        {
+          "day": 7,
+          "slide": 39
+        }
+      ]
     },
     {
       "destination": 20,
-      "source_day": 7,
-      "source_slide": 20
+      "title": "늘어나는 요구사항과 남는 금지 조건",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        38,
+        39
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 40
+        },
+        {
+          "day": 7,
+          "slide": 41
+        }
+      ]
     },
     {
       "destination": 21,
-      "source_day": 7,
-      "source_slide": 21
+      "title": "수용 기준: 참 · 거짓으로 가르는 문장",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        40,
+        41,
+        42
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 42
+        },
+        {
+          "day": 7,
+          "slide": 43
+        },
+        {
+          "day": 7,
+          "slide": 44
+        }
+      ]
     },
     {
       "destination": 22,
-      "source_day": 7,
-      "source_slide": 22
+      "title": "spec.md에 일반 기능과 긴급 요청을 나눠 적는 까닭",
+      "origin": "새로 짠 장",
+      "old_practical": [
+        33
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 35
+        }
+      ]
     },
     {
       "destination": 23,
-      "source_day": 7,
-      "source_slide": 23
+      "title": "긴급 확인 표시의 교육용 조건",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        44
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 46
+        }
+      ]
     },
     {
       "destination": 24,
-      "source_day": 7,
-      "source_slide": 26
+      "title": "응용: 가정 사례 다섯에 대어 본 긴급 판정",
+      "origin": "새 장(실전 응용: 가정 사례 판정)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 25,
-      "source_day": 7,
-      "source_slide": 27
+      "title": "명세를 기준으로 맡기는 구현과 확인",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        45,
+        47
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 47
+        },
+        {
+          "day": 7,
+          "slide": 49
+        }
+      ]
     },
     {
       "destination": 26,
-      "source_day": 7,
-      "source_slide": 28
+      "title": "판단 문제: 긴급하면 승인을 건너뛰자는 요구",
+      "origin": "새 장(판단 문제)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 27,
-      "source_day": 7,
-      "source_slide": 29
+      "title": "실습: 명세에 따른 요구사항 추가",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        48
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 52
+        }
+      ]
     },
     {
       "destination": 28,
-      "source_day": 7,
-      "source_slide": 30
+      "title": "긴급 확인 표시의 명세와 구현",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        49
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 53
+        }
+      ]
     },
     {
       "destination": 29,
-      "source_day": 7,
-      "source_slide": 31
+      "title": "BDD: 기대 행동을 시나리오로 검증하기",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        50,
+        51,
+        52,
+        59,
+        70
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 4
+        },
+        {
+          "day": 8,
+          "slide": 5
+        },
+        {
+          "day": 8,
+          "slide": 6
+        },
+        {
+          "day": 8,
+          "slide": 13
+        },
+        {
+          "day": 8,
+          "slide": 24
+        }
+      ]
     },
     {
       "destination": 30,
-      "source_day": 7,
-      "source_slide": 32
+      "title": "SDD와 BDD(Behavior-Driven Development)",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        53,
+        57,
+        58
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 7
+        },
+        {
+          "day": 8,
+          "slide": 11
+        },
+        {
+          "day": 8,
+          "slide": 12
+        }
+      ]
     },
     {
       "destination": 31,
-      "source_day": 7,
-      "source_slide": 33
+      "title": "Given · When · Then 시나리오 한 편",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        54,
+        55,
+        56
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 8
+        },
+        {
+          "day": 8,
+          "slide": 9
+        },
+        {
+          "day": 8,
+          "slide": 10
+        }
+      ]
     },
     {
       "destination": 32,
-      "source_day": 7,
-      "source_slide": 34
+      "title": "기대 결과를 정하는 두 방법",
+      "origin": "새 장(C66 기대 결과 정정)",
+      "old_practical": [],
+      "source": [
+        {
+          "day": 8,
+          "slide": 30
+        }
+      ]
     },
     {
       "destination": 33,
-      "source_day": 7,
-      "source_slide": 35
+      "title": "시나리오를 판정 코드로: 단언",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        60,
+        61,
+        62
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 14
+        },
+        {
+          "day": 8,
+          "slide": 15
+        },
+        {
+          "day": 8,
+          "slide": 16
+        }
+      ]
     },
     {
       "destination": 34,
-      "source_day": 7,
-      "source_slide": 36
+      "title": "사례의 종류: 정상 · 경계 · 누락 · 거절 · 오류 · 회귀",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        63,
+        64,
+        67
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 17
+        },
+        {
+          "day": 8,
+          "slide": 18
+        },
+        {
+          "day": 8,
+          "slide": 21
+        }
+      ]
     },
     {
       "destination": 35,
-      "source_day": 7,
-      "source_slide": 37
+      "title": "한 단계 더: 60.0 ℃에서 갈리는 경계값",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        65,
+        66
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 19
+        },
+        {
+          "day": 8,
+          "slide": 20
+        }
+      ]
     },
     {
       "destination": 36,
-      "source_day": 7,
-      "source_slide": 38
+      "title": "모델 출력의 표현 차이와 계약 위반",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        71,
+        72,
+        73,
+        75
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 25
+        },
+        {
+          "day": 8,
+          "slide": 26
+        },
+        {
+          "day": 8,
+          "slide": 27
+        },
+        {
+          "day": 8,
+          "slide": 29
+        }
+      ]
     },
     {
       "destination": 37,
-      "source_day": 7,
-      "source_slide": 39
+      "title": "회귀 시험: 바꾼 뒤 기존 사례까지 다시 실행",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        68,
+        69,
+        87
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 22
+        },
+        {
+          "day": 8,
+          "slide": 23
+        },
+        {
+          "day": 8,
+          "slide": 47
+        }
+      ]
     },
     {
       "destination": 38,
-      "source_day": 7,
-      "source_slide": 40
+      "title": "실패한 시나리오에서 고칠 곳 가리기",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        76
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 30
+        }
+      ]
     },
     {
       "destination": 39,
-      "source_day": 7,
-      "source_slide": 41
+      "title": "판단 문제: 60.0 ℃ 사례만 실패한 검사",
+      "origin": "새 장(판단 문제)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 40,
-      "source_day": 7,
-      "source_slide": 42
+      "title": "실습: 기존 기능과 추가 기능 검증",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        77
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 35
+        }
+      ]
     },
     {
       "destination": 41,
-      "source_day": 7,
-      "source_slide": 43
+      "title": "직접 정한 기대 결과로 하는 검증",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        78
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 36
+        }
+      ]
     },
     {
       "destination": 42,
-      "source_day": 7,
-      "source_slide": 44
+      "title": "에이전트 제작과 검증의 정리",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        79
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 39
+        }
+      ]
     },
     {
       "destination": 43,
-      "source_day": 7,
-      "source_slide": 45
+      "title": "여섯 개념이 푼 문제와 남긴 산출물",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        80,
+        82,
+        84
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 40
+        },
+        {
+          "day": 8,
+          "slide": 42
+        },
+        {
+          "day": 8,
+          "slide": 44
+        }
+      ]
     },
     {
       "destination": 44,
-      "source_day": 7,
-      "source_slide": 46
+      "title": "같은 점검 요청 프로젝트에 쌓인 기능",
+      "origin": "새로 짠 장",
+      "old_practical": [
+        92
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 52
+        }
+      ]
     },
     {
       "destination": 45,
-      "source_day": 7,
-      "source_slide": 47
+      "title": "처리할 때마다의 확인과 바꿀 때마다의 검증",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        88,
+        95
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 48
+        },
+        {
+          "day": 8,
+          "slide": 55
+        }
+      ]
     },
     {
       "destination": 46,
-      "source_day": 7,
-      "source_slide": 48
+      "title": "목적 · 입력 · 판정이 다른 활용 결과",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        89,
+        90
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 49
+        },
+        {
+          "day": 8,
+          "slide": 50
+        }
+      ]
     },
     {
       "destination": 47,
-      "source_day": 7,
-      "source_slide": 49
+      "title": "응용: 새 업무를 맡기기 전에 정할 다섯 가지",
+      "origin": "새 장(실전 응용: C67 맡기기 전 다섯 가지)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 48,
-      "source_day": 7,
-      "source_slide": 52
+      "title": "판단 문제: 화면 유온은 61 ℃인데 긴급 아님",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        93
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 53
+        }
+      ]
     },
     {
       "destination": 49,
-      "source_day": 7,
-      "source_slide": 53
+      "title": "검증한 작업이 업무 흐름의 한 칸이 되는 자리",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        81
+      ],
+      "source": [
+        {
+          "day": 8,
+          "slide": 41
+        }
+      ]
     },
     {
       "destination": 50,
-      "source_day": 8,
-      "source_slide": 4
+      "title": "점검 요청 한 건으로 되짚는 결정과 검증",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        96
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 54
+        }
+      ]
     },
     {
       "destination": 51,
-      "source_day": 8,
-      "source_slide": 5
+      "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        97,
+        98
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 55
+        },
+        {
+          "day": 8,
+          "slide": 56
+        }
+      ]
     },
     {
       "destination": 52,
-      "source_day": 8,
-      "source_slide": 6
+      "title": "Review Quiz: 핵심 흐름 되짚어보기",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        99
+      ],
+      "source": [
+        {
+          "day": 7,
+          "slide": 56
+        }
+      ]
     },
     {
       "destination": 53,
-      "source_day": 8,
-      "source_slide": 7
+      "title": "Quiz 1. null로 나온 긴급 확인 표시",
+      "origin": "새 문항",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 54,
-      "source_day": 8,
-      "source_slide": 8
+      "title": "Quiz 2. 긴급 표시와 검토 의견이 붙은 점검 결과",
+      "origin": "새 문항",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 55,
-      "source_day": 8,
-      "source_slide": 9
+      "title": "Quiz 3. 거절 뒤에 생긴 작업지시",
+      "origin": "새 문항",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 56,
-      "source_day": 8,
-      "source_slide": 10
-    },
-    {
-      "destination": 57,
-      "source_day": 8,
-      "source_slide": 11
-    },
-    {
-      "destination": 58,
-      "source_day": 8,
-      "source_slide": 12
-    },
-    {
-      "destination": 59,
-      "source_day": 8,
-      "source_slide": 13
-    },
-    {
-      "destination": 60,
-      "source_day": 8,
-      "source_slide": 14
-    },
-    {
-      "destination": 61,
-      "source_day": 8,
-      "source_slide": 15
-    },
-    {
-      "destination": 62,
-      "source_day": 8,
-      "source_slide": 16
-    },
-    {
-      "destination": 63,
-      "source_day": 8,
-      "source_slide": 17
-    },
-    {
-      "destination": 64,
-      "source_day": 8,
-      "source_slide": 18
-    },
-    {
-      "destination": 65,
-      "source_day": 8,
-      "source_slide": 19
-    },
-    {
-      "destination": 66,
-      "source_day": 8,
-      "source_slide": 20
-    },
-    {
-      "destination": 67,
-      "source_day": 8,
-      "source_slide": 21
-    },
-    {
-      "destination": 68,
-      "source_day": 8,
-      "source_slide": 22
-    },
-    {
-      "destination": 69,
-      "source_day": 8,
-      "source_slide": 23
-    },
-    {
-      "destination": 70,
-      "source_day": 8,
-      "source_slide": 24
-    },
-    {
-      "destination": 71,
-      "source_day": 8,
-      "source_slide": 25
-    },
-    {
-      "destination": 72,
-      "source_day": 8,
-      "source_slide": 26
-    },
-    {
-      "destination": 73,
-      "source_day": 8,
-      "source_slide": 27
-    },
-    {
-      "destination": 74,
-      "source_day": 8,
-      "source_slide": 28
-    },
-    {
-      "destination": 75,
-      "source_day": 8,
-      "source_slide": 29
-    },
-    {
-      "destination": 76,
-      "source_day": 8,
-      "source_slide": 30
-    },
-    {
-      "destination": 77,
-      "source_day": 8,
-      "source_slide": 35
-    },
-    {
-      "destination": 78,
-      "source_day": 8,
-      "source_slide": 36
-    },
-    {
-      "destination": 79,
-      "source_day": 8,
-      "source_slide": 39
-    },
-    {
-      "destination": 80,
-      "source_day": 8,
-      "source_slide": 40
-    },
-    {
-      "destination": 81,
-      "source_day": 8,
-      "source_slide": 41
-    },
-    {
-      "destination": 82,
-      "source_day": 8,
-      "source_slide": 42
-    },
-    {
-      "destination": 83,
-      "source_day": 8,
-      "source_slide": 43
-    },
-    {
-      "destination": 84,
-      "source_day": 8,
-      "source_slide": 44
-    },
-    {
-      "destination": 85,
-      "source_day": 8,
-      "source_slide": 45
-    },
-    {
-      "destination": 86,
-      "source_day": 8,
-      "source_slide": 46
-    },
-    {
-      "destination": 87,
-      "source_day": 8,
-      "source_slide": 47
-    },
-    {
-      "destination": 88,
-      "source_day": 8,
-      "source_slide": 48
-    },
-    {
-      "destination": 89,
-      "source_day": 8,
-      "source_slide": 49
-    },
-    {
-      "destination": 90,
-      "source_day": 8,
-      "source_slide": 50
-    },
-    {
-      "destination": 91,
-      "source_day": 8,
-      "source_slide": 51
-    },
-    {
-      "destination": 92,
-      "source_day": 8,
-      "source_slide": 52
-    },
-    {
-      "destination": 93,
-      "source_day": 8,
-      "source_slide": 53
-    },
-    {
-      "destination": 94,
-      "source_day": 8,
-      "source_slide": 54
-    },
-    {
-      "destination": 95,
-      "source_day": 8,
-      "source_slide": 55
-    },
-    {
-      "destination": 96,
-      "source_day": 7,
-      "source_slide": 54
-    },
-    {
-      "destination": 97,
-      "source_day": 7,
-      "source_slide": 55
-    },
-    {
-      "destination": 98,
-      "source_day": 8,
-      "source_slide": 56
-    },
-    {
-      "destination": 99,
-      "source_day": 7,
-      "source_slide": 56
-    },
-    {
-      "destination": 100,
-      "source_day": 7,
-      "source_slide": 57
-    },
-    {
-      "destination": 101,
-      "source_day": 7,
-      "source_slide": 58
-    },
-    {
-      "destination": 102,
-      "source_day": 7,
-      "source_slide": 59
-    },
-    {
-      "destination": 103,
-      "source_day": 8,
-      "source_slide": 58
-    },
-    {
-      "destination": 104,
-      "source_day": 8,
-      "source_slide": 59
-    },
-    {
-      "destination": 105,
-      "source_day": 8,
-      "source_slide": 60
-    },
-    {
-      "destination": 106,
-      "source_day": 7,
-      "source_slide": 60
-    },
-    {
-      "destination": 107,
-      "source_day": 8,
-      "source_slide": 61
-    }
-  ],
-  "speech_edits": [
-    {
-      "source_day": 7,
-      "source_slide": 5,
-      "destination": 5
-    },
-    {
-      "source_day": 7,
-      "source_slide": 12,
-      "destination": 12
-    },
-    {
-      "source_day": 7,
-      "source_slide": 13,
-      "destination": 13
-    },
-    {
-      "source_day": 7,
-      "source_slide": 20,
-      "destination": 20
-    },
-    {
-      "source_day": 7,
-      "source_slide": 22,
-      "destination": 22
-    },
-    {
-      "source_day": 7,
-      "source_slide": 26,
-      "destination": 24
-    },
-    {
-      "source_day": 7,
-      "source_slide": 30,
-      "destination": 28
-    },
-    {
-      "source_day": 7,
-      "source_slide": 33,
-      "destination": 31
-    },
-    {
-      "source_day": 7,
-      "source_slide": 40,
-      "destination": 38
-    },
-    {
-      "source_day": 7,
-      "source_slide": 45,
-      "destination": 43
-    },
-    {
-      "source_day": 7,
-      "source_slide": 49,
-      "destination": 47
-    },
-    {
-      "source_day": 7,
-      "source_slide": 52,
-      "destination": 48
-    },
-    {
-      "source_day": 8,
-      "source_slide": 11,
-      "destination": 57
-    },
-    {
-      "source_day": 8,
-      "source_slide": 13,
-      "destination": 59
-    },
-    {
-      "source_day": 8,
-      "source_slide": 24,
-      "destination": 70
-    },
-    {
-      "source_day": 8,
-      "source_slide": 30,
-      "destination": 76
-    },
-    {
-      "source_day": 8,
-      "source_slide": 35,
-      "destination": 77
-    },
-    {
-      "source_day": 8,
-      "source_slide": 39,
-      "destination": 79
-    },
-    {
-      "source_day": 8,
-      "source_slide": 45,
-      "destination": 85
-    },
-    {
-      "source_day": 8,
-      "source_slide": 50,
-      "destination": 90
-    },
-    {
-      "source_day": 8,
-      "source_slide": 52,
-      "destination": 92
-    },
-    {
-      "source_day": 7,
-      "source_slide": 54,
-      "destination": 96
-    },
-    {
-      "source_day": 8,
-      "source_slide": 56,
-      "destination": 98
-    },
-    {
-      "source_day": 7,
-      "source_slide": 56,
-      "destination": 99
-    },
-    {
-      "source_day": 7,
-      "source_slide": 59,
-      "destination": 102
-    },
-    {
-      "source_day": 8,
-      "source_slide": 58,
-      "destination": 103
-    },
-    {
-      "source_day": 8,
-      "source_slide": 59,
-      "destination": 104
-    },
-    {
-      "source_day": 8,
-      "source_slide": 60,
-      "destination": 105
-    },
-    {
-      "source_day": 7,
-      "source_slide": 60,
-      "destination": 106
-    },
-    {
-      "source_day": 8,
-      "source_slide": 61,
-      "destination": 107
-    }
-  ],
-  "metadata_rewritten": [
-    1,
-    2,
-    3
-  ],
-  "lab_screen_adapted": [
-    22,
-    23,
-    48,
-    49,
-    77,
-    78
-  ],
-  "omissions": "원본121장→107장. 통합반7의24~25 다른AI 검토 실습과 통합반8의37~38 인수인계 실습은 미배정. 7의50~53 변경 비교·명세 실습은48~49로 통합, 8의31~36 시나리오·반복·회귀 실습은77~78로 통합. 8의1~3 메타정보와57 퀴즈 안내는 공통 안내로 통합. 핵심 이론7:4~19,26~49 및8:4~30,39~55와 복습·용어·퀴즈6문제 전부 보존.",
-  "review_20261019": {
-    "screen_adapted": [
-      44,
-      48,
-      49,
-      77,
-      78,
-      92,
-      95,
-      98
-    ],
-    "speech_adapted": [
-      1,
-      2,
-      20,
-      24,
-      44,
-      50,
-      79,
-      92,
-      95,
-      98,
-      107
-    ],
-    "common_sync": {
-      "통합반7": [
-        46
+      "title": "정답과 판단 기준",
+      "origin": "통합반 장을 실전반 화면으로 다시 짬",
+      "old_practical": [
+        106,
+        107
       ],
-      "통합반8": [
-        55
+      "source": [
+        {
+          "day": 7,
+          "slide": 60
+        },
+        {
+          "day": 8,
+          "slide": 61
+        }
       ]
+    }
+  ],
+  "dropped": {
+    "old_practical": {
+      "46": "통합반 7:48 승인 카드 고정본 · 작업 규칙 바이트 고정 — 실전반 56행 밖의 저장소 장치. 회귀 실제 기록은 37장 대본 한 줄",
+      "74": "통합반 8:28 판단 채점(가중치 30·30·20·20) — 실전반 58·59행에 없음",
+      "83": "통합반 8:43 근거가 놓인 자리(지식과 현재값) — 실전반 4회차 내용, Wrap-up 60행 밖",
+      "85": "통합반 8:45 검사와 승인 — 11장과 같은 구분이라 합침",
+      "86": "통합반 8:46 명세·시나리오·가드레일·승인 관계도 — 43 · 45장과 겹침",
+      "91": "통합반 8:51 산출물 형식 — 46장(활용 결과) 대본으로 줄임",
+      "94": "통합반 8:54 사람이 정하는 기준과 에이전트가 정하는 과정 — 47장 응용(맡기기 전 다섯 가지)이 받음",
+      "100": "옛 퀴즈 1(통합반 7:57) — 새 문항 셋으로 교체(정답 3·2·4)",
+      "101": "옛 퀴즈 2(7:58) — 교체",
+      "102": "옛 퀴즈 3(7:59) — 교체",
+      "103": "옛 퀴즈 4(8:58) — 교체(내용은 55장 회귀 문항이 받음)",
+      "104": "옛 퀴즈 5(8:59) — 교체(표현 차이는 36장)",
+      "105": "옛 퀴즈 6(8:60) — 교체(기대값 판단은 39장)"
     },
-    "scope": "107장 전체 내용·화면 검토. 98장의 Data Fabric은 미배정 인수인계 본문 용어이므로 제외; 배정된 여덟 용어 및 퀴즈 여섯 문제 보존. 92장의 미배정 실습 산출물은 별도 응용 예로 구별."
+    "integrated": [
+      {
+        "day": 7,
+        "slides": [
+          24,
+          25
+        ],
+        "reason": "작성자 · 검토자 실습 — 실전반 행에 없음(통합반 7회차 71행 전용, 실전반 기준 · 최종흐름 :57)"
+      },
+      {
+        "day": 7,
+        "slides": [
+          50,
+          51
+        ],
+        "reason": "모호한 변경 비교 실습 — 실전반 57행에 독립 실습 없음(비교 기록 읽기는 랩 3 안)"
+      },
+      {
+        "day": 8,
+        "slides": [
+          31,
+          32,
+          33,
+          34
+        ],
+        "reason": "통합반 실습 셋(행동 기준 · 반복 검증 · 오류 수정) 간지 · 설명 — 실전반은 59행 실습 하나(40~41장)로"
+      },
+      {
+        "day": 8,
+        "slides": [
+          37,
+          38
+        ],
+        "reason": "교대 인수인계 실습 · 데이터 패브릭 — 통합반 8회차 83행 전용, 실전반 행 밖"
+      },
+      {
+        "day": 8,
+        "slides": [
+          28
+        ],
+        "reason": "판단 채점 가중치 — 실전반 58 · 59행 밖"
+      },
+      {
+        "day": 8,
+        "slides": [
+          57
+        ],
+        "reason": "퀴즈 간지 — 52장 하나로"
+      }
+    ]
   }
 }
