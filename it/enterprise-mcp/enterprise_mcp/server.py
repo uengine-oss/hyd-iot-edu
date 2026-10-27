@@ -131,9 +131,15 @@ def describe_schema() -> dict:
 
 
 @mcp.tool(annotations=READ)
-def describe_catalog() -> dict:
-    """현재 DB의 실제 컬럼 의미(주석)·정밀도·기본값·키 관계와 table/view 구분. 없는 의미는 추측하지 않는다."""
-    return guarded(tools.describe_catalog)()
+def describe_catalog(table: str | None = None, offset: int = 0, limit: int = 12) -> dict:
+    """업무 표 목록. table을 지정하면 실제 컬럼 주석·타입·기본값·키 관계 상세. next_offset이 있으면 같은 table과 offset으로 이어 읽는다. limit 1~20."""
+    from .catalog import page
+    from .tools import ok
+    def read():
+        result=tools.describe_catalog()
+        if result.get('result')!='ok':return result
+        return ok(page(result['document'],table,offset,limit))
+    return guarded(read)()
 
 
 @mcp.tool(annotations=READ)

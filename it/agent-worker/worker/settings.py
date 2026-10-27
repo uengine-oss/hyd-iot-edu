@@ -24,17 +24,16 @@ DEFAULT_ALLOWED_TOOLS = ("mcp__neo4j__get_neo4j_schema,mcp__neo4j__read_neo4j_cy
 
 BLOCKED_SHELL_TOOLS = ('Bash', 'PowerShell')
 
-HANDOVER_READS = {'neo4j': ('get_neo4j_schema', 'read_neo4j_cypher'),
-                  'enterprise': ('describe_catalog', 'describe_schema', 'query'),
-                  'hyd-dmn': ('timeseries_schema', 'timeseries_query')}
+from hydcommon.handover_tools import HANDOVER_READS
 
 
-def handover_allowed_tools(allowed, servers):
+def handover_allowed_tools(allowed, servers, read_tools=None):
     # Do not carry the general hyd-dmn wildcard (including submit_decision)
     # into a handover task, even if an activity or profile requests it.
     native = [tool for tool in allowed if tool in ('Read', 'Glob', 'Grep', 'Write', 'Edit', 'Skill')]
     return native + [f'mcp__{server}__{tool}' for server, names in HANDOVER_READS.items()
-                     if server in servers for tool in names]
+                     if server in servers for tool in names
+                     if read_tools is None or tool in read_tools.get(server, ())]
 
 
 def run_allowed_tools(allowed: list[str], servers: list[str], read_tools: dict[str, list[str]] | None = None) -> list[str]:

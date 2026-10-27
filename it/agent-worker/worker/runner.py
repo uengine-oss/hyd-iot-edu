@@ -182,7 +182,7 @@ class Runner:
         if remote_agent:
             from . import managed_tools
             managed=managed_model.attach(row,self.s.tenant_id,provider_id)
-            tenant_mcp,read_tools=managed_tools.attach(managed,ws.path)
+            tenant_mcp,read_tools=managed_tools.attach(managed,ws.path,handover=handover_task)
             missing_tools=[]
             gate=bridge.Gate(config=tenant_mcp,read_tools=read_tools)
         else:
@@ -245,7 +245,8 @@ class Runner:
             servers = sorted(((tenant_mcp or {}).get("mcpServers") or {}).keys())
             if handover_task:
                 from .settings import handover_allowed_tools
-                extra_args += ['--allowedTools', ','.join(handover_allowed_tools(self.s.allowed_tools, servers))]
+                extra_args += ['--allowedTools', ','.join(handover_allowed_tools(
+                    self.s.allowed_tools, servers, gate.read_tools if remote_agent else None))]
             elif self.s.allowed_tools or result_check_task or remote_agent:
                 extra_args += ["--allowedTools", ",".join(run_allowed_tools(self.s.allowed_tools, servers, gate.read_tools))]
             denied = run_disallowed_tools(gate.blocked_tools)

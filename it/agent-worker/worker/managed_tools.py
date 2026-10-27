@@ -65,7 +65,7 @@ class Transport:
         raise RuntimeConnectionError('학생 현재 상태 조회의 대기 시간이 초과됐습니다')
 
 
-def attach(managed,workdir,*,transport=None):
+def attach(managed,workdir,*,transport=None,handover=False):
     if not managed:
         raise RuntimeConnectionError('관리 에이전트는 강사 실행 권한 없이 시작할 수 없습니다')
     client=Transport(managed['url'],managed['token'],transport=transport)
@@ -84,6 +84,12 @@ def attach(managed,workdir,*,transport=None):
                 or qualified in TOOLS and tool.get('kind')!='proposal'):
             raise RuntimeConnectionError('관리 제안 도구 분류가 올바르지 않습니다')
         names.setdefault(tool['server'],[]).append(tool['name'])
+    if handover:
+        from hydcommon.handover_tools import handover_read
+        tools=[t for t in tools if handover_read(t['server'],t['name']) and t.get('kind')!='proposal']
+        names={}
+        for tool in tools:
+            names.setdefault(tool['server'],[]).append(tool['name'])
     path=Path(workdir)/'managed-tool-catalog.json'
     path.write_text(json.dumps(tools,ensure_ascii=False),encoding='utf8')
     servers={name:{'command':sys.executable,'args':['-m','worker.managed_tools','--server',name,'--catalog',str(path)],
