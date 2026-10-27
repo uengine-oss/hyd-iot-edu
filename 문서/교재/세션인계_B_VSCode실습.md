@@ -86,6 +86,10 @@ C67 최신 적용: [최상위 학습 목표](1_목적과_방향.md)와 [전체 �
 
 실습가이드를 완료 항목에서 빠뜨리지 않는다. 구체 명령·작업 위치·확인 결과·저장·다음 실습이 있어야 한다. 직접 청취와 자동 검사를 구별하고 학교 초기화/신뢰/권한은 실제 환경별로 기록한다.
 
+## 진행 중(2026-10-28 03:10) — 랩 현업화 재제작
+
+근거 `근거/2026-10-28_현업데이터_현실성_조사.md` §4. opus 세 묶음 동시 진행(서로 다른 생성기·폴더): ① 2회차 설계·구현(`build_labs.py`, 새 `data_session2.py`, `reference/{통합반,실전반}`, 작업기록 `reference/session2_작업기록.md`) ② 조건표·판정(`build_conditions.py`·`build_session3_judgement.py`, 새 `data_conditions.py`, `reference/session3/현업화_작업기록.md`) ③ 문서 추출·카드(`build_session3_documents.py`, 새 `data_documents.py`, `reference/session3_docs/현업화_작업기록.md`). 공유 `package-index.json`·전체 생성·Docker Desktop 종료·커밋은 메인. 옛 자료 리허설은 중단(새 자료로 재리허설). 끝나면: 산출물 직접 검토 → build.py → verify_packages → 재리허설 → 커밋·push → 완료 표.
+
 ## 다음 행동(2026-10-28 02:40 기준, main 28f9c182)
 
 1. 리허설 담당 에이전트(남은 9개 VS Code 랩 학생 경로) 결과 `.evidence/vscode-rehearsal-20261028/리허설_보고.md`를 직접 확인해 랩 보강 → `제작용/실습시작/build.py` 전체 생성 → `verify_packages.py` → 커밋·push. (리허설 중에는 build.py를 돌리지 않는다 — ZIP 바이트가 바뀜.)
