@@ -1,0 +1,30 @@
+{
+ "kind": "강사 참조 검증 — 학생 AI 수행/촬영 아님",
+ "ref_date": "2026-10-15",
+ "offline": {
+  "통합반": {
+   "A": {
+    "nodes": 206,
+    "rels": 305,
+    "mismatch": []
+   },
+   "B": {
+    "nodes": 206,
+    "rels": 306,
+    "mismatch": []
+   }
+  },
+  "실전반": {
+   "A": {
+    "nodes": 212,
+    "rels": 326,
+    "mismatch": []
+   },
+   "B": {
+    "nodes": 212,
+    "rels": 326,
+    "mismatch": []
+   }
+  }
+ }
+}

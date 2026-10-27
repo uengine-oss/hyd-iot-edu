@@ -1,0 +1,100 @@
+{
+ "통합반_원본": {
+  "exit": 0,
+  "first": [
+   "구조 검사 통과: 노드 206개, 관계 305개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요."
+  ]
+ },
+ "실전반_원본": {
+  "exit": 0,
+  "first": [
+   "구조 검사 통과: 노드 212개, 관계 326개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요."
+  ]
+ },
+ "1_중복id": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "중복 id: P-PMP-SEAL"
+  ]
+ },
+ "2_없는끝점": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "없는 관계 끝점: ('USES_PART', 'HYD-01:pump-a', 'P-PMP-SEAL-X')"
+  ]
+ },
+ "3_중복관계": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "중복 관계: ('HAS_COMPONENT', 'HYD-01', 'HYD-01:cooler')"
+  ]
+ },
+ "4_approved문자열": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "SUPPLIES supplier:A정밀→P-ACC-BLD approved='예': boolean 이어야 함, 실제 string — 참/거짓 자리에 글자가 들어 있음"
+  ]
+ },
+ "5_숫자에단위": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "Sensor HYD-02:PS1 limit='130 bar': number 이어야 함, 실제 string — 숫자 자리에 글자(단위 포함 여부 확인)"
+  ]
+ },
+ "6_필수속성없음": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "Sensor HYD-01:TS1: 필수 속성 unit 없음"
+  ]
+ },
+ "7_관계방향반대": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 2건",
+   "USES_PART 시작 종류가 다름: P-PMP-SEAL ['Part'] (정의 Component)",
+   "USES_PART 끝 종류가 다름: HYD-04:pump-b ['Component'] (정의 Part)"
+  ]
+ },
+ "8_스키마에없는종류": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "스키마에 없는 종류 Sensr: HYD-01:X"
+  ]
+ },
+ "9_허용값밖": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "Sensor HYD-01:PS1 limit_direction='하한': 허용 값 ['upper', 'lower'] 밖"
+  ]
+ },
+ "10_납기실수": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "SUPPLIES supplier:A정밀→P-ACC-BLD lead_days=2.5: integer 이어야 함, 실제 number"
+  ]
+ },
+ "11_빈그래프": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 1건",
+   "노드 또는 관계가 비어 있습니다."
+  ]
+ },
+ "12_스키마형식다름": {
+  "exit": 1,
+  "first": [
+   "구조 확인 필요 327건",
+   "schema.json에 classes·relations가 없습니다(START.md 결과 형식 참고).",
+   "스키마에 없는 관계 HAS_COMPONENT: HYD-01 → HYD-01:cooler"
+  ]
+ }
+}

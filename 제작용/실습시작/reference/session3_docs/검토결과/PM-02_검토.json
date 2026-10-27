@@ -2,53 +2,18 @@
   "doc_id": "PM-02",
   "source_file": "PM-02_powerpack-pm-checklist.md",
   "source_sha256": "2a757bd43772774a3b85c99779b3acef501f8d4dbc2cdbf9f851394ba841ae4a",
-  "extractor": "강사 참조 추출 함수(규칙 기반, LLM 없음)",
-  "generated_at": "2026-10-28T01:40:28+09:00",
+  "extractor": "강사 참조 추출 함수 2판(규칙 기반, LLM 없음, lang=해당 없음)",
+  "generated_at": "2026-10-28T02:44:43+09:00",
   "review": {
     "reviewer": "강사 참조 검토(원문 대조, 2026-10-28)",
     "reviewed_at": "2026-10-28T00:00:00+09:00",
     "candidates_file": "PM-02_후보.json",
-    "selected_task": null
+    "selected_task": null,
+    "decisions": []
   },
   "candidates": [
     {
       "id": "PM-02-001",
-      "doc_id": "PM-02",
-      "section": "머리말",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "quote": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "refs": [],
-      "status": "approved",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-002",
-      "doc_id": "PM-02",
-      "section": "머리말",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "quote": "주기 2,000 h, 허용 오차 ±10 %, 정비 인원, 감점액은 교육용 가상 기업의 회사 설정값이다.",
-      "refs": [],
-      "status": "approved",
-      "value": 10,
-      "unit": "%",
-      "comparator": "±",
-      "value_text": "±10 %",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-003",
       "doc_id": "PM-02",
       "section": "PM-2.1",
       "procedure": null,
@@ -56,18 +21,18 @@
       "text": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다.",
       "quote": "같은 모델의 유압 파워팩 세 대(1~3호기)에 적용한다.",
       "refs": [],
-      "status": "approved",
+      "status": "excluded",
       "value": 1,
       "unit": "호기",
       "comparator": "range",
       "value_text": "1~3호기",
       "value_max": 3,
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "decision": "제외",
+      "reason": "적용 설비 범위(호기 번호)이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-004",
+      "id": "PM-02-002",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -81,11 +46,11 @@
       "comparator": null,
       "value_text": "10,000 h",
       "decision": "보류",
-      "reason": "표 칸에 시행 차례가 여럿(2,000 · 6,000 · 10,000 h)인데 단위가 붙은 마지막 값만 추출됐다. 계약의 value 하나로는 차례 목록을 표현할 수 없어 보류한다.",
+      "reason": "표 칸에 시행 차례가 여럿(예: 2,000 · 6,000 · 10,000 h)인데 단위가 붙은 마지막 값만 추출됐다. 계약의 value 하나로는 차례 목록을 표현할 수 없어 보류한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-005",
+      "id": "PM-02-003",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -99,47 +64,11 @@
       "comparator": null,
       "value_text": "12,000 h",
       "decision": "보류",
-      "reason": "표 칸의 시행 차례 목록 중 마지막 값만 추출됐다(4,000 누락).",
+      "reason": "표 칸에 시행 차례가 여럿(예: 2,000 · 6,000 · 10,000 h)인데 단위가 붙은 마지막 값만 추출됐다. 계약의 value 하나로는 차례 목록을 표현할 수 없어 보류한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-006",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "4,000 h · 내용: 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석",
-      "quote": "| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |",
-      "refs": [],
-      "status": "excluded",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-007",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "4,000 h · 부품: 2,000 h 패키지와 같음",
-      "quote": "| 4,000 h | 4,000 · 12,000 h … | 2,000 h 패키지 + 어큐뮬레이터 프리차지 점검, 작동유 샘플 분석 | 2,000 h 패키지와 같음 |",
-      "refs": [],
-      "status": "excluded",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-008",
+      "id": "PM-02-004",
       "doc_id": "PM-02",
       "section": "PM-2.2",
       "procedure": null,
@@ -153,47 +82,11 @@
       "comparator": null,
       "value_text": "16,000 h",
       "decision": "보류",
-      "reason": "표 칸의 시행 차례 목록 중 마지막 값만 추출됐다(8,000 누락).",
+      "reason": "표 칸에 시행 차례가 여럿(예: 2,000 · 6,000 · 10,000 h)인데 단위가 붙은 마지막 값만 추출됐다. 계약의 value 하나로는 차례 목록을 표현할 수 없어 보류한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-009",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "8,000 h · 내용: 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환",
-      "quote": "| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
-      "refs": [],
-      "status": "excluded",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-010",
-      "doc_id": "PM-02",
-      "section": "PM-2.2",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "8,000 h · 부품: 4,000 h 부품 + 작동유",
-      "quote": "| 8,000 h | 8,000 · 16,000 h … | 4,000 h 패키지 + 주 펌프 분해 점검(체적 효율 측정), 작동유 교환 | 4,000 h 부품 + 작동유 |",
-      "refs": [],
-      "status": "excluded",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-011",
+      "id": "PM-02-005",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -211,7 +104,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-012",
+      "id": "PM-02-006",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -229,7 +122,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-013",
+      "id": "PM-02-007",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -248,7 +141,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-014",
+      "id": "PM-02-008",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -265,7 +158,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-015",
+      "id": "PM-02-009",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -283,7 +176,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-016",
+      "id": "PM-02-010",
       "doc_id": "PM-02",
       "section": "PM-2.3",
       "procedure": null,
@@ -297,7 +190,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-017",
+      "id": "PM-02-011",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -311,7 +204,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-018",
+      "id": "PM-02-012",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -322,14 +215,14 @@
       "status": "approved",
       "value": 1950,
       "unit": "h",
-      "comparator": null,
-      "value_text": "1,950 h",
+      "comparator": ">=",
+      "value_text": "1,950 h에 닿으면",
       "decision": "채택",
       "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-019",
+      "id": "PM-02-013",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -347,7 +240,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-020",
+      "id": "PM-02-014",
       "doc_id": "PM-02",
       "section": "PM-2.4",
       "procedure": null,
@@ -361,7 +254,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-021",
+      "id": "PM-02-015",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -375,7 +268,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-022",
+      "id": "PM-02-016",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -393,7 +286,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-023",
+      "id": "PM-02-017",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -407,99 +300,99 @@
       "origin": "extractor"
     },
     {
+      "id": "PM-02-018",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-019",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "prohibition",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-020",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "unit_value",
+      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
+      "refs": [],
+      "status": "approved",
+      "value": 2200,
+      "unit": "h",
+      "comparator": ">",
+      "value_text": "2,200 h를 넘",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-021",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-022",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "prohibition",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-023",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "unit_value",
+      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
+      "refs": [],
+      "status": "approved",
+      "value": 2200,
+      "unit": "h",
+      "comparator": ">",
+      "value_text": "2,200 h를 넘",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
       "id": "PM-02-024",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-025",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "prohibition",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-026",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "quote": "기한: 이번 예정된 정비 시간에 닿을 때의 운전시간이 2,200 h를 넘으면 그 시간까지 기다리지 않는다.",
-      "refs": [],
-      "status": "approved",
-      "value": 2200,
-      "unit": "h",
-      "comparator": ">",
-      "value_text": "2,200 h를 넘",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-027",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "precondition",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-028",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "prohibition",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-029",
-      "doc_id": "PM-02",
-      "section": "PM-2.5",
-      "procedure": null,
-      "kind": "unit_value",
-      "text": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "quote": "기한: 그다음 예정된 정비 시간까지 미룰 때의 운전시간이 2,200 h를 넘으면 미루지 않는다(보증 기록 요건 위반).",
-      "refs": [],
-      "status": "approved",
-      "value": 2200,
-      "unit": "h",
-      "comparator": ">",
-      "value_text": "2,200 h를 넘",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-030",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -511,16 +404,13 @@
       "value": 24,
       "unit": "시간",
       "comparator": "<=",
-      "value_text": "24시간",
-      "before": {
-        "comparator": null
-      },
-      "decision": "수정",
-      "reason": "「24시간 안에」는 24시간 이내를 뜻한다. 규칙이 「안」을 비교 표현으로 읽지 못했다.",
+      "value_text": "24시간 안에",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-031",
+      "id": "PM-02-025",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -538,7 +428,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-032",
+      "id": "PM-02-026",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -552,7 +442,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-033",
+      "id": "PM-02-027",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -570,7 +460,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-034",
+      "id": "PM-02-028",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -584,7 +474,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-035",
+      "id": "PM-02-029",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -596,16 +486,13 @@
       "value": 4,
       "unit": "명",
       "comparator": "<",
-      "value_text": "4명",
-      "before": {
-        "comparator": null
-      },
-      "decision": "수정",
-      "reason": "「4명보다 적으면」은 4명 미만이다. 규칙이 「보다 적으면」을 비교 표현으로 읽지 못했다.",
+      "value_text": "4명보다 적으면",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-036",
+      "id": "PM-02-030",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -623,7 +510,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-037",
+      "id": "PM-02-031",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -637,7 +524,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-038",
+      "id": "PM-02-032",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -655,7 +542,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-039",
+      "id": "PM-02-033",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -673,7 +560,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-040",
+      "id": "PM-02-034",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -687,7 +574,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-041",
+      "id": "PM-02-035",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -701,7 +588,21 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-042",
+      "id": "PM-02-036",
+      "doc_id": "PM-02",
+      "section": "PM-2.5",
+      "procedure": null,
+      "kind": "precondition",
+      "text": "부품: 두 대를 묶으려면 씰 키트가 2개 이상 있어야 한다.",
+      "quote": "부품: 두 대를 묶으려면 씰 키트가 2개 이상 있어야 한다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-037",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": null,
@@ -719,7 +620,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-043",
+      "id": "PM-02-038",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -734,7 +635,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-044",
+      "id": "PM-02-039",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -749,7 +650,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-045",
+      "id": "PM-02-040",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -764,7 +665,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-046",
+      "id": "PM-02-041",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -779,7 +680,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-047",
+      "id": "PM-02-042",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-11",
@@ -793,7 +694,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-048",
+      "id": "PM-02-043",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -808,7 +709,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-049",
+      "id": "PM-02-044",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -823,7 +724,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-050",
+      "id": "PM-02-045",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -838,7 +739,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-051",
+      "id": "PM-02-046",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -853,7 +754,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-052",
+      "id": "PM-02-047",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-12",
@@ -867,7 +768,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-053",
+      "id": "PM-02-048",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -882,7 +783,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-054",
+      "id": "PM-02-049",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -892,11 +793,11 @@
       "refs": [],
       "status": "excluded",
       "decision": "제외",
-      "reason": "다음 단계에 쓸 정보를 확인하는 단계이며 조건이 아니다. 단계 후보(PM-02-053)로 충분하다.",
+      "reason": "다음 단계에 쓸 정보를 확인하는 단계이며 조건이 아니다. 단계 후보로 충분하다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-055",
+      "id": "PM-02-050",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -911,7 +812,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-056",
+      "id": "PM-02-051",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -925,7 +826,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-057",
+      "id": "PM-02-052",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -940,7 +841,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-058",
+      "id": "PM-02-053",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-13",
@@ -954,7 +855,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-059",
+      "id": "PM-02-054",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -969,7 +870,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-060",
+      "id": "PM-02-055",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -983,7 +884,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-061",
+      "id": "PM-02-056",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -998,7 +899,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-062",
+      "id": "PM-02-057",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -1013,7 +914,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-063",
+      "id": "PM-02-058",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -1031,7 +932,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-064",
+      "id": "PM-02-059",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -1049,7 +950,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-065",
+      "id": "PM-02-060",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -1064,7 +965,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-066",
+      "id": "PM-02-061",
       "doc_id": "PM-02",
       "section": "PM-2.5",
       "procedure": "SOP-PM-14",
@@ -1078,7 +979,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-067",
+      "id": "PM-02-062",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": null,
@@ -1092,7 +993,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-068",
+      "id": "PM-02-063",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": null,
@@ -1106,7 +1007,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-069",
+      "id": "PM-02-064",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1121,7 +1022,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-070",
+      "id": "PM-02-065",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1136,7 +1037,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-071",
+      "id": "PM-02-066",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1151,7 +1052,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-072",
+      "id": "PM-02-067",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1165,7 +1066,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-073",
+      "id": "PM-02-068",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1176,14 +1077,17 @@
       "status": "approved",
       "value": 0,
       "unit": "bar",
-      "comparator": null,
+      "comparator": "=",
       "value_text": "0 bar",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "before": {
+        "comparator": null
+      },
+      "decision": "수정",
+      "reason": "「0 psi/0 bar인지」는 값이 그와 같아야 한다는 뜻이다. 비교 기호를 =로 맞춘다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-074",
+      "id": "PM-02-069",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1198,7 +1102,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-075",
+      "id": "PM-02-070",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1213,7 +1117,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-076",
+      "id": "PM-02-071",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1228,7 +1132,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-077",
+      "id": "PM-02-072",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1245,7 +1149,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-078",
+      "id": "PM-02-073",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1261,7 +1165,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-079",
+      "id": "PM-02-074",
       "doc_id": "PM-02",
       "section": "PM-2.6",
       "procedure": "SOP-PM-21",
@@ -1275,7 +1179,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-080",
+      "id": "PM-02-075",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
@@ -1287,33 +1191,12 @@
       ],
       "status": "approved",
       "order": 1,
-      "before": {
-        "refs": []
-      },
-      "decision": "수정",
-      "reason": "「2,000 h 정기 점검」은 SOP-PM-21의 이름이다. ID 없이 이름으로 가리켜 규칙이 참조를 놓쳤다.",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
       "origin": "extractor"
     },
     {
-      "id": "PM-02-081",
-      "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
-      "kind": "unit_value",
-      "text": "2,000 h 정기 점검의 1~6단계를 한다.",
-      "quote": "2,000 h 정기 점검의 1~6단계를 한다.",
-      "refs": [],
-      "status": "excluded",
-      "value": 2000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "2,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-082",
+      "id": "PM-02-076",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
@@ -1328,7 +1211,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-083",
+      "id": "PM-02-077",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
@@ -1343,10 +1226,104 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-084",
+      "id": "PM-02-078",
       "doc_id": "PM-02",
       "section": "PM-2.7",
       "procedure": "SOP-PM-22",
+      "kind": "step",
+      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "refs": [
+        "PM-2.9"
+      ],
+      "status": "approved",
+      "order": 4,
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-079",
+      "doc_id": "PM-02",
+      "section": "PM-2.7",
+      "procedure": "SOP-PM-22",
+      "kind": "completion",
+      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
+      "refs": [
+        "PM-2.9"
+      ],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-080",
+      "doc_id": "PM-02",
+      "section": "PM-2.7",
+      "procedure": "SOP-PM-22",
+      "kind": "precondition",
+      "text": "승인: 설비보전팀장.",
+      "quote": "승인: 설비보전팀장.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-081",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
+      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
+      "refs": [
+        "SOP-PM-22"
+      ],
+      "status": "approved",
+      "order": 1,
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-082",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
+      "quote": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
+      "refs": [],
+      "status": "approved",
+      "order": 2,
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-083",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
+      "kind": "step",
+      "text": "작동유를 교환한다.",
+      "quote": "작동유를 교환한다.",
+      "refs": [],
+      "status": "approved",
+      "order": 3,
+      "decision": "채택",
+      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
+      "origin": "extractor"
+    },
+    {
+      "id": "PM-02-084",
+      "doc_id": "PM-02",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "step",
       "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
       "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
@@ -1362,8 +1339,8 @@
     {
       "id": "PM-02-085",
       "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "completion",
       "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
       "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
@@ -1378,8 +1355,8 @@
     {
       "id": "PM-02-086",
       "doc_id": "PM-02",
-      "section": "PM-2.7",
-      "procedure": "SOP-PM-22",
+      "section": "PM-2.8",
+      "procedure": "SOP-PM-23",
       "kind": "precondition",
       "text": "승인: 설비보전팀장.",
       "quote": "승인: 설비보전팀장.",
@@ -1391,121 +1368,6 @@
     },
     {
       "id": "PM-02-087",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "refs": [
-        "SOP-PM-22"
-      ],
-      "status": "approved",
-      "order": 1,
-      "before": {
-        "refs": []
-      },
-      "decision": "수정",
-      "reason": "「4,000 h 정기 점검」은 SOP-PM-22의 이름이다. ID 없이 이름으로 가리켜 규칙이 참조를 놓쳤다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-088",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "unit_value",
-      "text": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "quote": "4,000 h 정기 점검의 1~3단계를 한다.",
-      "refs": [],
-      "status": "excluded",
-      "value": 4000,
-      "unit": "h",
-      "comparator": null,
-      "value_text": "4,000 h",
-      "decision": "제외",
-      "reason": "패키지·점검 이름 안의 수치이며 기준값이 아니다. 기준값으로 적재하면 근거 없는 기준이 된다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-089",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
-      "quote": "주 펌프를 분해 점검하고 체적 효율을 측정한다.",
-      "refs": [],
-      "status": "approved",
-      "order": 2,
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-090",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "작동유를 교환한다.",
-      "quote": "작동유를 교환한다.",
-      "refs": [],
-      "status": "approved",
-      "order": 3,
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-091",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "step",
-      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "refs": [
-        "PM-2.9"
-      ],
-      "status": "approved",
-      "order": 4,
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-092",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "completion",
-      "text": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "quote": "잠금을 풀고 PM-2.9 시운전 확인을 한다.",
-      "refs": [
-        "PM-2.9"
-      ],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-093",
-      "doc_id": "PM-02",
-      "section": "PM-2.8",
-      "procedure": "SOP-PM-23",
-      "kind": "precondition",
-      "text": "승인: 설비보전팀장.",
-      "quote": "승인: 설비보전팀장.",
-      "refs": [],
-      "status": "approved",
-      "decision": "채택",
-      "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
-      "origin": "extractor"
-    },
-    {
-      "id": "PM-02-094",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1519,7 +1381,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-095",
+      "id": "PM-02-088",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1537,7 +1399,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-096",
+      "id": "PM-02-089",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1555,7 +1417,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-097",
+      "id": "PM-02-090",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1573,7 +1435,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-098",
+      "id": "PM-02-091",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1591,7 +1453,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-099",
+      "id": "PM-02-092",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1609,7 +1471,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-100",
+      "id": "PM-02-093",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1623,7 +1485,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-101",
+      "id": "PM-02-094",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1637,7 +1499,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-102",
+      "id": "PM-02-095",
       "doc_id": "PM-02",
       "section": "PM-2.9",
       "procedure": null,
@@ -1651,7 +1513,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-103",
+      "id": "PM-02-096",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1669,7 +1531,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-104",
+      "id": "PM-02-097",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1683,7 +1545,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-105",
+      "id": "PM-02-098",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1701,7 +1563,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-106",
+      "id": "PM-02-099",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1719,7 +1581,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-107",
+      "id": "PM-02-100",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1733,7 +1595,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-108",
+      "id": "PM-02-101",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1751,7 +1613,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-109",
+      "id": "PM-02-102",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1769,7 +1631,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-110",
+      "id": "PM-02-103",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1783,7 +1645,7 @@
       "origin": "extractor"
     },
     {
-      "id": "PM-02-111",
+      "id": "PM-02-104",
       "doc_id": "PM-02",
       "section": "PM-2.10",
       "procedure": null,
@@ -1799,31 +1661,81 @@
       "decision": "채택",
       "reason": "원문 문장·절·종류·값을 대조해 일치한다.",
       "origin": "extractor"
+    },
+    {
+      "id": "PM-02-R105",
+      "doc_id": "PM-02",
+      "section": "PM-2.6",
+      "procedure": "SOP-PM-21",
+      "kind": "precondition",
+      "text": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+      "quote": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "검토자 추가: 2,000 h 점검 1단계의 정지·LOCAL·잠금은 배관 개방 전 안전 준비 조건이다(PM-2.6 머리 문장과 같은 뜻). 단계로만 잡혔다.",
+      "origin": "reviewer"
+    },
+    {
+      "id": "PM-02-R106",
+      "doc_id": "PM-02",
+      "section": "PM-2.6",
+      "procedure": "SOP-PM-21",
+      "kind": "precondition",
+      "text": "펌프 모터 전원을 차단하고 어큐뮬레이터 잔압을 탱크로 배출한다.",
+      "quote": "펌프 모터 전원을 차단하고 어큐뮬레이터 잔압을 탱크로 배출한다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "검토자 추가: 잔압 배출은 3단계 배관 개방의 선행 조건이다. 단계로만 잡혔다.",
+      "origin": "reviewer"
+    },
+    {
+      "id": "PM-02-R107",
+      "doc_id": "PM-02",
+      "section": "PM-2.3",
+      "procedure": null,
+      "kind": "completion",
+      "text": "시행 기록에는 패키지, 시행 때의 운전시간, 교체 부품 로트, 시운전 값을 남긴다.",
+      "quote": "시행 기록에는 패키지, 시행 때의 운전시간, 교체 부품 로트, 시운전 값을 남긴다.",
+      "refs": [],
+      "status": "approved",
+      "decision": "채택",
+      "reason": "검토자 추가: 완료 때 남길 기록 요건인데 완료 표현 목록에 없어 놓쳤다. 지난 시행 기록을 판단하는 근거라 검토자가 추가한다.",
+      "origin": "reviewer"
     }
   ],
   "missing": [
     {
-      "section": "PM-2.3",
-      "procedure": null,
+      "section": "PM-2.6",
+      "procedure": "SOP-PM-21",
       "kind": "precondition",
-      "quote": "허용 오차 안에서 일찍 시행해도 다음 주기는 시행한 때부터 다시 센다.",
-      "note": "주기 계산 규칙. 조건 표현이 「~해도」라 놓쳤다. 다섯 종류 중 맞는 것이 없어 계약 보완이 필요하다.",
-      "added": false
+      "quote": "설비를 정지하고 현장 패널에서 LOCAL로 전환한 뒤 잠금(LOTO)을 건다.",
+      "note": "2,000 h 점검 1단계의 정지·LOCAL·잠금은 배관 개방 전 안전 준비 조건이다(PM-2.6 머리 문장과 같은 뜻). 단계로만 잡혔다.",
+      "added": true
+    },
+    {
+      "section": "PM-2.6",
+      "procedure": "SOP-PM-21",
+      "kind": "precondition",
+      "quote": "펌프 모터 전원을 차단하고 어큐뮬레이터 잔압을 탱크로 배출한다.",
+      "note": "잔압 배출은 3단계 배관 개방의 선행 조건이다. 단계로만 잡혔다.",
+      "added": true
     },
     {
       "section": "PM-2.3",
       "procedure": null,
       "kind": "completion",
       "quote": "시행 기록에는 패키지, 시행 때의 운전시간, 교체 부품 로트, 시운전 값을 남긴다.",
-      "note": "완료 때 남길 기록 요건인데 완료 표현 목록에 없어 놓쳤다.",
-      "added": false
+      "note": "완료 때 남길 기록 요건인데 완료 표현 목록에 없어 놓쳤다. 지난 시행 기록을 판단하는 근거라 검토자가 추가한다.",
+      "added": true
     },
     {
-      "section": "PM-2.5",
+      "section": "PM-2.3",
       "procedure": null,
       "kind": "precondition",
-      "quote": "부품: 두 대를 묶으려면 씰 키트가 2개 이상 있어야 한다.",
-      "note": "「~려면 ~있어야 한다」 조건을 규칙이 읽지 못했다. 값(PM-02-042)만 남았다.",
+      "quote": "허용 오차 안에서 일찍 시행해도 다음 주기는 시행한 때부터 다시 센다.",
+      "note": "주기 계산 규칙. 다섯 종류 중 맞는 것이 없어 계약 보완이 필요하다.",
       "added": false
     },
     {
@@ -1831,7 +1743,7 @@
       "procedure": null,
       "kind": "prohibition",
       "quote": "잔압이 남은 유압 회로를 열면 작동유가 분출해 다칠 수 있다.",
-      "note": "금지(PM-02-068)의 이유인 위험 문장. 「열면」이 조건 표현 목록에 없다.",
+      "note": "금지(배관 개방 금지)의 이유인 위험 문장. 「열면」이 조건 표현 목록에 없다. 금지 후보가 이미 있어 추가하지 않는다.",
       "added": false
     },
     {
@@ -1839,7 +1751,7 @@
       "procedure": null,
       "kind": "completion",
       "quote": "계수기는 마지막 정기 정비 뒤 운전시간을 세고, 정비를 마치면 0으로 되돌린다.",
-      "note": "완료 후 처리. PM-2.9의 같은 내용(PM-02-100)은 잡혔다.",
+      "note": "완료 후 처리. PM-2.9의 같은 내용은 잡혔다.",
       "added": false
     }
   ]

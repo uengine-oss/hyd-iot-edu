@@ -1,15 +1,23 @@
 """후보·검토 JSON의 계약 검사. 인용이 원문 절 안에 그대로 있는지 대조한다.
-지식의 맞고 틀림, 종류 판단, 빠진 지식은 판정하지 않는다. 생성·수정을 하지 않는다.
-사용: python check_candidates.py 결과/후보/HM-8.json [다른 파일 …]
+지식의 맞고 틀림, 종류 판단, 빠진 지식, 어떤 문서를 근거로 쓸지는 판정하지 않는다. 생성·수정을 하지 않는다.
+사용:
+  python check_candidates.py                          단계별 상태(무엇이 있고 무엇이 비었는지)
+  python check_candidates.py 결과/후보/HM-8.json [...]   파일별 계약 검사
 """
 from pathlib import Path
-import hashlib, json, re, sys
+import csv, hashlib, json, re, sys
 
 HERE = Path(__file__).resolve().parent
 KINDS = {'step', 'precondition', 'prohibition', 'completion', 'unit_value'}
 COMPARATORS = {None, '>=', '>', '<=', '<', '=', 'range', '±'}
 STATUS = {'채택': 'approved', '수정': 'approved', '제외': 'excluded', '보류': 'pending'}
 REQUIRED = ['id', 'doc_id', 'section', 'procedure', 'kind', 'text', 'quote', 'refs', 'status']
+
+
+def register():
+    path = HERE / '자료/문서_목록.csv'
+    with path.open(encoding='utf-8-sig', newline='') as f:
+        return {r['파일']: r for r in csv.DictReader(f) if r['파일']}
 
 
 def blocks(text):
@@ -21,7 +29,7 @@ def blocks(text):
             body[current] = '\n'.join(lines)
             current, lines = m.group(1), []
             continue
-        p = re.match(r'^###\s+(SOP-[A-Z]+-\d+)', line)
+        p = re.match(r'^###\s+(\S+)', line)
         if p:
             procs.setdefault(current, []).append(p.group(1))
         lines.append(line)
@@ -35,7 +43,7 @@ def check(path):
     if not isinstance(data, dict):
         return ['최상위가 객체가 아닙니다.'], notes
     for key in ['doc_id', 'source_file', 'source_sha256', 'extractor', 'generated_at', 'candidates']:
-        if not data.get(key):
+        if not data.get(key) and key != 'candidates' or key not in data:
             errors.append(f'최상위 필드 없음: {key}')
     if errors:
         return errors, notes
@@ -43,7 +51,16 @@ def check(path):
     if not source.is_file():
         return [f'자료/원문/{data["source_file"]} 파일이 없습니다.'], notes
     if hashlib.sha256(source.read_bytes()).hexdigest() != data['source_sha256']:
-        errors.append('source_sha256이 자료/원문의 파일과 다릅니다(다른 판본을 읽었거나 해시를 지어냈음).')
+        errors.append('source_sha256이 자료/원문의 파일과 다릅니다(다른 판을 읽었거나 해시를 지어냈음).')
+    row = register().get(data['source_file'])
+    if row is None:
+        errors.append('자료/문서_목록.csv에 없는 파일입니다.')
+    else:
+        notes.append(f'문서_목록: {row["문서 식별자"]} {row["판"]}판 · 상태 {row["상태"]}')
+        if row['SHA-256'] != data['source_sha256']:
+            errors.append('source_sha256이 문서_목록.csv의 해시와 다릅니다.')
+        if row['문서 식별자'] != data['doc_id']:
+            errors.append(f'doc_id {data["doc_id"]!r}가 문서_목록의 식별자 {row["문서 식별자"]!r}와 다릅니다.')
     body, procs = blocks(source.read_text(encoding='utf-8'))
     reviewed = 'review' in data
     if reviewed:
@@ -52,7 +69,9 @@ def check(path):
                 errors.append(f'review.{key} 없음')
     seen, dup = set(), set()
     for i, c in enumerate(data['candidates']):
-        where = c.get('id', f'#{i}')
+        where = c.get('id', f'#{i}') if isinstance(c, dict) else f'#{i}'
+        if not isinstance(c, dict):
+            errors.append(f'{where}: 후보가 객체가 아님'); continue
         miss = [k for k in REQUIRED if k not in c]
         if miss:
             errors.append(f'{where}: 필수 필드 없음 {miss}')
@@ -75,7 +94,7 @@ def check(path):
             errors.append(f'{where}: quote가 {c["section"]} 절 안에 그대로 없음' + (f'(다른 절 {hit}에 있음)' if hit else '(원문 어디에도 없음)'))
         if c['procedure'] is not None and c['procedure'] not in procs.get(c['section'], []):
             errors.append(f'{where}: {c["section"]} 절에 없는 절차 {c["procedure"]!r}')
-        if c['kind'] == 'step' and not (isinstance(c.get('order'), int) and c['order'] >= 1):
+        if c['kind'] == 'step' and not (isinstance(c.get('order'), int) and not isinstance(c.get('order'), bool) and c['order'] >= 1):
             errors.append(f'{where}: step에는 1 이상의 정수 order가 필요')
         if c['kind'] == 'unit_value':
             if not isinstance(c.get('value'), (int, float)) or isinstance(c.get('value'), bool):
@@ -93,14 +112,14 @@ def check(path):
             errors.append(f'{where}: 같은 종류·절·내용·인용·값의 후보가 이미 있음')
         dup.add(key)
         if reviewed:
-            d = c.get('decision')
-            if d not in STATUS:
+            dec = c.get('decision')
+            if dec not in STATUS:
                 errors.append(f'{where}: decision은 채택·수정·제외·보류 중 하나')
-            elif c['status'] != STATUS[d]:
-                errors.append(f'{where}: {d}이면 status는 {STATUS[d]}')
+            elif c['status'] != STATUS[dec]:
+                errors.append(f'{where}: {dec}이면 status는 {STATUS[dec]}')
             if not str(c.get('reason', '')).strip():
                 errors.append(f'{where}: 결정 이유(reason)가 없음')
-            if d == '수정' and not c.get('before'):
+            if dec == '수정' and not c.get('before'):
                 errors.append(f'{where}: 수정에는 바꾸기 전 값(before)이 필요')
             if c.get('origin') not in ('extractor', 'reviewer'):
                 errors.append(f'{where}: origin은 extractor 또는 reviewer')
@@ -112,25 +131,114 @@ def check(path):
             errors.append(f'missing {sec}: quote가 원문 절 안에 그대로 없음')
     kinds = {}
     for c in data['candidates']:
-        kinds[c.get('kind')] = kinds.get(c.get('kind'), 0) + 1
+        if isinstance(c, dict):
+            kinds[c.get('kind')] = kinds.get(c.get('kind'), 0) + 1
     notes.append(f'후보 {len(data["candidates"])}개, 종류별 {kinds}')
     if reviewed:
         dec = {}
         for c in data['candidates']:
-            dec[c.get('decision')] = dec.get(c.get('decision'), 0) + 1
+            if isinstance(c, dict):
+                dec[c.get('decision')] = dec.get(c.get('decision'), 0) + 1
         notes.append(f'결정별 {dec}, 누락 기록 {len(data.get("missing", []))}개')
     return errors, notes
 
 
+def run(path):
+    try:
+        return check(path)
+    except (OSError, ValueError, TypeError, AttributeError, KeyError) as e:
+        return [f'읽기 실패: {e}'], []
+
+
+def empty_tables(md):
+    """기록 파일의 절별 빈 표·빈 칸 수. 제목 줄과 구분 줄은 세지 않는다."""
+    out, sec, header = {}, '머리', False
+    for line in md.splitlines():
+        if line.startswith('## '):
+            sec, header = line[3:].strip(), False
+            continue
+        if line.startswith('|'):
+            cells = [c.strip() for c in line.strip().strip('|').split('|')]
+            if all(re.fullmatch(r':?-{2,}:?', c) for c in cells):
+                header = True
+                out.setdefault(sec, [0, 0])
+                continue
+            if not header:
+                continue
+            out.setdefault(sec, [0, 0])
+            out[sec][0] += 1
+            out[sec][1] += sum(1 for c in cells if not c)
+        elif not line.strip():
+            header = False
+    return out
+
+
+def stages():
+    todo = []
+    ext = HERE / '결과/extract.py'
+    print(f'[1] 추출 함수 결과/extract.py: {"있음" if ext.is_file() else "없음"}')
+    if not ext.is_file():
+        todo.append('추출 함수가 없습니다.')
+    files = sorted((HERE / '결과/후보').glob('*.json'))
+    print(f'[2] 후보 파일 {len(files)}개')
+    docs = set()
+    for f in files:
+        errors, notes = run(f)
+        state = '계약 통과' if not errors else f'계약 확인 필요 {len(errors)}건'
+        print(f'    {f.name}: {state} · ' + ' · '.join(notes))
+        if errors:
+            todo.append(f'{f.name} 계약 오류(파일 이름을 인자로 주고 실행하면 목록이 나옵니다).')
+        try:
+            docs.add(json.loads(f.read_text(encoding='utf-8-sig')).get('source_file'))
+        except (OSError, ValueError, AttributeError):
+            pass
+    print(f'[3] 후보를 만든 원문 파일 {len(docs)}개: {", ".join(sorted(d for d in docs if d)) or "없음"}')
+    if len(docs) < 2:
+        todo.append('다른 문서에 다시 실행한 후보가 아직 없습니다.')
+    reviews = sorted((HERE / '결과/검토').glob('*.json'))
+    print(f'[4] 검토 결과 {len(reviews)}개')
+    for f in reviews:
+        errors, notes = run(f)
+        print(f'    {f.name}: {"계약 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
+        if errors:
+            todo.append(f'{f.name} 계약 오류.')
+    if not reviews:
+        todo.append('검토 결과가 없습니다.')
+    record = HERE / '결과/검토_기록.md'
+    print('[5] 검토_기록.md')
+    if not record.is_file():
+        todo.append('검토_기록.md가 없습니다.')
+    else:
+        text = record.read_text(encoding='utf-8-sig')
+        for line in text.splitlines():
+            if re.match(r'^- [^:]+:\s*$', line):
+                print(f'    빈 항목: {line.strip()}')
+                todo.append(f'검토_기록.md의 빈 항목 「{line.strip()}」')
+        for sec, (rows, blanks) in empty_tables(text).items():
+            if rows == 0:
+                print(f'    「{sec}」: 표에 기록 없음')
+                todo.append(f'검토_기록.md 「{sec}」 표가 비어 있습니다.')
+            elif blanks:
+                print(f'    「{sec}」: {rows}행, 빈 칸 {blanks}개')
+                todo.append(f'검토_기록.md 「{sec}」 빈 칸 {blanks}개(실제 결과 칸은 직접 채웁니다).')
+            else:
+                print(f'    「{sec}」: {rows}행')
+    print()
+    if todo:
+        print('완료 아님 — 남은 것:')
+        for t in todo:
+            print('  - ' + t)
+        return 1
+    print('구조상 빠진 단계는 없습니다. 내용이 맞는지·빠진 지식·근거 문서 선택은 원문과 직접 대조하세요.')
+    return 0
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print(__doc__); sys.exit(2)
+        sys.exit(stages())
     failed = False
     for arg in sys.argv[1:]:
-        try:
-            errors, notes = check(arg)
-        except (OSError, ValueError, TypeError, AttributeError, KeyError) as e:
-            errors, notes = [f'읽기 실패: {e}'], []
+        errors, notes = run(arg)
         print(f'== {arg}')
         for n in notes:
             print('  ' + n)
