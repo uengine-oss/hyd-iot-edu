@@ -8,6 +8,7 @@ DRAFT = 'shift-handover-draft-v1'
 SENDER = 'shift-handover-sender-v1'
 RECEIVER = 'shift-handover-receiver-v1'
 AREAS = {'equipment', 'work_orders', 'parts', 'work_notes'}
+START_INPUTS = frozenset({'asset', 'shift_label', 'as_of', 'work_notes'})
 
 
 def optional_inputs(form):
@@ -16,8 +17,7 @@ def optional_inputs(form):
 
 
 def validate_start(values):
-    allowed = {'asset', 'shift_label', 'as_of', 'work_notes'}
-    if not isinstance(values, dict) or set(values) != allowed:
+    if not isinstance(values, dict) or set(values) != START_INPUTS:
         raise ValueError('인수인계 시작에는 설비·교대·기준시각·작업 메모만 입력하세요')
     for key, maximum in [('asset', 80), ('shift_label', 120), ('work_notes', 4000), ('as_of', 80)]:
         value = values[key]

@@ -199,6 +199,19 @@ def test_handover_approval_accepts_first_draft_null_notes_without_dropping_revie
     assert inputs['sender_notes'] is None and inputs['receiver_notes'] is None
     agents.validate_input(approval,inputs)
     agents.validate_input(approval,dict(inputs,sender_notes='작업지시를 다시 확인하세요'))
+    # Exercise the actual engine start, not only the input-schema helper.
+    for notes in (None,'작업지시를 다시 확인하세요'):
+        managed_inputs=dict(inputs,sender_notes=notes)
+        started=agents.start(runtime,approval,managed_inputs,str(uuid4()),'handover.draft')
+        managed_row=runtime.repo.list_workitems(proc_inst_id=started['proc_inst_id'])[0]
+        assert runtime.workitem_view(managed_row['id'])['inputs']['sender_notes']==notes
+        assert agents.verify_instance(runtime,started)==approval
+    with pytest.raises(ValueError,match='시간대'):
+        agents.start(runtime,approval,dict(inputs,as_of='2026-10-27T18:00:00'),str(uuid4()),'handover.draft')
+    with pytest.raises(Denied):
+        agents.start(runtime,approval,dict(inputs,sender_decision='approve'),str(uuid4()),'handover.draft')
+    with pytest.raises(ValueError,match='시작에는'):
+        runtime.start_definition(source['processDefinitionId'],source['version'],str(uuid4()),values=inputs)
     bad=deepcopy(approval);bad['input_schema']['properties']['sender_notes']['type']='string'
     with pytest.raises(Denied,match='검토 전 null'):agents.revision(runtime,bad)
     del bad['input_schema']['properties']['sender_notes']
