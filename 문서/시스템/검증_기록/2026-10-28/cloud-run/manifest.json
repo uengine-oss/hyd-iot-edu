@@ -1,0 +1,116 @@
+{
+ "scope": "cloud fresh-install continuous portal run 2026-10-28; selected non-secret outputs copied from local .evidence/cloud-20261028 (not a full trace, DB or volume)",
+ "secret_scan": "pattern sk-/HYD1./LLM_API_KEY= and the configured key value: none (one false positive: form id ask-answer-v1)",
+ "files": [
+  {
+   "file": "02-A_판단.json",
+   "sha256": "5d949b1f98a1dc50042bd9b8d914a3d9469419bb1da810243dd552a0c67fa087",
+   "bytes": 457
+  },
+  {
+   "file": "06-나의_에이전트_질문.json",
+   "sha256": "0ed493f2acb4427652f9fa5af9582014c68cc65548c46299cdd8e21b4399afdb",
+   "bytes": 2274
+  },
+  {
+   "file": "11-내_정기_정비_판단_제안.json",
+   "sha256": "588b4581ea21bf192c421499d14fdc402262fe1d00f7c22bd5671ef2bac8d0e3",
+   "bytes": 500
+  },
+  {
+   "file": "12-내_예비품_구매_판단_제안.json",
+   "sha256": "5405ab3c65b5190099b7abbccfa36de456d49411ec1adecd0cb59da420017018",
+   "bytes": 414
+  },
+  {
+   "file": "deploy1-after.txt",
+   "sha256": "9ec225d2ed9583b522b81ea7b9e5031924e035558ae57a2e6fe155bc69cfa9bb",
+   "bytes": 77
+  },
+  {
+   "file": "deploy1-before.txt",
+   "sha256": "9ec225d2ed9583b522b81ea7b9e5031924e035558ae57a2e6fe155bc69cfa9bb",
+   "bytes": 77
+  },
+  {
+   "file": "deploy2-after.txt",
+   "sha256": "9ec225d2ed9583b522b81ea7b9e5031924e035558ae57a2e6fe155bc69cfa9bb",
+   "bytes": 77
+  },
+  {
+   "file": "ledger.csv",
+   "sha256": "cb2f2a9446e65bee05cfbc41161b80bf295b785ba935b9f9fe0d54f976c306f9",
+   "bytes": 510
+  },
+  {
+   "file": "q06-failed-question-instance.json",
+   "sha256": "454f8fbe9503ddb82090cc80a7a0341ae3a52ce865232a9b90d3c35c0718d8dc",
+   "bytes": 43424
+  },
+  {
+   "file": "round-06-fixed.summary.md",
+   "sha256": "2520f23f703528a42d005be4229ba9b950a5e59993df4c5121a34008c6f0221f",
+   "bytes": 2750
+  },
+  {
+   "file": "round-13-testkey.summary.md",
+   "sha256": "3243cc447c635f3d020f38f643f82d69d11061a030af3d058daf23cf73196644",
+   "bytes": 1071
+  },
+  {
+   "file": "round-13b.summary.md",
+   "sha256": "7110b6f6ac5b8a9d89c894148eb85f8af35dd27776899f3791da19cd67df67c0",
+   "bytes": 656
+  },
+  {
+   "file": "round-13c.summary.md",
+   "sha256": "4a99b0628681ea38e17a37982f6da576c1154c8266507116e5c399f4656728b1",
+   "bytes": 787
+  },
+  {
+   "file": "round-13d.summary.md",
+   "sha256": "77ba148561c2a1fe9e218da5b7ab98f1c32ea4cd2eaf77c08efde195b085ac39",
+   "bytes": 855
+  },
+  {
+   "file": "round-13e.summary.md",
+   "sha256": "dd234a015814264a7b095101ad76786a7d9d0f8c2ecea465bc53f30d13eab23e",
+   "bytes": 1503
+  },
+  {
+   "file": "round-ai-1.summary.md",
+   "sha256": "a6857acaffc70ee22ae1836a388a7d210af5ca3269811ff76970caec3697c80a",
+   "bytes": 11638
+  },
+  {
+   "file": "round-lab10-fixed.summary.md",
+   "sha256": "2e9f28104360051243e2900d1d978b1724d55e26b3747e156e7ad382ec9b566d",
+   "bytes": 1810
+  },
+  {
+   "file": "round-noai-1.summary.md",
+   "sha256": "5ec8a1cdb751395243f6418d3b068190d2ae59a8daea264b23911c95909dd68b",
+   "bytes": 23680
+  },
+  {
+   "file": "round-noai-90.summary.md",
+   "sha256": "4ebe7ce0f390138f1f7670e9898ca0cb7636ea4a9459ef6f2b8d59ad6af07a1d",
+   "bytes": 6038
+  },
+  {
+   "file": "start.exit",
+   "sha256": "19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061",
+   "bytes": 7
+  },
+  {
+   "file": "start.log",
+   "sha256": "21a45d0696d16cc7408829534db4eaaa390b8120ce989317be62fab9193a875d",
+   "bytes": 261854
+  },
+  {
+   "file": "unit-full.tail.txt",
+   "sha256": "78a831a589c0fb88731cee77f2b26ee9c06d821dc43d8e3c584fcba36657a24b",
+   "bytes": 132
+  }
+ ]
+}
