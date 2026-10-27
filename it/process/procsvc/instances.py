@@ -256,7 +256,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                      'events':self.repo.list_events(todo_id=wid)}
 
     def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None,
-                         role_endpoints=None, _classroom_approval=None, _initial_agent_results=None):
+                         role_endpoints=None, _classroom_approval=None, _initial_agent_results=None, _coalesce_key=None):
         if not isinstance(event_id,str) or not event_id.strip():
             raise ValueError('중복 실행을 구분할 event_id가 필요합니다')
         if not isinstance(version,str) or not version.strip():
@@ -278,7 +278,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         if unknown_roles:
             raise ValueError('정의에 없는 역할입니다: ' + ', '.join(unknown_roles))
         values = dict(values or {})
-        protected=(PROTECTED_OUTPUTS | {'decision_id'}).intersection(values)
+        protected=(PROTECTED_OUTPUTS | {'decision_id','_runtime_coalescing'}).intersection(values)
         if _classroom_approval is not None:
             from . import classroom_agents
             if defn.raw!=classroom_agents.isolated_definition(self,_classroom_approval):
@@ -296,10 +296,24 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                     if _classroom_approval is not None else values)
         if protected:
             raise ValueError('시작 변수로 Incident/승인 결과를 주입할 수 없습니다')
-        key = json.dumps([self.tenant_id,def_id,event_id])
+        # One short definition lock also serializes aliases with reused request
+        # IDs across different questions. No lock spans model/tool execution.
+        key = json.dumps([self.tenant_id,def_id,'coalesced' if _coalesce_key else event_id])
         with self.repo.event_transaction(key):
-            if self.repo.find_event_instance(self.tenant_id,def_id,event_id):
+            previous = self.repo.find_event_instance(self.tenant_id,def_id,event_id)
+            if previous:
+                if _coalesce_key and engine.variables(previous).get('_runtime_coalescing',{}).get('key') != _coalesce_key:
+                    raise ValueError('이 요청 ID는 다른 질문·에이전트 조건에 이미 사용됐습니다')
                 return None
+            if _coalesce_key:
+                active = self.repo.find_active_coalesced_instance(self.tenant_id,def_id,_coalesce_key)
+                if active:
+                    binding = engine.variables(active)['_runtime_coalescing']
+                    if len(binding['events']) >= 100:raise ValueError('같은 질문의 재전송 횟수 한도 초과')
+                    binding['events'].append(event_id)
+                    self.repo.update_instance(active)
+                    return active
+                values['_runtime_coalescing'] = {'key':_coalesce_key,'events':[event_id]}
             if alert is not None:
                 if not alert.get('asset') or not alert.get('alertId'):
                     raise ValueError('alert에는 asset과 alertId가 필요합니다')

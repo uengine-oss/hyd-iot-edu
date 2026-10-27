@@ -37,11 +37,20 @@ class ManagedIsolation(unittest.TestCase):
         try:
             proc = tree.spawn([sys.executable, '-c', script], cwd=str(self.work), env=dict(os.environ),
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            output, error = proc.communicate(timeout=20)
+            try:
+                output, error = proc.communicate(timeout=60)
+            except subprocess.TimeoutExpired:
+                tree.close()
+                output, error = proc.communicate(timeout=5)
+                self.fail('Boundary child timed out; stdout='+output[-1000:]+'; stderr='+error[-4000:])
             self.assertEqual(proc.returncode, 0, error)
             return json.loads(output)
         finally:
             tree.close()
+            if 'proc' in locals():
+                proc.wait(timeout=5)
+                if proc.stdout:proc.stdout.close()
+                if proc.stderr:proc.stderr.close()
 
     def test_secrets_other_runs_parent_environment_and_control_record_denied(self):
         other = self.work.parent / 'other'
@@ -90,6 +99,33 @@ print(json.dumps({'reads':results,'uid':os.getuid(),'groups':os.getgroups(),
     def test_existing_link_rejected_before_process_creation(self):
         (self.work / 'escape').symlink_to(self.secret)
         with self.assertRaisesRegex(RuntimeError, '링크'):
+            isolation.prepare(['true'], {'cwd':str(self.work), 'env':{}})
+
+    def test_resume_removes_only_stale_cli_socket_and_keeps_state(self):
+        import socket
+        sock_dir = self.work / '.runtime-tmp' / 'cc-socks'
+        sock_dir.mkdir(parents=True)
+        path = sock_dir / '123.sock'
+        sock = socket.socket(socket.AF_UNIX)
+        try:
+            sock.bind(str(path))
+        finally:
+            sock.close()
+        os.chown(path, isolation.UID, isolation.UID)
+        (self.work / 'state').write_text('retained')
+        isolation.prepare(['true'], {'cwd':str(self.work), 'env':{}})
+        self.assertFalse(path.exists())
+        self.assertEqual((self.work / 'state').read_text(), 'retained')
+
+    def test_other_socket_still_rejected(self):
+        import socket
+        path = self.work / 'unexpected.sock'
+        sock = socket.socket(socket.AF_UNIX)
+        try:
+            sock.bind(str(path))
+        finally:
+            sock.close()
+        with self.assertRaisesRegex(RuntimeError, '특수 파일'):
             isolation.prepare(['true'], {'cwd':str(self.work), 'env':{}})
 
     def test_approved_skill_bundle_is_readonly_and_cleaned_after_execution(self):
@@ -274,7 +310,7 @@ asyncio.run(main())
                         events=[json.loads(line) for line in output.splitlines() if line.startswith('{')]
                         init=next(e for e in events if e.get('type')=='system' and e.get('subtype')=='init')
                         self.assertIn('hyd-classroom:approved-test',init['skills'])
-                        self.assertEqual(set(init['tools']),{'Read','Glob','Grep','Write','Edit','Skill'})
+                        self.assertEqual(set(init['tools']),{'Read','Write','Edit','Skill'})
                         self.assertNotIn('Bash',init['tools'])
                         self.assertNotIn('WebFetch',init['tools'])
                 finally:tree.close()

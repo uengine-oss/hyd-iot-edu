@@ -50,6 +50,8 @@ def _execution(runtime, authority, row):
         return authority.execution_context(runtime.tenant_id,row['proc_inst_id'],
                                            execution_run_id=identifier(managed['run_id']))
     cache = values.get('extraction_cache') or {}
+    if not cache and hasattr(authority, 'local_execution'):
+        return authority.local_execution(runtime, row)
     return authority.execution_context(runtime.tenant_id, row['proc_inst_id'], cache.get('key'),
                                        execution_run_id=cache.get('execution_run_id'))
 
@@ -70,7 +72,7 @@ def issue(runtime, authority, body, authorization):
     raw = base64.urlsafe_b64encode(json.dumps(binding, separators=(',', ':')).encode()).decode()
     signature = hmac.new(secret.encode(), ('hyd-model-v1:'+raw).encode(), hashlib.sha256).hexdigest()
     return dict(tenant_id=runtime.tenant_id, todo_id=row['id'], consumer=row['consumer'],
-                model=execution['model'], token=PREFIX+raw+'.'+signature)
+                model=execution['model'], token=PREFIX+raw+'.'+signature, expires=binding['expires'])
 
 
 def verify_token(token):
@@ -119,7 +121,7 @@ def prepare(runtime, authority, token, raw, *, count_only=False):
     try:
         authority.charge_execution(binding['run_id'], input_bytes=len(raw), max_output_tokens=maximum)
     except Denied as exc:
-        raise HTTPException(429, str(exc)) from None
+        raise HTTPException(429, str(exc), headers={'x-should-retry':'false'}) from None
     return request, binding
 
 

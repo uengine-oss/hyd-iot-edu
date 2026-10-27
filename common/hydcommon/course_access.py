@@ -84,6 +84,9 @@ def authorize_task(grant, definition, activity_id, inputs):
     if approval:
         did, activity_id = approval.get('definition'), approval.get('activity')
     if activity_id in FIXED_RUNS.get(did, set()):return
+    if did == 'ask_agent' and activity_id == 'task:answer':
+        question = (inputs or {}).get('question')
+        if isinstance(question,str) and question.strip() and len(question)<=1000:return
     if current == 'handover' and activity_id in HANDOVER_RUNS.get(did, set()):return
     # Student ingestion is served from the signed source cache before enqueue.
     # A task reaching the live worker is a missing/bypassed cache, never a

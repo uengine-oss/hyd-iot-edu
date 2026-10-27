@@ -160,8 +160,22 @@ def start(rt, question, agent_id=None, by=None, request_id=None, *, definitions_
     request_id = str(uuid.UUID(request_id)) if request_id else str(uuid.uuid4())
     register_definition(rt, definitions_dir)
     event_id = EVENT_PREFIX + request_id
+    previous = rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event_id)
+    if previous:
+        endpoint = next((b.get('endpoint') for b in previous.get('role_bindings',[]) if b.get('name')==ROLE),None)
+        if engine.variables(previous).get('question') != q or endpoint != agent['id']:
+            raise ValueError('이 요청 ID는 다른 질문·에이전트에 이미 사용됐습니다')
+        return view(rt,previous['proc_inst_id'])
+    from dataclasses import asdict
+    from .agents_store import agent_settings
+    from .classroom_authority import digest
+    settings = asdict(agent_settings(rt.repo,rt.tenant_id,agent['id']))
+    settings['profile'] = {k:v for k,v in (settings.get('profile') or {}).items()
+                           if k not in {'username','name','created_at','updated_at'}}
+    binding = digest({'question':q,'agent':settings,'version':VERSION})
     inst = rt.start_definition(DEFINITION_ID, VERSION, event_id, values={'question': q, 'asked_by': str(by or '수강생').strip()[:120]},
-                               name='질문 · ' + (q if len(q) <= 40 else q[:40] + '…'), role_endpoints={ROLE: agent['id']})
+                               name='질문 · ' + (q if len(q) <= 40 else q[:40] + '…'), role_endpoints={ROLE: agent['id']},
+                               _coalesce_key=binding)
     inst = inst or rt.repo.find_event_instance(rt.tenant_id, DEFINITION_ID, event_id)
     return view(rt, inst['proc_inst_id'])
 
@@ -203,9 +217,13 @@ def _failed(output, is_error, tool=None) -> str | None:
         # adapter may wrap in {result: "[...]"}. This is data, not our
         # enterprise/DMN result-status envelope. Preserve explicit errors.
         if (not env.get('error') and not env.get('isError') and
-                short_tool(str(tool or '')).endswith('/read_neo4j_cypher') and isinstance(env.get('result'), str)):
+                short_tool(str(tool or '')).endswith(('/read_neo4j_cypher','/get_neo4j_schema')) and isinstance(env.get('result'), str)):
             try:
                 rows = json.loads(env['result'])
+                if isinstance(rows,dict) and isinstance(rows.get('rows'),list) and not any(rows.get(k) for k in ('error','isError','is_error')):
+                    if not rows['rows'] and rows.get('truncated'):
+                        return '응답 한도로 결과가 생략됐습니다. 필요한 이름·속성을 좁혀 추가 조회하세요'
+                    rows=rows['rows']
                 if isinstance(rows, list) and all(isinstance(row, dict) for row in rows):
                     return None
             except ValueError:
@@ -392,6 +410,37 @@ def _task(rt, inst):
     return max(rows, key=engine.workitem_order) if rows else None
 
 
+def retry(rt, proc_inst_id, request_id, by, reason):
+    """Explicit recovery of the same failed question; never reset its budget."""
+    request_id = str(uuid.UUID(request_id))
+    if not isinstance(reason,str) or not reason.strip() or len(reason)>1000:
+        raise ValueError('재개 사유를 1000자 이내로 적으세요')
+    with rt._transition(proc_inst_id):
+        inst = _instance(rt,proc_inst_id)
+        if not by or engine.variables(inst).get('asked_by') != by:
+            raise PermissionError('질문한 사람과 재개 요청자가 다릅니다')
+        wi = _task(rt,inst)
+        if not wi:raise ValueError('질문의 작업을 찾을 수 없습니다')
+        history = [e for e in rt.repo.list_events(todo_id=wi['id'])
+                   if isinstance(e.get('data'),dict) and e['data'].get('ask_retry_id')]
+        previous = next((e for e in history if e['data']['ask_retry_id']==request_id),None)
+        if previous:
+            if previous['data'].get('reason') != reason or previous['data'].get('by') != by:
+                raise ValueError('같은 재개 요청 ID의 내용이 다릅니다')
+            return view(rt,proc_inst_id)
+        if inst['status']!='RUNNING' or wi['status']!='IN_PROGRESS' or wi.get('draft_status')!='FAILED':
+            raise ValueError('실패해 멈춘 질문만 같은 작업으로 재개할 수 있습니다')
+        if len(history)>=2:raise ValueError('같은 질문의 재개는 2회까지입니다. 강사에게 실행 기록을 확인받으세요')
+        rt.repo.record_events([dict(job_id='ask-retry:'+request_id,todo_id=wi['id'],proc_inst_id=proc_inst_id,
+            crew_type='human',event_type='task_working',data=dict(type='notice',name='실패한 질문 재개',
+            ask_retry_id=request_id,by=by,reason=reason,retry_number=len(history)+1))])
+        wi['feedback'] = dict(wi.get('feedback') or {},text=reason.strip(),by=by,kind='human_retry')
+        wi.update(draft_status='FB_REQUESTED',consumer=None,lease_until=None)
+        rt.repo.update_workitem(wi)
+        rt._after_commit(rt._project,inst)
+        return view(rt,proc_inst_id)
+
+
 def _error_reason(events) -> str | None:
     for e in reversed(events):
         if e.get('event_type') == 'error':
@@ -493,6 +542,13 @@ class AskReq(BaseModel):
     request_id: str | None = None
 
 
+class AskRetryReq(BaseModel):
+    model_config = {'extra':'forbid'}
+    request_id: str
+    by: str
+    reason: str
+
+
 def register(app, *, runtime_factory, definitions_dir, worker_probe, bridge):
     """bridge: () -> AGENT_BRIDGE 값. worker_probe: () -> instance_mode.worker_status() 모양."""
     import asyncio
@@ -536,6 +592,13 @@ def register(app, *, runtime_factory, definitions_dir, worker_probe, bridge):
     async def ask_reset():
         r = rt()
         return await run(lambda: reset(r))
+
+    @app.post('/api/ask/{proc_inst_id}/retry')
+    async def ask_retry(proc_inst_id: str, req: AskRetryReq):
+        try:
+            return await run(lambda: retry(rt(),proc_inst_id,req.request_id,req.by,req.reason))
+        except PermissionError as exc:
+            raise HTTPException(403,str(exc)) from None
 
     @app.get('/api/ask/{proc_inst_id}')
     async def ask_view(proc_inst_id: str):

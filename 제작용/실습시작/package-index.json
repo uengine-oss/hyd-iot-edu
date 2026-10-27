@@ -14,11 +14,11 @@
       "id": "practical-02-relations",
       "course": "실전반",
       "session": "온라인 02회차",
-      "title": "관계를 따라 센서와 부품 조회하기",
-      "version": "2026-10-27-cypher-v2",
+      "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
+      "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "b5f93f33f4e997fadb2fc3bd33457754da0f6d52be79e255699db87c294babdb"
+      "sha256": "1749aa2e486354df4f939cbfa2c161b34976013b0428de0747816aa216d55b9b"
     },
     {
       "id": "practical-02-map",
@@ -74,11 +74,11 @@
       "id": "integrated-02-relations",
       "course": "통합반",
       "session": "온라인 02회차",
-      "title": "Cypher로 설비 전체 연결 탐색하기",
-      "version": "2026-10-27-readable-v5",
+      "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
+      "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "e04929a908719eec2be1d974f128b4e17bf56ff34d44252ed81b77d90785fb33"
+      "sha256": "dbe53876b32a668cd435144a555c606666eb48a52efbdaf3cdc250fa4b7170a7"
     },
     {
       "id": "integrated-02-map",

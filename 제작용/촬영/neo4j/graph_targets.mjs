@@ -21,7 +21,7 @@ export function graphTarget({label,edge=false,allowOutside=false}){
    if(c&&Math.hypot(c.x-t.x,c.y-t.y)<c.r*1.4)remembered.set(t.text,{wx:c.wx,wy:c.wy,t:t.t});
   }
   const groups=new Map();for(const [text,c]of remembered){const k=c.wx.toFixed(2)+','+c.wy.toFixed(2);const a=groups.get(k)||{...c,texts:[]};a.texts.push(text);a.t=Math.max(a.t,c.t);groups.set(k,a);}
-  const matches=[...groups.values()].filter(g=>g.texts.join('').replace(/\s/g,'').includes(label.replace(/\s/g,''))).sort((a,b)=>b.t-a.t);
+  const matches=[...groups.values()].filter(g=>g.texts.join('').replace(/\s/g,'').includes(label.replace(/\s/g,''))).sort((a,b)=>Number(b.texts.some(t=>t.replace(/\s/g,'')===label.replace(/\s/g,'')))-Number(a.texts.some(t=>t.replace(/\s/g,'')===label.replace(/\s/g,'')))||b.t-a.t);
   for(const match of matches){const c=q.circles.filter(c=>c.canvas===canvas&&Math.abs(c.wx-match.wx)<.01&&Math.abs(c.wy-match.wy)<.01).at(-1);if(c){const r=canvas.getBoundingClientRect();if(allowOutside||(c.x>=r.left&&c.x<=r.right&&c.y>=r.top&&c.y<=r.bottom))return {x:c.x,y:c.y,r:c.r};}}
  }
  const latest=q.texts.filter(x=>x.canvas===canvas).at(-1)?.t||0;
@@ -33,7 +33,12 @@ export function graphTarget({label,edge=false,allowOutside=false}){
  }
  if(!t)throw Error('Label not rendered: '+label);
  const rect=canvas.getBoundingClientRect();let point;
- if(edge)point={x:t.x+8,y:t.y};
+ if(edge){
+  // Two-node examples may render a vertical relationship label. A horizontal
+  // offset misses that line: use the observed node centres, away from the text.
+  const nodes=[...new Map(q.circles.filter(c=>c.canvas===canvas&&c.r>5&&c.t>=latest-50&&c.wx!==undefined).map(c=>[c.wx.toFixed(2)+','+c.wy.toFixed(2),c])).values()];
+  point=nodes.length===2?{x:nodes[0].x*.65+nodes[1].x*.35,y:nodes[0].y*.65+nodes[1].y*.35}:{x:t.x+8,y:t.y};
+ }
  else {const nodes=q.circles.filter(x=>x.canvas===canvas&&Math.abs(x.t-t.t)<35&&x.r>5&&x.wx!==undefined);let c=nodes.sort((a,b)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(b.x-t.x,b.y-t.y))[0];if(!c||Math.hypot(c.x-t.x,c.y-t.y)>c.r*1.5)throw Error('Label association failed: '+label);c=q.circles.filter(x=>x.canvas===canvas&&Math.abs(x.wx-c.wx)<.01&&Math.abs(x.wy-c.wy)<.01).at(-1)||c;point={x:c.x,y:c.y,r:c.r};}
  if(!allowOutside&&(point.x<rect.left||point.x>rect.right||point.y<rect.top||point.y>rect.bottom))throw Error('Target outside graph: '+label);
  return point;

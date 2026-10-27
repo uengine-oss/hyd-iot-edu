@@ -1141,6 +1141,8 @@ _course_store = course_access.mount(app,
     archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
     tenant=os.getenv('TENANT_ID', 'hyd'))
 course_access_proof.mount(app,_course_store)
+from . import course_model
+course_model.mount(app, access_store=_course_store, runtime_factory=instance_mode.current, settings=os.environ)
 _classroom_client = None
 if os.getenv('HYD_CLASSROOM_URL'):
     from .classroom_client import Client as ClassroomClient

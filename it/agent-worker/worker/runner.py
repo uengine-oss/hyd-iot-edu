@@ -272,6 +272,8 @@ class Runner:
             model = managed['model']
             bridged.env = dict(bridged.env or {}, **managed['env'])
             bridged.redaction_values.extend(managed['secrets'])
+            if managed.get('deadline') is not None:
+                deadline = min(deadline, time.monotonic()+max(0, managed['deadline']-time.time()))
         if provider_id == 'claude-code' and (managed or self.course_access is not None):
             # Luna uses a compatible gateway, not Claude's deferred-tool protocol.
             # Load the approved MCP schemas eagerly; permissions stay unchanged.
@@ -650,6 +652,8 @@ def relay_hint(raw: str) -> str | None:
     모르는 오류는 None — 원문은 raw_error 에 그대로 남는다."""
     text = str(raw or "")
     low = text.lower()
+    if '수업 실행 또는 누적 사용량 한도 초과' in text:
+        return '이 작업 또는 수업의 사용 한도에 도달했습니다. 실행 기록을 강사에게 확인받으세요. 잠시 기다려도 한도가 초기화되지는 않습니다.'
     if "not allowed to access model" in low or "invalid model" in low or ("model" in low and "not found" in low):
         return "에이전트의 모델 이름을 강의 중계가 받지 않습니다 — [에이전트]에서 이 에이전트의 모델 칸을 비우면(실행기 기본 모델) 다시 됩니다"
     if "401" in text or "invalid api key" in low or "authentication_error" in low or "failed to authenticate" in low:

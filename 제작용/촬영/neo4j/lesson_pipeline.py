@@ -14,7 +14,9 @@ def select(m, base):
     selected=[]
     for i, part in enumerate(m['takes']):
         source=base/part['take']; t=read(source/'timing.json')
-        start=part.get('start_ms', 0); end=part.get('end_ms', t['duration'])
+        start=t['frames'][part['start_frame']]['time'] if 'start_frame' in part else part.get('start_ms', 0); end=part.get('end_ms', t['duration'])
+        if part.get('from_cue'):
+            start=next(a['time']-250 for a in t['actions'] if a['id']==part['from_cue'])
         if part.get('before_cue'):
             end=next(a['time']-250 for a in t['actions'] if a['id']==part['before_cue'])
         if t['error'] and 'end_ms' not in part and 'before_cue' not in part:
@@ -27,7 +29,7 @@ def select(m, base):
         dest.mkdir(exist_ok=True)
         actual=[f for f in t['frames'] if start<=f['time']<end]
         previous=[f for f in t['frames'] if f['time']<start]
-        if previous: actual.insert(0,previous[-1])
+        if previous and (not actual or actual[0]['time']>start): actual.insert(0,previous[-1])
         assert actual, source
         out={**t,'start':t['start']+start,'duration':end-start,'error':None,
              'source_range':{'take':source.name,'start_ms':start,'end_ms':end,'error':t['error']}}
@@ -64,7 +66,7 @@ def check(m, base, repo):
         meta=read(base/m['audio']/(a['id']+'.json'))
         assert a['text']==c['text']==meta['text'], a['id']
         assert a['duration']==meta['duration_ms'], a['id']
-        if a['op']=='run':
+        if a['op'] in ['run','runSummary']:
             assert a['resultVerified'] and a['runAt']<a['time']+a['duration'], a['id']
             assert actions[i+1]['time']>=a['resultReady'], a['id']
         if a['op'] in ['node','edge']:
@@ -80,7 +82,7 @@ def check(m, base, repo):
         times=[f['time'] for f in frames if x['start']<=f['time']<=x['end']]
         gap=max(b-a for a,b in zip([x['start']]+times,times+[x['end']]))
         if gap>=100: gaps.append({**x,'gap_ms':gap})
-    report={'duration_s':offset/1000,'cues':len(actions),'queries':sum(a['op']=='run' for a in actions),
+    report={'duration_s':offset/1000,'cues':len(actions),'queries':sum(a['op'] in ['run','runSummary'] for a in actions),
             'selections':sum(a['op'] in ['node','edge'] for a in actions),'movement_over100ms':gaps,
             'csv':str(download),'csv_sha256':hashlib.sha256(download.read_bytes()).hexdigest(),
             'png':str(png),'not_verified':['전체 청취','사용자 재생','장면별 가독성·이음매 직접 확인']}
@@ -129,7 +131,7 @@ def capture(m, base, repo):
         dest.parent.mkdir(parents=True,exist_ok=True); im.crop(crop).save(dest,quality=92)
         provenance.append({'image':item['path'],'cue':a['id'],'source':str(f['path']),'crop':crop,'sha256':hashlib.sha256(dest.read_bytes()).hexdigest()})
     save(base/(m['name']+'-captures.json'),provenance)
-    review=[a for a in actions if a['op'] in ['details','graphTalk','mapTour','savedResult','outro','result']]
+    review=[a for a in actions if a['op'] in ['details','graphTalk','mapTour','savedResult','outro','result','graphResult','summaryTalk']]
     for batch in range((len(review)+3)//4):
         sheet=Image.new('RGB',(1920,1160),'white'); draw=ImageDraw.Draw(sheet)
         for i,a in enumerate(review[batch*4:(batch+1)*4]):

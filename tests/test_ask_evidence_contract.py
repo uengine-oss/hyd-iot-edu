@@ -27,6 +27,15 @@ def test_neo4j_json_rows_in_cli_result_wrapper_are_successful_evidence(rows):
     assert calls[0]['ok'] and result['evidence'][0]['verified']
 
 
+@pytest.mark.parametrize('tool',['read_neo4j_cypher','get_neo4j_schema'])
+def test_neo4j_row_envelope_is_data_and_explicit_errors_remain_errors(tool):
+    rows={'rows':[{'name':'Skill','property_count':3}],'offset':0,'next_offset':None}
+    assert ask._failed({'result':json.dumps(rows)},False,'neo4j/'+tool) is None
+    assert ask._failed({'result':json.dumps(dict(rows,error='query failed'))},False,'neo4j/'+tool)
+    assert ask._failed({'result':json.dumps(dict(rows,isError=True))},False,'neo4j/'+tool)
+    assert '응답 한도' in ask._failed({'result':json.dumps({'rows':[],'truncated':True})},False,'neo4j/'+tool)
+
+
 @pytest.mark.parametrize('output,is_error', [({'result':'rejected','message':'쓰기 금지'},False),
     ({'result':'[{"tag":'},False),({'result':'[]'},True),({'result':'[]','error':'query failed'},False),
     ({'result':'[]','isError':True},False),({'result':'ok','isError':True},False),
