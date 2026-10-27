@@ -263,8 +263,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             raise ValueError('실행할 정의 버전을 지정하세요')
         defn = self.definition_for({'proc_def_id':def_id,'proc_def_version':version,'tenant_id':self.tenant_id})
         from . import handover
-        if def_id == handover.DEFINITION_ID or any(f.get('contract') == handover.DRAFT for f in defn.raw.get('forms', {}).values()):
-            handover.validate_start(values)
+        is_handover = def_id == handover.DEFINITION_ID or any(f.get('contract') == handover.DRAFT for f in defn.raw.get('forms', {}).values())
         if defn.start_events()[0].get('eventDefinition') == 'message' and alert is None:
             raise ValueError('메시지 시작 정의에는 경보 입력이 필요합니다')
         from . import alert_policy
@@ -289,6 +288,12 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             # Incident/decision identifiers are observations from the student,
             # never authorization to run teacher-side business effects.
             protected-= {'incident','decision_id'}
+        if is_handover:
+            # The managed step also carries approved review notes and private
+            # run bindings. Validate all of those above, then retain the same
+            # semantic checks on the four original handover inputs.
+            handover.validate_start({k:v for k,v in values.items() if k in handover.START_INPUTS}
+                                    if _classroom_approval is not None else values)
         if protected:
             raise ValueError('시작 변수로 Incident/승인 결과를 주입할 수 없습니다')
         key = json.dumps([self.tenant_id,def_id,event_id])

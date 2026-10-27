@@ -113,8 +113,13 @@ def start(runtime,approval,values,run_id,reference):
     runtime.register_definition(definition)
     event='classroom-agent:'+run_id
     inputs=dict(deepcopy(values),classroom_execution={'run_id':run_id},classroom_agent_reference=reference)
-    inst=runtime.start_definition(did,'1',event,values=inputs,name=definition['processDefinitionName'],
-                                  _classroom_approval=approval)
+    try:
+        inst=runtime.start_definition(did,'1',event,values=inputs,name=definition['processDefinitionName'],
+                                      _classroom_approval=approval)
+    except ValueError as exc:
+        # Schema-valid text can still violate a business contract (for example
+        # a handover timestamp without a timezone). Report refusal, not HTTP500.
+        raise Denied(str(exc)) from None
     inst=inst or runtime.repo.find_event_instance(runtime.tenant_id,did,event)
     saved=engine.variables(inst)
     if any(saved.get(k)!=v for k,v in inputs.items()):
