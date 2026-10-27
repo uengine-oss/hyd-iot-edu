@@ -1,320 +1,774 @@
 {
-  "source_day": 10,
-  "source_count": 61,
-  "final_count": 61,
+  "note": "실전반 7회차 재편(2026-10-28). destination = 새 덱 장(39장), old_practical = 재편 전 조립본(61장, 통합반 10회차와 1:1)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 같은 화면: 퀴즈 간지 1장).",
   "slides": [
     {
       "destination": 1,
-      "source_day": 10,
-      "source_slide": 1
+      "title": "정비와 구매 업무의 연결 / 실행 결과의 검증",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        1
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 1
+        }
+      ]
     },
     {
       "destination": 2,
-      "source_day": 10,
-      "source_slide": 2
+      "title": "학습목표",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        2
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 2
+        }
+      ]
     },
     {
       "destination": 3,
-      "source_day": 10,
-      "source_slide": 3
+      "title": "목차",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        3
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 3
+        }
+      ]
     },
     {
       "destination": 4,
-      "source_day": 10,
-      "source_slide": 4
+      "title": "세 업무의 시작 조건과 끝나는 지점",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        4
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 4
+        }
+      ]
     },
     {
       "destination": 5,
-      "source_day": 10,
-      "source_slide": 5
+      "title": "세 업무의 시작 이벤트 · 승인자 · 실행 시스템",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        5,
+        6,
+        7
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 5
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 6
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 7
+        }
+      ]
     },
     {
       "destination": 6,
-      "source_day": 10,
-      "source_slide": 6
+      "title": "예방 정비의 기준: 운전시간 계수기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        8
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 8
+        }
+      ]
     },
     {
       "destination": 7,
-      "source_day": 10,
-      "source_slide": 7
+      "title": "재고 부족의 계산: 가용 재고와 재주문점",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        9,
+        10
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 9
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 10
+        }
+      ]
     },
     {
       "destination": 8,
-      "source_day": 10,
-      "source_slide": 8
+      "title": "응용: 정비 예약이 재고 보충을 여는 길",
+      "kind": "응용",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 9,
-      "source_day": 10,
-      "source_slide": 9
+      "title": "프로세스의 끝과 업무의 끝",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        11,
+        46
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 11
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 46
+        }
+      ]
     },
     {
       "destination": 10,
-      "source_day": 10,
-      "source_slide": 10
+      "title": "발주 중 수량과 입고 완료",
+      "origin": "새 장(옛 44장 메시지 한 줄에서 출발)",
+      "old_practical": [
+        44
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 44
+        }
+      ]
     },
     {
       "destination": 11,
-      "source_day": 10,
-      "source_slide": 11
+      "title": "판단 문제: 보충 표시가 꺼진 씰 키트",
+      "kind": "판단 문제",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 12,
-      "source_day": 10,
-      "source_slide": 12
+      "title": "정의 재사용과 실행 기록 읽기",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        12,
+        20
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 12
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 20
+        }
+      ]
     },
     {
       "destination": 13,
-      "source_day": 10,
-      "source_slide": 13
+      "title": "패턴: 승인 블록은 그대로, 업무마다 바뀌는 값",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        21,
+        22,
+        23,
+        24,
+        27
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 21
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 22
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 23
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 24
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 27
+        }
+      ]
     },
     {
       "destination": 14,
-      "source_day": 10,
-      "source_slide": 14
+      "title": "응용: 요구가 바뀔 때 고칠 곳",
+      "kind": "응용",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        21,
+        29
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 21
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 29
+        }
+      ]
     },
     {
       "destination": 15,
-      "source_day": 10,
-      "source_slide": 15
+      "title": "경보 · 정의 · 판본 · 처리 건",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        13,
+        14
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 13
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 14
+        }
+      ]
     },
     {
       "destination": 16,
-      "source_day": 10,
-      "source_slide": 16
+      "title": "처리 건의 상태 · 오류 · 반려 기록",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        15,
+        16
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 15
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 16
+        }
+      ]
     },
     {
       "destination": 17,
-      "source_day": 10,
-      "source_slide": 17
+      "title": "재고 보충 처리 건의 실행 기록",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        47
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 47
+        }
+      ]
     },
     {
       "destination": 18,
-      "source_day": 10,
-      "source_slide": 18
+      "title": "판단 문제: 사람이 닫은 정기 점검 처리 건",
+      "kind": "판단 문제",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 19,
-      "source_day": 10,
-      "source_slide": 19
+      "title": "실습: 정기 점검 작도",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        30
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 30
+        }
+      ]
     },
     {
       "destination": 20,
-      "source_day": 10,
-      "source_slide": 20
+      "title": "정기 점검 작도: 그릴 것과 성공 기준",
+      "kind": "실습 설명",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        31
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 31
+        }
+      ]
     },
     {
       "destination": 21,
-      "source_day": 10,
-      "source_slide": 21
+      "title": "실습: 정기 점검 실행",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        32
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 32
+        }
+      ]
     },
     {
       "destination": 22,
-      "source_day": 10,
-      "source_slide": 22
+      "title": "정기 점검 실행: 결정 · 대조 · 해석",
+      "kind": "실습 설명",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        33
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 33
+        }
+      ]
     },
     {
       "destination": 23,
-      "source_day": 10,
-      "source_slide": 23
+      "title": "실습: 재고 보충 작도",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        34
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 34
+        }
+      ]
     },
     {
       "destination": 24,
-      "source_day": 10,
-      "source_slide": 24
+      "title": "재고 보충 작도: 그릴 것과 범위",
+      "kind": "실습 설명",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        35
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 35
+        }
+      ]
     },
     {
       "destination": 25,
-      "source_day": 10,
-      "source_slide": 25
+      "title": "실습: 재고 보충 실행",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        36
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 36
+        }
+      ]
     },
     {
       "destination": 26,
-      "source_day": 10,
-      "source_slide": 26
+      "title": "재고 보충 실행: 수량으로 가르는 결과",
+      "kind": "실습 설명",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        37
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 37
+        }
+      ]
     },
     {
       "destination": 27,
-      "source_day": 10,
-      "source_slide": 27
+      "title": "설계 · 실행 · 검증의 정리",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        38,
+        48
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 38
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 48
+        }
+      ]
     },
     {
       "destination": 28,
-      "source_day": 10,
-      "source_slide": 28
+      "title": "두 처리 건이 지난 다섯 자리",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        39,
+        40,
+        41,
+        42,
+        44
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 39
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 40
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 41
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 42
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 44
+        }
+      ]
     },
     {
       "destination": 29,
-      "source_day": 10,
-      "source_slide": 29
+      "title": "두 추천안이 승인자에게 보이는 근거",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        43,
+        45
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 43
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 45
+        }
+      ]
     },
     {
       "destination": 30,
-      "source_day": 10,
-      "source_slide": 30
+      "title": "온톨로지에서 업무 기록까지: 정기 점검 한 건",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        49,
+        50,
+        51,
+        53
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 49
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 50
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 51
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 53
+        }
+      ]
     },
     {
       "destination": 31,
-      "source_day": 10,
-      "source_slide": 31
+      "title": "실행 결과의 대조: 처리 건 기록과 업무 시스템",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 32,
-      "source_day": 10,
-      "source_slide": 32
+      "title": "응용: 다음 담당자에게 남는 확인",
+      "kind": "응용",
+      "origin": "옛 장 여럿을 합쳐 재작성",
+      "old_practical": [
+        52,
+        54
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 52
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 54
+        }
+      ]
     },
     {
       "destination": 33,
-      "source_day": 10,
-      "source_slide": 33
+      "title": "처리 건 한 건으로 되짚는 판정",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        55
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 55
+        }
+      ]
     },
     {
       "destination": 34,
-      "source_day": 10,
-      "source_slide": 34
+      "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        56
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 56
+        }
+      ]
     },
     {
       "destination": 35,
-      "source_day": 10,
-      "source_slide": 35
+      "title": "Review Quiz: 핵심 흐름 되짚어보기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        57
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 57
+        }
+      ]
     },
     {
       "destination": 36,
-      "source_day": 10,
-      "source_slide": 36
+      "title": "Quiz 1. 정비 오더가 남은 정기 점검 처리 건",
+      "kind": "퀴즈",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 37,
-      "source_day": 10,
-      "source_slide": 37
+      "title": "Quiz 2. 거절된 처리 건의 결과를 가리는 근거",
+      "kind": "퀴즈",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 38,
-      "source_day": 10,
-      "source_slide": 38
+      "title": "Quiz 3. 전결 기준을 넘은 발주안",
+      "kind": "퀴즈",
+      "origin": "새 장",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 39,
-      "source_day": 10,
-      "source_slide": 39
-    },
-    {
-      "destination": 40,
-      "source_day": 10,
-      "source_slide": 40
-    },
-    {
-      "destination": 41,
-      "source_day": 10,
-      "source_slide": 41
-    },
-    {
-      "destination": 42,
-      "source_day": 10,
-      "source_slide": 42
-    },
-    {
-      "destination": 43,
-      "source_day": 10,
-      "source_slide": 43
-    },
-    {
-      "destination": 44,
-      "source_day": 10,
-      "source_slide": 44
-    },
-    {
-      "destination": 45,
-      "source_day": 10,
-      "source_slide": 45
-    },
-    {
-      "destination": 46,
-      "source_day": 10,
-      "source_slide": 46
-    },
-    {
-      "destination": 47,
-      "source_day": 10,
-      "source_slide": 47
-    },
-    {
-      "destination": 48,
-      "source_day": 10,
-      "source_slide": 48
-    },
-    {
-      "destination": 49,
-      "source_day": 10,
-      "source_slide": 49
-    },
-    {
-      "destination": 50,
-      "source_day": 10,
-      "source_slide": 50
-    },
-    {
-      "destination": 51,
-      "source_day": 10,
-      "source_slide": 51
-    },
-    {
-      "destination": 52,
-      "source_day": 10,
-      "source_slide": 52
-    },
-    {
-      "destination": 53,
-      "source_day": 10,
-      "source_slide": 53
-    },
-    {
-      "destination": 54,
-      "source_day": 10,
-      "source_slide": 54
-    },
-    {
-      "destination": 55,
-      "source_day": 10,
-      "source_slide": 55
-    },
-    {
-      "destination": 56,
-      "source_day": 10,
-      "source_slide": 56
-    },
-    {
-      "destination": 57,
-      "source_day": 10,
-      "source_slide": 57
-    },
-    {
-      "destination": 58,
-      "source_day": 10,
-      "source_slide": 58
-    },
-    {
-      "destination": 59,
-      "source_day": 10,
-      "source_slide": 59
-    },
-    {
-      "destination": 60,
-      "source_day": 10,
-      "source_slide": 60
-    },
-    {
-      "destination": 61,
-      "source_day": 10,
-      "source_slide": 61
+      "title": "정답과 판단 기준",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        61
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 61
+        }
+      ]
     }
   ],
-  "coverage": "통합반10 61장 전체 보존. 본론·실습4쌍·복습·용어·퀴즈3개·정답 모두 동일 순서.",
-  "speech_edit_candidates": [
-    1,
-    32,
-    36,
-    38,
-    51
+  "dropped": [
+    {
+      "old_practical": 17,
+      "title": "실행 기록과 모니터링: 단계마다 남는 시작과 끝",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 17
+      },
+      "reason": "실라버스 실전반 79행에 모니터링이 없다(사실표 9절: 5.1.4를 줄여도 사실 손실 없음). 실행 기록 자체는 17장(재고 보충 처리 기록)이 맡는다. 화면의 20배속 초 값은 기준_이론덱 「덱 사이의 용어와 값」 5번에도 걸린다"
+    },
+    {
+      "old_practical": 18,
+      "title": "병목: 흐름 전체를 늦추는 단계",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 18
+      },
+      "reason": "실라버스 실전반 79행에 병목이 없다(사실표 9절)"
+    },
+    {
+      "old_practical": 19,
+      "title": "프로세스 지표: 여러 처리 건을 수로 요약한다",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 19
+      },
+      "reason": "실라버스 실전반 79행에 지표가 없다(사실표 9절)"
+    },
+    {
+      "old_practical": 25,
+      "title": "정기 점검 프로세스의 BPMN 그림",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 25
+      },
+      "reason": "BPMN 그림 읽기는 실전반 6회차의 내용이고, 바뀌는 자리는 13장 표, 그림 자체는 실습 1(작도)이 맡는다"
+    },
+    {
+      "old_practical": 26,
+      "title": "재고 보충 프로세스의 BPMN 그림",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 26
+      },
+      "reason": "같음(실습 3)"
+    },
+    {
+      "old_practical": 28,
+      "title": "타이머의 설계: 끊을 것인가, 알리기만 할 것인가",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 28
+      },
+      "reason": "중단형 · 비중단형의 정의는 실전반 6회차(통합반 9회차) 내용. 이 회차의 동작(알림만, 자동 취소 없음)은 16장 「승인 지연」 줄이 맡는다"
+    },
+    {
+      "old_practical": 58,
+      "title": "Quiz 1. 거절로 닫힌 재고 보충 처리 건",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 58
+      },
+      "reason": "옛 퀴즈 셋은 실전반 결과 해석 문항 셋(36~38장)으로 바꿨다. 거절의 해석은 16장 · Quiz 2가 맡는다"
+    },
+    {
+      "old_practical": 59,
+      "title": "Quiz 2. 병목을 판단하는 근거",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 59
+      },
+      "reason": "병목을 뺐다(79행 밖)"
+    },
+    {
+      "old_practical": 60,
+      "title": "Quiz 3. 승인을 생략하자는 의견",
+      "source": {
+        "course": "통합반",
+        "day": 10,
+        "slide": 60
+      },
+      "reason": "승인 생략은 14장 응용 셋째 줄이 맡는다. 새 Quiz 3은 금액 전결의 책임"
+    }
   ]
 }
