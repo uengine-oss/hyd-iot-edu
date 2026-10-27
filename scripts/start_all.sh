@@ -7,6 +7,9 @@
 # AI 워커 컨테이너가 이 키로 강의 중계를 부른다. 키가 비어 있으면 2단계에서 멈춘다.
 # 끌 때: bash scripts/stop_all.sh
 set -euo pipefail
+# The distributed launcher must work independently of the Windows account's
+# console/code-page defaults, including Python subprocesses printing Korean.
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
 cd "$(dirname "$0")/.."
 
 say() { printf '\n== %s\n' "$*"; }
@@ -89,8 +92,8 @@ for i in $(seq 1 36); do
   [ -z "$bad" ] && break; sleep 5
 done
 for p in $PORTS; do printf '%s ' "$(hp "$p")"; curl -fsS -m 3 "http://127.0.0.1:$(hp "$p")/healthz" | head -c 120 || printf '응답 없음'; echo; done
-echo "실행 중 컨테이너: 시스템 $(docker ps --format '{{.Names}}' | grep -c '^hyd-iot-edu-') · 업무 DB $(docker ps --format '{{.Names}}' | grep -c '^supabase_')"
-broken=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep '^hyd-iot-edu-' | grep -E 'Restarting|Exited \([1-9]' || true)
+echo "실행 중 컨테이너: 시스템 $(docker compose ps --status running -q | wc -l | tr -d ' ') · 업무 DB $(docker ps --format '{{.Names}}' | grep -c '^supabase_')"
+broken=$(docker compose ps -a --format '{{.Name}} {{.State}} {{.ExitCode}}' | awk '$2 == "restarting" || ($2 == "exited" && $3 != "0")' || true)
 [ -z "$broken" ] || { echo "멈췄거나 계속 재시작하는 컨테이너:"; echo "$broken"; }
 [ -z "$bad" ] || die "응답하지 않는 포트:$bad — 'docker compose ps'와 'docker compose logs <서비스>'로 확인하세요."
 curl -fsS -m 5 "http://127.0.0.1:$(hp 8088)/" >/dev/null || die "포털이 응답하지 않습니다. docker compose logs portal 로 확인하세요."

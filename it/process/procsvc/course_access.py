@@ -108,6 +108,9 @@ def mount(app, *, path, archive_factory, tenant, store=None):
     async def gate(request, call_next):
         if request.method in {'GET','HEAD','OPTIONS'}:return await call_next(request)
         path = request.url.path.rstrip('/')
+        from .course_bootstrap import PATHS
+        if path in PATHS and request.scope.get('state',{}).get('_course_bootstrap') == (request.method,path):
+            return await call_next(request)
         if path == '/api/course-access/unlock' and request.method == 'POST':return await call_next(request)
         if path.startswith('/api/course-access'):
             return JSONResponse({'detail': '수업 권한은 강사 코드로만 열 수 있습니다.'}, 403)
