@@ -19,7 +19,8 @@ for course,slug in COURSES:
     for filename in ['lab_db.py','offline_load.py']:write(folder/filename,(HERE/filename).read_text(encoding='utf-8'))
     (folder/'입력').mkdir(parents=True,exist_ok=True)
     for filename in ['schema.json','graph.json']:
-        shutil.copy2(HERE/'reference/통합반'/filename,folder/'입력'/filename)
+        # 오프라인 첫날은 작은 모델(노드 44·관계 57) 고정 판본. 온라인 2회차 현업 규모 모델과 분리한다.
+        shutil.copy2(HERE/'reference/오프라인1'/filename,folder/'입력'/filename)
     write(folder/'질문.cypher',query)
     write(folder/'결과/README.md','적재 확인과 질문별 결과, 바꾼 모델을 저장합니다.\n')
     write(folder/'START.md','# 랩 그래프 적재와 질문\n\n앞 단계 완성 모델로 시작합니다. 개인 모델은 선택 입력입니다.\n\n1. Docker가 실행 중인지 확인합니다.\n2. VS Code 터미널에서 `python offline_load.py`를 실행합니다.\n3. 「적재 완료」와 노드 44개·관계 57개를 확인합니다.\n4. `python lab_db.py`로 Browser를 엽니다. Protocol은 bolt://, Connection URL은 출력 주소의 127.0.0.1:포트 부분, Database user는 neo4j, Password는 빈칸으로 연결합니다.\n5. 질문.cypher의 문장을 하나씩 실행하고 원자료와 대조합니다.\n6. 같은 적재 명령을 다시 실행해 개수가 유지되는지 확인합니다.\n\n개인 모델을 적용할 때는 제공 입력을 먼저 보관합니다. 종류나 관계 이름을 바꿨으면 질의도 함께 수정합니다. 삭제·종류 변경은 추가 적재만으로 기존 대상을 지우지 않으므로 시작 도구의 새로 시작으로 별도 DB에서 확인합니다.\n\n결과/를 USB 또는 개인 클라우드에 복사하고 복사본을 열어 확인합니다.\n')

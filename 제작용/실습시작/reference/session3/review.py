@@ -1,6 +1,6 @@
-"""강사 참조: 실전반 조치 검토 결과. 판정 코어는 judge.py를 그대로 쓴다. 학생 ZIP에 넣지 않는다.
+"""강사 참조: 실전반 조치 검토 결과(현업화 판). 판정 코어는 judge.py를 그대로 쓴다. 학생 ZIP에 넣지 않는다.
 
-사용: python review.py <랩 폴더> <출력 폴더>
+사용: python review.py <랩 폴더> <출력 폴더> [--counter recorded|elapsed]
 → <출력 폴더>/조치검토결과.json, 조치검토결과.md
 """
 from pathlib import Path
@@ -20,6 +20,10 @@ def expr(c):
     return f'{c["input"]} {c["operator"]} {c["value"]}{unit}'
 
 
+def why(cand, names):
+    return '; '.join(sorted({cand['missing_reasons'].get(m, '') for m in names} - {''}))
+
+
 def reasons(cand):
     out = []
     for key, kind in [('exclusions', 'EXCLUDE'), ('penalties', 'PENALTY'), ('warnings', 'WARN')]:
@@ -30,7 +34,8 @@ def reasons(cand):
             out.append(item)
     for u in cand['unknown']:
         rule = next(r for r in cand['rules'] if r['rule_id'] == u['rule_id'])
-        out.append({'규칙': u['rule_id'], '결과': '미확인', '실제_입력': {c['input']: c['actual'] for c in rule['conditions']}, '비교': ' AND '.join(expr(c) for c in rule['conditions']), '출처': u['source_section'], '설명': rule['reason'], '빠진_입력': u['missing'], '미확인_규칙의_결과': u['result']})
+        out.append({'규칙': u['rule_id'], '결과': '미확인', '실제_입력': {c['input']: c['actual'] for c in rule['conditions']}, '비교': ' AND '.join(expr(c) for c in rule['conditions']),
+                    '출처': u['source_section'], '설명': rule['reason'], '빠진_입력': u['missing'], '빠진_이유': why(cand, u['missing']), '미확인_규칙의_결과': u['result']})
     return out
 
 
@@ -38,7 +43,7 @@ def extra_checks(cand, sop):
     checks = []
     for u in cand['unknown']:
         effect = {'EXCLUDE': '참이면 제외', 'PENALTY': '참이면 감점', 'WARN': '참이면 경고'}[u['result']]
-        checks.append(f'{", ".join(u["missing"])} 값을 확인한다({u["rule_id"]} {effect}, 근거 {u["source_section"]}).')
+        checks.append(f'{", ".join(u["missing"])} 값을 확인한다 — 없는 이유: {why(cand, u["missing"])} ({u["rule_id"]} {effect}, 근거 {u["source_section"]})')
     if cand['status'] == '유지':
         for item in sop['적용_조건']:
             checks.append(f'실행 직전 적용 조건 재확인: {item["내용"]} ({item["출처"]})')
@@ -51,7 +56,7 @@ def extra_checks(cand, sop):
 
 
 def sources(cand, sop):
-    found = [sop['출처']+f' {sop["id"]}']
+    found = [sop['출처'] + f' {sop["id"]}']
     for r in reasons(cand):
         for part in r['출처'].split('; '):
             if part not in found:
@@ -61,73 +66,80 @@ def sources(cand, sop):
 
 def candidate(cand, sop, ranking):
     rank = next((r['rank'] for r in ranking if r['sop'] == cand['sop']), None)
-    return {'sop': cand['sop'], '이름': sop['이름'], '판정': cand['status'], '이유': reasons(cand), '원문_출처': sources(cand, sop), '추가_확인': extra_checks(cand, sop), '비교값': cand.get('comparison'), '순위': rank,
-            '승인': {'역할': sop['승인']['역할'], '출처': sop['승인']['출처'], '안내': f'비교 순위는 실행 승인이 아니다. 실행하려면 {sop["승인"]["역할"]}의 승인과 실행 전 확인이 필요하다.'}}
+    out = {'sop': cand['sop'], '이름': sop['이름'], '판정': cand['status'], '입력': cand['inputs'], '이유': reasons(cand), '원문_출처': sources(cand, sop),
+           '추가_확인': extra_checks(cand, sop), '비교값': cand.get('comparison'), '순위': rank,
+           '승인': {'역할': sop['승인']['역할'], '출처': sop['승인']['출처'], '안내': f'비교 순위는 실행 승인이 아니다. 실행하려면 {sop["승인"]["역할"]}의 승인과 실행 전 확인이 필요하다.'}}
+    if cand.get('comparison_unavailable'):
+        out['비교_불가'] = cand['comparison_unavailable']
+    return out
 
 
-def opinion(entry, kind):
+def opinion(entry):
     held = [c['sop'] for c in entry['candidates'] if c['status'] == '보류']
-    if kind == '사례':
-        allowed = entry['allowed']
-        reason = (f'유지 후보 {", ".join(allowed)}. 사례는 판정 확인용이며 비교·추천을 하지 않는다.' if allowed else entry['no_allowed_reason'])
-        return {'추천': [], '사유': reason, '보류': held}
     rec = entry['recommendation']
     if rec['sops']:
         reason = f'교육용 비교 합계 1위 유지 후보 {", ".join(rec["sops"])}를 승인 요청 검토 대상으로 제안한다. 실행 승인은 아니다.' + (f' 보류 후보 {", ".join(held)}는 빠진 값을 확인한 뒤 다시 비교한다.' if held else '')
     else:
-        excl = sorted({h['rule_id'] for c in entry['candidates'] for h in c['exclusions']})
-        reason = rec['reason'] + (f'(제외 규칙 {", ".join(excl)})' if excl else '')
+        reason = rec['reason']
     return {'추천': rec['sops'], '사유': reason, '보류': held}
 
 
-def build(lab):
-    result = judge.run(lab)
+def build(lab, counter='recorded', rules_path=None):
+    result = judge.run(lab, rules_path, counter)
     sop = {s['id']: s for s in json.loads((Path(lab)/'입력/sop.json').read_text(encoding='utf-8-sig'))['SOP']}
     items = []
-    for kind, key in [('사례', 'cases'), ('요청', 'requests')]:
-        for entry in result[key]:
-            ranking = entry.get('ranking', [])
-            items.append({'id': entry['id'], '종류': kind, '후보': [candidate(c, sop[c['sop']], ranking) for c in entry['candidates']], '검토_의견': opinion(entry, kind)})
-    return {'비교_기준': BASIS, '항목': items}
+    for entry in result['events']:
+        ranking = entry.get('ranking', [])
+        items.append({'id': entry['id'], '설비': entry['asset'], '판단_시각': entry['decision_time'], '후보': [candidate(c, sop[c['sop']], ranking) for c in entry['candidates']], '검토_의견': opinion(entry)})
+    return {'비교_기준': BASIS, '입력_결정': result['input_decisions'], '항목': items}
 
 
 def fmt(v):
-    return '-' if v is None else (f'{v:g}' if isinstance(v, float) else str(v))
+    if v is None:
+        return '-'
+    if isinstance(v, list):
+        return ';'.join(v)
+    if isinstance(v, float):
+        return f'{v:.4g}' if abs(v) < 100 else f'{v:.2f}'
+    return str(v)
 
 
 def markdown(review):
-    lines = ['# 조치 검토 결과', '', review['비교_기준'], '']
+    lines = ['# 조치 검토 결과', '', review['비교_기준'], '', '## 판단 입력을 만든 결정', '']
+    lines += [f'- {d["항목"]}: {d["결정"]} (근거 {d["근거"]})' for d in review['입력_결정']] + ['']
     for item in review['항목']:
-        lines += [f'## {item["id"]} ({item["종류"]})', '']
-        if item['종류'] == '요청':
-            lines += ['| 후보 | 판정 | 비용 | 생산 | 품질 | 에너지 | 감점 | 합계 | 순위 | 승인 |', '|---|---|---:|---:|---:|---:|---:|---:|---:|---|']
-            for c in item['후보']:
-                v = c['비교값'] or {}
-                lines.append(f'| {c["sop"]} {c["이름"]} | {c["판정"]} | ' + ' | '.join(fmt(v.get(k)) for k in ['비용', '생산', '품질', '에너지', '감점', '합계']) + f' | {fmt(c["순위"])} | {c["승인"]["역할"]} |')
-            lines.append('')
+        lines += [f'## {item["id"]} ({item["설비"]}, 판단 {item["판단_시각"]})', '',
+                  '| 후보 | 판정 | 비용 | 생산 | 품질 | 에너지 | 감점 | 합계 | 순위 | 승인 |', '|---|---|---:|---:|---:|---:|---:|---:|---:|---|']
+        for c in item['후보']:
+            v = c['비교값'] or {}
+            lines.append(f'| {c["sop"]} {c["이름"]} | {c["판정"]} | ' + ' | '.join(fmt(v.get(k)) for k in ['비용', '생산', '품질', '에너지', '감점', '합계']) + f' | {fmt(c["순위"])} | {c["승인"]["역할"]} |')
+        lines.append('')
         for c in item['후보']:
             lines.append(f'### {item["id"]} · {c["sop"]} — {c["판정"]}')
+            lines.append('- 판단 입력: ' + ', '.join(f'{k}={fmt(v)}' for k, v in c['입력'].items()))
             if c['이유']:
                 for r in c['이유']:
-                    actual = ', '.join(f'{k}={fmt(v) if not isinstance(v, list) else ";".join(v)}' for k, v in r['실제_입력'].items())
-                    lines.append(f'- 이유 {r["규칙"]} {KIND[r["결과"]]}: {r["비교"]} / 실제 {actual} — {r["설명"]} (출처 {r["출처"]})')
+                    actual = ', '.join(f'{k}={fmt(v)}' for k, v in r['실제_입력'].items())
+                    extra = f' / 없는 이유: {r["빠진_이유"]}' if r['결과'] == '미확인' else ''
+                    lines.append(f'- 이유 {r["규칙"]} {KIND[r["결과"]]}: {r["비교"]} / 실제 {actual}{extra} — {r["설명"]} (출처 {r["출처"]})')
             else:
                 lines.append('- 이유: 맞은 규칙과 미확인 규칙 없음')
             lines.append(f'- 원문 출처: {"; ".join(c["원문_출처"])}')
+            for x in c.get('비교_불가', []):
+                lines.append(f'- 비교 불가: {x}')
             for x in c['추가_확인']:
                 lines.append(f'- 추가 확인: {x}')
             lines.append(f'- 승인: {c["승인"]["역할"]}({c["승인"]["출처"]}). {c["승인"]["안내"]}')
             lines.append('')
-        op = item['검토_의견']
-        lines += [f'**검토 의견**: {op["사유"]}', '']
+        lines += [f'**검토 의견**: {item["검토_의견"]["사유"]}', '']
     return '\n'.join(lines) + '\n'
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        sys.exit('사용: python review.py <랩 폴더> <출력 폴더>')
+    if len(sys.argv) not in (3, 5):
+        sys.exit('사용: python review.py <랩 폴더> <출력 폴더> [--counter recorded|elapsed]')
     out = Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
-    review = build(sys.argv[1])
+    review = build(sys.argv[1], sys.argv[4] if len(sys.argv) == 5 else 'recorded')
     (out/'조치검토결과.json').write_text(json.dumps(review, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     (out/'조치검토결과.md').write_text(markdown(review), encoding='utf-8')
     print(f'항목 {len(review["항목"])}건 → {out}')

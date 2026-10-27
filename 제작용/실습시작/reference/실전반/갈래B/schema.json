@@ -1,0 +1,140 @@
+{
+  "classes": {
+    "Asset": {
+      "meaning": "개별 설비(설비코드 기준). 기능위치·실물 일련번호를 속성으로 둔다",
+      "required": {
+        "id": "string",
+        "name": "string",
+        "model": "string",
+        "status": "string"
+      },
+      "optional": {
+        "maker": "string",
+        "serial": "string",
+        "functional_location": "string",
+        "installed": "string",
+        "legacy_codes": "list"
+      }
+    },
+    "Component": {
+      "meaning": "설비 안의 정비 가능 품목. 기능 자리 기준 ID(설비코드:품목)로, 실물 교체는 serial로 남긴다",
+      "required": {
+        "id": "string",
+        "name": "string",
+        "group": "string"
+      },
+      "optional": {
+        "serial": "string",
+        "aliases": "list"
+      }
+    },
+    "Sensor": {
+      "meaning": "설비별 계측 채널. 실측·계산값·설정값을 kind로 구별",
+      "required": {
+        "id": "string",
+        "tag": "string",
+        "unit": "string",
+        "kind": [
+          "measured",
+          "derived",
+          "setpoint"
+        ],
+        "derived": "boolean"
+      },
+      "optional": {
+        "normal": "number",
+        "limit": "number",
+        "limit_direction": [
+          "upper",
+          "lower"
+        ],
+        "instrument_tag": "string",
+        "sample_hz": "number",
+        "collection": "string",
+        "source_unit": "string"
+      }
+    },
+    "Quantity": {
+      "meaning": "재는 물리량 종류와 기준 단위",
+      "required": {
+        "id": "string",
+        "name": "string",
+        "unit": "string"
+      }
+    },
+    "Part": {
+      "meaning": "사내 품번 하나로 관리하는 부품 품목",
+      "required": {
+        "id": "string",
+        "name": "string"
+      },
+      "optional": {
+        "other_codes": "list"
+      }
+    },
+    "Supplier": {
+      "meaning": "견적을 낸 공급사",
+      "required": {
+        "id": "string",
+        "name": "string"
+      }
+    }
+  },
+  "relations": {
+    "HAS_COMPONENT": {
+      "from": "Asset",
+      "to": "Component",
+      "cardinality": "1:N"
+    },
+    "MONITORED_BY": {
+      "from": [
+        "Component",
+        "Asset"
+      ],
+      "to": "Sensor",
+      "cardinality": "1:0..N",
+      "note": "설비 전체에 붙은 계산값(SE)은 Asset에서"
+    },
+    "OBSERVES": {
+      "from": "Sensor",
+      "to": "Quantity",
+      "cardinality": "N:1"
+    },
+    "USES_PART": {
+      "from": "Component",
+      "to": "Part",
+      "cardinality": "N:0..1",
+      "properties": {
+        "source_text": "string"
+      }
+    },
+    "SUPPLIES": {
+      "from": "Supplier",
+      "to": "Part",
+      "cardinality": "N:M",
+      "note": "공급사·품번마다 유효한 최신 견적 하나",
+      "properties": {
+        "approved": "boolean",
+        "approval_status": "string",
+        "condition": "string",
+        "price_manwon": "number",
+        "defect_rate": "number",
+        "lead_days": "integer",
+        "min_order_qty": "integer",
+        "supplier_part_no": "string",
+        "quote_date": "string",
+        "valid_until": "string"
+      }
+    }
+  },
+  "identity": "id는 전체 그래프에서 고유.",
+  "branch": "B",
+  "constraints": [
+    "id는 전체 그래프에서 고유. 구성요소·센서는 설비코드:이름, 부품은 사내 품번",
+    "이관 기록(코드 통합)·철거 실물·점검표 중복 행은 대상을 새로 만들지 않는다",
+    "limit 생략은 0과 다르다. normal 생략은 미확인",
+    "단위는 Quantity 기준 단위로 맞추고 바꾼 경우 source_unit을 남긴다",
+    "승인 여부는 승인공급사_목록(SCM 등록)과 기준일로 정한다",
+    "만료 견적은 SUPPLIES로 쓰지 않는다"
+  ]
+}

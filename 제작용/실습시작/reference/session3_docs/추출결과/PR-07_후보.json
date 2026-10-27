@@ -2,8 +2,8 @@
   "doc_id": "PR-07",
   "source_file": "PR-07_spare-parts-standard.md",
   "source_sha256": "7cb1c01da48ca797d0d387148c107d5899838a04c2a1de020741cb2715eef563",
-  "extractor": "강사 참조 추출 함수(규칙 기반, LLM 없음)",
-  "generated_at": "2026-10-28T01:40:28+09:00",
+  "extractor": "강사 참조 추출 함수 2판(규칙 기반, LLM 없음, lang=해당 없음)",
+  "generated_at": "2026-10-28T02:44:43+09:00",
   "candidates": [
     {
       "id": "PR-07-001",

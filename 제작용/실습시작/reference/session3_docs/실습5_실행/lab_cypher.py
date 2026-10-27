@@ -61,8 +61,7 @@ def model():
     count()
 
 
-def run(path):
-    text = Path(path).read_text(encoding='utf-8-sig')
+def statements(text):
     parts, buf = [], []
     for line in text.splitlines():
         if line.strip().startswith('//') and not buf:
@@ -72,9 +71,15 @@ def run(path):
             parts.append('\n'.join(buf).rstrip().rstrip(';')); buf = []
     if '\n'.join(buf).strip():
         parts.append('\n'.join(buf))
+    return parts
+
+
+def run(path):
+    parts = statements(Path(path).read_text(encoding='utf-8-sig'))
     for i, s in enumerate(parts, 1):
         if WIPE.search(s):
             raise RuntimeError(f'{i}번째 문장: 전체 삭제문은 이 랩에서 실행하지 않습니다. 필요한 대상만 고치세요.')
+    for i, s in enumerate(parts, 1):
         print(f'-- {i}/{len(parts)}')
         try:
             show(cypher([(s, {})])[0])
