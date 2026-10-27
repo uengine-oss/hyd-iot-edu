@@ -1,6 +1,6 @@
 """실습 폴더 전용 Neo4j 준비. 포털 DB에 접속하지 않는다."""
 from pathlib import Path
-import json,subprocess,sys,time,urllib.request,uuid,webbrowser
+import json,subprocess,sys,time,urllib.request,urllib.parse,uuid,webbrowser
 HERE=Path(__file__).resolve().parent
 STATE=HERE/'랩_연결.json'
 IMAGE='neo4j:5.26-community'
@@ -29,7 +29,15 @@ def prepare():
         state={'id':token,'container':name,'browser':f'http://127.0.0.1:{http}/browser/',
                'http':f'http://127.0.0.1:{http}','bolt':f'bolt://127.0.0.1:{bolt}',
                'username':'neo4j','password':'','scope':'이 실습 폴더 전용 로컬 DB'}
-        STATE.write_text(json.dumps(state,ensure_ascii=False,indent=2),encoding='utf-8')
+    # Docker의 임의 호스트 포트는 재시작 후 달라질 수 있다.
+    # 저장된 주소 대신 현재 실행 중인 컨테이너의 매핑을 사용한다.
+    info=json.loads(docker('inspect',state['container']))[0]
+    ports=info['NetworkSettings']['Ports']
+    http=ports['7474/tcp'][0]['HostPort'];bolt=ports['7687/tcp'][0]['HostPort']
+    connect=urllib.parse.quote(f'bolt://127.0.0.1:{bolt}',safe='')
+    state.update(browser=f'http://127.0.0.1:{http}/browser/?connectURL={connect}',
+                 http=f'http://127.0.0.1:{http}',bolt=f'bolt://127.0.0.1:{bolt}')
+    STATE.write_text(json.dumps(state,ensure_ascii=False,indent=2),encoding='utf-8')
     deadline=time.monotonic()+90
     while True:
         try:

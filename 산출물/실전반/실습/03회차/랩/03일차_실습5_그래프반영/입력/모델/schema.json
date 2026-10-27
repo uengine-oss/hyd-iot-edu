@@ -1,0 +1,97 @@
+{
+  "classes": {
+    "Asset": {
+      "meaning": "개별 설비",
+      "required": {
+        "id": "string",
+        "name": "string"
+      }
+    },
+    "Component": {
+      "meaning": "개별 설비에 속한 구성요소",
+      "required": {
+        "id": "string",
+        "name": "string"
+      }
+    },
+    "Sensor": {
+      "meaning": "설비별 물리 또는 계산 계측 채널",
+      "required": {
+        "id": "string",
+        "tag": "string",
+        "unit": "string",
+        "normal": "number",
+        "derived": "boolean"
+      },
+      "optional": {
+        "limit": "number",
+        "limit_direction": [
+          "upper",
+          "lower"
+        ]
+      }
+    },
+    "Quantity": {
+      "meaning": "측정하는 물리량 종류",
+      "required": {
+        "id": "string",
+        "name": "string",
+        "unit": "string"
+      }
+    },
+    "Part": {
+      "meaning": "공용으로 주문하는 부품 품목",
+      "required": {
+        "id": "string",
+        "name": "string"
+      }
+    },
+    "Supplier": {
+      "meaning": "견적을 제공한 공급사",
+      "required": {
+        "id": "string",
+        "name": "string"
+      }
+    }
+  },
+  "relations": {
+    "HAS_COMPONENT": {
+      "from": "Asset",
+      "to": "Component",
+      "cardinality": "1:N"
+    },
+    "MONITORED_BY": {
+      "from": "Component",
+      "to": "Sensor",
+      "cardinality": "1:0..N"
+    },
+    "OBSERVES": {
+      "from": "Sensor",
+      "to": "Quantity",
+      "cardinality": "N:1"
+    },
+    "USES_PART": {
+      "from": "Component",
+      "to": "Part",
+      "cardinality": "N:0..N"
+    },
+    "SUPPLIES": {
+      "from": "Supplier",
+      "to": "Part",
+      "cardinality": "N:M",
+      "properties": {
+        "approved": "boolean",
+        "price_manwon": "number",
+        "defect_rate": "number",
+        "lead_days": "integer"
+      }
+    }
+  },
+  "identity": "id는 전체 그래프에서 고유. 구성요소와 계측 채널은 설비별, 부품은 품번별.",
+  "constraints": [
+    "각 Component는 Asset 하나에 속함",
+    "각 Sensor는 Component 하나와 Quantity 하나에 연결",
+    "derived=true인 CE는 물리 계기를 뜻하지 않음",
+    "limit 생략은 0과 다름"
+  ]
+}
