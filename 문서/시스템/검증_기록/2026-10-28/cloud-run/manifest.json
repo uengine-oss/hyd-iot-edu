@@ -38,6 +38,21 @@
    "bytes": 77
   },
   {
+   "file": "fresh-full-round.summary.md",
+   "sha256": "7bf82a78cd8d4f6a0d1d4979d57d0eed743167aa102df68cdc9596927edc3a5b",
+   "bytes": 36093
+  },
+  {
+   "file": "fresh-node24-06-coalesced.summary.md",
+   "sha256": "23809bd5d7b1a73e61e89342fb4f8e79f66c1ee07f56781e7dc5d8987972f499",
+   "bytes": 2847
+  },
+  {
+   "file": "fresh-unlock-recheck.summary.md",
+   "sha256": "3b52b0fd07b6036d4040dde88b67d4f2125f97a4197a3c5f59006edc81031f63",
+   "bytes": 432
+  },
+  {
    "file": "ledger.csv",
    "sha256": "cb2f2a9446e65bee05cfbc41161b80bf295b785ba935b9f9fe0d54f976c306f9",
    "bytes": 510
