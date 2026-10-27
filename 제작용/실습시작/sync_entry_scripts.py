@@ -1,5 +1,6 @@
 """승인 Excel 순서에 따른 2회차 도입과 과정별 첫 UI 안내. 기존 본문을 보존한다."""
 from pathlib import Path
+import runpy
 ROOT=Path(__file__).resolve().parents[2]
 SOURCE=Path(__file__).parent/'도입'
 
@@ -13,13 +14,17 @@ def main():
     for course in ('통합반','실전반'):
         folder=ROOT/'산출물'/course/'실습/02회차/대본'
         query=next(folder.glob('*_관계조회.md'))
-        text=query.read_text(encoding='utf-8')
-        header=text[:text.index('## 자료를 내려받고 작업 공간 열기')]
-        intro=(SOURCE/f'관계조회_{course}.md').read_text(encoding='utf-8')
-        ui_path=SOURCE/f'Neo4j_첫화면_{course}.md'
-        ui=(ui_path if ui_path.exists() else SOURCE/'Neo4j_첫화면.md').read_text(encoding='utf-8')
-        body=(SOURCE/f'관계조회_{course}_본문.md').read_text(encoding='utf-8')
-        query.write_text(header+intro.rstrip()+'\n\n'+ui.rstrip()+'\n\n'+body.rstrip()+'\n',encoding='utf-8')
+        if course=='통합반':
+            render=runpy.run_path(str(ROOT/'제작용/촬영/neo4j/sync_integrated_script.py'))['render']
+            query.write_text(render(),encoding='utf-8')
+        else:
+            text=query.read_text(encoding='utf-8')
+            header=text[:text.index('## 자료를 내려받고 작업 공간 열기')]
+            intro=(SOURCE/f'관계조회_{course}.md').read_text(encoding='utf-8')
+            ui_path=SOURCE/f'Neo4j_첫화면_{course}.md'
+            ui=(ui_path if ui_path.exists() else SOURCE/'Neo4j_첫화면.md').read_text(encoding='utf-8')
+            body=(SOURCE/f'관계조회_{course}_본문.md').read_text(encoding='utf-8')
+            query.write_text(header+intro.rstrip()+'\n\n'+ui.rstrip()+'\n\n'+body.rstrip()+'\n',encoding='utf-8')
 
         mapping={
             '지식지도탐색':'앞 실습에서는 사이퍼로 설비의 센서와 교체 부품을 찾아봤습니다. 이번에는 HYD 포털의 지식 지도를 직접 눌러 같은 종류의 연결을 따라가 보겠습니다. 화면에서 대상의 종류와 속성, 관계 방향을 확인하고, 방금 쓴 실습 DB와 포털의 기준 지도가 별도라는 점도 구분하겠습니다.',

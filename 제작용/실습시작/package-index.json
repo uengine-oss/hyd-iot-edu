@@ -75,10 +75,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "관계를 따라 센서와 부품 조회하기",
-      "version": "2026-10-27-cypher-v2",
+      "version": "2026-10-27-cypher-v3",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "7bb742b441c7eddb38bd5b27148e0aea05e565f81e85ddd4ab9176f06c6f1664"
+      "sha256": "5930cfd2585628fcafa7765161ae81ad963c2b8f1e97d712efc1193af3c62e05"
     },
     {
       "id": "integrated-02-map",
