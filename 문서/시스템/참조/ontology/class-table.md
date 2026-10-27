@@ -41,6 +41,9 @@
 | 운영 기록 | IngestionControl | 적재 트랜잭션 제어 | HYD ingestion provenance (implementation record) |
 | 운영 기록 | IngestionBatch | 적재 배치 | HYD ingestion provenance (implementation record) |
 | 운영 기록 | ProcessInstance | 프로세스 실행 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
+| 운영 기록 | ExecutionActor | 실행 담당자 | ProcessGPT Organization (HYD tenant-scoped adapter) |
+| 운영 기록 | User | 사용자 | ProcessGPT Organization User (HYD adapter) |
+| 운영 기록 | Agent | 에이전트 | ProcessGPT Organization Agent (HYD adapter) |
 | 운영 기록 | WorkItem | 실행 작업 | ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter) |
 | 운영 기록 | ProcessVersion | 프로세스 정의 버전 | ProcessGPT version provenance; HYD immutable element snapshot |
 | 운영 기록 | ExecutionProjection | 실행 투영 잠금 | 내부 기록 |

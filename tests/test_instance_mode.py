@@ -57,7 +57,7 @@ def world(monkeypatch):
     ctx = instance_mode.ProcessContext(
         incidents=incidents, book=book, state={"incidents": 0}, time_scale=20.0, persist=lambda: None,
         audit=lambda asset, actor, event, detail, incident=None: audits.append(event),
-        cypher=lambda q, **p: cypher.append(p) or [dict(projection_key=p['id'],projection_revision=p['revision'],projection_hash=p['payload_hash'])], exec_skill=exec_skill, record_decision=lambda d: None,
+        cypher=lambda q, **p: [] if q == instance_mode.instances.ACTOR_CONSTRAINT_Q else cypher.append(p) or [dict(projection_key=p['id'],projection_revision=p['revision'],projection_hash=p['payload_hash'])], exec_skill=exec_skill, record_decision=lambda d: None,
         approve_incident=approve_incident, get_loop=lambda: None,
         check_approval=lambda *args: {'allowed': True, 'scope': 'unit-test-source-double'})
     rt = instance_mode.build(ctx)

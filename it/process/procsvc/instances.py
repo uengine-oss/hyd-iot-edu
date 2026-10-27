@@ -30,7 +30,7 @@ from hydcommon.process_contracts import pinned_form, validate_output
 from . import dependency_schedule, engine, inbox, procdb
 from . import definition as incident_def
 from .definition_registry import validate_definition, PROTECTED_OUTPUTS
-from .execution_graph import (INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection,
+from .execution_graph import (ACTOR_CONSTRAINT_Q, INSTANCE_Q, EXECUTION_Q, DELETE_INSTANCE_Q, definition_projection,
                               ORPHAN_VERSIONS_Q, DELETE_ORPHAN_VERSION_Q, scoped)
 from .projection_receipt import digest as projection_digest,require as require_projection_receipt
 from .approval_delivery import ApprovalDelivery
@@ -108,6 +108,7 @@ class Hooks:
     exec_compensation: Callable | None = None   # (request dict) → enterprise compensation transaction (A072)
     exec_enterprise: Callable[[str, dict], dict] = lambda decision_id, item: {"ok": False, "error": "no enterprise hook"}
     record_cypher: Callable[..., list] = lambda q, **params: []
+    ensure_actor_schema: Callable[[], None] | None = None
     query_cypher: Callable[..., list] = lambda q, **params: []          # read the projected Execution layer back (monitoring)
     audit: Callable[..., None] = lambda asset, actor, event, detail, incident=None: None
     # C2 승인 뒤 실행 부품 (service_parts.py). 없으면 그 부품은 사유와 함께 실패한다.
@@ -128,6 +129,8 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                  consumer: str = ENGINE_CONSUMER):
         self.repo, self.defn, self.hooks, self.time_scale, self.tenant_id, self.consumer = repo, defn, hooks, time_scale, tenant_id, consumer
         self._local=threading.local()
+        self._actor_schema_lock = threading.Lock()
+        self._actor_schema_ready = False
         # B4: 기준 흐름 = 경보 진입 정의 id와 기준 판본(기동 파일 판본). instance_mode.build()가 파일 기준으로 다시 정한다(배포된 학생 판본으로
         # 기동해도 기준은 파일). reference_ids의 흐름은 "기준 흐름으로 되돌리기"가 내리지 않는다.
         self.base_version, self.reference_ids = defn.raw['version'], {defn.id}
@@ -1622,6 +1625,13 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             log.warning("execution projection pending: %s", e)
 
     def _write_projection(self, pid, snapshot):
+        # Existing classroom graphs need the new uniqueness rule as well as
+        # fresh graph seeds. Failure leaves the durable projection pending.
+        if not self._actor_schema_ready and self.hooks.ensure_actor_schema is not None:
+            with self._actor_schema_lock:
+                if not self._actor_schema_ready:
+                    self.hooks.ensure_actor_schema()
+                    self._actor_schema_ready = True
         inst = snapshot['instance']
         if not inst or inst.get('is_deleted'):
             # Source deletion is the authority. A hidden instance alone must not
@@ -1638,7 +1648,16 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
         items = snapshot['items']
         v = engine.variables(inst)
         projection, node_id = definition_projection(defn, inst["tenant_id"])
-        params=dict(**projection, revision=snapshot["revision"], id=inst["proc_inst_id"], name=inst.get("proc_inst_name"), status=inst["status"],
+        actor_ids = {b.get('endpoint') for b in inst.get('role_bindings') or [] if b.get('endpoint')}
+        from .agents_store import csv_list
+        actor_ids.update(actor for w in items for actor in csv_list(w.get('user_id')))
+        users = self.repo.list_users(sorted(actor_ids), self.tenant_id) if actor_ids else []
+        actors = [dict(graph_id=scoped('execution-actor', self.tenant_id, user['id']),
+                       source_id=user['id'], username=user.get('username') or user['id'],
+                       kind='Agent' if user.get('is_agent') else 'User')
+                  for user in users if not str(user.get('id', '')).startswith('role:')
+                  and (not user.get('is_agent') or (user.get('agent_type') or 'agent') != 'system')]
+        params=dict(**projection, actors=actors, revision=snapshot["revision"], id=inst["proc_inst_id"], name=inst.get("proc_inst_name"), status=inst["status"],
                                  start=inst.get("start_date"), end=inst.get("end_date"), end_event=inst.get("end_event"),
                                  current=inst.get("current_activity_ids") or [], version=inst.get("proc_def_version"),
                                  asset=v.get("asset"), incident=v.get("incident"), process=process_node,
@@ -1649,7 +1668,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                                          "tool": w.get("tool"), "agent_mode": w.get("agent_mode"), "orch": w.get("agent_orch"),
                                          "draft_status": w.get("draft_status"), "retry": w.get("retry") or 0, "rework": w.get("rework_count") or 0,
                                          "generation": w.get('generation') or 0, "request_id": w.get('rework_request_id'), "supersedes": w.get('supersedes_id'),
-                                         "duration": w.get("duration"), "performer": w.get("user_id"), "start": w.get("start_date"),
+                                         "duration": w.get("duration"), "performers": list(dict.fromkeys(csv_list(w.get("user_id")))), "start": w.get("start_date"),
                                          "end": w.get("end_date"), "due": w.get("due_date")} for w in items])
         self._confirmed_projection(INSTANCE_Q,params)
 
@@ -1667,11 +1686,22 @@ def format_execution(rows: list[dict]) -> dict | None:
         return None
     r = rows[0]
     items = [it for it in (r.get("items") or []) if it and it.get("workitem")]
+    grouped = {}
+    for it in items:
+        wid = it['workitem']['id']
+        entry = grouped.setdefault(wid, {**it['workitem'], 'executes': it.get('task'),
+            'executes_name': it.get('task_name'), 'executes_type': it.get('task_type'), '_performers': []})
+        if it.get('performer') and it['performer'] not in entry['_performers']:
+            entry['_performers'].append(it['performer'])
+    workitems = []
+    for entry in grouped.values():
+        performers = entry.pop('_performers')
+        entry['assigned_to'] = ','.join(performers) if performers else None
+        entry['assigned_kind'] = 'multi' if len(performers) > 1 else 'single' if performers else None
+        workitems.append(entry)
     result = {"instance": r["instance"], "process": {"id": r.get("process"), "name": r.get("process_name"), "version": r.get("version")},
             "asset": r.get("asset"), "incident": r.get("incident"),
-            "bindings": [b for b in (r.get("bindings") or []) if b],
-            "workitems": [{**it["workitem"], "executes": it.get("task"), "executes_name": it.get("task_name"), "executes_type": it.get("task_type"),
-                           "assigned_to": it.get("performer"), "assigned_kind": it.get("performer_kind")} for it in items]}
+            "bindings": [b for b in (r.get("bindings") or []) if b], "workitems": workitems}
     result["warnings"] = r.get("warnings") or []
     result["definition"] = {"id": r.get("definition_id"), "version": r.get("version"), "graph_id": r.get("version_node")}
     return result

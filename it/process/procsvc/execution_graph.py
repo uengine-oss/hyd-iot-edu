@@ -44,6 +44,8 @@ def definition_projection(defn, tenant):
 
 # The fence survives graph deletion so a delayed pre-delete write cannot resurrect
 # source data. SET dependency acquires Neo4j's write lock before comparing revision.
+ACTOR_CONSTRAINT_Q = 'CREATE CONSTRAINT v2_executionactor_id IF NOT EXISTS FOR (n:ExecutionActor) REQUIRE n.id IS UNIQUE'
+
 FENCE_Q = '''
 MERGE (f:ExecutionProjection {id:$id})
 SET f.lock = coalesce(f.lock,0)+1
@@ -120,6 +122,15 @@ CALL (pv) {
   SET r.condition=flow.condition, r.priority=flow.priority, r.isDefault=flow.isDefault
   RETURN count(*) AS definition_flows
 }
+// Actors are projections of the authoritative users rows, tenant-scoped.
+CALL () {
+  UNWIND $actors AS actor
+  MERGE (who:ExecutionActor {id:actor.graph_id})
+  SET who.tenant_id=$tenant, who.source_id=actor.source_id, who.name=actor.username, who.username=actor.username
+  FOREACH (_ IN CASE WHEN actor.kind='User' THEN [1] ELSE [] END | SET who:User REMOVE who:Agent)
+  FOREACH (_ IN CASE WHEN actor.kind='Agent' THEN [1] ELSE [] END | SET who:Agent REMOVE who:User)
+  RETURN count(*) AS actor_count
+}
 MERGE (pi:ProcessInstance {id:$id})
 SET pi.name=$name, pi.status=$status, pi.start_date=$start, pi.end_date=$end, pi.end_event=$end_event,
     pi.current_activity_ids=$current, pi.version=$version, pi.tenant_id=$tenant, pi.definition_id=$definition_id,
@@ -150,7 +161,11 @@ CALL (pi) {
 }
 CALL (pi) {
   UNWIND $bindings AS b
-  OPTIONAL MATCH (who {id:b.endpoint}) WHERE who:Role OR who:System
+  OPTIONAL MATCH (actor:ExecutionActor {tenant_id:$tenant,source_id:b.endpoint})
+  WHERE actor.source_id IN [a IN $actors | a.source_id]
+  OPTIONAL MATCH (legacy {id:b.endpoint})
+  WHERE (legacy:Role OR legacy:System) AND (legacy.tenant_id IS NULL OR legacy.tenant_id=$tenant)
+  WITH pi,b,coalesce(actor,legacy) AS who
   FOREACH (_ IN CASE WHEN who IS NULL THEN [] ELSE [1] END |
     MERGE (pi)-[rb:ROLE_BOUND {role_name:b.role}]->(who))
   FOREACH (_ IN CASE WHEN who IS NULL THEN [1] ELSE [] END |
@@ -182,11 +197,19 @@ CALL (pi,pv) {
   FOREACH (_ IN CASE WHEN t IS NULL THEN [1] ELSE [] END |
     SET pi.projection_warnings=pi.projection_warnings+['definition element missing: '+it.activity])
   WITH pi,w,it
-  OPTIONAL MATCH (who {id:it.performer}) WHERE who:Role OR who:System
-  FOREACH (_ IN CASE WHEN who IS NULL THEN [] ELSE [1] END |
-    MERGE (w)-[ra:ASSIGNED_TO]->(who) SET ra.kind='single')
-  FOREACH (_ IN CASE WHEN who IS NULL AND it.performer IS NOT NULL THEN [1] ELSE [] END |
-    SET pi.projection_warnings=pi.projection_warnings+['performer missing: '+it.performer])
+  CALL (pi,w,it) {
+    UNWIND CASE WHEN size(it.performers)=0 THEN [null] ELSE it.performers END AS performer
+    OPTIONAL MATCH (actor:ExecutionActor {tenant_id:$tenant,source_id:performer})
+    WHERE actor.source_id IN [a IN $actors | a.source_id]
+    OPTIONAL MATCH (legacy {id:performer})
+    WHERE (legacy:Role OR legacy:System) AND (legacy.tenant_id IS NULL OR legacy.tenant_id=$tenant)
+    WITH pi,w,it,performer,coalesce(actor,legacy) AS who
+    FOREACH (_ IN CASE WHEN who IS NULL THEN [] ELSE [1] END |
+      MERGE (w)-[ra:ASSIGNED_TO]->(who) SET ra.kind=CASE WHEN size(it.performers)>1 THEN 'multi' ELSE 'single' END)
+    FOREACH (_ IN CASE WHEN who IS NULL AND performer IS NOT NULL THEN [1] ELSE [] END |
+      SET pi.projection_warnings=pi.projection_warnings+['performer missing: '+performer])
+    RETURN count(*) AS performer_rows
+  }
   RETURN count(*) AS projected_items
 }
 RETURN pi.id AS instance, projected_items,$id AS projection_key,$revision AS projection_revision,$payload_hash AS projection_hash
@@ -201,7 +224,7 @@ OPTIONAL MATCH (pi)-[:ON_ASSET]->(a:Asset)
 OPTIONAL MATCH (pi)-[:HANDLES]->(i:Incident)
 OPTIONAL MATCH (pi)-[rb:ROLE_BOUND]->(who)
 WITH pi,p,pv,io,a,i,collect(DISTINCT CASE WHEN who IS NULL THEN NULL ELSE
-  {role_name:rb.role_name,endpoint:who.id,kind:labels(who)[0]} END) AS bindings
+  {role_name:rb.role_name,endpoint:coalesce(who.source_id,who.id),kind:CASE WHEN who:User THEN 'User' WHEN who:Agent THEN 'Agent' ELSE labels(who)[0] END} END) AS bindings
 OPTIONAL MATCH (w:WorkItem)-[:IN_INSTANCE]->(pi)
 OPTIONAL MATCH (w)-[:EXECUTES]->(t)
 OPTIONAL MATCH (w)-[ra:ASSIGNED_TO]->(perf)
@@ -212,5 +235,5 @@ RETURN pi{.*} AS instance, p.id AS process, coalesce(pv.name,p.name) AS process_
        coalesce(pi.projection_warnings,[])+CASE WHEN pv IS NULL THEN ['version snapshot not projected'] ELSE [] END AS warnings,
        collect(CASE WHEN w IS NULL THEN NULL ELSE {workitem:w{.*},task:t.id,task_name:t.name,
          task_type:head([label IN labels(t) WHERE label <> 'FlowNode']),
-         performer:perf.id,performer_kind:ra.kind} END) AS items
+         performer:coalesce(perf.source_id,perf.id),performer_kind:ra.kind} END) AS items
 '''
