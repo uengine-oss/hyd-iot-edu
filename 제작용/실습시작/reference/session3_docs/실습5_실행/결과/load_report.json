@@ -1,0 +1,26 @@
+{
+  "statements": 171,
+  "skipped_not_approved": [
+    "HM-8-007",
+    "HM-8-022",
+    "HM-8-029",
+    "HM-8-033",
+    "HM-8-038",
+    "HM-8-041",
+    "HM-8-044",
+    "HM-8-047"
+  ],
+  "unresolved_tags": {
+    "HM-8-039": [
+      "TS4"
+    ],
+    "HM-8-040": [
+      "TS4"
+    ],
+    "HM-8-094": [
+      "TS4"
+    ]
+  },
+  "sections": 8,
+  "procedures": 7
+}
