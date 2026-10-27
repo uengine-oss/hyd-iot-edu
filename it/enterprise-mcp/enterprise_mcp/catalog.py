@@ -27,6 +27,29 @@ from (
 """
 
 
+def page(catalog, table=None, offset=0, limit=12):
+    """Keep full metadata in storage; expose a list or one bounded detail page."""
+    if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 20:
+        raise ValueError('offset >= 0, limit 1..20 required')
+    relations=catalog['relations']
+    base={'catalog':catalog['catalog'],'schema':catalog['schema']}
+    if table is None:
+        rows=[{'name':r['name'],'kind':r['kind'],'comment':r.get('comment'),
+               'column_count':len(r['columns'])} for r in relations]
+        selected=rows[offset:offset+limit]
+        return dict(base,relations=selected,total=len(rows),
+                    next_offset=offset+len(selected) if offset+len(selected)<len(rows) else None,
+                    detail='describe_catalog(table=<name>) for full columns and constraints; use next_offset to continue')
+    relation=next((r for r in relations if r['name']==table),None)
+    if relation is None:raise ValueError('unknown reader-visible table')
+    # Columns and constraints share one ordered page, so neither grows unbounded.
+    entries=[dict(kind='column',value=c) for c in relation['columns']]
+    entries += [dict(kind='constraint',value=c) for c in relation['constraints']]
+    selected=entries[offset:offset+limit]
+    return dict(base,table=table,kind=relation['kind'],comment=relation.get('comment'),entries=selected,
+                total=len(entries),next_offset=offset+len(selected) if offset+len(selected)<len(entries) else None)
+
+
 def quote(name):
     return '"' + name.replace('"', '""') + '"'
 

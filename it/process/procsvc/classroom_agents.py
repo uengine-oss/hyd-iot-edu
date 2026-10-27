@@ -142,9 +142,19 @@ def verify_tool(runtime,instance,qualified):
     if (not isinstance(qualified,str) or qualified.count('/')!=1
             or servers is not None and qualified.split('/')[0] not in servers):
         raise Denied('승인 에이전트 단계가 사용하는 도구 서버가 아닙니다')
+    if not _handover_tool_allowed(bundle, qualified.split('/')[0], qualified.split('/')[1]):
+        raise Denied('교대 인수인계의 승인 읽기 도구가 아닙니다')
+
+
+def _handover_tool_allowed(bundle, server, name):
+    from hydcommon.handover_tools import handover_read
+    form=pinned_form(bundle['source_definition'],bundle['activity'].get('tool',''))
+    return (form or {}).get('contract') != handover.DRAFT or handover_read(server,name)
 
 
 def filter_tools(runtime,instance,tools):
     approval=verify_instance(runtime,instance)
-    servers=snapshot(runtime,approval)[3]['agent']['tools']
-    return [tool for tool in tools if servers is None or tool['server'] in servers]
+    bundle=snapshot(runtime,approval)[3]
+    servers=bundle['agent']['tools']
+    return [tool for tool in tools if (servers is None or tool['server'] in servers)
+            and _handover_tool_allowed(bundle,tool['server'],tool['name'])]
