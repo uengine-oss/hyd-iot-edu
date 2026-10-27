@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("prepare_ports", ROOT / "scripts/prepare_ports.py")
@@ -69,7 +70,7 @@ site_url = "http://localhost:8088"
                 "EFFECTS_SMTP_PORT=54325\n"
                 "MCP_HOST_REWRITE=neo4j:7687=127.0.0.1:7687,dmn-mcp:8198=127.0.0.1:8198\n", encoding="utf-8")
             occupied = {3000, 13000, 8080, 8088, 54322, 54325, 7687, 8198}
-            with patch.object(ports, "docker_ports", return_value=(set(), occupied)), \
+            with patch.object(ports, "docker_projects", return_value=[]), patch.object(ports, "docker_ports", return_value=(set(), occupied)), \
                  patch.object(ports, "available", return_value=True), patch("builtins.print") as output:
                 # The probe default is explicitly replaced to avoid binding ports.
                 original = ports.allocate
@@ -95,7 +96,7 @@ site_url = "http://localhost:8088"
             self.assertNotIn(b"\r", (root / ".env").read_bytes())
             # Running own containers retain the same mapping on the next start.
             own = set(mapping.values())
-            with patch.object(ports, "docker_ports", return_value=(own, own)), patch("builtins.print"):
+            with patch.object(ports, "docker_projects", return_value=[]), patch.object(ports, "docker_ports", return_value=(own, own)), patch("builtins.print"):
                 with patch.object(ports, "allocate", side_effect=lambda a, b, c, d: original(a, b, c, d, lambda p: False)):
                     ports.prepare(root)
             self.assertEqual(json.loads((root / ".hyd-runtime/ports.json").read_text()), {str(k): v for k, v in mapping.items()})
@@ -115,6 +116,8 @@ site_url = "http://localhost:8088"
                       container("/foreign", "other", checkout.as_posix(), 3000),
                       container("/other-checkout", "hyd-iot-edu", "/another-checkout", 8080),
                       container("/supabase_db_hyd-portal-latest", "", "", 54322)]
+        containers[-1]['Config']['Labels'].update({'com.supabase.cli.project':'hyd-portal-latest',
+                                                   'com.supabase.cli.workdir':checkout.as_posix()+'/it'})
         with patch.object(ports.subprocess, "check_output", side_effect=["id1 id2 id3 id4", json.dumps(containers)]), \
              patch.dict(ports.os.environ, {'COMPOSE_PROJECT_NAME':'hyd-iot-edu'}):
             owned, occupied = ports.docker_ports(checkout, "hyd-portal-latest")
@@ -137,3 +140,33 @@ def test_custom_compose_project_owns_its_existing_ports(tmp_path,monkeypatch):
     monkeypatch.setattr(ports.subprocess,'check_output',lambda args,**kw:'a\nb\nc' if args[1]=='ps' else json.dumps(data))
     owned,occupied=ports.docker_ports(tmp_path,'supabase-existing')
     assert owned=={8080} and occupied=={8080,18080,28080}
+
+
+def test_fresh_checkout_separates_stopped_foreign_projects(tmp_path):
+    containers = [
+        {'Config': {'Labels': {'com.docker.compose.project':'hyd-iot-edu',
+            'com.docker.compose.project.working_dir':'C:/other/checkout'}}},
+        {'Config': {'Labels': {'com.supabase.cli.project':'hyd-portal-latest',
+            'com.supabase.cli.workdir':'C:/other/checkout/it'}}},
+    ]
+    compose, supabase = ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', containers,
+                                            saved=False, environment_name=False)
+    assert compose.startswith('hyd-iot-edu-') and supabase.startswith('hyd-portal-latest-')
+    assert (compose, supabase) == ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', containers,
+                                                      saved=False, environment_name=False)
+    with pytest.raises(RuntimeError, match='기존 데이터를 보존'):
+        ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', containers,
+                            saved=True, environment_name=False)
+    with pytest.raises(RuntimeError, match='기존 데이터를 보존'):
+        ports.project_names(tmp_path, 'hyd-iot-edu', 'hyd-portal-latest', containers,
+                            saved=False, environment_name=True)
+
+
+def test_same_checkout_supabase_ownership_requires_workdir(tmp_path, monkeypatch):
+    monkeypatch.delenv('COMPOSE_PROJECT_NAME', raising=False)
+    rows = [{'Name':'/supabase_db_same','Config':{'Labels':{'com.supabase.cli.project':'same',
+              'com.supabase.cli.workdir':str(tmp_path/'other'/'it')}},
+             'NetworkSettings':{'Ports':{'5432/tcp':[{'HostPort':'54322'}]}}}]
+    monkeypatch.setattr(ports.subprocess,'check_output',lambda args,**kw:'x' if args[1]=='ps' else json.dumps(rows))
+    owned, occupied = ports.docker_ports(tmp_path, 'same')
+    assert owned == set() and occupied == {54322}
