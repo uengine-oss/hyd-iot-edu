@@ -88,6 +88,7 @@ def test_worker_replaces_teacher_mcp_before_cli_and_never_uses_teacher_credentia
     assert json.loads(args[args.index('--settings')+1]) == {'disableAllHooks':True}
     assert set(args[args.index('--tools')+1].split(',')) == {'Read','Glob','Grep','Write','Edit','Skill'}
     assert '--strict-mcp-config' in args
+    assert args[args.index('--setting-sources')+1] == ''
 
 
 def test_missing_managed_permission_cannot_fall_back_to_local_model(rt,tmp_path,monkeypatch):

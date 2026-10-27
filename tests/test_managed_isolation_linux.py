@@ -28,6 +28,7 @@ class ManagedIsolation(unittest.TestCase):
         self.env.start()
 
     def tearDown(self):
+        isolation.cleanup_skills(self.work)
         self.env.stop()
         self.temp.cleanup()
 
@@ -90,6 +91,31 @@ print(json.dumps({'reads':results,'uid':os.getuid(),'groups':os.getgroups(),
         (self.work / 'escape').symlink_to(self.secret)
         with self.assertRaisesRegex(RuntimeError, '링크'):
             isolation.prepare(['true'], {'cwd':str(self.work), 'env':{}})
+
+    def test_approved_skill_bundle_is_readonly_and_cleaned_after_execution(self):
+        args=isolation.cli_args(self.work,[{'skill_name':'approved','description':'Approved','content':'Keep this instruction.'}])
+        plugin=Path(args[args.index('--plugin-dir')+1])
+        skill=plugin/'skills'/'approved'/'SKILL.md'
+        script='''import json,sys
+from pathlib import Path
+p=Path(sys.argv[1]); text=p.read_text()
+try: p.write_text('changed'); denied=False
+except PermissionError: denied=True
+print(json.dumps({'text':text,'denied':denied}))
+'''
+        tree=_ProcessTree(isolation.group_file(self.work))
+        try:
+            proc=tree.spawn([sys.executable,'-c',script,str(skill),'--plugin-dir',str(plugin)],
+                cwd=str(self.work),env=dict(os.environ),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            output,error=proc.communicate(timeout=10)
+            self.assertEqual(proc.returncode,0,error)
+            result=json.loads(output)
+            self.assertTrue(result['denied'])
+            self.assertIn('Keep this instruction.',result['text'])
+        finally:
+            tree.close()
+            isolation.cleanup_skills(self.work)
+        self.assertFalse(plugin.exists())
 
     def test_cli_cannot_create_symlink_or_write_outside_workspace(self):
         result=self.run_child('''import json
@@ -224,7 +250,14 @@ asyncio.run(main())
                 args=['/usr/bin/claude','--print','No model execution; test startup only','--output-format','stream-json',
                       '--verbose','--model','coding','--max-turns','1']
                 if guarded:
-                    args+=isolation.cli_args()
+                    args+=isolation.cli_args(self.work,[{'skill_name':'approved-test',
+                        'description':'Instructor approved test skill','content':'Read the supplied context.'}])
+                    # A writable project setting must not replace the model
+                    # endpoint or authentication during a correction/resume.
+                    config=json.loads((folder/'settings.local.json').read_text())
+                    config['env']={'ANTHROPIC_BASE_URL':f'http://127.0.0.1:{server.server_port}/bypassed',
+                                   'ANTHROPIC_AUTH_TOKEN':'fake-project-bearer'}
+                    (folder/'settings.local.json').write_text(json.dumps(config))
                     env.update(CLAUDE_CODE_USE_BEDROCK='1', CLAUDE_CODE_USE_VERTEX='1', CLAUDE_CODE_USE_FOUNDRY='1',
                                CLAUDE_CODE_OAUTH_TOKEN='fake-other-login', ANTHROPIC_AUTH_TOKEN='fake-other-bearer')
                 requests.clear()
@@ -237,9 +270,10 @@ asyncio.run(main())
                     if guarded:
                         self.assertTrue(requests, 'managed CLI did not reach the bound gateway')
                         self.assertTrue(all(key=='test-only-fake-key' and auth is None for _,key,auth in requests), requests)
+                        self.assertTrue(all(not path.startswith('/bypassed') for path,_,_ in requests), requests)
                         events=[json.loads(line) for line in output.splitlines() if line.startswith('{')]
                         init=next(e for e in events if e.get('type')=='system' and e.get('subtype')=='init')
-                        self.assertIn('approved-test',init['skills'])
+                        self.assertIn('hyd-classroom:approved-test',init['skills'])
                         self.assertEqual(set(init['tools']),{'Read','Glob','Grep','Write','Edit','Skill'})
                         self.assertNotIn('Bash',init['tools'])
                         self.assertNotIn('WebFetch',init['tools'])
