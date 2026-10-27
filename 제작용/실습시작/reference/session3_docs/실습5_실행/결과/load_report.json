@@ -1,26 +1,114 @@
 {
-  "statements": 171,
-  "skipped_not_approved": [
-    "HM-8-007",
-    "HM-8-022",
-    "HM-8-029",
-    "HM-8-033",
-    "HM-8-038",
-    "HM-8-041",
-    "HM-8-044",
-    "HM-8-047"
+  "documents": [
+    {
+      "file": "HI-01_검토.json",
+      "document": "HI-01@1.0",
+      "status": "보충",
+      "sha12": "2a0e533c3a9f",
+      "approved": 25,
+      "not_loaded": 2
+    },
+    {
+      "file": "HM-8_검토.json",
+      "document": "HM-8@1.1",
+      "status": "현행",
+      "sha12": "6a1a66a6000e",
+      "approved": 101,
+      "not_loaded": 8
+    },
+    {
+      "file": "OEM-HPP45A-MM_검토.json",
+      "document": "OEM-HPP45A-MM@C",
+      "status": "참고(제조사)",
+      "sha12": "7b4cdbecf66e",
+      "approved": 61,
+      "not_loaded": 2
+    },
+    {
+      "file": "PM-02_검토.json",
+      "document": "PM-02@2.0",
+      "status": "현행",
+      "sha12": "2a757bd43772",
+      "approved": 98,
+      "not_loaded": 9
+    }
   ],
-  "unresolved_tags": {
-    "HM-8-039": [
-      "TS4"
+  "skipped_not_approved": {
+    "HI-01_검토.json": [
+      "HI-01-010",
+      "HI-01-026"
     ],
-    "HM-8-040": [
-      "TS4"
+    "HM-8_검토.json": [
+      "HM-8-007",
+      "HM-8-022",
+      "HM-8-029",
+      "HM-8-033",
+      "HM-8-038",
+      "HM-8-041",
+      "HM-8-044",
+      "HM-8-047"
     ],
-    "HM-8-094": [
-      "TS4"
+    "OEM-HPP45A-MM_검토.json": [
+      "OEM-HPP45A-MM-001",
+      "OEM-HPP45A-MM-057"
+    ],
+    "PM-02_검토.json": [
+      "PM-02-001",
+      "PM-02-002",
+      "PM-02-003",
+      "PM-02-004",
+      "PM-02-011",
+      "PM-02-049",
+      "PM-02-097",
+      "PM-02-100",
+      "PM-02-103"
     ]
   },
-  "sections": 8,
-  "procedures": 7
+  "unresolved_tags": {},
+  "part_links": {
+    "OEM-HPP45A-MM-009": [
+      "P-RTN-FLT"
+    ],
+    "OEM-HPP45A-MM-010": [
+      "P-RTN-FLT"
+    ],
+    "OEM-HPP45A-MM-011": [
+      "P-SUC-STR"
+    ],
+    "OEM-HPP45A-MM-026": [
+      "P-RTN-FLT"
+    ],
+    "OEM-HPP45A-MM-027": [
+      "P-RTN-FLT"
+    ],
+    "OEM-HPP45A-MM-028": [
+      "P-RTN-FLT"
+    ],
+    "PM-02-069": [
+      "P-PMP-SEAL"
+    ],
+    "PM-02-070": [
+      "P-RTN-FLT"
+    ]
+  },
+  "ambiguous_parts": {},
+  "applies_to": {
+    "HI-01": [
+      "HYD-01",
+      "HYD-02",
+      "HYD-03"
+    ],
+    "HM-8": [],
+    "OEM-HPP45A-MM": [
+      "HYD-01",
+      "HYD-02",
+      "HYD-03"
+    ],
+    "PM-02": [
+      "HYD-01",
+      "HYD-02",
+      "HYD-03"
+    ]
+  },
+  "statements": 467
 }
