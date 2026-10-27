@@ -57,3 +57,17 @@ def test_failure_after_writes_restores_existing_file_and_removes_new_file(tmp_pa
     assert not (tmp_path / 'outside.txt').exists()
     backups = list((dest / '.hyd-runtime' / 'package-backups').glob('*/change.txt'))
     assert len(backups) == 1 and backups[0].read_bytes() == b'original'
+
+
+def test_existing_lab_env_is_preserved_and_new_lab_gets_template(tmp_path):
+    dest = tmp_path / 'pc'; dest.mkdir()
+    lab = dest / 'course' / 'labs' / 'offline' / '05-2-cause-agent' / '.env'
+    lab.parent.mkdir(parents=True)
+    lab.write_bytes(b'LLM_API_KEY=student-key\nCUSTOM_OPTION=preserve\n')
+    source = tmp_path / 'source.zip'
+    archive(source, [('course/labs/offline/05-2-cause-agent/.env', b'LLM_API_KEY=template\n'),
+                     ('another-lab/.env', b'LLM_API_KEY=template\n')])
+    assert apply(source, dest).returncode == 0
+    assert lab.read_bytes() == b'LLM_API_KEY=student-key\nCUSTOM_OPTION=preserve\n'
+    assert (dest / 'another-lab' / '.env').read_bytes() == b'LLM_API_KEY=template\n'
+    assert not list((dest / '.hyd-runtime' / 'package-backups').glob('*/course/labs/offline/05-2-cause-agent/.env'))
