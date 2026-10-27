@@ -7,7 +7,7 @@ C67 최신 적용: [최상위 학습 목표](1_목적과_방향.md)와 [전체 �
 ## 현재 작업
 
 - 시작 시각 / 현재 커밋 / 대상 랩: 2026-10-27 클라우드 Linux 세션 시작, main `e34f2dd`, 대상은 두 반 2회차(이어서 3회차).
-- 도구 확인(2026-10-27, 이 클라우드 세션): computer use 도구(`mcp__remote-devices__computer_*`)와 그것을 켜는 `enable__mcp__remote-devices__computer` 모두 없음 → 사용자 PC의 VS Code 화면 접근 불가. 재개 방법: Claude 데스크톱 앱 Settings → This computer → Computer use 켜기 후 claude.ai 입력창 + → Devices에서 해당 PC를 골라 새 메시지, 또는 그 PC에서 `claude remote-control`. 연결돼도 computer use는 VS Code를 「click」 등급(클릭만, 입력·키 금지)으로 주므로 Codex 채팅·터미널 입력이 막힐 수 있다 — 연결 뒤 실제 응답의 tier로 확인한다. Codex GPT-6 Luna·녹화 도구: 연결 전이라 미확인.
+- 도구 확인(2026-10-27, 이 클라우드 세션): computer use 도구(`mcp__remote-devices__computer_*`)와 그것을 켜는 `enable__mcp__remote-devices__computer` 모두 없음 → 사용자 PC의 VS Code 화면 접근 불가. 재개 방법: Claude 데스크톱 앱 Settings → This computer → Computer use 켜기 후 claude.ai 입력창 + → Devices에서 해당 PC를 골라 새 메시지, 또는 그 PC에서 `claude remote-control`. 연결돼도 computer use는 VS Code를 「click」 등급(클릭만, 입력·키 금지)으로 주므로 Codex 채팅·터미널 입력이 막힐 수 있다 — 연결 뒤 실제 응답의 tier로 확인한다. Codex GPT-6 Luna·녹화 도구: 연결 전이라 미확인. 사용자 데스크톱 앱 설정 화면(2026-10-27)에 「이 컴퓨터에서 실행되지 않는 클라우드 Code 세션에서는 사용할 수 없습니다」가 표시됨 → VS Code 촬영·computer use 시험은 사용자 PC에서 실행되는 세션(데스크톱 앱 로컬 Code 세션 또는 `claude remote-control`)에서 한다. 그 세션의 첫 확인: VS Code 허용 등급(click/full)과 Codex 채팅 입력 가능 여부.
 - 순서: 두 반2회차 완료 후3회차. 기존 Cypher 공통 영상은 보존한다.
 
 ## A에 전달할 랩 계약
