@@ -92,6 +92,15 @@ def test_structured_arguments_match_exact_successful_tool(args):
     assert result['kind'] == 'answered' and result['evidence'][0]['call'] == 'call-1'
 
 
+@pytest.mark.parametrize('claimed,args,expected', [
+    ('{}', {}, True), (' {"table":"parts", "limit":2}', {'limit':2,'table':'parts'}, True),
+    ('{"limit":true}', {'limit':1}, False), ('{"limit":2}', {'limit':2,'table':'parts'}, False),
+    ('{"limit":2', {'limit':2}, False), ('[]', {}, False),
+])
+def test_json_text_arguments_match_only_the_same_actual_object(claimed, args, expected):
+    assert ask._matches({'tool':'mcp__student__read_rows','query':claimed}, call(args=args)) is expected
+
+
 @pytest.mark.parametrize('claimed', [
     {'table': 'parts'}, {'table': 'parts', 'limit': 1, 'extra': None},
     {'table': 'parts', 'limit': True}, {'table': 'parts', 'limit': '1'},

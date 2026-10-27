@@ -314,6 +314,15 @@ def _matches(item, call) -> bool:
     if claimed is None or claimed != advertised(call.get('tool')):
         return False
     query = item.get('query')
+    # Models can serialize structured MCP arguments as JSON text. Accept only
+    # an object and compare every field exactly; SQL strings remain unchanged.
+    if isinstance(query, str) and query.lstrip().startswith('{'):
+        try:
+            parsed = json.loads(query)
+            if isinstance(parsed, dict):
+                query = parsed
+        except (ValueError, TypeError):
+            pass
     if isinstance(query, dict):
         actual = call.get('_input', call.get('input'))
         if not isinstance(actual, dict):
