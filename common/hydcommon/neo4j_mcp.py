@@ -6,7 +6,9 @@ compiled query type before executing. It never exposes a write tool.
 """
 import json
 import os
-from typing import Literal
+from typing import Annotated, Literal
+
+from pydantic import Field
 
 MAX_ROWS = 100
 MAX_CHARS = 16000
@@ -126,9 +128,11 @@ def create_server(driver, *, database='neo4j', timeout=30):
     async def read_neo4j_cypher(query: str, params: dict | None = None) -> str:
         """읽기 전용 Cypher. 큰 응답은 truncated 표시와 함께 제한하므로 필요한 속성과 범위만 조회하세요."""
         return await read(driver, query, params, database=database, timeout=timeout)
+    # The advertised bounds are the same ones schema() enforces, so a model can choose valid pages.
     @app.tool(annotations=annotations)
     async def get_neo4j_schema(name: str | None = None,
-            section: Literal['labels','properties','relationships'] = 'labels', offset: int = 0, limit: int = 50) -> str:
+            section: Literal['labels','properties','relationships'] = 'labels',
+            offset: Annotated[int, Field(ge=0)] = 0, limit: Annotated[int, Field(ge=1, le=50)] = 50) -> str:
         """현재 label 이름 목록. 선택한 name의 properties/relationships 상세를 페이지로 조회합니다."""
         return await schema(driver,name=name,section=section,offset=offset,limit=limit,database=database,timeout=timeout)
     return app

@@ -111,14 +111,16 @@ def server(name,tools,transport):
         _qualified: str=PrivateAttr()
         async def run(self,arguments):
             from procsvc.mcp_check import _argument_problem
-            if _argument_problem({'input_schema':self.parameters},arguments):
-                raise ToolError('조회 인자가 승인 도구 입력 스키마와 다릅니다')
+            problem=_argument_problem({'input_schema':self.parameters},arguments)
+            if problem:
+                raise ToolError('조회 인자가 승인 도구 입력 스키마와 다릅니다: '+problem['error'])
             try:
                 value=await asyncio.to_thread(transport.call,self._qualified,arguments)
             except Exception:
                 raise ToolError('학생 현재 상태 조회에 실패했습니다. 다른 설비 상태로 대체하지 마세요') from None
             text=json.dumps(value.get('result'),ensure_ascii=False)
-            if value['state']=='FAILED':raise ToolError(text)
+            if value['state']=='FAILED':
+                raise ToolError(value['result'] if isinstance(value.get('result'),str) else text)
             return ToolResult(content=[TextContent(type='text',text=text)])
 
     app=FastMCP('HYD managed student '+name)

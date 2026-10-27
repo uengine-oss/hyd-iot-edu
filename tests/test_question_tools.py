@@ -40,8 +40,45 @@ def test_question_proxy_fails_closed_on_truncation_and_disallowed_server(tmp_pat
     with pytest.raises(RuntimeConnectionError):question_tools.attach({'mcpServers':{'untrusted':{}}},tmp_path,'http://process:8080')
     transport=httpx.MockTransport(lambda request:httpx.Response(200,json={'result':{'is_error':False,'truncated':True,'text':'partial'}}))
     client=question_tools.Transport('http://process:8080',transport=transport)
-    with pytest.raises(RuntimeConnectionError):client.call('hyd-dmn/inputs',{})
+    reply=client.call('hyd-dmn/inputs',{})
+    # A partial result is a failure with a narrowing hint, never data.
+    assert reply['state']=='FAILED' and 'partial' not in reply['result'] and '범위' in reply['result']
     with pytest.raises(RuntimeConnectionError):client.call('hyd-dmn/submit_decision',{})
+    broken=question_tools.Transport('http://process:8080',transport=httpx.MockTransport(lambda request:httpx.Response(502)))
+    with pytest.raises(RuntimeConnectionError):broken.call('hyd-dmn/inputs',{})
+    refused=question_tools.Transport('http://process:8080',transport=httpx.MockTransport(
+        lambda request:httpx.Response(422,json={'detail':'도구 입력이 서버의 inputSchema 계약을 지키지 않습니다 (maximum)'})))
+    assert refused.call('hyd-dmn/inputs',{})=={'state':'FAILED','result':'도구 입력이 서버의 inputSchema 계약을 지키지 않습니다 (maximum)'}
+    unexplained=question_tools.Transport('http://process:8080',transport=httpx.MockTransport(lambda request:httpx.Response(404,text='nope')))
+    with pytest.raises(RuntimeConnectionError):unexplained.call('hyd-dmn/inputs',{})
+
+
+def test_question_proxy_returns_the_tools_own_refusal_to_the_model(tmp_path):
+    # Live 2026-10-28: limit=100 was refused by the server, the relay replaced the
+    # reason with a generic connection failure and the model answered "cannot answer".
+    refusal="Error calling tool 'get_neo4j_schema': 스키마 구간·목록 범위를 확인하세요"
+    transport=httpx.MockTransport(lambda request:httpx.Response(200,json={'result':{'is_error':True,'truncated':False,'json':False,'text':refusal}}))
+    rows=[{'server':'neo4j','name':'get_neo4j_schema','description':'스키마',
+           'inputSchema':{'type':'object','properties':{'limit':{'type':'integer','minimum':1,'maximum':50}}}}]
+    async def run():
+        proxy=managed_tools.server('neo4j',rows,question_tools.Transport('http://process:8080',transport=transport))
+        async with Client(proxy) as c:
+            failed=await c.call_tool('get_neo4j_schema',{'limit':10},raise_on_error=False)
+            assert failed.is_error and refusal in failed.content[0].text and '학생 현재 상태' not in failed.content[0].text
+            bad=await c.call_tool('get_neo4j_schema',{'limit':100},raise_on_error=False)
+            assert bad.is_error and 'inputSchema' in bad.content[0].text
+    asyncio.run(run())
+
+
+def test_neo4j_schema_tool_advertises_the_bounds_it_enforces():
+    from hydcommon import neo4j_mcp
+    app=neo4j_mcp.create_server(driver=None)
+    async def schema():
+        async with Client(app) as c:
+            return next(t for t in await c.list_tools() if t.name=='get_neo4j_schema').inputSchema
+    props=asyncio.run(schema())['properties']
+    assert (props['limit'].get('minimum'),props['limit'].get('maximum'))==(1,50)
+    assert props['offset'].get('minimum')==0
 
 
 def test_actual_question_runner_uses_proxy_and_exact_read_permissions(world, tmp_path, monkeypatch):
