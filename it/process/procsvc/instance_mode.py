@@ -574,7 +574,8 @@ def _hooks(ctx: ProcessContext) -> instances.Hooks:
                            check_rejection=delivery.check_rejection, reject_decision=delivery.reject,
                            approval_effects=delivery.effects, rework_effects=lambda inst: collect_rework_effects(ctx, inst),
                            reopen_incident=reopen_incident, reopen_for_recheck=reopen_for_recheck, exec_compensation=ctx.exec_compensation,
-                           exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher, audit=ctx.audit,
+                           exec_enterprise=exec_enterprise, record_cypher=ctx.cypher, query_cypher=ctx.cypher,
+                           ensure_actor_schema=lambda: ctx.cypher(instances.ACTOR_CONSTRAINT_Q), audit=ctx.audit,
                            enterprise_read=enterprise_read, mcp_call=mcp_call, mcp_read=mcp_read, plant_restore=plant_restore,
                            close_incident_effect=close_incident_effect, recovery_reading=recovery_reading,
                            read_tag=ctx.latest_tag, close_incident_result=close_incident_result)

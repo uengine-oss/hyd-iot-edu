@@ -97,6 +97,9 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:IngestionControl {id!, name!, sequence!})` HYD 교육용 단일 그래프의 DDL 적재/되돌리기를 직렬화하는 기술 기록. 업무 지식이 아니다.
 - `(:IngestionBatch {id!, name!, filename!, fingerprint!, status![ACTIVE|CLEARED], createdAt!, clearedAt})` 원본 DDL 적재의 내용 해시와 상태. 되돌린 영수증도 남겨 같은 ID의 재사용을 거절한다.
 - `(:ProcessInstance {id!, name!, tenant_id!, status![NEW|RUNNING|COMPLETED|CANCELLED], start_date, end_date, end_event, current_activity_ids, version, definition_id, projection_warnings, rework_generation, projection_revision})` bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다.
+- `(:ExecutionActor {id!, name!, tenant_id!, source_id!, username})` 관계형 users에서 실행 관계에 쓰는 현재 담당자 투영. 테넌트와 원본 ID를 분리한다.
+- `(:User:ExecutionActor {id!, name!, tenant_id!, source_id!, username})` users의 실제 사람 담당자 투영.
+- `(:Agent:ExecutionActor {id!, name!, tenant_id!, source_id!, username})` users의 실제 에이전트 담당자 투영.
 - `(:WorkItem {id!, tenant_id!, activity_id!, activity_name, status![NEW|TODO|IN_PROGRESS|SUBMITTED|PENDING|DONE|CANCELLED], tool, agent_mode, agent_orch, draft_status[STARTED|CANCELLED|COMPLETED|FB_REQUESTED|HUMAN_ASKED|FAILED], retry, rework_count, duration, start_date, end_date, due_date, definition_id, version, generation, supersedes_id, rework_request_id})` todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다.
 - `(:ProcessVersion {id!, name!, definition_id!, version!, tenant_id!, ontology_ref, projection_warnings})` 관계형 proc_def_version의 고정 정의 버전. HYD는 변경 전후 실습 비교를 위해 버전별 흐름 노드도 보존한다. 현재 head 요소만 투영하는 제품과의 차이다.
 - `(:ExecutionProjection {id!, tenant_id, lock, revision, payload_hash})` 실행 정의·인스턴스·작업을 그래프에 쓸 때 판본 순서를 지키는 잠금·영수증 (execution_graph). 사람이 편집하지 않는다.
@@ -182,8 +185,8 @@ KPI를 달성하기 위해 일이 어떤 순서로, 누구에 의해, 어떤 데
 - `(:DecisionCase)-[:FOR_INCIDENT]->(:Incident)` N:1. 판단 대상 사건
 - `(:ProcessInstance)-[:HANDLES]->(:Incident)` N:1. 프로세스 실행이 처리하는 사건
 - `(:WorkItem)-[:IN_INSTANCE]->(:ProcessInstance)` N:1. 실행 작업이 속한 인스턴스
-- `(:WorkItem)-[:ASSIGNED_TO {kind}]->(:Role|System)` N:M. HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다.
-- `(:ProcessInstance)-[:ROLE_BOUND {role_name}]->(:Role|System)` N:M. 실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다.
+- `(:WorkItem)-[:ASSIGNED_TO {kind}]->(:Role|System|User|Agent)` N:M. 원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다.
+- `(:ProcessInstance)-[:ROLE_BOUND {role_name}]->(:Role|System|User|Agent)` N:M. 원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다.
 - `(:ProcessInstance)-[:USES_VERSION]->(:ProcessVersion)` N:1. 이 실행이 사용하는 고정 정의 버전
 - `(:FlowNode)-[:MAPS_TO]->(:FlowNode)` N:1. 버전별 실행 정의 요소와 원래 업무 온톨로지 요소의 명시 대응. 원래 Process의 HAS_NODE 범위 안에서만 연결
 - `(:Step)-[:DOCUMENTS {_manual_document!}]->(:Skill)` N:1. ??? ??? ? ?? Step? ??? ?? SOP/active ??? ?? Skill? ????. ?? HAS_STEP? ??? ??? active journal?????? hash pin? ????.

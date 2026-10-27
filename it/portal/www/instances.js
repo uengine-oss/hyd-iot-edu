@@ -735,7 +735,7 @@
     const cy = UI.fold(esc(UI.t('inst.query')), `<pre>${esc(g.cypher)}</pre><pre>${esc(JSON.stringify(g.params))}</pre>`, { cls: 'small' });
     const x = g.graph;
     if (!x) return sync + '<div class="muted">조회 가능한 반영 내역이 없습니다.</div>' + cy;
-    const rows = (x.workitems || []).map(w => `<tr class="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><small class="muted">${esc(w.executes_type || '')}</small>` : '–'}</td><td>${w.assigned_to ? esc(who(w.assigned_to)) : '–'}</td></tr>`).join('');
+    const rows = (x.workitems || []).map(w => `<tr class="${esc(w.status)}"><td>${esc(UI.flowName(w.activity_name || w.activity_id || ''))}</td><td>${chip(w.status)}</td><td>${w.executes ? `${esc(w.executes_name || '')}<br><small class="muted">${esc(w.executes_type || '')}</small>` : '–'}</td><td>${w.assigned_to ? w.assigned_to.split(',').map(id => esc(who(id))).join(', ') : '–'}</td></tr>`).join('');
     const warnings = (x.warnings || []).map(w => `<div class="neg">확인 필요: ${esc(w)}</div>`).join('');
     const version = x.definition || {};
     return sync + warnings + `<p class="kv-line">정의 <b>${esc(version.id || '')}</b> · 버전 ${esc(version.version || x.process.version || '')}${x.asset ? ` · ${esc(UI.t('dec.asset'))} ${esc(x.asset)}` : ''}${x.incident ? ` · ${esc(UI.t('case'))} ${esc(x.incident)}` : ''}</p>

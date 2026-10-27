@@ -1956,6 +1956,59 @@
       ]
     },
     {
+      "name": "ExecutionActor",
+      "label_ko": "실행 담당자",
+      "layer": "record",
+      "standard": "ProcessGPT Organization (HYD tenant-scoped adapter)",
+      "abstract": true,
+      "description": "관계형 users에서 실행 관계에 쓰는 현재 담당자 투영. 테넌트와 원본 ID를 분리한다.",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "label_ko": "사용자",
+      "layer": "record",
+      "standard": "ProcessGPT Organization User (HYD adapter)",
+      "extends": "ExecutionActor",
+      "description": "users의 실제 사람 담당자 투영.",
+      "properties": []
+    },
+    {
+      "name": "Agent",
+      "label_ko": "에이전트",
+      "layer": "record",
+      "standard": "ProcessGPT Organization Agent (HYD adapter)",
+      "extends": "ExecutionActor",
+      "description": "users의 실제 에이전트 담당자 투영.",
+      "properties": []
+    },
+    {
       "name": "WorkItem",
       "label_ko": "실행 작업",
       "layer": "record",
@@ -3428,10 +3481,12 @@
       ],
       "to": [
         "Role",
-        "System"
+        "System",
+        "User",
+        "Agent"
       ],
       "cardinality": "N:M",
-      "description": "HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다.",
+      "description": "원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다.",
       "properties": [
         {
           "name": "kind",
@@ -3451,10 +3506,12 @@
       ],
       "to": [
         "Role",
-        "System"
+        "System",
+        "User",
+        "Agent"
       ],
       "cardinality": "N:M",
-      "description": "실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다.",
+      "description": "원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다.",
       "properties": [
         {
           "name": "role_name",

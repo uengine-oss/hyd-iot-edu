@@ -215,6 +215,23 @@ hyd:ProcessInstance a owl:Class ;
   rdfs:comment "bpm_proc_inst에서 투영한 실행. ProcessGPT 실행 계층을 HYD Process에 연결한다."@ko ;
   hyd:layer "운영 기록"@ko ;
   hyd:standard "ProcessGPT SCHEMA 0.2.0 Execution (HYD adapter)"@ko .
+hyd:ExecutionActor a owl:Class ;
+  rdfs:label "ExecutionActor" ;
+  rdfs:comment "관계형 users에서 실행 관계에 쓰는 현재 담당자 투영. 테넌트와 원본 ID를 분리한다."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT Organization (HYD tenant-scoped adapter)"@ko .
+hyd:User a owl:Class ;
+  rdfs:label "User" ;
+  rdfs:comment "users의 실제 사람 담당자 투영."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT Organization User (HYD adapter)"@ko ;
+  rdfs:subClassOf hyd:ExecutionActor .
+hyd:Agent a owl:Class ;
+  rdfs:label "Agent" ;
+  rdfs:comment "users의 실제 에이전트 담당자 투영."@ko ;
+  hyd:layer "운영 기록"@ko ;
+  hyd:standard "ProcessGPT Organization Agent (HYD adapter)"@ko ;
+  rdfs:subClassOf hyd:ExecutionActor .
 hyd:WorkItem a owl:Class ;
   rdfs:label "WorkItem" ;
   rdfs:comment "todolist에서 투영한 작업. 활동 이름은 activity_name에 있고 결과 본문은 원천 DB에 둔다."@ko ;
@@ -669,15 +686,15 @@ hyd:IN_INSTANCE a owl:ObjectProperty ;
 hyd:ASSIGNED_TO a owl:ObjectProperty ;
   rdfs:label "ASSIGNED_TO" ;
   rdfs:domain hyd:WorkItem ;
-  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System ) ] ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System hyd:User hyd:Agent ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "HYD의 역할/정보시스템 수행자. 제품 User/Agent 해석과 구분한다. | 관계 속성: kind"@ko .
+  rdfs:comment "원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다. | 관계 속성: kind"@ko .
 hyd:ROLE_BOUND a owl:ObjectProperty ;
   rdfs:label "ROLE_BOUND" ;
   rdfs:domain hyd:ProcessInstance ;
-  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System ) ] ;
+  rdfs:range [ a owl:Class ; owl:unionOf ( hyd:Role hyd:System hyd:User hyd:Agent ) ] ;
   hyd:cardinality "N:M" ;
-  rdfs:comment "실행의 역할 바인딩. 제품 User 대신 HYD 역할/시스템으로 해석한다. | 관계 속성: role_name"@ko .
+  rdfs:comment "원본 users의 사람·에이전트 또는 기존 역할·시스템에 연결한다. | 관계 속성: role_name"@ko .
 hyd:USES_VERSION a owl:ObjectProperty ;
   rdfs:label "USES_VERSION" ;
   rdfs:domain hyd:ProcessInstance ;
@@ -1025,7 +1042,7 @@ hyd:horizon a owl:DatatypeProperty ;
   rdfs:comment "예: steady-state, PT15M"@ko .
 hyd:id a owl:DatatypeProperty ;
   rdfs:label "id" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Step hyd:ManualSection hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:Rule hyd:KnowledgeSource hyd:ExternalVariable hyd:Forecast hyd:Incident hyd:DecisionCase hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion hyd:ExecutionProjection hyd:CaseProjection hyd:KnowledgeEdit hyd:ManualIngestionDocument hyd:ManualIngestionBatch ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Step hyd:ManualSection hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:Rule hyd:KnowledgeSource hyd:ExternalVariable hyd:Forecast hyd:Incident hyd:DecisionCase hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:ExecutionActor hyd:WorkItem hyd:ProcessVersion hyd:ExecutionProjection hyd:CaseProjection hyd:KnowledgeEdit hyd:ManualIngestionDocument hyd:ManualIngestionBatch ) ] ;
   rdfs:range xsd:string .
 hyd:ingest_batch a owl:DatatypeProperty ;
   rdfs:label "ingest_batch" ;
@@ -1088,7 +1105,7 @@ hyd:min a owl:DatatypeProperty ;
   rdfs:range xsd:decimal .
 hyd:name a owl:DatatypeProperty ;
   rdfs:label "name" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:KnowledgeSource hyd:ExternalVariable hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:ProcessVersion ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Perspective hyd:Objective hyd:Measure hyd:Process hyd:FlowNode hyd:OrgUnit hyd:Role hyd:System hyd:Asset hyd:Component hyd:Sensor hyd:Actuator hyd:StateVariable hyd:Part hyd:Supplier hyd:AnomalyPattern hyd:Symptom hyd:FailureMode hyd:Cause hyd:Evidence hyd:Skill hyd:Action hyd:Decision hyd:InputData hyd:DecisionTable hyd:KnowledgeSource hyd:ExternalVariable hyd:IngestionControl hyd:IngestionBatch hyd:ProcessInstance hyd:ExecutionActor hyd:ProcessVersion ) ] ;
   rdfs:range xsd:string .
 hyd:normal a owl:DatatypeProperty ;
   rdfs:label "normal" ;
@@ -1337,7 +1354,7 @@ hyd:sourceTrip a owl:DatatypeProperty ;
   rdfs:comment "트립 경보의 PLC 트립 사유"@ko .
 hyd:source_id a owl:DatatypeProperty ;
   rdfs:label "source_id" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:Step hyd:ManualSection hyd:Skill hyd:InputData hyd:KnowledgeSource ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:System hyd:Step hyd:ManualSection hyd:Skill hyd:InputData hyd:KnowledgeSource hyd:ExecutionActor ) ] ;
   rdfs:range xsd:string ;
   rdfs:comment "인제스천 원본 문서 내 위치"@ko .
 hyd:source_incident_id a owl:DatatypeProperty ;
@@ -1402,7 +1419,7 @@ hyd:tenant a owl:DatatypeProperty ;
   rdfs:range xsd:string .
 hyd:tenant_id a owl:DatatypeProperty ;
   rdfs:label "tenant_id" ;
-  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:FlowNode hyd:ProcessInstance hyd:WorkItem hyd:ProcessVersion hyd:ExecutionProjection ) ] ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:FlowNode hyd:ProcessInstance hyd:ExecutionActor hyd:WorkItem hyd:ProcessVersion hyd:ExecutionProjection ) ] ;
   rdfs:range xsd:string .
 hyd:text a owl:DatatypeProperty ;
   rdfs:label "text" ;
@@ -1440,6 +1457,10 @@ hyd:typeRef a owl:DatatypeProperty ;
 hyd:unit a owl:DatatypeProperty ;
   rdfs:label "unit" ;
   rdfs:domain [ a owl:Class ; owl:unionOf ( hyd:Measure hyd:Sensor hyd:StateVariable hyd:ExternalVariable hyd:Forecast ) ] ;
+  rdfs:range xsd:string .
+hyd:username a owl:DatatypeProperty ;
+  rdfs:label "username" ;
+  rdfs:domain hyd:ExecutionActor ;
   rdfs:range xsd:string .
 hyd:value a owl:DatatypeProperty ;
   rdfs:label "value" ;

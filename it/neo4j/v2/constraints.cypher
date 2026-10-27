@@ -36,6 +36,7 @@ CREATE CONSTRAINT v2_decisioncase_id IF NOT EXISTS FOR (n:DecisionCase) REQUIRE 
 CREATE CONSTRAINT v2_ingestioncontrol_id IF NOT EXISTS FOR (n:IngestionControl) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_ingestionbatch_id IF NOT EXISTS FOR (n:IngestionBatch) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_processinstance_id IF NOT EXISTS FOR (n:ProcessInstance) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT v2_executionactor_id IF NOT EXISTS FOR (n:ExecutionActor) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_workitem_id IF NOT EXISTS FOR (n:WorkItem) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_processversion_id IF NOT EXISTS FOR (n:ProcessVersion) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT v2_executionprojection_id IF NOT EXISTS FOR (n:ExecutionProjection) REQUIRE n.id IS UNIQUE;
