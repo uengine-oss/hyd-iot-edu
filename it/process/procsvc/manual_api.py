@@ -13,7 +13,7 @@ from .manual_sources import MAX_BYTES
 
 
 def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_factory=lambda: None,
-             cache_context=None, managed_client=None):
+             cache_context=None, managed_client=None, approved_cache=None):
     async def run(fn):
         try:
             return await asyncio.get_running_loop().run_in_executor(None, fn)
@@ -50,6 +50,9 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
             request_id = body.get('request_id')
             if not isinstance(request_id,str):raise ValueError('재전송에 사용할 request_id UUID가 필요합니다')
             source = archive_factory().get(tenant,source_id)
+            if approved_cache:
+                return approved_cache.start(runtime(), source, request_id, graph(manual_knowledge.catalog),
+                                            body.get('review_feedback'))
             if managed_client:
                 return managed_client.start(tenant, source, body.get('review_feedback'))
             # The authority hook is server-owned. No scope/profile/reextract
@@ -68,10 +71,12 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def extraction_result(source_id: str, instance_id: str):
         def work():
             source = archive_factory().get(tenant,source_id)
+            if approved_cache:
+                approved_cache.authorize(source)
             if cache_context:
                 cache_context(source, None)  # Revoked document access cannot be restored by a cache hit.
             previous = graph(lambda session: manual_graph.head(session,tenant,source['document_id']))
-            value = (managed_client.result(tenant, source, instance_id, previous) if managed_client else
+            value = (managed_client.result(tenant, source, instance_id, previous) if managed_client and not approved_cache else
                      manual_cache.result(runtime(),archive_factory(),source,instance_id,previous))
             if value.get('preview'):
                 # The graph tags a document's nodes with its tenant-scoped key, not the raw document id (F-1: the raw id
@@ -92,10 +97,13 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
     async def extraction_history(source_id: str, limit: int = 50, offset: int = 0):
         def work():
             source = archive_factory().get(tenant,source_id)
-            if managed_client:
+            if approved_cache:
+                approved_cache.authorize(source)
+            if managed_client and not approved_cache:
                 return managed_client.history(tenant, source, limit, offset)
             if not 1 <= limit <= 100 or offset < 0:raise ValueError('목록 범위가 올바르지 않습니다')
-            context = cache_context(source, None) if cache_context else None
+            context = (approved_cache.context(source) if approved_cache else
+                       cache_context(source, None) if cache_context else None)
             cache_prefix = None
             if context is not None:
                 key = manual_cache.identity(tenant, source, graph(manual_knowledge.catalog), **context)
@@ -178,7 +186,8 @@ def register(app, *, archive_factory, driver_factory, tenant, audit, runtime_fac
                 if not isinstance(binding,dict) or not isinstance(binding.get('instance'),str):
                     raise ValueError('추출 제안의 실제 작업 연결이 필요합니다')
                 source = archive_factory().get(tenant,plan['source_id'])
-                current = manual_extraction.result(runtime(),source,binding['instance'],plan['previous_batch'])['preview']
+                if approved_cache:approved_cache.authorize(source)
+                current = manual_cache.result(runtime(),archive_factory(),source,binding['instance'],plan['previous_batch'])['preview']
                 if current is None or current['extraction'] != binding:
                     raise ValueError('추출 작업이 완료되지 않았거나 검토한 작업 세대가 다릅니다')
                 plan['extraction'] = current['extraction']

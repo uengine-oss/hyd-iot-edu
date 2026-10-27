@@ -271,6 +271,10 @@ class Runner:
             model = managed['model']
             bridged.env = dict(bridged.env or {}, **managed['env'])
             bridged.redaction_values.extend(managed['secrets'])
+        if provider_id == 'claude-code' and (managed or self.course_access is not None):
+            # Luna uses a compatible gateway, not Claude's deferred-tool protocol.
+            # Load the approved MCP schemas eagerly; permissions stay unchanged.
+            bridged.env = dict(bridged.env or {}, ENABLE_TOOL_SEARCH='false')
         if result_check_task:
             text += '\n\n' + result_check.INSTRUCTION
         text = _deliver_prompt(text, ws, self.s.max_inline_prompt_chars, provider_id=provider_id)

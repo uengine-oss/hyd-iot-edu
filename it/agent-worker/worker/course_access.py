@@ -10,7 +10,7 @@ class CourseAccess:
     def __call__(self, definition, activity_id, inputs):
         try:
             with httpx.Client(transport=self.transport, trust_env=False, timeout=5) as client:
-                response = client.get('http://process:8080/internal/course-access')
+                response = client.get(rules.PROOF_URL)
                 response.raise_for_status()
                 if len(response.content)>2048:raise ValueError()
                 proof = response.json()

@@ -90,11 +90,6 @@ def mount(app, *, path, archive_factory, tenant, store=None):
     @app.get('/api/course-access')
     def status():return store.status()
 
-    @app.get('/internal/course-access')
-    def worker_proof():
-        # A proof is verifiable by the worker, even if a caller fakes a status flag.
-        return {'grant': store.grant()}
-
     @app.post('/api/course-access/unlock')
     async def unlock(request: Request):
         try:

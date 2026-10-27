@@ -601,7 +601,7 @@
       ${manualValidationHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       ${manualExecutionHtml(r.validation,r,{...H.catalog,...H.manualCatalog})}
       <p class="row-wrap"><a href="${API.process}/api/kg/manuals/sources/${encodeURIComponent(r.source_id)}/original">보관한 원본 내려받기</a> <button class="btn small" id="manualFullSource">추출 원문 전체 보기</button></p><div id="manualSourceText"></div>
-      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>에이전트 추출 요청</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '에이전트 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 일반 문서는 에이전트 추출을 요청하세요.'}</span></p>
+      <p class="row-wrap"><button class="btn small" id="manualAgentExtract" ${r.status === 'READY' ? '' : 'disabled'}>추출 제안 준비</button> <button class="btn small" id="manualAgentResult">추출 진행 · 결과 확인</button> <span id="manualAgentStatus" role="status" class="muted">${r.extraction ? '추출 제안입니다. 원문을 대조하고 검토 후 적재하세요.' : '현재 결과는 구조화된 줄 파서입니다. 원문에 근거한 추출 제안을 준비할 수 있습니다.'}</span></p>
       <div class="form-grid">${UI.field({ label: '이 문서의 추출 작업', input: `<select id="manualExtractionRuns"><option value="">${esc(UI.t('loading'))}</option></select>` })}</div><button class="btn small" id="manualExtractionMore" style="display:none">이전 추출 작업 더 보기</button>
       ${r.page_reviews ? UI.fold('페이지별 추출 검토 기록', r.page_reviews.map(p => `<p>${esc(p.page)}쪽: ${esc(p.note)}</p>`).join(''), { cls: 'small' }) : ''}
       <div class="mcols"><div><h3>매뉴얼 절</h3>${r.sections.map(s => `<div class="msec"><b>${esc(s.ref)}</b> ${esc(s.title)}${UI.fold('절 본문 전체', `<div class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.excerpt)}</div>`, { cls: 'small' })}${citation(s.anchor)}</div>`).join('') || `<div class="muted">${esc(UI.t('skill.none'))}</div>`}</div>
@@ -660,7 +660,7 @@
         const created = await postJ(extractionUrl, { request_id: state.request_id });
         sessionStorage.setItem(extractionKey, JSON.stringify({ ...state, instance: created.instance }));
         await loadExtractions();
-        if (H.preview === r) $('#manualAgentStatus').textContent = (created.cache?.reused ? '같은 문서·추출 조건의 기존 작업을 재사용합니다. 새 AI 작업을 만들지 않았습니다. ' : '') + (created.segments > 1 ? `긴 문서라 ${created.segments}개 구간으로 접수됨(결과는 하나로 병합). ` : '추출 작업 접수됨. ') + '진행 · 결과 확인을 누르세요. 접수는 추출 완료가 아닙니다.';
+        if (H.preview === r) $('#manualAgentStatus').textContent = '추출 요청을 접수했습니다. 진행 · 결과 확인을 누르세요.';
       } catch (e) { if (H.preview === r) $('#manualAgentStatus').textContent = '접수 확인 실패: ' + e.message + ' 같은 요청으로 다시 확인할 수 있습니다.'; }
       finally { if (H.preview === r) button.disabled = false; }
     });

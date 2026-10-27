@@ -510,10 +510,17 @@ def display_name(source):
 NOT_READY='이 PDF는 모든 페이지에 텍스트가 없어 추출할 글이 없습니다 — 글자 인식(OCR)한 PDF로 다시 올리세요'
 
 
-def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None, execution_run_id=None):
+def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_identity=None, execution_run_id=None,
+          _approved_proposal=None, _cache_origin=None):
     """One instance for a document that fits one task; one instance per heading-bounded segment otherwise (A093,
     bpmn-extractor chunked extraction). Returns the lead instance; sibling segments share the request id in their event ids."""
     if source['status'] != 'READY':raise ValueError(NOT_READY)
+    if _approved_proposal is not None:
+        if cache_identity is None or execution_run_id is not None or manual_segments.segments(source):
+            raise ValueError('제공 문서 캐시는 단일 원문의 검증된 추출에만 연결할 수 있습니다')
+        _approved_proposal = validate_proposal(source, deepcopy(_approved_proposal))
+        issues = content_issues(_approved_proposal, source, catalog)
+        if issues:raise ValueError('제공 문서 추출본 검증 실패 — ' + ' / '.join(issues))
     request_id=str(UUID(request_id))
     if execution_run_id is not None:
         execution_run_id = str(UUID(str(execution_run_id)))
@@ -528,13 +535,17 @@ def start(rt, source, request_id, review_feedback=None, catalog=None, *, cache_i
     def launch(event, values, name):
         if cache_identity:
             values['extraction_cache'] = {'key': cache_identity, 'source_id': source['source_id']}
+            if _cache_origin:
+                values['extraction_cache']['approved_origin'] = deepcopy(_cache_origin)
             if execution_run_id:
                 values['extraction_cache']['execution_run_id'] = execution_run_id
         if feedback and feedback['items']:
             values['review_feedback']=feedback          # pinned: the agent sees the previous verdicts as [InputData]
         if catalog:
             values['ontology_catalog']=catalog          # C1: the ids a document may point at (pinned with the run)
-        inst=rt.start_definition(DEFINITION_ID,VERSION,event,values=values,name=name)
+        initial = {ACTIVITY: {'proposal': _approved_proposal}} if _approved_proposal is not None else None
+        inst=rt.start_definition(DEFINITION_ID,VERSION,event,values=values,name=name,
+                                 _initial_agent_results=initial)
         result = inst or rt.repo.find_event_instance(rt.tenant_id,DEFINITION_ID,event)
         return dict(result, cache_reused=inst is None) if cache_identity else result
     segs=manual_segments.segments(source)

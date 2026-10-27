@@ -256,7 +256,7 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
                      'events':self.repo.list_events(todo_id=wid)}
 
     def start_definition(self, def_id, version, event_id, values=None, alert=None, name=None, now=None, _alert_policy=None,
-                         role_endpoints=None, _classroom_approval=None):
+                         role_endpoints=None, _classroom_approval=None, _initial_agent_results=None):
         if not isinstance(event_id,str) or not event_id.strip():
             raise ValueError('중복 실행을 구분할 event_id가 필요합니다')
         if not isinstance(version,str) or not version.strip():
@@ -315,6 +315,24 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             adv = engine.start(defn, inst, now=now, time_scale=self.time_scale)
             self.repo.insert_instance(inst)
             inbox.apply_advance(self, inst, adv)
+            # Server-owned, prevalidated source-cache results enter the normal
+            # SUBMITTED lifecycle in this same transaction. A worker must never
+            # observe an eligible row between cache creation and completion.
+            initial = _initial_agent_results or {}
+            matched = set()
+            for wi in adv.created:
+                if wi['activity_id'] not in initial:
+                    continue
+                if wi['status'] != 'IN_PROGRESS' or wi.get('agent_mode') != 'COMPLETE':
+                    raise ValueError('초기 캐시 결과는 시작된 자동 완료 작업에만 연결할 수 있습니다')
+                payload = deepcopy(initial[wi['activity_id']])
+                form = pinned_form(defn.raw, wi.get('tool'))
+                if form is not None:
+                    validate_output(form, payload)
+                wi.update(output=payload, status='SUBMITTED', draft_status='COMPLETED', consumer=None)
+                matched.add(wi['activity_id'])
+            if matched != set(initial):
+                raise ValueError('캐시 결과를 연결할 시작 작업이 없습니다')
             self.repo.insert_workitems(adv.created)
             self.repo.update_instance(inst)
         self.hooks.audit(values.get('asset','-'),'process','INSTANCE_STARTED',
