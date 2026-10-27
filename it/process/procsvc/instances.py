@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from uuid import uuid4
 from contextlib import contextmanager
 from functools import wraps
 from dataclasses import dataclass
@@ -561,12 +562,14 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             from .classroom_agents import verify_instance
             verify_instance(self,inst)
         form = pinned_form(defn.raw, (defn.activities.get(wi['activity_id']) or {}).get('tool'))
+        citation_changes = []
         if form is not None:
             from .manual_extraction import validate_result, CORRECTABLE_CONTRACTS
             try:
                 validate_output(form, wi.get('output'))
                 validate_result(form, inst, wi.get('output'))
-                from .handover import validate_trace
+                from .handover import reconcile_trace, validate_trace
+                wi['output'], citation_changes = reconcile_trace(self.repo, wi, form, wi.get('output'))
                 validate_trace(self.repo, wi, form, wi.get('output'))
             except ValueError as rejected:
                 if form.get('contract') not in CORRECTABLE_CONTRACTS:
@@ -594,6 +597,10 @@ class InstanceRuntime(ApprovalDelivery, ReworkRuntime, EffectRuntime, ServicePar
             self.repo.update_workitem(row)
         self.repo.insert_workitems(adv.created)
         self.repo.update_instance(inst)
+        if citation_changes:
+            self.repo.record_events([{'job_id':'citation-reconcile:'+uuid4().hex,'todo_id':wi['id'],
+                'proc_inst_id':wi['proc_inst_id'],'crew_type':'result','event_type':'task_working',
+                'data':{'type':'notice','name':'인계 근거 조회문 원천 대조·교정','changes':citation_changes}}])
         out = {"instance": inst, "workitem": wi, "reached": adv.reached, "ended": adv.ended, "pending": adv.pending}
         if adv.pending:
             self._after_commit(self.hooks.audit,engine.variables(inst).get("asset", "-"), "process", "TASK_PENDING",

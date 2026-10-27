@@ -1,5 +1,7 @@
 """Shift handover contracts. Confirmation records communication, never repairs."""
+from copy import deepcopy
 from datetime import datetime
+import json
 
 from . import ask
 
@@ -78,3 +80,60 @@ def validate_trace(repo, wi, form, output):
     evidence = verdict.get('evidence') or []
     if len(evidence) != len(output['evidence']) or any(not e['verified'] for e in evidence):
         raise ValueError('인계안의 모든 조회 근거가 현재 작업의 성공한 실제 도구 호출과 일치해야 합니다')
+
+
+def reconcile_trace(repo, wi, form, output):
+    """Derive a citation's actual query only from one identical, complete tool response.
+
+    This does not repair the narrative or trust a model's guessed SQL. Ambiguous,
+    truncated, altered or incomplete evidence is returned unchanged and must
+    still pass the normal validator. The original output is never modified.
+    """
+    if (form or {}).get('contract') != DRAFT or not isinstance(output,dict) or not output.get('evidence'):
+        return output, []
+    from hydcommon.sql_read import guard
+    calls = ask.tool_calls(repo.list_events(todo_id=wi['id']), repo.get_event_payload)
+    verdict = ask.verdict(dict(answer=output.get('handover_summary'), evidence=output['evidence']), calls)
+    checked = verdict.get('evidence') or []
+    if len(checked) != len(output['evidence']):return output, []
+    proposed = deepcopy(output)
+    changes = []
+    def same(left,right):
+        try:return json.dumps(left,sort_keys=True,allow_nan=False)==json.dumps(right,sort_keys=True,allow_nan=False)
+        except (ValueError,TypeError):return False
+    for index, evidence in enumerate(output['evidence']):
+        if checked[index].get('verified'):continue
+        query=evidence.get('query');claimed=evidence.get('result')
+        if (ask.short_tool(evidence.get('tool'))!='enterprise/query' or not isinstance(query,dict)
+                or set(query)!={'sql'} or not isinstance(claimed,dict) or set(claimed)!={'result','document'}
+                or claimed.get('result')!='ok' or not isinstance(claimed.get('document'),dict)):
+            return output, []
+        doc=claimed['document'];required={'statement','columns','rows','row_count'}
+        if not required <= set(doc) or not isinstance(doc['rows'],list) or type(doc['row_count']) is not int:
+            return output, []
+        try:guard(query['sql'])
+        except (ValueError,TypeError):return output, []
+        candidates=[]
+        for call in calls:
+            actual=call.get('_input');response=ask._envelope(call.get('_output'))
+            if (call.get('tool')!='enterprise/query' or call.get('ok') is not True or not call.get('output_complete')
+                    or not isinstance(actual,dict) or set(actual)!={'sql'} or not isinstance(response,dict)
+                    or response.get('result')!='ok' or not isinstance(response.get('document'),dict)):
+                continue
+            source=response['document']
+            if source.get('at_row_limit') is not False or not all(k in source and same(v,source[k]) for k,v in doc.items()):
+                continue
+            try:
+                if guard(actual['sql']) != source.get('statement'):continue
+            except (ValueError,TypeError):continue
+            candidates.append(call)
+        if len(candidates)!=1:return output, []
+        actual=candidates[0]['_input']
+        proposed['evidence'][index]['query']=deepcopy(actual)
+        changes.append({'index':index,'tool':'enterprise/query','call_id':candidates[0]['id'],
+                        'original_query':deepcopy(query),'actual_query':deepcopy(actual)})
+    if changes:
+        result=ask.verdict(dict(answer=proposed.get('handover_summary'),evidence=proposed['evidence']),calls)
+        if len(result.get('evidence') or [])!=len(proposed['evidence']) or not all(e['verified'] for e in result['evidence']):
+            return output, []
+    return proposed, changes

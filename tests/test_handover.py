@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
 
@@ -89,6 +90,80 @@ def test_fabricated_tool_evidence_is_returned_for_correction(rt):
     assert current['status'] != 'DONE'
     assert not any(w['activity_id'] == 'task:sender' and w['status'] in ('IN_PROGRESS', 'DONE')
                    for w in runtime.repo.list_workitems(proc_inst_id=inst['proc_inst_id']))
+
+
+def _query_evidence():
+    from hydcommon.sql_read import guard
+    actual={'sql':'SELECT code FROM ent.assets ORDER BY code'}
+    document={'statement':guard(actual['sql']),'columns':['code'],'rows':[['HYD-01']],
+              'row_count':1,'row_limit':200,'at_row_limit':False}
+    claim=dict(tool='mcp__enterprise__query',query={'sql':"SELECT code FROM ent.assets WHERE code = 'HYD-01'"},
+               result={'result':'ok','document':{k:document[k] for k in ('statement','columns','rows','row_count')}})
+    return actual, document, claim
+
+
+def _record_query(repo, inst, wi, actual, document, *, call_id='source', truncated=False):
+    common=dict(job_id='source-job',todo_id=wi['id'],proc_inst_id=inst['proc_inst_id'],crew_type='agent')
+    repo.record_events([
+        dict(common,event_type='tool_usage_started',data=dict(tool='mcp__enterprise__query',tool_use_id=call_id,input=actual)),
+        dict(common,event_type='tool_usage_finished',data=dict(tool='mcp__enterprise__query',tool_use_id=call_id,
+             output={'result':'ok','document':document},output_truncated=truncated,is_error=False)),
+    ])
+
+
+def test_identical_full_response_corrects_query_with_audited_normal_processing(rt):
+    runtime,hooks=rt;inst=begin(runtime)
+    wi=runtime.repo.fetch_pending_task('cliagents','handover-test')[0]
+    actual,document,claim=_query_evidence();_record_query(runtime.repo,inst,wi,actual,document)
+    output=unknown_draft();output['evidence']=[claim]
+    output['checks'][0].update(state='observed',evidence_indices=[0]);original=deepcopy(output)
+    runtime.repo.save_task_result(wi['id'],output,final=True);runtime.poll_once()
+    saved=runtime.repo.get_workitem(wi['id'])
+    assert saved['status']=='DONE' and saved['output']['evidence'][0]['query']==actual
+    assert output==original and original['evidence'][0]['query']!=actual
+    audit=[e for e in runtime.repo.list_events(todo_id=wi['id']) if str(e.get('job_id','')).startswith('citation-reconcile:')]
+    assert len(audit)==1 and audit[0]['data']['changes'][0]['original_query']==original['evidence'][0]['query']
+    assert audit[0]['data']['changes'][0]['actual_query']==actual and not hooks.calls
+    assert pending(runtime,inst,'task:sender')['status']=='IN_PROGRESS'
+
+
+@pytest.mark.parametrize('defect',['altered_rows','incomplete_claim','truncated_output','row_limit','two_candidates','unsafe_sql','forged_statement'])
+def test_ambiguous_or_untrusted_response_is_never_reconciled(rt,defect):
+    runtime,_=rt;inst=begin(runtime);wi=runtime.repo.fetch_pending_task('cliagents','handover-test')[0]
+    actual,document,claim=_query_evidence()
+    if defect=='altered_rows':claim['result']['document']['rows']=[['HYD-02']]
+    if defect=='incomplete_claim':del claim['result']['document']['rows']
+    if defect=='row_limit':document['at_row_limit']=True
+    if defect=='unsafe_sql':claim['query']={'sql':'DELETE FROM ent.assets'}
+    if defect=='forged_statement':
+        document['statement'] += ' OFFSET 1'
+        claim['result']['document']['statement']=document['statement']
+    _record_query(runtime.repo,inst,wi,actual,document,truncated=defect=='truncated_output')
+    if defect=='two_candidates':_record_query(runtime.repo,inst,wi,actual,document,call_id='other')
+    output=unknown_draft();output['evidence']=[claim];original=deepcopy(output)
+    corrected,changes=handover.reconcile_trace(runtime.repo,wi,{'contract':handover.DRAFT},output)
+    assert corrected==original and output==original and changes==[]
+    with pytest.raises(ValueError,match='모든 조회 근거'):
+        handover.validate_trace(runtime.repo,wi,{'contract':handover.DRAFT},corrected)
+
+
+def test_one_unrepairable_claim_does_not_partially_rewrite_other_evidence(rt):
+    runtime,_=rt;inst=begin(runtime);wi=runtime.repo.fetch_pending_task('cliagents','handover-test')[0]
+    actual,document,claim=_query_evidence();_record_query(runtime.repo,inst,wi,actual,document)
+    fabricated=deepcopy(claim);fabricated['result']['document']['rows']=[['HYD-02']]
+    output=unknown_draft();output['evidence']=[claim,fabricated];original=deepcopy(output)
+    corrected,changes=handover.reconcile_trace(runtime.repo,wi,{'contract':handover.DRAFT},output)
+    assert corrected==original and output==original and changes==[]
+
+
+def test_handover_initial_and_correction_prompts_identify_real_tool_inputs():
+    from worker import prompt
+    fields=[{'key':'handover_summary','type':'textarea'}]
+    initial=prompt.build({}, {'form_fields':fields,'form_contract':handover.DRAFT},workdir='/workspace')
+    correction=prompt.format_correction('조회 근거 불일치',fields,form_contract=handover.DRAFT)
+    for text in (initial,correction):
+        assert '호출에 보낸 SQL 원문' in text and '정규화된 statement' in text and 'needs_check' in text
+    assert '호출에 보낸 SQL 원문' not in prompt.build({}, {'form_fields':fields,'form_contract':'other'},workdir='/workspace')
 
 
 def test_repeated_revision_stops_as_unconfirmed_followup(rt):
