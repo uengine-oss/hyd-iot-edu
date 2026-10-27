@@ -335,12 +335,11 @@ services:
       NEO4J_AUTH: neo4j/hydpass123
       PROCESS_URL: http://process:8080
       ENTERPRISE_URL: http://enterprise-sim:8095
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ENTERPRISE_READ_DSN: ${ENTERPRISE_READ_DSN:-postgresql://hyd_enterprise_reader:hyd-enterprise-read-local@host.docker.internal:54322/postgres}
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       LLM_MODEL: ${LLM_MODEL:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      LLM_API_KEY: ${LLM_API_KEY:-}                 # key for OPENAI_BASE_URL when it is the LiteLLM relay (model coding)
+      # This read-only evaluator uses a template; model calls belong to the
+      # budgeted worker gateway, so no provider credentials enter this service.
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-8}
     extra_hosts: ["host.docker.internal:host-gateway"]   # ENTERPRISE_READ_DSN points at the host Supabase; Docker Desktop resolves the name by itself, Linux Engine only with this

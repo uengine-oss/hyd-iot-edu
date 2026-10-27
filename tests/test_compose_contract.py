@@ -83,6 +83,15 @@ def test_live_compose_file_meets_the_contract():
     assert check(load()) == []
 
 
+def test_read_only_agent_and_worker_do_not_receive_provider_keys():
+    services = load()['services']
+    for name in ('agent', 'agent-worker'):
+        env = services[name].get('environment') or {}
+        assert not {'LLM_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
+                    'CODEX_MODEL_PROVIDER_API_KEY'} & set(env), name
+    assert 'LLM_API_KEY' in services['process']['environment']
+
+
 def test_checker_catches_each_broken_invariant():
     c = load()
     c["services"]["detector"]["ports"] = ["0.0.0.0:8092:8092"]
