@@ -112,6 +112,9 @@ LLM은 LiteLLM 중계(모델 `coding`) 하나이고 GPU는 없다(`문서/시스
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).
 클라우드 이미지 빌드: 에이전트 프록시가 TLS를 다시 서명하므로 빌드 안 `pip`가 `CERTIFICATE_VERIFY_FAILED`로 실패한다. 세션마다 한 번, 베이스 이미지에 프록시 CA를 넣는다(레포 Dockerfile은 그대로):
 `docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + CA 사본을 `/usr/local/share/ca-certificates/`에 두고 `/etc/ssl/certs/ca-certificates.crt`에 덧붙임 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=… CURL_CA_BUNDLE=… NODE_EXTRA_CA_CERTS=<CA 사본>`으로 `docker build -t python:3.12-slim`(워커 이미지의 curl · npm까지 된다).
+CA 사본은 전체 묶음 `/root/.ccr/ca-bundle.crt`를 쓴다. `agent-proxy-ca.crt` 한 장만 넣으면 빌드 안 `pip`가 여전히 `self-signed certificate in certificate chain`으로 실패한다(2026-10-28 실측).
+클라우드 Python Playwright: `.venv`의 판본이 미리 설치된 브라우저(`/opt/pw-browsers/*-1243`)와 빌드 번호가 다르다. 설치하지 말고 기대 번호 이름으로 심볼릭 링크를 둔 폴더를 `PLAYWRIGHT_BROWSERS_PATH`로 준다(예: `/tmp/pwb/chromium_headless_shell-1248 → /opt/pw-browsers/chromium_headless_shell-1243`).
+클라우드 시작 스크립트의 실습랩 키 동기화는 저장소에 추적된 `course/labs/offline/05-2-cause-agent/.env`에 키를 쓴다. 시작이 끝나면 `git checkout -- 그 파일`로 되돌리고 절대 스테이징하지 않는다.
 
 통합 시험: `scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scripts/scenario_pump_fan_test.py`(펌프·팬·가림),
 `scripts/scenario_test.py --quick`(레거시, `PROCESS_MODE=legacy`로 process 재기동 필요).

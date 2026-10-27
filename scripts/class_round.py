@@ -79,6 +79,7 @@ class Round:
         self.lab = "-"
         self.memo: dict[str, Any] = {}                                    # 실습 사이에 넘길 값(앞 실습이 만든 id 등)
         self.ai_runs = 3                                                  # --ai-runs: 같은 AI 단계 반복 수(1이면 일치 판정은 측정 안 함)
+        self.unlock_code = ""                                             # --unlock-code-file: 13 교대 실습을 여는 강사 코드(출력하지 않는다)
         self.not_measured: list[dict] = []                                # 이번 실행이 재지 않은 판정(통과로 세지 않는다)
         page.on("console", self._on_console)
         page.on("pageerror", lambda e: self._log().console_errors.append(f"pageerror: {e}"))
@@ -2076,11 +2077,15 @@ def _c_apply_start(r, start: dict):
             _c_set_fields(r, q("#flowStartFields ~ .field-rows").first, start["fields"])
 
 
-def _c_apply_branch(r, gw_name: str, target_name: str, spec: dict):
-    """분기 '<gw_name>' 블록에서 「→ <target_name>」 줄의 조건. spec = {default: true} 또는 {var, op, value}."""
-    block = r.page.locator("#flowEditor div.field[data-row]").filter(has_text=f"분기 '{gw_name}'").first
-    line = block.locator("tr[data-row]").filter(has_text=f"→ {target_name}").first
-    fid = line.get_attribute("data-row")
+def _c_apply_branch(r, gw_name: str, target_name: str, spec: dict, *, flow_id: str | None = None):
+    """분기 '<gw_name>' 블록에서 「→ <target_name>」 줄의 조건. spec = {default: true} 또는 {var, op, value}.
+    같은 이름의 분기가 여럿이면(교대의 회차별 「검토 결정」) 그림의 연결선 id(flow_id)로 그 줄을 고른다."""
+    if flow_id:
+        fid = flow_id
+    else:
+        block = r.page.locator("#flowEditor div.field[data-row]").filter(has_text=f"분기 '{gw_name}'").first
+        line = block.locator("tr[data-row]").filter(has_text=f"→ {target_name}").first
+        fid = line.get_attribute("data-row")
     q = lambda css: r.page.locator(f"#flowEditor {css}")                 # noqa: E731
     if spec.get("default"):
         q(f"input[data-default='{fid}']").check(); _c_settle(r); return
@@ -2572,6 +2577,23 @@ def lab_13_shift_handover(r):
     import hashlib
     import xml.etree.ElementTree as ET
     page = r.page
+    # 마지막 날: 학생이 포털의 「수업 기능」에서 강사 해제 코드를 입력한다(잘못된 코드는 거절).
+    access = r.get(f"{r.process}/api/course-access")
+    if not access.get("unlocked"):
+        if not r.unlock_code:
+            r.check("강사 해제 코드로 교대 실습 열기", False, "--unlock-code-file 이 없어 교대 실습을 열 수 없다"); return
+        page.locator("#courseAccessPanel summary").click()
+        page.fill("#courseUnlockCode", "HYD1.wrong.code-not-signed-by-the-instructor")
+        page.click("#courseUnlockGo"); page.wait_for_timeout(1200)
+        ok, why = r.human_message(page.locator("#courseUnlockMessage").inner_text())
+        r.check("잘못된 해제 코드 → 거절 · 한국어", ok and "올바르지" in why and not r.get(f"{r.process}/api/course-access").get("unlocked"), why, kind="exception")
+        page.fill("#courseUnlockCode", r.unlock_code)
+        page.click("#courseUnlockGo")
+        opened = r.wait(15, lambda: r.get(f"{r.process}/api/course-access").get("unlocked") is True, every=1)
+        r.check("강사 해제 코드 → 교대 실습 열림(화면 안내)", bool(opened) and "열렸습니다" in page.locator("#courseUnlockMessage").inner_text(),
+                page.locator("#courseUnlockMessage").inner_text())
+        if not opened: return
+        page.reload(); page.wait_for_timeout(2000)
     # 이미 검토·적재한 동일 승인 자료는 재사용한다. 수업 전체를 초기화하지 않는다.
     before = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
     _B_DOC_FILES['HI-01'] = 'HI-01_shift-inspection-supplement.md'
@@ -2595,7 +2617,9 @@ def lab_13_shift_handover(r):
     r.check('보충 자료 추가가 기존 제조 지식을 초기화하지 않음',
             all(after.get(name) == batch for name, batch in before.items() if name != _B_DOC_FILES['HI-01']), kind='quality')
 
-    sid = _c_free_id(r, 'my_shift_handover')
+    # 스킬 · 에이전트 이름만 새로 짓는다(흐름은 ShiftHandover 의 새 판본) — 다시 돌린 PC에서도 이름이 겹치지 않게
+    taken = {x['skill_name'] for x in r.get(f'{r.process}/api/skills')}
+    sid = next(f'my_shift_handover{n or ""}' for n in range(100) if f'my-shift-handover{n or ""}-review' not in taken)
     skill = sid.replace('_', '-') + '-review'
     r.tab('agents'); page.locator('[data-ag-tab="skills"]').click()
     page.locator('[data-new-skill]').click()
@@ -2625,7 +2649,8 @@ def lab_13_shift_handover(r):
     xml = (folder/'shift_handover.bpmn').read_text(encoding='utf8')
     mapping = json.loads((folder/'shift_handover.mapping.json').read_text(encoding='utf8'))
     elements = {e.get('id'): e for e in ET.fromstring(xml).iter() if e.get('id')}
-    message, ok = _c_import(r, xml, 'shift_handover.bpmn', sid)
+    # 안내.html 4절: 흐름 ID는 제공 파일의 ShiftHandover 를 유지한다 — 칸을 비우면 그림의 프로세스 id 다
+    message, ok = _c_import(r, xml, 'handover.bpmn', '')
     r.check('교대 BPMN 가져오기', ok, message)
     if not ok: return
     _c_apply_start(r, mapping['start'])
@@ -2635,21 +2660,22 @@ def lab_13_shift_handover(r):
         _c_apply_task(r, elements[key].get('name'), value)
     for key, value in mapping['flows'].items():
         flow = elements[key]
-        _c_apply_branch(r, elements[flow.get('sourceRef')].get('name'), elements[flow.get('targetRef')].get('name'), value)
+        _c_apply_branch(r, elements[flow.get('sourceRef')].get('name'), elements[flow.get('targetRef')].get('name'), value, flow_id=key)
     passed, problems, dependencies = _c_check(r)
     r.check('교대 시작 폼·역할·작업·분기 검사', passed, '; '.join(problems) or dependencies)
     if not passed: return
     registered, message, version = _c_register(r)
     r.check('교대 별도 정의·판본 등록', registered, message)
     if not registered: return
+    did = 'ShiftHandover'
     _c_me(r, 'user:kim-op'); r.tab('flows')
-    page.locator(f"[data-start='{sid}'][data-version='{version}']").click()
-    box = page.locator(f"[data-startbox='{sid}@{version}']")
+    page.locator(f"[data-start='{did}'][data-version='{version}']").click()
+    box = page.locator(f"[data-startbox='{did}@{version}']")
     values = dict(asset='HYD-01', shift_label='다음 교대', as_of=datetime.now(timezone.utc).isoformat(),
                   work_notes='작업 메모: 정비 완료라고 전달받음. 부품 도착 예정이라고 전달받음. 실제 열린 작업지시와 현재 재고를 대조해야 함.')
     for key, value in values.items(): box.locator(f"[data-sv='{key}']").fill(value)
     known = _c_instance_ids(r); box.locator('[data-go]').click()
-    inst = _c_new_instance(r, known, sid, 30)
+    inst = _c_new_instance(r, known, did, 30)
     r.check('교대 시작 폼으로 한 처리 건 시작', bool(inst))
     if not inst: return
     pid = inst['proc_inst_id']
@@ -2685,7 +2711,7 @@ def lab_13_shift_handover(r):
     end_ids = {e['id'] for e in view['definition']['events'] if e.get('name') == '인수 확인 기록 완료'}
     r.check('인수 확인 종료 기록', view['instance']['status'] == 'COMPLETED' and view['instance'].get('end_event') in end_ids)
     r.check('인계 확인이 설비·발주·정비 실행을 만들지 않음', not view.get('effects'), kind='quality')
-    r.memo['c_handover'] = dict(def_id=sid, version=version, instance=pid, agent=mine['id'], skill=skill)
+    r.memo['c_handover'] = dict(def_id=did, version=version, instance=pid, agent=mine['id'], skill=skill)
 
 
 # ====================================================================== 92 · B · C [초기화]
@@ -2851,6 +2877,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--headed", action="store_true")
     ap.add_argument("--ai-runs", type=int, choices=(1, 3), default=3,
                     help="AI 단계 반복 수. 1 = 연속 수업 확인(반복 일치는 측정 안 함으로 남김)")
+    ap.add_argument("--unlock-code-file", default="", help="강사 해제 코드가 든 파일(13 교대 실습). 코드는 출력 · 결과에 남기지 않는다")
     args = ap.parse_args(argv[1:])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -2863,6 +2890,8 @@ def main(argv: list[str]) -> int:
         page.set_default_timeout(20_000)
         r = Round(page, out)
         r.ai_runs = args.ai_runs
+        if args.unlock_code_file:
+            r.unlock_code = Path(args.unlock_code_file).read_text(encoding="utf-8").strip()
         r.open()
         started = not args.start
         for code, title, fn in sorted(LABS, key=lambda x: x[0]):
