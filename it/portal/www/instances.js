@@ -488,6 +488,7 @@
       const it = el('div', 'item inst-card ' + esc(x.status) + (x.proc_inst_id === I.sel ? ' sel' : ''), `<div class="row"><strong>${esc(x.proc_inst_name)}</strong>${chip(x.status)}${outcomeChip(x)}</div>
         <div class="steps">${steps || (x.end_event ? `<span class="chip end">${esc(names[x.end_event] || UI.terms['val.' + String(x.end_event).replace(/^ev:/, '')] || UI.flowName(String(x.end_event).replace(/^ev:/, '')))}</span>` : '')}</div>
         <span class="sub">${esc(UI.dateTime(x.start_date))} · ${esc(when)}</span>`);
+      it.dataset.inst = x.proc_inst_id;   // 같은 이름의 처리 건(같은 설비 · 같은 흐름)을 처리 건 id로 구별한다
       keyboardItem(it);
       // A161: 끝난 처리 건은 처리 기록부터(가르칠 때 "설명한 대로 됐나"를 바로 본다), 진행 중이면 진행 상황부터
       it.addEventListener('click', () => { if (I.sel !== x.proc_inst_id && window.hydRecord) I.tab = x.status === 'RUNNING' ? 'flow' : 'record'; pick(x.proc_inst_id, x.proc_inst_id === I.sel ? I.taskSel : null); });

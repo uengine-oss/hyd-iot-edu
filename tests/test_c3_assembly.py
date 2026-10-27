@@ -208,20 +208,16 @@ def _ensure_server(deployed_flows):
     return calls, fake
 
 
-def test_c3_flows_ensure_deploys_only_the_flows_not_yet_deployed_as_class_flows(monkeypatch):
-    """시작 스크립트 두 번째 실행: 수업 흐름으로 올라 있는 것은 그대로, 학생이 같은 id 로 올린 것(표시 없음)과 없는 것만 배포."""
+def test_c3_flows_ensure_delegates_to_the_server_bootstrap_once(monkeypatch, capsys):
+    """시작 스크립트는 서버의 수업 흐름 bootstrap(course_bootstrap — 이미 수업 흐름이면 재사용) 한 번만 부른다(2141cb8).
+    어떤 흐름을 새로 배포할지는 서버가 정하고 test_course_bootstrap.py 가 판정한다."""
     mod = _flows()
-    calls, fake = _ensure_server([{"definition": "c3_cooling", "class_flow": True}, {"definition": "c3_pm", "class_flow": False}])
+    calls = []
+    def fake(method, path, body=None):
+        calls.append((method, path, body))
+        return {"status": "ok", "flows": [{"definition": "c3_cooling", "reused": True}, {"definition": "c3_pm", "reused": False}]}
     monkeypatch.setattr(mod, "call", fake)
     assert mod.main(["c3_flows.py", "ensure"]) == 0
-    deployed = [p for _, p in calls if p.endswith("/deploy")]
-    assert deployed == ["/api/process/definitions/c3_pm/deploy", "/api/process/definitions/c3_spare/deploy"]
-    assert not [p for _, p in calls if "c3_cooling" in p]
-
-
-def test_c3_flows_ensure_is_a_no_op_when_all_three_are_class_flows(monkeypatch):
-    mod = _flows()
-    calls, fake = _ensure_server([{"definition": d, "class_flow": True} for d in ("c3_cooling", "c3_pm", "c3_spare")])
-    monkeypatch.setattr(mod, "call", fake)
-    assert mod.main(["c3_flows.py", "ensure"]) == 0
-    assert calls == [("GET", "/api/flows/deployments")]
+    assert calls == [("POST", "/api/course-bootstrap", {})]
+    out = capsys.readouterr().out
+    assert "c3_cooling 이미 수업 흐름으로 배포됨" in out and "c3_pm 수업 기본 흐름 배포 완료" in out
