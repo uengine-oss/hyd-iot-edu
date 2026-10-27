@@ -1,0 +1,102 @@
+{
+  "scope": "selected non-secret evidence; not a full archive",
+  "files": [
+    {
+      "file": "fresh-start-result.json",
+      "original": ".evidence/audit-20261027/fresh-classroom-bat/bat-result.json",
+      "sha256": "b1a0d83766658a1f4adbe61141e26dcca90ff95707801cf25ce054d3024d4f6b",
+      "bytes": 43,
+      "pre_git_sha256": "74a7ae6d9982e1acf969b917a92e91c888be6c9318ad79c3e1ec899c3078dd63",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "fresh-cache-checks.json",
+      "original": ".evidence/audit-20261027/fresh-classroom-resumed-cache/checks.json",
+      "sha256": "d86834df0c2839fbc75e2ec58c805450318943a1922402813492aa27ee005e0e",
+      "bytes": 312,
+      "pre_git_sha256": "301700cccc59dfc967985652b052e996635e42d3ed009e56ef1e8cc3abfa270d",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "fresh-cache-run-handle.json",
+      "original": ".evidence/audit-20261027/fresh-classroom-resumed-cache/run-handle.json",
+      "sha256": "04e9464a0e12ebf3f18ae0bddef880ef76f69e6ccd00b63e168d206ec89752a2",
+      "bytes": 288,
+      "pre_git_sha256": "eb8875432d9bf83556f79f4d71c332cde3e48d810c40060ab1dcf87ae3adf8dc",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "fresh-cache-start.json",
+      "original": ".evidence/audit-20261027/fresh-classroom-resumed-cache/extraction-start.json",
+      "sha256": "29b1b2d06bc5f929071788936ac072453dee10b648812ef9926d538b3ff4a498",
+      "bytes": 879,
+      "pre_git_sha256": "755c652265603fee5fa9ec7de58a67ea81b13219a32b131e1747e8e127f05bfe",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "fresh-cache-result.json",
+      "original": ".evidence/audit-20261027/fresh-classroom-resumed-cache/extraction-latest.json",
+      "sha256": "fd5142b64619a047980ca5cbf8903c47dee7173f55e7ab3ef45ae8ccc835702c",
+      "bytes": 18521,
+      "pre_git_sha256": "b78255a5c90192f600f34ace6439743b2c3b9e1ba9c7d524c28511269e95bfcc",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "pg-restore-proof.json",
+      "original": ".evidence/audit-20261027/fresh-pg-real-restore/proof.json",
+      "sha256": "6ab66aa523657dfa3ee62a9b0d93d76e9233c902da788985a410811fc20215fe",
+      "bytes": 771,
+      "pre_git_sha256": "5344f67b6893d7fd596909f383d319df6723c9a044e1d1546df274236d2a7ae5",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "pg-failed-dump-validation.json",
+      "original": ".evidence/audit-20261027/fresh-pg-real-restore/failed-dump-validation.json",
+      "sha256": "8e6b504e295064f1d2c29cb09ce537bd6b4a2d4e4614231801cd5efbed55dace",
+      "bytes": 216,
+      "pre_git_sha256": "b415b56cfe7768f098df298a532d26ea45c3d24fe9512cd7490bed1e85022f63",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "pg-restore-first-error.log",
+      "original": ".evidence/audit-20261027/fresh-pg-real-restore/pg-restore.stderr.log",
+      "sha256": "2bca775eece1c6bd116fe2a76a7453390daec7361ef9a18b504640ebc2758e47",
+      "bytes": 228,
+      "original_sha256": "40bae5e4d270fdd49b70b9e4e1802a3a432e1f4937a419e8fc5f1bbe0729ff57",
+      "normalization": "trailing blank lines removed; original error text unchanged"
+    },
+    {
+      "file": "pg-restore-second-error.log",
+      "original": ".evidence/audit-20261027/fresh-pg-real-restore/admin-restore.stderr.log",
+      "sha256": "75a1e0807826bcb27db71f51f2061248d5d07012dd2a8a2e4ccdd121dccc81ee",
+      "bytes": 209,
+      "original_sha256": "2eb35362acb4f347cf56ac5d12958f488ea232a168db0687f395e933a4e4e474",
+      "normalization": "trailing blank lines removed; original error text unchanged"
+    },
+    {
+      "file": "existing-handover-nonhappy.json",
+      "original": ".evidence/audit-20261027/handover-existing-nonhappy-evidence.json",
+      "sha256": "56b3620aa1a0d15c343bf75138417e0e586def2bb1a2201dc78c31e49af7e0a7",
+      "bytes": 9329,
+      "pre_git_sha256": "d6e28c1df2bf89a14dfb44bdc0a7ef30bfbecb82350ba95ea8dbb2b131c5920f",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "handover-graph-proof.json",
+      "original": ".evidence/audit-20261027/handover-graph-replay/final-graph-proof.json",
+      "sha256": "724328017d0d54b7644e09c980b6fc9d6c8365731f9a05df7130680fd4be5403",
+      "bytes": 415,
+      "pre_git_sha256": "2fe9949b26cb7ddde96617077461c14af52e4dd1b5bdf38a1b805e62f0fa4e70",
+      "git_normalization": "CRLF to LF"
+    },
+    {
+      "file": "fresh-start-selected.log",
+      "original": ".evidence/audit-20261027/fresh-classroom-bat/start-bat.log",
+      "original_sha256": "23a9c18a749756e9d0bd4d6f60bef47d0e34cfd17af413f97f10da0941e7a3b8",
+      "selection": "8 stage headings, course flow, cache seed and relay status",
+      "sha256": "121585f867af26183ab0ba20e9cc2e3b389de32403d70e61e86121e78ab5f2d2",
+      "pre_git_sha256": "33626b30d3d182caf9349856ce6379681c1ddc793d5a47d14dd4057d843dad8d",
+      "git_normalization": "CRLF to LF"
+    }
+  ]
+}
