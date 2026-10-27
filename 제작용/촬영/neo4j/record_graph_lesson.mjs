@@ -100,6 +100,7 @@ try{
      await serial(()=>p.waitForFunction(()=>!document.querySelector('[role="table"]')&&!document.querySelector('[data-testid="nvl-c2d-canvas"]')&&!document.body.innerText.includes(':welcome'),undefined,{timeout:10000}));
      await serial(()=>p.keyboard.press('ControlOrMeta+A'));await serial(()=>p.keyboard.press('Backspace'));graph=false;break;
     case 'overview':
+     if(await serial(()=>p.evaluate(()=>!!document.querySelector('button[title="Open Sidebar"]')))){await g(.12);await act({css:'button[title="Open Sidebar"]'},true);}
      await g(.25);await act({css:'button[title="Collapse Sidebar"]'},true);await g(.45);await act({css:'button[title="Open Sidebar"]'},true);
      await g(.7);await act({css:'button[aria-label="Database overview"]'},true);break;
     case 'overviewResult':

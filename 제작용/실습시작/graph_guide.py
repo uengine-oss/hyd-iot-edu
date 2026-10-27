@@ -1,6 +1,18 @@
 """실제 그래프 탐색 큐와 동일한 통합반 학생 가이드 단계."""
 import html
 
+def basic_sections(spec):
+    by_id={c['id']:c for c in spec['cues']}
+    def q(n):return '<pre>'+html.escape(by_id[f'basic{n:03}']['query'])+'</pre>'
+    def check(text):return '<p class="check">'+text+'</p>'
+    def image(name,caption):return f'<figure><a href="images/basic-{name}.jpg" target="_blank"><img src="images/basic-{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
+    return [
+      ('작은 예제 만들고 조회하기','<p>위쪽 입력칸에서 한 문장씩 실행합니다. CREATE는 새 노드를 만듭니다. 이 생성 문장은 한 번 실행하세요.</p>'+q(2)+check('연습 펌프의 score는40, 연습 팬은70입니다.')+'<p>MATCH로 연습장치를 찾고 RETURN에 이름과 점수를 적습니다. ORDER BY score는 점수가 작은 순서로 정렬합니다.</p>'+q(5)+check('연습 펌프40, 연습 팬70의 두 행이 나옵니다.')+image('nodes','만든 노드 두 개를 MATCH로 다시 조회')),
+      ('조건을 바꾸고 결과 비교하기','<p>WHERE로 score가50 이상인 행을 고릅니다.</p>'+q(8)+check('연습 팬70 한 행만 나옵니다.')+'<p>50을30으로 바꾸고 다시 실행합니다.</p>'+q(11)+check('연습 펌프40과 연습 팬70이 다시 나옵니다. 조건에서 제외된 노드도 저장돼 있습니다.')+image('filter','조건에 따라 달라지는 조회 결과')),
+      ('같은 대상 찾아 수정하기','<p>MERGE는 패턴이 있으면 찾아 쓰고 없으면 만듭니다. id로 찾을 대상을 정하고 SET에 저장할 속성을 적습니다.</p>'+q(14)+'<p>같은 MERGE와 SET을 다시 실행하고 등록된 센서 수를 확인합니다.</p>'+q(17)+check('sensor_count는1입니다. WITH s는 앞 단계의 변수 s를 다음 단계로 넘깁니다. 여기서는 이어지는 MATCH로 전체 연습센서를 찾아 셉니다.')+'<p>이번에는 SET의 이름만 바꿉니다.</p>'+q(20)+check('id와 unit은 그대로이고 name은 연습 유온 센서로 바뀝니다. MERGE와 동시 등록의 중복을 막는 유일 제약은 구분합니다.')+image('update','식별자는 유지하고 이름만 수정')),
+      ('관계 만들고 그림으로 확인하기','<p>MATCH로 두 노드를 찾고 MERGE로 관측 관계를 만듭니다.</p>'+q(23)+check('연습 펌프 → 관측 → 연습 유온 센서의 한 행이 나옵니다.')+'<p>같은 연결에서 속성값 대신 노드·관계를 반환합니다.</p>'+q(26)+check('Graph에 노드2개·관계1개가 나옵니다. 변수 p·s는 노드, r은 관계를 가리킵니다.')+image('relation','표에서 확인한 같은 연결을 Graph로 보기')),
+      ('연습 정리하고 설비에 적용하기','<p>이번에 만든 연습장치와 연습센서만 찾아 삭제합니다. DETACH DELETE는 해당 노드와 연결된 관계를 함께 지웁니다.</p>'+q(29)+check('removed는3입니다. 준비된 설비의 노드20개·관계19개는 남습니다.')+'<p>입력칸에서 <code>:clear</code>를 실행해 카드만 비웁니다. 이제 같은 문법으로 아래 설비 연결을 탐색합니다. 실행한 문장은 <a href="기본문법_연습.cypher">기본문법_연습.cypher</a>에서도 확인할 수 있습니다.</p>')]
+
 def sections(spec, prepare):
     by_title={c['title']:c['query'] for c in spec['cues'] if c['op']=='query'}
     def q(title):return '<pre>'+html.escape(by_title[title])+'</pre>'

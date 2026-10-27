@@ -15,6 +15,8 @@ def select(m, base):
     for i, part in enumerate(m['takes']):
         source=base/part['take']; t=read(source/'timing.json')
         start=t['frames'][part['start_frame']]['time'] if 'start_frame' in part else part.get('start_ms', 0); end=part.get('end_ms', t['duration'])
+        if part.get('from_cue'):
+            start=next(a['time']-250 for a in t['actions'] if a['id']==part['from_cue'])
         if part.get('before_cue'):
             end=next(a['time']-250 for a in t['actions'] if a['id']==part['before_cue'])
         if t['error'] and 'end_ms' not in part and 'before_cue' not in part:
