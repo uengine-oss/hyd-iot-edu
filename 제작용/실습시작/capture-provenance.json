@@ -37,5 +37,26 @@
     ],
     "sha256": "6a7be8f1513cfd9cd689917a71351213a58edcbf91e4dee75437618438744d59",
     "kind": "별도 교육 DB의 강사 참조 모델 실제 조회; 학생 수행 화면 아님"
+  },
+  {
+    "target": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+    "source": ".evidence/practice-20261026/neo4j-clean-entry-take05/frames/000000.jpg",
+    "source_sha256": "15e953132c43f039f880ddde3be0931f3ef6f12e7cb41f5ab9941bcdf8b9ede1",
+    "sha256": "15e953132c43f039f880ddde3be0931f3ef6f12e7cb41f5ab9941bcdf8b9ede1",
+    "kind": "별도 실습 DB 실제 촬영 프레임, 원본 그대로"
+  },
+  {
+    "target": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-node.jpg",
+    "source": ".evidence/practice-20261026/neo4j-integrated-first-take01/frames/000379.jpg",
+    "source_sha256": "610e5ede674047881e40408498e1247e1f1c8e229506d5287731156f999db449",
+    "sha256": "610e5ede674047881e40408498e1247e1f1c8e229506d5287731156f999db449",
+    "kind": "별도 실습 DB 실제 촬영 프레임, 원본 그대로"
+  },
+  {
+    "target": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+    "source": ".evidence/practice-20261026/neo4j-clean-entry-take05/frames/000000.jpg",
+    "source_sha256": "15e953132c43f039f880ddde3be0931f3ef6f12e7cb41f5ab9941bcdf8b9ede1",
+    "sha256": "15e953132c43f039f880ddde3be0931f3ef6f12e7cb41f5ab9941bcdf8b9ede1",
+    "kind": "별도 실습 DB 실제 촬영 프레임, 원본 그대로"
   }
 ]
