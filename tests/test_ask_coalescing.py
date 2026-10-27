@@ -51,6 +51,104 @@ def test_coalescing_metadata_cannot_be_injected_as_start_input(rt):
                     values={'question':'x','_runtime_coalescing':{'events':['ask:other']}})
 
 
+def test_reused_request_id_rejects_changed_agent_instructions(rt):
+    runtime, _ = rt
+    _people(runtime)
+    rid = str(uuid4())
+    first = _ask(runtime, rid=rid)
+    agent = runtime.repo.list_users(['sys:agent'], 'hyd')[0]
+    runtime.repo.upsert_user(dict(agent, username='새 표시 이름'))
+    assert _ask(runtime, rid=rid)['id'] == first['id']
+    runtime.repo.upsert_user(dict(agent, goal='내용이 다른 새 업무 목표'))
+    with pytest.raises(ValueError, match='다른.*조건'):
+        _ask(runtime, rid=rid)
+
+
+def test_existing_legacy_request_is_readable_but_not_reused_without_settings_binding(rt):
+    from test_b5_ask import DEFS
+    runtime, _ = rt
+    _people(runtime)
+    ask.register_definition(runtime, DEFS)
+    rid = str(uuid4())
+    inst = runtime.start_definition(ask.DEFINITION_ID, ask.VERSION, 'ask:'+rid,
+                                    values={'question':'완제품 재고가 가장 적은 설비와 그 수량은?'},
+                                    role_endpoints={ask.ROLE:'sys:agent'})
+    with pytest.raises(ValueError, match='기존 조건을 확인'):
+        _ask(runtime, rid=rid)
+    assert ask.view(runtime, inst['proc_inst_id'])['id'] == inst['proc_inst_id']
+
+
+def test_ask_api_reports_reused_id_with_changed_settings_without_creating_a_task(rt):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from test_b5_ask import DEFS, UP
+    runtime, _ = rt
+    _people(runtime)
+    rid = str(uuid4())
+    first = _ask(runtime, rid=rid)
+    agent = runtime.repo.list_users(['sys:agent'], 'hyd')[0]
+    runtime.repo.upsert_user(dict(agent, goal='수정된 목표'))
+    app = FastAPI()
+    ask.register(app, runtime_factory=lambda:runtime, definitions_dir=DEFS, worker_probe=UP, bridge=lambda:'off')
+    response = TestClient(app).post('/api/ask', json={'question':'완제품 재고가 가장 적은 설비와 그 수량은?', 'request_id':rid})
+    assert response.status_code == 400 and '다른 에이전트 조건' in response.json()['detail']
+    assert len(runtime.repo.list_workitems(proc_inst_id=first['id'])) == 1
+
+
+@pytest.mark.parametrize('change', [{'goal':'새 목표'}, {'tools':'hyd-dmn'}])
+def test_queued_question_does_not_run_after_agent_execution_settings_change(rt, tmp_path, change):
+    from test_b5_ask import _cli, _work
+    runtime, _ = rt
+    _people(runtime)
+    started = _ask(runtime, rid=str(uuid4()))
+    agent = runtime.repo.list_users(['sys:agent'], 'hyd')[0]
+    runtime.repo.upsert_user(dict(agent, **change))
+    requests = []
+    _work(runtime, tmp_path, _cli({'status':'cannot_answer','reason':'fixture'}, requests=requests))
+    row = runtime.repo.get_workitem(started['workitem'])
+    assert not requests and row['draft_status'] == 'FAILED' and row['output'] is None
+    errors = runtime.repo.list_events(todo_id=row['id'])
+    assert any('에이전트 설정이 바뀌었습니다' in str(e.get('data',{})) for e in errors)
+
+
+def test_queued_question_allows_display_name_change(rt, tmp_path):
+    from test_b5_ask import _cli, _work
+    runtime, _ = rt
+    _people(runtime)
+    started = _ask(runtime, rid=str(uuid4()))
+    agent = runtime.repo.list_users(['sys:agent'], 'hyd')[0]
+    runtime.repo.upsert_user(dict(agent, username='새 표시 이름'))
+    requests = []
+    _work(runtime, tmp_path, _cli({'status':'cannot_answer','reason':'fixture'}, requests=requests))
+    assert len(requests) == 1 and ask.view(runtime, started['id'])['state'] == 'done'
+
+
+def test_queued_question_keeps_its_original_definition_version(rt, tmp_path, monkeypatch):
+    from test_b5_ask import _cli, _work
+    runtime, _ = rt
+    _people(runtime)
+    started = _ask(runtime, rid=str(uuid4()))
+    monkeypatch.setattr(ask, 'VERSION', 'future-version')
+    requests = []
+    _work(runtime, tmp_path, _cli({'status':'cannot_answer','reason':'fixture'}, requests=requests))
+    assert len(requests) == 1 and ask.view(runtime, started['id'])['state'] == 'done'
+
+
+def test_queued_question_stops_if_attached_skill_content_changes(rt, tmp_path):
+    from test_b5_ask import _cli, _work
+    runtime, _ = rt
+    _people(runtime)
+    skill = {'skill_name':'cooler-check', 'description':'점검', 'content':'원래 점검 방법'}
+    runtime.repo.put_skill(skill)
+    runtime.repo.attach_skill('sys:agent', 'cooler-check')
+    started = _ask(runtime, rid=str(uuid4()))
+    runtime.repo.put_skill(dict(skill, content='바뀐 점검 방법'))
+    requests = []
+    _work(runtime, tmp_path, _cli({'status':'cannot_answer','reason':'fixture'}, requests=requests))
+    row = runtime.repo.get_workitem(started['workitem'])
+    assert not requests and row['draft_status'] == 'FAILED' and row['output'] is None
+
+
 def test_failed_question_retry_preserves_work_generation_trace_and_is_bounded(rt):
     runtime, _ = rt
     _people(runtime)
