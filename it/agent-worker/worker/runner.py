@@ -200,7 +200,7 @@ class Runner:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         from . import managed_model
         remote_agent=bool((ctx.definition or {}).get('classroom_agent'))
-        question_task = self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
+        question_task = self.ai_mode != 'replay' and self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
         managed=None
         if remote_agent:
             from . import managed_tools
