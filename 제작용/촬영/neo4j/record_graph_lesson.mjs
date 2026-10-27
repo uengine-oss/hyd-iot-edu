@@ -112,12 +112,21 @@ try{
      const previous=await serial(()=>p.evaluate(()=>document.querySelector('[role="table"]')?.innerText||''));await g(.43);await act(runButton,true);a.runAt=Date.now()-start;
      await serial(()=>p.waitForFunction(({rows,graph,previous,nodes,edges})=>graph?Array.from(document.querySelectorAll('[role="status"]')).find(e=>e.textContent.startsWith('A graph visualization'))?.textContent.includes(`with ${nodes} ${nodes===1?"node":"nodes"} and ${edges} ${edges===1?"relationship":"relationships"}`):Array.from(document.querySelector('[role="table"]')?.querySelectorAll('[role="row"]')||[]).filter(e=>e.querySelector('[role="cell"]')).length===rows&&(document.querySelector('[role="table"]')?.innerText||'')!==previous,{rows:c.rows,graph:c.graph,previous,nodes:c.nodes,edges:c.edges},{timeout:15000}));
      a.resultVerified=true;a.nodes=c.nodes;a.edges=c.edges;a.rows=c.rows;a.resultReady=Date.now()-start;graph=c.graph;break;
+    case 'runSummary':
+     await g(.35);await act(runButton,true);a.runAt=Date.now()-start;
+     await serial(()=>p.waitForFunction(verify=>document.body.innerText.includes(verify),c.verify,{timeout:15000}));
+     a.resultVerified=true;a.summary=c.verify;a.resultReady=Date.now()-start;graph=false;break;
+    case 'summaryTalk':await g(.15);await move({x:600,y:290});break;
     case 'result':await g(.15);await resultPoint();break;
     case 'mapLayout':
-     await g(.12);await act({css:'button[title="Collapse Sidebar"]'},true);
+     await g(.12);if(await serial(()=>p.evaluate(()=>!!document.querySelector('button[title="Collapse Sidebar"]'))))await act({css:'button[title="Collapse Sidebar"]'},true);
      if(await serial(hasDetails))await act(graphButton('Toggle graph details panel'),true);
      await g(.4);await act(graphButton('Select layout'),true);await act({css:'[role="menuitemradio"]',text:'Hierarchical layout'},true);
      await g(.7);await act(graphButton('Zoom to fit'),true);break;
+    case 'basicFit':
+     await g(.25);if(await serial(()=>p.evaluate(()=>!!document.querySelector('button[title="Collapse Sidebar"]'))))await act({css:'button[title="Collapse Sidebar"]'},true);
+     if(await serial(hasDetails))await act(graphButton('Toggle graph details panel'),true);
+     await g(.65);await act(graphButton('Zoom to fit'),true);break;
     case 'node':case 'edge':await g(.08);await chooseGraph(c,a,g);break;
     case 'details':
      await g(.2);const prop=await serial(()=>p.evaluate(()=>{const h=Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')).find(e=>/^(Node details|Relationship details)$/.test(e.textContent.trim())&&e.getBoundingClientRect().height>0);const r=h?.parentElement?.parentElement?.getBoundingClientRect();return r&&{x:r.x+Math.min(r.width-30,140),y:r.y+150};}));if(prop)await move(prop);break;

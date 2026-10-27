@@ -5,13 +5,15 @@ import json,hashlib,shutil,html,argparse
 HERE=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--course',choices=[name for name,_ in COURSES])
+parser.add_argument('--lab',choices=['relations','map'],help='변경한 실습만 재생성한다. 생략하면 기존처럼 두 실습을 만든다.')
 args=parser.parse_args()
 active_courses=[item for item in COURSES if args.course is None or item[0]==args.course]
 catalog=json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))
-ids={f'{slug}-02-{kind}' for _,slug in active_courses for kind in ['relations','map']}
+ids={f'{slug}-02-{kind}' for _,slug in active_courses for kind in ['relations','map'] if args.lab is None or args.lab==kind}
 catalog['labs']=[x for x in catalog['labs'] if x['id'] not in ids]
 for course,slug in active_courses:
     for number,name,title,kind in [(1,'02일차_실습1_관계조회','관계를 따라 센서와 부품 조회하기','relations'),(2,'02일차_실습2_지식지도탐색','포털에서 기준 지식의 연결 탐색하기','map')]:
+        if args.lab is not None and args.lab!=kind:continue
         folder=OUT/course/'실습/02회차/랩'/name
         write(folder/'결과/README.md','작성한 질의와 실제 확인 기록을 여기에 보관합니다.\n')
         rules=RULES.replace('입력/와 자료/는 보존한다.','제공 예제와 원자료는 보존한다.')
@@ -83,22 +85,19 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
                 sections[2]=('기준값과 교체 부품 확인하기',sections[2][1])
                 sections[3]=('센서 목록으로 집계 검증하기',sections[3][1])
         if number==1:
-            from graph_guide import sections as graph_sections, basic_sections
-            shared=json.loads((ROOT/'제작용/촬영/neo4j/실전반_설비탐색_큐.json').read_text(encoding='utf-8'))
+            from graph_guide import sections as graph_sections, common_basic_sections
+            shared=json.loads((ROOT/'제작용/촬영/neo4j/공통_Cypher_큐.json').read_text(encoding='utf-8'))
             sections=graph_sections(shared,sections[0])
-            if course=='통합반':
-                basic=json.loads((ROOT/'제작용/촬영/neo4j/통합반_기본문법_큐.json').read_text(encoding='utf-8'))
-                sections=sections[:1]+basic_sections(basic)+sections[1:]
-                title='Cypher 기본 문법을 실행하고 설비에 적용하기'
-                steps=steps.replace('4. 가이드에서 전체 설비 지도를 펼치고 노드·관계의 정보를 확인한 뒤, 질문에 맞춰 경로·조건·집계를 조회합니다.','4. 가이드의 기본 문법 예제를 한 문장씩 실행·비교한 뒤, 준비된 설비의 경로·조건·집계를 조회합니다.')
-            else:
-                title='Cypher로 설비 연결을 탐색하고 검증하기'
-                steps=steps.replace('4. 조회_작성.cypher의 여섯 질문에 맞춰 질의를 작성하고 한 문장씩 실행합니다.','4. 가이드에서 설비 연결·속성을 확인하고 질문에 맞춰 경로·조건·집계를 조회합니다.')
+            sections=sections[:1]+common_basic_sections(shared)+sections[1:]
+            title='Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기'
+            steps='\n'.join('4. 가이드의 기본 예제를 생성·조회·수정·삭제하고 결과를 확인한 뒤, 준비된 설비의 경로·조건·집계를 조회합니다.' if line.startswith('4. ') else line for line in steps.splitlines())
+            basic_queries=[c['query'] for c in shared['cues'] if c['id'].startswith('common') and 'query' in c]
+            write(folder/'기본문법_연습.cypher','// 위에서부터 한 문장씩 실행합니다. 전체 파일을 한 번에 실행하지 않습니다.\n// CREATE 문장은 한 번 실행합니다. 준비된 설비와 별도의 연습장치·연습센서만 수정·삭제합니다.\n\n'+'\n\n'.join(basic_queries)+'\n')
         for file in ['AGENTS.md','CLAUDE.md','.github/copilot-instructions.md']:write(folder/file,rules)
         write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
         archive=pack(folder)
-        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':('2026-10-27-basic-application-v7' if course=='통합반' else '2026-10-27-application-v3') if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':'2026-10-27-common-graph-v8' if number==1 else '2026-10-26-common-v1','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('두 과정 조회 가이드·독립 시작본과 포털 탐색 연결')

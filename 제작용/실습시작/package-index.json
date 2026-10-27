@@ -14,11 +14,11 @@
       "id": "practical-02-relations",
       "course": "실전반",
       "session": "온라인 02회차",
-      "title": "Cypher로 설비 연결을 탐색하고 검증하기",
-      "version": "2026-10-27-application-v3",
+      "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
+      "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "ecacc08cd29e048c414b4f926dcc56bdece177c9eac1a5fa1a35b9c3c94b859d"
+      "sha256": "1749aa2e486354df4f939cbfa2c161b34976013b0428de0747816aa216d55b9b"
     },
     {
       "id": "practical-02-map",
@@ -74,11 +74,11 @@
       "id": "integrated-02-relations",
       "course": "통합반",
       "session": "온라인 02회차",
-      "title": "Cypher 기본 문법을 실행하고 설비에 적용하기",
-      "version": "2026-10-27-basic-application-v7",
+      "title": "Cypher로 그래프를 만들고 수정·삭제한 뒤 설비 탐색하기",
+      "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "89dc12c77848ea20a8f89cba5c595b27d0236a09aea351e3499bf0a40ea812bf"
+      "sha256": "dbe53876b32a668cd435144a555c606666eb48a52efbdaf3cdc250fa4b7170a7"
     },
     {
       "id": "integrated-02-map",

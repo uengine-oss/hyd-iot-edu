@@ -66,7 +66,7 @@ def check(m, base, repo):
         meta=read(base/m['audio']/(a['id']+'.json'))
         assert a['text']==c['text']==meta['text'], a['id']
         assert a['duration']==meta['duration_ms'], a['id']
-        if a['op']=='run':
+        if a['op'] in ['run','runSummary']:
             assert a['resultVerified'] and a['runAt']<a['time']+a['duration'], a['id']
             assert actions[i+1]['time']>=a['resultReady'], a['id']
         if a['op'] in ['node','edge']:
@@ -82,7 +82,7 @@ def check(m, base, repo):
         times=[f['time'] for f in frames if x['start']<=f['time']<=x['end']]
         gap=max(b-a for a,b in zip([x['start']]+times,times+[x['end']]))
         if gap>=100: gaps.append({**x,'gap_ms':gap})
-    report={'duration_s':offset/1000,'cues':len(actions),'queries':sum(a['op']=='run' for a in actions),
+    report={'duration_s':offset/1000,'cues':len(actions),'queries':sum(a['op'] in ['run','runSummary'] for a in actions),
             'selections':sum(a['op'] in ['node','edge'] for a in actions),'movement_over100ms':gaps,
             'csv':str(download),'csv_sha256':hashlib.sha256(download.read_bytes()).hexdigest(),
             'png':str(png),'not_verified':['전체 청취','사용자 재생','장면별 가독성·이음매 직접 확인']}
@@ -131,7 +131,7 @@ def capture(m, base, repo):
         dest.parent.mkdir(parents=True,exist_ok=True); im.crop(crop).save(dest,quality=92)
         provenance.append({'image':item['path'],'cue':a['id'],'source':str(f['path']),'crop':crop,'sha256':hashlib.sha256(dest.read_bytes()).hexdigest()})
     save(base/(m['name']+'-captures.json'),provenance)
-    review=[a for a in actions if a['op'] in ['details','graphTalk','mapTour','savedResult','outro','result']]
+    review=[a for a in actions if a['op'] in ['details','graphTalk','mapTour','savedResult','outro','result','graphResult','summaryTalk']]
     for batch in range((len(review)+3)//4):
         sheet=Image.new('RGB',(1920,1160),'white'); draw=ImageDraw.Draw(sheet)
         for i,a in enumerate(review[batch*4:(batch+1)*4]):

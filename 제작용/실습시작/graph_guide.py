@@ -1,6 +1,20 @@
 """실제 그래프 탐색 큐와 동일한 통합반 학생 가이드 단계."""
 import html
 
+def common_basic_sections(spec):
+    by_id={c['id']:c for c in spec['cues']}
+    def q(n):return '<pre>'+html.escape(by_id[n if isinstance(n,str) else f'common{n:03}']['query'])+'</pre>'
+    def check(text):return '<p class="check">'+text+'</p>'
+    def img(name,caption):return f'<figure><a href="images/common-{name}.jpg" target="_blank"><img src="images/common-{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
+    return [
+      ('노드 만들고 RETURN으로 그래프 보기','<p>Browser 위쪽 입력칸에 다음 문장을 넣고 Run을 누르세요. CREATE는 새 노드를 만듭니다. 이 생성 문장은 한 번 실행합니다.</p>'+q(2)+check('Created 2 nodes가 나옵니다. RETURN이 없어 그래프는 표시되지 않지만 노드는 생성됐습니다.')+img('no-return','RETURN 없이 실행한 생성 결과 안내')+'<p>CREATE를 다시 실행하지 않고 MATCH로 만든 노드를 찾습니다. RETURN n으로 노드 자체를 받습니다.</p>'+q('common003b')+check('Graph에 연습 펌프와 연습 팬 두 노드가 나타납니다. 관계는 아직 없습니다.')+img('created','만든 두 노드를 MATCH와 RETURN으로 확인')+'<p>왼쪽 도구 패널을 접고 Zoom to fit을 누릅니다. 연습 펌프를 클릭해 오른쪽 Node details를 확인하세요.</p>'+check('레이블은 연습장치, id는 basic-A, name은 연습 펌프, score는40입니다. n은 조회 문장의 변수입니다.')+img('properties','펌프 노드를 클릭해 레이블과 속성 확인')),
+      ('같은 노드를 그래프와 표로 조회하기','<p><code>:clear</code>를 실행해 앞 카드를 비웁니다. 데이터는 삭제되지 않습니다. MATCH로 저장된 노드를 다시 찾으세요.</p>'+q(9)+check('두 노드가 다시 나옵니다.')+'<p>이번에는 노드 대신 이름과 점수를 반환합니다. AS는 열 이름, ORDER BY는 정렬 기준입니다.</p>'+q(12)+check('펌프40·팬70의 두 행이 나옵니다. 노드·관계·경로는 Graph로, 속성값은 Table로 확인합니다.')+img('table','같은 노드의 이름과 점수만 표로 받기')),
+      ('조건을 바꾸고 그래프 비교하기','<p>WHERE에 score가50 이상이라는 조건을 넣습니다.</p>'+q(15)+check('팬 한 노드만 나타납니다. 펌프는 삭제되지 않았습니다.')+img('filtered','조건을 만족하는 팬만 조회')+'<p>50을30으로 바꿔 실행합니다.</p>'+q(18)+check('펌프와 팬 두 노드가 다시 나타납니다.')+'<p>카드를 정리하고 이름 조건을 OR로 묶은 뒤 AND로 점수 조건을 붙입니다.</p>'+q('common020b')+check('두 조건이 모두 맞는 팬 하나가 나옵니다.')+'<p>같은 조건에서 괄호만 뺍니다.</p>'+q('common020e')+check('펌프와 팬 두 개가 나옵니다. AND가 OR보다 먼저 묶여 펌프는 점수 조건 없이 통과합니다. 두 장치 모두에 점수 조건을 적용하려면 앞의 괄호 있는 식을 씁니다.')+img('conditions','괄호 유무에 따라 달라지는 조건 범위')),
+      ('센서를 만들고 관계 연결하기','<p><code>:clear</code>로 카드를 정리합니다. MERGE는 적은 패턴이 있으면 찾아 쓰고 없으면 만듭니다. SET은 속성값을 지정합니다.</p>'+q(22)+check('연습 온도 센서 하나가 나타납니다.')+'<p>같은 MERGE·SET을 다시 실행하고 센서 수를 확인합니다. WITH는 앞 처리에서 다음 절로 이어 줍니다.</p>'+q(25)+check('sensor_count는1입니다. 한 사람이 순서대로 반복 실행한 결과이며, 동시 등록의 고유성 보장은 유일 제약과 구분합니다.')+'<p>펌프와 센서를 찾아 관측 관계로 연결합니다.</p>'+q(28)+check('노드2개·관계1개입니다. p·s는 노드 변수, r은 관계 변수, 관측은 관계 유형입니다.')+img('linked','펌프와 센서를 연결한 관측 관계')+'<p>빈 곳을 눌러 선택을 풀고 Zoom to fit으로 맞춘 뒤 관측 선을 클릭합니다. 오른쪽 제목이 Relationship details로 바뀝니다.</p>'),
+      ('속성을 수정하고 연결 확인하기','<p>카드를 정리하고 id가 basic-S1인 센서의 이름만 바꿉니다.</p>'+q(34)+check('노드에 표시되는 이름이 연습 유온 센서로 바뀝니다.')+'<p>센서를 클릭해 속성을 확인하세요.</p>'+check('id는 basic-S1, unit은℃로 유지되고 name만 바뀝니다.')+img('updated','같은 센서의 이름 속성 수정')+'<p>경로 전체를 p에 담아 반환합니다.</p>'+q(39)+check('펌프와 이름을 바꾼 센서가 여전히 관측 관계로 연결돼 있습니다.')),
+      ('관계만 삭제하고 노드는 남기기','<p>카드를 정리한 뒤 관측 관계를 찾아 DELETE r로 관계만 삭제합니다.</p>'+q(43)+check('펌프·센서 두 원은 남고 연결선은 없어집니다.')+img('unlinked','관계 삭제 후 남은 두 노드')+'<p>다음 삭제 방법을 비교하기 위해 남아 있는 두 노드 사이를 다시 연결합니다.</p>'+q(46)+check('관측 선 하나가 다시 생깁니다. 새 노드를 만든 것은 아닙니다.')),
+      ('노드 삭제와 정리 확인하기','<p>DETACH DELETE로 연습 센서와 그 연결을 함께 삭제합니다.</p>'+q(49)+check('removed_sensors는1입니다.')+'<p>연습 데이터를 다시 조회합니다. 이전 카드는 실행 당시 결과이므로 새 결과를 확인하세요.</p>'+q(52)+check('펌프와 팬 두 노드만 남습니다. 센서와 관측 관계는 없습니다.')+img('remaining','센서 삭제 뒤 새 조회로 확인한 장치 두 개')+'<p>관계가 없는 두 장치를 일반 DELETE로 삭제합니다.</p>'+q(55)+check('removed_devices는2입니다.')+'<p>연습 노드 수를 다시 셉니다.</p>'+q(58)+check('remaining_practice_nodes는0입니다. 준비된 설비20노드·19관계는 유지됩니다.')+img('clean','연습 데이터가0개인지 재조회')+'<p><code>:clear</code>로 카드를 비운 뒤 아래 설비 예제로 이어갑니다. 실행 문장은 <a href="기본문법_연습.cypher">기본문법_연습.cypher</a>에도 있습니다.</p>')]
+
 def basic_sections(spec):
     by_id={c['id']:c for c in spec['cues']}
     def q(n):return '<pre>'+html.escape(by_id[f'basic{n:03}']['query'])+'</pre>'
@@ -14,7 +28,7 @@ def basic_sections(spec):
       ('연습 정리하고 설비에 적용하기','<p>이번에 만든 연습장치와 연습센서만 찾아 삭제합니다. DETACH DELETE는 해당 노드와 연결된 관계를 함께 지웁니다.</p>'+q(29)+check('removed는3입니다. 준비된 설비의 노드20개·관계19개는 남습니다.')+'<p>입력칸에서 <code>:clear</code>를 실행해 카드만 비웁니다. 이제 같은 문법으로 아래 설비 연결을 탐색합니다. 실행한 문장은 <a href="기본문법_연습.cypher">기본문법_연습.cypher</a>에서도 확인할 수 있습니다.</p>')]
 
 def sections(spec, prepare):
-    by_title={c['title']:c['query'] for c in spec['cues'] if c['op']=='query'}
+    by_title={c['title']:c['query'] for c in spec['cues'] if c['op']=='query' and 'title' in c}
     def q(title):return '<pre>'+html.escape(by_title[title])+'</pre>'
     def img(name,caption):return f'<figure><a href="images/forest-{name}.jpg" target="_blank"><img src="images/forest-{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
     def check(text):return '<p class="check">'+text+'</p>'
