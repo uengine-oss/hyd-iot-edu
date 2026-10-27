@@ -208,8 +208,10 @@ def test_worker_without_cli_login_starts_in_replay(monkeypatch, tmp_path):
     assert main._ai_login() is False                       # CLI 가 없다 → 로그인 없음으로 확인
     r = main.build_runner(MemoryRepo())
     assert main.status["ai_mode"] == "replay" and r.ai_mode == "replay" and hasattr(r.exec_fn, "last")
+    assert r.course_access is not None
     monkeypatch.setattr(main, "settings", replace(s, ai_mode="live"))
-    assert main.build_runner(MemoryRepo()).exec_fn is runner_mod._exec_stream
+    live = main.build_runner(MemoryRepo())
+    assert live.exec_fn is runner_mod._exec_stream and live.course_access is not None
 
 
 def test_business_name_ignores_spacing_and_case(tmp_path):

@@ -33,6 +33,16 @@ def test_supported_evaluation_does_not_submit_card_or_decision(evaluator,monkeyp
     assert not any(step['name']=='submit' for step in first['steps'])
 
 
+def test_legacy_http_evaluation_cannot_call_an_unguarded_model(evaluator,monkeypatch):
+    monkeypatch.setattr(main.llm,'summarize',lambda *_:pytest.fail('legacy HTTP bypassed the course worker gate'))
+    monkeypatch.setattr(main.decidelib,'decide',lambda *a,**k:{'status':'EVALUATED','asset':'A',
+        'origin':k['origin'],'result':{'options':[{'id':'fixture'}]}})
+    from fastapi.testclient import TestClient
+    client=TestClient(main.app,raise_server_exceptions=True)
+    response=client.post('/api/agent/evaluate',json={'alert':evaluator.alert})
+    assert response.status_code==200 and response.json()['card']['summarySource']=='template'
+
+
 def test_unavailable_source_is_withheld_without_decision(evaluator,monkeypatch):
     monkeypatch.setattr(main.tsdb,'evaluate',lambda *_:{})
     monkeypatch.setattr(main.decidelib,'decide',lambda *a,**kw:pytest.fail('unknown source evaluated decision'))

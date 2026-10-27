@@ -94,7 +94,9 @@ def pipeline(run, *, do_submit=True) -> None:
                  note="mcp-kg T2: 원인 → 고장 유형 → 조치 방법(스킬 = SOP) → 원자 조치 · 단계 · 매뉴얼 절")
         # 5. card (+ optional LLM narrative)
         card = cardlib.build_card(None, alert, causes, t2, fresh)
-        summary, source = llm.summarize(card, card["summary"])
+        # Classroom AI runs through the checked worker. A direct legacy HTTP
+        # evaluation must not create a second, unguarded model request.
+        summary, source = card["summary"], "template"
         card["summary"], card["summarySource"] = summary, source
         run.step("card", {"summary": summary, "source": source, "citations": card["citations"]}, note="가이드 카드 조립 (근거 노드 ID 인용)")
         # 6. guardrail

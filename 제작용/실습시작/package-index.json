@@ -15,10 +15,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "관계를 따라 센서와 부품 조회하기",
-      "version": "2026-10-26-common-v1",
+      "version": "2026-10-27-cypher-v2",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "d4e7f71f5a589ef880708b2966a632d4e913d2c9975d0e634012836cae46add1"
+      "sha256": "b5f93f33f4e997fadb2fc3bd33457754da0f6d52be79e255699db87c294babdb"
     },
     {
       "id": "practical-02-map",
@@ -45,10 +45,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "부품별 사용 설비와 공급 조건 조회하기",
-      "version": "2026-10-26-lab-v2-connection2",
+      "version": "2026-10-27-lab-v2-connection3",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "9cf36811f75f61c7c47bc0ca67f5492d640aa1d698ead84d3ea3e5fd204f66fc"
+      "sha256": "e263c9ad484d5404e5aa36dc0eda6de3db909645cd9b66e3f8c4c6611dc90e03"
     },
     {
       "id": "practical-02-conditions",
@@ -75,10 +75,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "관계를 따라 센서와 부품 조회하기",
-      "version": "2026-10-26-common-v1",
+      "version": "2026-10-27-cypher-v3",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "386df5f56f09c86f844fe6da5157f02683623babb72a00d78c83cf4154cc964c"
+      "sha256": "5930cfd2585628fcafa7765161ae81ad963c2b8f1e97d712efc1193af3c62e05"
     },
     {
       "id": "integrated-02-map",
@@ -105,10 +105,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "모델을 그래프에 적재하고 질문으로 검증하기",
-      "version": "2026-10-26-lab-v2-connection2",
+      "version": "2026-10-27-lab-v2-connection3",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "f6b78aa55dfdf11f915063332d0ba18a1997142c644510066f7a990b7ede0dae"
+      "sha256": "99955aaf65ad97a775623ca80a828b028d039248dd6169797a689853d82a35f8"
     }
   ]
 }

@@ -1,0 +1,125 @@
+{
+  "voice_id": "1PdAOcPlPTz12RwMyFVp",
+  "model_id": "eleven_v4",
+  "cues": [
+    {
+      "id": "prac601",
+      "segment": 6,
+      "text": "쿨러의 상태를 확인하려면 어떤 센서를 봐야 하는지부터 찾겠습니다. 매치에 쿨러에서 센서로 이어지는 패턴을 넣고, 리턴에는 점검할 센서의 식별자와 태그를 받겠습니다. 같은 이름의 다른 장치가 섞이지 않도록 고유 식별자를 쓰겠습니다.",
+      "op": "query",
+      "query": "MATCH (c:Component {id:'comp:cooler'})-[:MONITORED_BY]->(s:Sensor)\nRETURN c.name AS component, s.id AS sensor_id, s.tag AS tag\nORDER BY s.tag;\n"
+    },
+    {
+      "id": "prac602",
+      "segment": 6,
+      "text": "오른쪽 런을 눌러 실행하겠습니다.",
+      "op": "run",
+      "rows": 2
+    },
+    {
+      "id": "prac603",
+      "segment": 6,
+      "text": "씨이와 티에스원, 두 센서가 나왔습니다. 쿨러 이름이 두 번 나오지만 같은 쿨러에 연결된 두 센서입니다. 연결 방향도 그림에서 확인해 볼게요.",
+      "op": "result"
+    },
+    {
+      "id": "prac604",
+      "segment": 6,
+      "text": "같은 패턴의 관계에 알이라는 이름을 붙이고, 리턴에는 씨, 알, 에스를 넣겠습니다. 속성값 대신 노드와 관계 자체를 돌려받는 문장입니다.",
+      "op": "query",
+      "query": "MATCH (c:Component {id:'comp:cooler'})-[r:MONITORED_BY]->(s:Sensor)\nRETURN c,r,s;\n"
+    },
+    {
+      "id": "prac605",
+      "segment": 6,
+      "text": "런을 눌러 그래프를 보겠습니다.",
+      "op": "graph"
+    },
+    {
+      "id": "prac606",
+      "segment": 6,
+      "text": "쿨러에서 센서 두 개로 연결돼 있습니다. 방금 표에서 확인한 두 행을 이 연결로 읽을 수 있네요. 이제 확인할 물리량까지 따라가겠습니다.",
+      "op": "result"
+    },
+    {
+      "id": "prac607",
+      "segment": 6,
+      "text": "앞 결과 카드는 비우고 다음 조회를 보겠습니다. 센서 이름만으로는 어떤 값을 확인해야 할지 알 수 없습니다. 설비에서 구성 요소와 센서를 거쳐 물리량까지 연결하고, 태그와 물리량, 단위, 한계를 함께 받겠습니다.",
+      "op": "clearQuery",
+      "query": "MATCH (a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n      -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nRETURN s.tag AS tag, v.name AS quantity, v.unit AS unit, v.limit AS limit\nORDER BY tag;\n"
+    },
+    {
+      "id": "prac608",
+      "segment": 6,
+      "text": "런을 눌러 실행하겠습니다.",
+      "op": "run",
+      "rows": 5
+    },
+    {
+      "id": "prac609",
+      "segment": 6,
+      "text": "다섯 센서의 물리량을 찾았습니다. 한계가 비어 있는 행도 있네요. 연결을 못 찾은 것은 아닙니다. 물리량까지 찾았지만 그 속성값이 없는 거예요. 이 값은 영으로 바꾸지 않겠습니다.",
+      "op": "result"
+    },
+    {
+      "id": "prac610",
+      "segment": 6,
+      "text": "이번에 필요한 것은 한계가 등록된 항목입니다. 같은 경로에 웨어를 넣어 한계가 있는 행만 남기겠습니다. 어떤 행이 빠지는지도 함께 보겠습니다.",
+      "op": "query",
+      "query": "MATCH (a:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n      -[:MONITORED_BY]->(s:Sensor)-[:OBSERVES]->(v:StateVariable)\nWHERE v.limit IS NOT NULL\nRETURN s.tag AS tag, v.name AS quantity, v.unit AS unit, v.limit AS limit\nORDER BY tag;\n"
+    },
+    {
+      "id": "prac611",
+      "segment": 6,
+      "text": "런을 눌러 조건을 적용하겠습니다.",
+      "op": "run",
+      "rows": 3
+    },
+    {
+      "id": "prac612",
+      "segment": 6,
+      "text": "압력, 온도, 진동에 해당하는 세 행이 남았습니다. 단위가 서로 다르므로 한계 숫자의 크기로 위험 순위를 정할 수는 없습니다. 여기서는 등록된 기준을 찾았고, 실제 측정값에 대한 판단은 하지 않았습니다.",
+      "op": "result"
+    },
+    {
+      "id": "prac613",
+      "segment": 6,
+      "text": "앞 카드를 비우고 교체 부품을 확인하겠습니다. 같은 구성 요소에서 부품을 사용하는 관계로 이동할게요. 장치 이름과 교체 부품 이름을 함께 받고, 품번까지 확인하겠습니다.",
+      "op": "clearQuery",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n      -[:USES_PART]->(p:Part)\nRETURN c.name AS component, p.name AS part, p.partNo AS part_no\nORDER BY c.id;\n"
+    },
+    {
+      "id": "prac614",
+      "segment": 6,
+      "text": "런을 눌러 품번을 확인하겠습니다.",
+      "op": "run",
+      "rows": 3
+    },
+    {
+      "id": "prac615",
+      "segment": 6,
+      "text": "장치와 그 장치에 쓰이는 부품이 구분돼 나왔습니다. 쿨러 코어, 팬 베어링, 펌프 축 씰 키트의 품번을 원자료와 대조하겠습니다. 뒤의 모델 설계에서는 이 부품에 공급 조건을 연결합니다. 지금 예제에 없는 공급처를 여기서 추정하지는 않겠습니다.",
+      "op": "result"
+    },
+    {
+      "id": "prac616",
+      "segment": 6,
+      "text": "앞 결과를 정리하고 마지막으로 구성 요소별 센서 수를 보겠습니다. 카운트에 디스팅트를 넣어 서로 다른 센서를 셀게요. 숫자만 받지 않고 센서 태그 목록도 함께 받아 집계의 근거를 보겠습니다.",
+      "op": "clearQuery",
+      "query": "MATCH (:Asset {code:'HYD-01'})-[:HAS_COMPONENT]->(c:Component)\n      -[:MONITORED_BY]->(s:Sensor)\nRETURN c.id AS component_id, c.name AS component,\n       collect(DISTINCT s.tag) AS tags, count(DISTINCT s) AS channels\nORDER BY channels DESC, component_id;\n"
+    },
+    {
+      "id": "prac617",
+      "segment": 6,
+      "text": "런을 눌러 목록과 집계를 함께 보겠습니다.",
+      "op": "run",
+      "rows": 3
+    },
+    {
+      "id": "prac618",
+      "segment": 6,
+      "text": "쿨러와 주 펌프는 둘씩, 팬은 하나입니다. 목록의 태그 수와 집계가 맞습니다. 여기서 센서가 없는 구성 요소는 영으로 나온 것이 아니라 결과에서 빠졌습니다. 센서까지 연결되는 패턴을 찾았기 때문입니다.",
+      "op": "result"
+    }
+  ]
+}

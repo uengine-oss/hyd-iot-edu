@@ -140,7 +140,8 @@ def build_runner(repo, *, login=_ai_login) -> Runner:
                     settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.docs()))
     elif mode == "record":
         log.info("AI 응답 저장: 실제 AI 실행을 %s 에 업무마다 저장합니다", settings.ai_replay_dir)
-    return Runner(settings, repo, exec_fn=exec_fn, ai_mode=mode)
+    from .course_access import CourseAccess
+    return Runner(settings, repo, exec_fn=exec_fn, ai_mode=mode, course_access=CourseAccess())
 
 
 def install_stop_signals() -> list[str]:
