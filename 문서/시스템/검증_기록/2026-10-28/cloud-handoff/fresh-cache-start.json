@@ -1,0 +1,20 @@
+{
+  "instance": "manual_source_extraction.92f1c4af-9ef0-41ac-8107-8e39913bf012",
+  "status": "DONE",
+  "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd",
+  "segments": 1,
+  "cache": {
+    "key": "0fe24ddccd8108b794020127c96578b09c09a958cb46f04539990b690f59b509",
+    "reused": false,
+    "validated": false,
+    "origin": {
+      "bundle": "a8237ada6e3d359028f69614cb1cd51255fc445b3727d6c74271479ea8fddb62",
+      "revision": "2026-10-27-reviewed-1",
+      "instance": "manual_source_extraction.f88ebe64-35f0-4b3d-8d31-e821d1d163bf",
+      "reviewer": "수업 준비 위임 검토",
+      "review_method": "source-citation-and-reference-scope-review",
+      "review_notes": [],
+      "source_result_sha256": "45a1b041d5f693c88cb0cbce3c134fa02e6527c092ee0d258252f44f273d2e85"
+    }
+  }
+}

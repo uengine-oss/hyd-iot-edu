@@ -1,0 +1,365 @@
+{
+  "instance": "manual_source_extraction.92f1c4af-9ef0-41ac-8107-8e39913bf012",
+  "workitem": "543afd4d-b4d7-4a1a-a715-a7a4b67bf4cb",
+  "status": "DONE",
+  "log": null,
+  "preview": {
+    "sections": [
+      {
+        "ref": "HI-1",
+        "title": "적용 범위",
+        "anchor": {
+          "end": 83,
+          "page": 1,
+          "quote": "## HI-1 적용 범위",
+          "start": 70,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "excerpt": "이 문서의 절차는 조회와 상태 확인용 참고 절차이며 자동 실행 후보나 새 고장 유형이 아니다."
+      },
+      {
+        "ref": "HI-1.1",
+        "title": "설비 이상 표시와 관측 신선도 확인",
+        "anchor": {
+          "end": 291,
+          "page": 1,
+          "quote": "## HI-1.1 설비 이상 표시와 관측 신선도 확인",
+          "start": 262,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "excerpt": "3. 관측 시각이 없거나 조회가 실패하면 정상이라고 판단하지 말고 확인 필요로 남긴다. 과거 기준시각 상태를 복원할 수 없으면 현재 조회값과 구분한다.\n4. 작업 메모의 이상 해소 주장과 관측값이 일치하는지 비교하고, 근거가 부족하면 다음 근무자가 확인할 항목으로 남긴다."
+      },
+      {
+        "ref": "HI-1.2",
+        "title": "미완료 정비 작업지시 확인",
+        "anchor": {
+          "end": 598,
+          "page": 1,
+          "quote": "## HI-1.2 미완료 정비 작업지시 확인",
+          "start": 574,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "excerpt": "2. 해당 설비의 작업지시를 조회하고 시스템에 기록된 상태와 완료시각을 그대로 기록한다. 열려 있는 항목이 없다는 결론은 조회에 성공한 경우에만 적는다.\n3. 작업 메모에 정비 완료라고 적혀 있어도 작업지시가 열려 있거나 완료시각이 없으면 불일치 또는 확인 필요로 남긴다.\n4. 정비 이력을 임의로 닫지 말고 다음 근무자가 담당자에게 확인할 작업지시 식별자와 미확인 내용을 전달한다."
+      },
+      {
+        "ref": "HI-1.3",
+        "title": "부품 대기와 실제 재고 확인",
+        "anchor": {
+          "end": 929,
+          "page": 1,
+          "quote": "## HI-1.3 부품 대기와 실제 재고 확인",
+          "start": 904,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "excerpt": "3. 입고 예정 수량을 현재고로 합산해 도착 완료라고 보고하지 않는다. 메모의 도착 예정 주장과 실제 현재고·입고 기록을 구분한다.\n4. 부품의 실제 도착이나 사용 가능 여부를 확인할 근거가 없으면 확인 필요로 남기고, 발주·입고 처리·재고 변경은 하지 않는다."
+      },
+      {
+        "ref": "HI-1.4",
+        "title": "기록의 해석",
+        "anchor": {
+          "end": 1284,
+          "page": 1,
+          "quote": "## HI-1.4 기록의 해석",
+          "start": 1268,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "excerpt": "인계 확인은 다음 근무자가 전달 사항을 확인했다는 기록이다. 설비 정상 판정, 정비 완료, 부품 입고 또는 발주 승인 기록을 대신하지 않는다. 서로 모순된 기록은 둘 다 근거와 함께 남긴다. 인계자 검토와 인수자 확인 절차 자체를 SOP나 고장 유형으로 추출하지 않는다."
+      }
+    ],
+    "procedures": [
+      {
+        "id": "SOP-HI-01",
+        "link": {
+          "kind": "reference",
+          "executable": false
+        },
+        "name": "설비 상태 조회 확인",
+        "steps": [
+          {
+            "text": "설비 식별자와 인계 기준시각을 확인하고 조회한 시각을 함께 기록한다.",
+            "order": 1,
+            "anchor": {
+              "end": 359,
+              "page": 1,
+              "quote": "1. 설비 식별자와 인계 기준시각을 확인하고 조회한 시각을 함께 기록한다.",
+              "start": 318,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.1"
+          },
+          {
+            "text": "실제 시계열 스키마에서 관측 시각과 설비 식별 필드를 확인한 뒤 해당 설비의 최근 관측값을 조회한다.",
+            "order": 2,
+            "anchor": {
+              "end": 419,
+              "page": 1,
+              "quote": "2. 실제 시계열 스키마에서 관측 시각과 설비 식별 필드를 확인한 뒤 해당 설비의 최근 관측값을 조회한다.",
+              "start": 360,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.1"
+          },
+          {
+            "text": "관측 시각이 없거나 조회가 실패하면 정상이라고 판단하지 말고 확인 필요로 남긴다. 과거 기준시각 상태를 복원할 수 없으면 현재 조회값과 구분한다.",
+            "order": 3,
+            "anchor": {
+              "end": 504,
+              "page": 1,
+              "quote": "3. 관측 시각이 없거나 조회가 실패하면 정상이라고 판단하지 말고 확인 필요로 남긴다. 과거 기준시각 상태를 복원할 수 없으면 현재 조회값과 구분한다.",
+              "start": 420,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.1"
+          },
+          {
+            "text": "작업 메모의 이상 해소 주장과 관측값이 일치하는지 비교하고, 근거가 부족하면 다음 근무자가 확인할 항목으로 남긴다.",
+            "order": 4,
+            "anchor": {
+              "end": 572,
+              "page": 1,
+              "quote": "4. 작업 메모의 이상 해소 주장과 관측값이 일치하는지 비교하고, 근거가 부족하면 다음 근무자가 확인할 항목으로 남긴다.",
+              "start": 505,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.1"
+          }
+        ],
+        "anchor": {
+          "end": 317,
+          "page": 1,
+          "quote": "### SOP-HI-01 설비 상태 조회 확인",
+          "start": 292,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "section": "HI-1.1"
+      },
+      {
+        "id": "SOP-HI-02",
+        "link": {
+          "kind": "reference",
+          "executable": false
+        },
+        "name": "열린 작업지시 대조 확인",
+        "steps": [
+          {
+            "text": "업무 DB의 실제 스키마에서 해당 설비 작업지시의 식별자, 상태, 예정시각, 완료시각 필드를 확인한다.",
+            "order": 1,
+            "anchor": {
+              "end": 687,
+              "page": 1,
+              "quote": "1. 업무 DB의 실제 스키마에서 해당 설비 작업지시의 식별자, 상태, 예정시각, 완료시각 필드를 확인한다.",
+              "start": 627,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.2"
+          },
+          {
+            "text": "해당 설비의 작업지시를 조회하고 시스템에 기록된 상태와 완료시각을 그대로 기록한다. 열려 있는 항목이 없다는 결론은 조회에 성공한 경우에만 적는다.",
+            "order": 2,
+            "anchor": {
+              "end": 773,
+              "page": 1,
+              "quote": "2. 해당 설비의 작업지시를 조회하고 시스템에 기록된 상태와 완료시각을 그대로 기록한다. 열려 있는 항목이 없다는 결론은 조회에 성공한 경우에만 적는다.",
+              "start": 688,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.2"
+          },
+          {
+            "text": "작업 메모에 정비 완료라고 적혀 있어도 작업지시가 열려 있거나 완료시각이 없으면 불일치 또는 확인 필요로 남긴다.",
+            "order": 3,
+            "anchor": {
+              "end": 840,
+              "page": 1,
+              "quote": "3. 작업 메모에 정비 완료라고 적혀 있어도 작업지시가 열려 있거나 완료시각이 없으면 불일치 또는 확인 필요로 남긴다.",
+              "start": 774,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.2"
+          },
+          {
+            "text": "정비 이력을 임의로 닫지 말고 다음 근무자가 담당자에게 확인할 작업지시 식별자와 미확인 내용을 전달한다.",
+            "order": 4,
+            "anchor": {
+              "end": 902,
+              "page": 1,
+              "quote": "4. 정비 이력을 임의로 닫지 말고 다음 근무자가 담당자에게 확인할 작업지시 식별자와 미확인 내용을 전달한다.",
+              "start": 841,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.2"
+          }
+        ],
+        "anchor": {
+          "end": 626,
+          "page": 1,
+          "quote": "### SOP-HI-02 열린 작업지시 대조 확인",
+          "start": 599,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "section": "HI-1.2"
+      },
+      {
+        "id": "SOP-HI-03",
+        "link": {
+          "kind": "reference",
+          "executable": false
+        },
+        "name": "부품 입고 예정과 현재고 대조",
+        "steps": [
+          {
+            "text": "미완료 정비와 관련된 부품 번호를 실제 조회 근거에서 확인한다. 부품 연결 정보가 없으면 임의의 부품을 관련 부품으로 지정하지 않는다.",
+            "order": 1,
+            "anchor": {
+              "end": 1039,
+              "page": 1,
+              "quote": "1. 미완료 정비와 관련된 부품 번호를 실제 조회 근거에서 확인한다. 부품 연결 정보가 없으면 임의의 부품을 관련 부품으로 지정하지 않는다.",
+              "start": 961,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.3"
+          },
+          {
+            "text": "ERP의 해당 부품 현재고(on_hand), 예약(reserved), 입고 예정(on_order)과 발주 상태·입고 예정시각을 조회한다.",
+            "order": 2,
+            "anchor": {
+              "end": 1119,
+              "page": 1,
+              "quote": "2. ERP의 해당 부품 현재고(on_hand), 예약(reserved), 입고 예정(on_order)과 발주 상태·입고 예정시각을 조회한다.",
+              "start": 1040,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.3"
+          },
+          {
+            "text": "입고 예정 수량을 현재고로 합산해 도착 완료라고 보고하지 않는다. 메모의 도착 예정 주장과 실제 현재고·입고 기록을 구분한다.",
+            "order": 3,
+            "anchor": {
+              "end": 1193,
+              "page": 1,
+              "quote": "3. 입고 예정 수량을 현재고로 합산해 도착 완료라고 보고하지 않는다. 메모의 도착 예정 주장과 실제 현재고·입고 기록을 구분한다.",
+              "start": 1120,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.3"
+          },
+          {
+            "text": "부품의 실제 도착이나 사용 가능 여부를 확인할 근거가 없으면 확인 필요로 남기고, 발주·입고 처리·재고 변경은 하지 않는다.",
+            "order": 4,
+            "anchor": {
+              "end": 1266,
+              "page": 1,
+              "quote": "4. 부품의 실제 도착이나 사용 가능 여부를 확인할 근거가 없으면 확인 필요로 남기고, 발주·입고 처리·재고 변경은 하지 않는다.",
+              "start": 1194,
+              "located": "exact",
+              "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+            },
+            "manual": "HI-1.3"
+          }
+        ],
+        "anchor": {
+          "end": 960,
+          "page": 1,
+          "quote": "### SOP-HI-03 부품 입고 예정과 현재고 대조",
+          "start": 930,
+          "located": "exact",
+          "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd"
+        },
+        "section": "HI-1.3"
+      }
+    ],
+    "page_reviews": [
+      {
+        "note": "HI-1 적용 범위와 HI-1.1~HI-1.3의 설비 상태·작업지시·부품 재고 조회 및 대조 절차, HI-1.4의 인계 기록 해석을 검토했다. 세 번호 절차를 참고용으로 추출했다. HI-1.4의 인계자 검토·인수자 확인은 원문 지시에 따라 SOP로 추출하지 않았다. 설치·배선 장은 없다.",
+        "page": 1
+      }
+    ],
+    "warnings": [
+      "HI-1은 이 문서의 절차가 조회와 상태 확인용 참고 절차이며 자동 실행 후보나 새 고장 유형이 아니라고 명시한다. 따라서 세 절차는 참고용, 실행 불가로 제안하고 고장 유형·원인·조치·승인 역할·후보 규칙 연결을 제안하지 않았다.",
+      "HI-1은 설비 운전·정비·발주가 기존 승인 절차를 따른다고 명시한다. 이는 절차 범위의 선행 조건이며 번호 목록 밖 문장이므로 새 단계로 끼워 넣지 않았다."
+    ],
+    "source_id": "manual:15ce611c-3d47-473b-8907-4a70f0c85c9d:2a0e533c3a9fa7cebc2dfd6fdda140feab92e04002d5d28de2a13eb44e3980dd",
+    "document_id": "15ce611c-3d47-473b-8907-4a70f0c85c9d",
+    "filename": "HI-01_shift-inspection-supplement.md",
+    "batch": "4fe82f6d-3020-429e-92ec-dd593c4a3502",
+    "previous_batch": null,
+    "method": "manual-source-proposal-v1",
+    "status": "READY",
+    "chars": 1437,
+    "extraction": {
+      "instance": "manual_source_extraction.92f1c4af-9ef0-41ac-8107-8e39913bf012",
+      "workitem": "543afd4d-b4d7-4a1a-a715-a7a4b67bf4cb",
+      "session_id": null,
+      "generation": 0,
+      "cache": {
+        "key": "0fe24ddccd8108b794020127c96578b09c09a958cb46f04539990b690f59b509",
+        "stored": true,
+        "validated": true,
+        "origin": {
+          "bundle": "a8237ada6e3d359028f69614cb1cd51255fc445b3727d6c74271479ea8fddb62",
+          "instance": "manual_source_extraction.f88ebe64-35f0-4b3d-8d31-e821d1d163bf",
+          "reviewer": "수업 준비 위임 검토",
+          "revision": "2026-10-27-reviewed-1",
+          "review_notes": [],
+          "review_method": "source-citation-and-reference-scope-review",
+          "source_result_sha256": "45a1b041d5f693c88cb0cbce3c134fa02e6527c092ee0d258252f44f273d2e85"
+        }
+      }
+    },
+    "coverage": {
+      "pages": [
+        {
+          "page": 1,
+          "chars": 1437,
+          "cited": 1014,
+          "ratio": 0.706
+        }
+      ],
+      "chars": 1437,
+      "cited": 1014,
+      "ratio": 0.706
+    },
+    "conflicts": [],
+    "knowledge_conflicts": [],
+    "validation": {
+      "checked": true,
+      "technical_ready": true,
+      "needs_human_review": true,
+      "can_commit": false,
+      "issues": [],
+      "source_value_warnings": []
+    }
+  },
+  "cache": {
+    "key": "0fe24ddccd8108b794020127c96578b09c09a958cb46f04539990b690f59b509",
+    "stored": true,
+    "validated": true,
+    "origin": {
+      "bundle": "a8237ada6e3d359028f69614cb1cd51255fc445b3727d6c74271479ea8fddb62",
+      "instance": "manual_source_extraction.f88ebe64-35f0-4b3d-8d31-e821d1d163bf",
+      "reviewer": "수업 준비 위임 검토",
+      "revision": "2026-10-27-reviewed-1",
+      "review_notes": [],
+      "review_method": "source-citation-and-reference-scope-review",
+      "source_result_sha256": "45a1b041d5f693c88cb0cbce3c134fa02e6527c092ee0d258252f44f273d2e85"
+    }
+  }
+}

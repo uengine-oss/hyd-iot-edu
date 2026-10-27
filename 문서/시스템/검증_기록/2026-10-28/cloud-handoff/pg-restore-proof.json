@@ -1,0 +1,14 @@
+{
+  "source_dump_sha256": "4b352161fefbcf4ccf3a3b19ba72affd4c63358f0b9e53a1e8bc228e8fc67b77",
+  "first_failure": "postgres lacks extension ownership",
+  "second_failure": "hyd_enterprise_reader role absent",
+  "recovery": "preserved each partial DB dump; created NOLOGIN role; separate DB with supabase_admin",
+  "partial_db_hashes": {
+    "failed-first-database.dump": "279b947cfe4d8b378e53265575cc6236035c5c787252a35acf3e7bf816f0e207",
+    "failed-admin-database.dump": "e18a1b3c029b0fb9f8570c183d997ea474cd778a9429123de25c51fdd83c3165"
+  },
+  "run_id": "manual_source_extraction.92f1c4af-9ef0-41ac-8107-8e39913bf012",
+  "restored_status": "COMPLETED",
+  "scope": "isolated PostgreSQL restore; no Neo4j or application resume",
+  "container_cleaned": true
+}

@@ -1,0 +1,12 @@
+{
+  "failed-first-database.dump": {
+    "valid_list": true,
+    "bytes": 3465,
+    "entries": 29
+  },
+  "failed-admin-database.dump": {
+    "valid_list": true,
+    "bytes": 831810,
+    "entries": 841
+  }
+}
