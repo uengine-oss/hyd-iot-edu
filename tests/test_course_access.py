@@ -112,6 +112,21 @@ def test_guided_course_can_author_agents_and_skills_without_opening_handover(tmp
         assert getattr(client, method)(path, json=body).status_code == 403
 
 
+def test_course_allows_only_fixed_mcp_reads_without_opening_configuration(tmp_path, instructor):
+    _, client, store, sign, calls = setup(tmp_path, instructor)
+    for opened in (False, True):
+        if opened:assert client.post('/api/course-access/unlock', json={'code':sign()}).status_code == 200
+        assert client.get('/api/course-access').json()['capabilities']['tool_inspection'] is True
+        for server, tool in [('hyd-dmn','inputs'),('hyd-dmn','timeseries_query'),
+                             ('enterprise','describe_catalog'),('neo4j','read_neo4j_cypher')]:
+            assert client.post(f'/api/mcp/servers/{server}/tools/{tool}/call',json={'arguments':{}}).status_code == 200
+        for path in ('/api/mcp/servers/hyd-dmn/tools/submit_decision/call',
+                     '/api/mcp/servers/hyd-dmn/tools/submit_purchase/call',
+                     '/api/mcp/servers/custom/tools/inputs/call', '/api/mcp/servers',
+                     '/api/mcp/servers/hyd-dmn/check', '/api/mcp/reset'):
+            assert client.post(path,json={}).status_code == 403
+
+
 def test_unlock_opens_only_handover_and_provided_documents(tmp_path,instructor):
     _,client,store,sign,calls = setup(tmp_path,instructor)
     code=sign();assert client.post('/api/course-access/unlock',json={'code':code}).status_code==200

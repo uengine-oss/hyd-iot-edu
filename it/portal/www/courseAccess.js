@@ -28,10 +28,13 @@
     document.querySelectorAll('.rail nav button[data-tab]').forEach(button => {
       if (closedTabs.has(button.dataset.tab)) {
         button.disabled = !((opened && button.dataset.tab === 'flows') ||
-          (button.dataset.tab === 'ask' && access?.capabilities?.free_questions === true));
+          (button.dataset.tab === 'ask' && access?.capabilities?.free_questions === true) ||
+          (button.dataset.tab === 'mcp' && access?.capabilities?.tool_inspection === true));
         button.title = '이 수업에서는 준비된 에이전트와 교대 실습만 사용합니다.';
       }
     });
+    const operator = document.querySelector('#mcpOperator');
+    if (operator) operator.hidden = true;
     const extract = document.querySelector('#manualAgentExtract');
     if (extract && !opened) { extract.disabled = true; extract.title = '강사 해제 코드가 필요합니다.'; }
     document.querySelector('#courseAccessLabel').textContent = access ? `수업 기능 · ${access.label}` : '수업 기능 · 연결 확인 필요';

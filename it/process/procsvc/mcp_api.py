@@ -161,6 +161,9 @@ def register(app, *, runtime_factory, audit):
 
         def work():
             servers = servers_of(rt)
+            if getattr(app.state, 'course_access', None) is not None:
+                from hydcommon.course_access import AGENT_SERVERS
+                servers = {name: spec for name, spec in servers.items() if name in AGENT_SERVERS}
             used = usage(rt.repo, rt.tenant_id, list(servers))
             try:                                                                                     # B2: 출처 · 고칠 수 있음 · 마지막 검사
                 marks = mcp_registry.annotate(mcp_registry.store_for(rt.repo), rt.tenant_id, servers)
@@ -172,12 +175,19 @@ def register(app, *, runtime_factory, audit):
 
     @app.get("/api/mcp/servers/{name}/tools")
     async def server_tools(name: str, timeout: float | None = None):
+        course = getattr(app.state, 'course_access', None) is not None
+        if course:
+            from hydcommon.course_access import AGENT_SERVERS
+            if name not in AGENT_SERVERS:raise HTTPException(404, '수업에서 준비한 서버가 아닙니다.')
         rt = runtime()
         limit = _timeout(timeout, LIST_TIMEOUT)
         spec, used = await run(lambda: spec_of(rt, name))
         async with CALL_SEMAPHORE:
             result = mcp_secrets.redact(await run(lambda: mcp_check.check(spec, limit)), used)
         await run(lambda: auth_result(rt, name, result))
+        if course:
+            from hydcommon.handover_tools import handover_read
+            result['tools'] = [tool for tool in result.get('tools', []) if handover_read(name, tool.get('name'))]
         return {"name": name, "timeout_s": limit, **{k: result[k] for k in ("status", "tools", "error", "error_kind", "checked_at",
                                                                            "elapsed_ms", "server_info", "protocol_version", "transport")}}
 
