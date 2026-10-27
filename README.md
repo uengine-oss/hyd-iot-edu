@@ -165,11 +165,11 @@ Windows 공용 PC의 관리자용 설치·접속 설정·복제 절차다. macOS
 **저장소 받기 — PowerShell:** Git이 없는 경우에만 먼저 `winget install -e --id Git.Git`을 실행하고 PowerShell을 새로 연다. 처음 받는 PC에서는 아래를 실행한다.
 
 ```powershell
-git clone -b develop https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu
+git clone -b main https://github.com/uengine-oss/hyd-iot-edu.git C:\hyd-iot-edu
 Set-Location -LiteralPath 'C:\hyd-iot-edu'
 ```
 
-이미 저장소가 있으면 해당 폴더에서 `git branch --show-current`로 `develop`인지 확인한 뒤 `git pull --ff-only origin develop`으로 갱신한다. 로컬 수정 때문에 거부되면 강제 덮어쓰기 전에 변경 내용을 확인한다.
+이미 준비된 강의실 PC는 강사가 배포한 공통 파일 또는 이미지를 사용한다. 교대 실습 당일에는 다시 clone하거나 pull할 필요 없이 강사 해제 코드를 입력한다. 관리자가 저장소를 갱신해야 할 때는 `main`의 현재 상태와 로컬 변경을 먼저 확인하고 다른 작업을 보존한다.
 
 | 순서 | 실행할 것 | 확인할 것 |
 |---|---|---|
@@ -206,9 +206,9 @@ Set-Location -LiteralPath 'C:\hyd-iot-edu'
 
 ## 지키는 것
 
-- 공개 저장소다. 키, 사람 이름, 메일, 절대 경로, 내부 주소를 올리지 않는다. 강의 영상·음성은 main · develop에 올리지 않고 `other-pc` 브랜치에만 둔다(문서/교재/2_기준.md 76번).
-- `.env`는 열지 않는다.
-- 브랜치는 `main`과 `develop` 둘만 쓴다. 커밋은 경로를 지정한다.
+- 공개 저장소다. 키, 사람 이름, 메일, 절대 경로, 내부 주소를 올리지 않는다. 강의 영상·음성은 `other-pc` 브랜치에서 관리한다(문서/교재/2_기준.md 76번).
+- `.env`의 키는 실행에 필요한 경우에만 사용하며 출력·로그·커밋하지 않는다.
+- 공통 작업은 `main`에서 하고, 온라인 재생용 `replay-mode`와 다른 PC 작업용 `other-pc`에는 최신 변경을 보존해 병합한다. 커밋은 경로를 지정한다.
 - 문서를 새로 늘리지 않는다. 옛 지침과 쓰이지 않는 파일을 남기지 않는다.
 
 세션이 지키는 그 밖의 규칙은 [`CLAUDE.md`](CLAUDE.md)에 있다.
