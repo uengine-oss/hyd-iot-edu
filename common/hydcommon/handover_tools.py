@@ -10,3 +10,19 @@ HANDOVER_READS = {
 
 def handover_read(server, name):
     return name in HANDOVER_READS.get(server, ())
+
+
+# Ordinary classroom questions may inspect domain reasoning as well as the
+# handover's source data. Submission tools are deliberately not present.
+QUESTION_READS = {
+    **HANDOVER_READS,
+    'hyd-dmn': HANDOVER_READS['hyd-dmn'] + (
+        'diagnose', 'dmn_rules', 'gather_facts', 'prometheus_metadata',
+        'prometheus_series', 'prometheus_query', 'evaluate_cards',
+        'read_evaluation_evidence', 'forecast_actions', 'business_causes',
+        'purchase_context', 'evaluate_purchase', 'precedents', 'tradeoffs', 'fabric_query'),
+}
+
+
+def question_read(server, name):
+    return name in QUESTION_READS.get(server, ())
