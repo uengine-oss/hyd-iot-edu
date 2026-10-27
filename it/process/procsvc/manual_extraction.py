@@ -11,7 +11,8 @@ from . import engine, kgadmin, manual_segments, manual_locate, manual_knowledge
 
 CONTRACT = 'manual-source-proposal-v1'
 DEFINITION_ID = 'manual_source_extraction'
-VERSION = '2.17'         # 원문이 명시한 비실행 참고 절차의 link 계약을 전달.
+VERSION = '2.18'         # 원문이 명시한 예측 유온 비교 경고의 누락을 교정한다.
+# 2.17: 원문이 명시한 비실행 참고 절차의 link 계약을 전달.
 # 2.15: 작업 폴더에서도 문법 검사 MCP를 찾도록 Python 경로 고정.
 # 2.14: 결과 파일 문법 검사 도구 연결. 기존 등록 판본/실패 증거는 유지.
 # 2.13: 판정에 딸린 기록과 독립 업무 절차를 구분한다.
@@ -76,6 +77,7 @@ SOP 범위는 원문에 명시된 업무 실행 절차입니다. 운전·점검�
   고장 유형 아래의 즉시 완화 · 근본 조치 목록) 그 조건을 tests로, 그 절차들의 SOP ID를 outputs로 하는 dt:action-candidates SELECT 규칙을 knowledge.rules에 만드세요.
   이 규칙이 없으면 판단은 그 절차를 후보로 내지 못합니다. ontology_catalog.candidate_failure_modes에 있는 고장 유형의 고장 조치(MITIGATED_BY · REMEDIED_BY)만
   기존 후보 규칙에 자동으로 붙습니다. 예방 정비(PREVENTED_BY) · 구매 절차는 자동으로 붙지 않습니다.
+  예측 유온이 임계값 이상이면 실패할 수 있어 다른 조치와 비교하라는 원문은 dt:compliance WARN 규칙으로도 보존하세요. sections에만 남기지 말고 원문의 임계값·비교 연산·대상 완화 SOP를 옮기세요. 회복 판정 절을 별도 실행 SOP로 만들지는 않습니다.
   원문이 원인별 조치를 정하면(예: '원인이 …이면 …절차', 원인을 다른 절의 점검으로 넘김) 그 원인마다 tests=[{"input":"in:cause","operator":"==","value":"cause:…"}],
   outputs=[그 원인의 근본 조치 SOP ID]인 dt:action-candidates SELECT 규칙을 하나씩 만드세요. 경보 · 고장 유형 조건의 후보 규칙(즉시 완화 목록)이 있어도 빠뜨리지 마세요 —
   없으면 그 원인이 판정돼도 근본 조치 카드가 나오지 않습니다.
@@ -328,6 +330,32 @@ def check_penalty_rules(proposal, source):
                          ' — 각각 dt:compliance PENALTY 규칙(penalty 금액 · penalizes 지표 · 대상 applies_to · anchor)을 knowledge.rules 에 넣으세요')
 
 
+def check_forecast_warnings(proposal, source):
+    """One explicit, source-backed forecast comparison; not general semantics.
+
+    The HM-8 independent traces preserved this sentence in all sections but
+    omitted its executable WARN in two trials. WARN feeds warning_count into
+    the reviewed ranking policy, so section text alone is insufficient.
+    """
+    rules = ((proposal.get('knowledge') or {}).get('rules') or [])
+    controls = [(p.get('id'), p.get('link') or {}) for p in proposal.get('procedures') or []]
+    controls = [(pid, link) for pid, link in controls if link.get('kind') == 'control' and link.get('relation') == 'MITIGATED_BY']
+    targets = {pid for pid, _ in controls} if len({link.get('failureMode') for _,link in controls}) == 1 else set()
+    for page in (source or {}).get('pages') or []:
+        for match in re.finditer(r'예측\s*유온이\s*([\d.]+)\s*(?:℃|°C)\s*이상이면[^.\n]{0,180}실패[^.\n]{0,180}비교', page.get('text') or ''):
+            threshold = float(match[1])
+            def correct(rule):
+                tests = rule.get('tests') or []
+                return (rule.get('table') == 'dt:compliance' and rule.get('effect') == 'WARN'
+                    and len(tests) == 1 and tests[0].get('input') == 'in:forecast-ts1'
+                    and tests[0].get('operator') == '>=' and tests[0].get('value') == threshold
+                    and tests[0].get('unit') in ('℃','°C')
+                    and (not rule.get('applies_to') or targets <= set(rule['applies_to'])))
+            if not any(correct(rule) for rule in rules):
+                raise ValueError(f"원문 {page['page']}쪽의 예측 유온 {threshold:g} ℃ 이상 비교 경고가 없습니다 — "
+                    'knowledge.rules에 dt:compliance WARN, in:forecast-ts1 >= 원문 임계값, 대상 완화 SOP와 anchor를 보존하세요')
+
+
 def check_criteria_procedures(proposal, source):
     """Reject a bounded, source-grounded misclassification, not arbitrary SOPs.
 
@@ -372,7 +400,7 @@ def check_criteria_procedures(proposal, source):
         raise ValueError(' / '.join(failures))
 
 
-def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True, package_scope=True):
+def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=True, package_scope=True, forecast_scope=True):
     """Independent semantic checks share one correction round."""
     issues=[]
     checks=[lambda: check_section_titles(proposal)]
@@ -385,6 +413,7 @@ def content_issues(proposal, source, catalog, *, segment=False, criteria_scope=T
         checks.extend((lambda: check_action_values(proposal, catalog),
                        lambda: check_purchase_policy(proposal, source),
                        lambda: check_penalty_rules(proposal, source)))
+        if forecast_scope:checks.append(lambda: check_forecast_warnings(proposal, source))
     for check in checks:
         try:
             check()
@@ -403,13 +432,18 @@ def _package_contract(inst):
     return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 16)
 
 
+def _forecast_contract(inst):
+    version = str(inst.get('proc_def_version') or '')
+    return bool(re.fullmatch(r'\d+\.\d+', version)) and tuple(map(int, version.split('.'))) >= (2, 18)
+
+
 def validate_result(form, inst, output):
     if form and form.get('contract') == CONTRACT:
         variables = engine.variables(inst)
         proposal = validate_proposal(variables.get('manual_source'), (output or {}).get('proposal'), segment=bool(variables.get('segment')))
         issues=content_issues(proposal, variables.get('manual_source'), variables.get('ontology_catalog'),
                               segment=bool(variables.get('segment')), criteria_scope=_criteria_contract(inst),
-                              package_scope=_package_contract(inst))
+                              package_scope=_package_contract(inst), forecast_scope=_forecast_contract(inst))
         if issues:
             raise ValueError(' / '.join(issues))
     else:
@@ -652,7 +686,7 @@ def _group_result(rt, source, inst, previous_batch):
     merged=manual_segments.merge(source,parts,review_feedback=engine.variables(inst).get('review_feedback'))
     proposal=validate_proposal(source,merged)
     issues=content_issues(proposal,source,engine.variables(inst).get('ontology_catalog'), criteria_scope=_criteria_contract(inst),
-                          package_scope=_package_contract(inst))
+                          package_scope=_package_contract(inst), forecast_scope=_forecast_contract(inst))
     proposal['warnings'].extend('전체 문서 검사: '+issue for issue in issues)
     extraction=dict(instance=lead['instance'],workitem=lead['workitem'],session_id=(workitems[0].get('output') or {}).get('cliagents_session_id'),
                     generation=sum(wi.get('generation',0) for wi in workitems),
