@@ -220,6 +220,10 @@ def register(app, *, runtime_factory, audit=lambda *a, **k: None, base_loader=de
                 raise HTTPException(409, {"reason": f"'{draft.get('name') or def_id}'은(는) 강사가 배포한 수업 흐름입니다 — 내 판본은 [흐름 가져오기]에서 "
                                                     "다른 흐름 id(예: my_cooling)로 가져와 등록하세요"})
             mapping = req.mapping if isinstance(req.mapping, dict) else (draft.get("mapping") or {})
+            if getattr(app.state, 'course_access', None) is not None:
+                from hydcommon.course_handover import DEFINITION, approved_xml, approved_mapping
+                if def_id == DEFINITION and (not approved_xml(draft['bpmn']) or not approved_mapping(mapping)):
+                    raise HTTPException(403, '제공된 교대 BPMN과 연결만 등록할 수 있습니다. 원본을 다시 가져와 확인하세요.')
             if isinstance(req.mapping, dict):
                 store.save_mapping(def_id, mapping)
             cat = catalog_of(rt)
