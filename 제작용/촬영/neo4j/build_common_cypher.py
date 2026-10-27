@@ -69,6 +69,10 @@ def build():
     tail=copy.deepcopy([c for c in old['cues'] if c['id'].startswith('forest') and int(c['id'][6:])>=8 or c['id'] in ['full046','full047']])
     for c in tail:
         if c['id']=='forest010':c['text']='이제 설비 전체를 보기 좋게 배치하겠습니다. 도구 패널은 접어 둔 상태로 보고, 그래프 아래 배치 메뉴에서 계층형 배치를 고르겠습니다. 화면 맞춤을 눌러 전체 연결이 들어오게 할게요. 노드와 관계는 그대로이고 화면 배치만 바꾸는 겁니다.'
+    # Final narration review: align spoken identifiers and prior actions with the recorded screen.
+    narration_polish = {'common009': '화면을 비웠으니 같은 매치 문장을 다시 넣겠습니다. 연습장치 레이블을 가진 노드를 찾아 엔으로 가리키고, 리턴 엔으로 노드 자체를 받겠습니다. 화면을 정리해도 저장된 데이터는 그대로인지 확인하는 겁니다.', 'common012': '리턴 뒤를 엔 점 네임과 엔 점 스코어로 바꾸겠습니다. 각각 이름과 점수 속성입니다. 에이에스는 결과 열 제목을 정하고, 오더 바이는 점수가 작은 것부터 정렬합니다.', 'common061': '기본 문법을 확인했으니 앞 카드를 정리하겠습니다. 작은 그래프를 만들고 바꾸고 지우는 과정을 해봤죠. 이제 같은 문법으로 준비된 설비의 전체 연결부터 살펴볼게요. 지금은 실습용 설비 예제를 사용하고, 포털의 지식 지도는 다음 실습에서 탐색합니다.', 'forest036': '선택한 유온의 레이블은 스테이트 배리어블입니다. 센서를 나타내던 앞의 원과 달리, 이 원은 관측하는 물리량입니다. 단위는 섭씨, 노멀은 사십팔, 리밋은 육십오네요. 예제에 등록된 기준값이므로 지금 측정한 온도가 사십팔이라는 뜻은 아닙니다.', 'forest037': '앞에서는 점수 조건으로 노드를 골랐죠. 이번에는 같은 웨어에 센서 태그가 티에스원이라는 조건을 넣겠습니다. 전체 경로를 찾는 패턴은 유지하고, 그중 온도 센서로 이어지는 경로만 받아 보겠습니다.', 'forest048': '설비에서 구성 요소까지는 같고, 그다음에는 부품을 사용한다는 관계를 따라갑니다. 경로를 반환해서 어떤 장치에 어떤 부품이 연결돼 있는지 보겠습니다.', 'forest047': '앞 카드를 비우고, 이번에는 교체 부품 경로로 옮겨 가겠습니다. 전체 지도에서 구성 요소 아래로 갈라졌던 다른 가지입니다. 어떤 부품이 연결되는지 보겠습니다.', 'forest072': '작은 그래프를 만들고 수정하고 지운 뒤, 같은 문법으로 설비의 연결과 필요한 값을 찾아봤습니다. 그림과 질의를 함께 보관하면 확인 과정도 남습니다. 다음에는 포털의 지식 지도를 탐색할게요. 오늘의 파일이 없어도 제공된 시작 자료로 이어갈 수 있습니다.'}
+    for c in cs+tail:
+        if c["id"] in narration_polish: c["text"] = narration_polish[c["id"]]
     data.update(cues=cs+tail,course='공통',decision='C57',basic_only=False)
     prefix=copy.deepcopy(data);prefix['cues']=cs+tail[:3]
     (HERE/'공통_Cypher_큐.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
