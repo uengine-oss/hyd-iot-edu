@@ -17,6 +17,7 @@ from procsvc.procdb import PgRepo
 parser=argparse.ArgumentParser()
 parser.add_argument('--resume',action='store_true')
 parser.add_argument('--state-probe',action='store_true',help='No model: exercise real PG/API/worker NEEDS_INPUT preservation and same-run response')
+parser.add_argument('--user-approved-unpriced',action='store_true',help='Explicit user authorization for this bounded paid run despite unavailable relay pricing')
 parser.add_argument('--answer-file',type=Path)
 parser.add_argument('--input-usd-per-million',type=float)
 parser.add_argument('--output-usd-per-million',type=float)
@@ -30,7 +31,7 @@ STATE=PRIVATE/'credentials.json'
 OUT.mkdir(exist_ok=True)
 if not args.resume and (OUT/'attempt-started').exists():
     raise RuntimeError('Attempt exists: inspect or --resume; never overwrite original summary')
-if not args.resume and not args.state_probe:
+if not args.resume and not args.state_probe and not args.user_approved_unpriced:
     import math
     rates=[args.input_usd_per_million,args.output_usd_per_million,args.max_usd]
     if any(x is None or not math.isfinite(x) or x<=0 for x in rates):
@@ -46,14 +47,16 @@ report={'status':'preflight','model':'coding (previous routing proof: gpt-6-luna
         'scope':'teacher managed handover + real student-side read router, no UI/student submission',
         'attempt_limit':1,'max_seconds':600,'tool_calls':[]}
 if args.state_probe:report.update(model='deterministic state probe; no AI',scope='preservation and same-run response only',cost_usd=0)
-if not args.resume and not args.state_probe:report['cost_reservation']={'max_usd':args.max_usd,'upper_bound_usd':cost_bound,
+if args.user_approved_unpriced:report['cost_reservation']={'authorization':'user explicitly approved paid calls despite unavailable relay rates',
+    'max_usd':None,'actual_cost':'unknown; enforced shared call/byte/output reservation limits only'}
+if not args.resume and not args.state_probe and not args.user_approved_unpriced:report['cost_reservation']={'max_usd':args.max_usd,'upper_bound_usd':cost_bound,
     'input_usd_per_million':args.input_usd_per_million,'output_usd_per_million':args.output_usd_per_million,
     'actual_cost':'not measured; output_tokens is reserved, not generated'}
 created=[]; server=None; thread=None; worker_log=None; repo=None; auth=None
 if args.resume:
     report=json.loads((OUT/'summary.json').read_text(encoding='utf8'))
     if not report.get('run_id'):raise RuntimeError('No existing run to resume')
-    if report.get('status')=='COMPLETED':raise RuntimeError('Completed run must not be regenerated')
+    if report.get('status') in ('DONE','COMPLETED'):raise RuntimeError('Completed run must not be regenerated')
 
 def docker(*args,input=None,timeout=60):
     p=subprocess.run(['docker',*args],input=input,text=True,encoding='utf8',capture_output=True,timeout=timeout)
@@ -82,8 +85,10 @@ try:
     tool_policy['tools']=[t for t in tool_policy['tools'] if t not in ('hyd-dmn/submit_decision','hyd-dmn/submit_purchase')]
     tool_policy['catalog']={k:v for k,v in tool_policy['catalog'].items() if k in tool_policy['tools']}
     tool_policy['catalog']['enterprise/describe_catalog']['inputSchema']={
-        'type':'object','properties':{'table':{'anyOf':[{'type':'string'},{'type':'null'}],'default':None},
-        'offset':{'type':'integer','default':0},'limit':{'type':'integer','default':12}},'additionalProperties':False}
+        'type':'object','properties':{'table':{'anyOf':[{'type':'string'},{'type':'null'}],'default':None,
+        'description':'목록의 name 또는 ent.name. 생략하면 표 목록'},
+        'offset':{'type':'integer','default':0,'minimum':0},
+        'limit':{'type':'integer','default':12,'minimum':1,'maximum':20}},'additionalProperties':False}
     report['approved_read_tools']=len(tool_policy['tools'])
     report['revision']=candidate['approval']['revision']
     if not args.resume:
