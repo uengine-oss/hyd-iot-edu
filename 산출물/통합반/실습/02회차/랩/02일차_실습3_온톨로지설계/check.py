@@ -6,7 +6,7 @@ from pathlib import Path
 import json,sys
 root=Path(__file__).resolve().parent
 base=Path(sys.argv[1]) if len(sys.argv)>1 else root/'결과'
-errors=[];warnings=[]
+errors=[];warnings=[];nodes=[];rels=[];labels_by_id={}
 BOOL_WORDS={'예','아니오','true','false','True','False','Y','N','yes','no','승인','비승인'}
 def kind_of(v):
     return 'boolean' if isinstance(v,bool) else 'integer' if isinstance(v,int) else 'number' if isinstance(v,float) else 'string' if isinstance(v,str) else 'list' if isinstance(v,list) else type(v).__name__
@@ -77,6 +77,14 @@ except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:
     uniq=sorted(set(warnings));print(f'참고 {len(uniq)}건(정의와 다른 속성 등):');print('\n'.join('  '+w for w in uniq[:12])+('\n  …' if len(uniq)>12 else ''))
+spread={}
+for r in rels if isinstance(rels,list) else []:
+    a,b=r.get('a'),r.get('b')
+    if a in labels_by_id and b in labels_by_id:
+        k=(r.get('type'),'/'.join(labels_by_id[a]),'/'.join(labels_by_id[b]));spread[k]=spread.get(k,0)+1
+if spread:
+    print('참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)')
+    for (t,x,y),n in sorted(spread.items()):print(f'  {t}: {x} → {y} {n}개')
 if errors:
     print(f'구조 확인 필요 {len(errors)}건');print('\n'.join(errors[:40])+('\n…' if len(errors)>40 else ''));sys.exit(1)
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')

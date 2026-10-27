@@ -25,16 +25,17 @@ import build_labs as B             # noqa: E402
 
 REPORT = HERE/'reference/session2_검증.json'
 EXPECT = {'통합반': HERE/'reference/통합반/기대답.json', '실전반': HERE/'reference/실전반/기대답.json'}
-PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-BRG-6205', 'P-PMP-SEAL-HT', 'P-RTN-FLT', 'P-HYD-OIL', 'PMP-SEAL', 'RF-10', 'P-PMP-SEAL-X'],
+# 6205-2RS: 두 사내 품번(P-FAN-BRG·P-BRG-6205)이 같은 제조사 품번을 가진다 → 후보 둘. 갈래 A는 후보마다 따로, 갈래 B는 같은 물품 묶음으로 답한다.
+PROBES = {'통합반': ['P-PMP-SEAL', 'P-FAN-BRG', 'P-BRG-6205', 'P-PMP-SEAL-HT', 'P-RTN-FLT', 'P-HYD-OIL', 'PMP-SEAL', 'RF-10', 'P-PMP-SEAL-X', '6205-2RS'],
           '실전반': ['P-PMP-SEAL', 'P-PMP-SEAL-HT', 'P-CLR-CORE', 'P-CLR-PLT', 'P-ACC-BLD', 'P-RTN-FLT', 'PS-4510', 'PMP-SEAL', 'P-PMP-SEAL-X']}
 
 
 # ───────────── 기대 답(생성 정답 구조에서) ─────────────
-def code_to_part(code):
+def code_to_parts(code):
+    """조회 표기 → 사내 품번 후보(정렬). 없으면 빈 목록, 같은 표기를 가진 품번이 여럿이면 여럿."""
     if code in D.TRUTH['parts']:
-        return code
-    hits = {c[0] for c in D.CROSS if c[1] == code}
-    return hits.pop() if len(hits) == 1 else None
+        return [code]
+    return sorted({c[0] for c in D.CROSS if c[1] == code})
 
 
 def expected(course, branch):
@@ -65,18 +66,17 @@ def expected(course, branch):
                 same.setdefault(p, set()).update(ids)
     probes = {}
     for code in PROBES[course]:
-        pid = code_to_part(code)
-        if pid is None:
-            probes[code] = None
-            continue
-        group = same.get(pid, {pid})
-        assets = sorted(set().union(*(usage[p]['assets'] for p in group)))
-        comps = sorted(set().union(*(usage[p]['components'] for p in group)))
-        entry = {'part': pid, 'assets': assets, 'components': comps}
-        if course == '실전반':
-            key = 'approved_A' if branch == 'A' else 'approved_B'
-            entry['supply'] = sorted([[s, v[key], v['price_manwon'], v['defect_rate'], v['lead_days']] for (s, p), v in t['supply'].items() if p == pid])
-        probes[code] = entry
+        found = []
+        for pid in code_to_parts(code):
+            group = same.get(pid, {pid})
+            assets = sorted(set().union(*(usage[p]['assets'] for p in group)))
+            comps = sorted(set().union(*(usage[p]['components'] for p in group)))
+            entry = {'part': pid, 'assets': assets, 'components': comps}
+            if course == '실전반':
+                key = 'approved_A' if branch == 'A' else 'approved_B'
+                entry['supply'] = sorted([[s, v[key], v['price_manwon'], v['defect_rate'], v['lead_days']] for (s, p), v in t['supply'].items() if p == pid])
+            found.append(entry)
+        probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
     out = {'sensors_by_asset': sensors_by_asset, 'quantity_members': {k: sorted(v) for k, v in sorted(quantity_members.items())},
            'sensor_props': dict(sorted(sensor_props.items())), 'probes': probes}
     if course == '실전반':
@@ -142,17 +142,18 @@ def answers_from_graph(course, branch, graph):
         same[r['a']].update({r['a'], r['b']}); same[r['b']].update({r['a'], r['b']})
     probes = {}
     for code in PROBES[course]:
-        hits = [i for i, p in props.items() if labels[i] == 'Part' and (i == code or code in p.get('other_codes', []))]
-        if len(hits) != 1:
-            probes[code] = None
-            continue
-        pid = hits[0]; group = same.get(pid) or {pid}
-        entry = {'part': pid, 'assets': sorted(set().union(*(usage[p]['assets'] for p in group))),
-                 'components': sorted(set().union(*(usage[p]['components'] for p in group)))}
-        if course == '실전반':
-            entry['supply'] = sorted([[r['a'].split(':', 1)[1], r['props']['approved'], r['props']['price_manwon'], r['props']['defect_rate'], r['props']['lead_days']]
-                                      for r in by_type['SUPPLIES'] if r['b'] == pid])
-        probes[code] = entry
+        hits = [i for i, p in props.items() if labels[i] == 'Part' and i == code] or \
+               sorted(i for i, p in props.items() if labels[i] == 'Part' and code in p.get('other_codes', []))
+        found = []
+        for pid in hits:
+            group = same.get(pid) or {pid}
+            entry = {'part': pid, 'assets': sorted(set().union(*(usage[p]['assets'] for p in group))),
+                     'components': sorted(set().union(*(usage[p]['components'] for p in group)))}
+            if course == '실전반':
+                entry['supply'] = sorted([[r['a'].split(':', 1)[1], r['props']['approved'], r['props']['price_manwon'], r['props']['defect_rate'], r['props']['lead_days']]
+                                          for r in by_type['SUPPLIES'] if r['b'] == pid])
+            found.append(entry)
+        probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
     out = {'sensors_by_asset': {a: {k: sorted(v) for k, v in sorted(d.items())} for a, d in sorted(sensors_by_asset.items())},
            'quantity_members': {k: sorted(v) for k, v in sorted(quantity_members.items())}, 'sensor_props': dict(sorted(sensor_props.items())), 'probes': probes}
     if course == '실전반':
@@ -333,17 +334,18 @@ def neo4j_run(report):
                 exp = expected(course, branch)
                 db_probes = {}
                 for code in PROBES[course]:
-                    rows = lab.run('MATCH (p:Part) WHERE p.id=$c OR $c IN coalesce(p.other_codes,[]) '
+                    rows = lab.run('OPTIONAL MATCH (exact:Part {id:$c}) WITH exact '
+                                   'MATCH (p:Part) WHERE (exact IS NOT NULL AND p = exact) OR (exact IS NULL AND $c IN coalesce(p.other_codes,[])) '
                                    'OPTIONAL MATCH (p)-[:SAME_ITEM_AS*0..1]-(x:Part) WITH p, collect(DISTINCT x)+[p] AS grp UNWIND grp AS g '
                                    'OPTIONAL MATCH (g)<-[:USES_PART]-(c:Component)<-[:HAS_COMPONENT]-(a:Asset) '
-                                   'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id)', c=code)
-                    if not rows:
-                        db_probes[code] = None; continue
-                    pid, assets, comps = rows[0]
-                    e = {'part': pid, 'assets': sorted(assets), 'components': sorted(comps)}
-                    if course == '실전반':
-                        e['supply'] = sorted(lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days', p=pid))
-                    db_probes[code] = e
+                                   'RETURN p.id, collect(DISTINCT a.id), collect(DISTINCT c.id) ORDER BY p.id', c=code)
+                    found = []
+                    for pid, assets, comps in rows:
+                        e = {'part': pid, 'assets': sorted(assets), 'components': sorted(comps)}
+                        if course == '실전반':
+                            e['supply'] = sorted(lab.run('MATCH (s:Supplier)-[r:SUPPLIES]->(:Part {id:$p}) RETURN substring(s.id,9), r.approved, r.price_manwon, r.defect_rate, r.lead_days', p=pid))
+                        found.append(e)
+                    db_probes[code] = None if not found else (found[0] if len(found) == 1 else {'candidates': found})
                 sensors = lab.run('MATCH (a:Asset)-[:HAS_COMPONENT]->(:Component)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, count(s) ORDER BY a.id')
                 asset_level = lab.run('MATCH (a:Asset)-[:MONITORED_BY]->(s:Sensor) RETURN a.id, collect(s.tag) ORDER BY a.id')
                 same_qty = lab.run('MATCH (s:Sensor)-[:OBSERVES]->(q:Quantity {id:"quantity:TS1"}) RETURN collect(s.id)')[0][0]

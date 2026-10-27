@@ -4,6 +4,8 @@
 대상: 실전 2-5 조건표, 통합 3-2 SOP·결정표, 통합 3-3 판정 기능, 실전 3-2 조치 검토 결과.
 1. 참조 엔진(judge.py·review.py)을 학생 시작본 입력에 실행한다. 판단 갈림 두 축(팬 카운터 기록값/경과 더함,
    트립·인터록 예측 규칙의 작업지시 후보 적용 여부)과 R6(HM-8.6 확장) 유무를 모두 실행해 바뀌는 사례를 기록한다.
+   카운터 갈래는 감점뿐 아니라 1위 추천이 바뀌는 사례가 있어야 한다(E22, 리허설 2 제안). 실전 3-2는 검토 의견 방침
+   (defer: 1위가 될 수 있는 보류 후보가 있으면 추천을 미룸 / propose: 1위 유지 후보 추천) 두 갈래를 실행한다.
 2. 원문에서 직접 옮긴 두 번째 구현(oracle, 조건표·judge.py를 읽지 않음)과 모든 갈래에서 대조한다.
 3. 손으로 구한 표본(원자료 행을 읽어 계산)과 대조한다.
 4. 학생 검사기를 참조 답안·고의 손상 입력으로 실제 실행한다.
@@ -25,6 +27,8 @@ ROOT = HERE.parents[3]
 sys.path.insert(0, str(HERE))
 import judge  # noqa: E402
 import review  # noqa: E402
+
+VERSION = '2026-10-28-s3-v3-rh2'
 
 OUT = ROOT/'산출물'
 CONDITIONS = OUT/'실전반/실습/02회차/랩/02일차_실습5_조치조건표'
@@ -181,10 +185,16 @@ HAND = [
     ('E39', 'SOP-COOL-11', '유지', {'R1'}, None),
     # E11 SOP-COOL-14 예측 65.00 ℃: 주 갈래(작업지시에 인터록 예측 규칙 미적용) 유지
     ('E11', 'SOP-COOL-14', '유지', set(), None),
+    # E22 HYD-01 납기 246 h·잔량 21000 ea·로트 800, 카운터 1440분(기록 3.5분 뒤 판단), 예측 60.88/56.08/51.85/60.88 ℃
+    # SOP-COOL-11: 900×246/1400=158.14, 생산 0(21000÷300=70 h<246), 품질 150(60.88≥55), 에너지 6×246×0.015=22.14 → 330.28
+    # SOP-COOL-14: 40, 생산 50×3=150(3+70<246, 위약 0), 품질 150, 에너지 0 → 340.00 → 기록값 갈래 1위 SOP-COOL-11
+    ('E22', 'SOP-COOL-11', '유지', {'R1'}, {'비용': 158.14, '생산': 0.0, '품질': 150.0, '에너지': 22.14, '감점': 0.0, '합계': 330.28}),
+    ('E22', 'SOP-COOL-14', '유지', set(), {'비용': 40.0, '생산': 150.0, '품질': 150.0, '에너지': 0.0, '감점': 0.0, '합계': 340.0}),
 ]
 HAND_BRANCH = [
     ('elapsed', 'main', 'E39', 'SOP-COOL-11', '유지', {'R1', 'R5'}),
     ('elapsed', 'main', 'E22', 'SOP-COOL-12', '유지', {'R6', 'R5'}),
+    ('elapsed', 'main', 'E22', 'SOP-COOL-11', '유지', {'R1', 'R5'}),
     ('recorded', 'wo', 'E11', 'SOP-COOL-14', '제외', {'R7'}),
     ('recorded', 'wo', 'E09', 'SOP-COOL-14', '제외', {'R2', 'R4'}),
 ]
@@ -215,6 +225,11 @@ def hand_check(results, metric_doc):
     for k, v in want.items():
         if abs(comp[(eid, 'SOP-COOL-12')][k] - v) > 0.005:
             fail(f'지표_정의.md 손계산 {eid} {k}: 문서 {v} / 엔진 {comp[(eid, "SOP-COOL-12")][k]}')
+    # 카운터 갈래가 추천을 바꾸는 사례(손계산: 330.28+20=350.28 > 340.00)
+    rec = {k: next(e for e in results[k]['events'] if e['id'] == 'E22')['recommendation']['sops'] for k in [('recorded', 'main'), ('elapsed', 'main')]}
+    if rec != {('recorded', 'main'): ['SOP-COOL-11'], ('elapsed', 'main'): ['SOP-COOL-14']}:
+        fail(f'손계산 E22 추천 갈림: 기대 기록값 SOP-COOL-11 / 경과 SOP-COOL-14, 엔진 {rec}')
+    n += 1
     print(f'손계산 표본 {n}건 + 지표_정의.md 예({eid}) 대조')
     return n, eid
 
@@ -225,10 +240,10 @@ def run_check(folder):
     return p.returncode, (p.stdout + p.stderr).strip()
 
 
-def checker_trials(tmp):
+def checker_trials(tmp, review_alt):
     records = []
 
-    def trial(lab, name, mutate, path, expect_pass, expect_text=None):
+    def trial(lab, name, mutate, path, expect_pass, expect_text=None, absent=None):
         folder = tmp/lab.name
         target = folder/path
         original = target.read_bytes() if target.exists() else None
@@ -238,7 +253,7 @@ def checker_trials(tmp):
             target.unlink(missing_ok=True)
         else:
             target.write_bytes(original)
-        ok = (code == 0) == expect_pass and (expect_text is None or all(t in out for t in expect_text))
+        ok = (code == 0) == expect_pass and (expect_text is None or all(t in out for t in expect_text)) and not any(t in out for t in absent or [])
         records.append({'lab': lab.name, 'trial': name, 'exit': code, 'expected_pass': expect_pass, 'ok': ok, 'output_head': out.splitlines()[:6]})
         if not ok:
             fail(f'검사기 {lab.name} [{name}] 기대 {"통과" if expect_pass else "실패"} {expect_text or ""}, 실제 exit {code}: {out[:400]}')
@@ -261,6 +276,23 @@ def checker_trials(tmp):
     def put(text):
         return lambda p: p.write_text(text, encoding='utf-8')
 
+    def drop_rule(rid):
+        def m(path):
+            lines = path.read_text(encoding='utf-8').splitlines()
+            path.write_text('\n'.join(l for l in lines if not l.startswith(rid + ',')) + '\n', encoding='utf-8')
+        return m
+
+    def put_record_reason(path):
+        text = path.read_text(encoding='utf-8')
+        row = '| 다른 후보용 규칙 rule:avl·rule:standby·rule:no-pressure-raise, 대응 근거 rule:cand-cooler | 쿨러 후보 조건표에 옮기지 않음 | 규칙_원문.txt applies | - |'
+        path.write_text(text.replace('| 모호한 점 | 정한 내용 | 원문 근거(파일·절·문장) | 이 결정으로 결과가 바뀌는 사례 |\n|---|---|---|---|\n| | | | |', '| 모호한 점 | 정한 내용 | 원문 근거(파일·절·문장) | 이 결정으로 결과가 바뀌는 사례 |\n|---|---|---|---|\n' + row, 1), encoding='utf-8')
+
+    def put_record_case(kind):
+        def m(path):
+            text = path.read_text(encoding='utf-8')
+            path.write_text(text.replace('| | | | | | | | | | | |', f'| E20 | {kind} | SOP-COOL-11 | 55.00 ℃ | R1 | 예 | 0 | - | - | 유지 | HM-8.6 |', 1), encoding='utf-8')
+        return m
+
     noop = lambda p: None
     header = 'rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_만원,reason,source_section\n'
     # 실전 2-5
@@ -270,6 +302,12 @@ def checker_trials(tmp):
     trial(CONDITIONS, '감점 금액 누락', edit_text('PENALTY,20', 'PENALTY,'), '결과/조건표.csv', False)
     trial(CONDITIONS, '숫자 입력 단위 누락', edit_text('forecast_ps1,<,165,bar', 'forecast_ps1,<,165,'), '결과/조건표.csv', False)
     trial(CONDITIONS, '계약에 없는 입력 이름', edit_text('fan100_hours,>,24', 'fan100_minutes,>,24'), '결과/조건표.csv', False)
+    trial(CONDITIONS, '목록 입력에 != 사용', edit_text('skill_code,has_other_than,RESET', 'skill_code,!=,RESET'), '결과/조건표.csv', False, ['목록 입력 skill_code'])
+    trial(CONDITIONS, '글자 입력에 has_other_than', edit_text('plc_mode,!=,REMOTE_AUTO', 'plc_mode,has_other_than,REMOTE_AUTO'), '결과/조건표.csv', False, ['has_other_than은 목록 입력'])
+    trial(CONDITIONS, '규칙 하나를 통째로 뺌(정보)', drop_rule('R2'), '결과/조건표.csv', True, ['조건표.csv: 통과', 'rule:ps1-warn'])
+    trial(CONDITIONS, '참조 조건표에는 옮긴 규칙이 정보에 없음', noop, '결과/조건표.csv', True, ['rule:avl'], ['rule:ps1-warn', 'rule:trip-reset-only'])
+    trial(CONDITIONS, '결정 표에 이유를 적으면 정보 꺼짐', put_record_reason, '결과/판단기록.md', True, None, ['rule:avl', 'rule:standby'])
+    trial(CONDITIONS, '빠진 사례 종류 정보', put_record_case('경계'), '결과/판단기록.md', True, ['찾지 못한 것', '복수 사유', '적용 대상 밖'])
     # 통합 3-2
     trial(CRITERIA, '참조 답안', noop, '결과/rules.csv', True, ['sop.json: 통과', 'rules.csv: 통과'])
     trial(CRITERIA, 'sop만 완성·rules 빈 틀(단계 구분)', put(header), '결과/rules.csv', False, ['sop.json: 통과', 'rules.csv: 빈 틀'])
@@ -279,6 +317,9 @@ def checker_trials(tmp):
     trial(CRITERIA, '단계 순서 건너뜀', edit_json(lambda d: d['SOP'][0]['수행_단계'][1].update({'순서': 3})), '결과/sop.json', False)
     trial(CRITERIA, 'SOP 누락', edit_json(lambda d: d['SOP'].pop()), '결과/sop.json', False)
     trial(CRITERIA, '사례대조 빈 칸 경고', noop, '결과/사례대조.md', True, ['사례대조.md: 작성 중'])
+    trial(CRITERIA, '목록 입력에 != 사용', edit_text('skill_code,has_other_than,RESET', 'skill_code,!=,RESET'), '결과/rules.csv', False, ['목록 입력 skill_code'])
+    trial(CRITERIA, '규칙 하나를 통째로 뺌(정보)', drop_rule('R4'), '결과/rules.csv', True, ['rules.csv: 통과', 'rule:trip-reset-only'])
+    trial(CRITERIA, '빠진 사례 종류 정보', noop, '결과/사례대조.md', True, ['찾지 못한 것', '경계'])
     # 통합 3-3
     trial(JUDGE, '참조 답안', noop, '결과/result.json', True, ['result.json: 통과', '기대결과.md: 작성됨'])
 
@@ -324,6 +365,9 @@ def checker_trials(tmp):
                      ('사례 누락', missing_event), ('순위 번호 오류', tie_rank), ('입력 결정 기록 없음', no_decisions)]:
         trial(JUDGE, name, edit_json(fn), '결과/result.json', False)
     trial(JUDGE, '기대결과 실제 칸 비움 경고', edit_text('| 유지 | 일치 |', '|  | 일치 |'), '결과/기대결과.md', True, ['기대결과.md: 작성 중'])
+    trial(JUDGE, '기대 작성 시각 빈칸 정보', noop, '결과/기대결과.md', True, ['기대 칸을 쓴 시각」이 비어'])
+    trial(JUDGE, '기대 작성 시각이 실행 뒤(정보)', edit_text('- 기대 칸을 쓴 시각(실행 전):\n- 실행한 명령:\n- 실행 시각:', '- 기대 칸을 쓴 시각(실행 전): 2026-10-28 10:40\n- 실행한 명령: python 결과/judge.py\n- 실행 시각: 2026-10-28 10:30'), '결과/기대결과.md', True, ['실행 시각(2026-10-28 10:30)보다 뒤'])
+    trial(JUDGE, '기대 작성 시각이 실행 전(정보 없음)', edit_text('- 기대 칸을 쓴 시각(실행 전):\n- 실행한 명령:\n- 실행 시각:', '- 기대 칸을 쓴 시각(실행 전): 2026-10-28 10:20\n- 실행한 명령: python 결과/judge.py\n- 실행 시각: 2026-10-28 10:30'), '결과/기대결과.md', True, None, ['기대 칸을 쓴 시각'])
     # 실전 3-2
     trial(REVIEW, '참조 답안', noop, '결과/조치검토결과.json', True, ['조치검토결과.json·.md: 통과'])
 
@@ -353,9 +397,24 @@ def checker_trials(tmp):
     def unconverted(d):
         item(d, 'E26')['후보'][0]['입력']['forecast_ps1'] = 16.499
 
+    def impact_dropped(d):
+        item(d, 'E03')['검토_의견'].pop('보류_영향')
+
+    def impact_flag_wrong(d):
+        x = next(x for x in item(d, 'E03')['검토_의견']['보류_영향'] if x['1위_가능'] is True)
+        x['1위_가능'] = False
+
+    def deferred_without_held(d):
+        item(d, 'E21')['검토_의견']['추천'] = []
+
+    def impact_missing_one(d):
+        item(d, 'E30')['검토_의견']['보류_영향'].pop()
+
     for name, fn in [('보류 후보의 추가 확인 삭제', extra_removed), ('제외 후보를 추천', recommend_excluded), ('원문 출처 없음', no_source), ('승인 안내 없음', no_approval_note),
-                     ('제외+미확인을 보류로', keep_excluded), ('미확인의 없는 이유 누락', missing_reason_text), ('MPa 환산 안 함', unconverted)]:
+                     ('제외+미확인을 보류로', keep_excluded), ('미확인의 없는 이유 누락', missing_reason_text), ('MPa 환산 안 함', unconverted),
+                     ('보류_영향 없음', impact_dropped), ('1위_가능이 잠정 합계와 다름', impact_flag_wrong), ('보류 후보 없이 추천을 미룸', deferred_without_held), ('보류 후보 하나의 영향 누락', impact_missing_one)]:
         trial(REVIEW, name, edit_json(fn), '결과/조치검토결과.json', False)
+    trial(REVIEW, '검토 의견 다른 갈래(propose)도 형식 통과', put(json.dumps(review_alt, ensure_ascii=False)), '결과/조치검토결과.json', True, ['조치검토결과.json·.md: 통과'])
 
     def drop_heading(path):
         text = path.read_text(encoding='utf-8')
@@ -398,7 +457,7 @@ def fmt_set(s):
     return '·'.join(sorted(s)) or '-'
 
 
-def tables(results, diffs, hand_n, example):
+def tables(results, diffs, hand_n, example, policy_diff):
     base = results[('recorded', 'main')]
     lines = ['# 냉각 경보 판정 랩 기대 결과 (강사용)', '', '학생 ZIP에 넣지 않는다. `run_reference.py`가 참조 조건표(`rules.csv`)와 참조 구현(`judge.py`·`review.py`)을 학생 시작본의 실제 원자료에 실행해 만든 결과다. 원문에서 직접 옮긴 두 번째 구현(oracle)과 모든 갈래에서 일치했고, 손계산 표본과도 일치했다.', '',
              '판단 입력의 주 갈래: PLC 상태는 판단 시각 이전 마지막 수신(품질 bad·12초 넘게 끊김이면 값 없음), 팬 연속 시간은 마지막 카운터 기록값(종료면 0, 시작·주기 뒤 12분 넘게 끊기면 값 없음), 예측은 행 없음·거부·120초 지남이면 값 없음, MPa ×10. 조건표 주 갈래: 트립(R4)·인터록 예측(R7) 규칙은 제어 후보 SOP-COOL-11~13에만, HM-8.6 확장(R6)은 SOP-COOL-12·13.', '',
@@ -424,6 +483,11 @@ def tables(results, diffs, hand_n, example):
         rec_b = {e['id']: e['recommendation']['sops'] for e in results[key]['events']}
         changed = [f'{k}: {rec_a[k] or "없음"} → {rec_b[k] or "없음"}' for k in rec_a if rec_a[k] != rec_b[k]]
         lines += ['', '추천이 바뀌는 사례: ' + ('; '.join(changed) if changed else '없음(판정·감점만 바뀜)'), '']
+    lines += ['### 실전 3-2 검토 의견 방침: 1위가 될 수 있는 보류 후보가 있어도 1위 유지 후보를 추천(propose) (주 갈래: 추천을 미루고 확인 먼저, defer)', '',
+              '| 사례 | 주 갈래(defer) 추천 | 이 갈래(propose) 추천 | 1위가 될 수 있는 보류 후보(잠정 합계) |', '|---|---|---|---|']
+    for eid, a, b, could in policy_diff:
+        lines.append(f'| {eid} | {", ".join(a) or "미룸"} | {", ".join(b) or "없음"} | {could} |')
+    lines += ['']
     lines += ['## 판단 근거 요약', '',
               f'- 손계산 표본 {hand_n}건(E21 네 후보의 네 손실, E26 MPa 환산 경계, E03 품질 bad, E39·E22 카운터 갈래, E11·E09 작업지시 적용 갈래)과 지표_정의.md 예({example} SOP-COOL-12)가 엔진과 일치.',
               '- 경계: 예측 유온 54.99·55.00·55.01(R1·R6 이상), 예측 압력 164.99(16.499 MPa)·165.00·165.01(R2 미만), 팬 1440분 = 24 h(R5 초과 아님), 예측 65.00(R7 이상, 갈래에서만 SOP-COOL-14).',
@@ -445,7 +509,8 @@ def conditions_md(results, diffs):
              '| 값 없음 + 확인된 제외 | E09·E27·E37(트립) E47(수동 + 예측 행 없음) | 제외 유지 + 미확인 병기 |',
              '| 값 없음(두 원인) | E30(카운터 끊김) vs 카운터 종료 뒤 무기록(대부분), E23·E40(PLC 끊김), E03(품질 bad) | 보류, 0으로 채우지 않음 |',
              '| 적용 대상 밖 | E03·E23 SOP-COOL-14(모드 몰라도 R3 대상 아님) | 유지 |',
-             '| 결정에 따라 갈림 | 트립 E09·E27·E37, 예측 65 이상 E11·E14·E38·E41 SOP-COOL-14 | R4·R7 작업지시 적용 여부 |', '',
+             '| 결정에 따라 갈림 | 트립 E09·E27·E37, 예측 65 이상 E11·E14·E38·E41 SOP-COOL-14 | R4·R7 작업지시 적용 여부 |',
+             '| 결정에 따라 갈림(카운터) | E22·E39 SOP-COOL-11·12(1440분 기록 뒤 경과) | 기록값이면 감점 없음, 경과를 더하면 R5 감점 20. 다음 회차 E22는 추천까지 바뀜 |', '',
              '| 사례 | 후보 | 판정 | 일치 규칙 | 미확인 | 감점 |', '|---|---|---|---|---|---:|']
     for e in base['events']:
         for c in e['candidates']:
@@ -474,6 +539,16 @@ def main():
         (tmp/JUDGE.name/'결과/result.json').write_text(json.dumps(judge.strip(base), ensure_ascii=False, indent=2), encoding='utf-8')
         (tmp/JUDGE.name/'결과/기대결과.md').write_text((tmp/JUDGE.name/'결과/기대결과.md').read_text(encoding='utf-8').replace('| | | | | | | |', '| E21 / SOP-COOL-11 | 정상 | 52.60 ℃ | 유지 | - | 유지 | 일치 |'), encoding='utf-8')
         rv = review.build(tmp/REVIEW.name)
+        rv_alt = review.build(tmp/REVIEW.name, policy='propose')
+        policy_diff = []
+        for a, b in zip(rv['항목'], rv_alt['항목']):
+            if a['검토_의견']['추천'] != b['검토_의견']['추천']:
+                could = '; '.join(f'{x["sop"]} {x["잠정_합계"] if x["잠정_합계"] is not None else "계산 불가"}' for x in a['검토_의견']['보류_영향'] if x['1위_가능'] is not False)
+                policy_diff.append((a['id'], a['검토_의견']['추천'], b['검토_의견']['추천'], could))
+        if not policy_diff:
+            fail('실전 3-2 검토 의견 방침 갈래에서 추천이 바뀌는 사례가 없음')
+        if [i['검토_의견']['추천'] for i in rv_alt['항목']] != [e['recommendation']['sops'] for e in judge.run(tmp/REVIEW.name)['events']]:
+            fail('propose 갈래 추천이 판정 엔진의 1위 유지 후보와 다름')
         (tmp/REVIEW.name/'결과/조치검토결과.json').write_text(json.dumps(rv, ensure_ascii=False, indent=2), encoding='utf-8')
         (tmp/REVIEW.name/'결과/조치검토결과.md').write_text(review.markdown(rv), encoding='utf-8')
         if judge.run(tmp/REVIEW.name) != base:
@@ -486,13 +561,19 @@ def main():
         for k, v in diffs.items():
             if not v:
                 fail(f'갈래 {k}에서 바뀌는 사례가 없음(판단 지점이 결과를 바꾸지 않음)')
-        records = checker_trials(tmp)
+        rec_changed = [e['id'] for e, f in zip(base['events'], results[('elapsed', 'main')]['events']) if e['recommendation']['sops'] != f['recommendation']['sops']]
+        if not rec_changed:
+            fail('카운터 갈래에서 추천이 바뀌는 사례가 없음(감점만 바뀜)')
+        print('카운터 갈래에서 추천이 바뀌는 사례: ' + ', '.join(rec_changed) + f' / 검토 의견 방침 갈래에서 추천이 바뀌는 사례: {", ".join(x[0] for x in policy_diff)}')
+        records = checker_trials(tmp, rv_alt)
         (HERE/'참조_조치검토결과.md').write_text(review.markdown(rv), encoding='utf-8')
     boundary_check()
-    (HERE/'expected_results.json').write_text(json.dumps({'판본': '2026-10-28-s3-v2-field', 'integrated_judge_result': judge.strip(base), 'practical_review': rv,
-                                                          'branches': {f'{c}/{r}': [{'사례': k[0], '후보': k[1], '주': [a[0], sorted(a[1]), sorted(a[2]), a[3]], '갈래': [b[0], sorted(b[1]), sorted(b[2]), b[3]]} for k, a, b in v] for (c, r), v in diffs.items()}},
-                                                         ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    (HERE/'기대결과.md').write_text(tables(results, diffs, hand_n, example), encoding='utf-8')
+    branches = {f'{c}/{r}': [{'사례': k[0], '후보': k[1], '주': [a[0], sorted(a[1]), sorted(a[2]), a[3]], '갈래': [b[0], sorted(b[1]), sorted(b[2]), b[3]]} for k, a, b in v] for (c, r), v in diffs.items()}
+    branches['recommendation_changes/elapsed'] = rec_changed
+    branches['review_policy/propose'] = [{'사례': eid, '주(defer)': a, '갈래(propose)': b, '1위_가능_보류': could} for eid, a, b, could in policy_diff]
+    (HERE/'expected_results.json').write_text(json.dumps({'판본': VERSION, 'integrated_judge_result': judge.strip(base), 'practical_review': rv, 'practical_review_propose_recommendations': {i['id']: i['검토_의견']['추천'] for i in rv_alt['항목']},
+                                                          'branches': branches}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    (HERE/'기대결과.md').write_text(tables(results, diffs, hand_n, example, policy_diff), encoding='utf-8')
     (HERE.parent/'실전반/조건표_사례검토.md').write_text(conditions_md(results, diffs), encoding='utf-8')
     (HERE/'검사기_확인.json').write_text(json.dumps(records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     passed = sum(r['ok'] for r in records)

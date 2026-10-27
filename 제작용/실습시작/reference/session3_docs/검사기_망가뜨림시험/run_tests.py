@@ -85,6 +85,29 @@ def main():
     rc, out = run(lab4, 'check_candidates.py')
     hit = rc == 1 and '완료 아님' in out and '빈 칸' in out
     lines.append(f'| 23_단계점검_빈시작본 | check_candidates(인자 없음) | {rc} | 완료 아님·빈 칸 | {"예" if hit else "아니오"} |'); ok_all &= hit
+    # 리허설 2 실전 3-4 제안 1: 검토가 모두 보류(approved 0)면 완료 아님, 모두 채택·누락 0이면 정보
+    hm8 = json.loads((REF / '검토결과/HM-8_검토.json').read_text(encoding='utf-8'))
+    (lab4 / '결과/검토').mkdir(parents=True, exist_ok=True)
+    (lab4 / '결과/후보').mkdir(parents=True, exist_ok=True)
+    shutil.copy2(REF / '추출결과/HM-8_후보.json', lab4 / '결과/후보/HM-8.json')
+    stage_cases = [('정상 검토(채택·수정·보류 섞임)', hm8, None, ['approved 후보가 없습니다', '모든 후보가 「채택」']),
+                   ('30_검토가모두보류', 'pending', 'approved 후보가 없습니다', []),
+                   ('31_모두채택·누락0(정보)', 'all', '모든 후보가 「채택」이고 누락 기록이 0개', [])]
+    for name, mode, expect, absent in stage_cases:
+        d = copy.deepcopy(hm8)
+        if mode == 'pending':
+            for c in d['candidates']:
+                c.update(decision='보류', status='pending', reason='미검토')
+        elif mode == 'all':
+            for c in d['candidates']:
+                c.update(decision='채택', status='approved')
+                c.pop('before', None)
+            d['missing'] = []
+        (lab4 / '결과/검토/HM-8_검토.json').write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding='utf-8')
+        rc, out = run(lab4, 'check_candidates.py')
+        hit = (expect is None or expect in out) and not any(a in out for a in absent)
+        ok_all &= hit
+        lines.append(f'| {name} | check_candidates(인자 없음) | {rc} | {expect or "해당 문구 없음"} | {"예" if hit else "아니오"} |')
     # 실습5 카드 검사기
     lab5 = work / 'lab5'
     shutil.copytree(LAB5, lab5, ignore=shutil.ignore_patterns('__pycache__'))

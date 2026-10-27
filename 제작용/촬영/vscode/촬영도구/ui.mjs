@@ -63,6 +63,24 @@ export async function vscode(ctx){
  c.key=async k=>{await gate();await q1(()=>raw.keyboard.press(k));await sleep(200);};
  // 터미널: 열려 있지 않으면 Ctrl+` 로 연다. 명령은 type 뒤 Enter.
  c.terminalOpen=async()=>{const open=await q1(()=>raw.evaluate(()=>!!document.querySelector('.terminal-wrapper')?.checkVisibility()));if(!open)await c.key('Control+Backquote');await sleep(1500);};
+ // 오른쪽 버튼(VS Code 탐색기 Copy·Paste 메뉴). 메뉴 항목은 clickSel('.context-view .action-label','Copy')로 누른다.
+ c.rightClickSel=async(selector,text)=>{const q=await c.hoverSel(selector,text);await gate();await q1(()=>raw.mouse.click(q.x,q.y,{button:'right'}));await sleep(400);};
+ // 오른쪽 버튼 메뉴 항목(VS Code 웹 메뉴는 shadow DOM 안에 그려질 수 있어 둘 다 찾는다). 글이 정확히 같은 항목 하나.
+ c.menuItem=async text=>{const q=await q1(()=>raw.evaluate(text=>{const roots=[document];document.querySelectorAll('.context-view, .context-view *').forEach(e=>{if(e.shadowRoot)roots.push(e.shadowRoot);});
+  const hits=roots.flatMap(r=>[...r.querySelectorAll('.context-view .action-label, .monaco-menu .action-label')]).filter(e=>e.textContent.trim()===text&&e.getBoundingClientRect().width>0);
+  if(hits.length!==1)return{error:`menu ${text} matched ${hits.length}`};const b=hits[0].getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2};},text));
+  if(q.error)throw Error(q.error);await c.move(q.x,q.y);await sleep(250);await q1(()=>raw.mouse.click(q.x,q.y));await sleep(300);};
+ // 탐색기에서 같은 이름이 여러 줄일 때 폴더 깊이(aria-level)로 고른다.
+ c.explorerRow=async(name,level)=>q1(()=>raw.evaluate(({name,level})=>{const r=[...document.querySelectorAll('.explorer-folders-view .monaco-list-row')].filter(e=>e.getAttribute('aria-level')===String(level)&&e.querySelector('.label-name')?.textContent.trim()===name);if(r.length!==1)return{error:`explorer ${name} level ${level} matched ${r.length}`};const b=r[0].querySelector('.label-name').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2};},{name,level})).then(r=>{if(r.error)throw Error(r.error);return r;});
+ // 편집기에서 글이 정확히 text로 시작하는 줄의 끝(글 오른쪽 6px)을 누른다 — 그 줄 끝에 커서가 놓인다.
+ c.lineEnd=async text=>{const q=await q1(()=>raw.evaluate(text=>{const ls=[...document.querySelectorAll('.editor-instance .view-lines .view-line')].filter(e=>e.textContent.replace(/ /g,' ').startsWith(text));if(ls.length!==1)return{error:`line ${text} matched ${ls.length}`};const sp=ls[0].querySelector('span');const b=sp.getBoundingClientRect();return{x:b.right+6,y:b.y+b.height/2};},text));if(q.error)throw Error(q.error);await c.clickAt(q.x,q.y);};
+ // 빠른 입력(표 행처럼 긴 기록). 글자당 30~45ms.
+ c.typeFast=async text=>{await gate();let i=0;for(const ch of text){await q1(()=>raw.keyboard.insertText(ch));await sleep([32,40,36,45][i++%4]);}};
+ // 스크롤 영역을 부드럽게 굴린다(브라우저 smooth 스크롤). 화살표는 그 영역 안 빈 곳(at)으로 먼저 옮긴다.
+ c.scrollBy=async(selector,dy,at)=>{if(at)await c.move(at.x,at.y);await q1(()=>raw.evaluate(({selector,dy})=>document.querySelector(selector).scrollBy({top:dy,behavior:'smooth'}),{selector,dy}));await sleep(900);};
+ c.scrollTo=async(selector,top,at)=>{if(at)await c.move(at.x,at.y);await q1(()=>raw.evaluate(({selector,top})=>document.querySelector(selector).scrollTo({top,behavior:'smooth'}),{selector,top}));await sleep(900);};
+ // 선택 상자: 대상을 가리킨 뒤 실행 시점에 값을 바꾸고 change를 보낸다(운영체제 목록 창은 녹화에 안 찍힌다).
+ c.selectValue=async(selector,value)=>{await c.hoverSel(selector);await gate();await q1(()=>raw.evaluate(({selector,value})=>{const s=document.querySelector(selector);if(![...s.options].some(o=>o.value===value))throw Error('option '+value+' 없음');s.value=value;s.dispatchEvent(new Event('change',{bubbles:true}));},{selector,value}));await sleep(300);};
  c.waitFor=ctx.waitFor;
  return c;
 }

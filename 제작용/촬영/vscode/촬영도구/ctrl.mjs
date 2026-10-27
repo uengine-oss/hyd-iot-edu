@@ -21,8 +21,9 @@ export async function run(opts){
  const out=WORK+'/'+opts.name;
  await fs.mkdir(out+'/frames',{recursive:true});
  if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already has frames: '+out);
- const task=await taskSpace(CFG.space);const p=task.page('p1');
- await p.cdp('Emulation.setDeviceMetricsOverride',{width:CFG.viewport.width,height:CFG.viewport.height,deviceScaleFactor:1,mobile:false});
+ // opts.space·opts.viewport: VS Code 밖 화면(포털)을 다른 작업 공간에서 찍을 때. 포털은 1536x864 dsf1.5(→2304x1296 렌더 → 1920x1080 프레임).
+ const task=await taskSpace(opts.space||CFG.space);const p=task.page('p1');const VP=opts.viewport||CFG.viewport;
+ await p.cdp('Emulation.setDeviceMetricsOverride',{width:VP.width,height:VP.height,deviceScaleFactor:VP.dsf||1,mobile:false});
  let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null;const frames=[],actions=[],motions=[];

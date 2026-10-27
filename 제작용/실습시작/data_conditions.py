@@ -79,6 +79,7 @@ class Spec:
     order_missing: bool = False
     target: tuple | None = None        # (sop, 'ts1', 값): 경계 맞추기
     post_run_h: float | None = None    # 판단 뒤 팬 100 % 운전(조치 모사) 시간
+    order: tuple | None = None         # (납기까지_남은_시간_h, 오더_잔량_ea) 고정: 판단 결정이 추천을 바꾸는 사례
     note: str = ''
 
 
@@ -97,9 +98,11 @@ def specs():
     s.append(Spec('단위·MPa', 'HYD-03', health=0.55, leak=17.0/130, t_amb=25.5))
     s.append(Spec('단위·MPa', 'HYD-03', health=0.52, t_amb=27.5))
     s.append(Spec('단위·MPa', 'HYD-03', health=0.57, t_amb=24.5))
-    for run, gap, note in [(1443.5, None, '기록 1440분, 경과 더하면 24 h 초과'), (1437.0, None, '둘 다 24 h 이하'), (1452.0, None, '둘 다 24 h 초과'),
-                           (1441.0, None, '기록 1440분, 경과 더하면 24 h 초과'), (900.0, 25.0, '카운터 주기 기록 끊김')]:
-        s.append(Spec('팬 카운터', '', health=0.35, fan0=100.0, t_amb=28.0, fan_run_min=run, counter_gap_min=gap, note=note))
+    # 1443.5분 사례는 납기가 먼 대형 오더(246 h, 21000 ea): 팬 최대 운전의 고장 위험이 쌓여 핀 세척과 합계 차이가 감점 20보다 작다.
+    # → 카운터 기록값/경과 더함 결정이 감점뿐 아니라 1위 추천(SOP-COOL-11 ↔ SOP-COOL-14)을 바꾼다(리허설 2 통합 3-3 제안 1).
+    for run, gap, note, order in [(1443.5, None, '기록 1440분, 경과 더하면 24 h 초과. 납기 먼 대형 오더라 추천이 갈림', (246.0, 21000)), (1437.0, None, '둘 다 24 h 이하', None),
+                                  (1452.0, None, '둘 다 24 h 초과', None), (1441.0, None, '기록 1440분, 경과 더하면 24 h 초과', None), (900.0, 25.0, '카운터 주기 기록 끊김', None)]:
+        s.append(Spec('팬 카운터', '', health=0.35, fan0=100.0, t_amb=28.0, fan_run_min=run, counter_gap_min=gap, note=note, order=order))
     s.append(Spec('모드·수동', '', mode_change_s=75, t_amb=27.0))
     s.append(Spec('모드·수동', '', mode_change_s=140, t_amb=29.0, health=0.52))
     s.append(Spec('모드·현장', '', mode='LOCAL', t_amb=26.0))
@@ -310,6 +313,8 @@ def build():
         due = round(rnd.uniform(3.0, 30.0), 1)
         remain = rnd.randrange(300, 3001, 50)
         lot = rnd.choice([0, 0, 200, 400, 600, 800, 1200])
+        if x.order:
+            due, remain = x.order       # 난수는 그대로 소비해 다른 사례의 값은 바뀌지 않는다
         order_rows.append([eid, f'MO-{T:%m%d}-{rnd.randint(100, 999):03d}', iso(T - timedelta(seconds=rnd.randint(5, 40))), '' if x.order_missing else f'{due:.1f}', '' if x.order_missing else remain, '' if x.order_missing else lot, '조회 실패(MES 응답 없음)' if x.order_missing else ''])
         meta.append({'id': eid, 'asset': x.asset, '판단_시각': iso(T), '범주': x.tag, '메모': x.note, 'lag_s': lag,
                      'forecast_ts1': {k: (None if v is None else round(v['ts1'], 2)) for k, (v, _) in out_v.items()}, 'fan_run_min': x.fan_run_min})
