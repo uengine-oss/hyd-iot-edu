@@ -1496,6 +1496,30 @@ def _b_ask(r, agent_id: str, question: str) -> dict:
             "screen": page.locator(f".ask-a:has(a[href='{href}'])").first.inner_text()[-1500:] if href and page.locator(f".ask-a:has(a[href='{href}'])").count() else ""}
 
 
+def _b_check_model_override(r: Round, agent_id: str, course: bool):
+    """Check model policy without issuing a question when a course denies the edit."""
+    # 수업에서는 모델 변경을 저장 전에 막고, 다른 일반 운영 모드는 기존 실행 시 검사를 유지한다.
+    _b_open_agent_edit(r, agent_id)
+    err = _b_agent_form(r, model="gpt-9-ultra")
+    if course:
+        ok, why = r.human_message(err)
+        current = next(a for a in _b_agents(r) if a["id"] == agent_id)
+        r.check("허용하지 않은 모델은 저장 전에 차단되고 원래 설정을 유지한다",
+                "기본 모델" in err and ok and current.get("model") in (None, "", "coding"), why, kind="exception")
+        err = _b_agent_form(r, model="")
+    else:
+        warn = _b_toast_text(r, 3)
+        r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
+        bad = _b_ask(r, agent_id, "HYD-01 유온 최근 값은?")
+        ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
+        r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
+                and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
+                f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
+        _b_open_agent_edit(r, agent_id)
+        err = _b_agent_form(r, model="")
+    r.check("모델 칸을 비워 되돌림(실행기 기본 모델)", not err and not next(a for a in _b_agents(r) if a["id"] == agent_id).get("model"), err, kind="exception")
+
+
 @lab("06", "5-1 · 4-1 나의 첫 에이전트 (에이전트 · 에이전트에게 질문)")
 def lab_06_first_agent(r: Round):
     page = r.page
@@ -1572,26 +1596,7 @@ def lab_06_first_agent(r: Round):
         r.check("답할 수 없음 이유가 사람 글", ok, why, kind="exception")
     r.check("답할 수 없음 카드가 화면에 보인다", "답할 수 없음" in unk.get("screen", ""), unk.get("screen", "")[-200:], kind="exception")
 
-    # 수업에서는 모델 변경을 저장 전에 막고, 다른 일반 운영 모드는 기존 실행 시 검사를 유지한다.
-    _b_open_agent_edit(r, mine["id"])
-    err = _b_agent_form(r, model="gpt-9-ultra")
-    if course:
-        ok, why = r.human_message(err)
-        current = next(a for a in _b_agents(r) if a["id"] == mine["id"])
-        r.check("허용하지 않은 모델은 저장 전에 차단되고 원래 설정을 유지한다",
-                "기본 모델" in err and ok and current.get("model") in (None, "", "coding"), why, kind="exception")
-        err = _b_agent_form(r, model="")
-    else:
-        warn = _b_toast_text(r, 3)
-        r.check("모양이 맞는 모델 이름은 저장된다(중계 목록은 실행 때 확인)", not err, f"저장 결과 '{err}' · 토스트 '{warn}'", kind="quality")
-        bad = _b_ask(r, mine["id"], "HYD-01 유온 최근 값은?")
-        ok, why = r.human_message(bad.get("message") or bad.get("reason") or "")
-        r.check("엉뚱한 모델로 실행 → 무한 대기 없이 실패 · 사람 글로 무엇을 고칠지(모델 칸)", bad.get("state") in ("failed", "done") and bad.get("seconds", 999) <= _B_ASK_LIMIT_S and ok
-                and (bad.get("state") != "failed" or "모델 칸" in (bad.get("message") or "")),
-                f"{bad.get('state')} · {why}", kind="exception", seconds=bad.get("seconds"))
-        _b_open_agent_edit(r, mine["id"])
-        err = _b_agent_form(r, model="")
-    r.check("모델 칸을 비워 되돌림(실행기 기본 모델)", not err and not next(a for a in _b_agents(r) if a["id"] == mine["id"]).get("model"), err, kind="exception")
+    _b_check_model_override(r, mine["id"], course)
     r.check("질문 화면 에이전트 도구 칩이 사람 이름으로 보인다",
             "도구 표시 이름" not in (r.tab("ask") or page.locator("[data-ask-form]").inner_text()),
             page.locator("[data-ask-form]").inner_text()[:300], kind="quality")       # ask.js:91 UI.toolName(서버 이름) — 라이브에서 「확인 중」 3개
