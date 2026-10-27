@@ -1,0 +1,5 @@
+비교용 절차 7 단계 25 | 참조 추출 단계 25
+단계 키 일치 True 인용 다른 단계 []
+비교용 절 ['HM-8.1', 'HM-8.2', 'HM-8.3', 'HM-8.4', 'HM-8.5', 'HM-8.6', 'HM-8.7', 'HM-8.8']
+비교용 지식 {'rules': 9, 'causes': 3, 'evidence': 4, 'failure_modes': 1}
+참고: 비교용은 원인·증거·규칙(고장 판정)을 추출하고, 이번 계약의 precondition/prohibition/completion/unit_value 종류는 없다.

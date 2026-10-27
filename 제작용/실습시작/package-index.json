@@ -8,7 +8,7 @@
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "산출물/실전반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "5454353a650983e0fbc69d6f8aea4d50a3a8b110e38803cd649c54082b317afe"
+      "sha256": "1e9a82c2d59f0fc1961820390be53d6fae2a6bfd0d9c21d3a3dfbf3edc2e4d9c"
     },
     {
       "id": "practical-02-relations",
@@ -18,7 +18,7 @@
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "58427a884ce3643f3531ab08cd8a9fe55b3613e1ea8c78e92a2aa39c9bba6b30"
+      "sha256": "96a4b2204127fa509e6349ead0994a23be1f433b84fbc8de7c67c89bac208e67"
     },
     {
       "id": "practical-02-map",
@@ -28,7 +28,7 @@
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "533297c810b382e26db6ef566496a8ed9013dbbb9febb22864f38ca7176f4792"
+      "sha256": "7b15d34232879f5a6cd7395de897743bcdd17280a74a65fd36d69227862a55fa"
     },
     {
       "id": "practical-02-ontology",
@@ -38,7 +38,7 @@
       "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "b82b76e638611453b6f86bf2d2eb77db4cf1b865318d9dd631cdbbaf68ec9c45"
+      "sha256": "3709ff80cf53b6aa2d4b954166825fc82edfd24df31abfd49001f4a873d8d353"
     },
     {
       "id": "practical-02-graph",
@@ -48,7 +48,7 @@
       "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "447ab3e9f186126e0feeaa79d7c7435c8a77ec23ff22af1bdc51abe297c96888"
+      "sha256": "007776202d3fd30f852cf964c9e6f92089f90c6782222e51879181a5d00783a6"
     },
     {
       "id": "practical-02-conditions",
@@ -58,7 +58,17 @@
       "version": "2026-10-28-conditions-v2-c66",
       "folder": "02회차/랩/02일차_실습5_조치조건표",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습5_조치조건표.zip",
-      "sha256": "c019525ee665df69dee8bbf01c4261400cc17a6d7811cf900d40402774bc3820"
+      "sha256": "8fd6a21cfa84077aaac5b11d8e97d51f7d562ba500f5d50e7a610cb5b53b3db9"
+    },
+    {
+      "id": "practical-03-whatif",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "조건을 바꿔 조치 결과 비교하기",
+      "version": "2026-10-28-s3-whatif-v1",
+      "folder": "03회차/랩/03일차_실습1_조치결과비교",
+      "path": "산출물/실전반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
+      "sha256": "faab4016954370fade2ad952ebe7ee0c2e0130176b52a71d1076fa1b59225131"
     },
     {
       "id": "integrated-01-offline",
@@ -68,7 +78,7 @@
       "version": "2026-10-26-offline-v1-connection2",
       "folder": "01회차/랩/01일차_오프라인_모델과질문",
       "path": "산출물/통합반/실습/01회차/랩/01일차_오프라인_모델과질문.zip",
-      "sha256": "5454353a650983e0fbc69d6f8aea4d50a3a8b110e38803cd649c54082b317afe"
+      "sha256": "1e9a82c2d59f0fc1961820390be53d6fae2a6bfd0d9c21d3a3dfbf3edc2e4d9c"
     },
     {
       "id": "integrated-02-relations",
@@ -78,7 +88,7 @@
       "version": "2026-10-27-common-graph-v8",
       "folder": "02회차/랩/02일차_실습1_관계조회",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회.zip",
-      "sha256": "dc3cdf1314bdedee465d9be9f449730b6335ae08545abd838ec92ee0e775b702"
+      "sha256": "76068956599653cf44f0341af73222541b14b111a691ebda89185b33cde9ffc5"
     },
     {
       "id": "integrated-02-map",
@@ -88,7 +98,7 @@
       "version": "2026-10-26-common-v1",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "533297c810b382e26db6ef566496a8ed9013dbbb9febb22864f38ca7176f4792"
+      "sha256": "31c5a9fc1e335b682ae31d913f5a81994dd66e0426b02b30ae174763e60ec37d"
     },
     {
       "id": "integrated-02-ontology",
@@ -98,7 +108,7 @@
       "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습3_온톨로지설계",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습3_온톨로지설계.zip",
-      "sha256": "5127f72a319b6f2349d80c4b94d9a755cc0a489192eadaf001a54b28559fdd74"
+      "sha256": "df5fe103b97c7227a1c87a56cb5aecfa0efd43039d518b1570723e7e60625ee9"
     },
     {
       "id": "integrated-02-graph",
@@ -108,7 +118,77 @@
       "version": "2026-10-28-lab-v3-c67",
       "folder": "02회차/랩/02일차_실습4_그래프구현과검증",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습4_그래프구현과검증.zip",
-      "sha256": "3503d0e6b7af89ac080195cd0faa62182c8bd6395573706ed3fc57aa73b904ce"
+      "sha256": "a51114231c68fc8a8bfe207fe5ca8597e5d8a6fd9db29e69aec2443e817f396d"
+    },
+    {
+      "id": "integrated-03-whatif",
+      "course": "통합반",
+      "session": "온라인 03회차",
+      "title": "조건을 바꿔 조치 결과 비교하기",
+      "version": "2026-10-28-s3-whatif-v1",
+      "folder": "03회차/랩/03일차_실습1_조치결과비교",
+      "path": "산출물/통합반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
+      "sha256": "8dc48bd20489db90c895e19aebb0eb713779118e77470e071e879a5c62718b7f"
+    },
+    {
+      "id": "integrated-03-criteria",
+      "course": "통합반",
+      "session": "온라인 03회차",
+      "title": "SOP 구조와 조치 결정표 만들기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습2_조치기준만들기",
+      "path": "산출물/통합반/실습/03회차/랩/03일차_실습2_조치기준만들기.zip",
+      "sha256": "9a7c1bfff98546c2ab3dd278f05d62c3fc5168942096579be6e3b21ed2465c43"
+    },
+    {
+      "id": "integrated-03-judge",
+      "course": "통합반",
+      "session": "온라인 03회차",
+      "title": "조건표를 읽는 조치 판정·비교 기능 만들기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습3_판단기능만들기",
+      "path": "산출물/통합반/실습/03회차/랩/03일차_실습3_판단기능만들기.zip",
+      "sha256": "9145e1811bd95f5ff930b3a47e94fe7410bf0f22f1ff4dc421943b9fcc286cf8"
+    },
+    {
+      "id": "practical-03-review",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "후보별 조치 검토 결과 만들기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습2_판단기능만들기",
+      "path": "산출물/실전반/실습/03회차/랩/03일차_실습2_판단기능만들기.zip",
+      "sha256": "a3381531e8361bbf02a9f1dcbcc2da677577509d689db349f71aec743685d4e5"
+    },
+    {
+      "id": "practical-03-manual",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "포털 지식과 매뉴얼 원문 대조하기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습3_매뉴얼검토",
+      "path": "산출물/실전반/실습/03회차/랩/03일차_실습3_매뉴얼검토.zip",
+      "sha256": "7ab0dcb7775ac5f1ff70a439937b0333b433d5b69c9592ff19345f90101c8219"
+    },
+    {
+      "id": "practical-03-extract",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "매뉴얼에서 작업 지식 후보를 추출하고 검토하기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습4_지식추출",
+      "path": "산출물/실전반/실습/03회차/랩/03일차_실습4_지식추출.zip",
+      "sha256": "a54c777eff51a8b2c2ed7cf78694e4d2a8fca3a7ccf2ed57427831ea76d049a2"
+    },
+    {
+      "id": "practical-03-card",
+      "course": "실전반",
+      "session": "온라인 03회차",
+      "title": "검토한 지식을 랩 그래프에 연결하고 작업 확인 카드 만들기",
+      "version": "2026-10-28-s3-v1",
+      "folder": "03회차/랩/03일차_실습5_그래프반영",
+      "path": "산출물/실전반/실습/03회차/랩/03일차_실습5_그래프반영.zip",
+      "sha256": "cd7cc926969350e0142e5ac30ac66731c93e6cf7b6f128cb98f794e4546e41dd"
     }
   ]
 }

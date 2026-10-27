@@ -1,0 +1,24 @@
+rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_만원,reason,source_section
+R1,SOP-COOL-11,1,AND,forecast_ts1,>=,55,℃,예,WARN,,예측 유온이 55 ℃ 이상이면 경보 해제 실패 가능,규칙발췌 rule:ts1-warn(시드 HM-7.5); HM-8.6
+R2,SOP-COOL-11,1,AND,forecast_ps1,<,165,bar,아니오,WARN,,예측 토출 압력이 165 bar 미만이면 저압 경보가 이어질 수 있음,규칙발췌 rule:ps1-warn(시드 HM-5.2)
+R2,SOP-COOL-12,1,AND,forecast_ps1,<,165,bar,아니오,WARN,,예측 토출 압력이 165 bar 미만이면 저압 경보가 이어질 수 있음,규칙발췌 rule:ps1-warn(시드 HM-5.2)
+R2,SOP-COOL-13,1,AND,forecast_ps1,<,165,bar,아니오,WARN,,예측 토출 압력이 165 bar 미만이면 저압 경보가 이어질 수 있음,규칙발췌 rule:ps1-warn(시드 HM-5.2)
+R2,SOP-COOL-14,1,AND,forecast_ps1,<,165,bar,아니오,WARN,,예측 토출 압력이 165 bar 미만이면 저압 경보가 이어질 수 있음,규칙발췌 rule:ps1-warn(시드 HM-5.2)
+R3,SOP-COOL-11,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R3,SOP-COOL-11,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R3,SOP-COOL-12,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R3,SOP-COOL-12,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R3,SOP-COOL-13,1,AND,skill_kind,==,control,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R3,SOP-COOL-13,2,AND,plc_mode,!=,REMOTE_AUTO,,해당없음,EXCLUDE,,원격 제어는 REMOTE_AUTO에서만,규칙발췌 rule:auto-mode(시드 HM-3.2); HM-8.5; HM-8.8
+R4,SOP-COOL-11,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-11,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-12,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-12,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-13,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-13,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-14,1,AND,plc_state,==,TRIP,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R4,SOP-COOL-14,2,AND,skill_code,has_other_than,RESET,,해당없음,EXCLUDE,,트립 중에는 PLC가 리셋 외 제어 명령을 거부한다,규칙발췌 rule:trip-reset-only(시드 HM-9.4)
+R5,SOP-COOL-11,1,AND,fan100_hours,>,24,h,아니오,PENALTY,20,팬 100 % 연속 24시간 초과 시 수명 감점,규칙발췌 rule:fan-24h(시드 HM-7.3); HM-8.8
+R5,SOP-COOL-12,1,AND,fan100_hours,>,24,h,아니오,PENALTY,20,팬 100 % 연속 24시간 초과 시 수명 감점,규칙발췌 rule:fan-24h(시드 HM-7.3); HM-8.8
+R6,SOP-COOL-12,1,AND,forecast_ts1,>=,55,℃,예,WARN,,조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있어 다른 조치와 비교,HM-8.6
+R6,SOP-COOL-13,1,AND,forecast_ts1,>=,55,℃,예,WARN,,조치 후 예측 유온이 55 ℃ 이상이면 경보 해제에 실패할 수 있어 다른 조치와 비교,HM-8.6
