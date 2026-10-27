@@ -86,6 +86,7 @@ class Repo(Protocol):
     # U2 (agents_store.py, read only): list_skills · get_skill · list_agent_skills
     # instances
     def event_transaction(self, key: str): ...
+    def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None: ...
     def instance_transaction(self, tenant_id: str, proc_inst_id: str): ...
     def insert_approval(self, row: dict) -> None: ...
     def get_approval(self, todo_id: str, tenant_id: str) -> dict | None: ...
@@ -211,7 +212,16 @@ class MemoryRepo(MemoryApprovals, MemoryReworks, MemoryEffects, MemoryProjection
     def find_event_instance(self, tenant_id: str, def_id: str, event_id: str) -> dict | None:
         return next((_copy(i) for i in self.instances.values()
                      if i.get("tenant_id") == tenant_id and i.get("proc_def_id") == def_id
-                     and i.get("start_event_id") == event_id), None)
+                     and (i.get("start_event_id") == event_id or any(
+                         v.get('key') == '_runtime_coalescing' and event_id in v['value'].get('events', [])
+                         for v in i.get('variables_data', [])))), None)
+
+    def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None:
+        return next((_copy(i) for i in self.instances.values()
+                     if i.get('tenant_id') == tenant_id and i.get('proc_def_id') == def_id
+                     and i.get('status') == 'RUNNING' and not i.get('is_deleted') and any(
+                         v.get('key') == '_runtime_coalescing' and v['value'].get('key') == key
+                         for v in i.get('variables_data', []))), None)
 
     @contextmanager
     def instance_transaction(self, tenant_id: str, proc_inst_id: str):
@@ -679,8 +689,17 @@ class PgRepo(PgApprovals, PgReworks, PgEffects, PgProjection, PgAgents, PgAuthor
     def find_event_instance(self, tenant_id: str, def_id: str, event_id: str) -> dict | None:
         with self._conn() as connection:
             return self._row(connection.execute(
-                "select * from bpm_proc_inst where tenant_id=%s and proc_def_id=%s and start_event_id=%s",
-                (tenant_id, def_id, event_id)).fetchone())
+                """select * from bpm_proc_inst where tenant_id=%s and proc_def_id=%s
+                and (start_event_id=%s or exists (select 1 from jsonb_array_elements(variables_data) v
+                    where v->>'key'='_runtime_coalescing' and (v->'value'->'events') ? %s))""",
+                (tenant_id, def_id, event_id, event_id)).fetchone())
+
+    def find_active_coalesced_instance(self, tenant_id: str, def_id: str, key: str) -> dict | None:
+        with self._conn() as connection:
+            return self._row(connection.execute('''select * from bpm_proc_inst
+                where tenant_id=%s and proc_def_id=%s and status='RUNNING' and not is_deleted
+                and variables_data @> %s''', (tenant_id,def_id,self._Jsonb([
+                    {'key':'_runtime_coalescing','value':{'key':key}}]))).fetchone())
 
     @contextmanager
     def classroom_authoring_transaction(self, tenant_id: str):

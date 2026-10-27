@@ -16,7 +16,7 @@ def attach(row, tenant_id, provider_id):
         return None
     parsed = urllib.parse.urlsplit(url)
     if parsed.username or parsed.password or parsed.query or parsed.fragment or not parsed.hostname or \
-            parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in {'localhost', '127.0.0.1', '::1', 'classroom'}):
+            parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in {'localhost', '127.0.0.1', '::1', 'classroom', 'process'}):
         raise RuntimeConnectionError('관리 모델 실행 주소는 HTTPS 또는 내부 서비스여야 합니다')
     if provider_id != 'claude-code':
         raise RuntimeConnectionError('관리 모델 경로는 현재 강의 Claude Code 실행기만 지원합니다')
@@ -44,4 +44,4 @@ def attach(row, tenant_id, provider_id):
     for name in ('ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL',
                  'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL'):
         env[name] = model
-    return dict(model=model, env=env, secrets=[token], url=url, token=token)
+    return dict(model=model, env=env, secrets=[token], url=url, token=token, deadline=reply.get('expires'))

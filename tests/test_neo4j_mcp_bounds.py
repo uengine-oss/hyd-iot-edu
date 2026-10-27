@@ -38,6 +38,26 @@ def test_whole_response_budget_and_rows_are_explicit():
     assert len(out) <= adapter.MAX_CHARS and json.loads(out)['truncated']
 
 
+def test_schema_pages_keep_names_and_selected_details_without_whole_map(monkeypatch):
+    calls=[]
+    async def read(driver,query,params,**kwargs):
+        calls.append((query,params))
+        return json.dumps([{'name':'Skill'},{'name':'Step'},{'name':'WorkItem'}])
+    monkeypatch.setattr(adapter,'read',read)
+    result=json.loads(asyncio.run(adapter.schema(object(),limit=2)))
+    assert result['rows']==[{'name':'Skill'},{'name':'Step'}] and result['next_offset']==2
+    assert calls[-1][1]['take']==3
+    result=json.loads(asyncio.run(adapter.schema(object(),name='Skill',section='properties',offset=2,limit=2)))
+    assert result['section']=='properties' and result['name']=='Skill'
+    assert calls[-1][1]['name']=='Skill' and calls[-1][1]['offset']==2
+    assert 'RETURN value' not in calls[-1][0]
+
+
+@pytest.mark.parametrize('options',[{'section':'other'},{'section':'properties'}, {'offset':-1},{'limit':51}])
+def test_schema_invalid_ranges_are_rejected_before_database_access(options):
+    with pytest.raises(ValueError):asyncio.run(adapter.schema(None,**options))
+
+
 def test_real_mcp_compiled_read_guard_and_result_limits(graph):
     """The exposed MCP tool itself, actual Neo4j query compilation and writes refused before execution."""
     before = graph.run('MATCH (n) RETURN count(n) AS n').single()['n']

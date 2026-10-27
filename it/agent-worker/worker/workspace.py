@@ -92,6 +92,12 @@ class Workspace:
 
     def clear_result_file(self) -> None:
         """A119: a retained workspace may hold the result of an earlier attempt; a new run must not inherit it."""
+        if self.result_file.is_file() and not self.result_file.is_symlink():
+            history = self.context_dir / 'previous-results'
+            if not self.contains(history):raise ValueError('결과 보관 경로가 작업 폴더 밖입니다')
+            history.mkdir(parents=True,exist_ok=True)
+            self.result_file.replace(history / ('result-'+str(time.time_ns())+'.json'))
+            return
         try:
             self.result_file.unlink()
         except FileNotFoundError:

@@ -26,6 +26,7 @@ volumes:
   detector-data: {}
   enterprise-data: {}
   worker-data: {}                          # agent-worker: 인스턴스별 작업공간 · Claude Code 세션 (재시작 뒤 resume)
+  worker-runtime: {}                       # process가 생성하는 실행 인증; worker에는 읽기 전용
   effects-data: {}                         # C2 effects-mcp: 쓰기 도구 멱등 키 기록
 
 services:
@@ -363,7 +364,7 @@ services:
     networks: [it-net, sim-net]           # sim-net: 정비 수행 모사가 plant-sim 을 서비스 이름(plant-sim:8000)으로 부른다 (Linux 에서 호스트 루프백 불가).
                                           # ot-net 에는 붙이지 않는다 — IT 서비스가 OT(emqx)에 직접 닿으면 DMZ(cmd-gateway)가 유일한 하향 통로가 아니게 된다
     ports: ["127.0.0.1:${HYD_PORT_8080:-8080}:8080"]
-    volumes: ["process-data:/data"]
+    volumes: ["process-data:/data", "worker-runtime:/run/hyd-credentials"]
     environment:
       KAFKA_BOOTSTRAP: redpanda:9092
       PG_DSN: postgresql://hyd:hyd@timescaledb:5432/hyd
@@ -386,9 +387,10 @@ services:
       # OAuth credentials are encrypted with a key in the existing persistent
       # process volume. Provision once with scripts/setup_mcp_oauth_keys.py.
       HYD_MCP_OAUTH_KEY_FILE: /data/mcp/oauth.key
-      HYD_WORKER_RUNTIME_KEY_FILE: /data/mcp/worker-runtime.key
+      HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_RELAY_URL: ${LLM_RELAY_URL:-}
       HYD_MCP_OAUTH_CALLBACK_URL: ${HYD_MCP_OAUTH_CALLBACK_URL:-http://localhost:8088/api/mcp/connections/callback}
       # Optional operator settings; unset values are omitted, never printed.
       HYD_MCP_OAUTH_CLIENTS:
@@ -548,7 +550,7 @@ services:
     profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8097:-8097}:8097"]
-    volumes: ["worker-data:/workspace"]
+    volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro"]
     environment:
       # the worker is the ProcessGPT agent type `cliagents` (process-gpt-cli-agent): it polls todolist through fetch_pending_task,
       # reads the tenant's MCP servers from tenants.mcp (seed.sql) and stores results with save_task_result.
@@ -556,11 +558,10 @@ services:
       TENANT_ID: hyd
       CONSUMER_ID: agent-worker:docker
       HYD_CLASSROOM_URL: ${HYD_CLASSROOM_URL:-}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      # 실행기(Claude Code CLI)의 모델 호출은 전부 강의 LiteLLM 중계로 간다(사용자 결정 2026-10-25 — Anthropic 계정 · 모델을 쓰지 않는다).
-      # 키는 .env 의 LLM_API_KEY 하나, 주소는 Anthropic 방식 LLM_RELAY_URL(끝의 /v1 없이). 키가 있으면 실행마다 따로 CLAUDE_CONFIG_DIR(settings.isolate_config_dir)
-      ANTHROPIC_API_KEY: ${LLM_API_KEY:-}
-      ANTHROPIC_BASE_URL: ${LLM_RELAY_URL:-}
+      # 원본 중계 키는 process만 읽는다. CLI에는 현재 작업에 묶인 토큰만 전달한다.
+      HYD_MANAGED_MODEL_REQUIRED: "1"
+      HYD_MANAGED_MODEL_URL: http://process:8080
+      HYD_WORKER_RUNTIME_KEY_FILE: /run/hyd-credentials/runtime.key
       ANTHROPIC_MODEL: ${LLM_MODEL:-coding}
       ANTHROPIC_SMALL_FAST_MODEL: ${LLM_MODEL:-coding}
       ANTHROPIC_DEFAULT_OPUS_MODEL: ${LLM_MODEL:-coding}

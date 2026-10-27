@@ -115,7 +115,8 @@ def test_http_forwarder_charges_each_retry_and_does_not_forward_student_credenti
     for _ in range(2):
         response=client.post('/internal/model/v1/messages', headers={'x-api-key':permit['token']}, json=request)
         assert response.status_code==200 and 'message_stop' in response.text
-    assert client.post('/internal/model/v1/messages', headers={'x-api-key':permit['token']}, json=request).status_code==429
+    rejected=client.post('/internal/model/v1/messages', headers={'x-api-key':permit['token']}, json=request)
+    assert rejected.status_code==429 and rejected.headers['x-should-retry']=='false'
     assert len(sent)==2 and authority.calls==2
 
 

@@ -6,6 +6,7 @@ compiled query type before executing. It never exposes a write tool.
 """
 import json
 import os
+from typing import Literal
 
 MAX_ROWS = 100
 MAX_CHARS = 16000
@@ -80,6 +81,43 @@ async def read(driver, query, params=None, *, database='neo4j', timeout=30):
         return bounded_result(rows[:MAX_ROWS], more=len(rows) > MAX_ROWS)
 
 
+async def schema(driver, *, name=None, section='labels', offset=0, limit=50, database='neo4j', timeout=30):
+    """Project APOC metadata into bounded rows before applying the row limiter.
+
+    Returning APOC's entire map as one row made a large schema become zero
+    rows. Property and relationship details now have their own stable pages.
+    """
+    if section not in ('labels','properties','relationships') or type(offset) is not int or offset<0 or type(limit) is not int or not 1<=limit<=50:
+        raise ValueError('스키마 구간·목록 범위를 확인하세요')
+    if name is not None and (not isinstance(name,str) or not name.strip() or len(name)>200):
+        raise ValueError('목록에 표시된 스키마 이름을 사용하세요')
+    if section!='labels' and not name:raise ValueError('상세 조회에는 목록의 이름이 필요합니다')
+    head='CALL apoc.meta.schema() YIELD value '
+    if section=='labels':
+        query=head+'''UNWIND keys(value) AS name WITH name,value[name] AS shape
+            WHERE shape.type='node' AND ($name IS NULL OR name=$name)
+            RETURN name,shape.type AS type,shape.count AS count,
+                size(keys(coalesce(shape.properties,{}))) AS property_count,
+                size(keys(coalesce(shape.relationships,{}))) AS relationship_count
+            ORDER BY name SKIP $offset LIMIT $take'''
+    elif section=='properties':
+        query=head+'''WITH value[$name] AS shape UNWIND keys(coalesce(shape.properties,{})) AS property
+            RETURN $name AS name,property,shape.properties[property] AS specification
+            ORDER BY property SKIP $offset LIMIT $take'''
+    else:
+        query=head+'''WITH value[$name] AS shape UNWIND keys(coalesce(shape.relationships,{})) AS relationship
+            WITH relationship,shape.relationships[relationship] AS r
+            RETURN $name AS name,relationship,r.direction AS direction,r.labels AS labels
+            ORDER BY relationship SKIP $offset LIMIT $take'''
+    result=json.loads(await read(driver,query,dict(name=name,offset=offset,take=limit+1),database=database,timeout=timeout))
+    truncated=isinstance(result,dict) and result.get('truncated',False)
+    rows=result['rows'] if isinstance(result,dict) else result
+    page=rows[:limit]
+    return dumps(dict(section=section,name=name,rows=page,offset=offset,limit=limit,
+        next_offset=offset+len(page) if page and (len(rows)>limit or truncated) else None,
+        truncated=truncated,hint='labels는 이름 목록입니다. name과 section=properties 또는 relationships로 상세를 조회하세요.'))
+
+
 def create_server(driver, *, database='neo4j', timeout=30):
     from fastmcp import FastMCP
     app = FastMCP('hyd-neo4j-read')
@@ -89,9 +127,10 @@ def create_server(driver, *, database='neo4j', timeout=30):
         """읽기 전용 Cypher. 큰 응답은 truncated 표시와 함께 제한하므로 필요한 속성과 범위만 조회하세요."""
         return await read(driver, query, params, database=database, timeout=timeout)
     @app.tool(annotations=annotations)
-    async def get_neo4j_schema() -> str:
-        """APOC로 현재 그래프 구조를 조회합니다. 큰 구조는 필요한 label의 속성만 추가 조회하세요."""
-        return await read(driver, 'CALL apoc.meta.schema() YIELD value RETURN value', database=database, timeout=timeout)
+    async def get_neo4j_schema(name: str | None = None,
+            section: Literal['labels','properties','relationships'] = 'labels', offset: int = 0, limit: int = 50) -> str:
+        """현재 label 이름 목록. 선택한 name의 properties/relationships 상세를 페이지로 조회합니다."""
+        return await schema(driver,name=name,section=section,offset=offset,limit=limit,database=database,timeout=timeout)
     return app
 
 

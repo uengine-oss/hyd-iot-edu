@@ -28,6 +28,7 @@ class AccessStore:
         self.path, self.verify = Path(path), verify
         self.lock = threading.Lock()
         self.failed = []
+        self.questions_enabled = False
 
     def grant(self):
         try:
@@ -46,7 +47,7 @@ class AccessStore:
                 'label': '교대 인수인계 실습' if opened else '기본 수업',
                 'capabilities': {'fixed_agents': True, 'handover': opened,
                     'agent_authoring': opened, 'provided_manuals': opened, 'handover_flow': opened,
-                    'free_questions': False, 'model_settings': False, 'tool_settings': False}}
+                    'free_questions': self.questions_enabled, 'model_settings': False, 'tool_settings': False}}
 
     def unlock(self, code):
         with self.lock:
@@ -107,6 +108,8 @@ def mount(app, *, path, archive_factory, tenant, store=None):
         if path in PATHS and request.scope.get('state',{}).get('_course_bootstrap') == (request.method,path):
             return await call_next(request)
         if path == '/api/course-access/unlock' and request.method == 'POST':return await call_next(request)
+        if (path == '/api/ask' or re.fullmatch(r'/api/ask/[^/]+/retry',path)) and request.method == 'POST' and store.questions_enabled:
+            return await call_next(request)
         if path.startswith('/api/course-access'):
             return JSONResponse({'detail': '수업 권한은 강사 코드로만 열 수 있습니다.'}, 403)
         opened = bool(store.grant())

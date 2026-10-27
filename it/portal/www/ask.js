@@ -42,9 +42,22 @@
     finally { A.sending = false; render(); }
   }
   async function open(id) {
+    if (A.cur?.id!==id) { A.retryNote='';A.retryId=null; }
     try { A.cur = await getJ(api('/' + encodeURIComponent(id))); A.err = ''; poll(); }
     catch (e) { A.err = '질문을 읽지 못했습니다: ' + e.message; }
     render();
+  }
+  async function retry() {
+    if (!A.cur || A.cur.state!=='failed' || A.sending) return;
+    A.retryNote=A.el.querySelector('#askRetryNote')?.value || A.retryNote || '';
+    A.sending=true; A.err=''; render();
+    A.retryId=A.retryId || uuid();
+    try {
+      A.cur=await postJ(api('/'+encodeURIComponent(A.cur.id)+'/retry'),
+        {request_id:A.retryId,by:A.cur.asked_by,reason:A.retryNote.trim() || '연결 상태 확인 후 같은 질문을 다시 진행합니다.'});
+      A.retryId=null;poll();loadHistory().then(render);
+    } catch(e) { A.err=e.message; }
+    finally { A.sending=false;render(); }
   }
   function poll() {
     clearTimeout(A.timer);
@@ -151,7 +164,8 @@
           <span class="muted">${esc(UI.clean(v.message || ''))}</span><span class="ask-count">${window.hydTrace ? hydTrace.icon('tool') : ''}${calls.length}</span></div>
         <details class="fold small ask-process" ${live || A.processOpen ? 'open' : ''}><summary>처리 과정 · 도구 호출 ${calls.length} ${live && window.hydTrace ? hydTrace.spinner('sm') : ''}</summary><div class="fold-body"><div data-ask-trace>${staticCalls ? `<ol class="stack-list">${calls.map(callRow).join('')}</ol>` : ''}</div></div></details>
         ${resultHtml(v)}
-        <div class="form-actions"><a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
+        ${v.state==='failed' ? UI.field({label:'다시 진행할 때 반영할 내용(선택)',input:`<textarea id="askRetryNote" rows="2" maxlength="1000">${esc(A.retryNote || '')}</textarea>`}) : ''}
+        <div class="form-actions">${v.state==='failed' ? `<button class="btn small" id="askRetry" ${A.sending?'disabled':''}>같은 질문 다시 진행</button>` : ''}<a class="btn small ghost" href="${esc(v.link)}">처리 과정 보기 →</a></div></div></div>`;
   }
   function historyHtml() {
     if (A.histErr) return `<p class="neg">${esc('지난 질문을 읽지 못했습니다: ' + A.histErr)}</p>`;
@@ -190,12 +204,13 @@
     const thread = A.el.querySelector('[data-ask-thread]');
     const v = A.cur, trace = v ? ensureTrace(v) : null;
     const proc = thread.querySelector('.ask-process'); if (proc) A.processOpen = proc.open;
-    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name]);
+    const tSig = JSON.stringify(v && [v.id, v.state, v.message, (v.tool_calls || []).length, v.result, (v.agent || {}).name, A.sending]);
     if (thread._sig !== tSig) {
       thread._sig = tSig;
       thread.innerHTML = threadHtml(!A.traceHost);
       const slot = thread.querySelector('[data-ask-trace]'); if (slot && A.traceHost) slot.replaceWith(A.traceHost);
       thread.querySelector('.ask-process')?.addEventListener('toggle', e => { A.processOpen = e.target.open; });
+      thread.querySelector('#askRetry')?.addEventListener('click',retry);
     }
     if (trace) feed();
     const hist = A.el.querySelector('[data-ask-history]');

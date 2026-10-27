@@ -26,7 +26,8 @@
     });
     document.querySelectorAll('.rail nav button[data-tab]').forEach(button => {
       if (closedTabs.has(button.dataset.tab)) {
-        button.disabled = !(opened && button.dataset.tab === 'flows');
+        button.disabled = !((opened && button.dataset.tab === 'flows') ||
+          (button.dataset.tab === 'ask' && access?.capabilities?.free_questions === true));
         button.title = '이 수업에서는 준비된 에이전트와 교대 실습만 사용합니다.';
       }
     });

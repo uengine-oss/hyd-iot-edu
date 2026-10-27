@@ -44,8 +44,10 @@ def cli_args(workdir, skills):
     # Excluding user/project/local settings also excludes their skills. Deliver
     # only the approved DB skill bodies as an explicit, fresh session plugin;
     # never load the writable .claude directory as an unrestricted plugin.
+    tools = ['Read', 'Write', 'Edit']
+    if skills:tools.append('Skill')
     args = ['--setting-sources', '', '--settings', json.dumps({'disableAllHooks': True}),
-            '--tools', 'Read,Glob,Grep,Write,Edit,Skill']
+            '--tools', ','.join(tools)]
     if skills:
         from procsvc.agents_store import skill_markdown
         for skill in skills:
@@ -111,10 +113,21 @@ def prepare(argv, kwargs):
         path.mkdir(parents=True, exist_ok=True)
     # Do not follow retained links or chown a hard-linked external file.
     paths = [work, *work.rglob('*')]
+    stale_sockets = []
     for path in paths:
         info = path.lstat()
+        # Claude leaves its private IPC socket after exit. The process group is
+        # reaped before resume; retain every other special-file restriction.
+        if (stat.S_ISSOCK(info.st_mode) and info.st_uid == UID
+                and path.parent == tmp / 'cc-socks' and path.suffix == '.sock'
+                and path.stem.isdecimal()):
+            stale_sockets.append(path)
+            continue
         if stat.S_ISLNK(info.st_mode) or not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode)) or stat.S_ISREG(info.st_mode) and info.st_nlink != 1:
             raise RuntimeError('관리 AI 작업 폴더의 링크·특수 파일은 허용하지 않습니다')
+    for path in stale_sockets:
+        path.unlink()
+    paths = [path for path in paths if path not in stale_sockets]
     for path in paths:
         os.chown(path, UID, UID, follow_symlinks=False)
         os.chmod(path, 0o700 if path.is_dir() else 0o600)
