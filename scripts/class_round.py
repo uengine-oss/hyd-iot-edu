@@ -78,6 +78,8 @@ class Round:
         self.logs: dict[str, LabLog] = {}
         self.lab = "-"
         self.memo: dict[str, Any] = {}                                    # 실습 사이에 넘길 값(앞 실습이 만든 id 등)
+        self.ai_runs = 3                                                  # --ai-runs: 같은 AI 단계 반복 수(1이면 일치 판정은 측정 안 함)
+        self.not_measured: list[dict] = []                                # 이번 실행이 재지 않은 판정(통과로 세지 않는다)
         page.on("console", self._on_console)
         page.on("pageerror", lambda e: self._log().console_errors.append(f"pageerror: {e}"))
         page.on("requestfailed", lambda r: self._on_failed(r.url, r.failure or "failed"))
@@ -183,11 +185,15 @@ class Round:
         return True, t[:200]
 
     # ------------------------------------------------------------------ AI 3회
-    def repeat3(self, step: str, run_once: Callable[[int], dict], same_keys: tuple[str, ...], limit_s: float | None = None) -> list[dict]:
+    def repeat3(self, step: str, run_once: Callable[[int], dict], same_keys: tuple[str, ...], limit_s: float | None = None,
+                single: int = 0) -> list[dict]:
         """같은 입력으로 AI 단계를 3번 돌린다. run_once(i) 는 {'seconds': 소요, 키: 값 …} 을 낸다.
-        same_keys 의 값이 3번 모두 같아야 학생 모두가 같은 다음 단계를 받는다. limit_s 가 있으면 가장 느린 소요 시간이 그 안이어야 한다."""
+        same_keys 의 값이 3번 모두 같아야 학생 모두가 같은 다음 단계를 받는다. limit_s 가 있으면 가장 느린 소요 시간이 그 안이어야 한다.
+        --ai-runs 1(연속 수업 확인)이면 single 번째 실행 하나만 돌리고, 반복 일치와 나머지 실행의 경로는
+        측정하지 않은 것으로 따로 남긴다(통과 아님)."""
         runs = []
-        for i in range(3):
+        n = self.ai_runs
+        for i in (range(3) if n >= 3 else (single,)):
             # 학생마다 워커가 하나다 — 앞 단계의 AI 작업이 아직 돌면 그 뒤에 줄을 서 소요 시간이 부푼다(최종 1차: 질문이 추출 뒤에 줄 섬)
             self.wait(1200, lambda: (self.get(self.worker + "/healthz", timeout=5) or {}).get("runs_in_flight") == 0, every=5)
             t0 = time.monotonic()
@@ -197,13 +203,16 @@ class Round:
                 got = {"error": f"{type(e).__name__}: {e}"}
             got.setdefault("seconds", round(time.monotonic() - t0, 1))
             runs.append(got)
-            print(f"    {step} {i + 1}/3: " + json.dumps(got, ensure_ascii=False, default=str)[:400], flush=True)
+            print(f"    {step} {i + 1}/{n}: " + json.dumps(got, ensure_ascii=False, default=str)[:400], flush=True)
         (self.out / "ai3").mkdir(parents=True, exist_ok=True)
         (self.out / "ai3" / f"{self.lab}-{re.sub(r'[^0-9A-Za-z가-힣]+', '_', step)}.json").write_text(
             json.dumps(runs, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
         errors = [r["error"] for r in runs if r.get("error")]
-        self.check(f"{step} — 3번 모두 끝까지", not errors, "; ".join(errors), kind="ai3")
-        for key in same_keys:
+        self.check(f"{step} — {n}번 모두 끝까지", not errors, "; ".join(errors), kind="ai3")
+        if n < 3:
+            self.not_measured.append(dict(lab=self.lab, name=f"{step} — 3번 같은 {', '.join(same_keys)}",
+                                          why=f"--ai-runs {n}: {single + 1}번째 실행만 돌림. 반복 일치·다른 실행의 경로는 재지 않음(기존 증거를 따로 대조)"))
+        for key in same_keys if n >= 3 else ():
             values = [json.dumps(r.get(key), ensure_ascii=False, sort_keys=True, default=str) for r in runs]
             self.check(f"{step} — 3번 같은 {key}", len(set(values)) == 1 and not errors, " | ".join(v[:200] for v in values), kind="ai3")
         slowest = max(float(r.get("seconds") or 0) for r in runs)
@@ -222,8 +231,11 @@ class Round:
                 bad.append(Verdict(lab, "콘솔 오류 · 실패한 요청", False, "quality"))
         (self.out / "results.json").write_text(json.dumps({
             "verdicts": [asdict(v) for v in self.verdicts],
-            "logs": {k: asdict(v) for k, v in self.logs.items()}}, ensure_ascii=False, indent=2), encoding="utf-8")
-        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개 · 별도 콘솔/통신 오류 실습 {log_failures}개", ""]
+            "logs": {k: asdict(v) for k, v in self.logs.items()}, "not_measured": self.not_measured}, ensure_ascii=False, indent=2), encoding="utf-8")
+        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개 · 별도 콘솔/통신 오류 실습 {log_failures}개"
+                 + f" · 측정 안 함 {len(self.not_measured)}개(통과 아님)", ""]
+        if self.not_measured:
+            lines += ["## 측정 안 함(통과로 세지 않음)"] + [f"- [{x['lab']}] {x['name']} — {x['why']}" for x in self.not_measured] + [""]
         for lab in dict.fromkeys(v.lab for v in self.verdicts):
             vs = [v for v in self.verdicts if v.lab == lab]
             lines.append(f"## {lab} — 통과 {sum(v.ok for v in vs)}/{len(vs)}")
@@ -2683,6 +2695,12 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
         if approver_user != person:
             _c_me(r, approver_user)
         if i == 1:
+            if r.ai_runs < 3:   # 한 번만 돌릴 때도 사유 없는 [거절]이 막히는지 승인 전에 본다(제출되지 않는 화면 검사)
+                _c_open_task(r, inst["proc_inst_id"], task["id"])
+                r.page.fill("#tdReason", "")
+                r.page.click("#tdRejectCard"); r.page.wait_for_timeout(600)
+                ok_h, why = r.human_message(_c_panel_msg(r))
+                r.check(f"{sp['name']}: 사유 없이 [거절] → 「거절 사유를 1~2000자로」", ok_h and "사유" in why, why, kind="exception")
             ok_d, pmsg = _c_card_decide(r, inst["proc_inst_id"], task, approve=True, reason=f"실습 {sp['name']} 승인")
         else:
             if i == 0:   # 거절 사유 없이 [거절] → 화면이 막고 사람 글
@@ -2700,11 +2718,12 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
         return rec
 
     runs = r.repeat3(f"{sp['name']} 판단 · 제안", run_once, ("definition", "recommended", "approver", "evidence") + (
-        ("window",) if kind == "pm" else ("supplier", "qty", "amount")), limit_s=C_AI_LIMIT_S)
+        ("window",) if kind == "pm" else ("supplier", "qty", "amount")), limit_s=C_AI_LIMIT_S, single=1)
+    ok_outcome = "정상" if kind == "pm" else "입고 완료"
     r.check(f"{sp['name']}: 3회 모두 내 흐름으로 열렸다", all(x.get("definition") == did for x in runs), str([x.get("definition") for x in runs]))
     r.check(f"{sp['name']}: 카드 승인 역할 = 흐름 승인 담당({sp['approver']})", all(x.get("approver") == C_ROLE_NAME[sp["approver"]] for x in runs if not x.get("error")),
             str([x.get("approver") for x in runs]), kind="ai3")
-    r.check(f"{sp['name']}: 거절 → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == ["반려", "정상" if kind == "pm" else "입고 완료", "반려"],
+    r.check(f"{sp['name']}: 거절 → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == (["반려", ok_outcome, "반려"] if r.ai_runs >= 3 else [ok_outcome]),
             str([x.get("outcome") for x in runs]))
     ok_r, rtext = _c_reset_to_reference(r)
     route = _c_routes(r).get(sp["pattern"]) or {}
@@ -3070,6 +3089,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--only", default="", help="쉼표로 고른 실습 번호만(예: 01,05)")
     ap.add_argument("--from", dest="start", default="", help="이 번호부터 끝까지")
     ap.add_argument("--headed", action="store_true")
+    ap.add_argument("--ai-runs", type=int, choices=(1, 3), default=3,
+                    help="AI 단계 반복 수. 1 = 연속 수업 확인(반복 일치는 측정 안 함으로 남김)")
     args = ap.parse_args(argv[1:])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -3081,6 +3102,7 @@ def main(argv: list[str]) -> int:
         page = ctx.new_page()
         page.set_default_timeout(20_000)
         r = Round(page, out)
+        r.ai_runs = args.ai_runs
         r.open()
         started = not args.start
         for code, title, fn in sorted(LABS, key=lambda x: x[0]):
