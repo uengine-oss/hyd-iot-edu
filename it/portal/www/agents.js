@@ -268,6 +268,7 @@
       UI.toast(f.kind === 'agent' ? `에이전트 '${saved.username}'을(를) 저장했습니다` : `스킬 '${saved.skill_name}'을(를) 저장했습니다`, { tone: 'ok' });
       st.form = null;
       if (f.kind === 'agent') st.pick.agents = saved.id; else st.pick.skills = saved.skill_name;
+      st.busy = false;                              // 저장은 끝났다 — 다시 읽는 동안 연 새 폼의 저장 단추가 꺼진 채 남지 않게
       await load();
     } catch (e) {
       st.busy = false;                              // 다시 그리기 전에 풀어야 저장 단추가 살아 있다

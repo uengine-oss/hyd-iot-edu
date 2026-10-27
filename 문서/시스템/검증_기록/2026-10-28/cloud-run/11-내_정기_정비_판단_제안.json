@@ -1,0 +1,19 @@
+[
+  {
+    "definition": "c3_pm",
+    "seconds": 49.3,
+    "recommended": "skill:sop-pm-11",
+    "approver": "role:maint-mgr",
+    "evidence": [
+      "skill:sop-pm-11:허용:",
+      "skill:sop-pm-12:허용:",
+      "skill:sop-pm-13:제외:execution:pm-plan,rule:pm-following-window-over-hours-limit",
+      "skill:sop-pm-14:제외:execution:pm-plan,rule:pm-bundled-seal-kit-shortage"
+    ],
+    "window": null,
+    "supplier": null,
+    "qty": null,
+    "amount": null,
+    "outcome": "정상"
+  }
+]

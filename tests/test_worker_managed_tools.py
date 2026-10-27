@@ -86,7 +86,8 @@ def test_worker_replaces_teacher_mcp_before_cli_and_never_uses_teacher_credentia
     assert request.model=='class-model'
     args=request.extra_args
     assert json.loads(args[args.index('--settings')+1]) == {'disableAllHooks':True}
-    assert set(args[args.index('--tools')+1].split(',')) == {'Read','Glob','Grep','Write','Edit','Skill'}
+    # managed_isolation.cli_args: no search tools; Skill only when an approved skill is delivered (2141cb8).
+    assert set(args[args.index('--tools')+1].split(',')) == {'Read','Write','Edit'}
     assert '--strict-mcp-config' in args
     assert args[args.index('--setting-sources')+1] == ''
 

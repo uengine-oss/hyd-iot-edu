@@ -30,7 +30,9 @@
         button.disabled = !((opened && button.dataset.tab === 'flows') ||
           (button.dataset.tab === 'ask' && access?.capabilities?.free_questions === true) ||
           (button.dataset.tab === 'mcp' && access?.capabilities?.tool_inspection === true));
-        button.title = '이 수업에서는 준비된 에이전트와 교대 실습만 사용합니다.';
+        button.title = button.dataset.tab === 'flows'
+          ? (opened ? '' : '교대 인수인계 흐름은 마지막 날 강사 해제 코드로 열립니다.')
+          : '수업에서는 사용하지 않는 메뉴입니다. 준비된 흐름과 에이전트 화면을 사용하세요.';
       }
     });
     const operator = document.querySelector('#mcpOperator');

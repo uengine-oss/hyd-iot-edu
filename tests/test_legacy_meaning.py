@@ -478,18 +478,29 @@ def test_ddl_preview_and_commit_routes_reflect_only_the_review(tmp_path, monkeyp
     monkeypatch.setattr(main, '_audit', lambda *a, **k: audits.append(a))
     client = TestClient(main.app)
     body = {'filename': 'legacy-plant-db.sql', 'text': TEXT, 'datasource': 'legacy-plant', 'catalog': 'postgres'}
-    plain = client.post('/api/kg/ddl/preview', json=body).json()
+    # The classroom build locks DDL management permanently (course_access.PERMANENT, 2141cb8).
+    for path in ('/api/kg/ddl/preview', '/api/kg/ddl/commit'):
+        assert client.post(path, json=body).status_code == 403
+    # The review contract itself is the route handler's job; call it without the classroom gate.
+    import asyncio
+    from fastapi import HTTPException
+    def call(handler, value):
+        try:
+            return 200, asyncio.run(handler(value))
+        except HTTPException as exc:
+            return exc.status_code, {'detail': exc.detail}
+    plain = call(main.kg_ddl_preview, body)[1]
     assert plain['legacy']['targets'] == 23 and 'meaningReview' not in plain
     assert not [i for i in plain['inputs'] if 'represents' in i]                                  # 승인 전 반영 0
-    reviewed = client.post('/api/kg/ddl/preview', json=dict(body, meaning_review=row['id'])).json()
+    reviewed = call(main.kg_ddl_preview, dict(body, meaning_review=row['id']))[1]
     assert reviewed['meaningReview']['applied'] == [K('T_EQP01', 'C_PRS_A')] and reviewed['meaningReview']['rejected'] == 1
     assert [i['column'] for i in reviewed['inputs'] if i.get('represents')] == ['C_PRS_A']
-    assert client.post('/api/kg/ddl/preview', json=dict(body, text=TEXT + ' ', meaning_review=row['id'])).status_code == 400
+    assert call(main.kg_ddl_preview, dict(body, text=TEXT + ' ', meaning_review=row['id']))[0] == 400
     smuggled = copy.deepcopy(reviewed)
     next(i for i in smuggled['inputs'] if i['column'] == 'C_TMP_O')['represents'] = 'sv:ts1'
-    r = client.post('/api/kg/ddl/commit', json=dict(smuggled, by='강사'))
-    assert r.status_code == 400 and '승인' in r.json()['detail'] and not graph.rels                  # refused before the graph
-    r = client.post('/api/kg/ddl/commit', json=dict(reviewed, by='강사'))
-    assert r.status_code == 200, r.text
+    code, reply = call(main.kg_ddl_commit, dict(smuggled, by='강사'))
+    assert code == 400 and '승인' in reply['detail'] and not graph.rels                  # refused before the graph
+    code, reply = call(main.kg_ddl_commit, dict(reviewed, by='강사'))
+    assert code == 200, reply
     assert [(t, d) for s, t, d, _ in graph.rels if t == 'REPRESENTS'] == [('REPRESENTS', 'sv:ps1')]
     assert [a[2] for a in audits] == ['DDL_INGESTED']

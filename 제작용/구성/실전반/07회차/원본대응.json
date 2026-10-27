@@ -1,9 +1,9 @@
 {
-  "note": "실전반 7회차 재편(2026-10-28). destination = 새 덱 장(39장), old_practical = 재편 전 조립본(61장, 통합반 10회차와 1:1)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 같은 화면: 퀴즈 간지 1장).",
+  "note": "실전반 7회차 재편(2026-10-28). destination = 새 덱 장(39장), old_practical = 재편 전 조립본(61장, 통합반 10회차와 1:1)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 같은 화면: 퀴즈 간지 1장). 2026-10-28 완성판(P): w07 1차본 39장 → 46장. w07_first는 1차본의 장 번호. dropped의 이유 문장 속 장 번호는 1차본 번호다(1차본 13 → 15, 14 → 17, 16 → 21, 17 → 22, 36~38 → 43~45).",
   "slides": [
     {
       "destination": 1,
-      "title": "정비와 구매 업무의 연결 / 실행 결과의 검증",
+      "title": "정비와 구매 업무의 연결 실행 결과의 검증",
       "origin": "옛 장 재작성",
       "old_practical": [
         1
@@ -14,7 +14,8 @@
           "day": 10,
           "slide": 1
         }
-      ]
+      ],
+      "w07_first": 1
     },
     {
       "destination": 2,
@@ -29,7 +30,8 @@
           "day": 10,
           "slide": 2
         }
-      ]
+      ],
+      "w07_first": 2
     },
     {
       "destination": 3,
@@ -44,7 +46,8 @@
           "day": 10,
           "slide": 3
         }
-      ]
+      ],
+      "w07_first": 3
     },
     {
       "destination": 4,
@@ -59,7 +62,8 @@
           "day": 10,
           "slide": 4
         }
-      ]
+      ],
+      "w07_first": 4
     },
     {
       "destination": 5,
@@ -86,7 +90,8 @@
           "day": 10,
           "slide": 7
         }
-      ]
+      ],
+      "w07_first": 5
     },
     {
       "destination": 6,
@@ -101,7 +106,8 @@
           "day": 10,
           "slide": 8
         }
-      ]
+      ],
+      "w07_first": 6
     },
     {
       "destination": 7,
@@ -122,18 +128,38 @@
           "day": 10,
           "slide": 10
         }
-      ]
+      ],
+      "w07_first": 7
     },
     {
       "destination": 8,
+      "title": "세 사건이 같은 형식의 경보로 도착한다",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 7
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 10
+        }
+      ]
+    },
+    {
+      "destination": 9,
       "title": "응용: 정비 예약이 재고 보충을 여는 길",
       "kind": "응용",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 8
     },
     {
-      "destination": 9,
+      "destination": 10,
       "title": "프로세스의 끝과 업무의 끝",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -151,10 +177,11 @@
           "day": 10,
           "slide": 46
         }
-      ]
+      ],
+      "w07_first": 9
     },
     {
-      "destination": 10,
+      "destination": 11,
       "title": "발주 중 수량과 입고 완료",
       "origin": "새 장(옛 44장 메시지 한 줄에서 출발)",
       "old_practical": [
@@ -166,18 +193,20 @@
           "day": 10,
           "slide": 44
         }
-      ]
+      ],
+      "w07_first": 10
     },
     {
-      "destination": 11,
+      "destination": 12,
       "title": "판단 문제: 보충 표시가 꺼진 씰 키트",
       "kind": "판단 문제",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 11
     },
     {
-      "destination": 12,
+      "destination": 13,
       "title": "정의 재사용과 실행 기록 읽기",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -195,10 +224,29 @@
           "day": 10,
           "slide": 20
         }
+      ],
+      "w07_first": 12
+    },
+    {
+      "destination": 14,
+      "title": "업무마다 처음부터 그릴 때 생기는 일",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 21
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 22
+        }
       ]
     },
     {
-      "destination": 13,
+      "destination": 15,
       "title": "패턴: 승인 블록은 그대로, 업무마다 바뀌는 값",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -234,10 +282,24 @@
           "day": 10,
           "slide": 27
         }
+      ],
+      "w07_first": 13
+    },
+    {
+      "destination": 16,
+      "title": "구조로 남기는 것과 연결할 때 넣는 값",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 27
+        }
       ]
     },
     {
-      "destination": 14,
+      "destination": 17,
       "title": "응용: 요구가 바뀔 때 고칠 곳",
       "kind": "응용",
       "origin": "옛 장 여럿을 합쳐 재작성",
@@ -256,10 +318,24 @@
           "day": 10,
           "slide": 29
         }
+      ],
+      "w07_first": 14
+    },
+    {
+      "destination": 18,
+      "title": "정의가 셋일 때: 경보 패턴이 정의를 고른다",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 13
+        }
       ]
     },
     {
-      "destination": 15,
+      "destination": 19,
       "title": "경보 · 정의 · 판본 · 처리 건",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -277,10 +353,29 @@
           "day": 10,
           "slide": 14
         }
+      ],
+      "w07_first": 15
+    },
+    {
+      "destination": 20,
+      "title": "등록 · 배포 · 되돌리기와 이미 열린 처리 건",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 14
+        },
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 54
+        }
       ]
     },
     {
-      "destination": 16,
+      "destination": 21,
       "title": "처리 건의 상태 · 오류 · 반려 기록",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -298,10 +393,11 @@
           "day": 10,
           "slide": 16
         }
-      ]
+      ],
+      "w07_first": 16
     },
     {
-      "destination": 17,
+      "destination": 22,
       "title": "재고 보충 처리 건의 실행 기록",
       "origin": "옛 장 재작성",
       "old_practical": [
@@ -313,18 +409,20 @@
           "day": 10,
           "slide": 47
         }
-      ]
+      ],
+      "w07_first": 17
     },
     {
-      "destination": 18,
+      "destination": 23,
       "title": "판단 문제: 사람이 닫은 정기 점검 처리 건",
       "kind": "판단 문제",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 18
     },
     {
-      "destination": 19,
+      "destination": 24,
       "title": "실습: 정기 점검 작도",
       "kind": "실습 간지",
       "origin": "옛 장 재작성",
@@ -337,10 +435,11 @@
           "day": 10,
           "slide": 30
         }
-      ]
+      ],
+      "w07_first": 19
     },
     {
-      "destination": 20,
+      "destination": 25,
       "title": "정기 점검 작도: 그릴 것과 성공 기준",
       "kind": "실습 설명",
       "origin": "옛 장 재작성",
@@ -353,10 +452,11 @@
           "day": 10,
           "slide": 31
         }
-      ]
+      ],
+      "w07_first": 20
     },
     {
-      "destination": 21,
+      "destination": 26,
       "title": "실습: 정기 점검 실행",
       "kind": "실습 간지",
       "origin": "옛 장 재작성",
@@ -369,10 +469,11 @@
           "day": 10,
           "slide": 32
         }
-      ]
+      ],
+      "w07_first": 21
     },
     {
-      "destination": 22,
+      "destination": 27,
       "title": "정기 점검 실행: 결정 · 대조 · 해석",
       "kind": "실습 설명",
       "origin": "옛 장 재작성",
@@ -385,10 +486,11 @@
           "day": 10,
           "slide": 33
         }
-      ]
+      ],
+      "w07_first": 22
     },
     {
-      "destination": 23,
+      "destination": 28,
       "title": "실습: 재고 보충 작도",
       "kind": "실습 간지",
       "origin": "옛 장 재작성",
@@ -401,10 +503,11 @@
           "day": 10,
           "slide": 34
         }
-      ]
+      ],
+      "w07_first": 23
     },
     {
-      "destination": 24,
+      "destination": 29,
       "title": "재고 보충 작도: 그릴 것과 범위",
       "kind": "실습 설명",
       "origin": "옛 장 재작성",
@@ -417,10 +520,11 @@
           "day": 10,
           "slide": 35
         }
-      ]
+      ],
+      "w07_first": 24
     },
     {
-      "destination": 25,
+      "destination": 30,
       "title": "실습: 재고 보충 실행",
       "kind": "실습 간지",
       "origin": "옛 장 재작성",
@@ -433,10 +537,11 @@
           "day": 10,
           "slide": 36
         }
-      ]
+      ],
+      "w07_first": 25
     },
     {
-      "destination": 26,
+      "destination": 31,
       "title": "재고 보충 실행: 수량으로 가르는 결과",
       "kind": "실습 설명",
       "origin": "옛 장 재작성",
@@ -449,10 +554,11 @@
           "day": 10,
           "slide": 37
         }
-      ]
+      ],
+      "w07_first": 26
     },
     {
-      "destination": 27,
+      "destination": 32,
       "title": "설계 · 실행 · 검증의 정리",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -470,10 +576,11 @@
           "day": 10,
           "slide": 48
         }
-      ]
+      ],
+      "w07_first": 27
     },
     {
-      "destination": 28,
+      "destination": 33,
       "title": "두 처리 건이 지난 다섯 자리",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -509,10 +616,24 @@
           "day": 10,
           "slide": 44
         }
+      ],
+      "w07_first": 28
+    },
+    {
+      "destination": 34,
+      "title": "한 처리 건 안에서 건너가는 것: 정기 점검",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 40
+        }
       ]
     },
     {
-      "destination": 29,
+      "destination": 35,
       "title": "두 추천안이 승인자에게 보이는 근거",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -530,10 +651,11 @@
           "day": 10,
           "slide": 45
         }
-      ]
+      ],
+      "w07_first": 29
     },
     {
-      "destination": 30,
+      "destination": 36,
       "title": "온톨로지에서 업무 기록까지: 정기 점검 한 건",
       "origin": "옛 장 여럿을 합쳐 재작성",
       "old_practical": [
@@ -563,17 +685,32 @@
           "day": 10,
           "slide": 53
         }
+      ],
+      "w07_first": 30
+    },
+    {
+      "destination": 37,
+      "title": "세 에이전트가 읽는 곳: 같은 지식, 다른 업무 데이터",
+      "origin": "2026-10-28 완성판에서 되살린 장(통합반 장을 실전반 화면으로 다시 짬)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 10,
+          "slide": 50
+        }
       ]
     },
     {
-      "destination": 31,
+      "destination": 38,
       "title": "실행 결과의 대조: 처리 건 기록과 업무 시스템",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 31
     },
     {
-      "destination": 32,
+      "destination": 39,
       "title": "응용: 다음 담당자에게 남는 확인",
       "kind": "응용",
       "origin": "옛 장 여럿을 합쳐 재작성",
@@ -592,10 +729,11 @@
           "day": 10,
           "slide": 54
         }
-      ]
+      ],
+      "w07_first": 32
     },
     {
-      "destination": 33,
+      "destination": 40,
       "title": "처리 건 한 건으로 되짚는 판정",
       "origin": "옛 장 재작성",
       "old_practical": [
@@ -607,10 +745,11 @@
           "day": 10,
           "slide": 55
         }
-      ]
+      ],
+      "w07_first": 33
     },
     {
-      "destination": 34,
+      "destination": 41,
       "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
       "origin": "옛 장 재작성",
       "old_practical": [
@@ -622,10 +761,11 @@
           "day": 10,
           "slide": 56
         }
-      ]
+      ],
+      "w07_first": 34
     },
     {
-      "destination": 35,
+      "destination": 42,
       "title": "Review Quiz: 핵심 흐름 되짚어보기",
       "origin": "옛 장 재작성",
       "old_practical": [
@@ -637,34 +777,38 @@
           "day": 10,
           "slide": 57
         }
-      ]
+      ],
+      "w07_first": 35
     },
     {
-      "destination": 36,
+      "destination": 43,
       "title": "Quiz 1. 정비 오더가 남은 정기 점검 처리 건",
       "kind": "퀴즈",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 36
     },
     {
-      "destination": 37,
+      "destination": 44,
       "title": "Quiz 2. 거절된 처리 건의 결과를 가리는 근거",
       "kind": "퀴즈",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 37
     },
     {
-      "destination": 38,
+      "destination": 45,
       "title": "Quiz 3. 전결 기준을 넘은 발주안",
       "kind": "퀴즈",
       "origin": "새 장",
       "old_practical": [],
-      "source": []
+      "source": [],
+      "w07_first": 38
     },
     {
-      "destination": 39,
+      "destination": 46,
       "title": "정답과 판단 기준",
       "origin": "옛 장 재작성",
       "old_practical": [
@@ -676,7 +820,8 @@
           "day": 10,
           "slide": 61
         }
-      ]
+      ],
+      "w07_first": 39
     }
   ],
   "dropped": [
