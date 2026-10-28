@@ -65,10 +65,10 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-10-28-s3-whatif-v1",
+      "version": "2026-10-28-s3-whatif-v2-mode",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
       "path": "산출물/실전반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
-      "sha256": "e444845c0c19823207f58a7ee7004a7ee377bdfe5b91cde619d4a8a486071b26"
+      "sha256": "6d408cfcf40834c6d4766c075cfe74e322d4d479822095389275fbc5eea3eef6"
     },
     {
       "id": "practical-03-review",
@@ -168,7 +168,7 @@
       "version": "2026-10-28-s3-whatif-v1",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
       "path": "산출물/통합반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
-      "sha256": "bf0a58dda34294df3d18606cdec7184625cbfd2a9a2c8079fa1a0b7ab41f7e59"
+      "sha256": "845474261a355259c983896b837600df40b11ab1b785cfd986b5dd418f768d40"
     },
     {
       "id": "integrated-03-criteria",
