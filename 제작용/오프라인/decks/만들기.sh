@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 오프라인 이론 덱 하나를 조립 → 빌드 → 원 PPTX 대조(위치 옮김 포함) → 렌더 → 글겹침까지 돌린다.
+# 오프라인 이론 덱 하나를 조립 → 빌드 → 원 PPTX 대조(위치 옮김 포함) → 노트 점검 → 렌더 → 글겹침까지 돌린다.
 # bash 제작용/오프라인/decks/만들기.sh integrated 01 [렌더 폴더]
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -13,6 +13,7 @@ python3 제작용/오프라인/decks/조립.py "$dir"
 python3 .claude/skills/lecture-deck/scripts/deck2pptx.py "$md" "$pptx" | tail -1
 python3 제작용/오프라인/decks/대조.py "$md" "$pptx" --fix | tail -3
 python3 제작용/오프라인/decks/대조.py "$md" "$pptx" | tail -1
+python3 제작용/오프라인/decks/노트점검.py "$md" "$pptx"
 if [ -n "$out" ]; then
   rm -rf "$out"; mkdir -p "$out"
   timeout 300 soffice --headless --convert-to pdf --outdir "$out" "$pptx" >/dev/null 2>&1
