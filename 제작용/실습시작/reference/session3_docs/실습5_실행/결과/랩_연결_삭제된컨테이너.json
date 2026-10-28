@@ -1,0 +1,10 @@
+{
+  "id": "747b0e37fa1f",
+  "container": "hyd-student-747b0e37fa1f",
+  "browser": "http://127.0.0.1:4222/browser/?connectURL=bolt%3A%2F%2F127.0.0.1%3A4223",
+  "http": "http://127.0.0.1:4222",
+  "bolt": "bolt://127.0.0.1:4223",
+  "username": "neo4j",
+  "password": "",
+  "scope": "이 실습 폴더 전용 로컬 DB"
+}

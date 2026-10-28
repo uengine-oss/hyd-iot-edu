@@ -47,9 +47,18 @@ def approved_mapping(mapping):
 def allowed_request(method, path, body):
     if path == '/api/flows/import':
         return (method == 'POST' and set(body) <= {'xml','file_name','definition_id','start_patterns','class_flow'}
-            and body.get('definition_id',DEFINITION) == DEFINITION and not body.get('class_flow')
+            # An empty id means "the drawing's process id" in the portal (flows.js); the approved
+            # drawing's process id is ShiftHandover, so empty and the explicit id are the same flow.
+            and (body.get('definition_id') or DEFINITION) == DEFINITION and not body.get('class_flow')
             and body.get('start_patterns') in (None,[]) and approved_xml(body.get('xml')))
     match = re.fullmatch(r'/api/flows/ShiftHandover/(mapping|check|register)',path)
-    return bool(match and method == ('PUT' if match[1]=='mapping' else 'POST')
-        and set(body) <= {'mapping','class_flow'} and not body.get('class_flow')
-        and approved_mapping(body.get('mapping')))
+    if not (match and method == ('PUT' if match[1]=='mapping' else 'POST')
+            and set(body) <= {'mapping','class_flow'} and not body.get('class_flow')):
+        return False
+    if match[1] == 'check':
+        # [검사] only previews (flows_api.flows_check stores nothing). The student fills the
+        # shipped mapping one row at a time and needs each preview's available values to pick
+        # branch conditions; only saving and registering require the exact approved mapping.
+        mapping = body.get('mapping')
+        return mapping is None or (isinstance(mapping, dict) and len(json.dumps(mapping, ensure_ascii=False)) <= 200000)
+    return approved_mapping(body.get('mapping'))

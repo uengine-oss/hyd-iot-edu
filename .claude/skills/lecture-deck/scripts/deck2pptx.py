@@ -528,8 +528,9 @@ def bullets(lines: list[str]) -> str:
 
 
 def notes(sl, s: Slide):
+    """발표자 노트. 덱 MD에서는 한 줄이고, ` / `(앞뒤 공백)가 노트 안의 줄바꿈이다(오프라인 강의 메모, 2026-10-28)."""
     if s.fields.get("노트"):
-        sl.notes_slide.notes_text_frame.text = s.fields["노트"]
+        sl.notes_slide.notes_text_frame.text = s.fields["노트"].replace(" / ", "\n")
 
 
 def page_no(sl, page: int):

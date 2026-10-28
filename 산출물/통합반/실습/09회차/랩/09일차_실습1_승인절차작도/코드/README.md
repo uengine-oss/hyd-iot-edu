@@ -1,3 +1,5 @@
 # 승인절차작도
 
-안내.html의 순서로 직접 작업한다. source는 제공 업무 입력, input은 앞 실습의 실제 결과, output은 이번에 작성할 결과다. 빈 양식은 실행 결과가 아니다. 코드 폴더 밖 reference는 비교용 참조이며 직접 만든 결과와 구별한다.
+`source`: 제공 업무 입력. `input`: 앞 실습 결과를 복사해 둘 자리. `output`: 이번에 만든 파일을 저장할 자리. `element-map.md`·`review.md`: 제공 빈 틀.
+
+과제와 순서는 [../START.md](../START.md)에 있습니다.

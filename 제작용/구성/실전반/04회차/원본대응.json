@@ -1,848 +1,1572 @@
 {
+  "note": "실전반 4회차 재편(2026-10-28, C67 실라버스 42~48행). destination = 새 덱 장(70장), old_practical = 재편 전 조립본(132장, 통합반 5회차 1~59 · 6회차 4~23 · 62~63 · 24~61 · 마무리 이어 붙임)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 같은 화면 5장: 실습 간지 넷 · 퀴즈 간지). kind는 응용 · 판단 문제 · 한 단계 더 · 새 장. 2026-10-28 완성판: w04 1차 59장에 통합반 원 대본 통독 뒤 되살린 장 11을 더하고 옛 11장(실행 기록 표)을 그림 장(13)으로 바꿨다.",
   "slides": [
     {
       "destination": 1,
-      "source_day": 5,
-      "source_slide": 1
+      "title": "근거로 일하는 에이전트와 스킬 · MCP 연결",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        1
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 1
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 1
+        }
+      ]
     },
     {
       "destination": 2,
-      "source_day": 5,
-      "source_slide": 2
+      "title": "학습목표",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        2
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 2
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 2
+        }
+      ]
     },
     {
       "destination": 3,
-      "source_day": 5,
-      "source_slide": 3
+      "title": "목차",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        3
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 3
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 3
+        }
+      ]
     },
     {
       "destination": 4,
-      "source_day": 5,
-      "source_slide": 4
+      "title": "에이전트의 활용 범위와 실행 구조",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        4,
+        15,
+        24
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 4
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 15
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 24
+        }
+      ]
     },
     {
       "destination": 5,
-      "source_day": 5,
-      "source_slide": 5
+      "title": "구축한 지식이 채우는 점검 요청 초안",
+      "origin": "새 장",
+      "kind": "새 장(C67 출발 사례)"
     },
     {
       "destination": 6,
-      "source_day": 5,
-      "source_slide": 6
+      "title": "목적 · 입력 · 결과가 다른 다섯 활용",
+      "origin": "새 장",
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 60
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 61
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 62
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 63
+        }
+      ],
+      "kind": "새 장(C67 활용 범위)"
     },
     {
       "destination": 7,
-      "source_day": 5,
-      "source_slide": 7
+      "title": "경보 1분 34초 동안 에이전트가 한 일",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [
+        5,
+        6
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 5
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 6
+        }
+      ]
     },
     {
       "destination": 8,
-      "source_day": 5,
-      "source_slide": 8
+      "title": "모델 혼자 채우지 못하는 세 자리",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 7
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 8
+        }
+      ]
     },
     {
       "destination": 9,
-      "source_day": 5,
-      "source_slide": 9
+      "title": "LLM · RAG · 에이전트: 근거와 반복의 차이",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        7,
+        8,
+        9,
+        11
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 7
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 8
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 9
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 11
+        }
+      ]
     },
     {
       "destination": 10,
-      "source_day": 5,
-      "source_slide": 10
+      "title": "에이전트를 이루는 것과 끝나는 조건",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        10,
+        12
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 10
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 12
+        }
+      ]
     },
     {
       "destination": 11,
-      "source_day": 5,
-      "source_slide": 11
+      "title": "에이전트를 정하는 항목: 목표 · 서버 · 스킬 · 권한",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        13
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 13
+        }
+      ]
     },
     {
       "destination": 12,
-      "source_day": 5,
-      "source_slide": 12
+      "title": "도구 호출 두 건: 관찰한 결과가 다음 물음이 된다",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        14,
+        20
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 14
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 20
+        }
+      ]
     },
     {
       "destination": 13,
-      "source_day": 5,
-      "source_slide": 13
+      "title": "실행 고리: 쿨러 사건의 기록으로 본 다섯 단계",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [
+        17,
+        18,
+        19,
+        21,
+        22
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 17
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 18
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 19
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 21
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 22
+        }
+      ]
     },
     {
       "destination": 14,
-      "source_day": 5,
-      "source_slide": 14
+      "title": "한 단계 더: 같은 지침, 다른 실행의 길",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        23
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 23
+        }
+      ],
+      "kind": "한 단계 더"
     },
     {
       "destination": 15,
-      "source_day": 5,
-      "source_slide": 15
+      "title": "워크플로와 에이전트: 순서를 누가 정하는가",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 16
+        }
+      ]
     },
     {
       "destination": 16,
-      "source_day": 5,
-      "source_slide": 16
+      "title": "판단 문제: 에이전트에게 맡길 일",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        16
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 16
+        }
+      ],
+      "kind": "판단 문제"
     },
     {
       "destination": 17,
-      "source_day": 5,
-      "source_slide": 17
+      "title": "결과마다 받는 쪽과 사람이 판단하는 자리",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        25,
+        26,
+        27,
+        28
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 25
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 26
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 27
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 28
+        }
+      ]
     },
     {
       "destination": 18,
-      "source_day": 5,
-      "source_slide": 18
+      "title": "응용: 맡기기 전에 정할 다섯",
+      "origin": "새 장(C67 응용)",
+      "old_practical": [],
+      "source": []
     },
     {
       "destination": 19,
-      "source_day": 5,
-      "source_slide": 19
+      "title": "근거로 쓰는 점검 요청",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        29,
+        36,
+        40,
+        48
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 29
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 36
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 40
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 48
+        }
+      ]
     },
     {
       "destination": 20,
-      "source_day": 5,
-      "source_slide": 20
+      "title": "추천안 한 건에 든 값과 그 정보원",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 31
+        }
+      ]
     },
     {
       "destination": 21,
-      "source_day": 5,
-      "source_slide": 21
+      "title": "네 정보원이 답하는 물음과 읽는 길",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        30,
+        31,
+        35
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 30
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 31
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 35
+        }
+      ]
     },
     {
       "destination": 22,
-      "source_day": 5,
-      "source_slide": 22
+      "title": "기준과 측정값, 경보 순간과 지금",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        37,
+        38
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 37
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 38
+        }
+      ]
     },
     {
       "destination": 23,
-      "source_day": 5,
-      "source_slide": 23
+      "title": "추측 대신 도구로: 지식 · 값 · 규칙 판정을 얻는 곳",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 39
+        }
+      ]
     },
     {
       "destination": 24,
-      "source_day": 5,
-      "source_slide": 24
+      "title": "증거 한 건을 판정에 쓰기 전 확인할 다섯",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        33,
+        39,
+        43
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 33
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 39
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 43
+        }
+      ],
+      "kind": "한 단계 더(표본)"
     },
     {
       "destination": 25,
-      "source_day": 5,
-      "source_slide": 25
+      "title": "근거의 세 상태와 이어서 할 일",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 44
+        }
+      ]
     },
     {
       "destination": 26,
-      "source_day": 5,
-      "source_slide": 26
+      "title": "응용: 같은 쿨러 경보, 다른 근거 상태",
+      "origin": "새 장",
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 68
+        }
+      ],
+      "kind": "응용"
     },
     {
       "destination": 27,
-      "source_day": 5,
-      "source_slide": 27
+      "title": "멈춤 조건과 사람에게 넘기는 것",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        41,
+        42,
+        46,
+        47
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 41
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 42
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 46
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 47
+        }
+      ]
     },
     {
       "destination": 28,
-      "source_day": 5,
-      "source_slide": 28
+      "title": "구조화 출력과 보류: 다음 단계가 읽는 모양",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        44,
+        49,
+        50,
+        53
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 44
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 49
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 50
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 53
+        }
+      ]
     },
     {
       "destination": 29,
-      "source_day": 5,
-      "source_slide": 29
+      "title": "근거의 대조: 적어 낸 근거가 호출 기록에 있는가",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 55
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 26
+        }
+      ]
     },
     {
       "destination": 30,
-      "source_day": 5,
-      "source_slide": 30
+      "title": "결과에서 호출로 거슬러 확인하기",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        51,
+        52,
+        54
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 51
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 52
+        },
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 54
+        }
+      ]
     },
     {
       "destination": 31,
-      "source_day": 5,
-      "source_slide": 31
+      "title": "응용: 단정한 초안과 근거 있는 점검 요청 초안",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        55
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 55
+        }
+      ],
+      "kind": "응용"
     },
     {
       "destination": 32,
-      "source_day": 5,
-      "source_slide": 32
+      "title": "실습: 업무 에이전트 구성",
+      "origin": "옛 장 재작성(실습 간지, 제목을 랩 폴더 이름에 맞춤)",
+      "old_practical": [
+        56
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 56
+        }
+      ]
     },
     {
       "destination": 33,
-      "source_day": 5,
-      "source_slide": 33
+      "title": "수업용 에이전트의 구성과 질문 대조",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        57
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 57
+        }
+      ]
     },
     {
       "destination": 34,
-      "source_day": 5,
-      "source_slide": 34
+      "title": "실습: 원인 추론과 점검 계획",
+      "origin": "옛 장 재작성(실습 간지, 제목을 랩 폴더 이름에 맞춤)",
+      "old_practical": [
+        58
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 58
+        }
+      ]
     },
     {
       "destination": 35,
-      "source_day": 5,
-      "source_slide": 35
+      "title": "원인 분석에서 점검 요청 초안으로",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        59
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 59
+        }
+      ]
     },
     {
       "destination": 36,
-      "source_day": 5,
-      "source_slide": 36
+      "title": "재사용하는 업무 지침: 에이전트 스킬",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        60,
+        71
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 4
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 15
+        }
+      ]
     },
     {
       "destination": 37,
-      "source_day": 5,
-      "source_slide": 37
+      "title": "회의록마다 다시 정하게 되는 넷",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        61
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 5
+        }
+      ]
     },
     {
       "destination": 38,
-      "source_day": 5,
-      "source_slide": 38
+      "title": "에이전트 스킬과 SKILL.md",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        62,
+        63,
+        64,
+        66
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 6
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 7
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 8
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 10
+        }
+      ],
+      "kind": "한 단계 더(넷째 칸)"
     },
     {
       "destination": 39,
-      "source_day": 5,
-      "source_slide": 39
+      "title": "SKILL.md 원문: 여섯 자리가 있는 한 편",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        65,
+        67,
+        68,
+        70
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 9
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 11
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 12
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 14
+        }
+      ]
     },
     {
       "destination": 40,
-      "source_day": 5,
-      "source_slide": 40
+      "title": "한 번의 프롬프트와 재사용하는 스킬",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [
+        77
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 21
+        }
+      ]
     },
     {
       "destination": 41,
-      "source_day": 5,
-      "source_slide": 41
+      "title": "응용: 같은 틀로 쓰는 회의 후속 스킬",
+      "origin": "새 장",
+      "kind": "응용"
     },
     {
       "destination": 42,
-      "source_day": 5,
-      "source_slide": 42
+      "title": "SOP · 조치 방법과 에이전트 스킬",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        72,
+        73,
+        74
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 16
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 17
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 18
+        }
+      ]
     },
     {
       "destination": 43,
-      "source_day": 5,
-      "source_slide": 43
+      "title": "스킬에 적는 것과 입력 · 도구에서 받는 것",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [
+        75
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 19
+        }
+      ]
     },
     {
       "destination": 44,
-      "source_day": 5,
-      "source_slide": 44
+      "title": "재사용의 실제: 같은 스킬, 같은 틀",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        76,
+        78
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 20
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 22
+        }
+      ]
     },
     {
       "destination": 45,
-      "source_day": 5,
-      "source_slide": 45
+      "title": "판단 문제: 회의 후속 스킬에 넣지 않을 지시",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        79
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 23
+        }
+      ],
+      "kind": "판단 문제"
     },
     {
       "destination": 46,
-      "source_day": 5,
-      "source_slide": 46
+      "title": "응용: 회의 결과에서 다음 협의 안건으로",
+      "origin": "새 장",
+      "kind": "응용"
     },
     {
       "destination": 47,
-      "source_day": 5,
-      "source_slide": 47
+      "title": "실습: 회의록 스킬 작성",
+      "origin": "옛 장 재작성(실습 간지, 제목을 랩 폴더 이름에 맞춤)",
+      "old_practical": [
+        80
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 62
+        }
+      ]
     },
     {
       "destination": 48,
-      "source_day": 5,
-      "source_slide": 48
+      "title": "회의 결정과 후속 업무를 가르는 스킬",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        81
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 63
+        }
+      ]
     },
     {
       "destination": 49,
-      "source_day": 5,
-      "source_slide": 49
+      "title": "MCP: 도구를 찾고 부르는 연결",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        82,
+        89,
+        98
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 24
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 31
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 40
+        }
+      ]
     },
     {
       "destination": 50,
-      "source_day": 5,
-      "source_slide": 50
+      "title": "스킬이 적은 것과 도구가 실행한 것",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        83,
+        99,
+        100,
+        101
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 25
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 41
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 42
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 43
+        }
+      ]
     },
     {
       "destination": 51,
-      "source_day": 5,
-      "source_slide": 51
+      "title": "MCP: 도구를 내주고 부르는 공통 규약",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        84,
+        85
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 26
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 27
+        }
+      ]
     },
     {
       "destination": 52,
-      "source_day": 5,
-      "source_slide": 52
+      "title": "네 구성요소: HYD 포털과 로컬 VS Code",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        86,
+        87,
+        88,
+        95
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 28
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 29
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 30
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 37
+        }
+      ]
     },
     {
       "destination": 53,
-      "source_day": 5,
-      "source_slide": 53
+      "title": "도구 호출 한 번이 지나는 길",
+      "origin": "새 장(통합반 원 대본 통독 뒤 되살림)",
+      "old_practical": [],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 37
+        }
+      ]
     },
     {
       "destination": 54,
-      "source_day": 5,
-      "source_slide": 54
+      "title": "도구 목록 한 건과 호출 한 건",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        90,
+        91,
+        92,
+        93,
+        94
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 32
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 33
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 34
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 35
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 36
+        }
+      ]
     },
     {
       "destination": 55,
-      "source_day": 5,
-      "source_slide": 55
+      "title": "연결 방식과 설정: 포털과 로컬",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        96,
+        97
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 38
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 39
+        }
+      ]
     },
     {
       "destination": 56,
-      "source_day": 5,
-      "source_slide": 56
+      "title": "연결의 권한 · 실패 · 근거",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        102,
+        110
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 44
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 52
+        }
+      ]
     },
     {
       "destination": 57,
-      "source_day": 5,
-      "source_slide": 57
+      "title": "읽기 · 쓰기 경계의 세 겹: 포털과 로컬",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        103,
+        104,
+        105,
+        107,
+        108
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 45
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 46
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 47
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 49
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 50
+        }
+      ]
     },
     {
       "destination": 58,
-      "source_day": 5,
-      "source_slide": 58
+      "title": "최소 권한 · 파일 범위 · 비밀값",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        109,
+        111,
+        112
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 51
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 53
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 54
+        }
+      ]
     },
     {
       "destination": 59,
-      "source_day": 5,
-      "source_slide": 59
+      "title": "0행 · 연결 실패 · 호출 오류 · 시간 초과 · 잘림",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        45,
+        106,
+        113,
+        114
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 45
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 48
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 55
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 56
+        }
+      ]
     },
     {
       "destination": 60,
-      "source_day": 6,
-      "source_slide": 4
+      "title": "판단 문제: Notion 읽기가 실패한 다음 협의 안건",
+      "origin": "새 장(옛 장에서 출발)",
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 70
+        }
+      ],
+      "kind": "판단 문제"
     },
     {
       "destination": 61,
-      "source_day": 6,
-      "source_slide": 5
+      "title": "응용: 외부 자료를 엮은 다음 협의 안건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        115
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 57
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 61
+        }
+      ],
+      "kind": "응용"
     },
     {
       "destination": 62,
-      "source_day": 6,
-      "source_slide": 6
+      "title": "실습: MCP 도구 연결",
+      "origin": "옛 장 재작성(실습 간지, 제목을 랩 폴더 이름에 맞춤)",
+      "old_practical": [
+        118
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 60
+        }
+      ]
     },
     {
       "destination": 63,
-      "source_day": 6,
-      "source_slide": 7
+      "title": "외부 MCP와 내 도구로 만드는 다음 협의 안건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        119
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 61
+        }
+      ]
     },
     {
       "destination": 64,
-      "source_day": 6,
-      "source_slide": 8
+      "title": "결과물마다 맡긴 일과 가를 짝",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        120,
+        121
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 64
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 66
+        }
+      ]
     },
     {
       "destination": 65,
-      "source_day": 6,
-      "source_slide": 9
+      "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        122,
+        123
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 65
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 67
+        }
+      ]
     },
     {
       "destination": 66,
-      "source_day": 6,
-      "source_slide": 10
+      "title": "Review Quiz: 핵심 흐름 되짚어보기",
+      "origin": "옛 장 유지(간지)",
+      "old_practical": [
+        124
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 66
+        }
+      ]
     },
     {
       "destination": 67,
-      "source_day": 6,
-      "source_slide": 11
+      "title": "Quiz 1. 진행 설명만 남은 확인",
+      "origin": "새 장",
+      "kind": "퀴즈"
     },
     {
       "destination": 68,
-      "source_day": 6,
-      "source_slide": 12
+      "title": "Quiz 2. Notion 서버 없이 도는 회의 스킬",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        128
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 69
+        }
+      ],
+      "kind": "퀴즈"
     },
     {
       "destination": 69,
-      "source_day": 6,
-      "source_slide": 13
+      "title": "Quiz 3. 승인 전의 추천안",
+      "origin": "새 장",
+      "kind": "퀴즈"
     },
     {
       "destination": 70,
-      "source_day": 6,
-      "source_slide": 14
-    },
-    {
-      "destination": 71,
-      "source_day": 6,
-      "source_slide": 15
-    },
-    {
-      "destination": 72,
-      "source_day": 6,
-      "source_slide": 16
-    },
-    {
-      "destination": 73,
-      "source_day": 6,
-      "source_slide": 17
-    },
-    {
-      "destination": 74,
-      "source_day": 6,
-      "source_slide": 18
-    },
-    {
-      "destination": 75,
-      "source_day": 6,
-      "source_slide": 19
-    },
-    {
-      "destination": 76,
-      "source_day": 6,
-      "source_slide": 20
-    },
-    {
-      "destination": 77,
-      "source_day": 6,
-      "source_slide": 21
-    },
-    {
-      "destination": 78,
-      "source_day": 6,
-      "source_slide": 22
-    },
-    {
-      "destination": 79,
-      "source_day": 6,
-      "source_slide": 23
-    },
-    {
-      "destination": 80,
-      "source_day": 6,
-      "source_slide": 62
-    },
-    {
-      "destination": 81,
-      "source_day": 6,
-      "source_slide": 63
-    },
-    {
-      "destination": 82,
-      "source_day": 6,
-      "source_slide": 24
-    },
-    {
-      "destination": 83,
-      "source_day": 6,
-      "source_slide": 25
-    },
-    {
-      "destination": 84,
-      "source_day": 6,
-      "source_slide": 26
-    },
-    {
-      "destination": 85,
-      "source_day": 6,
-      "source_slide": 27
-    },
-    {
-      "destination": 86,
-      "source_day": 6,
-      "source_slide": 28
-    },
-    {
-      "destination": 87,
-      "source_day": 6,
-      "source_slide": 29
-    },
-    {
-      "destination": 88,
-      "source_day": 6,
-      "source_slide": 30
-    },
-    {
-      "destination": 89,
-      "source_day": 6,
-      "source_slide": 31
-    },
-    {
-      "destination": 90,
-      "source_day": 6,
-      "source_slide": 32
-    },
-    {
-      "destination": 91,
-      "source_day": 6,
-      "source_slide": 33
-    },
-    {
-      "destination": 92,
-      "source_day": 6,
-      "source_slide": 34
-    },
-    {
-      "destination": 93,
-      "source_day": 6,
-      "source_slide": 35
-    },
-    {
-      "destination": 94,
-      "source_day": 6,
-      "source_slide": 36
-    },
-    {
-      "destination": 95,
-      "source_day": 6,
-      "source_slide": 37
-    },
-    {
-      "destination": 96,
-      "source_day": 6,
-      "source_slide": 38
-    },
-    {
-      "destination": 97,
-      "source_day": 6,
-      "source_slide": 39
-    },
-    {
-      "destination": 98,
-      "source_day": 6,
-      "source_slide": 40
-    },
-    {
-      "destination": 99,
-      "source_day": 6,
-      "source_slide": 41
-    },
-    {
-      "destination": 100,
-      "source_day": 6,
-      "source_slide": 42
-    },
-    {
-      "destination": 101,
-      "source_day": 6,
-      "source_slide": 43
-    },
-    {
-      "destination": 102,
-      "source_day": 6,
-      "source_slide": 44
-    },
-    {
-      "destination": 103,
-      "source_day": 6,
-      "source_slide": 45
-    },
-    {
-      "destination": 104,
-      "source_day": 6,
-      "source_slide": 46
-    },
-    {
-      "destination": 105,
-      "source_day": 6,
-      "source_slide": 47
-    },
-    {
-      "destination": 106,
-      "source_day": 6,
-      "source_slide": 48
-    },
-    {
-      "destination": 107,
-      "source_day": 6,
-      "source_slide": 49
-    },
-    {
-      "destination": 108,
-      "source_day": 6,
-      "source_slide": 50
-    },
-    {
-      "destination": 109,
-      "source_day": 6,
-      "source_slide": 51
-    },
-    {
-      "destination": 110,
-      "source_day": 6,
-      "source_slide": 52
-    },
-    {
-      "destination": 111,
-      "source_day": 6,
-      "source_slide": 53
-    },
-    {
-      "destination": 112,
-      "source_day": 6,
-      "source_slide": 54
-    },
-    {
-      "destination": 113,
-      "source_day": 6,
-      "source_slide": 55
-    },
-    {
-      "destination": 114,
-      "source_day": 6,
-      "source_slide": 56
-    },
-    {
-      "destination": 115,
-      "source_day": 6,
-      "source_slide": 57
-    },
-    {
-      "destination": 116,
-      "source_day": 6,
-      "source_slide": 58
-    },
-    {
-      "destination": 117,
-      "source_day": 6,
-      "source_slide": 59
-    },
-    {
-      "destination": 118,
-      "source_day": 6,
-      "source_slide": 60
-    },
-    {
-      "destination": 119,
-      "source_day": 6,
-      "source_slide": 61
-    },
-    {
-      "destination": 120,
-      "source_day": 5,
-      "source_slide": 64
-    },
-    {
-      "destination": 121,
-      "source_day": 6,
-      "source_slide": 66
-    },
-    {
-      "destination": 122,
-      "source_day": 5,
-      "source_slide": 65
-    },
-    {
-      "destination": 123,
-      "source_day": 6,
-      "source_slide": 67
-    },
-    {
-      "destination": 124,
-      "source_day": 5,
-      "source_slide": 66
-    },
-    {
-      "destination": 125,
-      "source_day": 5,
-      "source_slide": 67
-    },
-    {
-      "destination": 126,
-      "source_day": 5,
-      "source_slide": 68
-    },
-    {
-      "destination": 127,
-      "source_day": 5,
-      "source_slide": 69
-    },
-    {
-      "destination": 128,
-      "source_day": 6,
-      "source_slide": 69
-    },
-    {
-      "destination": 129,
-      "source_day": 6,
-      "source_slide": 70
-    },
-    {
-      "destination": 130,
-      "source_day": 6,
-      "source_slide": 71
-    },
-    {
-      "destination": 131,
-      "source_day": 5,
-      "source_slide": 70
-    },
-    {
-      "destination": 132,
-      "source_day": 6,
-      "source_slide": 72
+      "title": "정답과 판단 기준",
+      "origin": "옛 장 합쳐 재작성",
+      "old_practical": [
+        131,
+        132
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 5,
+          "slide": 70
+        },
+        {
+          "course": "통합반",
+          "day": 6,
+          "slide": 72
+        }
+      ]
     }
   ],
-  "speech_edits": [
+  "dropped": [
     {
-      "source_day": 5,
-      "source_slide": 28,
-      "destination": 28
+      "old_practical": 32,
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 32
+      },
+      "title": "지식 그래프에서 읽는 것: 원인 후보와 조치 방법",
+      "reason": "원인 후보는 20장 그림 · 21장 표, 고장 유형 → 조치 방법의 관계 경로는 실전반 2회차 단원 범위(같은 관계도 반복을 뺌)"
     },
     {
-      "source_day": 5,
-      "source_slide": 29,
-      "destination": 29
+      "old_practical": 34,
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 34
+      },
+      "title": "업무 DB에서 읽는 것: 설비 밖의 사정",
+      "reason": "오더 · 납기 값은 21장, 응답의 실제 모양(mes_orders)은 54장 코드가 맡는다"
     },
     {
-      "source_day": 5,
-      "source_slide": 48,
-      "destination": 48
+      "old_practical": 69,
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 13
+      },
+      "title": "예외 지침: 근거가 없을 때 지어내지 않는다",
+      "reason": "39장 짚을 점 셋째(2단계 끝 예외 지침)와 27장 근거 부족 카드가 맡는다"
     },
     {
-      "source_day": 5,
-      "source_slide": 56,
-      "destination": 56
+      "old_practical": 116,
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 58
+      },
+      "title": "실습: HYD 업무 도구의 연결과 호출",
+      "reason": "실라버스 실전반 42~48행(C67)에 포털 업무 도구 연결 실습 행이 없다(통합반 60행 전용). 포털 에이전트의 도구 확인은 실습 1(43행)"
     },
     {
-      "source_day": 5,
-      "source_slide": 58,
-      "destination": 58
+      "old_practical": 117,
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 59
+      },
+      "title": "등록 상태 · 연결 검사 · 호출 기록의 확인",
+      "reason": "같음"
     },
     {
-      "source_day": 6,
-      "source_slide": 4,
-      "destination": 60
+      "old_practical": 125,
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 67
+      },
+      "title": "Quiz 1. 처리 기록의 한 장면",
+      "reason": "퀴즈를 세 문항으로 새로 냈다(기준 14절 3문항). 실행 고리의 판단은 16장 판단 문제와 67장이 받는다"
     },
     {
-      "source_day": 6,
-      "source_slide": 6,
-      "destination": 62
+      "old_practical": 126,
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 68
+      },
+      "title": "Quiz 2. 읽지 못한 값과 묵은 값",
+      "reason": "26장 응용(같은 쿨러 경보, 다른 근거 상태)으로 넓혔다"
     },
     {
-      "source_day": 6,
-      "source_slide": 7,
-      "destination": 63
+      "old_practical": 127,
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 69
+      },
+      "title": "Quiz 3. 허용되지 않은 도구",
+      "reason": "27장 권한 제한 카드 · 60장 판단 문제가 받는다"
     },
     {
-      "source_day": 6,
-      "source_slide": 8,
-      "destination": 64
+      "old_practical": 129,
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 70
+      },
+      "title": "Quiz 5. 시간을 넘긴 재고 조회",
+      "reason": "59장 표와 60장 판단 문제(Notion 읽기 실패)로 옮겼다"
     },
     {
-      "source_day": 6,
-      "source_slide": 11,
-      "destination": 67
+      "old_practical": 130,
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 71
+      },
+      "title": "Quiz 6. 등록한 서버에서 에이전트가 쓸 수 있는 도구",
+      "reason": "57장 표(표시 없는 도구는 별도 확인 없이 막음)가 받는다. 통합반 6회차와 같은 문항을 두지 않았다"
     },
     {
-      "source_day": 6,
-      "source_slide": 13,
-      "destination": 69
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 60
+      },
+      "title": "실습: 품질 불량 접수의 후속 업무 연결(간지 · 설명 60~61)",
+      "reason": "통합반 5회차 51행 전용 실습. 실전반은 6장 활용 범위 표의 한 행으로만 다룬다(억지 과제 추가 금지)"
     },
     {
-      "source_day": 6,
-      "source_slide": 15,
-      "destination": 71
+      "source": {
+        "course": "통합반",
+        "day": 5,
+        "slide": 62
+      },
+      "title": "실습: 여러 센서의 이상 징후 탐색과 시각화(간지 · 설명 62~63)",
+      "reason": "통합반 5회차 52행 전용 실습. 6장 활용 범위 표의 한 행"
     },
     {
-      "source_day": 6,
-      "source_slide": 19,
-      "destination": 75
-    },
-    {
-      "source_day": 6,
-      "source_slide": 20,
-      "destination": 76
-    },
-    {
-      "source_day": 6,
-      "source_slide": 23,
-      "destination": 79
-    },
-    {
-      "source_day": 6,
-      "source_slide": 62,
-      "destination": 80
-    },
-    {
-      "source_day": 6,
-      "source_slide": 24,
-      "destination": 82
-    },
-    {
-      "source_day": 6,
-      "source_slide": 31,
-      "destination": 89
-    },
-    {
-      "source_day": 6,
-      "source_slide": 37,
-      "destination": 95
-    },
-    {
-      "source_day": 6,
-      "source_slide": 40,
-      "destination": 98
-    },
-    {
-      "source_day": 6,
-      "source_slide": 43,
-      "destination": 101
-    },
-    {
-      "source_day": 6,
-      "source_slide": 44,
-      "destination": 102
-    },
-    {
-      "source_day": 6,
-      "source_slide": 58,
-      "destination": 116
-    },
-    {
-      "source_day": 6,
-      "source_slide": 60,
-      "destination": 118
-    },
-    {
-      "source_day": 5,
-      "source_slide": 64,
-      "destination": 120
-    },
-    {
-      "source_day": 6,
-      "source_slide": 66,
-      "destination": 121
-    },
-    {
-      "source_day": 6,
-      "source_slide": 67,
-      "destination": 123
-    },
-    {
-      "source_day": 5,
-      "source_slide": 66,
-      "destination": 124
-    },
-    {
-      "source_day": 5,
-      "source_slide": 69,
-      "destination": 127
-    },
-    {
-      "source_day": 6,
-      "source_slide": 69,
-      "destination": 128
-    },
-    {
-      "source_day": 6,
-      "source_slide": 70,
-      "destination": 129
-    },
-    {
-      "source_day": 6,
-      "source_slide": 71,
-      "destination": 130
-    },
-    {
-      "source_day": 5,
-      "source_slide": 70,
-      "destination": 131
-    },
-    {
-      "source_day": 6,
-      "source_slide": 72,
-      "destination": 132
+      "source": {
+        "course": "통합반",
+        "day": 6,
+        "slide": 64
+      },
+      "title": "실습: 대화형 AI 학습 코치 만들기(간지 · 설명 64~65)",
+      "reason": "통합반 6회차 63행 전용. 실전반은 같은 Notion 연결을 다음 협의 안건(48행)에 쓴다"
     }
-  ],
-  "metadata_rewritten": [
-    1,
-    2,
-    3
-  ],
-  "lab_screen_adapted": [
-    117
-  ],
-  "layout_reworded": [
-    119
-  ],
-  "omissions": "통합반5 품질대응·센서시각화 실습 소개60~63, 통합반6 학습코치 소개64~65는 이번 실전반4 미배정 활동. 통합반6 메타정보1~3과 퀴즈간지68은 공통 안내로 통합. 핵심 이론5:4~55 및6:4~57 전체 보존. 복습·용어·퀴즈6문제 전체 보존."
+  ]
 }

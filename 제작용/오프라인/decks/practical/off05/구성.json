@@ -1,0 +1,132 @@
+{
+ "title": "스킬 · 도구 조합 · 변경 근거 이해하기",
+ "intro": "실전반 오프라인 5회차 이론(50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 38행의 범위로 온라인 실전반 4회차 덱의 스킬 · MCP 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(39~41행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh practical 05`.",
+ "md": "실전반_오프라인_05회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day04",
+   "n": 37
+  },
+  {
+   "src": "practical/day04",
+   "n": 38
+  },
+  {
+   "src": "practical/day04",
+   "n": 39
+  },
+  {
+   "src": "practical/day04",
+   "n": 40
+  },
+  {
+   "src": "practical/day04",
+   "n": 43,
+   "note_edits": [
+    [
+     "→ 다음 단원의 MCP",
+     "→ 뒤 단원의 MCP"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day04",
+   "n": 45
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day04",
+   "n": 41
+  },
+  {
+   "src": "practical/day04",
+   "n": 46
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day04",
+   "n": 50
+  },
+  {
+   "src": "practical/day04",
+   "n": 51
+  },
+  {
+   "src": "practical/day04",
+   "n": 52
+  },
+  {
+   "src": "practical/day04",
+   "n": 54
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day04",
+   "n": 57
+  },
+  {
+   "src": "practical/day04",
+   "n": 58
+  },
+  {
+   "src": "practical/day04",
+   "n": 59
+  },
+  {
+   "src": "practical/day04",
+   "n": 61,
+   "note_edits": [
+    [
+     "· 결정할 질문: 회의 스킬의 미결 + Notion 기록 → 회의록 절 · 페이지",
+     "· 결정할 질문: 회의 스킬의 미결 + 회의록(현장에서 연결되면 자기 Notion 기록) → 회의록 절 · 페이지"
+    ]
+   ]
+  },
+  {
+   "new": "review"
+  },
+  {
+   "new": "terms"
+  },
+  {
+   "src": "practical/day04",
+   "n": 66
+  },
+  {
+   "new": "q1"
+  },
+  {
+   "src": "practical/day04",
+   "n": 68
+  },
+  {
+   "new": "q3"
+  },
+  {
+   "new": "answer"
+  }
+ ],
+ "note_end": [
+  "이어지는 실습: 파일 · Git · 시간 MCP를 필요한 범위만 열어 연결하고, 회의록 두 건 · 점검 메모에서 결정 · 담당 · 기한 · 근거를 뽑는 스킬(없으면 미정)을 만든 뒤, 점검 메모 조회 함수를 구현해 조회 실패와 자료 없음을 가른다",
+  "이를 엮어 결정할 질문 · 확인된 사실 · 남은 확인 · 파일 근거의 다음 협의 안건을 만들고 이전 결과와 대조한다. 기본은 Notion 없이 — 진행은 핸즈온 가이드",
+  "다음 회차: 점검 요청의 변경 요구를 명세하고 검증한다"
+ ]
+}

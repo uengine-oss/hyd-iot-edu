@@ -21,6 +21,11 @@ for item in json.loads((HERE/'package-index.json').read_text(encoding='utf-8'))[
         if '-02-' in item['id']:
             for file in ['결과/schema.json','결과/graph.json','결과/load.cypher','offline_load.py']:assert base+file not in names,(item['id'],file)
         if item['id'].endswith('-graph'):assert base+'입력/graph.json' in names
+        if item['id'] in ('integrated-02-graph','practical-02-graph'):
+            assert any(x.startswith(base+'입력/자료_변경분/') for x in names),(item['id'],'수정본 없음')
+        if item['id'].startswith(('integrated-02-','practical-02-')) and item['id'].endswith(('-ontology','-graph')):
+            assert not any(Path(x).name in ('기대답.json','session2_검증.json') or '/갈래B/' in x for x in names),(item['id'],'강사 기대 답 포함')
+            assert not any(x.startswith(base+'images/') for x in names),(item['id'],'옛 자료 조회 화면 포함')
         if item['id']=='practical-02-ontology':
             previous=json.loads(z.read(base+'입력/graph.json'))
             assert not any('Supplier' in n['labels'] for n in previous['nodes'])

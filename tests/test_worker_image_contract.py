@@ -34,7 +34,8 @@ def test_worker_build_rejects_node_before_security_release():
     assert node, 'Node is required to execute the Dockerfile version guard'
     source = DOCKERFILE.read_text(encoding='utf-8')
     guard = re.search(r'node -e "([^"]+)"', source).group(1)
-    for version, expected in [('22.23.3', False), ('22.23.4', True), ('22.24.0', True), ('18.20.8', False)]:
+    # Same LTS line and floor as the classroom PCs (install_windows.ps1 · install_macos.sh · README: 24.22.1).
+    for version, expected in [('24.22.0', False), ('24.22.1', True), ('24.23.0', True), ('22.23.4', False), ('26.12.1', False), ('18.20.8', False)]:
         code = guard.replace('process.versions.node', repr(version))
         result = subprocess.run([node, '-e', code], capture_output=True)
         assert (result.returncode == 0) is expected, version

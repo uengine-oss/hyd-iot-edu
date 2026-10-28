@@ -4,7 +4,7 @@
 
 전제: 시작.bat(scripts/start_all.sh)이 「완료」까지 돈 스택, 수업 시작 상태(구조판 지식 · 문서 적재 전 · 처리 건 0),
 AI 워커 1개(강의 중계 모델). 포트는 시작 스크립트가 저장한 .hyd-runtime/ports.json 에서 읽는다(포트가 옮겨진 PC 그대로).
-판정 규칙(문서/시스템/6_남은_일.md 인계 6절):
+판정 규칙(문서/시스템/검증_기록/지난기록/6_남은_일_~2026-10-28.md 2026-10-25 인계 6절):
   - 조작은 포털 화면 클릭 · 입력으로 한다. API 는 결과 확인(관측)과, 실습 안내가 「검증된 API 절차」로 정한 곳에만 쓴다.
   - 실습마다 정상 경로와 예외 경로(반려 · 거절 · 보류 · 권한 · 잘못된 입력 · 막혔을 때 되돌리기)를 함께 판정한다.
   - AI 단계는 같은 입력으로 3번 돌려 추천 카드 · 승인 역할 · 근거 · 추출 결과 · 소요 시간이 같은 다음 단계를 주는지 본다(Round.repeat3).
@@ -78,6 +78,9 @@ class Round:
         self.logs: dict[str, LabLog] = {}
         self.lab = "-"
         self.memo: dict[str, Any] = {}                                    # 실습 사이에 넘길 값(앞 실습이 만든 id 등)
+        self.ai_runs = 3                                                  # --ai-runs: 같은 AI 단계 반복 수(1이면 일치 판정은 측정 안 함)
+        self.unlock_code = ""                                             # --unlock-code-file: 13 교대 실습을 여는 강사 코드(출력하지 않는다)
+        self.not_measured: list[dict] = []                                # 이번 실행이 재지 않은 판정(통과로 세지 않는다)
         page.on("console", self._on_console)
         page.on("pageerror", lambda e: self._log().console_errors.append(f"pageerror: {e}"))
         page.on("requestfailed", lambda r: self._on_failed(r.url, r.failure or "failed"))
@@ -183,11 +186,15 @@ class Round:
         return True, t[:200]
 
     # ------------------------------------------------------------------ AI 3회
-    def repeat3(self, step: str, run_once: Callable[[int], dict], same_keys: tuple[str, ...], limit_s: float | None = None) -> list[dict]:
+    def repeat3(self, step: str, run_once: Callable[[int], dict], same_keys: tuple[str, ...], limit_s: float | None = None,
+                single: int = 0) -> list[dict]:
         """같은 입력으로 AI 단계를 3번 돌린다. run_once(i) 는 {'seconds': 소요, 키: 값 …} 을 낸다.
-        same_keys 의 값이 3번 모두 같아야 학생 모두가 같은 다음 단계를 받는다. limit_s 가 있으면 가장 느린 소요 시간이 그 안이어야 한다."""
+        same_keys 의 값이 3번 모두 같아야 학생 모두가 같은 다음 단계를 받는다. limit_s 가 있으면 가장 느린 소요 시간이 그 안이어야 한다.
+        --ai-runs 1(연속 수업 확인)이면 single 번째 실행 하나만 돌리고, 반복 일치와 나머지 실행의 경로는
+        측정하지 않은 것으로 따로 남긴다(통과 아님)."""
         runs = []
-        for i in range(3):
+        n = self.ai_runs
+        for i in (range(3) if n >= 3 else (single,)):
             # 학생마다 워커가 하나다 — 앞 단계의 AI 작업이 아직 돌면 그 뒤에 줄을 서 소요 시간이 부푼다(최종 1차: 질문이 추출 뒤에 줄 섬)
             self.wait(1200, lambda: (self.get(self.worker + "/healthz", timeout=5) or {}).get("runs_in_flight") == 0, every=5)
             t0 = time.monotonic()
@@ -197,13 +204,16 @@ class Round:
                 got = {"error": f"{type(e).__name__}: {e}"}
             got.setdefault("seconds", round(time.monotonic() - t0, 1))
             runs.append(got)
-            print(f"    {step} {i + 1}/3: " + json.dumps(got, ensure_ascii=False, default=str)[:400], flush=True)
+            print(f"    {step} {i + 1}/{n}: " + json.dumps(got, ensure_ascii=False, default=str)[:400], flush=True)
         (self.out / "ai3").mkdir(parents=True, exist_ok=True)
         (self.out / "ai3" / f"{self.lab}-{re.sub(r'[^0-9A-Za-z가-힣]+', '_', step)}.json").write_text(
             json.dumps(runs, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
         errors = [r["error"] for r in runs if r.get("error")]
-        self.check(f"{step} — 3번 모두 끝까지", not errors, "; ".join(errors), kind="ai3")
-        for key in same_keys:
+        self.check(f"{step} — {n}번 모두 끝까지", not errors, "; ".join(errors), kind="ai3")
+        if n < 3:
+            self.not_measured.append(dict(lab=self.lab, name=f"{step} — 3번 같은 {', '.join(same_keys)}",
+                                          why=f"--ai-runs {n}: {single + 1}번째 실행만 돌림. 반복 일치·다른 실행의 경로는 재지 않음(기존 증거를 따로 대조)"))
+        for key in same_keys if n >= 3 else ():
             values = [json.dumps(r.get(key), ensure_ascii=False, sort_keys=True, default=str) for r in runs]
             self.check(f"{step} — 3번 같은 {key}", len(set(values)) == 1 and not errors, " | ".join(v[:200] for v in values), kind="ai3")
         slowest = max(float(r.get("seconds") or 0) for r in runs)
@@ -222,8 +232,11 @@ class Round:
                 bad.append(Verdict(lab, "콘솔 오류 · 실패한 요청", False, "quality"))
         (self.out / "results.json").write_text(json.dumps({
             "verdicts": [asdict(v) for v in self.verdicts],
-            "logs": {k: asdict(v) for k, v in self.logs.items()}}, ensure_ascii=False, indent=2), encoding="utf-8")
-        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개 · 별도 콘솔/통신 오류 실습 {log_failures}개", ""]
+            "logs": {k: asdict(v) for k, v in self.logs.items()}, "not_measured": self.not_measured}, ensure_ascii=False, indent=2), encoding="utf-8")
+        lines = ["# 수업 한 바퀴 결과", "", f"판정 {len(self.verdicts)}개 · 실패 {len([v for v in self.verdicts if not v.ok])}개 · 별도 콘솔/통신 오류 실습 {log_failures}개"
+                 + f" · 측정 안 함 {len(self.not_measured)}개(통과 아님)", ""]
+        if self.not_measured:
+            lines += ["## 측정 안 함(통과로 세지 않음)"] + [f"- [{x['lab']}] {x['name']} — {x['why']}" for x in self.not_measured] + [""]
         for lab in dict.fromkeys(v.lab for v in self.verdicts):
             vs = [v for v in self.verdicts if v.lab == lab]
             lines.append(f"## {lab} — 통과 {sum(v.ok for v in vs)}/{len(vs)}")
@@ -818,6 +831,12 @@ def lab_08_human(r: Round):
 def lab_90_menu_sweep(r: Round):
     tabs = r.page.eval_on_selector_all("button[data-tab]", "bs => bs.map(b => [b.dataset.tab, b.innerText.trim()])")
     for tab, title in tabs:
+        button = r.page.locator(f"button[data-tab='{tab}']").first
+        if button.is_disabled():
+            # 수업 잠금이 닫은 메뉴(courseAccess.js closedTabs) — 열리지 않는 것이 정상이고, 이유가 사람 글이어야 한다
+            ok, why = r.human_message(button.get_attribute("title") or "")
+            r.check(f"메뉴 「{title}」 — 수업 잠금으로 꺼짐 · 이유를 알린다", ok and bool(button.get_attribute("title")), why, kind="exception")
+            continue
         try:
             r.tab(tab)
             r.page.wait_for_timeout(2500)
@@ -1255,121 +1274,80 @@ def _b_skill_count(stats: str) -> int:
 
 
 # ---------------------------------------------------------------------- 05
-@lab("05", "4-1 · 3-3 매뉴얼 → 지식 (지식 관리 · 지식 지도 · 데이터 연결)")
+@lab("05", "4회차 매뉴얼 원문과 등록된 지식의 조건 · 출처 대조 (기본 잠금: 제공 문서 보기 · 대조, 추출 · 적재는 교대 실습에서)")
 def lab_05_manual_to_knowledge(r: Round):
+    """최신 실라버스(통합 18행 · 실전 59행): 새로 추출하지 않고 제공 원문과 시작 때 적재된 검토 지식을 대조한다.
+    기본 잠금은 추출 · 임의 적재 · 되돌리기를 막는다(course_access.gate). 막힘도 학생이 읽을 한국어여야 한다."""
     page = r.page
     before = _b_onto_stats(r)
     r.memo["b_skills_before"] = _b_skill_count(before)
-    r.check("지식 지도(적재 전) 읽힘", _b_skill_count(before) >= 0, before)
+    r.check("지식 지도(시작 때 적재한 기본 지식) 읽힘", _b_skill_count(before) > 0, before)
+    loaded = {k: _b_current_batch(r, k) for k in ("HM-8", "PM-02", "PR-07")}
+    r.memo["b_loaded"] = {k: bool(v) for k, v in loaded.items()}
+    r.check("세 제공 문서가 현재 판본으로 적재돼 있다(시작 스크립트 7/8)", all(loaded.values()),
+            json.dumps({k: (v or {}).get("batch") for k, v in loaded.items()}, ensure_ascii=False))
 
-    # ---- 예외: 잘못된 파일 등록 거절(서버 manual_sources.extract · save). 거절된 파일은 보관 원문에 남지 않아야 한다
+    # ---- 예외: 파일 없음 · 잘못된 파일 · 제공하지 않은 문서는 거절되고 보관 원문에 남지 않는다
     r.tab("knowledge")
     total0 = r.get(f"{r.process}/api/kg/manuals/sources?limit=1")["total"]
-    page.click("#manualPreview")                                                                # 파일 없이 미리보기 — 라이브 확인
+    page.click("#manualPreview")
     r.check("파일 없이 미리보기 → 「파일을 먼저 선택해 주세요」", "파일을 먼저 선택" in page.locator("#manualResult").inner_text(),
             page.locator("#manualResult").inner_text(), kind="exception")
-    bad_files = [("빈 파일", {"name": "empty.md", "mimeType": "text/markdown", "buffer": b""}, "바이트"),
-                 ("다른 형식(.docx)", {"name": "manual.docx", "mimeType": "application/octet-stream", "buffer": b"PK\x03\x04 not a manual"}, "지원 파일"),
-                 ("PDF 이름의 텍스트", {"name": "fake.pdf", "mimeType": "application/pdf", "buffer": "가짜 PDF".encode()}, "PDF")]
-    for label, f, word in bad_files:
+    bad_files = [("빈 파일", {"name": "empty.md", "mimeType": "text/markdown", "buffer": b""}),
+                 ("제공하지 않은 문서", {"name": "my-notes.md", "mimeType": "text/markdown", "buffer": "# 내 메모\n\n1. 팬을 끈다".encode()}),
+                 ("PDF 이름의 텍스트", {"name": "fake.pdf", "mimeType": "application/pdf", "buffer": "가짜 PDF".encode()})]
+    for label, f in bad_files:
         page.set_input_files("#manualFile", f)
         page.click("#manualPreview")
         page.wait_for_selector("#manualResult .neg, #manualResult .mprev", timeout=30_000)
         text = page.locator("#manualResult").inner_text()
         ok, why = r.human_message(text)
-        r.check(f"잘못된 파일 거절 — {label}", "미리보기 실패" in text and word in text and ok, why, kind="exception")
+        r.check(f"잘못된 파일 거절 — {label}", "미리보기 실패" in text and ok, why, kind="exception")
     r.check("거절된 파일은 보관 원문에 남지 않는다", r.get(f"{r.process}/api/kg/manuals/sources?limit=1")["total"] == total0, kind="exception")
 
-    # ---- HM-8: 등록 → 미리보기 → 원문 보기 → 추출 3번(AI 3회) → 검토(예외 · 수정 · 제외) → 적재 → 되돌리기 → 다시 적재
+    # ---- HM-8 제공 원문 열기 → 원문 전체 보기 → 등록된 검토 지식과 대조
     sid = _b_preview_file(r, "HM-8")
     head = page.locator("#manualResult .mprev .muted").first.inner_text() if sid else page.locator("#manualResult").inner_text()
-    r.check("HM-8 미리보기(파일 · 글자 수 · 절 · 절차)", bool(sid) and "HM-8_cooler-fan-manual.md" in head and "절 " in head, head)
+    r.check("HM-8 제공 원문 미리보기(파일 · 글자 수 · 절 · 절차)", bool(sid) and "HM-8_cooler-fan-manual.md" in head and "절 " in head, head)
     if not sid:
         return
     r.memo["b_sid_HM-8"] = sid
-    page.click("#manualFullSource")                                                             # 코드 확인
+    page.click("#manualFullSource")
     r.wait(15, lambda: page.locator("#manualSourceText details").count() > 0, every=1)
-    r.check("추출 원문 전체 보기(보관 원문 쪽별)", page.locator("#manualSourceText details").count() >= 1, kind="normal")
-
-    runs = r.repeat3("HM-8 추출", lambda i: _b_run_extraction(r, "HM-8", sid, i),
-                     ("procedures", "failure_modes", "causes", "candidate_outputs", "issue_codes"), limit_s=_B_EXTRACT_LIMIT_S)
-    prog = next((x["progress"][0] for x in runs if x.get("progress")), "")
-    if prog:
-        ok, why = r.human_message(prog)
-        r.check("추출 중 화면 상태가 사람 글(무엇이 진행 중인지)", ok and "추출 상태" in prog, why, kind="quality")
-    r.check("3번 추출해도 이 문서의 추출 작업 목록에 3건이 고를 수 있게 보인다",
-            page.locator("#manualExtractionRuns option[value]:not([value=''])").count() >= 3,
-            str(page.locator("#manualExtractionRuns option").all_inner_texts()), kind="normal")
-    # 남는 추출 결과를 버리는 버튼은 없다 — 학생은 한 번 추출하고, 남은 결과는 처리 건 화면에 끝난 건으로 남을 뿐 지식에 영향이 없다(차이 있음, 유지)
-    last = runs[-1]
-    if last.get("error"):
-        r.check("HM-8 추출 결과가 화면에 열림", False, last["error"])
-        return
-    r.check("HM-8 원문 대조 — 부정 조건 · 단위 · 순서 · 대상 설비 오추출 없음(마지막 추출)", not last["quality"], "; ".join(last["quality"])[:1200], kind="quality")
-    code, body = _b_extraction(r, sid, last["instance"])
-    pv = body.get("preview") or {}
-    # 추출한 원인 · 규칙을 학생이 화면에서 보고 제외할 수 있어야 한다(실라버스 4-1). hitl.js renderPreview 는 절 · 절차 · 단계만 그린다.
-    shown = page.locator("#manualResult").inner_text()
-    k = pv.get("knowledge") or {}
-    hidden = [x.get("name") or x.get("annotation") or x.get("id") for kind in ("causes", "rules") for x in k.get(kind) or []
-              if (x.get("name") or x.get("annotation") or x.get("id") or "") not in shown]
-    r.check("추출된 원인 · 규칙이 검토 화면에 보이고 제외할 수 있다", not hidden and (k.get("causes") or k.get("rules")) is not None,
-            f"화면에 없는 항목 {len(hidden)}개: {hidden[:6]}", kind="quality")
-    cards = page.locator("#manualResult .mprev").first.inner_text()
-    r.check("현재 지식 기준 검사 카드가 보인다", "현재 지식 기준 검사" in cards, kind="normal")
-
-    _b_review_exceptions(r, "HM-8")
-    changes = _b_apply_review(r, "HM-8", pv)
-    ok, msg = _b_commit(r, "HM-8")
-    r.check("HM-8 검토한 내용 적재", ok, f"{msg} · 검토 변경 {changes}")
-    if not ok:
-        hm, why = r.human_message(msg)
-        r.check("적재 실패 문구가 사람 글이고 화면에서 고칠 길을 말한다", hm, why, kind="exception")
-        return
-    batch = _b_current_batch(r, "HM-8")
-    r.check("적재 이력: HM-8 현재 판본", bool(batch) and batch.get("status") == "ACTIVE", json.dumps(batch, ensure_ascii=False)[:300])
-    after = _b_onto_stats(r)
-    # 수업용 기본 지식이 이미 있으므로 4회차 적재는 같은 문서의 개정이다 — 조치 방법이 줄지 않으면 된다(검토에서 뺀 항목만큼 규칙 · 증거는 줄 수 있다)
-    r.check("지식 지도: 개정 적재 뒤 조치 방법이 줄지 않았다", _b_skill_count(after) >= r.memo["b_skills_before"], f"{before} → {after}")
-
-    # ---- 되돌리기(최신 판본) → 지식 지도에서 빠짐 → 같은 추출을 다시 열어 다시 적재
-    r.tab("knowledge")
-    undo = page.locator("#manualHistory [data-manual-undo]")                                   # 코드 확인 — 확인 대화상자 없이 바로 되돌린다
-    r.check("적재한 문서 카드에 되돌리기 버튼", undo.count() >= 1, kind="exception")
+    r.check("원문 전체 보기(보관 원문 쪽별)", page.locator("#manualSourceText details").count() >= 1)
+    extract = page.locator("#manualAgentExtract")
+    r.check("기본 잠금: [추출 제안 준비]는 꺼져 있고 강사 코드가 필요하다고 알린다",
+            extract.count() > 0 and extract.is_disabled() and "강사" in (extract.get_attribute("title") or ""),
+            extract.get_attribute("title") or "버튼 없음", kind="exception")
+    code, body = r.api("POST", f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/extractions",
+                       {"request_id": "00000000-0000-4000-8000-000000000005"})
+    detail = (body or {}).get("detail", "") if isinstance(body, dict) else str(body)
+    ok, why = r.human_message(detail)
+    r.check("화면 밖 추출 요청도 서버가 거절(403 · 한국어, AI 호출 없음)", code == 403 and ok and "강사" in detail, f"{code} {why}", kind="exception")
+    r.check("거절된 추출은 처리 건을 만들지 않는다", not (r.get(f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/extractions?limit=5")
+                                                 or {}).get("items"), kind="exception")
+    pv = r.get(f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/preview")
+    src = _b_source_procedures((_B_DOC_DIR / _B_DOC_FILES["HM-8"]).read_text(encoding="utf-8"))
+    got = {p["id"] for p in pv.get("procedures") or []}
+    r.check("원문 대조: 원문의 절차 번호가 미리보기에 모두 있다", set(src) <= got, f"원문 {sorted(src)} · 미리보기 {sorted(got)}", kind="quality")
+    hist = page.locator("#manualHistory").inner_text()
+    r.check("적재 이력 카드에 HM-8 현재 판본(시작 때 검토본)이 보인다", "HM-8" in hist, hist[:300])
+    undo = page.locator("#manualHistory [data-manual-undo]")
     if undo.count():
-        undo.first.click()
-        r.wait(30, lambda: (_b_current_batch(r, "HM-8") or {}).get("status") == "ROLLED_BACK" or _b_current_batch(r, "HM-8") is None, every=2)
-        hist = page.locator("#manualHistory").inner_text()
-        rolled = _b_skill_count(_b_onto_stats(r))
-        r.check("되돌리기 → 지식 지도 조치 방법이 적재 전 수로", rolled == r.memo["b_skills_before"], f"{rolled} vs {r.memo['b_skills_before']} · {hist[:200]}", kind="exception")
-        r.tab("knowledge")
-        # 「보관 원문 · 다시 검토」 — 그 문서(HM-8) 원문의 버튼을 고른다. final3: 첫 버튼(PR-07)을 눌러 PR-07 에 HM-8 검토를 적재했고 C 가 보류됐다
-        reopen = page.locator(f"#manualSources [data-manual-reopen='{sid}']")
-        if reopen.count():
-            page.locator("#manualSources details summary").first.click()
-            reopen.first.click()
-            page.wait_for_selector("#manualResult .mprev", timeout=30_000)
-            r.wait(10, lambda: page.locator(f"#manualExtractionRuns option[value='{last['instance']}']").count() > 0, every=1)
-            if page.locator(f"#manualExtractionRuns option[value='{last['instance']}']").count():
-                page.select_option("#manualExtractionRuns", last["instance"])
-            page.click("#manualAgentResult")
-            r.wait(30, lambda: "에이전트 제안" in page.locator("#manualAgentStatus").inner_text(), every=1)
-            _b_apply_review(r, "HM-8", (_b_extraction(r, sid, last["instance"])[1].get("preview") or {}))
-            ok2, msg2 = _b_commit(r, "HM-8")
-            r.check("되돌린 뒤 같은 추출을 다시 열어 다시 적재(뒤처진 학생 따라붙기)", ok2, msg2, kind="exception")
-        else:
-            r.check("되돌린 뒤 보관 원문 「다시 검토」로 다시 열 수 있다", False, "버튼 없음")
+        undo.first.click(); page.wait_for_timeout(1500)
+        r.check("기본 잠금: 기본 지식 되돌리기는 막히고 판본이 그대로", (_b_current_batch(r, "HM-8") or {}).get("batch") == loaded["HM-8"]["batch"],
+                page.locator("#manualHistory").inner_text()[:300], kind="exception")
 
     # ---- 지식 지도: 조치 → 단계 → 근거 매뉴얼 절 → 속한 문서(출처)
     r.tab("ontology")
     page.click("#ontoReload")
     r.wait(20, lambda: page.locator("#ontoMap .o-node").count() > 0, every=1)
-    page.fill("#ontoSearch", "팬 최대 운전")                                                     # 라이브 확인(검색 칸)
-    node = page.locator("#ontoMap .o-node[aria-label*='조치 방법'][aria-label*='팬 최대 운전']").first   # aria-label = 「종류\n이름」(enterprise.js drawGraph)
+    page.fill("#ontoSearch", "팬 최대 운전")
+    node = page.locator("#ontoMap .o-node[aria-label*='조치 방법'][aria-label*='팬 최대 운전']").first
     trail = []
     if node.count():
         node.click()
-        for rel in ("절차 단계", "근거 매뉴얼", "속한 문서"):                                     # RELATION_KO: HAS_STEP · REFERS_TO · PART_OF
+        for rel in ("절차 단계", "근거 매뉴얼", "속한 문서"):
             link = page.locator("#ontoNode li", has_text=rel).locator("a[data-go]").first
             if not link.count():
                 break
@@ -1381,57 +1359,12 @@ def lab_05_manual_to_knowledge(r: Round):
     # ---- 데이터 연결: 정적 기준(지식) vs 업무 DB · 시계열 DB 현재값
     r.tab("fabric")
     r.wait(15, lambda: page.locator("#fabRun").count(), every=1)
-    page.select_option("#fabQuery", label="고온 구간 로트와 실제 유온 기록")                         # 라이브 확인(선택지 문구)
+    page.select_option("#fabQuery", label="고온 구간 로트와 실제 유온 기록")
     page.click("#fabRun")
     r.wait(30, lambda: "읽는 중" not in page.locator("#fabRun").inner_text() and page.locator("#fabResult .card").count(), every=1)
     res = page.locator("#fabResult").inner_text()
     r.check("데이터 연결: 업무 DB · 시계열 DB 값이 출처(표 · 열)와 함께", "업무 DB" in res and "시계열 DB" in res and "조회 실패" not in res, res[:500])
-    r.check("데이터 연결: 기준(지식 그래프 임계값)과 현재값을 구별해 보인다", "기준" in res, res[:500], kind="quality")   # 미확인: 결과 문구에 기준값이 따로 찍히는지
-
-    # ---- PM-02 · PR-07: 한 번씩 추출 → 검토 → 적재 (B · C 흐름 전제). AI 3회는 HM-8 에서 봤다(시간: 3문서 × 3회는 50분 실습을 넘는다)
-    for key in ("PM-02", "PR-07"):
-        s = _b_preview_file(r, key)
-        if not s:
-            r.check(f"{key} 미리보기", False, page.locator("#manualResult").inner_text())
-            continue
-        one = _b_run_extraction(r, key, s, 0)
-        r.check(f"{key} 추출 끝(소요 {one.get('seconds')}초 · 교정 {one.get('corrections')}회)", not one.get("error"), one.get("error") or "", seconds=one.get("seconds"))
-        if one.get("error"):
-            continue
-        r.check(f"{key} 원문 대조 — 부정 조건 · 단위 · 순서 · 대상", not one["quality"], "; ".join(one["quality"])[:1200], kind="quality")
-        r.check(f"{key} 후보 규칙이 추출됐다(없으면 판단이 이 절차를 후보로 못 낸다)", bool(one["candidate_outputs"]), str(one["issue_codes"]), kind="quality")
-        pv = _b_extraction(r, s, one["instance"])[1].get("preview") or {}
-        # B · C 판단은 원문의 시행 기준(정기 정비) · 총비용 비교(구매) 정책을 요구한다 — 없는 개정을 적재하면 뒤 회차의 B · C 가 보류된다(final2 · 92)
-        links = {p["id"]: (pv.get("links") or {}).get(p["id"], p.get("link")) or {} for p in pv.get("procedures") or []}
-        if key == "PR-07":
-            pol, need = "purchase_comparison_policy", [sop for sop, l in links.items() if l.get("scope") == "purchase" and l.get("executable") is True]
-        else:
-            pol = "maintenance_policy"
-            need = sorted({o for x in (pv.get("knowledge") or {}).get("rules") or [] if x.get("table") == "dt:action-candidates" and x.get("effect") == "SELECT"
-                           and any(t.get("value") == "PM_DUE" for t in x.get("tests") or []) for o in x.get("outputs") or [] if o in links})
-        missing = [sop for sop in need if not links[sop].get(pol)]
-        r.check(f"{key} 판단에 필요한 원문 정책({pol})이 추출됐다", bool(need) and not missing, f"필요 {need} · 빠짐 {missing}", kind="quality")
-        if not need or missing:
-            r.check(f"{key} 적재 전 검사가 정책 없는 실행 절차를 「준비 안 됨」으로 알린다", any(i.get("code") in ("PM_SCOPE_POLICY_REQUIRED", "PURCHASE_COMPARISON_POLICY_REQUIRED")
-                    for e in ((pv.get("validation") or {}).get("execution") or []) for i in e.get("issues") or []), "", kind="exception")
-            continue                                                       # 주의 깊은 학생은 적재하지 않고 다시 추출을 요청한다 — 수업용 기본 지식이 남는다
-        changes = _b_apply_review(r, key, pv)
-        ok, msg = _b_commit(r, key)
-        if not ok and msg.startswith("고장 유형을 고르세요:"):
-            # 원문에 고장 유형이 없는 확인 절차(입고 확인 등) — 학생은 안내대로 종류를 「일반 원문 참고 절차」로 바꾸고 다시 적재한다
-            for sop in re.findall(r"SOP-[A-Z0-9-]+", msg.split("—")[0]):
-                r.page.select_option(f"select[data-kind='{sop}']", "reference")
-                if r.page.locator(f"select[data-reference-executable='{sop}']").count():
-                    r.page.select_option(f"select[data-reference-executable='{sop}']", "false")
-                changes.append(f"참고 절차로 {sop}(안내대로)")
-            ok, msg = _b_commit(r, key)
-        r.check(f"{key} 적재", ok, f"{msg} · 검토 변경 {changes}")
-        if not ok:
-            hm, why = r.human_message(msg)
-            r.check(f"{key} 적재 실패 문구가 사람 글", hm, why, kind="exception")
-    loaded = {k: bool(_b_current_batch(r, k)) for k in ("HM-8", "PM-02", "PR-07")}
-    r.memo["b_loaded"] = loaded
-    r.check("세 문서 모두 현재 판본으로 적재(A · B · C 흐름 전제)", all(loaded.values()), str(loaded))
+    r.check("데이터 연결: 기준(지식 그래프 임계값)과 현재값을 구별해 보인다", "기준" in res, res[:500], kind="quality")
 
 
 # ---------------------------------------------------------------------- 06
@@ -1582,6 +1515,13 @@ def lab_06_first_agent(r: Round):
     r.check("처리 과정 · 도구 호출 기록이 화면에 보인다", "도구 호출" in proc and last.get("calls", 0) > 0, proc[:300])
     r.check("근거 접기에 실행한 질의 · 결과가 보인다", page.locator(".ask-a").get_by_text(re.compile("근거 — 실행한 질의")).count() > 0, kind="normal")
 
+    if r.ai_runs < 3:
+        # 연속 확인: 이미 실제 Luna 로 검증한 같은 질문은 다시 만들지 않는다(6_남은_일.md 「새 로컬 학생 질문의 정보 없음 실제 검증」)
+        r.not_measured.append(dict(lab=r.lab, name="기준 에이전트 비교 · 지식에 없는 질문(고객센터 전화번호)",
+                                   why="--ai-runs 1: 같은 질문의 기존 실제 실행 증거(course-model-unknown-question-live)를 재사용, 재생성하지 않음"))
+        _b_check_model_override(r, mine["id"], course)
+        return
+
     # ---- 기준 에이전트와 비교(같은 질문을 기본 에이전트에게)
     base = _b_ask(r, "sys:agent", q)
     r.check("기준 에이전트도 같은 질문에 근거 있는 답", base.get("kind") == "answered" and base.get("verified_ok"), base.get("reason") or "")
@@ -1721,8 +1661,10 @@ def lab_07_mcp_tools(r: Round):
         r.check("판단 제출은 직접 API에서도 거절", denied == 403, str(body)[:300], kind="exception")
         registration, body = r.api("POST", f"{r.process}/api/mcp/servers", {"name": _B_MCP_NAME})
         r.check("임의 서버 등록은 현재 수업 정책에서 차단", registration == 403, str(body)[:300], kind="exception")
-        r.check("현행 6회차 자료의 학생 서버 직접 등록 단계", registration in (200, 201),
-                "현재 수업 정책은 직접 등록을 막는다. 교재 동선 정합이 필요하다.", kind="quality")
+        # 최신 실라버스(통합 25 · 26행)는 포털에서 준비된 도구 기록만 보고, 개인 MCP 연결은 VS Code 랩에서 한다.
+        # 6회차 대본의 포털 등록 문장과의 불일치는 교재 작업의 범위다 — 포털 성공도 실패도 아닌 미정합으로 남긴다.
+        r.not_measured.append(dict(lab=r.lab, name="6회차 대본의 포털 개인 서버 등록 단계",
+                                   why="최신 실라버스는 포털 등록을 요구하지 않음 · 대본 정합은 교재 작업(미해결)"))
         return
     # ---- 사전 준비 서버 상태(기준 서버는 보기만)
     r.tab("mcp")
@@ -2135,11 +2077,15 @@ def _c_apply_start(r, start: dict):
             _c_set_fields(r, q("#flowStartFields ~ .field-rows").first, start["fields"])
 
 
-def _c_apply_branch(r, gw_name: str, target_name: str, spec: dict):
-    """분기 '<gw_name>' 블록에서 「→ <target_name>」 줄의 조건. spec = {default: true} 또는 {var, op, value}."""
-    block = r.page.locator("#flowEditor div.field[data-row]").filter(has_text=f"분기 '{gw_name}'").first
-    line = block.locator("tr[data-row]").filter(has_text=f"→ {target_name}").first
-    fid = line.get_attribute("data-row")
+def _c_apply_branch(r, gw_name: str, target_name: str, spec: dict, *, flow_id: str | None = None):
+    """분기 '<gw_name>' 블록에서 「→ <target_name>」 줄의 조건. spec = {default: true} 또는 {var, op, value}.
+    같은 이름의 분기가 여럿이면(교대의 회차별 「검토 결정」) 그림의 연결선 id(flow_id)로 그 줄을 고른다."""
+    if flow_id:
+        fid = flow_id
+    else:
+        block = r.page.locator("#flowEditor div.field[data-row]").filter(has_text=f"분기 '{gw_name}'").first
+        line = block.locator("tr[data-row]").filter(has_text=f"→ {target_name}").first
+        fid = line.get_attribute("data-row")
     q = lambda css: r.page.locator(f"#flowEditor {css}")                 # noqa: E731
     if spec.get("default"):
         q(f"input[data-default='{fid}']").check(); _c_settle(r); return
@@ -2404,243 +2350,72 @@ def _c_build_flow(r, kind: str, base_id: str) -> dict:
     return {"def_id": def_id, "version": ver or "1", "names": names, "ids": ids}
 
 
-# ====================================================================== 09 · 9-3 · 6-5/6-6 흐름 연결
-@lab("09", "9-3 · 6-5/6-6 흐름 연결 — bpmn.io 로 새로 그린 승인 흐름 · 쿨러 흐름 가져오기 → 연결 → 사전 검사 → 등록 · 배포")
+# ====================================================================== 09 · 등록된 실행 흐름 비교 (최신 실라버스 통합 31 · 실전 68)
+_C_CLASS_STEPS = {"c3_cooling": ("T_agent", "T_approve", "T_cmd", "T_reobs"), "c3_pm": ("T_agent", "T_approve", "T_wo"),
+                  "c3_spare": ("T_agent", "T_approve", "T_po", "T_gr")}
+
+
+def _c_class_definition(r, did: str) -> dict:
+    route = next((x for x in r.get(f"{r.process}/api/flows/deployments").get("routes") or [] if x.get("definition") == did), {})
+    return r.get(f"{r.process}/api/process/definitions/{did}?version={urllib.parse.quote(str(route.get('version') or '1'))}")
+
+
+@lab("09", "9-3 · 6-5/6-6 BPMN 비교 — bpmn.io 그림과 포털에 등록된 수업 흐름의 시작 · 에이전트 · 승인 · 명령 · 재관측 연결 (기본 잠금: 학생 등록 막힘)")
 def lab_09_flow_import(r):
-    # ---- (가) 간단한 승인 흐름(6-5 · 9일차 1) — 풀 하나 · 칸 셋, 빈 시작. 정답 파일이 저장소에 없다(실습_목록.md 70행) → 이 그림이 그 자리
-    aid = _c_free_id(r, "my_approval")
-    nodes = [("S", "start", "구매 요청", 0, 0), ("AP", "userTask", "팀장 승인", 1, 0), ("G", "xor", "승인했나?", 2, 0),
-             ("ROK", "serviceTask", "결과 보고: 승인", 3, 0), ("E1", "end", "승인 종결", 4, 0),
-             ("RRJ", "serviceTask", "결과 보고: 반려", 3, 1), ("E2", "end", "반려 종결", 4, 1)]
-    flows = [("f1", "S", "AP", ""), ("f2", "AP", "G", ""), ("fy", "G", "ROK", "승인"), ("fn", "G", "RRJ", "반려"),
-             ("f3", "ROK", "E1", ""), ("f4", "RRJ", "E2", "")]
-    xml_a, ids_a = _c_draw(aid, "간단 승인", nodes, flows, lanes=[("요청자", ["S"]), ("팀장", ["AP", "G"]), ("시스템", ["ROK", "RRJ", "E1", "E2"])])
-    msg, ok = _c_import(r, xml_a, "diagram.bpmn", aid)                  # bpmn.io 기본 파일 이름
-    r.check("승인 흐름 가져오기", ok and "단계 3개" in msg, msg)
-    start_human = r.page.locator("#flowEditor input[name=flowStart][value=human]").is_checked()
-    r.check("빈 시작(bpmn.io 기본)은 시작 조건 기본값이 「사람 입력 · 직접 시작」", start_human, "bpmn_import.merge_mapping 513-519", kind="quality")
-    lane_sel = r.page.locator("#flowEditor select[data-lane]")
-    r.check("칸(레인) 셋이 「담당 구역별 역할」에 보인다", lane_sel.count() == 3, str(lane_sel.count()))
-    # 칸 이름(팀장)이 역할 이름이 아니라 역할을 고른다 — 팀장 칸 = 생산관리자
-    for i in range(lane_sel.count()):
-        row_text = lane_sel.nth(i).locator("xpath=ancestor::tr[1]").inner_text()
-        if "팀장" in row_text:
-            lane_sel.nth(i).select_option("생산관리자"); _c_settle(r)
-    _c_apply_start(r, {"kind": "human", "fields": [{"key": "item", "text": "요청 품목"}, {"key": "amount", "text": "금액(만원)", "type": "number"}]})
-    _c_apply_task(r, "팀장 승인", {"part": "human", "inputs": ["item", "amount"],
-                                  "fields": [{"key": "verdict", "text": "결정", "type": "select", "items": ["승인", "반려"]},
-                                             {"key": "memo", "text": "의견", "type": "textarea"}]})
-    _c_apply_task(r, "결과 보고: 승인", {"part": "svc:report", "config": {"outcome": "정상", "title": "{item} 구매 승인", "summary": "금액 {amount}만원 승인 — {memo}"}})
-    # 예외: 분기 조건 하나를 비운 채 [검사] → 무엇을 고치라는지 사람 글로
-    _c_apply_task(r, "결과 보고: 반려", {"part": "svc:report", "config": {"outcome": "반려", "title": "{item} 구매 반려", "summary": "반려 — {memo}"}})
-    _c_apply_branch(r, "승인했나?", "결과 보고: 승인", {"var": "verdict", "op": "==", "value": "승인"})
-    passed, problems, _ = _c_check(r)
-    miss = [p for p in problems if "조건이 없습니다" in p]
-    r.check("승인 흐름: 분기 조건 누락을 사전 검사가 잡는다", not passed and bool(miss), "; ".join(problems), kind="exception")
-    if miss:
-        ok_h, why = r.human_message(miss[0])
-        r.check("분기 조건 누락 문구가 무엇을 고치라는지 말한다(값 · 비교 · 기준 / 그 밖의 경우)", ok_h and ("그 밖의 경우" in miss[0]), why, kind="exception")
-    _c_apply_branch(r, "승인했나?", "결과 보고: 반려", {"default": True})
-    passed, problems, _ = _c_check(r)
-    r.check("승인 흐름: 고친 뒤 사전 검사 통과", passed, "; ".join(problems))
-    reg, text, ver_a = _c_register(r)
-    r.check("승인 흐름 판본 등록(운영 판본은 그대로)", reg, text)
-    # 예외: 담당자 없이 배포 → 화면이 막고 사람 글
-    _c_admin_deploy_panel(r)
-    r.page.locator("#deployChoice").select_option(aid)
-    r.wait(20, lambda: r.page.locator(f"#deployVersions [data-deploy='{ver_a or '1'}']").count() > 0, every=0.5)
-    r.page.fill("#deployBy", ""); r.page.fill("#deployReason", "")
-    r.page.click(f"#deployVersions [data-deploy='{ver_a or '1'}']")
-    r.page.wait_for_timeout(800)
-    ok_h, why = r.human_message(r.page.locator("#deployMessage").inner_text())
-    r.check("담당자 없이 [이 판본 배포] → 「담당자를 적으세요」", ok_h and "담당자" in why, why, kind="exception")
-    dep, dtext = _c_deploy(r, aid, ver_a or "1")
-    r.check("승인 흐름 배포(직접 시작 전용)", dep and "직접 시작" in dtext, dtext)
-    r.memo["c_approval"] = {"def_id": aid, "version": ver_a or "1"}
-
-    # ---- (나) 쿨러 흐름(6-6 · 9일차 2) — 1차: bpmn.io 기본 타이머(끊는 경계)로 그림 → 사전 검사가 무엇을 고치라는지 → bpmn.io 에서 고쳐 다시 가져오기
-    cid = _c_free_id(r, "my_cooling")
-    xml1, ids1, names = _c_spec_xml("cooling", cid, interrupting_timer=True)
-    msg, ok = _c_import(r, xml1, "diagram.bpmn", cid)
-    r.check("쿨러 흐름 가져오기(1차, 끊는 타이머)", ok and "단계 9개" in msg, msg)
-    r.check("빈 시작 → 「경보로 시작」은 학생이 직접 고른다(기본값이 사람 입력)",
-            r.page.locator("#flowEditor input[name=flowStart][value=human]").is_checked(), "merge_mapping: 메시지 시작일 때만 경보 기본값", kind="quality")
-    # 부품 누락 · 분기 조건 누락을 일부러 남기고 입력(학생이 한 줄씩 빠뜨린 상태)
-    _c_fill_cooling_like(r, "cooling", names, skip=("T_cmd", "F_yes"))
-    passed, problems, _ = _c_check(r)
-    part_miss = [p for p in problems if names["C"] in p and "부품을 고르세요" in p]
-    cond_miss = [p for p in problems if "유온 정상?" in p and "조건이 없습니다" in p]
-    cut_timer = [p for p in problems if "끊는 타이머" in p]
-    r.check("부품 누락을 사전 검사가 그 단계 이름과 함께 잡는다", bool(part_miss), "; ".join(problems), kind="exception")
-    r.check("분기 조건 누락을 그 분기 이름과 함께 잡는다", bool(cond_miss), "; ".join(problems), kind="exception")
-    r.check("bpmn.io 기본(끊는) 타이머를 승인 단계에 붙이면 사건이 열린 채 남는다고 막는다", bool(cut_timer), "; ".join(problems), kind="exception")
-    for label, rows in (("부품 누락", part_miss), ("분기 조건 누락", cond_miss), ("끊는 타이머", cut_timer)):
-        if rows:
-            ok_h, why = r.human_message(rows[0])
-            r.check(f"{label} 문구가 사람 글", ok_h, why, kind="exception")
-    reg, text, _ = _c_register(r)
-    ok_h, why = r.human_message(text)
-    r.check("검사 실패 상태에서 [판본 등록] → 등록하지 않고 첫 사유를 말한다", (not reg) and "등록하지 않았습니다" in text and ok_h, why, kind="exception")
-    # 한 줄씩 고친다: ① 부품
-    _c_apply_task(r, names["C"], _c_mapping("cooling")["tasks"]["T_cmd"])
-    passed, problems, _ = _c_check(r)
-    r.check("부품을 고르면 그 줄이 사라진다", not any(names["C"] in p and "부품" in p for p in problems), "; ".join(problems), kind="exception")
-    # ② 분기 조건
-    _c_apply_branch(r, "유온 정상?", names["W"], _c_mapping("cooling")["flows"]["F_yes"])
-    passed, problems, _ = _c_check(r)
-    r.check("분기 조건을 넣으면 그 줄이 사라진다(끊는 타이머만 남음)", (not passed) and all("끊는 타이머" in p for p in problems), "; ".join(problems), kind="exception")
-    # ③ 타이머: 화면에서 못 고친다 — bpmn.io 에서 「끊지 않음(점선)」으로 바꿔 같은 흐름 id 로 다시 가져온다(매핑 유지)
-    xml2, ids2, _ = _c_spec_xml("cooling", cid, interrupting_timer=False)
-    r.check("다시 그린 그림의 id 가 그대로(bpmn.io 는 고쳐도 id 를 바꾸지 않는다)", ids1 == ids2, "")
-    msg, ok = _c_import(r, xml2, "diagram.bpmn", cid)
-    r.check("같은 흐름 id 로 다시 가져오면 매핑이 남는다(매핑 유지 9 · 새 단계 0 · 사라진 단계 0)", ok and "매핑 유지 9" in msg and "새 단계 0" in msg, msg)
-    passed, problems, deps = _c_check(r)
-    r.check("쿨러 흐름 사전 검사 통과", passed, "; ".join(problems) or deps)
-    reg, text, ver_c = _c_register(r)
-    r.check("쿨러 흐름 판본 등록", reg, text)
-    r.check("등록만으로는 경보 경로가 바뀌지 않는다(배포는 따로)", (_c_routes(r).get("COOLER_DEGRADATION") or {}).get("definition") != cid, "")
-    dep, dtext = _c_deploy(r, cid, ver_c or "1", reason="실습 9-3 내 쿨러 흐름을 쿨러 경보에 배포")
-    r.check("쿨러 흐름 배포 — 다음 경보부터(COOLER_DEGRADATION)", dep and "COOLER_DEGRADATION" in dtext, dtext)
-    route = _c_routes(r).get("COOLER_DEGRADATION") or {}
-    r.check("경보 → 흐름 표: 쿨러 성능 저하 = 내 흐름(내가 배포한 흐름)", route.get("definition") == cid and route.get("source") == "내가 배포한 흐름",
-            json.dumps(route, ensure_ascii=False))
-    table = r.page.locator("#deployRoutes").inner_text()
-    r.check("경보 → 흐름 표가 경보 이름을 사람 말로(PM_DUE · SPARE_BELOW_MIN 같은 코드가 없음)", not re.search(r"\b[A-Z]{2,}_[A-Z_]+\b", table), table[:400], kind="quality")
-    r.memo["c_cool"] = {"def_id": cid, "version": ver_c or "1", "names": names}
-
-    # ---- (다) 깨진 파일 · 수업 흐름 id (이미 확인 — 짧게)
-    msg, ok = _c_import(r, xml2[: len(xml2) // 2], "broken.bpmn", _c_free_id(r, "my_broken"))
-    ok_h, why = r.human_message(msg)
-    r.check("깨진 파일 → 가져오지 않고 사람 글(몇 행 몇 열)", (not ok) and ok_h and "행" in msg, why, kind="exception")
-    r.check("깨진 파일 문구에 영문 파서 원문이 섞이지 않는다", not re.search(r"[a-z]{4,} [a-z]{3,}", msg), msg, kind="quality")   # bpmn_import.py:164 "{e}" 그대로
-    msg, ok = _c_import(r, xml2, "diagram.bpmn", "c3_cooling")
-    ok_h, why = r.human_message(msg)
-    r.check("수업 흐름 id(c3_cooling)로 가져오기 → 거절, 내 흐름 id 를 쓰라고", (not ok) and ok_h and "수업 흐름" in msg, why, kind="exception")
-    # 수업 흐름의 [매핑 열기] → [판본 등록]: 가져오기는 막혔지만 등록 경로(flows_api.py:208-213)는 수업 흐름 표시를 보지 않는다(의심 결함 — notes_C (d)1)
-    r.tab("flows")
-    opener = r.page.locator("#flowList [data-open='c3_cooling']")
-    if opener.count():
-        opener.click(); r.page.wait_for_selector("#flowEditor #flowRegister"); _c_settle(r)
-        reg, text, ver_x = _c_register(r)
-        r.check("수업 흐름의 [매핑 열기] → [판본 등록]은 막혀야 한다(강사 흐름에 학생 판본이 쌓이지 않게)", not reg, text, kind="exception")
-        if reg:
-            dep, dtext = _c_deploy(r, "c3_cooling", ver_x)
-            ok_h, why = r.human_message(dtext)
-            r.check("…등록됐더라도 배포는 수업 흐름이라 거절(사람 글)", (not dep) and ok_h, why, kind="exception")
+    """최신 실라버스: 학생은 bpmn.io 로 그리고 등록된 기준 흐름과 비교한다. 기본 잠금은 흐름 등록 · 배포를 막는다(교대 실습만 연다)."""
+    routes = _c_routes(r)
+    want = {"COOLER_DEGRADATION": "c3_cooling", "PM_DUE": "c3_pm", "SPARE_BELOW_MIN": "c3_spare"}
+    r.check("경보 경로: 쿨러 · 정기 점검 · 재고 부족 → 준비된 수업 흐름", all((routes.get(k) or {}).get("definition") == v and (routes.get(k) or {}).get("class_flow") is True
+            for k, v in want.items()), json.dumps({k: (routes.get(k) or {}).get("definition") for k in want}, ensure_ascii=False))
+    for did, steps in _C_CLASS_STEPS.items():
+        d = _c_class_definition(r, did)
+        acts = {x.get("id"): x for x in d.get("activities") or []}
+        r.check(f"{did}: 등록 흐름에 비교할 작업이 있다({', '.join(steps)})", all(s in acts for s in steps),
+                ", ".join(f"{s}={(acts.get(s) or {}).get('name')}" for s in steps))
+        approve = acts.get("T_approve") or {}
+        r.check(f"{did}: 승인 단계에 담당 역할이 정해져 있다", bool(approve.get("role") or approve.get("roles") or approve.get("lane")),
+                json.dumps({k: approve.get(k) for k in ("role", "roles", "lane")}, ensure_ascii=False), kind="quality")
+    r.page.wait_for_selector(".rail nav button[data-tab='flows']")
+    flows_btn = r.page.locator(".rail nav button[data-tab='flows']")
+    r.check("기본 잠금: 「흐름」 메뉴는 꺼져 있고 이유를 알린다", flows_btn.is_disabled() and bool(flows_btn.get_attribute("title")),
+            flows_btn.get_attribute("title") or "", kind="exception")
+    code, body = r.api("POST", f"{r.process}/api/flows/import", {"xml": "<definitions/>", "filename": "diagram.bpmn"})
+    detail = (body or {}).get("detail", "") if isinstance(body, dict) else str(body)
+    ok, why = r.human_message(detail)
+    r.check("화면 밖 흐름 가져오기 · 등록도 서버가 거절(403 · 한국어)", code == 403 and ok, f"{code} {why}", kind="exception")
+    r.check("거절 뒤 경보 경로는 그대로", _c_routes(r) == routes, kind="exception")
 
 
-# ====================================================================== 10 · 9-4 · 6-7 내 흐름 실행
-@lab("10", "9-4 · 6-7 내 흐름 실행 — [쿨러 열화] → 내 흐름 → 승인 → PLC 명령 → 재관측 → 완료, 처리 건 추적 · 기준 흐름 차이 · 되돌리기")
+# ====================================================================== 10 · 실제 설비 이벤트의 처리 이력 (최신 실라버스 통합 32 · 실전 69)
+@lab("10", "9-4 · 6-7 처리 이력 — 준비된 A 처리 건의 판단 → 운전원 승인 → 명령 → 재관측 → 보고를 처리 기록에서 따라가기")
 def lab_10_run_my_flow(r):
-    mine = r.memo.get("c_cool") or _c_build_flow(r, "cooling", "my_cooling")
-    did, names = mine["def_id"], mine["names"]
-    route = _c_routes(r).get("COOLER_DEGRADATION") or {}
-    if route.get("definition") != did:
-        _c_deploy(r, did, mine["version"], reason="실습 9-4 내 흐름 다시 배포")
-        route = _c_routes(r).get("COOLER_DEGRADATION") or {}
-    r.check("경보 경로 표: 쿨러 경보 → 내 흐름(수업 흐름 c3_cooling 대신)", route.get("definition") == did, json.dumps(route, ensure_ascii=False))
-    shadow = [f for f in r.get(f"{r.process}/api/flows/deployments")["flows"] if f["definition"] == "c3_cooling"]
-    r.check("수업 흐름 c3_cooling 은 남아 있되 쿨러 경보를 내 흐름에 양보(shadowed)", bool(shadow) and "COOLER_DEGRADATION" in shadow[0].get("shadowed", []),
-            json.dumps(shadow, ensure_ascii=False)[:300])
-    # 감지기가 대기(IDLE)여야 새 경보가 난다 — 아니면 [쿨러 복구] 뒤 기다린다(카드의 안내 문구 그대로)
-    def idle():
-        st = r.get(f"{r.detector}/api/detector/state")["assets"]["HYD-01"]
-        return ((st.get("patterns") or {}).get("COOLER_DEGRADATION") or {}).get("phase", st.get("phase")) == "IDLE"
-    if not idle():
-        _c_unit(r, "HYD-01", "restore")
-        r.check("감지기가 대기 상태로 돌아온다([쿨러 복구] 뒤)", bool(r.wait(240, idle, every=3)), "", kind="exception")
-    _c_me(r, "user:kim-op")                                              # 김운전 · 운전원
-    before = _c_instance_ids(r)
-    msg = _c_unit(r, "HYD-01", "degrade")
-    r.check("[쿨러 열화 주입] → 결과 줄에 누른 사람(나)", "쿨러 열화 시작" in msg and "김운전" in msg, msg)
-    inst = _c_new_instance(r, before, None, C_RAISE_WAIT_S)
-    r.check("경보가 연 처리 건이 내 흐름이다(c3_cooling 이 아님)", bool(inst) and inst["proc_def_id"] == did,
-            json.dumps({k: (inst or {}).get(k) for k in ("proc_def_id", "proc_inst_name")}, ensure_ascii=False))
-    if not inst or inst["proc_def_id"] != did:
+    """02 에서 끝낸 A 처리 건을 학생이 처리 기록으로 따라간다(새 AI 호출 없음). 02 가 없으면 판정하지 않는다."""
+    cards = [c for c in r.memo.get("02_cards") or [] if c.get("pid") and c.get("end")]
+    if not cards:
+        r.check("앞 실습(02)의 A 처리 건이 있다", False, "02 를 먼저 돌려야 한다(이 실습은 새 처리 건을 만들지 않는다)")
         return
-    pid = inst["proc_inst_id"]
-    t0 = time.monotonic()
-    state, view = _c_wait_step(r, pid, names["P"], C_AI_WAIT_S)
-    ai_s = time.monotonic() - t0
-    r.check(f"AI 판단 · 제안 → 「{names['P']}」 차례", state == "ready", f"{state} {ai_s:.0f}초 " + json.dumps({w['activity_name']: w['status'] for w in view.get('workitems', [])}, ensure_ascii=False),
-            seconds=ai_s)
-    if state != "ready":
-        return
-    dec = _c_decision(r, view)
-    card = _c_card(dec)
-    r.check("문서 적재 뒤라 추천 카드가 나온다(보류 아님)", bool(card["recommended"]), json.dumps(card, ensure_ascii=False), kind="quality")
-    r.check("카드 승인 역할 = 흐름의 승인 담당(운전원) — 갈리면 학생이 「나」를 바꿔야 한다", card["approver"] in (None, "role:operator"),
-            str(card["approver"]), kind="ai3")
-    # 승인 대기 ≠ 종료: 처리 건은 진행 중, 목록 칩 · 단계 칩이 승인 단계
-    r.tab("instances")
-    r.page.locator("#instReload").click(); r.page.wait_for_timeout(1500)
-    item = r.page.locator("#instList .inst-card").filter(has_text=inst["proc_inst_name"]).first
-    item_text = item.inner_text()
-    r.check("승인 대기 중 목록 카드: 진행 중 · 승인 단계 칩(완료로 보이지 않음)", names["P"] in item_text and "완료" not in item_text, item_text[:200], kind="exception")
-    # 승인 지연 알림(20배속 30초) — 기다려도 처리 건이 끝나지 않고 승인 패널에 지연 안내
-    time.sleep(max(0, C_DELAY_NOTICE_S + 5 - (time.monotonic() - t0 - ai_s)))
-    v2 = _c_view(r, pid)
-    noticed = _c_item(v2, "승인 지연 알림").get("status") in ("DONE", "COMPLETED")
-    r.check("승인 지연 알림이 나가도 처리 건은 RUNNING(자동 취소 없음)", noticed and v2["instance"]["status"] == "RUNNING",
-            json.dumps({w['activity_name']: w['status'] for w in v2['workitems']}, ensure_ascii=False), kind="timing")
-    task = _c_item(v2, names["P"])
-    _c_open_task(r, pid, task["id"])
-    panel = r.page.locator("#todoPanel").inner_text()
-    r.check("승인 패널에 「승인 지연 알림을 보냈습니다 … 기다립니다」", "승인 지연 알림을 보냈습니다" in panel, panel[:300], kind="timing")
-    # 권한 예외: 다른 역할(구매 담당)을 「나」로 고르면 [승인]이 꺼지고 이유를 말한다
-    _c_me(r, "user:jung-buy")
-    _c_open_task(r, pid, task["id"])
-    go_off = r.page.locator("#tdGo").is_disabled()
-    ok_h, why = r.human_message(r.page.locator("#todoPanel .form-actions").last.inner_text())
-    r.check("권한 없는 역할 → [승인] 꺼짐 · 누가 승인하는지 사람 글", go_off and ok_h and "[나 고르기]" in why, why, kind="exception")
-    approver_user = C_PEOPLE.get(card["approver"] or "role:operator", "user:kim-op")
-    _c_me(r, approver_user)
-    ok_d, pmsg = _c_card_decide(r, pid, task, approve=True, reason="실습 9-4 내 흐름 승인")
-    r.check("[승인] → 승인 단계 끝", ok_d, pmsg)
-    fin = _c_wait_end(r, pid, 420)                                       # 재관측 15분 = 실제 45초 + 명령 · 작업지시
-    v = _c_vars(fin["instance"])
-    rep = (v.get("result_report") or {})
-    r.check("처리 건 완료 — 결과 보고(정상 또는 미달)로 끝", fin["instance"]["status"] == "COMPLETED" and rep.get("outcome") in ("정상", "미달"),
-            json.dumps({"end": fin["instance"].get("end_event"), "outcome": rep.get("outcome"), "recovered": v.get("recovered")}, ensure_ascii=False))
-    r.check("결과와 재관측이 맞다(회복 → 정상 · 작업지시, 미회복 → 미달)",
-            (v.get("recovered") is True and rep.get("outcome") == "정상" and bool((v.get("work_order") or {}).get("ref"))) or
-            (v.get("recovered") is False and rep.get("outcome") == "미달"), json.dumps({"recovered": v.get("recovered"), "wo": v.get("work_order")}, ensure_ascii=False)[:300])
-    # 처리 건 화면 추적: 단계별 담당 · 결과
+    pid = cards[0]["pid"]
+    view = _c_view(r, pid)
+    rows = _a_rows(view)
+    names = {x["id"]: x.get("name") for x in view["definition"].get("activities") or []}
+    done = [k for k in ("T_agent", "T_approve", "T_cmd", "T_reobs") if (rows.get(k) or {}).get("status") in ("DONE", "COMPLETED")]
+    r.check("처리 건 상태: 판단 · 승인 · 명령 · 재관측이 모두 끝났다", len(done) == 4 and view["instance"]["status"] == "COMPLETED",
+            f"{view['instance']['status']} · 끝난 단계 {done}")
     r.tab("instances"); r.page.locator("#instReload").click(); r.page.wait_for_timeout(1200)
-    r.page.locator("#instList .inst-card").filter(has_text=inst["proc_inst_name"]).first.click()
+    # 같은 이름의 처리 건이 여럿이다(02 승인 · 08 거절) — 처리 건 id 로 고른다
+    card = r.page.locator(f"#instList .inst-card[data-inst='{pid}']").first
+    if not card.count():
+        r.check("처리 건 목록에서 A 처리 건을 찾는다", False, view["instance"].get("proc_inst_name") or pid); return
+    card.click()
     r.page.wait_for_selector("#instDetail [data-inst-tab='record']")
     r.page.locator("#instDetail [data-inst-tab='record']").click(); r.page.wait_for_timeout(1500)
     rec = r.page.locator("#instDetail").inner_text()
-    want = [names["A"], names["P"], names["C"], names["O"], "결과 보고"]
-    r.check("처리 기록에 단계가 순서대로 보인다(에이전트 → 승인 → 명령 → 재관측 → 결과)", all(w in rec for w in want),
-            ", ".join(w for w in want if w not in rec) or "모두 있음")
-    r.check("처리 기록에 승인한 사람(나)이 이름으로 보인다", any(n in rec for n in ("김운전", "이생산")), rec[:300])
-    # 학생 흐름 vs 기준 흐름 차이: [관리] → 내 흐름 → [기준과 비교]
-    _c_admin_deploy_panel(r)
-    r.page.locator("#deployChoice").select_option(did)
-    r.wait(20, lambda: r.page.locator(f"#deployVersions [data-refcompare='{mine['version']}']").count() > 0, every=0.5)
-    r.page.locator(f"#deployVersions [data-refcompare='{mine['version']}']").click()
-    # 머리줄(「기준(2.2)과 비교 — 판본 1」)이 먼저 그려지고 비교 내용은 뒤에 온다 — 내용까지 기다린다(최종 1차: 머리줄만 읽음)
-    r.wait(30, lambda: len(r.page.locator("#deployRefDiff").inner_text().strip().splitlines()) > 2, every=0.5)
-    diff = r.page.locator("#deployRefDiff").inner_text()
-    r.check("[기준과 비교] → 바뀐 단계 · 연결을 사람 말로", "기준" in diff and "같습니다" not in diff and not re.search(r"Activity_|Gateway_|Flow_", diff),
-            "모델러 id: " + ", ".join(sorted(set(re.findall(r"(?:Activity|Gateway|Flow)_\w+", diff)))[:8]) + " · " + diff[:300])
-    # 되돌리기: 담당자 없이 → 막힘, 담당자 넣고 → 학생 흐름만 내림, 수업 흐름 남음
-    r.page.fill("#deployBy", "")
-    r.page.locator("#deployResetRef").click(); r.page.wait_for_timeout(800)
-    ok_h, why = r.human_message(r.page.locator("#deployMessage").inner_text())
-    r.check("담당자 없이 [기준 흐름으로 되돌리기] → 「담당자를 적으세요」", ok_h and "담당자" in why, why, kind="exception")
-    ok_r, rtext = _c_reset_to_reference(r)
-    r.check("[기준 흐름으로 되돌리기] → 학생 흐름만 내림", ok_r, rtext)
-    routes = _c_routes(r)
-    r.check("되돌린 뒤 쿨러 경보 → 수업 흐름 c3_cooling, B · C 도 수업 흐름 그대로",
-            (routes.get("COOLER_DEGRADATION") or {}).get("definition") == "c3_cooling"
-            and (routes.get("PM_DUE") or {}).get("definition") == "c3_pm" and (routes.get("SPARE_BELOW_MIN") or {}).get("definition") == "c3_spare",
-            json.dumps({k: v.get("definition") for k, v in routes.items()}, ensure_ascii=False))
-    listed = r.get(f"{r.process}/api/flows")
-    r.check("등록한 내 판본은 남는다(되돌리기는 배포만 내림)", any(v["id"] == did for v in listed.get("versions") or []), "")
-    # 다음 실습을 위해 쿨러를 되돌린다
-    _c_unit(r, "HYD-01", "restore")
+    want = [names.get(k) for k in ("T_agent", "T_approve", "T_cmd", "T_reobs") if names.get(k)]
+    order = [rec.find(w) for w in want]
+    r.check("처리 기록에 단계가 순서대로 보인다(판단 → 승인 → 명령 → 재관측)", all(i >= 0 for i in order) and order == sorted(order),
+            ", ".join(f"{w}@{i}" for w, i in zip(want, order)))
+    r.check("처리 기록에 승인한 사람이 이름으로 보인다", any(n in rec for n in ("김운전", "이생산")), rec[:300])
+    r.check("처리 기록에 결과 보고가 보인다", "결과 보고" in rec or "정상" in rec or "미달" in rec, rec[-300:])
 
 
 # ====================================================================== 11 · 10-2 · 7-2 정기 점검 (B)
@@ -2648,9 +2423,12 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
     """B · C 공통: 내 흐름 배포 → AI 3회(같은 입력) — 1회 거절(효과 없음), 2회 승인(효과), 3회 「이미 처리됨」 거절 → [초기화] → 다시 → 거절.
     check_effects(stage, before, view) 가 업무 DB · 메일함을 판정한다."""
     sp = C_SPECS[kind]
-    mine = r.memo.get(f"c_{kind}") or _c_build_flow(r, kind, f"my_{kind}")
-    r.memo[f"c_{kind}"] = mine
-    did, names = mine["def_id"], mine["names"]
+    # 최신 실라버스(통합 33 · 35, 실전 70 · 72): 포털의 준비된 시나리오 B · C 를 실행한다. 학생 흐름 등록은 기본 잠금이 막는다.
+    did = {"pm": "c3_pm", "spare": "c3_spare"}[kind]
+    acts = {x.get("id"): x.get("name") for x in _c_class_definition(r, did).get("activities") or []}
+    names = {"P": acts.get("T_approve")}
+    if not names["P"]:
+        r.check(f"{sp['name']}: 준비된 흐름의 승인 단계를 읽었다", False, json.dumps(acts, ensure_ascii=False)[:300]); return []
     _c_me(r, person)
 
     def run_once(i):
@@ -2683,6 +2461,12 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
         if approver_user != person:
             _c_me(r, approver_user)
         if i == 1:
+            if r.ai_runs < 3:   # 한 번만 돌릴 때도 사유 없는 [거절]이 막히는지 승인 전에 본다(제출되지 않는 화면 검사)
+                _c_open_task(r, inst["proc_inst_id"], task["id"])
+                r.page.fill("#tdReason", "")
+                r.page.click("#tdRejectCard"); r.page.wait_for_timeout(600)
+                ok_h, why = r.human_message(_c_panel_msg(r))
+                r.check(f"{sp['name']}: 사유 없이 [거절] → 「거절 사유를 1~2000자로」", ok_h and "사유" in why, why, kind="exception")
             ok_d, pmsg = _c_card_decide(r, inst["proc_inst_id"], task, approve=True, reason=f"실습 {sp['name']} 승인")
         else:
             if i == 0:   # 거절 사유 없이 [거절] → 화면이 막고 사람 글
@@ -2700,19 +2484,19 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
         return rec
 
     runs = r.repeat3(f"{sp['name']} 판단 · 제안", run_once, ("definition", "recommended", "approver", "evidence") + (
-        ("window",) if kind == "pm" else ("supplier", "qty", "amount")), limit_s=C_AI_LIMIT_S)
-    r.check(f"{sp['name']}: 3회 모두 내 흐름으로 열렸다", all(x.get("definition") == did for x in runs), str([x.get("definition") for x in runs]))
+        ("window",) if kind == "pm" else ("supplier", "qty", "amount")), limit_s=C_AI_LIMIT_S, single=1)
+    ok_outcome = "정상" if kind == "pm" else "입고 완료"
+    r.check(f"{sp['name']}: 처리 건이 모두 준비된 수업 흐름으로 열렸다", all(x.get("definition") == did for x in runs), str([x.get("definition") for x in runs]))
     r.check(f"{sp['name']}: 카드 승인 역할 = 흐름 승인 담당({sp['approver']})", all(x.get("approver") == C_ROLE_NAME[sp["approver"]] for x in runs if not x.get("error")),
             str([x.get("approver") for x in runs]), kind="ai3")
-    r.check(f"{sp['name']}: 거절 → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == ["반려", "정상" if kind == "pm" else "입고 완료", "반려"],
+    r.check(f"{sp['name']}: 거절 → 반려, 승인 → 정상 종결", [x.get("outcome") for x in runs] == (["반려", ok_outcome, "반려"] if r.ai_runs >= 3 else [ok_outcome]),
             str([x.get("outcome") for x in runs]))
-    ok_r, rtext = _c_reset_to_reference(r)
     route = _c_routes(r).get(sp["pattern"]) or {}
-    r.check(f"{sp['name']}: [기준 흐름으로 되돌리기] → 수업 흐름이 다시 연다", ok_r and route.get("class_flow") is True, rtext + " " + json.dumps(route, ensure_ascii=False))
+    r.check(f"{sp['name']}: 실행 뒤에도 경보 경로는 준비된 수업 흐름", route.get("definition") == did and route.get("class_flow") is True, json.dumps(route, ensure_ascii=False))
     return runs
 
 
-@lab("11", "10-2 · 7-2 정기 점검 — 내 B 흐름 + 정비 계획 에이전트 → [정기 점검] → 승인 → 정비 오더 · 생산 공지 · 종료 / 반려 시 오더 없음")
+@lab("11", "10-2 · 7-2 정기 점검 — 준비된 시나리오 B: [정기 점검] → 정비 계획 제안 → 설비보전팀장 승인 → 정비 오더 · 생산 공지 · 보고 / 반려 시 오더 없음")
 def lab_11_pm(r):
     def effects(stage, ent0, fin, i):
         v = _c_vars(fin["instance"])
@@ -2738,7 +2522,7 @@ def lab_11_pm(r):
     _c_biz_round(r, "pm", "HYD-02", "user:park-maint", check_effects=effects)
 
 
-@lab("12", "10-4 · 7-4 구매 — 내 C 흐름 + 구매 에이전트 → [재고 보충] → 승인 → ERP 발주 · 공급사 메일 · 즉시 입고 · 재고 반영 / 거절 시 발주 차단")
+@lab("12", "10-4 · 7-4 구매 — 준비된 시나리오 C: [재고 보충] → 발주안 제안 → 구매 담당 승인 → ERP 발주 · 공급사 메일 · 입고 · 재고 반영 / 거절 시 발주 차단")
 def lab_12_spare(r):
     def effects(stage, ent0, fin, i):
         v = _c_vars(fin["instance"])
@@ -2788,11 +2572,38 @@ def _h_submit(r, pid, task, user, values, *, expect_done=True):
     return bool(r.wait(45, lambda: _c_item(_c_view(r, pid), task['activity_name']).get('status') == 'DONE', every=2))
 
 
+def _h_unlock(r) -> bool:
+    """마지막 날: 학생이 포털의 「수업 기능」에서 강사 해제 코드를 입력한다(잘못된 코드는 거절). 이미 열려 있으면 그대로 둔다."""
+    page = r.page
+    if r.get(f"{r.process}/api/course-access").get("unlocked"):
+        return True
+    if not r.unlock_code:
+        r.check("강사 해제 코드로 교대 실습 열기", False, "--unlock-code-file 이 없어 교대 실습을 열 수 없다"); return False
+    message = page.locator("#courseUnlockMessage")
+    page.locator("#courseAccessPanel summary").click()
+    page.fill("#courseUnlockCode", "HYD1.wrong.code-not-signed-by-the-instructor")
+    page.click("#courseUnlockGo")
+    r.wait(10, lambda: "올바르지" in message.inner_text(), every=0.3)
+    ok, why = r.human_message(message.inner_text())
+    r.check("잘못된 해제 코드 → 거절 · 한국어", ok and "올바르지" in why and not r.get(f"{r.process}/api/course-access").get("unlocked"), why, kind="exception")
+    page.fill("#courseUnlockCode", r.unlock_code)
+    page.click("#courseUnlockGo")
+    # 서버 저장과 화면 안내는 순서대로 오지 않는다(fresh 실행: 서버는 열렸는데 직전 거절 문구를 읽음) — 둘 다 기다린다
+    opened = r.wait(15, lambda: r.get(f"{r.process}/api/course-access").get("unlocked") is True and "열렸습니다" in message.inner_text(), every=0.5)
+    r.check("강사 해제 코드 → 교대 실습 열림(화면 안내)", bool(opened), message.inner_text())
+    if not opened:
+        return False
+    page.reload(); page.wait_for_timeout(2000)
+    return True
+
+
 @lab("13", "마지막 적용 · 교대 인수인계 — 보충 자료 → 새 에이전트·스킬 → 두 사람 검토·보완·확인")
 def lab_13_shift_handover(r):
     import hashlib
     import xml.etree.ElementTree as ET
     page = r.page
+    if not _h_unlock(r):
+        return
     # 이미 검토·적재한 동일 승인 자료는 재사용한다. 수업 전체를 초기화하지 않는다.
     before = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
     _B_DOC_FILES['HI-01'] = 'HI-01_shift-inspection-supplement.md'
@@ -2816,7 +2627,9 @@ def lab_13_shift_handover(r):
     r.check('보충 자료 추가가 기존 제조 지식을 초기화하지 않음',
             all(after.get(name) == batch for name, batch in before.items() if name != _B_DOC_FILES['HI-01']), kind='quality')
 
-    sid = _c_free_id(r, 'my_shift_handover')
+    # 스킬 · 에이전트 이름만 새로 짓는다(흐름은 ShiftHandover 의 새 판본) — 다시 돌린 PC에서도 이름이 겹치지 않게
+    taken = {x['skill_name'] for x in r.get(f'{r.process}/api/skills')}
+    sid = next(f'my_shift_handover{n or ""}' for n in range(100) if f'my-shift-handover{n or ""}-review' not in taken)
     skill = sid.replace('_', '-') + '-review'
     r.tab('agents'); page.locator('[data-ag-tab="skills"]').click()
     page.locator('[data-new-skill]').click()
@@ -2846,7 +2659,8 @@ def lab_13_shift_handover(r):
     xml = (folder/'shift_handover.bpmn').read_text(encoding='utf8')
     mapping = json.loads((folder/'shift_handover.mapping.json').read_text(encoding='utf8'))
     elements = {e.get('id'): e for e in ET.fromstring(xml).iter() if e.get('id')}
-    message, ok = _c_import(r, xml, 'shift_handover.bpmn', sid)
+    # 안내.html 4절: 흐름 ID는 제공 파일의 ShiftHandover 를 유지한다 — 칸을 비우면 그림의 프로세스 id 다
+    message, ok = _c_import(r, xml, 'handover.bpmn', '')
     r.check('교대 BPMN 가져오기', ok, message)
     if not ok: return
     _c_apply_start(r, mapping['start'])
@@ -2856,21 +2670,22 @@ def lab_13_shift_handover(r):
         _c_apply_task(r, elements[key].get('name'), value)
     for key, value in mapping['flows'].items():
         flow = elements[key]
-        _c_apply_branch(r, elements[flow.get('sourceRef')].get('name'), elements[flow.get('targetRef')].get('name'), value)
+        _c_apply_branch(r, elements[flow.get('sourceRef')].get('name'), elements[flow.get('targetRef')].get('name'), value, flow_id=key)
     passed, problems, dependencies = _c_check(r)
     r.check('교대 시작 폼·역할·작업·분기 검사', passed, '; '.join(problems) or dependencies)
     if not passed: return
     registered, message, version = _c_register(r)
     r.check('교대 별도 정의·판본 등록', registered, message)
     if not registered: return
+    did = 'ShiftHandover'
     _c_me(r, 'user:kim-op'); r.tab('flows')
-    page.locator(f"[data-start='{sid}'][data-version='{version}']").click()
-    box = page.locator(f"[data-startbox='{sid}@{version}']")
+    page.locator(f"[data-start='{did}'][data-version='{version}']").click()
+    box = page.locator(f"[data-startbox='{did}@{version}']")
     values = dict(asset='HYD-01', shift_label='다음 교대', as_of=datetime.now(timezone.utc).isoformat(),
                   work_notes='작업 메모: 정비 완료라고 전달받음. 부품 도착 예정이라고 전달받음. 실제 열린 작업지시와 현재 재고를 대조해야 함.')
     for key, value in values.items(): box.locator(f"[data-sv='{key}']").fill(value)
     known = _c_instance_ids(r); box.locator('[data-go]').click()
-    inst = _c_new_instance(r, known, sid, 30)
+    inst = _c_new_instance(r, known, did, 30)
     r.check('교대 시작 폼으로 한 처리 건 시작', bool(inst))
     if not inst: return
     pid = inst['proc_inst_id']
@@ -2906,7 +2721,7 @@ def lab_13_shift_handover(r):
     end_ids = {e['id'] for e in view['definition']['events'] if e.get('name') == '인수 확인 기록 완료'}
     r.check('인수 확인 종료 기록', view['instance']['status'] == 'COMPLETED' and view['instance'].get('end_event') in end_ids)
     r.check('인계 확인이 설비·발주·정비 실행을 만들지 않음', not view.get('effects'), kind='quality')
-    r.memo['c_handover'] = dict(def_id=sid, version=version, instance=pid, agent=mine['id'], skill=skill)
+    r.memo['c_handover'] = dict(def_id=did, version=version, instance=pid, agent=mine['id'], skill=skill)
 
 
 # ====================================================================== 92 · B · C [초기화]
@@ -3070,6 +2885,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--only", default="", help="쉼표로 고른 실습 번호만(예: 01,05)")
     ap.add_argument("--from", dest="start", default="", help="이 번호부터 끝까지")
     ap.add_argument("--headed", action="store_true")
+    ap.add_argument("--ai-runs", type=int, choices=(1, 3), default=3,
+                    help="AI 단계 반복 수. 1 = 연속 수업 확인(반복 일치는 측정 안 함으로 남김)")
+    ap.add_argument("--unlock-code-file", default="", help="강사 해제 코드가 든 파일(13 교대 실습). 코드는 출력 · 결과에 남기지 않는다")
     args = ap.parse_args(argv[1:])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -3081,6 +2899,9 @@ def main(argv: list[str]) -> int:
         page = ctx.new_page()
         page.set_default_timeout(20_000)
         r = Round(page, out)
+        r.ai_runs = args.ai_runs
+        if args.unlock_code_file:
+            r.unlock_code = Path(args.unlock_code_file).read_text(encoding="utf-8").strip()
         r.open()
         started = not args.start
         for code, title, fn in sorted(LABS, key=lambda x: x[0]):

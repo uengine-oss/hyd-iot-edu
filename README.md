@@ -37,7 +37,7 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 |---|---|---|---|
 | VS Code | 1.143.0 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
 | Git | 공식 최신 안정판 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
-| Node.js | 24.16.0 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.16.0/node-v24.16.0-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.16.0/node-v24.16.0.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
+| Node.js | 24.22.1 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
 | Python | 3.14.7 이상 | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
 | WSL | 공식 최신 안정판, WSL 2 실행 환경(Windows) | [설치](https://learn.microsoft.com/ko-kr/windows/wsl/install) · [명령](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands) | `wsl --version`, `wsl --status` |
 | Docker Desktop | 4.87.0 이상 | [Windows](https://docs.docker.com/desktop/setup/install/windows-install/) · [macOS](https://docs.docker.com/desktop/setup/install/mac-install/) | 앱 About, `docker info`, `docker compose version` |
@@ -46,7 +46,7 @@ Git·WSL은 준비 시점의 공식 최신 안정판으로 설치·업데이트�
 
 ### 공식 설치 파일로 준비
 
-표의 Node.js 설치 파일은 **24.16.0**, Python 설치 파일은 **3.14.7**이다. Windows 링크는 x64용이며 ARM64 PC는 공식 배포 페이지에서 CPU에 맞는 파일을 선택한다. macOS는 Node.js PKG와 Python Universal2 PKG를 사용하며, VS Code Universal ZIP은 압축을 풀어 앱을 응용 프로그램 폴더로 옮긴다. VS Code 링크는 최신 안정판으로 연결되므로 기준 버전을 확인한다. 각 제품의 macOS 지원 조건은 공식 문서를 따른다.
+표의 Node.js 설치 파일은 **24.22.1**, Python 설치 파일은 **3.14.7**이다. Windows 링크는 x64용이며 ARM64 PC는 공식 배포 페이지에서 CPU에 맞는 파일을 선택한다. macOS는 Node.js PKG와 Python Universal2 PKG를 사용하며, VS Code Universal ZIP은 압축을 풀어 앱을 응용 프로그램 폴더로 옮긴다. VS Code 링크는 최신 안정판으로 연결되므로 기준 버전을 확인한다. 각 제품의 macOS 지원 조건은 공식 문서를 따른다.
 
 위 공식 링크에서 운영체제와 CPU에 맞는 안정판 설치 파일을 받는다. Windows에서 확인할 항목은 다음과 같다.
 
@@ -180,7 +180,7 @@ Set-Location -LiteralPath 'C:\hyd-iot-edu'
 | 5 | **`점검.bat`** 더블클릭 | 실패 항목이 없는지 확인하고, 중계 서버가 **「연결됨」**인지 확인 |
 | 종료 | **`끄기.bat`** 더블클릭 | 실습 스택 종료 |
 
-**설치 정책:** Docker 4.87.0·VS Code 1.143.0·Node.js 24.16.0·Python 3.14.7 이상은 유지하고 낮거나 없으면 설치·업데이트한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 기존 BAT는 두 제품을 과거 최소 기준으로 유지할 수 있어 최신 확인을 대신하지 않는다. WSL용 Windows 기능도 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅 후 확인이 필요한 항목은 완료로 표시하지 않는다. 이 범위는 포털 실행 환경이며 XG5000은 별도 설치 대상이다.
+**설치 정책:** Docker 4.87.0·VS Code 1.143.0·Node.js 24.22.1·Python 3.14.7 이상은 유지하고 낮거나 없으면 설치·업데이트한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 기존 BAT는 두 제품을 과거 최소 기준으로 유지할 수 있어 최신 확인을 대신하지 않는다. WSL용 Windows 기능도 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅 후 확인이 필요한 항목은 완료로 표시하지 않는다. 이 범위는 포털 실행 환경이며 XG5000은 별도 설치 대상이다.
 
 **중계 설정(3번):** Google Drive에 보관한 `.env`의 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 값을 **저장소 루트 `.env`**에 복사·저장한다. 루트 `.env`가 없으면 `.env.example`을 복사해 만든다. `OPENAI_API_KEY`는 비워도 된다. `점검.bat`을 더블클릭하면 루트 설정을 자동 사용한다. 루트에 중계키가 없을 때만 기존 실습 폴더 설정을 사용하며, 명시적인 `-LlmEnvFile` 지정은 우선한다. 이미 발급한 중계키이므로 **gcloud 조회·재발급은 필요 없다.** 값이 있으면 점검 때 다시 묻지 않는다. 중계 서버 「건너뜀」은 연결 확인 완료가 아니다. 실제 키를 넣은 파일은 커밋·푸시하지 않는다.
 

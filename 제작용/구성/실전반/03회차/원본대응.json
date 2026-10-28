@@ -1,655 +1,1177 @@
 {
-  "slides": [
-    {
-      "destination": 1,
-      "source_day": 3,
-      "source_slide": 1
-    },
-    {
-      "destination": 2,
-      "source_day": 3,
-      "source_slide": 2
-    },
-    {
-      "destination": 3,
-      "source_day": 3,
-      "source_slide": 3
-    },
-    {
-      "destination": 4,
-      "source_day": 3,
-      "source_slide": 34
-    },
-    {
-      "destination": 5,
-      "source_day": 3,
-      "source_slide": 35
-    },
-    {
-      "destination": 6,
-      "source_day": 3,
-      "source_slide": 36
-    },
-    {
-      "destination": 7,
-      "source_day": 3,
-      "source_slide": 37
-    },
-    {
-      "destination": 8,
-      "source_day": 3,
-      "source_slide": 38
-    },
-    {
-      "destination": 9,
-      "source_day": 3,
-      "source_slide": 39
-    },
-    {
-      "destination": 10,
-      "source_day": 3,
-      "source_slide": 40
-    },
-    {
-      "destination": 11,
-      "source_day": 3,
-      "source_slide": 41
-    },
-    {
-      "destination": 12,
-      "source_day": 3,
-      "source_slide": 42
-    },
-    {
-      "destination": 13,
-      "source_day": 3,
-      "source_slide": 43
-    },
-    {
-      "destination": 14,
-      "source_day": 3,
-      "source_slide": 44
-    },
-    {
-      "destination": 15,
-      "source_day": 3,
-      "source_slide": 45
-    },
-    {
-      "destination": 16,
-      "source_day": 3,
-      "source_slide": 46
-    },
-    {
-      "destination": 17,
-      "source_day": 3,
-      "source_slide": 47
-    },
-    {
-      "destination": 18,
-      "source_day": 3,
-      "source_slide": 48
-    },
-    {
-      "destination": 19,
-      "source_day": 3,
-      "source_slide": 49
-    },
-    {
-      "destination": 20,
-      "source_day": 3,
-      "source_slide": 50
-    },
-    {
-      "destination": 21,
-      "source_day": 3,
-      "source_slide": 51
-    },
-    {
-      "destination": 22,
-      "source_day": 3,
-      "source_slide": 52
-    },
-    {
-      "destination": 23,
-      "source_day": 3,
-      "source_slide": 53
-    },
-    {
-      "destination": 24,
-      "source_day": 3,
-      "source_slide": 54
-    },
-    {
-      "destination": 25,
-      "source_day": 3,
-      "source_slide": 55
-    },
-    {
-      "destination": 26,
-      "source_day": 3,
-      "source_slide": 56
-    },
-    {
-      "destination": 27,
-      "source_day": 3,
-      "source_slide": 59
-    },
-    {
-      "destination": 28,
-      "source_day": 3,
-      "source_slide": 60
-    },
-    {
-      "destination": 29,
-      "source_day": 4,
-      "source_slide": 4
-    },
-    {
-      "destination": 30,
-      "source_day": 4,
-      "source_slide": 5
-    },
-    {
-      "destination": 31,
-      "source_day": 4,
-      "source_slide": 6
-    },
-    {
-      "destination": 32,
-      "source_day": 4,
-      "source_slide": 7
-    },
-    {
-      "destination": 33,
-      "source_day": 4,
-      "source_slide": 8
-    },
-    {
-      "destination": 34,
-      "source_day": 4,
-      "source_slide": 9
-    },
-    {
-      "destination": 35,
-      "source_day": 4,
-      "source_slide": 10
-    },
-    {
-      "destination": 36,
-      "source_day": 4,
-      "source_slide": 11
-    },
-    {
-      "destination": 37,
-      "source_day": 4,
-      "source_slide": 12
-    },
-    {
-      "destination": 38,
-      "source_day": 4,
-      "source_slide": 13
-    },
-    {
-      "destination": 39,
-      "source_day": 4,
-      "source_slide": 14
-    },
-    {
-      "destination": 40,
-      "source_day": 4,
-      "source_slide": 15
-    },
-    {
-      "destination": 41,
-      "source_day": 4,
-      "source_slide": 16
-    },
-    {
-      "destination": 42,
-      "source_day": 4,
-      "source_slide": 17
-    },
-    {
-      "destination": 43,
-      "source_day": 4,
-      "source_slide": 18
-    },
-    {
-      "destination": 44,
-      "source_day": 4,
-      "source_slide": 19
-    },
-    {
-      "destination": 45,
-      "source_day": 4,
-      "source_slide": 20
-    },
-    {
-      "destination": 46,
-      "source_day": 4,
-      "source_slide": 21
-    },
-    {
-      "destination": 47,
-      "source_day": 4,
-      "source_slide": 22
-    },
-    {
-      "destination": 48,
-      "source_day": 4,
-      "source_slide": 23
-    },
-    {
-      "destination": 49,
-      "source_day": 4,
-      "source_slide": 24
-    },
-    {
-      "destination": 50,
-      "source_day": 4,
-      "source_slide": 25
-    },
-    {
-      "destination": 51,
-      "source_day": 4,
-      "source_slide": 26
-    },
-    {
-      "destination": 52,
-      "source_day": 4,
-      "source_slide": 27
-    },
-    {
-      "destination": 53,
-      "source_day": 4,
-      "source_slide": 28
-    },
-    {
-      "destination": 54,
-      "source_day": 4,
-      "source_slide": 29
-    },
-    {
-      "destination": 55,
-      "source_day": 4,
-      "source_slide": 30
-    },
-    {
-      "destination": 56,
-      "source_day": 4,
-      "source_slide": 31
-    },
-    {
-      "destination": 57,
-      "source_day": 4,
-      "source_slide": 32
-    },
-    {
-      "destination": 58,
-      "source_day": 4,
-      "source_slide": 33
-    },
-    {
-      "destination": 59,
-      "source_day": 4,
-      "source_slide": 34
-    },
-    {
-      "destination": 60,
-      "source_day": 4,
-      "source_slide": 35
-    },
-    {
-      "destination": 61,
-      "source_day": 4,
-      "source_slide": 36
-    },
-    {
-      "destination": 62,
-      "source_day": 4,
-      "source_slide": 37
-    },
-    {
-      "destination": 63,
-      "source_day": 4,
-      "source_slide": 38
-    },
-    {
-      "destination": 64,
-      "source_day": 4,
-      "source_slide": 39
-    },
-    {
-      "destination": 65,
-      "source_day": 4,
-      "source_slide": 40
-    },
-    {
-      "destination": 66,
-      "source_day": 4,
-      "source_slide": 41
-    },
-    {
-      "destination": 67,
-      "source_day": 4,
-      "source_slide": 42
-    },
-    {
-      "destination": 68,
-      "source_day": 4,
-      "source_slide": 43
-    },
-    {
-      "destination": 69,
-      "source_day": 4,
-      "source_slide": 44
-    },
-    {
-      "destination": 70,
-      "source_day": 4,
-      "source_slide": 45
-    },
-    {
-      "destination": 71,
-      "source_day": 4,
-      "source_slide": 46
-    },
-    {
-      "destination": 72,
-      "source_day": 4,
-      "source_slide": 47
-    },
-    {
-      "destination": 73,
-      "source_day": 4,
-      "source_slide": 48
-    },
-    {
-      "destination": 74,
-      "source_day": 4,
-      "source_slide": 49
-    },
-    {
-      "destination": 75,
-      "source_day": 4,
-      "source_slide": 50
-    },
-    {
-      "destination": 76,
-      "source_day": 4,
-      "source_slide": 51
-    },
-    {
-      "destination": 77,
-      "source_day": 4,
-      "source_slide": 52
-    },
-    {
-      "destination": 78,
-      "source_day": 4,
-      "source_slide": 53
-    },
-    {
-      "destination": 79,
-      "source_day": 4,
-      "source_slide": 54
-    },
-    {
-      "destination": 80,
-      "source_day": 4,
-      "source_slide": 55
-    },
-    {
-      "destination": 81,
-      "source_day": 4,
-      "source_slide": 56
-    },
-    {
-      "destination": 82,
-      "source_day": 4,
-      "source_slide": 57
-    },
-    {
-      "destination": 83,
-      "source_day": 4,
-      "source_slide": 58
-    },
-    {
-      "destination": 84,
-      "source_day": 4,
-      "source_slide": 59
-    },
-    {
-      "destination": 85,
-      "source_day": 4,
-      "source_slide": 60
-    },
-    {
-      "destination": 86,
-      "source_day": 4,
-      "source_slide": 61
-    },
-    {
-      "destination": 87,
-      "source_day": 4,
-      "source_slide": 62
-    },
-    {
-      "destination": 88,
-      "source_day": 3,
-      "source_slide": 61
-    },
-    {
-      "destination": 89,
-      "source_day": 4,
-      "source_slide": 63
-    },
-    {
-      "destination": 90,
-      "source_day": 3,
-      "source_slide": 62
-    },
-    {
-      "destination": 91,
-      "source_day": 4,
-      "source_slide": 64
-    },
-    {
-      "destination": 92,
-      "source_day": 3,
-      "source_slide": 63
-    },
-    {
-      "destination": 93,
-      "source_day": 3,
-      "source_slide": 64
-    },
-    {
-      "destination": 94,
-      "source_day": 3,
-      "source_slide": 65
-    },
-    {
-      "destination": 95,
-      "source_day": 3,
-      "source_slide": 66
-    },
-    {
-      "destination": 96,
-      "source_day": 4,
-      "source_slide": 66
-    },
-    {
-      "destination": 97,
-      "source_day": 4,
-      "source_slide": 67
-    },
-    {
-      "destination": 98,
-      "source_day": 4,
-      "source_slide": 68
-    },
-    {
-      "destination": 99,
-      "source_day": 3,
-      "source_slide": 67
-    },
-    {
-      "destination": 100,
-      "source_day": 4,
-      "source_slide": 69
+ "note": "실전반 3회차 재편(2026-10-28). destination = 새 덱 장(60장), old_practical = 재편 전 조립본(100장)의 장, source = 그 장의 통합반 원본(통합반 3회차 34~60 · 61~67, 4회차 1~69). 화면 · 대본은 모두 새로 썼다. 조립본에 없던 통합반 3회차 57 · 58장(통합반 실습 2 조치 기준 만들기)은 실전반 행에 없어 처음부터 대응이 없다.",
+ "slides": [
+  {
+   "destination": 1,
+   "title": "조치의 성과 비교와 / 검토된 문서 지식",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    1
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 1
     }
-  ],
-  "speech_edits": [
+   ]
+  },
+  {
+   "destination": 2,
+   "title": "학습목표",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    2
+   ],
+   "source": [
     {
-      "source_day": 3,
-      "source_slide": 34,
-      "destination": 4
-    },
-    {
-      "source_day": 3,
-      "source_slide": 41,
-      "destination": 11
-    },
-    {
-      "source_day": 3,
-      "source_slide": 45,
-      "destination": 15
-    },
-    {
-      "source_day": 3,
-      "source_slide": 55,
-      "destination": 25
-    },
-    {
-      "source_day": 3,
-      "source_slide": 59,
-      "destination": 27
-    },
-    {
-      "source_day": 4,
-      "source_slide": 4,
-      "destination": 29
-    },
-    {
-      "source_day": 4,
-      "source_slide": 10,
-      "destination": 35
-    },
-    {
-      "source_day": 4,
-      "source_slide": 13,
-      "destination": 38
-    },
-    {
-      "source_day": 4,
-      "source_slide": 15,
-      "destination": 40
-    },
-    {
-      "source_day": 4,
-      "source_slide": 21,
-      "destination": 46
-    },
-    {
-      "source_day": 4,
-      "source_slide": 26,
-      "destination": 51
-    },
-    {
-      "source_day": 4,
-      "source_slide": 34,
-      "destination": 59
-    },
-    {
-      "source_day": 4,
-      "source_slide": 39,
-      "destination": 64
-    },
-    {
-      "source_day": 4,
-      "source_slide": 41,
-      "destination": 66
-    },
-    {
-      "source_day": 4,
-      "source_slide": 43,
-      "destination": 68
-    },
-    {
-      "source_day": 4,
-      "source_slide": 45,
-      "destination": 70
-    },
-    {
-      "source_day": 4,
-      "source_slide": 46,
-      "destination": 71
-    },
-    {
-      "source_day": 4,
-      "source_slide": 49,
-      "destination": 74
-    },
-    {
-      "source_day": 4,
-      "source_slide": 50,
-      "destination": 75
-    },
-    {
-      "source_day": 4,
-      "source_slide": 51,
-      "destination": 76
-    },
-    {
-      "source_day": 4,
-      "source_slide": 57,
-      "destination": 82
-    },
-    {
-      "source_day": 3,
-      "source_slide": 63,
-      "destination": 92
-    },
-    {
-      "source_day": 3,
-      "source_slide": 66,
-      "destination": 95
-    },
-    {
-      "source_day": 4,
-      "source_slide": 66,
-      "destination": 96
-    },
-    {
-      "source_day": 4,
-      "source_slide": 67,
-      "destination": 97
-    },
-    {
-      "source_day": 4,
-      "source_slide": 68,
-      "destination": 98
-    },
-    {
-      "source_day": 3,
-      "source_slide": 67,
-      "destination": 99
-    },
-    {
-      "source_day": 4,
-      "source_slide": 69,
-      "destination": 100
+     "course": "통합반",
+     "day": 3,
+     "slide": 2
     }
-  ],
-  "metadata_rewritten": [
-    1,
-    2,
+   ]
+  },
+  {
+   "destination": 3,
+   "title": "목차",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
     3
-  ],
-  "source3_BSC_34_to_54_complete": true,
-  "source4_content_4_to_64_complete": true,
-  "quiz6_complete": true,
-  "omissions": "통합반3 SOP·DMN 4~33은 실전반2에서 전체 사용. 조치기준 만들기 소개57~58은 실전반2 조건표로 대체된 실습 배정. 통합반4 표지·목표·목차1~3과 중복 퀴즈 간지65는 공통 메타정보로 통합. 본문 삭제 없음."
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 3
+    }
+   ]
+  },
+  {
+   "destination": 4,
+   "title": "성과 목표와 KPI",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    4
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 34
+    }
+   ]
+  },
+  {
+   "destination": 5,
+   "title": "BSC(Balanced Scorecard)의 네 관점 · 목표 · KPI",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    5,
+    6
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 35
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 36
+    }
+   ]
+  },
+  {
+   "destination": 6,
+   "title": "인터록 여유: KPI 한 벌의 정의",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    7
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 37
+    }
+   ]
+  },
+  {
+   "destination": 7,
+   "title": "같은 24시간 기록의 세 판정",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    8,
+    9
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 38
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 39
+    }
+   ]
+  },
+  {
+   "destination": 8,
+   "title": "응용: 실적을 계산할 수 없을 때 남기는 상태",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    10
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 40
+    }
+   ]
+  },
+  {
+   "destination": 9,
+   "title": "조치의 상충과 손익 비교",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    15
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 45
+    }
+   ]
+  },
+  {
+   "destination": 10,
+   "title": "가능 여부를 가르는 규칙과 효과를 견주는 기준",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    16
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 46
+    }
+   ]
+  },
+  {
+   "destination": 11,
+   "title": "조치 한 건이 성과 지표에 닿는 길과 상충",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    17
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 47
+    }
+   ]
+  },
+  {
+   "destination": 12,
+   "title": "후보의 손익 항목과 값의 원천",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    18
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 48
+    }
+   ]
+  },
+  {
+   "destination": 13,
+   "title": "순위 정책의 일곱 성분",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    20
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 50
+    }
+   ]
+  },
+  {
+   "destination": 14,
+   "title": "쿨러 사건 네 후보의 성분과 판단 순위",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    19,
+    21
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 49
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 51
+    }
+   ]
+  },
+  {
+   "destination": 15,
+   "title": "한 단계 더: 판단 순위 · 손익 순위 · 실습의 비교 합계",
+   "origin": "새 장(한 단계 더: HYD 정책 점수 · 손익 · 실습의 교육용 네 손실 구분, 실라버스 30 · 32행)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 16,
+   "title": "What-if와 조치 검토 결과",
+   "origin": "새 간지(통합반 3회차 52~54장을 단원으로 묶음)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 17,
+   "title": "What-if: 판단 사본에서 가정값을 하나씩 바꾸기",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    22,
+    23
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 52
+    },
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 53
+    }
+   ]
+  },
+  {
+   "destination": 18,
+   "title": "판단 문제: 납기를 48시간으로 바꾼 시험",
+   "origin": "새 장(판단 문제)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 19,
+   "title": "응용: 쿨러 사건의 조치 검토 결과",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    24
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 54
+    }
+   ]
+  },
+  {
+   "destination": 20,
+   "title": "실습: 조치 결과 비교",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    25
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 55
+    }
+   ]
+  },
+  {
+   "destination": 21,
+   "title": "시험 입력에 따른 순위와 성과의 비교",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    26
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 56
+    }
+   ]
+  },
+  {
+   "destination": 22,
+   "title": "실습: 판단 기능 만들기",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    27
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 59
+    }
+   ]
+  },
+  {
+   "destination": 23,
+   "title": "판정과 비교를 담은 조치 검토 결과",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    28
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 60
+    }
+   ]
+  },
+  {
+   "destination": 24,
+   "title": "문서 인제스천의 일곱 단계",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    29,
+    35
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 4
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 10
+    }
+   ]
+  },
+  {
+   "destination": 25,
+   "title": "매뉴얼 한 문단과 등록된 지식",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    30,
+    31
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 5
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 6
+    }
+   ]
+  },
+  {
+   "destination": 26,
+   "title": "샘플 인스턴스 적재와 문서 인제스천",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    32,
+    33
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 7
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 8
+    }
+   ]
+  },
+  {
+   "destination": 27,
+   "title": "일곱 단계와 단계마다 맡는 쪽",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    34
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 9
+    }
+   ]
+  },
+  {
+   "destination": 28,
+   "title": "1~2단계: 원문 보관 · 문서 식별자 · 구조 분석",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    36,
+    37
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 11
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 12
+    }
+   ]
+  },
+  {
+   "destination": 29,
+   "title": "추출 · 매핑 · 원문 대조",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    38,
+    46
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 13
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 30,
+   "title": "3단계 추출: 지시문과 구조화 출력",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    39,
+    40,
+    41,
+    42
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 14
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 15
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 16
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 17
+    }
+   ]
+  },
+  {
+   "destination": 31,
+   "title": "4단계 매핑: 새 후보와 등록된 대상",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    43,
+    44
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 18
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 19
+    }
+   ]
+  },
+  {
+   "destination": 32,
+   "title": "판단 문제: 가리킬 입력 데이터가 없는 금지 문장",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    45
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 20
+    }
+   ]
+  },
+  {
+   "destination": 33,
+   "title": "추출 오류 넷과 실제로 기록된 오류",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    47,
+    48
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 22
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 23
+    }
+   ]
+  },
+  {
+   "destination": 34,
+   "title": "5단계 인용 대조와 사람 검토",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    49,
+    50
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 24
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 25
+    }
+   ]
+  },
+  {
+   "destination": 35,
+   "title": "승인 적재 · 출처 · 지식과 값",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    51,
+    58
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 26
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 33
+    }
+   ]
+  },
+  {
+   "destination": 36,
+   "title": "6단계 적재에서 되돌리기까지",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    52,
+    53
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 27
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 28
+    }
+   ]
+  },
+  {
+   "destination": 37,
+   "title": "응용: 개정 · 되돌리기에서 생기는 다섯 경우",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    53,
+    54
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 28
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 29
+    }
+   ]
+  },
+  {
+   "destination": 38,
+   "title": "7단계 조회: 출처를 따라가고 개정의 영향을 찾는 길",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    55,
+    84,
+    85
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 30
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 59
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 60
+    }
+   ]
+  },
+  {
+   "destination": 39,
+   "title": "응용: 적재 뒤 역량 질문으로 검증하기",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    56
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 31
+    }
+   ]
+  },
+  {
+   "destination": 40,
+   "title": "지식과 값: 기준의 자리와 값의 출처",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    59,
+    60,
+    61,
+    62,
+    63
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 34
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 35
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 36
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 37
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 38
+    }
+   ]
+  },
+  {
+   "destination": 41,
+   "title": "응용: 검토 지식으로 답할 수 있는 것과 없는 것",
+   "origin": "새 장(응용: 검토 지식으로 답할 범위와 현재값 · 승인의 경계, 실라버스 36행)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 42,
+   "title": "실습: 매뉴얼 검토",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    64
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 39
+    }
+   ]
+  },
+  {
+   "destination": 43,
+   "title": "매뉴얼 근거와 작업 전 확인 항목",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    65
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 40
+    }
+   ]
+  },
+  {
+   "destination": 44,
+   "title": "실습: 지식 추출",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    66
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 41
+    }
+   ]
+  },
+  {
+   "destination": 45,
+   "title": "근거가 붙은 작업 조건 추출",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    67
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 42
+    }
+   ]
+  },
+  {
+   "destination": 46,
+   "title": "실습: 그래프 반영과 작업 확인 카드",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    68
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 43
+    }
+   ]
+  },
+  {
+   "destination": 47,
+   "title": "작업 확인 카드와 온톨로지 구축 결과",
+   "origin": "실습 간지 · 설명(실라버스 실전반 행대로 다시 씀)",
+   "old_practical": [
+    69
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 44
+    }
+   ]
+  },
+  {
+   "destination": 48,
+   "title": "온톨로지 설계부터 지식 활용까지",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    70,
+    78
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 45
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 53
+    }
+   ]
+  },
+  {
+   "destination": 49,
+   "title": "온톨로지 구축 완주: 단계마다 남긴 결과물",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    71,
+    72,
+    73,
+    74,
+    75,
+    76
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 46
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 47
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 48
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 49
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 50
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 51
+    }
+   ]
+  },
+  {
+   "destination": 50,
+   "title": "쿨러 사건 한 건에 쌓인 지식 그래프",
+   "origin": "새 장(구축 결과가 한 그래프로 이어진 모습)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 51,
+   "title": "세 층: 스키마 · 인스턴스 데이터 · 값",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    77
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 52
+    }
+   ]
+  },
+  {
+   "destination": 52,
+   "title": "쿨러 사건의 다섯 걸음과 쓰인 결과물",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    79,
+    80,
+    81,
+    82,
+    83
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 54
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 55
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 56
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 57
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 58
+    }
+   ]
+  },
+  {
+   "destination": 53,
+   "title": "응용: 점검 요청에 넘길 지식 자산",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    86,
+    87
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 61
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 62
+    }
+   ]
+  },
+  {
+   "destination": 54,
+   "title": "복습: 판단이 어긋났을 때 먼저 볼 자리",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    88,
+    89
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 61
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 63
+    }
+   ]
+  },
+  {
+   "destination": 55,
+   "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    90,
+    91
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 62
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 64
+    }
+   ]
+  },
+  {
+   "destination": 56,
+   "title": "Review Quiz: 핵심 흐름 되짚어보기",
+   "origin": "퀴즈 간지(고정 문구)",
+   "old_practical": [
+    92
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 63
+    }
+   ]
+  },
+  {
+   "destination": 57,
+   "title": "Quiz 1. 원격 수동에서 홀로 남은 핀 세척",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    93
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 64
+    }
+   ]
+  },
+  {
+   "destination": 58,
+   "title": "Quiz 2. 형식 검사와 인용 대조를 통과한 단계",
+   "origin": "옛 장 재작성(화면 · 대본 새로)",
+   "old_practical": [
+    98
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 68
+    }
+   ]
+  },
+  {
+   "destination": 59,
+   "title": "Quiz 3. 작업 확인 카드에 고정해 적지 않을 것",
+   "origin": "새 문항(지식과 값 · 작업 확인 카드)",
+   "old_practical": [],
+   "source": []
+  },
+  {
+   "destination": 60,
+   "title": "정답과 판단 기준",
+   "origin": "여러 장을 합쳐 새로 짬",
+   "old_practical": [
+    99,
+    100
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 3,
+     "slide": 67
+    },
+    {
+     "course": "통합반",
+     "day": 4,
+     "slide": 69
+    }
+   ]
+  }
+ ],
+ "dropped": [
+  {
+   "old_practical": 11,
+   "title": "전략맵과 성과 지표의 영향 관계",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 41
+   },
+   "reason": "실라버스 실전반 30행에 전략맵 · 선행/후행 지표 · 영향의 부호/강도/조건이 없음(통합반 30행에만). 실전반 기준 1절 「범위」"
+  },
+  {
+   "old_practical": 12,
+   "title": "전략맵: 목표 사이의 인과를 그린 그림",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 42
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 13,
+   "title": "선행 지표와 후행 지표",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 43
+   },
+   "reason": "같음"
+  },
+  {
+   "old_practical": 14,
+   "title": "영향의 부호 · 강도 · 적용 조건",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 44
+   },
+   "reason": "같음(영향 관계의 부호는 11장 관계도의 선 라벨로 남김)"
+  },
+  {
+   "old_practical": 57,
+   "title": "검색으로 답을 생성하는 일과 규칙으로 판정하는 일",
+   "source": {
+    "course": "통합반",
+    "day": 4,
+    "slide": 32
+   },
+   "reason": "실라버스 실전반 33 · 37행에 RAG와 규칙 판정의 비교가 없음(통합반 38행에만)"
+  },
+  {
+   "old_practical": 94,
+   "title": "Quiz 2. 여러 규칙이 함께 맞았을 때",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 65
+   },
+   "reason": "퀴즈 여섯 → 셋(기준 14절 3문항). Quiz 2(Collect)는 실전반 2회차 덱이 다룸"
+  },
+  {
+   "old_practical": 95,
+   "title": "Quiz 3. 가능 여부의 규칙과 성과의 비교",
+   "source": {
+    "course": "통합반",
+    "day": 3,
+    "slide": 66
+   },
+   "reason": "퀴즈 셋으로 줄임. 성과 비교 판단은 18장 판단 문제와 54장 복습이 맡음"
+  },
+  {
+   "old_practical": 96,
+   "title": "Quiz 4. 문서가 개정되었을 때",
+   "source": {
+    "course": "통합반",
+    "day": 4,
+    "slide": 66
+   },
+   "reason": "퀴즈 셋으로 줄임. 개정 처리는 37 · 38장과 54장 복습이 맡음"
+  },
+  {
+   "old_practical": 97,
+   "title": "Quiz 5. 지식과 값의 구분",
+   "source": {
+    "course": "통합반",
+    "day": 4,
+    "slide": 67
+   },
+   "reason": "퀴즈 셋으로 줄임. 지식과 값은 59장(Quiz 3)이 작업 확인 카드로 물음"
+  }
+ ]
 }

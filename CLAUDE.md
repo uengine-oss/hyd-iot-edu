@@ -29,9 +29,7 @@
 
 ## 시스템 수업 준비 재개 필독 (2026-10-26)
 
-2026-10-27 이후 재개는 `문서/시스템/6_남은_일.md` 맨 앞 「다음 세션 인계 (2026-10-27)」부터 읽는다. 교대 인수인계 단일 시나리오, 강사 승인 자료·행동만 허용, 캐시·AI 비용 통제, 기존 검증과 미해결 범위가 정리돼 있다. 아래 2026-10-26 원문 근거는 재사용한다.
-
-수업 준비(키 하나로 켜기 · 포털 실습 전수 점검 · ProcessGPT 대조 결함 처리)는 `문서/시스템/6_남은_일.md` 맨 앞 「다음 세션 인계 (2026-10-26)」가 진입점이다(사용자가 바로잡은 규칙 · 결과 · 남은 순서, 근거 원문 `문서/시스템/검증_기록/2026-10-26/인계_대화기록.md`).
+재개는 `문서/시스템/6_남은_일.md`(지금 위치 · 다음 행동 · 재실행 금지 · 열린 항목)부터 읽는다. 2026-10-28까지의 날짜별 인계 원문(10-26 · 10-27 절 포함)은 `문서/시스템/검증_기록/지난기록/`에 보관돼 있고 필요한 줄만 찾아 읽는다(근거 원문 `문서/시스템/검증_기록/2026-10-26/인계_대화기록.md`).
 
 이 저장소에서 일하는 세션이 지키는 것이다. 클라우드에서는 `.claude/hooks/cloud-bootstrap.sh`가 세션 시작 때 환경을 준비한다.
 
@@ -112,6 +110,9 @@ LLM은 LiteLLM 중계(모델 `coding`) 하나이고 GPU는 없다(`문서/시스
 클라우드 Supabase: `cd it/supabase && npx -y supabase start`로 뜬다(2026-10-08 실측, 마이그레이션 25개·seed 적용, ghcr 403이 몇 번 나도 재시도로 통과).
 클라우드 이미지 빌드: 에이전트 프록시가 TLS를 다시 서명하므로 빌드 안 `pip`가 `CERTIFICATE_VERIFY_FAILED`로 실패한다. 세션마다 한 번, 베이스 이미지에 프록시 CA를 넣는다(레포 Dockerfile은 그대로):
 `docker tag python:3.12-slim python:3.12-slim-orig` 뒤 `FROM python:3.12-slim-orig` + CA 사본을 `/usr/local/share/ca-certificates/`에 두고 `/etc/ssl/certs/ca-certificates.crt`에 덧붙임 + `ENV PIP_CERT=… SSL_CERT_FILE=… REQUESTS_CA_BUNDLE=… CURL_CA_BUNDLE=… NODE_EXTRA_CA_CERTS=<CA 사본>`으로 `docker build -t python:3.12-slim`(워커 이미지의 curl · npm까지 된다).
+CA 사본은 전체 묶음 `/root/.ccr/ca-bundle.crt`를 쓴다. `agent-proxy-ca.crt` 한 장만 넣으면 빌드 안 `pip`가 여전히 `self-signed certificate in certificate chain`으로 실패한다(2026-10-28 실측).
+클라우드 Python Playwright: `.venv`의 판본이 미리 설치된 브라우저(`/opt/pw-browsers/*-1243`)와 빌드 번호가 다르다. 설치하지 말고 기대 번호 이름으로 심볼릭 링크를 둔 폴더를 `PLAYWRIGHT_BROWSERS_PATH`로 준다(예: `/tmp/pwb/chromium_headless_shell-1248 → /opt/pw-browsers/chromium_headless_shell-1243`).
+클라우드 시작 스크립트의 실습랩 키 동기화는 저장소에 추적된 `course/labs/offline/05-2-cause-agent/.env`에 키를 쓴다. 시작이 끝나면 `git checkout -- 그 파일`로 되돌리고 절대 스테이징하지 않는다.
 
 통합 시험: `scripts/scenario_instance_test.py`(쿨러, `--worker`면 실제 워커 기대), `scripts/scenario_pump_fan_test.py`(펌프·팬·가림),
 `scripts/scenario_test.py --quick`(레거시, `PROCESS_MODE=legacy`로 process 재기동 필요).
