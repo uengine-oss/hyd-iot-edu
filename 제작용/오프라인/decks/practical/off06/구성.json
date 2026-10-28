@@ -48,7 +48,13 @@
   },
   {
    "src": "practical/day05",
-   "n": 24
+   "n": 24,
+   "note_edits": [
+    [
+     "표 여섯 줄(실습 spec.md 틀 순서)",
+     "표 여섯 줄(spec.md 틀 순서)"
+    ]
+   ]
   },
   {
    "src": "practical/day05",
@@ -89,7 +95,13 @@
   },
   {
    "src": "practical/day05",
-   "n": 44
+   "n": 44,
+   "note_edits": [
+    [
+     " / · 실습에서도 기대 결과는 반드시 실행 전에",
+     ""
+    ]
+   ]
   },
   {
    "new": "s4"
@@ -118,7 +130,13 @@
   },
   {
    "src": "practical/day05",
-   "n": 70
+   "n": 70,
+   "note_edits": [
+    [
+     "표시 · 검토 vs 승인",
+     "표현 차이 vs 계약 위반"
+    ]
+   ]
   },
   {
    "src": "practical/day05",
