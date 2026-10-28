@@ -33,7 +33,7 @@ C67 최신 적용: [최상위 학습 목표](1_목적과_방향.md)와 [전체 �
 
 **뚫린 길(재사용):** VS Code 녹화 `제작용/촬영/vscode/촬영도구`(`run.sh rec`, `SPACE="vscode rec 20261028" LOAD_OK=1`, 실행 시점 `commitFrac`, 긴 파일은 Ctrl+G 줄 이동, 표 빈 행은 정확 일치로 찾기, nbsp 정규화, CSV 열면 알림 닫기, 녹화 전 결과 틀 되돌리기), 준비 `.evidence/vscode-rec-20261028/setup-p22.mjs`(`SETUP_FOLDER`) · `reset-p31.mjs` · `reset-p33.mjs`, 공간 회수 `takeover.mjs`(사용자 「계속」 뒤에만). 포털 구간 `segs/p31-common.mjs`. 합본 `encode.py`(FFMPEG 환경변수), 검사 `제작용/촬영/포털/촬영도구/verify.py · scenes.py`(시스템 python). 대본 md 생성 스크립트는 앞 세션 scratchpad에 있었음(큐 JSON + 조작 메모). other-pc는 sparse checkout이라 `mkdir -p` 후 `git add --sparse`, push 전 `git fetch origin +refs/heads/other-pc:refs/remotes/origin/other-pc`.
 
-**안 뚫린 길:** VS Code 안 Codex 바이브 코딩 촬영. 방식은 촬영준비 「Codex가 일하는 랩의 촬영 방식」(요청 녹화 → 응답 대기 → 응답 관찰 뒤 큐 작성 · 음성 → 결과 확인 녹화)뿐이고 실측 없음. 코딩 랩 10개의 첫 길뚫기 과제.
+**안 뚫린 길(코딩 랩 10개 전에 먼저 뚫는다):** ① VS Code 안 Codex(AI 채팅) 촬영 — 방식은 촬영준비 「Codex가 일하는 랩의 촬영 방식」(요청 녹화 → 응답 대기 → 응답 관찰 뒤 큐 작성 · 음성 → 결과 확인 녹화)뿐이고 실측 없음, serve-web에서 Codex 확장 로그인 상태 미확인(로그인은 사용자 몫일 수 있음). ② VS Code 터미널에서 명령 실행 · 출력 확인 장면 — 미촬영. ③ 시작 도구로 자료를 받아 VS Code를 여는 장면(`기준_실습대본.md` 60-1 「짧게 보여 준다」) — 시작 도구는 윈도우 데스크톱이라 웹 녹화에 바로 안 담김, 웹으로 같은 화면을 재현해 찍는 방법 미정. ④ 별도 랩 DB(Neo4j) — 실전 2-4 · 3-5, 통합 2-4가 사용, `6_남은_일.md`의 「저장소에 없다」 미해결. 포털 관찰 실습 재촬영은 뚫린 길만으로 가능하다.
 
 **주의:** `course/labs/offline/05-2-cause-agent/.env`가 포털 시작 때 키가 써져 수정 상태 — 커밋 · 스테이징 금지, 필요하면 `git checkout --`로 되돌린다. 포털 작업 끝나면 `docker desktop stop` 후 프로세스 0 확인.
 
