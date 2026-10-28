@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import signal
 import subprocess
 import threading
@@ -20,7 +21,8 @@ from urllib.parse import urlparse
 
 from cliagents import Surface, registry
 
-from . import env_guard, workspace
+from . import ai_replay, env_guard, workspace
+from . import runner as runner_mod
 from .runner import Runner
 from .settings import AGENT_TYPE, settings
 
@@ -31,7 +33,7 @@ log = logging.getLogger("worker")
 _SCRUBBED = env_guard.scrub(keep=(settings.codex_model_provider_env_key,))
 if _SCRUBBED:
     log.info("child-process environment: removed %s", ", ".join(_SCRUBBED))
-status = {"status": "starting", "agent_type": AGENT_TYPE, "runs_in_flight": 0, "max_concurrent_runs": 1, "polls": 0, "handled": 0,
+status = {"status": "starting", "agent_type": AGENT_TYPE, "ai_mode": None, "runs_in_flight": 0, "max_concurrent_runs": 1, "polls": 0, "handled": 0,
           "last_poll": None, "error": None}
 _runner: Runner | None = None
 _SWEEP_INTERVAL_S = 3600
@@ -112,6 +114,36 @@ def sweep_forever() -> None:
         time.sleep(_SWEEP_INTERVAL_S)
 
 
+def _ai_login() -> bool | None:
+    """AI_MODE=auto: 이 워커가 AI를 부를 수 있나. 키 환경 변수가 있으면 예, 선택한 CLI가 없거나 로그인이 없다고 답하면 아니요,
+    확인할 수 없으면 None(그때는 재생으로 켜진다 — 키가 확인될 때만 실제 AI)."""
+    if settings.cli_agent == "claude-code" and settings.isolate_config_dir:          # ANTHROPIC_API_KEY 로 인증
+        return True
+    if settings.cli_agent == "codex" and settings.codex_model_provider_base_url and os.getenv(settings.codex_model_provider_env_key):
+        return True
+    row = next((a for a in registry.availability(Surface.EXEC, refresh=True) if a.agent_id == settings.cli_agent), None)
+    if row is None or not row.installed:
+        return False
+    return _probe_auth(row.agent_id, row.executable_path)[0]
+
+
+def build_runner(repo, *, login=_ai_login) -> Runner:
+    """AI_MODE 에 따라 CLI 실행 자리(exec_fn)만 바꾼다 — 나머지 실행 · 결과 검사 · 저장은 같다."""
+    mode = ai_replay.resolve_mode(settings.ai_mode, login)
+    library = ai_replay.Library(settings.ai_replay_dir, case_of=ai_replay.case_of_instance(repo))
+    exec_fn = {"live": None,
+               "record": ai_replay.recording(runner_mod._exec_stream, library, lambda p: getattr(p, "id", settings.cli_agent)),
+               "replay": ai_replay.replaying(library)}[mode]
+    status["ai_mode"] = mode
+    if mode == "replay":
+        log.warning("AI 응답 재생으로 실행합니다: %s 로그인 · API 키가 없어(AI_MODE=%s) 저장된 AI 응답(%s, 업무 %d개)을 씁니다. 실제 AI로 하려면 API 키를 넣고 워커를 다시 켜세요.",
+                    settings.cli_agent, settings.ai_mode, settings.ai_replay_dir, len(library.docs()))
+    elif mode == "record":
+        log.info("AI 응답 저장: 실제 AI 실행을 %s 에 업무마다 저장합니다", settings.ai_replay_dir)
+    from .course_access import CourseAccess
+    return Runner(settings, repo, exec_fn=exec_fn, ai_mode=mode, course_access=CourseAccess())
+
+
 def install_stop_signals() -> list[str]:
     """W1 (2026-10-23 검수): `pkill -f worker.main` (SIGTERM) or a closed terminal (SIGHUP) used to end the worker without
     running any `finally`, so on macOS · Linux the CLI's process group (start_new_session) lived on, kept calling tools
@@ -141,8 +173,7 @@ def main() -> None:
     install_stop_signals()
     threading.Thread(target=serve_http, daemon=True).start()
     threading.Thread(target=sweep_forever, daemon=True).start()
-    from .course_access import CourseAccess
-    _runner = Runner(settings, _repo(), course_access=CourseAccess())
+    _runner = build_runner(_repo())
     log.info("cliagents agent type up: consumer=%s agent_orch=%s cli=%s permission=%s http=:%d", settings.consumer, settings.agent_orch,
              settings.cli_agent, settings.default_permission.value, settings.health_port)
     while True:

@@ -29,7 +29,7 @@ from cliagents import ExecEvent, ExecEventKind, ExecRequest, Permission, Surface
 from procsvc import task_deferral, work_rules
 from procsvc.agents_store import SKILL_ROOTS, agent_settings, skill_markdown
 
-from . import bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
+from . import ai_replay, bridge, context, hitl, outcome, payloads, prompt, workspace, runtime_credentials
 from . import events as ui_events
 from .settings import Settings, effective_permission, run_allowed_tools, run_disallowed_tools
 from .process_control import controlled_stream, reap_stale_group
@@ -69,8 +69,9 @@ class LeaseLost(Cancelled):
 
 class Runner:
     def __init__(self, s: Settings, repo, exec_fn: ExecFn | None = None, schema_prompt: str | None = None, resolve_provider=None,
-                 course_access=None):
+                 ai_mode: str = "live", course_access=None):
         self.s, self.repo = s, repo
+        self.ai_mode = ai_mode                      # ai_replay: live · record · replay (main 이 정한다)
         self.exec_fn = exec_fn or _exec_stream
         self.schema_prompt = schema_prompt if schema_prompt is not None else _read(s.schema_prompt_path)
         self.resolve_provider = resolve_provider or _resolve_provider
@@ -199,7 +200,7 @@ class Runner:
             self._event(row, job_id, "task_working", {"type": "notice", "content": "배정된 스킬 중 저장된 본문이 없어 넣지 못한 것이 있습니다: " + ", ".join(agent.missing_skills)}, crew_type="agent")
         from . import managed_model
         remote_agent=bool((ctx.definition or {}).get('classroom_agent'))
-        question_task = self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
+        question_task = self.ai_mode != 'replay' and self.course_access is not None and row.get('proc_def_id') == 'ask_agent' and ctx.form_contract == 'ask-answer-v1' and not remote_agent
         managed=None
         if remote_agent:
             from . import managed_tools
@@ -308,6 +309,10 @@ class Runner:
         final_text, session_id, paused = self._stream(row, job_id, provider, request, bridged.env or None, crew,
                                                        trace_path=ws.path / f"{job_id}.events.jsonl", skills=provided,
                                                        redaction_values=bridged.redaction_values, deadline=deadline)
+        # 저장된 응답임을 알리되 결과 검사·교정은 live와 같은 경로를 쓴다.
+        found = ai_replay.used_notice(getattr(self.exec_fn, "last", None)) if self.ai_mode == "replay" else None
+        if found:
+            self._event(row, job_id, "task_working", {"type": "notice", "content": found}, crew_type="agent")
         corrections = 0
         while True:
             try:
@@ -414,7 +419,8 @@ class Runner:
             if time.monotonic()>deadline:
                 raise RunFailed(f"실행 제한 시간을 초과했습니다({self.s.run_timeout_s:g}s). 지금까지의 산출물은 보존됩니다.")
         check_stop()
-        gen = (_exec_stream(provider,request,env,check_stop=check_stop) if self.exec_fn is _exec_stream
+        gen = (self.exec_fn(provider,request,env,check_stop=check_stop)
+               if self.exec_fn is _exec_stream or getattr(self.exec_fn, "accepts_check_stop", False)
                else self.exec_fn(provider,request,env))
         trace = trace_path.open("a", encoding="utf-8") if trace_path else None
         console = ui_events.ConsoleLog()                      # U1: tool call start/end as one terminal line each
@@ -748,6 +754,9 @@ def _exec_stream(provider, request, env, *, check_stop=None):
         from .codex_provider import stream_with_prompt_stdin
         stream = partial(stream_with_prompt_stdin, stream_exec)
     yield from controlled_stream(stream,provider,request,env,check_stop or (lambda:None),RunFailed)
+
+
+_exec_stream.accepts_check_stop = True          # ai_replay.recording 이 실제 CLI 실행을 감쌀 때 취소 · 기한 검사를 넘긴다
 
 
 def _asker_of(row: dict) -> str:

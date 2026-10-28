@@ -120,6 +120,11 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
+    # AI 응답 저장 · 재생(worker/ai_replay.py): auto(기본: API 키 · CLI 로그인이 없으면 replay) · live · record · replay
+    ai_mode: str = os.getenv("AI_MODE", "auto")
+    ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
+
+
     # W3 (2026-10-23 검수): how long the business DB may stay unreachable during a run (cancel check · lease renewal · progress
     # rows) before the run stops with that reason. Below the 120 s lease, so the run ends before another worker may reclaim it.
     db_outage_limit_s: float = float(os.getenv("DB_OUTAGE_LIMIT_S", "90"))
