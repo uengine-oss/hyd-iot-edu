@@ -14,12 +14,12 @@ if [ "$cmd" = measure ]; then cd "$here" && PYTHONUTF8=1 python measure.py "$1";
 for f in ctrl.mjs ui.mjs segs/*.mjs; do node --check "$here/$f" || { echo "SYNTAX ERROR in $f: ego로 보내지 않음"; exit 2; }; done
 busy=$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -Filter \"Name='ego-browser.exe'\").Count")
 [ "${busy//[^0-9]/}" = "0" ] || { echo "BUSY: 다른 ego 명령이 실행 중($busy) — 끝난 뒤 다시"; exit 3; }
-# PC 부하: 화상회의가 돌거나 여유 메모리가 3GB 미만이면 녹화하지 않는다(Zoom · 메모리 부족으로 1~2초 정지가 반복된 사례)
+# PC 부하: 화상회의가 돌면 녹화하지 않는다(Zoom으로 1~2초 정지가 반복된 사례). 여유 메모리 3GB 미만은 경고만 하고 measure.py의 프레임 간격으로 판정한다(수치만으로 중단하지 않음).
 if [ "$cmd" = rec ]; then
   load=$(powershell -NoProfile -Command "\$z=@(Get-Process -Name Zoom,Teams,ms-teams -ErrorAction SilentlyContinue).Count; \$f=[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024); \"\$z \$f\"")
   set -- "$@"; z=${load%% *}; free=${load##* }; free=${free//[^0-9]/}
-  # LOAD_OK=1: 여유 메모리 기준만 건너뛴다(시험 녹화용). 결과는 measure.py의 프레임 공백으로 판정한다.
-  if [ "${z//[^0-9]/}" != "0" ] || { [ "${free:-0}" -lt 3000 ] && [ "${LOAD_OK:-0}" != 1 ]; }; then echo "LOAD: 화상회의 ${z}개, 여유 메모리 ${free}MB — 녹화하지 않음"; exit 4; fi
+  if [ "${z//[^0-9]/}" != "0" ]; then echo "LOAD: 화상회의 ${z}개 — 녹화하지 않음"; exit 4; fi
+  [ "${free:-0}" -lt 3000 ] && echo "WARN: 여유 메모리 ${free}MB — 녹화 뒤 measure.py 프레임 간격(최대 0.8초 이하)을 꼭 본다"
 fi
 stamp=$(date +%s)
 mkdir -p "$work"
