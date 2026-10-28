@@ -1,36 +1,36 @@
-"""대본 MD의 낭독 시간을 장별로 어림한다.
+"""이론 분할 대본 MD의 낭독 시간을 장별로 낸다 — 실제 강사 복제 음성으로 맞춘 계수(제작용/촬영/시간계수.json)를 쓴다.
 
-    python3 production/tools/deck/대본시간.py <대본.md> [분당 음절 수(기본 260)]
+    python 제작용/기존제작/tools/deck/대본시간.py <대본.md> [<대본.md> ...]
 
-- `## [SLIDE NN] 제목` 아래의 본문만 센다. 인용 줄(>)과 굵게 표시는 뺀다.
-- `English(한글 발음)`은 한글 발음만 센다. 숫자는 자리당 1.6음절, 남은 영문은 글자당 0.6음절로 어림한다.
-- 분당 음절 수는 가정이다. 실제 음성 파일 하나의 글자 수와 길이로 맞춘 뒤에 쓴다.
+- 장 시간 = scale·(장 본문의 말 길이) + per_slide. 말 길이와 장 계수는 제작용/촬영/시간계산.py가 맞춘다
+  (calibrate: 문장 음성, calibrate-lecture: 이론 영상의 장별 음성 시간). 새 음성이 생기면 다시 맞춘다.
+- `## [SLIDE NN] 제목` 아래 본문만 센다. 인용 줄(>) · 굵게 표시 · 제목 줄은 빼고, `English(한글 발음)`은 한글 발음만 센다.
+- 낭독 추정이며 조작 · AI 응답 대기 · 학습 대기는 들어 있지 않다.
 """
-import re
 import sys
+from pathlib import Path
 
-
-def syllables(text: str) -> float:
-    text = re.sub(r"\*\*|^>.*$|^# .*$", "", text, flags=re.M)  # 굵게 표시, 인용 줄, 큰 제목 줄은 세지 않는다
-    text = re.sub(r"[A-Za-z][A-Za-z0-9 _\-/\.]*\(([가-힣 ]+)\)", r"\1", text)
-    return (len(re.findall(r"[가-힣]", text))
-            + len(re.findall(r"\d", text)) * 1.6
-            + len(re.findall(r"[A-Za-z]", text)) * 0.6)
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / '촬영'))
+from 시간계산 import load_coef, script_slides, slide_seconds  # noqa: E402
 
 
 def main() -> None:
-    path = sys.argv[1]
-    rate = float(sys.argv[2]) if len(sys.argv) > 2 else 260.0
-    body = open(path, encoding="utf-8").read()
-    body = re.split(r"^# (여기까지 작성|촬영 본문 끝)|^## 제작 확인용", body, flags=re.M)[0]
-    parts = re.split(r"^## \[SLIDE ([0-9~]+)\](.*)$", body, flags=re.M)
-    total = 0.0
-    print(f"| 장 | 음절 | 초 | 제목 |\n|---|---|---|---|")
-    for i in range(1, len(parts), 3):
-        n = syllables(parts[i + 2])
-        total += n
-        print(f"| {parts[i]} | {n:.0f} | {n / rate * 60:.0f} | {parts[i + 1].strip()} |")
-    print(f"\n합계 {total:.0f}음절 · 분당 {rate:.0f}음절이면 {total / rate:.1f}분")
+    if len(sys.argv) < 2:
+        raise SystemExit(__doc__)
+    k = load_coef()
+    grand = 0.0
+    for path in sys.argv[1:]:
+        slides = script_slides(Path(path).read_text(encoding='utf-8'))
+        total = 0.0
+        print(f"\n{path}\n| 장 | 초 | 제목 |\n|---|---|---|")
+        for n, (text, share, title) in sorted(slides.items()):
+            sec = slide_seconds(text, k) / share if share > 1 else slide_seconds(text, k)
+            total += sec
+            print(f"| {n} | {sec:.0f} | {title} |")
+        grand += total
+        print(f"합계 {total / 60:.1f}분")
+    if len(sys.argv) > 2:
+        print(f"\n전체 {grand / 60:.1f}분")
 
 
 if __name__ == "__main__":
