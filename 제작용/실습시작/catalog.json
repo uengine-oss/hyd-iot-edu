@@ -27,7 +27,7 @@
       "title": "포털에서 기준 지식의 연결 탐색하기",
       "version": "2026-10-28-map-v2-screens",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "9418e3a3ccb282f720eb8bd9e62f8a643e3ab21e56e4f83c23982c7f2a48e930",
+      "sha256": "c9c8e668d92c73d024d0873a874fe603476fa249873b60fb6fb1093478ab2f7b",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
@@ -65,9 +65,9 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-10-28-s3-whatif-v2-mode",
+      "version": "2026-10-28-s3-whatif-v3-screens",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
-      "sha256": "6d408cfcf40834c6d4766c075cfe74e322d4d479822095389275fbc5eea3eef6",
+      "sha256": "a05b8754f0ddd91d0e4cc7d0173113257c0b4284e89f7bb947211155e7c403a4",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EC%A1%B0%EC%B9%98%EA%B2%B0%EA%B3%BC%EB%B9%84%EA%B5%90.zip"
     },
     {
@@ -85,9 +85,9 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "포털 지식과 매뉴얼 원문 대조하기",
-      "version": "2026-10-28-s3-v4-rh3",
+      "version": "2026-10-28-s3-v4-rh3-screens",
       "folder": "03회차/랩/03일차_실습3_매뉴얼검토",
-      "sha256": "4b8163d524306c91d260cadc73044ab7db0f376e8b7d41b482c7137bc9f7c61b",
+      "sha256": "cb3d565f02dc5cd836d0576ac4aee9fc1b8afafc531a719806fd54bd47994415",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B53_%EB%A7%A4%EB%89%B4%EC%96%BC%EA%B2%80%ED%86%A0.zip"
     },
     {
@@ -97,7 +97,7 @@
       "title": "현장 문서 묶음에서 작업 지식 후보를 추출하고 검토하기",
       "version": "2026-10-28-s3-v4-rh3",
       "folder": "03회차/랩/03일차_실습4_지식추출",
-      "sha256": "1720f91bcbb84308ab724694d7b41ca3618012be3cefdd12342d9abca2ee8517",
+      "sha256": "4c6c430f9c177294d3df25597fa3e72c377d73d8e5342d0829cfc6d0db3f05b3",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B54_%EC%A7%80%EC%8B%9D%EC%B6%94%EC%B6%9C.zip"
     },
     {
@@ -107,7 +107,7 @@
       "title": "검토한 지식을 랩 그래프에 연결하고 작업 확인 카드 만들기",
       "version": "2026-10-28-s3-v4-rh3",
       "folder": "03회차/랩/03일차_실습5_그래프반영",
-      "sha256": "bf477e089b36a6f038c6d315917259426034b9eb27f798099e6a3377febf7925",
+      "sha256": "6bf22d06cb401623c1e33ba690a7088c9d4353a64e022863f0f0b09456be39a1",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%EC%8B%A4%EC%A0%84%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B55_%EA%B7%B8%EB%9E%98%ED%94%84%EB%B0%98%EC%98%81.zip"
     },
     {
@@ -135,9 +135,9 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "포털에서 기준 지식의 연결 탐색하기",
-      "version": "2026-10-26-common-v1",
+      "version": "2026-10-28-map-v2-screens",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
-      "sha256": "01f218011ce043d928e216b0c342c7fcf2944d3406982197679d20211e1ef8b5",
+      "sha256": "2f1c1889893ea25c5b40a66ab59edeb205ada533e0e3fff5fce9c7e064b81a55",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/02%ED%9A%8C%EC%B0%A8/%EB%9E%A9/02%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B52_%EC%A7%80%EC%8B%9D%EC%A7%80%EB%8F%84%ED%83%90%EC%83%89.zip"
     },
     {
@@ -165,9 +165,9 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-10-28-s3-whatif-v1",
+      "version": "2026-10-28-s3-whatif-v2-screens",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
-      "sha256": "845474261a355259c983896b837600df40b11ab1b785cfd986b5dd418f768d40",
+      "sha256": "1de61bd7745a71f5993b573b0f3053f57fb57aa2212de5a0ab50e016487b2d0c",
       "url": "http://127.0.0.1:8765/%EC%82%B0%EC%B6%9C%EB%AC%BC/%ED%86%B5%ED%95%A9%EB%B0%98/%EC%8B%A4%EC%8A%B5/03%ED%9A%8C%EC%B0%A8/%EB%9E%A9/03%EC%9D%BC%EC%B0%A8_%EC%8B%A4%EC%8A%B51_%EC%A1%B0%EC%B9%98%EA%B2%B0%EA%B3%BC%EB%B9%84%EA%B5%90.zip"
     },
     {
