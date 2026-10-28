@@ -1,0 +1,111 @@
+{
+ "title": "스킬 · MCP · 접근 범위 이해하기",
+ "intro": "통합반 오프라인 6회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 46행의 범위로 온라인 통합반 6회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(47~49행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 06`.",
+ "md": "통합반_오프라인_06회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day06",
+   "n": 5
+  },
+  {
+   "src": "integrated/day06",
+   "n": 7
+  },
+  {
+   "src": "integrated/day06",
+   "n": 9
+  },
+  {
+   "src": "integrated/day06",
+   "n": 11
+  },
+  {
+   "src": "integrated/day06",
+   "n": 12
+  },
+  {
+   "src": "integrated/day06",
+   "n": 14
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day06",
+   "n": 25
+  },
+  {
+   "src": "integrated/day06",
+   "n": 27
+  },
+  {
+   "src": "integrated/day06",
+   "n": 28
+  },
+  {
+   "src": "integrated/day06",
+   "n": 34
+  },
+  {
+   "src": "integrated/day06",
+   "n": 35
+  },
+  {
+   "src": "integrated/day06",
+   "n": 38
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day06",
+   "n": 41
+  },
+  {
+   "src": "integrated/day06",
+   "n": 42
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day06",
+   "n": 45
+  },
+  {
+   "src": "integrated/day06",
+   "n": 49
+  },
+  {
+   "src": "integrated/day06",
+   "n": 51
+  },
+  {
+   "src": "integrated/day06",
+   "n": 53
+  },
+  {
+   "src": "integrated/day06",
+   "n": 54
+  },
+  {
+   "src": "integrated/day06",
+   "n": 56
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}

@@ -1,0 +1,103 @@
+{
+ "title": "문서 추출 · 검토 · 출처 관리 원리 이해하기",
+ "intro": "통합반 오프라인 4회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 30행의 범위로 온라인 통합반 4회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(31~33행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 04`.",
+ "md": "통합반_오프라인_04회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day04",
+   "n": 5
+  },
+  {
+   "src": "integrated/day04",
+   "n": 6
+  },
+  {
+   "src": "integrated/day04",
+   "n": 9
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day04",
+   "n": 11
+  },
+  {
+   "src": "integrated/day04",
+   "n": 12
+  },
+  {
+   "src": "integrated/day04",
+   "n": 14
+  },
+  {
+   "src": "integrated/day04",
+   "n": 15
+  },
+  {
+   "src": "integrated/day04",
+   "n": 16
+  },
+  {
+   "src": "integrated/day04",
+   "n": 18
+  },
+  {
+   "src": "integrated/day04",
+   "n": 20
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day04",
+   "n": 22
+  },
+  {
+   "src": "integrated/day04",
+   "n": 23
+  },
+  {
+   "src": "integrated/day04",
+   "n": 24
+  },
+  {
+   "src": "integrated/day04",
+   "n": 25
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day04",
+   "n": 27
+  },
+  {
+   "src": "integrated/day04",
+   "n": 28
+  },
+  {
+   "src": "integrated/day04",
+   "n": 30
+  },
+  {
+   "src": "integrated/day04",
+   "n": 31
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}

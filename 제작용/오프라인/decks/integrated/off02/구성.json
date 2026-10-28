@@ -1,0 +1,117 @@
+{
+ "title": "식별자 · 적재 · SOP 연결 원리 이해하기",
+ "intro": "통합반 오프라인 2회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 14행의 범위로 온라인 통합반 2 · 3회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(15~17행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 02`.",
+ "md": "통합반_오프라인_02회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day02",
+   "n": 23
+  },
+  {
+   "src": "integrated/day02",
+   "n": 24
+  },
+  {
+   "src": "integrated/day02",
+   "n": 25
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day02",
+   "n": 54
+  },
+  {
+   "src": "integrated/day02",
+   "n": 55
+  },
+  {
+   "src": "integrated/day02",
+   "n": 56
+  },
+  {
+   "src": "integrated/day02",
+   "n": 57
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day02",
+   "n": 27
+  },
+  {
+   "src": "integrated/day02",
+   "n": 28
+  },
+  {
+   "src": "integrated/day02",
+   "n": 29
+  },
+  {
+   "src": "integrated/day02",
+   "n": 30
+  },
+  {
+   "src": "integrated/day02",
+   "n": 31,
+   "note_edits": [
+    [
+     ". 자료형 · 필수 · 허용값 · 시작과 끝을 정의로 적으면 모두 제약이 된다 = 단원 물음의 답",
+     ". 자료형 · 필수 · 허용값 · 시작과 끝을 정의로 적으면 모두 제약이 된다"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day02",
+   "n": 41
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day03",
+   "n": 5
+  },
+  {
+   "src": "integrated/day03",
+   "n": 6
+  },
+  {
+   "src": "integrated/day03",
+   "n": 7
+  },
+  {
+   "src": "integrated/day03",
+   "n": 8
+  },
+  {
+   "src": "integrated/day03",
+   "n": 11
+  },
+  {
+   "src": "integrated/day03",
+   "n": 12
+  },
+  {
+   "src": "integrated/day03",
+   "n": 14
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}

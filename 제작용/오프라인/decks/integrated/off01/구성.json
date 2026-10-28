@@ -1,0 +1,154 @@
+{
+ "title": "HYD 시스템과 이번 과정의 학습 목표",
+ "intro": "통합반 오프라인 1회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 6행의 범위로 온라인 통합반 1 · 2회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(7~9행)은 핸즈온 가이드가 맡는다. 조립: `python3 제작용/오프라인/decks/조립.py 제작용/오프라인/decks/integrated/off01`.",
+ "md": "통합반_오프라인_01회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day01",
+   "n": 47
+  },
+  {
+   "src": "integrated/day01",
+   "n": 72,
+   "note_edits": [
+    [
+     "· 관계 그림에서 증거와 조치를 비교했듯, 이번엔 쿨러 사건의 기록이 각각 무엇을 확인하는지 구별",
+     "· 앞 장의 처리 과정에 남은 쿨러 사건의 기록이 각각 무엇을 확인하는지 구별"
+    ]
+   ]
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day01",
+   "n": 13
+  },
+  {
+   "src": "integrated/day01",
+   "n": 14
+  },
+  {
+   "src": "integrated/day01",
+   "n": 41
+  },
+  {
+   "src": "integrated/day01",
+   "n": 34
+  },
+  {
+   "src": "integrated/day01",
+   "n": 35
+  },
+  {
+   "src": "integrated/day01",
+   "n": 37
+  },
+  {
+   "src": "integrated/day01",
+   "n": 39
+  },
+  {
+   "src": "integrated/day01",
+   "n": 40
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day01",
+   "n": 48
+  },
+  {
+   "src": "integrated/day01",
+   "n": 49
+  },
+  {
+   "src": "integrated/day01",
+   "n": 51,
+   "note_edits": [
+    [
+     "· 시연에서 먼저 실행한 것은 팬 최대 운전",
+     "· 쿨러 사건에서 먼저 실행한 것은 팬 최대 운전"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day01",
+   "n": 54
+  },
+  {
+   "src": "integrated/day01",
+   "n": 58
+  },
+  {
+   "src": "integrated/day01",
+   "n": 60
+  },
+  {
+   "src": "integrated/day01",
+   "n": 63
+  },
+  {
+   "src": "integrated/day01",
+   "n": 64
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day02",
+   "n": 40,
+   "note_edits": [
+    [
+     " / · 레이블은 여럿 가능(규정 검토 = 작업 + 흐름 노드). 단, 상속의 정의는 스키마에 있다 — 이름표 둘만 보고 DB가 규칙을 아는 건 아니다",
+     ""
+    ],
+    [
+     "· 설계 말과 대응: 인스턴스 → 노드, 클래스 → 레이블,",
+     "· 설계 말과 대응: 대상 하나(인스턴스) → 노드, 대상의 종류(클래스) → 레이블,"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day02",
+   "n": 42
+  },
+  {
+   "src": "integrated/day02",
+   "n": 43
+  },
+  {
+   "src": "integrated/day02",
+   "n": 44
+  },
+  {
+   "new": "s5"
+  },
+  {
+   "new": "portal"
+  },
+  {
+   "src": "integrated/day01",
+   "n": 69
+  },
+  {
+   "new": "path"
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
