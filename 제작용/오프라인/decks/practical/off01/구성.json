@@ -1,0 +1,140 @@
+{
+ "title": "HYD 시스템과 이번 과정의 학습 목표",
+ "intro": "실전반 오프라인 1회차 첫 교시(이론 50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 6행의 범위로 온라인 실전반 1 · 2회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(7~9행)은 핸즈온 가이드가 맡는다. 조립: `python3 제작용/오프라인/decks/조립.py 제작용/오프라인/decks/practical/off01`.",
+ "md": "실전반_오프라인_01회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day01",
+   "n": 47
+  },
+  {
+   "src": "practical/day01",
+   "n": 72,
+   "note_edits": [
+    [
+     "· 관계 그림에서 증거와 조치를 비교했듯, 이번엔 쿨러 사건의 기록이 각각 무엇을 확인하는지 구별",
+     "· 앞 장의 처리 과정에 남은 쿨러 사건의 기록이 각각 무엇을 확인하는지 구별"
+    ]
+   ]
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day01",
+   "n": 13
+  },
+  {
+   "src": "practical/day01",
+   "n": 14
+  },
+  {
+   "src": "practical/day01",
+   "n": 41
+  },
+  {
+   "src": "practical/day01",
+   "n": 34
+  },
+  {
+   "src": "practical/day01",
+   "n": 35
+  },
+  {
+   "src": "practical/day01",
+   "n": 37
+  },
+  {
+   "src": "practical/day01",
+   "n": 39
+  },
+  {
+   "src": "practical/day01",
+   "n": 40
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day01",
+   "n": 48
+  },
+  {
+   "src": "practical/day01",
+   "n": 49
+  },
+  {
+   "src": "practical/day01",
+   "n": 51,
+   "note_edits": [
+    [
+     "· 시연에서 먼저 실행한 것은 팬 최대 운전",
+     "· 쿨러 사건에서 먼저 실행한 것은 팬 최대 운전"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day01",
+   "n": 54
+  },
+  {
+   "src": "practical/day01",
+   "n": 58
+  },
+  {
+   "src": "practical/day01",
+   "n": 60
+  },
+  {
+   "src": "practical/day01",
+   "n": 63
+  },
+  {
+   "src": "practical/day01",
+   "n": 64
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day02",
+   "n": 41
+  },
+  {
+   "src": "practical/day02",
+   "n": 43
+  },
+  {
+   "src": "practical/day02",
+   "n": 44
+  },
+  {
+   "new": "s5"
+  },
+  {
+   "new": "portal"
+  },
+  {
+   "src": "practical/day01",
+   "n": 69
+  },
+  {
+   "new": "path"
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
