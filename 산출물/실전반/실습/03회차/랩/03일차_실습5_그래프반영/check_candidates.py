@@ -210,7 +210,7 @@ def stages():
         if not any(c.get('status') == 'approved' for c in cands):
             todo.append(f'{f.name}: approved 후보가 없습니다. 다음 단계는 approved 후보만 쓰므로, 원문과 대조해 채택·수정한 후보가 있어야 합니다.')
         elif cands and all(c.get('decision') == '채택' for c in cands) and not data.get('missing'):
-            print(f'    참고: {f.name}은 모든 후보가 「채택」이고 누락 기록이 0개입니다. 원문과 나란히 놓고 대조했는지, 빠진 것이 정말 없는지 확인하세요.')
+            todo.append(f'{f.name}: 모든 후보가 「채택」이고 누락 기록이 0개입니다. 사람이 원문과 나란히 놓고 대조한 흔적(수정·제외·보류한 후보, 원문에 있는데 빠진 것)이 없습니다. 대조한 절의 후보를 원문과 한 줄씩 다시 보고, 시간 안에 보지 못한 후보는 「보류」(이유: 미검토)로 둡니다.')
     if not reviews:
         todo.append('검토 결과가 없습니다.')
     record = HERE / '결과/검토_기록.md'

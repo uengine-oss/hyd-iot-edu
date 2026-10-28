@@ -85,6 +85,24 @@ for r in rels if isinstance(rels,list) else []:
 if spread:
     print('참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)')
     for (t,x,y),n in sorted(spread.items()):print(f'  {t}: {x} → {y} {n}개')
+    # 같은 관계가 포함하는 쪽(위)과 포함되는 쪽(아래)에 함께 붙는 종류가 있으면, 아래를 거치지 않고 위에 바로 붙은 대상을 따로 센다.
+    # 관계 방향은 학생이 정하므로(센서→설비로 둘 수도 있음) 붙음은 양쪽 방향으로 본다. 포함(위→아래)은 정의된 방향 그대로.
+    contain={(x,y) for (t,x,y) in spread if x!=y}
+    touch={(t,x,y) for (t,x,y) in spread}|{(t,y,x) for (t,x,y) in spread}
+    direct={}
+    for (t,top,s) in sorted(touch):
+        mids=[mid for (t2,mid,s2) in touch if t2==t and s2==s and mid not in (top,s) and (top,mid) in contain]
+        if not mids:continue
+        per={}
+        for r in rels:
+            a,b=r.get('a'),r.get('b');la,lb='/'.join(labels_by_id.get(a,[])),'/'.join(labels_by_id.get(b,[]))
+            if r.get('type')!=t:continue
+            if (la,lb)==(top,s):per.setdefault(a,[]).append(b)
+            elif (la,lb)==(s,top):per.setdefault(b,[]).append(a)
+        if per:direct[(t,top,s,'/'.join(sorted(mids)))]=per
+    for (t,top,s,mids),per in sorted(direct.items()):
+        print(f'참고: {mids}를 거치지 않고 {top}에 바로 붙은 {s} {sum(len(v) for v in per.values())}개({t}). 원자료의 붙은곳이 정말 {top} 전체인 행인지 대조하세요.')
+        print('  '+', '.join(f'{a} {len(v)}개' for a,v in sorted(per.items())[:12])+(' …' if len(per)>12 else ''))
 if errors:
     print(f'구조 확인 필요 {len(errors)}건');print('\n'.join(errors[:40])+('\n…' if len(errors)>40 else ''));sys.exit(1)
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')

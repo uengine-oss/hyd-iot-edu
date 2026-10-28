@@ -12,7 +12,7 @@ import json
 import shutil
 
 HERE = Path(__file__).resolve().parent
-VERSION = '2026-10-28-conditions-v4-rh2'
+VERSION = '2026-10-28-conditions-v5-rh3'
 folder = OUT/'실전반/실습/02회차/랩/02일차_실습5_조치조건표'
 DOCS = ['HM-8_매뉴얼.md', '규칙_원문.txt', '작업기준.md', 'HI-01_보충매뉴얼.md', '수집_설명.md', 'targets.csv']
 RAW = ['경보_목록.csv', 'PLC_상태_수신.csv', '팬_운전_카운터.csv', '예측_결과.csv']

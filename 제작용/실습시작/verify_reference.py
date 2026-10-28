@@ -358,7 +358,11 @@ def neo4j_run(report):
                 apply_changes(lab, course, branch); after2 = counts(lab)
                 checks = {'HYD-02 name': lab.run('MATCH (a:Asset {id:"HYD-02"}) RETURN a.name')[0][0],
                           'HYD-07': lab.run('MATCH (a:Asset {id:"HYD-07"}) RETURN a.status'),
-                          'HYD-06:I_MOTOR normal': lab.run('MATCH (s:Sensor {id:"HYD-06:I_MOTOR"}) RETURN s.normal')[0][0]}
+                          'HYD-06:I_MOTOR normal': lab.run('MATCH (s:Sensor {id:"HYD-06:I_MOTOR"}) RETURN s.normal')[0][0],
+                          # 보강 3: 2-4 질문의 업무 맥락(지금 가동하는 설비의 예비품). 갈래 A는 불용 설비를 남기고 상태로 구별, B는 지운다.
+                          'P-RTN-FLT 사용 설비(상태)': lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) RETURN DISTINCT a.id, a.status ORDER BY a.id'),
+                          'P-RTN-FLT 지금 가동 설비': [r[0] for r in lab.run('MATCH (:Part {id:"P-RTN-FLT"})<-[:USES_PART]-(:Component)<-[:HAS_COMPONENT]-(a:Asset) '
+                                                                            'WHERE NOT coalesce(a.status,"") STARTS WITH "불용" RETURN DISTINCT a.id ORDER BY a.id')]}
                 if course == '실전반':
                     checks['A정밀→P-FAN-BRG'] = lab.run('MATCH (:Supplier {id:"supplier:A정밀"})-[r:SUPPLIES]->(:Part {id:"P-FAN-BRG"}) RETURN r.price_manwon, r.quote_date')[0]
                     checks['A정밀→P-ACC-BLD approved'] = lab.run('MATCH (:Supplier {id:"supplier:A정밀"})-[r:SUPPLIES]->(:Part {id:"P-ACC-BLD"}) RETURN r.approved')[0][0]
@@ -366,6 +370,8 @@ def neo4j_run(report):
                 assert after == after2 == expect_after, (course, branch, after, after2, expect_after)
                 assert checks['HYD-02 name'] == 'HYD-02 2라인 2호 파워팩' and checks['HYD-06:I_MOTOR normal'] == 18.5
                 assert (checks['HYD-07'] == [['불용(매각 예정)']]) if branch == 'A' else checks['HYD-07'] == []
+                assert checks['P-RTN-FLT 지금 가동 설비'] == ['HYD-01', 'HYD-02', 'HYD-03', 'HYD-04'], checks['P-RTN-FLT 지금 가동 설비']
+                assert ['HYD-07', '불용(매각 예정)'] in checks['P-RTN-FLT 사용 설비(상태)'] if branch == 'A' else all(r[0] != 'HYD-07' for r in checks['P-RTN-FLT 사용 설비(상태)'])
                 if course == '실전반':
                     assert checks['A정밀→P-FAN-BRG'] == [19.0, '2026-10-18'] and checks['A정밀→P-ACC-BLD approved'] is True
                 entry.update(changes_applied=done, after_changes=after, after_changes_again=after2, change_checks=checks)

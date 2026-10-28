@@ -46,7 +46,7 @@ def trials():
     def add(course, name, fn, ok, want=(), absent=(), branch='A'):
         T.append((course, name, branch, fn, ok, list(want), list(absent)))
     noop = lambda s, g: None
-    add('통합반', '원본 A', noop, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor 4개'])
+    add('통합반', '원본 A', noop, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor 4개', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor 4개(MONITORED_BY)'])
     add('통합반', '원본 B(SAME_ITEM_AS)', noop, True, ['구조 검사 통과', 'SAME_ITEM_AS: Part → Part 1개'], branch='B')
     add('실전반', '원본 A', noop, True, ['구조 검사 통과', 'SUPPLIES 쌍 21개, 관계 21개(approved=true 18개, false 3개)'])
     add('실전반', '원본 B(조건부 승인=비승인)', noop, True, ['구조 검사 통과'], branch='B')
@@ -70,7 +70,17 @@ def trials():
         for r in g['rels']:
             if r['type'] == 'MONITORED_BY' and r['a'] in owner and not r['a'].startswith(('HYD-01:',)):
                 r['a'] = owner[r['a']]
-    add('통합반', '13 센서를 설비에 조용히 붙임(정보로 드러남)', fallback, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor'], ['MONITORED_BY: Asset → Sensor 4개'])
+    add('통합반', '13 센서를 설비에 조용히 붙임(정보로 드러남)', fallback, True, ['구조 검사 통과', 'MONITORED_BY: Asset → Sensor', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor'], ['MONITORED_BY: Asset → Sensor 4개', '바로 붙은 Sensor 4개('])
+
+    # 보강 3: 관계 방향을 반대로(센서 → 붙은 곳) 정의한 모델에서도 설비에 바로 붙은 센서가 드러난다
+    def reverse_fallback(s, g):
+        fallback(s, g)
+        spec = s['relations'].pop('MONITORED_BY')
+        s['relations']['ATTACHED_TO'] = {**spec, 'from': 'Sensor', 'to': spec['from']}
+        for r in g['rels']:
+            if r['type'] == 'MONITORED_BY':
+                r.update(type='ATTACHED_TO', a=r['b'], b=r['a'])
+    add('통합반', '21 방향 반대(Sensor → Asset/Component)에서도 설비 직결 센서가 드러남', reverse_fallback, True, ['구조 검사 통과', 'Component를 거치지 않고 Asset에 바로 붙은 Sensor', '(ATTACHED_TO)'], ['바로 붙은 Sensor 4개('])
 
     # 리허설 2 실전 2-3: 공급 조건 출력 계약
     def dup_pair(s, g):
