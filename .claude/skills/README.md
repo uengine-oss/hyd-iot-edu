@@ -1,11 +1,13 @@
 # 강의 스킬
 
-이 저장소의 교재와 실습 자료를 만들 때 쓰는 스킬이다. 스킬 원본은 이 폴더 한 곳에 둔다. 경로는 저장소 루트 기준이다. 규칙은 스킬에 복사하지 않고 `문서/교재/`의 기준 문서를 가리킨다.
+이 저장소의 교재와 실습 자료를 만들 때 쓰는 스킬이다. 스킬 원본은 이 폴더 한 곳에 둔다. 경로는 저장소 루트 기준이다. 스킬은 절차 · 명령 · 점검 항목과 기준 절 번호만 갖고, 규칙은 `문서/교재/`의 기준 문서가 소유한다(`기준_공통.md` G5-6). 어떤 갈래에 어떤 스킬을 쓰는지는 각 기준 머리말 끝의 「이 갈래의 스킬」 줄이 정한다.
 
-| 스킬 | 언제 쓰는가 | 주요 파일 |
-|---|---|---|
-| `hyd-course-deck` | HYD 이론 교재 PPTX 덱을 만들거나 고치거나 점검할 때 | `SKILL.md` |
-| `hyd-lab-guide` | HYD 실습 랩 · 가이드 · 실습 촬영 대본을 만들거나 고칠 때 | `SKILL.md` |
-| `hyd-lecture-video` | HYD 이론 강의 영상(덱 장 그림 + 강사 복제 음성 + 자막) | `SKILL.md`, 도구 `제작용/기존제작/tools/video/강의영상.py` |
-| `hyd-portal-video` | HYD 포털 화면 실습 영상(Playwright 녹화 + 음성 + 자막) | `SKILL.md`, 정본 `제작용/촬영/포털/촬영준비.md` |
-| `lecture-deck` | 덱 MD(화면 원고)를 `deck2pptx.py`로 PPTX로 만들 때. 형식 · 유형 · 아이콘 · 렌더 | `SKILL.md`, `references/덱MD-PPTX형식.md`, `scripts/deck2pptx.py`, `scripts/find_icon.py` |
+| 스킬 | 언제 쓰는가 | 기준 갈래 | 주요 파일 |
+|---|---|---|---|
+| `hyd-course-deck` | 이론 덱(온라인 · 오프라인)을 만들거나 고치거나 점검할 때, 이론 대본 · 발표자 노트를 쓰거나 고칠 때 | `기준_이론덱.md`, `기준_대본.md`(이론 대본 · 노트) | `SKILL.md` |
+| `lecture-deck` | 덱 MD(화면 원고)를 `deck2pptx.py`로 PPTX로 만들 때. 형식 · 유형 · 아이콘 · 렌더 | `기준_이론덱.md` D9-4 | `SKILL.md`, `references/덱MD-PPTX형식.md`, `scripts/deck2pptx.py`, `scripts/find_icon.py` |
+| `hyd-lab-guide` | 실습 하나(랩 · 실습 대본 · 가이드)를 만들거나 고칠 때 | `기준_실습랩.md`(L1 순서가 `기준_대본` · `기준_촬영` · `기준_실습가이드`를 부름), `기준_실습가이드.md` | `SKILL.md` |
+| `hyd-portal-video` | 포털 화면 실습 영상(Playwright 녹화 + 음성 + 자막, 검증 · 게시) | `기준_촬영.md` | `SKILL.md`, 정본 `제작용/촬영/포털/촬영준비.md` |
+| `hyd-lecture-video` | 이론 강의 영상(덱 장 그림 + 강사 복제 음성 + 자막) | `기준_촬영.md` C9 | `SKILL.md`, 도구 `제작용/기존제작/tools/video/강의영상.py` |
+
+포털 밖의 실습 영상(ARROWS · Notion · Neo4j · VS Code 등 ego 촬영)은 스킬이 없다 — `기준_촬영.md`와 그 도구의 `제작용/촬영/<도구>/촬영준비.md`, 공통 구현은 `제작용/촬영/README.md`를 따른다.
