@@ -1,0 +1,125 @@
+{
+ "title": "BPMN 역할 · 분기 · 지연 · 실행 연결 이해하기",
+ "intro": "통합반 오프라인 8회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 62행의 범위로 온라인 통합반 9회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(63~65행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 08`.",
+ "md": "통합반_오프라인_08회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day09",
+   "n": 5
+  },
+  {
+   "src": "integrated/day09",
+   "n": 9
+  },
+  {
+   "src": "integrated/day09",
+   "n": 28
+  },
+  {
+   "src": "integrated/day09",
+   "n": 29,
+   "note_edits": [
+    [
+     "· 이 단원: 흐름 객체와 실선, 다음 단원: 칸과 점선",
+     "· 다음 단원: 흐름 객체와 실선, 그다음 단원: 칸과 타이머"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day09",
+   "n": 30
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day09",
+   "n": 31
+  },
+  {
+   "src": "integrated/day09",
+   "n": 32,
+   "note_edits": [
+    [
+     "— 셋째 실습에서 매핑 자료로",
+     "— 4교시 실습에서 매핑 자료로"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day09",
+   "n": 33
+  },
+  {
+   "src": "integrated/day09",
+   "n": 34
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day09",
+   "n": 36
+  },
+  {
+   "src": "integrated/day09",
+   "n": 37
+  },
+  {
+   "src": "integrated/day09",
+   "n": 39
+  },
+  {
+   "src": "integrated/day09",
+   "n": 40
+  },
+  {
+   "src": "integrated/day09",
+   "n": 41
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day09",
+   "n": 44
+  },
+  {
+   "src": "integrated/day09",
+   "n": 45,
+   "note_edits": [
+    [
+     "앞에서 「처리를 이끄는 시스템」이라 부른 것(재관측 · 결과 보고 담당)",
+     "작업을 차례로 열고 재관측 · 결과 보고까지 맡는 쪽"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day09",
+   "n": 52
+  },
+  {
+   "src": "integrated/day09",
+   "n": 48
+  },
+  {
+   "src": "integrated/day09",
+   "n": 57
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}

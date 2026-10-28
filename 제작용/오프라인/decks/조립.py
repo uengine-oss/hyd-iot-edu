@@ -30,7 +30,8 @@ def title_of(block):
 
 
 def short(title):
-    return title.replace(' / ', ' ')
+    # [다음]에는 다음 장 제목의 앞부분(콜론 앞)만 쓴다. 노트 길이를 원 장과 비슷하게 둔다.
+    return title.replace(' / ', ' ').split(':')[0].strip()
 
 
 def main():
