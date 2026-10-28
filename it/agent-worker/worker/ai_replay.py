@@ -247,6 +247,18 @@ def _masked(text: str, secrets: dict[str, str]) -> tuple[str, list[str]]:
     return text, sorted(names)
 
 
+def _run_secrets(env) -> dict[str, str]:
+    """이번 실행에서 CLI 에 넘긴 환경의 비밀값 — 교실 워커는 원본 키 없이 작업마다 실행 토큰(ANTHROPIC_API_KEY=「HydModel …」,
+    managed_model.attach)을 받는다. 워커가 켜질 때의 환경(_SECRET_ENV)에는 없으므로 실행마다 더한다. 「HydModel <토큰>」의 토큰 조각도."""
+    found = {}
+    for name, value in _secret_env(env or {}).items():
+        found[f"run.{name}"] = value
+        for j, piece in enumerate(value.split()[1:]):
+            if len(piece) >= 8:
+                found[f"run.{name}#{j + 1}"] = piece
+    return found
+
+
 class Library:
     """업무 하나에 파일 하나: {"format", "step", "recorded_at", "provider", "runs": [{"session_id", "events", "result_file", "context", "tool_outputs_full"}, …]}.
     tool_outputs_full: 파일로 빠진 큰 도구 결과의 원래 글({tool_use_id: 글}) — 재생 때 새 id 짝짓기에 쓴다."""
@@ -294,7 +306,7 @@ class Library:
                     return doc, i
         return None
 
-    def save(self, request, events: list[ExecEvent], *, provider_id: str) -> Path | None:
+    def save(self, request, events: list[ExecEvent], *, provider_id: str, env: dict | None = None) -> Path | None:
         result_path = Path(request.workdir) / RESULT_FILE
         run = {"session_id": next((ev.session_id for ev in events if ev.session_id), None),
                "events": _joined([_event_dict(ev) for ev in events if ev.kind is not ExecEventKind.THINKING]),
@@ -325,7 +337,7 @@ class Library:
             return None
         doc["recorded_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         text = json.dumps(doc, ensure_ascii=False, indent=1, default=str)
-        text, masked = _masked(text, _secrets_in(request.workdir))
+        text, masked = _masked(text, dict(_secrets_in(request.workdir), **_run_secrets(env)))
         if masked:      # 예: AI 가 작업 폴더의 .mcp.json 을 읽었다 — 값은 가리고 저장한다(가린 값은 저장 파일 어디에도 남지 않는다)
             log.warning("AI 응답 저장(%s): 실행 기록의 비밀값을 가렸습니다 — %s", doc["step"], ", ".join(masked))
         self.root.mkdir(parents=True, exist_ok=True)
@@ -365,7 +377,7 @@ def recording(inner, library: Library, provider_of: Callable[[object], str]):
         for ev in gen:
             seen.append(ev)
             yield ev
-        library.save(request, seen, provider_id=provider_of(provider))      # Runner 가 보류를 기록하기 전이다(실행 차례가 아직 그대로)
+        library.save(request, seen, provider_id=provider_of(provider), env=env)      # Runner 가 보류를 기록하기 전이다(실행 차례가 아직 그대로)
     run.accepts_check_stop = True
     return run
 

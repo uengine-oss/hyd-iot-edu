@@ -29,6 +29,9 @@ def sync(root: Path) -> str:
     # A managed classroom credential is not a direct LiteLLM key.
     if source.get('HYD_CLASSROOM_URL'):
         return 'managed'
+    # 키 없는 PC(온라인 학생): AI 단계는 강사 녹화본 재생이고 실습랩은 키가 없다 — 실습랩 설정을 건드리지 않는다
+    if not source.get('LLM_API_KEY', '').strip():
+        return 'nokey'
     if any(not source.get(key) or any(ord(c) < 32 for c in source[key]) for key in FIELDS):
         raise ValueError('수업 중계 주소·키·모델 설정을 확인하세요.')
     lab = root / 'course' / 'labs' / 'offline' / '05-2-cause-agent'
@@ -73,4 +76,5 @@ if __name__ == '__main__':
         raise SystemExit('실습랩 수업 키 설정을 준비하지 못했습니다. .env와 폴더 쓰기 권한을 확인하세요.') from None
     print({'updated':'실습랩 수업 키 연결 준비 완료', 'unchanged':'실습랩 수업 키 연결 유지',
            'managed':'관리 서버 방식은 실습랩 키를 별도로 설정합니다',
+           'nokey':'수업 키가 없어 실습랩 키 연결을 건너뜁니다',
            'absent':'실습랩 폴더가 없어 키 연결을 건너뜁니다'}[state])

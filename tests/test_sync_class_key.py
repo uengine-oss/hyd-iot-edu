@@ -41,7 +41,7 @@ def test_sync_updates_only_three_values_and_is_idempotent(tmp_path):
 
 def test_missing_values_and_managed_credential_never_overwrite_lab(tmp_path):
     path = lab(tmp_path); target = path / '.env'; target.write_text('LLM_API_KEY=existing\n', encoding='utf8')
-    (tmp_path / '.env').write_text('OPENAI_BASE_URL=https://relay.example/v1\nLLM_MODEL=coding\n', encoding='utf8')
+    (tmp_path / '.env').write_text('OPENAI_BASE_URL=https://relay.example/v1\nLLM_API_KEY=fixture-key\nLLM_MODEL=\n', encoding='utf8')
     with pytest.raises(ValueError):
         mod.sync(tmp_path)
     assert target.read_text(encoding='utf8') == 'LLM_API_KEY=existing\n'
@@ -91,3 +91,22 @@ def test_actual_lab_client_uses_synced_key_model_and_tool_schema(tmp_path):
         assert seen[0][1] == 'Bearer fixture-key' and seen[0][2]['model'] == 'coding' and seen[0][2]['tools'] == tools
     finally:
         server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+
+def test_no_key_pc_skips_the_lab_without_error_and_startup_replays(tmp_path):
+    # 2026-10-28 K4: 키 없는 온라인 학생 PC는 멈추지 않는다 — 실습랩 설정은 그대로 두고, 시작 스크립트는 AI 단계를 재생으로 켠다
+    path = lab(tmp_path); target = path / '.env'; target.write_text('LLM_API_KEY=existing\n', encoding='utf8')
+    for env in ('OPENAI_BASE_URL=https://relay.example/v1\nLLM_API_KEY=\nLLM_MODEL=coding\n',
+                'OPENAI_BASE_URL=https://relay.example/v1\nLLM_API_KEY= "" \nLLM_MODEL=coding\n', 'LLM_MODEL=coding\n'):
+        (tmp_path / '.env').write_text(env, encoding='utf8')
+        assert mod.sync(tmp_path) == 'nokey'
+    assert target.read_text(encoding='utf8') == 'LLM_API_KEY=existing\n'
+    script = (ROOT / 'scripts' / 'start_all.sh').read_text(encoding='utf8')
+    step2 = script[script.index('say "2/8'):script.index('say "3/8')]
+    assert 'die ".env의 LLM_API_KEY가 비어' not in script
+    assert 'AI_MODE_WANT=replay' in step2 and 'AI_MODE_WANT=live' in step2 and 'AI_MODE_WANT=record' in step2
+    assert 'set_env AI_MODE "$AI_MODE_WANT"' in step2
+    assert 'unset COMPOSE_PROFILES AI_MODE' in script            # 셸에 남은 AI_MODE 가 .env 를 이기지 않게
+    step8 = script[script.index('say "8/8'):]
+    assert step8.index('[ "$worker_mode" = "$AI_MODE_WANT" ]') < step8.index('if [ "$AI_MODE_WANT" = replay ]')
+    assert step8.index('if [ "$AI_MODE_WANT" = replay ]') < step8.index('/models')   # 재생은 강의 중계를 부르지 않는다

@@ -285,7 +285,8 @@ class Runner:
                 denied.append('mcp__hyd-dmn__submit_decision')
             if denied:
                 extra_args += ["--disallowedTools", ",".join(denied)]
-        if not remote_agent:
+        # 재생은 CLI·모델을 부르지 않는다 — 실행 토큰을 받으면 키 없는 PC(process에 LLM_API_KEY 없음)에서 여기서 멈춘다(K1, 2026-10-28)
+        if not remote_agent and self.ai_mode != 'replay':
             managed = managed_model.attach(row, self.s.tenant_id, provider_id)
         if managed:
             from .managed_isolation import cli_args

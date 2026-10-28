@@ -59,3 +59,13 @@ def test_permanent_local_quota_is_not_presented_as_a_one_minute_relay_wait():
     from worker.runner import relay_hint
     hint=relay_hint('API Error 429 {"detail":"수업 실행 또는 누적 사용량 한도 초과: calls"}')
     assert '초기화되지는 않습니다' in hint and '1분 뒤' not in hint
+
+
+def test_worker_gets_the_ai_mode_from_env_and_reads_writes_the_repo_replay_folder():
+    # 2026-10-28 K2 · K3: 시작 스크립트가 .env 에 정한 AI_MODE 가 워커에 가고, 녹화 · 재생이 저장소의 it/agent-worker/replay 를 쓴다
+    compose = yaml.safe_load((Path(__file__).resolve().parents[1]/'compose.yaml').read_text(encoding='utf8'))
+    worker = compose['services']['agent-worker']
+    assert worker['environment']['AI_MODE'] == '${AI_MODE:-live}'
+    assert worker['environment']['AI_REPLAY_DIR'] == '/srv/replay'
+    assert './it/agent-worker/replay:/srv/replay' in worker['volumes']
+    assert (Path(__file__).resolve().parents[1]/'it/agent-worker/replay').is_dir()

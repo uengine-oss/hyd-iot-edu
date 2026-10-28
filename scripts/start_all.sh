@@ -3,10 +3,15 @@
 #   bash scripts/start_all.sh
 # 하는 일: Docker 확인 → .env 준비(강의 배포본 값 + 키 확인) → 업무 DB(Supabase, 새 마이그레이션 적용) → 시스템 · AI 워커 빌드 · 기동
 #          → 상태 확인 → 수업 흐름(A · B · C) 배포 → 수업용 기본 지식(검토한 수업 문서 셋) → 강의 중계 키 확인.
-# 학생이 채우는 것은 .env의 LLM_API_KEY 한 줄이다(강의 중계 키). 포털의 AI 단계(판단 · 제안, 에이전트에게 질문, 매뉴얼 추출)는
-# AI 워커 컨테이너가 이 키로 강의 중계를 부른다. 키가 비어 있으면 2단계에서 멈춘다.
+# 오프라인 학생이 채우는 것은 .env의 LLM_API_KEY 한 줄이다(강의 중계 키). 포털의 AI 단계(판단 · 제안, 에이전트에게 질문)는
+# AI 워커 컨테이너가 이 키로 강의 중계를 부른다(AI_MODE=live).
+# 키가 비어 있으면(온라인 학생) AI 단계는 강사가 미리 실제 AI로 진행해 저장소에 올린 응답(it/agent-worker/replay/)을 재생한다(AI_MODE=replay).
+# 강사 녹화: bash scripts/start_all.sh --record (키 필요, AI_MODE=record) — 보통은 scripts/record_replay.sh(녹화.bat)가 부른다.
 # 끌 때: bash scripts/stop_all.sh
 set -euo pipefail
+RECORD=0
+case "${1:-}" in --record) RECORD=1;; "") ;; *) printf '[멈춤] 알 수 없는 인자: %s (쓸 수 있는 것: --record)
+' "$1" >&2; exit 1;; esac
 # The distributed launcher must work independently of the Windows account's
 # console/code-page defaults, including Python subprocesses printing Korean.
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
@@ -56,8 +61,16 @@ case "$(env_get OPENAI_BASE_URL)" in ""|*api.openai.com*) set_env OPENAI_BASE_UR
 [ -n "$(env_get LLM_RELAY_URL)" ] || set_env LLM_RELAY_URL "$(env_get LLM_RELAY_URL .env.example)"
 [ -n "$(env_get LLM_MODEL)" ] || set_env LLM_MODEL "$(env_get LLM_MODEL .env.example)"
 echo "ok (PROCESS_MODE=instance, ENTERPRISE_BACKEND=supabase, AGENT_BRIDGE=off, AI 워커 포함)"
-# 키는 이름만 본다(값을 화면에 내지 않는다)
-[ -n "$(llm_key)" ] || die ".env의 LLM_API_KEY가 비어 있습니다. 수업에서 받은 강의 중계 키를 .env의 LLM_API_KEY= 뒤에 붙여 넣고 저장한 뒤 시작.bat을 다시 실행하세요."
+# AI 단계를 무엇으로 할지 정한다. 키는 이름만 본다(값을 화면에 내지 않는다)
+if [ "$RECORD" = 1 ]; then
+  [ -n "$(llm_key)" ] || die "녹화는 실제 AI로 진행합니다. .env의 LLM_API_KEY에 강의 중계 키를 넣고 다시 실행하세요."
+  AI_MODE_WANT=record; echo "AI 단계: 녹화(실제 AI로 진행하며 응답을 it/agent-worker/replay/ 에 저장)"
+elif [ -n "$(llm_key)" ]; then
+  AI_MODE_WANT=live; echo "AI 단계: 실제 AI(강의 중계)"
+else
+  AI_MODE_WANT=replay; echo "AI 단계: 키가 없어 강사가 미리 진행한 결과를 재생합니다(온라인 수업). 실제 AI로 하려면 .env의 LLM_API_KEY= 뒤에 수업 키를 넣고 다시 실행하세요."
+fi
+set_env AI_MODE "$AI_MODE_WANT"
 
 # Compose · 업무 DB · 포털 · 점검이 같은 포트 표를 사용한다.
 # 실행 중인 이 프로젝트의 포트만 재사용하고, 다른 앱/컨테이너와 겹치면 빈 포트로 옮긴다.
@@ -81,8 +94,8 @@ SUPA=(npx -y supabase@2.119.0)
 ( cd it/supabase && "${SUPA[@]}" migration up --local ) || die "업무 DB 업데이트(마이그레이션)가 실패했습니다. 위 오류의 파일 이름을 강사에게 알려 주세요."
 
 say "4/8 시스템 · AI 워커 빌드 · 기동 (처음은 이미지 받기 · 빌드로 10분 넘게 걸릴 수 있습니다)"
-# .env의 COMPOSE_PROFILES(cliagents 포함)를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
-unset COMPOSE_PROFILES
+# .env의 COMPOSE_PROFILES(cliagents 포함) · AI_MODE를 쓴다. 이 창에 다른 값이 남아 있으면 그것이 이기므로 비운다
+unset COMPOSE_PROFILES AI_MODE
 docker compose up -d --build || die "docker compose up이 실패했습니다. 위 오류의 서비스 이름을 보고 'docker compose logs <서비스>'로 원인을 확인하세요."
 
 say "5/8 상태 확인 (최대 3분 기다립니다)"
@@ -107,8 +120,15 @@ say "7/8 수업용 기본 지식(쿨러 · 정기 정비 · 구매 매뉴얼) �
 # 검토를 마친 HM-8 · PM-02 · PR-07 지식을 처음 한 번 넣는다(AI를 부르지 않음, 이미 있으면 건너뜀). 4회차 인제스천은 같은 문서를 다시 올리는 과정 실습이다
 PROCESS_URL="http://127.0.0.1:$(hp 8080)" "${PYTHON[@]}" scripts/class_knowledge.py ensure || die "수업용 기본 지식을 넣지 못했습니다. 위 메시지를 강사에게 알려 주세요."
 
-say "8/8 강의 중계 키 확인"
-if [ -n "$(env_get HYD_CLASSROOM_URL)" ]; then
+say "8/8 AI 단계 확인"
+# 워커가 2단계에서 정한 방식으로 켜졌는지 본다(compose가 .env의 AI_MODE를 워커에 넘긴다)
+worker_mode=$(curl -fsS -m 5 "http://127.0.0.1:$(hp 8097)/health" | "${PYTHON[@]}" -c 'import json,sys; print(json.load(sys.stdin).get("ai_mode") or "")' || true)
+[ "$worker_mode" = "$AI_MODE_WANT" ] || die "AI 워커가 '$AI_MODE_WANT' 대신 '${worker_mode:-응답 없음}'으로 켜졌습니다. docker compose logs agent-worker 로 확인하세요."
+if [ "$AI_MODE_WANT" = replay ]; then
+  saved=$(ls it/agent-worker/replay/*.json.gz 2>/dev/null | wc -l | tr -d ' ')
+  [ "$saved" -gt 0 ] || die "강사가 미리 진행한 AI 결과(it/agent-worker/replay/)가 이 판에 없습니다. git pull 로 최신 판을 받은 뒤 다시 실행하세요. AI 단계가 없는 실습은 포털에서 그대로 할 수 있습니다."
+  echo "ok (키 없음 · 저장된 AI 응답 ${saved}개를 재생 — 강의 중계는 부르지 않습니다)"
+elif [ -n "$(env_get HYD_CLASSROOM_URL)" ]; then
   printf '%s' "$(llm_key)" | "${PYTHON[@]}" scripts/check_classroom.py "$(env_get HYD_CLASSROOM_URL)" || die "관리 서버 수업 접속을 확인하지 못했습니다. 직접 모델 중계로 우회하지 않습니다."
 else
 # 키는 명령줄에 싣지 않고 표준 입력으로 헤더를 넘긴다(작업 관리자 · 로그에 남지 않게).

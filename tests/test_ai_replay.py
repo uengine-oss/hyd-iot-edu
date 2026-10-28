@@ -738,3 +738,38 @@ def test_worker_default_mode_is_live_without_ai_mode_env(monkeypatch):
     monkeypatch.delenv("AI_MODE", raising=False)
     import worker.settings as ws
     assert importlib.reload(ws).Settings().ai_mode == "live"
+
+
+# ---------------------------------------------------------------- 키 없는 교실 PC(2026-10-28 K1): 재생은 실행 토큰을 받지 않는다
+def _managed_attach(calls, token="HydModel tok-managed-run-0123456789"):
+    def attach(row, tenant_id, provider_id):
+        calls.append(row["id"])
+        return {"model": "coding", "env": {"ANTHROPIC_API_KEY": token}, "secrets": [token], "deadline": None}
+    return attach
+
+
+def test_replay_never_asks_process_for_a_model_runtime_token(tmp_path, monkeypatch):
+    from worker import managed_isolation, managed_model
+    monkeypatch.setattr(managed_isolation, "cli_args", lambda *a, **k: [])
+    calls = []
+    monkeypatch.setattr(managed_model, "attach", _managed_attach(calls))
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _fake_exec(ANSWER))
+    assert len(calls) == 1                                # 녹화는 실제 AI — 실행 토큰을 받는다
+    def no_key_pc(*args, **kwargs):                       # 키 없는 PC: process 가 실행 토큰을 줄 수 없다
+        raise AssertionError("replay asked process for a model runtime token")
+    monkeypatch.setattr(managed_model, "attach", no_key_pc)
+    repo, inst, row = _replay(tmp_path, lib)
+    assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "cause:cooler-fin-fouling"
+
+
+def test_per_run_model_token_given_to_the_cli_is_never_saved(tmp_path, monkeypatch):
+    # 교실 워커는 원본 키 없이 작업마다 실행 토큰을 CLI 환경으로 받는다 — 워커가 켜질 때의 환경에는 없다
+    from worker import managed_isolation, managed_model
+    monkeypatch.setattr(managed_isolation, "cli_args", lambda *a, **k: [])
+    monkeypatch.setattr(managed_model, "attach", _managed_attach([]))
+    lib = ai_replay.Library(tmp_path / "lib")
+    _record(tmp_path, lib, _fake_exec(ANSWER.replace("cooler-fin-fouling", "tok-managed-run-0123456789")))
+    [path] = list((tmp_path / "lib").glob("*.json.gz"))
+    saved = gzip.decompress(path.read_bytes()).decode("utf-8")
+    assert "tok-managed-run-0123456789" not in saved and "********" in saved

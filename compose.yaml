@@ -549,8 +549,12 @@ services:
     profiles: [cliagents]
     networks: [it-net]
     ports: ["127.0.0.1:${HYD_PORT_8097:-8097}:8097"]
-    volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro"]
+    # 저장된 AI 응답(재생모드.md): 녹화(AI_MODE=record)는 저장소 폴더에 쓰고, 키 없는 PC 재생은 git pull 로 받은 그 폴더를 읽는다
+    volumes: ["worker-data:/workspace", "worker-runtime:/run/hyd-credentials:ro", "./it/agent-worker/replay:/srv/replay"]
     environment:
+      # 시작 스크립트가 .env 에 정한다: 키 있으면 live, 없으면 replay(강사 녹화본), 녹화는 start_all.sh --record
+      AI_MODE: ${AI_MODE:-live}
+      AI_REPLAY_DIR: /srv/replay
       # the worker is the ProcessGPT agent type `cliagents` (process-gpt-cli-agent): it polls todolist through fetch_pending_task,
       # reads the tenant's MCP servers from tenants.mcp (seed.sql) and stores results with save_task_result.
       SUPABASE_DSN: ${SUPABASE_DSN:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}
