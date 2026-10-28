@@ -1,0 +1,105 @@
+{
+ "title": "원인 근거와 점검 요청 구조 이해하기",
+ "intro": "실전반 오프라인 4회차 첫 교시(이론 50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 30행의 범위로 온라인 실전반 4회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(31~33행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh practical 04`.",
+ "md": "실전반_오프라인_04회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day04",
+   "n": 5
+  },
+  {
+   "src": "practical/day04",
+   "n": 6
+  },
+  {
+   "src": "practical/day04",
+   "n": 9
+  },
+  {
+   "src": "practical/day04",
+   "n": 10
+  },
+  {
+   "src": "practical/day04",
+   "n": 17
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day04",
+   "n": 12
+  },
+  {
+   "src": "practical/day04",
+   "n": 13
+  },
+  {
+   "src": "practical/day04",
+   "n": 15
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day04",
+   "n": 20
+  },
+  {
+   "src": "practical/day04",
+   "n": 22
+  },
+  {
+   "src": "practical/day04",
+   "n": 24
+  },
+  {
+   "src": "practical/day04",
+   "n": 25
+  },
+  {
+   "src": "practical/day04",
+   "n": 26,
+   "note_edits": [
+    [
+     "값은 수업용 사례(실습 2와 같음)",
+     "값은 수업용 사례(2교시 원인 · 점검 순서 실습과 같음)"
+    ]
+   ]
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day04",
+   "n": 27
+  },
+  {
+   "src": "practical/day04",
+   "n": 28
+  },
+  {
+   "src": "practical/day04",
+   "n": 29
+  },
+  {
+   "src": "practical/day04",
+   "n": 31
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
