@@ -110,3 +110,18 @@ def test_no_key_pc_skips_the_lab_without_error_and_startup_replays(tmp_path):
     step8 = script[script.index('say "8/8'):]
     assert step8.index('[ "$worker_mode" = "$AI_MODE_WANT" ]') < step8.index('if [ "$AI_MODE_WANT" = replay ]')
     assert step8.index('if [ "$AI_MODE_WANT" = replay ]') < step8.index('/models')   # 재생은 강의 중계를 부르지 않는다
+
+
+@pytest.mark.parametrize('script,var', [('start_all.sh', 'saved'), ('record_replay.sh', 'old')])
+def test_counting_saved_replays_survives_zero_files_under_pipefail(tmp_path, script, var):
+    # 2026-10-28 실측: 저장분 0개에서 ls 가 2를 내 set -euo pipefail 스크립트가 아무 말 없이 끝났다
+    import shutil
+    bash = shutil.which('bash')
+    if bash is None:
+        pytest.skip('bash 없음')
+    line = next(l.strip() for l in (ROOT / 'scripts' / script).read_text(encoding='utf8').splitlines() if l.strip().startswith(var + '=$('))
+    (tmp_path / 'it' / 'agent-worker' / 'replay').mkdir(parents=True)
+    run = lambda: subprocess.run([bash, '-c', f'set -euo pipefail; {line}; echo "n=${var}"'], cwd=tmp_path, capture_output=True, text=True)
+    assert run().stdout.strip() == 'n=0'
+    (tmp_path / 'it' / 'agent-worker' / 'replay' / 'a.json.gz').write_bytes(b'x')
+    assert run().stdout.strip() == 'n=1'

@@ -125,7 +125,8 @@ say "8/8 AI 단계 확인"
 worker_mode=$(curl -fsS -m 5 "http://127.0.0.1:$(hp 8097)/health" | "${PYTHON[@]}" -c 'import json,sys; print(json.load(sys.stdin).get("ai_mode") or "")' || true)
 [ "$worker_mode" = "$AI_MODE_WANT" ] || die "AI 워커가 '$AI_MODE_WANT' 대신 '${worker_mode:-응답 없음}'으로 켜졌습니다. docker compose logs agent-worker 로 확인하세요."
 if [ "$AI_MODE_WANT" = replay ]; then
-  saved=$(ls it/agent-worker/replay/*.json.gz 2>/dev/null | wc -l | tr -d ' ')
+  # 0개면 ls 가 2를 내 pipefail 로 말없이 끝난다(2026-10-28 실측) — || true
+  saved=$( { ls it/agent-worker/replay/*.json.gz 2>/dev/null || true; } | wc -l | tr -d ' ')
   [ "$saved" -gt 0 ] || die "강사가 미리 진행한 AI 결과(it/agent-worker/replay/)가 이 판에 없습니다. git pull 로 최신 판을 받은 뒤 다시 실행하세요. AI 단계가 없는 실습은 포털에서 그대로 할 수 있습니다."
   echo "ok (키 없음 · 저장된 AI 응답 ${saved}개를 재생 — 강의 중계는 부르지 않습니다)"
 elif [ -n "$(env_get HYD_CLASSROOM_URL)" ]; then

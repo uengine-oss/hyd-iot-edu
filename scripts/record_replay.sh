@@ -19,7 +19,7 @@ for candidate in .venv314/Scripts/python.exe .venv/bin/python .venv/Scripts/pyth
 done
 [ -n "$PY" ] || die "Playwright가 든 Python이 없습니다. 'python -m pip install playwright' 와 'python -m playwright install chromium' 뒤 다시 실행하세요."
 
-old=$(ls it/agent-worker/replay/*.json.gz 2>/dev/null | wc -l | tr -d ' ')
+old=$( { ls it/agent-worker/replay/*.json.gz 2>/dev/null || true; } | wc -l | tr -d ' ')
 if [ "$old" -gt 0 ]; then   # 한 바퀴 녹화가 저장분 전체가 되게 한다(옛 저장분은 git 이력에 남는다)
   rm -f it/agent-worker/replay/*.json.gz
   echo "옛 저장분 ${old}개를 지우고 새로 녹화합니다(git 이력에는 남아 있습니다)."
