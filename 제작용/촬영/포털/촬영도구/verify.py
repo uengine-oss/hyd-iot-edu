@@ -19,8 +19,12 @@ GAP_MAX = 8.0
 
 
 def probe(stream):
-    r = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', stream, '-show_entries', 'stream=duration', '-of', 'csv=p=0', str(mp4)], capture_output=True, text=True)
-    return float(r.stdout.strip().splitlines()[0])
+    # 스트림 하나를 끝까지 풀어 마지막 time=으로 길이를 잰다(ffprobe 없는 Windows imageio-ffmpeg에서도 같은 방법).
+    e = subprocess.run([ff, '-nostats', '-stats_period', '0.5', '-progress', 'pipe:1', '-i', str(mp4), '-map', f'0:{stream}', '-f', 'null', '-'], capture_output=True, text=True).stdout
+    t = re.findall(r'out_time_us=(\d+)', e)
+    if not t:
+        raise SystemExit(f'{mp4}: 스트림 {stream} 길이를 잴 수 없음')
+    return int(t[-1]) / 1e6
 
 
 def ms(t):

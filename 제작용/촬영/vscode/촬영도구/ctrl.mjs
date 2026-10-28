@@ -50,7 +50,8 @@ export async function run(opts){
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
   speechFree=t0+c.duration_ms;
   if(!fn){actionFree=Math.max(actionFree,t0);return;}
-  const pl=plan(c);const pointAt=t0+Math.round(c.duration_ms*(opt.pointFrac??pl.pointFrac))+(opt.pointDelay??250);
+  // opt.at = 대사 속 구절: 그 구절이 끝나는 시점에 첫 클릭·입력(여러 조작 중 첫 동작이 앞 문장에 있을 때). 없으면 오류.
+  const pl=plan(c);if(opt.at!=null){const i=c.text.indexOf(opt.at);if(i<0)throw Error(`${c.id}: at 구절 없음 — ${opt.at}`);Object.assign(pl,{pointFrac:Math.max(0,(i-1)/c.text.length),commitFrac:(i+opt.at.length)/c.text.length,sentence:opt.at});}const pointAt=t0+Math.round(c.duration_ms*(opt.pointFrac??pl.pointFrac))+(opt.pointDelay??250);
   const commitAt=t0+Math.round(c.duration_ms*(opt.commitFrac??pl.commitFrac))-(opt.commitLead??250);
   Object.assign(a,{plannedPoint:pointAt-start,plannedCommit:commitAt-start,actionSentence:pl.sentence,estimate:'character-proportional'});
   const go=(async()=>{const w2=pointAt-Date.now();if(w2>0)await sleep(w2);ctx.commitAt=commitAt;ctx.committed=null;a.actionStart=Date.now()-start;

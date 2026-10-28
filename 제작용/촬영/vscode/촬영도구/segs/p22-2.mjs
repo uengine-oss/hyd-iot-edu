@@ -3,7 +3,7 @@
 import {vscode} from '../ui.mjs';
 export default async ctx=>{
  const c=await vscode(ctx);
- const free={x:1240,y:330};   // 본문 오른쪽 빈 곳(지도 밖) — 화면 굴리기 전 화살표 자리
+ // 굴릴 때 화살표를 옮기지 않는다(포털 CSS 화면 1024 — 예전 x 1240은 화면 밖, 2026-10-28 다시 녹화)
  const link=id=>`#ontoNode a[data-go="${id}"]`;
  await c.installPointer({x:760,y:430});
  await ctx.begin();
@@ -15,7 +15,7 @@ export default async ctx=>{
  await ctx.waitFor(()=>document.querySelector('#ontoStats').innerText.includes('검색 결과'));
  await ctx.say('p22-15',async()=>{await c.hoverSel('#ontoStats');await ctx.sleep(1800);await c.clickSel('#ontoMap .o-node[data-id="part:pump-seal"]');},{pointFrac:0.05});
  await ctx.waitFor(()=>/partNo/.test(document.querySelector('#ontoNode').innerText));
- await ctx.say('p22-16',()=>c.scrollTo('main#content',9999,free));
+ await ctx.say('p22-16',()=>c.scrollTo('main#content',9999));
  await ctx.say('p22-17',async()=>{await c.hoverSel('#ontoNode h3');await ctx.sleep(1500);await c.hoverSel('#ontoNode .kvt th','partNo');},{pointFrac:0.05});
  await ctx.say('p22-18',async()=>{await c.hoverSel('#ontoNode h4','나가는 관계 3');await ctx.sleep(1800);await c.hoverSel(link('sup:c'));},{pointFrac:0.08});
  await ctx.say('p22-19',async()=>{await c.hoverSel('#ontoNode h4','들어오는 관계 6');await ctx.sleep(1800);await c.hoverSel(link('comp:pump-a'));await ctx.sleep(2600);await c.hoverSel(link('cause:pump-shaft-seal-wear'));},{pointFrac:0.05});
