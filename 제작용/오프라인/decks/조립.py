@@ -5,7 +5,8 @@ python3 제작용/오프라인/decks/조립.py 제작용/오프라인/decks/inte
 폴더의 구성.json(장 순서)과 새장.md(표지 · 학습목표 · 목차 · 간지 · 실습 연결 등 새로 쓴 장)로
 <폴더>/<이름>.md를 만든다. 온라인 장은 화면 내용을 그대로 옮기고, 그림 경로만 새 위치에 맞추며,
 노트의 [다음]을 새 순서의 다음 장 제목으로 바꾼다. 노트를 고칠 곳은 구성.json의 note_edits로만 바꾼다.
-간지 번호는 새 순서대로 다시 매긴다.
+간지 번호는 새 순서대로 다시 매긴다. 구성.json의 note_end(글머리 목록)는 마지막 장(정답과 판단 기준) 노트의
+[다음] 앞에 덧붙인다. 오프라인에는 대본이 없으므로 실습과 다음 회차로 잇는 말은 이 자리에만 둔다.
 """
 from pathlib import Path
 import json, os, re, sys
@@ -75,6 +76,11 @@ def main():
             sec += 1
             screen = re.sub(r'^- 번호: .*$', f'- 번호: {sec:02d}', screen, flags=re.M)
         nxt = f"[다음] {short(items[i + 1]['title'])}" if i + 1 < len(items) else '[다음] 실습으로'
+        if i + 1 == len(items):
+            assert x['title'] == '정답과 판단 기준', f"마지막 장이 정답과 판단 기준이 아님: {x['title']}"
+            assert spec.get('note_end'), '구성.json에 note_end(실습 · 다음 회차 연결)가 없음'
+            nxt = ' / '.join([f'· {t}' for t in spec['note_end']] + [nxt])
+            x['basis'] += ' 노트 끝에 실습과 다음 회차로 잇는 말(구성.json note_end)을 덧붙였다.'
         if not re.search(r'^- 노트: ', screen, re.M):
             raise SystemExit(f"{i + 1}장 「{x['title']}」 노트 없음")
         screen = re.sub(r'^(- 노트: .*?)(?: / )?\[다음\][^\n]*$', lambda m: f"{m.group(1)} / {nxt}", screen, flags=re.M) \
