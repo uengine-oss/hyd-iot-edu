@@ -38,7 +38,8 @@ set -e
 
 echo
 echo "== 저장된 AI 응답"
-docker compose exec -T agent-worker python -m worker.ai_replay /srv/replay || true
+# 폴더 인자를 주지 않는다: Git Bash 가 /srv/replay 를 C:/Program Files/Git/srv/replay 로 바꿔 「업무 0개」로 보였다(2026-10-28 실측) — 컨테이너의 AI_REPLAY_DIR 을 쓴다
+docker compose exec -T agent-worker python -m worker.ai_replay || true
 
 echo
 echo "== 평소 시작(실제 AI)으로 되돌림"
