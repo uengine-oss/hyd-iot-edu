@@ -25,10 +25,10 @@
       "course": "실전반",
       "session": "온라인 02회차",
       "title": "포털에서 기준 지식의 연결 탐색하기",
-      "version": "2026-10-28-map-v2-screens",
+      "version": "2026-10-28-map-v3-vscode-screens",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/실전반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "c9c8e668d92c73d024d0873a874fe603476fa249873b60fb6fb1093478ab2f7b"
+      "sha256": "85e6884492e6dd5cf5b1e5d37cd2558eace7892afa57abc25414f6cdfe74ec0d"
     },
     {
       "id": "practical-02-ontology",
@@ -65,10 +65,10 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-10-28-s3-whatif-v3-screens",
+      "version": "2026-10-28-s3-whatif-v4-vscode-screens",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
       "path": "산출물/실전반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
-      "sha256": "a05b8754f0ddd91d0e4cc7d0173113257c0b4284e89f7bb947211155e7c403a4"
+      "sha256": "3a71593928af444019baa920a85e39c5bf1da8f29d995db90ec2da2bb842624f"
     },
     {
       "id": "practical-03-review",
@@ -85,10 +85,10 @@
       "course": "실전반",
       "session": "온라인 03회차",
       "title": "포털 지식과 매뉴얼 원문 대조하기",
-      "version": "2026-10-28-s3-v4-rh3-screens",
+      "version": "2026-10-28-s3-v4-rh3-vscode-screens",
       "folder": "03회차/랩/03일차_실습3_매뉴얼검토",
       "path": "산출물/실전반/실습/03회차/랩/03일차_실습3_매뉴얼검토.zip",
-      "sha256": "cb3d565f02dc5cd836d0576ac4aee9fc1b8afafc531a719806fd54bd47994415"
+      "sha256": "6741afeeca125e57b3274cc965b1f22e85c9183ed08136e3c54dc02c66c511ff"
     },
     {
       "id": "practical-03-extract",
@@ -98,7 +98,7 @@
       "version": "2026-10-28-s3-v4-rh3",
       "folder": "03회차/랩/03일차_실습4_지식추출",
       "path": "산출물/실전반/실습/03회차/랩/03일차_실습4_지식추출.zip",
-      "sha256": "4c6c430f9c177294d3df25597fa3e72c377d73d8e5342d0829cfc6d0db3f05b3"
+      "sha256": "40f668589a69b576829854e63fb645d32fbee00a75b566c7e66682d0b0424f0c"
     },
     {
       "id": "practical-03-card",
@@ -108,7 +108,7 @@
       "version": "2026-10-28-s3-v4-rh3",
       "folder": "03회차/랩/03일차_실습5_그래프반영",
       "path": "산출물/실전반/실습/03회차/랩/03일차_실습5_그래프반영.zip",
-      "sha256": "6bf22d06cb401623c1e33ba690a7088c9d4353a64e022863f0f0b09456be39a1"
+      "sha256": "37a9e3143bacd7d8311804712d4c5bb51422f107279f9fc806ee93d0c22be4d0"
     },
     {
       "id": "integrated-01-offline",
@@ -135,10 +135,10 @@
       "course": "통합반",
       "session": "온라인 02회차",
       "title": "포털에서 기준 지식의 연결 탐색하기",
-      "version": "2026-10-28-map-v2-screens",
+      "version": "2026-10-28-map-v3-vscode-screens",
       "folder": "02회차/랩/02일차_실습2_지식지도탐색",
       "path": "산출물/통합반/실습/02회차/랩/02일차_실습2_지식지도탐색.zip",
-      "sha256": "2f1c1889893ea25c5b40a66ab59edeb205ada533e0e3fff5fce9c7e064b81a55"
+      "sha256": "119586c16809335dfcf5e77428051df9764293110671cc906efdb3e27ec2aa13"
     },
     {
       "id": "integrated-02-ontology",
@@ -165,10 +165,10 @@
       "course": "통합반",
       "session": "온라인 03회차",
       "title": "조건을 바꿔 조치 결과 비교하기",
-      "version": "2026-10-28-s3-whatif-v2-screens",
+      "version": "2026-10-28-s3-whatif-v4-vscode-screens",
       "folder": "03회차/랩/03일차_실습1_조치결과비교",
       "path": "산출물/통합반/실습/03회차/랩/03일차_실습1_조치결과비교.zip",
-      "sha256": "1de61bd7745a71f5993b573b0f3053f57fb57aa2212de5a0ab50e016487b2d0c"
+      "sha256": "65bea0506d7aa8f46d7e3064ef479a6de1195b7533a247f0afd41b61bdbad2e7"
     },
     {
       "id": "integrated-03-criteria",

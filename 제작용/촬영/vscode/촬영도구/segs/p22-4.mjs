@@ -36,7 +36,7 @@ export default async ctx=>{
   const q=await c.explorerRow('탐색_기록.md',2);await c.clickAt(q.x,q.y);
  });
  await ctx.waitFor(()=>document.querySelector('.tabs-container .tab.active')?.getAttribute('aria-label')?.startsWith('탐색_기록.md'));
- await ctx.say('p22-42',async()=>{const q=await c.serial(()=>ctx.p.evaluate(()=>{const l=[...document.querySelectorAll('.editor-instance .view-lines .view-line')].find(e=>e.textContent.includes('C트레이딩 최저가'));const b=l.querySelector('span').getBoundingClientRect();return{x:b.x+260,y:b.y+b.height/2};}));await c.move(q.x,q.y);},{pointFrac:0.05});
+ await ctx.say('p22-42',async()=>{const q=await c.serial(()=>ctx.p.evaluate(()=>{const l=[...document.querySelectorAll('.editor-instance .view-lines .view-line')].find(e=>e.textContent.replace(/ /g,' ').includes('C트레이딩 최저가'));const b=l.querySelector('span').getBoundingClientRect();return{x:b.x+260,y:b.y+b.height/2};}));await c.move(q.x,q.y);},{pointFrac:0.05});
  await ctx.say('p22-43');
  return 'p22-4 done';
 };

@@ -65,7 +65,10 @@ for course,slug in [('통합반','integrated'),('실전반','practical')]:
         # 가이드 그림 = 강사 촬영 영상의 실제 포털 화면(2026-10-28 녹화 p31-2·3·4 장면 끝 프레임, 두 반 같은 화면).
         if not (folder/'images'/f'{name}.jpg').is_file():raise FileNotFoundError(f'가이드 그림 없음: {folder}/images/{name}.jpg')
         return f'<figure><a href="images/{name}.jpg" target="_blank"><img src="images/{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
-    sections=[('조건별 손익 열기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a></p><p>왼쪽 메뉴의 판단 묶음에서 <b>조건별 손익</b>을 누르고 설비와 이상 패턴을 고른 뒤 <b>불러오기</b>를 누르세요. 비교_기록.md에 포털 주소와 확인 시각을 적습니다.</p><p class="check">맨 위 요약에 판단 1순위와 손익 1순위가 나옵니다. 「근거 조회가 불완전」이 나오면 포털이 막 켜져 데이터가 덜 쌓인 것이니 몇 분 뒤 다시 불러옵니다.</p>'+shot('wi-01-summary','요약: 판단 1순위와 손익 1순위')),
+    # VS Code 그림 = 강사 촬영 영상 구간 1(실전 p31-1 · 통합 i31-1)의 실제 화면. 그림이 없는 반은 글만 둔다.
+    def vs_shot(name,caption):return shot(name,caption) if (folder/'images'/f'{name}.jpg').is_file() else ''
+    sections=[('기록 틀 준비하기','<p>실습 시작 도구가 연 VS Code에서 왼쪽 탐색기(Explorer)의 <code>비교_기록.md</code>를 마우스 오른쪽 버튼으로 누르고 Copy를 고릅니다. 이어서 <code>결과</code> 폴더를 오른쪽 버튼으로 누르고 Paste를 고릅니다.</p>'+vs_shot('vs-01-paste','결과 폴더에서 오른쪽 버튼 → Paste')+'<p class="check">결과 폴더 안에 <code>비교_기록.md</code> 사본이 생깁니다. 원래 틀은 그대로 두고 사본을 열어 기록합니다. 표는 기준 결과 · 한 항목씩 바꾼 시험 · '+('순위와 선택 가능 여부 · ' if practical else '')+'목표와 집계 순서입니다.</p>'+vs_shot('vs-02-copy','결과/비교_기록.md 사본을 연 화면(빈 기록 틀)')),
+              ('조건별 손익 열기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a></p><p>왼쪽 메뉴의 판단 묶음에서 <b>조건별 손익</b>을 누르고 설비와 이상 패턴을 고른 뒤 <b>불러오기</b>를 누르세요. 비교_기록.md에 포털 주소와 확인 시각을 적습니다.</p><p class="check">맨 위 요약에 판단 1순위와 손익 1순위가 나옵니다. 「근거 조회가 불완전」이 나오면 포털이 막 켜져 데이터가 덜 쌓인 것이니 몇 분 뒤 다시 불러옵니다.</p>'+shot('wi-01-summary','요약: 판단 1순위와 손익 1순위')),
               ('기준 결과 기록하기','<p>카드별 손익 탭에서 후보마다 판단 순위·정책 점수·손익 순위·예상 손익을 읽고, 허용·제외된 조치, 경고·감점, 적용 규칙, 예상 성과를 나누어 적으세요.</p>'+shot('wi-02-unknown','예상 손익 미확인과 계산하지 못한 항목')+'<p>카드의 「항목별 손익 · 출처」를 펼치면 항목마다 계산식과 출처(데이터 · 문서 · 가정)가 나옵니다.</p>'+shot('wi-03-items','항목별 손익의 계산식과 출처')+'<p class="check">점수와 손익 금액은 다른 열에 적습니다. 값이 표시되지 않은 칸은 0으로 채우지 않고 미확인으로 둡니다.</p>'),
               ('한 항목만 바꿔 비교하기','<p><b>값 바꿔 보기</b> 탭에서 시험값 하나를 넣고 <b>다시 계산</b>을 누르세요. 칸 아래에 업무 DB의 현재 값이 나옵니다. 바꾼 항목의 화면 이름·단위·기준값·시험값을 그대로 적습니다.</p>'+shot('wi-04-compare','비교표: 기준 → 시험값의 순위·점수·손익')+'<p>순위가 왜 바뀌었는지는 <b>규칙 바꿔 보기</b> 탭 아래의 「순위 식 원문」에서 바꾼 값이 들어가는 식을 찾아 확인합니다.</p>'+shot('wi-05-formula','순위 식 원문: 항목마다 점수 식')+'<p class="check">다음 시험 전에 요약의 <b>원래대로</b>로 기준값을 되돌립니다. 시험값 변경은 실제 설비 조치가 아닙니다.</p>')]
     if practical:sections.append(('순위와 선택 가능 여부 구별하기','<p>설비 묶음의 <b>결함 시뮬레이션</b>에서 같은 설비 카드의 운전 모드를 「현장 제어」로 바꾼 뒤 조건별 손익에서 다시 불러오세요.</p>'+shot('wi-06-local','설비 카드의 운전 모드가 현장 제어로 바뀐 화면')+'<p>점수나 손익 순위가 높던 후보가 「규정상 제외」로 바뀌었는지 보고, 선택할 수 없는 이유를 카드에 적힌 규칙에서 찾아 적습니다.</p>'+shot('wi-07-excluded','규정상 제외와 이유')+'<p class="check">순위와 선택 가능 여부를 다른 열에 기록합니다. 끝나면 운전 모드를 「원격 자동」으로 되돌립니다. 모드 전환은 시뮬레이터 조건이고, 비교 순위는 실행 승인이 아닙니다.</p>'))
@@ -74,7 +77,7 @@ for course,slug in [('통합반','integrated'),('실전반','practical')]:
     archive=pack(folder)
     lab_id=f'{slug}-03-whatif'
     catalog['labs']=[x for x in catalog['labs'] if x['id']!=lab_id]
-    catalog['labs'].append({'id':lab_id,'course':course,'session':'온라인 03회차','title':TITLE,'version':'2026-10-28-s3-whatif-v3-screens' if practical else '2026-10-28-s3-whatif-v2-screens','folder':'03회차/랩/'+NAME,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+    catalog['labs'].append({'id':lab_id,'course':course,'session':'온라인 03회차','title':TITLE,'version':'2026-10-28-s3-whatif-v4-vscode-screens','folder':'03회차/랩/'+NAME,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('온라인3 조건별 손익 기록 랩 두 과정 생성')

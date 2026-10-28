@@ -9,7 +9,7 @@ SOURCES = ROOT/'it/process/definitions'
 MANUAL = ROOT/'문서/시스템/참조/수업_문서_원문/HI-01_shift-inspection-supplement.md'
 
 
-def build(course, day, emphasis):
+def build(course, day, emphasis, notebook):
     parent=ROOT/f'산출물/{course}/실습/{day:02}회차'
     folder=parent/'랩/shift-handover'
     (folder/'source').mkdir(parents=True,exist_ok=True)
@@ -53,6 +53,7 @@ AI 실행이 멈추면 같은 처리 건과 원천 응답을 보존해 원인을
         ('4. BPMN과 포털 연결','''source/handover.bpmn을 bpmn.io에서 열어 초안→인계자 검토→인수자 확인/보완→완료와 세 번의 초안 범위를 확인합니다. 표시 이름과 그림 배치는 바꿀 수 있으며 작업·연결·승인 조건을 추가하거나 제거하지 않습니다. 포털 「흐름」에서 이 파일을 가져옵니다. 흐름 ID는 제공 파일의 ShiftHandover를 유지합니다. source/mapping.json을 대조해 시작 입력 네 개와 각 작업의 부품·사람 역할·분기 조건을 연결합니다. 인계안 작성·보완 1·보완 2의 세 에이전트 칸에는 3단계에서 만든 자기 에이전트를 모두 배정합니다. 「검사」의 누락을 고친 뒤 「판본 등록」을 합니다. 기본 A/B/C의 매핑이나 배포는 바꾸지 않습니다. 임의 코드가 자동으로 포털 작업에 연결되는 것은 아닙니다.'''),
         ('5. 같은 처리 건에서 검토와 보완','''등록한 교대 판본을 시작하고 네 입력을 채웁니다. 포털의 「나」를 인계자 김운전으로 선택해 실제 초안·조회 근거를 검토합니다. 자료가 없거나 모순이면 미확인과 다음 확인 행동을 남깁니다. 승인 후 「나」를 인수자 최운전으로 바꾸어 근거와 남은 요청을 대조합니다. 보완할 사실이 있으면 사유를 적어 같은 건을 돌려보내고 보완된 초안과 인계자 재검토를 확인합니다. 처음부터 맞은 결과에 고의 오류를 넣지 않습니다. 인수 확인은 인계 기록만 남긴다는 확인을 한 뒤 제출합니다. 처리 건의 종료 상태와 미확인 항목을 확인하며 인수 확인을 정비 완료로 바꾸지 않습니다.'''),
         ('6. 실패 복구와 저장','''AI가 질문/권한 요청/실패로 멈추면 처리 건 ID·작업 ID·질문·호출 기록·원천 응답을 보존합니다. 새 건을 반복 시작하거나 DB/컨테이너를 지우지 말고 원인을 강사와 확인해 같은 건의 보완/재시도를 사용합니다. 통신 실패를 업무 없음으로 쓰지 않습니다. 완료 후 output에 적재 판본, 에이전트, 흐름 판본과 처리 건 ID, 조회 기준시각/근거, 사람 검토, 보완 사유, 완료·미확인 구분을 저장합니다. 다시 열어 각 주장으로부터 원문·조회 결과로 돌아갈 수 있어야 합니다.''')]
+    stages.append(('7. Notion 학습노트 기록',notebook))
     body=''.join(f'<section><h2>{escape(title)}</h2><p>{escape(text)}</p></section>' for title,text in stages)
     html=f'''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{course} 교대 인수인계</title><style>body{{max-width:850px;margin:40px auto;padding:0 22px;font:17px/1.85 system-ui;color:#182535;background:#f5f7fa}}section{{background:white;padding:18px 25px;margin:18px 0;border-radius:10px}}h1{{font-size:30px}}h2{{font-size:22px}}a{{color:#155ca4}}</style><h1>{course} {day}회차 · 교대 인수인계</h1><p>여러 출처를 대조한 인계안을 만들고 두 사람이 검토하여 다음 교대가 이어 확인할 일을 남깁니다.</p><p>학생 시작본 · 화면 사진은 포함하지 않습니다. 실제 결과는 자기 처리 건에서 확인하고 저장합니다.</p><p><a href="source/inspection-manual.md">보충 문서</a> · <a href="source/handover.bpmn">제공 BPMN</a> · <a href="source/mapping.json">연결 기준</a> · <a href="output/README.md">저장 항목</a></p>{body}</html>'''
     (folder/'안내.html').write_text(html,encoding='utf8')
@@ -71,6 +72,9 @@ AI 실행이 멈추면 같은 처리 건과 원천 응답을 보존해 원인을
 
 
 if __name__=='__main__':
-    for course,day,emphasis in [('통합반',11,'원문에서 추가한 지식이 조회 근거와 사람 검토로 이어지는 연결을 설명합니다.'),
-                               ('실전반',8,'교대 담당자의 미완료 업무·재고와 입고 예정·모순을 구분하고 다음 확인 행동을 정합니다.')]:
-        print(build(course,day,emphasis))
+    # 7단계 문장: 통합반 실라버스 117행 · 실전반 96행(Notion 학습노트 기록, 미연결이면 Markdown을 직접 붙여 정리)
+    for course,day,emphasis,notebook in [('통합반',11,'원문에서 추가한 지식이 조회 근거와 사람 검토로 이어지는 연결을 설명합니다.',
+                                         '첫날 준비한 Notion 학습노트에 개념·참고 자료·실습 산출물·검증 결과를 연결해 기록합니다. 관계 모델, 판단 근거, 명세, 검증 결과, 이번 인계 기록을 학습노트에서 함께 찾아볼 수 있게 정리합니다. 수업 계정에서 Notion 연결과 쓰기 권한이 검증된 경우에만 MCP 연동을 쓰고, 연결되지 않았으면 output에 정리한 Markdown을 Notion 학습노트에 직접 붙여 정리합니다. MCP로 기록하지 않았다면 연결했다고 적지 않습니다.'),
+                               ('실전반',8,'교대 담당자의 미완료 업무·재고와 입고 예정·모순을 구분하고 다음 확인 행동을 정합니다.',
+                                         'Notion 학습노트에 핵심 개념·실습 결과·참고 출처를 연결합니다. 조회·판단·검토·실행 확인에 쓴 자료와 산출물을 이후에도 다시 찾아 쓸 수 있게 정리합니다. 수업 환경에서 쓸 수 있으면 MCP로 기록을 반영하고, 그렇지 않으면 output에 작성한 Markdown을 Notion 학습노트에 직접 붙여 완성합니다. MCP로 반영하지 않았다면 연결했다고 적지 않습니다.')]:
+        print(build(course,day,emphasis,notebook))
