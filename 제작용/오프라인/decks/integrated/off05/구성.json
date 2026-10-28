@@ -1,0 +1,123 @@
+{
+ "title": "에이전트의 근거 · 도구 · 종료 조건 이해하기",
+ "intro": "통합반 오프라인 5회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 38행의 범위로 온라인 통합반 5회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(39~41행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 05`.",
+ "md": "통합반_오프라인_05회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day05",
+   "n": 5
+  },
+  {
+   "src": "integrated/day05",
+   "n": 11
+  },
+  {
+   "src": "integrated/day05",
+   "n": 12
+  },
+  {
+   "src": "integrated/day05",
+   "n": 13,
+   "note_edits": [
+    [
+     "에이전트 스킬이라는 파일로 준다(모양은 뒤에서)",
+     "에이전트 스킬이라는 파일로 준다(모양은 다음 회차에)"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day05",
+   "n": 29
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day05",
+   "n": 17
+  },
+  {
+   "src": "integrated/day05",
+   "n": 20
+  },
+  {
+   "src": "integrated/day05",
+   "n": 22
+  },
+  {
+   "src": "integrated/day05",
+   "n": 27
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day05",
+   "n": 32
+  },
+  {
+   "src": "integrated/day05",
+   "n": 33
+  },
+  {
+   "src": "integrated/day05",
+   "n": 38
+  },
+  {
+   "src": "integrated/day05",
+   "n": 40
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day05",
+   "n": 42
+  },
+  {
+   "src": "integrated/day05",
+   "n": 43
+  },
+  {
+   "src": "integrated/day05",
+   "n": 44
+  },
+  {
+   "src": "integrated/day05",
+   "n": 45
+  },
+  {
+   "src": "integrated/day05",
+   "n": 46
+  },
+  {
+   "src": "integrated/day05",
+   "n": 48
+  },
+  {
+   "src": "integrated/day05",
+   "n": 56,
+   "note_edits": [
+    [
+     "· 단원 답: 결과는 정해진 항목으로, 과정은 호출마다 기록, 근거는 식별자로 인용해 기록과 대조, 확인된 것과 가설을 나눠 적기 → 사람이 확인하고 승인할 수 있다",
+     "· 정리: 등록 기준이 지지한 것과 가설을 나눠 적어야 사람이 확인하고 승인할 수 있다"
+    ]
+   ]
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
