@@ -2,6 +2,11 @@
 
 사용: python review.py <랩 폴더> <출력 폴더> [--counter recorded|elapsed]
 → <출력 폴더>/조치검토결과.json, 조치검토결과.md
+
+검토 의견의 방침(담당자 판단 갈래, 리허설 2 실전 3-2 제안 3):
+- policy=defer(강사 주 갈래): 빠진 값만 확인되면 1위가 될 수 있는 보류 후보(잠정 합계 ≤ 1위 합계, 또는 계산 불가)가 있으면
+  추천을 미루고 먼저 확인할 값을 적는다. 근거: HI-01 SOP-HI-01(관측 실패면 정상 판단 금지), 작업기준.md 4절(필요한 입력이 빠지면 최종 허용 판단 보류).
+- policy=propose: 1위 유지 후보를 승인 요청 검토 대상으로 추천하고 보류 후보는 다시 비교하라고만 적는다.
 """
 from pathlib import Path
 import json
@@ -74,23 +79,50 @@ def candidate(cand, sop, ranking):
     return out
 
 
-def opinion(entry):
+def impacts(entry, metric):
+    """보류 후보마다 아는 값만으로 계산한 잠정 합계(미확인 규칙의 감점 제외)와 1위 가능 여부."""
+    values, works, settings, orders = metric
+    top = min((r['합계'] for r in entry['ranking'] if r['rank'] == 1), default=None)
+    out = []
+    for c in entry['candidates']:
+        if c['status'] != '보류':
+            continue
+        comp, lost = judge.compare(c, c['inputs']['forecast_ts1'], settings[c['sop']], values, works, orders[entry['id']])
+        total = comp['합계'] if comp else None
+        can = None if total is None else (True if top is None else total <= top)
+        missing = sorted({m for u in c['unknown'] for m in u['missing']})
+        basis = (f'빠진 값 {", ".join(missing)}을 뺀 잠정 합계 {total}' + (f', 1위 유지 후보 합계 {top}' if top is not None else ', 비교할 유지 후보 없음')) if total is not None else f'잠정 합계 계산 불가: {"; ".join(lost)}'
+        out.append({'sop': c['sop'], '잠정_합계': total, '1위_가능': can, '근거': basis})
+    return out
+
+
+def opinion(entry, metric, policy='defer'):
     held = [c['sop'] for c in entry['candidates'] if c['status'] == '보류']
     rec = entry['recommendation']
+    impact = impacts(entry, metric)
+    could = [x for x in impact if x['1위_가능'] is not False]
+    if rec['sops'] and policy == 'defer' and could:
+        need = sorted({m for c in entry['candidates'] if c['sop'] in {x['sop'] for x in could} for u in c['unknown'] for m in u['missing']})
+        reason = (f'보류 후보 {", ".join(x["sop"] for x in could)}는 빠진 값만 확인되면 1위가 될 수 있어(잠정 합계가 1위 유지 후보 {", ".join(rec["sops"])} 이하이거나 계산 불가) 추천을 미룬다. '
+                  f'먼저 확인할 값: {", ".join(need)}. 확인 뒤 다시 비교한다. 근거: HI-01 SOP-HI-01, 작업기준.md 4절.')
+        return {'추천': [], '사유': reason, '보류': held, '보류_영향': impact}
     if rec['sops']:
         reason = f'교육용 비교 합계 1위 유지 후보 {", ".join(rec["sops"])}를 승인 요청 검토 대상으로 제안한다. 실행 승인은 아니다.' + (f' 보류 후보 {", ".join(held)}는 빠진 값을 확인한 뒤 다시 비교한다.' if held else '')
     else:
         reason = rec['reason']
-    return {'추천': rec['sops'], '사유': reason, '보류': held}
+    return {'추천': rec['sops'], '사유': reason, '보류': held, '보류_영향': impact}
 
 
-def build(lab, counter='recorded', rules_path=None):
+def build(lab, counter='recorded', rules_path=None, policy='defer'):
+    if policy not in ('defer', 'propose'):
+        raise judge.ContractError(f'policy는 defer·propose: {policy}')
     result = judge.run(lab, rules_path, counter)
+    metric = judge.metric_inputs(lab)
     sop = {s['id']: s for s in json.loads((Path(lab)/'입력/sop.json').read_text(encoding='utf-8-sig'))['SOP']}
     items = []
     for entry in result['events']:
         ranking = entry.get('ranking', [])
-        items.append({'id': entry['id'], '설비': entry['asset'], '판단_시각': entry['decision_time'], '후보': [candidate(c, sop[c['sop']], ranking) for c in entry['candidates']], '검토_의견': opinion(entry)})
+        items.append({'id': entry['id'], '설비': entry['asset'], '판단_시각': entry['decision_time'], '후보': [candidate(c, sop[c['sop']], ranking) for c in entry['candidates']], '검토_의견': opinion(entry, metric, policy)})
     return {'비교_기준': BASIS, '입력_결정': result['input_decisions'], '항목': items}
 
 
@@ -131,15 +163,20 @@ def markdown(review):
                 lines.append(f'- 추가 확인: {x}')
             lines.append(f'- 승인: {c["승인"]["역할"]}({c["승인"]["출처"]}). {c["승인"]["안내"]}')
             lines.append('')
-        lines += [f'**검토 의견**: {item["검토_의견"]["사유"]}', '']
+        for x in item['검토_의견'].get('보류_영향', []):
+            lines.append(f'- 보류 후보 {x["sop"]}: 잠정 합계 {fmt(x["잠정_합계"])}, 1위 가능 {fmt(x["1위_가능"])} — {x["근거"]}')
+        lines += ['', f'**검토 의견**: {item["검토_의견"]["사유"]}', '']
     return '\n'.join(lines) + '\n'
 
 
 if __name__ == '__main__':
-    if len(sys.argv) not in (3, 5):
-        sys.exit('사용: python review.py <랩 폴더> <출력 폴더> [--counter recorded|elapsed]')
-    out = Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
-    review = build(sys.argv[1], sys.argv[4] if len(sys.argv) == 5 else 'recorded')
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('lab'); ap.add_argument('out')
+    ap.add_argument('--counter', default='recorded'); ap.add_argument('--policy', default='defer')
+    a = ap.parse_args()
+    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    review = build(a.lab, a.counter, None, a.policy)
     (out/'조치검토결과.json').write_text(json.dumps(review, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     (out/'조치검토결과.md').write_text(markdown(review), encoding='utf-8')
     print(f'항목 {len(review["항목"])}건 → {out}')

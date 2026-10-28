@@ -202,6 +202,15 @@ def stages():
         print(f'    {f.name}: {"계약 통과" if not errors else f"계약 확인 필요 {len(errors)}건"} · ' + ' · '.join(notes))
         if errors:
             todo.append(f'{f.name} 계약 오류.')
+        try:
+            data = json.loads(f.read_text(encoding='utf-8-sig'))
+            cands = [c for c in data.get('candidates', []) if isinstance(c, dict)]
+        except (OSError, ValueError, AttributeError):
+            continue
+        if not any(c.get('status') == 'approved' for c in cands):
+            todo.append(f'{f.name}: approved 후보가 없습니다. 다음 단계는 approved 후보만 쓰므로, 원문과 대조해 채택·수정한 후보가 있어야 합니다.')
+        elif cands and all(c.get('decision') == '채택' for c in cands) and not data.get('missing'):
+            todo.append(f'{f.name}: 모든 후보가 「채택」이고 누락 기록이 0개입니다. 사람이 원문과 나란히 놓고 대조한 흔적(수정·제외·보류한 후보, 원문에 있는데 빠진 것)이 없습니다. 대조한 절의 후보를 원문과 한 줄씩 다시 보고, 시간 안에 보지 못한 후보는 「보류」(이유: 미검토)로 둡니다.')
     if not reviews:
         todo.append('검토 결과가 없습니다.')
     record = HERE / '결과/검토_기록.md'

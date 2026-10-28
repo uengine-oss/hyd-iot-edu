@@ -3,10 +3,12 @@ from pathlib import Path
 from datetime import datetime
 import csv, json, re, sys
 root = Path(__file__).resolve().parent
+import re
 HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_만원','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
 NUMERIC = {'forecast_ts1','forecast_ps1','fan100_hours'}
-INPUTS = NUMERIC | {'plc_mode','plc_state','skill_kind','skill_code'}
+LIST_INPUTS = {'skill_code'}
+INPUTS = NUMERIC | {'plc_mode','plc_state','skill_kind'} | LIST_INPUTS
 def check_rules(path, sop_ids):
     """(상태, 오류 목록, 묶음 수). 상태: 없음·빈 틀·통과·확인 필요."""
     if not path.is_file(): return '없음', [], 0
@@ -22,6 +24,8 @@ def check_rules(path, sop_ids):
         if r['input'] not in INPUTS: errs.append(f'{at} 계약에 없는 input {r["input"]}')
         if r['operator'] not in OPS: errs.append(f'{at} 계약에 없는 operator {r["operator"]}')
         elif OPS[r['operator']] != r['boundary_included']: errs.append(f'{at} boundary_included({r["boundary_included"]})가 operator {r["operator"]}와 맞지 않습니다.')
+        if r['input'] in LIST_INPUTS and r['operator'] != 'has_other_than': errs.append(f'{at} 목록 입력 {r["input"]}에는 has_other_than만 씁니다(목록과 글자를 {r["operator"]}로 비교하지 않음).')
+        if r['operator'] == 'has_other_than' and r['input'] not in LIST_INPUTS: errs.append(f'{at} has_other_than은 목록 입력({", ".join(sorted(LIST_INPUTS))})에만 씁니다.')
         if r['result'] not in {'WARN','PENALTY','EXCLUDE'}: errs.append(f'{at} result는 WARN·PENALTY·EXCLUDE')
         if r['input'] in NUMERIC:
             try: float(r['value'])
@@ -56,6 +60,55 @@ def empty_rows(path, column):
         i = idx[0]
         if i >= len(cells) or not cells[i]: empty += 1
     return empty, total
+def excerpt_rules(path):
+    """규칙 발췌(규칙_원문.txt)에 실린 규칙 ID."""
+    return re.findall(r"^\s*\['(rule:[A-Za-z0-9_-]+)'", path.read_text(encoding='utf-8-sig'), re.M) if path.is_file() else []
+def section_text(path, word):
+    """마크다운에서 제목에 word가 들어 있는 절의 본문."""
+    if not path.is_file(): return ''
+    out, on = [], False
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if line.startswith('#'): on = word in line; continue
+        if on: out.append(line)
+    return '\n'.join(out)
+def mentioned(rid, text):
+    return re.search(re.escape(rid) + r'(?![A-Za-z0-9_-])', text) is not None
+def unused_rules(rules_path, excerpt_path, record_path, word):
+    """규칙 발췌의 규칙 중 조건표 source_section에도, 기록의 결정 절에도 이름이 없는 것. 옳고 그름은 판정하지 않는다."""
+    if not rules_path.is_file(): return []
+    with rules_path.open(encoding='utf-8-sig', newline='') as f: used = ' '.join(r.get('source_section') or '' for r in csv.DictReader(f))
+    if not used.strip(): return []
+    note = section_text(record_path, word)
+    return [rid for rid in excerpt_rules(excerpt_path) if not mentioned(rid, used) and not mentioned(rid, note)]
+def missing_kinds(path, column, kinds):
+    """kinds: [(종류 이름, [찾을 말…])]. 표의 column 칸 어디에서도 찾을 말이 없는 종류 이름. 표에 행이 없으면 빈 목록."""
+    if not path.is_file(): return []
+    head, seen = None, []
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if not line.startswith('|'): head = None; continue
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if head is None: head = cells; continue
+        if set(''.join(cells)) <= set('-: '): continue
+        idx = [k for k, h in enumerate(head) if h.startswith(column)]
+        if idx and idx[0] < len(cells) and any(cells): seen.append(cells[idx[0]])
+    text = ' '.join(seen)
+    if not text.strip(): return []
+    return [name for name, words in kinds if not any(w in text for w in words)]
+def expect_time(path):
+    """기대결과.md 머리의 「기대 칸을 쓴 시각」과 「실행 시각」 정보."""
+    if not path.is_file(): return []
+    text = path.read_text(encoding='utf-8-sig')
+    def when(label):
+        m = re.search(r'^- ' + label + r'[^:\n]*:[ \t]*(.*)$', text, re.M)
+        if not m or not m.group(1).strip(): return None, False
+        x = re.search(r'(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})', m.group(1))
+        return (f'{x.group(1)} {int(x.group(2)):02d}:{x.group(3)}' if x else None), True
+    e, e_filled = when('기대 칸을 쓴 시각'); r, _ = when('실행 시각')
+    if not e_filled: return ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다. 실행 전에 기대 칸을 쓰고 그 시각을 적으세요.']
+    if e and r and e > r: return [f'기대결과.md 기대 칸을 쓴 시각({e})이 실행 시각({r})보다 뒤입니다. 실행 출력을 보고 기대를 쓰지 않았는지 확인하세요.']
+    return []
+def notes(lines):
+    for line in lines: print('참고: ' + line)
 def report(parts):
     """parts: [(이름, 상태, 오류, 설명)]. 단계별 상태를 나눠 출력하고, 필수 단계가 모두 통과면 0."""
     ok = True
@@ -138,8 +191,25 @@ def check_review(jpath, mpath):
         opinion = item.get('검토_의견') or {}
         kept = [c for c in cands if c.get('판정') == '유지' and c.get('순위') is not None]
         top = sorted(c['sop'] for c in kept if c['순위'] == 1)
-        if sorted(opinion.get('추천') or []) != top: errs.append(f'{iid}: 추천은 순위 1위 유지 후보여야 합니다.')
-        if not opinion.get('사유'): errs.append(f'{iid}: 검토_의견.사유가 필요합니다(추천이 없으면 그 사유).')
+        top_total = min((c['비교값']['합계'] for c in kept if c['순위'] == 1 and isinstance(c.get('비교값'), dict) and num(c['비교값'].get('합계'))), default=None)
+        held = [c.get('sop') for c in cands if c.get('판정') == '보류']
+        impact = opinion.get('보류_영향')
+        possible = []
+        if not isinstance(impact, list): errs.append(f'{iid}: 검토_의견.보류_영향 목록이 필요합니다(보류 후보가 없으면 빈 목록).')
+        else:
+            if sorted(x.get('sop') for x in impact if isinstance(x, dict)) != sorted(held): errs.append(f'{iid}: 보류_영향에는 보류 후보 {held}가 하나씩 있어야 합니다.')
+            for x in impact:
+                if not isinstance(x, dict): errs.append(f'{iid}: 보류_영향 항목은 객체'); continue
+                total, can = x.get('잠정_합계'), x.get('1위_가능')
+                if total is not None and not num(total): errs.append(f'{iid} {x.get("sop")}: 잠정_합계는 숫자 또는 null')
+                if can not in (True, False, None): errs.append(f'{iid} {x.get("sop")}: 1위_가능은 true·false·null')
+                if not x.get('근거'): errs.append(f'{iid} {x.get("sop")}: 보류_영향.근거가 필요합니다.')
+                if num(total) and top_total is not None and can is not None and can != (total <= top_total): errs.append(f'{iid} {x.get("sop")}: 1위_가능({can})이 잠정_합계 {total}와 1위 합계 {top_total}의 비교와 다릅니다.')
+                if total is None and can is not None: errs.append(f'{iid} {x.get("sop")}: 잠정_합계를 계산하지 못했으면 1위_가능은 null입니다.')
+                if can is not False: possible.append(x.get('sop'))
+        rec = sorted(opinion.get('추천') or [])
+        if rec != top and not (rec == [] and top and possible): errs.append(f'{iid}: 추천은 순위 1위 유지 후보이거나, 1위가 될 수 있는 보류 후보가 있어 추천을 미룰 때만 빈 목록입니다.')
+        if not opinion.get('사유'): errs.append(f'{iid}: 검토_의견.사유가 필요합니다(추천이 없거나 미루면 그 사유).')
     return ('확인 필요' if errs else '통과'), errs, f'사례 {len(items)}건'
 state, errs, note = check_review(root/'결과/조치검토결과.json', root/'결과/조치검토결과.md')
 parts = [('review.py', '있음' if (root/'결과/review.py').is_file() else '없음', [], '', False), ('조치검토결과.json·.md', state, errs[:40] + ([f'… 외 {len(errs)-40}건'] if len(errs) > 40 else []), note, True)]
@@ -149,5 +219,7 @@ elif total == 0: parts.append(('기대결과.md', '아직 비어 있음', [], '�
 else: parts.append(('기대결과.md', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 「실제 결과」 빈 칸 {empty}개' + (' — 실행 뒤 실제 결과를 적어 대조하세요' if empty else ''), False))
 print('구조 검사 결과')
 ok = report(parts)
+kinds = missing_kinds(root/'결과/기대결과.md', '사례 종류', [('경계', ['경계']), ('제외와 값 없음이 겹친 후보', ['겹', '제외+', '제외와']), ('모두 제외·유지 후보 없음', ['모두 제외', '유지 후보 없음', '추천 없음']), ('값 없음', ['값 없음', '누락', '미확인']), ('결정에 따라 바뀌는 사례', ['결정', '갈래', '갈림']), ('보류 후보가 1위가 될 수 있는 사례', ['1위', '보류 후보'])])
+notes(([f'START.md 사례 종류 중 기대결과.md 「사례 종류」 칸에서 찾지 못한 것: {", ".join(kinds)} (다른 말로 적었다면 그대로 두어도 됩니다).'] if kinds else []) + expect_time(root/'결과/기대결과.md'))
 print('구조 검사는 형식과 계약의 불변식만 봅니다. 판정·이유·출처가 원문·원자료와 맞는지와 금액은 별도로 대조하세요.')
 sys.exit(0 if ok else 1)

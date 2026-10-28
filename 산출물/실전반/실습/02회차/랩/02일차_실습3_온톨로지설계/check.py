@@ -6,7 +6,7 @@ from pathlib import Path
 import json,sys
 root=Path(__file__).resolve().parent
 base=Path(sys.argv[1]) if len(sys.argv)>1 else root/'결과'
-errors=[];warnings=[]
+errors=[];warnings=[];nodes=[];rels=[];labels_by_id={}
 BOOL_WORDS={'예','아니오','true','false','True','False','Y','N','yes','no','승인','비승인'}
 def kind_of(v):
     return 'boolean' if isinstance(v,bool) else 'integer' if isinstance(v,int) else 'number' if isinstance(v,float) else 'string' if isinstance(v,str) else 'list' if isinstance(v,list) else type(v).__name__
@@ -73,10 +73,57 @@ try:
         for k,v in props.items():
             if k in pspec:check_value(f'{t} {a}→{b}',k,v,pspec[k])
             elif k!='id':warnings.append(f'{t}에 정의되지 않은 속성 {k}')
+    NEED={'approved':'boolean','price_manwon':'number','defect_rate':'number','lead_days':'integer','quote_date':'string'}
+    sspec=relations.get('SUPPLIES')
+    if not isinstance(sspec,dict):errors.append('schema.json relations에 공급 조건 관계 SUPPLIES가 없습니다(START.md 공급 조건 형식).')
+    else:
+        declared=sspec.get('properties',{}) or {}
+        for k,t in NEED.items():
+            if declared.get(k)!=t:errors.append(f'schema.json SUPPLIES.properties.{k}는 {t!r}이어야 합니다(현재 {declared.get(k)!r}).')
+    pairs={}
+    for r in rels:
+        if r.get('type')!='SUPPLIES':continue
+        a,b=r.get('a'),r.get('b');p=r.get('props') or {};pairs.setdefault((a,b),[]).append(p)
+        for k in NEED:
+            if p.get(k) is None:errors.append(f'SUPPLIES {a}→{b}: {k} 없음 — 이 쌍의 기준일 조건이 정해지지 않았습니다.')
+        d=p.get('defect_rate')
+        if isinstance(d,(int,float)) and not isinstance(d,bool) and not 0<=d<=1:errors.append(f'SUPPLIES {a}→{b}: defect_rate={d}는 0~1 비율이어야 합니다(% 표기 환산 확인).')
+    for (a,b),ps in sorted(pairs.items(),key=str):
+        if len(ps)>1:errors.append(f'SUPPLIES {a}→{b}가 {len(ps)}개: 공급사·부품 쌍마다 기준일 조건 하나만 둡니다. 견적 이력은 다른 종류·관계로 두세요.')
+    if not pairs:errors.append('graph.json에 SUPPLIES 관계가 없습니다.')
+    else:
+        yes=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is True);no=sum(1 for ps in pairs.values() for p in ps if p.get('approved') is False)
+        print(f'참고: 공급 조건 SUPPLIES 쌍 {len(pairs)}개, 관계 {sum(len(ps) for ps in pairs.values())}개(approved=true {yes}개, false {no}개). 쌍마다 고른 견적·승인 근거는 자료_검토.md에서 원자료와 대조하세요.')
 except (OSError,ValueError,TypeError,AttributeError) as e:
     errors.append(str(e))
 if warnings:
     uniq=sorted(set(warnings));print(f'참고 {len(uniq)}건(정의와 다른 속성 등):');print('\n'.join('  '+w for w in uniq[:12])+('\n  …' if len(uniq)>12 else ''))
+spread={}
+for r in rels if isinstance(rels,list) else []:
+    a,b=r.get('a'),r.get('b')
+    if a in labels_by_id and b in labels_by_id:
+        k=(r.get('type'),'/'.join(labels_by_id[a]),'/'.join(labels_by_id[b]));spread[k]=spread.get(k,0)+1
+if spread:
+    print('참고: 관계마다 어느 종류에서 어느 종류로 이어졌는지(원자료의 행 수·붙은 곳과 대조하세요)')
+    for (t,x,y),n in sorted(spread.items()):print(f'  {t}: {x} → {y} {n}개')
+    # 같은 관계가 포함하는 쪽(위)과 포함되는 쪽(아래)에 함께 붙는 종류가 있으면, 아래를 거치지 않고 위에 바로 붙은 대상을 따로 센다.
+    # 관계 방향은 학생이 정하므로(센서→설비로 둘 수도 있음) 붙음은 양쪽 방향으로 본다. 포함(위→아래)은 정의된 방향 그대로.
+    contain={(x,y) for (t,x,y) in spread if x!=y}
+    touch={(t,x,y) for (t,x,y) in spread}|{(t,y,x) for (t,x,y) in spread}
+    direct={}
+    for (t,top,s) in sorted(touch):
+        mids=[mid for (t2,mid,s2) in touch if t2==t and s2==s and mid not in (top,s) and (top,mid) in contain]
+        if not mids:continue
+        per={}
+        for r in rels:
+            a,b=r.get('a'),r.get('b');la,lb='/'.join(labels_by_id.get(a,[])),'/'.join(labels_by_id.get(b,[]))
+            if r.get('type')!=t:continue
+            if (la,lb)==(top,s):per.setdefault(a,[]).append(b)
+            elif (la,lb)==(s,top):per.setdefault(b,[]).append(a)
+        if per:direct[(t,top,s,'/'.join(sorted(mids)))]=per
+    for (t,top,s,mids),per in sorted(direct.items()):
+        print(f'참고: {mids}를 거치지 않고 {top}에 바로 붙은 {s} {sum(len(v) for v in per.values())}개({t}). 원자료의 붙은곳이 정말 {top} 전체인 행인지 대조하세요.')
+        print('  '+', '.join(f'{a} {len(v)}개' for a,v in sorted(per.items())[:12])+(' …' if len(per)>12 else ''))
 if errors:
     print(f'구조 확인 필요 {len(errors)}건');print('\n'.join(errors[:40])+('\n…' if len(errors)>40 else ''));sys.exit(1)
 print(f'구조 검사 통과: 노드 {len(nodes)}개, 관계 {len(rels)}개. 원자료의 의미·단위·질문별 답은 별도로 대조하세요.')

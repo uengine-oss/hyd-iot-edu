@@ -1221,7 +1221,35 @@
      "HYD-07:rtn-filter"
     ]
    },
-   "P-PMP-SEAL-X": null
+   "P-PMP-SEAL-X": null,
+   "6205-2RS": {
+    "candidates": [
+     {
+      "part": "P-BRG-6205",
+      "assets": [
+       "HYD-05",
+       "HYD-06"
+      ],
+      "components": [
+       "HYD-05:fan",
+       "HYD-06:fan"
+      ]
+     },
+     {
+      "part": "P-FAN-BRG",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03"
+      ],
+      "components": [
+       "HYD-01:fan",
+       "HYD-02:fan",
+       "HYD-03:fan"
+      ]
+     }
+    ]
+   }
   }
  },
  "B": {
@@ -2456,7 +2484,45 @@
      "HYD-07:rtn-filter"
     ]
    },
-   "P-PMP-SEAL-X": null
+   "P-PMP-SEAL-X": null,
+   "6205-2RS": {
+    "candidates": [
+     {
+      "part": "P-BRG-6205",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03",
+       "HYD-05",
+       "HYD-06"
+      ],
+      "components": [
+       "HYD-01:fan",
+       "HYD-02:fan",
+       "HYD-03:fan",
+       "HYD-05:fan",
+       "HYD-06:fan"
+      ]
+     },
+     {
+      "part": "P-FAN-BRG",
+      "assets": [
+       "HYD-01",
+       "HYD-02",
+       "HYD-03",
+       "HYD-05",
+       "HYD-06"
+      ],
+      "components": [
+       "HYD-01:fan",
+       "HYD-02:fan",
+       "HYD-03:fan",
+       "HYD-05:fan",
+       "HYD-06:fan"
+      ]
+     }
+    ]
+   }
   }
  }
 }

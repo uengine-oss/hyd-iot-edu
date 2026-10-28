@@ -1,13 +1,16 @@
 """실습5 단계별 상태와 작업 확인 카드의 형식 검사. 생성·수정·DB 변경을 하지 않는다.
 카드의 「인용」이 원문·기록 파일에 그대로 있는지, 카드가 가리킨 작업지시·품번이 자료에 있는지만 대조한다.
 조건이 빠졌는지, 지난 시행을 어떻게 골랐는지, 수량을 어떻게 셌는지가 맞는지는 판정하지 않는다.
+랩 DB가 준비돼 있으면 읽기 조회로 「적재한 지식이 앞 단계 모델의 기존 ID와 이어졌는지」 개수만 센다(어디에 이어야 맞는지는 판정하지 않는다).
 사용: python check_card.py
 """
 from pathlib import Path
 import csv, json, re, sys
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 HEADINGS = ['대상 작업', '준비 조건', '금지·제한', '작업 순서', '완료 기준', '작업 직전 확인할 현재 값', '부품 준비', '지난 시행 기록', '승인', '남은 질문']
+DELETE = re.compile(r'\bDELETE\b', re.I)
 QUOTE = re.compile(r'「([^」]+)」')
 LISTED = ['준비 조건', '금지·제한', '작업 순서', '완료 기준']
 
@@ -92,6 +95,34 @@ def main():
         print(f'[2] 결과/{name}: 문장 약 {n}개' + (' · 전체 삭제문 있음' if wipe else ''))
         if wipe:
             todo.append(f'{name}에 전체 삭제문이 있습니다.')
+        from lab_cypher import statements
+        dels = [i for i, s in enumerate(statements(text), 1)
+                if DELETE.search('\n'.join(l for l in s.splitlines() if not l.lstrip().startswith('//')))]
+        if dels:
+            print(f'    결과/{name}: 삭제(DELETE) 문장 {len(dels)}개 — {", ".join(f"{i}번째" for i in dels[:10])}' + (' …' if len(dels) > 10 else ''))
+            todo.append(f'결과/{name} {", ".join(f"{i}번째" for i in dels[:10])} 문장에 DELETE가 있습니다. '
+                        + ('적재문은 만들고 고치는 문장(MERGE·SET)만 두어 다시 실행해도 같은 결과가 나오게 합니다. 잘못 적재한 것은 적재문을 고친 뒤 랩 DB를 새로 준비해 다시 적재합니다.'
+                           if name == 'load.cypher' else '조회문은 읽기만 합니다.'))
+    if state.is_file():
+        try:
+            from lab_cypher import cypher
+            ids = [n['props']['id'] for n in json.loads((HERE / '입력/모델/graph.json').read_text(encoding='utf-8'))['nodes']]
+            res = cypher([('MATCH (k) WHERE k.id IS NULL OR NOT k.id IN $ids RETURN count(k)', {'ids': ids}),
+                          ('MATCH (m)-[r]-(k) WHERE m.id IN $ids AND (k.id IS NULL OR NOT k.id IN $ids) '
+                           'RETURN labels(m)[0] AS 기존, type(r) AS 관계, count(DISTINCT r) AS n ORDER BY 기존, 관계', {'ids': ids})])
+            extra = res[0]['data'][0]['row'][0]
+            links = [r['row'] for r in res[1]['data']]
+            total = sum(r[2] for r in links)
+            print(f'[2] 랩 DB: 앞 단계 모델 밖에서 적재한 노드 {extra}개, 그중 기존 모델 ID와 이어진 관계 {total}개'
+                  + (' — ' + ', '.join(f'{a} {t} {n}개' for a, t, n in links[:12]) if links else ''))
+            if extra == 0:
+                todo.append('랩 DB에 앞 단계 모델 밖의 노드가 없습니다. load.cypher를 아직 실행하지 않았습니다.')
+            elif total == 0:
+                todo.append(f'적재한 노드 {extra}개가 앞 단계 모델의 기존 ID(설비·구성요소·센서·물리량·부품 등)와 하나도 이어지지 않았습니다. '
+                            'START 범위 1: 기존 모델의 어떤 ID에 무엇을 근거로 연결할지 정하고, 연결할 ID가 없으면 남은 질문으로 적습니다.')
+        except (OSError, ValueError, KeyError, RuntimeError) as e:
+            print(f'[2] 랩 DB 조회 실패: {e}')
+            todo.append(f'랩 DB를 조회하지 못해 기존 모델 ID와의 연결을 세지 못했습니다({e}).')
     docs = sources()
     orders = {r['작업지시'] for r in csv_rows('작업지시_서술.csv')}
     known = parts()

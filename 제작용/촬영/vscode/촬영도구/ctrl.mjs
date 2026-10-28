@@ -21,8 +21,9 @@ export async function run(opts){
  const out=WORK+'/'+opts.name;
  await fs.mkdir(out+'/frames',{recursive:true});
  if((await fs.readdir(out+'/frames')).length)throw Error('Output folder already has frames: '+out);
- const task=await taskSpace(CFG.space);const p=task.page('p1');
- await p.cdp('Emulation.setDeviceMetricsOverride',{width:CFG.viewport.width,height:CFG.viewport.height,deviceScaleFactor:1,mobile:false});
+ // opts.space·opts.viewport: VS Code 밖 화면(포털)을 다른 작업 공간에서 찍을 때. 포털은 1536x864 dsf1.5(→2304x1296 렌더 → 1920x1080 프레임).
+ const task=await taskSpace(opts.space||CFG.space);const p=task.page('p1');const VP=opts.viewport||CFG.viewport;
+ await p.cdp('Emulation.setDeviceMetricsOverride',{width:VP.width,height:VP.height,deviceScaleFactor:VP.dsf||1,mobile:false});
  let queue=Promise.resolve();const serial=fn=>{const r=queue.then(fn);queue=r.catch(()=>{});return r;};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  let recording=false,done=false,error=null,writeQueue=Promise.resolve(),bufferBytes=0,start=null;const frames=[],actions=[],motions=[];
@@ -49,7 +50,8 @@ export async function run(opts){
   const t0=Date.now();const a={id:c.id,text:c.text,time:t0-start,duration:c.duration_ms};actions.push(a);
   speechFree=t0+c.duration_ms;
   if(!fn){actionFree=Math.max(actionFree,t0);return;}
-  const pl=plan(c);const pointAt=t0+Math.round(c.duration_ms*(opt.pointFrac??pl.pointFrac))+(opt.pointDelay??250);
+  // opt.at = 대사 속 구절: 그 구절이 끝나는 시점에 첫 클릭·입력(여러 조작 중 첫 동작이 앞 문장에 있을 때). 없으면 오류.
+  const pl=plan(c);if(opt.at!=null){const i=c.text.indexOf(opt.at);if(i<0)throw Error(`${c.id}: at 구절 없음 — ${opt.at}`);Object.assign(pl,{pointFrac:Math.max(0,(i-1)/c.text.length),commitFrac:(i+opt.at.length)/c.text.length,sentence:opt.at});}const pointAt=t0+Math.round(c.duration_ms*(opt.pointFrac??pl.pointFrac))+(opt.pointDelay??250);
   const commitAt=t0+Math.round(c.duration_ms*(opt.commitFrac??pl.commitFrac))-(opt.commitLead??250);
   Object.assign(a,{plannedPoint:pointAt-start,plannedCommit:commitAt-start,actionSentence:pl.sentence,estimate:'character-proportional'});
   const go=(async()=>{const w2=pointAt-Date.now();if(w2>0)await sleep(w2);ctx.commitAt=commitAt;ctx.committed=null;a.actionStart=Date.now()-start;

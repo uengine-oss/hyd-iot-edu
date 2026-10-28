@@ -15,7 +15,7 @@ import shutil
 
 HERE = Path(__file__).resolve().parent
 REFERENCE = HERE/'reference/session3'
-VERSION = '2026-10-28-s3-v2-field'
+VERSION = '2026-10-28-s3-v4-rh3'
 SESSION = '온라인 03회차'
 CRITERIA = OUT/'통합반/실습/03회차/랩/03일차_실습2_조치기준만들기'
 JUDGE = OUT/'통합반/실습/03회차/랩/03일차_실습3_판단기능만들기'
@@ -32,6 +32,9 @@ STEP_TIPS = '''## 진행할 때
 
 - 채팅에 파일 이름을 쓸 때는 백틱(`)으로 감쌉니다. 예: `자료/예측_결과.csv`. 채팅 입력이 밑줄(_)을 서식으로 바꿔 이름이 달라질 수 있습니다.
 - AI가 완료를 알리면 실행한 명령과 그 출력 원문(요약이 아니라 나온 글자 그대로)을 붙여 달라고 요청합니다.
+- AI가 질문 카드(선택지와 「(권장)」 표시)로 물으면, 「(권장)」은 AI의 추천일 뿐입니다. 근거가 되는 원문·원자료 줄을 열어 확인한 뒤 고르거나 직접 입력 칸에 결정과 근거를 적습니다.
+- 파일 편집 승인 창(「Allow ChatGPT to edit …」)이 뜨면 바뀔 파일이 `결과/` 아래인지 보고 「Allow once」, 아니면 「Deny」를 누릅니다.
+- AI에게 고치게 할 때는 입력·기대·실제를 함께 주고, 고친 뒤에는 내가 예로 든 행만 맞았는지가 아니라 같은 종류의 다른 행에도 통하는지 다시 세어 달라고 합니다.
 '''
 
 TABLE_CONTRACT = '''## 결정표 형식 (rules.csv)
@@ -43,6 +46,7 @@ TABLE_CONTRACT = '''## 결정표 형식 (rules.csv)
 - `result`: `WARN`(경고), `PENALTY`(감점), `EXCLUDE`(제외). 같은 묶음의 `result`·`penalty_만원`·`reason`·`source_section`은 모든 행에서 같다. `PENALTY`만 `penalty_만원`(만원)을 적고 나머지는 빈칸이다.
 - `operator`: `>=`, `>`, `<=`, `<`, `==`, `!=`, `has_other_than`(목록 입력에 기준값이 아닌 항목이 하나라도 있음). `boundary_included`: 기준값 자체가 조건에 들어가면 `예`, 들어가지 않으면 `아니오`, 문자열·목록 비교는 `해당없음`.
 - `input` 이름과 단위: `forecast_ts1`(조치 후 예측 유온, ℃), `forecast_ps1`(조치 후 예측 토출 압력, bar), `fan100_hours`(팬 100 % 연속 운전 시간, h), `plc_mode`(`REMOTE_AUTO`·`REMOTE_MANUAL`·`LOCAL`), `plc_state`(`RUNNING`·`TRIP`), `skill_kind`(`control`·`work_order`), `skill_code`(실행 코드 목록). 숫자 입력은 `unit`을 적는다.
+- 목록 입력(`skill_code`)에는 `has_other_than`만 쓴다. `==`·`!=`로 목록과 글자 하나를 비교하지 않는다. `has_other_than`은 목록 입력에만 쓴다.
 - `source_section`에는 원문 근거를 적는다. 규칙 발췌의 시드 출처와 첨부 HM-8의 절은 서로 다른 체계이므로 구별해 적는다(예: `규칙발췌 rule:xxx(시드 HM-x.y); HM-8.z`).
 
 형식 예시(가상의 행이며 정답 행이 아니다):
@@ -52,10 +56,12 @@ R0,SOP-COOL-00,1,AND,forecast_ts1,>=,0,℃,예,WARN,,이유 문장,근거 절
 ```
 '''
 
-RULES_CHECK = r'''HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_만원','reason','source_section']
+RULES_CHECK = r'''import re
+HEADER = ['rule_id','action','condition_index','logic','input','operator','value','unit','boundary_included','result','penalty_만원','reason','source_section']
 OPS = {'>=':'예','<=':'예','>':'아니오','<':'아니오','==':'해당없음','!=':'해당없음','has_other_than':'해당없음'}
 NUMERIC = {'forecast_ts1','forecast_ps1','fan100_hours'}
-INPUTS = NUMERIC | {'plc_mode','plc_state','skill_kind','skill_code'}
+LIST_INPUTS = {'skill_code'}
+INPUTS = NUMERIC | {'plc_mode','plc_state','skill_kind'} | LIST_INPUTS
 def check_rules(path, sop_ids):
     """(상태, 오류 목록, 묶음 수). 상태: 없음·빈 틀·통과·확인 필요."""
     if not path.is_file(): return '없음', [], 0
@@ -71,6 +77,8 @@ def check_rules(path, sop_ids):
         if r['input'] not in INPUTS: errs.append(f'{at} 계약에 없는 input {r["input"]}')
         if r['operator'] not in OPS: errs.append(f'{at} 계약에 없는 operator {r["operator"]}')
         elif OPS[r['operator']] != r['boundary_included']: errs.append(f'{at} boundary_included({r["boundary_included"]})가 operator {r["operator"]}와 맞지 않습니다.')
+        if r['input'] in LIST_INPUTS and r['operator'] != 'has_other_than': errs.append(f'{at} 목록 입력 {r["input"]}에는 has_other_than만 씁니다(목록과 글자를 {r["operator"]}로 비교하지 않음).')
+        if r['operator'] == 'has_other_than' and r['input'] not in LIST_INPUTS: errs.append(f'{at} has_other_than은 목록 입력({", ".join(sorted(LIST_INPUTS))})에만 씁니다.')
         if r['result'] not in {'WARN','PENALTY','EXCLUDE'}: errs.append(f'{at} result는 WARN·PENALTY·EXCLUDE')
         if r['input'] in NUMERIC:
             try: float(r['value'])
@@ -105,6 +113,55 @@ def empty_rows(path, column):
         i = idx[0]
         if i >= len(cells) or not cells[i]: empty += 1
     return empty, total
+def excerpt_rules(path):
+    """규칙 발췌(규칙_원문.txt)에 실린 규칙 ID."""
+    return re.findall(r"^\s*\['(rule:[A-Za-z0-9_-]+)'", path.read_text(encoding='utf-8-sig'), re.M) if path.is_file() else []
+def section_text(path, word):
+    """마크다운에서 제목에 word가 들어 있는 절의 본문."""
+    if not path.is_file(): return ''
+    out, on = [], False
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if line.startswith('#'): on = word in line; continue
+        if on: out.append(line)
+    return '\n'.join(out)
+def mentioned(rid, text):
+    return re.search(re.escape(rid) + r'(?![A-Za-z0-9_-])', text) is not None
+def unused_rules(rules_path, excerpt_path, record_path, word):
+    """규칙 발췌의 규칙 중 조건표 source_section에도, 기록의 결정 절에도 이름이 없는 것. 옳고 그름은 판정하지 않는다."""
+    if not rules_path.is_file(): return []
+    with rules_path.open(encoding='utf-8-sig', newline='') as f: used = ' '.join(r.get('source_section') or '' for r in csv.DictReader(f))
+    if not used.strip(): return []
+    note = section_text(record_path, word)
+    return [rid for rid in excerpt_rules(excerpt_path) if not mentioned(rid, used) and not mentioned(rid, note)]
+def missing_kinds(path, column, kinds):
+    """kinds: [(종류 이름, [찾을 말…])]. 표의 column 칸 어디에서도 찾을 말이 없는 종류 이름. 표에 행이 없으면 빈 목록."""
+    if not path.is_file(): return []
+    head, seen = None, []
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if not line.startswith('|'): head = None; continue
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if head is None: head = cells; continue
+        if set(''.join(cells)) <= set('-: '): continue
+        idx = [k for k, h in enumerate(head) if h.startswith(column)]
+        if idx and idx[0] < len(cells) and any(cells): seen.append(cells[idx[0]])
+    text = ' '.join(seen)
+    if not text.strip(): return []
+    return [name for name, words in kinds if not any(w in text for w in words)]
+def expect_time(path):
+    """기대결과.md 머리의 「기대 칸을 쓴 시각」과 「실행 시각」 정보."""
+    if not path.is_file(): return []
+    text = path.read_text(encoding='utf-8-sig')
+    def when(label):
+        m = re.search(r'^- ' + label + r'[^:\n]*:[ \t]*(.*)$', text, re.M)
+        if not m or not m.group(1).strip(): return None, False
+        x = re.search(r'(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})', m.group(1))
+        return (f'{x.group(1)} {int(x.group(2)):02d}:{x.group(3)}' if x else None), True
+    e, e_filled = when('기대 칸을 쓴 시각'); r, _ = when('실행 시각')
+    if not e_filled: return ['기대결과.md 「기대 칸을 쓴 시각」이 비어 있습니다. 실행 전에 기대 칸을 쓰고 그 시각을 적으세요.']
+    if e and r and e > r: return [f'기대결과.md 기대 칸을 쓴 시각({e})이 실행 시각({r})보다 뒤입니다. 실행 출력을 보고 기대를 쓰지 않았는지 확인하세요.']
+    return []
+def notes(lines):
+    for line in lines: print('참고: ' + line)
 def report(parts):
     """parts: [(이름, 상태, 오류, 설명)]. 단계별 상태를 나눠 출력하고, 필수 단계가 모두 통과면 0."""
     ok = True
@@ -179,8 +236,15 @@ def is_old_empty(path):
         except ValueError:
             return False
         return not d.get('SOP') and not d.get('events') and not d.get('항목')
-    rows = [l for l in text.splitlines() if l.startswith('|') and not set(l) <= set('|-: ')]
-    return all(not ''.join(c.strip() for c in l.strip('|').split('|')[1:]) for l in rows[1:]) if rows else True
+    lines = text.splitlines()
+    data = []
+    for i, l in enumerate(lines):
+        if not l.startswith('|') or set(l.strip()) <= set('|-: '):
+            continue
+        header = i + 1 < len(lines) and lines[i + 1].startswith('|') and set(lines[i + 1].strip()) <= set('|-: ')
+        if not header:
+            data.append(l)
+    return all(not ''.join(c.strip() for c in l.strip().strip('|').split('|')) for l in data)
 
 
 DATA_INTRO = '''- 원자료(교육용 가상 자료, 수업용 시뮬레이터 로직으로 생성): `자료/경보_목록.csv`(쿨러 냉각 경보 사례 E01~E48, HYD-01~03), `자료/PLC_상태_수신.csv`(운전 모드·상태 수신), `자료/팬_운전_카운터.csv`(팬 100 % 연속 운전 분), `자료/예측_결과.csv`(후보별 조치 후 예측). 원천마다 주기·단위·값이 비는 이유가 다르며 `자료/수집_설명.md`에 적혀 있습니다.
@@ -195,6 +259,8 @@ from pathlib import Path
 import csv, json, sys
 root = Path(__file__).resolve().parent
 ''' + RULES_CHECK + r'''
+CASE_KINDS = [('정상', ['정상']), ('경계', ['경계']), ('복수 조건', ['복수']), ('모두 제외·유지 후보 없음', ['모두 제외', '유지 후보 없음', '추천 없음']),
+              ('값 없음', ['값 없음', '누락', '미확인']), ('적용 대상 밖', ['대상 밖']), ('결정에 따라 바뀌는 사례', ['결정', '갈래', '갈림'])]
 def rows(path):
     with path.open(encoding='utf-8-sig', newline='') as f: return list(csv.DictReader(f))
 sop_ids = [t['sop_id'] for t in rows(root/'자료/targets.csv')]
@@ -250,6 +316,10 @@ for name, column in [('사례대조.md', '판정'), ('요구사항.md', '정한 
     else: parts.append((name, '작성 중' if empty else '작성됨', [], f'행 {total}개 중 「{column}」 빈 칸 {empty}개' if empty else f'행 {total}개', False))
 print('구조 검사 결과')
 ok = report(parts)
+left = unused_rules(root/'결과/rules.csv', root/'자료/규칙_원문.txt', root/'결과/요구사항.md', '정한 결정')
+if left: notes([f'규칙 발췌의 규칙 중 rules.csv source_section에도, 요구사항.md 결정 표에도 이름이 없는 것: {", ".join(left)}. 옮기지 않기로 정했다면 그 이유를 결정 표에 적습니다.'])
+kinds = missing_kinds(root/'결과/사례대조.md', '사례 종류', CASE_KINDS)
+if kinds: notes([f'START.md 사례 종류 중 사례대조.md 「사례 종류」 칸에서 찾지 못한 것: {", ".join(kinds)} (다른 말로 적었다면 그대로 두어도 됩니다).'])
 print('구조 검사는 형식만 봅니다. 경계 포함 여부·적용 대상·출처가 원문과 맞는지는 결과/사례대조.md에서 원문·원자료와 별도로 대조하세요.')
 sys.exit(0 if ok else 1)
 '''
@@ -327,13 +397,25 @@ CRITERIA_START = '''# SOP 구조와 조치 결정표 만들기
 
 사례는 48건이라 눈으로 다 찾기 어렵습니다. 종류에 맞는 사례를 찾는 일은 AI에게 원자료 조회를 맡기고, 찾은 행을 직접 열어 확인합니다.
 
+## 학생이 정할 것
+
+원문만으로 하나로 정해지지 않아 학생이 원문을 읽고 정하는 지점입니다. 어느 규칙·절이 해당하는지는 탐색에서 직접 찾고, 정한 내용·근거·바뀌는 사례를 `결과/요구사항.md` 결정 표에 적습니다. AI는 이 지점을 정하기 전에 학생에게 묻습니다.
+
+- 규칙의 식(적용 대상 목록)과 설명 문장이 서로 다른 범위를 말하는 곳
+- 규칙 발췌와 HM-8이 같은 내용을 다르게 적은 곳, 시드의 스킬 ID와 이번 후보 SOP ID를 무엇을 근거로 잇는지
+- 규칙 발췌의 규칙 가운데 결정표에 옮기지 않을 규칙과 그 이유
+
+## 이번 범위 밖
+
+원문 자동 추출(인제스천) 프로그램, 경보 사례 48건 전체를 판정하는 프로그램과 비교 계산(다음 실습). 사례 대조는 고른 사례를 결정표에 손으로 대입합니다.
+
 ## 실행
 
 ```
 python check.py
 ```
 
-`check.py`는 sop.json·rules.csv의 형식과 기록 칸을 단계별로 보여 줍니다. 형식 통과는 원문과 맞는다는 뜻이 아닙니다.
+`check.py`는 sop.json·rules.csv의 형식과 기록 칸을 단계별로 보여 줍니다. 규칙 발췌의 규칙 중 결정표와 요구사항.md 어디에도 이름이 없는 규칙, 사례대조.md에 아직 없는 사례 종류도 「참고」로 알려 줍니다. 형식 통과는 원문과 맞는다는 뜻이 아닙니다.
 
 ## 완료 조건
 
@@ -341,6 +423,7 @@ python check.py
 - 결정표의 모든 행에서 원문 문장으로 돌아갈 수 있고, 규칙 발췌의 시드 출처와 HM-8 절을 구별했습니다.
 - SOP 네 개의 단계 순서·금지·승인이 원문과 같고, 원문에 없는 단계를 추가하지 않았습니다.
 - 요구사항.md에 사람이 정한 결정과 근거가, 사례대조.md에 사례 종류마다 원자료 확인·판정·근거가 있습니다.
+- 규칙 발췌의 규칙마다 결정표에 옮겼거나, 옮기지 않은 이유를 요구사항.md 결정 표에 적었습니다.
 
 ## 저장과 다음 실습
 
@@ -348,6 +431,8 @@ python check.py
 '''
 
 CASE_TEMPLATE = '''# 사례 대조
+
+> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.
 
 결정표를 손으로 대입한 판정입니다. 판단 입력은 원자료의 행(파일·시각)으로 확인해 적고, 근거에는 결정표의 rule_id와 원문 절을 적습니다.
 
@@ -365,6 +450,8 @@ CASE_TEMPLATE = '''# 사례 대조
 '''
 
 REQ_TEMPLATE = '''# 이번에 만들 결과
+
+> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.
 
 ## 목표
 
@@ -395,11 +482,11 @@ def build_criteria(data):
     write(folder/'결과/README.md', 'sop.json, rules.csv, 요구사항.md, 사례대조.md를 여기에 저장합니다.\n')
     force_template(folder/'결과/sop.json', json.dumps({'문서': {'id': 'HM-8', '파일': '자료/HM-8_매뉴얼.md'}, '고장유형': [], 'SOP': []}, ensure_ascii=False, indent=2)+'\n', ['"SOP"'])
     force_template(folder/'결과/rules.csv', 'rule_id,action,condition_index,logic,input,operator,value,unit,boundary_included,result,penalty_만원,reason,source_section\n', ['rule_id'])
-    force_template(folder/'결과/요구사항.md', REQ_TEMPLATE, ['이 결정으로 결과가 바뀌는 사례'])
-    force_template(folder/'결과/사례대조.md', CASE_TEMPLATE, ['사례별 추천(유지 후보 없음 사유)'])
+    force_template(folder/'결과/요구사항.md', REQ_TEMPLATE, ['이 결정으로 결과가 바뀌는 사례', '제공 빈 틀'])
+    force_template(folder/'결과/사례대조.md', CASE_TEMPLATE, ['사례별 추천(유지 후보 없음 사유)', '제공 빈 틀'])
     sections = [
         ('시작하기', '<p>VS Code에서 이 폴더를 열고 <a href="START.md">START.md</a>와 <a href="입출력_계약.md">입출력_계약.md</a>를 읽으세요.</p><pre>입력/   이전 단계 완성 설비 모델(schema.json, graph.json)\n자료/   HM-8 매뉴얼, 규칙 발췌, 작업기준, HI-01, 수집 설명, 대상·고장 유형\n        경보 사례 48건의 원자료 4종(경보 목록, PLC 상태, 팬 카운터, 예측 결과)\n결과/   이번에 만들 sop.json, rules.csv, 요구사항.md, 사례대조.md\ncheck.py   단계별 구조 검사</pre><p>원자료는 수업용 시뮬레이터 로직으로 만든 교육용 가상 자료입니다. 실제 공장처럼 원천마다 수집 주기·단위가 다르고 값이 비는 이유도 다릅니다.</p>'),
-        ('요구 정하기', '<p>먼저 AI에게 <b>파일을 바꾸지 말고</b> 자료/와 입력/을 읽어 SOP 네 개, 규칙 발췌, 원천 자료 네 개를 설명하게 하세요. 파일 이름은 백틱(`)으로 감싸 적습니다. 설명은 실제 파일과 대조합니다.</p><p>그다음 결과/요구사항.md에 자기 말로 적습니다.</p><ul><li>무엇을 만드는가: SOP 네 개의 구조와 판단 규칙의 결정표</li><li>어떤 자료를 쓰는가: HM-8 원문, 규칙 발췌, 작업기준</li><li>지킬 조건: 원문에 없는 단계·값을 만들지 않는다, 기존 모델 ID를 재사용한다, 자동 추출 프로그램은 만들지 않는다</li><li>확인할 사례: START.md의 사례 종류</li></ul><p class="check">이번 실습의 판단 지점: 규칙의 식과 설명 문장, 규칙 발췌와 HM-8이 서로 다른 범위를 말하는 곳이 있습니다. 그런 곳은 <b>AI가 아니라 사람이 원문을 읽고 정해</b> 근거와 함께 요구사항.md에 적고, 그 결정으로 결과가 바뀌는 사례도 찾아 적습니다.</p>'),
+        ('요구 정하기', '<p>먼저 AI에게 <b>파일을 바꾸지 말고</b> 자료/와 입력/을 읽어 SOP 네 개, 규칙 발췌, 원천 자료 네 개를 설명하게 하세요. 파일 이름은 백틱(`)으로 감싸 적습니다. 설명은 실제 파일과 대조합니다.</p><p>그다음 결과/요구사항.md에 자기 말로 적습니다.</p><ul><li>무엇을 만드는가: SOP 네 개의 구조와 판단 규칙의 결정표</li><li>어떤 자료를 쓰는가: HM-8 원문, 규칙 발췌, 작업기준</li><li>지킬 조건: 원문에 없는 단계·값을 만들지 않는다, 기존 모델 ID를 재사용한다, 자동 추출 프로그램은 만들지 않는다</li><li>확인할 사례: START.md의 사례 종류</li></ul><p class="check">이번 실습의 판단 지점: 규칙의 식과 설명 문장, 규칙 발췌와 HM-8이 서로 다른 범위를 말하는 곳이 있습니다. 그런 곳은 <b>AI가 아니라 사람이 원문을 읽고 정해</b> 근거와 함께 요구사항.md에 적고, 그 결정으로 결과가 바뀌는 사례도 찾아 적습니다.</p><p>AI가 이 지점을 질문 카드(Question 1 of 2, 선택지, 「(권장)」 표시, 직접 입력 칸)로 물을 수 있습니다. 「(권장)」은 AI의 추천일 뿐입니다. 선택지마다 결정표가 어떻게 달라지는지 묻고, 근거가 되는 원문 절(HM-8·규칙 발췌의 문장)을 직접 열어 확인한 뒤 고르거나 직접 적습니다.</p>'),
         ('AI와 만들기', '<p>먼저 만들 순서를 계획으로만 받아 검토하세요.</p><ol><li>SOP-COOL-11 하나의 구조를 먼저 만들고 원문 단계와 한 줄씩 대조합니다. <code>python check.py</code>로 sop.json 부분을 확인한 뒤 나머지 SOP로 넓힙니다.</li><li>결정표는 규칙 하나씩 만듭니다. 같은 규칙의 비교 두 개는 한 묶음으로 둡니다.</li><li>모든 항목과 행에 <b>원문 근거 칸(출처)</b>을 채우게 요구합니다. 근거를 못 대는 항목은 지우거나 미기재로 둡니다.</li></ol><p>AI가 완료를 알리면 실행한 명령과 출력 원문을 붙여 달라고 요청합니다.</p><details><summary>요청을 정리할 때 볼 항목</summary><p>만들 결과 / 참고할 자료 / 사람이 정한 결정 / 바꾸지 않을 범위 / 출처 칸 요구 / 성공을 확인할 사례</p></details>'),
         ('결과 확인하기', '<pre>python check.py</pre><p>sop.json과 rules.csv가 각각 통과인지, 기록 파일이 비어 있지 않은지 단계별로 나옵니다. 그다음 사례 종류마다 경보 사례를 골라 결과/사례대조.md를 채웁니다.</p><ul><li>판단 입력은 원자료의 행에서 직접 확인합니다. 값이 비면 왜 비었는지(수집_설명.md·HI-01)를 함께 적습니다.</li><li>경계값은 원문의 「이상·초과·미만」 그대로 판단합니다.</li><li>여러 규칙이 함께 맞으면 경고·감점·제외를 모두 남깁니다.</li><li>사례별 추천 표에는 유지 후보를, 없으면 그 사유를 적습니다.</li></ul><p class="check">결과가 예상과 다르면 결정표가 원문과 다른지, 손으로 대입한 예상이 틀렸는지 원문으로 돌아가 확인하세요. 고칠 때는 해당 항목, 원문 문장(기대), 지금 결과(실제)를 함께 AI에 전달하고 그 부분만 고치게 합니다.</p>'),
         ('저장하기', '<p>결과/sop.json, 결과/rules.csv, 결과/요구사항.md, 결과/사례대조.md를 저장하고 다시 열어 확인하세요. 보관할 결과는 재부팅 전에 USB 또는 개인 클라우드에 복사합니다.</p><p>다음 실습(판정 기능)은 완성된 조건표와 SOP 구조를 제공합니다.</p>')]
@@ -507,6 +594,8 @@ elif total == 0: parts.append(('기대결과.md', '아직 비어 있음', [], '�
 else: parts.append(('기대결과.md', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 「실제 결과」 빈 칸 {empty}개' + (' — 실행 뒤 실제 결과를 적어 대조하세요' if empty else ''), False))
 print('구조 검사 결과')
 ok = report(parts)
+kinds = missing_kinds(root/'결과/기대결과.md', '사례 종류', [('정상', ['정상']), ('경계', ['경계']), ('복수 조건', ['복수']), ('모두 제외·유지 후보 없음', ['모두 제외', '유지 후보 없음', '추천 없음']), ('값 없음', ['값 없음', '누락', '미확인']), ('결정에 따라 바뀌는 사례', ['결정', '갈래', '갈림'])])
+notes(([f'START.md 사례 종류 중 기대결과.md 「사례 종류」 칸에서 찾지 못한 것: {", ".join(kinds)} (다른 말로 적었다면 그대로 두어도 됩니다).'] if kinds else []) + expect_time(root/'결과/기대결과.md'))
 print('구조 검사는 형식과 계약의 불변식만 봅니다. 어떤 규칙이 맞아야 하는지와 금액은 원문·원자료·지표_정의.md 손계산과 별도로 대조하세요.')
 sys.exit(0 if ok else 1)
 '''
@@ -525,7 +614,7 @@ def judge_contract():
     return ('# 판정 기능의 입출력 계약\n\n이 문서는 입력과 결과의 형식·뜻만 정한다. 판정 원칙은 `자료/작업기준.md`·HM-8·HI-01, 원천 해석은 `자료/수집_설명.md`에 있다.\n\n'
             '## 입력\n\n- `입력/rules.csv`: 이전 단계 완성 조건표(형식은 아래). 규칙을 코드에 다시 적어 고정하지 않고 이 파일에서 읽는다. 형식이 계약과 다르면 파일·행을 밝혀 실패한다.\n- `입력/sop.json`: 이전 단계 완성 SOP 구조(적용 조건·금지 조건·수행 단계·완료 기준·승인·출처).\n- `자료/`의 원자료 네 개와 `자료/오더_현황.csv`, `자료/metrics/`(지표_정의.md·업무_값.json·후보_설정.csv).\n\n'
             + INPUT_CONTRACT + TABLE_CONTRACT.replace('## 결정표 형식 (rules.csv)', '## 조건표 형식 (입력/rules.csv)').split('형식 예시')[0] +
-            '\n## 교육용 비교\n\n비교 식은 `자료/metrics/지표_정의.md`를 그대로 쓴다. 비교 합계 = 비용 + 생산 + 품질 + 에너지 + 그 후보의 감점 합(만원, 작을수록 유리, 소수 둘째 자리). 같은 합계는 같은 순위다(예: 1, 1, 3). 이 합계는 교육용 비교값이며 HYD의 일곱 성분 정책 점수와 같은 것으로 설명하지 않는다.\n')
+            '\n## 교육용 비교\n\n비교 식은 `자료/metrics/지표_정의.md`를 그대로 쓴다. 비교 합계 = 비용 + 생산 + 품질 + 에너지 + 그 후보의 감점 합(만원, 작을수록 유리). 네 손실과 합계는 각각 원값으로 계산한 뒤 소수 둘째 자리로 반올림해 적는다. 합계는 반올림한 네 값을 더하지 않고 원값의 합을 반올림한다. 같은 합계는 같은 순위다(예: 1, 1, 3). 이 합계는 교육용 비교값이며 HYD의 일곱 성분 정책 점수와 같은 것으로 설명하지 않는다.\n')
 
 
 JUDGE_RESULT = '''
@@ -587,7 +676,7 @@ JUDGE_START = '''# 조건표를 읽는 조치 판정·비교 기능 만들기
 ## 작업 순서
 
 1. **탐색만 요청**: AI에게 파일을 바꾸지 말고 입력/·자료/·입출력_계약.md를 읽어 원천 네 개의 모양(주기·단위·빈 값), 조건표의 묶음 방식, 결과 형식을 설명하게 합니다. 설명을 실제 파일과 대조합니다.
-2. **기대 결과 먼저**: 코드를 만들기 전에 `결과/기대결과.md`에 아래 사례 종류마다 하나 이상, 원자료 행과 조건표·원문으로 손으로 구한 기대 판정과 근거를 적습니다. 원천 해석에서 정한 결정도 적습니다. 구현 출력을 복사해 기대값을 만들지 않습니다.
+2. **기대 결과 먼저**: 코드를 만들기 전에 `결과/기대결과.md`에 아래 사례 종류마다 하나 이상, 원자료 행과 조건표·원문으로 손으로 구한 기대 판정과 근거를 적습니다. 원천 해석에서 정한 결정도 적습니다. 다 쓰면 머리의 「기대 칸을 쓴 시각」을 적고 저장한 뒤 실행합니다. 구현 출력을 복사해 기대값을 만들지 않습니다.
 3. **요구 정리와 계획 검토**: 목표·입력·제약·확인 사례와 정한 결정을 자기 말로 AI에 전달하고 구현 계획만 먼저 받습니다.
 4. **작은 단위로 구현**: 판단 입력 만들기 → 판정 → 비교 → 저장 순서로 하나씩 만들고 실행합니다. 판단 입력은 몇 사례를 원자료 행과 직접 맞춰 본 뒤 다음으로 갑니다.
 5. **기대와 실제 대조**: 실행 결과를 기대결과.md의 기대 칸과 한 줄씩 대조합니다.
@@ -609,8 +698,19 @@ python check.py
 - 복수 조건: 경고·감점·제외가 함께 맞는 후보, 감점이 규칙당 한 번인지
 - 모두 제외 또는 유지 후보 없음
 - 값 없음: 원천에서 값이 비는 이유가 서로 다른 사례. 그 값이 필요한 후보만 영향을 받는지
-- 원천 해석에서 정한 결정에 따라 결과가 바뀌는 사례
+- 원천 해석에서 정한 결정에 따라 결과(감점·판정·추천)가 바뀌는 사례
 - 비교: 지표_정의.md의 손계산과 프로그램 결과
+
+## 학생이 정할 것
+
+수집 설명만으로 하나로 정해지지 않아 학생이 근거를 찾아 정하는 지점입니다. 탐색에서 직접 찾고, 정한 방법·근거·바뀌는 사례를 `결과/기대결과.md` 「판단 입력을 만드는 결정」 표에 적습니다. AI는 이 지점을 정하기 전에 학생에게 묻습니다.
+
+- 원천의 기록 방식이 두 가지로 읽히는 곳에서 판단 입력을 어떻게 만들지
+- 그 결정으로 감점·판정·추천이 바뀌는 사례
+
+## 이번 범위 밖
+
+조건표·SOP 구조의 수정(입력은 읽기만 합니다), 매뉴얼 원문 재검토(다음 회차), 실제 설비 조작과 실행 승인.
 
 ## 완료 조건
 
@@ -626,8 +726,11 @@ python check.py
 
 EXPECT_TEMPLATE = '''# 기대 결과와 실제 대조
 
+> 제공 빈 틀입니다. 보관하지 말고 바로 채웁니다.
+
 기대 칸은 프로그램을 실행하기 **전에** 원자료 행과 조건표(입력/rules.csv)·원문으로 손으로 구해 적습니다. 실제 칸은 실행 후에 적습니다. 실제 출력을 복사해 기대 칸을 채우지 않습니다.
 
+- 기대 칸을 쓴 시각(실행 전):
 - 실행한 명령:
 - 실행 시각:
 - 사용한 입력: 입력/rules.csv, 자료/ 원자료
@@ -660,7 +763,7 @@ def build_judge(data):
     write(folder/'입출력_계약.md', judge_contract() + JUDGE_RESULT)
     write(folder/'check.py', JUDGE_CHECK)
     write(folder/'결과/README.md', 'judge.py, result.json, 기대결과.md를 여기에 저장합니다.\n')
-    force_template(folder/'결과/기대결과.md', EXPECT_TEMPLATE, ['판단 입력을 만드는 결정'])
+    force_template(folder/'결과/기대결과.md', EXPECT_TEMPLATE, ['판단 입력을 만드는 결정', '기대 칸을 쓴 시각'])
     sections = [
         ('시작하기', '<p>VS Code에서 이 폴더를 열고 <a href="START.md">START.md</a>와 <a href="입출력_계약.md">입출력_계약.md</a>를 읽으세요.</p><pre>입력/   이전 단계 완성 조건표(rules.csv)와 SOP 구조(sop.json)\n자료/   경보 사례 48건의 원자료 4종, 오더 현황, 원문, 수집 설명\n        metrics/의 손실 식(지표_정의.md)과 값\n결과/   이번에 만들 judge.py, result.json, 기대결과.md\ncheck.py   단계별 구조 검사</pre><p>원자료는 수업용 시뮬레이터 로직으로 만든 교육용 가상 자료입니다. 판단 입력은 이미 정리된 표가 아니라 원천 네 곳에 흩어져 있고, 원천마다 주기·단위·빈 값의 이유가 다릅니다. 48건 × 후보 4개라 손으로 다 맞출 수 없으므로 코드로 처리하고 대표 사례를 직접 대조합니다.</p><p>먼저 AI에게 <b>파일을 바꾸지 말고</b> 원천 네 개의 모양을 설명하게 하고, 그 설명을 실제 파일과 대조하세요. 파일 이름은 백틱(`)으로 감싸 적습니다.</p>'),
         ('요구 정하기', '<p class="check">이번 실습의 판단 지점: <b>원천에서 판단 입력을 만드는 방법</b>을 원문과 수집 설명을 근거로 직접 정합니다. 수집 설명만으로 하나로 정해지지 않는 곳이 있으면 결정과 근거, 그 결정으로 결과가 바뀌는 사례를 기대결과.md에 적습니다.</p><p>그다음 기대 결과를 먼저 적습니다. 사례 종류마다 하나 이상, 원자료 행을 직접 열어 손으로 구한 판정과 근거를 적으세요. 프로그램 출력을 보고 기대 칸을 채우면 검증이 되지 않습니다.</p>'),
@@ -731,8 +834,25 @@ def check_review(jpath, mpath):
         opinion = item.get('검토_의견') or {}
         kept = [c for c in cands if c.get('판정') == '유지' and c.get('순위') is not None]
         top = sorted(c['sop'] for c in kept if c['순위'] == 1)
-        if sorted(opinion.get('추천') or []) != top: errs.append(f'{iid}: 추천은 순위 1위 유지 후보여야 합니다.')
-        if not opinion.get('사유'): errs.append(f'{iid}: 검토_의견.사유가 필요합니다(추천이 없으면 그 사유).')
+        top_total = min((c['비교값']['합계'] for c in kept if c['순위'] == 1 and isinstance(c.get('비교값'), dict) and num(c['비교값'].get('합계'))), default=None)
+        held = [c.get('sop') for c in cands if c.get('판정') == '보류']
+        impact = opinion.get('보류_영향')
+        possible = []
+        if not isinstance(impact, list): errs.append(f'{iid}: 검토_의견.보류_영향 목록이 필요합니다(보류 후보가 없으면 빈 목록).')
+        else:
+            if sorted(x.get('sop') for x in impact if isinstance(x, dict)) != sorted(held): errs.append(f'{iid}: 보류_영향에는 보류 후보 {held}가 하나씩 있어야 합니다.')
+            for x in impact:
+                if not isinstance(x, dict): errs.append(f'{iid}: 보류_영향 항목은 객체'); continue
+                total, can = x.get('잠정_합계'), x.get('1위_가능')
+                if total is not None and not num(total): errs.append(f'{iid} {x.get("sop")}: 잠정_합계는 숫자 또는 null')
+                if can not in (True, False, None): errs.append(f'{iid} {x.get("sop")}: 1위_가능은 true·false·null')
+                if not x.get('근거'): errs.append(f'{iid} {x.get("sop")}: 보류_영향.근거가 필요합니다.')
+                if num(total) and top_total is not None and can is not None and can != (total <= top_total): errs.append(f'{iid} {x.get("sop")}: 1위_가능({can})이 잠정_합계 {total}와 1위 합계 {top_total}의 비교와 다릅니다.')
+                if total is None and can is not None: errs.append(f'{iid} {x.get("sop")}: 잠정_합계를 계산하지 못했으면 1위_가능은 null입니다.')
+                if can is not False: possible.append(x.get('sop'))
+        rec = sorted(opinion.get('추천') or [])
+        if rec != top and not (rec == [] and top and possible): errs.append(f'{iid}: 추천은 순위 1위 유지 후보이거나, 1위가 될 수 있는 보류 후보가 있어 추천을 미룰 때만 빈 목록입니다.')
+        if not opinion.get('사유'): errs.append(f'{iid}: 검토_의견.사유가 필요합니다(추천이 없거나 미루면 그 사유).')
     return ('확인 필요' if errs else '통과'), errs, f'사례 {len(items)}건'
 state, errs, note = check_review(root/'결과/조치검토결과.json', root/'결과/조치검토결과.md')
 parts = [('review.py', '있음' if (root/'결과/review.py').is_file() else '없음', [], '', False), ('조치검토결과.json·.md', state, errs[:40] + ([f'… 외 {len(errs)-40}건'] if len(errs) > 40 else []), note, True)]
@@ -742,6 +862,8 @@ elif total == 0: parts.append(('기대결과.md', '아직 비어 있음', [], '�
 else: parts.append(('기대결과.md', '작성 중' if empty else '작성됨', [], f'행 {total}개 중 「실제 결과」 빈 칸 {empty}개' + (' — 실행 뒤 실제 결과를 적어 대조하세요' if empty else ''), False))
 print('구조 검사 결과')
 ok = report(parts)
+kinds = missing_kinds(root/'결과/기대결과.md', '사례 종류', [('경계', ['경계']), ('제외와 값 없음이 겹친 후보', ['겹', '제외+', '제외와']), ('모두 제외·유지 후보 없음', ['모두 제외', '유지 후보 없음', '추천 없음']), ('값 없음', ['값 없음', '누락', '미확인']), ('결정에 따라 바뀌는 사례', ['결정', '갈래', '갈림']), ('보류 후보가 1위가 될 수 있는 사례', ['1위', '보류 후보'])])
+notes(([f'START.md 사례 종류 중 기대결과.md 「사례 종류」 칸에서 찾지 못한 것: {", ".join(kinds)} (다른 말로 적었다면 그대로 두어도 됩니다).'] if kinds else []) + expect_time(root/'결과/기대결과.md'))
 print('구조 검사는 형식과 계약의 불변식만 봅니다. 판정·이유·출처가 원문·원자료와 맞는지와 금액은 별도로 대조하세요.')
 sys.exit(0 if ok else 1)
 '''
@@ -775,13 +897,14 @@ REVIEW_START = '''# 후보별 조치 검토 결과 만들기
 | 추가로 확인할 값 | 빠진 입력과 어디서 무엇을 확인하면 되는지. 유지 후보는 실행 전에 확인할 조건·완료 기준(sop.json) |
 | 비교값·순위 | 유지 후보만. 비용·생산·품질·에너지·감점·합계와 순위 |
 | 승인 | 실행 승인 역할과 출처, 비교 순위가 실행 승인이 아니라는 안내 |
+| 보류 후보의 영향 | 보류 후보마다 아는 값만으로 계산한 잠정 합계와, 빠진 값이 확인되면 1위가 될 수 있는지 |
 
-사례마다 검토 의견(추천 후보 또는 추천 없음과 그 이유, 보류 후보)을 남깁니다. 결과에는 교육용 비교값과 실제 HYD 성과 점수(일곱 성분)를 구분하는 문장을 넣습니다.
+사례마다 검토 의견(추천 후보 또는 추천 없음·추천을 미룬 이유, 보류 후보와 그 영향)을 남깁니다. 결과에는 교육용 비교값과 실제 HYD 성과 점수(일곱 성분)를 구분하는 문장을 넣습니다.
 
 ## 작업 순서
 
 1. **탐색만 요청**: AI에게 파일을 바꾸지 말고 입력/·자료/·입출력_계약.md를 읽어 원천 네 개의 모양, 이유·출처·승인·완료 기준을 어디서 얻는지 설명하게 합니다. 설명을 실제 파일과 대조합니다.
-2. **요구와 기대 정리**: 이 결과를 읽을 담당자가 결정하려면 무엇이 보여야 하는지 자기 말로 정리합니다. 판단 입력을 만드는 방법과 근거를 정하고, `결과/기대결과.md`에 아래 사례 종류마다 하나 이상 원자료 행으로 기대 판정·이유·추가로 확인할 값을 먼저 적습니다.
+2. **요구와 기대 정리**: 이 결과를 읽을 담당자가 결정하려면 무엇이 보여야 하는지 자기 말로 정리합니다. 판단 입력을 만드는 방법과 근거를 정하고, `결과/기대결과.md`에 아래 사례 종류마다 하나 이상 원자료 행으로 기대 판정·이유·추가로 확인할 값을 먼저 적습니다. 다 쓰면 머리의 「기대 칸을 쓴 시각」을 적고 저장한 뒤 실행합니다.
 3. **계획 검토**: 구현 계획만 먼저 받아 출력 계약의 항목이 모두 어디서 채워지는지 확인합니다. 원문에 없는 확인 항목을 만드는 계획은 고칩니다.
 4. **작은 단위로 구현**: 판단 입력 → 판정과 이유 → 비교 → 검토 결과 작성 순서로 하나씩 만들고 실행합니다.
 5. **출력 계약으로 품질 판정**: 조치검토결과.md를 담당자 입장에서 읽고 후보마다 계약 항목이 원문·원자료와 맞게 채워졌는지, 기대결과.md와 같은지 대조합니다.
@@ -803,7 +926,19 @@ python check.py
 - 모두 제외 또는 유지 후보가 없는 사례: 추천 없이 그 사유가 남는지
 - 값 없음: 원천에서 값이 비는 이유가 서로 다른 사례
 - 판단 입력을 만드는 결정에 따라 결과가 바뀌는 사례
+- 보류 후보가 빠진 값이 확인되면 1위가 될 수 있는 사례: 검토 의견이 내가 정한 방침대로 나오는지
 - 비교: 지표_정의.md 손계산과 같은지, 1위 후보의 승인 역할이 함께 보이는지
+
+## 학생이 정할 것
+
+원문·수집 설명만으로 하나로 정해지지 않아 학생이 근거를 찾아 정하는 지점입니다. 정한 내용·근거·바뀌는 사례를 `결과/기대결과.md` 「판단 입력을 만드는 결정」 표에 적습니다. AI는 이 지점을 정하기 전에 학생에게 묻습니다.
+
+- 원천의 기록 방식이 두 가지로 읽히는 곳에서 판단 입력을 어떻게 만들지
+- 보류 후보가 빠진 값이 확인되면 1위가 될 수 있을 때, 지금 1위 유지 후보를 승인 요청 대상으로 추천할지, 추천을 미루고 빠진 값 확인을 먼저 요청할지(근거를 원문에서 찾아 적습니다)
+
+## 이번 범위 밖
+
+조건표·SOP 구조의 수정(입력은 읽기만 합니다), 매뉴얼 원문 재검토와 근거 확장(다음 실습), 실제 조치 실행과 승인 요청 발송.
 
 ## 완료 조건
 
@@ -837,12 +972,15 @@ REVIEW_RESULT = '''
         "순위": 1 또는 null,
         "승인": {"역할": "...", "출처": "...", "안내": "비교 순위는 실행 승인이 아니다 ..."}}
      ],
-     "검토_의견": {"추천": ["1위 유지 후보"], "사유": "...", "보류": ["..."]}}
+     "검토_의견": {"추천": ["1위 유지 후보"] 또는 [], "사유": "...", "보류": ["..."],
+                 "보류_영향": [{"sop": "보류 후보", "잠정_합계": 숫자 또는 null, "1위_가능": true | false | null, "근거": "..."}]}}
   ]
 }
 ```
 
 - `항목`과 후보의 순서는 `자료/경보_목록.csv`와 같다. `이유`에는 맞은 규칙과 미확인 규칙만 둔다.
+- `보류_영향`에는 보류 후보마다 한 항목을 둔다(보류 후보가 없으면 빈 목록). `잠정_합계`는 그 후보를 아는 값만으로 비교 식에 넣은 합계다(미확인 규칙의 감점은 넣지 않는다). 비교 식에 필요한 값이 없으면 `null`이다. `1위_가능`은 `잠정_합계`가 지금 1위 유지 후보의 합계 이하이면 `true`, 크면 `false`, 계산하지 못했으면 `null`이다.
+- `추천`은 순위 1위 유지 후보다. 1위가 될 수 있는 보류 후보(`1위_가능`이 `false`가 아닌 후보)가 있어 추천을 미루기로 정했다면 빈 목록으로 두고, `사유`에 먼저 확인할 값을 적는다.
 - `추가_확인`에는 미확인 규칙의 빠진 입력 이름을 그대로 넣는다.
 - `결과/조치검토결과.md`는 같은 내용을 사례마다 절로 나눠 사람이 읽게 쓴다. 각 절 제목에 사례 id를 넣는다.
 '''
@@ -856,10 +994,10 @@ def build_review(data):
     write(folder/'입출력_계약.md', judge_contract().replace('# 판정 기능의 입출력 계약', '# 조치 검토 결과의 입출력 계약').replace('(`input_decisions`)', '(`입력_결정`)') + REVIEW_RESULT)
     write(folder/'check.py', REVIEW_CHECK)
     write(folder/'결과/README.md', 'review.py, 조치검토결과.json, 조치검토결과.md, 기대결과.md를 여기에 저장합니다.\n')
-    force_template(folder/'결과/기대결과.md', EXPECT_TEMPLATE.replace('| 기대 판정·이유 |', '| 기대 판정·이유·추가로 확인할 값 |'), ['판단 입력을 만드는 결정'])
+    force_template(folder/'결과/기대결과.md', EXPECT_TEMPLATE.replace('| 기대 판정·이유 |', '| 기대 판정·이유·추가로 확인할 값 |'), ['판단 입력을 만드는 결정', '기대 칸을 쓴 시각', '추가로 확인할 값'])
     sections = [
         ('시작하기', '<p>VS Code에서 이 폴더를 열고 <a href="START.md">START.md</a>와 <a href="입출력_계약.md">입출력_계약.md</a>를 읽으세요.</p><pre>입력/   지난 회차 완성 조건표(rules.csv)와 제공 SOP 구조(sop.json)\n자료/   경보 사례 48건의 원자료 4종, 오더 현황, 원문, 수집 설명\n        metrics/의 손실 식(지표_정의.md)과 값\n결과/   이번에 만들 review.py, 조치검토결과.json·.md, 기대결과.md\ncheck.py   단계별 구조 검사</pre><p>원자료는 수업용 시뮬레이터 로직으로 만든 교육용 가상 자료입니다. 48건 × 후보 4개의 판단 입력이 원천 네 곳에 흩어져 있어 코드로 처리하고 대표 사례를 직접 대조합니다.</p><p>먼저 AI에게 <b>파일을 바꾸지 말고</b> 원천의 모양과 이유·출처·승인·완료 기준을 어느 파일에서 얻는지 설명하게 하고, 그 설명을 실제 파일과 대조하세요. 파일 이름은 백틱(`)으로 감싸 적습니다.</p>'),
-        ('요구 정하기', '<p>이 결과를 읽을 사람은 조치 승인을 요청할 담당자입니다. 그 사람이 결정하려면 무엇이 보여야 하는지 먼저 정하세요.</p><ul><li>후보마다 판정과 그 이유가 실제 입력값과 함께 보이는가</li><li>이유마다 원문으로 돌아갈 출처가 있는가</li><li>보류·제외 후보에서 무엇을 어디서 더 확인하면 되는가</li><li>1위 후보도 누가 승인하고 실행 전에 무엇을 확인해야 하는가</li></ul><p class="check">이번 실습의 판단 지점: 판단 입력을 원천에서 만드는 방법을 근거로 정하고, 정한 방법에 따라 결과가 바뀌는 사례를 기대결과.md에 적습니다. 지난 회차에 정한 방법이 있으면 이어서 씁니다.</p><p>기대 판정·이유·추가로 확인할 값은 원자료 행으로 먼저 적습니다. 출력을 보고 기대를 채우지 않습니다.</p>'),
+        ('요구 정하기', '<p>이 결과를 읽을 사람은 조치 승인을 요청할 담당자입니다. 그 사람이 결정하려면 무엇이 보여야 하는지 먼저 정하세요.</p><ul><li>후보마다 판정과 그 이유가 실제 입력값과 함께 보이는가</li><li>이유마다 원문으로 돌아갈 출처가 있는가</li><li>보류·제외 후보에서 무엇을 어디서 더 확인하면 되는가</li><li>1위 후보도 누가 승인하고 실행 전에 무엇을 확인해야 하는가</li></ul><p class="check">이번 실습의 판단 지점: 판단 입력을 원천에서 만드는 방법을 근거로 정하고, 정한 방법에 따라 결과가 바뀌는 사례를 기대결과.md에 적습니다. 지난 회차에 정한 방법이 있으면 이어서 씁니다. 또 하나는 담당자 입장의 판단입니다. 보류 후보가 빠진 값만 확인되면 1위가 될 수 있을 때 지금 추천을 낼지, 확인을 먼저 요청할지 원문(HI-01·작업기준 4절)을 근거로 정합니다.</p><p>기대 판정·이유·추가로 확인할 값은 원자료 행으로 먼저 적습니다. 출력을 보고 기대를 채우지 않습니다.</p>'),
         ('AI와 만들기', '<p>구현 전에 계획만 받아, 출력 계약의 항목(판단 입력·판정·이유·원문 출처·추가로 확인할 값·비교값·승인)이 각각 어느 입력에서 채워지는지 확인하세요. 원문에 없는 확인 항목을 만드는 계획, 빈 값을 0이나 이전 값으로 채우는 계획은 고칩니다.</p><ol><li>판단 입력부터 만들고 기대결과.md의 사례와 원자료 행을 맞춰 봅니다.</li><li>판정과 이유를 붙이고 경계·값 없음 사례를 확인합니다.</li><li>비교를 붙이고 지표_정의.md 손계산과 대조합니다.</li><li>sop.json에서 승인 역할·실행 전 확인·완료 기준을 읽어 검토 결과에 붙입니다.</li></ol><p>AI가 완료를 알리면 실행한 명령과 출력 원문을 붙여 달라고 요청합니다.</p><details><summary>요청을 정리할 때 볼 항목</summary><p>만들 결과 / 참고할 자료 / 정한 결정 / 바꾸지 않을 범위 / 성공을 확인할 사례</p></details>'),
         ('결과 확인하기', '<pre>python 결과/review.py\npython check.py</pre><p>check.py는 review.py·조치검토결과·기대결과.md의 상태를 나눠 보여 줍니다. 구조 검사는 형식과 계약의 불변식만 봅니다. 내용은 다음 기준으로 원문·원자료와 대조하세요.</p><ul><li>판단 입력이 원자료 행(시각·단위 환산)과 같고, 값이 없으면 그 이유가 원천의 사정과 맞는지</li><li>경계값이 원문의 「이상·초과·미만」대로 판정되는지</li><li>제외와 값 없음이 겹친 후보에서 제외를 유지하면서 빠진 값이 추가 확인에 남는지</li><li>추천이 없는 사례에 그 사유가 남는지</li><li>1위 후보에도 승인 역할과 실행 전 확인 조건이 함께 보이고, 순위가 실행 승인이 아니라는 안내가 있는지</li></ul><p class="check">이번 실습의 판단 지점: <b>출력 계약으로 결과물의 품질을 판정합니다.</b> 조치검토결과.md만 읽고 후보마다 판정·이유·원문 출처·추가로 확인할 값·승인 구분이 있고, 원문 절까지 따라갈 수 있는지 확인하세요. 기대결과.md와 다르면 입력·기대·실제를 함께 주고 필요한 부분만 고친 뒤 이미 맞았던 사례를 다시 확인합니다.</p>'),
         ('저장하기', '<p>결과/review.py, 결과/조치검토결과.json, 결과/조치검토결과.md, 결과/기대결과.md를 저장하고 다시 열어 확인하세요. 보관할 결과는 재부팅 전에 USB 또는 개인 클라우드에 복사합니다.</p><p>비교 합계는 교육용 비교값입니다. 실제 HYD 성과 점수와 다르며 순위가 실행 승인을 뜻하지 않습니다.</p>')]
