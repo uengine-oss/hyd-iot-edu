@@ -47,7 +47,7 @@ description: "HYD 포털(HYD Lab) 화면 실습 영상을 클라우드 세션에
 
 - 영상 · 자막은 other-pc에만(main에 올리지 않는다), 커밋 전 `git fetch origin other-pc && git merge origin/other-pc`, 경로 지정 커밋, 올린 뒤 raw 링크 200 · 크기 일치. 이름 규칙 · 노션 블록 모양은 촬영준비 1절 10~11번.
 - 노션은 통합반 · 실전반 1회차 페이지(ID는 촬영준비 0절)에 같은 모양으로 넣고 다시 fetch해 확인한다.
-- 끝나면 촬영준비 0절 표, `course/videos/README.md`, `문서/교재/3_현황.md` · `6_남은_일.md`를 고친다. 새 함정은 촬영준비 4절에 한 줄로 더한다.
+- 끝나면 촬영준비 0절 표, `course/videos/README.md`를 고치고, 진행 기록은 로컬 `.evidence/기록/`에 남긴다. 새 함정은 촬영준비 4절에 한 줄로 더한다.
 
 ## 산출물과 미결
 

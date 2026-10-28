@@ -1,6 +1,0 @@
-resource_id,asset,window_id,on_hand,reserved,required,status,confirmed_by,updated_at,source_ref
-P-RTN-FLT,HYD-02,all,2,1,1,available,store,2026-10-19T14:30:00+09:00,D5 row filter
-oil,HYD-02,all,,,,pending,maintenance,2026-10-19T14:30:00+09:00,D5 row oil
-staff,HYD-02,day,,,,confirmed,maintenance_manager,2026-10-19T14:30:00+09:00,D5 row staff_day
-staff,HYD-02,night,,,,pending,maintenance_manager,2026-10-19T14:30:00+09:00,D5 row staff_night
-staff,HYD-02,next_night,,,,confirmed,maintenance_manager,2026-10-19T14:30:00+09:00,D5 row staff_next_night

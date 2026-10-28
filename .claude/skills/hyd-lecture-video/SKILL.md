@@ -96,4 +96,4 @@ python3 제작용/기존제작/tools/video/강의영상.py <출력 폴더> <대�
 - 영상, 음성, 자막과 시간표는 main에 올리지 않고 `other-pc` 브랜치에만 올린다(2_기준 76번). 장 그림은 다시 만들 수 있어 어디에도 올리지 않는다. 키는 환경변수 `ELEVENLABS_API_KEY`로만 받는다. `제작용/기존제작/tools/video/.gitignore`가 `음성_저장/` · `슬라이드/`를, `course/videos/.gitignore`가 영상 폴더의 파일을 막는다. 커밋 전에 `git status`로 다시 본다.
 - 출력 폴더는 `course/videos/<과정>/` 아래에 두거나 저장소 밖에 둔다.
 - `쉼_저장/`의 JSON은 글이므로 올린다. 다시 채우는 품을 덜기 위해서다.
-- 영상을 만들거나 고쳤으면 `course/videos/README.md`(있는 영상의 목록), `문서/교재/3_현황.md` 0절의 「강의 영상」 줄, `문서/교재/6_남은_일.md`를 고친다.
+- 영상을 만들거나 고쳤으면 `course/videos/README.md`(있는 영상의 목록)를 고치고, 진행 기록은 로컬 `.evidence/기록/`에 남긴다.
