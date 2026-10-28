@@ -1,10 +1,14 @@
 """`.vscode/mcp.json`에 적힌 서버를 하나씩 직접 띄워 연결해 보고, 서버가 내주는 도구 목록을 그대로 보여 준다.
 
-    python 도구/연결_점검.py                          적힌 서버 모두: 연결(initialize) → 도구 목록(tools/list)
-    python 도구/연결_점검.py time                     그 서버만
-    python 도구/연결_점검.py --호출 time get_current_time timezone=Asia/Seoul
-                                                      도구 하나를 직접 부르고(tools/call) 주고받은 메시지를 그대로 보여 준다
-    python 도구/연결_점검.py --호출 git git_status    인수가 없는 도구
+    python 코드/도구/연결_점검.py                          적힌 서버 모두: 연결(initialize) → 도구 목록(tools/list)
+    python 코드/도구/연결_점검.py time                     그 서버만
+    python 코드/도구/연결_점검.py --호출 time get_current_time timezone=Asia/Seoul
+                                                           도구 하나를 직접 부르고(tools/call) 주고받은 메시지를 그대로 보여 준다
+    python 코드/도구/연결_점검.py --호출 git git_status    인수가 없는 도구
+
+설정 파일은 랩 폴더(START.md가 있는 폴더, VS Code로 연 폴더)의 `.vscode/mcp.json`이다. `${workspaceFolder}`는 그 랩 폴더로 푼다.
+stdio 서버만 띄운다. http 서버(예: Notion)는 「확인 안 함」으로 적고 연결 성공으로도 실패로도 세지 않는다.
+그 서버는 VS Code 채팅의 도구 목록과 호출 기록으로 확인한다.
 
 AI를 거치지 않는다. 채팅에서 본 것이 서버가 실제로 돌려준 것과 같은지 견줄 때 쓴다.
 인수는 `이름=값`으로 적는다. 값이 숫자이면 숫자로 넘긴다.
@@ -19,7 +23,7 @@ import sys
 import threading
 from pathlib import Path
 
-작업_폴더 = Path(__file__).resolve().parent.parent
+작업_폴더 = Path(__file__).resolve().parents[2]  # 랩 폴더(코드/도구/연결_점검.py의 두 단계 위)
 설정_파일 = 작업_폴더 / ".vscode" / "mcp.json"
 기다림 = 15  # 초
 
@@ -51,7 +55,8 @@ class 연결:
             raise 연결_실패(f"서버를 띄우지 못했다: {e}")
         self.받은_것, self.서버_기록, self.번호 = queue.Queue(), [], 0
         threading.Thread(target=lambda: [self.받은_것.put(줄) for 줄 in self.p.stdout], daemon=True).start()
-        threading.Thread(target=lambda: [self.서버_기록.append(줄.decode("utf-8", "replace").rstrip()) for 줄 in self.p.stderr], daemon=True).start()
+        self.기록_읽기 = threading.Thread(target=lambda: [self.서버_기록.append(줄.decode("utf-8", "replace").rstrip()) for 줄 in self.p.stderr], daemon=True)
+        self.기록_읽기.start()
 
     def 요청(self, 방법: str, 값: dict | None = None) -> tuple[dict, dict]:
         self.번호 += 1
@@ -63,6 +68,8 @@ class 연결:
             raise 연결_실패("서버 응답을 JSON으로 읽지 못했다: " + str(e))
         except queue.Empty:
             끝 = self.p.poll()
+            if 끝 is not None:
+                self.기록_읽기.join(timeout=2)  # 꺼진 서버가 남긴 말을 마저 읽는다
             까닭 = f"서버가 꺼졌다(종료 코드 {끝})" if 끝 is not None else f"{기다림}초 안에 답이 없다"
             raise 연결_실패(까닭 + ("\n      서버가 남긴 말: " + " / ".join(self.서버_기록[-3:]) if self.서버_기록 else ""))
 
@@ -116,6 +123,9 @@ def 목록(서버들: dict, 고른_것: list) -> int:
         if 고른_것 and 이름 not in 고른_것:
             continue
         print(f"\n■ {이름}")
+        if 항목.get("type") == "http":
+            print(f"  확인 안 함: http 서버({항목.get('url')})는 이 프로그램이 띄우지 않는다. VS Code 채팅의 도구 목록과 호출 기록으로 확인한다.")
+            continue
         c = None
         try:
             c = 연결(이름, 항목)
@@ -184,7 +194,7 @@ def main() -> int:
     서버들 = 설정_읽기()
     if 인수들 and 인수들[0] == "--호출":
         if len(인수들) < 3:
-            sys.exit("쓰는 법: python 도구/연결_점검.py --호출 <서버> <도구> [이름=값 …]")
+            sys.exit("쓰는 법: python 코드/도구/연결_점검.py --호출 <서버> <도구> [이름=값 …]")
         return 호출(서버들, 인수들[1], 인수들[2], 인수들[3:])
     return 목록(서버들, 인수들)
 

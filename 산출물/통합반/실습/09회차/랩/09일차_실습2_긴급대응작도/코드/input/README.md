@@ -1,1 +1,1 @@
-대본에서 지정한 앞 실습 결과를 이곳에 복사하고 원본 위치와 판본을 적는다.
+실습1에서 저장한 `approval.bpmn`과 `element-map.md`를 여기에 복사합니다. 원본은 고치지 않고 `output/cooling.bpmn`으로 따로 저장합니다.
