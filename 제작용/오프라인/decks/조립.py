@@ -4,7 +4,8 @@ python3 제작용/오프라인/decks/조립.py 제작용/오프라인/decks/inte
 
 폴더의 구성.json(장 순서)과 새장.md(표지 · 학습목표 · 목차 · 간지 · 실습 연결 등 새로 쓴 장)로
 <폴더>/<이름>.md를 만든다. 온라인 장은 화면 내용을 그대로 옮기고, 그림 경로만 새 위치에 맞추며,
-노트의 [다음]을 새 순서의 다음 장 제목으로 바꾼다. 노트를 고칠 곳은 구성.json의 note_edits로만 바꾼다.
+노트의 [다음]은 다음 장이 온라인에서도 바로 다음 장일 때만 원 구절을 두고, 순서가 바뀐 곳은 구성.json의 next
+(새 장은 새장.md 노트의 [다음])에 적은 구절을 쓴다. 노트를 고칠 곳은 구성.json의 note_edits로만 바꾼다.
 간지 번호는 새 순서대로 다시 매긴다. 구성.json의 note_end(글머리 목록)는 마지막 장(정답과 판단 기준) 노트의
 [다음] 앞에 덧붙인다. 오프라인에는 대본이 없으므로 실습과 다음 회차로 잇는 말은 이 자리에만 둔다.
 """
@@ -30,9 +31,24 @@ def title_of(block):
     return re.match(r'## (?:SLIDE \d+|NEW \S+) — (.*)', block).group(1).strip()
 
 
-def short(title):
-    # [다음]에는 다음 장 제목의 앞부분(콜론 앞)만 쓴다. 노트 길이를 원 장과 비슷하게 둔다.
-    return title.replace(' / ', ' ').split(':')[0].strip()
+def next_phrase(i, items):
+    # [다음]은 다음 장으로 잇는 한 구절이다(기준_대본 S7-2). 다음 장이 온라인에서도 바로 다음 장이면 원 구절을 두고,
+    # 순서가 바뀐 곳은 구성.json의 next(새 장은 새장.md 노트의 [다음])에 적은 구절을 쓴다. 없으면 멈춘다.
+    x = items[i]
+    if i + 1 == len(items):
+        return '[다음] 실습으로'
+    if 'next' in x['it']:
+        return f"[다음] {x['it']['next']}"
+    own = re.search(r'\[다음\][^\n]*$', x['screen'], re.M)
+    if 'new' in x['it']:
+        if own:
+            return own.group(0)
+    else:
+        nx = items[i + 1].get('src')
+        if own and nx and nx == (x['src'][0], x['src'][1] + 1):
+            return own.group(0)
+    raise SystemExit(f"{i + 1}장 「{x['title']}」: 다음 장 「{items[i + 1]['title']}」으로 잇는 [다음] 구절이 없다 "
+                     f"(재사용 장은 구성.json의 next, 새 장은 새장.md 노트 끝의 [다음])")
 
 
 def main():
@@ -65,8 +81,10 @@ def main():
             screen = screen.replace(old, rep)
         edits = '; '.join(f'「{o}」→「{r}」' for o, r in it.get('note_edits', []))
         basis = f"[출처] 온라인 {COURSE[course]} {int(day[3:])}회차 {it['n']}장. 화면은 원 장 그대로" + \
-                (f", 노트 고침: {edits}" if edits else ", 노트는 [다음]만 새 순서로") + '.'
-        items.append(dict(title=title_of(b), screen=screen, layout=section(b, '화면 구성'), basis=basis, it=it))
+                (f", 노트 고침: {edits}" if edits else ", 노트는 원 장 그대로") + \
+                (f", [다음]은 새 순서의 구절 「{it['next']}」" if 'next' in it else '') + '.'
+        items.append(dict(title=title_of(b), screen=screen, layout=section(b, '화면 구성'), basis=basis, it=it,
+                          src=(src, it['n'])))
     assert not new, f'새장.md에 쓰이지 않은 장: {list(new)}'
     out = [f"# {spec['title']}\n\n{spec['intro']}\n"]
     sec = 0
@@ -75,7 +93,7 @@ def main():
         if re.search(r'^- 유형: 간지$', screen, re.M) and re.search(r'^- 번호: ', screen, re.M):
             sec += 1
             screen = re.sub(r'^- 번호: .*$', f'- 번호: {sec:02d}', screen, flags=re.M)
-        nxt = f"[다음] {short(items[i + 1]['title'])}" if i + 1 < len(items) else '[다음] 실습으로'
+        nxt = next_phrase(i, items)
         if i + 1 == len(items):
             assert x['title'] == '정답과 판단 기준', f"마지막 장이 정답과 판단 기준이 아님: {x['title']}"
             assert spec.get('note_end'), '구성.json에 note_end(실습 · 다음 회차 연결)가 없음'
