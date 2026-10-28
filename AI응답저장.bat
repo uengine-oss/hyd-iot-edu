@@ -1,5 +1,5 @@
 @echo off
-rem 강사 녹화 - 더블클릭. 온라인(키 없는) 학생이 받을 AI 단계 결과를 실제 AI로 한 바퀴 진행하며 저장한다(scripts\record_replay.sh).
+rem 강사 AI 응답 저장(영상 녹화 아님) - 더블클릭. 온라인(키 없는) 학생이 받을 AI 단계 결과를 실제 AI로 한 바퀴 진행하며 저장한다(scripts\record_replay.sh).
 chcp 65001 >nul
 cd /d "%~dp0"
 setlocal

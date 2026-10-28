@@ -5,7 +5,7 @@
 #      → 쿨러 복구 → 점검이 연 처리 건 정리(「조치 전 해소」로 스스로 닫힌다)
 #      시작.bat이 수업용 기본 지식(HM-8 · PM-02 · PR-07 검토본)을 넣으므로 「운전원 승인 대기」까지 간다. 기본 지식이 빠진 PC면 「판단 보류」로 멈춘다(그때는 시작.bat을 다시).
 #   3) 루트 .env를 우선 사용하고, 미설정이면 기존 실습 폴더 .env로 중계 연결을 확인한다.
-#      키 없는 온라인 PC(워커 ai_mode = replay)는 중계를 부르지 않으므로 건너뛴다 — AI 단계는 강사 녹화본 재생(문서/시스템/참조/재생모드.md).
+#      키 없는 온라인 PC(워커 ai_mode = replay)는 중계를 부르지 않으므로 건너뛴다 — AI 단계는 강사가 저장한 AI 응답 재생(문서/시스템/참조/재생모드.md).
 # 점검이 연 처리 건은 끝에 정리한다(복제 이미지에 열린 처리 건이 남지 않게). 데이터는 지우지 않는다.
 param([switch]$SkipLlm, [string]$LlmEnvFile)
 $ErrorActionPreference = 'Stop'
@@ -109,7 +109,7 @@ try {
         $approve = $v.workitems | Where-Object { $_.activity_id -eq 'T_approve' -and $_.status -eq 'IN_PROGRESS' }
         if ($approve) { '판단 완료 — 추천 카드가 나와 운전원 승인 대기(수업용 기본 지식으로 판단)' }
         elseif ($agent.status -eq 'PENDING' -and ($v.events | Where-Object { $_.event_type -eq 'task_deferred' })) { throw '판단이 보류됐습니다 — 수업용 기본 지식이 없는 것 같습니다. 시작.bat을 다시 실행하세요(7단계가 기본 지식을 넣습니다)' }
-        elseif ($agent.status -in @('FAILED', 'ERROR', 'CANCELLED')) { throw "AI 워커가 판단하지 못했습니다($($agent.status)): $("$($agent.log)".Trim()) — $(if ($worker.ai_mode -eq 'replay') { 'git pull로 강사 녹화본(it/agent-worker/replay)이 든 최신 판을 받았는지 확인하세요' } else { '.env의 LLM_API_KEY와 인터넷 연결을 확인하세요' })" }
+        elseif ($agent.status -in @('FAILED', 'ERROR', 'CANCELLED')) { throw "AI 워커가 판단하지 못했습니다($($agent.status)): $("$($agent.log)".Trim()) — $(if ($worker.ai_mode -eq 'replay') { 'git pull로 강사가 저장한 AI 응답(it/agent-worker/replay)이 든 최신 판을 받았는지 확인하세요' } else { '.env의 LLM_API_KEY와 인터넷 연결을 확인하세요' })" }
     }
     if (-not $outcome) { throw '처리 건이 7분 안에 판단 결과(보류 또는 승인 대기)에 닿지 않았습니다 — 포털 「처리 건」에서 판단 · 제안 단계의 기록을 확인하세요' }
     Record 'AI 판단 · 제안' $true $outcome

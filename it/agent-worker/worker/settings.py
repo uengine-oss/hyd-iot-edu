@@ -120,9 +120,9 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", os.getenv("PORT", "8097")))
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
-    # AI 응답 저장 · 재생(worker/ai_replay.py): auto(기본: API 키 · CLI 로그인이 없으면 replay) · live · record · replay
+    # AI 응답 저장 · 재생(worker/ai_replay.py): auto(API 키 · CLI 로그인이 없으면 replay) · live · record · replay
     # 기본 live: 교실 워커는 원본 키를 환경에 두지 않고 실행 때 받으므로 auto 는 키를 못 보고 replay 로 켜진다.
-    # 재생은 온라인 배포본이 AI_MODE=auto 또는 replay 를 명시할 때만 켠다.
+    # 컨테이너 워커는 시작 스크립트(start_all.sh)가 .env 의 LLM_API_KEY 로 정해 compose 가 넘긴다: 키 있음 live · 없음 replay · --record.
     ai_mode: str = os.getenv("AI_MODE", "live")
     ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
 

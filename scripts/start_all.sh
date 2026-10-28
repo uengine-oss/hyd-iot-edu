@@ -6,7 +6,7 @@
 # 오프라인 학생이 채우는 것은 .env의 LLM_API_KEY 한 줄이다(강의 중계 키). 포털의 AI 단계(판단 · 제안, 에이전트에게 질문)는
 # AI 워커 컨테이너가 이 키로 강의 중계를 부른다(AI_MODE=live).
 # 키가 비어 있으면(온라인 학생) AI 단계는 강사가 미리 실제 AI로 진행해 저장소에 올린 응답(it/agent-worker/replay/)을 재생한다(AI_MODE=replay).
-# 강사 녹화: bash scripts/start_all.sh --record (키 필요, AI_MODE=record) — 보통은 scripts/record_replay.sh(녹화.bat)가 부른다.
+# 강사 AI 응답 저장: bash scripts/start_all.sh --record (키 필요, AI_MODE=record) — 보통은 scripts/record_replay.sh(AI응답저장.bat)가 부른다.
 # 끌 때: bash scripts/stop_all.sh
 set -euo pipefail
 RECORD=0
@@ -63,8 +63,8 @@ case "$(env_get OPENAI_BASE_URL)" in ""|*api.openai.com*) set_env OPENAI_BASE_UR
 echo "ok (PROCESS_MODE=instance, ENTERPRISE_BACKEND=supabase, AGENT_BRIDGE=off, AI 워커 포함)"
 # AI 단계를 무엇으로 할지 정한다. 키는 이름만 본다(값을 화면에 내지 않는다)
 if [ "$RECORD" = 1 ]; then
-  [ -n "$(llm_key)" ] || die "녹화는 실제 AI로 진행합니다. .env의 LLM_API_KEY에 강의 중계 키를 넣고 다시 실행하세요."
-  AI_MODE_WANT=record; echo "AI 단계: 녹화(실제 AI로 진행하며 응답을 it/agent-worker/replay/ 에 저장)"
+  [ -n "$(llm_key)" ] || die "AI 응답 저장은 실제 AI로 진행합니다. .env의 LLM_API_KEY에 강의 중계 키를 넣고 다시 실행하세요."
+  AI_MODE_WANT=record; echo "AI 단계: 응답 저장(실제 AI로 진행하며 응답을 it/agent-worker/replay/ 에 저장)"
 elif [ -n "$(llm_key)" ]; then
   AI_MODE_WANT=live; echo "AI 단계: 실제 AI(강의 중계)"
 else
