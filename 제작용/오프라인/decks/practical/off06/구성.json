@@ -1,0 +1,103 @@
+{
+ "title": "질문 · 승인 · 명세와 기대 결과 이해하기",
+ "intro": "실전반 오프라인 6회차 첫 교시(이론 50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 46행의 범위로 온라인 실전반 5회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(47~49행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh practical 06`.",
+ "md": "실전반_오프라인_06회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day05",
+   "n": 6
+  },
+  {
+   "src": "practical/day05",
+   "n": 7
+  },
+  {
+   "src": "practical/day05",
+   "n": 9
+  },
+  {
+   "src": "practical/day05",
+   "n": 10
+  },
+  {
+   "src": "practical/day05",
+   "n": 11
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day05",
+   "n": 21
+  },
+  {
+   "src": "practical/day05",
+   "n": 22
+  },
+  {
+   "src": "practical/day05",
+   "n": 24
+  },
+  {
+   "src": "practical/day05",
+   "n": 29
+  },
+  {
+   "src": "practical/day05",
+   "n": 31
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day05",
+   "n": 41
+  },
+  {
+   "src": "practical/day05",
+   "n": 42
+  },
+  {
+   "src": "practical/day05",
+   "n": 43
+  },
+  {
+   "src": "practical/day05",
+   "n": 44
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day05",
+   "n": 47
+  },
+  {
+   "src": "practical/day05",
+   "n": 48
+  },
+  {
+   "src": "practical/day05",
+   "n": 49
+  },
+  {
+   "src": "practical/day05",
+   "n": 51
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
