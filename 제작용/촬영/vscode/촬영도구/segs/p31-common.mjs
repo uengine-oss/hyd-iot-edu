@@ -27,6 +27,14 @@ export function portal(ctx, c) {
  p.hover = async (q, at) => { const r = await p.show(q, at); await c.move(r.x, r.y); return r; };
  p.click = async (q, at) => { const r = await p.hover(q, at); await c.gate(); await ctx.serial(() => ctx.p.mouse.click(r.x, r.y)); await ctx.sleep(150); };
  p.top = () => c.scrollTo('main#content', 0);
+ // 왼쪽 메뉴(aside#navigation)는 따로 굴러간다. 메뉴 단추가 메뉴 영역 밖이면 메뉴를 굴린 뒤 누른다(지식 관리 · 에이전트 등 아래쪽 메뉴).
+ p.menu = async (tab) => {
+  const sel = `button[data-tab=${tab}]`;
+  const r = await ctx.serial(() => ctx.p.evaluate((sel) => { const b = document.querySelector(sel), a = document.querySelector('aside#navigation'); if (!b || !a) return { error: `menu ${sel} 없음` }; const br = b.getBoundingClientRect(), ar = a.getBoundingClientRect(); return { inView: br.top >= ar.top + 8 && br.bottom <= ar.bottom - 8, top: a.scrollTop + br.top - ar.top - a.clientHeight * 0.5 }; }, sel));
+  if (r.error) throw Error(r.error);
+  if (!r.inView) await c.scrollTo('aside#navigation', Math.max(0, r.top));
+  await c.clickSel(sel);
+ };
  p.loaded = (n = 4) => ctx.waitFor(new Function(`return !!document.querySelector('[data-wi-tab]') && document.querySelectorAll('.stack-list > section.card').length>=${n} && !document.querySelector('#wiLoad')?.disabled`), 120000);
  p.free = free;
  return p;
