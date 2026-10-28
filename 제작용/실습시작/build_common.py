@@ -49,7 +49,7 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
             if (folder/'images/map-01-search.jpg').exists():
                 # 가이드 그림 = 강사 촬영 영상의 실제 포털 화면(2026-10-28 녹화 i22-2·3 장면 끝 프레임).
                 def shot(name,caption):return f'<figure><a href="images/{name}.jpg" target="_blank"><img src="images/{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
-                sections=[('기록 틀 준비하기','<p>실습 시작 도구가 연 VS Code에서 왼쪽 탐색기(Explorer)의 <code>탐색_기록.md</code>를 마우스 오른쪽 버튼으로 누르고 Copy, <code>결과</code> 폴더를 오른쪽 버튼으로 누르고 Paste를 고릅니다.</p><p class="check">결과 폴더 안에 사본이 생깁니다. 원래 틀은 그대로 두고 사본을 열어 기록합니다.</p>'),
+                sections=[('기록 틀 준비하기','<p>실습 시작 도구가 연 VS Code에서 왼쪽 탐색기(Explorer)의 <code>탐색_기록.md</code>를 마우스 오른쪽 버튼으로 누르고 Copy, <code>결과</code> 폴더를 오른쪽 버튼으로 누르고 Paste를 고릅니다.</p>'+(shot('vs-01-paste','결과 폴더에서 오른쪽 버튼 → Paste') if (folder/'images/vs-01-paste.jpg').exists() else '')+'<p class="check">결과 폴더 안에 사본이 생깁니다. 원래 틀은 그대로 두고 사본을 열어 기록합니다.</p>'+(shot('vs-02-copy','결과/탐색_기록.md 사본을 연 화면(빈 기록 틀)') if (folder/'images/vs-02-copy.jpg').exists() else '')),
                  ('지식 지도에서 오일 쿨러 찾기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a> → 왼쪽 메뉴 지식 묶음의 「지식 지도」를 누릅니다. 설비 칸이 HYD-01인지 확인하고 검색 칸에 <code>오일 쿨러</code>를 입력한 뒤 노랗게 표시된 오일 쿨러를 누릅니다.</p>'+shot('map-01-search','검색 「오일 쿨러」 뒤 노랗게 표시된 대상')),
                  ('클래스 · 별칭 · 관계 방향 읽기','<p>상세 칸은 지도 <b>아래</b>에 나옵니다. 맨 위 작은 글자가 클래스(종류), <code>aliases</code>는 별칭입니다. 나가는 관계(→)는 이 대상에서 출발하고, 들어오는 관계(←)는 다른 대상에서 이 대상으로 들어옵니다.</p>'+shot('map-02-cooler','오일 쿨러 상세: 관측 센서 · 교체 부품 · 소속 설비')+'<p class="check">관계는 시작 → 끝을 화살표 방향 그대로 적습니다. 상세 칸에는 대상의 ID가 표시되지 않습니다 — ID 칸은 「화면에서 미확인」으로 두고 클래스와 이름으로 구별합니다.</p>'),
                  ('같은 이름, 다른 대상','<p>나가는 관계의 유온 센서를 눌러 클래스와 속성(tag, unit, virtual)을 보고, 다시 「읽는 상태 변수」를 눌러 상태 변수의 속성(aliases, normal, limit)을 봅니다.</p>'+shot('map-03-sensor','센서: tag TS1')+shot('map-04-statevar','상태 변수: 별칭 TS1 · 한계 65')+'<p class="check">이름 TS1이 두 곳에 보여도 클래스가 다르면 다른 대상입니다. 센서는 재는 장치, 상태 변수는 재는 값의 종류입니다.</p>'),
@@ -133,7 +133,7 @@ Docker를 실행하고 VS Code 터미널에서 `python prepare_example.py`를 �
         write(folder/'START.md',f'# {title}\n\n{steps}\n\n작성한 결과를 다시 열어 확인하고 재부팅 전에 보관할 파일을 USB 또는 개인 클라우드로 복사합니다.\n')
         for file in ['guide.html','안내.html']:write(folder/file,page(title,'연결된 대상을 확인하고, 결과의 근거를 원자료와 대조합니다.',sections))
         archive=pack(folder)
-        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':'2026-10-27-common-graph-v8' if number==1 else ('2026-10-28-map-v3-vscode-screens' if course=='실전반' else '2026-10-28-map-v2-screens'),'folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+        catalog['labs'].append({'id':f'{slug}-02-{kind}','course':course,'session':'온라인 02회차','title':title,'version':'2026-10-27-common-graph-v8' if number==1 else '2026-10-28-map-v3-vscode-screens','folder':'02회차/랩/'+name,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('두 과정 조회 가이드·독립 시작본과 포털 탐색 연결')

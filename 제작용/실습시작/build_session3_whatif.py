@@ -65,7 +65,7 @@ for course,slug in [('통합반','integrated'),('실전반','practical')]:
         # 가이드 그림 = 강사 촬영 영상의 실제 포털 화면(2026-10-28 녹화 p31-2·3·4 장면 끝 프레임, 두 반 같은 화면).
         if not (folder/'images'/f'{name}.jpg').is_file():raise FileNotFoundError(f'가이드 그림 없음: {folder}/images/{name}.jpg')
         return f'<figure><a href="images/{name}.jpg" target="_blank"><img src="images/{name}.jpg" alt="{caption}"></a><figcaption>{caption} · 누르면 크게 보기</figcaption></figure>'
-    # VS Code 그림 = 강사 촬영 영상 구간 1(실전 p31-1 · 통합 i31-1)의 실제 화면. 아직 녹화하지 않은 반은 글만 둔다.
+    # VS Code 그림 = 강사 촬영 영상 구간 1(실전 p31-1 · 통합 i31-1)의 실제 화면. 그림이 없는 반은 글만 둔다.
     def vs_shot(name,caption):return shot(name,caption) if (folder/'images'/f'{name}.jpg').is_file() else ''
     sections=[('기록 틀 준비하기','<p>실습 시작 도구가 연 VS Code에서 왼쪽 탐색기(Explorer)의 <code>비교_기록.md</code>를 마우스 오른쪽 버튼으로 누르고 Copy를 고릅니다. 이어서 <code>결과</code> 폴더를 오른쪽 버튼으로 누르고 Paste를 고릅니다.</p>'+vs_shot('vs-01-paste','결과 폴더에서 오른쪽 버튼 → Paste')+'<p class="check">결과 폴더 안에 <code>비교_기록.md</code> 사본이 생깁니다. 원래 틀은 그대로 두고 사본을 열어 기록합니다. 표는 기준 결과 · 한 항목씩 바꾼 시험 · '+('순위와 선택 가능 여부 · ' if practical else '')+'목표와 집계 순서입니다.</p>'+vs_shot('vs-02-copy','결과/비교_기록.md 사본을 연 화면(빈 기록 틀)')),
               ('조건별 손익 열기','<p><a href="http://127.0.0.1:8088" target="_blank" rel="noopener">학교 PC의 HYD 포털 열기</a></p><p>왼쪽 메뉴의 판단 묶음에서 <b>조건별 손익</b>을 누르고 설비와 이상 패턴을 고른 뒤 <b>불러오기</b>를 누르세요. 비교_기록.md에 포털 주소와 확인 시각을 적습니다.</p><p class="check">맨 위 요약에 판단 1순위와 손익 1순위가 나옵니다. 「근거 조회가 불완전」이 나오면 포털이 막 켜져 데이터가 덜 쌓인 것이니 몇 분 뒤 다시 불러옵니다.</p>'+shot('wi-01-summary','요약: 판단 1순위와 손익 1순위')),
@@ -77,7 +77,7 @@ for course,slug in [('통합반','integrated'),('실전반','practical')]:
     archive=pack(folder)
     lab_id=f'{slug}-03-whatif'
     catalog['labs']=[x for x in catalog['labs'] if x['id']!=lab_id]
-    catalog['labs'].append({'id':lab_id,'course':course,'session':'온라인 03회차','title':TITLE,'version':'2026-10-28-s3-whatif-v4-vscode-screens' if practical else '2026-10-28-s3-whatif-v3-record-step','folder':'03회차/랩/'+NAME,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
+    catalog['labs'].append({'id':lab_id,'course':course,'session':'온라인 03회차','title':TITLE,'version':'2026-10-28-s3-whatif-v4-vscode-screens','folder':'03회차/랩/'+NAME,'path':archive.relative_to(ROOT).as_posix(),'sha256':hashlib.sha256(archive.read_bytes()).hexdigest()})
 catalog['labs'].sort(key=lambda x:(x['course'],x['session'],x['folder']))
 dump(HERE/'package-index.json',catalog)
 print('온라인3 조건별 손익 기록 랩 두 과정 생성')
