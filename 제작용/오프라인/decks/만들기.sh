@@ -16,6 +16,6 @@ python3 제작용/오프라인/decks/대조.py "$md" "$pptx" | tail -1
 if [ -n "$out" ]; then
   rm -rf "$out"; mkdir -p "$out"
   timeout 300 soffice --headless --convert-to pdf --outdir "$out" "$pptx" >/dev/null 2>&1
-  python3 제작용/기존제작/tools/deck/글겹침.py "$out/$(basename "${pptx%.pptx}").pdf" | tail -3
+  python3 제작용/기존제작/tools/deck/글겹침.py "$out/$(basename "${pptx%.pptx}").pdf" | tail -3 || true
   pdftoppm -r 50 -png "$out/$(basename "${pptx%.pptx}").pdf" "$out/p"
 fi
