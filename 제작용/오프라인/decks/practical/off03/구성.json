@@ -1,0 +1,91 @@
+{
+ "title": "문서 추출 · 검토 · 출처 재사용 이해하기",
+ "intro": "실전반 오프라인 3회차 첫 교시(이론 50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 22행의 범위로 온라인 실전반 3회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(23~25행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh practical 03`.",
+ "md": "실전반_오프라인_03회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day03",
+   "n": 25
+  },
+  {
+   "src": "practical/day03",
+   "n": 26
+  },
+  {
+   "src": "practical/day03",
+   "n": 27
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day03",
+   "n": 28
+  },
+  {
+   "src": "practical/day03",
+   "n": 30
+  },
+  {
+   "src": "practical/day03",
+   "n": 31
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day03",
+   "n": 33
+  },
+  {
+   "src": "practical/day03",
+   "n": 34
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day03",
+   "n": 36
+  },
+  {
+   "src": "practical/day03",
+   "n": 37
+  },
+  {
+   "src": "practical/day03",
+   "n": 38
+  },
+  {
+   "src": "practical/day03",
+   "n": 39
+  },
+  {
+   "src": "practical/day03",
+   "n": 40
+  },
+  {
+   "src": "practical/day03",
+   "n": 41
+  },
+  {
+   "src": "practical/day03",
+   "n": 53
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
