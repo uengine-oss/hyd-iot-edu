@@ -1,0 +1,135 @@
+{
+ "title": "질문 · 승인 · 명세 · 행동 검증 이해하기",
+ "intro": "통합반 오프라인 7회차 첫 교시(이론 50분) 덱. 실라버스 「통합반 오프라인 정규 10회」 54행의 범위로 온라인 통합반 7 · 8회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(55~57행)은 핸즈온 가이드가 맡는다. 조립: `bash 제작용/오프라인/decks/만들기.sh integrated 07`.",
+ "md": "통합반_오프라인_07회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "integrated/day07",
+   "n": 6
+  },
+  {
+   "src": "integrated/day07",
+   "n": 8
+  },
+  {
+   "src": "integrated/day07",
+   "n": 10
+  },
+  {
+   "src": "integrated/day07",
+   "n": 11
+  },
+  {
+   "src": "integrated/day07",
+   "n": 13
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "integrated/day07",
+   "n": 27
+  },
+  {
+   "src": "integrated/day07",
+   "n": 29
+  },
+  {
+   "src": "integrated/day07",
+   "n": 31
+  },
+  {
+   "src": "integrated/day07",
+   "n": 33,
+   "note_edits": [
+    [
+     "· 계약 · 금지 조건 · 수용 기준은 뒤에서 하나씩",
+     "· 수용 기준은 뒤에서 따로, 계약 · 금지 조건은 명세 예시에서"
+    ],
+    [
+     "마지막 실습에서 고칠 파일도 이 이름",
+     "3교시 실습에서 쓸 파일도 이 이름"
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day07",
+   "n": 35
+  },
+  {
+   "src": "integrated/day07",
+   "n": 42
+  },
+  {
+   "src": "integrated/day07",
+   "n": 43
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "integrated/day08",
+   "n": 7
+  },
+  {
+   "src": "integrated/day08",
+   "n": 8
+  },
+  {
+   "src": "integrated/day08",
+   "n": 9,
+   "note_edits": [
+    [
+     ". 이어서 HYD의 파이썬 시험에서 같은 구조가 어떻게 이어지는지 본다",
+     ""
+    ]
+   ]
+  },
+  {
+   "src": "integrated/day08",
+   "n": 10
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "integrated/day07",
+   "n": 46
+  },
+  {
+   "src": "integrated/day07",
+   "n": 49
+  },
+  {
+   "src": "integrated/day08",
+   "n": 18
+  },
+  {
+   "src": "integrated/day08",
+   "n": 19
+  },
+  {
+   "src": "integrated/day08",
+   "n": 22
+  },
+  {
+   "src": "integrated/day08",
+   "n": 26
+  },
+  {
+   "new": "practice"
+  }
+ ]
+}
