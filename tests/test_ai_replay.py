@@ -730,3 +730,11 @@ def test_continuation_does_not_run_into_the_next_turn(tmp_path):
     assert lib.find(ask(1))[1] == 3                                    # 다음 실행은 재평가 차례 → 없음(실행 수)
     fresh = SimpleNamespace(prompt="## 업무\n원인 진단\n", workdir=str(tmp_path), resume_session=None)
     assert lib.find(fresh, (0, 1))[1] == 2 and lib.find(fresh, (0, 2))[1] == 3 and lib.find(fresh, (0, 0))[1] == 0
+
+
+def test_worker_default_mode_is_live_without_ai_mode_env(monkeypatch):
+    """교실 워커는 원본 키를 환경에 두지 않는다. AI_MODE 를 안 주면 재생이 아니라 실제 AI로 켜져야 한다(2026-10-28 회귀)."""
+    import importlib
+    monkeypatch.delenv("AI_MODE", raising=False)
+    import worker.settings as ws
+    assert importlib.reload(ws).Settings().ai_mode == "live"

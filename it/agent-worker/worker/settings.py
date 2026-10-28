@@ -121,7 +121,9 @@ class Settings:
     cancel_check_every_s: float = 2.0
     lease_renew_every_s: float = float(os.getenv("LEASE_RENEW_EVERY_S", "30"))     # A097: agent-sdk lease.py renews a 120 s lease every 30 s
     # AI 응답 저장 · 재생(worker/ai_replay.py): auto(기본: API 키 · CLI 로그인이 없으면 replay) · live · record · replay
-    ai_mode: str = os.getenv("AI_MODE", "auto")
+    # 기본 live: 교실 워커는 원본 키를 환경에 두지 않고 실행 때 받으므로 auto 는 키를 못 보고 replay 로 켜진다.
+    # 재생은 온라인 배포본이 AI_MODE=auto 또는 replay 를 명시할 때만 켠다.
+    ai_mode: str = os.getenv("AI_MODE", "live")
     ai_replay_dir: Path = Path(os.getenv("AI_REPLAY_DIR", str(Path(__file__).resolve().parents[1] / "replay")))
 
 
