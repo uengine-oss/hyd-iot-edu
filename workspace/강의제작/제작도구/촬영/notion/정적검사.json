@@ -1,0 +1,27 @@
+{
+  "source_video": ".evidence/notion-rhythm-20261023/Notion_학습노트_v11",
+  "video_seconds": 2518.476,
+  "cues": 489,
+  "sections": 15,
+  "titles_from": "workspace/강의제작/제작도구/촬영/notion/수업원고.md",
+  "courses": [
+    {
+      "course": "통합반",
+      "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
+      "zip_files": 15,
+      "script_sha256": "9f3dd224023a541fdbc17e96d1ba14e20194b8af16aa43c7016b0374bad8f2c0",
+      "zip_sha256": "88607a3aedc11a9767f9f7a7613aba9baa8af394fed01255ffff2b58afbbc47d",
+      "zip_bytes_match": true,
+      "local_links_exist": true
+    },
+    {
+      "course": "실전반",
+      "zip_prefix": "01회차/랩/01일차_실습1_학습노트/",
+      "zip_files": 15,
+      "script_sha256": "696b8d83a54dc647d8db9e31e376106dd318fdfbeb90a80eaa616328c9092fcc",
+      "zip_sha256": "15dbece83e926f08713b583fd10c7a9c9627f6b632c1782f733e822fa259b5cc",
+      "zip_bytes_match": true,
+      "local_links_exist": true
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "alertId": "EDU-S08-E01",
+    "asset": "HYD-01",
+    "pattern": "COOLER_DEGRADATION",
+    "severity": "HIGH",
+    "state": "RAISE",
+    "t": "2026-10-18T09:00:00+09:00",
+    "evidence": {
+      "values": {
+        "TS1": 55.71,
+        "CE": 46.2
+      }
+    }
+  }
+]

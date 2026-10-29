@@ -1,0 +1,188 @@
+{
+ "title": "BPMN 역할 · 분기 · 지연 · 실행 연결 이해하기",
+ "intro": "실전반 오프라인 7회차 이론(50분) 덱. 실라버스 「실전반 오프라인 정규 9회」 54행의 범위로 온라인 실전반 6회차 덱의 장을 다시 묶었다. 온라인 장의 화면은 그대로 쓰고 노트는 [다음]과 표시한 연결 말만 새 순서에 맞췄다. 실습(55~57행)은 핸즈온 가이드가 맡는다. 조립: `bash workspace/강의제작/제작도구/오프라인/decks/만들기.sh practical 07`.",
+ "md": "실전반_오프라인_07회차.md",
+ "slides": [
+  {
+   "new": "cover"
+  },
+  {
+   "new": "goals"
+  },
+  {
+   "new": "toc"
+  },
+  {
+   "new": "s1"
+  },
+  {
+   "src": "practical/day06",
+   "n": 5,
+   "note_edits": [
+    [
+     "팬 최대 운전 추천(앞 회차까지)",
+     "팬 최대 운전 추천(에이전트가 맡은 부분)"
+    ],
+    [
+     "· 셋째 줄부터 이번 회차:",
+     "· 셋째 줄부터 승인 뒤 흐름:"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day06",
+   "n": 6
+  },
+  {
+   "src": "practical/day06",
+   "n": 7
+  },
+  {
+   "src": "practical/day06",
+   "n": 8
+  },
+  {
+   "src": "practical/day06",
+   "n": 9
+  },
+  {
+   "src": "practical/day06",
+   "n": 16,
+   "note_edits": [
+    [
+     "(단원 끝에서)",
+     "(뒤의 연결 값에서)"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day06",
+   "n": 17
+  },
+  {
+   "new": "s2"
+  },
+  {
+   "src": "practical/day06",
+   "n": 18
+  },
+  {
+   "src": "practical/day06",
+   "n": 12
+  },
+  {
+   "src": "practical/day06",
+   "n": 19,
+   "note_edits": [
+    [
+     " / · 실습에서 내 작업마다 대응 실행 기능을 표시하는 일이 이것",
+     ""
+    ]
+   ]
+  },
+  {
+   "src": "practical/day06",
+   "n": 20
+  },
+  {
+   "src": "practical/day06",
+   "n": 21
+  },
+  {
+   "new": "s3"
+  },
+  {
+   "src": "practical/day06",
+   "n": 23,
+   "note_edits": [
+    [
+     "· 긴급 대응 · 실습은 풀 하나에 레인으로",
+     "· 긴급 대응은 풀 하나에 레인으로"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day06",
+   "n": 24
+  },
+  {
+   "src": "practical/day06",
+   "n": 25
+  },
+  {
+   "src": "practical/day06",
+   "n": 26,
+   "note_edits": [
+    [
+     "· 실습 그림 검사의 점검표, 학생은 포털에 그림을 직접 등록하지 않는다",
+     "· 그림을 실행 정의로 가져오기 전에 보는 점검표"
+    ]
+   ]
+  },
+  {
+   "src": "practical/day06",
+   "n": 27
+  },
+  {
+   "new": "s4"
+  },
+  {
+   "src": "practical/day06",
+   "n": 29
+  },
+  {
+   "src": "practical/day06",
+   "n": 33
+  },
+  {
+   "src": "practical/day06",
+   "n": 31
+  },
+  {
+   "src": "practical/day06",
+   "n": 32
+  },
+  {
+   "src": "practical/day06",
+   "n": 34
+  },
+  {
+   "src": "practical/day06",
+   "n": 36
+  },
+  {
+   "src": "practical/day06",
+   "n": 37
+  },
+  {
+   "src": "practical/day06",
+   "n": 55
+  },
+  {
+   "new": "terms"
+  },
+  {
+   "src": "practical/day06",
+   "n": 57
+  },
+  {
+   "new": "q1"
+  },
+  {
+   "src": "practical/day06",
+   "n": 59
+  },
+  {
+   "src": "practical/day06",
+   "n": 60
+  },
+  {
+   "new": "answer"
+  }
+ ],
+ "note_end": [
+  "이어지는 실습: bpmn.io에서 시작 → 요청 확인 → 승인 또는 반려 → 종료를 그린 뒤 쿨러 경보 → 원인 분석 · 조치 제안 → 운전원 승인 → 설비 명령 → 효과 확인 → 보고로 넓혀 역할별 레인에 놓고, 거절 경로와 승인 작업을 취소하지 않는 지연 알림을 잇는다",
+  "내 그림은 포털에 직접 등록하지 않고 등록된 기준 흐름 · 제공 매핑과 견주어 작업마다 실행 기능을 표시하고 그림 파일과 실행 정의를 가른다 — 진행은 핸즈온 가이드",
+  "다음 회차: 등록된 흐름의 실행 이력을 대조하고 교대 인수인계 흐름을 구성한다"
+ ]
+}

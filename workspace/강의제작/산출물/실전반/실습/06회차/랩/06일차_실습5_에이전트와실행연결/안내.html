@@ -1,0 +1,30 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>내 BPMN과 포털에 등록된 기준 흐름의 실행 연결 비교하기</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;font:17px/1.8 "Malgun Gothic",sans-serif}main{max-width:1000px;margin:auto;padding:52px 28px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;line-height:1.45;margin:0 0 18px}h3{font-size:20px;margin:22px 0 8px}section{background:white;border:1px solid #dce5df;border-radius:16px;padding:30px;margin:24px 0}a{color:#176554;text-underline-offset:4px}nav{display:flex;gap:14px;flex-wrap:wrap}nav a{display:inline-block;background:#e2eee7;padding:8px 16px;border-radius:8px}p{margin:12px 0}li{margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2ef;padding:18px;border-radius:8px;font-size:15px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce5df;text-align:left;vertical-align:top}small{color:#607269}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}summary{cursor:pointer}</style><main><small>HYD · 실습 가이드</small><h1>내 BPMN과 포털에 등록된 기준 흐름의 실행 연결 비교하기</h1><p>VS Code에서 이 폴더(이 안내 파일이 있는 폴더)를 열고 <a href="START.md">START.md</a>를 함께 읽으세요. 이 안내는 START.md와 같은 내용입니다.</p><nav><a href="#s1">출발점</a><a href="#s2">이번에 할 것</a><a href="#s3">작업 순서</a><a href="#s4">기대 결과를 먼저 적을 사례 종류</a><a href="#s5">학생이 정할 것</a><a href="#s6">이번 범위 밖</a><a href="#s7">완료 조건</a><a href="#s8">저장과 다음 실습</a></nav>
+<p>bpmn.io에서 직접 그린 설비 대응 흐름을 포털에 등록된 기준 흐름과 견주고, 내가 그린 작업마다 어떤 실행 기능에 대응하는지 표시한 <b>실행 연결 대응표</b>를 만듭니다. 이 표를 읽는 사람이 그림 파일에 있는 것과 실행 정의에만 있는 것(조건·기한·담당)을 구분해 말할 수 있어야 합니다.</p>
+<p>여기서 「포털에 등록된 기준 흐름」은 수업용으로 미리 등록해 둔 시나리오 A 흐름 「냉각 긴급 대응」과 그 제공 매핑입니다. 포털의 다른 화면에서 「기준 흐름」이라고 부르는 것(아무 수업 흐름도 쓰지 않을 때 경보를 받는 원래 흐름)과는 다른 것입니다. 이번 실습에서는 내 그림을 포털에 올리지 않습니다.</p>
+<section id="s1"><h2>출발점</h2>
+<ul><li><code>코드/input/</code>: 실습4에서 저장한 <code>cooling.bpmn</code>, <code>condition-plan.md</code>, <code>element-map.md</code>를 복사해 둡니다. 비교 대상은 내 그림이므로 제공 기준 BPMN을 내 그림 대신 쓰지 않습니다.</li><li><a href="코드/source/reference/cooling-emergency.bpmn">코드/source/reference/cooling-emergency.bpmn</a>: 제공 기준 BPMN입니다(그림 파일).</li><li><a href="코드/source/reference/mapping.json">코드/source/reference/mapping.json</a>: 제공 매핑입니다. 시작 조건(<code>start</code>), 작업마다 붙는 실행 기능·담당(<code>tasks</code>), 갈림 조건(<code>flows</code>), 기한(<code>timers</code>)이 있습니다. 두 파일의 설명은 <a href="코드/source/reference/README.md">코드/source/reference/README.md</a>에 있습니다.</li><li>포털: 「승인과 실행」 화면의 「업무 흐름」 그림, 「처리 건」 화면에서 「냉각 긴급 대응」 처리 건을 열었을 때 보이는 흐름 이름·판본·단계. 보이는 화면에서만 적습니다.</li><li><a href="코드/output/실행연결_대응표.md">코드/output/실행연결_대응표.md</a>: 결과를 적는 제공 빈 틀입니다.</li></ul>
+<p>제공 매핑의 실행 기능은 부품 값으로 적혀 있습니다. 포털에서 보이는 이름은 다음과 같습니다(저장소 <code>students/flows/README.md</code>).</p>
+<table><tr><th>부품 값</th><th>포털에서 보이는 이름</th></tr><tr><td><code>task:decide</code></td><td>판단 · 제안 (에이전트 한 번)</td></tr><tr><td><code>task:select-or-reject</code></td><td>조치 카드 승인 · 거절</td></tr><tr><td><code>task:command</code></td><td>PLC 명령 발행</td></tr><tr><td><code>task:reobserve</code></td><td>재관측</td></tr><tr><td><code>task:work-order</code></td><td>정비 작업지시</td></tr><tr><td><code>svc:report</code></td><td>결과 보고</td></tr></table>
+</section>
+<section id="s2"><h2>이번에 할 것</h2>
+<ul><li>내 그림과 기준 흐름의 작업·갈림·끝·레인을 나란히 놓고 같은 것, 다른 것, 한쪽에만 있는 것을 찾습니다.</li><li>제공 매핑에서 시작 이벤트·에이전트 단계·운전원 승인·설비 명령·재관측 작업의 연결을 찾아 키와 값을 적습니다.</li><li>내가 그린 작업마다 대응하는 실행 기능(부품)과 담당을 표시합니다. 대응하지 않거나 다르게 대응하는 것도 그대로 적습니다.</li><li>갈림 조건·승인 지연 기한·담당이 그림 파일에 있는지, 실행 정의(매핑)에만 있는지 구분합니다.</li></ul>
+</section>
+<section id="s3"><h2>작업 순서</h2>
+<ol><li><code>코드/input/cooling.bpmn</code>을 편집기에서 열고, 내 요소 ID·이름·종류·레인을 대응표의 「작업별 대응」 왼쪽 칸에 옮깁니다.</li><li>매핑을 열기 전에 작업마다 어떤 실행 기능이 붙을지 「예상」 칸에 적습니다.</li><li>제공 기준 BPMN을 편집기에서 열고, 포털에서 기준 흐름의 이름·판본·단계를 확인해 「비교한 대상」에 적습니다.</li><li>제공 매핑에서 다섯 연결을 찾아 적고, 내 작업마다 대응하는 기준 요소 ID·실행 기능·담당을 채웁니다.</li><li>예상과 다른 곳은 근거(파일·키·화면)를 적고 「대응 판정」을 정합니다.</li><li>그림 파일과 실행 정의를 구분하는 표를 채운 뒤 저장하고 다시 열어 확인합니다.</li></ol>
+</section>
+<section id="s4"><h2>기대 결과를 먼저 적을 사례 종류</h2>
+<ul><li>이름은 같지만 레인이나 종류가 다른 작업</li><li>내 그림에만 있는 작업 또는 갈림, 기준 흐름에만 있는 작업 또는 갈림</li><li>선에 「승인」이라고 이름을 붙인 갈림: 그 조건이 어디에 있는지</li><li>운전원 승인: 그림의 레인 이름과 매핑의 역할이 각각 무엇을 정하는지</li></ul>
+</section>
+<section id="s5"><h2>학생이 정할 것</h2>
+<p class="check">내 작업 하나가 기준 흐름의 작업 둘에 걸치거나 딱 맞는 작업이 없을 때 「대응함 · 다르게 대응 · 대응 없음」 중 무엇으로 표시할지 정합니다. 고른 표시와 근거(어느 키·어느 요소를 보고 판단했는지)를 대응표에 적습니다. 표시에 따라 다음 실습에서 고칠 곳이 달라집니다.</p>
+</section>
+<section id="s6"><h2>이번 범위 밖</h2>
+<p>내 그림을 포털로 가져오거나 연결 값을 저장하는 일, 포털 흐름의 판본을 바꾸는 일, 매핑 파일을 고치는 일, 그림 수정(다음 실습).</p>
+</section>
+<section id="s7"><h2>완료 조건</h2>
+<ul><li><code>코드/output/실행연결_대응표.md</code>에 내 작업마다 대응하는 기준 요소·실행 기능·담당 또는 「대응 없음」과 근거가 있습니다.</li><li>다섯 연결(시작 이벤트·에이전트·운전원 승인·설비 명령·재관측)의 매핑 키와 값이 있습니다.</li><li>조건·기한·담당이 그림 파일과 실행 정의 중 어디에 있는지 근거와 함께 구분돼 있습니다.</li></ul>
+</section>
+<section id="s8"><h2>저장과 다음 실습</h2>
+<p>대응표를 저장하고 다시 열어 확인하세요. 보관할 결과는 재부팅 전에 USB 또는 개인 클라우드에 복사하세요. 다음 실습에서는 이 대응표를 들고 내 BPMN의 역할·분기·종료 연결을 검사하고 고칩니다.</p>
+</section>
+<section><h2>받은 폴더</h2><details><summary>받은 폴더의 파일</summary><ul><li><a href="START.md">START.md</a></li><li><a href="코드/input/README.md">코드/input/README.md</a></li><li><a href="코드/output/README.md">코드/output/README.md</a></li><li><a href="코드/output/실행연결_대응표.md">코드/output/실행연결_대응표.md</a></li><li><a href="코드/README.md">코드/README.md</a></li><li><a href="코드/source/reference/cooling-emergency.bpmn">코드/source/reference/cooling-emergency.bpmn</a></li><li><a href="코드/source/reference/mapping.json">코드/source/reference/mapping.json</a></li><li><a href="코드/source/reference/README.md">코드/source/reference/README.md</a></li></ul></details></section></main></html>

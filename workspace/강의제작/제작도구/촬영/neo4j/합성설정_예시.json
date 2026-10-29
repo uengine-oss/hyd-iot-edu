@@ -1,0 +1,111 @@
+{
+  "repo": ".",
+  "evidence": "작업/촬영/neo4j",
+  "name": "integrated-cypher-continuous-v3",
+  "cues": "workspace/강의제작/제작도구/촬영/neo4j/공통_Cypher_큐.json",
+  "audio": "../../../workspace/강의제작/제작도구/촬영/neo4j/음성/common-natural-audio-v5",
+  "ffmpeg": "REPLACE_WITH_ABSOLUTE_FFMPEG_EXE",
+  "source_description": "1920x1080 JPEG95; fixed CSS1536x864; continuous actual mouse input and guided selection",
+  "takes": [
+    {
+      "take": "neo4j-continuous-v3-take01",
+      "before_cue": "forest034"
+    },
+    {
+      "take": "neo4j-continuous-v3-take02",
+      "start_frame": 1
+    }
+  ],
+  "captures": [
+    {
+      "cue": "full002",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/00-connect.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest011",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-whole.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest015",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-cooler.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest026",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-sensor.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest030",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-relationship.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest036",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-quantity.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest039",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-filtered.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest052",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-part.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        1080
+      ]
+    },
+    {
+      "cue": "forest059",
+      "path": "workspace/강의제작/산출물/통합반/실습/02회차/랩/02일차_실습1_관계조회/images/forest-count.jpg",
+      "crop": [
+        0,
+        0,
+        1920,
+        650
+      ]
+    }
+  ]
+}

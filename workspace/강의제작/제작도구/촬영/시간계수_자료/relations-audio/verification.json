@@ -1,0 +1,24 @@
+{
+  "cues": 11,
+  "characters": 1189,
+  "duration_ms": 159200,
+  "decode": "pass each cue",
+  "listening": "not verified",
+  "screen_sync": "not verified",
+  "model": "eleven_v4",
+  "voice_id": "1PdAOcPlPTz12RwMyFVp",
+  "combined_file": "관계조회_음성준비본_v2.mp3",
+  "combined_decode": "pass",
+  "combined_seconds": 159.2,
+  "concat_note": "원본 MP3 복사 결합의 DTS 경고를 확인하여 원본별 PCM 디코드 후 합침. 원본 음성 보존.",
+  "transcription_check": {
+    "cues": 11,
+    "exact_after_basic_normalization": 9,
+    "reviewed_variants": {
+      "nq008": "WHERE/웨어, 영/0 표기 차이",
+      "nq009": "안의/안에 조사 차이 — 의미와 절차 변화 없음"
+    },
+    "missing_sentence_detected": false,
+    "listening": "not verified"
+  }
+}

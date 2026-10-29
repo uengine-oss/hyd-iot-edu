@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_c3_pm" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="17.11.1">
+  <bpmn:collaboration id="Collaboration_c3_pm">
+    <bpmn:participant id="Participant_c3_pm" name="정기 정비" processRef="Process_B" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_B" name="정기 정비" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_c3_pm">
+      <bpmn:lane id="L_person" name="담당자">
+        <bpmn:flowNodeRef>T_approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_approved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_agent" name="에이전트">
+        <bpmn:flowNodeRef>T_agent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_system" name="시스템">
+        <bpmn:flowNodeRef>T_notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>R_rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_wo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>R_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_notice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="정기 점검 요청">
+      <bpmn:outgoing>F1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="M1" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_agent" name="정비 계획 제안">
+      <bpmn:incoming>F1</bpmn:incoming>
+      <bpmn:outgoing>F2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:serviceTask id="T_wo" name="정비 오더 등록 · 공지 메일">
+      <bpmn:incoming>F_approved</bpmn:incoming>
+      <bpmn:outgoing>F4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="R_ok" name="결과 보고">
+      <bpmn:incoming>F4</bpmn:incoming>
+      <bpmn:outgoing>F5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_end" name="끝">
+      <bpmn:incoming>F5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T_approve" name="설비보전팀장 승인">
+      <bpmn:incoming>F2</bpmn:incoming>
+      <bpmn:outgoing>F3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="B_overdue" name="승인 지연" attachedToRef="T_approve" cancelActivity="false">
+      <bpmn:outgoing>F_overdue</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TD1" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="T_notice" name="승인 지연 알림">
+      <bpmn:incoming>F_overdue</bpmn:incoming>
+      <bpmn:outgoing>F_notice_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G_approved" name="승인?">
+      <bpmn:incoming>F3</bpmn:incoming>
+      <bpmn:outgoing>F_approved</bpmn:outgoing>
+      <bpmn:outgoing>F_rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="R_rejected" name="결과 보고: 거절">
+      <bpmn:incoming>F_rejected</bpmn:incoming>
+      <bpmn:outgoing>F_rej_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_notice" name="알림">
+      <bpmn:incoming>F_notice_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_rejected" name="거절 종결">
+      <bpmn:incoming>F_rej_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="T_agent" />
+    <bpmn:sequenceFlow id="F4" sourceRef="T_wo" targetRef="R_ok" />
+    <bpmn:sequenceFlow id="F5" sourceRef="R_ok" targetRef="E_end" />
+    <bpmn:sequenceFlow id="F2" sourceRef="T_agent" targetRef="T_approve" />
+    <bpmn:sequenceFlow id="F3" sourceRef="T_approve" targetRef="G_approved" />
+    <bpmn:sequenceFlow id="F_approved" name="승인" sourceRef="G_approved" targetRef="T_wo" />
+    <bpmn:sequenceFlow id="F_rejected" name="거절" sourceRef="G_approved" targetRef="R_rejected" />
+    <bpmn:sequenceFlow id="F_rej_end" sourceRef="R_rejected" targetRef="E_rejected" />
+    <bpmn:sequenceFlow id="F_overdue" sourceRef="B_overdue" targetRef="T_notice" />
+    <bpmn:sequenceFlow id="F_notice_end" sourceRef="T_notice" targetRef="E_notice" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_c3_pm">
+    <bpmndi:BPMNPlane id="BPMNPlane_c3_pm" bpmnElement="Collaboration_c3_pm">
+      <bpmndi:BPMNShape id="Participant_c3_pm_di" bpmnElement="Participant_c3_pm" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1116" height="540" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_person_di" bpmnElement="L_person" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="1086" height="140" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_agent_di" bpmnElement="L_agent" isHorizontal="true">
+        <dc:Bounds x="190" y="220" width="1086" height="140" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_system_di" bpmnElement="L_system" isHorizontal="true">
+        <dc:Bounds x="190" y="360" width="1086" height="260" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="250" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="212" y="315" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_agent_di" bpmnElement="T_agent">
+        <dc:Bounds x="330" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_wo_di" bpmnElement="T_wo">
+        <dc:Bounds x="850" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="R_ok_di" bpmnElement="R_ok">
+        <dc:Bounds x="1010" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_end_di" bpmnElement="E_end">
+        <dc:Bounds x="1170" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1181" y="390" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_approve_di" bpmnElement="T_approve">
+        <dc:Bounds x="490" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B_overdue_di" bpmnElement="B_overdue">
+        <dc:Bounds x="542" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="586" y="188" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_notice_di" bpmnElement="T_notice">
+        <dc:Bounds x="510" y="510" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_approved_di" bpmnElement="G_approved" isMarkerVisible="true">
+        <dc:Bounds x="730" y="125" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="734" y="103" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="R_rejected_di" bpmnElement="R_rejected">
+        <dc:Bounds x="705" y="510" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_notice_di" bpmnElement="E_notice">
+        <dc:Bounds x="640" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="644" y="575" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_rejected_di" bpmnElement="E_rejected">
+        <dc:Bounds x="835" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="818" y="575" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F1_di" bpmnElement="F1">
+        <di:waypoint x="286" y="290" />
+        <di:waypoint x="330" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F4_di" bpmnElement="F4">
+        <di:waypoint x="950" y="430" />
+        <di:waypoint x="1010" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F5_di" bpmnElement="F5">
+        <di:waypoint x="1110" y="430" />
+        <di:waypoint x="1170" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F2_di" bpmnElement="F2">
+        <di:waypoint x="380" y="250" />
+        <di:waypoint x="380" y="150" />
+        <di:waypoint x="490" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F3_di" bpmnElement="F3">
+        <di:waypoint x="590" y="150" />
+        <di:waypoint x="730" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_approved_di" bpmnElement="F_approved">
+        <di:waypoint x="780" y="150" />
+        <di:waypoint x="900" y="150" />
+        <di:waypoint x="900" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="792" y="132" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_rejected_di" bpmnElement="F_rejected">
+        <di:waypoint x="755" y="175" />
+        <di:waypoint x="755" y="510" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="763" y="187" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_rej_end_di" bpmnElement="F_rej_end">
+        <di:waypoint x="805" y="550" />
+        <di:waypoint x="835" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_overdue_di" bpmnElement="F_overdue">
+        <di:waypoint x="560" y="208" />
+        <di:waypoint x="560" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_notice_end_di" bpmnElement="F_notice_end">
+        <di:waypoint x="610" y="550" />
+        <di:waypoint x="640" y="550" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

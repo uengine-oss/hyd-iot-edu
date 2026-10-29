@@ -1,0 +1,926 @@
+{
+ "note": "실전반 8회차 재편(2026-10-28). destination = 새 덱 장(53장), old_practical = 재편 전 조립본(64장, 통합반 11회차와 1:1)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 닮음 0.8 이상은 실습 간지 6장 · 퀴즈 간지 1장뿐).",
+ "slides": [
+  {
+   "destination": 1,
+   "title": "교대 인수인계로 잇는 지식 · 에이전트 · 프로세스",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    1
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 1
+    }
+   ]
+  },
+  {
+   "destination": 2,
+   "title": "학습목표",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    2
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 2
+    }
+   ]
+  },
+  {
+   "destination": 3,
+   "title": "목차",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    3
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 3
+    }
+   ]
+  },
+  {
+   "destination": 4,
+   "title": "지식이 판단의 근거가 되는 길",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    4,
+    9,
+    13
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 4
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 9
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 13
+    }
+   ]
+  },
+  {
+   "destination": 5,
+   "title": "경보 메시지의 빈칸과 그 빈칸을 채우는 도구",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    7,
+    8
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 7
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 8
+    }
+   ]
+  },
+  {
+   "destination": 6,
+   "title": "공용 지식을 만든 단계와 그 지식을 읽는 도구",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    21
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 7,
+   "title": "진단 도구의 조회와 증거 대조",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    10,
+    11,
+    12
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 10
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 11
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 12
+    }
+   ]
+  },
+  {
+   "destination": 8,
+   "title": "조치 평가: 규칙의 허용과 성과의 순위",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    14,
+    15
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 14
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 15
+    }
+   ]
+  },
+  {
+   "destination": 9,
+   "title": "추천안의 줄과 그 줄을 만든 도구 · 지식",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    16,
+    17,
+    18
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 16
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 17
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 18
+    }
+   ]
+  },
+  {
+   "destination": 10,
+   "title": "응용: 실전 활용 결과가 이 길에서 맡는 자리",
+   "kind": "응용",
+   "origin": "새 장"
+  },
+  {
+   "destination": 11,
+   "title": "한 단계 더: 빈 결과 · 보류 · 조회 실패의 구별",
+   "kind": "한 단계 더",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    19
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 19
+    }
+   ]
+  },
+  {
+   "destination": 12,
+   "title": "판단 문제: 두 번 돌린 진단의 다른 설명",
+   "kind": "판단 문제",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    20,
+    21
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 20
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 21
+    }
+   ]
+  },
+  {
+   "destination": 13,
+   "title": "교대 인계안의 근거와 원천 대조",
+   "origin": "새 장"
+  },
+  {
+   "destination": 14,
+   "title": "쿨러 처리 건과 교대 처리 건",
+   "origin": "새 장"
+  },
+  {
+   "destination": 15,
+   "title": "보충 매뉴얼 HI-01이 정한 대조 기준",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    44
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 44
+    }
+   ]
+  },
+  {
+   "destination": 16,
+   "title": "인계안의 출력 계약: 네 영역 · 세 상태 · 근거 번호",
+   "kind": "한 단계 더",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    26
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 26
+    }
+   ]
+  },
+  {
+   "destination": 17,
+   "title": "응용: 작업 메모 한 장을 네 영역으로 대조하기",
+   "kind": "응용",
+   "origin": "새 장"
+  },
+  {
+   "destination": 18,
+   "title": "인수자가 받아들일 근거와 보완 질문",
+   "kind": "실전 핵심",
+   "origin": "새 장"
+  },
+  {
+   "destination": 19,
+   "title": "판단 문제: 다른 설비를 조회한 근거",
+   "kind": "판단 문제",
+   "origin": "새 장"
+  },
+  {
+   "destination": 20,
+   "title": "추천안에서 업무 완료까지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    22
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 22
+    }
+   ]
+  },
+  {
+   "destination": 21,
+   "title": "쿨러 처리 건의 자리 · 맡는 쪽 · 남은 기록",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    5,
+    6,
+    24
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 5
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 6
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 24
+    }
+   ]
+  },
+  {
+   "destination": 22,
+   "title": "제출에서 명령까지 넘겨지는 차례",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    25,
+    26,
+    27
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 25
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 26
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 27
+    }
+   ]
+  },
+  {
+   "destination": 23,
+   "title": "세 결말과 다음 근무자에게 남는 확인",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    28,
+    29
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 28
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 29
+    }
+   ]
+  },
+  {
+   "destination": 24,
+   "title": "응용: ABC 실행 기록에서 교대로 넘길 것",
+   "kind": "응용",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    30
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 30
+    }
+   ]
+  },
+  {
+   "destination": 25,
+   "title": "한 단계 더: COMPLETED가 말해 주지 않는 것",
+   "kind": "한 단계 더",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    29
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 29
+    }
+   ]
+  },
+  {
+   "destination": 26,
+   "title": "교대 처리 건의 장치와 사람의 확인",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    31
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 31
+    }
+   ]
+  },
+  {
+   "destination": 27,
+   "title": "같은 장치가 두 처리 건에서 맡는 일",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    32,
+    33,
+    34,
+    35
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 32
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 33
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 34
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 35
+    }
+   ]
+  },
+  {
+   "destination": 28,
+   "title": "제공 교대 흐름의 차례와 결정",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    48
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 48
+    }
+   ]
+  },
+  {
+   "destination": 29,
+   "title": "사람의 결정: 선택지 · 사유 · 전달 확인",
+   "kind": "한 단계 더",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    27
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 27
+    }
+   ]
+  },
+  {
+   "destination": 30,
+   "title": "제공 흐름에서 바꿀 수 있는 것과 유지하는 것",
+   "origin": "새 장(옛 장에서 출발)",
+   "old_practical": [
+    37
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 37
+    }
+   ]
+  },
+  {
+   "destination": 31,
+   "title": "응용: 메모와 작업지시가 다른 경우의 시나리오",
+   "kind": "응용",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    36
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 36
+    }
+   ]
+  },
+  {
+   "destination": 32,
+   "title": "응용: 교대 결과가 기대와 다를 때 먼저 볼 곳",
+   "kind": "응용",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    39
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 39
+    }
+   ]
+  },
+  {
+   "destination": 33,
+   "title": "실습: 교대 인수인계의 입력과 완료 조건",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    41
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 41
+    }
+   ]
+  },
+  {
+   "destination": 34,
+   "title": "인계 문제의 입력과 완료 조건",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    42
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 42
+    }
+   ]
+  },
+  {
+   "destination": 35,
+   "title": "실습: 보충 매뉴얼의 검토와 지식 추가",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    43
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 43
+    }
+   ]
+  },
+  {
+   "destination": 36,
+   "title": "제공 HI-01의 추출 결과 검토와 추가 적재",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    44
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 44
+    }
+   ]
+  },
+  {
+   "destination": 37,
+   "title": "실습: 설비 · 정비 · ERP 대조 인계 에이전트",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    45
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 45
+    }
+   ]
+  },
+  {
+   "destination": 38,
+   "title": "원천을 대조하는 인계 에이전트와 스킬",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    46
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 46
+    }
+   ]
+  },
+  {
+   "destination": 39,
+   "title": "실습: 교대 BPMN 등록과 검토 · 확인 실행",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    47
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 47
+    }
+   ]
+  },
+  {
+   "destination": 40,
+   "title": "제공 흐름의 등록에서 인수 확인 기록까지",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    48
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 48
+    }
+   ]
+  },
+  {
+   "destination": 41,
+   "title": "실습: ProcessGPT 시연",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    49
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 49
+    }
+   ]
+  },
+  {
+   "destination": 42,
+   "title": "교대 실습의 구조가 제품에서 불리는 이름",
+   "kind": "시연 소개",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    50,
+    51
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 50
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 51
+    }
+   ]
+  },
+  {
+   "destination": 43,
+   "title": "업무 통제와 실행 기록을 볼 자리",
+   "kind": "시연 소개",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    53,
+    54
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 53
+    },
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 54
+    }
+   ]
+  },
+  {
+   "destination": 44,
+   "title": "시연에서 확인할 연결",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    55
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 55
+    }
+   ]
+  },
+  {
+   "destination": 45,
+   "title": "실습: 제작 결과를 Notion 학습노트에 기록하기",
+   "kind": "실습 간지",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    56
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 56
+    }
+   ]
+  },
+  {
+   "destination": 46,
+   "title": "학습노트에 잇는 결과와 근거",
+   "kind": "실습 설명",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    57
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 57
+    }
+   ]
+  },
+  {
+   "destination": 47,
+   "title": "교대 한 건의 순간을 맡은 영역으로 가르기",
+   "kind": "복습",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    58
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 58
+    }
+   ]
+  },
+  {
+   "destination": 48,
+   "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    59
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 59
+    }
+   ]
+  },
+  {
+   "destination": 49,
+   "title": "Review Quiz: 핵심 흐름 되짚어보기",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    60
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 60
+    }
+   ]
+  },
+  {
+   "destination": 50,
+   "title": "Quiz 1. 인수 확인이 끝난 처리 건",
+   "kind": "퀴즈",
+   "origin": "새 장"
+  },
+  {
+   "destination": 51,
+   "title": "Quiz 2. 입고 예정을 확보로 적은 부품 영역",
+   "kind": "퀴즈",
+   "origin": "새 장"
+  },
+  {
+   "destination": 52,
+   "title": "Quiz 3. 작업지시를 닫는 도구를 달자는 의견",
+   "kind": "퀴즈",
+   "origin": "새 장"
+  },
+  {
+   "destination": 53,
+   "title": "정답과 판단 기준",
+   "origin": "옛 장 재작성",
+   "old_practical": [
+    64
+   ],
+   "source": [
+    {
+     "course": "통합반",
+     "day": 11,
+     "slide": 64
+    }
+   ]
+  }
+ ],
+ "dropped": [
+  {
+   "old_practical": 23,
+   "title": "추천안이 제출된 시점의 처리 건",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 23
+   },
+   "reason": "미실행 구간 삽화. 「에이전트 자리는 하나, 나머지는 사람 · 엔진」은 21장 표, 제출 뒤의 차례는 22장 단계가 맡는다"
+  },
+  {
+   "old_practical": 38,
+   "title": "같은 위험을 두 자리에서 막는 장치의 짝",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 38
+   },
+   "reason": "실라버스 실전반 90행에 없는 장치 짝 정리. 보류는 11장, 승인 지연은 23장, 업무 도구 제한은 14 · 27장이 다룬다"
+  },
+  {
+   "old_practical": 40,
+   "title": "세 영역이 주고받는 것",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 40
+   },
+   "reason": "세 영역 사이의 재료 · 추천안 · 기록은 6장(구축 → 도구 조회)과 27장(장치 표)이 맡는다"
+  },
+  {
+   "old_practical": 52,
+   "title": "실행 엔진, 워크아이템 목록, 수행자",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 52
+   },
+   "reason": "작업 전달 구조 삽화. 제품의 엔진 · 워크아이템 · 수행자는 42장 표와 대본이 교대 처리 건으로 말한다"
+  },
+  {
+   "old_practical": 61,
+   "title": "Quiz 1. 추천안이 제출된 시점의 처리 건",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 61
+   },
+   "reason": "옛 퀴즈 셋은 교대 처리 건의 새 문항 셋(50~52장)으로 바꿨다. 제출 시점의 몫은 21 · 22장 본문이 다룬다"
+  },
+  {
+   "old_practical": 62,
+   "title": "Quiz 2. 바뀐 기준을 반영할 곳",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 62
+   },
+   "reason": "같음. 기준 개정을 지식에서 고치는 원칙은 6장 대본과 12장 판단 문제 4번 풀이가 다룬다"
+  },
+  {
+   "old_practical": 63,
+   "title": "Quiz 3. 발주를 직접 내는 도구를 연결하자는 의견",
+   "source": {
+    "course": "통합반",
+    "day": 11,
+    "slide": 63
+   },
+   "reason": "같음. 쓰기 도구를 에이전트에 달지 않는 책임 경계는 교대판 Quiz 3(52장)으로 바꿨다"
+  }
+ ]
+}

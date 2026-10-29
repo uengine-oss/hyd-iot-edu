@@ -1,0 +1,12 @@
+{
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본·끝 상태(루트 작업/, 이 PC 전용 — 확정되면 지움). audio = 안치윤 음성 캐시(<큐id>.mp3·.json, workspace 브랜치). space = ego 작업 공간 이름(serve-web VS Code 탭). viewport = setDeviceMetricsOverride(2304x1296 dsf1, ego 150% → CSS 1536x864 → 프레임 1920x1080). serve-web 접속 토큰 파일은 환경변수 HYD_VSCODE_TOKEN_FILE, ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값 출력·커밋 금지). protect = 쓰지 않음.",
+ "work": "../../../../../../작업/촬영/vscode",
+ "audio": "../음성",
+ "space": "vscode web 20261028",
+ "page": "",
+ "protect": "__none__",
+ "viewport": {
+  "width": 2304,
+  "height": 1296
+ }
+}

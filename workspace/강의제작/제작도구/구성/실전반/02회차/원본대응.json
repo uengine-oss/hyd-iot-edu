@@ -1,0 +1,1695 @@
+{
+  "note": "실전반 2회차 재편(2026-10-23). destination = 새 덱 장(107장), old_practical = 재편 전 조립본(107장)의 장, source = 그 장의 통합반 원본. 화면 · 대본은 모두 새로 썼다(통합반과 같은 화면 5장: 실습 간지 넷 · 퀴즈 간지). 2026-10-23 분량 조정으로 112장 판에서 다섯 장을 더 뺐다(dropped의 removed_slide_112).",
+  "slides": [
+    {
+      "destination": 1,
+      "title": "지식 구조와 작업 판단의 설계",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        1
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 1
+        }
+      ]
+    },
+    {
+      "destination": 2,
+      "title": "학습목표",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        2
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 2
+        }
+      ]
+    },
+    {
+      "destination": 3,
+      "title": "목차",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        3
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 3
+        }
+      ]
+    },
+    {
+      "destination": 4,
+      "title": "클래스 · 인스턴스와 관계의 기초",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        4
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 4
+        }
+      ]
+    },
+    {
+      "destination": 5,
+      "title": "클래스와 인스턴스",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        5
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 5
+        }
+      ]
+    },
+    {
+      "destination": 6,
+      "title": "속성과 속성값",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        6
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 6
+        }
+      ]
+    },
+    {
+      "destination": 7,
+      "title": "센서와 상태 변수",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        7
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 7
+        }
+      ]
+    },
+    {
+      "destination": 8,
+      "title": "데이터 속성과 객체 간 관계",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        8
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 8
+        }
+      ]
+    },
+    {
+      "destination": 9,
+      "title": "설비 · 구성 요소 · 부품",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        9
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 9
+        }
+      ]
+    },
+    {
+      "destination": 10,
+      "title": "증상 · 고장 유형 · 원인",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        10
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 10
+        }
+      ]
+    },
+    {
+      "destination": 11,
+      "title": "관계 유형의 이름과 방향",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        11
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 11
+        }
+      ]
+    },
+    {
+      "destination": 12,
+      "title": "조작 관계와 물리적 영향의 구분",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        12
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 12
+        }
+      ]
+    },
+    {
+      "destination": 13,
+      "title": "들어오는 관계와 나가는 관계",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        13
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 13
+        }
+      ]
+    },
+    {
+      "destination": 14,
+      "title": "응용: 경보에서 교체품까지 길 잇기",
+      "kind": "응용",
+      "origin": "새 장"
+    },
+    {
+      "destination": 15,
+      "title": "카디널리티와 관계의 속성",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        14
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 14
+        }
+      ]
+    },
+    {
+      "destination": 16,
+      "title": "카디널리티의 네 가지 형태",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        15
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 15
+        }
+      ]
+    },
+    {
+      "destination": 17,
+      "title": "카디널리티 선언과 실제 데이터",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        16
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 16
+        }
+      ]
+    },
+    {
+      "destination": 18,
+      "title": "한 단계 더: 공통 노드 하나로 둘까, 설비마다 나눌까",
+      "kind": "한 단계 더",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        16
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 16
+        }
+      ]
+    },
+    {
+      "destination": 19,
+      "title": "짝에 딸린 값과 공급사에 딸린 값",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        17
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 17
+        }
+      ]
+    },
+    {
+      "destination": 20,
+      "title": "정보를 표현하는 네 가지 선택",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        21
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 21
+        }
+      ]
+    },
+    {
+      "destination": 21,
+      "title": "판단 문제: 비승인 공급사의 가격 인하",
+      "kind": "판단 문제",
+      "origin": "새 장"
+    },
+    {
+      "destination": 22,
+      "title": "스키마와 고유 식별자",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        22
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 22
+        }
+      ]
+    },
+    {
+      "destination": 23,
+      "title": "스키마와 인스턴스 데이터",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        23
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 23
+        }
+      ]
+    },
+    {
+      "destination": 24,
+      "title": "식별자 · 이름 · 별칭",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        24
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 24
+        }
+      ]
+    },
+    {
+      "destination": 25,
+      "title": "응용: 이름이 다른 같은 설비 잇기",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        25
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 25
+        }
+      ]
+    },
+    {
+      "destination": 26,
+      "title": "판단 문제: 이름이 다른 부품 두 줄",
+      "kind": "판단 문제",
+      "origin": "새 장"
+    },
+    {
+      "destination": 27,
+      "title": "속성과 연결의 정의 · 제약",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        26
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 26
+        }
+      ]
+    },
+    {
+      "destination": 28,
+      "title": "클래스 정의: 레이블 · 뜻 · 속성의 칸",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        27
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 27
+        }
+      ]
+    },
+    {
+      "destination": 29,
+      "title": "자료형과 허용값",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        28
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 28
+        }
+      ]
+    },
+    {
+      "destination": 30,
+      "title": "필수 속성과 선택 속성의 빈 칸",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        29
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 29
+        }
+      ]
+    },
+    {
+      "destination": 31,
+      "title": "관계 정의와 유효한 연결",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        30
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 30
+        }
+      ]
+    },
+    {
+      "destination": 32,
+      "title": "응용: 제약별로 걸러지는 데이터",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        31
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 31
+        }
+      ]
+    },
+    {
+      "destination": 33,
+      "title": "한 단계 더: 검사를 통과해도 틀린 데이터",
+      "kind": "한 단계 더",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        30
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 30
+        }
+      ]
+    },
+    {
+      "destination": 34,
+      "title": "설비 모델의 설계와 확장",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        32
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 32
+        }
+      ]
+    },
+    {
+      "destination": 35,
+      "title": "역량 질문에서 클래스 · 속성 · 관계로",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        33
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 33
+        }
+      ]
+    },
+    {
+      "destination": 36,
+      "title": "설비 모델의 핵심 정의",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        34
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 34
+        }
+      ]
+    },
+    {
+      "destination": 37,
+      "title": "세 질문이 지나는 관계 구조",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        35
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 35
+        }
+      ]
+    },
+    {
+      "destination": 38,
+      "title": "인스턴스 추가와 스키마 변경",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        36
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 36
+        }
+      ]
+    },
+    {
+      "destination": 39,
+      "title": "판단 문제: 부품 번호를 필수로 바꾸는 요구",
+      "kind": "판단 문제",
+      "origin": "새 장"
+    },
+    {
+      "destination": 40,
+      "title": "그래프 DB의 저장 구조와 Cypher 쿼리로 찾기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        38
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 38
+        }
+      ]
+    },
+    {
+      "destination": 41,
+      "title": "속성 그래프: 노드 · 레이블 · 관계 · 속성",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        40
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 40
+        }
+      ]
+    },
+    {
+      "destination": 42,
+      "title": "스키마의 정의와 DB 제약이 지키는 범위",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        41
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 41
+        }
+      ]
+    },
+    {
+      "destination": 43,
+      "title": "Cypher 패턴: 노드 · 관계 · 변수 · 속성 조건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        42,
+        43
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 42
+        },
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 43
+        }
+      ]
+    },
+    {
+      "destination": 44,
+      "title": "MATCH · RETURN: 찾은 연결과 돌려받는 항목",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        44,
+        45
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 44
+        },
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 45
+        }
+      ]
+    },
+    {
+      "destination": 45,
+      "title": "DISTINCT · COUNT: 행의 수와 대상의 수",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        46,
+        47
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 46
+        },
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 47
+        }
+      ]
+    },
+    {
+      "destination": 46,
+      "title": "여러 관계를 이은 경로와 NULL",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        48
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 48
+        }
+      ]
+    },
+    {
+      "destination": 47,
+      "title": "WHERE: 찾은 행을 거르는 조건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        49
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 49
+        }
+      ]
+    },
+    {
+      "destination": 48,
+      "title": "응용: 괄호 하나로 달라지는 조회 범위",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        50
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 50
+        }
+      ]
+    },
+    {
+      "destination": 49,
+      "title": "구성 요소별 집계와 ORDER BY",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        51
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 51
+        }
+      ]
+    },
+    {
+      "destination": 50,
+      "title": "응용: 세 설비를 함께 세면 생기는 합산 중복",
+      "kind": "응용",
+      "origin": "새 장"
+    },
+    {
+      "destination": 51,
+      "title": "저장된 방향을 거슬러 찾는 원인 후보",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        52
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 52
+        }
+      ]
+    },
+    {
+      "destination": 52,
+      "title": "응용: 경보 하나에서 교체품까지 쿼리 하나로",
+      "kind": "응용",
+      "origin": "새 장"
+    },
+    {
+      "destination": 53,
+      "title": "노드 · 관계의 생성 · 병합과 적재 검증",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        53
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 53
+        }
+      ]
+    },
+    {
+      "destination": 54,
+      "title": "구조 조회와 데이터 적재의 구분",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        53,
+        57
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 53
+        },
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 57
+        }
+      ]
+    },
+    {
+      "destination": 55,
+      "title": "CREATE · MERGE · SET: 새로 만들기와 찾아서 쓰기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        54
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 54
+        }
+      ]
+    },
+    {
+      "destination": 56,
+      "title": "MERGE 패턴에 넣을 값과 SET으로 바꿀 값",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        55
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 55
+        }
+      ]
+    },
+    {
+      "destination": 57,
+      "title": "한 단계 더: 유일 제약이 없는 DB에서의 MERGE",
+      "kind": "한 단계 더",
+      "origin": "새 장"
+    },
+    {
+      "destination": 58,
+      "title": "양 끝 노드를 찾은 뒤 관계 잇기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        56
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 56
+        }
+      ]
+    },
+    {
+      "destination": 59,
+      "title": "스키마 정의에서 적재 검증까지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        57
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 57
+        }
+      ]
+    },
+    {
+      "destination": 60,
+      "title": "실습: 그래프의 관계 조회",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        58
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 58
+        }
+      ]
+    },
+    {
+      "destination": 61,
+      "title": "조회 결과와 집계의 대조",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        59
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 59
+        }
+      ]
+    },
+    {
+      "destination": 62,
+      "title": "실습: 기준 지식의 연결 탐색",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        60
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 60
+        }
+      ]
+    },
+    {
+      "destination": 63,
+      "title": "기준 지식에서 확인할 구조",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        61
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 61
+        }
+      ]
+    },
+    {
+      "destination": 64,
+      "title": "실습: 온톨로지 설계",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        62
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 62
+        }
+      ]
+    },
+    {
+      "destination": 65,
+      "title": "스키마 · 인스턴스의 결과물",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        63
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 63
+        }
+      ]
+    },
+    {
+      "destination": 66,
+      "title": "실습: 그래프 구현과 검증",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        64
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 64
+        }
+      ]
+    },
+    {
+      "destination": 67,
+      "title": "저장된 그래프와 의미 검증",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        65
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 65
+        }
+      ]
+    },
+    {
+      "destination": 68,
+      "title": "작업 절차의 단계와 수행 조건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        66
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 4
+        }
+      ]
+    },
+    {
+      "destination": 69,
+      "title": "원인 하나에 걸린 조치 후보 넷",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        67
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 5
+        }
+      ]
+    },
+    {
+      "destination": 70,
+      "title": "SOP 원문에서 순서와 조건 가려 읽기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        68
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 6
+        }
+      ]
+    },
+    {
+      "destination": 71,
+      "title": "SOP의 여덟 구성요소와 작업자의 물음",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        69
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 7
+        }
+      ]
+    },
+    {
+      "destination": 72,
+      "title": "원격 조치의 전제와 현장 작업의 안전 조건",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        69,
+        70
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 7
+        },
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 8
+        }
+      ]
+    },
+    {
+      "destination": 73,
+      "title": "응용: 운전 모드가 바뀔 때 남는 후보",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        71
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 9
+        }
+      ]
+    },
+    {
+      "destination": 74,
+      "title": "절차를 지식 그래프와 실행에 잇기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        72
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 10
+        }
+      ]
+    },
+    {
+      "destination": 75,
+      "title": "조치 방법(Skill) · 작업 단계(Step)로 옮긴 SOP",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        73
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 11
+        }
+      ]
+    },
+    {
+      "destination": 76,
+      "title": "즉시 완화(MITIGATED_BY)와 근본 조치(REMEDIED_BY)",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        74
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 12
+        }
+      ]
+    },
+    {
+      "destination": 77,
+      "title": "응용: 경보가 꺼진 뒤 무엇을 완료로 보고하나",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        75
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 13
+        }
+      ]
+    },
+    {
+      "destination": 78,
+      "title": "고장 유형에서 조치 · 단계 · 근거 · 승인으로 가는 길",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        76
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 14
+        }
+      ]
+    },
+    {
+      "destination": 79,
+      "title": "응용: 승인부터 정비 완료까지 따로 남는 기록",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        77
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 15
+        }
+      ]
+    },
+    {
+      "destination": 80,
+      "title": "조건 문장을 결정표로 옮기기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        78
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 16
+        }
+      ]
+    },
+    {
+      "destination": 81,
+      "title": "순서를 정하는 SOP와 판정을 내는 DMN",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        79
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 17
+        }
+      ]
+    },
+    {
+      "destination": 82,
+      "title": "입력 데이터(InputData): 판정에 쓰는 값과 읽는 곳",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        80
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 18
+        }
+      ]
+    },
+    {
+      "destination": 83,
+      "title": "결정 · 결정표 · 규칙으로 쿨러 사건 판정하기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        81
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 19
+        }
+      ]
+    },
+    {
+      "destination": 84,
+      "title": "조건 문장을 입력 · 연산자 · 기준값으로 옮기기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        82
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 20
+        }
+      ]
+    },
+    {
+      "destination": 85,
+      "title": "응용: 경계값에서 뒤집히는 판정",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        83
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 21
+        }
+      ]
+    },
+    {
+      "destination": 86,
+      "title": "한 행의 AND와 행을 나눈 OR",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        84
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 22
+        }
+      ]
+    },
+    {
+      "destination": 87,
+      "title": "규칙의 출력: 후보 선택 · 제외 · 감점 · 경고",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        85
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 23
+        }
+      ]
+    },
+    {
+      "destination": 88,
+      "title": "결정표를 지금의 값에 대어 판정하기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        86
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 24
+        }
+      ]
+    },
+    {
+      "destination": 89,
+      "title": "Hit Policy: 여러 행이 함께 맞을 때의 처리",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        87
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 25
+        }
+      ]
+    },
+    {
+      "destination": 90,
+      "title": "응용: 같은 입력에 네 Hit Policy가 내는 답",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        88
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 26
+        }
+      ]
+    },
+    {
+      "destination": 91,
+      "title": "결정표의 누락 · 중복 · 상충 점검",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        89
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 27
+        }
+      ]
+    },
+    {
+      "destination": 92,
+      "title": "응용: 운전 모드와 운전 이력을 읽지 못했을 때",
+      "kind": "응용",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        90
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 28
+        }
+      ]
+    },
+    {
+      "destination": 93,
+      "title": "판정 근거: 걸린 규칙 · 그때의 값 · 원문 절",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        91
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 29
+        }
+      ]
+    },
+    {
+      "destination": 94,
+      "title": "판단의 차례와 절차의 몫",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        92
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 30
+        }
+      ]
+    },
+    {
+      "destination": 95,
+      "title": "원인 진단에서 승인까지 이어지는 판단",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        93
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 31
+        }
+      ]
+    },
+    {
+      "destination": 96,
+      "title": "규칙과 절차가 만나는 지식 구조",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        95
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 33
+        }
+      ]
+    },
+    {
+      "destination": 97,
+      "title": "한 단계 더: DMN 표준과 HYD 평가의 차이",
+      "kind": "한 단계 더",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        94
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 3,
+          "slide": 32
+        }
+      ]
+    },
+    {
+      "destination": 98,
+      "title": "응용: 결정표로 옮겨도 절차에 남는 것",
+      "kind": "응용",
+      "origin": "새 장"
+    },
+    {
+      "destination": 99,
+      "title": "실습: 조치 허용 · 제외 조건표 만들기",
+      "kind": "실습 간지",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        96
+      ],
+      "source": [
+        {
+          "course": "실전반 추가",
+          "day": 0,
+          "slide": 96
+        }
+      ]
+    },
+    {
+      "destination": 100,
+      "title": "조건표와 판단 기록의 결과물",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        97
+      ],
+      "source": [
+        {
+          "course": "실전반 추가",
+          "day": 0,
+          "slide": 97
+        }
+      ]
+    },
+    {
+      "destination": 101,
+      "title": "쿨러 경보 한 건으로 되짚는 지식 구조와 판단",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        98
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 66
+        }
+      ]
+    },
+    {
+      "destination": 102,
+      "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        99,
+        100
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 67
+        },
+        {
+          "course": "실전반 추가",
+          "day": 0,
+          "slide": 100
+        }
+      ]
+    },
+    {
+      "destination": 103,
+      "title": "Review Quiz: 핵심 흐름 되짚어보기",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        101
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 68
+        }
+      ]
+    },
+    {
+      "destination": 104,
+      "title": "Quiz 1. 0행을 돌려준 센서 조회",
+      "kind": "퀴즈",
+      "origin": "새 장"
+    },
+    {
+      "destination": 105,
+      "title": "Quiz 2. 읽지 못한 운전 이력",
+      "kind": "퀴즈",
+      "origin": "새 장"
+    },
+    {
+      "destination": 106,
+      "title": "Quiz 3. 정확히 24시간을 채운 팬",
+      "kind": "퀴즈",
+      "origin": "새 장"
+    },
+    {
+      "destination": 107,
+      "title": "정답과 판단 기준",
+      "origin": "옛 장 재작성",
+      "old_practical": [
+        106,
+        107
+      ],
+      "source": [
+        {
+          "course": "통합반",
+          "day": 2,
+          "slide": 72
+        },
+        {
+          "course": "실전반 추가",
+          "day": 0,
+          "slide": 107
+        }
+      ]
+    }
+  ],
+  "dropped": [
+    {
+      "old_practical": 18,
+      "title": "클래스 계층과 모델링 선택",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 18
+      },
+      "reason": "실라버스 실전반 2회차 행에 없는 클래스 계층 · 상속(실전반 기준 1절 「범위」)"
+    },
+    {
+      "old_practical": 19,
+      "title": "클래스 계층과 상속",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 19
+      },
+      "reason": "같음"
+    },
+    {
+      "old_practical": 20,
+      "title": "새 클래스를 정의하는 기준",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 20
+      },
+      "reason": "같음"
+    },
+    {
+      "old_practical": 37,
+      "title": "설비 · 진단 · 판단 · 성과의 지식",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 37
+      },
+      "reason": "실라버스 실전반 18행에 없는 네 묶음 소개. 진단 클래스는 10 · 14장, 판단 · 성과 클래스는 3회차가 다룬다"
+    },
+    {
+      "old_practical": 39,
+      "title": "테이블의 조인과 그래프의 연결",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 39
+      },
+      "reason": "실라버스 실전반 19행에 관계형 DB · 조인 비교가 없다. 대비 한 문장만 41장 대본에 남겼다"
+    },
+    {
+      "old_practical": 102,
+      "title": "Quiz 1. 스키마와 인스턴스",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 69
+      },
+      "reason": "옛 퀴즈 넷은 104~106장 새 문항 셋으로 바꿨다. 옛 Quiz 2(단가 · 납기 자리)는 21장 판단 문제와 겹친다"
+    },
+    {
+      "old_practical": 103,
+      "title": "Quiz 2. 관계의 속성",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 70
+      },
+      "reason": "같음"
+    },
+    {
+      "old_practical": 104,
+      "title": "Quiz 3. 저장을 막는 조건",
+      "source": {
+        "course": "통합반",
+        "day": 2,
+        "slide": 71
+      },
+      "reason": "같음"
+    },
+    {
+      "old_practical": 105,
+      "title": "Quiz 4. 조건 통과와 작업 수행",
+      "source": {
+        "course": "실전반 추가",
+        "day": 0,
+        "slide": 105
+      },
+      "reason": "옛 Quiz 4(승인 직전 모드 변경)는 79 · 95 · 98장 본문이 다룬다"
+    },
+    {
+      "removed_slide_112": 21,
+      "title": "응용: 요구가 바뀔 때 고칠 곳",
+      "origin": "새 장",
+      "reason": "분량 조정(2026-10-23): 다섯 요구 모두 7 · 16 · 18 · 19 · 21장에 이미 있다"
+    },
+    {
+      "removed_slide_112": 40,
+      "title": "응용: 스키마 변경이 미치는 범위",
+      "origin": "새 장(옛 장에서 출발)",
+      "old_practical": [
+        36
+      ],
+      "reason": "분량 조정(2026-10-23): 스키마 변경의 범위는 38장과 39장 판단 문제 정답 풀이(기존 데이터 · 넣는 쪽 · 찾는 쪽)가 맡는다"
+    },
+    {
+      "removed_slide_112": 55,
+      "title": "판단 문제: 한계 칸에 나온 NULL",
+      "origin": "새 장",
+      "reason": "분량 조정(2026-10-23): NULL은 46장이 설명하고, 「없음은 0이 아니다 · 기준은 경보 규칙 쪽」 한 문장을 46장 대본으로 옮겼다"
+    },
+    {
+      "removed_slide_112": 63,
+      "title": "판단 문제: 다시 적재했더니 늘어난 센서",
+      "origin": "새 장",
+      "reason": "분량 조정(2026-10-23): 다시 적재해 늘어나는 원인은 55~58장(CREATE · MERGE · 유일 제약)과 실습 4 검증이 맡는다"
+    },
+    {
+      "removed_slide_112": 78,
+      "title": "판단 문제: 부하를 더 낮추자는 제안",
+      "origin": "새 장",
+      "reason": "분량 조정(2026-10-23): 금지 사항은 71장 「금지 사항」 행과 98장이 맡는다"
+    }
+  ]
+}

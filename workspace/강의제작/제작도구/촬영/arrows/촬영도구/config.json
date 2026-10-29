@@ -1,0 +1,5 @@
+{
+ "note": "경로는 이 폴더 기준 상대 경로. space = ego 작업 공간 이름(번호는 바뀔 수 있어 이름으로 쥔다). work = 녹화 원본·음성·끝 상태가 쌓이는 근거 폴더(Git 밖). ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값은 출력·커밋 금지), ffmpeg는 환경변수 FFMPEG 또는 PATH.",
+ "work": "../../../../../../작업/촬영/arrows",
+ "space": "arrows ontology 20261023b"
+}

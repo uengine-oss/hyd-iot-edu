@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>승인·거절과 승인 지연 알림을 갖춘 안전한 흐름 만들기</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f6f3;color:#20342f;font:17px/1.8 "Malgun Gothic",sans-serif}main{max-width:1000px;margin:auto;padding:52px 28px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;line-height:1.45;margin:0 0 18px}h3{font-size:20px;margin:22px 0 8px}section{background:white;border:1px solid #dce5df;border-radius:16px;padding:30px;margin:24px 0}a{color:#176554;text-underline-offset:4px}nav{display:flex;gap:14px;flex-wrap:wrap}nav a{display:inline-block;background:#e2eee7;padding:8px 16px;border-radius:8px}p{margin:12px 0}li{margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf2ef;padding:18px;border-radius:8px;font-size:15px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce5df;text-align:left;vertical-align:top}small{color:#607269}details{border-top:1px solid #dce5df;margin-top:18px;padding-top:12px}summary{cursor:pointer}</style><main><small>HYD · 실습 가이드</small><h1>승인·거절과 승인 지연 알림을 갖춘 안전한 흐름 만들기</h1><p>VS Code에서 이 폴더(이 안내 파일이 있는 폴더)를 열고 <a href="START.md">START.md</a>를 함께 읽으세요. 이 안내는 START.md와 같은 내용입니다.</p><nav><a href="#s1">출발점</a><a href="#s2">이번에 할 것</a><a href="#s3">작업 순서</a><a href="#s4">기대 결과를 먼저 적을 사례 종류</a><a href="#s5">학생이 정할 것</a><a href="#s6">이번 범위 밖</a><a href="#s7">완료 조건</a><a href="#s8">저장과 다음 실습</a></nav>
+<p>실습3의 설비 이상 대응 초안에 승인·거절 분기, 반려 종료, 승인 지연 알림 타이머를 더합니다. 운전원이 거절하면 냉각 명령이 실행되지 않고, 승인이 늦어져 알림이 나가도 운전원 승인 작업은 취소되지 않고 계속 기다리는 구조를 그림과 저장한 파일 양쪽에서 확인합니다.</p>
+<section id="s1"><h2>출발점</h2>
+<ul><li><code>코드/input/</code>: 실습3에서 저장한 <code>cooling-draft.bpmn</code>과 <code>element-map.md</code>를 복사해 둡니다. 없으면 실습3의 기본 경로부터 그립니다.</li><li><a href="코드/source/reference/README.md">코드/source/reference/</a>: 제공 참조 흐름(대조용, 고치지 않습니다).</li><li><a href="코드/condition-plan.md">코드/condition-plan.md</a>: 분기 조건·기본 흐름·기한을 적는 제공 빈 틀입니다.</li><li><a href="코드/element-map.md">코드/element-map.md</a>, <a href="코드/review.md">코드/review.md</a>: 요소 대응과 확인 기록 빈 틀입니다.</li><li>편집기: demo.bpmn.io</li></ul>
+</section>
+<section id="s2"><h2>이번에 할 것</h2>
+<ul><li>운전원 승인 뒤에 배타 게이트웨이를 놓아 승인 갈래는 냉각 명령으로, 거절 갈래는 반려 종료로 보냅니다.</li><li>운전원 승인 작업의 테두리에 경계 타이머 「승인 지연」을 붙이고 비중단형(점선 겹테두리)으로 정합니다. 타이머에서 「승인 지연 알림」 서비스 작업과 알림 끝 이벤트로 잇습니다.</li><li>갈림의 조건, 반대편 기본 흐름, 승인 지연 기한 10분(<code>PT10M</code>)을 <code>코드/condition-plan.md</code>에 적습니다. 기한 입력 칸이 편집기에 없으면 조건 계획에만 적습니다.</li><li><code>코드/output/cooling.bpmn</code>으로 저장하고 XML에서 타이머 연결을 확인합니다.</li></ul>
+</section>
+<section id="s3"><h2>작업 순서</h2>
+<ol><li><code>코드/input/cooling-draft.bpmn</code>을 열고 결과는 새 파일로 저장합니다.</li><li>승인·거절 갈림을 놓고 거절 갈래가 반려 종료에 닿게 잇습니다.</li><li>운전원 승인에 경계 타이머를 붙여 비중단형으로 바꾸고, 알림 작업과 알림 끝을 잇습니다. 타이머를 승인 뒤의 따로 떨어진 이벤트로 놓지 않습니다.</li><li>거절 갈래에서 냉각 명령으로 가는 선이 없는지, 알림 갈래가 운전원 승인으로 되돌아가거나 승인을 끝내지 않는지 따라갑니다.</li><li>저장한 XML에서 <code>boundaryEvent</code>의 <code>attachedToRef</code>가 운전원 승인 ID를 가리키고 <code>cancelActivity=&quot;false&quot;</code>인지 확인합니다.</li><li><code>코드/condition-plan.md</code>, <code>코드/element-map.md</code>, <code>코드/review.md</code>를 채우고 다시 열어 확인합니다.</li></ol>
+</section>
+<section id="s4"><h2>기대 결과를 먼저 적을 사례 종류</h2>
+<p>그리기 전에 <code>코드/review.md</code>의 「예상」 칸을 먼저 적습니다.</p>
+<ul><li>승인: 지나는 요소와 닿는 끝</li><li>거절: 냉각 명령을 지나지 않고 닿는 끝</li><li>승인 지연: 알림이 나간 뒤 운전원 승인 작업이 어떤 상태로 남는지</li><li>선 이름과 실행 조건: 선에 「승인」이라고 적은 것과 조건 계획에 적은 조건의 차이</li></ul>
+</section>
+<section id="s5"><h2>학생이 정할 것</h2>
+<p class="check">거절 갈래에 거절 결과를 남기는 작업(예: 거절 보고)을 둘지, 게이트웨이에서 바로 반려 종료로 갈지 정합니다. 다음 담당자가 거절 사실과 사유를 어디서 읽게 될지를 기준으로 고르고, 이유를 <code>코드/review.md</code>에 적습니다.</p>
+</section>
+<section id="s6"><h2>이번 범위 밖</h2>
+<p>에이전트·역할·실행 기능 연결과 포털로 흐름을 보내는 일, 재관측 뒤 회복·미달 갈림(그리지 않아도 됩니다. 다음 비교 실습에서 기준 흐름의 해당 부분을 확인합니다), 병렬·하위 프로세스.</p>
+</section>
+<section id="s7"><h2>완료 조건</h2>
+<ul><li><code>코드/output/cooling.bpmn</code>을 다시 열면 승인·거절 갈림, 반려 종료, 운전원 승인에 붙은 비중단형 경계 타이머와 알림 갈래가 있습니다.</li><li>거절 갈래에 냉각 명령이 없고, 알림 갈래가 운전원 승인을 취소하지 않습니다.</li><li><code>코드/condition-plan.md</code>에 내 요소 ID 기준으로 승인 조건·기본 흐름·<code>PT10M</code>이 있습니다.</li></ul>
+</section>
+<section id="s8"><h2>저장과 다음 실습</h2>
+<p><code>코드/output/cooling.bpmn</code>과 기록 파일을 저장하고 다시 열어 확인하세요. 보관할 결과는 재부팅 전에 USB 또는 개인 클라우드에 복사하세요. 다음 실습에서는 이 그림을 포털에 등록된 기준 흐름·제공 매핑과 비교해 작업마다 대응하는 실행 기능을 표시합니다.</p>
+</section>
+<section><h2>받은 폴더</h2><details><summary>받은 폴더의 파일</summary><ul><li><a href="START.md">START.md</a></li><li><a href="코드/condition-plan.md">코드/condition-plan.md</a></li><li><a href="코드/element-map.md">코드/element-map.md</a></li><li><a href="코드/input/README.md">코드/input/README.md</a></li><li><a href="코드/output/README.md">코드/output/README.md</a></li><li><a href="코드/README.md">코드/README.md</a></li><li><a href="코드/review.md">코드/review.md</a></li><li><a href="코드/source/reference/cooling-emergency.bpmn">코드/source/reference/cooling-emergency.bpmn</a></li><li><a href="코드/source/reference/mapping.json">코드/source/reference/mapping.json</a></li><li><a href="코드/source/reference/README.md">코드/source/reference/README.md</a></li></ul></details></section></main></html>

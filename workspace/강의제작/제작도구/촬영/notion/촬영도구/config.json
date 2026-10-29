@@ -1,0 +1,12 @@
+{
+ "note": "경로는 이 폴더 기준 상대 경로. work = 녹화 원본·끝 상태가 쌓이는 근거 폴더(Git 밖). audio = 안치윤 음성 캐시(<큐id>.mp3 · <큐id>.json: text·duration_ms, Git 밖). space = ego 작업 공간 이름. page = 촬영 전용 Notion 페이지 id(이어 쓰기). protect = 덮어쓰면 안 되는 최종본 id(입력 금지). viewport = setDeviceMetricsOverride 값(Notion은 1536x864 dsf1, ego 150% → 프레임 1920x1080). ffmpeg는 환경변수 FFMPEG 또는 PATH. ElevenLabs 키 파일은 환경변수 HYD_ELEVENLABS_KEY_FILE(값은 출력·커밋 금지).",
+ "work": "../../../../../../작업/촬영/notion",
+ "audio": "../음성",
+ "space": "notion rhythm 20261023",
+ "page": "402f0e285bb48002b697e5ee2dfedd02",
+ "protect": "3bcf0e285bb4806f93c1cc2ace1f0836",
+ "viewport": {
+  "width": 1536,
+  "height": 864
+ }
+}

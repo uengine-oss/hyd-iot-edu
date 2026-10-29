@@ -1,0 +1,4020 @@
+{
+  "language_code": "kor",
+  "language_probability": 1.0,
+  "text": "이번에는 설비에서 센서와 교체 부품을 찾아볼게요. 결과가 몇 행 나왔는지만 보지 않고 어떤 대상이 연결돼서 나온 행인지 확인하겠습니다. 실습 시작 도구에서 관계 조회를 선택하고 새로 시작을 누릅니다. 먼저 조회할 예제를 준비할게요. 도커가 실행된 상태에서 VSCode 터미널에 파이썬 준비 명령을 넣겠습니다. 이 폴더에서 쓸 DB와 예제만 준비하는 명령입니다. 이제 브라우저를 열겠습니다. 터미널에 나온 접속 주소를 사용할 거예요. 앞에서 쓰던 포털의 DB 주소를 넣으면 다른 데이터를 보게 됩니다. 이 예제에는 설비 한 대의 구성과 계측 채널이 들어있습니다. 먼저 쿨러에서 센서로 가는 연결 하나부터 조회해 볼게요. 질의 파일을 열고 오일 쿨러에서 센서로 가는 패턴을 적겠습니다. 구성 요소와 센서의 종류를 쓰고 사이에는 계측 관계를 둡니다. 이름만 같은 다른 대상을 섞지 않도록 쿨러 식별자를 조건으로 쓰겠습니다. 결과에서는 쿨러가 몇 번 나왔는지와 서로 다른 센서가 몇 개인지를 나누어 봅니다. 쿨러 이름이 반복됐다고 쿨러 노드가 여러 개라는 뜻은 아닙니다. 센서 식별자와 태그를 함께 확인하겠습니다. 이번에는 같은 패턴에서 관계에도 변수를 붙이고 속성값 대신 노드와 관계를 반환하겠습니다. 표에서 읽은 연결이 그래프에서도 같은 대상인지 보겠습니다. 다음으로 출발점을 hyd-01로 바꾸고 구성 요소와 센서를 거쳐 상태 변수까지 길을 이어 적습니다. 한계가 없는 물리량은 빈 값으로 나올 수 있습니다. 대상까지 못 찾은 것과 속성값이 없는 것은 다릅니다. 웨어에 한계값이 있는 조건을 붙여보고 어떤 행이 빠졌는지 기록하겠습니다. 빈 값을 0으로 바꾸지는 않겠습니다. 같은 설비에서 이번에는 교체할 부품을 찾아보겠습니다. 센서를 찾던 길과 달리 구성 요소에서 부품을 쓰는 관계로 건너갑니다. 쿨러라는 장치와 그 안에 교체 부품인 쿨러 코어를 구별하고 주문할 때 확인할 품번까지 함께 받겠습니다. 이제 구성 요소별로 센서가 몇 개 연결되는지 보겠습니다. 먼저 원래 행에서 장치별 센서 식별자를 모아 세고 그다음 질의의 집계와 비교합니다. 장치 이름과 식별자를 묶는 기준으로 두고 서로 다른 센서를 세겠습니다. 수만 맞는지 보지 않고 같은 센서를 셌는지도 확인합니다. 질의와 결과, 사용한 DB와 확인 시점을 저장하고 파일을 다시 열겠습니다. 이렇게 하면 나중에 숫자의 근거가 된 행까지 돌아갈 수 있습니다.",
+  "words": [
+    {
+      "text": "이번에는",
+      "start": 0.08,
+      "end": 0.72,
+      "type": "word",
+      "logprob": -6.782553811035541e-05
+    },
+    {
+      "text": " ",
+      "start": 0.72,
+      "end": 0.88,
+      "type": "spacing",
+      "logprob": -7.319182623177767e-05
+    },
+    {
+      "text": "설비에서",
+      "start": 0.88,
+      "end": 1.48,
+      "type": "word",
+      "logprob": -1.940064163363786e-05
+    },
+    {
+      "text": " ",
+      "start": 1.48,
+      "end": 1.68,
+      "type": "spacing",
+      "logprob": -3.242440288886428e-05
+    },
+    {
+      "text": "센서와",
+      "start": 1.68,
+      "end": 2.12,
+      "type": "word",
+      "logprob": -1.9788483617351933e-05
+    },
+    {
+      "text": " ",
+      "start": 2.12,
+      "end": 2.24,
+      "type": "spacing",
+      "logprob": -5.364403477869928e-06
+    },
+    {
+      "text": "교체",
+      "start": 2.24,
+      "end": 2.46,
+      "type": "word",
+      "logprob": -3.5761684557655826e-05
+    },
+    {
+      "text": " ",
+      "start": 2.46,
+      "end": 2.54,
+      "type": "spacing",
+      "logprob": -0.00029595286468975246
+    },
+    {
+      "text": "부품을",
+      "start": 2.54,
+      "end": 2.88,
+      "type": "word",
+      "logprob": -0.0002822225117711241
+    },
+    {
+      "text": " ",
+      "start": 2.88,
+      "end": 2.92,
+      "type": "spacing",
+      "logprob": -1.9192511899746023e-05
+    },
+    {
+      "text": "찾아볼게요.",
+      "start": 2.92,
+      "end": 3.5,
+      "type": "word",
+      "logprob": -1.1265152750183915e-05
+    },
+    {
+      "text": " ",
+      "start": 3.5,
+      "end": 3.5,
+      "type": "spacing",
+      "logprob": -8.4638240878121e-06
+    },
+    {
+      "text": "결과가",
+      "start": 4.38,
+      "end": 4.7,
+      "type": "word",
+      "logprob": -5.642549391874733e-06
+    },
+    {
+      "text": " ",
+      "start": 4.7,
+      "end": 4.86,
+      "type": "spacing",
+      "logprob": -1.4781842764932662e-05
+    },
+    {
+      "text": "몇",
+      "start": 4.86,
+      "end": 4.9,
+      "type": "word",
+      "logprob": -1.4781842764932662e-05
+    },
+    {
+      "text": " ",
+      "start": 4.9,
+      "end": 5.04,
+      "type": "spacing",
+      "logprob": -0.0008853329927660525
+    },
+    {
+      "text": "행",
+      "start": 5.04,
+      "end": 5.08,
+      "type": "word",
+      "logprob": -0.0008853329927660525
+    },
+    {
+      "text": " ",
+      "start": 5.08,
+      "end": 5.18,
+      "type": "spacing",
+      "logprob": -2.3841830625315197e-06
+    },
+    {
+      "text": "나왔는지만",
+      "start": 5.18,
+      "end": 5.74,
+      "type": "word",
+      "logprob": -0.0005181037518923404
+    },
+    {
+      "text": " ",
+      "start": 5.74,
+      "end": 5.86,
+      "type": "spacing",
+      "logprob": -2.3841830625315197e-06
+    },
+    {
+      "text": "보지",
+      "start": 5.86,
+      "end": 6.0,
+      "type": "word",
+      "logprob": -2.622600959512056e-06
+    },
+    {
+      "text": " ",
+      "start": 6.0,
+      "end": 6.14,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "않고",
+      "start": 6.14,
+      "end": 6.76,
+      "type": "word",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": " ",
+      "start": 6.76,
+      "end": 6.84,
+      "type": "spacing",
+      "logprob": -0.00026127262390218675
+    },
+    {
+      "text": "어떤",
+      "start": 6.86,
+      "end": 7.14,
+      "type": "word",
+      "logprob": -0.00026127262390218675
+    },
+    {
+      "text": " ",
+      "start": 7.14,
+      "end": 7.24,
+      "type": "spacing",
+      "logprob": -3.504691630951129e-05
+    },
+    {
+      "text": "대상이",
+      "start": 7.24,
+      "end": 7.54,
+      "type": "word",
+      "logprob": -2.3722238552181807e-05
+    },
+    {
+      "text": " ",
+      "start": 7.54,
+      "end": 7.68,
+      "type": "spacing",
+      "logprob": -4.410734163684538e-06
+    },
+    {
+      "text": "연결돼서",
+      "start": 7.68,
+      "end": 8.14,
+      "type": "word",
+      "logprob": -0.000821379357830665
+    },
+    {
+      "text": " ",
+      "start": 8.14,
+      "end": 8.22,
+      "type": "spacing",
+      "logprob": -4.529942543740617e-06
+    },
+    {
+      "text": "나온",
+      "start": 8.22,
+      "end": 8.38,
+      "type": "word",
+      "logprob": -4.529942543740617e-06
+    },
+    {
+      "text": " ",
+      "start": 8.38,
+      "end": 8.48,
+      "type": "spacing",
+      "logprob": -1.7881233361549675e-05
+    },
+    {
+      "text": "행인지",
+      "start": 8.48,
+      "end": 8.96,
+      "type": "word",
+      "logprob": -1.0331404155294877e-05
+    },
+    {
+      "text": " ",
+      "start": 8.96,
+      "end": 9.08,
+      "type": "spacing",
+      "logprob": -3.576272320060525e-06
+    },
+    {
+      "text": "확인하겠습니다.",
+      "start": 9.08,
+      "end": 9.7,
+      "type": "word",
+      "logprob": -9.283367205625837e-06
+    },
+    {
+      "text": " ",
+      "start": 9.7,
+      "end": 9.7,
+      "type": "spacing",
+      "logprob": -2.6940935640595853e-05
+    },
+    {
+      "text": "실습",
+      "start": 10.74,
+      "end": 10.96,
+      "type": "word",
+      "logprob": -0.0001713382443995215
+    },
+    {
+      "text": " ",
+      "start": 10.96,
+      "end": 11.06,
+      "type": "spacing",
+      "logprob": -1.3828182090946939e-05
+    },
+    {
+      "text": "시작",
+      "start": 11.06,
+      "end": 11.26,
+      "type": "word",
+      "logprob": -1.3828182090946939e-05
+    },
+    {
+      "text": " ",
+      "start": 11.26,
+      "end": 11.38,
+      "type": "spacing",
+      "logprob": -6.615896563744172e-05
+    },
+    {
+      "text": "도구에서",
+      "start": 11.38,
+      "end": 12.1,
+      "type": "word",
+      "logprob": -1.8834513014098775e-05
+    },
+    {
+      "text": " ",
+      "start": 12.1,
+      "end": 12.3,
+      "type": "spacing",
+      "logprob": -0.0019743014127016068
+    },
+    {
+      "text": "관계",
+      "start": 12.3,
+      "end": 12.5,
+      "type": "word",
+      "logprob": -0.0019743014127016068
+    },
+    {
+      "text": " ",
+      "start": 12.5,
+      "end": 12.6,
+      "type": "spacing",
+      "logprob": -0.0009579836623743176
+    },
+    {
+      "text": "조회를",
+      "start": 12.6,
+      "end": 12.9,
+      "type": "word",
+      "logprob": -0.0008482483293240269
+    },
+    {
+      "text": " ",
+      "start": 12.9,
+      "end": 13.02,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "선택하고",
+      "start": 13.02,
+      "end": 13.82,
+      "type": "word",
+      "logprob": -9.536736627069331e-07
+    },
+    {
+      "text": " ",
+      "start": 13.82,
+      "end": 13.92,
+      "type": "spacing",
+      "logprob": -4.23184028477408e-05
+    },
+    {
+      "text": "새로",
+      "start": 13.92,
+      "end": 14.08,
+      "type": "word",
+      "logprob": -4.23184028477408e-05
+    },
+    {
+      "text": " ",
+      "start": 14.08,
+      "end": 14.18,
+      "type": "spacing",
+      "logprob": -1.4305104514278355e-06
+    },
+    {
+      "text": "시작을",
+      "start": 14.18,
+      "end": 14.52,
+      "type": "word",
+      "logprob": -1.1523557266931068e-06
+    },
+    {
+      "text": " ",
+      "start": 14.52,
+      "end": 14.6,
+      "type": "spacing",
+      "logprob": -1.7881377516459906e-06
+    },
+    {
+      "text": "누릅니다.",
+      "start": 14.6,
+      "end": 14.96,
+      "type": "word",
+      "logprob": -4.6439134939646466e-05
+    },
+    {
+      "text": " ",
+      "start": 14.96,
+      "end": 15.3,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "먼저",
+      "start": 15.3,
+      "end": 15.66,
+      "type": "word",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": " ",
+      "start": 15.66,
+      "end": 15.78,
+      "type": "spacing",
+      "logprob": -3.576272320060525e-06
+    },
+    {
+      "text": "조회할",
+      "start": 15.78,
+      "end": 16.079,
+      "type": "word",
+      "logprob": -1.6172437729740825e-05
+    },
+    {
+      "text": " ",
+      "start": 16.079,
+      "end": 16.219,
+      "type": "spacing",
+      "logprob": -2.3841830625315197e-06
+    },
+    {
+      "text": "예제를",
+      "start": 16.26,
+      "end": 16.56,
+      "type": "word",
+      "logprob": -0.00020500870020138487
+    },
+    {
+      "text": " ",
+      "start": 16.56,
+      "end": 16.68,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "준비할게요.",
+      "start": 16.68,
+      "end": 17.16,
+      "type": "word",
+      "logprob": -1.450378019759076e-06
+    },
+    {
+      "text": " ",
+      "start": 17.16,
+      "end": 17.16,
+      "type": "spacing",
+      "logprob": -0.0041139028035104275
+    },
+    {
+      "text": "도커가",
+      "start": 17.88,
+      "end": 18.22,
+      "type": "word",
+      "logprob": -0.002046493890967819
+    },
+    {
+      "text": " ",
+      "start": 18.22,
+      "end": 18.3,
+      "type": "spacing",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": "실행된",
+      "start": 18.3,
+      "end": 18.62,
+      "type": "word",
+      "logprob": -9.258463838553629e-06
+    },
+    {
+      "text": " ",
+      "start": 18.62,
+      "end": 18.78,
+      "type": "spacing",
+      "logprob": -8.344646857949556e-07
+    },
+    {
+      "text": "상태에서",
+      "start": 18.78,
+      "end": 19.58,
+      "type": "word",
+      "logprob": -4.172323428974778e-07
+    },
+    {
+      "text": " ",
+      "start": 19.58,
+      "end": 19.62,
+      "type": "spacing",
+      "logprob": -0.3076537847518921
+    },
+    {
+      "text": "VSCode",
+      "start": 19.62,
+      "end": 20.18,
+      "type": "word",
+      "logprob": -0.7360252936681112
+    },
+    {
+      "text": " ",
+      "start": 20.18,
+      "end": 20.34,
+      "type": "spacing",
+      "logprob": -9.464769391342998e-05
+    },
+    {
+      "text": "터미널에",
+      "start": 20.34,
+      "end": 20.96,
+      "type": "word",
+      "logprob": -5.495311279446469e-05
+    },
+    {
+      "text": " ",
+      "start": 20.96,
+      "end": 21.06,
+      "type": "spacing",
+      "logprob": -0.05267355963587761
+    },
+    {
+      "text": "파이썬",
+      "start": 21.06,
+      "end": 21.5,
+      "type": "word",
+      "logprob": -0.021683299642366666
+    },
+    {
+      "text": " ",
+      "start": 21.5,
+      "end": 21.68,
+      "type": "spacing",
+      "logprob": -1.645074735279195e-05
+    },
+    {
+      "text": "준비",
+      "start": 21.68,
+      "end": 21.84,
+      "type": "word",
+      "logprob": -1.645074735279195e-05
+    },
+    {
+      "text": " ",
+      "start": 21.84,
+      "end": 22.0,
+      "type": "spacing",
+      "logprob": -3.135155202471651e-05
+    },
+    {
+      "text": "명령을",
+      "start": 22.0,
+      "end": 22.24,
+      "type": "word",
+      "logprob": -0.00016483503713971004
+    },
+    {
+      "text": " ",
+      "start": 22.24,
+      "end": 22.32,
+      "type": "spacing",
+      "logprob": -5.340433563105762e-05
+    },
+    {
+      "text": "넣겠습니다.",
+      "start": 22.32,
+      "end": 22.84,
+      "type": "word",
+      "logprob": -0.00013397939953089613
+    },
+    {
+      "text": " ",
+      "start": 22.84,
+      "end": 23.54,
+      "type": "spacing",
+      "logprob": -7.509902934543788e-05
+    },
+    {
+      "text": "이",
+      "start": 23.54,
+      "end": 23.64,
+      "type": "word",
+      "logprob": -7.509902934543788e-05
+    },
+    {
+      "text": " ",
+      "start": 23.64,
+      "end": 23.8,
+      "type": "spacing",
+      "logprob": -6.6756979322235566e-06
+    },
+    {
+      "text": "폴더에서",
+      "start": 23.8,
+      "end": 24.2,
+      "type": "word",
+      "logprob": -3.6954751152507015e-06
+    },
+    {
+      "text": " ",
+      "start": 24.2,
+      "end": 24.3,
+      "type": "spacing",
+      "logprob": -2.1934269170742482e-05
+    },
+    {
+      "text": "쓸",
+      "start": 24.52,
+      "end": 24.54,
+      "type": "word",
+      "logprob": -2.1934269170742482e-05
+    },
+    {
+      "text": " ",
+      "start": 24.54,
+      "end": 24.72,
+      "type": "spacing",
+      "logprob": -0.01243269257247448
+    },
+    {
+      "text": "DB와",
+      "start": 24.72,
+      "end": 25.48,
+      "type": "word",
+      "logprob": -0.008300859250690943
+    },
+    {
+      "text": " ",
+      "start": 25.48,
+      "end": 25.62,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "예제만",
+      "start": 25.62,
+      "end": 26.0,
+      "type": "word",
+      "logprob": -2.5431275313773463e-06
+    },
+    {
+      "text": " ",
+      "start": 26.0,
+      "end": 26.16,
+      "type": "spacing",
+      "logprob": -4.529942543740617e-06
+    },
+    {
+      "text": "준비하는",
+      "start": 26.16,
+      "end": 26.48,
+      "type": "word",
+      "logprob": -2.9802264975842263e-06
+    },
+    {
+      "text": " ",
+      "start": 26.48,
+      "end": 26.62,
+      "type": "spacing",
+      "logprob": -5.2569914259947836e-05
+    },
+    {
+      "text": "명령입니다.",
+      "start": 26.62,
+      "end": 27.1,
+      "type": "word",
+      "logprob": -2.495396347512724e-05
+    },
+    {
+      "text": " ",
+      "start": 27.1,
+      "end": 27.34,
+      "type": "spacing",
+      "logprob": -1.156323378381785e-05
+    },
+    {
+      "text": "이제",
+      "start": 27.34,
+      "end": 27.58,
+      "type": "word",
+      "logprob": -1.156323378381785e-05
+    },
+    {
+      "text": " ",
+      "start": 27.58,
+      "end": 27.88,
+      "type": "spacing",
+      "logprob": -1.1920922133867862e-06
+    },
+    {
+      "text": "브라우저를",
+      "start": 27.88,
+      "end": 28.32,
+      "type": "word",
+      "logprob": -0.0007821354500663347
+    },
+    {
+      "text": " ",
+      "start": 28.32,
+      "end": 28.46,
+      "type": "spacing",
+      "logprob": -5.960446742392378e-06
+    },
+    {
+      "text": "열겠습니다.",
+      "start": 28.46,
+      "end": 28.94,
+      "type": "word",
+      "logprob": -1.1900909839823726e-05
+    },
+    {
+      "text": " ",
+      "start": 28.94,
+      "end": 28.94,
+      "type": "spacing",
+      "logprob": -2.7418097943154862e-06
+    },
+    {
+      "text": "터미널에",
+      "start": 29.8,
+      "end": 30.14,
+      "type": "word",
+      "logprob": -5.816824227622419e-05
+    },
+    {
+      "text": " ",
+      "start": 30.14,
+      "end": 30.24,
+      "type": "spacing",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": "나온",
+      "start": 30.24,
+      "end": 30.48,
+      "type": "word",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": " ",
+      "start": 30.48,
+      "end": 30.64,
+      "type": "spacing",
+      "logprob": -3.58813522325363e-05
+    },
+    {
+      "text": "접속",
+      "start": 30.64,
+      "end": 30.86,
+      "type": "word",
+      "logprob": -3.58813522325363e-05
+    },
+    {
+      "text": " ",
+      "start": 30.86,
+      "end": 30.96,
+      "type": "spacing",
+      "logprob": -0.00029595286468975246
+    },
+    {
+      "text": "주소를",
+      "start": 30.96,
+      "end": 31.22,
+      "type": "word",
+      "logprob": -0.00012463807312694067
+    },
+    {
+      "text": " ",
+      "start": 31.22,
+      "end": 31.3,
+      "type": "spacing",
+      "logprob": -0.00014006110723130405
+    },
+    {
+      "text": "사용할",
+      "start": 31.3,
+      "end": 31.6,
+      "type": "word",
+      "logprob": -0.00014006110723130405
+    },
+    {
+      "text": " ",
+      "start": 31.6,
+      "end": 31.66,
+      "type": "spacing",
+      "logprob": -2.9802276912960224e-06
+    },
+    {
+      "text": "거예요.",
+      "start": 31.66,
+      "end": 31.94,
+      "type": "word",
+      "logprob": -5.304791102389572e-06
+    },
+    {
+      "text": " ",
+      "start": 31.94,
+      "end": 32.78,
+      "type": "spacing",
+      "logprob": -4.291525328881107e-06
+    },
+    {
+      "text": "앞에서",
+      "start": 32.78,
+      "end": 33.02,
+      "type": "word",
+      "logprob": -4.291525328881107e-06
+    },
+    {
+      "text": " ",
+      "start": 33.02,
+      "end": 33.12,
+      "type": "spacing",
+      "logprob": -8.344646857949556e-07
+    },
+    {
+      "text": "쓰던",
+      "start": 33.12,
+      "end": 33.56,
+      "type": "word",
+      "logprob": -7.748600978629838e-07
+    },
+    {
+      "text": " ",
+      "start": 33.56,
+      "end": 33.68,
+      "type": "spacing",
+      "logprob": -0.00047874910524114966
+    },
+    {
+      "text": "포털의",
+      "start": 33.68,
+      "end": 34.1,
+      "type": "word",
+      "logprob": -0.002030884197059398
+    },
+    {
+      "text": " ",
+      "start": 34.1,
+      "end": 34.16,
+      "type": "spacing",
+      "logprob": -0.000704159727320075
+    },
+    {
+      "text": "DB",
+      "start": 34.16,
+      "end": 34.52,
+      "type": "word",
+      "logprob": -0.000704159727320075
+    },
+    {
+      "text": " ",
+      "start": 34.52,
+      "end": 34.62,
+      "type": "spacing",
+      "logprob": -0.0003800861886702478
+    },
+    {
+      "text": "주소를",
+      "start": 34.62,
+      "end": 34.9,
+      "type": "word",
+      "logprob": -0.0001375830894782363
+    },
+    {
+      "text": " ",
+      "start": 34.9,
+      "end": 34.98,
+      "type": "spacing",
+      "logprob": -3.862306402879767e-05
+    },
+    {
+      "text": "넣으면",
+      "start": 34.98,
+      "end": 35.56,
+      "type": "word",
+      "logprob": -1.6212206295070548e-05
+    },
+    {
+      "text": " ",
+      "start": 35.56,
+      "end": 35.68,
+      "type": "spacing",
+      "logprob": -3.933898824470816e-06
+    },
+    {
+      "text": "다른",
+      "start": 35.68,
+      "end": 35.84,
+      "type": "word",
+      "logprob": -3.933898824470816e-06
+    },
+    {
+      "text": " ",
+      "start": 35.84,
+      "end": 35.94,
+      "type": "spacing",
+      "logprob": -2.0265558760002023e-06
+    },
+    {
+      "text": "데이터를",
+      "start": 35.94,
+      "end": 36.26,
+      "type": "word",
+      "logprob": -2.0265558760002023e-06
+    },
+    {
+      "text": " ",
+      "start": 36.26,
+      "end": 36.36,
+      "type": "spacing",
+      "logprob": -7.390948667307384e-06
+    },
+    {
+      "text": "보게",
+      "start": 36.38,
+      "end": 36.5,
+      "type": "word",
+      "logprob": -4.2319158524151135e-06
+    },
+    {
+      "text": " ",
+      "start": 36.5,
+      "end": 36.58,
+      "type": "spacing",
+      "logprob": -3.5523738915799186e-05
+    },
+    {
+      "text": "됩니다.",
+      "start": 36.58,
+      "end": 36.86,
+      "type": "word",
+      "logprob": -2.819252017616236e-05
+    },
+    {
+      "text": " ",
+      "start": 36.86,
+      "end": 37.1,
+      "type": "spacing",
+      "logprob": -1.1920922133867862e-06
+    },
+    {
+      "text": "이",
+      "start": 37.12,
+      "end": 37.2,
+      "type": "word",
+      "logprob": -1.1920922133867862e-06
+    },
+    {
+      "text": " ",
+      "start": 37.2,
+      "end": 37.32,
+      "type": "spacing",
+      "logprob": -5.483612312673358e-06
+    },
+    {
+      "text": "예제에는",
+      "start": 37.32,
+      "end": 38.0,
+      "type": "word",
+      "logprob": -1.949047748439625e-05
+    },
+    {
+      "text": " ",
+      "start": 38.0,
+      "end": 38.18,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "설비",
+      "start": 38.18,
+      "end": 38.34,
+      "type": "word",
+      "logprob": -2.324576968248948e-06
+    },
+    {
+      "text": " ",
+      "start": 38.34,
+      "end": 38.44,
+      "type": "spacing",
+      "logprob": -0.0263226255774498
+    },
+    {
+      "text": "한",
+      "start": 38.44,
+      "end": 38.58,
+      "type": "word",
+      "logprob": -0.0263226255774498
+    },
+    {
+      "text": " ",
+      "start": 38.58,
+      "end": 38.66,
+      "type": "spacing",
+      "logprob": -0.0010874316794797778
+    },
+    {
+      "text": "대의",
+      "start": 38.66,
+      "end": 38.8,
+      "type": "word",
+      "logprob": -0.0016398350126110017
+    },
+    {
+      "text": " ",
+      "start": 38.8,
+      "end": 38.9,
+      "type": "spacing",
+      "logprob": -1.823885577323381e-05
+    },
+    {
+      "text": "구성과",
+      "start": 38.9,
+      "end": 39.5,
+      "type": "word",
+      "logprob": -1.5059983828299059e-05
+    },
+    {
+      "text": " ",
+      "start": 39.5,
+      "end": 39.64,
+      "type": "spacing",
+      "logprob": -4.911301948595792e-05
+    },
+    {
+      "text": "계측",
+      "start": 39.64,
+      "end": 39.9,
+      "type": "word",
+      "logprob": -0.00030271360446931794
+    },
+    {
+      "text": " ",
+      "start": 39.9,
+      "end": 40.02,
+      "type": "spacing",
+      "logprob": -3.659658250398934e-05
+    },
+    {
+      "text": "채널이",
+      "start": 40.02,
+      "end": 40.26,
+      "type": "word",
+      "logprob": -1.3828051843726522e-05
+    },
+    {
+      "text": " ",
+      "start": 40.26,
+      "end": 40.32,
+      "type": "spacing",
+      "logprob": -1.7881377516459906e-06
+    },
+    {
+      "text": "들어있습니다.",
+      "start": 40.32,
+      "end": 40.86,
+      "type": "word",
+      "logprob": -0.028810466923776597
+    },
+    {
+      "text": " ",
+      "start": 40.86,
+      "end": 41.6,
+      "type": "spacing",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": "먼저",
+      "start": 41.6,
+      "end": 42.02,
+      "type": "word",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": " ",
+      "start": 42.02,
+      "end": 42.2,
+      "type": "spacing",
+      "logprob": -0.00011336160969221964
+    },
+    {
+      "text": "쿨러에서",
+      "start": 42.2,
+      "end": 42.78,
+      "type": "word",
+      "logprob": -3.963687220220891e-06
+    },
+    {
+      "text": " ",
+      "start": 42.78,
+      "end": 42.96,
+      "type": "spacing",
+      "logprob": -4.2676016164477915e-05
+    },
+    {
+      "text": "센서로",
+      "start": 42.96,
+      "end": 43.24,
+      "type": "word",
+      "logprob": -3.254333205167844e-05
+    },
+    {
+      "text": " ",
+      "start": 43.24,
+      "end": 43.32,
+      "type": "spacing",
+      "logprob": -0.00018225439998786896
+    },
+    {
+      "text": "가는",
+      "start": 43.32,
+      "end": 43.5,
+      "type": "word",
+      "logprob": -0.00018225439998786896
+    },
+    {
+      "text": " ",
+      "start": 43.5,
+      "end": 43.66,
+      "type": "spacing",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": "연결",
+      "start": 43.66,
+      "end": 43.86,
+      "type": "word",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": " ",
+      "start": 43.86,
+      "end": 43.96,
+      "type": "spacing",
+      "logprob": -0.00015853578224778175
+    },
+    {
+      "text": "하나부터",
+      "start": 43.96,
+      "end": 44.54,
+      "type": "word",
+      "logprob": -9.03542322703288e-05
+    },
+    {
+      "text": " ",
+      "start": 44.54,
+      "end": 44.66,
+      "type": "spacing",
+      "logprob": -6.437280717364047e-06
+    },
+    {
+      "text": "조회해",
+      "start": 44.66,
+      "end": 44.88,
+      "type": "word",
+      "logprob": -2.5947171404065255e-05
+    },
+    {
+      "text": " ",
+      "start": 44.88,
+      "end": 44.98,
+      "type": "spacing",
+      "logprob": -0.0008320921915583313
+    },
+    {
+      "text": "볼게요.",
+      "start": 44.98,
+      "end": 45.3,
+      "type": "word",
+      "logprob": -0.0006249632117487636
+    },
+    {
+      "text": " ",
+      "start": 45.3,
+      "end": 45.72,
+      "type": "spacing",
+      "logprob": -0.024272069334983826
+    },
+    {
+      "text": "질의",
+      "start": 45.72,
+      "end": 45.88,
+      "type": "word",
+      "logprob": -0.012174120583949843
+    },
+    {
+      "text": " ",
+      "start": 45.88,
+      "end": 45.98,
+      "type": "spacing",
+      "logprob": -0.004698901902884245
+    },
+    {
+      "text": "파일을",
+      "start": 45.98,
+      "end": 46.2,
+      "type": "word",
+      "logprob": -0.004698901902884245
+    },
+    {
+      "text": " ",
+      "start": 46.2,
+      "end": 46.38,
+      "type": "spacing",
+      "logprob": -2.8013790142722428e-05
+    },
+    {
+      "text": "열고",
+      "start": 46.38,
+      "end": 47.02,
+      "type": "word",
+      "logprob": -1.6033448900998337e-05
+    },
+    {
+      "text": " ",
+      "start": 47.02,
+      "end": 47.12,
+      "type": "spacing",
+      "logprob": -9.107174992095679e-05
+    },
+    {
+      "text": "오일",
+      "start": 47.12,
+      "end": 47.3,
+      "type": "word",
+      "logprob": -4.8814119736562134e-05
+    },
+    {
+      "text": " ",
+      "start": 47.3,
+      "end": 47.44,
+      "type": "spacing",
+      "logprob": -0.04313681647181511
+    },
+    {
+      "text": "쿨러에서",
+      "start": 47.44,
+      "end": 48.06,
+      "type": "word",
+      "logprob": -4.881153638791602e-05
+    },
+    {
+      "text": " ",
+      "start": 48.06,
+      "end": 48.26,
+      "type": "spacing",
+      "logprob": -2.2411095415009186e-05
+    },
+    {
+      "text": "센서로",
+      "start": 48.26,
+      "end": 48.52,
+      "type": "word",
+      "logprob": -9.02008241373172e-06
+    },
+    {
+      "text": " ",
+      "start": 48.52,
+      "end": 48.62,
+      "type": "spacing",
+      "logprob": -0.00021479207498487085
+    },
+    {
+      "text": "가는",
+      "start": 48.62,
+      "end": 48.8,
+      "type": "word",
+      "logprob": -0.00021479207498487085
+    },
+    {
+      "text": " ",
+      "start": 48.8,
+      "end": 48.88,
+      "type": "spacing",
+      "logprob": -5.960446742392378e-06
+    },
+    {
+      "text": "패턴을",
+      "start": 48.9,
+      "end": 49.24,
+      "type": "word",
+      "logprob": -4.0133675890767035e-06
+    },
+    {
+      "text": " ",
+      "start": 49.24,
+      "end": 49.32,
+      "type": "spacing",
+      "logprob": -2.0861407392658293e-05
+    },
+    {
+      "text": "적겠습니다.",
+      "start": 49.32,
+      "end": 49.86,
+      "type": "word",
+      "logprob": -3.08547411454659e-05
+    },
+    {
+      "text": " ",
+      "start": 49.86,
+      "end": 50.62,
+      "type": "spacing",
+      "logprob": -2.9205850296420977e-05
+    },
+    {
+      "text": "구성",
+      "start": 50.62,
+      "end": 50.84,
+      "type": "word",
+      "logprob": -2.9205850296420977e-05
+    },
+    {
+      "text": " ",
+      "start": 50.84,
+      "end": 50.94,
+      "type": "spacing",
+      "logprob": -0.03823912516236305
+    },
+    {
+      "text": "요소와",
+      "start": 50.94,
+      "end": 51.4,
+      "type": "word",
+      "logprob": -0.025499544968624832
+    },
+    {
+      "text": " ",
+      "start": 51.4,
+      "end": 51.58,
+      "type": "spacing",
+      "logprob": -3.6477376852417365e-05
+    },
+    {
+      "text": "센서의",
+      "start": 51.58,
+      "end": 51.86,
+      "type": "word",
+      "logprob": -7.851236659680201e-05
+    },
+    {
+      "text": " ",
+      "start": 51.86,
+      "end": 52.04,
+      "type": "spacing",
+      "logprob": -6.556489552167477e-06
+    },
+    {
+      "text": "종류를",
+      "start": 52.04,
+      "end": 52.32,
+      "type": "word",
+      "logprob": -4.569675127186201e-06
+    },
+    {
+      "text": " ",
+      "start": 52.32,
+      "end": 52.44,
+      "type": "spacing",
+      "logprob": -2.7418097943154862e-06
+    },
+    {
+      "text": "쓰고",
+      "start": 52.44,
+      "end": 52.98,
+      "type": "word",
+      "logprob": -2.7418097943154862e-06
+    },
+    {
+      "text": " ",
+      "start": 52.98,
+      "end": 53.12,
+      "type": "spacing",
+      "logprob": -0.0003943857445847243
+    },
+    {
+      "text": "사이에는",
+      "start": 53.12,
+      "end": 53.64,
+      "type": "word",
+      "logprob": -0.00020100755500607193
+    },
+    {
+      "text": " ",
+      "start": 53.64,
+      "end": 53.76,
+      "type": "spacing",
+      "logprob": -1.9550132492440753e-05
+    },
+    {
+      "text": "계측",
+      "start": 53.76,
+      "end": 54.02,
+      "type": "word",
+      "logprob": -0.0003333831473355531
+    },
+    {
+      "text": " ",
+      "start": 54.02,
+      "end": 54.16,
+      "type": "spacing",
+      "logprob": -0.004267751704901457
+    },
+    {
+      "text": "관계를",
+      "start": 54.16,
+      "end": 54.4,
+      "type": "word",
+      "logprob": -0.0028452075396951195
+    },
+    {
+      "text": " ",
+      "start": 54.4,
+      "end": 54.48,
+      "type": "spacing",
+      "logprob": -0.0025934891309589148
+    },
+    {
+      "text": "둡니다.",
+      "start": 54.48,
+      "end": 54.78,
+      "type": "word",
+      "logprob": -8.206230248219981e-05
+    },
+    {
+      "text": " ",
+      "start": 54.78,
+      "end": 55.58,
+      "type": "spacing",
+      "logprob": 0.0
+    },
+    {
+      "text": "이름만",
+      "start": 55.58,
+      "end": 55.92,
+      "type": "word",
+      "logprob": -1.9868209240788323e-07
+    },
+    {
+      "text": " ",
+      "start": 55.92,
+      "end": 56.12,
+      "type": "spacing",
+      "logprob": -1.8954096958623268e-05
+    },
+    {
+      "text": "같은",
+      "start": 56.12,
+      "end": 56.34,
+      "type": "word",
+      "logprob": -1.8954096958623268e-05
+    },
+    {
+      "text": " ",
+      "start": 56.34,
+      "end": 56.46,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "다른",
+      "start": 56.46,
+      "end": 56.64,
+      "type": "word",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": " ",
+      "start": 56.64,
+      "end": 56.74,
+      "type": "spacing",
+      "logprob": -9.881961887003854e-05
+    },
+    {
+      "text": "대상을",
+      "start": 56.74,
+      "end": 57.02,
+      "type": "word",
+      "logprob": -3.3098818657132746e-05
+    },
+    {
+      "text": " ",
+      "start": 57.02,
+      "end": 57.16,
+      "type": "spacing",
+      "logprob": -3.576272320060525e-06
+    },
+    {
+      "text": "섞지",
+      "start": 57.16,
+      "end": 57.32,
+      "type": "word",
+      "logprob": -0.00020201940651531913
+    },
+    {
+      "text": " ",
+      "start": 57.32,
+      "end": 57.44,
+      "type": "spacing",
+      "logprob": -3.325883881188929e-05
+    },
+    {
+      "text": "않도록",
+      "start": 57.44,
+      "end": 58.0,
+      "type": "word",
+      "logprob": -1.8318270425273415e-05
+    },
+    {
+      "text": " ",
+      "start": 58.0,
+      "end": 58.16,
+      "type": "spacing",
+      "logprob": -2.312633478140924e-05
+    },
+    {
+      "text": "쿨러",
+      "start": 58.16,
+      "end": 58.32,
+      "type": "word",
+      "logprob": -8.940692453052179e-07
+    },
+    {
+      "text": " ",
+      "start": 58.32,
+      "end": 58.44,
+      "type": "spacing",
+      "logprob": -8.4638240878121e-06
+    },
+    {
+      "text": "식별자를",
+      "start": 58.44,
+      "end": 59.04,
+      "type": "word",
+      "logprob": -6.28795503416768e-05
+    },
+    {
+      "text": " ",
+      "start": 59.04,
+      "end": 59.16,
+      "type": "spacing",
+      "logprob": -4.172316494077677e-06
+    },
+    {
+      "text": "조건으로",
+      "start": 59.16,
+      "end": 59.54,
+      "type": "word",
+      "logprob": -2.205367522378765e-06
+    },
+    {
+      "text": " ",
+      "start": 59.54,
+      "end": 59.64,
+      "type": "spacing",
+      "logprob": -6.9141146923357155e-06
+    },
+    {
+      "text": "쓰겠습니다.",
+      "start": 59.64,
+      "end": 60.12,
+      "type": "word",
+      "logprob": -1.4503755162801706e-06
+    },
+    {
+      "text": " ",
+      "start": 60.12,
+      "end": 60.52,
+      "type": "spacing",
+      "logprob": -2.145764938177308e-06
+    },
+    {
+      "text": "결과에서는",
+      "start": 60.52,
+      "end": 61.3,
+      "type": "word",
+      "logprob": -6.079649938328657e-06
+    },
+    {
+      "text": " ",
+      "start": 61.3,
+      "end": 61.48,
+      "type": "spacing",
+      "logprob": -1.0013530300057027e-05
+    },
+    {
+      "text": "쿨러가",
+      "start": 61.48,
+      "end": 61.78,
+      "type": "word",
+      "logprob": -9.496878144924873e-06
+    },
+    {
+      "text": " ",
+      "start": 61.78,
+      "end": 61.92,
+      "type": "spacing",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": "몇",
+      "start": 61.92,
+      "end": 62.02,
+      "type": "word",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": " ",
+      "start": 62.02,
+      "end": 62.16,
+      "type": "spacing",
+      "logprob": -2.455681169521995e-05
+    },
+    {
+      "text": "번",
+      "start": 62.16,
+      "end": 62.18,
+      "type": "word",
+      "logprob": -2.455681169521995e-05
+    },
+    {
+      "text": " ",
+      "start": 62.18,
+      "end": 62.28,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "나왔는지와",
+      "start": 62.28,
+      "end": 63.2,
+      "type": "word",
+      "logprob": -4.041053541641304e-05
+    },
+    {
+      "text": " ",
+      "start": 63.2,
+      "end": 63.32,
+      "type": "spacing",
+      "logprob": -4.768360213347478e-06
+    },
+    {
+      "text": "서로",
+      "start": 63.32,
+      "end": 63.46,
+      "type": "word",
+      "logprob": -4.768360213347478e-06
+    },
+    {
+      "text": " ",
+      "start": 63.46,
+      "end": 63.6,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "다른",
+      "start": 63.6,
+      "end": 63.8,
+      "type": "word",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": " ",
+      "start": 63.8,
+      "end": 63.96,
+      "type": "spacing",
+      "logprob": -1.6093124941107817e-05
+    },
+    {
+      "text": "센서가",
+      "start": 63.96,
+      "end": 64.3,
+      "type": "word",
+      "logprob": -2.0622825635048987e-05
+    },
+    {
+      "text": " ",
+      "start": 64.3,
+      "end": 64.5,
+      "type": "spacing",
+      "logprob": -1.3112935448589269e-05
+    },
+    {
+      "text": "몇",
+      "start": 64.5,
+      "end": 64.54,
+      "type": "word",
+      "logprob": -1.3112935448589269e-05
+    },
+    {
+      "text": " ",
+      "start": 64.54,
+      "end": 64.64,
+      "type": "spacing",
+      "logprob": -0.2817380428314209
+    },
+    {
+      "text": "개인지를",
+      "start": 64.64,
+      "end": 65.099,
+      "type": "word",
+      "logprob": -0.14088028656624374
+    },
+    {
+      "text": " ",
+      "start": 65.099,
+      "end": 65.22,
+      "type": "spacing",
+      "logprob": -0.0001399419124936685
+    },
+    {
+      "text": "나누어",
+      "start": 65.22,
+      "end": 65.42,
+      "type": "word",
+      "logprob": -9.349329042152021e-05
+    },
+    {
+      "text": " ",
+      "start": 65.42,
+      "end": 65.519,
+      "type": "spacing",
+      "logprob": -0.006719611585140228
+    },
+    {
+      "text": "봅니다.",
+      "start": 65.519,
+      "end": 65.82,
+      "type": "word",
+      "logprob": -3.159035259159282e-06
+    },
+    {
+      "text": " ",
+      "start": 65.82,
+      "end": 66.74,
+      "type": "spacing",
+      "logprob": -4.291525328881107e-06
+    },
+    {
+      "text": "쿨러",
+      "start": 66.74,
+      "end": 66.9,
+      "type": "word",
+      "logprob": -1.1920918439045636e-06
+    },
+    {
+      "text": " ",
+      "start": 66.9,
+      "end": 66.96,
+      "type": "spacing",
+      "logprob": -4.768370445162873e-07
+    },
+    {
+      "text": "이름이",
+      "start": 66.96,
+      "end": 67.22,
+      "type": "word",
+      "logprob": -6.75519042185139e-07
+    },
+    {
+      "text": " ",
+      "start": 67.22,
+      "end": 67.4,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "반복됐다고",
+      "start": 67.4,
+      "end": 68.4,
+      "type": "word",
+      "logprob": -0.00020150581815414625
+    },
+    {
+      "text": " ",
+      "start": 68.4,
+      "end": 68.58,
+      "type": "spacing",
+      "logprob": -1.2636104656849056e-05
+    },
+    {
+      "text": "쿨러",
+      "start": 68.58,
+      "end": 68.72,
+      "type": "word",
+      "logprob": -1.1920921565433673e-06
+    },
+    {
+      "text": " ",
+      "start": 68.72,
+      "end": 68.82,
+      "type": "spacing",
+      "logprob": -0.0001003691868390888
+    },
+    {
+      "text": "노드가",
+      "start": 68.82,
+      "end": 69.12,
+      "type": "word",
+      "logprob": -8.328401600010693e-05
+    },
+    {
+      "text": " ",
+      "start": 69.12,
+      "end": 69.28,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "여러",
+      "start": 69.28,
+      "end": 69.42,
+      "type": "word",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": " ",
+      "start": 69.42,
+      "end": 69.52,
+      "type": "spacing",
+      "logprob": -0.00043442347669042647
+    },
+    {
+      "text": "개라는",
+      "start": 69.52,
+      "end": 69.78,
+      "type": "word",
+      "logprob": -0.00015331136758807892
+    },
+    {
+      "text": " ",
+      "start": 69.78,
+      "end": 69.92,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "뜻은",
+      "start": 69.92,
+      "end": 70.04,
+      "type": "word",
+      "logprob": -1.7881390590446244e-07
+    },
+    {
+      "text": " ",
+      "start": 70.04,
+      "end": 70.12,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "아닙니다.",
+      "start": 70.12,
+      "end": 70.52,
+      "type": "word",
+      "logprob": -1.668929883180681e-07
+    },
+    {
+      "text": " ",
+      "start": 70.52,
+      "end": 71.36,
+      "type": "spacing",
+      "logprob": -2.5510462364763953e-05
+    },
+    {
+      "text": "센서",
+      "start": 71.36,
+      "end": 71.54,
+      "type": "word",
+      "logprob": -1.4841389429420815e-05
+    },
+    {
+      "text": " ",
+      "start": 71.54,
+      "end": 71.66,
+      "type": "spacing",
+      "logprob": -2.9802276912960224e-06
+    },
+    {
+      "text": "식별자와",
+      "start": 71.66,
+      "end": 72.36,
+      "type": "word",
+      "logprob": -0.00025945260813386994
+    },
+    {
+      "text": " ",
+      "start": 72.36,
+      "end": 72.5,
+      "type": "spacing",
+      "logprob": -4.327203714638017e-05
+    },
+    {
+      "text": "태그를",
+      "start": 72.5,
+      "end": 72.88,
+      "type": "word",
+      "logprob": -5.519114923420906e-05
+    },
+    {
+      "text": " ",
+      "start": 72.88,
+      "end": 73.06,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "함께",
+      "start": 73.06,
+      "end": 73.24,
+      "type": "word",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": " ",
+      "start": 73.24,
+      "end": 73.38,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "확인하겠습니다.",
+      "start": 73.38,
+      "end": 74.0,
+      "type": "word",
+      "logprob": -1.658479821031733e-05
+    },
+    {
+      "text": " ",
+      "start": 74.0,
+      "end": 74.24,
+      "type": "spacing",
+      "logprob": -6.615896563744172e-05
+    },
+    {
+      "text": "이번에는",
+      "start": 74.24,
+      "end": 74.9,
+      "type": "word",
+      "logprob": -3.307948281872086e-05
+    },
+    {
+      "text": " ",
+      "start": 74.9,
+      "end": 75.1,
+      "type": "spacing",
+      "logprob": -8.344646857949556e-07
+    },
+    {
+      "text": "같은",
+      "start": 75.12,
+      "end": 75.26,
+      "type": "word",
+      "logprob": -8.344646857949556e-07
+    },
+    {
+      "text": " ",
+      "start": 75.26,
+      "end": 75.36,
+      "type": "spacing",
+      "logprob": -1.9073468138230965e-06
+    },
+    {
+      "text": "패턴에서",
+      "start": 75.36,
+      "end": 76.06,
+      "type": "word",
+      "logprob": -1.0728826822514748e-06
+    },
+    {
+      "text": " ",
+      "start": 76.06,
+      "end": 76.3,
+      "type": "spacing",
+      "logprob": -3.1470757676288486e-05
+    },
+    {
+      "text": "관계에도",
+      "start": 76.3,
+      "end": 76.72,
+      "type": "word",
+      "logprob": -2.050372768280795e-05
+    },
+    {
+      "text": " ",
+      "start": 76.72,
+      "end": 76.92,
+      "type": "spacing",
+      "logprob": -4.410734163684538e-06
+    },
+    {
+      "text": "변수를",
+      "start": 76.92,
+      "end": 77.2,
+      "type": "word",
+      "logprob": -1.8159336680885946e-05
+    },
+    {
+      "text": " ",
+      "start": 77.2,
+      "end": 77.36,
+      "type": "spacing",
+      "logprob": -1.168244216387393e-05
+    },
+    {
+      "text": "붙이고",
+      "start": 77.36,
+      "end": 78.08,
+      "type": "word",
+      "logprob": -4.196056064150374e-05
+    },
+    {
+      "text": " ",
+      "start": 78.08,
+      "end": 78.22,
+      "type": "spacing",
+      "logprob": -7.676783570786938e-05
+    },
+    {
+      "text": "속성값",
+      "start": 78.22,
+      "end": 78.6,
+      "type": "word",
+      "logprob": -0.03774503858827908
+    },
+    {
+      "text": " ",
+      "start": 78.6,
+      "end": 78.72,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "대신",
+      "start": 78.72,
+      "end": 79.14,
+      "type": "word",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": " ",
+      "start": 79.14,
+      "end": 79.3,
+      "type": "spacing",
+      "logprob": -4.458328112377785e-05
+    },
+    {
+      "text": "노드와",
+      "start": 79.3,
+      "end": 79.68,
+      "type": "word",
+      "logprob": -7.696484256788001e-05
+    },
+    {
+      "text": " ",
+      "start": 79.68,
+      "end": 79.92,
+      "type": "spacing",
+      "logprob": -1.0967194612021558e-05
+    },
+    {
+      "text": "관계를",
+      "start": 79.92,
+      "end": 80.26,
+      "type": "word",
+      "logprob": -7.390935924907656e-06
+    },
+    {
+      "text": " ",
+      "start": 80.26,
+      "end": 80.4,
+      "type": "spacing",
+      "logprob": -0.00011824862303910777
+    },
+    {
+      "text": "반환하겠습니다.",
+      "start": 80.4,
+      "end": 81.04,
+      "type": "word",
+      "logprob": -0.00011038024376475164
+    },
+    {
+      "text": " ",
+      "start": 81.04,
+      "end": 81.9,
+      "type": "spacing",
+      "logprob": -9.846202738117427e-05
+    },
+    {
+      "text": "표에서",
+      "start": 81.9,
+      "end": 82.18,
+      "type": "word",
+      "logprob": -3.5681692679645494e-05
+    },
+    {
+      "text": " ",
+      "start": 82.18,
+      "end": 82.34,
+      "type": "spacing",
+      "logprob": -1.5616295058862306e-05
+    },
+    {
+      "text": "읽은",
+      "start": 82.34,
+      "end": 82.46,
+      "type": "word",
+      "logprob": -2.9086552785884123e-05
+    },
+    {
+      "text": " ",
+      "start": 82.46,
+      "end": 82.6,
+      "type": "spacing",
+      "logprob": -1.6689286894688848e-06
+    },
+    {
+      "text": "연결이",
+      "start": 82.6,
+      "end": 83.14,
+      "type": "word",
+      "logprob": -6.953823382597572e-06
+    },
+    {
+      "text": " ",
+      "start": 83.14,
+      "end": 83.22,
+      "type": "spacing",
+      "logprob": -1.4305104514278355e-06
+    },
+    {
+      "text": "그래프에서도",
+      "start": 83.22,
+      "end": 83.98,
+      "type": "word",
+      "logprob": -2.6226002205476107e-06
+    },
+    {
+      "text": " ",
+      "start": 83.98,
+      "end": 84.2,
+      "type": "spacing",
+      "logprob": -2.7418097943154862e-06
+    },
+    {
+      "text": "같은",
+      "start": 84.22,
+      "end": 84.36,
+      "type": "word",
+      "logprob": -2.7418097943154862e-06
+    },
+    {
+      "text": " ",
+      "start": 84.36,
+      "end": 84.46,
+      "type": "spacing",
+      "logprob": -1.3708974620385561e-05
+    },
+    {
+      "text": "대상인지",
+      "start": 84.46,
+      "end": 84.9,
+      "type": "word",
+      "logprob": -1.5497086224058876e-05
+    },
+    {
+      "text": " ",
+      "start": 84.9,
+      "end": 85.0,
+      "type": "spacing",
+      "logprob": -8.284702198579907e-05
+    },
+    {
+      "text": "보겠습니다.",
+      "start": 85.0,
+      "end": 85.5,
+      "type": "word",
+      "logprob": -6.935707612380308e-05
+    },
+    {
+      "text": " ",
+      "start": 85.5,
+      "end": 86.3,
+      "type": "spacing",
+      "logprob": -4.589452510117553e-05
+    },
+    {
+      "text": "다음으로",
+      "start": 86.3,
+      "end": 86.94,
+      "type": "word",
+      "logprob": -2.3364494893485244e-05
+    },
+    {
+      "text": " ",
+      "start": 86.94,
+      "end": 87.1,
+      "type": "spacing",
+      "logprob": -4.410734163684538e-06
+    },
+    {
+      "text": "출발점을",
+      "start": 87.12,
+      "end": 87.82,
+      "type": "word",
+      "logprob": -4.2317685029047425e-05
+    },
+    {
+      "text": " ",
+      "start": 87.82,
+      "end": 87.86,
+      "type": "spacing",
+      "logprob": -0.003971309866756201
+    },
+    {
+      "text": "hyd-01로",
+      "start": 88.5,
+      "end": 90.1,
+      "type": "word",
+      "logprob": -0.0019998981086441097
+    },
+    {
+      "text": " ",
+      "start": 90.1,
+      "end": 90.18,
+      "type": "spacing",
+      "logprob": -2.622600959512056e-06
+    },
+    {
+      "text": "바꾸고",
+      "start": 90.18,
+      "end": 91.08,
+      "type": "word",
+      "logprob": -1.8676099102776789e-06
+    },
+    {
+      "text": " ",
+      "start": 91.08,
+      "end": 91.18,
+      "type": "spacing",
+      "logprob": -0.0007432320853695273
+    },
+    {
+      "text": "구성",
+      "start": 91.18,
+      "end": 91.38,
+      "type": "word",
+      "logprob": -0.0007432320853695273
+    },
+    {
+      "text": " ",
+      "start": 91.38,
+      "end": 91.48,
+      "type": "spacing",
+      "logprob": -0.018200883641839027
+    },
+    {
+      "text": "요소와",
+      "start": 91.48,
+      "end": 91.82,
+      "type": "word",
+      "logprob": -0.012137339743276243
+    },
+    {
+      "text": " ",
+      "start": 91.82,
+      "end": 92.0,
+      "type": "spacing",
+      "logprob": -2.038458114839159e-05
+    },
+    {
+      "text": "센서를",
+      "start": 92.0,
+      "end": 92.28,
+      "type": "word",
+      "logprob": -9.206378672388382e-05
+    },
+    {
+      "text": " ",
+      "start": 92.28,
+      "end": 92.38,
+      "type": "spacing",
+      "logprob": -4.887569048150908e-06
+    },
+    {
+      "text": "거쳐",
+      "start": 92.38,
+      "end": 92.86,
+      "type": "word",
+      "logprob": -1.4841396932752104e-05
+    },
+    {
+      "text": " ",
+      "start": 92.86,
+      "end": 93.04,
+      "type": "spacing",
+      "logprob": -0.0005673944251611829
+    },
+    {
+      "text": "상태",
+      "start": 93.04,
+      "end": 93.2,
+      "type": "word",
+      "logprob": -0.0005673944251611829
+    },
+    {
+      "text": " ",
+      "start": 93.2,
+      "end": 93.36,
+      "type": "spacing",
+      "logprob": -0.026379285380244255
+    },
+    {
+      "text": "변수까지",
+      "start": 93.36,
+      "end": 94.0,
+      "type": "word",
+      "logprob": -0.006607129418512159
+    },
+    {
+      "text": " ",
+      "start": 94.0,
+      "end": 94.16,
+      "type": "spacing",
+      "logprob": -0.0002531684876885265
+    },
+    {
+      "text": "길을",
+      "start": 94.16,
+      "end": 94.32,
+      "type": "word",
+      "logprob": -0.00013933947502664523
+    },
+    {
+      "text": " ",
+      "start": 94.32,
+      "end": 94.4,
+      "type": "spacing",
+      "logprob": -4.660974445869215e-05
+    },
+    {
+      "text": "이어",
+      "start": 94.4,
+      "end": 94.5,
+      "type": "word",
+      "logprob": -4.660974445869215e-05
+    },
+    {
+      "text": " ",
+      "start": 94.5,
+      "end": 94.64,
+      "type": "spacing",
+      "logprob": -0.00010930894495686516
+    },
+    {
+      "text": "적습니다.",
+      "start": 94.64,
+      "end": 95.02,
+      "type": "word",
+      "logprob": -0.00012656741964747197
+    },
+    {
+      "text": " ",
+      "start": 95.02,
+      "end": 95.4,
+      "type": "spacing",
+      "logprob": -1.4424220353248529e-05
+    },
+    {
+      "text": "한계가",
+      "start": 95.4,
+      "end": 95.68,
+      "type": "word",
+      "logprob": -0.0003635542664710556
+    },
+    {
+      "text": " ",
+      "start": 95.68,
+      "end": 95.78,
+      "type": "spacing",
+      "logprob": -4.172316494077677e-06
+    },
+    {
+      "text": "없는",
+      "start": 95.78,
+      "end": 95.96,
+      "type": "word",
+      "logprob": -4.172316494077677e-06
+    },
+    {
+      "text": " ",
+      "start": 95.96,
+      "end": 96.08,
+      "type": "spacing",
+      "logprob": -2.8490614567999728e-05
+    },
+    {
+      "text": "물리량은",
+      "start": 96.08,
+      "end": 96.72,
+      "type": "word",
+      "logprob": -5.122756374476012e-05
+    },
+    {
+      "text": " ",
+      "start": 96.72,
+      "end": 96.92,
+      "type": "spacing",
+      "logprob": -9.07141511561349e-05
+    },
+    {
+      "text": "빈",
+      "start": 96.92,
+      "end": 96.94,
+      "type": "word",
+      "logprob": -9.07141511561349e-05
+    },
+    {
+      "text": " ",
+      "start": 96.94,
+      "end": 97.1,
+      "type": "spacing",
+      "logprob": -0.18039092421531677
+    },
+    {
+      "text": "값으로",
+      "start": 97.16,
+      "end": 97.34,
+      "type": "word",
+      "logprob": -0.060174652452891074
+    },
+    {
+      "text": " ",
+      "start": 97.34,
+      "end": 97.44,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "나올",
+      "start": 97.44,
+      "end": 97.56,
+      "type": "word",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": " ",
+      "start": 97.56,
+      "end": 97.62,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "수",
+      "start": 97.62,
+      "end": 97.66,
+      "type": "word",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": " ",
+      "start": 97.66,
+      "end": 97.78,
+      "type": "spacing",
+      "logprob": -2.622600959512056e-06
+    },
+    {
+      "text": "있습니다.",
+      "start": 97.78,
+      "end": 98.12,
+      "type": "word",
+      "logprob": -6.5087757320725356e-06
+    },
+    {
+      "text": " ",
+      "start": 98.12,
+      "end": 98.9,
+      "type": "spacing",
+      "logprob": -3.6954811548639555e-06
+    },
+    {
+      "text": "대상까지",
+      "start": 98.9,
+      "end": 99.36,
+      "type": "word",
+      "logprob": -2.3245775082614273e-06
+    },
+    {
+      "text": " ",
+      "start": 99.36,
+      "end": 99.52,
+      "type": "spacing",
+      "logprob": -8.106198947643861e-06
+    },
+    {
+      "text": "못",
+      "start": 99.52,
+      "end": 99.54,
+      "type": "word",
+      "logprob": -8.106198947643861e-06
+    },
+    {
+      "text": " ",
+      "start": 99.54,
+      "end": 99.68,
+      "type": "spacing",
+      "logprob": -0.00010394509445177391
+    },
+    {
+      "text": "찾은",
+      "start": 99.68,
+      "end": 99.82,
+      "type": "word",
+      "logprob": -5.322424317455443e-05
+    },
+    {
+      "text": " ",
+      "start": 99.82,
+      "end": 99.96,
+      "type": "spacing",
+      "logprob": -1.2755313036905136e-05
+    },
+    {
+      "text": "것과",
+      "start": 99.96,
+      "end": 100.42,
+      "type": "word",
+      "logprob": -1.007313085210626e-05
+    },
+    {
+      "text": " ",
+      "start": 100.42,
+      "end": 100.56,
+      "type": "spacing",
+      "logprob": -1.2159273865108844e-05
+    },
+    {
+      "text": "속성값이",
+      "start": 100.56,
+      "end": 101.08,
+      "type": "word",
+      "logprob": -0.07142019988600623
+    },
+    {
+      "text": " ",
+      "start": 101.08,
+      "end": 101.22,
+      "type": "spacing",
+      "logprob": -5.364403477869928e-06
+    },
+    {
+      "text": "없는",
+      "start": 101.22,
+      "end": 101.44,
+      "type": "word",
+      "logprob": -5.364403477869928e-06
+    },
+    {
+      "text": " ",
+      "start": 101.44,
+      "end": 101.62,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "것은",
+      "start": 101.62,
+      "end": 101.84,
+      "type": "word",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": " ",
+      "start": 101.84,
+      "end": 101.96,
+      "type": "spacing",
+      "logprob": -2.658331868587993e-05
+    },
+    {
+      "text": "다릅니다.",
+      "start": 101.96,
+      "end": 102.38,
+      "type": "word",
+      "logprob": -7.068102677294519e-05
+    },
+    {
+      "text": " ",
+      "start": 102.38,
+      "end": 103.26,
+      "type": "spacing",
+      "logprob": -0.04860879108309746
+    },
+    {
+      "text": "웨어에",
+      "start": 103.26,
+      "end": 103.7,
+      "type": "word",
+      "logprob": -0.01908200354834359
+    },
+    {
+      "text": " ",
+      "start": 103.7,
+      "end": 103.86,
+      "type": "spacing",
+      "logprob": -7.617183291586116e-05
+    },
+    {
+      "text": "한계값이",
+      "start": 103.86,
+      "end": 104.34,
+      "type": "word",
+      "logprob": -0.28834069124604866
+    },
+    {
+      "text": " ",
+      "start": 104.34,
+      "end": 104.44,
+      "type": "spacing",
+      "logprob": -1.1920922133867862e-06
+    },
+    {
+      "text": "있는",
+      "start": 104.44,
+      "end": 104.6,
+      "type": "word",
+      "logprob": -1.1920922133867862e-06
+    },
+    {
+      "text": " ",
+      "start": 104.6,
+      "end": 104.7,
+      "type": "spacing",
+      "logprob": -3.933898824470816e-06
+    },
+    {
+      "text": "조건을",
+      "start": 104.7,
+      "end": 105.0,
+      "type": "word",
+      "logprob": -3.933898824470816e-06
+    },
+    {
+      "text": " ",
+      "start": 105.0,
+      "end": 105.16,
+      "type": "spacing",
+      "logprob": -8.523101132595912e-05
+    },
+    {
+      "text": "붙여보고",
+      "start": 105.16,
+      "end": 105.88,
+      "type": "word",
+      "logprob": -0.000304142319919265
+    },
+    {
+      "text": " ",
+      "start": 105.88,
+      "end": 105.98,
+      "type": "spacing",
+      "logprob": -4.017272294731811e-05
+    },
+    {
+      "text": "어떤",
+      "start": 105.98,
+      "end": 106.26,
+      "type": "word",
+      "logprob": -4.017272294731811e-05
+    },
+    {
+      "text": " ",
+      "start": 106.26,
+      "end": 106.4,
+      "type": "spacing",
+      "logprob": -1.0132738680113107e-05
+    },
+    {
+      "text": "행이",
+      "start": 106.4,
+      "end": 106.5,
+      "type": "word",
+      "logprob": -8.22484253149014e-05
+    },
+    {
+      "text": " ",
+      "start": 106.5,
+      "end": 106.62,
+      "type": "spacing",
+      "logprob": -1.1801649634435307e-05
+    },
+    {
+      "text": "빠졌는지",
+      "start": 106.62,
+      "end": 107.2,
+      "type": "word",
+      "logprob": -4.827955962127817e-06
+    },
+    {
+      "text": " ",
+      "start": 107.2,
+      "end": 107.28,
+      "type": "spacing",
+      "logprob": -3.4570634852570947e-06
+    },
+    {
+      "text": "기록하겠습니다.",
+      "start": 107.28,
+      "end": 107.96,
+      "type": "word",
+      "logprob": -6.475722904042414e-05
+    },
+    {
+      "text": " ",
+      "start": 107.96,
+      "end": 108.76,
+      "type": "spacing",
+      "logprob": -8.201262971851975e-05
+    },
+    {
+      "text": "빈",
+      "start": 108.76,
+      "end": 108.8,
+      "type": "word",
+      "logprob": -8.201262971851975e-05
+    },
+    {
+      "text": " ",
+      "start": 108.8,
+      "end": 108.96,
+      "type": "spacing",
+      "logprob": -0.07897787541151047
+    },
+    {
+      "text": "값을",
+      "start": 109.04,
+      "end": 109.38,
+      "type": "word",
+      "logprob": -0.07897787541151047
+    },
+    {
+      "text": " ",
+      "start": 109.38,
+      "end": 109.6,
+      "type": "spacing",
+      "logprob": -0.00010525626566959545
+    },
+    {
+      "text": "0으로",
+      "start": 109.6,
+      "end": 109.78,
+      "type": "word",
+      "logprob": -2.5669241333995767e-05
+    },
+    {
+      "text": " ",
+      "start": 109.78,
+      "end": 109.88,
+      "type": "spacing",
+      "logprob": -3.4927710657939315e-05
+    },
+    {
+      "text": "바꾸지는",
+      "start": 109.88,
+      "end": 110.32,
+      "type": "word",
+      "logprob": -3.2484000257682055e-05
+    },
+    {
+      "text": " ",
+      "start": 110.32,
+      "end": 110.44,
+      "type": "spacing",
+      "logprob": -8.702239938429557e-06
+    },
+    {
+      "text": "않겠습니다.",
+      "start": 110.44,
+      "end": 110.96,
+      "type": "word",
+      "logprob": -0.00012192238712790034
+    },
+    {
+      "text": " ",
+      "start": 110.96,
+      "end": 111.34,
+      "type": "spacing",
+      "logprob": -1.6689286894688848e-06
+    },
+    {
+      "text": "같은",
+      "start": 111.34,
+      "end": 111.46,
+      "type": "word",
+      "logprob": -1.6689286894688848e-06
+    },
+    {
+      "text": " ",
+      "start": 111.46,
+      "end": 111.62,
+      "type": "spacing",
+      "logprob": -2.861018856492592e-06
+    },
+    {
+      "text": "설비에서",
+      "start": 111.62,
+      "end": 112.28,
+      "type": "word",
+      "logprob": -8.940686164748968e-07
+    },
+    {
+      "text": " ",
+      "start": 112.28,
+      "end": 112.36,
+      "type": "spacing",
+      "logprob": -0.0001820160250645131
+    },
+    {
+      "text": "이번에는",
+      "start": 112.36,
+      "end": 112.9,
+      "type": "word",
+      "logprob": -9.106761717347922e-05
+    },
+    {
+      "text": " ",
+      "start": 112.9,
+      "end": 113.06,
+      "type": "spacing",
+      "logprob": -2.861018856492592e-06
+    },
+    {
+      "text": "교체할",
+      "start": 113.06,
+      "end": 113.4,
+      "type": "word",
+      "logprob": -1.2914216161637645e-05
+    },
+    {
+      "text": " ",
+      "start": 113.4,
+      "end": 113.48,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "부품을",
+      "start": 113.48,
+      "end": 113.82,
+      "type": "word",
+      "logprob": -2.4476762755890984e-05
+    },
+    {
+      "text": " ",
+      "start": 113.82,
+      "end": 113.96,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "찾아보겠습니다.",
+      "start": 113.96,
+      "end": 114.6,
+      "type": "word",
+      "logprob": -1.8626392357390387e-06
+    },
+    {
+      "text": " ",
+      "start": 114.6,
+      "end": 115.54,
+      "type": "spacing",
+      "logprob": -8.082063141046092e-05
+    },
+    {
+      "text": "센서를",
+      "start": 115.54,
+      "end": 115.82,
+      "type": "word",
+      "logprob": -4.577501264672416e-05
+    },
+    {
+      "text": " ",
+      "start": 115.82,
+      "end": 116.0,
+      "type": "spacing",
+      "logprob": -8.940656698541716e-06
+    },
+    {
+      "text": "찾던",
+      "start": 116.0,
+      "end": 116.16,
+      "type": "word",
+      "logprob": -1.5199048903014045e-05
+    },
+    {
+      "text": " ",
+      "start": 116.16,
+      "end": 116.3,
+      "type": "spacing",
+      "logprob": -2.2291887944447808e-05
+    },
+    {
+      "text": "길과",
+      "start": 116.3,
+      "end": 116.44,
+      "type": "word",
+      "logprob": -1.2755266766362183e-05
+    },
+    {
+      "text": " ",
+      "start": 116.44,
+      "end": 116.6,
+      "type": "spacing",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": "달리",
+      "start": 116.6,
+      "end": 117.08,
+      "type": "word",
+      "logprob": -2.3841855067985307e-07
+    },
+    {
+      "text": " ",
+      "start": 117.08,
+      "end": 117.22,
+      "type": "spacing",
+      "logprob": -1.9907753085135482e-05
+    },
+    {
+      "text": "구성",
+      "start": 117.22,
+      "end": 117.46,
+      "type": "word",
+      "logprob": -1.9907753085135482e-05
+    },
+    {
+      "text": " ",
+      "start": 117.46,
+      "end": 117.56,
+      "type": "spacing",
+      "logprob": -0.0002681849291548133
+    },
+    {
+      "text": "요소에서",
+      "start": 117.56,
+      "end": 118.16,
+      "type": "word",
+      "logprob": -0.00013421167385274657
+    },
+    {
+      "text": " ",
+      "start": 118.16,
+      "end": 118.26,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "부품을",
+      "start": 118.26,
+      "end": 118.6,
+      "type": "word",
+      "logprob": -5.24517457733964e-06
+    },
+    {
+      "text": " ",
+      "start": 118.6,
+      "end": 118.68,
+      "type": "spacing",
+      "logprob": -5.602820692729438e-06
+    },
+    {
+      "text": "쓰는",
+      "start": 118.68,
+      "end": 118.86,
+      "type": "word",
+      "logprob": -5.602820692729438e-06
+    },
+    {
+      "text": " ",
+      "start": 118.86,
+      "end": 119.0,
+      "type": "spacing",
+      "logprob": -0.0001299296854995191
+    },
+    {
+      "text": "관계로",
+      "start": 119.0,
+      "end": 119.34,
+      "type": "word",
+      "logprob": -0.0001299296854995191
+    },
+    {
+      "text": " ",
+      "start": 119.34,
+      "end": 119.5,
+      "type": "spacing",
+      "logprob": -7.390948667307384e-06
+    },
+    {
+      "text": "건너갑니다.",
+      "start": 119.5,
+      "end": 119.98,
+      "type": "word",
+      "logprob": -6.156244520146477e-05
+    },
+    {
+      "text": " ",
+      "start": 119.98,
+      "end": 120.9,
+      "type": "spacing",
+      "logprob": -0.00027021096320822835
+    },
+    {
+      "text": "쿨러라는",
+      "start": 120.9,
+      "end": 121.3,
+      "type": "word",
+      "logprob": -1.0728829806794238e-06
+    },
+    {
+      "text": " ",
+      "start": 121.3,
+      "end": 121.46,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "장치와",
+      "start": 121.46,
+      "end": 122.0,
+      "type": "word",
+      "logprob": -3.73520873608868e-06
+    },
+    {
+      "text": " ",
+      "start": 122.0,
+      "end": 122.08,
+      "type": "spacing",
+      "logprob": -1.311301275563892e-06
+    },
+    {
+      "text": "그",
+      "start": 122.14,
+      "end": 122.18,
+      "type": "word",
+      "logprob": -1.311301275563892e-06
+    },
+    {
+      "text": " ",
+      "start": 122.18,
+      "end": 122.34,
+      "type": "spacing",
+      "logprob": -0.348702073097229
+    },
+    {
+      "text": "안에",
+      "start": 122.34,
+      "end": 122.46,
+      "type": "word",
+      "logprob": -0.348702073097229
+    },
+    {
+      "text": " ",
+      "start": 122.46,
+      "end": 122.6,
+      "type": "spacing",
+      "logprob": -4.768360213347478e-06
+    },
+    {
+      "text": "교체",
+      "start": 122.6,
+      "end": 122.84,
+      "type": "word",
+      "logprob": -8.404212849200121e-06
+    },
+    {
+      "text": " ",
+      "start": 122.84,
+      "end": 122.94,
+      "type": "spacing",
+      "logprob": -2.753696753643453e-05
+    },
+    {
+      "text": "부품인",
+      "start": 122.94,
+      "end": 123.46,
+      "type": "word",
+      "logprob": -1.760301620379323e-05
+    },
+    {
+      "text": " ",
+      "start": 123.46,
+      "end": 123.64,
+      "type": "spacing",
+      "logprob": -1.0251946150674485e-05
+    },
+    {
+      "text": "쿨러",
+      "start": 123.64,
+      "end": 123.86,
+      "type": "word",
+      "logprob": -2.9206196217046454e-06
+    },
+    {
+      "text": " ",
+      "start": 123.86,
+      "end": 123.98,
+      "type": "spacing",
+      "logprob": -0.003190429415553808
+    },
+    {
+      "text": "코어를",
+      "start": 123.98,
+      "end": 124.3,
+      "type": "word",
+      "logprob": -0.001122204329779682
+    },
+    {
+      "text": " ",
+      "start": 124.3,
+      "end": 124.4,
+      "type": "spacing",
+      "logprob": -1.1205610462639015e-05
+    },
+    {
+      "text": "구별하고",
+      "start": 124.4,
+      "end": 125.32,
+      "type": "word",
+      "logprob": -5.9306399862180115e-06
+    },
+    {
+      "text": " ",
+      "start": 125.32,
+      "end": 125.46,
+      "type": "spacing",
+      "logprob": -0.0009130837861448526
+    },
+    {
+      "text": "주문할",
+      "start": 125.46,
+      "end": 125.78,
+      "type": "word",
+      "logprob": -0.0006108682843356897
+    },
+    {
+      "text": " ",
+      "start": 125.78,
+      "end": 125.98,
+      "type": "spacing",
+      "logprob": -1.0609570381348021e-05
+    },
+    {
+      "text": "때",
+      "start": 125.98,
+      "end": 126.04,
+      "type": "word",
+      "logprob": -1.0609570381348021e-05
+    },
+    {
+      "text": " ",
+      "start": 126.04,
+      "end": 126.22,
+      "type": "spacing",
+      "logprob": -2.4437606043647975e-05
+    },
+    {
+      "text": "확인할",
+      "start": 126.22,
+      "end": 126.48,
+      "type": "word",
+      "logprob": -2.4437606043647975e-05
+    },
+    {
+      "text": " ",
+      "start": 126.48,
+      "end": 126.64,
+      "type": "spacing",
+      "logprob": -0.0003698380314745009
+    },
+    {
+      "text": "품번까지",
+      "start": 126.64,
+      "end": 127.28,
+      "type": "word",
+      "logprob": -0.00010366498383973521
+    },
+    {
+      "text": " ",
+      "start": 127.28,
+      "end": 127.44,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "함께",
+      "start": 127.44,
+      "end": 127.58,
+      "type": "word",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": " ",
+      "start": 127.58,
+      "end": 127.72,
+      "type": "spacing",
+      "logprob": -0.00025876989820972085
+    },
+    {
+      "text": "받겠습니다.",
+      "start": 127.72,
+      "end": 128.199,
+      "type": "word",
+      "logprob": -4.428067191971271e-05
+    },
+    {
+      "text": " ",
+      "start": 128.199,
+      "end": 128.5,
+      "type": "spacing",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": "이제",
+      "start": 128.5,
+      "end": 128.9,
+      "type": "word",
+      "logprob": -1.2993727978027891e-05
+    },
+    {
+      "text": " ",
+      "start": 128.9,
+      "end": 129.039,
+      "type": "spacing",
+      "logprob": -8.821448318485636e-06
+    },
+    {
+      "text": "구성",
+      "start": 129.039,
+      "end": 129.259,
+      "type": "word",
+      "logprob": -8.821448318485636e-06
+    },
+    {
+      "text": " ",
+      "start": 129.259,
+      "end": 129.38,
+      "type": "spacing",
+      "logprob": -0.0001264730526600033
+    },
+    {
+      "text": "요소별로",
+      "start": 129.38,
+      "end": 130.06,
+      "type": "word",
+      "logprob": -0.00012131453328834141
+    },
+    {
+      "text": " ",
+      "start": 130.06,
+      "end": 130.24,
+      "type": "spacing",
+      "logprob": -3.290122185717337e-05
+    },
+    {
+      "text": "센서가",
+      "start": 130.24,
+      "end": 130.539,
+      "type": "word",
+      "logprob": -3.3218734943811036e-05
+    },
+    {
+      "text": " ",
+      "start": 130.539,
+      "end": 130.759,
+      "type": "spacing",
+      "logprob": -1.156323378381785e-05
+    },
+    {
+      "text": "몇",
+      "start": 130.759,
+      "end": 130.8,
+      "type": "word",
+      "logprob": -1.156323378381785e-05
+    },
+    {
+      "text": " ",
+      "start": 130.8,
+      "end": 130.9,
+      "type": "spacing",
+      "logprob": -4.207999518257566e-05
+    },
+    {
+      "text": "개",
+      "start": 130.9,
+      "end": 130.94,
+      "type": "word",
+      "logprob": -4.207999518257566e-05
+    },
+    {
+      "text": " ",
+      "start": 130.94,
+      "end": 131.1,
+      "type": "spacing",
+      "logprob": -3.576278118089249e-07
+    },
+    {
+      "text": "연결되는지",
+      "start": 131.1,
+      "end": 131.72,
+      "type": "word",
+      "logprob": -0.0001679626584291327
+    },
+    {
+      "text": " ",
+      "start": 131.72,
+      "end": 131.82,
+      "type": "spacing",
+      "logprob": -2.396077979938127e-05
+    },
+    {
+      "text": "보겠습니다.",
+      "start": 131.82,
+      "end": 132.32,
+      "type": "word",
+      "logprob": -2.1159405150683597e-05
+    },
+    {
+      "text": " ",
+      "start": 132.32,
+      "end": 133.14,
+      "type": "spacing",
+      "logprob": -7.152555099310121e-07
+    },
+    {
+      "text": "먼저",
+      "start": 133.14,
+      "end": 133.56,
+      "type": "word",
+      "logprob": -7.152555099310121e-07
+    },
+    {
+      "text": " ",
+      "start": 133.56,
+      "end": 133.74,
+      "type": "spacing",
+      "logprob": -1.168244216387393e-05
+    },
+    {
+      "text": "원래",
+      "start": 133.74,
+      "end": 133.9,
+      "type": "word",
+      "logprob": -1.168244216387393e-05
+    },
+    {
+      "text": " ",
+      "start": 133.9,
+      "end": 134.04,
+      "type": "spacing",
+      "logprob": -0.00022909401741344482
+    },
+    {
+      "text": "행에서",
+      "start": 134.04,
+      "end": 134.48,
+      "type": "word",
+      "logprob": -0.0003042538737645373
+    },
+    {
+      "text": " ",
+      "start": 134.48,
+      "end": 134.68,
+      "type": "spacing",
+      "logprob": -4.768370445162873e-07
+    },
+    {
+      "text": "장치별",
+      "start": 134.68,
+      "end": 135.06,
+      "type": "word",
+      "logprob": -6.297665803837542e-05
+    },
+    {
+      "text": " ",
+      "start": 135.06,
+      "end": 135.22,
+      "type": "spacing",
+      "logprob": -3.218599158572033e-05
+    },
+    {
+      "text": "센서",
+      "start": 135.22,
+      "end": 135.42,
+      "type": "word",
+      "logprob": -2.384153958701063e-05
+    },
+    {
+      "text": " ",
+      "start": 135.42,
+      "end": 135.54,
+      "type": "spacing",
+      "logprob": -4.0531076592742465e-06
+    },
+    {
+      "text": "식별자를",
+      "start": 135.54,
+      "end": 135.98,
+      "type": "word",
+      "logprob": -1.2934082405990921e-05
+    },
+    {
+      "text": " ",
+      "start": 135.98,
+      "end": 136.1,
+      "type": "spacing",
+      "logprob": -6.437280717364047e-06
+    },
+    {
+      "text": "모아",
+      "start": 136.1,
+      "end": 136.26,
+      "type": "word",
+      "logprob": -3.355648414071766e-05
+    },
+    {
+      "text": " ",
+      "start": 136.26,
+      "end": 136.38,
+      "type": "spacing",
+      "logprob": -0.00032610344351269305
+    },
+    {
+      "text": "세고",
+      "start": 136.38,
+      "end": 137.04,
+      "type": "word",
+      "logprob": -0.00016483985791637679
+    },
+    {
+      "text": " ",
+      "start": 137.04,
+      "end": 137.12,
+      "type": "spacing",
+      "logprob": -0.04315873980522156
+    },
+    {
+      "text": "그다음",
+      "start": 137.12,
+      "end": 137.62,
+      "type": "word",
+      "logprob": -0.02877312898575231
+    },
+    {
+      "text": " ",
+      "start": 137.62,
+      "end": 137.82,
+      "type": "spacing",
+      "logprob": -0.00022003613412380219
+    },
+    {
+      "text": "질의의",
+      "start": 137.82,
+      "end": 138.08,
+      "type": "word",
+      "logprob": -9.595499492813057e-05
+    },
+    {
+      "text": " ",
+      "start": 138.08,
+      "end": 138.26,
+      "type": "spacing",
+      "logprob": -5.602820692729438e-06
+    },
+    {
+      "text": "집계와",
+      "start": 138.26,
+      "end": 138.66,
+      "type": "word",
+      "logprob": -0.0008432390521496321
+    },
+    {
+      "text": " ",
+      "start": 138.66,
+      "end": 138.78,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "비교합니다.",
+      "start": 138.78,
+      "end": 139.26,
+      "type": "word",
+      "logprob": -3.039828012418866e-06
+    },
+    {
+      "text": " ",
+      "start": 139.26,
+      "end": 139.26,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "장치",
+      "start": 140.08,
+      "end": 140.3,
+      "type": "word",
+      "logprob": -5.1855819833690475e-06
+    },
+    {
+      "text": " ",
+      "start": 140.3,
+      "end": 140.36,
+      "type": "spacing",
+      "logprob": 0.0
+    },
+    {
+      "text": "이름과",
+      "start": 140.36,
+      "end": 140.82,
+      "type": "word",
+      "logprob": -3.973642748178463e-08
+    },
+    {
+      "text": " ",
+      "start": 140.82,
+      "end": 140.94,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "식별자를",
+      "start": 140.94,
+      "end": 141.42,
+      "type": "word",
+      "logprob": -3.7848849103738758e-06
+    },
+    {
+      "text": " ",
+      "start": 141.42,
+      "end": 141.6,
+      "type": "spacing",
+      "logprob": -1.1920928244535389e-07
+    },
+    {
+      "text": "묶는",
+      "start": 141.6,
+      "end": 141.82,
+      "type": "word",
+      "logprob": -0.0009496139243196922
+    },
+    {
+      "text": " ",
+      "start": 141.82,
+      "end": 141.92,
+      "type": "spacing",
+      "logprob": -2.1934269170742482e-05
+    },
+    {
+      "text": "기준으로",
+      "start": 141.92,
+      "end": 142.28,
+      "type": "word",
+      "logprob": -2.1934269170742482e-05
+    },
+    {
+      "text": " ",
+      "start": 142.28,
+      "end": 142.38,
+      "type": "spacing",
+      "logprob": -0.00020180096908006817
+    },
+    {
+      "text": "두고",
+      "start": 142.38,
+      "end": 142.9,
+      "type": "word",
+      "logprob": -0.00020180096908006817
+    },
+    {
+      "text": " ",
+      "start": 142.9,
+      "end": 143.0,
+      "type": "spacing",
+      "logprob": -2.622600959512056e-06
+    },
+    {
+      "text": "서로",
+      "start": 143.0,
+      "end": 143.16,
+      "type": "word",
+      "logprob": -2.622600959512056e-06
+    },
+    {
+      "text": " ",
+      "start": 143.16,
+      "end": 143.3,
+      "type": "spacing",
+      "logprob": -4.768360213347478e-06
+    },
+    {
+      "text": "다른",
+      "start": 143.3,
+      "end": 143.5,
+      "type": "word",
+      "logprob": -4.768360213347478e-06
+    },
+    {
+      "text": " ",
+      "start": 143.5,
+      "end": 143.66,
+      "type": "spacing",
+      "logprob": -2.5033637939486653e-05
+    },
+    {
+      "text": "센서를",
+      "start": 143.66,
+      "end": 143.96,
+      "type": "word",
+      "logprob": -5.078170458242918e-05
+    },
+    {
+      "text": " ",
+      "start": 143.96,
+      "end": 144.06,
+      "type": "spacing",
+      "logprob": -0.00020251607929822057
+    },
+    {
+      "text": "세겠습니다.",
+      "start": 144.06,
+      "end": 144.54,
+      "type": "word",
+      "logprob": -0.00023999264753153207
+    },
+    {
+      "text": " ",
+      "start": 144.54,
+      "end": 144.92,
+      "type": "spacing",
+      "logprob": -2.6464111215318553e-05
+    },
+    {
+      "text": "수만",
+      "start": 144.92,
+      "end": 145.12,
+      "type": "word",
+      "logprob": -1.5437422689501545e-05
+    },
+    {
+      "text": " ",
+      "start": 145.12,
+      "end": 145.28,
+      "type": "spacing",
+      "logprob": -7.688703772146255e-05
+    },
+    {
+      "text": "맞는지",
+      "start": 145.28,
+      "end": 145.56,
+      "type": "word",
+      "logprob": -2.6582686208106072e-05
+    },
+    {
+      "text": " ",
+      "start": 145.56,
+      "end": 145.68,
+      "type": "spacing",
+      "logprob": -4.887569048150908e-06
+    },
+    {
+      "text": "보지",
+      "start": 145.68,
+      "end": 145.84,
+      "type": "word",
+      "logprob": -5.900841870243312e-06
+    },
+    {
+      "text": " ",
+      "start": 145.84,
+      "end": 145.98,
+      "type": "spacing",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": "않고",
+      "start": 145.98,
+      "end": 146.52,
+      "type": "word",
+      "logprob": -1.0728830375228426e-06
+    },
+    {
+      "text": " ",
+      "start": 146.52,
+      "end": 146.76,
+      "type": "spacing",
+      "logprob": -3.1709168979432434e-05
+    },
+    {
+      "text": "같은",
+      "start": 146.76,
+      "end": 146.92,
+      "type": "word",
+      "logprob": -3.1709168979432434e-05
+    },
+    {
+      "text": " ",
+      "start": 146.92,
+      "end": 147.06,
+      "type": "spacing",
+      "logprob": -1.3708974620385561e-05
+    },
+    {
+      "text": "센서를",
+      "start": 147.06,
+      "end": 147.34,
+      "type": "word",
+      "logprob": -1.8954090592160355e-05
+    },
+    {
+      "text": " ",
+      "start": 147.34,
+      "end": 147.44,
+      "type": "spacing",
+      "logprob": -0.00028939827461726964
+    },
+    {
+      "text": "셌는지도",
+      "start": 147.44,
+      "end": 147.94,
+      "type": "word",
+      "logprob": -0.0006949532615294629
+    },
+    {
+      "text": " ",
+      "start": 147.94,
+      "end": 148.1,
+      "type": "spacing",
+      "logprob": -4.1483970562694594e-05
+    },
+    {
+      "text": "확인합니다.",
+      "start": 148.1,
+      "end": 148.54,
+      "type": "word",
+      "logprob": -1.8914201064035296e-05
+    },
+    {
+      "text": " ",
+      "start": 148.54,
+      "end": 149.4,
+      "type": "spacing",
+      "logprob": -9.775113539944869e-06
+    },
+    {
+      "text": "질의와",
+      "start": 149.4,
+      "end": 149.74,
+      "type": "word",
+      "logprob": -1.0410886413107315e-05
+    },
+    {
+      "text": " ",
+      "start": 149.74,
+      "end": 149.94,
+      "type": "spacing",
+      "logprob": -1.4305104514278355e-06
+    },
+    {
+      "text": "결과,",
+      "start": 149.94,
+      "end": 150.16,
+      "type": "word",
+      "logprob": -0.0012019271955523436
+    },
+    {
+      "text": " ",
+      "start": 150.16,
+      "end": 150.68,
+      "type": "spacing",
+      "logprob": -2.634490556374658e-05
+    },
+    {
+      "text": "사용한",
+      "start": 150.68,
+      "end": 151.02,
+      "type": "word",
+      "logprob": -2.2371343826913897e-05
+    },
+    {
+      "text": " ",
+      "start": 151.02,
+      "end": 151.08,
+      "type": "spacing",
+      "logprob": -0.0011257746955379844
+    },
+    {
+      "text": "DB와",
+      "start": 151.08,
+      "end": 151.6,
+      "type": "word",
+      "logprob": -0.0007843304507938834
+    },
+    {
+      "text": " ",
+      "start": 151.6,
+      "end": 151.78,
+      "type": "spacing",
+      "logprob": -6.9141146923357155e-06
+    },
+    {
+      "text": "확인",
+      "start": 151.78,
+      "end": 151.9,
+      "type": "word",
+      "logprob": -6.9141146923357155e-06
+    },
+    {
+      "text": " ",
+      "start": 151.9,
+      "end": 152.0,
+      "type": "spacing",
+      "logprob": -2.992108420585282e-05
+    },
+    {
+      "text": "시점을",
+      "start": 152.0,
+      "end": 152.32,
+      "type": "word",
+      "logprob": -4.923213055008091e-05
+    },
+    {
+      "text": " ",
+      "start": 152.32,
+      "end": 152.44,
+      "type": "spacing",
+      "logprob": -2.9802276912960224e-06
+    },
+    {
+      "text": "저장하고",
+      "start": 152.44,
+      "end": 153.16,
+      "type": "word",
+      "logprob": -3.2186455882765586e-06
+    },
+    {
+      "text": " ",
+      "start": 153.16,
+      "end": 153.28,
+      "type": "spacing",
+      "logprob": -3.6238969187252223e-05
+    },
+    {
+      "text": "파일을",
+      "start": 153.28,
+      "end": 153.58,
+      "type": "word",
+      "logprob": -3.6238969187252223e-05
+    },
+    {
+      "text": " ",
+      "start": 153.58,
+      "end": 153.72,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "다시",
+      "start": 153.72,
+      "end": 153.86,
+      "type": "word",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": " ",
+      "start": 153.86,
+      "end": 153.96,
+      "type": "spacing",
+      "logprob": -2.288792165927589e-05
+    },
+    {
+      "text": "열겠습니다.",
+      "start": 153.96,
+      "end": 154.42,
+      "type": "word",
+      "logprob": -1.0410872770686789e-05
+    },
+    {
+      "text": " ",
+      "start": 154.42,
+      "end": 155.14,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "이렇게",
+      "start": 155.14,
+      "end": 155.4,
+      "type": "word",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": " ",
+      "start": 155.4,
+      "end": 155.48,
+      "type": "spacing",
+      "logprob": -7.152555099310121e-07
+    },
+    {
+      "text": "하면",
+      "start": 155.48,
+      "end": 155.96,
+      "type": "word",
+      "logprob": -7.152555099310121e-07
+    },
+    {
+      "text": " ",
+      "start": 155.96,
+      "end": 156.06,
+      "type": "spacing",
+      "logprob": -7.152555099310121e-07
+    },
+    {
+      "text": "나중에",
+      "start": 156.06,
+      "end": 156.38,
+      "type": "word",
+      "logprob": -3.0994353892310755e-06
+    },
+    {
+      "text": " ",
+      "start": 156.38,
+      "end": 156.48,
+      "type": "spacing",
+      "logprob": -0.0017379907658323646
+    },
+    {
+      "text": "숫자의",
+      "start": 156.56,
+      "end": 156.82,
+      "type": "word",
+      "logprob": -0.03305846743751317
+    },
+    {
+      "text": " ",
+      "start": 156.82,
+      "end": 157.02,
+      "type": "spacing",
+      "logprob": -3.3378546504536644e-06
+    },
+    {
+      "text": "근거가",
+      "start": 157.02,
+      "end": 157.28,
+      "type": "word",
+      "logprob": -1.621211958990898e-05
+    },
+    {
+      "text": " ",
+      "start": 157.28,
+      "end": 157.42,
+      "type": "spacing",
+      "logprob": -1.7523612768854946e-05
+    },
+    {
+      "text": "된",
+      "start": 157.42,
+      "end": 157.44,
+      "type": "word",
+      "logprob": -1.7523612768854946e-05
+    },
+    {
+      "text": " ",
+      "start": 157.44,
+      "end": 157.62,
+      "type": "spacing",
+      "logprob": -3.909988299710676e-05
+    },
+    {
+      "text": "행까지",
+      "start": 157.62,
+      "end": 158.06,
+      "type": "word",
+      "logprob": -1.4066440674772215e-05
+    },
+    {
+      "text": " ",
+      "start": 158.06,
+      "end": 158.2,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "돌아갈",
+      "start": 158.2,
+      "end": 158.42,
+      "type": "word",
+      "logprob": -1.0728828101491672e-06
+    },
+    {
+      "text": " ",
+      "start": 158.42,
+      "end": 158.48,
+      "type": "spacing",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": "수",
+      "start": 158.48,
+      "end": 158.5,
+      "type": "word",
+      "logprob": -5.960462772236497e-07
+    },
+    {
+      "text": " ",
+      "start": 158.5,
+      "end": 158.64,
+      "type": "spacing",
+      "logprob": -9.536738616588991e-07
+    },
+    {
+      "text": "있습니다.",
+      "start": 158.64,
+      "end": 158.96,
+      "type": "word",
+      "logprob": -9.841918326856103e-05
+    }
+  ],
+  "transcription_id": "Y8TAuKid1S1sC7rrtT6z",
+  "audio_duration_secs": 159.2
+}
