@@ -207,7 +207,8 @@ def push():
         if not scan(ref):
             sys.exit(f"{ref}: 키 검사에 걸렸다 — push하지 않았다")
     print(git("push", "origin", "main", BRANCH))
-    git("fetch", "-q", "origin")
+    # 이 저장소의 fetch 설정은 main만 받는다 — 두 브랜치를 이름으로 받아 와야 origin/workspace가 새 값이 된다
+    git("fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main", f"+refs/heads/{BRANCH}:refs/remotes/origin/{BRANCH}")
     for ref in ("main", BRANCH):
         print(ref, git("rev-list", "--left-right", "--count", f"{ref}...origin/{ref}").strip())
 
