@@ -1,23 +1,23 @@
 {
   "source": "제작용/온라인/decks/integrated/day01/통합반_01일차.md",
-  "source_sha256": "e126c5ba79b6df087f39c05ae91397cb15fa424d5fa489a295b3309ea628e076",
+  "source_sha256": "06d4c5cb070e3c2b2b05da946497c84f3f5868be8b55394fcaff3815596e9eb8",
   "slides": [
     {
       "slide": 1,
       "title": "설비 데이터에서 판단과 조치까지, / 그리고 온톨로지가 필요한 이유",
-      "screen_sha256": "c7700090927e051bdafe3d283b74e3d9996e07a913b769e952faa7a34cd75f58",
+      "screen_sha256": "2a4f9e61c14037719fe5b1b38fad0020c9249b14249c18add06fb2da7eed2ac2",
       "assets": []
     },
     {
       "slide": 2,
       "title": "학습목표",
-      "screen_sha256": "0f3ef17a1ccdbb133eb0d320782dac4fb6be1df2c2a3fd449e7dd0b8be8aad4a",
+      "screen_sha256": "3e139b3c1c6c9986e98e33fd8fc5b0f0513e9f279fd054e8cd9ed1f9f7b804f7",
       "assets": []
     },
     {
       "slide": 3,
       "title": "목차",
-      "screen_sha256": "2eefd506ebd0f29936f45bc0a40ff926f793481f5a78bc3b0b24f0dcb162e7c2",
+      "screen_sha256": "ec51f116f7705ba5bad3b13457cb032b5abc59bbd6bbbd32367f3171319e6e3b",
       "assets": []
     },
     {
@@ -70,8 +70,8 @@
     },
     {
       "slide": 12,
-      "title": "HYD 시스템 구조와 데이터 흐름",
-      "screen_sha256": "909384f11abee56a47af2ce96a080dce56e4fe5e40a8775e5def695f2d8c5492",
+      "title": "설비 데이터가 판단으로 이어지는 시스템 구조와 데이터 흐름",
+      "screen_sha256": "3648a57523225d836d917f4ce88a508944a285da2c9c6134258fb949c4a60103",
       "assets": []
     },
     {
@@ -82,7 +82,7 @@
     },
     {
       "slide": 14,
-      "title": "유압 파워팩 HYD-01의 구성과 유온 TS1의 계측 지점",
+      "title": "유압 파워팩의 구성과 유온 TS1의 계측 지점",
       "screen_sha256": "75a5e85fa45cb5a8b78c2711c3e2f38790b146fef49cc2a0641ce425d6d12cc2",
       "assets": [
         {
@@ -99,8 +99,8 @@
     },
     {
       "slide": 16,
-      "title": "HYD-01의 인터록 세 가지",
-      "screen_sha256": "332b4994d9efdcc5402198302d79b8e499d21e8668f87fcba62cfb35f72288ac",
+      "title": "보호 정지 조건의 예: 과열 · 저압 · 고진동",
+      "screen_sha256": "6e7ccc4962e4256b565ee6c580e9b5b4f475c996a034804b0f44e015f74a27dc",
       "assets": []
     },
     {
@@ -141,7 +141,7 @@
     {
       "slide": 22,
       "title": "발행·구독의 전달과 보존 범위",
-      "screen_sha256": "7e947c8f2d0c65832bca7752810ab8dc944c365b8f87f71bb6eb6db73011ad95",
+      "screen_sha256": "3015db3711e154e04d42ba677b8ffda4982660f5743c4e398e920c68818c382e",
       "assets": []
     },
     {
@@ -212,7 +212,7 @@
     {
       "slide": 33,
       "title": "경보·알람·인터록의 기준과 역할",
-      "screen_sha256": "326473a269650dc017e78b6a0605ac732e0bfcbd73fb12ea32c0ea7663041a24",
+      "screen_sha256": "7ee49861cfaf92d559f2147193c250ac8a29a98505f82da6cf57ec47e14a56b8",
       "assets": []
     },
     {
@@ -230,7 +230,7 @@
     {
       "slide": 36,
       "title": "명령 관문과 PLC가 검사하는 것",
-      "screen_sha256": "55e358188f993e3580cde2a4f4a5f87b76056dada5d6ebe18b1c1645bf6a1839",
+      "screen_sha256": "47d6b38a393b58ec7b8b2be1fb1d4c41eaf4985730e32a0c22c37c48b5a33da0",
       "assets": []
     },
     {
@@ -265,7 +265,7 @@
     {
       "slide": 41,
       "title": "데이터 수집과 승인된 자동 명령의 두 경로",
-      "screen_sha256": "66e12fe69ed7aaa782a287427de95b57cf4ab616b1f5110a5e0975179e0c7b0a",
+      "screen_sha256": "5bd3f6ebbc0ded80e37ce44450ec1c62444e78e8c1075cfbcf9b4becfb9a7b06",
       "assets": [
         {
           "path": "figures/데이터_명령_두경로.svg",
@@ -282,7 +282,7 @@
     {
       "slide": 43,
       "title": "실습에서 쓰는 도구와 확인하는 상태",
-      "screen_sha256": "cfc49765ee7ee39a3b308eb0e4118ee626a059248b3a43434f0f8289bae7beee",
+      "screen_sha256": "fd176bf5d1095875908fcc82421e25a96525eb47dc5b3468fc9925fa05d1f302",
       "assets": []
     },
     {
@@ -323,7 +323,7 @@
     {
       "slide": 49,
       "title": "원인 후보와 증거의 대조",
-      "screen_sha256": "ab1bd6b2317e79b12b14782cdf4c0b80127c7154126666954de05f1ce8a526ac",
+      "screen_sha256": "5865b04fb0fabc4a932a29a2a316159d3f6ef6de62ceae72ad74717a2712efb1",
       "assets": []
     },
     {
@@ -353,7 +353,7 @@
     {
       "slide": 54,
       "title": "판단에 쓰이는 정보가 놓인 곳",
-      "screen_sha256": "ca9eddfb62298044a25c6dd20401e133ac323ba5bf9fed28f3d72a9e6406dc31",
+      "screen_sha256": "0617fd3869ba3e8ab3fefea13e9f2124b7a4db78f78bcba26757535ba3a6f7ec",
       "assets": [
         {
           "path": "figures/흩어진정보.svg",
@@ -394,7 +394,7 @@
     {
       "slide": 60,
       "title": "온톨로지: 공통 의미를 정의하는 지식 모델",
-      "screen_sha256": "2959f5dd6a4819d952bf01dd4e44491ab87ea1965ac6a8bb682b7a0ebe7c02df",
+      "screen_sha256": "ea7e1dc270be1b964783146a6d93ae26d1f5e5a1095bbef21465adce30ca2576",
       "assets": []
     },
     {
@@ -422,8 +422,8 @@
     },
     {
       "slide": 64,
-      "title": "HYD 지식 그래프 지도: 설비 쪽과 진단 · 조치 쪽",
-      "screen_sha256": "31886764cb7b4d3faa8cd66d3507c30549b6087aa4108f077dd352c54b04b268",
+      "title": "지식 그래프 지도: 설비 쪽과 진단 · 조치 쪽",
+      "screen_sha256": "7e1c5a7ea990cd634daac20bcf43e8094685054043ce4864da86ed7a80c2d542",
       "assets": [
         {
           "path": "figures/지식그래프_지도.svg",
@@ -492,7 +492,7 @@
     {
       "slide": 73,
       "title": "오늘 다룬 핵심 개념과 주요 용어 정리",
-      "screen_sha256": "5f732103901ccfbfdece12e1b40ae2b649732675dee68d68ed54814904ba128a",
+      "screen_sha256": "2b0bcc35d473122d3c5b18ccee7614ba20300061643729ce3d33721125c8257a",
       "assets": []
     },
     {
