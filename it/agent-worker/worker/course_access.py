@@ -1,21 +1,7 @@
-"""The worker verifies the offline proof itself; a status boolean is not authority."""
-import httpx
+"""The worker checks the course boundary itself right before an AI run; a status flag is not authority."""
 from hydcommon import course_access as rules
 
 
 class CourseAccess:
-    def __init__(self, *, transport=None):
-        self.transport = transport
-
     def __call__(self, definition, activity_id, inputs):
-        try:
-            with httpx.Client(transport=self.transport, trust_env=False, timeout=5) as client:
-                response = client.get(rules.PROOF_URL)
-                response.raise_for_status()
-                if len(response.content)>2048:raise ValueError()
-                proof = response.json()
-                if not isinstance(proof,dict) or set(proof)!={'grant'}:raise ValueError()
-            rules.authorize_task(proof['grant'], definition, activity_id, inputs)
-        except rules.AccessDenied:raise
-        except Exception:
-            raise rules.AccessDenied('수업 권한을 확인하지 못했습니다. 프로세스 서비스 연결을 확인하세요.') from None
+        rules.authorize_task(definition, activity_id, inputs)

@@ -12,7 +12,6 @@ from procsvc import engine, manual_api, manual_cache, manual_extraction
 from procsvc.manual_approved_cache import ApprovedExtractions, BUNDLE
 from procsvc.manual_sources import ManualSources
 from test_instances import rt
-from test_course_access import instructor
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -151,8 +150,8 @@ def test_approved_http_path_history_and_commit_keep_the_same_cache_binding(rt, p
     assert not runtime.repo.fetch_pending_task('cliagents','never')
 
 
-def test_a_cache_miss_cannot_fall_back_to_student_live_extraction(instructor):
-    # A valid unlock grants classroom capabilities, not fresh ingestion calls.
+def test_a_cache_miss_cannot_fall_back_to_student_live_extraction():
+    # Course actions are open, but an extraction reaching the live worker is a cache miss, never a paid fallback.
     with pytest.raises(ValueError):
-        rules.authorize_task(instructor[0](), {'processDefinitionId':manual_extraction.DEFINITION_ID},
+        rules.authorize_task({'processDefinitionId':manual_extraction.DEFINITION_ID},
                              manual_extraction.ACTIVITY, {'manual_source':{'sha256':rules.CONTENT['document_hashes'][0]}})

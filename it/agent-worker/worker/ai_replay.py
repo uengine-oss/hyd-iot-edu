@@ -99,6 +99,16 @@ def _key(step: str, case: str = "") -> str:
 DEFERRED_MARK = "[DEFERRED]"       # task_deferral.defer 가 작업 log 에 남기는 표시 — 보류 한 번에 하나(재평가는 log 를 지우지 않는다)
 
 
+QUESTION_PREFIX = "질문 "
+
+
+def question_case(text: str) -> str:
+    """에이전트 질문은 질문 글로 업무를 가린다 — 키 없는 PC는 강의에서 다룬 질문에만 저장된 답을 낸다(2026-10-29).
+    띄어쓰기와 끝의 물음표 · 마침표 차이는 같은 질문으로 본다."""
+    flat = " ".join(text.split())
+    return QUESTION_PREFIX + (flat.rstrip(" ?？.!。") or flat)
+
+
 class case_of_instance:
     """처리 건 id → 무엇에 대한 처리 건인가: 경보 종류(처리 건 값 pattern), 문서 추출이면 문서 내용 해시(manual_source.sha256 —
     올릴 때마다 바뀌는 문서 id 가 아니라 내용)와 긴 문서의 구간 번호(segment.index). 둘 다 없으면(질문 답변 등) 빈 값.
@@ -113,6 +123,8 @@ class case_of_instance:
         values = engine.variables(inst) if inst else {}
         if values.get("pattern"):
             return str(values["pattern"])
+        if isinstance(values.get("question"), str) and values["question"].strip():
+            return question_case(values["question"])
         source = values.get("manual_source") if isinstance(values.get("manual_source"), dict) else {}
         if source.get("sha256"):
             segment = values.get("segment") if isinstance(values.get("segment"), dict) else {}
@@ -137,7 +149,7 @@ def _run_attempt(run: dict) -> tuple[int, int]:
 
 def _what(step: str, case: str, attempt) -> str:
     """저장분이 없을 때 알림에 쓰는 업무 이름: 「원인 진단」 업무(경보 COOLER_DEGRADATION · 재평가 1회째)."""
-    where = [(case if case.startswith("문서") else f"경보 {case}")] if case else []
+    where = [(case if case.startswith(("문서", QUESTION_PREFIX)) else f"경보 {case}")] if case else []
     where += [_attempt_label(attempt)] if _attempt_label(attempt) else []
     return f"「{step or '이 단계'}」 업무" + (f"({' · '.join(where)})" if where else "")
 
@@ -544,8 +556,14 @@ def replaying(library: Library):
         attempt = None if resumed else library.attempt(request)
         doc, i = library.find(request, attempt)
         if doc is None or i >= len(doc["runs"]):
-            what = (f"「{doc['step']}」의 이어지는 응답" if doc and resumed else
-                    _what(step_of(request), library.case(request), attempt))
+            case = "" if resumed else library.case(request)
+            if doc is None and case.startswith(QUESTION_PREFIX):
+                asked = [d["case"][len(QUESTION_PREFIX):] for d in library.docs() if str(d.get("case") or "").startswith(QUESTION_PREFIX)]
+                yield _error("온라인(키 없는) 수업에서는 강의에서 다룬 질문에만 답할 수 있습니다. 다룬 질문: "
+                             + (" / ".join(f"「{q}」" for q in asked) if asked else "없음")
+                             + ". API 키를 넣으면 실제 AI로 어떤 질문이든 답합니다.")
+                return
+            what = (f"「{doc['step']}」의 이어지는 응답" if doc and resumed else _what(step_of(request), case, attempt))
             yield _error(f"{what}의 저장된 AI 응답이 없습니다. API 키를 넣으면 실제 AI로 실행합니다.")
             return
         saved = doc["runs"][i]

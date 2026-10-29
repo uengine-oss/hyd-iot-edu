@@ -548,7 +548,7 @@ def test_classroom_tool_map_and_actual_call_exclude_unapproved_tools(client, tmp
     client.repo.upsert_tenant({'id':'hyd','name':'hyd','mcp':{'mcpServers':{
         'hyd-dmn':{'type':'url','url':client.url,'transport':'streamable_http'},
         'unapproved':{'type':'url','url':client.url,'transport':'streamable_http'}}}})
-    mount(client.app, path=tmp_path/'grant.json',archive_factory=lambda:None,tenant='hyd')
+    mount(client.app, archive_factory=lambda:None, tenant='hyd')
     assert [s['name'] for s in client.get('/api/mcp/servers').json()['servers']] == ['hyd-dmn']
     listed=client.get('/api/mcp/servers/hyd-dmn/tools').json()
     assert listed['status']=='ok' and [t['name'] for t in listed['tools']] == ['inputs']

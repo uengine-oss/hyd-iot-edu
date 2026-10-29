@@ -434,7 +434,7 @@ def test_course_clone_checks_inherited_model_and_server_before_writing(env):
 def test_guided_authoring_real_api_and_clone_inherited_settings(env, tmp_path):
     client, rt = env
     from procsvc.course_access import mount
-    mount(client.app, path=tmp_path/'grant.json', archive_factory=lambda:None, tenant='hyd')
+    mount(client.app, archive_factory=lambda:None, tenant='hyd')
     options=client.get('/api/agent-authoring/options').json()
     assert {item['name'] for item in options['servers']} <= {'neo4j','enterprise','hyd-dmn'}
     created=client.post('/api/agents', json={'name':'냉각 점검', 'goal':'근거 조사', 'tools':['neo4j']})

@@ -390,9 +390,11 @@ def test_document_extraction_is_told_apart_by_document_content_and_segment():
     put("p.hm8-a", {"manual_source": {"source_id": "manual:u1:abc", "sha256": "abcdef0123456789ffff"}})
     put("p.hm8-b", {"manual_source": {"source_id": "manual:u2:abc", "sha256": "abcdef0123456789ffff"}})   # 같은 문서를 다시 올림
     put("p.hm8-seg", {"manual_source": {"sha256": "abcdef0123456789ffff"}, "segment": {"index": 2, "total": 3}})
-    put("p.ask", {"question": "?"})
+    put("p.ask", {"question": "냉각 경보  원인은?"})
+    put("p.ask2", {"question": " 냉각 경보 원인은 "})
     case = ai_replay.case_of_instance(repo)
-    assert case("p.cooler") == "COOLER_DEGRADATION" and case("p.ask") == "" and case("missing") == ""
+    assert case("p.cooler") == "COOLER_DEGRADATION" and case("missing") == ""
+    assert case("p.ask") == case("p.ask2") == "질문 냉각 경보 원인은"           # 띄어쓰기 · 끝 물음표는 같은 질문
     assert case("p.hm8-a") == case("p.hm8-b") == "문서 abcdef0123456789" and case("p.hm8-seg") == "문서 abcdef0123456789 구간 2"
 
 
@@ -773,3 +775,18 @@ def test_per_run_model_token_given_to_the_cli_is_never_saved(tmp_path, monkeypat
     [path] = list((tmp_path / "lib").glob("*.json.gz"))
     saved = gzip.decompress(path.read_bytes()).decode("utf-8")
     assert "tok-managed-run-0123456789" not in saved and "********" in saved
+
+
+# ---------------------------------------------------------------- 온라인 질문은 강의에서 다룬 질문만(2026-10-29)
+def test_keyless_pc_answers_only_the_questions_recorded_in_class(tmp_path):
+    asked = {"q": "질문 냉각 경보 원인은"}
+    case_of = lambda pid: asked["q"]
+    lib = ai_replay.Library(tmp_path / "lib", case_of=case_of)
+    _record(tmp_path, lib, _fake_exec(ANSWER))
+    repo, inst, row = _replay(tmp_path, lib)                            # 같은 질문: 저장된 답
+    assert row["status"] == "SUBMITTED" and row["output"]["cause"] == "cause:cooler-fin-fouling"
+    asked["q"] = "질문 우리 회사 매출은"
+    repo, inst, row = _replay(tmp_path, lib)                            # 다른 질문: 지어내지 않고 다룬 질문을 알린다
+    text = _texts(repo, row)
+    assert row["status"] != "SUBMITTED"
+    assert "강의에서 다룬 질문에만" in text and "냉각 경보 원인은" in text

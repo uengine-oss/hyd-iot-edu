@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from procsvc import course_bootstrap,course_access
 
 
-def test_locked_bootstrap_installs_only_shipped_flows_and_reuses_them(tmp_path):
+def test_bootstrap_installs_only_shipped_flows_and_reuses_them(tmp_path):
     app=FastAPI();present=set();writes=[]
     @app.get('/api/flows/deployments')
     def deployments():return {'flows':[{'definition':d,'class_flow':True} for d in present]}
@@ -28,7 +28,7 @@ def test_locked_bootstrap_installs_only_shipped_flows_and_reuses_them(tmp_path):
     async def deploy(did:str,request:Request):
         assert (await request.json())['class_flow'] is True
         present.add(did);writes.append('deploy');return {}
-    course_access.mount(app,path=tmp_path/'access.json',archive_factory=lambda:None,tenant='hyd')
+    course_access.mount(app,archive_factory=lambda:None,tenant='hyd')
     course_bootstrap.mount(app)
     client=TestClient(app)
     assert client.post('/api/flows/import',json={'definition_id':'c3_cooling'},
@@ -39,7 +39,7 @@ def test_locked_bootstrap_installs_only_shipped_flows_and_reuses_them(tmp_path):
     assert response.status_code==200 and len(writes)==12
     assert all(not r['reused'] for r in response.json()['flows'])
     assert all(r['reused'] for r in client.post('/api/course-bootstrap',json={}).json()['flows'])
-    assert len(writes)==12 and client.get('/api/course-access').json()['unlocked'] is False
+    assert len(writes)==12 and client.get('/api/course-access').json()['phase'] == 'course'
 
 
 def test_packaged_flows_match_existing_assembly_source():

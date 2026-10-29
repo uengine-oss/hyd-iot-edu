@@ -89,7 +89,7 @@ class CourseAuthority(Authority):
         definition = runtime.definition_for(inst)
         values = engine.variables(inst)
         try:
-            rules.authorize_task(self.access_store.grant(), definition.raw, row['activity_id'], values)
+            rules.authorize_task(definition.raw, row['activity_id'], values)
         except rules.AccessDenied as exc:
             raise Denied(str(exc)) from None
         if len(rules.canonical(values)) > 128_000:raise Denied('수업 작업의 입력 크기 한도 초과')

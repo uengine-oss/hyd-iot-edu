@@ -66,4 +66,4 @@ try {
 Write-Output ('공통 파일 적용 완료: ' + $written + '개, 동일한 파일 유지: ' + $unchanged + '개')
 if ($kept) { Write-Output '기존 환경 파일과 업무 DB 설정을 보존했습니다.' }
 if (Test-Path -LiteralPath $backupRoot -PathType Container) { Write-Output ('변경 전 파일 보관: ' + $backupRoot) }
-Write-Output '다음은 이 폴더의 시작.bat을 실행하세요. 마지막 날에는 포털에서 강사 코드만 입력합니다.'
+Write-Output '다음은 이 폴더의 시작.bat을 실행하세요.'

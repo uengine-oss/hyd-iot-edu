@@ -1134,13 +1134,11 @@ from pathlib import Path
 from .manual_sources import ManualSources
 from . import manual_api
 from .manual_approved_cache import ApprovedExtractions
-from . import course_access, course_access_proof, course_bootstrap
+from . import course_access, course_bootstrap
 course_bootstrap.mount(app)
 _course_store = course_access.mount(app,
-    path=Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('course-access.json'),
     archive_factory=lambda: ManualSources(Path(os.getenv('PROCESS_STATE_PATH', '/data/process.sqlite3')).with_name('manuals.sqlite3')),
     tenant=os.getenv('TENANT_ID', 'hyd'))
-course_access_proof.mount(app,_course_store)
 from . import course_model
 course_model.mount(app, access_store=_course_store, runtime_factory=instance_mode.current, settings=os.environ)
 _classroom_client = None

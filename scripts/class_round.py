@@ -79,7 +79,6 @@ class Round:
         self.lab = "-"
         self.memo: dict[str, Any] = {}                                    # 실습 사이에 넘길 값(앞 실습이 만든 id 등)
         self.ai_runs = 3                                                  # --ai-runs: 같은 AI 단계 반복 수(1이면 일치 판정은 측정 안 함)
-        self.unlock_code = ""                                             # --unlock-code-file: 13 교대 실습을 여는 강사 코드(출력하지 않는다)
         self.not_measured: list[dict] = []                                # 이번 실행이 재지 않은 판정(통과로 세지 않는다)
         page.on("console", self._on_console)
         page.on("pageerror", lambda e: self._log().console_errors.append(f"pageerror: {e}"))
@@ -1274,10 +1273,10 @@ def _b_skill_count(stats: str) -> int:
 
 
 # ---------------------------------------------------------------------- 05
-@lab("05", "4회차 매뉴얼 원문과 등록된 지식의 조건 · 출처 대조 (기본 잠금: 제공 문서 보기 · 대조, 추출 · 적재는 교대 실습에서)")
+@lab("05", "4회차 매뉴얼 인제스천 — 제공 원문 보기 · 추출(강사 검토 캐시) · 원문 대조 · 검토 · 적재")
 def lab_05_manual_to_knowledge(r: Round):
-    """최신 실라버스(통합 18행 · 실전 59행): 새로 추출하지 않고 제공 원문과 시작 때 적재된 검토 지식을 대조한다.
-    기본 잠금은 추출 · 임의 적재 · 되돌리기를 막는다(course_access.gate). 막힘도 학생이 읽을 한국어여야 한다."""
+    """수업 행위는 처음부터 열려 있다(2026-10-29): 제공 문서를 포털에서 직접 추출 · 검토 · 적재한다. 추출은 강사가 검토 · 서명한
+    결과(캐시)라 AI를 부르지 않는다. 제공하지 않은 문서는 서버가 거절한다(course_access.gate). 막힘도 학생이 읽을 한국어여야 한다."""
     page = r.page
     before = _b_onto_stats(r)
     r.memo["b_skills_before"] = _b_skill_count(before)
@@ -1315,28 +1314,25 @@ def lab_05_manual_to_knowledge(r: Round):
     page.click("#manualFullSource")
     r.wait(15, lambda: page.locator("#manualSourceText details").count() > 0, every=1)
     r.check("원문 전체 보기(보관 원문 쪽별)", page.locator("#manualSourceText details").count() >= 1)
-    extract = page.locator("#manualAgentExtract")
-    r.check("기본 잠금: [추출 제안 준비]는 꺼져 있고 강사 코드가 필요하다고 알린다",
-            extract.count() > 0 and extract.is_disabled() and "강사" in (extract.get_attribute("title") or ""),
-            extract.get_attribute("title") or "버튼 없음", kind="exception")
-    code, body = r.api("POST", f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/extractions",
-                       {"request_id": "00000000-0000-4000-8000-000000000005"})
-    detail = (body or {}).get("detail", "") if isinstance(body, dict) else str(body)
-    ok, why = r.human_message(detail)
-    r.check("화면 밖 추출 요청도 서버가 거절(403 · 한국어, AI 호출 없음)", code == 403 and ok and "강사" in detail, f"{code} {why}", kind="exception")
-    r.check("거절된 추출은 처리 건을 만들지 않는다", not (r.get(f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/extractions?limit=5")
-                                                 or {}).get("items"), kind="exception")
     pv = r.get(f"{r.process}/api/kg/manuals/sources/{urllib.parse.quote(sid, safe='')}/preview")
     src = _b_source_procedures((_B_DOC_DIR / _B_DOC_FILES["HM-8"]).read_text(encoding="utf-8"))
     got = {p["id"] for p in pv.get("procedures") or []}
     r.check("원문 대조: 원문의 절차 번호가 미리보기에 모두 있다", set(src) <= got, f"원문 {sorted(src)} · 미리보기 {sorted(got)}", kind="quality")
+    # ---- 추출 → 원문 대조 → 검토 → 적재 (강사 검토 캐시: AI 호출 없음)
+    extract = page.locator("#manualAgentExtract")
+    r.check("[추출 제안 준비]를 바로 쓸 수 있다(잠금 없음)", extract.count() > 0 and extract.is_enabled(),
+            extract.get_attribute("title") or "버튼 있음")
+    extracted = _b_run_extraction(r, "HM-8", sid, 0)
+    r.check("HM-8 추출 제안을 받는다", not extracted.get("error"), extracted.get("error") or f"{extracted.get('seconds')}초")
+    if extracted.get("error"):
+        return
+    r.check("추출 제안이 원문과 맞는다(절차 · 순서 · 조건)", not extracted["quality"], str(extracted["quality"]), kind="quality")
+    proposal = _b_extraction(r, sid, extracted["instance"])[1].get("preview") or {}
+    _b_apply_review(r, "HM-8", proposal)
+    committed, message = _b_commit(r, "HM-8")
+    r.check("검토한 제안을 적재(새 판본)", committed, message)
     hist = page.locator("#manualHistory").inner_text()
-    r.check("적재 이력 카드에 HM-8 현재 판본(시작 때 검토본)이 보인다", "HM-8" in hist, hist[:300])
-    undo = page.locator("#manualHistory [data-manual-undo]")
-    if undo.count():
-        undo.first.click(); page.wait_for_timeout(1500)
-        r.check("기본 잠금: 기본 지식 되돌리기는 막히고 판본이 그대로", (_b_current_batch(r, "HM-8") or {}).get("batch") == loaded["HM-8"]["batch"],
-                page.locator("#manualHistory").inner_text()[:300], kind="exception")
+    r.check("적재 이력 카드에 HM-8 판본이 보인다", "HM-8" in hist, hist[:300])
 
     # ---- 지식 지도: 조치 → 단계 → 근거 매뉴얼 절 → 속한 문서(출처)
     r.tab("ontology")
@@ -2360,9 +2356,9 @@ def _c_class_definition(r, did: str) -> dict:
     return r.get(f"{r.process}/api/process/definitions/{did}?version={urllib.parse.quote(str(route.get('version') or '1'))}")
 
 
-@lab("09", "9-3 · 6-5/6-6 BPMN 비교 — bpmn.io 그림과 포털에 등록된 수업 흐름의 시작 · 에이전트 · 승인 · 명령 · 재관측 연결 (기본 잠금: 학생 등록 막힘)")
+@lab("09", "9-3 · 6-5/6-6 BPMN 비교 — bpmn.io 그림과 포털에 등록된 수업 흐름의 시작 · 에이전트 · 승인 · 명령 · 재관측 연결 (준비된 교대 흐름만 등록)")
 def lab_09_flow_import(r):
-    """최신 실라버스: 학생은 bpmn.io 로 그리고 등록된 기준 흐름과 비교한다. 기본 잠금은 흐름 등록 · 배포를 막는다(교대 실습만 연다)."""
+    """학생은 bpmn.io 로 그리고 등록된 기준 흐름과 비교한다. 「흐름」 메뉴는 열려 있고, 등록은 제공된 교대 BPMN만 받는다(course_handover)."""
     routes = _c_routes(r)
     want = {"COOLER_DEGRADATION": "c3_cooling", "PM_DUE": "c3_pm", "SPARE_BELOW_MIN": "c3_spare"}
     r.check("경보 경로: 쿨러 · 정기 점검 · 재고 부족 → 준비된 수업 흐름", all((routes.get(k) or {}).get("definition") == v and (routes.get(k) or {}).get("class_flow") is True
@@ -2377,12 +2373,11 @@ def lab_09_flow_import(r):
                 json.dumps({k: approve.get(k) for k in ("role", "roles", "lane")}, ensure_ascii=False), kind="quality")
     r.page.wait_for_selector(".rail nav button[data-tab='flows']")
     flows_btn = r.page.locator(".rail nav button[data-tab='flows']")
-    r.check("기본 잠금: 「흐름」 메뉴는 꺼져 있고 이유를 알린다", flows_btn.is_disabled() and bool(flows_btn.get_attribute("title")),
-            flows_btn.get_attribute("title") or "", kind="exception")
+    r.check("「흐름」 메뉴를 바로 쓸 수 있다(잠금 없음)", flows_btn.is_enabled(), flows_btn.get_attribute("title") or "열림")
     code, body = r.api("POST", f"{r.process}/api/flows/import", {"xml": "<definitions/>", "filename": "diagram.bpmn"})
     detail = (body or {}).get("detail", "") if isinstance(body, dict) else str(body)
     ok, why = r.human_message(detail)
-    r.check("화면 밖 흐름 가져오기 · 등록도 서버가 거절(403 · 한국어)", code == 403 and ok, f"{code} {why}", kind="exception")
+    r.check("준비되지 않은 흐름 가져오기는 서버가 거절(403 · 한국어)", code == 403 and ok, f"{code} {why}", kind="exception")
     r.check("거절 뒤 경보 경로는 그대로", _c_routes(r) == routes, kind="exception")
 
 
@@ -2423,7 +2418,7 @@ def _c_biz_round(r, kind: str, asset: str, person: str, *, check_effects) -> lis
     """B · C 공통: 내 흐름 배포 → AI 3회(같은 입력) — 1회 거절(효과 없음), 2회 승인(효과), 3회 「이미 처리됨」 거절 → [초기화] → 다시 → 거절.
     check_effects(stage, before, view) 가 업무 DB · 메일함을 판정한다."""
     sp = C_SPECS[kind]
-    # 최신 실라버스(통합 33 · 35, 실전 70 · 72): 포털의 준비된 시나리오 B · C 를 실행한다. 학생 흐름 등록은 기본 잠금이 막는다.
+    # 최신 실라버스(통합 33 · 35, 실전 70 · 72): 포털의 준비된 시나리오 B · C 를 실행한다. 준비되지 않은 흐름 등록은 서버가 막는다.
     did = {"pm": "c3_pm", "spare": "c3_spare"}[kind]
     acts = {x.get("id"): x.get("name") for x in _c_class_definition(r, did).get("activities") or []}
     names = {"P": acts.get("T_approve")}
@@ -2572,38 +2567,11 @@ def _h_submit(r, pid, task, user, values, *, expect_done=True):
     return bool(r.wait(45, lambda: _c_item(_c_view(r, pid), task['activity_name']).get('status') == 'DONE', every=2))
 
 
-def _h_unlock(r) -> bool:
-    """마지막 날: 학생이 포털의 「수업 기능」에서 강사 해제 코드를 입력한다(잘못된 코드는 거절). 이미 열려 있으면 그대로 둔다."""
-    page = r.page
-    if r.get(f"{r.process}/api/course-access").get("unlocked"):
-        return True
-    if not r.unlock_code:
-        r.check("강사 해제 코드로 교대 실습 열기", False, "--unlock-code-file 이 없어 교대 실습을 열 수 없다"); return False
-    message = page.locator("#courseUnlockMessage")
-    page.locator("#courseAccessPanel summary").click()
-    page.fill("#courseUnlockCode", "HYD1.wrong.code-not-signed-by-the-instructor")
-    page.click("#courseUnlockGo")
-    r.wait(10, lambda: "올바르지" in message.inner_text(), every=0.3)
-    ok, why = r.human_message(message.inner_text())
-    r.check("잘못된 해제 코드 → 거절 · 한국어", ok and "올바르지" in why and not r.get(f"{r.process}/api/course-access").get("unlocked"), why, kind="exception")
-    page.fill("#courseUnlockCode", r.unlock_code)
-    page.click("#courseUnlockGo")
-    # 서버 저장과 화면 안내는 순서대로 오지 않는다(fresh 실행: 서버는 열렸는데 직전 거절 문구를 읽음) — 둘 다 기다린다
-    opened = r.wait(15, lambda: r.get(f"{r.process}/api/course-access").get("unlocked") is True and "열렸습니다" in message.inner_text(), every=0.5)
-    r.check("강사 해제 코드 → 교대 실습 열림(화면 안내)", bool(opened), message.inner_text())
-    if not opened:
-        return False
-    page.reload(); page.wait_for_timeout(2000)
-    return True
-
-
 @lab("13", "마지막 적용 · 교대 인수인계 — 보충 자료 → 새 에이전트·스킬 → 두 사람 검토·보완·확인")
 def lab_13_shift_handover(r):
     import hashlib
     import xml.etree.ElementTree as ET
     page = r.page
-    if not _h_unlock(r):
-        return
     # 이미 검토·적재한 동일 승인 자료는 재사용한다. 수업 전체를 초기화하지 않는다.
     before = {x['filename']: x['batch'] for x in r.get(f'{r.process}/api/kg/manuals') if x.get('current')}
     _B_DOC_FILES['HI-01'] = 'HI-01_shift-inspection-supplement.md'
@@ -2887,7 +2855,6 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--headed", action="store_true")
     ap.add_argument("--ai-runs", type=int, choices=(1, 3), default=3,
                     help="AI 단계 반복 수. 1 = 연속 수업 확인(반복 일치는 측정 안 함으로 남김)")
-    ap.add_argument("--unlock-code-file", default="", help="강사 해제 코드가 든 파일(13 교대 실습). 코드는 출력 · 결과에 남기지 않는다")
     args = ap.parse_args(argv[1:])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -2900,8 +2867,6 @@ def main(argv: list[str]) -> int:
         page.set_default_timeout(20_000)
         r = Round(page, out)
         r.ai_runs = args.ai_runs
-        if args.unlock_code_file:
-            r.unlock_code = Path(args.unlock_code_file).read_text(encoding="utf-8").strip()
         r.open()
         started = not args.start
         for code, title, fn in sorted(LABS, key=lambda x: x[0]):

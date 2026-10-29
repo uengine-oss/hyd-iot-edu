@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 # 강사 AI 응답 저장(영상 녹화 아님) — 온라인(키 없는) 학생이 받을 AI 단계 결과를 한 번에 만든다. 저장소 루트에서(Windows는 AI응답저장.bat):
-#   bash scripts/record_replay.sh [강사 해제 코드 파일]
+#   bash scripts/record_replay.sh
 # 하는 일: 시작(--record: 실제 AI로 진행하며 응답 저장) → 포털 실습 01~13 · 90을 학생 한 명이 누르는 그대로 한 바퀴(class_round.py)
 #          → 저장 목록 → 평소 시작(live)으로 되돌림 → 커밋할 명령 안내.
-# 필요한 것: .env의 LLM_API_KEY(강의 중계 키), 13 교대 실습을 여는 강사 해제 코드 파일(기본 work/course-access-private/unlock-code.txt),
-#           Playwright가 든 Python. 수업 시작 상태(처리 건 0)의 새 폴더에서 돌린다 — 학생 PC도 그 상태에서 시작한다.
+# 필요한 것: .env의 LLM_API_KEY(강의 중계 키), Playwright가 든 Python. 수업 시작 상태(처리 건 0)의 새 폴더에서 돌린다 — 학생 PC도 그 상태에서 시작한다.
 # 결과: it/agent-worker/replay/*.json.gz (문서/시스템/참조/재생모드.md). 커밋 · 푸시는 안내만 하고 하지 않는다.
 set -euo pipefail
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
 cd "$(dirname "$0")/.."
 die() { printf '\n[멈춤] %s\n' "$*" >&2; exit 1; }
 
-CODE_FILE="${1:-work/course-access-private/unlock-code.txt}"
-[ -s "$CODE_FILE" ] || die "강사 해제 코드 파일이 없습니다: $CODE_FILE (13 교대 실습의 AI 응답을 저장하려면 필요합니다. 경로를 인자로 주세요)"
 PY=""
 for candidate in .venv314/Scripts/python.exe .venv/bin/python .venv/Scripts/python.exe python python3; do
   if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import playwright' >/dev/null 2>&1; then PY="$candidate"; break; fi
@@ -31,8 +28,7 @@ OUT=".evidence/record-replay/$(date +%Y%m%d-%H%M%S)"
 echo
 echo "== AI 응답 저장: 포털 실습 01~13 · 90 한 바퀴 (실제 AI, 30분 안팎) — 결과 $OUT"
 set +e
-"$PY" scripts/class_round.py --only 01,02,03,04,05,05c,06,07,08,09,10,11,12,13,90 --ai-runs 1 \
-  --unlock-code-file "$CODE_FILE" --out "$OUT"
+"$PY" scripts/class_round.py --only 01,02,03,04,05,05c,06,07,08,09,10,11,12,13,90 --ai-runs 1 --out "$OUT"
 rc=$?
 set -e
 

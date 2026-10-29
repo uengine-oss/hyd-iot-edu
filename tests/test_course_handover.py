@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from hydcommon import course_access as rules, course_handover as flow
-from test_course_access import instructor, setup
+from test_course_access import setup
 from test_bpmn_import import api
 
 
@@ -14,12 +14,10 @@ def test_shipped_handover_contract_matches_its_source():
     assert flow.CONTENT['mapping']==json.loads((root/'shift_handover.mapping.json').read_text(encoding='utf8'))
 
 
-def test_only_shipped_topology_and_mapping_are_editable(tmp_path,instructor):
-    _,client,_,sign,_=setup(tmp_path,instructor)
+def test_only_shipped_topology_and_mapping_are_editable():
+    _,client,_,_=setup()
     imported={'definition_id':'ShiftHandover','xml':flow.CONTENT['xml'],'file_name':'shift_handover.bpmn'}
-    assert client.post('/api/flows/import',json=imported).status_code==403
-    client.post('/api/course-access/unlock',json={'code':sign()})
-    assert client.post('/api/flows/import',json=imported).status_code==200
+    assert client.post('/api/flows/import',json=imported).status_code==200       # 처음부터 열려 있다(강사 코드 없음)
     # The portal sends null when the student leaves "흐름 id" empty (live 2026-10-28 refusal).
     for empty in (dict(imported,definition_id=None),{k:v for k,v in imported.items() if k!='definition_id'}):
         reply=client.post('/api/flows/import',json=empty)
@@ -48,12 +46,10 @@ def test_only_shipped_topology_and_mapping_are_editable(tmp_path,instructor):
         assert client.post(path,json={}).status_code==403
 
 
-def test_all_three_imported_handover_drafts_require_the_signed_grant(instructor):
-    grant=instructor[0]()
+def test_all_three_imported_handover_drafts_are_course_steps_and_nothing_else_is():
     for task in flow.DRAFTS:
-        with pytest.raises(ValueError):rules.authorize_task(None,{'processDefinitionId':'ShiftHandover'},task,{})
-        rules.authorize_task(grant,{'processDefinitionId':'ShiftHandover'},task,{})
-    with pytest.raises(ValueError):rules.authorize_task(grant,{'processDefinitionId':'ShiftHandover'},'task_evil',{})
+        rules.authorize_task({'processDefinitionId':'ShiftHandover'},task,{})
+    with pytest.raises(ValueError):rules.authorize_task({'processDefinitionId':'ShiftHandover'},'task_evil',{})
 
 
 def test_registration_rechecks_persisted_xml_and_preserves_the_class_flows(api):
@@ -73,8 +69,7 @@ def test_registration_rechecks_persisted_xml_and_preserves_the_class_flows(api):
     assert len(store.versions(flow.DEFINITION))==1
 
 
-def test_imported_flow_worker_runs_revision_drafts_under_course_gate(api,tmp_path,instructor):
-    import httpx
+def test_imported_flow_worker_runs_revision_drafts_under_course_gate(api,tmp_path):
     from worker.runner import Runner
     from worker.course_access import CourseAccess
     from test_worker import _settings,_fake_exec,TENANT_MCP
@@ -91,7 +86,7 @@ def test_imported_flow_worker_runs_revision_drafts_under_course_gate(api,tmp_pat
     inst=runtime.start_definition(flow.DEFINITION,registered.json()['version'],'course-revision',values=dict(
         asset='HYD-01',shift_label='다음 교대',as_of='2026-10-27T18:00:00+09:00',work_notes='완료 주장 확인 필요'))
     requests=[]
-    gate=CourseAccess(transport=httpx.MockTransport(lambda req:httpx.Response(200,json={'grant':instructor[0]()})))
+    gate=CourseAccess()
     runner=Runner(_settings(tmp_path),repo,exec_fn=_fake_exec(json.dumps(unknown_draft()),requests=requests),
                   resolve_provider=lambda _:object(),course_access=gate)
     for index in range(3):

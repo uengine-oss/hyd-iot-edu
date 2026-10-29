@@ -5,7 +5,7 @@ import yaml
 
 from procsvc.course_model import ensure_runtime_key
 from worker import managed_isolation
-from test_course_access import instructor, setup
+from test_course_access import setup
 
 
 def test_runtime_identity_survives_restart_and_invalid_file_is_not_reset(tmp_path):
@@ -20,8 +20,8 @@ def test_runtime_identity_survives_restart_and_invalid_file_is_not_reset(tmp_pat
     assert path.read_text() == 'invalid'
 
 
-def test_normal_questions_can_open_without_unlocking_management(tmp_path, instructor):
-    _, client, store, _, _ = setup(tmp_path, instructor)
+def test_normal_questions_can_open_without_opening_management():
+    _, client, store, _ = setup()
     store.questions_enabled = True
     assert client.get('/api/course-access').json()['capabilities']['free_questions']
     assert client.post('/api/ask',json={'question':'학생이 다르게 쓴 질문'}).status_code == 200
