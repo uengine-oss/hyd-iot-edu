@@ -35,10 +35,10 @@ Windows에서는 Git Bash와 Docker Desktop의 WSL 2 기반 Linux 컨테이너�
 
 | 프로그램 | 프로젝트 준비 기준 | 공식 다운로드·문서 | 설치 확인 |
 |---|---|---|---|
-| VS Code | 1.143.0 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
+| VS Code | 1.132.0(2026년 8월 판) 이상. 프로젝트 편집용 | [Windows](https://code.visualstudio.com/download) · [macOS Universal ZIP](https://update.code.visualstudio.com/latest/darwin-universal/stable) · [Mac 설치](https://code.visualstudio.com/docs/setup/mac) | 정보(About) 또는 `code --version` |
 | Git | 공식 최신 안정판 | [Windows](https://git-scm.com/install/windows) · [macOS](https://git-scm.com/install/mac) | `git --version` |
 | Node.js | 24.22.1 이상. 24.x LTS 권장 | [Windows x64 MSI](https://nodejs.org/dist/v24.22.1/node-v24.22.1-x64.msi) · [macOS PKG](https://nodejs.org/dist/v24.22.1/node-v24.22.1.pkg) · [다른 CPU·버전](https://nodejs.org/en/download) | `node --version`, `npm --version` |
-| Python | 3.14.7 이상 | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
+| Python | 3.13 이상(없으면 3.14.7 설치) | [Windows x64 EXE](https://www.python.org/ftp/python/3.14.7/python-3.14.7-amd64.exe) · [macOS Universal2 PKG](https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg) · [릴리스 정보](https://www.python.org/downloads/release/python-3147/) | `python --version` / macOS `python3 --version` |
 | WSL | 공식 최신 안정판, WSL 2 실행 환경(Windows) | [설치](https://learn.microsoft.com/ko-kr/windows/wsl/install) · [명령](https://learn.microsoft.com/ko-kr/windows/wsl/basic-commands) | `wsl --version`, `wsl --status` |
 | Docker Desktop | 4.87.0 이상 | [Windows](https://docs.docker.com/desktop/setup/install/windows-install/) · [macOS](https://docs.docker.com/desktop/setup/install/mac-install/) | 앱 About, `docker info`, `docker compose version` |
 
@@ -117,7 +117,7 @@ Windows에서는 설치·업데이트가 필요한 항목에 `winget`을 사용�
 1. 같은 저장소에서 **Code → Download ZIP**으로 받고 Finder에서 ZIP을 열어 압축을 푼다. `설치.command`, `시작.command`, `scripts` 폴더를 함께 둔다. 기존 프로젝트에 덮어쓰지 않는다.
 2. **`설치.command`를 더블클릭**한다. [Homebrew](https://brew.sh/)가 없으면 공식 설치 스크립트로 먼저 준비한다. 터미널의 설치 내용·Enter·관리자 암호 요청을 확인한다. 암호 입력 중 글자가 보이지 않는 것은 정상이다. 전체 파일을 `sudo`로 실행하지 않는다.
 3. Docker Desktop·VS Code·Node.js·Git·Python의 `[유지]`·`[완료]`·`[실패]` 결과를 확인한다. 기준 미달인 항목만 [Homebrew 설치·업데이트](https://docs.brew.sh/Manpage)를 수행한다. 의존 패키지도 함께 설치될 수 있다. Docker·VS Code는 업데이트 전에 작업을 저장하고 종료한다. `/Applications`와 `~/Applications`의 앱을 확인하며 두 곳에 중복된 앱은 자동 교체하지 않는다.
-4. **Python도 설치 파일이 준비한다.** 3.14.7 이상이 있으면 유지하며 기존 Python·Anaconda는 삭제하지 않는다. Mac에는 WSL·Git Bash가 필요 없다.
+4. **Python도 설치 파일이 준비한다.** 3.13 이상이 있으면 유지하며 기존 Python·Anaconda는 삭제하지 않는다. Mac에는 WSL·Git Bash가 필요 없다.
 5. Docker Desktop을 열어 초기 설정과 약관 동의를 완료하고 **Engine running**을 확인한다. 현재 macOS가 [Docker Desktop 지원 조건](https://docs.docker.com/desktop/setup/install/mac-install/)과 Homebrew 지원 조건을 만족해야 한다.
 
 ZIP 다운로드 후 실행 권한 오류가 나면 터미널에서 `cd ` 뒤에 압축을 푼 폴더를 끌어다 놓고 Enter를 누른 다음 아래를 한 번 실행한다. 이후 더블클릭할 수 있다.
@@ -180,7 +180,7 @@ Set-Location -LiteralPath 'C:\hyd-iot-edu'
 | 5 | **`점검.bat`** 더블클릭 | 실패 항목이 없는지 확인하고, 중계 서버가 **「연결됨」**인지 확인 |
 | 종료 | **`끄기.bat`** 더블클릭 | 실습 스택 종료 |
 
-**설치 정책:** Docker 4.87.0·VS Code 1.143.0·Node.js 24.22.1·Python 3.14.7 이상은 유지하고 낮거나 없으면 설치·업데이트한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 기존 BAT는 두 제품을 과거 최소 기준으로 유지할 수 있어 최신 확인을 대신하지 않는다. WSL용 Windows 기능도 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅 후 확인이 필요한 항목은 완료로 표시하지 않는다. 이 범위는 포털 실행 환경이며 XG5000은 별도 설치 대상이다.
+**설치 정책:** Docker 4.87.0·VS Code 1.132.0(2026년 8월 판)·Node.js 24.22.1·Python 3.13 이상은 유지하고 낮거나 없으면 설치·업데이트한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 기존 BAT는 두 제품을 과거 최소 기준으로 유지할 수 있어 최신 확인을 대신하지 않는다. WSL용 Windows 기능도 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅 후 확인이 필요한 항목은 완료로 표시하지 않는다. 이 범위는 포털 실행 환경이며 XG5000은 별도 설치 대상이다.
 
 **중계 설정(3번):** Google Drive에 보관한 `.env`의 `OPENAI_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` 세 값을 **저장소 루트 `.env`**에 복사·저장한다. 루트 `.env`가 없으면 `.env.example`을 복사해 만든다. `OPENAI_API_KEY`는 비워도 된다. `점검.bat`을 더블클릭하면 루트 설정을 자동 사용한다. 루트에 중계키가 없을 때만 기존 실습 폴더 설정을 사용하며, 명시적인 `-LlmEnvFile` 지정은 우선한다. 이미 발급한 중계키이므로 **gcloud 조회·재발급은 필요 없다.** 값이 있으면 점검 때 다시 묻지 않는다. 중계 서버 「건너뜀」은 연결 확인 완료가 아니다. 실제 키를 넣은 파일은 커밋·푸시하지 않는다.
 

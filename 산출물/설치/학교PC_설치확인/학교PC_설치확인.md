@@ -52,16 +52,16 @@ notepad.exe '.\.env'
 
 해당 세 줄의 값만 바꾸고 Ctrl+S로 저장한다. 저장소 최상위 `.env`를 사용하며, 다른 설정은 유지한다. 파일이 없으면 `.env.example`을 복사해 만든다. `OPENAI_API_KEY`는 비워도 된다. `점검.bat` 더블클릭만으로 루트 설정을 사용한다. 값이 들어 있으면 `점검.bat`에서 주소·키를 다시 묻지 않는다. **기존에 발급한 중계키를 사용하므로 gcloud 조회·키 재발급은 필요 없다.** 키를 넣은 파일은 커밋·푸시하지 않는다. A절 ④의 `python llm_client.py`는 수업에서 직접 연결을 확인하는 추가 절차이며, 지금의 자동 점검을 위해 별도 실행할 필요는 없다.
 
-**`설치.bat`이 하는 일.** Docker Desktop·VS Code·Node.js·Git·Python과 WSL 및 필요한 Windows 기능을 준비한다. Docker 4.87.0·VS Code 1.143.0·Node.js 24.16.0·Python 3.14.7 이상은 유지하며 낮거나 없으면 설치·업데이트 후 확인한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 현재 BAT는 Git 2.54.0·WSL 2.7.12.0 이상을 유지할 수 있어 최신판 확인은 별도로 한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅이 필요한 항목은 재부팅 후 확인하기 전까지 완료가 아니다. 현재 설치 정책은 [README](../../../README.md#실행-환경)를 따른다. Arduino IDE와 XG5000은 자동 설치하지 않는다.
+**`설치.bat`이 하는 일.** Docker Desktop·VS Code·Node.js·Git·Python과 WSL 및 필요한 Windows 기능을 준비한다. Docker 4.87.0·VS Code 1.132.0(2026년 8월 판)·Node.js 24.22.1·Python 3.13 이상은 유지하며 낮거나 없으면 설치·업데이트 후 확인한다. Git·WSL은 준비 시점의 공식 최신 안정판을 확인한다. 현재 BAT는 Git 2.54.0·WSL 2.7.12.0 이상을 유지할 수 있어 최신판 확인은 별도로 한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다. 재부팅이 필요한 항목은 재부팅 후 확인하기 전까지 완료가 아니다. 현재 설치 정책은 [README](../../../README.md#실행-환경)를 따른다. Arduino IDE와 XG5000은 자동 설치하지 않는다.
 
 | 목록 번호 | 프로그램 | 판 | 설치 방법 | 확인할 것 |
 |---|---|---|---|---|
 | — | BIOS 가상화 | — | 확인만 한다. 대부분 켜져 있어 꺼졌을 때만 표에 뜬다 | 「꺼짐」이 뜨고 Docker가 안 돌면 BIOS에서 Intel VT-x / AMD SVM을 켠다 |
 | 2 | WSL 2 | 공식 최신 안정판 확인 | 자동 준비(현재 BAT 기준 2.7.12.0) | Windows 기능·재부팅 후 버전 확인, Ubuntu 별도 설치 불필요 |
 | 1 | Docker Desktop | 4.87.0 | winget `Docker.DockerDesktop` | 로그인한 계정과 「로그인한 모든 계정(Authenticated Users)」을 `docker-users` 그룹에 넣는다(복제된 PC의 다른 계정도 Docker를 쓴다). 다시 시작한 뒤 한 번 열어 약관 동의 |
-| 3 | Visual Studio Code | 1.143.0 이상 | winget `Microsoft.VisualStudioCode`(신규는 PC 전체) | Codex 확장 설치·로그인은 별도 |
-| 4 | Python | 3.14.7 이상 | winget `Python.Python.3.14` | 5회차 실습의 `python llm_client.py` |
-| 5 | Node.js | 24.16.0 이상 | winget `OpenJS.NodeJS` | — |
+| 3 | Visual Studio Code | 1.132.0(2026년 8월 판) 이상 | winget `Microsoft.VisualStudioCode`(신규는 PC 전체) | Codex 확장 설치·로그인은 별도 |
+| 4 | Python | 3.13 이상 | winget `Python.Python.3.14` | 5회차 실습의 `python llm_client.py` |
+| 5 | Node.js | 24.22.1 이상 | winget `OpenJS.NodeJS` | — |
 | 6 | Git | 공식 최신 안정판 확인 | winget `Git.Git` | 현재 BAT는 2.54.0 이상을 유지할 수 있어 최신 확인 별도 |
 | 8 | XG5000 | 4.73 | **직접 설치** — E-7의 4.73 파일 링크 | `설치.bat`은 건드리지 않는다 |
 
@@ -292,22 +292,22 @@ Docker Desktop은 이미지를 **Windows 사용자 계정마다** 저장한다(`
 
 4. PC를 다시 시작하고 Docker Desktop을 연다. 약관 「Accept」, 로그인 창은 「Skip」. 왼쪽 아래가 「Engine running」이면 된다.
 
-### E-3. Visual Studio Code (1.143.0 이상)
+### E-3. Visual Studio Code (1.132.0 이상)
 
-1. 받아서 설치한다: [VS Code 공식 다운로드](https://code.visualstudio.com/Download). 현재 버전이 1.143.0 이상이면 유지한다
+1. 받아서 설치한다: [VS Code 공식 다운로드](https://code.visualstudio.com/Download). 현재 버전이 1.132.0 이상이면 유지한다
 2. 기본값 그대로 「다음」. 「PATH에 추가」는 체크된 채로 둔다.
 
-### E-4. Python (3.14.7 이상)
+### E-4. Python (3.13 이상)
 
 1. PowerShell에서 `python --version` 또는 `py --version`을 확인한다. 기준 이상이면 유지한다.
 2. 낮거나 없으면 [README의 공식 설치 파일](../../../README.md) 또는 `설치.bat`으로 준비한다. 기존 Python·Anaconda와 데이터는 삭제하지 않는다.
 3. 설치 후 새 PowerShell 창에서 버전과 사용할 실행 경로를 확인한다. 설치기를 열었다는 사실만으로 완료로 판단하지 않는다.
 
-### E-5. Node.js (24.16.0 이상)
+### E-5. Node.js (24.22.1 이상)
 
-1. 받아서 설치한다: [Node.js 공식 다운로드](https://nodejs.org/en/download). 24.16.0 이상의 Windows 설치판을 사용한다
+1. 받아서 설치한다: [Node.js 공식 다운로드](https://nodejs.org/en/download). 24.22.1 이상의 Windows 설치판을 사용한다
 2. 기본값 그대로 「Next」. 「Tools for Native Modules」는 체크하지 않는다.
-3. 확인 — **새로 연 [PowerShell]**: `v24.16.0` 이상인지 확인한다.
+3. 확인 — **새로 연 [PowerShell]**: `v24.22.1` 이상인지 확인한다.
 
    ```
    node --version

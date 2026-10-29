@@ -1,6 +1,6 @@
 ﻿# 학생 PC에 실습 필수 프로그램을 최소 기준보다 낮거나 없으면 설치·업데이트한다. 저장소 루트의 설치.bat을 더블클릭하면 관리자 권한으로 이 파일을 실행한다.
 #   2026-10-22 강사 PC 실측 최소 버전:
-#   Docker Desktop 4.87.0 · VS Code 1.143.0 · Node.js 24.22.1 · Git 2.54.0
+#   Docker Desktop 4.87.0 · VS Code 1.132.0(2026년 8월 판) · Node.js 24.22.1 · Git 2.54.0
 #   7번 Arduino IDE는 빼고, 8번 XG5000 4.73은 직접 설치한다(사용자 2026-10-19).
 #   + supabase CLI: 목록 밖. 업무 DB를 켜는 데 쓰고, 없어도 시작.bat이 npx로 대신 받는다
 # Python 3.13 이상(없으면 3.14 설치) · WSL 2.7.12.0과 필요한 Windows 기능을 포함한다.
@@ -124,9 +124,10 @@ if (Get-LocalGroup -Name 'docker-users' -ErrorAction SilentlyContinue) {
     }
 }
 
-# 2. VS Code: 신규는 PC 전체 설치, 업데이트는 기존 설치 범위 유지
+# 2. VS Code: 2026년 8월 판(1.132.0, 2026-08-05) 이상이면 그대로 둔다(사용자 2026-10-29). 낮거나 없을 때만 설치 · 업데이트
+#    신규는 PC 전체 설치, 업데이트는 기존 설치 범위 유지
 Say "`n[2/4] Visual Studio Code"
-Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' '1.143.0' {
+Ensure-Minimum 'VS Code' 'Microsoft.VisualStudioCode' '1.132.0' {
 $v = Installed-App 'Microsoft Visual Studio Code*'
 if (-not $v) { $v = Version-Of 'code' @('--version') }
 return $v
